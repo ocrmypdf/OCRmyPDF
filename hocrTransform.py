@@ -1,31 +1,27 @@
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.units import inch
-#from xml.etree.ElementTree import ElementTree
 from lxml import etree as ElementTree
 import Image, re, sys
+import getopt
 
 class hocrTransform():
 	"""
-	A class for converting documents to/from the hOCR format.
+	A class for converting documents from the hOCR format.
 	For details of the hOCR format, see:
 	http://docs.google.com/View?docid=dfxcv4vc_67g844kf
-	See also:
-	http://code.google.com/p/hocr-tools/
-	Basic usage:
-	Create a PDF from an hOCR file and an image:
-	hocr = hocrTransform("path/to/hOCR/file")
-	hocr.to_pdf("path/to/image/file", "path/to/output/file")
 	"""
-	def __init__(self, hocrFileName = None, dpi=300):
-		self.hocr = None
+	def __init__(self, hocrFileName, dpi=300):
 		self.dpi = dpi
-		self.xmlns = ''
 		self.boxPattern = re.compile('bbox((\s+\d+){4})')
-		if hocrFileName is not None:
-			self.parse_hocr(hocrFileName)
-      		else:
-			print "No hocr file provided. exiting"
-			exit
+
+		self.hocr = ElementTree.ElementTree()
+		self.hocr.parse(hocrFileName)
+ 
+		# if the hOCR file has a namespace, ElementTree requires its use to find elements
+		matches = re.match('({.*})html', self.hocr.getroot().tag)
+		self.xmlns = ''
+		if matches:
+			self.xmlns = matches.group(1)
 
 	def __str__(self):
 		"""
@@ -65,21 +61,7 @@ class hocrTransform():
 				out = (int(coords[0]),int(coords[1]),int(coords[2]),int(coords[3]))
 		return out
     
-	def parse_hocr(self, hocrFileName):
-		"""
-		Reads an XML/XHTML file into an ElementTree object
-		"""
-		self.hocr = ElementTree.ElementTree()
-		self.hocr.parse(hocrFileName)
- 
-		# if the hOCR file has a namespace, ElementTree requires its use to find elements
-		matches = re.match('({.*})html', self.hocr.getroot().tag)
-		if matches:
-			self.xmlns = matches.group(1)
-		else:
-			self.xmlns = ''
-
-	def pxl2pt(self, pxl):
+	def px2pt(self, pxl):
 		"""
 		Returns the length in pt given length in pxl
 		"""
@@ -98,8 +80,8 @@ class hocrTransform():
 		# get dimension of the OCRed image
 		for div in self.hocr.findall(".//%sdiv[@class='ocr_page']"%(self.xmlns)):
 			coords = self.element_coordinates(div)
-			width = self.pxl2pt(coords[2]-coords[0])
-			height = self.pxl2pt(coords[3]-coords[1])
+			width = self.px2pt(coords[2]-coords[0])
+			height = self.px2pt(coords[3]-coords[1])
 			break # there shouldn't be more than one, and if there is, we don't want it
 
 		if width is None:
@@ -129,18 +111,16 @@ class hocrTransform():
 				continue
 
 			coords = self.element_coordinates(elem)
-			x1=self.pxl2pt(coords[0])
-			y1=self.pxl2pt(coords[1])
-			x2=self.pxl2pt(coords[2])
-			y2=self.pxl2pt(coords[3])
-			
-			# compute font size according to bbox coordinates
-			fontsize=self.pxl2pt(coords[3]-coords[1])
+			x1=self.px2pt(coords[0])
+			y1=self.px2pt(coords[1])
+			x2=self.px2pt(coords[2])
+			y2=self.px2pt(coords[3])
 			
 			# draw the bbox border
 			pdf.rect(x1, height-y2, x2-x1, y2-y1, fill=0)
 
 			text = pdf.beginText()
+			fontsize=self.px2pt(coords[3]-coords[1])
 			text.setFont(fontname, fontsize)
 			#text.setTextRenderMode(3) # invisible
 
