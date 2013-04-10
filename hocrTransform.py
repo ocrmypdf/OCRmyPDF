@@ -97,8 +97,6 @@ class hocrTransform():
 		The image need not be identical to the image used to create the hOCR file.
 		It can have a lower resolution, different color mode, etc.
 		"""
-		im = Image.open(imageFileName)
-		
 		# get dimension of the OCRed image
 		for div in self.hocr.findall(".//%sdiv[@class='ocr_page']"%(self.xmlns)):
 			coords = self.element_coordinates(div)
@@ -111,13 +109,14 @@ class hocrTransform():
 			# assuming page size is A4
 			print "page width and height not available in %s. Assuming A4."%(imageFileName)
 			width = 21*2.54*inch
-			height = 29.6*2.54*inch
+			height = 29.7*2.54*inch
 
 		# create the PDF file
 		pdf = Canvas(outFileName, pagesize=(width, height), pageCompression=1) # page size in points (1/72 in.)
 
 		# put the image on the page, scaled to fill the page
-		#pdf.drawInlineImage(im, 0, 0, width=width, height=height)
+		im = Image.open(imageFileName)		
+		pdf.drawInlineImage(im, 0, 0, width=width, height=height)
 
 		# check if element with class 'ocrx_word' are available
 		# otherwise use 'ocr_line' as fallback
