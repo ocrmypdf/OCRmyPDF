@@ -44,6 +44,19 @@ class hocrTransform():
 		self.xmlns = ''
 		if matches:
 			self.xmlns = matches.group(1)
+			
+		# get dimension in pt (not pixel!!!!) of the OCRed image
+		for div in self.hocr.findall(".//%sdiv[@class='ocr_page']"%(self.xmlns)):
+			coords = self.element_coordinates(div)
+			self.width = self.px2pt(coords[2]-coords[0])
+			self.height = self.px2pt(coords[3]-coords[1])
+			break # there shouldn't be more than one, and if there is, we don't want it
+		if self.width is None:
+			# no width and heigh definition in the ocr_image element of the hocr file
+			# assuming page size is A4
+			print "page width and height not available in %s. Assuming A4."%(imageFileName)
+			self.width = 21*2.54*inch
+			self.height = 29.7*2.54*inch
 
 	def __str__(self):
 		"""
@@ -97,26 +110,12 @@ class hocrTransform():
 		The image need not be identical to the image used to create the hOCR file.
 		It can have a lower resolution, different color mode, etc.
 		"""
-		# get dimension of the OCRed image
-		for div in self.hocr.findall(".//%sdiv[@class='ocr_page']"%(self.xmlns)):
-			coords = self.element_coordinates(div)
-			width = self.px2pt(coords[2]-coords[0])
-			height = self.px2pt(coords[3]-coords[1])
-			break # there shouldn't be more than one, and if there is, we don't want it
-
-		if width is None:
-			# no width and heigh definition in the ocr_image element of the hocr file
-			# assuming page size is A4
-			print "page width and height not available in %s. Assuming A4."%(imageFileName)
-			width = 21*2.54*inch
-			height = 29.7*2.54*inch
-
 		# create the PDF file
-		pdf = Canvas(outFileName, pagesize=(width, height), pageCompression=1) # page size in points (1/72 in.)
+		pdf = Canvas(outFileName, pagesize=(self.width, self.height), pageCompression=1) # page size in points (1/72 in.)
 
 		# put the image on the page, scaled to fill the page
 		im = Image.open(imageFileName)		
-		pdf.drawInlineImage(im, 0, 0, width=width, height=height)
+		pdf.drawInlineImage(im, 0, 0, width=self.width, height=self.height)
 
 		# check if element with class 'ocrx_word' are available
 		# otherwise use 'ocr_line' as fallback
@@ -138,7 +137,7 @@ class hocrTransform():
 			y2=self.px2pt(coords[3])
 			
 			# draw the bbox border
-			pdf.rect(x1, height-y2, x2-x1, y2-y1, fill=0)
+			pdf.rect(x1, self.height-y2, x2-x1, y2-y1, fill=0)
 
 			text = pdf.beginText()
 			fontsize=self.px2pt(coords[3]-coords[1])
@@ -146,7 +145,7 @@ class hocrTransform():
 			#text.setTextRenderMode(3) # invisible
 
 			# set cursor to bottom left corner of bbox (adjust for dpi)
-			text.setTextOrigin(x1, height-y2)
+			text.setTextOrigin(x1, self.height-y2)
        
 			# scale the width of the text to fill the width of the bbox
 			text.setHorizScale(100*(x2-x1)/pdf.stringWidth(elemtxt, fontname, fontsize))
