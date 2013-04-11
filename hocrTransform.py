@@ -24,7 +24,7 @@ from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.units import inch
 from lxml import etree as ElementTree
 import Image, re, sys
-import getopt
+import argparse
 
 class hocrTransform():
 	"""
@@ -32,7 +32,7 @@ class hocrTransform():
 	For details of the hOCR format, see:
 	http://docs.google.com/View?docid=dfxcv4vc_67g844kf
 	"""
-	def __init__(self, hocrFileName, dpi=300):
+	def __init__(self, hocrFileName, dpi):
 		self.dpi = dpi
 		self.boxPattern = re.compile('bbox((\s+\d+){4})')
 
@@ -102,7 +102,7 @@ class hocrTransform():
 		"""
 		return float(pxl)/self.dpi*inch
 			
-	def to_pdf(self, imageFileName, outFileName, fontname="Courier"):
+	def to_pdf(self, outFileName, imageFileName, txtabove, showBoundingboxes, fontname="Courier"):
 		"""
 		Creates a PDF file with an image superimposed on top of the text.
 		Text is positioned according to the bounding box of the lines in
@@ -114,8 +114,9 @@ class hocrTransform():
 		pdf = Canvas(outFileName, pagesize=(self.width, self.height), pageCompression=1) # page size in points (1/72 in.)
 
 		# put the image on the page, scaled to fill the page
-		im = Image.open(imageFileName)		
-		pdf.drawInlineImage(im, 0, 0, width=self.width, height=self.height)
+		if imageFileName != None:
+			im = Image.open(imageFileName)		
+			pdf.drawInlineImage(im, 0, 0, width=self.width, height=self.height)
 
 		# check if element with class 'ocrx_word' are available
 		# otherwise use 'ocr_line' as fallback
@@ -137,12 +138,14 @@ class hocrTransform():
 			y2=self.px2pt(coords[3])
 			
 			# draw the bbox border
-			pdf.rect(x1, self.height-y2, x2-x1, y2-y1, fill=0)
+			if showBoundingboxes == True:
+				pdf.rect(x1, self.height-y2, x2-x1, y2-y1, fill=0)
 
 			text = pdf.beginText()
 			fontsize=self.px2pt(coords[3]-coords[1])
 			text.setFont(fontname, fontsize)
-			#text.setTextRenderMode(3) # invisible
+			if txtabove == False:
+				text.setTextRenderMode(3) # invisible
 
 			# set cursor to bottom left corner of bbox (adjust for dpi)
 			text.setTextOrigin(x1, self.height-y2)
@@ -159,8 +162,17 @@ class hocrTransform():
 		pdf.save()
   
 if __name__ == "__main__":
-	if len(sys.argv) < 4:
-		print 'Usage: python hocrTransform.py inputHocrFile inputImageFile outputPdfFile'
-		sys.exit(1)
-	hocr = hocrTransform(sys.argv[1])
-	hocr.to_pdf(sys.argv[2], sys.argv[3])
+	parser = argparse.ArgumentParser(description='Convert hocr file to PDF')
+	parser.add_argument('-a', '--above', action="store_true", default=False, help='Put text above image')
+	parser.add_argument('-b', '--boundingboxes', action="store_true", default=False, help='Show bounding boxes borders')
+	parser.add_argument('-r', '--resolution', type=int, default=300, help='Resolution of the image that was OCRed')
+	parser.add_argument('-i', '--image', default=None, help='Path to the image to be placed above the text')
+	parser.add_argument('hocrfile', help='Path to the hocr file to be parsed')
+	parser.add_argument('outputfile', help='Path to the PDF file to be generated')
+	args = parser.parse_args()
+
+	hocr = hocrTransform(args.hocrfile, args.resolution)
+	hocr.to_pdf(args.outputfile, args.image, args.above, args.boundingboxes)
+
+	
+	
