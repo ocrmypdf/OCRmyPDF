@@ -37,8 +37,8 @@ while [ $page -le $numpages ]; do
 
 	# embed text and image to new pdf file
 	echo "Page $page: Embedding text in PDF"
-	python hocrTransform.py "${tmp}/${page}.hocr" "${tmp}/${page}.forocr.ppm" "${tmp}/${page}-ocred.pdf"
-
+	python hocrTransform.py -r 300 -i "${tmp}/${page}.forocr.ppm" "${tmp}/${page}.hocr" "${tmp}/${page}-ocred.pdf"
+	
 	# go to next page of the pdf
 	page=$(($page+1))
 done
