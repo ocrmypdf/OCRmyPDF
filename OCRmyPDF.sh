@@ -70,12 +70,13 @@ cat "$FILE_SIZEPAGES" | while read pageSize ; do
 	mv "${tmp}/${page}.hocr.html" "$tmp/$page.hocr"
 
 	# compress image to be put inside the pdf file
-	echo "Page $page: Compressing image for final PDF file"
-	convert -colorspace "$colorspaceImg" "$tmp/$page.forocr.$ext" "$tmp/$page.forpdf.jpg"
+	#echo "Page $page: Compressing image for final PDF file"
+	#convert -colorspace "$colorspaceImg" "$tmp/$page.forocr.$ext" "$tmp/$page.forpdf.jpg"
 	
 	# embed text and image to new pdf file
 	echo "Page $page: Embedding text in PDF"
-	python hocrTransform.py -r $dpi -i "$tmp/$page.forpdf.jpg" "$tmp/$page.hocr" "$tmp/${page}-ocred.pdf"
+	#python hocrTransform.py -r $dpi -i "$tmp/$page.forpdf.jpg" "$tmp/$page.hocr" "$tmp/${page}-ocred.pdf"
+	python hocrTransform.py -r $dpi -i "$tmp/$page.forocr.$ext" "$tmp/$page.hocr" "$tmp/${page}-ocred.pdf"
 	
 	# go to next page of the pdf
 	page=$(($page+1))
@@ -83,10 +84,16 @@ done
 
 
 # concatenate all pages
+# TODO pages are currently not concatenated in the right order due to their naming (e.g. 2.pdf after 10.pdf)
 pdftk ${tmp}/*-ocred.pdf cat output "${tmp}/ocred.pdf"
 
 # insert metadata
 # TODO
 
-# validate generated pdf file (compliance to PDF/A) 
-#java -jar jhove/bin/JhoveApp.jar -m PDF-hul "$1" |egrep "Status|Message"
+# convert the pdf file to match PDF/A format
+gs -dPDFA -dBATCH -dNOPAUSE -dUseCIEColor -sProcessColorModel=DeviceCMYK -sDEVICE=pdfwrite -sPDFACompatibilityPolicy=2 -sOutputFile=${tmp}/ocred-pdfa.pdf ${tmp}/ocred.pdf
+
+# validate generated pdf file (compliance to PDF/A)
+echo "Check compliance of generated PDF to PDF/A standard" 
+#java -jar /root/jhove-1_9/jhove/bin/JhoveApp.jar -m PDF-hul "${tmp}/ocred-pdfa.pdf" |egrep "Status|Message"
+java -jar /root/jhove-1_9/jhove/bin/JhoveApp.jar -m PDF-hul "${tmp}/ocred-pdfa.pdf"
