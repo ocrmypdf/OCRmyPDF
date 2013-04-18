@@ -24,6 +24,9 @@ echo "PDF file has $numpages pages"
 page="1"
 cat "$FILE_SIZEPAGES" | while read pageSize ; do
 
+	# add leading zeros to the page number
+	page=`printf "%04d" $page`
+
 	echo "Page $page: Computing embedded image resolution"
 	# get width / height of PDF page
 	heightPDF=`echo $pageSize | cut -f1 -d" "`
@@ -84,7 +87,6 @@ done
 
 
 # concatenate all pages
-# TODO pages are currently not concatenated in the right order due to their naming (e.g. 2.pdf after 10.pdf)
 pdftk ${tmp}/*-ocred.pdf cat output "${tmp}/ocred.pdf"
 
 # insert metadata
