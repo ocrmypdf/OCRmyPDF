@@ -1,33 +1,41 @@
 #!/bin/sh
-echo "usage: ./scan-archive.sh filename.pdf"
 
+VERSION="alpha0"
+
+FILE_INPUT_PDF="$1"
 LAN="eng"
-KEEP_TMP="1"
-
-infile="$1"
+KEEP_TMP="0"
+IMG4OCR="0"	# 0=original image
+		# 1=only deskewed
+		# 2=processed with unpaper
+IMG4PDF="0"	# 0=original image
+		# 1=only deskewed
+		# 2=processed with unpaper
 
 tmp="./tmp"
 FILE_SIZE_PAGES="$tmp/page-sizes.txt"		# size in pt of the respective page of the input PDF file
+FILES_OCRed_PDFS="${tmp}/*-ocred.pdf"		# string matching all 1 page PDF files that need to be merged
 FILE_OUTPUT_PDF="${tmp}/ocred.pdf"		# name of the OCRed PDF file before conversion to PDF/A
 FILE_OUTPUT_PDFA="${tmp}/ocred-pdfa.pdf"	# name of the final PDF/A file
+FILE_VALIDATION_LOG="${tmp}/pdf_validation.log"	# log file containing the results of the validation of the PDF/A file
 
 # delete tmp files
 rm -r -f "${tmp}"
 mkdir -p "${tmp}"
 
 # get the size of each pdf page (width / height) in pt (inch*72)
-echo "Extracting size of each page (in pt)"
-identify -format "%w %h\n" "$infile" > "$FILE_SIZE_PAGES"
+echo "Input file: Extracting size of each page (in pt)"
+identify -format "%w %h\n" "$FILE_INPUT_PDF" > "$FILE_SIZE_PAGES"
 sed -I "" '/^$/d' "$FILE_SIZE_PAGES"	# removing empty lines (last one should be)
-numpages=`cat "$FILE_SIZE_PAGES" | wc -l`
-echo "PDF file has $numpages pages"
+numpages=`cat "$FILE_SIZE_PAGES" | wc -l | sed 's/^ *//g'`
+echo "Input file: The file has $numpages pages"
 
-# Itterate the pages of the pdf file
-page="1"
+# Itterate the pages of the input pdf file
+cpt="1"
 cat "$FILE_SIZE_PAGES" | while read pageSize ; do
 
 	# add leading zeros to the page number
-	page=`printf "%04d" $page`
+	page=`printf "%04d" $cpt`
 
 	# create the name of the required file
 	curOrigImg="$tmp/${page}_Image"		# original image available in the current PDF page 
@@ -42,10 +50,13 @@ cat "$FILE_SIZE_PAGES" | while read pageSize ; do
 	# extract raw image from pdf file to compute resolution
 	# unfortunatelly this image may not be rotated as in the pdf...
 	# so we will have to extract it again later
-	pdfimages -f $page -l $page -j "$infile" "$curOrigImg" 1>&2	
+	pdfimages -f $page -l $page -j "$FILE_INPUT_PDF" "$curOrigImg" 1>&2	
 	# count number of extracted images
 	nbImg=`ls -1 "$curOrigImg"* | wc -l`
-	[ $nbImg -ne "1" ] && echo "Not exactly 1 image on page $page. Exiting" && exit 1
+	if [ $nbImg -ne "1" ]; then
+		echo "Not exactly 1 image on page $page. Exiting"
+		exit 1
+	fi
 	# Get the characteristic of the extracted image
 	curOrigImg01=`ls -1 "$curOrigImg"*`
 	propCurOrigImg01=`identify -format "%w %h %[colorspace]" "$curOrigImg01"`
@@ -54,10 +65,9 @@ cat "$FILE_SIZE_PAGES" | while read pageSize ; do
 	colorspaceCurOrigImg01=`echo "$propCurOrigImg01" | cut -f3 -d" "`
 	# compute the resolution of the whole page (taking into account all images)
 	dpi=$(($heightCurOrigImg01*72/$heightPDF))
-	echo "Page $page: Resolution: ${dpi} dpi"
 
 	# Identify if page image should be saved as ppm (color) or pgm (gray)
-	echo "Page $page: Extracting image as ppm/pgm"
+	echo "Page $page: Extracting image as ppm/pgm (${dpi} dpi)"
 	if [ $colorspaceCurOrigImg01 == "Gray" ]; then
 		ext="pgm"
 		opt="-gray"
@@ -69,7 +79,7 @@ cat "$FILE_SIZE_PAGES" | while read pageSize ; do
 	curImgPixmapClean="$tmp/$page.for-ocr.$ext"
 	
 	# extract current page as image with right orientation and resoltution
-	pdftoppm -f $page -l $page -r $dpi $opt $infile > "$curImgPixmap"
+	pdftoppm -f $page -l $page -r $dpi $opt "$FILE_INPUT_PDF" > "$curImgPixmap"
 
 	# improve quality of the image with unpaper to get better OCR results
 	echo "Page $page: Preprocessing image with unpaper"
@@ -86,21 +96,47 @@ cat "$FILE_SIZE_PAGES" | while read pageSize ; do
 	echo "Page $page: Embedding text in PDF"
 	python hocrTransform.py -r $dpi -i "$curImgPixmapClean" "$curHocr" "$curOCRedPDF"
 	
+	# delete temporary files created for the current page
+	# to avoid using to much disk space in case of PDF files having many pages
+	if [ $KEEP_TMP -eq 0 ]; then
+		rm "$curOrigImg"*.*
+		rm "$curHocr"
+		rm "$curImgPixmap"
+		rm "$curImgPixmapClean"
+	fi
+	
 	# go to next page of the pdf
-	page=$(($page+1))
+	cpt=$(($cpt+1))
 done
 
-
 # concatenate all pages
-pdftk ${tmp}/*-ocred.pdf cat output "$FILE_OUTPUT_PDF"
+echo "Output file: Concatenating all pages"
+pdftk $FILES_OCRed_PDFS cat output "$FILE_OUTPUT_PDF"
 
 # insert metadata
+#echo "Output file: Inserting metadata"
 # TODO
 
 # convert the pdf file to match PDF/A format
-gs -dPDFA -dBATCH -dNOPAUSE -dUseCIEColor -sProcessColorModel=DeviceCMYK -sDEVICE=pdfwrite -sPDFACompatibilityPolicy=2 -sOutputFile=$FILE_OUTPUT_PDFA "$FILE_OUTPUT_PDF"
+echo "Output file: Conversion to PDF/A" 
+gs -dQUIET -dPDFA -dBATCH -dNOPAUSE -dUseCIEColor \
+	-sProcessColorModel=DeviceCMYK -sDEVICE=pdfwrite -sPDFACompatibilityPolicy=2 \
+	-sOutputFile=$FILE_OUTPUT_PDFA "$FILE_OUTPUT_PDF"
 
 # validate generated pdf file (compliance to PDF/A)
-echo "Check compliance of generated PDF to PDF/A standard" 
-#java -jar /root/jhove-1_9/jhove/bin/JhoveApp.jar -m PDF-hul "$FILE_OUTPUT_PDFA" |egrep "Status|Message"
-java -jar /root/jhove-1_9/jhove/bin/JhoveApp.jar -m PDF-hul "$FILE_OUTPUT_PDFA"
+echo "Output file: Checking compliance to PDF/A standard" 
+java -jar /root/jhove-1_9/jhove/bin/JhoveApp.jar -m PDF-hul "$FILE_OUTPUT_PDFA" > "$FILE_VALIDATION_LOG"
+cat "$FILE_VALIDATION_LOG" | egrep "Status|Message" # summary of the validation
+# check if the validation was successful
+pdf_valid=1
+cat "$FILE_VALIDATION_LOG" | egrep "ErrorMessage" && pdf_valid=0
+cat "$FILE_VALIDATION_LOG" | egrep "Status.*not valid" && pdf_valid=0
+cat "$FILE_VALIDATION_LOG" | egrep "Status.*Not well-formed" && pdf_valid=0
+[ $pdf_valid -eq 1 ] && echo "Output file: The generated PDF/A file is VALID" \
+	|| echo "Output file: The generated PDF/A file is INVALID"
+
+# delete temporary files
+if [ $KEEP_TMP -eq 0 ]; then
+	rm "$FILE_SIZE_PAGES"
+	rm "$FILE_OUTPUT_PDF"
+fi
