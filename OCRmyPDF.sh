@@ -3,8 +3,8 @@
 VERSION="alpha0"
 
 FILE_INPUT_PDF="$1"
-LAN="eng"
-KEEP_TMP="0"
+LAN="eng"	# language of the PDF file (required to get good OCR results)
+KEEP_TMP="0"	# do not delete the temporary files
 IMG4OCR="0"	# 0=original image
 		# 1=only deskewed
 		# 2=processed with unpaper
@@ -32,7 +32,7 @@ echo "Input file: The file has $numpages pages"
 
 # Itterate the pages of the input pdf file
 cpt="1"
-cat "$FILE_SIZE_PAGES" | while read pageSize ; do
+while read pageSize ; do
 
 	# add leading zeros to the page number
 	page=`printf "%04d" $cpt`
@@ -107,7 +107,7 @@ cat "$FILE_SIZE_PAGES" | while read pageSize ; do
 	
 	# go to next page of the pdf
 	cpt=$(($cpt+1))
-done
+done < "$FILE_SIZE_PAGES"
 
 # concatenate all pages
 echo "Output file: Concatenating all pages"
