@@ -15,14 +15,6 @@ IMG_PREPROCESS="0"	# 0=none
 			# 2=full preprocessing for OCR, but only deskew in final PDF
 			# 3=full preprocessing
 
-# Initialize path to temporary files
-tmp="./tmp"
-FILE_SIZE_PAGES="$tmp/page-sizes.txt"		# size in pt of the respective page of the input PDF file
-FILES_OCRed_PDFS="${tmp}/*-ocred.pdf"		# string matching all 1 page PDF files that need to be merged
-FILE_OUTPUT_PDF="${tmp}/ocred.pdf"		# name of the OCRed PDF file before conversion to PDF/A
-FILE_OUTPUT_PDFA="${tmp}/ocred-pdfa.pdf"	# name of the final PDF/A file
-FILE_VALIDATION_LOG="${tmp}/pdf_validation.log"	# log file containing the results of the validation of the PDF/A file
-
 # check if the required utilities are installed
 ! which gs > /dev/null && echo "Please install ghostcript. Exiting..." && exit 1
 ! which identify > /dev/null && echo "Please install ImageMagick. Exiting..." && exit 1  
@@ -31,6 +23,17 @@ FILE_VALIDATION_LOG="${tmp}/pdf_validation.log"	# log file containing the result
 ! which pdftk > /dev/null && echo "Please install pdftk. Exiting..." && exit 1
 ! which unpaper > /dev/null && echo "Please install unpaper. Exiting..." && exit 1
 ! which tesseract > /dev/null && echo "Please install tesseract and tesseract-data. Exiting..." && exit 1
+
+
+
+
+# Initialize path to temporary files
+tmp="./tmp"
+FILE_SIZE_PAGES="$tmp/page-sizes.txt"		# size in pt of the respective page of the input PDF file
+FILES_OCRed_PDFS="${tmp}/*-ocred.pdf"		# string matching all 1 page PDF files that need to be merged
+FILE_OUTPUT_PDF="${tmp}/ocred.pdf"		# name of the OCRed PDF file before conversion to PDF/A
+FILE_OUTPUT_PDFA="${tmp}/ocred-pdfa.pdf"	# name of the final PDF/A file
+FILE_VALIDATION_LOG="${tmp}/pdf_validation.log"	# log file containing the results of the validation of the PDF/A file
 
 # delete tmp files
 rm -r -f "${tmp}"
@@ -124,13 +127,14 @@ done < "$FILE_SIZE_PAGES"
 
 
 
+
 # concatenate all pages
 echo "Output file: Concatenating all pages"
 pdftk $FILES_OCRed_PDFS cat output "$FILE_OUTPUT_PDF"
 
-# insert metadata
+# insert metadata (copy metadata from input file)
 #echo "Output file: Inserting metadata"
-# TODO
+# TODO (may work with pdftk update_info)
 
 # convert the pdf file to match PDF/A format
 echo "Output file: Conversion to PDF/A" 
@@ -150,8 +154,8 @@ grep -i "Status.*Not well-formed" "$FILE_VALIDATION_LOG" && pdf_valid=0
 [ $pdf_valid -eq 1 ] && echo "Output file: The generated PDF/A file is VALID" \
 	|| echo "Output file: The generated PDF/A file is INVALID"
 
-	
-	
+
+
 	
 # delete temporary files
 if [ $KEEP_TMP -eq 0 ]; then
