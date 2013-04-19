@@ -2,16 +2,20 @@
 
 VERSION="alpha0"
 
+# Initialization of configuration parameters
 FILE_INPUT_PDF="$1"
-LAN="eng"	# language of the PDF file (required to get good OCR results)
-KEEP_TMP="0"	# do not delete the temporary files
-IMG4OCR="0"	# 0=original image
-		# 1=only deskewed
-		# 2=processed with unpaper
-IMG4PDF="0"	# 0=original image
-		# 1=only deskewed
-		# 2=processed with unpaper
+LOG_ERR="0"		# 0=only error messages
+LOG_INFO="1"		# 1=error messages and some infos
+LOG_DEBUG="2"		# 2=debug level logging
+VERBOSITY="$LOG_ERR"
+LAN="eng"		# language of the PDF file (required to get good OCR results)
+KEEP_TMP="0"		# do not delete the temporary files
+IMG_PREPROCESS="0"	# 0=none
+			# 1=only deskew
+			# 2=full preprocessing for OCR, but only deskew in final PDF
+			# 3=full preprocessing
 
+# Initialize path to temporary files
 tmp="./tmp"
 FILE_SIZE_PAGES="$tmp/page-sizes.txt"		# size in pt of the respective page of the input PDF file
 FILES_OCRed_PDFS="${tmp}/*-ocred.pdf"		# string matching all 1 page PDF files that need to be merged
@@ -19,9 +23,21 @@ FILE_OUTPUT_PDF="${tmp}/ocred.pdf"		# name of the OCRed PDF file before conversi
 FILE_OUTPUT_PDFA="${tmp}/ocred-pdfa.pdf"	# name of the final PDF/A file
 FILE_VALIDATION_LOG="${tmp}/pdf_validation.log"	# log file containing the results of the validation of the PDF/A file
 
+# check if the required utilities are installed
+! which gs > /dev/null && echo "Please install ghostcript. Exiting..." && exit 1
+! which identify > /dev/null && echo "Please install ImageMagick. Exiting..." && exit 1  
+! which pdfimages > /dev/null && echo "Please install xpdf. Exiting..." && exit 1
+! which pdftoppm > /dev/null && echo "Please install xpdf. Exiting..." && exit 1
+! which pdftk > /dev/null && echo "Please install pdftk. Exiting..." && exit 1
+! which unpaper > /dev/null && echo "Please install unpaper. Exiting..." && exit 1
+! which tesseract > /dev/null && echo "Please install tesseract and tesseract-data. Exiting..." && exit 1
+
 # delete tmp files
 rm -r -f "${tmp}"
 mkdir -p "${tmp}"
+
+
+
 
 # get the size of each pdf page (width / height) in pt (inch*72)
 echo "Input file: Extracting size of each page (in pt)"
@@ -53,10 +69,8 @@ while read pageSize ; do
 	pdfimages -f $page -l $page -j "$FILE_INPUT_PDF" "$curOrigImg" 1>&2	
 	# count number of extracted images
 	nbImg=`ls -1 "$curOrigImg"* | wc -l`
-	if [ $nbImg -ne "1" ]; then
-		echo "Not exactly 1 image on page $page. Exiting"
-		exit 1
-	fi
+	[ $nbImg -ne "1" ] && echo "Not exactly 1 image on page $page. Exiting..." && exit 1
+	
 	# Get the characteristic of the extracted image
 	curOrigImg01=`ls -1 "$curOrigImg"*`
 	propCurOrigImg01=`identify -format "%w %h %[colorspace]" "$curOrigImg01"`
@@ -68,12 +82,11 @@ while read pageSize ; do
 
 	# Identify if page image should be saved as ppm (color) or pgm (gray)
 	echo "Page $page: Extracting image as ppm/pgm (${dpi} dpi)"
+	ext="ppm"
+	opt=""		
 	if [ $colorspaceCurOrigImg01 == "Gray" ]; then
 		ext="pgm"
 		opt="-gray"
-	else
-		ext="ppm"
-		opt=""		
 	fi
 	curImgPixmap="$tmp/$page.$ext"
 	curImgPixmapClean="$tmp/$page.for-ocr.$ext"
@@ -109,6 +122,8 @@ while read pageSize ; do
 	cpt=$(($cpt+1))
 done < "$FILE_SIZE_PAGES"
 
+
+
 # concatenate all pages
 echo "Output file: Concatenating all pages"
 pdftk $FILES_OCRed_PDFS cat output "$FILE_OUTPUT_PDF"
@@ -126,17 +141,21 @@ gs -dQUIET -dPDFA -dBATCH -dNOPAUSE -dUseCIEColor \
 # validate generated pdf file (compliance to PDF/A)
 echo "Output file: Checking compliance to PDF/A standard" 
 java -jar /root/jhove-1_9/jhove/bin/JhoveApp.jar -m PDF-hul "$FILE_OUTPUT_PDFA" > "$FILE_VALIDATION_LOG"
-cat "$FILE_VALIDATION_LOG" | egrep "Status|Message" # summary of the validation
+grep -i "Status|Message" "$FILE_VALIDATION_LOG" # summary of the validation
 # check if the validation was successful
 pdf_valid=1
-cat "$FILE_VALIDATION_LOG" | egrep "ErrorMessage" && pdf_valid=0
-cat "$FILE_VALIDATION_LOG" | egrep "Status.*not valid" && pdf_valid=0
-cat "$FILE_VALIDATION_LOG" | egrep "Status.*Not well-formed" && pdf_valid=0
+grep -i "ErrorMessage" "$FILE_VALIDATION_LOG" && pdf_valid=0
+grep -i "Status.*not valid" "$FILE_VALIDATION_LOG" && pdf_valid=0
+grep -i "Status.*Not well-formed" "$FILE_VALIDATION_LOG" && pdf_valid=0
 [ $pdf_valid -eq 1 ] && echo "Output file: The generated PDF/A file is VALID" \
 	|| echo "Output file: The generated PDF/A file is INVALID"
 
+	
+	
+	
 # delete temporary files
 if [ $KEEP_TMP -eq 0 ]; then
+	rm $FILES_OCRed_PDFS
 	rm "$FILE_SIZE_PAGES"
 	rm "$FILE_OUTPUT_PDF"
 fi
