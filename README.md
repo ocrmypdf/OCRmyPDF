@@ -10,9 +10,9 @@ ATTENTION: THE SCRIPTS ARE STILL IN DEVELOPMENT PHASE, PLEASE DO NOT USE !!!!
 Features
 --------
 
-- Generates a searchable PDF/A file from PDF file containing only images
-- Keeps the original resolution of the embedded images
-- Validation of the generated file against the PDF/A specification using jhove
+- Generates a searchable PDF/A file from a PDF file containing only images
+- Keeps the exact resolution of the original embedded images
+- Validates the generated file against the PDF/A specification using jhove
 
 
 Motivation
