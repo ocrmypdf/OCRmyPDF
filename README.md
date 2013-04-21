@@ -3,9 +3,7 @@ OCRmyPDF
 
 Script aimed at performing optical character recognition (OCR) on PDF files from PDF files containing only images
 
-Usage: ./OCRmyPDF.sh filename.pdf
-
-ATTENTION: THE SCRIPTS ARE STILL IN DEVELOPMENT PHASE, PLEASE DO NOT USE !!!!
+To get the script usage, call: ./OCmyPDF.sh -h
 
 Features
 --------
@@ -32,9 +30,6 @@ Install
 --------
 
 TODO
-
-Install java:
-cd /usr/ports/java/openjdk7/ && make install clean
 
 Install jhove:
 download jhove from here: http://sourceforge.net/projects/jhove/files/jhove/
