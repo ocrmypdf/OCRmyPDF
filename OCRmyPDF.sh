@@ -1,25 +1,74 @@
 #!/bin/sh
 
-FILE_INPUT_PDF="$1"
-
 VERSION="alpha0"
 
+usage() {
+	cat << EOF
+	Usage: TODO
+EOF
+}
+
+
+
+
+
 # Initialization of constants
-EXIT_BAD_INPUT_FILE="1"		# possible exit codes
-EXIT_MISSING_DEPENDENCY="2"
-EXIT_INVALID_OUPUT_PDFA="3"
+EXIT_BAD_ARGS="1"		# possible exit codes
+EXIT_BAD_INPUT_FILE="2"
+EXIT_MISSING_DEPENDENCY="3"
+EXIT_INVALID_OUPUT_PDFA="4"
+EXIT_OTHER_ERROR="5"
 LOG_ERR="0"			# 0=only error messages
 LOG_INFO="1"			# 1=error messages and some infos
 LOG_DEBUG="2"			# 2=debug level logging
 
 # Initialization the configuration parameters with default values
-VERBOSITY="$LOG_ERR"	# default verbosity level
-LAN="eng"		# default language of the PDF file (required to get good OCR results)
-KEEP_TMP="0"		# do not delete the temporary files (default)
-PREPROCESS_DESKEW="1"	# 0=no, 1=yes
-PREPROCESS_CLEAN="2"	# 0=no, 
-			# 1=clean image to improve OCR, but do not put cleaned image in final PDF 
-			# 2=clean image to improve OCR, AND put it in final PDF
+VERBOSITY="$LOG_ERR"		# default verbosity level
+LAN="eng"			# default language of the PDF file (required to get good OCR results)
+KEEP_TMP="0"			# do not delete the temporary files (default)
+PREPROCESS_DESKEW="0"		# 0=no, 1=yes (deskew image)
+PREPROCESS_CLEAN="0"		# 0=no, 1=yes (clean image to improve OCR)
+PREPROCESS_CLEANINPDF="0"	# 0=no, 1=yes (put cleaned image in final PDF)
+
+# Parse optional command line arguments
+while getopts ":hvkdcil:" opt; do
+	case $opt in
+		h) usage ; exit 0 ;;
+		v) VERBOSITY=$(($VERBOSITY+1)) ;;
+		k) KEEP_TMP="1" ;;
+		d) PREPROCESS_DESKEW="1" ;;		
+		c) PREPROCESS_CLEAN="1" ;;
+		i) PREPROCESS_CLEANINPDF="1" ;;
+		l) LAN="$OPTARG" ;;
+		\?)
+			echo "Invalid option: -$OPTARG"
+			echo
+			usage
+			exit $EXIT_BAD_ARGS ;;
+		:)
+			echo "Option -$OPTARG requires an argument"
+			echo
+			usage
+			exit $EXIT_BAD_ARGS ;;
+	esac
+done
+
+# Remove the optional arguments parsed above.
+shift $((OPTIND-1))
+
+# Check if the number of mandatory parameters
+# provided is as expected
+if [ "$#" -ne "1" ]; then
+	echo "Exactly one mandatory argument shall be provided"
+	echo
+	usage
+	exit $EXIT_BAD_ARGS
+fi
+
+FILE_INPUT_PDF="$1"
+
+
+
 
 # check if the required utilities are installed
 echo "Checking if all dependencies are installed"
@@ -52,7 +101,8 @@ mkdir -p "${tmp}"
 
 # get the size of each pdf page (width / height) in pt (inch*72)
 echo "Input file: Extracting size of each page (in pt)"
-identify -format "%w %h\n" "$FILE_INPUT_PDF" > "$FILE_SIZE_PAGES"
+! identify -format "%w %h\n" "$FILE_INPUT_PDF" > "$FILE_SIZE_PAGES" \
+	&& echo "Could not get size of PDF pages. Exiting..." && exit $EXIT_BAD_INPUT_FILE
 sed -I "" '/^$/d' "$FILE_SIZE_PAGES"	# removing empty lines (last one should be)
 numpages=`cat "$FILE_SIZE_PAGES" | wc -l | sed 's/^ *//g'`
 echo "Input file: The file has $numpages pages"
@@ -108,39 +158,44 @@ while read pageSize ; do
 	
 	# extract current page as image with right orientation and resoltution
 	echo "Page $page: Extracting image as $ext file (${dpi} dpi)"
-	pdftoppm -f $page -l $page -r $dpi $opt "$FILE_INPUT_PDF" > "$curImgPixmap"
+	! pdftoppm -f $page -l $page -r $dpi $opt "$FILE_INPUT_PDF" > "$curImgPixmap" \
+		&& echo "Could not extract page $page as $ext from $FILE_INPUT_PDF. Exiting..." && exit $EXIT_OTHER_ERROR
 
 	# if requested deskew image (without changing its size in pixel)
 	if [ "$PREPROCESS_DESKEW" -eq "1" ]; then
 		echo "Page $page: Deskewing image"
-		convert "$curImgPixmap" -deskew 40% -gravity center -extent ${heightCurOrigImg01}x${widthICurOrigImg01} "$curImgPixmapDeskewed"
+		! convert "$curImgPixmap" -deskew 40% -gravity center -extent ${heightCurOrigImg01}x${widthICurOrigImg01} "$curImgPixmapDeskewed" \
+			&& echo "Could not deskew \"$curImgPixmap\". Exiting..." && exit $EXIT_OTHER_ERROR
 	else
 		cp "$curImgPixmap" "$curImgPixmapDeskewed"
 	fi
-	
+
 	# if requested clean image with unpaper to get better OCR results
-	if [ "$PREPROCESS_CLEAN" -ge "1" ]; then
+	if [ "$PREPROCESS_CLEAN" -eq "1" ]; then
 		echo "Page $page: Cleaning image with unpaper"
-		unpaper --dpi $dpi --mask-scan-size 100 \
+		! unpaper --dpi $dpi --mask-scan-size 100 \
 			--no-deskew --no-grayfilter --no-blackfilter --no-mask-center --no-border-align \
-			"$curImgPixmapDeskewed" "$curImgPixmapClean" 1> /dev/null
+			"$curImgPixmapDeskewed" "$curImgPixmapClean" 1> /dev/null \
+			&& echo "Could not clean \"$curImgPixmapDeskewed\". Exiting..." && exit $EXIT_OTHER_ERROR
 	else
 		cp "$curImgPixmapDeskewed" "$curImgPixmapClean"
 	fi
-			
+
 	# perform OCR
 	echo "Page $page: Performing OCR"
-	tesseract -l "$LAN" "$curImgPixmapClean" "$curHocr" hocr 1> /dev/null 2> /dev/null 
+	! tesseract -l "$LAN" "$curImgPixmapClean" "$curHocr" hocr 1> /dev/null 2> /dev/null \
+		&& echo "Could not OCR file \"$curImgPixmapClean\". Exiting..." && exit $EXIT_OTHER_ERROR
 	mv "$curHocr.html" "$curHocr"
 
 	# embed text and image to new pdf file
 	echo "Page $page: Embedding text in PDF"
-	if [ "$PREPROCESS_CLEAN" -eq "2" ]; then
+	if [ "$PREPROCESS_CLEANINPDF" -eq "1" ]; then
 		image4finalPDF="$curImgPixmapClean"
 	else
 		image4finalPDF="$curImgPixmapDeskewed"	
 	fi
-	python hocrTransform.py -r $dpi -i "$image4finalPDF" "$curHocr" "$curOCRedPDF"
+	! python hocrTransform.py -r $dpi -i "$image4finalPDF" "$curHocr" "$curOCRedPDF" \
+		&& echo "Could not create PDF file from \"$curHocr\". Exiting..." && exit $EXIT_OTHER_ERROR
 	
 	# delete temporary files created for the current page
 	# to avoid using to much disk space in case of PDF files having many pages
@@ -151,7 +206,7 @@ while read pageSize ; do
 		rm "$curImgPixmapDeskewed"
 		rm "$curImgPixmapClean"
 	fi
-	
+
 	# go to next page of the pdf
 	cpt=$(($cpt+1))
 done < "$FILE_SIZE_PAGES"
@@ -161,7 +216,8 @@ done < "$FILE_SIZE_PAGES"
 
 # concatenate all pages
 echo "Output file: Concatenating all pages"
-pdftk $FILES_OCRed_PDFS cat output "$FILE_OUTPUT_PDF"
+! pdftk $FILES_OCRed_PDFS cat output "$FILE_OUTPUT_PDF" \
+	&& echo "Could not concatenate individual PDF pages (\"$FILES_OCRed_PDFS\") to one file. Exiting..." && exit $EXIT_OTHER_ERROR
 
 # insert metadata (copy metadata from input file)
 #echo "Output file: Inserting metadata"
@@ -170,9 +226,10 @@ pdftk $FILES_OCRed_PDFS cat output "$FILE_OUTPUT_PDF"
 
 # convert the pdf file to match PDF/A format
 echo "Output file: Conversion to PDF/A" 
-gs -dQUIET -dPDFA -dBATCH -dNOPAUSE -dUseCIEColor \
+! gs -dQUIET -dPDFA -dBATCH -dNOPAUSE -dUseCIEColor \
 	-sProcessColorModel=DeviceCMYK -sDEVICE=pdfwrite -sPDFACompatibilityPolicy=2 \
-	-sOutputFile=$FILE_OUTPUT_PDFA "$FILE_OUTPUT_PDF"
+	-sOutputFile=$FILE_OUTPUT_PDFA "$FILE_OUTPUT_PDF" \
+	&& echo "Could not convert PDF file \"$FILE_OUTPUT_PDF\" to PDF/A. Exiting..." && exit $EXIT_OTHER_ERROR
 
 # validate generated pdf file (compliance to PDF/A)
 echo "Output file: Checking compliance to PDF/A standard" 
