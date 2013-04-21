@@ -16,7 +16,8 @@ Features
 Motivation
 ----------
 
-I searched the web for a free tool to OCR PDF files on linux/unix and found many but none of them was satisfying.
+I searched the web for a free tool to OCR PDF files on linux/unix:
+I found many, but none of them was satisfying.
 - Either they produced PDF files with misplaced text below the image (making copy/paste impossible)
 - Or they changed the resolution of the embedded images
 - Or they generated PDF file having a rediculous big size
