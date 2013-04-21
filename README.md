@@ -10,6 +10,7 @@ Features
 
 - Generates a searchable PDF/A file from a PDF file containing only images
 - Keeps the exact resolution of the original embedded images
+- If requested deskew and / or clean the image before performing OCR
 - Validates the generated file against the PDF/A specification using jhove
 
 
