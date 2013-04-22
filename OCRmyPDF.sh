@@ -25,7 +25,7 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-l language] inputfile
 -c : Clean each page before performing OCR
 -i : Incorporate the cleaned image in the final PDF file (by default the original image	
      image, or the deskewed image if the -d option is set, is incorporated)
--l : Set the language of the PDF file in order to improve OCR results(default "eng")
+-l : Set the language of the PDF file in order to improve OCR results (default "eng")
      Any language supported by tesseract is supported.
 inputfile : PDF file to be processed
 --------------------------------------------------------------------------------------
