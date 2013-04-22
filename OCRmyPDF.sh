@@ -4,7 +4,27 @@ VERSION="alpha0"
 
 usage() {
 	cat << EOF
-	Usage: TODO
+--------------------------------------------------------------------------------------
+Script aimed at generating a searchable PDF file from a PDF file containing only images.
+(The script performs optical character recognition of each respective page using the
+tesseract engine)
+
+Copyright: fritz from NAS4Free forum
+Version: $VERSION
+
+Usage: OCRmyPDF.sh  [-h] [-v] [-k] [-d] [-c] [-i] [-l language] inputfile
+
+-h : Display this help message
+-v : Increase the verbosity (this option can be used more than once)
+-k : Do not delete the temporary files
+-d : Deskew each page before performing OCR
+-c : Clean each page before performing OCR
+-i : Incorporate the cleaned image in the final PDF file (by default the original image	
+     image, or the deskewed image if the -d option is set, is incorporated)
+-l : Set the language of the PDF file in order to improve OCR results(default "eng")
+     Any language supported by tesseract is supported.
+inputfile : PDF file to be processed
+--------------------------------------------------------------------------------------
 EOF
 }
 
