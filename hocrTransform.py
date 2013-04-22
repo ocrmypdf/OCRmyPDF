@@ -102,7 +102,7 @@ class hocrTransform():
 		"""
 		return float(pxl)/self.dpi*inch
 			
-	def to_pdf(self, outFileName, imageFileName, txtabove, showBoundingboxes, fontname="Courier"):
+	def to_pdf(self, outFileName, imageFileName, showBoundingboxes, fontname="Courier"):
 		"""
 		Creates a PDF file with an image superimposed on top of the text.
 		Text is positioned according to the bounding box of the lines in
@@ -113,11 +113,27 @@ class hocrTransform():
 		# create the PDF file
 		pdf = Canvas(outFileName, pagesize=(self.width, self.height), pageCompression=1) # page size in points (1/72 in.)
 
-		# put the image on the page, scaled to fill the page
-		if imageFileName != None:
-			im = Image.open(imageFileName)		
-			pdf.drawInlineImage(im, 0, 0, width=self.width, height=self.height)
+		# draw bounding box for each paragraph
+		pdf.setStrokeColorRGB(0,1,1)	# light blue for bounding box of paragraph
+		pdf.setFillColorRGB(0,1,1)	# light blue for bounding box of paragraph
+		pdf.setLineWidth(0)		# no line for bounding box
+		for elem in self.hocr.findall(".//%sp[@class='%s']" % (self.xmlns, "ocr_par")):
+		
+			elemtxt=self._get_element_text(elem).rstrip()
+			if len(elemtxt) == 0:
+				continue
 
+			coords = self.element_coordinates(elem)
+			x1=self.px2pt(coords[0])
+			y1=self.px2pt(coords[1])
+			x2=self.px2pt(coords[2])
+			y2=self.px2pt(coords[3])
+			
+			# draw the bbox border
+			if showBoundingboxes == True:
+				pdf.rect(x1, self.height-y2, x2-x1, y2-y1, fill=1)		
+		
+		
 		# check if element with class 'ocrx_word' are available
 		# otherwise use 'ocr_line' as fallback
 		elemclass="ocr_line"
@@ -125,6 +141,10 @@ class hocrTransform():
 			elemclass="ocrx_word"
 
 		# itterate all text elements
+		pdf.setStrokeColorRGB(1,0,0)	# light green for bounding box of word/line
+		pdf.setLineWidth(0.5)		# bounding box line width
+		pdf.setDash(6,3)		# bounding box is dashed
+		pdf.setFillColorRGB(0,0,0)	# text in black
 		for elem in self.hocr.findall(".//%sspan[@class='%s']" % (self.xmlns, elemclass)):
 
 			elemtxt=self._get_element_text(elem).rstrip()
@@ -144,8 +164,6 @@ class hocrTransform():
 			text = pdf.beginText()
 			fontsize=self.px2pt(coords[3]-coords[1])
 			text.setFont(fontname, fontsize)
-			if txtabove == False:
-				text.setTextRenderMode(3) # invisible
 
 			# set cursor to bottom left corner of bbox (adjust for dpi)
 			text.setTextOrigin(x1, self.height-y2)
@@ -157,13 +175,17 @@ class hocrTransform():
 			text.textLine(elemtxt)
 			pdf.drawText(text)
 
+		# put the image on the page, scaled to fill the page
+		if imageFileName != None:
+			im = Image.open(imageFileName)		
+			pdf.drawInlineImage(im, 0, 0, width=self.width, height=self.height)
+			
 		# finish up the page and save it
 		pdf.showPage()
 		pdf.save()
   
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Convert hocr file to PDF')
-	parser.add_argument('-a', '--above', action="store_true", default=False, help='Put text above image')
 	parser.add_argument('-b', '--boundingboxes', action="store_true", default=False, help='Show bounding boxes borders')
 	parser.add_argument('-r', '--resolution', type=int, default=300, help='Resolution of the image that was OCRed')
 	parser.add_argument('-i', '--image', default=None, help='Path to the image to be placed above the text')
@@ -172,7 +194,7 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 
 	hocr = hocrTransform(args.hocrfile, args.resolution)
-	hocr.to_pdf(args.outputfile, args.image, args.above, args.boundingboxes)
+	hocr.to_pdf(args.outputfile, args.image, args.boundingboxes)
 
 	
 	
