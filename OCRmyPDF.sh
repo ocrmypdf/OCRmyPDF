@@ -40,7 +40,8 @@ EOF
 
 #################################################
 # Get an absolute path from a relative path to a file
-# 
+#
+# Param1 : Relative path
 # Returns: 1 if the folder in which the file is located does not exist
 #          0 otherwise
 ################################################# 
@@ -123,9 +124,6 @@ FILE_OUTPUT_PDFA="`absolutePath "$2"`"
 
 # set script path as working directory
 cd "`dirname $0`"
-
-
-
 
 # check if the required utilities are installed
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Checking if all dependencies are installed"
