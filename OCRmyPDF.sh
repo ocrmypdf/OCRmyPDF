@@ -12,7 +12,7 @@ tesseract engine)
 Copyright: fritz from NAS4Free forum
 Version: $VERSION
 
-Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-l language] inputfile
+Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-l language] [-C filename] inputfile
 
 -h : Display this help message
 -v : Increase the verbosity (this option can be used more than once)
@@ -27,6 +27,9 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-l language] inputfile
      image, or the deskewed image if the -d option is set, is incorporated)
 -l : Set the language of the PDF file in order to improve OCR results(default "eng")
      Any language supported by tesseract is supported.
+-C : Pass an additional configuration file to the tesseract OCR engine.
+     (this option can be used more than once)
+     Note: The configuration file must be available in the .../tessdata/configs folder
 inputfile : PDF file to be processed
 --------------------------------------------------------------------------------------
 EOF
@@ -52,20 +55,22 @@ LAN="eng"			# default language of the PDF file (required to get good OCR results
 KEEP_TMP="0"			# do not delete the temporary files (default)
 PREPROCESS_DESKEW="0"		# 0=no, 1=yes (deskew image)
 PREPROCESS_CLEAN="0"		# 0=no, 1=yes (clean image to improve OCR)
-PREPROCESS_CLEANINPDF="0"	# 0=no, 1=yes (put cleaned image in final PDF)
+PREPROCESS_CLEANTOPDF="0"	# 0=no, 1=yes (put cleaned image in final PDF)
 DEBUG_MODE="0"			# 0=no, 1=yes (generates each PDF page twice, with and without image)
+TESS_CFG_FILES=""		# list of additional configuration files to be used by tesseract
 
 # Parse optional command line arguments
-while getopts ":hvgkdcil:" opt; do
+while getopts ":hvgkdcil:C:" opt; do
 	case $opt in
 		h) usage ; exit 0 ;;
 		v) VERBOSITY=$(($VERBOSITY+1)) ;;
 		g) VERBOSITY="10"; DEBUG_MODE="1" ;;
 		k) KEEP_TMP="1" ;;
-		d) PREPROCESS_DESKEW="1" ;;		
+		d) PREPROCESS_DESKEW="1" ;;
 		c) PREPROCESS_CLEAN="1" ;;
-		i) PREPROCESS_CLEANINPDF="1" ;;
+		i) PREPROCESS_CLEANTOPDF="1" ;;
 		l) LAN="$OPTARG" ;;
+		C) TESS_CFG_FILES="$OPTARG $TESS_CFG_FILES" ;;
 		\?)
 			echo "Invalid option: -$OPTARG"
 			echo
@@ -210,12 +215,12 @@ while read pageSize ; do
 
 	# perform OCR
 	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Performing OCR"
-	! tesseract -l "$LAN" "$curImgPixmapClean" "$curHocr" hocr 1> /dev/null 2> /dev/null \
+	! tesseract -l "$LAN" "$curImgPixmapClean" "$curHocr" hocr $TESS_CFG_FILES 1> /dev/null 2> /dev/null \
 		&& echo "Could not OCR file \"$curImgPixmapClean\". Exiting..." && exit $EXIT_OTHER_ERROR
 	mv "$curHocr.html" "$curHocr"
 
 	# embed text and image to new pdf file
-	if [ "$PREPROCESS_CLEANINPDF" -eq "1" ]; then
+	if [ "$PREPROCESS_CLEANTOPDF" -eq "1" ]; then
 		image4finalPDF="$curImgPixmapClean"
 	else
 		image4finalPDF="$curImgPixmapDeskewed"	
@@ -275,8 +280,8 @@ pdf_valid=1
 grep -i "ErrorMessage" "$FILE_VALIDATION_LOG" && pdf_valid=0
 grep -i "Status.*not valid" "$FILE_VALIDATION_LOG" && pdf_valid=0
 grep -i "Status.*Not well-formed" "$FILE_VALIDATION_LOG" && pdf_valid=0
-[ $pdf_valid -eq 1 ] && echo "Output file: The generated PDF/A file is VALID" \
-	|| echo "Output file: The generated PDF/A file is INVALID"
+[ $VERBOSITY -ge $LOG_INFO ] && [ $pdf_valid -eq 1 ] && echo "Output file: The generated PDF/A file is VALID"
+[ $pdf_valid -ne 1 ] && echo "Output file: The generated PDF/A file is INVALID"
 [ $VERBOSITY -ge $LOG_DEBUG ] && cat "$FILE_VALIDATION_LOG"
 
 
