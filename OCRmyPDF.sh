@@ -193,14 +193,12 @@ while read pageSize ; do
 	curOrigImg01=`ls -1 "$curOrigImg"*`
 	propCurOrigImg01=`identify -format "%w %h %[colorspace]" "$curOrigImg01"`
 	heightCurOrigImg01=`echo "$propCurOrigImg01" | cut -f1 -d" "`
-	widthICurOrigImg01=`echo "$propCurOrigImg01" | cut -f2 -d" "`
+	widthCurOrigImg01=`echo "$propCurOrigImg01" | cut -f2 -d" "`
 	colorspaceCurOrigImg01=`echo "$propCurOrigImg01" | cut -f3 -d" "`
-	# compute the resolution of the whole page (taking into account all images)
-	dpi_x=$(($widthICurOrigImg01*72/$widthPDF))
-	dpi_y=$(($heightCurOrigImg01*72/$heightPDF))
-	[ "$dpi_x" -ne "$dpi_y" ] && echo "X/Y Resolutions not equal (Not supported currently). Exiting..." && exit $EXIT_BAD_INPUT_FILE
-	dpi="$dpi_x"
-
+	# compute the resolution of the image in the page
+	dpi=`echo "sqrt(($widthCurOrigImg01*72/$widthPDF)*($heightCurOrigImg01*72/$heightPDF))" | bc -l`
+	dpi=`echo "scale=0;($dpi+0.5)/1" | bc`	# round the dpi value to the nearest integer
+	
 	# Identify if page image should be saved as ppm (color) or pgm (gray)
 	ext="ppm"
 	opt=""		
@@ -220,7 +218,7 @@ while read pageSize ; do
 	# if requested deskew image (without changing its size in pixel)
 	if [ "$PREPROCESS_DESKEW" -eq "1" ]; then
 		[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Deskewing image"
-		! convert "$curImgPixmap" -deskew 40% -gravity center -extent ${heightCurOrigImg01}x${widthICurOrigImg01} "$curImgPixmapDeskewed" \
+		! convert "$curImgPixmap" -deskew 40% -gravity center -extent ${heightCurOrigImg01}x${widthCurOrigImg01} "$curImgPixmapDeskewed" \
 			&& echo "Could not deskew \"$curImgPixmap\". Exiting..." && exit $EXIT_OTHER_ERROR
 	else
 		cp "$curImgPixmap" "$curImgPixmapDeskewed"
