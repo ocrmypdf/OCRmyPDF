@@ -1,7 +1,7 @@
 OCRmyPDF
 ========
 
-Script aimed at performing optical character recognition (OCR) on PDF files from PDF files containing only images
+OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched
 
 To get the script usage, call: ./OCmyPDF.sh -h
 
