@@ -182,7 +182,7 @@ while read pageSize ; do
 	heightPDF=`echo $pageSize | cut -f1 -d" "`
 	widthPDF=`echo $pageSize | cut -f2 -d" "`
 	# extract raw image from pdf file to compute resolution
-	# unfortunatelly this image may not be rotated as in the pdf...
+	# unfortunatelly this image can have another orientation than in the pdf...
 	# so we will have to extract it again later
 	pdfimages -f $page -l $page -j "$FILE_INPUT_PDF" "$curOrigImg" 1>&2	
 	# count number of extracted images
@@ -190,19 +190,28 @@ while read pageSize ; do
 	[ $nbImg -ne "1" ] && echo "Not exactly 1 image on page $page. Exiting..." && exit $EXIT_BAD_INPUT_FILE
 	
 	# Get characteristics of the extracted image
-	curOrigImg01=`ls -1 "$curOrigImg"*`
-	propCurOrigImg01=`identify -format "%w %h %[colorspace]" "$curOrigImg01"`
-	heightCurOrigImg01=`echo "$propCurOrigImg01" | cut -f1 -d" "`
-	widthCurOrigImg01=`echo "$propCurOrigImg01" | cut -f2 -d" "`
-	colorspaceCurOrigImg01=`echo "$propCurOrigImg01" | cut -f3 -d" "`
+	curImg=`ls -1 "$curOrigImg"*`
+	propCurImg=`identify -format "%w %h %[colorspace]" "$curImg"`
+	heightCurImg=`echo "$propCurImg" | cut -f1 -d" "`
+	widthCurImg=`echo "$propCurImg" | cut -f2 -d" "`
+	colorspaceCurImg=`echo "$propCurImg" | cut -f3 -d" "`
+	# switch height/width values if the image has not the right orientation
+	if [ $((($heightPDF-$widthPDF)*($heightCurImg-$widthCurImg))) -lt 0 ]; then
+		[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Extracted image has wrong orientation. Inverting image height/width values"
+		tmpval=$heightCurImg
+		heightCurImg=$widthCurImg
+		widthCurImg=$tmpval
+	fi
 	# compute the resolution of the image in the page
-	dpi=`echo "sqrt(($widthCurOrigImg01*72/$widthPDF)*($heightCurOrigImg01*72/$heightPDF))" | bc -l`
-	dpi=`echo "scale=0;($dpi+0.5)/1" | bc`	# round the dpi value to the nearest integer
+	dpi_x=$(($widthCurImg*72/$widthPDF))
+	dpi_y=$(($heightCurImg*72/$heightPDF))
+	[ "$dpi_x" -ne "$dpi_y" ] && echo "X/Y Resolutions not equal. Exiting..." && exit $EXIT_BAD_INPUT_FILE
+	dpi="$dpi_x"
 	
 	# Identify if page image should be saved as ppm (color) or pgm (gray)
 	ext="ppm"
 	opt=""		
-	if [ $colorspaceCurOrigImg01 == "Gray" ]; then
+	if [ $colorspaceCurImg == "Gray" ]; then
 		ext="pgm"
 		opt="-gray"
 	fi
@@ -218,7 +227,7 @@ while read pageSize ; do
 	# if requested deskew image (without changing its size in pixel)
 	if [ "$PREPROCESS_DESKEW" -eq "1" ]; then
 		[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Deskewing image"
-		! convert "$curImgPixmap" -deskew 40% -gravity center -extent ${heightCurOrigImg01}x${widthCurOrigImg01} "$curImgPixmapDeskewed" \
+		! convert "$curImgPixmap" -deskew 40% -gravity center -extent ${heightCurImg}x${widthCurImg} "$curImgPixmapDeskewed" \
 			&& echo "Could not deskew \"$curImgPixmap\". Exiting..." && exit $EXIT_OTHER_ERROR
 	else
 		cp "$curImgPixmap" "$curImgPixmapDeskewed"
