@@ -31,13 +31,10 @@ On top of that none of them produced PDF/A files (format dedicated for long time
 Install
 --------
 
-TODO
+Download OCRmyPDF here: https://github.com/fritz-hh/OCRmyPDF/tags
 
-Install jhove:
-download jhove from here: http://sourceforge.net/projects/jhove/files/jhove/
-After extracting the JHOVE files to some directory "jhove", you have to edit the file "jhove/conf/jhove.conf" and change something in "something" to the actual directory (ending in "/jhove").
+Copy the file in onto your linux/unix machine and extract it.
 
+Run: "sh ./OCRmyPDF.sh" to get the script usage
 
-
-
-
+If not yet installed, the script will notify you about dependencies that need to be installed
