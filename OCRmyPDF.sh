@@ -21,7 +21,7 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-l language] [-C filenam
 -v : Increase the verbosity (this option can be used more than once)
 -g : Activate debug mode:
      - Generates a PDF file containing each page twice (once with the image, once without the image
-       but with the OCRed text as well as the detected bounding boxes detected during OCR)
+       but with the OCRed text as well as the detected bounding boxes)
      - Set the verbosity to the highest possible 
 -k : Do not delete the temporary files
 -d : Deskew each page before performing OCR
