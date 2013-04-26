@@ -114,9 +114,9 @@ if [ "$#" -ne "2" ]; then
 	exit $EXIT_BAD_ARGS
 fi
 
-! absolutePath "$1" && echo "The folder in which the input file should be located does not exist. Exiting..." >&2 && exit $EXIT_BAD_ARGS
+! absolutePath "$1" > /dev/null && echo "The folder in which the input file should be located does not exist. Exiting..." >&2 && exit $EXIT_BAD_ARGS
 FILE_INPUT_PDF="`absolutePath "$1"`"
-! absolutePath "$2" && echo "The folder in which the output file should be generated does not exist. Exiting..." >&2 && exit $EXIT_BAD_ARGS
+! absolutePath "$2" > /dev/null  && echo "The folder in which the output file should be generated does not exist. Exiting..." >&2 && exit $EXIT_BAD_ARGS
 FILE_OUTPUT_PDFA="`absolutePath "$2"`"
 
 
@@ -179,10 +179,10 @@ while read pageSize ; do
 	curOCRedPDF="$TMP_FLD/${page}-ocred.pdf"		# PDF file containing the image + the OCRed text for the current page
 	curOCRedPDFDebug="$TMP_FLD/${page}-debug-ocred.pdf"	# PDF file containing data required to find out if OCR worked correctly
 	
-	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Computing embedded image resolution"
-	# get width / height of PDF page
-	heightPDF=`echo $pageSize | cut -f1 -d" "`
-	widthPDF=`echo $pageSize | cut -f2 -d" "`
+	# get width / height of PDF page (in pt)
+	widthPDF=`echo $pageSize | cut -f1 -d" "`
+	heightPDF=`echo $pageSize | cut -f2 -d" "`
+	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: size ${heightPDF}x${widthPDF} (h*w in pt)"
 	# extract raw image from pdf file to compute resolution
 	# unfortunatelly this image can have another orientation than in the pdf...
 	# so we will have to extract it again later
@@ -190,24 +190,26 @@ while read pageSize ; do
 	# count number of extracted images
 	nbImg=`ls -1 "$curOrigImg"* | wc -l`
 	[ $nbImg -ne "1" ] && echo "Expecting exactly 1 image on page $page (found $nbImg). Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
-	
 	# Get characteristics of the extracted image
 	curImg=`ls -1 "$curOrigImg"*`
 	propCurImg=`identify -format "%w %h %[colorspace]" "$curImg"`
-	heightCurImg=`echo "$propCurImg" | cut -f1 -d" "`
-	widthCurImg=`echo "$propCurImg" | cut -f2 -d" "`
+	widthCurImg=`echo "$propCurImg" | cut -f1 -d" "`
+	heightCurImg=`echo "$propCurImg" | cut -f2 -d" "`
 	colorspaceCurImg=`echo "$propCurImg" | cut -f3 -d" "`
 	# switch height/width values if the image has not the right orientation
+	# we make here the assumption that vertical/horizontal dpi are equal
+	# we will check that later
 	if [ $((($heightPDF-$widthPDF)*($heightCurImg-$widthCurImg))) -lt 0 ]; then
 		[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Extracted image has wrong orientation. Inverting image height/width values"
 		tmpval=$heightCurImg
 		heightCurImg=$widthCurImg
 		widthCurImg=$tmpval
 	fi
-	# compute the resolution of the image in the page
+	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: size ${heightCurImg}x${widthCurImg} (h*w pixel)"	
+	# compute the resolution of the image
 	dpi_x=$(($widthCurImg*72/$widthPDF))
 	dpi_y=$(($heightCurImg*72/$heightPDF))
-	[ "$dpi_x" -ne "$dpi_y" ] && echo "X/Y Resolutions not equal ($dpi_x/$dpi_y). Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
+	[ "$dpi_x" -ne "$dpi_y" ] && echo "X/Y resolutions not equal ($dpi_x/$dpi_y). Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
 	dpi="$dpi_x"
 	
 	# Identify if page image should be saved as ppm (color) or pgm (gray)
