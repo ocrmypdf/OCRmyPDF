@@ -8,7 +8,7 @@ while [ $cpt -le 10 ] ; do
 
 	echo "------- Itteration $cpt ---------"
 
-	! ../OCRmyPDF.sh -vv -l deu -k ../tmp/ocred-$(($cpt-1)).pdf ../tmp/ocred-$cpt.pdf && exit 1
+	! ../../OCRmyPDF.sh -vv -l deu -k ../../tmp/ocred-$(($cpt-1)).pdf ../../tmp/ocred-$cpt.pdf && exit 1
 	
 	cpt=$(($cpt+1))
 	

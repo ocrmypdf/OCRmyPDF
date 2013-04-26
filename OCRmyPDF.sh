@@ -69,6 +69,7 @@ EXIT_OTHER_ERROR="5"
 LOG_ERR="0"			# 0=only error messages
 LOG_INFO="1"			# 1=error messages and some infos
 LOG_DEBUG="2"			# 2=debug level logging
+SRC="./src"				# location of the source folder (except source of external tools like jhove)
 JHOVE="./jhove/bin/JhoveApp.jar"	# java SW for validating the final PDF/A
 JHOVE_CFG="./jhove/conf/jhove.conf"	# location of the jhove config file
 
@@ -263,13 +264,13 @@ while read pageSize ; do
 		image4finalPDF="$curImgPixmapDeskewed"	
 	fi
 	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Embedding text in PDF"
-	! python hocrTransform.py -r $dpi -i "$image4finalPDF" "$curHocr" "$curOCRedPDF" \
+	! python $SRC/hocrTransform.py -r $dpi -i "$image4finalPDF" "$curHocr" "$curOCRedPDF" \
 		&& echo "Could not create PDF file from \"$curHocr\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR
 	
 	# if requested generate special debug PDF page with visible OCR text
 	if [ $DEBUG_MODE -eq "1" ] ; then
 		[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Embedding text in PDF (debug page)"
-		! python hocrTransform.py -b -r $dpi "$curHocr" "$curOCRedPDFDebug" \
+		! python $SRC/hocrTransform.py -b -r $dpi "$curHocr" "$curOCRedPDFDebug" \
 			&& echo "Could not create PDF file from \"$curHocr\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR	
 	fi
 	
