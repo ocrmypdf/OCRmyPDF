@@ -234,7 +234,7 @@ while read pageSize ; do
 	# if requested deskew image (without changing its size in pixel)
 	if [ "$PREPROCESS_DESKEW" -eq "1" ]; then
 		[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Deskewing image"
-		! convert "$curImgPixmap" -deskew 40% -gravity center -extent ${heightCurImg}x${widthCurImg} "$curImgPixmapDeskewed" \
+		! convert "$curImgPixmap" -deskew 40% -gravity center -extent ${widthCurImg}x${heightCurImg} "$curImgPixmapDeskewed" \
 			&& echo "Could not deskew \"$curImgPixmap\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR
 	else
 		cp "$curImgPixmap" "$curImgPixmapDeskewed"
