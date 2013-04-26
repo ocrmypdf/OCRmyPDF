@@ -132,8 +132,8 @@ cd "`dirname $0`"
 # check if the required utilities are installed
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Checking if all dependencies are installed"
 ! command -v identify > /dev/null && echo "Please install ImageMagick. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
-! command -v pdfimages > /dev/null && echo "Please install xpdf. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
-! command -v pdftoppm > /dev/null && echo "Please install xpdf. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
+! command -v pdfimages > /dev/null && echo "Please install poppler-utils. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
+! command -v pdftoppm > /dev/null && echo "Please install poppler-utils. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdftk > /dev/null && echo "Please install pdftk. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
 [ $PREPROCESS_CLEAN -eq 1 ] && ! command -v unpaper > /dev/null && echo "Please install unpaper. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
 ! command -v tesseract > /dev/null && echo "Please install tesseract and tesseract-data. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
