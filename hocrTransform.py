@@ -1,25 +1,9 @@
-# Author: fritz from NAS4Free forum
+##############################################################################
+# Copyright (c) 2013: fritz-hh from Github (https://github.com/fritz-hh)
 #
+# Copyright (c) 2010: Jonathan Brinley from Github (https://github.com/jbrinley/HocrConverter)
 # Initial version by Jonathan Brinley, jonathanbrinley@gmail.com
-# https://github.com/jbrinley/HocrConverter
-# 
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-# 
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-# 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
+##############################################################################
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.units import inch
 from lxml import etree as ElementTree
@@ -102,7 +86,7 @@ class hocrTransform():
 		"""
 		return float(pxl)/self.dpi*inch
 			
-	def to_pdf(self, outFileName, imageFileName, showBoundingboxes, fontname="Courier"):
+	def to_pdf(self, outFileName, imageFileName, showBoundingboxes, fontname="Helvetica"):
 		"""
 		Creates a PDF file with an image superimposed on top of the text.
 		Text is positioned according to the bounding box of the lines in
@@ -112,7 +96,7 @@ class hocrTransform():
 		"""
 		# create the PDF file
 		pdf = Canvas(outFileName, pagesize=(self.width, self.height), pageCompression=1) # page size in points (1/72 in.)
-
+		
 		# draw bounding box for each paragraph
 		pdf.setStrokeColorRGB(0,1,1)	# light blue for bounding box of paragraph
 		pdf.setFillColorRGB(0,1,1)	# light blue for bounding box of paragraph
