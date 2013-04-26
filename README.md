@@ -37,6 +37,6 @@ Download OCRmyPDF here: https://github.com/fritz-hh/OCRmyPDF/tags
 
 Copy the file in onto your linux/unix machine and extract it.
 
-Run: "sh ./OCRmyPDF.sh" to get the script usage
+Run: "sh ./OCRmyPDF.sh -h" to get the script usage
 
 If not yet installed, the script will notify you about dependencies that need to be installed
