@@ -21,6 +21,7 @@ Motivation
 I searched the web for a free command line tool to OCR PDF files on linux/unix:
 I found many, but none of them were really satisfying.
 - Either they produced PDF files with misplaced text under the image (making copy/paste impossible)
+- Or they did not display correctly some escaped html characters located in the hocr file produced by the OCR engine
 - Or they changed the resolution of the embedded images
 - Or they generated PDF file having a ridiculous big size
 - Or they crashed when trying to OCR some of my PDF files
