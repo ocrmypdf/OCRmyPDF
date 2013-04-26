@@ -1,4 +1,7 @@
 #!/bin/sh
+##############################################################################
+# Copyright (c) 2013: fritz-hh from Github (https://github.com/fritz-hh)
+##############################################################################
 
 VERSION="alpha0"
 
@@ -121,19 +124,21 @@ FILE_OUTPUT_PDFA="`absolutePath "$2"`"
 
 
 
-
 # set script path as working directory
 cd "`dirname $0`"
 
+[ $VERBOSITY -ge $LOG_INFO ] && echo "OCRmyPDF version: $VERSION"
+
 # check if the required utilities are installed
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Checking if all dependencies are installed"
-! command -v gs > /dev/null && echo "Please install ghostcript. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v identify > /dev/null && echo "Please install ImageMagick. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdfimages > /dev/null && echo "Please install xpdf. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdftoppm > /dev/null && echo "Please install xpdf. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdftk > /dev/null && echo "Please install pdftk. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
-! command -v unpaper > /dev/null && echo "Please install unpaper. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+[ $PREPROCESS_CLEAN -eq 1 ] && ! command -v unpaper > /dev/null && echo "Please install unpaper. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v tesseract > /dev/null && echo "Please install tesseract and tesseract-data. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! command -v python > /dev/null && echo "Please install python, as well as the following python libraries: reportlab, lxml. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! command -v gs > /dev/null && echo "Please install ghostcript. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v java > /dev/null && echo "Please install java. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 
 
