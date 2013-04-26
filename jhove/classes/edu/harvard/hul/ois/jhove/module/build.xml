@@ -1,0 +1,108 @@
+<project name="Jhove" default="module-dist" basedir=".">
+  <description>Module build file
+    Jhove - JSTOR/Harvard Object Validation Environment
+    Version 1.0 2004-05-05
+    Copyright 2004 by JSTOR and the President and Fellows of Harvard College
+  </description>
+
+  <!-- set global properties for this build -->
+  <property name="root" location="../../../../../.."/>
+  <property name="bin"  location="${root}/../bin"/>
+  <property name="classpath" value="${bin}/jhove.jar:${root}"/>
+  <property name="jar"  location="${bin}/jhove-module.jar"/>
+  <property name="manifest" location="META-INF"/>
+
+  <target name="module-init" description="Create the time stamp">
+    <tstamp>
+      <format property="timestamp.isoformat" pattern="yyyy-MM-dd'T'HH:mm:ss"/>
+    </tstamp>
+  </target>
+
+  <target name="module" depends="module-init"
+          description="Compile the modules">
+    <javac compiler="javac1.5" target="1.5" srcdir="." debug="{$dbg}" classpath="${classpath}"/>
+    <ant dir="aiff" target="aiff" inheritAll="false">
+      <property name="dbg" value="${dbg}"/>
+    </ant>
+    <ant dir="gif" target="gif" inheritAll="false">
+      <property name="dbg" value="${dbg}"/>
+    </ant>
+    <ant dir="html" target="html" inheritAll="false">
+      <property name="dbg" value="${dbg}"/>
+    </ant>
+    <ant dir="iff" target="iff" inheritAll="false">
+      <property name="dbg" value="${dbg}"/>
+    </ant>
+    <ant dir="jpeg" target="jpeg" inheritAll="false">
+      <property name="dbg" value="${dbg}"/>
+    </ant>
+    <ant dir="jpeg2000" target="jpeg2000" inheritAll="false">
+      <property name="dbg" value="${dbg}"/>
+    </ant>
+    <ant dir="pdf"  target="pdf"  inheritAll="false">
+      <property name="dbg" value="${dbg}"/>
+    </ant>
+    <ant dir="tiff" target="tiff" inheritAll="false">
+      <property name="dbg" value="${dbg}"/>
+    </ant>
+    <ant dir="wave" target="wave" inheritAll="false">
+      <property name="dbg" value="${dbg}"/>
+    </ant>
+    <ant dir="xml" target="xml" inheritAll="false">
+      <property name="dbg" value="${dbg}"/>
+    </ant>
+  </target>
+
+  <target name="module-manifest" depends="module">
+    <mkdir dir="${manifest}"/>
+    <manifest file="${manifest}/MANIFEST.MF">
+      <attribute name="Built-By" value="${user.name}"/>
+      <attribute name="Built-On" value="${timestamp.isoformat}"/>
+      <section name="JHOVE">
+        <attribute name="Version" value="1.0"/>
+        <attribute name="Package" value="Modules"/>
+        <attribute name="Rights"  value="Copyright 2004 by JSTOR and the President and Fellows of Harvard College"/>
+      </section>
+    </manifest>
+  </target>
+
+  <target name="module-dist" depends="module-manifest"
+          description="Create the distribution">
+    <mkdir dir="${bin}"/>
+    <jar destfile="${jar}" basedir="${root}" index="true"
+         manifest="${manifest}/MANIFEST.MF"
+         includes="edu/harvard/hul/ois/jhove/module/**/*.class"/>
+  </target>
+
+  <target name="module-clean" description="Delete backup files" >
+    <delete>
+      <fileset dir="." includes="*~ \#*"/>
+    </delete>
+    <ant dir="aiff" target="aiff-clean" inheritAll="false"/>
+    <ant dir="gif"  target="gif-clean"  inheritAll="false"/>
+    <ant dir="html" target="html-clean" inheritAll="false"/>
+    <ant dir="iff"  target="iff-clean"  inheritAll="false"/>
+    <ant dir="jpeg" target="jpeg-clean" inheritAll="false"/>
+    <ant dir="jpeg2000" target="jpeg2000-clean" inheritAll="false"/>
+    <ant dir="pdf"  target="pdf-clean"  inheritAll="false"/>
+    <ant dir="tiff" target="tiff-clean" inheritAll="false"/>
+    <ant dir="wave" target="wave-clean" inheritAll="false"/>
+    <ant dir="xml"  target="xml-clean"  inheritAll="false"/>
+  </target>
+
+  <target name="module-cleanclass" description="Delete backup and class files">
+    <delete>
+      <fileset dir="." includes="*.class*"/>
+    </delete>
+    <ant dir="aiff" target="aiff-cleanclass" inheritAll="false"/>
+    <ant dir="gif"  target="gif-cleanclass"  inheritAll="false"/>
+    <ant dir="html" target="html-cleanclass" inheritAll="false"/>
+    <ant dir="iff"  target="iff-cleanclass"  inheritAll="false"/>
+    <ant dir="jpeg" target="jpeg-cleanclass" inheritAll="false"/>
+    <ant dir="jpeg2000" target="jpeg2000-cleanclass" inheritAll="false"/>
+    <ant dir="pdf"  target="pdf-cleanclass"  inheritAll="false"/>
+    <ant dir="tiff" target="tiff-cleanclass" inheritAll="false"/>
+    <ant dir="wave" target="wave-cleanclass" inheritAll="false"/>
+    <ant dir="xml"  target="xml-cleanclass"  inheritAll="false"/>
+  </target>
+</project>

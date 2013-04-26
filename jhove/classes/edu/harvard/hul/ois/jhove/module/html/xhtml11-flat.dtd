@@ -1,0 +1,4513 @@
+<!-- ....................................................................... -->
+<!-- XHTML 1.1 DTD  ........................................................ -->
+<!-- file: xhtml11.dtd
+-->
+
+<!-- XHTML 1.1 DTD
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+
+     The Extensible HyperText Markup Language (XHTML)
+     Copyright 1998-2000 World Wide Web Consortium
+        (Massachusetts Institute of Technology, Institut National de
+         Recherche en Informatique et en Automatique, Keio University).
+         All Rights Reserved.
+
+     Permission to use, copy, modify and distribute the XHTML DTD and its 
+     accompanying documentation for any purpose and without fee is hereby 
+     granted in perpetuity, provided that the above copyright notice and 
+     this paragraph appear in all copies.  The copyright holders make no 
+     representation about the suitability of the DTD for any purpose.
+
+     It is provided "as is" without expressed or implied warranty.
+
+        Author:     Murray M. Altheim <altheim@eng.sun.com>
+        Revision:   $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $
+
+-->
+<!-- This is the driver file for version 1.1 of the XHTML DTD.
+
+     Please use this formal public identifier to identify it:
+
+         "-//W3C//DTD XHTML 1.1//EN"
+-->
+<!ENTITY % XHTML.version  "-//W3C//DTD XHTML 1.1//EN" >
+
+<!-- Use this URI to identify the default namespace:
+
+         "http://www.w3.org/1999/xhtml"
+
+     See the Qualified Names module for information
+     on the use of namespace prefixes in the DTD.
+-->
+<!ENTITY % NS.prefixed "IGNORE" >
+<!ENTITY % XHTML.prefix "" >
+
+<!-- Reserved for use with the XLink namespace:
+-->
+<!ENTITY % XLINK.xmlns "" >
+<!ENTITY % XLINK.xmlns.attrib "" >
+
+<!-- For example, if you are using XHTML 1.1 directly, use the FPI
+     in the DOCTYPE declaration, with the xmlns attribute on the
+     document element to identify the default namespace:
+
+       <?xml version="1.0"?>
+       <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "xhtml11.dtd">
+       <html xmlns="http://www.w3.org/1999/xhtml"
+             xml:lang="en">
+       ...
+       </html>
+
+     Revisions:
+     (none)
+-->
+
+<!-- reserved for future use with document profiles -->
+<!ENTITY % XHTML.profile  "" >
+
+<!-- Bidirectional Text features
+     This feature-test entity is used to declare elements
+     and attributes used for bidirectional text support.
+-->
+<!ENTITY % XHTML.bidi  "INCLUDE" >
+
+<?doc type="doctype" role="title" { XHTML 1.1 } ?>
+
+<!-- ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: -->
+
+<!-- Pre-Framework Redeclaration placeholder  .................... -->
+<!-- this serves as a location to insert markup declarations
+     into the DTD prior to the framework declarations.
+-->
+<!ENTITY % xhtml-prefw-redecl.module "IGNORE" >
+<![%xhtml-prefw-redecl.module;[
+%xhtml-prefw-redecl.mod;
+<!-- end of xhtml-prefw-redecl.module -->]]>
+
+<!ENTITY % xhtml-events.module "INCLUDE" >
+
+<!-- Inline Style Module  ........................................ -->
+<!ENTITY % xhtml-inlstyle.module "INCLUDE" >
+<![%xhtml-inlstyle.module;[
+<!ENTITY % xhtml-inlstyle.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Inline Style 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-inlstyle-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Inline Style Module  ........................................... -->
+<!-- file: xhtml-inlstyle-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ENTITIES XHTML Inline Style 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-inlstyle-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Inline Style
+
+     This module declares the 'style' attribute, used to support inline
+     style markup. This module must be instantiated prior to the XHTML
+     Common Attributes module in order to be included in %Core.attrib;.
+-->
+
+<!ENTITY % style.attrib
+     "style        CDATA                    #IMPLIED"
+>
+
+
+<!ENTITY % Core.extra.attrib
+     "%style.attrib;"
+>
+
+<!-- end of xhtml-inlstyle-1.mod -->
+]]>
+
+<!-- declare Document Model module instantiated in framework
+-->
+<!ENTITY % xhtml-model.mod
+     PUBLIC "-//W3C//ENTITIES XHTML 1.1 Document Model 1.0//EN"
+            "xhtml11-model-1.mod" >
+
+<!-- Modular Framework Module (required) ......................... -->
+<!ENTITY % xhtml-framework.module "INCLUDE" >
+<![%xhtml-framework.module;[
+<!ENTITY % xhtml-framework.mod
+     PUBLIC "-//W3C//ENTITIES XHTML Modular Framework 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-framework-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Modular Framework Module  ...................................... -->
+<!-- file: xhtml-framework-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ENTITIES XHTML Modular Framework 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-framework-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Modular Framework
+
+     This required module instantiates the modules needed
+     to support the XHTML modularization model, including:
+
+        +  notations
+        +  datatypes
+        +  namespace-qualified names
+        +  common attributes
+        +  document model
+        +  character entities
+
+     The Intrinsic Events module is ignored by default but
+     occurs in this module because it must be instantiated
+     prior to Attributes but after Datatypes.
+-->
+
+<!ENTITY % xhtml-arch.module "IGNORE" >
+<![%xhtml-arch.module;[
+<!ENTITY % xhtml-arch.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Base Architecture 1.0//EN"
+            "xhtml-arch-1.mod" >
+%xhtml-arch.mod;]]>
+
+<!ENTITY % xhtml-notations.module "INCLUDE" >
+<![%xhtml-notations.module;[
+<!ENTITY % xhtml-notations.mod
+     PUBLIC "-//W3C//NOTATIONS XHTML Notations 1.0//EN"
+            "xhtml-notations-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Notations Module  .............................................. -->
+<!-- file: xhtml-notations-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//NOTATIONS XHTML Notations 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-notations-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Notations
+
+     defines the following notations, many of these imported from
+     other specifications and standards. When an existing FPI is
+     known, it is incorporated here.
+-->
+
+<!-- XML Notations ..................................... -->
+<!-- SGML and XML Notations ............................ -->
+
+<!-- W3C XML 1.0 Recommendation -->
+<!NOTATION w3c-xml
+     PUBLIC "ISO 8879//NOTATION Extensible Markup Language (XML) 1.0//EN" >
+
+<!-- XML 1.0 CDATA -->
+<!NOTATION cdata
+     PUBLIC "-//W3C//NOTATION XML 1.0: CDATA//EN" >
+
+<!-- SGML Formal Public Identifiers -->
+<!NOTATION fpi
+     PUBLIC "ISO 8879:1986//NOTATION Formal Public Identifier//EN" >
+
+<!-- XHTML Notations ................................... -->
+
+<!-- Length defined for cellpadding/cellspacing -->
+
+<!-- nn for pixels or nn% for percentage length -->
+<!NOTATION length
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: Length//EN" >
+
+<!-- space-separated list of link types -->
+<!NOTATION linkTypes
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: LinkTypes//EN" >
+
+<!-- single or comma-separated list of media descriptors -->
+<!NOTATION mediaDesc
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: MediaDesc//EN" >
+
+<!-- pixel, percentage, or relative -->
+<!NOTATION multiLength
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: MultiLength//EN" >
+
+<!-- one or more digits (NUMBER) -->
+<!NOTATION number
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: Number//EN" >
+
+<!-- integer representing length in pixels -->
+<!NOTATION pixels
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: Pixels//EN" >
+
+<!-- script expression -->
+<!NOTATION script
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: Script//EN" >
+
+<!-- textual content -->
+<!NOTATION text
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: Text//EN" >
+
+<!-- Imported Notations ................................ -->
+
+<!-- a single character from [ISO10646] -->
+<!NOTATION character
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: Character//EN" >
+
+<!-- a character encoding, as per [RFC2045] -->
+<!NOTATION charset
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: Charset//EN" >
+
+<!-- a space separated list of character encodings, as per [RFC2045] -->
+<!NOTATION charsets
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: Charsets//EN" >
+
+<!-- media type, as per [RFC2045] -->
+<!NOTATION contentType
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: ContentType//EN" >
+
+<!-- comma-separated list of media types, as per [RFC2045] -->
+<!NOTATION contentTypes
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: ContentTypes//EN" >
+
+<!-- date and time information. ISO date format -->
+<!NOTATION datetime
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: Datetime//EN" >
+
+<!-- a language code, as per [RFC3066] -->
+<!NOTATION languageCode
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: LanguageCode//EN" >
+
+<!-- a Uniform Resource Identifier, see [URI] -->
+<!NOTATION uri
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: URI//EN" >
+
+<!-- a space-separated list of Uniform Resource Identifiers, see [URI] -->
+<!NOTATION uris
+    PUBLIC "-//W3C//NOTATION XHTML Datatype: URIs//EN" >
+
+<!-- end of xhtml-notations-1.mod -->
+]]>
+
+<!ENTITY % xhtml-datatypes.module "INCLUDE" >
+<![%xhtml-datatypes.module;[
+<!ENTITY % xhtml-datatypes.mod
+     PUBLIC "-//W3C//ENTITIES XHTML Datatypes 1.0//EN"
+            "xhtml-datatypes-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Datatypes Module  .............................................. -->
+<!-- file: xhtml-datatypes-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ENTITIES XHTML Datatypes 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-datatypes-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Datatypes
+
+     defines containers for the following datatypes, many of
+     these imported from other specifications and standards.
+-->
+
+<!-- Length defined for cellpadding/cellspacing -->
+
+<!-- nn for pixels or nn% for percentage length -->
+<!ENTITY % Length.datatype "CDATA" >
+
+<!-- space-separated list of link types -->
+<!ENTITY % LinkTypes.datatype "NMTOKENS" >
+
+<!-- single or comma-separated list of media descriptors -->
+<!ENTITY % MediaDesc.datatype "CDATA" >
+
+<!-- pixel, percentage, or relative -->
+<!ENTITY % MultiLength.datatype "CDATA" >
+
+<!-- one or more digits (NUMBER) -->
+<!ENTITY % Number.datatype "CDATA" >
+
+<!-- integer representing length in pixels -->
+<!ENTITY % Pixels.datatype "CDATA" >
+
+<!-- script expression -->
+<!ENTITY % Script.datatype "CDATA" >
+
+<!-- textual content -->
+<!ENTITY % Text.datatype "CDATA" >
+
+<!-- Imported Datatypes ................................ -->
+
+<!-- a single character from [ISO10646] -->
+<!ENTITY % Character.datatype "CDATA" >
+
+<!-- a character encoding, as per [RFC2045] -->
+<!ENTITY % Charset.datatype "CDATA" >
+
+<!-- a space separated list of character encodings, as per [RFC2045] -->
+<!ENTITY % Charsets.datatype "CDATA" >
+
+<!-- media type, as per [RFC2045] -->
+<!ENTITY % ContentType.datatype "CDATA" >
+
+<!-- comma-separated list of media types, as per [RFC2045] -->
+<!ENTITY % ContentTypes.datatype "CDATA" >
+
+<!-- date and time information. ISO date format -->
+<!ENTITY % Datetime.datatype "CDATA" >
+
+<!-- formal public identifier, as per [ISO8879] -->
+<!ENTITY % FPI.datatype "CDATA" >
+
+<!-- a language code, as per [RFC3066] -->
+<!ENTITY % LanguageCode.datatype "NMTOKEN" >
+
+<!-- a Uniform Resource Identifier, see [URI] -->
+<!ENTITY % URI.datatype "CDATA" >
+
+<!-- a space-separated list of Uniform Resource Identifiers, see [URI] -->
+<!ENTITY % URIs.datatype "CDATA" >
+
+<!-- end of xhtml-datatypes-1.mod -->
+]]>
+
+<!-- placeholder for XLink support module -->
+<!ENTITY % xhtml-xlink.mod "" >
+
+
+<!ENTITY % xhtml-qname.module "INCLUDE" >
+<![%xhtml-qname.module;[
+<!ENTITY % xhtml-qname.mod
+     PUBLIC "-//W3C//ENTITIES XHTML Qualified Names 1.0//EN"
+            "xhtml-qname-1.mod" >
+<!-- ....................................................................... -->
+<!-- XHTML Qname Module  ................................................... -->
+<!-- file: xhtml-qname-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ENTITIES XHTML Qualified Names 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-qname-1.mod"
+
+     Revisions:
+#2000-10-22: added qname declarations for ruby elements
+     ....................................................................... -->
+
+<!-- XHTML Qname (Qualified Name) Module
+
+     This module is contained in two parts, labeled Section 'A' and 'B':
+
+       Section A declares parameter entities to support namespace-
+       qualified names, namespace declarations, and name prefixing
+       for XHTML and extensions.
+
+       Section B declares parameter entities used to provide
+       namespace-qualified names for all XHTML element types:
+
+         %applet.qname;   the xmlns-qualified name for <applet>
+         %base.qname;     the xmlns-qualified name for <base>
+         ...
+
+     XHTML extensions would create a module similar to this one.
+     Included in the XHTML distribution is a template module
+     ('template-qname-1.mod') suitable for this purpose.
+-->
+
+<!-- Section A: XHTML XML Namespace Framework :::::::::::::::::::: -->
+
+<!-- 1. Declare a %XHTML.prefixed; conditional section keyword, used
+        to activate namespace prefixing. The default value should
+        inherit '%NS.prefixed;' from the DTD driver, so that unless
+        overridden, the default behaviour follows the overall DTD
+        prefixing scheme.
+-->
+<!ENTITY % NS.prefixed "IGNORE" >
+<!ENTITY % XHTML.prefixed "%NS.prefixed;" >
+
+<!-- 2. Declare a parameter entity (eg., %XHTML.xmlns;) containing
+        the URI reference used to identify the XHTML namespace:
+-->
+<!ENTITY % XHTML.xmlns  "http://www.w3.org/1999/xhtml" >
+
+<!-- 3. Declare parameter entities (eg., %XHTML.prefix;) containing
+        the default namespace prefix string(s) to use when prefixing
+        is enabled. This may be overridden in the DTD driver or the
+        internal subset of an document instance. If no default prefix
+        is desired, this may be declared as an empty string.
+
+     NOTE: As specified in [XMLNAMES], the namespace prefix serves
+     as a proxy for the URI reference, and is not in itself significant.
+-->
+<!ENTITY % XHTML.prefix  "" >
+
+<!-- 4. Declare parameter entities (eg., %XHTML.pfx;) containing the
+        colonized prefix(es) (eg., '%XHTML.prefix;:') used when
+        prefixing is active, an empty string when it is not.
+-->
+<![%XHTML.prefixed;[
+<!ENTITY % XHTML.pfx  "%XHTML.prefix;:" >
+]]>
+<!ENTITY % XHTML.pfx  "" >
+
+<!-- declare qualified name extensions here ............ -->
+<!ENTITY % xhtml-qname-extra.mod "" >
+
+
+<!-- 5. The parameter entity %XHTML.xmlns.extra.attrib; may be
+        redeclared to contain any non-XHTML namespace declaration
+        attributes for namespaces embedded in XHTML. The default
+        is an empty string.  XLink should be included here if used
+        in the DTD.
+-->
+<!ENTITY % XHTML.xmlns.extra.attrib "" >
+
+<!-- The remainder of Section A is only followed in XHTML, not extensions. -->
+
+<!-- Declare a parameter entity %NS.decl.attrib; containing
+     all XML Namespace declarations used in the DTD, plus the
+     xmlns declaration for XHTML, its form dependent on whether
+     prefixing is active.
+-->
+<![%XHTML.prefixed;[
+<!ENTITY % NS.decl.attrib
+     "xmlns:%XHTML.prefix;  %URI.datatype;   #FIXED '%XHTML.xmlns;'
+      %XHTML.xmlns.extra.attrib;"
+>
+]]>
+<!ENTITY % NS.decl.attrib
+     "%XHTML.xmlns.extra.attrib;"
+>
+
+<!-- This is a placeholder for future XLink support.
+-->
+<!ENTITY % XLINK.xmlns.attrib "" >
+
+<!-- Declare a parameter entity %NS.decl.attrib; containing all
+     XML namespace declaration attributes used by XHTML, including
+     a default xmlns attribute when prefixing is inactive.
+-->
+<![%XHTML.prefixed;[
+<!ENTITY % XHTML.xmlns.attrib
+     "%NS.decl.attrib;
+      %XLINK.xmlns.attrib;"
+>
+]]>
+<!ENTITY % XHTML.xmlns.attrib
+     "xmlns        %URI.datatype;           #FIXED '%XHTML.xmlns;'
+      %XLINK.xmlns.attrib;"
+>
+
+<!-- placeholder for qualified name redeclarations -->
+<!ENTITY % xhtml-qname.redecl "" >
+
+
+<!-- Section B: XHTML Qualified Names ::::::::::::::::::::::::::::: -->
+
+<!-- 6. This section declares parameter entities used to provide
+        namespace-qualified names for all XHTML element types.
+-->
+
+<!-- module:  xhtml-applet-1.mod -->
+<!ENTITY % applet.qname  "%XHTML.pfx;applet" >
+
+<!-- module:  xhtml-base-1.mod -->
+<!ENTITY % base.qname    "%XHTML.pfx;base" >
+
+<!-- module:  xhtml-bdo-1.mod -->
+<!ENTITY % bdo.qname     "%XHTML.pfx;bdo" >
+
+<!-- module:  xhtml-blkphras-1.mod -->
+<!ENTITY % address.qname "%XHTML.pfx;address" >
+<!ENTITY % blockquote.qname  "%XHTML.pfx;blockquote" >
+<!ENTITY % pre.qname     "%XHTML.pfx;pre" >
+<!ENTITY % h1.qname      "%XHTML.pfx;h1" >
+<!ENTITY % h2.qname      "%XHTML.pfx;h2" >
+<!ENTITY % h3.qname      "%XHTML.pfx;h3" >
+<!ENTITY % h4.qname      "%XHTML.pfx;h4" >
+<!ENTITY % h5.qname      "%XHTML.pfx;h5" >
+<!ENTITY % h6.qname      "%XHTML.pfx;h6" >
+
+<!-- module:  xhtml-blkpres-1.mod -->
+<!ENTITY % hr.qname      "%XHTML.pfx;hr" >
+
+<!-- module:  xhtml-blkstruct-1.mod -->
+<!ENTITY % div.qname     "%XHTML.pfx;div" >
+<!ENTITY % p.qname       "%XHTML.pfx;p" >
+
+<!-- module:  xhtml-edit-1.mod -->
+<!ENTITY % ins.qname     "%XHTML.pfx;ins" >
+<!ENTITY % del.qname     "%XHTML.pfx;del" >
+
+<!-- module:  xhtml-form-1.mod -->
+<!ENTITY % form.qname    "%XHTML.pfx;form" >
+<!ENTITY % label.qname   "%XHTML.pfx;label" >
+<!ENTITY % input.qname   "%XHTML.pfx;input" >
+<!ENTITY % select.qname  "%XHTML.pfx;select" >
+<!ENTITY % optgroup.qname  "%XHTML.pfx;optgroup" >
+<!ENTITY % option.qname  "%XHTML.pfx;option" >
+<!ENTITY % textarea.qname  "%XHTML.pfx;textarea" >
+<!ENTITY % fieldset.qname  "%XHTML.pfx;fieldset" >
+<!ENTITY % legend.qname  "%XHTML.pfx;legend" >
+<!ENTITY % button.qname  "%XHTML.pfx;button" >
+
+<!-- module:  xhtml-hypertext-1.mod -->
+<!ENTITY % a.qname       "%XHTML.pfx;a" >
+
+<!-- module:  xhtml-image-1.mod -->
+<!ENTITY % img.qname     "%XHTML.pfx;img" >
+
+<!-- module:  xhtml-inlphras-1.mod -->
+<!ENTITY % abbr.qname    "%XHTML.pfx;abbr" >
+<!ENTITY % acronym.qname "%XHTML.pfx;acronym" >
+<!ENTITY % cite.qname    "%XHTML.pfx;cite" >
+<!ENTITY % code.qname    "%XHTML.pfx;code" >
+<!ENTITY % dfn.qname     "%XHTML.pfx;dfn" >
+<!ENTITY % em.qname      "%XHTML.pfx;em" >
+<!ENTITY % kbd.qname     "%XHTML.pfx;kbd" >
+<!ENTITY % q.qname       "%XHTML.pfx;q" >
+<!ENTITY % samp.qname    "%XHTML.pfx;samp" >
+<!ENTITY % strong.qname  "%XHTML.pfx;strong" >
+<!ENTITY % var.qname     "%XHTML.pfx;var" >
+
+<!-- module:  xhtml-inlpres-1.mod -->
+<!ENTITY % b.qname       "%XHTML.pfx;b" >
+<!ENTITY % big.qname     "%XHTML.pfx;big" >
+<!ENTITY % i.qname       "%XHTML.pfx;i" >
+<!ENTITY % small.qname   "%XHTML.pfx;small" >
+<!ENTITY % sub.qname     "%XHTML.pfx;sub" >
+<!ENTITY % sup.qname     "%XHTML.pfx;sup" >
+<!ENTITY % tt.qname      "%XHTML.pfx;tt" >
+
+<!-- module:  xhtml-inlstruct-1.mod -->
+<!ENTITY % br.qname      "%XHTML.pfx;br" >
+<!ENTITY % span.qname    "%XHTML.pfx;span" >
+
+<!-- module:  xhtml-ismap-1.mod (also csismap, ssismap) -->
+<!ENTITY % map.qname     "%XHTML.pfx;map" >
+<!ENTITY % area.qname    "%XHTML.pfx;area" >
+
+<!-- module:  xhtml-link-1.mod -->
+<!ENTITY % link.qname    "%XHTML.pfx;link" >
+
+<!-- module:  xhtml-list-1.mod -->
+<!ENTITY % dl.qname      "%XHTML.pfx;dl" >
+<!ENTITY % dt.qname      "%XHTML.pfx;dt" >
+<!ENTITY % dd.qname      "%XHTML.pfx;dd" >
+<!ENTITY % ol.qname      "%XHTML.pfx;ol" >
+<!ENTITY % ul.qname      "%XHTML.pfx;ul" >
+<!ENTITY % li.qname      "%XHTML.pfx;li" >
+
+<!-- module:  xhtml-meta-1.mod -->
+<!ENTITY % meta.qname    "%XHTML.pfx;meta" >
+
+<!-- module:  xhtml-param-1.mod -->
+<!ENTITY % param.qname   "%XHTML.pfx;param" >
+
+<!-- module:  xhtml-object-1.mod -->
+<!ENTITY % object.qname  "%XHTML.pfx;object" >
+
+<!-- module:  xhtml-script-1.mod -->
+<!ENTITY % script.qname  "%XHTML.pfx;script" >
+<!ENTITY % noscript.qname  "%XHTML.pfx;noscript" >
+
+<!-- module:  xhtml-struct-1.mod -->
+<!ENTITY % html.qname    "%XHTML.pfx;html" >
+<!ENTITY % head.qname    "%XHTML.pfx;head" >
+<!ENTITY % title.qname   "%XHTML.pfx;title" >
+<!ENTITY % body.qname    "%XHTML.pfx;body" >
+
+<!-- module:  xhtml-style-1.mod -->
+<!ENTITY % style.qname   "%XHTML.pfx;style" >
+
+<!-- module:  xhtml-table-1.mod -->
+<!ENTITY % table.qname   "%XHTML.pfx;table" >
+<!ENTITY % caption.qname "%XHTML.pfx;caption" >
+<!ENTITY % thead.qname   "%XHTML.pfx;thead" >
+<!ENTITY % tfoot.qname   "%XHTML.pfx;tfoot" >
+<!ENTITY % tbody.qname   "%XHTML.pfx;tbody" >
+<!ENTITY % colgroup.qname  "%XHTML.pfx;colgroup" >
+<!ENTITY % col.qname     "%XHTML.pfx;col" >
+<!ENTITY % tr.qname      "%XHTML.pfx;tr" >
+<!ENTITY % th.qname      "%XHTML.pfx;th" >
+<!ENTITY % td.qname      "%XHTML.pfx;td" >
+
+<!-- module:  xhtml-ruby-1.mod -->
+
+<!ENTITY % ruby.qname    "%XHTML.pfx;ruby" >
+<!ENTITY % rbc.qname     "%XHTML.pfx;rbc" >
+<!ENTITY % rtc.qname     "%XHTML.pfx;rtc" >
+<!ENTITY % rb.qname      "%XHTML.pfx;rb" >
+<!ENTITY % rt.qname      "%XHTML.pfx;rt" >
+<!ENTITY % rp.qname      "%XHTML.pfx;rp" >
+
+<!-- Provisional XHTML 2.0 Qualified Names  ...................... -->
+
+<!-- module:  xhtml-image-2.mod -->
+<!ENTITY % alt.qname     "%XHTML.pfx;alt" >
+
+<!-- end of xhtml-qname-1.mod -->
+]]>
+
+<!ENTITY % xhtml-events.module "IGNORE" >
+<![%xhtml-events.module;[
+<!ENTITY % xhtml-events.mod
+     PUBLIC "-//W3C//ENTITIES XHTML Intrinsic Events 1.0//EN"
+            "xhtml-events-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Intrinsic Events Module  ....................................... -->
+<!-- file: xhtml-events-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ENTITIES XHTML Intrinsic Events 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-events-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Intrinsic Event Attributes
+
+     These are the event attributes defined in HTML 4.0,
+     Section 18.2.3 "Intrinsic Events". This module must be
+     instantiated prior to the Attributes Module but after
+     the Datatype Module in the Modular Framework module.
+
+    "Note: Authors of HTML documents are advised that changes
+     are likely to occur in the realm of intrinsic events
+     (e.g., how scripts are bound to events). Research in
+     this realm is carried on by members of the W3C Document
+     Object Model Working Group (see the W3C Web site at
+     http://www.w3.org/ for more information)."
+-->
+<!-- NOTE: Because the ATTLIST declarations in this module occur
+     before their respective ELEMENT declarations in other
+     modules, there may be a dependency on this module that
+     should be considered if any of the parameter entities used
+     for element type names (eg., %a.qname;) are redeclared.
+-->
+
+<!ENTITY % Events.attrib
+     "onclick      %Script.datatype;        #IMPLIED
+      ondblclick   %Script.datatype;        #IMPLIED
+      onmousedown  %Script.datatype;        #IMPLIED
+      onmouseup    %Script.datatype;        #IMPLIED
+      onmouseover  %Script.datatype;        #IMPLIED
+      onmousemove  %Script.datatype;        #IMPLIED
+      onmouseout   %Script.datatype;        #IMPLIED
+      onkeypress   %Script.datatype;        #IMPLIED
+      onkeydown    %Script.datatype;        #IMPLIED
+      onkeyup      %Script.datatype;        #IMPLIED"
+>
+
+<!-- additional attributes on anchor element
+-->
+<!ATTLIST %a.qname;
+     onfocus      %Script.datatype;         #IMPLIED
+     onblur       %Script.datatype;         #IMPLIED
+>
+
+<!-- additional attributes on form element
+-->
+<!ATTLIST %form.qname;
+      onsubmit     %Script.datatype;        #IMPLIED
+      onreset      %Script.datatype;        #IMPLIED
+>
+
+<!-- additional attributes on label element
+-->
+<!ATTLIST %label.qname;
+      onfocus      %Script.datatype;        #IMPLIED
+      onblur       %Script.datatype;        #IMPLIED
+>
+
+<!-- additional attributes on input element
+-->
+<!ATTLIST %input.qname;
+      onfocus      %Script.datatype;        #IMPLIED
+      onblur       %Script.datatype;        #IMPLIED
+      onselect     %Script.datatype;        #IMPLIED
+      onchange     %Script.datatype;        #IMPLIED
+>
+
+<!-- additional attributes on select element
+-->
+<!ATTLIST %select.qname;
+      onfocus      %Script.datatype;        #IMPLIED
+      onblur       %Script.datatype;        #IMPLIED
+      onchange     %Script.datatype;        #IMPLIED
+>
+
+<!-- additional attributes on textarea element
+-->
+<!ATTLIST %textarea.qname;
+      onfocus      %Script.datatype;        #IMPLIED
+      onblur       %Script.datatype;        #IMPLIED
+      onselect     %Script.datatype;        #IMPLIED
+      onchange     %Script.datatype;        #IMPLIED
+>
+
+<!-- additional attributes on button element
+-->
+<!ATTLIST %button.qname;
+      onfocus      %Script.datatype;        #IMPLIED
+      onblur       %Script.datatype;        #IMPLIED
+>
+
+<!-- additional attributes on body element
+-->
+<!ATTLIST %body.qname;
+      onload       %Script.datatype;        #IMPLIED
+      onunload     %Script.datatype;        #IMPLIED
+>
+
+<!-- additional attributes on area element
+-->
+<!ATTLIST %area.qname;
+      onfocus      %Script.datatype;        #IMPLIED
+      onblur       %Script.datatype;        #IMPLIED
+>
+
+<!-- end of xhtml-events-1.mod -->
+]]>
+
+<!ENTITY % xhtml-attribs.module "INCLUDE" >
+<![%xhtml-attribs.module;[
+<!ENTITY % xhtml-attribs.mod
+     PUBLIC "-//W3C//ENTITIES XHTML Common Attributes 1.0//EN"
+            "xhtml-attribs-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Common Attributes Module  ...................................... -->
+<!-- file: xhtml-attribs-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ENTITIES XHTML Common Attributes 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-attribs-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Common Attributes
+
+     This module declares many of the common attributes for the XHTML DTD.
+     %NS.decl.attrib; is declared in the XHTML Qname module.
+-->
+
+<!ENTITY % id.attrib
+     "id           ID                       #IMPLIED"
+>
+
+<!ENTITY % class.attrib
+     "class        NMTOKENS                 #IMPLIED"
+>
+
+<!ENTITY % title.attrib
+     "title        %Text.datatype;          #IMPLIED"
+>
+
+<!ENTITY % Core.extra.attrib "" >
+
+<!ENTITY % Core.attrib
+     "%XHTML.xmlns.attrib;
+      %id.attrib;
+      %class.attrib;
+      %title.attrib;
+      %Core.extra.attrib;"
+>
+
+<!ENTITY % lang.attrib
+     "xml:lang     %LanguageCode.datatype;  #IMPLIED"
+>
+
+<![%XHTML.bidi;[
+<!ENTITY % dir.attrib
+     "dir          ( ltr | rtl )            #IMPLIED"
+>
+
+<!ENTITY % I18n.attrib
+     "%dir.attrib;
+      %lang.attrib;"
+>
+
+]]>
+<!ENTITY % I18n.attrib
+     "%lang.attrib;"
+>
+
+<!ENTITY % Common.extra.attrib "" >
+
+<!-- intrinsic event attributes declared previously
+-->
+<!ENTITY % Events.attrib "" >
+
+<!ENTITY % Common.attrib
+     "%Core.attrib;
+      %I18n.attrib;
+      %Events.attrib;
+      %Common.extra.attrib;"
+>
+
+<!-- end of xhtml-attribs-1.mod -->
+]]>
+
+<!-- placeholder for content model redeclarations -->
+<!ENTITY % xhtml-model.redecl "" >
+
+
+<!ENTITY % xhtml-model.module "INCLUDE" >
+<![%xhtml-model.module;[
+<!-- instantiate the Document Model module declared in the DTD driver
+-->
+<!-- ....................................................................... -->
+<!-- XHTML 1.1 Document Model Module  ...................................... -->
+<!-- file: xhtml11-model-1.mod
+
+     This is XHTML 1.1, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2000 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ENTITIES XHTML 1.1 Document Model 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml11/DTD/xhtml11-model-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- XHTML 1.1 Document Model
+
+     This module describes the groupings of elements that make up
+     common content models for XHTML elements.
+
+     XHTML has three basic content models:
+
+         %Inline.mix;  character-level elements
+         %Block.mix;   block-like elements, eg., paragraphs and lists
+         %Flow.mix;    any block or inline elements
+
+     Any parameter entities declared in this module may be used
+     to create element content models, but the above three are
+     considered 'global' (insofar as that term applies here).
+
+     The reserved word '#PCDATA' (indicating a text string) is now
+     included explicitly with each element declaration that is
+     declared as mixed content, as XML requires that this token
+     occur first in a content model specification.
+-->
+<!-- Extending the Model
+
+     While in some cases this module may need to be rewritten to
+     accommodate changes to the document model, minor extensions
+     may be accomplished by redeclaring any of the three *.extra;
+     parameter entities to contain extension element types as follows:
+
+         %Misc.extra;    whose parent may be any block or
+                         inline element.
+
+         %Inline.extra;  whose parent may be any inline element.
+
+         %Block.extra;   whose parent may be any block element.
+
+     If used, these parameter entities must be an OR-separated
+     list beginning with an OR separator ("|"), eg., "| a | b | c"
+
+     All block and inline *.class parameter entities not part
+     of the *struct.class classes begin with "| " to allow for
+     exclusion from mixes.
+-->
+
+<!-- ..............  Optional Elements in head  .................. -->
+
+<!ENTITY % HeadOpts.mix
+     "( %script.qname; | %style.qname; | %meta.qname;
+      | %link.qname; | %object.qname; )*"
+>
+
+<!-- .................  Miscellaneous Elements  .................. -->
+
+<!-- ins and del are used to denote editing changes
+-->
+<!ENTITY % Edit.class "| %ins.qname; | %del.qname;" >
+
+<!-- script and noscript are used to contain scripts
+     and alternative content
+-->
+<!ENTITY % Script.class "| %script.qname; | %noscript.qname;" >
+
+<!ENTITY % Misc.extra "" >
+
+<!-- These elements are neither block nor inline, and can
+     essentially be used anywhere in the document body.
+-->
+<!ENTITY % Misc.class
+     "%Edit.class;
+      %Script.class;
+      %Misc.extra;"
+>
+
+<!-- ....................  Inline Elements  ...................... -->
+
+<!ENTITY % InlStruct.class "%br.qname; | %span.qname;" >
+
+<!ENTITY % InlPhras.class
+     "| %em.qname; | %strong.qname; | %dfn.qname; | %code.qname;
+      | %samp.qname; | %kbd.qname; | %var.qname; | %cite.qname;
+      | %abbr.qname; | %acronym.qname; | %q.qname;" >
+
+<!ENTITY % InlPres.class
+     "| %tt.qname; | %i.qname; | %b.qname; | %big.qname;
+      | %small.qname; | %sub.qname; | %sup.qname;" >
+
+<!ENTITY % I18n.class "| %bdo.qname;" >
+
+<!ENTITY % Anchor.class "| %a.qname;" >
+
+<!ENTITY % InlSpecial.class
+     "| %img.qname; | %map.qname;
+      | %object.qname;" >
+
+<!ENTITY % InlForm.class
+     "| %input.qname; | %select.qname; | %textarea.qname;
+      | %label.qname; | %button.qname;" >
+
+<!ENTITY % Inline.extra "" >
+
+<!ENTITY % Ruby.class "| %ruby.qname;" >
+
+<!-- %Inline.class; includes all inline elements,
+     used as a component in mixes
+-->
+<!ENTITY % Inline.class
+     "%InlStruct.class;
+      %InlPhras.class;
+      %InlPres.class;
+      %I18n.class;
+      %Anchor.class;
+      %InlSpecial.class;
+      %InlForm.class;
+      %Ruby.class;
+      %Inline.extra;"
+>
+
+<!-- %InlNoRuby.class; includes all inline elements
+     except ruby, used as a component in mixes
+-->
+<!ENTITY % InlNoRuby.class
+     "%InlStruct.class;
+      %InlPhras.class;
+      %InlPres.class;
+      %I18n.class;
+      %Anchor.class;
+      %InlSpecial.class;
+      %InlForm.class;
+      %Inline.extra;"
+>
+
+<!-- %NoRuby.content; includes all inlines except ruby
+-->
+<!ENTITY % NoRuby.content
+     "( #PCDATA
+      | %InlNoRuby.class;
+      %Misc.class; )*"
+>
+
+<!-- %InlNoAnchor.class; includes all non-anchor inlines,
+     used as a component in mixes
+-->
+<!ENTITY % InlNoAnchor.class
+     "%InlStruct.class;
+      %InlPhras.class;
+      %InlPres.class;
+      %I18n.class;
+      %InlSpecial.class;
+      %InlForm.class;
+      %Ruby.class;
+      %Inline.extra;"
+>
+
+<!-- %InlNoAnchor.mix; includes all non-anchor inlines
+-->
+<!ENTITY % InlNoAnchor.mix
+     "%InlNoAnchor.class;
+      %Misc.class;"
+>
+
+<!-- %Inline.mix; includes all inline elements, including %Misc.class;
+-->
+<!ENTITY % Inline.mix
+     "%Inline.class;
+      %Misc.class;"
+>
+
+<!-- .....................  Block Elements  ...................... -->
+
+<!-- In the HTML 4.0 DTD, heading and list elements were included
+     in the %block; parameter entity. The %Heading.class; and
+     %List.class; parameter entities must now be included explicitly
+     on element declarations where desired.
+-->
+
+<!ENTITY % Heading.class
+     "%h1.qname; | %h2.qname; | %h3.qname;
+      | %h4.qname; | %h5.qname; | %h6.qname;" >
+
+<!ENTITY % List.class "%ul.qname; | %ol.qname; | %dl.qname;" >
+
+<!ENTITY % Table.class "| %table.qname;" >
+
+<!ENTITY % Form.class  "| %form.qname;" >
+
+<!ENTITY % Fieldset.class  "| %fieldset.qname;" >
+
+<!ENTITY % BlkStruct.class "%p.qname; | %div.qname;" >
+
+<!ENTITY % BlkPhras.class
+     "| %pre.qname; | %blockquote.qname; | %address.qname;" >
+
+<!ENTITY % BlkPres.class "| %hr.qname;" >
+
+<!ENTITY % BlkSpecial.class
+     "%Table.class;
+      %Form.class;
+      %Fieldset.class;"
+>
+
+<!ENTITY % Block.extra "" >
+
+<!-- %Block.class; includes all block elements,
+     used as an component in mixes
+-->
+<!ENTITY % Block.class
+     "%BlkStruct.class;
+      %BlkPhras.class;
+      %BlkPres.class;
+      %BlkSpecial.class;
+      %Block.extra;"
+>
+
+<!-- %Block.mix; includes all block elements plus %Misc.class;
+-->
+<!ENTITY % Block.mix
+     "%Heading.class;
+      | %List.class;
+      | %Block.class;
+      %Misc.class;"
+>
+
+<!-- ................  All Content Elements  .................. -->
+
+<!-- %Flow.mix; includes all text content, block and inline
+-->
+<!ENTITY % Flow.mix
+     "%Heading.class;
+      | %List.class;
+      | %Block.class;
+      | %Inline.class;
+      %Misc.class;"
+>
+
+<!-- end of xhtml11-model-1.mod -->
+]]>
+
+<!ENTITY % xhtml-charent.module "INCLUDE" >
+<![%xhtml-charent.module;[
+<!ENTITY % xhtml-charent.mod
+     PUBLIC "-//W3C//ENTITIES XHTML Character Entities 1.0//EN"
+            "xhtml-charent-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Character Entities Module  ......................................... -->
+<!-- file: xhtml-charent-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ENTITIES XHTML Character Entities 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-charent-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Character Entities for XHTML
+
+     This module declares the set of character entities for XHTML,
+     including the Latin 1, Symbol and Special character collections.
+-->
+
+<!ENTITY % xhtml-lat1
+    PUBLIC "-//W3C//ENTITIES Latin 1 for XHTML//EN"
+           "xhtml-lat1.ent" >
+<!-- Portions (C) International Organization for Standardization 1986
+     Permission to copy in any form is granted for use with
+     conforming SGML systems and applications as defined in
+     ISO 8879, provided this notice is included in all copies.
+-->
+<!-- Character entity set. Typical invocation:
+    <!ENTITY % HTMLlat1 PUBLIC
+       "-//W3C//ENTITIES Latin 1 for XHTML//EN"
+       "http://www.w3.org/TR/xhtml1/DTD/xhtml-lat1.ent">
+    %HTMLlat1;
+-->
+
+<!ENTITY nbsp   "&#160;"> <!-- no-break space = non-breaking space,
+                                  U+00A0 ISOnum -->
+<!ENTITY iexcl  "&#161;"> <!-- inverted exclamation mark, U+00A1 ISOnum -->
+<!ENTITY cent   "&#162;"> <!-- cent sign, U+00A2 ISOnum -->
+<!ENTITY pound  "&#163;"> <!-- pound sign, U+00A3 ISOnum -->
+<!ENTITY curren "&#164;"> <!-- currency sign, U+00A4 ISOnum -->
+<!ENTITY yen    "&#165;"> <!-- yen sign = yuan sign, U+00A5 ISOnum -->
+<!ENTITY brvbar "&#166;"> <!-- broken bar = broken vertical bar,
+                                  U+00A6 ISOnum -->
+<!ENTITY sect   "&#167;"> <!-- section sign, U+00A7 ISOnum -->
+<!ENTITY uml    "&#168;"> <!-- diaeresis = spacing diaeresis,
+                                  U+00A8 ISOdia -->
+<!ENTITY copy   "&#169;"> <!-- copyright sign, U+00A9 ISOnum -->
+<!ENTITY ordf   "&#170;"> <!-- feminine ordinal indicator, U+00AA ISOnum -->
+<!ENTITY laquo  "&#171;"> <!-- left-pointing double angle quotation mark
+                                  = left pointing guillemet, U+00AB ISOnum -->
+<!ENTITY not    "&#172;"> <!-- not sign = discretionary hyphen,
+                                  U+00AC ISOnum -->
+<!ENTITY shy    "&#173;"> <!-- soft hyphen = discretionary hyphen,
+                                  U+00AD ISOnum -->
+<!ENTITY reg    "&#174;"> <!-- registered sign = registered trade mark sign,
+                                  U+00AE ISOnum -->
+<!ENTITY macr   "&#175;"> <!-- macron = spacing macron = overline
+                                  = APL overbar, U+00AF ISOdia -->
+<!ENTITY deg    "&#176;"> <!-- degree sign, U+00B0 ISOnum -->
+<!ENTITY plusmn "&#177;"> <!-- plus-minus sign = plus-or-minus sign,
+                                  U+00B1 ISOnum -->
+<!ENTITY sup2   "&#178;"> <!-- superscript two = superscript digit two
+                                  = squared, U+00B2 ISOnum -->
+<!ENTITY sup3   "&#179;"> <!-- superscript three = superscript digit three
+                                  = cubed, U+00B3 ISOnum -->
+<!ENTITY acute  "&#180;"> <!-- acute accent = spacing acute,
+                                  U+00B4 ISOdia -->
+<!ENTITY micro  "&#181;"> <!-- micro sign, U+00B5 ISOnum -->
+<!ENTITY para   "&#182;"> <!-- pilcrow sign = paragraph sign,
+                                  U+00B6 ISOnum -->
+<!ENTITY middot "&#183;"> <!-- middle dot = Georgian comma
+                                  = Greek middle dot, U+00B7 ISOnum -->
+<!ENTITY cedil  "&#184;"> <!-- cedilla = spacing cedilla, U+00B8 ISOdia -->
+<!ENTITY sup1   "&#185;"> <!-- superscript one = superscript digit one,
+                                  U+00B9 ISOnum -->
+<!ENTITY ordm   "&#186;"> <!-- masculine ordinal indicator,
+                                  U+00BA ISOnum -->
+<!ENTITY raquo  "&#187;"> <!-- right-pointing double angle quotation mark
+                                  = right pointing guillemet, U+00BB ISOnum -->
+<!ENTITY frac14 "&#188;"> <!-- vulgar fraction one quarter
+                                  = fraction one quarter, U+00BC ISOnum -->
+<!ENTITY frac12 "&#189;"> <!-- vulgar fraction one half
+                                  = fraction one half, U+00BD ISOnum -->
+<!ENTITY frac34 "&#190;"> <!-- vulgar fraction three quarters
+                                  = fraction three quarters, U+00BE ISOnum -->
+<!ENTITY iquest "&#191;"> <!-- inverted question mark
+                                  = turned question mark, U+00BF ISOnum -->
+<!ENTITY Agrave "&#192;"> <!-- latin capital letter A with grave
+                                  = latin capital letter A grave,
+                                  U+00C0 ISOlat1 -->
+<!ENTITY Aacute "&#193;"> <!-- latin capital letter A with acute,
+                                  U+00C1 ISOlat1 -->
+<!ENTITY Acirc  "&#194;"> <!-- latin capital letter A with circumflex,
+                                  U+00C2 ISOlat1 -->
+<!ENTITY Atilde "&#195;"> <!-- latin capital letter A with tilde,
+                                  U+00C3 ISOlat1 -->
+<!ENTITY Auml   "&#196;"> <!-- latin capital letter A with diaeresis,
+                                  U+00C4 ISOlat1 -->
+<!ENTITY Aring  "&#197;"> <!-- latin capital letter A with ring above
+                                  = latin capital letter A ring,
+                                  U+00C5 ISOlat1 -->
+<!ENTITY AElig  "&#198;"> <!-- latin capital letter AE
+                                  = latin capital ligature AE,
+                                  U+00C6 ISOlat1 -->
+<!ENTITY Ccedil "&#199;"> <!-- latin capital letter C with cedilla,
+                                  U+00C7 ISOlat1 -->
+<!ENTITY Egrave "&#200;"> <!-- latin capital letter E with grave,
+                                  U+00C8 ISOlat1 -->
+<!ENTITY Eacute "&#201;"> <!-- latin capital letter E with acute,
+                                  U+00C9 ISOlat1 -->
+<!ENTITY Ecirc  "&#202;"> <!-- latin capital letter E with circumflex,
+                                  U+00CA ISOlat1 -->
+<!ENTITY Euml   "&#203;"> <!-- latin capital letter E with diaeresis,
+                                  U+00CB ISOlat1 -->
+<!ENTITY Igrave "&#204;"> <!-- latin capital letter I with grave,
+                                  U+00CC ISOlat1 -->
+<!ENTITY Iacute "&#205;"> <!-- latin capital letter I with acute,
+                                  U+00CD ISOlat1 -->
+<!ENTITY Icirc  "&#206;"> <!-- latin capital letter I with circumflex,
+                                  U+00CE ISOlat1 -->
+<!ENTITY Iuml   "&#207;"> <!-- latin capital letter I with diaeresis,
+                                  U+00CF ISOlat1 -->
+<!ENTITY ETH    "&#208;"> <!-- latin capital letter ETH, U+00D0 ISOlat1 -->
+<!ENTITY Ntilde "&#209;"> <!-- latin capital letter N with tilde,
+                                  U+00D1 ISOlat1 -->
+<!ENTITY Ograve "&#210;"> <!-- latin capital letter O with grave,
+                                  U+00D2 ISOlat1 -->
+<!ENTITY Oacute "&#211;"> <!-- latin capital letter O with acute,
+                                  U+00D3 ISOlat1 -->
+<!ENTITY Ocirc  "&#212;"> <!-- latin capital letter O with circumflex,
+                                  U+00D4 ISOlat1 -->
+<!ENTITY Otilde "&#213;"> <!-- latin capital letter O with tilde,
+                                  U+00D5 ISOlat1 -->
+<!ENTITY Ouml   "&#214;"> <!-- latin capital letter O with diaeresis,
+                                  U+00D6 ISOlat1 -->
+<!ENTITY times  "&#215;"> <!-- multiplication sign, U+00D7 ISOnum -->
+<!ENTITY Oslash "&#216;"> <!-- latin capital letter O with stroke
+                                  = latin capital letter O slash,
+                                  U+00D8 ISOlat1 -->
+<!ENTITY Ugrave "&#217;"> <!-- latin capital letter U with grave,
+                                  U+00D9 ISOlat1 -->
+<!ENTITY Uacute "&#218;"> <!-- latin capital letter U with acute,
+                                  U+00DA ISOlat1 -->
+<!ENTITY Ucirc  "&#219;"> <!-- latin capital letter U with circumflex,
+                                  U+00DB ISOlat1 -->
+<!ENTITY Uuml   "&#220;"> <!-- latin capital letter U with diaeresis,
+                                  U+00DC ISOlat1 -->
+<!ENTITY Yacute "&#221;"> <!-- latin capital letter Y with acute,
+                                  U+00DD ISOlat1 -->
+<!ENTITY THORN  "&#222;"> <!-- latin capital letter THORN,
+                                  U+00DE ISOlat1 -->
+<!ENTITY szlig  "&#223;"> <!-- latin small letter sharp s = ess-zed,
+                                  U+00DF ISOlat1 -->
+<!ENTITY agrave "&#224;"> <!-- latin small letter a with grave
+                                  = latin small letter a grave,
+                                  U+00E0 ISOlat1 -->
+<!ENTITY aacute "&#225;"> <!-- latin small letter a with acute,
+                                  U+00E1 ISOlat1 -->
+<!ENTITY acirc  "&#226;"> <!-- latin small letter a with circumflex,
+                                  U+00E2 ISOlat1 -->
+<!ENTITY atilde "&#227;"> <!-- latin small letter a with tilde,
+                                  U+00E3 ISOlat1 -->
+<!ENTITY auml   "&#228;"> <!-- latin small letter a with diaeresis,
+                                  U+00E4 ISOlat1 -->
+<!ENTITY aring  "&#229;"> <!-- latin small letter a with ring above
+                                  = latin small letter a ring,
+                                  U+00E5 ISOlat1 -->
+<!ENTITY aelig  "&#230;"> <!-- latin small letter ae
+                                  = latin small ligature ae, U+00E6 ISOlat1 -->
+<!ENTITY ccedil "&#231;"> <!-- latin small letter c with cedilla,
+                                  U+00E7 ISOlat1 -->
+<!ENTITY egrave "&#232;"> <!-- latin small letter e with grave,
+                                  U+00E8 ISOlat1 -->
+<!ENTITY eacute "&#233;"> <!-- latin small letter e with acute,
+                                  U+00E9 ISOlat1 -->
+<!ENTITY ecirc  "&#234;"> <!-- latin small letter e with circumflex,
+                                  U+00EA ISOlat1 -->
+<!ENTITY euml   "&#235;"> <!-- latin small letter e with diaeresis,
+                                  U+00EB ISOlat1 -->
+<!ENTITY igrave "&#236;"> <!-- latin small letter i with grave,
+                                  U+00EC ISOlat1 -->
+<!ENTITY iacute "&#237;"> <!-- latin small letter i with acute,
+                                  U+00ED ISOlat1 -->
+<!ENTITY icirc  "&#238;"> <!-- latin small letter i with circumflex,
+                                  U+00EE ISOlat1 -->
+<!ENTITY iuml   "&#239;"> <!-- latin small letter i with diaeresis,
+                                  U+00EF ISOlat1 -->
+<!ENTITY eth    "&#240;"> <!-- latin small letter eth, U+00F0 ISOlat1 -->
+<!ENTITY ntilde "&#241;"> <!-- latin small letter n with tilde,
+                                  U+00F1 ISOlat1 -->
+<!ENTITY ograve "&#242;"> <!-- latin small letter o with grave,
+                                  U+00F2 ISOlat1 -->
+<!ENTITY oacute "&#243;"> <!-- latin small letter o with acute,
+                                  U+00F3 ISOlat1 -->
+<!ENTITY ocirc  "&#244;"> <!-- latin small letter o with circumflex,
+                                  U+00F4 ISOlat1 -->
+<!ENTITY otilde "&#245;"> <!-- latin small letter o with tilde,
+                                  U+00F5 ISOlat1 -->
+<!ENTITY ouml   "&#246;"> <!-- latin small letter o with diaeresis,
+                                  U+00F6 ISOlat1 -->
+<!ENTITY divide "&#247;"> <!-- division sign, U+00F7 ISOnum -->
+<!ENTITY oslash "&#248;"> <!-- latin small letter o with stroke,
+                                  = latin small letter o slash,
+                                  U+00F8 ISOlat1 -->
+<!ENTITY ugrave "&#249;"> <!-- latin small letter u with grave,
+                                  U+00F9 ISOlat1 -->
+<!ENTITY uacute "&#250;"> <!-- latin small letter u with acute,
+                                  U+00FA ISOlat1 -->
+<!ENTITY ucirc  "&#251;"> <!-- latin small letter u with circumflex,
+                                  U+00FB ISOlat1 -->
+<!ENTITY uuml   "&#252;"> <!-- latin small letter u with diaeresis,
+                                  U+00FC ISOlat1 -->
+<!ENTITY yacute "&#253;"> <!-- latin small letter y with acute,
+                                  U+00FD ISOlat1 -->
+<!ENTITY thorn  "&#254;"> <!-- latin small letter thorn with,
+                                  U+00FE ISOlat1 -->
+<!ENTITY yuml   "&#255;"> <!-- latin small letter y with diaeresis,
+                                  U+00FF ISOlat1 -->
+
+
+<!ENTITY % xhtml-symbol
+    PUBLIC "-//W3C//ENTITIES Symbols for XHTML//EN"
+           "xhtml-symbol.ent" >
+<!-- Mathematical, Greek and Symbolic characters for HTML -->
+
+<!-- Character entity set. Typical invocation:
+     <!ENTITY % HTMLsymbol PUBLIC
+        "-//W3C//ENTITIES Symbols for XHTML//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml-symbol.ent">
+     %HTMLsymbol;
+-->
+
+<!-- Portions (C) International Organization for Standardization 1986:
+     Permission to copy in any form is granted for use with
+     conforming SGML systems and applications as defined in
+     ISO 8879, provided this notice is included in all copies.
+-->
+
+<!-- Relevant ISO entity set is given unless names are newly introduced.
+     New names (i.e., not in ISO 8879 list) do not clash with any
+     existing ISO 8879 entity names. ISO 10646 character numbers
+     are given for each character, in hex. values are decimal
+     conversions of the ISO 10646 values and refer to the document
+     character set. Names are Unicode names. 
+-->
+
+<!-- Latin Extended-B -->
+<!ENTITY fnof     "&#402;"> <!-- latin small f with hook = function
+                                    = florin, U+0192 ISOtech -->
+
+<!-- Greek -->
+<!ENTITY Alpha    "&#913;"> <!-- greek capital letter alpha, U+0391 -->
+<!ENTITY Beta     "&#914;"> <!-- greek capital letter beta, U+0392 -->
+<!ENTITY Gamma    "&#915;"> <!-- greek capital letter gamma,
+                                    U+0393 ISOgrk3 -->
+<!ENTITY Delta    "&#916;"> <!-- greek capital letter delta,
+                                    U+0394 ISOgrk3 -->
+<!ENTITY Epsilon  "&#917;"> <!-- greek capital letter epsilon, U+0395 -->
+<!ENTITY Zeta     "&#918;"> <!-- greek capital letter zeta, U+0396 -->
+<!ENTITY Eta      "&#919;"> <!-- greek capital letter eta, U+0397 -->
+<!ENTITY Theta    "&#920;"> <!-- greek capital letter theta,
+                                    U+0398 ISOgrk3 -->
+<!ENTITY Iota     "&#921;"> <!-- greek capital letter iota, U+0399 -->
+<!ENTITY Kappa    "&#922;"> <!-- greek capital letter kappa, U+039A -->
+<!ENTITY Lambda   "&#923;"> <!-- greek capital letter lambda,
+                                    U+039B ISOgrk3 -->
+<!ENTITY Mu       "&#924;"> <!-- greek capital letter mu, U+039C -->
+<!ENTITY Nu       "&#925;"> <!-- greek capital letter nu, U+039D -->
+<!ENTITY Xi       "&#926;"> <!-- greek capital letter xi, U+039E ISOgrk3 -->
+<!ENTITY Omicron  "&#927;"> <!-- greek capital letter omicron, U+039F -->
+<!ENTITY Pi       "&#928;"> <!-- greek capital letter pi, U+03A0 ISOgrk3 -->
+<!ENTITY Rho      "&#929;"> <!-- greek capital letter rho, U+03A1 -->
+<!-- there is no Sigmaf, and no U+03A2 character either -->
+<!ENTITY Sigma    "&#931;"> <!-- greek capital letter sigma,
+                                    U+03A3 ISOgrk3 -->
+<!ENTITY Tau      "&#932;"> <!-- greek capital letter tau, U+03A4 -->
+<!ENTITY Upsilon  "&#933;"> <!-- greek capital letter upsilon,
+                                    U+03A5 ISOgrk3 -->
+<!ENTITY Phi      "&#934;"> <!-- greek capital letter phi,
+                                    U+03A6 ISOgrk3 -->
+<!ENTITY Chi      "&#935;"> <!-- greek capital letter chi, U+03A7 -->
+<!ENTITY Psi      "&#936;"> <!-- greek capital letter psi,
+                                    U+03A8 ISOgrk3 -->
+<!ENTITY Omega    "&#937;"> <!-- greek capital letter omega,
+                                    U+03A9 ISOgrk3 -->
+
+<!ENTITY alpha    "&#945;"> <!-- greek small letter alpha,
+                                    U+03B1 ISOgrk3 -->
+<!ENTITY beta     "&#946;"> <!-- greek small letter beta, U+03B2 ISOgrk3 -->
+<!ENTITY gamma    "&#947;"> <!-- greek small letter gamma,
+                                    U+03B3 ISOgrk3 -->
+<!ENTITY delta    "&#948;"> <!-- greek small letter delta,
+                                    U+03B4 ISOgrk3 -->
+<!ENTITY epsilon  "&#949;"> <!-- greek small letter epsilon,
+                                    U+03B5 ISOgrk3 -->
+<!ENTITY zeta     "&#950;"> <!-- greek small letter zeta, U+03B6 ISOgrk3 -->
+<!ENTITY eta      "&#951;"> <!-- greek small letter eta, U+03B7 ISOgrk3 -->
+<!ENTITY theta    "&#952;"> <!-- greek small letter theta,
+                                    U+03B8 ISOgrk3 -->
+<!ENTITY iota     "&#953;"> <!-- greek small letter iota, U+03B9 ISOgrk3 -->
+<!ENTITY kappa    "&#954;"> <!-- greek small letter kappa,
+                                    U+03BA ISOgrk3 -->
+<!ENTITY lambda   "&#955;"> <!-- greek small letter lambda,
+                                    U+03BB ISOgrk3 -->
+<!ENTITY mu       "&#956;"> <!-- greek small letter mu, U+03BC ISOgrk3 -->
+<!ENTITY nu       "&#957;"> <!-- greek small letter nu, U+03BD ISOgrk3 -->
+<!ENTITY xi       "&#958;"> <!-- greek small letter xi, U+03BE ISOgrk3 -->
+<!ENTITY omicron  "&#959;"> <!-- greek small letter omicron, U+03BF NEW -->
+<!ENTITY pi       "&#960;"> <!-- greek small letter pi, U+03C0 ISOgrk3 -->
+<!ENTITY rho      "&#961;"> <!-- greek small letter rho, U+03C1 ISOgrk3 -->
+<!ENTITY sigmaf   "&#962;"> <!-- greek small letter final sigma,
+                                    U+03C2 ISOgrk3 -->
+<!ENTITY sigma    "&#963;"> <!-- greek small letter sigma,
+                                    U+03C3 ISOgrk3 -->
+<!ENTITY tau      "&#964;"> <!-- greek small letter tau, U+03C4 ISOgrk3 -->
+<!ENTITY upsilon  "&#965;"> <!-- greek small letter upsilon,
+                                    U+03C5 ISOgrk3 -->
+<!ENTITY phi      "&#966;"> <!-- greek small letter phi, U+03C6 ISOgrk3 -->
+<!ENTITY chi      "&#967;"> <!-- greek small letter chi, U+03C7 ISOgrk3 -->
+<!ENTITY psi      "&#968;"> <!-- greek small letter psi, U+03C8 ISOgrk3 -->
+<!ENTITY omega    "&#969;"> <!-- greek small letter omega,
+                                    U+03C9 ISOgrk3 -->
+<!ENTITY thetasym "&#977;"> <!-- greek small letter theta symbol,
+                                    U+03D1 NEW -->
+<!ENTITY upsih    "&#978;"> <!-- greek upsilon with hook symbol,
+                                    U+03D2 NEW -->
+<!ENTITY piv      "&#982;"> <!-- greek pi symbol, U+03D6 ISOgrk3 -->
+
+<!-- General Punctuation -->
+<!ENTITY bull     "&#8226;"> <!-- bullet = black small circle,
+                                     U+2022 ISOpub  -->
+<!-- bullet is NOT the same as bullet operator, U+2219 -->
+<!ENTITY hellip   "&#8230;"> <!-- horizontal ellipsis = three dot leader,
+                                     U+2026 ISOpub  -->
+<!ENTITY prime    "&#8242;"> <!-- prime = minutes = feet, U+2032 ISOtech -->
+<!ENTITY Prime    "&#8243;"> <!-- double prime = seconds = inches,
+                                     U+2033 ISOtech -->
+<!ENTITY oline    "&#8254;"> <!-- overline = spacing overscore,
+                                     U+203E NEW -->
+<!ENTITY frasl    "&#8260;"> <!-- fraction slash, U+2044 NEW -->
+
+<!-- Letterlike Symbols -->
+<!ENTITY weierp   "&#8472;"> <!-- script capital P = power set
+                                     = Weierstrass p, U+2118 ISOamso -->
+<!ENTITY image    "&#8465;"> <!-- blackletter capital I = imaginary part,
+                                     U+2111 ISOamso -->
+<!ENTITY real     "&#8476;"> <!-- blackletter capital R = real part symbol,
+                                     U+211C ISOamso -->
+<!ENTITY trade    "&#8482;"> <!-- trade mark sign, U+2122 ISOnum -->
+<!ENTITY alefsym  "&#8501;"> <!-- alef symbol = first transfinite cardinal,
+                                     U+2135 NEW -->
+<!-- alef symbol is NOT the same as hebrew letter alef,
+     U+05D0 although the same glyph could be used to depict both characters -->
+
+<!-- Arrows -->
+<!ENTITY larr     "&#8592;"> <!-- leftwards arrow, U+2190 ISOnum -->
+<!ENTITY uarr     "&#8593;"> <!-- upwards arrow, U+2191 ISOnum-->
+<!ENTITY rarr     "&#8594;"> <!-- rightwards arrow, U+2192 ISOnum -->
+<!ENTITY darr     "&#8595;"> <!-- downwards arrow, U+2193 ISOnum -->
+<!ENTITY harr     "&#8596;"> <!-- left right arrow, U+2194 ISOamsa -->
+<!ENTITY crarr    "&#8629;"> <!-- downwards arrow with corner leftwards
+                                     = carriage return, U+21B5 NEW -->
+<!ENTITY lArr     "&#8656;"> <!-- leftwards double arrow, U+21D0 ISOtech -->
+<!-- Unicode does not say that lArr is the same as the 'is implied by' arrow
+    but also does not have any other character for that function. So ? lArr can
+    be used for 'is implied by' as ISOtech suggests -->
+<!ENTITY uArr     "&#8657;"> <!-- upwards double arrow, U+21D1 ISOamsa -->
+<!ENTITY rArr     "&#8658;"> <!-- rightwards double arrow,
+                                     U+21D2 ISOtech -->
+<!-- Unicode does not say this is the 'implies' character but does not have 
+     another character with this function so ?
+     rArr can be used for 'implies' as ISOtech suggests -->
+<!ENTITY dArr     "&#8659;"> <!-- downwards double arrow, U+21D3 ISOamsa -->
+<!ENTITY hArr     "&#8660;"> <!-- left right double arrow,
+                                     U+21D4 ISOamsa -->
+
+<!-- Mathematical Operators -->
+<!ENTITY forall   "&#8704;"> <!-- for all, U+2200 ISOtech -->
+<!ENTITY part     "&#8706;"> <!-- partial differential, U+2202 ISOtech  -->
+<!ENTITY exist    "&#8707;"> <!-- there exists, U+2203 ISOtech -->
+<!ENTITY empty    "&#8709;"> <!-- empty set = null set = diameter,
+                                     U+2205 ISOamso -->
+<!ENTITY nabla    "&#8711;"> <!-- nabla = backward difference,
+                                     U+2207 ISOtech -->
+<!ENTITY isin     "&#8712;"> <!-- element of, U+2208 ISOtech -->
+<!ENTITY notin    "&#8713;"> <!-- not an element of, U+2209 ISOtech -->
+<!ENTITY ni       "&#8715;"> <!-- contains as member, U+220B ISOtech -->
+<!-- should there be a more memorable name than 'ni'? -->
+<!ENTITY prod     "&#8719;"> <!-- n-ary product = product sign,
+                                     U+220F ISOamsb -->
+<!-- prod is NOT the same character as U+03A0 'greek capital letter pi' though
+     the same glyph might be used for both -->
+<!ENTITY sum      "&#8721;"> <!-- n-ary sumation, U+2211 ISOamsb -->
+<!-- sum is NOT the same character as U+03A3 'greek capital letter sigma'
+     though the same glyph might be used for both -->
+<!ENTITY minus    "&#8722;"> <!-- minus sign, U+2212 ISOtech -->
+<!ENTITY lowast   "&#8727;"> <!-- asterisk operator, U+2217 ISOtech -->
+<!ENTITY radic    "&#8730;"> <!-- square root = radical sign,
+                                     U+221A ISOtech -->
+<!ENTITY prop     "&#8733;"> <!-- proportional to, U+221D ISOtech -->
+<!ENTITY infin    "&#8734;"> <!-- infinity, U+221E ISOtech -->
+<!ENTITY ang      "&#8736;"> <!-- angle, U+2220 ISOamso -->
+<!ENTITY and      "&#8743;"> <!-- logical and = wedge, U+2227 ISOtech -->
+<!ENTITY or       "&#8744;"> <!-- logical or = vee, U+2228 ISOtech -->
+<!ENTITY cap      "&#8745;"> <!-- intersection = cap, U+2229 ISOtech -->
+<!ENTITY cup      "&#8746;"> <!-- union = cup, U+222A ISOtech -->
+<!ENTITY int      "&#8747;"> <!-- integral, U+222B ISOtech -->
+<!ENTITY there4   "&#8756;"> <!-- therefore, U+2234 ISOtech -->
+<!ENTITY sim      "&#8764;"> <!-- tilde operator = varies with = similar to,
+                                     U+223C ISOtech -->
+<!-- tilde operator is NOT the same character as the tilde, U+007E,
+     although the same glyph might be used to represent both  -->
+<!ENTITY cong     "&#8773;"> <!-- approximately equal to, U+2245 ISOtech -->
+<!ENTITY asymp    "&#8776;"> <!-- almost equal to = asymptotic to,
+                                     U+2248 ISOamsr -->
+<!ENTITY ne       "&#8800;"> <!-- not equal to, U+2260 ISOtech -->
+<!ENTITY equiv    "&#8801;"> <!-- identical to, U+2261 ISOtech -->
+<!ENTITY le       "&#8804;"> <!-- less-than or equal to, U+2264 ISOtech -->
+<!ENTITY ge       "&#8805;"> <!-- greater-than or equal to,
+                                     U+2265 ISOtech -->
+<!ENTITY sub      "&#8834;"> <!-- subset of, U+2282 ISOtech -->
+<!ENTITY sup      "&#8835;"> <!-- superset of, U+2283 ISOtech -->
+<!-- note that nsup, 'not a superset of, U+2283' is not covered by the Symbol 
+     font encoding and is not included. Should it be, for symmetry?
+     It is in ISOamsn  --> 
+<!ENTITY nsub     "&#8836;"> <!-- not a subset of, U+2284 ISOamsn -->
+<!ENTITY sube     "&#8838;"> <!-- subset of or equal to, U+2286 ISOtech -->
+<!ENTITY supe     "&#8839;"> <!-- superset of or equal to,
+                                     U+2287 ISOtech -->
+<!ENTITY oplus    "&#8853;"> <!-- circled plus = direct sum,
+                                     U+2295 ISOamsb -->
+<!ENTITY otimes   "&#8855;"> <!-- circled times = vector product,
+                                     U+2297 ISOamsb -->
+<!ENTITY perp     "&#8869;"> <!-- up tack = orthogonal to = perpendicular,
+                                     U+22A5 ISOtech -->
+<!ENTITY sdot     "&#8901;"> <!-- dot operator, U+22C5 ISOamsb -->
+<!-- dot operator is NOT the same character as U+00B7 middle dot -->
+
+<!-- Miscellaneous Technical -->
+<!ENTITY lceil    "&#8968;"> <!-- left ceiling = apl upstile,
+                                     U+2308 ISOamsc  -->
+<!ENTITY rceil    "&#8969;"> <!-- right ceiling, U+2309 ISOamsc  -->
+<!ENTITY lfloor   "&#8970;"> <!-- left floor = apl downstile,
+                                     U+230A ISOamsc  -->
+<!ENTITY rfloor   "&#8971;"> <!-- right floor, U+230B ISOamsc  -->
+<!ENTITY lang     "&#9001;"> <!-- left-pointing angle bracket = bra,
+                                     U+2329 ISOtech -->
+<!-- lang is NOT the same character as U+003C 'less than' 
+     or U+2039 'single left-pointing angle quotation mark' -->
+<!ENTITY rang     "&#9002;"> <!-- right-pointing angle bracket = ket,
+                                     U+232A ISOtech -->
+<!-- rang is NOT the same character as U+003E 'greater than' 
+     or U+203A 'single right-pointing angle quotation mark' -->
+
+<!-- Geometric Shapes -->
+<!ENTITY loz      "&#9674;"> <!-- lozenge, U+25CA ISOpub -->
+
+<!-- Miscellaneous Symbols -->
+<!ENTITY spades   "&#9824;"> <!-- black spade suit, U+2660 ISOpub -->
+<!-- black here seems to mean filled as opposed to hollow -->
+<!ENTITY clubs    "&#9827;"> <!-- black club suit = shamrock,
+                                     U+2663 ISOpub -->
+<!ENTITY hearts   "&#9829;"> <!-- black heart suit = valentine,
+                                     U+2665 ISOpub -->
+<!ENTITY diams    "&#9830;"> <!-- black diamond suit, U+2666 ISOpub -->
+
+
+<!ENTITY % xhtml-special
+    PUBLIC "-//W3C//ENTITIES Special for XHTML//EN"
+           "xhtml-special.ent" >
+<!-- Special characters for HTML -->
+
+<!-- Character entity set. Typical invocation:
+     <!ENTITY % HTMLspecial PUBLIC
+        "-//W3C//ENTITIES Special for XHTML//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml-special.ent">
+     %HTMLspecial;
+-->
+
+<!-- Portions (C) International Organization for Standardization 1986:
+     Permission to copy in any form is granted for use with
+     conforming SGML systems and applications as defined in
+     ISO 8879, provided this notice is included in all copies.
+-->
+
+<!-- Relevant ISO entity set is given unless names are newly introduced.
+     New names (i.e., not in ISO 8879 list) do not clash with any
+     existing ISO 8879 entity names. ISO 10646 character numbers
+     are given for each character, in hex. values are decimal
+     conversions of the ISO 10646 values and refer to the document
+     character set. Names are Unicode names. 
+-->
+
+<!-- C0 Controls and Basic Latin -->
+<!ENTITY quot    "&#34;"> <!--  quotation mark = APL quote,
+                                    U+0022 ISOnum -->
+<!ENTITY amp     "&#38;#38;"> <!--  ampersand, U+0026 ISOnum -->
+<!ENTITY lt      "&#38;#60;"> <!--  less-than sign, U+003C ISOnum -->
+<!ENTITY gt      "&#62;"> <!--  greater-than sign, U+003E ISOnum -->
+<!ENTITY apos	 "&#39;"> <!--  apostrophe mark, U+0027 ISOnum -->
+
+<!-- Latin Extended-A -->
+<!ENTITY OElig   "&#338;"> <!--  latin capital ligature OE,
+                                    U+0152 ISOlat2 -->
+<!ENTITY oelig   "&#339;"> <!--  latin small ligature oe, U+0153 ISOlat2 -->
+<!-- ligature is a misnomer, this is a separate character in some languages -->
+<!ENTITY Scaron  "&#352;"> <!--  latin capital letter S with caron,
+                                    U+0160 ISOlat2 -->
+<!ENTITY scaron  "&#353;"> <!--  latin small letter s with caron,
+                                    U+0161 ISOlat2 -->
+<!ENTITY Yuml    "&#376;"> <!--  latin capital letter Y with diaeresis,
+                                    U+0178 ISOlat2 -->
+
+<!-- Spacing Modifier Letters -->
+<!ENTITY circ    "&#710;"> <!--  modifier letter circumflex accent,
+                                    U+02C6 ISOpub -->
+<!ENTITY tilde   "&#732;"> <!--  small tilde, U+02DC ISOdia -->
+
+<!-- General Punctuation -->
+<!ENTITY ensp    "&#8194;"> <!-- en space, U+2002 ISOpub -->
+<!ENTITY emsp    "&#8195;"> <!-- em space, U+2003 ISOpub -->
+<!ENTITY thinsp  "&#8201;"> <!-- thin space, U+2009 ISOpub -->
+<!ENTITY zwnj    "&#8204;"> <!-- zero width non-joiner,
+                                    U+200C NEW RFC 2070 -->
+<!ENTITY zwj     "&#8205;"> <!-- zero width joiner, U+200D NEW RFC 2070 -->
+<!ENTITY lrm     "&#8206;"> <!-- left-to-right mark, U+200E NEW RFC 2070 -->
+<!ENTITY rlm     "&#8207;"> <!-- right-to-left mark, U+200F NEW RFC 2070 -->
+<!ENTITY ndash   "&#8211;"> <!-- en dash, U+2013 ISOpub -->
+<!ENTITY mdash   "&#8212;"> <!-- em dash, U+2014 ISOpub -->
+<!ENTITY lsquo   "&#8216;"> <!-- left single quotation mark,
+                                    U+2018 ISOnum -->
+<!ENTITY rsquo   "&#8217;"> <!-- right single quotation mark,
+                                    U+2019 ISOnum -->
+<!ENTITY sbquo   "&#8218;"> <!-- single low-9 quotation mark, U+201A NEW -->
+<!ENTITY ldquo   "&#8220;"> <!-- left double quotation mark,
+                                    U+201C ISOnum -->
+<!ENTITY rdquo   "&#8221;"> <!-- right double quotation mark,
+                                    U+201D ISOnum -->
+<!ENTITY bdquo   "&#8222;"> <!-- double low-9 quotation mark, U+201E NEW -->
+<!ENTITY dagger  "&#8224;"> <!-- dagger, U+2020 ISOpub -->
+<!ENTITY Dagger  "&#8225;"> <!-- double dagger, U+2021 ISOpub -->
+<!ENTITY permil  "&#8240;"> <!-- per mille sign, U+2030 ISOtech -->
+<!ENTITY lsaquo  "&#8249;"> <!-- single left-pointing angle quotation mark,
+                                    U+2039 ISO proposed -->
+<!-- lsaquo is proposed but not yet ISO standardized -->
+<!ENTITY rsaquo  "&#8250;"> <!-- single right-pointing angle quotation mark,
+                                    U+203A ISO proposed -->
+<!-- rsaquo is proposed but not yet ISO standardized -->
+<!ENTITY euro   "&#8364;"> <!--  euro sign, U+20AC NEW -->
+
+
+<!-- end of xhtml-charent-1.mod -->
+]]>
+
+<!-- end of xhtml-framework-1.mod -->
+]]>
+
+<!-- Post-Framework Redeclaration placeholder  ................... -->
+<!-- this serves as a location to insert markup declarations
+     into the DTD following the framework declarations.
+-->
+<!ENTITY % xhtml-postfw-redecl.module "IGNORE" >
+<![%xhtml-postfw-redecl.module;[
+%xhtml-postfw-redecl.mod;
+<!-- end of xhtml-postfw-redecl.module -->]]>
+
+<!-- Text Module (Required)  ..................................... -->
+<!ENTITY % xhtml-text.module "INCLUDE" >
+<![%xhtml-text.module;[
+<!ENTITY % xhtml-text.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Text 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-text-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Text Module  ................................................... -->
+<!-- file: xhtml-text-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Text 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-text-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Textual Content
+
+     The Text module includes declarations for all core
+     text container elements and their attributes.
+-->
+
+<!ENTITY % xhtml-inlstruct.module "INCLUDE" >
+<![%xhtml-inlstruct.module;[
+<!ENTITY % xhtml-inlstruct.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Inline Structural 1.0//EN"
+            "xhtml-inlstruct-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Inline Structural Module  ...................................... -->
+<!-- file: xhtml-inlstruct-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Inline Structural 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-inlstruct-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Inline Structural
+
+        br, span
+
+     This module declares the elements and their attributes
+     used to support inline-level structural markup.
+-->
+
+<!-- br: forced line break ............................. -->
+
+<!ENTITY % br.element  "INCLUDE" >
+<![%br.element;[
+
+<!ENTITY % br.content  "EMPTY" >
+<!ENTITY % br.qname  "br" >
+<!ELEMENT %br.qname;  %br.content; >
+
+<!-- end of br.element -->]]>
+
+<!ENTITY % br.attlist  "INCLUDE" >
+<![%br.attlist;[
+<!ATTLIST %br.qname;
+      %Core.attrib;
+>
+<!-- end of br.attlist -->]]>
+
+<!-- span: generic inline container .................... -->
+
+<!ENTITY % span.element  "INCLUDE" >
+<![%span.element;[
+<!ENTITY % span.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % span.qname  "span" >
+<!ELEMENT %span.qname;  %span.content; >
+<!-- end of span.element -->]]>
+
+<!ENTITY % span.attlist  "INCLUDE" >
+<![%span.attlist;[
+<!ATTLIST %span.qname;
+      %Common.attrib;
+>
+<!-- end of span.attlist -->]]>
+
+<!-- end of xhtml-inlstruct-1.mod -->
+]]>
+
+<!ENTITY % xhtml-inlphras.module "INCLUDE" >
+<![%xhtml-inlphras.module;[
+<!ENTITY % xhtml-inlphras.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Inline Phrasal 1.0//EN"
+            "xhtml-inlphras-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Inline Phrasal Module  ......................................... -->
+<!-- file: xhtml-inlphras-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Inline Phrasal 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-inlphras-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Inline Phrasal
+
+        abbr, acronym, cite, code, dfn, em, kbd, q, samp, strong, var
+
+     This module declares the elements and their attributes used to
+     support inline-level phrasal markup.
+-->
+
+<!ENTITY % abbr.element  "INCLUDE" >
+<![%abbr.element;[
+<!ENTITY % abbr.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % abbr.qname  "abbr" >
+<!ELEMENT %abbr.qname;  %abbr.content; >
+<!-- end of abbr.element -->]]>
+
+<!ENTITY % abbr.attlist  "INCLUDE" >
+<![%abbr.attlist;[
+<!ATTLIST %abbr.qname;
+      %Common.attrib;
+>
+<!-- end of abbr.attlist -->]]>
+
+<!ENTITY % acronym.element  "INCLUDE" >
+<![%acronym.element;[
+<!ENTITY % acronym.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % acronym.qname  "acronym" >
+<!ELEMENT %acronym.qname;  %acronym.content; >
+<!-- end of acronym.element -->]]>
+
+<!ENTITY % acronym.attlist  "INCLUDE" >
+<![%acronym.attlist;[
+<!ATTLIST %acronym.qname;
+      %Common.attrib;
+>
+<!-- end of acronym.attlist -->]]>
+
+<!ENTITY % cite.element  "INCLUDE" >
+<![%cite.element;[
+<!ENTITY % cite.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % cite.qname  "cite" >
+<!ELEMENT %cite.qname;  %cite.content; >
+<!-- end of cite.element -->]]>
+
+<!ENTITY % cite.attlist  "INCLUDE" >
+<![%cite.attlist;[
+<!ATTLIST %cite.qname;
+      %Common.attrib;
+>
+<!-- end of cite.attlist -->]]>
+
+<!ENTITY % code.element  "INCLUDE" >
+<![%code.element;[
+<!ENTITY % code.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % code.qname  "code" >
+<!ELEMENT %code.qname;  %code.content; >
+<!-- end of code.element -->]]>
+
+<!ENTITY % code.attlist  "INCLUDE" >
+<![%code.attlist;[
+<!ATTLIST %code.qname;
+      %Common.attrib;
+>
+<!-- end of code.attlist -->]]>
+
+<!ENTITY % dfn.element  "INCLUDE" >
+<![%dfn.element;[
+<!ENTITY % dfn.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % dfn.qname  "dfn" >
+<!ELEMENT %dfn.qname;  %dfn.content; >
+<!-- end of dfn.element -->]]>
+
+<!ENTITY % dfn.attlist  "INCLUDE" >
+<![%dfn.attlist;[
+<!ATTLIST %dfn.qname;
+      %Common.attrib;
+>
+<!-- end of dfn.attlist -->]]>
+
+<!ENTITY % em.element  "INCLUDE" >
+<![%em.element;[
+<!ENTITY % em.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % em.qname  "em" >
+<!ELEMENT %em.qname;  %em.content; >
+<!-- end of em.element -->]]>
+
+<!ENTITY % em.attlist  "INCLUDE" >
+<![%em.attlist;[
+<!ATTLIST %em.qname;
+      %Common.attrib;
+>
+<!-- end of em.attlist -->]]>
+
+<!ENTITY % kbd.element  "INCLUDE" >
+<![%kbd.element;[
+<!ENTITY % kbd.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % kbd.qname  "kbd" >
+<!ELEMENT %kbd.qname;  %kbd.content; >
+<!-- end of kbd.element -->]]>
+
+<!ENTITY % kbd.attlist  "INCLUDE" >
+<![%kbd.attlist;[
+<!ATTLIST %kbd.qname;
+      %Common.attrib;
+>
+<!-- end of kbd.attlist -->]]>
+
+<!ENTITY % q.element  "INCLUDE" >
+<![%q.element;[
+<!ENTITY % q.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % q.qname  "q" >
+<!ELEMENT %q.qname;  %q.content; >
+<!-- end of q.element -->]]>
+
+<!ENTITY % q.attlist  "INCLUDE" >
+<![%q.attlist;[
+<!ATTLIST %q.qname;
+      %Common.attrib;
+      cite         %URI.datatype;           #IMPLIED
+>
+<!-- end of q.attlist -->]]>
+
+<!ENTITY % samp.element  "INCLUDE" >
+<![%samp.element;[
+<!ENTITY % samp.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % samp.qname  "samp" >
+<!ELEMENT %samp.qname;  %samp.content; >
+<!-- end of samp.element -->]]>
+
+<!ENTITY % samp.attlist  "INCLUDE" >
+<![%samp.attlist;[
+<!ATTLIST %samp.qname;
+      %Common.attrib;
+>
+<!-- end of samp.attlist -->]]>
+
+<!ENTITY % strong.element  "INCLUDE" >
+<![%strong.element;[
+<!ENTITY % strong.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % strong.qname  "strong" >
+<!ELEMENT %strong.qname;  %strong.content; >
+<!-- end of strong.element -->]]>
+
+<!ENTITY % strong.attlist  "INCLUDE" >
+<![%strong.attlist;[
+<!ATTLIST %strong.qname;
+      %Common.attrib;
+>
+<!-- end of strong.attlist -->]]>
+
+<!ENTITY % var.element  "INCLUDE" >
+<![%var.element;[
+<!ENTITY % var.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % var.qname  "var" >
+<!ELEMENT %var.qname;  %var.content; >
+<!-- end of var.element -->]]>
+
+<!ENTITY % var.attlist  "INCLUDE" >
+<![%var.attlist;[
+<!ATTLIST %var.qname;
+      %Common.attrib;
+>
+<!-- end of var.attlist -->]]>
+
+<!-- end of xhtml-inlphras-1.mod -->
+]]>
+
+<!ENTITY % xhtml-blkstruct.module "INCLUDE" >
+<![%xhtml-blkstruct.module;[
+<!ENTITY % xhtml-blkstruct.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Block Structural 1.0//EN"
+            "xhtml-blkstruct-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Block Structural Module  ....................................... -->
+<!-- file: xhtml-blkstruct-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Block Structural 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-blkstruct-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Block Structural
+
+        div, p
+
+     This module declares the elements and their attributes used to
+     support block-level structural markup.
+-->
+
+<!ENTITY % div.element  "INCLUDE" >
+<![%div.element;[
+<!ENTITY % div.content
+     "( #PCDATA | %Flow.mix; )*"
+>
+<!ENTITY % div.qname  "div" >
+<!ELEMENT %div.qname;  %div.content; >
+<!-- end of div.element -->]]>
+
+<!ENTITY % div.attlist  "INCLUDE" >
+<![%div.attlist;[
+<!ATTLIST %div.qname;
+      %Common.attrib;
+>
+<!-- end of div.attlist -->]]>
+
+<!ENTITY % p.element  "INCLUDE" >
+<![%p.element;[
+<!ENTITY % p.content
+     "( #PCDATA | %Inline.mix; )*" >
+<!ENTITY % p.qname  "p" >
+<!ELEMENT %p.qname;  %p.content; >
+<!-- end of p.element -->]]>
+
+<!ENTITY % p.attlist  "INCLUDE" >
+<![%p.attlist;[
+<!ATTLIST %p.qname;
+      %Common.attrib;
+>
+<!-- end of p.attlist -->]]>
+
+<!-- end of xhtml-blkstruct-1.mod -->
+]]>
+
+<!ENTITY % xhtml-blkphras.module "INCLUDE" >
+<![%xhtml-blkphras.module;[
+<!ENTITY % xhtml-blkphras.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Block Phrasal 1.0//EN"
+            "xhtml-blkphras-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Block Phrasal Module  .......................................... -->
+<!-- file: xhtml-blkphras-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Block Phrasal 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-blkphras-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Block Phrasal
+
+        address, blockquote, pre, h1, h2, h3, h4, h5, h6
+
+     This module declares the elements and their attributes used to
+     support block-level phrasal markup.
+-->
+
+<!ENTITY % address.element  "INCLUDE" >
+<![%address.element;[
+<!ENTITY % address.content
+     "( #PCDATA | %Inline.mix; )*" >
+<!ENTITY % address.qname  "address" >
+<!ELEMENT %address.qname;  %address.content; >
+<!-- end of address.element -->]]>
+
+<!ENTITY % address.attlist  "INCLUDE" >
+<![%address.attlist;[
+<!ATTLIST %address.qname;
+      %Common.attrib;
+>
+<!-- end of address.attlist -->]]>
+
+<!ENTITY % blockquote.element  "INCLUDE" >
+<![%blockquote.element;[
+<!ENTITY % blockquote.content
+     "( %Block.mix; )+"
+>
+<!ENTITY % blockquote.qname  "blockquote" >
+<!ELEMENT %blockquote.qname;  %blockquote.content; >
+<!-- end of blockquote.element -->]]>
+
+<!ENTITY % blockquote.attlist  "INCLUDE" >
+<![%blockquote.attlist;[
+<!ATTLIST %blockquote.qname;
+      %Common.attrib;
+      cite         %URI.datatype;           #IMPLIED
+>
+<!-- end of blockquote.attlist -->]]>
+
+<!ENTITY % pre.element  "INCLUDE" >
+<![%pre.element;[
+<!ENTITY % pre.content
+     "( #PCDATA
+      | %InlStruct.class;
+      %InlPhras.class;
+      | %tt.qname; | %i.qname; | %b.qname;
+      %I18n.class;
+      %Anchor.class;
+      | %script.qname; | %map.qname;
+      %Inline.extra; )*"
+>
+<!ENTITY % pre.qname  "pre" >
+<!ELEMENT %pre.qname;  %pre.content; >
+<!-- end of pre.element -->]]>
+
+<!ENTITY % pre.attlist  "INCLUDE" >
+<![%pre.attlist;[
+<!ATTLIST %pre.qname;
+      %Common.attrib;
+      xml:space    ( preserve )             #FIXED 'preserve'
+>
+<!-- end of pre.attlist -->]]>
+
+<!-- ...................  Heading Elements  ................... -->
+
+<!ENTITY % Heading.content  "( #PCDATA | %Inline.mix; )*" >
+
+<!ENTITY % h1.element  "INCLUDE" >
+<![%h1.element;[
+<!ENTITY % h1.qname  "h1" >
+<!ELEMENT %h1.qname;  %Heading.content; >
+<!-- end of h1.element -->]]>
+
+<!ENTITY % h1.attlist  "INCLUDE" >
+<![%h1.attlist;[
+<!ATTLIST %h1.qname;
+      %Common.attrib;
+>
+<!-- end of h1.attlist -->]]>
+
+<!ENTITY % h2.element  "INCLUDE" >
+<![%h2.element;[
+<!ENTITY % h2.qname  "h2" >
+<!ELEMENT %h2.qname;  %Heading.content; >
+<!-- end of h2.element -->]]>
+
+<!ENTITY % h2.attlist  "INCLUDE" >
+<![%h2.attlist;[
+<!ATTLIST %h2.qname;
+      %Common.attrib;
+>
+<!-- end of h2.attlist -->]]>
+
+<!ENTITY % h3.element  "INCLUDE" >
+<![%h3.element;[
+<!ENTITY % h3.qname  "h3" >
+<!ELEMENT %h3.qname;  %Heading.content; >
+<!-- end of h3.element -->]]>
+
+<!ENTITY % h3.attlist  "INCLUDE" >
+<![%h3.attlist;[
+<!ATTLIST %h3.qname;
+      %Common.attrib;
+>
+<!-- end of h3.attlist -->]]>
+
+<!ENTITY % h4.element  "INCLUDE" >
+<![%h4.element;[
+<!ENTITY % h4.qname  "h4" >
+<!ELEMENT %h4.qname;  %Heading.content; >
+<!-- end of h4.element -->]]>
+
+<!ENTITY % h4.attlist  "INCLUDE" >
+<![%h4.attlist;[
+<!ATTLIST %h4.qname;
+      %Common.attrib;
+>
+<!-- end of h4.attlist -->]]>
+
+<!ENTITY % h5.element  "INCLUDE" >
+<![%h5.element;[
+<!ENTITY % h5.qname  "h5" >
+<!ELEMENT %h5.qname;  %Heading.content; >
+<!-- end of h5.element -->]]>
+
+<!ENTITY % h5.attlist  "INCLUDE" >
+<![%h5.attlist;[
+<!ATTLIST %h5.qname;
+      %Common.attrib;
+>
+<!-- end of h5.attlist -->]]>
+
+<!ENTITY % h6.element  "INCLUDE" >
+<![%h6.element;[
+<!ENTITY % h6.qname  "h6" >
+<!ELEMENT %h6.qname;  %Heading.content; >
+<!-- end of h6.element -->]]>
+
+<!ENTITY % h6.attlist  "INCLUDE" >
+<![%h6.attlist;[
+<!ATTLIST %h6.qname;
+      %Common.attrib;
+>
+<!-- end of h6.attlist -->]]>
+
+<!-- end of xhtml-blkphras-1.mod -->
+]]>
+
+<!-- end of xhtml-text-1.mod -->
+]]>
+
+<!-- Hypertext Module (required) ................................. -->
+<!ENTITY % xhtml-hypertext.module "INCLUDE" >
+<![%xhtml-hypertext.module;[
+<!ENTITY % xhtml-hypertext.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Hypertext 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-hypertext-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Hypertext Module  .............................................. -->
+<!-- file: xhtml-hypertext-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Hypertext 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-hypertext-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Hypertext
+
+        a
+
+     This module declares the anchor ('a') element type, which
+     defines the source of a hypertext link. The destination
+     (or link 'target') is identified via its 'id' attribute
+     rather than the 'name' attribute as was used in HTML.
+-->
+
+<!-- ............  Anchor Element  ............ -->
+
+<!ENTITY % a.element  "INCLUDE" >
+<![%a.element;[
+<!ENTITY % a.content
+     "( #PCDATA | %InlNoAnchor.mix; )*"
+>
+<!ENTITY % a.qname  "a" >
+<!ELEMENT %a.qname;  %a.content; >
+<!-- end of a.element -->]]>
+
+<!ENTITY % a.attlist  "INCLUDE" >
+<![%a.attlist;[
+<!ATTLIST %a.qname;
+      %Common.attrib;
+      href         %URI.datatype;           #IMPLIED
+      charset      %Charset.datatype;       #IMPLIED
+      type         %ContentType.datatype;   #IMPLIED
+      hreflang     %LanguageCode.datatype;  #IMPLIED
+      rel          %LinkTypes.datatype;     #IMPLIED
+      rev          %LinkTypes.datatype;     #IMPLIED
+      accesskey    %Character.datatype;     #IMPLIED
+      tabindex     %Number.datatype;        #IMPLIED
+>
+<!-- end of a.attlist -->]]>
+
+<!-- end of xhtml-hypertext-1.mod -->
+]]>
+
+<!-- Lists Module (required)  .................................... -->
+<!ENTITY % xhtml-list.module "INCLUDE" >
+<![%xhtml-list.module;[
+<!ENTITY % xhtml-list.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Lists 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-list-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Lists Module  .................................................. -->
+<!-- file: xhtml-list-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Lists 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-list-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Lists
+
+        dl, dt, dd, ol, ul, li
+
+     This module declares the list-oriented element types
+     and their attributes.
+-->
+
+<!ENTITY % dl.qname  "dl" >
+<!ENTITY % dt.qname  "dt" >
+<!ENTITY % dd.qname  "dd" >
+<!ENTITY % ol.qname  "ol" >
+<!ENTITY % ul.qname  "ul" >
+<!ENTITY % li.qname  "li" >
+
+<!-- dl: Definition List ............................... -->
+
+<!ENTITY % dl.element  "INCLUDE" >
+<![%dl.element;[
+<!ENTITY % dl.content  "( %dt.qname; | %dd.qname; )+" >
+<!ELEMENT %dl.qname;  %dl.content; >
+<!-- end of dl.element -->]]>
+
+<!ENTITY % dl.attlist  "INCLUDE" >
+<![%dl.attlist;[
+<!ATTLIST %dl.qname;
+      %Common.attrib;
+>
+<!-- end of dl.attlist -->]]>
+
+<!-- dt: Definition Term ............................... -->
+
+<!ENTITY % dt.element  "INCLUDE" >
+<![%dt.element;[
+<!ENTITY % dt.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ELEMENT %dt.qname;  %dt.content; >
+<!-- end of dt.element -->]]>
+
+<!ENTITY % dt.attlist  "INCLUDE" >
+<![%dt.attlist;[
+<!ATTLIST %dt.qname;
+      %Common.attrib;
+>
+<!-- end of dt.attlist -->]]>
+
+<!-- dd: Definition Description ........................ -->
+
+<!ENTITY % dd.element  "INCLUDE" >
+<![%dd.element;[
+<!ENTITY % dd.content
+     "( #PCDATA | %Flow.mix; )*"
+>
+<!ELEMENT %dd.qname;  %dd.content; >
+<!-- end of dd.element -->]]>
+
+<!ENTITY % dd.attlist  "INCLUDE" >
+<![%dd.attlist;[
+<!ATTLIST %dd.qname;
+      %Common.attrib;
+>
+<!-- end of dd.attlist -->]]>
+
+<!-- ol: Ordered List (numbered styles) ................ -->
+
+<!ENTITY % ol.element  "INCLUDE" >
+<![%ol.element;[
+<!ENTITY % ol.content  "( %li.qname; )+" >
+<!ELEMENT %ol.qname;  %ol.content; >
+<!-- end of ol.element -->]]>
+
+<!ENTITY % ol.attlist  "INCLUDE" >
+<![%ol.attlist;[
+<!ATTLIST %ol.qname;
+      %Common.attrib;
+>
+<!-- end of ol.attlist -->]]>
+
+<!-- ul: Unordered List (bullet styles) ................ -->
+
+<!ENTITY % ul.element  "INCLUDE" >
+<![%ul.element;[
+<!ENTITY % ul.content  "( %li.qname; )+" >
+<!ELEMENT %ul.qname;  %ul.content; >
+<!-- end of ul.element -->]]>
+
+<!ENTITY % ul.attlist  "INCLUDE" >
+<![%ul.attlist;[
+<!ATTLIST %ul.qname;
+      %Common.attrib;
+>
+<!-- end of ul.attlist -->]]>
+
+<!-- li: List Item ..................................... -->
+
+<!ENTITY % li.element  "INCLUDE" >
+<![%li.element;[
+<!ENTITY % li.content
+     "( #PCDATA | %Flow.mix; )*"
+>
+<!ELEMENT %li.qname;  %li.content; >
+<!-- end of li.element -->]]>
+
+<!ENTITY % li.attlist  "INCLUDE" >
+<![%li.attlist;[
+<!ATTLIST %li.qname;
+      %Common.attrib;
+>
+<!-- end of li.attlist -->]]>
+
+<!-- end of xhtml-list-1.mod -->
+]]>
+
+<!-- ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: -->
+
+<!-- Edit Module  ................................................ -->
+<!ENTITY % xhtml-edit.module "INCLUDE" >
+<![%xhtml-edit.module;[
+<!ENTITY % xhtml-edit.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Editing Elements 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-edit-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Editing Elements Module  ....................................... -->
+<!-- file: xhtml-edit-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Editing Markup 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-edit-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Editing Elements
+
+        ins, del
+
+     This module declares element types and attributes used to indicate
+     inserted and deleted content while editing a document.
+-->
+
+<!-- ins: Inserted Text  ............................... -->
+
+<!ENTITY % ins.element  "INCLUDE" >
+<![%ins.element;[
+<!ENTITY % ins.content
+     "( #PCDATA | %Flow.mix; )*"
+>
+<!ENTITY % ins.qname  "ins" >
+<!ELEMENT %ins.qname;  %ins.content; >
+<!-- end of ins.element -->]]>
+
+<!ENTITY % ins.attlist  "INCLUDE" >
+<![%ins.attlist;[
+<!ATTLIST %ins.qname;
+      %Common.attrib;
+      cite         %URI.datatype;           #IMPLIED
+      datetime     %Datetime.datatype;      #IMPLIED
+>
+<!-- end of ins.attlist -->]]>
+
+<!-- del: Deleted Text  ................................ -->
+
+<!ENTITY % del.element  "INCLUDE" >
+<![%del.element;[
+<!ENTITY % del.content
+     "( #PCDATA | %Flow.mix; )*"
+>
+<!ENTITY % del.qname  "del" >
+<!ELEMENT %del.qname;  %del.content; >
+<!-- end of del.element -->]]>
+
+<!ENTITY % del.attlist  "INCLUDE" >
+<![%del.attlist;[
+<!ATTLIST %del.qname;
+      %Common.attrib;
+      cite         %URI.datatype;           #IMPLIED
+      datetime     %Datetime.datatype;      #IMPLIED
+>
+<!-- end of del.attlist -->]]>
+
+<!-- end of xhtml-edit-1.mod -->
+]]>
+
+<!-- BIDI Override Module  ....................................... -->
+<!ENTITY % xhtml-bdo.module "%XHTML.bidi;" >
+<![%xhtml-bdo.module;[
+<!ENTITY % xhtml-bdo.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML BIDI Override Element 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-bdo-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML BDO Element Module ............................................. -->
+<!-- file: xhtml-bdo-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML BDO Element 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-bdo-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Bidirectional Override (bdo) Element
+
+     This modules declares the element 'bdo', used to override the
+     Unicode bidirectional algorithm for selected fragments of text.
+
+     DEPENDENCIES:
+     Relies on the conditional section keyword %XHTML.bidi; declared
+     as "INCLUDE". Bidirectional text support includes both the bdo
+     element and the 'dir' attribute.
+-->
+
+<!ENTITY % bdo.element  "INCLUDE" >
+<![%bdo.element;[
+<!ENTITY % bdo.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % bdo.qname  "bdo" >
+<!ELEMENT %bdo.qname;  %bdo.content; >
+<!-- end of bdo.element -->]]>
+
+<!ENTITY % bdo.attlist  "INCLUDE" >
+<![%bdo.attlist;[
+<!ATTLIST %bdo.qname;
+      %Core.attrib;
+      xml:lang     %LanguageCode.datatype;  #IMPLIED
+      dir          ( ltr | rtl )            #REQUIRED
+>
+]]>
+
+<!-- end of xhtml-bdo-1.mod -->
+]]>
+
+<!-- Ruby Module  ................................................ -->
+<!ENTITY % Ruby.common.attlists "INCLUDE" >
+<!ENTITY % Ruby.common.attrib "%Common.attrib;" >
+<!ENTITY % xhtml-ruby.module "INCLUDE" >
+<![%xhtml-ruby.module;[
+<!ENTITY % xhtml-ruby.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Ruby 1.0//EN"
+            "http://www.w3.org/TR/ruby/xhtml-ruby-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Ruby Module .................................................... -->
+<!-- file: xhtml-ruby-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1999-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $
+
+     This module is based on the W3C Ruby Annotation Specification:
+
+        http://www.w3.org/TR/ruby
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Ruby 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/ruby/xhtml-ruby-1.mod"
+
+     ...................................................................... -->
+
+<!-- Ruby Elements
+
+        ruby, rbc, rtc, rb, rt, rp
+
+     This module declares the elements and their attributes used to
+     support ruby annotation markup.
+-->
+
+<!-- declare qualified element type names:
+-->
+<!ENTITY % ruby.qname  "ruby" >
+<!ENTITY % rbc.qname  "rbc" >
+<!ENTITY % rtc.qname  "rtc" >
+<!ENTITY % rb.qname  "rb" >
+<!ENTITY % rt.qname  "rt" >
+<!ENTITY % rp.qname  "rp" >
+
+<!-- rp fallback is included by default.
+-->
+<!ENTITY % Ruby.fallback "INCLUDE" >
+<!ENTITY % Ruby.fallback.mandatory "IGNORE" >
+
+<!-- Complex ruby is included by default; it may be 
+     overridden by other modules to ignore it.
+-->
+<!ENTITY % Ruby.complex "INCLUDE" >
+
+<!-- Fragments for the content model of the ruby element -->
+<![%Ruby.fallback;[
+<![%Ruby.fallback.mandatory;[
+<!ENTITY % Ruby.content.simple 
+     "( %rb.qname;, %rp.qname;, %rt.qname;, %rp.qname; )"
+>
+]]>
+<!ENTITY % Ruby.content.simple 
+     "( %rb.qname;, ( %rt.qname; | ( %rp.qname;, %rt.qname;, %rp.qname; ) ) )"
+>
+]]>
+<!ENTITY % Ruby.content.simple "( %rb.qname;, %rt.qname; )" >
+
+<![%Ruby.complex;[
+<!ENTITY % Ruby.content.complex 
+     "| ( %rbc.qname;, %rtc.qname;, %rtc.qname;? )"
+>
+]]>
+<!ENTITY % Ruby.content.complex "" >
+
+<!-- Content models of the rb and the rt elements are intended to
+     allow other inline-level elements of its parent markup language,
+     but it should not include ruby descendent elements. The following
+     parameter entity %NoRuby.content; can be used to redefine
+     those content models with minimum effort.  It's defined as
+     '( #PCDATA )' by default.
+-->
+<!ENTITY % NoRuby.content "( #PCDATA )" >
+
+<!-- one or more digits (NUMBER) -->
+<!ENTITY % Number.datatype "CDATA" >
+
+<!-- ruby element ...................................... -->
+
+<!ENTITY % ruby.element  "INCLUDE" >
+<![%ruby.element;[
+<!ENTITY % ruby.content
+     "( %Ruby.content.simple; %Ruby.content.complex; )"
+>
+<!ELEMENT %ruby.qname;  %ruby.content; >
+<!-- end of ruby.element -->]]>
+
+<![%Ruby.complex;[
+<!-- rbc (ruby base component) element ................. -->
+
+<!ENTITY % rbc.element  "INCLUDE" >
+<![%rbc.element;[
+<!ENTITY % rbc.content
+     "(%rb.qname;)+"
+>
+<!ELEMENT %rbc.qname;  %rbc.content; >
+<!-- end of rbc.element -->]]>
+
+<!-- rtc (ruby text component) element ................. -->
+
+<!ENTITY % rtc.element  "INCLUDE" >
+<![%rtc.element;[
+<!ENTITY % rtc.content
+     "(%rt.qname;)+"
+>
+<!ELEMENT %rtc.qname;  %rtc.content; >
+<!-- end of rtc.element -->]]>
+]]>
+
+<!-- rb (ruby base) element ............................ -->
+
+<!ENTITY % rb.element  "INCLUDE" >
+<![%rb.element;[
+<!-- %rb.content; uses %NoRuby.content; as its content model,
+     which is '( #PCDATA )' by default. It may be overridden
+     by other modules to allow other inline-level elements
+     of its parent markup language, but it should not include
+     ruby descendent elements.
+-->
+<!ENTITY % rb.content "%NoRuby.content;" >
+<!ELEMENT %rb.qname;  %rb.content; >
+<!-- end of rb.element -->]]>
+
+<!-- rt (ruby text) element ............................ -->
+
+<!ENTITY % rt.element  "INCLUDE" >
+<![%rt.element;[
+<!-- %rt.content; uses %NoRuby.content; as its content model,
+     which is '( #PCDATA )' by default. It may be overridden
+     by other modules to allow other inline-level elements
+     of its parent markup language, but it should not include
+     ruby descendent elements.
+-->
+<!ENTITY % rt.content "%NoRuby.content;" >
+
+<!ELEMENT %rt.qname;  %rt.content; >
+<!-- end of rt.element -->]]>
+
+<!-- rbspan attribute is used for complex ruby only ...... -->
+<![%Ruby.complex;[
+<!ENTITY % rt.attlist  "INCLUDE" >
+<![%rt.attlist;[
+<!ATTLIST %rt.qname;
+      rbspan         %Number.datatype;      "1"
+>
+<!-- end of rt.attlist -->]]>
+]]>
+
+<!-- rp (ruby parenthesis) element ..................... -->
+
+<![%Ruby.fallback;[
+<!ENTITY % rp.element  "INCLUDE" >
+<![%rp.element;[
+<!ENTITY % rp.content
+     "( #PCDATA )"
+>
+<!ELEMENT %rp.qname;  %rp.content; >
+<!-- end of rp.element -->]]>
+]]>
+
+<!-- Ruby Common Attributes
+
+     The following optional ATTLIST declarations provide an easy way
+     to define common attributes for ruby elements.  These declarations
+     are ignored by default.
+
+     Ruby elements are intended to have common attributes of its
+     parent markup language.  For example, if a markup language defines
+     common attributes as a parameter entity %attrs;, you may add
+     those attributes by just declaring the following parameter entities
+
+         <!ENTITY % Ruby.common.attlists  "INCLUDE" >
+         <!ENTITY % Ruby.common.attrib  "%attrs;" >
+
+     before including the Ruby module.
+-->
+
+<!ENTITY % Ruby.common.attlists  "IGNORE" >
+<![%Ruby.common.attlists;[
+<!ENTITY % Ruby.common.attrib  "" >
+
+<!-- common attributes for ruby ........................ -->
+
+<!ENTITY % Ruby.common.attlist  "INCLUDE" >
+<![%Ruby.common.attlist;[
+<!ATTLIST %ruby.qname;
+      %Ruby.common.attrib;
+>
+<!-- end of Ruby.common.attlist -->]]>
+
+<![%Ruby.complex;[
+<!-- common attributes for rbc ......................... -->
+
+<!ENTITY % Rbc.common.attlist  "INCLUDE" >
+<![%Rbc.common.attlist;[
+<!ATTLIST %rbc.qname;
+      %Ruby.common.attrib;
+>
+<!-- end of Rbc.common.attlist -->]]>
+
+<!-- common attributes for rtc ......................... -->
+
+<!ENTITY % Rtc.common.attlist  "INCLUDE" >
+<![%Rtc.common.attlist;[
+<!ATTLIST %rtc.qname;
+      %Ruby.common.attrib;
+>
+<!-- end of Rtc.common.attlist -->]]>
+]]>
+
+<!-- common attributes for rb .......................... -->
+
+<!ENTITY % Rb.common.attlist  "INCLUDE" >
+<![%Rb.common.attlist;[
+<!ATTLIST %rb.qname;
+      %Ruby.common.attrib;
+>
+<!-- end of Rb.common.attlist -->]]>
+
+<!-- common attributes for rt .......................... -->
+
+<!ENTITY % Rt.common.attlist  "INCLUDE" >
+<![%Rt.common.attlist;[
+<!ATTLIST %rt.qname;
+      %Ruby.common.attrib;
+>
+<!-- end of Rt.common.attlist -->]]>
+
+<![%Ruby.fallback;[
+<!-- common attributes for rp .......................... -->
+
+<!ENTITY % Rp.common.attlist  "INCLUDE" >
+<![%Rp.common.attlist;[
+<!ATTLIST %rp.qname;
+      %Ruby.common.attrib;
+>
+<!-- end of Rp.common.attlist -->]]>
+]]>
+]]>
+
+<!-- end of xhtml-ruby-1.mod -->
+]]>
+
+<!-- Presentation Module  ........................................ -->
+<!ENTITY % xhtml-pres.module "INCLUDE" >
+<![%xhtml-pres.module;[
+<!ENTITY % xhtml-pres.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Presentation 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-pres-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Presentation Module ............................................ -->
+<!-- file: xhtml-pres-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Presentation 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-pres-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Presentational Elements
+
+     This module defines elements and their attributes for
+     simple presentation-related markup.
+-->
+
+<!ENTITY % xhtml-inlpres.module "INCLUDE" >
+<![%xhtml-inlpres.module;[
+<!ENTITY % xhtml-inlpres.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Inline Presentation 1.0//EN"
+            "xhtml-inlpres-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Inline Presentation Module  .................................... -->
+<!-- file: xhtml-inlpres-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Inline Presentation 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-inlpres-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Inline Presentational Elements
+
+        b, big, i, small, sub, sup, tt
+
+     This module declares the elements and their attributes used to
+     support inline-level presentational markup.
+-->
+
+<!ENTITY % b.element  "INCLUDE" >
+<![%b.element;[
+<!ENTITY % b.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % b.qname  "b" >
+<!ELEMENT %b.qname;  %b.content; >
+<!-- end of b.element -->]]>
+
+<!ENTITY % b.attlist  "INCLUDE" >
+<![%b.attlist;[
+<!ATTLIST %b.qname;
+      %Common.attrib;
+>
+<!-- end of b.attlist -->]]>
+
+<!ENTITY % big.element  "INCLUDE" >
+<![%big.element;[
+<!ENTITY % big.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % big.qname  "big" >
+<!ELEMENT %big.qname;  %big.content; >
+<!-- end of big.element -->]]>
+
+<!ENTITY % big.attlist  "INCLUDE" >
+<![%big.attlist;[
+<!ATTLIST %big.qname;
+      %Common.attrib;
+>
+<!-- end of big.attlist -->]]>
+
+<!ENTITY % i.element  "INCLUDE" >
+<![%i.element;[
+<!ENTITY % i.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % i.qname  "i" >
+<!ELEMENT %i.qname;  %i.content; >
+<!-- end of i.element -->]]>
+
+<!ENTITY % i.attlist  "INCLUDE" >
+<![%i.attlist;[
+<!ATTLIST %i.qname;
+      %Common.attrib;
+>
+<!-- end of i.attlist -->]]>
+
+<!ENTITY % small.element  "INCLUDE" >
+<![%small.element;[
+<!ENTITY % small.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % small.qname  "small" >
+<!ELEMENT %small.qname;  %small.content; >
+<!-- end of small.element -->]]>
+
+<!ENTITY % small.attlist  "INCLUDE" >
+<![%small.attlist;[
+<!ATTLIST %small.qname;
+      %Common.attrib;
+>
+<!-- end of small.attlist -->]]>
+
+<!ENTITY % sub.element  "INCLUDE" >
+<![%sub.element;[
+<!ENTITY % sub.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % sub.qname  "sub" >
+<!ELEMENT %sub.qname;  %sub.content; >
+<!-- end of sub.element -->]]>
+
+<!ENTITY % sub.attlist  "INCLUDE" >
+<![%sub.attlist;[
+<!ATTLIST %sub.qname;
+      %Common.attrib;
+>
+<!-- end of sub.attlist -->]]>
+
+<!ENTITY % sup.element  "INCLUDE" >
+<![%sup.element;[
+<!ENTITY % sup.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % sup.qname  "sup" >
+<!ELEMENT %sup.qname;  %sup.content; >
+<!-- end of sup.element -->]]>
+
+<!ENTITY % sup.attlist  "INCLUDE" >
+<![%sup.attlist;[
+<!ATTLIST %sup.qname;
+      %Common.attrib;
+>
+<!-- end of sup.attlist -->]]>
+
+<!ENTITY % tt.element  "INCLUDE" >
+<![%tt.element;[
+<!ENTITY % tt.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ENTITY % tt.qname  "tt" >
+<!ELEMENT %tt.qname;  %tt.content; >
+<!-- end of tt.element -->]]>
+
+<!ENTITY % tt.attlist  "INCLUDE" >
+<![%tt.attlist;[
+<!ATTLIST %tt.qname;
+      %Common.attrib;
+>
+<!-- end of tt.attlist -->]]>
+
+<!-- end of xhtml-inlpres-1.mod -->
+]]>
+
+<!ENTITY % xhtml-blkpres.module "INCLUDE" >
+<![%xhtml-blkpres.module;[
+<!ENTITY % xhtml-blkpres.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Block Presentation 1.0//EN"
+            "xhtml-blkpres-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Block Presentation Module  ..................................... -->
+<!-- file: xhtml-blkpres-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Block Presentation 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-blkpres-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Block Presentational Elements
+
+        hr
+
+     This module declares the elements and their attributes used to
+     support block-level presentational markup.
+-->
+
+<!ENTITY % hr.element  "INCLUDE" >
+<![%hr.element;[
+<!ENTITY % hr.content  "EMPTY" >
+<!ENTITY % hr.qname  "hr" >
+<!ELEMENT %hr.qname;  %hr.content; >
+<!-- end of hr.element -->]]>
+
+<!ENTITY % hr.attlist  "INCLUDE" >
+<![%hr.attlist;[
+<!ATTLIST %hr.qname;
+      %Common.attrib;
+>
+<!-- end of hr.attlist -->]]>
+
+<!-- end of xhtml-blkpres-1.mod -->
+]]>
+
+<!-- end of xhtml-pres-1.mod -->
+]]>
+
+<!-- Link Element Module  ........................................ -->
+<!ENTITY % xhtml-link.module "INCLUDE" >
+<![%xhtml-link.module;[
+<!ENTITY % xhtml-link.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Link Element 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-link-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Link Element Module  ........................................... -->
+<!-- file: xhtml-link-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Link Element 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-link-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Link element
+
+        link
+
+     This module declares the link element type and its attributes,
+     which could (in principle) be used to define document-level links
+     to external resources such as:
+
+     a) for document specific toolbars/menus, e.g. start, contents,
+        previous, next, index, end, help
+     b) to link to a separate style sheet (rel="stylesheet")
+     c) to make a link to a script (rel="script")
+     d) by stylesheets to control how collections of html nodes are
+        rendered into printed documents
+     e) to make a link to a printable version of this document
+        e.g. a postscript or pdf version (rel="alternate" media="print")
+-->
+
+<!-- link: Media-Independent Link ...................... -->
+
+<!ENTITY % link.element  "INCLUDE" >
+<![%link.element;[
+<!ENTITY % link.content  "EMPTY" >
+<!ENTITY % link.qname  "link" >
+<!ELEMENT %link.qname;  %link.content; >
+<!-- end of link.element -->]]>
+
+<!ENTITY % link.attlist  "INCLUDE" >
+<![%link.attlist;[
+<!ATTLIST %link.qname;
+      %Common.attrib;
+      charset      %Charset.datatype;       #IMPLIED
+      href         %URI.datatype;           #IMPLIED
+      hreflang     %LanguageCode.datatype;  #IMPLIED
+      type         %ContentType.datatype;   #IMPLIED
+      rel          %LinkTypes.datatype;     #IMPLIED
+      rev          %LinkTypes.datatype;     #IMPLIED
+      media        %MediaDesc.datatype;     #IMPLIED
+>
+<!-- end of link.attlist -->]]>
+
+<!-- end of xhtml-link-1.mod -->
+]]>
+
+<!-- Document Metainformation Module  ............................ -->
+<!ENTITY % xhtml-meta.module "INCLUDE" >
+<![%xhtml-meta.module;[
+<!ENTITY % xhtml-meta.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Metainformation 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-meta-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Document Metainformation Module  ............................... -->
+<!-- file: xhtml-meta-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Metainformation 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-meta-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Meta Information
+
+        meta
+
+     This module declares the meta element type and its attributes,
+     used to provide declarative document metainformation.
+-->
+
+<!-- meta: Generic Metainformation ..................... -->
+
+<!ENTITY % meta.element  "INCLUDE" >
+<![%meta.element;[
+<!ENTITY % meta.content  "EMPTY" >
+<!ENTITY % meta.qname  "meta" >
+<!ELEMENT %meta.qname;  %meta.content; >
+<!-- end of meta.element -->]]>
+
+<!ENTITY % meta.attlist  "INCLUDE" >
+<![%meta.attlist;[
+<!ATTLIST %meta.qname;
+      %XHTML.xmlns.attrib;
+      %I18n.attrib;
+      http-equiv   NMTOKEN                  #IMPLIED
+      name         NMTOKEN                  #IMPLIED
+      content      CDATA                    #REQUIRED
+      scheme       CDATA                    #IMPLIED
+>
+<!-- end of meta.attlist -->]]>
+
+<!-- end of xhtml-meta-1.mod -->
+]]>
+
+<!-- Base Element Module  ........................................ -->
+<!ENTITY % xhtml-base.module "INCLUDE" >
+<![%xhtml-base.module;[
+<!ENTITY % xhtml-base.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Base Element 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-base-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Base Element Module  ........................................... -->
+<!-- file: xhtml-base-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Base Element 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-base-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Base element
+
+        base
+
+     This module declares the base element type and its attributes,
+     used to define a base URI against which relative URIs in the
+     document will be resolved.
+
+     Note that this module also redeclares the content model for
+     the head element to include the base element.
+-->
+
+<!-- base: Document Base URI ........................... -->
+
+<!ENTITY % base.element  "INCLUDE" >
+<![%base.element;[
+<!ENTITY % base.content  "EMPTY" >
+<!ENTITY % base.qname  "base" >
+<!ELEMENT %base.qname;  %base.content; >
+<!-- end of base.element -->]]>
+
+<!ENTITY % base.attlist  "INCLUDE" >
+<![%base.attlist;[
+<!ATTLIST %base.qname;
+      %XHTML.xmlns.attrib;
+      href         %URI.datatype;           #REQUIRED
+>
+<!-- end of base.attlist -->]]>
+
+<!ENTITY % head.content
+    "( %HeadOpts.mix;,
+     ( ( %title.qname;, %HeadOpts.mix;, ( %base.qname;, %HeadOpts.mix; )? )
+     | ( %base.qname;, %HeadOpts.mix;, ( %title.qname;, %HeadOpts.mix; ))))"
+>
+
+<!-- end of xhtml-base-1.mod -->
+]]>
+
+<!-- Scripting Module  ........................................... -->
+<!ENTITY % xhtml-script.module "INCLUDE" >
+<![%xhtml-script.module;[
+<!ENTITY % xhtml-script.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Scripting 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-script-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Document Scripting Module  ..................................... -->
+<!-- file: xhtml-script-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Scripting 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-script-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Scripting
+
+        script, noscript
+
+     This module declares element types and attributes used to provide
+     support for executable scripts as well as an alternate content
+     container where scripts are not supported.
+-->
+
+<!-- script: Scripting Statement ....................... -->
+
+<!ENTITY % script.element  "INCLUDE" >
+<![%script.element;[
+<!ENTITY % script.content  "( #PCDATA )" >
+<!ENTITY % script.qname  "script" >
+<!ELEMENT %script.qname;  %script.content; >
+<!-- end of script.element -->]]>
+
+<!ENTITY % script.attlist  "INCLUDE" >
+<![%script.attlist;[
+<!ATTLIST %script.qname;
+      %XHTML.xmlns.attrib;
+      charset      %Charset.datatype;       #IMPLIED
+      type         %ContentType.datatype;   #REQUIRED
+      src          %URI.datatype;           #IMPLIED
+      defer        ( defer )                #IMPLIED
+      xml:space    ( preserve )             #FIXED 'preserve'
+>
+<!-- end of script.attlist -->]]>
+
+<!-- noscript: No-Script Alternate Content ............. -->
+
+<!ENTITY % noscript.element  "INCLUDE" >
+<![%noscript.element;[
+<!ENTITY % noscript.content
+     "( %Block.mix; )+"
+>
+<!ENTITY % noscript.qname  "noscript" >
+<!ELEMENT %noscript.qname;  %noscript.content; >
+<!-- end of noscript.element -->]]>
+
+<!ENTITY % noscript.attlist  "INCLUDE" >
+<![%noscript.attlist;[
+<!ATTLIST %noscript.qname;
+      %Common.attrib;
+>
+<!-- end of noscript.attlist -->]]>
+
+<!-- end of xhtml-script-1.mod -->
+]]>
+
+<!-- Style Sheets Module  ......................................... -->
+<!ENTITY % xhtml-style.module "INCLUDE" >
+<![%xhtml-style.module;[
+<!ENTITY % xhtml-style.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Style Sheets 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-style-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Document Style Sheet Module  .................................... -->
+<!-- file: xhtml-style-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//DTD XHTML Style Sheets 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-style-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Style Sheets
+
+        style
+
+     This module declares the style element type and its attributes,
+     used to embed stylesheet information in the document head element.
+-->
+
+<!-- style: Style Sheet Information ..................... -->
+
+<!ENTITY % style.element  "INCLUDE" >
+<![%style.element;[
+<!ENTITY % style.content  "( #PCDATA )" >
+<!ENTITY % style.qname  "style" >
+<!ELEMENT %style.qname;  %style.content; >
+<!-- end of style.element -->]]>
+
+<!ENTITY % style.attlist  "INCLUDE" >
+<![%style.attlist;[
+<!ATTLIST %style.qname;
+      %XHTML.xmlns.attrib;
+      %title.attrib;
+      %I18n.attrib;
+      type         %ContentType.datatype;   #REQUIRED
+      media        %MediaDesc.datatype;     #IMPLIED
+      xml:space    ( preserve )             #FIXED 'preserve'
+>
+<!-- end of style.attlist -->]]>
+
+<!-- end of xhtml-style-1.mod -->
+]]>
+
+<!-- Image Module  ............................................... -->
+<!ENTITY % xhtml-image.module "INCLUDE" >
+<![%xhtml-image.module;[
+<!ENTITY % xhtml-image.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Images 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-image-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Images Module  ................................................. -->
+<!-- file: xhtml-image-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Rovision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Images 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-image-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Images
+
+        img
+
+     This module provides markup to support basic image embedding.
+-->
+
+<!-- To avoid problems with text-only UAs as well as to make
+     image content understandable and navigable to users of
+     non-visual UAs, you need to provide a description with
+     the 'alt' attribute, and avoid server-side image maps.
+-->
+
+<!ENTITY % img.element  "INCLUDE" >
+<![%img.element;[
+<!ENTITY % img.content  "EMPTY" >
+<!ENTITY % img.qname  "img" >
+<!ELEMENT %img.qname;  %img.content; >
+<!-- end of img.element -->]]>
+
+<!ENTITY % img.attlist  "INCLUDE" >
+<![%img.attlist;[
+<!ATTLIST %img.qname;
+      %Common.attrib;
+      src          %URI.datatype;           #REQUIRED
+      alt          %Text.datatype;          #REQUIRED
+      longdesc     %URI.datatype;           #IMPLIED
+      height       %Length.datatype;        #IMPLIED
+      width        %Length.datatype;        #IMPLIED
+>
+<!-- end of img.attlist -->]]>
+
+<!-- end of xhtml-image-1.mod -->
+]]>
+
+<!-- Client-side Image Map Module  ............................... -->
+<!ENTITY % xhtml-csismap.module "INCLUDE" >
+<![%xhtml-csismap.module;[
+<!ENTITY % xhtml-csismap.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Client-side Image Maps 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-csismap-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Client-side Image Map Module  .................................. -->
+<!-- file: xhtml-csismap-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Client-side Image Maps 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-csismap-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Client-side Image Maps
+
+        area, map
+
+     This module declares elements and attributes to support client-side
+     image maps. This requires that the Image Module (or a module
+     declaring the img element type) be included in the DTD.
+
+     These can be placed in the same document or grouped in a
+     separate document, although the latter isn't widely supported
+-->
+
+<!ENTITY % area.element  "INCLUDE" >
+<![%area.element;[
+<!ENTITY % area.content  "EMPTY" >
+<!ENTITY % area.qname  "area" >
+<!ELEMENT %area.qname;  %area.content; >
+<!-- end of area.element -->]]>
+
+<!ENTITY % Shape.datatype "( rect | circle | poly | default )">
+<!ENTITY % Coords.datatype "CDATA" >
+
+<!ENTITY % area.attlist  "INCLUDE" >
+<![%area.attlist;[
+<!ATTLIST %area.qname;
+      %Common.attrib;
+      href         %URI.datatype;           #IMPLIED
+      shape        %Shape.datatype;         'rect'
+      coords       %Coords.datatype;        #IMPLIED
+      nohref       ( nohref )               #IMPLIED
+      alt          %Text.datatype;          #REQUIRED
+      tabindex     %Number.datatype;        #IMPLIED
+      accesskey    %Character.datatype;     #IMPLIED
+>
+<!-- end of area.attlist -->]]>
+
+<!-- modify anchor attribute definition list
+     to allow for client-side image maps
+-->
+<!ATTLIST %a.qname;
+      shape        %Shape.datatype;         'rect'
+      coords       %Coords.datatype;        #IMPLIED
+>
+
+<!-- modify img attribute definition list
+     to allow for client-side image maps
+-->
+<!ATTLIST %img.qname;
+      usemap       IDREF                    #IMPLIED
+>
+
+<!-- modify form input attribute definition list
+     to allow for client-side image maps
+-->
+<!ATTLIST %input.qname;
+      usemap       IDREF                    #IMPLIED
+>
+
+<!-- modify object attribute definition list
+     to allow for client-side image maps
+-->
+<!ATTLIST %object.qname;
+      usemap       IDREF                    #IMPLIED
+>
+
+<!-- 'usemap' points to the 'id' attribute of a <map> element,
+     which must be in the same document; support for external
+     document maps was not widely supported in HTML and is
+     eliminated in XHTML.
+
+     It is considered an error for the element pointed to by
+     a usemap IDREF to occur in anything but a <map> element.
+-->
+
+<!ENTITY % map.element  "INCLUDE" >
+<![%map.element;[
+<!ENTITY % map.content
+     "(( %Block.mix; ) | %area.qname; )+"
+>
+<!ENTITY % map.qname  "map" >
+<!ELEMENT %map.qname;  %map.content; >
+<!-- end of map.element -->]]>
+
+<!ENTITY % map.attlist  "INCLUDE" >
+<![%map.attlist;[
+<!ATTLIST %map.qname;
+      %XHTML.xmlns.attrib;
+      id           ID                       #REQUIRED
+      %class.attrib;
+      %title.attrib;
+      %Core.extra.attrib;
+      %I18n.attrib;
+      %Events.attrib;
+>
+<!-- end of map.attlist -->]]>
+
+<!-- end of xhtml-csismap-1.mod -->
+]]>
+
+<!-- Server-side Image Map Module  ............................... -->
+<!ENTITY % xhtml-ssismap.module "INCLUDE" >
+<![%xhtml-ssismap.module;[
+<!ENTITY % xhtml-ssismap.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Server-side Image Maps 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-ssismap-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Server-side Image Map Module  .................................. -->
+<!-- file: xhtml-ssismap-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Server-side Image Maps 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-ssismap-1.mod"
+
+     Revisions:
+#2000-10-22: added declaration for 'ismap' on <input>
+     ....................................................................... -->
+
+<!-- Server-side Image Maps
+
+     This adds the 'ismap' attribute to the img and input elements
+     to support server-side processing of a user selection.
+-->
+
+<!ATTLIST %img.qname;
+      ismap        ( ismap )                #IMPLIED
+>
+
+<!ATTLIST %input.qname;
+      ismap        ( ismap )                #IMPLIED
+>
+
+<!-- end of xhtml-ssismap-1.mod -->
+]]>
+
+<!-- Param Element Module  ....................................... -->
+<!ENTITY % xhtml-param.module "INCLUDE" >
+<![%xhtml-param.module;[
+<!ENTITY % xhtml-param.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Param Element 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-param-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Param Element Module  ..................................... -->
+<!-- file: xhtml-param-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Param Element 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-param-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Parameters for Java Applets and Embedded Objects
+
+        param
+
+     This module provides declarations for the param element,
+     used to provide named property values for the applet
+     and object elements.
+-->
+
+<!-- param: Named Property Value ....................... -->
+
+<!ENTITY % param.element  "INCLUDE" >
+<![%param.element;[
+<!ENTITY % param.content  "EMPTY" >
+<!ENTITY % param.qname  "param" >
+<!ELEMENT %param.qname;  %param.content; >
+<!-- end of param.element -->]]>
+
+<!ENTITY % param.attlist  "INCLUDE" >
+<![%param.attlist;[
+<!ATTLIST %param.qname;
+      %XHTML.xmlns.attrib;
+      %id.attrib;
+      name         CDATA                    #REQUIRED
+      value        CDATA                    #IMPLIED
+      valuetype    ( data | ref | object )  'data'
+      type         %ContentType.datatype;   #IMPLIED
+>
+<!-- end of param.attlist -->]]>
+
+<!-- end of xhtml-param-1.mod -->
+]]>
+
+<!-- Embedded Object Module  ..................................... -->
+<!ENTITY % xhtml-object.module "INCLUDE" >
+<![%xhtml-object.module;[
+<!ENTITY % xhtml-object.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Embedded Object 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-object-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Embedded Object Module  ........................................ -->
+<!-- file: xhtml-object-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Embedded Object 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-object-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Embedded Objects
+
+        object
+
+     This module declares the object element type and its attributes, used
+     to embed external objects as part of XHTML pages. In the document,
+     place param elements prior to other content within the object element.
+
+     Note that use of this module requires instantiation of the Param
+     Element Module.
+-->
+
+<!-- object: Generic Embedded Object ................... -->
+
+<!ENTITY % object.element  "INCLUDE" >
+<![%object.element;[
+<!ENTITY % object.content
+     "( #PCDATA | %Flow.mix; | %param.qname; )*"
+>
+<!ENTITY % object.qname  "object" >
+<!ELEMENT %object.qname;  %object.content; >
+<!-- end of object.element -->]]>
+
+<!ENTITY % object.attlist  "INCLUDE" >
+<![%object.attlist;[
+<!ATTLIST %object.qname;
+      %Common.attrib;
+      declare      ( declare )              #IMPLIED
+      classid      %URI.datatype;           #IMPLIED
+      codebase     %URI.datatype;           #IMPLIED
+      data         %URI.datatype;           #IMPLIED
+      type         %ContentType.datatype;   #IMPLIED
+      codetype     %ContentType.datatype;   #IMPLIED
+      archive      %URIs.datatype;          #IMPLIED
+      standby      %Text.datatype;          #IMPLIED
+      height       %Length.datatype;        #IMPLIED
+      width        %Length.datatype;        #IMPLIED
+      name         CDATA                    #IMPLIED
+      tabindex     %Number.datatype;        #IMPLIED
+>
+<!-- end of object.attlist -->]]>
+
+<!-- end of xhtml-object-1.mod -->
+]]>
+
+<!-- Tables Module ............................................... -->
+<!ENTITY % xhtml-table.module "INCLUDE" >
+<![%xhtml-table.module;[
+<!ENTITY % xhtml-table.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Tables 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-table-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Table Module  .................................................. -->
+<!-- file: xhtml-table-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Tables 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-table-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Tables
+
+        table, caption, thead, tfoot, tbody, colgroup, col, tr, th, td
+
+     This module declares element types and attributes used to provide
+     table markup similar to HTML 4.0, including features that enable
+     better accessibility for non-visual user agents.
+-->
+
+<!-- declare qualified element type names:
+-->
+<!ENTITY % table.qname  "table" >
+<!ENTITY % caption.qname  "caption" >
+<!ENTITY % thead.qname  "thead" >
+<!ENTITY % tfoot.qname  "tfoot" >
+<!ENTITY % tbody.qname  "tbody" >
+<!ENTITY % colgroup.qname  "colgroup" >
+<!ENTITY % col.qname  "col" >
+<!ENTITY % tr.qname  "tr" >
+<!ENTITY % th.qname  "th" >
+<!ENTITY % td.qname  "td" >
+
+<!-- The frame attribute specifies which parts of the frame around
+     the table should be rendered. The values are not the same as
+     CALS to avoid a name clash with the valign attribute.
+-->
+<!ENTITY % frame.attrib
+     "frame        ( void
+                   | above
+                   | below
+                   | hsides
+                   | lhs
+                   | rhs
+                   | vsides
+                   | box
+                   | border )               #IMPLIED"
+>
+
+<!-- The rules attribute defines which rules to draw between cells:
+
+     If rules is absent then assume:
+
+       "none" if border is absent or border="0" otherwise "all"
+-->
+<!ENTITY % rules.attrib
+     "rules        ( none
+                   | groups
+                   | rows
+                   | cols
+                   | all )                  #IMPLIED"
+>
+
+<!-- horizontal alignment attributes for cell contents
+-->
+<!ENTITY % CellHAlign.attrib
+     "align        ( left
+                   | center
+                   | right
+                   | justify
+                   | char )                 #IMPLIED
+      char         %Character.datatype;     #IMPLIED
+      charoff      %Length.datatype;        #IMPLIED"
+>
+
+<!-- vertical alignment attribute for cell contents
+-->
+<!ENTITY % CellVAlign.attrib
+     "valign       ( top
+                   | middle
+                   | bottom
+                   | baseline )             #IMPLIED"
+>
+
+<!-- scope is simpler than axes attribute for common tables
+-->
+<!ENTITY % scope.attrib
+     "scope        ( row
+                   | col
+                   | rowgroup
+                   | colgroup )             #IMPLIED"
+>
+
+<!-- table: Table Element .............................. -->
+
+<!ENTITY % table.element  "INCLUDE" >
+<![%table.element;[
+<!ENTITY % table.content
+     "( %caption.qname;?, ( %col.qname;* | %colgroup.qname;* ),
+      (( %thead.qname;?, %tfoot.qname;?, %tbody.qname;+ ) | ( %tr.qname;+ )))"
+>
+<!ELEMENT %table.qname;  %table.content; >
+<!-- end of table.element -->]]>
+
+<!ENTITY % table.attlist  "INCLUDE" >
+<![%table.attlist;[
+<!ATTLIST %table.qname;
+      %Common.attrib;
+      summary      %Text.datatype;          #IMPLIED
+      width        %Length.datatype;        #IMPLIED
+      border       %Pixels.datatype;        #IMPLIED
+      %frame.attrib;
+      %rules.attrib;
+      cellspacing  %Length.datatype;        #IMPLIED
+      cellpadding  %Length.datatype;        #IMPLIED
+>
+<!-- end of table.attlist -->]]>
+
+<!-- caption: Table Caption ............................ -->
+
+<!ENTITY % caption.element  "INCLUDE" >
+<![%caption.element;[
+<!ENTITY % caption.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ELEMENT %caption.qname;  %caption.content; >
+<!-- end of caption.element -->]]>
+
+<!ENTITY % caption.attlist  "INCLUDE" >
+<![%caption.attlist;[
+<!ATTLIST %caption.qname;
+      %Common.attrib;
+>
+<!-- end of caption.attlist -->]]>
+
+<!-- thead: Table Header ............................... -->
+
+<!-- Use thead to duplicate headers when breaking table
+     across page boundaries, or for static headers when
+     tbody sections are rendered in scrolling panel.
+-->
+
+<!ENTITY % thead.element  "INCLUDE" >
+<![%thead.element;[
+<!ENTITY % thead.content  "( %tr.qname; )+" >
+<!ELEMENT %thead.qname;  %thead.content; >
+<!-- end of thead.element -->]]>
+
+<!ENTITY % thead.attlist  "INCLUDE" >
+<![%thead.attlist;[
+<!ATTLIST %thead.qname;
+      %Common.attrib;
+      %CellHAlign.attrib;
+      %CellVAlign.attrib;
+>
+<!-- end of thead.attlist -->]]>
+
+<!-- tfoot: Table Footer ............................... -->
+
+<!-- Use tfoot to duplicate footers when breaking table
+     across page boundaries, or for static footers when
+     tbody sections are rendered in scrolling panel.
+-->
+
+<!ENTITY % tfoot.element  "INCLUDE" >
+<![%tfoot.element;[
+<!ENTITY % tfoot.content  "( %tr.qname; )+" >
+<!ELEMENT %tfoot.qname;  %tfoot.content; >
+<!-- end of tfoot.element -->]]>
+
+<!ENTITY % tfoot.attlist  "INCLUDE" >
+<![%tfoot.attlist;[
+<!ATTLIST %tfoot.qname;
+      %Common.attrib;
+      %CellHAlign.attrib;
+      %CellVAlign.attrib;
+>
+<!-- end of tfoot.attlist -->]]>
+
+<!-- tbody: Table Body ................................. -->
+
+<!-- Use multiple tbody sections when rules are needed
+     between groups of table rows.
+-->
+
+<!ENTITY % tbody.element  "INCLUDE" >
+<![%tbody.element;[
+<!ENTITY % tbody.content  "( %tr.qname; )+" >
+<!ELEMENT %tbody.qname;  %tbody.content; >
+<!-- end of tbody.element -->]]>
+
+<!ENTITY % tbody.attlist  "INCLUDE" >
+<![%tbody.attlist;[
+<!ATTLIST %tbody.qname;
+      %Common.attrib;
+      %CellHAlign.attrib;
+      %CellVAlign.attrib;
+>
+<!-- end of tbody.attlist -->]]>
+
+<!-- colgroup: Table Column Group ...................... -->
+
+<!-- colgroup groups a set of col elements. It allows you
+     to group several semantically-related columns together.
+-->
+
+<!ENTITY % colgroup.element  "INCLUDE" >
+<![%colgroup.element;[
+<!ENTITY % colgroup.content  "( %col.qname; )*" >
+<!ELEMENT %colgroup.qname;  %colgroup.content; >
+<!-- end of colgroup.element -->]]>
+
+<!ENTITY % colgroup.attlist  "INCLUDE" >
+<![%colgroup.attlist;[
+<!ATTLIST %colgroup.qname;
+      %Common.attrib;
+      span         %Number.datatype;        '1'
+      width        %MultiLength.datatype;   #IMPLIED
+      %CellHAlign.attrib;
+      %CellVAlign.attrib;
+>
+<!-- end of colgroup.attlist -->]]>
+
+<!-- col: Table Column ................................. -->
+
+<!-- col elements define the alignment properties for
+     cells in one or more columns.
+
+     The width attribute specifies the width of the
+     columns, e.g.
+
+       width="64"        width in screen pixels
+       width="0.5*"      relative width of 0.5
+
+     The span attribute causes the attributes of one
+     col element to apply to more than one column.
+-->
+
+<!ENTITY % col.element  "INCLUDE" >
+<![%col.element;[
+<!ENTITY % col.content  "EMPTY" >
+<!ELEMENT %col.qname;  %col.content; >
+<!-- end of col.element -->]]>
+
+<!ENTITY % col.attlist  "INCLUDE" >
+<![%col.attlist;[
+<!ATTLIST %col.qname;
+      %Common.attrib;
+      span         %Number.datatype;        '1'
+      width        %MultiLength.datatype;   #IMPLIED
+      %CellHAlign.attrib;
+      %CellVAlign.attrib;
+>
+<!-- end of col.attlist -->]]>
+
+<!-- tr: Table Row ..................................... -->
+
+<!ENTITY % tr.element  "INCLUDE" >
+<![%tr.element;[
+<!ENTITY % tr.content  "( %th.qname; | %td.qname; )+" >
+<!ELEMENT %tr.qname;  %tr.content; >
+<!-- end of tr.element -->]]>
+
+<!ENTITY % tr.attlist  "INCLUDE" >
+<![%tr.attlist;[
+<!ATTLIST %tr.qname;
+      %Common.attrib;
+      %CellHAlign.attrib;
+      %CellVAlign.attrib;
+>
+<!-- end of tr.attlist -->]]>
+
+<!-- th: Table Header Cell ............................. -->
+
+<!-- th is for header cells, td for data,
+     but for cells acting as both use td
+-->
+
+<!ENTITY % th.element  "INCLUDE" >
+<![%th.element;[
+<!ENTITY % th.content
+     "( #PCDATA | %Flow.mix; )*"
+>
+<!ELEMENT %th.qname;  %th.content; >
+<!-- end of th.element -->]]>
+
+<!ENTITY % th.attlist  "INCLUDE" >
+<![%th.attlist;[
+<!ATTLIST %th.qname;
+      %Common.attrib;
+      abbr         %Text.datatype;          #IMPLIED
+      axis         CDATA                    #IMPLIED
+      headers      IDREFS                   #IMPLIED
+      %scope.attrib;
+      rowspan      %Number.datatype;        '1'
+      colspan      %Number.datatype;        '1'
+      %CellHAlign.attrib;
+      %CellVAlign.attrib;
+>
+<!-- end of th.attlist -->]]>
+
+<!-- td: Table Data Cell ............................... -->
+
+<!ENTITY % td.element  "INCLUDE" >
+<![%td.element;[
+<!ENTITY % td.content
+     "( #PCDATA | %Flow.mix; )*"
+>
+<!ELEMENT %td.qname;  %td.content; >
+<!-- end of td.element -->]]>
+
+<!ENTITY % td.attlist  "INCLUDE" >
+<![%td.attlist;[
+<!ATTLIST %td.qname;
+      %Common.attrib;
+      abbr         %Text.datatype;          #IMPLIED
+      axis         CDATA                    #IMPLIED
+      headers      IDREFS                   #IMPLIED
+      %scope.attrib;
+      rowspan      %Number.datatype;        '1'
+      colspan      %Number.datatype;        '1'
+      %CellHAlign.attrib;
+      %CellVAlign.attrib;
+>
+<!-- end of td.attlist -->]]>
+
+<!-- end of xhtml-table-1.mod -->
+]]>
+
+<!-- Forms Module  ............................................... -->
+<!ENTITY % xhtml-form.module "INCLUDE" >
+<![%xhtml-form.module;[
+<!ENTITY % xhtml-form.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Forms 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-form-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Forms Module  .................................................. -->
+<!-- file: xhtml-form-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Forms 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-form-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Forms
+
+        form, label, input, select, optgroup, option,
+        textarea, fieldset, legend, button
+
+     This module declares markup to provide support for online
+     forms, based on the features found in HTML 4.0 forms.
+-->
+
+<!-- declare qualified element type names:
+-->
+<!ENTITY % form.qname  "form" >
+<!ENTITY % label.qname  "label" >
+<!ENTITY % input.qname  "input" >
+<!ENTITY % select.qname  "select" >
+<!ENTITY % optgroup.qname  "optgroup" >
+<!ENTITY % option.qname  "option" >
+<!ENTITY % textarea.qname  "textarea" >
+<!ENTITY % fieldset.qname  "fieldset" >
+<!ENTITY % legend.qname  "legend" >
+<!ENTITY % button.qname  "button" >
+
+<!-- %BlkNoForm.mix; includes all non-form block elements,
+     plus %Misc.class;
+-->
+<!ENTITY % BlkNoForm.mix
+     "%Heading.class;
+      | %List.class;
+      | %BlkStruct.class;
+      %BlkPhras.class;
+      %BlkPres.class;
+      %Table.class;
+      %Block.extra;
+      %Misc.class;"
+>
+
+<!-- form: Form Element ................................ -->
+
+<!ENTITY % form.element  "INCLUDE" >
+<![%form.element;[
+<!ENTITY % form.content
+     "( %BlkNoForm.mix;
+      | %fieldset.qname; )+"
+>
+<!ELEMENT %form.qname;  %form.content; >
+<!-- end of form.element -->]]>
+
+<!ENTITY % form.attlist  "INCLUDE" >
+<![%form.attlist;[
+<!ATTLIST %form.qname;
+      %Common.attrib;
+      action       %URI.datatype;           #REQUIRED
+      method       ( get | post )           'get'
+      enctype      %ContentType.datatype;   'application/x-www-form-urlencoded'
+      accept-charset %Charsets.datatype;    #IMPLIED
+      accept       %ContentTypes.datatype;  #IMPLIED
+>
+<!-- end of form.attlist -->]]>
+
+<!-- label: Form Field Label Text ...................... -->
+
+<!-- Each label must not contain more than ONE field
+-->
+
+<!ENTITY % label.element  "INCLUDE" >
+<![%label.element;[
+<!ENTITY % label.content
+     "( #PCDATA
+      | %input.qname; | %select.qname; | %textarea.qname; | %button.qname;
+      | %InlStruct.class;
+      %InlPhras.class;
+      %I18n.class;
+      %InlPres.class;
+      %Anchor.class;
+      %InlSpecial.class;
+      %Inline.extra;
+      %Misc.class; )*"
+>
+<!ELEMENT %label.qname;  %label.content; >
+<!-- end of label.element -->]]>
+
+<!ENTITY % label.attlist  "INCLUDE" >
+<![%label.attlist;[
+<!ATTLIST %label.qname;
+      %Common.attrib;
+      for          IDREF                    #IMPLIED
+      accesskey    %Character.datatype;     #IMPLIED
+>
+<!-- end of label.attlist -->]]>
+
+<!-- input: Form Control ............................... -->
+
+<!ENTITY % input.element  "INCLUDE" >
+<![%input.element;[
+<!ENTITY % input.content  "EMPTY" >
+<!ELEMENT %input.qname;  %input.content; >
+<!-- end of input.element -->]]>
+
+<!ENTITY % input.attlist  "INCLUDE" >
+<![%input.attlist;[
+<!ENTITY % InputType.class
+     "( text | password | checkbox | radio | submit
+      | reset | file | hidden | image | button )"
+>
+<!-- attribute 'name' required for all but submit & reset
+-->
+<!ATTLIST %input.qname;
+      %Common.attrib;
+      type         %InputType.class;        'text'
+      name         CDATA                    #IMPLIED
+      value        CDATA                    #IMPLIED
+      checked      ( checked )              #IMPLIED
+      disabled     ( disabled )             #IMPLIED
+      readonly     ( readonly )             #IMPLIED
+      size         %Number.datatype;        #IMPLIED
+      maxlength    %Number.datatype;        #IMPLIED
+      src          %URI.datatype;           #IMPLIED
+      alt          %Text.datatype;          #IMPLIED
+      tabindex     %Number.datatype;        #IMPLIED
+      accesskey    %Character.datatype;     #IMPLIED
+      accept       %ContentTypes.datatype;  #IMPLIED
+>
+<!-- end of input.attlist -->]]>
+
+<!-- select: Option Selector ........................... -->
+
+<!ENTITY % select.element  "INCLUDE" >
+<![%select.element;[
+<!ENTITY % select.content
+     "( %optgroup.qname; | %option.qname; )+"
+>
+<!ELEMENT %select.qname;  %select.content; >
+<!-- end of select.element -->]]>
+
+<!ENTITY % select.attlist  "INCLUDE" >
+<![%select.attlist;[
+<!ATTLIST %select.qname;
+      %Common.attrib;
+      name         CDATA                    #IMPLIED
+      size         %Number.datatype;        #IMPLIED
+      multiple     ( multiple )             #IMPLIED
+      disabled     ( disabled )             #IMPLIED
+      tabindex     %Number.datatype;        #IMPLIED
+>
+<!-- end of select.attlist -->]]>
+
+<!-- optgroup: Option Group ............................ -->
+
+<!ENTITY % optgroup.element  "INCLUDE" >
+<![%optgroup.element;[
+<!ENTITY % optgroup.content  "( %option.qname; )+" >
+<!ELEMENT %optgroup.qname;  %optgroup.content; >
+<!-- end of optgroup.element -->]]>
+
+<!ENTITY % optgroup.attlist  "INCLUDE" >
+<![%optgroup.attlist;[
+<!ATTLIST %optgroup.qname;
+      %Common.attrib;
+      disabled     ( disabled )             #IMPLIED
+      label        %Text.datatype;          #REQUIRED
+>
+<!-- end of optgroup.attlist -->]]>
+
+<!-- option: Selectable Choice ......................... -->
+
+<!ENTITY % option.element  "INCLUDE" >
+<![%option.element;[
+<!ENTITY % option.content  "( #PCDATA )" >
+<!ELEMENT %option.qname;  %option.content; >
+<!-- end of option.element -->]]>
+
+<!ENTITY % option.attlist  "INCLUDE" >
+<![%option.attlist;[
+<!ATTLIST %option.qname;
+      %Common.attrib;
+      selected     ( selected )             #IMPLIED
+      disabled     ( disabled )             #IMPLIED
+      label        %Text.datatype;          #IMPLIED
+      value        CDATA                    #IMPLIED
+>
+<!-- end of option.attlist -->]]>
+
+<!-- textarea: Multi-Line Text Field ................... -->
+
+<!ENTITY % textarea.element  "INCLUDE" >
+<![%textarea.element;[
+<!ENTITY % textarea.content  "( #PCDATA )" >
+<!ELEMENT %textarea.qname;  %textarea.content; >
+<!-- end of textarea.element -->]]>
+
+<!ENTITY % textarea.attlist  "INCLUDE" >
+<![%textarea.attlist;[
+<!ATTLIST %textarea.qname;
+      %Common.attrib;
+      name         CDATA                    #IMPLIED
+      rows         %Number.datatype;        #REQUIRED
+      cols         %Number.datatype;        #REQUIRED
+      disabled     ( disabled )             #IMPLIED
+      readonly     ( readonly )             #IMPLIED
+      tabindex     %Number.datatype;        #IMPLIED
+      accesskey    %Character.datatype;     #IMPLIED
+>
+<!-- end of textarea.attlist -->]]>
+
+<!-- fieldset: Form Control Group ...................... -->
+
+<!-- #PCDATA is to solve the mixed content problem,
+     per specification only whitespace is allowed
+-->
+
+<!ENTITY % fieldset.element  "INCLUDE" >
+<![%fieldset.element;[
+<!ENTITY % fieldset.content
+     "( #PCDATA | %legend.qname; | %Flow.mix; )*"
+>
+<!ELEMENT %fieldset.qname;  %fieldset.content; >
+<!-- end of fieldset.element -->]]>
+
+<!ENTITY % fieldset.attlist  "INCLUDE" >
+<![%fieldset.attlist;[
+<!ATTLIST %fieldset.qname;
+      %Common.attrib;
+>
+<!-- end of fieldset.attlist -->]]>
+
+<!-- legend: Fieldset Legend ........................... -->
+
+<!ENTITY % legend.element  "INCLUDE" >
+<![%legend.element;[
+<!ENTITY % legend.content
+     "( #PCDATA | %Inline.mix; )*"
+>
+<!ELEMENT %legend.qname;  %legend.content; >
+<!-- end of legend.element -->]]>
+
+<!ENTITY % legend.attlist  "INCLUDE" >
+<![%legend.attlist;[
+<!ATTLIST %legend.qname;
+      %Common.attrib;
+      accesskey    %Character.datatype;     #IMPLIED
+>
+<!-- end of legend.attlist -->]]>
+
+<!-- button: Push Button ............................... -->
+
+<!ENTITY % button.element  "INCLUDE" >
+<![%button.element;[
+<!ENTITY % button.content
+     "( #PCDATA
+      | %BlkNoForm.mix;
+      | %InlStruct.class;
+      %InlPhras.class;
+      %InlPres.class;
+      %I18n.class;
+      %InlSpecial.class;
+      %Inline.extra; )*"
+>
+<!ELEMENT %button.qname;  %button.content; >
+<!-- end of button.element -->]]>
+
+<!ENTITY % button.attlist  "INCLUDE" >
+<![%button.attlist;[
+<!ATTLIST %button.qname;
+      %Common.attrib;
+      name         CDATA                    #IMPLIED
+      value        CDATA                    #IMPLIED
+      type         ( button | submit | reset ) 'submit'
+      disabled     ( disabled )             #IMPLIED
+      tabindex     %Number.datatype;        #IMPLIED
+      accesskey    %Character.datatype;     #IMPLIED
+>
+<!-- end of button.attlist -->]]>
+
+<!-- end of xhtml-form-1.mod -->
+]]>
+
+<!-- Legacy Markup ............................................... -->
+<!ENTITY % xhtml-legacy.module "IGNORE" >
+<![%xhtml-legacy.module;[
+<!ENTITY % xhtml-legacy.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Legacy Markup 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-legacy-1.mod" >
+%xhtml-legacy.mod;]]>
+
+<!-- Document Structure Module (required)  ....................... -->
+<!ENTITY % xhtml-struct.module "INCLUDE" >
+<![%xhtml-struct.module;[
+<!ENTITY % xhtml-struct.mod
+     PUBLIC "-//W3C//ELEMENTS XHTML Document Structure 1.0//EN"
+            "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-struct-1.mod" >
+<!-- ...................................................................... -->
+<!-- XHTML Structure Module  .............................................. -->
+<!-- file: xhtml-struct-1.mod
+
+     This is XHTML, a reformulation of HTML as a modular XML application.
+     Copyright 1998-2001 W3C (MIT, INRIA, Keio), All Rights Reserved.
+     Revision: $Id: xhtml11-flat.dtd,v 1.1 2008/03/23 23:21:21 garymcgath Exp $ SMI
+
+     This DTD module is identified by the PUBLIC and SYSTEM identifiers:
+
+       PUBLIC "-//W3C//ELEMENTS XHTML Document Structure 1.0//EN"
+       SYSTEM "http://www.w3.org/TR/xhtml-modularization/DTD/xhtml-struct-1.mod"
+
+     Revisions:
+     (none)
+     ....................................................................... -->
+
+<!-- Document Structure
+
+        title, head, body, html
+
+     The Structure Module defines the major structural elements and
+     their attributes.
+
+     Note that the content model of the head element type is redeclared
+     when the Base Module is included in the DTD.
+
+     The parameter entity containing the XML namespace URI value used
+     for XHTML is '%XHTML.xmlns;', defined in the Qualified Names module.
+-->
+
+<!-- title: Document Title ............................. -->
+
+<!-- The title element is not considered part of the flow of text.
+     It should be displayed, for example as the page header or
+     window title. Exactly one title is required per document.
+-->
+
+<!ENTITY % title.element  "INCLUDE" >
+<![%title.element;[
+<!ENTITY % title.content  "( #PCDATA )" >
+<!ENTITY % title.qname  "title" >
+<!ELEMENT %title.qname;  %title.content; >
+<!-- end of title.element -->]]>
+
+<!ENTITY % title.attlist  "INCLUDE" >
+<![%title.attlist;[
+<!ATTLIST %title.qname;
+      %XHTML.xmlns.attrib;
+      %I18n.attrib;
+>
+<!-- end of title.attlist -->]]>
+
+<!-- head: Document Head ............................... -->
+
+<!ENTITY % head.element  "INCLUDE" >
+<![%head.element;[
+<!ENTITY % head.content
+    "( %HeadOpts.mix;, %title.qname;, %HeadOpts.mix; )"
+>
+<!ENTITY % head.qname  "head" >
+<!ELEMENT %head.qname;  %head.content; >
+<!-- end of head.element -->]]>
+
+<!ENTITY % head.attlist  "INCLUDE" >
+<![%head.attlist;[
+<!-- reserved for future use with document profiles
+-->
+<!ENTITY % profile.attrib
+     "profile      %URI.datatype;           '%XHTML.profile;'"
+>
+
+<!ATTLIST %head.qname;
+      %XHTML.xmlns.attrib;
+      %I18n.attrib;
+      %profile.attrib;
+>
+<!-- end of head.attlist -->]]>
+
+<!-- body: Document Body ............................... -->
+
+<!ENTITY % body.element  "INCLUDE" >
+<![%body.element;[
+<!ENTITY % body.content
+     "( %Block.mix; )+"
+>
+<!ENTITY % body.qname  "body" >
+<!ELEMENT %body.qname;  %body.content; >
+<!-- end of body.element -->]]>
+
+<!ENTITY % body.attlist  "INCLUDE" >
+<![%body.attlist;[
+<!ATTLIST %body.qname;
+      %Common.attrib;
+>
+<!-- end of body.attlist -->]]>
+
+<!-- html: XHTML Document Element ...................... -->
+
+<!ENTITY % html.element  "INCLUDE" >
+<![%html.element;[
+<!ENTITY % html.content  "( %head.qname;, %body.qname; )" >
+<!ENTITY % html.qname  "html" >
+<!ELEMENT %html.qname;  %html.content; >
+<!-- end of html.element -->]]>
+
+<!ENTITY % html.attlist  "INCLUDE" >
+<![%html.attlist;[
+<!-- version attribute value defined in driver
+-->
+<!ENTITY % XHTML.version.attrib
+     "version      %FPI.datatype;           #FIXED '%XHTML.version;'"
+>
+
+<!-- see the Qualified Names module for information
+     on how to extend XHTML using XML namespaces
+-->
+<!ATTLIST %html.qname;
+      %XHTML.xmlns.attrib;
+      %XHTML.version.attrib;
+      %I18n.attrib;
+>
+<!-- end of html.attlist -->]]>
+
+<!-- end of xhtml-struct-1.mod -->
+]]>
+
+<!-- end of XHTML 1.1 DTD  ................................................. -->
+<!-- ....................................................................... -->

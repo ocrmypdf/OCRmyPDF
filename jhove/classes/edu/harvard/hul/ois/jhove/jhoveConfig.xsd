@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- JHOVE - JSTOR/Harvard Object Validation Environment -->
+<!-- Copyright 2004-2007 by JSTOR and the President and Fellows of Harvard College -->
+<!-- JHOVE configuration file schema, Rel. 1.4 (2007-04-10) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+ targetNamespace="http://hul.harvard.edu/ois/xml/ns/jhove/jhoveConfig"
+ elementFormDefault="qualified" attributeFormDefault="unqualified">
+ <xs:element name="jhoveConfig">
+  <xs:annotation>
+   <xs:documentation>The JHOVE configuration file consists of the JHOVE home directory, optional temporary directory and buffer size, an unbounded, ordered set of modules, followed by an optional unbounded set of output handlers. It has a single required attribute, version, which specifies the schema version to which a configuration file conforms.</xs:documentation>
+  </xs:annotation>
+  <xs:complexType>
+   <xs:sequence>
+    <xs:element name="jhoveHome" type="xs:string">
+     <xs:annotation>
+      <xs:documentation>JHOVE home directory.</xs:documentation>
+     </xs:annotation>
+    </xs:element>
+    <xs:element name="defaultEncoding" type="xs:string" minOccurs="0">
+     <xs:annotation>
+      <xs:documentation>Default character encoding used by the output handlers.</xs:documentation>
+     </xs:annotation>
+    </xs:element>
+    <xs:element name="tempDirectory" type="xs:string" minOccurs="0">
+     <xs:annotation>
+      <xs:documentation>Optional directory in which temporary files are created. Default value is the current working directory.</xs:documentation>
+     </xs:annotation>
+    </xs:element>
+    <xs:element name="bufferSize" type="xs:nonNegativeInteger" minOccurs="0">
+     <xs:annotation>
+      <xs:documentation>Optional buffer size used for buffered I/O. Defeault value is 131072.</xs:documentation>
+     </xs:annotation>
+    </xs:element>
+    <xs:element name="mixVersion" type="xs:string" minOccurs="0">
+     <xs:annotation>
+      <xs:documentation>The version of the MIX schema to be used in metadata output. Default value is "0.2".</xs:documentation>
+     </xs:annotation>
+    </xs:element>
+    <xs:element name="sigBytes" type="xs:nonNegativeInteger" minOccurs="0">
+     <xs:annotation>
+      <xs:documentation>The number of initial bytes to search when matching internal signatures.</xs:documentation>
+     </xs:annotation>
+    </xs:element>
+    <xs:element name="module" maxOccurs="unbounded">
+     <xs:annotation>
+      <xs:documentation>A module consists of a fully package qualified class name, followed by an optional initialization parameter.</xs:documentation>
+     </xs:annotation>
+     <xs:complexType>
+      <xs:sequence>
+       <xs:element name="class" type="xs:string">
+        <xs:annotation>
+         <xs:documentation>A class consists of the fully package qualified class name for the module. Note that the class must be found on the Java CLASSPATH at the time that JHOVE is invoked.</xs:documentation>
+        </xs:annotation>
+       </xs:element>
+       <xs:element name="init" type="xs:string" minOccurs="0">
+        <xs:annotation>
+         <xs:documentation>A module initialization value is passed to the module once at the time it is first instantiated.</xs:documentation>
+        </xs:annotation>
+       </xs:element>
+       <xs:element name="param" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+         <xs:documentation>A module parameter value that is passed to the module immediately prior to each invocation of the parse() method.</xs:documentation>
+        </xs:annotation>
+       </xs:element>
+      </xs:sequence>
+     </xs:complexType>
+    </xs:element>
+    <xs:element name="outputHandler" minOccurs="0" maxOccurs="unbounded">
+     <xs:annotation>
+      <xs:documentation>An output handler consists of a fully package qualified class name.</xs:documentation>
+     </xs:annotation>
+     <xs:complexType>
+      <xs:sequence>
+       <xs:element name="class" type="xs:string">
+        <xs:annotation>
+         <xs:documentation>A class consists of the fully package qualified class name for the output handler. Note that the class must be found on the Java CLASSPATH at the time that JHOVE is invoked.</xs:documentation>
+        </xs:annotation>
+       </xs:element>
+       <xs:element name="init" type="xs:string" minOccurs="0">
+        <xs:annotation>
+         <xs:documentation>A handler initialization value that is passed to the class at the time it is first instantiated.</xs:documentation>
+        </xs:annotation>
+       </xs:element>
+       <xs:element name="param" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+         <xs:documentation>A handler parameter value that is passed to the module immediately prior to each invocation of the showHeader() method.</xs:documentation>
+        </xs:annotation>
+       </xs:element>
+      </xs:sequence>
+     </xs:complexType>
+    </xs:element>
+    <xs:element name="logLevel" minOccurs="0">
+     <xs:annotation>
+      <xs:documentation>Logging level.</xs:documentation>
+     </xs:annotation>
+     <xs:simpleType>
+      <xs:restriction base="xs:string">
+       <xs:enumeration value="OFF"/>
+       <xs:enumeration value="CONFIG"/>
+       <xs:enumeration value="INFO"/>
+       <xs:enumeration value="WARNING"/>
+       <xs:enumeration value="SEVERE"/>
+       <xs:enumeration value="FINE"/>
+       <xs:enumeration value="FINER"/>
+       <xs:enumeration value="FINEST"/>
+       <xs:enumeration value="ALL"/>
+      </xs:restriction>
+     </xs:simpleType>
+    </xs:element>
+   </xs:sequence>
+   <xs:attribute name="version" type="xs:string" use="required">
+    <xs:annotation>
+     <xs:documentation>The version attribute specifies the schema version to which a configuration file conforms.</xs:documentation>
+    </xs:annotation>
+   </xs:attribute>
+  </xs:complexType>
+ </xs:element>
+</xs:schema>

@@ -1,0 +1,65 @@
+<project name="Jhove" default="handler-dist" basedir=".">
+  <description>Handler build file	
+    Jhove - JSTOR/Harvard Object Validation Environment
+    Version 1.0 2004-02-03
+    Copyright 2004 by JSTOR and the President and Fellows of Harvard College
+  </description>
+
+  <!-- set global properties for this build -->
+  <property name="root" location="../../../../../.."/>
+  <property name="bin"  location="${root}/../bin"/>
+  <property name="classpath" value="${bin}/jhove.jar:${root}"/>
+  <property name="jar"  location="${bin}/jhove-handler.jar"/>
+  <property name="manifest" location="META-INF"/>
+
+  <target name="handler-init" description="Create the time stamp">
+    <tstamp>
+      <format property="timestamp.isoformat" pattern="yyyy-MM-dd'T'HH:mm:ss"/>
+    </tstamp>
+  </target>
+
+  <target name="handler" depends="handler-init"
+          description="Compile the handlers">
+    <javac compiler="javac1.5" target="1.5" srcdir="." debug="${dbg}" classpath="${classpath}"/>
+    <ant dir="audit" target="audit" inheritAll="false">
+      <property name="dbg" value="${dbg}"/>
+    </ant>
+  </target>
+
+  <target name="handler-manifest" depends="handler">
+    <mkdir dir="${manifest}"/>
+    <manifest file="${manifest}/MANIFEST.MF">
+      <attribute name="Built-By" value="${user.name}"/>
+      <attribute name="Built-On" value="${timestamp.isoformat}"/>
+      <section name="JHOVE">
+        <attribute name="Version" value="1.0"/>
+        <attribute name="Package" value="Handlers"/>
+        <attribute name="Rights"  value="Copyright 2004 by JSTOR and the President and Fellows of Harvard College"/>
+      </section>
+    </manifest>
+  </target>
+
+  <target name="handler-dist" depends="handler-manifest"
+          description="Create the distribution">
+    <mkdir dir="${bin}"/>
+    <jar destfile="${jar}" basedir="${root}" index="true"
+         manifest="${manifest}/MANIFEST.MF"
+         includes="edu/harvard/hul/ois/jhove/handler/*.class,
+	 	 edu/harvard/hul/ois/jhove/handler/audit/*.class"/>
+  </target>
+
+  <target name="handler-clean" description="Delete backup files">
+    <delete>
+      <fileset dir="." includes="*~ \#*"/>
+    </delete>
+    <ant dir="audit" target="audit-clean" inheritAll="false"/>
+  </target>
+
+  <target name="handler-cleanclass"
+          description="Delete backup and class files">
+    <delete>
+      <fileset dir="." includes="*.class*"/>
+    </delete>
+    <ant dir="audit" target="audit-cleanclass"  inheritAll="false"/>
+  </target>
+</project>

@@ -1,0 +1,32 @@
+<project name="Jhove" default="xml" basedir=".">
+  <description>XML module build file
+    Jhove - JSTOR/Harvard Object Validation Environment
+    Version 1.0 2004-02-03
+    Copyright 2004 by JSTOR and the President and Fellows of Harvard College
+  </description>
+
+  <!-- set global properties for this build -->
+  <property name="root" location="../../../../../../.."/>
+  <property name="bin"  location="${root}/../bin"/>
+  <property name="classpath" value="${bin}/jhove.jar:${root}"/>
+
+  <target name="xml-init" description="Create the time stamp">
+    <tstamp/>
+  </target>
+
+  <target name="xml" depends="xml-init" description="Compile the XML module">
+    <javac compiler="javac1.5" target="1.5" srcdir="." debug="{$dbg}" classpath="${classpath}"/>
+  </target>
+
+  <target name="xml-clean" description="Delete backup files" >
+    <delete>
+      <fileset dir="." includes="*~ \#*"/>
+    </delete>
+  </target>
+
+  <target name="xml-cleanclass" description="Delete backup and class files">
+    <delete>
+      <fileset dir="." includes="*.class*"/>
+    </delete>
+  </target>
+</project>

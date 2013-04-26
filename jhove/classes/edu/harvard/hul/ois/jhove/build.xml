@@ -1,0 +1,79 @@
+<project name="Jhove" default="api-dist" basedir=".">
+  <description>API build file
+    Jhove - JSTOR/Harvard Object Validation Environment
+    Version 1.0 2004-02-03
+    Copyright 2004 by JSTOR and the President and Fellows of Harvard College
+  </description>
+
+  <!-- set global properties for this build -->
+  <property name="root" location="../../../../.."/>
+  <property name="bin"  location="${root}/../bin"/>
+  <property name="classpath" value="${root}"/>
+  <property name="jar"  location="${bin}/jhove.jar"/>
+  <property name="manifest" location="META-INF"/>
+
+  <target name="api-init" description="Create the time stamp">
+    <tstamp>
+      <format property="timestamp.isoformat" pattern="yyyy-MM-dd'T'HH:mm:ss"/>
+    </tstamp>
+  </target>
+
+  <target name="api" depends="api-init" description="Compile the API">
+    <javac compiler="javac1.5" target="1.5" srcdir="." debug="${dbg}" classpath="${classpath}"/>
+  </target>
+
+  <target name="api-manifest" depends="api">
+    <mkdir dir="${manifest}"/>
+    <manifest file="${manifest}/MANIFEST.MF">
+      <attribute name="Built-By" value="${user.name}"/>
+      <attribute name="Built-On" value="${timestamp.isoformat}"/>
+      <section name="JHOVE">
+        <attribute name="Version" value="1.0"/>
+        <attribute name="Package" value="Framework API"/>
+        <attribute name="Rights"  value="Copyright 2004 by JSTOR and the President and Fellows of Harvard College"/>
+      </section>
+    </manifest>
+  </target>
+
+  <target name="api-dist" depends="api-manifest,module,handler"
+          description="Create the distribution">
+    <mkdir dir="${bin}"/>
+    <jar destfile="${jar}" basedir="${root}" index="true"
+         manifest="${manifest}/MANIFEST.MF"
+         includes="edu/harvard/hul/ois/jhove/*.class"/>
+  </target>
+
+  <target name="module">
+    <ant dir="module" target="module-dist" inheritAll="false">
+      <property name="dbg" value="${dbg}"/>
+    </ant>
+  </target>
+
+  <target name="handler">
+    <ant dir="handler" target="handler-dist" inheritAll="false">
+      <property name="dbg" value="${dbg}"/>
+    </ant>
+  </target>
+
+  <target name="api-clean" description="Delete backup files">
+    <delete>
+      <fileset dir="." includes="*~ \#*"/>
+    </delete>
+    <ant dir="handler" target="handler-clean" inheritAll="false"/>
+    <ant dir="module"  target="module-clean"  inheritAll="false"/>
+    <delete>
+      <fileset dir="./viewer" includes="*~ \#*"/>
+    </delete>
+  </target>
+
+  <target name="api-cleanclass" description="Delete backup and class files">
+    <delete>
+      <fileset dir="." includes="*.class*"/>
+    </delete>
+    <ant dir="handler" target="handler-cleanclass" inheritAll="false"/>
+    <ant dir="module"  target="module-cleanclass"  inheritAll="false"/>
+    <delete>
+      <fileset dir="./viewer" includes="*.class*"/>
+    </delete>
+  </target>
+</project>

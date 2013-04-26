@@ -1,0 +1,15 @@
+edu.harvard.hul.ois.jhove
+edu.harvard.hul.ois.jhove.handler
+edu.harvard.hul.ois.jhove.handler.audit
+edu.harvard.hul.ois.jhove.module
+edu.harvard.hul.ois.jhove.module.aiff
+edu.harvard.hul.ois.jhove.module.gif
+edu.harvard.hul.ois.jhove.module.html
+edu.harvard.hul.ois.jhove.module.iff
+edu.harvard.hul.ois.jhove.module.jpeg
+edu.harvard.hul.ois.jhove.module.jpeg2000
+edu.harvard.hul.ois.jhove.module.pdf
+edu.harvard.hul.ois.jhove.module.tiff
+edu.harvard.hul.ois.jhove.module.wave
+edu.harvard.hul.ois.jhove.module.xml
+edu.harvard.hul.ois.jhove.viewer

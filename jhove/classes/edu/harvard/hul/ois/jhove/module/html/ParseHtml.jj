@@ -1,0 +1,316 @@
+/**********************************************************************
+ * Jhove - JSTOR/Harvard Object Validation Environment
+ * Copyright 2004 by JSTOR and the President and Fellows of Harvard College
+ **********************************************************************/
+ 
+/* javacc grammar for parsing HTML into a List that higher-level
+   code can handle.
+*/
+
+options { 
+    IGNORE_CASE = true; 
+    USER_CHAR_STREAM = true;
+    STATIC = false; 
+} 
+
+PARSER_BEGIN(ParseHtml)
+
+
+package edu.harvard.hul.ois.jhove.module.html;
+
+import java.util.*;
+
+public class ParseHtml
+{
+	private List elements;
+	
+	public List getElements ()
+	{
+	    return elements;
+	}
+	
+
+}
+
+PARSER_END(ParseHtml)
+
+
+/* Lexical productions start here.   */
+TOKEN:
+{
+    <STARTDOCTYPE: "<!"> : IN_DOCTYPE |
+    <LABRACKET: "<"> : IN_TAG 
+}
+
+<DEFAULT>
+MORE:
+{
+    <PCDATASTART: (~["<", "\t", "\n", "\r", "\f", " "]) > : IN_PCDATA
+}
+
+<IN_PCDATA>
+TOKEN:
+{
+    <PCDATA: (~["<"])* > : DEFAULT
+}
+
+
+<IN_TAG>
+TOKEN:
+{
+    <NAME: (["A"-"Z", "a"-"z"]) ([ "A"-"Z" , "a"-"z", "0"-"9", "-"  ])*> |
+    <EQUALS: "=" (["\n", "\r", " "])*> : IN_ATTVALUE 
+}
+
+<IN_ATTVALUE>
+TOKEN:
+{
+    <NAKEDVALUE: (~["\n", "\r", "\f", " ", "\t", ">", "=", ",", "\""])+ > : IN_TAG |
+    <QUOTEDVALUE: ("\"")  (~["\""])* ("\"")> : IN_TAG |
+    <SINGQUOTEDVALUE: ("'")  (~["\'"])* ("'")> : IN_TAG 
+}
+
+
+<IN_TAG, IN_DOCTYPE>
+TOKEN:
+{
+	<QMARK: "?" > |
+    <SLASH: "/" > |
+    <COLON: ":" >
+}
+
+<IN_TAG, IN_DOCTYPE2>
+TOKEN:
+{
+    <RABRACKET: ">"> : DEFAULT
+}
+
+<IN_DOCTYPE> 
+TOKEN:
+{
+    <DOCTYPEKEYWORD: "DOCTYPE" > : IN_DOCTYPE2 
+}
+
+<IN_DOCTYPE2>
+TOKEN:
+{
+    <NAKEDDTITEM: (~["\n", "\r", " ", "\t", "\f", "\"", ">"])+ > |
+    <QUOTEDDTITEM: ("\"")  (~["\n", "\r", "\f", "\""])* ("\"")>
+}
+
+<DEFAULT, IN_DOCTYPE, IN_DOCTYPE2, IN_TAG>
+SKIP :  /* white space */
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+| "\f"
+}
+
+MORE :
+{
+  <OPENCOMMENT: "<!--"> : IN_COMMENT 
+}
+
+<IN_COMMENT>
+SPECIAL_TOKEN :
+{
+  <"--" > : ENDING_COMMENT
+}
+
+<IN_COMMENT>
+MORE :
+{
+  < ~[] >
+}
+
+
+<ENDING_COMMENT>
+SPECIAL_TOKEN :
+{
+  <">" > : DEFAULT |
+  < ~[">"] > : IN_COMMENT
+}
+
+
+
+List HtmlDoc () :
+{
+	elements = new LinkedList ();
+}
+{
+/* Production block -- looks a little like Java but isn't */
+    (Element(elements))* <EOF>
+    { return elements; }
+}
+
+JHElement Element (List elements) :
+{
+    JHElement elem;
+}
+{
+    try {
+    	LOOKAHEAD(2)
+    	elem = Doctype () { return elem; } |
+        LOOKAHEAD(2)
+        elem = OpenTag() { return elem; } |
+        LOOKAHEAD(2)
+        elem = CloseTag() { return elem; }  |
+        elem = PCData() { return elem; }  |
+        LOOKAHEAD(2)
+        elem = XMLDecl() { return elem; } /* |
+        elem = ProcessingInst() */ 
+    }
+    catch (ParseException e) {
+    	String errText = "";
+    	for (;;) {
+            token_source.SwitchTo(DEFAULT);
+	        Token tok = getNextToken ();
+	        if (tok.kind == LABRACKET || tok.kind == PCDATA) {
+	            break;
+	        }
+	        errText += "Text = \"" + tok.image + "\", Line = " +
+                    tok.beginLine + ", Column = " + tok.beginColumn;
+	    }
+        return new JHErrorElement(elements, "Parsing error", errText, true); 
+    }
+    { return elem; } 
+}
+
+
+JHOpenTag OpenTag () :
+{
+    List attrs = new LinkedList ();
+    Token name;
+    String slasher;
+    boolean complete;
+}
+{
+    <LABRACKET> name = Name () (Attribute(attrs))* slasher = TagCloser ()
+    { if ("/".equals (slasher)) { 
+         /* This is a special hack so that a tag closed with "/>" will keep
+            the whole thing from falling apart, yet will generate an error */
+         return new JHOpenTag (elements, name.image, attrs, 
+           name.beginLine, name.beginColumn,
+           "Construction with \"/>\" is incorrect except in XHTML");
+     }
+     else {
+         return new JHOpenTag (elements, name.image, attrs, 
+            name.beginLine, name.beginColumn); 
+     }
+    }
+}
+
+JHXmlDecl XMLDecl () :
+{
+    List attrs = new LinkedList ();
+}
+{
+	<LABRACKET> <QMARK> <NAME> (Attribute(attrs))* <QMARK><RABRACKET>
+	{  return new JHXmlDecl (elements); }
+}
+
+JHCloseTag CloseTag () :
+{
+    Token name;
+}
+{
+    <LABRACKET> <SLASH> name = Name () <RABRACKET>
+    { return new JHCloseTag (elements, name.image,
+              name.beginLine, name.beginColumn); }
+}
+
+JHPCData PCData () :
+{
+    Token tok = getToken(1);
+}
+{
+    <PCDATA> { return new JHPCData (elements, tok.image, tok.beginLine, tok.beginColumn); }
+}
+
+JHDoctype Doctype () :
+{
+    List doctypeElements = new LinkedList ();
+}
+{
+    <STARTDOCTYPE> <DOCTYPEKEYWORD> (DoctypeItem (doctypeElements))* <RABRACKET>
+    {return new JHDoctype (elements, doctypeElements); }
+}
+
+
+/* This is a last-resort production which consumes a token
+   and returns an element that will be flagged as an error. */
+JAVACODE JHErrorElement ConsumeError () 
+{
+    Token tok = getNextToken();
+	return new JHErrorElement (elements, "Parsing error", tok.image, true);
+}
+
+void DoctypeItem (List dtElements) :
+{
+    Token tok = getToken(1);
+}
+{
+    <NAKEDDTITEM> { dtElements.add (tok.image); } |
+    <QUOTEDDTITEM> { dtElements.add (tok.image); }
+}
+
+
+Token Name () :
+{
+    Token tok = getToken(1);
+}
+{
+    <NAME> { return tok; }
+}
+
+String AttrVal () :
+{
+    Token tok = getToken(1);
+}
+{
+    <NAKEDVALUE> { return tok.image; } |
+    <QUOTEDVALUE> { return tok.image; }
+    <SINGQUOTEDVALUE> { return tok.image; }
+}
+
+void Attribute (List attrs) :
+{
+    JHAttribute attval;
+    Token name;
+    Token namespace;
+    String val;
+}
+{
+    LOOKAHEAD(2)
+    namespace = Name() <COLON> name = Name() <EQUALS> val = AttrVal()
+    { attval = new JHAttribute (name.image, namespace.image, val,
+    		name.beginLine, name.beginColumn);
+      attrs.add(attval); } |
+     LOOKAHEAD(2)
+    namespace = Name() <COLON> name = Name()
+    { attval = new JHAttribute (name.image, namespace.image, 
+            null,
+    		name.beginLine, name.beginColumn);
+      attrs.add(attval); } |
+    LOOKAHEAD(2)
+    name = Name() <EQUALS> val = AttrVal()
+    { attval = new JHAttribute (name.image, null, val,
+            name.beginLine, name.beginColumn); 
+      attrs.add(attval); } |
+     LOOKAHEAD(2)
+    name = Name()
+    { attval = new JHAttribute (name.image, null, null,
+            name.beginLine, name.beginColumn);
+      attrs.add(attval); }
+}
+
+String TagCloser () :
+{
+    Token tok = getToken (1);
+}
+{
+    ( <SLASH> <RABRACKET> ) { return tok.image; } | 
+    <RABRACKET>  { return tok.image; }
+}

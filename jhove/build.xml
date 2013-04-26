@@ -1,0 +1,78 @@
+<project name="Jhove" default="dist" basedir=".">
+  <description>Project build file
+    Jhove - JSTOR/Harvard Object Validation Environment
+    Version 1.0 2004-09-10
+    Copyright 2004 by JSTOR and the President and Fellows of Harvard College
+  </description>
+
+  <!-- ant (or ant dist) Build everything
+       ant debug         Build everything with debug enabled
+       ant clean         Delete backup files
+       ant cleanclass    Delete backup and class files
+       ant cleandist     Delete backup, class, and jar files
+       ant javadoc       Build javadocs
+    -->
+
+  <!-- set global properties for this build -->
+  <property name="bin"     location="bin"/>
+  <property name="classes" location="classes"/>
+  <property name="doc"     location="doc"/>
+
+  <target name="dist" description="Create distribution">
+    <ant dir="${classes}" inheritAll="false">
+      <property name="dbg" value="off"/>
+    </ant>
+  	<chmod file="jhove" perm="ugo+x"/>
+  	<chmod file="${bin}/JhoveView.jar" perm="ugo+x"/>
+  </target>
+
+  <target name="debug" description="Create distribution with debug enabled">
+    <ant dir="${classes}" inheritAll="false">
+      <property name="dbg" value="on"/>
+    </ant>
+  </target>
+
+  <target name="view" description="Create JhoveView application">
+    <ant dir="${classes}" target="view" inheritAll="false">
+      <property name="dbs" value="on"/>
+    </ant>
+  </target>
+
+  <target name="clean" description="Delete backup files">
+    <ant dir="${classes}" target="main-clean" inheritAll="false"/>
+  </target>
+
+  <target name="cleanclass" depends="clean">
+    <ant dir="${classes}" target="main-cleanclass" inheritAll="false"/>
+  </target>
+
+  <target name="cleandist" depends="cleanclass">
+    <delete file="${bin}/jhove.jar"/>
+    <delete file="${bin}/jhove-handler.jar"/>
+    <delete file="${bin}/jhove-module.jar"/>
+    <delete file="${bin}/JhoveApp.jar"/>
+    <delete file="${bin}/JhoveView.jar"/>
+  </target>
+
+  <target name="javadoc">
+    <javadoc sourcepath="${classes}" destdir="${doc}"
+             windowtitle="JHOVE Documentation"
+             Overview="${classes}/overview.html">
+      <package name="edu.harvard.hul.ois.jhove"/>
+      <package name="edu.harvard.hul.ois.jhove.handler"/>
+      <package name="edu.harvard.hul.ois.jhove.handler.audit"/>
+      <package name="edu.harvard.hul.ois.jhove.module"/>
+      <package name="edu.harvard.hul.ois.jhove.module.aiff"/>
+      <package name="edu.harvard.hul.ois.jhove.module.gif"/>
+      <package name="edu.harvard.hul.ois.jhove.module.html"/>
+      <package name="edu.harvard.hul.ois.jhove.module.iff"/>
+      <package name="edu.harvard.hul.ois.jhove.module.jpeg"/>
+      <package name="edu.harvard.hul.ois.jhove.module.jpeg2000"/>
+      <package name="edu.harvard.hul.ois.jhove.module.pdf"/>
+      <package name="edu.harvard.hul.ois.jhove.module.tiff"/>
+      <package name="edu.harvard.hul.ois.jhove.module.wave"/>
+      <package name="edu.harvard.hul.ois.jhove.module.xml"/>
+      <package name="edu.harvard.hul.ois.jhove.viewer"/>
+    </javadoc>
+  </target>
+</project>

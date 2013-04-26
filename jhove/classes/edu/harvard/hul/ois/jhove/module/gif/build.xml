@@ -1,0 +1,32 @@
+<project name="Jhove" default="gif" basedir=".">
+  <description>GIF module build file
+    Jhove - JSTOR/Harvard Object Validation Environment
+    Version 1.0 2004-02-03
+    Copyright 2004 by JSTOR and the President and Fellows of Harvard College
+  </description>
+
+  <!-- set global properties for this build -->
+  <property name="root" location="../../../../../../.."/>
+  <property name="bin"  location="${root}/../bin"/>
+  <property name="classpath" value="${bin}/jhove.jar:${root}"/>
+
+  <target name="gif-init" description="Create the time stamp">
+    <tstamp/>
+  </target>
+
+  <target name="gif" depends="gif-init" description="Compile the GIF module">
+    <javac compiler="javac1.5" target="1.5" srcdir="." debug="{$dbg}" classpath="${classpath}"/>
+  </target>
+
+  <target name="gif-clean" description="Delete backup files" >
+    <delete>
+      <fileset dir="." includes="*~ \#*"/>
+    </delete>
+  </target>
+
+  <target name="gif-cleanclass" description="Delete backup and class files">
+    <delete>
+      <fileset dir="." includes="*.class*"/>
+    </delete>
+  </target>
+</project>

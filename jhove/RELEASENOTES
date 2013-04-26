@@ -1,0 +1,1676 @@
+RELEASENOTES
+JHOVE - JSTOR/Harvard Object Validation Environment
+Copyright 2003-2009 by JSTOR and the President and Fellows of Harvard College
+JHOVE is made available under the GNU Lesser General Public License (LGPL;
+see the file LICENSE for details)
+
+Versions 1.7 and beyond of JHOVE are no longer under the control of Harvard.
+
+RELEASE NOTES FOR JHOVE 1.9
+
+GENERAL
+
+1. Jhove.java and JhoveView.java now get their version information from 
+   JhoveBase.java. Before it was redundantly kept in three places, and 
+   sometimes they didn't all get updated for a new release. Like in 1.8.
+   
+2. ConfigWriter was in the package edu.harvard.hul.ois.jhove.viewer, which 
+   caused a NoClassDefFoundError if non-GUI configurations didn't include
+   JhoveViewer.jar in the classpath. It's been moved to
+   edu.harvard.hul.ois.jhove.
+
+3. Added script packagejhove.sh and made md5.pl part of the CVS repository
+   to make packaging for delivery easier.
+
+4. jhove.bat now simply uses the Java command rather than requiring
+   the user to set up the Java path.
+
+5. JhoveView.jar and jhove (the top level shell script) are now forced
+   by ant to be executable so there are no mistakes.
+
+6. Warning message given on invalid buffer size string, and minimum 
+   buffer size is 1024.
+
+7. Configuration file code for adding handlers and giving init strings 
+   to modules was an awful mess that never could have worked. 
+   Major repairs done.
+   
+AIFF MODULE
+
+1. If an AIFF file was found to be little-endian, the module instance
+   would stay in little-endian mode for all subsequent files. This
+   has been fixed.
+   
+TIFF MODULE
+
+1. TIFF files that had strip or tile offsets but no corresponding byte
+   counts were throwing an exception all the way to the top level. Now
+   they're correctly being reported as invalid.
+   
+XML MODULE
+
+1. Cleaned up reporting of schemas, Added some small classes to replace
+   the use of string arrays for information structures. Made URI comparison
+   for local schema parameter case-independent. Resolved conflict between
+   "s" and "schema" parameters.
+
+WAVE MODULE
+
+1.  Some uncaught exceptions caused the module to throw all the way
+    back to JhoveBase and not report any result for certain defective
+    files. These now report the file as not well-formed. 
+
+
+RELEASE NOTES FOR JHOVE 1.8
+
+GENERAL
+
+1. If JHOVE doesn't find a configuration file, it creates a default one.
+
+2. Generics widely added to clean up the code.
+
+3. build.xml files fixed to force compilation to Java 1.5.
+
+4. Shell script "jhove" no longer makes you figure out where JAVA_HOME is.
+
+PDF MODULE
+
+1. Several errors in checking for PDF-A compliance were corrected. Aside from
+   fixing some outright bugs, the Contents key for non-text Annotations is
+   no longer checked, as its presence is only recommended and not required.
+
+2. Improved code by Håkan Svenson is now used for finding the trailer. 
+
+TIFF MODULE
+
+1. TIFF tag 700 (XMP) now accepts field type 7 (UNDEFINED) as well as 1 
+   (BYTE), on the basis of Adobe's XMP spec, part 3.
+   
+2. If compression scheme 6 is used in a file, an InfoMessage will report
+   that the file uses deprecated compression.
+
+WAVE MODULE
+
+1. The Originator Reference property, found in the Broadcast Wave Extension
+   (BEXT) chunk, is now reported.
+
+RELEASE NOTES FOR JHOVE 1.7
+2012-08-12
+
+GENERAL
+
+1. JHOVE 1.7, as well as future releases unless noted otherwise, is 
+   released independently of Harvard under the GNU General Public License.
+
+2. JHOVE now will tell you where it was looking for the config file if it 
+   can't open it. This should help debug configuration problems.
+
+XML HANDLER
+
+1. Changes to XmlHandler.java and NisoImageMetadata.java to correct invalid MIX 
+   2.0 XML output in the value of grayResponseUnit. It was previously writing 
+   integers (as in 1.0) rather than the expected enumerated strings.
+
+PDF MODULE
+
+1. A situation that caused an infinite loop and eventual memory exhaustion 
+   processing in some PDF files with malformed literals has been fixed.
+ 
+RELEASE NOTES FOR JHOVE 1.6
+2011-01-03
+
+XML HANDLER AND TEXT HANDLER
+
+1. The default version of MIX is now 2.0. In earlier versions it was 0.2.
+   However, MIX 2.0 still isn't supported in the text handler, so it will
+   produce 1.0 output by default. The XML handler will produce MIX 2.0
+   output.
+   
+TIFF MODULE
+
+1. JHOVE returned a \"String index out of range: 4\" exceptions during 
+   TIFF validation for a tiff contains an empty (not NULL) date/time 
+   field. This has been corrected so that a date/time field with
+   the wrong length won't be parsed but will report an error instead.
+   
+2. If text tags contain characters which aren't printable ASCII, these
+   are now output as escape sequences so that invalid XML isn't
+   output.
+
+UTF-8 MODULE
+
+1.  Updated to Unicode 6.0.0.
+
+RELEASE NOTES FOR JHOVE 1.5
+2009-12-17
+
+PDF MODULE
+
+1. An ArrayIndexOutOfBoundsException was thrown on a PDF with an invalid 
+   object number in the cross-reference stream. In JHOVE 1.5, this is
+   correctly reported as a violation of well-formedness.
+
+UTF-8 MODULE   
+
+1. With some very simple UTF-8 files, JHOVE handlers would throw an exception
+   processing them, and the GUI would fail silently. This happened with files
+   using no UTF-8 blocks. This has been fixed.
+
+TEXTMD (multiple modules)
+
+1. TextMD metadata can now optionally be reported. To get this, it's
+   necessary to edit jhove.conf. TextMD can be enabled on a per-module
+   basis for HtmlModule, AsciiModule, Utf8Module, and XmlModule.  
+   The <module> element for each chosen module must contain the element
+   <param>withtextmd=true</param> (no spaces).
+   
+2. The TextMD feature was added by Thomas Ledoux.
+
+   
+   
+RELEASE NOTES FOR JHOVE 1.4
+2009-07-30
+
+PDF MODULE
+
+   1. The PDF/A profile has been updated to the final version of 
+      19005-1:2005(E) and made more thorough. Among the changes:
+
+      a. The set-state and no-op actions disqualify a PDF/A candidate.
+
+      b. The ASCIIHexDecode and ASCII85Decode filters no longer 
+         disqualify a candidate.
+
+      c. Checking of outlines has been added.
+
+      d. Additional checking of Type 1 fonts and symbolic fonts.
+
+      e. Bug fix in checking type 2 subfonts.
+
+      f. An LZW filter in an image object disqualifies a candidate.
+
+      g. The xpacket processing instruction is checked for attributes 
+         which disqualify from PDF/A.
+
+      h. Conformity to implementation limits is checked as a condition
+         of PDF/A conformity.
+
+JPEG2000 MODULE
+
+   1. The pathological case of an image with no components is checked so
+      it won't cause a crash.
+
+XML HANDLER
+
+   1. A reset() function has been added so that if the handler is reused,
+      it will return to a valid initial state.
+
+RELEASE NOTES FOR JHOVE 1.3
+2009-06-04
+
+GENERAL
+
+   1. The build.xml files now force compilation to Java 1.4, preventing 
+      accidental distributions that aren't 1.4-compatible.
+   2. Spaces are allowed in file paths on Windows, if the path is 
+      enclosed in quotes. This fix had been in version 1.1i, and had been
+      lost since then.
+      
+PDF MODULE
+
+   1. According to the PDF 1.6 specification, table 3.4, parameters for a 
+      stream filter can be either a dictionary or the null object. The null 
+      object was treated as an error; it is now allowed.
+   2. Object stream handling was seriously buggy, causing rejection of
+      well-formed and valid files; it's better now.
+   3. In PDF 1.4, an outline dictionary unconditionally must have a "First" 
+      and a "Last" entry. JHOVE follows this requirement, declaring a file
+      invalid if it isn't met. However, PDF 1.6 relaxes the requirement,
+      applying it only "if there are any open or closed outline entries." 
+      Thus, an empty outline dictionary with no "First" or "Last" entry 
+      is valid. It is now accepted (for all PDF versions).
+   4. If a page number tree in a PDF file is missing an expected "Nums" 
+      entry, this was being reported as an invalid date. A more appropriate
+      error message is now given. 
+
+TIFF MODULE
+
+   1. TIFF tag 33723 (IPTC-NAA) was considered valid only if the data
+      type is ASCII or LONG. But according to Aware Systems, the valid
+      types are UNDEFINED and BYTE. All four types are now accepted. 
+
+XML HANDLER
+
+   1. Omissions in MIX 1.0 and 2.0 output have been fixed.
+   
+RELEASE NOTES FOR JHOVE 1.2
+2009-02-10
+
+GENERAL
+
+   1. A bug has been fixed in CountedInputStream, which could potentially
+      have caused infinite recursion in some modules.
+
+HTML MODULE
+
+   1. An incompatibility with Java 1.6 has been fixed.
+   
+PDF MODULE
+
+   1. A null pointer exception would be thrown for PDF documents without a
+      document root tree. This has been fixed.
+   2. A source of possible false positives in PDF profiles has been fixed.
+   3. Certain checks weren't being done to Type 2 fonts, and some PDF/A 
+      profile violations might have been missed as a result. This has
+      been fixed.
+   
+WAVE MODULE
+
+   1. Sub-chunks of the 'adtl' chunk are now constrained to even byte
+      boundaries.
+      
+XML HANDLER
+
+   1. MIX 2.0 is now supported.
+   2. The URL for the MIX 0.2 schema has changed to reflect the change
+      on the LOC MIX site.
+   3. The handler was sometimes incorrectly reporting whether the 
+      AESAudioMetadata property had an empty value or not. This has
+      been fixed.
+
+
+RELEASE NOTES FOR JHOVE 1.1 
+Rev. 2008-02-22
+
+COMMAND-LINE INTERFACE
+
+   1. Allow filenames with internal spaces if they are quoted on the
+      command line.
+   2. Corrected error setting the Classpath in the Windows Shell script
+      (jhove.bat)
+   3. Corrected error opening the configuration file using the default
+      GCJ parser in the GNU Java Runtime Environment.
+
+GUI (SWING) INTERFACE (JHOVE VIEW)
+
+   1. AES metadata properties displayed in the RepInfo window rearranged
+      slightly to make their ordering consistent with the Text and XML
+      handlers.
+   2. The JhoveView.main() method will now accept a "-c configFile" option
+      on the command line.  The GUI interface can now be invoked by:
+
+          java -jar bin/JhoveView.jar -c configFile
+
+   3. Corrected error opening the configuration file using the default
+      GCJ parser in the GNU Java Runtime Environment.
+   4. Correct recurrent problems with reading the configuration file on
+      Windows installations.
+
+AIFF MODULE
+
+   1. Correct value for first sample offset by included non-zero offset
+      defined in the SSND chunk.
+   2. Do not report bitrate reduction data for PCM data.
+   3. All non-final instance fields and methods are protected, rather than
+      private.
+
+ASCII MODULE
+
+   1. A minimal file containing no line-end characters now does not
+      produce an empty ASCIIMetadata property, which is invalid against
+      the JHOVE schema.
+   2. Zero-length files are considered not well-formed.
+   3. Issue informative message if file contains no printable characters.
+   4. All non-final instance fields and methods are protected, rather than
+      private.
+
+BYTESTREAM MODULE
+
+   1. All non-final instance fields and methods are protected, rather than
+      private.
+
+GIF MODULE
+
+   1. All non-final instance fields and methods are protected, rather than
+      private.
+
+HTML MODULE
+
+   1. The HTMLMetadata block in the module output is only produced if
+      there is at least one actual metadata property to report.
+   2. All non-final instance fields and methods are protected, rather than
+      private.
+
+JPEG MODULE
+
+   1. The JPEG module reports the X and Y sampling frequency for files
+      meeting the JFIF profile.
+   2. The JPEG module reports the pixel aspect ratio for JFIF profile
+      files for which it is defined.
+   3. File handles were not being properly closed when processing embedded
+      EXIF metadata.  In cases where JHOVE was invoked against large
+      numbers of objects this was causing a premature crash due to the
+      resource leak.
+   4. All non-final instance fields and methods are protected, rather than
+      private.
+   5. Correct parsing of the EXIF "subsecTimeOriginal" (37251) and
+      "subsecTimeDigitized" (37522) properties.
+   6. Validation errors in embedded EXIF metdata were not being fully
+      reported.
+
+JPEG 2000 MODULE
+
+   1. All non-final instance fields and methods are protected, rather than
+      private.
+   2. Files generated by the LuraWave codec are no longer incorrecly identified
+      as having unrecognized QCC marker segments.
+
+PDF MODULE
+
+   1. Date strings are now parsed with strict conformance to the ASN.1
+      syntax.
+   2. Destinations defined by indirect references to non-existent objects
+      are assumed to have the value "null".  Files containing such
+      destinations are reported as "well-formed, but not valid".
+   3. No attempt is made to display encrypted outline item title strings are
+      not displayed.
+   4. Catch error if the Info key of the trailer dictionary is not an 
+      indirect reference.
+   5. Read entire page tree structure, regardless of its internal
+      organization.  This error may have caused the under reporting of
+      page resources, such as fonts and images.
+   6. The NISO Compression Scheme for all images using the CCITTFaxDecode
+      compression filter is now reported properly; previously, the scheme
+      was always reported as CCITT 1D even if the actual compression
+      algorithm was CCITT Group 3 or 4.
+   7. Properly parse UTF-16 escape characters encoded in double-byte form.
+   8. The module properly stops looking for the header comment after 1024
+      bytes.
+   9. All non-final instance fields and methods are protected, rather than
+      private.
+  10. The number of incremental updates is now reported correctly, rather than
+      the total number of file trailers, which is one greater than the number
+      of updates.
+  11. Only up to 1000 fonts will be reported.  After that, an informative
+      message will be generated.  The limit can be set using the parameter
+      "nxxxx" in the module-specific section of the configuration file:
+
+          <module>
+            <class>edu.harvard.hul.ois.jhove.module.PdfModule</class>
+            <param>n2000</param>
+          </module>
+
+  12. Subfonts of Type 0 are now being properly reported.
+  13. PDF/A-1b profile is now being properly reported.
+  14. Permit trailer info key to be optional.
+  15. Additional correction for outline recursion.
+  16. Fix treatment of indirect object of Actions.
+  17. Correctly handle trailer dictionary without Info entry.
+  18. Ignore comments within dictionaries.
+
+TIFF MODULE
+
+   1. Corrected error parsing pyramidal TIFF using the SubIFDs tag with a
+      type of IFD (13) rather than LONG (4).
+   7. Correct parsing of the EXIF "subsecTimeOriginal" (37251) and
+      "subsecTimeDigitized" (37522) properties.
+   2. All sub-IFDs of a pyramidal TIFF are now properly parsed.
+   3. The EXIF GainControl tag (41991) is now correctly identified as
+      a SHORT, not a RATIONAL, value.
+   4. Corrected error in which valid files were reported as being only
+      well-formed due to an incorrect parsing of the DateTime (306) tag.
+   5. Byte-aligned offsets can be considered well-formed if the module
+      parameter "byteoffset=true" is set in the configuration file:
+
+          <module>
+            <class>edu.harvard.hul.ois.jhove.module.TiffModule</class>
+            <param>byteoffset=true</param>
+          </module>
+
+   6. All non-final instance fields and methods are protected, rather than
+      private.
+   7. Correct parsing of the EXIF "subsecTimeOriginal" (37251) and
+      "subsecTimeDigitized" (37522) properties.
+   8. Using the "-s" option, the TIFF module was incorrectlly reporting
+      signature matches for text files starting with "II".
+   9. Validation errors in embedded EXIF metdata were not being fully
+      reported.
+
+UTF8 MODULE
+
+   1. Corrected error under which malformed UTF-8 files containing encoding
+      sequences starting with a byte value in the range 0xF8 through 0xFF
+      were reported as well-formed and valid.
+   2. Zero-length files are considered not well-formed.
+   3. Issue informative message if file contains no printable characters.
+   4. All non-final instance fields and methods are protected, rather than
+      private.
+
+WAVE MODULE
+
+   1. BWF files now set the correct start time in the AES metadata.
+   2. All non-final instance fields and methods are protected, rather than
+      private.
+   3. "cue " and "adtl" chunks are now properly read.
+
+XML MODULE
+
+   1. The DTD is assumed to be the first DOCTYPE system ID in the file with an
+      ".dtd" extension.
+   2. All non-final instance fields and methods are protected, rather than
+      private.
+   3. The module correctly handles schemaLocation attributes that do not
+      provide two whitespace-separated URIs.
+
+TEXT HANDLER
+
+   1. AES audio metadata properties rearranged slightly to make their
+      ordering consistent with the XML schema.
+
+XML HANDLER
+
+   1. Correct sample rate formatting in AES Time Code Format (TCF)
+      temporal references.
+   2. Correct face IDREF in AES metadata.
+   3. Disallowed control characters are removed from content.
+   4. Null property values no longer generate empty elements.
+   5. Image technical metadata can be reported in terms of the MIX 1.0 schema,
+      as opposed to the default reporting against MIX 0.2.  To specify the
+      1.0 schema include the directive:
+
+          <mixVersion>1.0</mixVersion>
+
+      if the configuration file.
+
+JHOVE API
+
+   1. The process() and processFile() methods of the JhoveBase class are now
+      public, to permit direct access to the API by applications.
+   2. Checksum calculations now use buffered I/O uniformly for improved
+      performance.
+   3. All non-final fields and methods in the JhoveBase class are
+      protected, rather than private.
+   4. When invoked with the "-s" option JHOVE now reports the signature
+      matched format and MIME type.
+   5. The processing of files in a directory is now performed in an
+      alphabetically sorted order.
+
+ADUMP UTILITY
+
+   1. Display the field values of known chunks.
+
+TDUMP UTILITY
+
+   1. New format that sorts all tag definitions by their byte offset and
+      also displays the byte ranges for image data.
+   2. Command line flags permit the suppression of BYTE data display (-b) and
+      and subIFD parsing (-s). 
+
+USERHOME UTILITY
+
+   1. A new utility program, UserHome, is available to determine the value
+      of the Java user.home property needed to know where to place the
+      configuration file.  This utility can be invoked by the driver scripts
+      "userhome" (Bourne shell) or "userhome.bat" (Windows).
+
+************************************************************************
+
+RELEASE NOTES FOR JHOVE 1.0
+Rev. 2005-05-26
+
+GENERAL
+
+   1. Zero length files are now handled properly in all modules.
+
+   2. Missing start time in audio files is now handled property in all
+      audio modules.
+
+   3. Miscellaneous bug fixes, enhancements, and documentation updates.
+
+AIFF MODULE
+
+   1. Corrected error causing BitrateReduction to be incorrectly reported
+      for uncompressed PCM audio.
+
+
+JPEG2000 MODULE
+
+   1. The module now validates the enumerated ICC profile types in the
+      Color Specification Box. In the JP2 profile, an unrecognized ICC
+      profile type marks the file as not well formed; in the JPX, the file
+      is merely not valid.
+
+   2. In the beta 3 release certain invalid JPEG 2000 files were
+      reported as well formed in the JP2 profile. This has been corrected.
+
+PDF MODULE
+
+   1. Following the practice of Acrobar, the PDF module will accept
+      the "%PDF-1.n" header comment anywhere in the first 1024 bytes of a
+      file (with appropriate notification via an information message),
+      rather than requiring that it start at byte offset 0.
+
+   2. The requirements for the PDF/A profile have been brought into
+      conformance with the most recent version of the PDF/A specification,
+      ISO/DIS 19005-1 of 2004-12-22.
+
+   3. Corrected bug that prevented valid PDF/X-1 files from being
+      recognized as such.
+
+WAVE MODULE
+
+   1. Corrected error causing BitrateReduction to be incorrectly reported
+      for uncompressed PCM audio.
+
+XML HANDLER
+
+   1. Dates reported for the NISO Z39.87 <tt><mix:DateTimeCreated>
+      element are now canonicalized to be in proper ISO 8601 form.
+
+   2. The NISO Z39.87 <tt><mix:ScannerManufacturer> element is now
+      reported, if known.
+
+AUDIT HANDLER
+
+   1. The current working directory is reported as the "home"
+      attribute of the <audit> element and individual files are reported
+      as relative pathnames
+
+************************************************************************
+
+RELEASE NOTES FOR JHOVE 1.0 (beta 3)
+Rev. 2005-02-04
+
+1 GENERAL
+
+   1. The architecture has been modified to simplify the use of JHOVE
+      with new "front ends." The new JhoveBase class is used in
+      conjunction with the App class to incorporate nearly all the
+      work of setting up a JHOVE instance. The main Jhove class and the App
+      class are now smaller than before.
+
+   2. Checksums were often being reported with incorrect values due to
+      an output formatting error that dropped zeroes. This has been fixed.
+
+   3. New utilities GDUMP and JDUMP created for GIF and JPEG documents.
+
+   4. Error messages are more consistently factored into submessages.
+      This allows messages indicating the same type of error to
+      be more readily grouped.
+
+   5. Some modules were reporting a MIME type for a document that is
+      not well-formed. This no longer occurs.
+
+   6. Duplicate reporting of AES BitDepth has been suppressed.
+
+   7. New module for HTML format. Be sure to update the configuration
+      file, jhove/conf/jhove.conf, to include the module:
+
+        ...
+        <module>
+         <class>edu.harvard.hul.ois.jhove.module.HtmlModule</class>
+        </module>
+        ...
+
+   8. The AES audio metadata representation has been updated to
+      conform with schema version 1.02b (pre-release).
+
+   9. New property, sigMatches, has been added to RepInfo. This
+      records which module(s) regarded the signature of the document as a
+      match, even if the document was not well-formed. This is useful in
+      identifying broken documents that are reported as ASCII or Bytestream.
+
+  10. The logging API is supported, permitting the generation of
+      debugging messages.
+
+  11. All modules are now non-final, so that they can be subclassed by
+      adventurous users.
+
+  12. The -p and -P arguments of the command line are no longer
+      supported.  Instead, the equivalent parameters can be
+      provided to all variants of JHOVE (including those which
+      don't take a command line) by specifying a <param> element
+      within the <module> element of the configuration file.
+      Example:
+
+        <module>
+         <class>edu.harvard.hul.ois.jhove.module.PdfModule</class>
+         <param>a</param>
+         <param>f</param>
+         <param>p</param>
+        </module>
+
+2 JHOVE COMMAND-LINE INTERFACE
+
+   1. The JHOVE command-line interface can now accept directory names,
+      as well as file pathnames and URIs:
+
+        java Jhove [-c config] [-m module] [-h handler] [-e encoding]
+                   [-H handler] [-o output] [-x saxclass] [-t tempdir]
+                   [-b bufsize] [-l loglevel] [[-krs] dir-file-or-uri [...]]
+
+      All of the files in the directories are processed in a
+      depth-first recursive descent.
+
+3 JHOVEVIEWER (SWING GUI) INTERFACE
+
+   1. The JhoveViewer class now allows dragging of a directory or of
+      multiple files, and the output for all files is presented in a single
+      window. This significantly reduces the window clutter.
+
+   2. The JhoveViewer presents the module menu in alphabetical order
+      rather than configuration file order.
+
+   3. The JhoveViewer was failing to report some submessages. This is fixed.
+
+   4. The JhoveViewer was failing silently on certain URL errors; it
+      now puts up an error alert.
+
+   5. If an empty module class name is added in the Configuration
+      dialog, it is ignored.
+
+4 AIFF MODULE
+
+   1. Descriptive properties added.
+
+   2. Checksum was sometimes missing; fixed.
+
+   3. Specification URL added to descriptive information.
+
+   4. Reported MIME type changed to 'audio/x-aiff' from 'application/aiff'.
+
+5 GIF MODULE
+
+   1. BitsPerSample is now reported.
+
+6 JPEG MODULE
+
+   1. Errors occurring when parsing an optional EXIF segment were not
+      being reported. This problem manifested itself by incorrectly
+      reporting that the JPEG file is not well-formed.
+
+   2. Array size bug in BitsPerSample fixed.
+
+7 JPEG2000 MODULE
+
+   1. Specification information added for ITU.
+
+   2. Errors in parsing of an EXIF segment are now reported.
+
+8 PDF MODULE
+
+   1. In certain instances the module was inappropriately reporting
+      well-formed PDF files as being non-well-formed, indicating
+      (incorrectly) that the file does not contain a trailer.
+
+   2. Fixed a NullPointerException being thrown with a defective page
+      root tree.
+
+   3. Certain broken cross-reference tables would throw the module
+      into a loop. This is fixed.
+
+   4. Problems in XMP data that triggered a SAX error were being
+      reported to standard output as a "fatal error." They are now properly
+      reported.
+
+   5. Error in offset reporting fixed.
+
+   6. Now reports FontFile2 and FontFile3.
+
+   7. File trailers are now found more reliably.
+
+   8. PDF/A profile updated to latest draft proposal, ISO/CD 19005-1
+      (2004-09-20).
+
+   9. Parameters that would have been specified by the -p argument 
+      of the command line are now specified by the <param> element 
+      in the configuration file. The sense of these parameters 
+      has been reversed; by default, the PDF module presents
+      the maximum amount of information unless suppressed by
+      including the characters a, p, f, or o in the parameter value(s). 
+
+9 TIFF MODULE
+
+   1. Adobe DNG tags are recognized, and a DNG profile has been added.
+
+   2. Bug in DATETIME checking fixed.
+
+   3. Changes in validity tests for PhotometricInterpretation,
+      SamplesPerPixel and BitsPerSample.
+
+   4. Corrected spurious null values for some properties.
+
+   5. Tag data type checking was badly broken, now fixed.
+
+10 WAVE MODULE
+
+   1. Type 'exif' recognized in LIST chunk.
+
+   2. Format and signature information updated.
+
+   3. Checksum was sometimes missing; fixed.
+
+   4. Reported MIME type changed to 'audio/x-wave' from 'audio/x-wav'.
+
+11 XML MODULE
+
+   1. Now reports 1.0 and 1.1 as versions rather than profiles.
+
+   2. Reported MIME type changed to 'text/xml' from 'application/xml'.
+
+   3. A base URL for DTD's may now be specified using the 
+      <param> element. The URL must be preceded by the letter b 
+      to distinguish it from potential future parameters, e.g.,
+
+        <module>
+         <class>edu.harvard.hul.ois.jhove.module.XmlModule</class>
+         <param>bhttp://www.example.com/</param>
+        </module>
+
+12 XML HANDLER
+
+   1. The "xsi" namespace is now defined in the NISO Image Metadata
+      <mix:mix> and AES Audio Metadata <aes:audioObject> elements. This
+      allows these segments to validate when extracted from the JHOVE output
+      document.
+
+   2. The <ImagingPerformanceAssessment> element is properly named; it
+      had been improperly displayed as <ImagePerformanceAssessment>.
+
+   3. X and YSamplingFrequency are reported as positive integers
+      ("600"), not ratios ("600/1"), for consistency with the MIX schema.
+
+   4. An empty Properties element in the XML handler is now suppressed.
+
+13 GDUMP UTILITY
+
+   1. New utility to dump GIF files in human-readable form. 
+
+14 JDUMP UTILITY
+
+   1. New utility to dump JPEG files in human-readable form. 
+
+15 TDUMP UTILITY
+
+   1. The output format has changed slightly, e.g.
+
+       00000000: "II" (little endian) 42
+        00000008: IFD 1 with 15 entries
+        00000034: 254 (NewSubFileType) LONG 1 = 0
+        00000046: 256 (ImageWidth) LONG 1 = 2948
+        00000058: 257 (ImageLength) LONG 1 = 4620
+        ...
+
+************************************************************************
+
+RELEASE NOTES FOR JHOVE 1.0 (beta 2)
+Rev. 2004-07-19
+
+1. GENERAL
+
+  1.1 Multiple files can now be specified in command line.
+
+         jhove ... [[-krs] file-or-uri ...]
+
+      A single output document (XML or text) will be generated for a
+      set of files specified in a command line.
+
+  1.2 API version information is now available through methods in the
+      App class.
+
+  1.3 AESAudioMetadata property has been added for sound formats. The
+      new PropertyPath class facilitates the extraction of Properties
+      by applications that use the JHOVE API.
+
+  1.4 The ErrorMessage and InfoMessage classes now support a submessage
+      string for more flexible message factoring.
+
+  1.5 The SAX parser class may now be specified in the jhove.properties
+      file in the property "edu.harvard.hul.ois.jhove.saxClass".
+
+2. GRAPHIC USER INTERFACE (JhoveView)
+
+  2.1 Supports drag and drop of directories; subdirectories are
+      processed recursively.
+
+  2.2 The menu option "File > Close document windows" closes all document
+      windows.
+
+3. MODULES (GENERAL)
+
+  3.1 Performance has been improved in all modules.
+
+  3.2 New modules for JPEG 2000, AIFF, and WAVE formats.  Be sure to
+      update the configuration file, jhove/conf/jhove.conf, to include
+      these modules:
+
+        ...
+        <module>
+          <class>edu.harvard.hul.ois.jhove.module.AiffModule</class>
+        </module>
+        <module>
+          <class>edu.harvard.hul.ois.jhove.module.WaveModule</class>
+        </module>
+        <module>
+          <class>edu.harvard.hul.ois.jhove.module.Jpeg2000Module</class>
+        </module>
+        ...
+
+  3.3 Bug reading unsigned integers has been fixed.
+
+4. PDF MODULE
+
+  4.1 More information provided about encryption keys.
+
+  4.2 UserAccess property now shows "No permissions" if no bits are
+      set.
+
+5. GIF MODULE
+
+  5.1 Unexpected EOF is now handled cleanly.
+
+6. JPEG MODULE
+
+  6.1 Exif data exception properly thrown.
+
+7. TIFF MODULE
+
+  7.1 Identification of Exif profile has been improved.
+
+  7.2 Photoshop tags 34377 and 50255 are now recognized.
+
+  7.3 Bug in handling ExtraSamples tag fixed.
+
+  7.4 Bug in determining valid date/time formats; the range for hours was
+      incorrectly constrained to 1-24, rather than 0-24.
+
+8. XML MODULE
+
+  8.1 If no encoding is specified, encoding is now reported as UTF-8.
+
+  8.2 Catches and reports UTFDataFormatException.
+
+  8.3 A greater range of parsers (including Xerces) now will do
+      schema validation.
+
+9. XML HANDLER
+
+  9.1 Omitted values in NisoImageMetadata were being reported in XML
+      in some cases as default values (e.g., -1).  These have been
+      suppressed.
+
+  9.2 <PlanarConfiguration> element was inappropriately nested underneath
+      the <Segments> element.
+
+  9.3 The "subMessage" attribute is now properly defined in the jhove.xsd
+      schema.
+=======
+JHOVE - JSTOR/Harvard Object Validation Environment
+Copyright 2003-2009 by JSTOR and the President and Fellows of Harvard College
+JHOVE is made available under the GNU Lesser General Public License (LGPL;
+see the file LICENSE for details)
+
+RELEASE NOTES FOR JHOVE 1.5
+2009-12-17
+
+PDF MODULE
+
+1. An ArrayIndexOutOfBoundsException was thrown on a PDF with an invalid 
+   object number in the cross-reference stream. In JHOVE 1.5, this is
+   correctly reported as a violation of well-formedness.
+
+UTF-8 MODULE   
+
+1. With some very simple UTF-8 files, JHOVE handlers would throw an exception
+   processing them, and the GUI would fail silently. This happened with files
+   using no UTF-8 blocks. This has been fixed.
+
+TEXTMD (multiple modules)
+
+1. TextMD metadata can now optionally be reported. To get this, it's
+   necessary to edit jhove.conf. TextMD can be enabled on a per-module
+   basis for HtmlModule, AsciiModule, Utf8Module, and XmlModule.  
+   The <module> element for each chosen module must contain the element
+   <param>withtextmd=true</param> (no spaces).
+   
+2. The TextMD feature was added by Thomas Ledoux.
+
+   
+   
+RELEASE NOTES FOR JHOVE 1.4
+2009-07-30
+
+PDF MODULE
+
+   1. The PDF/A profile has been updated to the final version of 
+      19005-1:2005(E) and made more thorough. Among the changes:
+
+      a. The set-state and no-op actions disqualify a PDF/A candidate.
+
+      b. The ASCIIHexDecode and ASCII85Decode filters no longer 
+         disqualify a candidate.
+
+      c. Checking of outlines has been added.
+
+      d. Additional checking of Type 1 fonts and symbolic fonts.
+
+      e. Bug fix in checking type 2 subfonts.
+
+      f. An LZW filter in an image object disqualifies a candidate.
+
+      g. The xpacket processing instruction is checked for attributes 
+         which disqualify from PDF/A.
+
+      h. Conformity to implementation limits is checked as a condition
+         of PDF/A conformity.
+
+JPEG2000 MODULE
+
+   1. The pathological case of an image with no components is checked so
+      it won't cause a crash.
+
+XML HANDLER
+
+   1. A reset() function has been added so that if the handler is reused,
+      it will return to a valid initial state.
+
+RELEASE NOTES FOR JHOVE 1.3
+2009-06-04
+
+GENERAL
+
+   1. The build.xml files now force compilation to Java 1.4, preventing 
+      accidental distributions that aren't 1.4-compatible.
+   2. Spaces are allowed in file paths on Windows, if the path is 
+      enclosed in quotes. This fix had been in version 1.1i, and had been
+      lost since then.
+      
+PDF MODULE
+
+   1. According to the PDF 1.6 specification, table 3.4, parameters for a 
+      stream filter can be either a dictionary or the null object. The null 
+      object was treated as an error; it is now allowed.
+   2. Object stream handling was seriously buggy, causing rejection of
+      well-formed and valid files; it's better now.
+   3. In PDF 1.4, an outline dictionary unconditionally must have a "First" 
+      and a "Last" entry. JHOVE follows this requirement, declaring a file
+      invalid if it isn't met. However, PDF 1.6 relaxes the requirement,
+      applying it only "if there are any open or closed outline entries." 
+      Thus, an empty outline dictionary with no "First" or "Last" entry 
+      is valid. It is now accepted (for all PDF versions).
+   4. If a page number tree in a PDF file is missing an expected "Nums" 
+      entry, this was being reported as an invalid date. A more appropriate
+      error message is now given. 
+
+TIFF MODULE
+
+   1. TIFF tag 33723 (IPTC-NAA) was considered valid only if the data
+      type is ASCII or LONG. But according to Aware Systems, the valid
+      types are UNDEFINED and BYTE. All four types are now accepted. 
+
+XML HANDLER
+
+   1. Omissions in MIX 1.0 and 2.0 output have been fixed.
+   
+RELEASE NOTES FOR JHOVE 1.2
+2009-02-10
+
+GENERAL
+
+   1. A bug has been fixed in CountedInputStream, which could potentially
+      have caused infinite recursion in some modules.
+
+HTML MODULE
+
+   1. An incompatibility with Java 1.6 has been fixed.
+   
+PDF MODULE
+
+   1. A null pointer exception would be thrown for PDF documents without a
+      document root tree. This has been fixed.
+   2. A source of possible false positives in PDF profiles has been fixed.
+   3. Certain checks weren't being done to Type 2 fonts, and some PDF/A 
+      profile violations might have been missed as a result. This has
+      been fixed.
+   
+WAVE MODULE
+
+   1. Sub-chunks of the 'adtl' chunk are now constrained to even byte
+      boundaries.
+      
+XML HANDLER
+
+   1. MIX 2.0 is now supported.
+   2. The URL for the MIX 0.2 schema has changed to reflect the change
+      on the LOC MIX site.
+   3. The handler was sometimes incorrectly reporting whether the 
+      AESAudioMetadata property had an empty value or not. This has
+      been fixed.
+
+
+RELEASE NOTES FOR JHOVE 1.1 
+Rev. 2008-02-22
+
+COMMAND-LINE INTERFACE
+
+   1. Allow filenames with internal spaces if they are quoted on the
+      command line.
+   2. Corrected error setting the Classpath in the Windows Shell script
+      (jhove.bat)
+   3. Corrected error opening the configuration file using the default
+      GCJ parser in the GNU Java Runtime Environment.
+
+GUI (SWING) INTERFACE (JHOVE VIEW)
+
+   1. AES metadata properties displayed in the RepInfo window rearranged
+      slightly to make their ordering consistent with the Text and XML
+      handlers.
+   2. The JhoveView.main() method will now accept a "-c configFile" option
+      on the command line.  The GUI interface can now be invoked by:
+
+          java -jar bin/JhoveView.jar -c configFile
+
+   3. Corrected error opening the configuration file using the default
+      GCJ parser in the GNU Java Runtime Environment.
+   4. Correct recurrent problems with reading the configuration file on
+      Windows installations.
+
+AIFF MODULE
+
+   1. Correct value for first sample offset by included non-zero offset
+      defined in the SSND chunk.
+   2. Do not report bitrate reduction data for PCM data.
+   3. All non-final instance fields and methods are protected, rather than
+      private.
+
+ASCII MODULE
+
+   1. A minimal file containing no line-end characters now does not
+      produce an empty ASCIIMetadata property, which is invalid against
+      the JHOVE schema.
+   2. Zero-length files are considered not well-formed.
+   3. Issue informative message if file contains no printable characters.
+   4. All non-final instance fields and methods are protected, rather than
+      private.
+
+BYTESTREAM MODULE
+
+   1. All non-final instance fields and methods are protected, rather than
+      private.
+
+GIF MODULE
+
+   1. All non-final instance fields and methods are protected, rather than
+      private.
+
+HTML MODULE
+
+   1. The HTMLMetadata block in the module output is only produced if
+      there is at least one actual metadata property to report.
+   2. All non-final instance fields and methods are protected, rather than
+      private.
+
+JPEG MODULE
+
+   1. The JPEG module reports the X and Y sampling frequency for files
+      meeting the JFIF profile.
+   2. The JPEG module reports the pixel aspect ratio for JFIF profile
+      files for which it is defined.
+   3. File handles were not being properly closed when processing embedded
+      EXIF metadata.  In cases where JHOVE was invoked against large
+      numbers of objects this was causing a premature crash due to the
+      resource leak.
+   4. All non-final instance fields and methods are protected, rather than
+      private.
+   5. Correct parsing of the EXIF "subsecTimeOriginal" (37251) and
+      "subsecTimeDigitized" (37522) properties.
+   6. Validation errors in embedded EXIF metdata were not being fully
+      reported.
+
+JPEG 2000 MODULE
+
+   1. All non-final instance fields and methods are protected, rather than
+      private.
+   2. Files generated by the LuraWave codec are no longer incorrecly identified
+      as having unrecognized QCC marker segments.
+
+PDF MODULE
+
+   1. Date strings are now parsed with strict conformance to the ASN.1
+      syntax.
+   2. Destinations defined by indirect references to non-existent objects
+      are assumed to have the value "null".  Files containing such
+      destinations are reported as "well-formed, but not valid".
+   3. No attempt is made to display encrypted outline item title strings are
+      not displayed.
+   4. Catch error if the Info key of the trailer dictionary is not an 
+      indirect reference.
+   5. Read entire page tree structure, regardless of its internal
+      organization.  This error may have caused the under reporting of
+      page resources, such as fonts and images.
+   6. The NISO Compression Scheme for all images using the CCITTFaxDecode
+      compression filter is now reported properly; previously, the scheme
+      was always reported as CCITT 1D even if the actual compression
+      algorithm was CCITT Group 3 or 4.
+   7. Properly parse UTF-16 escape characters encoded in double-byte form.
+   8. The module properly stops looking for the header comment after 1024
+      bytes.
+   9. All non-final instance fields and methods are protected, rather than
+      private.
+  10. The number of incremental updates is now reported correctly, rather than
+      the total number of file trailers, which is one greater than the number
+      of updates.
+  11. Only up to 1000 fonts will be reported.  After that, an informative
+      message will be generated.  The limit can be set using the parameter
+      "nxxxx" in the module-specific section of the configuration file:
+
+          <module>
+            <class>edu.harvard.hul.ois.jhove.module.PdfModule</class>
+            <param>n2000</param>
+          </module>
+
+  12. Subfonts of Type 0 are now being properly reported.
+  13. PDF/A-1b profile is now being properly reported.
+  14. Permit trailer info key to be optional.
+  15. Additional correction for outline recursion.
+  16. Fix treatment of indirect object of Actions.
+  17. Correctly handle trailer dictionary without Info entry.
+  18. Ignore comments within dictionaries.
+
+TIFF MODULE
+
+   1. Corrected error parsing pyramidal TIFF using the SubIFDs tag with a
+      type of IFD (13) rather than LONG (4).
+   7. Correct parsing of the EXIF "subsecTimeOriginal" (37251) and
+      "subsecTimeDigitized" (37522) properties.
+   2. All sub-IFDs of a pyramidal TIFF are now properly parsed.
+   3. The EXIF GainControl tag (41991) is now correctly identified as
+      a SHORT, not a RATIONAL, value.
+   4. Corrected error in which valid files were reported as being only
+      well-formed due to an incorrect parsing of the DateTime (306) tag.
+   5. Byte-aligned offsets can be considered well-formed if the module
+      parameter "byteoffset=true" is set in the configuration file:
+
+          <module>
+            <class>edu.harvard.hul.ois.jhove.module.TiffModule</class>
+            <param>byteoffset=true</param>
+          </module>
+
+   6. All non-final instance fields and methods are protected, rather than
+      private.
+   7. Correct parsing of the EXIF "subsecTimeOriginal" (37251) and
+      "subsecTimeDigitized" (37522) properties.
+   8. Using the "-s" option, the TIFF module was incorrectlly reporting
+      signature matches for text files starting with "II".
+   9. Validation errors in embedded EXIF metdata were not being fully
+      reported.
+
+UTF8 MODULE
+
+   1. Corrected error under which malformed UTF-8 files containing encoding
+      sequences starting with a byte value in the range 0xF8 through 0xFF
+      were reported as well-formed and valid.
+   2. Zero-length files are considered not well-formed.
+   3. Issue informative message if file contains no printable characters.
+   4. All non-final instance fields and methods are protected, rather than
+      private.
+
+WAVE MODULE
+
+   1. BWF files now set the correct start time in the AES metadata.
+   2. All non-final instance fields and methods are protected, rather than
+      private.
+   3. "cue " and "adtl" chunks are now properly read.
+
+XML MODULE
+
+   1. The DTD is assumed to be the first DOCTYPE system ID in the file with an
+      ".dtd" extension.
+   2. All non-final instance fields and methods are protected, rather than
+      private.
+   3. The module correctly handles schemaLocation attributes that do not
+      provide two whitespace-separated URIs.
+
+TEXT HANDLER
+
+   1. AES audio metadata properties rearranged slightly to make their
+      ordering consistent with the XML schema.
+
+XML HANDLER
+
+   1. Correct sample rate formatting in AES Time Code Format (TCF)
+      temporal references.
+   2. Correct face IDREF in AES metadata.
+   3. Disallowed control characters are removed from content.
+   4. Null property values no longer generate empty elements.
+   5. Image technical metadata can be reported in terms of the MIX 1.0 schema,
+      as opposed to the default reporting against MIX 0.2.  To specify the
+      1.0 schema include the directive:
+
+          <mixVersion>1.0</mixVersion>
+
+      if the configuration file.
+
+JHOVE API
+
+   1. The process() and processFile() methods of the JhoveBase class are now
+      public, to permit direct access to the API by applications.
+   2. Checksum calculations now use buffered I/O uniformly for improved
+      performance.
+   3. All non-final fields and methods in the JhoveBase class are
+      protected, rather than private.
+   4. When invoked with the "-s" option JHOVE now reports the signature
+      matched format and MIME type.
+   5. The processing of files in a directory is now performed in an
+      alphabetically sorted order.
+
+ADUMP UTILITY
+
+   1. Display the field values of known chunks.
+
+TDUMP UTILITY
+
+   1. New format that sorts all tag definitions by their byte offset and
+      also displays the byte ranges for image data.
+   2. Command line flags permit the suppression of BYTE data display (-b) and
+      and subIFD parsing (-s). 
+
+USERHOME UTILITY
+
+   1. A new utility program, UserHome, is available to determine the value
+      of the Java user.home property needed to know where to place the
+      configuration file.  This utility can be invoked by the driver scripts
+      "userhome" (Bourne shell) or "userhome.bat" (Windows).
+
+************************************************************************
+
+RELEASE NOTES FOR JHOVE 1.0
+Rev. 2005-05-26
+
+GENERAL
+
+   1. Zero length files are now handled properly in all modules.
+
+   2. Missing start time in audio files is now handled property in all
+      audio modules.
+
+   3. Miscellaneous bug fixes, enhancements, and documentation updates.
+
+AIFF MODULE
+
+   1. Corrected error causing BitrateReduction to be incorrectly reported
+      for uncompressed PCM audio.
+
+
+JPEG2000 MODULE
+
+   1. The module now validates the enumerated ICC profile types in the
+      Color Specification Box. In the JP2 profile, an unrecognized ICC
+      profile type marks the file as not well formed; in the JPX, the file
+      is merely not valid.
+
+   2. In the beta 3 release certain invalid JPEG 2000 files were
+      reported as well formed in the JP2 profile. This has been corrected.
+
+PDF MODULE
+
+   1. Following the practice of Acrobar, the PDF module will accept
+      the "%PDF-1.n" header comment anywhere in the first 1024 bytes of a
+      file (with appropriate notification via an information message),
+      rather than requiring that it start at byte offset 0.
+
+   2. The requirements for the PDF/A profile have been brought into
+      conformance with the most recent version of the PDF/A specification,
+      ISO/DIS 19005-1 of 2004-12-22.
+
+   3. Corrected bug that prevented valid PDF/X-1 files from being
+      recognized as such.
+
+WAVE MODULE
+
+   1. Corrected error causing BitrateReduction to be incorrectly reported
+      for uncompressed PCM audio.
+
+XML HANDLER
+
+   1. Dates reported for the NISO Z39.87 <tt><mix:DateTimeCreated>
+      element are now canonicalized to be in proper ISO 8601 form.
+
+   2. The NISO Z39.87 <tt><mix:ScannerManufacturer> element is now
+      reported, if known.
+
+AUDIT HANDLER
+
+   1. The current working directory is reported as the "home"
+      attribute of the <audit> element and individual files are reported
+      as relative pathnames
+
+************************************************************************
+
+RELEASE NOTES FOR JHOVE 1.0 (beta 3)
+Rev. 2005-02-04
+
+1 GENERAL
+
+   1. The architecture has been modified to simplify the use of JHOVE
+      with new "front ends." The new JhoveBase class is used in
+      conjunction with the App class to incorporate nearly all the
+      work of setting up a JHOVE instance. The main Jhove class and the App
+      class are now smaller than before.
+
+   2. Checksums were often being reported with incorrect values due to
+      an output formatting error that dropped zeroes. This has been fixed.
+
+   3. New utilities GDUMP and JDUMP created for GIF and JPEG documents.
+
+   4. Error messages are more consistently factored into submessages.
+      This allows messages indicating the same type of error to
+      be more readily grouped.
+
+   5. Some modules were reporting a MIME type for a document that is
+      not well-formed. This no longer occurs.
+
+   6. Duplicate reporting of AES BitDepth has been suppressed.
+
+   7. New module for HTML format. Be sure to update the configuration
+      file, jhove/conf/jhove.conf, to include the module:
+
+        ...
+        <module>
+         <class>edu.harvard.hul.ois.jhove.module.HtmlModule</class>
+        </module>
+        ...
+
+   8. The AES audio metadata representation has been updated to
+      conform with schema version 1.02b (pre-release).
+
+   9. New property, sigMatches, has been added to RepInfo. This
+      records which module(s) regarded the signature of the document as a
+      match, even if the document was not well-formed. This is useful in
+      identifying broken documents that are reported as ASCII or Bytestream.
+
+  10. The logging API is supported, permitting the generation of
+      debugging messages.
+
+  11. All modules are now non-final, so that they can be subclassed by
+      adventurous users.
+
+  12. The -p and -P arguments of the command line are no longer
+      supported.  Instead, the equivalent parameters can be
+      provided to all variants of JHOVE (including those which
+      don't take a command line) by specifying a <param> element
+      within the <module> element of the configuration file.
+      Example:
+
+        <module>
+         <class>edu.harvard.hul.ois.jhove.module.PdfModule</class>
+         <param>a</param>
+         <param>f</param>
+         <param>p</param>
+        </module>
+
+2 JHOVE COMMAND-LINE INTERFACE
+
+   1. The JHOVE command-line interface can now accept directory names,
+      as well as file pathnames and URIs:
+
+        java Jhove [-c config] [-m module] [-h handler] [-e encoding]
+                   [-H handler] [-o output] [-x saxclass] [-t tempdir]
+                   [-b bufsize] [-l loglevel] [[-krs] dir-file-or-uri [...]]
+
+      All of the files in the directories are processed in a
+      depth-first recursive descent.
+
+3 JHOVEVIEWER (SWING GUI) INTERFACE
+
+   1. The JhoveViewer class now allows dragging of a directory or of
+      multiple files, and the output for all files is presented in a single
+      window. This significantly reduces the window clutter.
+
+   2. The JhoveViewer presents the module menu in alphabetical order
+      rather than configuration file order.
+
+   3. The JhoveViewer was failing to report some submessages. This is fixed.
+
+   4. The JhoveViewer was failing silently on certain URL errors; it
+      now puts up an error alert.
+
+   5. If an empty module class name is added in the Configuration
+      dialog, it is ignored.
+
+4 AIFF MODULE
+
+   1. Descriptive properties added.
+
+   2. Checksum was sometimes missing; fixed.
+
+   3. Specification URL added to descriptive information.
+
+   4. Reported MIME type changed to 'audio/x-aiff' from 'application/aiff'.
+
+5 GIF MODULE
+
+   1. BitsPerSample is now reported.
+
+6 JPEG MODULE
+
+   1. Errors occurring when parsing an optional EXIF segment were not
+      being reported. This problem manifested itself by incorrectly
+      reporting that the JPEG file is not well-formed.
+
+   2. Array size bug in BitsPerSample fixed.
+
+7 JPEG2000 MODULE
+
+   1. Specification information added for ITU.
+
+   2. Errors in parsing of an EXIF segment are now reported.
+
+8 PDF MODULE
+
+   1. In certain instances the module was inappropriately reporting
+      well-formed PDF files as being non-well-formed, indicating
+      (incorrectly) that the file does not contain a trailer.
+
+   2. Fixed a NullPointerException being thrown with a defective page
+      root tree.
+
+   3. Certain broken cross-reference tables would throw the module
+      into a loop. This is fixed.
+
+   4. Problems in XMP data that triggered a SAX error were being
+      reported to standard output as a "fatal error." They are now properly
+      reported.
+
+   5. Error in offset reporting fixed.
+
+   6. Now reports FontFile2 and FontFile3.
+
+   7. File trailers are now found more reliably.
+
+   8. PDF/A profile updated to latest draft proposal, ISO/CD 19005-1
+      (2004-09-20).
+
+   9. Parameters that would have been specified by the -p argument 
+      of the command line are now specified by the <param> element 
+      in the configuration file. The sense of these parameters 
+      has been reversed; by default, the PDF module presents
+      the maximum amount of information unless suppressed by
+      including the characters a, p, f, or o in the parameter value(s). 
+
+9 TIFF MODULE
+
+   1. Adobe DNG tags are recognized, and a DNG profile has been added.
+
+   2. Bug in DATETIME checking fixed.
+
+   3. Changes in validity tests for PhotometricInterpretation,
+      SamplesPerPixel and BitsPerSample.
+
+   4. Corrected spurious null values for some properties.
+
+   5. Tag data type checking was badly broken, now fixed.
+
+10 WAVE MODULE
+
+   1. Type 'exif' recognized in LIST chunk.
+
+   2. Format and signature information updated.
+
+   3. Checksum was sometimes missing; fixed.
+
+   4. Reported MIME type changed to 'audio/x-wave' from 'audio/x-wav'.
+
+11 XML MODULE
+
+   1. Now reports 1.0 and 1.1 as versions rather than profiles.
+
+   2. Reported MIME type changed to 'text/xml' from 'application/xml'.
+
+   3. A base URL for DTD's may now be specified using the 
+      <param> element. The URL must be preceded by the letter b 
+      to distinguish it from potential future parameters, e.g.,
+
+        <module>
+         <class>edu.harvard.hul.ois.jhove.module.XmlModule</class>
+         <param>bhttp://www.example.com/</param>
+        </module>
+
+12 XML HANDLER
+
+   1. The "xsi" namespace is now defined in the NISO Image Metadata
+      <mix:mix> and AES Audio Metadata <aes:audioObject> elements. This
+      allows these segments to validate when extracted from the JHOVE output
+      document.
+
+   2. The <ImagingPerformanceAssessment> element is properly named; it
+      had been improperly displayed as <ImagePerformanceAssessment>.
+
+   3. X and YSamplingFrequency are reported as positive integers
+      ("600"), not ratios ("600/1"), for consistency with the MIX schema.
+
+   4. An empty Properties element in the XML handler is now suppressed.
+
+13 GDUMP UTILITY
+
+   1. New utility to dump GIF files in human-readable form. 
+
+14 JDUMP UTILITY
+
+   1. New utility to dump JPEG files in human-readable form. 
+
+15 TDUMP UTILITY
+
+   1. The output format has changed slightly, e.g.
+
+       00000000: "II" (little endian) 42
+        00000008: IFD 1 with 15 entries
+        00000034: 254 (NewSubFileType) LONG 1 = 0
+        00000046: 256 (ImageWidth) LONG 1 = 2948
+        00000058: 257 (ImageLength) LONG 1 = 4620
+        ...
+
+************************************************************************
+
+RELEASE NOTES FOR JHOVE 1.0 (beta 2)
+Rev. 2004-07-19
+
+1. GENERAL
+
+  1.1 Multiple files can now be specified in command line.
+
+         jhove ... [[-krs] file-or-uri ...]
+
+      A single output document (XML or text) will be generated for a
+      set of files specified in a command line.
+
+  1.2 API version information is now available through methods in the
+      App class.
+
+  1.3 AESAudioMetadata property has been added for sound formats. The
+      new PropertyPath class facilitates the extraction of Properties
+      by applications that use the JHOVE API.
+
+  1.4 The ErrorMessage and InfoMessage classes now support a submessage
+      string for more flexible message factoring.
+
+  1.5 The SAX parser class may now be specified in the jhove.properties
+      file in the property "edu.harvard.hul.ois.jhove.saxClass".
+
+2. GRAPHIC USER INTERFACE (JhoveView)
+
+  2.1 Supports drag and drop of directories; subdirectories are
+      processed recursively.
+
+  2.2 The menu option "File > Close document windows" closes all document
+      windows.
+
+3. MODULES (GENERAL)
+
+  3.1 Performance has been improved in all modules.
+
+  3.2 New modules for JPEG 2000, AIFF, and WAVE formats.  Be sure to
+      update the configuration file, jhove/conf/jhove.conf, to include
+      these modules:
+
+        ...
+        <module>
+          <class>edu.harvard.hul.ois.jhove.module.AiffModule</class>
+        </module>
+        <module>
+          <class>edu.harvard.hul.ois.jhove.module.WaveModule</class>
+        </module>
+        <module>
+          <class>edu.harvard.hul.ois.jhove.module.Jpeg2000Module</class>
+        </module>
+        ...
+
+  3.3 Bug reading unsigned integers has been fixed.
+
+4. PDF MODULE
+
+  4.1 More information provided about encryption keys.
+
+  4.2 UserAccess property now shows "No permissions" if no bits are
+      set.
+
+5. GIF MODULE
+
+  5.1 Unexpected EOF is now handled cleanly.
+
+6. JPEG MODULE
+
+  6.1 Exif data exception properly thrown.
+
+7. TIFF MODULE
+
+  7.1 Identification of Exif profile has been improved.
+
+  7.2 Photoshop tags 34377 and 50255 are now recognized.
+
+  7.3 Bug in handling ExtraSamples tag fixed.
+
+  7.4 Bug in determining valid date/time formats; the range for hours was
+      incorrectly constrained to 1-24, rather than 0-24.
+
+8. XML MODULE
+
+  8.1 If no encoding is specified, encoding is now reported as UTF-8.
+
+  8.2 Catches and reports UTFDataFormatException.
+
+  8.3 A greater range of parsers (including Xerces) now will do
+      schema validation.
+
+9. XML HANDLER
+
+  9.1 Omitted values in NisoImageMetadata were being reported in XML
+      in some cases as default values (e.g., -1).  These have been
+      suppressed.
+
+  9.2 <PlanarConfiguration> element was inappropriately nested underneath
+      the <Segments> element.
+
+  9.3 The "subMessage" attribute is now properly defined in the jhove.xsd
+      schema.
+

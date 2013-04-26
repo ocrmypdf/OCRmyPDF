@@ -69,6 +69,7 @@ EXIT_OTHER_ERROR="5"
 LOG_ERR="0"			# 0=only error messages
 LOG_INFO="1"			# 1=error messages and some infos
 LOG_DEBUG="2"			# 2=debug level logging
+JHOVE="./jhove/bin/JhoveApp.jar"	# java SW for validating the final PDF/A
 
 # Initialization the configuration parameters with default values
 VERBOSITY="$LOG_ERR"		# default verbosity level
@@ -308,7 +309,7 @@ done < "$FILE_SIZE_PAGES"
 
 # validate generated pdf file (compliance to PDF/A)
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Checking compliance to PDF/A standard" 
-java -jar /root/jhove-1_9/jhove/bin/JhoveApp.jar -m PDF-hul "$FILE_OUTPUT_PDFA" > "$FILE_VALIDATION_LOG"
+java -jar "$JHOVE" -m PDF-hul "$FILE_OUTPUT_PDFA" > "$FILE_VALIDATION_LOG"
 grep -i "Status|Message" "$FILE_VALIDATION_LOG" # summary of the validation
 [ $VERBOSITY -ge $LOG_DEBUG ] && cat "$FILE_VALIDATION_LOG"
 # check the validation results

@@ -1,0 +1,227 @@
+JHOVE - JSTOR/Harvard Object Validation Environment
+Copyright 2003-2012 by JSTOR and the President and Fellows of Harvard College
+JHOVE is made available under the GNU Lesser General Public License (LGPL;
+see the file LICENSE for details)
+
+Rev. 1.9, 2012-12-17
+
+JHOVE (the JSTOR/Harvard Object Validation Environment, pronounced "jhove")
+is an extensible software framework for performing format identification,
+validation, and characterization of digital objects.
+
+o Format identification is the process of determining the format to which a
+  digital object conforms: "I have a digital object; what format is it?"
+o Format validation is the process of determining the level of compliance of a
+  digital object to the specification for its purported format: "I have an
+  object purportedly of format F; is it?"
+o Format characterization is the process of determing the format-specific
+  significant properties of an object of a given format: "I have an object of
+  format F; what are its salient properties?"
+
+These actions are frequently necessary during routine operation of digital
+repositories and for digital preservation activities.
+
+The output from JHOVE is controlled by output handlers. JHOVE uses an
+extensible plug-in architecture; it can be configured at the time of its
+invocation to include whatever specific format modules and output handlers
+that are desired. The initial release of JHOVE includes modules for
+arbitrary byte streams, ASCII and UTF-8 encoded text, AIFF and WAVE audio,
+GIF, JPEG, JPEG 2000, TIFF, and PDF; and text and XML output handlers.
+
+The JHOVE project is a collaboration of JSTOR and the Harvard University
+Library.  Development of JHOVE was funded in part by the Andrew W. Mellon
+Foundation.  JHOVE is made available under the GNU Lesser General Public
+License (LGPL; see the file LICENSE for details).
+
+JHOVE is currently being maintained by indpendent developers.
+
+REQUIREMENTS
+
+1. Java J2SE 1.5
+(JHOVE was originally implemented using the Sun J2SE SDK 1.4.1 and has
+been tested to work with 1.5)
+
+2. If you would like to compile the JHOVE source code, then
+Apache Ant, a Java-based build tool <http://ant.apache.org/> is necessary.
+Note that the JAVA_HOME environment variable must be set appropriately for
+Ant to work properly.
+(JHOVE was implemented and tested using Ant 1.5.1.)
+
+DISTRIBUTION
+
+The JHOVE distribution package includes:
+
+    jhove/                                 # JHOVE home directory
+          COPYING                          # GNU Lesser General Public License
+          LICENSE                          # JHOVE license information
+          README
+          RELEASENOTES                     # JHOVE release notes
+          bin/
+                    jhove.jar              # JHOVE API package
+                    jhove-handler.jar      # Standard output handler package
+                    jhove-module.jar       # Standard module package
+                    JhoveApp.jar           # JHOVE command line application
+                    JhoveView.jar          # JHOVE with Swing GUI front-end
+          build.xml                        # Ant configuration file
+          classes/
+                    build.xml              # Ant configuration file
+                    edu/ ...               # JHOVE API packages
+                    ADump.*                # AIFF dump utility class
+                    GDump.*                # GIF dump utility class
+                    Jhove.*                # JHOVE main class
+                    JDump.*                # JPEG dump utility class
+                    J2Dump.*               # JPEG 2000 dump utility class
+                    PDump.*                # PDF dump utility class
+                    TDump.*                # TIFF dump utility class
+                    UserHome.*             # user.home property utility class
+                    WDump.*                # WAVE dump utility class
+          conf/
+                   jhove.conf              # JHOVE configuration file
+                   jhove.xsd               # JHOVE output schema
+                   jhoveConfig.xsd         # JHOVE configuration file schema
+          doc/
+                   *.html                  # API documentation
+                   ...
+          examples/                        # Sample files
+                   ascii/ ...
+                   gif/   ...
+                   jpeg/  ...
+                   jpeg2000/ ...
+                   pdf/   ...
+                   tiff/  ...
+                   utf-8/ ...
+          adump*                           # AIFF dump Bourne shell driver
+          adump.bat*                       # AIFF dump DOS shell driver script
+          gdump*                           # GIF dump Bourne shell driver
+          gdump.bat*                       # GIF dump DOS shell driver script
+          jdump*                           # JPEG dump Bourne shell driver
+          jdump.bat*                       # JPEG dump DOS shell driver script
+          j2dump*                          # JPEG 2000 dump Bourne shell driver
+          j2dump.bat*                      # JPEG 2000 dump DOS shell driver
+          jhove.tmpl*                      # Template for JHOVE Bourne shell driver script
+          jhove_bat.tmpl*                  # Template for JHOVE DOS shell driver script
+          pdump*                           # PDF dump Bourne shell driver
+          pdump.bat*                       # PDF dump DOS shell driver script
+          tdump*                           # TIFF dump Bourne shell driver
+          tdump.bat*                       # TIFF dump DOS shell driver script
+          userhome*                        # user.home Bourne shell driver
+          userhome.bat*                    # user.home DOS shell driver script
+          wdump*                           # WAVE dump Bourne shell driver
+          wdump.bat*                       # WAVE dump DOS shell driver script
+
+INSTALLATION
+
+Edit the configuration file, jhove/conf/jhove.conf, and set the absolute
+pathname of the JHOVE home directory and the temporary directory (in which
+temporary files are created):
+
+    <jhoveHome>jhove-home-directory</jhoveHome>
+    <tempDirectory>temporary-directory</tempDirectory>
+
+The JHOVE home directory is the top-most directory in the distribution TAR
+or ZIP file.  On Unix systems, "/var/tmp" is an appropriate temporary
+directory; on Windows, "C:\Temp".  For example, if the distribution TAR
+file is disaggregated on a Unix system in the directory "/users/stephen/
+projects", then the configuration file should read:
+
+    <jhoveHome>/users/stephen/projects/jhove</jhoveHome>
+    <tempDirectory>/var/tmp</jhoveHome>
+
+In the JHOVE home directory, copy the JHOVE Bourne shell driver script
+template, "jhove.tmpl", to "jhove" (or the equivalent Windows shell 
+script, "jhove_bat.tmpl" to "jhove.bat"), and set the
+JHOVE home directory, Java home directory, and Java interpreter:
+
+    JHOVE_HOME=jhove-home-directory
+    JAVA_HOME=java-home-directory
+    JAVA=java-interpreter
+
+The JAVA_HOME property should provide the absolute pathname of the Java
+runtime or SDK installation; JAVA should provide the absolute pathname of the
+Java interpreter.  For example:
+
+    JHOVE_HOME=/users/stephen/projects/jhove
+    JAVA_HOME=/usr/local/j2re1.4.1_02
+    JAVA=$JAVA_HOME/bin/java
+
+In the DOS shell driver script, jhove.bat, the equivalent three
+variables are:
+
+    SET JHOVE_HOME=jhove-home-directory
+    SET JAVA_HOME=java-home-directory
+    SET JAVA=%JAVA_HOME%\bin\java
+
+For example:
+
+    SET JHOVE_HOME="C:\Program Files\jhove"
+    SET JAVA_HOME="C:\Program Files\java\j2re1.4.1_02"
+    SET JAVA=%JAVA_HOME%\bin\java
+
+The quotation marks are necessary because of the embedded space characters.
+On Windows platforms it may also be necessary to add the Java bin subdirectory
+to the System PATH environment variable:
+
+    PATH=C:\Program Files\java\j2re1.4.1_02\bin;...
+
+(For information on setting a Windows environment variable, consult your local
+documentation or system administrator.)
+
+USAGE
+
+    java Jhove [-c config] [-m module] [-h handler] [-e encoding] [-H handler]
+               [-o output] [-x saxclass] [-t tempdir] [-b bufsize]
+               [-l loglevel] [[-krs] dir-file-or-uri [...]]
+
+where -c config   Configuration file pathname
+      -m module   Module name
+      -h handler  Output handler name (defaults to TEXT)
+      -e encoding Character encoding used by output handler (defaults to UTF-8)
+      -H handler  About handler name
+      -o output   Output file pathname (defaults to standard output)
+      -x saxclass SAX parser class (defaults to J2SE default)
+      -t tempdir  Temporary directory in which to create temporary files
+      -b bufsize  Buffer size for buffered I/O (defaults to J2SE 1.4 default)
+      -l loglevel Logging level
+      -k          Calculate CRC32, MD5, and SHA-1 checksums
+      -r          Display raw data flags, not textual equivalents
+      -s          Format identification based on internal signatures only
+      dir-file-or-uri Directory or file pathname or URI of formated content
+                      stream
+
+All named modules and output handlers must be found on the Java CLASSPATH at
+the time of invocation.  The JHOVE driver script, jhove/jhove, automatically
+sets the CLASSPATH and invokes the Jhove main class:
+
+    jhove [-c config] [-m module] [-h handler] [-e encoding] [-H handler]
+          [-o output] [-x saxclass] [-t tempdir] [-b bufsize] [-l loglevel]
+          [[-krs] dir-file-or-uri [...]]
+
+The following additional programs are available, primarily for testing
+and debugging purposes.  They display a minimally processed, human-readable
+version of the contents of AIFF, GIF, JPEG, JPEG 2000, PDF, TIFF, and WAVE
+files:
+
+    java ADump  aiff-file
+    java GDump  gif-file
+    java JDump  jpeg-file
+    java J2Dump jpeg2000-file
+    java PDump  pdf-file
+    java TDump  tiff-file
+    java WDump  wave-file
+
+For convenience, the following driver scripts are also available:
+
+    adump  aiff-file
+    gdump  gif-file
+    jdump  jpeg-file
+    j2dump jpeg2000-file
+    pdump  pdf-file
+    tdump  tiff-file
+    wdump  wave-file
+
+The JHOVE Swing-based GUI interface can be invoked from a command shell from
+the jhove/bin sub-directory:
+
+    java -jar JhoveView.jar -c <configFile>
+
+where <configFile> is the pathname of the JHOVE configuration file.

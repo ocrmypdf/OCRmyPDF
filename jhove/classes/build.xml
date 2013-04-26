@@ -1,0 +1,128 @@
+<project name="Jhove" default="main-dist" basedir=".">
+  <description>Main build file
+    Jhove - JSTOR/Harvard Object Validation Environment
+    Version 1.1 2006-02-13
+    Copyright 2004-2006 by JSTOR and the President and Fellows of Harvard College
+  </description>
+
+  <!-- set global properties for this build -->
+  <property name="classpath" value=".:../bin/jhove.jar"/>
+  <property name="api" location="edu/harvard/hul/ois/jhove"/>
+  <property name="viewer" location="edu/harvard/hul/ois/jhove/viewer"/>
+  <property name="root" location=".."/>
+  <property name="manifest" location="${viewer}/META-INF"/>
+
+  <target name="main-init" description="Create the time stamp">
+    <tstamp>
+      <format property="timestamp.isoformat" pattern="yyyy-MM-dd'T'HH:mm:ss"/>
+    </tstamp>
+  </target>
+
+  <target name="main-dist" depends="api,main,view"/>
+
+  <target name="api" description="Compile the API">
+    <ant dir="${api}" inheritAll="false">
+      <property name="dbg" value="${dbg}"/>
+    </ant>
+  </target>
+
+  <target name="main-compile" depends="main-init"
+          description="Compile the main file">
+    <javac compiler="javac1.5" target="1.5" srcdir="." debug="${dbg}" classpath="${classpath}"/>
+  </target>
+
+  <target name="main" depends="main-compile, app-manifest"
+          description="Build the app jar">
+    <jar destfile="${root}/bin/JhoveApp.jar" basedir="." index="true"
+         manifest="./META-INF/MANIFEST.MF"
+         includes="Jhove.class,
+              GDump.class, JDump.class, PDump.class, TDump.class,
+              J2Dump.class,J2Dump$Box.class,
+              ADump.class,
+              WDump.class, UserHome.class,
+              edu/harvard/hul/ois/jhove/*.class,
+              edu/harvard/hul/ois/jhove/*.xsd,
+              edu/harvard/hul/ois/jhove/handler/*.class,
+              edu/harvard/hul/ois/jhove/handler/audit/*.class,
+              edu/harvard/hul/ois/jhove/module/*.class,
+              edu/harvard/hul/ois/jhove/module/aiff/*.class,
+              edu/harvard/hul/ois/jhove/module/gif/*.class,
+              edu/harvard/hul/ois/jhove/module/html/*.class,
+              edu/harvard/hul/ois/jhove/module/html/*.dtd,
+              edu/harvard/hul/ois/jhove/module/html/*.ent,
+              edu/harvard/hul/ois/jhove/module/iff/*.class,
+              edu/harvard/hul/ois/jhove/module/jpeg/*.class,
+              edu/harvard/hul/ois/jhove/module/jpeg2000/*.class,
+              edu/harvard/hul/ois/jhove/module/pdf/*.class,
+              edu/harvard/hul/ois/jhove/module/tiff/*.class,
+              edu/harvard/hul/ois/jhove/module/wave/*.class,
+	      edu/harvard/hul/ois/jhove/module/xml/*.class"/>
+  </target>
+
+  <target name="app-manifest" depends="main-init">
+    <mkdir dir="${manifest}"/>
+    <manifest file="./META-INF/MANIFEST.MF">
+      <attribute name="Built-By" value="${user.name}"/>
+      <attribute name="Built-On" value="${timestamp.isoformat}"/>
+      <attribute name="Main-Class" value="Jhove"/>
+      <section name="JHOVE">
+        <attribute name="Version" value="1.0"/>
+        <attribute name="Package" value="Jhove app"/>
+        <attribute name="Rights"  value="Copyright 2004-2006 by JSTOR and the President and Fellows of Harvard College"/>
+      </section>
+    </manifest>
+  </target>
+
+  <target name="view-manifest" depends="main-init">
+    <mkdir dir="${manifest}"/>
+    <manifest file="${manifest}/MANIFEST.MF">
+      <attribute name="Built-By" value="${user.name}"/>
+      <attribute name="Built-On" value="${timestamp.isoformat}"/>
+      <attribute name="Main-Class" value="JhoveView"/>
+      <section name="JHOVE">
+        <attribute name="Version" value="1.0"/>
+        <attribute name="Package" value="Swing Viewer"/>
+        <attribute name="Rights"  value="Copyright 2004-2006 by JSTOR and the President and Fellows of Harvard College"/>
+      </section>
+    </manifest>
+  </target>
+
+  <target name="view" description="Compile the viewer application" 
+             depends="api,main,view-manifest">
+    <jar destfile="${root}/bin/JhoveView.jar" basedir="." index="true"
+         manifest="${manifest}/MANIFEST.MF"
+         includes="JhoveView.class,
+              edu/harvard/hul/ois/jhove/*.class,
+              edu/harvard/hul/ois/jhove/handler/*.class,
+              edu/harvard/hul/ois/jhove/handler/audit/*.class,
+              edu/harvard/hul/ois/jhove/module/*.class,
+              edu/harvard/hul/ois/jhove/module/aiff/*.class,
+              edu/harvard/hul/ois/jhove/module/gif/*.class,
+              edu/harvard/hul/ois/jhove/module/html/*.class,
+              edu/harvard/hul/ois/jhove/module/html/*.dtd,
+              edu/harvard/hul/ois/jhove/module/html/*.ent,
+              edu/harvard/hul/ois/jhove/module/iff/*.class,
+              edu/harvard/hul/ois/jhove/module/jpeg/*.class,
+              edu/harvard/hul/ois/jhove/module/jpeg2000/*.class,
+              edu/harvard/hul/ois/jhove/module/pdf/*.class,
+              edu/harvard/hul/ois/jhove/module/tiff/*.class,
+              edu/harvard/hul/ois/jhove/module/wave/*.class,
+              edu/harvard/hul/ois/jhove/module/xml/*.class,
+              edu/harvard/hul/ois/jhove/viewer/*.gif,
+              edu/harvard/hul/ois/jhove/viewer/*.class"/>
+  </target>
+
+  <target name="main-clean">
+    <delete>
+      <fileset dir="." includes="*~ \#*"/>
+    </delete>
+    <ant dir="${api}" target="api-clean" inheritAll="false"/>
+  </target>
+
+  <target name="main-cleanclass">
+    <delete>
+      <fileset dir="." includes="*.class*"/>
+    </delete>
+    <ant dir="${api}" target="api-cleanclass" inheritAll="false"/>
+  </target>
+</project>
