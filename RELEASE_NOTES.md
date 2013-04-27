@@ -30,6 +30,7 @@ Tested with
 - Dependencies:
    - poppler-utils 0.22.2
    - ImageMagick 6.8.0-7 2013-03-30
+   - Unpaper 0.3
    - tesseract 3.02.02
    - Python 2.7.3
    - pdftk 1.45
