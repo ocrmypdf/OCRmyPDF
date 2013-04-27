@@ -3,7 +3,7 @@
 # Copyright (c) 2013: fritz-hh from Github (https://github.com/fritz-hh)
 ##############################################################################
 
-VERSION="alpha0"
+VERSION="v1.0-rc1"
 
 usage() {
 	cat << EOF
