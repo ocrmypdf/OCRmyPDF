@@ -3,6 +3,7 @@
 # Copyright (c) 2013: fritz-hh from Github (https://github.com/fritz-hh)
 ##############################################################################
 
+TOOLNAME="OCRmyPDF"
 VERSION="v1.0-rc1"
 
 usage() {
@@ -128,7 +129,7 @@ FILE_OUTPUT_PDFA="`absolutePath "$2"`"
 # set script path as working directory
 cd "`dirname $0`"
 
-[ $VERBOSITY -ge $LOG_INFO ] && echo "OCRmyPDF version: $VERSION"
+[ $VERBOSITY -ge $LOG_INFO ] && echo "$TOOLNAME version: $VERSION"
 
 # check if the required utilities are installed
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Checking if all dependencies are installed"
@@ -147,11 +148,14 @@ cd "`dirname $0`"
 
 # Initialize path to temporary files
 TMP_FLD="./tmp/`date +"%Y%m%d_%H%M"`.filename.`basename "$FILE_INPUT_PDF" | sed s/[.][^.]*//`"
-FILE_SIZE_PAGES="$TMP_FLD/page-sizes.txt"		# size in pt of the respective page of the input PDF file
-FILES_OCRed_PDFS="${TMP_FLD}/*-ocred.pdf"		# string matching all 1 page PDF files that need to be merged
-FILE_OUTPUT_PDF="${TMP_FLD}/ocred.pdf"			# name of the OCRed PDF file before conversion to PDF/A
+FILE_SIZE_PAGES="$TMP_FLD/page-sizes.txt"				# size in pt of the respective page of the input PDF file
+FILE_INPUT_PDF_METADATA="$TMP_FLD/input-metadata.txt"			# metadata of the input pdf file
+FILES_OCRed_PDFS="${TMP_FLD}/*-ocred.pdf"				# string matching all 1 page PDF files that need to be merged
+FILE_OUTPUT_PDF_CAT="${TMP_FLD}/ocred.pdf"				# concatenated OCRed PDF files
+FILE_OUTPUT_PDFA_WO_META="${TMP_FLD}/ocred-pdfa-wo-metadata.pdf"	# PDFA file before appending metadata
+FILE_OUTPUT_PDFA_META="${TMP_FLD}/ocred-pdfa-metadata1.pdf"		# PDFA file with metadata of the input pdf file
 FILE_VALIDATION_LOG="${TMP_FLD}/pdf_validation.log"	# log file containing the results of the validation of the PDF/A file
-FILE_INPUT_PDF_ACL="${TMP_FLD}/input_pdf.acl"
+FILE_INPUT_PDF_ACL="${TMP_FLD}/input-pdf-acl.txt"
 
 # Create tmp folder
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Creating temporary folder"
@@ -296,20 +300,36 @@ done < "$FILE_SIZE_PAGES"
 
 # concatenate all pages
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Concatenating all pages"
-! pdftk $FILES_OCRed_PDFS cat output "$FILE_OUTPUT_PDF" \
+! pdftk $FILES_OCRed_PDFS cat output "$FILE_OUTPUT_PDF_CAT" \
 	&& echo "Could not concatenate individual PDF pages (\"$FILES_OCRed_PDFS\") to one file. Exiting..." >&2 && exit $EXIT_OTHER_ERROR
-
-# insert metadata (copy metadata from input file)
-#echo "Output file: Inserting metadata"
-# TODO (may work with pdftk update_info)
-# the name of the file may be used as title
 
 # convert the pdf file to match PDF/A format
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Converting to PDF/A" 
 ! gs -dQUIET -dPDFA -dBATCH -dNOPAUSE -dUseCIEColor \
 	-sProcessColorModel=DeviceCMYK -sDEVICE=pdfwrite -sPDFACompatibilityPolicy=2 \
-	-sOutputFile=$FILE_OUTPUT_PDFA "$FILE_OUTPUT_PDF" 1> /dev/null 2> /dev/null \
-	&& echo "Could not convert PDF file \"$FILE_OUTPUT_PDF\" to PDF/A. Exiting..." >&2 && exit $EXIT_OTHER_ERROR
+	-sOutputFile="$FILE_OUTPUT_PDFA_WO_META" "$FILE_OUTPUT_PDF_CAT" 1> /dev/null 2> /dev/null \
+	&& echo "Could not convert PDF file \"$FILE_OUTPUT_PDF_CAT\" to PDF/A. Exiting..." >&2 && exit $EXIT_OTHER_ERROR
+
+# Write metadata
+# Needs to be done after converting to PDF/A, as gs does not preserve metadata
+[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Restoring metadata from input PDF" 
+if ! pdftk "$FILE_INPUT_PDF" dump_data_utf8 > "$FILE_INPUT_PDF_METADATA" \
+	|| ! pdftk "$FILE_OUTPUT_PDFA_WO_META" update_info_utf8 "$FILE_INPUT_PDF_METADATA" output "$FILE_OUTPUT_PDFA_META"; then
+	echo "Output file: Could not restore metadata from input PDF"
+fi
+[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Update metadata (creator, producer, and title)" 
+title=`basename $FILE_INPUT_PDF | sed 's/[.][^.]*//' | sed 's/_/ /g' | sed 's/-/ /g'`
+pdftk "$FILE_OUTPUT_PDFA_META" update_info_utf8 - output "$FILE_OUTPUT_PDFA" << EOF
+InfoBegin
+InfoKey: Title
+InfoValue: $title
+InfoBegin
+InfoKey: Creator
+InfoValue: $TOOLNAME $VERSION
+InfoBegin
+InfoKey: Producer
+InfoValue: ghostcript `gs --version`, pdftk
+EOF
 
 # validate generated pdf file (compliance to PDF/A)
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Checking compliance to PDF/A standard" 
@@ -318,34 +338,33 @@ grep -i "Status|Message" "$FILE_VALIDATION_LOG" # summary of the validation
 [ $VERBOSITY -ge $LOG_DEBUG ] && cat "$FILE_VALIDATION_LOG"
 # check the validation results
 pdf_valid=1
-grep -i 'ErrorMessage' "$FILE_VALIDATION_LOG" && pdf_valid=0
-grep -i 'Status.*not valid' "$FILE_VALIDATION_LOG" && pdf_valid=0
-grep -i 'Status.*Not well-formed' "$FILE_VALIDATION_LOG" && pdf_valid=0
-! grep -i 'Profile:.*PDF/A-1' "$FILE_VALIDATION_LOG" && pdf_valid=0
+grep -i 'ErrorMessage' "$FILE_VALIDATION_LOG" >&2 && pdf_valid=0
+grep -i 'Status.*not valid' "$FILE_VALIDATION_LOG" >&2 && pdf_valid=0
+grep -i 'Status.*Not well-formed' "$FILE_VALIDATION_LOG" >&2 && pdf_valid=0
+! grep -i 'Profile:.*PDF/A-1' "$FILE_VALIDATION_LOG" > /dev/null && echo "PDF file profile is not PDF/A-1" >&2 && pdf_valid=0
+[ $pdf_valid -ne 1 ] && echo "Output file: The generated PDF/A file is INVALID" >&2
+[ $pdf_valid -ne 0 ] && [ $VERBOSITY -ge $LOG_INFO ] && echo "Output file: The generated PDF/A file is VALID"
 
 
-
-
-# remember the owner / group / permissions for the input file 
-OWNER=`stat -f "%Su" "$FILE_INPUT_PDF"`
-GROUP=`stat -f "%Sg" "$FILE_INPUT_PDF"`
-getfacl "$FILE_INPUT_PDF" > "$FILE_INPUT_PDF_ACL"
 
 # set the owner / group / permissions of the output (equal to those of the intput file)
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: restoring owner, group, permissions"
-chown $OWNER:$GROUP "$FILE_OUTPUT_PDFA"
-setfacl -M "$FILE_INPUT_PDF_ACL" "$FILE_OUTPUT_PDFA"
+owner=`stat -f "%Su" "$FILE_INPUT_PDF"`
+group=`stat -f "%Sg" "$FILE_INPUT_PDF"`
+! chown $owner:$group "$FILE_OUTPUT_PDFA" \
+	&& echo "Could not restore owner/group" >&2
+getfacl "$FILE_INPUT_PDF" > "$FILE_INPUT_PDF_ACL"
+! setfacl -M "$FILE_INPUT_PDF_ACL" "$FILE_OUTPUT_PDFA" \
+	&& echo "Could not restore permissions" >&2
 
 
 
 # delete temporary files
 if [ $KEEP_TMP -eq 0 ]; then
+	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Deleting temporary files"
 	rm -r -f "${TMP_FLD}"
 fi
 
 
 
-[ $pdf_valid -ne 1 ] && echo "Output file: The generated PDF/A file is INVALID" >&2 && exit $EXIT_INVALID_OUPUT_PDFA
-
-[ $VERBOSITY -ge $LOG_INFO ] && echo "Output file: The generated PDF/A file is VALID"
-exit 0
+[ $pdf_valid -ne 1 ] && exit $EXIT_INVALID_OUPUT_PDFA || exit 0
