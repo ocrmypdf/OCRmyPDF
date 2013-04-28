@@ -19,11 +19,12 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-l language] [-C filenam
 
 -h : Display this help message
 -v : Increase the verbosity (this option can be used more than once)
+-k : Do not delete the temporary files
 -g : Activate debug mode:
      - Generates a PDF file containing each page twice (once with the image, once without the image
        but with the OCRed text as well as the detected bounding boxes)
-     - Set the verbosity to the highest possible 
--k : Do not delete the temporary files
+     - Set the verbosity to the highest possible
+     - Do not delete the temporary files
 -d : Deskew each page before performing OCR
 -c : Clean each page before performing OCR
 -i : Incorporate the cleaned image in the final PDF file (by default the original image	
@@ -80,7 +81,7 @@ KEEP_TMP="0"			# do not delete the temporary files (default)
 PREPROCESS_DESKEW="0"		# 0=no, 1=yes (deskew image)
 PREPROCESS_CLEAN="0"		# 0=no, 1=yes (clean image to improve OCR)
 PREPROCESS_CLEANTOPDF="0"	# 0=no, 1=yes (put cleaned image in final PDF)
-DEBUG_MODE="0"			# 0=no, 1=yes (generates each PDF page twice, with and without image)
+PDF_NOIMG="0"			# 0=no, 1=yes (generates each PDF page twice, with and without image)
 TESS_CFG_FILES=""		# list of additional configuration files to be used by tesseract
 
 # Parse optional command line arguments
@@ -88,8 +89,8 @@ while getopts ":hvgkdcil:C:" opt; do
 	case $opt in
 		h) usage ; exit 0 ;;
 		v) VERBOSITY=$(($VERBOSITY+1)) ;;
-		g) VERBOSITY="10"; DEBUG_MODE="1" ;;
 		k) KEEP_TMP="1" ;;
+		g) PDF_NOIMG="1"; VERBOSITY="10"; KEEP_TMP="1" ;;
 		d) PREPROCESS_DESKEW="1" ;;
 		c) PREPROCESS_CLEAN="1" ;;
 		i) PREPROCESS_CLEANTOPDF="1" ;;
@@ -268,7 +269,7 @@ while read pageSize ; do
 		&& echo "Could not create PDF file from \"$curHocr\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR
 	
 	# if requested generate special debug PDF page with visible OCR text
-	if [ $DEBUG_MODE -eq "1" ] ; then
+	if [ $PDF_NOIMG -eq "1" ] ; then
 		[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Embedding text in PDF (debug page)"
 		! python $SRC/hocrTransform.py -b -r $dpi "$curHocr" "$curOCRedPDFDebug" \
 			&& echo "Could not create PDF file from \"$curHocr\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR	
