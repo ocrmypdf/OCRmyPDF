@@ -151,6 +151,7 @@ FILE_SIZE_PAGES="$TMP_FLD/page-sizes.txt"		# size in pt of the respective page o
 FILES_OCRed_PDFS="${TMP_FLD}/*-ocred.pdf"		# string matching all 1 page PDF files that need to be merged
 FILE_OUTPUT_PDF="${TMP_FLD}/ocred.pdf"			# name of the OCRed PDF file before conversion to PDF/A
 FILE_VALIDATION_LOG="${TMP_FLD}/pdf_validation.log"	# log file containing the results of the validation of the PDF/A file
+FILE_INPUT_PDF_ACL="${TMP_FLD}/input_pdf.acl"
 
 # Create tmp folder
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Creating temporary folder"
@@ -321,6 +322,19 @@ grep -i 'ErrorMessage' "$FILE_VALIDATION_LOG" && pdf_valid=0
 grep -i 'Status.*not valid' "$FILE_VALIDATION_LOG" && pdf_valid=0
 grep -i 'Status.*Not well-formed' "$FILE_VALIDATION_LOG" && pdf_valid=0
 ! grep -i 'Profile:.*PDF/A-1' "$FILE_VALIDATION_LOG" && pdf_valid=0
+
+
+
+
+# remember the owner / group / permissions for the input file 
+OWNER=`stat -f "%Su" "$FILE_INPUT_PDF"`
+GROUP=`stat -f "%Sg" "$FILE_INPUT_PDF"`
+getfacl "$FILE_INPUT_PDF" > "$FILE_INPUT_PDF_ACL"
+
+# set the owner / group / permissions of the output (equal to those of the intput file)
+[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: restoring owner, group, permissions"
+chown $OWNER:$GROUP "$FILE_OUTPUT_PDFA"
+setfacl -M "$FILE_INPUT_PDF_ACL" "$FILE_OUTPUT_PDFA"
 
 
 
