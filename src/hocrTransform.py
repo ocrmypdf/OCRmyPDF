@@ -35,12 +35,11 @@ class hocrTransform():
 			self.width = self.px2pt(coords[2]-coords[0])
 			self.height = self.px2pt(coords[3]-coords[1])
 			break # there shouldn't be more than one, and if there is, we don't want it
+			
+		# no width and heigh definition in the ocr_image element of the hocr file
 		if self.width is None:
-			# no width and heigh definition in the ocr_image element of the hocr file
-			# assuming page size is A4
-			print "page width and height not available in %s. Assuming A4."%(imageFileName)
-			self.width = 21*2.54*inch
-			self.height = 29.7*2.54*inch
+			print "No page dimension found in the hocr file"
+			sys.exit(1)
 
 	def __str__(self):
 		"""
