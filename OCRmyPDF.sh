@@ -52,9 +52,9 @@ EOF
 ################################################# 
 absolutePath() {
 	local wdsave absolutepath 
-	wdsave="`pwd`"
-	! cd "`dirname "$1"`" 1> /dev/null 2> /dev/null && return 1
-	absolutepath="`pwd`/`basename $1`"
+	wdsave="$(pwd)"
+	! cd "$(dirname "$1")" 1> /dev/null 2> /dev/null && return 1
+	absolutepath="$(pwd)/$(basename "$1")"
 	cd "$wdsave"
 	echo "$absolutepath"
 	return 0
@@ -114,7 +114,7 @@ shift $((OPTIND-1))
 # Check if the number of mandatory parameters
 # provided is as expected
 if [ "$#" -ne "2" ]; then
-	echo "Exactly one mandatory argument shall be provided" >&2
+	echo "Exactly two mandatory argument shall be provided ($# arguments provided)" >&2
 	usage
 	exit $EXIT_BAD_ARGS
 fi
@@ -147,18 +147,17 @@ cd "`dirname $0`"
 
 
 # Initialize path to temporary files
-TMP_FLD="./tmp/`date +"%Y%m%d_%H%M"`.filename.`basename "$FILE_INPUT_PDF" | sed s/[.][^.]*//`"
+today=$(date +"%Y%m%d_%H%M")
+fld=$(basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*//')
+TMP_FLD="./tmp/$today.filename.$fld"
 FILE_SIZE_PAGES="$TMP_FLD/page-sizes.txt"				# size in pt of the respective page of the input PDF file
-FILE_INPUT_PDF_METADATA="$TMP_FLD/input-metadata.txt"			# metadata of the input pdf file
 FILES_OCRed_PDFS="${TMP_FLD}/*-ocred.pdf"				# string matching all 1 page PDF files that need to be merged
 FILE_OUTPUT_PDF_CAT="${TMP_FLD}/ocred.pdf"				# concatenated OCRed PDF files
 FILE_OUTPUT_PDFA_WO_META="${TMP_FLD}/ocred-pdfa-wo-metadata.pdf"	# PDFA file before appending metadata
-FILE_OUTPUT_PDFA_META="${TMP_FLD}/ocred-pdfa-metadata1.pdf"		# PDFA file with metadata of the input pdf file
 FILE_VALIDATION_LOG="${TMP_FLD}/pdf_validation.log"	# log file containing the results of the validation of the PDF/A file
-FILE_INPUT_PDF_ACL="${TMP_FLD}/input-pdf-acl.txt"
 
 # Create tmp folder
-[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Creating temporary folder"
+[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Creating temporary folder: \"$TMP_FLD\""
 rm -r -f "${TMP_FLD}"
 mkdir -p "${TMP_FLD}"
 
@@ -235,7 +234,7 @@ while read pageSize ; do
 	# extract current page as image with right orientation and resoltution
 	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Extracting image as $ext file (${dpi} dpi)"
 	! pdftoppm -f $page -l $page -r $dpi $opt "$FILE_INPUT_PDF" > "$curImgPixmap" \
-		&& echo "Could not extract page $page as $ext from $FILE_INPUT_PDF. Exiting..." >&2 && exit $EXIT_OTHER_ERROR
+		&& echo "Could not extract page $page as $ext from \"$FILE_INPUT_PDF\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR
 
 	# if requested deskew image (without changing its size in pixel)
 	if [ "$PREPROCESS_DESKEW" -eq "1" ]; then
@@ -312,14 +311,13 @@ done < "$FILE_SIZE_PAGES"
 
 # Write metadata
 # Needs to be done after converting to PDF/A, as gs does not preserve metadata
-[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Restoring metadata from input PDF" 
-if ! pdftk "$FILE_INPUT_PDF" dump_data_utf8 > "$FILE_INPUT_PDF_METADATA" \
-	|| ! pdftk "$FILE_OUTPUT_PDFA_WO_META" update_info_utf8 "$FILE_INPUT_PDF_METADATA" output "$FILE_OUTPUT_PDFA_META"; then
-	echo "Output file: Could not restore metadata from input PDF"
-fi
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Update metadata (creator, producer, and title)" 
-title=`basename $FILE_INPUT_PDF | sed 's/[.][^.]*//' | sed 's/_/ /g' | sed 's/-/ /g'`
-pdftk "$FILE_OUTPUT_PDFA_META" update_info_utf8 - output "$FILE_OUTPUT_PDFA" << EOF
+title=`basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*//' | \
+	sed 's/_/ /g' | sed 's/-/ /g' | \
+	sed 's/\([[:lower:]]\)\([[:upper:]]\)/\1 \2/g' | \
+	sed 's/\([[:alpha:]]\)\([[:digit:]]\)/\1 \2/g' | \
+	sed 's/\([[:digit:]]\)\([[:alpha:]]\)/\1 \2/g'`	# transform the file name (with extension) into distinct words
+pdftk "$FILE_OUTPUT_PDFA_WO_META" update_info_utf8 - output "$FILE_OUTPUT_PDFA" << EOF
 InfoBegin
 InfoKey: Title
 InfoValue: $title
@@ -345,17 +343,6 @@ grep -i 'Status.*Not well-formed' "$FILE_VALIDATION_LOG" >&2 && pdf_valid=0
 [ $pdf_valid -ne 1 ] && echo "Output file: The generated PDF/A file is INVALID" >&2
 [ $pdf_valid -ne 0 ] && [ $VERBOSITY -ge $LOG_INFO ] && echo "Output file: The generated PDF/A file is VALID"
 
-
-
-# set the owner / group / permissions of the output (equal to those of the intput file)
-[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: restoring owner, group, permissions"
-owner=`stat -f "%Su" "$FILE_INPUT_PDF"`
-group=`stat -f "%Sg" "$FILE_INPUT_PDF"`
-! chown $owner:$group "$FILE_OUTPUT_PDFA" \
-	&& echo "Could not restore owner/group" >&2
-getfacl "$FILE_INPUT_PDF" > "$FILE_INPUT_PDF_ACL"
-! setfacl -M "$FILE_INPUT_PDF_ACL" "$FILE_OUTPUT_PDFA" \
-	&& echo "Could not restore permissions" >&2
 
 
 
