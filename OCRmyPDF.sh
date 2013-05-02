@@ -152,7 +152,7 @@ cd "`dirname $0`"
 today=$(date +"%Y%m%d_%H%M")
 fld=$(basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*//')
 TMP_FLD="./tmp/$today.filename.$fld"
-FILE_TMP="$TMP_FLD/tmp.txt"						# temporary file with a very short life used for several things)
+FILE_TMP="$TMP_FLD/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
 FILE_SIZE_PAGES="$TMP_FLD/page-sizes.txt"				# size in pt of the respective page of the input PDF file
 FILES_OCRed_PDFS="${TMP_FLD}/*-ocred.pdf"				# string matching all 1 page PDF files that need to be merged
 FILE_OUTPUT_PDF_CAT="${TMP_FLD}/ocred.pdf"				# concatenated OCRed PDF files
@@ -169,9 +169,9 @@ mkdir -p "${TMP_FLD}"
 
 # get the size of each pdf page (width / height) in pt (inch*72)
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Input file: Extracting size of each page (in pt)"
-! identify -format "%w %h\n" "$FILE_INPUT_PDF" > "$FILE_SIZE_PAGES" \
+! identify -format "%w %h\n" "$FILE_INPUT_PDF" > "$FILE_TMP" \
 	&& echo "Could not get size of PDF pages. Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
-sed -i "" '/^$/d' "$FILE_SIZE_PAGES"	# removing empty lines (last one should be)
+sed '/^$/d' "$FILE_TMP" > "$FILE_SIZE_PAGES"	# removing empty lines (last one should be)
 numpages=`cat "$FILE_SIZE_PAGES" | wc -l | sed 's/^ *//g'`
 numpages=`printf "%04d" $numpages`	# add leading zeros to the page number
 
@@ -223,9 +223,8 @@ while read pageSize ; do
 	# - the truncated PDF with/height in pt
 	# - the precision of dpi value
 	epsilon=`echo "scale=5;($widthCurImg*72/$widthPDF^2)+($heightCurImg*72/$heightPDF^2)+0.00002" | bc`	# max inaccuracy due to truncation of PDF size in pt
-	diff1=`echo "($dpi_x - $dpi_y) < $epsilon " | bc`
-	diff2=`echo "($dpi_y - $dpi_x) < $epsilon " | bc`
-	[ $diff1 -eq 0 -o $diff2 -eq 0 ] && echo "Resolutions difference ($dpi_x/$dpi_y) higher than expected ($epsilon). Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
+	[ `echo "($dpi_x - $dpi_y) < $epsilon " | bc` -eq 0 -o `echo "($dpi_y - $dpi_x) < $epsilon " | bc` -eq 0 ] \
+		&& echo "Resolutions difference ($dpi_x/$dpi_y) higher than expected ($epsilon). Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
 	dpi=`echo "scale=5;($dpi_x+$dpi_y)/2+0.5" | bc` # adding 0.5 is required for rounding
 	dpi=`echo "scale=0;$dpi/1" | bc`		# round to the nearest integer
 	
