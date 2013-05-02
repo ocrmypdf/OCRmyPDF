@@ -171,15 +171,14 @@ mkdir -p "${TMP_FLD}"
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Input file: Extracting size of each page (in pt)"
 ! identify -format "%w %h\n" "$FILE_INPUT_PDF" > "$FILE_TMP" \
 	&& echo "Could not get size of PDF pages. Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
-sed '/^$/d' "$FILE_TMP" > "$FILE_SIZE_PAGES"	# removing empty lines (last one should be)
-numpages=`cat "$FILE_SIZE_PAGES" | wc -l | sed 's/^ *//g'`
-numpages=`printf "%04d" $numpages`	# add leading zeros to the page number
+# removing empty lines (last one should be) and prepend page # before each line
+sed '/^$/d' "$FILE_TMP" | awk '{printf "%04d %s\n", NR, $0}' > "$FILE_SIZE_PAGES"
+numpages=`tail -n 1 "$FILE_SIZE_PAGES" | cut -f1 -d" "`
 
 # Itterate the pages of the input pdf file
-cpt="1"
 while read pageSize ; do
 
-	page=`printf "%04d" $cpt`	# add leading zeros to the page number
+	page=`echo $pageSize | cut -f1 -d" "`
 	[ $VERBOSITY -ge $LOG_INFO ] && echo "Processing page $page / $numpages"
 	
 	# create the name of the required file
@@ -190,8 +189,8 @@ while read pageSize ; do
 	curOCRedPDFDebug="$TMP_FLD/${page}-debug-ocred.pdf"	# PDF file containing data required to find out if OCR worked correctly
 	
 	# get width / height of PDF page (in pt)
-	widthPDF=`echo $pageSize | cut -f1 -d" "`
-	heightPDF=`echo $pageSize | cut -f2 -d" "`
+	widthPDF=`echo $pageSize | cut -f2 -d" "`
+	heightPDF=`echo $pageSize | cut -f3 -d" "`
 	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: size ${heightPDF}x${widthPDF} (h*w in pt)"
 	# extract raw image from pdf file to compute resolution
 	# unfortunatelly this image can have another orientation than in the pdf...
@@ -296,9 +295,6 @@ while read pageSize ; do
 		rm "$curImgPixmapDeskewed"
 		rm "$curImgPixmapClean"
 	fi
-
-	# go to next page of the pdf
-	cpt=$(($cpt+1))
 	
 done < "$FILE_SIZE_PAGES"
 
