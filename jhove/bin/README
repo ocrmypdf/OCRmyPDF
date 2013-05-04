@@ -1,0 +1,25 @@
+JHOVE - JSTOR/Harvard Object Validation Environment
+Copyright 2003 by JSTOR and the President and Fellows of Harvard College
+JHOVE is made available under the GNU General Public License (see the file
+LICENSE for details)
+
+Rev. 2003-11-25
+
+The following jar files are meant to be used for embedding JHOVE functionality
+into new applications or systems.
+
+  jhove.jar          Contains the JHOVE API interfaces and classes
+  jhove-module.jar   Contains the standard JHOVE modules ()
+  jhove-handler.jar  Contains the standard JHOVE output handlers (TEXT and XML)
+
+The following jar file is meant to be used with the stand-alone JHOVE
+application using a command-line interface.  It contains the main Jhove class
+and the contents of jhove.jar, jhove-module.jar, and jhove-handler.jar.
+
+  JhoveApp.jar
+
+The following jar file is meant to be used with the stand-alone JHOVE
+application using a Swing GUI interface.  It contains the main JhoveView class
+and the contents of jhove.jar, jhove-module.jar, and jhove-handler.jar.
+
+  JhoveView.jar
