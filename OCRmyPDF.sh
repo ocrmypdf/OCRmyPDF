@@ -153,7 +153,7 @@ today=$(date +"%Y%m%d_%H%M")
 fld=$(basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*//')
 TMP_FLD="./tmp/$today.filename.$fld"
 FILE_TMP="$TMP_FLD/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
-FILE_SIZE_PAGES="$TMP_FLD/page-sizes.txt"				# size in pt of the respective page of the input PDF file
+FILE_PAGES_INFO="$TMP_FLD/pages-info.txt"				# for each page: page #; width in pt; height in pt
 FILES_OCRed_PDFS="${TMP_FLD}/*-ocred.pdf"				# string matching all 1 page PDF files that need to be merged
 FILE_OUTPUT_PDF_CAT="${TMP_FLD}/ocred.pdf"				# concatenated OCRed PDF files
 FILE_OUTPUT_PDFA_WO_META="${TMP_FLD}/ocred-pdfa-wo-metadata.pdf"	# PDFA file before appending metadata
@@ -172,13 +172,13 @@ mkdir -p "${TMP_FLD}"
 ! identify -format "%w %h\n" "$FILE_INPUT_PDF" > "$FILE_TMP" \
 	&& echo "Could not get size of PDF pages. Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
 # removing empty lines (last one should be) and prepend page # before each line
-sed '/^$/d' "$FILE_TMP" | awk '{printf "%04d %s\n", NR, $0}' > "$FILE_SIZE_PAGES"
-numpages=`tail -n 1 "$FILE_SIZE_PAGES" | cut -f1 -d" "`
+sed '/^$/d' "$FILE_TMP" | awk '{printf "%04d %s\n", NR, $0}' > "$FILE_PAGES_INFO"
+numpages=`tail -n 1 "$FILE_PAGES_INFO" | cut -f1 -d" "`
 
 # Itterate the pages of the input pdf file
-while read pageSize ; do
+while read pageInfo ; do
 
-	page=`echo $pageSize | cut -f1 -d" "`
+	page=`echo $pageInfo | cut -f1 -d" "`
 	[ $VERBOSITY -ge $LOG_INFO ] && echo "Processing page $page / $numpages"
 	
 	# create the name of the required file
@@ -189,8 +189,8 @@ while read pageSize ; do
 	curOCRedPDFDebug="$TMP_FLD/${page}-debug-ocred.pdf"	# PDF file containing data required to find out if OCR worked correctly
 	
 	# get width / height of PDF page (in pt)
-	widthPDF=`echo $pageSize | cut -f2 -d" "`
-	heightPDF=`echo $pageSize | cut -f3 -d" "`
+	widthPDF=`echo $pageInfo | cut -f2 -d" "`
+	heightPDF=`echo $pageInfo | cut -f3 -d" "`
 	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: size ${heightPDF}x${widthPDF} (h*w in pt)"
 	# extract raw image from pdf file to compute resolution
 	# unfortunatelly this image can have another orientation than in the pdf...
@@ -296,7 +296,7 @@ while read pageSize ; do
 		rm "$curImgPixmapClean"
 	fi
 	
-done < "$FILE_SIZE_PAGES"
+done < "$FILE_PAGES_INFO"
 
 
 
