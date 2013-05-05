@@ -154,7 +154,6 @@ fld=$(basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*//')
 TMP_FLD="./tmp/$today.filename.$fld"
 FILE_TMP="$TMP_FLD/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
 FILE_PAGES_INFO="$TMP_FLD/pages-info.txt"				# for each page: page #; width in pt; height in pt
-FILES_OCRed_PDFS="${TMP_FLD}/*-ocred.pdf"				# string matching all 1 page PDF files that need to be merged
 FILE_OUTPUT_PDF_CAT="${TMP_FLD}/ocred.pdf"				# concatenated OCRed PDF files
 FILE_OUTPUT_PDFA_WO_META="${TMP_FLD}/ocred-pdfa-wo-metadata.pdf"	# PDFA file before appending metadata
 FILE_VALIDATION_LOG="${TMP_FLD}/pdf_validation.log"			# log file containing the results of the validation of the PDF/A file
@@ -303,8 +302,8 @@ done < "$FILE_PAGES_INFO"
 
 # concatenate all pages
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Concatenating all pages"
-! pdftk $FILES_OCRed_PDFS cat output "$FILE_OUTPUT_PDF_CAT" \
-	&& echo "Could not concatenate individual PDF pages (\"$FILES_OCRed_PDFS\") to one file. Exiting..." >&2 && exit $EXIT_OTHER_ERROR
+! pdftk "${TMP_FLD}/"*-ocred.pdf cat output "$FILE_OUTPUT_PDF_CAT" \
+	&& echo "Could not concatenate individual PDF pages (\"${TMP_FLD}/*-ocred.pdf\") to one file. Exiting..." >&2 && exit $EXIT_OTHER_ERROR
 
 # convert the pdf file to match PDF/A format
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Converting to PDF/A" 
