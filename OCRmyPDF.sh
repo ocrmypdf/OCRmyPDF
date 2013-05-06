@@ -4,7 +4,7 @@
 ##############################################################################
 
 TOOLNAME="OCRmyPDF"
-VERSION="v1.0-rc2"
+VERSION="v1.0-stable"
 
 START=`date +%s`
 
@@ -197,28 +197,28 @@ numpages=`tail -n 1 "$FILE_PAGES_INFO" | cut -f1 -d" "`
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Converting to PDF/A" 
 ! gs -dQUIET -dPDFA -dBATCH -dNOPAUSE -dUseCIEColor \
 	-sProcessColorModel=DeviceCMYK -sDEVICE=pdfwrite -sPDFACompatibilityPolicy=2 \
-	-sOutputFile="$FILE_OUTPUT_PDFA_WO_META" "$FILE_OUTPUT_PDF_CAT" 1> /dev/null 2> /dev/null \
+	-sOutputFile="$FILE_OUTPUT_PDFA" "$FILE_OUTPUT_PDF_CAT" 1> /dev/null 2> /dev/null \
 	&& echo "Could not convert PDF file \"$FILE_OUTPUT_PDF_CAT\" to PDF/A. Exiting..." >&2 && exit $EXIT_OTHER_ERROR
 
-# Write metadata
-# Needs to be done after converting to PDF/A, as gs does not preserve metadata
-[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Update metadata (creator, producer, and title)" 
-title=`basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*//' | \
-	sed 's/_/ /g' | sed 's/-/ /g' | \
-	sed 's/\([[:lower:]]\)\([[:upper:]]\)/\1 \2/g' | \
-	sed 's/\([[:alpha:]]\)\([[:digit:]]\)/\1 \2/g' | \
-	sed 's/\([[:digit:]]\)\([[:alpha:]]\)/\1 \2/g'`	# transform the file name (with extension) into distinct words
-pdftk "$FILE_OUTPUT_PDFA_WO_META" update_info_utf8 - output "$FILE_OUTPUT_PDFA" << EOF
-InfoBegin
-InfoKey: Title
-InfoValue: $title
-InfoBegin
-InfoKey: Creator
-InfoValue: $TOOLNAME $VERSION
-InfoBegin
-InfoKey: Producer
-InfoValue: ghostcript `gs --version`, pdftk
-EOF
+# # Write metadata
+# # Needs to be done after converting to PDF/A, as gs does not preserve metadata
+# [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Update metadata (creator, producer, and title)" 
+# title=`basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*//' | \
+	# sed 's/_/ /g' | sed 's/-/ /g' | \
+	# sed 's/\([[:lower:]]\)\([[:upper:]]\)/\1 \2/g' | \
+	# sed 's/\([[:alpha:]]\)\([[:digit:]]\)/\1 \2/g' | \
+	# sed 's/\([[:digit:]]\)\([[:alpha:]]\)/\1 \2/g'`	# transform the file name (with extension) into distinct words
+# pdftk "$FILE_OUTPUT_PDFA_WO_META" update_info_utf8 - output "$FILE_OUTPUT_PDFA" << EOF
+# InfoBegin
+# InfoKey: Title
+# InfoValue: $title
+# InfoBegin
+# InfoKey: Creator
+# InfoValue: $TOOLNAME $VERSION
+# InfoBegin
+# InfoKey: Producer
+# InfoValue: ghostcript `gs --version`, pdftk
+# EOF
 
 # validate generated pdf file (compliance to PDF/A)
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Checking compliance to PDF/A standard" 
