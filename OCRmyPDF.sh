@@ -139,6 +139,7 @@ cd "`dirname $0`"
 # check if the required utilities are installed
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Checking if all dependencies are installed"
 ! command -v identify > /dev/null && echo "Please install ImageMagick. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
+! command -v parallel > /dev/null && echo "Please install GNU Parallel. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdfimages > /dev/null && echo "Please install poppler-utils. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdftoppm > /dev/null && echo "Please install poppler-utils. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdftk > /dev/null && echo "Please install pdftk. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
