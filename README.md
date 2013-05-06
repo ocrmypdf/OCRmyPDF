@@ -14,6 +14,7 @@ Features
 - If requested deskew and / or clean the image before performing OCR
 - Validate the generated file against the PDF/A specification using jhove
 - Provides debug mode to enable easy verification of the OCR results
+- Processes several pages in parallel if more than one CPU core is available
 
 Motivation
 ----------
