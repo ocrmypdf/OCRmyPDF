@@ -3,23 +3,13 @@
 # Copyright (c) 2013: fritz-hh from Github (https://github.com/fritz-hh)
 ##############################################################################
 
-# Initialization of constants
-EXIT_BAD_ARGS="1"			# possible exit codes
-EXIT_BAD_INPUT_FILE="2"
-EXIT_MISSING_DEPENDENCY="3"
-EXIT_INVALID_OUPUT_PDFA="4"
-EXIT_OTHER_ERROR="5"
-LOG_ERR="0"				# 0=only error messages
-LOG_INFO="1"				# 1=error messages and some infos
-LOG_DEBUG="2"				# 2=debug level logging
-
-SRC="./src"
+. "./src/config.sh"
 
 
 # Initialization of variables passed by args
 FILE_INPUT_PDF="$1"
-pageInfo="$2"
-numpages="$3"
+PAGE_INFO="$2"
+NUM_PAGES="$3"
 TMP_FLD="$4"
 VERBOSITY="$5"
 LAN="$6"
@@ -32,8 +22,8 @@ TESS_CFG_FILES="${12}"
 
 
 
-page=`echo $pageInfo | cut -f1 -d" "`
-[ $VERBOSITY -ge $LOG_INFO ] && echo "Processing page $page / $numpages"
+page=`echo $PAGE_INFO | cut -f1 -d" "`
+[ $VERBOSITY -ge $LOG_INFO ] && echo "Processing page $page / $NUM_PAGES"
 
 # create the name of the required file
 curOrigImg="$TMP_FLD/${page}_Image"			# original image available in the current PDF page 
@@ -43,11 +33,11 @@ curOCRedPDF="$TMP_FLD/${page}-ocred.pdf"		# PDF file containing the image + the 
 curOCRedPDFDebug="$TMP_FLD/${page}-debug-ocred.pdf"	# PDF file containing data required to find out if OCR worked correctly
 
 # get width / height of PDF page (in pt)
-widthPDF=`echo $pageInfo | cut -f2 -d" "`
-heightPDF=`echo $pageInfo | cut -f3 -d" "`
+widthPDF=`echo $PAGE_INFO | cut -f2 -d" "`
+heightPDF=`echo $PAGE_INFO | cut -f3 -d" "`
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: size ${heightPDF}x${widthPDF} (h*w in pt)"
 # extract raw image from pdf file to compute resolution
-# unfortunatelly this image can have another orientation than in the pdf...
+# unfortunately this image can have another orientation than in the pdf...
 # so we will have to extract it again later using pdftoppm
 pdfimages -f $page -l $page -j "$FILE_INPUT_PDF" "$curOrigImg" 1>&2	
 # count number of extracted images
@@ -130,13 +120,13 @@ else
 	image4finalPDF="$curImgPixmapDeskewed"	
 fi
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Embedding text in PDF"
-! python $SRC/hocrTransform.py -r $dpi -i "$image4finalPDF" "$curHocr" "$curOCRedPDF" \
+! python2 $SRC/hocrTransform.py -r $dpi -i "$image4finalPDF" "$curHocr" "$curOCRedPDF" \
 	&& echo "Could not create PDF file from \"$curHocr\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR
 
 # if requested generate special debug PDF page with visible OCR text
 if [ $PDF_NOIMG -eq "1" ] ; then
 	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Embedding text in PDF (debug page)"
-	! python $SRC/hocrTransform.py -b -r $dpi "$curHocr" "$curOCRedPDFDebug" \
+	! python2 $SRC/hocrTransform.py -b -r $dpi "$curHocr" "$curOCRedPDFDebug" \
 		&& echo "Could not create PDF file from \"$curHocr\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR	
 fi
 

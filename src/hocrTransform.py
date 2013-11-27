@@ -1,3 +1,4 @@
+#!/usr/bin/python
 ##############################################################################
 # Copyright (c) 2013: fritz-hh from Github (https://github.com/fritz-hh)
 #
@@ -7,7 +8,8 @@
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.units import inch
 from lxml import etree as ElementTree
-import Image, re, sys
+from PIL import Image
+import re, sys
 import argparse
 
 class hocrTransform():
@@ -38,7 +40,7 @@ class hocrTransform():
 			
 		# no width and heigh definition in the ocr_image element of the hocr file
 		if self.width is None:
-			print "No page dimension found in the hocr file"
+			print("No page dimension found in the hocr file")
 			sys.exit(1)
 
 	def __str__(self):

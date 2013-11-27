@@ -3,8 +3,9 @@
 # Copyright (c) 2013: fritz-hh from Github (https://github.com/fritz-hh)
 ##############################################################################
 
-TOOLNAME="OCRmyPDF"
-VERSION="v1.0-stable"
+# Import required scripts
+. "`dirname $0`/src/config.sh"
+
 
 START=`date +%s`
 
@@ -62,21 +63,6 @@ absolutePath() {
 	return 0
 }
 
-
-
-# Initialization of constants
-EXIT_BAD_ARGS="1"			# possible exit codes
-EXIT_BAD_INPUT_FILE="2"
-EXIT_MISSING_DEPENDENCY="3"
-EXIT_INVALID_OUPUT_PDFA="4"
-EXIT_OTHER_ERROR="5"
-LOG_ERR="0"				# 0=only error messages
-LOG_INFO="1"				# 1=error messages and some infos
-LOG_DEBUG="2"				# 2=debug level logging
-SRC="./src"				# location of the source folder (except source of external tools like jhove)
-OCR_PAGE="$SRC/ocrPage.sh"		# path to the script aimed at OCRing one page
-JHOVE="./jhove/bin/JhoveApp.jar"	# java SW for validating the final PDF/A
-JHOVE_CFG="./jhove/conf/jhove.conf"	# location of the jhove config file
 
 # Initialization the configuration parameters with default values
 VERBOSITY="$LOG_ERR"		# default verbosity level
@@ -145,7 +131,7 @@ cd "`dirname $0`"
 ! command -v pdftk > /dev/null && echo "Please install pdftk. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
 [ $PREPROCESS_CLEAN -eq 1 ] && ! command -v unpaper > /dev/null && echo "Please install unpaper. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
 ! command -v tesseract > /dev/null && echo "Please install tesseract and tesseract-data. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
-! command -v python > /dev/null && echo "Please install python, and the python libraries: reportlab, lxml. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
+! command -v python2 > /dev/null && echo "Please install python v2.x, and the python libraries: reportlab, lxml. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
 ! command -v gs > /dev/null && echo "Please install ghostcript. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
 ! command -v java > /dev/null && echo "Please install java. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
 
@@ -178,7 +164,7 @@ mkdir -p "${TMP_FLD}"
 sed '/^$/d' "$FILE_TMP" | awk '{printf "%04d %s\n", NR, $0}' > "$FILE_PAGES_INFO"
 numpages=`tail -n 1 "$FILE_PAGES_INFO" | cut -f1 -d" "`
 
-# Itterate the pages of the input pdf file
+# OCR each page of the input pdf file
 ! parallel -k --halt-on-error 1 "$OCR_PAGE" "$FILE_INPUT_PDF" "{}" "$numpages" "$TMP_FLD" \
 	"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$PDF_NOIMG" "$TESS_CFG_FILES" < "$FILE_PAGES_INFO" \
 	&& exit $?
@@ -200,26 +186,6 @@ numpages=`tail -n 1 "$FILE_PAGES_INFO" | cut -f1 -d" "`
 	-sProcessColorModel=DeviceCMYK -sDEVICE=pdfwrite -sPDFACompatibilityPolicy=2 \
 	-sOutputFile="$FILE_OUTPUT_PDFA" "$FILE_OUTPUT_PDF_CAT" 1> /dev/null 2> /dev/null \
 	&& echo "Could not convert PDF file \"$FILE_OUTPUT_PDF_CAT\" to PDF/A. Exiting..." >&2 && exit $EXIT_OTHER_ERROR
-
-# # Write metadata
-# # Needs to be done after converting to PDF/A, as gs does not preserve metadata
-# [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Update metadata (creator, producer, and title)" 
-# title=`basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*//' | \
-	# sed 's/_/ /g' | sed 's/-/ /g' | \
-	# sed 's/\([[:lower:]]\)\([[:upper:]]\)/\1 \2/g' | \
-	# sed 's/\([[:alpha:]]\)\([[:digit:]]\)/\1 \2/g' | \
-	# sed 's/\([[:digit:]]\)\([[:alpha:]]\)/\1 \2/g'`	# transform the file name (with extension) into distinct words
-# pdftk "$FILE_OUTPUT_PDFA_WO_META" update_info_utf8 - output "$FILE_OUTPUT_PDFA" << EOF
-# InfoBegin
-# InfoKey: Title
-# InfoValue: $title
-# InfoBegin
-# InfoKey: Creator
-# InfoValue: $TOOLNAME $VERSION
-# InfoBegin
-# InfoKey: Producer
-# InfoValue: ghostcript `gs --version`, pdftk
-# EOF
 
 # validate generated pdf file (compliance to PDF/A)
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Checking compliance to PDF/A standard" 
