@@ -8,11 +8,11 @@ To get the script usage, call: ./OCmyPDF.sh -h
 Features
 --------
 
-- Generate a searchable PDF/A file from a PDF file containing only images
-- Place OCRed text accurately below the image to easy copy / paste
-- Keep the exact resolution of the original embedded images
-- If requested deskew and / or clean the image before performing OCR
-- Validate the generated file against the PDF/A specification using jhove
+- Generates a searchable PDF/A file from a PDF file containing only images
+- Places OCRed text accurately below the image to ease copy / paste
+- Keeps the exact resolution of the original embedded images
+- If requested deskews and / or clean the image before performing OCR
+- Validates the generated file against the PDF/A specification using jhove
 - Provides debug mode to enable easy verification of the OCR results
 - Processes several pages in parallel if more than one CPU core is available
 
