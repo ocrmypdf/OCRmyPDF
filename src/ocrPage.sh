@@ -74,7 +74,7 @@ dpi=`echo "scale=0;$dpi/1" | bc`		# round to the nearest integer
 # Identify if page image should be saved as ppm (color) or pgm (gray)
 ext="ppm"
 opt=""		
-if [ $colorspaceCurImg == "Gray" ]; then
+if [ "$colorspaceCurImg" = "Gray" ]; then
 	ext="pgm"
 	opt="-gray"
 fi
