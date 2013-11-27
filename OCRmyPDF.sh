@@ -165,7 +165,7 @@ sed '/^$/d' "$FILE_TMP" | awk '{printf "%04d %s\n", NR, $0}' > "$FILE_PAGES_INFO
 numpages=`tail -n 1 "$FILE_PAGES_INFO" | cut -f1 -d" "`
 
 # OCR each page of the input pdf file
-! parallel -k --halt-on-error 1 "$OCR_PAGE" "$FILE_INPUT_PDF" "{}" "$numpages" "$TMP_FLD" \
+! parallel -q -k --halt-on-error 1 "$OCR_PAGE" "$FILE_INPUT_PDF" "{}" "$numpages" "$TMP_FLD" \
 	"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$PDF_NOIMG" "$TESS_CFG_FILES" < "$FILE_PAGES_INFO" \
 	&& exit $?
 #while read pageInfo ; do
