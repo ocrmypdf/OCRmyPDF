@@ -63,17 +63,17 @@ fi
 dpi_x=`echo "scale=5;$widthCurImg*72/$widthPDF" | bc`
 dpi_y=`echo "scale=5;$heightCurImg*72/$heightPDF" | bc`
 # compute the maximum allowed resolution difference that can be cause by:
-# - the truncated PDF with/height in pt
-# - the precision of dpi value
+# - the truncated PDF width/height in pt
+# - the precision of dpi values computed above
 epsilon=`echo "scale=5;($widthCurImg*72/$widthPDF^2)+($heightCurImg*72/$heightPDF^2)+0.00002" | bc`	# max inaccuracy due to truncation of PDF size in pt
 [ `echo "($dpi_x - $dpi_y) < $epsilon " | bc` -eq 0 -o `echo "($dpi_y - $dpi_x) < $epsilon " | bc` -eq 0 ] \
-	&& echo "Resolutions difference ($dpi_x/$dpi_y) higher than expected ($epsilon). Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
+	&& echo "(x/y) resolution mismatch ($dpi_x/$dpi_y). Difference should be lower than $epsilon. Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
 dpi=`echo "scale=5;($dpi_x+$dpi_y)/2+0.5" | bc` # adding 0.5 is required for rounding
 dpi=`echo "scale=0;$dpi/1" | bc`		# round to the nearest integer
 
 # Identify if page image should be saved as ppm (color) or pgm (gray)
 ext="ppm"
-opt=""		
+opt=""
 if [ "$colorspaceCurImg" = "Gray" ]; then
 	ext="pgm"
 	opt="-gray"
@@ -82,7 +82,7 @@ curImgPixmap="$TMP_FLD/$page.$ext"
 curImgPixmapDeskewed="$TMP_FLD/$page.deskewed.$ext"
 curImgPixmapClean="$TMP_FLD/$page.cleaned.$ext"
 
-# extract current page as image with right orientation and resoltution
+# extract current page as image with right orientation and resolution
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Extracting image as $ext file (${dpi} dpi)"
 ! pdftoppm -f $page -l $page -r $dpi $opt "$FILE_INPUT_PDF" > "$curImgPixmap" \
 	&& echo "Could not extract page $page as $ext from \"$FILE_INPUT_PDF\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR
