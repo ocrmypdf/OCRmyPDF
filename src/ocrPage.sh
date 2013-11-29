@@ -1,5 +1,7 @@
 #!/bin/sh
 ##############################################################################
+# Script aimed at OCRing a single page of a PDF file
+#
 # Copyright (c) 2013: fritz-hh from Github (https://github.com/fritz-hh)
 ##############################################################################
 
@@ -7,69 +9,111 @@
 
 
 # Initialization of variables passed by args
-FILE_INPUT_PDF="$1"
-PAGE_INFO="$2"
-NUM_PAGES="$3"
-TMP_FLD="$4"
-VERBOSITY="$5"
-LAN="$6"
-KEEP_TMP="$7"
-PREPROCESS_DESKEW="$8"
-PREPROCESS_CLEAN="$9"
-PREPROCESS_CLEANTOPDF="${10}"
-PDF_NOIMG="${11}"
-TESS_CFG_FILES="${12}"
+FILE_INPUT_PDF="$1"			# PDF file containing the page to be OCRed
+PAGE_INFO="$2"				# Various characteristics of the page to be OCRed
+NUM_PAGES="$3"				# Total number of page of the PDF file (required for logging)
+TMP_FLD="$4"				# Folder where the temporary files should be placed
+VERBOSITY="$5"				# Requested verbosity
+LAN="$6"				# Language of the file to be OCRed
+KEEP_TMP="$7"				# Keep the temporary files after processing (helpful for debugging)
+PREPROCESS_DESKEW="$8"			# Deskew the page to be OCRed
+PREPROCESS_CLEAN="$9"			# Clean the page to be OCRed
+PREPROCESS_CLEANTOPDF="${10}"		# Put the cleaned paged in the OCRed PDF
+PDF_NOIMG="${11}"			# Request to generate also a pdf page containing only the OCRed text but no image (helpful for debugging) 
+TESS_CFG_FILES="${12}"			# Specific configuration files to be used by Tesseract during OCRing
 
+
+
+
+################################## 
+# Detect the characteristics of the embedded image
+#
+# Params: 
+# return :  
+##################################
+imageCharacteristics() {
+	local page widthPDF heightPDF nbImg curImg propCurImg widthCurImg heightCurImg colorspaceCurImg tmpval dpi_x dpi_y epsilon dpi
+
+	# width / height of PDF page (in pt)
+	page="$1"
+	widthPDF="$2"
+	heightPDF="$3"
+	
+	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: size ${heightPDF}x${widthPDF} (h*w in pt)"
+	# extract raw image from pdf file to compute resolution
+	# unfortunately this image can have another orientation than in the pdf...
+	# so we will have to extract it again later using pdftoppm
+	pdfimages -f $page -l $page -j "$FILE_INPUT_PDF" "$curOrigImg" 1>&2	
+	# count number of extracted images
+	nbImg=`ls -1 "$curOrigImg"* | wc -l`
+	[ $nbImg -ne "1" ] && echo "Page $page: Expecting exactly 1 image on page $page (found $nbImg). Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
+	# Get characteristics of the extracted image
+	curImg=`ls -1 "$curOrigImg"*`
+	propCurImg=`identify -format "%w %h %[colorspace]" "$curImg"`
+	widthCurImg=`echo "$propCurImg" | cut -f1 -d" "`
+	heightCurImg=`echo "$propCurImg" | cut -f2 -d" "`
+	colorspaceCurImg=`echo "$propCurImg" | cut -f3 -d" "`
+	# switch height/width values if the image has not the right orientation
+	# we make here the assumption that vertical/horizontal dpi are equal
+	# we will check that later
+	if [ $((($heightPDF-$widthPDF)*($heightCurImg-$widthCurImg))) -lt 0 ]; then
+		[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Extracted image has wrong orientation. Inverting image height/width values"
+		tmpval=$heightCurImg
+		heightCurImg=$widthCurImg
+		widthCurImg=$tmpval
+	fi
+	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: size ${heightCurImg}x${widthCurImg} (h*w pixel)"	
+	
+	# compute the resolution of the image
+	dpi_x=`echo "scale=5;$widthCurImg*72/$widthPDF" | bc`
+	dpi_y=`echo "scale=5;$heightCurImg*72/$heightPDF" | bc`
+	# check the x,y resolution difference that can be cause by:
+	# 	- the truncated PDF width/height in pt
+	# 	- the precision of dpi values computed above
+	epsilon=`echo "scale=5;($widthCurImg*72/$widthPDF^2)+($heightCurImg*72/$heightPDF^2)+0.00002" | bc`	# max inaccuracy due to truncation of PDF size in pt
+	[ $VERBOSITY -ge $LOG_WARN ] && [ `echo "($dpi_x - $dpi_y) < $epsilon " | bc` -eq 0 -o `echo "($dpi_y - $dpi_x) < $epsilon " | bc` -eq 0 ] \
+		&& echo "Page $page: (x/y) resolution mismatch ($dpi_x/$dpi_y). Difference should be less than $epsilon. Taking biggest value"
+
+	# round the dpi values to the nearest integer
+	dpi_x=`echo "scale=5;$dpi_x+0.5" | bc` 		# adding 0.5 is required for rounding
+	dpi_x=`echo "scale=0;$dpi_x/1" | bc`		# round to the nearest integer
+	dpi_y=`echo "scale=5;$dpi_y+0.5" | bc` 		# adding 0.5 is required for rounding
+	dpi_y=`echo "scale=0;$dpi_y/1" | bc`		# round to the nearest integer
+	
+	# take the biggest x,y dpi value
+	[ $dpi_x -ge $dpi_y ] && dpi=$dpi_x || dpi=$dpi_y
+	
+	# save the image characteristics
+	echo "$dpi $colorspaceCurImg" > $curImgCharacteristics
+	
+	return 0
+}
 
 
 page=`echo $PAGE_INFO | cut -f1 -d" "`
 [ $VERBOSITY -ge $LOG_INFO ] && echo "Processing page $page / $NUM_PAGES"
 
-# create the name of the required file
-curOrigImg="$TMP_FLD/${page}_Image"			# original image available in the current PDF page 
-							# (the image file may have a different orientation than in the pdf file)
-curHocr="$TMP_FLD/$page.hocr"				# hocr file to be generated by the OCR SW for the current page
-curOCRedPDF="$TMP_FLD/${page}-ocred.pdf"		# PDF file containing the image + the OCRed text for the current page
-curOCRedPDFDebug="$TMP_FLD/${page}-debug-ocred.pdf"	# PDF file containing data required to find out if OCR worked correctly
-
 # get width / height of PDF page (in pt)
 widthPDF=`echo $PAGE_INFO | cut -f2 -d" "`
 heightPDF=`echo $PAGE_INFO | cut -f3 -d" "`
-[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: size ${heightPDF}x${widthPDF} (h*w in pt)"
-# extract raw image from pdf file to compute resolution
-# unfortunately this image can have another orientation than in the pdf...
-# so we will have to extract it again later using pdftoppm
-pdfimages -f $page -l $page -j "$FILE_INPUT_PDF" "$curOrigImg" 1>&2	
-# count number of extracted images
-nbImg=`ls -1 "$curOrigImg"* | wc -l`
-[ $nbImg -ne "1" ] && echo "Expecting exactly 1 image on page $page (found $nbImg). Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
-# Get characteristics of the extracted image
-curImg=`ls -1 "$curOrigImg"*`
-propCurImg=`identify -format "%w %h %[colorspace]" "$curImg"`
-widthCurImg=`echo "$propCurImg" | cut -f1 -d" "`
-heightCurImg=`echo "$propCurImg" | cut -f2 -d" "`
-colorspaceCurImg=`echo "$propCurImg" | cut -f3 -d" "`
-# switch height/width values if the image has not the right orientation
-# we make here the assumption that vertical/horizontal dpi are equal
-# we will check that later
-if [ $((($heightPDF-$widthPDF)*($heightCurImg-$widthCurImg))) -lt 0 ]; then
-	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Extracted image has wrong orientation. Inverting image height/width values"
-	tmpval=$heightCurImg
-	heightCurImg=$widthCurImg
-	widthCurImg=$tmpval
+
+# create the name of the required temporary files
+curOrigImg="$TMP_FLD/${page}_Image"					# original image available in the current PDF page 
+									# (the image file may have a different orientation than in the pdf file)
+curHocr="$TMP_FLD/$page.hocr"						# hocr file to be generated by the OCR SW for the current page
+curOCRedPDF="$TMP_FLD/${page}-ocred.pdf"				# PDF file containing the image + the OCRed text for the current page
+curOCRedPDFDebug="$TMP_FLD/${page}-debug-ocred.pdf"			# PDF file containing data required to find out if OCR worked correctly
+curImgCharacteristics="$TMP_FLD/${page}-img-characteristics.txt"	# Detected characteristics of the embedded image
+
+
+# auto-detect the characteristics of the embedded image
+if ! imageCharacteristics "$page" "$widthPDF" "$heightPDF"; then
+	echo "problem detected. Exiting...."
 fi
-[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: size ${heightCurImg}x${widthCurImg} (h*w pixel)"	
-# compute the resolution of the image
-dpi_x=`echo "scale=5;$widthCurImg*72/$widthPDF" | bc`
-dpi_y=`echo "scale=5;$heightCurImg*72/$heightPDF" | bc`
-# compute the maximum allowed resolution difference that can be cause by:
-# - the truncated PDF width/height in pt
-# - the precision of dpi values computed above
-epsilon=`echo "scale=5;($widthCurImg*72/$widthPDF^2)+($heightCurImg*72/$heightPDF^2)+0.00002" | bc`	# max inaccuracy due to truncation of PDF size in pt
-[ `echo "($dpi_x - $dpi_y) < $epsilon " | bc` -eq 0 -o `echo "($dpi_y - $dpi_x) < $epsilon " | bc` -eq 0 ] \
-	&& echo "(x/y) resolution mismatch ($dpi_x/$dpi_y). Difference should be lower than $epsilon. Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
-dpi=`echo "scale=5;($dpi_x+$dpi_y)/2+0.5" | bc` # adding 0.5 is required for rounding
-dpi=`echo "scale=0;$dpi/1" | bc`		# round to the nearest integer
+
+# read the image characteristics
+dpi=`cat "$curImgCharacteristics" | cut -f1 -d" "`
+colorspaceCurImg=`cat "$curImgCharacteristics" | cut -f2 -d" "`
 
 # Identify if page image should be saved as ppm (color) or pgm (gray)
 ext="ppm"
@@ -88,6 +132,8 @@ curImgPixmapClean="$TMP_FLD/$page.cleaned.$ext"
 	&& echo "Could not extract page $page as $ext from \"$FILE_INPUT_PDF\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR
 
 # if requested deskew image (without changing its size in pixel)
+widthCurImg=$(($dpi*$widthPDF/72))
+heightCurImg=$(($dpi*$heightPDF/72))
 if [ "$PREPROCESS_DESKEW" -eq "1" ]; then
 	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Deskewing image"
 	! convert "$curImgPixmap" -deskew 40% -gravity center -extent ${widthCurImg}x${heightCurImg} "$curImgPixmapDeskewed" \
