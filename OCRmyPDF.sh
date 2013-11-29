@@ -80,7 +80,7 @@ while getopts ":hvgkdcil:C:" opt; do
 		h) usage ; exit 0 ;;
 		v) VERBOSITY=$(($VERBOSITY+1)) ;;
 		k) KEEP_TMP="1" ;;
-		g) PDF_NOIMG="1"; VERBOSITY="10"; KEEP_TMP="1" ;;
+		g) PDF_NOIMG="1"; VERBOSITY="$LOG_DEBUG"; KEEP_TMP="1" ;;
 		d) PREPROCESS_DESKEW="1" ;;
 		c) PREPROCESS_CLEAN="1" ;;
 		i) PREPROCESS_CLEANTOPDF="1" ;;
