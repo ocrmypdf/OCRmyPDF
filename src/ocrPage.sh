@@ -141,6 +141,8 @@ fi
 if [ "$dpi" -lt "$OVERSAMPLING_DPI" ]; then
 	[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: Low image resolution detected ($dpi dpi). Performing oversampling ($OVERSAMPLING_DPI dpi) to try to get better OCR results." 
 	dpi="$OVERSAMPLING_DPI"
+elif [ "$dpi" -lt "200" ]; then
+	[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: Low image resolution detected ($dpi dpi). If needed, please use the \"-o\" to try to get better OCR results." 
 fi
 	
 # Identify if page image should be saved as ppm (color) or pgm (gray)
