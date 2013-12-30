@@ -8,7 +8,7 @@
 . "./src/config.sh"
 
 
-# Initialization of variables passed by args
+# Initialization of variables passed by arguments
 FILE_INPUT_PDF="$1"			# PDF file containing the page to be OCRed
 PAGE_INFO="$2"				# Various characteristics of the page to be OCRed
 NUM_PAGES="$3"				# Total number of page of the PDF file (required for logging)
@@ -19,34 +19,47 @@ KEEP_TMP="$7"				# Keep the temporary files after processing (helpful for debugg
 PREPROCESS_DESKEW="$8"			# Deskew the page to be OCRed
 PREPROCESS_CLEAN="$9"			# Clean the page to be OCRed
 PREPROCESS_CLEANTOPDF="${10}"		# Put the cleaned paged in the OCRed PDF
-PDF_NOIMG="${11}"			# Request to generate also a pdf page containing only the OCRed text but no image (helpful for debugging) 
+PDF_NOIMG="${11}"			# Request to generate also a PDF page containing only the OCRed text but no image (helpful for debugging) 
 TESS_CFG_FILES="${12}"			# Specific configuration files to be used by Tesseract during OCRing
 
 
 
 
 ################################## 
-# Detect the characteristics of the embedded image
+# Detect the characteristics of the embedded image for 
+# the page number provided as parameter
 #
-# Params: 
-# return :  
+# Param 1: page number
+# Param 2: PDF page width in pt
+# Param 3: PDF page height in pt
+# Param 4: temp file path (Path of the file in which the output should be written)
+# Output: A file (<pagenum>-img-characteristics.txt) containing the characteristics of the embedded image
+#          Structure of the file:
+#          <dpi> <colorspace>
+# Returns:
+#       - 0: if no error occurs
+#       - 1: in case the page contains more than one image
+#       - 2: in case the x,y resolutions are not equal
 ##################################
 imageCharacteristics() {
-	local page widthPDF heightPDF nbImg curImg propCurImg widthCurImg heightCurImg colorspaceCurImg tmpval dpi_x dpi_y epsilon dpi
+	local page widthPDF heightPDF curImgCharacteristics nbImg curImg propCurImg widthCurImg heightCurImg colorspaceCurImg tmpval dpi_x dpi_y epsilon dpi
 
-	# width / height of PDF page (in pt)
+	# page number
 	page="$1"
+	# width / height of PDF page (in pt)
 	widthPDF="$2"
 	heightPDF="$3"
+	# path of the file in which the output should be written
+	curImgCharacteristics="$4"
 	
-	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: size ${heightPDF}x${widthPDF} (h*w in pt)"
+	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Size ${heightPDF}x${widthPDF} (h*w in pt)"
 	# extract raw image from pdf file to compute resolution
 	# unfortunately this image can have another orientation than in the pdf...
 	# so we will have to extract it again later using pdftoppm
 	pdfimages -f $page -l $page -j "$FILE_INPUT_PDF" "$curOrigImg" 1>&2	
 	# count number of extracted images
 	nbImg=`ls -1 "$curOrigImg"* | wc -l`
-	[ $nbImg -ne "1" ] && echo "Page $page: Expecting exactly 1 image on page $page (found $nbImg). Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
+	[ $nbImg -ne "1" ] && echo "Page $page: Expecting exactly 1 image on page $page (found $nbImg). Exiting..." >&2 && return 1
 	# Get characteristics of the extracted image
 	curImg=`ls -1 "$curOrigImg"*`
 	propCurImg=`identify -format "%w %h %[colorspace]" "$curImg"`
@@ -62,30 +75,33 @@ imageCharacteristics() {
 		heightCurImg=$widthCurImg
 		widthCurImg=$tmpval
 	fi
-	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: size ${heightCurImg}x${widthCurImg} (h*w pixel)"	
+	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Size ${heightCurImg}x${widthCurImg} (h*w pixel)"	
 	
 	# compute the resolution of the image
 	dpi_x=`echo "scale=5;$widthCurImg*72/$widthPDF" | bc`
 	dpi_y=`echo "scale=5;$heightCurImg*72/$heightPDF" | bc`
+
+	# round the dpi values to the nearest integer
+	rounded_dpi_x=`echo "scale=5;$dpi_x+0.5" | bc` 		        # adding 0.5 is required for rounding
+	rounded_dpi_x=`echo "scale=0;$rounded_dpi_x/1" | bc`		# round to the nearest integer
+	rounded_dpi_y=`echo "scale=5;$dpi_y+0.5" | bc` 		        # adding 0.5 is required for rounding
+	rounded_dpi_y=`echo "scale=0;$rounded_dpi_y/1" | bc`		# round to the nearest integer
+	
+	# take the biggest dpi value
+	[ $rounded_dpi_x -ge $rounded_dpi_y ] && dpi=$rounded_dpi_x || dpi=$rounded_dpi_y
+	[ $VERBOSITY -ge $LOG_INFO ] && echo "Page $page: Embedded image resolution is $dpi dpi"
+	
+	# save the image characteristics
+	echo "$dpi $colorspaceCurImg" > $curImgCharacteristics
+
 	# check the x,y resolution difference that can be cause by:
 	# 	- the truncated PDF width/height in pt
 	# 	- the precision of dpi values computed above
 	epsilon=`echo "scale=5;($widthCurImg*72/$widthPDF^2)+($heightCurImg*72/$heightPDF^2)+0.00002" | bc`	# max inaccuracy due to truncation of PDF size in pt
 	[ $VERBOSITY -ge $LOG_WARN ] && [ `echo "($dpi_x - $dpi_y) < $epsilon " | bc` -eq 0 -o `echo "($dpi_y - $dpi_x) < $epsilon " | bc` -eq 0 ] \
-		&& echo "Page $page: (x/y) resolution mismatch ($dpi_x/$dpi_y). Difference should be less than $epsilon. Taking biggest value"
+		&& echo "Page $page: (x/y) resolution mismatch ($dpi_x/$dpi_y). Difference should be less than $epsilon. Taking biggest value" && return 2
 
-	# round the dpi values to the nearest integer
-	dpi_x=`echo "scale=5;$dpi_x+0.5" | bc` 		# adding 0.5 is required for rounding
-	dpi_x=`echo "scale=0;$dpi_x/1" | bc`		# round to the nearest integer
-	dpi_y=`echo "scale=5;$dpi_y+0.5" | bc` 		# adding 0.5 is required for rounding
-	dpi_y=`echo "scale=0;$dpi_y/1" | bc`		# round to the nearest integer
-	
-	# take the biggest x,y dpi value
-	[ $dpi_x -ge $dpi_y ] && dpi=$dpi_x || dpi=$dpi_y
-	
-	# save the image characteristics
-	echo "$dpi $colorspaceCurImg" > $curImgCharacteristics
-	
+	# everything went well!
 	return 0
 }
 
@@ -107,13 +123,19 @@ curImgCharacteristics="$TMP_FLD/${page}-img-characteristics.txt"	# Detected char
 
 
 # auto-detect the characteristics of the embedded image
-if ! imageCharacteristics "$page" "$widthPDF" "$heightPDF"; then
-	echo "problem detected. Exiting...."
-fi
+imageCharacteristics "$page" "$widthPDF" "$heightPDF" "$curImgCharacteristics"
+case "$?" in
+	1)	exit $EXIT_BAD_INPUT_FILE ;;
+esac
 
 # read the image characteristics
 dpi=`cat "$curImgCharacteristics" | cut -f1 -d" "`
 colorspaceCurImg=`cat "$curImgCharacteristics" | cut -f2 -d" "`
+
+# perform oversampling if the resolution is not big enough
+# to get good OCR results
+[ $dpi -lt 250 ] && dpi=250 && [ $VERBOSITY -ge $LOG_WARN ] \
+	&& echo "Page $page: Low image resolution detected. Performing oversampling (at $dpi dpi) to try to get better OCR results. This will probably increase output file size." 
 
 # Identify if page image should be saved as ppm (color) or pgm (gray)
 ext="ppm"
