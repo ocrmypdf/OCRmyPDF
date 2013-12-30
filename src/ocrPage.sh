@@ -19,8 +19,9 @@ KEEP_TMP="$7"				# Keep the temporary files after processing (helpful for debugg
 PREPROCESS_DESKEW="$8"			# Deskew the page to be OCRed
 PREPROCESS_CLEAN="$9"			# Clean the page to be OCRed
 PREPROCESS_CLEANTOPDF="${10}"		# Put the cleaned paged in the OCRed PDF
-PDF_NOIMG="${11}"			# Request to generate also a PDF page containing only the OCRed text but no image (helpful for debugging) 
-TESS_CFG_FILES="${12}"			# Specific configuration files to be used by Tesseract during OCRing
+OVERSAMPLING_DPI="${11}"		# Oversampling resolution in dpi
+PDF_NOIMG="${12}"			# Request to generate also a PDF page containing only the OCRed text but no image (helpful for debugging) 
+TESS_CFG_FILES="${13}"			# Specific configuration files to be used by Tesseract during OCRing
 
 
 
@@ -59,7 +60,7 @@ imageCharacteristics() {
 	pdfimages -f $page -l $page -j "$FILE_INPUT_PDF" "$curOrigImg" 1>&2	
 	# count number of extracted images
 	nbImg=`ls -1 "$curOrigImg"* | wc -l`
-	[ $nbImg -ne "1" ] && echo "Page $page: Expecting exactly 1 image on page $page (found $nbImg). Exiting..." >&2 && return 1
+	[ $nbImg -ne "1" ] && echo "Page $page: Expecting exactly 1 image on page $page (found $nbImg). Page might not (only) contain a scanned image !!!" && return 1
 	# Get characteristics of the extracted image
 	curImg=`ls -1 "$curOrigImg"*`
 	propCurImg=`identify -format "%w %h %[colorspace]" "$curImg"`
@@ -124,19 +125,24 @@ curImgCharacteristics="$TMP_FLD/${page}-img-characteristics.txt"	# Detected char
 
 # auto-detect the characteristics of the embedded image
 imageCharacteristics "$page" "$widthPDF" "$heightPDF" "$curImgCharacteristics"
-case "$?" in
-	1)	exit $EXIT_BAD_INPUT_FILE ;;
-esac
-
-# read the image characteristics
-dpi=`cat "$curImgCharacteristics" | cut -f1 -d" "`
-colorspaceCurImg=`cat "$curImgCharacteristics" | cut -f2 -d" "`
+#in case the page contains more than one image, warn the user but go on with default parameters
+if [ "$?" -eq "1" ]; then
+	dpi=300
+	echo "Page $page: Continuing anyway, assuming a default resolution of $dpi dpi"
+	colorspaceCurImg="sRGB"
+else
+	# read the image characteristics from the file
+	dpi=`cat "$curImgCharacteristics" | cut -f1 -d" "`
+	colorspaceCurImg=`cat "$curImgCharacteristics" | cut -f2 -d" "`
+fi
 
 # perform oversampling if the resolution is not big enough
 # to get good OCR results
-[ $dpi -lt 250 ] && dpi=250 && [ $VERBOSITY -ge $LOG_WARN ] \
-	&& echo "Page $page: Low image resolution detected. Performing oversampling (at $dpi dpi) to try to get better OCR results. This will probably increase output file size." 
-
+if [ "$dpi" -lt "$OVERSAMPLING_DPI" ]; then
+	[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: Low image resolution detected ($dpi dpi). Performing oversampling ($OVERSAMPLING_DPI dpi) to try to get better OCR results." 
+	dpi="$OVERSAMPLING_DPI"
+fi
+	
 # Identify if page image should be saved as ppm (color) or pgm (gray)
 ext="ppm"
 opt=""
@@ -151,7 +157,7 @@ curImgPixmapClean="$TMP_FLD/$page.cleaned.$ext"
 # extract current page as image with right orientation and resolution
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Extracting image as $ext file (${dpi} dpi)"
 ! pdftoppm -f $page -l $page -r $dpi $opt "$FILE_INPUT_PDF" > "$curImgPixmap" \
-	&& echo "Could not extract page $page as $ext from \"$FILE_INPUT_PDF\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR
+	&& echo "Could not extract page $page as $ext from \"$FILE_INPUT_PDF\". Exiting..." && exit $EXIT_OTHER_ERROR
 
 # if requested deskew image (without changing its size in pixel)
 widthCurImg=$(($dpi*$widthPDF/72))
@@ -159,7 +165,7 @@ heightCurImg=$(($dpi*$heightPDF/72))
 if [ "$PREPROCESS_DESKEW" -eq "1" ]; then
 	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Deskewing image"
 	! convert "$curImgPixmap" -deskew 40% -gravity center -extent ${widthCurImg}x${heightCurImg} "$curImgPixmapDeskewed" \
-		&& echo "Could not deskew \"$curImgPixmap\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR
+		&& echo "Could not deskew \"$curImgPixmap\". Exiting..." && exit $EXIT_OTHER_ERROR
 else
 	cp "$curImgPixmap" "$curImgPixmapDeskewed"
 fi
@@ -170,7 +176,7 @@ if [ "$PREPROCESS_CLEAN" -eq "1" ]; then
 	! unpaper --dpi $dpi --mask-scan-size 100 \
 		--no-deskew --no-grayfilter --no-blackfilter --no-mask-center --no-border-align \
 		"$curImgPixmapDeskewed" "$curImgPixmapClean" 1> /dev/null \
-		&& echo "Could not clean \"$curImgPixmapDeskewed\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR
+		&& echo "Could not clean \"$curImgPixmapDeskewed\". Exiting..." && exit $EXIT_OTHER_ERROR
 else
 	cp "$curImgPixmapDeskewed" "$curImgPixmapClean"
 fi
@@ -178,7 +184,7 @@ fi
 # perform OCR
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Performing OCR"
 ! tesseract -l "$LAN" "$curImgPixmapClean" "$curHocr" hocr $TESS_CFG_FILES 1> /dev/null 2> /dev/null \
-	&& echo "Could not OCR file \"$curImgPixmapClean\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR
+	&& echo "Could not OCR file \"$curImgPixmapClean\". Exiting..." && exit $EXIT_OTHER_ERROR
 mv "$curHocr.html" "$curHocr"
 
 # embed text and image to new pdf file
@@ -189,13 +195,13 @@ else
 fi
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Embedding text in PDF"
 ! python2 $SRC/hocrTransform.py -r $dpi -i "$image4finalPDF" "$curHocr" "$curOCRedPDF" \
-	&& echo "Could not create PDF file from \"$curHocr\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR
+	&& echo "Could not create PDF file from \"$curHocr\". Exiting..." && exit $EXIT_OTHER_ERROR
 
 # if requested generate special debug PDF page with visible OCR text
 if [ $PDF_NOIMG -eq "1" ] ; then
 	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Embedding text in PDF (debug page)"
 	! python2 $SRC/hocrTransform.py -b -r $dpi "$curHocr" "$curOCRedPDFDebug" \
-		&& echo "Could not create PDF file from \"$curHocr\". Exiting..." >&2 && exit $EXIT_OTHER_ERROR	
+		&& echo "Could not create PDF file from \"$curHocr\". Exiting..." && exit $EXIT_OTHER_ERROR	
 fi
 
 # delete temporary files created for the current page

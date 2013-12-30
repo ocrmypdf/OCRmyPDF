@@ -19,10 +19,10 @@ tesseract engine)
 Copyright: fritz from NAS4Free forum
 Version: $VERSION
 
-Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-l language] [-C filename] inputfile outputfile
+Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-l language] [-C filename] inputfile outputfile
 
 -h : Display this help message
--v : Increase the verbosity (this option can be used more than once)
+-v : Increase the verbosity (this option can be used more than once) (e.g. -vvv)
 -k : Do not delete the temporary files
 -g : Activate debug mode:
      - Generates a PDF file containing each page twice (once with the image, once without the image
@@ -33,6 +33,9 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-l language] [-C filenam
 -c : Clean each page before performing OCR
 -i : Incorporate the cleaned image in the final PDF file (by default the original image	
      image, or the deskewed image if the -d option is set, is incorporated)
+-o : If the resolution of an image is lower than dpi value provided as argument, provide the OCR engine with 
+     an oversampled image having the latter dpi value. This can improve the OCR results but can lead to a larger output PDF file.
+     (default: no oversampling performed)
 -l : Set the language of the PDF file in order to improve OCR results (default "eng")
      Any language supported by tesseract is supported.
 -C : Pass an additional configuration file to the tesseract OCR engine.
@@ -71,11 +74,12 @@ KEEP_TMP="0"			# do not delete the temporary files (default)
 PREPROCESS_DESKEW="0"		# 0=no, 1=yes (deskew image)
 PREPROCESS_CLEAN="0"		# 0=no, 1=yes (clean image to improve OCR)
 PREPROCESS_CLEANTOPDF="0"	# 0=no, 1=yes (put cleaned image in final PDF)
+OVERSAMPLING_DPI="0"		# do not perform oversampling
 PDF_NOIMG="0"			# 0=no, 1=yes (generates each PDF page twice, with and without image)
 TESS_CFG_FILES=""		# list of additional configuration files to be used by tesseract
 
 # Parse optional command line arguments
-while getopts ":hvgkdcil:C:" opt; do
+while getopts ":hvgkdcio:l:C:" opt; do
 	case $opt in
 		h) usage ; exit 0 ;;
 		v) VERBOSITY=$(($VERBOSITY+1)) ;;
@@ -84,14 +88,15 @@ while getopts ":hvgkdcil:C:" opt; do
 		d) PREPROCESS_DESKEW="1" ;;
 		c) PREPROCESS_CLEAN="1" ;;
 		i) PREPROCESS_CLEANTOPDF="1" ;;
+		o) OVERSAMPLING_DPI="$OPTARG" ;;
 		l) LAN="$OPTARG" ;;
 		C) TESS_CFG_FILES="$OPTARG $TESS_CFG_FILES" ;;
 		\?)
-			echo "Invalid option: -$OPTARG" >&2
+			echo "Invalid option: -$OPTARG"
 			usage
 			exit $EXIT_BAD_ARGS ;;
 		:)
-			echo "Option -$OPTARG requires an argument" >&2
+			echo "Option -$OPTARG requires an argument"
 			usage
 			exit $EXIT_BAD_ARGS ;;
 	esac
@@ -103,16 +108,16 @@ shift $((OPTIND-1))
 # Check if the number of mandatory parameters
 # provided is as expected
 if [ "$#" -ne "2" ]; then
-	echo "Exactly two mandatory argument shall be provided ($# arguments provided)" >&2
+	echo "Exactly two mandatory argument shall be provided ($# arguments provided)"
 	usage
 	exit $EXIT_BAD_ARGS
 fi
 
 ! absolutePath "$1" > /dev/null \
-	&& echo "The folder in which the input file should be located does not exist. Exiting..." >&2 && exit $EXIT_BAD_ARGS
+	&& echo "The folder in which the input file should be located does not exist. Exiting..." && exit $EXIT_BAD_ARGS
 FILE_INPUT_PDF="`absolutePath "$1"`"
 ! absolutePath "$2" > /dev/null \
-	&& echo "The folder in which the output file should be generated does not exist. Exiting..." >&2 && exit $EXIT_BAD_ARGS
+	&& echo "The folder in which the output file should be generated does not exist. Exiting..." && exit $EXIT_BAD_ARGS
 FILE_OUTPUT_PDFA="`absolutePath "$2"`"
 
 
@@ -124,16 +129,16 @@ cd "`dirname $0`"
 
 # check if the required utilities are installed
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Checking if all dependencies are installed"
-! command -v identify > /dev/null && echo "Please install ImageMagick. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
-! command -v parallel > /dev/null && echo "Please install GNU Parallel. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
-! command -v pdfimages > /dev/null && echo "Please install poppler-utils. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
-! command -v pdftoppm > /dev/null && echo "Please install poppler-utils. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
-! command -v pdftk > /dev/null && echo "Please install pdftk. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
-[ $PREPROCESS_CLEAN -eq 1 ] && ! command -v unpaper > /dev/null && echo "Please install unpaper. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
-! command -v tesseract > /dev/null && echo "Please install tesseract and tesseract-data. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
-! command -v python2 > /dev/null && echo "Please install python v2.x, and the python libraries: reportlab, lxml. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
-! command -v gs > /dev/null && echo "Please install ghostcript. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
-! command -v java > /dev/null && echo "Please install java. Exiting..." >&2 && exit $EXIT_MISSING_DEPENDENCY
+! command -v identify > /dev/null && echo "Please install ImageMagick. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! command -v parallel > /dev/null && echo "Please install GNU Parallel. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! command -v pdfimages > /dev/null && echo "Please install poppler-utils. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! command -v pdftoppm > /dev/null && echo "Please install poppler-utils. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! command -v pdftk > /dev/null && echo "Please install pdftk. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+[ $PREPROCESS_CLEAN -eq 1 ] && ! command -v unpaper > /dev/null && echo "Please install unpaper. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! command -v tesseract > /dev/null && echo "Please install tesseract and tesseract-data. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! command -v python2 > /dev/null && echo "Please install python v2.x, and the python libraries: reportlab, lxml. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! command -v gs > /dev/null && echo "Please install ghostcript. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! command -v java > /dev/null && echo "Please install java. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 
 
 
@@ -159,18 +164,18 @@ mkdir -p "${TMP_FLD}"
 # get the size of each pdf page (width / height) in pt (inch*72)
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Input file: Extracting size of each page (in pt)"
 ! identify -format "%w %h\n" "$FILE_INPUT_PDF" > "$FILE_TMP" \
-	&& echo "Could not get size of PDF pages. Exiting..." >&2 && exit $EXIT_BAD_INPUT_FILE
+	&& echo "Could not get size of PDF pages. Exiting..." && exit $EXIT_BAD_INPUT_FILE
 # removing empty lines (last one should be) and prepend page # before each line
 sed '/^$/d' "$FILE_TMP" | awk '{printf "%04d %s\n", NR, $0}' > "$FILE_PAGES_INFO"
 numpages=`tail -n 1 "$FILE_PAGES_INFO" | cut -f1 -d" "`
 
 # OCR each page of the input pdf file
 ! parallel -q -k --halt-on-error 1 "$OCR_PAGE" "$FILE_INPUT_PDF" "{}" "$numpages" "$TMP_FLD" \
-	"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$PDF_NOIMG" "$TESS_CFG_FILES" < "$FILE_PAGES_INFO" \
+	"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$OVERSAMPLING_DPI" "$PDF_NOIMG" "$TESS_CFG_FILES" < "$FILE_PAGES_INFO" \
 	&& exit $?
 #while read pageInfo ; do
 #	! "$OCR_PAGE" "$FILE_INPUT_PDF" "$pageInfo" "$numpages" "$TMP_FLD" \
-#		"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$PDF_NOIMG" "$TESS_CFG_FILES" \
+#		"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$OVERSAMPLING_DPI" "$PDF_NOIMG" "$TESS_CFG_FILES" \
 #		&& exit $?
 #done < "$FILE_PAGES_INFO"
 
@@ -178,14 +183,14 @@ numpages=`tail -n 1 "$FILE_PAGES_INFO" | cut -f1 -d" "`
 # concatenate all pages
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Concatenating all pages"
 ! pdftk "${TMP_FLD}/"*-ocred.pdf cat output "$FILE_OUTPUT_PDF_CAT" \
-	&& echo "Could not concatenate individual PDF pages (\"${TMP_FLD}/*-ocred.pdf\") to one file. Exiting..." >&2 && exit $EXIT_OTHER_ERROR
+	&& echo "Could not concatenate individual PDF pages (\"${TMP_FLD}/*-ocred.pdf\") to one file. Exiting..." && exit $EXIT_OTHER_ERROR
 
 # convert the pdf file to match PDF/A format
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Converting to PDF/A" 
 ! gs -dQUIET -dPDFA -dBATCH -dNOPAUSE -dUseCIEColor \
 	-sProcessColorModel=DeviceCMYK -sDEVICE=pdfwrite -sPDFACompatibilityPolicy=2 \
 	-sOutputFile="$FILE_OUTPUT_PDFA" "$FILE_OUTPUT_PDF_CAT" 1> /dev/null 2> /dev/null \
-	&& echo "Could not convert PDF file \"$FILE_OUTPUT_PDF_CAT\" to PDF/A. Exiting..." >&2 && exit $EXIT_OTHER_ERROR
+	&& echo "Could not convert PDF file \"$FILE_OUTPUT_PDF_CAT\" to PDF/A. Exiting..." && exit $EXIT_OTHER_ERROR
 
 # validate generated pdf file (compliance to PDF/A)
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Checking compliance to PDF/A standard" 
@@ -194,11 +199,11 @@ grep -i "Status|Message" "$FILE_VALIDATION_LOG" # summary of the validation
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "The full validation log is available here: \"$FILE_VALIDATION_LOG\""
 # check the validation results
 pdf_valid=1
-grep -i 'ErrorMessage' "$FILE_VALIDATION_LOG" >&2 && pdf_valid=0
-grep -i 'Status.*not valid' "$FILE_VALIDATION_LOG" >&2 && pdf_valid=0
-grep -i 'Status.*Not well-formed' "$FILE_VALIDATION_LOG" >&2 && pdf_valid=0
-! grep -i 'Profile:.*PDF/A-1' "$FILE_VALIDATION_LOG" > /dev/null && echo "PDF file profile is not PDF/A-1" >&2 && pdf_valid=0
-[ $pdf_valid -ne 1 ] && echo "Output file: The generated PDF/A file is INVALID" >&2
+grep -i 'ErrorMessage' "$FILE_VALIDATION_LOG" && pdf_valid=0
+grep -i 'Status.*not valid' "$FILE_VALIDATION_LOG" && pdf_valid=0
+grep -i 'Status.*Not well-formed' "$FILE_VALIDATION_LOG" && pdf_valid=0
+! grep -i 'Profile:.*PDF/A-1' "$FILE_VALIDATION_LOG" > /dev/null && echo "PDF file profile is not PDF/A-1" && pdf_valid=0
+[ $pdf_valid -ne 1 ] && echo "Output file: The generated PDF/A file is INVALID"
 [ $pdf_valid -ne 0 ] && [ $VERBOSITY -ge $LOG_INFO ] && echo "Output file: The generated PDF/A file is VALID"
 
 
