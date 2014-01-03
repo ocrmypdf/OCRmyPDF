@@ -170,6 +170,9 @@ if [ $VERBOSITY -ge $LOG_DEBUG ]; then
 	echo "Ghostscript version:"
 	gs --version
 	echo "--------------------------------"
+	echo "Java version:"
+	java -version
+	echo "--------------------------------"
 fi
 
 
