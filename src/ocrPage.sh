@@ -214,6 +214,7 @@ if [ $KEEP_TMP -eq 0 ]; then
 	rm "$curImgPixmap"
 	rm "$curImgPixmapDeskewed"
 	rm "$curImgPixmapClean"
+	rm "$curImgCharacteristics"
 fi
 
 exit 0
