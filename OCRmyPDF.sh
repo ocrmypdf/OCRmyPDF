@@ -142,6 +142,37 @@ cd "`dirname $0`"
 
 
 
+# Display the version of the tools if log level is LOG_DEBUG
+if [ $VERBOSITY -ge $LOG_DEBUG ]; then
+	echo "--------------------------------"
+	echo "ImageMagick version:"
+	identify --version
+	echo "--------------------------------"
+	echo "GNU Parallel version:"
+	parallel --version
+	echo "--------------------------------"
+	echo "Poppler-utils version:"
+	pdfimages -v
+	pdftoppm -v
+	echo "--------------------------------"
+	echo "pdftk version:"
+	pdftk --version
+	echo "--------------------------------"
+	echo "unpaper version:"
+	unpaper --version
+	echo "--------------------------------"
+	echo "tesseract version:"
+	tesseract --version
+	echo "--------------------------------"
+	echo "python2 version:"
+	python2 --version
+	echo "--------------------------------"
+	echo "Ghostscript version:"
+	gs --version
+	echo "--------------------------------"
+fi
+
+
 
 # Initialize path to temporary files
 today=$(date +"%Y%m%d_%H%M")
