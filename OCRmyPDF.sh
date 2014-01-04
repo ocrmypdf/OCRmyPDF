@@ -6,6 +6,8 @@
 # Import required scripts
 . "`dirname $0`/src/config.sh"
 
+# Set variables corresponding to the input parameters
+ARGUMENTS="$@"
 
 START=`date +%s`
 
@@ -16,7 +18,7 @@ Script aimed at generating a searchable PDF file from a PDF file containing only
 (The script performs optical character recognition of each respective page using the
 tesseract engine)
 
-Copyright: fritz from NAS4Free forum
+Copyright: fritz-hh  from Github (https://github.com/fritz-hh)
 Version: $VERSION
 
 Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-f] [-l language] [-C filename] inputfile outputfile
@@ -129,7 +131,8 @@ FILE_OUTPUT_PDFA="`absolutePath "$2"`"
 # set script path as working directory
 cd "`dirname $0`"
 
-[ $VERBOSITY -ge $LOG_INFO ] && echo "$TOOLNAME version: $VERSION"
+[ $VERBOSITY -ge $LOG_DEBUG ] && echo "$TOOLNAME version: $VERSION"
+[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Arguments: $ARGUMENTS"
 
 # check if the required utilities are installed
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Checking if all dependencies are installed"
