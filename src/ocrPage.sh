@@ -39,8 +39,9 @@ TESS_CFG_FILES="${13}"			# Specific configuration files to be used by Tesseract 
 #          <dpi> <colorspace>
 # Returns:
 #       - 0: if no error occurs
-#       - 1: in case the page contains more than one image
-#       - 2: in case the x,y resolutions are not equal
+#       - 1: in case the page already contains fonts (which should be the case for PDF generated from scanned pages) 
+#       - 2: in case the page contains more than one image
+#       - 3: in case the x,y resolutions are not equal
 ##################################
 imageCharacteristics() {
 	local page widthPDF heightPDF curImgCharacteristics nbImg curImg propCurImg widthCurImg heightCurImg colorspaceCurImg tmpval dpi_x dpi_y epsilon dpi
@@ -52,6 +53,10 @@ imageCharacteristics() {
 	heightPDF="$3"
 	# path of the file in which the output should be written
 	curImgCharacteristics="$4"
+
+	# check if the page already contains fonts (which should not be the case for PDF based on scanned files
+	[ `pdffonts -f $page -l $page ${FILE_INPUT_PDF} | wc -l` -gt 2 ] && echo "Page $page: This page already contains fonts !!!" && return 1
+
 	
 	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Size ${heightPDF}x${widthPDF} (h*w in pt)"
 	# extract raw image from pdf file to compute resolution
@@ -60,7 +65,7 @@ imageCharacteristics() {
 	pdfimages -f $page -l $page -j "$FILE_INPUT_PDF" "$curOrigImg" 1>&2	
 	# count number of extracted images
 	nbImg=`ls -1 "$curOrigImg"* | wc -l`
-	[ $nbImg -ne "1" ] && echo "Page $page: Expecting exactly 1 image on page $page (found $nbImg). Page might not (only) contain a scanned image !!!" && return 1
+	[ $nbImg -ne "1" ] && echo "Page $page: Expecting exactly 1 image on page $page (found $nbImg). Cannot compute dpi value." && return 2
 	# Get characteristics of the extracted image
 	curImg=`ls -1 "$curOrigImg"*`
 	propCurImg=`identify -format "%w %h %[colorspace]" "$curImg"`
@@ -100,7 +105,7 @@ imageCharacteristics() {
 	# 	- the precision of dpi values computed above
 	epsilon=`echo "scale=5;($widthCurImg*72/$widthPDF^2)+($heightCurImg*72/$heightPDF^2)+0.00002" | bc`	# max inaccuracy due to truncation of PDF size in pt
 	[ $VERBOSITY -ge $LOG_WARN ] && [ `echo "($dpi_x - $dpi_y) < $epsilon " | bc` -eq 0 -o `echo "($dpi_y - $dpi_x) < $epsilon " | bc` -eq 0 ] \
-		&& echo "Page $page: (x/y) resolution mismatch ($dpi_x/$dpi_y). Difference should be less than $epsilon. Taking biggest value" && return 2
+		&& echo "Page $page: (x/y) resolution mismatch ($dpi_x/$dpi_y). Difference should be less than $epsilon. Taking biggest value" && return 3
 
 	# everything went well!
 	return 0
@@ -127,6 +132,8 @@ curImgCharacteristics="$TMP_FLD/${page}-img-characteristics.txt"	# Detected char
 imageCharacteristics "$page" "$widthPDF" "$heightPDF" "$curImgCharacteristics"
 #in case the page contains more than one image, warn the user but go on with default parameters
 if [ "$?" -eq "1" ]; then
+	echo "Page $page: No need to OCR this file. Exiting..." && exit $EXIT_BAD_INPUT_FILE
+elif [ "$?" -eq "2" ]; then
 	dpi=300
 	echo "Page $page: Continuing anyway, assuming a default resolution of $dpi dpi"
 	colorspaceCurImg="sRGB"
