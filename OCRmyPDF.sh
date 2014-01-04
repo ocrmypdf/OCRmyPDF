@@ -180,9 +180,9 @@ fi
 # Initialize path to temporary files
 today=$(date +"%Y%m%d_%H%M")
 fld=$(basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*//')
-TMP_FLD="./tmp/$today.filename.$fld"
-FILE_TMP="$TMP_FLD/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
-FILE_PAGES_INFO="$TMP_FLD/pages-info.txt"				# for each page: page #; width in pt; height in pt
+TMP_FLD="${TMP}/$today.filename.$fld"
+FILE_TMP="${TMP_FLD}/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
+FILE_PAGES_INFO="${TMP_FLD}/pages-info.txt"				# for each page: page #; width in pt; height in pt
 FILE_OUTPUT_PDF_CAT="${TMP_FLD}/ocred.pdf"				# concatenated OCRed PDF files
 FILE_OUTPUT_PDFA_WO_META="${TMP_FLD}/ocred-pdfa-wo-metadata.pdf"	# PDFA file before appending metadata
 FILE_VALIDATION_LOG="${TMP_FLD}/pdf_validation.log"			# log file containing the results of the validation of the PDF/A file

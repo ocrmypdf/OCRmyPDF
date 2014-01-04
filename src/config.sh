@@ -16,6 +16,7 @@ LOG_DEBUG="3"				# debug level logging
 
 # various paths
 SRC="./src"				# location of the source folder (except source of external tools like jhove)
+TMP="./tmp"				# location of the temporary files (one sub-folder will be created per PDF file to be processed)
 OCR_PAGE="$SRC/ocrPage.sh"		# path to the script aimed at OCRing one page
 JHOVE="./jhove/bin/JhoveApp.jar"	# java SW for validating the final PDF/A
 JHOVE_CFG="./jhove/conf/jhove.conf"	# location of the jhove config file
