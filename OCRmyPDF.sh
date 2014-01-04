@@ -1,6 +1,6 @@
 #!/bin/sh
 ##############################################################################
-# Copyright (c) 2013: fritz-hh from Github (https://github.com/fritz-hh)
+# Copyright (c) 2013-14: fritz-hh from Github (https://github.com/fritz-hh)
 ##############################################################################
 
 # Import required scripts
@@ -19,7 +19,7 @@ tesseract engine)
 Copyright: fritz from NAS4Free forum
 Version: $VERSION
 
-Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-l language] [-C filename] inputfile outputfile
+Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-f] [-l language] [-C filename] inputfile outputfile
 
 -h : Display this help message
 -v : Increase the verbosity (this option can be used more than once) (e.g. -vvv)
@@ -36,6 +36,8 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-l language] [-
 -o : If the resolution of an image is lower than dpi value provided as argument, provide the OCR engine with 
      an oversampled image having the latter dpi value. This can improve the OCR results but can lead to a larger output PDF file.
      (default: no oversampling performed)
+-f : Force to OCR the whole document, even if some page already contain font data 
+     (which should not be the case for PDF files built from scnanned images) 
 -l : Set the language of the PDF file in order to improve OCR results (default "eng")
      Any language supported by tesseract is supported.
 -C : Pass an additional configuration file to the tesseract OCR engine.
@@ -43,7 +45,7 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-l language] [-
      Note: The configuration file must be available in the "tessdata/configs" folder
      of your tesseract installation
 inputfile  : PDF file to be OCRed
-outputfile : The PDF/A file to be generated 
+outputfile : The PDF/A file that will be generated 
 --------------------------------------------------------------------------------------
 EOF
 }
@@ -76,10 +78,11 @@ PREPROCESS_CLEAN="0"		# 0=no, 1=yes (clean image to improve OCR)
 PREPROCESS_CLEANTOPDF="0"	# 0=no, 1=yes (put cleaned image in final PDF)
 OVERSAMPLING_DPI="0"		# do not perform oversampling
 PDF_NOIMG="0"			# 0=no, 1=yes (generates each PDF page twice, with and without image)
+FORCE_OCR="0"			# 0=do not force, 1=force (Force to OCR the whole document, even if some page already contain font data)
 TESS_CFG_FILES=""		# list of additional configuration files to be used by tesseract
 
 # Parse optional command line arguments
-while getopts ":hvgkdcio:l:C:" opt; do
+while getopts ":hvgkdcio:fl:C:" opt; do
 	case $opt in
 		h) usage ; exit 0 ;;
 		v) VERBOSITY=$(($VERBOSITY+1)) ;;
@@ -89,6 +92,7 @@ while getopts ":hvgkdcio:l:C:" opt; do
 		c) PREPROCESS_CLEAN="1" ;;
 		i) PREPROCESS_CLEANTOPDF="1" ;;
 		o) OVERSAMPLING_DPI="$OPTARG" ;;
+		f) FORCE_OCR="1" ;;
 		l) LAN="$OPTARG" ;;
 		C) TESS_CFG_FILES="$OPTARG $TESS_CFG_FILES" ;;
 		\?)
@@ -207,11 +211,13 @@ numpages=`tail -n 1 "$FILE_PAGES_INFO" | cut -f1 -d" "`
 
 # OCR each page of the input pdf file
 ! parallel -q -k --halt-on-error 1 "$OCR_PAGE" "$FILE_INPUT_PDF" "{}" "$numpages" "$TMP_FLD" \
-	"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$OVERSAMPLING_DPI" "$PDF_NOIMG" "$TESS_CFG_FILES" < "$FILE_PAGES_INFO" \
+	"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$OVERSAMPLING_DPI" \
+	"$PDF_NOIMG" "$TESS_CFG_FILES" "$FORCE_OCR" < "$FILE_PAGES_INFO" \
 	&& exit $?
 #while read pageInfo ; do
 #	! "$OCR_PAGE" "$FILE_INPUT_PDF" "$pageInfo" "$numpages" "$TMP_FLD" \
-#		"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$OVERSAMPLING_DPI" "$PDF_NOIMG" "$TESS_CFG_FILES" \
+#		"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$OVERSAMPLING_DPI" \
+#		"$PDF_NOIMG" "$TESS_CFG_FILES" "$FORCE_OCR" \
 #		&& exit $?
 #done < "$FILE_PAGES_INFO"
 

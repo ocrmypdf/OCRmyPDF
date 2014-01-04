@@ -2,7 +2,7 @@
 ##############################################################################
 # Script aimed at OCRing a single page of a PDF file
 #
-# Copyright (c) 2013: fritz-hh from Github (https://github.com/fritz-hh)
+# Copyright (c) 2013-14: fritz-hh from Github (https://github.com/fritz-hh)
 ##############################################################################
 
 . "./src/config.sh"
@@ -22,7 +22,7 @@ PREPROCESS_CLEANTOPDF="${10}"		# Put the cleaned paged in the OCRed PDF
 OVERSAMPLING_DPI="${11}"		# Oversampling resolution in dpi
 PDF_NOIMG="${12}"			# Request to generate also a PDF page containing only the OCRed text but no image (helpful for debugging) 
 TESS_CFG_FILES="${13}"			# Specific configuration files to be used by Tesseract during OCRing
-
+FORCE_OCR="${14}"			# Force to OCR, even if the page already contains fonts
 
 
 
@@ -54,18 +54,24 @@ imageCharacteristics() {
 	# path of the file in which the output should be written
 	curImgCharacteristics="$4"
 
-	# check if the page already contains fonts (which should not be the case for PDF based on scanned files
-	[ `pdffonts -f $page -l $page ${FILE_INPUT_PDF} | wc -l` -gt 2 ] && echo "Page $page: This page already contains fonts !!!" && return 1
-
 	
 	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Size ${heightPDF}x${widthPDF} (h*w in pt)"
+	
+	
+	# check if the page already contains fonts (which should not be the case for PDF based on scanned files
+	[ `pdffonts -f $page -l $page ${FILE_INPUT_PDF} | wc -l` -gt 2 ] && echo "Page $page: Page already contains font data !!!" && return 1
+
+	
 	# extract raw image from pdf file to compute resolution
 	# unfortunately this image can have another orientation than in the pdf...
 	# so we will have to extract it again later using pdftoppm
 	pdfimages -f $page -l $page -j "$FILE_INPUT_PDF" "$curOrigImg" 1>&2	
 	# count number of extracted images
 	nbImg=`ls -1 "$curOrigImg"* | wc -l`
-	[ $nbImg -ne "1" ] && echo "Page $page: Expecting exactly 1 image on page $page (found $nbImg). Cannot compute dpi value." && return 2
+	if [ $nbImg -ne "1" ]; then
+		[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: Expecting exactly 1 image on page $page (found $nbImg). Cannot compute dpi value."
+		return 2
+	fi
 	# Get characteristics of the extracted image
 	curImg=`ls -1 "$curOrigImg"*`
 	propCurImg=`identify -format "%w %h %[colorspace]" "$curImg"`
@@ -130,13 +136,19 @@ curImgCharacteristics="$TMP_FLD/${page}-img-characteristics.txt"	# Detected char
 
 # auto-detect the characteristics of the embedded image
 imageCharacteristics "$page" "$widthPDF" "$heightPDF" "$curImgCharacteristics"
-#in case the page contains more than one image, warn the user but go on with default parameters
-if [ "$?" -eq "1" ]; then
-	echo "Page $page: No need to OCR this file. Exiting..." && exit $EXIT_BAD_INPUT_FILE
-elif [ "$?" -eq "2" ]; then
-	dpi=300
-	echo "Page $page: Continuing anyway, assuming a default resolution of $dpi dpi"
+ret_code="$?"
+# in case the page contains text do not OCR, unless the FORCE_OCR flag is set
+if [ "$ret_code" -eq "1" -a "$FORCE_OCR" -eq "0" ]; then
+	echo "Page $page: Exiting... (Use the -f option to force OCRing, even though fonts are available in the input file)" && exit $EXIT_BAD_INPUT_FILE
+elif [ "$ret_code" -eq "1" -a "$FORCE_OCR" -eq "1" ]; then
 	colorspaceCurImg="sRGB"
+	dpi=300
+	[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: OCRing anyway, assuming a default resolution of $dpi dpi"
+# in case the page contains more than one image, warn the user but go on with default parameters
+elif [ "$ret_code" -eq "2" ]; then
+	colorspaceCurImg="sRGB"
+	dpi=300
+	[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: Continuing anyway, assuming a default resolution of $dpi dpi"
 else
 	# read the image characteristics from the file
 	dpi=`cat "$curImgCharacteristics" | cut -f1 -d" "`
@@ -216,12 +228,12 @@ fi
 # delete temporary files created for the current page
 # to avoid using to much disk space in case of PDF files having many pages
 if [ $KEEP_TMP -eq 0 ]; then
-	rm "$curOrigImg"*.*
-	rm "$curHocr"
-	rm "$curImgPixmap"
-	rm "$curImgPixmapDeskewed"
-	rm "$curImgPixmapClean"
-	rm "$curImgCharacteristics"
+	rm -f "$curOrigImg"*.*
+	rm -f "$curHocr"
+	rm -f "$curImgPixmap"
+	rm -f "$curImgPixmapDeskewed"
+	rm -f "$curImgPixmapClean"
+	rm -f "$curImgCharacteristics"
 fi
 
 exit 0
