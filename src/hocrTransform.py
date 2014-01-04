@@ -1,6 +1,6 @@
 #!/usr/bin/python
 ##############################################################################
-# Copyright (c) 2013: fritz-hh from Github (https://github.com/fritz-hh)
+# Copyright (c) 2013-14: fritz-hh from Github (https://github.com/fritz-hh)
 #
 # Copyright (c) 2010: Jonathan Brinley from Github (https://github.com/jbrinley/HocrConverter)
 # Initial version by Jonathan Brinley, jonathanbrinley@gmail.com
