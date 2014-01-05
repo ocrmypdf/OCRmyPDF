@@ -33,7 +33,7 @@ FORCE_OCR="${14}"			# Force to OCR, even if the page already contains fonts
 # Param 1: page number
 # Param 2: PDF page width in pt
 # Param 3: PDF page height in pt
-# Param 4: temp file path (Path of the file in which the output should be written)
+# Param 4: temporary file path (Path of the file in which the output should be written)
 # Output: A file (<pagenum>-img-characteristics.txt) containing the characteristics of the embedded image
 #          Structure of the file:
 #          <dpi> <colorspace>
@@ -142,12 +142,12 @@ if [ "$ret_code" -eq "1" -a "$FORCE_OCR" -eq "0" ]; then
 	echo "Page $page: Exiting... (Use the -f option to force OCRing, even though fonts are available in the input file)" && exit $EXIT_BAD_INPUT_FILE
 elif [ "$ret_code" -eq "1" -a "$FORCE_OCR" -eq "1" ]; then
 	colorspaceCurImg="sRGB"
-	dpi=300
+	dpi=$DEFAULT_DPI
 	[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: OCRing anyway, assuming a default resolution of $dpi dpi"
 # in case the page contains more than one image, warn the user but go on with default parameters
 elif [ "$ret_code" -eq "2" ]; then
 	colorspaceCurImg="sRGB"
-	dpi=300
+	dpi=$DEFAULT_DPI
 	[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: Continuing anyway, assuming a default resolution of $dpi dpi"
 else
 	# read the image characteristics from the file
