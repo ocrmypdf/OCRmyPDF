@@ -44,8 +44,8 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-f] [-l languag
      Any language supported by tesseract is supported.
 -C : Pass an additional configuration file to the tesseract OCR engine.
      (this option can be used more than once)
-     Note: The configuration file must be available in the "tessdata/configs" folder
-     of your tesseract installation
+     Note 1: The configuration file must be available in the "tessdata/configs" folder of your tesseract installation
+     Note 2: The folder "./tess-cfg" contains useful tesseract configuration files
 inputfile  : PDF file to be OCRed
 outputfile : The PDF/A file that will be generated 
 --------------------------------------------------------------------------------------
@@ -74,13 +74,13 @@ absolutePath() {
 # Initialization the configuration parameters with default values
 VERBOSITY="$LOG_ERR"		# default verbosity level
 LAN="eng"			# default language of the PDF file (required to get good OCR results)
-KEEP_TMP="0"			# do not delete the temporary files (default)
+KEEP_TMP="0"			# 0=no, 1=yes (keep the temporary files)
 PREPROCESS_DESKEW="0"		# 0=no, 1=yes (deskew image)
 PREPROCESS_CLEAN="0"		# 0=no, 1=yes (clean image to improve OCR)
 PREPROCESS_CLEANTOPDF="0"	# 0=no, 1=yes (put cleaned image in final PDF)
-OVERSAMPLING_DPI="0"		# do not perform oversampling
+OVERSAMPLING_DPI="0"		# 0=do not perform oversampling (dpi value under which oversampling should be performed)
 PDF_NOIMG="0"			# 0=no, 1=yes (generates each PDF page twice, with and without image)
-FORCE_OCR="0"			# 0=do not force, 1=force (Force to OCR the whole document, even if some page already contain font data)
+FORCE_OCR="0"			# 0=do not force, 1=force (force to OCR the whole document, even if some page already contain font data)
 TESS_CFG_FILES=""		# list of additional configuration files to be used by tesseract
 
 # Parse optional command line arguments
