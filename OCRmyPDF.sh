@@ -249,7 +249,7 @@ grep -i 'Status.*not valid' "$FILE_VALIDATION_LOG" && pdf_valid=0
 grep -i 'Status.*Not well-formed' "$FILE_VALIDATION_LOG" && pdf_valid=0
 ! grep -i 'Profile:.*PDF/A-1' "$FILE_VALIDATION_LOG" > /dev/null && echo "PDF file profile is not PDF/A-1" && pdf_valid=0
 [ $pdf_valid -ne 1 ] && echo "Output file: The generated PDF/A file is INVALID"
-[ $pdf_valid -ne 0 ] && [ $VERBOSITY -ge $LOG_INFO ] && echo "Output file: The generated PDF/A file is VALID"
+[ $pdf_valid -eq 1 ] && [ $VERBOSITY -ge $LOG_INFO ] && echo "Output file: The generated PDF/A file is VALID"
 
 
 
