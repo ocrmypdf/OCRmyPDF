@@ -208,7 +208,7 @@ mkdir -p "${TMP_FLD}"
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Input file: Extracting size of each page (in pt)"
 ! identify -format "%w %h\n" "$FILE_INPUT_PDF" > "$FILE_TMP" \
 	&& echo "Could not get size of PDF pages. Exiting..." && exit $EXIT_BAD_INPUT_FILE
-# removing empty lines (last one should be) and prepend page # before each line
+# removing empty lines (last one should be) and add page # before each line
 sed '/^$/d' "$FILE_TMP" | awk '{printf "%04d %s\n", NR, $0}' > "$FILE_PAGES_INFO"
 numpages=`tail -n 1 "$FILE_PAGES_INFO" | cut -f1 -d" "`
 
