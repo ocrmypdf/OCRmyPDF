@@ -227,7 +227,7 @@ numpages=`tail -n 1 "$FILE_PAGES_INFO" | cut -f1 -d" "`
 
 # concatenate all pages
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Concatenating all pages"
-! pdftk "${TMP_FLD}/"*-ocred.pdf cat output "$FILE_OUTPUT_PDF_CAT" \
+! pdftk "${TMP_FLD}/"*ocred*.pdf cat output "$FILE_OUTPUT_PDF_CAT" \
 	&& echo "Could not concatenate individual PDF pages (\"${TMP_FLD}/*-ocred.pdf\") to one file. Exiting..." && exit $EXIT_OTHER_ERROR
 
 # convert the pdf file to match PDF/A format
