@@ -161,7 +161,7 @@ if [ "$PREPROCESS_DESKEW" -eq "1" ]; then
 	! convert "$curImgPixmap" -deskew 40% -gravity center -extent ${widthCurImg}x${heightCurImg} "$curImgPixmapDeskewed" \
 		&& echo "Could not deskew \"$curImgPixmap\". Exiting..." && exit $EXIT_OTHER_ERROR
 else
-	cp "$curImgPixmap" "$curImgPixmapDeskewed"
+	ln -s `basename "$curImgPixmap"` "$curImgPixmapDeskewed"
 fi
 
 # if requested clean image with unpaper to get better OCR results
@@ -172,7 +172,7 @@ if [ "$PREPROCESS_CLEAN" -eq "1" ]; then
 		"$curImgPixmapDeskewed" "$curImgPixmapClean" 1> /dev/null \
 		&& echo "Could not clean \"$curImgPixmapDeskewed\". Exiting..." && exit $EXIT_OTHER_ERROR
 else
-	cp "$curImgPixmapDeskewed" "$curImgPixmapClean"
+	ln -s `basename "$curImgPixmapDeskewed"` "$curImgPixmapClean"
 fi
 
 # perform OCR
