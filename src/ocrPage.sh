@@ -41,7 +41,6 @@ FORCE_OCR="${14}"			# Force to OCR, even if the page already contains fonts
 #       - 0: if no error occurs
 #       - 1: in case the page already contains fonts (which should be the case for PDF generated from scanned pages) 
 #       - 2: in case the page contains more than one image
-#       - 3: in case the x,y resolutions are not equal
 ##################################
 getImgInfo() {
 	local page widthPDF heightPDF curImgCharacteristics nbImg curImg propCurImg widthCurImg heightCurImg colorspaceCurImg tmpval dpi_x dpi_y epsilon dpi
@@ -78,42 +77,15 @@ getImgInfo() {
 	widthCurImg=`echo "$propCurImg" | cut -f1 -d" "`
 	heightCurImg=`echo "$propCurImg" | cut -f2 -d" "`
 	colorspaceCurImg=`echo "$propCurImg" | cut -f3 -d" "`
-	# switch height/width values if the image has not the right orientation
-	# we make here the assumption that vertical/horizontal dpi are equal
-	# we will check that later
-	if [ $((($heightPDF-$widthPDF)*($heightCurImg-$widthCurImg))) -lt 0 ]; then
-		[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Extracted image has wrong orientation. Inverting image height/width values"
-		tmpval=$heightCurImg
-		heightCurImg=$widthCurImg
-		widthCurImg=$tmpval
-	fi
-	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Size ${heightCurImg}x${widthCurImg} (h*w pixel)"	
-	
-	# compute the resolution of the image
-	dpi_x=`echo "scale=5;$widthCurImg*72/$widthPDF" | bc`
-	dpi_y=`echo "scale=5;$heightCurImg*72/$heightPDF" | bc`
+	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Size ${heightCurImg}x${widthCurImg} (in pixel)"	
 
-	# round the dpi values to the nearest integer
-	rounded_dpi_x=`echo "scale=5;$dpi_x+0.5" | bc` 		        # adding 0.5 is required for rounding
-	rounded_dpi_x=`echo "scale=0;$rounded_dpi_x/1" | bc`		# round to the nearest integer
-	rounded_dpi_y=`echo "scale=5;$dpi_y+0.5" | bc` 		        # adding 0.5 is required for rounding
-	rounded_dpi_y=`echo "scale=0;$rounded_dpi_y/1" | bc`		# round to the nearest integer
-	
-	# take the biggest dpi value
-	[ $rounded_dpi_x -ge $rounded_dpi_y ] && dpi=$rounded_dpi_x || dpi=$rounded_dpi_y
-	[ $VERBOSITY -ge $LOG_INFO ] && echo "Page $page: Embedded image resolution is $dpi dpi"
+	# compute the resolution of the image (making the assumption that x & y resolution are equal
+	dpi=`echo "scale=5;sqrt($widthCurImg*72*$heightCurImg*72/$widthPDF/$heightPDF)" | bc`
+	dpi=`echo "scale=0;$dpi/1" | bc`
 	
 	# save the image characteristics
 	echo "$dpi $colorspaceCurImg" > $curImgCharacteristics
-
-	# check the x,y resolution difference that can be cause by:
-	# 	- the truncated PDF width/height in pt
-	# 	- the precision of dpi values computed above
-	epsilon=`echo "scale=5;($widthCurImg*72/$widthPDF^2)+($heightCurImg*72/$heightPDF^2)+0.00002" | bc`	# max inaccuracy due to truncation of PDF size in pt
-	[ $VERBOSITY -ge $LOG_WARN ] && [ `echo "($dpi_x - $dpi_y) < $epsilon " | bc` -eq 0 -o `echo "($dpi_y - $dpi_x) < $epsilon " | bc` -eq 0 ] \
-		&& echo "Page $page: (x/y) resolution mismatch ($dpi_x/$dpi_y). Difference should be less than $epsilon. Taking biggest value" && return 3
-
-	# everything went well!
+	
 	return 0
 }
 
