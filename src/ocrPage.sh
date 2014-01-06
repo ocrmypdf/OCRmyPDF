@@ -43,7 +43,7 @@ FORCE_OCR="${14}"			# Force to OCR, even if the page already contains fonts
 #       - 2: in case the page contains more than one image
 ##################################
 getImgInfo() {
-	local page widthPDF heightPDF curImgCharacteristics nbImg curImg propCurImg widthCurImg heightCurImg colorspaceCurImg tmpval dpi_x dpi_y epsilon dpi
+	local page widthPDF heightPDF curImgCharacteristics nbImg curImg propCurImg widthCurImg heightCurImg colorspaceCurImg dpi
 
 	# page number
 	page="$1"
