@@ -79,8 +79,9 @@ getImgInfo() {
 	colorspaceCurImg=`echo "$propCurImg" | cut -f3 -d" "`
 	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Size ${heightCurImg}x${widthCurImg} (in pixel)"	
 
-	# compute the resolution of the image (making the assumption that x & y resolution are equal
-	dpi=`echo "scale=5;sqrt($widthCurImg*72*$heightCurImg*72/$widthPDF/$heightPDF)" | bc`
+	# compute the resolution of the image (making the assumption that x & y resolution are equal)
+	# and round it to the nearest integer
+	dpi=`echo "scale=5;sqrt($widthCurImg*72*$heightCurImg*72/$widthPDF/$heightPDF)+0.5" | bc`
 	dpi=`echo "scale=0;$dpi/1" | bc`
 	
 	# save the image characteristics
