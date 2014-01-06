@@ -3,7 +3,7 @@ OCRmyPDF
 
 OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched
 
-To get the script usage, call: ./OCmyPDF.sh -h
+To get the script usage, call: sh ./OCRmyPDF.sh -h
 
 Features
 --------
