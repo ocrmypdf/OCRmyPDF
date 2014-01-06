@@ -5,6 +5,38 @@ Please always read this file before installing the package
 
 Download software here: https://github.com/fritz-hh/OCRmyPDF/tags
 
+v1.1-stable (2014-01-06):
+====
+
+New features
+------------
+
+- N/A
+
+Changes
+-------
+
+- N/A
+
+Fixes
+-----
+
+- Fixed syntax error (bashism) leading to an error message on certain systems (fixes #42)
+
+Tested with
+-----------
+
+- Operating system: FreeBSD 9.1
+- Dependencies:
+   - poppler-utils 0.22.2
+   - ImageMagick 6.8.0-7 2013-03-30
+   - Unpaper 0.3
+   - tesseract 3.02.02
+   - Python 2.7.3
+   - pdftk 1.45
+   - ghoscript (gs): 9.06
+   - java: openjdk version "1.7.0_17"
+   
 v1.0-stable (2013-05-06):
 ====
 

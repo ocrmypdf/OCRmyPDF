@@ -4,7 +4,7 @@
 ##############################################################################
 
 TOOLNAME="OCRmyPDF"
-VERSION="v1.0-stable"
+VERSION="v1.1-stable"
 
 START=`date +%s`
 
