@@ -49,7 +49,7 @@ Support
 In case you detect an issue, please:
 
 - Check if your issue is already known
-- if no problem report exists on github: Create one
+- if no problem report exists on github, please create one here: https://github.com/fritz-hh/OCRmyPDF/issues
 - Describe your problem thoroughly
 - Append the console output of the script when running the debug mode (-g option)
 - If possible provide your input PDF file as well as the content of the temporary folder (using a file sharing service like www.file-upload.net)
