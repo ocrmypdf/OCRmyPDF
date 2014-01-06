@@ -69,7 +69,7 @@ imageCharacteristics() {
 	# count number of extracted images
 	nbImg=`ls -1 "$curOrigImg"* | wc -l`
 	if [ $nbImg -ne "1" ]; then
-		[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: Expecting exactly 1 image on page $page (found $nbImg). Cannot compute dpi value."
+		[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: Expecting exactly 1 image covering the whole page (found $nbImg). Cannot compute dpi value."
 		return 2
 	fi
 	# Get characteristics of the extracted image
