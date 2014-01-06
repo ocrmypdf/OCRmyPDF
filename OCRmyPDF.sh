@@ -229,7 +229,7 @@ while read pageSize ; do
 	# Identify if page image should be saved as ppm (color) or pgm (gray)
 	ext="ppm"
 	opt=""		
-	if [ $colorspaceCurImg == "Gray" ]; then
+	if [ $colorspaceCurImg = "Gray" ]; then
 		ext="pgm"
 		opt="-gray"
 	fi
