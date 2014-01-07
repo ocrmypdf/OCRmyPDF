@@ -5,7 +5,7 @@ OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be search
 
 To get the script usage, call: sh ./OCRmyPDF.sh -h
 
-Features
+Main features
 --------
 
 - Generates a searchable PDF/A file from a PDF file containing only images
@@ -53,3 +53,8 @@ In case you detect an issue, please:
 - Describe your problem thoroughly
 - Append the console output of the script when running the debug mode (-g option)
 - If possible provide your input PDF file as well as the content of the temporary folder (using a file sharing service like www.file-upload.net)
+
+Press & Media
+-------------
+
+- c't 1-2014, page 59: Detailed presentation of OCRmyPDF v1.0 in the leading german IT magazine (c't)

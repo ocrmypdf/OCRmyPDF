@@ -5,6 +5,52 @@ Please always read this file before installing the package
 
 Download software here: https://github.com/fritz-hh/OCRmyPDF/tags
 
+v2.0-rc1 (2014-01-07):
+====
+
+New features
+------------
+
+- Huge performance improvement on machines having multiple CPU/cores (processing of several pages concurrently) (fixes #18)
+- By default prevent from processing a PDF file already containing fonts (i.e. text)(it can be overridden with the -f flag) (fixes #16)
+- Warn if the resolution is too low to get reasonable OCR results (fixes #37)
+- New option (-o) to perform automatic oversampling if the image resolution is too low. This can improve OCR results.
+- Warn if using a tesseract version older than v3.02.02 (as older versions are known to produce invalid output) (fixes #41)
+- Echo version of the installed dependencies (e.g. tesseract) in debug mode in order to ease support (fixes #35)
+- Echo the arguments passed to the script in debug mode to ease support
+
+Changes
+-------
+
+- In debug mode: The debug page is now placed after the respective "normal" page
+- Reduced disk space usage if -d (deskew) or -c (cleanup) options are not selected
+- New file src/config.sh containing various configuration parameters
+- Documentation of the tesseract config file "tess-cfg/no_ligature" improved 
+- Improved consistency of the temporary file names
+
+Fixes
+-----
+
+- Improved robustness:
+   - in case vertical resolution differs from horizontal resolution (fixes #38)
+   - in case a PDF page contains more than one image (fixes #36)
+- Fix a problem occurring if python 3 is the standard interpreter (fixes #33)
+- Fix a problem occurring if the input PDF file contains special characters like "#" (fixes #34)
+
+Tested with
+-----------
+
+- Operating system: FreeBSD 9.1
+- Dependencies:
+   - poppler-utils 0.22.2
+   - ImageMagick 6.8.0-7 2013-03-30
+   - Unpaper 0.3
+   - tesseract 3.02.02
+   - Python 2.7.3
+   - pdftk 1.45
+   - ghoscript (gs): 9.06
+   - java: openjdk version "1.7.0_17"
+
 v1.1-stable (2014-01-06):
 ====
 

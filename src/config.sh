@@ -1,5 +1,5 @@
 TOOLNAME="OCRmyPDF"
-VERSION="v2.x"
+VERSION="v2.0-rc1"
 
 # possible exit codes
 EXIT_BAD_ARGS="1"
