@@ -218,18 +218,12 @@ mkdir -p "${TMP_FLD}"
 sed '/^$/d' "$FILE_TMP" | awk '{printf "%04d %s\n", NR, $0}' > "$FILE_PAGES_INFO"
 numpages=`tail -n 1 "$FILE_PAGES_INFO" | cut -f1 -d" "`
 
-# OCR each page of the input pdf file
-! parallel -q -k --halt-on-error 1 "$OCR_PAGE" "$FILE_INPUT_PDF" "{}" "$numpages" "$TMP_FLD" \
+# process each page of the input pdf file
+parallel -q -k --halt-on-error 1 "$OCR_PAGE" "$FILE_INPUT_PDF" "{}" "$numpages" "$TMP_FLD" \
 	"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$OVERSAMPLING_DPI" \
-	"$PDF_NOIMG" "$TESS_CFG_FILES" "$FORCE_OCR" < "$FILE_PAGES_INFO" \
-	&& exit $?
-#while read pageInfo ; do
-#	! "$OCR_PAGE" "$FILE_INPUT_PDF" "$pageInfo" "$numpages" "$TMP_FLD" \
-#		"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$OVERSAMPLING_DPI" \
-#		"$PDF_NOIMG" "$TESS_CFG_FILES" "$FORCE_OCR" \
-#		&& exit $?
-#done < "$FILE_PAGES_INFO"
-
+	"$PDF_NOIMG" "$TESS_CFG_FILES" "$FORCE_OCR" < "$FILE_PAGES_INFO"
+ret_code="$?"
+[ $ret_code -ne 0 ] && exit $ret_code 
 
 # concatenate all pages
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Concatenating all pages"
