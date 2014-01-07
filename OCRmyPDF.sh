@@ -149,6 +149,13 @@ cd "`dirname $0`"
 ! command -v java > /dev/null && echo "Please install java. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 
 
+# ensure tesseract v3.02.02 or newer is installed
+# older versions are known to produce malformed hocr output and should not be used
+tessversion=`tesseract -v 2>&1 | grep "tesseract"`
+if [ $VERBOSITY -ge $LOG_WARN -a $((`echo ${tessversion} | sed s/[^0-9]//g`-30202)) -lt 0 ]; then
+	echo "Warning: Please use tesseract 3.02.02 or newer. Older versions are known to produce invalid hocr output (installed version: ${tessversion})"
+fi
+
 
 # Display the version of the tools if log level is LOG_DEBUG
 if [ $VERBOSITY -ge $LOG_DEBUG ]; then
@@ -193,7 +200,6 @@ TMP_FLD="${TMP}/$today.filename.$fld"
 FILE_TMP="${TMP_FLD}/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
 FILE_PAGES_INFO="${TMP_FLD}/pages-info.txt"				# for each page: page #; width in pt; height in pt
 FILE_OUTPUT_PDF_CAT="${TMP_FLD}/ocred.pdf"				# concatenated OCRed PDF files
-FILE_OUTPUT_PDFA_WO_META="${TMP_FLD}/ocred-pdfa-wo-metadata.pdf"	# PDFA file before appending metadata
 FILE_VALIDATION_LOG="${TMP_FLD}/pdf_validation.log"			# log file containing the results of the validation of the PDF/A file
 
 # Create tmp folder
