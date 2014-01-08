@@ -35,7 +35,7 @@ I found many, but none of them were really satisfying.
 Install
 -------
 
-Download OCRmyPDF here: https://github.com/fritz-hh/OCRmyPDF/tags
+Download OCRmyPDF here: https://github.com/fritz-hh/OCRmyPDF/releases
 
 Copy the file in onto your linux/unix machine and extract it.
 
