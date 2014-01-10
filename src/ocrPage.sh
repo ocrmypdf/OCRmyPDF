@@ -58,7 +58,7 @@ getImgInfo() {
 	
 	
 	# check if the page already contains fonts (which should not be the case for PDF based on scanned files
-	[ `pdffonts -f $page -l $page ${FILE_INPUT_PDF} | wc -l` -gt 2 ] && echo "Page $page: Page already contains font data !!!" && return 1
+	[ `pdffonts -f $page -l $page "${FILE_INPUT_PDF}" | wc -l` -gt 2 ] && echo "Page $page: Page already contains font data !!!" && return 1
 
 	
 	# extract raw image from pdf file to compute resolution
