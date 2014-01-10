@@ -41,7 +41,8 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-f] [-l languag
 -f : Force to OCR the whole document, even if some page already contain font data 
      (which should not be the case for PDF files built from scnanned images) 
 -l : Set the language of the PDF file in order to improve OCR results (default "eng")
-     Any language supported by tesseract is supported.
+     Any language supported by tesseract is supported (Tesseract uses 3-character ISO 639-2 language codes)
+     Multiple languages may be specified, separated by plus characters.
 -C : Pass an additional configuration file to the tesseract OCR engine.
      (this option can be used more than once)
      Note 1: The configuration file must be available in the "tessdata/configs" folder of your tesseract installation
@@ -149,12 +150,18 @@ cd "`dirname $0`"
 ! command -v java > /dev/null && echo "Please install java. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 
 
-# ensure tesseract v3.02.02 or newer is installed
+# ensure the right tesseract version is installed
 # older versions are known to produce malformed hocr output and should not be used
-tessversion=`tesseract -v 2>&1 | grep "tesseract"`
-if [ $VERBOSITY -ge $LOG_WARN -a $((`echo ${tessversion} | sed s/[^0-9]//g`-30202)) -lt 0 ]; then
-	echo "Warning: Please use tesseract 3.02.02 or newer. Older versions are known to produce invalid hocr output (installed version: ${tessversion})"
-fi
+reqtessversion="3.02.02"
+tessversion=`tesseract -v 2>&1 | grep "tesseract" | sed s/[^0-9.]//g`
+! [ $((`echo $tessversion | sed s/[.]//g`-`echo $reqtessversion | sed s/[.]//g`)) -ge 0 ] > /dev/null \
+	&& echo "Please install tesseract ${reqtessversion} or newer (currently installed version is ${tessversion})" && exit $EXIT_MISSING_DEPENDENCY
+# ensure the right GNU parallel version is installed
+# older version do not support -q flag (required to escape special characters)
+reqparallelversion="20130222"
+parallelversion=`parallel --minversion 0`
+! parallel --minversion "$reqparallelversion" > /dev/null \
+	&& echo "Please install GNU parallel ${reqparallelversion} or newer (currently installed version is ${parallelversion})" && exit $EXIT_MISSING_DEPENDENCY
 
 
 # Display the version of the tools if log level is LOG_DEBUG
