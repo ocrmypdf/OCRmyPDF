@@ -42,6 +42,7 @@ Tested with
 
 - Operating system: FreeBSD 9.1
 - Dependencies:
+   - parallel 20130222
    - poppler-utils 0.22.2
    - ImageMagick 6.8.0-7 2013-03-30
    - Unpaper 0.3
