@@ -138,8 +138,8 @@ elif [ "$dpi" -lt "200" ]; then
 fi
 	
 # Identify if page image should be saved as ppm (color) or pgm (gray)
-ext="ppm"
-opt=""
+ext="ppm" # by default (color image) the extension of the extracted image is ppm
+opt="" # by default (color image) no option as to be passed to pdftoppm
 if [ "$colorspaceCurImg" = "Gray" ]; then
 	ext="pgm"
 	opt="-gray"
