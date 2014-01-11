@@ -150,7 +150,7 @@ curImgPixmapClean="$TMP_FLD/$page.cleaned.$ext"
 
 # extract current page as image with correct orientation and resolution
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Extracting image as $ext file (${dpi} dpi)"
-! pdftoppm -f $page -l $page -r $dpi $opt "$FILE_INPUT_PDF" - > "$curImgPixmap" \
+! pdftoppm -f $page -l $page -r $dpi $opt "$FILE_INPUT_PDF" > "$curImgPixmap" \
 	&& echo "Could not extract page $page as $ext from \"$FILE_INPUT_PDF\". Exiting..." && exit $EXIT_OTHER_ERROR
 
 # if requested deskew image (without changing its size in pixel)
