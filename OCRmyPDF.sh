@@ -145,7 +145,9 @@ cd "`dirname $0`"
 ! command -v pdftk > /dev/null && echo "Please install pdftk. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 [ $PREPROCESS_CLEAN -eq 1 ] && ! command -v unpaper > /dev/null && echo "Please install unpaper. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v tesseract > /dev/null && echo "Please install tesseract and tesseract-data. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
-! command -v python2 > /dev/null && echo "Please install python v2.x, and the python libraries: reportlab, lxml. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! command -v python2 > /dev/null && echo "Please install python v2.x. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! python2 -c 'import lxml' 2>/dev/null && echo "Please install the python library lxml. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! python2 -c 'import reportlab' 2>/dev/null && echo "Please install the python library reportlab. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v gs > /dev/null && echo "Please install ghostcript. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v java > /dev/null && echo "Please install java. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 
