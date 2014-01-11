@@ -115,6 +115,7 @@ class hocrTransform():
 			self.xmlns = matches.group(1)
 
 		# get dimension in pt (not pixel!!!!) of the OCRed image
+		self.width, self.height = None, None
 		for div in self.hocr.findall(".//%sdiv[@class='ocr_page']"%(self.xmlns)):
 			coords = self.element_coordinates(div)
 			self.width = self.px2pt(coords[2]-coords[0])
