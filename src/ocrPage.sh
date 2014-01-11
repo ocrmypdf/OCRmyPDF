@@ -65,8 +65,8 @@ getImgInfo() {
 	# unfortunately this image can have another orientation than in the pdf...
 	# so we will have to extract it again later using pdftoppm
 	pdfimages -f $page -l $page -j "$FILE_INPUT_PDF" "$curOrigImg" 1>&2	
-	# count number of extracted images
-	nbImg=`ls -1 "$curOrigImg"* 2>/dev/null | wc -l`
+	# count number of extracted images 
+	nbImg=$((`ls -1 "$curOrigImg"* 2>/dev/null | wc -l`))
 	if [ $nbImg -ne "1" ]; then
 		[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: Expecting exactly 1 image covering the whole page (found $nbImg). Cannot compute dpi value."
 		return 2
