@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/bin/python2
 ##############################################################################
 # Copyright (c) 2013-14: fritz-hh from Github (https://github.com/fritz-hh)
 #
