@@ -111,20 +111,20 @@ curImgInfo="$TMP_FLD/${page}.orig-img-info.txt"			# Detected characteristics of 
 
 
 # auto-detect the characteristics of the embedded image
-depthCurImg="8"
+depthCurImg="8"			# default color depth
+colorspaceCurImg="sRGB"		# default color space
+dpi=$DEFAULT_DPI		# default resolution
+
 getImgInfo "$page" "$widthPDF" "$heightPDF" "$curImgInfo"
 ret_code="$?"
+
 # in case the page contains text do not OCR, unless the FORCE_OCR flag is set
 if [ "$ret_code" -eq "1" -a "$FORCE_OCR" -eq "0" ]; then
 	echo "Page $page: Exiting... (Use the -f option to force OCRing, even though fonts are available in the input file)" && exit $EXIT_BAD_INPUT_FILE
 elif [ "$ret_code" -eq "1" -a "$FORCE_OCR" -eq "1" ]; then
-	colorspaceCurImg="sRGB"
-	dpi=$DEFAULT_DPI
 	[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: OCRing anyway, assuming a default resolution of $dpi dpi"
 # in case the page contains more than one image, warn the user but go on with default parameters
 elif [ "$ret_code" -eq "2" ]; then
-	colorspaceCurImg="sRGB"
-	dpi=$DEFAULT_DPI
 	[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: Continuing anyway, assuming a default resolution of $dpi dpi"
 else
 	# read the image characteristics from the file
@@ -142,12 +142,12 @@ elif [ "$dpi" -lt "200" ]; then
 fi
 	
 # Identify if page image should be saved as ppm (color), pgm (gray) or pbm (b&w)
-ext="ppm" # by default (color image) the extension of the extracted image is ppm
-opt="" # by default (color image) no option as to be passed to pdftoppm
-if [ "$colorspaceCurImg" = "Gray" ] && [ "$depthCurImg" = "1" ]; then
+ext="ppm" 	# by default (color image) the extension of the extracted image is ppm
+opt=""		# by default (color image) no option as to be passed to pdftoppm
+if [ "$colorspaceCurImg" = "Gray" ] && [ "$depthCurImg" = "1" ]; then		# if monochrome (b&w)
 	ext="pbm"
 	opt="-mono"
-elif [ "$colorspaceCurImg" = "Gray" ]; then
+elif [ "$colorspaceCurImg" = "Gray" ]; then					# if gray
 	ext="pgm"
 	opt="-gray"
 fi
