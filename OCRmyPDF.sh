@@ -210,7 +210,11 @@ fi
 today=$(date +"%Y%m%d_%H%M")
 fld=$(basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*$//')
 prefix="${today}.filename.${fld}"
-TMP_FLD=`TMPDIR=${TMP} mktemp -d -t "${prefix}"`
+TMP_FLD=`TMPDIR=${TMP} mktemp -d -t "${prefix}"`			# create temporary sub-folder in $TMP folder
+if [ $? -ne 0 ]; then
+	echo "Could not create folder for temporary files. Please ensure you have sufficient right and \"$TMP\" exists"
+	exit $EXIT_FILE_ACCESS_ERROR
+fi
 FILE_TMP="${TMP_FLD}/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
 FILE_PAGES_INFO="${TMP_FLD}/pages-info.txt"				# for each page: page #; width in pt; height in pt
 FILE_OUTPUT_PDF_CAT="${TMP_FLD}/ocred.pdf"				# concatenated OCRed PDF files
