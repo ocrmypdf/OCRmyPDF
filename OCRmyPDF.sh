@@ -46,7 +46,6 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-f] [-l languag
 -C : Pass an additional configuration file to the tesseract OCR engine.
      (this option can be used more than once)
      Note 1: The configuration file must be available in the "tessdata/configs" folder of your tesseract installation
-     Note 2: The folder "./tess-cfg" contains useful tesseract configuration files
 inputfile  : PDF file to be OCRed
 outputfile : The PDF/A file that will be generated 
 --------------------------------------------------------------------------------------

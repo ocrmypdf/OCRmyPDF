@@ -1,9 +1,0 @@
-##############################################################################
-# tesseract config file provided for OCRmyPDF
-#
-# prevents tesseract to detect ligatures, as ligatures are not displayed correctly in the final PDF file
-# but are replaced by a black square
-#
-# Copyright (c) 2013-14: fritz-hh from Github (https://github.com/fritz-hh)
-##############################################################################
-tessedit_char_blacklist ﬁﬂ

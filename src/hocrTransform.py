@@ -1,4 +1,5 @@
 #!/usr/local/bin/python2
+# coding: utf-8
 ##############################################################################
 # Copyright (c) 2013-14: fritz-hh from Github (https://github.com/fritz-hh)
 #
@@ -171,6 +172,17 @@ class hocrTransform():
 		"""
 		return float(pxl)/self.dpi*inch
 
+	def replace_unsupported_chars(self, str):
+		"""
+		Given an input string, returns the corresponding string that:
+		- is available in the helvetica facetype
+		- does not contain any ligature (to allow easy search in the PDF file)
+		"""		
+		# The 'u' before the character to replace indicates that it is a unicode character
+		str=str.replace(u"ﬂ","fl")
+		str=str.replace(u"ﬁ","fi")
+		return str
+		
 	def to_pdf(self, outFileName, imageFileName, showBoundingboxes, fontname="Helvetica"):
 		"""
 		Creates a PDF file with an image superimposed on top of the text.
@@ -217,6 +229,9 @@ class hocrTransform():
 		for elem in self.hocr.findall(".//%sspan[@class='%s']" % (self.xmlns, elemclass)):
 
 			elemtxt=self._get_element_text(elem).rstrip()
+			
+			elemtxt=self.replace_unsupported_chars(elemtxt)
+			
 			if len(elemtxt) == 0:
 				continue
 
