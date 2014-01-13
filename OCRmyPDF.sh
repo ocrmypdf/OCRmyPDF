@@ -204,19 +204,16 @@ fi
 
 # Initialize path to temporary files
 today=$(date +"%Y%m%d_%H%M")
-fld=$(basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*//')
-TMP_FLD="${TMP}/$today.filename.$fld"
+fld=$(basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*$//')
+prefix="${today}.filename.${fld}"
+TMP_FLD=`TMPDIR=${TMP} mktemp -d -t "${prefix}"`
 FILE_TMP="${TMP_FLD}/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
 FILE_PAGES_INFO="${TMP_FLD}/pages-info.txt"				# for each page: page #; width in pt; height in pt
 FILE_OUTPUT_PDF_CAT="${TMP_FLD}/ocred.pdf"				# concatenated OCRed PDF files
 FILE_VALIDATION_LOG="${TMP_FLD}/pdf_validation.log"			# log file containing the results of the validation of the PDF/A file
 
 # Create tmp folder
-[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Creating temporary folder: \"$TMP_FLD\""
-rm -r -f "${TMP_FLD}"
-mkdir -p "${TMP_FLD}"
-
-
+[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Created temporary folder: \"$TMP_FLD\""
 
 
 # get the size of each pdf page (width / height) in pt (inch*72)
