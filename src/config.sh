@@ -4,9 +4,6 @@
 
 DEFAULT_DPI=300				# dpi value used as fall back if the page dpi cannot be determined
 
-TMP="./tmp"				# location of the temporary files (one sub-folder will be created per PDF file to be processed)
-					# an absolute path or a path relative to the OCRmyPDF installation should be entered
-
 #####################################################################################
 # Do NOT change the following parameters
 #####################################################################################
