@@ -61,3 +61,8 @@ Press & Media
 -------------
 
 - c't 1-2014, page 59: Detailed presentation of OCRmyPDF v1.0 in the leading german IT magazine c't (http://www.heise.de/ct/inhalt/2014/1/58/)
+
+Disclaimer
+----------
+
+The software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
