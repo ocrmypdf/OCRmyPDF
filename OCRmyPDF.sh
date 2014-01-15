@@ -141,7 +141,6 @@ cd "`dirname $0`"
 ! command -v pdfimages > /dev/null && echo "Please install poppler-utils. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdftoppm > /dev/null && echo "Please install poppler-utils. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdffonts > /dev/null && echo "Please install poppler-utils. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
-! command -v pdftk > /dev/null && echo "Please install pdftk. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 [ $PREPROCESS_CLEAN -eq 1 ] && ! command -v unpaper > /dev/null && echo "Please install unpaper. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v tesseract > /dev/null && echo "Please install tesseract and tesseract-data. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v python2 > /dev/null && echo "Please install python v2.x. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
@@ -183,9 +182,6 @@ if [ $VERBOSITY -ge $LOG_DEBUG ]; then
 	pdftoppm -v
 	pdffonts -v
 	echo "--------------------------------"
-	echo "pdftk version:"
-	pdftk --version
-	echo "--------------------------------"
 	echo "unpaper version:"
 	unpaper --version
 	echo "--------------------------------"
@@ -223,16 +219,15 @@ if [ $? -ne 0 ]; then
 	fi
 	exit $EXIT_FILE_ACCESS_ERROR
 fi
-FILE_TMP="${TMP_FLD}/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
-FILE_PAGES_INFO="${TMP_FLD}/pages-info.txt"				# for each page: page #; width in pt; height in pt
-FILE_OUTPUT_PDF_CAT="${TMP_FLD}/ocred.pdf"				# concatenated OCRed PDF files
-FILE_VALIDATION_LOG="${TMP_FLD}/pdf_validation.log"			# log file containing the results of the validation of the PDF/A file
-
-# Create tmp folder
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Created temporary folder: \"$TMP_FLD\""
 
+FILE_TMP="${TMP_FLD}/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
+FILE_PAGES_INFO="${TMP_FLD}/pages-info.txt"				# for each page: page #; width in pt; height in pt
+FILE_VALIDATION_LOG="${TMP_FLD}/pdf_validation.log"			# log file containing the results of the validation of the PDF/A file
 
-# get the size of each pdf page (width / height) in pt (inch*72)
+
+
+# get the size of each pdf page (width / height) in pt (i.e. inch/72)
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Input file: Extracting size of each page (in pt)"
 ! identify -format "%w %h\n" "$FILE_INPUT_PDF" > "$FILE_TMP" \
 	&& echo "Could not get size of PDF pages. Exiting..." && exit $EXIT_BAD_INPUT_FILE
@@ -247,17 +242,12 @@ parallel --gnu -q -k --halt-on-error 1 "$OCR_PAGE" "$FILE_INPUT_PDF" "{}" "$nump
 ret_code="$?"
 [ $ret_code -ne 0 ] && exit $ret_code 
 
-# concatenate all pages
-[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Concatenating all pages"
-! pdftk "${TMP_FLD}/"*ocred*.pdf cat output "$FILE_OUTPUT_PDF_CAT" \
-	&& echo "Could not concatenate individual PDF pages (\"${TMP_FLD}/*-ocred.pdf\") to one file. Exiting..." && exit $EXIT_OTHER_ERROR
-
-# convert the pdf file to match PDF/A format
-[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Converting to PDF/A" 
+# concatenate all pages and convert the pdf file to match PDF/A format
+[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Concatenating all pages to the final PDF/A file" 
 ! gs -dQUIET -dPDFA -dBATCH -dNOPAUSE -dUseCIEColor \
 	-sProcessColorModel=DeviceCMYK -sDEVICE=pdfwrite -sPDFACompatibilityPolicy=2 \
-	-sOutputFile="$FILE_OUTPUT_PDFA" "$FILE_OUTPUT_PDF_CAT" 1> /dev/null 2> /dev/null \
-	&& echo "Could not convert PDF file \"$FILE_OUTPUT_PDF_CAT\" to PDF/A. Exiting..." && exit $EXIT_OTHER_ERROR
+	-sOutputFile="$FILE_OUTPUT_PDFA" "${TMP_FLD}/"*ocred*.pdf 1> /dev/null 2> /dev/null \
+	&& echo "Could not concatenate all pages to the final PDF/A file. Exiting..." && exit $EXIT_OTHER_ERROR
 
 # validate generated pdf file (compliance to PDF/A)
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Checking compliance to PDF/A standard" 
