@@ -37,6 +37,7 @@ FORCE_OCR="${14}"			# Force to OCR, even if the page already contains fonts
 # Output:  A file containing the characteristics of the embedded image. File structure:
 #          DPI=<dpi>
 #          COLOR_SPACE=<colorspace>
+#          DEPTH=<colordepth>
 # Returns:
 #       - 0: if no error occurs
 #       - 1: in case the page already contains fonts (which should be the case for PDF generated from scanned pages) 
@@ -119,9 +120,9 @@ getImgInfo "$page" "$widthPDF" "$heightPDF" "$curImgInfo"
 ret_code="$?"
 
 # in case the page contains text do not OCR, unless the FORCE_OCR flag is set
-if [ "$ret_code" -eq "1" -a "$FORCE_OCR" -eq "0" ]; then
+if ([ "$ret_code" -eq "1" ] && [ "$FORCE_OCR" -eq "0" ]); then
 	echo "Page $page: Exiting... (Use the -f option to force OCRing, even though fonts are available in the input file)" && exit $EXIT_BAD_INPUT_FILE
-elif [ "$ret_code" -eq "1" -a "$FORCE_OCR" -eq "1" ]; then
+elif ([ "$ret_code" -eq "1" ] && [ "$FORCE_OCR" -eq "1" ]); then
 	[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: OCRing anyway, assuming a default resolution of $dpi dpi"
 # in case the page contains more than one image, warn the user but go on with default parameters
 elif [ "$ret_code" -eq "2" ]; then
@@ -208,7 +209,7 @@ fi
 # delete temporary files created for the current page
 # to avoid using to much disk space in case of PDF files having many pages
 if [ $KEEP_TMP -eq 0 ]; then
-	rm -f "$curOrigImg"*.*
+	rm -f "$curOrigImg"*
 	rm -f "$curHocr"
 	rm -f "$curImgPixmap"
 	rm -f "$curImgPixmapDeskewed"
