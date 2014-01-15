@@ -23,7 +23,7 @@ Changes
 -------
 
 - In debug mode: The debug page is now placed after the respective "normal" page
-- Reduced disk space usage if -d (deskew) or -c (cleanup) options are not selected
+- Reduced disk space usage in temporary folder if -d (deskew) or -c (cleanup) options are not selected
 - New file src/config.sh containing various configuration parameters
 - Documentation of the tesseract config file "tess-cfg/no_ligature" improved 
 - Improved consistency of the temporary file names
