@@ -150,12 +150,15 @@ cd "`dirname $0`"
 ! command -v java > /dev/null && echo "Please install java. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 
 
+
 # ensure the right tesseract version is installed
 # older versions are known to produce malformed hocr output and should not be used
 reqtessversion="3.02.02"
 tessversion=`tesseract -v 2>&1 | grep "tesseract" | sed s/[^0-9.]//g`
-! [ $((`echo $tessversion | sed s/[.]//g`-`echo $reqtessversion | sed s/[.]//g`)) -ge 0 ] > /dev/null \
+tesstooold=$(echo "`echo $tessversion | sed s/[.]//2`-`echo $reqtessversion | sed s/[.]//2` < 0" | bc)
+[ "$tesstooold" -eq "1" ] \\
 	&& echo "Please install tesseract ${reqtessversion} or newer (currently installed version is ${tessversion})" && exit $EXIT_MISSING_DEPENDENCY
+
 # ensure the right GNU parallel version is installed
 # older version do not support -q flag (required to escape special characters)
 reqparallelversion="20130222"
@@ -163,10 +166,8 @@ parallelversion=`parallel --minversion 0`
 ! parallel --minversion "$reqparallelversion" > /dev/null \
 	&& echo "Please install GNU parallel ${reqparallelversion} or newer (currently installed version is ${parallelversion})" && exit $EXIT_MISSING_DEPENDENCY
 
-
 # ensure pdftoppm is provided by poppler-utils, not the older xpdf version
 ! pdftoppm -v 2>&1 | grep -q 'Poppler' && echo "Please remove xpdf and install poppler-utils. Exiting..." && $EXIT_MISSING_DEPENDENCY
-
 
 # Display the version of the tools if log level is LOG_DEBUG
 if [ $VERBOSITY -ge $LOG_DEBUG ]; then
