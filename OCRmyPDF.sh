@@ -42,7 +42,7 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-f] [-l languag
      (which should not be the case for PDF files built from scnanned images) 
 -l : Set the language of the PDF file in order to improve OCR results (default "eng")
      Any language supported by tesseract is supported (Tesseract uses 3-character ISO 639-2 language codes)
-     Multiple languages may be specified, separated by plus characters.
+     Multiple languages may be specified, separated by '+' characters.
 -C : Pass an additional configuration file to the tesseract OCR engine.
      (this option can be used more than once)
      Note 1: The configuration file must be available in the "tessdata/configs" folder of your tesseract installation
@@ -168,6 +168,8 @@ parallelversion=`parallel --minversion 0`
 # ensure pdftoppm is provided by poppler-utils, not the older xpdf version
 ! pdftoppm -v 2>&1 | grep -q 'Poppler' && echo "Please remove xpdf and install poppler-utils. Exiting..." && $EXIT_MISSING_DEPENDENCY
 
+
+
 # Display the version of the tools if log level is LOG_DEBUG
 if [ $VERBOSITY -ge $LOG_DEBUG ]; then
 	echo "--------------------------------"
@@ -200,11 +202,17 @@ if [ $VERBOSITY -ge $LOG_DEBUG ]; then
 fi
 
 
+
 # check if the languages passed to tesseract are all supported
 for currentlan in `echo "$LAN" | sed 's/+/ /g'`; do
-	! tesseract --list-langs 2>&1 | grep "^$currentlan\$" > /dev/null \
-		&& echo "The language \"$currentlan\" is not supported by tesseract. Exiting..." && exit $EXIT_BAD_ARGS
+	if ! tesseract --list-langs 2>&1 | grep "^$currentlan\$" > /dev/null; then
+		echo "The language \"$currentlan\" is not supported by tesseract."
+		tesseract --list-langs 2>&1 | tr '\n' ' '; echo
+		echo "Exiting..."
+		exit $EXIT_BAD_ARGS
+	fi
 done
+
 
 
 # Initialize path to temporary files using mktemp
