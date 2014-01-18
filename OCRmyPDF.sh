@@ -111,8 +111,7 @@ done
 # Remove the optional arguments parsed above.
 shift $((OPTIND-1))
 
-# Check if the number of mandatory parameters
-# provided is as expected
+# Check if the number of mandatory parameters provided is as expected
 if [ "$#" -ne "2" ]; then
 	echo "Exactly two mandatory argument shall be provided ($# arguments provided)"
 	usage
@@ -156,7 +155,7 @@ cd "`dirname $0`"
 reqtessversion="3.02.02"
 tessversion=`tesseract -v 2>&1 | grep "tesseract" | sed s/[^0-9.]//g`
 tesstooold=$(echo "`echo $tessversion | sed s/[.]//2`-`echo $reqtessversion | sed s/[.]//2` < 0" | bc)
-[ "$tesstooold" -eq "1" ] \\
+[ "$tesstooold" -eq "1" ] \
 	&& echo "Please install tesseract ${reqtessversion} or newer (currently installed version is ${tessversion})" && exit $EXIT_MISSING_DEPENDENCY
 
 # ensure the right GNU parallel version is installed
@@ -201,9 +200,14 @@ if [ $VERBOSITY -ge $LOG_DEBUG ]; then
 fi
 
 
+# check if the languages passed to tesseract are all supported
+for currentlan in `echo "$LAN" | sed 's/+/ /g'`; do
+	! tesseract --list-langs 2>&1 | grep "^$currentlan\$" > /dev/null \
+		&& echo "The language \"$currentlan\" is not supported by tesseract. Exiting..." && exit $EXIT_BAD_ARGS
+done
+
 
 # Initialize path to temporary files using mktemp
-
 # Goal: save tmp file in a sub-folder of the $TMPDIR environment variable (or in "/tmp" if unset)
 # Unfortunately, Linux mktemp is not compatible with FreeBSD/OSX mktemp
 # Linux version requires no arg
