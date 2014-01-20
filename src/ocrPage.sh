@@ -166,7 +166,7 @@ widthCurImg=$(($dpi*$widthPDF/72))
 heightCurImg=$(($dpi*$heightPDF/72))
 if [ "$PREPROCESS_DESKEW" -eq "1" ]; then
 	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Deskewing image"
-	! python2 $SRC/deskew.py -r $dpi "$curImgPixmap" "$curImgPixmapDeskewed" && exit $?
+	! python2 $SRC/leptonica.py deskew -r $dpi "$curImgPixmap" "$curImgPixmapDeskewed" && exit $?
 else
 	ln -s `basename "$curImgPixmap"` "$curImgPixmapDeskewed"
 fi

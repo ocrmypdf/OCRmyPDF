@@ -81,7 +81,7 @@ lept.getLeptonicaVersion.argtypes = []
 lept.getLeptonicaVersion.restype = C.c_char_p
 
 
-class Leptonica(object):
+class LeptonicaErrorTrap(object):
     """Context manager to trap errors reported by Leptonica.
 
     Leptonica's error return codes are unreliable to the point of being
@@ -102,17 +102,17 @@ class Leptonica(object):
         os.dup2(self.tmpfile.fileno(), sys.stderr.fileno())
         return
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback):
         # Restore old stderr
         os.dup2(self.old_stderr_fileno, sys.stderr.fileno())
 
         # Get data from tmpfile (in with block to ensure it is closed)
         with self.tmpfile as tmpfile:
-            tmpfile.seek(0)
+            tmpfile.seek(0)  # Cursor will be at end, so move back to beginning
             leptonica_output = tmpfile.read().decode(errors='replace')
 
         # If there are Python errors, let them bubble up
-        if type:
+        if exc_type:
             stderr(leptonica_output)
             return False
 
@@ -142,13 +142,13 @@ def pixRead(filename):
     fails then the object will wrap a C null pointer.
 
     """
-    with Leptonica():
+    with LeptonicaErrorTrap():
         return lept.pixRead(filename.encode(sys.getfilesystemencoding()))
 
 
 def pixScale(pix, scalex, scaley):
     """Returns the pix object rescaled according to the proportions given."""
-    with Leptonica():
+    with LeptonicaErrorTrap():
         return lept.pixScale(pix, scalex, scaley)
 
 
@@ -162,7 +162,7 @@ def pixDeskew(pix, reduction_factor=0):
         for skew angle
 
     """
-    with Leptonica():
+    with LeptonicaErrorTrap():
         return lept.pixDeskew(pix, reduction_factor)
 
 
@@ -173,7 +173,7 @@ def pixWriteImpliedFormat(filename, pix, jpeg_quality=0, jpeg_progressive=0):
     jpeg_ progressive -- (iff JPEG; 0 for baseline seq., 1 for progressive)
 
     """
-    with Leptonica():
+    with LeptonicaErrorTrap():
         lept.pixWriteImpliedFormat(
             filename.encode(sys.getfilesystemencoding()),
             pix, jpeg_quality, jpeg_progressive)
@@ -186,7 +186,7 @@ def pixDestroy(pix):
     the address of the pointer.
 
     """
-    with Leptonica():
+    with LeptonicaErrorTrap():
         lept.pixDestroy(C.byref(pix))
 
 
