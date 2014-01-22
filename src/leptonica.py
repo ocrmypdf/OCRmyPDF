@@ -73,6 +73,8 @@ lept.pixScale.argtypes = [PIX, C.c_float, C.c_float]
 lept.pixScale.restype = PIX
 lept.pixDeskew.argtypes = [PIX, C.c_int32]
 lept.pixDeskew.restype = PIX
+lept.pixFindSkew.argtypes = [PIX, C.POINTER(C.c_float), C.POINTER(C.c_float)]
+lept.pixFindSkew.restype = C.c_int32
 lept.pixWriteImpliedFormat.argtypes = [C.c_char_p, PIX, C.c_int32, C.c_int32]
 lept.pixWriteImpliedFormat.restype = C.c_int32
 lept.pixDestroy.argtypes = [C.POINTER(PIX)]
@@ -164,6 +166,22 @@ def pixDeskew(pix, reduction_factor=0):
     """
     with LeptonicaErrorTrap():
         return lept.pixDeskew(pix, reduction_factor)
+
+
+def pixFindSkew(pix):
+    """Returns a tuple (deskew angle in degrees, confidence value).
+
+    Returns (None, None) if no angle is available.
+
+    """
+    with LeptonicaErrorTrap():
+        angle = C.c_float(0.0)
+        confidence = C.c_float(0.0)
+        result = lept.pixFindSkew(pix, C.byref(angle), C.byref(confidence))
+        if result == 0:
+            return (angle.value, confidence.value)
+        else:
+            return (None, None)
 
 
 def pixWriteImpliedFormat(filename, pix, jpeg_quality=0, jpeg_progressive=0):
@@ -282,4 +300,31 @@ def test_pnm_output():
               ['RGB', '.ppm', 'PPM']]
     for param in params:
         _test_output(*param)
+
+
+def test_skew_angle():
+    from PIL import Image, ImageDraw
+    from tempfile import NamedTemporaryFile
+
+    im = Image.new(mode='1', size=(1000, 1000), color=1)
+
+    draw = ImageDraw.Draw(im)
+    for n in range(20):
+        draw.line([(50, 25 + 50*n), (950, 25 + 50*n)], width=1)
+    del draw
+
+    test_angles = [0.1 * ang for ang in range(1, 10)] + \
+                  [float(ang) for ang in range(1, 7)]
+    test_angles += [-ang for ang in test_angles]
+    test_angles = sorted(test_angles)
+
+    for rotate_angle in test_angles:
+        rotated_im = im.rotate(rotate_angle)
+        with NamedTemporaryFile(prefix='lept-skew', suffix='.png', delete=True) as tmpfile:
+            rotated_im.save(tmpfile)
+            pix = pixRead(tmpfile.name)
+            angle, confidence = pixFindSkew(pix)
+            pixDestroy(pix)
+            print('{0} {1}  {2}'.format(rotate_angle, angle, confidence), file=sys.stderr)
+
 
