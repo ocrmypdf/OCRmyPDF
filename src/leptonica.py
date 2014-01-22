@@ -170,13 +170,25 @@ def pixWriteImpliedFormat(filename, pix, jpeg_quality=0, jpeg_progressive=0):
     """Write pix to the filename, with the extension indicating format.
 
     jpeg_quality -- quality (iff JPEG; 1 - 100, 0 for default)
-    jpeg_ progressive -- (iff JPEG; 0 for baseline seq., 1 for progressive)
+    jpeg_progressive -- (iff JPEG; 0 for baseline seq., 1 for progressive)
 
     """
+    fileroot, extension = os.path.splitext(filename)
+    fix_pnm = False
+    if extension.lower() in ('.pbm', '.pgm', '.ppm'):
+        # Leptonica does not process handle these extensions correctly, but
+        # does handle .pnm correctly.  Add another .pnm suffix.
+        filename += '.pnm'
+        fix_pnm = True
+
     with LeptonicaErrorTrap():
         lept.pixWriteImpliedFormat(
             filename.encode(sys.getfilesystemencoding()),
             pix, jpeg_quality, jpeg_progressive)
+
+    if fix_pnm:
+        from shutil import move
+        move(filename, filename[:-4])   # Remove .pnm suffix
 
 
 def pixDestroy(pix):
@@ -243,4 +255,31 @@ if __name__ == '__main__':
         print("Unexpected leptonica version: %s" % getLeptonicaVersion())
 
     args.func(args)
+
+
+def _test_output(mode, extension, im_format):
+    from PIL import Image
+    from tempfile import NamedTemporaryFile
+
+    with NamedTemporaryFile(prefix='test-lept-pnm', suffix=extension, delete=True) as tmpfile:
+        im = Image.new(mode=mode, size=(100, 100))
+        im.save(tmpfile)
+
+        pix = pixRead(tmpfile.name)
+        pixWriteImpliedFormat(tmpfile.name, pix)
+        pixDestroy(pix)
+
+        im_roundtrip = Image.open(tmpfile.name)
+        assert im_roundtrip.mode == im.mode, "leptonica mode differs"
+        assert im_roundtrip.format == im_format, \
+            "{0}: leptonica produced a {1}".format(
+                extension,
+                im_roundtrip.format)
+
+
+def test_pnm_output():
+    params = [['1', '.pbm', 'PPM'], ['L', '.pgm', 'PPM'],
+              ['RGB', '.ppm', 'PPM']]
+    for param in params:
+        _test_output(*param)
 
