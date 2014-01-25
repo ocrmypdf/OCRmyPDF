@@ -152,7 +152,9 @@ cd "`dirname $0`"
 
 # ensure the right tesseract version is installed
 # older versions are known to produce malformed hocr output and should not be used
-reqtessversion="3.02.02"
+# Even 3.02.01 fails in few cases (see issue #28). I decided to allow this version anyway because
+# 3.02.02 is not yet available for some widespread linux distributions
+reqtessversion="3.02.01"
 tessversion=`tesseract -v 2>&1 | grep "tesseract" | sed s/[^0-9.]//g`
 tesstooold=$(echo "`echo $tessversion | sed s/[.]//2`-`echo $reqtessversion | sed s/[.]//2` < 0" | bc)
 [ "$tesstooold" -eq "1" ] \
