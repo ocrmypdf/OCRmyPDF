@@ -11,7 +11,7 @@ Main features
 - Generates a searchable PDF/A file from a PDF file containing only images
 - Places OCRed text accurately below the image to ease copy / paste
 - Keeps the exact resolution of the original embedded images
-    - or if requested oversample the images before OCRing so as to get better results 
+    - or if requested oversamples the images before OCRing so as to get better results 
 - If requested deskews and / or clean the image before performing OCR
 - Validates the generated file against the PDF/A specification using jhove
 - Provides debug mode to enable easy verification of the OCR results

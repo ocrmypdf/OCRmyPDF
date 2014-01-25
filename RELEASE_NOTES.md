@@ -5,9 +5,41 @@ Please always read this file before installing the package
 
 Download software here: https://github.com/fritz-hh/OCRmyPDF/tags
 
-v2.0-rc2 (2014-01-16):
+v2.0-stable (2014-01-25):
 =======
 
+New features
+------------
+
+- Check if the language(s) passed using the -l option is supported by tesseract (fixes #60)
+
+Changes
+-------
+
+- Allow OCRmyPDF to be used with tesseract 3.02.01, even though OCR might fail for few PDF file (see issue #28). Rationale: For some linux distribution, no newer version than tesseract 3.02.01 is available
+
+Fixes
+-----
+
+- More robust algorithm for checking the version of the installed tesseract package
+
+Tested with
+-----------
+
+- Operating system: FreeBSD 9.1
+- Dependencies:
+   - parallel 20130222
+   - poppler-utils 0.22.2
+   - ImageMagick 6.8.0-7 2013-03-30
+   - Unpaper 0.3
+   - tesseract 3.02.02
+   - Python 2.7.3
+   - ghoscript (gs): 9.06
+   - java: openjdk version "1.7.0_17"
+
+v2.0-rc2 (2014-01-16):
+=======
+   
 New features
 ------------
 
