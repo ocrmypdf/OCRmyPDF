@@ -139,8 +139,8 @@ cd "$BASEPATH"
 ! command -v identify > /dev/null && echo "Please install ImageMagick. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v parallel > /dev/null && echo "Please install GNU Parallel. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdfimages > /dev/null && echo "Please install poppler-utils. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
-! command -v pdftoppm > /dev/null && echo "Please install poppler-utils. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdffonts > /dev/null && echo "Please install poppler-utils. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! command -v pdftoppm > /dev/null && echo "Please install poppler-utils with the option --enable-splash-output enabled. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 [ $PREPROCESS_CLEAN -eq 1 ] && ! command -v unpaper > /dev/null && echo "Please install unpaper. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v tesseract > /dev/null && echo "Please install tesseract and tesseract-data. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v python2 > /dev/null && echo "Please install python v2.x. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
