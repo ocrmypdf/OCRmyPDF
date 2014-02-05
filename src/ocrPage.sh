@@ -23,6 +23,7 @@ OVERSAMPLING_DPI="${11}"		# Oversampling resolution in dpi
 PDF_NOIMG="${12}"			# Request to generate also a PDF page containing only the OCRed text but no image (helpful for debugging) 
 TESS_CFG_FILES="${13}"			# Specific configuration files to be used by Tesseract during OCRing
 FORCE_OCR="${14}"			# Force to OCR, even if the page already contains fonts
+SKIP_TEXT="${15}"			# Skip OCR on pages that contain fonts and include the page anyway
 
 
 
@@ -119,8 +120,12 @@ dpi=$DEFAULT_DPI		# default resolution
 getImgInfo "$page" "$widthPDF" "$heightPDF" "$curImgInfo"
 ret_code="$?"
 
-# in case the page contains text do not OCR, unless the FORCE_OCR flag is set
-if ([ "$ret_code" -eq "1" ] && [ "$FORCE_OCR" -eq "0" ]); then
+# Handle pages that already contain a text layer
+if ([ "$ret_code" -eq "1" ] && [ "$SKIP_TEXT" -eq "1" ]); then
+	echo "Page $page: Skipping processing because page contains text..."
+	pdfseparate -f $page -l $page ${FILE_INPUT_PDF} $curOCRedPDF
+	exit 0
+elif ([ "$ret_code" -eq "1" ] && [ "$FORCE_OCR" -eq "0" ]); then
 	echo "Page $page: Exiting... (Use the -f option to force OCRing, even though fonts are available in the input file)" && exit $EXIT_BAD_INPUT_FILE
 elif ([ "$ret_code" -eq "1" ] && [ "$FORCE_OCR" -eq "1" ]); then
 	[ $VERBOSITY -ge $LOG_WARN ] && echo "Page $page: OCRing anyway, assuming a default resolution of $dpi dpi"
