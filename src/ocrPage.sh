@@ -187,7 +187,14 @@ fi
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Page $page: Performing OCR"
 ! tesseract -l "$LAN" "$curImgPixmapClean" "$curHocr" hocr $TESS_CFG_FILES 1> /dev/null 2> /dev/null \
 	&& echo "Could not OCR file \"$curImgPixmapClean\". Exiting..." && exit $EXIT_OTHER_ERROR
-mv "$curHocr.html" "$curHocr"
+# Tesseract names the output files differently in some distributions.
+if [ -e "$curHocr.html" ]; then
+	mv "$curHocr.html" "$curHocr"
+elif [ -e "$curHocr.hocr" ]; then
+	mv "$curHocr.hocr" "$curHocr"
+elif [ ! -e "$curHocr" ]; then
+	echo "\"$curHocr[.html|.hocr]\" not found. Exiting..." && exit $EXIT_OTHER_ERROR
+fi
 
 # embed text and image to new pdf file
 if [ "$PREPROCESS_CLEANTOPDF" -eq "1" ]; then
