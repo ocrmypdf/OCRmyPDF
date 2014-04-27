@@ -51,7 +51,7 @@ def PIL_imagedata(self):
 	try:
 	    from reportlab.pdfbase.pdfutils import _AsciiBase85Encode
 	except ImportError:
-	    from reportlab.pdfbase.pdfutils import _asciiBase85Encode as _AsciiBase85Encode
+	    from reportlab.pdfbase.pdfutils import asciiBase85Encode as _AsciiBase85Encode
 	
 	self.source = 'PIL'
 	zlib = import_zlib()
