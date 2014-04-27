@@ -1,2 +1,3 @@
 tmp/
 log/
+*.pyc
