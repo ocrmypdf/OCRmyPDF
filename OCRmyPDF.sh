@@ -39,7 +39,7 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-f] [-l languag
      an oversampled image having the latter dpi value. This can improve the OCR results but can lead to a larger output PDF file.
      (default: no oversampling performed)
 -f : Force to OCR the whole document, even if some page already contain font data 
-     (which should not be the case for PDF files built from scnanned images) 
+     (which should not be the case for PDF files built from scanned images) 
 -l : Set the language of the PDF file in order to improve OCR results (default "eng")
      Any language supported by tesseract is supported (Tesseract uses 3-character ISO 639-2 language codes)
      Multiple languages may be specified, separated by '+' characters.
