@@ -145,7 +145,7 @@ cd "`dirname $0`"
 ! command -v python2 > /dev/null && echo "Please install python v2.x. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! python2 -c 'import lxml' 2>/dev/null && echo "Please install the python library lxml. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! python2 -c 'import reportlab' 2>/dev/null && echo "Please install the python library reportlab. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
-! command -v gs > /dev/null && echo "Please install ghostcript. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! command -v gs > /dev/null && echo "Please install ghostscript. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v java > /dev/null && echo "Please install java. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 
 
