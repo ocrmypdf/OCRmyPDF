@@ -292,4 +292,4 @@ END=`date +%s`
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Script took $(($END-$START)) seconds"
 
 
-[ $pdf_valid -ne 1 ] && exit $EXIT_INVALID_OUPUT_PDFA || exit 0
+[ $pdf_valid -ne 1 ] && exit $EXIT_INVALID_OUTPUT_PDFA || exit 0
