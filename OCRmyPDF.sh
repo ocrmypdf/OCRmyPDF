@@ -4,7 +4,8 @@
 ##############################################################################
 
 # Import required scripts
-. "`dirname $0`/src/config.sh"
+BASEPATH="$(dirname $(readlink -f $0))"
+. "$BASEPATH/src/config.sh"
 
 # Set variables corresponding to the input parameters
 ARGUMENTS="$@"
@@ -128,7 +129,7 @@ FILE_OUTPUT_PDFA="`absolutePath "$2"`"
 
 
 # set script path as working directory
-cd "`dirname $0`"
+cd "$BASEPATH"
 
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "$TOOLNAME version: $VERSION"
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Arguments: $ARGUMENTS"
@@ -162,7 +163,7 @@ tesstooold=$(echo "`echo $tessversion | sed s/[.]//2`-`echo $reqtessversion | se
 
 # ensure the right GNU parallel version is installed
 # older version do not support -q flag (required to escape special characters)
-reqparallelversion="20130222"
+reqparallelversion="20121122"
 parallelversion=`parallel --minversion 0`
 ! parallel --minversion "$reqparallelversion" > /dev/null \
 	&& echo "Please install GNU parallel ${reqparallelversion} or newer (currently installed version is ${parallelversion})" && exit $EXIT_MISSING_DEPENDENCY
