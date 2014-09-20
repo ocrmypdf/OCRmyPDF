@@ -9,7 +9,7 @@ DEFAULT_DPI=300				# dpi value used as fall back if the page dpi cannot be deter
 #####################################################################################
 
 TOOLNAME="OCRmyPDF"
-VERSION="v2.0-stable"
+VERSION="v2.1-stable"
 
 # possible exit codes
 EXIT_BAD_ARGS="1"
