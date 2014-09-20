@@ -60,7 +60,8 @@ In case you detect an issue, please:
 Press & Media
 -------------
 
-- c't 1-2014, page 59: Detailed presentation of OCRmyPDF v1.0 in the leading german IT magazine c't (http://www.heise.de/ct/inhalt/2014/1/58/)
+- c't 1-2014, page 59: Detailed presentation of OCRmyPDF v1.0 in the leading german IT magazine c't (http://www.heise.de/ct/inhalt/2014/1/58/) 
+- heise Open Source, 09/2014: Texterkennung mit OCRmyPDF (http://www.heise.de/-2356670)
 
 Disclaimer
 ----------
