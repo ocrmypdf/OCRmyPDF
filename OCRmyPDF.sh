@@ -35,7 +35,7 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-f] [-l languag
 -d : Deskew each page before performing OCR
 -c : Clean each page before performing OCR
 -i : Incorporate the cleaned image in the final PDF file (by default the original image	
-     image, or the deskewed image if the -d option is set, is incorporated)
+     image, or the deskewed image if the -d option is set)
 -o : If the resolution of an image is lower than dpi value provided as argument, provide the OCR engine with 
      an oversampled image having the latter dpi value. This can improve the OCR results but can lead to a larger output PDF file.
      (default: no oversampling performed)
