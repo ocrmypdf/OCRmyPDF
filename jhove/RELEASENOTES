@@ -6,6 +6,85 @@ see the file LICENSE for details)
 
 Versions 1.7 and beyond of JHOVE are no longer under the control of Harvard.
 
+RELEASE NOTES FOR JHOVE 1.11
+
+GENERAL
+
+1. I've added lots of logging code. Calls at the FINE level and lower 
+   don't show up no matter what I do, so I've put them at the INFO level.
+   The level is set in JhoveBase.java.
+
+2. All .bat and _bat.tmpl files now have CR-LF line endings. That is, they
+   do in the gzip and zip archives you download. I'm not sure how
+   SourceForge will treat files that you download individually,
+   but hopefully it will have the sense to keep CR-LF when downloading
+   to a Windows system. 
+
+3. All .bat files now assume JHOVE_HOME is the directory from which they're
+   run. They no longer try to set JAVA_HOME (which was still stuck in
+   Java 1.4 and probably wasn't working for many people), instead assuming
+   that the JAVA command is available on the command line.
+
+4. All javac commands in build.xml files now specify source=1.5 for
+   compatibility with more recent compilers.
+  
+5. gdumpwin.bat is deleted. It's redundant with gdump.bat and has bugs
+   of its own.
+   
+PDF MODULE
+
+1. Fix to PDF module, submitted by willp-bl, may reduce tendency 
+   to run out of heap space on some files.
+
+RELEASE NOTES FOR JHOVE 1.10
+
+GENERAL
+
+1. The amount of logging code has been increased, mostly at the
+   DEBUG level.
+   
+2. Further work on generics in Java code.
+
+3. JhoveView now checks for Java 1.5. Was previously allowing 1.4 even
+   though it wouldn't work.
+
+HTML MODULE
+
+1. XHTML files are processed by the HTML module, which invokes the XML
+   modules. In this case, the XML module doesn't have the parameters
+   specified in the JHOVE configuration file and so won't use local
+   copies of schemas. Starting with this version, the parameters of
+   the HTML module are passed to the XML module when invoking it.
+   However, this doesn't work properly (in either module) for a DTD
+   that invokes additional DTDs by relative URLs. Such DTDs should
+   be edited to use only absolute URLs.
+   
+PDF MODULE
+
+1. Failure to get a page object number wasn't being handled cleanly,
+   resulting in a report of an invalid document without an error message
+   to explain it (SourceForge bug 49). This has been fixed.
+
+2. The PDF module unnecessarily uses huge amounts of memory to build
+   complex structure trees, when it doesn't need to keep the whole 
+   tree in memory to validate it. In the new version, it uses memory
+   more economically. This should result in the successful processing
+   of some PDF files that ran out of memory or took hours to process before.
+   
+3. If an annotation isn't a dictionary object, report that explicitly.
+   This happens with some otherwise good files; I can't find any warrant
+   for it in the PDF spec.
+
+4. Some efficiency improvements to PDF parser. Increased buffer size from 4K 
+   to 64K. Made Parser.collapseObjectVector more efficient. Parser now
+   returns pseudo-objects for array and dictionary end instead of throwing
+   an exception.
+
+5. Minor cleanup of error reporting.
+
+6. If an object uses a compression scheme which JHOVE can't deal with, JHOVE
+   will try to give a specific error message.
+
 RELEASE NOTES FOR JHOVE 1.9
 
 GENERAL
