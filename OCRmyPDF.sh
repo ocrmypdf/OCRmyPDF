@@ -267,7 +267,8 @@ ret_code="$?"
 
 # validate generated pdf file (compliance to PDF/A)
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Checking compliance to PDF/A standard" 
-java -jar "$JHOVE" -c "$JHOVE_CFG" -m PDF-hul "$FILE_OUTPUT_PDFA" > "$FILE_VALIDATION_LOG"
+! java -jar "$JHOVE" -c "$JHOVE_CFG" -m PDF-hul "$FILE_OUTPUT_PDFA" 2> /dev/null 1> "$FILE_VALIDATION_LOG" \
+	&& echo "Unexpected error while checking compliance to PDF/A file. Exiting..." && exit $EXIT_OTHER_ERROR
 grep -i "Status|Message" "$FILE_VALIDATION_LOG" # summary of the validation
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "The full validation log is available here: \"$FILE_VALIDATION_LOG\""
 # check the validation results
