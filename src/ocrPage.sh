@@ -7,7 +7,6 @@
 
 . "./src/config.sh"
 
-
 # Initialization of variables passed by arguments
 FILE_INPUT_PDF="$1"			# PDF file containing the page to be OCRed
 PAGE_INFO="$2"				# Various characteristics of the page to be OCRed
@@ -21,11 +20,9 @@ PREPROCESS_CLEAN="$9"			# Clean the page to be OCRed
 PREPROCESS_CLEANTOPDF="${10}"		# Put the cleaned paged in the OCRed PDF
 OVERSAMPLING_DPI="${11}"		# Oversampling resolution in dpi
 PDF_NOIMG="${12}"			# Request to generate also a PDF page containing only the OCRed text but no image (helpful for debugging) 
-TESS_CFG_FILES="${13}"			# Specific configuration files to be used by Tesseract during OCRing
-FORCE_OCR="${14}"			# Force to OCR, even if the page already contains fonts
-SKIP_TEXT="${15}"			# Skip OCR on pages that contain fonts and include the page anyway
-
-
+FORCE_OCR="${13}"			# Force to OCR, even if the page already contains fonts
+SKIP_TEXT="${14}"			# Skip OCR on pages that contain fonts and include the page anyway
+TESS_CFG_FILES="${15}"			# Specific configuration files to be used by Tesseract during OCRing
 
 ################################## 
 # Detect the characteristics of the embedded image for 
@@ -60,8 +57,10 @@ getImgInfo() {
 	
 	
 	# check if the page already contains fonts (which should not be the case for PDF based on scanned files
-	[ `pdffonts -f $page -l $page "${FILE_INPUT_PDF}" | wc -l` -gt 2 ] && echo "Page $page: Page already contains font data !!!" && return 1
-
+	if [ `pdffonts -f $page -l $page "${FILE_INPUT_PDF}" | wc -l` -gt 2 ]; then
+		[ "$SKIP_TEXT" -eq "0" ] && echo "Page $page: Page already contains font data !!!" 
+		return 1
+	fi
 	
 	# extract raw image from pdf file to compute resolution
 	# unfortunately this image can have another orientation than in the pdf...
@@ -122,7 +121,7 @@ ret_code="$?"
 
 # Handle pages that already contain a text layer
 if ([ "$ret_code" -eq "1" ] && [ "$SKIP_TEXT" -eq "1" ]); then
-	echo "Page $page: Skipping processing because page contains text..."
+	echo "Page $page: Skipping OCR on this page since it already contains text"
 	pdfseparate -f $page -l $page ${FILE_INPUT_PDF} $curOCRedPDF
 	exit 0
 elif ([ "$ret_code" -eq "1" ] && [ "$FORCE_OCR" -eq "0" ]); then
