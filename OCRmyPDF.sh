@@ -3,15 +3,10 @@
 # Copyright (c) 2013-14: fritz-hh from Github (https://github.com/fritz-hh)
 ##############################################################################
 
-# Darwin/OS X has not evolved a proper readlink yet
-if [ $(uname) == "Darwin" ]; then
-	function readlink() {
-		python -c 'import os,sys; print os.path.realpath(sys.argv[1])' "$2"
-	}
-fi
+# Determine real path of this script, following symlinks if present
+BASEPATH="$(dirname $(python -c "import os; print os.path.realpath(\"$0\")"))"
 
 # Import required scripts
-BASEPATH="$(dirname $(readlink -f $0))"
 . "$BASEPATH/src/config.sh"
 
 # Set variables corresponding to the input parameters
