@@ -3,8 +3,10 @@
 # Copyright (c) 2013-14: fritz-hh from Github (https://github.com/fritz-hh)
 ##############################################################################
 
+# Determine real path of this script, following symlinks if present
+BASEPATH="$(dirname $(python -c "import os; print os.path.realpath(\"$0\")"))"
+
 # Import required scripts
-BASEPATH="$(dirname $(readlink -f $0))"
 . "$BASEPATH/src/config.sh"
 
 # Set variables corresponding to the input parameters
