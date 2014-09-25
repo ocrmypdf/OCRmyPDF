@@ -3,6 +3,13 @@
 # Copyright (c) 2013-14: fritz-hh from Github (https://github.com/fritz-hh)
 ##############################################################################
 
+# Darwin/OS X has not evolved a proper readlink yet
+if [ $(uname) == "Darwin" ]; then
+	function readlink() {
+		python -c 'import os,sys; print os.path.realpath(sys.argv[1])' "$2"
+	}
+fi
+
 # Import required scripts
 BASEPATH="$(dirname $(readlink -f $0))"
 . "$BASEPATH/src/config.sh"
@@ -41,6 +48,7 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-f] [-l languag
      (default: no oversampling performed)
 -f : Force to OCR the whole document, even if some page already contain font data 
      (which should not be the case for PDF files built from scanned images) 
+-s : If pages contain font data, do not perform processing on that page, but include the page in the final output.
 -l : Set the language of the PDF file in order to improve OCR results (default "eng")
      Any language supported by tesseract is supported (Tesseract uses 3-character ISO 639-2 language codes)
      Multiple languages may be specified, separated by '+' characters.
@@ -82,10 +90,11 @@ PREPROCESS_CLEANTOPDF="0"	# 0=no, 1=yes (put cleaned image in final PDF)
 OVERSAMPLING_DPI="0"		# 0=do not perform oversampling (dpi value under which oversampling should be performed)
 PDF_NOIMG="0"			# 0=no, 1=yes (generates each PDF page twice, with and without image)
 FORCE_OCR="0"			# 0=do not force, 1=force (force to OCR the whole document, even if some page already contain font data)
+SKIP_TEXT="0"			# 0=do not skip text pages, 1=skip text pages
 TESS_CFG_FILES=""		# list of additional configuration files to be used by tesseract
 
 # Parse optional command line arguments
-while getopts ":hvgkdcio:fl:C:" opt; do
+while getopts ":hvgkdcio:fsl:C:" opt; do
 	case $opt in
 		h) usage ; exit 0 ;;
 		v) VERBOSITY=$(($VERBOSITY+1)) ;;
@@ -96,6 +105,7 @@ while getopts ":hvgkdcio:fl:C:" opt; do
 		i) PREPROCESS_CLEANTOPDF="1" ;;
 		o) OVERSAMPLING_DPI="$OPTARG" ;;
 		f) FORCE_OCR="1" ;;
+		s) SKIP_TEXT="1" ;;
 		l) LAN="$OPTARG" ;;
 		C) TESS_CFG_FILES="$OPTARG $TESS_CFG_FILES" ;;
 		\?)
@@ -115,6 +125,12 @@ shift $((OPTIND-1))
 # Check if the number of mandatory parameters provided is as expected
 if [ "$#" -ne "2" ]; then
 	echo "Exactly two mandatory argument shall be provided ($# arguments provided)"
+	usage
+	exit $EXIT_BAD_ARGS
+fi
+
+if [ "$SKIP_TEXT" -eq "1" -a "$FORCE_OCR" -eq "1" ]; then
+	echo "Options -f and -s are mutually exclusive; choose one or the other"
 	usage
 	exit $EXIT_BAD_ARGS
 fi
@@ -141,6 +157,7 @@ cd "$BASEPATH"
 ! command -v pdfimages > /dev/null && echo "Please install poppler-utils. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdffonts > /dev/null && echo "Please install poppler-utils. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdftoppm > /dev/null && echo "Please install poppler-utils with the option --enable-splash-output enabled. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! command -v pdfseparate > /dev/null && echo "Please install or update poppler-utils to at least 0.24.5. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 [ $PREPROCESS_CLEAN -eq 1 ] && ! command -v unpaper > /dev/null && echo "Please install unpaper. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v tesseract > /dev/null && echo "Please install tesseract and tesseract-data. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v python2 > /dev/null && echo "Please install python v2.x. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
@@ -186,6 +203,7 @@ if [ $VERBOSITY -ge $LOG_DEBUG ]; then
 	pdfimages -v
 	pdftoppm -v
 	pdffonts -v
+	pdfseparate -v
 	echo "--------------------------------"
 	echo "unpaper version:"
 	unpaper --version
@@ -254,7 +272,7 @@ numpages=`tail -n 1 "$FILE_PAGES_INFO" | cut -f1 -d" "`
 # process each page of the input pdf file
 parallel --gnu -q -k --halt-on-error 1 "$OCR_PAGE" "$FILE_INPUT_PDF" "{}" "$numpages" "$TMP_FLD" \
 	"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$OVERSAMPLING_DPI" \
-	"$PDF_NOIMG" "$TESS_CFG_FILES" "$FORCE_OCR" < "$FILE_PAGES_INFO"
+	"$PDF_NOIMG" "$TESS_CFG_FILES" "$FORCE_OCR" "$SKIP_TEXT" < "$FILE_PAGES_INFO"
 ret_code="$?"
 [ $ret_code -ne 0 ] && exit $ret_code 
 
