@@ -119,9 +119,10 @@ if [ "$#" -ne "2" ]; then
 	exit $EXIT_BAD_ARGS
 fi
 
-! absolutePath "$1" > /dev/null \
-	&& echo "The folder in which the input file should be located does not exist. Exiting..." && exit $EXIT_BAD_ARGS
+[ ! -f "$1" ] \
+	&& echo "The input file does not exist. Exiting..." && exit $EXIT_BAD_ARGS
 FILE_INPUT_PDF="`absolutePath "$1"`"
+
 ! absolutePath "$2" > /dev/null \
 	&& echo "The folder in which the output file should be generated does not exist. Exiting..." && exit $EXIT_BAD_ARGS
 FILE_OUTPUT_PDFA="`absolutePath "$2"`"
