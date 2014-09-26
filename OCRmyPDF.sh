@@ -4,7 +4,8 @@
 ##############################################################################
 
 # Determine real path of this script, following symlinks if present
-BASEPATH="$(dirname $(python -c "import os; print os.path.realpath(\"$0\")"))"
+! command -v python2 > /dev/null && echo "Please install python v2.x. Exiting..." && exit 1
+BASEPATH="$(dirname $(python2 -c "import os; print os.path.realpath(\"$0\")"))"
 
 # Import required scripts
 . "$BASEPATH/src/config.sh"
@@ -146,12 +147,11 @@ cd "$BASEPATH"
 ! command -v pdffonts > /dev/null && echo "Please install poppler-utils. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 [ $PREPROCESS_CLEAN -eq 1 ] && ! command -v unpaper > /dev/null && echo "Please install unpaper. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v tesseract > /dev/null && echo "Please install tesseract and tesseract-data. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
-! command -v python2 > /dev/null && echo "Please install python v2.x. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! python2 -c 'import lxml' 2>/dev/null && echo "Please install the python library lxml. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
-! python2 -c 'import reportlab' 2>/dev/null && echo "Please install the python library reportlab. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! python2 -c 'import reportlab; hasattr(reportlab, "Version") and reportlab.Version >= "3.0"' 2>/dev/null \
+	&& echo "Please install the python library reportlab. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v gs > /dev/null && echo "Please install ghostscript. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v java > /dev/null && echo "Please install java. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
-
 
 
 # ensure the right tesseract version is installed

@@ -7,97 +7,11 @@
 # Initial version by Jonathan Brinley, jonathanbrinley@gmail.com
 ##############################################################################
 from reportlab.pdfgen.canvas import Canvas
-from reportlab.pdfgen.pdfimages import PDFImage
 from reportlab.lib.units import inch
 from lxml import etree as ElementTree
 from PIL import Image
 import re, sys
 import argparse
-
-def monkeypatch_method(cls):
-	'''
-	Override a class method at runtime.
-
-	Rationale:
-	https://mail.python.org/pipermail/python-dev/2008-January/076194.html
-	'''
-	def decorator(func):
-		setattr(cls, func.__name__, func)
-		return func
-	return decorator
-
-
-@monkeypatch_method(PDFImage)
-def PIL_imagedata(self):
-	'''
-	Add ability to output greyscale and 1-bit PIL images without conversion to RGB.
-
-	The upstream Python 2.7 version of reportlab converts 1-bit PIL images to RGB
-	instead of saving them in a lower BPP format.  They have since added the following
-	fix to their Python 3.3 branch, but it has not been back-ported.
-
-	https://bitbucket.org/rptlab/reportlab/commits/177ddcbe4df6f9b461dac62612df9b8da3966a5d
-	'''
-	image = self.image
-	if image.format == 'JPEG':
-		fp = image.fp
-		fp.seek(0)
-		return self._jpg_imagedata(fp)
-
-	from reportlab.lib.utils import import_zlib
-	from reportlab import rl_config
-	from reportlab.pdfbase.pdfutils import _chunker
-	# in order to support both newer and older versions of reportlab
-	try:
-	    from reportlab.pdfbase.pdfutils import _AsciiBase85Encode
-	except ImportError:
-	    from reportlab.pdfbase.pdfutils import asciiBase85Encode as _AsciiBase85Encode
-	
-	self.source = 'PIL'
-	zlib = import_zlib()
-	if not zlib:
-		return
-
-	bpc = 8
-	# Use the colorSpace in the image
-	if image.mode == 'CMYK':
-		myimage = image
-		colorSpace = 'DeviceCMYK'
-		bpp = 4
-	elif image.mode == '1':
-		myimage = image
-		colorSpace = 'DeviceGray'
-		bpp = 1
-		bpc = 1
-	elif image.mode == 'L':
-		myimage = image
-		colorSpace = 'DeviceGray'
-		bpp = 1
-	else:
-		myimage = image.convert('RGB')
-		colorSpace = 'RGB'
-		bpp = 3
-	imgwidth, imgheight = myimage.size
-
-	# this describes what is in the image itself
-	# *NB* according to the spec you can only use the short form in inline images
-
-	imagedata = ['BI /W %d /H %d /BPC %d /CS /%s /F [%s/Fl] ID' %
-				 (imgwidth, imgheight, bpc, colorSpace, rl_config.useA85 and '/A85 ' or '')]
-
-	# use a flate filter and, optionally, Ascii Base 85 to compress
-	raw = myimage.tostring()
-	rowstride = (imgwidth * bpc * bpp + 7) / 8
-	assert len(raw) == rowstride * imgheight, "Wrong amount of data for image"
-	data = zlib.compress(raw)  # this bit is very fast...
-
-	if rl_config.useA85:
-		# ...sadly this may not be
-		data = _AsciiBase85Encode(data)
-	# append in blocks of 60 characters
-	_chunker(data, imagedata)
-	imagedata.append('EI')
-	return (imagedata, imgwidth, imgheight)
 
 
 class hocrTransform():
