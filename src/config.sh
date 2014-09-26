@@ -27,6 +27,6 @@ LOG_DEBUG="3"				# debug level logging
 
 # various paths
 SRC="./src"				# location of the source folder (except source of external tools like jhove)
-OCR_PAGE="$SRC/ocrPage.sh"		# path to the script aimed at OCRing one page
+OCR_PAGE="$SRC/ocrpage.py"		# path to the script aimed at OCRing one page
 JHOVE="./jhove/bin/JhoveApp.jar"	# java SW for validating the final PDF/A
 JHOVE_CFG="./jhove/conf/jhove.conf"	# location of the jhove config file
