@@ -4,9 +4,9 @@
 import argparse
 import logging
 import sys
+import os.path
 from parse import parse
 from subprocess import Popen, PIPE, check_call
-
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +15,12 @@ SUBPROC_PIPE = dict(close_fds=True, stdin=PIPE, stdout=PIPE, stderr=PIPE,
                     universal_newlines=True)
 
 
-def pdf_get_pageinfo(infile, page):
+def pdf_get_pageinfo(infile, page, width_pt, height_pt):
     pageinfo = {}
+    pageinfo['pageno'] = page
+    pageinfo['width_inches'] = width_pt / 72.0
+    pageinfo['height_inches'] = height_pt / 72.0
+    pageinfo['images'] = []
 
     p_pdffonts = Popen(['pdffonts', '-f', str(page), '-l', str(page), infile],
                        **SUBPROC_PIPE)
@@ -50,7 +54,8 @@ def pdf_get_pageinfo(infile, page):
     return pageinfo
 
 
-def unpack_with_pdftoppm(pageinfo, infile, output_folder, prefix, force_ppm=False):
+def unpack_with_pdftoppm(pageinfo, infile, output_folder, prefix,
+                         force_ppm=False):
     xres = max(image['dpi_w'] for image in pageinfo['images'])
     yres = max(image['dpi_h'] for image in pageinfo['images'])
 
@@ -61,15 +66,16 @@ def unpack_with_pdftoppm(pageinfo, infile, output_folder, prefix, force_ppm=Fals
         if all(image['bpc'] == 1 for image in pageinfo['images']):
             colorspace = 'mono'
             compression = 'deflate'
-        elif not any(image['color'] == 'color' for image in info['images']):
+        elif not any(image['color'] == 'color'
+                     for image in pageinfo['images']):
             colorspace = 'gray'
 
-    if image['enc'] == 'jpeg':
+    if all(image['enc'] == 'jpeg' for image in pageinfo['images']):
         output_format = 'jpeg'
 
     args_pdftoppm = [
         'pdftoppm',
-        '-f', str(pageno), '-l', str(pageno),
+        '-f', str(pageinfo['pageno']), '-l', str(pageinfo['pageno']),
         '-rx', str(int(round(xres))),
         '-ry', str(int(round(yres))),
     ]
@@ -88,9 +94,13 @@ def unpack_with_pdftoppm(pageinfo, infile, output_folder, prefix, force_ppm=Fals
     elif colorspace == 'gray':
         args_pdftoppm.append('-gray')
 
-    args_pdftoppm.extend([str(infile), str(output_folder + prefix)])
+    args_pdftoppm.extend([str(infile)])
 
-    check_call(args_pdftoppm, close_fds=True)
+    with open(
+        os.path.join(output_folder, "%04i.ppm" % pageinfo['pageno']), 'wb'
+    ) as output_file:
+        print(output_file.name)
+        check_call(args_pdftoppm, close_fds=True, stdout=output_file)
 
 
 parser = argparse.ArgumentParser(
@@ -139,21 +149,21 @@ parser.add_argument(
 parser.add_argument(
     'skip_text',
     help="Skip OCR on pages that contain fonts and include the page anyway")
-parser.add_argument(
-    'tess_cfg_files',
-    help="Specific configuration files to be used by Tesseract during OCRing")
+# parser.add_argument(
+#     'tess_cfg_files',
+#     help="Specific configuration files to be used by Tesseract during OCRing")
 
 
 def main():
     args = parser.parse_args()
 
-    pageno, width_pt, height_pt = args.page_info.split(' ', 3)
+    pageno, width_pt, height_pt = map(int, args.page_info.split(' ', 3))
 
     logger.name += '(page=%i)' % pageno
 
     logger.info("Processing page %i / %i", pageno, args.num_pages)
 
-    pageinfo = pdf_get_pageinfo(args.input_pdf, pageno)
+    pageinfo = pdf_get_pageinfo(args.input_pdf, pageno, width_pt, height_pt)
 
     if pageinfo['has_text']:
         if args.force_ocr:
@@ -166,8 +176,6 @@ def main():
 
     unpack_with_pdftoppm(pageinfo, args.input_pdf, args.tmp_fld, prefix='',
                          force_ppm=True)
-
-
 
 
 if __name__ == '__main__':
