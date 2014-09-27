@@ -7,6 +7,7 @@ import sys
 import os.path
 from parse import parse
 from subprocess import Popen, PIPE, check_call
+from tempfile import NamedTemporaryFile
 
 logger = logging.getLogger(__name__)
 
@@ -51,13 +52,17 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
         image['dpi'] = (image['dpi_w'] * image['dpi_h']) ** 0.5
         pageinfo['images'].append(image)
 
+    xres = max(image['dpi_w'] for image in pageinfo['images'])
+    yres = max(image['dpi_h'] for image in pageinfo['images'])
+    pageinfo['xres'], pageinfo['yres'] = xres, yres
+    pageinfo['width_pixels'] = int(round(xres * pageinfo['width_inches']))
+    pageinfo['height_pixels'] = int(round(yres * pageinfo['height_inches']))
+
     return pageinfo
 
 
 def unpack_with_pdftoppm(pageinfo, infile, output_folder, prefix,
                          force_ppm=False):
-    xres = max(image['dpi_w'] for image in pageinfo['images'])
-    yres = max(image['dpi_h'] for image in pageinfo['images'])
 
     colorspace = 'color'
     compression = 'deflate'
@@ -76,8 +81,8 @@ def unpack_with_pdftoppm(pageinfo, infile, output_folder, prefix,
     args_pdftoppm = [
         'pdftoppm',
         '-f', str(pageinfo['pageno']), '-l', str(pageinfo['pageno']),
-        '-rx', str(int(round(xres))),
-        '-ry', str(int(round(yres))),
+        '-rx', str(pageinfo['xres']),
+        '-ry', str(pageinfo['yres'])
     ]
 
     if not force_ppm:
@@ -96,11 +101,49 @@ def unpack_with_pdftoppm(pageinfo, infile, output_folder, prefix,
 
     args_pdftoppm.extend([str(infile)])
 
-    with open(
-        os.path.join(output_folder, "%04i.ppm" % pageinfo['pageno']), 'wb'
-    ) as output_file:
-        print(output_file.name)
-        check_call(args_pdftoppm, close_fds=True, stdout=output_file)
+    with NamedTemporaryFile(prefix=prefix + "%04i.ppm" % pageinfo['pageno'],
+                            suffix='.ppm', dir=output_folder,
+                            delete=False) as tmpfile:
+        check_call(args_pdftoppm, close_fds=True, stdout=tmpfile)
+        return tmpfile.name
+
+
+def deskew_imagemagick(pageinfo, infile, prefix, output_folder):
+    args_convert = [
+        'convert',
+        infile,
+        '-deskew', '40%',
+        '-gravity', 'center',
+        '-extent', '{width_pixels}x{height_pixels}'.format(**pageinfo)
+    ]
+
+    with NamedTemporaryFile(prefix=prefix + "%04i.ppm" % pageinfo['pageno'],
+                            suffix='.ppm', dir=output_folder,
+                            delete=False) as tmpfile:
+        args_convert.append(tmpfile.name)
+        check_call(args_convert, close_fds=True)
+        return tmpfile.name
+
+
+def clean_unpaper(pageinfo, infile, prefix, output_folder):
+    args_unpaper = [
+        'unpaper',
+        '--dpi', int(round((pageinfo['xres'] * pageinfo['yres']) ** 0.5)),
+        '--mask-scan-size', '100',
+        '--no-deskew',
+        '--no-grayfilter',
+        '--no-blackfilter',
+        '--no-mask-center',
+        '--no-border-align',
+        infile
+    ]
+
+    with NamedTemporaryFile(prefix=prefix + "%04i.ppm" % pageinfo['pageno'],
+                            suffix='.ppm', dir=output_folder,
+                            delete=False) as tmpfile:
+        args_unpaper.append(tmpfile.name)
+        check_call(args_unpaper, close_fds=True)
+        return tmpfile.name
 
 
 parser = argparse.ArgumentParser(
@@ -156,6 +199,7 @@ parser.add_argument(
 
 def main():
     args = parser.parse_args()
+    tmpfiles = {}
 
     pageno, width_pt, height_pt = map(int, args.page_info.split(' ', 3))
 
@@ -174,8 +218,26 @@ def main():
     if len(pageinfo['images']) > 1:
         logger.warn("Page has more than one single image, proceeding anyway")
 
-    unpack_with_pdftoppm(pageinfo, args.input_pdf, args.tmp_fld, prefix='',
-                         force_ppm=True)
+    tmpfiles['pixmap'] = unpack_with_pdftoppm(
+        pageinfo, args.input_pdf, args.tmp_fld, prefix='', force_ppm=True)
+
+    if args.preprocess_deskew:
+        tmpfiles['deskew'] = deskew_imagemagick(
+            pageinfo, tmpfiles['pixmap'],
+            prefix='deskew', output_folder=args.tmp_fld)
+    else:
+        tmpfiles['deskew'] = tmpfiles['pixmap']
+
+    if args.preprocess_clean:
+        tmpfiles['clean'] = clean_unpaper(
+            pageinfo, 
+            tmpfiles['deskew'])
+    else:
+        tmpfiles['clean'] = tmpfiles['deskew']
+
+    
+
+
 
 
 if __name__ == '__main__':
