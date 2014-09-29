@@ -3,7 +3,7 @@ RELEASE NOTES
 
 Please always read this file before installing the package
 
-Download software here: https://github.com/fritz-hh/OCRmyPDF/tags
+Download software here: https://github.com/fritz-hh/OCRmyPDF/releases
 
 v2.2-stable (2014-09-29):
 =======
