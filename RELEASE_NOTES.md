@@ -5,6 +5,40 @@ Please always read this file before installing the package
 
 Download software here: https://github.com/fritz-hh/OCRmyPDF/tags
 
+v2.2-stable (2014-09-29):
+=======
+
+New features
+------------
+
+- None
+
+Changes
+-------
+
+- Update to jhove v1.11
+- Request the python library reportlab v3.0 or newer (So that we could remove a patch to the previous version of reportlab leading to issues for some users)
+
+Fixes
+-----
+
+- Fix bug on Mac OS X (resolution of simlink to OCRmyPDF.sh script) (thanks to jbarlow83)
+- Check if the input pdf file exists before to continue
+
+Tested with
+-----------
+
+- Operating system: FreeBSD 9.2
+- Dependencies:
+   - parallel 20140822
+   - poppler-utils 0.24.5
+   - ImageMagick 6.8.9-4 2014-09-17
+   - Unpaper 0.3
+   - tesseract 3.02.02
+   - Python 2.7.8
+   - ghostcript (gs): 9.06
+   - java: openjdk version "1.7.0_65"
+
 v2.1-stable (2014-09-20):
 =======
 
@@ -38,7 +72,7 @@ Tested with
    - Unpaper 0.3
    - tesseract 3.02.02
    - Python 2.7.3
-   - ghoscript (gs): 9.06
+   - ghostcript (gs): 9.06
    - java: openjdk version "1.7.0_17"
 
 v2.0-stable (2014-01-25):
@@ -70,7 +104,7 @@ Tested with
    - Unpaper 0.3
    - tesseract 3.02.02
    - Python 2.7.3
-   - ghoscript (gs): 9.06
+   - ghostcript (gs): 9.06
    - java: openjdk version "1.7.0_17"
 
 v2.0-rc2 (2014-01-16):
@@ -113,7 +147,7 @@ Tested with
    - Unpaper 0.3
    - tesseract 3.02.02
    - Python 2.7.3
-   - ghoscript (gs): 9.06
+   - ghostcript (gs): 9.06
    - java: openjdk version "1.7.0_17"
 
 v2.0-rc1 (2014-01-07):
@@ -160,7 +194,7 @@ Tested with
    - tesseract 3.02.02
    - Python 2.7.3
    - pdftk 1.45
-   - ghoscript (gs): 9.06
+   - ghostcript (gs): 9.06
    - java: openjdk version "1.7.0_17"
 
 v1.1-stable (2014-01-06):
@@ -192,7 +226,7 @@ Tested with
    - tesseract 3.02.02
    - Python 2.7.3
    - pdftk 1.45
-   - ghoscript (gs): 9.06
+   - ghostcript (gs): 9.06
    - java: openjdk version "1.7.0_17"
 
 v1.0-stable (2013-05-06):
@@ -229,7 +263,7 @@ Tested with
    - tesseract 3.02.02
    - Python 2.7.3
    - pdftk 1.45
-   - ghoscript (gs): 9.06
+   - ghostcript (gs): 9.06
    - java: openjdk version "1.7.0_17"
 
 v1.0-rc2 (2013-04-29):
@@ -265,7 +299,7 @@ Tested with
    - tesseract 3.02.02
    - Python 2.7.3
    - pdftk 1.45
-   - ghoscript (gs): 9.06
+   - ghostcript (gs): 9.06
    - java: openjdk version "1.7.0_17"
 
 v1.0-rc1 (2013-04-26):
@@ -297,5 +331,5 @@ Tested with
    - tesseract 3.02.02
    - Python 2.7.3
    - pdftk 1.45
-   - ghoscript (gs): 9.06
+   - ghostcript (gs): 9.06
    - java: openjdk version "1.7.0_17"
