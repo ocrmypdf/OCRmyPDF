@@ -46,9 +46,10 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-f] [-l languag
      (which should not be the case for PDF files built from scnanned images) 
      Any text data will be rendered to raster format and then fed through OCR.
 -s : If pages contain font data, do not OCR that page, but include the page (as is) in the final output.
--l : Set the language of the PDF file in order to improve OCR results (default "eng")
+-l : Language(s) of the PDF file. The language should be set correctly in order to get good OCR results.
      Any language supported by tesseract is supported (Tesseract uses 3-character ISO 639-2 language codes)
      Multiple languages may be specified, separated by '+' characters.
+     (The default language is defined in the config file)
 -C : Pass an additional configuration file to the tesseract OCR engine.
      (this option can be used more than once)
      Note 1: The configuration file must be available in the "tessdata/configs" folder of your tesseract installation
@@ -79,7 +80,7 @@ absolutePath() {
 
 # Initialization the configuration parameters with default values
 VERBOSITY="$LOG_ERR"		# default verbosity level
-LAN="eng"			# default language of the PDF file (required to get good OCR results)
+LAN="$DEFAULT_LANGUAGES"	# default language(s) of the PDF file (required to get good OCR results)
 KEEP_TMP="0"			# 0=no, 1=yes (keep the temporary files)
 PREPROCESS_DESKEW="0"		# 0=no, 1=yes (deskew image)
 PREPROCESS_CLEAN="0"		# 0=no, 1=yes (clean image to improve OCR)
@@ -224,7 +225,7 @@ fi
 
 
 
-# check if the languages passed to tesseract are all supported
+# check if the language(s) passed to tesseract are all supported
 for currentlan in `echo "$LAN" | sed 's/+/ /g'`; do
 	if ! tesseract --list-langs 2>&1 | grep "^$currentlan\$" > /dev/null; then
 		echo "The language \"$currentlan\" is not supported by tesseract."
