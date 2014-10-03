@@ -71,14 +71,14 @@ ocrmypdf [-h] [-v] [-k] [-g] [-o dpi] [-f|-s] [-r] [-d] [-c] [-i] [-l lan1[+lan2
   - [-v] : Increase the verbosity (this option can be used more than once) (e.g. -vvv)
   - [-k] : Do not delete the temporary files
   - [-g] : Activate debug mode (max verbosity, keep tmp files, generate debug pages)
-- Nomalization parameters:
+- Normalization parameters:
   - [-o dpi] : If page resolution is lower x dpi, provide OCR engine with an oversampled image. (Can improve OCR results)
   - [-f] : Force to OCR the whole document, even if some page already contain font data (only for pdf inputs)
   - [-s] : If pages contain font data, do not OCR that page, but include the page (as is) in the final output (only for pdf inputs)
 - Prepocessing parameters:
-  - [-r] : Correct orientation before performing OCR
-  - [-d] : Deskew each page before performing OCR
-  - [-c] : Clean each page before performing OCR
+  - [-r] : Correct orientation
+  - [-d] : Deskew each page
+  - [-c] : Clean each page
   - [-i] : Incorporate cleaned image in final output
 - OCR parameters:
   - [-l lan1[+lan2...]] : Document language(s). Multiple languages may be specified, separated by '+' characters.
