@@ -41,15 +41,20 @@ Generate output for each page
 
 - For pdf (if output file has a "pdf" extension):
   - Generate pdf pages from hocr files (note: pdf pages can already exist if OCR has been skipped for them)
+- For txt
+  - generate txt file for each page (containing txt located into hocr file)
 
 Build final output
 ------------------
 
 - For pdf:
   - Concatenate pdf pages
-  - Converte to pdf/1-a
+  - Convert to pdf/1-a
   - Verify conformity to pdf/1-a
-    
+- For txt
+  - Concatenate all txt files into the final output txt file
+
+
 
 Tmp folder structure
 =========================
