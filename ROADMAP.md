@@ -1,28 +1,35 @@
 Complete tool reimplementation in python
-Segregate the processing into 4 main tasks
+Segregate the processing into 5 main tasks
 
-  - Normalization of inputs. 
-    - Inputs can be:
-      - a PDF file
-      - one or several images of any type
-    - What preprocessing does:
-      - In case of PDF file:
-        - If the page needs to be OCRed:
-          - Extract the image corresponding to the page and save it in a tmp folder. 3 approaches to extract the image:
-            - extract raw image from pdf
-            - if not possible: identify resolution and rasterize page
-            - if not possible: use default resolution and rasterize
-        - If not:
-          - Save the page AS-IS in the tmp folder that should contained the final page
-      - In case of separate images:
-        - Just copy the images with standardized name into the tmp folder containing pages to be OCRed
+  - Normalization of inputs (inputs can be a pdf file, an image, a folder containing images)
+    - For pdf:
+      - Identify if image already contains fonts
+      - If the page needs to be OCRed:
+        - Extract the image corresponding to the page and save it in a tmp folder. 3 approaches to extract images:
+          - extract raw image from pdf and rotate it according to pdf page rotation
+          - if not possible: identify resolution and rasterize
+          - if not possible: use default resolution and rasterize
+      - If not:
+        - Save the page AS-IS in the tmp folder that should contained the final page
+    - For image(s):
+      - Just copy the images with standardized name into the tmp folder containing pages to be OCRed
   - Preprocessing of normalized inputs (perform jobs in parallel)
-    - Identify orientation and skew angle
-    - deskew / rotate image
-    - Clean image
+    - Orientation (if requested by user)
+      - Correct orientation
+    - Skew angle (if requested by user)
+      - Correct skew angle
+    - Cleaning (if requested by user)
+      - Clean image
   - OCRing (perform jobs in parallel)
-    - Just perform OCR in save resulting hocr file for each respective page (to be 
-  - Build output (currently only PDF file generation will be supported)
+    - Perform OCR and save resulting hocr file for each respective page (perfom jobs in parallel)
+  - Build output per page
+    - For pdf (if output file has a "pdf" extension):
+      - Generate pdf pages from hocr files (note: pdf pages can already exist if OCR has been skipped for them)
+  - Build final output:
+    - For pdf:
+      - Concatenate pdf pages
+      - Converte to pdf/1-a
+      - Verify conformity to pdf/1-a
     
 
     
