@@ -1,7 +1,7 @@
 Complete tool reimplementation in python
 Segregate the processing into 5 main tasks
 
-  - Normalization of inputs (inputs can be a pdf file, an image, a folder containing images)
+  - Normalize inputs (inputs can be a pdf file, an image, a folder containing images)
     - For pdf:
       - Identify if image already contains fonts
       - If the page needs to be OCRed:
@@ -13,16 +13,16 @@ Segregate the processing into 5 main tasks
         - Save the page AS-IS in the tmp folder that should contained the final page
     - For image(s):
       - Just copy the images with standardized name into the tmp folder containing pages to be OCRed
-  - Preprocessing of normalized inputs (perform jobs in parallel)
+  - Preprocess normalized inputs (perform jobs in parallel)
     - Orientation (if requested by user)
       - Correct orientation
     - Skew angle (if requested by user)
       - Correct skew angle
     - Cleaning (if requested by user)
       - Clean image
-  - OCRing (perform jobs in parallel)
+  - Perform OCR (perform jobs in parallel)
     - Perform OCR and save resulting hocr file for each respective page (perfom jobs in parallel)
-  - Build output per page
+  - Generate output for each page
     - For pdf (if output file has a "pdf" extension):
       - Generate pdf pages from hocr files (note: pdf pages can already exist if OCR has been skipped for them)
   - Build final output:
