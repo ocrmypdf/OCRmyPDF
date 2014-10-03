@@ -64,6 +64,8 @@ Tmp folder structure
 ocrmypdf arguments
 ==================
 
+ocrmypdf [-h] [-v] [-k] [-g] [-o dpi] [-f|-s] [-r] [-d] [-c] [-i] [-l lan1[+lan2...]] [-C] inputpath outputfile1 [outputfile2...]
+
 - Overall parameters
   - [-h] : Display this help message
   - [-v] : Increase the verbosity (this option can be used more than once) (e.g. -vvv)
@@ -71,19 +73,19 @@ ocrmypdf arguments
   - [-g] : Activate debug mode (max verbosity, keep tmp files, generate debug pages)
 - Nomalization parameters:
   - [-o dpi] : If page resolution is lower x dpi, provide OCR engine with an oversampled image. (Can improve OCR results)
-  - [-f] : Force to OCR the whole document, even if some page already contain font data
-  - [-s] : If pages contain font data, do not OCR that page, but include the page (as is) in the final output.
+  - [-f] : Force to OCR the whole document, even if some page already contain font data (only for pdf inputs)
+  - [-s] : If pages contain font data, do not OCR that page, but include the page (as is) in the final output (only for pdf inputs)
 - Prepocessing parameters:
   - [-r] : Correct orientation before performing OCR
   - [-d] : Deskew each page before performing OCR
   - [-c] : Clean each page before performing OCR
   - [-i] : Incorporate cleaned image in final output
 - OCR parameters:
-  - [-l lan1[+lan2...] : Document language(s). Multiple languages may be specified, separated by '+' characters.
+  - [-l lan1[+lan2...]] : Document language(s). Multiple languages may be specified, separated by '+' characters.
   - [-C cfg] : Pass an additional cofg file to the tesseract OCR engine. (this option can be used more than once)
 - output generation parameters:
   - None by now
 - input files:
   - inputpath : path to image, pdf file or folder to be processed
 - output files:
-  - outputfile1 [outputfile2 ...] : *.pdf file or *.txt file to be generated (this argumente can be repeated if both pdf and txt file should be generated 
+  - outputfile1 [outputfile2 ...] : *.pdf file or *.txt file to be generated (argumenst can be repeated if both pdf and txt file should be generated 
