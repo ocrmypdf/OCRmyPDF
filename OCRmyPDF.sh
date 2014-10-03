@@ -25,7 +25,7 @@ tesseract engine)
 Copyright: fritz-hh  from Github (https://github.com/fritz-hh)
 Version: $VERSION
 
-Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-f] [-l language] [-C filename] inputfile outputfile
+Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-f|-s] [-l lan1[+lan2...]] [-C filename] inputfile outputfile
 
 -h : Display this help message
 -v : Increase the verbosity (this option can be used more than once) (e.g. -vvv)
