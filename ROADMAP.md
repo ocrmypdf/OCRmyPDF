@@ -2,7 +2,7 @@ Recoding in 5 python modules
 ==================
 
 - Less platform dependent implementation
-- Higher versality (wrt addition of new intput / output file tytes)
+- Higher versality (wrt addition of new intput / output file types)
 
 The functionality of each module is described below:
 
@@ -10,10 +10,10 @@ Normalize inputs (inputs can be a pdf file, an image, a folder containing images
 ----------------
 
 - For pdf:
-  - Identify if image already contains fonts
+  - Identify if page needs to be ocred (see -s and -f parameters)
   - If the page needs to be OCRed:
     - Extract the image corresponding to the page and save it in a tmp folder. 3 approaches to extract images:
-    - extract raw image from pdf and rotate it according to pdf page rotation
+      - extract raw image from pdf and rotate it according to pdf page rotation
       - if not possible: identify resolution and rasterize
       - if not possible: use default resolution and rasterize
   - If not:
