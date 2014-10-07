@@ -134,12 +134,13 @@ if [ "$SKIP_TEXT" -eq "1" -a "$FORCE_OCR" -eq "1" ]; then
 fi
 
 
-[ ! -f "$1" ] \
-	&& echo "The input file does not exist. Exiting..." && exit $EXIT_BAD_ARGS
+[ ! -f "$1" ] && echo "The input file does not exist. Exiting..." && exit $EXIT_BAD_ARGS
 FILE_INPUT_PDF="`absolutePath "$1"`"
 
-! absolutePath "$2" > /dev/null \
+! absolutePath "$2" >/dev/null \
 	&& echo "The folder in which the output file should be generated does not exist. Exiting..." && exit $EXIT_BAD_ARGS
+[ -d "$2" ] && echo "Please enter the path of the file to be generated (and not a path to a folder). Exitíng..." && exit $EXIT_BAD_ARGS
+[ -f "$2" ] && echo "The output file already exists. Exiting..." && exit $EXIT_BAD_ARGS
 FILE_OUTPUT_PDFA="`absolutePath "$2"`"
 
 
