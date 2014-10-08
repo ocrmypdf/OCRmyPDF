@@ -16,9 +16,10 @@ except ImportError:
 
 from tempfile import NamedTemporaryFile
 
-from ruffus import transform, suffix
+from ruffus import transform, suffix, merge
 import ruffus.cmdline as cmdline
 
+basedir = os.path.dirname(os.path.realpath(__file__))
 
 parser = cmdline.get_argparse(
     prog="ocrpage",
@@ -219,7 +220,7 @@ def clean_unpaper(pageinfo, infile, prefix, output_folder):
         return tmpfile.name
 
 
-@transform(unpack_with_pdftoppm, suffix(".ppm"), ".hocr")
+@transform(unpack_with_pdftoppm, suffix(".ppm"), ".hocr.html")
 def ocr_tesseract(
         input_file,
         output_file):
@@ -233,6 +234,29 @@ def ocr_tesseract(
         options.tess_cfg_files
     ]
     p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
+              universal_newlines=True)
+    stdout, stderr = p.communicate()
+
+    if stdout:
+        logger.info(stdout)
+    if stderr:
+        logger.error(stderr)
+
+
+@merge([ocr_tesseract, unpack_with_pdftoppm], 'page_%04i.pdf' % pageno)
+def render_page(infiles, output_file):
+    # Call python in a subprocess because:
+    #  -That is python2 and this is python3
+    #  -It is written as a standalone script; not meant for import yet
+    args_hocrTransform = [
+        'python2',
+        os.path.join(basedir, 'hocrTransform.py'),
+        '-r', str(round(max(pageinfo['xres'], pageinfo['yres']))),
+        '-i', infiles[1],
+        infiles[0],
+        output_file
+    ]
+    p = Popen(args_hocrTransform, close_fds=True, stdout=PIPE, stderr=PIPE,
               universal_newlines=True)
     stdout, stderr = p.communicate()
 
