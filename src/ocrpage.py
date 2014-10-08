@@ -6,10 +6,75 @@ import logging
 import sys
 import os.path
 from parse import parse
-from subprocess import Popen, PIPE, check_call
+
+from subprocess import Popen, check_call, PIPE, STDOUT
+try:
+    from subprocess import DEVNULL
+except ImportError:
+    import os
+    DEVNULL = open(os.devnull, 'wb')
+
 from tempfile import NamedTemporaryFile
 
-logger = logging.getLogger(__name__)
+from ruffus import transform, suffix
+import ruffus.cmdline as cmdline
+
+
+parser = cmdline.get_argparse(
+    prog="ocrpage",
+    description="Run OCR and related jobs on a single page of a PDF file")
+
+parser.add_argument(
+    'input_pdf',
+    help="PDF file containing the page to be OCRed")
+parser.add_argument(
+    'page_info',
+    help="Various characteristics of the page to be OCRed")
+parser.add_argument(
+    'num_pages',
+    help="Total number of page of the PDF file (required for logger)")
+parser.add_argument(
+    'tmp_fld',
+    help="Folder where the temporary files should be placed")
+parser.add_argument(
+    'verbosity',
+    help="Requested verbosity")
+parser.add_argument(
+    'language',
+    help="Language of the file to be OCRed")
+parser.add_argument(
+    'keep_tmp',
+    help="Keep the temporary files after processing (helpful for debugging)")
+parser.add_argument(
+    'preprocess_deskew',
+    help="Deskew the page to be OCRed")
+parser.add_argument(
+    'preprocess_clean',
+    help="Clean the page to be OCRed")
+parser.add_argument(
+    'preprocess_cleantopdf',
+    help="Put the cleaned paged in the OCRed PDF")
+parser.add_argument(
+    'oversampling_dpi',
+    help="Oversampling resolution in dpi")
+parser.add_argument(
+    'pdf_noimg',
+    help="Generate debug PDF pages with only the OCRed text and no image")
+parser.add_argument(
+    'force_ocr',
+    help="Force to OCR, even if the page already contains fonts")
+parser.add_argument(
+    'skip_text',
+    help="Skip OCR on pages that contain fonts and include the page anyway")
+parser.add_argument(
+    'tess_cfg_files',
+    help="Tesseract configuration")
+
+
+options = parser.parse_args()
+
+logger, logger_mutex = cmdline.setup_logging(__name__, options.log_file,
+                                             options.verbose)
 
 
 SUBPROC_PIPE = dict(close_fds=True, stdin=PIPE, stdout=PIPE, stderr=PIPE,
@@ -27,7 +92,7 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
                        **SUBPROC_PIPE)
     pdffonts, _ = p_pdffonts.communicate()
     if len(pdffonts.splitlines()) > 2:
-        logger.info("Page already contains font data !!!")
+        logger.info("Page already contains font data!")
         pageinfo['has_text'] = True
     else:
         pageinfo['has_text'] = False
@@ -60,9 +125,15 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
 
     return pageinfo
 
+pageno, width_pt, height_pt = map(int, options.page_info.split(' ', 3))
+pageinfo = pdf_get_pageinfo(options.input_pdf, pageno, width_pt, height_pt)
 
-def unpack_with_pdftoppm(pageinfo, infile, output_folder, prefix,
-                         force_ppm=False):
+
+@transform([options.input_pdf], suffix(".pdf"), ".ppm")
+def unpack_with_pdftoppm(
+        input_file,
+        output_file):
+    force_ppm = True
 
     colorspace = 'color'
     compression = 'deflate'
@@ -99,13 +170,15 @@ def unpack_with_pdftoppm(pageinfo, infile, output_folder, prefix,
     elif colorspace == 'gray':
         args_pdftoppm.append('-gray')
 
-    args_pdftoppm.extend([str(infile)])
+    args_pdftoppm.extend([str(input_file)])
 
-    with NamedTemporaryFile(prefix=prefix + "%04i.ppm" % pageinfo['pageno'],
-                            suffix='.ppm', dir=output_folder,
-                            delete=False) as tmpfile:
-        check_call(args_pdftoppm, close_fds=True, stdout=tmpfile)
-        return tmpfile.name
+    p = Popen(args_pdftoppm, close_fds=True, stdout=open(output_file, 'wb'),
+              stderr=PIPE)
+    _, stderr = p.communicate()
+    if stderr:
+        import codecs
+        logger.error(codecs.iterdecode(stderr, sys.getdefaultencoding(),
+                                       errors='ignore'))
 
 
 def deskew_imagemagick(pageinfo, infile, prefix, output_folder):
@@ -146,52 +219,31 @@ def clean_unpaper(pageinfo, infile, prefix, output_folder):
         return tmpfile.name
 
 
-parser = argparse.ArgumentParser(
-    prog="ocrpage",
-    description="Run OCR and related jobs on a single page of a PDF file")
+@transform(unpack_with_pdftoppm, suffix(".ppm"), ".hocr")
+def ocr_tesseract(
+        input_file,
+        output_file):
 
-parser.add_argument(
-    'input_pdf',
-    help="DF file containing the page to be OCRed")
-parser.add_argument(
-    'page_info',
-    help="Various characteristics of the page to be OCRed")
-parser.add_argument(
-    'num_pages',
-    help="Total number of page of the PDF file (required for logger)")
-parser.add_argument(
-    'tmp_fld',
-    help="Folder where the temporary files should be placed")
-parser.add_argument(
-    'verbosity',
-    help="Requested verbosity")
-parser.add_argument(
-    'lan',
-    help="Language of the file to be OCRed")
-parser.add_argument(
-    'keep_tmp',
-    help="Keep the temporary files after processing (helpful for debugging)")
-parser.add_argument(
-    'preprocess_deskew',
-    help="Deskew the page to be OCRed")
-parser.add_argument(
-    'preprocess_clean',
-    help="Clean the page to be OCRed")
-parser.add_argument(
-    'preprocess_cleantopdf',
-    help="Put the cleaned paged in the OCRed PDF")
-parser.add_argument(
-    'oversampling_dpi',
-    help="Oversampling resolution in dpi")
-parser.add_argument(
-    'pdf_noimg',
-    help="Generate debug PDF pages with only the OCRed text and no image")
-parser.add_argument(
-    'force_ocr',
-    help="Force to OCR, even if the page already contains fonts")
-parser.add_argument(
-    'skip_text',
-    help="Skip OCR on pages that contain fonts and include the page anyway")
+    args_tesseract = [
+        'tesseract',
+        '-l', options.language,
+        input_file,
+        output_file,
+        'hocr',
+        options.tess_cfg_files
+    ]
+    p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
+              universal_newlines=True)
+    stdout, stderr = p.communicate()
+
+    if stdout:
+        logger.info(stdout)
+    if stderr:
+        logger.error(stderr)
+
+
+cmdline.run(options)
+
 # parser.add_argument(
 #     'tess_cfg_files',
 #     help="Specific configuration files to be used by Tesseract during OCRing")
@@ -199,7 +251,6 @@ parser.add_argument(
 
 def main():
     args = parser.parse_args()
-    tmpfiles = {}
 
     pageno, width_pt, height_pt = map(int, args.page_info.split(' ', 3))
 
@@ -209,36 +260,3 @@ def main():
 
     pageinfo = pdf_get_pageinfo(args.input_pdf, pageno, width_pt, height_pt)
 
-    if pageinfo['has_text']:
-        if args.force_ocr:
-            logger.info("Has text but forcing OCR (-f)")
-        else:
-            sys.exit(2)
-
-    if len(pageinfo['images']) > 1:
-        logger.warn("Page has more than one single image, proceeding anyway")
-
-    tmpfiles['pixmap'] = unpack_with_pdftoppm(
-        pageinfo, args.input_pdf, args.tmp_fld, prefix='', force_ppm=True)
-
-    if args.preprocess_deskew:
-        tmpfiles['deskew'] = deskew_imagemagick(
-            pageinfo, tmpfiles['pixmap'],
-            prefix='deskew', output_folder=args.tmp_fld)
-    else:
-        tmpfiles['deskew'] = tmpfiles['pixmap']
-
-    if args.preprocess_clean:
-        tmpfiles['clean'] = clean_unpaper(
-            pageinfo, 
-            tmpfiles['deskew'])
-    else:
-        tmpfiles['clean'] = tmpfiles['deskew']
-
-    
-
-
-
-
-if __name__ == '__main__':
-    main()
