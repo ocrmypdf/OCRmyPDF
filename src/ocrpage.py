@@ -16,7 +16,8 @@ except ImportError:
 
 from tempfile import NamedTemporaryFile
 
-from ruffus import transform, suffix, merge
+from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
+    mkdir, formatter
 import ruffus.cmdline as cmdline
 
 basedir = os.path.dirname(os.path.realpath(__file__))
@@ -38,34 +39,34 @@ parser.add_argument(
     'tmp_fld',
     help="Folder where the temporary files should be placed")
 parser.add_argument(
-    'verbosity',
+    'verbosity', type=int,
     help="Requested verbosity")
 parser.add_argument(
     'language',
     help="Language of the file to be OCRed")
 parser.add_argument(
-    'keep_tmp',
+    'keep_tmp', type=int,
     help="Keep the temporary files after processing (helpful for debugging)")
 parser.add_argument(
-    'preprocess_deskew',
+    'preprocess_deskew', type=int,
     help="Deskew the page to be OCRed")
 parser.add_argument(
-    'preprocess_clean',
+    'preprocess_clean', type=int,
     help="Clean the page to be OCRed")
 parser.add_argument(
-    'preprocess_cleantopdf',
+    'preprocess_cleantopdf', type=int,
     help="Put the cleaned paged in the OCRed PDF")
 parser.add_argument(
-    'oversampling_dpi',
+    'oversampling_dpi', type=int,
     help="Oversampling resolution in dpi")
 parser.add_argument(
-    'pdf_noimg',
+    'pdf_noimg', type=int,
     help="Generate debug PDF pages with only the OCRed text and no image")
 parser.add_argument(
-    'force_ocr',
+    'force_ocr', type=int,
     help="Force to OCR, even if the page already contains fonts")
 parser.add_argument(
-    'skip_text',
+    'skip_text', type=int,
     help="Skip OCR on pages that contain fonts and include the page anyway")
 parser.add_argument(
     'tess_cfg_files',
@@ -78,10 +79,6 @@ logger, logger_mutex = cmdline.setup_logging(__name__, options.log_file,
                                              options.verbose)
 
 
-SUBPROC_PIPE = dict(close_fds=True, stdin=PIPE, stdout=PIPE, stderr=PIPE,
-                    universal_newlines=True)
-
-
 def pdf_get_pageinfo(infile, page, width_pt, height_pt):
     pageinfo = {}
     pageinfo['pageno'] = page
@@ -90,7 +87,8 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
     pageinfo['images'] = []
 
     p_pdffonts = Popen(['pdffonts', '-f', str(page), '-l', str(page), infile],
-                       **SUBPROC_PIPE)
+                       close_fds=True, stdout=PIPE, stderr=PIPE,
+                       universal_newlines=True)
     pdffonts, _ = p_pdffonts.communicate()
     if len(pdffonts.splitlines()) > 2:
         logger.info("Page already contains font data!")
@@ -100,7 +98,8 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
 
     # pdfimages: get image dimensions
     p_pdfimages = Popen(['pdfimages', '-list', '-f', str(page), '-l',
-                        str(page), str(infile)], **SUBPROC_PIPE)
+                        str(page), str(infile)], close_fds=True, stdout=PIPE,
+                        stderr=PIPE, universal_newlines=True)
     pdfimages, _ = p_pdfimages.communicate()
     for n, line in enumerate(pdfimages.splitlines()):
         if n <= 1:
@@ -130,7 +129,51 @@ pageno, width_pt, height_pt = map(int, options.page_info.split(' ', 3))
 pageinfo = pdf_get_pageinfo(options.input_pdf, pageno, width_pt, height_pt)
 
 
-@transform([options.input_pdf], suffix(".pdf"), ".ppm")
+def re_symlink(input_file, soft_link_name, logger, logger_mutex):
+    """
+    Helper function: relinks soft symbolic link if necessary
+    """
+    # Guard against soft linking to oneself
+    if input_file == soft_link_name:
+        logger.debug("Warning: No symbolic link made. You are using " +
+                     "the original data directory as the working directory.")
+        return
+
+    # Soft link already exists: delete for relink?
+    if os.path.lexists(soft_link_name):
+        # do not delete or overwrite real (non-soft link) file
+        if not os.path.islink(soft_link_name):
+            raise Exception("%s exists and is not a link" % soft_link_name)
+        try:
+            os.unlink(soft_link_name)
+        except:
+            with logger_mutex:
+                logger.debug("Can't unlink %s" % (soft_link_name))
+    with logger_mutex:
+        logger.debug("os.symlink(%s, %s)" % (input_file, soft_link_name))
+
+    # Create symbolic link relative to original directory, so that the entire
+    # path can be moved around
+    os.symlink(
+        os.path.relpath(os.path.abspath(input_file),
+                        os.path.abspath(os.path.dirname(soft_link_name))),
+        soft_link_name
+    )
+
+
+@jobs_limit(1)
+@mkdir(options.tmp_fld)
+@transform([options.input_pdf],
+           formatter(),
+           os.path.join(options.tmp_fld, "{basename[0]}{ext[0]}"))
+def setup_working_directory(input_file, soft_link_name):
+    with logger_mutex:
+        logger.debug("Linking %(input_file)s -> %(soft_link_name)s" % locals())
+    re_symlink(input_file, soft_link_name, logger, logger_mutex)
+
+
+@transform(setup_working_directory, suffix(".pdf"),
+           "%04i.frompdf.pnm" % pageno)
 def unpack_with_pdftoppm(
         input_file,
         output_file):
@@ -174,29 +217,36 @@ def unpack_with_pdftoppm(
     args_pdftoppm.extend([str(input_file)])
 
     p = Popen(args_pdftoppm, close_fds=True, stdout=open(output_file, 'wb'),
-              stderr=PIPE)
+              stderr=PIPE, universal_newlines=False)
     _, stderr = p.communicate()
     if stderr:
-        import codecs
-        logger.error(codecs.iterdecode(stderr, sys.getdefaultencoding(),
-                                       errors='ignore'))
+        from codecs import iterdecode
+        with logger_mutex:
+            logger.error(iterdecode(stderr, sys.getdefaultencoding(),
+                                    errors='ignore'))
 
 
-def deskew_imagemagick(pageinfo, infile, prefix, output_folder):
+@active_if(options.preprocess_deskew != 0)
+@transform(unpack_with_pdftoppm, suffix(".frompdf.pnm"), ".deskewed.pnm")
+def deskew_imagemagick(input_file, output_file):
     args_convert = [
         'convert',
-        infile,
+        input_file,
         '-deskew', '40%',
         '-gravity', 'center',
-        '-extent', '{width_pixels}x{height_pixels}'.format(**pageinfo)
+        '-extent', '{width_pixels}x{height_pixels}'.format(**pageinfo),
+        output_file
     ]
 
-    with NamedTemporaryFile(prefix=prefix + "%04i.ppm" % pageinfo['pageno'],
-                            suffix='.ppm', dir=output_folder,
-                            delete=False) as tmpfile:
-        args_convert.append(tmpfile.name)
-        check_call(args_convert, close_fds=True)
-        return tmpfile.name
+    p = Popen(args_convert, close_fds=True, stdout=PIPE, stderr=PIPE,
+              universal_newlines=True)
+    stdout, stderr = p.communicate()
+
+    with logger_mutex:
+        if stdout:
+            logger.info(stdout)
+        if stderr:
+            logger.error(stderr)
 
 
 def clean_unpaper(pageinfo, infile, prefix, output_folder):
@@ -212,15 +262,21 @@ def clean_unpaper(pageinfo, infile, prefix, output_folder):
         infile
     ]
 
-    with NamedTemporaryFile(prefix=prefix + "%04i.ppm" % pageinfo['pageno'],
-                            suffix='.ppm', dir=output_folder,
+    with NamedTemporaryFile(prefix=prefix + "%04i.pnm" % pageinfo['pageno'],
+                            suffix='.pnm', dir=output_folder,
                             delete=False) as tmpfile:
         args_unpaper.append(tmpfile.name)
         check_call(args_unpaper, close_fds=True)
         return tmpfile.name
 
 
-@transform(unpack_with_pdftoppm, suffix(".ppm"), ".hocr.html")
+@merge([unpack_with_pdftoppm, deskew_imagemagick],
+       os.path.join(options.tmp_fld, "%04i.for_ocr.pnm" % pageno))
+def select_ocr_image(infiles, output_file):
+    re_symlink(infiles[-1], output_file, logger, logger_mutex)
+
+
+@transform(select_ocr_image, suffix(".for_ocr.pnm"), ".hocr")
 def ocr_tesseract(
         input_file,
         output_file):
@@ -237,13 +293,18 @@ def ocr_tesseract(
               universal_newlines=True)
     stdout, stderr = p.communicate()
 
-    if stdout:
-        logger.info(stdout)
-    if stderr:
-        logger.error(stderr)
+    with logger_mutex:
+        if stdout:
+            logger.info(stdout)
+        if stderr:
+            logger.error(stderr)
+
+    # Tesseract appends suffix ".html" on its own
+    re_symlink(output_file + ".html", output_file, logger, logger_mutex)
 
 
-@merge([ocr_tesseract, unpack_with_pdftoppm], 'page_%04i.pdf' % pageno)
+@merge([ocr_tesseract, select_ocr_image],
+       os.path.join(options.tmp_fld, '%04i.ocred.pdf' % pageno))
 def render_page(infiles, output_file):
     # Call python in a subprocess because:
     #  -That is python2 and this is python3
@@ -260,10 +321,11 @@ def render_page(infiles, output_file):
               universal_newlines=True)
     stdout, stderr = p.communicate()
 
-    if stdout:
-        logger.info(stdout)
-    if stderr:
-        logger.error(stderr)
+    with logger_mutex:
+        if stdout:
+            logger.info(stdout)
+        if stderr:
+            logger.error(stderr)
 
 
 cmdline.run(options)
