@@ -179,6 +179,7 @@ def unpack_with_pdftoppm(
         input_file,
         output_file):
     force_ppm = True
+    allow_jpeg = False
 
     colorspace = 'color'
     compression = 'deflate'
@@ -191,7 +192,8 @@ def unpack_with_pdftoppm(
                      for image in pageinfo['images']):
             colorspace = 'gray'
 
-    if all(image['enc'] == 'jpeg' for image in pageinfo['images']):
+    if allow_jpeg and \
+            all(image['enc'] == 'jpeg' for image in pageinfo['images']):
         output_format = 'jpeg'
 
     args_pdftoppm = [
@@ -204,7 +206,7 @@ def unpack_with_pdftoppm(
     if not force_ppm:
         if output_format == 'tiff':
             args_pdftoppm.append('-tiff')
-            if compression:
+            if False and compression:
                 args_pdftoppm.append('-tiffcompression')
                 args_pdftoppm.append(compression)
         elif output_format == 'jpeg':
@@ -226,11 +228,21 @@ def unpack_with_pdftoppm(
             logger.error(iterdecode(stderr, sys.getdefaultencoding(),
                                     errors='ignore'))
     if p.returncode != 0:
-        raise CalledProcessError(' '.join(args_pdftoppm))
+        raise CalledProcessError(p.returncode, args_pdftoppm)
+
+
+@transform(unpack_with_pdftoppm, suffix(".pnm"), ".tif")
+def convert_to_tiff(input_file, output_file):
+    args_convert = [
+        'convert',
+        input_file,
+        output_file
+    ]
+    check_call(args_convert)
 
 
 @active_if(options.preprocess_deskew != 0)
-@transform(unpack_with_pdftoppm, suffix(".pnm"), ".deskewed.pnm")
+@transform(convert_to_tiff, suffix(".tif"), ".deskewed.tif")
 def deskew_imagemagick(input_file, output_file):
     args_convert = [
         'convert',
@@ -238,6 +250,7 @@ def deskew_imagemagick(input_file, output_file):
         '-deskew', '40%',
         '-gravity', 'center',
         '-extent', '{width_pixels}x{height_pixels}'.format(**pageinfo),
+        '+repage',
         output_file
     ]
 
@@ -252,7 +265,7 @@ def deskew_imagemagick(input_file, output_file):
             logger.error(stderr)
 
     if p.returncode != 0:
-        raise CalledProcessError(' '.join(args_convert))
+        raise CalledProcessError(p.returncode, args_convert)
 
 
 def clean_unpaper(pageinfo, infile, prefix, output_folder):
@@ -276,13 +289,13 @@ def clean_unpaper(pageinfo, infile, prefix, output_folder):
         return tmpfile.name
 
 
-@merge([unpack_with_pdftoppm, deskew_imagemagick],
-       os.path.join(options.tmp_fld, "%04i.for_ocr.pnm" % pageno))
+@merge([convert_to_tiff, deskew_imagemagick],
+       os.path.join(options.tmp_fld, "%04i.for_ocr.tif" % pageno))
 def select_ocr_image(infiles, output_file):
     re_symlink(infiles[-1], output_file, logger, logger_mutex)
 
 
-@transform(select_ocr_image, suffix(".for_ocr.pnm"), ".hocr")
+@transform(select_ocr_image, suffix(".for_ocr.tif"), ".hocr")
 def ocr_tesseract(
         input_file,
         output_file):
