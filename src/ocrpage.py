@@ -165,15 +165,16 @@ def re_symlink(input_file, soft_link_name, logger, logger_mutex):
 @mkdir(options.tmp_fld)
 @transform([options.input_pdf],
            formatter(),
-           os.path.join(options.tmp_fld, "{basename[0]}{ext[0]}"))
+           os.path.join(options.tmp_fld, "original{ext[0]}"))
 def setup_working_directory(input_file, soft_link_name):
     with logger_mutex:
         logger.debug("Linking %(input_file)s -> %(soft_link_name)s" % locals())
     re_symlink(input_file, soft_link_name, logger, logger_mutex)
 
 
-@transform(setup_working_directory, suffix(".pdf"),
-           "%04i.frompdf.pnm" % pageno)
+@transform(setup_working_directory,
+           formatter(),
+           "{path[0]}/%04i.pnm" % pageno)
 def unpack_with_pdftoppm(
         input_file,
         output_file):
@@ -229,7 +230,7 @@ def unpack_with_pdftoppm(
 
 
 @active_if(options.preprocess_deskew != 0)
-@transform(unpack_with_pdftoppm, suffix(".frompdf.pnm"), ".deskewed.pnm")
+@transform(unpack_with_pdftoppm, suffix(".pnm"), ".deskewed.pnm")
 def deskew_imagemagick(input_file, output_file):
     args_convert = [
         'convert',
