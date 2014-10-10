@@ -7,7 +7,7 @@ import sys
 import os.path
 from parse import parse
 
-from subprocess import Popen, check_call, PIPE, STDOUT
+from subprocess import Popen, check_call, PIPE, CalledProcessError
 try:
     from subprocess import DEVNULL
 except ImportError:
@@ -224,6 +224,8 @@ def unpack_with_pdftoppm(
         with logger_mutex:
             logger.error(iterdecode(stderr, sys.getdefaultencoding(),
                                     errors='ignore'))
+    if p.returncode != 0:
+        raise CalledProcessError(' '.join(args_pdftoppm))
 
 
 @active_if(options.preprocess_deskew != 0)
@@ -247,6 +249,9 @@ def deskew_imagemagick(input_file, output_file):
             logger.info(stdout)
         if stderr:
             logger.error(stderr)
+
+    if p.returncode != 0:
+        raise CalledProcessError(' '.join(args_convert))
 
 
 def clean_unpaper(pageinfo, infile, prefix, output_folder):
@@ -299,6 +304,9 @@ def ocr_tesseract(
         if stderr:
             logger.error(stderr)
 
+    if p.returncode != 0:
+        raise CalledProcessError(p.returncode, args_tesseract)
+
     # Tesseract appends suffix ".html" on its own
     re_symlink(output_file + ".html", output_file, logger, logger_mutex)
 
@@ -326,6 +334,9 @@ def render_page(infiles, output_file):
             logger.info(stdout)
         if stderr:
             logger.error(stderr)
+
+    if p.returncode != 0:
+        raise CalledProcessError(p.returncode, args_hocrTransform)
 
 
 cmdline.run(options)
