@@ -69,7 +69,7 @@ parser.add_argument(
     'skip_text', type=int,
     help="Skip OCR on pages that contain fonts and include the page anyway")
 parser.add_argument(
-    'tess_cfg_files',
+    'tess_cfg_files', default='', nargs='*',
     help="Tesseract configuration")
 
 
