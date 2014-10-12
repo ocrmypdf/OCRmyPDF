@@ -152,11 +152,9 @@ def re_symlink(input_file, soft_link_name, logger, logger_mutex):
     with logger_mutex:
         logger.debug("os.symlink(%s, %s)" % (input_file, soft_link_name))
 
-    # Create symbolic link relative to original directory, so that the entire
-    # path can be moved around
+    # Create symbolic link using absolute path
     os.symlink(
-        os.path.relpath(os.path.abspath(input_file),
-                        os.path.abspath(os.path.dirname(soft_link_name))),
+        os.path.abspath(input_file),
         soft_link_name
     )
 
