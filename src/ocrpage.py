@@ -217,10 +217,14 @@ def unpack_with_pdftoppm(
 
     args_pdftoppm.extend([str(input_file)])
 
+    # Ask pdftoppm to write the binary output to stdout; therefore set
+    # universal_newlines=False
     p = Popen(args_pdftoppm, close_fds=True, stdout=open(output_file, 'wb'),
               stderr=PIPE, universal_newlines=False)
     _, stderr = p.communicate()
     if stderr:
+        # Because universal_newlines=False, stderr is bytes(), so we must
+        # manually convert it to str for logging
         from codecs import iterdecode
         with logger_mutex:
             logger.error(iterdecode(stderr, sys.getdefaultencoding(),
