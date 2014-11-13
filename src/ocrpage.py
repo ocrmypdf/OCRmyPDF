@@ -228,10 +228,10 @@ def unpack_with_pdftoppm(
     if stderr:
         # Because universal_newlines=False, stderr is bytes(), so we must
         # manually convert it to str for logging
-        from codecs import iterdecode
+        from codecs import decode
         with logger_mutex:
-            logger.error(iterdecode(stderr, sys.getdefaultencoding(),
-                                    errors='ignore'))
+            logger.error(decode(stderr, sys.getdefaultencoding(),
+                                errors='ignore'))
     if p.returncode != 0:
         raise CalledProcessError(p.returncode, args_pdftoppm)
 
