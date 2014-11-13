@@ -167,7 +167,10 @@ def re_symlink(input_file, soft_link_name, logger, logger_mutex):
 def setup_working_directory(input_file, soft_link_name):
     with logger_mutex:
         logger.debug("Linking %(input_file)s -> %(soft_link_name)s" % locals())
-    re_symlink(input_file, soft_link_name, logger, logger_mutex)
+    try:
+        re_symlink(input_file, soft_link_name, logger, logger_mutex)
+    except FileExistsError:
+        pass
 
 
 @transform(setup_working_directory,
