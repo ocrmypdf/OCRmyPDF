@@ -279,7 +279,7 @@ def deskew_imagemagick(input_file, output_file):
 
 @active_if(options.preprocess_deskew != 0
            and options.deskew_provider == 'leptonica')
-@transform(convert_to_tiff, suffix(".tif"), ".deskewed.tif")
+@transform(unpack_with_pdftoppm, suffix(".pnm"), ".deskewed.tif")
 def deskew_leptonica(input_file, output_file):
     from .leptonica import deskew
     with logger_mutex:
