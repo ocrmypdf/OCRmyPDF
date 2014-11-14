@@ -279,7 +279,7 @@ def deskew_imagemagick(input_file, output_file):
 
 @active_if(options.preprocess_deskew != 0
            and options.deskew_provider == 'leptonica')
-@transform(unpack_with_pdftoppm, suffix(".pnm"), ".deskewed.tif")
+@transform(convert_to_tiff, suffix(".tif"), ".deskewed.tif")
 def deskew_leptonica(input_file, output_file):
     from .leptonica import deskew
     with logger_mutex:
@@ -287,28 +287,60 @@ def deskew_leptonica(input_file, output_file):
                min(pageinfo['xres'], pageinfo['yres']))
 
 
-def clean_unpaper(pageinfo, infile, prefix, output_folder):
+@merge([unpack_with_pdftoppm, deskew_imagemagick, deskew_leptonica],
+       os.path.join(options.tmp_fld, "%04i.for_clean.pnm" % pageno))
+def select_image_for_cleaning(infiles, output_file):
+    input_file = infiles[-1]
+    args_convert = [
+        'convert',
+        input_file,
+        output_file
+    ]
+    check_call(args_convert)
+
+
+@active_if(options.preprocess_clean != 0)
+@transform(select_image_for_cleaning, suffix(".pnm"), ".cleaned.pnm")
+def clean_unpaper(input_file, output_file):
     args_unpaper = [
         'unpaper',
-        '--dpi', int(round((pageinfo['xres'] * pageinfo['yres']) ** 0.5)),
+        '--dpi', str(int(round((pageinfo['xres'] * pageinfo['yres']) ** 0.5))),
         '--mask-scan-size', '100',
         '--no-deskew',
         '--no-grayfilter',
         '--no-blackfilter',
         '--no-mask-center',
         '--no-border-align',
-        infile
+        input_file,
+        output_file
     ]
 
-    with NamedTemporaryFile(prefix=prefix + "%04i.pnm" % pageinfo['pageno'],
-                            suffix='.pnm', dir=output_folder,
-                            delete=False) as tmpfile:
-        args_unpaper.append(tmpfile.name)
-        check_call(args_unpaper, close_fds=True)
-        return tmpfile.name
+    p = Popen(args_unpaper, close_fds=True, stdout=PIPE, stderr=PIPE,
+              universal_newlines=True)
+    stdout, stderr = p.communicate()
+
+    with logger_mutex:
+        if stdout:
+            logger.info(stdout)
+        if stderr:
+            logger.error(stderr)
+
+    if p.returncode != 0:
+        raise CalledProcessError(p.returncode, args_unpaper)
 
 
-@merge([convert_to_tiff, deskew_imagemagick, deskew_leptonica],
+@transform(clean_unpaper, suffix(".cleaned.pnm"), ".cleaned.tif")
+def cleaned_to_tiff(input_file, output_file):
+    args_convert = [
+        'convert',
+        input_file,
+        output_file
+    ]
+    check_call(args_convert)
+
+
+@merge([convert_to_tiff, deskew_imagemagick, deskew_leptonica,
+        cleaned_to_tiff],
        os.path.join(options.tmp_fld, "%04i.for_ocr.tif" % pageno))
 def select_ocr_image(infiles, output_file):
     re_symlink(infiles[-1], output_file, logger, logger_mutex)
@@ -344,7 +376,22 @@ def ocr_tesseract(
     re_symlink(output_file + ".html", output_file, logger, logger_mutex)
 
 
-@merge([ocr_tesseract, select_ocr_image],
+@merge([convert_to_tiff, deskew_imagemagick, deskew_leptonica,
+        cleaned_to_tiff],
+       os.path.join(options.tmp_fld, "%04i.image_for_pdf.tif" % pageno))
+def select_image_for_pdf(infiles, output_file):
+    if options.preprocess_clean != 0 and options.preprocess_cleantopdf != 0:
+        input_file = infiles[-1]
+    elif options.preprocess_deskew != 0 and options.preprocess_clean != 0:
+        input_file = infiles[-2]
+    elif options.preprocess_deskew != 0 and options.preprocess_clean == 0:
+        input_file = infiles[-1]
+    else:
+        input_file = infiles[0]
+    re_symlink(input_file, output_file, logger, logger_mutex)
+
+
+@merge([ocr_tesseract, select_image_for_pdf],
        os.path.join(options.tmp_fld, '%04i.ocred.pdf' % pageno))
 def render_page(infiles, output_file):
     # Call python in a subprocess because:
