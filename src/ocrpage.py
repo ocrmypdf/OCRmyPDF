@@ -7,7 +7,8 @@ import sys
 import os.path
 from parse import parse
 
-from subprocess import Popen, check_call, PIPE, CalledProcessError
+from subprocess import Popen, check_call, PIPE, CalledProcessError, \
+    TimeoutExpired
 try:
     from subprocess import DEVNULL
 except ImportError:
@@ -346,6 +347,29 @@ def select_ocr_image(infiles, output_file):
     re_symlink(infiles[-1], output_file, logger, logger_mutex)
 
 
+hocr_template = '''<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+  <title></title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name='ocr-system' content='tesseract 3.02.02' />
+  <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word'/>
+ </head>
+ <body>
+  <div class='ocr_page' id='page_1' title='image "x.tif"; bbox 0 0 {0} {1}; ppageno 0'>
+   <div class='ocr_carea' id='block_1_1' title="bbox 0 1 {0} {1}">
+    <p class='ocr_par' dir='ltr' id='par_1' title="bbox 0 1 {0} {1}">
+     <span class='ocr_line' id='line_1' title="bbox 0 1 {0} {1}"><span class='ocrx_word' id='word_1' title="bbox 0 1 {0} {1}"> </span> 
+     </span>
+    </p>
+   </div>
+  </div>
+ </body>
+</html>'''
+
+
 @transform(select_ocr_image, suffix(".for_ocr.tif"), ".hocr")
 def ocr_tesseract(
         input_file,
@@ -361,19 +385,29 @@ def ocr_tesseract(
     ]
     p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
               universal_newlines=True)
-    stdout, stderr = p.communicate()
+    try:
+        stdout, stderr = p.communicate(timeout=180)
+    except TimeoutExpired:
+        p.kill()
+        stdout, stderr = p.communicate()
+        # Generate a HOCR file with no recognized text if tesseract times out
+        # Temporary workaround to hocrTransform not being able to function if
+        # it does not have a valid hOCR file.
+        with open(output_file, 'w', encoding="utf-8") as f:
+            f.write(hocr_template.format(pageinfo['width_pixels'],
+                                         pageinfo['height_pixels']))
+    else:
+        with logger_mutex:
+            if stdout:
+                logger.info(stdout)
+            if stderr:
+                logger.error(stderr)
 
-    with logger_mutex:
-        if stdout:
-            logger.info(stdout)
-        if stderr:
-            logger.error(stderr)
+        if p.returncode != 0:
+            raise CalledProcessError(p.returncode, args_tesseract)
 
-    if p.returncode != 0:
-        raise CalledProcessError(p.returncode, args_tesseract)
-
-    # Tesseract appends suffix ".html" on its own
-    re_symlink(output_file + ".html", output_file, logger, logger_mutex)
+        # Tesseract appends suffix ".html" on its own
+        re_symlink(output_file + ".html", output_file, logger, logger_mutex)
 
 
 @merge([convert_to_tiff, deskew_imagemagick, deskew_leptonica,
