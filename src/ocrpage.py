@@ -71,6 +71,9 @@ parser.add_argument(
 parser.add_argument(
     'tess_cfg_files', default='', nargs='*',
     help="Tesseract configuration")
+parser.add_argument(
+    '--deskew-provider', choices=['imagemagick', 'leptonica'],
+    default='leptonica')
 
 
 options = parser.parse_args()
@@ -246,7 +249,8 @@ def convert_to_tiff(input_file, output_file):
     check_call(args_convert)
 
 
-@active_if(options.preprocess_deskew != 0)
+@active_if(options.preprocess_deskew != 0
+           and options.deskew_provider == 'imagemagick')
 @transform(convert_to_tiff, suffix(".tif"), ".deskewed.tif")
 def deskew_imagemagick(input_file, output_file):
     args_convert = [
@@ -273,6 +277,16 @@ def deskew_imagemagick(input_file, output_file):
         raise CalledProcessError(p.returncode, args_convert)
 
 
+@active_if(options.preprocess_deskew != 0
+           and options.deskew_provider == 'leptonica')
+@transform(convert_to_tiff, suffix(".tif"), ".deskewed.tif")
+def deskew_leptonica(input_file, output_file):
+    from .leptonica import deskew
+    with logger_mutex:
+        deskew(input_file, output_file,
+               min(pageinfo['xres'], pageinfo['yres']))
+
+
 def clean_unpaper(pageinfo, infile, prefix, output_folder):
     args_unpaper = [
         'unpaper',
@@ -294,7 +308,7 @@ def clean_unpaper(pageinfo, infile, prefix, output_folder):
         return tmpfile.name
 
 
-@merge([convert_to_tiff, deskew_imagemagick],
+@merge([convert_to_tiff, deskew_imagemagick, deskew_leptonica],
        os.path.join(options.tmp_fld, "%04i.for_ocr.tif" % pageno))
 def select_ocr_image(infiles, output_file):
     re_symlink(infiles[-1], output_file, logger, logger_mutex)

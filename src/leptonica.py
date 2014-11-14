@@ -13,7 +13,10 @@ import argparse
 import ctypes as C
 import sys
 import os
+import logging
 from tempfile import TemporaryFile
+
+logger = logging.getLogger(__name__)
 
 
 def stderr(*objs):
@@ -115,13 +118,13 @@ class LeptonicaErrorTrap(object):
 
         # If there are Python errors, let them bubble up
         if exc_type:
-            stderr(leptonica_output)
+            logger.warning(leptonica_output)
             return False
 
         # If there are Leptonica errors, wrap them in Python excpetions
         if 'Error' in leptonica_output:
             if 'image file not found' in leptonica_output:
-                raise LeptonicaIOError()
+                raise FileNotFoundError()
             if 'pixWrite: stream not opened' in leptonica_output:
                 raise LeptonicaIOError()
             raise LeptonicaError(leptonica_output)
@@ -231,24 +234,22 @@ def getLeptonicaVersion():
     return lept.getLeptonicaVersion().decode()
 
 
-def deskew(args):
+def deskew(infile, outfile, dpi):
     try:
-        pix_source = pixRead(args.infile)
+        pix_source = pixRead(infile)
     except LeptonicaIOError:
-        stderr("Failed to open file: %s" % args.infile)
-        sys.exit(2)
+        raise LeptonicaIOError("Failed to open file: %s" % infile)
 
-    if args.dpi < 150:
+    if dpi < 150:
         reduction_factor = 1  # Don't downsample too much if DPI is already low
     else:
         reduction_factor = 0  # Use default
     pix_deskewed = pixDeskew(pix_source, reduction_factor)
 
     try:
-        pixWriteImpliedFormat(args.outfile, pix_deskewed)
+        pixWriteImpliedFormat(outfile, pix_deskewed)
     except LeptonicaIOError:
-        stderr("Failed to open destination file: %s" % args.outfile)
-        sys.exit(5)
+        raise LeptonicaIOError("Failed to open destination file: %s" % outfile)
     pixDestroy(pix_source)
     pixDestroy(pix_deskewed)
 
