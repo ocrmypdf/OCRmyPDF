@@ -234,8 +234,7 @@ def unpack_with_pdftoppm(
         # manually convert it to str for logging
         from codecs import decode
         with logger_mutex:
-            logger.error(decode(stderr, sys.getdefaultencoding(),
-                                errors='ignore'))
+            logger.error(decode(stderr, sys.getdefaultencoding(), 'ignore'))
     if p.returncode != 0:
         raise CalledProcessError(p.returncode, args_pdftoppm)
 
