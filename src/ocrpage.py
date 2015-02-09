@@ -177,7 +177,7 @@ def setup_working_directory(input_file, soft_link_name):
         pass
 
 
-ocr_required = not pageinfo['has_text'] and options.skip_text != 0
+ocr_required = not (pageinfo['has_text'] and options.skip_text != 0)
 
 
 @active_if(not ocr_required)
