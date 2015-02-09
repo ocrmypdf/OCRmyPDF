@@ -114,7 +114,7 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
                   '{pdfobject:1d} {pdfid:1d} {bad_dpi_w:1d} {bad_dpi_h:1d} ' +
                   '{size:>} {ratio:>}', line)
         image = r.named
-        # pdfimages calculates DPI as 0.26.0, but adds +1 to dpi_h
+        # pdfimages calculates DPI as of 0.26.0, but adds +1 to dpi_h
         # apparent bug, so calculate explicitly
         image['dpi_w'] = image['width'] / pageinfo['width_inches']
         image['dpi_h'] = image['height'] / pageinfo['height_inches']
@@ -177,6 +177,26 @@ def setup_working_directory(input_file, soft_link_name):
         pass
 
 
+ocr_required = not pageinfo['has_text'] and options.skip_text != 0
+
+
+@active_if(not ocr_required)
+@transform(setup_working_directory,
+           formatter(),
+           os.path.join(options.tmp_fld, '%04i.skip.pdf' % pageno))
+def skip_ocr(
+        input_file,
+        output_file):
+    args_pdfseparate = [
+        'pdfseparate',
+        '-f', str(pageinfo['pageno']), '-l', str(pageinfo['pageno']),
+        input_file,
+        output_file
+    ]
+    check_call(args_pdfseparate)
+
+
+@active_if(ocr_required)
 @transform(setup_working_directory,
            formatter(),
            "{path[0]}/%04i.pnm" % pageno)
@@ -239,6 +259,7 @@ def unpack_with_pdftoppm(
         raise CalledProcessError(p.returncode, args_pdftoppm)
 
 
+@active_if(ocr_required)
 @transform(unpack_with_pdftoppm, suffix(".pnm"), ".tif")
 def convert_to_tiff(input_file, output_file):
     args_convert = [
@@ -249,6 +270,7 @@ def convert_to_tiff(input_file, output_file):
     check_call(args_convert)
 
 
+@active_if(ocr_required)
 @active_if(options.preprocess_deskew != 0
            and options.deskew_provider == 'imagemagick')
 @transform(convert_to_tiff, suffix(".tif"), ".deskewed.tif")
@@ -277,6 +299,7 @@ def deskew_imagemagick(input_file, output_file):
         raise CalledProcessError(p.returncode, args_convert)
 
 
+@active_if(ocr_required)
 @active_if(options.preprocess_deskew != 0
            and options.deskew_provider == 'leptonica')
 @transform(convert_to_tiff, suffix(".tif"), ".deskewed.tif")
@@ -287,6 +310,8 @@ def deskew_leptonica(input_file, output_file):
                min(pageinfo['xres'], pageinfo['yres']))
 
 
+@active_if(ocr_required)
+@active_if(options.preprocess_clean != 0)
 @merge([unpack_with_pdftoppm, deskew_imagemagick, deskew_leptonica],
        os.path.join(options.tmp_fld, "%04i.for_clean.pnm" % pageno))
 def select_image_for_cleaning(infiles, output_file):
@@ -299,6 +324,7 @@ def select_image_for_cleaning(infiles, output_file):
     check_call(args_convert)
 
 
+@active_if(ocr_required)
 @active_if(options.preprocess_clean != 0)
 @transform(select_image_for_cleaning, suffix(".pnm"), ".cleaned.pnm")
 def clean_unpaper(input_file, output_file):
@@ -329,6 +355,7 @@ def clean_unpaper(input_file, output_file):
         raise CalledProcessError(p.returncode, args_unpaper)
 
 
+@active_if(ocr_required)
 @transform(clean_unpaper, suffix(".cleaned.pnm"), ".cleaned.tif")
 def cleaned_to_tiff(input_file, output_file):
     args_convert = [
@@ -339,6 +366,7 @@ def cleaned_to_tiff(input_file, output_file):
     check_call(args_convert)
 
 
+@active_if(ocr_required)
 @merge([convert_to_tiff, deskew_imagemagick, deskew_leptonica,
         cleaned_to_tiff],
        os.path.join(options.tmp_fld, "%04i.for_ocr.tif" % pageno))
@@ -369,6 +397,7 @@ hocr_template = '''<?xml version="1.0" encoding="UTF-8"?>
 </html>'''
 
 
+@active_if(ocr_required)
 @transform(select_ocr_image, suffix(".for_ocr.tif"), ".hocr")
 def ocr_tesseract(
         input_file,
@@ -409,6 +438,7 @@ def ocr_tesseract(
         re_symlink(output_file + ".html", output_file, logger, logger_mutex)
 
 
+@active_if(ocr_required)
 @merge([convert_to_tiff, deskew_imagemagick, deskew_leptonica,
         cleaned_to_tiff],
        os.path.join(options.tmp_fld, "%04i.image_for_pdf.tif" % pageno))
@@ -424,8 +454,9 @@ def select_image_for_pdf(infiles, output_file):
     re_symlink(input_file, output_file, logger, logger_mutex)
 
 
+@active_if(ocr_required)
 @merge([ocr_tesseract, select_image_for_pdf],
-       os.path.join(options.tmp_fld, '%04i.ocred.pdf' % pageno))
+       os.path.join(options.tmp_fld, '%04i.rendered.pdf' % pageno))
 def render_page(infiles, output_file):
     # Call python in a subprocess because:
     #  -That is python2 and this is python3
@@ -450,6 +481,12 @@ def render_page(infiles, output_file):
 
     if p.returncode != 0:
         raise CalledProcessError(p.returncode, args_hocrTransform)
+
+
+@merge([render_page, skip_ocr],
+       os.path.join(options.tmp_fld, '%04i.ocred.pdf' % pageno))
+def select_final_page(infiles, output_file):
+    re_symlink(infiles[-1], output_file, logger, logger_mutex)
 
 
 cmdline.run(options)
