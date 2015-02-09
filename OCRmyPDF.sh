@@ -278,9 +278,10 @@ ret_code="$?"
 
 # concatenate all pages and convert the pdf file to match PDF/A format
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Concatenating all pages to the final PDF/A file" 
-! gs -dQUIET -dPDFA -dBATCH -dNOPAUSE -dUseCIEColor \
-	-sProcessColorModel=DeviceCMYK -sDEVICE=pdfwrite -sPDFACompatibilityPolicy=2 \
-	-sOutputFile="$FILE_OUTPUT_PDFA" "${TMP_FLD}/"*ocred*.pdf 1> /dev/null 2> /dev/null \
+! gs -dQUIET -dBATCH -dNOPAUSE -sDEVICE=pdfwrite -sColorConversionStrategy=/RGB \
+	-sProcessColorModel=DeviceRGB -dPDFA -sPDFACompatibilityPolicy=2 \
+	-sOutputICCProfile=srgb.icc \
+	-sOutputFile="$FILE_OUTPUT_PDFA" "$(pwd)/PDFA_def.ps" "${TMP_FLD}/"*ocred*.pdf \
 	&& echo "Could not concatenate all pages to the final PDF/A file. Exiting..." && exit $EXIT_OTHER_ERROR
 
 # validate generated pdf file (compliance to PDF/A)
