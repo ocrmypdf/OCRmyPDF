@@ -121,11 +121,14 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
         image['dpi'] = (image['dpi_w'] * image['dpi_h']) ** 0.5
         pageinfo['images'].append(image)
 
-    xres = max(image['dpi_w'] for image in pageinfo['images'])
-    yres = max(image['dpi_h'] for image in pageinfo['images'])
-    pageinfo['xres'], pageinfo['yres'] = xres, yres
-    pageinfo['width_pixels'] = int(round(xres * pageinfo['width_inches']))
-    pageinfo['height_pixels'] = int(round(yres * pageinfo['height_inches']))
+    if pageinfo['images']:
+        xres = max(image['dpi_w'] for image in pageinfo['images'])
+        yres = max(image['dpi_h'] for image in pageinfo['images'])
+        pageinfo['xres'], pageinfo['yres'] = xres, yres
+        pageinfo['width_pixels'] = \
+            int(round(xres * pageinfo['width_inches']))
+        pageinfo['height_pixels'] = \
+            int(round(yres * pageinfo['height_inches']))
 
     return pageinfo
 
@@ -133,7 +136,14 @@ pageno, width_pt, height_pt = map(int, options.page_info.split(' ', 3))
 pageinfo = pdf_get_pageinfo(options.input_pdf, pageno, width_pt, height_pt)
 
 with logger_mutex:
-    if pageinfo['has_text']:
+    if not pageinfo['images']:
+        # If the page has no images, then it contains vector content or text
+        # or both. It seems quite unlikely that one would find meaningful text
+        # from rasterizing vector content. So skip the page.
+        logger.info(
+            "Page {0} has no images - skipping OCR".format(pageno)
+        )
+    elif pageinfo['has_text']:
         s = "Page {0} already has text! – {1}"
 
         if not options.force_ocr and not options.skip_text:
@@ -147,8 +157,9 @@ with logger_mutex:
             logger.info(s.format(pageno,
                         "skipping all processing on this page"))
 
-ocr_required = not (pageinfo['has_text'] and options.skip_text != 0) or \
-               options.force_ocr != 0
+ocr_required = pageinfo['images'] and \
+    (options.force_ocr or
+        (not (pageinfo['has_text'] and options.skip_text)))
 
 
 def re_symlink(input_file, soft_link_name, logger, logger_mutex):
