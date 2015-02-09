@@ -90,12 +90,13 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
     pageinfo['height_inches'] = height_pt / 72.0
     pageinfo['images'] = []
 
-    p_pdffonts = Popen(['pdffonts', '-f', str(page), '-l', str(page), infile],
-                       close_fds=True, stdout=PIPE, stderr=PIPE,
-                       universal_newlines=True)
-    pdffonts, _ = p_pdffonts.communicate()
-    if len(pdffonts.splitlines()) > 2:
-        logger.info("Page already contains font data!")
+    p_pdftotext = Popen(['pdftotext', '-f', str(page), '-l', str(page),
+                        '-raw', '-nopgbrk', infile, '-'],
+                        close_fds=True, stdout=PIPE, stderr=PIPE,
+                        universal_newlines=True)
+    text, _ = p_pdftotext.communicate()
+    if len(text.strip()) > 0:
+        logger.info("Page already contains text!")
         pageinfo['has_text'] = True
     else:
         pageinfo['has_text'] = False
