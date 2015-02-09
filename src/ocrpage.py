@@ -28,49 +28,49 @@ parser = cmdline.get_argparse(
     description="Run OCR and related jobs on a single page of a PDF file")
 
 parser.add_argument(
-    'input_pdf',
+    'input_pdf',    # Implemented
     help="PDF file containing the page to be OCRed")
 parser.add_argument(
-    'page_info',
+    'page_info',    # Implemented
     help="Various characteristics of the page to be OCRed")
 parser.add_argument(
-    'num_pages',
+    'num_pages',    # Unused
     help="Total number of page of the PDF file (required for logger)")
 parser.add_argument(
-    'tmp_fld',
+    'tmp_fld',      # Implemented
     help="Folder where the temporary files should be placed")
 parser.add_argument(
-    'verbosity', type=int,
+    'verbosity', type=int,      # Superseded
     help="Requested verbosity")
 parser.add_argument(
-    'language',
+    'language',     # Implemented
     help="Language of the file to be OCRed")
 parser.add_argument(
-    'keep_tmp', type=int,
+    'keep_tmp', type=int,   # Not implemented
     help="Keep the temporary files after processing (helpful for debugging)")
 parser.add_argument(
-    'preprocess_deskew', type=int,
+    'preprocess_deskew', type=int,          # Implemented
     help="Deskew the page to be OCRed")
 parser.add_argument(
-    'preprocess_clean', type=int,
+    'preprocess_clean', type=int,           # Implemented
     help="Clean the page to be OCRed")
 parser.add_argument(
-    'preprocess_cleantopdf', type=int,
+    'preprocess_cleantopdf', type=int,      # Implemented
     help="Put the cleaned paged in the OCRed PDF")
 parser.add_argument(
-    'oversampling_dpi', type=int,
+    'oversampling_dpi', type=int,           # Not implmeneted
     help="Oversampling resolution in dpi")
 parser.add_argument(
-    'pdf_noimg', type=int,
+    'pdf_noimg', type=int,                  # implemented
     help="Generate debug PDF pages with only the OCRed text and no image")
 parser.add_argument(
-    'force_ocr', type=int,
+    'force_ocr', type=int,                  # Implemented
     help="Force to OCR, even if the page already contains fonts")
 parser.add_argument(
-    'skip_text', type=int,
+    'skip_text', type=int,                  # Implemented
     help="Skip OCR on pages that contain fonts and include the page anyway")
 parser.add_argument(
-    'tess_cfg_files', default='', nargs='*',
+    'tess_cfg_files', default='', nargs='*',    # Implemented
     help="Tesseract configuration")
 parser.add_argument(
     '--deskew-provider', choices=['imagemagick', 'leptonica'],
@@ -482,6 +482,34 @@ def render_page(infiles, output_file):
         '-r', str(round(max(pageinfo['xres'], pageinfo['yres']))),
         '-i', infiles[1],
         infiles[0],
+        output_file
+    ]
+    p = Popen(args_hocrTransform, close_fds=True, stdout=PIPE, stderr=PIPE,
+              universal_newlines=True)
+    stdout, stderr = p.communicate()
+
+    with logger_mutex:
+        if stdout:
+            logger.info(stdout)
+        if stderr:
+            logger.error(stderr)
+
+    if p.returncode != 0:
+        raise CalledProcessError(p.returncode, args_hocrTransform)
+
+
+@active_if(ocr_required and options.pdf_noimg)
+@transform(ocr_tesseract, suffix(".hocr"), ".ocred.todebug.pdf")
+def render_text_output_page(input_file, output_file):
+    # Call python in a subprocess because:
+    #  -That is python2 and this is python3
+    #  -It is written as a standalone script; not meant for import yet
+    args_hocrTransform = [
+        'python2',
+        os.path.join(basedir, 'hocrTransform.py'),
+        '-b',
+        '-r', str(round(max(pageinfo['xres'], pageinfo['yres']))),
+        input_file,
         output_file
     ]
     p = Popen(args_hocrTransform, close_fds=True, stdout=PIPE, stderr=PIPE,
