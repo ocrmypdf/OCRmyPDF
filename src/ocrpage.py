@@ -96,7 +96,6 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
                         universal_newlines=True)
     text, _ = p_pdftotext.communicate()
     if len(text.strip()) > 0:
-        logger.info("Page already contains text!")
         pageinfo['has_text'] = True
     else:
         pageinfo['has_text'] = False
@@ -132,6 +131,24 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
 
 pageno, width_pt, height_pt = map(int, options.page_info.split(' ', 3))
 pageinfo = pdf_get_pageinfo(options.input_pdf, pageno, width_pt, height_pt)
+
+with logger_mutex:
+    if pageinfo['has_text']:
+        s = "Page {0} already has text! – {1}"
+
+        if not options.force_ocr and not options.skip_text:
+            logger.error(s.format(pageno,
+                         "aborting (use -f or -s to force OCR)"))
+            sys.exit(1)
+        elif options.force_ocr:
+            logger.info(s.format(pageno,
+                        "rasterizing text and running OCR anyway"))
+        elif options.skip_text:
+            logger.info(s.format(pageno,
+                        "skipping all processing on this page"))
+
+ocr_required = not (pageinfo['has_text'] and options.skip_text != 0) or \
+               options.force_ocr != 0
 
 
 def re_symlink(input_file, soft_link_name, logger, logger_mutex):
@@ -176,9 +193,6 @@ def setup_working_directory(input_file, soft_link_name):
         re_symlink(input_file, soft_link_name, logger, logger_mutex)
     except FileExistsError:
         pass
-
-
-ocr_required = not (pageinfo['has_text'] and options.skip_text != 0)
 
 
 @active_if(not ocr_required)
