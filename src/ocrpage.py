@@ -75,6 +75,9 @@ parser.add_argument(
 parser.add_argument(
     '--deskew-provider', choices=['imagemagick', 'leptonica'],
     default='leptonica')
+parser.add_argument(
+    '--page-renderer', choices=['pdftoppm', 'ghostscript'],
+    default='ghostscript')
 
 
 options = parser.parse_args()
@@ -223,6 +226,7 @@ def skip_ocr(
 
 
 @active_if(ocr_required)
+@active_if(options.page_renderer == 'pdftoppm')
 @transform(setup_working_directory,
            formatter(),
            "{path[0]}/%04i.pnm" % pageno)
@@ -286,8 +290,8 @@ def unpack_with_pdftoppm(
 
 
 @active_if(ocr_required)
-@transform(unpack_with_pdftoppm, suffix(".pnm"), ".tif")
-def convert_to_tiff(input_file, output_file):
+@transform(unpack_with_pdftoppm, suffix(".pnm"), ".png")
+def convert_to_png(input_file, output_file):
     args_convert = [
         'convert',
         input_file,
@@ -297,9 +301,45 @@ def convert_to_tiff(input_file, output_file):
 
 
 @active_if(ocr_required)
+@active_if(options.page_renderer == 'ghostscript')
+@transform(setup_working_directory,
+           formatter(),
+           "{path[0]}/%04i.png" % pageno)
+def unpack_with_ghostscript(
+        input_file,
+        output_file):
+    args_gs = [
+        'gs',
+        '-dBATCH', '-dNOPAUSE',
+        '-dFirstPage=%i' % pageno,
+        '-dLastPage=%i' % pageno,
+        '-sDEVICE=pngalpha',
+        '-o', output_file,
+        '-r{0}x{1}'.format(str(pageinfo['xres']), str(pageinfo['yres'])),
+        input_file
+    ]
+
+    p = Popen(args_gs, close_fds=True, stdout=PIPE, stderr=PIPE,
+              universal_newlines=True)
+    stdout, stderr = p.communicate()
+    with logger_mutex:
+        if stdout:
+            logger.info(stdout)
+        if stderr:
+            logger.error(stderr)
+
+    try:
+        f = open(output_file)
+    except FileNotFoundError:
+        raise
+    else:
+        f.close()
+
+
+@active_if(ocr_required)
 @active_if(options.preprocess_deskew != 0
            and options.deskew_provider == 'imagemagick')
-@transform(convert_to_tiff, suffix(".tif"), ".deskewed.tif")
+@transform(convert_to_png, suffix(".png"), ".deskewed.png")
 def deskew_imagemagick(input_file, output_file):
     args_convert = [
         'convert',
@@ -328,7 +368,7 @@ def deskew_imagemagick(input_file, output_file):
 @active_if(ocr_required)
 @active_if(options.preprocess_deskew != 0
            and options.deskew_provider == 'leptonica')
-@transform(convert_to_tiff, suffix(".tif"), ".deskewed.tif")
+@transform(convert_to_png, suffix(".png"), ".deskewed.png")
 def deskew_leptonica(input_file, output_file):
     from .leptonica import deskew
     with logger_mutex:
@@ -338,7 +378,8 @@ def deskew_leptonica(input_file, output_file):
 
 @active_if(ocr_required)
 @active_if(options.preprocess_clean != 0)
-@merge([unpack_with_pdftoppm, deskew_imagemagick, deskew_leptonica],
+@merge([unpack_with_pdftoppm, unpack_with_ghostscript,
+        deskew_imagemagick, deskew_leptonica],
        os.path.join(options.tmp_fld, "%04i.for_clean.pnm" % pageno))
 def select_image_for_cleaning(infiles, output_file):
     input_file = infiles[-1]
@@ -382,8 +423,8 @@ def clean_unpaper(input_file, output_file):
 
 
 @active_if(ocr_required)
-@transform(clean_unpaper, suffix(".cleaned.pnm"), ".cleaned.tif")
-def cleaned_to_tiff(input_file, output_file):
+@transform(clean_unpaper, suffix(".cleaned.pnm"), ".cleaned.png")
+def cleaned_to_png(input_file, output_file):
     args_convert = [
         'convert',
         input_file,
@@ -393,9 +434,9 @@ def cleaned_to_tiff(input_file, output_file):
 
 
 @active_if(ocr_required)
-@merge([convert_to_tiff, deskew_imagemagick, deskew_leptonica,
-        cleaned_to_tiff],
-       os.path.join(options.tmp_fld, "%04i.for_ocr.tif" % pageno))
+@merge([unpack_with_ghostscript, convert_to_png, deskew_imagemagick,
+        deskew_leptonica, cleaned_to_png],
+       os.path.join(options.tmp_fld, "%04i.for_ocr.png" % pageno))
 def select_ocr_image(infiles, output_file):
     re_symlink(infiles[-1], output_file, logger, logger_mutex)
 
@@ -424,7 +465,7 @@ hocr_template = '''<?xml version="1.0" encoding="UTF-8"?>
 
 
 @active_if(ocr_required)
-@transform(select_ocr_image, suffix(".for_ocr.tif"), ".hocr")
+@transform(select_ocr_image, suffix(".for_ocr.png"), ".hocr")
 def ocr_tesseract(
         input_file,
         output_file):
@@ -465,9 +506,9 @@ def ocr_tesseract(
 
 
 @active_if(ocr_required)
-@merge([convert_to_tiff, deskew_imagemagick, deskew_leptonica,
-        cleaned_to_tiff],
-       os.path.join(options.tmp_fld, "%04i.image_for_pdf.tif" % pageno))
+@merge([unpack_with_ghostscript, convert_to_png,
+        deskew_imagemagick, deskew_leptonica, cleaned_to_png],
+       os.path.join(options.tmp_fld, "%04i.image_for_pdf.png" % pageno))
 def select_image_for_pdf(infiles, output_file):
     if options.preprocess_clean != 0 and options.preprocess_cleantopdf != 0:
         input_file = infiles[-1]
