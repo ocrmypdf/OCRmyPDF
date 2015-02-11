@@ -516,7 +516,7 @@ def ocr_tesseract(
 @active_if(ocr_required)
 @merge([unpack_with_ghostscript, convert_to_png,
         deskew_imagemagick, deskew_leptonica, cleaned_to_png],
-       os.path.join(options.tmp_fld, "%04i.image_for_pdf.png" % pageno))
+       os.path.join(options.tmp_fld, "%04i.image_for_pdf" % pageno))
 def select_image_for_pdf(infiles, output_file):
     if options.preprocess_clean != 0 and options.preprocess_cleantopdf != 0:
         input_file = infiles[-1]
@@ -526,7 +526,12 @@ def select_image_for_pdf(infiles, output_file):
         input_file = infiles[-1]
     else:
         input_file = infiles[0]
-    re_symlink(input_file, output_file, logger, logger_mutex)
+
+    if all(image['enc'] == 'jpeg' for image in pageinfo['images']):
+        # If all images were JPEGs originally, produce a JPEG as output
+        check_call(['convert', input_file, 'jpg:' + output_file])
+    else:
+        re_symlink(input_file, output_file, logger, logger_mutex)
 
 
 @active_if(ocr_required)
