@@ -185,6 +185,10 @@ def re_symlink(input_file, soft_link_name, logger, logger_mutex):
         except:
             with logger_mutex:
                 logger.debug("Can't unlink %s" % (soft_link_name))
+
+    if not os.path.exists(input_file):
+        raise Exception("trying to create a broken symlink to %s" % input_file)
+
     with logger_mutex:
         logger.debug("os.symlink(%s, %s)" % (input_file, soft_link_name))
 
@@ -509,8 +513,14 @@ def ocr_tesseract(
         if p.returncode != 0:
             raise CalledProcessError(p.returncode, args_tesseract)
 
-        # Tesseract appends suffix ".html" on its own
-        re_symlink(output_file + ".html", output_file, logger, logger_mutex)
+        if os.path.exists(output_file + '.html'):
+            # Tesseract 3.02 appends suffix ".html" on its own
+            re_symlink(output_file + ".html", output_file,
+                       logger, logger_mutex)
+        elif os.path.exists(output_file + '.hocr'):
+            # Tesseract 3.03 appends suffix ".hocr" on its own
+            re_symlink(output_file + ".hocr", output_file,
+                       logger, logger_mutex)
 
 
 @active_if(ocr_required)
