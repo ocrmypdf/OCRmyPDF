@@ -308,12 +308,20 @@ def convert_to_png(input_file, output_file):
 def unpack_with_ghostscript(
         input_file,
         output_file):
+    device = 'png16m'  # 24-bit
+    if all(image['comp'] == 1 for image in pageinfo['images']):
+        if all(image['bpc'] == 1 for image in pageinfo['images']):
+            device = 'pngmono'
+        elif not any(image['color'] == 'color'
+                     for image in pageinfo['images']):
+            device = 'pnggray'
+
     args_gs = [
         'gs',
         '-dBATCH', '-dNOPAUSE',
         '-dFirstPage=%i' % pageno,
         '-dLastPage=%i' % pageno,
-        '-sDEVICE=pngalpha',
+        '-sDEVICE=%s' % device,
         '-o', output_file,
         '-r{0}x{1}'.format(str(pageinfo['xres']), str(pageinfo['yres'])),
         input_file
