@@ -5,6 +5,8 @@ import argparse
 import logging
 import sys
 import os.path
+import fileinput
+import re
 from parse import parse
 
 from subprocess import Popen, check_call, PIPE, CalledProcessError, \
@@ -521,6 +523,17 @@ def ocr_tesseract(
             # Tesseract 3.03 appends suffix ".hocr" on its own
             re_symlink(output_file + ".hocr", output_file,
                        logger, logger_mutex)
+
+            # The filename gets inserted to hocr
+            # but Tesseract does not verify that it is escaped XML
+            # it's not necessary so strip it out
+            regex_nested_single_quotes = re.compile(
+                r"""title='image "([^"]*)";""")
+            with fileinput.input(files=(output_file,), inplace=True) as f:
+                for line in f:
+                    line = regex_nested_single_quotes.sub(
+                        r"""title='image " ";""", line)
+                    print(line, end='')  # stdout is redirected here
 
 
 @active_if(ocr_required)
