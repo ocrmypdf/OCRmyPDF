@@ -72,6 +72,9 @@ parser.add_argument(
     'skip_text', type=int,                  # Implemented
     help="Skip OCR on pages that contain fonts and include the page anyway")
 parser.add_argument(
+    'skip_big', type=int,
+    help="Skip OCR for pages that are very large")
+parser.add_argument(
     'tess_cfg_files', default='', nargs='*',    # Implemented
     help="Tesseract configuration")
 parser.add_argument(
@@ -165,6 +168,14 @@ with logger_mutex:
 ocr_required = pageinfo['images'] and \
     (options.force_ocr or
         (not (pageinfo['has_text'] and options.skip_text)))
+
+if ocr_required and options.skip_big:
+    area = pageinfo['width_inches'] * pageinfo['height_inches']
+    pixel_count = pageinfo['width_pixels'] * pageinfo['height_pixels']
+    if area > (11.0 * 17.0) or pixel_count > (300.0 * 300.0 * 11 * 17):
+        ocr_required = False
+        logger.info(
+            "Page {0} is very large; skipping due to -b".format(pageno))
 
 
 def re_symlink(input_file, soft_link_name, logger, logger_mutex):
