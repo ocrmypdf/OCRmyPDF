@@ -577,7 +577,7 @@ def render_page(infiles, output_file):
     #  -It is written as a standalone script; not meant for import yet
     args_hocrTransform = [
         'python2',
-        os.path.join(basedir, 'hocrTransform.py'),
+        os.path.join(basedir, 'hocrtransform.py'),
         '-r', str(round(max(pageinfo['xres'], pageinfo['yres']))),
         '-i', infiles[1],
         infiles[0],
