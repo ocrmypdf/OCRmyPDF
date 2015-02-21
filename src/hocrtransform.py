@@ -6,13 +6,15 @@
 # Initial version by Jonathan Brinley, jonathanbrinley@gmail.com
 ##############################################################################
 from reportlab.pdfgen.canvas import Canvas
-from reportlab.pdfgen.pdfimages import PDFImage
 from reportlab.lib.units import inch
 from lxml import etree as ElementTree
 from PIL import Image
 import re
-import sys
 import argparse
+
+
+class HocrTransformError(Exception):
+	pass
 
 
 class HocrTransform():
@@ -46,12 +48,9 @@ class HocrTransform():
             # there shouldn't be more than one, and if there is, we don't want
             # it
             break
+        if self.width is None or self.height is None:
+            raise HocrTransformError("hocr file is missing page dimensions")
 
-        # no width and heigh definition in the ocr_image element of the hocr
-        # file
-        if self.width is None:
-            print("No page dimension found in the hocr file")
-            sys.exit(1)
 
     def __str__(self):
         """
@@ -109,7 +108,7 @@ class HocrTransform():
         s = s.replace(u"ﬁ", "fi")
         return s
 
-    def to_pdf(self, outFileName, imageFileName, showBoundingboxes, fontname="Helvetica"):
+    def to_pdf(self, outFileName, imageFileName=None, showBoundingboxes=False, fontname="Helvetica"):
         """
         Creates a PDF file with an image superimposed on top of the text.
         Text is positioned according to the bounding box of the lines in

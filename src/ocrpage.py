@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # Reimplement ocrPage.sh as Python
 
-import argparse
-import logging
 import sys
 import os.path
 import fileinput
@@ -17,11 +15,12 @@ except ImportError:
     import os
     DEVNULL = open(os.devnull, 'wb')
 
-from tempfile import NamedTemporaryFile
 
 from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
     mkdir, formatter
 import ruffus.cmdline as cmdline
+from .hocrtransform import HocrTransform
+
 
 basedir = os.path.dirname(os.path.realpath(__file__))
 
@@ -572,57 +571,23 @@ def select_image_for_pdf(infiles, output_file):
 @merge([ocr_tesseract, select_image_for_pdf],
        os.path.join(options.tmp_fld, '%04i.rendered.pdf' % pageno))
 def render_page(infiles, output_file):
-    # Call python in a subprocess because:
-    #  -That is python2 and this is python3
-    #  -It is written as a standalone script; not meant for import yet
-    args_hocrTransform = [
-        'python3',
-        os.path.join(basedir, 'hocrtransform.py'),
-        '-r', str(round(max(pageinfo['xres'], pageinfo['yres']))),
-        '-i', infiles[1],
-        infiles[0],
-        output_file
-    ]
-    p = Popen(args_hocrTransform, close_fds=True, stdout=PIPE, stderr=PIPE,
-              universal_newlines=True)
-    stdout, stderr = p.communicate()
+    hocr, image = infiles[0], infiles[1]
 
-    with logger_mutex:
-        if stdout:
-            logger.info(stdout)
-        if stderr:
-            logger.error(stderr)
+    dpi = round(max(pageinfo['xres'], pageinfo['yres']))
 
-    if p.returncode != 0:
-        raise CalledProcessError(p.returncode, args_hocrTransform)
+    hocrtransform = HocrTransform(hocr, dpi)
+    hocrtransform.to_pdf(output_file, imageFileName=image,
+                         showBoundingboxes=False)
 
 
 @active_if(ocr_required and options.pdf_noimg)
 @transform(ocr_tesseract, suffix(".hocr"), ".ocred.todebug.pdf")
 def render_text_output_page(input_file, output_file):
-    # Call python in a subprocess because:
-    #  -That is python2 and this is python3
-    #  -It is written as a standalone script; not meant for import yet
-    args_hocrTransform = [
-        'python3',
-        os.path.join(basedir, 'hocr3ransform.py'),
-        '-b',
-        '-r', str(round(max(pageinfo['xres'], pageinfo['yres']))),
-        input_file,
-        output_file
-    ]
-    p = Popen(args_hocrTransform, close_fds=True, stdout=PIPE, stderr=PIPE,
-              universal_newlines=True)
-    stdout, stderr = p.communicate()
+    dpi = round(max(pageinfo['xres'], pageinfo['yres']))
 
-    with logger_mutex:
-        if stdout:
-            logger.info(stdout)
-        if stderr:
-            logger.error(stderr)
-
-    if p.returncode != 0:
-        raise CalledProcessError(p.returncode, args_hocrTransform)
+    hocrtransform = HocrTransform(input_file, dpi)
+    hocrtransform.to_pdf(output_file, imageFileName=None,
+                         showBoundingboxes=True)
 
 
 @merge([render_page, skip_ocr],
