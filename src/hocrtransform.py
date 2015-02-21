@@ -11,8 +11,12 @@ from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.units import inch
 from lxml import etree as ElementTree
 from PIL import Image
+from collections import namedtuple
 import re
 import argparse
+
+
+Rect = namedtuple('Rect', ['x1', 'y1', 'x2', 'y2'])
 
 
 class HocrTransformError(Exception):
@@ -89,14 +93,15 @@ class HocrTransform():
             matches = self.boxPattern.search(element.attrib['title'])
             if matches:
                 coords = matches.group(1).split()
-                out = tuple(int(coords[n]) for n in range(4))
+                out = Rect._make(int(coords[n]) for n in range(4))
         return out
 
-    def px2pt(self, pxl):
+    def pt_from_pixel(self, pxl):
         """
-        Returns the length in pt given length in pxl
+        Returns the quantity in PDF units (pt) given quantity in pixels
         """
-        return float(pxl) / self.dpi * inch
+        return Rect._make(
+            (c / self.dpi * inch) for c in pxl)
 
     def replace_unsupported_chars(self, s):
         """
@@ -138,15 +143,14 @@ class HocrTransform():
             if len(elemtxt) == 0:
                 continue
 
-            coords = self.element_coordinates(elem)
-            x1 = self.px2pt(coords[0])
-            y1 = self.px2pt(coords[1])
-            x2 = self.px2pt(coords[2])
-            y2 = self.px2pt(coords[3])
+            pxl_coords = self.element_coordinates(elem)
+            pt = self.pt_from_pixel(pxl_coords)
 
             # draw the bbox border
             if showBoundingboxes:
-                pdf.rect(x1, self.height - y2, x2 - x1, y2 - y1, fill=1)
+                pdf.rect(
+                    pt.x1, self.height - pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1,
+                    fill=1)
 
         # check if element with class 'ocrx_word' are available
         # otherwise use 'ocr_line' as fallback
@@ -171,26 +175,26 @@ class HocrTransform():
             if len(elemtxt) == 0:
                 continue
 
-            coords = self.element_coordinates(elem)
-            x1 = self.px2pt(coords[0])
-            y1 = self.px2pt(coords[1])
-            x2 = self.px2pt(coords[2])
-            y2 = self.px2pt(coords[3])
+            pxl_coords = self.element_coordinates(elem)
+            pt = self.pt_from_pixel(pxl_coords)
 
             # draw the bbox border
             if showBoundingboxes:
-                pdf.rect(x1, self.height - y2, x2 - x1, y2 - y1, fill=0)
+                pdf.rect(
+                    pt.x1, self.height - pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1,
+                    fill=0)
 
             text = pdf.beginText()
-            fontsize = self.px2pt(coords[3] - coords[1])
+            fontsize = pt.y2 - pt.y1
             text.setFont(fontname, fontsize)
 
             # set cursor to bottom left corner of bbox (adjust for dpi)
-            text.setTextOrigin(x1, self.height - y2)
+            text.setTextOrigin(pt.x1, self.height - pt.y2)
 
             # scale the width of the text to fill the width of the bbox
             text.setHorizScale(
-                100 * (x2 - x1) / pdf.stringWidth(elemtxt, fontname, fontsize))
+                100 * (pt.x2 - pt.x1) / pdf.stringWidth(
+                    elemtxt, fontname, fontsize))
 
             # write the text to the page
             text.textLine(elemtxt)
