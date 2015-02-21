@@ -576,7 +576,7 @@ def render_page(infiles, output_file):
     #  -That is python2 and this is python3
     #  -It is written as a standalone script; not meant for import yet
     args_hocrTransform = [
-        'python2',
+        'python3',
         os.path.join(basedir, 'hocrtransform.py'),
         '-r', str(round(max(pageinfo['xres'], pageinfo['yres']))),
         '-i', infiles[1],
@@ -604,8 +604,8 @@ def render_text_output_page(input_file, output_file):
     #  -That is python2 and this is python3
     #  -It is written as a standalone script; not meant for import yet
     args_hocrTransform = [
-        'python2',
-        os.path.join(basedir, 'hocrTransform.py'),
+        'python3',
+        os.path.join(basedir, 'hocr3ransform.py'),
         '-b',
         '-r', str(round(max(pageinfo['xres'], pageinfo['yres']))),
         input_file,

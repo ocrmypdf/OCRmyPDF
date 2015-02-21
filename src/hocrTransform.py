@@ -1,5 +1,4 @@
-#!/usr/local/bin/python2
-# coding: utf-8
+#!/usr/local/bin/python3
 ##############################################################################
 # Copyright (c) 2013-14: fritz-hh from Github (https://github.com/fritz-hh)
 #
@@ -16,92 +15,6 @@ import sys
 import argparse
 
 
-def monkeypatch_method(cls):
-    '''
-    Override a class method at runtime.
-
-    Rationale:
-    https://mail.python.org/pipermail/python-dev/2008-January/076194.html
-    '''
-    def decorator(func):
-        setattr(cls, func.__name__, func)
-        return func
-    return decorator
-
-
-@monkeypatch_method(PDFImage)
-def PIL_imagedata(self):
-    '''
-    Add ability to output greyscale and 1-bit PIL images without conversion to RGB.
-
-    The upstream Python 2.7 version of reportlab converts 1-bit PIL images to RGB
-    instead of saving them in a lower BPP format.  They have since added the following
-    fix to their Python 3.3 branch, but it has not been back-ported.
-
-    https://bitbucket.org/rptlab/reportlab/commits/177ddcbe4df6f9b461dac62612df9b8da3966a5d
-    '''
-    image = self.image
-    if image.format == 'JPEG':
-        fp = image.fp
-        fp.seek(0)
-        return self._jpg_imagedata(fp)
-
-    from reportlab.lib.utils import import_zlib
-    from reportlab import rl_config
-    from reportlab.pdfbase.pdfutils import _chunker
-    # in order to support both newer and older versions of reportlab
-    try:
-        from reportlab.pdfbase.pdfutils import _AsciiBase85Encode
-    except ImportError:
-        from reportlab.pdfbase.pdfutils import asciiBase85Encode as _AsciiBase85Encode
-
-    self.source = 'PIL'
-    zlib = import_zlib()
-    if not zlib:
-        return
-
-    bpc = 8
-    # Use the colorSpace in the image
-    if image.mode == 'CMYK':
-        myimage = image
-        colorSpace = 'DeviceCMYK'
-        bpp = 4
-    elif image.mode == '1':
-        myimage = image
-        colorSpace = 'DeviceGray'
-        bpp = 1
-        bpc = 1
-    elif image.mode == 'L':
-        myimage = image
-        colorSpace = 'DeviceGray'
-        bpp = 1
-    else:
-        myimage = image.convert('RGB')
-        colorSpace = 'RGB'
-        bpp = 3
-    imgwidth, imgheight = myimage.size
-
-    # this describes what is in the image itself
-    # *NB* according to the spec you can only use the short form in inline images
-
-    imagedata = ['BI /W %d /H %d /BPC %d /CS /%s /F [%s/Fl] ID' %
-                 (imgwidth, imgheight, bpc, colorSpace, rl_config.useA85 and '/A85 ' or '')]
-
-    # use a flate filter and, optionally, Ascii Base 85 to compress
-    raw = myimage.tostring()
-    rowstride = (imgwidth * bpc * bpp + 7) / 8
-    assert len(raw) == rowstride * imgheight, "Wrong amount of data for image"
-    data = zlib.compress(raw)  # this bit is very fast...
-
-    if rl_config.useA85:
-        # ...sadly this may not be
-        data = _AsciiBase85Encode(data)
-    # append in blocks of 60 characters
-    _chunker(data, imagedata)
-    imagedata.append('EI')
-    return (imagedata, imgwidth, imgheight)
-
-
 class HocrTransform():
 
     """
@@ -112,14 +25,14 @@ class HocrTransform():
 
     def __init__(self, hocrFileName, dpi):
         self.dpi = dpi
-        self.boxPattern = re.compile('bbox((\s+\d+){4})')
+        self.boxPattern = re.compile(r'bbox((\s+\d+){4})')
 
         self.hocr = ElementTree.ElementTree()
         self.hocr.parse(hocrFileName)
 
         # if the hOCR file has a namespace, ElementTree requires its use to
         # find elements
-        matches = re.match('({.*})html', self.hocr.getroot().tag)
+        matches = re.match(r'({.*})html', self.hocr.getroot().tag)
         self.xmlns = ''
         if matches:
             self.xmlns = matches.group(1)
@@ -148,8 +61,7 @@ class HocrTransform():
             return ''
         body = self.hocr.find(".//%sbody" % (self.xmlns))
         if body:
-            # XML gives unicode
-            return self._get_element_text(body).encode('utf-8')
+            return self._get_element_text(body)
         else:
             return ''
 
@@ -176,8 +88,7 @@ class HocrTransform():
             matches = self.boxPattern.search(element.attrib['title'])
             if matches:
                 coords = matches.group(1).split()
-                out = (
-                    int(coords[0]), int(coords[1]), int(coords[2]), int(coords[3]))
+                out = tuple(int(coords[n]) for n in range(4))
         return out
 
     def px2pt(self, pxl):
@@ -186,7 +97,7 @@ class HocrTransform():
         """
         return float(pxl) / self.dpi * inch
 
-    def replace_unsupported_chars(self, str):
+    def replace_unsupported_chars(self, s):
         """
         Given an input string, returns the corresponding string that:
         - is available in the helvetica facetype
@@ -194,9 +105,9 @@ class HocrTransform():
         """
         # The 'u' before the character to replace indicates that it is a
         # unicode character
-        str = str.replace(u"ﬂ", "fl")
-        str = str.replace(u"ﬁ", "fi")
-        return str
+        s = s.replace(u"ﬂ", "fl")
+        s = s.replace(u"ﬁ", "fi")
+        return s
 
     def to_pdf(self, outFileName, imageFileName, showBoundingboxes, fontname="Helvetica"):
         """
