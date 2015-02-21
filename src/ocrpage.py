@@ -577,7 +577,7 @@ def render_page(infiles, output_file):
 
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=image,
-                         showBoundingboxes=False)
+                         showBoundingboxes=False, invisibleText=True)
 
 
 @active_if(ocr_required and options.pdf_noimg)
@@ -587,7 +587,7 @@ def render_text_output_page(input_file, output_file):
 
     hocrtransform = HocrTransform(input_file, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=None,
-                         showBoundingboxes=True)
+                         showBoundingboxes=True, invisibleText=False)
 
 
 @merge([render_page, skip_ocr],

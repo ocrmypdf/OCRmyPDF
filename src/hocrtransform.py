@@ -50,8 +50,9 @@ class HocrTransform():
         for div in self.hocr.findall(
                 ".//%sdiv[@class='ocr_page']" % (self.xmlns)):
             coords = self.element_coordinates(div)
-            self.width = self.px2pt(coords[2] - coords[0])
-            self.height = self.px2pt(coords[3] - coords[1])
+            pt_coords = self.pt_from_pixel(coords)
+            self.width = pt_coords.x2 - pt_coords.x1
+            self.height = pt_coords.y2 - pt_coords.y1
             # there shouldn't be more than one, and if there is, we don't want
             # it
             break
@@ -116,7 +117,7 @@ class HocrTransform():
         return s
 
     def to_pdf(self, outFileName, imageFileName=None, showBoundingboxes=False,
-               fontname="Helvetica"):
+               fontname="Helvetica", invisibleText=False):
         """
         Creates a PDF file with an image superimposed on top of the text.
         Text is positioned according to the bounding box of the lines in
@@ -187,6 +188,8 @@ class HocrTransform():
             text = pdf.beginText()
             fontsize = pt.y2 - pt.y1
             text.setFont(fontname, fontsize)
+            if invisibleText:
+                text.setTextRenderMode(3)  # Invisible (indicates OCR text)
 
             # set cursor to bottom left corner of bbox (adjust for dpi)
             text.setTextOrigin(pt.x1, self.height - pt.y2)
