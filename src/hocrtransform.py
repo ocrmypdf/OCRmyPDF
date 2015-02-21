@@ -1,9 +1,11 @@
 #!/usr/local/bin/python3
 ##############################################################################
-# Copyright (c) 2013-14: fritz-hh from Github (https://github.com/fritz-hh)
+# Copyright (c) 2013-14: fritz-hh from Github
+#   (https://github.com/fritz-hh)
 #
-# Copyright (c) 2010: Jonathan Brinley from Github (https://github.com/jbrinley/HocrConverter)
-# Initial version by Jonathan Brinley, jonathanbrinley@gmail.com
+# Copyright (c) 2010: Jonathan Brinley from Github
+#   (https://github.com/jbrinley/HocrConverter)
+#   Initial version by Jonathan Brinley, jonathanbrinley@gmail.com
 ##############################################################################
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.units import inch
@@ -14,7 +16,7 @@ import argparse
 
 
 class HocrTransformError(Exception):
-	pass
+    pass
 
 
 class HocrTransform():
@@ -41,7 +43,8 @@ class HocrTransform():
 
         # get dimension in pt (not pixel!!!!) of the OCRed image
         self.width, self.height = None, None
-        for div in self.hocr.findall(".//%sdiv[@class='ocr_page']" % (self.xmlns)):
+        for div in self.hocr.findall(
+                ".//%sdiv[@class='ocr_page']" % (self.xmlns)):
             coords = self.element_coordinates(div)
             self.width = self.px2pt(coords[2] - coords[0])
             self.height = self.px2pt(coords[3] - coords[1])
@@ -50,7 +53,6 @@ class HocrTransform():
             break
         if self.width is None or self.height is None:
             raise HocrTransformError("hocr file is missing page dimensions")
-
 
     def __str__(self):
         """
@@ -70,11 +72,11 @@ class HocrTransform():
         """
         text = ''
         if element.text is not None:
-            text = text + element.text
+            text += element.text
         for child in element.getchildren():
-            text = text + self._get_element_text(child)
+            text += self._get_element_text(child)
         if element.tail is not None:
-            text = text + element.tail
+            text += element.tail
         return text
 
     def element_coordinates(self, element):
@@ -108,12 +110,14 @@ class HocrTransform():
         s = s.replace(u"ﬁ", "fi")
         return s
 
-    def to_pdf(self, outFileName, imageFileName=None, showBoundingboxes=False, fontname="Helvetica"):
+    def to_pdf(self, outFileName, imageFileName=None, showBoundingboxes=False,
+               fontname="Helvetica"):
         """
         Creates a PDF file with an image superimposed on top of the text.
         Text is positioned according to the bounding box of the lines in
         the hOCR file.
-        The image need not be identical to the image used to create the hOCR file.
+        The image need not be identical to the image used to create the hOCR
+        file.
         It can have a lower resolution, different color mode, etc.
         """
         # create the PDF file
@@ -127,7 +131,8 @@ class HocrTransform():
         # light blue for bounding box of paragraph
         pdf.setFillColorRGB(0, 1, 1)
         pdf.setLineWidth(0)		# no line for bounding box
-        for elem in self.hocr.findall(".//%sp[@class='%s']" % (self.xmlns, "ocr_par")):
+        for elem in self.hocr.findall(
+                ".//%sp[@class='%s']" % (self.xmlns, "ocr_par")):
 
             elemtxt = self._get_element_text(elem).rstrip()
             if len(elemtxt) == 0:
@@ -146,7 +151,8 @@ class HocrTransform():
         # check if element with class 'ocrx_word' are available
         # otherwise use 'ocr_line' as fallback
         elemclass = "ocr_line"
-        if self.hocr.find(".//%sspan[@class='ocrx_word']" % (self.xmlns)) is not None:
+        if self.hocr.find(
+                ".//%sspan[@class='ocrx_word']" % (self.xmlns)) is not None:
             elemclass = "ocrx_word"
 
         # itterate all text elements
@@ -155,7 +161,8 @@ class HocrTransform():
         pdf.setLineWidth(0.5)		# bounding box line width
         pdf.setDash(6, 3)		# bounding box is dashed
         pdf.setFillColorRGB(0, 0, 0)  # text in black
-        for elem in self.hocr.findall(".//%sspan[@class='%s']" % (self.xmlns, elemclass)):
+        for elem in self.hocr.findall(
+                ".//%sspan[@class='%s']" % (self.xmlns, elemclass)):
 
             elemtxt = self._get_element_text(elem).rstrip()
 
@@ -204,7 +211,8 @@ if __name__ == "__main__":
     parser.add_argument('-b', '--boundingboxes', action="store_true",
                         default=False, help='Show bounding boxes borders')
     parser.add_argument('-r', '--resolution', type=int,
-                        default=300, help='Resolution of the image that was OCRed')
+                        default=300,
+                        help='Resolution of the image that was OCRed')
     parser.add_argument('-i', '--image', default=None,
                         help='Path to the image to be placed above the text')
     parser.add_argument('hocrfile', help='Path to the hocr file to be parsed')
