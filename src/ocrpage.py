@@ -6,6 +6,8 @@ import os.path
 import fileinput
 import re
 from parse import parse
+import PyPDF2 as pypdf
+import shutil
 
 from subprocess import Popen, check_call, PIPE, CalledProcessError, \
     TimeoutExpired
@@ -73,6 +75,9 @@ parser.add_argument(
 parser.add_argument(
     'skip_big', type=int,
     help="Skip OCR for pages that are very large")
+parser.add_argument(
+    'exact_image', type=int,
+    help="Use original page from PDF without re-rendering")
 parser.add_argument(
     'tess_cfg_files', default='', nargs='*',    # Implemented
     help="Tesseract configuration")
@@ -225,11 +230,11 @@ def setup_working_directory(input_file, soft_link_name):
         pass
 
 
-@active_if(not ocr_required)
+@active_if(not ocr_required or (ocr_required and options.exact_image))
 @transform(setup_working_directory,
            formatter(),
-           os.path.join(options.tmp_fld, '%04i.skip.pdf' % pageno))
-def skip_ocr(
+           os.path.join(options.tmp_fld, '%04i.page.pdf' % pageno))
+def extract_single_page(
         input_file,
         output_file):
     args_pdfseparate = [
@@ -526,27 +531,25 @@ def ocr_tesseract(
             raise CalledProcessError(p.returncode, args_tesseract)
 
         if os.path.exists(output_file + '.html'):
-            # Tesseract 3.02 appends suffix ".html" on its own
-            re_symlink(output_file + ".html", output_file,
-                       logger, logger_mutex)
+            # Tesseract 3.02 appends suffix ".html" on its own (.hocr.html)
+            shutil.move(output_file + '.html', output_file)
         elif os.path.exists(output_file + '.hocr'):
-            # Tesseract 3.03 appends suffix ".hocr" on its own
-            re_symlink(output_file + ".hocr", output_file,
-                       logger, logger_mutex)
+            # Tesseract 3.03 appends suffix ".hocr" on its own (.hocr.hocr)
+            shutil.move(output_file + '.hocr', output_file)
 
-            # The filename gets inserted to hocr
-            # but Tesseract does not verify that it is escaped XML
-            # it's not necessary so strip it out
-            regex_nested_single_quotes = re.compile(
-                r"""title='image "([^"]*)";""")
-            with fileinput.input(files=(output_file,), inplace=True) as f:
-                for line in f:
-                    line = regex_nested_single_quotes.sub(
-                        r"""title='image " ";""", line)
-                    print(line, end='')  # stdout is redirected here
+        # Tesseract inserts source filename into hocr file without escaping
+        # it. This could break the XML parser. Rewrite the hocr file,
+        # replacing the filename with a space.
+        regex_nested_single_quotes = re.compile(
+            r"""title='image "([^"]*)";""")
+        with fileinput.input(files=(output_file,), inplace=True) as f:
+            for line in f:
+                line = regex_nested_single_quotes.sub(
+                    r"""title='image " ";""", line)
+                print(line, end='')  # fileinput.input redirects stdout
 
 
-@active_if(ocr_required)
+@active_if(ocr_required and not options.exact_image)
 @merge([unpack_with_ghostscript, convert_to_png,
         deskew_imagemagick, deskew_leptonica, cleaned_to_png],
        os.path.join(options.tmp_fld, "%04i.image_for_pdf" % pageno))
@@ -567,7 +570,7 @@ def select_image_for_pdf(infiles, output_file):
         re_symlink(input_file, output_file, logger, logger_mutex)
 
 
-@active_if(ocr_required)
+@active_if(ocr_required and not options.exact_image)
 @merge([ocr_tesseract, select_image_for_pdf],
        os.path.join(options.tmp_fld, '%04i.rendered.pdf' % pageno))
 def render_page(infiles, output_file):
@@ -590,7 +593,34 @@ def render_text_output_page(input_file, output_file):
                          showBoundingboxes=True, invisibleText=False)
 
 
-@merge([render_page, skip_ocr],
+@active_if(ocr_required and options.exact_image)
+@transform(ocr_tesseract, suffix(".hocr"), ".hocr.pdf")
+def render_hocr_blank_page(input_file, output_file):
+    dpi = round(max(pageinfo['xres'], pageinfo['yres']))
+
+    hocrtransform = HocrTransform(input_file, dpi)
+    hocrtransform.to_pdf(output_file, imageFileName=None,
+                         showBoundingboxes=False, invisibleText=True)
+
+
+@active_if(ocr_required and options.exact_image)
+@merge([render_hocr_blank_page, extract_single_page],
+       os.path.join(options.tmp_fld, "%04i.merged.pdf") % pageno)
+def merge_hocr_with_original_page(infiles, output_file):
+    with open(infiles[0], 'rb') as hocr_input, \
+            open(infiles[1], 'rb') as page_input, \
+            open(output_file, 'wb') as output:
+        hocr_reader = pypdf.PdfFileReader(hocr_input)
+        page_reader = pypdf.PdfFileReader(page_input)
+        writer = pypdf.PdfFileWriter()
+
+        the_page = hocr_reader.getPage(0)
+        the_page.mergePage(page_reader.getPage(0))
+        writer.addPage(the_page)
+        writer.write(output)
+
+
+@merge([render_page, merge_hocr_with_original_page, extract_single_page],
        os.path.join(options.tmp_fld, '%04i.ocred.pdf' % pageno))
 def select_final_page(infiles, output_file):
     re_symlink(infiles[-1], output_file, logger, logger_mutex)
@@ -600,7 +630,7 @@ cmdline.run(options)
 
 # parser.add_argument(
 #     'tess_cfg_files',
-#     help="Specific configuration files to be used by Tesseract during OCRing")
+#   help="Specific configuration files to be used by Tesseract during OCRing")
 
 
 def main():

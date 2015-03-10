@@ -50,6 +50,7 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-f] [-l languag
      (which should not be the case for PDF files built from scanned images) 
 -s : If pages contain font data, do not perform processing on that page, but include the page in the final output.
 -b : Skip big pages
+-e : Use exact PDF pages with no changes other than inserting hidden OCR text layer (mutually exclusive with -d/-c/-i/-f)
 -l : Set the language of the PDF file in order to improve OCR results (default "eng")
      Any language supported by tesseract is supported (Tesseract uses 3-character ISO 639-2 language codes)
      Multiple languages may be specified, separated by '+' characters.
@@ -93,10 +94,11 @@ PDF_NOIMG="0"			# 0=no, 1=yes (generates each PDF page twice, with and without i
 FORCE_OCR="0"			# 0=do not force, 1=force (force to OCR the whole document, even if some page already contain font data)
 SKIP_TEXT="0"			# 0=do not skip text pages, 1=skip text pages
 SKIP_BIG="0"
+EXACT_IMAGE="0"
 TESS_CFG_FILES=""		# list of additional configuration files to be used by tesseract
 
 # Parse optional command line arguments
-while getopts ":hvgkdcio:fsbl:C:" opt; do
+while getopts ":hvgkdcio:fsbel:C:" opt; do
 	case $opt in
 		h) usage ; exit 0 ;;
 		v) VERBOSITY=$(($VERBOSITY+1)) ;;
@@ -109,6 +111,7 @@ while getopts ":hvgkdcio:fsbl:C:" opt; do
 		f) FORCE_OCR="1" ;;
 		s) SKIP_TEXT="1" ;;
 		b) SKIP_BIG="1" ;;
+		e) EXACT_IMAGE="1" ;;
 		l) LAN="$OPTARG" ;;
 		C) TESS_CFG_FILES="$OPTARG $TESS_CFG_FILES" ;;
 		\?)
@@ -273,10 +276,10 @@ sed '/^$/d' "$FILE_TMP" | awk '{printf "%04d %s\n", NR, $0}' > "$FILE_PAGES_INFO
 numpages=`tail -n 1 "$FILE_PAGES_INFO" | cut -f1 -d" "`
 
 # process each page of the input pdf file
-parallel --gnu -q -k --halt-on-error 1 python3 -m src.ocrpage \
+parallel --gnu -q -k --halt-on-error 1 -j2 python3 -m src.ocrpage \
 	"$FILE_INPUT_PDF" "{}" "$numpages" "$TMP_FLD" \
 	"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$OVERSAMPLING_DPI" \
-	"$PDF_NOIMG" "$FORCE_OCR" "$SKIP_TEXT" "$SKIP_BIG" "$TESS_CFG_FILES" < "$FILE_PAGES_INFO"
+	"$PDF_NOIMG" "$FORCE_OCR" "$SKIP_TEXT" "$SKIP_BIG" "$EXACT_IMAGE" "$TESS_CFG_FILES" < "$FILE_PAGES_INFO"
 ret_code="$?"
 [ $ret_code -ne 0 ] && exit $ret_code 
 
