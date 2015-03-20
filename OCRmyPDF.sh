@@ -138,7 +138,7 @@ fi
 if [ "$SKIP_TEXT" -eq "1" -a "$FORCE_OCR" -eq "1" ]; then
 	echo "Options -f and -s are mutually exclusive; choose one or the other"
 	usage
-	exit $EXIT_BAD_ARGS
+	exit $EXIT_BAD_ARGSor
 fi
 
 ! absolutePath "$1" > /dev/null \
@@ -167,8 +167,8 @@ cd "$BASEPATH"
 [ $PREPROCESS_CLEAN -eq 1 ] && ! command -v unpaper > /dev/null && echo "Please install unpaper. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v tesseract > /dev/null && echo "Please install tesseract and tesseract-data. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v python2 > /dev/null && echo "Please install python v2.x. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
-! python2 -c 'import lxml' 2>/dev/null && echo "Please install the python library lxml. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
-! python2 -c 'import reportlab' 2>/dev/null && echo "Please install the python library reportlab. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! python3 -c 'import lxml' 2>/dev/null && echo "Please install the python library lxml. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
+! python3 -c 'import reportlab' 2>/dev/null && echo "Please install the python library reportlab. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v gs > /dev/null && echo "Please install ghostscript. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v java > /dev/null && echo "Please install java. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 
