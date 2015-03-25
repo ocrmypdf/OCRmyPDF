@@ -91,8 +91,41 @@ parser.add_argument(
 
 options = parser.parse_args()
 
-logger, logger_mutex = cmdline.setup_logging(__name__, options.log_file,
-                                             options.verbose)
+_logger, _logger_mutex = cmdline.setup_logging(__name__, options.log_file,
+                                               options.verbose)
+
+
+class WrappedLogger:
+
+    def __init__(self, my_logger, my_mutex):
+        self.logger = my_logger
+        self.mutex = my_mutex
+
+    def log(self, *args, **kwargs):
+        with self.mutex:
+            self.logger.log(*args, **kwargs)
+
+    def debug(self, *args, **kwargs):
+        with self.mutex:
+            self.logger.debug(*args, **kwargs)
+
+    def info(self, *args, **kwargs):
+        with self.mutex:
+            self.logger.info(*args, **kwargs)
+
+    def warning(self, *args, **kwargs):
+        with self.mutex:
+            self.logger.warning(*args, **kwargs)
+
+    def error(self, *args, **kwargs):
+        with self.mutex:
+            self.logger.error(*args, **kwargs)
+
+    def critical(self, *args, **kwargs):
+        with self.mutex:
+            self.logger.critical(*args, **kwargs)
+
+log = WrappedLogger(_logger, _logger_mutex)
 
 
 def pdf_get_pageinfo(infile, page, width_pt, height_pt):
@@ -147,27 +180,26 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
 pageno, width_pt, height_pt = map(int, options.page_info.split(' ', 3))
 pageinfo = pdf_get_pageinfo(options.input_pdf, pageno, width_pt, height_pt)
 
-with logger_mutex:
-    if not pageinfo['images']:
-        # If the page has no images, then it contains vector content or text
-        # or both. It seems quite unlikely that one would find meaningful text
-        # from rasterizing vector content. So skip the page.
-        logger.info(
-            "Page {0} has no images - skipping OCR".format(pageno)
-        )
-    elif pageinfo['has_text']:
-        s = "Page {0} already has text! – {1}"
+if not pageinfo['images']:
+    # If the page has no images, then it contains vector content or text
+    # or both. It seems quite unlikely that one would find meaningful text
+    # from rasterizing vector content. So skip the page.
+    log.info(
+        "Page {0} has no images - skipping OCR".format(pageno)
+    )
+elif pageinfo['has_text']:
+    s = "Page {0} already has text! – {1}"
 
-        if not options.force_ocr and not options.skip_text:
-            logger.error(s.format(pageno,
-                         "aborting (use -f or -s to force OCR)"))
-            sys.exit(1)
-        elif options.force_ocr:
-            logger.info(s.format(pageno,
-                        "rasterizing text and running OCR anyway"))
-        elif options.skip_text:
-            logger.info(s.format(pageno,
-                        "skipping all processing on this page"))
+    if not options.force_ocr and not options.skip_text:
+        log.error(s.format(pageno,
+                     "aborting (use -f or -s to force OCR)"))
+        sys.exit(1)
+    elif options.force_ocr:
+        log.info(s.format(pageno,
+                    "rasterizing text and running OCR anyway"))
+    elif options.skip_text:
+        log.info(s.format(pageno,
+                    "skipping all processing on this page"))
 
 ocr_required = pageinfo['images'] and \
     (options.force_ocr or
@@ -178,17 +210,17 @@ if ocr_required and options.skip_big:
     pixel_count = pageinfo['width_pixels'] * pageinfo['height_pixels']
     if area > (11.0 * 17.0) or pixel_count > (300.0 * 300.0 * 11 * 17):
         ocr_required = False
-        logger.info(
+        log.info(
             "Page {0} is very large; skipping due to -b".format(pageno))
 
 
-def re_symlink(input_file, soft_link_name, logger, logger_mutex):
+def re_symlink(input_file, soft_link_name, log=log):
     """
     Helper function: relinks soft symbolic link if necessary
     """
     # Guard against soft linking to oneself
     if input_file == soft_link_name:
-        logger.debug("Warning: No symbolic link made. You are using " +
+        log.debug("Warning: No symbolic link made. You are using " +
                      "the original data directory as the working directory.")
         return
 
@@ -200,14 +232,12 @@ def re_symlink(input_file, soft_link_name, logger, logger_mutex):
         try:
             os.unlink(soft_link_name)
         except:
-            with logger_mutex:
-                logger.debug("Can't unlink %s" % (soft_link_name))
+            log.debug("Can't unlink %s" % (soft_link_name))
 
     if not os.path.exists(input_file):
         raise Exception("trying to create a broken symlink to %s" % input_file)
 
-    with logger_mutex:
-        logger.debug("os.symlink(%s, %s)" % (input_file, soft_link_name))
+    log.debug("os.symlink(%s, %s)" % (input_file, soft_link_name))
 
     # Create symbolic link using absolute path
     os.symlink(
@@ -222,10 +252,9 @@ def re_symlink(input_file, soft_link_name, logger, logger_mutex):
            formatter(),
            os.path.join(options.tmp_fld, "original{ext[0]}"))
 def setup_working_directory(input_file, soft_link_name):
-    with logger_mutex:
-        logger.debug("Linking %(input_file)s -> %(soft_link_name)s" % locals())
+    log.debug("Linking %(input_file)s -> %(soft_link_name)s" % locals())
     try:
-        re_symlink(input_file, soft_link_name, logger, logger_mutex)
+        re_symlink(input_file, soft_link_name)
     except FileExistsError:
         pass
 
@@ -304,8 +333,7 @@ def unpack_with_pdftoppm(
         # Because universal_newlines=False, stderr is bytes(), so we must
         # manually convert it to str for logging
         from codecs import decode
-        with logger_mutex:
-            logger.error(decode(stderr, sys.getdefaultencoding(), 'ignore'))
+        log.error(decode(stderr, sys.getdefaultencoding(), 'ignore'))
     if p.returncode != 0:
         raise CalledProcessError(p.returncode, args_pdftoppm)
 
@@ -351,11 +379,10 @@ def unpack_with_ghostscript(
     p = Popen(args_gs, close_fds=True, stdout=PIPE, stderr=PIPE,
               universal_newlines=True)
     stdout, stderr = p.communicate()
-    with logger_mutex:
-        if stdout:
-            logger.info(stdout)
-        if stderr:
-            logger.error(stderr)
+    if stdout:
+        log.info(stdout)
+    if stderr:
+        log.error(stderr)
 
     try:
         f = open(output_file)
@@ -384,11 +411,10 @@ def deskew_imagemagick(input_file, output_file):
               universal_newlines=True)
     stdout, stderr = p.communicate()
 
-    with logger_mutex:
-        if stdout:
-            logger.info(stdout)
-        if stderr:
-            logger.error(stderr)
+    if stdout:
+        log.info(stdout)
+    if stderr:
+        log.error(stderr)
 
     if p.returncode != 0:
         raise CalledProcessError(p.returncode, args_convert)
@@ -400,9 +426,8 @@ def deskew_imagemagick(input_file, output_file):
 @transform(convert_to_png, suffix(".png"), ".deskewed.png")
 def deskew_leptonica(input_file, output_file):
     from .leptonica import deskew
-    with logger_mutex:
-        deskew(input_file, output_file,
-               min(pageinfo['xres'], pageinfo['yres']))
+    deskew(input_file, output_file,
+           min(pageinfo['xres'], pageinfo['yres']))
 
 
 @active_if(ocr_required)
@@ -441,11 +466,10 @@ def clean_unpaper(input_file, output_file):
               universal_newlines=True)
     stdout, stderr = p.communicate()
 
-    with logger_mutex:
-        if stdout:
-            logger.info(stdout)
-        if stderr:
-            logger.error(stderr)
+    if stdout:
+        logger.info(stdout)
+    if stderr:
+        logger.error(stderr)
 
     if p.returncode != 0:
         raise CalledProcessError(p.returncode, args_unpaper)
@@ -484,7 +508,7 @@ hocr_template = '''<?xml version="1.0" encoding="UTF-8"?>
   <div class='ocr_page' id='page_1' title='image "x.tif"; bbox 0 0 {0} {1}; ppageno 0'>
    <div class='ocr_carea' id='block_1_1' title="bbox 0 1 {0} {1}">
     <p class='ocr_par' dir='ltr' id='par_1' title="bbox 0 1 {0} {1}">
-     <span class='ocr_line' id='line_1' title="bbox 0 1 {0} {1}"><span class='ocrx_word' id='word_1' title="bbox 0 1 {0} {1}"> </span> 
+     <span class='ocr_line' id='line_1' title="bbox 0 1 {0} {1}"><span class='ocrx_word' id='word_1' title="bbox 0 1 {0} {1}"> </span>
      </span>
     </p>
    </div>
@@ -521,11 +545,10 @@ def ocr_tesseract(
             f.write(hocr_template.format(pageinfo['width_pixels'],
                                          pageinfo['height_pixels']))
     else:
-        with logger_mutex:
-            if stdout:
-                logger.info(stdout)
-            if stderr:
-                logger.error(stderr)
+        if stdout:
+            logger.info(stdout)
+        if stderr:
+            logger.error(stderr)
 
         if p.returncode != 0:
             raise CalledProcessError(p.returncode, args_tesseract)
@@ -626,21 +649,7 @@ def select_final_page(infiles, output_file):
     re_symlink(infiles[-1], output_file, logger, logger_mutex)
 
 
-cmdline.run(options)
+if __name__ == '__main__':
+    cmdline.run(options)
 
-# parser.add_argument(
-#     'tess_cfg_files',
-#   help="Specific configuration files to be used by Tesseract during OCRing")
-
-
-def main():
-    args = parser.parse_args()
-
-    pageno, width_pt, height_pt = map(int, args.page_info.split(' ', 3))
-
-    logger.name += '(page=%i)' % pageno
-
-    logger.info("Processing page %i / %i", pageno, args.num_pages)
-
-    pageinfo = pdf_get_pageinfo(args.input_pdf, pageno, width_pt, height_pt)
 
