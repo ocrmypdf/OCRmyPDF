@@ -149,7 +149,6 @@ FILE_INPUT_PDF="`absolutePath "$1"`"
 FILE_OUTPUT_PDFA="`absolutePath "$2"`"
 
 
-
 # set script path as working directory
 cd "$BASEPATH"
 
@@ -173,7 +172,6 @@ cd "$BASEPATH"
 ! command -v java > /dev/null && echo "Please install java. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 
 
-
 # ensure the right tesseract version is installed
 # older versions are known to produce malformed hocr output and should not be used
 # Even 3.02.01 fails in few cases (see issue #28). I decided to allow this version anyway because
@@ -193,7 +191,6 @@ parallelversion=`parallel --minversion 0`
 
 # ensure pdftoppm is provided by poppler-utils, not the older xpdf version
 ! pdftoppm -v 2>&1 | grep -q 'Poppler' && echo "Please remove xpdf and install poppler-utils. Exiting..." && $EXIT_MISSING_DEPENDENCY
-
 
 
 # Display the version of the tools if log level is LOG_DEBUG
@@ -229,7 +226,6 @@ if [ $VERBOSITY -ge $LOG_DEBUG ]; then
 fi
 
 
-
 # check if the languages passed to tesseract are all supported
 for currentlan in `echo "$LAN" | sed 's/+/ /g'`; do
 	if ! tesseract --list-langs 2>&1 | grep "^$currentlan\$" > /dev/null; then
@@ -239,7 +235,6 @@ for currentlan in `echo "$LAN" | sed 's/+/ /g'`; do
 		exit $EXIT_BAD_ARGS
 	fi
 done
-
 
 
 # Initialize path to temporary files using mktemp
@@ -264,7 +259,6 @@ fi
 FILE_TMP="${TMP_FLD}/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
 FILE_PAGES_INFO="${TMP_FLD}/pages-info.txt"				# for each page: page #; width in pt; height in pt
 FILE_VALIDATION_LOG="${TMP_FLD}/pdf_validation.log"			# log file containing the results of the validation of the PDF/A file
-
 
 
 # get the size of each pdf page (width / height) in pt (i.e. inch/72)
@@ -297,6 +291,7 @@ ret_code="$?"
 	&& echo "Unexpected error while checking compliance to PDF/A file. Exiting..." && exit $EXIT_OTHER_ERROR
 grep -i "Status|Message" "$FILE_VALIDATION_LOG" # summary of the validation
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "The full validation log is available here: \"$FILE_VALIDATION_LOG\""
+
 # check the validation results
 pdf_valid=1
 grep -i 'ErrorMessage' "$FILE_VALIDATION_LOG" && pdf_valid=0
@@ -306,18 +301,13 @@ grep -i 'Status.*Not well-formed' "$FILE_VALIDATION_LOG" && pdf_valid=0
 [ $pdf_valid -ne 1 ] && echo "Output file: The generated PDF/A file is INVALID"
 [ $pdf_valid -eq 1 ] && [ $VERBOSITY -ge $LOG_INFO ] && echo "Output file: The generated PDF/A file is VALID"
 
-
-
-
 # delete temporary files
 if [ $KEEP_TMP -eq 0 ]; then
 	[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Deleting temporary files"
 	rm -r -f "${TMP_FLD}"
 fi
 
-
 END=`date +%s`
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Script took $(($END-$START)) seconds"
-
 
 [ $pdf_valid -ne 1 ] && exit $EXIT_INVALID_OUTPUT_PDFA || exit 0
