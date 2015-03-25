@@ -6,7 +6,7 @@
 # Darwin/OS X has not evolved a proper readlink yet
 if [ $(uname) == "Darwin" ]; then
 	function readlink() {
-		python -c 'import os,sys; print os.path.realpath(sys.argv[1])' "$2"
+		python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$2"
 	}
 fi
 
