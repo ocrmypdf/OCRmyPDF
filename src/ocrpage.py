@@ -61,7 +61,7 @@ parser.add_argument(
     'preprocess_cleantopdf', type=int,      # Implemented
     help="Put the cleaned paged in the OCRed PDF")
 parser.add_argument(
-    'oversampling_dpi', type=int,           # Not implmeneted
+    'oversampling_dpi', type=int,           # Implemented
     help="Oversampling resolution in dpi")
 parser.add_argument(
     'pdf_noimg', type=int,                  # implemented
@@ -174,6 +174,12 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
             int(round(xres * pageinfo['width_inches']))
         pageinfo['height_pixels'] = \
             int(round(yres * pageinfo['height_inches']))
+
+        if options.oversampling_dpi > 0:
+            rx, ry = options.oversampling_dpi, options.oversampling_dpi
+        else:
+            rx, ry = pageinfo['xres'], pageinfo['yres']
+        pageinfo['xres_render'], pageinfo['yres_render'] = rx, ry
 
     return pageinfo
 
@@ -304,8 +310,8 @@ def unpack_with_pdftoppm(
     args_pdftoppm = [
         'pdftoppm',
         '-f', str(pageinfo['pageno']), '-l', str(pageinfo['pageno']),
-        '-rx', str(pageinfo['xres']),
-        '-ry', str(pageinfo['yres'])
+        '-rx', str(pageinfo['xres_render']),
+        '-ry', str(pageinfo['yres_render'])
     ]
 
     if not force_ppm:
@@ -372,7 +378,8 @@ def unpack_with_ghostscript(
         '-dLastPage=%i' % pageno,
         '-sDEVICE=%s' % device,
         '-o', output_file,
-        '-r{0}x{1}'.format(str(pageinfo['xres']), str(pageinfo['yres'])),
+        '-r{0}x{1}'.format(
+            str(pageinfo['xres_render']), str(pageinfo['yres_render'])),
         input_file
     ]
 
