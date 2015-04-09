@@ -25,7 +25,7 @@ from .hocrtransform import HocrTransform
 
 import warnings
 
-warnings.simplefilter('once', pypdf.utils.PdfReadWarning, lineno=1509)
+warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
 
 basedir = os.path.dirname(os.path.realpath(__file__))
