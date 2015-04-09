@@ -23,6 +23,10 @@ from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
 import ruffus.cmdline as cmdline
 from .hocrtransform import HocrTransform
 
+import warnings
+
+warnings.simplefilter('once', pypdf.utils.PdfReadWarning, lineno=1509)
+
 
 basedir = os.path.dirname(os.path.realpath(__file__))
 
@@ -128,6 +132,35 @@ class WrappedLogger:
 log = WrappedLogger(_logger, _logger_mutex)
 
 
+FRIENDLY_COLORSPACE = {
+    '/DeviceGray': 'gray',
+    '/CalGray': 'gray',
+    '/DeviceRGB': 'rgb',
+    '/CalRGB': 'rgb',
+    '/DeviceCMYK': 'cmyk',
+    '/Lab': 'lab',
+    '/ICCBased': 'icc',
+    '/Indexed': 'index',
+    '/Separation': 'sep',
+    '/DeviceN': 'devn',
+    '/Pattern': '-'
+}
+
+FRIENDLY_ENCODING = {
+    '/CCITTFaxDecode': 'ccitt',
+    '/DCTDecode': 'jpeg',
+    '/JPXDecode': 'jpx',
+    '/JBIG2Decode': 'jbig2',
+}
+
+FRIENDLY_COMP = {
+    'gray': 1,
+    'rgb': 3,
+    'cmyk': 4,
+    'lab': 3,
+}
+
+
 def pdf_get_pageinfo(infile, page, width_pt, height_pt):
     pageinfo = {}
     pageinfo['pageno'] = page
@@ -157,9 +190,29 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
         pdfimage = page['/Resources']['/XObject'][xobj]
         if pdfimage['/Subtype'] != '/Image':
             continue
+        if '/ImageMask' in pdfimage:
+            if pdfimage['/ImageMask']:
+                continue
         image = {}
         image['width'] = pdfimage['/Width']
         image['height'] = pdfimage['/Height']
+        image['bpc'] = pdfimage['/BitsPerComponent']
+        if '/Filter' in pdfimage:
+            filter_ = pdfimage['/Filter']
+            if isinstance(filter_, pypdf.generic.ArrayObject):
+                filter_ = filter_[0]
+            image['enc'] = FRIENDLY_ENCODING.get(filter_, 'image')
+        else:
+            image['enc'] = 'image'
+        if '/ColorSpace' in pdfimage:
+            cs = pdfimage['/ColorSpace']
+            if isinstance(cs, pypdf.generic.ArrayObject):
+                cs = cs[0]
+            image['color'] = FRIENDLY_COLORSPACE.get(cs, '-')
+        else:
+            image['color'] = 'jpx' if image['enc'] == 'jpx' else '?'
+
+        image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
         image['dpi_w'] = image['width'] / pageinfo['width_inches']
         image['dpi_h'] = image['height'] / pageinfo['height_inches']
         image['dpi'] = (image['dpi_w'] * image['dpi_h']) ** 0.5
