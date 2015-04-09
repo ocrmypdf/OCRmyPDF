@@ -145,22 +145,21 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
     else:
         pageinfo['has_text'] = False
 
-    # pdfimages: get image dimensions
-    p_pdfimages = Popen(['pdfimages', '-list', '-f', str(page), '-l',
-                        str(page), str(infile)], close_fds=True, stdout=PIPE,
-                        stderr=PIPE, universal_newlines=True)
-    pdfimages, _ = p_pdfimages.communicate()
-    for n, line in enumerate(pdfimages.splitlines()):
-        if n <= 1:
-            continue  # Skip first two lines
+    pdf = pypdf.PdfFileReader(infile)
+    page = pdf.pages[page - 1]
 
-        r = parse('{page:1d} {num:1d} {imtype:>} {width:1d} {height:1d} ' +
-                  '{color:>} {comp:1d} {bpc:1d} {enc:>} {interp:>} ' +
-                  '{pdfobject:1d} {pdfid:1d} {bad_dpi_w:1d} {bad_dpi_h:1d} ' +
-                  '{size:>} {ratio:>}', line)
-        image = r.named
-        # pdfimages calculates DPI as of 0.26.0, but adds +1 to dpi_h
-        # apparent bug, so calculate explicitly
+    if not '/XObject' in page['/Resources']:
+        # Missing /XObject means no images or possibly corrupt PDF
+        return pageinfo
+
+    for xobj in page['/Resources']['/XObject']:
+        # PyPDF2 returns the keys as an iterator
+        pdfimage = page['/Resources']['/XObject'][xobj]
+        if pdfimage['/Subtype'] != '/Image':
+            continue
+        image = {}
+        image['width'] = pdfimage['/Width']
+        image['height'] = pdfimage['/Height']
         image['dpi_w'] = image['width'] / pageinfo['width_inches']
         image['dpi_h'] = image['height'] / pageinfo['height_inches']
         image['dpi'] = (image['dpi_w'] * image['dpi_h']) ** 0.5
