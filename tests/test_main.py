@@ -7,11 +7,19 @@ TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
 PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
 OCRMYPDF = os.path.join(PROJECT_ROOT, 'OCRmyPDF.sh')
 TEST_RESOURCES = os.path.join(PROJECT_ROOT, 'tests', 'resources')
+TEST_OUTPUT = os.path.join(PROJECT_ROOT, 'tests', 'output')
 
 
-def run_ocrmypdf(input_file, output_file, *args):
+def setup_module():
+    try:
+        os.mkdir(TEST_OUTPUT)
+    except FileExistsError:
+        pass
+
+
+def run_ocrmypdf(input_file, *args):
     input_path = os.path.join(TEST_RESOURCES, input_file)
-    output_path = os.path.join(TEST_RESOURCES, output_file)
+    output_path = os.path.join(TEST_OUTPUT, input_file)
 
     sh_args = ['sh', './OCRmyPDF.sh'] + list(args) + [input_path, output_path]
     sh = Popen(
@@ -21,10 +29,10 @@ def run_ocrmypdf(input_file, output_file, *args):
     return sh, out, err
 
 
-def check_ocrmypdf(input_file, output_file, *args):
-    sh, _, err = run_ocrmypdf(input_file, output_file, *args)
+def check_ocrmypdf(input_file, *args):
+    sh, _, err = run_ocrmypdf(input_file, *args)
     assert sh.returncode == 0, err
 
 
 def test_quick():
-    check_ocrmypdf('graph.pdf', 'graph_out.pdf')
+    check_ocrmypdf('c02-22.pdf')
