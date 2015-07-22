@@ -474,9 +474,9 @@ def clean_unpaper(input_file, output_file):
     stdout, stderr = p.communicate()
 
     if stdout:
-        logger.info(stdout)
+        log.info(stdout)
     if stderr:
-        logger.error(stderr)
+        log.error(stderr)
 
     if p.returncode != 0:
         raise CalledProcessError(p.returncode, args_unpaper)
@@ -498,7 +498,7 @@ def cleaned_to_png(input_file, output_file):
         deskew_leptonica, cleaned_to_png],
        os.path.join(options.tmp_fld, "%04i.for_ocr.png" % pageno))
 def select_ocr_image(infiles, output_file):
-    re_symlink(infiles[-1], output_file, logger, logger_mutex)
+    re_symlink(infiles[-1], output_file)
 
 
 hocr_template = '''<?xml version="1.0" encoding="UTF-8"?>
@@ -553,9 +553,9 @@ def ocr_tesseract(
                                          pageinfo['height_pixels']))
     else:
         if stdout:
-            logger.info(stdout)
+            log.info(stdout)
         if stderr:
-            logger.error(stderr)
+            log.error(stderr)
 
         if p.returncode != 0:
             raise CalledProcessError(p.returncode, args_tesseract)
@@ -597,7 +597,7 @@ def select_image_for_pdf(infiles, output_file):
         # If all images were JPEGs originally, produce a JPEG as output
         check_call(['convert', input_file, 'jpg:' + output_file])
     else:
-        re_symlink(input_file, output_file, logger, logger_mutex)
+        re_symlink(input_file, output_file)
 
 
 @active_if(ocr_required and not options.exact_image)
@@ -653,7 +653,7 @@ def merge_hocr_with_original_page(infiles, output_file):
 @merge([render_page, merge_hocr_with_original_page, extract_single_page],
        os.path.join(options.tmp_fld, '%04i.ocred.pdf' % pageno))
 def select_final_page(infiles, output_file):
-    re_symlink(infiles[-1], output_file, logger, logger_mutex)
+    re_symlink(infiles[-1], output_file)
 
 
 if __name__ == '__main__':
