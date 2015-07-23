@@ -33,7 +33,10 @@ from .pdfa import generate_pdfa_def
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
 
-basedir = os.path.dirname(os.path.realpath(__file__))
+BASEDIR = os.path.dirname(os.path.realpath(__file__))
+JHOVE_PATH = os.path.realpath(os.path.join(BASEDIR, '..', 'jhove'))
+JHOVE_JAR = os.path.join(JHOVE_PATH, 'bin', 'JhoveApp.jar')
+JHOVE_CFG = os.path.join(JHOVE_PATH, 'conf', 'jhove.conf')
 
 parser = cmdline.get_argparse(
     prog="OCRmyPDF",
@@ -310,7 +313,7 @@ def generate_postscript_stub(
 
 @merge(
     input=[noop, generate_postscript_stub],
-    output=options.output_file,
+    output=os.path.join(options.temp_folder, 'merged.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def merge_pages(
         input_files,
@@ -339,6 +342,68 @@ def merge_pages(
         args_gs.extend(ocr_pages)
         check_call(args_gs)
         shutil.copy(gs_pdf.name, output_file)
+
+
+@transform(
+    input=merge_pages,
+    filter=formatter(),
+    output=options.output_file,
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def validate_pdfa(
+        input_file,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+
+    args_jhove = [
+        'java',
+        '-jar', JHOVE_JAR,
+        '-c', JHOVE_CFG,
+        '-m', 'PDF-hul',
+        input_file
+    ]
+    p_jhove = Popen(args_jhove, close_fds=True, universal_newlines=True,
+                    stdout=PIPE, stderr=DEVNULL)
+    stdout, _ = p_jhove.communicate()
+
+    log.debug(stdout)
+    if p_jhove.returncode != 0:
+        log.error(stdout)
+        raise RuntimeError(
+            "Unexpected error while checking compliance to PDF/A file.")
+
+    pdf_is_valid = True
+    if re.search(r'ErrorMessage', stdout,
+                 re.IGNORECASE | re.MULTILINE):
+        pdf_is_valid = False
+    if re.search(r'^\s+Status.*not valid', stdout,
+                 re.IGNORECASE | re.MULTILINE):
+        pdf_is_valid = False
+    if re.search(r'^\s+Status.*Not well-formed', stdout,
+                 re.IGNORECASE | re.MULTILINE):
+        pdf_is_valid = False
+
+    pdf_is_pdfa = False
+    if re.search(r'^\s+Profile:.*PDF/A-1', stdout,
+                 re.IGNORECASE | re.MULTILINE):
+        pdf_is_pdfa = True
+
+    if not pdf_is_valid:
+        log.warning('Output file: The generated PDF/A file is INVALID')
+    elif pdf_is_valid and not pdf_is_pdfa:
+        log.warning('Output file: Generated file is a VALID PDF but not PDF/A')
+    elif pdf_is_valid and pdf_is_pdfa:
+        log.info('Output file: The generated PDF/A file is VALID')
+    shutil.copy(input_file, output_file)
+
+
+
+#     [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Checking compliance to PDF/A standard"
+# ! java -jar "$JHOVE" -c "$JHOVE_CFG" -m PDF-hul "$FILE_OUTPUT_PDFA" 2> /dev/null 1> "$FILE_VALIDATION_LOG" \
+#     && echo "Unexpected error while checking compliance to PDF/A file. Exiting..." && exit $EXIT_OTHER_ERROR
+# grep -i "Status|Message" "$FILE_VALIDATION_LOG" # summary of the validation
+# [ $VERBOSITY -ge $LOG_DEBUG ] && echo "The full validation log is available here: \"$FILE_VALIDATION_LOG\""
 
 
 
