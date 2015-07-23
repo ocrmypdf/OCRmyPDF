@@ -24,6 +24,7 @@ import ruffus.cmdline as cmdline
 from .hocrtransform import HocrTransform
 
 import warnings
+import multiprocessing
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
@@ -96,7 +97,7 @@ debugging.add_argument(
     '-k', '--keep-temporary-files', action='store_true',
     help="keep temporary files (helpful for debugging)")
 debugging.add_argument(
-    '-g' ,'--debug-rendering', action='store_true',
+    '-g', '--debug-rendering', action='store_true',
     help="render each page twice with debug information on second page")
 
 
@@ -106,51 +107,19 @@ if not options.temp_folder:
     options.temp_folder = 'tmp'
 
 
-_logger, _logger_mutex = cmdline.setup_logging(__name__, options.log_file,
-                                               options.verbose)
+log, log_mutex = cmdline.setup_logging(__name__, options.log_file,
+                                       options.verbose)
 
 
-class WrappedLogger:
-
-    def __init__(self, my_logger, my_mutex):
-        self.logger = my_logger
-        self.mutex = my_mutex
-
-    def log(self, *args, **kwargs):
-        with self.mutex:
-            self.logger.log(*args, **kwargs)
-
-    def debug(self, *args, **kwargs):
-        with self.mutex:
-            self.logger.debug(*args, **kwargs)
-
-    def info(self, *args, **kwargs):
-        with self.mutex:
-            self.logger.info(*args, **kwargs)
-
-    def warning(self, *args, **kwargs):
-        with self.mutex:
-            self.logger.warning(*args, **kwargs)
-
-    def error(self, *args, **kwargs):
-        with self.mutex:
-            self.logger.error(*args, **kwargs)
-
-    def critical(self, *args, **kwargs):
-        with self.mutex:
-            self.logger.critical(*args, **kwargs)
-
-log = WrappedLogger(_logger, _logger_mutex)
-
-
-def re_symlink(input_file, soft_link_name, log=log):
+def re_symlink(input_file, soft_link_name, log, mutex):
     """
     Helper function: relinks soft symbolic link if necessary
     """
     # Guard against soft linking to oneself
     if input_file == soft_link_name:
-        log.debug("Warning: No symbolic link made. You are using " +
-                     "the original data directory as the working directory.")
+        with mutex:
+            log.debug("Warning: No symbolic link made. You are using " +
+                      "the original data directory as the working directory.")
         return
 
     # Soft link already exists: delete for relink?
@@ -161,12 +130,14 @@ def re_symlink(input_file, soft_link_name, log=log):
         try:
             os.unlink(soft_link_name)
         except:
-            log.debug("Can't unlink %s" % (soft_link_name))
+            with mutex:
+                log.debug("Can't unlink %s" % (soft_link_name))
 
     if not os.path.exists(input_file):
         raise Exception("trying to create a broken symlink to %s" % input_file)
 
-    log.debug("os.symlink(%s, %s)" % (input_file, soft_link_name))
+    with mutex:
+        log.debug("os.symlink(%s, %s)" % (input_file, soft_link_name))
 
     # Create symbolic link using absolute path
     os.symlink(
