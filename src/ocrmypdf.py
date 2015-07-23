@@ -107,19 +107,51 @@ if not options.temp_folder:
     options.temp_folder = 'tmp'
 
 
-log, log_mutex = cmdline.setup_logging(__name__, options.log_file,
-                                       options.verbose)
+_logger, _logger_mutex = cmdline.setup_logging(__name__, options.log_file,
+                                               options.verbose)
 
 
-def re_symlink(input_file, soft_link_name, log, mutex):
+class WrappedLogger:
+
+    def __init__(self, my_logger, my_mutex):
+        self.logger = my_logger
+        self.mutex = my_mutex
+
+    def log(self, *args, **kwargs):
+        with self.mutex:
+            self.logger.log(*args, **kwargs)
+
+    def debug(self, *args, **kwargs):
+        with self.mutex:
+            self.logger.debug(*args, **kwargs)
+
+    def info(self, *args, **kwargs):
+        with self.mutex:
+            self.logger.info(*args, **kwargs)
+
+    def warning(self, *args, **kwargs):
+        with self.mutex:
+            self.logger.warning(*args, **kwargs)
+
+    def error(self, *args, **kwargs):
+        with self.mutex:
+            self.logger.error(*args, **kwargs)
+
+    def critical(self, *args, **kwargs):
+        with self.mutex:
+            self.logger.critical(*args, **kwargs)
+
+_log = WrappedLogger(_logger, _logger_mutex)
+
+
+def re_symlink(input_file, soft_link_name, log=_log):
     """
     Helper function: relinks soft symbolic link if necessary
     """
     # Guard against soft linking to oneself
     if input_file == soft_link_name:
-        with mutex:
-            log.debug("Warning: No symbolic link made. You are using " +
-                      "the original data directory as the working directory.")
+        log.debug("Warning: No symbolic link made. You are using " +
+                     "the original data directory as the working directory.")
         return
 
     # Soft link already exists: delete for relink?
@@ -130,14 +162,12 @@ def re_symlink(input_file, soft_link_name, log, mutex):
         try:
             os.unlink(soft_link_name)
         except:
-            with mutex:
-                log.debug("Can't unlink %s" % (soft_link_name))
+            log.debug("Can't unlink %s" % (soft_link_name))
 
     if not os.path.exists(input_file):
         raise Exception("trying to create a broken symlink to %s" % input_file)
 
-    with mutex:
-        log.debug("os.symlink(%s, %s)" % (input_file, soft_link_name))
+    log.debug("os.symlink(%s, %s)" % (input_file, soft_link_name))
 
     # Create symbolic link using absolute path
     os.symlink(
