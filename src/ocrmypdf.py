@@ -19,7 +19,7 @@ except ImportError:
 
 
 from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
-    mkdir, formatter, follows, split
+    mkdir, formatter, follows, subdivide
 import ruffus.cmdline as cmdline
 import warnings
 
@@ -177,40 +177,33 @@ def re_symlink(input_file, soft_link_name, log=_log):
     )
 
 
-# ------------------------
-# Change working directory
-
-if not options.temp_folder:
-    options.temp_folder = 'tmp'
-
-original_cwd = os.getcwd()
-with suppress(FileExistsError):
-    os.mkdir(options.temp_folder)
-os.chdir(options.temp_folder)
-
-
 # -------------
 # The Pipeline
 
-pdfinfo = {}
+_pdfinfo = []
+if options.temp_folder == '':
+    options.temp_folder = 'tmp'
 
 
+@follows(mkdir(options.temp_folder))
 @transform(
-    os.path.join(original_cwd, options.input_file),
-    suffix('.pdf'),
-    '.cleaned.pdf',
-    pdfinfo)
+    input=options.input_file,
+    filter=suffix('.pdf'),
+    output='.cleaned.pdf',
+    output_dir=options.temp_folder,
+    extras=[_pdfinfo, _log])
 def clean_pdf(
         input_file,
         output_file,
-        pdfinfo):
+        pdfinfo,
+        log):
     args_mutool = [
         'mutool', 'clean',
         input_file, output_file
     ]
     check_call(args_mutool)
 
-    pdfinfo = pdf_get_all_pageinfo(output_file)
+    pdfinfo.extend(pdf_get_all_pageinfo(output_file))
 
 
 # pageno, width_pt, height_pt = map(int, options.page_info.split(' ', 3))
@@ -251,22 +244,28 @@ def clean_pdf(
 
 
 
-@split(
+@subdivide(
     clean_pdf,
-    '*.page.pdf',
-    pdfinfo)
+    formatter(),
+    "{path[0]}/*.page.pdf",
+    "{path[0]}/",
+    _pdfinfo,
+    _log)
 def split_pages(
         input_file,
-        output_files):
+        output_files,
+        output_file_name_root,
+        pdfinfo,
+        log):
 
     for oo in output_files:
         with suppress(FileNotFoundError):
             os.unlink(oo)
-
+    log.info(output_file_name_root)
     args_pdfseparate = [
         'pdfseparate',
         input_file,
-        '%06d.page.pdf'
+        output_file_name_root + '%06d.page.pdf'
     ]
     check_call(args_pdfseparate)
 
