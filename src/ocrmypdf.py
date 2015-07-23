@@ -7,6 +7,7 @@ import re
 from parse import parse
 import PyPDF2 as pypdf
 import shutil
+from contextlib import suppress
 
 from subprocess import Popen, check_call, PIPE, CalledProcessError, \
     TimeoutExpired
@@ -34,10 +35,10 @@ parser = cmdline.get_argparse(
     description="Generate searchable PDF file from an image-only PDF file.")
 
 parser.add_argument(
-    'inputfile',
+    'input_file',
     help="PDF file containing the images to be OCRed")
 parser.add_argument(
-    'outputfile',
+    'output_file',
     help="output searchable PDF file")
 parser.add_argument(
     '-l', '--language', nargs='*', default=['eng'],
@@ -174,8 +175,170 @@ def re_symlink(input_file, soft_link_name, log=log):
     )
 
 
-@follows(mkdir(options.temp_folder))
-@split(options.inputfile, '*.page.pdf')
+original_cwd = os.getcwd()
+with suppress(FileExistsError):
+    os.mkdir(options.temp_folder)
+os.chdir(options.temp_folder)
+
+
+@transform(
+    os.path.join(original_cwd, options.input_file),
+    suffix('.pdf'),
+    '.cleaned.pdf')
+def clean_pdf(
+        input_file,
+        output_file):
+    args_mutool = [
+        'mutool', 'clean',
+        input_file, output_file
+    ]
+    check_call(args_mutool)
+
+
+FRIENDLY_COLORSPACE = {
+    '/DeviceGray': 'gray',
+    '/CalGray': 'gray',
+    '/DeviceRGB': 'rgb',
+    '/CalRGB': 'rgb',
+    '/DeviceCMYK': 'cmyk',
+    '/Lab': 'lab',
+    '/ICCBased': 'icc',
+    '/Indexed': 'index',
+    '/Separation': 'sep',
+    '/DeviceN': 'devn',
+    '/Pattern': '-'
+}
+
+FRIENDLY_ENCODING = {
+    '/CCITTFaxDecode': 'ccitt',
+    '/DCTDecode': 'jpeg',
+    '/JPXDecode': 'jpx',
+    '/JBIG2Decode': 'jbig2',
+}
+
+FRIENDLY_COMP = {
+    'gray': 1,
+    'rgb': 3,
+    'cmyk': 4,
+    'lab': 3,
+}
+
+
+def pdf_get_pageinfo(infile, page, width_pt, height_pt):
+    pageinfo = {}
+    pageinfo['pageno'] = page
+    pageinfo['width_inches'] = width_pt / 72.0
+    pageinfo['height_inches'] = height_pt / 72.0
+    pageinfo['images'] = []
+
+    p_pdftotext = Popen(['pdftotext', '-f', str(page), '-l', str(page),
+                        '-raw', '-nopgbrk', infile, '-'],
+                        close_fds=True, stdout=PIPE, stderr=PIPE,
+                        universal_newlines=True)
+    text, _ = p_pdftotext.communicate()
+    if len(text.strip()) > 0:
+        pageinfo['has_text'] = True
+    else:
+        pageinfo['has_text'] = False
+
+    pdf = pypdf.PdfFileReader(infile)
+    page = pdf.pages[page - 1]
+
+    if not '/XObject' in page['/Resources']:
+        # Missing /XObject means no images or possibly corrupt PDF
+        return pageinfo
+
+    for xobj in page['/Resources']['/XObject']:
+        # PyPDF2 returns the keys as an iterator
+        pdfimage = page['/Resources']['/XObject'][xobj]
+        if pdfimage['/Subtype'] != '/Image':
+            continue
+        if '/ImageMask' in pdfimage:
+            if pdfimage['/ImageMask']:
+                continue
+        image = {}
+        image['width'] = pdfimage['/Width']
+        image['height'] = pdfimage['/Height']
+        image['bpc'] = pdfimage['/BitsPerComponent']
+        if '/Filter' in pdfimage:
+            filter_ = pdfimage['/Filter']
+            if isinstance(filter_, pypdf.generic.ArrayObject):
+                filter_ = filter_[0]
+            image['enc'] = FRIENDLY_ENCODING.get(filter_, 'image')
+        else:
+            image['enc'] = 'image'
+        if '/ColorSpace' in pdfimage:
+            cs = pdfimage['/ColorSpace']
+            if isinstance(cs, pypdf.generic.ArrayObject):
+                cs = cs[0]
+            image['color'] = FRIENDLY_COLORSPACE.get(cs, '-')
+        else:
+            image['color'] = 'jpx' if image['enc'] == 'jpx' else '?'
+
+        image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
+        image['dpi_w'] = image['width'] / pageinfo['width_inches']
+        image['dpi_h'] = image['height'] / pageinfo['height_inches']
+        image['dpi'] = (image['dpi_w'] * image['dpi_h']) ** 0.5
+        pageinfo['images'].append(image)
+
+    if pageinfo['images']:
+        xres = max(image['dpi_w'] for image in pageinfo['images'])
+        yres = max(image['dpi_h'] for image in pageinfo['images'])
+        pageinfo['xres'], pageinfo['yres'] = xres, yres
+        pageinfo['width_pixels'] = \
+            int(round(xres * pageinfo['width_inches']))
+        pageinfo['height_pixels'] = \
+            int(round(yres * pageinfo['height_inches']))
+
+        if options.oversampling_dpi > 0:
+            rx, ry = options.oversampling_dpi, options.oversampling_dpi
+        else:
+            rx, ry = pageinfo['xres'], pageinfo['yres']
+        pageinfo['xres_render'], pageinfo['yres_render'] = rx, ry
+
+    return pageinfo
+
+pageno, width_pt, height_pt = map(int, options.page_info.split(' ', 3))
+pageinfo = pdf_get_pageinfo(options.input_file, pageno, width_pt, height_pt)
+
+if not pageinfo['images']:
+    # If the page has no images, then it contains vector content or text
+    # or both. It seems quite unlikely that one would find meaningful text
+    # from rasterizing vector content. So skip the page.
+    log.info(
+        "Page {0} has no images - skipping OCR".format(pageno)
+    )
+elif pageinfo['has_text']:
+    s = "Page {0} already has text! – {1}"
+
+    if not options.force_ocr and not options.skip_text:
+        log.error(s.format(pageno,
+                     "aborting (use -f or -s to force OCR)"))
+        sys.exit(1)
+    elif options.force_ocr:
+        log.info(s.format(pageno,
+                    "rasterizing text and running OCR anyway"))
+    elif options.skip_text:
+        log.info(s.format(pageno,
+                    "skipping all processing on this page"))
+
+ocr_required = pageinfo['images'] and \
+    (options.force_ocr or
+        (not (pageinfo['has_text'] and options.skip_text)))
+
+if ocr_required and options.skip_big:
+    area = pageinfo['width_inches'] * pageinfo['height_inches']
+    pixel_count = pageinfo['width_pixels'] * pageinfo['height_pixels']
+    if area > (11.0 * 17.0) or pixel_count > (300.0 * 300.0 * 11 * 17):
+        ocr_required = False
+        log.info(
+            "Page {0} is very large; skipping due to -b".format(pageno))
+
+
+
+@split(
+    clean_pdf,
+    '*.page.pdf')
 def split_pages(
         input_file,
         output_files):
@@ -192,144 +355,6 @@ def split_pages(
     check_call(args_pdfseparate)
 
 
-# FRIENDLY_COLORSPACE = {
-#     '/DeviceGray': 'gray',
-#     '/CalGray': 'gray',
-#     '/DeviceRGB': 'rgb',
-#     '/CalRGB': 'rgb',
-#     '/DeviceCMYK': 'cmyk',
-#     '/Lab': 'lab',
-#     '/ICCBased': 'icc',
-#     '/Indexed': 'index',
-#     '/Separation': 'sep',
-#     '/DeviceN': 'devn',
-#     '/Pattern': '-'
-# }
-
-# FRIENDLY_ENCODING = {
-#     '/CCITTFaxDecode': 'ccitt',
-#     '/DCTDecode': 'jpeg',
-#     '/JPXDecode': 'jpx',
-#     '/JBIG2Decode': 'jbig2',
-# }
-
-# FRIENDLY_COMP = {
-#     'gray': 1,
-#     'rgb': 3,
-#     'cmyk': 4,
-#     'lab': 3,
-# }
-
-
-# def pdf_get_pageinfo(infile, page, width_pt, height_pt):
-#     pageinfo = {}
-#     pageinfo['pageno'] = page
-#     pageinfo['width_inches'] = width_pt / 72.0
-#     pageinfo['height_inches'] = height_pt / 72.0
-#     pageinfo['images'] = []
-
-#     p_pdftotext = Popen(['pdftotext', '-f', str(page), '-l', str(page),
-#                         '-raw', '-nopgbrk', infile, '-'],
-#                         close_fds=True, stdout=PIPE, stderr=PIPE,
-#                         universal_newlines=True)
-#     text, _ = p_pdftotext.communicate()
-#     if len(text.strip()) > 0:
-#         pageinfo['has_text'] = True
-#     else:
-#         pageinfo['has_text'] = False
-
-#     pdf = pypdf.PdfFileReader(infile)
-#     page = pdf.pages[page - 1]
-
-#     if not '/XObject' in page['/Resources']:
-#         # Missing /XObject means no images or possibly corrupt PDF
-#         return pageinfo
-
-#     for xobj in page['/Resources']['/XObject']:
-#         # PyPDF2 returns the keys as an iterator
-#         pdfimage = page['/Resources']['/XObject'][xobj]
-#         if pdfimage['/Subtype'] != '/Image':
-#             continue
-#         if '/ImageMask' in pdfimage:
-#             if pdfimage['/ImageMask']:
-#                 continue
-#         image = {}
-#         image['width'] = pdfimage['/Width']
-#         image['height'] = pdfimage['/Height']
-#         image['bpc'] = pdfimage['/BitsPerComponent']
-#         if '/Filter' in pdfimage:
-#             filter_ = pdfimage['/Filter']
-#             if isinstance(filter_, pypdf.generic.ArrayObject):
-#                 filter_ = filter_[0]
-#             image['enc'] = FRIENDLY_ENCODING.get(filter_, 'image')
-#         else:
-#             image['enc'] = 'image'
-#         if '/ColorSpace' in pdfimage:
-#             cs = pdfimage['/ColorSpace']
-#             if isinstance(cs, pypdf.generic.ArrayObject):
-#                 cs = cs[0]
-#             image['color'] = FRIENDLY_COLORSPACE.get(cs, '-')
-#         else:
-#             image['color'] = 'jpx' if image['enc'] == 'jpx' else '?'
-
-#         image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
-#         image['dpi_w'] = image['width'] / pageinfo['width_inches']
-#         image['dpi_h'] = image['height'] / pageinfo['height_inches']
-#         image['dpi'] = (image['dpi_w'] * image['dpi_h']) ** 0.5
-#         pageinfo['images'].append(image)
-
-#     if pageinfo['images']:
-#         xres = max(image['dpi_w'] for image in pageinfo['images'])
-#         yres = max(image['dpi_h'] for image in pageinfo['images'])
-#         pageinfo['xres'], pageinfo['yres'] = xres, yres
-#         pageinfo['width_pixels'] = \
-#             int(round(xres * pageinfo['width_inches']))
-#         pageinfo['height_pixels'] = \
-#             int(round(yres * pageinfo['height_inches']))
-
-#         if options.oversampling_dpi > 0:
-#             rx, ry = options.oversampling_dpi, options.oversampling_dpi
-#         else:
-#             rx, ry = pageinfo['xres'], pageinfo['yres']
-#         pageinfo['xres_render'], pageinfo['yres_render'] = rx, ry
-
-#     return pageinfo
-
-# pageno, width_pt, height_pt = map(int, options.page_info.split(' ', 3))
-# pageinfo = pdf_get_pageinfo(options.inputfile, pageno, width_pt, height_pt)
-
-# if not pageinfo['images']:
-#     # If the page has no images, then it contains vector content or text
-#     # or both. It seems quite unlikely that one would find meaningful text
-#     # from rasterizing vector content. So skip the page.
-#     log.info(
-#         "Page {0} has no images - skipping OCR".format(pageno)
-#     )
-# elif pageinfo['has_text']:
-#     s = "Page {0} already has text! – {1}"
-
-#     if not options.force_ocr and not options.skip_text:
-#         log.error(s.format(pageno,
-#                      "aborting (use -f or -s to force OCR)"))
-#         sys.exit(1)
-#     elif options.force_ocr:
-#         log.info(s.format(pageno,
-#                     "rasterizing text and running OCR anyway"))
-#     elif options.skip_text:
-#         log.info(s.format(pageno,
-#                     "skipping all processing on this page"))
-
-# ocr_required = pageinfo['images'] and \
-#     (options.force_ocr or
-#         (not (pageinfo['has_text'] and options.skip_text)))
-
-# if ocr_required and options.skip_big:
-#     area = pageinfo['width_inches'] * pageinfo['height_inches']
-#     pixel_count = pageinfo['width_pixels'] * pageinfo['height_pixels']
-#     if area > (11.0 * 17.0) or pixel_count > (300.0 * 300.0 * 11 * 17):
-#         ocr_required = False
-#         log.info(
-#             "Page {0} is very large; skipping due to -b".format(pageno))
 
 
 
