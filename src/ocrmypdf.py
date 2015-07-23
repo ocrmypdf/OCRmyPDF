@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Reimplement ocrPage.sh as Python
 
 import sys
 import os.path
@@ -31,66 +30,73 @@ warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 basedir = os.path.dirname(os.path.realpath(__file__))
 
 parser = cmdline.get_argparse(
-    prog="ocrpage",
-    description="Run OCR and related jobs on a single page of a PDF file")
+    prog="OCRmyPDF",
+    description="Generate searchable PDF file from an image-only PDF file.")
 
 parser.add_argument(
-    'input_pdf',    # Implemented
-    help="PDF file containing the page to be OCRed")
+    'inputfile',
+    help="PDF file containing the images to be OCRed")
 parser.add_argument(
-    'page_info',    # Implemented
-    help="Various characteristics of the page to be OCRed")
+    'outputfile',
+    help="output searchable PDF file")
 parser.add_argument(
-    'num_pages',    # Unused
-    help="Total number of page of the PDF file (required for logger)")
+    '-l', '--language', nargs='*', default=['eng']
+    help="language of the file to be OCRed")
+
+preprocessing = parser.add_group(
+    "Preprocessing options",
+    "Improve OCR quality and final image")
+preprocessing.add_argument(
+    '-d', '--deskew', action='store_true',
+    help="deskew each page before performing OCR")
+preprocessing.add_argument(
+    '-c', '--clean', action='store_true',
+    help="clean pages with unpaper before performing OCR")
+preprocessing.add_argument(
+    '-i', '--clean-final', action='store_true',
+    help="incorporate the cleaned image in the final PDF file")
+preprocessing.add_argument(
+    '--oversample', metavar='DPI', type=int,
+    help="oversample images to improve OCR results slightly")
+
 parser.add_argument(
-    'tmp_fld',      # Implemented
-    help="Folder where the temporary files should be placed")
-parser.add_argument(
-    'verbosity', type=int,      # Superseded
-    help="Requested verbosity")
-parser.add_argument(
-    'language',     # Implemented
-    help="Language of the file to be OCRed")
-parser.add_argument(
-    'keep_tmp', type=int,   # Not implemented
-    help="Keep the temporary files after processing (helpful for debugging)")
-parser.add_argument(
-    'preprocess_deskew', type=int,          # Implemented
-    help="Deskew the page to be OCRed")
-parser.add_argument(
-    'preprocess_clean', type=int,           # Implemented
-    help="Clean the page to be OCRed")
-parser.add_argument(
-    'preprocess_cleantopdf', type=int,      # Implemented
-    help="Put the cleaned paged in the OCRed PDF")
-parser.add_argument(
-    'oversampling_dpi', type=int,           # Implemented
-    help="Oversampling resolution in dpi")
-parser.add_argument(
-    'pdf_noimg', type=int,                  # implemented
-    help="Generate debug PDF pages with only the OCRed text and no image")
-parser.add_argument(
-    'force_ocr', type=int,                  # Implemented
+    '--force-ocr', action='store_true',
     help="Force to OCR, even if the page already contains fonts")
 parser.add_argument(
-    'skip_text', type=int,                  # Implemented
+    '--skip-text', action='store_true',
     help="Skip OCR on pages that contain fonts and include the page anyway")
 parser.add_argument(
-    'skip_big', type=int,
+    '--skip-big', action='store_true',
     help="Skip OCR for pages that are very large")
 parser.add_argument(
-    'exact_image', type=int,
+    '--exact-image', action='store_true',
     help="Use original page from PDF without re-rendering")
-parser.add_argument(
-    'tess_cfg_files', default='', nargs='*',    # Implemented
-    help="Tesseract configuration")
-parser.add_argument(
+
+advanced = parser.add_group(
+    "Advanced",
+    "Advanced options for power users and debugging")
+advanced.add_argument(
     '--deskew-provider', choices=['imagemagick', 'leptonica'],
     default='leptonica')
-parser.add_argument(
+advanced.add_argument(
     '--page-renderer', choices=['pdftoppm', 'ghostscript'],
     default='ghostscript')
+advanced.add_argument(
+    '--temp-folder',
+    help="folder where the temporary files should be placed")
+advanced.add_argument(
+    '--tesseract-config', default='', nargs='*',    # Implemented
+    help="Tesseract configuration")
+
+debugging = parser.add_group(
+    "Debugging",
+    "Arguments to help with troubleshooting and debugging")
+debugging.add_argument(
+    '-k', '--keep-temporary-files', action='store_true',
+    help="keep temporary files (helpful for debugging)")
+debugging.add_argument(
+    '-g' ,'--debug-rendering', action='store_true',
+    help="render each page twice with debug information on second page")
 
 
 options = parser.parse_args()
@@ -236,7 +242,7 @@ def pdf_get_pageinfo(infile, page, width_pt, height_pt):
     return pageinfo
 
 pageno, width_pt, height_pt = map(int, options.page_info.split(' ', 3))
-pageinfo = pdf_get_pageinfo(options.input_pdf, pageno, width_pt, height_pt)
+pageinfo = pdf_get_pageinfo(options.inputfile, pageno, width_pt, height_pt)
 
 if not pageinfo['images']:
     # If the page has no images, then it contains vector content or text
@@ -305,10 +311,10 @@ def re_symlink(input_file, soft_link_name, log=log):
 
 
 @jobs_limit(1)
-@mkdir(options.tmp_fld)
-@transform([options.input_pdf],
+@mkdir(options.temp_folder)
+@transform([options.inputfile],
            formatter(),
-           os.path.join(options.tmp_fld, "original{ext[0]}"))
+           os.path.join(options.temp_folder, "original{ext[0]}"))
 def setup_working_directory(input_file, soft_link_name):
     log.debug("Linking %(input_file)s -> %(soft_link_name)s" % locals())
     try:
@@ -320,7 +326,7 @@ def setup_working_directory(input_file, soft_link_name):
 @active_if(not ocr_required or (ocr_required and options.exact_image))
 @transform(setup_working_directory,
            formatter(),
-           os.path.join(options.tmp_fld, '%04i.page.pdf' % pageno))
+           os.path.join(options.temp_folder, '%04i.page.pdf' % pageno))
 def extract_single_page(
         input_file,
         output_file):
@@ -493,7 +499,7 @@ def deskew_leptonica(input_file, output_file):
 @active_if(options.preprocess_clean != 0)
 @merge([unpack_with_pdftoppm, unpack_with_ghostscript,
         deskew_imagemagick, deskew_leptonica],
-       os.path.join(options.tmp_fld, "%04i.for_clean.pnm" % pageno))
+       os.path.join(options.temp_folder, "%04i.for_clean.pnm" % pageno))
 def select_image_for_cleaning(infiles, output_file):
     input_file = infiles[-1]
     args_convert = [
@@ -548,7 +554,7 @@ def cleaned_to_png(input_file, output_file):
 @active_if(ocr_required)
 @merge([unpack_with_ghostscript, convert_to_png, deskew_imagemagick,
         deskew_leptonica, cleaned_to_png],
-       os.path.join(options.tmp_fld, "%04i.for_ocr.png" % pageno))
+       os.path.join(options.temp_folder, "%04i.for_ocr.png" % pageno))
 def select_ocr_image(infiles, output_file):
     re_symlink(infiles[-1], output_file)
 
@@ -634,7 +640,7 @@ def ocr_tesseract(
 @active_if(ocr_required and not options.exact_image)
 @merge([unpack_with_ghostscript, convert_to_png,
         deskew_imagemagick, deskew_leptonica, cleaned_to_png],
-       os.path.join(options.tmp_fld, "%04i.image_for_pdf" % pageno))
+       os.path.join(options.temp_folder, "%04i.image_for_pdf" % pageno))
 def select_image_for_pdf(infiles, output_file):
     if options.preprocess_clean != 0 and options.preprocess_cleantopdf != 0:
         input_file = infiles[-1]
@@ -654,7 +660,7 @@ def select_image_for_pdf(infiles, output_file):
 
 @active_if(ocr_required and not options.exact_image)
 @merge([ocr_tesseract, select_image_for_pdf],
-       os.path.join(options.tmp_fld, '%04i.rendered.pdf' % pageno))
+       os.path.join(options.temp_folder, '%04i.rendered.pdf' % pageno))
 def render_page(infiles, output_file):
     hocr, image = infiles[0], infiles[1]
 
@@ -687,7 +693,7 @@ def render_hocr_blank_page(input_file, output_file):
 
 @active_if(ocr_required and options.exact_image)
 @merge([render_hocr_blank_page, extract_single_page],
-       os.path.join(options.tmp_fld, "%04i.merged.pdf") % pageno)
+       os.path.join(options.temp_folder, "%04i.merged.pdf") % pageno)
 def merge_hocr_with_original_page(infiles, output_file):
     with open(infiles[0], 'rb') as hocr_input, \
             open(infiles[1], 'rb') as page_input, \
@@ -703,7 +709,7 @@ def merge_hocr_with_original_page(infiles, output_file):
 
 
 @merge([render_page, merge_hocr_with_original_page, extract_single_page],
-       os.path.join(options.tmp_fld, '%04i.ocred.pdf' % pageno))
+       os.path.join(options.temp_folder, '%04i.ocred.pdf' % pageno))
 def select_final_page(infiles, output_file):
     re_symlink(infiles[-1], output_file)
 
