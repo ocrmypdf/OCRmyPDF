@@ -82,7 +82,7 @@ advanced.add_argument(
     '--page-renderer', choices=['pdftoppm', 'ghostscript'],
     default='ghostscript')
 advanced.add_argument(
-    '--temp-folder',
+    '--temp-folder', default='', type=str,
     help="folder where the temporary files should be placed")
 advanced.add_argument(
     '--tesseract-config', default='', nargs='*',    # Implemented
@@ -100,6 +100,10 @@ debugging.add_argument(
 
 
 options = parser.parse_args()
+
+if not options.temp_folder:
+    options.temp_folder = 'tmp'
+
 
 _logger, _logger_mutex = cmdline.setup_logging(__name__, options.log_file,
                                                options.verbose)
@@ -722,7 +726,7 @@ def split_pages(
 #     re_symlink(infiles[-1], output_file)
 
 
-# if __name__ == '__main__':
-#     cmdline.run(options)
+if __name__ == '__main__':
+    cmdline.run(options)
 
 
