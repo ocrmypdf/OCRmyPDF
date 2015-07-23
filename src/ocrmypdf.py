@@ -21,10 +21,11 @@ except ImportError:
 from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
     mkdir, formatter, follows, split
 import ruffus.cmdline as cmdline
-from .hocrtransform import HocrTransform
-
 import warnings
-import multiprocessing
+
+from .hocrtransform import HocrTransform
+from .pageinfo import pdf_get_all_pageinfo
+
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
@@ -103,8 +104,8 @@ debugging.add_argument(
 
 options = parser.parse_args()
 
-if not options.temp_folder:
-    options.temp_folder = 'tmp'
+# ----------
+# Logging
 
 
 _logger, _logger_mutex = cmdline.setup_logging(__name__, options.log_file,
@@ -176,67 +177,84 @@ def re_symlink(input_file, soft_link_name, log=_log):
     )
 
 
+# ------------------------
+# Change working directory
+
+if not options.temp_folder:
+    options.temp_folder = 'tmp'
+
 original_cwd = os.getcwd()
 with suppress(FileExistsError):
     os.mkdir(options.temp_folder)
 os.chdir(options.temp_folder)
 
 
+# -------------
+# The Pipeline
+
+pdfinfo = {}
+
+
 @transform(
     os.path.join(original_cwd, options.input_file),
     suffix('.pdf'),
-    '.cleaned.pdf')
+    '.cleaned.pdf',
+    pdfinfo)
 def clean_pdf(
         input_file,
-        output_file):
+        output_file,
+        pdfinfo):
     args_mutool = [
         'mutool', 'clean',
         input_file, output_file
     ]
     check_call(args_mutool)
 
+    pdfinfo = pdf_get_all_pageinfo(output_file)
 
-pageno, width_pt, height_pt = map(int, options.page_info.split(' ', 3))
-pageinfo = pdf_get_pageinfo(options.input_file, pageno, width_pt, height_pt)
 
-if not pageinfo['images']:
-    # If the page has no images, then it contains vector content or text
-    # or both. It seems quite unlikely that one would find meaningful text
-    # from rasterizing vector content. So skip the page.
-    log.info(
-        "Page {0} has no images - skipping OCR".format(pageno)
-    )
-elif pageinfo['has_text']:
-    s = "Page {0} already has text! – {1}"
+# pageno, width_pt, height_pt = map(int, options.page_info.split(' ', 3))
+# pageinfo = pdf_get_pageinfo(options.input_file, pageno, width_pt, height_pt)
 
-    if not options.force_ocr and not options.skip_text:
-        log.error(s.format(pageno,
-                     "aborting (use -f or -s to force OCR)"))
-        sys.exit(1)
-    elif options.force_ocr:
-        log.info(s.format(pageno,
-                    "rasterizing text and running OCR anyway"))
-    elif options.skip_text:
-        log.info(s.format(pageno,
-                    "skipping all processing on this page"))
+# if not pageinfo['images']:
+#     # If the page has no images, then it contains vector content or text
+#     # or both. It seems quite unlikely that one would find meaningful text
+#     # from rasterizing vector content. So skip the page.
+#     log.info(
+#         "Page {0} has no images - skipping OCR".format(pageno)
+#     )
+# elif pageinfo['has_text']:
+#     s = "Page {0} already has text! – {1}"
 
-ocr_required = pageinfo['images'] and \
-    (options.force_ocr or
-        (not (pageinfo['has_text'] and options.skip_text)))
+#     if not options.force_ocr and not options.skip_text:
+#         log.error(s.format(pageno,
+#                      "aborting (use -f or -s to force OCR)"))
+#         sys.exit(1)
+#     elif options.force_ocr:
+#         log.info(s.format(pageno,
+#                     "rasterizing text and running OCR anyway"))
+#     elif options.skip_text:
+#         log.info(s.format(pageno,
+#                     "skipping all processing on this page"))
 
-if ocr_required and options.skip_big:
-    area = pageinfo['width_inches'] * pageinfo['height_inches']
-    pixel_count = pageinfo['width_pixels'] * pageinfo['height_pixels']
-    if area > (11.0 * 17.0) or pixel_count > (300.0 * 300.0 * 11 * 17):
-        ocr_required = False
-        log.info(
-            "Page {0} is very large; skipping due to -b".format(pageno))
+# ocr_required = pageinfo['images'] and \
+#     (options.force_ocr or
+#         (not (pageinfo['has_text'] and options.skip_text)))
+
+# if ocr_required and options.skip_big:
+#     area = pageinfo['width_inches'] * pageinfo['height_inches']
+#     pixel_count = pageinfo['width_pixels'] * pageinfo['height_pixels']
+#     if area > (11.0 * 17.0) or pixel_count > (300.0 * 300.0 * 11 * 17):
+#         ocr_required = False
+#         log.info(
+#             "Page {0} is very large; skipping due to -b".format(pageno))
 
 
 
 @split(
     clean_pdf,
-    '*.page.pdf')
+    '*.page.pdf',
+    pdfinfo)
 def split_pages(
         input_file,
         output_files):
