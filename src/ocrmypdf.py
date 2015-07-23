@@ -22,6 +22,7 @@ from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
     mkdir, formatter, follows, subdivide
 import ruffus.cmdline as cmdline
 import warnings
+import multiprocessing
 
 from .hocrtransform import HocrTransform
 from .pageinfo import pdf_get_all_pageinfo
@@ -180,7 +181,10 @@ def re_symlink(input_file, soft_link_name, log=_log):
 # -------------
 # The Pipeline
 
-_pdfinfo = []
+manager = multiprocessing.Manager()
+_pdfinfo = manager.list()
+_pdfinfo_lock = manager.Lock()
+
 if options.temp_folder == '':
     options.temp_folder = 'tmp'
 
@@ -191,19 +195,22 @@ if options.temp_folder == '':
     filter=suffix('.pdf'),
     output='.cleaned.pdf',
     output_dir=options.temp_folder,
-    extras=[_pdfinfo, _log])
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
 def clean_pdf(
         input_file,
         output_file,
+        log,
         pdfinfo,
-        log):
+        pdfinfo_lock):
     args_mutool = [
         'mutool', 'clean',
         input_file, output_file
     ]
     check_call(args_mutool)
 
-    pdfinfo.extend(pdf_get_all_pageinfo(output_file))
+    with pdfinfo_lock:
+        pdfinfo.extend(pdf_get_all_pageinfo(output_file))
+        log.info(pdfinfo)
 
 
 # pageno, width_pt, height_pt = map(int, options.page_info.split(' ', 3))
@@ -249,25 +256,28 @@ def clean_pdf(
     formatter(),
     "{path[0]}/*.page.pdf",
     "{path[0]}/",
+    _log,
     _pdfinfo,
-    _log)
+    _pdfinfo_lock)
 def split_pages(
         input_file,
         output_files,
         output_file_name_root,
+        log,
         pdfinfo,
-        log):
+        pdfinfo_lock):
 
     for oo in output_files:
         with suppress(FileNotFoundError):
             os.unlink(oo)
-    log.info(output_file_name_root)
     args_pdfseparate = [
         'pdfseparate',
         input_file,
         output_file_name_root + '%06d.page.pdf'
     ]
     check_call(args_pdfseparate)
+
+    log.info(pdfinfo[0]['width_inches'])
 
 
 
