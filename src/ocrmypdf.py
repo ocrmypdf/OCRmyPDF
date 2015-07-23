@@ -138,6 +138,56 @@ class WrappedLogger:
 log = WrappedLogger(_logger, _logger_mutex)
 
 
+def re_symlink(input_file, soft_link_name, log=log):
+    """
+    Helper function: relinks soft symbolic link if necessary
+    """
+    # Guard against soft linking to oneself
+    if input_file == soft_link_name:
+        log.debug("Warning: No symbolic link made. You are using " +
+                     "the original data directory as the working directory.")
+        return
+
+    # Soft link already exists: delete for relink?
+    if os.path.lexists(soft_link_name):
+        # do not delete or overwrite real (non-soft link) file
+        if not os.path.islink(soft_link_name):
+            raise Exception("%s exists and is not a link" % soft_link_name)
+        try:
+            os.unlink(soft_link_name)
+        except:
+            log.debug("Can't unlink %s" % (soft_link_name))
+
+    if not os.path.exists(input_file):
+        raise Exception("trying to create a broken symlink to %s" % input_file)
+
+    log.debug("os.symlink(%s, %s)" % (input_file, soft_link_name))
+
+    # Create symbolic link using absolute path
+    os.symlink(
+        os.path.abspath(input_file),
+        soft_link_name
+    )
+
+
+@follows(mkdir(options.temp_folder))
+@split(options.inputfile, '*.page.pdf')
+def split_pages(
+        input_file,
+        output_files):
+
+    for oo in output_files:
+        with suppress(FileNotFoundError):
+            os.unlink(oo)
+
+    args_pdfseparate = [
+        'pdfseparate',
+        input_file,
+        '%06d.page.pdf'
+    ]
+    check_call(args_pdfseparate)
+
+
 FRIENDLY_COLORSPACE = {
     '/DeviceGray': 'gray',
     '/CalGray': 'gray',
@@ -278,49 +328,7 @@ if ocr_required and options.skip_big:
             "Page {0} is very large; skipping due to -b".format(pageno))
 
 
-def re_symlink(input_file, soft_link_name, log=log):
-    """
-    Helper function: relinks soft symbolic link if necessary
-    """
-    # Guard against soft linking to oneself
-    if input_file == soft_link_name:
-        log.debug("Warning: No symbolic link made. You are using " +
-                     "the original data directory as the working directory.")
-        return
 
-    # Soft link already exists: delete for relink?
-    if os.path.lexists(soft_link_name):
-        # do not delete or overwrite real (non-soft link) file
-        if not os.path.islink(soft_link_name):
-            raise Exception("%s exists and is not a link" % soft_link_name)
-        try:
-            os.unlink(soft_link_name)
-        except:
-            log.debug("Can't unlink %s" % (soft_link_name))
-
-    if not os.path.exists(input_file):
-        raise Exception("trying to create a broken symlink to %s" % input_file)
-
-    log.debug("os.symlink(%s, %s)" % (input_file, soft_link_name))
-
-    # Create symbolic link using absolute path
-    os.symlink(
-        os.path.abspath(input_file),
-        soft_link_name
-    )
-
-
-@jobs_limit(1)
-@mkdir(options.temp_folder)
-@transform([options.inputfile],
-           formatter(),
-           os.path.join(options.temp_folder, "original{ext[0]}"))
-def setup_working_directory(input_file, soft_link_name):
-    log.debug("Linking %(input_file)s -> %(soft_link_name)s" % locals())
-    try:
-        re_symlink(input_file, soft_link_name)
-    except FileExistsError:
-        pass
 
 
 @active_if(not ocr_required or (ocr_required and options.exact_image))
