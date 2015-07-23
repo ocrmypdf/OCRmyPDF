@@ -1,31 +1,33 @@
 #!/usr/bin/env python3
 
+from contextlib import suppress
+from tempfile import NamedTemporaryFile
 import sys
-import os.path
+import os
 import fileinput
 import re
-from parse import parse
-import PyPDF2 as pypdf
 import shutil
-from contextlib import suppress
+import warnings
+import multiprocessing
+
+import PyPDF2 as pypdf
+from parse import parse
 
 from subprocess import Popen, check_call, PIPE, CalledProcessError, \
     TimeoutExpired
 try:
     from subprocess import DEVNULL
 except ImportError:
-    import os
     DEVNULL = open(os.devnull, 'wb')
 
 
 from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
     mkdir, formatter, follows, subdivide
 import ruffus.cmdline as cmdline
-import warnings
-import multiprocessing
 
 from .hocrtransform import HocrTransform
 from .pageinfo import pdf_get_all_pageinfo
+from .pdfa import generate_pdfa_def
 
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
@@ -277,11 +279,66 @@ def split_pages(
     ]
     check_call(args_pdfseparate)
 
-    log.info(pdfinfo[0]['width_inches'])
+
+@transform(
+    input=split_pages,
+    filter=suffix('.page.pdf'),
+    output='.done.pdf',
+    output_dir=options.temp_folder,
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def noop(
+        input_file,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+    shutil.copy(input_file, output_file)
 
 
+@transform(
+    input=clean_pdf,
+    filter=suffix('.cleaned.pdf'),
+    output='.pdfa_def.ps',
+    output_dir=options.temp_folder,
+    extras=[_log])
+def generate_postscript_stub(
+        input_file,
+        output_file,
+        log):
+    generate_pdfa_def(output_file)
 
 
+@merge(
+    input=[noop, generate_postscript_stub],
+    output=options.output_file,
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def merge_pages(
+        input_files,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+
+    ocr_pages, postscript = input_files[0:-1], input_files[-1]
+
+    with NamedTemporaryFile(delete=True) as gs_pdf:
+        args_gs = [
+            "gs",
+            "-dQUIET",
+            "-dBATCH",
+            "-dNOPAUSE",
+            "-sDEVICE=pdfwrite",
+            "-sColorConversionStrategy=/RGB",
+            "-sProcessColorModel=DeviceRGB",
+            "-dPDFA",
+            "-sPDFACompatibilityPolicy=2",
+            "-sOutputICCProfile=srgb.icc",
+            "-sOutputFile=" + gs_pdf.name,
+            postscript,  # the PDF/A definition header
+        ]
+        args_gs.extend(ocr_pages)
+        check_call(args_gs)
+        shutil.copy(gs_pdf.name, output_file)
 
 
 

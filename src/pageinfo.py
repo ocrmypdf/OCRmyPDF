@@ -3,6 +3,7 @@
 
 from subprocess import Popen, PIPE
 import PyPDF2 as pypdf
+from decimal import Decimal
 
 
 FRIENDLY_COLORSPACE = {
@@ -53,8 +54,8 @@ def _pdf_get_pageinfo(infile, page: int):
     page = pdf.pages[page - 1]
     width_pt = page['/MediaBox'][2] - page['/MediaBox'][0]
     height_pt = page['/MediaBox'][3] - page['/MediaBox'][1]
-    pageinfo['width_inches'] = width_pt / 72.0
-    pageinfo['height_inches'] = height_pt / 72.0
+    pageinfo['width_inches'] = width_pt / Decimal(72.0)
+    pageinfo['height_inches'] = height_pt / Decimal(72.0)
 
     if '/XObject' not in page['/Resources']:
         # Missing /XObject means no images or possibly corrupt PDF
@@ -90,7 +91,7 @@ def _pdf_get_pageinfo(infile, page: int):
         image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
         image['dpi_w'] = image['width'] / pageinfo['width_inches']
         image['dpi_h'] = image['height'] / pageinfo['height_inches']
-        image['dpi'] = (image['dpi_w'] * image['dpi_h']) ** 0.5
+        image['dpi'] = (image['dpi_w'] * image['dpi_h']) ** Decimal(0.5)
         pageinfo['images'].append(image)
 
     if pageinfo['images']:
