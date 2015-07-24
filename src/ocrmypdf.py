@@ -458,8 +458,8 @@ def render_page(
         log,
         pdfinfo,
         pdfinfo_lock):
-    hocr = [ii for ii in infiles if ii.endswith('.hocr')][0]
-    image = [ii for ii in infiles if ii.endswith('.png')][0]
+    hocr = next(ii for ii in infiles if ii.endswith('.hocr'))
+    image = next(ii for ii in infiles if ii.endswith('.page.png'))
 
     pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
     dpi = round(max(pageinfo['xres'], pageinfo['yres']))

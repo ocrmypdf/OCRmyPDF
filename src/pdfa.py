@@ -7,8 +7,13 @@
 
 from __future__ import print_function, absolute_import, division
 from string import Template
+from subprocess import Popen, PIPE
+import os
 
 
+# This is a template written in PostScript which is needed to create PDF/A
+# files, from the Ghostscript documentation. Lines beginning with % are
+# comments. Python substitution variables have a '$' prefix.
 pdfa_def_template = u"""%!
 % This is a sample prefix file for creating a PDF/A document.
 % Feel free to modify entries marked with "Customize".
@@ -60,10 +65,35 @@ def _get_pdfa_def(icc_profile, pdf_title, icc_identifier):
     return result
 
 
+def _get_postscript_icc_path():
+    "Parse Ghostscript's help message to find where iccprofiles are stored"
+
+    p_gs = Popen(['gs', '--help'], close_fds=True, universal_newlines=True,
+                 stdout=PIPE, stderr=PIPE)
+    out, _ = p_gs.communicate()
+    lines = out.splitlines()
+
+    def search_paths(lines):
+        seeking = True
+        for line in lines:
+            if seeking:
+                if line.startswith('Search path'):
+                    seeking = False
+                    continue
+            else:
+                if line.strip().startswith('/'):
+                    yield from (
+                        path.strip() for path in line.split(':')
+                        if path.strip() != '')
+    for root in search_paths(lines):
+        path = os.path.realpath(os.path.join(root, '../iccprofiles'))
+        if os.path.exists(path):
+            return path
+
+
 def generate_pdfa_def(target_filename, pdf_title='', icc='sRGB'):
-    # How does find this directory on other platforms?
     if icc == 'sRGB':
-        icc_profile = '/usr/local/share/ghostscript/iccprofiles/srgb.icc'
+        icc_profile = os.path.join(_get_postscript_icc_path(), 'srgb.icc')
     else:
         raise NotImplementedError("Only supporting sRGB")
 
