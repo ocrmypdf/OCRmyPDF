@@ -11,6 +11,7 @@ import warnings
 import multiprocessing
 
 import PyPDF2 as pypdf
+from PIL import Image
 from parse import parse
 
 from subprocess import Popen, check_call, PIPE, CalledProcessError, \
@@ -326,7 +327,6 @@ def split_pages(
 
 def get_pageinfo(input_file, pdfinfo, pdfinfo_lock):
     pageno = int(os.path.basename(input_file)[0:6]) - 1
-    print(pageno)
     with pdfinfo_lock:
         pageinfo = pdfinfo[pageno].copy()
     return pageinfo
@@ -384,6 +384,69 @@ def rasterize_with_ghostscript(
 @transform(
     input=rasterize_with_ghostscript,
     filter=suffix(".page.png"),
+    output=".pp.png",
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def preprocess(
+        input_file,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+
+    if not options.deskew and not options.clean:
+        re_symlink(input_file, output_file, log)
+        return
+
+    pageinfo = get_pageinfo(input_file, pdfinfo, pdfinfo_lock)
+
+    # unpaper documentation:
+    # https://github.com/Flameeyes/unpaper/blob/master/doc/basic-concepts.md
+    args_unpaper = [
+        'unpaper',
+        '-v',
+        '--dpi', str(int(pageinfo['xres'])),
+        '--mask-scan-size', '100',  # don't blank out narrow columns
+        '--no-border-align',  # don't align visible content to borders
+        '--no-mask-center',   # don't center visible content within page
+        '--no-grayfilter',    # don't remove light gray areas
+        '--no-blackfilter',   # don't remove solid black areas
+    ]
+
+    if not options.clean:
+        args_unpaper.extend([
+            '--no-noisefilter',
+            '--no-blurfilter'])
+    if not options.deskew:
+        args_unpaper.extend([
+            '--no-deskew'])
+
+    SUFFIXES = {'1': '.pbm', 'L': '.pgm', 'RGB': '.ppm'}
+    suffix = ''
+
+    im = Image.open(input_file)
+    suffix = SUFFIXES[im.mode]
+    with NamedTemporaryFile(suffix=suffix) as input_pnm, \
+            NamedTemporaryFile(suffix=suffix, mode="r+b") as output_pnm:
+        im.save(input_pnm, format='PPM')
+        im.close()
+
+        os.unlink(output_pnm.name)
+
+        args_unpaper.extend([input_pnm.name, output_pnm.name])
+        p_unpaper = Popen(
+            args_unpaper, close_fds=True,
+            universal_newlines=True, stdout=PIPE, stderr=PIPE
+            )
+        out, err = p_unpaper.communicate()
+        log.debug(out)
+        log.debug(err)
+
+        Image.open(output_pnm.name).save(output_file)
+
+
+@transform(
+    input=preprocess,
+    filter=suffix(".pp.png"),
     output=".hocr",
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def ocr_tesseract(
@@ -650,16 +713,6 @@ def validate_pdfa(
 #         raise CalledProcessError(p.returncode, args_unpaper)
 
 
-# @active_if(ocr_required)
-# @transform(clean_unpaper, suffix(".cleaned.pnm"), ".cleaned.png")
-# def cleaned_to_png(input_file, output_file):
-#     args_convert = [
-#         'convert',
-#         input_file,
-#         output_file
-#     ]
-#     check_call(args_convert)
-
 
 # @active_if(ocr_required)
 # @merge([unpack_with_ghostscript, convert_to_png, deskew_imagemagick,
@@ -669,61 +722,6 @@ def validate_pdfa(
 #     re_symlink(infiles[-1], output_file)
 
 
-
-
-# @active_if(ocr_required)
-# @transform(select_ocr_image, suffix(".for_ocr.png"), ".hocr")
-# def ocr_tesseract(
-#         input_file,
-#         output_file):
-
-#     args_tesseract = [
-#         'tesseract',
-#         '-l', options.language,
-#         input_file,
-#         output_file,
-#         'hocr',
-#         options.tess_cfg_files
-#     ]
-#     p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
-#               universal_newlines=True)
-#     try:
-#         stdout, stderr = p.communicate(timeout=180)
-#     except TimeoutExpired:
-#         p.kill()
-#         stdout, stderr = p.communicate()
-#         # Generate a HOCR file with no recognized text if tesseract times out
-#         # Temporary workaround to hocrTransform not being able to function if
-#         # it does not have a valid hOCR file.
-#         with open(output_file, 'w', encoding="utf-8") as f:
-#             f.write(hocr_template.format(pageinfo['width_pixels'],
-#                                          pageinfo['height_pixels']))
-#     else:
-#         if stdout:
-#             log.info(stdout)
-#         if stderr:
-#             log.error(stderr)
-
-#         if p.returncode != 0:
-#             raise CalledProcessError(p.returncode, args_tesseract)
-
-#         if os.path.exists(output_file + '.html'):
-#             # Tesseract 3.02 appends suffix ".html" on its own (.hocr.html)
-#             shutil.move(output_file + '.html', output_file)
-#         elif os.path.exists(output_file + '.hocr'):
-#             # Tesseract 3.03 appends suffix ".hocr" on its own (.hocr.hocr)
-#             shutil.move(output_file + '.hocr', output_file)
-
-#         # Tesseract inserts source filename into hocr file without escaping
-#         # it. This could break the XML parser. Rewrite the hocr file,
-#         # replacing the filename with a space.
-#         regex_nested_single_quotes = re.compile(
-#             r"""title='image "([^"]*)";""")
-#         with fileinput.input(files=(output_file,), inplace=True) as f:
-#             for line in f:
-#                 line = regex_nested_single_quotes.sub(
-#                     r"""title='image " ";""", line)
-#                 print(line, end='')  # fileinput.input redirects stdout
 
 
 # @active_if(ocr_required and not options.exact_image)
@@ -796,11 +794,6 @@ def validate_pdfa(
 #         writer.addPage(the_page)
 #         writer.write(output)
 
-
-# @merge([render_page, merge_hocr_with_original_page, extract_single_page],
-#        os.path.join(options.temp_folder, '%04i.ocred.pdf' % pageno))
-# def select_final_page(infiles, output_file):
-#     re_symlink(infiles[-1], output_file)
 
 
 if __name__ == '__main__':
