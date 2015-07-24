@@ -630,98 +630,6 @@ def validate_pdfa(
     shutil.copy(input_file, output_file)
 
 
-# @active_if(ocr_required)
-# @active_if(options.preprocess_deskew != 0
-#            and options.deskew_provider == 'imagemagick')
-# @transform(convert_to_png, suffix(".png"), ".deskewed.png")
-# def deskew_imagemagick(input_file, output_file):
-#     args_convert = [
-#         'convert',
-#         input_file,
-#         '-deskew', '40%',
-#         '-gravity', 'center',
-#         '-extent', '{width_pixels}x{height_pixels}'.format(**pageinfo),
-#         '+repage',
-#         output_file
-#     ]
-
-#     p = Popen(args_convert, close_fds=True, stdout=PIPE, stderr=PIPE,
-#               universal_newlines=True)
-#     stdout, stderr = p.communicate()
-
-#     if stdout:
-#         log.info(stdout)
-#     if stderr:
-#         log.error(stderr)
-
-#     if p.returncode != 0:
-#         raise CalledProcessError(p.returncode, args_convert)
-
-
-# @active_if(ocr_required)
-# @active_if(options.preprocess_deskew != 0
-#            and options.deskew_provider == 'leptonica')
-# @transform(convert_to_png, suffix(".png"), ".deskewed.png")
-# def deskew_leptonica(input_file, output_file):
-#     from .leptonica import deskew
-#     deskew(input_file, output_file,
-#            min(pageinfo['xres'], pageinfo['yres']))
-
-
-# @active_if(ocr_required)
-# @active_if(options.preprocess_clean != 0)
-# @merge([unpack_with_pdftoppm, unpack_with_ghostscript,
-#         deskew_imagemagick, deskew_leptonica],
-#        os.path.join(options.temp_folder, "%04i.for_clean.pnm" % pageno))
-# def select_image_for_cleaning(infiles, output_file):
-#     input_file = infiles[-1]
-#     args_convert = [
-#         'convert',
-#         input_file,
-#         output_file
-#     ]
-#     check_call(args_convert)
-
-
-# @active_if(ocr_required)
-# @active_if(options.preprocess_clean != 0)
-# @transform(select_image_for_cleaning, suffix(".pnm"), ".cleaned.pnm")
-# def clean_unpaper(input_file, output_file):
-#     args_unpaper = [
-#         'unpaper',
-#         '--dpi', str(int(round((pageinfo['xres'] * pageinfo['yres']) ** 0.5))),
-#         '--mask-scan-size', '100',
-#         '--no-deskew',
-#         '--no-grayfilter',
-#         '--no-blackfilter',
-#         '--no-mask-center',
-#         '--no-border-align',
-#         input_file,
-#         output_file
-#     ]
-
-#     p = Popen(args_unpaper, close_fds=True, stdout=PIPE, stderr=PIPE,
-#               universal_newlines=True)
-#     stdout, stderr = p.communicate()
-
-#     if stdout:
-#         log.info(stdout)
-#     if stderr:
-#         log.error(stderr)
-
-#     if p.returncode != 0:
-#         raise CalledProcessError(p.returncode, args_unpaper)
-
-
-
-# @active_if(ocr_required)
-# @merge([unpack_with_ghostscript, convert_to_png, deskew_imagemagick,
-#         deskew_leptonica, cleaned_to_png],
-#        os.path.join(options.temp_folder, "%04i.for_ocr.png" % pageno))
-# def select_ocr_image(infiles, output_file):
-#     re_symlink(infiles[-1], output_file)
-
-
 
 
 # @active_if(ocr_required and not options.exact_image)
@@ -744,18 +652,6 @@ def validate_pdfa(
 #     else:
 #         re_symlink(input_file, output_file)
 
-
-# @active_if(ocr_required and not options.exact_image)
-# @merge([ocr_tesseract, select_image_for_pdf],
-#        os.path.join(options.temp_folder, '%04i.rendered.pdf' % pageno))
-# def render_page(infiles, output_file):
-#     hocr, image = infiles[0], infiles[1]
-
-#     dpi = round(max(pageinfo['xres'], pageinfo['yres']))
-
-#     hocrtransform = HocrTransform(hocr, dpi)
-#     hocrtransform.to_pdf(output_file, imageFileName=image,
-#                          showBoundingboxes=False, invisibleText=True)
 
 
 # @active_if(ocr_required and options.pdf_noimg)
