@@ -22,7 +22,7 @@ except ImportError:
 
 
 from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
-    mkdir, formatter, follows, subdivide, collate
+    mkdir, formatter, follows, subdivide, collate, check_if_uptodate
 import ruffus.cmdline as cmdline
 
 from .hocrtransform import HocrTransform
@@ -449,7 +449,7 @@ def ocr_tesseract(
 
 @collate(
     input=[rasterize_with_ghostscript, ocr_tesseract],
-    filter=regex(r"(\d{6})(?:\.page\.png)|(?:\.hocr)"),
+    filter=regex(r".*/(\d{6})(?:\.page\.png|\.hocr)"),
     output=r'\1.rendered.pdf',
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def render_page(
@@ -458,7 +458,8 @@ def render_page(
         log,
         pdfinfo,
         pdfinfo_lock):
-    image, hocr = infiles[0], infiles[1]
+    hocr = [ii for ii in infiles if ii.endswith('.hocr')][0]
+    image = [ii for ii in infiles if ii.endswith('.png')][0]
 
     pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
     dpi = round(max(pageinfo['xres'], pageinfo['yres']))
