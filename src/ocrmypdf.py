@@ -447,7 +447,7 @@ def ocr_tesseract(
 @collate(
     input=[rasterize_with_ghostscript, ocr_tesseract],
     filter=regex(r".*/(\d{6})(?:\.page\.png|\.hocr)"),
-    output=r'\1.rendered.pdf',
+    output=os.path.join(options.temp_folder, r'\1.rendered.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def render_page(
         infiles,
