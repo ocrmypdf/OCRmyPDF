@@ -2,3 +2,6 @@ tmp/
 log/
 *.pyc
 tests/output/
+.ruffus_history.sqlite
+*.sublime-*
+/*.pdf
