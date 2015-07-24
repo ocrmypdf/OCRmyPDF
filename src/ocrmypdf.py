@@ -355,14 +355,15 @@ def rasterize_with_ghostscript(
                      for image in pageinfo['images']):
             device = 'pnggray'
 
+    xres = max(pageinfo['xres_render'], options.oversample or 0)
+    yres = max(pageinfo['yres_render'], options.oversample or 0)
     with NamedTemporaryFile(delete=True) as tmp:
         args_gs = [
             'gs',
             '-dBATCH', '-dNOPAUSE',
             '-sDEVICE=%s' % device,
             '-o', tmp.name,
-            '-r{0}x{1}'.format(
-                str(pageinfo['xres_render']), str(pageinfo['yres_render'])),
+            '-r{0}x{1}'.format(str(xres), str(yres)),
             input_file
         ]
 
