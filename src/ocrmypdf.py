@@ -22,7 +22,7 @@ except ImportError:
 
 
 from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
-    mkdir, formatter, follows, subdivide
+    mkdir, formatter, follows, subdivide, collate
 import ruffus.cmdline as cmdline
 
 from .hocrtransform import HocrTransform
@@ -119,7 +119,7 @@ advanced.add_argument(
     '--temp-folder', default='', type=str,
     help="folder where the temporary files should be placed")
 advanced.add_argument(
-    '--tesseract-config', default='', nargs='*',    # Implemented
+    '--tesseract-config', default=[], type=list, action='append',
     help="Tesseract configuration")
 
 debugging = parser.add_argument_group(
@@ -300,7 +300,6 @@ def clean_pdf(
 #             "Page {0} is very large; skipping due to -b".format(pageno))
 
 
-
 @subdivide(
     clean_pdf,
     formatter(),
@@ -328,19 +327,146 @@ def split_pages(
     check_call(args_pdfseparate)
 
 
+def get_pageinfo(input_file, pdfinfo, pdfinfo_lock):
+    pageno = int(os.path.basename(input_file)[0:6]) - 1
+    print(pageno)
+    with pdfinfo_lock:
+        pageinfo = pdfinfo[pageno].copy()
+    return pageinfo
+
+
 @transform(
     input=split_pages,
     filter=suffix('.page.pdf'),
-    output='.done.pdf',
+    output='.page.png',
     output_dir=options.temp_folder,
     extras=[_log, _pdfinfo, _pdfinfo_lock])
-def noop(
+def rasterize_with_ghostscript(
         input_file,
         output_file,
         log,
         pdfinfo,
         pdfinfo_lock):
-    shutil.copy(input_file, output_file)
+
+    pageinfo = get_pageinfo(input_file, pdfinfo, pdfinfo_lock)
+
+    device = 'png16m'  # 24-bit
+    if all(image['comp'] == 1 for image in pageinfo['images']):
+        if all(image['bpc'] == 1 for image in pageinfo['images']):
+            device = 'pngmono'
+        elif not any(image['color'] == 'color'
+                     for image in pageinfo['images']):
+            device = 'pnggray'
+
+    with NamedTemporaryFile(delete=True) as tmp:
+        args_gs = [
+            'gs',
+            '-dBATCH', '-dNOPAUSE',
+            '-sDEVICE=%s' % device,
+            '-o', tmp.name,
+            '-r{0}x{1}'.format(
+                str(pageinfo['xres_render']), str(pageinfo['yres_render'])),
+            input_file
+        ]
+
+        p = Popen(args_gs, close_fds=True, stdout=PIPE, stderr=PIPE,
+                  universal_newlines=True)
+        stdout, stderr = p.communicate()
+        if stdout:
+            log.debug(stdout)
+        if stderr:
+            log.error(stderr)
+
+        if p.returncode == 0:
+            shutil.copy(tmp.name, output_file)
+        else:
+            log.error('Ghostscript rendering failed')
+
+
+@transform(
+    input=rasterize_with_ghostscript,
+    filter=suffix(".page.png"),
+    output=".hocr",
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def ocr_tesseract(
+        input_file,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+
+    pageinfo = get_pageinfo(input_file, pdfinfo, pdfinfo_lock)
+
+    args_tesseract = [
+        'tesseract',
+        '-l', '+'.join(options.language),
+        input_file,
+        output_file,
+        'hocr'
+    ] + options.tesseract_config
+    p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
+              universal_newlines=True)
+    try:
+        stdout, stderr = p.communicate(timeout=180)
+    except TimeoutExpired:
+        p.kill()
+        stdout, stderr = p.communicate()
+        # Generate a HOCR file with no recognized text if tesseract times out
+        # Temporary workaround to hocrTransform not being able to function if
+        # it does not have a valid hOCR file.
+        with open(output_file, 'w', encoding="utf-8") as f:
+            f.write(tesseract.HOCR_TEMPLATE.format(
+                pageinfo['width_pixels'],
+                pageinfo['height_pixels']))
+    else:
+        if stdout:
+            log.info(stdout)
+        if stderr:
+            log.error(stderr)
+
+        if p.returncode != 0:
+            raise CalledProcessError(p.returncode, args_tesseract)
+
+        if os.path.exists(output_file + '.html'):
+            # Tesseract 3.02 appends suffix ".html" on its own (.hocr.html)
+            shutil.move(output_file + '.html', output_file)
+        elif os.path.exists(output_file + '.hocr'):
+            # Tesseract 3.03 appends suffix ".hocr" on its own (.hocr.hocr)
+            shutil.move(output_file + '.hocr', output_file)
+
+        # Tesseract 3.03 inserts source filename into hocr file without
+        # escaping it, creating invalid XML and breaking the parser.
+        # As a workaround, rewrite the hocr file, replacing the filename
+        # with a space.
+        regex_nested_single_quotes = re.compile(
+            r"""title='image "([^"]*)";""")
+        with fileinput.input(files=(output_file,), inplace=True) as f:
+            for line in f:
+                line = regex_nested_single_quotes.sub(
+                    r"""title='image " ";""", line)
+                print(line, end='')  # fileinput.input redirects stdout
+
+
+@collate(
+    input=[rasterize_with_ghostscript, ocr_tesseract],
+    filter=regex(r"(\d{6})(?:\.page\.png)|(?:\.hocr)"),
+    output=r'\1.rendered.pdf',
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def render_page(
+        infiles,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+    image, hocr = infiles[0], infiles[1]
+
+    pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
+    dpi = round(max(pageinfo['xres'], pageinfo['yres']))
+
+    hocrtransform = HocrTransform(hocr, dpi)
+    hocrtransform.to_pdf(output_file, imageFileName=image,
+                         showBoundingboxes=False, invisibleText=True)
+
 
 
 @transform(
@@ -357,7 +483,7 @@ def generate_postscript_stub(
 
 
 @merge(
-    input=[noop, generate_postscript_stub],
+    input=[render_page, generate_postscript_stub],
     output=os.path.join(options.temp_folder, 'merged.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def merge_pages(
@@ -442,30 +568,6 @@ def validate_pdfa(
         log.info('Output file: The generated PDF/A file is VALID')
     shutil.copy(input_file, output_file)
 
-
-
-#     [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Checking compliance to PDF/A standard"
-# ! java -jar "$JHOVE" -c "$JHOVE_CFG" -m PDF-hul "$FILE_OUTPUT_PDFA" 2> /dev/null 1> "$FILE_VALIDATION_LOG" \
-#     && echo "Unexpected error while checking compliance to PDF/A file. Exiting..." && exit $EXIT_OTHER_ERROR
-# grep -i "Status|Message" "$FILE_VALIDATION_LOG" # summary of the validation
-# [ $VERBOSITY -ge $LOG_DEBUG ] && echo "The full validation log is available here: \"$FILE_VALIDATION_LOG\""
-
-
-
-# @active_if(not ocr_required or (ocr_required and options.exact_image))
-# @transform(setup_working_directory,
-#            formatter(),
-#            os.path.join(options.temp_folder, '%04i.page.pdf' % pageno))
-# def extract_single_page(
-#         input_file,
-#         output_file):
-#     args_pdfseparate = [
-#         'pdfseparate',
-#         '-f', str(pageinfo['pageno']), '-l', str(pageinfo['pageno']),
-#         input_file,
-#         output_file
-#     ]
-#     check_call(args_pdfseparate)
 
 
 # @active_if(ocr_required)
@@ -688,27 +790,6 @@ def validate_pdfa(
 #     re_symlink(infiles[-1], output_file)
 
 
-# hocr_template = '''<?xml version="1.0" encoding="UTF-8"?>
-# <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-#     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-# <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-#  <head>
-#   <title></title>
-#   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-#   <meta name='ocr-system' content='tesseract 3.02.02' />
-#   <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word'/>
-#  </head>
-#  <body>
-#   <div class='ocr_page' id='page_1' title='image "x.tif"; bbox 0 0 {0} {1}; ppageno 0'>
-#    <div class='ocr_carea' id='block_1_1' title="bbox 0 1 {0} {1}">
-#     <p class='ocr_par' dir='ltr' id='par_1' title="bbox 0 1 {0} {1}">
-#      <span class='ocr_line' id='line_1' title="bbox 0 1 {0} {1}"><span class='ocrx_word' id='word_1' title="bbox 0 1 {0} {1}"> </span>
-#      </span>
-#     </p>
-#    </div>
-#   </div>
-#  </body>
-# </html>'''
 
 
 # @active_if(ocr_required)
