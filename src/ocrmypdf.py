@@ -39,12 +39,12 @@ JHOVE_PATH = os.path.realpath(os.path.join(BASEDIR, '..', 'jhove'))
 JHOVE_JAR = os.path.join(JHOVE_PATH, 'bin', 'JhoveApp.jar')
 JHOVE_CFG = os.path.join(JHOVE_PATH, 'conf', 'jhove.conf')
 
-EXIT_BAD_ARGS=1
-EXIT_BAD_INPUT_FILE=2
-EXIT_MISSING_DEPENDENCY=3
-EXIT_INVALID_OUTPUT_PDFA=4
-EXIT_FILE_ACCESS_ERROR=5
-EXIT_OTHER_ERROR=15
+EXIT_BAD_ARGS = 1
+EXIT_BAD_INPUT_FILE = 2
+EXIT_MISSING_DEPENDENCY = 3
+EXIT_INVALID_OUTPUT_PDFA = 4
+EXIT_FILE_ACCESS_ERROR = 5
+EXIT_OTHER_ERROR = 15
 
 # -------------
 # External dependencies
@@ -203,7 +203,7 @@ def re_symlink(input_file, soft_link_name, log=_log):
     # Guard against soft linking to oneself
     if input_file == soft_link_name:
         log.debug("Warning: No symbolic link made. You are using " +
-                     "the original data directory as the working directory.")
+                  "the original data directory as the working directory.")
         return
 
     # Soft link already exists: delete for relink?
@@ -467,7 +467,6 @@ def render_page(
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=image,
                          showBoundingboxes=False, invisibleText=True)
-
 
 
 @transform(
