@@ -28,7 +28,7 @@ import ruffus.cmdline as cmdline
 from .hocrtransform import HocrTransform
 from .pageinfo import pdf_get_all_pageinfo
 from .pdfa import generate_pdfa_def
-from .tesseract import TESS_VERSION
+from . import tesseract
 
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
@@ -51,11 +51,11 @@ EXIT_OTHER_ERROR=15
 
 MINIMUM_TESS_VERSION = '3.02.02'
 
-if TESS_VERSION < MINIMUM_TESS_VERSION:
+if tesseract.VERSION < MINIMUM_TESS_VERSION:
     print(
         "Please install tesseract {0} or newer "
         "(currently installed version is {1})".format(
-            MINIMUM_TESS_VERSION, TESS_VERSION),
+            MINIMUM_TESS_VERSION, tesseract.VERSION),
         file=sys.stderr)
     sys.exit(EXIT_MISSING_DEPENDENCY)
 
@@ -74,7 +74,7 @@ parser.add_argument(
     'output_file',
     help="output searchable PDF file")
 parser.add_argument(
-    '-l', '--language', nargs='*', default=['eng'],
+    '-l', '--language', action='append',
     help="language of the file to be OCRed")
 
 preprocessing = parser.add_argument_group(
@@ -134,6 +134,26 @@ debugging.add_argument(
 
 
 options = parser.parse_args()
+
+# ----------
+# Languages
+
+if not options.language:
+    options.language = ['eng']  # Enforce English hegemony
+
+# Support v2.x "eng+deu" language syntax
+if '+' in options.language[0]:
+    options.language = options.language[0].split('+')
+
+if not set(options.language).issubset(tesseract.LANGUAGES):
+    print(
+        "The installed version of tesseract does not have language "
+        "data for the following requested languages: ",
+        file=sys.stderr)
+    for lang in (set(options.language) - tesseract.LANGUAGES):
+        print(lang, file=sys.stderr)
+    sys.exit(EXIT_BAD_ARGS)
+
 
 # ----------
 # Logging
