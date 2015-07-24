@@ -113,9 +113,6 @@ advanced.add_argument(
     '--deskew-provider', choices=['imagemagick', 'leptonica'],
     default='leptonica')
 advanced.add_argument(
-    '--page-renderer', choices=['pdftoppm', 'ghostscript'],
-    default='ghostscript')
-advanced.add_argument(
     '--temp-folder', default='', type=str,
     help="folder where the temporary files should be placed")
 advanced.add_argument(
@@ -567,125 +564,6 @@ def validate_pdfa(
     elif pdf_is_valid and pdf_is_pdfa:
         log.info('Output file: The generated PDF/A file is VALID')
     shutil.copy(input_file, output_file)
-
-
-
-# @active_if(ocr_required)
-# @active_if(options.page_renderer == 'pdftoppm')
-# @transform(setup_working_directory,
-#            formatter(),
-#            "{path[0]}/%04i.pnm" % pageno)
-# def unpack_with_pdftoppm(
-#         input_file,
-#         output_file):
-#     force_ppm = True
-#     allow_jpeg = False
-
-#     colorspace = 'color'
-#     compression = 'deflate'
-#     output_format = 'tiff'
-#     if all(image['comp'] == 1 for image in pageinfo['images']):
-#         if all(image['bpc'] == 1 for image in pageinfo['images']):
-#             colorspace = 'mono'
-#             compression = 'deflate'
-#         elif not any(image['color'] == 'color'
-#                      for image in pageinfo['images']):
-#             colorspace = 'gray'
-
-#     if allow_jpeg and \
-#             all(image['enc'] == 'jpeg' for image in pageinfo['images']):
-#         output_format = 'jpeg'
-
-#     args_pdftoppm = [
-#         'pdftoppm',
-#         '-f', str(pageinfo['pageno']), '-l', str(pageinfo['pageno']),
-#         '-rx', str(pageinfo['xres_render']),
-#         '-ry', str(pageinfo['yres_render'])
-#     ]
-
-#     if not force_ppm:
-#         if output_format == 'tiff':
-#             args_pdftoppm.append('-tiff')
-#             if False and compression:
-#                 args_pdftoppm.append('-tiffcompression')
-#                 args_pdftoppm.append(compression)
-#         elif output_format == 'jpeg':
-#             args_pdftoppm.append('-jpeg')
-
-#     if colorspace == 'mono':
-#         args_pdftoppm.append('-mono')
-#     elif colorspace == 'gray':
-#         args_pdftoppm.append('-gray')
-
-#     args_pdftoppm.extend([str(input_file)])
-
-#     # Ask pdftoppm to write the binary output to stdout; therefore set
-#     # universal_newlines=False
-#     p = Popen(args_pdftoppm, close_fds=True, stdout=open(output_file, 'wb'),
-#               stderr=PIPE, universal_newlines=False)
-#     _, stderr = p.communicate()
-#     if stderr:
-#         # Because universal_newlines=False, stderr is bytes(), so we must
-#         # manually convert it to str for logging
-#         from codecs import decode
-#         log.error(decode(stderr, sys.getdefaultencoding(), 'ignore'))
-#     if p.returncode != 0:
-#         raise CalledProcessError(p.returncode, args_pdftoppm)
-
-
-# @active_if(ocr_required)
-# @transform(unpack_with_pdftoppm, suffix(".pnm"), ".png")
-# def convert_to_png(input_file, output_file):
-#     args_convert = [
-#         'convert',
-#         input_file,
-#         output_file
-#     ]
-#     check_call(args_convert)
-
-
-# @active_if(ocr_required)
-# @active_if(options.page_renderer == 'ghostscript')
-# @transform(setup_working_directory,
-#            formatter(),
-#            "{path[0]}/%04i.png" % pageno)
-# def unpack_with_ghostscript(
-#         input_file,
-#         output_file):
-#     device = 'png16m'  # 24-bit
-#     if all(image['comp'] == 1 for image in pageinfo['images']):
-#         if all(image['bpc'] == 1 for image in pageinfo['images']):
-#             device = 'pngmono'
-#         elif not any(image['color'] == 'color'
-#                      for image in pageinfo['images']):
-#             device = 'pnggray'
-
-#     args_gs = [
-#         'gs',
-#         '-dBATCH', '-dNOPAUSE',
-#         '-dFirstPage=%i' % pageno,
-#         '-dLastPage=%i' % pageno,
-#         '-sDEVICE=%s' % device,
-#         '-o', output_file,
-#         '-r{0}x{1}'.format(
-#             str(pageinfo['xres_render']), str(pageinfo['yres_render'])),
-#         input_file
-#     ]
-
-#     p = Popen(args_gs, close_fds=True, stdout=PIPE, stderr=PIPE,
-#               universal_newlines=True)
-#     stdout, stderr = p.communicate()
-#     if stdout:
-#         log.info(stdout)
-#     if stderr:
-#         log.error(stderr)
-
-#     try:
-#         f = open(output_file)
-#     except FileNotFoundError:
-#         raise
-#     else:
-#         f.close()
 
 
 # @active_if(ocr_required)
