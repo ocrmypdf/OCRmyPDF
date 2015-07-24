@@ -28,6 +28,7 @@ import ruffus.cmdline as cmdline
 from .hocrtransform import HocrTransform
 from .pageinfo import pdf_get_all_pageinfo
 from .pdfa import generate_pdfa_def
+from .tesseract import TESS_VERSION
 
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
@@ -37,6 +38,30 @@ BASEDIR = os.path.dirname(os.path.realpath(__file__))
 JHOVE_PATH = os.path.realpath(os.path.join(BASEDIR, '..', 'jhove'))
 JHOVE_JAR = os.path.join(JHOVE_PATH, 'bin', 'JhoveApp.jar')
 JHOVE_CFG = os.path.join(JHOVE_PATH, 'conf', 'jhove.conf')
+
+EXIT_BAD_ARGS=1
+EXIT_BAD_INPUT_FILE=2
+EXIT_MISSING_DEPENDENCY=3
+EXIT_INVALID_OUTPUT_PDFA=4
+EXIT_FILE_ACCESS_ERROR=5
+EXIT_OTHER_ERROR=15
+
+# -------------
+# External dependencies
+
+MINIMUM_TESS_VERSION = '3.02.02'
+
+if TESS_VERSION < MINIMUM_TESS_VERSION:
+    print(
+        "Please install tesseract {0} or newer "
+        "(currently installed version is {1})".format(
+            MINIMUM_TESS_VERSION, TESS_VERSION),
+        file=sys.stderr)
+    sys.exit(EXIT_MISSING_DEPENDENCY)
+
+
+# -------------
+# Parser
 
 parser = cmdline.get_argparse(
     prog="OCRmyPDF",
