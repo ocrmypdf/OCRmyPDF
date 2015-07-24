@@ -240,10 +240,10 @@ if options.temp_folder == '':
 @transform(
     input=options.input_file,
     filter=suffix('.pdf'),
-    output='.cleaned.pdf',
+    output='.repaired.pdf',
     output_dir=options.temp_folder,
     extras=[_log, _pdfinfo, _pdfinfo_lock])
-def clean_pdf(
+def repair_pdf(
         input_file,
         output_file,
         log,
@@ -298,7 +298,7 @@ def clean_pdf(
 
 
 @subdivide(
-    clean_pdf,
+    repair_pdf,
     formatter(),
     "{path[0]}/*.page.pdf",
     "{path[0]}/",
@@ -467,8 +467,8 @@ def render_page(
 
 
 @transform(
-    input=clean_pdf,
-    filter=suffix('.cleaned.pdf'),
+    input=repair_pdf,
+    filter=suffix('.repaired.pdf'),
     output='.pdfa_def.ps',
     output_dir=options.temp_folder,
     extras=[_log])
