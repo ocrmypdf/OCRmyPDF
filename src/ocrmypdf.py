@@ -277,8 +277,6 @@ def repair_pdf(
         log.info(pdfinfo)
 
 
-# pageno, width_pt, height_pt = map(int, options.page_info.split(' ', 3))
-# pageinfo = pdf_get_pageinfo(options.input_file, pageno, width_pt, height_pt)
 
 # if not pageinfo['images']:
 #     # If the page has no images, then it contains vector content or text

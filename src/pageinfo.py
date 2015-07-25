@@ -3,7 +3,7 @@
 
 from subprocess import Popen, PIPE
 import PyPDF2 as pypdf
-from decimal import Decimal
+from decimal import Decimal, getcontext
 
 
 FRIENDLY_COLORSPACE = {
@@ -110,4 +110,5 @@ def _pdf_get_pageinfo(infile, page: int):
 
 def pdf_get_all_pageinfo(infile):
     pdf = pypdf.PdfFileReader(infile)
+    getcontext().prec = 6
     return [_pdf_get_pageinfo(infile, n) for n in range(pdf.numPages)]
