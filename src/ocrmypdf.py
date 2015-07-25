@@ -563,6 +563,29 @@ def render_page(
                          showBoundingboxes=False, invisibleText=True)
 
 
+@active_if(options.debug_rendering)
+@collate(
+    input=[select_image_for_pdf, ocr_tesseract],
+    filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
+    output=os.path.join(work_folder, r'\1.debug.pdf'),
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def render_debug_page(
+        infiles,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+    hocr = next(ii for ii in infiles if ii.endswith('.hocr'))
+    image = next(ii for ii in infiles if ii.endswith('.image'))
+
+    pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
+    dpi = round(max(pageinfo['xres'], pageinfo['yres']))
+
+    hocrtransform = HocrTransform(hocr, dpi)
+    hocrtransform.to_pdf(output_file, imageFileName=None,
+                         showBoundingboxes=True, invisibleText=False)
+
+
 @transform(
     input=repair_pdf,
     filter=suffix('.repaired.pdf'),
@@ -590,7 +613,8 @@ def skip_page(
 
 
 @merge(
-    input=[render_page, skip_page, generate_postscript_stub],
+    input=[render_page, render_debug_page, skip_page,
+           generate_postscript_stub],
     output=os.path.join(work_folder, 'merged.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def merge_pages(
@@ -600,9 +624,18 @@ def merge_pages(
         pdfinfo,
         pdfinfo_lock):
 
-    ocr_pages, postscript = input_files[0:-1], input_files[-1]
-    ocr_pages = sorted(ocr_pages)
-    log.info(ocr_pages)
+    def input_file_order(s):
+        '''Sort order: Postscript PDF/A header, and then pages followed
+        by their debug page, if any.'''
+        if s.endswith('.ps'):
+            return -1
+        key = int(os.path.basename(s)[0:6]) * 10
+        if 'debug' in os.path.basename(s):
+            key += 1
+        return key
+
+    pdf_pages = sorted(input_files, key=input_file_order)
+    log.info(pdf_pages)
 
     with NamedTemporaryFile(delete=True) as gs_pdf:
         args_gs = [
@@ -617,9 +650,8 @@ def merge_pages(
             "-sPDFACompatibilityPolicy=2",
             "-sOutputICCProfile=srgb.icc",
             "-sOutputFile=" + gs_pdf.name,
-            postscript,  # the PDF/A definition header
         ]
-        args_gs.extend(ocr_pages)
+        args_gs.extend(pdf_pages)
         check_call(args_gs)
         shutil.copy(gs_pdf.name, output_file)
 
@@ -676,16 +708,6 @@ def validate_pdfa(
     elif pdf_is_valid and pdf_is_pdfa:
         log.info('Output file: The generated PDF/A file is VALID')
     shutil.copy(input_file, output_file)
-
-
-# @active_if(ocr_required and options.pdf_noimg)
-# @transform(ocr_tesseract, suffix(".hocr"), ".ocred.todebug.pdf")
-# def render_text_output_page(input_file, output_file):
-#     dpi = round(max(pageinfo['xres'], pageinfo['yres']))
-
-#     hocrtransform = HocrTransform(input_file, dpi)
-#     hocrtransform.to_pdf(output_file, imageFileName=None,
-#                          showBoundingboxes=True, invisibleText=False)
 
 
 # @active_if(ocr_required and options.exact_image)
