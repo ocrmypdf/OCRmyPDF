@@ -154,6 +154,20 @@ if not set(options.language).issubset(tesseract.LANGUAGES):
 
 
 # ----------
+# Arguments
+
+
+if any((options.deskew, options.clean, options.clean_final)):
+    try:
+        from . import unpaper
+    except ImportError:
+        print("Install the 'unpaper' program to use the specified options",
+              file=sys.stderr)
+        sys.exit(EXIT_BAD_ARGS)
+else:
+    unpaper = None
+
+# ----------
 # Logging
 
 
@@ -384,69 +398,50 @@ def rasterize_with_ghostscript(
 @transform(
     input=rasterize_with_ghostscript,
     filter=suffix(".page.png"),
-    output=".pp.png",
+    output=".pp-deskew.png",
     extras=[_log, _pdfinfo, _pdfinfo_lock])
-def preprocess(
+def preprocess_deskew(
         input_file,
         output_file,
         log,
         pdfinfo,
         pdfinfo_lock):
 
-    if not options.deskew and not options.clean:
+    if not options.deskew:
         re_symlink(input_file, output_file, log)
         return
 
     pageinfo = get_pageinfo(input_file, pdfinfo, pdfinfo_lock)
+    dpi = int(pageinfo['xres'])
 
-    # unpaper documentation:
-    # https://github.com/Flameeyes/unpaper/blob/master/doc/basic-concepts.md
-    args_unpaper = [
-        'unpaper',
-        '-v',
-        '--dpi', str(int(pageinfo['xres'])),
-        '--mask-scan-size', '100',  # don't blank out narrow columns
-        '--no-border-align',  # don't align visible content to borders
-        '--no-mask-center',   # don't center visible content within page
-        '--no-grayfilter',    # don't remove light gray areas
-        '--no-blackfilter',   # don't remove solid black areas
-    ]
-
-    if not options.clean:
-        args_unpaper.extend([
-            '--no-noisefilter',
-            '--no-blurfilter'])
-    if not options.deskew:
-        args_unpaper.extend([
-            '--no-deskew'])
-
-    SUFFIXES = {'1': '.pbm', 'L': '.pgm', 'RGB': '.ppm'}
-    suffix = ''
-
-    im = Image.open(input_file)
-    suffix = SUFFIXES[im.mode]
-    with NamedTemporaryFile(suffix=suffix) as input_pnm, \
-            NamedTemporaryFile(suffix=suffix, mode="r+b") as output_pnm:
-        im.save(input_pnm, format='PPM')
-        im.close()
-
-        os.unlink(output_pnm.name)
-
-        args_unpaper.extend([input_pnm.name, output_pnm.name])
-        p_unpaper = Popen(
-            args_unpaper, close_fds=True,
-            universal_newlines=True, stdout=PIPE, stderr=PIPE
-            )
-        out, err = p_unpaper.communicate()
-        log.debug(out)
-        log.debug(err)
-
-        Image.open(output_pnm.name).save(output_file)
+    unpaper.deskew(input_file, output_file, dpi, log)
 
 
 @transform(
-    input=preprocess,
-    filter=suffix(".pp.png"),
+    input=preprocess_deskew,
+    filter=suffix(".pp-deskew.png"),
+    output=".pp-clean.png",
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def preprocess_clean(
+        input_file,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+
+    if not options.clean:
+        re_symlink(input_file, output_file, log)
+        return
+
+    pageinfo = get_pageinfo(input_file, pdfinfo, pdfinfo_lock)
+    dpi = int(pageinfo['xres'])
+
+    unpaper.clean(input_file, output_file, dpi, log)
+
+
+@transform(
+    input=preprocess_clean,
+    filter=suffix(".pp-clean.png"),
     output=".hocr",
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def ocr_tesseract(
@@ -509,8 +504,8 @@ def ocr_tesseract(
 
 
 @collate(
-    input=[rasterize_with_ghostscript, ocr_tesseract],
-    filter=regex(r".*/(\d{6})(?:\.page\.png|\.hocr)"),
+    input=[preprocess_deskew, preprocess_clean, ocr_tesseract],
+    filter=regex(r".*/(\d{6})(?:\.pp-deskew\.png|\.pp-clean\.png|\.hocr)"),
     output=os.path.join(options.temp_folder, r'\1.rendered.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def render_page(
@@ -520,7 +515,11 @@ def render_page(
         pdfinfo,
         pdfinfo_lock):
     hocr = next(ii for ii in infiles if ii.endswith('.hocr'))
-    image = next(ii for ii in infiles if ii.endswith('.page.png'))
+    if options.clean_final:
+        image_suffix = '.pp-clean.png'
+    else:
+        image_suffix = '.pp-deskew.png'
+    image = next(ii for ii in infiles if ii.endswith(image_suffix))
 
     pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
     dpi = round(max(pageinfo['xres'], pageinfo['yres']))
