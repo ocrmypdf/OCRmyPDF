@@ -109,10 +109,7 @@ parser.add_argument(
 
 advanced = parser.add_argument_group(
     "Advanced",
-    "Advanced options for power users and debugging")
-advanced.add_argument(
-    '--deskew-provider', choices=['imagemagick', 'leptonica'],
-    default='leptonica')
+    "Advanced options for power users")
 advanced.add_argument(
     '--tesseract-config', default=[], type=list, action='append',
     help="Tesseract configuration")
