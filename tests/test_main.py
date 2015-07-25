@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from __future__ import print_function
 from subprocess import Popen, PIPE
 import os
 import shutil
@@ -7,7 +8,6 @@ from contextlib import suppress
 import sys
 
 if sys.version_info.major < 3:
-    from __future__ import print_function
     print("Requires Python 3.4+")
     sys.exit(1)
 
