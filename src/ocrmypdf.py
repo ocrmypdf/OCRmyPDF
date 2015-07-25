@@ -652,7 +652,6 @@ def validate_pdfa(
     shutil.copy(input_file, output_file)
 
 
-
 # @active_if(ocr_required and options.pdf_noimg)
 # @transform(ocr_tesseract, suffix(".hocr"), ".ocred.todebug.pdf")
 # def render_text_output_page(input_file, output_file):
@@ -690,8 +689,23 @@ def validate_pdfa(
 #         writer.write(output)
 
 
+def available_cpu_count():
+    try:
+        return multiprocessing.cpu_count()
+    except NotImplementedError:
+        pass
+
+    try:
+        import psutil
+        return psutil.cpu_count()
+    except (ImportError, AttributeError):
+        pass
+
+    print(
+        "Could not get CPU count.  Assuming one (1) CPU."
+        "Use -j N to set manually.", file=sys.stderr)
+    return 1
+
 
 if __name__ == '__main__':
-    cmdline.run(options)
-
-
+    cmdline.run(options, multiprocess=available_cpu_count())
