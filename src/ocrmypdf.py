@@ -45,6 +45,7 @@ EXIT_BAD_INPUT_FILE = 2
 EXIT_MISSING_DEPENDENCY = 3
 EXIT_INVALID_OUTPUT_PDFA = 4
 EXIT_FILE_ACCESS_ERROR = 5
+EXIT_ALREADY_DONE_OCR = 6
 EXIT_OTHER_ERROR = 15
 
 # -------------
@@ -95,17 +96,17 @@ preprocessing.add_argument(
     help="oversample images to improve OCR results slightly")
 
 parser.add_argument(
-    '--force-ocr', action='store_true',
+    '-f', '--force-ocr', action='store_true',
     help="Force to OCR, even if the page already contains fonts")
 parser.add_argument(
-    '--skip-text', action='store_true',
+    '-s', '--skip-text', action='store_true',
     help="Skip OCR on pages that contain fonts and include the page anyway")
 parser.add_argument(
     '--skip-big', action='store_true',
     help="Skip OCR for pages that are very large")
-parser.add_argument(
-    '--exact-image', action='store_true',
-    help="Use original page from PDF without re-rendering")
+# parser.add_argument(
+#     '--exact-image', action='store_true',
+#     help="Use original page from PDF without re-rendering")
 
 advanced = parser.add_argument_group(
     "Advanced",
@@ -277,39 +278,49 @@ def repair_pdf(
         log.info(pdfinfo)
 
 
+def get_pageinfo(input_file, pdfinfo, pdfinfo_lock):
+    pageno = int(os.path.basename(input_file)[0:6]) - 1
+    with pdfinfo_lock:
+        pageinfo = pdfinfo[pageno].copy()
+    return pageinfo
 
-# if not pageinfo['images']:
-#     # If the page has no images, then it contains vector content or text
-#     # or both. It seems quite unlikely that one would find meaningful text
-#     # from rasterizing vector content. So skip the page.
-#     log.info(
-#         "Page {0} has no images - skipping OCR".format(pageno)
-#     )
-# elif pageinfo['has_text']:
-#     s = "Page {0} already has text! – {1}"
 
-#     if not options.force_ocr and not options.skip_text:
-#         log.error(s.format(pageno,
-#                      "aborting (use -f or -s to force OCR)"))
-#         sys.exit(1)
-#     elif options.force_ocr:
-#         log.info(s.format(pageno,
-#                     "rasterizing text and running OCR anyway"))
-#     elif options.skip_text:
-#         log.info(s.format(pageno,
-#                     "skipping all processing on this page"))
+def is_ocr_required(pageinfo, log):
+    page = pageinfo['pageno'] + 1
+    ocr_required = True
+    if not pageinfo['images']:
+        # If the page has no images, then it contains vector content or text
+        # or both. It seems quite unlikely that one would find meaningful text
+        # from rasterizing vector content. So skip the page.
+        log.info(
+            "Page {0} has no images - skipping OCR".format(page)
+        )
+        ocr_required = False
+    elif pageinfo['has_text']:
+        s = "Page {0} already has text! – {1}"
 
-# ocr_required = pageinfo['images'] and \
-#     (options.force_ocr or
-#         (not (pageinfo['has_text'] and options.skip_text)))
+        if not options.force_ocr and not options.skip_text:
+            log.error(s.format(page,
+                               "aborting (use --force-ocr to force OCR)"))
+            sys.exit(EXIT_ALREADY_DONE_OCR)
+        elif options.force_ocr:
+            log.info(s.format(page,
+                              "rasterizing text and running OCR anyway"))
+            ocr_required = True
+        elif options.skip_text:
+            log.info(s.format(page,
+                              "skipping all processing on this page"))
+            ocr_required = False
 
-# if ocr_required and options.skip_big:
-#     area = pageinfo['width_inches'] * pageinfo['height_inches']
-#     pixel_count = pageinfo['width_pixels'] * pageinfo['height_pixels']
-#     if area > (11.0 * 17.0) or pixel_count > (300.0 * 300.0 * 11 * 17):
-#         ocr_required = False
-#         log.info(
-#             "Page {0} is very large; skipping due to -b".format(pageno))
+    if ocr_required and options.skip_big:
+        area = pageinfo['width_inches'] * pageinfo['height_inches']
+        pixel_count = pageinfo['width_pixels'] * pageinfo['height_pixels']
+        if area > (11.0 * 17.0) or pixel_count > (300.0 * 300.0 * 11 * 17):
+            ocr_required = False
+            log.info(
+                "Page {0} is very large; skipping due to -b".format(page))
+
+    return ocr_required
 
 
 @split(
@@ -333,17 +344,22 @@ def split_pages(
     ]
     check_call(args_pdfseparate)
 
+    from glob import glob
+    for filename in glob(os.path.join(work_folder, '*.page.pdf')):
+        pageinfo = get_pageinfo(filename, pdfinfo, pdfinfo_lock)
 
-def get_pageinfo(input_file, pdfinfo, pdfinfo_lock):
-    pageno = int(os.path.basename(input_file)[0:6]) - 1
-    with pdfinfo_lock:
-        pageinfo = pdfinfo[pageno].copy()
-    return pageinfo
+        alt_suffix = '.ocr.page.pdf' if is_ocr_required(pageinfo, log) \
+                     else '.skip.page.pdf'
+        re_symlink(
+            filename,
+            os.path.join(
+                work_folder,
+                os.path.basename(filename)[0:6] + alt_suffix))
 
 
 @transform(
     input=split_pages,
-    filter=suffix('.page.pdf'),
+    filter=suffix('.ocr.page.pdf'),
     output='.page.png',
     output_dir=work_folder,
     extras=[_log, _pdfinfo, _pdfinfo_lock])
@@ -560,8 +576,21 @@ def generate_postscript_stub(
     generate_pdfa_def(output_file)
 
 
+@transform(
+    input=split_pages,
+    filter=suffix('.skip.page.pdf'),
+    output='.done.pdf',
+    output_dir=work_folder,
+    extras=[_log])
+def skip_page(
+        input_file,
+        output_file,
+        log):
+    re_symlink(input_file, output_file, log)
+
+
 @merge(
-    input=[render_page, generate_postscript_stub],
+    input=[render_page, skip_page, generate_postscript_stub],
     output=os.path.join(work_folder, 'merged.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def merge_pages(
@@ -572,6 +601,8 @@ def merge_pages(
         pdfinfo_lock):
 
     ocr_pages, postscript = input_files[0:-1], input_files[-1]
+    ocr_pages = sorted(ocr_pages)
+    log.info(ocr_pages)
 
     with NamedTemporaryFile(delete=True) as gs_pdf:
         args_gs = [
