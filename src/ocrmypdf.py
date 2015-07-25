@@ -596,7 +596,18 @@ def generate_postscript_stub(
         input_file,
         output_file,
         log):
-    generate_pdfa_def(output_file)
+    try:
+        pdf = pypdf.PdfFileReader(input_file)
+        pdfmark = {
+            'title': pdf.documentInfo['/Title'],
+            'author': pdf.documentInfo['/Author'],
+            'keywords': pdf.documentInfo['/Keywords'],
+            'subject': pdf.documentInfo['/Subject']
+        }
+    except KeyError:
+        pdfmark = {}
+
+    generate_pdfa_def(output_file, pdfmark)
 
 
 @transform(

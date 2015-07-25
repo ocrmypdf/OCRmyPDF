@@ -25,6 +25,9 @@ pdfa_def_template = u"""%!
 def
 
 [ /Title ($pdf_title)
+  /Author ($pdf_author)
+  /Subject ($pdf_subject)
+  /Keywords ($pdf_keywords)
   /DOCINFO pdfmark
 
 % Define an ICC profile :
@@ -57,11 +60,14 @@ def
 """
 
 
-def _get_pdfa_def(icc_profile, pdf_title, icc_identifier):
+def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
     t = Template(pdfa_def_template)
     result = t.substitute(icc_profile=icc_profile,
-                          pdf_title=pdf_title,
-                          icc_identifier=icc_identifier)
+                          icc_identifier=icc_identifier,
+                          pdf_title=pdfmark.get('title', ''),
+                          pdf_author=pdfmark.get('author', ''),
+                          pdf_subject=pdfmark.get('subject', ''),
+                          pdf_keywords=pdfmark.get('keywords', ''))
     return result
 
 
@@ -91,13 +97,13 @@ def _get_postscript_icc_path():
             return path
 
 
-def generate_pdfa_def(target_filename, pdf_title='', icc='sRGB'):
+def generate_pdfa_def(target_filename, pdfmark, icc='sRGB'):
     if icc == 'sRGB':
         icc_profile = os.path.join(_get_postscript_icc_path(), 'srgb.icc')
     else:
         raise NotImplementedError("Only supporting sRGB")
 
-    ps = _get_pdfa_def(icc_profile, pdf_title, icc)
+    ps = _get_pdfa_def(icc_profile, icc, pdfmark)
 
     # Since PostScript might not handle UTF-8 (it's hard to get a clear
     # answer), insist on ascii
