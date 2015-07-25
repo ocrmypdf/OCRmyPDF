@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from contextlib import suppress
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, mkdtemp
 import sys
 import os
 import fileinput
@@ -9,10 +9,10 @@ import re
 import shutil
 import warnings
 import multiprocessing
+import atexit
 
 import PyPDF2 as pypdf
 from PIL import Image
-from parse import parse
 
 from subprocess import Popen, check_call, PIPE, CalledProcessError, \
     TimeoutExpired
@@ -23,7 +23,7 @@ except ImportError:
 
 
 from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
-    mkdir, formatter, follows, subdivide, collate, check_if_uptodate
+    formatter, follows, subdivide, collate, check_if_uptodate
 import ruffus.cmdline as cmdline
 
 from .hocrtransform import HocrTransform
@@ -113,9 +113,6 @@ advanced = parser.add_argument_group(
 advanced.add_argument(
     '--deskew-provider', choices=['imagemagick', 'leptonica'],
     default='leptonica')
-advanced.add_argument(
-    '--temp-folder', default='', type=str,
-    help="folder where the temporary files should be placed")
 advanced.add_argument(
     '--tesseract-config', default=[], type=list, action='append',
     help="Tesseract configuration")
@@ -247,16 +244,24 @@ manager = multiprocessing.Manager()
 _pdfinfo = manager.list()
 _pdfinfo_lock = manager.Lock()
 
-if options.temp_folder == '':
-    options.temp_folder = 'tmp'
+work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
 
 
-@follows(mkdir(options.temp_folder))
+@atexit.register
+def cleanup_working_files(*args):
+    if options.keep_temporary_files:
+        print("Temporary working files saved at:")
+        print(work_folder)
+    else:
+        with suppress(FileNotFoundError):
+            shutil.rmtree(work_folder)
+
+
 @transform(
     input=options.input_file,
     filter=suffix('.pdf'),
     output='.repaired.pdf',
-    output_dir=options.temp_folder,
+    output_dir=work_folder,
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def repair_pdf(
         input_file,
@@ -350,7 +355,7 @@ def get_pageinfo(input_file, pdfinfo, pdfinfo_lock):
     input=split_pages,
     filter=suffix('.page.pdf'),
     output='.page.png',
-    output_dir=options.temp_folder,
+    output_dir=work_folder,
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def rasterize_with_ghostscript(
         input_file,
@@ -506,7 +511,7 @@ def ocr_tesseract(
 @collate(
     input=[rasterize_with_ghostscript, preprocess_deskew, preprocess_clean],
     filter=regex(r".*/(\d{6})(?:\.page|\.pp-deskew|\.pp-clean)\.png"),
-    output=os.path.join(options.temp_folder, r'\1.image'),
+    output=os.path.join(work_folder, r'\1.image'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def select_image_for_pdf(
         infiles,
@@ -533,7 +538,7 @@ def select_image_for_pdf(
 @collate(
     input=[select_image_for_pdf, ocr_tesseract],
     filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
-    output=os.path.join(options.temp_folder, r'\1.rendered.pdf'),
+    output=os.path.join(work_folder, r'\1.rendered.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def render_page(
         infiles,
@@ -556,7 +561,7 @@ def render_page(
     input=repair_pdf,
     filter=suffix('.repaired.pdf'),
     output='.pdfa_def.ps',
-    output_dir=options.temp_folder,
+    output_dir=work_folder,
     extras=[_log])
 def generate_postscript_stub(
         input_file,
@@ -567,7 +572,7 @@ def generate_postscript_stub(
 
 @merge(
     input=[render_page, generate_postscript_stub],
-    output=os.path.join(options.temp_folder, 'merged.pdf'),
+    output=os.path.join(work_folder, 'merged.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def merge_pages(
         input_files,
@@ -674,7 +679,7 @@ def validate_pdfa(
 
 # @active_if(ocr_required and options.exact_image)
 # @merge([render_hocr_blank_page, extract_single_page],
-#        os.path.join(options.temp_folder, "%04i.merged.pdf") % pageno)
+#        os.path.join(work_folder, "%04i.merged.pdf") % pageno)
 # def merge_hocr_with_original_page(infiles, output_file):
 #     with open(infiles[0], 'rb') as hocr_input, \
 #             open(infiles[1], 'rb') as page_input, \
