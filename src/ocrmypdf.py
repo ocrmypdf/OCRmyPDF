@@ -504,8 +504,35 @@ def ocr_tesseract(
 
 
 @collate(
-    input=[preprocess_deskew, preprocess_clean, ocr_tesseract],
-    filter=regex(r".*/(\d{6})(?:\.pp-deskew\.png|\.pp-clean\.png|\.hocr)"),
+    input=[rasterize_with_ghostscript, preprocess_deskew, preprocess_clean],
+    filter=regex(r".*/(\d{6})(?:\.page|\.pp-deskew|\.pp-clean)\.png"),
+    output=os.path.join(options.temp_folder, r'\1.image'),
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def select_image_for_pdf(
+        infiles,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+    if options.clean_final:
+        image_suffix = '.pp-clean.png'
+    elif options.deskew:
+        image_suffix = '.pp-deskew.png'
+    else:
+        image_suffix = '.page.png'
+    image = next(ii for ii in infiles if ii.endswith(image_suffix))
+
+    pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
+    if all(image['enc'] == 'jpeg' for image in pageinfo['images']):
+        # If all images were JPEGs originally, produce a JPEG as output
+        Image.open(image).save(output_file, format='JPEG')
+    else:
+        re_symlink(image, output_file)
+
+
+@collate(
+    input=[select_image_for_pdf, ocr_tesseract],
+    filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
     output=os.path.join(options.temp_folder, r'\1.rendered.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def render_page(
@@ -515,11 +542,7 @@ def render_page(
         pdfinfo,
         pdfinfo_lock):
     hocr = next(ii for ii in infiles if ii.endswith('.hocr'))
-    if options.clean_final:
-        image_suffix = '.pp-clean.png'
-    else:
-        image_suffix = '.pp-deskew.png'
-    image = next(ii for ii in infiles if ii.endswith(image_suffix))
+    image = next(ii for ii in infiles if ii.endswith('.image'))
 
     pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
     dpi = round(max(pageinfo['xres'], pageinfo['yres']))
@@ -627,29 +650,6 @@ def validate_pdfa(
     elif pdf_is_valid and pdf_is_pdfa:
         log.info('Output file: The generated PDF/A file is VALID')
     shutil.copy(input_file, output_file)
-
-
-
-
-# @active_if(ocr_required and not options.exact_image)
-# @merge([unpack_with_ghostscript, convert_to_png,
-#         deskew_imagemagick, deskew_leptonica, cleaned_to_png],
-#        os.path.join(options.temp_folder, "%04i.image_for_pdf" % pageno))
-# def select_image_for_pdf(infiles, output_file):
-#     if options.preprocess_clean != 0 and options.preprocess_cleantopdf != 0:
-#         input_file = infiles[-1]
-#     elif options.preprocess_deskew != 0 and options.preprocess_clean != 0:
-#         input_file = infiles[-2]
-#     elif options.preprocess_deskew != 0 and options.preprocess_clean == 0:
-#         input_file = infiles[-1]
-#     else:
-#         input_file = infiles[0]
-
-#     if all(image['enc'] == 'jpeg' for image in pageinfo['images']):
-#         # If all images were JPEGs originally, produce a JPEG as output
-#         check_call(['convert', input_file, 'jpg:' + output_file])
-#     else:
-#         re_symlink(input_file, output_file)
 
 
 
