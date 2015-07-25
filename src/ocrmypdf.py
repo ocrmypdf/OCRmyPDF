@@ -23,7 +23,7 @@ except ImportError:
 
 
 from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
-    formatter, follows, subdivide, collate, check_if_uptodate
+    formatter, follows, split, collate, check_if_uptodate
 import ruffus.cmdline as cmdline
 
 from .hocrtransform import HocrTransform
@@ -312,18 +312,13 @@ def repair_pdf(
 #             "Page {0} is very large; skipping due to -b".format(pageno))
 
 
-@subdivide(
+@split(
     repair_pdf,
-    formatter(),
-    "{path[0]}/*.page.pdf",
-    "{path[0]}/",
-    _log,
-    _pdfinfo,
-    _pdfinfo_lock)
+    os.path.join(work_folder, '*.page.pdf'),
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
 def split_pages(
         input_file,
         output_files,
-        output_file_name_root,
         log,
         pdfinfo,
         pdfinfo_lock):
@@ -334,7 +329,7 @@ def split_pages(
     args_pdfseparate = [
         'pdfseparate',
         input_file,
-        output_file_name_root + '%06d.page.pdf'
+        os.path.join(work_folder, '%06d.page.pdf')
     ]
     check_call(args_pdfseparate)
 
