@@ -9,3 +9,4 @@ build/
 dist/
 *.egg-info/
 venv/
+*/test/output
