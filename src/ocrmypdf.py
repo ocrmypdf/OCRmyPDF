@@ -79,6 +79,23 @@ parser.add_argument(
     '-l', '--language', action='append',
     help="language of the file to be OCRed")
 
+metadata = parser.add_argument_group(
+    "Metadata options",
+    "Set output PDF/A metadata (default: use input document's title)")
+metadata.add_argument(
+    '--title', type=str,
+    help="set document title")
+metadata.add_argument(
+    '--author', type=str,
+    help="set document author")
+metadata.add_argument(
+    '--subject', type=str,
+    help="set document")
+metadata.add_argument(
+    '--keywords', type=str,
+    help="set document keywords")
+
+
 preprocessing = parser.add_argument_group(
     "Preprocessing options",
     "Improve OCR quality and final image")
@@ -613,7 +630,15 @@ def generate_postscript_stub(
         'keywords': from_document_info('/Keywords'),
         'subject': from_document_info('/Subject'),
     }
-    print(pdfmark)
+    if options.title:
+        pdfmark['title'] = options.title
+    if options.author:
+        pdfmark['author'] = options.author
+    if options.keywords:
+        pdfmark['keywords'] = options.keywords
+    if options.subject:
+        pdfmark['subject'] = options.subject
+
     generate_pdfa_def(output_file, pdfmark)
 
 
@@ -729,16 +754,6 @@ def validate_pdfa(
     elif pdf_is_valid and pdf_is_pdfa:
         log.info('Output file: The generated PDF/A file is VALID')
     shutil.copy(input_file, output_file)
-
-
-# @active_if(ocr_required and options.exact_image)
-# @transform(ocr_tesseract, suffix(".hocr"), ".hocr.pdf")
-# def render_hocr_blank_page(input_file, output_file):
-#     dpi = round(max(pageinfo['xres'], pageinfo['yres']))
-
-#     hocrtransform = HocrTransform(input_file, dpi)
-#     hocrtransform.to_pdf(output_file, imageFileName=None,
-#                          showBoundingboxes=False, invisibleText=True)
 
 
 # @active_if(ocr_required and options.exact_image)
