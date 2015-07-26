@@ -5,6 +5,34 @@ Please always read this file before installing the package
 
 Download software here: https://github.com/fritz-hh/OCRmyPDF/tags
 
+
+v3.0-rc1:
+=======
+
+
+Changes
+-------
+
+- New, robust Python 3.4+ implementation based on ruffus pipelines
+   - All "tasks" in the pipeline can be executed in parallel on any available CPUs
+- Removed dependencies on several packages:
+   - parallel
+   - ImageMagick
+   - Python 2.7
+   - shell
+- Updated dependencies
+   - Ghostscript 9.14
+   - Unpaper 6.1 (now optional)
+   - Tesseract 3.02 and 3.03
+   - Python's reportlab 3
+- Unpaper 6.1 is now an optional dependency
+
+Fixes
+-----
+
+- Document metadata from the source PDF is copied to the output PDF (Title, Author, etc.)
+
+
 v2.1-stable (2014-09-20):
 =======
 
