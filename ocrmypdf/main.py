@@ -36,7 +36,7 @@ warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
 
 BASEDIR = os.path.dirname(os.path.realpath(__file__))
-JHOVE_PATH = os.path.realpath(os.path.join(BASEDIR, '..', 'jhove'))
+JHOVE_PATH = os.path.realpath(os.path.join(BASEDIR, 'jhove'))
 JHOVE_JAR = os.path.join(JHOVE_PATH, 'bin', 'JhoveApp.jar')
 JHOVE_CFG = os.path.join(JHOVE_PATH, 'conf', 'jhove.conf')
 
@@ -791,5 +791,9 @@ def available_cpu_count():
     return 1
 
 
-if __name__ == '__main__':
+def run_pipeline():
     cmdline.run(options, multiprocess=available_cpu_count())
+
+
+if __name__ == '__main__':
+    run_pipeline()

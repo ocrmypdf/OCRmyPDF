@@ -37,8 +37,13 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'ocrmypdf = ocrmypdf.main:main'
+            'ocrmypdf = ocrmypdf.main:run_pipeline'
         ],
     },
+    eager_resources=[
+        'ocrmypdf/jhove/bin/*.jar',
+        'ocrmypdf/jhove/conf/*.conf',
+        'ocrmypdf/jhove/lib/*.jar'
+    ],
     include_package_data=True,
     zip_safe=False)
