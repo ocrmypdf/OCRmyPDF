@@ -88,7 +88,6 @@ def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
                           author=pdfmark_utf16.get('author', ''),
                           subject=pdfmark_utf16.get('subject', ''),
                           keywords=pdfmark_utf16.get('keywords', ''))
-    print(result)
     return result
 
 
