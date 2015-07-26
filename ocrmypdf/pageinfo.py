@@ -102,8 +102,6 @@ def _pdf_get_pageinfo(infile, page: int):
             int(round(xres * pageinfo['width_inches']))
         pageinfo['height_pixels'] = \
             int(round(yres * pageinfo['height_inches']))
-        rx, ry = pageinfo['xres'], pageinfo['yres']
-        pageinfo['xres_render'], pageinfo['yres_render'] = rx, ry
 
     return pageinfo
 
