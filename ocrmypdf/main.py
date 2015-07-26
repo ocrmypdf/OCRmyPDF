@@ -66,7 +66,7 @@ if tesseract.VERSION < MINIMUM_TESS_VERSION:
 # Parser
 
 parser = cmdline.get_argparse(
-    prog="OCRmyPDF",
+    prog="ocrmypdf",
     description="Generate searchable PDF file from an image-only PDF file.")
 
 parser.add_argument(

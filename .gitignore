@@ -5,3 +5,7 @@ tests/output/
 .ruffus_history.sqlite
 *.sublime-*
 /*.pdf
+build/
+dist/
+*.egg-info/
+venv/
