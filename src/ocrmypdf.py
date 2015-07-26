@@ -596,17 +596,24 @@ def generate_postscript_stub(
         input_file,
         output_file,
         log):
-    try:
-        pdf = pypdf.PdfFileReader(input_file)
-        pdfmark = {
-            'title': pdf.documentInfo['/Title'],
-            'author': pdf.documentInfo['/Author'],
-            'keywords': pdf.documentInfo['/Keywords'],
-            'subject': pdf.documentInfo['/Subject']
-        }
-    except KeyError:
-        pdfmark = {}
 
+    pdf = pypdf.PdfFileReader(input_file)
+
+    def from_document_info(key):
+        # pdf.documentInfo.get() DOES NOT work as expected
+        try:
+            s = pdf.documentInfo[key]
+            return str(s)
+        except KeyError:
+            return ''
+
+    pdfmark = {
+        'title': from_document_info('/Title'),
+        'author': from_document_info('/Author'),
+        'keywords': from_document_info('/Keywords'),
+        'subject': from_document_info('/Subject'),
+    }
+    print(pdfmark)
     generate_pdfa_def(output_file, pdfmark)
 
 
@@ -636,10 +643,13 @@ def merge_pages(
         pdfinfo_lock):
 
     def input_file_order(s):
-        '''Sort order: Postscript PDF/A header, and then pages followed
-        by their debug page, if any.'''
+        '''Sort order: All rendered pages followed
+        by their debug page, if any, followed by Postscript stub.
+        Ghostscript documentation has the Postscript stub at the
+        beginning, but it works at the end and also gets document info
+        right that way.'''
         if s.endswith('.ps'):
-            return -1
+            return 99999999
         key = int(os.path.basename(s)[0:6]) * 10
         if 'debug' in os.path.basename(s):
             key += 1

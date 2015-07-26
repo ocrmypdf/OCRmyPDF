@@ -9,6 +9,7 @@ from __future__ import print_function, absolute_import, division
 from string import Template
 from subprocess import Popen, PIPE
 import os
+import codecs
 
 
 # This is a template written in PostScript which is needed to create PDF/A
@@ -24,10 +25,10 @@ pdfa_def_template = u"""%!
 /ICCProfile ($icc_profile)
 def
 
-[ /Title ($pdf_title)
-  /Author ($pdf_author)
-  /Subject ($pdf_subject)
-  /Keywords ($pdf_keywords)
+[ /Title <$title>
+  /Author <$author>
+  /Subject <$subject>
+  /Keywords <$keywords>
   /DOCINFO pdfmark
 
 % Define an ICC profile :
@@ -60,14 +61,34 @@ def
 """
 
 
+def encode_text_string(s: str) -> str:
+    '''Encode text string to hex string for use in a PDF
+
+    From PDF 32000-1:2008 a string object may be included in hexademical form
+    if it is enclosed in angle brackets.  For general Unicode the string should
+    be UTF-16 (big endian) with byte order marks.  A non-hexademical
+    presentation is possible but this is preferable since it allows the output
+    Postscript file to be completely ASCII.
+    '''
+    if s == '':
+        return ''
+    utf16_bytes = s.encode('utf-16be')
+    ascii_hex_bytes = codecs.encode(b'\xfe\xff' + utf16_bytes, 'hex')
+    ascii_hex_str = ascii_hex_bytes.decode('ascii').lower()
+    return ascii_hex_str
+
+
 def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
+    pdfmark_utf16 = {k: encode_text_string(v) for k, v in pdfmark.items()}
+
     t = Template(pdfa_def_template)
     result = t.substitute(icc_profile=icc_profile,
                           icc_identifier=icc_identifier,
-                          pdf_title=pdfmark.get('title', ''),
-                          pdf_author=pdfmark.get('author', ''),
-                          pdf_subject=pdfmark.get('subject', ''),
-                          pdf_keywords=pdfmark.get('keywords', ''))
+                          title=pdfmark_utf16.get('title', ''),
+                          author=pdfmark_utf16.get('author', ''),
+                          subject=pdfmark_utf16.get('subject', ''),
+                          keywords=pdfmark_utf16.get('keywords', ''))
+    print(result)
     return result
 
 
