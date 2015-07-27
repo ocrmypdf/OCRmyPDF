@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from __future__ import print_function
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, check_output
 import os
 import shutil
 from contextlib import suppress
@@ -64,7 +64,11 @@ def test_quick():
 
 
 def test_deskew():
+    # Run with deskew
     deskewed_pdf = run_ocrmypdf('skew.pdf', 'test_deskew.pdf', '-d')
+
+    # Now render as an image again and use Leptonica to find the skew angle
+    # to confirm that it was deskewed
     from ocrmypdf.ghostscript import rasterize_pdf
     import logging
     log = logging.getLogger()
@@ -92,3 +96,21 @@ def test_clean():
     check_ocrmypdf_sh('skew.pdf', 'test_clean.pdf', '-c')
 
 
+def test_metadata():
+    pdf = run_ocrmypdf(
+        'c02-22.pdf', 'test_metadata.pdf',
+        '--title', 'Du siehst den Wald vor lauter Bäumen nicht.',
+        '--author', '孔子',
+        '--subject', 'U+1030C is: 𐌌')
+
+    out_pdfinfo = check_output(['pdfinfo', pdf], universal_newlines=True)
+    lines_pdfinfo = out_pdfinfo.splitlines()
+    pdfinfo = {}
+    for line in lines_pdfinfo:
+        k, v = line.strip().split(':', maxsplit=1)
+        pdfinfo[k.strip()] = v.strip()
+
+    assert pdfinfo['Title'] == 'Du siehst den Wald vor lauter Bäumen nicht.'
+    assert pdfinfo['Author'] == '孔子'
+    assert pdfinfo['Subject'] == 'U+1030C is: 𐌌'
+    assert pdfinfo.get('Keywords', '') == ''
