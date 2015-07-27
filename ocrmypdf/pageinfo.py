@@ -2,8 +2,10 @@
 #
 
 from subprocess import Popen, PIPE
-import PyPDF2 as pypdf
 from decimal import Decimal, getcontext
+import re
+import sys
+import PyPDF2 as pypdf
 
 
 FRIENDLY_COLORSPACE = {
@@ -35,32 +37,32 @@ FRIENDLY_COMP = {
 }
 
 
-def _pdf_get_pageinfo(infile, page: int):
-    pageinfo = {}
-    pageinfo['pageno'] = page
-    pageinfo['images'] = []
+def _page_has_inline_images(page):
+    # PDF always uses \r\n for separator regardless of platform
+    # Really basic heuristic that might trigger the odd false positive
+    # This is only finds the first image and is not quite spec compliant
+    contents = page.getContents()
+    data = contents.getData()
+    begin_image, image_data, end_image = False, False, False
+    for data in re.split(b'\s+', data):
+        print(data)
+        if data == b'BI':
+            begin_image = True
+        elif data == b'ID':
+            image_data = True
+        elif data == b'EI':
+            end_image = True
+        if all((begin_image, image_data, end_image)):
+            return True
 
-    p_pdftotext = Popen(['pdftotext', '-f', str(page), '-l', str(page),
-                         '-raw', '-nopgbrk', infile, '-'],
-                        close_fds=True, stdout=PIPE, stderr=PIPE,
-                        universal_newlines=True)
-    text, _ = p_pdftotext.communicate()
-    if len(text.strip()) > 0:
-        pageinfo['has_text'] = True
-    else:
-        pageinfo['has_text'] = False
 
-    pdf = pypdf.PdfFileReader(infile)
-    page = pdf.pages[page - 1]
-    width_pt = page['/MediaBox'][2] - page['/MediaBox'][0]
-    height_pt = page['/MediaBox'][3] - page['/MediaBox'][1]
-    pageinfo['width_inches'] = width_pt / Decimal(72.0)
-    pageinfo['height_inches'] = height_pt / Decimal(72.0)
+def _find_page_images(page, pageinfo):
+    try:
+        page['/Resources']['/XObject']
+    except KeyError:
+        return
 
-    if '/XObject' not in page['/Resources']:
-        # Missing /XObject means no images or possibly corrupt PDF
-        return pageinfo
-
+    # Look for XObject (out of line images)
     for xobj in page['/Resources']['/XObject']:
         # PyPDF2 returns the keys as an iterator
         pdfimage = page['/Resources']['/XObject'][xobj]
@@ -92,7 +94,37 @@ def _pdf_get_pageinfo(infile, page: int):
         image['dpi_w'] = image['width'] / pageinfo['width_inches']
         image['dpi_h'] = image['height'] / pageinfo['height_inches']
         image['dpi'] = (image['dpi_w'] * image['dpi_h']) ** Decimal(0.5)
-        pageinfo['images'].append(image)
+        yield image
+
+
+def _pdf_get_pageinfo(infile, page: int):
+    pageinfo = {}
+    pageinfo['pageno'] = page
+    pageinfo['images'] = []
+
+    p_pdftotext = Popen(['pdftotext', '-f', str(page), '-l', str(page),
+                         '-raw', '-nopgbrk', infile, '-'],
+                        close_fds=True, stdout=PIPE, stderr=PIPE,
+                        universal_newlines=True)
+    text, _ = p_pdftotext.communicate()
+    if len(text.strip()) > 0:
+        pageinfo['has_text'] = True
+    else:
+        pageinfo['has_text'] = False
+
+    pdf = pypdf.PdfFileReader(infile)
+    page = pdf.pages[page - 1]
+    width_pt = page['/MediaBox'][2] - page['/MediaBox'][0]
+    height_pt = page['/MediaBox'][3] - page['/MediaBox'][1]
+    pageinfo['width_inches'] = width_pt / Decimal(72.0)
+    pageinfo['height_inches'] = height_pt / Decimal(72.0)
+
+    pageinfo['images'] = [im for im in _find_page_images(page, pageinfo)]
+
+    # Look for inline images
+    if _page_has_inline_images(page):
+        raise NotImplementedError(
+            "Warning: input PDF contains inline images - not supported")
 
     if pageinfo['images']:
         xres = max(image['dpi_w'] for image in pageinfo['images'])

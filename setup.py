@@ -33,7 +33,7 @@ setup(
         'Pillow>=2.7.0',
         'lxml>=3.4.2',
         'reportlab>=3.1.44',
-        'PyPDF2>=1.24'
+        'PyPDF2>=1.25.1'
     ],
     entry_points={
         'console_scripts': [
