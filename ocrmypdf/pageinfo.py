@@ -102,18 +102,12 @@ def _pdf_get_pageinfo(infile, page: int):
     pageinfo['pageno'] = page
     pageinfo['images'] = []
 
-    p_pdftotext = Popen(['pdftotext', '-f', str(page), '-l', str(page),
-                         '-raw', '-nopgbrk', infile, '-'],
-                        close_fds=True, stdout=PIPE, stderr=PIPE,
-                        universal_newlines=True)
-    text, _ = p_pdftotext.communicate()
-    if len(text.strip()) > 0:
-        pageinfo['has_text'] = True
-    else:
-        pageinfo['has_text'] = False
-
     pdf = pypdf.PdfFileReader(infile)
     page = pdf.pages[page - 1]
+
+    text = page.extractText()
+    pageinfo['has_text'] = (text.strip() != '')
+
     width_pt = page['/MediaBox'][2] - page['/MediaBox'][0]
     height_pt = page['/MediaBox'][3] - page['/MediaBox'][1]
     pageinfo['width_inches'] = width_pt / Decimal(72.0)

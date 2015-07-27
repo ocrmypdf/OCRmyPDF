@@ -26,8 +26,8 @@ def test_single_page_text():
     pdf = Canvas(filename, pagesize=(8*72, 6*72))
     text = pdf.beginText()
     text.setFont('Helvetica', 12)
-    text.setTextOrigin(4*72, 3*72)
-    text.textLine("Methink’st thou art a general offence and every"
+    text.setTextOrigin(1*72, 3*72)
+    text.textLine("Methink'st thou art a general offence and every"
                   " man should beat thee.")
     pdf.drawText(text)
     pdf.showPage()
