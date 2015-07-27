@@ -205,8 +205,8 @@ class HocrTransform():
 
         # put the image on the page, scaled to fill the page
         if imageFileName is not None:
-            im = Image.open(imageFileName)
-            pdf.drawInlineImage(im, 0, 0, width=self.width, height=self.height)
+            pdf.drawImage(imageFileName, 0, 0,
+                          width=self.width, height=self.height)
 
         # finish up the page and save it
         pdf.showPage()

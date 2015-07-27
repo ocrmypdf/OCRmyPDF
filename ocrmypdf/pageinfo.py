@@ -45,7 +45,6 @@ def _page_has_inline_images(page):
     data = contents.getData()
     begin_image, image_data, end_image = False, False, False
     for data in re.split(b'\s+', data):
-        print(data)
         if data == b'BI':
             begin_image = True
         elif data == b'ID':
