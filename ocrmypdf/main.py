@@ -68,7 +68,13 @@ if tesseract.VERSION < MINIMUM_TESS_VERSION:
 
 parser = cmdline.get_argparse(
     prog="ocrmypdf",
-    description="Generate searchable PDF file from an image-only PDF file.")
+    description="Generate searchable PDF file from an image-only PDF file.",
+    version='3.0rc1',
+    fromfile_prefix_chars='@',
+    ignored_args=[
+        'touch_files_only', 'recreate_database', 'checksum_file_name',
+        'key_legend_in_graph', 'draw_graph_horizontally', 'flowchart_format',
+        'forced_tasks', 'target_tasks'])
 
 parser.add_argument(
     'input_file',
@@ -150,7 +156,14 @@ debugging.add_argument(
     help="render each page twice with debug information on second page")
 
 
-options = parser.parse_args()
+# Fiddle with arguments to support with unittest.mock
+_argv = sys.argv
+if _argv[0].startswith('python'):
+    _argv = _argv[1:]
+if _argv[0].endswith('.py'):
+    _argv = _argv[1:]
+options = parser.parse_args(_argv)
+
 
 # ----------
 # Languages

@@ -6,6 +6,7 @@ import os
 import shutil
 from contextlib import suppress
 import sys
+from unittest.mock import patch
 
 if sys.version_info.major < 3:
     print("Requires Python 3.4+")
@@ -25,7 +26,7 @@ def setup_module():
         os.mkdir(TEST_OUTPUT)
 
 
-def run_ocrmypdf(input_file, output_file, *args):
+def run_ocrmypdf_sh(input_file, output_file, *args):
     sh_args = ['sh', OCRMYPDF] + list(args) + [input_file, output_file]
     sh = Popen(
         sh_args, close_fds=True, stdout=PIPE, stderr=PIPE,
@@ -34,23 +35,60 @@ def run_ocrmypdf(input_file, output_file, *args):
     return sh, out, err
 
 
-def check_ocrmypdf(input_basename, output_basename, *args):
+def check_ocrmypdf_sh(input_basename, output_basename, *args):
     input_file = os.path.join(TEST_RESOURCES, input_basename)
     output_file = os.path.join(TEST_OUTPUT, output_basename or input_basename)
 
-    sh, _, err = run_ocrmypdf(input_file, output_file, *args)
+    sh, _, err = run_ocrmypdf_sh(input_file, output_file, *args)
     assert sh.returncode == 0, err
     assert os.path.exists(output_file), "Output file not created"
-    assert os.stat(output_file).st_size > 100, "PDF too small, empty or near empty"
+    assert os.stat(output_file).st_size > 100, "PDF too small or empty"
+
+
+def run_ocrmypdf(input_basename, output_basename, *args):
+    input_file = os.path.join(TEST_RESOURCES, input_basename)
+    output_file = os.path.join(TEST_OUTPUT, output_basename or input_basename)
+
+    sys_argv = list(args) + [input_file, output_file]
+    with patch.object(sys, 'argv', sys_argv):
+        try:
+            import ocrmypdf.main
+            ocrmypdf.main.run_pipeline()
+        except SystemExit as e:
+            assert e.code == 0
+    return output_file
 
 
 def test_quick():
-    check_ocrmypdf('c02-22.pdf', 'test_quick.pdf')
+    check_ocrmypdf_sh('c02-22.pdf', 'test_quick.pdf')
 
 
 def test_deskew():
-    check_ocrmypdf('skew.pdf', 'test_deskew.pdf', '-d')
+    deskewed_pdf = run_ocrmypdf('skew.pdf', 'test_deskew.pdf', '-d')
+    from ocrmypdf.ghostscript import rasterize_pdf
+    import logging
+    log = logging.getLogger()
+
+    deskewed_png = os.path.join(TEST_OUTPUT, 'deskewed.png')
+
+    rasterize_pdf(
+        deskewed_pdf,
+        deskewed_png,
+        xres=150,
+        yres=150,
+        raster_device='pngmono',
+        log=log)
+
+    from ocrmypdf.leptonica import pixRead, pixDestroy, pixFindSkew
+    pix = pixRead(deskewed_png)
+    skew_angle, skew_confidence = pixFindSkew(pix)
+    pix = pixDestroy(pix)
+
+    print(skew_angle)
+    assert -0.5 < skew_angle < 0.5, "Deskewing failed"
 
 
 def test_clean():
-    check_ocrmypdf('skew.pdf', 'test_clean.pdf', '-c')
+    check_ocrmypdf_sh('skew.pdf', 'test_clean.pdf', '-c')
+
+
