@@ -134,6 +134,9 @@ advanced.add_argument(
 advanced.add_argument(
     '--pdf-renderer', choices=['tesseract', 'hocr'], default='hocr',
     help='choose OCR PDF renderer')
+advanced.add_argument(
+    '--tesseract-timeout', default=180.0, type=float,
+    help='give up on OCR after timeout')
 
 debugging = parser.add_argument_group(
     "Debugging",
@@ -495,7 +498,7 @@ def ocr_tesseract_hocr(
     p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
               universal_newlines=True)
     try:
-        stdout, stderr = p.communicate(timeout=180)
+        stdout, stderr = p.communicate(timeout=options.tesseract_timeout)
     except TimeoutExpired:
         p.kill()
         stdout, stderr = p.communicate()
@@ -633,7 +636,7 @@ def tesseract_ocr_and_render_pdf(
     p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
               universal_newlines=True)
 
-    stdout, stderr = p.communicate(timeout=180)
+    stdout, stderr = p.communicate(timeout=options.tesseract_timeout)
     if stdout:
         log.info(stdout)
     if stderr:
