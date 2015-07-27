@@ -67,8 +67,9 @@ def encode_text_string(s: str) -> str:
     From PDF 32000-1:2008 a string object may be included in hexademical form
     if it is enclosed in angle brackets.  For general Unicode the string should
     be UTF-16 (big endian) with byte order marks.  A non-hexademical
-    presentation is possible but this is preferable since it allows the output
-    Postscript file to be completely ASCII.
+    representation is doable but this is preferable since it allows the output
+    Postscript file to be completely ASCII and no escaping of Postscript
+    characters is necessary.
     '''
     if s == '':
         return ''

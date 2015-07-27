@@ -9,7 +9,9 @@ import os
 import sys
 import shutil
 from nose.tools import *
+from pkg_resources import Requirement, resource_filename
 
+req = Requirement.parse('ocrmypdf')
 
 TEST_OUTPUT = os.path.join(os.path.dirname(__file__), 'output')
 
@@ -92,4 +94,13 @@ def test_single_page_inline_image():
         pdf.save()
 
     pageinfo.pdf_get_all_pageinfo(filename)
+
+
+def test_jpeg():
+    filename = resource_filename(req, 'tests/resources/c02-22.pdf')
+
+    pdfinfo = pageinfo.pdf_get_all_pageinfo(filename)
+
+    pdfimage = pdfinfo[0]['images'][0]
+    assert pdfimage['enc'] == 'jpeg'
 
