@@ -29,6 +29,7 @@ import ruffus.cmdline as cmdline
 from .hocrtransform import HocrTransform
 from .pageinfo import pdf_get_all_pageinfo
 from .pdfa import generate_pdfa_def
+from .ghostscript import rasterize_pdf, generate_pdfa
 from . import tesseract
 
 
@@ -405,28 +406,8 @@ def rasterize_with_ghostscript(
 
     xres = max(pageinfo['xres'], options.oversample or 0)
     yres = max(pageinfo['yres'], options.oversample or 0)
-    with NamedTemporaryFile(delete=True) as tmp:
-        args_gs = [
-            'gs',
-            '-dBATCH', '-dNOPAUSE',
-            '-sDEVICE=%s' % device,
-            '-o', tmp.name,
-            '-r{0}x{1}'.format(str(xres), str(yres)),
-            input_file
-        ]
 
-        p = Popen(args_gs, close_fds=True, stdout=PIPE, stderr=PIPE,
-                  universal_newlines=True)
-        stdout, stderr = p.communicate()
-        if stdout:
-            log.debug(stdout)
-        if stderr:
-            log.error(stderr)
-
-        if p.returncode == 0:
-            shutil.copy(tmp.name, output_file)
-        else:
-            log.error('Ghostscript rendering failed')
+    rasterize_pdf(input_file, output_file, xres, yres, device, log)
 
 
 @transform(
@@ -722,24 +703,7 @@ def merge_pages(
 
     pdf_pages = sorted(input_files, key=input_file_order)
     log.info(pdf_pages)
-
-    with NamedTemporaryFile(delete=True) as gs_pdf:
-        args_gs = [
-            "gs",
-            "-dQUIET",
-            "-dBATCH",
-            "-dNOPAUSE",
-            "-sDEVICE=pdfwrite",
-            "-sColorConversionStrategy=/RGB",
-            "-sProcessColorModel=DeviceRGB",
-            "-dPDFA",
-            "-sPDFACompatibilityPolicy=2",
-            "-sOutputICCProfile=srgb.icc",
-            "-sOutputFile=" + gs_pdf.name,
-        ]
-        args_gs.extend(pdf_pages)
-        check_call(args_gs)
-        shutil.copy(gs_pdf.name, output_file)
+    generate_pdfa(pdf_pages, output_file)
 
 
 @transform(
