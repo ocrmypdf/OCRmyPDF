@@ -84,7 +84,7 @@ metadata = parser.add_argument_group(
     "Set output PDF/A metadata (default: use input document's title)")
 metadata.add_argument(
     '--title', type=str,
-    help="set document title")
+    help="set document title (place multiple words in quotes)")
 metadata.add_argument(
     '--author', type=str,
     help="set document author")
@@ -131,6 +131,9 @@ advanced = parser.add_argument_group(
 advanced.add_argument(
     '--tesseract-config', default=[], type=list, action='append',
     help="Tesseract configuration")
+advanced.add_argument(
+    '--pdf-renderer', choices=['tesseract', 'hocr'], default='hocr',
+    help='choose OCR PDF renderer')
 
 debugging = parser.add_argument_group(
     "Debugging",
@@ -467,12 +470,13 @@ def preprocess_clean(
     unpaper.clean(input_file, output_file, dpi, log)
 
 
+@active_if(options.pdf_renderer == 'hocr')
 @transform(
     input=preprocess_clean,
     filter=suffix(".pp-clean.png"),
     output=".hocr",
     extras=[_log, _pdfinfo, _pdfinfo_lock])
-def ocr_tesseract(
+def ocr_tesseract_hocr(
         input_file,
         output_file,
         log,
@@ -531,6 +535,7 @@ def ocr_tesseract(
                 print(line, end='')  # fileinput.input redirects stdout
 
 
+@active_if(options.pdf_renderer == 'hocr')
 @collate(
     input=[rasterize_with_ghostscript, preprocess_deskew, preprocess_clean],
     filter=regex(r".*/(\d{6})(?:\.page|\.pp-deskew|\.pp-clean)\.png"),
@@ -558,12 +563,13 @@ def select_image_for_pdf(
         re_symlink(image, output_file)
 
 
+@active_if(options.pdf_renderer == 'hocr')
 @collate(
-    input=[select_image_for_pdf, ocr_tesseract],
+    input=[select_image_for_pdf, ocr_tesseract_hocr],
     filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
     output=os.path.join(work_folder, r'\1.rendered.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
-def render_page(
+def render_hocr_page(
         infiles,
         output_file,
         log,
@@ -580,13 +586,14 @@ def render_page(
                          showBoundingboxes=False, invisibleText=True)
 
 
+@active_if(options.pdf_renderer == 'hocr')
 @active_if(options.debug_rendering)
 @collate(
-    input=[select_image_for_pdf, ocr_tesseract],
+    input=[select_image_for_pdf, ocr_tesseract_hocr],
     filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
     output=os.path.join(work_folder, r'\1.debug.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
-def render_debug_page(
+def render_hocr_debug_page(
         infiles,
         output_file,
         log,
@@ -601,6 +608,36 @@ def render_debug_page(
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=None,
                          showBoundingboxes=True, invisibleText=False)
+
+
+@active_if(options.pdf_renderer == 'tesseract')
+@transform(
+    input=preprocess_clean,
+    filter=suffix(".pp-clean.png"),
+    output=".rendered.pdf",
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def tesseract_ocr_and_render_pdf(
+        input_file,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+
+    args_tesseract = [
+        'tesseract',
+        '-l', '+'.join(options.language),
+        input_file,
+        os.path.splitext(output_file)[0],  # Tesseract appends suffix
+        'pdf'
+    ] + options.tesseract_config
+    p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
+              universal_newlines=True)
+
+    stdout, stderr = p.communicate(timeout=180)
+    if stdout:
+        log.info(stdout)
+    if stderr:
+        log.error(stderr)
 
 
 @transform(
@@ -656,8 +693,8 @@ def skip_page(
 
 
 @merge(
-    input=[render_page, render_debug_page, skip_page,
-           generate_postscript_stub],
+    input=[render_hocr_page, render_hocr_debug_page, skip_page,
+           tesseract_ocr_and_render_pdf, generate_postscript_stub],
     output=os.path.join(work_folder, 'merged.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def merge_pages(
