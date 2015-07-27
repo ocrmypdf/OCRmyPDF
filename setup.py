@@ -125,47 +125,46 @@ def check_external_program(
     print('Found {program} {version}'.format(
             program=program, version=version))
 
-check_external_program(
-    program='tesseract',
-    minimum_version='3.02.02',
-    package='tesseract'
-)
+command = next((arg for arg in sys.argv[1:] if not arg.startswith('-')), '')
 
-check_external_program(
-    program='gs',
-    minimum_version='9.14',
-    package='ghostscript'
-)
-
-check_external_program(
-    program='unpaper',
-    minimum_version='6.1',
-    package='unpaper',
-    optional=True
-)
-
-# Deprecated
-check_external_program(
-    program='pdfseparate',
-    minimum_version='0.29.0',
-    package='poppler',
-    version_check_args=['-v']
-)
-
-check_external_program(
-    program='java',
-    minimum_version='1.5.0',
-    package='Java Runtime Environment',
-    version_check_args=['-version']
-)
-
-check_external_program(
-    program='mutool',
-    minimum_version='1.7a',
-    version_check_args=['-v'],
-    version_scrape_regex=re.compile(r'(\d+\.\d+[a-z]+)'),
-    package='mupdf-tools'
-)
+if command.startswith('install') or \
+        command in ['check', 'test', 'nosetests', 'easy_install']:
+    check_external_program(
+        program='tesseract',
+        minimum_version='3.02.02',
+        package='tesseract'
+    )
+    check_external_program(
+        program='gs',
+        minimum_version='9.14',
+        package='ghostscript'
+    )
+    check_external_program(
+        program='unpaper',
+        minimum_version='6.1',
+        package='unpaper',
+        optional=True
+    )
+    # Deprecated
+    check_external_program(
+        program='pdfseparate',
+        minimum_version='0.29.0',
+        package='poppler',
+        version_check_args=['-v']
+    )
+    check_external_program(
+        program='java',
+        minimum_version='1.5.0',
+        package='Java Runtime Environment',
+        version_check_args=['-version']
+    )
+    check_external_program(
+        program='mutool',
+        minimum_version='1.7a',
+        version_check_args=['-v'],
+        version_scrape_regex=re.compile(r'(\d+\.\d+[a-z]+)'),
+        package='mupdf-tools'
+    )
 
 setup(
     name='ocrmypdf',
