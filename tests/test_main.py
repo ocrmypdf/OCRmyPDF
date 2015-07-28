@@ -114,3 +114,15 @@ def test_metadata():
     assert pdfinfo['Author'] == '孔子'
     assert pdfinfo['Subject'] == 'U+1030C is: 𐌌'
     assert pdfinfo.get('Keywords', '') == ''
+
+
+def test_oversample():
+    oversampled_pdf = run_ocrmypdf(
+        'skew.pdf', 'test-oversample.pdf', '--oversample', '300')
+
+    from ocrmypdf.pageinfo import pdf_get_all_pageinfo
+
+    pdfinfo = pdf_get_all_pageinfo(oversampled_pdf)
+
+    print(pdfinfo[0]['xres'])
+    assert abs(pdfinfo[0]['xres'] - 300) < 1
