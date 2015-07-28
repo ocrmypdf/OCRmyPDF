@@ -642,7 +642,12 @@ def tesseract_ocr_and_render_pdf(
         pdfinfo,
         pdfinfo_lock):
 
-    input_image = next(ii for ii in input_files if ii.endswith('.png'))
+    input_image = next((ii for ii in input_files if ii.endswith('.png')), '')
+    input_pdf = next((ii for ii in input_files if ii.endswith('.pdf')))
+    if not input_image:
+        # Skipping this page
+        re_symlink(input_pdf, output_file)
+        return
 
     args_tesseract = [
         'tesseract',
@@ -662,8 +667,6 @@ def tesseract_ocr_and_render_pdf(
             log.error(stderr)
     except TimeoutError:
         p.kill()
-
-        input_pdf = next(ii for ii in input_files if ii.endswith('.pdf'))
         log.info("Tesseract - page timed out")
         re_symlink(input_pdf, output_file)
 

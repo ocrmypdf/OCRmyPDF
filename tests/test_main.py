@@ -134,7 +134,7 @@ def test_force_ocr():
 
 
 def test_skip_ocr():
-    out = check_ocrmypdf('graph_ocred.pdf', 'test_skip.pdf', '-s')
+    check_ocrmypdf('graph_ocred.pdf', 'test_skip.pdf', '-s')
 
 
 def check_ocr_timeout(renderer):
@@ -155,3 +155,15 @@ def test_skip_big():
     pdfinfo = pdf_get_all_pageinfo(out)
     assert pdfinfo[0]['has_text'] == False
 
+
+def check_maximum_options(renderer):
+    check_ocrmypdf(
+        'multipage.pdf', 'test_multipage%s.pdf' % renderer,
+        '-d', '-c', '-i', '-g', '-f', '-k', '--oversample', '300',
+        '--skip-big', '10', '--title', 'Too Many Weird Files',
+        '--author', 'py.test', '--pdf-renderer', renderer)
+
+
+def test_maximum_options():
+    yield check_maximum_options, 'hocr'
+    yield check_maximum_options, 'tesseract'
