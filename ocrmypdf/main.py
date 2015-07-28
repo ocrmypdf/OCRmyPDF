@@ -161,16 +161,7 @@ debugging.add_argument(
     '-g', '--debug-rendering', action='store_true',
     help="render each page twice with debug information on second page")
 
-
-# Fiddle with arguments to support with unittest.mock
-_argv = sys.argv
-if _argv[0].startswith('python'):
-    _argv = _argv[1:]
-if _argv[0].endswith('.py'):
-    _argv = _argv[1:]
-if _argv[0].startswith('ocrmypdf'):
-    _argv = _argv[1:]
-options = parser.parse_args(_argv)
+options = parser.parse_args()
 
 
 # ----------
