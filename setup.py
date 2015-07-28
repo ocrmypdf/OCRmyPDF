@@ -169,7 +169,7 @@ if command.startswith('install') or \
 
 setup(
     name='ocrmypdf',
-    version='3.0rc1',
+    version='3.0rc2',
     description='OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched',
     url='https://github.com/fritz-hh/OCRmyPDF',
     author='J. R. Barlow',

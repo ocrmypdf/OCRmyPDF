@@ -5,7 +5,7 @@ Please always read this file before installing the package
 
 Download software here: https://github.com/fritz-hh/OCRmyPDF/tags
 
-v3.0-rc1:
+v3.0-rc2:
 =========
 
 New features
