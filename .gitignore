@@ -1,3 +1,17 @@
 tmp/
 log/
 *.pyc
+tests/output/
+.ruffus_history.sqlite
+*.sublime-*
+/*.pdf
+build/
+dist/
+*.egg-info/
+venv/
+*/test/output
+bin/
+include/
+lib/
+pip-selfcheck.json
+pyvenv.cfg
