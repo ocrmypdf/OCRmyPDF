@@ -8,7 +8,7 @@ from contextlib import suppress
 import os
 import sys
 import shutil
-from nose.tools import *
+import pytest
 from pkg_resources import Requirement, resource_filename
 
 req = Requirement.parse('ocrmypdf')
@@ -75,11 +75,10 @@ def test_single_page_image():
     assert pdfimage['bpc'] == 8
 
     # DPI in a 1"x1" is the image width
-    eq_(pdfimage['dpi_w'], 8)
-    eq_(pdfimage['dpi_h'], 8)
+    assert pdfimage['dpi_w'] == 8
+    assert pdfimage['dpi_h'] == 8
 
 
-@raises(NotImplementedError)
 def test_single_page_inline_image():
     filename = os.path.join(TEST_OUTPUT, 'image-mono-inline.pdf')
     pdf = Canvas(filename, pagesize=(8*72, 6*72))
@@ -93,7 +92,8 @@ def test_single_page_inline_image():
         pdf.showPage()
         pdf.save()
 
-    pageinfo.pdf_get_all_pageinfo(filename)
+    with pytest.raises(NotImplementedError):
+        pageinfo.pdf_get_all_pageinfo(filename)
 
 
 def test_jpeg():

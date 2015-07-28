@@ -22,8 +22,10 @@ def _version():
 
 try:
     VERSION = _version()
+    AVAILABLE = True
 except FileNotFoundError:
-    print("Could not find 'unpaper' executable", file=sys.stderr)
+    VERSION = '?'
+    AVAILABLE = False
     raise
 
 try:

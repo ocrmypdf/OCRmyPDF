@@ -10,3 +10,6 @@ dist/
 *.egg-info/
 venv/
 */test/output
+bin/
+include/
+lib/

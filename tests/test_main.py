@@ -7,8 +7,7 @@ import shutil
 from contextlib import suppress
 import sys
 from unittest.mock import patch, create_autospec
-from nose import with_setup
-from nose.tools import raises
+import pytest
 
 
 if sys.version_info.major < 3:
@@ -38,7 +37,7 @@ def run_ocrmypdf_sh(input_file, output_file, *args):
     return sh, out, err
 
 
-def check_ocrmypdf_sh(input_basename, output_basename, *args):
+def check_ocrmypdf(input_basename, output_basename, *args):
     input_file = os.path.join(TEST_RESOURCES, input_basename)
     output_file = os.path.join(TEST_OUTPUT, output_basename)
 
@@ -46,26 +45,16 @@ def check_ocrmypdf_sh(input_basename, output_basename, *args):
     assert sh.returncode == 0, err
     assert os.path.exists(output_file), "Output file not created"
     assert os.stat(output_file).st_size > 100, "PDF too small or empty"
-
-
-def run_ocrmypdf(input_basename, output_basename, *args):
-    input_file = os.path.join(TEST_RESOURCES, input_basename)
-    output_file = os.path.join(TEST_OUTPUT, output_basename)
-
-    sys_argv = list(args) + [input_file, output_file]
-    with patch.object(sys, 'argv', sys_argv):
-        import ocrmypdf.main
-        ocrmypdf.main.run_pipeline()
     return output_file
 
 
-def xtest_quick():
-    check_ocrmypdf_sh('c02-22.pdf', 'test_quick.pdf')
+def test_quick():
+    check_ocrmypdf('c02-22.pdf', 'test_quick.pdf')
 
 
-def xtest_deskew():
+def test_deskew():
     # Run with deskew
-    deskewed_pdf = run_ocrmypdf('skew.pdf', 'test_deskew.pdf', '-d')
+    deskewed_pdf = check_ocrmypdf('skew.pdf', 'test_deskew.pdf', '-d')
 
     # Now render as an image again and use Leptonica to find the skew angle
     # to confirm that it was deskewed
@@ -92,12 +81,12 @@ def xtest_deskew():
     assert -0.5 < skew_angle < 0.5, "Deskewing failed"
 
 
-def xtest_clean():
-    check_ocrmypdf_sh('skew.pdf', 'test_clean.pdf', '-c')
+def test_clean():
+    check_ocrmypdf('skew.pdf', 'test_clean.pdf', '-c')
 
 
 def test_metadata():
-    pdf = run_ocrmypdf(
+    pdf = check_ocrmypdf(
         'c02-22.pdf', 'test_metadata.pdf',
         '--title', 'Du siehst den Wald vor lauter Bäumen nicht.',
         '--author', '孔子',
@@ -117,7 +106,7 @@ def test_metadata():
 
 
 def check_oversample(renderer):
-    oversampled_pdf = run_ocrmypdf(
+    oversampled_pdf = check_ocrmypdf(
         'skew.pdf', 'test_oversample_%s.pdf' % renderer, '--oversample', '300',
         '--pdf-renderer', renderer)
 
@@ -134,12 +123,14 @@ def test_oversample():
     yield check_oversample, 'tesseract'
 
 
-@raises(SystemExit)
 def test_repeat_ocr():
-    run_ocrmypdf('graph_ocred.pdf', 'wontwork.pdf')
+    sh, _, _ = run_ocrmypdf_sh('graph_ocred.pdf', 'wontwork.pdf')
+    assert sh.returncode != 0
 
 
 def test_force_ocr():
-    run_ocrmypdf('graph_ocred.pdf', 'test_force.pdf')
+    check_ocrmypdf('graph_ocred.pdf', 'test_force.pdf', '-f')
 
 
+def test_skip_ocr():
+    check_ocrmypdf('graph_ocred.pdf', 'test_skip.pdf', '-s')
