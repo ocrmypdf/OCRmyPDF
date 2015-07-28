@@ -116,7 +116,7 @@ preprocessing.add_argument(
     '-i', '--clean-final', action='store_true',
     help="incorporate the cleaned image in the final PDF file")
 preprocessing.add_argument(
-    '--oversample', metavar='DPI', type=int,
+    '--oversample', metavar='DPI', type=int, default=0,
     help="oversample images to improve OCR results slightly")
 
 parser.add_argument(
