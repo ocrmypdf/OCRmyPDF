@@ -134,3 +134,13 @@ def test_force_ocr():
 
 def test_skip_ocr():
     check_ocrmypdf('graph_ocred.pdf', 'test_skip.pdf', '-s')
+
+
+def check_ocr_timeout(renderer):
+    check_ocrmypdf('skew.pdf', 'test_timeout_%s.pdf' % renderer,
+                   '--tesseract-timeout', '1.0')
+
+
+def test_ocr_timeout():
+    yield check_ocr_timeout, 'hocr'
+    yield check_ocr_timeout, 'tesseract'

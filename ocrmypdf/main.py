@@ -610,33 +610,42 @@ def render_hocr_debug_page(
 
 
 @active_if(options.pdf_renderer == 'tesseract')
-@transform(
-    input=preprocess_clean,
-    filter=suffix(".pp-clean.png"),
-    output=".rendered.pdf",
+@collate(
+    input=[preprocess_clean, split_pages],
+    filter=regex(r".*/(\d{6})(?:\.pp-clean\.png|\.page\.pdf)"),
+    output=os.path.join(work_folder, r'\1.rendered.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def tesseract_ocr_and_render_pdf(
-        input_file,
+        input_files,
         output_file,
         log,
         pdfinfo,
         pdfinfo_lock):
 
+    input_image = next(ii for ii in input_files if ii.endswith('.png'))
+
     args_tesseract = [
         'tesseract',
         '-l', '+'.join(options.language),
-        input_file,
+        input_image,
         os.path.splitext(output_file)[0],  # Tesseract appends suffix
         'pdf'
     ] + options.tesseract_config
     p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
               universal_newlines=True)
 
-    stdout, stderr = p.communicate(timeout=options.tesseract_timeout)
-    if stdout:
-        log.info(stdout)
-    if stderr:
-        log.error(stderr)
+    try:
+        stdout, stderr = p.communicate(timeout=options.tesseract_timeout)
+        if stdout:
+            log.info(stdout)
+        if stderr:
+            log.error(stderr)
+    except TimeoutError:
+        p.kill()
+
+        input_pdf = next(ii for ii in input_files if ii.endswith('.pdf'))
+        log.info("Tesseract - page timed out")
+        re_symlink(input_pdf, output_file)
 
 
 @transform(
