@@ -6,7 +6,10 @@ import os
 import shutil
 from contextlib import suppress
 import sys
-from unittest.mock import patch
+from unittest.mock import patch, create_autospec
+from nose import with_setup
+from nose.tools import raises
+
 
 if sys.version_info.major < 3:
     print("Requires Python 3.4+")
@@ -37,7 +40,7 @@ def run_ocrmypdf_sh(input_file, output_file, *args):
 
 def check_ocrmypdf_sh(input_basename, output_basename, *args):
     input_file = os.path.join(TEST_RESOURCES, input_basename)
-    output_file = os.path.join(TEST_OUTPUT, output_basename or input_basename)
+    output_file = os.path.join(TEST_OUTPUT, output_basename)
 
     sh, _, err = run_ocrmypdf_sh(input_file, output_file, *args)
     assert sh.returncode == 0, err
@@ -47,23 +50,20 @@ def check_ocrmypdf_sh(input_basename, output_basename, *args):
 
 def run_ocrmypdf(input_basename, output_basename, *args):
     input_file = os.path.join(TEST_RESOURCES, input_basename)
-    output_file = os.path.join(TEST_OUTPUT, output_basename or input_basename)
+    output_file = os.path.join(TEST_OUTPUT, output_basename)
 
     sys_argv = list(args) + [input_file, output_file]
     with patch.object(sys, 'argv', sys_argv):
-        try:
-            import ocrmypdf.main
-            ocrmypdf.main.run_pipeline()
-        except SystemExit as e:
-            assert e.code == 0
+        import ocrmypdf.main
+        ocrmypdf.main.run_pipeline()
     return output_file
 
 
-def test_quick():
+def xtest_quick():
     check_ocrmypdf_sh('c02-22.pdf', 'test_quick.pdf')
 
 
-def test_deskew():
+def xtest_deskew():
     # Run with deskew
     deskewed_pdf = run_ocrmypdf('skew.pdf', 'test_deskew.pdf', '-d')
 
@@ -92,7 +92,7 @@ def test_deskew():
     assert -0.5 < skew_angle < 0.5, "Deskewing failed"
 
 
-def test_clean():
+def xtest_clean():
     check_ocrmypdf_sh('skew.pdf', 'test_clean.pdf', '-c')
 
 
@@ -116,9 +116,10 @@ def test_metadata():
     assert pdfinfo.get('Keywords', '') == ''
 
 
-def test_oversample():
+def check_oversample(renderer):
     oversampled_pdf = run_ocrmypdf(
-        'skew.pdf', 'test-oversample.pdf', '--oversample', '300')
+        'skew.pdf', 'test_oversample_%s.pdf' % renderer, '--oversample', '300',
+        '--pdf-renderer', renderer)
 
     from ocrmypdf.pageinfo import pdf_get_all_pageinfo
 
@@ -126,3 +127,19 @@ def test_oversample():
 
     print(pdfinfo[0]['xres'])
     assert abs(pdfinfo[0]['xres'] - 300) < 1
+
+
+def test_oversample():
+    yield check_oversample, 'hocr'
+    yield check_oversample, 'tesseract'
+
+
+@raises(SystemExit)
+def test_repeat_ocr():
+    run_ocrmypdf('graph_ocred.pdf', 'wontwork.pdf')
+
+
+def test_force_ocr():
+    run_ocrmypdf('graph_ocred.pdf', 'test_force.pdf')
+
+
