@@ -50,7 +50,7 @@ Install
 Download OCRmyPDF here: https://github.com/fritz-hh/OCRmyPDF/releases
 
 To install, download the tarball and run::
-
+https://github.com/fritz-hh/OCRmyPDF.git
    pip3 install ocrmypdf-3.0rc2.tar.gz
 
 You can install it within a virtual environment or system-wide. 
@@ -58,7 +58,7 @@ You can install it within a virtual environment or system-wide.
 To install the HEAD revision from sources in development mode if you want
 to make changes::
 
-   git clone https://github.com/fritz-hh/OCRmyPDF/master
+   git clone -b master https://github.com/fritz-hh/OCRmyPDF.git
    cd OCRmyPDF
    pip3 install -e .
 
