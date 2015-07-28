@@ -24,7 +24,7 @@ Main features
    available
 -  Uses Tesseract OCR engine
 
-For details: please consult the release notes
+For details: please consult the `release notes <RELEASE_NOTES.rst>`__
 
 Motivation
 ----------
@@ -50,7 +50,7 @@ Install
 Download OCRmyPDF here: https://github.com/fritz-hh/OCRmyPDF/releases
 
 To install, download the tarball and run::
-https://github.com/fritz-hh/OCRmyPDF.git
+
    pip3 install ocrmypdf-3.0rc2.tar.gz
 
 You can install it within a virtual environment or system-wide. 
