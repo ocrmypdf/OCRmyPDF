@@ -2,9 +2,7 @@ OCRmyPDF
 ========
 
 OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to
-be searched
-
-To get the script usage, call: sh ./OCRmyPDF.sh -h
+be searched.
 
 Main features
 -------------
@@ -18,12 +16,13 @@ Main features
    -  or if requested oversamples the images before OCRing so as to get
       better results
 
--  If requested deskews and / or clean the image before performing OCR
+-  If requested deskews and/or cleans the image before performing OCR
 -  Validates the generated file against the PDF/A-1b specification using
    `JHOVE <http://jhove.sourceforge.net/>`__
 -  Provides debug mode to enable easy verification of the OCR results
--  Processes several pages in parallel if more than one CPU core is
+-  Processes several pages in parallel when more than one CPU core is
    available
+-  Uses Tesseract OCR engine
 
 For details: please consult the release notes
 
@@ -50,9 +49,13 @@ Install
 
 Download OCRmyPDF here: https://github.com/fritz-hh/OCRmyPDF/releases
 
-Copy the file in onto your linux/unix machine and extract it.
+To install, extract the release files and run::
 
-Run: "sh ./OCRmyPDF.sh -h" to get the script usage
+    pip install .
+
+Run::
+   
+   ocrmypdf --help
 
 If not yet installed, the script will notify you about dependencies that
 need to be installed. The script requires specific versions of the
@@ -69,7 +72,7 @@ In case you detect an issue, please:
    https://github.com/fritz-hh/OCRmyPDF/issues
 -  Describe your problem thoroughly
 -  Append the console output of the script when running the debug mode
-   (-g option)
+   (-v 1 option)
 -  If possible provide your input PDF file as well as the content of the
    temporary folder (using a file sharing service like
    www.file-upload.net)

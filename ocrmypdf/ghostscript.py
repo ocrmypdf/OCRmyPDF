@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# © 2015 James R. Barlow: github.com/jbarlow83
+
 from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE, check_call
 from shutil import copy

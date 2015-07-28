@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2015 James R. Barlow: github.com/jbarlow83
 
 from setuptools import setup
 from subprocess import Popen, STDOUT, check_output, CalledProcessError

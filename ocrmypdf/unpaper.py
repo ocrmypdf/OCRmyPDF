@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2015 James R. Barlow: github.com/jbarlow83
 # unpaper documentation:
 # https://github.com/Flameeyes/unpaper/blob/master/doc/basic-concepts.md
 

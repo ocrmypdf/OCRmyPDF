@@ -8,29 +8,85 @@ Download software here: https://github.com/fritz-hh/OCRmyPDF/tags
 v3.0-rc1:
 =========
 
+New features
+------------
+
+-  Easier installation with Python's package manager 
+-  Now installs ``ocrmypdf`` to ``/usr/local/bin`` or equivalent for system-wide
+   access
+-  Tesseract 3.03 PDF page can be used instead for better positioning
+   of recognized text (``--pdf-renderer tesseract``)
+-  Improved command line syntax and usage help (``--help``)
+-  PDF metadata (title, author, keywords) are now transferred to the 
+   output PDF
+-  PDF metadata can also be set from the command line (``--title``, etc.)
+-  Added test cases to confirm everything is working
+-  Added option to skip extremely large pages that take too long to OCR and are 
+   often not OCRable (e.g. large scanned maps or diagrams); other pages are still
+   processed (``--skip-big``)
+-  Added option to kill Tesseract OCR process if it seems to be taking too long on
+   a page, while still processing other pages (``--tesseract-timeout``)
+
 Changes
 -------
 
--  New, robust Python 3.4+ implementation based on ruffus pipelines
+-  New, robust rewrite in Python 3.4+ with ruffus_ pipelines
+-  Now uses Ghostscript 9.14's improved color conversion model
 -  All "tasks" in the pipeline can be executed in parallel on any
-   available CPUs
--  Removed dependencies on several packages:
--  parallel
--  ImageMagick
--  Python 2.7
--  shell
--  Updated dependencies
--  Ghostscript 9.14
--  Unpaper 6.1 (now optional)
--  Tesseract 3.02 and 3.03
--  Python's reportlab 3
--  Unpaper 6.1 is now an optional dependency
+   available CPUs, increasing performance
+-  The ``-o DPI`` argument has been phased out, in favor of ``--oversample DPI``
+-  Removed several dependencies, so it's easier to install.  We no 
+   longer use:
+   
+   - GNU parallel_
+   - ImageMagick_
+   - Python 2.7
+   - shell scripts
+
+-  Some new external dependencies are required:
+
+   - MuPDF_ tools
+   - Ghostscript 9.14+
+   - Unpaper_ 6.1 (optional)
+   - some automatically managed Python dependencies
+  
+.. _ruffus: http://www.ruffus.org.uk/index.html
+.. _parallel: https://www.gnu.org/software/parallel/
+.. _ImageMagick: http://www.imagemagick.org/script/index.php
+.. _MuPDF: http://mupdf.com/docs/
+.. _Unpaper: https://github.com/Flameeyes/unpaper
+
+Compatibility notes
+-------------------
+
+-  ``./OCRmyPDF.sh`` script is still available for now
+-  Stacking the verbosity option like ``-vvv`` is no longer supported
+
+-  The configuration file ``config.sh`` has been removed.  Instead, you can
+   feed a file to the arguments for common settings:
+
+::
+
+   ocrmypdf input.pdf output.pdf @settings.txt
+
+where ``settings.txt`` contains, for example:
+
+::
+
+   -l deu --author 'A. Merkel' --pdf-renderer tesseract
+
 
 Fixes
 -----
 
--  Document metadata from the source PDF is copied to the output PDF
-   (Title, Author, etc.)
+-  Handling of filenames containing spaces: fixed
+
+Notes
+-----
+
+-  Some dependencies may work with lower versions than tested, so try
+   overriding dependencies if they are "in the way" to see if they work.
+
 
 v2.1-stable (2014-09-20):
 =========================
@@ -262,8 +318,8 @@ Changes
    to final PDF file that does not comply to the PDF/A-1 format)
 -  Removed feature to set same owner & permissions in final PDF file
    than in input file
--  Removed many unused jhove files (e.g. documentation, *.java and
-   *.class files)
+-  Removed many unused jhove files (e.g. documentation, \*.java and
+   \*.class files)
 
 Fixes
 -----

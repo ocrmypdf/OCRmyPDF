@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-#
-# © 2015: jbarlow83 (https://github.com/jbarlow83)
+# © 2015 James R. Barlow: github.com/jbarlow83
 #
 # Generate a PDFA_def.ps file for Ghostscript >= 9.14
 

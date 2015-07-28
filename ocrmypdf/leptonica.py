@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 #
-# © 2013-14: jbarlow83 from Github (https://github.com/jbarlow83)
+# © 2013-15: jbarlow83 from Github (https://github.com/jbarlow83)
 #
 #
 # Use Leptonica to detect find and remove page skew.  Leptonica uses the method

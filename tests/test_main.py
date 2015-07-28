@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# © 2015 James R. Barlow: github.com/jbarlow83
 
 from __future__ import print_function
 from subprocess import Popen, PIPE, check_output
