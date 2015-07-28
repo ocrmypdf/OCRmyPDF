@@ -10,6 +10,7 @@ import shutil
 import warnings
 import multiprocessing
 import atexit
+import textwrap
 
 import PyPDF2 as pypdf
 from PIL import Image
@@ -29,7 +30,7 @@ import ruffus.cmdline as cmdline
 from .hocrtransform import HocrTransform
 from .pageinfo import pdf_get_all_pageinfo
 from .pdfa import generate_pdfa_def
-from .ghostscript import rasterize_pdf, generate_pdfa
+from . import ghostscript
 from . import tesseract
 
 
@@ -54,12 +55,16 @@ EXIT_OTHER_ERROR = 15
 
 MINIMUM_TESS_VERSION = '3.02.02'
 
+
+def complain(message):
+    print(textwrap.wrap(message), file=sys.stderr)
+
+
 if tesseract.version() < MINIMUM_TESS_VERSION:
-    print(
+    complain(
         "Please install tesseract {0} or newer "
         "(currently installed version is {1})".format(
-            MINIMUM_TESS_VERSION, tesseract.version()),
-        file=sys.stderr)
+            MINIMUM_TESS_VERSION, tesseract.version()))
     sys.exit(EXIT_MISSING_DEPENDENCY)
 
 
@@ -121,13 +126,13 @@ preprocessing.add_argument(
 
 parser.add_argument(
     '-f', '--force-ocr', action='store_true',
-    help="Force to OCR, even if the page already contains fonts")
+    help="force image into OCR, even if the page already contains text")
 parser.add_argument(
     '-s', '--skip-text', action='store_true',
-    help="Skip OCR on pages that contain fonts and include the page anyway")
+    help="skip OCR on any pages that already contain text")
 parser.add_argument(
-    '--skip-big', action='store_true',
-    help="Skip OCR for pages that are very large")
+    '--skip-big', type=float, metavar='MPixels',
+    help="skip OCR on pages larger than the specified amount of megapixels")
 # parser.add_argument(
 #     '--exact-image', action='store_true',
 #     help="Use original page from PDF without re-rendering")
@@ -137,7 +142,7 @@ advanced = parser.add_argument_group(
     "Advanced options for power users")
 advanced.add_argument(
     '--tesseract-config', default=[], type=list, action='append',
-    help="Tesseract configuration")
+    help="additional Tesseract configuration files")
 advanced.add_argument(
     '--pdf-renderer', choices=['tesseract', 'hocr'], default='hocr',
     help='choose OCR PDF renderer')
@@ -178,12 +183,11 @@ if '+' in options.language[0]:
     options.language = options.language[0].split('+')
 
 if not set(options.language).issubset(tesseract.languages()):
-    print(
+    complain(
         "The installed version of tesseract does not have language "
-        "data for the following requested languages: ",
-        file=sys.stderr)
+        "data for the following requested languages: ")
     for lang in (set(options.language) - tesseract.languages()):
-        print(lang, file=sys.stderr)
+        complain(lang, file=sys.stderr)
     sys.exit(EXIT_BAD_ARGS)
 
 
@@ -195,11 +199,28 @@ if any((options.deskew, options.clean, options.clean_final)):
     try:
         from . import unpaper
     except ImportError:
-        print("Install the 'unpaper' program to use the specified options",
-              file=sys.stderr)
+        complain(
+            "Install the 'unpaper' program to use --deskew or --clean.")
         sys.exit(EXIT_BAD_ARGS)
 else:
     unpaper = None
+
+if options.debug_rendering and options.pdf_renderer == 'tesseract':
+    complain(
+        "Ignoring --debug-rendering because it is not supported with"
+        "--pdf-renderer=tesseract.")
+
+if options.force_ocr and options.skip_text:
+    complain(
+        "Error: --force-ocr and --skip-text are mutually incompatible.")
+    sys.exit(EXIT_BAD_ARGS)
+
+if options.clean and not options.clean_final \
+        and options.pdf_renderer == 'tesseract':
+    complain(
+        "Tesseract PDF renderer cannot render --clean pages without "
+        "also performing --clean-final, so --clean-final is assumed.")
+
 
 # ----------
 # Logging
@@ -352,9 +373,8 @@ def is_ocr_required(pageinfo, log):
             ocr_required = False
 
     if ocr_required and options.skip_big:
-        area = pageinfo['width_inches'] * pageinfo['height_inches']
         pixel_count = pageinfo['width_pixels'] * pageinfo['height_pixels']
-        if area > (11.0 * 17.0) or pixel_count > (300.0 * 300.0 * 11 * 17):
+        if pixel_count > (options.skip_big * 1000000):
             ocr_required = False
             log.info(
                 "Page {0} is very large; skipping due to -b".format(page))
@@ -422,7 +442,7 @@ def rasterize_with_ghostscript(
     xres = max(pageinfo['xres'], options.oversample or 0)
     yres = max(pageinfo['yres'], options.oversample or 0)
 
-    rasterize_pdf(input_file, output_file, xres, yres, device, log)
+    ghostscript.rasterize_pdf(input_file, output_file, xres, yres, device, log)
 
 
 @transform(
@@ -727,7 +747,7 @@ def merge_pages(
 
     pdf_pages = sorted(input_files, key=input_file_order)
     log.info(pdf_pages)
-    generate_pdfa(pdf_pages, output_file)
+    ghostscript.generate_pdfa(pdf_pages, output_file)
 
 
 @transform(
@@ -813,9 +833,9 @@ def available_cpu_count():
     except (ImportError, AttributeError):
         pass
 
-    print(
+    complain(
         "Could not get CPU count.  Assuming one (1) CPU."
-        "Use -j N to set manually.", file=sys.stderr)
+        "Use -j N to set manually.")
     return 1
 
 
