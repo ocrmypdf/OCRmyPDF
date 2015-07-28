@@ -52,7 +52,7 @@ installing the RPM for {package}.
 '''
 
 
-def _error_trailer(program, package, optional):
+def _error_trailer(program, package, optional, **kwargs):
     if program == 'java':
         return  # You're fucked
 
@@ -78,7 +78,8 @@ def error_missing_program(
 def error_unknown_version(
         program,
         package,
-        optional
+        optional,
+        need_version
         ):
     print(unknown_version.format(**locals()), file=sys.stderr)
     _error_trailer(**locals())
@@ -88,7 +89,8 @@ def error_old_version(
         program,
         package,
         optional,
-        need_version
+        need_version,
+        found_version
         ):
     print(old_version.format(**locals()), file=sys.stderr)
     _error_trailer(**locals())
@@ -96,14 +98,14 @@ def error_old_version(
 
 def check_external_program(
         program,
-        minimum_version,
+        need_version,
         package,
         version_check_args=['--version'],
         version_scrape_regex=re.compile(r'(\d+\.\d+(?:\.\d+)?)'),
         optional=False):
 
-    print('Checking for {program} >= {minimum_version}...'.format(
-            program=program, minimum_version=minimum_version))
+    print('Checking for {program} >= {need_version}...'.format(
+            program=program, need_version=need_version))
     try:
         result = check_output(
                 [program] + version_check_args,
@@ -112,19 +114,21 @@ def check_external_program(
         error_missing_program(program, package, optional)
         if not optional:
             sys.exit(1)
+        print('Continuing install without {program}'.format(program=program))
+        return
 
     try:
-        version = version_scrape_regex.search(result).group(1)
-    except (AttributeError, CalledProcessError):
-        error_unknown_version(program, package, optional)
-        if not optional:
-            sys.exit(1)
+        found_version = version_scrape_regex.search(result).group(1)
+    except AttributeError:
+        error_unknown_version(program, package, optional, need_version)
+        sys.exit(1)
 
-    if version < minimum_version:
-        error_old_version(program, package, optional, minimum_version)
+    if found_version < need_version:
+        error_old_version(program, package, optional, need_version,
+                          found_version)
 
-    print('Found {program} {version}'.format(
-            program=program, version=version))
+    print('Found {program} {found_version}'.format(
+            program=program, found_version=found_version))
 
 command = next((arg for arg in sys.argv[1:] if not arg.startswith('-')), '')
 
@@ -132,36 +136,36 @@ if command.startswith('install') or \
         command in ['check', 'test', 'nosetests', 'easy_install', 'egg_info']:
     check_external_program(
         program='tesseract',
-        minimum_version='3.02.02',
+        need_version='3.02.02',
         package='tesseract'
     )
     check_external_program(
         program='gs',
-        minimum_version='9.14',
+        need_version='9.14',
         package='ghostscript'
     )
     check_external_program(
         program='unpaper',
-        minimum_version='6.1',
+        need_version='6.1',
         package='unpaper',
         optional=True
     )
     # Deprecated
     check_external_program(
         program='pdfseparate',
-        minimum_version='0.29.0',
+        need_version='0.29.0',
         package='poppler',
         version_check_args=['-v']
     )
     check_external_program(
         program='java',
-        minimum_version='1.5.0',
+        need_version='1.5.0',
         package='Java Runtime Environment',
         version_check_args=['-version']
     )
     check_external_program(
         program='mutool',
-        minimum_version='1.7a',
+        need_version='1.7a',
         version_check_args=['-v'],
         version_scrape_regex=re.compile(r'(\d+\.\d+[a-z]+)'),
         package='mupdf-tools'
