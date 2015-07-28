@@ -8,6 +8,7 @@ from contextlib import suppress
 import sys
 from unittest.mock import patch, create_autospec
 import pytest
+from ocrmypdf.pageinfo import pdf_get_all_pageinfo
 
 
 if sys.version_info.major < 3:
@@ -110,8 +111,6 @@ def check_oversample(renderer):
         'skew.pdf', 'test_oversample_%s.pdf' % renderer, '--oversample', '300',
         '--pdf-renderer', renderer)
 
-    from ocrmypdf.pageinfo import pdf_get_all_pageinfo
-
     pdfinfo = pdf_get_all_pageinfo(oversampled_pdf)
 
     print(pdfinfo[0]['xres'])
@@ -129,18 +128,30 @@ def test_repeat_ocr():
 
 
 def test_force_ocr():
-    check_ocrmypdf('graph_ocred.pdf', 'test_force.pdf', '-f')
+    out = check_ocrmypdf('graph_ocred.pdf', 'test_force.pdf', '-f')
+    pdfinfo = pdf_get_all_pageinfo(out)
+    assert pdfinfo[0]['has_text']
 
 
 def test_skip_ocr():
-    check_ocrmypdf('graph_ocred.pdf', 'test_skip.pdf', '-s')
+    out = check_ocrmypdf('graph_ocred.pdf', 'test_skip.pdf', '-s')
 
 
 def check_ocr_timeout(renderer):
-    check_ocrmypdf('skew.pdf', 'test_timeout_%s.pdf' % renderer,
-                   '--tesseract-timeout', '1.0')
+    out = check_ocrmypdf('skew.pdf', 'test_timeout_%s.pdf' % renderer,
+                         '--tesseract-timeout', '1.0')
+    pdfinfo = pdf_get_all_pageinfo(out)
+    assert pdfinfo[0]['has_text'] == False
 
 
 def test_ocr_timeout():
     yield check_ocr_timeout, 'hocr'
     yield check_ocr_timeout, 'tesseract'
+
+
+def test_skip_big():
+    out = check_ocrmypdf('enormous.pdf', 'test_enormous.pdf',
+                         '--skip-big', '10')
+    pdfinfo = pdf_get_all_pageinfo(out)
+    assert pdfinfo[0]['has_text'] == False
+
