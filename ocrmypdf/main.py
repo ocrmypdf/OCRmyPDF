@@ -54,11 +54,11 @@ EXIT_OTHER_ERROR = 15
 
 MINIMUM_TESS_VERSION = '3.02.02'
 
-if tesseract.VERSION < MINIMUM_TESS_VERSION:
+if tesseract.version() < MINIMUM_TESS_VERSION:
     print(
         "Please install tesseract {0} or newer "
         "(currently installed version is {1})".format(
-            MINIMUM_TESS_VERSION, tesseract.VERSION),
+            MINIMUM_TESS_VERSION, tesseract.version()),
         file=sys.stderr)
     sys.exit(EXIT_MISSING_DEPENDENCY)
 
@@ -177,12 +177,12 @@ if not options.language:
 if '+' in options.language[0]:
     options.language = options.language[0].split('+')
 
-if not set(options.language).issubset(tesseract.LANGUAGES):
+if not set(options.language).issubset(tesseract.languages()):
     print(
         "The installed version of tesseract does not have language "
         "data for the following requested languages: ",
         file=sys.stderr)
-    for lang in (set(options.language) - tesseract.LANGUAGES):
+    for lang in (set(options.language) - tesseract.languages()):
         print(lang, file=sys.stderr)
     sys.exit(EXIT_BAD_ARGS)
 

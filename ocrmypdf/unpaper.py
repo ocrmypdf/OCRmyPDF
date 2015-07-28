@@ -6,9 +6,11 @@ from subprocess import Popen, PIPE
 from tempfile import NamedTemporaryFile
 import sys
 import os
+from functools import lru_cache
 
 
-def _version():
+@lru_cache(maxsize=1)
+def version():
     args_unpaper = [
         'unpaper',
         '--version'
@@ -19,14 +21,6 @@ def _version():
 
     return version.strip()
 
-
-try:
-    VERSION = _version()
-    AVAILABLE = True
-except FileNotFoundError:
-    VERSION = '?'
-    AVAILABLE = False
-    raise
 
 try:
     from PIL import Image

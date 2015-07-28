@@ -1,43 +1,41 @@
 #!/usr/bin/env python3
 
-from subprocess import Popen, PIPE, CalledProcessError
+from subprocess import STDOUT, CalledProcessError, check_output
 import sys
 import os
 import re
+from functools import lru_cache
 
 
-def _version():
+@lru_cache(maxsize=1)
+def version():
     args_tess = [
         'tesseract',
         '--version'
     ]
-    p_tess = Popen(args_tess, close_fds=True, universal_newlines=True,
-                   stdout=PIPE, stderr=PIPE)
-    _, versions = p_tess.communicate(timeout=5)
+    try:
+        versions = check_output(
+                args_tess, close_fds=True, universal_newlines=True,
+                stderr=STDOUT)
+    except CalledProcessError:
+        print("Could not find Tesseract executable on system PATH.")
+        sys.exit(1)
 
     tesseract_version = re.match(r'tesseract\s(.+)', versions).group(1)
     return tesseract_version
 
 
-def _languages():
+@lru_cache(maxsize=1)
+def languages():
     args_tess = [
         'tesseract',
         '--list-langs'
     ]
-    p_tess = Popen(args_tess, close_fds=True, universal_newlines=True,
-                   stdout=PIPE, stderr=PIPE)
-    _, langs = p_tess.communicate(timeout=5)
-
+    langs = check_output(
+            args_tess, close_fds=True, universal_newlines=True,
+            stderr=STDOUT)
     return set(lang.strip() for lang in langs.splitlines()[1:])
 
-try:
-    VERSION = _version()
-    LANGUAGES = _languages()
-except Exception as e:
-    print(e)
-    print("Could not find tesseract executable", file=sys.stderr)
-
-    sys.exit(1)
 
 HOCR_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
