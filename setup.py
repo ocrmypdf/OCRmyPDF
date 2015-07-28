@@ -108,15 +108,15 @@ def check_external_program(
         result = check_output(
                 [program] + version_check_args,
                 universal_newlines=True, stderr=STDOUT)
-    except CalledProcessError:
+    except (CalledProcessError, FileNotFoundError):
         error_missing_program(program, package, optional)
         if not optional:
             sys.exit(1)
 
     try:
         version = version_scrape_regex.search(result).group(1)
-    except AttributeError:
-        error_unknown_version(program, package, optional, minimum_version)
+    except (AttributeError, CalledProcessError):
+        error_unknown_version(program, package, optional)
         if not optional:
             sys.exit(1)
 
