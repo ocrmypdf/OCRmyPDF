@@ -129,7 +129,7 @@ def check_external_program(
 command = next((arg for arg in sys.argv[1:] if not arg.startswith('-')), '')
 
 if command.startswith('install') or \
-        command in ['check', 'test', 'nosetests', 'easy_install']:
+        command in ['check', 'test', 'nosetests', 'easy_install', 'egg_info']:
     check_external_program(
         program='tesseract',
         minimum_version='3.02.02',
