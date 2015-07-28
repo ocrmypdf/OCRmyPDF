@@ -165,9 +165,9 @@ if command.startswith('install') or \
     )
     check_external_program(
         program='mutool',
-        need_version='1.7a',
+        need_version='1.7',
         version_check_args=['-v'],
-        version_scrape_regex=re.compile(r'(\d+\.\d+[a-z]+)'),
+        version_scrape_regex=re.compile(r'(\d+\.\d+[a-z]*)'),
         package='mupdf-tools'
     )
 
