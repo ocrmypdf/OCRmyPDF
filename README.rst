@@ -49,16 +49,25 @@ Install
 
 Download OCRmyPDF here: https://github.com/fritz-hh/OCRmyPDF/releases
 
-To install, download the tarball and run::
-
-   pip3 install ocrmypdf-3.0rc2.tar.gz
-
 You can install it within a virtual environment or system-wide. 
 
-To install the HEAD revision from sources in development mode if you want
-to make changes::
+To install the HEAD revision from sources in development mode::
 
    git clone -b master https://github.com/fritz-hh/OCRmyPDF.git
+   cd OCRmyPDF
+   pip3 install -e .
+   
+On certain Linux/UNIX platforms such as Ubuntu, you may need to use 
+run the install command as superuser::
+
+   sudo pip3 install -e .
+   
+Note that this will alter your system's Python distribution. If you prefer 
+to not install as superuser, you can install the package in a Python virtual environment::
+
+   git clone -b master https://github.com/fritz-hh/OCRmyPDF.git
+   pyvenv venv
+   source venv/bin/activate
    cd OCRmyPDF
    pip3 install -e .
 
