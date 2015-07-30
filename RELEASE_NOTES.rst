@@ -41,12 +41,14 @@ Changes
    - GNU parallel_
    - ImageMagick_
    - Python 2.7
+   - Poppler
+   - MuPDF_ tools
    - shell scripts
 
 -  Some new external dependencies are required:
 
-   - MuPDF_ tools
    - Ghostscript 9.14+
+   - qpdf 5.0.0+
    - Unpaper_ 6.1 (optional)
    - some automatically managed Python dependencies
   

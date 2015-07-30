@@ -17,7 +17,7 @@ import PyPDF2 as pypdf
 from PIL import Image
 
 from subprocess import Popen, check_call, PIPE, CalledProcessError, \
-    TimeoutExpired
+    TimeoutExpired, check_output
 try:
     from subprocess import DEVNULL
 except ImportError:
@@ -319,11 +319,10 @@ def repair_pdf(
         log,
         pdfinfo,
         pdfinfo_lock):
-    args_mutool = [
-        'mutool', 'clean',
-        input_file, output_file
+    args_qpdf = [
+        'qpdf', input_file, output_file
     ]
-    check_call(args_mutool)
+    check_call(args_qpdf)
 
     with pdfinfo_lock:
         pdfinfo.extend(pdf_get_all_pageinfo(output_file))
@@ -388,12 +387,17 @@ def split_pages(
     for oo in output_files:
         with suppress(FileNotFoundError):
             os.unlink(oo)
-    args_pdfseparate = [
-        'pdfseparate',
-        input_file,
-        os.path.join(work_folder, '%06d.page.pdf')
-    ]
-    check_call(args_pdfseparate)
+
+    pages = check_output(['qpdf', '--show-npages', input_file],
+                         universal_newlines=True, close_fds=True)
+
+    for n in range(int(pages)):
+        args_qpdf = [
+            'qpdf', input_file,
+            '--pages', input_file, '{0}'.format(n + 1), '--',
+            os.path.join(work_folder, '{0:06d}.page.pdf'.format(n + 1))
+        ]
+        check_call(args_qpdf)
 
     from glob import glob
     for filename in glob(os.path.join(work_folder, '*.page.pdf')):

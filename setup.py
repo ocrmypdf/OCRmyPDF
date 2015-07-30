@@ -150,13 +150,6 @@ if command.startswith('install') or \
         package='unpaper',
         optional=True
     )
-    # Deprecated
-    check_external_program(
-        program='pdfseparate',
-        need_version='0.29.0',
-        package='poppler',
-        version_check_args=['-v']
-    )
     check_external_program(
         program='java',
         need_version='1.5.0',
@@ -164,11 +157,10 @@ if command.startswith('install') or \
         version_check_args=['-version']
     )
     check_external_program(
-        program='mutool',
-        need_version='1.7',
-        version_check_args=['-v'],
-        version_scrape_regex=re.compile(r'(\d+\.\d+[a-z]*)'),
-        package='mupdf-tools'
+        program='qpdf',
+        need_version='5.0.0',
+        package='qpdf',
+        version_check_args=['--version']
     )
 
 setup(
