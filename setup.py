@@ -204,6 +204,10 @@ setup(
         'reportlab>=3.1.44',
         'PyPDF2>=1.25.1'
     ],
+    test_requires=[
+        'img2pdf>=0.1.5',
+        'pytest>=2.7.2'
+    ],
     entry_points={
         'console_scripts': [
             'ocrmypdf = ocrmypdf.main:run_pipeline'
