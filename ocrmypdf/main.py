@@ -742,7 +742,7 @@ def merge_pages(
 
     pdf_pages = sorted(input_files, key=input_file_order)
     log.info(pdf_pages)
-    ghostscript.generate_pdfa(pdf_pages, output_file)
+    ghostscript.generate_pdfa(pdf_pages, output_file, options.jobs or 1)
 
 
 @transform(
@@ -835,7 +835,9 @@ def available_cpu_count():
 
 
 def run_pipeline():
-    cmdline.run(options, multiprocess=available_cpu_count())
+    if not options.jobs or options.jobs == 1:
+        options.jobs = available_cpu_count()
+    cmdline.run(options)
 
 
 if __name__ == '__main__':
