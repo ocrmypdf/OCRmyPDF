@@ -31,13 +31,14 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log):
             log.error('Ghostscript rendering failed')
 
 
-def generate_pdfa(pdf_pages, output_file):
+def generate_pdfa(pdf_pages, output_file, threads=1):
     with NamedTemporaryFile(delete=True) as gs_pdf:
         args_gs = [
             "gs",
             "-dQUIET",
             "-dBATCH",
             "-dNOPAUSE",
+            '-dNumRenderingThreads=' + str(threads),
             "-sDEVICE=pdfwrite",
             "-sColorConversionStrategy=/RGB",
             "-sProcessColorModel=DeviceRGB",
