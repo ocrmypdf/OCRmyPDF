@@ -661,7 +661,7 @@ def tesseract_ocr_and_render_pdf(
             log.info(stdout)
         if stderr:
             log.error(stderr)
-    except TimeoutError:
+    except TimeoutExpired:
         p.kill()
         log.info("Tesseract - page timed out")
         re_symlink(input_pdf, output_file)
