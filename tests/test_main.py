@@ -87,12 +87,16 @@ def test_clean():
     check_ocrmypdf('skew.pdf', 'test_clean.pdf', '-c')
 
 
-def test_metadata():
+def test_override_metadata():
+    german = 'Du siehst den Wald vor lauter Bäumen nicht.'
+    chinese = '孔子'
+    high_unicode = 'U+1030C is: 𐌌'
+
     pdf = check_ocrmypdf(
         'c02-22.pdf', 'test_metadata.pdf',
-        '--title', 'Du siehst den Wald vor lauter Bäumen nicht.',
-        '--author', '孔子',
-        '--subject', 'U+1030C is: 𐌌')
+        '--title', german,
+        '--author', chinese,
+        '--subject', high_unicode)
 
     out_pdfinfo = check_output(['pdfinfo', pdf], universal_newlines=True)
     lines_pdfinfo = out_pdfinfo.splitlines()
@@ -101,9 +105,9 @@ def test_metadata():
         k, v = line.strip().split(':', maxsplit=1)
         pdfinfo[k.strip()] = v.strip()
 
-    assert pdfinfo['Title'] == 'Du siehst den Wald vor lauter Bäumen nicht.'
-    assert pdfinfo['Author'] == '孔子'
-    assert pdfinfo['Subject'] == 'U+1030C is: 𐌌'
+    assert pdfinfo['Title'] == german
+    assert pdfinfo['Author'] == chinese
+    assert pdfinfo['Subject'] == high_unicode
     assert pdfinfo.get('Keywords', '') == ''
 
 
