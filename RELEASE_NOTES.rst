@@ -5,8 +5,8 @@ Please always read this file before installing the package
 
 Download software here: https://github.com/fritz-hh/OCRmyPDF/tags
 
-v3.0-rc2:
-=========
+v3.0:
+=====
 
 New features
 ------------
@@ -34,7 +34,8 @@ Changes
 -  Now uses Ghostscript 9.14's improved color conversion model
 -  All "tasks" in the pipeline can be executed in parallel on any
    available CPUs, increasing performance
--  The ``-o DPI`` argument has been phased out, in favor of ``--oversample DPI``
+-  The ``-o DPI`` argument has been phased out, in favor of ``--oversample DPI``, in
+   case we need ``-o OUTPUTFILE`` in the future
 -  Removed several dependencies, so it's easier to install.  We no 
    longer use:
    
@@ -45,18 +46,35 @@ Changes
    - MuPDF_ tools
    - shell scripts
 
--  Some new external dependencies are required:
+-  Some new external dependencies are required or optional, compared to v2.x:
 
    - Ghostscript 9.14+
-   - qpdf 5.0.0+
+   - qpdf_ 5.0.0+
    - Unpaper_ 6.1 (optional)
-   - some automatically managed Python dependencies
+   - some automatically managed Python packages
   
 .. _ruffus: http://www.ruffus.org.uk/index.html
 .. _parallel: https://www.gnu.org/software/parallel/
 .. _ImageMagick: http://www.imagemagick.org/script/index.php
 .. _MuPDF: http://mupdf.com/docs/
+.. _qpdf: http://qpdf.sourceforge.net/
 .. _Unpaper: https://github.com/Flameeyes/unpaper
+
+
+Release candidates
+------------------
+
+-  rc4:
+
+   - dropped MuPDF in favour of qpdf
+   - fixed some installer issues and errors in installation instructions
+   - improve performance: run Ghostscript with multithreaded rendering
+   - improve performance: use multiple cores by default
+   - bug fix: checking for wrong exception on process timeout 
+
+-  rc3: skipping version number intentionally to avoid confusion with Tesseract
+-  rc2: first release for public testing to test-PyPI, Github
+-  rc1: testing release process
 
 Compatibility notes
 -------------------
@@ -91,7 +109,7 @@ Notes
 
 
 v2.2-stable (2014-09-29):
-=======
+=========================
 
 New features
 ------------
@@ -115,6 +133,7 @@ Tested with
 
 - Operating system: FreeBSD 9.2
 - Dependencies:
+
    - parallel 20140822
    - poppler-utils 0.24.5
    - ImageMagick 6.8.9-4 2014-09-17
