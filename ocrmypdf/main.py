@@ -90,7 +90,7 @@ parser.add_argument(
     help="output searchable PDF file")
 parser.add_argument(
     '-l', '--language', action='append',
-    help="language of the file to be OCRed")
+    help="languages of the file to be OCRed")
 
 metadata = parser.add_argument_group(
     "Metadata options",
@@ -117,23 +117,26 @@ preprocessing.add_argument(
     help="deskew each page before performing OCR")
 preprocessing.add_argument(
     '-c', '--clean', action='store_true',
-    help="clean pages with unpaper before performing OCR")
+    help="clean pages from scanning artifacts before performing OCR")
 preprocessing.add_argument(
     '-i', '--clean-final', action='store_true',
     help="incorporate the cleaned image in the final PDF file")
 preprocessing.add_argument(
     '--oversample', metavar='DPI', type=int, default=0,
-    help="oversample images to improve OCR results slightly")
+    help="oversample images to at least the specified DPI, to improve OCR "
+         "results slightly")
 
 parser.add_argument(
     '-f', '--force-ocr', action='store_true',
-    help="force image into OCR, even if the page already contains text")
+    help="rasterize any fonts or vector images on each page and apply OCR")
 parser.add_argument(
     '-s', '--skip-text', action='store_true',
-    help="skip OCR on any pages that already contain text")
+    help="skip OCR on any pages that already contain text, but include the"
+         " page in final output")
 parser.add_argument(
     '--skip-big', type=float, metavar='MPixels',
-    help="skip OCR on pages larger than the specified amount of megapixels")
+    help="skip OCR on pages larger than the specified amount of megapixels, "
+         "but include skipped pages in final output")
 # parser.add_argument(
 #     '--exact-image', action='store_true',
 #     help="Use original page from PDF without re-rendering")
@@ -149,7 +152,8 @@ advanced.add_argument(
     help='choose OCR PDF renderer')
 advanced.add_argument(
     '--tesseract-timeout', default=180.0, type=float,
-    help='give up on OCR after timeout')
+    help='give up on OCR after the timeout, but copy the preprocessed page '
+         'into the final output')
 
 debugging = parser.add_argument_group(
     "Debugging",
