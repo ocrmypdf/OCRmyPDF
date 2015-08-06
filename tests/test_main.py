@@ -10,6 +10,7 @@ import sys
 from unittest.mock import patch, create_autospec
 import pytest
 from ocrmypdf.pageinfo import pdf_get_all_pageinfo
+import PyPDF2 as pypdf
 
 
 if sys.version_info.major < 3:
@@ -39,9 +40,17 @@ def run_ocrmypdf_sh(input_file, output_file, *args):
     return sh, out, err
 
 
+def _make_input(input_basename):
+    return os.path.join(TEST_RESOURCES, input_basename)
+
+
+def _make_output(output_basename):
+    return os.path.join(TEST_OUTPUT, output_basename)
+
+
 def check_ocrmypdf(input_basename, output_basename, *args):
-    input_file = os.path.join(TEST_RESOURCES, input_basename)
-    output_file = os.path.join(TEST_OUTPUT, output_basename)
+    input_file = _make_input(input_basename)
+    output_file = _make_output(output_basename)
 
     sh, _, err = run_ocrmypdf_sh(input_file, output_file, *args)
     assert sh.returncode == 0, err
@@ -64,7 +73,7 @@ def test_deskew():
     import logging
     log = logging.getLogger()
 
-    deskewed_png = os.path.join(TEST_OUTPUT, 'deskewed.png')
+    deskewed_png = _make_output('deskewed.png')
 
     rasterize_pdf(
         deskewed_pdf,
@@ -85,6 +94,17 @@ def test_deskew():
 
 def test_clean():
     check_ocrmypdf('skew.pdf', 'test_clean.pdf', '-c')
+
+
+def test_preserve_metadata():
+    pdf_before = pypdf.PdfFileReader(_make_input('graph.pdf'))
+
+    output = check_ocrmypdf('graph.pdf', 'test_metadata_preserve.pdf')
+
+    pdf_after = pypdf.PdfFileReader(output)
+
+    for key in ('/Title', '/Author'):
+        assert pdf_before.documentInfo[key] == pdf_after.documentInfo[key]
 
 
 def test_override_metadata():
