@@ -165,10 +165,10 @@ if command.startswith('install') or \
 
 setup(
     name='ocrmypdf',
-    version='3.0rc2',
+    version='3.0rc4',  # also update: release notes, main.py
     description='OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched',
     url='https://github.com/fritz-hh/OCRmyPDF',
-    author='J. R. Barlow',
+    author='James. R. Barlow',
     author_email='jim@purplerock.ca',
     license='Public Domain',
     packages=['ocrmypdf'],
