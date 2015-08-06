@@ -162,6 +162,14 @@ def test_skip_ocr():
     check_ocrmypdf('graph_ocred.pdf', 'test_skip.pdf', '-s')
 
 
+def test_argsfile():
+    with open(_make_output('test_argsfile.txt'), 'w') as argsfile:
+        print('--title', 'ArgsFile Test', '--author', 'Test Cases',
+              sep='\n', end='\n', file=argsfile)
+    check_ocrmypdf('graph.pdf', 'test_argsfile.pdf',
+                   '@' + _make_output('test_argsfile.txt'))
+
+
 def check_ocr_timeout(renderer):
     out = check_ocrmypdf('skew.pdf', 'test_timeout_%s.pdf' % renderer,
                          '--tesseract-timeout', '1.0')

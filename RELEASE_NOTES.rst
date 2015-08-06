@@ -89,11 +89,16 @@ Compatibility notes
 
    ocrmypdf input.pdf output.pdf @settings.txt
 
-where ``settings.txt`` contains, for example:
+where ``settings.txt`` contains *one argument per line*, for example:
 
 ::
 
-   -l deu --author 'A. Merkel' --pdf-renderer tesseract
+   -l 
+   deu 
+   --author 
+   A. Merkel 
+   --pdf-renderer 
+   tesseract
 
 
 Fixes
