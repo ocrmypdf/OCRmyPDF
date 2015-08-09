@@ -130,7 +130,9 @@ def check_external_program(
     print('Found {program} {found_version}'.format(
             program=program, found_version=found_version))
 
+
 command = next((arg for arg in sys.argv[1:] if not arg.startswith('-')), '')
+
 
 if command.startswith('install') or \
         command in ['check', 'test', 'nosetests', 'easy_install', 'egg_info']:
@@ -162,6 +164,11 @@ if command.startswith('install') or \
         package='qpdf',
         version_check_args=['--version']
     )
+
+
+if 'upload' in sys.argv[1:]:
+    print('Use twine to upload the package - setup.py upload is insecure')
+    sys.exit(1)
 
 setup(
     name='ocrmypdf',
