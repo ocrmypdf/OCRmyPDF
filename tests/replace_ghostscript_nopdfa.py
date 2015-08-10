@@ -10,7 +10,15 @@ created instead.
 It assumes that it is called from a staged system PATH where the first
 item on the PATH contains a file named 'gs' which is a symlink to this
 file.  It will strip out the first item on path to invoke the real
-'gs'.
+'gs'.  That is, it expects this when called
+
+1.   tests/output/[...test name...]/bin/gs is a symlink to this file
+2.   tests/output/bin is the first item on PATH
+3.   The real executable is on the path
+
+OCRmyPDF also calls "gs --version" and "gs --help".  gs answers both
+on stdout so, this wrapper prints to stderr.
+
 '''
 
 
@@ -21,14 +29,35 @@ def pdfa_param(arg):
         return True
     if arg.endswith('.ps'):
         return True
+    if 'ColorConversionStrategy' in arg:
+        return True
+    if 'ProcessColorModel' in arg:
+        return True
+    if 'OutputICCProfile' in arg:
+        return True
     return False
 
 
 if __name__ == '__main__':
-    args = [arg for arg in sys.argv[1:]
-            if not pdfa_param(arg)]
+    sys_args = sys.argv[1:]
 
     print("Fake Ghostscript wrapper", file=sys.stderr)
+
+    if any(pdfa_param(arg) for arg in sys_args):
+        # We were asked to produce a PDF/A
+        # Filter out PDF/A arguments
+        args = [arg for arg in sys.argv[1:]
+                if not pdfa_param(arg)]
+
+        # Tell Ghostscript to create a PDF 1.3 instead so JHOVE won't
+        # think it's a PDF/A
+        indexof_pdfwrite = next(n for n, item in enumerate(args)
+                                if 'pdfwrite' in item)
+        args.insert(indexof_pdfwrite + 1, '-dCompatibilityLevel=1.3')
+        print("Rewrote arguments", file=sys.stderr)
+    else:
+        args = sys_args
+        print("Keeping arguments", file=sys.stderr)
 
     exec_path = os.environ['PATH'].split(os.pathsep)
     env = os.environ.copy()

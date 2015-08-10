@@ -758,12 +758,18 @@ def merge_pages(
     filter=formatter(),
     output=options.output_file,
     extras=[_log, _pdfinfo, _pdfinfo_lock])
-def validate_pdfa(
+def copy_final(
         input_file,
         output_file,
         log,
         pdfinfo,
         pdfinfo_lock):
+    shutil.copy(input_file, output_file)
+
+
+def validate_pdfa(
+        input_file,
+        log):
 
     args_jhove = [
         'java',
@@ -798,13 +804,7 @@ def validate_pdfa(
                  re.IGNORECASE | re.MULTILINE):
         pdf_is_pdfa = True
 
-    if not pdf_is_valid:
-        log.warning('Output file: The generated PDF/A file is INVALID')
-    elif pdf_is_valid and not pdf_is_pdfa:
-        log.warning('Output file: Generated file is a VALID PDF but not PDF/A')
-    elif pdf_is_valid and pdf_is_pdfa:
-        log.info('Output file: The generated PDF/A file is VALID')
-    shutil.copy(input_file, output_file)
+    return (pdf_is_valid, pdf_is_pdfa)
 
 
 # @active_if(ocr_required and options.exact_image)
@@ -845,8 +845,25 @@ def available_cpu_count():
 def run_pipeline():
     if not options.jobs or options.jobs == 1:
         options.jobs = available_cpu_count()
+
     cmdline.run(options)
+
+    pdf_is_valid, pdf_is_pdfa = validate_pdfa(options.output_file, _log)
+
+    returncode = EXIT_OTHER_ERROR  # Assume error
+
+    if not pdf_is_valid:
+        _log.warning('Output file: The generated PDF/A file is INVALID')
+        returncode = EXIT_INVALID_OUTPUT_PDFA
+    elif pdf_is_valid and not pdf_is_pdfa:
+        _log.warning('Output file: Generated file is VALID PDF but not PDF/A')
+        returncode = EXIT_INVALID_OUTPUT_PDFA
+    elif pdf_is_valid and pdf_is_pdfa:
+        _log.info('Output file: The generated PDF/A file is VALID')
+        returncode = 0
+
+    return returncode
 
 
 if __name__ == '__main__':
-    run_pipeline()
+    sys.exit(run_pipeline())
