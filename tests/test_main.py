@@ -22,6 +22,7 @@ PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
 OCRMYPDF = os.path.join(PROJECT_ROOT, 'OCRmyPDF.sh')
 TEST_RESOURCES = os.path.join(PROJECT_ROOT, 'tests', 'resources')
 TEST_OUTPUT = os.path.join(PROJECT_ROOT, 'tests', 'output')
+TEST_BINARY_PATH = os.path.join(TEST_OUTPUT, 'bin')
 
 
 def setup_module():
@@ -57,6 +58,18 @@ def check_ocrmypdf(input_basename, output_basename, *args):
     assert os.path.exists(output_file), "Output file not created"
     assert os.stat(output_file).st_size > 100, "PDF too small or empty"
     return output_file
+
+
+def run_ocrmypdf_env(input_basename, output_basename, env, *args):
+    input_file = _make_input(input_basename)
+    output_file = _make_output(output_basename)
+
+    p_args = ['ocrmypdf'] + list(args) + [input_file, output_file]
+    p = Popen(
+        p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
+        universal_newlines=True, env=env)
+    out, err = p.communicate()
+    return p, out, err
 
 
 def test_quick():
@@ -200,3 +213,34 @@ def check_maximum_options(renderer):
 def test_maximum_options():
     yield check_maximum_options, 'hocr'
     yield check_maximum_options, 'tesseract'
+
+
+def override_binary(binary, replacement):
+    with suppress(FileExistsError):
+        os.makedirs(TEST_BINARY_PATH)
+
+    replacement_path = os.path.abspath(os.path.join(TESTS_ROOT,
+                                                    replacement))
+    binary_path = os.path.abspath(os.path.join(TEST_BINARY_PATH,
+                                               binary))
+    assert not os.path.lexists(binary_path)
+    print("symlink %s -> %s" % (replacement_path, binary_path))
+    os.symlink(replacement_path, binary_path)
+
+    os.chmod(replacement_path, int('755', base=8))
+
+    return os.path.dirname(binary_path) + os.pathsep + os.environ["PATH"]
+
+
+@pytest.fixture
+def break_ghostscript_pdfa():
+    return override_binary('gs', 'replace_ghostscript_nopdfa.py')
+
+
+def test_ghostscript_pdfa_fails(break_ghostscript_pdfa):
+    env = os.environ
+    env['PATH'] = break_ghostscript_pdfa
+
+    p, out, err = run_ocrmypdf_env(
+        'graph_ocred.pdf', 'not_a_pdfa.pdf', env, '-v', '1', '--skip-text')
+    assert p.returncode == 4, err  # not PDFA
