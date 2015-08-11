@@ -23,7 +23,7 @@ PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
 OCRMYPDF = os.path.join(PROJECT_ROOT, 'OCRmyPDF.sh')
 TEST_RESOURCES = os.path.join(PROJECT_ROOT, 'tests', 'resources')
 TEST_OUTPUT = os.path.join(PROJECT_ROOT, 'tests', 'output')
-TEST_BINARY_PATH = os.path.join(TEST_OUTPUT, 'bin')
+TEST_BINARY_PATH = os.path.join(TEST_OUTPUT, 'fakebin')
 
 
 def setup_module():
@@ -229,13 +229,27 @@ def test_maximum_options():
 
 
 def override_binary(binary, replacement):
-    with suppress(FileExistsError):
-        os.makedirs(TEST_BINARY_PATH)
+    '''Create a directory that contains a symlink named 'binary' that
+    points to replacement, another program to use in place of the
+    regular binary for testing.
+
+    override_binary('gs', 'replace_gs.py') will create an environment
+    in which "gs" will invoke replace_gs.py.
+
+    Not thread-safe with other test at the moment.
+
+    Returns the os.environ["PATH"] string under which this binary will
+    be invoked.'''
 
     replacement_path = os.path.abspath(os.path.join(TESTS_ROOT,
                                                     replacement))
+    subdir = os.path.splitext(os.path.basename(replacement))[0]
     binary_path = os.path.abspath(os.path.join(TEST_BINARY_PATH,
+                                               subdir,
                                                binary))
+    with suppress(FileExistsError):
+        os.makedirs(os.path.dirname(binary_path))
+    assert os.path.isdir(os.path.dirname(binary_path))
     assert not os.path.lexists(binary_path)
     print("symlink %s -> %s" % (replacement_path, binary_path))
     os.symlink(replacement_path, binary_path)
