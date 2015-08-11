@@ -12,11 +12,12 @@ New features
 ------------
 
 -  Easier installation with Python's package manager 
+-  Eliminated many external dependencies, so it's easier to setup
 -  Now installs ``ocrmypdf`` to ``/usr/local/bin`` or equivalent for system-wide
-   access
--  Tesseract 3.03 PDF page can be used instead for better positioning
-   of recognized text (``--pdf-renderer tesseract``)
+   access and easier typing
 -  Improved command line syntax and usage help (``--help``)
+-  Tesseract 3.03 PDF page renderning can be used instead for better positioning
+   of recognized text (``--pdf-renderer tesseract``)
 -  PDF metadata (title, author, keywords) are now transferred to the 
    output PDF
 -  PDF metadata can also be set from the command line (``--title``, etc.)
@@ -31,7 +32,7 @@ Changes
 -------
 
 -  New, robust rewrite in Python 3.4+ with ruffus_ pipelines
--  Now uses Ghostscript 9.14's improved color conversion model
+-  Now uses Ghostscript 9.14's improved color conversion model to preserve PDF colors
 -  All "tasks" in the pipeline can be executed in parallel on any
    available CPUs, increasing performance
 -  The ``-o DPI`` argument has been phased out, in favor of ``--oversample DPI``, in
@@ -45,6 +46,7 @@ Changes
    - Poppler
    - MuPDF_ tools
    - shell scripts
+   - Java and JHOVE_
 
 -  Some new external dependencies are required or optional, compared to v2.x:
 
@@ -59,10 +61,16 @@ Changes
 .. _MuPDF: http://mupdf.com/docs/
 .. _qpdf: http://qpdf.sourceforge.net/
 .. _Unpaper: https://github.com/Flameeyes/unpaper
-
+.. _JHOVE: http://jhove.sourceforge.net/
 
 Release candidates
 ------------------
+
+-  rc5:
+
+   - dropped Java and JHOVE in favour of qpdf
+   - improved command line error output
+   - additional tests and bug fixes
 
 -  rc4:
 

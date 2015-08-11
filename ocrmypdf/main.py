@@ -777,40 +777,28 @@ def validate_pdfa(
         input_file,
         log):
 
-    args_jhove = [
-        'java',
-        '-jar', JHOVE_JAR,
-        '-c', JHOVE_CFG,
-        '-m', 'PDF-hul',
+    args_qpdf = [
+        'qpdf',
+        '--check',
         input_file
     ]
-    p_jhove = Popen(args_jhove, close_fds=True, universal_newlines=True,
-                    stdout=PIPE, stderr=DEVNULL)
-    stdout, _ = p_jhove.communicate()
 
-    log.debug(stdout)
-    if p_jhove.returncode != 0:
-        log.error(stdout)
-        raise RuntimeError(
-            "Unexpected error while checking compliance to PDF/A file.")
+    try:
+        check_output(args_qpdf, stderr=STDOUT, universal_newlines=True)
+    except CalledProcessError as e:
+        if e.returncode == 2:
+            print("{0}: not a valid PDF, and could not repair it.".format(
+                    options.input_file))
+            print("Details:")
+            print(e.output)
+        elif e.returncode == 3:
+            log.info("qpdf --check returned warnings:")
+            log.info(e.output)
+        else:
+            print(e.output)
+        return False
 
-    pdf_is_valid = True
-    if re.search(r'ErrorMessage', stdout,
-                 re.IGNORECASE | re.MULTILINE):
-        pdf_is_valid = False
-    if re.search(r'^\s+Status.*not valid', stdout,
-                 re.IGNORECASE | re.MULTILINE):
-        pdf_is_valid = False
-    if re.search(r'^\s+Status.*Not well-formed', stdout,
-                 re.IGNORECASE | re.MULTILINE):
-        pdf_is_valid = False
-
-    pdf_is_pdfa = False
-    if re.search(r'^\s+Profile:.*PDF/A-1', stdout,
-                 re.IGNORECASE | re.MULTILINE):
-        pdf_is_pdfa = True
-
-    return (pdf_is_valid, pdf_is_pdfa)
+    return True
 
 
 # @active_if(ocr_required and options.exact_image)
@@ -867,21 +855,11 @@ def run_pipeline():
                     exc_value,
                     {'ExitCode': ExitCode}, {'exc_value': exc_value})
 
-    pdf_is_valid, pdf_is_pdfa = validate_pdfa(options.output_file, _log)
-
-    returncode = ExitCode.other_error  # Assume error
-
-    if not pdf_is_valid:
+    if not validate_pdfa(options.output_file, _log):
         _log.warning('Output file: The generated PDF/A file is INVALID')
-        returncode = ExitCode.invalid_output_pdfa
-    elif pdf_is_valid and not pdf_is_pdfa:
-        _log.warning('Output file: Generated file is VALID PDF but not PDF/A')
-        returncode = ExitCode.invalid_output_pdfa
-    elif pdf_is_valid and pdf_is_pdfa:
-        _log.info('Output file: The generated PDF/A file is VALID')
-        returncode = 0
+        return ExitCode.invalid_output_pdfa
 
-    return returncode
+    return ExitCode.ok
 
 
 if __name__ == '__main__':
