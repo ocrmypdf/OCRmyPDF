@@ -61,9 +61,12 @@ def check_ocrmypdf(input_basename, output_basename, *args):
     return output_file
 
 
-def run_ocrmypdf_env(input_basename, output_basename, env, *args):
+def run_ocrmypdf_env(input_basename, output_basename, *args, env=None):
     input_file = _make_input(input_basename)
     output_file = _make_output(output_basename)
+
+    if env is None:
+        env = os.environ
 
     p_args = ['ocrmypdf'] + list(args) + [input_file, output_file]
     p = Popen(
@@ -122,15 +125,24 @@ def test_preserve_metadata():
 
 
 def test_override_metadata():
+    input_file = _make_input('c02-22.pdf')
+    output_file = _make_output('test_override_metadata.pdf')
+
     german = 'Du siehst den Wald vor lauter Bäumen nicht.'
     chinese = '孔子'
     high_unicode = 'U+1030C is: 𐌌'
 
-    pdf = check_ocrmypdf(
-        'c02-22.pdf', 'test_metadata.pdf',
+    p, out, err = run_ocrmypdf_env(
+        input_file, output_file,
         '--title', german,
         '--author', chinese,
         '--subject', high_unicode)
+
+    if p.returncode == ExitCode.invalid_output_pdfa:
+        print("Got invalid PDF return code, as expected - JHOVE bug")
+    assert p.returncode in (ExitCode.ok, ExitCode.invalid_output_pdfa)
+
+    pdf = output_file
 
     out_pdfinfo = check_output(['pdfinfo', pdf], universal_newlines=True)
     lines_pdfinfo = out_pdfinfo.splitlines()
@@ -243,7 +255,7 @@ def test_ghostscript_pdfa_fails(break_ghostscript_pdfa):
     env['PATH'] = break_ghostscript_pdfa
 
     p, out, err = run_ocrmypdf_env(
-        'graph_ocred.pdf', 'not_a_pdfa.pdf', env, '-v', '1', '--skip-text')
+        'graph_ocred.pdf', 'not_a_pdfa.pdf', '-v', '1', '--skip-text', env=env)
     assert p.returncode == ExitCode.invalid_output_pdfa, err  # not PDFA
 
 
@@ -252,6 +264,6 @@ def test_tesseract_missing_tessdata():
     env['TESSDATA_PREFIX'] = '/tmp'
 
     p, _, err = run_ocrmypdf_env(
-        'graph_ocred.pdf', 'not_a_pdfa.pdf', env, '-v', '1', '--skip-text')
+        'graph_ocred.pdf', 'not_a_pdfa.pdf', '-v', '1', '--skip-text', env=env)
     assert p.returncode == ExitCode.missing_dependency, err
 

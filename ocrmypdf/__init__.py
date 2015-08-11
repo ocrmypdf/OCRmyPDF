@@ -2,6 +2,7 @@ from enum import IntEnum
 
 
 class ExitCode(IntEnum):
+    ok = 0
     bad_args = 1
     input_file = 2
     missing_dependency = 3
