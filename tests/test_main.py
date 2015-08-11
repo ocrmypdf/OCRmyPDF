@@ -11,6 +11,7 @@ from unittest.mock import patch, create_autospec
 import pytest
 from ocrmypdf.pageinfo import pdf_get_all_pageinfo
 import PyPDF2 as pypdf
+from ocrmypdf import ExitCode
 
 
 if sys.version_info.major < 3:
@@ -243,4 +244,14 @@ def test_ghostscript_pdfa_fails(break_ghostscript_pdfa):
 
     p, out, err = run_ocrmypdf_env(
         'graph_ocred.pdf', 'not_a_pdfa.pdf', env, '-v', '1', '--skip-text')
-    assert p.returncode == 4, err  # not PDFA
+    assert p.returncode == ExitCode.invalid_output_pdfa, err  # not PDFA
+
+
+def test_tesseract_missing_tessdata():
+    env = os.environ
+    env['TESSDATA_PREFIX'] = '/tmp'
+
+    p, _, err = run_ocrmypdf_env(
+        'graph_ocred.pdf', 'not_a_pdfa.pdf', env, '-v', '1', '--skip-text')
+    assert p.returncode == ExitCode.missing_dependency, err
+

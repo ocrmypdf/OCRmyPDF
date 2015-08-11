@@ -33,7 +33,7 @@ from .pageinfo import pdf_get_all_pageinfo
 from .pdfa import generate_pdfa_def
 from . import ghostscript
 from . import tesseract
-
+from . import ExitCode
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
@@ -43,13 +43,6 @@ JHOVE_PATH = os.path.realpath(os.path.join(BASEDIR, 'jhove'))
 JHOVE_JAR = os.path.join(JHOVE_PATH, 'bin', 'JhoveApp.jar')
 JHOVE_CFG = os.path.join(JHOVE_PATH, 'conf', 'jhove.conf')
 
-EXIT_BAD_ARGS = 1
-EXIT_BAD_INPUT_FILE = 2
-EXIT_MISSING_DEPENDENCY = 3
-EXIT_INVALID_OUTPUT_PDFA = 4
-EXIT_FILE_ACCESS_ERROR = 5
-EXIT_ALREADY_DONE_OCR = 6
-EXIT_OTHER_ERROR = 15
 
 # -------------
 # External dependencies
@@ -66,7 +59,7 @@ if tesseract.version() < MINIMUM_TESS_VERSION:
         "Please install tesseract {0} or newer "
         "(currently installed version is {1})".format(
             MINIMUM_TESS_VERSION, tesseract.version()))
-    sys.exit(EXIT_MISSING_DEPENDENCY)
+    sys.exit(ExitCode.missing_dependency)
 
 
 # -------------
@@ -184,7 +177,7 @@ if not set(options.language).issubset(tesseract.languages()):
         "data for the following requested languages: ")
     for lang in (set(options.language) - tesseract.languages()):
         complain(lang, file=sys.stderr)
-    sys.exit(EXIT_BAD_ARGS)
+    sys.exit(ExitCode.bad_args)
 
 
 # ----------
@@ -197,7 +190,7 @@ if any((options.deskew, options.clean, options.clean_final)):
     except ImportError:
         complain(
             "Install the 'unpaper' program to use --deskew or --clean.")
-        sys.exit(EXIT_BAD_ARGS)
+        sys.exit(ExitCode.bad_args)
 else:
     unpaper = None
 
@@ -209,7 +202,7 @@ if options.debug_rendering and options.pdf_renderer == 'tesseract':
 if options.force_ocr and options.skip_text:
     complain(
         "Error: --force-ocr and --skip-text are mutually incompatible.")
-    sys.exit(EXIT_BAD_ARGS)
+    sys.exit(ExitCode.bad_args)
 
 if options.clean and not options.clean_final \
         and options.pdf_renderer == 'tesseract':
@@ -357,7 +350,7 @@ def is_ocr_required(pageinfo, log):
         if not options.force_ocr and not options.skip_text:
             log.error(s.format(page,
                                "aborting (use --force-ocr to force OCR)"))
-            sys.exit(EXIT_ALREADY_DONE_OCR)
+            sys.exit(ExitCode.already_done_ocr)
         elif options.force_ocr:
             log.info(s.format(page,
                               "rasterizing text and running OCR anyway"))
@@ -850,14 +843,14 @@ def run_pipeline():
 
     pdf_is_valid, pdf_is_pdfa = validate_pdfa(options.output_file, _log)
 
-    returncode = EXIT_OTHER_ERROR  # Assume error
+    returncode = ExitCode.other_error  # Assume error
 
     if not pdf_is_valid:
         _log.warning('Output file: The generated PDF/A file is INVALID')
-        returncode = EXIT_INVALID_OUTPUT_PDFA
+        returncode = ExitCode.invalid_output_pdfa
     elif pdf_is_valid and not pdf_is_pdfa:
         _log.warning('Output file: Generated file is VALID PDF but not PDF/A')
-        returncode = EXIT_INVALID_OUTPUT_PDFA
+        returncode = ExitCode.invalid_output_pdfa
     elif pdf_is_valid and pdf_is_pdfa:
         _log.info('Output file: The generated PDF/A file is VALID')
         returncode = 0

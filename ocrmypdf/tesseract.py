@@ -6,6 +6,7 @@ import sys
 import os
 import re
 from functools import lru_cache
+from . import ExitCode
 
 
 @lru_cache(maxsize=1)
@@ -20,7 +21,7 @@ def version():
                 stderr=STDOUT)
     except CalledProcessError:
         print("Could not find Tesseract executable on system PATH.")
-        sys.exit(1)
+        sys.exit(ExitCode.missing_dependency)
 
     tesseract_version = re.match(r'tesseract\s(.+)', versions).group(1)
     return tesseract_version
@@ -32,9 +33,16 @@ def languages():
         'tesseract',
         '--list-langs'
     ]
-    langs = check_output(
-            args_tess, close_fds=True, universal_newlines=True,
-            stderr=STDOUT)
+    try:
+        langs = check_output(
+                args_tess, close_fds=True, universal_newlines=True,
+                stderr=STDOUT)
+    except CalledProcessError as e:
+        print("Tesseract failed to report available languages.")
+        print("Output from Tesseract:")
+        print("-" * 40)
+        print(e.output)
+        sys.exit(ExitCode.missing_dependency)
     return set(lang.strip() for lang in langs.splitlines()[1:])
 
 
