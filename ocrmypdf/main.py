@@ -17,7 +17,7 @@ import PyPDF2 as pypdf
 from PIL import Image
 
 from subprocess import Popen, check_call, PIPE, CalledProcessError, \
-    TimeoutExpired, check_output
+    TimeoutExpired, check_output, STDOUT
 try:
     from subprocess import DEVNULL
 except ImportError:
@@ -26,6 +26,7 @@ except ImportError:
 
 from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
     formatter, follows, split, collate, check_if_uptodate
+import ruffus.ruffus_exceptions as ruffus_exceptions
 import ruffus.cmdline as cmdline
 
 from .hocrtransform import HocrTransform
@@ -51,7 +52,7 @@ MINIMUM_TESS_VERSION = '3.02.02'
 
 
 def complain(message):
-    print(textwrap.wrap(message), file=sys.stderr)
+    print(*textwrap.wrap(message), file=sys.stderr)
 
 
 if tesseract.version() < MINIMUM_TESS_VERSION:
@@ -319,7 +320,19 @@ def repair_pdf(
     args_qpdf = [
         'qpdf', input_file, output_file
     ]
-    check_call(args_qpdf)
+    try:
+        out = check_output(args_qpdf, stderr=STDOUT, universal_newlines=True)
+    except CalledProcessError as e:
+        if e.returncode == 2:
+            print("{0}: not a valid PDF, and could not repair it.".format(
+                    options.input_file))
+            print("Details:")
+            print(e.output)
+        else:
+            print(e.output)
+        sys.exit(ExitCode.input_file)
+
+    log.debug(out)
 
     with pdfinfo_lock:
         pdfinfo.extend(pdf_get_all_pageinfo(output_file))
@@ -839,7 +852,20 @@ def run_pipeline():
     if not options.jobs or options.jobs == 1:
         options.jobs = available_cpu_count()
 
-    cmdline.run(options)
+    try:
+        cmdline.run(options)
+    except ruffus_exceptions.RethrownJobError as e:
+        if options.verbose:
+            print(e)
+
+        # Yuck. Hunt through the ruffus exception to find out what the
+        # return code is supposed to be.
+        for exc in e.args:
+            task_name, job_name, exc_name, exc_value, exc_stack = exc
+            if exc_name == 'builtins.SystemExit':
+                return eval(
+                    exc_value,
+                    {'ExitCode': ExitCode}, {'exc_value': exc_value})
 
     pdf_is_valid, pdf_is_pdfa = validate_pdfa(options.output_file, _log)
 

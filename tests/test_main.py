@@ -281,3 +281,9 @@ def test_tesseract_missing_tessdata():
         'graph_ocred.pdf', 'not_a_pdfa.pdf', '-v', '1', '--skip-text', env=env)
     assert p.returncode == ExitCode.missing_dependency, err
 
+
+def test_invalid_input_pdf():
+    p, out, err = run_ocrmypdf_env(
+        'invalid.pdf', 'wont_be_created.pdf')
+    assert p.returncode == ExitCode.input_file, err
+
