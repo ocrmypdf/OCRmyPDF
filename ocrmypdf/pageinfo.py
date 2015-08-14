@@ -41,8 +41,14 @@ def _page_has_inline_images(page):
     # PDF always uses \r\n for separator regardless of platform
     # Really basic heuristic that might trigger the odd false positive
     # This is only finds the first image and is not quite spec compliant
-    contents = page.getContents()
-    data = contents.getData()
+    try:
+        contents = page.getContents()
+        data = contents.getData()
+    except AttributeError:
+        # If we can't access the contents or data (empty page?) then there
+        # are no inline images
+        return False
+
     begin_image, image_data, end_image = False, False, False
     for data in re.split(b'\s+', data):
         if data == b'BI':
@@ -53,6 +59,7 @@ def _page_has_inline_images(page):
             end_image = True
         if all((begin_image, image_data, end_image)):
             return True
+    return False
 
 
 def _find_page_images(page, pageinfo):
