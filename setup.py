@@ -53,9 +53,6 @@ installing the RPM for {package}.
 
 
 def _error_trailer(program, package, optional, **kwargs):
-    if program == 'java':
-        return  # You're fucked
-
     if optional:
         print(okay_its_optional.format(**locals()), file=sys.stderr)
     else:
@@ -153,12 +150,6 @@ if command.startswith('install') or \
         optional=True
     )
     check_external_program(
-        program='java',
-        need_version='1.5.0',
-        package='Java Runtime Environment',
-        version_check_args=['-version']
-    )
-    check_external_program(
         program='qpdf',
         need_version='5.0.0',
         package='qpdf',
@@ -212,10 +203,5 @@ setup(
             'ocrmypdf = ocrmypdf.main:run_pipeline'
         ],
     },
-    eager_resources=[
-        'ocrmypdf/jhove/bin/*.jar',
-        'ocrmypdf/jhove/conf/*.conf',
-        'ocrmypdf/jhove/lib/*.jar'
-    ],
     include_package_data=True,
     zip_safe=False)
