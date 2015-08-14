@@ -287,3 +287,9 @@ def test_invalid_input_pdf():
         'invalid.pdf', 'wont_be_created.pdf')
     assert p.returncode == ExitCode.input_file, err
 
+
+def test_blank_input_pdf():
+    p, out, err = run_ocrmypdf_env(
+        'blank.pdf', 'still_blank.pdf')
+    assert p.returncode == ExitCode.ok
+
