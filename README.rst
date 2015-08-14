@@ -8,8 +8,8 @@ Main features
 -------------
 
 -  Generates a searchable
-   `PDF/A <https://en.wikipedia.org/?title=PDF/A>`__ file from a PDF
-   file containing only images
+   `PDF/A <https://en.wikipedia.org/?title=PDF/A>`__ file from a regular PDF
+   only containing images
 -  Places OCRed text accurately below the image to ease copy / paste
 -  Keeps the exact resolution of the original embedded images
 
@@ -17,8 +17,7 @@ Main features
       better results
 
 -  If requested deskews and/or cleans the image before performing OCR
--  Validates the generated file against the PDF/A-1b specification using
-   `JHOVE <http://jhove.sourceforge.net/>`__
+-  Validates input and output files
 -  Provides debug mode to enable easy verification of the OCR results
 -  Processes several pages in parallel when more than one CPU core is
    available
