@@ -1,4 +1,1 @@
-recursive-include ocrmypdf/jhove/bin *.jar
-recursive-include ocrmypdf/jhove/lib *.jar
-recursive-include ocrmypdf/jhove/conf *.conf
 recursive-exclude tests/output *
