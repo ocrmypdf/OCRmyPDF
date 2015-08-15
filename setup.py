@@ -4,6 +4,7 @@
 from setuptools import setup
 from subprocess import Popen, STDOUT, check_output, CalledProcessError
 from string import Template
+from collections.abc import Mapping
 import re
 import sys
 
@@ -48,8 +49,16 @@ commands:
     sudo apt-get install {package}
 
 On RPM-based systems (Red Hat, Fedora), search for instructions on
-installing the RPM for {package}.
+installing the RPM for {program}.
 '''
+
+
+def get_platform():
+    if sys.platform.startswith('freebsd'):
+        return 'freebsd'
+    elif sys.platform.startswith('linux'):
+        return 'linux'
+    return sys.platform
 
 
 def _error_trailer(program, package, optional, **kwargs):
@@ -57,9 +66,13 @@ def _error_trailer(program, package, optional, **kwargs):
         print(okay_its_optional.format(**locals()), file=sys.stderr)
     else:
         print(not_okay_its_required.format(**locals()), file=sys.stderr)
-    if sys.platform.startswith('darwin'):
+
+    if isinstance(package, Mapping):
+        package = package[get_platform()]
+
+    if get_platform() == 'darwin':
         print(osx_install_advice.format(**locals()), file=sys.stderr)
-    elif sys.platform.startswith('linux'):
+    elif get_platform() == 'linux':
         print(linux_install_advice.format(**locals()), file=sys.stderr)
 
 
@@ -136,7 +149,7 @@ if command.startswith('install') or \
     check_external_program(
         program='tesseract',
         need_version='3.02.02',
-        package='tesseract'
+        package={'darwin': 'tesseract', 'linux': 'tesseract-ocr'}
     )
     check_external_program(
         program='gs',
