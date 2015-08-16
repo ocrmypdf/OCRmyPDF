@@ -71,6 +71,7 @@ Release candidates
    - dropped Java and JHOVE in favour of qpdf
    - improved command line error output
    - additional tests and bug fixes
+   - tested on Ubuntu 14.04 LTS
 
 -  rc4:
 

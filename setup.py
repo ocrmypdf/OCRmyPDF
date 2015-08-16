@@ -176,7 +176,7 @@ if 'upload' in sys.argv[1:]:
 
 setup(
     name='ocrmypdf',
-    version='3.0rc4',  # also update: release notes, main.py
+    version='3.0rc5',  # also update: release notes, main.py
     description='OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched',
     url='https://github.com/fritz-hh/OCRmyPDF',
     author='James. R. Barlow',
