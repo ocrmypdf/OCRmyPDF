@@ -63,6 +63,41 @@ if tesseract.version() < MINIMUM_TESS_VERSION:
     sys.exit(ExitCode.missing_dependency)
 
 
+try:
+    import PIL.features
+    check_codec = PIL.features.check_codec
+except (ImportError, AttributeError):
+    def check_codec(codec_name):
+        if codec_name == 'jpg':
+            return 'jpeg_encoder' in dir(Image.core)
+        elif codec_name == 'zlib':
+            return 'zip_encoder' in dir(Image.core)
+        raise NotImplementedError(codec_name)
+
+
+def check_pil_encoder(codec_name, friendly_name):
+    try:
+        if check_codec(codec_name):
+            return
+    except Exception:
+        pass
+    complain(
+        "ERROR: Your version of the Python imaging library (Pillow) was "
+        "compiled without support for " + friendly_name + " encoding/decoding."
+        "\n"
+        "You will need to uninstall Pillow and reinstall it with PNG and JPEG "
+        "support (libjpeg and zlib)."
+        "\n"
+        "See installation instructions for your platform here:\n"
+        "    https://pillow.readthedocs.org/installation.html"
+    )
+    sys.exit(ExitCode.missing_dependency)
+
+
+check_pil_encoder('jpg', 'JPEG')
+check_pil_encoder('zlib', 'PNG')
+
+
 # -------------
 # Parser
 
