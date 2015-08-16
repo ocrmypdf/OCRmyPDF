@@ -265,16 +265,16 @@ def break_ghostscript_pdfa():
 
 
 def test_ghostscript_pdfa_fails(break_ghostscript_pdfa):
-    env = os.environ
+    env = os.environ.copy()
     env['PATH'] = break_ghostscript_pdfa
 
     p, out, err = run_ocrmypdf_env(
         'graph_ocred.pdf', 'not_a_pdfa.pdf', '-v', '1', '--skip-text', env=env)
-    assert p.returncode == ExitCode.invalid_output_pdfa, err  # not PDFA
+    assert p.returncode == ExitCode.ok, err  # no longer using JHOVE PDFA check
 
 
 def test_tesseract_missing_tessdata():
-    env = os.environ
+    env = os.environ.copy()
     env['TESSDATA_PREFIX'] = '/tmp'
 
     p, _, err = run_ocrmypdf_env(
