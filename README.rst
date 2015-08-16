@@ -16,6 +16,9 @@ Main features
    -  or if requested oversamples the images before OCRing so as to get
       better results
 
+-  When possible, copies input images directly to output without transcoding them,
+   to preserve image quality
+-  Keeps file size about the same
 -  If requested deskews and/or cleans the image before performing OCR
 -  Validates input and output files
 -  Provides debug mode to enable easy verification of the OCR results
@@ -42,12 +45,23 @@ Linux/UNIX: I found many, but none of them were really satisfying.
 ... so I decided to develop my own tool (using various existing scripts
 as an inspiration)
 
-Install
--------
+Installation
+------------
 
 Download OCRmyPDF here: https://github.com/fritz-hh/OCRmyPDF/releases
 
-You can install it within a virtual environment or system-wide. 
+You can install it to a Python virtual environment or system-wide. 
+
+
+Installation dependencies on Mac OS X Yosemite
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[text here]
+
+
+Installation on Ubuntu 14.04 LTS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 To install the HEAD revision from sources in development mode::
 
