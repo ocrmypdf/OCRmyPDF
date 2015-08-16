@@ -53,15 +53,60 @@ Download OCRmyPDF here: https://github.com/fritz-hh/OCRmyPDF/releases
 You can install it to a Python virtual environment or system-wide. 
 
 
-Installation dependencies on Mac OS X Yosemite
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Installing dependencies on Mac OS X Yosemite
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[text here]
+If it's not already present, `install Homebrew <http://brew.sh/>`__
+
+Update Homebrew::
+
+   brew update
+   brew upgrade
+   
+Install the required Homebrew packages, if any are missing::
+
+   brew install libpng openjpeg jbig2dec     # image libraries
+   brew install qpdf
+   brew install ghostscript
+   brew install python3
+   brew install libxml2
+   brew install leptonica
+   brew install tesseract
+   
+It is also recommended that install Pillow and confirm it can read and write JPEG and PNG files::
+
+   pip3 install --upgrade pip
+   pip3 install --upgrade pillow
+
+To test that your dependencies are working, try this command::
+
+   python3 -c "from PIL import Image; im = Image.new('1', (1, 1)); im.save('test.png'); im.save('test.jpg')"
 
 
-Installation on Ubuntu 14.04 LTS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Installing dependencies on Ubuntu 14.04 LTS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Update apt-get::
+
+   sudo apt-get update
+   sudo apt-get upgrade
+   
+Install dependencies::
+
+   sudo apt-get install \
+      zlib1g-dev \
+      libjpeg-dev \
+      libxml2 \
+      tesseract-ocr \
+      qpdf \
+      unpaper \
+      python3-pip \
+      python3-pil \
+      python3-pytest \
+      python3-reportlab
+      
+Installing HEAD revision from sources
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To install the HEAD revision from sources in development mode::
 
