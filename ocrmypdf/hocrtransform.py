@@ -9,7 +9,7 @@
 ##############################################################################
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.units import inch
-from lxml import etree as ElementTree
+from xml.etree import ElementTree
 from PIL import Image
 from collections import namedtuple
 import re
@@ -35,8 +35,7 @@ class HocrTransform():
         self.dpi = dpi
         self.boxPattern = re.compile(r'bbox((\s+\d+){4})')
 
-        self.hocr = ElementTree.ElementTree()
-        self.hocr.parse(hocrFileName)
+        self.hocr = ElementTree.parse(hocrFileName)
 
         # if the hOCR file has a namespace, ElementTree requires its use to
         # find elements

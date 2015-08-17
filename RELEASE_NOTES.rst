@@ -47,6 +47,7 @@ Changes
    - MuPDF_ tools
    - shell scripts
    - Java and JHOVE_
+   - libxml2
 
 -  Some new external dependencies are required or optional, compared to v2.x:
 
@@ -65,6 +66,10 @@ Changes
 
 Release candidates
 ------------------
+
+-  rc6:
+
+   - dropped libxml2 (Python lxml) since Python 3's internal XML parser is sufficient
 
 -  rc5:
 

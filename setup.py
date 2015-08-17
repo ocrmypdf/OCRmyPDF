@@ -203,7 +203,6 @@ setup(
     install_requires=[
         'ruffus>=2.6.3',
         'Pillow>=2.4.0',
-        'lxml>=3.3.3',
         'reportlab>=3.1.44',
         'PyPDF2>=1.25.1'
     ],
