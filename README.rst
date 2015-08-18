@@ -96,6 +96,7 @@ Install dependencies::
    sudo apt-get install \
       zlib1g-dev \
       libjpeg-dev \
+      ghostscript \
       tesseract-ocr \
       qpdf \
       unpaper \
