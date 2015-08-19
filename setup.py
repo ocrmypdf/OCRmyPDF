@@ -174,6 +174,9 @@ if 'upload' in sys.argv[1:]:
     print('Use twine to upload the package - setup.py upload is insecure')
     sys.exit(1)
 
+install_requires = open('requirements.txt').read().splitlines()
+tests_require = open('test_requirements.txt').read().splitlines()
+
 setup(
     name='ocrmypdf',
     version='3.0rc5',  # also update: release notes, main.py
@@ -200,16 +203,8 @@ setup(
         "Topic :: Text Processing :: Indexing",
         "Topic :: Text Processing :: Linguistic",
         ],
-    install_requires=[
-        'ruffus>=2.6.3',
-        'Pillow>=2.4.0',
-        'reportlab>=3.1.44',
-        'PyPDF2>=1.25.1'
-    ],
-    tests_require=[
-        'img2pdf>=0.1.5',
-        'pytest>=2.7.2'
-    ],
+    install_requires=install_requires,
+    tests_require=tests_require,
     entry_points={
         'console_scripts': [
             'ocrmypdf = ocrmypdf.main:run_pipeline'

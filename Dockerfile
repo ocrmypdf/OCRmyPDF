@@ -13,6 +13,7 @@ RUN useradd docker \
 RUN apt-get update && apt-get install -y --no-install-recommends \
   bc \
   curl \
+  wget \
   zlib1g-dev \
   libjpeg-dev \
   ghostscript \
@@ -23,12 +24,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   poppler-utils \
   python3 \
   python3-pip \
-  python3-pil \
   python3-pytest \
-  python3-reportlab
+  python3-dev \
+  gcc
 
-
-RUN apt-get install -y wget
 
 # Ubuntu 14.04's ensurepip is broken, so it cannot create py3 virtual envs
 # Use elaborate workaround: create a venv without pip, activate that environment,
@@ -39,12 +38,20 @@ RUN python3 -m venv appenv --without-pip
 RUN . /appenv/bin/activate; \
   wget -O - -o /dev/null https://bootstrap.pypa.io/get-pip.py | python
 
-RUN apt-get install -y gcc python3-dev
+COPY ./*requirements.txt /application/
+
+# Build wheels separately so build is cached by Docker
+RUN . /appenv/bin/activate; \
+  pip install wheel \
+  && pip wheel --wheel-dir=/wheelhouse -r /application/requirements.txt \
+  && pip wheel --wheel-dir=/wheelhouse -r /application/test_requirements.txt
 
 COPY . /application/
 
+# Install application using our built wheels
 RUN . /appenv/bin/activate; \
-  pip install /application/.
+  pip install --no-index --find-links=/wheelhouse /application \
+  && pip install --no-index --find-links=/wheelhouse -r /application/test_requirements.txt
 
 USER docker
 WORKDIR /home/docker
