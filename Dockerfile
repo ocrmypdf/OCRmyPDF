@@ -30,7 +30,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN apt-get install -y wget
 
-# Ubuntu 14.04's ensurepip is broken
+# Ubuntu 14.04's ensurepip is broken, so it cannot create py3 virtual envs
+# Use elaborate workaround: create a venv without pip, activate that environment,
+# download a script to install pip into the environment
 # http://www.thefourtheye.in/2014/12/Python-venv-problem-with-ensurepip-in-Ubuntu.html
 
 RUN python3 -m venv appenv --without-pip
@@ -48,5 +50,6 @@ WORKDIR /home/docker
 
 ENV DEFAULT_RUFFUS_HISTORY_FILE=/tmp/.{basename}.ruffus_history.sqlite
 
-# Must use array form of ENTRYPOINT because Docker loves arbitrary and stupid rules
+# Must use array form of ENTRYPOINT
+# Non-array form does not append other arguments, because that is "intuitive"
 ENTRYPOINT ["/docker-wrapper.sh"]
