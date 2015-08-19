@@ -293,3 +293,15 @@ def test_blank_input_pdf():
         'blank.pdf', 'still_blank.pdf')
     assert p.returncode == ExitCode.ok
 
+
+def test_french():
+    p, out, err = run_ocrmypdf_env(
+        'français.pdf', 'français.pdf', '-l', 'fra')
+    assert p.returncode == ExitCode.ok, \
+        "This test may fail if Tesseract language packs are missing"
+
+
+def test_klingon():
+    p, out, err = run_ocrmypdf_env(
+        'français.pdf', 'français.pdf', '-l', 'klz')
+    assert p.returncode == ExitCode.bad_args
