@@ -41,10 +41,11 @@ RUN . /appenv/bin/activate; \
 
 RUN apt-get install -y gcc python3-dev
 
-RUN . /appenv/bin/activate; \
-  pip install https://github.com/fritz-hh/ocrmypdf/zipball/master
+COPY . /application/
 
-ADD docker-wrapper.sh /docker-wrapper.sh
+RUN . /appenv/bin/activate; \
+  pip install /application/.
+
 USER docker
 WORKDIR /home/docker
 
@@ -52,4 +53,4 @@ ENV DEFAULT_RUFFUS_HISTORY_FILE=/tmp/.{basename}.ruffus_history.sqlite
 
 # Must use array form of ENTRYPOINT
 # Non-array form does not append other arguments, because that is "intuitive"
-ENTRYPOINT ["/docker-wrapper.sh"]
+ENTRYPOINT ["/application/docker-wrapper.sh"]

@@ -6,3 +6,8 @@ lib/
 ocrmypdf.egg-info/
 staging/
 .git/
+.ruffus_history.sqlite
+MANIFEST.in
+*.sublime*
+*.pdf
+*.rst
