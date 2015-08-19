@@ -42,9 +42,11 @@ RUN apt-get install -y gcc python3-dev
 RUN . /appenv/bin/activate; \
   pip install https://github.com/fritz-hh/ocrmypdf/zipball/master
 
+ADD docker-wrapper.sh /docker-wrapper.sh
 USER docker
 WORKDIR /home/docker
-ADD docker-wrapper.sh /home/docker/docker-wrapper.sh
+
+ENV DEFAULT_RUFFUS_HISTORY_FILE=/tmp/.{basename}.ruffus_history.sqlite
 
 # Must use array form of ENTRYPOINT because Docker loves arbitrary and stupid rules
-ENTRYPOINT ["/home/docker/docker-wrapper.sh"]
+ENTRYPOINT ["/docker-wrapper.sh"]
