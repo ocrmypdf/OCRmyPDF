@@ -1,7 +1,8 @@
-/bin
-/build
-/dist
-/include
-/lib
-/ocrmypdf.egg-info
-/staging
+bin/
+build/
+dist/
+include/
+lib/
+ocrmypdf.egg-info/
+staging/
+.git/

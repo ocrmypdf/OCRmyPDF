@@ -303,5 +303,5 @@ def test_french():
 
 def test_klingon():
     p, out, err = run_ocrmypdf_env(
-        'français.pdf', 'français.pdf', '-l', 'klz')
+        'francais.pdf', 'francais.pdf', '-l', 'klz')
     assert p.returncode == ExitCode.bad_args
