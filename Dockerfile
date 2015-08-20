@@ -11,6 +11,7 @@ RUN useradd docker \
 
 # Update system and install our dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+  locales \
   ghostscript \
   tesseract-ocr \
   tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-eng tesseract-ocr-fra \
@@ -22,6 +23,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   python3-venv \
   python3-reportlab \
   python3-pil
+
+# Enforce UTF-8
+# Borrowed from https://index.docker.io/u/crosbymichael/python/ 
+RUN dpkg-reconfigure locales && \
+  locale-gen C.UTF-8 && \
+  /usr/sbin/update-locale LANG=C.UTF-8
+ENV LC_ALL C.UTF-8
 
 # Set up a Python virtualenv and take all of the system packages, so we can
 # rely on the platform packages rather than importing GCC and compiling them
