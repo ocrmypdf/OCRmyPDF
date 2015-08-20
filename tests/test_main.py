@@ -7,7 +7,6 @@ import os
 import shutil
 from contextlib import suppress
 import sys
-from unittest.mock import patch, create_autospec
 import pytest
 from ocrmypdf.pageinfo import pdf_get_all_pageinfo
 import PyPDF2 as pypdf
@@ -22,7 +21,9 @@ TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
 PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
 OCRMYPDF = os.path.join(PROJECT_ROOT, 'OCRmyPDF.sh')
 TEST_RESOURCES = os.path.join(PROJECT_ROOT, 'tests', 'resources')
-TEST_OUTPUT = os.path.join(PROJECT_ROOT, 'tests', 'output')
+TEST_OUTPUT = os.environ.get(
+    'OCRMYPDF_TEST_OUTPUT',
+    default=os.path.join(PROJECT_ROOT, 'tests', 'output'))
 TEST_BINARY_PATH = os.path.join(TEST_OUTPUT, 'fakebin')
 
 
