@@ -50,6 +50,7 @@ WORKDIR /home/docker
 
 ENV DEFAULT_RUFFUS_HISTORY_FILE=/tmp/.{basename}.ruffus_history.sqlite
 ENV OCRMYPDF_TEST_OUTPUT=/tmp/test-output
+ENV OCRMYPDF_IN_DOCKER=1
 
 # Must use array form of ENTRYPOINT
 # Non-array form does not append other arguments, because that is "intuitive"

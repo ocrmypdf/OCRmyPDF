@@ -265,6 +265,8 @@ def break_ghostscript_pdfa():
     return override_binary('gs', 'replace_ghostscript_nopdfa.py')
 
 
+@pytest.mark.skipif(os.environ.get('OCRMYPDF_IN_DOCKER', False),
+                    reason="Requires writable filesystem")
 def test_ghostscript_pdfa_fails(break_ghostscript_pdfa):
     env = os.environ.copy()
     env['PATH'] = break_ghostscript_pdfa
@@ -297,7 +299,7 @@ def test_blank_input_pdf():
 
 def test_french():
     p, out, err = run_ocrmypdf_env(
-        'français.pdf', 'français.pdf', '-l', 'fra')
+        'francais.pdf', 'francais.pdf', '-l', 'fra')
     assert p.returncode == ExitCode.ok, \
         "This test may fail if Tesseract language packs are missing"
 
