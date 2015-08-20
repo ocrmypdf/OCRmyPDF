@@ -11,3 +11,11 @@ MANIFEST.in
 *.sublime*
 *.pdf
 *.rst
+*.pyc
+*/*.pyc
+*/*/*.pyc
+*/*/*/*.pyc
+*/*/*/*/*.pyc
+*/*/*/*/*/*.pyc
+*/*/*/*/*/*/*.pyc
+*/*/*/*/*/*/*/*.pyc
