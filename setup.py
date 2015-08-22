@@ -158,7 +158,7 @@ if command.startswith('install') or \
     )
     check_external_program(
         program='unpaper',
-        need_version='0.4.2',
+        need_version='6.1',
         package='unpaper',
         optional=True
     )
