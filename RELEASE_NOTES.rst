@@ -11,12 +11,12 @@ v3.0:
 New features
 ------------
 
--  Easier installation with Python's package manager 
+-  Easier installation with a Docker container or Python's ``pip`` package manager 
 -  Eliminated many external dependencies, so it's easier to setup
 -  Now installs ``ocrmypdf`` to ``/usr/local/bin`` or equivalent for system-wide
    access and easier typing
 -  Improved command line syntax and usage help (``--help``)
--  Tesseract 3.03 PDF page renderning can be used instead for better positioning
+-  Tesseract 3.03+ PDF page rendering can be used instead for better positioning
    of recognized text (``--pdf-renderer tesseract``)
 -  PDF metadata (title, author, keywords) are now transferred to the 
    output PDF
@@ -70,6 +70,8 @@ Release candidates
 -  rc6:
 
    - dropped libxml2 (Python lxml) since Python 3's internal XML parser is sufficient
+   - set up Docker container
+   - fix Unicode errors if recognized text contains Unicode characters and system locale is not UTF-8
 
 -  rc5:
 
