@@ -55,7 +55,7 @@ You can install it to a Python virtual environment or system-wide.
 Installing the Docker container
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For many users, installing the Docker container will be easier than installing all of OCRmyPDF's dependencies.
+For many users, installing the Docker container will be easier than installing all of OCRmyPDF's dependencies. For Windows, it is the only option.
 
 If you have `Docker <https://docs.docker.com/>`__ installed on your system, you can install
 a Docker container of the latest release.
@@ -64,29 +64,37 @@ Follow the Docker installation instructions for your platform.  If you can run t
 successfully, your system is ready to download and execute the image::
 
    docker run hello-world
+   
+OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine instance on Windows and OS X has only a single CPU core enabled. Use the VirtualBox Manager to determine the name of your Docker container host, and then follow these optional steps to enable multiple CPUs::
+
+   # Optional
+   docker-machine stop "yourVM"
+   VBoxManage modifyvm "yourVM" --cpus 2  # or whatever number of core is desired
+   docker-machine start "yourVM"
+   eval $(docker-machine env "yourVM")
 
 Assuming you have a Docker engine running somewhere, you can run these commands to download
 the image::
 
    docker pull jbarlow83/ocrmypdf
 
-Then give it a more friendly, local name::
+Then tag it to give a more convenient name, just ocrmypdf::
 
    docker tag jbarlow83/ocrmypdf ocrmypdf
   
-You can then run using the simple command::
+You can then run using the command::
 
    docker run ocrmypdf --help
   
 To execute the OCRmyPDF on a local file, you must `provide a writable volume to the Docker image <https://docs.docker.com/userguide/dockervolumes/>`__, such as this in this template::
 
-   docker run -v "$(pwd):/home/docker"   ocrmypdf <your arguments>
+   docker run -v "$(pwd):/home/docker" <other docker arguments>   ocrmypdf <your arguments to ocrmypdf>
 
 In this worked example, the current working directory contains an input file called `test.pdf` and the output will go to `output.pdf`:: 
 
    docker run -v "$(pwd):/home/docker"   ocrmypdf --skip-text test.pdf output.pdf
 
-Note that `ocrmypdf` has its own separate -v argument to control debug verbosity.
+Note that `ocrmypdf` has its own separate -v argument to control debug verbosity. All Docker arguments should before the `ocrmypdf` container name and all arguments to `ocrmypdf` should be listed after.
 
 Installing on Mac OS X Yosemite
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -129,7 +137,7 @@ The command line program should now be available::
 Installing on Ubuntu 14.04 LTS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Installing on Ubuntu 14.04 LTS (trusty) is more difficult than other options.
+Installing on Ubuntu 14.04 LTS (trusty) is more difficult than other options, because of certain bugs in package installation.
 
 Update apt-get::
 
