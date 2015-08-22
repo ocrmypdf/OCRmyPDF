@@ -16,7 +16,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   tesseract-ocr \
   tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-eng tesseract-ocr-fra \
   qpdf \
-  unpaper \
   poppler-utils \
   python3 \
   python3-pip \
@@ -30,6 +29,37 @@ RUN dpkg-reconfigure locales && \
   locale-gen C.UTF-8 && \
   /usr/sbin/update-locale LANG=C.UTF-8
 ENV LC_ALL C.UTF-8
+
+# Build unpaper 6.1
+RUN apt-get install -y \
+  wget \
+  gcc \
+  libavformat-dev \
+  libavcodec-dev \
+  libavutil-dev \
+  autoconf \
+  automake \
+  make \
+  pkg-config \
+  xsltproc
+
+WORKDIR /root
+RUN wget https://github.com/Flameeyes/unpaper/archive/unpaper-6.1.tar.gz
+RUN tar xf unpaper-6.1.tar.gz
+WORKDIR /root/unpaper-unpaper-6.1
+RUN autoreconf -i
+RUN ./configure CFLAGS="-O2 -march=native -pipe -flto"
+RUN make -j install
+
+RUN apt-get remove -y \
+  gcc \
+  autoconf \
+  automake \
+  pkg-config \
+  xsltproc \
+  make
+RUN apt-get autoremove -y && apt-get clean -y
+RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Set up a Python virtualenv and take all of the system packages, so we can
 # rely on the platform packages rather than importing GCC and compiling them
