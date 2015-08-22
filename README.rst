@@ -52,18 +52,44 @@ Download OCRmyPDF here: https://github.com/fritz-hh/OCRmyPDF/releases
 
 You can install it to a Python virtual environment or system-wide. 
 
+Installing the Docker container
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Installing dependencies on Mac OS X Yosemite
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+For many users, installing the Docker container will be easier than installing all of OCRmyPDF's dependencies.
+
+If you have `Docker <https://docs.docker.com/>`__ installed on your system, you can install
+a Docker container of the latest release.
+
+Follow the Docker installation instructions for your platform.  If you can run this command
+successfully, your system is ready to download and execute the image::
+
+  docker run hello-world
+
+Assuming you have a Docker engine running somewhere, you can run these commands to download
+the image::
+
+  docker pull jbarlow83/ocrmypdf
+
+Then give it a more friendly, local name::
+
+  docker tag jbarlow83/ocrmypdf ocrmypdf
+  
+You can then run using the simple command::
+
+  docker run ocrmypdf --help
+  
+That's it.
+
+Installing on Mac OS X Yosemite
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If it's not already present, `install Homebrew <http://brew.sh/>`__
 
 Update Homebrew::
 
    brew update
-   brew upgrade
    
-Install the required Homebrew packages, if any are missing::
+Install or upgrade the required Homebrew packages, if any are missing::
 
    brew install libpng openjpeg jbig2dec     # image libraries
    brew install qpdf
@@ -78,20 +104,34 @@ It is also recommended that install Pillow and confirm it can read and write JPE
    pip3 install --upgrade pip
    pip3 install --upgrade pillow
 
-To test that your dependencies are working, try this command::
+To test that your Python imaging library (Pillow) can access JPEG and PNG files, try this command::
 
    python3 -c "from PIL import Image; im = Image.new('1', (1, 1)); im.save('test.png'); im.save('test.jpg')"
 
+If you have trouble getting Pillow to access JPEG and PNG files, `review the installation instructions <https://pillow.readthedocs.org/installation.html>`__.
 
-Installing dependencies on Ubuntu 14.04 LTS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+You can then install OCRmyPDF from PyPI::
+
+   pip3 install ocrmypdf
+
+The command line program should now be available::
+
+   ocrmypdf --help
+
+
+
+
+Installing on Ubuntu 14.04 LTS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Installing on Ubuntu 14.04 LTS (trusty) is more difficult than other options.
 
 Update apt-get::
 
    sudo apt-get update
    sudo apt-get upgrade
    
-Install dependencies::
+Install system dependencies::
 
    sudo apt-get install \
       zlib1g-dev \
@@ -104,6 +144,25 @@ Install dependencies::
       python3-pil \
       python3-pytest \
       python3-reportlab
+
+If you wish install OCRmyPDF to the system Python, then install as follows (note this installs new packages
+into your system Python, which could interfere with other programs)::
+
+   sudo pip3 install ocrmypdf
+   
+If you wish to install OCRmyPDF to a virtual environment to isolate system Python from modified, you can
+follow these steps.  This includes a workaround `for a known, unresolved issue in Ubuntu 14.04's ensurepip
+package <http://www.thefourtheye.in/2014/12/Python-venv-problem-with-ensurepip-in-Ubuntu.html>`__::
+
+   sudo apt-get install python3-venv
+   python3 -m venv venv-ocrmypdf --without-pip
+   source venv-ocrmypdf/bin/activate
+   wget -O - -o /dev/null https://bootstrap.pypa.io/get-pip.py | python
+   deactivate
+   pyvenv --system-site-packages venv-ocrmypdf
+   source venv-ocrmypdf/bin/activate
+   pip install ocrmypdf
+
       
 Installing HEAD revision from sources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
