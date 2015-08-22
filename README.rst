@@ -63,22 +63,30 @@ a Docker container of the latest release.
 Follow the Docker installation instructions for your platform.  If you can run this command
 successfully, your system is ready to download and execute the image::
 
-  docker run hello-world
+   docker run hello-world
 
 Assuming you have a Docker engine running somewhere, you can run these commands to download
 the image::
 
-  docker pull jbarlow83/ocrmypdf
+   docker pull jbarlow83/ocrmypdf
 
 Then give it a more friendly, local name::
 
-  docker tag jbarlow83/ocrmypdf ocrmypdf
+   docker tag jbarlow83/ocrmypdf ocrmypdf
   
 You can then run using the simple command::
 
-  docker run ocrmypdf --help
+   docker run ocrmypdf --help
   
-That's it.
+To execute the OCRmyPDF on a local file, you must `provide a writable volume to the Docker image <https://docs.docker.com/userguide/dockervolumes/>`__, such as this in this template::
+
+   docker run -v "$(pwd):/home/docker"   ocrmypdf <your arguments>
+
+In this worked example, the current working directory contains an input file called `test.pdf` and the output will go to `output.pdf`:: 
+
+   docker run -v "$(pwd):/home/docker"   ocrmypdf --skip-text test.pdf output.pdf
+
+Note that `ocrmypdf` has its own separate -v argument to control debug verbosity.
 
 Installing on Mac OS X Yosemite
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -117,9 +125,6 @@ You can then install OCRmyPDF from PyPI::
 The command line program should now be available::
 
    ocrmypdf --help
-
-
-
 
 Installing on Ubuntu 14.04 LTS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -162,6 +167,8 @@ package <http://www.thefourtheye.in/2014/12/Python-venv-problem-with-ensurepip-i
    pyvenv --system-site-packages venv-ocrmypdf
    source venv-ocrmypdf/bin/activate
    pip install ocrmypdf
+
+Ubuntu 14.04 only installs `unpaper` version 0.4.2, which is not supported by OCRmyPDF because it is produces invalid output. This program is an optional dependency, and provides page deskewing and cleaning. See `Dockerfile <Dockerfile>`__ for an example of how to building unpaper 6.1 from source. If you choose to install unpaper later, OCRmyPDF will use the foremost version on the system PATH.
 
       
 Installing HEAD revision from sources
