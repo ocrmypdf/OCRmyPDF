@@ -7,7 +7,6 @@ from PIL import Image
 from tempfile import NamedTemporaryFile
 from contextlib import suppress
 import os
-import sys
 import shutil
 import pytest
 import img2pdf
@@ -15,7 +14,9 @@ from pkg_resources import Requirement, resource_filename
 
 req = Requirement.parse('ocrmypdf')
 
-TEST_OUTPUT = os.path.join(os.path.dirname(__file__), 'output')
+TEST_OUTPUT = os.environ.get(
+    'OCRMYPDF_TEST_OUTPUT',
+    default=os.path.join(os.path.dirname(__file__), 'output'))
 
 
 def setup_module():

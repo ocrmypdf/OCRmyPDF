@@ -158,7 +158,7 @@ if command.startswith('install') or \
     )
     check_external_program(
         program='unpaper',
-        need_version='6.1',
+        need_version='0.4.2',
         package='unpaper',
         optional=True
     )
@@ -173,6 +173,9 @@ if command.startswith('install') or \
 if 'upload' in sys.argv[1:]:
     print('Use twine to upload the package - setup.py upload is insecure')
     sys.exit(1)
+
+install_requires = open('requirements.txt').read().splitlines()
+tests_require = open('test_requirements.txt').read().splitlines()
 
 setup(
     name='ocrmypdf',
@@ -200,16 +203,8 @@ setup(
         "Topic :: Text Processing :: Indexing",
         "Topic :: Text Processing :: Linguistic",
         ],
-    install_requires=[
-        'ruffus>=2.6.3',
-        'Pillow>=2.4.0',
-        'reportlab>=3.1.44',
-        'PyPDF2>=1.25.1'
-    ],
-    tests_require=[
-        'img2pdf>=0.1.5',
-        'pytest>=2.7.2'
-    ],
+    install_requires=install_requires,
+    tests_require=tests_require,
     entry_points={
         'console_scripts': [
             'ocrmypdf = ocrmypdf.main:run_pipeline'

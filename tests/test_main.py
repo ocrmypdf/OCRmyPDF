@@ -7,7 +7,6 @@ import os
 import shutil
 from contextlib import suppress
 import sys
-from unittest.mock import patch, create_autospec
 import pytest
 from ocrmypdf.pageinfo import pdf_get_all_pageinfo
 import PyPDF2 as pypdf
@@ -22,7 +21,9 @@ TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
 PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
 OCRMYPDF = os.path.join(PROJECT_ROOT, 'OCRmyPDF.sh')
 TEST_RESOURCES = os.path.join(PROJECT_ROOT, 'tests', 'resources')
-TEST_OUTPUT = os.path.join(PROJECT_ROOT, 'tests', 'output')
+TEST_OUTPUT = os.environ.get(
+    'OCRMYPDF_TEST_OUTPUT',
+    default=os.path.join(PROJECT_ROOT, 'tests', 'output'))
 TEST_BINARY_PATH = os.path.join(TEST_OUTPUT, 'fakebin')
 
 
@@ -264,6 +265,8 @@ def break_ghostscript_pdfa():
     return override_binary('gs', 'replace_ghostscript_nopdfa.py')
 
 
+@pytest.mark.skipif(os.environ.get('OCRMYPDF_IN_DOCKER', False),
+                    reason="Requires writable filesystem")
 def test_ghostscript_pdfa_fails(break_ghostscript_pdfa):
     env = os.environ.copy()
     env['PATH'] = break_ghostscript_pdfa
@@ -293,3 +296,15 @@ def test_blank_input_pdf():
         'blank.pdf', 'still_blank.pdf')
     assert p.returncode == ExitCode.ok
 
+
+def test_french():
+    p, out, err = run_ocrmypdf_env(
+        'francais.pdf', 'francais.pdf', '-l', 'fra')
+    assert p.returncode == ExitCode.ok, \
+        "This test may fail if Tesseract language packs are missing"
+
+
+def test_klingon():
+    p, out, err = run_ocrmypdf_env(
+        'francais.pdf', 'francais.pdf', '-l', 'klz')
+    assert p.returncode == ExitCode.bad_args
