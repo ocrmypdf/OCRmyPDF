@@ -67,6 +67,10 @@ Changes
 Release candidates
 ------------------
 
+-  rc7:
+
+   - fix error when installing direct from pip, "no such file 'requirements.txt'"
+
 -  rc6:
 
    - dropped libxml2 (Python lxml) since Python 3's internal XML parser is sufficient

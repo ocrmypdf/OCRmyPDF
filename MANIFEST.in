@@ -1,1 +1,3 @@
 recursive-exclude tests/output *
+include requirements.txt
+include test_requirements.txt
