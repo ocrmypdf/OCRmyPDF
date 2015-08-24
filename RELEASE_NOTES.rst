@@ -67,6 +67,10 @@ Changes
 Release candidates
 ------------------
 
+-  rc8:
+
+   - fix issue #111: exception thrown if PDF is missing DocumentInfo dictionary
+
 -  rc7:
 
    - fix error when installing direct from pip, "no such file 'requirements.txt'"

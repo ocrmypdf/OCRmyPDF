@@ -103,7 +103,7 @@ check_pil_encoder('zlib', 'PNG')
 parser = cmdline.get_argparse(
     prog="ocrmypdf",
     description="Generate searchable PDF file from an image-only PDF file.",
-    version='3.0rc7',
+    version='3.0rc8',
     fromfile_prefix_chars='@',
     ignored_args=[
         'touch_files_only', 'recreate_database', 'checksum_file_name',
