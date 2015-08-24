@@ -308,3 +308,10 @@ def test_klingon():
     p, out, err = run_ocrmypdf_env(
         'francais.pdf', 'francais.pdf', '-l', 'klz')
     assert p.returncode == ExitCode.bad_args
+
+
+def test_missing_docinfo():
+    p, out, err = run_ocrmypdf_env(
+        'missing_docinfo.pdf', 'missing_docinfo.pdf', '-l', 'eng')
+    assert p.returncode == ExitCode.ok, err
+

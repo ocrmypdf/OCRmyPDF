@@ -729,11 +729,13 @@ def generate_postscript_stub(
     pdf = pypdf.PdfFileReader(input_file)
 
     def from_document_info(key):
-        # pdf.documentInfo.get() DOES NOT work as expected
+        # pdf.documentInfo.get() DOES NOT behave as expected for a dict-like
+        # object, so call with precautions.  TypeError may occur if the PDF
+        # is missing the optional document info section.
         try:
             s = pdf.documentInfo[key]
             return str(s)
-        except KeyError:
+        except (KeyError, TypeError):
             return ''
 
     pdfmark = {
