@@ -475,10 +475,15 @@ def rasterize_with_ghostscript(
     if all(image['comp'] == 1 for image in pageinfo['images']):
         if all(image['bpc'] == 1 for image in pageinfo['images']):
             device = 'pngmono'
-        elif not any(image['color'] == 'color'
-                     for image in pageinfo['images']):
+        elif all(image['bpc'] > 1 and image['color'] == 'index'
+                 for image in pageinfo['images']):
+            device = 'png256'
+        elif all(image['bpc'] > 1 and image['color'] == 'gray'
+                 for image in pageinfo['images']):
             device = 'pnggray'
 
+    log.debug("Rendering {0} with {1}".format(
+            os.path.basename(input_file), device))
     xres = max(pageinfo['xres'], options.oversample or 0)
     yres = max(pageinfo['yres'], options.oversample or 0)
 

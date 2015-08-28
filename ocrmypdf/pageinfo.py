@@ -34,6 +34,7 @@ FRIENDLY_COMP = {
     'rgb': 3,
     'cmyk': 4,
     'lab': 3,
+    'index': 1
 }
 
 
