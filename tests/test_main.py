@@ -114,6 +114,21 @@ def test_clean():
     check_ocrmypdf('skew.pdf', 'test_clean.pdf', '-c')
 
 
+def check_exotic_image(pdf, renderer):
+    check_ocrmypdf(
+        pdf,
+        'test_{0}_{1}.pdf'.format(pdf, renderer),
+        '-dc',
+        '--pdf-renderer', renderer)
+
+
+def test_exotic_image():
+    yield check_exotic_image, 'palette.pdf', 'hocr'
+    yield check_exotic_image, 'palette.pdf', 'tesseract'
+    yield check_exotic_image, 'cmyk.pdf', 'hocr'
+    yield check_exotic_image, 'cmyk.pdf', 'tesseract'
+
+
 def test_preserve_metadata():
     pdf_before = pypdf.PdfFileReader(_make_input('graph.pdf'))
 
@@ -312,6 +327,6 @@ def test_klingon():
 
 def test_missing_docinfo():
     p, out, err = run_ocrmypdf_env(
-        'missing_docinfo.pdf', 'missing_docinfo.pdf', '-l', 'eng')
+        'missing_docinfo.pdf', 'missing_docinfo.pdf', '-l', 'eng', '-c')
     assert p.returncode == ExitCode.ok, err
 
