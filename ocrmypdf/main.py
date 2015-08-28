@@ -899,6 +899,7 @@ def run_pipeline():
                 return eval(
                     exc_value,
                     {'ExitCode': ExitCode}, {'exc_value': exc_value})
+        return ExitCode.other_error
 
     if not validate_pdfa(options.output_file, _log):
         _log.warning('Output file: The generated PDF/A file is INVALID')
