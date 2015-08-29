@@ -21,12 +21,15 @@ New features
 -  PDF metadata (title, author, keywords) are now transferred to the 
    output PDF
 -  PDF metadata can also be set from the command line (``--title``, etc.)
+-  Automatic repairs malformed input PDFs if possible
 -  Added test cases to confirm everything is working
 -  Added option to skip extremely large pages that take too long to OCR and are 
    often not OCRable (e.g. large scanned maps or diagrams); other pages are still
    processed (``--skip-big``)
 -  Added option to kill Tesseract OCR process if it seems to be taking too long on
    a page, while still processing other pages (``--tesseract-timeout``)
+-  Less common colorspaces (CMYK, palette) are now supported by conversion to RGB
+-  Multiple images on the same PDF page are now supported
 
 Changes
 -------
@@ -66,6 +69,13 @@ Changes
 
 Release candidates
 ------------------
+
+-  rc9:
+
+   - fix issue #118: report error if ghostscript iccprofiles are missing
+   - fixed another issue related to #111: PDF rasterized to palette file
+   - add support image files with a palette
+   - don't try to validate PDF file after an exception occurs
 
 -  rc8:
 
@@ -130,11 +140,17 @@ Fixes
 
 -  Handling of filenames containing spaces: fixed
 
-Notes
------
+Notes and known issues
+----------------------
 
 -  Some dependencies may work with lower versions than tested, so try
    overriding dependencies if they are "in the way" to see if they work.
+
+-  ``--pdf-renderer tesseract`` will output files with an incorrect page size in Tesseract 3.03,
+   due to a bug in Tesseract.
+
+-  PDF files containing "inline images" are not supported and won't be for the 3.0 release. Scanned
+   images almost never contain inline images.
 
 
 v2.2-stable (2014-09-29):
