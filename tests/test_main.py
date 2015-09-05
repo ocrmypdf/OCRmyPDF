@@ -154,9 +154,7 @@ def test_override_metadata():
         '--author', chinese,
         '--subject', high_unicode)
 
-    if p.returncode == ExitCode.invalid_output_pdfa:
-        print("Got invalid PDF return code, as expected - JHOVE bug")
-    assert p.returncode in (ExitCode.ok, ExitCode.invalid_output_pdfa)
+    assert p.returncode == ExitCode.ok
 
     pdf = output_file
 
