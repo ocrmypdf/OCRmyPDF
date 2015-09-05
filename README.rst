@@ -48,7 +48,7 @@ as an inspiration)
 Installation
 ------------
 
-Download OCRmyPDF here: https://github.com/fritz-hh/OCRmyPDF/releases
+Download OCRmyPDF here: https://github.com/jbarlow83/OCRmyPDF/releases
 
 You can install it to a Python virtual environment or system-wide. 
 
@@ -184,7 +184,7 @@ Installing HEAD revision from sources
 
 To install the HEAD revision from sources in development mode::
 
-   git clone -b master https://github.com/fritz-hh/OCRmyPDF.git
+   git clone -b master https://github.com/jbarlow83/OCRmyPDF.git
    cd OCRmyPDF
    pip3 install -e .
    
@@ -196,7 +196,7 @@ run the install command as superuser::
 Note that this will alter your system's Python distribution. If you prefer 
 to not install as superuser, you can install the package in a Python virtual environment::
 
-   git clone -b master https://github.com/fritz-hh/OCRmyPDF.git
+   git clone -b master https://github.com/jbarlow83/OCRmyPDF.git
    pyvenv venv
    source venv/bin/activate
    cd OCRmyPDF
