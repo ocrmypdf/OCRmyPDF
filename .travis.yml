@@ -1,10 +1,43 @@
 sudo: false
 language: python
+
+python:
+	- 3.4
+
+addons:
+	apt:
+		packages:
+		- locales
+		- ghostscript
+		- tesseract-ocr
+		- tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra
+		- qpdf
+		- poppler-utils
+		- wget
+		- gcc-4.8
+		- libavformat-dev
+		- libavcodec-dev
+		- libavutil-dev
+		- autoconf
+		- automake
+		- make
+		- pkg-config
+		- xsltproc
+
+
+# before_script:
+# 	- wget -q https://github.com/Flameeyes/unpaper/archive/unpaper-6.1.tar.gz
+# 	- tar -xvf unpaper-6.1.tar.gz
+# 	- cd unpaper-6.1.tar.gz && autoreconf -i && ./configure --prefix=/tmp/unpaper && make && make install
+
+script:
+	- pip install --upgrade pip
+	- python setup.py clean
+	- python setup.py install
+
+after_success:
+	- py.test
+
+
 os:
 	- linux
-	- osx
-matrix:
-	include:
-		- python: "3.4"
-		- python: "3.5"
-
