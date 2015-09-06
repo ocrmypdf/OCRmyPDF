@@ -5,19 +5,23 @@ python:
 
 before_install:
     - sudo apt-get update -qq
-    - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils gcc libavformat-dev libavcodec-dev libavutil-dev autoconf automake make pkg-config xsltproc
+    - sudo add-apt-repository ppa:evl.ms/precise -y  # for Ghostscript 9.15
+    - pip install --upgrade pip
 
-# before_script:
+install:
+    - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils gcc libavformat-dev libavcodec-dev libavutil-dev autoconf automake make pkg-config xsltproc
+    - pip install -r requirements.txt
+    - pip install -r test_requirements.txt
+
+#before_script:
+#    - 
 #   - wget -q https://github.com/Flameeyes/unpaper/archive/unpaper-6.1.tar.gz
 #   - tar -xvf unpaper-6.1.tar.gz
 #   - cd unpaper-6.1.tar.gz && autoreconf -i && ./configure --prefix=/tmp/unpaper && make && make install
 
 script:
-    - pip install --upgrade pip
     - python setup.py clean
     - python setup.py install
-
-after_success:
     - py.test
 
 os:
