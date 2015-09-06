@@ -15,6 +15,7 @@ before_install:
     - sudo add-apt-repository ppa:lyrasis/precise-backports -y  # for Tesseract 3.03
     - sudo add-apt-repository ppa:b-eltzner/qpdfview-exp -y  # for QPDF 5
     - sudo apt-get update -qq  # must go after all add-apt-repo
+    - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils gcc libavformat-dev libavcodec-dev libavutil-dev make pkg-config xsltproc
 
     # pip
     - pip install --upgrade pip
@@ -25,7 +26,6 @@ before_install:
     - tar -xvf tarballs/unpaper-6.1.tar.xz
     - export PATH="/usr/lib/ccache:$PATH"
     - pushd unpaper-6.1 && ./configure --prefix=/usr && make -j && sudo make install && popd
-    - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils gcc libavformat-dev libavcodec-dev libavutil-dev make pkg-config xsltproc
 
 install:
     - pip install -r requirements.txt
