@@ -1,5 +1,12 @@
 language: python
 
+cache:
+    directories:
+        - $HOME/.cache/pip
+        - $HOME/.ccache
+        - .autoconf
+
+
 python:
     - 3.4
 
@@ -9,17 +16,14 @@ before_install:
     - sudo add-apt-repository ppa:b-eltzner/qpdfview-exp -y  # for QPDF 5
     - sudo apt-get update -qq  # must go after all add-apt-repo
     - pip install --upgrade pip
+    - wget -q https://github.com/Flameeyes/unpaper/archive/unpaper-6.1.tar.gz
+    - tar -xvf unpaper-6.1.tar.gz
+    - pushd unpaper-6.1 && autoreconf -i && ./configure --prefix=/usr && make -j && sudo make install && popd
+    - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils gcc libavformat-dev libavcodec-dev libavutil-dev autoconf automake make pkg-config xsltproc
 
 install:
-    - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils gcc libavformat-dev libavcodec-dev libavutil-dev autoconf automake make pkg-config xsltproc
     - pip install -r requirements.txt
     - pip install -r test_requirements.txt
-
-#before_script:
-#    - 
-#   - wget -q https://github.com/Flameeyes/unpaper/archive/unpaper-6.1.tar.gz
-#   - tar -xvf unpaper-6.1.tar.gz
-#   - cd unpaper-6.1.tar.gz && autoreconf -i && ./configure --prefix=/tmp/unpaper && make && make install
 
 script:
     - python setup.py clean
