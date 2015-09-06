@@ -5,7 +5,7 @@ python:
 
 before_install:
     - sudo apt-get update -qq
-    - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils gcc-4.8 libavformat-dev libavcodec-dev libavutil-dev autoconf automake make pkg-config xsltproc
+    - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils gcc libavformat-dev libavcodec-dev libavutil-dev autoconf automake make pkg-config xsltproc
 
 # before_script:
 #   - wget -q https://github.com/Flameeyes/unpaper/archive/unpaper-6.1.tar.gz
