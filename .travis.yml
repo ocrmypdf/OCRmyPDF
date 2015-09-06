@@ -22,7 +22,7 @@ before_install:
     # Download, make and install unpaper (using ccache)
     - mkdir -p tarballs
     - "[ -f tarballs/unpaper-6.1.tar.xz ] || wget -q https://www.flameeyes.eu/files/unpaper-6.1.tar.xz -O tarballs/unpaper-6.1.tar.xz"
-    - tar -xvf unpaper-6.1.tar.xz
+    - tar -xvf tarballs/unpaper-6.1.tar.xz
     - export PATH="/usr/lib/ccache:$PATH"
     - pushd unpaper-6.1 && ./configure --prefix=/usr && make -j && sudo make install && popd
     - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils gcc libavformat-dev libavcodec-dev libavutil-dev make pkg-config xsltproc
