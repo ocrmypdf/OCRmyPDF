@@ -4,8 +4,10 @@ python:
     - 3.4
 
 before_install:
-    - sudo apt-get update -qq
     - sudo add-apt-repository ppa:evl.ms/precise -y  # for Ghostscript 9.15
+    - sudo add-apt-repository ppa:lyrasis/precise-backports -y  # for Tesseract 3.03
+    - sudo add-apt-repository ppa:b-eltzner/qpdfview-exp -y  # for QPDF 5
+    - sudo apt-get update -qq  # must go after all add-apt-repo
     - pip install --upgrade pip
 
 install:
