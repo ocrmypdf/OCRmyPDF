@@ -1,0 +1,10 @@
+sudo: false
+language: python
+os:
+	- linux
+	- osx
+matrix:
+	include:
+		- python: "3.4"
+		- python: "3.5"
+
