@@ -36,6 +36,8 @@ Changes
 
 -  New, robust rewrite in Python 3.4+ with ruffus_ pipelines
 -  Now uses Ghostscript 9.14's improved color conversion model to preserve PDF colors
+-  OCR text is now rendered in the PDF as invisible text. Previous versions of OCRmyPDF
+   incorrectly rendered visible text with an image on top.
 -  All "tasks" in the pipeline can be executed in parallel on any
    available CPUs, increasing performance
 -  The ``-o DPI`` argument has been phased out, in favor of ``--oversample DPI``, in
