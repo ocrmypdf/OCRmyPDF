@@ -10,23 +10,25 @@ Main features
 -  Generates a searchable
    `PDF/A <https://en.wikipedia.org/?title=PDF/A>`__ file from a regular PDF
    only containing images
--  Places OCRed text accurately below the image to ease copy / paste
+-  Places OCR text accurately below the image to ease copy / paste
 -  Keeps the exact resolution of the original embedded images
 
    -  or if requested oversamples the images before OCRing so as to get
       better results
 
--  When possible, copies input images directly to output without transcoding them,
+-  When possible, copies input images directly to output without transcoding,
    to preserve image quality
 -  Keeps file size about the same
 -  If requested deskews and/or cleans the image before performing OCR
 -  Validates input and output files
 -  Provides debug mode to enable easy verification of the OCR results
--  Processes several pages in parallel when more than one CPU core is
+-  Processes pages in parallel when more than one CPU core is
    available
--  Uses Tesseract OCR engine
+-  Uses `Tesseract OCR <https://github.com/tesseract-ocr/tesseract>`__ engine
+-  Supports the `39 languages <https://code.google.com/p/tesseract-ocr/downloads/list>`__ recognized by Tesseract
+-  Battle-tested on thousands of PDFs, a test suite and continuous integration
 
-For details: please consult the `release notes <RELEASE_NOTES.rst>`__
+For details: please consult the `release notes <RELEASE_NOTES.rst>`__.
 
 Motivation
 ----------
@@ -48,22 +50,67 @@ as an inspiration)
 Installation
 ------------
 
-Download OCRmyPDF here: https://github.com/fritz-hh/OCRmyPDF/releases
+Download OCRmyPDF here: https://github.com/jbarlow83/OCRmyPDF/releases
 
 You can install it to a Python virtual environment or system-wide. 
 
+Installing the Docker container
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Installing dependencies on Mac OS X Yosemite
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+For many users, installing the Docker container will be easier than installing all of OCRmyPDF's dependencies. For Windows, it is the only option.
 
-If it's not already present, `install Homebrew <http://brew.sh/>`__
+If you have `Docker <https://docs.docker.com/>`__ installed on your system, you can install
+a Docker container of the latest release.
+
+Follow the Docker installation instructions for your platform.  If you can run this command
+successfully, your system is ready to download and execute the image::
+
+   docker run hello-world
+   
+OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine instance on Windows and OS X has only a single CPU core enabled. Use the VirtualBox Manager to determine the name of your Docker container host, and then follow these optional steps to enable multiple CPUs::
+
+   # Optional
+   docker-machine stop "yourVM"
+   VBoxManage modifyvm "yourVM" --cpus 2  # or whatever number of core is desired
+   docker-machine start "yourVM"
+   eval $(docker-machine env "yourVM")
+
+Assuming you have a Docker engine running somewhere, you can run these commands to download
+the image::
+
+   docker pull jbarlow83/ocrmypdf
+
+Then tag it to give a more convenient name, just ocrmypdf::
+
+   docker tag jbarlow83/ocrmypdf ocrmypdf
+  
+You can then run using the command::
+
+   docker run ocrmypdf --help
+  
+To execute the OCRmyPDF on a local file, you must `provide a writable volume to the Docker image <https://docs.docker.com/userguide/dockervolumes/>`__, such as this in this template::
+
+   docker run -v "$(pwd):/home/docker" <other docker arguments>   ocrmypdf <your arguments to ocrmypdf>
+
+In this worked example, the current working directory contains an input file called ``test.pdf`` and the output will go to ``output.pdf``:: 
+
+   docker run -v "$(pwd):/home/docker"   ocrmypdf --skip-text test.pdf output.pdf
+
+Note that ``ocrmypdf`` has its own separate ``-v VERBOSITYLEVEL`` argument to control debug verbosity. All Docker arguments should before the ``ocrmypdf`` container name and all arguments to ``ocrmypdf`` should be listed after.
+
+Installing on Mac OS X Yosemite
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These instructions probably work on all Mac OS X versions later than 10.7 (Lion), but were only tested
+on Yosemite.
+
+If it's not already present, `install Homebrew <http://brew.sh/>`__.
 
 Update Homebrew::
 
    brew update
-   brew upgrade
    
-Install the required Homebrew packages, if any are missing::
+Install or upgrade the required Homebrew packages, if any are missing::
 
    brew install libpng openjpeg jbig2dec     # image libraries
    brew install qpdf
@@ -78,20 +125,31 @@ It is also recommended that install Pillow and confirm it can read and write JPE
    pip3 install --upgrade pip
    pip3 install --upgrade pillow
 
-To test that your dependencies are working, try this command::
+Sometimes, the Python imaging library (Pillow) can end up being compiled and installed without support for JPEG and PNG files. (Arguably, this is an unfixed bug in Pillow's installer.) To confirm that Pillow is compiled correctly and can access JPEG and PNG files, try this command::
 
    python3 -c "from PIL import Image; im = Image.new('1', (1, 1)); im.save('test.png'); im.save('test.jpg')"
 
+If you have trouble getting Pillow to access JPEG and PNG files, `review the installation instructions <https://pillow.readthedocs.org/installation.html>`__.
 
-Installing dependencies on Ubuntu 14.04 LTS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+You can then install OCRmyPDF from PyPI::
+
+   pip3 install ocrmypdf
+
+The command line program should now be available::
+
+   ocrmypdf --help
+
+Installing on Ubuntu 14.04 LTS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Installing on Ubuntu 14.04 LTS (trusty) is more difficult than other options, because of certain bugs in Python package installation.
 
 Update apt-get::
 
    sudo apt-get update
    sudo apt-get upgrade
    
-Install dependencies::
+Install system dependencies::
 
    sudo apt-get install \
       zlib1g-dev \
@@ -104,32 +162,64 @@ Install dependencies::
       python3-pil \
       python3-pytest \
       python3-reportlab
+
+If you wish install OCRmyPDF to the system Python, then install as follows (note this installs new packages
+into your system Python, which could interfere with other programs)::
+
+   sudo pip3 install ocrmypdf
+   
+If you wish to install OCRmyPDF to a virtual environment to isolate system Python from modified, you can
+follow these steps.  This includes a workaround `for a known, unresolved issue in Ubuntu 14.04's ensurepip
+package <http://www.thefourtheye.in/2014/12/Python-venv-problem-with-ensurepip-in-Ubuntu.html>`__::
+
+   sudo apt-get install python3-venv
+   python3 -m venv venv-ocrmypdf --without-pip
+   source venv-ocrmypdf/bin/activate
+   wget -O - -o /dev/null https://bootstrap.pypa.io/get-pip.py | python
+   deactivate
+   pyvenv --system-site-packages venv-ocrmypdf
+   source venv-ocrmypdf/bin/activate
+   pip install ocrmypdf
+
+Ubuntu 14.04 only installs ``unpaper`` version 0.4.2, which is not supported by OCRmyPDF because it is produces invalid output. This program is an optional dependency, and provides page deskewing and cleaning. See `Dockerfile <Dockerfile>`__ for an example of how to building unpaper 6.1 from source. If you choose to install unpaper later, OCRmyPDF will use the foremost version on the system PATH.
+
       
 Installing HEAD revision from sources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To install the HEAD revision from sources in development mode::
+If you have ``git`` and ``python3.4`` installed, you can install from source. When the ``pip`` installer runs,
+it will alert you if dependencies are missing.
 
-   git clone -b master https://github.com/fritz-hh/OCRmyPDF.git
+First, clone the HEAD revision::
+
+   git clone -b master https://github.com/jbarlow83/OCRmyPDF.git
    cd OCRmyPDF
+
+To install the HEAD revision from sources::
+
+   pip3 install .
+
+Or, to install in `development mode <https://pythonhosted.org/setuptools/setuptools.html#development-mode>`__, 
+allowing customization of OCRmyPDF, use the ``-e`` flag::
+
    pip3 install -e .
    
-On certain Linux/UNIX platforms such as Ubuntu, you may need to use 
+On certain Linux distributions such as Ubuntu, you may need to use 
 run the install command as superuser::
 
-   sudo pip3 install -e .
+   sudo pip3 install [-e] .
    
 Note that this will alter your system's Python distribution. If you prefer 
 to not install as superuser, you can install the package in a Python virtual environment::
 
-   git clone -b master https://github.com/fritz-hh/OCRmyPDF.git
+   git clone -b master https://github.com/jbarlow83/OCRmyPDF.git
    pyvenv venv
    source venv/bin/activate
    cd OCRmyPDF
-   pip3 install -e .
+   pip3 install .
 
-If your platform does not have ``pip3``, make sure that Python 3.4+ and the `pip` 
-package are installed.
+However, ``ocrmypdf`` will only be accessible on the system PATH after
+you activate the virtual environment.
 
 To run the program::
    
@@ -147,10 +237,10 @@ In case you detect an issue, please:
 
 -  Check if your issue is already known
 -  If no problem report exists on github, please create one here:
-   https://github.com/fritz-hh/OCRmyPDF/issues
+   https://github.com/jbarlow83/OCRmyPDF/issues
 -  Describe your problem thoroughly
 -  Append the console output of the script when running the debug mode
-   (-v 1 option)
+   (``-v 1`` option)
 -  If possible provide your input PDF file as well as the content of the
    temporary folder (using a file sharing service like
    www.file-upload.net)

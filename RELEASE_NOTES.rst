@@ -3,7 +3,7 @@ RELEASE NOTES
 
 Please always read this file before installing the package
 
-Download software here: https://github.com/fritz-hh/OCRmyPDF/tags
+Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 v3.0:
 =====
@@ -21,18 +21,23 @@ New features
 -  PDF metadata (title, author, keywords) are now transferred to the 
    output PDF
 -  PDF metadata can also be set from the command line (``--title``, etc.)
+-  Automatic repairs malformed input PDFs if possible
 -  Added test cases to confirm everything is working
 -  Added option to skip extremely large pages that take too long to OCR and are 
    often not OCRable (e.g. large scanned maps or diagrams); other pages are still
    processed (``--skip-big``)
 -  Added option to kill Tesseract OCR process if it seems to be taking too long on
    a page, while still processing other pages (``--tesseract-timeout``)
+-  Less common colorspaces (CMYK, palette) are now supported by conversion to RGB
+-  Multiple images on the same PDF page are now supported
 
 Changes
 -------
 
 -  New, robust rewrite in Python 3.4+ with ruffus_ pipelines
 -  Now uses Ghostscript 9.14's improved color conversion model to preserve PDF colors
+-  OCR text is now rendered in the PDF as invisible text. Previous versions of OCRmyPDF
+   incorrectly rendered visible text with an image on top.
 -  All "tasks" in the pipeline can be executed in parallel on any
    available CPUs, increasing performance
 -  The ``-o DPI`` argument has been phased out, in favor of ``--oversample DPI``, in
@@ -66,6 +71,21 @@ Changes
 
 Release candidates
 ------------------
+
+-  rc9:
+
+   - fix issue #118: report error if ghostscript iccprofiles are missing
+   - fixed another issue related to #111: PDF rasterized to palette file
+   - add support image files with a palette
+   - don't try to validate PDF file after an exception occurs
+
+-  rc8:
+
+   - fix issue #111: exception thrown if PDF is missing DocumentInfo dictionary
+
+-  rc7:
+
+   - fix error when installing direct from pip, "no such file 'requirements.txt'"
 
 -  rc6:
 
@@ -122,11 +142,17 @@ Fixes
 
 -  Handling of filenames containing spaces: fixed
 
-Notes
------
+Notes and known issues
+----------------------
 
 -  Some dependencies may work with lower versions than tested, so try
    overriding dependencies if they are "in the way" to see if they work.
+
+-  ``--pdf-renderer tesseract`` will output files with an incorrect page size in Tesseract 3.03,
+   due to a bug in Tesseract.
+
+-  PDF files containing "inline images" are not supported and won't be for the 3.0 release. Scanned
+   images almost never contain inline images.
 
 
 v2.2-stable (2014-09-29):

@@ -103,7 +103,7 @@ check_pil_encoder('zlib', 'PNG')
 parser = cmdline.get_argparse(
     prog="ocrmypdf",
     description="Generate searchable PDF file from an image-only PDF file.",
-    version='3.0rc6',
+    version='3.0',
     fromfile_prefix_chars='@',
     ignored_args=[
         'touch_files_only', 'recreate_database', 'checksum_file_name',
@@ -475,10 +475,15 @@ def rasterize_with_ghostscript(
     if all(image['comp'] == 1 for image in pageinfo['images']):
         if all(image['bpc'] == 1 for image in pageinfo['images']):
             device = 'pngmono'
-        elif not any(image['color'] == 'color'
-                     for image in pageinfo['images']):
+        elif all(image['bpc'] > 1 and image['color'] == 'index'
+                 for image in pageinfo['images']):
+            device = 'png256'
+        elif all(image['bpc'] > 1 and image['color'] == 'gray'
+                 for image in pageinfo['images']):
             device = 'pnggray'
 
+    log.debug("Rendering {0} with {1}".format(
+            os.path.basename(input_file), device))
     xres = max(pageinfo['xres'], options.oversample or 0)
     yres = max(pageinfo['yres'], options.oversample or 0)
 
@@ -729,11 +734,13 @@ def generate_postscript_stub(
     pdf = pypdf.PdfFileReader(input_file)
 
     def from_document_info(key):
-        # pdf.documentInfo.get() DOES NOT work as expected
+        # pdf.documentInfo.get() DOES NOT behave as expected for a dict-like
+        # object, so call with precautions.  TypeError may occur if the PDF
+        # is missing the optional document info section.
         try:
             s = pdf.documentInfo[key]
             return str(s)
-        except KeyError:
+        except (KeyError, TypeError):
             return ''
 
     pdfmark = {
@@ -892,6 +899,7 @@ def run_pipeline():
                 return eval(
                     exc_value,
                     {'ExitCode': ExitCode}, {'exc_value': exc_value})
+        return ExitCode.other_error
 
     if not validate_pdfa(options.output_file, _log):
         _log.warning('Output file: The generated PDF/A file is INVALID')

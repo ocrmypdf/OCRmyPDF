@@ -10,7 +10,9 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log):
     with NamedTemporaryFile(delete=True) as tmp:
         args_gs = [
             'gs',
-            '-dBATCH', '-dNOPAUSE',
+            '-dQUIET',
+            '-dBATCH',
+            '-dNOPAUSE',
             '-sDEVICE=%s' % raster_device,
             '-o', tmp.name,
             '-r{0}x{1}'.format(str(xres), str(yres)),

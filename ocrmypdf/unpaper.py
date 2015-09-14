@@ -8,6 +8,7 @@ from tempfile import NamedTemporaryFile
 import sys
 import os
 from functools import lru_cache
+from . import ExitCode
 
 
 @lru_cache(maxsize=1)
@@ -38,10 +39,27 @@ def run(input_file, output_file, dpi, log, mode_args):
     ] + mode_args
 
     SUFFIXES = {'1': '.pbm', 'L': '.pgm', 'RGB': '.ppm'}
-    suffix = ''
 
     im = Image.open(input_file)
-    suffix = SUFFIXES[im.mode]
+    if im.mode not in SUFFIXES.keys():
+        log.info("Converting image to other colorspace")
+        try:
+            if im.mode == 'P' and len(im.getcolors()) == 2:
+                im = im.convert(mode='1')
+            else:
+                im = im.convert(mode='RGB')
+        except IOError:
+            log.error(
+                    "Could not convert image with type " + im.mode)
+            sys.exit(ExitCode.missing_dependency)
+
+    try:
+        suffix = SUFFIXES[im.mode]
+    except KeyError:
+        log.error(
+                "Failed to convert image to a supported format.")
+        sys.exit(ExitCode.missing_dependency)
+
     with NamedTemporaryFile(suffix=suffix) as input_pnm, \
             NamedTemporaryFile(suffix=suffix, mode="r+b") as output_pnm:
         im.save(input_pnm, format='PPM')

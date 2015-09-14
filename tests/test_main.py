@@ -114,6 +114,21 @@ def test_clean():
     check_ocrmypdf('skew.pdf', 'test_clean.pdf', '-c')
 
 
+def check_exotic_image(pdf, renderer):
+    check_ocrmypdf(
+        pdf,
+        'test_{0}_{1}.pdf'.format(pdf, renderer),
+        '-dc',
+        '--pdf-renderer', renderer)
+
+
+def test_exotic_image():
+    yield check_exotic_image, 'palette.pdf', 'hocr'
+    yield check_exotic_image, 'palette.pdf', 'tesseract'
+    yield check_exotic_image, 'cmyk.pdf', 'hocr'
+    yield check_exotic_image, 'cmyk.pdf', 'tesseract'
+
+
 def test_preserve_metadata():
     pdf_before = pypdf.PdfFileReader(_make_input('graph.pdf'))
 
@@ -139,9 +154,7 @@ def test_override_metadata():
         '--author', chinese,
         '--subject', high_unicode)
 
-    if p.returncode == ExitCode.invalid_output_pdfa:
-        print("Got invalid PDF return code, as expected - JHOVE bug")
-    assert p.returncode in (ExitCode.ok, ExitCode.invalid_output_pdfa)
+    assert p.returncode == ExitCode.ok
 
     pdf = output_file
 
@@ -308,3 +321,10 @@ def test_klingon():
     p, out, err = run_ocrmypdf_env(
         'francais.pdf', 'francais.pdf', '-l', 'klz')
     assert p.returncode == ExitCode.bad_args
+
+
+def test_missing_docinfo():
+    p, out, err = run_ocrmypdf_env(
+        'missing_docinfo.pdf', 'missing_docinfo.pdf', '-l', 'eng', '-c')
+    assert p.returncode == ExitCode.ok, err
+

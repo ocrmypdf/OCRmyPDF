@@ -179,17 +179,17 @@ tests_require = open('test_requirements.txt').read().splitlines()
 
 setup(
     name='ocrmypdf',
-    version='3.0rc6',  # also update: release notes, main.py
+    version='3.0',  # also update: release notes, main.py
     description='OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched',
-    url='https://github.com/fritz-hh/OCRmyPDF',
-    author='James. R. Barlow',
+    url='https://github.com/jbarlow83/OCRmyPDF',
+    author='James R. Barlow',
     author_email='jim@purplerock.ca',
     license='Public Domain',
     packages=['ocrmypdf'],
     keywords=['PDF', 'OCR', 'optical character recognition', 'PDF/A', 'scanning'],
     classifiers=[
         "Programming Language :: Python :: 3",
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Environment :: Console",
         "Intended Audience :: End Users/Desktop",
         "Intended Audience :: Science/Research",

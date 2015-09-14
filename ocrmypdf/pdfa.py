@@ -115,6 +115,8 @@ def _get_postscript_icc_path():
         if os.path.exists(path):
             return path
 
+    raise FileNotFoundError("Could not find Ghostscript's iccprofiles")
+
 
 def generate_pdfa_def(target_filename, pdfmark, icc='sRGB'):
     if icc == 'sRGB':

@@ -1,0 +1,41 @@
+language: python
+
+cache:
+    directories:
+        - $HOME/.cache/pip
+        - $HOME/.ccache
+        - tarballs
+
+python:
+    - 3.4
+
+before_install:
+    # Ubuntu packages
+    - sudo add-apt-repository ppa:evl.ms/precise -y  # for Ghostscript 9.15
+    - sudo add-apt-repository ppa:lyrasis/precise-backports -y  # for Tesseract 3.03
+    - sudo add-apt-repository ppa:b-eltzner/qpdfview-exp -y  # for QPDF 5
+    - sudo add-apt-repository ppa:itachi-san/ffmpeg -y  # for libav 11.2 (for unpaper)
+    - sudo apt-get update -qq  # must go after all add-apt-repo
+    - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils gcc libavformat-dev libavcodec-dev libavutil-dev automake make pkg-config xsltproc 
+
+    # pip
+    - pip install --upgrade pip
+
+    # Download, make and install unpaper (using ccache)
+    - mkdir -p tarballs
+    - "[ -f tarballs/unpaper-6.1.tar.xz ] || wget -q https://www.flameeyes.eu/files/unpaper-6.1.tar.xz -O tarballs/unpaper-6.1.tar.xz"
+    - tar -xvf tarballs/unpaper-6.1.tar.xz
+    - export PATH="/usr/lib/ccache:$PATH"
+    - pushd unpaper-6.1 && ./configure --prefix=/usr && make -j && sudo make install && popd
+
+install:
+    - pip install -r requirements.txt
+    - pip install -r test_requirements.txt
+
+script:
+    - python setup.py clean
+    - python setup.py install
+    - py.test
+
+os:
+    - linux
