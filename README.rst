@@ -98,11 +98,10 @@ In this worked example, the current working directory contains an input file cal
 
 Note that ``ocrmypdf`` has its own separate ``-v VERBOSITYLEVEL`` argument to control debug verbosity. All Docker arguments should before the ``ocrmypdf`` container name and all arguments to ``ocrmypdf`` should be listed after.
 
-Installing on Mac OS X Yosemite
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Installing on Mac OS X
+~~~~~~~~~~~~~~~~~~~~~~
 
-These instructions probably work on all Mac OS X versions later than 10.7 (Lion), but were only tested
-on Yosemite.
+These instructions probably work on all Mac OS X versions later than 10.7 (Lion). OCRmyPDF is known to work on Yosemite and El Capitan, and regularly tested on El Capitan.
 
 If it's not already present, `install Homebrew <http://brew.sh/>`__.
 
@@ -187,7 +186,7 @@ Ubuntu 14.04 only installs ``unpaper`` version 0.4.2, which is not supported by 
 Installing HEAD revision from sources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you have ``git`` and ``python3.4`` installed, you can install from source. When the ``pip`` installer runs,
+If you have ``git`` and ``python3.4`` or ``python3.5`` installed, you can install from source. When the ``pip`` installer runs,
 it will alert you if dependencies are missing.
 
 First, clone the HEAD revision::
