@@ -104,6 +104,24 @@ def _find_page_images(page, pageinfo):
         yield image
 
 
+def _page_has_text(pdf, page):
+    # Simple test
+    text = page.extractText()
+    if text.strip() != '':
+        return True
+
+    # More nuanced test to deal with quirks of Tesseract PDF generation
+    # Check if there's a Glyphless font
+    font = page['/Resources']['/Font']
+    font_objects = list(font.keys())
+    for font_object in font_objects:
+        basefont = font[font_object]['/BaseFont']
+        if basefont.endswith('GlyphLessFont'):
+            return True
+
+    return False
+
+
 def _pdf_get_pageinfo(infile, page: int):
     pageinfo = {}
     pageinfo['pageno'] = page
@@ -112,8 +130,7 @@ def _pdf_get_pageinfo(infile, page: int):
     pdf = pypdf.PdfFileReader(infile)
     page = pdf.pages[page - 1]
 
-    text = page.extractText()
-    pageinfo['has_text'] = (text.strip() != '')
+    pageinfo['has_text'] = _page_has_text(pdf, page)
 
     width_pt = page['/MediaBox'][2] - page['/MediaBox'][0]
     height_pt = page['/MediaBox'][3] - page['/MediaBox'][1]
