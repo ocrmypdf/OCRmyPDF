@@ -5,6 +5,14 @@ Please always read this file before installing the package
 
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
+
+Latest:
+=======
+
+-  Default output format is now PDF/A-2b instead of PDF/A-1b
+-  Python 3.5 and OS X El Capitan are now supported platforms - no changes were
+   needed to implement support
+
 v3.0:
 =====
 

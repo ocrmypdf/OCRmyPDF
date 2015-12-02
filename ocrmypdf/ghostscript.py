@@ -44,7 +44,7 @@ def generate_pdfa(pdf_pages, output_file, threads=1):
             "-sDEVICE=pdfwrite",
             "-sColorConversionStrategy=/RGB",
             "-sProcessColorModel=DeviceRGB",
-            "-dPDFA",
+            "-dPDFA=2",
             "-sPDFACompatibilityPolicy=2",
             "-sOutputICCProfile=srgb.icc",
             "-sOutputFile=" + gs_pdf.name,
