@@ -112,12 +112,16 @@ def _page_has_text(pdf, page):
 
     # More nuanced test to deal with quirks of Tesseract PDF generation
     # Check if there's a Glyphless font
-    font = page['/Resources']['/Font']
-    font_objects = list(font.keys())
-    for font_object in font_objects:
-        basefont = font[font_object]['/BaseFont']
-        if basefont.endswith('GlyphLessFont'):
-            return True
+    try:
+        font = page['/Resources']['/Font']
+    except KeyError:
+        pass
+    else:
+        font_objects = list(font.keys())
+        for font_object in font_objects:
+            basefont = font[font_object]['/BaseFont']
+            if basefont.endswith('GlyphLessFont'):
+                return True
 
     return False
 
