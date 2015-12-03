@@ -174,7 +174,7 @@ advanced.add_argument(
     '--tesseract-config', default=[], type=list, action='append',
     help="additional Tesseract configuration files")
 advanced.add_argument(
-    '--pdf-renderer', choices=['tesseract', 'hocr'], default='hocr',
+    '--pdf-renderer', choices=['auto', 'tesseract', 'hocr'], default='auto',
     help='choose OCR PDF renderer')
 advanced.add_argument(
     '--tesseract-timeout', default=180.0, type=float,
@@ -216,6 +216,8 @@ if not set(options.language).issubset(tesseract.languages()):
 # ----------
 # Arguments
 
+if options.pdf_renderer == 'auto':
+    options.pdf_renderer = 'hocr'
 
 if any((options.deskew, options.clean, options.clean_final)):
     try:
