@@ -467,7 +467,6 @@ def rasterize_with_ghostscript(
         log,
         pdfinfo,
         pdfinfo_lock):
-
     pageinfo = get_pageinfo(input_file, pdfinfo, pdfinfo_lock)
 
     device = 'png16m'  # 24-bit
@@ -901,9 +900,10 @@ def run_pipeline():
         for exc in e.args:
             task_name, job_name, exc_name, exc_value, exc_stack = exc
             if exc_name == 'builtins.SystemExit':
-                return eval(
-                    exc_value,
-                    {'ExitCode': ExitCode}, {'exc_value': exc_value})
+                match = re.search(r"\.(.+?)\)", exc_value)
+                exit_code_name = match.groups()[0]
+                exit_code = getattr(ExitCode, exit_code_name, 'other_error')
+                return exit_code
             elif exc_name == 'ruffus.ruffus_exceptions.MissingInputFileError':
                 print(cleanup_ruffus_error_message(exc_value))
                 return ExitCode.input_file
