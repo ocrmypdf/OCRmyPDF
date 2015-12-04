@@ -9,9 +9,15 @@ build/
 dist/
 *.egg-info/
 venv/
+venv-3.4/
+venv-3.5/
 */test/output
 bin/
 include/
 lib/
 pip-selfcheck.json
 pyvenv.cfg
+htmlcov/
+.coverage
+.cache/
+.ipynb_checkpoints/

@@ -328,3 +328,12 @@ def test_missing_docinfo():
         'missing_docinfo.pdf', 'missing_docinfo.pdf', '-l', 'eng', '-c')
     assert p.returncode == ExitCode.ok, err
 
+
+def test_uppercase_extension():
+    shutil.copy(_make_input("skew.pdf"), _make_input("UPPERCASE.PDF"))
+    try:
+        check_ocrmypdf("UPPERCASE.PDF", "UPPERCASE_OUT.PDF")
+    finally:
+        os.unlink(_make_input("UPPERCASE.PDF"))
+
+
