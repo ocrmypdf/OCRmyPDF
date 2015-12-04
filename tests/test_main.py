@@ -337,3 +337,20 @@ def test_uppercase_extension():
         os.unlink(_make_input("UPPERCASE.PDF"))
 
 
+def test_input_file_not_found():
+    input_file = "does not exist.pdf"
+    sh, out, err = run_ocrmypdf_sh(
+        _make_input(input_file),
+        _make_output("will not happen.pdf"))
+    assert sh.returncode == ExitCode.input_file
+    assert (input_file in out or input_file in err)
+
+
+def test_input_file_not_a_pdf():
+    input_file = __file__  # Try to OCR this file
+    sh, out, err = run_ocrmypdf_sh(
+        _make_input(input_file),
+        _make_output("will not happen.pdf"))
+    assert sh.returncode == ExitCode.input_file
+    assert (input_file in out or input_file in err)
+

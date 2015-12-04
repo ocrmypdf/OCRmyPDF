@@ -880,10 +880,16 @@ def available_cpu_count():
     return 1
 
 
+def cleanup_ruffus_error_message(msg):
+    msg = re.sub(r'\s+', r' ', msg, re.MULTILINE)
+    msg = re.sub(r"\((.+?)\)", r'\1', msg, re.MULTILINE)
+    msg = msg.strip()
+    return msg
+
+
 def run_pipeline():
     if not options.jobs or options.jobs == 1:
         options.jobs = available_cpu_count()
-
     try:
         cmdline.run(options)
     except ruffus_exceptions.RethrownJobError as e:
@@ -898,6 +904,15 @@ def run_pipeline():
                 return eval(
                     exc_value,
                     {'ExitCode': ExitCode}, {'exc_value': exc_value})
+            elif exc_name == 'ruffus.ruffus_exceptions.MissingInputFileError':
+                print(cleanup_ruffus_error_message(exc_value))
+                return ExitCode.input_file
+            elif exc_name == 'builtins.TypeError':
+                if task_name == 'split_pages':
+                    print("Input file '{0}' is not a valid PDF".format(
+                        options.input_file))
+                    return ExitCode.input_file
+
         return ExitCode.other_error
 
     if not validate_pdfa(options.output_file, _log):
