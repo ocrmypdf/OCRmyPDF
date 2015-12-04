@@ -6,12 +6,23 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
-Latest:
-=======
+v3.1:
+=====
+
+Changes
+-------
 
 -  Default output format is now PDF/A-2b instead of PDF/A-1b
 -  Python 3.5 and OS X El Capitan are now supported platforms - no changes were
    needed to implement support
+-  Improved some error messages related to missing input files
+-  Fixed issue #20 - uppercase .PDF extension not accepted
+-  Fixed an issue where OCRmyPDF failed to text that certain pages contained previously OCR'ed text, 
+   such as OCR text produced by Tesseract 3.04
+-  Inserts /Creator tag into PDFs so that errors can be traced back to this project
+-  Added new option --pdf-renderer=auto, to let OCRmyPDF pick the best PDF renderer. 
+   Currently it always chooses the 'hocrtransform' renderer but that behavior may change.
+-  Set up Travis CI automatic integration testing
 
 v3.0:
 =====
