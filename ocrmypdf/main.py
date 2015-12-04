@@ -39,9 +39,7 @@ warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
 
 BASEDIR = os.path.dirname(os.path.realpath(__file__))
-JHOVE_PATH = os.path.realpath(os.path.join(BASEDIR, 'jhove'))
-JHOVE_JAR = os.path.join(JHOVE_PATH, 'bin', 'JhoveApp.jar')
-JHOVE_CFG = os.path.join(JHOVE_PATH, 'conf', 'jhove.conf')
+VERSION = '3.0'
 
 
 # -------------
@@ -103,7 +101,7 @@ check_pil_encoder('zlib', 'PNG')
 parser = cmdline.get_argparse(
     prog="ocrmypdf",
     description="Generate searchable PDF file from an image-only PDF file.",
-    version='3.0',
+    version=VERSION,
     fromfile_prefix_chars='@',
     ignored_args=[
         'touch_files_only', 'recreate_database', 'checksum_file_name',
@@ -176,7 +174,7 @@ advanced.add_argument(
     '--tesseract-config', default=[], type=list, action='append',
     help="additional Tesseract configuration files")
 advanced.add_argument(
-    '--pdf-renderer', choices=['tesseract', 'hocr'], default='hocr',
+    '--pdf-renderer', choices=['auto', 'tesseract', 'hocr'], default='auto',
     help='choose OCR PDF renderer')
 advanced.add_argument(
     '--tesseract-timeout', default=180.0, type=float,
@@ -218,6 +216,8 @@ if not set(options.language).issubset(tesseract.languages()):
 # ----------
 # Arguments
 
+if options.pdf_renderer == 'auto':
+    options.pdf_renderer = 'hocr'
 
 if any((options.deskew, options.clean, options.clean_final)):
     try:
@@ -755,6 +755,11 @@ def generate_postscript_stub(
         pdfmark['keywords'] = options.keywords
     if options.subject:
         pdfmark['subject'] = options.subject
+
+    pdfmark['creator'] = '{0} {1} / Tesseract OCR{2} {3}'.format(
+            parser.prog, VERSION,
+            '+PDF' if options.pdf_renderer == 'tesseract' else '',
+            tesseract.version())
 
     generate_pdfa_def(output_file, pdfmark)
 

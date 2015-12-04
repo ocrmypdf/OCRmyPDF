@@ -27,6 +27,7 @@ def
   /Author <$author>
   /Subject <$subject>
   /Keywords <$keywords>
+  /Creator <$creator>
   /DOCINFO pdfmark
 
 % Define an ICC profile :
@@ -86,6 +87,7 @@ def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
                           title=pdfmark_utf16.get('title', ''),
                           author=pdfmark_utf16.get('author', ''),
                           subject=pdfmark_utf16.get('subject', ''),
+                          creator=pdfmark_utf16.get('creator', ''),
                           keywords=pdfmark_utf16.get('keywords', ''))
     return result
 
