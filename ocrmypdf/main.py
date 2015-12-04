@@ -108,7 +108,7 @@ parser = cmdline.get_argparse(
     ignored_args=[
         'touch_files_only', 'recreate_database', 'checksum_file_name',
         'key_legend_in_graph', 'draw_graph_horizontally', 'flowchart_format',
-        'forced_tasks', 'target_tasks'])
+        'forced_tasks', 'target_tasks', 'use_threads'])
 
 parser.add_argument(
     'input_file',
