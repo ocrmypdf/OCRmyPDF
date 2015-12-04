@@ -908,6 +908,8 @@ def run_pipeline():
                 print(cleanup_ruffus_error_message(exc_value))
                 return ExitCode.input_file
             elif exc_name == 'builtins.TypeError':
+                # Even though repair_pdf will fail, ruffus will still try
+                # to call split_pages with no input files, likely due to a bug
                 if task_name == 'split_pages':
                     print("Input file '{0}' is not a valid PDF".format(
                         options.input_file))
