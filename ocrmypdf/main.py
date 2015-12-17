@@ -15,6 +15,8 @@ import textwrap
 import PyPDF2 as pypdf
 from PIL import Image
 
+from functools import partial
+
 from subprocess import Popen, check_call, PIPE, CalledProcessError, \
     TimeoutExpired, check_output, STDOUT
 try:
@@ -545,60 +547,16 @@ def ocr_tesseract_hocr(
         pdfinfo,
         pdfinfo_lock):
 
-    pageinfo = get_pageinfo(input_file, pdfinfo, pdfinfo_lock)
-
-    badxml = os.path.splitext(output_file)[0] + '.badxml'
-
-    args_tesseract = [
-        'tesseract',
-        '-l', '+'.join(options.language),
-        input_file,
-        badxml,
-        'hocr'
-    ] + options.tesseract_config
-    p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
-              universal_newlines=True)
-    try:
-        stdout, stderr = p.communicate(timeout=options.tesseract_timeout)
-    except TimeoutExpired:
-        p.kill()
-        stdout, stderr = p.communicate()
-        # Generate a HOCR file with no recognized text if tesseract times out
-        # Temporary workaround to hocrTransform not being able to function if
-        # it does not have a valid hOCR file.
-        with open(output_file, 'w', encoding="utf-8") as f:
-            f.write(tesseract.HOCR_TEMPLATE.format(
-                pageinfo['width_pixels'],
-                pageinfo['height_pixels']))
-    else:
-        if stdout:
-            log.info(stdout)
-        if stderr:
-            log.error(stderr)
-
-        if p.returncode != 0:
-            raise CalledProcessError(p.returncode, args_tesseract)
-
-        if os.path.exists(badxml + '.html'):
-            # Tesseract 3.02 appends suffix ".html" on its own (.badxml.html)
-            shutil.move(badxml + '.html', badxml)
-        elif os.path.exists(badxml + '.hocr'):
-            # Tesseract 3.03 appends suffix ".hocr" on its own (.badxml.hocr)
-            shutil.move(badxml + '.hocr', badxml)
-
-        # Tesseract 3.03 inserts source filename into hocr file without
-        # escaping it, creating invalid XML and breaking the parser.
-        # As a workaround, rewrite the hocr file, replacing the filename
-        # with a space.  Don't know if Tesseract 3.02 does the same.
-
-        regex_nested_single_quotes = re.compile(
-            r"""title='image "([^"]*)";""")
-        with open(badxml, mode='r', encoding='utf-8') as f_in, \
-                open(output_file, mode='w', encoding='utf-8') as f_out:
-            for line in f_in:
-                line = regex_nested_single_quotes.sub(
-                    r"""title='image " ";""", line)
-                f_out.write(line)
+    tesseract.generate_hocr(
+        input_file=input_file,
+        output_hocr=output_file,
+        language=options.language,
+        tessconfig=options.tesseract_config,
+        timeout=options.tesseract_timeout,
+        pageinfo_getter=partial(get_pageinfo, input_file, pdfinfo,
+                                pdfinfo_lock),
+        log=log
+        )
 
 
 @active_if(options.pdf_renderer == 'hocr')
