@@ -6,7 +6,7 @@ import os
 import re
 import shutil
 from functools import lru_cache
-from . import ExitCode
+from . import ExitCode, get_program
 
 from subprocess import Popen, PIPE, CalledProcessError, \
     TimeoutExpired, check_output, STDOUT
@@ -42,7 +42,7 @@ HOCR_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
 @lru_cache(maxsize=1)
 def version():
     args_tess = [
-        'tesseract',
+        get_program('tesseract'),
         '--version'
     ]
     try:
@@ -60,7 +60,7 @@ def version():
 @lru_cache(maxsize=1)
 def languages():
     args_tess = [
-        'tesseract',
+        get_program('tesseract'),
         '--list-langs'
     ]
     try:
@@ -82,7 +82,7 @@ def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
     badxml = os.path.splitext(output_hocr)[0] + '.badxml'
 
     args_tesseract = [
-        'tesseract',
+        get_program('tesseract'),
         '-l', '+'.join(language),
         input_file,
         badxml,
@@ -147,7 +147,7 @@ def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
     '''
 
     args_tesseract = [
-        'tesseract',
+        get_program('tesseract'),
         '-l', '+'.join(language),
         input_image,
         os.path.splitext(output_pdf)[0],  # Tesseract appends suffix

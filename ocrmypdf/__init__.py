@@ -1,4 +1,5 @@
 from enum import IntEnum
+import os
 
 
 class ExitCode(IntEnum):
@@ -10,3 +11,8 @@ class ExitCode(IntEnum):
     file_access_error = 5
     already_done_ocr = 6
     other_error = 15
+
+
+def get_program(name):
+    envvar = 'OCRMYPDF_' + name.upper()
+    return os.environ.get(envvar, name)

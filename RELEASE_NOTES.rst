@@ -6,6 +6,18 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
+Latest:
+=====
+
+Changes
+-------
+
+-  Fixed bug where successful repair of PDF files errors led to abort (thanks to @shemgp)
+-  You can now override the location of external programs OCRmyPDF uses by setting
+   environmental variables of the form OCRMYPDF_PROGRAMNAME, e.g. OCRMYPDF_TESSERACT will
+   override system Tesseract.
+
+
 v3.1:
 =====
 

@@ -8,13 +8,13 @@ from tempfile import NamedTemporaryFile
 import sys
 import os
 from functools import lru_cache
-from . import ExitCode
+from . import ExitCode, get_program
 
 
 @lru_cache(maxsize=1)
 def version():
     args_unpaper = [
-        'unpaper',
+        get_program('unpaper'),
         '--version'
     ]
     p_unpaper = Popen(args_unpaper, close_fds=True, universal_newlines=True,
@@ -33,7 +33,7 @@ except ImportError:
 
 def run(input_file, output_file, dpi, log, mode_args):
     args_unpaper = [
-        'unpaper',
+        get_program('unpaper'),
         '-v',
         '--dpi', str(dpi)
     ] + mode_args

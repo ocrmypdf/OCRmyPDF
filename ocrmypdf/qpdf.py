@@ -5,12 +5,12 @@ from subprocess import CalledProcessError, check_output, STDOUT, check_call
 import sys
 import os
 
-from . import ExitCode
+from . import ExitCode, get_program
 
 
 def check(input_file, log):
     args_qpdf = [
-        'qpdf',
+        get_program('qpdf'),
         '--check',
         input_file
     ]
@@ -34,7 +34,7 @@ def check(input_file, log):
 
 def repair(input_file, output_file, log):
     args_qpdf = [
-        'qpdf', input_file, output_file
+        get_program('qpdf'), input_file, output_file
     ]
     try:
         check_output(args_qpdf, stderr=STDOUT, universal_newlines=True)
@@ -60,7 +60,7 @@ def repair(input_file, output_file, log):
 
 def get_npages(input_file):
     pages = check_output(
-        ['qpdf', '--show-npages', input_file],
+        [get_program('qpdf'), '--show-npages', input_file],
          universal_newlines=True, close_fds=True)
     return int(pages)
 
@@ -73,7 +73,7 @@ def split_pages(input_file, work_folder, npages):
     """
     for n in range(int(npages)):
         args_qpdf = [
-            'qpdf', input_file,
+            get_program('qpdf'), input_file,
             '--pages', input_file, '{0}'.format(n + 1), '--',
             os.path.join(work_folder, '{0:06d}.page.pdf'.format(n + 1))
         ]
