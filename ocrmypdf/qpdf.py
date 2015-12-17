@@ -45,7 +45,11 @@ def repair(input_file, output_file, log):
             print(e.output)
             return
 
-        if e.returncode == 2:
+        if e.returncode == 2 and e.output.find("invalid password"):
+            print("{0}: this PDF is password-protected - password must "
+                  "be removed for OCR".format(input_file))
+            sys.exit(ExitCode.input_file)
+        elif e.returncode == 2:
             print("{0}: not a valid PDF, and could not repair it.".format(
                     input_file))
             print("Details:")

@@ -317,3 +317,9 @@ def test_qpdf_repair_fails():
     print(out)
     print(err)
     assert p.returncode == ExitCode.input_file
+
+
+def test_encrypted():
+    p, out, err = run_ocrmypdf_env('skew-encrypted.pdf', 'wont_be_created.pdf')
+    assert p.returncode == ExitCode.input_file
+    assert out.find('password')
