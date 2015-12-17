@@ -2,7 +2,7 @@
 # © 2015 James R. Barlow: github.com/jbarlow83
 
 from contextlib import suppress
-from tempfile import NamedTemporaryFile, mkdtemp
+from tempfile import mkdtemp
 import sys
 import os
 import re
@@ -16,13 +16,6 @@ import PyPDF2 as pypdf
 from PIL import Image
 
 from functools import partial
-
-from subprocess import CalledProcessError, \
-     check_output, STDOUT
-try:
-    from subprocess import DEVNULL
-except ImportError:
-    DEVNULL = open(os.devnull, 'wb')
 
 
 from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
