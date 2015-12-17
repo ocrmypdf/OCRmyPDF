@@ -356,14 +356,20 @@ def repair_pdf(
     try:
         out = check_output(args_qpdf, stderr=STDOUT, universal_newlines=True)
     except CalledProcessError as e:
+        exit_with_error = True
         if e.returncode == 2:
             print("{0}: not a valid PDF, and could not repair it.".format(
                     options.input_file))
             print("Details:")
             print(e.output)
+        elif e.returncode == 3 and e.output.find("operation succeeded"):
+            exit_with_error = False
+            out = e.output
+            print(e.output)
         else:
             print(e.output)
-        sys.exit(ExitCode.input_file)
+        if exit_with_error:
+            sys.exit(ExitCode.input_file)
 
     log.debug(out)
 
