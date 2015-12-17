@@ -5,6 +5,7 @@ cache:
         - $HOME/.cache/pip
         - $HOME/.ccache
         - tarballs
+        - tests/cache
 
 python:
     - 3.4
