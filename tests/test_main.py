@@ -83,18 +83,18 @@ def test_quick():
 
 
 @pytest.fixture
-def spoof_tesseract_hocr_empty():
+def spoof_tesseract_noop():
     env = os.environ.copy()
-    program = os.path.join(SPOOF_PATH, 'tesseract_hocr_empty.py')
+    program = os.path.join(SPOOF_PATH, 'tesseract_noop.py')
     check_call(['chmod', "+x", program])
     env['OCRMYPDF_TESSERACT'] = program
     return env
 
 
-def test_deskew(spoof_tesseract_hocr_empty):
+def test_deskew(spoof_tesseract_noop):
     # Run with deskew
     deskewed_pdf = check_ocrmypdf(
-        'skew.pdf', 'test_deskew.pdf', '-d', env=spoof_tesseract_hocr_empty)
+        'skew.pdf', 'test_deskew.pdf', '-d', env=spoof_tesseract_noop)
 
     # Now render as an image again and use Leptonica to find the skew angle
     # to confirm that it was deskewed

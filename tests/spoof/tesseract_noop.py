@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import img2pdf
 
 
 VERSION_STRING = '''tesseract 3.04.00
@@ -42,6 +43,12 @@ def main():
         output = sys.argv[-2]
         with open(output + '.hocr', 'w', encoding='utf-8') as f:
             f.write(HOCR_TEMPLATE.format('1000', '1000'))
+    elif sys.argv[-1] == 'pdf':
+        inputf = sys.argv[-3]
+        output = sys.argv[-2]
+        pdf_bytes = img2pdf.convert([inputf], dpi=300)
+        with open(output + '.pdf', 'wb') as f:
+            f.write(pdf_bytes)
     else:
         print("Spoof doesn't understand arguments", file=sys.stderr)
         print(sys.argv, file=sys.stderr)
