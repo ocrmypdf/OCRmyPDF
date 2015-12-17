@@ -78,10 +78,6 @@ def run_ocrmypdf_env(input_basename, output_basename, *args, env=None):
     return p, out, err
 
 
-def test_quick():
-    check_ocrmypdf('c02-22.pdf', 'test_quick.pdf')
-
-
 @pytest.fixture
 def spoof_tesseract_noop():
     env = os.environ.copy()
@@ -89,6 +85,10 @@ def spoof_tesseract_noop():
     check_call(['chmod', "+x", program])
     env['OCRMYPDF_TESSERACT'] = program
     return env
+
+
+def test_quick(spoof_tesseract_noop):
+    check_ocrmypdf('c02-22.pdf', 'test_quick.pdf', env=spoof_tesseract_noop)
 
 
 def test_deskew(spoof_tesseract_noop):
@@ -121,8 +121,8 @@ def test_deskew(spoof_tesseract_noop):
     assert -0.5 < skew_angle < 0.5, "Deskewing failed"
 
 
-def test_clean():
-    check_ocrmypdf('skew.pdf', 'test_clean.pdf', '-c')
+def test_clean(spoof_tesseract_noop):
+    check_ocrmypdf('skew.pdf', 'test_clean.pdf', '-c', env=spoof_tesseract_noop)
 
 
 def check_exotic_image(pdf, renderer):
@@ -140,7 +140,7 @@ def test_exotic_image():
     yield check_exotic_image, 'cmyk.pdf', 'tesseract'
 
 
-def test_preserve_metadata():
+def test_preserve_metadata(spoof_tesseract_noop):
     pdf_before = pypdf.PdfFileReader(_make_input('graph.pdf'))
 
     output = check_ocrmypdf('graph.pdf', 'test_metadata_preserve.pdf')
@@ -151,7 +151,7 @@ def test_preserve_metadata():
         assert pdf_before.documentInfo[key] == pdf_after.documentInfo[key]
 
 
-def test_override_metadata():
+def test_override_metadata(spoof_tesseract_noop):
     input_file = _make_input('c02-22.pdf')
     output_file = _make_output('test_override_metadata.pdf')
 
@@ -163,7 +163,8 @@ def test_override_metadata():
         input_file, output_file,
         '--title', german,
         '--author', chinese,
-        '--subject', high_unicode)
+        '--subject', high_unicode,
+        env=spoof_tesseract_noop)
 
     assert p.returncode == ExitCode.ok
 
@@ -213,12 +214,13 @@ def test_skip_ocr():
     check_ocrmypdf('graph_ocred.pdf', 'test_skip.pdf', '-s')
 
 
-def test_argsfile():
+def test_argsfile(spoof_tesseract_noop):
     with open(_make_output('test_argsfile.txt'), 'w') as argsfile:
         print('--title', 'ArgsFile Test', '--author', 'Test Cases',
               sep='\n', end='\n', file=argsfile)
     check_ocrmypdf('graph.pdf', 'test_argsfile.pdf',
-                   '@' + _make_output('test_argsfile.txt'))
+                   '@' + _make_output('test_argsfile.txt'),
+                   env=spoof_tesseract_noop)
 
 
 def check_ocr_timeout(renderer):
