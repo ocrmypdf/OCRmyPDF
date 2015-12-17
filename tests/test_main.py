@@ -134,19 +134,19 @@ def test_clean(spoof_tesseract_noop):
     check_ocrmypdf('skew.pdf', 'test_clean.pdf', '-c', env=spoof_tesseract_noop)
 
 
-def check_exotic_image(pdf, renderer):
+@pytest.mark.parametrize("pdf,renderer", [
+    ('palette.pdf', 'hocr'),
+    ('palette.pdf', 'tesseract'),
+    ('cmyk.pdf', 'hocr'),
+    ('cmyk.pdf', 'tesseract'),
+])
+def test_exotic_image(spoof_tesseract_cache, pdf, renderer):
     check_ocrmypdf(
         pdf,
         'test_{0}_{1}.pdf'.format(pdf, renderer),
         '-dc',
-        '--pdf-renderer', renderer)
-
-
-def test_exotic_image():
-    yield check_exotic_image, 'palette.pdf', 'hocr'
-    yield check_exotic_image, 'palette.pdf', 'tesseract'
-    yield check_exotic_image, 'cmyk.pdf', 'hocr'
-    yield check_exotic_image, 'cmyk.pdf', 'tesseract'
+        '-v', '1',
+        '--pdf-renderer', renderer, env=spoof_tesseract_cache)
 
 
 def test_preserve_metadata(spoof_tesseract_noop):
@@ -193,20 +193,19 @@ def test_override_metadata(spoof_tesseract_noop):
     assert pdfinfo.get('Keywords', '') == ''
 
 
-def check_oversample(renderer):
+@pytest.mark.parametrize('renderer', [
+    'hocr',
+    'tesseract',
+    ])
+def test_oversample(spoof_tesseract_cache, renderer):
     oversampled_pdf = check_ocrmypdf(
         'skew.pdf', 'test_oversample_%s.pdf' % renderer, '--oversample', '300',
-        '--pdf-renderer', renderer)
+        '--pdf-renderer', renderer, env=spoof_tesseract_cache)
 
     pdfinfo = pdf_get_all_pageinfo(oversampled_pdf)
 
     print(pdfinfo[0]['xres'])
     assert abs(pdfinfo[0]['xres'] - 300) < 1
-
-
-def test_oversample():
-    yield check_oversample, 'hocr'
-    yield check_oversample, 'tesseract'
 
 
 def test_repeat_ocr():
@@ -235,16 +234,15 @@ def test_argsfile(spoof_tesseract_noop):
                    env=spoof_tesseract_noop)
 
 
-def check_ocr_timeout(renderer):
+@pytest.mark.parametrize('renderer', [
+    'hocr',
+    'tesseract',
+    ])
+def test_ocr_timeout(renderer):
     out = check_ocrmypdf('skew.pdf', 'test_timeout_%s.pdf' % renderer,
                          '--tesseract-timeout', '1.0')
     pdfinfo = pdf_get_all_pageinfo(out)
     assert pdfinfo[0]['has_text'] == False
-
-
-def test_ocr_timeout():
-    yield check_ocr_timeout, 'hocr'
-    yield check_ocr_timeout, 'tesseract'
 
 
 def test_skip_big(spoof_tesseract_cache):
@@ -254,17 +252,17 @@ def test_skip_big(spoof_tesseract_cache):
     assert pdfinfo[0]['has_text'] == False
 
 
-def check_maximum_options(renderer):
+@pytest.mark.parametrize('renderer', [
+    'hocr',
+    'tesseract',
+    ])
+def test_maximum_options(spoof_tesseract_cache, renderer):
     check_ocrmypdf(
         'multipage.pdf', 'test_multipage%s.pdf' % renderer,
         '-d', '-c', '-i', '-g', '-f', '-k', '--oversample', '300',
         '--skip-big', '10', '--title', 'Too Many Weird Files',
-        '--author', 'py.test', '--pdf-renderer', renderer)
-
-
-def test_maximum_options():
-    yield check_maximum_options, 'hocr'
-    yield check_maximum_options, 'tesseract'
+        '--author', 'py.test', '--pdf-renderer', renderer,
+        env=spoof_tesseract_cache)
 
 
 def test_tesseract_missing_tessdata():
@@ -288,9 +286,9 @@ def test_blank_input_pdf():
     assert p.returncode == ExitCode.ok
 
 
-def test_french():
+def test_french(spoof_tesseract_cache):
     p, out, err = run_ocrmypdf_env(
-        'francais.pdf', 'francais.pdf', '-l', 'fra')
+        'francais.pdf', 'francais.pdf', '-l', 'fra', env=spoof_tesseract_cache)
     assert p.returncode == ExitCode.ok, \
         "This test may fail if Tesseract language packs are missing"
 
@@ -301,16 +299,18 @@ def test_klingon():
     assert p.returncode == ExitCode.bad_args
 
 
-def test_missing_docinfo():
+def test_missing_docinfo(spoof_tesseract_noop):
     p, out, err = run_ocrmypdf_env(
-        'missing_docinfo.pdf', 'missing_docinfo.pdf', '-l', 'eng', '-c')
+        'missing_docinfo.pdf', 'missing_docinfo.pdf', '-l', 'eng', '-c',
+        env=spoof_tesseract_noop)
     assert p.returncode == ExitCode.ok, err
 
 
-def test_uppercase_extension():
+def test_uppercase_extension(spoof_tesseract_noop):
     shutil.copy(_make_input("skew.pdf"), _make_input("UPPERCASE.PDF"))
     try:
-        check_ocrmypdf("UPPERCASE.PDF", "UPPERCASE_OUT.PDF")
+        check_ocrmypdf("UPPERCASE.PDF", "UPPERCASE_OUT.PDF",
+                       env=spoof_tesseract_noop)
     finally:
         os.unlink(_make_input("UPPERCASE.PDF"))
 

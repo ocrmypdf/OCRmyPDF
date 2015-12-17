@@ -29,7 +29,7 @@ def main():
         ['tesseract', '--version'],
         stderr=subprocess.STDOUT)
 
-    m.update(version.encode())
+    m.update(version)
     m.update(operation.encode())
 
     try:
