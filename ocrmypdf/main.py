@@ -35,6 +35,7 @@ from .pageinfo import pdf_get_all_pageinfo
 from .pdfa import generate_pdfa_def
 from . import ghostscript
 from . import tesseract
+from . import qpdf
 from . import ExitCode
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
@@ -352,29 +353,8 @@ def repair_pdf(
         log,
         pdfinfo,
         pdfinfo_lock):
-    args_qpdf = [
-        'qpdf', input_file, output_file
-    ]
-    try:
-        out = check_output(args_qpdf, stderr=STDOUT, universal_newlines=True)
-    except CalledProcessError as e:
-        exit_with_error = True
-        if e.returncode == 2:
-            print("{0}: not a valid PDF, and could not repair it.".format(
-                    options.input_file))
-            print("Details:")
-            print(e.output)
-        elif e.returncode == 3 and e.output.find("operation succeeded"):
-            exit_with_error = False
-            out = e.output
-            print(e.output)
-        else:
-            print(e.output)
-        if exit_with_error:
-            sys.exit(ExitCode.input_file)
 
-    log.debug(out)
-
+    qpdf.repair(input_file, output_file, log)
     with pdfinfo_lock:
         pdfinfo.extend(pdf_get_all_pageinfo(output_file))
         log.info(pdfinfo)
