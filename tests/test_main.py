@@ -2,7 +2,7 @@
 # © 2015 James R. Barlow: github.com/jbarlow83
 
 from __future__ import print_function
-from subprocess import Popen, PIPE, check_output
+from subprocess import Popen, PIPE, check_output, check_call
 import os
 import shutil
 from contextlib import suppress
@@ -18,6 +18,7 @@ if sys.version_info.major < 3:
     sys.exit(1)
 
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
+SPOOF_PATH = os.path.join(TESTS_ROOT, 'spoof')
 PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
 OCRMYPDF = os.path.join(PROJECT_ROOT, 'OCRmyPDF.sh')
 TEST_RESOURCES = os.path.join(PROJECT_ROOT, 'tests', 'resources')
@@ -34,11 +35,11 @@ def setup_module():
         os.mkdir(TEST_OUTPUT)
 
 
-def run_ocrmypdf_sh(input_file, output_file, *args):
+def run_ocrmypdf_sh(input_file, output_file, *args, env=None):
     sh_args = ['sh', OCRMYPDF] + list(args) + [input_file, output_file]
     sh = Popen(
         sh_args, close_fds=True, stdout=PIPE, stderr=PIPE,
-        universal_newlines=True)
+        universal_newlines=True, env=env)
     out, err = sh.communicate()
     return sh, out, err
 
@@ -51,11 +52,11 @@ def _make_output(output_basename):
     return os.path.join(TEST_OUTPUT, output_basename)
 
 
-def check_ocrmypdf(input_basename, output_basename, *args):
+def check_ocrmypdf(input_basename, output_basename, *args, env=None):
     input_file = _make_input(input_basename)
     output_file = _make_output(output_basename)
 
-    sh, _, err = run_ocrmypdf_sh(input_file, output_file, *args)
+    sh, _, err = run_ocrmypdf_sh(input_file, output_file, *args, env=env)
     assert sh.returncode == 0, err
     assert os.path.exists(output_file), "Output file not created"
     assert os.stat(output_file).st_size > 100, "PDF too small or empty"
@@ -81,9 +82,19 @@ def test_quick():
     check_ocrmypdf('c02-22.pdf', 'test_quick.pdf')
 
 
-def test_deskew():
+@pytest.fixture
+def spoof_tesseract_hocr_empty():
+    env = os.environ.copy()
+    program = os.path.join(SPOOF_PATH, 'tesseract_hocr_empty.py')
+    check_call(['chmod', "+x", program])
+    env['OCRMYPDF_TESSERACT'] = program
+    return env
+
+
+def test_deskew(spoof_tesseract_hocr_empty):
     # Run with deskew
-    deskewed_pdf = check_ocrmypdf('skew.pdf', 'test_deskew.pdf', '-d')
+    deskewed_pdf = check_ocrmypdf(
+        'skew.pdf', 'test_deskew.pdf', '-d', env=spoof_tesseract_hocr_empty)
 
     # Now render as an image again and use Leptonica to find the skew angle
     # to confirm that it was deskewed
@@ -310,7 +321,7 @@ def test_input_file_not_a_pdf():
 
 def test_qpdf_repair_fails():
     env = os.environ.copy()
-    env['OCRMYPDF_QPDF'] = os.path.abspath('./qpdf_dummy_return2.py')
+    env['OCRMYPDF_QPDF'] = os.path.abspath('./spoof/qpdf_dummy_return2.py')
     p, out, err = run_ocrmypdf_env(
         '-v', '1',
         'c02-22.pdf', 'wont_be_created.pdf', env=env)
