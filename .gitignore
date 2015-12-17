@@ -21,3 +21,4 @@ htmlcov/
 .coverage
 .cache/
 .ipynb_checkpoints/
+tests/cache/

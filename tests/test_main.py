@@ -87,6 +87,15 @@ def spoof_tesseract_noop():
     return env
 
 
+@pytest.fixture
+def spoof_tesseract_cache():
+    env = os.environ.copy()
+    program = os.path.join(SPOOF_PATH, "tesseract_cache.py")
+    check_call(['chmod', '+x', program])
+    env['OCRMYPDF_TESSERACT'] = program
+    return env
+
+
 def test_quick(spoof_tesseract_noop):
     check_ocrmypdf('c02-22.pdf', 'test_quick.pdf', env=spoof_tesseract_noop)
 
@@ -143,7 +152,8 @@ def test_exotic_image():
 def test_preserve_metadata(spoof_tesseract_noop):
     pdf_before = pypdf.PdfFileReader(_make_input('graph.pdf'))
 
-    output = check_ocrmypdf('graph.pdf', 'test_metadata_preserve.pdf')
+    output = check_ocrmypdf('graph.pdf', 'test_metadata_preserve.pdf',
+                            env=spoof_tesseract_noop)
 
     pdf_after = pypdf.PdfFileReader(output)
 
@@ -204,14 +214,16 @@ def test_repeat_ocr():
     assert sh.returncode != 0
 
 
-def test_force_ocr():
-    out = check_ocrmypdf('graph_ocred.pdf', 'test_force.pdf', '-f')
+def test_force_ocr(spoof_tesseract_cache):
+    out = check_ocrmypdf('graph_ocred.pdf', 'test_force.pdf', '-f',
+                         env=spoof_tesseract_cache)
     pdfinfo = pdf_get_all_pageinfo(out)
     assert pdfinfo[0]['has_text']
 
 
-def test_skip_ocr():
-    check_ocrmypdf('graph_ocred.pdf', 'test_skip.pdf', '-s')
+def test_skip_ocr(spoof_tesseract_cache):
+    check_ocrmypdf('graph_ocred.pdf', 'test_skip.pdf', '-s',
+                   env=spoof_tesseract_cache)
 
 
 def test_argsfile(spoof_tesseract_noop):
@@ -235,9 +247,9 @@ def test_ocr_timeout():
     yield check_ocr_timeout, 'tesseract'
 
 
-def test_skip_big():
+def test_skip_big(spoof_tesseract_cache):
     out = check_ocrmypdf('enormous.pdf', 'test_enormous.pdf',
-                         '--skip-big', '10')
+                         '--skip-big', '10', env=spoof_tesseract_cache)
     pdfinfo = pdf_get_all_pageinfo(out)
     assert pdfinfo[0]['has_text'] == False
 
