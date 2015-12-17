@@ -134,3 +134,36 @@ def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
                 f_out.write(line)
 
 
+def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
+                 tessconfig: list, timeout: float, log):
+    '''Use Tesseract to render a PDF.
+
+    input_image -- image to analyze
+    skip_pdf -- if we time out, use this file as output
+    language -- list of languages to consider
+    tessconfig -- tesseract configuration
+    timeout -- timeout (seconds)
+    log -- logger object
+    '''
+
+    args_tesseract = [
+        'tesseract',
+        '-l', '+'.join(language),
+        input_image,
+        os.path.splitext(output_pdf)[0],  # Tesseract appends suffix
+        'pdf'
+    ] + tessconfig
+    p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
+              universal_newlines=True)
+
+    try:
+        stdout, stderr = p.communicate(timeout=timeout)
+        if stdout:
+            log.info(stdout)
+        if stderr:
+            log.error(stderr)
+    except TimeoutExpired:
+        p.kill()
+        log.info("Tesseract - page timed out")
+        shutil.copy(skip_pdf, output_pdf)
+

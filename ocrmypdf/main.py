@@ -654,26 +654,14 @@ def tesseract_ocr_and_render_pdf(
         re_symlink(input_pdf, output_file)
         return
 
-    args_tesseract = [
-        'tesseract',
-        '-l', '+'.join(options.language),
-        input_image,
-        os.path.splitext(output_file)[0],  # Tesseract appends suffix
-        'pdf'
-    ] + options.tesseract_config
-    p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
-              universal_newlines=True)
-
-    try:
-        stdout, stderr = p.communicate(timeout=options.tesseract_timeout)
-        if stdout:
-            log.info(stdout)
-        if stderr:
-            log.error(stderr)
-    except TimeoutExpired:
-        p.kill()
-        log.info("Tesseract - page timed out")
-        re_symlink(input_pdf, output_file)
+    tesseract.generate_pdf(
+        input_image=input_image,
+        skip_pdf=input_pdf,
+        output_pdf=output_file,
+        language=options.language,
+        tessconfig=options.tesseract_config,
+        timeout=options.tesseract_timeout,
+        log=log)
 
 
 @transform(
