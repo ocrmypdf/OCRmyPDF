@@ -419,16 +419,8 @@ def split_pages(
         with suppress(FileNotFoundError):
             os.unlink(oo)
 
-    pages = check_output(['qpdf', '--show-npages', input_file],
-                         universal_newlines=True, close_fds=True)
-
-    for n in range(int(pages)):
-        args_qpdf = [
-            'qpdf', input_file,
-            '--pages', input_file, '{0}'.format(n + 1), '--',
-            os.path.join(work_folder, '{0:06d}.page.pdf'.format(n + 1))
-        ]
-        check_call(args_qpdf)
+    npages = qpdf.get_npages(input_file)
+    qpdf.split_pages(input_file, work_folder, npages)
 
     from glob import glob
     for filename in glob(os.path.join(work_folder, '*.page.pdf')):

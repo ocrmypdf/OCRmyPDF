@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # © 2015 James R. Barlow: github.com/jbarlow83
 
-from subprocess import CalledProcessError, check_output, STDOUT
+from subprocess import CalledProcessError, check_output, STDOUT, check_call
+import sys
+import os
 
 from . import ExitCode
 
@@ -31,3 +33,19 @@ def repair(input_file, output_file, log):
             print(e.output)
             sys.exit(ExitCode.unknown)
 
+
+def get_npages(input_file):
+    pages = check_output(
+        ['qpdf', '--show-npages', input_file],
+         universal_newlines=True, close_fds=True)
+    return int(pages)
+
+
+def split_pages(input_file, work_folder, npages):
+    for n in range(int(npages)):
+        args_qpdf = [
+            'qpdf', input_file,
+            '--pages', input_file, '{0}'.format(n + 1), '--',
+            os.path.join(work_folder, '{0:06d}.page.pdf'.format(n + 1))
+        ]
+        check_call(args_qpdf)
