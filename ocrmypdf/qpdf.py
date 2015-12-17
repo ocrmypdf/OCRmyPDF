@@ -66,6 +66,11 @@ def get_npages(input_file):
 
 
 def split_pages(input_file, work_folder, npages):
+    """Split multipage PDF into individual pages.
+
+    Incredibly enough, this multiple process approach is about 70 times
+    faster than using Ghostscript.
+    """
     for n in range(int(npages)):
         args_qpdf = [
             'qpdf', input_file,
