@@ -17,8 +17,8 @@ from PIL import Image
 
 from functools import partial
 
-from subprocess import Popen, check_call, PIPE, CalledProcessError, \
-    TimeoutExpired, check_output, STDOUT
+from subprocess import CalledProcessError, \
+     check_output, STDOUT
 try:
     from subprocess import DEVNULL
 except ImportError:
@@ -748,29 +748,7 @@ def copy_final(
 def validate_pdfa(
         input_file,
         log):
-
-    args_qpdf = [
-        'qpdf',
-        '--check',
-        input_file
-    ]
-
-    try:
-        check_output(args_qpdf, stderr=STDOUT, universal_newlines=True)
-    except CalledProcessError as e:
-        if e.returncode == 2:
-            print("{0}: not a valid PDF, and could not repair it.".format(
-                    options.input_file))
-            print("Details:")
-            print(e.output)
-        elif e.returncode == 3:
-            log.info("qpdf --check returned warnings:")
-            log.info(e.output)
-        else:
-            print(e.output)
-        return False
-
-    return True
+    return qpdf.check(input_file, log)
 
 
 # @active_if(ocr_required and options.exact_image)
