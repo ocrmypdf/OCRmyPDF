@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # © 2015 James R. Barlow: github.com/jbarlow83
 
+from __future__ import print_function, unicode_literals
 from setuptools import setup
 from subprocess import Popen, STDOUT, check_output, CalledProcessError
 from string import Template
@@ -8,6 +9,10 @@ from collections.abc import Mapping
 import re
 import sys
 
+
+if sys.version_info.major < 3:
+    print("Python 2 is not supported")
+    sys.exit(1)
 
 missing_program = '''
 The program '{program}' could not be executed or was not found on your
