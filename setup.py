@@ -10,8 +10,8 @@ import re
 import sys
 
 
-if sys.version_info.major < 3:
-    print("Python 2 is not supported")
+if sys.version_info < (3, 4):
+    print("Python 3.4 or newer is required")
     sys.exit(1)
 
 missing_program = '''
