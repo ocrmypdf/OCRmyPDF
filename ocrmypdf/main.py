@@ -790,6 +790,7 @@ def run_pipeline():
     if not options.jobs or options.jobs == 1:
         options.jobs = available_cpu_count()
     try:
+        options.history_file = os.path.join(work_folder, 'ruffus_history.sqlite')
         cmdline.run(options)
     except ruffus_exceptions.RethrownJobError as e:
         if options.verbose:
