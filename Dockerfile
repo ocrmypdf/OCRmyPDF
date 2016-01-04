@@ -20,7 +20,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   python3-pip \
   python3-venv \
   python3-reportlab \
-  python3-pil
+  python3-pil \
+  python3-wheel \
+  unpaper
 
 # Enforce UTF-8
 # Borrowed from https://index.docker.io/u/crosbymichael/python/ 
@@ -29,35 +31,7 @@ RUN dpkg-reconfigure locales && \
   /usr/sbin/update-locale LANG=C.UTF-8
 ENV LC_ALL C.UTF-8
 
-# Build unpaper 6.1
-RUN apt-get install -y \
-  wget \
-  gcc \
-  libavformat-dev \
-  libavcodec-dev \
-  libavutil-dev \
-  autoconf \
-  automake \
-  make \
-  pkg-config \
-  xsltproc
-
-WORKDIR /root
-RUN wget -q https://github.com/Flameeyes/unpaper/archive/unpaper-6.1.tar.gz
-RUN tar xf unpaper-6.1.tar.gz
-WORKDIR /root/unpaper-unpaper-6.1
-RUN autoreconf -i
-RUN ./configure CFLAGS="-O2 -march=native -pipe -flto"
-RUN make -j install
-WORKDIR /
-
-RUN apt-get remove -y \
-  gcc \
-  autoconf \
-  automake \
-  pkg-config \
-  xsltproc \
-  make
+# Remove the junk
 RUN apt-get autoremove -y && apt-get clean -y
 RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /root/*
 
