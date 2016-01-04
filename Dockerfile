@@ -1,6 +1,6 @@
 # OCRmyPDF
 #
-# VERSION               3.0.0
+# VERSION               3.0.1
 FROM      debian:stretch
 MAINTAINER James R. Barlow <jim@purplerock.ca>
 
@@ -13,8 +13,7 @@ RUN useradd docker \
 RUN apt-get update && apt-get install -y --no-install-recommends \
   locales \
   ghostscript \
-  tesseract-ocr \
-  tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-eng tesseract-ocr-fra \
+  tesseract-ocr-all \
   qpdf \
   poppler-utils \
   python3 \
@@ -79,7 +78,6 @@ RUN . /appenv/bin/activate; \
 USER docker
 WORKDIR /home/docker
 
-ENV DEFAULT_RUFFUS_HISTORY_FILE=/tmp/.{basename}.ruffus_history.sqlite
 ENV OCRMYPDF_TEST_OUTPUT=/tmp/test-output
 ENV OCRMYPDF_IN_DOCKER=1
 
