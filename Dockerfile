@@ -1,6 +1,6 @@
 # OCRmyPDF
 #
-# VERSION               3.0.1
+# VERSION               3.0.2
 FROM      debian:stretch
 MAINTAINER James R. Barlow <jim@purplerock.ca>
 
@@ -13,7 +13,8 @@ RUN useradd docker \
 RUN apt-get update && apt-get install -y --no-install-recommends \
   locales \
   ghostscript \
-  tesseract-ocr-all \
+  tesseract-ocr \
+  tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-eng tesseract-ocr-fra \
   qpdf \
   poppler-utils \
   python3 \
