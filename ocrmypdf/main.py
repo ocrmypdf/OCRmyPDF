@@ -39,7 +39,7 @@ warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
 
 BASEDIR = os.path.dirname(os.path.realpath(__file__))
-VERSION = '3.1'
+VERSION = '3.1.1'
 
 
 # -------------
