@@ -126,13 +126,13 @@ def _page_has_text(pdf, page):
     return False
 
 
-def _pdf_get_pageinfo(infile, page: int):
+def _pdf_get_pageinfo(infile, pageno: int):
     pageinfo = {}
-    pageinfo['pageno'] = page
+    pageinfo['pageno'] = pageno
     pageinfo['images'] = []
 
     pdf = pypdf.PdfFileReader(infile)
-    page = pdf.pages[page - 1]
+    page = pdf.pages[pageno]
 
     pageinfo['has_text'] = _page_has_text(pdf, page)
 
