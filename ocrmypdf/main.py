@@ -102,7 +102,7 @@ parser = cmdline.get_argparse(
     ignored_args=[
         'touch_files_only', 'recreate_database', 'checksum_file_name',
         'key_legend_in_graph', 'draw_graph_horizontally', 'flowchart_format',
-        'forced_tasks', 'target_tasks', 'use_threads'])
+        'forced_tasks', 'target_tasks', 'use_threads', 'jobs'])
 
 parser.add_argument(
     'input_file',
@@ -113,6 +113,9 @@ parser.add_argument(
 parser.add_argument(
     '-l', '--language', action='append',
     help="languages of the file to be OCRed")
+parser.add_argument(
+    '-j', '--jobs', metavar='N', type=int,
+    help="Use up to N CPU cores simultaneously (default: use all)")
 
 metadata = parser.add_argument_group(
     "Metadata options",
@@ -787,7 +790,7 @@ def cleanup_ruffus_error_message(msg):
 
 
 def run_pipeline():
-    if not options.jobs or options.jobs == 1:
+    if not options.jobs:
         options.jobs = available_cpu_count()
     try:
         options.history_file = os.path.join(work_folder, 'ruffus_history.sqlite')
