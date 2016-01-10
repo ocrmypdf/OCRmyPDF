@@ -6,6 +6,14 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
+v3.1.1:
+
+Changes
+-------
+
+-  Fixed bug that caused incorrect page size and DPI calculations on documents with mixed page sizes
+
+
 v3.1:
 =====
 
