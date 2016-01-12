@@ -56,8 +56,8 @@ def check_ocrmypdf(input_basename, output_basename, *args, env=None):
     input_file = _make_input(input_basename)
     output_file = _make_output(output_basename)
 
-    sh, _, err = run_ocrmypdf_sh(input_file, output_file, *args, env=env)
-    assert sh.returncode == 0, err
+    sh, out, err = run_ocrmypdf_sh(input_file, output_file, *args, env=env)
+    assert sh.returncode == 0, dict(stdout=out, stderr=err)
     assert os.path.exists(output_file), "Output file not created"
     assert os.stat(output_file).st_size > 100, "PDF too small or empty"
     return output_file
@@ -348,3 +348,18 @@ def test_encrypted():
     p, out, err = run_ocrmypdf_env('skew-encrypted.pdf', 'wont_be_created.pdf')
     assert p.returncode == ExitCode.input_file
     assert out.find('password')
+
+
+@pytest.mark.parametrize('renderer', [
+    'hocr',
+    'tesseract',
+    ])
+def test_pagesegmode(renderer):
+    check_ocrmypdf(
+        'skew.pdf', 'test_psm_%s.pdf' % renderer,
+        '--tesseract-pagesegmode', '7',
+        '-v', '1',
+        '--pdf-renderer', renderer)
+
+
+

@@ -170,8 +170,11 @@ advanced = parser.add_argument_group(
     "Advanced",
     "Advanced options for power users")
 advanced.add_argument(
-    '--tesseract-config', action='append', metavar='CFG',
+    '--tesseract-config', action='append', metavar='CFG', default=[],
     help="additional Tesseract configuration files")
+advanced.add_argument(
+    '--tesseract-pagesegmode', action='store', type=int, metavar='PSM',
+    help="set Tesseract page segmentation mode (see tesseract --help)")
 advanced.add_argument(
     '--pdf-renderer', choices=['auto', 'tesseract', 'hocr'], default='auto',
     help='choose OCR PDF renderer')
@@ -529,6 +532,7 @@ def ocr_tesseract_hocr(
         timeout=options.tesseract_timeout,
         pageinfo_getter=partial(get_pageinfo, input_file, pdfinfo,
                                 pdfinfo_lock),
+        pagesegmode=options.tesseract_pagesegmode,
         log=log
         )
 
@@ -635,6 +639,7 @@ def tesseract_ocr_and_render_pdf(
         language=options.language,
         tessconfig=options.tesseract_config,
         timeout=options.tesseract_timeout,
+        pagesegmode=options.tesseract_pagesegmode,
         log=log)
 
 
