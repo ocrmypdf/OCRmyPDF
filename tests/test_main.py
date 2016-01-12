@@ -354,12 +354,12 @@ def test_encrypted():
     'hocr',
     'tesseract',
     ])
-def test_pagesegmode(renderer):
+def test_pagesegmode(renderer, spoof_tesseract_cache):
     check_ocrmypdf(
         'skew.pdf', 'test_psm_%s.pdf' % renderer,
         '--tesseract-pagesegmode', '7',
         '-v', '1',
-        '--pdf-renderer', renderer)
+        '--pdf-renderer', renderer, env=spoof_tesseract_cache)
 
 
 
