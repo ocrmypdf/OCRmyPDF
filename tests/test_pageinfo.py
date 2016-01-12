@@ -10,14 +10,22 @@ import os
 import shutil
 import pytest
 import img2pdf
-from pkg_resources import Requirement, resource_filename
 import pytest
+import sys
 
-req = Requirement.parse('ocrmypdf')
 
+if sys.version_info.major < 3:
+    print("Requires Python 3.4+")
+    sys.exit(1)
+
+TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
+SPOOF_PATH = os.path.join(TESTS_ROOT, 'spoof')
+PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
+OCRMYPDF = os.path.join(PROJECT_ROOT, 'OCRmyPDF.sh')
+TEST_RESOURCES = os.path.join(PROJECT_ROOT, 'tests', 'resources')
 TEST_OUTPUT = os.environ.get(
     'OCRMYPDF_TEST_OUTPUT',
-    default=os.path.join(os.path.dirname(__file__), 'output'))
+    default=os.path.join(PROJECT_ROOT, 'tests', 'output', 'pageinfo'))
 
 
 def setup_module():
@@ -25,6 +33,14 @@ def setup_module():
         shutil.rmtree(TEST_OUTPUT)
     with suppress(FileExistsError):
         os.mkdir(TEST_OUTPUT)
+
+
+def _make_input(input_basename):
+    return os.path.join(TEST_RESOURCES, input_basename)
+
+
+def _make_output(output_basename):
+    return os.path.join(TEST_OUTPUT, output_basename)
 
 
 def test_single_page_text():
@@ -100,9 +116,8 @@ def test_single_page_inline_image():
         pageinfo.pdf_get_all_pageinfo(filename)
 
 
-@pytest.mark.skipif(True, reason="need to fix packaging error")
 def test_jpeg():
-    filename = resource_filename(req, 'tests/resources/c02-22.pdf')
+    filename = _make_input('c02-22.pdf')
 
     pdfinfo = pageinfo.pdf_get_all_pageinfo(filename)
 

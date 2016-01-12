@@ -24,8 +24,7 @@ OCRMYPDF = os.path.join(PROJECT_ROOT, 'OCRmyPDF.sh')
 TEST_RESOURCES = os.path.join(PROJECT_ROOT, 'tests', 'resources')
 TEST_OUTPUT = os.environ.get(
     'OCRMYPDF_TEST_OUTPUT',
-    default=os.path.join(PROJECT_ROOT, 'tests', 'output'))
-TEST_BINARY_PATH = os.path.join(TEST_OUTPUT, 'fakebin')
+    default=os.path.join(PROJECT_ROOT, 'tests', 'output', 'main'))
 
 
 def setup_module():
