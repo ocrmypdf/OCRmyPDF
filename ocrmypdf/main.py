@@ -170,13 +170,13 @@ advanced = parser.add_argument_group(
     "Advanced",
     "Advanced options for power users")
 advanced.add_argument(
-    '--tesseract-config', default=[], type=list, action='append',
+    '--tesseract-config', action='append', metavar='CFG',
     help="additional Tesseract configuration files")
 advanced.add_argument(
     '--pdf-renderer', choices=['auto', 'tesseract', 'hocr'], default='auto',
     help='choose OCR PDF renderer')
 advanced.add_argument(
-    '--tesseract-timeout', default=180.0, type=float,
+    '--tesseract-timeout', default=180.0, type=float, metavar='SECONDS',
     help='give up on OCR after the timeout, but copy the preprocessed page '
          'into the final output')
 
