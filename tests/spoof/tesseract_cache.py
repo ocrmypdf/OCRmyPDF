@@ -37,6 +37,11 @@ def main():
         m.update(lang.encode())
     except ValueError:
         pass
+    try:
+        psm = sys.argv[sys.argv.index('-psm') + 1]
+        m.update(psm.encode())
+    except ValueError:
+        pass
 
     input_file = sys.argv[-3]
     output_file = sys.argv[-2]

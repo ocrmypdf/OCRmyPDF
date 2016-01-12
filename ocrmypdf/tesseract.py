@@ -77,17 +77,24 @@ def languages():
 
 
 def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
-                  timeout: float, pageinfo_getter, log):
+                  timeout: float, pageinfo_getter, pagesegmode: int, log):
 
     badxml = os.path.splitext(output_hocr)[0] + '.badxml'
 
     args_tesseract = [
         get_program('tesseract'),
-        '-l', '+'.join(language),
+        '-l', '+'.join(language)
+    ]
+
+    if pagesegmode is not None:
+        args_tesseract.extend(['-psm', str(pagesegmode)])
+
+    args_tesseract.extend([
         input_file,
         badxml,
         'hocr'
-    ] + tessconfig
+    ] + tessconfig)
+    print(args_tesseract)
     p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
               universal_newlines=True)
     try:
@@ -135,7 +142,7 @@ def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
 
 
 def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
-                 tessconfig: list, timeout: float, log):
+                 tessconfig: list, timeout: float, pagesegmode: int, log):
     '''Use Tesseract to render a PDF.
 
     input_image -- image to analyze
@@ -148,11 +155,17 @@ def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
 
     args_tesseract = [
         get_program('tesseract'),
-        '-l', '+'.join(language),
+        '-l', '+'.join(language)
+    ]
+
+    if pagesegmode is not None:
+        args_tesseract.extend(['-psm', str(pagesegmode)])
+
+    args_tesseract.extend([
         input_image,
         os.path.splitext(output_pdf)[0],  # Tesseract appends suffix
         'pdf'
-    ] + tessconfig
+    ] + tessconfig)
     p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
               universal_newlines=True)
 
