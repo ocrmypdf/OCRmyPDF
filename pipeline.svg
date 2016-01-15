@@ -19,235 +19,248 @@
 <polyline fill="none" stroke="black" points="932.535,-642.083 709.465,-642.083 "/>
 <polyline fill="none" stroke="black" points="932.535,-642.083 932.535,-610.083 "/>
 <polyline fill="none" stroke="black" points="932.535,-642.083 936.535,-646.083 "/>
-<text text-anchor="middle" x="823" y="-622.083" font-family="Times,serif" font-size="20.00">ocrmypdf.main.repair_pdf</text>
+<text text-anchor="middle" x="823" y="-622.083" font-family="Times,serif" font-size="20.00">repair_pdf</text>
 </g>
 <!-- t1 -->
 <g id="node2" class="node"><title>t1</title>
 <polygon fill="#efa03b" stroke="black" points="914.112,-567.155 710,-584.057 505.888,-567.155 506.078,-539.806 913.922,-539.806 914.112,-567.155"/>
 <polygon fill="none" stroke="black" points="918.134,-570.834 710,-588.069 501.866,-570.834 502.11,-535.808 917.89,-535.808 918.134,-570.834"/>
-<text text-anchor="middle" x="710" y="-553.596" font-family="Times,serif" font-size="20.00">ocrmypdf.main.split_pages</text>
+<text text-anchor="middle" x="710" y="-553.596" font-family="Times,serif" font-size="20.00">split_pages</text>
 </g>
 <!-- t0&#45;&gt;t1 -->
 <g id="edge1" class="edge"><title>t0&#45;&gt;t1</title>
 <path fill="none" stroke="#0044a0" d="M793.9,-609.961C783.582,-603.89 771.656,-596.873 760.092,-590.069"/>
 <polygon fill="#0044a0" stroke="#0044a0" points="761.747,-586.982 751.353,-584.927 758.197,-593.015 761.747,-586.982"/>
 </g>
-<!-- t11 -->
-<g id="node13" class="node"><title>t11</title>
+<!-- t12 -->
+<g id="node14" class="node"><title>t12</title>
 <polygon fill="#efa03b" stroke="black" points="1108.08,-509.109 769.918,-509.109 765.918,-505.109 765.918,-473.109 1104.08,-473.109 1108.08,-477.109 1108.08,-509.109"/>
 <polyline fill="none" stroke="black" points="1104.08,-505.109 765.918,-505.109 "/>
 <polyline fill="none" stroke="black" points="1104.08,-505.109 1104.08,-473.109 "/>
 <polyline fill="none" stroke="black" points="1104.08,-505.109 1108.08,-509.109 "/>
-<text text-anchor="middle" x="937" y="-485.109" font-family="Times,serif" font-size="20.00">ocrmypdf.main.generate_postscript_stub</text>
+<text text-anchor="middle" x="937" y="-485.109" font-family="Times,serif" font-size="20.00">generate_postscript_stub</text>
 </g>
-<!-- t0&#45;&gt;t11 -->
-<g id="edge18" class="edge"><title>t0&#45;&gt;t11</title>
+<!-- t0&#45;&gt;t12 -->
+<g id="edge19" class="edge"><title>t0&#45;&gt;t12</title>
 <path fill="none" stroke="#0044a0" d="M899.32,-610.004C909.979,-604.592 919.748,-597.466 927,-588.083 941.916,-568.78 943.099,-540.385 941.345,-519.486"/>
 <polygon fill="#0044a0" stroke="#0044a0" points="944.8,-518.881 940.218,-509.328 937.843,-519.653 944.8,-518.881"/>
 </g>
 <!-- t2 -->
 <g id="node3" class="node"><title>t2</title>
-<polygon fill="#efa03b" stroke="black" points="708.299,-509.109 357.701,-509.109 353.701,-505.109 353.701,-473.109 704.299,-473.109 708.299,-477.109 708.299,-509.109"/>
-<polyline fill="none" stroke="black" points="704.299,-505.109 353.701,-505.109 "/>
-<polyline fill="none" stroke="black" points="704.299,-505.109 704.299,-473.109 "/>
-<polyline fill="none" stroke="black" points="704.299,-505.109 708.299,-509.109 "/>
-<text text-anchor="middle" x="531" y="-485.109" font-family="Times,serif" font-size="20.00">ocrmypdf.main.rasterize_with_ghostscript</text>
+<polygon fill="#efa03b" stroke="black" points="592.299,-509.109 241.701,-509.109 237.701,-505.109 237.701,-473.109 588.299,-473.109 592.299,-477.109 592.299,-509.109"/>
+<polyline fill="none" stroke="black" points="588.299,-505.109 237.701,-505.109 "/>
+<polyline fill="none" stroke="black" points="588.299,-505.109 588.299,-473.109 "/>
+<polyline fill="none" stroke="black" points="588.299,-505.109 592.299,-509.109 "/>
+<text text-anchor="middle" x="415" y="-485.109" font-family="Times,serif" font-size="20.00">rasterize_with_ghostscript</text>
 </g>
 <!-- t1&#45;&gt;t2 -->
 <g id="edge2" class="edge"><title>t1&#45;&gt;t2</title>
-<path fill="none" stroke="#0044a0" d="M648.649,-535.808C628.471,-528.313 606.168,-520.029 586.455,-512.707"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="587.599,-509.399 577.006,-509.198 585.162,-515.961 587.599,-509.399"/>
+<path fill="none" stroke="#0044a0" d="M608.89,-535.808C573.672,-527.87 534.524,-519.048 500.679,-511.42"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="501.345,-507.982 490.82,-509.198 499.806,-514.811 501.345,-507.982"/>
 </g>
-<!-- t9 -->
-<g id="node9" class="node"><title>t9</title>
-<polygon fill="#efa03b" stroke="black" points="1050.08,-219.109 791.918,-219.109 787.918,-215.109 787.918,-183.109 1046.08,-183.109 1050.08,-187.109 1050.08,-219.109"/>
-<polyline fill="none" stroke="black" points="1046.08,-215.109 787.918,-215.109 "/>
-<polyline fill="none" stroke="black" points="1046.08,-215.109 1046.08,-183.109 "/>
-<polyline fill="none" stroke="black" points="1046.08,-215.109 1050.08,-219.109 "/>
-<text text-anchor="middle" x="919" y="-195.109" font-family="Times,serif" font-size="20.00">ocrmypdf.main.add_text_layer</text>
+<!-- t7 -->
+<g id="node9" class="node"><title>t7</title>
+<polygon fill="#efa03b" stroke="black" points="314.109,-277.109 19.8906,-277.109 15.8906,-273.109 15.8906,-241.109 310.109,-241.109 314.109,-245.109 314.109,-277.109"/>
+<polyline fill="none" stroke="black" points="310.109,-273.109 15.8906,-273.109 "/>
+<polyline fill="none" stroke="black" points="310.109,-273.109 310.109,-241.109 "/>
+<polyline fill="none" stroke="black" points="310.109,-273.109 314.109,-277.109 "/>
+<text text-anchor="middle" x="165" y="-253.109" font-family="Times,serif" font-size="20.00">select_image_layer</text>
 </g>
-<!-- t1&#45;&gt;t9 -->
-<g id="edge12" class="edge"><title>t1&#45;&gt;t9</title>
-<path fill="none" stroke="#0044a0" d="M713.811,-535.65C717.806,-513.795 724.533,-482.833 732,-473.109 748,-452.276 811.116,-426.045 835,-415.109 882.679,-393.28 1026.85,-378.017 1057,-335.109 1063.83,-325.393 1062.79,-251.081 1055,-241.109 1049.95,-234.644 1043.9,-229.201 1037.21,-224.625"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="1038.77,-221.477 1028.4,-219.28 1035.13,-227.461 1038.77,-221.477"/>
+<!-- t1&#45;&gt;t7 -->
+<g id="edge11" class="edge"><title>t1&#45;&gt;t7</title>
+<path fill="none" stroke="#0044a0" d="M501.985,-548.028C416.651,-540.897 317.351,-528.985 229,-509.109 131.492,-487.174 17,-534.054 17,-434.109 17,-434.109 17,-434.109 17,-374.109 17,-340.481 4.97908,-324.525 27,-299.109 32.8004,-292.415 39.6539,-286.828 47.1559,-282.17"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="49.1993,-285.038 56.2361,-277.118 45.7959,-278.921 49.1993,-285.038"/>
 </g>
-<!-- t12 -->
-<g id="node11" class="node"><title>t12</title>
-<polygon fill="#efa03b" stroke="black" points="1068.34,-451.109 847.662,-451.109 843.662,-447.109 843.662,-415.109 1064.34,-415.109 1068.34,-419.109 1068.34,-451.109"/>
-<polyline fill="none" stroke="black" points="1064.34,-447.109 843.662,-447.109 "/>
-<polyline fill="none" stroke="black" points="1064.34,-447.109 1064.34,-415.109 "/>
-<polyline fill="none" stroke="black" points="1064.34,-447.109 1068.34,-451.109 "/>
-<text text-anchor="middle" x="956" y="-427.109" font-family="Times,serif" font-size="20.00">ocrmypdf.main.skip_page</text>
+<!-- t13 -->
+<g id="node12" class="node"><title>t13</title>
+<polygon fill="#efa03b" stroke="black" points="1029.34,-451.109 808.662,-451.109 804.662,-447.109 804.662,-415.109 1025.34,-415.109 1029.34,-419.109 1029.34,-451.109"/>
+<polyline fill="none" stroke="black" points="1025.34,-447.109 804.662,-447.109 "/>
+<polyline fill="none" stroke="black" points="1025.34,-447.109 1025.34,-415.109 "/>
+<polyline fill="none" stroke="black" points="1025.34,-447.109 1029.34,-451.109 "/>
+<text text-anchor="middle" x="917" y="-427.109" font-family="Times,serif" font-size="20.00">skip_page</text>
 </g>
-<!-- t1&#45;&gt;t12 -->
-<g id="edge15" class="edge"><title>t1&#45;&gt;t12</title>
-<path fill="none" stroke="#0044a0" d="M719.876,-535.755C730.043,-513.285 745.922,-481.201 757,-473.109 770.269,-463.418 800.319,-455.609 833.148,-449.598"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="834.169,-452.972 843.41,-447.79 832.954,-446.078 834.169,-452.972"/>
+<!-- t1&#45;&gt;t13 -->
+<g id="edge16" class="edge"><title>t1&#45;&gt;t13</title>
+<path fill="none" stroke="#0044a0" d="M716.849,-535.484C723.825,-515.965 736.562,-488.763 757,-473.109 768.342,-464.422 781.352,-457.641 794.947,-452.352"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="796.223,-455.612 804.44,-448.923 793.845,-449.029 796.223,-455.612"/>
 </g>
-<!-- t10 -->
-<g id="node12" class="node"><title>t10</title>
-<polygon fill="#efa03b" stroke="black" points="400.24,-335.109 19.7597,-335.109 15.7597,-331.109 15.7597,-299.109 396.24,-299.109 400.24,-303.109 400.24,-335.109"/>
-<polyline fill="none" stroke="black" points="396.24,-331.109 15.7597,-331.109 "/>
-<polyline fill="none" stroke="black" points="396.24,-331.109 396.24,-299.109 "/>
-<polyline fill="none" stroke="black" points="396.24,-331.109 400.24,-335.109 "/>
-<text text-anchor="middle" x="208" y="-311.109" font-family="Times,serif" font-size="20.00">ocrmypdf.main.tesseract_ocr_and_render_pdf</text>
+<!-- t11 -->
+<g id="node13" class="node"><title>t11</title>
+<polygon fill="#efa03b" stroke="black" points="1068.24,-335.109 687.76,-335.109 683.76,-331.109 683.76,-299.109 1064.24,-299.109 1068.24,-303.109 1068.24,-335.109"/>
+<polyline fill="none" stroke="black" points="1064.24,-331.109 683.76,-331.109 "/>
+<polyline fill="none" stroke="black" points="1064.24,-331.109 1064.24,-299.109 "/>
+<polyline fill="none" stroke="black" points="1064.24,-331.109 1068.24,-335.109 "/>
+<text text-anchor="middle" x="876" y="-311.109" font-family="Times,serif" font-size="20.00">tesseract_ocr_and_render_pdf</text>
 </g>
-<!-- t1&#45;&gt;t10 -->
-<g id="edge17" class="edge"><title>t1&#45;&gt;t10</title>
-<path fill="none" stroke="#0044a0" d="M502.02,-544.561C435.943,-537.084 372.808,-525.841 345,-509.109 280.096,-470.057 237.287,-387.221 218.654,-344.626"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="221.779,-343.029 214.64,-335.2 215.338,-345.772 221.779,-343.029"/>
+<!-- t1&#45;&gt;t11 -->
+<g id="edge18" class="edge"><title>t1&#45;&gt;t11</title>
+<path fill="none" stroke="#0044a0" d="M710.717,-535.657C712.098,-517.744 715.879,-492.693 726,-473.109 754.651,-417.673 809.56,-368.731 844.403,-341.318"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="846.607,-344.038 852.372,-335.148 842.322,-338.503 846.607,-344.038"/>
 </g>
 <!-- t3 -->
 <g id="node4" class="node"><title>t3</title>
-<polygon fill="#efa03b" stroke="black" points="714.742,-451.109 419.258,-451.109 415.258,-447.109 415.258,-415.109 710.742,-415.109 714.742,-419.109 714.742,-451.109"/>
-<polyline fill="none" stroke="black" points="710.742,-447.109 415.258,-447.109 "/>
-<polyline fill="none" stroke="black" points="710.742,-447.109 710.742,-415.109 "/>
-<polyline fill="none" stroke="black" points="710.742,-447.109 714.742,-451.109 "/>
-<text text-anchor="middle" x="565" y="-427.109" font-family="Times,serif" font-size="20.00">ocrmypdf.main.preprocess_deskew</text>
+<polygon fill="#efa03b" stroke="black" points="564.742,-451.109 269.258,-451.109 265.258,-447.109 265.258,-415.109 560.742,-415.109 564.742,-419.109 564.742,-451.109"/>
+<polyline fill="none" stroke="black" points="560.742,-447.109 265.258,-447.109 "/>
+<polyline fill="none" stroke="black" points="560.742,-447.109 560.742,-415.109 "/>
+<polyline fill="none" stroke="black" points="560.742,-447.109 564.742,-451.109 "/>
+<text text-anchor="middle" x="415" y="-427.109" font-family="Times,serif" font-size="20.00">preprocess_deskew</text>
 </g>
 <!-- t2&#45;&gt;t3 -->
 <g id="edge3" class="edge"><title>t2&#45;&gt;t3</title>
-<path fill="none" stroke="#0044a0" d="M541.386,-473.003C543.89,-468.878 546.622,-464.379 549.31,-459.952"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="552.48,-461.475 554.678,-451.111 546.496,-457.842 552.48,-461.475"/>
+<path fill="none" stroke="#0044a0" d="M415,-473.003C415,-469.312 415,-465.322 415,-461.352"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="418.5,-461.111 415,-451.111 411.5,-461.111 418.5,-461.111"/>
 </g>
 <!-- t6 -->
-<g id="node6" class="node"><title>t6</title>
-<polygon fill="#efa03b" stroke="black" points="1048.12,-335.109 733.881,-335.109 729.881,-331.109 729.881,-299.109 1044.12,-299.109 1048.12,-303.109 1048.12,-335.109"/>
-<polyline fill="none" stroke="black" points="1044.12,-331.109 729.881,-331.109 "/>
-<polyline fill="none" stroke="black" points="1044.12,-331.109 1044.12,-299.109 "/>
-<polyline fill="none" stroke="black" points="1044.12,-331.109 1048.12,-335.109 "/>
-<text text-anchor="middle" x="889" y="-311.109" font-family="Times,serif" font-size="20.00">ocrmypdf.main.select_image_for_pdf</text>
+<g id="node8" class="node"><title>t6</title>
+<polygon fill="#efa03b" stroke="black" points="354.119,-335.109 39.8808,-335.109 35.8808,-331.109 35.8808,-299.109 350.119,-299.109 354.119,-303.109 354.119,-335.109"/>
+<polyline fill="none" stroke="black" points="350.119,-331.109 35.8808,-331.109 "/>
+<polyline fill="none" stroke="black" points="350.119,-331.109 350.119,-299.109 "/>
+<polyline fill="none" stroke="black" points="350.119,-331.109 354.119,-335.109 "/>
+<text text-anchor="middle" x="195" y="-311.109" font-family="Times,serif" font-size="20.00">select_image_for_pdf</text>
 </g>
 <!-- t2&#45;&gt;t6 -->
-<g id="edge7" class="edge"><title>t2&#45;&gt;t6</title>
-<path fill="none" stroke="#0044a0" d="M659.658,-473.081C681.716,-467.658 703.964,-460.515 724,-451.109 754.084,-436.987 823.873,-376.567 862.35,-342.223"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="864.947,-344.595 870.06,-335.316 860.276,-339.382 864.947,-344.595"/>
+<g id="edge9" class="edge"><title>t2&#45;&gt;t6</title>
+<path fill="none" stroke="#0044a0" d="M294.315,-473.06C280.461,-467.585 267.283,-460.434 256,-451.109 223.245,-424.039 207.251,-375.559 200.099,-345.207"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="203.486,-344.31 197.925,-335.292 196.648,-345.809 203.486,-344.31"/>
 </g>
 <!-- t4 -->
 <g id="node5" class="node"><title>t4</title>
-<polygon fill="#efa03b" stroke="black" points="705.95,-393.109 428.05,-393.109 424.05,-389.109 424.05,-357.109 701.95,-357.109 705.95,-361.109 705.95,-393.109"/>
-<polyline fill="none" stroke="black" points="701.95,-389.109 424.05,-389.109 "/>
-<polyline fill="none" stroke="black" points="701.95,-389.109 701.95,-357.109 "/>
-<polyline fill="none" stroke="black" points="701.95,-389.109 705.95,-393.109 "/>
-<text text-anchor="middle" x="565" y="-369.109" font-family="Times,serif" font-size="20.00">ocrmypdf.main.preprocess_clean</text>
+<polygon fill="#efa03b" stroke="black" points="587.95,-393.109 310.05,-393.109 306.05,-389.109 306.05,-357.109 583.95,-357.109 587.95,-361.109 587.95,-393.109"/>
+<polyline fill="none" stroke="black" points="583.95,-389.109 306.05,-389.109 "/>
+<polyline fill="none" stroke="black" points="583.95,-389.109 583.95,-357.109 "/>
+<polyline fill="none" stroke="black" points="583.95,-389.109 587.95,-393.109 "/>
+<text text-anchor="middle" x="447" y="-369.109" font-family="Times,serif" font-size="20.00">preprocess_clean</text>
 </g>
 <!-- t3&#45;&gt;t4 -->
 <g id="edge4" class="edge"><title>t3&#45;&gt;t4</title>
-<path fill="none" stroke="#0044a0" d="M565,-415.003C565,-411.312 565,-407.322 565,-403.352"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="568.5,-403.111 565,-393.111 561.5,-403.111 568.5,-403.111"/>
+<path fill="none" stroke="#0044a0" d="M424.775,-415.003C427.132,-410.878 429.703,-406.379 432.232,-401.952"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="435.362,-403.53 437.285,-393.111 429.285,-400.057 435.362,-403.53"/>
 </g>
 <!-- t3&#45;&gt;t6 -->
-<g id="edge6" class="edge"><title>t3&#45;&gt;t6</title>
-<path fill="none" stroke="#0044a0" d="M658.847,-415.081C678.072,-409.586 697.702,-402.416 715,-393.109 736.063,-381.777 734.103,-368.744 755,-357.109 768.545,-349.568 783.69,-343.36 798.789,-338.29"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="800.232,-341.504 808.688,-335.12 798.097,-334.837 800.232,-341.504"/>
-</g>
-<!-- t4&#45;&gt;t6 -->
-<g id="edge5" class="edge"><title>t4&#45;&gt;t6</title>
-<path fill="none" stroke="#0044a0" d="M663.53,-357.079C700.446,-350.699 742.584,-343.416 780.363,-336.886"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="781.122,-340.307 790.38,-335.155 779.93,-333.409 781.122,-340.307"/>
+<g id="edge8" class="edge"><title>t3&#45;&gt;t6</title>
+<path fill="none" stroke="#0044a0" d="M351.041,-415.02C333.086,-409.151 313.871,-401.82 297,-393.109 269.828,-379.08 242.065,-358.149 222.377,-341.96"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="224.378,-339.071 214.46,-335.347 219.891,-344.444 224.378,-339.071"/>
 </g>
 <!-- t5 -->
-<g id="node7" class="node"><title>t5</title>
-<polygon fill="#efa03b" stroke="black" points="711.666,-335.109 422.334,-335.109 418.334,-331.109 418.334,-299.109 707.666,-299.109 711.666,-303.109 711.666,-335.109"/>
-<polyline fill="none" stroke="black" points="707.666,-331.109 418.334,-331.109 "/>
-<polyline fill="none" stroke="black" points="707.666,-331.109 707.666,-299.109 "/>
-<polyline fill="none" stroke="black" points="707.666,-331.109 711.666,-335.109 "/>
-<text text-anchor="middle" x="565" y="-311.109" font-family="Times,serif" font-size="20.00">ocrmypdf.main.ocr_tesseract_hocr</text>
+<g id="node6" class="node"><title>t5</title>
+<polygon fill="#efa03b" stroke="black" points="665.666,-335.109 376.334,-335.109 372.334,-331.109 372.334,-299.109 661.666,-299.109 665.666,-303.109 665.666,-335.109"/>
+<polyline fill="none" stroke="black" points="661.666,-331.109 372.334,-331.109 "/>
+<polyline fill="none" stroke="black" points="661.666,-331.109 661.666,-299.109 "/>
+<polyline fill="none" stroke="black" points="661.666,-331.109 665.666,-335.109 "/>
+<text text-anchor="middle" x="519" y="-311.109" font-family="Times,serif" font-size="20.00">ocr_tesseract_hocr</text>
 </g>
 <!-- t4&#45;&gt;t5 -->
-<g id="edge8" class="edge"><title>t4&#45;&gt;t5</title>
-<path fill="none" stroke="#0044a0" d="M565,-357.003C565,-353.312 565,-349.322 565,-345.352"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="568.5,-345.111 565,-335.111 561.5,-345.111 568.5,-345.111"/>
+<g id="edge5" class="edge"><title>t4&#45;&gt;t5</title>
+<path fill="none" stroke="#0044a0" d="M468.994,-357.003C475.274,-352.118 482.229,-346.709 488.905,-341.516"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="491.396,-344.013 497.141,-335.111 487.099,-338.487 491.396,-344.013"/>
 </g>
-<!-- t4&#45;&gt;t10 -->
-<g id="edge16" class="edge"><title>t4&#45;&gt;t10</title>
-<path fill="none" stroke="#0044a0" d="M456.434,-357.079C415.413,-350.645 368.538,-343.292 326.64,-336.72"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="327.086,-333.247 316.664,-335.155 326.001,-340.162 327.086,-333.247"/>
+<!-- t4&#45;&gt;t6 -->
+<g id="edge7" class="edge"><title>t4&#45;&gt;t6</title>
+<path fill="none" stroke="#0044a0" d="M370.365,-357.079C342.386,-350.862 310.55,-343.787 281.752,-337.388"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="282.225,-333.907 271.704,-335.155 280.707,-340.741 282.225,-333.907"/>
 </g>
-<!-- t7 -->
-<g id="node8" class="node"><title>t7</title>
-<polygon fill="#efa03b" stroke="black" points="1046.11,-277.109 761.891,-277.109 757.891,-273.109 757.891,-241.109 1042.11,-241.109 1046.11,-245.109 1046.11,-277.109"/>
-<polyline fill="none" stroke="black" points="1042.11,-273.109 757.891,-273.109 "/>
-<polyline fill="none" stroke="black" points="1042.11,-273.109 1042.11,-241.109 "/>
-<polyline fill="none" stroke="black" points="1042.11,-273.109 1046.11,-277.109 "/>
-<text text-anchor="middle" x="902" y="-253.109" font-family="Times,serif" font-size="20.00">ocrmypdf.main.render_hocr_page</text>
-</g>
-<!-- t6&#45;&gt;t7 -->
-<g id="edge9" class="edge"><title>t6&#45;&gt;t7</title>
-<path fill="none" stroke="#0044a0" d="M892.971,-299.003C893.853,-295.204 894.809,-291.087 895.757,-287.002"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="899.201,-287.643 898.053,-277.111 892.383,-286.06 899.201,-287.643"/>
+<!-- t4&#45;&gt;t11 -->
+<g id="edge17" class="edge"><title>t4&#45;&gt;t11</title>
+<path fill="none" stroke="#0044a0" d="M577.461,-357.079C627.38,-350.563 684.512,-343.106 735.342,-336.47"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="735.957,-339.92 745.42,-335.155 735.051,-332.979 735.957,-339.92"/>
 </g>
 <!-- t8 -->
-<g id="node10" class="node"><title>t8</title>
-<polygon fill="#efa03b" stroke="black" points="739.486,-277.109 396.514,-277.109 392.514,-273.109 392.514,-241.109 735.486,-241.109 739.486,-245.109 739.486,-277.109"/>
-<polyline fill="none" stroke="black" points="735.486,-273.109 392.514,-273.109 "/>
-<polyline fill="none" stroke="black" points="735.486,-273.109 735.486,-241.109 "/>
-<polyline fill="none" stroke="black" points="735.486,-273.109 739.486,-277.109 "/>
-<text text-anchor="middle" x="566" y="-253.109" font-family="Times,serif" font-size="20.00">ocrmypdf.main.render_hocr_debug_page</text>
-</g>
-<!-- t6&#45;&gt;t8 -->
-<g id="edge13" class="edge"><title>t6&#45;&gt;t8</title>
-<path fill="none" stroke="#0044a0" d="M790.774,-299.079C753.972,-292.699 711.964,-285.416 674.301,-278.886"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="674.766,-275.415 664.315,-277.155 673.571,-282.312 674.766,-275.415"/>
-</g>
-<!-- t5&#45;&gt;t7 -->
-<g id="edge10" class="edge"><title>t5&#45;&gt;t7</title>
-<path fill="none" stroke="#0044a0" d="M667.484,-299.079C706.044,-292.672 750.082,-285.354 789.506,-278.803"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="790.132,-282.247 799.423,-277.155 788.985,-275.341 790.132,-282.247"/>
+<g id="node7" class="node"><title>t8</title>
+<polygon fill="#efa03b" stroke="black" points="986.109,-277.109 701.891,-277.109 697.891,-273.109 697.891,-241.109 982.109,-241.109 986.109,-245.109 986.109,-277.109"/>
+<polyline fill="none" stroke="black" points="982.109,-273.109 697.891,-273.109 "/>
+<polyline fill="none" stroke="black" points="982.109,-273.109 982.109,-241.109 "/>
+<polyline fill="none" stroke="black" points="982.109,-273.109 986.109,-277.109 "/>
+<text text-anchor="middle" x="842" y="-253.109" font-family="Times,serif" font-size="20.00">render_hocr_page</text>
 </g>
 <!-- t5&#45;&gt;t8 -->
-<g id="edge14" class="edge"><title>t5&#45;&gt;t8</title>
-<path fill="none" stroke="#0044a0" d="M565.305,-299.003C565.371,-295.312 565.443,-291.322 565.514,-287.352"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="569.017,-287.172 565.696,-277.111 562.018,-287.047 569.017,-287.172"/>
+<g id="edge6" class="edge"><title>t5&#45;&gt;t8</title>
+<path fill="none" stroke="#0044a0" d="M617.226,-299.079C654.028,-292.699 696.036,-285.416 733.699,-278.886"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="734.429,-282.312 743.685,-277.155 733.234,-275.415 734.429,-282.312"/>
 </g>
-<!-- t7&#45;&gt;t9 -->
-<g id="edge11" class="edge"><title>t7&#45;&gt;t9</title>
-<path fill="none" stroke="#0044a0" d="M907.193,-241.003C908.346,-237.204 909.596,-233.087 910.836,-229.002"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="914.283,-229.696 913.839,-219.111 907.585,-227.663 914.283,-229.696"/>
+<!-- t9 -->
+<g id="node11" class="node"><title>t9</title>
+<polygon fill="#efa03b" stroke="black" points="679.486,-277.109 336.514,-277.109 332.514,-273.109 332.514,-241.109 675.486,-241.109 679.486,-245.109 679.486,-277.109"/>
+<polyline fill="none" stroke="black" points="675.486,-273.109 332.514,-273.109 "/>
+<polyline fill="none" stroke="black" points="675.486,-273.109 675.486,-241.109 "/>
+<polyline fill="none" stroke="black" points="675.486,-273.109 679.486,-277.109 "/>
+<text text-anchor="middle" x="506" y="-253.109" font-family="Times,serif" font-size="20.00">render_hocr_debug_page</text>
 </g>
-<!-- t13 -->
-<g id="node14" class="node"><title>t13</title>
-<polygon fill="#efa03b" stroke="black" points="754.472,-105.333 919,-78.005 1083.53,-105.333 1083.37,-149.551 754.625,-149.551 754.472,-105.333"/>
-<polygon fill="none" stroke="black" points="750.46,-101.94 919,-73.9453 1087.54,-101.94 1087.36,-153.556 750.639,-153.556 750.46,-101.94"/>
-<text text-anchor="middle" x="919" y="-111.555" font-family="Times,serif" font-size="20.00">ocrmypdf.main.merge_pages</text>
+<!-- t5&#45;&gt;t9 -->
+<g id="edge15" class="edge"><title>t5&#45;&gt;t9</title>
+<path fill="none" stroke="#0044a0" d="M515.029,-299.003C514.147,-295.204 513.191,-291.087 512.243,-287.002"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="515.617,-286.06 509.947,-277.111 508.799,-287.643 515.617,-286.06"/>
 </g>
-<!-- t9&#45;&gt;t13 -->
-<g id="edge22" class="edge"><title>t9&#45;&gt;t13</title>
-<path fill="none" stroke="#0044a0" d="M919,-182.814C919,-177.096 919,-170.444 919,-163.631"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="922.5,-163.622 919,-153.622 915.5,-163.622 922.5,-163.622"/>
+<!-- t10 -->
+<g id="node10" class="node"><title>t10</title>
+<polygon fill="#efa03b" stroke="black" points="973.082,-219.109 714.918,-219.109 710.918,-215.109 710.918,-183.109 969.082,-183.109 973.082,-187.109 973.082,-219.109"/>
+<polyline fill="none" stroke="black" points="969.082,-215.109 710.918,-215.109 "/>
+<polyline fill="none" stroke="black" points="969.082,-215.109 969.082,-183.109 "/>
+<polyline fill="none" stroke="black" points="969.082,-215.109 973.082,-219.109 "/>
+<text text-anchor="middle" x="842" y="-195.109" font-family="Times,serif" font-size="20.00">add_text_layer</text>
 </g>
-<!-- t8&#45;&gt;t13 -->
-<g id="edge23" class="edge"><title>t8&#45;&gt;t13</title>
-<path fill="none" stroke="#0044a0" d="M609.285,-240.997C661.595,-220.317 751.23,-184.881 820.652,-157.435"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="822.295,-160.55 830.308,-153.618 819.721,-154.04 822.295,-160.55"/>
+<!-- t8&#45;&gt;t10 -->
+<g id="edge12" class="edge"><title>t8&#45;&gt;t10</title>
+<path fill="none" stroke="#0044a0" d="M842,-241.003C842,-237.312 842,-233.322 842,-229.352"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="845.5,-229.111 842,-219.111 838.5,-229.111 845.5,-229.111"/>
 </g>
-<!-- t12&#45;&gt;t13 -->
-<g id="edge19" class="edge"><title>t12&#45;&gt;t13</title>
-<path fill="none" stroke="#0044a0" d="M1000.35,-415.044C1038.35,-397.186 1087,-365.142 1087,-318.109 1087,-318.109 1087,-318.109 1087,-258.109 1087,-222.529 1083.2,-209.191 1059,-183.109 1050.45,-173.898 1040.33,-165.894 1029.5,-158.965"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="1031.05,-155.811 1020.68,-153.635 1027.43,-161.802 1031.05,-155.811"/>
+<!-- t6&#45;&gt;t7 -->
+<g id="edge10" class="edge"><title>t6&#45;&gt;t7</title>
+<path fill="none" stroke="#0044a0" d="M185.836,-299.003C183.626,-294.878 181.216,-290.379 178.845,-285.952"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="181.915,-284.273 174.108,-277.111 175.745,-287.578 181.915,-284.273"/>
 </g>
-<!-- t10&#45;&gt;t13 -->
-<g id="edge21" class="edge"><title>t10&#45;&gt;t13</title>
-<path fill="none" stroke="#0044a0" d="M243.022,-298.992C278.043,-282.403 333.772,-257.421 384,-241.109 500.659,-203.224 635.265,-172.452 740.275,-151.219"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="741.229,-154.597 750.343,-149.194 739.849,-147.734 741.229,-154.597"/>
+<!-- t6&#45;&gt;t9 -->
+<g id="edge14" class="edge"><title>t6&#45;&gt;t9</title>
+<path fill="none" stroke="#0044a0" d="M289.577,-299.079C324.86,-292.726 365.115,-285.478 401.259,-278.969"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="402.116,-282.372 411.337,-277.155 400.875,-275.482 402.116,-282.372"/>
 </g>
-<!-- t11&#45;&gt;t13 -->
-<g id="edge20" class="edge"><title>t11&#45;&gt;t13</title>
-<path fill="none" stroke="#0044a0" d="M1040.93,-473.017C1054.09,-467.586 1066.57,-460.458 1077,-451.109 1103.73,-427.142 1107,-412.01 1107,-376.109 1107,-376.109 1107,-376.109 1107,-258.109 1107,-221.869 1100.77,-208.595 1075,-183.109 1065.44,-173.655 1054.3,-165.516 1042.45,-158.525"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="1044.15,-155.463 1033.71,-153.635 1040.73,-161.572 1044.15,-155.463"/>
+<!-- t7&#45;&gt;t10 -->
+<g id="edge13" class="edge"><title>t7&#45;&gt;t10</title>
+<path fill="none" stroke="#0044a0" d="M314.366,-242.002C317.606,-241.697 320.821,-241.399 324,-241.109 451.228,-229.521 596.262,-218.816 700.44,-211.565"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="700.976,-215.036 710.71,-210.852 700.491,-208.053 700.976,-215.036"/>
 </g>
 <!-- t14 -->
 <g id="node15" class="node"><title>t14</title>
-<polygon fill="#efa03b" stroke="black" points="1033.18,-52 808.822,-52 804.822,-48 804.822,-16 1029.18,-16 1033.18,-20 1033.18,-52"/>
-<polyline fill="none" stroke="black" points="1029.18,-48 804.822,-48 "/>
-<polyline fill="none" stroke="black" points="1029.18,-48 1029.18,-16 "/>
-<polyline fill="none" stroke="black" points="1029.18,-48 1033.18,-52 "/>
-<text text-anchor="middle" x="919" y="-28" font-family="Times,serif" font-size="20.00">ocrmypdf.main.copy_final</text>
+<polygon fill="#efa03b" stroke="black" points="774.472,-105.333 939,-78.005 1103.53,-105.333 1103.37,-149.551 774.625,-149.551 774.472,-105.333"/>
+<polygon fill="none" stroke="black" points="770.46,-101.94 939,-73.9453 1107.54,-101.94 1107.36,-153.556 770.639,-153.556 770.46,-101.94"/>
+<text text-anchor="middle" x="939" y="-111.555" font-family="Times,serif" font-size="20.00">merge_pages</text>
+</g>
+<!-- t10&#45;&gt;t14 -->
+<g id="edge23" class="edge"><title>t10&#45;&gt;t14</title>
+<path fill="none" stroke="#0044a0" d="M862.571,-182.814C870.479,-176.165 879.888,-168.254 889.356,-160.293"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="891.89,-162.736 897.292,-153.622 887.385,-157.378 891.89,-162.736"/>
+</g>
+<!-- t9&#45;&gt;t14 -->
+<g id="edge24" class="edge"><title>t9&#45;&gt;t14</title>
+<path fill="none" stroke="#0044a0" d="M546.87,-241.103C586.226,-225.054 647.626,-200.869 702,-183.109 730.59,-173.771 761.415,-164.679 791.074,-156.405"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="792.38,-159.675 801.082,-153.632 790.511,-152.93 792.38,-159.675"/>
 </g>
 <!-- t13&#45;&gt;t14 -->
-<g id="edge24" class="edge"><title>t13&#45;&gt;t14</title>
-<path fill="none" stroke="#0044a0" d="M919,-73.8665C919,-69.8921 919,-65.942 919,-62.1676"/>
-<polygon fill="#0044a0" stroke="#0044a0" points="922.5,-62.1213 919,-52.1214 915.5,-62.1214 922.5,-62.1213"/>
+<g id="edge20" class="edge"><title>t13&#45;&gt;t14</title>
+<path fill="none" stroke="#0044a0" d="M986.636,-414.956C1033.58,-398.748 1087,-369.103 1087,-318.109 1087,-318.109 1087,-318.109 1087,-258.109 1087,-215.948 1054.81,-182.761 1020.46,-159.346"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="1021.98,-156.158 1011.7,-153.604 1018.15,-162.013 1021.98,-156.158"/>
+</g>
+<!-- t11&#45;&gt;t14 -->
+<g id="edge22" class="edge"><title>t11&#45;&gt;t14</title>
+<path fill="none" stroke="#0044a0" d="M969.056,-299.033C979.177,-293.579 988.239,-286.44 995,-277.109 1020.03,-242.568 998.243,-195.803 974.929,-162.021"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="977.661,-159.825 968.996,-153.728 971.968,-163.897 977.661,-159.825"/>
+</g>
+<!-- t12&#45;&gt;t14 -->
+<g id="edge21" class="edge"><title>t12&#45;&gt;t14</title>
+<path fill="none" stroke="#0044a0" d="M1006.64,-472.956C1053.58,-456.748 1107,-427.103 1107,-376.109 1107,-376.109 1107,-376.109 1107,-258.109 1107,-220.742 1095.53,-209.426 1069,-183.109 1059.8,-173.988 1049.06,-165.927 1037.76,-158.869"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="1039.41,-155.777 1029.03,-153.665 1035.83,-161.791 1039.41,-155.777"/>
+</g>
+<!-- t15 -->
+<g id="node16" class="node"><title>t15</title>
+<polygon fill="#efa03b" stroke="black" points="1053.18,-52 828.822,-52 824.822,-48 824.822,-16 1049.18,-16 1053.18,-20 1053.18,-52"/>
+<polyline fill="none" stroke="black" points="1049.18,-48 824.822,-48 "/>
+<polyline fill="none" stroke="black" points="1049.18,-48 1049.18,-16 "/>
+<polyline fill="none" stroke="black" points="1049.18,-48 1053.18,-52 "/>
+<text text-anchor="middle" x="939" y="-28" font-family="Times,serif" font-size="20.00">copy_final</text>
+</g>
+<!-- t14&#45;&gt;t15 -->
+<g id="edge25" class="edge"><title>t14&#45;&gt;t15</title>
+<path fill="none" stroke="#0044a0" d="M939,-73.8665C939,-69.8921 939,-65.942 939,-62.1676"/>
+<polygon fill="#0044a0" stroke="#0044a0" points="942.5,-62.1213 939,-52.1214 935.5,-62.1214 942.5,-62.1213"/>
 </g>
 </g>
 </svg>

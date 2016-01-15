@@ -11,6 +11,7 @@ import warnings
 import multiprocessing
 import atexit
 import textwrap
+import img2pdf
 
 import PyPDF2 as pypdf
 from PIL import Image
@@ -570,6 +571,32 @@ def select_image_for_pdf(
 
 
 @active_if(options.pdf_renderer == 'hocr')
+@collate(
+    input=[select_image_for_pdf, split_pages],
+    filter=regex(r".*/(\d{6})(?:\.image|\.page\.pdf)"),
+    output=os.path.join(work_folder, r'\1.image-layer.pdf'),
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def select_image_layer(
+        infiles,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+
+    page_pdf = next(ii for ii in infiles if ii.endswith('.page.pdf'))
+    image = next(ii for ii in infiles if ii.endswith('.image'))
+
+    if lossless_reconstruction:
+        re_symlink(page_pdf, output_file)
+    else:
+        pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
+        dpi = round(max(pageinfo['xres'], pageinfo['yres'], options.oversample))
+        pdf_bytes = img2pdf.convert([image], dpi=dpi)
+        with open(output_file, 'wb') as pdf:
+            pdf.write(pdf_bytes)
+
+
+@active_if(options.pdf_renderer == 'hocr')
 @transform(
     input=ocr_tesseract_hocr,
     filter=suffix('.hocr'),
@@ -615,10 +642,9 @@ def render_hocr_debug_page(
 
 
 @active_if(options.pdf_renderer == 'hocr')
-@active_if(lossless_reconstruction)
 @collate(
-    input=[render_hocr_page, split_pages],
-    filter=regex(r".*/(\d{6})(?:\.hocr\.pdf|\.ocr\.page\.pdf)"),
+    input=[render_hocr_page, select_image_layer],
+    filter=regex(r".*/(\d{6})(?:\.hocr\.pdf|\.image-layer\.pdf)"),
     output=os.path.join(work_folder, r'\1.rendered.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def add_text_layer(
@@ -628,7 +654,7 @@ def add_text_layer(
         pdfinfo,
         pdfinfo_lock):
     text = next(ii for ii in infiles if ii.endswith('.hocr.pdf'))
-    image = next(ii for ii in infiles if ii.endswith('.ocr.page.pdf'))
+    image = next(ii for ii in infiles if ii.endswith('.image-layer.pdf'))
 
     pdf_output = pypdf.PdfFileWriter()
 
