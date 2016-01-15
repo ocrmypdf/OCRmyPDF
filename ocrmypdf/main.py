@@ -573,7 +573,7 @@ def select_image_for_pdf(
 @active_if(options.pdf_renderer == 'hocr')
 @collate(
     input=[select_image_for_pdf, split_pages],
-    filter=regex(r".*/(\d{6})(?:\.image|\.page\.pdf)"),
+    filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.page\.pdf)"),
     output=os.path.join(work_folder, r'\1.image-layer.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def select_image_layer(
