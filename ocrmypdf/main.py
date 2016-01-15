@@ -249,7 +249,7 @@ if options.clean and not options.clean_final \
 
 lossless_reconstruction = False
 if options.pdf_renderer == 'hocr':
-    if not options.deskew and not options.clean_final:
+    if not options.deskew and not options.clean_final and not options.force_ocr:
         lossless_reconstruction = True
 
 # ----------
@@ -570,21 +570,19 @@ def select_image_for_pdf(
 
 
 @active_if(options.pdf_renderer == 'hocr')
-@collate(
-    input=[select_image_for_pdf, ocr_tesseract_hocr],
-    filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
-    output=os.path.join(work_folder, r'\1.hocr.pdf'),
+@transform(
+    input=ocr_tesseract_hocr,
+    filter=suffix('.hocr'),
+    output='.hocr.pdf',
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def render_hocr_page(
-        infiles,
+        input_file,
         output_file,
         log,
         pdfinfo,
         pdfinfo_lock):
-    hocr = next(ii for ii in infiles if ii.endswith('.hocr'))
-    image = next(ii for ii in infiles if ii.endswith('.image'))
-
-    pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
+    hocr = input_file
+    pageinfo = get_pageinfo(hocr, pdfinfo, pdfinfo_lock)
     dpi = round(max(pageinfo['xres'], pageinfo['yres'], options.oversample))
 
     hocrtransform = HocrTransform(hocr, dpi)
