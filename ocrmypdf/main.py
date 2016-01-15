@@ -569,7 +569,7 @@ def select_image_for_pdf(
 @collate(
     input=[select_image_for_pdf, ocr_tesseract_hocr],
     filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
-    output=os.path.join(work_folder, r'\1.rendered.pdf'),
+    output=os.path.join(work_folder, r'\1.hocr.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def render_hocr_page(
         infiles,
@@ -584,7 +584,7 @@ def render_hocr_page(
     dpi = round(max(pageinfo['xres'], pageinfo['yres'], options.oversample))
 
     hocrtransform = HocrTransform(hocr, dpi)
-    hocrtransform.to_pdf(output_file, imageFileName=image,
+    hocrtransform.to_pdf(output_file, imageFileName=None,
                          showBoundingboxes=False, invisibleText=True)
 
 
@@ -610,6 +610,35 @@ def render_hocr_debug_page(
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=None,
                          showBoundingboxes=True, invisibleText=False)
+
+
+@active_if(options.pdf_renderer == 'hocr')
+@collate(
+    input=[render_hocr_page, split_pages],
+    filter=regex(r".*/(\d{6})(?:\.hocr\.pdf|\.ocr\.page\.pdf)"),
+    output=os.path.join(work_folder, r'\1.rendered.pdf'),
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def add_text_layer(
+        infiles,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+    text = next(ii for ii in infiles if ii.endswith('.hocr.pdf'))
+    image = next(ii for ii in infiles if ii.endswith('.ocr.page.pdf'))
+
+    pdf_output = pypdf.PdfFileWriter()
+
+    pdf_text = pypdf.PdfFileReader(open(text, "rb"))
+    pdf_image = pypdf.PdfFileReader(open(image, "rb"))
+
+    page = pdf_text.getPage(0)
+    page.mergePage(pdf_image.getPage(0))
+
+    pdf_output.addPage(page)
+
+    with open(output_file, "wb") as out:
+        pdf_output.write(out)
 
 
 @active_if(options.pdf_renderer == 'tesseract')
@@ -703,7 +732,7 @@ def skip_page(
 
 
 @merge(
-    input=[render_hocr_page, render_hocr_debug_page, skip_page,
+    input=[add_text_layer, render_hocr_debug_page, skip_page,
            tesseract_ocr_and_render_pdf, generate_postscript_stub],
     output=os.path.join(work_folder, 'merged.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
