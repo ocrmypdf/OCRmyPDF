@@ -247,6 +247,10 @@ if options.clean and not options.clean_final \
         "Tesseract PDF renderer cannot render --clean pages without "
         "also performing --clean-final, so --clean-final is assumed.")
 
+lossless_reconstruction = False
+if options.pdf_renderer == 'hocr':
+    if not options.deskew and not options.clean_final:
+        lossless_reconstruction = True
 
 # ----------
 # Logging
@@ -613,6 +617,7 @@ def render_hocr_debug_page(
 
 
 @active_if(options.pdf_renderer == 'hocr')
+@active_if(lossless_reconstruction)
 @collate(
     input=[render_hocr_page, split_pages],
     filter=regex(r".*/(\d{6})(?:\.hocr\.pdf|\.ocr\.page\.pdf)"),
