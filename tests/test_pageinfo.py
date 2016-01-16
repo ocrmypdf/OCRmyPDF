@@ -32,7 +32,7 @@ def setup_module():
     with suppress(FileNotFoundError):
         shutil.rmtree(TEST_OUTPUT)
     with suppress(FileExistsError):
-        os.mkdir(TEST_OUTPUT)
+        os.makedirs(TEST_OUTPUT)
 
 
 def _make_input(input_basename):

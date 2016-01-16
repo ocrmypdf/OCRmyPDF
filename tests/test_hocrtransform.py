@@ -33,7 +33,7 @@ def setup_module():
     with suppress(FileNotFoundError):
         shutil.rmtree(TEST_OUTPUT)
     with suppress(FileExistsError):
-        os.mkdir(TEST_OUTPUT)
+        os.makedirs(TEST_OUTPUT)
     with open(_make_output('blank.hocr'), 'w') as f:
         f.write(HOCR_TEMPLATE)
 
