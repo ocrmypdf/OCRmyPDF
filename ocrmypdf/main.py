@@ -11,6 +11,7 @@ import warnings
 import multiprocessing
 import atexit
 import textwrap
+import img2pdf
 
 import PyPDF2 as pypdf
 from PIL import Image
@@ -247,6 +248,10 @@ if options.clean and not options.clean_final \
         "Tesseract PDF renderer cannot render --clean pages without "
         "also performing --clean-final, so --clean-final is assumed.")
 
+lossless_reconstruction = False
+if options.pdf_renderer == 'hocr':
+    if not options.deskew and not options.clean_final and not options.force_ocr:
+        lossless_reconstruction = True
 
 # ----------
 # Logging
@@ -567,24 +572,48 @@ def select_image_for_pdf(
 
 @active_if(options.pdf_renderer == 'hocr')
 @collate(
-    input=[select_image_for_pdf, ocr_tesseract_hocr],
-    filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
-    output=os.path.join(work_folder, r'\1.rendered.pdf'),
+    input=[select_image_for_pdf, split_pages],
+    filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.page\.pdf)"),
+    output=os.path.join(work_folder, r'\1.image-layer.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
-def render_hocr_page(
+def select_image_layer(
         infiles,
         output_file,
         log,
         pdfinfo,
         pdfinfo_lock):
-    hocr = next(ii for ii in infiles if ii.endswith('.hocr'))
+
+    page_pdf = next(ii for ii in infiles if ii.endswith('.page.pdf'))
     image = next(ii for ii in infiles if ii.endswith('.image'))
 
-    pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
+    if lossless_reconstruction:
+        re_symlink(page_pdf, output_file)
+    else:
+        pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
+        dpi = round(max(pageinfo['xres'], pageinfo['yres'], options.oversample))
+        pdf_bytes = img2pdf.convert([image], dpi=dpi)
+        with open(output_file, 'wb') as pdf:
+            pdf.write(pdf_bytes)
+
+
+@active_if(options.pdf_renderer == 'hocr')
+@transform(
+    input=ocr_tesseract_hocr,
+    filter=suffix('.hocr'),
+    output='.hocr.pdf',
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def render_hocr_page(
+        input_file,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+    hocr = input_file
+    pageinfo = get_pageinfo(hocr, pdfinfo, pdfinfo_lock)
     dpi = round(max(pageinfo['xres'], pageinfo['yres'], options.oversample))
 
     hocrtransform = HocrTransform(hocr, dpi)
-    hocrtransform.to_pdf(output_file, imageFileName=image,
+    hocrtransform.to_pdf(output_file, imageFileName=None,
                          showBoundingboxes=False, invisibleText=True)
 
 
@@ -610,6 +639,35 @@ def render_hocr_debug_page(
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=None,
                          showBoundingboxes=True, invisibleText=False)
+
+
+@active_if(options.pdf_renderer == 'hocr')
+@collate(
+    input=[render_hocr_page, select_image_layer],
+    filter=regex(r".*/(\d{6})(?:\.hocr\.pdf|\.image-layer\.pdf)"),
+    output=os.path.join(work_folder, r'\1.rendered.pdf'),
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def add_text_layer(
+        infiles,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+    text = next(ii for ii in infiles if ii.endswith('.hocr.pdf'))
+    image = next(ii for ii in infiles if ii.endswith('.image-layer.pdf'))
+
+    pdf_output = pypdf.PdfFileWriter()
+
+    pdf_text = pypdf.PdfFileReader(open(text, "rb"))
+    pdf_image = pypdf.PdfFileReader(open(image, "rb"))
+
+    page = pdf_text.getPage(0)
+    page.mergePage(pdf_image.getPage(0))
+
+    pdf_output.addPage(page)
+
+    with open(output_file, "wb") as out:
+        pdf_output.write(out)
 
 
 @active_if(options.pdf_renderer == 'tesseract')
@@ -703,7 +761,7 @@ def skip_page(
 
 
 @merge(
-    input=[render_hocr_page, render_hocr_debug_page, skip_page,
+    input=[add_text_layer, render_hocr_debug_page, skip_page,
            tesseract_ocr_and_render_pdf, generate_postscript_stub],
     output=os.path.join(work_folder, 'merged.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
