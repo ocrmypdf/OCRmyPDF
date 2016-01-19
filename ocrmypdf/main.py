@@ -18,7 +18,6 @@ from PIL import Image
 
 from functools import partial
 
-
 from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
     formatter, follows, split, collate, check_if_uptodate
 import ruffus.ruffus_exceptions as ruffus_exceptions
@@ -31,14 +30,12 @@ from . import ghostscript
 from . import tesseract
 from . import qpdf
 from . import ExitCode
+from . import version
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
 
 BASEDIR = os.path.dirname(os.path.realpath(__file__))
-
-from setuptools_scm import get_version
-VERSION = get_version()
 
 
 # -------------
@@ -100,7 +97,7 @@ check_pil_encoder('zlib', 'PNG')
 parser = cmdline.get_argparse(
     prog="ocrmypdf",
     description="Generate searchable PDF file from an image-only PDF file.",
-    version=VERSION,
+    version=version.__version__,
     fromfile_prefix_chars='@',
     ignored_args=[
         'touch_files_only', 'recreate_database', 'checksum_file_name',
