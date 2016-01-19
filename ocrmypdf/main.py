@@ -809,23 +809,6 @@ def validate_pdfa(
     return qpdf.check(input_file, log)
 
 
-# @active_if(ocr_required and options.exact_image)
-# @merge([render_hocr_blank_page, extract_single_page],
-#        os.path.join(work_folder, "%04i.merged.pdf") % pageno)
-# def merge_hocr_with_original_page(infiles, output_file):
-#     with open(infiles[0], 'rb') as hocr_input, \
-#             open(infiles[1], 'rb') as page_input, \
-#             open(output_file, 'wb') as output:
-#         hocr_reader = pypdf.PdfFileReader(hocr_input)
-#         page_reader = pypdf.PdfFileReader(page_input)
-#         writer = pypdf.PdfFileWriter()
-
-#         the_page = hocr_reader.getPage(0)
-#         the_page.mergePage(page_reader.getPage(0))
-#         writer.addPage(the_page)
-#         writer.write(output)
-
-
 def available_cpu_count():
     try:
         return multiprocessing.cpu_count()
