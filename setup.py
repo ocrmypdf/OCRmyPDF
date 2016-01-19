@@ -184,7 +184,6 @@ tests_require = open('test_requirements.txt').read().splitlines()
 
 setup(
     name='ocrmypdf',
-    version='3.1.1',  # also update: release notes, main.py
     description='OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched',
     url='https://github.com/jbarlow83/OCRmyPDF',
     author='James R. Barlow',
@@ -208,6 +207,7 @@ setup(
         "Topic :: Text Processing :: Indexing",
         "Topic :: Text Processing :: Linguistic",
         ],
+    setup_requires=['setuptools_scm'],
     install_requires=install_requires,
     tests_require=tests_require,
     entry_points={
@@ -216,4 +216,5 @@ setup(
         ],
     },
     include_package_data=True,
+    use_scm_version=True,
     zip_safe=False)

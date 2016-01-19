@@ -36,7 +36,9 @@ warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
 
 BASEDIR = os.path.dirname(os.path.realpath(__file__))
-VERSION = '3.1.1'
+
+from setuptools_scm import get_version
+VERSION = get_version()
 
 
 # -------------
