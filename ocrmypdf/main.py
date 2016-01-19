@@ -702,9 +702,8 @@ def tesseract_ocr_and_render_pdf(
 
 @transform(
     input=repair_pdf,
-    filter=suffix('.repaired.pdf'),
-    output='.pdfa_def.ps',
-    output_dir=work_folder,
+    filter=formatter(r'\.repaired\.pdf'),
+    output=os.path.join(work_folder, 'pdfa_def.ps'),
     extras=[_log])
 def generate_postscript_stub(
         input_file,
