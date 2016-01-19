@@ -591,9 +591,8 @@ def select_image_layer(
     else:
         pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
         dpi = round(max(pageinfo['xres'], pageinfo['yres'], options.oversample))
-        pdf_bytes = img2pdf.convert([image], dpi=dpi)
         with open(output_file, 'wb') as pdf:
-            pdf.write(pdf_bytes)
+            img2pdf.convert([image], dpi=dpi, outputstream=pdf)
 
 
 @active_if(options.pdf_renderer == 'hocr')

@@ -2,4 +2,4 @@ ruffus>=2.6.3
 Pillow>=2.4.0
 reportlab>=3.1.44
 PyPDF2>=1.25.1
-img2pdf>=0.1.5
+git+https://github.com/jbarlow83/img2pdf.git@1261741136dcbfed65355ed93f4930617a55feee#egg=img2pdf
