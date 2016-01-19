@@ -138,6 +138,10 @@ def test_clean(spoof_tesseract_noop):
     ('palette.pdf', 'tesseract'),
     ('cmyk.pdf', 'hocr'),
     ('cmyk.pdf', 'tesseract'),
+    ('ccitt.pdf', 'hocr'),
+    ('ccitt.pdf', 'tesseract'),
+    ('jbig2.pdf', 'hocr'),
+    ('jbig2.pdf', 'tesseract')
 ])
 def test_exotic_image(spoof_tesseract_cache, pdf, renderer):
     check_ocrmypdf(
