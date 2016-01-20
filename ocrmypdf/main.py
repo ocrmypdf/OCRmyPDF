@@ -30,7 +30,10 @@ from . import ghostscript
 from . import tesseract
 from . import qpdf
 from . import ExitCode
-from . import version
+
+import pkg_resources
+
+VERSION = pkg_resources.get_distribution('ocrmypdf').version
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
@@ -97,7 +100,7 @@ check_pil_encoder('zlib', 'PNG')
 parser = cmdline.get_argparse(
     prog="ocrmypdf",
     description="Generate searchable PDF file from an image-only PDF file.",
-    version=version.__version__,
+    version=VERSION,
     fromfile_prefix_chars='@',
     ignored_args=[
         'touch_files_only', 'recreate_database', 'checksum_file_name',
