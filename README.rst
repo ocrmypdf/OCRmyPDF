@@ -9,15 +9,14 @@ Main features
 
 -  Generates a searchable
    `PDF/A <https://en.wikipedia.org/?title=PDF/A>`__ file from a regular PDF
-   only containing images
 -  Places OCR text accurately below the image to ease copy / paste
 -  Keeps the exact resolution of the original embedded images
 
    -  or if requested oversamples the images before OCRing so as to get
       better results
 
--  When possible, copies input images directly to output without transcoding,
-   to preserve image quality
+-  When possible, inserts OCR information as a "lossless" operation without transcoding
+   images or rendering vector information
 -  Keeps file size about the same
 -  If requested deskews and/or cleans the image before performing OCR
 -  Validates input and output files
@@ -182,6 +181,11 @@ package <http://www.thefourtheye.in/2014/12/Python-venv-problem-with-ensurepip-i
 
 Ubuntu 14.04 only installs ``unpaper`` version 0.4.2, which is not supported by OCRmyPDF because it is produces invalid output. This program is an optional dependency, and provides page deskewing and cleaning. See `Dockerfile <Dockerfile>`__ for an example of how to building unpaper 6.1 from source. If you choose to install unpaper later, OCRmyPDF will use the foremost version on the system PATH.
 
+Installing on Windows
+~~~~~~~~~~~~~~~~~~~~~
+
+Direct installation on Windows is not possible.  Install the Docker container as described above.
+
       
 Installing HEAD revision from sources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -241,8 +245,7 @@ In case you detect an issue, please:
 -  Append the console output of the script when running the debug mode
    (``-v 1`` option)
 -  If possible provide your input PDF file as well as the content of the
-   temporary folder (using a file sharing service like
-   www.file-upload.net)
+   temporary folder (using a file sharing service like Dropbox)
 
 Press & Media
 -------------

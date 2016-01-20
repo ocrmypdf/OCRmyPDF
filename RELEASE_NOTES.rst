@@ -6,6 +6,18 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
+v3.2-rc1:
+=========
+
+New features
+------------
+
+-  Lossless reconstruction: when possible, OCRmyPDF will inject text layers without transcoding
+   images or otherwise manipulating the PDF.
+-  New argument --tesseract-pagesegmode allows you to pass page segmentation arguments to Tesseract OCR.
+   This helps for two column text and other situations that confuse Tesseract.
+
+
 v3.1.1:
 =======
 
