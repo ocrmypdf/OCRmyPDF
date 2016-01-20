@@ -21,3 +21,6 @@ htmlcov/
 .coverage
 .cache/
 .ipynb_checkpoints/
+tests/cache/
+tests/resources/private
+ocrmypdf/version.py

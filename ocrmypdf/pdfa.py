@@ -8,6 +8,7 @@ from string import Template
 from subprocess import Popen, PIPE
 import os
 import codecs
+from . import get_program
 
 
 # This is a template written in PostScript which is needed to create PDF/A
@@ -95,7 +96,8 @@ def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
 def _get_postscript_icc_path():
     "Parse Ghostscript's help message to find where iccprofiles are stored"
 
-    p_gs = Popen(['gs', '--help'], close_fds=True, universal_newlines=True,
+    p_gs = Popen([get_program('gs'), '--help'], close_fds=True,
+                 universal_newlines=True,
                  stdout=PIPE, stderr=PIPE)
     out, _ = p_gs.communicate()
     lines = out.splitlines()

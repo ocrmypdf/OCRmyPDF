@@ -4,12 +4,13 @@
 from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE, check_call
 from shutil import copy
+from . import get_program
 
 
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log):
     with NamedTemporaryFile(delete=True) as tmp:
         args_gs = [
-            'gs',
+            get_program('gs'),
             '-dQUIET',
             '-dBATCH',
             '-dNOPAUSE',
@@ -36,7 +37,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log):
 def generate_pdfa(pdf_pages, output_file, threads=1):
     with NamedTemporaryFile(delete=True) as gs_pdf:
         args_gs = [
-            "gs",
+            get_program("gs"),
             "-dQUIET",
             "-dBATCH",
             "-dNOPAUSE",

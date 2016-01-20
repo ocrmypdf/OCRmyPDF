@@ -3,8 +3,7 @@
 
 from __future__ import print_function, unicode_literals
 from setuptools import setup
-from subprocess import Popen, STDOUT, check_output, CalledProcessError
-from string import Template
+from subprocess import STDOUT, check_output, CalledProcessError
 from collections.abc import Mapping
 import re
 import sys
@@ -179,12 +178,10 @@ if 'upload' in sys.argv[1:]:
     print('Use twine to upload the package - setup.py upload is insecure')
     sys.exit(1)
 
-install_requires = open('requirements.txt').read().splitlines()
 tests_require = open('test_requirements.txt').read().splitlines()
 
 setup(
     name='ocrmypdf',
-    version='3.1.1',  # also update: release notes, main.py
     description='OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched',
     url='https://github.com/jbarlow83/OCRmyPDF',
     author='James R. Barlow',
@@ -208,7 +205,17 @@ setup(
         "Topic :: Text Processing :: Indexing",
         "Topic :: Text Processing :: Linguistic",
         ],
-    install_requires=install_requires,
+    setup_requires=[
+        'setuptools_scm'
+    ],
+    use_scm_version={'version_scheme': 'post-release'},
+    install_requires=[
+        'ruffus',
+        'Pillow',
+        'reportlab',
+        'PyPDF2',
+        'img2pdf'
+    ],
     tests_require=tests_require,
     entry_points={
         'console_scripts': [

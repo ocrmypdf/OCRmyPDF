@@ -2,7 +2,7 @@
 # © 2015 James R. Barlow: github.com/jbarlow83
 
 from contextlib import suppress
-from tempfile import NamedTemporaryFile, mkdtemp
+from tempfile import mkdtemp
 import sys
 import os
 import re
@@ -11,17 +11,12 @@ import warnings
 import multiprocessing
 import atexit
 import textwrap
+import img2pdf
 
 import PyPDF2 as pypdf
 from PIL import Image
 
-from subprocess import Popen, check_call, PIPE, CalledProcessError, \
-    TimeoutExpired, check_output, STDOUT
-try:
-    from subprocess import DEVNULL
-except ImportError:
-    DEVNULL = open(os.devnull, 'wb')
-
+from functools import partial
 
 from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
     formatter, follows, split, collate, check_if_uptodate
@@ -33,13 +28,17 @@ from .pageinfo import pdf_get_all_pageinfo
 from .pdfa import generate_pdfa_def
 from . import ghostscript
 from . import tesseract
+from . import qpdf
 from . import ExitCode
+
+import pkg_resources
+
+VERSION = pkg_resources.get_distribution('ocrmypdf').version
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
 
 BASEDIR = os.path.dirname(os.path.realpath(__file__))
-VERSION = '3.1.1'
 
 
 # -------------
@@ -106,7 +105,7 @@ parser = cmdline.get_argparse(
     ignored_args=[
         'touch_files_only', 'recreate_database', 'checksum_file_name',
         'key_legend_in_graph', 'draw_graph_horizontally', 'flowchart_format',
-        'forced_tasks', 'target_tasks', 'use_threads'])
+        'forced_tasks', 'target_tasks', 'use_threads', 'jobs'])
 
 parser.add_argument(
     'input_file',
@@ -117,6 +116,9 @@ parser.add_argument(
 parser.add_argument(
     '-l', '--language', action='append',
     help="languages of the file to be OCRed")
+parser.add_argument(
+    '-j', '--jobs', metavar='N', type=int,
+    help="Use up to N CPU cores simultaneously (default: use all)")
 
 metadata = parser.add_argument_group(
     "Metadata options",
@@ -171,13 +173,16 @@ advanced = parser.add_argument_group(
     "Advanced",
     "Advanced options for power users")
 advanced.add_argument(
-    '--tesseract-config', default=[], type=list, action='append',
+    '--tesseract-config', action='append', metavar='CFG', default=[],
     help="additional Tesseract configuration files")
+advanced.add_argument(
+    '--tesseract-pagesegmode', action='store', type=int, metavar='PSM',
+    help="set Tesseract page segmentation mode (see tesseract --help)")
 advanced.add_argument(
     '--pdf-renderer', choices=['auto', 'tesseract', 'hocr'], default='auto',
     help='choose OCR PDF renderer')
 advanced.add_argument(
-    '--tesseract-timeout', default=180.0, type=float,
+    '--tesseract-timeout', default=180.0, type=float, metavar='SECONDS',
     help='give up on OCR after the timeout, but copy the preprocessed page '
          'into the final output')
 
@@ -245,6 +250,10 @@ if options.clean and not options.clean_final \
         "Tesseract PDF renderer cannot render --clean pages without "
         "also performing --clean-final, so --clean-final is assumed.")
 
+lossless_reconstruction = False
+if options.pdf_renderer == 'hocr':
+    if not options.deskew and not options.clean_final and not options.force_ocr:
+        lossless_reconstruction = True
 
 # ----------
 # Logging
@@ -350,29 +359,8 @@ def repair_pdf(
         log,
         pdfinfo,
         pdfinfo_lock):
-    args_qpdf = [
-        'qpdf', input_file, output_file
-    ]
-    try:
-        out = check_output(args_qpdf, stderr=STDOUT, universal_newlines=True)
-    except CalledProcessError as e:
-        exit_with_error = True
-        if e.returncode == 2:
-            print("{0}: not a valid PDF, and could not repair it.".format(
-                    options.input_file))
-            print("Details:")
-            print(e.output)
-        elif e.returncode == 3 and e.output.find("operation succeeded"):
-            exit_with_error = False
-            out = e.output
-            print(e.output)
-        else:
-            print(e.output)
-        if exit_with_error:
-            sys.exit(ExitCode.input_file)
 
-    log.debug(out)
-
+    qpdf.repair(input_file, output_file, log)
     with pdfinfo_lock:
         pdfinfo.extend(pdf_get_all_pageinfo(output_file))
         log.info(pdfinfo)
@@ -437,16 +425,8 @@ def split_pages(
         with suppress(FileNotFoundError):
             os.unlink(oo)
 
-    pages = check_output(['qpdf', '--show-npages', input_file],
-                         universal_newlines=True, close_fds=True)
-
-    for n in range(int(pages)):
-        args_qpdf = [
-            'qpdf', input_file,
-            '--pages', input_file, '{0}'.format(n + 1), '--',
-            os.path.join(work_folder, '{0:06d}.page.pdf'.format(n + 1))
-        ]
-        check_call(args_qpdf)
+    npages = qpdf.get_npages(input_file)
+    qpdf.split_pages(input_file, work_folder, npages)
 
     from glob import glob
     for filename in glob(os.path.join(work_folder, '*.page.pdf')):
@@ -551,60 +531,17 @@ def ocr_tesseract_hocr(
         pdfinfo,
         pdfinfo_lock):
 
-    pageinfo = get_pageinfo(input_file, pdfinfo, pdfinfo_lock)
-
-    badxml = os.path.splitext(output_file)[0] + '.badxml'
-
-    args_tesseract = [
-        'tesseract',
-        '-l', '+'.join(options.language),
-        input_file,
-        badxml,
-        'hocr'
-    ] + options.tesseract_config
-    p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
-              universal_newlines=True)
-    try:
-        stdout, stderr = p.communicate(timeout=options.tesseract_timeout)
-    except TimeoutExpired:
-        p.kill()
-        stdout, stderr = p.communicate()
-        # Generate a HOCR file with no recognized text if tesseract times out
-        # Temporary workaround to hocrTransform not being able to function if
-        # it does not have a valid hOCR file.
-        with open(output_file, 'w', encoding="utf-8") as f:
-            f.write(tesseract.HOCR_TEMPLATE.format(
-                pageinfo['width_pixels'],
-                pageinfo['height_pixels']))
-    else:
-        if stdout:
-            log.info(stdout)
-        if stderr:
-            log.error(stderr)
-
-        if p.returncode != 0:
-            raise CalledProcessError(p.returncode, args_tesseract)
-
-        if os.path.exists(badxml + '.html'):
-            # Tesseract 3.02 appends suffix ".html" on its own (.badxml.html)
-            shutil.move(badxml + '.html', badxml)
-        elif os.path.exists(badxml + '.hocr'):
-            # Tesseract 3.03 appends suffix ".hocr" on its own (.badxml.hocr)
-            shutil.move(badxml + '.hocr', badxml)
-
-        # Tesseract 3.03 inserts source filename into hocr file without
-        # escaping it, creating invalid XML and breaking the parser.
-        # As a workaround, rewrite the hocr file, replacing the filename
-        # with a space.  Don't know if Tesseract 3.02 does the same.
-
-        regex_nested_single_quotes = re.compile(
-            r"""title='image "([^"]*)";""")
-        with open(badxml, mode='r', encoding='utf-8') as f_in, \
-                open(output_file, mode='w', encoding='utf-8') as f_out:
-            for line in f_in:
-                line = regex_nested_single_quotes.sub(
-                    r"""title='image " ";""", line)
-                f_out.write(line)
+    tesseract.generate_hocr(
+        input_file=input_file,
+        output_hocr=output_file,
+        language=options.language,
+        tessconfig=options.tesseract_config,
+        timeout=options.tesseract_timeout,
+        pageinfo_getter=partial(get_pageinfo, input_file, pdfinfo,
+                                pdfinfo_lock),
+        pagesegmode=options.tesseract_pagesegmode,
+        log=log
+        )
 
 
 @active_if(options.pdf_renderer == 'hocr')
@@ -637,24 +574,47 @@ def select_image_for_pdf(
 
 @active_if(options.pdf_renderer == 'hocr')
 @collate(
-    input=[select_image_for_pdf, ocr_tesseract_hocr],
-    filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
-    output=os.path.join(work_folder, r'\1.rendered.pdf'),
+    input=[select_image_for_pdf, split_pages],
+    filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.page\.pdf)"),
+    output=os.path.join(work_folder, r'\1.image-layer.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
-def render_hocr_page(
+def select_image_layer(
         infiles,
         output_file,
         log,
         pdfinfo,
         pdfinfo_lock):
-    hocr = next(ii for ii in infiles if ii.endswith('.hocr'))
+
+    page_pdf = next(ii for ii in infiles if ii.endswith('.page.pdf'))
     image = next(ii for ii in infiles if ii.endswith('.image'))
 
-    pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
+    if lossless_reconstruction:
+        re_symlink(page_pdf, output_file)
+    else:
+        pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
+        dpi = round(max(pageinfo['xres'], pageinfo['yres'], options.oversample))
+        with open(output_file, 'wb') as pdf:
+            img2pdf.convert([image], dpi=dpi, outputstream=pdf)
+
+
+@active_if(options.pdf_renderer == 'hocr')
+@transform(
+    input=ocr_tesseract_hocr,
+    filter=suffix('.hocr'),
+    output='.hocr.pdf',
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def render_hocr_page(
+        input_file,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+    hocr = input_file
+    pageinfo = get_pageinfo(hocr, pdfinfo, pdfinfo_lock)
     dpi = round(max(pageinfo['xres'], pageinfo['yres'], options.oversample))
 
     hocrtransform = HocrTransform(hocr, dpi)
-    hocrtransform.to_pdf(output_file, imageFileName=image,
+    hocrtransform.to_pdf(output_file, imageFileName=None,
                          showBoundingboxes=False, invisibleText=True)
 
 
@@ -682,6 +642,35 @@ def render_hocr_debug_page(
                          showBoundingboxes=True, invisibleText=False)
 
 
+@active_if(options.pdf_renderer == 'hocr')
+@collate(
+    input=[render_hocr_page, select_image_layer],
+    filter=regex(r".*/(\d{6})(?:\.hocr\.pdf|\.image-layer\.pdf)"),
+    output=os.path.join(work_folder, r'\1.rendered.pdf'),
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def add_text_layer(
+        infiles,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+    text = next(ii for ii in infiles if ii.endswith('.hocr.pdf'))
+    image = next(ii for ii in infiles if ii.endswith('.image-layer.pdf'))
+
+    pdf_output = pypdf.PdfFileWriter()
+
+    pdf_text = pypdf.PdfFileReader(open(text, "rb"))
+    pdf_image = pypdf.PdfFileReader(open(image, "rb"))
+
+    page = pdf_text.getPage(0)
+    page.mergePage(pdf_image.getPage(0))
+
+    pdf_output.addPage(page)
+
+    with open(output_file, "wb") as out:
+        pdf_output.write(out)
+
+
 @active_if(options.pdf_renderer == 'tesseract')
 @collate(
     input=[preprocess_clean, split_pages],
@@ -702,33 +691,21 @@ def tesseract_ocr_and_render_pdf(
         re_symlink(input_pdf, output_file)
         return
 
-    args_tesseract = [
-        'tesseract',
-        '-l', '+'.join(options.language),
-        input_image,
-        os.path.splitext(output_file)[0],  # Tesseract appends suffix
-        'pdf'
-    ] + options.tesseract_config
-    p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
-              universal_newlines=True)
-
-    try:
-        stdout, stderr = p.communicate(timeout=options.tesseract_timeout)
-        if stdout:
-            log.info(stdout)
-        if stderr:
-            log.error(stderr)
-    except TimeoutExpired:
-        p.kill()
-        log.info("Tesseract - page timed out")
-        re_symlink(input_pdf, output_file)
+    tesseract.generate_pdf(
+        input_image=input_image,
+        skip_pdf=input_pdf,
+        output_pdf=output_file,
+        language=options.language,
+        tessconfig=options.tesseract_config,
+        timeout=options.tesseract_timeout,
+        pagesegmode=options.tesseract_pagesegmode,
+        log=log)
 
 
 @transform(
     input=repair_pdf,
-    filter=suffix('.repaired.pdf'),
-    output='.pdfa_def.ps',
-    output_dir=work_folder,
+    filter=formatter(r'\.repaired\.pdf'),
+    output=os.path.join(work_folder, 'pdfa_def.ps'),
     extras=[_log])
 def generate_postscript_stub(
         input_file,
@@ -784,7 +761,7 @@ def skip_page(
 
 
 @merge(
-    input=[render_hocr_page, render_hocr_debug_page, skip_page,
+    input=[add_text_layer, render_hocr_debug_page, skip_page,
            tesseract_ocr_and_render_pdf, generate_postscript_stub],
     output=os.path.join(work_folder, 'merged.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
@@ -830,46 +807,7 @@ def copy_final(
 def validate_pdfa(
         input_file,
         log):
-
-    args_qpdf = [
-        'qpdf',
-        '--check',
-        input_file
-    ]
-
-    try:
-        check_output(args_qpdf, stderr=STDOUT, universal_newlines=True)
-    except CalledProcessError as e:
-        if e.returncode == 2:
-            print("{0}: not a valid PDF, and could not repair it.".format(
-                    options.input_file))
-            print("Details:")
-            print(e.output)
-        elif e.returncode == 3:
-            log.info("qpdf --check returned warnings:")
-            log.info(e.output)
-        else:
-            print(e.output)
-        return False
-
-    return True
-
-
-# @active_if(ocr_required and options.exact_image)
-# @merge([render_hocr_blank_page, extract_single_page],
-#        os.path.join(work_folder, "%04i.merged.pdf") % pageno)
-# def merge_hocr_with_original_page(infiles, output_file):
-#     with open(infiles[0], 'rb') as hocr_input, \
-#             open(infiles[1], 'rb') as page_input, \
-#             open(output_file, 'wb') as output:
-#         hocr_reader = pypdf.PdfFileReader(hocr_input)
-#         page_reader = pypdf.PdfFileReader(page_input)
-#         writer = pypdf.PdfFileWriter()
-
-#         the_page = hocr_reader.getPage(0)
-#         the_page.mergePage(page_reader.getPage(0))
-#         writer.addPage(the_page)
-#         writer.write(output)
+    return qpdf.check(input_file, log)
 
 
 def available_cpu_count():
@@ -898,9 +836,10 @@ def cleanup_ruffus_error_message(msg):
 
 
 def run_pipeline():
-    if not options.jobs or options.jobs == 1:
+    if not options.jobs:
         options.jobs = available_cpu_count()
     try:
+        options.history_file = os.path.join(work_folder, 'ruffus_history.sqlite')
         cmdline.run(options)
     except ruffus_exceptions.RethrownJobError as e:
         if options.verbose:
