@@ -214,7 +214,8 @@ setup(
         'Pillow',
         'reportlab',
         'PyPDF2',
-        'img2pdf'
+        'img2pdf',
+        'cffi'
     ],
     tests_require=tests_require,
     entry_points={

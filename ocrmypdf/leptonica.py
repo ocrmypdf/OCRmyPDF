@@ -10,11 +10,14 @@
 
 from __future__ import print_function, absolute_import, division
 import argparse
-import ctypes as C
 import sys
 import os
 import logging
 from tempfile import TemporaryFile
+from ctypes.util import find_library
+from ._leptonica import ffi
+
+lept = ffi.dlopen(find_library('lept'))
 
 logger = logging.getLogger(__name__)
 
@@ -23,67 +26,6 @@ def stderr(*objs):
     """Python 2/3 compatible print to stderr.
     """
     print("leptonica.py:", *objs, file=sys.stderr)
-
-
-from ctypes.util import find_library
-lept_lib = find_library('lept')
-if not lept_lib:
-    stderr("Could not find the Leptonica library")
-    sys.exit(3)
-try:
-    lept = C.cdll.LoadLibrary(lept_lib)
-except Exception:
-    stderr("Could not load the Leptonica library from %s", lept_lib)
-    sys.exit(3)
-
-
-class _PIXCOLORMAP(C.Structure):
-    """struct PixColormap from Leptonica src/pix.h
-    """
-
-    _fields_ = [
-        ("array", C.c_void_p),
-        ("depth", C.c_int32),
-        ("nalloc", C.c_int32),
-        ("n", C.c_int32)
-    ]
-
-
-class _PIX(C.Structure):
-    """struct Pix from Leptonica src/pix.h
-    """
-
-    _fields_ = [
-        ("w", C.c_uint32),
-        ("h", C.c_uint32),
-        ("d", C.c_uint32),
-        ("wpl", C.c_uint32),
-        ("refcount", C.c_uint32),
-        ("xres", C.c_int32),
-        ("yres", C.c_int32),
-        ("informat", C.c_int32),
-        ("text", C.POINTER(C.c_char)),
-        ("colormap", C.POINTER(_PIXCOLORMAP)),
-        ("data", C.POINTER(C.c_uint32))
-    ]
-
-
-PIX = C.POINTER(_PIX)
-
-lept.pixRead.argtypes = [C.c_char_p]
-lept.pixRead.restype = PIX
-lept.pixScale.argtypes = [PIX, C.c_float, C.c_float]
-lept.pixScale.restype = PIX
-lept.pixDeskew.argtypes = [PIX, C.c_int32]
-lept.pixDeskew.restype = PIX
-lept.pixFindSkew.argtypes = [PIX, C.POINTER(C.c_float), C.POINTER(C.c_float)]
-lept.pixFindSkew.restype = C.c_int32
-lept.pixWriteImpliedFormat.argtypes = [C.c_char_p, PIX, C.c_int32, C.c_int32]
-lept.pixWriteImpliedFormat.restype = C.c_int32
-lept.pixDestroy.argtypes = [C.POINTER(PIX)]
-lept.pixDestroy.restype = None
-lept.getLeptonicaVersion.argtypes = []
-lept.getLeptonicaVersion.restype = C.c_char_p
 
 
 class LeptonicaErrorTrap(object):
@@ -140,6 +82,12 @@ class LeptonicaIOError(LeptonicaError):
     pass
 
 
+def _pix_destroy(pix):
+    ptr_to_pix = ffi.new('PIX **', pix)
+    lept.pixDestroy(ptr_to_pix)
+    print('pix destroy ' + repr(pix))
+
+
 def pixRead(filename):
     """Load an image file into a PIX object.
 
@@ -148,7 +96,8 @@ def pixRead(filename):
 
     """
     with LeptonicaErrorTrap():
-        return lept.pixRead(filename.encode(sys.getfilesystemencoding()))
+        pix = lept.pixRead(filename.encode(sys.getfilesystemencoding()))
+        return ffi.gc(pix, _pix_destroy)
 
 
 def pixScale(pix, scalex, scaley):
@@ -168,7 +117,8 @@ def pixDeskew(pix, reduction_factor=0):
 
     """
     with LeptonicaErrorTrap():
-        return lept.pixDeskew(pix, reduction_factor)
+        deskewed = lept.pixDeskew(pix, reduction_factor)
+        return ffi.gc(deskewed, _pix_destroy)
 
 
 def pixFindSkew(pix):
@@ -178,11 +128,11 @@ def pixFindSkew(pix):
 
     """
     with LeptonicaErrorTrap():
-        angle = C.c_float(0.0)
-        confidence = C.c_float(0.0)
-        result = lept.pixFindSkew(pix, C.byref(angle), C.byref(confidence))
+        angle = ffi.new('float *', 0.0)
+        confidence = ffi.new('float *', 0.0)
+        result = lept.pixFindSkew(pix, angle, confidence)
         if result == 0:
-            return (angle.value, confidence.value)
+            return (angle[0], confidence[0])
         else:
             return (None, None)
 
@@ -212,17 +162,6 @@ def pixWriteImpliedFormat(filename, pix, jpeg_quality=0, jpeg_progressive=0):
         move(filename, filename[:-4])   # Remove .pnm suffix
 
 
-def pixDestroy(pix):
-    """Destroy the pix object.
-
-    Function signature is pixDestroy(struct Pix **), hence C.byref() to pass
-    the address of the pointer.
-
-    """
-    with LeptonicaErrorTrap():
-        lept.pixDestroy(C.byref(pix))
-
-
 def getLeptonicaVersion():
     """Get Leptonica version string.
 
@@ -231,12 +170,13 @@ def getLeptonicaVersion():
     a pointless effort to reclaim 100 bytes of memory.
 
     """
-    return lept.getLeptonicaVersion().decode()
+    return ffi.string(lept.getLeptonicaVersion()).decode()
 
 
 def deskew(infile, outfile, dpi):
     try:
         pix_source = pixRead(infile)
+        print(repr(pix_source))
     except LeptonicaIOError:
         raise LeptonicaIOError("Failed to open file: %s" % infile)
 
@@ -245,13 +185,12 @@ def deskew(infile, outfile, dpi):
     else:
         reduction_factor = 0  # Use default
     pix_deskewed = pixDeskew(pix_source, reduction_factor)
+    print(repr(pix_deskewed))
 
     try:
         pixWriteImpliedFormat(outfile, pix_deskewed)
     except LeptonicaIOError:
         raise LeptonicaIOError("Failed to open destination file: %s" % outfile)
-    pixDestroy(pix_source)
-    pixDestroy(pix_deskewed)
 
 
 if __name__ == '__main__':
@@ -325,7 +264,6 @@ def test_skew_angle():
             rotated_im.save(tmpfile)
             pix = pixRead(tmpfile.name)
             angle, confidence = pixFindSkew(pix)
-            pixDestroy(pix)
             print('{0} {1}  {2}'.format(rotate_angle, angle, confidence), file=sys.stderr)
 
 
