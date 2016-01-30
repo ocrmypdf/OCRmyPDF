@@ -1,7 +1,7 @@
 from cffi import FFI
 
 ffi = FFI()
-ffi.set_source("_leptonica", None)
+ffi.set_source("ocrmypdf.lib._leptonica", None)
 ffi.cdef("""
 typedef signed char             l_int8;
 typedef unsigned char           l_uint8;

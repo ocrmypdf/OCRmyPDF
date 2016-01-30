@@ -14,7 +14,7 @@ venv-3.5/
 */test/output
 bin/
 include/
-lib/
+ocrmypdf/lib/_*.py
 pip-selfcheck.json
 pyvenv.cfg
 htmlcov/
@@ -24,3 +24,4 @@ htmlcov/
 tests/cache/
 tests/resources/private
 ocrmypdf/version.py
+.eggs/

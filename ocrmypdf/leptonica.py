@@ -15,7 +15,7 @@ import os
 import logging
 from tempfile import TemporaryFile
 from ctypes.util import find_library
-from ._leptonica import ffi
+from .lib._leptonica import ffi
 
 lept = ffi.dlopen(find_library('lept'))
 
