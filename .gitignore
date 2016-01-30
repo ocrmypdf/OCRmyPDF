@@ -1,27 +1,31 @@
-tmp/
-log/
+# Development environment
 *.pyc
-tests/output/
-.ruffus_history.sqlite
 *.sublime-*
-/*.pdf
-build/
-dist/
-*.egg-info/
-venv/
 venv-3.4/
 venv-3.5/
-*/test/output
-bin/
-include/
-ocrmypdf/lib/_*.py
-pip-selfcheck.json
+venv/
 pyvenv.cfg
-htmlcov/
-.coverage
+
+# Package building
+*.egg-info/
 .cache/
+.eggs/
+build/
+dist/
+
+# Automatically generated files
+ocrmypdf/lib/_*.py
+ocrmypdf/version.py
+
+# Code coverage
+.coverage
+htmlcov/
+
+# Testing
+log/
+/*.pdf
 .ipynb_checkpoints/
 tests/cache/
+tests/output/
 tests/resources/private
-ocrmypdf/version.py
-.eggs/
+tmp/
