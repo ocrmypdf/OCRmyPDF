@@ -94,7 +94,6 @@ def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
         badxml,
         'hocr'
     ] + tessconfig)
-    print(args_tesseract)
     p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
               universal_newlines=True)
     try:
