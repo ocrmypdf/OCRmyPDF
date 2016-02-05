@@ -10,20 +10,26 @@ RUN useradd docker \
   && chown docker:docker /home/docker
 
 # Update system and install our dependencies
+# If this command takes too Docker hub's automated build will timeout,
+# so try it in portions
 RUN apt-get update && apt-get install -y --no-install-recommends \
   locales \
-  ghostscript \
-  tesseract-ocr \
-  tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-eng tesseract-ocr-fra \
-  qpdf \
-  poppler-utils \
   python3 \
   python3-pip \
   python3-venv \
   python3-reportlab \
   python3-pil \
-  python3-wheel \
-  unpaper
+  python3-wheel
+
+RUN apt-get install -y --no-install-recommends \
+  unpaper \
+  ghostscript \
+  qpdf \
+  poppler-utils
+
+RUN apt-get install -y --no-install-recommends \
+  tesseract-ocr \
+  tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-eng tesseract-ocr-fra
 
 # Enforce UTF-8
 # Borrowed from https://index.docker.io/u/crosbymichael/python/ 
