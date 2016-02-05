@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # © 2015 James R. Barlow: github.com/jbarlow83
 
 from __future__ import print_function, unicode_literals
-from setuptools import setup
-from subprocess import STDOUT, check_output, CalledProcessError
-from collections.abc import Mapping
-import re
+
 import sys
-
-
 if sys.version_info < (3, 4):
     print("Python 3.4 or newer is required")
     sys.exit(1)
+
+from setuptools import setup  # nopep8
+from subprocess import STDOUT, check_output, CalledProcessError  # nopep8
+from collections.abc import Mapping  # nopep8
+import re  # nopep8
+
 
 missing_program = '''
 The program '{program}' could not be executed or was not found on your
