@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python3
 ##############################################################################
 # Copyright (c) 2013-14: fritz-hh from Github
 #   (https://github.com/fritz-hh)
