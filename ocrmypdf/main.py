@@ -592,9 +592,15 @@ def select_image_layer(
         re_symlink(page_pdf, output_file)
     else:
         pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
-        dpi = round(max(pageinfo['xres'], pageinfo['yres'], options.oversample))
+        dpi = round(max(pageinfo['xres'], pageinfo['yres'],
+                        options.oversample))
+        imgsize = '{0}dpix{1}dpi'.format(dpi, dpi)
+        layout_fun = img2pdf.get_layout_fun(None, imgsize, None, None, None)
+
         with open(output_file, 'wb') as pdf:
-            img2pdf.convert([image], dpi=dpi, outputstream=pdf)
+            pdf.write(img2pdf.convert(
+                [image], producer="img2pdf", with_pdfrw=False,
+                layout_fun=layout_fun))
 
 
 @active_if(options.pdf_renderer == 'hocr')
