@@ -5,8 +5,11 @@ FROM      jbarlow83/ocrmypdf:latest
 MAINTAINER James R. Barlow <jim@purplerock.ca>
 
 # Update system and install our dependencies
+USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
   tesseract-ocr-all 
+
+USER docker
 
 # Must use array form of ENTRYPOINT
 # Non-array form does not append other arguments, because that is "intuitive"
