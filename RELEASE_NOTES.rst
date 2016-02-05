@@ -6,16 +6,18 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
-v3.2-rc1:
+v3.2:
 =========
 
 New features
 ------------
 
 -  Lossless reconstruction: when possible, OCRmyPDF will inject text layers without transcoding
-   images or otherwise manipulating the PDF.
--  New argument --tesseract-pagesegmode allows you to pass page segmentation arguments to Tesseract OCR.
+   images or otherwise manipulating the content and layout of a PDF page. The overall PDF is still reconstructed.
+-  New argument ``--tesseract-pagesegmode`` allows you to pass page segmentation arguments to Tesseract OCR.
    This helps for two column text and other situations that confuse Tesseract.
+-  Added a new "polyglot" version of the Docker image, that generates Tesseract with all languages packs installed,
+   for the polyglots among us. It is much larger.
 
 
 v3.1.1:
@@ -40,7 +42,7 @@ Changes
 -  Fixed an issue where OCRmyPDF failed to text that certain pages contained previously OCR'ed text, 
    such as OCR text produced by Tesseract 3.04
 -  Inserts /Creator tag into PDFs so that errors can be traced back to this project
--  Added new option --pdf-renderer=auto, to let OCRmyPDF pick the best PDF renderer. 
+-  Added new option ``--pdf-renderer=auto``, to let OCRmyPDF pick the best PDF renderer. 
    Currently it always chooses the 'hocrtransform' renderer but that behavior may change.
 -  Set up Travis CI automatic integration testing
 
