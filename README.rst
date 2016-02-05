@@ -11,12 +11,7 @@ Main features
    `PDF/A <https://en.wikipedia.org/?title=PDF/A>`__ file from a regular PDF
 -  Places OCR text accurately below the image to ease copy / paste
 -  Keeps the exact resolution of the original embedded images
-
-   -  or if requested oversamples the images before OCRing so as to get
-      better results
-
--  When possible, inserts OCR information as a "lossless" operation without transcoding
-   images or rendering vector information
+-  When possible, inserts OCR information as a "lossless" operation without rendering vector information
 -  Keeps file size about the same
 -  If requested deskews and/or cleans the image before performing OCR
 -  Validates input and output files
