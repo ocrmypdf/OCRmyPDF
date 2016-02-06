@@ -1,6 +1,6 @@
 # OCRmyPDF
 #
-# VERSION               3.0.2
+# VERSION               3.2
 FROM      debian:stretch
 MAINTAINER James R. Barlow <jim@purplerock.ca>
 
