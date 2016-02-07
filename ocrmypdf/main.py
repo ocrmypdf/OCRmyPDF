@@ -483,7 +483,6 @@ def orient_page(
         language=options.language,
         timeout=options.tesseract_timeout,
         log=log)
-    print(orient_conf)
 
     if orient_conf.angle == 0:
         re_symlink(page_pdf, output_file)
@@ -745,6 +744,11 @@ def add_text_layer(
 
     w, h = page_image.mediaBox.getWidth(), page_image.mediaBox.getHeight()
 
+    # Rotation occurs about the bottom left corner of the image rather than
+    # the center.
+    # Rotation is applied first, then the image must be translated so that the
+    # bottom left corner of the image is moved to the bottom left corner of the
+    # page.
     if rotation == 0:
         tx, ty = 0, 0
     elif rotation == 90:
@@ -770,8 +774,8 @@ def add_text_layer(
 
 @active_if(options.pdf_renderer == 'tesseract')
 @collate(
-    input=[preprocess_clean, orient_page],
-    filter=regex(r".*/(\d{6})(?:\.pp-clean\.png|\.ocr\.oriented\.pdf)"),
+    input=[select_image_for_pdf, orient_page],
+    filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
     output=os.path.join(work_folder, r'\1.rendered.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def tesseract_ocr_and_render_pdf(
@@ -781,7 +785,7 @@ def tesseract_ocr_and_render_pdf(
         pdfinfo,
         pdfinfo_lock):
 
-    input_image = next((ii for ii in input_files if ii.endswith('.png')), '')
+    input_image = next((ii for ii in input_files if ii.endswith('.image')), '')
     input_pdf = next((ii for ii in input_files if ii.endswith('.pdf')))
     if not input_image:
         # Skipping this page
@@ -854,6 +858,10 @@ def skip_page(
         input_file,
         output_file,
         log):
+    # The purpose of this step is its filter to forward only the skipped
+    # files (.skip.oriented.pdf) while disregarding the processed ones
+    # (.ocr.oriented.pdf).  Alternative would be for merge_pages to filter
+    # pages itself if it gets multiple copies of a page.
     re_symlink(input_file, output_file, log)
 
 
