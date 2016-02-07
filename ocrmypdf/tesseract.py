@@ -7,6 +7,7 @@ import re
 import shutil
 from functools import lru_cache
 from . import ExitCode, get_program
+from collections import namedtuple
 
 from subprocess import Popen, PIPE, CalledProcessError, \
     TimeoutExpired, check_output, STDOUT
@@ -15,6 +16,10 @@ try:
 except ImportError:
     DEVNULL = open(os.devnull, 'wb')
 
+
+OrientationConfidence = namedtuple(
+    'OrientationConfidence',
+    ('angle', 'confidence'))
 
 HOCR_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -74,6 +79,37 @@ def languages():
         print(e.output)
         sys.exit(ExitCode.missing_dependency)
     return set(lang.strip() for lang in langs.splitlines()[1:])
+
+
+def get_orientation(input_file, language: list, timeout: float, log):
+    args_tesseract = [
+        get_program('tesseract'),
+        '-l', '+'.join(language),
+        '-psm', '0',
+        input_file,
+        'stdout'
+    ]
+
+    p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=STDOUT,
+              universal_newlines=True)
+    try:
+        stdout, stderr = p.communicate(timeout=timeout)
+    except TimeoutExpired:
+        p.kill()
+        stdout, stderr = p.communicate()
+        return OrientationConfidence(angle=0, confidence=0.0)
+    else:
+        osd = {}
+        for line in stdout.splitlines():
+            line = line.strip()
+            parts = line.split(':', maxsplit=2)
+            if len(parts) == 2:
+                osd[parts[0].strip()] = parts[1].strip()
+        print(osd)
+        oc = OrientationConfidence(
+            angle=int(osd['Orientation in degrees']),
+            confidence=float(osd['Orientation confidence']))
+        return oc
 
 
 def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
