@@ -141,6 +141,9 @@ preprocessing = parser.add_argument_group(
     "Preprocessing options",
     "Improve OCR quality and final image")
 preprocessing.add_argument(
+    '-r', '--rotate-pages', action='store_true',
+    help="automatically rotate pages based on detected text orientation")
+preprocessing.add_argument(
     '-d', '--deskew', action='store_true',
     help="deskew each page before performing OCR")
 preprocessing.add_argument(
@@ -442,6 +445,7 @@ def split_pages(
                 os.path.basename(filename)[0:6] + alt_suffix))
 
 
+@active_if(options.rotate_pages)
 @transform(
     input=split_pages,
     filter=suffix('.page.pdf'),
@@ -476,6 +480,10 @@ def orient_page(
         pdfinfo_lock):
 
     page_pdf = next(ii for ii in infiles if ii.endswith('.page.pdf'))
+
+    if not options.rotate_pages:
+        re_symlink(page_pdf, output_file)
+        return
     preview = next(ii for ii in infiles if ii.endswith('.preview.png'))
 
     orient_conf = tesseract.get_orientation(
