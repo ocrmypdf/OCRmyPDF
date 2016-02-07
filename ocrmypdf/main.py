@@ -370,6 +370,10 @@ def get_pageinfo(input_file, pdfinfo, pdfinfo_lock):
     return pageinfo
 
 
+def page_number(input_file):
+    return int(os.path.basename(input_file)[0:6])
+
+
 def is_ocr_required(pageinfo, log):
     page = pageinfo['pageno'] + 1
     ocr_required = True
@@ -725,8 +729,6 @@ def add_text_layer(
     text = next(ii for ii in infiles if ii.endswith('.hocr.pdf'))
     image = next(ii for ii in infiles if ii.endswith('.image-layer.pdf'))
 
-    pdf_output = pypdf.PdfFileWriter()
-
     pdf_text = pypdf.PdfFileReader(open(text, "rb"))
     pdf_image = pypdf.PdfFileReader(open(image, "rb"))
 
@@ -737,40 +739,29 @@ def add_text_layer(
     page_image = pdf_image.getPage(0)
     rotation = page_image.get('/Rotate', 0)
 
-    print(rotation)
+    # /Rotate is a clockwise rotation: 90 means page facing "east"
+    # The negative of this value is the angle that eliminates that rotation
     rotation = -rotation % 360
-    while rotation < 0:
-        rotation += 360
-    while rotation > 360:
-        rotation -= 360
 
-    # In PDF coordinates the bottom left corner is (0, 0)
-    # Translation applies first
-    # Jump to the center of the text page (/2), and then rotate in place
     w, h = page_image.mediaBox.getWidth(), page_image.mediaBox.getHeight()
 
-    print(rotation)
-    print("image w = {0}, h = {1}".format(w, h))
-    print("text w = {0}, h = {1}".format(page_text.mediaBox.getWidth(), page_text.mediaBox.getHeight()))
-
-    if rotation == 180:
-        tx = w / 2
-        ty = h / 2
-        page_text.mergeRotatedTranslatedPage(page_image,
-                                             rotation, tx, ty, expand=False)
+    if rotation == 0:
+        tx, ty = 0, 0
     elif rotation == 90:
-        tx = h
-        ty = 0
-        page_text.mergeRotatedScaledTranslatedPage(page_image,
-                                                   rotation, 1.0, tx, ty, expand=False)
+        tx, ty = h, 0
+    elif rotation == 180:
+        tx, ty = w, h
     elif rotation == 270:
-        tx = 0
-        ty = w
-        page_text.mergeRotatedScaledTranslatedPage(page_image,
-                                                   rotation, 1.0, tx, ty, expand=False)
+        tx, ty = 0, w
     else:
         pass
 
+    log.info("{0}: rotating {1} degrees and translating {1}, {2}".format(
+        page_number(image), rotation, tx, ty))
+    page_text.mergeRotatedScaledTranslatedPage(
+        page_image, rotation, 1.0, tx, ty, expand=False)
+
+    pdf_output = pypdf.PdfFileWriter()
     pdf_output.addPage(page_text)
 
     with open(output_file, "wb") as out:
