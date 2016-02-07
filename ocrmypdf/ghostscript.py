@@ -43,6 +43,7 @@ def generate_pdfa(pdf_pages, output_file, threads=1):
             "-dNOPAUSE",
             '-dNumRenderingThreads=' + str(threads),
             "-sDEVICE=pdfwrite",
+            "-dAutoRotatePages=/None",
             "-sColorConversionStrategy=/RGB",
             "-sProcessColorModel=DeviceRGB",
             "-dJPEGQ=95",
