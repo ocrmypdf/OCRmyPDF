@@ -747,28 +747,29 @@ def add_text_layer(
     # In PDF coordinates the bottom left corner is (0, 0)
     # Translation applies first
     # Jump to the center of the text page (/2), and then rotate in place
+    w, h = page_image.mediaBox.getWidth(), page_image.mediaBox.getHeight()
+
     print(rotation)
-    print("image w = {0}, h = {1}".format(page_image.mediaBox.getWidth(), page_image.mediaBox.getHeight()))
+    print("image w = {0}, h = {1}".format(w, h))
     print("text w = {0}, h = {1}".format(page_text.mediaBox.getWidth(), page_text.mediaBox.getHeight()))
+
     if rotation == 180:
-        tx = page_image.mediaBox.getWidth() / 2
-        ty = page_image.mediaBox.getHeight() / 2
+        tx = w / 2
+        ty = h / 2
         page_text.mergeRotatedTranslatedPage(page_image,
                                              rotation, tx, ty, expand=False)
     elif rotation == 90:
-        w, h = page_image.mediaBox.getWidth(), page_image.mediaBox.getHeight()
-        #page_image.addTransformation(
-        #    [0, 1,
-        #     -1, 0,
-        #     2, 0])
         tx = h
         ty = 0
         page_text.mergeRotatedScaledTranslatedPage(page_image,
                                                    rotation, 1.0, tx, ty, expand=False)
+    elif rotation == 270:
+        tx = 0
+        ty = w
+        page_text.mergeRotatedScaledTranslatedPage(page_image,
+                                                   rotation, 1.0, tx, ty, expand=False)
     else:
-        tx = ty = 0
-        print("t = ({0}, {1})".format(tx, ty))
-
+        pass
 
     pdf_output.addPage(page_text)
 
