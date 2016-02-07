@@ -47,6 +47,9 @@ RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /root/*
 RUN pyvenv /appenv \
   && pyvenv --system-site-packages /appenv
 
+COPY ./docker-wrapper.sh /application/
+COPY ./test_requirements.txt /application/
+
 # Install application and dependencies
 # In this arrangement Pillow and reportlab will be provided by the system
 RUN . /appenv/bin/activate; \
