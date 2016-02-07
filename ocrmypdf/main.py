@@ -440,7 +440,69 @@ def split_pages(
 
 @transform(
     input=split_pages,
-    filter=suffix('.ocr.page.pdf'),
+    filter=suffix('.page.pdf'),
+    output='.preview.png',
+    output_dir=work_folder,
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def rasterize_preview(
+        input_file,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+    ghostscript.rasterize_pdf(
+        input_file=input_file,
+        output_file=output_file,
+        xres=200,
+        yres=200,
+        raster_device='pnggray',
+        log=log)
+
+
+@collate(
+    input=[split_pages, rasterize_preview],
+    filter=regex(r".*/(\d{6})(\.ocr|\.skip)(?:\.page\.pdf|\.preview\.png)"),
+    output=os.path.join(work_folder, r'\1\2.oriented.pdf'),
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def orient_page(
+        infiles,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+
+    page_pdf = next(ii for ii in infiles if ii.endswith('.page.pdf'))
+    preview = next(ii for ii in infiles if ii.endswith('.preview.png'))
+
+    orient_conf = tesseract.get_orientation(
+        preview,
+        language=options.language,
+        timeout=options.tesseract_timeout,
+        log=log)
+    print(orient_conf)
+
+    if orient_conf.angle == 0:
+        re_symlink(page_pdf, output_file)
+    else:
+        if orient_conf.confidence < 15:
+            log.warning(
+                'Low orientation confidence {:.1f}'.format(
+                    orient_conf.confidence))
+
+        writer = pypdf.PdfFileWriter()
+        reader = pypdf.PdfFileReader(page_pdf)
+        page = reader.pages[0]
+
+        # Rotate opposite of orientation
+        rotated_page = page.rotateClockwise(orient_conf.angle)
+        writer.addPage(rotated_page)
+        with open(output_file, 'wb') as out:
+            writer.write(out)
+
+
+@transform(
+    input=orient_page,
+    filter=suffix('.ocr.oriented.pdf'),
     output='.page.png',
     output_dir=work_folder,
     extras=[_log, _pdfinfo, _pdfinfo_lock])
@@ -571,8 +633,8 @@ def select_image_for_pdf(
 
 @active_if(options.pdf_renderer == 'hocr')
 @collate(
-    input=[select_image_for_pdf, split_pages],
-    filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.page\.pdf)"),
+    input=[select_image_for_pdf, orient_page],
+    filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
     output=os.path.join(work_folder, r'\1.image-layer.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def select_image_layer(
@@ -582,7 +644,7 @@ def select_image_layer(
         pdfinfo,
         pdfinfo_lock):
 
-    page_pdf = next(ii for ii in infiles if ii.endswith('.page.pdf'))
+    page_pdf = next(ii for ii in infiles if ii.endswith('.ocr.oriented.pdf'))
     image = next(ii for ii in infiles if ii.endswith('.image'))
 
     if lossless_reconstruction:
@@ -679,8 +741,8 @@ def add_text_layer(
 
 @active_if(options.pdf_renderer == 'tesseract')
 @collate(
-    input=[preprocess_clean, split_pages],
-    filter=regex(r".*/(\d{6})(?:\.pp-clean\.png|\.page\.pdf)"),
+    input=[preprocess_clean, orient_page],
+    filter=regex(r".*/(\d{6})(?:\.pp-clean\.png|\.ocr\.oriented\.pdf)"),
     output=os.path.join(work_folder, r'\1.rendered.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def tesseract_ocr_and_render_pdf(
@@ -754,8 +816,8 @@ def generate_postscript_stub(
 
 
 @transform(
-    input=split_pages,
-    filter=suffix('.skip.page.pdf'),
+    input=orient_page,
+    filter=suffix('.skip.oriented.pdf'),
     output='.done.pdf',
     output_dir=work_folder,
     extras=[_log])
