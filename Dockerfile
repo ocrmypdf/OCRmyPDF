@@ -41,13 +41,11 @@ RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /root/*
 RUN pyvenv /appenv \
   && pyvenv --system-site-packages /appenv
 
-COPY . /application/
-
 # Install application and dependencies
 # In this arrangement Pillow and reportlab will be provided by the system
 RUN . /appenv/bin/activate; \
   pip install --upgrade pip \
-  && pip install --no-cache-dir /application \
+  && pip install ocrmypdf \
   && pip install --no-cache-dir -r /application/test_requirements.txt
 
 USER docker
