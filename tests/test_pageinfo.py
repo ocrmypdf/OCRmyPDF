@@ -67,13 +67,21 @@ def test_single_page_text():
 def test_single_page_image():
     filename = os.path.join(TEST_OUTPUT, 'image-mono.pdf')
 
-    with NamedTemporaryFile() as im_tmp:
+    with NamedTemporaryFile(mode='wb+', suffix='.png') as im_tmp:
         im = Image.new('1', (8, 8), 0)
         for n in range(8):
             im.putpixel((n, n), 1)
         im.save(im_tmp.name, format='PNG')
 
-        pdf_bytes = img2pdf.convert([im_tmp.name], dpi=8)
+        imgsize = ((img2pdf.ImgSize.dpi, 8), (img2pdf.ImgSize.dpi, 8))
+        layout_fun = img2pdf.get_layout_fun(None, imgsize, None, None, None)
+
+        im_tmp.seek(0)
+        im_bytes = im_tmp.read()
+        pdf_bytes = img2pdf.convert(
+                im_bytes, producer="img2pdf", with_pdfrw=False,
+                layout_fun=layout_fun)
+
         with open(filename, 'wb') as pdf:
             pdf.write(pdf_bytes)
 
