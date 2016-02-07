@@ -105,7 +105,7 @@ def get_orientation(input_file, language: list, timeout: float, log):
             parts = line.split(':', maxsplit=2)
             if len(parts) == 2:
                 osd[parts[0].strip()] = parts[1].strip()
-        print(osd)
+
         oc = OrientationConfidence(
             angle=int(osd['Orientation in degrees']),
             confidence=float(osd['Orientation confidence']))
