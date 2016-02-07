@@ -449,7 +449,7 @@ def split_pages(
 @transform(
     input=split_pages,
     filter=suffix('.page.pdf'),
-    output='.preview.png',
+    output='.preview.jpg',
     output_dir=work_folder,
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def rasterize_preview(
@@ -463,13 +463,13 @@ def rasterize_preview(
         output_file=output_file,
         xres=200,
         yres=200,
-        raster_device='pnggray',
+        raster_device='jpeggray',
         log=log)
 
 
 @collate(
     input=[split_pages, rasterize_preview],
-    filter=regex(r".*/(\d{6})(\.ocr|\.skip)(?:\.page\.pdf|\.preview\.png)"),
+    filter=regex(r".*/(\d{6})(\.ocr|\.skip)(?:\.page\.pdf|\.preview\.jpg)"),
     output=os.path.join(work_folder, r'\1\2.oriented.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def orient_page(
@@ -484,7 +484,7 @@ def orient_page(
     if not options.rotate_pages:
         re_symlink(page_pdf, output_file)
         return
-    preview = next(ii for ii in infiles if ii.endswith('.preview.png'))
+    preview = next(ii for ii in infiles if ii.endswith('.preview.jpg'))
 
     orient_conf = tesseract.get_orientation(
         preview,
