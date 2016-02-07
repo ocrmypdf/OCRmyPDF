@@ -48,22 +48,22 @@ Download OCRmyPDF here: https://github.com/jbarlow83/OCRmyPDF/releases
 
 You can install it to a Python virtual environment or system-wide. 
 
-Installing the Docker container
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Installing the Docker image
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For many users, installing the Docker container will be easier than installing all of OCRmyPDF's dependencies. For Windows, it is the only option.
+For many users, installing the Docker image will be easier than installing all of OCRmyPDF's dependencies. For Windows, it is the only option.
 
 If you have `Docker <https://docs.docker.com/>`__ installed on your system, you can install
-a Docker container of the latest release.
+a Docker image of the latest release.
 
 Follow the Docker installation instructions for your platform.  If you can run this command
 successfully, your system is ready to download and execute the image::
 
    docker run hello-world
    
-OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine instance on Windows and OS X has only a single CPU core enabled. Use the VirtualBox Manager to determine the name of your Docker container host, and then follow these optional steps to enable multiple CPUs::
+OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine instance on Windows and OS X has only a single CPU core enabled. Use the VirtualBox Manager to determine the name of your Docker engine host, and then follow these optional steps to enable multiple CPUs::
 
-   # Optional
+   # Optional step for Mac OS X users
    docker-machine stop "yourVM"
    VBoxManage modifyvm "yourVM" --cpus 2  # or whatever number of core is desired
    docker-machine start "yourVM"
@@ -77,8 +77,14 @@ the image::
 Then tag it to give a more convenient name, just ocrmypdf::
 
    docker tag jbarlow83/ocrmypdf ocrmypdf
-  
-You can then run using the command::
+
+This image contains language packs for English, French, Spanish and German. The alternative "polyglot" image provides all available language packs <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.1.asc#languages>`__::
+
+   # Alternative step: If you need all language packs
+   docker pull jbarlow83/ocrmypdf-polyglot
+   docker tag jbarlow83/ocrmypdf-polyglot ocrmypdf
+
+You can then run ocrmypdf using the command::
 
    docker run ocrmypdf --help
   
@@ -90,7 +96,10 @@ In this worked example, the current working directory contains an input file cal
 
    docker run -v "$(pwd):/home/docker"   ocrmypdf --skip-text test.pdf output.pdf
 
-Note that ``ocrmypdf`` has its own separate ``-v VERBOSITYLEVEL`` argument to control debug verbosity. All Docker arguments should before the ``ocrmypdf`` container name and all arguments to ``ocrmypdf`` should be listed after.
+Note that ``ocrmypdf`` has its own separate ``-v VERBOSITYLEVEL`` argument to control debug verbosity. All Docker arguments should before the ``ocrmypdf`` image name and all arguments to ``ocrmypdf`` should be listed after.
+
+The Docker image provides the English, French, German and Spanish language packs. `All other language packs <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.1.asc#languages>`__ are available in the larger image ``jbarlow83/ocrmypdf-polyglot``.
+
 
 Installing on Mac OS X
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -227,6 +236,18 @@ If not yet installed, the script will notify you about dependencies that
 need to be installed. The script requires specific versions of the
 dependencies. Older version than the ones mentioned in the release notes
 are likely not to be compatible to OCRmyPDF.
+
+Languages
+---------
+
+OCRmyPDF uses Tesseract for OCR, and relies on its language packs. For Linux users,
+you can often find packages that provide language packs::
+
+   # Debian/Ubuntu users
+   sudo apt-get install tesseract-ocr-chi-sim
+   
+You can then pass the ``-l LANG`` argument to OCRmyPDF to give a hint as to what languages it should search for. Multiple
+languages can be requested.
 
 Support
 -------
