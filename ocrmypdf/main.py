@@ -683,7 +683,7 @@ def render_hocr_page(
 
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=None,
-                         showBoundingboxes=False, invisibleText=True)
+                         showBoundingboxes=False, invisibleText=False)
 
 
 @active_if(options.pdf_renderer == 'hocr')
@@ -730,10 +730,47 @@ def add_text_layer(
     pdf_text = pypdf.PdfFileReader(open(text, "rb"))
     pdf_image = pypdf.PdfFileReader(open(image, "rb"))
 
-    page = pdf_text.getPage(0)
-    page.mergePage(pdf_image.getPage(0))
+    page_text = pdf_text.getPage(0)
 
-    pdf_output.addPage(page)
+    # The text page will be oriented up
+    # if lossless_reconstruction, pdf_image may have a rotation applied
+    page_image = pdf_image.getPage(0)
+    rotation = page_image.get('/Rotate', 0)
+
+    print(rotation)
+    rotation = -rotation % 360
+    while rotation < 0:
+        rotation += 360
+    while rotation > 360:
+        rotation -= 360
+
+    # In PDF coordinates the bottom left corner is (0, 0)
+    # Translation applies first
+    # Jump to the center of the text page (/2), and then rotate in place
+    print(rotation)
+    print("image w = {0}, h = {1}".format(page_image.mediaBox.getWidth(), page_image.mediaBox.getHeight()))
+    print("text w = {0}, h = {1}".format(page_text.mediaBox.getWidth(), page_text.mediaBox.getHeight()))
+    if rotation == 180:
+        tx = page_image.mediaBox.getWidth() / 2
+        ty = page_image.mediaBox.getHeight() / 2
+        page_text.mergeRotatedTranslatedPage(page_image,
+                                             rotation, tx, ty, expand=False)
+    elif rotation == 90:
+        w, h = page_image.mediaBox.getWidth(), page_image.mediaBox.getHeight()
+        #page_image.addTransformation(
+        #    [0, 1,
+        #     -1, 0,
+        #     2, 0])
+        tx = h
+        ty = 0
+        page_text.mergeRotatedScaledTranslatedPage(page_image,
+                                                   rotation, 1.0, tx, ty, expand=False)
+    else:
+        tx = ty = 0
+        print("t = ({0}, {1})".format(tx, ty))
+
+
+    pdf_output.addPage(page_text)
 
     with open(output_file, "wb") as out:
         pdf_output.write(out)
