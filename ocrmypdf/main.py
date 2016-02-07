@@ -165,9 +165,6 @@ parser.add_argument(
     '--skip-big', type=float, metavar='MPixels',
     help="skip OCR on pages larger than the specified amount of megapixels, "
          "but include skipped pages in final output")
-# parser.add_argument(
-#     '--exact-image', action='store_true',
-#     help="Use original page from PDF without re-rendering")
 
 advanced = parser.add_argument_group(
     "Advanced",
@@ -592,9 +589,18 @@ def select_image_layer(
         re_symlink(page_pdf, output_file)
     else:
         pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
-        dpi = round(max(pageinfo['xres'], pageinfo['yres'], options.oversample))
-        with open(output_file, 'wb') as pdf:
-            img2pdf.convert([image], dpi=dpi, outputstream=pdf)
+        dpi = round(max(pageinfo['xres'], pageinfo['yres'],
+                        options.oversample))
+        imgsize = ((img2pdf.ImgSize.dpi, dpi), (img2pdf.ImgSize.dpi, dpi))
+
+        layout_fun = img2pdf.get_layout_fun(None, imgsize, None, None, None)
+
+        with open(image, 'rb') as imfile, \
+                open(output_file, 'wb') as pdf:
+            rawdata = imfile.read()
+            pdf.write(img2pdf.convert(
+                rawdata, producer="img2pdf", with_pdfrw=False,
+                layout_fun=layout_fun))
 
 
 @active_if(options.pdf_renderer == 'hocr')

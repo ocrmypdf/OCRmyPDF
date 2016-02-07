@@ -6,8 +6,18 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
+v3.2.1:
+=======
+
+Changes
+-------
+
+-  Fixed issue #47 "convert() got and unexpected keyword argument 'dpi'" by upgrading to img2pdf 0.2
+-  Tweaked the Dockerfiles
+
+
 v3.2:
-=========
+=====
 
 New features
 ------------

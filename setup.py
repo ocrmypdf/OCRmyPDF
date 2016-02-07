@@ -212,11 +212,11 @@ setup(
     ],
     use_scm_version={'version_scheme': 'post-release'},
     install_requires=[
-        'ruffus',
-        'Pillow',
-        'reportlab',
-        'PyPDF2',
-        'img2pdf'
+        'ruffus>=2.6.3',
+        'Pillow>=2.4.0',
+        'reportlab>=3.1.44',
+        'PyPDF2>=1.25.1',
+        'img2pdf>=0.2.0'
     ],
     tests_require=tests_require,
     entry_points={
