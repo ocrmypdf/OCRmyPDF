@@ -187,9 +187,6 @@ advanced.add_argument(
     '--tesseract-timeout', default=180.0, type=float, metavar='SECONDS',
     help='give up on OCR after the timeout, but copy the preprocessed page '
          'into the final output')
-advanced.add_argument(
-    '--deskewer', choices=['leptonica', 'unpaper'], default='leptonica',
-    help='choose deskew provider')
 
 debugging = parser.add_argument_group(
     "Debugging",
@@ -588,11 +585,8 @@ def preprocess_deskew(
     pageinfo = get_pageinfo(input_file, pdfinfo, pdfinfo_lock)
     dpi = int(pageinfo['xres'])
 
-    if options.deskewer == 'unpaper':
-        unpaper.deskew(input_file, output_file, dpi, log)
-    else:
-        from . import leptonica
-        leptonica.deskew(input_file, output_file, dpi)
+    from . import leptonica
+    leptonica.deskew(input_file, output_file, dpi)
 
 
 @transform(
