@@ -63,9 +63,14 @@ def repair(input_file, output_file, log):
 
 
 def get_npages(input_file):
-    pages = check_output(
-        [get_program('qpdf'), '--show-npages', input_file],
-         universal_newlines=True, close_fds=True)
+    try:
+        pages = check_output(
+            [get_program('qpdf'), '--show-npages', input_file],
+             universal_newlines=True, close_fds=True)
+    except CalledProcessError as e:
+        if e.returncode == 2 and e.output.find('No such file'):
+            log.error(e.output)
+            sys.exit(ExitCode.input_file)
     return int(pages)
 
 

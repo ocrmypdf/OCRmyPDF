@@ -12,6 +12,7 @@ import multiprocessing
 import atexit
 import textwrap
 import img2pdf
+import logging
 
 import PyPDF2 as pypdf
 from PIL import Image
@@ -105,7 +106,7 @@ parser = cmdline.get_argparse(
     ignored_args=[
         'touch_files_only', 'recreate_database', 'checksum_file_name',
         'key_legend_in_graph', 'draw_graph_horizontally', 'flowchart_format',
-        'forced_tasks', 'target_tasks', 'use_threads', 'jobs'])
+        'forced_tasks', 'target_tasks', 'use_threads', 'jobs', 'log_file'])
 
 parser.add_argument(
     'input_file',
@@ -122,7 +123,7 @@ parser.add_argument(
 
 metadata = parser.add_argument_group(
     "Metadata options",
-    "Set output PDF/A metadata (default: use input document's title)")
+    "Set output PDF/A metadata (default: use input document's metadata)")
 metadata.add_argument(
     '--title', type=str,
     help="set document title (place multiple words in quotes)")
@@ -131,7 +132,7 @@ metadata.add_argument(
     help="set document author")
 metadata.add_argument(
     '--subject', type=str,
-    help="set document")
+    help="set document subject description")
 metadata.add_argument(
     '--keywords', type=str,
     help="set document keywords")
@@ -259,8 +260,20 @@ if options.pdf_renderer == 'hocr':
 # Logging
 
 
-_logger, _logger_mutex = cmdline.setup_logging(__name__, options.log_file,
-                                               options.verbose)
+# Let ruffus configure logging
+_logger, _logger_mutex = cmdline.setup_logging(__name__, log_file_name=None,
+                                               verbose=True)
+
+# Hijack the root logger it configures
+root_logger = logging.getLogger(__name__)
+
+# Find the stderr handler and ensure it produces sane output
+for handler in root_logger.handlers:
+    if isinstance(handler, logging.StreamHandler):
+        formatter_ = logging.Formatter("%(message)s")
+        handler.setFormatter(formatter_)
+        if not options.verbose:
+            handler.setLevel(logging.WARNING)
 
 
 class WrappedLogger:
@@ -428,6 +441,12 @@ def split_pages(
     for oo in output_files:
         with suppress(FileNotFoundError):
             os.unlink(oo)
+
+    # If no files were repaired the input will be empty
+    if not input_file:
+        log.error("{0}: file not found or invalid argument".format(
+                options.input_file))
+        sys.exit(ExitCode.input_file)
 
     npages = qpdf.get_npages(input_file)
     qpdf.split_pages(input_file, work_folder, npages)
