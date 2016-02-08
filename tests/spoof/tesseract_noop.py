@@ -53,6 +53,13 @@ def main():
         pdf_bytes = img2pdf.convert([inputf], dpi=300)
         with open(output + '.pdf', 'wb') as f:
             f.write(pdf_bytes)
+    elif sys.argv[-1] == 'stdout':
+        inputf = sys.argv[-2]
+        print("""Orientation: 0
+Orientation in degrees: 0
+Orientation confidence: 100.00
+Script: 1
+Script confidence: 100.00""", file=sys.stderr)
     else:
         print("Spoof doesn't understand arguments", file=sys.stderr)
         print(sys.argv, file=sys.stderr)

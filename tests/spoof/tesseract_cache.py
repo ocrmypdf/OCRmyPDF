@@ -10,12 +10,16 @@ CACHE_PATH = os.path.abspath(os.path.join(
         os.path.dirname(__file__), '..', 'cache'))
 
 
+def real_tesseract():
+    tess_args = ['tesseract'] + sys.argv[1:]
+    os.execvp("tesseract", tess_args)
+    return  # Not reachable
+
 def main():
     operation = sys.argv[-1]
-    # For anything except a hocr or pdf, defer to real tesseract
-    if operation != 'hocr' and operation != 'pdf':
-        tess_args = ['tesseract'] + sys.argv[1:]
-        os.execvp("tesseract", tess_args)
+    # For anything unexpected operation, defer to real tesseract binary
+    if operation != 'hocr' and operation != 'pdf' and operation != 'stdout':
+        real_tesseract()
         return  # Not reachable
 
     try:
@@ -43,8 +47,16 @@ def main():
     except ValueError:
         pass
 
-    input_file = sys.argv[-3]
-    output_file = sys.argv[-2]
+    if operation == 'stdout' and psm != '0':
+        real_tesseract()
+        return
+
+    if operation == 'stdout':
+        input_file = sys.argv[-2]
+        output_file = 'stdout'
+    else:
+        input_file = sys.argv[-3]
+        output_file = sys.argv[-2]
 
     if operation == 'hocr':
         output_file += '.hocr'
@@ -53,25 +65,46 @@ def main():
 
     with open(input_file, 'rb') as f:
         m.update(f.read())
-
     cache_name = os.path.join(CACHE_PATH, m.hexdigest())
+    print(cache_name)
     if os.path.exists(cache_name):
         # Cache hit
         print("Tesseract cache hit", file=sys.stderr)
-        shutil.copy(cache_name, output_file)
+        if operation != 'stdout':
+            shutil.copy(cache_name, output_file)
+
+        # Replicate output
+        with open(cache_name + '.stdout', 'r') as f:
+            print(f.read(), end='')
+        with open(cache_name + '.stderr', 'r') as f:
+            print(f.read(), end='', file=sys.stderr)
         sys.exit(0)
 
     # Cache miss
     print("Tesseract cache miss", file=sys.stderr)
 
     # Call tesseract
-    subprocess.check_call(['tesseract'] + sys.argv[1:])
+    p = subprocess.Popen(
+            ['tesseract'] + sys.argv[1:],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            universal_newlines=True)
+    stdout, stderr = p.communicate()
+
+    with open(cache_name + '.stdout', 'w') as f:
+        f.write(stdout)
+    with open(cache_name + '.stderr', 'w') as f:
+        f.write(stderr)
+    print(stdout, end='')
+    print(stderr, end='', file=sys.stderr)
 
     # Insert file into cache
-    if os.path.exists(output_file):
-        shutil.copy(output_file, cache_name)
+    if output_file != 'stdout':
+        if os.path.exists(output_file):
+            shutil.copy(output_file, cache_name)
+        else:
+            print("Could not find output file", file=sys.stderr)
     else:
-        print("Could not find output file", file=sys.stderr)
+        open(cache_name, 'w').close()
 
 
 if __name__ == '__main__':
