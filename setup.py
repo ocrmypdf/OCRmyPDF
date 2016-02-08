@@ -208,15 +208,20 @@ setup(
         "Topic :: Text Processing :: Linguistic",
         ],
     setup_requires=[
-        'setuptools_scm'
+        'setuptools_scm',
+        'cffi>=1.0.0'
     ],
     use_scm_version={'version_scheme': 'post-release'},
+    cffi_modules=[
+        'ocrmypdf/lib/compile_leptonica.py:ffi'
+    ],
     install_requires=[
         'ruffus>=2.6.3',
         'Pillow>=2.4.0',
         'reportlab>=3.1.44',
         'PyPDF2>=1.25.1',
-        'img2pdf>=0.2.0'
+        'img2pdf>=0.2.0',
+        'cffi>=1.5.0'
     ],
     tests_require=tests_require,
     entry_points={
