@@ -636,7 +636,6 @@ def ocr_tesseract_hocr(
         )
 
 
-@active_if(options.pdf_renderer == 'hocr')
 @collate(
     input=[rasterize_with_ghostscript, preprocess_deskew, preprocess_clean],
     filter=regex(r".*/(\d{6})(?:\.page|\.pp-deskew|\.pp-clean)\.png"),
