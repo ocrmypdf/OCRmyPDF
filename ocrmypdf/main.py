@@ -23,6 +23,7 @@ from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
     formatter, follows, split, collate, check_if_uptodate
 import ruffus.ruffus_exceptions as ruffus_exceptions
 import ruffus.cmdline as cmdline
+import ruffus.proxy_logger as proxy_logger
 
 from .hocrtransform import HocrTransform
 from .pageinfo import pdf_get_all_pageinfo
@@ -260,20 +261,24 @@ if options.pdf_renderer == 'hocr':
 # Logging
 
 
-# Let ruffus configure logging
-_logger, _logger_mutex = cmdline.setup_logging(__name__, log_file_name=None,
-                                               verbose=True)
+def logging_factory(logger_name, listargs):
+    log_file_name, verbose = listargs
 
-# Hijack the root logger it configures
-root_logger = logging.getLogger(__name__)
+    root_logger = logging.getLogger(logger_name)
+    root_logger.setLevel(logging.DEBUG)
 
-# Find the stderr handler and ensure it produces sane output
-for handler in root_logger.handlers:
-    if isinstance(handler, logging.StreamHandler):
-        formatter_ = logging.Formatter("%(message)s")
-        handler.setFormatter(formatter_)
-        if not options.verbose:
-            handler.setLevel(logging.WARNING)
+    handler = logging.StreamHandler(sys.stderr)
+    formatter_ = logging.Formatter("%(levelname)6s - %(message)s")
+    handler.setFormatter(formatter_)
+    if verbose:
+        handler.setLevel(logging.DEBUG)
+    else:
+        handler.setLevel(logging.WARNING)
+    root_logger.addHandler(handler)
+    return root_logger
+
+_logger, _logger_mutex = proxy_logger.make_shared_logger_and_proxy(
+    logging_factory, __name__, [None, options.verbose])
 
 
 class WrappedLogger:
