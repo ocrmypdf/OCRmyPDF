@@ -31,7 +31,7 @@ from .pdfa import generate_pdfa_def
 from . import ghostscript
 from . import tesseract
 from . import qpdf
-from . import ExitCode
+from . import ExitCode, page_number
 
 import pkg_resources
 
@@ -268,12 +268,12 @@ def logging_factory(logger_name, listargs):
     root_logger.setLevel(logging.DEBUG)
 
     handler = logging.StreamHandler(sys.stderr)
-    formatter_ = logging.Formatter("%(levelname)6s - %(message)s")
+    formatter_ = logging.Formatter("%(levelname)7s - %(message)s")
     handler.setFormatter(formatter_)
     if verbose:
         handler.setLevel(logging.DEBUG)
     else:
-        handler.setLevel(logging.WARNING)
+        handler.setLevel(logging.INFO)
     root_logger.addHandler(handler)
     return root_logger
 
@@ -381,7 +381,7 @@ def repair_pdf(
     qpdf.repair(input_file, output_file, log)
     with pdfinfo_lock:
         pdfinfo.extend(pdf_get_all_pageinfo(output_file))
-        log.info(pdfinfo)
+        log.debug(pdfinfo)
 
 
 def get_pageinfo(input_file, pdfinfo, pdfinfo_lock):
@@ -389,10 +389,6 @@ def get_pageinfo(input_file, pdfinfo, pdfinfo_lock):
     with pdfinfo_lock:
         pageinfo = pdfinfo[pageno].copy()
     return pageinfo
-
-
-def page_number(input_file):
-    return int(os.path.basename(input_file)[0:6])
 
 
 def is_ocr_required(pageinfo, log):
@@ -403,11 +399,11 @@ def is_ocr_required(pageinfo, log):
         # or both. It seems quite unlikely that one would find meaningful text
         # from rasterizing vector content. So skip the page.
         log.info(
-            "Page {0} has no images - skipping OCR".format(page)
+            "{0:4d}: page has no images - skipping OCR".format(page)
         )
         ocr_required = False
     elif pageinfo['has_text']:
-        s = "Page {0} already has text! – {1}"
+        s = "{0:4d}: page already has text! – {1}"
 
         if not options.force_ocr and not options.skip_text:
             log.error(s.format(page,
@@ -426,9 +422,10 @@ def is_ocr_required(pageinfo, log):
         pixel_count = pageinfo['width_pixels'] * pageinfo['height_pixels']
         if pixel_count > (options.skip_big * 1000000):
             ocr_required = False
-            log.info(
-                "Page {0} is very large; skipping due to -b".format(page))
-
+            log.warning(
+                "{0:4d}: page too big, skipping OCR "
+                "({1:.1f} MPixels > {2:.1f} MPixels --skip-big)".format(
+                    page, pixel_count / 1000000, options.skip_big))
     return ocr_required
 
 
@@ -521,7 +518,8 @@ def orient_page(
     else:
         if orient_conf.confidence < 15:
             log.warning(
-                'Low orientation confidence {:.1f}'.format(
+                '{0:4d}: low orientation confidence {1:.1f}'.format(
+                    page_number(preview),
                     orient_conf.confidence))
 
         writer = pypdf.PdfFileWriter()
@@ -560,7 +558,7 @@ def rasterize_with_ghostscript(
                  for image in pageinfo['images']):
             device = 'pnggray'
 
-    log.debug("Rendering {0} with {1}".format(
+    log.debug("Rasterize {0} with {1}".format(
             os.path.basename(input_file), device))
     xres = max(pageinfo['xres'], options.oversample or 0)
     yres = max(pageinfo['yres'], options.oversample or 0)
@@ -683,6 +681,8 @@ def select_image_layer(
     image = next(ii for ii in infiles if ii.endswith('.image'))
 
     if lossless_reconstruction:
+        log.debug("{:4d}: page eligible for lossless reconstruction".format(
+            page_number(page_pdf)))
         re_symlink(page_pdf, output_file)
     else:
         pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
@@ -792,7 +792,7 @@ def add_text_layer(
     else:
         pass
 
-    log.info("{0}: rotating {1} degrees and translating {1}, {2}".format(
+    log.info("{0}: rotating {1} degrees".format(
         page_number(image), rotation, tx, ty))
     page_text.mergeRotatedScaledTranslatedPage(
         page_image, rotation, 1.0, tx, ty, expand=False)
@@ -923,7 +923,7 @@ def merge_pages(
         return key
 
     pdf_pages = sorted(input_files, key=input_file_order)
-    log.info(pdf_pages)
+    log.debug("Final pages: " + "\n".join(pdf_pages))
     ghostscript.generate_pdfa(pdf_pages, output_file, options.jobs or 1)
 
 

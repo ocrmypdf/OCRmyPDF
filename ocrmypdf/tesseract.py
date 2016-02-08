@@ -6,7 +6,7 @@ import os
 import re
 import shutil
 from functools import lru_cache
-from . import ExitCode, get_program
+from . import ExitCode, get_program, page_number
 from collections import namedtuple
 
 from subprocess import Popen, PIPE, CalledProcessError, \
@@ -93,10 +93,10 @@ def get_orientation(input_file, language: list, timeout: float, log):
     p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=STDOUT,
               universal_newlines=True)
     try:
-        stdout, stderr = p.communicate(timeout=timeout)
+        stdout, _ = p.communicate(timeout=timeout)
     except TimeoutExpired:
         p.kill()
-        stdout, stderr = p.communicate()
+        stdout, _ = p.communicate()
         return OrientationConfidence(angle=0, confidence=0.0)
     else:
         osd = {}
@@ -130,7 +130,7 @@ def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
         badxml,
         'hocr'
     ] + tessconfig)
-    p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=PIPE,
+    p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=STDOUT,
               universal_newlines=True)
     try:
         stdout, stderr = p.communicate(timeout=timeout)
@@ -146,10 +146,21 @@ def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
                 pageinfo['width_pixels'],
                 pageinfo['height_pixels']))
     else:
-        if stdout:
-            log.info(stdout)
-        if stderr:
-            log.error(stderr)
+        lines = stdout.splitlines()
+        for line in lines:
+            if line.startswith("Tesseract Open Source"):
+                continue
+            elif line.startswith("Warning in pixReadMemPng"):
+                continue
+            elif 'diacritics' in line:
+                log.warning("{0:4d}: {1} - may indicate poor results".format(
+                    page_number(input_file), line.strip()))
+            elif line.startswith('OSD: Weak margin'):
+                log.warning("{0:4d}: unsure about page orientation".format(
+                    page_number(input_file)))
+            else:
+                log.info("{0:4d}: {1}".format(
+                    page_number(input_file), line.strip()))
 
         if p.returncode != 0:
             raise CalledProcessError(p.returncode, args_tesseract)
