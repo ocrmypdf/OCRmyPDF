@@ -7,7 +7,8 @@ from shutil import copy
 from . import get_program
 
 
-def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log):
+def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
+                  pageno=1):
     with NamedTemporaryFile(delete=True) as tmp:
         args_gs = [
             get_program('gs'),
@@ -15,6 +16,8 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log):
             '-dBATCH',
             '-dNOPAUSE',
             '-sDEVICE=%s' % raster_device,
+            '-dFirstPage=%i' % pageno,
+            '-dLastPage=%i' % pageno,
             '-o', tmp.name,
             '-r{0}x{1}'.format(str(xres), str(yres)),
             input_file

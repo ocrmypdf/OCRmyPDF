@@ -242,6 +242,28 @@ def test_argsfile(spoof_tesseract_noop):
     'hocr',
     'tesseract',
     ])
+def test_autorotate(spoof_tesseract_cache, renderer):
+    import ocrmypdf.ghostscript as ghostscript
+    import logging
+
+    gslog = logging.getLogger()
+
+    out = check_ocrmypdf('cardinal.pdf', 'test_autorotate_%s.pdf' % renderer,
+                         '-r', '-v', '1')
+    for n in range(1, 4+1):
+        ghostscript.rasterize_pdf(
+            out, _make_output('cardinal-%i.png' % n), xres=100, yres=100,
+            raster_device='pngmono', log=gslog, pageno=n)
+
+    ghostscript.rasterize_pdf(
+            _make_input('cardinal.pdf'), _make_output('reference.png'),
+            xres=100, yres=100, raster_device='pngmono', log=gslog, pageno=1)
+
+
+@pytest.mark.parametrize('renderer', [
+    'hocr',
+    'tesseract',
+    ])
 def test_ocr_timeout(renderer):
     out = check_ocrmypdf('skew.pdf', 'test_timeout_%s.pdf' % renderer,
                          '--tesseract-timeout', '1.0')
