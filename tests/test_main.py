@@ -121,10 +121,9 @@ def test_deskew(spoof_tesseract_noop):
         raster_device='pngmono',
         log=log)
 
-    from ocrmypdf.leptonica import pixRead, pixDestroy, pixFindSkew
-    pix = pixRead(deskewed_png)
-    skew_angle, skew_confidence = pixFindSkew(pix)
-    pix = pixDestroy(pix)
+    from ocrmypdf.leptonica import Pix
+    pix = Pix.read(deskewed_png)
+    skew_angle, skew_confidence = pix.find_skew()
 
     print(skew_angle)
     assert -0.5 < skew_angle < 0.5, "Deskewing failed"
@@ -249,6 +248,8 @@ def test_autorotate(spoof_tesseract_cache, renderer):
 
     gslog = logging.getLogger()
 
+    # cardinal.pdf contains four copies of an image rotated in each cardinal
+    # direction - these ones are "burned in" not tagged with /Rotate
     out = check_ocrmypdf('cardinal.pdf', 'test_autorotate_%s.pdf' % renderer,
                          '-r', '-v', '1', env=spoof_tesseract_cache)
     for n in range(1, 4+1):
@@ -260,15 +261,20 @@ def test_autorotate(spoof_tesseract_cache, renderer):
             _infile('cardinal.pdf'), _outfile('reference.png'),
             xres=100, yres=100, raster_device='pngmono', log=gslog, pageno=1)
 
+    # Verify leptonica: check that a rotated image has poor correlation with
+    # reference
     pix_ref = leptonica.Pix.read(_outfile('reference.png'))
     pix_ref_180 = pix_ref.rotate180()
     correlation = leptonica.Pix.correlation_binary(pix_ref, pix_ref_180)
     assert correlation < 0.10
 
+    # Confirm that each image strongly correlates with the reference
+    # i.e. was rotated to correct orientation
     for n in range(1, 4+1):
         pix_other = leptonica.Pix.read(_outfile('cardinal-%i.png' % n))
         correlation = leptonica.Pix.correlation_binary(pix_ref, pix_other)
         assert correlation > 0.80
+
 
 @pytest.mark.parametrize('renderer', [
     'hocr',
@@ -278,14 +284,14 @@ def test_ocr_timeout(renderer):
     out = check_ocrmypdf('skew.pdf', 'test_timeout_%s.pdf' % renderer,
                          '--tesseract-timeout', '1.0')
     pdfinfo = pdf_get_all_pageinfo(out)
-    assert pdfinfo[0]['has_text'] == False
+    assert not pdfinfo[0]['has_text']
 
 
 def test_skip_big(spoof_tesseract_cache):
     out = check_ocrmypdf('enormous.pdf', 'test_enormous.pdf',
                          '--skip-big', '10', env=spoof_tesseract_cache)
     pdfinfo = pdf_get_all_pageinfo(out)
-    assert pdfinfo[0]['has_text'] == False
+    assert not pdfinfo[0]['has_text']
 
 
 @pytest.mark.parametrize('renderer', [
