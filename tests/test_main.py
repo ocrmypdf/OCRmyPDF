@@ -11,6 +11,7 @@ import pytest
 from ocrmypdf.pageinfo import pdf_get_all_pageinfo
 import PyPDF2 as pypdf
 from ocrmypdf import ExitCode
+from ocrmypdf import leptonica
 
 
 if sys.version_info.major < 3:
@@ -258,6 +259,11 @@ def test_autorotate(spoof_tesseract_cache, renderer):
     ghostscript.rasterize_pdf(
             _make_input('cardinal.pdf'), _make_output('reference.png'),
             xres=100, yres=100, raster_device='pngmono', log=gslog, pageno=1)
+
+    pix_ref = leptonica.pixRead(_make_output('reference.png'))
+    for n in range(1, 4+1):
+        pix_other = leptonica.pixRead(_make_output('cardinal-%i.png' % n))
+        print(leptonica.correlation_binary(pix_ref, pix_other))
 
 
 @pytest.mark.parametrize('renderer', [

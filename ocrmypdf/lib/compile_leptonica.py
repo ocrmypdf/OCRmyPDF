@@ -52,6 +52,7 @@ l_int32 pixWriteImpliedFormat ( const char *filename, PIX *pix, l_int32 quality,
 void pixDestroy ( PIX **ppix );
 PIX * pixDeskew ( PIX *pixs, l_int32 redsearch );
 char * getLeptonicaVersion (  );
+l_int32 pixCorrelationBinary(PIX *pix1, PIX *pix2, l_float32 *pval);
 """)
 
 if __name__ == '__main__':

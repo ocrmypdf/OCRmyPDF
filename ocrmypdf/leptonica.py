@@ -193,6 +193,14 @@ def deskew(infile, outfile, dpi):
         raise LeptonicaIOError("Failed to open destination file: %s" % outfile)
 
 
+def correlation_binary(pix1, pix2):
+    correlation = ffi.new('float *', 0.0)
+    result = lept.pixCorrelationBinary(pix1, pix2, correlation)
+    if result != 0:
+        raise LeptonicaError("Correlation failed")
+    return correlation[0]
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Python wrapper to access Leptonica")
