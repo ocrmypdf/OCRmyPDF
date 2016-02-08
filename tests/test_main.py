@@ -262,7 +262,7 @@ def test_autorotate(spoof_tesseract_cache, renderer):
 
     pix_ref = leptonica.Pix.read(_outfile('reference.png'))
     pix_ref_180 = pix_ref.rotate180()
-    correlation = leptonica.correlation_binary(pix_ref.cpix, pix_ref_180.cpix)
+    correlation = leptonica.Pix.correlation_binary(pix_ref, pix_ref_180)
     assert correlation < 0.10
 
     for n in range(1, 4+1):
