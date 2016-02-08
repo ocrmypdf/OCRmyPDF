@@ -19,15 +19,15 @@ def check(input_file, log):
         check_output(args_qpdf, stderr=STDOUT, universal_newlines=True)
     except CalledProcessError as e:
         if e.returncode == 2:
-            print("{0}: not a valid PDF, and could not repair it.".format(
+            log.error("{0}: not a valid PDF, and could not repair it.".format(
                     input_file))
-            print("Details:")
-            print(e.output)
+            log.error("Details:")
+            log.error(e.output)
         elif e.returncode == 3:
             log.info("qpdf --check returned warnings:")
             log.info(e.output)
         else:
-            print(e.output)
+            log.warning(e.output)
         return False
     return True
 
@@ -40,29 +40,27 @@ def repair(input_file, output_file, log):
         check_output(args_qpdf, stderr=STDOUT, universal_newlines=True)
     except CalledProcessError as e:
         if e.returncode == 3 and e.output.find("operation succeeded"):
-            log.debug('qpdf found and fixed errors:')
+            log.debug('qpdf found and fixed errors: ' + e.output)
             log.debug(e.output)
-            print(e.output)
             return
 
         if e.returncode == 2 and e.output.find("invalid password"):
-            print("{0}: this PDF is password-protected - password must "
-                  "be removed for OCR".format(input_file))
+            log.error("{0}: this PDF is password-protected - password must "
+                      "be removed for OCR".format(input_file))
             sys.exit(ExitCode.input_file)
         elif e.returncode == 2:
-            print("{0}: not a valid PDF, and could not repair it.".format(
-                    input_file))
-            print("Details:")
-            print(e.output)
+            log.error("{0}: not a valid PDF, and could not repair it.".format(
+                      input_file))
+            log.error("Details: " + e.output)
             sys.exit(ExitCode.input_file)
         else:
-            print("{0}: unknown error".format(
-                    input_file))
-            print(e.output)
+            log.error("{0}: unknown error".format(
+                      input_file))
+            log.error(e.output)
             sys.exit(ExitCode.unknown)
 
 
-def get_npages(input_file):
+def get_npages(input_file, log):
     try:
         pages = check_output(
             [get_program('qpdf'), '--show-npages', input_file],

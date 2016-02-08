@@ -450,7 +450,7 @@ def split_pages(
                 options.input_file))
         sys.exit(ExitCode.input_file)
 
-    npages = qpdf.get_npages(input_file)
+    npages = qpdf.get_npages(input_file, log)
     qpdf.split_pages(input_file, work_folder, npages)
 
     from glob import glob
@@ -792,7 +792,7 @@ def add_text_layer(
     else:
         pass
 
-    log.info("{0}: rotating {1} degrees".format(
+    log.info("{0:4d}: rotating {1} degrees".format(
         page_number(image), rotation, tx, ty))
     page_text.mergeRotatedScaledTranslatedPage(
         page_image, rotation, 1.0, tx, ty, expand=False)
