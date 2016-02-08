@@ -249,7 +249,7 @@ def test_autorotate(spoof_tesseract_cache, renderer):
     gslog = logging.getLogger()
 
     out = check_ocrmypdf('cardinal.pdf', 'test_autorotate_%s.pdf' % renderer,
-                         '-r', '-v', '1')
+                         '-r', '-v', '1', env=spoof_tesseract_cache)
     for n in range(1, 4+1):
         ghostscript.rasterize_pdf(
             out, _make_output('cardinal-%i.png' % n), xres=100, yres=100,
