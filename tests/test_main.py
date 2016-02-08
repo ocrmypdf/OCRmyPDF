@@ -44,17 +44,17 @@ def run_ocrmypdf_sh(input_file, output_file, *args, env=None):
     return sh, out, err
 
 
-def _make_input(input_basename):
+def _infile(input_basename):
     return os.path.join(TEST_RESOURCES, input_basename)
 
 
-def _make_output(output_basename):
+def _outfile(output_basename):
     return os.path.join(TEST_OUTPUT, output_basename)
 
 
 def check_ocrmypdf(input_basename, output_basename, *args, env=None):
-    input_file = _make_input(input_basename)
-    output_file = _make_output(output_basename)
+    input_file = _infile(input_basename)
+    output_file = _outfile(output_basename)
 
     sh, out, err = run_ocrmypdf_sh(input_file, output_file, *args, env=env)
     assert sh.returncode == 0, dict(stdout=out, stderr=err)
@@ -64,8 +64,8 @@ def check_ocrmypdf(input_basename, output_basename, *args, env=None):
 
 
 def run_ocrmypdf_env(input_basename, output_basename, *args, env=None):
-    input_file = _make_input(input_basename)
-    output_file = _make_output(output_basename)
+    input_file = _infile(input_basename)
+    output_file = _outfile(output_basename)
 
     if env is None:
         env = os.environ
@@ -111,7 +111,7 @@ def test_deskew(spoof_tesseract_noop):
     import logging
     log = logging.getLogger()
 
-    deskewed_png = _make_output('deskewed.png')
+    deskewed_png = _outfile('deskewed.png')
 
     rasterize_pdf(
         deskewed_pdf,
@@ -154,7 +154,7 @@ def test_exotic_image(spoof_tesseract_cache, pdf, renderer):
 
 
 def test_preserve_metadata(spoof_tesseract_noop):
-    pdf_before = pypdf.PdfFileReader(_make_input('graph.pdf'))
+    pdf_before = pypdf.PdfFileReader(_infile('graph.pdf'))
 
     output = check_ocrmypdf('graph.pdf', 'test_metadata_preserve.pdf',
                             env=spoof_tesseract_noop)
@@ -166,8 +166,8 @@ def test_preserve_metadata(spoof_tesseract_noop):
 
 
 def test_override_metadata(spoof_tesseract_noop):
-    input_file = _make_input('c02-22.pdf')
-    output_file = _make_output('test_override_metadata.pdf')
+    input_file = _infile('c02-22.pdf')
+    output_file = _outfile('test_override_metadata.pdf')
 
     german = 'Du siehst den Wald vor lauter Bäumen nicht.'
     chinese = '孔子'
@@ -231,11 +231,11 @@ def test_skip_ocr(spoof_tesseract_cache):
 
 
 def test_argsfile(spoof_tesseract_noop):
-    with open(_make_output('test_argsfile.txt'), 'w') as argsfile:
+    with open(_outfile('test_argsfile.txt'), 'w') as argsfile:
         print('--title', 'ArgsFile Test', '--author', 'Test Cases',
               sep='\n', end='\n', file=argsfile)
     check_ocrmypdf('graph.pdf', 'test_argsfile.pdf',
-                   '@' + _make_output('test_argsfile.txt'),
+                   '@' + _outfile('test_argsfile.txt'),
                    env=spoof_tesseract_noop)
 
 
@@ -253,16 +253,16 @@ def test_autorotate(spoof_tesseract_cache, renderer):
                          '-r', '-v', '1', env=spoof_tesseract_cache)
     for n in range(1, 4+1):
         ghostscript.rasterize_pdf(
-            out, _make_output('cardinal-%i.png' % n), xres=100, yres=100,
+            out, _outfile('cardinal-%i.png' % n), xres=100, yres=100,
             raster_device='pngmono', log=gslog, pageno=n)
 
     ghostscript.rasterize_pdf(
-            _make_input('cardinal.pdf'), _make_output('reference.png'),
+            _infile('cardinal.pdf'), _outfile('reference.png'),
             xres=100, yres=100, raster_device='pngmono', log=gslog, pageno=1)
 
-    pix_ref = leptonica.pixRead(_make_output('reference.png'))
+    pix_ref = leptonica.pixRead(_outfile('reference.png'))
     for n in range(1, 4+1):
-        pix_other = leptonica.pixRead(_make_output('cardinal-%i.png' % n))
+        pix_other = leptonica.pixRead(_outfile('cardinal-%i.png' % n))
         print(leptonica.correlation_binary(pix_ref, pix_other))
 
 
@@ -339,19 +339,19 @@ def test_missing_docinfo(spoof_tesseract_noop):
 
 
 def test_uppercase_extension(spoof_tesseract_noop):
-    shutil.copy(_make_input("skew.pdf"), _make_input("UPPERCASE.PDF"))
+    shutil.copy(_infile("skew.pdf"), _infile("UPPERCASE.PDF"))
     try:
         check_ocrmypdf("UPPERCASE.PDF", "UPPERCASE_OUT.PDF",
                        env=spoof_tesseract_noop)
     finally:
-        os.unlink(_make_input("UPPERCASE.PDF"))
+        os.unlink(_infile("UPPERCASE.PDF"))
 
 
 def test_input_file_not_found():
     input_file = "does not exist.pdf"
     sh, out, err = run_ocrmypdf_sh(
-        _make_input(input_file),
-        _make_output("will not happen.pdf"))
+        _infile(input_file),
+        _outfile("will not happen.pdf"))
     assert sh.returncode == ExitCode.input_file
     assert (input_file in out or input_file in err)
 
@@ -359,8 +359,8 @@ def test_input_file_not_found():
 def test_input_file_not_a_pdf():
     input_file = __file__  # Try to OCR this file
     sh, out, err = run_ocrmypdf_sh(
-        _make_input(input_file),
-        _make_output("will not happen.pdf"))
+        _infile(input_file),
+        _outfile("will not happen.pdf"))
     assert sh.returncode == ExitCode.input_file
     assert (input_file in out or input_file in err)
 
