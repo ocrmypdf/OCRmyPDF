@@ -718,7 +718,7 @@ def render_hocr_page(
 
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=None,
-                         showBoundingboxes=False, invisibleText=False)
+                         showBoundingboxes=False, invisibleText=True)
 
 
 @active_if(options.pdf_renderer == 'hocr')
