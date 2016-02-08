@@ -201,6 +201,11 @@ def correlation_binary(pix1, pix2):
     return correlation[0]
 
 
+def rotate180(pix):
+    pix_rotated = lept.pixRotate180(ffi.NULL, pix)
+    return ffi.gc(pix_rotated, _pix_destroy)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Python wrapper to access Leptonica")
