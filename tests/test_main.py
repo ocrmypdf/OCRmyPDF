@@ -260,14 +260,14 @@ def test_autorotate(spoof_tesseract_cache, renderer):
             _infile('cardinal.pdf'), _outfile('reference.png'),
             xres=100, yres=100, raster_device='pngmono', log=gslog, pageno=1)
 
-    pix_ref = leptonica.pixRead(_outfile('reference.png'))
-    pix_ref_180 = leptonica.rotate180(pix_ref)
-    correlation = leptonica.correlation_binary(pix_ref, pix_ref_180)
+    pix_ref = leptonica.Pix.read(_outfile('reference.png'))
+    pix_ref_180 = pix_ref.rotate180()
+    correlation = leptonica.correlation_binary(pix_ref.cpix, pix_ref_180.cpix)
     assert correlation < 0.10
 
     for n in range(1, 4+1):
-        pix_other = leptonica.pixRead(_outfile('cardinal-%i.png' % n))
-        correlation = leptonica.correlation_binary(pix_ref, pix_other)
+        pix_other = leptonica.Pix.read(_outfile('cardinal-%i.png' % n))
+        correlation = leptonica.Pix.correlation_binary(pix_ref, pix_other)
         assert correlation > 0.80
 
 @pytest.mark.parametrize('renderer', [

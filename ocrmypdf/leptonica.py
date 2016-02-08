@@ -82,6 +82,65 @@ class LeptonicaIOError(LeptonicaError):
     pass
 
 
+class Pix:
+    def __init__(self, cpix):
+        self.cpix = ffi.gc(cpix, _pix_destroy)
+
+    @classmethod
+    def read(cls, filename):
+        with LeptonicaErrorTrap():
+            return cls(lept.pixRead(
+                filename.encode(sys.getfilesystemencoding())))
+
+    def write_implied_format(
+            self, filename, jpeg_quality=0, jpeg_progressive=0):
+        fileroot, extension = os.path.splitext(filename)
+        fix_pnm = False
+        if extension.lower() in ('.pbm', '.pgm', '.ppm'):
+            # Leptonica does not process handle these extensions correctly, but
+            # does handle .pnm correctly.  Add another .pnm suffix.
+            filename += '.pnm'
+            fix_pnm = True
+
+        with LeptonicaErrorTrap():
+            lept.pixWriteImpliedFormat(
+                filename.encode(sys.getfilesystemencoding()),
+                self.cpix, jpeg_quality, jpeg_progressive)
+
+        if fix_pnm:
+            from shutil import move
+            move(filename, filename[:-4])   # Remove .pnm suffix
+
+    def deskew(self, reduction_factor=0):
+        return Pix(lept.pixDeskew(self.cpix, reduction_factor))
+
+    def scale(self, scalex, scaley):
+        with LeptonicaErrorTrap():
+            return Pix(lept.pixScale(self.cpix, scalex, scaley))
+
+    def rotate180(self):
+        with LeptonicaErrorTrap():
+            return Pix(lept.pixRotate180(ffi.NULL, self.cpix))
+
+    def find_skew(self):
+        with LeptonicaErrorTrap():
+            angle = ffi.new('float *', 0.0)
+            confidence = ffi.new('float *', 0.0)
+            result = lept.pixFindSkew(self.cpix, angle, confidence)
+            if result == 0:
+                return (angle[0], confidence[0])
+            else:
+                return (None, None)
+
+    @staticmethod
+    def correlation_binary(pix1, pix2):
+        correlation = ffi.new('float *', 0.0)
+        result = lept.pixCorrelationBinary(pix1.cpix, pix2.cpix, correlation)
+        if result != 0:
+            raise LeptonicaError("Correlation failed")
+        return correlation[0]
+
+
 def _pix_destroy(pix):
     ptr_to_pix = ffi.new('PIX **', pix)
     lept.pixDestroy(ptr_to_pix)
@@ -199,11 +258,6 @@ def correlation_binary(pix1, pix2):
     if result != 0:
         raise LeptonicaError("Correlation failed")
     return correlation[0]
-
-
-def rotate180(pix):
-    pix_rotated = lept.pixRotate180(ffi.NULL, pix)
-    return ffi.gc(pix_rotated, _pix_destroy)
 
 
 if __name__ == '__main__':
