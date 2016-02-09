@@ -138,7 +138,6 @@ metadata.add_argument(
     '--keywords', type=str,
     help="set document keywords")
 
-
 preprocessing = parser.add_argument_group(
     "Preprocessing options",
     "Improve OCR quality and final image")
@@ -159,14 +158,17 @@ preprocessing.add_argument(
     help="oversample images to at least the specified DPI, to improve OCR "
          "results slightly")
 
-parser.add_argument(
+ocrsettings = parser.add_argument_group(
+    "OCR options",
+    "Control how OCR is applied")
+ocrsettings.add_argument(
     '-f', '--force-ocr', action='store_true',
     help="rasterize any fonts or vector images on each page and apply OCR")
-parser.add_argument(
+ocrsettings.add_argument(
     '-s', '--skip-text', action='store_true',
     help="skip OCR on any pages that already contain text, but include the"
          " page in final output")
-parser.add_argument(
+ocrsettings.add_argument(
     '--skip-big', type=float, metavar='MPixels',
     help="skip OCR on pages larger than the specified amount of megapixels, "
          "but include skipped pages in final output")
@@ -513,15 +515,24 @@ def orient_page(
         timeout=options.tesseract_timeout,
         log=log)
 
+    direction = {
+        0: '⇧',
+        90: '⇦',
+        180: '⇩',
+        270: '⇨'
+    }
+
+    log.info(
+        '{0:4d}: page is facing {1}, confidence {2:.2f}{3}'.format(
+            page_number(preview),
+            direction.get(orient_conf.angle, '?'),
+            orient_conf.confidence,
+            ' - correcting rotation' if orient_conf.angle != 0 else '')
+    )
+
     if orient_conf.angle == 0:
         re_symlink(page_pdf, output_file)
     else:
-        if orient_conf.confidence < 15:
-            log.warning(
-                '{0:4d}: low orientation confidence {1:.1f}'.format(
-                    page_number(preview),
-                    orient_conf.confidence))
-
         writer = pypdf.PdfFileWriter()
         reader = pypdf.PdfFileReader(page_pdf)
         page = reader.pages[0]
@@ -792,8 +803,9 @@ def add_text_layer(
     else:
         pass
 
-    log.info("{0:4d}: rotating {1} degrees".format(
-        page_number(image), rotation, tx, ty))
+    if rotation != 0:
+        log.info("{0:4d}: rotating image within page {1} degrees".format(
+            page_number(image), rotation, tx, ty))
     page_text.mergeRotatedScaledTranslatedPage(
         page_image, rotation, 1.0, tx, ty, expand=False)
 
