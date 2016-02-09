@@ -202,14 +202,14 @@ def test_override_metadata(spoof_tesseract_noop):
     ])
 def test_oversample(spoof_tesseract_cache, renderer):
     oversampled_pdf = check_ocrmypdf(
-        'skew.pdf', 'test_oversample_%s.pdf' % renderer, '--oversample', '300',
+        'skew.pdf', 'test_oversample_%s.pdf' % renderer, '--oversample', '350',
         '-f',
         '--pdf-renderer', renderer, env=spoof_tesseract_cache)
 
     pdfinfo = pdf_get_all_pageinfo(oversampled_pdf)
 
     print(pdfinfo[0]['xres'])
-    assert abs(pdfinfo[0]['xres'] - 300) < 1
+    assert abs(pdfinfo[0]['xres'] - 350) < 1
 
 
 def test_repeat_ocr():
