@@ -176,7 +176,7 @@ class Pix:
     def _pix_destroy(pix):
         ptr_to_pix = ffi.new('PIX **', pix)
         lept.pixDestroy(ptr_to_pix)
-        print('pix destroy ' + repr(pix))
+        # print('pix destroy ' + repr(pix))
 
 
 def getLeptonicaVersion():
@@ -192,7 +192,6 @@ def getLeptonicaVersion():
 def deskew(infile, outfile, dpi):
     try:
         pix_source = Pix.read(infile)
-        print(repr(pix_source))
     except LeptonicaIOError:
         raise LeptonicaIOError("Failed to open file: %s" % infile)
 
@@ -201,7 +200,6 @@ def deskew(infile, outfile, dpi):
     else:
         reduction_factor = 0  # Use default
     pix_deskewed = pix_source.deskew(reduction_factor)
-    print(repr(pix_deskewed))
 
     try:
         pix_deskewed.write_implied_format(outfile)
