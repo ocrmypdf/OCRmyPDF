@@ -777,8 +777,11 @@ def add_text_layer(
 
     page_text = pdf_text.getPage(0)
 
-    # The text page will be oriented up
-    # if lossless_reconstruction, pdf_image may have a rotation applied
+    # The text page always will be oriented up
+    # but if lossless_reconstruction, pdf_image may have a rotation applied
+    # we can't just merge the pages, because a page can only have one /Rotate
+    # tag, so the differential rotation must be corrected.
+    # Also, pdf_image may not have its mediabox nailed to (0, 0)
     page_image = pdf_image.getPage(0)
     rotation = page_image.get('/Rotate', 0)
 
@@ -786,33 +789,30 @@ def add_text_layer(
     # The negative of this value is the angle that eliminates that rotation
     rotation = -rotation % 360
 
-    w, h = page_image.mediaBox.getWidth(), page_image.mediaBox.getHeight()
+    x1 = page_image.mediaBox.getLowerLeft_x()
+    x2 = page_image.mediaBox.getUpperRight_x()
+    y1 = page_image.mediaBox.getLowerLeft_y()
+    y2 = page_image.mediaBox.getUpperRight_y()
 
-    # Rotation occurs about the bottom left corner of the image rather than
-    # the center.
-    # Rotation is applied first, then the image must be translated so that the
-    # bottom left corner of the image is moved to the bottom left corner of the
-    # page.
+    # Rotation occurs about the page's (0, 0). Most pages will have the media
+    # box at (0, 0) will all content in the first quadrant but some cropped
+    # files may have an offset mediabox. We translate the page so that its
+    # bottom left corner after rotation is pinned to (0, 0) with the image
+    # in the first quadrant.
     if rotation == 0:
-        tx, ty = 0, 0
+        tx, ty = -x1, -y1
     elif rotation == 90:
-        tx, ty = h, 0
+        tx, ty = y2, -x1
     elif rotation == 180:
-        tx, ty = w, h
+        tx, ty = x2, y2
     elif rotation == 270:
-        tx, ty = 0, w
+        tx, ty = -y1, x2
     else:
         pass
 
     if rotation != 0:
-        log.info("{0:4d}: rotating image within page {1} degrees".format(
+        log.info("{0:4d}: rotating image layer {1} degrees".format(
             page_number(image), rotation, tx, ty))
-
-    # Since we produced .hocr.pdf it will have a mediabox at (0, 0)
-    # No such guarantees about .image-layer.pdf, so compensate
-    if rotation == 0:
-        lower_left = page_image.mediaBox.lowerLeft
-        tx, ty = (tx - lower_left[0], ty - lower_left[1])
 
     page_text.mergeRotatedScaledTranslatedPage(
         page_image, rotation, 1.0, tx, ty, expand=False)
