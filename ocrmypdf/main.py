@@ -807,6 +807,13 @@ def add_text_layer(
     if rotation != 0:
         log.info("{0:4d}: rotating image within page {1} degrees".format(
             page_number(image), rotation, tx, ty))
+
+    # Since we produced .hocr.pdf it will have a mediabox at (0, 0)
+    # No such guarantees about .image-layer.pdf, so compensate
+    if rotation == 0:
+        lower_left = page_image.mediaBox.lowerLeft
+        tx, ty = (tx - lower_left[0], ty - lower_left[1])
+
     page_text.mergeRotatedScaledTranslatedPage(
         page_image, rotation, 1.0, tx, ty, expand=False)
 
