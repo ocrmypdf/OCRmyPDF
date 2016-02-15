@@ -6,6 +6,31 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
+next:
+=======
+
+New features
+------------
+
+-  Automatic page rotation (``-r``) is now available. It uses ignores any prior rotation information
+   on PDFs and sets rotation based on the dominant orientation of detectable text.
+
+
+Fixes
+-----
+
+-  Fixed an issue where lossless reconstruction could cause some pages to be appear incorrectly
+   rotated in the page had a /Rotate tag applied
+
+
+Changes
+-------
+
+-  Many improvements to logging output
+-  ``--deskew`` is now performed by Leptonica instead of unpaper
+-  libffi is now required
+
+
 v3.2.1:
 =======
 

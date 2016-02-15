@@ -197,24 +197,18 @@ Installing HEAD revision from sources
 If you have ``git`` and ``python3.4`` or ``python3.5`` installed, you can install from source. When the ``pip`` installer runs,
 it will alert you if dependencies are missing.
 
-First, clone the HEAD revision::
+To install the HEAD revision from sources in the current Python 3 environment::
 
-   git clone -b master https://github.com/jbarlow83/OCRmyPDF.git
-   cd OCRmyPDF
+   pip3 install git+https://github.com/jbarlow83/OCRmyPDF.git
 
-To install the HEAD revision from sources::
+Or, to install in `development mode <https://pythonhosted.org/setuptools/setuptools.html#development-mode>`__,  allowing customization of OCRmyPDF, use the ``-e`` flag::
 
-   pip3 install .
-
-Or, to install in `development mode <https://pythonhosted.org/setuptools/setuptools.html#development-mode>`__, 
-allowing customization of OCRmyPDF, use the ``-e`` flag::
-
-   pip3 install -e .
+   pip3 install -e git+https://github.com/jbarlow83/OCRmyPDF.git
    
 On certain Linux distributions such as Ubuntu, you may need to use 
 run the install command as superuser::
 
-   sudo pip3 install [-e] .
+   sudo pip3 install [-e] git+https://github.com/jbarlow83/OCRmyPDF.git
    
 Note that this will alter your system's Python distribution. If you prefer 
 to not install as superuser, you can install the package in a Python virtual environment::
