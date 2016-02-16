@@ -254,16 +254,19 @@ def test_autorotate(spoof_tesseract_cache, renderer):
                          '-r', '-v', '1', env=spoof_tesseract_cache)
     for n in range(1, 4+1):
         ghostscript.rasterize_pdf(
-            out, _outfile('cardinal-%i.png' % n), xres=100, yres=100,
+            out, _outfile('cardinal_%s-%i.png' % (renderer, n)),
+            xres=100, yres=100,
             raster_device='pngmono', log=gslog, pageno=n)
 
     ghostscript.rasterize_pdf(
-            _infile('cardinal.pdf'), _outfile('reference.png'),
-            xres=100, yres=100, raster_device='pngmono', log=gslog, pageno=1)
+            _infile('cardinal.pdf'),
+            _outfile('reference_%s.png' % renderer),
+            xres=100, yres=100,
+            raster_device='pngmono', log=gslog, pageno=1)
 
-    # Verify leptonica: check that a rotated image has poor correlation with
-    # reference
-    pix_ref = leptonica.Pix.read(_outfile('reference.png'))
+    # Verify leptonica: check that an incorrect rotated image has poor
+    # correlation with reference
+    pix_ref = leptonica.Pix.read(_outfile('reference_%s.png' % renderer))
     pix_ref_180 = pix_ref.rotate180()
     correlation = leptonica.Pix.correlation_binary(pix_ref, pix_ref_180)
     assert correlation < 0.10
@@ -271,9 +274,14 @@ def test_autorotate(spoof_tesseract_cache, renderer):
     # Confirm that each image strongly correlates with the reference
     # i.e. was rotated to correct orientation
     for n in range(1, 4+1):
-        pix_other = leptonica.Pix.read(_outfile('cardinal-%i.png' % n))
+        pix_other = leptonica.Pix.read(
+            _outfile('cardinal_%s-%i.png' % (renderer, n)))
         correlation = leptonica.Pix.correlation_binary(pix_ref, pix_other)
         assert correlation > 0.80
+
+
+def test_slashrotate(spoof_tesseract_cache:
+
 
 
 @pytest.mark.parametrize('renderer', [
