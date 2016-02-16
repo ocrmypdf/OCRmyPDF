@@ -38,9 +38,9 @@ install:
     - pip install -r test_requirements.txt
 
 script:
-    - cat ./lib/_leptonica.py
     - python setup.py clean
     - python setup.py install
+    - cat ./lib/_leptonica.py
     - py.test -s tests/test_main.py::test_deskew
 
 os:
