@@ -13,21 +13,24 @@ New features
 ------------
 
 -  Automatic page rotation (``-r``) is now available. It uses ignores any prior rotation information
-   on PDFs and sets rotation based on the dominant orientation of detectable text.
+   on PDFs and sets rotation based on the dominant orientation of detectable text. This feature is
+   fairly reliable but some false positives occur especially if there is not much text to work with. (#4) 
 
 
 Fixes
 -----
 
 -  Fixed an issue where lossless reconstruction could cause some pages to be appear incorrectly
-   rotated in the page had a /Rotate tag applied
+   rotated in the page had a /Rotate tag applied (#50)
+-  Fixed an issue where lossless reconstruction could misalign the graphics layer with respect to
+   text layer if the page had been cropped such that its origin is not (0, 0) (#49)
 
 
 Changes
 -------
 
 -  Many improvements to logging output
--  ``--deskew`` is now performed by Leptonica instead of unpaper
+-  ``--deskew`` is now performed by Leptonica instead of unpaper (#25)
 -  libffi is now required
 
 
