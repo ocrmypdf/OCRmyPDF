@@ -40,7 +40,7 @@ install:
 script:
     - python setup.py clean
     - python setup.py install
-    - cat ./lib/_leptonica.py
+    - python ocrmypdf/lib/compile_leptonica.py
     - py.test -s tests/test_main.py::test_deskew
 
 os:
