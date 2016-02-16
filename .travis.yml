@@ -25,7 +25,6 @@ before_install:
 
     # pip
     - pip install --upgrade pip
-    - pip install --upgrade wheel
 
     # Download, make and install unpaper (using ccache)
     - mkdir -p tarballs
@@ -34,17 +33,14 @@ before_install:
     - export PATH="/usr/lib/ccache:$PATH"
     - pushd unpaper-6.1 && ./configure --prefix=/usr && make -j && sudo make install && popd
 
-    - pip wheel -r requirements.txt -w $HOME/.cache/pip
-
 install:
     - pip install -r requirements.txt
     - pip install -r test_requirements.txt
 
 script:
     - python setup.py clean
-    - python setup.py build
     - python setup.py install
-    - cat /home/travis/build/jbarlow83/OCRmyPDF/lib/_leptonica.py
+    - cat ./lib/_leptonica.py
     - py.test -s tests/test_main.py::test_deskew
 
 os:
