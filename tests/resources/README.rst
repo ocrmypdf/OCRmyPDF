@@ -12,8 +12,6 @@ In some cases they were converted from one image format to another without other
 +---------------------+--------------------------------------------------------------------------------+
 | File                | Source                                                                         |
 +=====================+================================================================================+
-| cardinal.pdf        | Rotated copies of LinnSequencer.jpg                                            |
-+---------------------+--------------------------------------------------------------------------------+
 | c02-22.pdf          | `Project Gutenberg`_, Adventures of Huckleberry Finn, page 22                  |
 +---------------------+--------------------------------------------------------------------------------+
 | congress.jpg        | `US Congressional Records`_                                                    |
@@ -53,7 +51,7 @@ These test resources are assemblies from other previously mentioned files, relea
 - skew-encrypted.pdf (skew.pdf with encrypted applied)
 
 
-.. _Wikimedia: https://upload.wikimedia.org/wikipedia/en/b/b7/LinnSequencer_hardware_MIDI_sequencer_brochure_page_2_300dpi.jpg
+.. _`Wikimedia: LinnSequencer`: https://upload.wikimedia.org/wikipedia/en/b/b7/LinnSequencer_hardware_MIDI_sequencer_brochure_page_2_300dpi.jpg
 
 .. _`Project Gutenberg`: https://www.gutenberg.org/files/76/76-h/76-h.htm#c2
 
