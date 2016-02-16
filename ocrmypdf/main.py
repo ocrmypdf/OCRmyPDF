@@ -677,7 +677,10 @@ def select_image_for_pdf(
     if all(image['enc'] == 'jpeg' for image in pageinfo['images']):
         # If all images were JPEGs originally, produce a JPEG as output
         im = Image.open(image)
-        dpi = im.info.get('dpi', int(pageinfo['xres']))
+        dpi = im.info.get(
+            'dpi',
+            (int(pageinfo['xres']), int(pageinfo['yres']))
+        )
         im.save(output_file, format='JPEG', dpi=dpi)
     else:
         re_symlink(image, output_file)
