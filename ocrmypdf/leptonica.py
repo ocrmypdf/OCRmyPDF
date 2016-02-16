@@ -170,7 +170,7 @@ class Pix:
         result = lept.pixCorrelationBinary(pix1.cpix, pix2.cpix, correlation)
         if result != 0:
             raise LeptonicaError("Correlation failed")
-        return correlation[0]
+        return float(correlation[0])
 
     @staticmethod
     def _pix_destroy(pix):
