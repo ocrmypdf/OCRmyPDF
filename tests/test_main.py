@@ -57,7 +57,12 @@ def check_ocrmypdf(input_basename, output_basename, *args, env=None):
     output_file = _outfile(output_basename)
 
     sh, out, err = run_ocrmypdf_sh(input_file, output_file, *args, env=env)
-    assert sh.returncode == 0, dict(stdout=out, stderr=err)
+    if sh.returncode != 0:
+        print('stdout\n======')
+        print(out)
+        print('stderr\n======')
+        print(err)
+    assert sh.returncode == 0
     assert os.path.exists(output_file), "Output file not created"
     assert os.stat(output_file).st_size > 100, "PDF too small or empty"
     return output_file
