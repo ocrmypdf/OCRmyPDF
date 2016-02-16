@@ -60,7 +60,6 @@ if tesseract.version() < MINIMUM_TESS_VERSION:
             MINIMUM_TESS_VERSION, tesseract.version()))
     sys.exit(ExitCode.missing_dependency)
 
-
 try:
     import PIL.features
     check_codec = PIL.features.check_codec
@@ -228,6 +227,12 @@ if not set(options.language).issubset(tesseract.languages()):
 if options.pdf_renderer == 'auto':
     options.pdf_renderer = 'hocr'
 
+if options.pdf_renderer == 'tesseract' and tesseract.version() < '3.04.01':
+    complain(
+        "WARNING: Your version of tesseract has problems with PDF output. "
+        "Some PDF viewers will fail to find searchable text. "
+        "--pdf-renderer=tesseract is not recommended.")
+
 if any((options.deskew, options.clean, options.clean_final)):
     try:
         from . import unpaper
@@ -258,6 +263,7 @@ lossless_reconstruction = False
 if options.pdf_renderer == 'hocr':
     if not options.deskew and not options.clean_final and not options.force_ocr:
         lossless_reconstruction = True
+
 
 # ----------
 # Logging
