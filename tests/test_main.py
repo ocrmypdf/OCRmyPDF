@@ -49,7 +49,7 @@ def _infile(input_basename):
 
 
 def _outfile(output_basename):
-    return os.path.join(TEST_OUTPUT, output_basename)
+    return os.path.join(TEST_OUTPUT, os.path.basename(output_basename))
 
 
 def check_ocrmypdf(input_basename, output_basename, *args, env=None):
@@ -238,6 +238,50 @@ def test_argsfile(spoof_tesseract_noop):
                    env=spoof_tesseract_noop)
 
 
+def check_monochrome_correlation(
+        reference_pdf, reference_pageno, test_pdf, test_pageno):
+
+    import ocrmypdf.ghostscript as ghostscript
+    import logging
+
+    gslog = logging.getLogger()
+
+    reference_png = _outfile('{}.ref{:04d}.png'.format(
+        reference_pdf, reference_pageno))
+    test_png = _outfile('{}.test{:04d}.png'.format(
+        test_pdf, test_pageno))
+
+    def rasterize(pdf, pageno, png):
+        if os.path.exists(png):
+            print(png)
+            return
+        ghostscript.rasterize_pdf(
+            pdf,
+            png,
+            xres=100, yres=100,
+            raster_device='pngmono', log=gslog, pageno=pageno)
+
+    rasterize(reference_pdf, reference_pageno, reference_png)
+    rasterize(test_pdf, test_pageno, test_png)
+
+    pix_ref = leptonica.Pix.read(reference_png)
+    pix_test = leptonica.Pix.read(test_png)
+
+    return leptonica.Pix.correlation_binary(pix_ref, pix_test)
+
+
+def test_monochrome_correlation():
+    # Verify leptonica: check that an incorrect rotated image has poor
+    # correlation with reference
+    corr = check_monochrome_correlation(
+        reference_pdf=_infile('cardinal.pdf'),
+        reference_pageno=1,  # north facing page
+        test_pdf=_infile('cardinal.pdf'),
+        test_pageno=3,  # south facing page
+        )
+    assert corr < 0.10
+
+
 @pytest.mark.parametrize('renderer', [
     'hocr',
     'tesseract',
@@ -253,35 +297,12 @@ def test_autorotate(spoof_tesseract_cache, renderer):
     out = check_ocrmypdf('cardinal.pdf', 'test_autorotate_%s.pdf' % renderer,
                          '-r', '-v', '1', env=spoof_tesseract_cache)
     for n in range(1, 4+1):
-        ghostscript.rasterize_pdf(
-            out, _outfile('cardinal_%s-%i.png' % (renderer, n)),
-            xres=100, yres=100,
-            raster_device='pngmono', log=gslog, pageno=n)
-
-    ghostscript.rasterize_pdf(
-            _infile('cardinal.pdf'),
-            _outfile('reference_%s.png' % renderer),
-            xres=100, yres=100,
-            raster_device='pngmono', log=gslog, pageno=1)
-
-    # Verify leptonica: check that an incorrect rotated image has poor
-    # correlation with reference
-    pix_ref = leptonica.Pix.read(_outfile('reference_%s.png' % renderer))
-    pix_ref_180 = pix_ref.rotate180()
-    correlation = leptonica.Pix.correlation_binary(pix_ref, pix_ref_180)
-    assert correlation < 0.10
-
-    # Confirm that each image strongly correlates with the reference
-    # i.e. was rotated to correct orientation
-    for n in range(1, 4+1):
-        pix_other = leptonica.Pix.read(
-            _outfile('cardinal_%s-%i.png' % (renderer, n)))
-        correlation = leptonica.Pix.correlation_binary(pix_ref, pix_other)
+        correlation = check_monochrome_correlation(
+            reference_pdf=_infile('cardinal.pdf'),
+            reference_pageno=1,
+            test_pdf=out,
+            test_pageno=n)
         assert correlation > 0.80
-
-
-def test_slashrotate(spoof_tesseract_cache:
-
 
 
 @pytest.mark.parametrize('renderer', [
