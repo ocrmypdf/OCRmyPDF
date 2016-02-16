@@ -54,6 +54,10 @@ PIX * pixDeskew ( PIX *pixs, l_int32 redsearch );
 char * getLeptonicaVersion (  );
 l_int32 pixCorrelationBinary(PIX *pix1, PIX *pix2, l_float32 *pval);
 PIX *pixRotate180(PIX *pixd, PIX *pixs);
+
+l_int32 pixCountPixels ( PIX *pix, l_int32 *pcount, l_int32 *tab8 );
+PIX * pixAnd ( PIX *pixd, PIX *pixs1, PIX *pixs2 );
+l_int32 * makePixelSumTab8 ( void );
 """)
 
 if __name__ == '__main__':

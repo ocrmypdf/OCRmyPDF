@@ -16,6 +16,7 @@ import logging
 from tempfile import TemporaryFile
 from ctypes.util import find_library
 from .lib._leptonica import ffi
+from functools import lru_cache
 
 lept = ffi.dlopen(find_library('lept'))
 
@@ -166,11 +167,34 @@ class Pix:
 
     @staticmethod
     def correlation_binary(pix1, pix2):
-        correlation = ffi.new('float *', 0.0)
-        result = lept.pixCorrelationBinary(pix1.cpix, pix2.cpix, correlation)
-        if result != 0:
-            raise LeptonicaError("Correlation failed")
-        return float(correlation[0])
+        if getLeptonicaVersion() < 'leptonica-1.72':
+            # Older versions of Leptonica (pre-1.72) have a buggy
+            # implementation of pixCorrelationBinary that overflows on larger
+            # images.
+            pix1_count = ffi.new('l_int32 *', 0)
+            pix2_count = ffi.new('l_int32 *', 0)
+            pixn_count = ffi.new('l_int32 *', 0)
+            tab8 = lept.makePixelSumTab8()  # Small memory leak on each call
+
+            lept.pixCountPixels(pix1.cpix, pix1_count, tab8)
+            lept.pixCountPixels(pix2.cpix, pix2_count, tab8)
+            pixn = Pix(lept.pixAnd(ffi.NULL, pix1.cpix, pix2.cpix))
+            lept.pixCountPixels(pixn.cpix, pixn_count, tab8)
+
+            # Python converts these int32s to larger units as needed
+            # to avoid overflow. Overflow happens easily here.
+            correlation = (
+                    (pixn_count[0] * pixn_count[0]) /
+                    (pix1_count[0] * pix2_count[0])
+                    )
+            return correlation
+        else:
+            correlation = ffi.new('float *', 0.0)
+            result = lept.pixCorrelationBinary(pix1.cpix, pix2.cpix,
+                                               correlation)
+            if result != 0:
+                raise LeptonicaError("Correlation failed")
+            return correlation[0]
 
     @staticmethod
     def _pix_destroy(pix):
@@ -179,6 +203,7 @@ class Pix:
         # print('pix destroy ' + repr(pix))
 
 
+@lru_cache(maxsize=1)
 def getLeptonicaVersion():
     """Get Leptonica version string.
 
