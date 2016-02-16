@@ -122,16 +122,10 @@ Install or upgrade the required Homebrew packages, if any are missing::
    brew install leptonica
    brew install tesseract
    
-It is also recommended that install Pillow and confirm it can read and write JPEG and PNG files::
+Update the homebrew pip and install Pillow::
 
    pip3 install --upgrade pip
    pip3 install --upgrade pillow
-
-Sometimes, the Python imaging library (Pillow) can end up being compiled and installed without support for JPEG and PNG files. (Arguably, this is an unfixed bug in Pillow's installer.) To confirm that Pillow is compiled correctly and can access JPEG and PNG files, try this command::
-
-   python3 -c "from PIL import Image; im = Image.new('1', (1, 1)); im.save('test.png'); im.save('test.jpg')"
-
-If you have trouble getting Pillow to access JPEG and PNG files, `review the installation instructions <https://pillow.readthedocs.org/installation.html>`__.
 
 You can then install OCRmyPDF from PyPI::
 

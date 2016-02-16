@@ -218,7 +218,7 @@ setup(
     ],
     install_requires=[
         'ruffus>=2.6.3',
-        'Pillow>=2.4.0',
+        'Pillow>=3.0.0',
         'reportlab>=3.1.44',
         'PyPDF2>=1.25.1',
         'img2pdf>=0.2.0',
