@@ -209,7 +209,8 @@ setup(
         ],
     setup_requires=[
         'setuptools_scm',
-        'cffi>=1.0.0'
+        'cffi>=1.5.0',
+        'pytest-runner'
     ],
     use_scm_version={'version_scheme': 'post-release'},
     cffi_modules=[
