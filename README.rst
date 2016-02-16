@@ -78,7 +78,7 @@ Then tag it to give a more convenient name, just ocrmypdf::
 
    docker tag jbarlow83/ocrmypdf ocrmypdf
 
-This image contains language packs for English, French, Spanish and German. The alternative "polyglot" image provides all available language packs <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.1.asc#languages>`__::
+This image contains language packs for English, French, Spanish and German. The alternative "polyglot" image provides `all available language packs <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.1.asc#languages>`__::
 
    # Alternative step: If you need all language packs
    docker pull jbarlow83/ocrmypdf-polyglot
@@ -97,8 +97,6 @@ In this worked example, the current working directory contains an input file cal
    docker run -v "$(pwd):/home/docker"   ocrmypdf --skip-text test.pdf output.pdf
 
 Note that ``ocrmypdf`` has its own separate ``-v VERBOSITYLEVEL`` argument to control debug verbosity. All Docker arguments should before the ``ocrmypdf`` image name and all arguments to ``ocrmypdf`` should be listed after.
-
-The Docker image provides the English, French, German and Spanish language packs. `All other language packs <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.1.asc#languages>`__ are available in the larger image ``jbarlow83/ocrmypdf-polyglot``.
 
 
 Installing on Mac OS X
