@@ -103,7 +103,7 @@ def test_quick(spoof_tesseract_noop):
 def test_deskew(spoof_tesseract_noop):
     # Run with deskew
     deskewed_pdf = check_ocrmypdf(
-        'skew.pdf', 'test_deskew.pdf', '-d', env=spoof_tesseract_noop)
+        'skew.pdf', 'test_deskew.pdf', '-d', '-v', '1', env=spoof_tesseract_noop)
 
     # Now render as an image again and use Leptonica to find the skew angle
     # to confirm that it was deskewed

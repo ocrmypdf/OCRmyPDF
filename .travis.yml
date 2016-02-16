@@ -1,14 +1,17 @@
 language: python
 
 cache:
+    pip
     directories:
-        - $HOME/.cache/pip
         - $HOME/.ccache
         - tarballs
         - tests/cache
 
 python:
     - 3.4
+
+before_cache:
+    - rm -f $HOME/.cache/pip/log/debug.log
 
 before_install:
     # Ubuntu packages
@@ -36,7 +39,7 @@ install:
 script:
     - python setup.py clean
     - python setup.py install
-    - py.test
+    - py.test -s tests/test_main.py::test_deskew
 
 os:
     - linux
