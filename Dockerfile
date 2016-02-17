@@ -63,9 +63,11 @@ RUN chmod 644 /usr/share/tesseract-ocr/tessdata/pdf.ttf
 
 # Install application and dependencies
 # In this arrangement Pillow and reportlab will be provided by the system
+# Even though ocrmypdf is locally present, pull from PyPI because
+# Dockerhub and setuptools_scm clash
 RUN . /appenv/bin/activate; \
   pip install --upgrade pip \
-  && pip install /application \
+  && pip install ocrmypdf \
   && pip install --no-cache-dir -r /application/test_requirements.txt
 
 # Remove the junk
