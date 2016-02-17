@@ -6,8 +6,8 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
-next:
-=======
+v4.0:
+=====
 
 New features
 ------------
@@ -15,6 +15,8 @@ New features
 -  Automatic page rotation (``-r``) is now available. It uses ignores any prior rotation information
    on PDFs and sets rotation based on the dominant orientation of detectable text. This feature is
    fairly reliable but some false positives occur especially if there is not much text to work with. (#4) 
+-  Deskewing is now performed using Leptonica instead of unpaper. Leptonica deskews images faster and
+   more reliably than unpaper.
 
 
 Fixes
@@ -29,9 +31,14 @@ Fixes
 Changes
 -------
 
--  Many improvements to logging output
+-  Logging output much is now better
 -  ``--deskew`` is now performed by Leptonica instead of unpaper (#25)
 -  libffi is now required
+-  Some changes were made to the Docker and Travis build environments to support libffi
+-  ``--pdf-renderer=tesseract`` now displays a warning if the Tesseract version is less than 3.04.01,
+   the planned release that will include fixes to an important OCR text rendering bug in Tesseract 3.04.00.
+   You can also manually install ./share/sharp2.ttf on top of pdf.ttf in your Tesseract tessdata folder
+   to correct the problem.
 
 
 v3.2.1:
