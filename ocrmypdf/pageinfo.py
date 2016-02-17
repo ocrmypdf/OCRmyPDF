@@ -136,8 +136,8 @@ def _pdf_get_pageinfo(infile, pageno: int):
 
     pageinfo['has_text'] = _page_has_text(pdf, page)
 
-    width_pt = page['/MediaBox'][2] - page['/MediaBox'][0]
-    height_pt = page['/MediaBox'][3] - page['/MediaBox'][1]
+    width_pt = page.mediaBox.getWidth()
+    height_pt = page.mediaBox.getHeight()
     pageinfo['width_inches'] = width_pt / Decimal(72.0)
     pageinfo['height_inches'] = height_pt / Decimal(72.0)
 

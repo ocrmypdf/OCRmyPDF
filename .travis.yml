@@ -1,14 +1,18 @@
 language: python
 
+cache: pip
+
 cache:
     directories:
-        - $HOME/.cache/pip
         - $HOME/.ccache
         - tarballs
         - tests/cache
 
 python:
     - 3.4
+
+before_cache:
+    - rm -f $HOME/.cache/pip/log/debug.log
 
 before_install:
     # Ubuntu packages
@@ -17,7 +21,7 @@ before_install:
     - sudo add-apt-repository ppa:b-eltzner/qpdfview-exp -y  # for QPDF 5
     - sudo add-apt-repository ppa:itachi-san/ffmpeg -y  # for libav 11.2 (for unpaper)
     - sudo apt-get update -qq  # must go after all add-apt-repo
-    - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils gcc libavformat-dev libavcodec-dev libavutil-dev automake make pkg-config xsltproc 
+    - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils gcc libavformat-dev libavcodec-dev libavutil-dev automake make pkg-config xsltproc libffi-dev
 
     # pip
     - pip install --upgrade pip
@@ -36,7 +40,7 @@ install:
 script:
     - python setup.py clean
     - python setup.py install
-    - py.test
+    - python setup.py test
 
 os:
     - linux

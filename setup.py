@@ -151,7 +151,7 @@ command = next((arg for arg in sys.argv[1:] if not arg.startswith('-')), '')
 
 
 if command.startswith('install') or \
-        command in ['check', 'test', 'nosetests', 'easy_install', 'egg_info']:
+        command in ['check', 'test', 'nosetests', 'easy_install']:
     check_external_program(
         program='tesseract',
         need_version='3.02.02',
@@ -208,15 +208,22 @@ setup(
         "Topic :: Text Processing :: Linguistic",
         ],
     setup_requires=[
-        'setuptools_scm'
+        'setuptools_scm',
+        'setuptools_scm_git_archive',
+        'cffi>=1.5.0',
+        'pytest-runner'
     ],
     use_scm_version={'version_scheme': 'post-release'},
+    cffi_modules=[
+        'ocrmypdf/lib/compile_leptonica.py:ffi'
+    ],
     install_requires=[
         'ruffus>=2.6.3',
-        'Pillow>=2.4.0',
+        'Pillow>=3.0.0',
         'reportlab>=3.1.44',
         'PyPDF2>=1.25.1',
-        'img2pdf>=0.2.0'
+        'img2pdf>=0.2.0',
+        'cffi>=1.5.0'
     ],
     tests_require=tests_require,
     entry_points={

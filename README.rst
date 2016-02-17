@@ -78,7 +78,7 @@ Then tag it to give a more convenient name, just ocrmypdf::
 
    docker tag jbarlow83/ocrmypdf ocrmypdf
 
-This image contains language packs for English, French, Spanish and German. The alternative "polyglot" image provides all available language packs <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.1.asc#languages>`__::
+This image contains language packs for English, French, Spanish and German. The alternative "polyglot" image provides `all available language packs <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.1.asc#languages>`__::
 
    # Alternative step: If you need all language packs
    docker pull jbarlow83/ocrmypdf-polyglot
@@ -97,8 +97,6 @@ In this worked example, the current working directory contains an input file cal
    docker run -v "$(pwd):/home/docker"   ocrmypdf --skip-text test.pdf output.pdf
 
 Note that ``ocrmypdf`` has its own separate ``-v VERBOSITYLEVEL`` argument to control debug verbosity. All Docker arguments should before the ``ocrmypdf`` image name and all arguments to ``ocrmypdf`` should be listed after.
-
-The Docker image provides the English, French, German and Spanish language packs. `All other language packs <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.1.asc#languages>`__ are available in the larger image ``jbarlow83/ocrmypdf-polyglot``.
 
 
 Installing on Mac OS X
@@ -122,16 +120,10 @@ Install or upgrade the required Homebrew packages, if any are missing::
    brew install leptonica
    brew install tesseract
    
-It is also recommended that install Pillow and confirm it can read and write JPEG and PNG files::
+Update the homebrew pip and install Pillow::
 
    pip3 install --upgrade pip
    pip3 install --upgrade pillow
-
-Sometimes, the Python imaging library (Pillow) can end up being compiled and installed without support for JPEG and PNG files. (Arguably, this is an unfixed bug in Pillow's installer.) To confirm that Pillow is compiled correctly and can access JPEG and PNG files, try this command::
-
-   python3 -c "from PIL import Image; im = Image.new('1', (1, 1)); im.save('test.png'); im.save('test.jpg')"
-
-If you have trouble getting Pillow to access JPEG and PNG files, `review the installation instructions <https://pillow.readthedocs.org/installation.html>`__.
 
 You can then install OCRmyPDF from PyPI::
 
@@ -197,24 +189,18 @@ Installing HEAD revision from sources
 If you have ``git`` and ``python3.4`` or ``python3.5`` installed, you can install from source. When the ``pip`` installer runs,
 it will alert you if dependencies are missing.
 
-First, clone the HEAD revision::
+To install the HEAD revision from sources in the current Python 3 environment::
 
-   git clone -b master https://github.com/jbarlow83/OCRmyPDF.git
-   cd OCRmyPDF
+   pip3 install git+https://github.com/jbarlow83/OCRmyPDF.git
 
-To install the HEAD revision from sources::
+Or, to install in `development mode <https://pythonhosted.org/setuptools/setuptools.html#development-mode>`__,  allowing customization of OCRmyPDF, use the ``-e`` flag::
 
-   pip3 install .
-
-Or, to install in `development mode <https://pythonhosted.org/setuptools/setuptools.html#development-mode>`__, 
-allowing customization of OCRmyPDF, use the ``-e`` flag::
-
-   pip3 install -e .
+   pip3 install -e git+https://github.com/jbarlow83/OCRmyPDF.git
    
 On certain Linux distributions such as Ubuntu, you may need to use 
 run the install command as superuser::
 
-   sudo pip3 install [-e] .
+   sudo pip3 install [-e] git+https://github.com/jbarlow83/OCRmyPDF.git
    
 Note that this will alter your system's Python distribution. If you prefer 
 to not install as superuser, you can install the package in a Python virtual environment::

@@ -1,9 +1,7 @@
 # Development environment
 *.pyc
 *.sublime-*
-venv-3.4/
-venv-3.5/
-venv/
+venv-*/
 pyvenv.cfg
 
 # Package building

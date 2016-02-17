@@ -12,6 +12,7 @@ import multiprocessing
 import atexit
 import textwrap
 import img2pdf
+import logging
 
 import PyPDF2 as pypdf
 from PIL import Image
@@ -22,6 +23,7 @@ from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
     formatter, follows, split, collate, check_if_uptodate
 import ruffus.ruffus_exceptions as ruffus_exceptions
 import ruffus.cmdline as cmdline
+import ruffus.proxy_logger as proxy_logger
 
 from .hocrtransform import HocrTransform
 from .pageinfo import pdf_get_all_pageinfo
@@ -29,7 +31,7 @@ from .pdfa import generate_pdfa_def
 from . import ghostscript
 from . import tesseract
 from . import qpdf
-from . import ExitCode
+from . import ExitCode, page_number
 
 import pkg_resources
 
@@ -57,7 +59,6 @@ if tesseract.version() < MINIMUM_TESS_VERSION:
         "(currently installed version is {1})".format(
             MINIMUM_TESS_VERSION, tesseract.version()))
     sys.exit(ExitCode.missing_dependency)
-
 
 try:
     import PIL.features
@@ -105,7 +106,7 @@ parser = cmdline.get_argparse(
     ignored_args=[
         'touch_files_only', 'recreate_database', 'checksum_file_name',
         'key_legend_in_graph', 'draw_graph_horizontally', 'flowchart_format',
-        'forced_tasks', 'target_tasks', 'use_threads', 'jobs'])
+        'forced_tasks', 'target_tasks', 'use_threads', 'jobs', 'log_file'])
 
 parser.add_argument(
     'input_file',
@@ -122,7 +123,7 @@ parser.add_argument(
 
 metadata = parser.add_argument_group(
     "Metadata options",
-    "Set output PDF/A metadata (default: use input document's title)")
+    "Set output PDF/A metadata (default: use input document's metadata)")
 metadata.add_argument(
     '--title', type=str,
     help="set document title (place multiple words in quotes)")
@@ -131,15 +132,17 @@ metadata.add_argument(
     help="set document author")
 metadata.add_argument(
     '--subject', type=str,
-    help="set document")
+    help="set document subject description")
 metadata.add_argument(
     '--keywords', type=str,
     help="set document keywords")
 
-
 preprocessing = parser.add_argument_group(
     "Preprocessing options",
     "Improve OCR quality and final image")
+preprocessing.add_argument(
+    '-r', '--rotate-pages', action='store_true',
+    help="automatically rotate pages based on detected text orientation")
 preprocessing.add_argument(
     '-d', '--deskew', action='store_true',
     help="deskew each page before performing OCR")
@@ -154,14 +157,17 @@ preprocessing.add_argument(
     help="oversample images to at least the specified DPI, to improve OCR "
          "results slightly")
 
-parser.add_argument(
+ocrsettings = parser.add_argument_group(
+    "OCR options",
+    "Control how OCR is applied")
+ocrsettings.add_argument(
     '-f', '--force-ocr', action='store_true',
     help="rasterize any fonts or vector images on each page and apply OCR")
-parser.add_argument(
+ocrsettings.add_argument(
     '-s', '--skip-text', action='store_true',
     help="skip OCR on any pages that already contain text, but include the"
          " page in final output")
-parser.add_argument(
+ocrsettings.add_argument(
     '--skip-big', type=float, metavar='MPixels',
     help="skip OCR on pages larger than the specified amount of megapixels, "
          "but include skipped pages in final output")
@@ -221,6 +227,13 @@ if not set(options.language).issubset(tesseract.languages()):
 if options.pdf_renderer == 'auto':
     options.pdf_renderer = 'hocr'
 
+if options.pdf_renderer == 'tesseract' and tesseract.version() < '3.04.01' \
+        and os.environ.get('OCRMYPDF_SHARP_TTF', '') != '1':
+    complain(
+        "WARNING: Your version of tesseract has problems with PDF output. "
+        "Some PDF viewers will fail to find searchable text.\n"
+        "--pdf-renderer=tesseract is not recommended.")
+
 if any((options.deskew, options.clean, options.clean_final)):
     try:
         from . import unpaper
@@ -252,12 +265,29 @@ if options.pdf_renderer == 'hocr':
     if not options.deskew and not options.clean_final and not options.force_ocr:
         lossless_reconstruction = True
 
+
 # ----------
 # Logging
 
 
-_logger, _logger_mutex = cmdline.setup_logging(__name__, options.log_file,
-                                               options.verbose)
+def logging_factory(logger_name, listargs):
+    log_file_name, verbose = listargs
+
+    root_logger = logging.getLogger(logger_name)
+    root_logger.setLevel(logging.DEBUG)
+
+    handler = logging.StreamHandler(sys.stderr)
+    formatter_ = logging.Formatter("%(levelname)7s - %(message)s")
+    handler.setFormatter(formatter_)
+    if verbose:
+        handler.setLevel(logging.DEBUG)
+    else:
+        handler.setLevel(logging.INFO)
+    root_logger.addHandler(handler)
+    return root_logger
+
+_logger, _logger_mutex = proxy_logger.make_shared_logger_and_proxy(
+    logging_factory, __name__, [None, options.verbose])
 
 
 class WrappedLogger:
@@ -360,7 +390,7 @@ def repair_pdf(
     qpdf.repair(input_file, output_file, log)
     with pdfinfo_lock:
         pdfinfo.extend(pdf_get_all_pageinfo(output_file))
-        log.info(pdfinfo)
+        log.debug(pdfinfo)
 
 
 def get_pageinfo(input_file, pdfinfo, pdfinfo_lock):
@@ -378,11 +408,11 @@ def is_ocr_required(pageinfo, log):
         # or both. It seems quite unlikely that one would find meaningful text
         # from rasterizing vector content. So skip the page.
         log.info(
-            "Page {0} has no images - skipping OCR".format(page)
+            "{0:4d}: page has no images - skipping OCR".format(page)
         )
         ocr_required = False
     elif pageinfo['has_text']:
-        s = "Page {0} already has text! – {1}"
+        s = "{0:4d}: page already has text! – {1}"
 
         if not options.force_ocr and not options.skip_text:
             log.error(s.format(page,
@@ -401,9 +431,10 @@ def is_ocr_required(pageinfo, log):
         pixel_count = pageinfo['width_pixels'] * pageinfo['height_pixels']
         if pixel_count > (options.skip_big * 1000000):
             ocr_required = False
-            log.info(
-                "Page {0} is very large; skipping due to -b".format(page))
-
+            log.warning(
+                "{0:4d}: page too big, skipping OCR "
+                "({1:.1f} MPixels > {2:.1f} MPixels --skip-big)".format(
+                    page, pixel_count / 1000000, options.skip_big))
     return ocr_required
 
 
@@ -422,7 +453,13 @@ def split_pages(
         with suppress(FileNotFoundError):
             os.unlink(oo)
 
-    npages = qpdf.get_npages(input_file)
+    # If no files were repaired the input will be empty
+    if not input_file:
+        log.error("{0}: file not found or invalid argument".format(
+                options.input_file))
+        sys.exit(ExitCode.input_file)
+
+    npages = qpdf.get_npages(input_file, log)
     qpdf.split_pages(input_file, work_folder, npages)
 
     from glob import glob
@@ -438,9 +475,85 @@ def split_pages(
                 os.path.basename(filename)[0:6] + alt_suffix))
 
 
+@active_if(options.rotate_pages)
 @transform(
     input=split_pages,
-    filter=suffix('.ocr.page.pdf'),
+    filter=suffix('.page.pdf'),
+    output='.preview.jpg',
+    output_dir=work_folder,
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def rasterize_preview(
+        input_file,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+    ghostscript.rasterize_pdf(
+        input_file=input_file,
+        output_file=output_file,
+        xres=200,
+        yres=200,
+        raster_device='jpeggray',
+        log=log)
+
+
+@collate(
+    input=[split_pages, rasterize_preview],
+    filter=regex(r".*/(\d{6})(\.ocr|\.skip)(?:\.page\.pdf|\.preview\.jpg)"),
+    output=os.path.join(work_folder, r'\1\2.oriented.pdf'),
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def orient_page(
+        infiles,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+
+    page_pdf = next(ii for ii in infiles if ii.endswith('.page.pdf'))
+
+    if not options.rotate_pages:
+        re_symlink(page_pdf, output_file)
+        return
+    preview = next(ii for ii in infiles if ii.endswith('.preview.jpg'))
+
+    orient_conf = tesseract.get_orientation(
+        preview,
+        language=options.language,
+        timeout=options.tesseract_timeout,
+        log=log)
+
+    direction = {
+        0: '⇧',
+        90: '⇦',
+        180: '⇩',
+        270: '⇨'
+    }
+
+    log.info(
+        '{0:4d}: page is facing {1}, confidence {2:.2f}{3}'.format(
+            page_number(preview),
+            direction.get(orient_conf.angle, '?'),
+            orient_conf.confidence,
+            ' - correcting rotation' if orient_conf.angle != 0 else '')
+    )
+
+    if orient_conf.angle == 0:
+        re_symlink(page_pdf, output_file)
+    else:
+        writer = pypdf.PdfFileWriter()
+        reader = pypdf.PdfFileReader(page_pdf)
+        page = reader.pages[0]
+
+        # Rotate opposite of orientation
+        rotated_page = page.rotateClockwise(orient_conf.angle)
+        writer.addPage(rotated_page)
+        with open(output_file, 'wb') as out:
+            writer.write(out)
+
+
+@transform(
+    input=orient_page,
+    filter=suffix('.ocr.oriented.pdf'),
     output='.page.png',
     output_dir=work_folder,
     extras=[_log, _pdfinfo, _pdfinfo_lock])
@@ -463,7 +576,7 @@ def rasterize_with_ghostscript(
                  for image in pageinfo['images']):
             device = 'pnggray'
 
-    log.debug("Rendering {0} with {1}".format(
+    log.debug("Rasterize {0} with {1}".format(
             os.path.basename(input_file), device))
     xres = max(pageinfo['xres'], options.oversample or 0)
     yres = max(pageinfo['yres'], options.oversample or 0)
@@ -490,7 +603,8 @@ def preprocess_deskew(
     pageinfo = get_pageinfo(input_file, pdfinfo, pdfinfo_lock)
     dpi = int(pageinfo['xres'])
 
-    unpaper.deskew(input_file, output_file, dpi, log)
+    from . import leptonica
+    leptonica.deskew(input_file, output_file, dpi)
 
 
 @transform(
@@ -541,7 +655,6 @@ def ocr_tesseract_hocr(
         )
 
 
-@active_if(options.pdf_renderer == 'hocr')
 @collate(
     input=[rasterize_with_ghostscript, preprocess_deskew, preprocess_clean],
     filter=regex(r".*/(\d{6})(?:\.page|\.pp-deskew|\.pp-clean)\.png"),
@@ -564,15 +677,20 @@ def select_image_for_pdf(
     pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
     if all(image['enc'] == 'jpeg' for image in pageinfo['images']):
         # If all images were JPEGs originally, produce a JPEG as output
-        Image.open(image).save(output_file, format='JPEG')
+        im = Image.open(image)
+        dpi = im.info.get(
+            'dpi',
+            (int(pageinfo['xres']), int(pageinfo['yres']))
+        )
+        im.save(output_file, format='JPEG', dpi=dpi)
     else:
         re_symlink(image, output_file)
 
 
 @active_if(options.pdf_renderer == 'hocr')
 @collate(
-    input=[select_image_for_pdf, split_pages],
-    filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.page\.pdf)"),
+    input=[select_image_for_pdf, orient_page],
+    filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
     output=os.path.join(work_folder, r'\1.image-layer.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def select_image_layer(
@@ -582,10 +700,12 @@ def select_image_layer(
         pdfinfo,
         pdfinfo_lock):
 
-    page_pdf = next(ii for ii in infiles if ii.endswith('.page.pdf'))
+    page_pdf = next(ii for ii in infiles if ii.endswith('.ocr.oriented.pdf'))
     image = next(ii for ii in infiles if ii.endswith('.image'))
 
     if lossless_reconstruction:
+        log.debug("{:4d}: page eligible for lossless reconstruction".format(
+            page_number(page_pdf)))
         re_symlink(page_pdf, output_file)
     else:
         pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
@@ -663,15 +783,53 @@ def add_text_layer(
     text = next(ii for ii in infiles if ii.endswith('.hocr.pdf'))
     image = next(ii for ii in infiles if ii.endswith('.image-layer.pdf'))
 
-    pdf_output = pypdf.PdfFileWriter()
-
     pdf_text = pypdf.PdfFileReader(open(text, "rb"))
     pdf_image = pypdf.PdfFileReader(open(image, "rb"))
 
-    page = pdf_text.getPage(0)
-    page.mergePage(pdf_image.getPage(0))
+    page_text = pdf_text.getPage(0)
 
-    pdf_output.addPage(page)
+    # The text page always will be oriented up
+    # but if lossless_reconstruction, pdf_image may have a rotation applied
+    # we can't just merge the pages, because a page can only have one /Rotate
+    # tag, so the differential rotation must be corrected.
+    # Also, pdf_image may not have its mediabox nailed to (0, 0)
+    page_image = pdf_image.getPage(0)
+    rotation = page_image.get('/Rotate', 0)
+
+    # /Rotate is a clockwise rotation: 90 means page facing "east"
+    # The negative of this value is the angle that eliminates that rotation
+    rotation = -rotation % 360
+
+    x1 = page_image.mediaBox.getLowerLeft_x()
+    x2 = page_image.mediaBox.getUpperRight_x()
+    y1 = page_image.mediaBox.getLowerLeft_y()
+    y2 = page_image.mediaBox.getUpperRight_y()
+
+    # Rotation occurs about the page's (0, 0). Most pages will have the media
+    # box at (0, 0) will all content in the first quadrant but some cropped
+    # files may have an offset mediabox. We translate the page so that its
+    # bottom left corner after rotation is pinned to (0, 0) with the image
+    # in the first quadrant.
+    if rotation == 0:
+        tx, ty = -x1, -y1
+    elif rotation == 90:
+        tx, ty = y2, -x1
+    elif rotation == 180:
+        tx, ty = x2, y2
+    elif rotation == 270:
+        tx, ty = -y1, x2
+    else:
+        pass
+
+    if rotation != 0:
+        log.info("{0:4d}: rotating image layer {1} degrees".format(
+            page_number(image), rotation, tx, ty))
+
+    page_text.mergeRotatedScaledTranslatedPage(
+        page_image, rotation, 1.0, tx, ty, expand=False)
+
+    pdf_output = pypdf.PdfFileWriter()
+    pdf_output.addPage(page_text)
 
     with open(output_file, "wb") as out:
         pdf_output.write(out)
@@ -679,8 +837,8 @@ def add_text_layer(
 
 @active_if(options.pdf_renderer == 'tesseract')
 @collate(
-    input=[preprocess_clean, split_pages],
-    filter=regex(r".*/(\d{6})(?:\.pp-clean\.png|\.page\.pdf)"),
+    input=[select_image_for_pdf, orient_page],
+    filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
     output=os.path.join(work_folder, r'\1.rendered.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def tesseract_ocr_and_render_pdf(
@@ -690,7 +848,7 @@ def tesseract_ocr_and_render_pdf(
         pdfinfo,
         pdfinfo_lock):
 
-    input_image = next((ii for ii in input_files if ii.endswith('.png')), '')
+    input_image = next((ii for ii in input_files if ii.endswith('.image')), '')
     input_pdf = next((ii for ii in input_files if ii.endswith('.pdf')))
     if not input_image:
         # Skipping this page
@@ -754,8 +912,8 @@ def generate_postscript_stub(
 
 
 @transform(
-    input=split_pages,
-    filter=suffix('.skip.page.pdf'),
+    input=orient_page,
+    filter=suffix('.skip.oriented.pdf'),
     output='.done.pdf',
     output_dir=work_folder,
     extras=[_log])
@@ -763,6 +921,10 @@ def skip_page(
         input_file,
         output_file,
         log):
+    # The purpose of this step is its filter to forward only the skipped
+    # files (.skip.oriented.pdf) while disregarding the processed ones
+    # (.ocr.oriented.pdf).  Alternative would be for merge_pages to filter
+    # pages itself if it gets multiple copies of a page.
     re_symlink(input_file, output_file, log)
 
 
@@ -792,7 +954,7 @@ def merge_pages(
         return key
 
     pdf_pages = sorted(input_files, key=input_file_order)
-    log.info(pdf_pages)
+    log.debug("Final pages: " + "\n".join(pdf_pages))
     ghostscript.generate_pdfa(pdf_pages, output_file, options.jobs or 1)
 
 
