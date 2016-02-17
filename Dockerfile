@@ -57,6 +57,10 @@ COPY . /application/
 COPY ./share/sharp2.ttf /usr/share/tesseract-ocr/tessdata/pdf.ttf
 RUN chmod 644 /usr/share/tesseract-ocr/tessdata/pdf.ttf
 
+# Set this here to force a docker version, allowing non-tagged versions to
+# be built
+# ENV SETUPTOOLS_SCM_PRETEND_VERSION=v3.3.0
+
 # Install application and dependencies
 # In this arrangement Pillow and reportlab will be provided by the system
 RUN . /appenv/bin/activate; \
