@@ -151,7 +151,7 @@ command = next((arg for arg in sys.argv[1:] if not arg.startswith('-')), '')
 
 
 if command.startswith('install') or \
-        command in ['check', 'test', 'nosetests', 'easy_install', 'egg_info']:
+        command in ['check', 'test', 'nosetests', 'easy_install']:
     check_external_program(
         program='tesseract',
         need_version='3.02.02',
@@ -209,6 +209,7 @@ setup(
         ],
     setup_requires=[
         'setuptools_scm',
+        'setuptools_scm_git_archive',
         'cffi>=1.5.0',
         'pytest-runner'
     ],

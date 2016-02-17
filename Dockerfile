@@ -31,6 +31,11 @@ RUN apt-get install -y --no-install-recommends \
   tesseract-ocr \
   tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-eng tesseract-ocr-fra
 
+RUN apt-get install -qy --no-install-recommends \
+  libffi-dev \
+  libpython3-dev \
+  gcc
+
 # Enforce UTF-8
 # Borrowed from https://index.docker.io/u/crosbymichael/python/ 
 RUN dpkg-reconfigure locales && \
@@ -38,17 +43,13 @@ RUN dpkg-reconfigure locales && \
   /usr/sbin/update-locale LANG=C.UTF-8
 ENV LC_ALL C.UTF-8
 
-# Remove the junk
-RUN apt-get autoremove -y && apt-get clean -y
-RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /root/*
 
 # Set up a Python virtualenv and take all of the system packages, so we can
 # rely on the platform packages rather than importing GCC and compiling them
 RUN pyvenv /appenv \
   && pyvenv --system-site-packages /appenv
 
-COPY ./docker-wrapper.sh /application/
-COPY ./test_requirements.txt /application/
+COPY . /application/
 
 # Replace stock Tesseract 3.04.00 font with improved sharp2.ttf that resolves
 # issues in many PDF viewers.
@@ -60,8 +61,13 @@ RUN chmod 644 /usr/share/tesseract-ocr/tessdata/pdf.ttf
 # In this arrangement Pillow and reportlab will be provided by the system
 RUN . /appenv/bin/activate; \
   pip install --upgrade pip \
-  && pip install ocrmypdf \
+  && pip install /application \
   && pip install --no-cache-dir -r /application/test_requirements.txt
+
+# Remove the junk
+RUN apt-get remove -qy gcc
+RUN apt-get autoremove -y && apt-get clean -y
+RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /root/*
 
 USER docker
 WORKDIR /home/docker
