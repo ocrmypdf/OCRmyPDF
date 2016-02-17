@@ -50,6 +50,12 @@ RUN pyvenv /appenv \
 COPY ./docker-wrapper.sh /application/
 COPY ./test_requirements.txt /application/
 
+# Replace stock Tesseract 3.04.00 font with improved sharp2.ttf that resolves
+# issues in many PDF viewers.
+# Discussion is in https://github.com/tesseract-ocr/tesseract/issues/182
+COPY ./share/sharp2.ttf /usr/share/tesseract-ocr/tessdata/pdf.ttf
+RUN chmod 644 /usr/share/tesseract-ocr/tessdata/pdf.ttf
+
 # Install application and dependencies
 # In this arrangement Pillow and reportlab will be provided by the system
 RUN . /appenv/bin/activate; \
