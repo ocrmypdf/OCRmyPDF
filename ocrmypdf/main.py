@@ -227,10 +227,11 @@ if not set(options.language).issubset(tesseract.languages()):
 if options.pdf_renderer == 'auto':
     options.pdf_renderer = 'hocr'
 
-if options.pdf_renderer == 'tesseract' and tesseract.version() < '3.04.01':
+if options.pdf_renderer == 'tesseract' and tesseract.version() < '3.04.01' \
+        and os.environ.get('OCRMYPDF_SHARP_TTF', '') != '1':
     complain(
         "WARNING: Your version of tesseract has problems with PDF output. "
-        "Some PDF viewers will fail to find searchable text. "
+        "Some PDF viewers will fail to find searchable text.\n"
         "--pdf-renderer=tesseract is not recommended.")
 
 if any((options.deskew, options.clean, options.clean_final)):
