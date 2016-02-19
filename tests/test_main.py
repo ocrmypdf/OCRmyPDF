@@ -83,22 +83,33 @@ def run_ocrmypdf_env(input_basename, output_basename, *args, env=None):
     return p, out, err
 
 
+def spoof(replace_program, with_spoof):
+    """Modify environment variables to override subprocess executables
+
+    Before running any executable, ocrmypdf checks the environment variable
+    OCRMYPDF_PROGRAMNAME to override default program name/location, e.g.
+    OCRMYPDF_GS redirects from the system path Ghostscript ("gs") to elsewhere.
+    """
+    env = os.environ.copy()
+    spoofer = os.path.join(SPOOF_PATH, with_spoof)
+    check_call(['chmod', "+x", spoofer])
+    env['OCRMYPDF_' + replace_program.upper()] = spoofer
+    return env
+
+
 @pytest.fixture
 def spoof_tesseract_noop():
-    env = os.environ.copy()
-    program = os.path.join(SPOOF_PATH, 'tesseract_noop.py')
-    check_call(['chmod', "+x", program])
-    env['OCRMYPDF_TESSERACT'] = program
-    return env
+    return spoof('tesseract', 'tesseract_noop.py')
 
 
 @pytest.fixture
 def spoof_tesseract_cache():
-    env = os.environ.copy()
-    program = os.path.join(SPOOF_PATH, "tesseract_cache.py")
-    check_call(['chmod', '+x', program])
-    env['OCRMYPDF_TESSERACT'] = program
-    return env
+    return spoof('tesseract', "tesseract_cache.py")
+
+
+@pytest.fixture
+def spoof_tesseract_crash():
+    return spoof('tesseract', 'tesseract_crash.py')
 
 
 def test_quick(spoof_tesseract_noop):
@@ -438,4 +449,14 @@ def test_pagesegmode(renderer, spoof_tesseract_cache):
         '--pdf-renderer', renderer, env=spoof_tesseract_cache)
 
 
-
+@pytest.mark.parametrize('renderer', [
+    'hocr',
+    'tesseract',
+    ])
+def test_tesseract_crash(renderer, spoof_tesseract_crash):
+    sh, out, err = run_ocrmypdf_env(
+        'ccitt.pdf', 'wontwork.pdf', '-v', '1',
+        '--pdf-renderer', renderer, env=spoof_tesseract_crash)
+    assert sh.returncode == ExitCode.child_process_error
+    assert not os.path.exists(_outfile('wontwork.pdf'))
+    assert "ERROR" in err

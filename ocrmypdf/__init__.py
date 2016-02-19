@@ -10,6 +10,7 @@ class ExitCode(IntEnum):
     invalid_output_pdfa = 4
     file_access_error = 5
     already_done_ocr = 6
+    child_process_error = 7
     other_error = 15
 
 

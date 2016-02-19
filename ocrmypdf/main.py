@@ -1011,10 +1011,17 @@ def run_pipeline():
         cmdline.run(options)
     except ruffus_exceptions.RethrownJobError as e:
         if options.verbose:
-            print(e)
+            _log.debug(e)
 
         # Yuck. Hunt through the ruffus exception to find out what the
         # return code is supposed to be.
+        # Ruffus flattens the exception to a string, throwing away all kinds
+        # of helpful details
+        # task_name, job_name - ruffus status
+        # exc_name - class name of exception
+        # exc_value - irritating string that makes impossible to recover
+        #   exception object
+        # exc_stack - string that contains traceback of exception
         for exc in e.args:
             task_name, job_name, exc_name, exc_value, exc_stack = exc
             if exc_name == 'builtins.SystemExit':
@@ -1023,16 +1030,24 @@ def run_pipeline():
                 exit_code = getattr(ExitCode, exit_code_name, 'other_error')
                 return exit_code
             elif exc_name == 'ruffus.ruffus_exceptions.MissingInputFileError':
-                print(cleanup_ruffus_error_message(exc_value))
+                _log.error(cleanup_ruffus_error_message(exc_value))
                 return ExitCode.input_file
             elif exc_name == 'builtins.TypeError':
                 # Even though repair_pdf will fail, ruffus will still try
                 # to call split_pages with no input files, likely due to a bug
                 if task_name == 'split_pages':
-                    print("Input file '{0}' is not a valid PDF".format(
+                    _log.error("Input file '{0}' is not a valid PDF".format(
                         options.input_file))
                     return ExitCode.input_file
+            elif exc_name == 'subprocess.CalledProcessError':
+                # It's up to the subprocess handler to report something useful
+                msg = "Error occurred while running this command:"
+                _log.error(msg + '\n' + exc_value)
+                return ExitCode.child_process_error
 
+        return ExitCode.other_error
+    except Exception as e:
+        _log.error(e)
         return ExitCode.other_error
 
     if not validate_pdfa(options.output_file, _log):

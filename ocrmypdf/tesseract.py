@@ -99,6 +99,10 @@ def get_orientation(input_file, language: list, timeout: float, log):
         stdout, _ = p.communicate()
         return OrientationConfidence(angle=0, confidence=0.0)
     else:
+        if p.returncode != 0:
+            log.error(stdout)
+            return OrientationConfidence(angle=0, confidence=0.0)
+
         osd = {}
         for line in stdout.splitlines():
             line = line.strip()
@@ -124,8 +128,15 @@ def tesseract_log_output(log, stdout, input_file):
             log.warning(prefix + "lots of diacritics - possibly poor OCR")
         elif line.startswith('OSD: Weak margin'):
             log.warning(prefix + "unsure about page orientation")
+        elif 'error' in line.lower():
+            log.error(prefix + line.strip())
         else:
             log.info(prefix + line.strip())
+
+
+def page_timedout(log, input_file):
+    prefix = "{0:4d}: [tesseract] ".format(page_number(input_file))
+    log.warning(prefix + " took too long to OCR - skipping")
 
 
 def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
@@ -146,26 +157,25 @@ def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
         badxml,
         'hocr'
     ] + tessconfig)
-    p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=STDOUT,
-              universal_newlines=True)
     try:
-        stdout, _ = p.communicate(timeout=timeout)
+        stdout = check_output(
+            args_tesseract, close_fds=True, stderr=STDOUT,
+            universal_newlines=True, timeout=timeout)
     except TimeoutExpired:
-        p.kill()
-        stdout, _ = p.communicate()
         # Generate a HOCR file with no recognized text if tesseract times out
         # Temporary workaround to hocrTransform not being able to function if
         # it does not have a valid hOCR file.
+        page_timedout(input_file)
         with open(output_hocr, 'w', encoding="utf-8") as f:
             pageinfo = pageinfo_getter()
             f.write(HOCR_TEMPLATE.format(
                 pageinfo['width_pixels'],
                 pageinfo['height_pixels']))
+    except CalledProcessError as e:
+        tesseract_log_output(log, e.output, input_file)
+        raise e from e
     else:
         tesseract_log_output(log, stdout, input_file)
-        if p.returncode != 0:
-            raise CalledProcessError(p.returncode, args_tesseract)
-
         if os.path.exists(badxml + '.html'):
             # Tesseract 3.02 appends suffix ".html" on its own (.badxml.html)
             shutil.move(badxml + '.html', badxml)
@@ -213,14 +223,16 @@ def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
         os.path.splitext(output_pdf)[0],  # Tesseract appends suffix
         'pdf'
     ] + tessconfig)
-    p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=STDOUT,
-              universal_newlines=True)
 
     try:
-        stdout, _ = p.communicate()
+        stdout = check_output(
+            args_tesseract, close_fds=True, stderr=STDOUT,
+            universal_newlines=True, timeout=timeout)
     except TimeoutExpired:
-        p.kill()
-        log.info("Tesseract - page timed out")
+        page_timedout(input_image)
         shutil.copy(skip_pdf, output_pdf)
+    except CalledProcessError as e:
+        tesseract_log_output(log, e.output, input_image)
+        raise e from e
     else:
         tesseract_log_output(log, stdout, input_image)
