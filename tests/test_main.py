@@ -297,6 +297,13 @@ def test_monochrome_correlation():
         test_pageno=3,  # south facing page
         )
     assert corr < 0.10
+    corr = check_monochrome_correlation(
+        reference_pdf=_infile('cardinal.pdf'),
+        reference_pageno=2,
+        test_pdf=_infile('cardinal.pdf'),
+        test_pageno=2,
+        )
+    assert corr > 0.90
 
 
 @pytest.mark.parametrize('renderer', [
