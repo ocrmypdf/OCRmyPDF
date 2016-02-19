@@ -92,7 +92,8 @@ def spoof(replace_program, with_spoof):
     """
     env = os.environ.copy()
     spoofer = os.path.join(SPOOF_PATH, with_spoof)
-    check_call(['chmod', "+x", spoofer])
+    if not os.access(spoofer, os.X_OK):
+        os.chmod(spoofer, 0o755)
     env['OCRMYPDF_' + replace_program.upper()] = spoofer
     return env
 
