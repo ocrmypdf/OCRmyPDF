@@ -460,3 +460,12 @@ def test_tesseract_crash(renderer, spoof_tesseract_crash):
     assert sh.returncode == ExitCode.child_process_error
     assert not os.path.exists(_outfile('wontwork.pdf'))
     assert "ERROR" in err
+
+
+def test_tesseract_crash_autorotate(spoof_tesseract_crash):
+    sh, out, err = run_ocrmypdf_env(
+        'ccitt.pdf', 'wontwork.pdf',
+        '-r', env=spoof_tesseract_crash)
+    assert sh.returncode == ExitCode.child_process_error
+    assert not os.path.exists(_outfile('wontwork.pdf'))
+    assert "ERROR" in err

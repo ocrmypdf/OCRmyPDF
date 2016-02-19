@@ -90,19 +90,16 @@ def get_orientation(input_file, language: list, timeout: float, log):
         'stdout'
     ]
 
-    p = Popen(args_tesseract, close_fds=True, stdout=PIPE, stderr=STDOUT,
-              universal_newlines=True)
     try:
-        stdout, _ = p.communicate(timeout=timeout)
+        stdout = check_output(
+            args_tesseract, close_fds=True, stderr=STDOUT,
+            universal_newlines=True, timeout=timeout)
     except TimeoutExpired:
-        p.kill()
-        stdout, _ = p.communicate()
         return OrientationConfidence(angle=0, confidence=0.0)
+    except CalledProcessError as e:
+        tesseract_log_output(log, e.output, input_file)
+        raise e from e
     else:
-        if p.returncode != 0:
-            log.error(stdout)
-            return OrientationConfidence(angle=0, confidence=0.0)
-
         osd = {}
         for line in stdout.splitlines():
             line = line.strip()
@@ -128,7 +125,7 @@ def tesseract_log_output(log, stdout, input_file):
             log.warning(prefix + "lots of diacritics - possibly poor OCR")
         elif line.startswith('OSD: Weak margin'):
             log.warning(prefix + "unsure about page orientation")
-        elif 'error' in line.lower():
+        elif 'error' in line.lower() or 'exception' in line.lower():
             log.error(prefix + line.strip())
         else:
             log.info(prefix + line.strip())
