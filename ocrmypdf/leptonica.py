@@ -167,7 +167,7 @@ class Pix:
 
     @staticmethod
     def correlation_binary(pix1, pix2):
-        if getLeptonicaVersion() < 'leptonica-1.72':
+        if get_leptonica_version() < 'leptonica-1.72':
             # Older versions of Leptonica (pre-1.72) have a buggy
             # implementation of pixCorrelationBinary that overflows on larger
             # images.
@@ -204,7 +204,7 @@ class Pix:
 
 
 @lru_cache(maxsize=1)
-def getLeptonicaVersion():
+def get_leptonica_version():
     """Get Leptonica version string.
 
     Caveat: Leptonica expects the caller to free this memory.  We don't,
@@ -248,7 +248,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if getLeptonicaVersion() != u'leptonica-1.69':
+    if get_leptonica_version() != u'leptonica-1.69':
         print("Unexpected leptonica version: %s" % getLeptonicaVersion())
 
     args.func(args)
