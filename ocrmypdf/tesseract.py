@@ -174,7 +174,7 @@ def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
         # Generate a HOCR file with no recognized text if tesseract times out
         # Temporary workaround to hocrTransform not being able to function if
         # it does not have a valid hOCR file.
-        page_timedout(input_file)
+        page_timedout(log, input_file)
         with open(output_hocr, 'w', encoding="utf-8") as f:
             pageinfo = pageinfo_getter()
             f.write(HOCR_TEMPLATE.format(
@@ -238,7 +238,7 @@ def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
             args_tesseract, close_fds=True, stderr=STDOUT,
             universal_newlines=True, timeout=timeout)
     except TimeoutExpired:
-        page_timedout(input_image)
+        page_timedout(log, input_image)
         shutil.copy(skip_pdf, output_pdf)
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_image)
