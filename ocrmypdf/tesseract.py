@@ -107,8 +107,20 @@ def get_orientation(input_file, language: list, timeout: float, log):
             if len(parts) == 2:
                 osd[parts[0].strip()] = parts[1].strip()
 
+        angle = int(osd.get('Orientation in degrees', 0))
+        if 'Orientation' in osd:
+            # Tesseract < 3.04.01
+            # reports "Orientation in degrees" as a counterclockwise angle
+            # We keep it clockwise
+            assert 'Rotate' not in osd
+            angle = -angle % 360
+        else:
+            # Tesseract == 3.04.01, hopefully also Tesseract > 3.04.01
+            # reports "Orientation in degrees" as a clockwise angle
+            assert 'Rotate' in osd
+
         oc = OrientationConfidence(
-            angle=int(osd.get('Orientation in degrees', 0)),
+            angle=angle,
             confidence=float(osd.get('Orientation confidence', 0)))
         return oc
 

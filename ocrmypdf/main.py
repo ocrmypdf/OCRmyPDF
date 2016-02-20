@@ -524,9 +524,9 @@ def orient_page(
 
     direction = {
         0: '⇧',
-        90: '⇦',
+        90: '⇨',
         180: '⇩',
-        270: '⇨'
+        270: '⇦'
     }
 
     log.info(
@@ -544,8 +544,8 @@ def orient_page(
         reader = pypdf.PdfFileReader(page_pdf)
         page = reader.pages[0]
 
-        # Rotate opposite of orientation
-        rotated_page = page.rotateClockwise(orient_conf.angle)
+        # angle is a clockwise angle, so rotating ccw will correct the error
+        rotated_page = page.rotateCounterClockwise(orient_conf.angle)
         writer.addPage(rotated_page)
         with open(output_file, 'wb') as out:
             writer.write(out)
@@ -788,11 +788,12 @@ def add_text_layer(
 
     page_text = pdf_text.getPage(0)
 
-    # The text page always will be oriented up
+    # The text page always will be oriented up by this stage
     # but if lossless_reconstruction, pdf_image may have a rotation applied
-    # we can't just merge the pages, because a page can only have one /Rotate
-    # tag, so the differential rotation must be corrected.
-    # Also, pdf_image may not have its mediabox nailed to (0, 0)
+    # We have to eliminate the /Rotate tag (because it applies to the whole
+    # page) and rotate the image layer to match the text page
+    # Also, pdf_image may not have its mediabox nailed to (0, 0), so may need
+    # translation
     page_image = pdf_image.getPage(0)
     rotation = page_image.get('/Rotate', 0)
 
