@@ -20,7 +20,8 @@ In some cases they were converted from one image format to another without other
 +---------------------+--------------------------------------------------------------------------------+
 | lichtenstein.pdf    | `Wikimedia: JPEG2000 Lichtenstein`_ (Creative Commons BY-SA 3.0)               |
 +---------------------+--------------------------------------------------------------------------------+
-| LinnSequencer.jpg   | `Wikimedia: LinnSequencer`_ (Creative Commons Attribution-ShareAlike 3.0)      |
+| LinnSequencer.jpg,  | `Wikimedia: LinnSequencer`_ (Creative Commons Attribution-ShareAlike 3.0)      |
+| linn.pdf, linn.txt  |                                                                                |
 +---------------------+--------------------------------------------------------------------------------+
  
 
