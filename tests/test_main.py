@@ -113,6 +113,11 @@ def spoof_tesseract_crash():
     return spoof('tesseract', 'tesseract_crash.py')
 
 
+@pytest.fixture
+def spoof_tesseract_big_image_error():
+    return spoof('tesseract', 'tesseract_big_image_error.py')
+
+
 def test_quick(spoof_tesseract_noop):
     check_ocrmypdf('c02-22.pdf', 'test_quick.pdf', env=spoof_tesseract_noop)
 
@@ -477,3 +482,13 @@ def test_tesseract_crash_autorotate(spoof_tesseract_crash):
     assert sh.returncode == ExitCode.child_process_error
     assert not os.path.exists(_outfile('wontwork.pdf'))
     assert "ERROR" in err
+
+
+@pytest.mark.parametrize('renderer', [
+    'hocr',
+    'tesseract',
+    ])
+def test_tesseract_image_too_big(renderer, spoof_tesseract_big_image_error):
+    check_ocrmypdf(
+        'hugemono.pdf', 'hugemono_%s.pdf' % renderer, '-r',
+        '--pdf-renderer', renderer, env=spoof_tesseract_big_image_error)

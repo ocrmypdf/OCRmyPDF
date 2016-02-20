@@ -90,6 +90,13 @@ def main():
             universal_newlines=True)
     stdout, stderr = p.communicate()
 
+    if p.returncode != 0:
+        # Do not cache errors or crashes
+        print("Tesseract error", file=sys.stderr)
+        print(stdout, end='')
+        print(stderr, end='', file=sys.stderr)
+        return p.returncode
+
     with open(cache_name + '.stdout', 'w') as f:
         f.write(stdout)
     with open(cache_name + '.stderr', 'w') as f:
