@@ -84,6 +84,20 @@ class LeptonicaIOError(LeptonicaError):
 
 
 class Pix:
+    """Wrapper around leptonica's PIX object.
+
+    Leptonica uses referencing counting on PIX objects. Also, many Leptonica
+    functions return the original object with an increased reference count
+    if the operation had no effect (for example, image skew was found to be 0).
+    This has complications for memory management in Python. Whenever Leptonica
+    returns a PIX object (new or old), we wrap it in this class, which
+    registers it with the FFI garbage collector. pixDestroy() decrements the
+    reference count and only destroys when the last reference is removed.
+
+    Leptonica's reference counting is not threadsafe. This class can be used
+    in a threadsafe manner if a Python threading.Lock protects the data.
+    """
+
     def __init__(self, cpix):
         self.cpix = ffi.gc(cpix, Pix._pix_destroy)
 
@@ -94,6 +108,49 @@ class Pix:
                             int(ffi.cast("intptr_t", self.cpix)))
         else:
             return "<leptonica.Pix image NULL>"
+
+    def __getstate__(self):
+        state = {}
+        if self.cpix.colormap:
+            raise NotImplementedError('colormap')
+        else:
+            state['colormap'] = None
+        if self.cpix.text:
+            state['text'] = ffi.string(self.cpix.text)[:]
+        else:
+            state['text'] = None
+        if self.cpix.data:
+            data_bytes = self.cpix.wpl * self.cpix.h * 4
+            state['data'] = ffi.buffer(self.cpix.data, data_bytes)[:]
+        else:
+            state['data'] = None
+
+        cpix_copy = ffi.new('PIX *')
+        ffi.buffer(cpix_copy)[:] = self.cpix
+        cpix_copy.text = ffi.NULL
+        cpix_copy.colormap = ffi.NULL
+        cpix_copy.data = ffi.NULL
+
+        state['cpix'] = ffi.buffer(self.cpix)[:]
+        return state
+
+    def __setstate__(self, state):
+        import array
+        self.cpix = ffi.new('PIX *')
+        ffi.buffer(self.cpix)[:] = state['cpix']
+
+        data_array = array.array('I', state['data'])
+        self.cpix.data = ffi.from_buffer(data_array)
+        self.cpix.text = ffi.new('char[]', state['text'])
+        self.cpix.colormap = ffi.NULL
+
+    @property
+    def width(self):
+        return self.cpix.w
+
+    @property
+    def height(self):
+        return self.cpix.h
 
     @classmethod
     def read(cls, filename):
