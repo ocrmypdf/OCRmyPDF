@@ -98,6 +98,8 @@ def get_orientation(input_file, language: list, timeout: float, log):
         return OrientationConfidence(angle=0, confidence=0.0)
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_file)
+        if 'Image too large' in e.output:
+            return OrientationConfidence(0, 0)
         raise e from e
     else:
         osd = {}
@@ -148,6 +150,13 @@ def page_timedout(log, input_file):
     log.warning(prefix + " took too long to OCR - skipping")
 
 
+def _generate_null_hocr(output_hocr, pageinfo):
+    with open(output_hocr, 'w', encoding="utf-8") as f:
+        f.write(HOCR_TEMPLATE.format(
+            pageinfo['width_pixels'],
+            pageinfo['height_pixels']))
+
+
 def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
                   timeout: float, pageinfo_getter, pagesegmode: int, log):
 
@@ -175,13 +184,13 @@ def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
         # Temporary workaround to hocrTransform not being able to function if
         # it does not have a valid hOCR file.
         page_timedout(log, input_file)
-        with open(output_hocr, 'w', encoding="utf-8") as f:
-            pageinfo = pageinfo_getter()
-            f.write(HOCR_TEMPLATE.format(
-                pageinfo['width_pixels'],
-                pageinfo['height_pixels']))
+        _generate_null_hocr(output_hocr, pageinfo_getter())
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_file)
+        if 'Image too large' in e.output:
+            _generate_null_hocr(output_hocr, pageinfo_getter())
+            return
+
         raise e from e
     else:
         tesseract_log_output(log, stdout, input_file)
@@ -242,6 +251,9 @@ def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
         shutil.copy(skip_pdf, output_pdf)
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_image)
+        if 'Image too large' in e.output:
+            shutil.copy(skip_pdf, output_pdf)
+            return
         raise e from e
     else:
         tesseract_log_output(log, stdout, input_image)

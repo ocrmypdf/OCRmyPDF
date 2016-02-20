@@ -32,6 +32,7 @@ under the terms of the license in LICENSE.rst.
 - cmyk.pdf (a CMYK image created in Photoshop)
 - enormous.pdf (a very lage page)
 - francais.pdf (a page containing French accented characters)
+- hugemono.pdf (large monochrome JBIG2 page with pixel dimensions of 35000x35000)
 - invalid.pdf (a PDF file header followed by EOF marker)
 - missing_docinfo.pdf (PDF file with no /DocumentInfo section)
 
