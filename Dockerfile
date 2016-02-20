@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN apt-get install -y --no-install-recommends \
   unpaper \
+  libopenjpeg-dev \
   ghostscript \
   qpdf \
   poppler-utils
