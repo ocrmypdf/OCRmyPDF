@@ -19,7 +19,6 @@ from .lib._leptonica import ffi
 from functools import lru_cache
 
 lept = ffi.dlopen(find_library('lept'))
-libc = ffi.dlopen(None)
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +119,7 @@ class Pix:
 
         char_data = ffi.cast('char *', data[0])
         data_bytes = ffi.buffer(char_data, size[0])[:]
+        lept.lept_free(char_data)
         return dict(data=data_bytes)
 
     def __setstate__(self, state):

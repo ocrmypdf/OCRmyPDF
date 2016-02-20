@@ -61,7 +61,10 @@ l_int32 * makePixelSumTab8 ( void );
 
 PIX * pixDeserializeFromMemory ( const l_uint32 *data, size_t nbytes );
 l_int32 pixSerializeToMemory ( PIX *pixs, l_uint32 **pdata, size_t *pnbytes );
+
+void lept_free(void *ptr);
 """)
+
 
 if __name__ == '__main__':
     ffi.compile()
