@@ -58,6 +58,9 @@ PIX *pixRotate180(PIX *pixd, PIX *pixs);
 l_int32 pixCountPixels ( PIX *pix, l_int32 *pcount, l_int32 *tab8 );
 PIX * pixAnd ( PIX *pixd, PIX *pixs1, PIX *pixs2 );
 l_int32 * makePixelSumTab8 ( void );
+
+PIX * pixDeserializeFromMemory ( const l_uint32 *data, size_t nbytes );
+l_int32 pixSerializeToMemory ( PIX *pixs, l_uint32 **pdata, size_t *pnbytes );
 """)
 
 if __name__ == '__main__':

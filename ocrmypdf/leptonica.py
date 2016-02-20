@@ -19,6 +19,7 @@ from .lib._leptonica import ffi
 from functools import lru_cache
 
 lept = ffi.dlopen(find_library('lept'))
+libc = ffi.dlopen(None)
 
 logger = logging.getLogger(__name__)
 
@@ -110,39 +111,23 @@ class Pix:
             return "<leptonica.Pix image NULL>"
 
     def __getstate__(self):
-        state = {}
-        if self.cpix.colormap:
-            raise NotImplementedError('colormap')
-        else:
-            state['colormap'] = None
-        if self.cpix.text:
-            state['text'] = ffi.string(self.cpix.text)[:]
-        else:
-            state['text'] = None
-        if self.cpix.data:
-            data_bytes = self.cpix.wpl * self.cpix.h * 4
-            state['data'] = ffi.buffer(self.cpix.data, data_bytes)[:]
-        else:
-            state['data'] = None
+        data = ffi.new('l_uint32 *[]', 1)
+        size = ffi.new('size_t *', 0)
 
-        cpix_copy = ffi.new('PIX *')
-        ffi.buffer(cpix_copy)[:] = self.cpix
-        cpix_copy.text = ffi.NULL
-        cpix_copy.colormap = ffi.NULL
-        cpix_copy.data = ffi.NULL
+        err = lept.pixSerializeToMemory(self.cpix, data, size)
+        if err != 0:
+            raise LeptonicaIOError("pixSerializeToMemory")
 
-        state['cpix'] = ffi.buffer(self.cpix)[:]
-        return state
+        char_data = ffi.cast('char *', data[0])
+        data_bytes = ffi.buffer(char_data, size[0])[:]
+        return dict(data=data_bytes)
 
     def __setstate__(self, state):
-        import array
-        self.cpix = ffi.new('PIX *')
-        ffi.buffer(self.cpix)[:] = state['cpix']
+        cdata_bytes = ffi.new('char[]', state['data'])
+        cdata_uint32 = ffi.cast('l_uint32 *', cdata_bytes)
 
-        data_array = array.array('I', state['data'])
-        self.cpix.data = ffi.from_buffer(data_array)
-        self.cpix.text = ffi.new('char[]', state['text'])
-        self.cpix.colormap = ffi.NULL
+        self.cpix = lept.pixDeserializeFromMemory(
+            cdata_uint32, len(state['data']))
 
     @property
     def width(self):
