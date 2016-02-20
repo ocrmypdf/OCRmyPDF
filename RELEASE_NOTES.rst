@@ -6,6 +6,27 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
+v4.0.2:
+=======
+
+Fixes
+-----
+
+-  Fixed compatibility with Tesseract 3.04.01 release, particularly its different way of outputting
+   orientation information
+-  Improved handling of Tesseract errors and crashes
+-  Fixed use of chmod on Docker that broke most test cases
+
+
+v4.0.1:
+=======
+
+Fixes
+-----
+
+-  Fixed a KeyError if tesseract fails to find page orientation information
+
+
 v4.0:
 =====
 
