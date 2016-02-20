@@ -18,9 +18,11 @@ In some cases they were converted from one image format to another without other
 +---------------------+--------------------------------------------------------------------------------+
 | graph.pdf           | `Wikimedia: Pandas text analysis.png`_                                         |
 +---------------------+--------------------------------------------------------------------------------+
+| lichtenstein.pdf    | `Wikimedia: JPEG2000 Lichtenstein`_ (Creative Commons BY-SA 3.0)               |
++---------------------+--------------------------------------------------------------------------------+
 | LinnSequencer.jpg   | `Wikimedia: LinnSequencer`_ (Creative Commons Attribution-ShareAlike 3.0)      |
 +---------------------+--------------------------------------------------------------------------------+
-
+ 
 
 Files generated for this project
 ================================
@@ -59,3 +61,5 @@ These test resources are assemblies from other previously mentioned files, relea
 .. _`US Congressional Records`: http://www.baxleystamps.com/litho/meiji/courts_1871.jpg
 
 .. _`Wikimedia: Pandas text analysis.png`: https://en.wikipedia.org/wiki/File:Pandas_text_analysis.png
+
+.. _`Wikimedia: JPEG2000 Lichtenstein`: https://en.wikipedia.org/wiki/JPEG_2000#/media/File:Jpeg2000_2-level_wavelet_transform-lichtenstein.png
