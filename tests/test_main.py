@@ -28,6 +28,11 @@ TEST_OUTPUT = os.environ.get(
     default=os.path.join(PROJECT_ROOT, 'tests', 'output', 'main'))
 
 
+def running_in_docker():
+    # Docker creates a file named /.dockerinit
+    return os.path.exists('/.dockerinit')
+
+
 def setup_module():
     with suppress(FileNotFoundError):
         shutil.rmtree(TEST_OUTPUT)
@@ -105,6 +110,8 @@ def spoof_tesseract_noop():
 
 @pytest.fixture
 def spoof_tesseract_cache():
+    if running_in_docker():
+        return os.environ.copy()
     return spoof('tesseract', "tesseract_cache.py")
 
 
@@ -408,6 +415,8 @@ def test_missing_docinfo(spoof_tesseract_noop):
     assert p.returncode == ExitCode.ok, err
 
 
+@pytest.mark.skipif(running_in_docker(),
+                    reason="writes to tests/resources")
 def test_uppercase_extension(spoof_tesseract_noop):
     shutil.copy(_infile("skew.pdf"), _infile("UPPERCASE.PDF"))
     try:

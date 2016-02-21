@@ -80,7 +80,6 @@ USER docker
 WORKDIR /home/docker
 
 ENV OCRMYPDF_TEST_OUTPUT=/tmp/test-output
-ENV OCRMYPDF_IN_DOCKER=1
 ENV OCRMYPDF_SHARP_TTF=1
 
 # Must use array form of ENTRYPOINT
