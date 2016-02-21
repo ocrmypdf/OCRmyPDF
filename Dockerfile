@@ -23,12 +23,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN apt-get install -y --no-install-recommends \
   unpaper \
-  libopenjpeg-dev \
-  ghostscript \
   qpdf \
-  poppler-utils
-
-RUN apt-get install -y --no-install-recommends \
+  poppler-utils \
   tesseract-ocr \
   tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-eng tesseract-ocr-fra
 
@@ -36,6 +32,14 @@ RUN apt-get install -qy --no-install-recommends \
   libffi-dev \
   libpython3-dev \
   gcc
+
+# Install Ghostscript from Debian sid to work around JPEG 2000 issue in
+# Debian stretch libgs9 or gs 9.16~dfsg-2.1
+
+COPY ./share/etc-apt-sources.list /etc/apt/sources.list
+
+RUN apt-get update && apt-get install -y ghostscript/sid
+
 
 # Enforce UTF-8
 # Borrowed from https://index.docker.io/u/crosbymichael/python/ 

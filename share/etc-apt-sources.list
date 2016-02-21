@@ -1,0 +1,4 @@
+deb http://httpredir.debian.org/debian stretch main
+deb http://httpredir.debian.org/debian stretch-updates main
+deb http://security.debian.org stretch/updates main
+deb http://ftp.de.debian.org/debian sid main contrib non-free
