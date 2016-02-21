@@ -98,7 +98,8 @@ def get_orientation(input_file, language: list, timeout: float, log):
         return OrientationConfidence(angle=0, confidence=0.0)
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_file)
-        if 'Image too large' in e.output:
+        if ('Too few characters. Skipping this page' in e.output or
+                'Image too large' in e.output):
             return OrientationConfidence(0, 0)
         raise e from e
     else:
