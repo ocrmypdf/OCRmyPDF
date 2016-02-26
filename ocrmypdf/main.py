@@ -550,6 +550,12 @@ def orient_page(
         with open(output_file, 'wb') as out:
             writer.write(out)
 
+        with pdfinfo_lock:
+            pageno = int(os.path.basename(page_pdf)[0:6]) - 1
+            pageinfo = pdfinfo[pageno].copy()
+            pageinfo['rotated'] = orient_conf.angle
+            pdfinfo[pageno] = pageinfo
+
 
 @transform(
     input=orient_page,
@@ -1056,6 +1062,20 @@ def run_pipeline():
     if not validate_pdfa(options.output_file, _log):
         _log.warning('Output file: The generated PDF/A file is INVALID')
         return ExitCode.invalid_output_pdfa
+
+    with _pdfinfo_lock:
+        _log.debug(_pdfinfo)
+        direction = {0: 'n', 90: 'e',
+                     180: 's', 270: 'w'}
+        orientations = []
+        for n, page in enumerate(_pdfinfo):
+            angle = _pdfinfo[n].get('rotated', 0)
+            if angle != 0:
+                orientations.append('{0}{1}'.format(
+                    n + 1,
+                    direction.get(angle, '')))
+        if orientations:
+            _log.info('Page orientations detected: ' + ' '.join(orientations))
 
     return ExitCode.ok
 
