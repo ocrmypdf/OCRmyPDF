@@ -6,6 +6,24 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
+v4.0.3:
+=======
+
+New features
+------------
+
+-  Page orientations detected are now reported in a summary comment
+
+
+Fixes
+-----
+
+-  Show stack trace if unexpect errors occur
+-  Treat "too few characters" error message from Tesseract as a reason to skip that page rather than
+   abort the file
+-  Docker: fix blank JPEG2000 issue by insisting on Ghostscript versions that have this fixed
+
+
 v4.0.2:
 =======
 
