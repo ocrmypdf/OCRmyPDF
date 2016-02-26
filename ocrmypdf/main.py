@@ -1045,6 +1045,8 @@ def run_pipeline():
                 msg = "Error occurred while running this command:"
                 _log.error(msg + '\n' + exc_value)
                 return ExitCode.child_process_error
+            elif not options.verbose:
+                _log.error(e)
 
         return ExitCode.other_error
     except Exception as e:
