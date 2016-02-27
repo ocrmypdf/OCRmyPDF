@@ -67,14 +67,14 @@ def euclidean_distance(rowvec1, rowvec2):
 
 
 ContentsInfo = namedtuple('ContentsInfo',
-    ['raster_settings', 'has_inline_images'])
+    ['raster_settings', 'inline_images'])
 
 def _interpret_contents(contentstream):
     operations = contentstream.operations
     stack = []
     ctm = _matrix_from_shorthand((1, 0, 0, 1, 0, 0))
     image_raster_settings = []
-    has_inline_images = False
+    inline_images = []
 
     print(operations)
     for op in operations:
@@ -91,21 +91,85 @@ def _interpret_contents(contentstream):
             image_raster_settings.append(
                 (image_name, _shorthand_from_matrix(ctm)))
         elif command == b'INLINE IMAGE':
-            # {'settings': {'/BPC': 8, '/H': 8, '/CS': '/RGB', '/F': ['/A85', '/Fl'], '/W': 8}, 'data': b'...'},
-            has_inline_images = True
+            settings = operands['settings']
+            inline_images.append(
+                (settings, _shorthand_from_matrix(ctm)))
 
     return ContentsInfo(
         raster_settings=image_raster_settings,
-        has_inline_images=has_inline_images)
+        inline_images=inline_images)
+
+
+def _get_dpi(ctm_shorthand, image_size):
+    matrix = _matrix_from_shorthand(ctm_shorthand)
+
+    # Corners of the image in untranslated square image space; last
+    # column is a dummy
+    corners = [[0, 0, 1],
+               [1, 0, 1],
+               [0, 1, 1],
+               [1, 1, 1]]
+
+    # Rotate/translate/scale the corners into PDF coords (1/72")
+    # ordering of points may change, e.g. if rotation is 180 then
+    # the point (0, 0) may become the top right
+    # The row vectors can all be transformed together here by building
+    # a matrix of them
+    page_unit_corners = matrix_mult(corners, matrix)
+    print(matrix)
+    print(page_unit_corners)
+
+    # Calculate the width and height of the rotated image
+    # the transformation matrix so the corner that was originally
+    # (1, 1) can be ignored
+    image_drawn_width = euclidean_distance(
+        page_unit_corners[0], page_unit_corners[1])
+    image_drawn_height = euclidean_distance(
+        page_unit_corners[0], page_unit_corners[2])
+
+    print((image_drawn_width, image_drawn_height))
+
+    # The scale of the image is pixels per PDF unit (1/72")
+    scale_w = image_size[0] / image_drawn_width
+    scale_h = image_size[1] / image_drawn_height
+
+    # DPI = scale * 72
+    dpi_w = scale_w * 72.0
+    dpi_h = scale_h * 72.0
+
+    print((dpi_w, dpi_h))
+
+    # If the image is drawn skewed or rotated analyzing its actual
+    # bounding box is a bit more of headache. This is allowed, but
+    # rare.
+    if ctm_shorthand[1] != 0 or ctm_shorthand[2] != 0:
+        print('image was rotated')
+
+    return (dpi_w, dpi_h)
 
 
 def _find_page_images(page, pageinfo, contentsinfo):
+
+    for n, im in enumerate(contentsinfo.inline_images):
+        print(n)
+        settings, shorthand = im
+        image = {}
+        image['name'] = str('inline-%02d' % n)
+        image['width'] = settings['/W']
+        image['height'] = settings['/H']
+        image['bpc'] = settings['/BPC']
+        image['color'] = FRIENDLY_COLORSPACE.get(settings['/CS'], '-')
+        image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
+
+        dpi_w, dpi_h = _get_dpi(shorthand, (image['width'], image['height']))
+        image['dpi_w'], image['dpi_h'] = Decimal(dpi_w), Decimal(dpi_h)
+        yield image
+
+    # Look for XObject (out of line images)
     try:
         page['/Resources']['/XObject']
     except KeyError:
         return
-
-    # Look for XObject (out of line images)
     for xobj in page['/Resources']['/XObject']:
         # PyPDF2 returns the keys as an iterator
         pdfimage = page['/Resources']['/XObject'][xobj]
@@ -142,49 +206,9 @@ def _find_page_images(page, pageinfo, contentsinfo):
             if raster[0] != image['name']:
                 continue
             shorthand = raster[1]
-            matrix = _matrix_from_shorthand(shorthand)
 
-            # Corners of the image in untranslated square image space; last
-            # column is a dummy
-            corners = [[0, 0, 1],
-                       [1, 0, 1],
-                       [0, 1, 1],
-                       [1, 1, 1]]
-
-            # Rotate/translate/scale the corners into PDF coords (1/72")
-            # ordering of points may change, e.g. if rotation is 180 then
-            # the point (0, 0) may become the top right
-            # The row vectors can all be transformed together here by building
-            # a matrix of them
-            page_unit_corners = matrix_mult(corners, matrix)
-            print(matrix)
-            print(page_unit_corners)
-
-            # Calculate the width and height of the rotated image
-            # the transformation matrix so the corner that was originally
-            # (1, 1) can be ignored
-            image_drawn_width = euclidean_distance(
-                page_unit_corners[0], page_unit_corners[1])
-            image_drawn_height = euclidean_distance(
-                page_unit_corners[0], page_unit_corners[2])
-
-            print((image_drawn_width, image_drawn_height))
-
-            # The scale of the image is pixels per PDF unit (1/72")
-            scale_w = image['width'] / image_drawn_width
-            scale_h = image['height'] / image_drawn_height
-
-            # DPI = scale * 72
-            dpi_w = scale_w * 72.0
-            dpi_h = scale_h * 72.0
-
-            print((dpi_w, dpi_h))
-
-            # If the image is drawn skewed or rotated analyzing its actual
-            # bounding box is a bit more of headache. This is allowed, but
-            # rare.
-            if shorthand[1] != 0 or shorthand[2] != 0:
-                print('image was rotated')
+            dpi_w, dpi_h = _get_dpi(
+                shorthand, (image['width'], image['height']))
 
             # When image is used multiple times take the highest DPI it is
             # rendered at
@@ -238,15 +262,9 @@ def _pdf_get_pageinfo(infile, pageno: int):
         return pageinfo
 
     contentsinfo = _interpret_contents(contentstream)
-
-
+    print(contentsinfo)
     pageinfo['images'] = [im for im in _find_page_images(
                                 page, pageinfo, contentsinfo)]
-
-    # Look for inline images
-    if contentsinfo.has_inline_images:
-        raise NotImplementedError(
-            "Warning: input PDF contains inline images - not supported")
 
     if pageinfo['images']:
         xres = max(image['dpi_w'] for image in pageinfo['images'])

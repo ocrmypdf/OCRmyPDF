@@ -120,8 +120,10 @@ def test_single_page_inline_image():
         pdf.showPage()
         pdf.save()
 
-    with pytest.raises(NotImplementedError):
-        pageinfo.pdf_get_all_pageinfo(filename)
+    pdfinfo = pageinfo.pdf_get_all_pageinfo(filename)
+    print(pdfinfo)
+    pdfimage = pdfinfo[0]['images'][0]
+    assert (pdfimage['dpi_w'] - 8) < 1e-5
 
 
 def test_jpeg():
