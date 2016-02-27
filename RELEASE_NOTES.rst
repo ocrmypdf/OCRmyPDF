@@ -6,14 +6,21 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
-v4.0.4:
+v4.0.5:
 =======
 
 Fixes
 -----
 
+-  Remove some verbose debug messages from v4.0.4
+-  Fixed temporary that wasn't being deleted
 -  DPI is now calculated correctly for cropped images, along with other image transformations
 -  Inline images are now checked during DPI calculation instead of rejecting the image
+
+v4.0.4:
+=======
+
+Released with verbose debug message turned on. Do not use. Skip to v4.0.5.
 
 
 v4.0.3:
