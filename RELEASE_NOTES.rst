@@ -6,6 +6,16 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
+v4.0.4:
+=======
+
+Fixes
+-----
+
+-  DPI is now calculated correctly for cropped images, along with other image transformations
+-  Inline images are now checked during DPI calculation instead of rejecting the image
+
+
 v4.0.3:
 =======
 
