@@ -82,7 +82,6 @@ def _interpret_contents(contentstream):
     image_raster_settings = []
     inline_images = []
 
-    print(operations)
     for op in operations:
         operands, command = op
         if command == b'q':
@@ -182,7 +181,6 @@ def _get_dpi(ctm_shorthand, image_size):
 def _find_page_images(page, pageinfo, contentsinfo):
 
     for n, im in enumerate(contentsinfo.inline_images):
-        print(n)
         settings, shorthand = im
         image = {}
         image['name'] = str('inline-%02d' % n)
@@ -295,7 +293,6 @@ def _pdf_get_pageinfo(infile, pageno: int):
         return pageinfo
 
     contentsinfo = _interpret_contents(contentstream)
-    print(contentsinfo)
     pageinfo['images'] = [im for im in _find_page_images(
                                 page, pageinfo, contentsinfo)]
 
