@@ -378,7 +378,7 @@ def cleanup_working_files(*args):
 @transform(
     input=options.input_file,
     filter=formatter('(?i)\.pdf'),
-    output=work_folder + '{basename[0]}.repaired.pdf',
+    output=os.path.join(work_folder, '{basename[0]}.repaired.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def repair_pdf(
         input_file,
