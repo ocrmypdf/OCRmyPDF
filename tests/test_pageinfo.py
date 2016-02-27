@@ -124,6 +124,8 @@ def test_single_page_inline_image():
     print(pdfinfo)
     pdfimage = pdfinfo[0]['images'][0]
     assert (pdfimage['dpi_w'] - 8) < 1e-5
+    assert pdfimage['color'] != '-'
+    assert pdfimage['width'] == 8
 
 
 def test_jpeg():

@@ -21,7 +21,11 @@ FRIENDLY_COLORSPACE = {
     '/Indexed': 'index',
     '/Separation': 'sep',
     '/DeviceN': 'devn',
-    '/Pattern': '-'
+    '/Pattern': '-',
+    '/G': 'gray',  # Abbreviations permitted in inline images
+    '/RGB': 'rgb',
+    '/CMYK': 'cmyk',
+    '/I': 'index',
 }
 
 FRIENDLY_ENCODING = {
@@ -29,6 +33,8 @@ FRIENDLY_ENCODING = {
     '/DCTDecode': 'jpeg',
     '/JPXDecode': 'jpx',
     '/JBIG2Decode': 'jbig2',
+    '/CCF': 'ccitt',  # Abbreviations permitted in inline images
+    '/DCT': 'jpeg'
 }
 
 FRIENDLY_COMP = {
@@ -101,10 +107,45 @@ def _interpret_contents(contentstream):
 
 
 def _get_dpi(ctm_shorthand, image_size):
+    """Given the transformation matrix and image size, find the image DPI.
+
+    PDFs do not include image resolution information within image data.
+    Instead, the PDF page content stream describes the location where the
+    image will be rasterized, and the effective resolution is the ratio of the
+    pixel size to raster target size.
+
+    Normally a scanned PDF has the paper size set appropriately but this is
+    not guaranteed. The most common case is a cropped image will change the
+    page size (/CropBox) without altering the page content stream. That means
+    it is not sufficient to assume that the image fills the page, even though
+    that is the most common case.
+
+    This code solves the general case where the image may be scaled (always),
+    cropped, translated (often), and rotated in place (occasionally) to an
+    arbitrary angle (rare). It will work as long as the image is a
+    parallelogram from the perspective of a rectilinear coordinate system.
+    It does not work for arbitrarily quadrilaterals that might be produced
+    by shearing, but by that point DPI becomes a linear gradient rather than
+    constant over the image.
+
+    The transformation matrix describes the coordinate system at the time of
+    rendering. We transform the image corner locations into the coordinate
+    system and measure the width and height within the system, expressed in
+    PDF units. From there we can compare to the actual image dimensions.
+
+    pdfimages -list does calculate the DPI in some way that is not completely
+    naive, but it does not the DPI of rotated images right, so cannot be
+    used anymore to validate this. Photoshop works, or using Acrobat to
+    rotate the image back to normal.
+
+    It does not matter if the image is partially cropped, or even out of the
+    /MediaBox.
+
+    """
     matrix = _matrix_from_shorthand(ctm_shorthand)
 
-    # Corners of the image in untranslated square image space; last
-    # column is a dummy
+    # Corners of the image in untransformed unit space; last
+    # column is a dummy to assist matrix math
     corners = [[0, 0, 1],
                [1, 0, 1],
                [0, 1, 1],
@@ -116,8 +157,6 @@ def _get_dpi(ctm_shorthand, image_size):
     # The row vectors can all be transformed together here by building
     # a matrix of them
     page_unit_corners = matrix_mult(corners, matrix)
-    print(matrix)
-    print(page_unit_corners)
 
     # Calculate the width and height of the rotated image
     # the transformation matrix so the corner that was originally
@@ -127,7 +166,7 @@ def _get_dpi(ctm_shorthand, image_size):
     image_drawn_height = euclidean_distance(
         page_unit_corners[0], page_unit_corners[2])
 
-    print((image_drawn_width, image_drawn_height))
+    # print((image_drawn_width, image_drawn_height))
 
     # The scale of the image is pixels per PDF unit (1/72")
     scale_w = image_size[0] / image_drawn_width
@@ -136,14 +175,6 @@ def _get_dpi(ctm_shorthand, image_size):
     # DPI = scale * 72
     dpi_w = scale_w * 72.0
     dpi_h = scale_h * 72.0
-
-    print((dpi_w, dpi_h))
-
-    # If the image is drawn skewed or rotated analyzing its actual
-    # bounding box is a bit more of headache. This is allowed, but
-    # rare.
-    if ctm_shorthand[1] != 0 or ctm_shorthand[2] != 0:
-        print('image was rotated')
 
     return (dpi_w, dpi_h)
 
@@ -212,9 +243,11 @@ def _find_page_images(page, pageinfo, contentsinfo):
 
             # When image is used multiple times take the highest DPI it is
             # rendered at
-            image['dpi_w'] = Decimal(max(dpi_w, image.get('dpi_w', 0)))
-            image['dpi_h'] = Decimal(max(dpi_h, image.get('dpi_h', 0)))
+            image['dpi_w'] = max(dpi_w, image.get('dpi_w', 0))
+            image['dpi_h'] = max(dpi_h, image.get('dpi_h', 0))
 
+        image['dpi_w'] = Decimal(image['dpi_w'])
+        image['dpi_h'] = Decimal(image['dpi_h'])
         image['dpi'] = (image['dpi_w'] * image['dpi_h']) ** Decimal(0.5)
         yield image
 
@@ -282,3 +315,17 @@ def pdf_get_all_pageinfo(infile):
     pdf = pypdf.PdfFileReader(infile)
     getcontext().prec = 6
     return [_pdf_get_pageinfo(infile, n) for n in range(pdf.numPages)]
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('infile')
+    args = parser.parse_args()
+    info = pdf_get_all_pageinfo(args.infile)
+    from pprint import pprint
+    pprint(info)
+
+
+if __name__ == '__main__':
+    main()
