@@ -103,8 +103,8 @@ def test_single_page_image():
     assert pdfimage['bpc'] == 8
 
     # DPI in a 1"x1" is the image width
-    assert pdfimage['dpi_w'] == 8
-    assert pdfimage['dpi_h'] == 8
+    assert abs(pdfimage['dpi_w'] - 8) < 1e-5
+    assert abs(pdfimage['dpi_h'] - 8) < 1e-5
 
 
 def test_single_page_inline_image():
@@ -131,4 +131,5 @@ def test_jpeg():
 
     pdfimage = pdfinfo[0]['images'][0]
     assert pdfimage['enc'] == 'jpeg'
+    assert (pdfimage['dpi_w'] - 150) < 1e-5
 
