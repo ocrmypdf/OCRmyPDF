@@ -252,11 +252,11 @@ In case you detect an issue, please:
 Press & Media
 -------------
 
--  `c't 1-2014, page 59 <http://www.heise.de/ct/inhalt/2014/1/58/>`__:
+-  `c't 1-2014, page 59 <http://heise.de/-2279695>`__:
    Detailed presentation of OCRmyPDF v1.0 in the leading German IT
    magazine c't
 -  `heise Open Source, 09/2014: Texterkennung mit
-   OCRmyPDF <http://www.heise.de/-2356670>`__
+   OCRmyPDF <http://heise.de/-2356670>`__
 
 Disclaimer
 ----------
