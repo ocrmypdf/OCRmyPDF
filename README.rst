@@ -116,8 +116,8 @@ Install or upgrade the required Homebrew packages, if any are missing::
    brew install qpdf
    brew install ghostscript
    brew install python3
-   brew install libxml2
-   brew install leptonica
+   brew install libxml2 libffi leptonica
+   brew install unpaper    # optional
    brew install tesseract
    
 Update the homebrew pip and install Pillow::
