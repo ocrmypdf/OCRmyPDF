@@ -6,3 +6,5 @@
 *.jar	binary
 *.pdf	binary
 *.PDF	binary
+
+.git_archival.txt  export-subst
