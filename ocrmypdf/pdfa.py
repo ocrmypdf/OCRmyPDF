@@ -8,6 +8,7 @@ from string import Template
 from subprocess import Popen, PIPE
 import os
 import codecs
+from collections import OrderedDict
 from . import get_program
 
 
@@ -114,7 +115,9 @@ def _get_postscript_icc_path():
                     yield from (
                         path.strip() for path in line.split(':')
                         if path.strip() != '')
-    for root in search_paths(lines):
+
+    ordered_paths_once = OrderedDict.fromkeys(search_paths(lines))
+    for root in ordered_paths_once.keys():
         path = os.path.realpath(os.path.join(root, '../iccprofiles'))
         if os.path.exists(path):
             return path
