@@ -5,11 +5,13 @@
 
 from __future__ import print_function, absolute_import, division
 from string import Template
-from subprocess import Popen, PIPE
-import os
 import codecs
-from collections import OrderedDict
-from . import get_program
+import pkg_resources
+
+ICC_PROFILE_RELPATH = 'data/sRGB_IEC61966-2-1_black_scaled.icc'
+
+SRGB_ICC_PROFILE = pkg_resources.resource_filename(
+    'ocrmypdf', ICC_PROFILE_RELPATH)
 
 
 # This is a template written in PostScript which is needed to create PDF/A
@@ -94,40 +96,9 @@ def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
     return result
 
 
-def _get_postscript_icc_path():
-    "Parse Ghostscript's help message to find where iccprofiles are stored"
-
-    p_gs = Popen([get_program('gs'), '--help'], close_fds=True,
-                 universal_newlines=True,
-                 stdout=PIPE, stderr=PIPE)
-    out, _ = p_gs.communicate()
-    lines = out.splitlines()
-
-    def search_paths(lines):
-        seeking = True
-        for line in lines:
-            if seeking:
-                if line.startswith('Search path'):
-                    seeking = False
-                    continue
-            else:
-                if line.strip().startswith('/'):
-                    yield from (
-                        path.strip() for path in line.split(':')
-                        if path.strip() != '')
-
-    ordered_paths_once = OrderedDict.fromkeys(search_paths(lines))
-    for root in ordered_paths_once.keys():
-        path = os.path.realpath(os.path.join(root, '../iccprofiles'))
-        if os.path.exists(path):
-            return path
-
-    raise FileNotFoundError("Could not find Ghostscript's iccprofiles")
-
-
 def generate_pdfa_def(target_filename, pdfmark, icc='sRGB'):
     if icc == 'sRGB':
-        icc_profile = os.path.join(_get_postscript_icc_path(), 'srgb.icc')
+        icc_profile = SRGB_ICC_PROFILE
     else:
         raise NotImplementedError("Only supporting sRGB")
 

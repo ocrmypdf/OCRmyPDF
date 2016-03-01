@@ -5,6 +5,7 @@ from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE, check_call
 from shutil import copy
 from . import get_program
+from .pdfa import SRGB_ICC_PROFILE
 
 
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
@@ -52,7 +53,7 @@ def generate_pdfa(pdf_pages, output_file, threads=1):
             "-dJPEGQ=95",
             "-dPDFA=2",
             "-sPDFACompatibilityPolicy=2",
-            "-sOutputICCProfile=srgb.icc",
+            "-sOutputICCProfile=" + SRGB_ICC_PROFILE,
             "-sOutputFile=" + gs_pdf.name,
         ]
         args_gs.extend(pdf_pages)
