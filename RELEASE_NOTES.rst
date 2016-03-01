@@ -6,6 +6,13 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
+v4.0.6:
+=======
+
+-  Update install instructions
+-  Provide a sRGB profile instead of using Ghostscript's
+
+
 v4.0.5:
 =======
 
