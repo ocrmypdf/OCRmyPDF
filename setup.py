@@ -209,7 +209,6 @@ setup(
         ],
     setup_requires=[
         'setuptools_scm',
-        'setuptools_scm_git_archive',
         'cffi>=1.5.0',
         'pytest-runner'
     ],
