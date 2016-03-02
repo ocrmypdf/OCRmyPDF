@@ -6,6 +6,12 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
+v4.0.7:
+=======
+
+-  Minor correction to Ghostscript output settings
+
+
 v4.0.6:
 =======
 
