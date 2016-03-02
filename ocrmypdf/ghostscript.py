@@ -53,7 +53,6 @@ def generate_pdfa(pdf_pages, output_file, threads=1):
             "-dJPEGQ=95",
             "-dPDFA=2",
             "-sPDFACompatibilityPolicy=2",
-            "-sOutputICCProfile=" + SRGB_ICC_PROFILE,
             "-sOutputFile=" + gs_pdf.name,
         ]
         args_gs.extend(pdf_pages)
