@@ -110,8 +110,8 @@ class Pix:
             return "<leptonica.Pix image NULL>"
 
     def __getstate__(self):
-        data = ffi.new('l_uint32 *[]', 1)
-        size = ffi.new('size_t *', 0)
+        data = ffi.new('l_uint32 **')
+        size = ffi.new('size_t *')
 
         err = lept.pixSerializeToMemory(self.cpix, data, size)
         if err != 0:
@@ -196,15 +196,20 @@ class Pix:
                 return (None, None)
 
     @staticmethod
+    @lru_cache(maxsize=1)
+    def make_pixel_sum_tab8():
+        return lept.makePixelSumTab8()
+
+    @staticmethod
     def correlation_binary(pix1, pix2):
         if get_leptonica_version() < 'leptonica-1.72':
             # Older versions of Leptonica (pre-1.72) have a buggy
             # implementation of pixCorrelationBinary that overflows on larger
             # images.
-            pix1_count = ffi.new('l_int32 *', 0)
-            pix2_count = ffi.new('l_int32 *', 0)
-            pixn_count = ffi.new('l_int32 *', 0)
-            tab8 = lept.makePixelSumTab8()  # Small memory leak on each call
+            pix1_count = ffi.new('l_int32 *')
+            pix2_count = ffi.new('l_int32 *')
+            pixn_count = ffi.new('l_int32 *')
+            tab8 = Pix.make_pixel_sum_tab8()
 
             lept.pixCountPixels(pix1.cpix, pix1_count, tab8)
             lept.pixCountPixels(pix2.cpix, pix2_count, tab8)
