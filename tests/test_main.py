@@ -503,3 +503,20 @@ def test_tesseract_image_too_big(renderer, spoof_tesseract_big_image_error):
     check_ocrmypdf(
         'hugemono.pdf', 'hugemono_%s.pdf' % renderer, '-r',
         '--pdf-renderer', renderer, env=spoof_tesseract_big_image_error)
+
+
+def test_no_unpaper():
+    env = os.environ.copy()
+    env['OCRMYPDF_UNPAPER'] = os.path.abspath('./spoof/no_unpaper_here.py')
+    sh, out, err = run_ocrmypdf_env(
+        'c02-22.pdf', 'wont_be_created.pdf', '--clean', env=env)
+    assert sh.returncode == ExitCode.missing_dependency
+
+
+def test_old_unpaper():
+    env = os.environ.copy()
+    env['OCRMYPDF_UNPAPER'] = os.path.abspath('./spoof/unpaper_oldversion.py')
+    sh, out, err = run_ocrmypdf_env(
+        'c02-22.pdf', 'wont_be_created.pdf', '--clean', env=env)
+    assert sh.returncode == ExitCode.missing_dependency
+

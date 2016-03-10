@@ -234,13 +234,18 @@ if options.pdf_renderer == 'tesseract' and tesseract.version() < '3.04.01' \
         "Some PDF viewers will fail to find searchable text.\n"
         "--pdf-renderer=tesseract is not recommended.")
 
-if any((options.deskew, options.clean, options.clean_final)):
+if any((options.clean, options.clean_final)):
     try:
         from . import unpaper
-    except ImportError:
+        if unpaper.version() < '6.1':
+            complain(
+                "The installed 'unpaper' is not supported. "
+                "Install version 6.1 or newer.")
+            sys.exit(ExitCode.missing_dependency)
+    except FileNotFoundError:
         complain(
             "Install the 'unpaper' program to use --deskew or --clean.")
-        sys.exit(ExitCode.bad_args)
+        sys.exit(ExitCode.missing_dependency)
 else:
     unpaper = None
 

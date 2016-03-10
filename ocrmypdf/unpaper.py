@@ -3,7 +3,7 @@
 # unpaper documentation:
 # https://github.com/Flameeyes/unpaper/blob/master/doc/basic-concepts.md
 
-from subprocess import Popen, PIPE
+from subprocess import CalledProcessError, STDOUT, check_output, check_call
 from tempfile import NamedTemporaryFile
 import sys
 import os
@@ -17,10 +17,9 @@ def version():
         get_program('unpaper'),
         '--version'
     ]
-    p_unpaper = Popen(args_unpaper, close_fds=True, universal_newlines=True,
-                      stdout=PIPE, stderr=PIPE)
-    version, _ = p_unpaper.communicate(timeout=5)
-
+    version = check_output(
+        args_unpaper, close_fds=True, universal_newlines=True,
+        stderr=STDOUT, timeout=5)
     return version.strip()
 
 
@@ -68,15 +67,17 @@ def run(input_file, output_file, dpi, log, mode_args):
         os.unlink(output_pnm.name)
 
         args_unpaper.extend([input_pnm.name, output_pnm.name])
-        p_unpaper = Popen(
-            args_unpaper, close_fds=True,
-            universal_newlines=True, stdout=PIPE, stderr=PIPE
-            )
-        out, err = p_unpaper.communicate()
-        log.debug(out)
-        log.debug(err)
-
-        Image.open(output_pnm.name).save(output_file)
+        try:
+            stdout = check_output(
+                args_unpaper, close_fds=True,
+                universal_newlines=True, stderr=STDOUT,
+                )
+        except CalledProcessError as e:
+            log.debug(e.output)
+            raise e from e
+        else:
+            log.debug(stdout)
+            Image.open(output_pnm.name).save(output_file)
 
 
 def deskew(input_file, output_file, dpi, log):
