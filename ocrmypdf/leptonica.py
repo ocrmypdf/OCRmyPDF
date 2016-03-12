@@ -17,6 +17,7 @@ from tempfile import TemporaryFile
 from ctypes.util import find_library
 from .lib._leptonica import ffi
 from functools import lru_cache
+from enum import Enum
 
 lept = ffi.dlopen(find_library('lept'))
 
@@ -83,6 +84,13 @@ class LeptonicaIOError(LeptonicaError):
     pass
 
 
+class RemoveColormap(Enum):
+    to_binary = 0
+    to_grayscale = 1
+    to_full_color = 2
+    based_on_src = 3
+
+
 class Pix:
     """Wrapper around leptonica's PIX object.
 
@@ -136,6 +144,30 @@ class Pix:
     @property
     def height(self):
         return self.cpix.h
+
+    @property
+    def depth(self):
+        return self.cpix.d
+
+    @property
+    def size(self):
+        return (self.cpix.w, self.cpix.h)
+
+    @property
+    def info(self):
+        return {'dpi': (self.cpix.xres, self.cpix.yres)}
+
+    @property
+    def mode(self):
+        "Return mode like PIL.Image"
+        if self.depth == 1:
+            return '1'
+        elif self.depth >= 16:
+            return 'RGB'
+        elif not self.cpix.colormap:
+            return 'L'
+        else:
+            return 'P'
 
     @classmethod
     def read(cls, filename):
@@ -195,6 +227,22 @@ class Pix:
             else:
                 return (None, None)
 
+    def convert_rgb_to_luminance(self):
+        with LeptonicaErrorTrap():
+            gray_pix = lept.pixConvertRGBToLuminance(self.cpix)
+            if gray_pix:
+                return Pix(gray_pix)
+            return None
+
+    def remove_colormap(self, removal_type):
+        """Remove a palette
+
+            removal_type - RemovalColormap()
+        """
+
+        with LeptonicaErrorTrap():
+            return Pix(lept.pixRemoveColormap(self.cpix, removal_type))
+
     def otsu_adaptive_threshold(
             self, tile_size=(300, 300), kernel_size=(4, 4), scorefract=0.1):
         with LeptonicaErrorTrap():
@@ -213,6 +261,30 @@ class Pix:
                 return Pix(p_cpix[0])
             else:
                 return None
+
+    def otsu_threshold_on_background_norm(
+            self, mask=None, tile_size=(10, 15), thresh=100, mincount=50,
+            bgval=255, kernel_size=(2, 2), scorefract=0.1):
+        with LeptonicaErrorTrap():
+            sx, sy = tile_size
+            smoothx, smoothy = kernel_size
+            if mask is None:
+                mask = ffi.NULL
+            if isinstance(mask, Pix):
+                mask = mask.cpix
+
+            thresh_pix = lept.pixOtsuThreshOnBackgroundNorm(
+                self.cpix,
+                mask,
+                sx, sy,
+                thresh, mincount, bgval,
+                smoothx, smoothy,
+                scorefract,
+                ffi.NULL
+                )
+            if thresh_pix == ffi.NULL:
+                return None
+            return Pix(thresh_pix)
 
     @staticmethod
     @lru_cache(maxsize=1)

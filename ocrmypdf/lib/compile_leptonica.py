@@ -42,6 +42,18 @@ struct PixColormap
     l_int32          n;         /* number of color entries used            */
 };
 typedef struct PixColormap  PIXCMAP;
+
+struct Box
+{
+    l_int32            x;
+    l_int32            y;
+    l_int32            w;
+    l_int32            h;
+    l_uint32           refcount;      /* reference count (1 if no clones)  */
+
+};
+typedef struct Box    BOX;
+
 """)
 
 ffi.cdef("""
@@ -62,6 +74,10 @@ l_int32 * makePixelSumTab8 ( void );
 PIX * pixDeserializeFromMemory ( const l_uint32 *data, size_t nbytes );
 l_int32 pixSerializeToMemory ( PIX *pixs, l_uint32 **pdata, size_t *pnbytes );
 
+PIX * pixConvertRGBToLuminance(PIX *pixs);
+
+PIX * pixRemoveColormap(PIX *pixs, l_int32  type);
+
 l_int32
 pixOtsuAdaptiveThreshold(PIX       *pixs,
                          l_int32    sx,
@@ -71,6 +87,29 @@ pixOtsuAdaptiveThreshold(PIX       *pixs,
                          l_float32  scorefract,
                          PIX      **ppixth,
                          PIX      **ppixd);
+
+PIX *
+pixOtsuThreshOnBackgroundNorm(PIX       *pixs,
+                              PIX       *pixim,
+                              l_int32    sx,
+                              l_int32    sy,
+                              l_int32    thresh,
+                              l_int32    mincount,
+                              l_int32    bgval,
+                              l_int32    smoothx,
+                              l_int32    smoothy,
+                              l_float32  scorefract,
+                              l_int32   *pthresh);
+
+BOX *
+pixFindPageForeground(PIX         *pixs,
+                      l_int32      threshold,
+                      l_int32      mindist,
+                      l_int32      erasedist,
+                      l_int32      pagenum,
+                      l_int32      showmorph,
+                      l_int32      display,
+                      const char  *pdfdir);
 
 void lept_free(void *ptr);
 """)
