@@ -195,6 +195,25 @@ class Pix:
             else:
                 return (None, None)
 
+    def otsu_adaptive_threshold(
+            self, tile_size=(300, 300), kernel_size=(4, 4), scorefract=0.1):
+        with LeptonicaErrorTrap():
+            sx, sy = tile_size
+            smoothx, smoothy = kernel_size
+            p_cpix = ffi.new('PIX **')
+
+            result = lept.pixOtsuAdaptiveThreshold(
+                self.cpix,
+                sx, sy,
+                smoothx, smoothy,
+                scorefract,
+                ffi.NULL,
+                p_cpix)
+            if result == 0:
+                return Pix(p_cpix[0])
+            else:
+                return None
+
     @staticmethod
     @lru_cache(maxsize=1)
     def make_pixel_sum_tab8():

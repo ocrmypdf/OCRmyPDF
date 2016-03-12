@@ -62,6 +62,16 @@ l_int32 * makePixelSumTab8 ( void );
 PIX * pixDeserializeFromMemory ( const l_uint32 *data, size_t nbytes );
 l_int32 pixSerializeToMemory ( PIX *pixs, l_uint32 **pdata, size_t *pnbytes );
 
+l_int32
+pixOtsuAdaptiveThreshold(PIX       *pixs,
+                         l_int32    sx,
+                         l_int32    sy,
+                         l_int32    smoothx,
+                         l_int32    smoothy,
+                         l_float32  scorefract,
+                         PIX      **ppixth,
+                         PIX      **ppixd);
+
 void lept_free(void *ptr);
 """)
 
