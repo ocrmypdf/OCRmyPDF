@@ -106,14 +106,14 @@ class Pix:
     in a threadsafe manner if a Python threading.Lock protects the data.
     """
 
-    def __init__(self, cpix):
-        self.cpix = ffi.gc(cpix, Pix._pix_destroy)
+    def __init__(self, pix):
+        self._pix = ffi.gc(pix, Pix._pix_destroy)
 
     def __repr__(self):
-        if self.cpix:
+        if self._pix:
             s = "<leptonica.Pix image size={0}x{1} depth={2} at 0x{3:x}>"
-            return s.format(self.cpix.w, self.cpix.h, self.cpix.d,
-                            int(ffi.cast("intptr_t", self.cpix)))
+            return s.format(self._pix.w, self._pix.h, self._pix.d,
+                            int(ffi.cast("intptr_t", self._pix)))
         else:
             return "<leptonica.Pix image NULL>"
 
@@ -121,7 +121,7 @@ class Pix:
         data = ffi.new('l_uint32 **')
         size = ffi.new('size_t *')
 
-        err = lept.pixSerializeToMemory(self.cpix, data, size)
+        err = lept.pixSerializeToMemory(self._pix, data, size)
         if err != 0:
             raise LeptonicaIOError("pixSerializeToMemory")
 
@@ -134,28 +134,28 @@ class Pix:
         cdata_bytes = ffi.new('char[]', state['data'])
         cdata_uint32 = ffi.cast('l_uint32 *', cdata_bytes)
 
-        self.cpix = lept.pixDeserializeFromMemory(
+        self._pix = lept.pixDeserializeFromMemory(
             cdata_uint32, len(state['data']))
 
     @property
     def width(self):
-        return self.cpix.w
+        return self._pix.w
 
     @property
     def height(self):
-        return self.cpix.h
+        return self._pix.h
 
     @property
     def depth(self):
-        return self.cpix.d
+        return self._pix.d
 
     @property
     def size(self):
-        return (self.cpix.w, self.cpix.h)
+        return (self._pix.w, self._pix.h)
 
     @property
     def info(self):
-        return {'dpi': (self.cpix.xres, self.cpix.yres)}
+        return {'dpi': (self._pix.xres, self._pix.yres)}
 
     @property
     def mode(self):
@@ -164,7 +164,7 @@ class Pix:
             return '1'
         elif self.depth >= 16:
             return 'RGB'
-        elif not self.cpix.colormap:
+        elif not self._pix.colormap:
             return 'L'
         else:
             return 'P'
@@ -190,7 +190,7 @@ class Pix:
         with LeptonicaErrorTrap():
             lept.pixWriteImpliedFormat(
                 filename.encode(sys.getfilesystemencoding()),
-                self.cpix, jpeg_quality, jpeg_progressive)
+                self._pix, jpeg_quality, jpeg_progressive)
 
     def deskew(self, reduction_factor=0):
         """Returns the deskewed pix object.
@@ -202,16 +202,16 @@ class Pix:
             for skew angle
         """
         with LeptonicaErrorTrap():
-            return Pix(lept.pixDeskew(self.cpix, reduction_factor))
+            return Pix(lept.pixDeskew(self._pix, reduction_factor))
 
     def scale(self, scalex, scaley):
         "Returns the pix object rescaled according to the proportions given."
         with LeptonicaErrorTrap():
-            return Pix(lept.pixScale(self.cpix, scalex, scaley))
+            return Pix(lept.pixScale(self._pix, scalex, scaley))
 
     def rotate180(self):
         with LeptonicaErrorTrap():
-            return Pix(lept.pixRotate180(ffi.NULL, self.cpix))
+            return Pix(lept.pixRotate180(ffi.NULL, self._pix))
 
     def find_skew(self):
         """Returns a tuple (deskew angle in degrees, confidence value).
@@ -221,7 +221,7 @@ class Pix:
         with LeptonicaErrorTrap():
             angle = ffi.new('float *', 0.0)
             confidence = ffi.new('float *', 0.0)
-            result = lept.pixFindSkew(self.cpix, angle, confidence)
+            result = lept.pixFindSkew(self._pix, angle, confidence)
             if result == 0:
                 return (angle[0], confidence[0])
             else:
@@ -229,7 +229,7 @@ class Pix:
 
     def convert_rgb_to_luminance(self):
         with LeptonicaErrorTrap():
-            gray_pix = lept.pixConvertRGBToLuminance(self.cpix)
+            gray_pix = lept.pixConvertRGBToLuminance(self._pix)
             if gray_pix:
                 return Pix(gray_pix)
             return None
@@ -241,24 +241,24 @@ class Pix:
         """
 
         with LeptonicaErrorTrap():
-            return Pix(lept.pixRemoveColormap(self.cpix, removal_type))
+            return Pix(lept.pixRemoveColormap(self._pix, removal_type))
 
     def otsu_adaptive_threshold(
             self, tile_size=(300, 300), kernel_size=(4, 4), scorefract=0.1):
         with LeptonicaErrorTrap():
             sx, sy = tile_size
             smoothx, smoothy = kernel_size
-            p_cpix = ffi.new('PIX **')
+            p_pix = ffi.new('PIX **')
 
             result = lept.pixOtsuAdaptiveThreshold(
-                self.cpix,
+                self._pix,
                 sx, sy,
                 smoothx, smoothy,
                 scorefract,
                 ffi.NULL,
-                p_cpix)
+                p_pix)
             if result == 0:
-                return Pix(p_cpix[0])
+                return Pix(p_pix[0])
             else:
                 return None
 
@@ -271,10 +271,10 @@ class Pix:
             if mask is None:
                 mask = ffi.NULL
             if isinstance(mask, Pix):
-                mask = mask.cpix
+                mask = mask._pix
 
             thresh_pix = lept.pixOtsuThreshOnBackgroundNorm(
-                self.cpix,
+                self._pix,
                 mask,
                 sx, sy,
                 thresh, mincount, bgval,
@@ -302,10 +302,10 @@ class Pix:
             pixn_count = ffi.new('l_int32 *')
             tab8 = Pix.make_pixel_sum_tab8()
 
-            lept.pixCountPixels(pix1.cpix, pix1_count, tab8)
-            lept.pixCountPixels(pix2.cpix, pix2_count, tab8)
-            pixn = Pix(lept.pixAnd(ffi.NULL, pix1.cpix, pix2.cpix))
-            lept.pixCountPixels(pixn.cpix, pixn_count, tab8)
+            lept.pixCountPixels(pix1._pix, pix1_count, tab8)
+            lept.pixCountPixels(pix2._pix, pix2_count, tab8)
+            pixn = Pix(lept.pixAnd(ffi.NULL, pix1._pix, pix2._pix))
+            lept.pixCountPixels(pixn._pix, pixn_count, tab8)
 
             # Python converts these int32s to larger units as needed
             # to avoid overflow. Overflow happens easily here.
@@ -316,7 +316,7 @@ class Pix:
             return correlation
         else:
             correlation = ffi.new('float *', 0.0)
-            result = lept.pixCorrelationBinary(pix1.cpix, pix2.cpix,
+            result = lept.pixCorrelationBinary(pix1._pix, pix2._pix,
                                                correlation)
             if result != 0:
                 raise LeptonicaError("Correlation failed")
@@ -324,8 +324,8 @@ class Pix:
 
     @staticmethod
     def _pix_destroy(pix):
-        ptr_to_pix = ffi.new('PIX **', pix)
-        lept.pixDestroy(ptr_to_pix)
+        p_pix = ffi.new('PIX **', pix)
+        lept.pixDestroy(p_pix)
         # print('pix destroy ' + repr(pix))
 
 
