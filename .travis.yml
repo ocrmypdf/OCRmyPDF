@@ -5,7 +5,7 @@ cache: pip
 cache:
     directories:
         - $HOME/.ccache
-        - tarballs
+        - packages
         - tests/cache
 
 python:
@@ -21,17 +21,15 @@ before_install:
     - sudo add-apt-repository ppa:b-eltzner/qpdfview-exp -y  # for QPDF 5
     - sudo add-apt-repository ppa:itachi-san/ffmpeg -y  # for libav 11.2 (for unpaper)
     - sudo apt-get update -qq  # must go after all add-apt-repo
-    - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils gcc libavformat-dev libavcodec-dev libavutil-dev automake make pkg-config xsltproc libffi-dev
+    - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils libavformat56 libavcodec56 libavutil54 libffi-dev
 
     # pip
     - pip install --upgrade pip
 
     # Download, make and install unpaper (using ccache)
-    - mkdir -p tarballs
-    - "[ -f tarballs/unpaper-6.1.tar.xz ] || wget -q https://www.flameeyes.eu/files/unpaper-6.1.tar.xz -O tarballs/unpaper-6.1.tar.xz"
-    - tar -xvf tarballs/unpaper-6.1.tar.xz
-    - export PATH="/usr/lib/ccache:$PATH"
-    - pushd unpaper-6.1 && ./configure --prefix=/usr && make -j && sudo make install && popd
+    - mkdir -p packages
+    - "[ -f packages/unpaper_6.1-1.deb ] || wget -q https://dl.dropboxusercontent.com/u/28971240/unpaper_6.1-1.deb -O packages/unpaper_6.1-1.deb"
+    - sudo dpkg -i packages/unpaper_6.1-1.deb
 
 install:
     - pip install -r requirements.txt
