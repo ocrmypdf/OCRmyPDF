@@ -126,7 +126,11 @@ class Pix:
             raise LeptonicaIOError("pixSerializeToMemory")
 
         char_data = ffi.cast('char *', data[0])
+
+        # Copy from C bytes to python bytes()
         data_bytes = ffi.buffer(char_data, size[0])[:]
+
+        # Can now free C bytes
         lept.lept_free(char_data)
         return dict(data=data_bytes)
 
@@ -134,8 +138,9 @@ class Pix:
         cdata_bytes = ffi.new('char[]', state['data'])
         cdata_uint32 = ffi.cast('l_uint32 *', cdata_bytes)
 
-        self._pix = lept.pixDeserializeFromMemory(
+        pix = lept.pixDeserializeFromMemory(
             cdata_uint32, len(state['data']))
+        Pix.__init__(self, pix)
 
     @property
     def width(self):
