@@ -66,6 +66,9 @@ PIX * pixDeskew ( PIX *pixs, l_int32 redsearch );
 char * getLeptonicaVersion (  );
 l_int32 pixCorrelationBinary(PIX *pix1, PIX *pix2, l_float32 *pval);
 PIX *pixRotate180(PIX *pixd, PIX *pixs);
+PIX *
+pixRotateOrth(PIX     *pixs,
+              l_int32  quads);
 
 l_int32 pixCountPixels ( PIX *pix, l_int32 *pcount, l_int32 *tab8 );
 PIX * pixAnd ( PIX *pixd, PIX *pixs1, PIX *pixs2 );
@@ -101,6 +104,14 @@ pixOtsuThreshOnBackgroundNorm(PIX       *pixs,
                               l_float32  scorefract,
                               l_int32   *pthresh);
 
+PIX *
+pixCleanBackgroundToWhite(PIX       *pixs,
+                          PIX       *pixim,
+                          PIX       *pixg,
+                          l_float32  gamma,
+                          l_int32    blackval,
+                          l_int32    whiteval);
+
 BOX *
 pixFindPageForeground(PIX         *pixs,
                       l_int32      threshold,
@@ -110,6 +121,14 @@ pixFindPageForeground(PIX         *pixs,
                       l_int32      showmorph,
                       l_int32      display,
                       const char  *pdfdir);
+
+PIX *
+pixClipRectangle(PIX   *pixs,
+                 BOX   *box,
+                 BOX  **pboxc);
+
+void
+boxDestroy(BOX  **pbox);
 
 void lept_free(void *ptr);
 """)

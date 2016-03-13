@@ -213,6 +213,11 @@ class Pix:
         with LeptonicaErrorTrap():
             return Pix(lept.pixRotate180(ffi.NULL, self._pix))
 
+    def rotate_orth(self, quads):
+        "Orthographic rotation, quads: 0-3, number of clockwise rotations"
+        with LeptonicaErrorTrap():
+            return Pix(lept.pixRotateOrth(self._pix, quads))
+
     def find_skew(self):
         """Returns a tuple (deskew angle in degrees, confidence value).
 
@@ -286,6 +291,40 @@ class Pix:
                 return None
             return Pix(thresh_pix)
 
+    def crop_to_foreground(
+            self, threshold=128, mindist=70, erasedist=30, pagenum=0,
+            showmorph=0, display=0, pdfdir=ffi.NULL):
+        with LeptonicaErrorTrap():
+            cropbox = Box(lept.pixFindPageForeground(
+                self._pix,
+                threshold,
+                mindist,
+                erasedist,
+                pagenum,
+                showmorph,
+                display,
+                pdfdir))
+
+            print(repr(cropbox))
+
+            cropped_pix = lept.pixClipRectangle(
+                self._pix,
+                cropbox._box,
+                ffi.NULL)
+
+            return Pix(cropped_pix)
+
+    def clean_background_to_white(
+            self, mask=None, grayscale=None, gamma=1.0, black=0, white=255):
+        with LeptonicaErrorTrap():
+            return Pix(lept.pixCleanBackgroundToWhite(
+                self._pix,
+                mask or ffi.NULL,
+                grayscale or ffi.NULL,
+                gamma,
+                black,
+                white))
+
     @staticmethod
     @lru_cache(maxsize=1)
     def make_pixel_sum_tab8():
@@ -327,6 +366,43 @@ class Pix:
         p_pix = ffi.new('PIX **', pix)
         lept.pixDestroy(p_pix)
         # print('pix destroy ' + repr(pix))
+
+
+class Box:
+    """Wrapper around Leptonica's BOX objects.
+
+    See class Pix for notes about reference counting.
+    """
+
+    def __init__(self, box):
+        self._box = ffi.gc(box, Box._box_destroy)
+
+    def __repr__(self):
+        if self._box:
+            return '<leptonica.Box x={0} y={1} w={2} h={3}>'.format(
+                self.x, self.y, self.w, self.h)
+        return '<leptonica.Box NULL>'
+
+    @property
+    def x(self):
+        return self._box.x
+
+    @property
+    def y(self):
+        return self._box.y
+
+    @property
+    def w(self):
+        return self._box.w
+
+    @property
+    def h(self):
+        return self._box.h
+
+    @staticmethod
+    def _box_destroy(box):
+        p_box = ffi.new('BOX **', box)
+        lept.boxDestroy(p_box)
 
 
 @lru_cache(maxsize=1)
