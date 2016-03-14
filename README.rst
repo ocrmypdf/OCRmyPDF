@@ -48,6 +48,12 @@ Download OCRmyPDF here: https://github.com/jbarlow83/OCRmyPDF/releases
 
 You can install it to a Python virtual environment or system-wide. 
 
+Debian and Ubuntu
+~~~~~~~~~~~~~~~~~
+
+Users of Debian 9 or later or Ubuntu 16.10 or later may simply
+``apt-get install ocrmypdf``.
+
 Installing the Docker image
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
