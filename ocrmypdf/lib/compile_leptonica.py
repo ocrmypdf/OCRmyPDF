@@ -62,6 +62,10 @@ PIX * pixScale ( PIX *pixs, l_float32 scalex, l_float32 scaley );
 l_int32 pixFindSkew ( PIX *pixs, l_float32 *pangle, l_float32 *pconf );
 l_int32 pixWriteImpliedFormat ( const char *filename, PIX *pix, l_int32 quality, l_int32 progressive );
 void pixDestroy ( PIX **ppix );
+
+PIX *
+pixEndianByteSwapNew(PIX  *pixs);
+
 PIX * pixDeskew ( PIX *pixs, l_int32 redsearch );
 char * getLeptonicaVersion (  );
 l_int32 pixCorrelationBinary(PIX *pix1, PIX *pix2, l_float32 *pval);

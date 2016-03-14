@@ -197,6 +197,28 @@ class Pix:
                 filename.encode(sys.getfilesystemencoding()),
                 self._pix, jpeg_quality, jpeg_progressive)
 
+    def topil(self):
+        "Returns a PIL.Image version of this Pix"
+        from PIL import Image
+
+        with LeptonicaErrorTrap():
+            pix_swapped = Pix(lept.pixEndianByteSwapNew(self._pix))
+
+        size = (pix_swapped._pix.wpl * 4, pix_swapped._pix.h)
+        buf = ffi.buffer(pix_swapped._pix.data, size[0] * size[1])
+
+        im_raw = Image.frombytes(self.mode, size, buf, 'raw')
+
+        # Leptonica stores images in 32-bit words
+        # Need to crop the any trailing amount
+        box = (0, 0, self.width, self.height)
+        im = im_raw.crop(box)
+
+        return im
+
+    def show(self):
+        return self.topil().show()
+
     def deskew(self, reduction_factor=0):
         """Returns the deskewed pix object.
 
