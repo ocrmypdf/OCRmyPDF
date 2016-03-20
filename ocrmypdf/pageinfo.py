@@ -119,21 +119,31 @@ def _get_dpi(ctm_shorthand, image_size):
     it is not sufficient to assume that the image fills the page, even though
     that is the most common case.
 
-    This code solves the general case where the image may be scaled (always),
-    cropped, translated (often), and rotated in place (occasionally) to an
-    arbitrary angle (rare). It will work as long as the image is a
-    parallelogram from the perspective of a rectilinear coordinate system.
-    It does not work for arbitrarily quadrilaterals that might be produced
-    by shearing, but by that point DPI becomes a linear gradient rather than
-    constant over the image.
+    A PDF image may be scaled (always), cropped, translated, rotated in place
+    to an arbitrary angle (rarely) and skewed. Only equal area mappings can
+    be expressed, that is, it is not necessary to consider distortions where
+    the effective DPI varies with position.
 
-    The transformation matrix describes the coordinate system at the time of
-    rendering. We transform the image corner locations into the coordinate
-    system and measure the width and height within the system, expressed in
-    PDF units. From there we can compare to the actual image dimensions.
+    To determine the image scale, transform an offset axis vector v0 (0, 0),
+    width-axis vector v0 (1, 0), height-axis vector vh (0, 1) with the matrix,
+    which gives the dimensions of the image in PDF units. From there we can
+    compare to actual image dimensions. PDF uses
+    row vector * matrix_tranposed unlike the traditional
+    matrix * column vector.
+
+    The offset, width and height vectors can be combined in a matrix and
+    multiplied by the transform matrix. Then we want to calculated
+        magnitude(width_vector - offset_vector)
+    and
+        magnitude(height_vector - offset_vector)
+
+    When the above is worked out algebraically, the effect of translation
+    cancels out, and the vector magnitudes become functions of the nonzero
+    transformation matrix indices. The results of the derivation are used
+    in this code.
 
     pdfimages -list does calculate the DPI in some way that is not completely
-    naive, but it does not the DPI of rotated images right, so cannot be
+    naive, but it does not get the DPI of rotated images right, so cannot be
     used anymore to validate this. Photoshop works, or using Acrobat to
     rotate the image back to normal.
 
@@ -141,31 +151,12 @@ def _get_dpi(ctm_shorthand, image_size):
     /MediaBox.
 
     """
-    matrix = _matrix_from_shorthand(ctm_shorthand)
 
-    # Corners of the image in untransformed unit space; last
-    # column is a dummy to assist matrix math
-    corners = [[0, 0, 1],
-               [1, 0, 1],
-               [0, 1, 1],
-               [1, 1, 1]]
+    a, b, c, d, _, _ = ctm_shorthand
 
-    # Rotate/translate/scale the corners into PDF coords (1/72")
-    # ordering of points may change, e.g. if rotation is 180 then
-    # the point (0, 0) may become the top right
-    # The row vectors can all be transformed together here by building
-    # a matrix of them
-    page_unit_corners = matrix_mult(corners, matrix)
-
-    # Calculate the width and height of the rotated image
-    # the transformation matrix so the corner that was originally
-    # (1, 1) can be ignored
-    image_drawn_width = euclidean_distance(
-        page_unit_corners[0], page_unit_corners[1])
-    image_drawn_height = euclidean_distance(
-        page_unit_corners[0], page_unit_corners[2])
-
-    # print((image_drawn_width, image_drawn_height))
+    # Calculate the width and height of the image in PDF units
+    image_drawn_width = (a**2 + b**2) ** 0.5
+    image_drawn_height = (c**2 + d**2) ** 0.5
 
     # The scale of the image is pixels per PDF unit (1/72")
     scale_w = image_size[0] / image_drawn_width
