@@ -154,6 +154,7 @@ Install system dependencies::
    sudo apt-get install \
       zlib1g-dev \
       libjpeg-dev \
+      libffi-dev \
       ghostscript \
       tesseract-ocr \
       qpdf \
