@@ -34,7 +34,12 @@ FRIENDLY_ENCODING = {
     '/JPXDecode': 'jpx',
     '/JBIG2Decode': 'jbig2',
     '/CCF': 'ccitt',  # Abbreviations permitted in inline images
-    '/DCT': 'jpeg'
+    '/DCT': 'jpeg',
+    '/AHx': 'asciihex',
+    '/A85': 'ascii85',
+    '/LZW': 'lzw',
+    '/Fl': 'flate',
+    '/RL': 'runlength'
 }
 
 FRIENDLY_COMP = {
@@ -180,6 +185,7 @@ def _find_page_images(page, pageinfo, contentsinfo):
         image['bpc'] = settings['/BPC']
         image['color'] = FRIENDLY_COLORSPACE.get(settings['/CS'], '-')
         image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
+        image['enc'] = FRIENDLY_ENCODING.get(settings['/F'], 'image')
 
         dpi_w, dpi_h = _get_dpi(shorthand, (image['width'], image['height']))
         image['dpi_w'], image['dpi_h'] = Decimal(dpi_w), Decimal(dpi_h)
