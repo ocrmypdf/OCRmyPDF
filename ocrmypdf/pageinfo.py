@@ -201,9 +201,6 @@ def _find_page_images(page, pageinfo, contentsinfo):
         pdfimage = page['/Resources']['/XObject'][xobj]
         if pdfimage['/Subtype'] != '/Image':
             continue
-        if '/ImageMask' in pdfimage:
-            if pdfimage['/ImageMask']:
-                continue
         image = {}
         image['name'] = str(xobj)
         image['width'] = pdfimage['/Width']
