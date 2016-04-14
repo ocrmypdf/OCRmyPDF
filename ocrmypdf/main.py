@@ -188,6 +188,10 @@ advanced.add_argument(
     '--tesseract-timeout', default=180.0, type=float, metavar='SECONDS',
     help='give up on OCR after the timeout, but copy the preprocessed page '
          'into the final output')
+advanced.add_argument(
+    '--rotate-pages-threshold', default=14.0, type=float, metavar='CONFIDENCE',
+    help="only rotate pages when confidence is above this value (arbitrary "
+         "units reported by tesseract)")
 
 debugging = parser.add_argument_group(
     "Debugging",
@@ -534,15 +538,29 @@ def orient_page(
         270: '⇦'
     }
 
+    apply_correction = False
+    description = ''
+    if orient_conf.confidence >= options.rotate_pages_threshold:
+        if orient_conf.angle != 0:
+            apply_correction = True
+            description = ' - will rotate'
+        else:
+            description = ' - rotation appears correct'
+    else:
+        if orient_conf.angle != 0:
+            description = ' - confidence too low to rotate'
+        else:
+            description = ' - no change'
+
     log.info(
         '{0:4d}: page is facing {1}, confidence {2:.2f}{3}'.format(
             page_number(preview),
             direction.get(orient_conf.angle, '?'),
             orient_conf.confidence,
-            ' - correcting rotation' if orient_conf.angle != 0 else '')
+            description)
     )
 
-    if orient_conf.angle == 0:
+    if not apply_correction:
         re_symlink(page_pdf, output_file)
     else:
         writer = pypdf.PdfFileWriter()

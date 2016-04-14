@@ -343,6 +343,36 @@ def test_autorotate(spoof_tesseract_cache, renderer):
         assert correlation > 0.80
 
 
+def test_autorotate_threshold_low(spoof_tesseract_cache):
+    out = check_ocrmypdf('cardinal.pdf', 'test_autorotate_threshold.pdf',
+                         '--rotate-pages-threshold', '1',
+                         '-r', '-v', '1', env=spoof_tesseract_cache)
+
+    # Low threshold -> always rotate -> expect high correlation between
+    # reference page and test page
+    correlation = check_monochrome_correlation(
+        reference_pdf=_infile('cardinal.pdf'),
+        reference_pageno=1,
+        test_pdf=out,
+        test_pageno=3)
+    assert correlation > 0.80
+
+
+def test_autorotate_threshold_high(spoof_tesseract_cache):
+    out = check_ocrmypdf('cardinal.pdf', 'test_autorotate_threshold.pdf',
+                         '--rotate-pages-threshold', '99',
+                         '-r', '-v', '1', env=spoof_tesseract_cache)
+
+    # High threshold -> never rotate -> expect low correlation since
+    # test page will not be rotated
+    correlation = check_monochrome_correlation(
+        reference_pdf=_infile('cardinal.pdf'),
+        reference_pageno=1,
+        test_pdf=out,
+        test_pageno=3)
+    assert correlation < 0.10
+
+
 @pytest.mark.parametrize('renderer', [
     'hocr',
     'tesseract',
