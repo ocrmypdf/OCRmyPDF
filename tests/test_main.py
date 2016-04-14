@@ -325,11 +325,6 @@ def test_monochrome_correlation():
     'tesseract',
     ])
 def test_autorotate(spoof_tesseract_cache, renderer):
-    import ocrmypdf.ghostscript as ghostscript
-    import logging
-
-    gslog = logging.getLogger()
-
     # cardinal.pdf contains four copies of an image rotated in each cardinal
     # direction - these ones are "burned in" not tagged with /Rotate
     out = check_ocrmypdf('cardinal.pdf', 'test_autorotate_%s.pdf' % renderer,
