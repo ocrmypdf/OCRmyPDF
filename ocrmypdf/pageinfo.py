@@ -3,6 +3,7 @@
 
 from subprocess import Popen, PIPE
 from decimal import Decimal, getcontext
+from math import hypot
 import re
 import sys
 import PyPDF2 as pypdf
@@ -72,9 +73,6 @@ def _shorthand_from_matrix(matrix):
     return tuple(map(float, (a, b, c, d, e, f)))
 
 
-def euclidean_distance(rowvec1, rowvec2):
-    return ((rowvec1[0] - rowvec2[0]) ** 2
-        + (rowvec1[1] - rowvec2[1]) ** 2) ** 0.5
 
 
 ContentsInfo = namedtuple('ContentsInfo',
@@ -160,8 +158,8 @@ def _get_dpi(ctm_shorthand, image_size):
     a, b, c, d, _, _ = ctm_shorthand
 
     # Calculate the width and height of the image in PDF units
-    image_drawn_width = (a**2 + b**2) ** 0.5
-    image_drawn_height = (c**2 + d**2) ** 0.5
+    image_drawn_width = hypot(a, b)
+    image_drawn_height = hypot(c, d)
 
     # The scale of the image is pixels per PDF unit (1/72")
     scale_w = image_size[0] / image_drawn_width
