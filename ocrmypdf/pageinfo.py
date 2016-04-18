@@ -73,10 +73,8 @@ def _shorthand_from_matrix(matrix):
     return tuple(map(float, (a, b, c, d, e, f)))
 
 
+ContentsInfo = namedtuple('ContentsInfo', ['raster_settings', 'inline_images'])
 
-
-ContentsInfo = namedtuple('ContentsInfo',
-    ['raster_settings', 'inline_images'])
 
 def _interpret_contents(contentstream):
     operations = contentstream.operations
@@ -89,6 +87,8 @@ def _interpret_contents(contentstream):
         operands, command = op
         if command == b'q':
             stack.append(ctm)
+            if len(stack) > 32:
+                raise RuntimeError("PDF graphics stack overflow")
         elif command == b'Q':
             ctm = stack.pop()
         elif command == b'cm':
