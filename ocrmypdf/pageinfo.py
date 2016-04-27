@@ -183,7 +183,13 @@ def _find_page_images(page, pageinfo, contentsinfo):
         image['bpc'] = settings['/BPC']
         image['color'] = FRIENDLY_COLORSPACE.get(settings['/CS'], '-')
         image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
-        image['enc'] = FRIENDLY_ENCODING.get(settings['/F'], 'image')
+        if '/F' in settings:
+            filter_ = settings['/F']
+            if isinstance(filter_, pypdf.generic.ArrayObject):
+                filter_ = filter_[0]
+            image['enc'] = FRIENDLY_ENCODING.get(filter_, 'image')
+        else:
+            image['enc'] = 'image'
 
         dpi_w, dpi_h = _get_dpi(shorthand, (image['width'], image['height']))
         image['dpi_w'], image['dpi_h'] = Decimal(dpi_w), Decimal(dpi_h)
