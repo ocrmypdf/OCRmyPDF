@@ -172,7 +172,8 @@ def _get_dpi(ctm_shorthand, image_size):
     return (dpi_w, dpi_h)
 
 
-def _find_page_images(page, pageinfo, contentsinfo):
+def _find_page_inline_images(page, pageinfo, contentsinfo):
+    "Find inline images on the page"
 
     for n, im in enumerate(contentsinfo.inline_images):
         settings, shorthand = im
@@ -195,7 +196,10 @@ def _find_page_images(page, pageinfo, contentsinfo):
         image['dpi_w'], image['dpi_h'] = Decimal(dpi_w), Decimal(dpi_h)
         yield image
 
-    # Look for XObject (out of line images)
+
+def _find_page_regular_images(page, pageinfo, contentsinfo):
+    "Find images stored in XObject resources"
+
     try:
         page['/Resources']['/XObject']
     except KeyError:
@@ -246,6 +250,11 @@ def _find_page_images(page, pageinfo, contentsinfo):
         image['dpi_h'] = Decimal(image['dpi_h'])
         image['dpi'] = (image['dpi_w'] * image['dpi_h']) ** Decimal(0.5)
         yield image
+
+
+def _find_page_images(page, pageinfo, contentsinfo):
+    yield from _find_page_inline_images(page, pageinfo, contentsinfo)
+    yield from _find_page_regular_images(page, pageinfo, contentsinfo)
 
 
 def _page_has_text(pdf, page):
