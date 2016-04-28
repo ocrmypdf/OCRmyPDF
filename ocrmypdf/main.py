@@ -797,6 +797,10 @@ def render_hocr_debug_page(
                          showBoundingboxes=True, invisibleText=False)
 
 
+class PdfMergeFailedError(Exception):
+    pass
+
+
 @active_if(options.pdf_renderer == 'hocr')
 @collate(
     input=[render_hocr_page, select_image_layer],
@@ -855,8 +859,13 @@ def add_text_layer(
         log.info("{0:4d}: rotating image layer {1} degrees".format(
             page_number(image), rotation, tx, ty))
 
-    page_text.mergeRotatedScaledTranslatedPage(
-        page_image, rotation, 1.0, tx, ty, expand=False)
+    try:
+        page_text.mergeRotatedScaledTranslatedPage(
+            page_image, rotation, 1.0, tx, ty, expand=False)
+    except (AttributeError, ValueError) as e:
+        if 'writeToStream' in str(e) or 'invalid literal' in str(e):
+            raise PdfMergeFailedError() from e
+
 
     pdf_output = pypdf.PdfFileWriter()
     pdf_output.addPage(page_text)
@@ -1058,6 +1067,17 @@ def do_ruffus_exception(ruffus_five_tuple):
         msg = "Error occurred while running this command:"
         _log.error(msg + '\n' + exc_value)
         return ExitCode.child_process_error
+    elif exc_name == 'ocrmypdf.main.PdfMergeFailedError':
+        _log.error(textwrap.dedent("""\
+            Failed to merge PDF image layer with OCR layer
+
+            Usually this happens because the input PDF file is mal-formed and
+            ocrmypdf cannot automatically correct the problem on its own.
+
+            Try using
+                ocrmypdf --pdf-renderer tesseract  [..other args..]
+            """))
+        return ExitCode.input_file
     elif not options.verbose:
         _log.error(exc_stack)
         return ExitCode.other_error
