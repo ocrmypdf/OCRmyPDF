@@ -6,6 +6,14 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
+v4.1:
+=====
+
+-  ``--rotate-pages`` now only rotates pages when reasonably confidence in the orientation. This behavior can be adjusted with the new argument ``--rotate-pages-threshold``
+-  Fixed problems in error checking if ``unpaper`` is uninstalled or missing at run-time
+-  Fixed problems with "RethrownJobError" errors during error handling that suppressed the useful error messages
+
+
 v4.0.7:
 =======
 
