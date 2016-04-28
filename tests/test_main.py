@@ -339,7 +339,7 @@ def test_autorotate(spoof_tesseract_cache, renderer):
 
 
 def test_autorotate_threshold_low(spoof_tesseract_cache):
-    out = check_ocrmypdf('cardinal.pdf', 'test_autorotate_threshold.pdf',
+    out = check_ocrmypdf('cardinal.pdf', 'test_autorotate_threshold_low.pdf',
                          '--rotate-pages-threshold', '1',
                          '-r', '-v', '1', env=spoof_tesseract_cache)
 
@@ -354,7 +354,7 @@ def test_autorotate_threshold_low(spoof_tesseract_cache):
 
 
 def test_autorotate_threshold_high(spoof_tesseract_cache):
-    out = check_ocrmypdf('cardinal.pdf', 'test_autorotate_threshold.pdf',
+    out = check_ocrmypdf('cardinal.pdf', 'test_autorotate_threshold_high.pdf',
                          '--rotate-pages-threshold', '99',
                          '-r', '-v', '1', env=spoof_tesseract_cache)
 
@@ -518,6 +518,8 @@ def test_tesseract_crash_autorotate(spoof_tesseract_crash):
     assert sh.returncode == ExitCode.child_process_error
     assert not os.path.exists(_outfile('wontwork.pdf'))
     assert "ERROR" in err
+    print(out)
+    print(err)
 
 
 @pytest.mark.parametrize('renderer', [
