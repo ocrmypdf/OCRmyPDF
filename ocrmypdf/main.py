@@ -1033,51 +1033,82 @@ def cleanup_ruffus_error_message(msg):
     return msg
 
 
+def do_ruffus_exception(ruffus_five_tuple):
+    """Replace the elaborate ruffus stack trace with a user friendly
+    description of the error message that occurred."""
+
+    task_name, job_name, exc_name, exc_value, exc_stack = ruffus_five_tuple
+    if exc_name == 'builtins.SystemExit':
+        match = re.search(r"\.(.+?)\)", exc_value)
+        exit_code_name = match.groups()[0]
+        exit_code = getattr(ExitCode, exit_code_name, 'other_error')
+        return exit_code
+    elif exc_name == 'ruffus.ruffus_exceptions.MissingInputFileError':
+        _log.error(cleanup_ruffus_error_message(exc_value))
+        return ExitCode.input_file
+    elif exc_name == 'builtins.TypeError':
+        # Even though repair_pdf will fail, ruffus will still try
+        # to call split_pages with no input files, likely due to a bug
+        if task_name == 'split_pages':
+            _log.error("Input file '{0}' is not a valid PDF".format(
+                options.input_file))
+            return ExitCode.input_file
+    elif exc_name == 'subprocess.CalledProcessError':
+        # It's up to the subprocess handler to report something useful
+        msg = "Error occurred while running this command:"
+        _log.error(msg + '\n' + exc_value)
+        return ExitCode.child_process_error
+    elif not options.verbose:
+        _log.error(exc_stack)
+        return ExitCode.other_error
+
+
+def traverse_ruffus_exception(e):
+    """Walk through a RethrownJobError and find the first exception.
+
+    The exit code will be based on this, even if multiple exceptions occurred
+    at the same time."""
+
+    if isinstance(e[0], str) and len(e) == 5:
+        return do_ruffus_exception(e)
+    elif hasattr(e, '__iter__'):
+        for exc in e:
+            return traverse_ruffus_exception(exc)
+
+
 def run_pipeline():
     if not options.jobs:
         options.jobs = available_cpu_count()
     try:
-        options.history_file = os.path.join(work_folder, 'ruffus_history.sqlite')
+        options.history_file = os.path.join(
+            work_folder, 'ruffus_history.sqlite')
         cmdline.run(options)
     except ruffus_exceptions.RethrownJobError as e:
         if options.verbose:
-            _log.debug(e)
+            _log.debug(str(e))  # stringify exception so logger doesn't have to
 
-        # Yuck. Hunt through the ruffus exception to find out what the
-        # return code is supposed to be.
-        # Ruffus flattens the exception to a string, throwing away all kinds
-        # of helpful details
-        # task_name, job_name - ruffus status
-        # exc_name - class name of exception
-        # exc_value - irritating string that makes impossible to recover
-        #   exception object
-        # exc_stack - string that contains traceback of exception
-        for exc in e.args:
-            task_name, job_name, exc_name, exc_value, exc_stack = exc
-            if exc_name == 'builtins.SystemExit':
-                match = re.search(r"\.(.+?)\)", exc_value)
-                exit_code_name = match.groups()[0]
-                exit_code = getattr(ExitCode, exit_code_name, 'other_error')
-                return exit_code
-            elif exc_name == 'ruffus.ruffus_exceptions.MissingInputFileError':
-                _log.error(cleanup_ruffus_error_message(exc_value))
-                return ExitCode.input_file
-            elif exc_name == 'builtins.TypeError':
-                # Even though repair_pdf will fail, ruffus will still try
-                # to call split_pages with no input files, likely due to a bug
-                if task_name == 'split_pages':
-                    _log.error("Input file '{0}' is not a valid PDF".format(
-                        options.input_file))
-                    return ExitCode.input_file
-            elif exc_name == 'subprocess.CalledProcessError':
-                # It's up to the subprocess handler to report something useful
-                msg = "Error occurred while running this command:"
-                _log.error(msg + '\n' + exc_value)
-                return ExitCode.child_process_error
-            elif not options.verbose:
-                _log.error(e)
+        # Ruffus flattens exception to 5 element tuples. Because of a bug
+        # in <= 2.6.3 it may present either the single:
+        #   (task, job, exc, value, stack)
+        # or something like:
+        #   [[(task, job, exc, value, stack)]]
+        #
+        # Generally cross-process exception marshalling doesn't work well
+        # and ruffus doesn't support because BaseException has its own
+        # implementation of __reduce__ that attempts to reconstruct the
+        # exception based on e.__init__(e.args).
+        #
+        # Attempting to log the exception directly marshalls it to the logger
+        # which is probably in another process, so it's better to log only
+        # data from the exception at this point.
 
-        return ExitCode.other_error
+        exitcode = traverse_ruffus_exception(e.args)
+        if exitcode is None:
+            _log.error("Unexpected ruffus exception: " + str(e))
+            _log.error(repr(e))
+            return ExitCode.other_error
+        else:
+            return exitcode
     except Exception as e:
         _log.error(e)
         return ExitCode.other_error
