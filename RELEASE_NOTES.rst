@@ -5,7 +5,7 @@ Please always read this file before installing the package
 
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
-v4.1.1:
+v4.1.2:
 =======
 
 -  Replace IEC sRGB ICC profile with Debian's sRGB (from icc-profiles-free) which is more compatible with the MIT license

@@ -230,6 +230,6 @@ setup(
             'ocrmypdf = ocrmypdf.main:run_pipeline'
         ],
     },
-    package_data={'ocrmypdf': ['data/sRGB_IEC61966-2-1_black_scaled.icc']},
+    package_data={'ocrmypdf': ['data/sRGB.icc']},
     include_package_data=True,
     zip_safe=False)

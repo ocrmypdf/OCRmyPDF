@@ -8,7 +8,7 @@ from string import Template
 import codecs
 import pkg_resources
 
-ICC_PROFILE_RELPATH = 'data/sRGB_IEC61966-2-1_black_scaled.icc'
+ICC_PROFILE_RELPATH = 'data/sRGB.icc'
 
 SRGB_ICC_PROFILE = pkg_resources.resource_filename(
     'ocrmypdf', ICC_PROFILE_RELPATH)
