@@ -187,7 +187,13 @@ Ubuntu 14.04 only installs ``unpaper`` version 0.4.2, which is not supported by 
 Installing on Windows
 ~~~~~~~~~~~~~~~~~~~~~
 
-Direct installation on Windows is not possible.  Install the Docker container as described above.
+Direct installation on Windows is not possible.  Install the Docker container as described above.  Ensure that your command prompt can run the docker "hello world" container.
+
+The command line syntax to run ocrmypdf from a command prompt will resemble::
+
+   docker run -v /c/Users/sampleuser:/home/docker ocrmypdf --skip-text test.pdf output.pdf
+
+where /c/Users/sampleuser is a Unix representation of the Windows path C:\Users\sampleuser, assuming a user named "sampleuser" is running ocrmypdf on a file in their home directory, and the files "test.pdf" and "output.pdf" are in the sampleuser folder. The Windows user must have read and write permissions.
 
       
 Installing HEAD revision from sources
