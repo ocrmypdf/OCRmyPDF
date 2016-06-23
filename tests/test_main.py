@@ -547,3 +547,7 @@ def test_old_unpaper():
         'c02-22.pdf', 'wont_be_created.pdf', '--clean', env=env)
     assert sh.returncode == ExitCode.missing_dependency
 
+
+def test_algo4():
+    sh, _, _ = run_ocrmypdf_env('encrypted_algo4.pdf', 'wontwork.pdf')
+    assert sh.returncode == ExitCode.encrypted_pdf
