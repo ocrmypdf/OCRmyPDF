@@ -93,7 +93,7 @@ def _interpret_contents(contentstream):
             ctm = stack.pop()
         elif command == b'cm':
             ctm = matrix_mult(
-                ctm, _matrix_from_shorthand(operands))
+                _matrix_from_shorthand(operands), ctm)
         elif command == b'Do':
             image_name = operands[0]
             image_raster_settings.append(
