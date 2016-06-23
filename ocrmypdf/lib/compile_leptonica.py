@@ -42,6 +42,18 @@ struct PixColormap
     l_int32          n;         /* number of color entries used            */
 };
 typedef struct PixColormap  PIXCMAP;
+
+struct Box
+{
+    l_int32            x;
+    l_int32            y;
+    l_int32            w;
+    l_int32            h;
+    l_uint32           refcount;      /* reference count (1 if no clones)  */
+
+};
+typedef struct Box    BOX;
+
 """)
 
 ffi.cdef("""
@@ -50,10 +62,17 @@ PIX * pixScale ( PIX *pixs, l_float32 scalex, l_float32 scaley );
 l_int32 pixFindSkew ( PIX *pixs, l_float32 *pangle, l_float32 *pconf );
 l_int32 pixWriteImpliedFormat ( const char *filename, PIX *pix, l_int32 quality, l_int32 progressive );
 void pixDestroy ( PIX **ppix );
+
+PIX *
+pixEndianByteSwapNew(PIX  *pixs);
+
 PIX * pixDeskew ( PIX *pixs, l_int32 redsearch );
 char * getLeptonicaVersion (  );
 l_int32 pixCorrelationBinary(PIX *pix1, PIX *pix2, l_float32 *pval);
 PIX *pixRotate180(PIX *pixd, PIX *pixs);
+PIX *
+pixRotateOrth(PIX     *pixs,
+              l_int32  quads);
 
 l_int32 pixCountPixels ( PIX *pix, l_int32 *pcount, l_int32 *tab8 );
 PIX * pixAnd ( PIX *pixd, PIX *pixs1, PIX *pixs2 );
@@ -61,6 +80,10 @@ l_int32 * makePixelSumTab8 ( void );
 
 PIX * pixDeserializeFromMemory ( const l_uint32 *data, size_t nbytes );
 l_int32 pixSerializeToMemory ( PIX *pixs, l_uint32 **pdata, size_t *pnbytes );
+
+PIX * pixConvertRGBToLuminance(PIX *pixs);
+
+PIX * pixRemoveColormap(PIX *pixs, l_int32  type);
 
 l_int32
 pixOtsuAdaptiveThreshold(PIX       *pixs,
@@ -71,6 +94,45 @@ pixOtsuAdaptiveThreshold(PIX       *pixs,
                          l_float32  scorefract,
                          PIX      **ppixth,
                          PIX      **ppixd);
+
+PIX *
+pixOtsuThreshOnBackgroundNorm(PIX       *pixs,
+                              PIX       *pixim,
+                              l_int32    sx,
+                              l_int32    sy,
+                              l_int32    thresh,
+                              l_int32    mincount,
+                              l_int32    bgval,
+                              l_int32    smoothx,
+                              l_int32    smoothy,
+                              l_float32  scorefract,
+                              l_int32   *pthresh);
+
+PIX *
+pixCleanBackgroundToWhite(PIX       *pixs,
+                          PIX       *pixim,
+                          PIX       *pixg,
+                          l_float32  gamma,
+                          l_int32    blackval,
+                          l_int32    whiteval);
+
+BOX *
+pixFindPageForeground(PIX         *pixs,
+                      l_int32      threshold,
+                      l_int32      mindist,
+                      l_int32      erasedist,
+                      l_int32      pagenum,
+                      l_int32      showmorph,
+                      l_int32      display,
+                      const char  *pdfdir);
+
+PIX *
+pixClipRectangle(PIX   *pixs,
+                 BOX   *box,
+                 BOX  **pboxc);
+
+void
+boxDestroy(BOX  **pbox);
 
 void lept_free(void *ptr);
 """)

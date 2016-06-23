@@ -17,6 +17,7 @@ from tempfile import TemporaryFile
 from ctypes.util import find_library
 from .lib._leptonica import ffi
 from functools import lru_cache
+from enum import Enum
 
 lept = ffi.dlopen(find_library('lept'))
 
@@ -83,6 +84,13 @@ class LeptonicaIOError(LeptonicaError):
     pass
 
 
+class RemoveColormap(Enum):
+    to_binary = 0
+    to_grayscale = 1
+    to_full_color = 2
+    based_on_src = 3
+
+
 class Pix:
     """Wrapper around leptonica's PIX object.
 
@@ -98,14 +106,14 @@ class Pix:
     in a threadsafe manner if a Python threading.Lock protects the data.
     """
 
-    def __init__(self, cpix):
-        self.cpix = ffi.gc(cpix, Pix._pix_destroy)
+    def __init__(self, pix):
+        self._pix = ffi.gc(pix, Pix._pix_destroy)
 
     def __repr__(self):
-        if self.cpix:
+        if self._pix:
             s = "<leptonica.Pix image size={0}x{1} depth={2} at 0x{3:x}>"
-            return s.format(self.cpix.w, self.cpix.h, self.cpix.d,
-                            int(ffi.cast("intptr_t", self.cpix)))
+            return s.format(self._pix.w, self._pix.h, self._pix.d,
+                            int(ffi.cast("intptr_t", self._pix)))
         else:
             return "<leptonica.Pix image NULL>"
 
@@ -113,12 +121,16 @@ class Pix:
         data = ffi.new('l_uint32 **')
         size = ffi.new('size_t *')
 
-        err = lept.pixSerializeToMemory(self.cpix, data, size)
+        err = lept.pixSerializeToMemory(self._pix, data, size)
         if err != 0:
             raise LeptonicaIOError("pixSerializeToMemory")
 
         char_data = ffi.cast('char *', data[0])
+
+        # Copy from C bytes to python bytes()
         data_bytes = ffi.buffer(char_data, size[0])[:]
+
+        # Can now free C bytes
         lept.lept_free(char_data)
         return dict(data=data_bytes)
 
@@ -126,16 +138,41 @@ class Pix:
         cdata_bytes = ffi.new('char[]', state['data'])
         cdata_uint32 = ffi.cast('l_uint32 *', cdata_bytes)
 
-        self.cpix = lept.pixDeserializeFromMemory(
+        pix = lept.pixDeserializeFromMemory(
             cdata_uint32, len(state['data']))
+        Pix.__init__(self, pix)
 
     @property
     def width(self):
-        return self.cpix.w
+        return self._pix.w
 
     @property
     def height(self):
-        return self.cpix.h
+        return self._pix.h
+
+    @property
+    def depth(self):
+        return self._pix.d
+
+    @property
+    def size(self):
+        return (self._pix.w, self._pix.h)
+
+    @property
+    def info(self):
+        return {'dpi': (self._pix.xres, self._pix.yres)}
+
+    @property
+    def mode(self):
+        "Return mode like PIL.Image"
+        if self.depth == 1:
+            return '1'
+        elif self.depth >= 16:
+            return 'RGB'
+        elif not self._pix.colormap:
+            return 'L'
+        else:
+            return 'P'
 
     @classmethod
     def read(cls, filename):
@@ -158,7 +195,29 @@ class Pix:
         with LeptonicaErrorTrap():
             lept.pixWriteImpliedFormat(
                 filename.encode(sys.getfilesystemencoding()),
-                self.cpix, jpeg_quality, jpeg_progressive)
+                self._pix, jpeg_quality, jpeg_progressive)
+
+    def topil(self):
+        "Returns a PIL.Image version of this Pix"
+        from PIL import Image
+
+        with LeptonicaErrorTrap():
+            pix_swapped = Pix(lept.pixEndianByteSwapNew(self._pix))
+
+        size = (pix_swapped._pix.wpl * 4, pix_swapped._pix.h)
+        buf = ffi.buffer(pix_swapped._pix.data, size[0] * size[1])
+
+        im_raw = Image.frombytes(self.mode, size, buf, 'raw')
+
+        # Leptonica stores images in 32-bit words
+        # Need to crop the any trailing amount
+        box = (0, 0, self.width, self.height)
+        im = im_raw.crop(box)
+
+        return im
+
+    def show(self):
+        return self.topil().show()
 
     def deskew(self, reduction_factor=0):
         """Returns the deskewed pix object.
@@ -170,16 +229,21 @@ class Pix:
             for skew angle
         """
         with LeptonicaErrorTrap():
-            return Pix(lept.pixDeskew(self.cpix, reduction_factor))
+            return Pix(lept.pixDeskew(self._pix, reduction_factor))
 
     def scale(self, scalex, scaley):
         "Returns the pix object rescaled according to the proportions given."
         with LeptonicaErrorTrap():
-            return Pix(lept.pixScale(self.cpix, scalex, scaley))
+            return Pix(lept.pixScale(self._pix, scalex, scaley))
 
     def rotate180(self):
         with LeptonicaErrorTrap():
-            return Pix(lept.pixRotate180(ffi.NULL, self.cpix))
+            return Pix(lept.pixRotate180(ffi.NULL, self._pix))
+
+    def rotate_orth(self, quads):
+        "Orthographic rotation, quads: 0-3, number of clockwise rotations"
+        with LeptonicaErrorTrap():
+            return Pix(lept.pixRotateOrth(self._pix, quads))
 
     def find_skew(self):
         """Returns a tuple (deskew angle in degrees, confidence value).
@@ -189,30 +253,104 @@ class Pix:
         with LeptonicaErrorTrap():
             angle = ffi.new('float *', 0.0)
             confidence = ffi.new('float *', 0.0)
-            result = lept.pixFindSkew(self.cpix, angle, confidence)
+            result = lept.pixFindSkew(self._pix, angle, confidence)
             if result == 0:
                 return (angle[0], confidence[0])
             else:
                 return (None, None)
+
+    def convert_rgb_to_luminance(self):
+        with LeptonicaErrorTrap():
+            gray_pix = lept.pixConvertRGBToLuminance(self._pix)
+            if gray_pix:
+                return Pix(gray_pix)
+            return None
+
+    def remove_colormap(self, removal_type):
+        """Remove a palette
+
+            removal_type - RemovalColormap()
+        """
+
+        with LeptonicaErrorTrap():
+            return Pix(lept.pixRemoveColormap(self._pix, removal_type))
 
     def otsu_adaptive_threshold(
             self, tile_size=(300, 300), kernel_size=(4, 4), scorefract=0.1):
         with LeptonicaErrorTrap():
             sx, sy = tile_size
             smoothx, smoothy = kernel_size
-            p_cpix = ffi.new('PIX **')
+            p_pix = ffi.new('PIX **')
 
             result = lept.pixOtsuAdaptiveThreshold(
-                self.cpix,
+                self._pix,
                 sx, sy,
                 smoothx, smoothy,
                 scorefract,
                 ffi.NULL,
-                p_cpix)
+                p_pix)
             if result == 0:
-                return Pix(p_cpix[0])
+                return Pix(p_pix[0])
             else:
                 return None
+
+    def otsu_threshold_on_background_norm(
+            self, mask=None, tile_size=(10, 15), thresh=100, mincount=50,
+            bgval=255, kernel_size=(2, 2), scorefract=0.1):
+        with LeptonicaErrorTrap():
+            sx, sy = tile_size
+            smoothx, smoothy = kernel_size
+            if mask is None:
+                mask = ffi.NULL
+            if isinstance(mask, Pix):
+                mask = mask._pix
+
+            thresh_pix = lept.pixOtsuThreshOnBackgroundNorm(
+                self._pix,
+                mask,
+                sx, sy,
+                thresh, mincount, bgval,
+                smoothx, smoothy,
+                scorefract,
+                ffi.NULL
+                )
+            if thresh_pix == ffi.NULL:
+                return None
+            return Pix(thresh_pix)
+
+    def crop_to_foreground(
+            self, threshold=128, mindist=70, erasedist=30, pagenum=0,
+            showmorph=0, display=0, pdfdir=ffi.NULL):
+        with LeptonicaErrorTrap():
+            cropbox = Box(lept.pixFindPageForeground(
+                self._pix,
+                threshold,
+                mindist,
+                erasedist,
+                pagenum,
+                showmorph,
+                display,
+                pdfdir))
+
+            print(repr(cropbox))
+
+            cropped_pix = lept.pixClipRectangle(
+                self._pix,
+                cropbox._box,
+                ffi.NULL)
+
+            return Pix(cropped_pix)
+
+    def clean_background_to_white(
+            self, mask=None, grayscale=None, gamma=1.0, black=0, white=255):
+        with LeptonicaErrorTrap():
+            return Pix(lept.pixCleanBackgroundToWhite(
+                self._pix,
+                mask or ffi.NULL,
+                grayscale or ffi.NULL,
+                gamma,
+                black,
+                white))
 
     @staticmethod
     @lru_cache(maxsize=1)
@@ -230,10 +368,10 @@ class Pix:
             pixn_count = ffi.new('l_int32 *')
             tab8 = Pix.make_pixel_sum_tab8()
 
-            lept.pixCountPixels(pix1.cpix, pix1_count, tab8)
-            lept.pixCountPixels(pix2.cpix, pix2_count, tab8)
-            pixn = Pix(lept.pixAnd(ffi.NULL, pix1.cpix, pix2.cpix))
-            lept.pixCountPixels(pixn.cpix, pixn_count, tab8)
+            lept.pixCountPixels(pix1._pix, pix1_count, tab8)
+            lept.pixCountPixels(pix2._pix, pix2_count, tab8)
+            pixn = Pix(lept.pixAnd(ffi.NULL, pix1._pix, pix2._pix))
+            lept.pixCountPixels(pixn._pix, pixn_count, tab8)
 
             # Python converts these int32s to larger units as needed
             # to avoid overflow. Overflow happens easily here.
@@ -244,7 +382,7 @@ class Pix:
             return correlation
         else:
             correlation = ffi.new('float *', 0.0)
-            result = lept.pixCorrelationBinary(pix1.cpix, pix2.cpix,
+            result = lept.pixCorrelationBinary(pix1._pix, pix2._pix,
                                                correlation)
             if result != 0:
                 raise LeptonicaError("Correlation failed")
@@ -252,9 +390,46 @@ class Pix:
 
     @staticmethod
     def _pix_destroy(pix):
-        ptr_to_pix = ffi.new('PIX **', pix)
-        lept.pixDestroy(ptr_to_pix)
+        p_pix = ffi.new('PIX **', pix)
+        lept.pixDestroy(p_pix)
         # print('pix destroy ' + repr(pix))
+
+
+class Box:
+    """Wrapper around Leptonica's BOX objects.
+
+    See class Pix for notes about reference counting.
+    """
+
+    def __init__(self, box):
+        self._box = ffi.gc(box, Box._box_destroy)
+
+    def __repr__(self):
+        if self._box:
+            return '<leptonica.Box x={0} y={1} w={2} h={3}>'.format(
+                self.x, self.y, self.w, self.h)
+        return '<leptonica.Box NULL>'
+
+    @property
+    def x(self):
+        return self._box.x
+
+    @property
+    def y(self):
+        return self._box.y
+
+    @property
+    def w(self):
+        return self._box.w
+
+    @property
+    def h(self):
+        return self._box.h
+
+    @staticmethod
+    def _box_destroy(box):
+        p_box = ffi.new('BOX **', box)
+        lept.boxDestroy(p_box)
 
 
 @lru_cache(maxsize=1)
