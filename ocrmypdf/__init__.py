@@ -11,6 +11,7 @@ class ExitCode(IntEnum):
     file_access_error = 5
     already_done_ocr = 6
     child_process_error = 7
+    encrypted_pdf = 8
     other_error = 15
 
 

@@ -1078,6 +1078,19 @@ def do_ruffus_exception(ruffus_five_tuple):
                 ocrmypdf --pdf-renderer tesseract  [..other args..]
             """))
         return ExitCode.input_file
+    elif exc_name == 'PyPDF2.utils.PdfReadError' and \
+            'not been decrypted' in exc_value:
+        _log.error(textwrap.dedent("""\
+            Input PDF uses either an encryption algorithm or a PDF security
+            handler that is not supported by ocrmypdf.
+
+            For information about this PDF's security use
+                qpdf --show-encryption [...input PDF...]
+
+            (Only algorithms "R = 1" and "R = 2" are supported.)
+
+            """))
+        return ExitCode.encrypted_pdf
     elif not options.verbose:
         _log.error(exc_stack)
         return ExitCode.other_error
