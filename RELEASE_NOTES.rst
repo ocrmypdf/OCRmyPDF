@@ -5,6 +5,16 @@ Please always read this file before installing the package
 
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
+
+v4.1.3:
+=======
+
+-  More helpful error message for PDFs with version 4 security handler
+-  Update usage instructions for Windows/Docker users
+-  Fix order of operations for matrix multiplication (no effect on most users)
+-  Add a few leptonica wrapper functions (no effect on most users)
+
+
 v4.1.2:
 =======
 
