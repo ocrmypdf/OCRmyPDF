@@ -65,11 +65,15 @@ If you have `Docker <https://docs.docker.com/>`__ installed on your system, you 
 a Docker image of the latest release.
 
 Follow the Docker installation instructions for your platform.  If you can run this command
-successfully, your system is ready to download and execute the image::
+successfully, your system is ready to download and execute the image:
+
+.. code-block:: bash
 
    docker run hello-world
    
-OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine instance on Windows and OS X has only a single CPU core enabled. Use the VirtualBox Manager to determine the name of your Docker engine host, and then follow these optional steps to enable multiple CPUs::
+OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine instance on Windows and OS X has only a single CPU core enabled. Use the VirtualBox Manager to determine the name of your Docker engine host, and then follow these optional steps to enable multiple CPUs:
+
+.. code-block:: bash
 
    # Optional step for Mac OS X users
    docker-machine stop "yourVM"
@@ -78,29 +82,41 @@ OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine i
    eval $(docker-machine env "yourVM")
 
 Assuming you have a Docker engine running somewhere, you can run these commands to download
-the image::
+the image:
+
+.. code-block:: bash
 
    docker pull jbarlow83/ocrmypdf
 
-Then tag it to give a more convenient name, just ocrmypdf::
+Then tag it to give a more convenient name, just ocrmypdf:
+
+.. code-block:: bash
 
    docker tag jbarlow83/ocrmypdf ocrmypdf
 
-This image contains language packs for English, French, Spanish and German. The alternative "polyglot" image provides `all available language packs <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.1.asc#languages>`__::
+This image contains language packs for English, French, Spanish and German. The alternative "polyglot" image provides `all available language packs <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.1.asc#languages>`__:
+
+.. code-block:: bash
 
    # Alternative step: If you need all language packs
    docker pull jbarlow83/ocrmypdf-polyglot
    docker tag jbarlow83/ocrmypdf-polyglot ocrmypdf
 
-You can then run ocrmypdf using the command::
+You can then run ocrmypdf using the command:
+
+.. code-block:: bash
 
    docker run ocrmypdf --help
   
-To execute the OCRmyPDF on a local file, you must `provide a writable volume to the Docker image <https://docs.docker.com/userguide/dockervolumes/>`__, such as this in this template::
+To execute the OCRmyPDF on a local file, you must `provide a writable volume to the Docker image <https://docs.docker.com/userguide/dockervolumes/>`__, such as this in this template:
+
+.. code-block:: bash
 
    docker run -v "$(pwd):/home/docker" <other docker arguments>   ocrmypdf <your arguments to ocrmypdf>
 
-In this worked example, the current working directory contains an input file called ``test.pdf`` and the output will go to ``output.pdf``:: 
+In this worked example, the current working directory contains an input file called ``test.pdf`` and the output will go to ``output.pdf``: 
+
+.. code-block:: bash
 
    docker run -v "$(pwd):/home/docker"   ocrmypdf --skip-text test.pdf output.pdf
 
@@ -114,11 +130,15 @@ These instructions probably work on all Mac OS X versions later than 10.7 (Lion)
 
 If it's not already present, `install Homebrew <http://brew.sh/>`__.
 
-Update Homebrew::
+Update Homebrew:
+
+.. code-block:: bash
 
    brew update
    
-Install or upgrade the required Homebrew packages, if any are missing::
+Install or upgrade the required Homebrew packages, if any are missing:
+
+.. code-block:: bash
 
    brew install libpng openjpeg jbig2dec     # image libraries
    brew install qpdf
@@ -128,16 +148,22 @@ Install or upgrade the required Homebrew packages, if any are missing::
    brew install unpaper    # optional
    brew install tesseract
    
-Update the homebrew pip and install Pillow::
+Update the homebrew pip and install Pillow:
+
+.. code-block:: bash
 
    pip3 install --upgrade pip
    pip3 install --upgrade pillow
 
-You can then install OCRmyPDF from PyPI::
+You can then install OCRmyPDF from PyPI:
+
+.. code-block:: bash
 
    pip3 install ocrmypdf
 
-The command line program should now be available::
+The command line program should now be available:
+
+.. code-block:: bash
 
    ocrmypdf --help
 
@@ -146,12 +172,16 @@ Installing on Ubuntu 14.04 LTS
 
 Installing on Ubuntu 14.04 LTS (trusty) is more difficult than other options, because of certain bugs in Python package installation.
 
-Update apt-get::
+Update apt-get:
+
+.. code-block:: bash
 
    sudo apt-get update
    sudo apt-get upgrade
    
-Install system dependencies::
+Install system dependencies:
+
+.. code-block:: bash
 
    sudo apt-get install \
       zlib1g-dev \
@@ -167,13 +197,17 @@ Install system dependencies::
       python3-reportlab
 
 If you wish install OCRmyPDF to the system Python, then install as follows (note this installs new packages
-into your system Python, which could interfere with other programs)::
+into your system Python, which could interfere with other programs):
+
+.. code-block:: bash
 
    sudo pip3 install ocrmypdf
    
 If you wish to install OCRmyPDF to a virtual environment to isolate system Python from modified, you can
 follow these steps.  This includes a workaround `for a known, unresolved issue in Ubuntu 14.04's ensurepip
-package <http://www.thefourtheye.in/2014/12/Python-venv-problem-with-ensurepip-in-Ubuntu.html>`__::
+package <http://www.thefourtheye.in/2014/12/Python-venv-problem-with-ensurepip-in-Ubuntu.html>`__:
+
+.. code-block:: bash
 
    sudo apt-get install python3-venv
    python3 -m venv venv-ocrmypdf --without-pip
@@ -194,7 +228,9 @@ Direct installation on Windows is not possible.  Install the _`Docker` container
 Running on Windows
 ~~~~~~~~~~~~~~~~~~
 
-The command line syntax to run ocrmypdf from a command prompt will resemble::
+The command line syntax to run ocrmypdf from a command prompt will resemble:
+
+.. code-block:: bat
 
    docker run -v /c/Users/sampleuser:/home/docker ocrmypdf --skip-text test.pdf output.pdf
 
@@ -206,21 +242,29 @@ Installing HEAD revision from sources
 If you have ``git`` and ``python3.4`` or ``python3.5`` installed, you can install from source. When the ``pip`` installer runs,
 it will alert you if dependencies are missing.
 
-To install the HEAD revision from sources in the current Python 3 environment::
+To install the HEAD revision from sources in the current Python 3 environment:
+
+.. code-block:: bash
 
    pip3 install git+https://github.com/jbarlow83/OCRmyPDF.git
 
-Or, to install in `development mode <https://pythonhosted.org/setuptools/setuptools.html#development-mode>`__,  allowing customization of OCRmyPDF, use the ``-e`` flag::
+Or, to install in `development mode <https://pythonhosted.org/setuptools/setuptools.html#development-mode>`__,  allowing customization of OCRmyPDF, use the ``-e`` flag:
+
+.. code-block:: bash
 
    pip3 install -e git+https://github.com/jbarlow83/OCRmyPDF.git
    
 On certain Linux distributions such as Ubuntu, you may need to use 
-run the install command as superuser::
+run the install command as superuser:
+
+.. code-block:: bash
 
    sudo pip3 install [-e] git+https://github.com/jbarlow83/OCRmyPDF.git
    
 Note that this will alter your system's Python distribution. If you prefer 
-to not install as superuser, you can install the package in a Python virtual environment::
+to not install as superuser, you can install the package in a Python virtual environment:
+
+.. code-block:: bash
 
    git clone -b master https://github.com/jbarlow83/OCRmyPDF.git
    pyvenv venv
@@ -231,7 +275,9 @@ to not install as superuser, you can install the package in a Python virtual env
 However, ``ocrmypdf`` will only be accessible on the system PATH after
 you activate the virtual environment.
 
-To run the program::
+To run the program:
+
+.. code-block:: bash
    
    ocrmypdf --help
 
@@ -244,7 +290,9 @@ Languages
 ---------
 
 OCRmyPDF uses Tesseract for OCR, and relies on its language packs. For Linux users,
-you can often find packages that provide language packs::
+you can often find packages that provide language packs:
+
+.. code-block:: bash
 
    # Debian/Ubuntu users
    sudo apt-get install tesseract-ocr-chi-sim
@@ -255,7 +303,9 @@ languages can be requested.
 Support
 -------
 
-Once ocrmypdf is installed, the built-in help which explains the command syntax and options can be accessed via::
+Once ocrmypdf is installed, the built-in help which explains the command syntax and options can be accessed via:
+
+.. code-block:: bash
 
    ocrmypdf --help
 
