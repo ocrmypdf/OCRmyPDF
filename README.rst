@@ -54,6 +54,8 @@ Debian and Ubuntu
 Users of Debian 9 or later or Ubuntu 16.10 or later may simply
 ``apt-get install ocrmypdf``.
 
+.. _Docker:
+
 Installing the Docker image
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -187,14 +189,16 @@ Ubuntu 14.04 only installs ``unpaper`` version 0.4.2, which is not supported by 
 Installing on Windows
 ~~~~~~~~~~~~~~~~~~~~~
 
-Direct installation on Windows is not possible.  Install the Docker container as described above.  Ensure that your command prompt can run the docker "hello world" container.
+Direct installation on Windows is not possible.  Install the _`Docker` container as described above.  Ensure that your command prompt can run the docker "hello world" container.
+
+Running on Windows
+~~~~~~~~~~~~~~~~~~
 
 The command line syntax to run ocrmypdf from a command prompt will resemble::
 
    docker run -v /c/Users/sampleuser:/home/docker ocrmypdf --skip-text test.pdf output.pdf
 
-where /c/Users/sampleuser is a Unix representation of the Windows path C:\Users\sampleuser, assuming a user named "sampleuser" is running ocrmypdf on a file in their home directory, and the files "test.pdf" and "output.pdf" are in the sampleuser folder. The Windows user must have read and write permissions.
-
+where /c/Users/sampleuser is a Unix representation of the Windows path C:\\Users\\sampleuser, assuming a user named "sampleuser" is running ocrmypdf on a file in their home directory, and the files "test.pdf" and "output.pdf" are in the sampleuser folder. The Windows user must have read and write permissions.
       
 Installing HEAD revision from sources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -251,7 +255,7 @@ languages can be requested.
 Support
 -------
 
-Once ocrmypdf is installed, the built-in help which explains the command syntax and options can be accessed via
+Once ocrmypdf is installed, the built-in help which explains the command syntax and options can be accessed via::
 
    ocrmypdf --help
 
