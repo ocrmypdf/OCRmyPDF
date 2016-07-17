@@ -6,6 +6,12 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
+v4.1.4:
+=======
+
+-  Bug fix: monochrome images with an ICC profile attached were incorrectly converted to full color images if lossless reconstruction was not possible due to other settings; consequence was increased file size for these images
+
+
 v4.1.3:
 =======
 
