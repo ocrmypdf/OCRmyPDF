@@ -230,6 +230,14 @@ def _find_page_regular_images(page, pageinfo, contentsinfo):
             image['color'] = 'jpx' if image['enc'] == 'jpx' else '?'
 
         image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
+
+        # Bit of a hack... infer grayscale if component count is uncertain
+        # but encoding must be monochrome. This happens if a monochrome image
+        # has an ICC profile attached. Better solution would be to examine
+        # the ICC profile.
+        if image['comp'] == '?' and image['enc'] in ('ccitt', 'jbig2'):
+            image['comp'] = FRIENDLY_COMP['gray']
+
         image['dpi_w'] = image['dpi_h'] = 0
 
         for raster in contentsinfo.raster_settings:
