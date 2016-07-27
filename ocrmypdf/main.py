@@ -42,6 +42,8 @@ warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
 BASEDIR = os.path.dirname(os.path.realpath(__file__))
 
+VECTOR_PAGE_DPI = 400
+
 
 # -------------
 # External dependencies
@@ -409,24 +411,46 @@ def get_pageinfo(input_file, pdfinfo, pdfinfo_lock):
     return pageinfo
 
 
+def get_page_dpi(pageinfo):
+    "Get the DPI when nonsquare DPI is tolerable"
+    xres = max(pageinfo.get('xres', VECTOR_PAGE_DPI), options.oversample or 0)
+    yres = max(pageinfo.get('yres', VECTOR_PAGE_DPI), options.oversample or 0)
+    return (float(xres), float(yres))
+
+
+def get_page_square_dpi(pageinfo):
+    "Get the DPI when we require xres == yres"
+    return float(max(
+        pageinfo.get('xres', VECTOR_PAGE_DPI),
+        pageinfo.get('yres', VECTOR_PAGE_DPI),
+        options.oversample or 0))
+
+
 def is_ocr_required(pageinfo, log):
     page = pageinfo['pageno'] + 1
     ocr_required = True
     if not pageinfo['images']:
-        msg = "{0:4d}: page has no images - {1}"
-
-        if options.force_ocr:
-            # Someone wanted to do this to fix a PDF with text objects but a
-            # broken toUnicode mapping
+        if options.force_ocr and options.oversample:
+            # The user really wants to reprocess this file
+            log.info(
+                "{0:4d}: page has no images - "
+                "rasterizing at {1} DPI because "
+                "--force-ocr --oversample was specified".format(
+                    page, options.oversample))
+        elif options.force_ocr:
+            # Warn the user they might not want to do this
             log.warning(
-                msg.format(
-                    page,
-                    "rasterizing anyway because --force-ocr was specified"))
+                "{0:4d}: page has no images - "
+                "all vector content will be "
+                "rasterized at {1} DPI, losing some resolution and likely "
+                "increasing file size. Use --oversample to adjust the "
+                "DPI.".format(page, VECTOR_PAGE_DPI))
         else:
-            #
-            log.info(msg.format(page,
-                                "skipping all processing on this page"))
+            log.info(
+                "{0:4d}: page has no images - "
+                "skipping all processing on this page".format(page))
             ocr_required = False
+
     elif pageinfo['has_text']:
         msg = "{0:4d}: page already has text! – {1}"
 
@@ -614,9 +638,8 @@ def rasterize_with_ghostscript(
 
     log.debug("Rasterize {0} with {1}".format(
             os.path.basename(input_file), device))
-    xres = max(pageinfo['xres'], options.oversample or 0)
-    yres = max(pageinfo['yres'], options.oversample or 0)
 
+    xres, yres = get_page_dpi(pageinfo)
     ghostscript.rasterize_pdf(input_file, output_file, xres, yres, device, log)
 
 
@@ -637,7 +660,7 @@ def preprocess_deskew(
         return
 
     pageinfo = get_pageinfo(input_file, pdfinfo, pdfinfo_lock)
-    dpi = int(pageinfo['xres'])
+    dpi = get_page_square_dpi(pageinfo)
 
     from . import leptonica
     leptonica.deskew(input_file, output_file, dpi)
@@ -660,7 +683,7 @@ def preprocess_clean(
         return
 
     pageinfo = get_pageinfo(input_file, pdfinfo, pdfinfo_lock)
-    dpi = int(pageinfo['xres'])
+    dpi = get_page_square_dpi(pageinfo)
 
     unpaper.clean(input_file, output_file, dpi, log)
 
@@ -714,10 +737,9 @@ def select_image_for_pdf(
     if all(image['enc'] == 'jpeg' for image in pageinfo['images']):
         # If all images were JPEGs originally, produce a JPEG as output
         im = Image.open(image)
-        dpi = im.info.get(
-            'dpi',
-            (int(pageinfo['xres']), int(pageinfo['yres']))
-        )
+        fallback_dpi = get_page_dpi(pageinfo)
+        dpi = im.info.get('dpi', fallback_dpi)
+        dpi = round(dpi[0]), round(dpi[1])  # Pillow requires integer DPI
         im.save(output_file, format='JPEG', dpi=dpi)
     else:
         re_symlink(image, output_file)
@@ -745,8 +767,8 @@ def select_image_layer(
         re_symlink(page_pdf, output_file)
     else:
         pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
-        dpi = round(max(pageinfo['xres'], pageinfo['yres'],
-                        options.oversample))
+
+        dpi = round(get_page_square_dpi(pageinfo))
         imgsize = ((img2pdf.ImgSize.dpi, dpi), (img2pdf.ImgSize.dpi, dpi))
 
         layout_fun = img2pdf.get_layout_fun(None, imgsize, None, None, None)
@@ -773,7 +795,7 @@ def render_hocr_page(
         pdfinfo_lock):
     hocr = input_file
     pageinfo = get_pageinfo(hocr, pdfinfo, pdfinfo_lock)
-    dpi = round(max(pageinfo['xres'], pageinfo['yres'], options.oversample))
+    dpi = get_page_square_dpi(pageinfo)
 
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=None,
@@ -797,7 +819,7 @@ def render_hocr_debug_page(
     image = next(ii for ii in infiles if ii.endswith('.image'))
 
     pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
-    dpi = round(max(pageinfo['xres'], pageinfo['yres'], options.oversample))
+    dpi = get_page_square_dpi(pageinfo)
 
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=None,
