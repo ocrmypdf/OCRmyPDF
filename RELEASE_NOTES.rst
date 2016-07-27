@@ -6,6 +6,17 @@ Please always read this file before installing the package
 Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 
 
+v4.2 (planned):
+===============
+
+-  Support for some older programs dropped - should not be a problem for anyone except Ubuntu 12.04 LTS users
+
+   +  Ghostscript 9.15 is now required
+   +  Tesseract 3.03 is now required
+
+-  Ghostscript now runs in "safer" mode where possible
+
+
 v4.1.4:
 =======
 

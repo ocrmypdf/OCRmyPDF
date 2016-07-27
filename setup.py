@@ -154,23 +154,23 @@ if command.startswith('install') or \
         command in ['check', 'test', 'nosetests', 'easy_install']:
     check_external_program(
         program='tesseract',
-        need_version='3.02.02',
+        need_version='3.03',  # limited by Travis CI / Ubuntu 12.04 backports
         package={'darwin': 'tesseract', 'linux': 'tesseract-ocr'}
     )
     check_external_program(
         program='gs',
-        need_version='9.14',
+        need_version='9.15',  # limited by Travis CI / Ubuntu 12.04 backports
         package='ghostscript'
     )
     check_external_program(
         program='unpaper',
-        need_version='6.1',
+        need_version='6.1',   # latest sane version
         package='unpaper',
         optional=True
     )
     check_external_program(
         program='qpdf',
-        need_version='5.0.0',
+        need_version='5.0.0',   # limited by Travis CI / Ubuntu 12.04 backports
         package='qpdf',
         version_check_args=['--version']
     )
@@ -217,12 +217,12 @@ setup(
         'ocrmypdf/lib/compile_leptonica.py:ffi'
     ],
     install_requires=[
-        'ruffus==2.6.3',
-        'Pillow>=3.0.0',
-        'reportlab>=3.1.44',
-        'PyPDF2>=1.25.1',
-        'img2pdf>=0.2.0',
-        'cffi>=1.5.0'
+        'ruffus==2.6.3',        # ocrmypdf implements a 2.6.3 workaround
+        'Pillow>=3.0.0',        # just seemed right
+        'reportlab>=3.1.44',    # oldest version with sane image handling
+        'PyPDF2>=1.26',         # pure Python, so track HEAD closely
+        'img2pdf>=0.2.1',       # pure Python, so track HEAD closely
+        'cffi>=1.5.0'           # oldest version with stable API
     ],
     tests_require=tests_require,
     entry_points={
