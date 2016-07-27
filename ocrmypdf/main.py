@@ -413,27 +413,34 @@ def is_ocr_required(pageinfo, log):
     page = pageinfo['pageno'] + 1
     ocr_required = True
     if not pageinfo['images']:
-        # If the page has no images, then it contains vector content or text
-        # or both. It seems quite unlikely that one would find meaningful text
-        # from rasterizing vector content. So skip the page.
-        log.info(
-            "{0:4d}: page has no images - skipping OCR".format(page)
-        )
-        ocr_required = False
+        msg = "{0:4d}: page has no images - {1}"
+
+        if options.force_ocr:
+            # Someone wanted to do this to fix a PDF with text objects but a
+            # broken toUnicode mapping
+            log.warning(
+                msg.format(
+                    page,
+                    "rasterizing anyway because --force-ocr was specified"))
+        else:
+            #
+            log.info(msg.format(page,
+                                "skipping all processing on this page"))
+            ocr_required = False
     elif pageinfo['has_text']:
-        s = "{0:4d}: page already has text! – {1}"
+        msg = "{0:4d}: page already has text! – {1}"
 
         if not options.force_ocr and not options.skip_text:
-            log.error(s.format(page,
-                               "aborting (use --force-ocr to force OCR)"))
+            log.error(msg.format(page,
+                                 "aborting (use --force-ocr to force OCR)"))
             sys.exit(ExitCode.already_done_ocr)
         elif options.force_ocr:
-            log.info(s.format(page,
-                              "rasterizing text and running OCR anyway"))
+            log.info(msg.format(page,
+                                "rasterizing text and running OCR anyway"))
             ocr_required = True
         elif options.skip_text:
-            log.info(s.format(page,
-                              "skipping all processing on this page"))
+            log.info(msg.format(page,
+                                "skipping all processing on this page"))
             ocr_required = False
 
     if ocr_required and options.skip_big:
@@ -865,7 +872,6 @@ def add_text_layer(
     except (AttributeError, ValueError) as e:
         if 'writeToStream' in str(e) or 'invalid literal' in str(e):
             raise PdfMergeFailedError() from e
-
 
     pdf_output = pypdf.PdfFileWriter()
     pdf_output.addPage(page_text)

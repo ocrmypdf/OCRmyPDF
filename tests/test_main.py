@@ -420,6 +420,17 @@ def test_blank_input_pdf():
     assert p.returncode == ExitCode.ok
 
 
+def test_force_ocr_on_pdf_with_no_images(spoof_tesseract_crash):
+    # As a correctness test, make sure that --force-ocr on a PDF with no
+    # content still triggers tesseract. If tesseract crashes, then it was
+    # called.
+    p, _, err = run_ocrmypdf_env(
+        'blank.pdf', 'wont_be_created.pdf', '--force-ocr',
+        env=spoof_tesseract_crash)
+    assert p.returncode == ExitCode.child_process_error, err
+    assert not os.path.exists(_outfile('wontwork.pdf'))
+
+
 def test_french(spoof_tesseract_cache):
     p, out, err = run_ocrmypdf_env(
         'francais.pdf', 'francais.pdf', '-l', 'fra', env=spoof_tesseract_cache)
