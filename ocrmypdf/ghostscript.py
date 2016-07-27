@@ -14,6 +14,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
         args_gs = [
             get_program('gs'),
             '-dQUIET',
+            '-dSAFER',
             '-dBATCH',
             '-dNOPAUSE',
             '-sDEVICE=%s' % raster_device,
