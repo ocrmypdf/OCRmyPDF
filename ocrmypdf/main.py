@@ -637,10 +637,14 @@ def rasterize_with_ghostscript(
             device = 'pnggray'
 
     log.debug("Rasterize {0} with {1}".format(
-            os.path.basename(input_file), device))
+              os.path.basename(input_file), device))
 
-    xres, yres = get_page_dpi(pageinfo)
-    ghostscript.rasterize_pdf(input_file, output_file, xres, yres, device, log)
+    # Produce the page image with square resolution or else deskew and OCR
+    # will not work properly
+    dpi = get_page_square_dpi(pageinfo)
+    ghostscript.rasterize_pdf(
+        input_file, output_file, xres=dpi, yres=dpi, raster_device=device,
+        log=log)
 
 
 @transform(
@@ -767,18 +771,16 @@ def select_image_layer(
         re_symlink(page_pdf, output_file)
     else:
         pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
-
-        dpi = round(get_page_square_dpi(pageinfo))
-        imgsize = ((img2pdf.ImgSize.dpi, dpi), (img2pdf.ImgSize.dpi, dpi))
-
-        layout_fun = img2pdf.get_layout_fun(None, imgsize, None, None, None)
+        dpi = get_page_dpi(pageinfo)
+        dpi = float(dpi[0]), float(dpi[1])
+        layout_fun = img2pdf.get_fixed_dpi_layout_fun(dpi)
 
         with open(image, 'rb') as imfile, \
                 open(output_file, 'wb') as pdf:
             rawdata = imfile.read()
-            pdf.write(img2pdf.convert(
-                rawdata, producer="img2pdf", with_pdfrw=False,
-                layout_fun=layout_fun))
+            img2pdf.convert(
+                rawdata, with_pdfrw=False,
+                layout_fun=layout_fun, outputstream=pdf)
 
 
 @active_if(options.pdf_renderer == 'hocr')

@@ -562,3 +562,22 @@ def test_old_unpaper():
 def test_algo4():
     sh, _, _ = run_ocrmypdf_env('encrypted_algo4.pdf', 'wontwork.pdf')
     assert sh.returncode == ExitCode.encrypted_pdf
+
+
+@pytest.mark.parametrize('renderer', [
+    'hocr'])
+def test_non_square_resolution(renderer):
+    # Confirm input image is non-square resolution
+    in_pageinfo = pdf_get_all_pageinfo(_infile('aspect.pdf'))
+    assert in_pageinfo[0]['xres'] != in_pageinfo[0]['yres']
+
+    out = 'aspect_%s.pdf' % renderer
+    check_ocrmypdf(
+        'aspect.pdf', out,
+        '--pdf-renderer', renderer)
+
+    out_pageinfo = pdf_get_all_pageinfo(_outfile(out))
+
+    # Confirm resolution was kept the same
+    assert in_pageinfo[0]['xres'] == out_pageinfo[0]['xres']
+    assert in_pageinfo[0]['yres'] == out_pageinfo[0]['yres']

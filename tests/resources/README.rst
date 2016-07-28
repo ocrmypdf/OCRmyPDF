@@ -31,6 +31,7 @@ Files generated for this project
 The following test resources were crafted specifically for this project, and can be used
 under the terms of the license in LICENSE.rst.
 
+- aspect.pdf (a page with an image with 200 x 100 DPI resolution)
 - blank.pdf (a blank PDF page)
 - cmyk.pdf (a CMYK image created in Photoshop)
 - enormous.pdf (a very lage page)
