@@ -1142,7 +1142,7 @@ def traverse_ruffus_exception(e):
 
     if isinstance(e[0], str) and len(e) == 5:
         return do_ruffus_exception(e)
-    elif hasattr(e, '__iter__'):
+    elif hasattr(e, '__iter__') and not isinstance(e, str):
         for exc in e:
             return traverse_ruffus_exception(exc)
 
