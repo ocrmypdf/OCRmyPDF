@@ -12,6 +12,7 @@ cache:
 
 python:
     - 3.4
+    - 3.5
 
 before_cache:
     - rm -f $HOME/.cache/pip/log/debug.log
