@@ -14,9 +14,9 @@ In some cases they were converted from one image format to another without other
 +=====================+================================================================================+
 | c02-22.pdf          | `Project Gutenberg`_, Adventures of Huckleberry Finn, page 22                  |
 +---------------------+--------------------------------------------------------------------------------+
-| congress.jpg        | `US Congressional Records`_                                                    |
+| congress.jpg        | `US Congressional Records`_ (Public Domain)                                    |
 +---------------------+--------------------------------------------------------------------------------+
-| graph.pdf           | `Wikimedia: Pandas text analysis.png`_                                         |
+| graph.pdf           | `Wikimedia: Pandas text analysis.png`_ (Public Domain)                         |
 +---------------------+--------------------------------------------------------------------------------+
 | lichtenstein.pdf    | `Wikimedia: JPEG2000 Lichtenstein`_ (Creative Commons BY-SA 3.0)               |
 +---------------------+--------------------------------------------------------------------------------+

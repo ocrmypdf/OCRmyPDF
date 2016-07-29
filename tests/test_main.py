@@ -565,8 +565,8 @@ def test_algo4():
 
 
 @pytest.mark.parametrize('renderer', [
-    'hocr'])
-def test_non_square_resolution(renderer):
+    'hocr'])  # tesseract cannot pass this test yet
+def test_non_square_resolution(renderer, spoof_tesseract_cache):
     # Confirm input image is non-square resolution
     in_pageinfo = pdf_get_all_pageinfo(_infile('aspect.pdf'))
     assert in_pageinfo[0]['xres'] != in_pageinfo[0]['yres']
@@ -574,7 +574,7 @@ def test_non_square_resolution(renderer):
     out = 'aspect_%s.pdf' % renderer
     check_ocrmypdf(
         'aspect.pdf', out,
-        '--pdf-renderer', renderer)
+        '--pdf-renderer', renderer, env=spoof_tesseract_cache)
 
     out_pageinfo = pdf_get_all_pageinfo(_outfile(out))
 

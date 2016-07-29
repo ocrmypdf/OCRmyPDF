@@ -738,12 +738,20 @@ def select_image_for_pdf(
     image = next(ii for ii in infiles if ii.endswith(image_suffix))
 
     pageinfo = get_pageinfo(image, pdfinfo, pdfinfo_lock)
-    if all(image['enc'] == 'jpeg' for image in pageinfo['images']):
+    if all(orig_image['enc'] == 'jpeg' for orig_image in pageinfo['images']):
         # If all images were JPEGs originally, produce a JPEG as output
         im = Image.open(image)
-        fallback_dpi = get_page_dpi(pageinfo)
-        dpi = im.info.get('dpi', fallback_dpi)
-        dpi = round(dpi[0]), round(dpi[1])  # Pillow requires integer DPI
+
+        # At this point the image should be a .png, but deskew, unpaper might
+        # have removed the DPI information. In this case, fall back to square
+        # DPI used to rasterize. When the preview image was rasterized, it
+        # was also converted to square resolution, which is what we want to
+        # give tesseract, so keep it square.
+        fallback_dpi = get_page_square_dpi(pageinfo)
+        dpi = im.info.get('dpi', (fallback_dpi, fallback_dpi))
+
+        # Pillow requires integer DPI
+        dpi = round(dpi[0]), round(dpi[1])
         im.save(output_file, format='JPEG', dpi=dpi)
     else:
         re_symlink(image, output_file)
@@ -871,7 +879,7 @@ def add_text_layer(
     y2 = page_image.mediaBox.getUpperRight_y()
 
     # Rotation occurs about the page's (0, 0). Most pages will have the media
-    # box at (0, 0) will all content in the first quadrant but some cropped
+    # box at (0, 0) with all content in the first quadrant but some cropped
     # files may have an offset mediabox. We translate the page so that its
     # bottom left corner after rotation is pinned to (0, 0) with the image
     # in the first quadrant.

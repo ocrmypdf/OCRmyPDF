@@ -9,13 +9,13 @@ Download software here: https://github.com/jbarlow83/OCRmyPDF/tags
 v4.2 (planned):
 ===============
 
+-  Improved support for PDFs containing images with "non-square" pixel aspect ratios, such as 200x100 DPI.
 -  Support for some older programs dropped - should not be a problem for anyone except Ubuntu 12.04 LTS users
 
    +  Ghostscript 9.15 is now required
    +  Tesseract 3.03 is now required
 
 -  Ghostscript now runs in "safer" mode where possible
-
 
 v4.1.4:
 =======
