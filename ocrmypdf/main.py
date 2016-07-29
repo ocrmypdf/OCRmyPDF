@@ -31,7 +31,7 @@ from .pdfa import generate_pdfa_def
 from . import ghostscript
 from . import tesseract
 from . import qpdf
-from . import ExitCode, page_number
+from . import ExitCode, page_number, is_iterable_notstr
 
 import pkg_resources
 
@@ -552,7 +552,7 @@ def split_pages(
         pdfinfo,
         pdfinfo_lock):
 
-    if isinstance(input_files, list):
+    if is_iterable_notstr(input_files):
         input_file = input_files[0]
     else:
         input_file = input_files
@@ -1210,7 +1210,7 @@ def traverse_ruffus_exception(e):
 
     if isinstance(e[0], str) and len(e) == 5:
         return do_ruffus_exception(e)
-    elif hasattr(e, '__iter__') and not isinstance(e, str):
+    elif is_iterable_notstr(e):
         for exc in e:
             return traverse_ruffus_exception(exc)
 
