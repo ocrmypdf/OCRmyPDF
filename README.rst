@@ -190,7 +190,14 @@ The command line program should now be available:
 Installing on Ubuntu 14.04 LTS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Installing on Ubuntu 14.04 LTS (trusty) is more difficult than other options, because of certain bugs in Python package installation.
+Installing on Ubuntu 14.04 LTS (trusty) is more difficult than some other options, because of bugs in Python package installation.
+
+Add new "apt" repositories needed for backports of Ghostscript 9.16 and libav-11, which supports unpaper 6.1. This will replace Ghostscript on your system.
+
+.. code-block:: bash
+
+   sudo add-apt-repository ppa:vshn/ghostscript -y 
+   sudo add-apt-repository ppa:heyarje/libav-11 -y
 
 Update apt-get:
 
@@ -207,10 +214,10 @@ Install system dependencies:
       zlib1g-dev \
       libjpeg-dev \
       libffi-dev \
+      libavformat56 libavcodec56 libavutil54 \
       ghostscript \
       tesseract-ocr \
       qpdf \
-      unpaper \
       python3-pip \
       python3-pil \
       python3-pytest \
@@ -223,7 +230,7 @@ into your system Python, which could interfere with other programs):
 
    sudo pip3 install ocrmypdf
    
-If you wish to install OCRmyPDF to a virtual environment to isolate system Python from modified, you can
+If you wish to install OCRmyPDF to a virtual environment to isolate the system Python, you can
 follow these steps.  This includes a workaround `for a known, unresolved issue in Ubuntu 14.04's ensurepip
 package <http://www.thefourtheye.in/2014/12/Python-venv-problem-with-ensurepip-in-Ubuntu.html>`_:
 
@@ -238,7 +245,13 @@ package <http://www.thefourtheye.in/2014/12/Python-venv-problem-with-ensurepip-i
    source venv-ocrmypdf/bin/activate
    pip install ocrmypdf
 
-Ubuntu 14.04 only installs ``unpaper`` version 0.4.2, which is not supported by OCRmyPDF because it is produces invalid output. This program is an optional dependency, and provides page deskewing and cleaning. See `Dockerfile <Dockerfile>`_ for an example of how to building unpaper 6.1 from source. If you choose to install unpaper later, OCRmyPDF will use the foremost version on the system PATH.
+These installation instructions omit the optional dependency ``unpaper``, which is only available at version 0.4.2 in Ubuntu 14.04. The author could not find a backport of ``unpaper`` and is not motivated to figure how to set up a Ubuntu PPA to distribute it. You can create a .deb package to do the job of installing unpaper 6.1 (for x86 64-bit only):
+
+.. code-block:: bash
+
+   wget -q https://dl.dropboxusercontent.com/u/28971240/unpaper_6.1-1.deb -O unpaper_6.1-1.deb
+   sudo dpkg -i packages/unpaper_6.1-1.deb
+
 
 Installing on Windows
 ~~~~~~~~~~~~~~~~~~~~~

@@ -5,7 +5,8 @@ RELEASE NOTES
 v4.2 (planned):
 ===============
 
--  Improved support for PDFs containing images with "non-square" pixel aspect ratios, such as 200x100 DPI.
+-  ocrmypdf will now try to convert single image files to PDFs if they are provided as input (#15)
+-  Improved support for PDFs containing images with "non-square" pixel aspect ratios, such as 200x100 DPI
 -  ``--force-ocr`` rasterizes pages even if they contain no images
 
    +  supports users who want to use OCRmyPDF to reconstruct text information in PDFs with damaged Unicode maps (copy and paste text does not match displayed text)
