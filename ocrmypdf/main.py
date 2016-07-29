@@ -388,6 +388,38 @@ def cleanup_working_files(*args):
 
 @transform(
     input=options.input_file,
+    filter=formatter('(?i)'),
+    output=os.path.join(work_folder, '{basename[0]}.pdf'),
+    extras=[_log])
+def triage(
+        input_file,
+        output_file,
+        log):
+    try:
+        with open(input_file, 'rb') as f:
+            signature = f.read(4)
+            if signature == b'%PDF':
+                re_symlink(input_file, output_file)
+                return
+    except EnvironmentError as e:
+        log.error(e)
+        sys.exit(ExitCode.input_file)
+
+    # We opened the file, but it's not a PDF
+    try:
+        with open(output_file, 'wb') as outf:
+            log.info("Input file is not a PDF, try converting it to PDF...")
+            img2pdf.convert(
+                input_file,
+                with_pdfrw=False,
+                outputstream=outf)
+    except OSError as e:
+        log.error(e)
+        sys.exit(ExitCode.input_file)
+
+
+@transform(
+    input=triage,
     filter=formatter('(?i)\.pdf'),
     output=os.path.join(work_folder, '{basename[0]}.repaired.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
