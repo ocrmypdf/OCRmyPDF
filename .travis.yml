@@ -12,14 +12,12 @@ cache:
 
 python:
     - 3.4
-    - 3.5
 
 before_cache:
     - rm -f $HOME/.cache/pip/log/debug.log
 
 before_install:
     # Ubuntu packages
-    - sudo add-apt-repository ppa:itachi-san/ffmpeg -y  # for libav 11.2 (for unpaper)
     - sudo apt-get update -qq  # must go after all add-apt-repo
     - sudo apt-get install -y ghostscript tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-fra qpdf poppler-utils libavformat56 libavcodec56 libavutil54 libffi-dev
 
