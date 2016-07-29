@@ -450,8 +450,9 @@ def triage(
 
 @transform(
     input=triage,
-    filter=formatter('(?i)\.pdf'),
-    output=os.path.join(work_folder, '{basename[0]}.repaired.pdf'),
+    filter=suffix('.pdf'),
+    output='.repaired.pdf',
+    output_dir=work_folder,
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def repair_pdf(
         input_file,
@@ -545,11 +546,16 @@ def is_ocr_required(pageinfo, log):
     os.path.join(work_folder, '*.page.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def split_pages(
-        input_file,
+        input_files,
         output_files,
         log,
         pdfinfo,
         pdfinfo_lock):
+
+    if isinstance(input_files, list):
+        input_file = input_files[0]
+    else:
+        input_file = input_files
 
     for oo in output_files:
         with suppress(FileNotFoundError):
