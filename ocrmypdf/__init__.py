@@ -14,6 +14,7 @@ class ExitCode(IntEnum):
     child_process_error = 7
     encrypted_pdf = 8
     other_error = 15
+    ctrl_c = 130
 
 
 def get_program(name):

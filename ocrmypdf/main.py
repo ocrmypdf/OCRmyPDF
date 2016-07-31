@@ -32,6 +32,7 @@ from . import ghostscript
 from . import tesseract
 from . import qpdf
 from . import ExitCode, page_number, is_iterable_notstr
+from collections.abc import Sequence
 
 import pkg_resources
 
@@ -1176,6 +1177,9 @@ def do_ruffus_exception(ruffus_five_tuple):
             _log.error("Input file '{0}' is not a valid PDF".format(
                 options.input_file))
             return ExitCode.input_file
+    elif exc_name == 'builtins.KeyboardInterrupt':
+        _log.error("Interrupted by user")
+        return ExitCode.ctrl_c
     elif exc_name == 'subprocess.CalledProcessError':
         # It's up to the subprocess handler to report something useful
         msg = "Error occurred while running this command:"
@@ -1216,7 +1220,7 @@ def traverse_ruffus_exception(e):
     The exit code will be based on this, even if multiple exceptions occurred
     at the same time."""
 
-    if isinstance(e[0], str) and len(e) == 5:
+    if isinstance(e, Sequence) and isinstance(e[0], str) and len(e) == 5:
         return do_ruffus_exception(e)
     elif is_iterable_notstr(e):
         for exc in e:
