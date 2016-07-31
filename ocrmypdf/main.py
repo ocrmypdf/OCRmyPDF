@@ -1209,21 +1209,23 @@ def do_ruffus_exception(ruffus_five_tuple):
 
             """))
         return ExitCode.encrypted_pdf
-    elif not options.verbose:
+
+    if not options.verbose:
         _log.error(exc_stack)
-        return ExitCode.other_error
+    return ExitCode.other_error
 
 
-def traverse_ruffus_exception(e):
+def traverse_ruffus_exception(e_args):
     """Walk through a RethrownJobError and find the first exception.
 
     The exit code will be based on this, even if multiple exceptions occurred
     at the same time."""
 
-    if isinstance(e, Sequence) and isinstance(e[0], str) and len(e) == 5:
-        return do_ruffus_exception(e)
-    elif is_iterable_notstr(e):
-        for exc in e:
+    if isinstance(e_args, Sequence) and isinstance(e_args[0], str) and \
+            len(e_args) == 5:
+        return do_ruffus_exception(e_args)
+    elif is_iterable_notstr(e_args):
+        for exc in e_args:
             return traverse_ruffus_exception(exc)
 
 
