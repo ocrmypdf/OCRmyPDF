@@ -123,6 +123,9 @@ parser.add_argument(
 parser.add_argument(
     '-j', '--jobs', metavar='N', type=int,
     help="Use up to N CPU cores simultaneously (default: use all)")
+parser.add_argument(
+    '--image-dpi', metavar='DPI', type=int,
+    help="for input image instead of PDF, use this DPI instead of file's")
 
 metadata = parser.add_argument_group(
     "Metadata options",
@@ -399,20 +402,20 @@ def triage_image_file(input_file, output_file, log):
         log.info("Input file is an image")
 
         if 'dpi' in im.info:
-            if im.info['dpi'] <= (96, 96) and not options.oversample:
+            if im.info['dpi'] <= (96, 96) and not options.image_dpi:
                 log.info("Image size: (%d, %d)" % im.size)
                 log.info("Image resolution: (%d, %d)" % im.info['dpi'])
                 log.error(
                     "Input file is an image, but the resolution (DPI) is "
                     "not credible.  Estimate the resolution at which the "
-                    "image was scanned and specify it using --oversample.")
+                    "image was scanned and specify it using --image-dpi.")
                 sys.exit(ExitCode.input_file)
-        elif not options.oversample:
+        elif not options.image_dpi:
             log.info("Image size: (%d, %d)" % im.size)
             log.error(
                 "Input file is an image, but has no resolution (DPI) "
                 "in its metadata.  Estimate the resolution at which "
-                "image was scanned and specify it using --oversample.")
+                "image was scanned and specify it using --image-dpi.")
             sys.exit(ExitCode.input_file)
     finally:
         im.close()
@@ -420,9 +423,9 @@ def triage_image_file(input_file, output_file, log):
     try:
         log.info("Image seems valid. Try converting to PDF...")
         layout_fun = img2pdf.default_layout_fun
-        if options.oversample:
+        if options.image_dpi:
             layout_fun = img2pdf.get_fixed_dpi_layout_fun(
-                (options.oversample, options.oversample))
+                (options.image_dpi, options.image_dpi))
         with open(output_file, 'wb') as outf:
             img2pdf.convert(
                 input_file,
