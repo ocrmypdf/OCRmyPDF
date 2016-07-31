@@ -386,6 +386,54 @@ def cleanup_working_files(*args):
             shutil.rmtree(work_folder)
 
 
+def triage_image_file(input_file, output_file, log):
+    try:
+        log.info("Input file is not a PDF, checking if it is an image...")
+        im = Image.open(input_file)
+    except EnvironmentError as e:
+        log.error(e)
+        sys.exit(ExitCode.input_file)
+        return
+    else:
+        log.info("Input file is an image")
+
+        if 'dpi' in im.info:
+            if im.info['dpi'] <= (96, 96) and not options.oversample:
+                log.info("Image size: (%d, %d)" % im.size)
+                log.info("Image resolution: (%d, %d)" % im.info['dpi'])
+                log.error(
+                    "Input file is an image, but the resolution (DPI) is "
+                    "not credible.  Estimate the resolution at which the "
+                    "image was scanned and specify it using --oversample.")
+                sys.exit(ExitCode.input_file)
+        elif not options.oversample:
+            log.info("Image size: (%d, %d)" % im.size)
+            log.error(
+                "Input file is an image, but has no resolution (DPI) "
+                "in its metadata.  Estimate the resolution at which "
+                "image was scanned and specify it using --oversample.")
+            sys.exit(ExitCode.input_file)
+    finally:
+        im.close()
+
+    try:
+        log.info("Image seems valid. Try converting to PDF...")
+        layout_fun = img2pdf.default_layout_fun
+        if options.oversample:
+            layout_fun = img2pdf.get_fixed_dpi_layout_fun(
+                (options.oversample, options.oversample))
+        with open(output_file, 'wb') as outf:
+            img2pdf.convert(
+                input_file,
+                layout_fun=layout_fun,
+                with_pdfrw=False,
+                outputstream=outf)
+        log.info("Successfully converted to PDF, processing...")
+    except img2pdf.ImageOpenError as e:
+        log.error(e)
+        sys.exit(ExitCode.input_file)
+
+
 @transform(
     input=options.input_file,
     filter=formatter('(?i)'),
@@ -401,51 +449,11 @@ def triage(
             if signature == b'%PDF':
                 re_symlink(input_file, output_file)
                 return
-
-            # We opened the file, but it's not a PDF
-            f.seek(0)
-
-            log.info("Input file is not a PDF, checking if it is an image...")
-            im = Image.open(f)
-            f = None  # Image.load() closes the file handle
-            log.info("Input file is an image")
-
-            if 'dpi' in im.info:
-                if im.info['dpi'] <= (96, 96) and not options.oversample:
-                    log.info("Image size: (%d, %d)" % im.size)
-                    log.info("Image resolution: (%d, %d)" % im.info['dpi'])
-                    log.error(
-                        "Input file is an image, but the resolution (DPI) is "
-                        "not credible.  Estimate the resolution at which the "
-                        "image was scanned and specify it using --oversample.")
-                    sys.exit(ExitCode.input_file)
-            elif not options.oversample:
-                log.info("Image size: (%d, %d)" % im.size)
-                log.error(
-                    "Input file is an image, but has no resolution (DPI) "
-                    "in its metadata.  Estimate the resolution at which "
-                    "image was scanned and specify it using --oversample.")
-                sys.exit(ExitCode.input_file)
-            im.close()
-
-        log.info("Image seems valid. Try converting to PDF...")
-        layout_fun = None
-        if options.oversample:
-            layout_fun = img2pdf.get_fixed_dpi_layout_fun(
-                (options.oversample, options.oversample))
-        with open(output_file, 'wb') as outf:
-            img2pdf.convert(
-                input_file,
-                layout_fun=layout_fun,
-                with_pdfrw=False,
-                outputstream=outf)
-        log.info("Successfully converted to PDF, processing...")
-    except img2pdf.ImageOpenError as e:
-        log.error(e)
-        sys.exit(ExitCode.input_file)
     except EnvironmentError as e:
         log.error(e)
         sys.exit(ExitCode.input_file)
+
+    triage_image_file(input_file, output_file, log)
 
 
 @transform(
