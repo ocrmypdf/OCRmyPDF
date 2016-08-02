@@ -126,6 +126,9 @@ parser.add_argument(
 parser.add_argument(
     '--image-dpi', metavar='DPI', type=int,
     help="for input image instead of PDF, use this DPI instead of file's")
+parser.add_argument(
+    '--output-type', choices=['pdfa', 'pdf'], default='pdf',
+    help="choose output type")
 
 metadata = parser.add_argument_group(
     "Metadata options",
@@ -1031,6 +1034,40 @@ def tesseract_ocr_and_render_pdf(
         log=log)
 
 
+def get_pdfmark(base_pdf):
+    def from_document_info(key):
+        # pdf.documentInfo.get() DOES NOT behave as expected for a dict-like
+        # object, so call with precautions.  TypeError may occur if the PDF
+        # is missing the optional document info section.
+        try:
+            s = base_pdf.documentInfo[key]
+            return str(s)
+        except (KeyError, TypeError):
+            return ''
+
+    pdfmark = {
+        '/Title': from_document_info('/Title'),
+        '/Author': from_document_info('/Author'),
+        '/Keywords': from_document_info('/Keywords'),
+        '/Subject': from_document_info('/Subject'),
+    }
+    if options.title:
+        pdfmark['/Title'] = options.title
+    if options.author:
+        pdfmark['/Author'] = options.author
+    if options.keywords:
+        pdfmark['/Keywords'] = options.keywords
+    if options.subject:
+        pdfmark['/Subject'] = options.subject
+
+    pdfmark['/Creator'] = '{0} {1} / Tesseract OCR{2} {3}'.format(
+            parser.prog, VERSION,
+            '+PDF' if options.pdf_renderer == 'tesseract' else '',
+            tesseract.version())
+    return pdfmark
+
+
+@active_if(options.output_type == 'pdfa')
 @transform(
     input=repair_pdf,
     filter=formatter(r'\.repaired\.pdf'),
@@ -1042,37 +1079,7 @@ def generate_postscript_stub(
         log):
 
     pdf = pypdf.PdfFileReader(input_file)
-
-    def from_document_info(key):
-        # pdf.documentInfo.get() DOES NOT behave as expected for a dict-like
-        # object, so call with precautions.  TypeError may occur if the PDF
-        # is missing the optional document info section.
-        try:
-            s = pdf.documentInfo[key]
-            return str(s)
-        except (KeyError, TypeError):
-            return ''
-
-    pdfmark = {
-        'title': from_document_info('/Title'),
-        'author': from_document_info('/Author'),
-        'keywords': from_document_info('/Keywords'),
-        'subject': from_document_info('/Subject'),
-    }
-    if options.title:
-        pdfmark['title'] = options.title
-    if options.author:
-        pdfmark['author'] = options.author
-    if options.keywords:
-        pdfmark['keywords'] = options.keywords
-    if options.subject:
-        pdfmark['subject'] = options.subject
-
-    pdfmark['creator'] = '{0} {1} / Tesseract OCR{2} {3}'.format(
-            parser.prog, VERSION,
-            '+PDF' if options.pdf_renderer == 'tesseract' else '',
-            tesseract.version())
-
+    pdfmark = get_pdfmark(pdf)
     generate_pdfa_def(output_file, pdfmark)
 
 
@@ -1093,12 +1100,13 @@ def skip_page(
     re_symlink(input_file, output_file, log)
 
 
+@active_if(options.output_type == 'pdfa')
 @merge(
     input=[add_text_layer, render_hocr_debug_page, skip_page,
            tesseract_ocr_and_render_pdf, generate_postscript_stub],
     output=os.path.join(work_folder, 'merged.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
-def merge_pages(
+def merge_pages_ghostscript(
         input_files,
         output_file,
         log,
@@ -1119,23 +1127,77 @@ def merge_pages(
         return key
 
     pdf_pages = sorted(input_files, key=input_file_order)
-    #log.debug("Final pages: " + "\n".join(pdf_pages))
-    #ghostscript.generate_pdfa(pdf_pages, output_file, options.jobs or 1)
-    pdf_pages.pop()
-    qpdf.merge(pdf_pages, output_file)
+    log.debug("Final pages: " + "\n".join(pdf_pages))
+    ghostscript.generate_pdfa(pdf_pages, output_file, options.jobs or 1)
 
 
-@transform(
-    input=merge_pages,
-    filter=formatter(),
-    output=options.output_file,
+@active_if(options.output_type == 'pdf')
+@merge(
+    input=[add_text_layer, render_hocr_debug_page, skip_page,
+           tesseract_ocr_and_render_pdf],
+    output=os.path.join(work_folder, 'merged_nometadata.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
-def copy_final(
-        input_file,
+def merge_pages_qpdf(
+        input_files,
         output_file,
         log,
         pdfinfo,
         pdfinfo_lock):
+
+    def input_file_order(s):
+        '''Sort order: All rendered pages followed
+        by their debug page.'''
+        key = int(os.path.basename(s)[0:6]) * 10
+        if 'debug' in os.path.basename(s):
+            key += 1
+        return key
+
+    pdf_pages = sorted(input_files, key=input_file_order)
+    log.debug("Final pages: " + "\n".join(pdf_pages))
+    qpdf.merge(pdf_pages, output_file)
+
+
+@active_if(options.output_type == 'pdf')
+@merge(
+    input=[merge_pages_qpdf, repair_pdf],
+    output=os.path.join(work_folder, 'merged.pdf'),
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def copy_metadata(
+        input_files,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+
+    merged_file = next(
+        (ii for ii in input_files if ii.endswith('merged_nometadata.pdf')))
+    metadata_file = next(
+        (ii for ii in input_files if ii.endswith('.repaired.pdf')))
+
+    metadata_pdf = pypdf.PdfFileReader(metadata_file)
+    pdfmark = get_pdfmark(metadata_pdf)
+    pdfmark['/Producer'] = 'PyPDF2 ' + pypdf.__version__
+
+    merged_pdf = pypdf.PdfFileReader(merged_file)
+    output_pdf = pypdf.PdfFileWriter()
+
+    output_pdf.appendPagesFromReader(merged_pdf)
+    output_pdf.addMetadata(pdfmark)
+    with open(output_file, 'wb') as f:
+        output_pdf.write(f)
+
+
+@merge(
+    input=[merge_pages_ghostscript, copy_metadata],
+    output=options.output_file,
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def copy_final(
+        input_files,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+    input_file = next((ii for ii in input_files if ii.endswith('.pdf')))
     shutil.copy(input_file, output_file)
 
 

@@ -88,11 +88,11 @@ def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
     t = Template(pdfa_def_template)
     result = t.substitute(icc_profile=icc_profile,
                           icc_identifier=icc_identifier,
-                          title=pdfmark_utf16.get('title', ''),
-                          author=pdfmark_utf16.get('author', ''),
-                          subject=pdfmark_utf16.get('subject', ''),
-                          creator=pdfmark_utf16.get('creator', ''),
-                          keywords=pdfmark_utf16.get('keywords', ''))
+                          title=pdfmark_utf16.get('/Title', ''),
+                          author=pdfmark_utf16.get('/Author', ''),
+                          subject=pdfmark_utf16.get('/Subject', ''),
+                          creator=pdfmark_utf16.get('/Creator', ''),
+                          keywords=pdfmark_utf16.get('/Keywords', ''))
     return result
 
 
