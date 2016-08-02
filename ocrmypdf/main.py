@@ -417,6 +417,14 @@ def triage_image_file(input_file, output_file, log):
                 "in its metadata.  Estimate the resolution at which "
                 "image was scanned and specify it using --image-dpi.")
             sys.exit(ExitCode.input_file)
+
+        if 'iccprofile' not in im.info:
+            if im.mode == 'RGB':
+                log.info('Input image has no ICC profile, assuming sRGB')
+            elif im.mode == 'CMYK':
+                log.info('Input CMYK image has no ICC profile, not usable')
+                sys.exit(ExitCode.input_file)
+
     finally:
         im.close()
 
