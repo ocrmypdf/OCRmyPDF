@@ -241,7 +241,7 @@ package <http://www.thefourtheye.in/2014/12/Python-venv-problem-with-ensurepip-i
    source venv-ocrmypdf/bin/activate
    wget -O - -o /dev/null https://bootstrap.pypa.io/get-pip.py | python
    deactivate
-   pyvenv --system-site-packages venv-ocrmypdf
+   python3 -m venv --system-site-packages venv-ocrmypdf
    source venv-ocrmypdf/bin/activate
    pip install ocrmypdf
 
@@ -300,7 +300,7 @@ to not install as superuser, you can install the package in a Python virtual env
 .. code-block:: bash
 
    git clone -b master https://github.com/jbarlow83/OCRmyPDF.git
-   pyvenv venv
+   python3 -m venv
    source venv/bin/activate
    cd OCRmyPDF
    pip3 install .
