@@ -14,7 +14,10 @@ v4.2 (planned):
    +  fixes issue #82
 
 -  Fixes an issue where, with certain settings, monochrome images in PDFs would be converted to 8-bit grayscale, increasing file size (#79)
--  Support for Ubuntu 12.04 LTS (precise) has been dropped in favor of Ubuntu 14.04 LTS (trusty) with help from backports
+-  Support for Ubuntu 12.04 LTS "precise" has been dropped in favor of (roughly) Ubuntu 14.04 LTS "trusty" 
+
+   +  Some Ubuntu "PPAs" (backports) are needed to make it work
+      
 -  Support for some older dependencies dropped
 
    +  Ghostscript 9.15 or later is now required (available in Ubuntu trusty with backports)
