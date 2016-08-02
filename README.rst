@@ -250,7 +250,7 @@ These installation instructions omit the optional dependency ``unpaper``, which 
 .. code-block:: bash
 
    wget -q https://dl.dropboxusercontent.com/u/28971240/unpaper_6.1-1.deb -O unpaper_6.1-1.deb
-   sudo dpkg -i packages/unpaper_6.1-1.deb
+   sudo dpkg -i unpaper_6.1-1.deb
 
 
 Installing on Windows
