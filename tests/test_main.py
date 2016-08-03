@@ -591,3 +591,9 @@ def test_non_square_resolution(renderer, spoof_tesseract_cache):
     # Confirm resolution was kept the same
     assert in_pageinfo[0]['xres'] == out_pageinfo[0]['xres']
     assert in_pageinfo[0]['yres'] == out_pageinfo[0]['yres']
+
+
+def test_image_to_pdf(spoof_tesseract_noop):
+    check_ocrmypdf(
+        'LinnSequencer.jpg', 'image_to_pdf.pdf', '--image-dpi', '200',
+        env=spoof_tesseract_noop)
