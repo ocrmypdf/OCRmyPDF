@@ -27,7 +27,7 @@ import ruffus.proxy_logger as proxy_logger
 
 from .hocrtransform import HocrTransform
 from .pageinfo import pdf_get_all_pageinfo
-from .pdfa import generate_pdfa_def
+from .pdfa import generate_pdfa_def, file_claims_pdfa
 from . import ghostscript
 from . import tesseract
 from . import qpdf
@@ -127,8 +127,12 @@ parser.add_argument(
     '--image-dpi', metavar='DPI', type=int,
     help="for input image instead of PDF, use this DPI instead of file's")
 parser.add_argument(
-    '--output-type', choices=['pdfa', 'pdf'], default='pdf',
-    help="choose output type")
+    '--output-type', choices=['pdfa', 'pdf'], default='pdfa',
+    help="Choose output type. 'pdfa' creates a PDF/A-2b compliant file for "
+         "long term archiving (default, recommended) but may not suitable "
+         "for users who want their file altered as little as possible. 'pdfa' "
+         "also has problems with full Unicode text. 'pdf' attempts to "
+         "preserve file contents as much as possible.")
 
 metadata = parser.add_argument_group(
     "Metadata options",
@@ -1220,12 +1224,6 @@ def copy_final(
     shutil.copy(input_file, output_file)
 
 
-def validate_pdfa(
-        input_file,
-        log):
-    return qpdf.check(input_file, log)
-
-
 def available_cpu_count():
     try:
         return multiprocessing.cpu_count()
@@ -1360,9 +1358,17 @@ def run_pipeline():
         _log.error(e)
         return ExitCode.other_error
 
-    if not validate_pdfa(options.output_file, _log):
-        _log.warning('Output file: The generated PDF/A file is INVALID')
-        return ExitCode.invalid_output_pdfa
+    if options.output_type == 'pdfa':
+        pdfa_info = file_claims_pdfa(options.output_file)
+        if pdfa_info['pass']:
+            _log.info(pdfa_info['message'])
+        else:
+            _log.warning(pdfa_info['message'])
+            return ExitCode.invalid_output_pdf
+
+    if not qpdf.check(options.output_file, _log):
+        _log.warning('Output file: The generated PDF is INVALID')
+        return ExitCode.invalid_output_pdf
 
     with _pdfinfo_lock:
         _log.debug(_pdfinfo)

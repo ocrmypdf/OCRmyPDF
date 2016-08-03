@@ -7,6 +7,7 @@ from __future__ import print_function, absolute_import, division
 from string import Template
 import codecs
 import pkg_resources
+import PyPDF2 as pypdf
 
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
 
@@ -108,3 +109,39 @@ def generate_pdfa_def(target_filename, pdfmark, icc='sRGB'):
     # answer), insist on ascii
     with open(target_filename, 'w', encoding='ascii') as f:
         f.write(ps)
+
+
+def file_claims_pdfa(filename):
+    """Determines if the file claims to be PDF/A compliant
+
+    Checking if a file is a truly compliant PDF/A is a massive undertaking
+    that no open source tool does properly.  Some commercial tools are
+    generally reliable (Acrobat).
+
+    This checks if the XMP metadata contains a PDF/A marker.
+    """
+
+    pdf = pypdf.PdfFileReader(filename)
+    xmp = pdf.getXmpMetadata()
+
+    pdfa_nodes = xmp.getNodesInNamespace(
+        aboutUri='',
+        namespace='http://www.aiim.org/pdfa/ns/id/')
+
+    pdfa_dict = {attr.localName: attr.value for attr in pdfa_nodes}
+    pdfa_dict['pass'] = False
+    if pdfa_dict:
+        part_conformance = pdfa_dict['part'] + pdfa_dict['conformance']
+        valid_part_conforms = {'1A', '1B', '2A', '2B', '2U', '3A', '3B', '3U'}
+
+        message = 'File claims to be PDF/A-{}'.format(
+            part_conformance)
+
+        if part_conformance in valid_part_conforms:
+            pdfa_dict['pass'] = True
+        pdfa_dict['message'] = message
+    else:
+        pdfa_dict['message'] = 'File is a regular PDF'
+
+    return pdfa_dict
+
