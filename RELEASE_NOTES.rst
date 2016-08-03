@@ -2,11 +2,21 @@ RELEASE NOTES
 =============
 
 
-v4.2 (planned):
-===============
+v4.2:
+=====
 
 -  ocrmypdf will now try to convert single image files to PDFs if they are provided as input (#15)
--  Improved support for PDFs containing images with "non-square" pixel aspect ratios, such as 200x100 DPI
+
+   +  This is a basic convenience feature. It only supports a single image and always makes the image fill the whole page.
+   +  For better control over image to PDF conversion, use ``img2pdf`` (one of ocrmypdf's dependencies)
+
+-  New argument ``--output-type {pdf|pdfa}`` allows disabling Ghostscript PDF/A generation
+
+   +  ``pdfa`` is the default, consistent with past behavior
+   +  ``pdf`` provides a workaround for users concerned about the increase in file size from Ghostscript forcing JBIG2 images to CCITT and transcoding JPEGs
+   +  ``pdf`` preserves as much as it can about the original file, including problems that PDF/A conversion fixes
+
+-  PDFs containing images with "non-square" pixel aspect ratios, such as 200x100 DPI, are now handled and converted properly (fixing a bug that caused to be cropped)
 -  ``--force-ocr`` rasterizes pages even if they contain no images
 
    +  supports users who want to use OCRmyPDF to reconstruct text information in PDFs with damaged Unicode maps (copy and paste text does not match displayed text)
