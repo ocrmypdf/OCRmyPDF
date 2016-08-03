@@ -282,6 +282,13 @@ if options.clean and not options.clean_final \
         "Tesseract PDF renderer cannot render --clean pages without "
         "also performing --clean-final, so --clean-final is assumed.")
 
+if set(options.language) & {'chi_sim', 'chi_tra'} \
+        and (options.pdf_renderer == 'hocr' or options.output_type == 'pdfa'):
+    complain(
+        "Your settings are known to cause problems with OCR of Chinese text. "
+        "Try adding these arguments: "
+        "    ocrmypdf --pdf-renderer tesseract --output-type pdf")
+
 lossless_reconstruction = False
 if options.pdf_renderer == 'hocr':
     if not options.deskew and not options.clean_final and not options.force_ocr:
