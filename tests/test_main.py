@@ -12,6 +12,7 @@ from ocrmypdf.pageinfo import pdf_get_all_pageinfo
 import PyPDF2 as pypdf
 from ocrmypdf import ExitCode
 from ocrmypdf import leptonica
+from ocrmypdf.pdfa import file_claims_pdfa
 
 
 if sys.version_info.major < 3:
@@ -159,34 +160,34 @@ def test_deskew(spoof_tesseract_noop):
 
 
 def test_clean(spoof_tesseract_noop):
-    check_ocrmypdf('skew.pdf', 'test_clean.pdf', '-c', env=spoof_tesseract_noop)
+    check_ocrmypdf('skew.pdf', 'test_clean.pdf', '-c',
+                   env=spoof_tesseract_noop)
 
 
-@pytest.mark.parametrize("pdf,renderer", [
-    ('palette.pdf', 'hocr'),
-    ('palette.pdf', 'tesseract'),
-    ('cmyk.pdf', 'hocr'),
-    ('cmyk.pdf', 'tesseract'),
-    ('ccitt.pdf', 'hocr'),
-    ('ccitt.pdf', 'tesseract'),
-    ('jbig2.pdf', 'hocr'),
-    ('jbig2.pdf', 'tesseract'),
-    ('lichtenstein.pdf', 'hocr'),
-    ('lichtenstein.pdf', 'tesseract')
-])
-def test_exotic_image(spoof_tesseract_cache, pdf, renderer):
+# This will run 5 * 2 * 2 = 20 test cases
+@pytest.mark.parametrize(
+    "pdf",
+    ['palette.pdf', 'cmyk.pdf', 'ccitt.pdf', 'jbig2.pdf', 'lichtenstein.pdf'])
+@pytest.mark.parametrize("renderer", ['hocr', 'tesseract'])
+@pytest.mark.parametrize("output_type", ['pdf', 'pdfa'])
+def test_exotic_image(spoof_tesseract_cache, pdf, renderer, output_type):
     check_ocrmypdf(
         pdf,
         'test_{0}_{1}.pdf'.format(pdf, renderer),
         '-dc',
         '-v', '1',
+        '--output-type', output_type,
         '--pdf-renderer', renderer, env=spoof_tesseract_cache)
 
 
-def test_preserve_metadata(spoof_tesseract_noop):
+@pytest.mark.parametrize("output_type", [
+    'pdfa', 'pdf'
+    ])
+def test_preserve_metadata(spoof_tesseract_noop, output_type):
     pdf_before = pypdf.PdfFileReader(_infile('graph.pdf'))
 
     output = check_ocrmypdf('graph.pdf', 'test_metadata_preserve.pdf',
+                            '--output-type', output_type,
                             env=spoof_tesseract_noop)
 
     pdf_after = pypdf.PdfFileReader(output)
@@ -194,8 +195,14 @@ def test_preserve_metadata(spoof_tesseract_noop):
     for key in ('/Title', '/Author'):
         assert pdf_before.documentInfo[key] == pdf_after.documentInfo[key]
 
+    pdfa_info = file_claims_pdfa(output)
+    assert pdfa_info['output'] == output_type
 
-def test_override_metadata(spoof_tesseract_noop):
+
+@pytest.mark.parametrize("output_type", [
+    'pdfa', 'pdf'
+    ])
+def test_override_metadata(spoof_tesseract_noop, output_type):
     input_file = _infile('c02-22.pdf')
     output_file = _outfile('test_override_metadata.pdf')
 
@@ -208,6 +215,7 @@ def test_override_metadata(spoof_tesseract_noop):
         '--title', german,
         '--author', chinese,
         '--subject', high_unicode,
+        '--output-type', output_type,
         env=spoof_tesseract_noop)
 
     assert p.returncode == ExitCode.ok
@@ -225,6 +233,9 @@ def test_override_metadata(spoof_tesseract_noop):
     assert pdfinfo['Author'] == chinese
     assert pdfinfo['Subject'] == high_unicode
     assert pdfinfo.get('Keywords', '') == ''
+
+    pdfa_info = file_claims_pdfa(output_file)
+    assert pdfa_info['output'] == output_type
 
 
 @pytest.mark.parametrize('renderer', [
@@ -386,16 +397,15 @@ def test_skip_big(spoof_tesseract_cache):
     assert not pdfinfo[0]['has_text']
 
 
-@pytest.mark.parametrize('renderer', [
-    'hocr',
-    'tesseract',
-    ])
-def test_maximum_options(spoof_tesseract_cache, renderer):
+@pytest.mark.parametrize('renderer', ['hocr', 'tesseract'])
+@pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
+def test_maximum_options(spoof_tesseract_cache, renderer, output_type):
     check_ocrmypdf(
         'multipage.pdf', 'test_multipage%s.pdf' % renderer,
         '-d', '-c', '-i', '-g', '-f', '-k', '--oversample', '300',
         '--skip-big', '10', '--title', 'Too Many Weird Files',
         '--author', 'py.test', '--pdf-renderer', renderer,
+        '--output-type', output_type,
         env=spoof_tesseract_cache)
 
 
