@@ -427,8 +427,6 @@ def triage_image_file(input_file, output_file, log):
             elif im.mode == 'CMYK':
                 log.info('Input CMYK image has no ICC profile, not usable')
                 sys.exit(ExitCode.input_file)
-
-    finally:
         im.close()
 
     try:
