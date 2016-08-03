@@ -575,7 +575,7 @@ def test_algo4():
 
 
 @pytest.mark.parametrize('renderer', [
-    'hocr'])  # tesseract cannot pass this test yet
+    'hocr'])  # tesseract cannot pass this test - resamples to square image
 def test_non_square_resolution(renderer, spoof_tesseract_cache):
     # Confirm input image is non-square resolution
     in_pageinfo = pdf_get_all_pageinfo(_infile('aspect.pdf'))
@@ -597,3 +597,15 @@ def test_image_to_pdf(spoof_tesseract_noop):
     check_ocrmypdf(
         'LinnSequencer.jpg', 'image_to_pdf.pdf', '--image-dpi', '200',
         env=spoof_tesseract_noop)
+
+
+def test_jbig2_passthrough(spoof_tesseract_cache):
+    out = check_ocrmypdf(
+        'jbig2.pdf', 'jbig2_out.pdf',
+        '--output-type', 'pdf',
+        '--pdf-renderer', 'hocr',
+        env=spoof_tesseract_cache)
+
+    out_pageinfo = pdf_get_all_pageinfo(out)
+    assert out_pageinfo[0]['images'][0]['enc'] == 'jbig2'
+
