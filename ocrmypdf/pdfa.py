@@ -75,8 +75,14 @@ def encode_text_string(s: str) -> str:
     Postscript file to be completely ASCII and no escaping of Postscript
     characters is necessary.
     '''
+
+    # Sometimes lazy C programmer leave their NULs at the end of strings
+    # tests/resources/aspect.pdf is one example (created by ImageMagick)
+    s = s.replace('\x00', '')
+
     if s == '':
         return ''
+
     utf16_bytes = s.encode('utf-16be')
     ascii_hex_bytes = codecs.encode(b'\xfe\xff' + utf16_bytes, 'hex')
     ascii_hex_str = ascii_hex_bytes.decode('ascii').lower()
@@ -105,8 +111,8 @@ def generate_pdfa_def(target_filename, pdfmark, icc='sRGB'):
 
     ps = _get_pdfa_def(icc_profile, icc, pdfmark)
 
-    # Since PostScript might not handle UTF-8 (it's hard to get a clear
-    # answer), insist on ascii
+    # We should have encoded everything to pure ASCII by this point, and
+    # to be safe, only allow ASCII in PostScript
     with open(target_filename, 'w', encoding='ascii') as f:
         f.write(ps)
 
