@@ -1134,8 +1134,8 @@ def merge_pages_ghostscript(
 @active_if(options.output_type == 'pdf')
 @merge(
     input=[add_text_layer, render_hocr_debug_page, skip_page,
-           tesseract_ocr_and_render_pdf],
-    output=os.path.join(work_folder, 'merged_nometadata.pdf'),
+           tesseract_ocr_and_render_pdf, repair_pdf],
+    output=os.path.join(work_folder, 'merged.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def merge_pages_qpdf(
         input_files,
@@ -1143,6 +1143,10 @@ def merge_pages_qpdf(
         log,
         pdfinfo,
         pdfinfo_lock):
+
+    metadata_file = next(
+        (ii for ii in input_files if ii.endswith('.repaired.pdf')))
+    input_files.remove(metadata_file)
 
     def input_file_order(s):
         '''Sort order: All rendered pages followed
@@ -1154,10 +1158,27 @@ def merge_pages_qpdf(
 
     pdf_pages = sorted(input_files, key=input_file_order)
     log.debug("Final pages: " + "\n".join(pdf_pages))
+
+    reader_metadata = pypdf.PdfFileReader(metadata_file)
+    pdfmark = get_pdfmark(reader_metadata)
+    pdfmark['/Producer'] = 'qpdf ' + qpdf.version()
+
+    first_page = pypdf.PdfFileReader(pdf_pages[0])
+
+    writer = pypdf.PdfFileWriter()
+    writer.appendPagesFromReader(first_page)
+    writer.addMetadata(pdfmark)
+    writer_file = pdf_pages[0].replace('.pdf', '.metadata.pdf')
+    with open(writer_file, 'wb') as f:
+        writer.write(f)
+
+    pdf_pages[0] = writer_file
+
     qpdf.merge(pdf_pages, output_file)
 
 
-@active_if(options.output_type == 'pdf')
+#@active_if(options.output_type == 'pdf')
+@active_if(False)
 @merge(
     input=[merge_pages_qpdf, repair_pdf],
     output=os.path.join(work_folder, 'merged.pdf'),
@@ -1188,7 +1209,7 @@ def copy_metadata(
 
 
 @merge(
-    input=[merge_pages_ghostscript, copy_metadata],
+    input=[merge_pages_ghostscript, merge_pages_qpdf],
     output=options.output_file,
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def copy_final(

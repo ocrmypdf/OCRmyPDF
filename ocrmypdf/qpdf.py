@@ -2,10 +2,30 @@
 # © 2015 James R. Barlow: github.com/jbarlow83
 
 from subprocess import CalledProcessError, check_output, STDOUT, check_call
+from functools import lru_cache
 import sys
 import os
+import re
 
 from . import ExitCode, get_program
+
+
+@lru_cache(maxsize=1)
+def version():
+    args_qpdf = [
+        get_program('qpdf'),
+        '--version'
+    ]
+    try:
+        versions = check_output(
+            args_qpdf, close_fds=True, universal_newlines=True,
+            stderr=STDOUT)
+    except CalledProcessError:
+        print("Could not find qpdf executable on system PATH.")
+        sys.exit(ExitCode.missing_dependency)
+
+    qpdf_version = re.match(r'qpdf version (.+)', versions).group(1)
+    return qpdf_version
 
 
 def check(input_file, log):
@@ -20,7 +40,7 @@ def check(input_file, log):
     except CalledProcessError as e:
         if e.returncode == 2:
             log.error("{0}: not a valid PDF, and could not repair it.".format(
-                    input_file))
+                input_file))
             log.error("Details:")
             log.error(e.output)
         elif e.returncode == 3:
