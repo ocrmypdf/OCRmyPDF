@@ -362,7 +362,8 @@ class Pix:
         if get_leptonica_version() < 'leptonica-1.72':
             # Older versions of Leptonica (pre-1.72) have a buggy
             # implementation of pixCorrelationBinary that overflows on larger
-            # images.
+            # images.  Ubuntu trusty has 1.70. Ubuntu PPA
+            # ppa:rebuntu16/avidemux+unofficial has "leptonlib" 1.73.
             pix1_count = ffi.new('l_int32 *')
             pix2_count = ffi.new('l_int32 *')
             pixn_count = ffi.new('l_int32 *')
