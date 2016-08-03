@@ -1179,37 +1179,6 @@ def merge_pages_qpdf(
     qpdf.merge(pdf_pages, output_file)
 
 
-#@active_if(options.output_type == 'pdf')
-@active_if(False)
-@merge(
-    input=[merge_pages_qpdf, repair_pdf],
-    output=os.path.join(work_folder, 'merged.pdf'),
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
-def copy_metadata(
-        input_files,
-        output_file,
-        log,
-        pdfinfo,
-        pdfinfo_lock):
-
-    merged_file = next(
-        (ii for ii in input_files if ii.endswith('merged_nometadata.pdf')))
-    metadata_file = next(
-        (ii for ii in input_files if ii.endswith('.repaired.pdf')))
-
-    metadata_pdf = pypdf.PdfFileReader(metadata_file)
-    pdfmark = get_pdfmark(metadata_pdf)
-    pdfmark['/Producer'] = 'PyPDF2 ' + pypdf.__version__
-
-    merged_pdf = pypdf.PdfFileReader(merged_file)
-    output_pdf = pypdf.PdfFileWriter()
-
-    output_pdf.appendPagesFromReader(merged_pdf)
-    output_pdf.addMetadata(pdfmark)
-    with open(output_file, 'wb') as f:
-        output_pdf.write(f)
-
-
 @merge(
     input=[merge_pages_ghostscript, merge_pages_qpdf],
     output=options.output_file,
