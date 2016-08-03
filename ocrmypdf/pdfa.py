@@ -130,9 +130,12 @@ def file_claims_pdfa(filename):
     pdf = pypdf.PdfFileReader(filename)
     xmp = pdf.getXmpMetadata()
 
-    pdfa_nodes = xmp.getNodesInNamespace(
-        aboutUri='',
-        namespace='http://www.aiim.org/pdfa/ns/id/')
+    try:
+        pdfa_nodes = xmp.getNodesInNamespace(
+            aboutUri='',
+            namespace='http://www.aiim.org/pdfa/ns/id/')
+    except AttributeError:
+        return {'pass': False, 'output': 'pdf', 'message': 'No XMP metadata'}
 
     pdfa_dict = {attr.localName: attr.value for attr in pdfa_nodes}
     pdfa_dict['pass'] = False
