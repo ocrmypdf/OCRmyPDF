@@ -459,9 +459,9 @@ def triage_image_file(input_file, output_file, log):
 
 
 @transform(
-    input=options.input_file,
+    input=os.path.join(work_folder, 'origin'),
     filter=formatter('(?i)'),
-    output=os.path.join(work_folder, '{basename[0]}.pdf'),
+    output=os.path.join(work_folder, 'origin.pdf'),
     extras=[_log])
 def triage(
         input_file,
@@ -1298,11 +1298,26 @@ def traverse_ruffus_exception(e_args):
 
 
 def run_pipeline():
+    # Any changes to options will not take effect for options that are already
+    # bound to function parameters in the pipeline. (For example
+    # options.input_file, options.pdf_renderer are already bound.)
+    global options
     if not options.jobs:
         options.jobs = available_cpu_count()
     try:
         options.history_file = os.path.join(
             work_folder, 'ruffus_history.sqlite')
+        start_input_file = os.path.join(
+            work_folder, 'origin')
+
+        if options.input_file == '-':
+            # stdin
+            with open(start_input_file, 'wb') as stream_buffer:
+                from shutil import copyfileobj
+                copyfileobj(sys.stdin.buffer, stream_buffer)
+        else:
+            re_symlink(options.input_file, start_input_file, log)
+
         cmdline.run(options)
     except ruffus_exceptions.RethrownJobError as e:
         if options.verbose:
