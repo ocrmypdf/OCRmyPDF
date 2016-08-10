@@ -20,7 +20,7 @@ from PIL import Image
 from functools import partial
 
 from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
-    formatter, follows, split, collate, check_if_uptodate
+    formatter, follows, split, collate, check_if_uptodate, graphviz
 import ruffus.ruffus_exceptions as ruffus_exceptions
 import ruffus.cmdline as cmdline
 import ruffus.proxy_logger as proxy_logger
@@ -798,6 +798,7 @@ def preprocess_clean(
     filter=suffix(".pp-clean.png"),
     output=".hocr",
     extras=[_log, _pdfinfo, _pdfinfo_lock])
+@graphviz(fillcolor='"#00cc66"')
 def ocr_tesseract_hocr(
         input_file,
         output_file,
@@ -823,6 +824,7 @@ def ocr_tesseract_hocr(
     filter=regex(r".*/(\d{6})(?:\.page|\.pp-deskew|\.pp-clean)\.png"),
     output=os.path.join(work_folder, r'\1.image'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
+@graphviz(shape='diamond')
 def select_image_for_pdf(
         infiles,
         output_file,
@@ -863,6 +865,7 @@ def select_image_for_pdf(
     filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
     output=os.path.join(work_folder, r'\1.image-layer.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
+@graphviz(fillcolor='"#00cc66"', shape='diamond')
 def select_image_layer(
         infiles,
         output_file,
@@ -897,6 +900,7 @@ def select_image_layer(
     filter=suffix('.hocr'),
     output='.hocr.pdf',
     extras=[_log, _pdfinfo, _pdfinfo_lock])
+@graphviz(fillcolor='"#00cc66"')
 def render_hocr_page(
         input_file,
         output_file,
@@ -919,6 +923,7 @@ def render_hocr_page(
     filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
     output=os.path.join(work_folder, r'\1.debug.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
+@graphviz(fillcolor='"#00cc66"')
 def render_hocr_debug_page(
         infiles,
         output_file,
@@ -946,6 +951,7 @@ class PdfMergeFailedError(Exception):
     filter=regex(r".*/(\d{6})(?:\.hocr\.pdf|\.image-layer\.pdf)"),
     output=os.path.join(work_folder, r'\1.rendered.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
+@graphviz(fillcolor='"#00cc66"')
 def add_text_layer(
         infiles,
         output_file,
@@ -1018,6 +1024,7 @@ def add_text_layer(
     filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
     output=os.path.join(work_folder, r'\1.rendered.pdf'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
+@graphviz(fillcolor='"#66ccff"')
 def tesseract_ocr_and_render_pdf(
         input_files,
         output_file,
@@ -1316,7 +1323,7 @@ def run_pipeline():
                 from shutil import copyfileobj
                 copyfileobj(sys.stdin.buffer, stream_buffer)
         else:
-            re_symlink(options.input_file, start_input_file, log)
+            re_symlink(options.input_file, start_input_file, _log)
 
         cmdline.run(options)
     except ruffus_exceptions.RethrownJobError as e:
