@@ -198,7 +198,7 @@ setup(
         "Intended Audience :: End Users/Desktop",
         "Intended Audience :: Science/Research",
         "Intended Audience :: System Administrators",
-        "License :: Public Domain",
+        "License :: OSI Approved :: MIT License",
         "Operating System :: MacOS :: MacOS X",
         "Operating System :: POSIX",
         "Operating System :: POSIX :: BSD",
