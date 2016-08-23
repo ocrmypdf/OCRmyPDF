@@ -214,6 +214,17 @@ def _find_page_regular_images(page, pageinfo, contentsinfo):
         image['width'] = pdfimage['/Width']
         image['height'] = pdfimage['/Height']
         image['bpc'] = pdfimage['/BitsPerComponent']
+
+        # Fixme: this is incorrectly treats explicit masks as stencil masks,
+        # but good enough for now. Explicit masks have /ImageMask true but are
+        # never called for in content stream, instead are drawn as a /Mask on
+        # other images. For our purposes finding out the details of /Mask
+        # will seldom matter.
+        if '/ImageMask' in pdfimage:
+            image['type'] = 'stencil' if pdfimage['/ImageMask'].value \
+                            else 'image'
+        else:
+            image['type'] = 'image'
         if '/Filter' in pdfimage:
             filter_ = pdfimage['/Filter']
             if isinstance(filter_, pypdf.generic.ArrayObject):
@@ -245,6 +256,20 @@ def _find_page_regular_images(page, pageinfo, contentsinfo):
             if raster[0] != image['name']:
                 continue
             shorthand = raster[1]
+
+            if image['type'] == 'stencil':
+                # Stencil masks are implicitly scaled over the whole page
+                # Images that are used in explicit masks are not drawn directly
+                # but drawn by the image they mask over, so they will never
+                # be called for in raster settings
+                if shorthand != (1, 0, 0, 1, 0, 0):
+                    raise NotImplementedError(
+                        "Don't know how to handle "
+                        "stencil masks when graphics stack depth > 0.")
+                page_w = float(pageinfo['width_inches']) * 72.0
+                page_h = float(pageinfo['height_inches']) * 72.0
+                shorthand = (page_w, 0.0, 0.0,
+                             page_h, 0.0, 0.0)
 
             dpi_w, dpi_h = _get_dpi(
                 shorthand, (image['width'], image['height']))
