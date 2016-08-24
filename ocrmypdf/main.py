@@ -366,14 +366,16 @@ def re_symlink(input_file, soft_link_name, log=_log):
     if os.path.lexists(soft_link_name):
         # do not delete or overwrite real (non-soft link) file
         if not os.path.islink(soft_link_name):
-            raise Exception("%s exists and is not a link" % soft_link_name)
+            raise FileExistsError(
+                "%s exists and is not a link" % soft_link_name)
         try:
             os.unlink(soft_link_name)
         except:
             log.debug("Can't unlink %s" % (soft_link_name))
 
     if not os.path.exists(input_file):
-        raise Exception("trying to create a broken symlink to %s" % input_file)
+        raise FileNotFoundError(
+            "trying to create a broken symlink to %s" % input_file)
 
     log.debug("os.symlink(%s, %s)" % (input_file, soft_link_name))
 
@@ -409,7 +411,16 @@ def triage_image_file(input_file, output_file, log):
         log.info("Input file is not a PDF, checking if it is an image...")
         im = Image.open(input_file)
     except EnvironmentError as e:
-        log.error(e)
+        msg = str(e)
+
+        # Recover the original filename
+        realpath = ''
+        if os.path.islink(input_file):
+            realpath = os.path.realpath(input_file)
+        elif os.path.isfile(input_file):
+            realpath = '<stdin>'
+        msg = msg.replace(input_file, realpath)
+        log.error(msg)
         sys.exit(ExitCode.input_file)
         return
     else:
@@ -1323,7 +1334,11 @@ def run_pipeline():
                 from shutil import copyfileobj
                 copyfileobj(sys.stdin.buffer, stream_buffer)
         else:
-            re_symlink(options.input_file, start_input_file, _log)
+            try:
+                re_symlink(options.input_file, start_input_file, _log)
+            except FileNotFoundError:
+                _log.error("File not found - " + options.input_file)
+                return ExitCode.input_file
 
         cmdline.run(options)
     except ruffus_exceptions.RethrownJobError as e:
