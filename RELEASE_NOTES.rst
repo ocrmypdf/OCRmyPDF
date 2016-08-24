@@ -2,6 +2,13 @@ RELEASE NOTES
 =============
 
 
+v4.2.1:
+=======
+
+-  Fixed an issue where PDF pages that contained stencil masks would report an incorrect DPI and cause Ghostscript to abort
+-  Implemented stdin/stdout streaming
+
+
 v4.2:
 =====
 
