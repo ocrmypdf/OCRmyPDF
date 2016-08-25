@@ -1419,9 +1419,12 @@ def run_pipeline():
     if options.output_type == 'pdfa':
         pdfa_info = file_claims_pdfa(options.output_file)
         if pdfa_info['pass']:
-            _log.info(pdfa_info['message'])
+            msg = 'Output file is a {} (as expected)'
+            _log.info(msg.format(pdfa_info['conformance']))
         else:
-            _log.warning(pdfa_info['message'])
+            msg = 'Output file was generated but is not PDF/A (seems to be {})'
+            _log.warning(msg.format(pdfa_info['conformance']))
+
             return ExitCode.invalid_output_pdf
 
     if not qpdf.check(options.output_file, _log):

@@ -135,7 +135,8 @@ def file_claims_pdfa(filename):
             aboutUri='',
             namespace='http://www.aiim.org/pdfa/ns/id/')
     except AttributeError:
-        return {'pass': False, 'output': 'pdf', 'message': 'No XMP metadata'}
+        return {'pass': False, 'output': 'pdf',
+                'conformance': 'No XMP metadata'}
 
     pdfa_dict = {attr.localName: attr.value for attr in pdfa_nodes}
     pdfa_dict['pass'] = False
@@ -144,15 +145,15 @@ def file_claims_pdfa(filename):
         part_conformance = pdfa_dict['part'] + pdfa_dict['conformance']
         valid_part_conforms = {'1A', '1B', '2A', '2B', '2U', '3A', '3B', '3U'}
 
-        message = 'File claims to be PDF/A-{}'.format(
+        conformance = 'PDF/A-{}'.format(
             part_conformance)
 
         if part_conformance in valid_part_conforms:
             pdfa_dict['pass'] = True
             pdfa_dict['output'] = 'pdfa'
-        pdfa_dict['message'] = message
+        pdfa_dict['conformance'] = conformance
     else:
-        pdfa_dict['message'] = 'File is a regular PDF'
+        pdfa_dict['conformance'] = 'PDF'
 
     return pdfa_dict
 
