@@ -6,7 +6,7 @@ from __future__ import print_function, unicode_literals
 
 import sys
 if sys.version_info < (3, 4):
-    print("Python 3.4 or newer is required")
+    print("Python 3.4 or newer is required", file=sys.stderr)
     sys.exit(1)
 
 from setuptools import setup  # nopep8

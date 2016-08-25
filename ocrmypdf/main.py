@@ -13,6 +13,7 @@ import atexit
 import textwrap
 import img2pdf
 import logging
+import argparse
 
 import PyPDF2 as pypdf
 from PIL import Image
@@ -103,23 +104,55 @@ check_pil_encoder('zlib', 'PNG')
 
 parser = cmdline.get_argparse(
     prog="ocrmypdf",
-    description="Generate searchable PDF file from an image-only PDF file.",
     version=VERSION,
     fromfile_prefix_chars='@',
     ignored_args=[
         'touch_files_only', 'recreate_database', 'checksum_file_name',
         'key_legend_in_graph', 'draw_graph_horizontally', 'flowchart_format',
-        'forced_tasks', 'target_tasks', 'use_threads', 'jobs', 'log_file'])
+        'forced_tasks', 'target_tasks', 'use_threads', 'jobs', 'log_file'],
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description="""\
+Generates a searchable PDF or PDF/A from a regular PDF.
+
+OCRmyPDF rasterizes each page of the input PDF, optionally corrects page
+rotation and performs image processing, runs the Tesseract OCR engine on the
+image, and then creates a PDF from the OCR information.
+""",
+    epilog="""\
+OCRmyPDF attempts to keep the output file at about the same size.  If a file
+contains losslessly compressed images, and output file will be losslessly
+compressed as well.
+
+PDF is a page description file that attempts to preserve a layout exactly.
+A PDF can contain vector objects (such as text or lines) and raster objects
+(images).  A page might have multiple images.  OCRmyPDF is prepared to deal
+with the wide variety of PDFs that exist in the wild.
+
+When a PDF page contains text, OCRmyPDF assumes that the page has already
+been OCRed or is a "born digital" page that should not be OCRed.  The default
+behavior is to exit in this case without producing a file.  You can use the
+option --skip-text to ignore pages with text, or --force-ocr to rasterize
+all objects on the page and produce an image-only PDF as output.
+
+If you are concerned about long-term archiving of PDFs, use the default option
+--output-type pdfa which converts the PDF to a standardized PDF/A-2b.  This
+converts images to sRGB colorspace, removes some features from the PDF such
+as Javascript or forms. If you want to minimize the number of changes made to
+your PDF, use --output-type pdf.
+
+""")
 
 parser.add_argument(
     'input_file',
-    help="PDF file containing the images to be OCRed")
+    help="PDF file containing the images to be OCRed (or '-' to read from "
+         "standard input)")
 parser.add_argument(
     'output_file',
     help="output searchable PDF file")
 parser.add_argument(
     '-l', '--language', action='append',
-    help="languages of the file to be OCRed")
+    help="languages of the file to be OCRed (see tesseract --list-langs for "
+         "all language packs installed in your system)")
 parser.add_argument(
     '-j', '--jobs', metavar='N', type=int,
     help="Use up to N CPU cores simultaneously (default: use all)")
@@ -151,8 +184,8 @@ metadata.add_argument(
     help="set document keywords")
 
 preprocessing = parser.add_argument_group(
-    "Preprocessing options",
-    "Improve OCR quality and final image")
+    "Image preprocessing options",
+    "Options to improve the quality of the final PDF and OCR")
 preprocessing.add_argument(
     '-r', '--rotate-pages', action='store_true',
     help="automatically rotate pages based on detected text orientation")
@@ -161,10 +194,13 @@ preprocessing.add_argument(
     help="deskew each page before performing OCR")
 preprocessing.add_argument(
     '-c', '--clean', action='store_true',
-    help="clean pages from scanning artifacts before performing OCR")
+    help="clean pages from scanning artifacts before performing OCR, and send "
+         "the cleaned page to OCR, but do not include the cleaned page in "
+         "the output ")
 preprocessing.add_argument(
     '-i', '--clean-final', action='store_true',
-    help="incorporate the cleaned image in the final PDF file")
+    help="clean page as above, and incorporate the cleaned image in the final "
+         "PDF")
 preprocessing.add_argument(
     '--oversample', metavar='DPI', type=int, default=0,
     help="oversample images to at least the specified DPI, to improve OCR "
@@ -175,11 +211,13 @@ ocrsettings = parser.add_argument_group(
     "Control how OCR is applied")
 ocrsettings.add_argument(
     '-f', '--force-ocr', action='store_true',
-    help="rasterize any fonts or vector images on each page and apply OCR")
+    help="rasterize any fonts or vector objects on each page, apply OCR, and "
+         "save the rastered output (this rewrites the PDF)")
 ocrsettings.add_argument(
     '-s', '--skip-text', action='store_true',
-    help="skip OCR on any pages that already contain text, but include the"
-         " page in final output")
+    help="skip OCR on any pages that already contain text, but include the "
+         "page in final output; useful for PDFs that contain a mix of "
+         "images, text pages, and/or previously OCRed pages")
 ocrsettings.add_argument(
     '--skip-big', type=float, metavar='MPixels',
     help="skip OCR on pages larger than the specified amount of megapixels, "
@@ -196,7 +234,13 @@ advanced.add_argument(
     help="set Tesseract page segmentation mode (see tesseract --help)")
 advanced.add_argument(
     '--pdf-renderer', choices=['auto', 'tesseract', 'hocr'], default='auto',
-    help='choose OCR PDF renderer')
+    help="choose OCR PDF renderer - the default option is to let OCRmyPDF "
+         "choose.  The 'tesseract' PDF renderer is more accurate and does a "
+         "better job and document structure such as recognizing columns. It "
+         "also does a better job on non-Latin languages. However, it does "
+         "not work as well when older versions of Tesseract or Ghostscript "
+         "are installed, and some combinations of arguments to do not work "
+         "with --pdf-renderer tesseract.")
 advanced.add_argument(
     '--tesseract-timeout', default=180.0, type=float, metavar='SECONDS',
     help='give up on OCR after the timeout, but copy the preprocessed page '
@@ -1330,6 +1374,7 @@ def run_pipeline():
 
         if options.input_file == '-':
             # stdin
+            _log.info('reading file from standard input')
             with open(start_input_file, 'wb') as stream_buffer:
                 from shutil import copyfileobj
                 copyfileobj(sys.stdin.buffer, stream_buffer)
