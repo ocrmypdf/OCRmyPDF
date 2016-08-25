@@ -2,7 +2,7 @@
 # © 2015 James R. Barlow: github.com/jbarlow83
 
 from __future__ import print_function
-from subprocess import Popen, PIPE, check_output, check_call
+from subprocess import Popen, PIPE, check_output, check_call, DEVNULL
 import os
 import shutil
 from contextlib import suppress
@@ -608,4 +608,21 @@ def test_jbig2_passthrough(spoof_tesseract_cache):
 
     out_pageinfo = pdf_get_all_pageinfo(out)
     assert out_pageinfo[0]['images'][0]['enc'] == 'jbig2'
+
+
+def test_stdin(spoof_tesseract_noop):
+    input_file = _infile('francais.pdf')
+    output_file = _outfile('test_stdin.pdf')
+
+    p1_args = ['cat', input_file]
+    p1 = Popen(p1_args, close_fds=True, stdin=DEVNULL, stdout=PIPE)
+
+    p2_args = ['ocrmypdf', '-', output_file]
+    p2 = Popen(
+        p2_args, close_fds=True, stdout=PIPE, stderr=PIPE,
+        stdin=p1.stdout, env=spoof_tesseract_noop)
+    p1.stdout.close()
+    out, err = p2.communicate()
+
+    assert p2.returncode == ExitCode.ok
 
