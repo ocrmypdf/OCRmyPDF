@@ -134,11 +134,26 @@ behavior is to exit in this case without producing a file.  You can use the
 option --skip-text to ignore pages with text, or --force-ocr to rasterize
 all objects on the page and produce an image-only PDF as output.
 
+    ocrmypdf --skip-text file_with_some_text_pages.pdf output.pdf
+
+    ocrmypdf --force-ocr word_document.pdf output.pdf
+
 If you are concerned about long-term archiving of PDFs, use the default option
 --output-type pdfa which converts the PDF to a standardized PDF/A-2b.  This
 converts images to sRGB colorspace, removes some features from the PDF such
 as Javascript or forms. If you want to minimize the number of changes made to
 your PDF, use --output-type pdf.
+
+If OCRmyPDF is given an image file as input, it will attempt to convert the
+image to a PDF before processing.  For more control over the conversion of
+images to PDF, use the Python package img2pdf or other image to PDF software.
+
+For example, this command uses img2pdf to convert all .png files beginning
+with the 'page' prefix to a PDF, fitting each image on A4-sized paper, and
+sending the result to OCRmyPDF through a pipe.  img2pdf is a dependency of
+ocrmypdf so it is already installed.
+
+    img2pdf --pagesize A4 page*.png | ocrmypdf - myfile.pdf
 
 """)
 
