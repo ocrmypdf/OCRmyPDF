@@ -626,3 +626,7 @@ def test_stdin(spoof_tesseract_noop):
 
     assert p2.returncode == ExitCode.ok
 
+
+def test_masks(spoof_tesseract_noop):
+    check_ocrmypdf('masks.pdf', 'test_masks.pdf', env=spoof_tesseract_noop)
+

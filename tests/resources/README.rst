@@ -20,10 +20,10 @@ In some cases they were converted from one image format to another without other
 +---------------------+--------------------------------------------------------------------------------+
 | lichtenstein.pdf    | `Wikimedia: JPEG2000 Lichtenstein`_ (Creative Commons BY-SA 3.0)               |
 +---------------------+--------------------------------------------------------------------------------+
-| LinnSequencer.jpg,  | `Wikimedia: LinnSequencer`_ (Creative Commons Attribution-ShareAlike 3.0)      |
+| LinnSequencer.jpg,  | `Wikimedia: LinnSequencer`_ (Creative Commons BY-SA 3.0)                       |
 | linn.pdf, linn.txt  |                                                                                |
 +---------------------+--------------------------------------------------------------------------------+
- 
+
 
 Files generated for this project
 ================================
@@ -38,6 +38,7 @@ under the terms of the license in LICENSE.rst.
 - francais.pdf (a page containing French accented characters)
 - hugemono.pdf (large monochrome JBIG2 page with pixel dimensions of 35000x35000)
 - invalid.pdf (a PDF file header followed by EOF marker)
+- masks.pdf (a file containing explicit masks and stencil masks; printout of `"Linux" (German Wikipedia article)`_ (Creative Commons Attribution-ShareAlike) scanned on a HP Officejet 8620 scanner, contributed by Github user @supergrobi)
 - missing_docinfo.pdf (PDF file with no /DocumentInfo section)
 
 
@@ -66,3 +67,5 @@ These test resources are assemblies from other previously mentioned files, relea
 .. _`Wikimedia: Pandas text analysis.png`: https://en.wikipedia.org/wiki/File:Pandas_text_analysis.png
 
 .. _`Wikimedia: JPEG2000 Lichtenstein`: https://en.wikipedia.org/wiki/JPEG_2000#/media/File:Jpeg2000_2-level_wavelet_transform-lichtenstein.png
+
+.. _`Linux (Wikipedia Article)`: https://de.wikipedia.org/wiki/Linux 
