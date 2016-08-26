@@ -23,7 +23,6 @@ if sys.version_info.major < 3:
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
 SPOOF_PATH = os.path.join(TESTS_ROOT, 'spoof')
 PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
-OCRMYPDF = os.path.join(PROJECT_ROOT, 'OCRmyPDF.sh')
 TEST_RESOURCES = os.path.join(PROJECT_ROOT, 'tests', 'resources')
 TEST_OUTPUT = os.environ.get(
     'OCRMYPDF_TEST_OUTPUT',
@@ -46,15 +45,6 @@ def setup_module():
         os.makedirs(TEST_OUTPUT)
 
 
-def run_ocrmypdf_sh(input_file, output_file, *args, env=None):
-    sh_args = ['sh', OCRMYPDF] + list(args) + [input_file, output_file]
-    sh = Popen(
-        sh_args, close_fds=True, stdout=PIPE, stderr=PIPE,
-        universal_newlines=True, env=env)
-    out, err = sh.communicate()
-    return sh, out, err
-
-
 def _infile(input_basename):
     return os.path.join(TEST_RESOURCES, input_basename)
 
@@ -67,19 +57,19 @@ def check_ocrmypdf(input_basename, output_basename, *args, env=None):
     input_file = _infile(input_basename)
     output_file = _outfile(output_basename)
 
-    sh, out, err = run_ocrmypdf_sh(input_file, output_file, *args, env=env)
-    if sh.returncode != 0:
+    p, out, err = run_ocrmypdf(input_basename, output_basename, *args, env=env)
+    if p.returncode != 0:
         print('stdout\n======')
         print(out)
         print('stderr\n======')
         print(err)
-    assert sh.returncode == 0
+    assert p.returncode == 0
     assert os.path.exists(output_file), "Output file not created"
     assert os.stat(output_file).st_size > 100, "PDF too small or empty"
     return output_file
 
 
-def run_ocrmypdf_env(input_basename, output_basename, *args, env=None):
+def run_ocrmypdf(input_basename, output_basename, *args, env=None):
     input_file = _infile(input_basename)
     output_file = _outfile(output_basename)
 
@@ -218,7 +208,7 @@ def test_override_metadata(spoof_tesseract_noop, output_type):
     chinese = '孔子'
     high_unicode = 'U+1030C is: 𐌌'
 
-    p, out, err = run_ocrmypdf_env(
+    p, out, err = run_ocrmypdf(
         input_file, output_file,
         '--title', german,
         '--author', chinese,
@@ -263,8 +253,8 @@ def test_oversample(spoof_tesseract_cache, renderer):
 
 
 def test_repeat_ocr():
-    sh, _, _ = run_ocrmypdf_sh('graph_ocred.pdf', 'wontwork.pdf')
-    assert sh.returncode != 0
+    p, _, _ = run_ocrmypdf('graph_ocred.pdf', 'wontwork.pdf')
+    assert p.returncode != 0
 
 
 def test_force_ocr(spoof_tesseract_cache):
@@ -421,19 +411,19 @@ def test_tesseract_missing_tessdata():
     env = os.environ.copy()
     env['TESSDATA_PREFIX'] = '/tmp'
 
-    p, _, err = run_ocrmypdf_env(
+    p, _, err = run_ocrmypdf(
         'graph_ocred.pdf', 'not_a_pdfa.pdf', '-v', '1', '--skip-text', env=env)
     assert p.returncode == ExitCode.missing_dependency, err
 
 
 def test_invalid_input_pdf():
-    p, out, err = run_ocrmypdf_env(
+    p, out, err = run_ocrmypdf(
         'invalid.pdf', 'wont_be_created.pdf')
     assert p.returncode == ExitCode.input_file, err
 
 
 def test_blank_input_pdf():
-    p, out, err = run_ocrmypdf_env(
+    p, out, err = run_ocrmypdf(
         'blank.pdf', 'still_blank.pdf')
     assert p.returncode == ExitCode.ok
 
@@ -442,7 +432,7 @@ def test_force_ocr_on_pdf_with_no_images(spoof_tesseract_crash):
     # As a correctness test, make sure that --force-ocr on a PDF with no
     # content still triggers tesseract. If tesseract crashes, then it was
     # called.
-    p, _, err = run_ocrmypdf_env(
+    p, _, err = run_ocrmypdf(
         'blank.pdf', 'wont_be_created.pdf', '--force-ocr',
         env=spoof_tesseract_crash)
     assert p.returncode == ExitCode.child_process_error, err
@@ -450,20 +440,20 @@ def test_force_ocr_on_pdf_with_no_images(spoof_tesseract_crash):
 
 
 def test_french(spoof_tesseract_cache):
-    p, out, err = run_ocrmypdf_env(
+    p, out, err = run_ocrmypdf(
         'francais.pdf', 'francais.pdf', '-l', 'fra', env=spoof_tesseract_cache)
     assert p.returncode == ExitCode.ok, \
         "This test may fail if Tesseract language packs are missing"
 
 
 def test_klingon():
-    p, out, err = run_ocrmypdf_env(
+    p, out, err = run_ocrmypdf(
         'francais.pdf', 'francais.pdf', '-l', 'klz')
     assert p.returncode == ExitCode.bad_args
 
 
 def test_missing_docinfo(spoof_tesseract_noop):
-    p, out, err = run_ocrmypdf_env(
+    p, out, err = run_ocrmypdf(
         'missing_docinfo.pdf', 'missing_docinfo.pdf', '-l', 'eng', '-c',
         env=spoof_tesseract_noop)
     assert p.returncode == ExitCode.ok, err
@@ -482,26 +472,26 @@ def test_uppercase_extension(spoof_tesseract_noop):
 
 def test_input_file_not_found():
     input_file = "does not exist.pdf"
-    sh, out, err = run_ocrmypdf_sh(
+    p, out, err = run_ocrmypdf(
         _infile(input_file),
         _outfile("will not happen.pdf"))
-    assert sh.returncode == ExitCode.input_file
+    assert p.returncode == ExitCode.input_file
     assert (input_file in out or input_file in err)
 
 
 def test_input_file_not_a_pdf():
     input_file = __file__  # Try to OCR this file
-    sh, out, err = run_ocrmypdf_sh(
+    p, out, err = run_ocrmypdf(
         _infile(input_file),
         _outfile("will not happen.pdf"))
-    assert sh.returncode == ExitCode.input_file
+    assert p.returncode == ExitCode.input_file
     assert (input_file in out or input_file in err)
 
 
 def test_qpdf_repair_fails():
     env = os.environ.copy()
     env['OCRMYPDF_QPDF'] = os.path.abspath('./spoof/qpdf_dummy_return2.py')
-    p, out, err = run_ocrmypdf_env(
+    p, out, err = run_ocrmypdf(
         '-v', '1',
         'c02-22.pdf', 'wont_be_created.pdf', env=env)
     print(out)
@@ -510,7 +500,7 @@ def test_qpdf_repair_fails():
 
 
 def test_encrypted():
-    p, out, err = run_ocrmypdf_env('skew-encrypted.pdf', 'wont_be_created.pdf')
+    p, out, err = run_ocrmypdf('skew-encrypted.pdf', 'wont_be_created.pdf')
     assert p.returncode == ExitCode.input_file
     assert out.find('password')
 
@@ -532,19 +522,19 @@ def test_pagesegmode(renderer, spoof_tesseract_cache):
     'tesseract',
     ])
 def test_tesseract_crash(renderer, spoof_tesseract_crash):
-    sh, out, err = run_ocrmypdf_env(
+    p, out, err = run_ocrmypdf(
         'ccitt.pdf', 'wontwork.pdf', '-v', '1',
         '--pdf-renderer', renderer, env=spoof_tesseract_crash)
-    assert sh.returncode == ExitCode.child_process_error
+    assert p.returncode == ExitCode.child_process_error
     assert not os.path.exists(_outfile('wontwork.pdf'))
     assert "ERROR" in err
 
 
 def test_tesseract_crash_autorotate(spoof_tesseract_crash):
-    sh, out, err = run_ocrmypdf_env(
+    p, out, err = run_ocrmypdf(
         'ccitt.pdf', 'wontwork.pdf',
         '-r', env=spoof_tesseract_crash)
-    assert sh.returncode == ExitCode.child_process_error
+    assert p.returncode == ExitCode.child_process_error
     assert not os.path.exists(_outfile('wontwork.pdf'))
     assert "ERROR" in err
     print(out)
@@ -564,22 +554,22 @@ def test_tesseract_image_too_big(renderer, spoof_tesseract_big_image_error):
 def test_no_unpaper():
     env = os.environ.copy()
     env['OCRMYPDF_UNPAPER'] = os.path.abspath('./spoof/no_unpaper_here.py')
-    sh, out, err = run_ocrmypdf_env(
+    p, out, err = run_ocrmypdf(
         'c02-22.pdf', 'wont_be_created.pdf', '--clean', env=env)
-    assert sh.returncode == ExitCode.missing_dependency
+    assert p.returncode == ExitCode.missing_dependency
 
 
 def test_old_unpaper():
     env = os.environ.copy()
     env['OCRMYPDF_UNPAPER'] = os.path.abspath('./spoof/unpaper_oldversion.py')
-    sh, out, err = run_ocrmypdf_env(
+    p, out, err = run_ocrmypdf(
         'c02-22.pdf', 'wont_be_created.pdf', '--clean', env=env)
-    assert sh.returncode == ExitCode.missing_dependency
+    assert p.returncode == ExitCode.missing_dependency
 
 
 def test_algo4():
-    sh, _, _ = run_ocrmypdf_env('encrypted_algo4.pdf', 'wontwork.pdf')
-    assert sh.returncode == ExitCode.encrypted_pdf
+    p, _, _ = run_ocrmypdf('encrypted_algo4.pdf', 'wontwork.pdf')
+    assert p.returncode == ExitCode.encrypted_pdf
 
 
 @pytest.mark.parametrize('renderer', [
