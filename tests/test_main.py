@@ -13,6 +13,7 @@ import PyPDF2 as pypdf
 from ocrmypdf import ExitCode
 from ocrmypdf import leptonica
 from ocrmypdf.pdfa import file_claims_pdfa
+import platform
 
 
 if sys.version_info.major < 3:
@@ -32,6 +33,10 @@ TEST_OUTPUT = os.environ.get(
 def running_in_docker():
     # Docker creates a file named /.dockerinit
     return os.path.exists('/.dockerinit')
+
+
+def is_linux():
+    return platform.system() == 'Linux'
 
 
 def setup_module():
@@ -199,6 +204,9 @@ def test_preserve_metadata(spoof_tesseract_noop, output_type):
     assert pdfa_info['output'] == output_type
 
 
+@pytest.mark.skipif(
+    is_linux() and not running_in_docker(),
+    reason="likely to fail if Linux locale is not configured correctly")
 @pytest.mark.parametrize("output_type", [
     'pdfa', 'pdf'
     ])
