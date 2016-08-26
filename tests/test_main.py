@@ -27,6 +27,7 @@ TEST_RESOURCES = os.path.join(PROJECT_ROOT, 'tests', 'resources')
 TEST_OUTPUT = os.environ.get(
     'OCRMYPDF_TEST_OUTPUT',
     default=os.path.join(PROJECT_ROOT, 'tests', 'output', 'main'))
+OCRMYPDF = [sys.executable, '-m', 'ocrmypdf.main']
 
 
 def running_in_docker():
@@ -54,6 +55,7 @@ def _outfile(output_basename):
 
 
 def check_ocrmypdf(input_basename, output_basename, *args, env=None):
+    "Run ocrmypdf and confirmed that a valid file was created"
     input_file = _infile(input_basename)
     output_file = _outfile(output_basename)
 
@@ -70,13 +72,14 @@ def check_ocrmypdf(input_basename, output_basename, *args, env=None):
 
 
 def run_ocrmypdf(input_basename, output_basename, *args, env=None):
+    "Run ocrmypdf and let caller deal with results"
     input_file = _infile(input_basename)
     output_file = _outfile(output_basename)
 
     if env is None:
         env = os.environ
 
-    p_args = ['ocrmypdf'] + list(args) + [input_file, output_file]
+    p_args = OCRMYPDF + list(args) + [input_file, output_file]
     p = Popen(
         p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
         universal_newlines=True, env=env)
@@ -617,7 +620,7 @@ def test_stdin(spoof_tesseract_noop):
     p1_args = ['cat', input_file]
     p1 = Popen(p1_args, close_fds=True, stdin=DEVNULL, stdout=PIPE)
 
-    p2_args = ['ocrmypdf', '-', output_file]
+    p2_args = OCRMYPDF + ['-', output_file]
     p2 = Popen(
         p2_args, close_fds=True, stdout=PIPE, stderr=PIPE,
         stdin=p1.stdout, env=spoof_tesseract_noop)
