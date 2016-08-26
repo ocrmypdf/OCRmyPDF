@@ -6,6 +6,25 @@ import shutil
 import subprocess
 
 
+"""Cache output of tesseract to speed up test suite
+
+The cache is keyed by a hash that includes the tesseract version, some of
+the command line, and the binary dump of the input file. The output file,
+stdout, and stderr are replicated on a cache hit.
+
+Page orientation checks are also cached (-psm 0 stdout)
+
+Errors and crashes are not cached.
+
+Things not checked:
+-changes to tesseract installation that don't affect --version
+
+Will fail on Tesseract 3.02.02 in "hocr" mode because it doesn't produce
+the incorrect file extension.
+
+"""
+
+
 CACHE_PATH = os.path.abspath(os.path.join(
         os.path.dirname(__file__), '..', 'cache'))
 

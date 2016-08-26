@@ -614,6 +614,8 @@ def test_stdin(spoof_tesseract_noop):
     input_file = _infile('francais.pdf')
     output_file = _outfile('test_stdin.pdf')
 
+    # Runs: cat testfile.pdf | ocrmypdf - output.pdf
+
     p1_args = ['cat', input_file]
     p1 = Popen(p1_args, close_fds=True, stdin=DEVNULL, stdout=PIPE)
 

@@ -4,6 +4,18 @@ import img2pdf
 from PIL import Image
 
 
+"""Tesseract no-op spoof
+
+To quickly run tests where getting OCR output is not necessary.
+
+In 'hocr' mode, create a .hocr file that specifies no text found.
+
+In 'pdf' mode, convert the image to PDF using another program.
+
+In orientation check mode, report the orientation is upright.
+"""
+
+
 VERSION_STRING = '''tesseract 3.04.00
  leptonica-1.72
   libjpeg 8d : libpng 1.6.19 : libtiff 4.0.6 : zlib 1.2.5

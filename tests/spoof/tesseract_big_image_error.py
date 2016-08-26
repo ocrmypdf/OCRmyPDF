@@ -8,13 +8,7 @@ VERSION_STRING = '''tesseract 3.04.00
 SPOOFED: return error claiming image too big
 '''
 
-"""Simulates a Tesseract crash
-
-It isn't strictly necessary to crash the process and that has unwanted
-side effects like triggering core dumps or error reporting, logging and such.
-It's enough to dump some text to stderr and return an error code.
-
-Follows the POSIX? convention of returning 128 + signal number.
+"""Simulates an error of Tesseract failing on attempts to process large images
 
 """
 

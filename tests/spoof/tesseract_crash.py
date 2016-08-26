@@ -10,13 +10,13 @@ VERSION_STRING = '''tesseract 3.04.00
 SPOOFED: CRASH ON OCR or -psm 0
 '''
 
-"""Simulates a Tesseract crash
+"""Simulates a Tesseract crash when asked to run OCR
 
 It isn't strictly necessary to crash the process and that has unwanted
 side effects like triggering core dumps or error reporting, logging and such.
 It's enough to dump some text to stderr and return an error code.
 
-Follows the POSIX? convention of returning 128 + signal number.
+Follows the POSIX(?) convention of returning 128 + signal number.
 
 """
 
