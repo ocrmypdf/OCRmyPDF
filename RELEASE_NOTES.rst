@@ -1,6 +1,21 @@
 RELEASE NOTES
 =============
 
+OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
+
+v4.2.3:
+=======
+
+-  Fixed an issue with PDFs that store page rotation (/Rotate) in an indirect object
+-  Integrated a few fixes to simplify downstream packaging (Debian)
+
+   +  The test suite no longer assumes it is installed
+   +  If running Linux, skip a test that passes Unicode on the command line
+
+-  Added a test case to check explicit masks and stencil masks
+-  Added a test case for indirect objects and linearized PDFs
+-  Deprecated the OCRmyPDF.sh shell script
+
 
 v4.2.2:
 =======
