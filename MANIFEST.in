@@ -25,6 +25,7 @@ recursive-exclude tests/cache *
 # documentation
 include *.rst
 include pipeline.svg
+recursive-exclude .github * 
 
 # support files
 recursive-include ocrmypdf/data *
