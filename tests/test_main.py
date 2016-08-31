@@ -633,3 +633,6 @@ def test_stdin(spoof_tesseract_noop):
 def test_masks(spoof_tesseract_noop):
     check_ocrmypdf('masks.pdf', 'test_masks.pdf', env=spoof_tesseract_noop)
 
+
+def test_linearized_pdf_and_indirect_object(spoof_tesseract_noop):
+    check_ocrmypdf('milk.pdf', 'test_milk.pdf', env=spoof_tesseract_noop)

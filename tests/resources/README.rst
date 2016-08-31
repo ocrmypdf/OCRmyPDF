@@ -31,16 +31,30 @@ Files generated for this project
 The following test resources were crafted specifically for this project, and can be used
 under the terms of the license in LICENSE.rst.
 
-- aspect.pdf (a page with an image with 200 x 100 DPI resolution)
-- blank.pdf (a blank PDF page)
-- cmyk.pdf (a CMYK image created in Photoshop)
-- enormous.pdf (a very lage page)
-- francais.pdf (a page containing French accented characters)
-- hugemono.pdf (large monochrome JBIG2 page with pixel dimensions of 35000x35000)
-- invalid.pdf (a PDF file header followed by EOF marker)
-- masks.pdf (a file containing explicit masks and stencil masks; printout of `"Linux" (German Wikipedia article)`_ (Creative Commons Attribution-ShareAlike) scanned on a HP Officejet 8620 scanner, contributed by Github user @supergrobi)
-- missing_docinfo.pdf (PDF file with no /DocumentInfo section)
-
++---------------------+-----------------------+---------------------------------------------------------+
+| File                | Contributor           | Purpose                                                 |
++---------------------+-----------------------+---------------------------------------------------------+
+| aspect.pdf          | @jbarlow83            | test image with 200 x 100 DPI resolution                |
++---------------------+-----------------------+---------------------------------------------------------+
+| blank.pdf           | @jbarlow83            | blank PDF                                               |
++---------------------+-----------------------+---------------------------------------------------------+
+| cmyk.pdf            | @jbarlow83            | a CMYK image created in Photoshop                       |
++---------------------+-----------------------+---------------------------------------------------------+
+| enormous.pdf        | @jbarlow83            | very large PDF page                                     |
++---------------------+-----------------------+---------------------------------------------------------+
+| francais.pdf        | @jbarlow83            | a page containing French accents (diacritics)           |
++---------------------+-----------------------+---------------------------------------------------------+
+| hugemono.pdf        | @jbarlow83            | large monochrome 35000x35000 image in JBIG2 encoding    |
++---------------------+-----------------------+---------------------------------------------------------+
+| invalid.pdf         | @jbarlow83            | a PDF file header followed by EOF marker                |
++---------------------+-----------------------+---------------------------------------------------------+
+| masks.pdf           | @supergrobi           | file containing stencil masks; printout of a German     |
+|                     |                       | Wikipedia article (Creative Commons BY-SA)              |
++---------------------+-----------------------+---------------------------------------------------------+
+| milk.pdf            | @lowesjam             | linearized PDF containing some indirect objects         |
++---------------------+-----------------------+---------------------------------------------------------+
+| missing_docinfo.pdf | @jbarlow83            | PDF file with no /DocumentInfo section                  |
++---------------------+-----------------------+---------------------------------------------------------+
 
 Assemblies
 ==========
