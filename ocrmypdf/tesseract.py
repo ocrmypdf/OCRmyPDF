@@ -10,11 +10,7 @@ from . import ExitCode, get_program, page_number
 from collections import namedtuple
 
 from subprocess import Popen, PIPE, CalledProcessError, \
-    TimeoutExpired, check_output, STDOUT
-try:
-    from subprocess import DEVNULL
-except ImportError:
-    DEVNULL = open(os.devnull, 'wb')
+    TimeoutExpired, check_output, STDOUT, DEVNULL
 
 
 OrientationConfidence = namedtuple(
