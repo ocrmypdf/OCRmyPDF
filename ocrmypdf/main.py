@@ -1043,7 +1043,12 @@ def add_text_layer(
     # Also, pdf_image may not have its mediabox nailed to (0, 0), so may need
     # translation
     page_image = pdf_image.getPage(0)
-    rotation = page_image.get('/Rotate', 0)
+    try:
+        # pypdf DictionaryObject.get() does not resolve indirect objects but
+        # __getitem__ does
+        rotation = page_image['/Rotate']
+    except KeyError:
+        rotation = 0
 
     # /Rotate is a clockwise rotation: 90 means page facing "east"
     # The negative of this value is the angle that eliminates that rotation
