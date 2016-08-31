@@ -26,5 +26,5 @@ log/
 .ipynb_checkpoints/
 tests/cache/
 tests/output/
-tests/resources/private
+tests/resources/private/
 tmp/

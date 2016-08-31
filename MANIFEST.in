@@ -1,4 +1,39 @@
-recursive-exclude tests/output *
+# requirements
 include requirements.txt
 include test_requirements.txt
-include share/*
+
+# git
+include .git_archival.txt
+
+# docker
+include Dockerfile
+include Dockerfile.polyglot
+include .dockerignore
+
+# tests
+include pytest.ini
+recursive-include tests *.jpg
+recursive-include tests *.pdf
+recursive-include tests *.py
+recursive-include tests *.rst
+recursive-include tests *.txt
+recursive-exclude tests/output *
+recursive-exclude tests/output_pageinfo *
+recursive-exclude tests/resources/private *
+recursive-exclude tests/cache *
+
+# documentation
+include *.rst
+include pipeline.svg
+
+# support files
+recursive-include ocrmypdf/data *
+recursive-include share *
+
+# code
+recursive-include ocrmypdf *.py
+exclude ocrmypdf/lib/_leptonica.py
+include OCRmyPDF.sh
+include docker-wrapper.sh
+
+
