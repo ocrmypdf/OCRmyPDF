@@ -1,6 +1,7 @@
 # requirements
 include requirements.txt
 include test_requirements.txt
+include dev_requirements.txt
 
 # git
 include .git_archival.txt

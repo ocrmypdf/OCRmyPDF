@@ -1,0 +1,4 @@
+check-manifest>=0.33
+setuptools-scm>=1.11.1
+twine>=1.8.1
+coverage>=4.2
