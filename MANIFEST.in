@@ -31,6 +31,7 @@ recursive-exclude .github *
 # support files
 recursive-include ocrmypdf/data *
 recursive-include share *
+include *.py
 
 # code
 recursive-include ocrmypdf *.py
