@@ -286,22 +286,16 @@ def _find_page_regular_images(page, pageinfo, contentsinfo):
             if raster.name != image['name']:
                 continue
 
-            shorthand = raster.shorthand
-            if image['type'] == 'stencil' and raster.stack_depth == 0:
-                # By observation, it seems that stencil masks are implicitly
-                # scaled over the whole page if they are ever drawn when the
-                # graphics stack depth is 0.  I can't find this documented
-                # in the reference manual but it is consistent with how
-                # Acrobat and OS X Preview behave.  I also can't find a
-                # description, generally, of what should happen when an image
-                # is drawn with the default CTM.
-                page_w = float(pageinfo['width_inches']) * 72.0
-                page_h = float(pageinfo['height_inches']) * 72.0
-                shorthand = (page_w, 0.0, 0.0,
-                             page_h, 0.0, 0.0)
+            if raster.stack_depth == 0:
+                # At least one PDF in the wild (and test suite) draws an image
+                # when the graphics stack depth is 0, meaning that the image
+                # gets drawn into a square of 1x1 PDF units (or 1/72",
+                # or 0.35 mm).  The equivalent DPI will be >100,000.  Exclude
+                # these from our DPI calculation for the page.
+                continue
 
             dpi_w, dpi_h = _get_dpi(
-                shorthand, (image['width'], image['height']))
+                raster.shorthand, (image['width'], image['height']))
 
             # When image is used multiple times take the highest DPI it is
             # rendered at
