@@ -27,7 +27,7 @@ TEST_RESOURCES = os.path.join(PROJECT_ROOT, 'tests', 'resources')
 TEST_OUTPUT = os.environ.get(
     'OCRMYPDF_TEST_OUTPUT',
     default=os.path.join(PROJECT_ROOT, 'tests', 'output', 'main'))
-OCRMYPDF = [sys.executable, '-m', 'ocrmypdf.main']
+OCRMYPDF = [sys.executable, '-m', 'ocrmypdf']
 
 
 def running_in_docker():

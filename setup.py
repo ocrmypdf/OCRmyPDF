@@ -227,7 +227,7 @@ setup(
     tests_require=tests_require,
     entry_points={
         'console_scripts': [
-            'ocrmypdf = ocrmypdf.main:run_pipeline'
+            'ocrmypdf = ocrmypdf.__main__:run_pipeline'
         ],
     },
     package_data={'ocrmypdf': ['data/sRGB.icc']},
