@@ -72,11 +72,38 @@ def _shorthand_from_matrix(matrix):
     e, f = matrix[2][0], matrix[2][1]
     return tuple(map(float, (a, b, c, d, e, f)))
 
+RasterSettings = namedtuple('RasterSettings',
+    ['name', 'shorthand', 'stack_depth'])
+
+InlineSettings = namedtuple('InlineSettings',
+    ['settings', 'shorthand', 'stack_depth'])
 
 ContentsInfo = namedtuple('ContentsInfo', ['raster_settings', 'inline_images'])
 
 
 def _interpret_contents(contentstream):
+    """Interpret the PDF content stream
+
+    The stack represents the state of the PDF graphics stack.  We are only
+    interested in the current transformation matrix (CTM) so we only track
+    this object; a full implementation would need to track many other items.
+
+    The CTM is initialized to the mapping from user space to device space.
+    PDF units are 1/72".  In a PDF viewer or printer this matrix is initialized
+    to the transformation to device space.  For example if set to
+    (1/72, 0, 0, 1/72, 0, 0) then all units would be calculated in inches.
+
+    Images are always considered to be (0, 0) -> (1, 1).  Before drawing an
+    image there should be a 'cm' that sets up an image coordinate system
+    where drawing from (0, 0) -> (1, 1) will draw on the desired area of the
+    page.
+
+    PDF units suit our needs so we initialize ctm to the identity matrix.
+
+    PyPDF2 replaces inline images with a fake "INLINE IMAGE" operator.
+
+    """
+
     operations = contentstream.operations
     stack = []
     ctm = _matrix_from_shorthand((1, 0, 0, 1, 0, 0))
@@ -96,12 +123,15 @@ def _interpret_contents(contentstream):
                 _matrix_from_shorthand(operands), ctm)
         elif command == b'Do':
             image_name = operands[0]
-            image_raster_settings.append(
-                (image_name, _shorthand_from_matrix(ctm)))
+            raster = RasterSettings(
+                name=image_name, shorthand=_shorthand_from_matrix(ctm),
+                stack_depth=len(stack))
+            image_raster_settings.append(raster)
         elif command == b'INLINE IMAGE':
             settings = operands['settings']
-            inline_images.append(
-                (settings, _shorthand_from_matrix(ctm)))
+            inline = InlineSettings(
+                settings=settings, shorthand=_shorthand_from_matrix(ctm),
+                stack_depth=len(stack))
 
     return ContentsInfo(
         raster_settings=image_raster_settings,
@@ -175,24 +205,24 @@ def _get_dpi(ctm_shorthand, image_size):
 def _find_page_inline_images(page, pageinfo, contentsinfo):
     "Find inline images on the page"
 
-    for n, im in enumerate(contentsinfo.inline_images):
-        settings, shorthand = im
+    for n, inline in enumerate(contentsinfo.inline_images):
         image = {}
         image['name'] = str('inline-%02d' % n)
-        image['width'] = settings['/W']
-        image['height'] = settings['/H']
-        image['bpc'] = settings['/BPC']
-        image['color'] = FRIENDLY_COLORSPACE.get(settings['/CS'], '-')
+        image['width'] = inline.settings['/W']
+        image['height'] = inline.settings['/H']
+        image['bpc'] = inline.settings['/BPC']
+        image['color'] = FRIENDLY_COLORSPACE.get(inline.settings['/CS'], '-')
         image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
-        if '/F' in settings:
-            filter_ = settings['/F']
+        if '/F' in inline.settings:
+            filter_ = inline.settings['/F']
             if isinstance(filter_, pypdf.generic.ArrayObject):
                 filter_ = filter_[0]
             image['enc'] = FRIENDLY_ENCODING.get(filter_, 'image')
         else:
             image['enc'] = 'image'
 
-        dpi_w, dpi_h = _get_dpi(shorthand, (image['width'], image['height']))
+        dpi_w, dpi_h = _get_dpi(
+            inline.shorthand, (image['width'], image['height']))
         image['dpi_w'], image['dpi_h'] = Decimal(dpi_w), Decimal(dpi_h)
         yield image
 
@@ -253,19 +283,18 @@ def _find_page_regular_images(page, pageinfo, contentsinfo):
 
         for raster in contentsinfo.raster_settings:
             # Loop in case the same image is display multiple times on a page
-            if raster[0] != image['name']:
+            if raster.name != image['name']:
                 continue
-            shorthand = raster[1]
 
-            if image['type'] == 'stencil':
-                # Stencil masks are implicitly scaled over the whole page
-                # Images that are used in explicit masks are not drawn directly
-                # but drawn by the image they mask over, so they will never
-                # be called for in raster settings
-                if shorthand != (1, 0, 0, 1, 0, 0):
-                    raise NotImplementedError(
-                        "Don't know how to handle "
-                        "stencil masks when graphics stack depth > 0.")
+            shorthand = raster.shorthand
+            if image['type'] == 'stencil' and raster.stack_depth == 0:
+                # By observation, it seems that stencil masks are implicitly
+                # scaled over the whole page if they are ever drawn when the
+                # graphics stack depth is 0.  I can't find this documented
+                # in the reference manual but it is consistent with how
+                # Acrobat and OS X Preview behave.  I also can't find a
+                # description, generally, of what should happen when an image
+                # is drawn with the default CTM.
                 page_w = float(pageinfo['width_inches']) * 72.0
                 page_h = float(pageinfo['height_inches']) * 72.0
                 shorthand = (page_w, 0.0, 0.0,
