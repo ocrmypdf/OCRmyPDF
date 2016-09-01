@@ -132,6 +132,7 @@ def _interpret_contents(contentstream):
             inline = InlineSettings(
                 settings=settings, shorthand=_shorthand_from_matrix(ctm),
                 stack_depth=len(stack))
+            inline_images.append(inline)
 
     return ContentsInfo(
         raster_settings=image_raster_settings,
