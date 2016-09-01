@@ -5,11 +5,16 @@
 
 import argparse
 from subprocess import run, PIPE, DEVNULL, STDOUT, CalledProcessError
-from git import Repo, Remote
+from git import Repo, Remote, PushInfo
 import logging
 import re
 import sys
 import os
+
+
+REMOTE_ERROR_FLAGS = \
+    PushInfo.REJECTED | PushInfo.NO_MATCH | PushInfo.REMOTE_REJECTED | \
+    PushInfo.REMOTE_FAILURE | PushInfo.DELETED | PushInfo.ERROR
 
 
 def test_repo(repo):
@@ -40,8 +45,10 @@ def travis(args):
 
     origin = Remote(repo, 'jbarlow')
     result = origin.push(refspec='master:master')[0]
-    if result.flags & (1024|4|8|32|16):
+
+    if result.flags & REMOTE_ERROR_FLAGS:
         logging.error(result.summary)
+        sys.exit(1)
     else:
         logging.info(result.summary)
 
@@ -55,7 +62,7 @@ def release(args):
 
     git_describe = repo.git.describe()
 
-    assert not git_describe.startswith('v') and not '-' in git_describe and not '+ng' in git_describe, \
+    assert git_describe.startswith('v') and not '-' in git_describe and not '+ng' in git_describe, \
         "Not tagged properly for release: " + git_describe
 
     plain_version = git_describe[1:]  # without 'v' prefix
@@ -70,8 +77,9 @@ def release(args):
 
     origin = Remote(repo, 'jbarlow')
     result = origin.push(refspec='master:master', tags=True)[0]
-    if result.flags & (1024|4|8|32|16):
+    if result.flags & REMOTE_ERROR_FLAGS:
         logging.error(result.summary)
+        sys.exit(1)
     else:
         logging.info(result.summary)
 
