@@ -48,8 +48,9 @@ under the terms of the license in LICENSE.rst.
 +---------------------+-----------------------+---------------------------------------------------------+
 | invalid.pdf         | @jbarlow83            | a PDF file header followed by EOF marker                |
 +---------------------+-----------------------+---------------------------------------------------------+
-| masks.pdf           | @supergrobi           | file containing stencil masks; printout of a German     |
-|                     |                       | Wikipedia article (Creative Commons BY-SA)              |
+| masks.pdf           | @supergrobi           | file containing explicit masks and a stencil mask       |
+|                     |                       | drawn without a proper transformation matrix; printout  |
+|                     |                       | of a German Wikipedia article (Creative Commons BY-SA)  |
 +---------------------+-----------------------+---------------------------------------------------------+
 | milk.pdf            | @lowesjam             | linearized PDF containing some indirect objects         |
 +---------------------+-----------------------+---------------------------------------------------------+
