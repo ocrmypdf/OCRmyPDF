@@ -12,6 +12,8 @@ import sys
 import os
 
 
+logging.basicConfig(level=logging.INFO)
+
 REMOTE_ERROR_FLAGS = \
     PushInfo.REJECTED | PushInfo.NO_MATCH | PushInfo.REMOTE_REJECTED | \
     PushInfo.REMOTE_FAILURE | PushInfo.DELETED | PushInfo.ERROR
