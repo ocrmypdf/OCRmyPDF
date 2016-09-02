@@ -3,6 +3,13 @@ RELEASE NOTES
 
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
+
+v4.2.4:
+=======
+
+-  Fixed an error (#90) caused by PDFs that use stencil masks properly
+-  Fixed handling of PDFs that try to draw images or stencil masks without properly setting up the graphics state (such images are now ignored for the purposes of calculating DPI)
+
 v4.2.3:
 =======
 
