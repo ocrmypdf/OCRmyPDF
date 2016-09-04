@@ -3,6 +3,7 @@
 *.sublime-*
 venv-*/
 pyvenv.cfg
+tasks.py
 
 # Package building
 *.egg-info/
