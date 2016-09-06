@@ -32,12 +32,8 @@ from .pdfa import generate_pdfa_def, file_claims_pdfa
 from . import ghostscript
 from . import tesseract
 from . import qpdf
-from . import ExitCode, page_number, is_iterable_notstr
+from . import ExitCode, page_number, is_iterable_notstr, VERSION
 from collections.abc import Sequence
-
-import pkg_resources
-
-VERSION = pkg_resources.get_distribution('ocrmypdf').version
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 

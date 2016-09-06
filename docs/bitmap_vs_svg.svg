@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 915 585" xmlns:xlink="http://www.w3.org/1999/xlink">
+<defs>
+<linearGradient id="b" y2="445" gradientUnits="userSpaceOnUse" y1="179" gradientTransform="translate(0 -2.06)" x2="-29.7" x1="322">
+<stop stop-color="#333" offset="0"/>
+<stop stop-color="#fff" stop-opacity="0" offset="1"/>
+</linearGradient>
+<linearGradient id="a" y2="414" gradientUnits="userSpaceOnUse" y1="159" x2="490" x1="815">
+<stop stop-color="#33f" offset="0"/>
+<stop stop-color="#3f3fff" stop-opacity="0" offset="1"/>
+</linearGradient>
+</defs>
+<path fill="url(#b)" d="m403 247c-12 115-135 122-368 123-4.3-1.07-7.32-7.33-6-41 76-37 151-124 167-236 93 123 201 40.9 207 154z"/>
+<g stroke-width="3.45" fill="none">
+<path stroke="#000" d="m11.8 11.8h411v411l-411 0.01v-411z"/>
+<path stroke="#448" d="m489 11.7h415v411h-415v-411z"/>
+</g>
+<path d="m876 244c-12 115-133 120-366 121-6-14-10-40-3-43 76-37.3 136-106 152-218 38 48 209 101 217 140z" fill="url(#a)"/>
+<g id="RasterLarge" transform="matrix(1.36 0 0 1.28 -161 -636)">
+<path fill="#999" d="m287 730h-30v-60h20v20h10v10h10v10h20v10h40v-10h20v-20h10v-20h-10v-10h-10v-10h-40v-10h-30v-10h-20v-10h-10v-10h-10v-60h10v-10h10v-10h10v-10h90v10h30v60h-20v-10h-10v-20h-10v-10h-20v-10h-30v10h-20v10h-10v20h10v20h30v10h30v10h30v10h10v10h10v10h10v60h-10v10h-10v10h-10v10h-100v-10z"/>
+<path fill="#555" d="m297 730h-30v-10h-10v-50h20v20h10v20h10 10v10h60v-10h10v-10h10v-40h-20v-10h-20v-10h-40v-10h-20v-10h-20v-20h-10v-50h10v-10h10v-10h20v-10h70v10h30v10h10v50h-20v-20h-10v-20h-20v-10h-50v10h-10v10h-10v30h10v10h20v10h30v10h30v10h20v10h10v10h10v50h-10v20h-10v10h-20v10h-80z"/>
+<path d="m307 730h-30v-10h-20v-50h20v30h10v10h10v10h70v-10h20v-50h-10v-10h-20v-10h-40v-10h-30v-10h-10v-10h-10v-20h-10v-30h10v-20h20v-10h20v-10h50v10h30v10h20v50h-20v-30h-10v-10h-10v-10h-70v10h-10v40h10v10h10v10h30v10h40v10h20v10h10v20h10v40h-10v20h-20v10h-30v10h-50v-10z"/>
+</g>
+<g font-size="40" font-family="sans-serif" text-anchor="middle">
+<g font-size="100">
+<text y="518" x="210">Raster</text>
+<text y="518" x="695" fill="#338">Vector</text>
+</g>
+<text y="563" x="210">.jpeg  .gif  .png</text>
+<text y="563" x="696" fill="#338">.svg</text>
+</g>
+<path id="VectorLarge" fill="#005" d="m661 294v-62.5l23.4 0.184c0.678 20.8 7.32 36.3 19.9 46.4 12.7 9.93 32.1 14.9 57.9 14.9 24.1 0 42.5-4.29 55.1-12.9 12.7-8.71 19.1-21.3 19.1-37.9 0-13.2-3.86-23.4-11.6-30.5-7.59-7.11-23.7-14-48.4-20.8l-40.1-10.9c-29-7.97-49.5-17.9-61.4-29.8-11.8-11.9-17.7-28.2-17.7-48.9 0-23.3 9.15-41.4 27.4-54.3 18.3-12.9 44-19.3 77.1-19.3 14.1 0 29.6 1.41 46.4 4.23 16.8 2.7 34.7 6.68 53.7 12v58.5h-23c-2.3-19.4-9.49-33.4-21.6-41.9-11.9-8.71-30.2-13.1-54.7-13.1-21.4 0-37.7 3.99-49 12-11.1 7.85-16.7 19.3-16.7 34.4 0 13.1 4.2 23.4 12.6 30.9 8.4 7.48 26.2 14.9 53.5 22.3l37.6 10.1c27.5 7.48 47.1 17 58.8 28.7 11.8 11.5 17.7 27 17.7 46.5 0 26.6-9.42 46.7-28.3 60.2s-46.9 20.2-84.2 20.2c-16.7 0-33.7-1.53-51-4.6-18-3-35-7-53-13z"/>
+<use xlink:href="#VectorLarge" transform="matrix(.17 0 0 .17 392 313)"/>
+<use xlink:href="#RasterLarge" transform="matrix(.173 0 0 .173 -8.25 314)" height="100%" width="100%" y="0" x="0"/>
+</svg>

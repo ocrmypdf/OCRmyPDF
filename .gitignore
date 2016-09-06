@@ -16,6 +16,9 @@ wheelhouse/
 # Automatically generated files
 ocrmypdf/lib/_*.py
 ocrmypdf/version.py
+docs/_build
+docs/_static
+docs/_templates
 
 # Code coverage
 .coverage
