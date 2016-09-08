@@ -21,7 +21,7 @@ PDFs are `vector graphic files <http://vector-conversions.com/vectorizing/raster
 
 A PDF page might contain multiple images, even if it only appears to have one image.  Some scanners or scanning software will segment pages into monochromatic text and color regions for example, to improve the compression ratio and appearance of the page.
 
-Rasterizing a PDF is the process of generating an image suitable for display on a screen, of analyzing with an OCR engine.  OCR engines like Tesseract work with images, not vector objects.
+Rasterizing a PDF is the process of generating an image suitable for display or analyzing with an OCR engine.  OCR engines like Tesseract work with images, not vector objects.
 
 
 About PDF/A
@@ -35,7 +35,7 @@ PDF/A has a few drawbacks.  Some PDF viewers include an alert that the file is a
 What OCRmyPDF does
 ------------------
 
-OCRmyPDF analyzes each page of a PDF to determine the colorspace and resolution (DPI) needed to capture all of the information on that page without losing content.  It uses `Ghostscript <http://ghostscript.com/>`_ to rasterize the page, and then performs on OCR on the rasterized image.  It is not enough to simply extract the images from each page and run OCR on them individually.  Of course one could use Ghostscript or another PDF rasterizer directly; the advantage of OCRmyPDF its ability to automate the process and produce a minimally changed output file.
+OCRmyPDF analyzes each page of a PDF to determine the colorspace and resolution (DPI) needed to capture all of the information on that page without losing content.  It uses `Ghostscript <http://ghostscript.com/>`_ to rasterize the page, and then performs on OCR on the rasterized image.  It is not enough to simply extract the images from each page and run OCR on them individually.  Of course one could use Ghostscript or another PDF rasterizer and then pass the image to Tesseract.  OCRmyPDF automates this process and produces a minimally changed output file that contains the same information, colorspace and resolution.
 
 The Tesseract OCR engine can output 'hOCR' files, which are XML files that contain a description of the text it found on the page.  OCRmyPDF will render a new PDF that contains only the hidden text layer, and merge this with the original page.
 
@@ -51,16 +51,19 @@ Limitations
 
 OCRmyPDF is limited by the Tesseract OCR engine.  As such it experiences these limitations, as do any other programs that rely on Tesseract:
 
-* The OCR is not as accurate quality as commercial solutions such as Abbyy.
+* The OCR is not as accurate as commercial solutions such as Abbyy.
 * It is not capable of recognizing handwriting.
-* It may report OCR text as gibberish.
+* It may find gibberish and report this as OCR output.
+* If a document contains languages outside of those given in the ``-l LANG`` arguments, results may be poor.
 * It is not always good at analyzing the natural reading order of documents. For example, it may fail to recognize that a document contains two columns and join text across the columns.
 * Poor quality scans may produce poor quality OCR. Garbage in, garbage out.
   
 OCRmyPDF is also limited by the PDF specification:
 
-* PDF encodes the position of text glyphs but does not encode document structure.  There is no markup that divides a document in sections, paragraphs, sentences, or even words. As such all elements of document structure including the spaces between words must be derived heuristically.  Some PDF viewers do a better job of this than others.
+* PDF encodes the position of text glyphs but does not encode document structure.  There is no markup that divides a document in sections, paragraphs, sentences, or even words (since blank spaces are not represented). As such all elements of document structure including the spaces between words must be derived heuristically.  Some PDF viewers do a better job of this than others.
 
 Ghostscript also imposes some limitations:
 
 * PDFs containing JBIG2-encoded content will be converted to CCITT Group4 encoding, which has lower compression ratios, if Ghostscript PDF/A is enabled.
+  
+OCRmyPDF is currently not designed to be used as a Python API; it is designed to be run as a command line tool. ``import ocrmypf`` currently attempts to process the command line on ``sys.argv`` at import time so it has side effects that will interfere with its use as a package. The API it presents should not be considered stable.
