@@ -231,10 +231,10 @@ class Pix:
         with LeptonicaErrorTrap():
             return Pix(lept.pixDeskew(self._pix, reduction_factor))
 
-    def scale(self, scalex, scaley):
+    def scale(self, scale_xy):
         "Returns the pix object rescaled according to the proportions given."
         with LeptonicaErrorTrap():
-            return Pix(lept.pixScale(self._pix, scalex, scaley))
+            return Pix(lept.pixScale(self._pix, scale_xy[0], scale_xy[1]))
 
     def rotate180(self):
         with LeptonicaErrorTrap():
