@@ -131,6 +131,25 @@ pixClipRectangle(PIX   *pixs,
                  BOX   *box,
                  BOX  **pboxc);
 
+PIX *
+pixBackgroundNorm(PIX     *pixs,
+                  PIX     *pixim,
+                  PIX     *pixg,
+                  l_int32  sx,
+                  l_int32  sy,
+                  l_int32  thresh,
+                  l_int32  mincount,
+                  l_int32  bgval,
+                  l_int32  smoothx,
+                  l_int32  smoothy);
+
+PIX *
+pixGammaTRC(PIX       *pixd,
+            PIX       *pixs,
+            l_float32  gamma,
+            l_int32    minval,
+            l_int32    maxval);
+
 void
 boxDestroy(BOX  **pbox);
 

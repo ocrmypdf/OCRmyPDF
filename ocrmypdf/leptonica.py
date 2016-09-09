@@ -104,6 +104,12 @@ class Pix:
 
     Leptonica's reference counting is not threadsafe. This class can be used
     in a threadsafe manner if a Python threading.Lock protects the data.
+
+    This class treats Pix objects as immutable.  All methods return new
+    modified objects.  This allows convenient chaining:
+
+    >>>   Pix.read('filename.jpg').scale((0.5, 0.5)).deskew().show()
+
     """
 
     def __init__(self, pix):
@@ -201,13 +207,23 @@ class Pix:
         "Returns a PIL.Image version of this Pix"
         from PIL import Image
 
-        with LeptonicaErrorTrap():
-            pix_swapped = Pix(lept.pixEndianByteSwapNew(self._pix))
+        # Leptonica manages data in words, so it implicitly does an endian
+        # swap.  Tell Pillow about this when it reads the data.
+        if sys.byteorder == 'little':
+            if self.mode == 'RGB':
+                raw_mode = 'XBGR'
+            elif self.mode == 'RGBA':
+                raw_mode = 'ABGR'
+            else:
+                raw_mode = self.mode
+        else:
+            raw_mode = self.mode  # no endian swap needed
 
-        size = (pix_swapped._pix.wpl * 4, pix_swapped._pix.h)
-        buf = ffi.buffer(pix_swapped._pix.data, size[0] * size[1])
+        size = (self._pix.w, self._pix.h)
+        bytecount = self._pix.wpl * 4 * self._pix.h
+        buf = ffi.buffer(self._pix.data, bytecount)
 
-        im_raw = Image.frombytes(self.mode, size, buf, 'raw')
+        im_raw = Image.frombytes(self.mode, size, buf, 'raw', raw_mode)
 
         # Leptonica stores images in 32-bit words
         # Need to crop the any trailing amount
@@ -351,6 +367,33 @@ class Pix:
                 gamma,
                 black,
                 white))
+
+    def gamma_trc(self, gamma=1.0, minval=0, maxval=255):
+        with LeptonicaErrorTrap():
+            return Pix(lept.pixGammaTRC(
+                ffi.NULL,
+                self._pix,
+                gamma,
+                minval,
+                maxval
+                ))
+
+    def background_norm(
+            self, mask=None, grayscale=None, tile_size=(10, 15), fg_threshold=60,
+            min_count=40, bg_val=200, smooth_kernel=(2, 1)):
+        with LeptonicaErrorTrap():
+            return Pix(lept.pixBackgroundNorm(
+                self._pix,
+                mask or ffi.NULL,
+                grayscale or ffi.NULL,
+                tile_size[0],
+                tile_size[1],
+                fg_threshold,
+                min_count,
+                bg_val,
+                smooth_kernel[0],
+                smooth_kernel[1]
+                ))
 
     @staticmethod
     @lru_cache(maxsize=1)
