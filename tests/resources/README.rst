@@ -9,21 +9,39 @@ Files derived from free sources
 These test resources come from free sources, under either public domain or Creative Commons licenses.
 In some cases they were converted from one image format to another without other changes.
 
-+---------------------+--------------------------------------------------------------------------------+
-| File                | Source                                                                         |
-+=====================+================================================================================+
-| c02-22.pdf          | `Project Gutenberg`_, Adventures of Huckleberry Finn, page 22                  |
-+---------------------+--------------------------------------------------------------------------------+
-| congress.jpg        | `US Congressional Records`_ (Public Domain)                                    |
-+---------------------+--------------------------------------------------------------------------------+
-| graph.pdf           | `Wikimedia: Pandas text analysis.png`_ (Public Domain)                         |
-+---------------------+--------------------------------------------------------------------------------+
-| lichtenstein.pdf    | `Wikimedia: JPEG2000 Lichtenstein`_ (Creative Commons BY-SA 3.0)               |
-+---------------------+--------------------------------------------------------------------------------+
-| LinnSequencer.jpg,  | `Wikimedia: LinnSequencer`_ (Creative Commons BY-SA 3.0)                       |
-| linn.pdf, linn.txt  |                                                                                |
-+---------------------+--------------------------------------------------------------------------------+
+.. list-table:: 
+    :widths: 20 50 30
+    :header-rows: 1
 
+    *   - File
+        - Source
+        - License
+    *   - c02-22.pdf
+        - `Project Gutenberg`_, Adventures of Huckleberry Finn, page 22
+        - Public Domain
+    *   - congress.jpg
+        - `US Congressional Records`_
+        - Public Domain
+    *   - graph.pdf
+        - `Wikimedia: Pandas text analysis.png`_
+        - Public Domain
+    *   - lichtenstein.pdf
+        - `Wikimedia: JPEG2000 Lichtenstein`_
+        - Creative Commons BY-SA 3.0
+    *   - LinnSequencer.jpg, linn.pdf, linn.txt
+        - `Wikimedia: LinnSequencer`_
+        - Creative Commons BY-SA 3.0
+
+
+Files from non-free sources
+===========================
+
+These test resources come from non-free sources, or free sources with restrictions, and used here under fair use.
+
+Open source packagers may wish to opt out of the test cases that use non-free sources.
+
+
+* milk.pdf
 
 Files generated for this project
 ================================
@@ -56,6 +74,7 @@ under the terms of the license in LICENSE.rst.
 +---------------------+-----------------------+---------------------------------------------------------+
 | missing_docinfo.pdf | @jbarlow83            | PDF file with no /DocumentInfo section                  |
 +---------------------+-----------------------+---------------------------------------------------------+
+
 
 Assemblies
 ==========
