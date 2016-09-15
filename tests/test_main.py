@@ -634,5 +634,7 @@ def test_masks(spoof_tesseract_noop):
     check_ocrmypdf('masks.pdf', 'test_masks.pdf', env=spoof_tesseract_noop)
 
 
+@pytest.mark.skipif(not os.path.isfile(_infile('milk.pdf')),
+                    reason="fair use restricted test resource does not exist")
 def test_linearized_pdf_and_indirect_object(spoof_tesseract_noop):
     check_ocrmypdf('milk.pdf', 'test_milk.pdf', env=spoof_tesseract_noop)
