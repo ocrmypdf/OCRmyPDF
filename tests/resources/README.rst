@@ -38,7 +38,7 @@ Files from non-free sources
 
 These test resources come from non-free sources, or free sources with restrictions, and used here under fair use.
 
-Open source packagers may wish to opt out of the test cases that use non-free sources.
+All test cases that involve non-free sources will be skipped if the containing folder is deleted.
 
 
 * milk.pdf
