@@ -49,32 +49,40 @@ Files generated for this project
 The following test resources were crafted specifically for this project, and can be used
 under the terms of the license in LICENSE.rst.
 
-+---------------------+-----------------------+---------------------------------------------------------+
-| File                | Contributor           | Purpose                                                 |
-+---------------------+-----------------------+---------------------------------------------------------+
-| aspect.pdf          | @jbarlow83            | test image with 200 x 100 DPI resolution                |
-+---------------------+-----------------------+---------------------------------------------------------+
-| blank.pdf           | @jbarlow83            | blank PDF                                               |
-+---------------------+-----------------------+---------------------------------------------------------+
-| cmyk.pdf            | @jbarlow83            | a CMYK image created in Photoshop                       |
-+---------------------+-----------------------+---------------------------------------------------------+
-| enormous.pdf        | @jbarlow83            | very large PDF page                                     |
-+---------------------+-----------------------+---------------------------------------------------------+
-| francais.pdf        | @jbarlow83            | a page containing French accents (diacritics)           |
-+---------------------+-----------------------+---------------------------------------------------------+
-| hugemono.pdf        | @jbarlow83            | large monochrome 35000x35000 image in JBIG2 encoding    |
-+---------------------+-----------------------+---------------------------------------------------------+
-| invalid.pdf         | @jbarlow83            | a PDF file header followed by EOF marker                |
-+---------------------+-----------------------+---------------------------------------------------------+
-| masks.pdf           | @supergrobi           | file containing explicit masks and a stencil mask       |
-|                     |                       | drawn without a proper transformation matrix; printout  |
-|                     |                       | of a German Wikipedia article (Creative Commons BY-SA)  |
-+---------------------+-----------------------+---------------------------------------------------------+
-| milk.pdf            | @lowesjam             | linearized PDF containing some indirect objects         |
-+---------------------+-----------------------+---------------------------------------------------------+
-| missing_docinfo.pdf | @jbarlow83            | PDF file with no /DocumentInfo section                  |
-+---------------------+-----------------------+---------------------------------------------------------+
+.. list-table:: 
+    :widths: 20 20 60
+    :header-rows: 1
 
+    *   - File
+        - Contributor
+        - Purpose
+    *   - aspect.pdf
+        - @jbarlow83
+        - test image with 200 x 100 DPI resolution
+    *   - blank.pdf
+        - @jbarlow83
+        - blank PDF
+    *   - cmyk.pdf
+        - @jbarlow83
+        - a CMYK image created in Photoshop
+    *   - enormous.pdf
+        - @jbarlow83
+        - very large PDF page
+    *   - francais.pdf
+        - @jbarlow83
+        - a page containing French accents (diacritics)  
+    *   - hugemono.pdf
+        - @jbarlow83
+        - large monochrome 35000x35000 image in JBIG2 encoding 
+    *   - invalid.pdf
+        - @jbarlow83
+        - a PDF file header followed by EOF marker
+    *   - masks.pdf
+        - @supergrobi
+        - file containing explicit masks and a stencil mask drawn without a proper transformation matrix; printout of a German Wikipedia article (Creative Common BY-SA)
+    *   - missing_docinfo.pdf
+        - @jbarlow83
+        - PDF file with no /DocumentInfo section 
 
 Assemblies
 ==========
