@@ -33,16 +33,6 @@ In some cases they were converted from one image format to another without other
         - Creative Commons BY-SA 3.0
 
 
-Files from non-free sources
-===========================
-
-These test resources come from non-free sources, or free sources with restrictions, and used here under fair use.
-
-All test cases that involve non-free sources will be skipped if the containing folder is deleted.
-
-
-* milk.pdf
-
 Files generated for this project
 ================================
 
@@ -74,6 +64,9 @@ under the terms of the license in LICENSE.rst.
     *   - hugemono.pdf
         - @jbarlow83
         - large monochrome 35000x35000 image in JBIG2 encoding 
+    *   - indirect_objects.pdf
+        - @lowesjam
+        - a linearized PDF containing some unusual indirect objects
     *   - invalid.pdf
         - @jbarlow83
         - a PDF file header followed by EOF marker
