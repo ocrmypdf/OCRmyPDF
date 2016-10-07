@@ -58,21 +58,21 @@ under the terms of the license in LICENSE.rst.
     *   - enormous.pdf
         - @jbarlow83
         - very large PDF page
+    *   - epson.pdf
+        - @lowesjam
+        - a linearized PDF containing some unusual indirect objects, created by an Epson printer; printout of a Wikipedia article (CC BY-SA)
     *   - francais.pdf
         - @jbarlow83
         - a page containing French accents (diacritics)  
     *   - hugemono.pdf
         - @jbarlow83
         - large monochrome 35000x35000 image in JBIG2 encoding 
-    *   - indirect_objects.pdf
-        - @lowesjam
-        - a linearized PDF containing some unusual indirect objects
     *   - invalid.pdf
         - @jbarlow83
         - a PDF file header followed by EOF marker
     *   - masks.pdf
         - @supergrobi
-        - file containing explicit masks and a stencil mask drawn without a proper transformation matrix; printout of a German Wikipedia article (Creative Common BY-SA)
+        - file containing explicit masks and a stencil mask drawn without a proper transformation matrix; printout of a German Wikipedia article (CC BY-SA)
     *   - missing_docinfo.pdf
         - @jbarlow83
         - PDF file with no /DocumentInfo section 

@@ -636,5 +636,5 @@ def test_masks(spoof_tesseract_noop):
 
 def test_linearized_pdf_and_indirect_object(spoof_tesseract_noop):
     check_ocrmypdf(
-        'indirect_objects.pdf', 'test_indirect_objects.pdf',
+        'epson.pdf', 'test_epson.pdf',
         env=spoof_tesseract_noop)
