@@ -162,7 +162,7 @@ Install the required Tesseract OCR engine with the language packs you plan to us
    
 .. code-block:: bash
 
-   brew install tesseract                       # Option 1: for English, French, German, Spanish
+   brew install tesseract                       # Option 1: for English
    
 .. code-block:: bash
    
