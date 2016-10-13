@@ -211,7 +211,7 @@ def _find_page_inline_images(page, pageinfo, contentsinfo):
         image['name'] = str('inline-%02d' % n)
         image['width'] = inline.settings['/W']
         image['height'] = inline.settings['/H']
-        if '/BPC' in inline.settings['/BPC']
+        if '/BPC' in inline.settings:
             image['bpc'] = inline.settings['/BPC']
         else:
             image['bpc'] = 8

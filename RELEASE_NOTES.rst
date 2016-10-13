@@ -4,6 +4,13 @@ RELEASE NOTES
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
 
+v4.2.5:
+=======
+
+-  Fixed an issue (#100) with PDFs that omit the optional /BitsPerComponent parameter on images
+-  Removed non-free file milk.pdf
+
+
 v4.2.4:
 =======
 
