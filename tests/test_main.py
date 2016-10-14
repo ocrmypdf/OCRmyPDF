@@ -124,8 +124,8 @@ def spoof_tesseract_big_image_error():
     return spoof('tesseract', 'tesseract_big_image_error.py')
 
 
-def test_quick(spoof_tesseract_noop):
-    check_ocrmypdf('c02-22.pdf', 'test_quick.pdf', env=spoof_tesseract_noop)
+def test_quick(spoof_tesseract_cache):
+    check_ocrmypdf('ccitt.pdf', 'test_quick.pdf', env=spoof_tesseract_cache)
 
 
 def test_deskew(spoof_tesseract_noop):
@@ -635,4 +635,6 @@ def test_masks(spoof_tesseract_noop):
 
 
 def test_linearized_pdf_and_indirect_object(spoof_tesseract_noop):
-    check_ocrmypdf('milk.pdf', 'test_milk.pdf', env=spoof_tesseract_noop)
+    check_ocrmypdf(
+        'epson.pdf', 'test_epson.pdf',
+        env=spoof_tesseract_noop)

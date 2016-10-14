@@ -211,7 +211,10 @@ def _find_page_inline_images(page, pageinfo, contentsinfo):
         image['name'] = str('inline-%02d' % n)
         image['width'] = inline.settings['/W']
         image['height'] = inline.settings['/H']
-        image['bpc'] = inline.settings['/BPC']
+        if '/BPC' in inline.settings:
+            image['bpc'] = inline.settings['/BPC']
+        else:
+            image['bpc'] = 8
         image['color'] = FRIENDLY_COLORSPACE.get(inline.settings['/CS'], '-')
         image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
         if '/F' in inline.settings:
@@ -244,7 +247,10 @@ def _find_page_regular_images(page, pageinfo, contentsinfo):
         image['name'] = str(xobj)
         image['width'] = pdfimage['/Width']
         image['height'] = pdfimage['/Height']
-        image['bpc'] = pdfimage['/BitsPerComponent']
+        if '/BitsPerComponent' in pdfimage:
+            image['bpc'] = pdfimage['/BitsPerComponent']
+        else:
+            image['bpc'] = 8
 
         # Fixme: this is incorrectly treats explicit masks as stencil masks,
         # but good enough for now. Explicit masks have /ImageMask true but are

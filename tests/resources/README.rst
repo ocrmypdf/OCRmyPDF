@@ -9,20 +9,28 @@ Files derived from free sources
 These test resources come from free sources, under either public domain or Creative Commons licenses.
 In some cases they were converted from one image format to another without other changes.
 
-+---------------------+--------------------------------------------------------------------------------+
-| File                | Source                                                                         |
-+=====================+================================================================================+
-| c02-22.pdf          | `Project Gutenberg`_, Adventures of Huckleberry Finn, page 22                  |
-+---------------------+--------------------------------------------------------------------------------+
-| congress.jpg        | `US Congressional Records`_ (Public Domain)                                    |
-+---------------------+--------------------------------------------------------------------------------+
-| graph.pdf           | `Wikimedia: Pandas text analysis.png`_ (Public Domain)                         |
-+---------------------+--------------------------------------------------------------------------------+
-| lichtenstein.pdf    | `Wikimedia: JPEG2000 Lichtenstein`_ (Creative Commons BY-SA 3.0)               |
-+---------------------+--------------------------------------------------------------------------------+
-| LinnSequencer.jpg,  | `Wikimedia: LinnSequencer`_ (Creative Commons BY-SA 3.0)                       |
-| linn.pdf, linn.txt  |                                                                                |
-+---------------------+--------------------------------------------------------------------------------+
+.. list-table:: 
+    :widths: 20 50 30
+    :header-rows: 1
+
+    *   - File
+        - Source
+        - License
+    *   - c02-22.pdf
+        - `Project Gutenberg`_, Adventures of Huckleberry Finn, page 22
+        - Public Domain
+    *   - congress.jpg
+        - `US Congressional Records`_
+        - Public Domain
+    *   - graph.pdf
+        - `Wikimedia: Pandas text analysis.png`_
+        - Public Domain
+    *   - lichtenstein.pdf
+        - `Wikimedia: JPEG2000 Lichtenstein`_
+        - Creative Commons BY-SA 3.0
+    *   - LinnSequencer.jpg, linn.pdf, linn.txt
+        - `Wikimedia: LinnSequencer`_
+        - Creative Commons BY-SA 3.0
 
 
 Files generated for this project
@@ -31,31 +39,43 @@ Files generated for this project
 The following test resources were crafted specifically for this project, and can be used
 under the terms of the license in LICENSE.rst.
 
-+---------------------+-----------------------+---------------------------------------------------------+
-| File                | Contributor           | Purpose                                                 |
-+---------------------+-----------------------+---------------------------------------------------------+
-| aspect.pdf          | @jbarlow83            | test image with 200 x 100 DPI resolution                |
-+---------------------+-----------------------+---------------------------------------------------------+
-| blank.pdf           | @jbarlow83            | blank PDF                                               |
-+---------------------+-----------------------+---------------------------------------------------------+
-| cmyk.pdf            | @jbarlow83            | a CMYK image created in Photoshop                       |
-+---------------------+-----------------------+---------------------------------------------------------+
-| enormous.pdf        | @jbarlow83            | very large PDF page                                     |
-+---------------------+-----------------------+---------------------------------------------------------+
-| francais.pdf        | @jbarlow83            | a page containing French accents (diacritics)           |
-+---------------------+-----------------------+---------------------------------------------------------+
-| hugemono.pdf        | @jbarlow83            | large monochrome 35000x35000 image in JBIG2 encoding    |
-+---------------------+-----------------------+---------------------------------------------------------+
-| invalid.pdf         | @jbarlow83            | a PDF file header followed by EOF marker                |
-+---------------------+-----------------------+---------------------------------------------------------+
-| masks.pdf           | @supergrobi           | file containing explicit masks and a stencil mask       |
-|                     |                       | drawn without a proper transformation matrix; printout  |
-|                     |                       | of a German Wikipedia article (Creative Commons BY-SA)  |
-+---------------------+-----------------------+---------------------------------------------------------+
-| milk.pdf            | @lowesjam             | linearized PDF containing some indirect objects         |
-+---------------------+-----------------------+---------------------------------------------------------+
-| missing_docinfo.pdf | @jbarlow83            | PDF file with no /DocumentInfo section                  |
-+---------------------+-----------------------+---------------------------------------------------------+
+.. list-table:: 
+    :widths: 20 20 60
+    :header-rows: 1
+
+    *   - File
+        - Contributor
+        - Purpose
+    *   - aspect.pdf
+        - @jbarlow83
+        - test image with 200 x 100 DPI resolution
+    *   - blank.pdf
+        - @jbarlow83
+        - blank PDF
+    *   - cmyk.pdf
+        - @jbarlow83
+        - a CMYK image created in Photoshop
+    *   - enormous.pdf
+        - @jbarlow83
+        - very large PDF page
+    *   - epson.pdf
+        - @lowesjam
+        - a linearized PDF containing some unusual indirect objects, created by an Epson printer; printout of a Wikipedia article (CC BY-SA)
+    *   - francais.pdf
+        - @jbarlow83
+        - a page containing French accents (diacritics)  
+    *   - hugemono.pdf
+        - @jbarlow83
+        - large monochrome 35000x35000 image in JBIG2 encoding 
+    *   - invalid.pdf
+        - @jbarlow83
+        - a PDF file header followed by EOF marker
+    *   - masks.pdf
+        - @supergrobi
+        - file containing explicit masks and a stencil mask drawn without a proper transformation matrix; printout of a German Wikipedia article (CC BY-SA)
+    *   - missing_docinfo.pdf
+        - @jbarlow83
+        - PDF file with no /DocumentInfo section 
 
 Assemblies
 ==========
