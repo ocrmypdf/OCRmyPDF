@@ -32,6 +32,7 @@ from .pdfa import generate_pdfa_def, file_claims_pdfa
 from . import ghostscript
 from . import tesseract
 from . import qpdf
+from . import leptonica
 from . import ExitCode, page_number, is_iterable_notstr
 from collections.abc import Sequence
 
@@ -205,6 +206,10 @@ preprocessing.add_argument(
     '-r', '--rotate-pages', action='store_true',
     help="automatically rotate pages based on detected text orientation")
 preprocessing.add_argument(
+    '--remove-background', action='store_true',
+    help="attempt to remove background from gray or color pages, setting it "
+         "to white ")
+preprocessing.add_argument(
     '-d', '--deskew', action='store_true',
     help="deskew each page before performing OCR")
 preprocessing.add_argument(
@@ -350,7 +355,8 @@ if set(options.language) & {'chi_sim', 'chi_tra'} \
 
 lossless_reconstruction = False
 if options.pdf_renderer == 'hocr':
-    if not options.deskew and not options.clean_final and not options.force_ocr:
+    if not options.deskew and not options.clean_final and \
+            not options.force_ocr and not options.remove_background:
         lossless_reconstruction = True
 
 
@@ -820,6 +826,32 @@ def rasterize_with_ghostscript(
 @transform(
     input=rasterize_with_ghostscript,
     filter=suffix(".page.png"),
+    output=".pp-background.png",
+    extras=[_log, _pdfinfo, _pdfinfo_lock])
+def preprocess_remove_background(
+        input_file,
+        output_file,
+        log,
+        pdfinfo,
+        pdfinfo_lock):
+
+    if not options.remove_background:
+        re_symlink(input_file, output_file, log)
+        return
+
+    pageinfo = get_pageinfo(input_file, pdfinfo, pdfinfo_lock)
+
+    if any(image['bpc'] > 1 for image in pageinfo['images']):
+        leptonica.remove_background(input_file, output_file)
+    else:
+        log.info("{0:4d}: background removal skipped on mono page".format(
+            pageinfo['pageno']))
+        re_symlink(input_file, output_file, log)
+
+
+@transform(
+    input=preprocess_remove_background,
+    filter=suffix(".pp-background.png"),
     output=".pp-deskew.png",
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 def preprocess_deskew(
@@ -836,7 +868,6 @@ def preprocess_deskew(
     pageinfo = get_pageinfo(input_file, pdfinfo, pdfinfo_lock)
     dpi = get_page_square_dpi(pageinfo)
 
-    from . import leptonica
     leptonica.deskew(input_file, output_file, dpi)
 
 
@@ -890,8 +921,9 @@ def ocr_tesseract_hocr(
 
 
 @collate(
-    input=[rasterize_with_ghostscript, preprocess_deskew, preprocess_clean],
-    filter=regex(r".*/(\d{6})(?:\.page|\.pp-deskew|\.pp-clean)\.png"),
+    input=[rasterize_with_ghostscript, preprocess_remove_background,
+           preprocess_deskew, preprocess_clean],
+    filter=regex(r".*/(\d{6})(?:\.page|\.pp-.*)\.png"),
     output=os.path.join(work_folder, r'\1.image'),
     extras=[_log, _pdfinfo, _pdfinfo_lock])
 @graphviz(shape='diamond')
@@ -905,6 +937,8 @@ def select_image_for_pdf(
         image_suffix = '.pp-clean.png'
     elif options.deskew:
         image_suffix = '.pp-deskew.png'
+    elif options.remove_background:
+        image_suffix = '.pp-background.png'
     else:
         image_suffix = '.page.png'
     image = next(ii for ii in infiles if ii.endswith(image_suffix))

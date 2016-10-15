@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# © 2013-15: jbarlow83 from Github (https://github.com/jbarlow83)
+# © 2013-16: jbarlow83 from Github (https://github.com/jbarlow83)
 #
-#
-# Use Leptonica to detect find and remove page skew.  Leptonica uses the method
-# of differential square sums, which its author claim is faster and more robust
-# than the Hough transform used by ImageMagick.
+# Python FFI wrapper for Leptonica library
 
 from __future__ import print_function, absolute_import, division
 import argparse
@@ -501,6 +498,22 @@ def deskew(infile, outfile, dpi):
 
     try:
         pix_deskewed.write_implied_format(outfile)
+    except LeptonicaIOError:
+        raise LeptonicaIOError("Failed to open destination file: %s" % outfile)
+
+
+def remove_background(infile, outfile, tile_size=(40, 60), gamma=1.0,
+                      black_threshold=70, white_threshold=190):
+    try:
+        pix = Pix.read(infile)
+    except LeptonicaIOError:
+        raise LeptonicaIOError("Failed to open file: %s" % infile)
+
+    pix = pix.background_norm(tile_size=tile_size).gamma_trc(
+            gamma, black_threshold, white_threshold)
+
+    try:
+        pix.write_implied_format(outfile)
     except LeptonicaIOError:
         raise LeptonicaIOError("Failed to open destination file: %s" % outfile)
 

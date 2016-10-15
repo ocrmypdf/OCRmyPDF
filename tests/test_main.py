@@ -162,6 +162,38 @@ def test_clean(spoof_tesseract_noop):
                    env=spoof_tesseract_noop)
 
 
+def test_remove_background(spoof_tesseract_noop):
+    from PIL import Image
+
+    # Ensure the input image does not contain pure white/black
+    im = Image.open(_infile('congress.jpg'))
+    assert im.getextrema() != ((0, 255), (0, 255), (0, 255))
+
+    output_pdf = check_ocrmypdf(
+        'congress.jpg', 'test_remove_bg.pdf', '--remove-background',
+        '--image-dpi', '150',
+        env=spoof_tesseract_noop)
+
+    from ocrmypdf.ghostscript import rasterize_pdf
+    import logging
+    log = logging.getLogger()
+
+    output_png = _outfile('remove_bg.png')
+
+    rasterize_pdf(
+        output_pdf,
+        output_png,
+        xres=100,
+        yres=100,
+        raster_device='png16m',
+        log=log)
+
+
+    # The output image should contain pure white and black
+    im = Image.open(output_png)
+    assert im.getextrema() == ((0, 255), (0, 255), (0, 255))
+
+
 # This will run 5 * 2 * 2 = 20 test cases
 @pytest.mark.parametrize(
     "pdf",
@@ -404,6 +436,7 @@ def test_maximum_options(spoof_tesseract_cache, renderer, output_type):
     check_ocrmypdf(
         'multipage.pdf', 'test_multipage%s.pdf' % renderer,
         '-d', '-c', '-i', '-g', '-f', '-k', '--oversample', '300',
+        '--remove-background',
         '--skip-big', '10', '--title', 'Too Many Weird Files',
         '--author', 'py.test', '--pdf-renderer', renderer,
         '--output-type', output_type,
