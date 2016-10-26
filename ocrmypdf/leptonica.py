@@ -206,26 +206,27 @@ class Pix:
 
         # Leptonica manages data in words, so it implicitly does an endian
         # swap.  Tell Pillow about this when it reads the data.
+        pix = self
         if sys.byteorder == 'little':
             if self.mode == 'RGB':
                 raw_mode = 'XBGR'
             elif self.mode == 'RGBA':
                 raw_mode = 'ABGR'
+            elif self.mode == '1':
+                raw_mode = '1;I'
+                pix = Pix(lept.pixEndianByteSwapNew(pix._pix))
             else:
                 raw_mode = self.mode
+                pix = Pix(lept.pixEndianByteSwapNew(pix._pix))
         else:
             raw_mode = self.mode  # no endian swap needed
 
-        size = (self._pix.w, self._pix.h)
-        bytecount = self._pix.wpl * 4 * self._pix.h
-        buf = ffi.buffer(self._pix.data, bytecount)
+        size = (pix._pix.w, pix._pix.h)
+        bytecount = pix._pix.wpl * 4 * pix._pix.h
+        buf = ffi.buffer(pix._pix.data, bytecount)
+        stride = pix._pix.wpl * 4
 
-        im_raw = Image.frombytes(self.mode, size, buf, 'raw', raw_mode)
-
-        # Leptonica stores images in 32-bit words
-        # Need to crop the any trailing amount
-        box = (0, 0, self.width, self.height)
-        im = im_raw.crop(box)
+        im = Image.frombytes(self.mode, size, buf, 'raw', raw_mode, stride)
 
         return im
 
