@@ -61,6 +61,12 @@ PIX * pixRead ( const char *filename );
 PIX * pixScale ( PIX *pixs, l_float32 scalex, l_float32 scaley );
 l_int32 pixFindSkew ( PIX *pixs, l_float32 *pangle, l_float32 *pconf );
 l_int32 pixWriteImpliedFormat ( const char *filename, PIX *pix, l_int32 quality, l_int32 progressive );
+l_int32
+pixWriteMemPng(l_uint8  **pdata,
+               size_t    *psize,
+               PIX       *pix,
+               l_float32  gamma);
+
 void pixDestroy ( PIX **ppix );
 
 PIX *

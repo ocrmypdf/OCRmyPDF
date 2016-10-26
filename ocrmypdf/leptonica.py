@@ -41,16 +41,21 @@ class LeptonicaErrorTrap(object):
 
     """
     def __enter__(self):
+        from io import UnsupportedOperation
         self.tmpfile = TemporaryFile()
 
         # Save the old stderr, and redirect stderr to temporary file
-        self.old_stderr_fileno = os.dup(sys.stderr.fileno())
-        os.dup2(self.tmpfile.fileno(), sys.stderr.fileno())
+        try:
+            self.old_stderr_fileno = os.dup(sys.stderr.fileno())
+            os.dup2(self.tmpfile.fileno(), sys.stderr.fileno())
+        except UnsupportedOperation:
+            self.old_stderr_fileno = None
         return
 
     def __exit__(self, exc_type, exc_value, traceback):
         # Restore old stderr
-        os.dup2(self.old_stderr_fileno, sys.stderr.fileno())
+        if self.old_stderr_fileno is not None:
+            os.dup2(self.old_stderr_fileno, sys.stderr.fileno())
 
         # Get data from tmpfile (in with block to ensure it is closed)
         with self.tmpfile as tmpfile:
@@ -120,6 +125,22 @@ class Pix:
         else:
             return "<leptonica.Pix image NULL>"
 
+    def _repr_png_(self):
+        """iPython display hook
+
+        returns png version of image
+        """
+
+        data = ffi.new('l_uint8 **')
+        size = ffi.new('size_t *')
+
+        err = lept.pixWriteMemPng(data, size, self._pix, 0)
+        if err != 0:
+            raise LeptonicaIOError("pixWriteMemPng")
+
+        char_data = ffi.cast('char *', data[0])
+        return ffi.buffer(char_data, size[0])[:]
+
     def __getstate__(self):
         data = ffi.new('l_uint32 **')
         size = ffi.new('size_t *')
@@ -144,6 +165,9 @@ class Pix:
         pix = lept.pixDeserializeFromMemory(
             cdata_uint32, len(state['data']))
         Pix.__init__(self, pix)
+
+    def __eq__(self, other):
+        return self.__getstate__() == other.__getstate__()
 
     @property
     def width(self):
