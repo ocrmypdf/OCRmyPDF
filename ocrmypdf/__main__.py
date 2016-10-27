@@ -1313,7 +1313,13 @@ def copy_final(
         pdfinfo,
         pdfinfo_lock):
     input_file = next((ii for ii in input_files if ii.endswith('.pdf')))
-    shutil.copy(input_file, output_file)
+
+    if output_file == '-':
+        from shutil import copyfileobj
+        with open(input_file, 'rb') as input_stream:
+            copyfileobj(input_stream, sys.stdout.buffer)
+    else:
+        shutil.copy(input_file, output_file)
 
 
 def available_cpu_count():
@@ -1470,20 +1476,22 @@ def run_pipeline():
         _log.error(e)
         return ExitCode.other_error
 
-    if options.output_type == 'pdfa':
-        pdfa_info = file_claims_pdfa(options.output_file)
-        if pdfa_info['pass']:
-            msg = 'Output file is a {} (as expected)'
-            _log.info(msg.format(pdfa_info['conformance']))
-        else:
-            msg = 'Output file was generated but is not PDF/A (seems to be {})'
-            _log.warning(msg.format(pdfa_info['conformance']))
+    if options.output_file != '-':
+        if options.output_type == 'pdfa':
+            pdfa_info = file_claims_pdfa(options.output_file)
+            if pdfa_info['pass']:
+                msg = 'Output file is a {} (as expected)'
+                _log.info(msg.format(pdfa_info['conformance']))
+            else:
+                msg = 'Output file is okay but is not PDF/A (seems to be {})'
+                _log.warning(msg.format(pdfa_info['conformance']))
 
+                return ExitCode.invalid_output_pdf
+        if not qpdf.check(options.output_file, _log):
+            _log.warning('Output file: The generated PDF is INVALID')
             return ExitCode.invalid_output_pdf
-
-    if not qpdf.check(options.output_file, _log):
-        _log.warning('Output file: The generated PDF is INVALID')
-        return ExitCode.invalid_output_pdf
+    else:
+        _log.info("Output sent to stdout")
 
     with _pdfinfo_lock:
         _log.debug(_pdfinfo)

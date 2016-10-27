@@ -662,6 +662,24 @@ def test_stdin(spoof_tesseract_noop):
         assert p.returncode == ExitCode.ok
 
 
+def test_stdout(spoof_tesseract_noop):
+    input_file = _infile('francais.pdf')
+    output_file = _outfile('test_stdout.pdf')
+
+    # Runs: ocrmypdf francais.pdf - > test_stdout.pdf
+    with open(output_file, 'wb') as output_stream:
+        p_args = OCRMYPDF + [input_file, '-']
+        p = Popen(
+            p_args, close_fds=True, stdout=output_stream, stderr=PIPE,
+            stdin=DEVNULL, env=spoof_tesseract_noop)
+        out, err = p.communicate()
+
+        assert p.returncode == ExitCode.ok
+
+    from ocrmypdf import qpdf
+    assert qpdf.check(output_file, log=None)
+
+
 def test_masks(spoof_tesseract_noop):
     check_ocrmypdf('masks.pdf', 'test_masks.pdf', env=spoof_tesseract_noop)
 
