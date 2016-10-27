@@ -156,6 +156,31 @@ pixGammaTRC(PIX       *pixd,
             l_int32    minval,
             l_int32    maxval);
 
+
+l_int32
+pixNumSignificantGrayColors(PIX       *pixs,
+                            l_int32    darkthresh,
+                            l_int32    lightthresh,
+                            l_float32  minfract,
+                            l_int32    factor,
+                            l_int32   *pncolors);
+
+l_int32
+pixColorFraction(PIX        *pixs,
+                 l_int32     darkthresh,
+                 l_int32     lightthresh,
+                 l_int32     diffthresh,
+                 l_int32     factor,
+                 l_float32  *ppixfract,
+                 l_float32  *pcolorfract);
+
+PIX *
+pixColorMagnitude(PIX     *pixs,
+                  l_int32  rwhite,
+                  l_int32  gwhite,
+                  l_int32  bwhite,
+                  l_int32  type);
+
 void
 boxDestroy(BOX  **pbox);
 
