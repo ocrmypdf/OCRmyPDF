@@ -651,19 +651,15 @@ def test_stdin(spoof_tesseract_noop):
     input_file = _infile('francais.pdf')
     output_file = _outfile('test_stdin.pdf')
 
-    # Runs: cat testfile.pdf | ocrmypdf - output.pdf
+    # Runs: ocrmypdf - output.pdf < testfile.pdf
+    with open(input_file, 'rb') as input_stream:
+        p_args = OCRMYPDF + ['-', output_file]
+        p = Popen(
+            p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
+            stdin=input_stream, env=spoof_tesseract_noop)
+        out, err = p.communicate()
 
-    p1_args = ['cat', input_file]
-    p1 = Popen(p1_args, close_fds=True, stdin=DEVNULL, stdout=PIPE)
-
-    p2_args = OCRMYPDF + ['-', output_file]
-    p2 = Popen(
-        p2_args, close_fds=True, stdout=PIPE, stderr=PIPE,
-        stdin=p1.stdout, env=spoof_tesseract_noop)
-    p1.stdout.close()
-    out, err = p2.communicate()
-
-    assert p2.returncode == ExitCode.ok
+        assert p.returncode == ExitCode.ok
 
 
 def test_masks(spoof_tesseract_noop):
