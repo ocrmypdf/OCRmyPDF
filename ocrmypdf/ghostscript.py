@@ -29,7 +29,10 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
                   universal_newlines=True)
         stdout, stderr = p.communicate()
         if stdout:
-            log.debug(stdout)
+            if 'error' in stdout:
+                log.error(stdout)  # Ghostscript puts errors in stdout
+            else:
+                log.debug(stdout)
         if stderr:
             log.error(stderr)
 
