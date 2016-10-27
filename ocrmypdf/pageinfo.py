@@ -3,7 +3,7 @@
 
 from subprocess import Popen, PIPE
 from decimal import Decimal, getcontext
-from math import hypot
+from math import hypot, isclose
 import re
 import sys
 import PyPDF2 as pypdf
@@ -52,6 +52,9 @@ FRIENDLY_COMP = {
 }
 
 
+UNIT_SQUARE = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+
+
 def _matrix_from_shorthand(shorthand):
     """Convert from PDF matrix shorthand to full matrix
 
@@ -71,6 +74,12 @@ def _shorthand_from_matrix(matrix):
     c, d = matrix[1][0], matrix[1][1]
     e, f = matrix[2][0], matrix[2][1]
     return tuple(map(float, (a, b, c, d, e, f)))
+
+
+def _is_unit_square(shorthand):
+    values = map(float, shorthand)
+    pairwise = zip(values, UNIT_SQUARE)
+    return all([isclose(a, b, rel_tol=1e-3) for a, b in pairwise])
 
 RasterSettings = namedtuple('RasterSettings',
     ['name', 'shorthand', 'stack_depth'])
@@ -106,7 +115,7 @@ def _interpret_contents(contentstream):
 
     operations = contentstream.operations
     stack = []
-    ctm = _matrix_from_shorthand((1, 0, 0, 1, 0, 0))
+    ctm = _matrix_from_shorthand(UNIT_SQUARE)
     image_raster_settings = []
     inline_images = []
 
@@ -293,7 +302,7 @@ def _find_page_regular_images(page, pageinfo, contentsinfo):
             if raster.name != image['name']:
                 continue
 
-            if raster.stack_depth == 0:
+            if raster.stack_depth == 0 and _is_unit_square(raster.shorthand):
                 # At least one PDF in the wild (and test suite) draws an image
                 # when the graphics stack depth is 0, meaning that the image
                 # gets drawn into a square of 1x1 PDF units (or 1/72",
