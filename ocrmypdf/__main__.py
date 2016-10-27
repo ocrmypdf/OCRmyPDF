@@ -1445,6 +1445,14 @@ def run_pipeline():
                 _log.error("File not found - " + options.input_file)
                 return ExitCode.input_file
 
+        if options.output_file == '-':
+            if sys.stdout.isatty():
+                _log.error(textwrap.dedent("""\
+                    Output was set to stdout '-' but it looks like stdout
+                    is connected to a terminal.  Please redirect stdout to a
+                    file."""))
+                return ExitCode.bad_args
+
         cmdline.run(options)
     except ruffus_exceptions.RethrownJobError as e:
         if options.verbose:
