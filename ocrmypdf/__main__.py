@@ -464,8 +464,8 @@ work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
 @atexit.register
 def cleanup_working_files(*args):
     if options.keep_temporary_files:
-        print("Temporary working files saved at:")
-        print(work_folder)
+        print("Temporary working files saved at:\n{0}".format(work_folder),
+              file=sys.stderr)
     else:
         with suppress(FileNotFoundError):
             shutil.rmtree(work_folder)
