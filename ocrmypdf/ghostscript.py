@@ -21,7 +21,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             '-dFirstPage=%i' % pageno,
             '-dLastPage=%i' % pageno,
             '-o', tmp.name,
-            '-r{0}x{1}'.format(str(xres), str(yres)),
+            '-r{0}x{1}'.format(str(round(xres)), str(round(yres))),
             input_file
         ]
 
