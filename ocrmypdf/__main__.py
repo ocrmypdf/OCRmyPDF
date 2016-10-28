@@ -164,7 +164,7 @@ parser.add_argument(
          "standard input)")
 parser.add_argument(
     'output_file',
-    help="output searchable PDF file")
+    help="output searchable PDF file (or '-' to write to standard output)")
 parser.add_argument(
     '-l', '--language', action='append',
     help="languages of the file to be OCRed (see tesseract --list-langs for "

@@ -4,6 +4,17 @@ RELEASE NOTES
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
 
+v4.3:
+=====
+
+-  New feature ``--remove-background`` to detect and erase the background of color and grayscale images
+-  Better documentation
+-  Fixed an issue with PDFs that draw images when the raster stack depth is zero 
+-  ocrmypdf can now redirect its output to stdout for use in a shell pipeline
+
+   +  This does not improve performance since temporary files are still used for buffering
+   +  Some output validation is disabled in this mode
+
 v4.2.5:
 =======
 
