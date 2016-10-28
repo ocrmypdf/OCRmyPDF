@@ -9,15 +9,16 @@ About OCR
 
 `Optical character recognition <https://en.wikipedia.org/wiki/Optical_character_recognition>`_ is technology that converts images of typed or handwritten text, such as in a scanned document, to computer text that can be searched and copied.
 
-OCRmyPDF uses `Tesseract <https://github.com/tesseract-ocr/tesseract>`_, the best available open source OCR engine, to do perform OCR.
+OCRmyPDF uses `Tesseract <https://github.com/tesseract-ocr/tesseract>`_, the best available open source OCR engine, to perform OCR.
 
+.. _raster-vector:
 
 About PDFs
 ----------
 
-PDFs are `vector graphic files <http://vector-conversions.com/vectorizing/raster_vs_vector.html>`_ that can contain raster objects such as scanned images. Because PDFs can contain multiple pages (unlike many image formats) and can contain fonts and text, it is a good formats for exchanging scanned documents.
+PDFs are page description files that attempts to preserve a layout exactly. They can contain `vector graphic files <http://vector-conversions.com/vectorizing/raster_vs_vector.html>`_ that can contain raster objects such as scanned images. Because PDFs can contain multiple pages (unlike many image formats) and can contain fonts and text, it is a good formats for exchanging scanned documents.
 
-.. image:: _static/bitmap_vs_svg.svg
+.. image:: bitmap_vs_svg.svg
 
 A PDF page might contain multiple images, even if it only appears to have one image.  Some scanners or scanning software will segment pages into monochromatic text and color regions for example, to improve the compression ratio and appearance of the page.
 
@@ -27,10 +28,11 @@ Rasterizing a PDF is the process of generating an image suitable for display or 
 About PDF/A
 -----------
 
-`PDF/A <https://en.wikipedia.org/wiki/PDF/A>`_ is a standardized subset of the full PDF specification that is designed for archiving.  PDF/A differs from PDF primarily by omitting features that would make it difficult to read the file in the future.  All fonts and resources needed to interpret the PDF must be contained within it.  Generally speaking, scanned documents should be converted to PDF/A.
+`PDF/A <https://en.wikipedia.org/wiki/PDF/A>`_ is a standardized subset of the full PDF specification that is designed for archiving.  PDF/A differs from PDF primarily by omitting features that would make it difficult to read the file in the future, such as embedded Javascript or references to external fonts.  All fonts and resources needed to interpret the PDF must be contained within it.  Generally speaking, scanned documents should be converted to PDF/A. There are various conformance levels and versions, such as "PDF/A-2b".
+
+Since most people who scan documents are interested in reading them in the future, OCRmyPDF generates PDF/A-2b by default.
 
 PDF/A has a few drawbacks.  Some PDF viewers include an alert that the file is a PDF/A, which may confuse some users.  It also tends to produce larger files than PDF, because it embeds certain resources even if they are commonly available. 
-
 
 What OCRmyPDF does
 ------------------

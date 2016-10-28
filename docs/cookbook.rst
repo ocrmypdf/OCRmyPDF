@@ -69,9 +69,11 @@ You can also use Tesseract 3.04+ directly to convert single page images or multi
 Image processing
 ----------------
 
-OCRmyPDF perform some image processing on each page of a PDF, if desired.  The same processing is applied to each page.
+OCRmyPDF perform some image processing on each page of a PDF, if desired.  The same processing is applied to each page.  It is suggested that the user review files after image processing as these commands might remove desirable content, especially from poor quality scans.
 
-OCRmyPDF has two image processing functions: deskew and clean.  
+* ``--rotate-pages`` attempts to determine the correct orientation for each page and rotates the page if necessary.
+
+* ``--remove-background`` attempts to detect and remove a noisy background from grayscale or color images.  Monochrome images are ignored. This should not be used on documents that contain color photos as it may remove them.
 
 * ``--deskew`` will correct pages were scanned at a skewed angle by rotating them back into place.  Skew determination and correction is performed using `Postl's variance of line sums <http://www.leptonica.com/skew-measurement.html>`_ algorithm as implemented in `Leptonica <http://www.leptonica.com/index.html>`_.
   
@@ -127,7 +129,7 @@ Consider using the excellent `GNU Parallel <https://www.gnu.org/software/paralle
 
 Both ``parallel`` and ``ocrmypdf`` will try to use all available processors. To maximize parallelism without overloading your system with processes, consider using ``parallel -j 2`` to limit parallel to running two jobs at once.
 
-This command will run all ocrmypdf all files named ``\*.pdf`` in the current directory and write them to the previous created ``output/`` folder.
+This command will run all ocrmypdf all files named ``*.pdf`` in the current directory and write them to the previous created ``output/`` folder.
 
 .. code-block:: bash
 

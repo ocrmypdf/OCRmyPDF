@@ -152,6 +152,9 @@ ocrmypdf so it is already installed.
 
     img2pdf --pagesize A4 page*.png | ocrmypdf - myfile.pdf
 
+Online documentation is located at:
+    https://ocrmypdf.readthedocs.io/en/latest/introduction.html
+
 """)
 
 parser.add_argument(
