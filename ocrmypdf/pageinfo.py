@@ -3,11 +3,19 @@
 
 from subprocess import Popen, PIPE
 from decimal import Decimal, getcontext
-from math import hypot, isclose
+from math import hypot
 import re
 import sys
 import PyPDF2 as pypdf
 from collections import namedtuple
+
+try:
+    from math import isclose
+except ImportError:
+    def isclose(a, b, rel_tol=1e-9):
+        "Python 3.4 does not have math.isclose()"
+        diff = abs(b - a)
+        return diff <= abs(rel_tol * b) or diff <= abs(rel_tol * a)
 
 matrix_mult = pypdf.pdf.utils.matrixMultiply
 
