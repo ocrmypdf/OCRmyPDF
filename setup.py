@@ -148,9 +148,10 @@ def check_external_program(
 
 
 command = next((arg for arg in sys.argv[1:] if not arg.startswith('-')), '')
+forced = ('--force' in sys.argv)
 
 
-if command.startswith('install') or \
+if not forced and command.startswith('install') or \
         command in ['check', 'test', 'nosetests', 'easy_install']:
     check_external_program(
         program='tesseract',
@@ -174,6 +175,8 @@ if command.startswith('install') or \
         package='qpdf',
         version_check_args=['--version']
     )
+else:
+    print('Skipping external program tests because of --force')
 
 
 if 'upload' in sys.argv[1:]:
