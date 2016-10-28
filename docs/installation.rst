@@ -81,10 +81,10 @@ In this worked example, the current working directory contains an input file cal
 Note that ``ocrmypdf`` has its own separate ``-v VERBOSITYLEVEL`` argument to control debug verbosity. All Docker arguments should before the ``ocrmypdf`` image name and all arguments to ``ocrmypdf`` should be listed after.
 
 
-Installing on Mac OS X
-----------------------
+Installing on macOS (formerly Mac OS X)
+---------------------------------------
 
-These instructions probably work on all Mac OS X versions later than 10.7 (Lion). OCRmyPDF is known to work on Yosemite and El Capitan, and regularly tested on El Capitan.
+These instructions probably work on all macOS supported by Homebrew. OCRmyPDF is known to work on Yosemite and El Capitan, and regularly tested on El Capitan.
 
 If it's not already present, `install Homebrew <http://brew.sh/>`_.
 
