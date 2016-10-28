@@ -1,6 +1,9 @@
 from enum import IntEnum
 import os
 from collections.abc import Iterable
+import pkg_resources
+
+VERSION = pkg_resources.get_distribution('ocrmypdf').version
 
 
 class ExitCode(IntEnum):
@@ -28,3 +31,4 @@ def page_number(input_file):
 
 def is_iterable_notstr(thing):
     return isinstance(thing, Iterable) and not isinstance(thing, str)
+

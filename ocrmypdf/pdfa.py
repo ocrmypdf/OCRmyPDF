@@ -70,13 +70,14 @@ def encode_text_string(s: str) -> str:
 
     From PDF 32000-1:2008 a string object may be included in hexademical form
     if it is enclosed in angle brackets.  For general Unicode the string should
-    be UTF-16 (big endian) with byte order marks.  A non-hexademical
-    representation is doable but this is preferable since it allows the output
-    Postscript file to be completely ASCII and no escaping of Postscript
-    characters is necessary.
+    be UTF-16 (big endian) with byte order marks.  Many strings including all
+    ASCII strings fall could be encoded as PdfDocEncoding literals provided
+    that certain Postscript sequences are escaped.  But it's far simpler to
+    encode everything as UTF-16.
     '''
 
-    # Sometimes lazy C programmer leave their NULs at the end of strings
+    # Sometimes lazy C programmers leave their NULs at the end of strings they
+    # insert into PDFs
     # tests/resources/aspect.pdf is one example (created by ImageMagick)
     s = s.replace('\x00', '')
 
