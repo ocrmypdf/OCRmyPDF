@@ -5,7 +5,6 @@
 #
 # Python FFI wrapper for Leptonica library
 
-from __future__ import print_function, absolute_import, division
 import argparse
 import sys
 import os
@@ -45,22 +44,29 @@ class LeptonicaErrorTrap(object):
         self.tmpfile = TemporaryFile()
 
         # Save the old stderr, and redirect stderr to temporary file
+        sys.stderr.flush()
         try:
-            self.old_stderr_fileno = os.dup(sys.stderr.fileno())
-            os.dup2(self.tmpfile.fileno(), sys.stderr.fileno())
+            self.copy_of_stderr = os.dup(sys.stderr.fileno())
+            os.dup2(self.tmpfile.fileno(), sys.stderr.fileno(),
+                    inheritable=False)
         except UnsupportedOperation:
-            self.old_stderr_fileno = None
+            self.copy_of_stderr = None
         return
 
     def __exit__(self, exc_type, exc_value, traceback):
         # Restore old stderr
-        if self.old_stderr_fileno is not None:
-            os.dup2(self.old_stderr_fileno, sys.stderr.fileno())
+        sys.stderr.flush()
+        if self.copy_of_stderr is not None:
+            os.dup2(self.copy_of_stderr, sys.stderr.fileno())
+            os.close(self.copy_of_stderr)
 
         # Get data from tmpfile (in with block to ensure it is closed)
         with self.tmpfile as tmpfile:
             tmpfile.seek(0)  # Cursor will be at end, so move back to beginning
             leptonica_output = tmpfile.read().decode(errors='replace')
+
+        assert self.tmpfile.closed
+        assert not sys.stderr.closed
 
         # If there are Python errors, let them bubble up
         if exc_type:
