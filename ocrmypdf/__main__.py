@@ -1529,7 +1529,10 @@ def run_pipeline():
         _log.info("Output sent to stdout")
 
     with _pdfinfo_lock:
-        _log.debug(_pdfinfo)
+        if options.verbose:
+            from pprint import pformat
+            referent = _pdfinfo._getvalue()  # get the real list out of proxy
+            _log.debug(pformat(referent))
         direction = {0: 'n', 90: 'e',
                      180: 's', 270: 'w'}
         orientations = []
