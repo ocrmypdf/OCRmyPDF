@@ -82,14 +82,14 @@ Assemblies
 
 These test resources are assemblies from other previously mentioned files, released under the same license terms as their input files.
 
-- cardinal.pdf (four cardinal directions, rotated copies of LinnSequencer.jpg)
+- cardinal.pdf (four cardinal directions, baked-in rotated copies of LinnSequencer.jpg)
 - ccitt.pdf (LinnSequencer.jpg, converted to CCITT encoding)
 - encrypted_algo4.pdf (congress.jpg, encrypted with algorithm 4 - not supported by PyPDF2)
 - graph_ocred.pdf (from graph.pdf)
 - jbig2.pdf (congress.jpg, converted to JBIG2 encoding)
 - multipage.pdf (from several other files)
 - palette.pdf (congress.jpg, converted to a 256-color palette)
-- skew.pdf (from c02-22.pdf)
+- skew.pdf (from LinnSequencer.jpg, skew simulated by adjusting the transformation matrix)
 - skew-encrypted.pdf (skew.pdf with encryption - access supported by PyPDF2)
 
 

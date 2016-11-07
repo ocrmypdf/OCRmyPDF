@@ -377,6 +377,11 @@ def _pdf_get_pageinfo(infile, pageno: int):
     pageinfo['height_inches'] = height_pt / Decimal(72.0)
 
     try:
+        pageinfo['rotate'] = int(page['/Rotate'])
+    except KeyError:
+        pageinfo['rotate'] = 0
+
+    try:
         contentstream = pypdf.pdf.ContentStream(page.getContents(), pdf)
     except AttributeError as e:
         return pageinfo
