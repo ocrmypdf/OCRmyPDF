@@ -147,11 +147,16 @@ def page_timedout(log, input_file):
     log.warning(prefix + " took too long to OCR - skipping")
 
 
-def _generate_null_hocr(output_hocr, pageinfo):
+def _generate_null_hocr(output_hocr, image):
+    """Produce a .hocr file that reports no text detected on a page that is
+    the same size as the input image."""
+    from PIL import Image
+
+    im = Image.open(image)
+    w, h = im.size
+
     with open(output_hocr, 'w', encoding="utf-8") as f:
-        f.write(HOCR_TEMPLATE.format(
-            pageinfo['width_pixels'],
-            pageinfo['height_pixels']))
+        f.write(HOCR_TEMPLATE.format(w, h))
 
 
 def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
@@ -181,11 +186,11 @@ def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
         # Temporary workaround to hocrTransform not being able to function if
         # it does not have a valid hOCR file.
         page_timedout(log, input_file)
-        _generate_null_hocr(output_hocr, pageinfo_getter())
+        _generate_null_hocr(output_hocr, input_file)
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_file)
         if 'Image too large' in e.output:
-            _generate_null_hocr(output_hocr, pageinfo_getter())
+            _generate_null_hocr(output_hocr, input_file)
             return
 
         raise e from e

@@ -707,6 +707,7 @@ def test_rotated_skew_timeout():
 
     out = check_ocrmypdf(
         'rotated_skew.pdf', 'test_rotated_skew.pdf',
+        '--pdf-renderer', 'hocr',
         '--deskew', '--tesseract-timeout', '0')
 
     out_pageinfo = pdf_get_all_pageinfo(out)[0]
