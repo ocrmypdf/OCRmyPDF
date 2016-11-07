@@ -166,8 +166,10 @@ parser.add_argument(
     help="output searchable PDF file (or '-' to write to standard output)")
 parser.add_argument(
     '-l', '--language', action='append',
-    help="languages of the file to be OCRed (see tesseract --list-langs for "
-         "all language packs installed in your system)")
+    help="Language(s) of the file to be OCRed (see tesseract --list-langs for "
+         "all language packs installed in your system). To specify multiple "
+         "languages, join them with '+' or issue this argument once for each "
+         "language.")
 parser.add_argument(
     '-j', '--jobs', metavar='N', type=int,
     help="Use up to N CPU cores simultaneously (default: use all)")
@@ -1011,9 +1013,11 @@ def select_image_layer(
         with open(image, 'rb') as imfile, \
                 open(output_file, 'wb') as pdf:
             rawdata = imfile.read()
+            log.debug('{:4d}: convert'.format(page_number(page_pdf)))
             img2pdf.convert(
                 rawdata, with_pdfrw=False,
                 layout_fun=layout_fun, outputstream=pdf)
+            log.debug('{:4d}: convert done'.format(page_number(page_pdf)))
 
 
 @posttask(partial(done_task, 'render_hocr_page'))

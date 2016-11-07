@@ -28,11 +28,16 @@ Rasterizing a PDF is the process of generating an image suitable for display or 
 About PDF/A
 -----------
 
-`PDF/A <https://en.wikipedia.org/wiki/PDF/A>`_ is a standardized subset of the full PDF specification that is designed for archiving.  PDF/A differs from PDF primarily by omitting features that would make it difficult to read the file in the future, such as embedded Javascript or references to external fonts.  All fonts and resources needed to interpret the PDF must be contained within it.  Generally speaking, scanned documents should be converted to PDF/A. There are various conformance levels and versions, such as "PDF/A-2b".
+`PDF/A <https://en.wikipedia.org/wiki/PDF/A>`_ is an ISO-standardized subset of the full PDF specification that is designed for archiving (the 'A' stands for Archive).  PDF/A differs from PDF primarily by omitting features that would make it difficult to read the file in the future, such as embedded Javascript, video, audio and references to external fonts.  All fonts and resources needed to interpret the PDF must be contained within it. Because PDF/A disables Javascript and other types of embedded content, it is probably more secure.
 
-Since most people who scan documents are interested in reading them in the future, OCRmyPDF generates PDF/A-2b by default.
+There are various conformance levels and versions, such as "PDF/A-2b".
 
-PDF/A has a few drawbacks.  Some PDF viewers include an alert that the file is a PDF/A, which may confuse some users.  It also tends to produce larger files than PDF, because it embeds certain resources even if they are commonly available. 
+Generally speaking, the best format for scanned documents is PDF/A. Some governments and jurisdictions, US Courts in particular, `mandate the use of PDF/A <https://pdfblog.com/2012/02/13/what-is-pdfa/>`_ for scanned documents.
+
+Since most people who scan documents are interested in reading them indefinitely into the future, OCRmyPDF generates PDF/A-2b by default.
+
+PDF/A has a few drawbacks.  Some PDF viewers include an alert that the file is a PDF/A, which may confuse some users.  It also tends to produce larger files than PDF, because it embeds certain resources even if they are commonly available. PDF/A files can be digitally signed, but may not be encrypted, to ensure they can be read in the future.  Fortunately, converting from PDF/A to a regular PDF is trivial, and any PDF viewer can view PDF/A.
+
 
 What OCRmyPDF does
 ------------------

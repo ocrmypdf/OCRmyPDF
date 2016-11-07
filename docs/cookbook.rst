@@ -49,10 +49,23 @@ OCR will attempt to automatic correct the rotation of each page. This can help f
 You can increase (decrease) the parameter ``--rotate-pages-threshold`` to make page rotation more (less) aggressive.
 
 
+OCR languages other than English
+""""""""""""""""""""""""""""""""
+
+By default OCRmyPDF assumes the document is English. 
+
+.. code-block:: bash
+
+	ocrmypdf -l fre LeParisien.pdf LeParisien.pdf
+	ocrmypdf -l eng+fre Bilingual-English-French.pdf Bilingual-English-French.pdf
+
+Language packs must be installed for all languages specified. See :ref:`Installing additional language packs <lang-packs>`.
+
+
 OCR images, not PDFs
 --------------------
 
-Use a program like `img2pdf <https://gitlab.mister-muffin.de/josch/img2pdf>`_ to convert your images to PDFs, and then pipe the resutls to run ocrmypdf:
+Use a program like `img2pdf <https://gitlab.mister-muffin.de/josch/img2pdf>`_ to convert your images to PDFs, and then pipe the results to run ocrmypdf:
 
 .. code-block:: bash
 
@@ -107,6 +120,7 @@ watchdog installs the command line program ``watchmedo``, which can be told to r
 	mkdir out
 	watchmedo shell-command \
 		--patterns="*.pdf" \
+		--ignore-directories \
 		--command='ocrmypdf "${watch_src_path}" "out/${watch_src_path}" ' \
 		.  # don't forget the final dot
 
@@ -114,12 +128,12 @@ For more complex behavior you can write a Python script around to use the watchd
 
 On file servers, you could configure watchmedo as a system service so it will run all the time.
 
-
 Caveats
 """""""
 
 * ``watchmedo`` may not work properly on a networked file system, depending on the capabilities of the file system client and server.
 * This simple recipe does not filter for the type of file system event, so file copies, deletes and moves, and directory operations, will all be sent to ocrmypdf, producing errors in several cases. Disable your watched folder if you are doing anything other than copying files to it.
+* If the source and destination directory are the same, watchmedo may create an infinite loop.
 
 
 Batch jobs
