@@ -89,6 +89,7 @@ These test resources are assemblies from other previously mentioned files, relea
 - jbig2.pdf (congress.jpg, converted to JBIG2 encoding)
 - multipage.pdf (from several other files)
 - palette.pdf (congress.jpg, converted to a 256-color palette)
+- rotated_skew.pdf (a /Rotate'd and skewed document from LinnSequencer.jpg)
 - skew.pdf (from LinnSequencer.jpg, skew simulated by adjusting the transformation matrix)
 - skew-encrypted.pdf (skew.pdf with encryption - access supported by PyPDF2)
 
