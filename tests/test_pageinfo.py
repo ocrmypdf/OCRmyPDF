@@ -97,11 +97,6 @@ def test_single_page_image():
     assert pdfimage['width'] == 8
     assert pdfimage['color'] == 'gray'
 
-    # While unexpected, this is correct
-    # PDF spec says /FlateDecode image must have /BitsPerComponent 8
-    # So mono images get upgraded to 8-bit
-    assert pdfimage['bpc'] == 8
-
     # DPI in a 1"x1" is the image width
     assert abs(pdfimage['dpi_w'] - 8) < 1e-5
     assert abs(pdfimage['dpi_h'] - 8) < 1e-5
