@@ -688,3 +688,37 @@ def test_linearized_pdf_and_indirect_object(spoof_tesseract_noop):
     check_ocrmypdf(
         'epson.pdf', 'test_epson.pdf',
         env=spoof_tesseract_noop)
+
+
+def test_rotated_skew_timeout():
+    """This document contains an image that is rotated 90 into place with a
+    /Rotate tag and intentionally skewed by altering the transformation matrix.
+
+    This tests for a bug where the combinatino of preprocessing and a tesseract
+    timeout produced a page whose dimensions did not match the original's.
+    """
+
+    input_file = _infile('rotated_skew.pdf')
+    in_pageinfo = pdf_get_all_pageinfo(input_file)[0]
+
+    assert in_pageinfo['height_pixels'] < in_pageinfo['width_pixels'], \
+        "Expected the input page to be landscape"
+    assert in_pageinfo['rotate'] == 90, "Expected a rotated page"
+
+    out = check_ocrmypdf(
+        'rotated_skew.pdf', 'test_rotated_skew.pdf',
+        '--pdf-renderer', 'hocr',
+        '--deskew', '--tesseract-timeout', '0')
+
+    out_pageinfo = pdf_get_all_pageinfo(out)[0]
+
+    assert out_pageinfo['height_pixels'] > out_pageinfo['width_pixels'], \
+        "Expected the output page to be portrait"
+
+    assert out_pageinfo['rotate'] == 0, \
+        "Expected no page rotation for output"
+
+    assert in_pageinfo['width_pixels'] == out_pageinfo['height_pixels'] and \
+        in_pageinfo['height_pixels'] == out_pageinfo['width_pixels'], \
+        "Expected page rotation to be baked in"
+

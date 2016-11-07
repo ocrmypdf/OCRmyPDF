@@ -3,6 +3,16 @@ RELEASE NOTES
 
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
+v4.3.1:
+=======
+
+-  Fixed an issue where pages produced by the "hocr" renderer after a Tesseract timeout would be rotated incorrectly if the input page was rotated with a /Rotate marker
+-  Fixed a file handle leak in LeptonicaErrorTrap that would cause a "too many open files" error for files around hundred pages of pages long when ``--deskew`` or ``--remove-background`` or other Leptonica based image processing features were in use, depending on the system value of ``ulimit -n``
+-  Ability to specify multiple languages for multilingual documents is now advertised in documentation
+-  Reduced the file sizes of some test resources
+-  Cleaned up debug output
+-  Tesseract caching in test cases is now more cautious about false cache hits and reproducing exact output, not that any problems were observed
+
 
 v4.3:
 =====

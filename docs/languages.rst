@@ -1,3 +1,5 @@
+.. _lang-packs:
+
 Installing additional language packs
 ====================================
 
@@ -19,7 +21,7 @@ Debian and Ubuntu users
    apt-get install tesseract-ocr-chi-sim  # Example: Install Chinese Simplified language back
    
 You can then pass the ``-l LANG`` argument to OCRmyPDF to give a hint as to what languages it should search for. Multiple
-languages can be requested.
+languages can be requested using either ``-l eng+fre`` (English and French) or ``-l eng -l fre``.
 
 Mac OS X (macOS) users
 ----------------------
@@ -38,7 +40,7 @@ As of v4.2, users of ocrmypdf working languages outside the Latin alphabet shoul
 
 .. code-block:: bash
 
-	ocrmypdf --output-type pdf --pdf-renderer tesseract
+	ocrmypdf -l eng+gre --output-type pdf --pdf-renderer tesseract
 
 The reasons for this are:
 

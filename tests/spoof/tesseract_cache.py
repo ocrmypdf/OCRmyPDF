@@ -48,11 +48,17 @@ def main():
 
     m = hashlib.sha1()
 
-    version = subprocess.check_output(
+    tess_version = subprocess.check_output(
         ['tesseract', '--version'],
         stderr=subprocess.STDOUT)
 
-    m.update(version)
+    m.update(tess_version)
+
+    # Insert this source file into the hash function, to ensure that any
+    # changes to this file invalidate previous hashes
+    with open(__file__, 'rb') as f:
+        m.update(f.read())
+
     m.update(operation.encode())
 
     try:
@@ -93,10 +99,10 @@ def main():
             shutil.copy(cache_name, output_file)
 
         # Replicate output
-        with open(cache_name + '.stdout', 'r') as f:
-            print(f.read(), end='')
-        with open(cache_name + '.stderr', 'r') as f:
-            print(f.read(), end='', file=sys.stderr)
+        with open(cache_name + '.stdout', 'rb') as f:
+            sys.stdout.buffer.write(f.read())
+        with open(cache_name + '.stderr', 'rb') as f:
+            sys.stderr.buffer.write(f.read())
         sys.exit(0)
 
     # Cache miss
@@ -105,23 +111,22 @@ def main():
     # Call tesseract
     p = subprocess.Popen(
             ['tesseract'] + sys.argv[1:],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            universal_newlines=True)
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = p.communicate()
 
     if p.returncode != 0:
         # Do not cache errors or crashes
         print("Tesseract error", file=sys.stderr)
-        print(stdout, end='')
-        print(stderr, end='', file=sys.stderr)
+        sys.stdout.buffer.write(stdout)
+        sys.stderr.buffer.write(stderr)
         return p.returncode
 
-    with open(cache_name + '.stdout', 'w') as f:
+    with open(cache_name + '.stdout', 'wb') as f:
         f.write(stdout)
-    with open(cache_name + '.stderr', 'w') as f:
+    with open(cache_name + '.stderr', 'wb') as f:
         f.write(stderr)
-    print(stdout, end='')
-    print(stderr, end='', file=sys.stderr)
+    sys.stdout.buffer.write(stdout)
+    sys.stderr.buffer.write(stderr)
 
     # Insert file into cache
     if output_file != 'stdout':

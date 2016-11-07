@@ -21,7 +21,7 @@ from PIL import Image
 from functools import partial
 
 from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
-    formatter, follows, split, collate, check_if_uptodate, graphviz
+    formatter, follows, split, collate, check_if_uptodate, graphviz, posttask
 import ruffus.ruffus_exceptions as ruffus_exceptions
 import ruffus.cmdline as cmdline
 import ruffus.proxy_logger as proxy_logger
@@ -166,8 +166,10 @@ parser.add_argument(
     help="output searchable PDF file (or '-' to write to standard output)")
 parser.add_argument(
     '-l', '--language', action='append',
-    help="languages of the file to be OCRed (see tesseract --list-langs for "
-         "all language packs installed in your system)")
+    help="Language(s) of the file to be OCRed (see tesseract --list-langs for "
+         "all language packs installed in your system). To specify multiple "
+         "languages, join them with '+' or issue this argument once for each "
+         "language.")
 parser.add_argument(
     '-j', '--jobs', metavar='N', type=int,
     help="Use up to N CPU cores simultaneously (default: use all)")
@@ -303,6 +305,8 @@ if not set(options.language).issubset(tesseract.languages()):
 
 # ----------
 # Arguments
+
+options.verbose_abbreviated_path = 1
 
 if options.pdf_renderer == 'auto':
     options.pdf_renderer = 'hocr'
@@ -460,6 +464,11 @@ _pdfinfo_lock = manager.Lock()
 work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
 
 
+def done_task(caller):
+    "Useful as debug hook"
+    pass
+
+
 @atexit.register
 def cleanup_working_files(*args):
     if options.keep_temporary_files:
@@ -533,6 +542,7 @@ def triage_image_file(input_file, output_file, log):
         sys.exit(ExitCode.input_file)
 
 
+@posttask(partial(done_task, 'triage'))
 @transform(
     input=os.path.join(work_folder, 'origin'),
     filter=formatter('(?i)'),
@@ -555,6 +565,7 @@ def triage(
     triage_image_file(input_file, output_file, log)
 
 
+@posttask(partial(done_task, 'repair_pdf'))
 @transform(
     input=triage,
     filter=suffix('.pdf'),
@@ -648,6 +659,7 @@ def is_ocr_required(pageinfo, log):
     return ocr_required
 
 
+@posttask(partial(done_task, 'split_pages'))
 @split(
     repair_pdf,
     os.path.join(work_folder, '*.page.pdf'),
@@ -690,6 +702,7 @@ def split_pages(
                 os.path.basename(filename)[0:6] + alt_suffix))
 
 
+@posttask(partial(done_task, 'rasterize_preview'))
 @active_if(options.rotate_pages)
 @transform(
     input=split_pages,
@@ -712,6 +725,7 @@ def rasterize_preview(
         log=log)
 
 
+@posttask(partial(done_task, 'orient_page'))
 @collate(
     input=[split_pages, rasterize_preview],
     filter=regex(r".*/(\d{6})(\.ocr|\.skip)(?:\.page\.pdf|\.preview\.jpg)"),
@@ -786,6 +800,7 @@ def orient_page(
             pdfinfo[pageno] = pageinfo
 
 
+@posttask(partial(done_task, 'rasterize_with_ghostscript'))
 @transform(
     input=orient_page,
     filter=suffix('.ocr.oriented.pdf'),
@@ -822,6 +837,7 @@ def rasterize_with_ghostscript(
         log=log)
 
 
+@posttask(partial(done_task, 'preprocess_remove_background'))
 @transform(
     input=rasterize_with_ghostscript,
     filter=suffix(".page.png"),
@@ -848,6 +864,7 @@ def preprocess_remove_background(
         re_symlink(input_file, output_file, log)
 
 
+@posttask(partial(done_task, 'preprocess_deskew'))
 @transform(
     input=preprocess_remove_background,
     filter=suffix(".pp-background.png"),
@@ -870,6 +887,7 @@ def preprocess_deskew(
     leptonica.deskew(input_file, output_file, dpi)
 
 
+@posttask(partial(done_task, 'preprocess_clean'))
 @transform(
     input=preprocess_deskew,
     filter=suffix(".pp-deskew.png"),
@@ -892,6 +910,7 @@ def preprocess_clean(
     unpaper.clean(input_file, output_file, dpi, log)
 
 
+@posttask(partial(done_task, 'ocr_tesseract_hocr'))
 @active_if(options.pdf_renderer == 'hocr')
 @transform(
     input=preprocess_clean,
@@ -919,6 +938,7 @@ def ocr_tesseract_hocr(
         )
 
 
+@posttask(partial(done_task, 'select_image_for_pdf'))
 @collate(
     input=[rasterize_with_ghostscript, preprocess_remove_background,
            preprocess_deskew, preprocess_clean],
@@ -962,6 +982,7 @@ def select_image_for_pdf(
         re_symlink(image, output_file)
 
 
+@posttask(partial(done_task, 'select_image_layer'))
 @active_if(options.pdf_renderer == 'hocr')
 @collate(
     input=[select_image_for_pdf, orient_page],
@@ -992,11 +1013,14 @@ def select_image_layer(
         with open(image, 'rb') as imfile, \
                 open(output_file, 'wb') as pdf:
             rawdata = imfile.read()
+            log.debug('{:4d}: convert'.format(page_number(page_pdf)))
             img2pdf.convert(
                 rawdata, with_pdfrw=False,
                 layout_fun=layout_fun, outputstream=pdf)
+            log.debug('{:4d}: convert done'.format(page_number(page_pdf)))
 
 
+@posttask(partial(done_task, 'render_hocr_page'))
 @active_if(options.pdf_renderer == 'hocr')
 @transform(
     input=ocr_tesseract_hocr,
@@ -1019,6 +1043,7 @@ def render_hocr_page(
                          showBoundingboxes=False, invisibleText=True)
 
 
+@posttask(partial(done_task, 'render_hocr_debug_page'))
 @active_if(options.pdf_renderer == 'hocr')
 @active_if(options.debug_rendering)
 @collate(
@@ -1048,6 +1073,7 @@ class PdfMergeFailedError(Exception):
     pass
 
 
+@posttask(partial(done_task, 'add_text_layer'))
 @active_if(options.pdf_renderer == 'hocr')
 @collate(
     input=[render_hocr_page, select_image_layer],
@@ -1126,6 +1152,7 @@ def add_text_layer(
         pdf_output.write(out)
 
 
+@posttask(partial(done_task, 'tesseract_ocr_and_render_pdf'))
 @active_if(options.pdf_renderer == 'tesseract')
 @collate(
     input=[select_image_for_pdf, orient_page],
@@ -1191,6 +1218,7 @@ def get_pdfmark(base_pdf):
     return pdfmark
 
 
+@posttask(partial(done_task, 'generate_postscript_stub'))
 @active_if(options.output_type == 'pdfa')
 @transform(
     input=repair_pdf,
@@ -1207,6 +1235,7 @@ def generate_postscript_stub(
     generate_pdfa_def(output_file, pdfmark)
 
 
+@posttask(partial(done_task, 'skip_page'))
 @transform(
     input=orient_page,
     filter=suffix('.skip.oriented.pdf'),
@@ -1224,6 +1253,7 @@ def skip_page(
     re_symlink(input_file, output_file, log)
 
 
+@posttask(partial(done_task, 'merge_pages_ghostscript'))
 @active_if(options.output_type == 'pdfa')
 @merge(
     input=[add_text_layer, render_hocr_debug_page, skip_page,
@@ -1255,6 +1285,7 @@ def merge_pages_ghostscript(
     ghostscript.generate_pdfa(pdf_pages, output_file, options.jobs or 1)
 
 
+@posttask(partial(done_task, 'merge_pages_qpdf'))
 @active_if(options.output_type == 'pdf')
 @merge(
     input=[add_text_layer, render_hocr_debug_page, skip_page,
@@ -1301,6 +1332,7 @@ def merge_pages_qpdf(
     qpdf.merge(pdf_pages, output_file)
 
 
+@posttask(partial(done_task, 'copy_final'))
 @merge(
     input=[merge_pages_ghostscript, merge_pages_qpdf],
     output=options.output_file,
@@ -1501,7 +1533,10 @@ def run_pipeline():
         _log.info("Output sent to stdout")
 
     with _pdfinfo_lock:
-        _log.debug(_pdfinfo)
+        if options.verbose:
+            from pprint import pformat
+            referent = _pdfinfo._getvalue()  # get the real list out of proxy
+            _log.debug(pformat(referent))
         direction = {0: 'n', 90: 'e',
                      180: 's', 270: 'w'}
         orientations = []

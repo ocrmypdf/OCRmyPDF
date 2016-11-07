@@ -326,9 +326,11 @@ def _find_page_regular_images(page, pageinfo, contentsinfo):
             image['dpi_w'] = max(dpi_w, image.get('dpi_w', 0))
             image['dpi_h'] = max(dpi_h, image.get('dpi_h', 0))
 
-        image['dpi_w'] = Decimal(image['dpi_w'])
-        image['dpi_h'] = Decimal(image['dpi_h'])
-        image['dpi'] = (image['dpi_w'] * image['dpi_h']) ** Decimal(0.5)
+        DPI_PREC = Decimal('1.000')
+        image['dpi_w'] = Decimal(image['dpi_w']).quantize(DPI_PREC)
+        image['dpi_h'] = Decimal(image['dpi_h']).quantize(DPI_PREC)
+        dpi = Decimal(image['dpi_w'] * image['dpi_h']).sqrt()
+        image['dpi'] = dpi.quantize(DPI_PREC)
         yield image
 
 
@@ -373,6 +375,11 @@ def _pdf_get_pageinfo(infile, pageno: int):
     height_pt = page.mediaBox.getHeight()
     pageinfo['width_inches'] = width_pt / Decimal(72.0)
     pageinfo['height_inches'] = height_pt / Decimal(72.0)
+
+    try:
+        pageinfo['rotate'] = int(page['/Rotate'])
+    except KeyError:
+        pageinfo['rotate'] = 0
 
     try:
         contentstream = pypdf.pdf.ContentStream(page.getContents(), pdf)
