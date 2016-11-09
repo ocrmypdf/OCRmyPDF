@@ -140,21 +140,20 @@ def file_claims_pdfa(filename):
                 'conformance': 'No XMP metadata'}
 
     pdfa_dict = {attr.localName: attr.value for attr in pdfa_nodes}
-    pdfa_dict['pass'] = False
-    pdfa_dict['output'] = 'pdf'
-    if pdfa_dict:
-        part_conformance = pdfa_dict['part'] + pdfa_dict['conformance']
-        valid_part_conforms = {'1A', '1B', '2A', '2B', '2U', '3A', '3B', '3U'}
+    if not pdfa_dict:
+        return {'pass': False, 'output': 'pdf',
+                'conformance': 'No XMP metadata'}
 
-        conformance = 'PDF/A-{}'.format(
-            part_conformance)
+    part_conformance = pdfa_dict['part'] + pdfa_dict['conformance']
+    valid_part_conforms = {'1A', '1B', '2A', '2B', '2U', '3A', '3B', '3U'}
 
-        if part_conformance in valid_part_conforms:
-            pdfa_dict['pass'] = True
-            pdfa_dict['output'] = 'pdfa'
-        pdfa_dict['conformance'] = conformance
-    else:
-        pdfa_dict['conformance'] = 'PDF'
+    conformance = 'PDF/A-{}'.format(
+        part_conformance)
+
+    if part_conformance in valid_part_conforms:
+        pdfa_dict['pass'] = True
+        pdfa_dict['output'] = 'pdfa'
+    pdfa_dict['conformance'] = conformance
 
     return pdfa_dict
 
