@@ -282,7 +282,7 @@ Changes
 -------
 
 -  Default output format is now PDF/A-2b instead of PDF/A-1b
--  Python 3.5 and OS X El Capitan are now supported platforms - no changes were
+-  Python 3.5 and macOS El Capitan are now supported platforms - no changes were
    needed to implement support
 -  Improved some error messages related to missing input files
 -  Fixed issue #20 - uppercase .PDF extension not accepted
