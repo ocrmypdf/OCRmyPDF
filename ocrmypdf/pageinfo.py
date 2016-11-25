@@ -232,7 +232,10 @@ def _find_page_inline_images(page, pageinfo, contentsinfo):
             image['bpc'] = inline.settings['/BPC']
         else:
             image['bpc'] = 8
-        image['color'] = FRIENDLY_COLORSPACE.get(inline.settings['/CS'], '-')
+        if '/CS' in inline.settings:
+            image['color'] = FRIENDLY_COLORSPACE.get(inline.settings['/CS'], '-')
+        else:
+            image['color'] = '-'
         image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
         if '/F' in inline.settings:
             filter_ = inline.settings['/F']
