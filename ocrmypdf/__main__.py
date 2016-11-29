@@ -418,6 +418,7 @@ class WrappedLogger:
             self.logger.critical(*args, **kwargs)
 
 _log = WrappedLogger(_logger, _logger_mutex)
+_log.debug('ocrmypdf ' + VERSION)
 
 
 def re_symlink(input_file, soft_link_name, log=_log):
