@@ -1432,7 +1432,7 @@ def build_pipeline():
     task_render_hocr_page.graphviz(fillcolor='"#00cc66"')
     task_render_hocr_page.active_if(options.pdf_renderer == 'hocr')
 
-    task_render_hocr_debug_page = main_pipeline.transform(
+    task_render_hocr_debug_page = main_pipeline.collate(
         task_func=render_hocr_debug_page,
         input=[task_select_image_for_pdf, task_ocr_tesseract_hocr],
         filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
