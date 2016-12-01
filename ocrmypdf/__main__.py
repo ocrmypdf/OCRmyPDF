@@ -20,8 +20,11 @@ from PIL import Image
 
 from functools import partial
 
-from ruffus import transform, suffix, merge, active_if, regex, jobs_limit, \
-    formatter, follows, split, collate, check_if_uptodate, graphviz, posttask
+# from ruffus import transform, suffix, merge, active_if, regex, \
+#     formatter, split, collate, graphviz, \
+#     posttask, Pipeline
+from ruffus import formatter, regex, Pipeline, suffix
+
 import ruffus.ruffus_exceptions as ruffus_exceptions
 import ruffus.cmdline as cmdline
 import ruffus.proxy_logger as proxy_logger
@@ -42,6 +45,9 @@ warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 BASEDIR = os.path.dirname(os.path.realpath(__file__))
 
 VECTOR_PAGE_DPI = 400
+
+
+_log = None
 
 
 # -------------
@@ -281,86 +287,87 @@ debugging.add_argument(
     '-g', '--debug-rendering', action='store_true',
     help="render each page twice with debug information on second page")
 
-options = parser.parse_args()
+if 0:
+    options = parser.parse_args()
 
 
-# ----------
-# Languages
+    # ----------
+    # Languages
 
-if not options.language:
-    options.language = ['eng']  # Enforce English hegemony
+    if not options.language:
+        options.language = ['eng']  # Enforce English hegemony
 
-# Support v2.x "eng+deu" language syntax
-if '+' in options.language[0]:
-    options.language = options.language[0].split('+')
+    # Support v2.x "eng+deu" language syntax
+    if '+' in options.language[0]:
+        options.language = options.language[0].split('+')
 
-if not set(options.language).issubset(tesseract.languages()):
-    complain(
-        "The installed version of tesseract does not have language "
-        "data for the following requested languages: ")
-    for lang in (set(options.language) - tesseract.languages()):
-        complain(lang)
-    sys.exit(ExitCode.bad_args)
-
-
-# ----------
-# Arguments
-
-options.verbose_abbreviated_path = 1
-
-if options.pdf_renderer == 'auto':
-    options.pdf_renderer = 'hocr'
-
-if options.pdf_renderer == 'tesseract' and tesseract.version() < '3.04.01' \
-        and os.environ.get('OCRMYPDF_SHARP_TTF', '') != '1':
-    complain(
-        "WARNING: Your version of tesseract has problems with PDF output. "
-        "Some PDF viewers will fail to find searchable text.\n"
-        "--pdf-renderer=tesseract is not recommended.")
-
-if any((options.clean, options.clean_final)):
-    try:
-        from . import unpaper
-        if unpaper.version() < '6.1':
-            complain(
-                "The installed 'unpaper' is not supported. "
-                "Install version 6.1 or newer.")
-            sys.exit(ExitCode.missing_dependency)
-    except FileNotFoundError:
+    if not set(options.language).issubset(tesseract.languages()):
         complain(
-            "Install the 'unpaper' program to use --deskew or --clean.")
-        sys.exit(ExitCode.missing_dependency)
-else:
-    unpaper = None
+            "The installed version of tesseract does not have language "
+            "data for the following requested languages: ")
+        for lang in (set(options.language) - tesseract.languages()):
+            complain(lang)
+        sys.exit(ExitCode.bad_args)
 
-if options.debug_rendering and options.pdf_renderer == 'tesseract':
-    complain(
-        "Ignoring --debug-rendering because it is not supported with"
-        "--pdf-renderer=tesseract.")
 
-if options.force_ocr and options.skip_text:
-    complain(
-        "Error: --force-ocr and --skip-text are mutually incompatible.")
-    sys.exit(ExitCode.bad_args)
+    # ----------
+    # Arguments
 
-if options.clean and not options.clean_final \
-        and options.pdf_renderer == 'tesseract':
-    complain(
-        "Tesseract PDF renderer cannot render --clean pages without "
-        "also performing --clean-final, so --clean-final is assumed.")
+    options.verbose_abbreviated_path = 1
 
-if set(options.language) & {'chi_sim', 'chi_tra'} \
-        and (options.pdf_renderer == 'hocr' or options.output_type == 'pdfa'):
-    complain(
-        "Your settings are known to cause problems with OCR of Chinese text. "
-        "Try adding these arguments: "
-        "    ocrmypdf --pdf-renderer tesseract --output-type pdf")
+    if options.pdf_renderer == 'auto':
+        options.pdf_renderer = 'hocr'
 
-lossless_reconstruction = False
-if options.pdf_renderer == 'hocr':
-    if not options.deskew and not options.clean_final and \
-            not options.force_ocr and not options.remove_background:
-        lossless_reconstruction = True
+    if options.pdf_renderer == 'tesseract' and tesseract.version() < '3.04.01' \
+            and os.environ.get('OCRMYPDF_SHARP_TTF', '') != '1':
+        complain(
+            "WARNING: Your version of tesseract has problems with PDF output. "
+            "Some PDF viewers will fail to find searchable text.\n"
+            "--pdf-renderer=tesseract is not recommended.")
+
+    if any((options.clean, options.clean_final)):
+        try:
+            from . import unpaper
+            if unpaper.version() < '6.1':
+                complain(
+                    "The installed 'unpaper' is not supported. "
+                    "Install version 6.1 or newer.")
+                sys.exit(ExitCode.missing_dependency)
+        except FileNotFoundError:
+            complain(
+                "Install the 'unpaper' program to use --deskew or --clean.")
+            sys.exit(ExitCode.missing_dependency)
+    else:
+        unpaper = None
+
+    if options.debug_rendering and options.pdf_renderer == 'tesseract':
+        complain(
+            "Ignoring --debug-rendering because it is not supported with"
+            "--pdf-renderer=tesseract.")
+
+    if options.force_ocr and options.skip_text:
+        complain(
+            "Error: --force-ocr and --skip-text are mutually incompatible.")
+        sys.exit(ExitCode.bad_args)
+
+    if options.clean and not options.clean_final \
+            and options.pdf_renderer == 'tesseract':
+        complain(
+            "Tesseract PDF renderer cannot render --clean pages without "
+            "also performing --clean-final, so --clean-final is assumed.")
+
+    if set(options.language) & {'chi_sim', 'chi_tra'} \
+            and (options.pdf_renderer == 'hocr' or options.output_type == 'pdfa'):
+        complain(
+            "Your settings are known to cause problems with OCR of Chinese text. "
+            "Try adding these arguments: "
+            "    ocrmypdf --pdf-renderer tesseract --output-type pdf")
+
+    lossless_reconstruction = False
+    if options.pdf_renderer == 'hocr':
+        if not options.deskew and not options.clean_final and \
+                not options.force_ocr and not options.remove_background:
+            lossless_reconstruction = True
 
 
 # ----------
@@ -382,9 +389,6 @@ def logging_factory(logger_name, listargs):
         handler.setLevel(logging.INFO)
     root_logger.addHandler(handler)
     return root_logger
-
-_logger, _logger_mutex = proxy_logger.make_shared_logger_and_proxy(
-    logging_factory, __name__, [None, options.verbose])
 
 
 class WrappedLogger:
@@ -417,14 +421,18 @@ class WrappedLogger:
         with self.mutex:
             self.logger.critical(*args, **kwargs)
 
-_log = WrappedLogger(_logger, _logger_mutex)
-_log.debug('ocrmypdf ' + VERSION)
-
 
 def re_symlink(input_file, soft_link_name, log=_log):
     """
     Helper function: relinks soft symbolic link if necessary
     """
+
+    if log is None:
+        class Blackhole:
+            def debug(self, msg):
+                pass
+        log = Blackhole()
+
     # Guard against soft linking to oneself
     if input_file == soft_link_name:
         log.debug("Warning: No symbolic link made. You are using " +
@@ -543,12 +551,6 @@ def triage_image_file(input_file, output_file, log):
         sys.exit(ExitCode.input_file)
 
 
-@posttask(partial(done_task, 'triage'))
-@transform(
-    input=os.path.join(work_folder, 'origin'),
-    filter=formatter('(?i)'),
-    output=os.path.join(work_folder, 'origin.pdf'),
-    extras=[_log])
 def triage(
         input_file,
         output_file,
@@ -566,13 +568,6 @@ def triage(
     triage_image_file(input_file, output_file, log)
 
 
-@posttask(partial(done_task, 'repair_pdf'))
-@transform(
-    input=triage,
-    filter=suffix('.pdf'),
-    output='.repaired.pdf',
-    output_dir=work_folder,
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
 def repair_pdf(
         input_file,
         output_file,
@@ -660,11 +655,6 @@ def is_ocr_required(pageinfo, log):
     return ocr_required
 
 
-@posttask(partial(done_task, 'split_pages'))
-@split(
-    repair_pdf,
-    os.path.join(work_folder, '*.page.pdf'),
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
 def split_pages(
         input_files,
         output_files,
@@ -703,14 +693,6 @@ def split_pages(
                 os.path.basename(filename)[0:6] + alt_suffix))
 
 
-@posttask(partial(done_task, 'rasterize_preview'))
-@active_if(options.rotate_pages)
-@transform(
-    input=split_pages,
-    filter=suffix('.page.pdf'),
-    output='.preview.jpg',
-    output_dir=work_folder,
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
 def rasterize_preview(
         input_file,
         output_file,
@@ -726,12 +708,6 @@ def rasterize_preview(
         log=log)
 
 
-@posttask(partial(done_task, 'orient_page'))
-@collate(
-    input=[split_pages, rasterize_preview],
-    filter=regex(r".*/(\d{6})(\.ocr|\.skip)(?:\.page\.pdf|\.preview\.jpg)"),
-    output=os.path.join(work_folder, r'\1\2.oriented.pdf'),
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
 def orient_page(
         infiles,
         output_file,
@@ -801,13 +777,6 @@ def orient_page(
             pdfinfo[pageno] = pageinfo
 
 
-@posttask(partial(done_task, 'rasterize_with_ghostscript'))
-@transform(
-    input=orient_page,
-    filter=suffix('.ocr.oriented.pdf'),
-    output='.page.png',
-    output_dir=work_folder,
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
 def rasterize_with_ghostscript(
         input_file,
         output_file,
@@ -838,12 +807,6 @@ def rasterize_with_ghostscript(
         log=log)
 
 
-@posttask(partial(done_task, 'preprocess_remove_background'))
-@transform(
-    input=rasterize_with_ghostscript,
-    filter=suffix(".page.png"),
-    output=".pp-background.png",
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
 def preprocess_remove_background(
         input_file,
         output_file,
@@ -865,12 +828,6 @@ def preprocess_remove_background(
         re_symlink(input_file, output_file, log)
 
 
-@posttask(partial(done_task, 'preprocess_deskew'))
-@transform(
-    input=preprocess_remove_background,
-    filter=suffix(".pp-background.png"),
-    output=".pp-deskew.png",
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
 def preprocess_deskew(
         input_file,
         output_file,
@@ -888,12 +845,6 @@ def preprocess_deskew(
     leptonica.deskew(input_file, output_file, dpi)
 
 
-@posttask(partial(done_task, 'preprocess_clean'))
-@transform(
-    input=preprocess_deskew,
-    filter=suffix(".pp-deskew.png"),
-    output=".pp-clean.png",
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
 def preprocess_clean(
         input_file,
         output_file,
@@ -911,14 +862,6 @@ def preprocess_clean(
     unpaper.clean(input_file, output_file, dpi, log)
 
 
-@posttask(partial(done_task, 'ocr_tesseract_hocr'))
-@active_if(options.pdf_renderer == 'hocr')
-@transform(
-    input=preprocess_clean,
-    filter=suffix(".pp-clean.png"),
-    output=".hocr",
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
-@graphviz(fillcolor='"#00cc66"')
 def ocr_tesseract_hocr(
         input_file,
         output_file,
@@ -939,14 +882,6 @@ def ocr_tesseract_hocr(
         )
 
 
-@posttask(partial(done_task, 'select_image_for_pdf'))
-@collate(
-    input=[rasterize_with_ghostscript, preprocess_remove_background,
-           preprocess_deskew, preprocess_clean],
-    filter=regex(r".*/(\d{6})(?:\.page|\.pp-.*)\.png"),
-    output=os.path.join(work_folder, r'\1.image'),
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
-@graphviz(shape='diamond')
 def select_image_for_pdf(
         infiles,
         output_file,
@@ -983,14 +918,6 @@ def select_image_for_pdf(
         re_symlink(image, output_file)
 
 
-@posttask(partial(done_task, 'select_image_layer'))
-@active_if(options.pdf_renderer == 'hocr')
-@collate(
-    input=[select_image_for_pdf, orient_page],
-    filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
-    output=os.path.join(work_folder, r'\1.image-layer.pdf'),
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
-@graphviz(fillcolor='"#00cc66"', shape='diamond')
 def select_image_layer(
         infiles,
         output_file,
@@ -1021,14 +948,6 @@ def select_image_layer(
             log.debug('{:4d}: convert done'.format(page_number(page_pdf)))
 
 
-@posttask(partial(done_task, 'render_hocr_page'))
-@active_if(options.pdf_renderer == 'hocr')
-@transform(
-    input=ocr_tesseract_hocr,
-    filter=suffix('.hocr'),
-    output='.hocr.pdf',
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
-@graphviz(fillcolor='"#00cc66"')
 def render_hocr_page(
         input_file,
         output_file,
@@ -1044,15 +963,6 @@ def render_hocr_page(
                          showBoundingboxes=False, invisibleText=True)
 
 
-@posttask(partial(done_task, 'render_hocr_debug_page'))
-@active_if(options.pdf_renderer == 'hocr')
-@active_if(options.debug_rendering)
-@collate(
-    input=[select_image_for_pdf, ocr_tesseract_hocr],
-    filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
-    output=os.path.join(work_folder, r'\1.debug.pdf'),
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
-@graphviz(fillcolor='"#00cc66"')
 def render_hocr_debug_page(
         infiles,
         output_file,
@@ -1074,14 +984,6 @@ class PdfMergeFailedError(Exception):
     pass
 
 
-@posttask(partial(done_task, 'add_text_layer'))
-@active_if(options.pdf_renderer == 'hocr')
-@collate(
-    input=[render_hocr_page, select_image_layer],
-    filter=regex(r".*/(\d{6})(?:\.hocr\.pdf|\.image-layer\.pdf)"),
-    output=os.path.join(work_folder, r'\1.rendered.pdf'),
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
-@graphviz(fillcolor='"#00cc66"')
 def add_text_layer(
         infiles,
         output_file,
@@ -1153,14 +1055,6 @@ def add_text_layer(
         pdf_output.write(out)
 
 
-@posttask(partial(done_task, 'tesseract_ocr_and_render_pdf'))
-@active_if(options.pdf_renderer == 'tesseract')
-@collate(
-    input=[select_image_for_pdf, orient_page],
-    filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
-    output=os.path.join(work_folder, r'\1.rendered.pdf'),
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
-@graphviz(fillcolor='"#66ccff"')
 def tesseract_ocr_and_render_pdf(
         input_files,
         output_file,
@@ -1219,13 +1113,6 @@ def get_pdfmark(base_pdf):
     return pdfmark
 
 
-@posttask(partial(done_task, 'generate_postscript_stub'))
-@active_if(options.output_type == 'pdfa')
-@transform(
-    input=repair_pdf,
-    filter=formatter(r'\.repaired\.pdf'),
-    output=os.path.join(work_folder, 'pdfa_def.ps'),
-    extras=[_log])
 def generate_postscript_stub(
         input_file,
         output_file,
@@ -1236,13 +1123,6 @@ def generate_postscript_stub(
     generate_pdfa_def(output_file, pdfmark)
 
 
-@posttask(partial(done_task, 'skip_page'))
-@transform(
-    input=orient_page,
-    filter=suffix('.skip.oriented.pdf'),
-    output='.done.pdf',
-    output_dir=work_folder,
-    extras=[_log])
 def skip_page(
         input_file,
         output_file,
@@ -1254,13 +1134,6 @@ def skip_page(
     re_symlink(input_file, output_file, log)
 
 
-@posttask(partial(done_task, 'merge_pages_ghostscript'))
-@active_if(options.output_type == 'pdfa')
-@merge(
-    input=[add_text_layer, render_hocr_debug_page, skip_page,
-           tesseract_ocr_and_render_pdf, generate_postscript_stub],
-    output=os.path.join(work_folder, 'merged.pdf'),
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
 def merge_pages_ghostscript(
         input_files,
         output_file,
@@ -1286,13 +1159,6 @@ def merge_pages_ghostscript(
     ghostscript.generate_pdfa(pdf_pages, output_file, options.jobs or 1)
 
 
-@posttask(partial(done_task, 'merge_pages_qpdf'))
-@active_if(options.output_type == 'pdf')
-@merge(
-    input=[add_text_layer, render_hocr_debug_page, skip_page,
-           tesseract_ocr_and_render_pdf, repair_pdf],
-    output=os.path.join(work_folder, 'merged.pdf'),
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
 def merge_pages_qpdf(
         input_files,
         output_file,
@@ -1333,11 +1199,6 @@ def merge_pages_qpdf(
     qpdf.merge(pdf_pages, output_file)
 
 
-@posttask(partial(done_task, 'copy_final'))
-@merge(
-    input=[merge_pages_ghostscript, merge_pages_qpdf],
-    output=options.output_file,
-    extras=[_log, _pdfinfo, _pdfinfo_lock])
 def copy_final(
         input_files,
         output_file,
@@ -1449,6 +1310,212 @@ def traverse_ruffus_exception(e_args):
     elif is_iterable_notstr(e_args):
         for exc in e_args:
             return traverse_ruffus_exception(exc)
+
+
+def build_pipeline():
+    import sys
+    sys.argv = ['ocrmypdf', 'file1.pdf', 'file2.pdf']
+
+    options = parser.parse_args()
+    _logger, _logger_mutex = proxy_logger.make_shared_logger_and_proxy(
+            logging_factory, __name__, [None, options.verbose])
+    _log = WrappedLogger(_logger, _logger_mutex)
+    _log.debug('ocrmypdf ' + VERSION)
+
+    main_pipeline = Pipeline.pipelines['main']
+
+    # Triage
+    task_triage = main_pipeline.transform(
+        task_func=triage,
+        input=os.path.join(work_folder, 'origin'),
+        filter=formatter('(?i)'),
+        output=os.path.join(work_folder, 'origin.pdf'),
+        extras=[_log])
+
+    task_repair_pdf = main_pipeline.transform(
+        task_func=repair_pdf,
+        input=task_triage,
+        filter=suffix('.pdf'),
+        output='.repaired.pdf',
+        output_dir=work_folder,
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+
+    # Split
+    task_split_pages = main_pipeline.split(
+        split_pages,
+        task_repair_pdf,
+        os.path.join(work_folder, '*.page.pdf'),
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+
+    # Rasterize preview
+    task_rasterize_preview = main_pipeline.transform(
+        task_func=rasterize_preview,
+        input=task_split_pages,
+        filter=suffix('.page.pdf'),
+        output='.preview.jpg',
+        output_dir=work_folder,
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+    task_rasterize_preview.active_if(options.rotate_pages)
+
+    # Orient
+    task_orient_page = main_pipeline.collate(
+        task_func=orient_page,
+        input=[task_split_pages, task_rasterize_preview],
+        filter=regex(r".*/(\d{6})(\.ocr|\.skip)(?:\.page\.pdf|\.preview\.jpg)"),
+        output=os.path.join(work_folder, r'\1\2.oriented.pdf'),
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+
+    # Rasterize actual
+    task_rasterize_with_ghostscript = main_pipeline.transform(
+        task_func=rasterize_with_ghostscript,
+        input=task_orient_page,
+        filter=suffix('.ocr.oriented.pdf'),
+        output='.page.png',
+        output_dir=work_folder,
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+
+    # Preprocessing subpipeline
+    task_preprocess_remove_background = main_pipeline.transform(
+        task_func=preprocess_remove_background,
+        input=task_rasterize_with_ghostscript,
+        filter=suffix(".page.png"),
+        output=".pp-background.png",
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+
+    task_preprocess_deskew = main_pipeline.transform(
+        task_func=preprocess_deskew,
+        input=task_preprocess_remove_background,
+        filter=suffix(".pp-background.png"),
+        output=".pp-deskew.png",
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+
+    task_preprocess_clean = main_pipeline.transform(
+        task_func=preprocess_clean,
+        input=task_preprocess_deskew,
+        filter=suffix(".pp-deskew.png"),
+        output=".pp-clean.png",
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+
+    # HOCR OCR
+    task_ocr_tesseract_hocr = main_pipeline.transform(
+        task_func=ocr_tesseract_hocr,
+        input=task_preprocess_clean,
+        filter=suffix(".pp-clean.png"),
+        output=".hocr",
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+    task_ocr_tesseract_hocr.graphviz(fillcolor='"#00cc66"')
+    task_ocr_tesseract_hocr.active_if(options.pdf_renderer == 'hocr')
+
+    task_select_image_for_pdf = main_pipeline.collate(
+        task_func=select_image_for_pdf,
+        input=[task_rasterize_with_ghostscript,
+               task_preprocess_remove_background,
+               task_preprocess_deskew,
+               task_preprocess_clean],
+        filter=regex(r".*/(\d{6})(?:\.page|\.pp-.*)\.png"),
+        output=os.path.join(work_folder, r'\1.image'),
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+    task_select_image_for_pdf.graphviz(shape='diamond')
+
+    task_select_image_layer = main_pipeline.collate(
+        task_func=select_image_layer,
+        input=[task_select_image_for_pdf, task_orient_page],
+        filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
+        output=os.path.join(work_folder, r'\1.image-layer.pdf'),
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+    task_select_image_layer.graphviz(
+        fillcolor='"#00cc66"', shape='diamond')
+    task_select_image_layer.active_if(options.pdf_renderer == 'hocr')
+
+    task_render_hocr_page = main_pipeline.transform(
+        task_func=render_hocr_page,
+        input=task_ocr_tesseract_hocr,
+        filter=suffix('.hocr'),
+        output='.hocr.pdf',
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+    task_render_hocr_page.graphviz(fillcolor='"#00cc66"')
+    task_render_hocr_page.active_if(options.pdf_renderer == 'hocr')
+
+    task_render_hocr_debug_page = main_pipeline.transform(
+        task_func=render_hocr_debug_page,
+        input=[task_select_image_for_pdf, task_ocr_tesseract_hocr],
+        filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
+        output=os.path.join(work_folder, r'\1.debug.pdf'),
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+    task_render_hocr_debug_page.graphviz(fillcolor='"#00cc66"')
+    task_render_hocr_debug_page.active_if(options.pdf_renderer == 'hocr')
+    task_render_hocr_debug_page.active_if(options.debug_rendering)
+
+    task_add_text_layer = main_pipeline.collate(
+        task_func=add_text_layer,
+        input=[task_render_hocr_page, task_select_image_layer],
+        filter=regex(r".*/(\d{6})(?:\.hocr\.pdf|\.image-layer\.pdf)"),
+        output=os.path.join(work_folder, r'\1.rendered.pdf'),
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+    task_add_text_layer.graphviz(fillcolor='"#00cc66"')
+    task_add_text_layer.active_if(options.pdf_renderer == 'hocr')
+
+    # Tesseract OCR
+    task_tesseract_ocr_and_render_pdf = main_pipeline.collate(
+        task_func=tesseract_ocr_and_render_pdf,
+        input=[task_select_image_for_pdf, task_orient_page],
+        filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
+        output=os.path.join(work_folder, r'\1.rendered.pdf'),
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+    task_tesseract_ocr_and_render_pdf.graphviz(fillcolor='"#66ccff"')
+    task_tesseract_ocr_and_render_pdf.active_if(options.pdf_renderer == 'tesseract')
+
+    # PDF/A
+    task_generate_postscript_stub = main_pipeline.transform(
+        task_func=generate_postscript_stub,
+        input=task_repair_pdf,
+        filter=formatter(r'\.repaired\.pdf'),
+        output=os.path.join(work_folder, 'pdfa_def.ps'),
+        extras=[_log])
+    task_generate_postscript_stub.active_if(options.output_type == 'pdfa')
+
+
+    # Bypass valve
+    task_skip_page = main_pipeline.transform(
+        task_func=skip_page,
+        input=task_orient_page,
+        filter=suffix('.skip.oriented.pdf'),
+        output='.done.pdf',
+        output_dir=work_folder,
+        extras=[_log])
+
+    # Merge pages
+    task_merge_pages_ghostscript = main_pipeline.merge(
+        task_func=merge_pages_ghostscript,
+        input=[task_add_text_layer,
+               task_render_hocr_debug_page,
+               task_skip_page,
+               task_tesseract_ocr_and_render_pdf,
+               task_generate_postscript_stub],
+        output=os.path.join(work_folder, 'merged.pdf'),
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+    task_merge_pages_ghostscript.active_if(options.output_type == 'pdfa')
+
+    task_merge_pages_qpdf = main_pipeline.merge(
+        task_func=merge_pages_qpdf,
+        input=[task_add_text_layer,
+               task_render_hocr_debug_page,
+               task_skip_page,
+               task_tesseract_ocr_and_render_pdf,
+               task_repair_pdf],
+        output=os.path.join(work_folder, 'merged.pdf'),
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+    task_merge_pages_qpdf.active_if(options.output_type == 'pdf')
+
+    # Finalize
+    task_copy_final = main_pipeline.merge(
+        task_func=copy_final,
+        input=[task_merge_pages_ghostscript, task_merge_pages_qpdf],
+        output=options.output_file,
+        extras=[_log, _pdfinfo, _pdfinfo_lock])
+
+
+
 
 
 def run_pipeline():
