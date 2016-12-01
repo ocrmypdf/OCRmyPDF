@@ -390,40 +390,8 @@ def logging_factory(logger_name, listargs):
     return root_logger
 
 
-class WrappedLogger:
-
-    def __init__(self, my_logger, my_mutex):
-        self.logger = my_logger
-        self.mutex = my_mutex
-
-    def log(self, *args, **kwargs):
-        with self.mutex:
-            self.logger.log(*args, **kwargs)
-
-    def debug(self, *args, **kwargs):
-        with self.mutex:
-            self.logger.debug(*args, **kwargs)
-
-    def info(self, *args, **kwargs):
-        with self.mutex:
-            self.logger.info(*args, **kwargs)
-
-    def warning(self, *args, **kwargs):
-        with self.mutex:
-            self.logger.warning(*args, **kwargs)
-
-    def error(self, *args, **kwargs):
-        with self.mutex:
-            self.logger.error(*args, **kwargs)
-
-    def critical(self, *args, **kwargs):
-        with self.mutex:
-            self.logger.critical(*args, **kwargs)
-
-
-_logger, _logger_mutex = proxy_logger.make_shared_logger_and_proxy(
+_log, _log_mutex = proxy_logger.make_shared_logger_and_proxy(
         logging_factory, __name__, [None, options.verbose])
-_log = WrappedLogger(_logger, _logger_mutex)
 _log.debug('ocrmypdf ' + VERSION)
 
 
