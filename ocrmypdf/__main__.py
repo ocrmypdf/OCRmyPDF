@@ -432,12 +432,6 @@ def re_symlink(input_file, soft_link_name, log=_log):
     Helper function: relinks soft symbolic link if necessary
     """
 
-    if log is None:
-        class Blackhole:
-            def debug(self, msg):
-                pass
-        log = Blackhole()
-
     # Guard against soft linking to oneself
     if input_file == soft_link_name:
         log.debug("Warning: No symbolic link made. You are using " +
