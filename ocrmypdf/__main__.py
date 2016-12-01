@@ -287,87 +287,86 @@ debugging.add_argument(
     '-g', '--debug-rendering', action='store_true',
     help="render each page twice with debug information on second page")
 
-if 0:
-    options = parser.parse_args()
+options = parser.parse_args()
 
 
-    # ----------
-    # Languages
+# ----------
+# Languages
 
-    if not options.language:
-        options.language = ['eng']  # Enforce English hegemony
+if not options.language:
+    options.language = ['eng']  # Enforce English hegemony
 
-    # Support v2.x "eng+deu" language syntax
-    if '+' in options.language[0]:
-        options.language = options.language[0].split('+')
+# Support v2.x "eng+deu" language syntax
+if '+' in options.language[0]:
+    options.language = options.language[0].split('+')
 
-    if not set(options.language).issubset(tesseract.languages()):
-        complain(
-            "The installed version of tesseract does not have language "
-            "data for the following requested languages: ")
-        for lang in (set(options.language) - tesseract.languages()):
-            complain(lang)
-        sys.exit(ExitCode.bad_args)
+if not set(options.language).issubset(tesseract.languages()):
+    complain(
+        "The installed version of tesseract does not have language "
+        "data for the following requested languages: ")
+    for lang in (set(options.language) - tesseract.languages()):
+        complain(lang)
+    sys.exit(ExitCode.bad_args)
 
 
-    # ----------
-    # Arguments
+# ----------
+# Arguments
 
-    options.verbose_abbreviated_path = 1
+options.verbose_abbreviated_path = 1
 
-    if options.pdf_renderer == 'auto':
-        options.pdf_renderer = 'hocr'
+if options.pdf_renderer == 'auto':
+    options.pdf_renderer = 'hocr'
 
-    if options.pdf_renderer == 'tesseract' and tesseract.version() < '3.04.01' \
-            and os.environ.get('OCRMYPDF_SHARP_TTF', '') != '1':
-        complain(
-            "WARNING: Your version of tesseract has problems with PDF output. "
-            "Some PDF viewers will fail to find searchable text.\n"
-            "--pdf-renderer=tesseract is not recommended.")
+if options.pdf_renderer == 'tesseract' and tesseract.version() < '3.04.01' \
+        and os.environ.get('OCRMYPDF_SHARP_TTF', '') != '1':
+    complain(
+        "WARNING: Your version of tesseract has problems with PDF output. "
+        "Some PDF viewers will fail to find searchable text.\n"
+        "--pdf-renderer=tesseract is not recommended.")
 
-    if any((options.clean, options.clean_final)):
-        try:
-            from . import unpaper
-            if unpaper.version() < '6.1':
-                complain(
-                    "The installed 'unpaper' is not supported. "
-                    "Install version 6.1 or newer.")
-                sys.exit(ExitCode.missing_dependency)
-        except FileNotFoundError:
+if any((options.clean, options.clean_final)):
+    try:
+        from . import unpaper
+        if unpaper.version() < '6.1':
             complain(
-                "Install the 'unpaper' program to use --deskew or --clean.")
+                "The installed 'unpaper' is not supported. "
+                "Install version 6.1 or newer.")
             sys.exit(ExitCode.missing_dependency)
-    else:
-        unpaper = None
-
-    if options.debug_rendering and options.pdf_renderer == 'tesseract':
+    except FileNotFoundError:
         complain(
-            "Ignoring --debug-rendering because it is not supported with"
-            "--pdf-renderer=tesseract.")
+            "Install the 'unpaper' program to use --deskew or --clean.")
+        sys.exit(ExitCode.missing_dependency)
+else:
+    unpaper = None
 
-    if options.force_ocr and options.skip_text:
-        complain(
-            "Error: --force-ocr and --skip-text are mutually incompatible.")
-        sys.exit(ExitCode.bad_args)
+if options.debug_rendering and options.pdf_renderer == 'tesseract':
+    complain(
+        "Ignoring --debug-rendering because it is not supported with"
+        "--pdf-renderer=tesseract.")
 
-    if options.clean and not options.clean_final \
-            and options.pdf_renderer == 'tesseract':
-        complain(
-            "Tesseract PDF renderer cannot render --clean pages without "
-            "also performing --clean-final, so --clean-final is assumed.")
+if options.force_ocr and options.skip_text:
+    complain(
+        "Error: --force-ocr and --skip-text are mutually incompatible.")
+    sys.exit(ExitCode.bad_args)
 
-    if set(options.language) & {'chi_sim', 'chi_tra'} \
-            and (options.pdf_renderer == 'hocr' or options.output_type == 'pdfa'):
-        complain(
-            "Your settings are known to cause problems with OCR of Chinese text. "
-            "Try adding these arguments: "
-            "    ocrmypdf --pdf-renderer tesseract --output-type pdf")
+if options.clean and not options.clean_final \
+        and options.pdf_renderer == 'tesseract':
+    complain(
+        "Tesseract PDF renderer cannot render --clean pages without "
+        "also performing --clean-final, so --clean-final is assumed.")
 
-    lossless_reconstruction = False
-    if options.pdf_renderer == 'hocr':
-        if not options.deskew and not options.clean_final and \
-                not options.force_ocr and not options.remove_background:
-            lossless_reconstruction = True
+if set(options.language) & {'chi_sim', 'chi_tra'} \
+        and (options.pdf_renderer == 'hocr' or options.output_type == 'pdfa'):
+    complain(
+        "Your settings are known to cause problems with OCR of Chinese text. "
+        "Try adding these arguments: "
+        "    ocrmypdf --pdf-renderer tesseract --output-type pdf")
+
+lossless_reconstruction = False
+if options.pdf_renderer == 'hocr':
+    if not options.deskew and not options.clean_final and \
+            not options.force_ocr and not options.remove_background:
+        lossless_reconstruction = True
 
 
 # ----------
@@ -420,6 +419,12 @@ class WrappedLogger:
     def critical(self, *args, **kwargs):
         with self.mutex:
             self.logger.critical(*args, **kwargs)
+
+
+_logger, _logger_mutex = proxy_logger.make_shared_logger_and_proxy(
+        logging_factory, __name__, [None, options.verbose])
+_log = WrappedLogger(_logger, _logger_mutex)
+_log.debug('ocrmypdf ' + VERSION)
 
 
 def re_symlink(input_file, soft_link_name, log=_log):
@@ -1313,15 +1318,6 @@ def traverse_ruffus_exception(e_args):
 
 
 def build_pipeline():
-    import sys
-    sys.argv = ['ocrmypdf', 'file1.pdf', 'file2.pdf']
-
-    options = parser.parse_args()
-    _logger, _logger_mutex = proxy_logger.make_shared_logger_and_proxy(
-            logging_factory, __name__, [None, options.verbose])
-    _log = WrappedLogger(_logger, _logger_mutex)
-    _log.debug('ocrmypdf ' + VERSION)
-
     main_pipeline = Pipeline.pipelines['main']
 
     # Triage
@@ -1519,6 +1515,8 @@ def build_pipeline():
 
 
 def run_pipeline():
+    build_pipeline()
+
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
     # options.input_file, options.pdf_renderer are already bound.)
