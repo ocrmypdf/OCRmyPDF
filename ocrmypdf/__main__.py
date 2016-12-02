@@ -462,6 +462,12 @@ class JobContext:
     def set_options(self, options):
         self.options = options
 
+    def get_work_folder(self):
+        return self.work_folder
+
+    def set_work_folder(self, work_folder):
+        self.work_folder = work_folder
+
 
 from multiprocessing.managers import BaseManager
 class JobContextManager(BaseManager):
@@ -479,15 +485,12 @@ _context = manager.JobContext()
 # The Pipeline
 
 
-work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
-
-
 def done_task(caller):
     "Useful as debug hook"
     pass
 
 
-def cleanup_working_files(options):
+def cleanup_working_files(work_folder, options):
     if options.keep_temporary_files:
         print("Temporary working files saved at:\n{0}".format(work_folder),
               file=sys.stderr)
@@ -671,6 +674,7 @@ def split_pages(
         context):
 
     options = context.get_options()
+    work_folder = context.get_work_folder()
 
     if is_iterable_notstr(input_files):
         input_file = input_files[0]
@@ -1311,10 +1315,11 @@ def traverse_ruffus_exception(e_args, options):
             return traverse_ruffus_exception(exc, options)
 
 
-def build_pipeline(options):
+def build_pipeline(options, work_folder):
     main_pipeline = Pipeline.pipelines['main']
 
     _context.set_options(options)
+    _context.set_work_folder(work_folder)
 
     # Triage
     task_triage = main_pipeline.transform(
@@ -1516,6 +1521,7 @@ def run_pipeline():
     if not options.jobs:
         options.jobs = available_cpu_count()
     try:
+        work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
         options.history_file = os.path.join(
             work_folder, 'ruffus_history.sqlite')
         start_input_file = os.path.join(
@@ -1542,7 +1548,7 @@ def run_pipeline():
                     file."""))
                 return ExitCode.bad_args
 
-        build_pipeline(options)
+        build_pipeline(options, work_folder)
         atexit.register(cleanup_working_files, options)
         cmdline.run(options)
     except ruffus_exceptions.RethrownJobError as e:
