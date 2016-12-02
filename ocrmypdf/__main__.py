@@ -287,24 +287,24 @@ debugging.add_argument(
     '-g', '--debug-rendering', action='store_true',
     help="render each page twice with debug information on second page")
 
-options = parser.parse_args()
+_options = parser.parse_args()
 
 
 # ----------
 # Languages
 
-if not options.language:
-    options.language = ['eng']  # Enforce English hegemony
+if not _options.language:
+    _options.language = ['eng']  # Enforce English hegemony
 
 # Support v2.x "eng+deu" language syntax
-if '+' in options.language[0]:
-    options.language = options.language[0].split('+')
+if '+' in _options.language[0]:
+    _options.language = _options.language[0].split('+')
 
-if not set(options.language).issubset(tesseract.languages()):
+if not set(_options.language).issubset(tesseract.languages()):
     complain(
         "The installed version of tesseract does not have language "
         "data for the following requested languages: ")
-    for lang in (set(options.language) - tesseract.languages()):
+    for lang in (set(_options.language) - tesseract.languages()):
         complain(lang)
     sys.exit(ExitCode.bad_args)
 
@@ -312,19 +312,19 @@ if not set(options.language).issubset(tesseract.languages()):
 # ----------
 # Arguments
 
-options.verbose_abbreviated_path = 1
+_options.verbose_abbreviated_path = 1
 
-if options.pdf_renderer == 'auto':
-    options.pdf_renderer = 'hocr'
+if _options.pdf_renderer == 'auto':
+    _options.pdf_renderer = 'hocr'
 
-if options.pdf_renderer == 'tesseract' and tesseract.version() < '3.04.01' \
+if _options.pdf_renderer == 'tesseract' and tesseract.version() < '3.04.01' \
         and os.environ.get('OCRMYPDF_SHARP_TTF', '') != '1':
     complain(
         "WARNING: Your version of tesseract has problems with PDF output. "
         "Some PDF viewers will fail to find searchable text.\n"
         "--pdf-renderer=tesseract is not recommended.")
 
-if any((options.clean, options.clean_final)):
+if any((_options.clean, _options.clean_final)):
     try:
         from . import unpaper
         if unpaper.version() < '6.1':
@@ -339,33 +339,33 @@ if any((options.clean, options.clean_final)):
 else:
     unpaper = None
 
-if options.debug_rendering and options.pdf_renderer == 'tesseract':
+if _options.debug_rendering and _options.pdf_renderer == 'tesseract':
     complain(
         "Ignoring --debug-rendering because it is not supported with"
         "--pdf-renderer=tesseract.")
 
-if options.force_ocr and options.skip_text:
+if _options.force_ocr and _options.skip_text:
     complain(
         "Error: --force-ocr and --skip-text are mutually incompatible.")
     sys.exit(ExitCode.bad_args)
 
-if options.clean and not options.clean_final \
-        and options.pdf_renderer == 'tesseract':
+if _options.clean and not _options.clean_final \
+        and _options.pdf_renderer == 'tesseract':
     complain(
         "Tesseract PDF renderer cannot render --clean pages without "
         "also performing --clean-final, so --clean-final is assumed.")
 
-if set(options.language) & {'chi_sim', 'chi_tra'} \
-        and (options.pdf_renderer == 'hocr' or options.output_type == 'pdfa'):
+if set(_options.language) & {'chi_sim', 'chi_tra'} \
+        and (_options.pdf_renderer == 'hocr' or _options.output_type == 'pdfa'):
     complain(
         "Your settings are known to cause problems with OCR of Chinese text. "
         "Try adding these arguments: "
         "    ocrmypdf --pdf-renderer tesseract --output-type pdf")
 
 lossless_reconstruction = False
-if options.pdf_renderer == 'hocr':
-    if not options.deskew and not options.clean_final and \
-            not options.force_ocr and not options.remove_background:
+if _options.pdf_renderer == 'hocr':
+    if not _options.deskew and not _options.clean_final and \
+            not _options.force_ocr and not _options.remove_background:
         lossless_reconstruction = True
 
 
@@ -391,7 +391,7 @@ def logging_factory(logger_name, listargs):
 
 
 _log, _log_mutex = proxy_logger.make_shared_logger_and_proxy(
-        logging_factory, __name__, [None, options.verbose])
+        logging_factory, __name__, [None, _options.verbose])
 _log.debug('ocrmypdf ' + VERSION)
 
 
@@ -434,14 +434,33 @@ def re_symlink(input_file, soft_link_name, log=_log):
 # Pipeline state manager
 
 class JobContext:
+    """Holds our context for a particular run of the pipeline
+
+    A multiprocessing manager effectively creates a separate process
+    that keeps the master job context object.  Other threads access
+    job context via multiprocessing proxy objects.
+
+    While this would naturally lend itself @property's it seems to make
+    a little more sense to use functions to make it explicitly that the
+    invocation requires marshalling data across a process boundary.
+
+    """
+
     def __init__(self):
         self.pdfinfo = []
 
     def get_pdfinfo(self):
+        "What we know about the input PDF"
         return self.pdfinfo
 
     def set_pdfinfo(self, pdfinfo):
         self.pdfinfo = pdfinfo
+
+    def get_options(self):
+        return self.options
+
+    def set_options(self, options):
+        self.options = options
 
 
 from multiprocessing.managers import BaseManager
@@ -478,7 +497,7 @@ def cleanup_working_files(*args):
             shutil.rmtree(work_folder)
 
 
-def triage_image_file(input_file, output_file, log):
+def triage_image_file(input_file, output_file, log, options):
     try:
         log.info("Input file is not a PDF, checking if it is an image...")
         im = Image.open(input_file)
@@ -555,7 +574,7 @@ def triage(
         log.error(e)
         sys.exit(ExitCode.input_file)
 
-    triage_image_file(input_file, output_file, log)
+    triage_image_file(input_file, output_file, log, _options)
 
 
 def repair_pdf(
@@ -567,6 +586,7 @@ def repair_pdf(
     qpdf.repair(input_file, output_file, log)
     pdfinfo = pdf_get_all_pageinfo(output_file)
     context.set_pdfinfo(pdfinfo)
+    context.set_options(_options)
     log.debug(pdfinfo)
 
 
@@ -576,14 +596,14 @@ def get_pageinfo(input_file, context):
     return pageinfo
 
 
-def get_page_dpi(pageinfo):
+def get_page_dpi(pageinfo, options):
     "Get the DPI when nonsquare DPI is tolerable"
     xres = max(pageinfo.get('xres', VECTOR_PAGE_DPI), options.oversample or 0)
     yres = max(pageinfo.get('yres', VECTOR_PAGE_DPI), options.oversample or 0)
     return (float(xres), float(yres))
 
 
-def get_page_square_dpi(pageinfo):
+def get_page_square_dpi(pageinfo, options):
     "Get the DPI when we require xres == yres"
     return float(max(
         pageinfo.get('xres', VECTOR_PAGE_DPI),
@@ -591,7 +611,7 @@ def get_page_square_dpi(pageinfo):
         options.oversample or 0))
 
 
-def is_ocr_required(pageinfo, log):
+def is_ocr_required(pageinfo, log, options):
     page = pageinfo['pageno'] + 1
     ocr_required = True
     if not pageinfo['images']:
@@ -649,6 +669,8 @@ def split_pages(
         log,
         context):
 
+    options = context.get_options()
+
     if is_iterable_notstr(input_files):
         input_file = input_files[0]
     else:
@@ -671,8 +693,9 @@ def split_pages(
     for filename in glob(os.path.join(work_folder, '*.page.pdf')):
         pageinfo = get_pageinfo(filename, context)
 
-        alt_suffix = '.ocr.page.pdf' if is_ocr_required(pageinfo, log) \
-                     else '.skip.page.pdf'
+        alt_suffix = \
+            '.ocr.page.pdf' if is_ocr_required(pageinfo, log, options) \
+            else '.skip.page.pdf'
         re_symlink(
             filename,
             os.path.join(
@@ -700,6 +723,7 @@ def orient_page(
         log,
         context):
 
+    options = context.get_options()
     page_pdf = next(ii for ii in infiles if ii.endswith('.page.pdf'))
 
     if not options.rotate_pages:
@@ -766,6 +790,7 @@ def rasterize_with_ghostscript(
         output_file,
         log,
         context):
+    options = context.get_options()
     pageinfo = get_pageinfo(input_file, context)
 
     device = 'png16m'  # 24-bit
@@ -784,7 +809,7 @@ def rasterize_with_ghostscript(
 
     # Produce the page image with square resolution or else deskew and OCR
     # will not work properly
-    dpi = get_page_square_dpi(pageinfo)
+    dpi = get_page_square_dpi(pageinfo, options)
     ghostscript.rasterize_pdf(
         input_file, output_file, xres=dpi, yres=dpi, raster_device=device,
         log=log)
@@ -795,7 +820,7 @@ def preprocess_remove_background(
         output_file,
         log,
         context):
-
+    options = context.get_options()
     if not options.remove_background:
         re_symlink(input_file, output_file, log)
         return
@@ -815,13 +840,13 @@ def preprocess_deskew(
         output_file,
         log,
         context):
-
+    options = context.get_options()
     if not options.deskew:
         re_symlink(input_file, output_file, log)
         return
 
     pageinfo = get_pageinfo(input_file, context)
-    dpi = get_page_square_dpi(pageinfo)
+    dpi = get_page_square_dpi(pageinfo, options)
 
     leptonica.deskew(input_file, output_file, dpi)
 
@@ -831,13 +856,13 @@ def preprocess_clean(
         output_file,
         log,
         context):
-
+    options = context.get_options()
     if not options.clean:
         re_symlink(input_file, output_file, log)
         return
 
     pageinfo = get_pageinfo(input_file, context)
-    dpi = get_page_square_dpi(pageinfo)
+    dpi = get_page_square_dpi(pageinfo, options)
 
     unpaper.clean(input_file, output_file, dpi, log)
 
@@ -847,7 +872,7 @@ def ocr_tesseract_hocr(
         output_file,
         log,
         context):
-
+    options = context.get_options()
     tesseract.generate_hocr(
         input_file=input_file,
         output_hocr=output_file,
@@ -865,6 +890,7 @@ def select_image_for_pdf(
         output_file,
         log,
         context):
+    options = context.get_options()
     if options.clean_final:
         image_suffix = '.pp-clean.png'
     elif options.deskew:
@@ -885,7 +911,7 @@ def select_image_for_pdf(
         # DPI used to rasterize. When the preview image was rasterized, it
         # was also converted to square resolution, which is what we want to
         # give tesseract, so keep it square.
-        fallback_dpi = get_page_square_dpi(pageinfo)
+        fallback_dpi = get_page_square_dpi(pageinfo, options)
         dpi = im.info.get('dpi', (fallback_dpi, fallback_dpi))
 
         # Pillow requires integer DPI
@@ -900,7 +926,7 @@ def select_image_layer(
         output_file,
         log,
         context):
-
+    options = context.get_options()
     page_pdf = next(ii for ii in infiles if ii.endswith('.ocr.oriented.pdf'))
     image = next(ii for ii in infiles if ii.endswith('.image'))
 
@@ -910,7 +936,7 @@ def select_image_layer(
         re_symlink(page_pdf, output_file)
     else:
         pageinfo = get_pageinfo(image, context)
-        dpi = get_page_dpi(pageinfo)
+        dpi = get_page_dpi(pageinfo, options)
         dpi = float(dpi[0]), float(dpi[1])
         layout_fun = img2pdf.get_fixed_dpi_layout_fun(dpi)
 
@@ -929,9 +955,10 @@ def render_hocr_page(
         output_file,
         log,
         context):
+    options = context.get_options()
     hocr = input_file
     pageinfo = get_pageinfo(hocr, context)
-    dpi = get_page_square_dpi(pageinfo)
+    dpi = get_page_square_dpi(pageinfo, options)
 
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=None,
@@ -943,11 +970,12 @@ def render_hocr_debug_page(
         output_file,
         log,
         context):
+    options = context.get_options()
     hocr = next(ii for ii in infiles if ii.endswith('.hocr'))
     image = next(ii for ii in infiles if ii.endswith('.image'))
 
     pageinfo = get_pageinfo(image, context)
-    dpi = get_page_square_dpi(pageinfo)
+    dpi = get_page_square_dpi(pageinfo, options)
 
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=None,
@@ -1033,7 +1061,7 @@ def tesseract_ocr_and_render_pdf(
         output_file,
         log,
         context):
-
+    options = context.get_options()
     input_image = next((ii for ii in input_files if ii.endswith('.image')), '')
     input_pdf = next((ii for ii in input_files if ii.endswith('.pdf')))
     if not input_image:
@@ -1052,7 +1080,7 @@ def tesseract_ocr_and_render_pdf(
         log=log)
 
 
-def get_pdfmark(base_pdf):
+def get_pdfmark(base_pdf, options):
     def from_document_info(key):
         # pdf.documentInfo.get() DOES NOT behave as expected for a dict-like
         # object, so call with precautions.  TypeError may occur if the PDF
@@ -1088,10 +1116,11 @@ def get_pdfmark(base_pdf):
 def generate_postscript_stub(
         input_file,
         output_file,
-        log):
-
+        log,
+        context):
+    options = context.get_options()
     pdf = pypdf.PdfFileReader(input_file)
-    pdfmark = get_pdfmark(pdf)
+    pdfmark = get_pdfmark(pdf, options)
     generate_pdfa_def(output_file, pdfmark)
 
 
@@ -1135,7 +1164,7 @@ def merge_pages_qpdf(
         output_file,
         log,
         context):
-
+    options = context.get_options()
     metadata_file = next(
         (ii for ii in input_files if ii.endswith('.repaired.pdf')))
     input_files.remove(metadata_file)
@@ -1152,7 +1181,7 @@ def merge_pages_qpdf(
     log.debug("Final pages: " + "\n".join(pdf_pages))
 
     reader_metadata = pypdf.PdfFileReader(metadata_file)
-    pdfmark = get_pdfmark(reader_metadata)
+    pdfmark = get_pdfmark(reader_metadata, options)
     pdfmark['/Producer'] = 'qpdf ' + qpdf.version()
 
     first_page = pypdf.PdfFileReader(pdf_pages[0])
@@ -1281,7 +1310,7 @@ def traverse_ruffus_exception(e_args):
             return traverse_ruffus_exception(exc)
 
 
-def build_pipeline():
+def build_pipeline(options):
     main_pipeline = Pipeline.pipelines['main']
 
     # Triage
@@ -1431,7 +1460,7 @@ def build_pipeline():
         input=task_repair_pdf,
         filter=formatter(r'\.repaired\.pdf'),
         output=os.path.join(work_folder, 'pdfa_def.ps'),
-        extras=[_log])
+        extras=[_log, _context])
     task_generate_postscript_stub.active_if(options.output_type == 'pdfa')
 
 
@@ -1475,11 +1504,10 @@ def build_pipeline():
         extras=[_log, _context])
 
 
-
-
-
 def run_pipeline():
-    build_pipeline()
+    options = _options
+
+    build_pipeline(options)
 
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
