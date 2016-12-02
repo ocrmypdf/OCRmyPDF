@@ -487,8 +487,7 @@ def done_task(caller):
     pass
 
 
-@atexit.register
-def cleanup_working_files(*args):
+def cleanup_working_files(options):
     if options.keep_temporary_files:
         print("Temporary working files saved at:\n{0}".format(work_folder),
               file=sys.stderr)
@@ -563,7 +562,9 @@ def triage_image_file(input_file, output_file, log, options):
 def triage(
         input_file,
         output_file,
-        log):
+        log,
+        context):
+
     try:
         with open(input_file, 'rb') as f:
             signature = f.read(4)
@@ -574,7 +575,8 @@ def triage(
         log.error(e)
         sys.exit(ExitCode.input_file)
 
-    triage_image_file(input_file, output_file, log, _options)
+    options = context.get_options()
+    triage_image_file(input_file, output_file, log, options)
 
 
 def repair_pdf(
@@ -586,7 +588,6 @@ def repair_pdf(
     qpdf.repair(input_file, output_file, log)
     pdfinfo = pdf_get_all_pageinfo(output_file)
     context.set_pdfinfo(pdfinfo)
-    context.set_options(_options)
     log.debug(pdfinfo)
 
 
@@ -1140,7 +1141,7 @@ def merge_pages_ghostscript(
         output_file,
         log,
         context):
-
+    options = context.get_options()
     def input_file_order(s):
         '''Sort order: All rendered pages followed
         by their debug page, if any, followed by Postscript stub.
@@ -1238,7 +1239,7 @@ def cleanup_ruffus_error_message(msg):
     return msg
 
 
-def do_ruffus_exception(ruffus_five_tuple):
+def do_ruffus_exception(ruffus_five_tuple, options):
     """Replace the elaborate ruffus stack trace with a user friendly
     description of the error message that occurred."""
 
@@ -1296,7 +1297,7 @@ def do_ruffus_exception(ruffus_five_tuple):
     return ExitCode.other_error
 
 
-def traverse_ruffus_exception(e_args):
+def traverse_ruffus_exception(e_args, options):
     """Walk through a RethrownJobError and find the first exception.
 
     The exit code will be based on this, even if multiple exceptions occurred
@@ -1304,14 +1305,16 @@ def traverse_ruffus_exception(e_args):
 
     if isinstance(e_args, Sequence) and isinstance(e_args[0], str) and \
             len(e_args) == 5:
-        return do_ruffus_exception(e_args)
+        return do_ruffus_exception(e_args, options)
     elif is_iterable_notstr(e_args):
         for exc in e_args:
-            return traverse_ruffus_exception(exc)
+            return traverse_ruffus_exception(exc, options)
 
 
 def build_pipeline(options):
     main_pipeline = Pipeline.pipelines['main']
+
+    _context.set_options(options)
 
     # Triage
     task_triage = main_pipeline.transform(
@@ -1319,7 +1322,7 @@ def build_pipeline(options):
         input=os.path.join(work_folder, 'origin'),
         filter=formatter('(?i)'),
         output=os.path.join(work_folder, 'origin.pdf'),
-        extras=[_log])
+        extras=[_log, _context])
 
     task_repair_pdf = main_pipeline.transform(
         task_func=repair_pdf,
@@ -1507,12 +1510,9 @@ def build_pipeline(options):
 def run_pipeline():
     options = _options
 
-    build_pipeline(options)
-
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
     # options.input_file, options.pdf_renderer are already bound.)
-    global options
     if not options.jobs:
         options.jobs = available_cpu_count()
     try:
@@ -1542,6 +1542,8 @@ def run_pipeline():
                     file."""))
                 return ExitCode.bad_args
 
+        build_pipeline(options)
+        atexit.register(cleanup_working_files, options)
         cmdline.run(options)
     except ruffus_exceptions.RethrownJobError as e:
         if options.verbose:
@@ -1562,7 +1564,7 @@ def run_pipeline():
         # which is probably in another process, so it's better to log only
         # data from the exception at this point.
 
-        exitcode = traverse_ruffus_exception(e.args)
+        exitcode = traverse_ruffus_exception(e.args, options)
         if exitcode is None:
             _log.error("Unexpected ruffus exception: " + str(e))
             _log.error(repr(e))
