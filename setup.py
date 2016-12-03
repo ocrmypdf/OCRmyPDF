@@ -155,12 +155,12 @@ if not forced and command.startswith('install') or \
         command in ['check', 'test', 'nosetests', 'easy_install']:
     check_external_program(
         program='tesseract',
-        need_version='3.03',  # limited by Travis CI / Ubuntu 12.04 backports
+        need_version='3.03',  # limited by Travis CI / Ubuntu 14.04 backports
         package={'darwin': 'tesseract', 'linux': 'tesseract-ocr'}
     )
     check_external_program(
         program='gs',
-        need_version='9.15',  # limited by Travis CI / Ubuntu 12.04 backports
+        need_version='9.15',  # limited by Travis CI / Ubuntu 14.04 backports
         package='ghostscript'
     )
     check_external_program(
@@ -171,7 +171,7 @@ if not forced and command.startswith('install') or \
     )
     check_external_program(
         program='qpdf',
-        need_version='5.0.0',   # limited by Travis CI / Ubuntu 12.04 backports
+        need_version='5.1.1',   # limited by Travis CI / Ubuntu 14.04 backports
         package='qpdf',
         version_check_args=['--version']
     )
@@ -221,7 +221,7 @@ setup(
     ],
     install_requires=[
         'ruffus==2.6.3',        # pinned - ocrmypdf implements a 2.6.3 workaround
-        'Pillow>=3.1.0',        # Pillow is pretty stable
+        'Pillow>=3.1.1',        # Pillow is pretty stable
         'reportlab>=3.2.0',     # oldest released version with sane image handling
         'PyPDF2>=1.26',         # pure Python, so track HEAD closely
         'img2pdf>=0.2.1',       # pure Python, so track HEAD closely

@@ -1,4 +1,6 @@
-check-manifest>=0.33
-setuptools-scm>=1.11.1
-twine>=1.8.1
-coverage>=4.2
+check-manifest >= 0.33
+twine >= 1.8.1
+coverage >= 4.2
+GitPython == 2.1.0
+setuptools-scm >= 1.11.1, != 1.13.1
+setuptools_scm_git_archive == 1.0
