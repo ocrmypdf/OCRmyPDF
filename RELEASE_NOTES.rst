@@ -3,6 +3,12 @@ RELEASE NOTES
 
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
+v4.3.3:
+=======
+
+-  Fix additional problems with PDF/A creation on Ghostscript 9.20
+
+
 v4.3.2:
 =======
 

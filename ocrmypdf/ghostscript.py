@@ -56,7 +56,7 @@ def generate_pdfa(pdf_pages, output_file, threads=1):
             "-sProcessColorModel=DeviceRGB",
             "-dJPEGQ=95",
             "-dPDFA=2",
-            "-sPDFACompatibilityPolicy=1",
+            "-dPDFACompatibilityPolicy=1",
             "-sOutputFile=" + gs_pdf.name,
         ]
         args_gs.extend(pdf_pages)
