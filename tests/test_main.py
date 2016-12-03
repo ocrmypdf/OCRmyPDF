@@ -90,41 +90,56 @@ def run_ocrmypdf(input_basename, output_basename, *args, env=None):
     return p, out, err
 
 
-def spoof(replace_program, with_spoof):
+def spoof(**kwargs):
     """Modify environment variables to override subprocess executables
+
+    spoof(program1='replacement', ...)
 
     Before running any executable, ocrmypdf checks the environment variable
     OCRMYPDF_PROGRAMNAME to override default program name/location, e.g.
     OCRMYPDF_GS redirects from the system path Ghostscript ("gs") to elsewhere.
+
     """
     env = os.environ.copy()
-    spoofer = os.path.join(SPOOF_PATH, with_spoof)
-    if not os.access(spoofer, os.X_OK):
-        os.chmod(spoofer, 0o755)
-    env['OCRMYPDF_' + replace_program.upper()] = spoofer
+
+    for replace_program, with_spoof in kwargs.items():
+        spoofer = os.path.join(SPOOF_PATH, with_spoof)
+        if not os.access(spoofer, os.X_OK):
+            os.chmod(spoofer, 0o755)
+        env['OCRMYPDF_' + replace_program.upper()] = spoofer
     return env
 
 
 @pytest.fixture
 def spoof_tesseract_noop():
-    return spoof('tesseract', 'tesseract_noop.py')
+    return spoof(tesseract='tesseract_noop.py')
 
 
 @pytest.fixture
 def spoof_tesseract_cache():
     if running_in_docker():
         return os.environ.copy()
-    return spoof('tesseract', "tesseract_cache.py")
+    return spoof(tesseract="tesseract_cache.py")
 
 
 @pytest.fixture
 def spoof_tesseract_crash():
-    return spoof('tesseract', 'tesseract_crash.py')
+    return spoof(tesseract='tesseract_crash.py')
 
 
 @pytest.fixture
 def spoof_tesseract_big_image_error():
-    return spoof('tesseract', 'tesseract_big_image_error.py')
+    return spoof(tesseract='tesseract_big_image_error.py')
+
+
+@pytest.fixture
+def spoof_no_tess_no_pdfa():
+    return spoof(tesseract='tesseract_noop.py', gs='gs_pdfa_failure.py')
+
+
+@pytest.fixture
+def spoof_no_tess_pdfa_warning():
+    return spoof(tesseract='tesseract_noop.py', gs='gs_feature_elision.py')
 
 
 def test_quick(spoof_tesseract_cache):
@@ -722,3 +737,14 @@ def test_rotated_skew_timeout():
         in_pageinfo['height_pixels'] == out_pageinfo['width_pixels'], \
         "Expected page rotation to be baked in"
 
+
+def test_ghostscript_pdfa_failure(spoof_no_tess_no_pdfa):
+    p, out, err = run_ocrmypdf(
+        'ccitt.pdf', 'test_pdfa_failure.pdf',
+        env=spoof_no_tess_no_pdfa)
+    assert p.returncode == 4, "Expected return code 4 when PDF/A fails"
+
+
+def test_ghostscript_feature_elision(spoof_no_tess_pdfa_warning):
+    check_ocrmypdf('ccitt.pdf', 'test_feature_elision.pdf',
+                   env=spoof_no_tess_pdfa_warning)
