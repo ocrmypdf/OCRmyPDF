@@ -42,7 +42,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             log.error('Ghostscript rendering failed')
 
 
-def generate_pdfa(pdf_pages, output_file, threads=1):
+def generate_pdfa(pdf_pages, output_file, log, threads=1):
     with NamedTemporaryFile(delete=True) as gs_pdf:
         args_gs = [
             get_program("gs"),
@@ -56,9 +56,32 @@ def generate_pdfa(pdf_pages, output_file, threads=1):
             "-sProcessColorModel=DeviceRGB",
             "-dJPEGQ=95",
             "-dPDFA=2",
-            "-sPDFACompatibilityPolicy=1",
+            "-dPDFACompatibilityPolicy=1",
             "-sOutputFile=" + gs_pdf.name,
         ]
         args_gs.extend(pdf_pages)
-        check_call(args_gs)
-        copy(gs_pdf.name, output_file)
+        p = Popen(args_gs, close_fds=True, stdout=PIPE, stderr=PIPE,
+                  universal_newlines=True)
+        stdout, stderr = p.communicate()
+        if stdout:
+            if 'error' in stdout:
+                log.error(stdout)
+            elif 'overprint mode not set' in stdout:
+                # Unless someone is going to print PDF/A documents on a
+                # magical sRGB printer I can't see the removal of overprinting
+                # being a problem....
+                log.debug(
+                    "Ghostscript had to remove PDF 'overprinting' from the "
+                    "input file to complete PDF/A conversion. "
+                    )
+            else:
+                log.debug(stdout)
+        if stderr:
+            log.error(stderr)
+
+        if p.returncode == 0:
+            # Ghostscript does not change return code when it fails to create
+            # PDF/A - check PDF/A status elsewhere
+            copy(gs_pdf.name, output_file)
+        else:
+            log.error('Ghostscript PDF/A failed')

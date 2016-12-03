@@ -1161,7 +1161,7 @@ def merge_pages_ghostscript(
 
     pdf_pages = sorted(input_files, key=input_file_order)
     log.debug("Final pages: " + "\n".join(pdf_pages))
-    ghostscript.generate_pdfa(pdf_pages, output_file, options.jobs or 1)
+    ghostscript.generate_pdfa(pdf_pages, output_file, log, options.jobs or 1)
 
 
 def merge_pages_qpdf(

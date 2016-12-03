@@ -3,10 +3,17 @@ RELEASE NOTES
 
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
+v4.3.3:
+=======
+
+-  Fixed PDF/A creation with Ghostscript 9.20 properly
+-  Fixed an exception on inline stencil masks with a missing optional parameter
+
+
 v4.3.2:
 =======
 
--  Fixed a PDF/A creation issue with Ghostscript 9.20 
+-  Fixed a PDF/A creation issue with Ghostscript 9.20 (note: this fix did not actually work)
 
 
 v4.3.1:
