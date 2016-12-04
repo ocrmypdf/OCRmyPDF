@@ -191,7 +191,7 @@ setup(
     url='https://github.com/jbarlow83/OCRmyPDF',
     author='James R. Barlow',
     author_email='jim@purplerock.ca',
-    license='Public Domain',
+    license='MIT',
     packages=['ocrmypdf'],
     keywords=['PDF', 'OCR', 'optical character recognition', 'PDF/A', 'scanning'],
     classifiers=[
