@@ -47,9 +47,6 @@ BASEDIR = os.path.dirname(os.path.realpath(__file__))
 VECTOR_PAGE_DPI = 400
 
 
-_log = None
-
-
 # -------------
 # External dependencies
 
@@ -66,6 +63,10 @@ if tesseract.version() < MINIMUM_TESS_VERSION:
         "(currently installed version is {1})".format(
             MINIMUM_TESS_VERSION, tesseract.version()))
     sys.exit(ExitCode.missing_dependency)
+
+
+class MissingDependencyException(Exception):
+    pass
 
 
 # -------------
@@ -253,86 +254,97 @@ debugging.add_argument(
     '-g', '--debug-rendering', action='store_true',
     help="render each page twice with debug information on second page")
 
-_options = parser.parse_args()
+
+def check_options_languages(options, _log):
+    if not options.language:
+        options.language = ['eng']  # Enforce English hegemony
+
+    # Support v2.x "eng+deu" language syntax
+    if '+' in options.language[0]:
+        options.language = options.language[0].split('+')
+
+    if not set(options.language).issubset(tesseract.languages()):
+        msg = (
+            "The installed version of tesseract does not have language "
+            "data for the following requested languages: \n")
+        for lang in (set(options.language) - tesseract.languages()):
+            msg += lang + '\n'
+        raise argparse.ArgumentError(msg)
 
 
-# ----------
-# Languages
+def check_options_output(options, log):
+    if options.pdf_renderer == 'auto':
+        options.pdf_renderer = 'hocr'
 
-if not _options.language:
-    _options.language = ['eng']  # Enforce English hegemony
+    if options.pdf_renderer == 'tesseract' and \
+            tesseract.version() < '3.04.01' and \
+            os.environ.get('OCRMYPDF_SHARP_TTF', '') != '1':
+        log.warning(
+            "Your version of tesseract has problems with PDF output."
+            " Some PDF viewers will fail to find searchable text.\n"
+            "--pdf-renderer=tesseract is not recommended.")
 
-# Support v2.x "eng+deu" language syntax
-if '+' in _options.language[0]:
-    _options.language = _options.language[0].split('+')
+    if options.debug_rendering and options.pdf_renderer == 'tesseract':
+        log.info(
+            "Ignoring --debug-rendering because it is not supported with"
+            "--pdf-renderer=tesseract.")
 
-if not set(_options.language).issubset(tesseract.languages()):
-    complain(
-        "The installed version of tesseract does not have language "
-        "data for the following requested languages: ")
-    for lang in (set(_options.language) - tesseract.languages()):
-        complain(lang)
-    sys.exit(ExitCode.bad_args)
+    lossless_reconstruction = False
+    if options.pdf_renderer == 'hocr':
+        if not any((options.deskew, options.clean_final, options.force_ocr,
+                   options.remove_background)):
+            lossless_reconstruction = True
+    options.lossless_reconstruction = lossless_reconstruction
 
 
-# ----------
-# Arguments
-
-_options.verbose_abbreviated_path = 1
-
-if _options.pdf_renderer == 'auto':
-    _options.pdf_renderer = 'hocr'
-
-if _options.pdf_renderer == 'tesseract' and tesseract.version() < '3.04.01' \
-        and os.environ.get('OCRMYPDF_SHARP_TTF', '') != '1':
-    complain(
-        "WARNING: Your version of tesseract has problems with PDF output. "
-        "Some PDF viewers will fail to find searchable text.\n"
-        "--pdf-renderer=tesseract is not recommended.")
-
-if any((_options.clean, _options.clean_final)):
-    try:
+def check_options_preprocessing(options, log):
+    if any((options.clean, options.clean_final)):
         from . import unpaper
-        if unpaper.version() < '6.1':
-            complain(
-                "The installed 'unpaper' is not supported. "
-                "Install version 6.1 or newer.")
-            sys.exit(ExitCode.missing_dependency)
-    except FileNotFoundError:
-        complain(
-            "Install the 'unpaper' program to use --deskew or --clean.")
+        try:
+            if unpaper.version() < '6.1':
+                raise MissingDependencyException(
+                    "The installed 'unpaper' is not supported. "
+                    "Install version 6.1 or newer.")
+        except FileNotFoundError:
+            raise MissingDependencyException(
+                "Install the 'unpaper' program to use --clean, --clean-final.")
+
+    if options.clean and \
+            not options.clean_final and \
+            options.pdf_renderer == 'tesseract':
+        log.info(
+            "Tesseract PDF renderer cannot render --clean pages without "
+            "also performing --clean-final, so --clean-final is assumed.")
+
+
+def check_options_ocr_behavior(options, log):
+    if options.force_ocr and options.skip_text:
+        raise argparse.ArgumentError(
+            "Error: --force-ocr and --skip-text are mutually incompatible.")
+
+    if set(options.language) & {'chi_sim', 'chi_tra'} and \
+            (options.pdf_renderer == 'hocr' or options.output_type == 'pdfa'):
+        log.warning(
+            "Your settings are known to cause problems with OCR of Chinese text. "
+            "Try adding these arguments: "
+            "    ocrmypdf --pdf-renderer tesseract --output-type pdf")
+
+
+def check_options(options, log):
+    try:
+        check_options_languages(options, log)
+        check_options_output(options, log)
+        check_options_preprocessing(options, log)
+        check_options_ocr_behavior(options, log)
+    except argparse.ArgumentError as e:
+        log.error(e)
+        sys.exit(ExitCode.bad_args)
+    except MissingDependencyException as e:
+        log.error(e)
         sys.exit(ExitCode.missing_dependency)
-else:
-    unpaper = None
 
-if _options.debug_rendering and _options.pdf_renderer == 'tesseract':
-    complain(
-        "Ignoring --debug-rendering because it is not supported with"
-        "--pdf-renderer=tesseract.")
 
-if _options.force_ocr and _options.skip_text:
-    complain(
-        "Error: --force-ocr and --skip-text are mutually incompatible.")
-    sys.exit(ExitCode.bad_args)
 
-if _options.clean and not _options.clean_final \
-        and _options.pdf_renderer == 'tesseract':
-    complain(
-        "Tesseract PDF renderer cannot render --clean pages without "
-        "also performing --clean-final, so --clean-final is assumed.")
-
-if set(_options.language) & {'chi_sim', 'chi_tra'} \
-        and (_options.pdf_renderer == 'hocr' or _options.output_type == 'pdfa'):
-    complain(
-        "Your settings are known to cause problems with OCR of Chinese text. "
-        "Try adding these arguments: "
-        "    ocrmypdf --pdf-renderer tesseract --output-type pdf")
-
-lossless_reconstruction = False
-if _options.pdf_renderer == 'hocr':
-    if not _options.deskew and not _options.clean_final and \
-            not _options.force_ocr and not _options.remove_background:
-        lossless_reconstruction = True
 
 
 # ----------
@@ -356,12 +368,7 @@ def logging_factory(logger_name, listargs):
     return root_logger
 
 
-_log, _log_mutex = proxy_logger.make_shared_logger_and_proxy(
-        logging_factory, __name__, [None, _options.verbose])
-_log.debug('ocrmypdf ' + VERSION)
-
-
-def re_symlink(input_file, soft_link_name, log=_log):
+def re_symlink(input_file, soft_link_name, log):
     """
     Helper function: relinks soft symbolic link if necessary
     """
@@ -538,7 +545,7 @@ def triage(
         with open(input_file, 'rb') as f:
             signature = f.read(4)
             if signature == b'%PDF':
-                re_symlink(input_file, output_file)
+                re_symlink(input_file, output_file, log)
                 return
     except EnvironmentError as e:
         log.error(e)
@@ -671,7 +678,8 @@ def split_pages(
             filename,
             os.path.join(
                 work_folder,
-                os.path.basename(filename)[0:6] + alt_suffix))
+                os.path.basename(filename)[0:6] + alt_suffix),
+            log)
 
 
 def rasterize_preview(
@@ -698,7 +706,7 @@ def orient_page(
     page_pdf = next(ii for ii in infiles if ii.endswith('.page.pdf'))
 
     if not options.rotate_pages:
-        re_symlink(page_pdf, output_file)
+        re_symlink(page_pdf, output_file, log)
         return
     preview = next(ii for ii in infiles if ii.endswith('.preview.jpg'))
 
@@ -738,7 +746,7 @@ def orient_page(
     )
 
     if not apply_correction:
-        re_symlink(page_pdf, output_file)
+        re_symlink(page_pdf, output_file, log)
     else:
         writer = pypdf.PdfFileWriter()
         reader = pypdf.PdfFileReader(page_pdf)
@@ -832,6 +840,7 @@ def preprocess_clean(
         re_symlink(input_file, output_file, log)
         return
 
+    from . import unpaper
     pageinfo = get_pageinfo(input_file, context)
     dpi = get_page_square_dpi(pageinfo, options)
 
@@ -889,7 +898,7 @@ def select_image_for_pdf(
         dpi = round(dpi[0]), round(dpi[1])
         im.save(output_file, format='JPEG', dpi=dpi)
     else:
-        re_symlink(image, output_file)
+        re_symlink(image, output_file, log)
 
 
 def select_image_layer(
@@ -901,10 +910,10 @@ def select_image_layer(
     page_pdf = next(ii for ii in infiles if ii.endswith('.ocr.oriented.pdf'))
     image = next(ii for ii in infiles if ii.endswith('.image'))
 
-    if lossless_reconstruction:
+    if options.lossless_reconstruction:
         log.debug("{:4d}: page eligible for lossless reconstruction".format(
             page_number(page_pdf)))
-        re_symlink(page_pdf, output_file)
+        re_symlink(page_pdf, output_file, log)
     else:
         pageinfo = get_pageinfo(image, context)
         dpi = get_page_dpi(pageinfo, options)
@@ -1037,7 +1046,7 @@ def tesseract_ocr_and_render_pdf(
     input_pdf = next((ii for ii in input_files if ii.endswith('.pdf')))
     if not input_image:
         # Skipping this page
-        re_symlink(input_pdf, output_file)
+        re_symlink(input_pdf, output_file, log)
         return
 
     tesseract.generate_pdf(
@@ -1209,7 +1218,7 @@ def cleanup_ruffus_error_message(msg):
     return msg
 
 
-def do_ruffus_exception(ruffus_five_tuple, options):
+def do_ruffus_exception(ruffus_five_tuple, options, log):
     """Replace the elaborate ruffus stack trace with a user friendly
     description of the error message that occurred."""
 
@@ -1220,25 +1229,25 @@ def do_ruffus_exception(ruffus_five_tuple, options):
         exit_code = getattr(ExitCode, exit_code_name, 'other_error')
         return exit_code
     elif exc_name == 'ruffus.ruffus_exceptions.MissingInputFileError':
-        _log.error(cleanup_ruffus_error_message(exc_value))
+        log.error(cleanup_ruffus_error_message(exc_value))
         return ExitCode.input_file
     elif exc_name == 'builtins.TypeError':
         # Even though repair_pdf will fail, ruffus will still try
         # to call split_pages with no input files, likely due to a bug
         if task_name == 'split_pages':
-            _log.error("Input file '{0}' is not a valid PDF".format(
+            log.error("Input file '{0}' is not a valid PDF".format(
                 options.input_file))
             return ExitCode.input_file
     elif exc_name == 'builtins.KeyboardInterrupt':
-        _log.error("Interrupted by user")
+        log.error("Interrupted by user")
         return ExitCode.ctrl_c
     elif exc_name == 'subprocess.CalledProcessError':
         # It's up to the subprocess handler to report something useful
         msg = "Error occurred while running this command:"
-        _log.error(msg + '\n' + exc_value)
+        log.error(msg + '\n' + exc_value)
         return ExitCode.child_process_error
     elif exc_name == 'ocrmypdf.main.PdfMergeFailedError':
-        _log.error(textwrap.dedent("""\
+        log.error(textwrap.dedent("""\
             Failed to merge PDF image layer with OCR layer
 
             Usually this happens because the input PDF file is mal-formed and
@@ -1250,7 +1259,7 @@ def do_ruffus_exception(ruffus_five_tuple, options):
         return ExitCode.input_file
     elif exc_name == 'PyPDF2.utils.PdfReadError' and \
             'not been decrypted' in exc_value:
-        _log.error(textwrap.dedent("""\
+        log.error(textwrap.dedent("""\
             Input PDF uses either an encryption algorithm or a PDF security
             handler that is not supported by ocrmypdf.
 
@@ -1263,11 +1272,11 @@ def do_ruffus_exception(ruffus_five_tuple, options):
         return ExitCode.encrypted_pdf
 
     if not options.verbose:
-        _log.error(exc_stack)
+        log.error(exc_stack)
     return ExitCode.other_error
 
 
-def traverse_ruffus_exception(e_args, options):
+def traverse_ruffus_exception(e_args, options, log):
     """Walk through a RethrownJobError and find the first exception.
 
     The exit code will be based on this, even if multiple exceptions occurred
@@ -1275,13 +1284,13 @@ def traverse_ruffus_exception(e_args, options):
 
     if isinstance(e_args, Sequence) and isinstance(e_args[0], str) and \
             len(e_args) == 5:
-        return do_ruffus_exception(e_args, options)
+        return do_ruffus_exception(e_args, options, log)
     elif is_iterable_notstr(e_args):
         for exc in e_args:
-            return traverse_ruffus_exception(exc, options)
+            return traverse_ruffus_exception(exc, options, log)
 
 
-def build_pipeline(options, work_folder):
+def build_pipeline(options, work_folder, log):
     main_pipeline = Pipeline.pipelines['main']
 
     _context.set_options(options)
@@ -1293,7 +1302,7 @@ def build_pipeline(options, work_folder):
         input=os.path.join(work_folder, 'origin'),
         filter=formatter('(?i)'),
         output=os.path.join(work_folder, 'origin.pdf'),
-        extras=[_log, _context])
+        extras=[log, _context])
 
     task_repair_pdf = main_pipeline.transform(
         task_func=repair_pdf,
@@ -1301,14 +1310,14 @@ def build_pipeline(options, work_folder):
         filter=suffix('.pdf'),
         output='.repaired.pdf',
         output_dir=work_folder,
-        extras=[_log, _context])
+        extras=[log, _context])
 
     # Split
     task_split_pages = main_pipeline.split(
         split_pages,
         task_repair_pdf,
         os.path.join(work_folder, '*.page.pdf'),
-        extras=[_log, _context])
+        extras=[log, _context])
 
     # Rasterize preview
     task_rasterize_preview = main_pipeline.transform(
@@ -1317,7 +1326,7 @@ def build_pipeline(options, work_folder):
         filter=suffix('.page.pdf'),
         output='.preview.jpg',
         output_dir=work_folder,
-        extras=[_log, _context])
+        extras=[log, _context])
     task_rasterize_preview.active_if(options.rotate_pages)
 
     # Orient
@@ -1326,7 +1335,7 @@ def build_pipeline(options, work_folder):
         input=[task_split_pages, task_rasterize_preview],
         filter=regex(r".*/(\d{6})(\.ocr|\.skip)(?:\.page\.pdf|\.preview\.jpg)"),
         output=os.path.join(work_folder, r'\1\2.oriented.pdf'),
-        extras=[_log, _context])
+        extras=[log, _context])
 
     # Rasterize actual
     task_rasterize_with_ghostscript = main_pipeline.transform(
@@ -1335,7 +1344,7 @@ def build_pipeline(options, work_folder):
         filter=suffix('.ocr.oriented.pdf'),
         output='.page.png',
         output_dir=work_folder,
-        extras=[_log, _context])
+        extras=[log, _context])
 
     # Preprocessing subpipeline
     task_preprocess_remove_background = main_pipeline.transform(
@@ -1343,21 +1352,21 @@ def build_pipeline(options, work_folder):
         input=task_rasterize_with_ghostscript,
         filter=suffix(".page.png"),
         output=".pp-background.png",
-        extras=[_log, _context])
+        extras=[log, _context])
 
     task_preprocess_deskew = main_pipeline.transform(
         task_func=preprocess_deskew,
         input=task_preprocess_remove_background,
         filter=suffix(".pp-background.png"),
         output=".pp-deskew.png",
-        extras=[_log, _context])
+        extras=[log, _context])
 
     task_preprocess_clean = main_pipeline.transform(
         task_func=preprocess_clean,
         input=task_preprocess_deskew,
         filter=suffix(".pp-deskew.png"),
         output=".pp-clean.png",
-        extras=[_log, _context])
+        extras=[log, _context])
 
     # HOCR OCR
     task_ocr_tesseract_hocr = main_pipeline.transform(
@@ -1365,7 +1374,7 @@ def build_pipeline(options, work_folder):
         input=task_preprocess_clean,
         filter=suffix(".pp-clean.png"),
         output=".hocr",
-        extras=[_log, _context])
+        extras=[log, _context])
     task_ocr_tesseract_hocr.graphviz(fillcolor='"#00cc66"')
     task_ocr_tesseract_hocr.active_if(options.pdf_renderer == 'hocr')
 
@@ -1377,7 +1386,7 @@ def build_pipeline(options, work_folder):
                task_preprocess_clean],
         filter=regex(r".*/(\d{6})(?:\.page|\.pp-.*)\.png"),
         output=os.path.join(work_folder, r'\1.image'),
-        extras=[_log, _context])
+        extras=[log, _context])
     task_select_image_for_pdf.graphviz(shape='diamond')
 
     task_select_image_layer = main_pipeline.collate(
@@ -1385,7 +1394,7 @@ def build_pipeline(options, work_folder):
         input=[task_select_image_for_pdf, task_orient_page],
         filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
         output=os.path.join(work_folder, r'\1.image-layer.pdf'),
-        extras=[_log, _context])
+        extras=[log, _context])
     task_select_image_layer.graphviz(
         fillcolor='"#00cc66"', shape='diamond')
     task_select_image_layer.active_if(options.pdf_renderer == 'hocr')
@@ -1395,7 +1404,7 @@ def build_pipeline(options, work_folder):
         input=task_ocr_tesseract_hocr,
         filter=suffix('.hocr'),
         output='.hocr.pdf',
-        extras=[_log, _context])
+        extras=[log, _context])
     task_render_hocr_page.graphviz(fillcolor='"#00cc66"')
     task_render_hocr_page.active_if(options.pdf_renderer == 'hocr')
 
@@ -1404,7 +1413,7 @@ def build_pipeline(options, work_folder):
         input=[task_select_image_for_pdf, task_ocr_tesseract_hocr],
         filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
         output=os.path.join(work_folder, r'\1.debug.pdf'),
-        extras=[_log, _context])
+        extras=[log, _context])
     task_render_hocr_debug_page.graphviz(fillcolor='"#00cc66"')
     task_render_hocr_debug_page.active_if(options.pdf_renderer == 'hocr')
     task_render_hocr_debug_page.active_if(options.debug_rendering)
@@ -1414,7 +1423,7 @@ def build_pipeline(options, work_folder):
         input=[task_render_hocr_page, task_select_image_layer],
         filter=regex(r".*/(\d{6})(?:\.hocr\.pdf|\.image-layer\.pdf)"),
         output=os.path.join(work_folder, r'\1.rendered.pdf'),
-        extras=[_log, _context])
+        extras=[log, _context])
     task_add_text_layer.graphviz(fillcolor='"#00cc66"')
     task_add_text_layer.active_if(options.pdf_renderer == 'hocr')
 
@@ -1424,7 +1433,7 @@ def build_pipeline(options, work_folder):
         input=[task_select_image_for_pdf, task_orient_page],
         filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
         output=os.path.join(work_folder, r'\1.rendered.pdf'),
-        extras=[_log, _context])
+        extras=[log, _context])
     task_tesseract_ocr_and_render_pdf.graphviz(fillcolor='"#66ccff"')
     task_tesseract_ocr_and_render_pdf.active_if(options.pdf_renderer == 'tesseract')
 
@@ -1434,7 +1443,7 @@ def build_pipeline(options, work_folder):
         input=task_repair_pdf,
         filter=formatter(r'\.repaired\.pdf'),
         output=os.path.join(work_folder, 'pdfa_def.ps'),
-        extras=[_log, _context])
+        extras=[log, _context])
     task_generate_postscript_stub.active_if(options.output_type == 'pdfa')
 
 
@@ -1445,7 +1454,7 @@ def build_pipeline(options, work_folder):
         filter=suffix('.skip.oriented.pdf'),
         output='.done.pdf',
         output_dir=work_folder,
-        extras=[_log])
+        extras=[log])
 
     # Merge pages
     task_merge_pages_ghostscript = main_pipeline.merge(
@@ -1456,7 +1465,7 @@ def build_pipeline(options, work_folder):
                task_tesseract_ocr_and_render_pdf,
                task_generate_postscript_stub],
         output=os.path.join(work_folder, 'merged.pdf'),
-        extras=[_log, _context])
+        extras=[log, _context])
     task_merge_pages_ghostscript.active_if(options.output_type == 'pdfa')
 
     task_merge_pages_qpdf = main_pipeline.merge(
@@ -1467,7 +1476,7 @@ def build_pipeline(options, work_folder):
                task_tesseract_ocr_and_render_pdf,
                task_repair_pdf],
         output=os.path.join(work_folder, 'merged.pdf'),
-        extras=[_log, _context])
+        extras=[log, _context])
     task_merge_pages_qpdf.active_if(options.output_type == 'pdf')
 
     # Finalize
@@ -1475,11 +1484,18 @@ def build_pipeline(options, work_folder):
         task_func=copy_final,
         input=[task_merge_pages_ghostscript, task_merge_pages_qpdf],
         output=options.output_file,
-        extras=[_log, _context])
+        extras=[log, _context])
 
 
 def run_pipeline():
-    options = _options
+    options = parser.parse_args()
+    options.verbose_abbreviated_path = 1
+
+    _log, _log_mutex = proxy_logger.make_shared_logger_and_proxy(
+        logging_factory, __name__, [None, options.verbose])
+    _log.debug('ocrmypdf ' + VERSION)
+
+    check_options(options, _log)
 
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
@@ -1514,8 +1530,8 @@ def run_pipeline():
                     file."""))
                 return ExitCode.bad_args
 
-        build_pipeline(options, work_folder)
-        atexit.register(cleanup_working_files, options)
+        build_pipeline(options, work_folder, _log)
+        atexit.register(cleanup_working_files, work_folder, options)
         cmdline.run(options)
     except ruffus_exceptions.RethrownJobError as e:
         if options.verbose:
@@ -1536,7 +1552,7 @@ def run_pipeline():
         # which is probably in another process, so it's better to log only
         # data from the exception at this point.
 
-        exitcode = traverse_ruffus_exception(e.args, options)
+        exitcode = traverse_ruffus_exception(e.args, options, _log)
         if exitcode is None:
             _log.error("Unexpected ruffus exception: " + str(e))
             _log.error(repr(e))
