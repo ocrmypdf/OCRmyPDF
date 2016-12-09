@@ -2,7 +2,7 @@
 # © 2015 James R. Barlow: github.com/jbarlow83
 
 from subprocess import Popen, PIPE
-from decimal import Decimal, getcontext
+from decimal import Decimal
 from math import hypot
 import re
 import sys
@@ -330,9 +330,9 @@ def _find_page_regular_images(page, pageinfo, contentsinfo):
             image['dpi_h'] = max(dpi_h, image.get('dpi_h', 0))
 
         DPI_PREC = Decimal('1.000')
+        dpi = Decimal(image['dpi_w'] * image['dpi_h']).sqrt()
         image['dpi_w'] = Decimal(image['dpi_w']).quantize(DPI_PREC)
         image['dpi_h'] = Decimal(image['dpi_h']).quantize(DPI_PREC)
-        dpi = Decimal(image['dpi_w'] * image['dpi_h']).sqrt()
         image['dpi'] = dpi.quantize(DPI_PREC)
         yield image
 
@@ -407,7 +407,6 @@ def _pdf_get_pageinfo(infile, pageno: int):
 
 def pdf_get_all_pageinfo(infile):
     pdf = pypdf.PdfFileReader(infile)
-    getcontext().prec = 6
     return [_pdf_get_pageinfo(infile, n) for n in range(pdf.numPages)]
 
 

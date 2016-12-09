@@ -748,3 +748,9 @@ def test_ghostscript_pdfa_failure(spoof_no_tess_no_pdfa):
 def test_ghostscript_feature_elision(spoof_no_tess_pdfa_warning):
     check_ocrmypdf('ccitt.pdf', 'test_feature_elision.pdf',
                    env=spoof_no_tess_pdfa_warning)
+
+
+def test_very_high_dpi(spoof_tesseract_cache):
+    "Checks for a Decimal quantize error with high DPI, etc"
+    check_ocrmypdf('2400dpi.pdf', 'test_2400dpi.pdf',
+                   env=spoof_tesseract_cache)
