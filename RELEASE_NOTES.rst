@@ -3,6 +3,12 @@ RELEASE NOTES
 
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
+v4.3.4:
+=======
+
+-  Fixed "decimal.InvalidOperation: quantize result has too many digits" for high DPI images
+
+
 v4.3.3:
 =======
 
