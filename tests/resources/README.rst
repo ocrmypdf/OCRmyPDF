@@ -31,6 +31,9 @@ In some cases they were converted from one image format to another without other
     *   - LinnSequencer.jpg, linn.pdf, linn.txt
         - `Wikimedia: LinnSequencer`_
         - Creative Commons BY-SA 3.0
+    *   - typewriter.png, 2400dpi.pdf
+        - `Wikimedia: Triumph typewrtier text Linzensoep`_
+        * Creative Commons BY-SA 2.5
 
 
 Files generated for this project
@@ -105,3 +108,5 @@ These test resources are assemblies from other previously mentioned files, relea
 .. _`Wikimedia: JPEG2000 Lichtenstein`: https://en.wikipedia.org/wiki/JPEG_2000#/media/File:Jpeg2000_2-level_wavelet_transform-lichtenstein.png
 
 .. _`Linux (Wikipedia Article)`: https://de.wikipedia.org/wiki/Linux 
+
+.. _`Wikimedia: Triumph typewrtier text Linzensoep`: https://commons.wikimedia.org/wiki/File:Triumph.typewriter_text_Linzensoep.gif
