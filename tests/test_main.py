@@ -60,6 +60,7 @@ def check_ocrmypdf(input_basename, output_basename, *args, env=None):
     output_file = _outfile(output_basename)
 
     p, out, err = run_ocrmypdf(input_basename, output_basename, *args, env=env)
+    print(err)  # ensure py.test collects the output, use -s to view
     if p.returncode != 0:
         print('stdout\n======')
         print(out)
