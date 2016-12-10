@@ -24,12 +24,12 @@ from ruffus import formatter, regex, Pipeline, suffix
 from .hocrtransform import HocrTransform
 from .pageinfo import pdf_get_all_pageinfo
 from .pdfa import generate_pdfa_def, file_claims_pdfa
+from .helpers import re_symlink, is_iterable_notstr
 from . import ghostscript
 from . import tesseract
 from . import qpdf
 from . import leptonica
-from . import ExitCode, page_number, is_iterable_notstr, PROGRAM_NAME, \
-    VERSION
+from . import ExitCode, page_number, PROGRAM_NAME, VERSION
 
 
 VECTOR_PAGE_DPI = 400
@@ -76,43 +76,6 @@ class JobContext:
 from multiprocessing.managers import BaseManager
 class JobContextManager(BaseManager):
     pass
-
-
-
-def re_symlink(input_file, soft_link_name, log):
-    """
-    Helper function: relinks soft symbolic link if necessary
-    """
-
-    # Guard against soft linking to oneself
-    if input_file == soft_link_name:
-        log.debug("Warning: No symbolic link made. You are using " +
-                  "the original data directory as the working directory.")
-        return
-
-    # Soft link already exists: delete for relink?
-    if os.path.lexists(soft_link_name):
-        # do not delete or overwrite real (non-soft link) file
-        if not os.path.islink(soft_link_name):
-            raise FileExistsError(
-                "%s exists and is not a link" % soft_link_name)
-        try:
-            os.unlink(soft_link_name)
-        except:
-            log.debug("Can't unlink %s" % (soft_link_name))
-
-    if not os.path.exists(input_file):
-        raise FileNotFoundError(
-            "trying to create a broken symlink to %s" % input_file)
-
-    log.debug("os.symlink(%s, %s)" % (input_file, soft_link_name))
-
-    # Create symbolic link using absolute path
-    os.symlink(
-        os.path.abspath(input_file),
-        soft_link_name
-    )
-
 
 
 def cleanup_working_files(work_folder, options):
@@ -869,7 +832,7 @@ def build_pipeline(options, work_folder, log, context):
         output_dir=work_folder,
         extras=[log, context])
 
-    # Split
+    # Split (kwargs for split seems to be broken, so pass plain args)
     task_split_pages = main_pipeline.split(
         split_pages,
         task_repair_pdf,

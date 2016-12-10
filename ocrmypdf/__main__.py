@@ -25,15 +25,13 @@ import ruffus.proxy_logger as proxy_logger
 from .pipeline import JobContext, JobContextManager, re_symlink, \
     cleanup_working_files, build_pipeline
 from .pdfa import file_claims_pdfa
+from .helpers import is_iterable_notstr, re_symlink
 from . import tesseract
 from . import qpdf
-from . import ExitCode, is_iterable_notstr, PROGRAM_NAME, VERSION
+from . import ExitCode, PROGRAM_NAME, VERSION
 from collections.abc import Sequence
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
-
-
-BASEDIR = os.path.dirname(os.path.realpath(__file__))
 
 
 # -------------

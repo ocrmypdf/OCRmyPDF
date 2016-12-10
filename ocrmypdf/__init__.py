@@ -1,6 +1,5 @@
 from enum import IntEnum
 import os
-from collections.abc import Iterable
 import pkg_resources
 
 PROGRAM_NAME = 'ocrmypdf'
@@ -30,7 +29,4 @@ def get_program(name):
 def page_number(input_file):
     return int(os.path.basename(input_file)[0:6])
 
-
-def is_iterable_notstr(thing):
-    return isinstance(thing, Iterable) and not isinstance(thing, str)
 
