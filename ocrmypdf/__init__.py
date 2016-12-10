@@ -21,11 +21,6 @@ class ExitCode(IntEnum):
     ctrl_c = 130
 
 
-def get_program(name):
-    envvar = 'OCRMYPDF_' + name.upper()
-    return os.environ.get(envvar, name)
-
-
 def page_number(input_file):
     return int(os.path.basename(input_file)[0:6])
 

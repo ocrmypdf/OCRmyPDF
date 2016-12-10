@@ -8,7 +8,8 @@ from tempfile import NamedTemporaryFile
 import sys
 import os
 from functools import lru_cache
-from . import ExitCode, get_program
+from .. import ExitCode
+from . import get_program
 
 
 @lru_cache(maxsize=1)

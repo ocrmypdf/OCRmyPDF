@@ -7,7 +7,8 @@ import sys
 import os
 import re
 
-from . import ExitCode, get_program
+from .. import ExitCode
+from . import get_program
 
 
 @lru_cache(maxsize=1)

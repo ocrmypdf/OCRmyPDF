@@ -5,7 +5,7 @@ from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE, STDOUT, check_call
 from shutil import copy
 from . import get_program
-from .pdfa import SRGB_ICC_PROFILE
+from ..pdfa import SRGB_ICC_PROFILE
 
 
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,

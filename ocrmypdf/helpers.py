@@ -49,4 +49,3 @@ def re_symlink(input_file, soft_link_name, log=None):
 
 def is_iterable_notstr(thing):
     return isinstance(thing, Iterable) and not isinstance(thing, str)
-

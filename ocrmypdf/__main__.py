@@ -26,8 +26,8 @@ from .pipeline import JobContext, JobContextManager, re_symlink, \
     cleanup_working_files, build_pipeline
 from .pdfa import file_claims_pdfa
 from .helpers import is_iterable_notstr, re_symlink
-from . import tesseract
-from . import qpdf
+from .exe import tesseract
+from .exe import qpdf
 from . import ExitCode, PROGRAM_NAME, VERSION
 from collections.abc import Sequence
 
@@ -286,7 +286,7 @@ def check_options_output(options, log):
 
 def check_options_preprocessing(options, log):
     if any((options.clean, options.clean_final)):
-        from . import unpaper
+        from .exe import unpaper
         try:
             if unpaper.version() < '6.1':
                 raise MissingDependencyException(

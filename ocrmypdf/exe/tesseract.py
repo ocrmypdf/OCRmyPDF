@@ -6,7 +6,8 @@ import os
 import re
 import shutil
 from functools import lru_cache
-from . import ExitCode, get_program, page_number
+from .. import ExitCode, page_number
+from . import get_program
 from collections import namedtuple
 
 from subprocess import Popen, PIPE, CalledProcessError, \

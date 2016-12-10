@@ -154,7 +154,7 @@ def test_deskew(spoof_tesseract_noop):
 
     # Now render as an image again and use Leptonica to find the skew angle
     # to confirm that it was deskewed
-    from ocrmypdf.ghostscript import rasterize_pdf
+    from ocrmypdf.exe.ghostscript import rasterize_pdf
     import logging
     log = logging.getLogger()
 
@@ -193,7 +193,7 @@ def test_remove_background(spoof_tesseract_noop):
         '--image-dpi', '150',
         env=spoof_tesseract_noop)
 
-    from ocrmypdf.ghostscript import rasterize_pdf
+    from ocrmypdf.exe.ghostscript import rasterize_pdf
     import logging
     log = logging.getLogger()
 
@@ -335,7 +335,7 @@ def test_argsfile(spoof_tesseract_noop):
 def check_monochrome_correlation(
         reference_pdf, reference_pageno, test_pdf, test_pageno):
 
-    import ocrmypdf.ghostscript as ghostscript
+    import ocrmypdf.exe.ghostscript as ghostscript
     import logging
 
     gslog = logging.getLogger()
@@ -692,7 +692,7 @@ def test_stdout(spoof_tesseract_noop):
 
         assert p.returncode == ExitCode.ok
 
-    from ocrmypdf import qpdf
+    from ocrmypdf.exe import qpdf
     assert qpdf.check(output_file, log=None)
 
 
