@@ -25,9 +25,7 @@ from .hocrtransform import HocrTransform
 from .pageinfo import pdf_get_all_pageinfo
 from .pdfa import generate_pdfa_def, file_claims_pdfa
 from .helpers import re_symlink, is_iterable_notstr
-from .exe import ghostscript
-from .exe import tesseract
-from .exe import qpdf
+from .exec import ghostscript, tesseract, qpdf
 from .exceptions import *
 from . import leptonica
 from . import page_number, PROGRAM_NAME, VERSION
@@ -460,7 +458,7 @@ def preprocess_clean(
         re_symlink(input_file, output_file, log)
         return
 
-    from .exe import unpaper
+    from .exec import unpaper
     pageinfo = get_pageinfo(input_file, context)
     dpi = get_page_square_dpi(pageinfo, options)
 

@@ -2,7 +2,7 @@
 # © 2015 James R. Barlow: github.com/jbarlow83
 
 from ocrmypdf import hocrtransform
-from ocrmypdf.exe.tesseract import HOCR_TEMPLATE
+from ocrmypdf.exec.tesseract import HOCR_TEMPLATE
 from reportlab.pdfgen.canvas import Canvas
 from PIL import Image
 from tempfile import NamedTemporaryFile
