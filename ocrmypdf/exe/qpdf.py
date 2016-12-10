@@ -7,7 +7,8 @@ import sys
 import os
 import re
 
-from .. import ExitCode
+from ..exceptions import InputFileError, SubprocessOutputError, \
+    MissingDependencyError, EncryptedPdfError
 from . import get_program
 
 
@@ -21,9 +22,10 @@ def version():
         versions = check_output(
             args_qpdf, close_fds=True, universal_newlines=True,
             stderr=STDOUT)
-    except CalledProcessError:
-        print("Could not find qpdf executable on system PATH.")
-        sys.exit(ExitCode.missing_dependency)
+    except CalledProcessError as e:
+        print("Could not find qpdf executable on system PATH.",
+              file=sys.stderr)
+        raise MissingDependencyError() from e
 
     qpdf_version = re.match(r'qpdf version (.+)', versions).group(1)
     return qpdf_version
@@ -53,6 +55,14 @@ def check(input_file, log):
     return True
 
 
+def _probably_encrypted(e):
+    """qpdf can report a false positive "file is encrypted" message for damaged
+    files - suppress this"""
+    return e.returncode == 2 and \
+        'invalid password' in e.output and \
+        'file is damaged' not in e.output
+
+
 def repair(input_file, output_file, log):
     args_qpdf = [
         get_program('qpdf'), input_file, output_file
@@ -65,20 +75,20 @@ def repair(input_file, output_file, log):
             log.debug(e.output)
             return
 
-        if e.returncode == 2 and e.output.find("invalid password"):
+        if _probably_encrypted(e):
             log.error("{0}: this PDF is password-protected - password must "
                       "be removed for OCR".format(input_file))
-            sys.exit(ExitCode.input_file)
+            raise EncryptedPdfError() from e
         elif e.returncode == 2:
             log.error("{0}: not a valid PDF, and could not repair it.".format(
                       input_file))
             log.error("Details: " + e.output)
-            sys.exit(ExitCode.input_file)
+            raise InputFileError() from e
         else:
             log.error("{0}: unknown error".format(
                       input_file))
             log.error(e.output)
-            sys.exit(ExitCode.unknown)
+            raise SubprocessOutputError() from e
 
 
 def get_npages(input_file, log):
@@ -89,7 +99,7 @@ def get_npages(input_file, log):
     except CalledProcessError as e:
         if e.returncode == 2 and e.output.find('No such file'):
             log.error(e.output)
-            sys.exit(ExitCode.input_file)
+            raise InputFileError() from e
     return int(pages)
 
 

@@ -8,7 +8,7 @@ from tempfile import NamedTemporaryFile
 import sys
 import os
 from functools import lru_cache
-from .. import ExitCode
+from ..exceptions import MissingDependencyError
 from . import get_program
 
 
@@ -48,17 +48,17 @@ def run(input_file, output_file, dpi, log, mode_args):
                 im = im.convert(mode='1')
             else:
                 im = im.convert(mode='RGB')
-        except IOError:
+        except IOError as e:
             log.error(
                     "Could not convert image with type " + im.mode)
-            sys.exit(ExitCode.missing_dependency)
+            raise MissingDependencyError() from e
 
     try:
         suffix = SUFFIXES[im.mode]
     except KeyError:
         log.error(
                 "Failed to convert image to a supported format.")
-        sys.exit(ExitCode.missing_dependency)
+        raise MissingDependencyError() from e
 
     with NamedTemporaryFile(suffix=suffix) as input_pnm, \
             NamedTemporaryFile(suffix=suffix, mode="r+b") as output_pnm:

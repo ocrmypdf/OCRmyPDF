@@ -10,7 +10,7 @@ import sys
 import pytest
 from ocrmypdf.pageinfo import pdf_get_all_pageinfo
 import PyPDF2 as pypdf
-from ocrmypdf import ExitCode
+from ocrmypdf.exceptions import ExitCode
 from ocrmypdf import leptonica
 from ocrmypdf.pdfa import file_claims_pdfa
 import platform
@@ -61,11 +61,6 @@ def check_ocrmypdf(input_basename, output_basename, *args, env=None):
 
     p, out, err = run_ocrmypdf(input_basename, output_basename, *args, env=env)
     print(err)  # ensure py.test collects the output, use -s to view
-    if p.returncode != 0:
-        print('stdout\n======')
-        print(out)
-        print('stderr\n======')
-        print(err)
     assert p.returncode == 0
     assert os.path.exists(output_file), "Output file not created"
     assert os.stat(output_file).st_size > 100, "PDF too small or empty"
@@ -88,6 +83,8 @@ def run_ocrmypdf(input_basename, output_basename, *args, env=None):
         p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
         universal_newlines=True, env=env)
     out, err = p.communicate()
+    print(err)
+
     return p, out, err
 
 
@@ -548,15 +545,16 @@ def test_qpdf_repair_fails():
     env['OCRMYPDF_QPDF'] = os.path.abspath('./spoof/qpdf_dummy_return2.py')
     p, out, err = run_ocrmypdf(
         '-v', '1',
-        'c02-22.pdf', 'wont_be_created.pdf', env=env)
+        'c02-22.pdf', 'wont_be_created_repair_fail.pdf', env=env)
     print(out)
     print(err)
     assert p.returncode == ExitCode.input_file
 
 
 def test_encrypted():
-    p, out, err = run_ocrmypdf('skew-encrypted.pdf', 'wont_be_created.pdf')
-    assert p.returncode == ExitCode.input_file
+    p, out, err = run_ocrmypdf(
+        'skew-encrypted.pdf', 'wont_be_created_test_enc.pdf')
+    assert p.returncode == ExitCode.encrypted_pdf
     assert out.find('password')
 
 

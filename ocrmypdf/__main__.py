@@ -3,6 +3,7 @@
 
 from contextlib import suppress
 from tempfile import mkdtemp
+from collections.abc import Sequence
 import sys
 import os
 import re
@@ -28,8 +29,10 @@ from .pdfa import file_claims_pdfa
 from .helpers import is_iterable_notstr, re_symlink
 from .exe import tesseract
 from .exe import qpdf
-from . import ExitCode, PROGRAM_NAME, VERSION
-from collections.abc import Sequence
+from . import PROGRAM_NAME, VERSION
+
+from .exceptions import *
+from . import exceptions as ocrmypdf_exceptions
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
@@ -50,10 +53,6 @@ if tesseract.version() < MINIMUM_TESS_VERSION:
         "(currently installed version is {1})".format(
             MINIMUM_TESS_VERSION, tesseract.version()))
     sys.exit(ExitCode.missing_dependency)
-
-
-class MissingDependencyException(Exception):
-    pass
 
 
 # -------------
@@ -289,11 +288,11 @@ def check_options_preprocessing(options, log):
         from .exe import unpaper
         try:
             if unpaper.version() < '6.1':
-                raise MissingDependencyException(
+                raise MissingDependencyError(
                     "The installed 'unpaper' is not supported. "
                     "Install version 6.1 or newer.")
         except FileNotFoundError:
-            raise MissingDependencyException(
+            raise MissingDependencyError(
                 "Install the 'unpaper' program to use --clean, --clean-final.")
 
     if options.clean and \
@@ -326,7 +325,7 @@ def check_options(options, log):
     except argparse.ArgumentError as e:
         log.error(e)
         sys.exit(ExitCode.bad_args)
-    except MissingDependencyException as e:
+    except MissingDependencyError as e:
         log.error(e)
         sys.exit(ExitCode.missing_dependency)
 
@@ -408,7 +407,7 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
         msg = "Error occurred while running this command:"
         log.error(msg + '\n' + exc_value)
         return ExitCode.child_process_error
-    elif exc_name == 'ocrmypdf.main.PdfMergeFailedError':
+    elif exc_name == 'ocrmypdf.exceptions.PdfMergeFailedError':
         log.error(textwrap.dedent("""\
             Failed to merge PDF image layer with OCR layer
 
@@ -419,6 +418,10 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
                 ocrmypdf --pdf-renderer tesseract  [..other args..]
             """))
         return ExitCode.input_file
+    elif exc_name.startswith('ocrmypdf.exceptions.'):
+        base_exc_name = exc_name.replace('ocrmypdf.exceptions.', '')
+        exc_class = getattr(ocrmypdf_exceptions, base_exc_name)
+        return exc_class.exit_code
     elif exc_name == 'PyPDF2.utils.PdfReadError' and \
             'not been decrypted' in exc_value:
         log.error(textwrap.dedent("""\
@@ -532,6 +535,8 @@ def run_pipeline():
             return ExitCode.other_error
         else:
             return exitcode
+    except ExitCodeException as e:
+        return e.exit_code
     except Exception as e:
         _log.error(e)
         return ExitCode.other_error

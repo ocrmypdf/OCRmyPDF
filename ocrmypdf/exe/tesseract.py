@@ -6,9 +6,11 @@ import os
 import re
 import shutil
 from functools import lru_cache
-from .. import ExitCode, page_number
+from ..exceptions import MissingDependencyError
+from .. import page_number
 from . import get_program
 from collections import namedtuple
+from textwrap import dedent
 
 from subprocess import Popen, PIPE, CalledProcessError, \
     TimeoutExpired, check_output, STDOUT, DEVNULL
@@ -51,9 +53,10 @@ def version():
         versions = check_output(
                 args_tess, close_fds=True, universal_newlines=True,
                 stderr=STDOUT)
-    except CalledProcessError:
-        print("Could not find Tesseract executable on system PATH.")
-        sys.exit(ExitCode.missing_dependency)
+    except CalledProcessError as e:
+        print("Could not find Tesseract executable on system PATH.",
+              file=sys.stderr)
+        raise MissingDependencyError from e
 
     tesseract_version = re.match(r'tesseract\s(.+)', versions).group(1)
     return tesseract_version
@@ -70,11 +73,13 @@ def languages():
                 args_tess, close_fds=True, universal_newlines=True,
                 stderr=STDOUT)
     except CalledProcessError as e:
-        print("Tesseract failed to report available languages.")
-        print("Output from Tesseract:")
-        print("-" * 40)
-        print(e.output)
-        sys.exit(ExitCode.missing_dependency)
+        msg = dedent("""Tesseract failed to report available languages.
+        Output from Tesseract:
+        -----------
+        """)
+        msg += e.output
+        print(msg, file=sys.stderr)
+        raise MissingDependencyError from e
     return set(lang.strip() for lang in langs.splitlines()[1:])
 
 

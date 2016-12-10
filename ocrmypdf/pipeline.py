@@ -28,8 +28,9 @@ from .helpers import re_symlink, is_iterable_notstr
 from .exe import ghostscript
 from .exe import tesseract
 from .exe import qpdf
+from .exceptions import *
 from . import leptonica
-from . import ExitCode, page_number, PROGRAM_NAME, VERSION
+from . import page_number, PROGRAM_NAME, VERSION
 
 
 VECTOR_PAGE_DPI = 400
@@ -107,8 +108,7 @@ def triage_image_file(input_file, output_file, log, options):
             realpath = '<stdin>'
         msg = msg.replace(input_file, realpath)
         log.error(msg)
-        sys.exit(ExitCode.input_file)
-        return
+        raise UnsupportedImageFormatError() from e
     else:
         log.info("Input file is an image")
 
@@ -120,21 +120,21 @@ def triage_image_file(input_file, output_file, log, options):
                     "Input file is an image, but the resolution (DPI) is "
                     "not credible.  Estimate the resolution at which the "
                     "image was scanned and specify it using --image-dpi.")
-                sys.exit(ExitCode.input_file)
+                raise DpiError()
         elif not options.image_dpi:
             log.info("Image size: (%d, %d)" % im.size)
             log.error(
                 "Input file is an image, but has no resolution (DPI) "
                 "in its metadata.  Estimate the resolution at which "
                 "image was scanned and specify it using --image-dpi.")
-            sys.exit(ExitCode.input_file)
+            raise DpiError()
 
         if 'iccprofile' not in im.info:
             if im.mode == 'RGB':
                 log.info('Input image has no ICC profile, assuming sRGB')
             elif im.mode == 'CMYK':
                 log.info('Input CMYK image has no ICC profile, not usable')
-                sys.exit(ExitCode.input_file)
+                raise UnsupportedImageFormatError()
         im.close()
 
     try:
@@ -152,7 +152,7 @@ def triage_image_file(input_file, output_file, log, options):
         log.info("Successfully converted to PDF, processing...")
     except img2pdf.ImageOpenError as e:
         log.error(e)
-        sys.exit(ExitCode.input_file)
+        raise UnsupportedImageFormatError() from e
 
 
 def triage(
@@ -169,7 +169,7 @@ def triage(
                 return
     except EnvironmentError as e:
         log.error(e)
-        sys.exit(ExitCode.input_file)
+        raise InputFileError() from e
 
     options = context.get_options()
     triage_image_file(input_file, output_file, log, options)
@@ -239,7 +239,7 @@ def is_ocr_required(pageinfo, log, options):
         if not options.force_ocr and not options.skip_text:
             log.error(msg.format(page,
                                  "aborting (use --force-ocr to force OCR)"))
-            sys.exit(ExitCode.already_done_ocr)
+            raise PriorOcrFoundError()
         elif options.force_ocr:
             log.info(msg.format(page,
                                 "rasterizing text and running OCR anyway"))
@@ -282,7 +282,7 @@ def split_pages(
     if not input_file:
         log.error("{0}: file not found or invalid argument".format(
                 options.input_file))
-        sys.exit(ExitCode.input_file)
+        raise InputFileError()
 
     npages = qpdf.get_npages(input_file, log)
     qpdf.split_pages(input_file, work_folder, npages)
@@ -580,10 +580,6 @@ def render_hocr_debug_page(
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=None,
                          showBoundingboxes=True, invisibleText=False)
-
-
-class PdfMergeFailedError(Exception):
-    pass
 
 
 def add_text_layer(
