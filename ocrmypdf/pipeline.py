@@ -282,7 +282,8 @@ def split_pages(
                 options.input_file))
         raise InputFileError()
 
-    npages = qpdf.get_npages(input_file, log)
+    pdfinfo = context.get_pdfinfo()
+    npages = len(pdfinfo)
     qpdf.split_pages(input_file, work_folder, npages)
 
     from glob import glob
