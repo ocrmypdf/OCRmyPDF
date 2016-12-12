@@ -3,7 +3,6 @@
 #
 # Generate a PDFA_def.ps file for Ghostscript >= 9.14
 
-from __future__ import print_function, absolute_import, division
 from string import Template
 import codecs
 import pkg_resources
@@ -19,10 +18,9 @@ SRGB_ICC_PROFILE = pkg_resources.resource_filename(
 # files, from the Ghostscript documentation. Lines beginning with % are
 # comments. Python substitution variables have a '$' prefix.
 pdfa_def_template = u"""%!
-% This is a sample prefix file for creating a PDF/A document.
-% Feel free to modify entries marked with "Customize".
-% This assumes an ICC profile to reside in the file (ISO Coated sb.icc),
-% unless the user modifies the corresponding line below.
+% This is derived from Ghostscript's template for creating a PDF/A document.
+% This is a small PostScript program that includes some necessary information
+% to create a PDF/A compliant file.
 
 % Define entries in the document Info dictionary :
 /ICCProfile ($icc_profile)
@@ -71,7 +69,7 @@ def encode_text_string(s: str) -> str:
     From PDF 32000-1:2008 a string object may be included in hexademical form
     if it is enclosed in angle brackets.  For general Unicode the string should
     be UTF-16 (big endian) with byte order marks.  Many strings including all
-    ASCII strings fall could be encoded as PdfDocEncoding literals provided
+    ASCII strings could be encoded as PdfDocEncoding literals provided
     that certain Postscript sequences are escaped.  But it's far simpler to
     encode everything as UTF-16.
     '''
