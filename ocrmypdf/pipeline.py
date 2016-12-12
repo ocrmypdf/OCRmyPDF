@@ -187,7 +187,7 @@ def repair_pdf(
 
 def get_pageinfo(input_file, context):
     pageno = int(os.path.basename(input_file)[0:6]) - 1
-    pageinfo = context.get_pdfinfo()[pageno].copy()
+    pageinfo = context.get_pdfinfo()[pageno]
     return pageinfo
 
 
