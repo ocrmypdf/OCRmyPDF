@@ -78,6 +78,8 @@ In this worked example, the current working directory contains an input file cal
 
    docker run --rm -v "$(pwd):/home/docker"   ocrmypdf --skip-text test.pdf output.pdf
 
+.. note:: The working directory should be a writable local volume or Docker may not have permission to access it.
+
 Note that ``ocrmypdf`` has its own separate ``-v VERBOSITYLEVEL`` argument to control debug verbosity. All Docker arguments should before the ``ocrmypdf`` image name and all arguments to ``ocrmypdf`` should be listed after.
 
 
@@ -105,6 +107,8 @@ Install or upgrade the required Homebrew packages, if any are missing:
    brew install libxml2 libffi leptonica
    brew install unpaper   # optional
    
+Python 3.4, 3.5 and 3.6 are supported.
+
 Install the required Tesseract OCR engine with the language packs you plan to use:
    
 .. code-block:: bash

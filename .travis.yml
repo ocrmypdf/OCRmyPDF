@@ -11,8 +11,9 @@ cache:
         - tests/cache
 
 python:
-    - 3.4
-    - 3.5
+    - "3.4"
+    - "3.5"
+    - "3.6-dev"  # 3.6 not available yet
 
 before_cache:
     - rm -f $HOME/.cache/pip/log/debug.log
