@@ -214,7 +214,7 @@ setup(
         "Topic :: Text Processing :: Linguistic",
         ],
     setup_requires=[
-        'setuptools-scm',
+        'setuptools-scm == 1.11.1',  # pinned because upstream keeps breaking things
         'setuptools-scm-git-archive',
         'cffi>=1.5.0',
         'pytest-runner'
