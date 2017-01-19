@@ -332,6 +332,7 @@ def orient_page(
     orient_conf = tesseract.get_orientation(
         preview,
         language=options.language,
+        engine_mode=options.tesseract_oem,
         timeout=options.tesseract_timeout,
         log=log)
 
@@ -476,9 +477,9 @@ def ocr_tesseract_hocr(
         input_file=input_file,
         output_hocr=output_file,
         language=options.language,
+        engine_mode=options.tesseract_oem,
         tessconfig=options.tesseract_config,
         timeout=options.tesseract_timeout,
-        pageinfo_getter=partial(get_pageinfo, input_file, context),
         pagesegmode=options.tesseract_pagesegmode,
         log=log
         )
@@ -669,6 +670,7 @@ def tesseract_ocr_and_render_pdf(
         skip_pdf=input_pdf,
         output_pdf=output_file,
         language=options.language,
+        engine_mode=options.tesseract_oem,
         tessconfig=options.tesseract_config,
         timeout=options.tesseract_timeout,
         pagesegmode=options.tesseract_pagesegmode,

@@ -93,10 +93,20 @@ def languages():
     return set(lang.strip() for lang in langs.splitlines()[1:])
 
 
-def get_orientation(input_file, language: list, timeout: float, log):
-    args_tesseract = [
+def tess_base_args(languages, engine_mode):
+    args = [
         get_program('tesseract'),
-        '-l', '+'.join(language),
+    ]
+    if languages:
+        args.extend(['-l', '+'.join(languages)])
+    if engine_mode is not None and v4():
+        args.extend(['--oem', str(engine_mode)])
+    return args
+
+
+def get_orientation(input_file, language: list, engine_mode, timeout: float,
+                    log):
+    args_tesseract = tess_base_args(language, engine_mode) + [
         psm(), '0',
         input_file,
         'stdout'
@@ -175,15 +185,13 @@ def _generate_null_hocr(output_hocr, image):
         f.write(HOCR_TEMPLATE.format(w, h))
 
 
-def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
-                  timeout: float, pageinfo_getter, pagesegmode: int, log):
+def generate_hocr(input_file, output_hocr, language: list, engine_mode,
+                  tessconfig: list,
+                  timeout: float, pagesegmode: int, log):
 
     badxml = os.path.splitext(output_hocr)[0] + '.badxml'
 
-    args_tesseract = [
-        get_program('tesseract'),
-        '-l', '+'.join(language)
-    ]
+    args_tesseract = tess_base_args(language, engine_mode)
 
     if pagesegmode is not None:
         args_tesseract.extend([psm(), str(pagesegmode)])
@@ -194,6 +202,7 @@ def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
         'hocr'
     ] + tessconfig)
     try:
+        log.debug(args_tesseract)
         stdout = check_output(
             args_tesseract, close_fds=True, stderr=STDOUT,
             universal_newlines=True, timeout=timeout)
@@ -235,6 +244,7 @@ def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
 
 
 def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
+                 engine_mode,
                  tessconfig: list, timeout: float, pagesegmode: int, log):
     '''Use Tesseract to render a PDF.
 
@@ -246,10 +256,7 @@ def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
     log -- logger object
     '''
 
-    args_tesseract = [
-        get_program('tesseract'),
-        '-l', '+'.join(language)
-    ]
+    args_tesseract = tess_base_args(language, engine_mode)
 
     if pagesegmode is not None:
         args_tesseract.extend([psm(), str(pagesegmode)])
@@ -261,6 +268,7 @@ def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
     ] + tessconfig)
 
     try:
+        log.debug(args_tesseract)
         stdout = check_output(
             args_tesseract, close_fds=True, stderr=STDOUT,
             universal_newlines=True, timeout=timeout)

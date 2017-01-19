@@ -213,6 +213,15 @@ advanced.add_argument(
     choices=range(0, 14),
     help="set Tesseract page segmentation mode (see tesseract --help)")
 advanced.add_argument(
+    '--tesseract-oem', action='store', type=int, metavar='MODE',
+    choices=range(0, 4),
+    help=("set Tesseract 4.0 OCR engine mode: "
+         "0 - original Tesseract only; "
+         "1 - neural nets LSTM only; "
+         "2 - Tesseract + LSTM; "
+         "3 - default.")
+    )
+advanced.add_argument(
     '--pdf-renderer', choices=['auto', 'tesseract', 'hocr'], default='auto',
     help="choose OCR PDF renderer - the default option is to let OCRmyPDF "
          "choose.  The 'tesseract' PDF renderer is more accurate and does a "
@@ -316,12 +325,22 @@ def check_options_ocr_behavior(options, log):
             "    ocrmypdf --pdf-renderer tesseract --output-type pdf")
 
 
+def check_options_advanced(options, log):
+    if tesseract.v4():
+        log.info(
+            "Tesseract v4.x.alpha found. OCRmyPDF support is experimental.")
+    if options.tesseract_oem and not tesseract.v4():
+        log.warning(
+            "--tesseract-oem requires Tesseract 4.x -- argument ignored")
+
+
 def check_options(options, log):
     try:
         check_options_languages(options, log)
         check_options_output(options, log)
         check_options_preprocessing(options, log)
         check_options_ocr_behavior(options, log)
+        check_options_advanced(options, log)
     except argparse.ArgumentError as e:
         log.error(e)
         sys.exit(ExitCode.bad_args)
@@ -462,6 +481,7 @@ def run_pipeline():
     _log, _log_mutex = proxy_logger.make_shared_logger_and_proxy(
         logging_factory, __name__, [None, options.verbose])
     _log.debug('ocrmypdf ' + VERSION)
+    _log.debug('tesseract ' + tesseract.version())
 
     check_options(options, _log)
 
