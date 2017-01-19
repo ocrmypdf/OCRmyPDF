@@ -7,7 +7,7 @@ import re
 import shutil
 from functools import lru_cache
 from ..exceptions import MissingDependencyError
-from .. import page_number
+from ..helpers import page_number
 from . import get_program
 from collections import namedtuple
 from textwrap import dedent

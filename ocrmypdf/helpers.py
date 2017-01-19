@@ -49,3 +49,7 @@ def re_symlink(input_file, soft_link_name, log=None):
 
 def is_iterable_notstr(thing):
     return isinstance(thing, Iterable) and not isinstance(thing, str)
+
+
+def page_number(input_file):
+    return int(os.path.basename(input_file)[0:6])

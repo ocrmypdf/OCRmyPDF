@@ -24,11 +24,11 @@ from ruffus import formatter, regex, Pipeline, suffix
 from .hocrtransform import HocrTransform
 from .pageinfo import pdf_get_all_pageinfo
 from .pdfa import generate_pdfa_def, file_claims_pdfa
-from .helpers import re_symlink, is_iterable_notstr
+from .helpers import re_symlink, is_iterable_notstr, page_number
 from .exec import ghostscript, tesseract, qpdf
 from .exceptions import *
 from . import leptonica
-from . import page_number, PROGRAM_NAME, VERSION
+from . import PROGRAM_NAME, VERSION
 
 
 VECTOR_PAGE_DPI = 400
