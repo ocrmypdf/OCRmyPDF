@@ -62,6 +62,16 @@ def version():
     return tesseract_version
 
 
+def v4():
+    "Is this Tesseract v4.0?"
+    return (version() >= '4')
+
+
+def psm():
+    "If Tesseract 4.0, use argument --psm instead of -psm"
+    return '--psm' if v4() else '-psm'
+
+
 @lru_cache(maxsize=1)
 def languages():
     args_tess = [
@@ -87,7 +97,7 @@ def get_orientation(input_file, language: list, timeout: float, log):
     args_tesseract = [
         get_program('tesseract'),
         '-l', '+'.join(language),
-        '-psm', '0',
+        psm(), '0',
         input_file,
         'stdout'
     ]
@@ -176,7 +186,7 @@ def generate_hocr(input_file, output_hocr, language: list, tessconfig: list,
     ]
 
     if pagesegmode is not None:
-        args_tesseract.extend(['-psm', str(pagesegmode)])
+        args_tesseract.extend([psm(), str(pagesegmode)])
 
     args_tesseract.extend([
         input_file,
@@ -242,7 +252,7 @@ def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
     ]
 
     if pagesegmode is not None:
-        args_tesseract.extend(['-psm', str(pagesegmode)])
+        args_tesseract.extend([psm(), str(pagesegmode)])
 
     args_tesseract.extend([
         input_image,

@@ -210,6 +210,7 @@ advanced.add_argument(
     help="additional Tesseract configuration files")
 advanced.add_argument(
     '--tesseract-pagesegmode', action='store', type=int, metavar='PSM',
+    choices=range(0, 14),
     help="set Tesseract page segmentation mode (see tesseract --help)")
 advanced.add_argument(
     '--pdf-renderer', choices=['auto', 'tesseract', 'hocr'], default='auto',
