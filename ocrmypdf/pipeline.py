@@ -892,6 +892,8 @@ def build_pipeline(options, work_folder, log, context):
         extras=[log, context])
     task_ocr_tesseract_hocr.graphviz(fillcolor='"#00cc66"')
     task_ocr_tesseract_hocr.active_if(options.pdf_renderer == 'hocr')
+    if tesseract.v4():
+        task_ocr_tesseract_hocr.jobs_limit(1)  # Uses multi-core on its own
 
     task_select_image_for_pdf = main_pipeline.collate(
         task_func=select_image_for_pdf,
@@ -951,6 +953,8 @@ def build_pipeline(options, work_folder, log, context):
         extras=[log, context])
     task_tesseract_ocr_and_render_pdf.graphviz(fillcolor='"#66ccff"')
     task_tesseract_ocr_and_render_pdf.active_if(options.pdf_renderer == 'tesseract')
+    if tesseract.v4():
+        task_tesseract_ocr_and_render_pdf.jobs_limit(1)  # Uses multi-core
 
     # PDF/A
     task_generate_postscript_stub = main_pipeline.transform(
