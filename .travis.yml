@@ -13,7 +13,7 @@ cache:
 python:
     - "3.4"
     - "3.5"
-    - "3.6-dev"  # 3.6 not available yet
+    - "3.6"
 
 before_cache:
     - rm -f $HOME/.cache/pip/log/debug.log
