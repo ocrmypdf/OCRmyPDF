@@ -806,6 +806,7 @@ def copy_final(
         from shutil import copyfileobj
         with open(input_file, 'rb') as input_stream:
             copyfileobj(input_stream, sys.stdout.buffer)
+            sys.stdout.flush()
     else:
         shutil.copy(input_file, output_file)
 
