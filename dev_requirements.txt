@@ -1,6 +1,10 @@
-check-manifest >= 0.33
+check-manifest >= 0.34
 twine >= 1.8.1
-coverage >= 4.2
+coverage >= 4.3.1
+pytest-xdist >= 1.15.0
 GitPython == 2.1.0
-setuptools-scm >= 1.11.1, != 1.13.1
-setuptools_scm_git_archive == 1.0
+
+# Known good versions: 1.11.1
+# Known broken versions: 1.15.0
+setuptools-scm == 1.11.1
+setuptools-scm-git-archive == 1.0

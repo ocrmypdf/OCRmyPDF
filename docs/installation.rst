@@ -78,6 +78,8 @@ In this worked example, the current working directory contains an input file cal
 
    docker run --rm -v "$(pwd):/home/docker"   ocrmypdf --skip-text test.pdf output.pdf
 
+.. note:: The working directory should be a writable local volume or Docker may not have permission to access it.
+
 Note that ``ocrmypdf`` has its own separate ``-v VERBOSITYLEVEL`` argument to control debug verbosity. All Docker arguments should before the ``ocrmypdf`` image name and all arguments to ``ocrmypdf`` should be listed after.
 
 
@@ -105,6 +107,8 @@ Install or upgrade the required Homebrew packages, if any are missing:
    brew install libxml2 libffi leptonica
    brew install unpaper   # optional
    
+Python 3.4, 3.5 and 3.6 are supported.
+
 Install the required Tesseract OCR engine with the language packs you plan to use:
    
 .. code-block:: bash
@@ -136,6 +140,44 @@ The command line program should now be available:
 
    ocrmypdf --help
 
+
+Installing on Ubuntu 16.04 LTS
+------------------------------
+
+No package is currently available for Ubuntu 16.04, but you can install the dependencies manually:
+
+.. code-block:: bash
+
+   sudo apt-get update
+   sudo apt-get install \
+      unpaper \
+      ghostscript \
+      tesseract-ocr \
+      qpdf \
+      python3-pip \
+      python3-pil \
+      python3-pytest \
+      python3-reportlab \
+      python3-ruffus \
+      python3-cffi
+
+If you wish install OCRmyPDF to the system Python, then install as follows (note this installs new packages
+into your system Python, which could interfere with other programs):
+
+.. code-block:: bash
+
+   sudo pip3 install ocrmypdf
+
+If you wish to install OCRmyPDF to a virtual environment to isolate the system Python, you can
+follow these steps.
+
+.. code-block:: bash
+
+   python3 -m venv --system-site-packages venv-ocrmypdf
+   source venv-ocrmypdf/bin/activate
+   pip3 install ocrmypdf
+
+
 Installing on Ubuntu 14.04 LTS
 ------------------------------
 
@@ -153,7 +195,6 @@ Update apt-get:
 .. code-block:: bash
 
    sudo apt-get update
-   sudo apt-get upgrade
    
 Install system dependencies:
 

@@ -3,6 +3,12 @@ RELEASE NOTES
 
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
+v4.3.5:
+=======
+
+-  Update documentation to confirm Python 3.6.0 compatibility. No code changes were needed, so many earlier versions are likely supported.
+
+
 v4.3.4:
 =======
 
