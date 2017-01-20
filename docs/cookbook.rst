@@ -62,6 +62,17 @@ By default OCRmyPDF assumes the document is English.
 Language packs must be installed for all languages specified. See :ref:`Installing additional language packs <lang-packs>`.
 
 
+Produce PDF and text file containing OCR text
+"""""""""""""""""""""""""""""""""""""""""""""
+
+This produces a file named "output.pdf" and a companion text file named "output.txt". The ``pdftotext`` program from 
+`Poppler <https://poppler.freedesktop.org/>`_ is used to extract text from the finished PDF.
+
+.. code-block:: bash
+
+	ocrmypdf input.pdf - | tee output.pdf | pdftotext - output.txt
+
+
 OCR images, not PDFs
 --------------------
 
