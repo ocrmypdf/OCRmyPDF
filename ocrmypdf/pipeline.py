@@ -467,6 +467,19 @@ def preprocess_clean(
     unpaper.clean(input_file, output_file, dpi, log)
 
 
+def select_ocr_image(
+        infiles,
+        output_file,
+        log,
+        contenxt):
+    """Select the image we send for OCR. May not be the same as the display
+    image depending on preprocessing."""
+
+    # For the moment this is always the .pp-clean.png image
+    image = infiles[0]
+    re_symlink(image, output_file, log)
+
+
 def ocr_tesseract_hocr(
         input_file,
         output_file,
@@ -593,7 +606,7 @@ def combine_layers(
         output_file,
         log,
         context):
-    text = next(ii for ii in infiles if ii.endswith('.hocr.pdf'))
+    text = next(ii for ii in infiles if ii.endswith('.text.pdf'))
     image = next(ii for ii in infiles if ii.endswith('.image-layer.pdf'))
 
     pdf_text = pypdf.PdfFileReader(open(text, "rb"))
@@ -677,6 +690,31 @@ def ocr_tesseract_and_render_pdf(
         output_pdf=output_file,
         language=options.language,
         engine_mode=options.tesseract_oem,
+        text_only=False,
+        tessconfig=options.tesseract_config,
+        timeout=options.tesseract_timeout,
+        pagesegmode=options.tesseract_pagesegmode,
+        log=log)
+
+
+def ocr_tesseract_textonly_pdf(
+        infiles,
+        output_file,
+        log,
+        context):
+    options = context.get_options()
+    input_image = next((ii for ii in infiles if ii.endswith('.ocr.png')), '')
+    if not input_image:
+        raise ValueError("No image rendered?")
+
+    skip_pdf = next((ii for ii in infiles if ii.endswith('.pdf')))
+    tesseract.generate_pdf(
+        input_image=input_image,
+        skip_pdf=skip_pdf,
+        output_pdf=output_file,
+        language=options.language,
+        engine_mode=options.tesseract_oem,
+        text_only=True,
         tessconfig=options.tesseract_config,
         timeout=options.tesseract_timeout,
         pagesegmode=options.tesseract_pagesegmode,
@@ -892,11 +930,19 @@ def build_pipeline(options, work_folder, log, context):
         output=".pp-clean.png",
         extras=[log, context])
 
+    task_select_ocr_image = main_pipeline.collate(
+        task_func=select_ocr_image,
+        input=[task_preprocess_clean],
+        filter=regex(r".*/(\d{6})(?:\.page|\.pp-.*)\.png"),
+        output=os.path.join(work_folder, r"\1.ocr.png"),
+        extras=[log, context])
+
+
     # HOCR OCR
     task_ocr_tesseract_hocr = main_pipeline.transform(
         task_func=ocr_tesseract_hocr,
-        input=task_preprocess_clean,
-        filter=suffix(".pp-clean.png"),
+        input=task_select_ocr_image,
+        filter=suffix(".ocr.png"),
         output=".hocr",
         extras=[log, context])
     task_ocr_tesseract_hocr.graphviz(fillcolor='"#00cc66"')
@@ -923,13 +969,14 @@ def build_pipeline(options, work_folder, log, context):
         extras=[log, context])
     task_select_image_layer.graphviz(
         fillcolor='"#00cc66"', shape='diamond')
-    task_select_image_layer.active_if(options.pdf_renderer == 'hocr')
+    task_select_image_layer.active_if(
+        options.pdf_renderer == 'hocr' or options.pdf_renderer == 'tesstop')
 
     task_render_hocr_page = main_pipeline.transform(
         task_func=render_hocr_page,
         input=task_ocr_tesseract_hocr,
         filter=suffix('.hocr'),
-        output='.hocr.pdf',
+        output='.text.pdf',
         extras=[log, context])
     task_render_hocr_page.graphviz(fillcolor='"#00cc66"')
     task_render_hocr_page.active_if(options.pdf_renderer == 'hocr')
@@ -944,9 +991,22 @@ def build_pipeline(options, work_folder, log, context):
     task_render_hocr_debug_page.active_if(options.pdf_renderer == 'hocr')
     task_render_hocr_debug_page.active_if(options.debug_rendering)
 
+    # Tesseract OCR + text only PDF
+    task_ocr_tesseract_textonly_pdf = main_pipeline.collate(
+        task_func=ocr_tesseract_textonly_pdf,
+        input=[task_select_ocr_image, task_orient_page],
+        filter=regex(r".*/(\d{6})(?:\.ocr.png|\.ocr\.oriented\.pdf)"),
+        output=os.path.join(work_folder, r'\1.text.pdf'),
+        extras=[log, context])
+    task_ocr_tesseract_textonly_pdf.graphviz(fillcolor='"#ff69b4"')
+    task_ocr_tesseract_textonly_pdf.active_if(options.pdf_renderer == 'tesstop')
+    if tesseract.v4():
+        task_ocr_tesseract_textonly_pdf.jobs_limit(1)
+
     task_combine_layers = main_pipeline.collate(
         task_func=combine_layers,
         input=[task_render_hocr_page,
+               task_ocr_tesseract_textonly_pdf,
                task_select_image_layer],
         filter=regex(r".*/(\d{6})(?:\.text\.pdf|\.image-layer\.pdf)"),
         output=os.path.join(work_folder, r'\1.rendered.pdf'),

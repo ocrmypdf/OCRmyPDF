@@ -222,7 +222,7 @@ advanced.add_argument(
          "3 - default.")
     )
 advanced.add_argument(
-    '--pdf-renderer', choices=['auto', 'tesseract', 'hocr'], default='auto',
+    '--pdf-renderer', choices=['auto', 'tesseract', 'hocr', 'tesstop'], default='auto',
     help="choose OCR PDF renderer - the default option is to let OCRmyPDF "
          "choose.  The 'tesseract' PDF renderer is more accurate and does a "
          "better job and document structure such as recognizing columns. It "
