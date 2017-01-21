@@ -67,6 +67,28 @@ def v4():
     return (version() >= '4')
 
 
+def has_textonly_pdf():
+    if version() == '4.00.00alpha':
+        # textonly_pdf added during the 4.00.00alpha cycle, so we must test
+        # more carefully to see if it is present
+        args_tess = [
+            get_program('tesseract'),
+            '--print-parameters'
+        ]
+        try:
+            params = check_output(
+                    args_tess, close_fds=True, universal_newlines=True,
+                    stderr=STDOUT)
+        except CalledProcessError as e:
+            print("Could not --print-parameters from tesseract",
+                  file=sys.stderr)
+            raise MissingDependencyError from e
+        if 'textonly_pdf' in params:
+            return True
+    else:
+        return v4()
+
+
 def psm():
     "If Tesseract 4.0, use argument --psm instead of -psm"
     return '--psm' if v4() else '-psm'
@@ -244,13 +266,16 @@ def generate_hocr(input_file, output_hocr, language: list, engine_mode,
 
 
 def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
-                 engine_mode,
+                 engine_mode, text_only: bool,
                  tessconfig: list, timeout: float, pagesegmode: int, log):
     '''Use Tesseract to render a PDF.
 
     input_image -- image to analyze
     skip_pdf -- if we time out, use this file as output
+    output_pdf -- file to generate
     language -- list of languages to consider
+    engine_mode -- engine mode argument for tess v4
+    text_only -- enable tesseract text only mode?
     tessconfig -- tesseract configuration
     timeout -- timeout (seconds)
     log -- logger object
@@ -260,6 +285,9 @@ def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
 
     if pagesegmode is not None:
         args_tesseract.extend([psm(), str(pagesegmode)])
+
+    if text_only:
+        args_tesseract.extend(['-c', 'textonly_pdf=1'])
 
     args_tesseract.extend([
         input_image,
