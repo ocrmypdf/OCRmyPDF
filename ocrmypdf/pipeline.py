@@ -485,11 +485,13 @@ def ocr_tesseract_hocr(
         )
 
 
-def select_image_for_pdf(
+def select_visible_page_image(
         infiles,
         output_file,
         log,
         context):
+    "Selects a whole page image that we can show the user (if necessary)"
+
     options = context.get_options()
     if options.clean_final:
         image_suffix = '.pp-clean.png'
@@ -526,6 +528,10 @@ def select_image_layer(
         output_file,
         log,
         context):
+    """Selects the image layer for the output page. If possible this is the
+    orientation-corrected input page, or an image of the whole page converted
+    to PDF."""
+
     options = context.get_options()
     page_pdf = next(ii for ii in infiles if ii.endswith('.ocr.oriented.pdf'))
     image = next(ii for ii in infiles if ii.endswith('.image'))
@@ -582,7 +588,7 @@ def render_hocr_debug_page(
                          showBoundingboxes=True, invisibleText=False)
 
 
-def add_text_layer(
+def combine_layers(
         infiles,
         output_file,
         log,
@@ -652,14 +658,14 @@ def add_text_layer(
         pdf_output.write(out)
 
 
-def tesseract_ocr_and_render_pdf(
-        input_files,
+def ocr_tesseract_and_render_pdf(
+        infiles,
         output_file,
         log,
         context):
     options = context.get_options()
-    input_image = next((ii for ii in input_files if ii.endswith('.image')), '')
-    input_pdf = next((ii for ii in input_files if ii.endswith('.pdf')))
+    input_image = next((ii for ii in infiles if ii.endswith('.image')), '')
+    input_pdf = next((ii for ii in infiles if ii.endswith('.pdf')))
     if not input_image:
         # Skipping this page
         re_symlink(input_pdf, output_file, log)
@@ -898,8 +904,8 @@ def build_pipeline(options, work_folder, log, context):
     if tesseract.v4():
         task_ocr_tesseract_hocr.jobs_limit(1)  # Uses multi-core on its own
 
-    task_select_image_for_pdf = main_pipeline.collate(
-        task_func=select_image_for_pdf,
+    task_select_visible_page_image = main_pipeline.collate(
+        task_func=select_visible_page_image,
         input=[task_rasterize_with_ghostscript,
                task_preprocess_remove_background,
                task_preprocess_deskew,
@@ -907,11 +913,11 @@ def build_pipeline(options, work_folder, log, context):
         filter=regex(r".*/(\d{6})(?:\.page|\.pp-.*)\.png"),
         output=os.path.join(work_folder, r'\1.image'),
         extras=[log, context])
-    task_select_image_for_pdf.graphviz(shape='diamond')
+    task_select_visible_page_image.graphviz(shape='diamond')
 
     task_select_image_layer = main_pipeline.collate(
         task_func=select_image_layer,
-        input=[task_select_image_for_pdf, task_orient_page],
+        input=[task_select_visible_page_image, task_orient_page],
         filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
         output=os.path.join(work_folder, r'\1.image-layer.pdf'),
         extras=[log, context])
@@ -930,7 +936,7 @@ def build_pipeline(options, work_folder, log, context):
 
     task_render_hocr_debug_page = main_pipeline.collate(
         task_func=render_hocr_debug_page,
-        input=[task_select_image_for_pdf, task_ocr_tesseract_hocr],
+        input=[task_select_visible_page_image, task_ocr_tesseract_hocr],
         filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
         output=os.path.join(work_folder, r'\1.debug.pdf'),
         extras=[log, context])
@@ -938,26 +944,27 @@ def build_pipeline(options, work_folder, log, context):
     task_render_hocr_debug_page.active_if(options.pdf_renderer == 'hocr')
     task_render_hocr_debug_page.active_if(options.debug_rendering)
 
-    task_add_text_layer = main_pipeline.collate(
-        task_func=add_text_layer,
-        input=[task_render_hocr_page, task_select_image_layer],
-        filter=regex(r".*/(\d{6})(?:\.hocr\.pdf|\.image-layer\.pdf)"),
+    task_combine_layers = main_pipeline.collate(
+        task_func=combine_layers,
+        input=[task_render_hocr_page,
+               task_select_image_layer],
+        filter=regex(r".*/(\d{6})(?:\.text\.pdf|\.image-layer\.pdf)"),
         output=os.path.join(work_folder, r'\1.rendered.pdf'),
         extras=[log, context])
-    task_add_text_layer.graphviz(fillcolor='"#00cc66"')
-    task_add_text_layer.active_if(options.pdf_renderer == 'hocr')
+    task_combine_layers.graphviz(fillcolor='"#00cc66"')
+    task_combine_layers.active_if(options.pdf_renderer == 'hocr' or options.pdf_renderer == 'tesstop')
 
-    # Tesseract OCR
-    task_tesseract_ocr_and_render_pdf = main_pipeline.collate(
-        task_func=tesseract_ocr_and_render_pdf,
-        input=[task_select_image_for_pdf, task_orient_page],
+    # Tesseract OCR+PDF
+    task_ocr_tesseract_and_render_pdf = main_pipeline.collate(
+        task_func=ocr_tesseract_and_render_pdf,
+        input=[task_select_visible_page_image, task_orient_page],
         filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
         output=os.path.join(work_folder, r'\1.rendered.pdf'),
         extras=[log, context])
-    task_tesseract_ocr_and_render_pdf.graphviz(fillcolor='"#66ccff"')
-    task_tesseract_ocr_and_render_pdf.active_if(options.pdf_renderer == 'tesseract')
+    task_ocr_tesseract_and_render_pdf.graphviz(fillcolor='"#66ccff"')
+    task_ocr_tesseract_and_render_pdf.active_if(options.pdf_renderer == 'tesseract')
     if tesseract.v4():
-        task_tesseract_ocr_and_render_pdf.jobs_limit(1)  # Uses multi-core
+        task_ocr_tesseract_and_render_pdf.jobs_limit(1)  # Uses multi-core
 
     # PDF/A
     task_generate_postscript_stub = main_pipeline.transform(
@@ -981,10 +988,10 @@ def build_pipeline(options, work_folder, log, context):
     # Merge pages
     task_merge_pages_ghostscript = main_pipeline.merge(
         task_func=merge_pages_ghostscript,
-        input=[task_add_text_layer,
+        input=[task_combine_layers,
                task_render_hocr_debug_page,
                task_skip_page,
-               task_tesseract_ocr_and_render_pdf,
+               task_ocr_tesseract_and_render_pdf,
                task_generate_postscript_stub],
         output=os.path.join(work_folder, 'merged.pdf'),
         extras=[log, context])
@@ -992,10 +999,10 @@ def build_pipeline(options, work_folder, log, context):
 
     task_merge_pages_qpdf = main_pipeline.merge(
         task_func=merge_pages_qpdf,
-        input=[task_add_text_layer,
+        input=[task_combine_layers,
                task_render_hocr_debug_page,
                task_skip_page,
-               task_tesseract_ocr_and_render_pdf,
+               task_ocr_tesseract_and_render_pdf,
                task_repair_pdf],
         output=os.path.join(work_folder, 'merged.pdf'),
         extras=[log, context])
