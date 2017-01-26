@@ -970,7 +970,7 @@ def build_pipeline(options, work_folder, log, context):
     task_select_image_layer.graphviz(
         fillcolor='"#00cc66"', shape='diamond')
     task_select_image_layer.active_if(
-        options.pdf_renderer == 'hocr' or options.pdf_renderer == 'tesstop')
+        options.pdf_renderer == 'hocr' or options.pdf_renderer == 'tess4')
 
     task_render_hocr_page = main_pipeline.transform(
         task_func=render_hocr_page,
@@ -999,7 +999,7 @@ def build_pipeline(options, work_folder, log, context):
         output=os.path.join(work_folder, r'\1.text.pdf'),
         extras=[log, context])
     task_ocr_tesseract_textonly_pdf.graphviz(fillcolor='"#ff69b4"')
-    task_ocr_tesseract_textonly_pdf.active_if(options.pdf_renderer == 'tesstop')
+    task_ocr_tesseract_textonly_pdf.active_if(options.pdf_renderer == 'tess4')
     if tesseract.v4():
         task_ocr_tesseract_textonly_pdf.jobs_limit(1)
 
@@ -1012,7 +1012,7 @@ def build_pipeline(options, work_folder, log, context):
         output=os.path.join(work_folder, r'\1.rendered.pdf'),
         extras=[log, context])
     task_combine_layers.graphviz(fillcolor='"#00cc66"')
-    task_combine_layers.active_if(options.pdf_renderer == 'hocr' or options.pdf_renderer == 'tesstop')
+    task_combine_layers.active_if(options.pdf_renderer == 'hocr' or options.pdf_renderer == 'tess4')
 
     # Tesseract OCR+PDF
     task_ocr_tesseract_and_render_pdf = main_pipeline.collate(

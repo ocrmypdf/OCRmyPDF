@@ -222,14 +222,15 @@ advanced.add_argument(
          "3 - default.")
     )
 advanced.add_argument(
-    '--pdf-renderer', choices=['auto', 'tesseract', 'hocr', 'tesstop'], default='auto',
+    '--pdf-renderer', choices=['auto', 'tesseract', 'hocr', 'tess4'], default='auto',
     help="choose OCR PDF renderer - the default option is to let OCRmyPDF "
          "choose.  The 'tesseract' PDF renderer is more accurate and does a "
          "better job and document structure such as recognizing columns. It "
          "also does a better job on non-Latin languages. However, it does "
          "not work as well when older versions of Tesseract or Ghostscript "
          "are installed, and some combinations of arguments to do not work "
-         "with --pdf-renderer tesseract.")
+         "with --pdf-renderer tesseract.  The 'tess4' PDF renderer is similar "
+         "to 'tesseract', requires tesseract 4, and gives superior results.")
 advanced.add_argument(
     '--tesseract-timeout', default=180.0, type=float, metavar='SECONDS',
     help='give up on OCR after the timeout, but copy the preprocessed page '
