@@ -1,1 +1,2 @@
-pytest >= 2.7.2
+pytest >= 2.8
+pytest-helpers-namespace

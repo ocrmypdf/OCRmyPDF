@@ -15,14 +15,9 @@ import pytest
 import sys
 
 
-if sys.version_info.major < 3:
-    print("Requires Python 3.4+")
-    sys.exit(1)
-
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
 SPOOF_PATH = os.path.join(TESTS_ROOT, 'spoof')
 PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
-OCRMYPDF = os.path.join(PROJECT_ROOT, 'OCRmyPDF.sh')
 TEST_RESOURCES = os.path.join(PROJECT_ROOT, 'tests', 'resources')
 TEST_OUTPUT = os.environ.get(
     'OCRMYPDF_TEST_OUTPUT',

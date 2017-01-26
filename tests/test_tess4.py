@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # © 2017 James R. Barlow: github.com/jbarlow83
 
-from __future__ import print_function
 from subprocess import Popen, PIPE, check_output, check_call, DEVNULL
 import os
 import shutil
@@ -14,12 +13,8 @@ from ocrmypdf.exceptions import ExitCode
 from ocrmypdf import leptonica
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.exec import tesseract
-import platform
+from common import is_linux, running_in_docker
 
-
-if sys.version_info.major < 3:
-    print("Requires Python 3.4+")
-    sys.exit(1)
 
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
 SPOOF_PATH = os.path.join(TESTS_ROOT, 'spoof')
@@ -31,15 +26,6 @@ OCRMYPDF = [sys.executable, '-m', 'ocrmypdf']
 # Skip all tests in this file if not tesseract 4
 pytestmark = pytest.mark.skipif(not tesseract.v4(),
                                 reason="tesseract 4.0 required")
-
-
-def running_in_docker():
-    # Docker creates a file named /.dockerinit
-    return os.path.exists('/.dockerinit')
-
-
-def is_linux():
-    return platform.system() == 'Linux'
 
 
 def _infile(input_basename):

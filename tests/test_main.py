@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # © 2015 James R. Barlow: github.com/jbarlow83
 
-from __future__ import print_function
 from subprocess import Popen, PIPE, check_output, check_call, DEVNULL
 import os
 import shutil
@@ -13,12 +12,7 @@ import PyPDF2 as pypdf
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf import leptonica
 from ocrmypdf.pdfa import file_claims_pdfa
-import platform
 
-
-if sys.version_info.major < 3:
-    print("Requires Python 3.4+")
-    sys.exit(1)
 
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
 SPOOF_PATH = os.path.join(TESTS_ROOT, 'spoof')
@@ -28,15 +22,6 @@ TEST_OUTPUT = os.environ.get(
     'OCRMYPDF_TEST_OUTPUT',
     default=os.path.join(PROJECT_ROOT, 'tests', 'output', 'main'))
 OCRMYPDF = [sys.executable, '-m', 'ocrmypdf']
-
-
-def running_in_docker():
-    # Docker creates a file named /.dockerinit
-    return os.path.exists('/.dockerinit')
-
-
-def is_linux():
-    return platform.system() == 'Linux'
 
 
 def setup_module():
@@ -115,7 +100,7 @@ def spoof_tesseract_noop():
 
 @pytest.fixture
 def spoof_tesseract_cache():
-    if running_in_docker():
+    if pytest.helpers.running_in_docker():
         return os.environ.copy()
     return spoof(tesseract="tesseract_cache.py")
 
@@ -246,7 +231,7 @@ def test_preserve_metadata(spoof_tesseract_noop, output_type):
 
 
 @pytest.mark.skipif(
-    is_linux() and not running_in_docker(),
+    pytest.helpers.is_linux() and not pytest.helpers.running_in_docker(),
     reason="likely to fail if Linux locale is not configured correctly")
 @pytest.mark.parametrize("output_type", [
     'pdfa', 'pdf'
@@ -511,7 +496,7 @@ def test_missing_docinfo(spoof_tesseract_noop):
     assert p.returncode == ExitCode.ok, err
 
 
-@pytest.mark.skipif(running_in_docker(),
+@pytest.mark.skipif(pytest.helpers.running_in_docker(),
                     reason="writes to tests/resources")
 def test_uppercase_extension(spoof_tesseract_noop):
     shutil.copy(_infile("skew.pdf"), _infile("UPPERCASE.PDF"))

@@ -14,10 +14,6 @@ import pytest
 import sys
 
 
-if sys.version_info.major < 3:
-    print("Requires Python 3.4+")
-    sys.exit(1)
-
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
 SPOOF_PATH = os.path.join(TESTS_ROOT, 'spoof')
 PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
