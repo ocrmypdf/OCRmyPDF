@@ -262,7 +262,7 @@ where /c/Users/sampleuser is a Unix representation of the Windows path C:\\Users
 Installing HEAD revision from sources
 -------------------------------------
 
-If you have ``git`` and ``python3.4`` or ``python3.5`` installed, you can install from source. When the ``pip`` installer runs,
+If you have ``git`` and Python 3.4 or newer installed, you can install from source. When the ``pip`` installer runs,
 it will alert you if dependencies are missing.
 
 To install the HEAD revision from sources in the current Python 3 environment:

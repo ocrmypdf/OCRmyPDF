@@ -3,6 +3,23 @@ RELEASE NOTES
 
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
+v4.4:
+=====
+
+-  Tesseract 4.00 is now supported on an experimental basis.
+
+   +  A new rendering option ``--pdf-renderer tess4`` exploits Tesseract 4's new text-only output PDF mode. See the documentation on PDF Renderers for details.
+   +  The ``--tesseract-oem`` argument allows control over the Tesseract 4 OCR 
+   engine mode.
+   +  Fixed poor performance with Tesseract 4.00 on Linux
+
+-  Fixed an issue that caused corruption of output to stdout in some cases
+-  Removed test for Pillow JPEG and PNG support, as the minimum supported version of Pillow now enforces this
+-  Significant code reorganization to make OCRmyPDF re-entrant and improve performance. All changes should be backward compatible for the v4.x series.
+
+   + However, OCRmyPDF's dependency "ruffus" is not re-entrant, so no Python API is available. Scripts should continue to use the command line interface.
+
+
 v4.3.5:
 =======
 

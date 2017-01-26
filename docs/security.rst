@@ -14,7 +14,7 @@ PDF is a rich, complex file format. The official PDF 1.7 specification, ISO 3200
 
 In short, PDFs `may contain viruses <https://security.stackexchange.com/questions/64052/can-a-pdf-file-contain-a-virus>`_.
 
-This `article <https://theinvisiblethings.blogspot.ca/2013/02/converting-untrusted-pdfs-into-trusted.html>`_ describes a method which allows potentially hostile PDFs to be viewed and rasterized safely in a disposable virtual machine. A trusted PDF created in this manner is converted to images and loses all information making it searchable. OCRmyPDF could be used restore searchability.
+This `article <https://theinvisiblethings.blogspot.ca/2013/02/converting-untrusted-pdfs-into-trusted.html>`_ describes a high-paranoia method which allows potentially hostile PDFs to be viewed and rasterized safely in a disposable virtual machine. A trusted PDF created in this manner is converted to images and loses all information making it searchable and losing all compression. OCRmyPDF could be used restore searchability.
 
 How OCRmyPDF processes PDFs
 ---------------------------
