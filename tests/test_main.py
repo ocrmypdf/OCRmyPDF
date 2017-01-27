@@ -261,9 +261,9 @@ def check_monochrome_correlation(
     gslog = logging.getLogger()
 
     reference_png = outdir / '{}.ref{:04d}.png'.format(
-        reference_pdf, reference_pageno)
+        reference_pdf.name, reference_pageno)
     test_png = outdir / '{}.test{:04d}.png'.format(
-        test_pdf, test_pageno)
+        test_pdf.name, test_pageno)
 
     def rasterize(pdf, pageno, png):
         if png.exists():
