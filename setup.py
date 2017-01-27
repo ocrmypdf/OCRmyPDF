@@ -214,7 +214,8 @@ setup(
         "Topic :: Text Processing :: Linguistic",
         ],
     setup_requires=[
-        'setuptools_scm',
+        'setuptools_scm',       # so that version will work
+        'cffi>=1.9.1'           # to build the leptonica module
     ],
     use_scm_version={'version_scheme': 'post-release'},
     cffi_modules=[
@@ -226,7 +227,7 @@ setup(
         'reportlab>=3.2.0',     # oldest released version with sane image handling
         'PyPDF2>=1.26',         # pure Python, so track HEAD closely
         'img2pdf>=0.2.3',       # pure Python, so track HEAD closely
-        'cffi>=1.9.1'
+        'cffi>=1.9.1'           # must be a setup and install requirement
     ],
     tests_require=tests_require,
     entry_points={
