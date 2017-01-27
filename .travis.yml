@@ -2,11 +2,9 @@ sudo: required
 dist: trusty
 language: python
 
-cache: pip
-
 cache:
+    pip: true
     directories:
-        - $HOME/.ccache
         - packages
         - tests/cache
 
@@ -28,7 +26,7 @@ before_install:
     # pip
     - pip install --upgrade pip
 
-    # Download, make and install unpaper (using ccache)
+    # install unpaper from a previously built .deb since ubuntu's version is too old
     - mkdir -p packages
     - "[ -f packages/unpaper_6.1-1.deb ] || wget -q https://dl.dropboxusercontent.com/u/28971240/unpaper_6.1-1.deb -O packages/unpaper_6.1-1.deb"
     - sudo dpkg -i packages/unpaper_6.1-1.deb
@@ -38,6 +36,11 @@ install:
     - pip install -r requirements.txt -r test_requirements.txt
 
 script:
+    # "pip install" installs the ocrmypdf into the system environment.
+    # The working copy of ocrmypdf is not an installed version and its cffi
+    # module has not been compiled. As such, move the local copy out of the
+    # way and ensure that the system copy gets tested.
+    - mv ocrmypdf dont_import_this_ocrmypdf
     - pytest
 
 os:
