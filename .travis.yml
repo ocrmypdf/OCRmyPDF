@@ -34,13 +34,11 @@ before_install:
     - sudo dpkg -i packages/unpaper_6.1-1.deb
 
 install:
-    - pip install -r requirements.txt
-    - pip install -r test_requirements.txt
+    - pip install .
+    - pip install -r requirements.txt -r test_requirements.txt
 
 script:
-    - python setup.py clean
-    - python setup.py install
-    - python setup.py test
+    - pytest
 
 os:
     - linux

@@ -9,7 +9,7 @@ if sys.version_info < (3, 4):
     print("Python 3.4 or newer is required", file=sys.stderr)
     sys.exit(1)
 
-from setuptools import setup  # nopep8
+from setuptools import setup, find_packages  # nopep8
 from subprocess import STDOUT, check_output, CalledProcessError  # nopep8
 from collections.abc import Mapping  # nopep8
 import re  # nopep8
@@ -192,7 +192,7 @@ setup(
     author='James R. Barlow',
     author_email='jim@purplerock.ca',
     license='MIT',
-    packages=['ocrmypdf', 'ocrmypdf.exec'],
+    packages=find_packages(exclude=["tests", "tests.*"]),
     keywords=['PDF', 'OCR', 'optical character recognition', 'PDF/A', 'scanning'],
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -215,9 +215,6 @@ setup(
         ],
     setup_requires=[
         'setuptools_scm',
-        'cffi>=1.5.0',
-        'pytest-runner',
-        'pytest-helpers-namespace'
     ],
     use_scm_version={'version_scheme': 'post-release'},
     cffi_modules=[
@@ -225,11 +222,11 @@ setup(
     ],
     install_requires=[
         'ruffus==2.6.3',        # pinned - ocrmypdf implements a 2.6.3 workaround
-        'Pillow>=3.1.1',        # Pillow is pretty stable
+        'Pillow>=4.0.0',        # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
         'reportlab>=3.2.0',     # oldest released version with sane image handling
         'PyPDF2>=1.26',         # pure Python, so track HEAD closely
-        'img2pdf>=0.2.1',       # pure Python, so track HEAD closely
-        'cffi>=1.5.0'           # oldest version ever tested
+        'img2pdf>=0.2.3',       # pure Python, so track HEAD closely
+        'cffi>=1.9.1'
     ],
     tests_require=tests_require,
     entry_points={
