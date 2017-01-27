@@ -52,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'ocrmypdf'
-copyright = '2016, James R. Barlow'
+copyright = '2017, James R. Barlow'
 author = 'James R. Barlow'
 
 # The version info for the project you're documenting, acts as replacement for

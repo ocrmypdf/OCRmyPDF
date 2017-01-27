@@ -20,6 +20,7 @@ Contents:
    installation
    languages
    cookbook
+   batch
    renderers
    security
    errors

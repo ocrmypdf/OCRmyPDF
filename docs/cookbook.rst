@@ -59,7 +59,7 @@ By default OCRmyPDF assumes the document is English.
 	ocrmypdf -l fre LeParisien.pdf LeParisien.pdf
 	ocrmypdf -l eng+fre Bilingual-English-French.pdf Bilingual-English-French.pdf
 
-Language packs must be installed for all languages specified. See :ref:`Installing additional language packs <lang-packs>`.
+Language packs must be installed for all languages specified. See :ref:`Installing additional language packs <languages>`.
 
 
 Produce PDF and text file containing OCR text
@@ -82,7 +82,13 @@ Use a program like `img2pdf <https://gitlab.mister-muffin.de/josch/img2pdf>`_ to
 
 	img2pdf my-images*.jpg | ocrmypdf - myfile.pdf
 
-If given a single image as input, OCRmyPDF will try converting it to a PDF on its own.  This feature may be removed at some point, because OCRmyPDF does not specialize in converting images to PDFs.
+If given a single image as input, OCRmyPDF will try converting it to a PDF on its own.  If the DPI specified in the image is incorrect, it can be overridden with ``--image-dpi``:
+
+.. code-block:: bash
+
+	ocrmypdf --image-dpi 300 image.png myfile.pdf
+
+This feature may be removed at some point, because OCRmyPDF does not specialize in converting images to PDFs.
 
 You can also use Tesseract 3.04+ directly to convert single page images or multi-page TIFFs to PDF:
 
@@ -109,56 +115,28 @@ OCRmyPDF perform some image processing on each page of a PDF, if desired.  The s
 OCR and correct document skew (crooked scan)
 """"""""""""""""""""""""""""""""""""""""""""
 
+Deskew:
+
 .. code-block:: bash
 
 	ocrmypdf --deskew input.pdf output.pdf
 
-
-Hot (watched) folders
----------------------
-
-To set up a "hot folder" that will trigger an OCR operation for every file inserted, use a program like Python `watchdog <https://pypi.python.org/pypi/watchdog>`_ (supports all major OS).
+Image processing commands can be combined. The order in which options are given does not matter. OCRmyPDF always applies the steps of the image processing pipeline in the same order (rotate, remove background, deskew, clean).
 
 .. code-block:: bash
 
-	pip install watchdog
+	ocrmypdf --deskew --clean --rotate-pages input.pdf output.pdf
 
-watchdog installs the command line program ``watchmedo``, which can be told to run ``ocrmypdf`` on any .pdf added to the current directory (``.``) and place the result in the previously created ``out/`` folder.
+Control of OCR options
+----------------------
 
-.. code-block:: bash
+By default, OCRmyPDF permits tesseract to run for only three minutes (180 seconds) per page. This is usually more than enough time to find all text on a reasonably sized page with modern hardware. A skipped page will be inserted into the output without any OCR text.
 
-	cd hot-folder
-	mkdir out
-	watchmedo shell-command \
-		--patterns="*.pdf" \
-		--ignore-directories \
-		--command='ocrmypdf "${watch_src_path}" "out/${watch_src_path}" ' \
-		.  # don't forget the final dot
-
-For more complex behavior you can write a Python script around to use the watchdog API.
-
-On file servers, you could configure watchmedo as a system service so it will run all the time.
-
-Caveats
-"""""""
-
-* ``watchmedo`` may not work properly on a networked file system, depending on the capabilities of the file system client and server.
-* This simple recipe does not filter for the type of file system event, so file copies, deletes and moves, and directory operations, will all be sent to ocrmypdf, producing errors in several cases. Disable your watched folder if you are doing anything other than copying files to it.
-* If the source and destination directory are the same, watchmedo may create an infinite loop.
-
-
-Batch jobs
-----------
-
-Consider using the excellent `GNU Parallel <https://www.gnu.org/software/parallel/>`_ to apply OCRmyPDF to multiple files at once.
-
-Both ``parallel`` and ``ocrmypdf`` will try to use all available processors. To maximize parallelism without overloading your system with processes, consider using ``parallel -j 2`` to limit parallel to running two jobs at once.
-
-This command will run all ocrmypdf all files named ``*.pdf`` in the current directory and write them to the previous created ``output/`` folder.
+If you want to adjust the amount of time spent on OCR, change ``--tesseract-timeout``.  You can also automatically skip images that exceed a certain number of megapixels.
 
 .. code-block:: bash
 
-	parallel -j 2 ocrmypdf '{}' 'output/{}' ::: *.pdf
+	# Allow 300 seconds for OCR; skip any page larger than 50 megapixels
+	ocrmypdf --tesseract-timeout 300 --skip-big 50 bigfile.pdf output.pdf
 
-If you have thousands of files to work with, contact the author.
- 
+

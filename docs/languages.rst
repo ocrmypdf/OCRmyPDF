@@ -23,8 +23,8 @@ Debian and Ubuntu users
 You can then pass the ``-l LANG`` argument to OCRmyPDF to give a hint as to what languages it should search for. Multiple
 languages can be requested using either ``-l eng+fre`` (English and French) or ``-l eng -l fre``.
 
-Mac OS X (macOS) users
-----------------------
+macOS users
+-----------
 
 You can install additional language packs by :ref:`installing Tesseract using Homebrew with all language packs <macos-all-languages>`.
 
