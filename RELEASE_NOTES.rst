@@ -16,6 +16,7 @@ v4.4:
 -  Fixed an issue that caused corruption of output to stdout in some cases
 -  Removed test for Pillow JPEG and PNG support, as the minimum supported version of Pillow now enforces this
 -  OCRmyPDF now tests that the intended destination file is writable before proceeding
+-  The test suite now requires ``pytest-helpers-namespace`` to run (but not install)
 -  Significant code reorganization to make OCRmyPDF re-entrant and improve performance. All changes should be backward compatible for the v4.x series.
 
    + However, OCRmyPDF's dependency "ruffus" is not re-entrant, so no Python API is available. Scripts should continue to use the command line interface.
