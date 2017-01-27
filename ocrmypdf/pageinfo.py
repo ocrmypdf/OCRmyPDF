@@ -98,6 +98,22 @@ InlineSettings = namedtuple('InlineSettings',
 ContentsInfo = namedtuple('ContentsInfo', ['raster_settings', 'inline_images'])
 
 
+def _normalize_stack(operations):
+    """Fix runs of qQ's in the stack
+
+    For some reason PyPDF2 converts runs of qqq, QQ, QQQq, etc. into single
+    operations.  Break this silliness up and issue each stack operation
+    individually so we don't lose count.
+
+    """
+    for operands, command in operations:
+        if re.match(br'Q*q+$', command):   # Zero or more Q, one or more q
+            for char in command:           # Split into individual bytes
+                yield ([], bytes([char]))  # Yield individual bytes
+        else:
+            yield (operands, command)
+
+
 def _interpret_contents(contentstream):
     """Interpret the PDF content stream
 
@@ -127,14 +143,19 @@ def _interpret_contents(contentstream):
     image_raster_settings = []
     inline_images = []
 
-    for op in operations:
+    for n, op in enumerate(_normalize_stack(operations)):
         operands, command = op
         if command == b'q':
             stack.append(ctm)
             if len(stack) > 32:
-                raise RuntimeError("PDF graphics stack overflow")
+                raise RuntimeError(
+                    "PDF graphics stack overflow, command %i" % n)
         elif command == b'Q':
-            ctm = stack.pop()
+            try:
+                ctm = stack.pop()
+            except IndexError:
+                raise RuntimeError(
+                    "PDF graphics stack underflow, command %i" % n)
         elif command == b'cm':
             ctm = matrix_mult(
                 _matrix_from_shorthand(operands), ctm)

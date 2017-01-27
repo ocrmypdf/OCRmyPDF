@@ -687,3 +687,8 @@ def test_very_high_dpi(spoof_tesseract_cache, resources, outpdf):
     "Checks for a Decimal quantize error with high DPI, etc"
     check_ocrmypdf(resources / '2400dpi.pdf', outpdf,
                    env=spoof_tesseract_cache)
+
+
+def test_overlay(spoof_tesseract_noop, resources, outpdf):
+    check_ocrmypdf(resources / 'overlay.pdf', outpdf,
+                   env=spoof_tesseract_noop)
