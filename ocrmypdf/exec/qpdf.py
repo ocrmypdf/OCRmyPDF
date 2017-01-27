@@ -31,12 +31,15 @@ def version():
     return qpdf_version
 
 
-def check(input_file, log):
+def check(input_file, log=None):
     args_qpdf = [
         get_program('qpdf'),
         '--check',
         input_file
     ]
+
+    if log is None:
+        import logging as log
 
     try:
         check_output(args_qpdf, stderr=STDOUT, universal_newlines=True)

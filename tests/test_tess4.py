@@ -13,7 +13,6 @@ from ocrmypdf.exceptions import ExitCode
 from ocrmypdf import leptonica
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.exec import tesseract
-from common import is_linux, running_in_docker
 
 
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -28,47 +27,12 @@ pytestmark = pytest.mark.skipif(not tesseract.v4(),
                                 reason="tesseract 4.0 required")
 
 
-def _infile(input_basename):
-    return os.path.join(TEST_RESOURCES, input_basename)
-
-
-def check_ocrmypdf(input_basename, output, *args, env=None):
-    "Run ocrmypdf and confirmed that a valid file was created"
-    input_file = _infile(input_basename)
-
-    p, out, err = run_ocrmypdf(input_basename, output, *args, env=env)
-    print(err)  # ensure py.test collects the output, use -s to view
-    assert p.returncode == 0
-    assert os.path.exists(output), "Output file not created"
-    assert os.stat(output).st_size > 100, "PDF too small or empty"
-    assert out == "", \
-        "The following was written to stdout and should not have been: \n" + \
-        "<stdout>\n" + out + "\n</stdout>"
-    return output
-
-
-def run_ocrmypdf(input_basename, output, *args, env=None):
-    "Run ocrmypdf and let caller deal with results"
-    input_file = _infile(input_basename)
-
-    if env is None:
-        env = os.environ
-
-    p_args = OCRMYPDF + list(args) + [input_file, output]
-    p = Popen(
-        p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
-        universal_newlines=True, env=env)
-    out, err = p.communicate()
-    print(err)
-
-    return p, out, err
-
-
 @pytest.mark.skipif(not tesseract.has_textonly_pdf(),
                     reason="requires textonly_pdf parameter")
-def test_textonly_pdf(self, tmpdir):
-    output = str(tmpdir.join("linn_textonly.pdf"))
-    check_ocrmypdf('linn.pdf', output, '--pdf-renderer', 'tess4')
+def test_textonly_pdf(resources, outdir):
+    pytest.helpers.check_ocrmypdf(
+        resources / 'linn.pdf',
+        outdir / 'linn_textonly.pdf', '--pdf-renderer', 'tess4')
 
 
 
