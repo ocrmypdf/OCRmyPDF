@@ -26,7 +26,7 @@ import ruffus.proxy_logger as proxy_logger
 from .pipeline import JobContext, JobContextManager, re_symlink, \
     cleanup_working_files, build_pipeline
 from .pdfa import file_claims_pdfa
-from .helpers import is_iterable_notstr, re_symlink
+from .helpers import is_iterable_notstr, re_symlink, is_file_writable
 from .exec import tesseract, qpdf
 from . import PROGRAM_NAME, VERSION
 
@@ -518,6 +518,10 @@ def run_pipeline():
                     is connected to a terminal.  Please redirect stdout to a
                     file."""))
                 return ExitCode.bad_args
+        elif not is_file_writable(options.output_file):
+                _log.error(textwrap.dedent("""\
+                    Cutput file location is not writable."""))
+                return ExitCode.file_access_error
 
         manager = JobContextManager()
         manager.register('JobContext', JobContext)

@@ -3,6 +3,7 @@
 
 from functools import partial
 from collections.abc import Iterable
+from contextlib import suppress
 import sys
 import os
 
@@ -53,3 +54,26 @@ def is_iterable_notstr(thing):
 
 def page_number(input_file):
     return int(os.path.basename(input_file)[0:6])
+
+
+def is_file_writable(test_file):
+    """Intentionally racy test if target is writable.
+
+    We intend to write to the output file if and only if we succeed and
+    can replace it atomically. Before doing the OCR work, make sure
+    the location is writable.
+    """
+    if os.path.exists(test_file):
+        return os.access(
+            test_file, os.W_OK,
+            effective_ids=(os.access in os.supports_effective_ids))
+    else:
+        try:
+            fp = open(test_file, 'wb')
+        except OSError as e:
+            return False
+        else:
+            fp.close()
+            with suppress(OSError):
+                os.unlink(test_file)
+        return True

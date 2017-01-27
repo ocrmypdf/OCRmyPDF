@@ -680,3 +680,13 @@ def test_very_high_dpi(spoof_tesseract_cache, resources, outpdf):
 def test_overlay(spoof_tesseract_noop, resources, outpdf):
     check_ocrmypdf(resources / 'overlay.pdf', outpdf,
                    env=spoof_tesseract_noop)
+
+
+def test_destination_not_writable(spoof_tesseract_noop, resources, outdir):
+    protected_file = outdir / 'protected.pdf'
+    protected_file.touch()
+    protected_file.chmod(0o400)  # Read-only
+    p, out, err = run_ocrmypdf(
+        resources / 'jbig2.pdf', protected_file,
+        env=spoof_tesseract_noop)
+    assert p.returncode == ExitCode.file_access_error, "Expected error"
