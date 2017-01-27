@@ -59,7 +59,7 @@ By default OCRmyPDF assumes the document is English.
 	ocrmypdf -l fre LeParisien.pdf LeParisien.pdf
 	ocrmypdf -l eng+fre Bilingual-English-French.pdf Bilingual-English-French.pdf
 
-Language packs must be installed for all languages specified. See :ref:`Installing additional language packs <languages>`.
+Language packs must be installed for all languages specified. See :ref:`Installing additional language packs <lang-packs>`.
 
 
 Produce PDF and text file containing OCR text
