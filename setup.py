@@ -192,7 +192,7 @@ setup(
     author='James R. Barlow',
     author_email='jim@purplerock.ca',
     license='MIT',
-    packages=find_packages(exclude=["tests", "tests.*"]),
+    packages=find_packages(exclude=["tests", "tests.*", "ocrmypdf.lib"]),
     keywords=['PDF', 'OCR', 'optical character recognition', 'PDF/A', 'scanning'],
     classifiers=[
         "Programming Language :: Python :: 3",
