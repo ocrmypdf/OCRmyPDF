@@ -7,4 +7,3 @@ reportlab == 3.3.0
 PyPDF2 == 1.26
 img2pdf == 0.2.1
 cffi == 1.9.1
--e .
