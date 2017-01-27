@@ -35,6 +35,7 @@ def test_single_page_text(outdir):
     assert len(page['images']) == 0
 
 
+@pytest.mark.skipif(sys.version_info < (3, 5), reason="needs Path.read_bytes")
 def test_single_page_image(outdir):
     filename = outdir / 'image-mono.pdf'
 
@@ -51,8 +52,7 @@ def test_single_page_image(outdir):
     pdf_bytes = img2pdf.convert(
             im_bytes, producer="img2pdf", with_pdfrw=False,
             layout_fun=layout_fun)
-    with open(filename, 'wb') as pdf:
-        pdf.write(pdf_bytes)
+    filename.write_bytes(pdf_bytes)
 
     pdfinfo = pageinfo.pdf_get_all_pageinfo(str(filename))
 

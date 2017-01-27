@@ -20,7 +20,7 @@ import sys
 @pytest.fixture
 def blank_hocr(tmpdir):
     filename = Path(str(tmpdir)) / "blank.hocr"
-    with open(filename, 'w') as f:
+    with open(str(filename), 'w') as f:
         f.write(HOCR_TEMPLATE)
     return filename
 
@@ -31,8 +31,9 @@ def test_mono_image(blank_hocr, outdir):
         im.putpixel((n, n), 1)
     im.save(outdir / 'mono.tif', format='TIFF')
 
-    hocr = hocrtransform.HocrTransform(blank_hocr, 300)
-    hocr.to_pdf(str(outdir / 'mono.pdf'), imageFileName=outdir / 'mono.tif')
+    hocr = hocrtransform.HocrTransform(str(blank_hocr), 300)
+    hocr.to_pdf(
+        str(outdir / 'mono.pdf'), imageFileName=str(outdir / 'mono.tif'))
 
     qpdf.check(str(outdir / 'mono.pdf'))
 

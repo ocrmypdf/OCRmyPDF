@@ -242,10 +242,11 @@ def test_skip_ocr(spoof_tesseract_cache, resources, outpdf):
 
 
 def test_argsfile(spoof_tesseract_noop, resources, outdir):
-    with open(outdir / 'test_argsfile.txt', 'w') as argsfile:
+    path_argsfile = outdir / 'test_argsfile.txt'
+    with open(str(path_argsfile), 'w') as argsfile:
         print('--title', 'ArgsFile Test', '--author', 'Test Cases',
               sep='\n', end='\n', file=argsfile)
-    check_ocrmypdf(resources / 'graph.pdf', outdir / 'args.pdf',
+    check_ocrmypdf(resources / 'graph.pdf', path_argsfile,
                    '@' + str(outdir / 'test_argsfile.txt'),
                    env=spoof_tesseract_noop)
 
@@ -473,9 +474,9 @@ def test_input_file_not_a_pdf(no_outpdf):
 
 def test_qpdf_repair_fails(spoof_qpdf_always_error, resources, no_outpdf):
     p, out, err = run_ocrmypdf(
+        resources / 'c02-22.pdf', no_outpdf,
         '-v', '1',
-        resources / 'c02-22.pdf', no_outpdf, env=spoof_qpdf_always_error)
-    print(out)
+        env=spoof_qpdf_always_error)
     print(err)
     assert p.returncode == ExitCode.input_file
 
