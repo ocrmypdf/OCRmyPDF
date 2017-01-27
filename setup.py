@@ -219,7 +219,7 @@ setup(
     ],
     use_scm_version={'version_scheme': 'post-release'},
     cffi_modules=[
-        'ocrmypdf/lib/compile_leptonica.py:ffi'
+        'ocrmypdf/lib/compile_leptonica.py:ffibuilder'
     ],
     install_requires=[
         'ruffus==2.6.3',        # pinned - ocrmypdf implements a 2.6.3 workaround

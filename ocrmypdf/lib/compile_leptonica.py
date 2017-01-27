@@ -1,8 +1,8 @@
 from cffi import FFI
 
-ffi = FFI()
-ffi.set_source("ocrmypdf.lib._leptonica", None)
-ffi.cdef("""
+ffibuilder = FFI()
+ffibuilder.set_source("ocrmypdf.lib._leptonica", None)
+ffibuilder.cdef("""
 typedef signed char             l_int8;
 typedef unsigned char           l_uint8;
 typedef short                   l_int16;
@@ -56,7 +56,7 @@ typedef struct Box    BOX;
 
 """)
 
-ffi.cdef("""
+ffibuilder.cdef("""
 PIX * pixRead ( const char *filename );
 PIX * pixScale ( PIX *pixs, l_float32 scalex, l_float32 scaley );
 l_int32 pixFindSkew ( PIX *pixs, l_float32 *pangle, l_float32 *pconf );
@@ -189,4 +189,4 @@ void lept_free(void *ptr);
 
 
 if __name__ == '__main__':
-    ffi.compile()
+    ffibuilder.compile(verbose=True)
