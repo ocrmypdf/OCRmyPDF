@@ -19,7 +19,7 @@ import sys
 
 @pytest.fixture
 def blank_hocr(tmpdir):
-    filename = Path(tmpdir) / "blank.hocr"
+    filename = Path(str(tmpdir)) / "blank.hocr"
     with open(filename, 'w') as f:
         f.write(HOCR_TEMPLATE)
     return filename

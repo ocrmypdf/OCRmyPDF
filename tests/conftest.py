@@ -67,12 +67,12 @@ def ocrmypdf_exec():
 
 @pytest.fixture(scope="function")
 def outdir(tmpdir):
-    return Path(tmpdir)
+    return Path(str(tmpdir))
 
 
 @pytest.fixture(scope="function")
 def outpdf(tmpdir):
-    return str(Path(tmpdir) / 'out.pdf')
+    return str(Path(str(tmpdir)) / 'out.pdf')
 
 
 @pytest.fixture(scope="function")
@@ -81,7 +81,7 @@ def no_outpdf(tmpdir):
     output. Unfortunately an assertion failure inside a test fixture produces
     an error rather than a test failure, so no testing is done. It's up to
     the test to confirm that no output file was created."""
-    return str(Path(tmpdir) / 'no_output.pdf')
+    return str(Path(str(tmpdir)) / 'no_output.pdf')
 
 
 @pytest.helpers.register
