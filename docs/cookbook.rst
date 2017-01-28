@@ -162,5 +162,5 @@ For example, if you are testing tesseract 4.00 and don't wish to disturb your te
 
 * ``TESSDATA_PREFIX`` directs tesseract 4.0 to use LSTM training data. This is a tesseract environment variable.
 * ``--pdf-renderer tess4`` takes advantage of new tesseract 4.0 PDF renderer in OCRmyPDF. (Tesseract 4.0 only.)
-* ``--tesseract-oem 2`` requests tesseract 4.0's new LSTM engine. (Tesseract 4.0 only.)
+* ``--tesseract-oem 1`` requests tesseract 4.0's new LSTM engine. (Tesseract 4.0 only.)
 
