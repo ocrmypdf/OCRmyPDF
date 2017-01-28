@@ -948,7 +948,7 @@ def build_pipeline(options, work_folder, log, context):
     task_ocr_tesseract_hocr.graphviz(fillcolor='"#00cc66"')
     task_ocr_tesseract_hocr.active_if(options.pdf_renderer == 'hocr')
     if tesseract.v4():
-        task_ocr_tesseract_hocr.jobs_limit(1)  # Uses multi-core on its own
+        task_ocr_tesseract_hocr.jobs_limit(2)  # Uses multi-core on its own
 
     task_select_visible_page_image = main_pipeline.collate(
         task_func=select_visible_page_image,
@@ -1001,7 +1001,7 @@ def build_pipeline(options, work_folder, log, context):
     task_ocr_tesseract_textonly_pdf.graphviz(fillcolor='"#ff69b4"')
     task_ocr_tesseract_textonly_pdf.active_if(options.pdf_renderer == 'tess4')
     if tesseract.v4():
-        task_ocr_tesseract_textonly_pdf.jobs_limit(1)
+        task_ocr_tesseract_textonly_pdf.jobs_limit(2)
 
     task_combine_layers = main_pipeline.collate(
         task_func=combine_layers,
@@ -1024,7 +1024,7 @@ def build_pipeline(options, work_folder, log, context):
     task_ocr_tesseract_and_render_pdf.graphviz(fillcolor='"#66ccff"')
     task_ocr_tesseract_and_render_pdf.active_if(options.pdf_renderer == 'tesseract')
     if tesseract.v4():
-        task_ocr_tesseract_and_render_pdf.jobs_limit(1)  # Uses multi-core
+        task_ocr_tesseract_and_render_pdf.jobs_limit(2)  # Uses multi-core
 
     # PDF/A
     task_generate_postscript_stub = main_pipeline.transform(
