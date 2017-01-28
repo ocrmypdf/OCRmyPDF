@@ -20,8 +20,8 @@ Contents:
    installation
    languages
    cookbook
+   advanced
    batch
-   renderers
    security
    errors
 

@@ -68,9 +68,15 @@ Produce PDF and text file containing OCR text
 This produces a file named "output.pdf" and a companion text file named "output.txt". The ``pdftotext`` program from 
 `Poppler <https://poppler.freedesktop.org/>`_ is used to extract text from the finished PDF.
 
+
 .. code-block:: bash
 
 	ocrmypdf input.pdf - | tee output.pdf | pdftotext - output.txt
+
+.. note::
+
+	To get pdftotext, Debian/Ubuntu users may ``apt-get install poppler-utils`` 
+	and macOS users may ``brew install poppler`` respectively.
 
 
 OCR images, not PDFs
@@ -111,6 +117,14 @@ OCRmyPDF perform some image processing on each page of a PDF, if desired.  The s
 
 * ``--clean-final`` uses unpaper to clean up pages before OCR and inserts the page into the final output.  You will want to review each page to ensure that unpaper did not remove something important.
 
+.. note::
+
+	In many cases image processing will rasterize PDF pages as images, potentially losing quality.
+
+.. warning::
+
+	``--clean-final`` and ``-remove-background`` may leave undesirable visual artifacts in some images where their algorithms have shortcomings. Files should be visually reviewed after using these options.
+
 
 OCR and correct document skew (crooked scan)
 """"""""""""""""""""""""""""""""""""""""""""
@@ -127,40 +141,4 @@ Image processing commands can be combined. The order in which options are given 
 
 	ocrmypdf --deskew --clean --rotate-pages input.pdf output.pdf
 
-Control of OCR options
-----------------------
-
-OCRmyPDF provides many features to control the behavior of the OCR engine, Tesseract.
-
-Time and image size limits
-""""""""""""""""""""""""""
-
-By default, OCRmyPDF permits tesseract to run for only three minutes (180 seconds) per page. This is usually more than enough time to find all text on a reasonably sized page with modern hardware. 
-
-If a page is skipped, it will be inserted without OCR. If preprocessing was requested, the preprocessed image layer will be inserted.
-
-If you want to adjust the amount of time spent on OCR, change ``--tesseract-timeout``.  You can also automatically skip images that exceed a certain number of megapixels. (A 300 DPI, 8.5×11" page is 8.4 megapixels.)
-
-.. code-block:: bash
-
-	# Allow 300 seconds for OCR; skip any page larger than 50 megapixels
-	ocrmypdf --tesseract-timeout 300 --skip-big 50 bigfile.pdf output.pdf
-
-Overriding default tesseract
-""""""""""""""""""""""""""""
-
-OCRmyPDF checks the environment variable ``OCRMYPDF_TESSERACT`` for the full path to the tesseract executable first. 
-
-For example, if you are testing tesseract 4.00 and don't wish to disturb your tesseract 3.04 installation, you can launch OCRmyPDF as follows:
-
-.. code-block:: bash
-
-	env \
-		OCRMYPDF_TESSERACT=/home/user/src/tesseract4/api/tesseract \
-		TESSDATA_PREFIX=/home/user/src/tesseract4 \
-		ocrmypdf --pdf-renderer tess4 --tesseract-oem 2 input.pdf output.pdf
-
-* ``TESSDATA_PREFIX`` directs tesseract 4.0 to use LSTM training data. This is a tesseract environment variable.
-* ``--pdf-renderer tess4`` takes advantage of new tesseract 4.0 PDF renderer in OCRmyPDF. (Tesseract 4.0 only.)
-* ``--tesseract-oem 1`` requests tesseract 4.0's new LSTM engine. (Tesseract 4.0 only.)
 
