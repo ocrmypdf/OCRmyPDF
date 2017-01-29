@@ -3,14 +3,22 @@ RELEASE NOTES
 
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
+v4.4.1:
+=======
+
+-  To prevent a `TIFF output error <https://github.com/python-pillow/Pillow/issues/2206>`_ caused by img2pdf >= 0.2.1 and Pillow <= 3.4.2, dependencies have been tightened
+-  The Tesseract 4.00 simultaenous process limit was increased from 1 to 2, since it was observed that 1 lowers performance
+-  Documentation improvements to describe the ``--tesseract-config`` feature 
+-  Added test cases and fixed error handling for ``--tesseract-config``
+-  Tweaks to setup.py to deal with issues in the v4.4 release
+
 v4.4:
 =====
 
 -  Tesseract 4.00 is now supported on an experimental basis.
 
    +  A new rendering option ``--pdf-renderer tess4`` exploits Tesseract 4's new text-only output PDF mode. See the documentation on PDF Renderers for details.
-   +  The ``--tesseract-oem`` argument allows control over the Tesseract 4 OCR 
-   engine mode (tesseract's ``--oem``). Use ``--tesseract-oem 2`` to enforce the new LSTM mode.
+   +  The ``--tesseract-oem`` argument allows control over the Tesseract 4 OCR engine mode (tesseract's ``--oem``). Use ``--tesseract-oem 2`` to enforce the new LSTM mode.
    +  Fixed poor performance with Tesseract 4.00 on Linux
 
 -  Fixed an issue that caused corruption of output to stdout in some cases
