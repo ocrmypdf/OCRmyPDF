@@ -37,6 +37,7 @@ def real_tesseract():
 def main():
     operation = sys.argv[-1]
     # For anything unexpected operation, defer to real tesseract binary
+    # Currently this includes all use of "--tesseract-config"
     if operation != 'hocr' and operation != 'pdf' and operation != 'stdout':
         real_tesseract()
         return  # Not reachable
@@ -52,6 +53,11 @@ def main():
         ['tesseract', '--version'],
         stderr=subprocess.STDOUT)
 
+    if b'4.00.00alpha' in tess_version:
+        # Tesseract 4.x alpha is a moving target, don't cache it
+        real_tesseract()
+        return
+
     m.update(tess_version)
 
     # Insert this source file into the hash function, to ensure that any
@@ -65,12 +71,21 @@ def main():
         lang = sys.argv[sys.argv.index('-l') + 1]
         m.update(lang.encode())
     except ValueError:
-        pass
-    try:
-        psm = sys.argv[sys.argv.index('-psm') + 1]
-        m.update(psm.encode())
-    except ValueError:
-        pass
+        m.update(b'default-lang')
+
+    psm_arg = ''
+    if '--psm' in sys.argv:
+        psm_arg = '--psm'
+    elif '-psm' in sys.argv:
+        psm_arg = '-psm'
+    if psm_arg:
+        try:
+            psm = sys.argv[sys.argv.index(psm_arg) + 1]
+            m.update(psm.encode())
+        except ValueError:
+            m.update(b'default-psm')
+    else:
+        m.update(b'default-psm')
 
     if operation == 'stdout' and psm != '0':
         real_tesseract()

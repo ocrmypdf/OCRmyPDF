@@ -14,6 +14,7 @@ class ExitCode(IntEnum):
     already_done_ocr = 6
     child_process_error = 7
     encrypted_pdf = 8
+    invalid_config = 9
     other_error = 15
     ctrl_c = 130
 
@@ -52,3 +53,7 @@ class SubprocessOutputError(ExitCodeException):
 
 class EncryptedPdfError(ExitCodeException):
     exit_code = ExitCode.encrypted_pdf
+
+
+class TesseractConfigError(ExitCodeException):
+    exit_code = ExitCode.invalid_config

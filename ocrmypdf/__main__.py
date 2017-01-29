@@ -207,7 +207,7 @@ advanced = parser.add_argument_group(
     "Advanced options for power users")
 advanced.add_argument(
     '--tesseract-config', action='append', metavar='CFG', default=[],
-    help="additional Tesseract configuration files")
+    help="additional Tesseract configuration files -- see documentation")
 advanced.add_argument(
     '--tesseract-pagesegmode', action='store', type=int, metavar='PSM',
     choices=range(0, 14),

@@ -59,9 +59,34 @@ In addition to tesseract, OCRmyPDF uses the following external binaries:
 
 In each case OCRmyPDF will check the environment variable ``OCRMYPDF_{program}`` before asking the system to find ``{program}`` on the PATH. For example, you could redirect OCRmyPDF to ``OCRMYPDF_GS`` to override Ghostscript.
 
+Changing tesseract configuration variables
+""""""""""""""""""""""""""""""""""""""""""
+
+You can override tesseract's default `control parameters <https://github.com/tesseract-ocr/tesseract/wiki/ControlParams>`_ with a configuration file.
+
+As an example, this configuration will disable Tesseract's dictionary for current language. Normally the dictionary is helpful for interpolating words that are unclear, but it may interfere with OCR if the document does not contain many words (for example, a list of part numbers).
+
+Create a file named "no-dict.cfg" with these contents:
+
+::
+
+	load_system_dawg 0
+	language_model_penalty_non_dict_word 0
+	language_model_penalty_non_freq_dict_word 0
+
+then run ocrmypdf as follows (along with any other desired arguments):
+
+.. code-block:: bash
+
+	ocrmypdf --tesseract-config no-dict.cfg input.pdf output.pdf
+
+.. warning::
+
+	Some combinations of control parameters will break Tesseract or break assumptions that OCRmyPDF makes about Tesseract's output.
+
+
 Changing the PDF renderer
 -------------------------
-
 
 rasterizing
   Converting a PDF to an image for display.

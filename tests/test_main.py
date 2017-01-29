@@ -690,3 +690,51 @@ def test_destination_not_writable(spoof_tesseract_noop, resources, outdir):
         resources / 'jbig2.pdf', protected_file,
         env=spoof_tesseract_noop)
     assert p.returncode == ExitCode.file_access_error, "Expected error"
+
+
+def test_tesseract_config_valid(resources, outdir):
+    cfg_file = outdir / 'test.cfg'
+    with cfg_file.open('w') as f:
+        f.write('''\
+load_system_dawg 0
+language_model_penalty_non_dict_word 0
+language_model_penalty_non_freq_dict_word 0
+''')
+
+    check_ocrmypdf(
+        resources / 'ccitt.pdf', outdir / 'out.pdf',
+        '--tesseract-config', str(cfg_file))
+
+
+@pytest.mark.parametrize('renderer', [
+    'hocr',
+    'tesseract',
+    ])
+def test_tesseract_config_notfound(renderer, resources, outdir):
+    cfg_file = outdir / 'nofile.cfg'
+
+    p, out, err = run_ocrmypdf(
+        resources / 'ccitt.pdf', outdir / 'out.pdf',
+        '--pdf-renderer', renderer,
+        '--tesseract-config', str(cfg_file))
+    assert "Can't open" in err, "No error message about missing config file"
+    assert p.returncode == ExitCode.ok
+
+
+@pytest.mark.parametrize('renderer', [
+    'hocr',
+    'tesseract',
+    ])
+def test_tesseract_config_invalid(renderer, resources, outdir):
+    cfg_file = outdir / 'test.cfg'
+    with cfg_file.open('w') as f:
+        f.write('''\
+THIS FILE IS INVALID
+''')
+
+    p, out, err = run_ocrmypdf(
+        resources / 'ccitt.pdf', outdir / 'out.pdf',
+        '--pdf-renderer', renderer,
+        '--tesseract-config', str(cfg_file))
+    assert "parameter not found" in err, "No error message"
+    assert p.returncode == ExitCode.invalid_config

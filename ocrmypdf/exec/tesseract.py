@@ -6,7 +6,7 @@ import os
 import re
 import shutil
 from functools import lru_cache
-from ..exceptions import MissingDependencyError
+from ..exceptions import MissingDependencyError, TesseractConfigError
 from ..helpers import page_number
 from . import get_program
 from collections import namedtuple
@@ -186,6 +186,8 @@ def tesseract_log_output(log, stdout, input_file):
             log.warning(prefix + "unsure about page orientation")
         elif 'error' in line.lower() or 'exception' in line.lower():
             log.error(prefix + line.strip())
+        elif 'read_params_file' in line.lower():
+            log.error(prefix + line.strip())
         else:
             log.info(prefix + line.strip())
 
@@ -236,6 +238,8 @@ def generate_hocr(input_file, output_hocr, language: list, engine_mode,
         _generate_null_hocr(output_hocr, input_file)
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_file)
+        if 'read_params_file: parameter not found' in e.output:
+            raise TesseractConfigError() from e
         if 'Image too large' in e.output:
             _generate_null_hocr(output_hocr, input_file)
             return
@@ -243,6 +247,7 @@ def generate_hocr(input_file, output_hocr, language: list, engine_mode,
         raise e from e
     else:
         tesseract_log_output(log, stdout, input_file)
+
         if os.path.exists(badxml + '.html'):
             # Tesseract 3.02 appends suffix ".html" on its own (.badxml.html)
             shutil.move(badxml + '.html', badxml)
@@ -305,6 +310,9 @@ def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
         shutil.copy(skip_pdf, output_pdf)
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_image)
+        if 'read_params_file: parameter not found' in e.output:
+            raise TesseractConfigError() from e
+
         if 'Image too large' in e.output:
             shutil.copy(skip_pdf, output_pdf)
             return
