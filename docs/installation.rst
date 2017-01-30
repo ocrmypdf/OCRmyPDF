@@ -27,7 +27,7 @@ successfully, your system is ready to download and execute the image:
 
    docker run hello-world
    
-OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine instance on Windows and OS X has only a single CPU core enabled. Use the VirtualBox Manager to determine the name of your Docker engine host, and then follow these optional steps to enable multiple CPUs:
+OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine instance on Windows and macOS has only a single CPU core enabled. Use the VirtualBox Manager to determine the name of your Docker engine host, and then follow these optional steps to enable multiple CPUs:
 
 .. code-block:: bash
 
@@ -37,28 +37,33 @@ OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine i
    docker-machine start "yourVM"
    eval $(docker-machine env "yourVM")
 
-Assuming you have a Docker engine running somewhere, you can run these commands to download
-the image:
+Assuming you have a Docker engine running, you can download one of the three available images:
+
++-----------------------------+-------------------------------------------+---------------------------------------------------------------------------------+
+| Image name                  | Download command                          | Notes                                                                           |
++-----------------------------+-------------------------------------------+---------------------------------------------------------------------------------+
+| jbarlow83/ocrmypdf          | `docker pull jbarlow83/ocrmypdf`          | Latest ocrmypdf with Tesseract 3.04. Includes English, French, German, Spanish. |
++-----------------------------+-------------------------------------------+---------------------------------------------------------------------------------+
+| jbarlow83/ocrmypdf-polyglot | `docker pull jbarlow83/ocrmypdf-polyglot` | As above, with all available language packs.                                    |
++-----------------------------+-------------------------------------------+---------------------------------------------------------------------------------+
+| jbarlow83/ocrmypdf-tess4    | `docker pull jbarlow83/ocrmypdf-tess4`    | Latest ocrmypdf with Tesseract 4.00.00alpha and all language packs.             |
++-----------------------------+-------------------------------------------+---------------------------------------------------------------------------------+
+
+For example:
 
 .. code-block:: bash
 
-   docker pull jbarlow83/ocrmypdf
+   docker pull jbarlow83/ocrmypdf-tess4
 
 Then tag it to give a more convenient name, just ocrmypdf:
 
 .. code-block:: bash
 
-   docker tag jbarlow83/ocrmypdf ocrmypdf
+   docker tag jbarlow83/ocrmypdf-tess4 ocrmypdf
 
 .. _docker-polyglot:
 
-This image contains language packs for English, French, Spanish and German. The alternative "polyglot" image provides `all available language packs <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.1.asc#languages>`_:
-
-.. code-block:: bash
-
-   # Alternative step: If you need all language packs
-   docker pull jbarlow83/ocrmypdf-polyglot
-   docker tag jbarlow83/ocrmypdf-polyglot ocrmypdf
+The alternative "polyglot" image provides `all available language packs <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.1.asc#languages>`_.
 
 You can then run ocrmypdf using the command:
 
@@ -83,10 +88,10 @@ In this worked example, the current working directory contains an input file cal
 Note that ``ocrmypdf`` has its own separate ``-v VERBOSITYLEVEL`` argument to control debug verbosity. All Docker arguments should before the ``ocrmypdf`` image name and all arguments to ``ocrmypdf`` should be listed after.
 
 
-Installing on macOS (formerly Mac OS X)
----------------------------------------
+Installing on macOS
+-------------------
 
-These instructions probably work on all macOS supported by Homebrew. OCRmyPDF is known to work on Yosemite and El Capitan, and regularly tested on El Capitan.
+These instructions probably work on all macOS supported by Homebrew.
 
 If it's not already present, `install Homebrew <http://brew.sh/>`_.
 

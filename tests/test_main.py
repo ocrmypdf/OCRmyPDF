@@ -682,6 +682,10 @@ def test_overlay(spoof_tesseract_noop, resources, outpdf):
                    env=spoof_tesseract_noop)
 
 
+@pytest.mark.skipif(
+    os.getuid() == 0 or os.geteuid() == 0,
+    reason="root can write to anything"
+    )
 def test_destination_not_writable(spoof_tesseract_noop, resources, outdir):
     protected_file = outdir / 'protected.pdf'
     protected_file.touch()

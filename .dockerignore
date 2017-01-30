@@ -11,11 +11,14 @@
 */*/*/*/*/*/*.pyc
 */*/*/*/*/*/*/*.pyc
 .cache/
+.eggs/
+.github/
 .git/
 .ipynb_checkpoints/
 .ruffus_history.sqlite
 bin/
 build/
+docs/
 dist/
 htmlcov/
 include/
@@ -27,5 +30,5 @@ tests/cache/
 tests/output/
 tests/resources/private/
 tmp/
-venv-3.4/
-venv-3.5/
+venv*/
+wheelhouse/
