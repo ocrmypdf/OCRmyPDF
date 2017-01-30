@@ -39,15 +39,15 @@ OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine i
 
 Assuming you have a Docker engine running, you can download one of the three available images:
 
-+-----------------------------+-------------------------------------------+---------------------------------------------------------------------------------+
-| Image name                  | Download command                          | Notes                                                                           |
-+-----------------------------+-------------------------------------------+---------------------------------------------------------------------------------+
-| jbarlow83/ocrmypdf          | `docker pull jbarlow83/ocrmypdf`          | Latest ocrmypdf with Tesseract 3.04. Includes English, French, German, Spanish. |
-+-----------------------------+-------------------------------------------+---------------------------------------------------------------------------------+
-| jbarlow83/ocrmypdf-polyglot | `docker pull jbarlow83/ocrmypdf-polyglot` | As above, with all available language packs.                                    |
-+-----------------------------+-------------------------------------------+---------------------------------------------------------------------------------+
-| jbarlow83/ocrmypdf-tess4    | `docker pull jbarlow83/ocrmypdf-tess4`    | Latest ocrmypdf with Tesseract 4.00.00alpha and all language packs.             |
-+-----------------------------+-------------------------------------------+---------------------------------------------------------------------------------+
++-----------------------------+---------------------------------------------+---------------------------------------------------------------------------------+
+| Image name                  | Download command                            | Notes                                                                           |
++-----------------------------+---------------------------------------------+---------------------------------------------------------------------------------+
+| ocrmypdf                    | ``docker pull jbarlow83/ocrmypdf``          | Latest ocrmypdf with Tesseract 3.04. Includes English, French, German, Spanish. |
++-----------------------------+---------------------------------------------+---------------------------------------------------------------------------------+
+| ocrmypdf-polyglot           | ``docker pull jbarlow83/ocrmypdf-polyglot`` | As above, with all available language packs.                                    |
++-----------------------------+---------------------------------------------+---------------------------------------------------------------------------------+
+| ocrmypdf-tess4              | ``docker pull jbarlow83/ocrmypdf-tess4``    | Latest ocrmypdf with Tesseract 4.00.00alpha and all language packs.             |
++-----------------------------+---------------------------------------------+---------------------------------------------------------------------------------+
 
 For example:
 
@@ -86,6 +86,20 @@ In this worked example, the current working directory contains an input file cal
 .. note:: The working directory should be a writable local volume or Docker may not have permission to access it.
 
 Note that ``ocrmypdf`` has its own separate ``-v VERBOSITYLEVEL`` argument to control debug verbosity. All Docker arguments should before the ``ocrmypdf`` image name and all arguments to ``ocrmypdf`` should be listed after.
+
+For convenience, a shell alias can hide the docker command:
+
+.. code-block:: bash
+
+   alias ocrmypdf='docker run --rm -v "$(pwd):/home/docker" ocrmypdf' 
+   ocrmypdf --version  # runs docker version
+
+Or in the wonderful `fish shell <https://fishshell.com/>`_:
+
+.. code-block:: fish
+
+   alias ocrmypdf 'docker run --rm -v (pwd):/home/docker ocrmypdf'
+   funcsave ocrmypdf
 
 
 Installing on macOS
