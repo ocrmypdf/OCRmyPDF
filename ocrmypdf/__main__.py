@@ -333,6 +333,10 @@ def check_options_advanced(options, log):
     if options.tesseract_oem and not tesseract.v4():
         log.warning(
             "--tesseract-oem requires Tesseract 4.x -- argument ignored")
+    if options.pdf_renderer == 'tess4' and not tesseract.has_textonly_pdf():
+        raise MissingDependencyError(
+            "--pdf-renderer tess4 requires Tesseract 4.x "
+            "commit 3d9fb3b or later")
 
 
 def check_options(options, log):
