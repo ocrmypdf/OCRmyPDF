@@ -36,7 +36,6 @@ recursive-exclude docs/_build *
 
 # support files
 recursive-include ocrmypdf/data *
-recursive-include share *
 include *.py
 exclude tasks.py
 

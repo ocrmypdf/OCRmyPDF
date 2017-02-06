@@ -1,13 +1,16 @@
 # OCRmyPDF polyglot
 #
-# VERSION               3.2
+# VERSION               4.4.2
 FROM      jbarlow83/ocrmypdf:latest
 MAINTAINER James R. Barlow <jim@purplerock.ca>
 
-# Update system and install our dependencies
 USER root
+
+# Update system and install our dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
   tesseract-ocr-all 
+
+RUN apt-get autoremove -y && apt-get clean -y
 
 USER docker
 
