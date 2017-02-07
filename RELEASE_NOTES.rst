@@ -3,17 +3,29 @@ RELEASE NOTES
 
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
-v4.4.1:
-=======
+
+v4.4.2
+======
+
+-  The Docker images (ocrmypdf, ocrmypdf-polyglot, ocrmypdf-tess4) are now based on Ubuntu 16.10 instead of Debian stretch
+
+   + This makes supporting the Tesseract 4 image easier
+   + This could be a disruptive change for any Docker users who built customized these images with their own changes, and made those changes in a way that depends on Debian and not Ubuntu
+
+-  OCRmyPDF now prevents running the Tesseract 4 renderer with Tesseract 3.04, which was permitted in v4.4 and v4.4.1 but will not work
+
+
+v4.4.1
+======
 
 -  To prevent a `TIFF output error <https://github.com/python-pillow/Pillow/issues/2206>`_ caused by img2pdf >= 0.2.1 and Pillow <= 3.4.2, dependencies have been tightened
--  The Tesseract 4.00 simultaenous process limit was increased from 1 to 2, since it was observed that 1 lowers performance
+-  The Tesseract 4.00 simultaneous process limit was increased from 1 to 2, since it was observed that 1 lowers performance
 -  Documentation improvements to describe the ``--tesseract-config`` feature 
 -  Added test cases and fixed error handling for ``--tesseract-config``
 -  Tweaks to setup.py to deal with issues in the v4.4 release
 
-v4.4:
-=====
+v4.4
+====
 
 -  Tesseract 4.00 is now supported on an experimental basis.
 
@@ -30,33 +42,33 @@ v4.4:
    + However, OCRmyPDF's dependency "ruffus" is not re-entrant, so no Python API is available. Scripts should continue to use the command line interface.
 
 
-v4.3.5:
-=======
+v4.3.5
+======
 
 -  Update documentation to confirm Python 3.6.0 compatibility. No code changes were needed, so many earlier versions are likely supported.
 
 
-v4.3.4:
-=======
+v4.3.4
+======
 
 -  Fixed "decimal.InvalidOperation: quantize result has too many digits" for high DPI images
 
 
-v4.3.3:
-=======
+v4.3.3
+======
 
 -  Fixed PDF/A creation with Ghostscript 9.20 properly
 -  Fixed an exception on inline stencil masks with a missing optional parameter
 
 
-v4.3.2:
-=======
+v4.3.2
+======
 
 -  Fixed a PDF/A creation issue with Ghostscript 9.20 (note: this fix did not actually work)
 
 
-v4.3.1:
-=======
+v4.3.1
+======
 
 -  Fixed an issue where pages produced by the "hocr" renderer after a Tesseract timeout would be rotated incorrectly if the input page was rotated with a /Rotate marker
 -  Fixed a file handle leak in LeptonicaErrorTrap that would cause a "too many open files" error for files around hundred pages of pages long when ``--deskew`` or ``--remove-background`` or other Leptonica based image processing features were in use, depending on the system value of ``ulimit -n``
@@ -66,8 +78,8 @@ v4.3.1:
 -  Tesseract caching in test cases is now more cautious about false cache hits and reproducing exact output, not that any problems were observed
 
 
-v4.3:
-=====
+v4.3
+====
 
 -  New feature ``--remove-background`` to detect and erase the background of color and grayscale images
 -  Better documentation
@@ -77,21 +89,21 @@ v4.3:
    +  This does not improve performance since temporary files are still used for buffering
    +  Some output validation is disabled in this mode
 
-v4.2.5:
-=======
+v4.2.5
+======
 
 -  Fixed an issue (#100) with PDFs that omit the optional /BitsPerComponent parameter on images
 -  Removed non-free file milk.pdf
 
 
-v4.2.4:
-=======
+v4.2.4
+======
 
 -  Fixed an error (#90) caused by PDFs that use stencil masks properly
 -  Fixed handling of PDFs that try to draw images or stencil masks without properly setting up the graphics state (such images are now ignored for the purposes of calculating DPI)
 
-v4.2.3:
-=======
+v4.2.3
+======
 
 -  Fixed an issue with PDFs that store page rotation (/Rotate) in an indirect object
 -  Integrated a few fixes to simplify downstream packaging (Debian)
@@ -104,21 +116,21 @@ v4.2.3:
 -  Deprecated the OCRmyPDF.sh shell script
 
 
-v4.2.2:
-=======
+v4.2.2
+======
 
 -  Improvements to documentation
 
 
-v4.2.1:
-=======
+v4.2.1
+======
 
 -  Fixed an issue where PDF pages that contained stencil masks would report an incorrect DPI and cause Ghostscript to abort
 -  Implemented stdin streaming
 
 
-v4.2:
-=====
+v4.2
+====
 
 -  ocrmypdf will now try to convert single image files to PDFs if they are provided as input (#15)
 
@@ -150,14 +162,14 @@ v4.2:
 
 -  Ghostscript now runs in "safer" mode where possible
 
-v4.1.4:
-=======
+v4.1.4
+======
 
 -  Bug fix: monochrome images with an ICC profile attached were incorrectly converted to full color images if lossless reconstruction was not possible due to other settings; consequence was increased file size for these images
 
 
-v4.1.3:
-=======
+v4.1.3
+======
 
 -  More helpful error message for PDFs with version 4 security handler
 -  Update usage instructions for Windows/Docker users
@@ -165,50 +177,50 @@ v4.1.3:
 -  Add a few leptonica wrapper functions (no effect on most users)
 
 
-v4.1.2:
-=======
+v4.1.2
+======
 
 -  Replace IEC sRGB ICC profile with Debian's sRGB (from icc-profiles-free) which is more compatible with the MIT license
 -  More helpful error message for an error related to certain types of malformed PDFs
 
 
-v4.1:
-=====
+v4.1
+====
 
 -  ``--rotate-pages`` now only rotates pages when reasonably confidence in the orientation. This behavior can be adjusted with the new argument ``--rotate-pages-threshold``
 -  Fixed problems in error checking if ``unpaper`` is uninstalled or missing at run-time
 -  Fixed problems with "RethrownJobError" errors during error handling that suppressed the useful error messages
 
 
-v4.0.7:
-=======
+v4.0.7
+======
 
 -  Minor correction to Ghostscript output settings
 
 
-v4.0.6:
-=======
+v4.0.6
+======
 
 -  Update install instructions
 -  Provide a sRGB profile instead of using Ghostscript's
 
 
-v4.0.5:
-=======
+v4.0.5
+======
 
 -  Remove some verbose debug messages from v4.0.4
 -  Fixed temporary that wasn't being deleted
 -  DPI is now calculated correctly for cropped images, along with other image transformations
 -  Inline images are now checked during DPI calculation instead of rejecting the image
 
-v4.0.4:
-=======
+v4.0.4
+======
 
 Released with verbose debug message turned on. Do not use. Skip to v4.0.5.
 
 
-v4.0.3:
-=======
+v4.0.3
+======
 
 New features
 ------------
@@ -225,8 +237,8 @@ Fixes
 -  Docker: fix blank JPEG2000 issue by insisting on Ghostscript versions that have this fixed
 
 
-v4.0.2:
-=======
+v4.0.2
+======
 
 Fixes
 -----
@@ -237,8 +249,8 @@ Fixes
 -  Fixed use of chmod on Docker that broke most test cases
 
 
-v4.0.1:
-=======
+v4.0.1
+======
 
 Fixes
 -----
@@ -246,8 +258,8 @@ Fixes
 -  Fixed a KeyError if tesseract fails to find page orientation information
 
 
-v4.0:
-=====
+v4.0
+====
 
 New features
 ------------
@@ -281,8 +293,8 @@ Changes
    to correct the problem.
 
 
-v3.2.1:
-=======
+v3.2.1
+======
 
 Changes
 -------
@@ -291,8 +303,8 @@ Changes
 -  Tweaked the Dockerfiles
 
 
-v3.2:
-=====
+v3.2
+====
 
 New features
 ------------
@@ -313,16 +325,16 @@ Changes
 
 
 
-v3.1.1:
-=======
+v3.1.1
+======
 
 Changes
 -------
 
 -  Fixed bug that caused incorrect page size and DPI calculations on documents with mixed page sizes
 
-v3.1:
-=====
+v3.1
+====
 
 Changes
 -------
@@ -339,8 +351,8 @@ Changes
    Currently it always chooses the 'hocrtransform' renderer but that behavior may change.
 -  Set up Travis CI automatic integration testing
 
-v3.0:
-=====
+v3.0
+====
 
 New features
 ------------
@@ -489,8 +501,8 @@ Notes and known issues
    images almost never contain inline images.
 
 
-v2.2-stable (2014-09-29):
-=========================
+v2.2-stable (2014-09-29)
+========================
 
 OCRmyPDF versions 1 and 2 were implemented as shell scripts. OCRmyPDF 3.0+ is a fork that gradually replaced all shell scripts with Python while maintaining the existing command line arguments. No one is maintaining old versions.
 
