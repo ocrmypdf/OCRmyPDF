@@ -39,6 +39,9 @@ script:
 - pytest
 - mv dont_import_this_ocrmypdf ocrmypdf
 
+# See https://www.appneta.com/blog/pypi-deployment-with-travis-ci/ for
+# steps to set up testpypi deploy for untagged builds if desired
+
 deploy:
   provider: pypi
   user: ocrmypdf-travis
@@ -46,4 +49,7 @@ deploy:
     secure: DTFOmmNL6olA0+yXvp4u9jXZlZeqrJsJ0526jzqf4a3gZ6jnGTq5UI6WzRsslSyoMMfXKtHQebqHM6ogSgCZinyZ3ufHJo8fn9brxbEc2gsiWkbj5o3bGwdWMT1vNNE7XW0VCpw87rZ1EEwjl4FJHFudMlPR1yfU5+uq0k0PACo=
   distributions: "sdist bdist_wheel"
   on:
+    branch: master
     tags: true
+    condition: $TRAVIS_PYTHON_VERSION = "3.6"
+  skip_upload_docs: true
