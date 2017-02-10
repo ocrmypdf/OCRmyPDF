@@ -11,6 +11,8 @@ RUN add-apt-repository ppa:alex-p/tesseract-ocr
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	tesseract-ocr-all
 
+RUN apt-get upgrade tesseract-ocr
+
 RUN apt-get autoremove -y && apt-get clean -y
 
 USER docker
