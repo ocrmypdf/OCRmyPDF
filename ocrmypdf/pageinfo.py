@@ -89,13 +89,13 @@ def _is_unit_square(shorthand):
     pairwise = zip(values, UNIT_SQUARE)
     return all([isclose(a, b, rel_tol=1e-3) for a, b in pairwise])
 
-RasterSettings = namedtuple('RasterSettings',
+XobjectSettings = namedtuple('XobjectSettings',
     ['name', 'shorthand', 'stack_depth'])
 
 InlineSettings = namedtuple('InlineSettings',
     ['settings', 'shorthand', 'stack_depth'])
 
-ContentsInfo = namedtuple('ContentsInfo', ['raster_settings', 'inline_images'])
+ContentsInfo = namedtuple('ContentsInfo', ['xobject_settings', 'inline_images'])
 
 
 def _normalize_stack(operations):
@@ -114,7 +114,7 @@ def _normalize_stack(operations):
             yield (operands, command)
 
 
-def _interpret_contents(contentstream):
+def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     """Interpret the PDF content stream
 
     The stack represents the state of the PDF graphics stack.  We are only
@@ -139,8 +139,8 @@ def _interpret_contents(contentstream):
 
     operations = contentstream.operations
     stack = []
-    ctm = _matrix_from_shorthand(UNIT_SQUARE)
-    image_raster_settings = []
+    ctm = _matrix_from_shorthand(initial_shorthand)
+    xobject_settings = []
     inline_images = []
 
     for n, op in enumerate(_normalize_stack(operations)):
@@ -161,10 +161,10 @@ def _interpret_contents(contentstream):
                 _matrix_from_shorthand(operands), ctm)
         elif command == b'Do':
             image_name = operands[0]
-            raster = RasterSettings(
+            settings = XobjectSettings(
                 name=image_name, shorthand=_shorthand_from_matrix(ctm),
                 stack_depth=len(stack))
-            image_raster_settings.append(raster)
+            xobject_settings.append(settings)
         elif command == b'INLINE IMAGE':
             settings = operands['settings']
             inline = InlineSettings(
@@ -173,7 +173,7 @@ def _interpret_contents(contentstream):
             inline_images.append(inline)
 
     return ContentsInfo(
-        raster_settings=image_raster_settings,
+        xobject_settings=xobject_settings,
         inline_images=inline_images)
 
 
@@ -241,8 +241,8 @@ def _get_dpi(ctm_shorthand, image_size):
     return (dpi_w, dpi_h)
 
 
-def _find_page_inline_images(page, pageinfo, contentsinfo):
-    "Find inline images on the page"
+def _find_inline_images(contentsinfo):
+    "Find inline images in the contentstream"
 
     for n, inline in enumerate(contentsinfo.inline_images):
         image = {}
@@ -272,20 +272,44 @@ def _find_page_inline_images(page, pageinfo, contentsinfo):
         yield image
 
 
-def _find_page_regular_images(page, pageinfo, contentsinfo):
-    "Find images stored in XObject resources"
+def _image_xobjects(container):
+    """Search for all XObject-based images in the container
 
-    try:
-        page['/Resources']['/XObject']
-    except KeyError:
+    Usually the container is a page, but it could also be a Form XObject
+    that contains images. Filter out the Form XObjects which are dealt with
+    elsewhere.
+
+    Generate a sequence of tuples (image, xobj container), where container,
+    where xobj is the name of the object and image is the object itself,
+    since the object does not know its own name.
+
+    """
+
+    if '/Resources' not in container:
         return
-    for xobj in page['/Resources']['/XObject']:
-        # PyPDF2 returns the keys as an iterator
-        pdfimage = page['/Resources']['/XObject'][xobj]
-        if pdfimage['/Subtype'] != '/Image':
-            continue
+    resources = container['/Resources']
+    if '/XObject' not in resources:
+        return
+    for xobj in resources['/XObject']:
+        candidate = resources['/XObject'][xobj]
+        if candidate['/Subtype'] == '/Image':
+            image = candidate
+            yield (image, xobj)
+
+
+def _find_regular_images(container, contentsinfo):
+    """Find images stored in the container's /Resources /XObject
+
+    Usually the container is a page, but it could also be a Form XObject
+    that contains images.
+
+    Generates images with their DPI at time of drawing.
+
+    """
+
+    for pdfimage, xobj in _image_xobjects(container):
         image = {}
-        image['name'] = str(xobj)
+        image['name'] = xobj
         image['width'] = pdfimage['/Width']
         image['height'] = pdfimage['/Height']
         if '/BitsPerComponent' in pdfimage:
@@ -329,12 +353,12 @@ def _find_page_regular_images(page, pageinfo, contentsinfo):
 
         image['dpi_w'] = image['dpi_h'] = 0
 
-        for raster in contentsinfo.raster_settings:
+        for xobj in contentsinfo.xobject_settings:
             # Loop in case the same image is display multiple times on a page
-            if raster.name != image['name']:
+            if xobj.name != image['name']:
                 continue
 
-            if raster.stack_depth == 0 and _is_unit_square(raster.shorthand):
+            if xobj.stack_depth == 0 and _is_unit_square(xobj.shorthand):
                 # At least one PDF in the wild (and test suite) draws an image
                 # when the graphics stack depth is 0, meaning that the image
                 # gets drawn into a square of 1x1 PDF units (or 1/72",
@@ -343,7 +367,7 @@ def _find_page_regular_images(page, pageinfo, contentsinfo):
                 continue
 
             dpi_w, dpi_h = _get_dpi(
-                raster.shorthand, (image['width'], image['height']))
+                xobj.shorthand, (image['width'], image['height']))
 
             # When image is used multiple times take the highest DPI it is
             # rendered at
@@ -358,9 +382,85 @@ def _find_page_regular_images(page, pageinfo, contentsinfo):
         yield image
 
 
-def _find_page_images(page, pageinfo, contentsinfo):
-    yield from _find_page_inline_images(page, pageinfo, contentsinfo)
-    yield from _find_page_regular_images(page, pageinfo, contentsinfo)
+def _find_form_xobject_images(pdf, container, contentsinfo):
+    """Find any images that are in Form XObjects in the container
+
+    The container may be a page, or a parent Form XObject.
+
+    """
+    if '/Resources' not in container:
+        return
+    resources = container['/Resources']
+    if '/XObject' not in resources:
+        return
+    for xobj in resources['/XObject']:
+        candidate = resources['/XObject'][xobj]
+        if candidate['/Subtype'] != '/Form':
+            continue
+
+        form_xobject = candidate
+        for settings in contentsinfo.xobject_settings:
+            if settings.name != xobj:
+                continue
+
+            # Find images once for each time this Form XObject is drawn.
+            # This could be optimized to cache the multiple drawing events
+            # but in practice both Form XObjects and multiple drawing of the
+            # same object are both very rare.
+            ctm_shorthand = settings.shorthand
+            yield from _find_images(pdf, form_xobject, ctm_shorthand)
+
+
+def _find_images(pdf, container, shorthand=None):
+    """Find all individual instances of images drawn in the container
+
+    Usually the container is a page, but it may also be a Form XObject.
+
+    On a typical page images are stored inline or as regular images
+    in an XObject.
+
+    Form XObjects may include inline images, XObject images,
+    and recursively, other Form XObjects; and also vector drawing commands.
+
+    Every instance of an image being drawn somewhere is flattened and
+    treated as a unique image, since if the same image is drawn multiple times
+    on one page it may be drawn at differing resolutions, and our objective
+    is to find the resolution at which the page can be rastered without
+    downsampling.
+
+    """
+
+    if container.get('/Type') == '/Page':
+        # For a /Page the content stream is attached to the page's /Contents
+        page = container
+        contentstream = pypdf.pdf.ContentStream(page.getContents(), pdf)
+        initial_shorthand = shorthand or UNIT_SQUARE
+    elif container.get('/Type') == '/XObject' and \
+            container['/Subtype'] == '/Form':
+        # For a Form XObject that content stream is attached to the XObject
+        contentstream = pypdf.pdf.ContentStream(container, pdf)
+
+        # Set the CTM to the state it was when the "Do" operator was
+        # encountered that is drawing this instance of the Form XObject
+        ctm = _matrix_from_shorthand(shorthand or UNIT_SQUARE)
+
+        # A Form XObject may provide its own matrix to map form space into
+        # user space. Get this if one exists
+        form_matrix = _matrix_from_shorthand(
+                container.get('/Matrix', UNIT_SQUARE))
+
+        # Concatenate form matrix with CTM to ensure CTM is correct for
+        # drawing this instance of the XObject
+        ctm = matrix_mult(form_matrix, ctm)
+        initial_shorthand = _shorthand_from_matrix(ctm)
+    else:
+        return
+
+    contentsinfo = _interpret_contents(contentstream, initial_shorthand)
+
+    yield from _find_inline_images(contentsinfo)
+    yield from _find_regular_images(container, contentsinfo)
+    yield from _find_form_xobject_images(pdf, container, contentsinfo)
 
 
 def _page_has_text(pdf, page):
@@ -405,15 +505,8 @@ def _pdf_get_pageinfo(infile, pageno: int):
     except KeyError:
         pageinfo['rotate'] = 0
 
-    try:
-        contentstream = pypdf.pdf.ContentStream(page.getContents(), pdf)
-    except AttributeError as e:
-        return pageinfo
-
-    contentsinfo = _interpret_contents(contentstream)
-    pageinfo['images'] = [im for im in _find_page_images(
-                                page, pageinfo, contentsinfo)]
-
+    pageinfo['images'] = [im for im in
+                          _find_images(pdf, page)]
     if pageinfo['images']:
         xres = max(image['dpi_w'] for image in pageinfo['images'])
         yres = max(image['dpi_h'] for image in pageinfo['images'])
