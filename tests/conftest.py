@@ -24,8 +24,9 @@ def is_linux():
 
 @pytest.helpers.register
 def running_in_docker():
-    # Docker creates a file named /.dockerinit
-    return os.path.exists('/.dockerinit')
+    # Docker creates a file named /.dockerenv (newer versions) or
+    # /.dockerinit (older) -- this is undocumented, not an offical test
+    return os.path.exists('/.dockerenv') or os.path.exists('/.dockerinit')
 
 
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
