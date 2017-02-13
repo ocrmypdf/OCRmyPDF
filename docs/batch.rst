@@ -10,11 +10,29 @@ Consider using the excellent `GNU Parallel <https://www.gnu.org/software/paralle
 
 Both ``parallel`` and ``ocrmypdf`` will try to use all available processors. To maximize parallelism without overloading your system with processes, consider using ``parallel -j 2`` to limit parallel to running two jobs at once.
 
-This command will run all ocrmypdf all files named ``*.pdf`` in the current directory and write them to the previous created ``output/`` folder.
+This command will run all ocrmypdf all files named ``*.pdf`` in the current directory and write them to the previous created ``output/`` folder. It will not search subdirectories.
+
+The ``--tag`` argument tells parallel to print the filename as a prefix whenever a message is printed, so that one can trace any errors to the file that produced them.
 
 .. code-block:: bash
 
-	parallel -j 2 ocrmypdf '{}' 'output/{}' ::: *.pdf
+	parallel --tag -j 2 ocrmypdf '{}' 'output/{}' ::: *.pdf
+
+Directory trees
+---------------
+
+This will walk through a directory tree and run OCR on all files in place, printing the output in a way that makes 
+
+.. code-block:: bash
+
+	find . --printf '%p' -name '*.pdf' -exec ocrmypdf '{}' '{}' \;
+
+This only runs one ``ocrmypdf`` process at a time. This variation uses ``find`` to create a directory list and ``parallel`` to parallelize runs of ``ocrmypdf``, again updating files in place.
+
+.. code-block:: bash
+
+	find . -name '*.pdf' | parallel --tag -j 2 ocrmypdf '{}' '{}'
+
 
 Sample script
 """""""""""""
