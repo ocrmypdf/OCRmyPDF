@@ -4,6 +4,14 @@ RELEASE NOTES
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
 
+v4.5
+====
+
+-  Exotic PDFs containing "Form XObjects" are now supported (issue #134; PDF reference manual 8.10), and images they contain are taken into account when determining the resolution for rasterizing
+-  The Tesseract 4 Docker image no longer includes all languages, because it took so long to build something would tend to fail
+-  OCRmyPDF now warns about using ``--pdf-renderer tesseract`` with Tesseract 3.04 or lower due to issues with Ghostscript corrupting the OCR text in these cases
+
+
 v4.4.2
 ======
 
