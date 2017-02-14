@@ -46,7 +46,8 @@ Assuming you have a Docker engine running, you can download one of the three ava
 +-----------------------------+---------------------------------------------+---------------------------------------------------------------------------------+
 | ocrmypdf-polyglot           | ``docker pull jbarlow83/ocrmypdf-polyglot`` | As above, with all available language packs.                                    |
 +-----------------------------+---------------------------------------------+---------------------------------------------------------------------------------+
-| ocrmypdf-tess4              | ``docker pull jbarlow83/ocrmypdf-tess4``    | Latest ocrmypdf with Tesseract 4.00.00alpha and all language packs.             |
+| ocrmypdf-tess4              | ``docker pull jbarlow83/ocrmypdf-tess4``    | Latest ocrmypdf with Tesseract 4.00.00alpha and English, French, German,        |
+|                             |                                             | Spanish, Portuguese, Chinese Simplified, Arabic and Russian (the top 8).        |
 +-----------------------------+---------------------------------------------+---------------------------------------------------------------------------------+
 
 For example:
