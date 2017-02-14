@@ -742,3 +742,9 @@ THIS FILE IS INVALID
         '--tesseract-config', str(cfg_file))
     assert "parameter not found" in err, "No error message"
     assert p.returncode == ExitCode.invalid_config
+
+
+def test_form_xobject(spoof_tesseract_noop, resources, outpdf):
+    check_ocrmypdf(resources / 'formxobject.pdf', outpdf,
+                   '--force-ocr',
+                   env=spoof_tesseract_noop)

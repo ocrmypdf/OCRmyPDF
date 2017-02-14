@@ -356,9 +356,6 @@ def check_options(options, log):
         sys.exit(ExitCode.missing_dependency)
 
 
-
-
-
 # ----------
 # Logging
 

@@ -101,3 +101,10 @@ def test_jpeg(resources, outdir):
     assert pdfimage['enc'] == 'jpeg'
     assert (pdfimage['dpi_w'] - 150) < 1e-5
 
+
+def test_form_xobject(resources):
+    filename = resources / 'formxobject.pdf'
+
+    pdfinfo = pageinfo.pdf_get_all_pageinfo(str(filename))
+    pdfimage = pdfinfo[0]['images'][0]
+    assert pdfimage['width'] == 50

@@ -64,6 +64,9 @@ under the terms of the license in LICENSE.rst.
     *   - epson.pdf
         - @lowesjam
         - a linearized PDF containing some unusual indirect objects, created by an Epson printer; printout of a Wikipedia article (CC BY-SA)
+    *   - formxobject.pdf
+        - @jbarlow83
+        - hand-crafted exotic PDF containing an image inside a Form XObject
     *   - francais.pdf
         - @jbarlow83
         - a page containing French accents (diacritics)  
