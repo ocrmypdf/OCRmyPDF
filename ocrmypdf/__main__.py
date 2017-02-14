@@ -272,13 +272,15 @@ def check_options_output(options, log):
     if options.pdf_renderer == 'auto':
         options.pdf_renderer = 'hocr'
 
-    if options.pdf_renderer == 'tesseract' and \
-            tesseract.version() < '3.04.01' and \
-            os.environ.get('OCRMYPDF_SHARP_TTF', '') != '1':
-        log.warning(
-            "Your version of tesseract has problems with PDF output."
-            " Some PDF viewers will fail to find searchable text.\n"
-            "--pdf-renderer=tesseract is not recommended.")
+    if options.pdf_renderer in ('tesseract', 'tess4'):
+        if tesseract.version() < '3.05':
+            log.warning(
+                "tesseract < 3.05 may corrupt PDF output. "
+                "--pdf-renderer=tesseract is not recommend.")
+        elif tesseract.version() == '4.00.00alpha':
+            log.warning(
+                "tesseract 4.00.00alpha may corrupt PDF output. "
+                "--pdf-renderer={tesseract,tess4} is not recommend.")
 
     if options.debug_rendering and options.pdf_renderer == 'tesseract':
         log.info(
