@@ -555,16 +555,21 @@ def select_image_layer(
         re_symlink(page_pdf, output_file, log)
     else:
         pageinfo = get_pageinfo(image, context)
-        dpi = get_page_dpi(pageinfo, options)
-        dpi = float(dpi[0]), float(dpi[1])
-        layout_fun = img2pdf.get_fixed_dpi_layout_fun(dpi)
+
+        # We rasterize a square DPI version of each page because most image
+        # processing tools don't support rectangular DPI. Use the square DPI
+        # as it accurately describes the image. It would be possible to
+        # resample the image at this stage back to non-square DPI to more
+        # closely resemble the input, except that the hocr renderer does not
+        # understand non-square DPI. The tess4 renderer would be fine.
+        dpi = get_page_square_dpi(pageinfo, options)
+        layout_fun = img2pdf.get_fixed_dpi_layout_fun((dpi, dpi))
 
         with open(image, 'rb') as imfile, \
                 open(output_file, 'wb') as pdf:
-            rawdata = imfile.read()
             log.debug('{:4d}: convert'.format(page_number(page_pdf)))
             img2pdf.convert(
-                rawdata, with_pdfrw=False,
+                imfile, with_pdfrw=False,
                 layout_fun=layout_fun, outputstream=pdf)
             log.debug('{:4d}: convert done'.format(page_number(page_pdf)))
 

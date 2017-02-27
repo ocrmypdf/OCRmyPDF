@@ -564,6 +564,46 @@ def test_non_square_resolution(renderer, spoof_tesseract_cache,
     assert in_pageinfo[0]['yres'] == out_pageinfo[0]['yres']
 
 
+@pytest.mark.skipif(sys.version_info < (3, 5), reason="needs math.isclose")
+@pytest.mark.parametrize('renderer', [
+    'hocr',
+    'tesseract'
+    ])
+def test_convert_to_square_resolution(renderer, spoof_tesseract_cache,
+                                      resources, outpdf):
+    from math import isclose
+
+    # Confirm input image is non-square resolution
+    in_pageinfo = pdf_get_all_pageinfo(str(resources / 'aspect.pdf'))
+    assert in_pageinfo[0]['xres'] != in_pageinfo[0]['yres']
+
+    # --force-ocr requires means forced conversion to square resolution
+    check_ocrmypdf(
+        resources / 'aspect.pdf', outpdf,
+        '--force-ocr',
+        '--pdf-renderer', renderer, env=spoof_tesseract_cache)
+
+    out_pageinfo = pdf_get_all_pageinfo(str(outpdf))
+
+    in_p0, out_p0 = in_pageinfo[0], out_pageinfo[0]
+
+    # Resolution show now be equal
+    assert out_p0['xres'] == out_p0['yres']
+
+    # Page size should match input page size
+    assert isclose(in_p0['width_inches'],
+                   out_p0['width_inches'])
+    assert isclose(in_p0['height_inches'],
+                   out_p0['height_inches'])
+
+    # Because we rasterized the page to produce a new image, it should occupy
+    # the entire page
+    out_im_w = out_p0['images'][0]['width'] / out_p0['images'][0]['dpi_w']
+    out_im_h = out_p0['images'][0]['height'] / out_p0['images'][0]['dpi_h']
+    assert isclose(out_p0['width_inches'], out_im_w)
+    assert isclose(out_p0['height_inches'], out_im_h)
+
+
 def test_image_to_pdf(spoof_tesseract_noop, resources, outpdf):
     check_ocrmypdf(
         resources / 'LinnSequencer.jpg', outpdf, '--image-dpi', '200',

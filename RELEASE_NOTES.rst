@@ -4,6 +4,12 @@ RELEASE NOTES
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
 
+v4.5.1
+======
+
+-  Fix issue #137, proportions of images with a non-square pixel aspect ratio would be distorted in output for ``--force-ocr`` and some other combinations of flags
+
+
 v4.5
 ====
 
