@@ -409,10 +409,14 @@ def test_force_ocr_on_pdf_with_no_images(spoof_tesseract_crash, resources,
     assert not os.path.exists(no_outpdf)
 
 
+@pytest.mark.skipif(
+    pytest.helpers.is_macos() and pytest.helpers.running_in_travis(),
+    reason="takes too long to install language packs in Travis macOS homebrew")
 def test_french(spoof_tesseract_cache, resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / 'francais.pdf', outpdf, '-l', 'fra',
         env=spoof_tesseract_cache)
+    print(os.environ)
     assert p.returncode == ExitCode.ok, \
         "This test may fail if Tesseract language packs are missing"
 

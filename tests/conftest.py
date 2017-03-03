@@ -23,10 +23,20 @@ def is_linux():
 
 
 @pytest.helpers.register
+def is_macos():
+    return platform.system() == 'Darwin'
+
+
+@pytest.helpers.register
 def running_in_docker():
     # Docker creates a file named /.dockerenv (newer versions) or
     # /.dockerinit (older) -- this is undocumented, not an offical test
     return os.path.exists('/.dockerenv') or os.path.exists('/.dockerinit')
+
+
+@pytest.helpers.register
+def running_in_travis():
+    return os.environ.get('TRAVIS') == 'true'
 
 
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))

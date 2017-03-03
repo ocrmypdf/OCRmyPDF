@@ -4,6 +4,8 @@
 venv*/
 pyvenv.cfg
 tasks.py
+.bash_history
+.ruffus_history.sqlite
 
 # Package building
 *.egg-info/
@@ -27,8 +29,11 @@ htmlcov/
 # Testing
 log/
 /*.pdf
+/*.qdf
+*.ipynb
 .ipynb_checkpoints/
 tests/cache/
 tests/output/
 tests/resources/private/
 tmp/
+pdfbox-app*.jar
