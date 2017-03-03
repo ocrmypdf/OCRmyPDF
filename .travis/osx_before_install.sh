@@ -1,8 +1,10 @@
 #!/bin/bash
+set -euo pipefail
+set -x
 
 brew update
 
-brew install libpng openjpeg jbig2dec libtiff     # image libraries
+brew install openjpeg jbig2dec libtiff     # image libraries
 brew install qpdf
 brew install ghostscript
 brew install python3

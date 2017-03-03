@@ -41,6 +41,9 @@ script:
 - pytest
 - mv dont_import_this_ocrmypdf ocrmypdf
 
+after_success:
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then bash .travis/osx_before_deploy.sh ; fi
+
 # See https://www.appneta.com/blog/pypi-deployment-with-travis-ci/ for
 # steps to set up testpypi deploy for untagged builds if desired
 

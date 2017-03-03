@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+set -x
 
 sudo add-apt-repository ppa:vshn/ghostscript -y
 sudo add-apt-repository ppa:heyarje/libav-11 -y
