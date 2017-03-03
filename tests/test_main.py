@@ -169,6 +169,9 @@ def test_preserve_metadata(spoof_tesseract_noop, output_type,
 @pytest.mark.skipif(
     pytest.helpers.is_linux() and not pytest.helpers.running_in_docker(),
     reason="likely to fail if Linux locale is not configured correctly")
+@pytest.mark.skipif(
+    pytest.helpers.is_macos() and pytest.helpers.running_in_travis(),
+    reason="save Travis the trouble of installing poppler")
 @pytest.mark.parametrize("output_type", [
     'pdfa', 'pdf'
     ])
