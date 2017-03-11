@@ -7,9 +7,11 @@ include dev_requirements.txt
 include .git_archival.txt
 
 # docker
-include Dockerfile
-include Dockerfile.polyglot
 include .dockerignore
+include .docker/main.docker
+include .docker/polyglot.docker
+include .docker/tess4.docker
+include .docker/docker-wrapper.sh
 
 # tests
 include pytest.ini
@@ -43,6 +45,6 @@ exclude tasks.py
 recursive-include ocrmypdf *.py
 exclude ocrmypdf/lib/_leptonica.py
 include OCRmyPDF.sh
-include docker-wrapper.sh
+
 
 
