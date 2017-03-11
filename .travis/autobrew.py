@@ -17,7 +17,7 @@ class Ocrmypdf < Formula
   depends_on "unpaper"
   depends_on "qpdf"
 
-${poet_resources}
+${resources}
 
   def install
     ENV.append ["SETUPTOOLS_SCM_PRETEND_VERSION"], "v${ocrmypdf_version}"
@@ -29,11 +29,6 @@ ${poet_resources}
 
   test do
     # `test do` will create, run in and delete a temporary directory.
-    #
-    # This test will fail and we won't accept that! It's enough to just replace
-    # "false" with the main program this formula installs, but it'd be nice if you
-    # were more thorough. Run the test with `brew test OCRmyPDF`. Options passed
-    # to `brew install` such as `--HEAD` also need to be provided to `brew test`.
     #
     # The installed folder is not in the path, so use the entire path to any
     # executables being tested: `system "#{bin}/program", "do", "something"`.
@@ -58,6 +53,12 @@ def main():
             encoding='utf-8', stdout=PIPE, check=True)
 
     poet_resources = p.stdout
+
+    # Remove the duplicate "ocrmypdf" resource block
+    all_resources = poet_resources.split('resource')
+    kept_resources = [block for block in resources if 'ocrmypdf' not in block]
+    resources = 'resource'.join(kept_resources)
+
     with open('ocrmypdf.rb', 'w') as out:
         out.write(recipe_template.substitute(**locals()))
 
