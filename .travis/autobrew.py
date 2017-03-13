@@ -62,7 +62,7 @@ def main():
 
     # Remove the duplicate "ocrmypdf" resource block
     all_resources = poet_resources.split('resource')
-    kept_resources = [block for block in resources if 'ocrmypdf' not in block]
+    kept_resources = [block for block in all_resources if 'ocrmypdf' not in block]
     resources = 'resource'.join(kept_resources)
 
     with open('ocrmypdf.rb', 'w') as out:
