@@ -478,9 +478,57 @@ def traverse_ruffus_exception(e_args, options, log):
             return traverse_ruffus_exception(exc, options, log)
 
 
+def check_closed_streams(options):
+    """Work around Python issue with multiprocessing forking on closed streams
+
+    https://bugs.python.org/issue28326
+
+    Attempting to a fork/exec a new Python process when any of std{in,out,err}
+    are closed or not flushable for some reason may raise an exception.
+    Fix this by opening devnull if the handle seems to be closed.  Do this
+    globally to avoid tracking places all places that fork.
+
+    Seems to be specific to multiprocessing.Process not all Python process
+    forkers.
+
+    The error actually occurs when the stream object is not flushable,
+    but replacing an open stream object that is not flushable with
+    /dev/null is a bad idea since it will create a silent failure.  Replacing
+    a closed handle with /dev/null seems safe.
+
+    """
+
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, 'w')
+
+    if sys.stdin is None:
+        if options.input_file == '-':
+            print("Trying to read from stdin but stdin seems closed",
+                  file=sys.stderr)
+            return False
+        sys.stdin = open(os.devnull, 'r')
+
+    if sys.stdout is None:
+        if options.output_file == '-':
+            # Can't replace stdout if the user is piping
+            # If this case can even happen, it must be some kind of weird
+            # stream.
+            print(textwrap.dedent("""\
+                Output was set to stdout '-' but the stream attached to
+                stdout does not support the flush() system call.  This
+                will fail."""), file=sys.stderr)
+            return False
+        sys.stdout = open(os.devnull, 'w')
+
+    return True
+
+
 def run_pipeline():
     options = parser.parse_args()
     options.verbose_abbreviated_path = 1
+
+    if not check_closed_streams(options):
+        return ExitCode.bad_args
 
     _log, _log_mutex = proxy_logger.make_shared_logger_and_proxy(
         logging_factory, __name__, [None, options.verbose])
@@ -522,9 +570,9 @@ def run_pipeline():
                     file."""))
                 return ExitCode.bad_args
         elif not is_file_writable(options.output_file):
-                _log.error(textwrap.dedent("""\
-                    Cutput file location is not writable."""))
-                return ExitCode.file_access_error
+            _log.error(textwrap.dedent("""\
+                Cutput file location is not writable."""))
+            return ExitCode.file_access_error
 
         manager = JobContextManager()
         manager.register('JobContext', JobContext)

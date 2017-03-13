@@ -661,6 +661,23 @@ def test_stdout(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
     assert qpdf.check(output_file, log=None)
 
 
+def test_closed_streams(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
+    input_file = str(resources / 'francais.pdf')
+    output_file = str(outpdf)
+
+    def evil_closer():
+        os.close(0)
+        os.close(1)
+
+    p_args = ocrmypdf_exec + [input_file, output_file]
+    p = Popen(
+        p_args, close_fds=True, stdout=None, stderr=PIPE, stdin=None,
+        env=spoof_tesseract_noop, preexec_fn=evil_closer)
+    out, err = p.communicate()
+    print(err.decode())
+    assert p.returncode == ExitCode.ok
+
+
 def test_masks(spoof_tesseract_noop, resources, outpdf):
     check_ocrmypdf(resources / 'masks.pdf', outpdf, env=spoof_tesseract_noop)
 
