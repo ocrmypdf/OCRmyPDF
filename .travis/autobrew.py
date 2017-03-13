@@ -12,10 +12,16 @@ class Ocrmypdf < Formula
   ${ocrmypdf_sha256}
 
   depends_on :python3
+  depends_on "pkg-config"
+  depends_on "libffi"
   depends_on "tesseract"
   depends_on "ghostscript"
   depends_on "unpaper"
   depends_on "qpdf"
+
+  # For Pillow source install
+  depends_on "openjpeg"
+  depends_on "freetype"
 
 ${resources}
 
