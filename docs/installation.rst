@@ -10,6 +10,18 @@ Users of Debian 9 ("stretch") or later or Ubuntu 16.10 or later may simply
 
 	apt-get install ocrmypdf
 
+
+Installing on macOS
+-------------------
+
+.. code-block:: bash
+
+   brew tap jbarlow83/ocrmypdf
+   brew install ocrmypdf
+
+
+Users who previously installed OCRmyPDF on macOS may need to remove the ``pip`` based installation (``pip3 uninstall ocrmypdf``).
+
 .. _Docker:
 
 Installing the Docker image
@@ -103,8 +115,8 @@ Or in the wonderful `fish shell <https://fishshell.com/>`_:
    funcsave ocrmypdf
 
 
-Installing on macOS
--------------------
+Manual installation on macOS
+----------------------------
 
 These instructions probably work on all macOS supported by Homebrew.
 
