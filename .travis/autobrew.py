@@ -12,7 +12,7 @@ class Ocrmypdf < Formula
   ${ocrmypdf_sha256}
 
   depends_on :python3
-  depends_on "pkg-config"
+  depends_on "pkg-config" => :build
   depends_on "libffi"
   depends_on "tesseract"
   depends_on "ghostscript"
