@@ -13,6 +13,7 @@ class Ocrmypdf < Formula
 
   depends_on :python3
   depends_on "pkg-config" => :build
+  depends_on "zlib"
   depends_on "libffi"
   depends_on "tesseract"
   depends_on "ghostscript"
@@ -22,6 +23,7 @@ class Ocrmypdf < Formula
   # For Pillow source install
   depends_on "openjpeg"
   depends_on "freetype"
+  depends_on "libpng"
 
 ${resources}
 
