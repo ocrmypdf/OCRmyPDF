@@ -187,10 +187,6 @@ No package is currently available for Ubuntu 16.04, but you can install the depe
       tesseract-ocr \
       qpdf \
       python3-pip \
-      python3-pil \
-      python3-pytest \
-      python3-reportlab \
-      python3-ruffus \
       python3-cffi
 
 If you wish install OCRmyPDF to the system Python, then install as follows (note this installs new packages
@@ -205,7 +201,7 @@ follow these steps.
 
 .. code-block:: bash
 
-   python3 -m venv --system-site-packages venv-ocrmypdf
+   python3 -m venv venv-ocrmypdf
    source venv-ocrmypdf/bin/activate
    pip3 install ocrmypdf
 
