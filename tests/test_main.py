@@ -812,3 +812,28 @@ def test_form_xobject(spoof_tesseract_noop, resources, outpdf):
     check_ocrmypdf(resources / 'formxobject.pdf', outpdf,
                    '--force-ocr',
                    env=spoof_tesseract_noop)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 5), reason="needs math.isclose")
+@pytest.mark.parametrize('renderer', [
+    'hocr',
+    'tesseract',
+])
+def test_pagesize_consistency(renderer, resources, outpdf):
+    from math import isclose
+
+    first_page_dimensions = pytest.helpers.first_page_dimensions
+
+    infile = resources / 'linn.pdf'
+
+    before_dims = first_page_dimensions(infile)
+
+    check_ocrmypdf(
+        infile,
+        outpdf, '--pdf-renderer', renderer,
+        '--clean', '--deskew', '--remove-background', '--clean-final')
+
+    after_dims = first_page_dimensions(outpdf)
+
+    assert isclose(before_dims[0], after_dims[0])
+    assert isclose(before_dims[1], after_dims[1])

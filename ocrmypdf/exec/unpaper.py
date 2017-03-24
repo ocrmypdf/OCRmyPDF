@@ -78,7 +78,8 @@ def run(input_file, output_file, dpi, log, mode_args):
             raise e from e
         else:
             log.debug(stdout)
-            Image.open(output_pnm.name).save(output_file)
+            # unpaper sets dpi to 72
+            Image.open(output_pnm.name).save(output_file, dpi=(dpi, dpi))
 
 
 def deskew(input_file, output_file, dpi, log):

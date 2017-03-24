@@ -4,6 +4,14 @@ RELEASE NOTES
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
 
+v4.5.2
+======
+
+-  Fix issue #147, unpaper loses DPI information, which affects PDF rendering with ``--pdf-renderer tess4``
+-  Make "using Tesseract 4.0" warning less ominous
+-  Set up machinery for homebrew OCRmyPDF tap
+
+
 v4.5.1
 ======
 

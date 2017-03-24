@@ -101,7 +101,7 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
 
     p, out, err = run_ocrmypdf(input_file, output_file, *args, env=env)
     #print(err)  # ensure py.test collects the output, use -s to view
-    assert p.returncode == 0
+    assert p.returncode == 0, "<stderr>\n" + err + "\n</stderr>"
     assert os.path.exists(str(output_file)), "Output file not created"
     assert os.stat(str(output_file)).st_size > 100, "PDF too small or empty"
     assert out == "", \
@@ -125,3 +125,11 @@ def run_ocrmypdf(input_file, output_file, *args, env=None):
     #print(err)
 
     return p, out, err
+
+
+@pytest.helpers.register
+def first_page_dimensions(pdf):
+    from ocrmypdf import pageinfo
+    info = pageinfo.pdf_get_all_pageinfo(str(pdf))
+    page0 = info[0]
+    return (page0['width_inches'], page0['height_inches'])
