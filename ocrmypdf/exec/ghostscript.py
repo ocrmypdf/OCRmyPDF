@@ -2,10 +2,30 @@
 # © 2015 James R. Barlow: github.com/jbarlow83
 
 from tempfile import NamedTemporaryFile
-from subprocess import Popen, PIPE, STDOUT, check_call
+from subprocess import Popen, PIPE, STDOUT, check_call, CalledProcessError, \
+    check_output
 from shutil import copy
+from functools import lru_cache
 from . import get_program
 from ..pdfa import SRGB_ICC_PROFILE
+
+
+@lru_cache(maxsize=1)
+def version():
+    args_gs = [
+        get_program('gs'),
+        '--version'
+    ]
+    try:
+        version = check_output(
+                args_gs, close_fds=True, universal_newlines=True,
+                stderr=STDOUT)
+    except CalledProcessError as e:
+        print("Could not find Ghostscript executable on system PATH.",
+              file=sys.stderr)
+        raise MissingDependencyError from e
+
+    return version.strip()
 
 
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,

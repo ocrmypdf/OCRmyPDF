@@ -12,6 +12,7 @@ import PyPDF2 as pypdf
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf import leptonica
 from ocrmypdf.pdfa import file_claims_pdfa
+from ocrmypdf.exec import ghostscript
 
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
@@ -172,6 +173,10 @@ def test_preserve_metadata(spoof_tesseract_noop, output_type,
 @pytest.mark.skipif(
     pytest.helpers.is_macos() and pytest.helpers.running_in_travis(),
     reason="save Travis the trouble of installing poppler")
+@pytest.mark.xfail(
+    ghostscript.version() == '9.21',
+    reason="gs 9.21 has a regression that affects this"
+    )
 @pytest.mark.parametrize("output_type", [
     'pdfa', 'pdf'
     ])
@@ -191,7 +196,7 @@ def test_override_metadata(spoof_tesseract_noop, output_type, resources,
         '--output-type', output_type,
         env=spoof_tesseract_noop)
 
-    assert p.returncode == ExitCode.ok
+    assert p.returncode == ExitCode.ok, err
 
     pdf = str(outpdf)
 
