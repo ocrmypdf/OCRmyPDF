@@ -275,12 +275,15 @@ def check_options_output(options, log):
     if options.pdf_renderer in ('tesseract', 'tess4'):
         if tesseract.version() < '3.05':
             log.warning(
-                "tesseract < 3.05 may corrupt PDF output. "
-                "--pdf-renderer=tesseract is not recommend.")
+                "The setting --pdf-renderer=tesseract is not recommend for "
+                " use with tesseract versions less than 3.05, because it "
+                " produces OCR text that is incompatible with Ghostscript and "
+                " some other software.")
         elif tesseract.version() == '4.00.00alpha':
             log.warning(
-                "tesseract 4.00.00alpha may corrupt PDF output. "
-                "--pdf-renderer={tesseract,tess4} is not recommend.")
+                "The setting --pdf-renderer={tesseract,tess4} is not"
+                " recommended for builds of tesseract 4.00.00alpha older than"
+                " February 2017. Make sure you are using a recent build.")
 
     if options.debug_rendering and options.pdf_renderer == 'tesseract':
         log.info(
