@@ -102,7 +102,7 @@ def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
     return result
 
 
-def generate_pdfa_def(target_filename, pdfmark, icc='sRGB'):
+def generate_pdfa_ps(target_filename, pdfmark, icc='sRGB'):
     if icc == 'sRGB':
         icc_profile = SRGB_ICC_PROFILE
     else:

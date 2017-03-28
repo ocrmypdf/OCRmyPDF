@@ -23,7 +23,7 @@ from ruffus import formatter, regex, Pipeline, suffix
 
 from .hocrtransform import HocrTransform
 from .pageinfo import pdf_get_all_pageinfo
-from .pdfa import generate_pdfa_def, file_claims_pdfa
+from .pdfa import generate_pdfa_ps, file_claims_pdfa
 from .helpers import re_symlink, is_iterable_notstr, page_number
 from .exec import ghostscript, tesseract, qpdf
 from .exceptions import *
@@ -767,7 +767,7 @@ def generate_postscript_stub(
     options = context.get_options()
     pdf = pypdf.PdfFileReader(input_file)
     pdfmark = get_pdfmark(pdf, options)
-    generate_pdfa_def(output_file, pdfmark)
+    generate_pdfa_ps(output_file, pdfmark)
 
 
 def skip_page(
@@ -1036,7 +1036,7 @@ def build_pipeline(options, work_folder, log, context):
         task_func=generate_postscript_stub,
         input=task_repair_pdf,
         filter=formatter(r'\.repaired\.pdf'),
-        output=os.path.join(work_folder, 'pdfa_def.ps'),
+        output=os.path.join(work_folder, 'pdfa.ps'),
         extras=[log, context])
     task_generate_postscript_stub.active_if(options.output_type == 'pdfa')
 
