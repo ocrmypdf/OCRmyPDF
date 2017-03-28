@@ -186,6 +186,8 @@ def tesseract_log_output(log, stdout, input_file):
             log.warning(prefix + "unsure about page orientation")
         elif 'error' in line.lower() or 'exception' in line.lower():
             log.error(prefix + line.strip())
+        elif 'warning' in line.lower():
+            log.warning(prefix + line.strip())
         elif 'read_params_file' in line.lower():
             log.error(prefix + line.strip())
         else:

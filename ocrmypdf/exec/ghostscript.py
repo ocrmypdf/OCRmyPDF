@@ -81,7 +81,7 @@ def generate_pdfa(pdf_pages, output_file, log, threads=1):
                   universal_newlines=True)
         stdout, _ = p.communicate()
 
-        if 'error' in stdout:
+        if 'error' in stdout or 'ERROR' in stdout:
             log.error(stdout)
         elif 'overprint mode not set' in stdout:
             # Unless someone is going to print PDF/A documents on a
