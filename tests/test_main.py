@@ -167,52 +167,31 @@ def test_preserve_metadata(spoof_tesseract_noop, output_type,
     assert pdfa_info['output'] == output_type
 
 
-@pytest.mark.skipif(
-    pytest.helpers.is_linux() and not pytest.helpers.running_in_docker(),
-    reason="likely to fail if Linux locale is not configured correctly")
-@pytest.mark.skipif(
-    pytest.helpers.is_macos() and pytest.helpers.running_in_travis(),
-    reason="save Travis the trouble of installing poppler")
-@pytest.mark.xfail(
-    ghostscript.version() == '9.21',
-    reason="gs 9.21 has a regression that affects this"
-    )
 @pytest.mark.parametrize("output_type", [
     'pdfa', 'pdf'
     ])
 def test_override_metadata(spoof_tesseract_noop, output_type, resources,
                            outpdf):
     input_file = resources / 'c02-22.pdf'
-
     german = 'Du siehst den Wald vor lauter Bäumen nicht.'
     chinese = '孔子'
-    high_unicode = 'U+1030C is: 𐌌'
 
     p, out, err = run_ocrmypdf(
         input_file, outpdf,
         '--title', german,
         '--author', chinese,
-        '--subject', high_unicode,
         '--output-type', output_type,
         env=spoof_tesseract_noop)
 
     assert p.returncode == ExitCode.ok, err
 
-    pdf = str(outpdf)
+    reader = pypdf.PdfFileReader(outpdf)
 
-    out_pdfinfo = check_output(['pdfinfo', pdf], universal_newlines=True)
-    lines_pdfinfo = out_pdfinfo.splitlines()
-    pdfinfo = {}
-    for line in lines_pdfinfo:
-        k, v = line.strip().split(':', maxsplit=1)
-        pdfinfo[k.strip()] = v.strip()
+    assert reader.documentInfo['/Title'] == german
+    assert reader.documentInfo['/Author'] == chinese
+    assert reader.documentInfo.get('/Keywords', '') == ''
 
-    assert pdfinfo['Title'] == german
-    assert pdfinfo['Author'] == chinese
-    assert pdfinfo['Subject'] == high_unicode
-    assert pdfinfo.get('Keywords', '') == ''
-
-    pdfa_info = file_claims_pdfa(pdf)
+    pdfa_info = file_claims_pdfa(outpdf)
     assert pdfa_info['output'] == output_type
 
 

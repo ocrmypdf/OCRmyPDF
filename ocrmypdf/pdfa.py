@@ -26,11 +26,7 @@ pdfa_def_template = u"""%!
 /ICCProfile ($icc_profile)
 def
 
-[ /Title <$title>
-  /Author <$author>
-  /Subject <$subject>
-  /Keywords <$keywords>
-  /Creator <$creator>
+[$docinfo
   /DOCINFO pdfmark
 
 % Define an ICC profile :
@@ -89,16 +85,26 @@ def encode_text_string(s: str) -> str:
 
 
 def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
-    pdfmark_utf16 = {k: encode_text_string(v) for k, v in pdfmark.items()}
+    # Ghostscript <= 9.21 has a bug where null entries in DOCINFO might produce
+    # ERROR: VMerror (-25) on closing pdfwrite device.
+    # https://bugs.ghostscript.com/show_bug.cgi?id=697684
+    # Work around this by only adding keys that have a nontrivial value
+    docinfo_keys = ('/Title', '/Author', '/Subject', '/Creator', '/Keywords')
+    docinfo_line_template = '  {key} <{value}>'
+
+    def docinfo_gen():
+        for key in docinfo_keys:
+            if key in pdfmark and pdfmark[key].strip() != '':
+                line = docinfo_line_template.format(
+                    key=key, value=encode_text_string(pdfmark[key]))
+                yield line
+
+    docinfo = '\n'.join(docinfo_gen())
 
     t = Template(pdfa_def_template)
     result = t.substitute(icc_profile=icc_profile,
                           icc_identifier=icc_identifier,
-                          title=pdfmark_utf16.get('/Title', ''),
-                          author=pdfmark_utf16.get('/Author', ''),
-                          subject=pdfmark_utf16.get('/Subject', ''),
-                          creator=pdfmark_utf16.get('/Creator', ''),
-                          keywords=pdfmark_utf16.get('/Keywords', ''))
+                          docinfo=docinfo)
     return result
 
 
