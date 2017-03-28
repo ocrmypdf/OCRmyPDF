@@ -53,7 +53,6 @@ if tesseract.version() < MINIMUM_TESS_VERSION:
             MINIMUM_TESS_VERSION, tesseract.version()))
     sys.exit(ExitCode.missing_dependency)
 
-
 # -------------
 # Parser
 
@@ -344,13 +343,31 @@ def check_options_advanced(options, log):
             "commit 3d9fb3b or later")
 
 
+def check_options_metadata(options, log):
+    import unicodedata
+    metadata = [options.title, options.author, options.keywords,
+                options.subject]
+    for s in (m for m in metadata if m):
+        for c in s:
+            if unicodedata.category(c) == 'Co' or ord(c) >= 0x10000:
+                raise ValueError(
+                    "One of the metadata strings contains "
+                    "an unsupported Unicode character: '{}' (U+{})".format(
+                        c, hex(ord(c))[2:].upper()
+                ))
+
+
 def check_options(options, log):
     try:
         check_options_languages(options, log)
+        check_options_metadata(options, log)
         check_options_output(options, log)
         check_options_preprocessing(options, log)
         check_options_ocr_behavior(options, log)
         check_options_advanced(options, log)
+    except ValueError as e:
+        log.error(e)
+        sys.exit(ExitCode.bad_args)
     except argparse.ArgumentError as e:
         log.error(e)
         sys.exit(ExitCode.bad_args)

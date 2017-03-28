@@ -195,6 +195,22 @@ def test_override_metadata(spoof_tesseract_noop, output_type, resources,
     assert pdfa_info['output'] == output_type
 
 
+def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
+
+    # Ghostscript doesn't support high Unicode, so neither do we, to be
+    # safe
+    input_file = resources / 'c02-22.pdf'
+    high_unicode = 'U+1030C is: 𐌌'
+
+    p, out, err = run_ocrmypdf(
+        input_file, no_outpdf,
+        '--subject', high_unicode,
+        '--output-type', 'pdfa',
+        env=spoof_tesseract_noop)
+
+    assert p.returncode == ExitCode.bad_args, err
+
+
 @pytest.mark.parametrize('renderer', [
     'hocr',
     'tesseract',
