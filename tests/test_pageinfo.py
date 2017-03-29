@@ -35,7 +35,6 @@ def test_single_page_text(outdir):
     assert len(page['images']) == 0
 
 
-@pytest.mark.skipif(sys.version_info < (3, 5), reason="needs Path.read_bytes")
 def test_single_page_image(outdir):
     filename = outdir / 'image-mono.pdf'
 

@@ -139,7 +139,7 @@ Install or upgrade the required Homebrew packages, if any are missing:
    brew install libxml2 libffi leptonica
    brew install unpaper   # optional
    
-Python 3.4, 3.5 and 3.6 are supported.
+Python 3.5 and 3.6 are supported.
 
 Install the required Tesseract OCR engine with the language packs you plan to use:
    
@@ -290,7 +290,7 @@ where /c/Users/sampleuser is a Unix representation of the Windows path C:\\Users
 Installing HEAD revision from sources
 -------------------------------------
 
-If you have ``git`` and Python 3.4 or newer installed, you can install from source. When the ``pip`` installer runs,
+If you have ``git`` and Python 3.5 or newer installed, you can install from source. When the ``pip`` installer runs,
 it will alert you if dependencies are missing.
 
 To install the HEAD revision from sources in the current Python 3 environment:

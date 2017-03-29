@@ -12,10 +12,6 @@ matrix:
     - os: linux
       sudo: required
       language: python
-      python: 3.4
-    - os: linux
-      sudo: required
-      language: python
       python: 3.5
     - os: linux
       sudo: required

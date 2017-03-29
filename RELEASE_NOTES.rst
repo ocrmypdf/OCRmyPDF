@@ -3,6 +3,13 @@ RELEASE NOTES
 
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
+next
+====
+
+-   Python 3.4 compatibility dropped
+-   Remove deprecated API functions: ocrmypdf.main
+-   Remove OCRmyPDF.sh script
+
 
 v4.5.3
 ======

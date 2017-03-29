@@ -571,7 +571,6 @@ def test_non_square_resolution(renderer, spoof_tesseract_cache,
     assert in_pageinfo[0]['yres'] == out_pageinfo[0]['yres']
 
 
-@pytest.mark.skipif(sys.version_info < (3, 5), reason="needs math.isclose")
 @pytest.mark.parametrize('renderer', [
     'hocr',
     'tesseract'
@@ -814,7 +813,6 @@ def test_form_xobject(spoof_tesseract_noop, resources, outpdf):
                    env=spoof_tesseract_noop)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 5), reason="needs math.isclose")
 @pytest.mark.parametrize('renderer', [
     'hocr',
     'tesseract',
