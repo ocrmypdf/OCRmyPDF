@@ -4,6 +4,13 @@ RELEASE NOTES
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
 
+v4.5.3
+======
+
+-  Added a workaround for Ghostscript 9.21 and probably early versions would fail with the error message "VMerror -25", due to a Ghostscript bug in XMP metadata handling
+-  High Unicode characters (U+10000 and up) are no longer accepted for setting metadata on the command line, as Ghostscript may not handle them correctly.
+
+
 v4.5.2
 ======
 

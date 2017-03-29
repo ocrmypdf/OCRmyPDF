@@ -122,6 +122,10 @@ def generate_pdfa_ps(target_filename, pdfmark, icc='sRGB'):
         f.write(ps)
 
 
+# The old name is generate_pdfa_def -- now deprecated
+generate_pdfa_def = generate_pdfa_ps
+
+
 def file_claims_pdfa(filename):
     """Determines if the file claims to be PDF/A compliant
 
