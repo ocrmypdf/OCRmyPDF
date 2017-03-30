@@ -773,7 +773,8 @@ def generate_postscript_stub(
 def skip_page(
         input_file,
         output_file,
-        log):
+        log,
+        context):
     # The purpose of this step is its filter to forward only the skipped
     # files (.skip.oriented.pdf) while disregarding the processed ones
     # (.ocr.oriented.pdf).  Alternative would be for merge_pages to filter
@@ -1048,7 +1049,7 @@ def build_pipeline(options, work_folder, log, context):
         filter=suffix('.skip.oriented.pdf'),
         output='.done.pdf',
         output_dir=work_folder,
-        extras=[log])
+        extras=[log, context])
 
     # Merge pages
     task_merge_pages_ghostscript = main_pipeline.merge(

@@ -11,6 +11,7 @@ from ..helpers import page_number
 from . import get_program
 from collections import namedtuple
 from textwrap import dedent
+import PyPDF2 as pypdf
 
 from subprocess import Popen, PIPE, CalledProcessError, \
     TimeoutExpired, check_output, STDOUT, DEVNULL
@@ -272,6 +273,24 @@ def generate_hocr(input_file, output_hocr, language: list, engine_mode,
                 f_out.write(line)
 
 
+def use_skip_page(text_only, skip_pdf, output_pdf):
+    if not text_only:
+        os.symlink(skip_pdf, output_pdf)
+        return
+
+    # For text only we must create a blank page with dimensions identical
+    # to the skip page because this is equivalent to a page with no text
+
+    pdf_in = pypdf.PdfFileReader(skip_pdf)
+    page0 = pdf_in.pages[0]
+
+    with open(output_pdf, 'wb') as out:
+        pdf_out = pypdf.PdfFileWriter()
+        w, h = page0.mediaBox.getWidth(), page0.mediaBox.getHeight()
+        pdf_out.addBlankPage(w, h)
+        pdf_out.write(out)
+
+
 def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
                  engine_mode, text_only: bool,
                  tessconfig: list, timeout: float, pagesegmode: int, log):
@@ -309,14 +328,14 @@ def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
             universal_newlines=True, timeout=timeout)
     except TimeoutExpired:
         page_timedout(log, input_image)
-        shutil.copy(skip_pdf, output_pdf)
+        use_skip_page(text_only, skip_pdf, output_pdf)
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_image)
         if 'read_params_file: parameter not found' in e.output:
             raise TesseractConfigError() from e
 
         if 'Image too large' in e.output:
-            shutil.copy(skip_pdf, output_pdf)
+            use_skip_page(text_only, skip_pdf, output_pdf)
             return
         raise e from e
     else:
