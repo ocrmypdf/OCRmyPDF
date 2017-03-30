@@ -197,6 +197,11 @@ ocrsettings.add_argument(
          "page in final output; useful for PDFs that contain a mix of "
          "images, text pages, and/or previously OCRed pages")
 ocrsettings.add_argument(
+    '--redo-ocr', action='store_true',
+    help="removing any existing OCR text, but otherwise preserve mixed PDF "
+         "pages")
+
+ocrsettings.add_argument(
     '--skip-big', type=float, metavar='MPixels',
     help="skip OCR on pages larger than the specified amount of megapixels, "
          "but include skipped pages in final output")
@@ -321,6 +326,10 @@ def check_options_ocr_behavior(options, log):
     if options.force_ocr and options.skip_text:
         raise argparse.ArgumentError(
             "Error: --force-ocr and --skip-text are mutually incompatible.")
+
+    if options.redo_ocr and (options.skip_text or options.force_ocr):
+        raise argparse.ArgumentError(
+            "Error: --redo-ocr and other OCR options are incompatible.")
 
     if set(options.language) & {'chi_sim', 'chi_tra'} and \
             (options.pdf_renderer == 'hocr' or options.output_type == 'pdfa'):
