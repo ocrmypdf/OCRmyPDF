@@ -97,3 +97,17 @@ def test_skip_pages_does_not_replicate(
 
     for n in range(len(info_in)):
         assert info[n]['width_inches'] == info_in[n]['width_inches']
+
+
+def test_content_preservation(ensure_tess4, resources, outpdf):
+    infile = resources / 'masks.pdf'
+
+    check_ocrmypdf(
+        infile,
+        outpdf, '--pdf-renderer', 'tess4', '--tesseract-timeout', '0',
+        env=ensure_tess4
+    )
+
+    info = pageinfo.pdf_get_all_pageinfo(str(outpdf))
+    page = info[0]
+    assert len(page['images']) > 1, "masked were rasterized"
