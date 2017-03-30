@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © 2015 James R. Barlow: github.com/jbarlow83
 
-from subprocess import CalledProcessError, check_output, STDOUT, check_call
+from subprocess import CalledProcessError, STDOUT, run, check_output
 from functools import lru_cache
 import sys
 import os
@@ -19,15 +19,14 @@ def version():
         '--version'
     ]
     try:
-        versions = check_output(
-            args_qpdf, close_fds=True, universal_newlines=True,
-            stderr=STDOUT)
+        p = run(args_qpdf, universal_newlines=True, stderr=STDOUT,
+                stdout=PIPE)
     except CalledProcessError as e:
         print("Could not find qpdf executable on system PATH.",
               file=sys.stderr)
         raise MissingDependencyError() from e
 
-    qpdf_version = re.match(r'qpdf version (.+)', versions).group(1)
+    qpdf_version = re.match(r'qpdf version (.+)', p.stdout).group(1)
     return qpdf_version
 
 
@@ -118,7 +117,7 @@ def split_pages(input_file, work_folder, npages):
             '--pages', input_file, '{0}'.format(n + 1), '--',
             os.path.join(work_folder, '{0:06d}.page.pdf'.format(n + 1))
         ]
-        check_call(args_qpdf)
+        run(args_qpdf, check=True)
 
 
 def merge(input_files, output_file):
@@ -129,5 +128,5 @@ def merge(input_files, output_file):
     args_qpdf = [
         get_program('qpdf'), input_files[0], '--pages'
     ] + input_files + ['--', output_file]
-    check_call(args_qpdf)
+    run(args_qpdf, check=True)
 

@@ -2,8 +2,7 @@
 # © 2015 James R. Barlow: github.com/jbarlow83
 
 from tempfile import NamedTemporaryFile
-from subprocess import Popen, PIPE, STDOUT, check_call, CalledProcessError, \
-    check_output
+from subprocess import run, PIPE, STDOUT, CalledProcessError
 from shutil import copy
 from functools import lru_cache
 from . import get_program
@@ -45,13 +44,12 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             input_file
         ]
 
-        p = Popen(args_gs, close_fds=True, stdout=PIPE, stderr=STDOUT,
-                  universal_newlines=True)
-        stdout, _ = p.communicate()
-        if 'error' in stdout:
-            log.error(stdout)  # Ghostscript puts errors in stdout
+        p = run(args_gs, stdout=PIPE, stderr=STDOUT,
+                universal_newlines=True)
+        if 'error' in p.stdout.lower():
+            log.error(p.stdout)
         else:
-            log.debug(stdout)
+            log.debug(p.stdout)
 
         if p.returncode == 0:
             copy(tmp.name, output_file)
@@ -77,13 +75,12 @@ def generate_pdfa(pdf_pages, output_file, log, threads=1):
             "-sOutputFile=" + gs_pdf.name,
         ]
         args_gs.extend(pdf_pages)
-        p = Popen(args_gs, close_fds=True, stdout=PIPE, stderr=STDOUT,
-                  universal_newlines=True)
-        stdout, _ = p.communicate()
+        p = run(args_gs, stdout=PIPE, stderr=STDOUT,
+                universal_newlines=True)
 
-        if 'error' in stdout or 'ERROR' in stdout:
-            log.error(stdout)
-        elif 'overprint mode not set' in stdout:
+        if 'error' in p.stdout.lower():
+            log.error(p.stdout)
+        elif 'overprint mode not set' in p.stdout:
             # Unless someone is going to print PDF/A documents on a
             # magical sRGB printer I can't see the removal of overprinting
             # being a problem....
@@ -92,7 +89,7 @@ def generate_pdfa(pdf_pages, output_file, log, threads=1):
                 "input file to complete PDF/A conversion. "
                 )
         else:
-            log.debug(stdout)
+            log.debug(p.stdout)
 
         if p.returncode == 0:
             # Ghostscript does not change return code when it fails to create
