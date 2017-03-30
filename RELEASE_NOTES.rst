@@ -7,8 +7,10 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 v4.5.3
 ======
 
--  Added a workaround for Ghostscript 9.21 and probably early versions would fail with the error message "VMerror -25", due to a Ghostscript bug in XMP metadata handling
+-  Added a workaround for Ghostscript 9.21 and probably earlier versions would fail with the error message "VMerror -25", due to a Ghostscript bug in XMP metadata handling
 -  High Unicode characters (U+10000 and up) are no longer accepted for setting metadata on the command line, as Ghostscript may not handle them correctly.
+-  Fixed an issue where the ``tess4`` renderer would duplicate content onto output pages if tesseract failed or timed out
+-  Fixed ``tess4`` renderer not recognized when lossless reconstruction is possible
 
 
 v4.5.2
