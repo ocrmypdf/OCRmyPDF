@@ -3,7 +3,7 @@
 # installation
 ruffus == 2.6.3
 Pillow == 4.0.0
-reportlab == 3.3.0
+reportlab == 3.4.0
 PyPDF2 == 1.26
 img2pdf == 0.2.3
-cffi == 1.9.1
+cffi == 1.10.0
