@@ -837,3 +837,10 @@ def test_pagesize_consistency(renderer, resources, outpdf):
 
     assert isclose(before_dims[0], after_dims[0])
     assert isclose(before_dims[1], after_dims[1])
+
+
+def test_skip_big_with_no_images(spoof_tesseract_noop, resources, outpdf):
+    check_ocrmypdf(resources / 'blank.pdf', outpdf,
+                   '--skip-big', '5',
+                   '--force-ocr',
+                   env=spoof_tesseract_noop)
