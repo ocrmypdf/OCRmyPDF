@@ -247,7 +247,7 @@ def is_ocr_required(pageinfo, log, options):
                                 "skipping all processing on this page"))
             ocr_required = False
 
-    if ocr_required and options.skip_big:
+    if ocr_required and options.skip_big and pageinfo['images']:
         pixel_count = pageinfo['width_pixels'] * pageinfo['height_pixels']
         if pixel_count > (options.skip_big * 1000000):
             ocr_required = False
