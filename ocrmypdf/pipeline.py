@@ -393,15 +393,16 @@ def rasterize_with_ghostscript(
     pageinfo = get_pageinfo(input_file, context)
 
     device = 'png16m'  # 24-bit
-    if all(image['comp'] == 1 for image in pageinfo['images']):
-        if all(image['bpc'] == 1 for image in pageinfo['images']):
-            device = 'pngmono'
-        elif all(image['bpc'] > 1 and image['color'] == 'index'
-                 for image in pageinfo['images']):
-            device = 'png256'
-        elif all(image['bpc'] > 1 and image['color'] == 'gray'
-                 for image in pageinfo['images']):
-            device = 'pnggray'
+    if pageinfo['images']:
+        if all(image['comp'] == 1 for image in pageinfo['images']):
+            if all(image['bpc'] == 1 for image in pageinfo['images']):
+                device = 'pngmono'
+            elif all(image['bpc'] > 1 and image['color'] == 'index'
+                     for image in pageinfo['images']):
+                device = 'png256'
+            elif all(image['bpc'] > 1 and image['color'] == 'gray'
+                     for image in pageinfo['images']):
+                device = 'pnggray'
 
     log.debug("Rasterize {0} with {1}".format(
               os.path.basename(input_file), device))
@@ -517,7 +518,8 @@ def select_visible_page_image(
     image = next(ii for ii in infiles if ii.endswith(image_suffix))
 
     pageinfo = get_pageinfo(image, context)
-    if all(orig_image['enc'] == 'jpeg' for orig_image in pageinfo['images']):
+    if pageinfo['images'] and \
+            all(im['enc'] == 'jpeg' for im in pageinfo['images']):
         # If all images were JPEGs originally, produce a JPEG as output
         im = Image.open(image)
 
