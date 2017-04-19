@@ -11,20 +11,23 @@ be searched.
 
 PDFs are the best format for scanned documents.  Unfortunately, PDFs can be difficult to work with. OCRmyPDF makes it easy to apply image processing and OCR to existing PDFs.
 
-Contents:
-
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    introduction
+   release_notes
    installation
    languages
+
+.. toctree::
+   :caption: Usage
+   :maxdepth: 2
+
    cookbook
    advanced
    batch
    security
    errors
-
 
 
 Indices and tables
