@@ -4,6 +4,13 @@ RELEASE NOTES
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
 
+v4.5.4
+======
+
+-   Fix ``--skip-big`` raising an exception if a page contains no images (#152) (thanks to @TomRaz)
+-   Fix an issue where pages with no images might trigger "cannot write mode P as JPEG" (#151)
+
+
 v4.5.3
 ======
 
