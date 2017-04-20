@@ -420,7 +420,7 @@ def available_cpu_count():
 
 
 def cleanup_ruffus_error_message(msg):
-    msg = re.sub(r'\s+', r' ', msg, re.MULTILINE)
+    msg = re.sub(r'\s+', r' ', msg)
     msg = re.sub(r"\((.+?)\)", r'\1', msg)
     msg = msg.strip()
     return msg
