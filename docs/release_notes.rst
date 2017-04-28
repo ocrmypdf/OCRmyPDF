@@ -4,6 +4,13 @@ Release notes
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
 
+v4.5.5
+------
+
+-   Automated update of macOS homebrew tap
+-   Fixed issue #154, KeyError '/Contents' when searching for text on blank pages that have no /Contents record
+
+
 v4.5.4
 ------
 

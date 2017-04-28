@@ -6,6 +6,7 @@ pyvenv.cfg
 tasks.py
 .bash_history
 .ruffus_history.sqlite
+.idea/
 
 # Package building
 *.egg-info/
