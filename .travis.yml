@@ -24,13 +24,18 @@ matrix:
     - os: osx
       osx_image: xcode8
       language: generic
+      env:
+        - secure: "hsf6MT+n2x3OiDM2fQyJZdV0/PWYmv81LdVqC6cfnHBE/8N3DloJRqQ7WfO14TxhiK9PEC7MpyCj0lSabUHEO7gSH6Vks6I1asoSkt8S9/bSMlhT4hei+pwVpeGEiU5xHVATNjY+D919VC3IFvc3XmjT74h/2SLhaZ+jhEmDggM="
 
 before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
 
-before_install:
-- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then bash .travis/linux_before_install.sh ; fi
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then bash .travis/osx_before_install.sh ; fi
+before_install: |
+  if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+    bash .travis/linux_before_install.sh
+  elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    bash .travis/osx_before_install.sh
+  fi
 
 install:
 - pip3 install .
@@ -41,20 +46,31 @@ script:
 - pytest
 - mv dont_import_this_ocrmypdf ocrmypdf
 
-after_success:
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then bash .travis/osx_brew.sh ; fi
-
-# See https://www.appneta.com/blog/pypi-deployment-with-travis-ci/ for
-# steps to set up testpypi deploy for untagged builds if desired
-
 deploy:
-  provider: pypi
+  # release for main pypi
+- provider: pypi
   user: ocrmypdf-travis
   password:
-    secure: DTFOmmNL6olA0+yXvp4u9jXZlZeqrJsJ0526jzqf4a3gZ6jnGTq5UI6WzRsslSyoMMfXKtHQebqHM6ogSgCZinyZ3ufHJo8fn9brxbEc2gsiWkbj5o3bGwdWMT1vNNE7XW0VCpw87rZ1EEwjl4FJHFudMlPR1yfU5+uq0k0PACo=
+    secure: "DTFOmmNL6olA0+yXvp4u9jXZlZeqrJsJ0526jzqf4a3gZ6jnGTq5UI6WzRsslSyoMMfXKtHQebqHM6ogSgCZinyZ3ufHJo8fn9brxbEc2gsiWkbj5o3bGwdWMT1vNNE7XW0VCpw87rZ1EEwjl4FJHFudMlPR1yfU5+uq0k0PACo="
   distributions: "sdist bdist_wheel"
   on:
     branch: master
     tags: true
     condition: $TRAVIS_PYTHON_VERSION == "3.6" && $TRAVIS_OS_NAME == "linux"
   skip_upload_docs: true
+
+  # test pypi
+- provider: pypi
+  server: https://testpypi.python.org/pypi
+  user: ocrmypdf-travis
+  password:
+    secure: "DTFOmmNL6olA0+yXvp4u9jXZlZeqrJsJ0526jzqf4a3gZ6jnGTq5UI6WzRsslSyoMMfXKtHQebqHM6ogSgCZinyZ3ufHJo8fn9brxbEc2gsiWkbj5o3bGwdWMT1vNNE7XW0VCpw87rZ1EEwjl4FJHFudMlPR1yfU5+uq0k0PACo="
+  distributions: "sdist"
+  on:
+    branch: develop
+    tags: false
+    condition: $TRAVIS_OS_NAME == "osx"
+  skip_upload_docs: true
+
+after_deploy:
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then bash .travis/osx_brew.sh ; fi
