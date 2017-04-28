@@ -464,6 +464,9 @@ def _find_images(pdf, container, shorthand=None):
 
 
 def _page_has_text(pdf, page):
+    if not '/Contents' in page:
+        return False
+
     # Simple test
     text = page.extractText()
     if text.strip() != '':
