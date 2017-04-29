@@ -21,11 +21,13 @@ matrix:
       sudo: required
       language: python
       python: 3.6
+      env:
+        - secure: "oyX5xesoHD7qcDXKIxMyGZPi+H/WxcvfFkaviEmq84K1DDyHk48+9e92IKgrw8/lcTADnEo/AgVKfnhCPflFimk1xTkgaK4sUg1WLI2YjmaHcwl5SlBHa2rN3uGBwy1hyP92qyv/mMc9R59NtRJ8u76lbn6eN9wi7lkFWdE6BTw="  # DOCKERHUB_OCRMYPDF_TOKEN
     - os: osx
       osx_image: xcode8
       language: generic
       env:
-        - secure: "hsf6MT+n2x3OiDM2fQyJZdV0/PWYmv81LdVqC6cfnHBE/8N3DloJRqQ7WfO14TxhiK9PEC7MpyCj0lSabUHEO7gSH6Vks6I1asoSkt8S9/bSMlhT4hei+pwVpeGEiU5xHVATNjY+D919VC3IFvc3XmjT74h/2SLhaZ+jhEmDggM="
+        - secure: "hsf6MT+n2x3OiDM2fQyJZdV0/PWYmv81LdVqC6cfnHBE/8N3DloJRqQ7WfO14TxhiK9PEC7MpyCj0lSabUHEO7gSH6Vks6I1asoSkt8S9/bSMlhT4hei+pwVpeGEiU5xHVATNjY+D919VC3IFvc3XmjT74h/2SLhaZ+jhEmDggM="  # HOMEBREW_OCRMYPDF_TOKEN
 
 before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
@@ -72,5 +74,9 @@ deploy:
     condition: $TRAVIS_OS_NAME == "osx"
   skip_upload_docs: true
 
-after_deploy:
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then bash .travis/osx_brew.sh ; fi
+after_deploy: |
+  if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    bash .travis/osx_brew.sh
+  elif [[ "$TRAVIS_PYTHON_VERSION" == "3.6" && "$TRAVIS_OS_NAME" == "linux" ]]; then
+    curl -H "Content-Type: application/json" --data '{"build": true}' -X POST https://registry.hub.docker.com/u/jbarlow83/ocrmypdf/trigger/$DOCKERHUB_OCRMYPDF_TOKEN/
+  fi
