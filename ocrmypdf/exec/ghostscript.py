@@ -6,8 +6,9 @@ from subprocess import Popen, PIPE, STDOUT, check_call, CalledProcessError, \
     check_output
 from shutil import copy
 from functools import lru_cache
+import re
 from . import get_program
-from ..pdfa import SRGB_ICC_PROFILE
+from ..exceptions import SubprocessOutputError
 
 
 @lru_cache(maxsize=1)
@@ -26,6 +27,10 @@ def version():
         raise MissingDependencyError from e
 
     return version.strip()
+
+
+def _gs_error_reported(stream):
+    return re.search(r'error', stream, flags=re.IGNORECASE)
 
 
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
@@ -48,15 +53,16 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
         p = Popen(args_gs, close_fds=True, stdout=PIPE, stderr=STDOUT,
                   universal_newlines=True)
         stdout, _ = p.communicate()
-        if 'error' in stdout:
-            log.error(stdout)  # Ghostscript puts errors in stdout
+        if _gs_error_reported(stdout):
+            log.error(stdout)
         else:
             log.debug(stdout)
 
         if p.returncode == 0:
             copy(tmp.name, output_file)
         else:
-            log.error('Ghostscript rendering failed')
+            log.error('Ghostscript rasterizing failed')
+            raise SubprocessOutputError()
 
 
 def generate_pdfa(pdf_pages, output_file, log, threads=1):
@@ -81,7 +87,7 @@ def generate_pdfa(pdf_pages, output_file, log, threads=1):
                   universal_newlines=True)
         stdout, _ = p.communicate()
 
-        if 'error' in stdout or 'ERROR' in stdout:
+        if _gs_error_reported(stdout):
             log.error(stdout)
         elif 'overprint mode not set' in stdout:
             # Unless someone is going to print PDF/A documents on a
@@ -99,4 +105,5 @@ def generate_pdfa(pdf_pages, output_file, log, threads=1):
             # PDF/A - check PDF/A status elsewhere
             copy(gs_pdf.name, output_file)
         else:
-            log.error('Ghostscript PDF/A failed')
+            log.error('Ghostscript PDF/A rendering failed')
+            raise SubprocessOutputError()

@@ -52,6 +52,16 @@ def spoof_no_tess_pdfa_warning():
 
 
 @pytest.fixture
+def spoof_no_tess_gs_render_fail():
+    return spoof(tesseract='tesseract_noop.py', gs='gs_render_failure.py')
+
+
+@pytest.fixture
+def spoof_no_tess_gs_raster_fail():
+    return spoof(tesseract='tesseract_noop.py', gs='gs_raster_failure.py')
+
+
+@pytest.fixture
 def spoof_qpdf_always_error():
     return spoof(qpdf='qpdf_dummy_return2.py')
 
@@ -843,4 +853,21 @@ def test_skip_big_with_no_images(spoof_tesseract_noop, resources, outpdf):
     check_ocrmypdf(resources / 'blank.pdf', outpdf,
                    '--skip-big', '5',
                    '--force-ocr',
+                   env=spoof_tesseract_noop)
+
+
+def test_gs_render_failure(spoof_no_tess_gs_render_fail, resources, outpdf):
+    p, out, err = run_ocrmypdf(
+        resources / 'blank.pdf', outpdf,
+        env=spoof_no_tess_gs_render_fail)
+    print(err)
+    assert p.returncode == ExitCode.child_process_error
+
+
+def test_gs_raster_failure(spoof_no_tess_gs_raster_fail, resources, outpdf):
+    p, out, err = run_ocrmypdf(
+        resources / 'ccitt.pdf', outpdf,
+        env=spoof_no_tess_gs_raster_fail)
+    print(err)
+    assert p.returncode == ExitCode.child_process_error
                    env=spoof_tesseract_noop)
