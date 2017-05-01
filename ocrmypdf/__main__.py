@@ -268,7 +268,7 @@ def check_options_languages(options, _log):
             "data for the following requested languages: \n")
         for lang in (set(options.language) - tesseract.languages()):
             msg += lang + '\n'
-        raise argparse.ArgumentError(msg)
+        raise argparse.ArgumentError(None, msg)
 
 
 def check_options_output(options, log):
@@ -324,6 +324,7 @@ def check_options_preprocessing(options, log):
 def check_options_ocr_behavior(options, log):
     if options.force_ocr and options.skip_text:
         raise argparse.ArgumentError(
+            None,
             "Error: --force-ocr and --skip-text are mutually incompatible.")
 
     if set(options.language) & {'chi_sim', 'chi_tra'} and \
