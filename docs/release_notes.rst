@@ -4,11 +4,19 @@ Release notes
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
 
+v4.5.6
+------
+
+-   Fixed issue #156, 'NoneType' object has no attribute 'getObject' on pages with no optional /Contents record.  This should resolve all issues related to pages with no /Contents record.
+-   Fixed issue #158, ocrmypdf now stops and terminates if Ghostscript fails on an intermediate step, as it is not possible to proceed.
+-   Fixed issue #160, exception thrown on certain invalid arguments instead of error message
+
+
 v4.5.5
 ------
 
 -   Automated update of macOS homebrew tap
--   Fixed issue #154, KeyError '/Contents' when searching for text on blank pages that have no /Contents record
+-   Fixed issue #154, KeyError '/Contents' when searching for text on blank pages that have no /Contents record.  Note: incomplete fix for this issue.
 
 
 v4.5.4
