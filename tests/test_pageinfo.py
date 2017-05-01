@@ -108,3 +108,11 @@ def test_form_xobject(resources):
     pdfinfo = pageinfo.pdf_get_all_pageinfo(str(filename))
     pdfimage = pdfinfo[0]['images'][0]
     assert pdfimage['width'] == 50
+
+
+def test_no_contents(resources):
+    filename = resources / 'no_contents.pdf'
+
+    pdfinfo = pageinfo.pdf_get_all_pageinfo(str(filename))
+    assert len(pdfinfo[0]['images']) == 0
+    assert pdfinfo[0]['has_text'] == False

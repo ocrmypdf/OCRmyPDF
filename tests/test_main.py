@@ -870,4 +870,8 @@ def test_gs_raster_failure(spoof_no_tess_gs_raster_fail, resources, outpdf):
         env=spoof_no_tess_gs_raster_fail)
     print(err)
     assert p.returncode == ExitCode.child_process_error
+
+
+def test_no_contents(spoof_tesseract_noop, resources, outpdf):
+    check_ocrmypdf(resources / 'no_contents.pdf', outpdf, '--force-ocr',
                    env=spoof_tesseract_noop)

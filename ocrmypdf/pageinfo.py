@@ -430,7 +430,7 @@ def _find_images(pdf, container, shorthand=None):
 
     """
 
-    if container.get('/Type') == '/Page':
+    if container.get('/Type') == '/Page' and '/Contents' in container:
         # For a /Page the content stream is attached to the page's /Contents
         page = container
         contentstream = pypdf.pdf.ContentStream(page.getContents(), pdf)
