@@ -875,3 +875,37 @@ def test_gs_raster_failure(spoof_no_tess_gs_raster_fail, resources, outpdf):
 def test_no_contents(spoof_tesseract_noop, resources, outpdf):
     check_ocrmypdf(resources / 'no_contents.pdf', outpdf, '--force-ocr',
                    env=spoof_tesseract_noop)
+
+
+@pytest.mark.parametrize('image', [
+    'baiona.png',
+    'baiona_gray.png',
+    ])
+def test_lossless_to_lossless(spoof_tesseract_noop, ocrmypdf_exec,
+                              resources, image, outpdf):
+    from PIL import Image
+
+    input_file = str(resources / image)
+    output_file = str(outpdf)
+
+    im = Image.open(input_file)
+
+    # Runs: ocrmypdf - output.pdf < testfile
+    with open(input_file, 'rb') as input_stream:
+        p_args = ocrmypdf_exec + ['--image-dpi', '150', '-', output_file]
+        p = Popen(
+            p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
+            stdin=input_stream, env=spoof_tesseract_noop)
+        out, err = p.communicate()
+
+        assert p.returncode == ExitCode.ok
+
+    pdfinfo = pdf_get_all_pageinfo(output_file)
+    assert pdfinfo[0]['images'][0]['enc'] != 'jpeg', \
+        "Lossless compression changed to lossy!"
+    if im.mode.startswith('RGB') or im.mode.startswith('BGR'):
+        assert pdfinfo[0]['images'][0]['color'] == 'rgb', \
+            "Colorspace changed"
+    elif im.mode.startswith('L'):
+        assert pdfinfo[0]['images'][0]['color'] == 'gray', \
+            "Colorspace changed"

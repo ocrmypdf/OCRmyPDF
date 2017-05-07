@@ -34,6 +34,9 @@ In some cases they were converted from one image format to another without other
     *   - typewriter.png, 2400dpi.pdf
         - `Wikimedia: Triumph typewrtier text Linzensoep`_
         * Creative Commons BY-SA 2.5
+    *   - baiona.png
+        - `Wikimedia: Baionako udalerri mugakideak`_
+        - Creative Commons BY-SA 4.0
 
 
 Files generated for this project
@@ -119,3 +122,5 @@ These test resources are assemblies from other previously mentioned files, relea
 .. _`Linux (Wikipedia Article)`: https://de.wikipedia.org/wiki/Linux 
 
 .. _`Wikimedia: Triumph typewrtier text Linzensoep`: https://commons.wikimedia.org/wiki/File:Triumph.typewriter_text_Linzensoep.gif
+
+.. _`Wikimedia: Baionako udalerri mugakideak`: https://commons.wikimedia.org/wiki/File:Baionako_udalerri_mugakideak.png
