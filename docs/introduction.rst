@@ -78,6 +78,7 @@ OCRmyPDF is limited by the Tesseract OCR engine.  As such it experiences these l
 * If a document contains languages outside of those given in the ``-l LANG`` arguments, results may be poor.
 * It is not always good at analyzing the natural reading order of documents. For example, it may fail to recognize that a document contains two columns and join text across the columns.
 * Poor quality scans may produce poor quality OCR. Garbage in, garbage out.
+* PDFs that use transparent layers are not currently checked in the test suite, so they may not work correctly.
   
 OCRmyPDF is also limited by the PDF specification:
 
@@ -86,6 +87,7 @@ OCRmyPDF is also limited by the PDF specification:
 Ghostscript also imposes some limitations:
 
 * PDFs containing JBIG2-encoded content will be converted to CCITT Group4 encoding, which has lower compression ratios, if Ghostscript PDF/A is enabled.
+* PDFs containing JPEG 2000-encoded content will be converted to JPEG encoding, which may introduce compression artifacts, if Ghostscript PDF/A is enabled.
   
 OCRmyPDF is currently not designed to be used as a Python API; it is designed to be run as a command line tool. ``import ocrmypf`` currently attempts to process the command line on ``sys.argv`` at import time so it has side effects that will interfere with its use as a package. The API it presents should not be considered stable.
 
@@ -93,7 +95,7 @@ OCRmyPDF is currently not designed to be used as a Python API; it is designed to
 Similar programs
 ----------------
 
-To the author's knowledge, OCRmyPDF is the most feature-rich and thoroughly tested command line OCR PDF conversion tool. If it doesn't meet your needs, consider of these similar open source programs:
+To the author's knowledge, OCRmyPDF is the most feature-rich and thoroughly tested command line OCR PDF conversion tool. If it does not meet your needs, contributions and suggestions are welcome. If not, consider one of these similar open source programs:
 
 * pdf2pdfocr
 * pdfsandwich
