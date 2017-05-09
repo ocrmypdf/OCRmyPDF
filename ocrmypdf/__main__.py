@@ -596,7 +596,7 @@ def run_pipeline():
                 return ExitCode.bad_args
         elif not is_file_writable(options.output_file):
             _log.error(textwrap.dedent("""\
-                Cutput file location is not writable."""))
+                Output file location is not writable."""))
             return ExitCode.file_access_error
 
         manager = JobContextManager()
