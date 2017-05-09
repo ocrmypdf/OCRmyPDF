@@ -885,9 +885,10 @@ def test_no_contents(spoof_tesseract_noop, resources, outpdf):
 @pytest.mark.parametrize('image', [
     'baiona.png',
     'baiona_gray.png',
+    'congress.jpg'
     ])
-def test_lossless_to_lossless(spoof_tesseract_noop, ocrmypdf_exec,
-                              resources, image, outpdf):
+def test_compression_preserved(spoof_tesseract_noop, ocrmypdf_exec,
+                               resources, image, outpdf):
     from PIL import Image
 
     input_file = str(resources / image)
@@ -897,7 +898,8 @@ def test_lossless_to_lossless(spoof_tesseract_noop, ocrmypdf_exec,
 
     # Runs: ocrmypdf - output.pdf < testfile
     with open(input_file, 'rb') as input_stream:
-        p_args = ocrmypdf_exec + ['--image-dpi', '150', '-', output_file]
+        p_args = ocrmypdf_exec + [
+            '--image-dpi', '150', '--output-type', 'pdf', '-', output_file]
         p = Popen(
             p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
             stdin=input_stream, env=spoof_tesseract_noop)
@@ -906,11 +908,62 @@ def test_lossless_to_lossless(spoof_tesseract_noop, ocrmypdf_exec,
         assert p.returncode == ExitCode.ok
 
     pdfinfo = pdf_get_all_pageinfo(output_file)
-    assert pdfinfo[0]['images'][0]['enc'] != 'jpeg', \
-        "Lossless compression changed to lossy!"
+
+    pdfimage = pdfinfo[0]['images'][0]
+
+    if input_file.endswith('.png'):
+        assert pdfimage['enc'] != 'jpeg', \
+            "Lossless compression changed to lossy!"
+    elif input_file.endswith('.jpg'):
+        assert pdfimage['enc'] == 'jpeg', \
+            "Lossy compression changed to lossless!"
     if im.mode.startswith('RGB') or im.mode.startswith('BGR'):
-        assert pdfinfo[0]['images'][0]['color'] == 'rgb', \
+        assert pdfimage['color'] == 'rgb', \
             "Colorspace changed"
     elif im.mode.startswith('L'):
-        assert pdfinfo[0]['images'][0]['color'] == 'gray', \
+        assert pdfimage['color'] == 'gray', \
+            "Colorspace changed"
+
+
+@pytest.mark.parametrize('image,compression', [
+    ('baiona.png', 'jpeg'),
+    ('baiona_gray.png', 'lossless'),
+    ('congress.jpg', 'lossless')
+    ])
+def test_compression_changed(spoof_tesseract_noop, ocrmypdf_exec,
+                             resources, image, compression, outpdf):
+    from PIL import Image
+
+    input_file = str(resources / image)
+    output_file = str(outpdf)
+
+    im = Image.open(input_file)
+
+    # Runs: ocrmypdf - output.pdf < testfile
+    with open(input_file, 'rb') as input_stream:
+        p_args = ocrmypdf_exec + [
+            '--image-dpi', '150', '--output-type', 'pdfa',
+            '--pdfa-image-compression', compression,
+            '-', output_file]
+        p = Popen(
+            p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
+            stdin=input_stream, env=spoof_tesseract_noop)
+        out, err = p.communicate()
+
+        assert p.returncode == ExitCode.ok
+
+    pdfinfo = pdf_get_all_pageinfo(output_file)
+
+    pdfimage = pdfinfo[0]['images'][0]
+
+    if compression == 'jpeg':
+        assert pdfimage['enc'] == 'jpeg'
+    elif compression == 'lossless':
+        assert pdfimage['enc'] == 'image'
+
+    if im.mode.startswith('RGB') or im.mode.startswith('BGR'):
+        assert pdfimage['color'] == 'rgb', \
+            "Colorspace changed"
+    elif im.mode.startswith('L'):
+        assert pdfimage['color'] == 'gray', \
             "Colorspace changed"

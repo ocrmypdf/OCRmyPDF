@@ -242,6 +242,18 @@ advanced.add_argument(
     '--rotate-pages-threshold', default=14.0, type=float, metavar='CONFIDENCE',
     help="only rotate pages when confidence is above this value (arbitrary "
          "units reported by tesseract)")
+advanced.add_argument(
+    '--pdfa-image-compression', choices=['auto', 'jpeg', 'lossless'],
+    default='auto',
+    help="specify how to compress images in the output PDF/A. 'auto' lets "
+         "OCRmyPDF decide.  'jpeg' changes all grayscale and color images to "
+         "JPEG compression.  'lossless' uses PNG-style lossless compression "
+         "for all images.  Monochrome images are always compressed using a "
+         "lossless codec.  In 'auto' mode OCRmyPDF lets Ghostscript's auto "
+         "filter decide how to compress the image.  Compression settings "
+         "are applied to all pages, including those for which OCR was "
+         "skipped.  Not supported for --output-type=pdf ; that setting "
+         "preserves the original compression of all images.")
 
 debugging = parser.add_argument_group(
     "Debugging",
@@ -346,6 +358,12 @@ def check_options_advanced(options, log):
         raise MissingDependencyError(
             "--pdf-renderer tess4 requires Tesseract 4.x "
             "commit 3d9fb3b or later")
+    if options.pdfa_image_compression != 'auto' and \
+            options.output_type != 'pdfa':
+        log.warning(
+            "--pdfa-image-compression argument has no effect when "
+            "--output-type is not 'pdfa'"
+        )
 
 
 def check_options_metadata(options, log):

@@ -521,7 +521,7 @@ def select_visible_page_image(
     if pageinfo['images'] and \
             all(im['enc'] == 'jpeg' for im in pageinfo['images']):
         log.debug('{:4d}: JPEG input -> JPEG output'.format(
-            page_number(page_pdf)))
+            page_number(image)))
         # If all images were JPEGs originally, produce a JPEG as output
         im = Image.open(image)
 
@@ -807,7 +807,9 @@ def merge_pages_ghostscript(
 
     pdf_pages = sorted(input_files, key=input_file_order)
     log.debug("Final pages: " + "\n".join(pdf_pages))
-    ghostscript.generate_pdfa(pdf_pages, output_file, log, options.jobs or 1)
+    ghostscript.generate_pdfa(
+        pdf_pages, output_file, options.pdfa_image_compression,
+        log, options.jobs or 1)
 
 
 def merge_pages_qpdf(

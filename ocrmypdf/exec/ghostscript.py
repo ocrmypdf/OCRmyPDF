@@ -65,7 +65,28 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             raise SubprocessOutputError()
 
 
-def generate_pdfa(pdf_pages, output_file, log, threads=1):
+def generate_pdfa(pdf_pages, output_file, compression, log, threads=1):
+    compression_args = []
+    if compression == 'jpeg':
+        compression_args = [
+            "-dAutoFilterColorImages=false",
+            "-dColorImageFilter=/DCTEncode",
+            "-dAutoFilterGrayImages=false",
+            "-dGrayImageFilter=/DCTEncode",
+        ]
+    elif compression == 'lossless':
+        compression_args = [
+            "-dAutoFilterColorImages=false",
+            "-dColorImageFilter=/FlateEncode",
+            "-dAutoFilterGrayImages=false",
+            "-dGrayImageFilter=/FlateEncode",
+        ]
+    else:
+        compression_args = [
+            "-dAutoFilterColorImages=true",
+            "-dAutoFilterGrayImages=true",
+        ]
+
     with NamedTemporaryFile(delete=True) as gs_pdf:
         args_gs = [
             get_program("gs"),
@@ -76,11 +97,8 @@ def generate_pdfa(pdf_pages, output_file, log, threads=1):
             "-sDEVICE=pdfwrite",
             "-dAutoRotatePages=/None",
             "-sColorConversionStrategy=/RGB",
-            "-sProcessColorModel=DeviceRGB",
-            "-dAutoFilterColorImages=false",
-            "-sColorImageFilter=",
-            "-dAutoFilterGrayImages=false",
-            "-sGrayImageFilter=",
+            "-sProcessColorModel=DeviceRGB"
+        ] + compression_args + [
             "-dJPEGQ=95",
             "-dPDFA=2",
             "-dPDFACompatibilityPolicy=1",
