@@ -483,13 +483,13 @@ def select_ocr_image(
 
 def ocr_tesseract_hocr(
         input_file,
-        output_file,
+        output_files,
         log,
         context):
     options = context.get_options()
     tesseract.generate_hocr(
         input_file=input_file,
-        output_hocr=output_file,
+        output_files=output_files,
         language=options.language,
         engine_mode=options.tesseract_oem,
         tessconfig=options.tesseract_config,
@@ -579,12 +579,12 @@ def select_image_layer(
 
 
 def render_hocr_page(
-        input_file,
+        infiles,
         output_file,
         log,
         context):
     options = context.get_options()
-    hocr = input_file
+    hocr = next(ii for ii in infiles if ii.endswith('.hocr'))
     pageinfo = get_pageinfo(hocr, context)
     dpi = get_page_square_dpi(pageinfo, options)
 
@@ -610,13 +610,23 @@ def render_hocr_debug_page(
                          showBoundingboxes=True, invisibleText=False)
 
 
+def flatten_groups(groups):
+    for obj in groups:
+        if is_iterable_notstr(obj):
+            yield from obj
+        else:
+            yield obj
+
+
 def combine_layers(
         infiles,
         output_file,
         log,
         context):
-    text = next(ii for ii in infiles if ii.endswith('.text.pdf'))
-    image = next(ii for ii in infiles if ii.endswith('.image-layer.pdf'))
+    text = next(ii for ii in flatten_groups(infiles)
+                if ii.endswith('.text.pdf'))
+    image = next(ii for ii in flatten_groups(infiles)
+                 if ii.endswith('.image-layer.pdf'))
 
     pdf_text = pypdf.PdfFileReader(open(text, "rb"))
     pdf_image = pypdf.PdfFileReader(open(image, "rb"))
@@ -682,21 +692,27 @@ def combine_layers(
 
 def ocr_tesseract_and_render_pdf(
         infiles,
-        output_file,
+        outfiles,
         log,
         context):
     options = context.get_options()
     input_image = next((ii for ii in infiles if ii.endswith('.image')), '')
     input_pdf = next((ii for ii in infiles if ii.endswith('.pdf')))
+    output_pdf = next((ii for ii in outfiles if ii.endswith('.pdf')))
+    output_text = next((ii for ii in outfiles if ii.endswith('.txt')))
+
     if not input_image:
         # Skipping this page
-        re_symlink(input_pdf, output_file, log)
+        re_symlink(input_pdf, output_pdf, log)
+        with open(output_text, 'w') as f:
+            f.write('[skipped page]')
         return
 
     tesseract.generate_pdf(
         input_image=input_image,
         skip_pdf=input_pdf,
-        output_pdf=output_file,
+        output_pdf=output_pdf,
+        output_text=output_text,
         language=options.language,
         engine_mode=options.tesseract_oem,
         text_only=False,
@@ -708,19 +724,23 @@ def ocr_tesseract_and_render_pdf(
 
 def ocr_tesseract_textonly_pdf(
         infiles,
-        output_file,
+        outfiles,
         log,
         context):
     options = context.get_options()
     input_image = next((ii for ii in infiles if ii.endswith('.ocr.png')), '')
     if not input_image:
         raise ValueError("No image rendered?")
-
     skip_pdf = next((ii for ii in infiles if ii.endswith('.pdf')))
+
+    output_pdf = next((ii for ii in outfiles if ii.endswith('.pdf')))
+    output_text = next((ii for ii in outfiles if ii.endswith('.txt')))
+
     tesseract.generate_pdf(
         input_image=input_image,
         skip_pdf=skip_pdf,
-        output_pdf=output_file,
+        output_pdf=output_pdf,
+        output_text=output_text,
         language=options.language,
         engine_mode=options.tesseract_oem,
         text_only=True,
@@ -787,7 +807,7 @@ def skip_page(
 
 
 def merge_pages_ghostscript(
-        input_files,
+        input_files_groups,
         output_file,
         log,
         context):
@@ -805,6 +825,8 @@ def merge_pages_ghostscript(
             key += 1
         return key
 
+    input_files = (f for f in flatten_groups(input_files_groups)
+                   if not f.endswith('.txt'))
     pdf_pages = sorted(input_files, key=input_file_order)
     log.debug("Final pages: " + "\n".join(pdf_pages))
     ghostscript.generate_pdfa(
@@ -813,11 +835,14 @@ def merge_pages_ghostscript(
 
 
 def merge_pages_qpdf(
-        input_files,
+        input_files_groups,
         output_file,
         log,
         context):
     options = context.get_options()
+
+    input_files = list(f for f in flatten_groups(input_files_groups)
+                       if not f.endswith('.txt'))
     metadata_file = next(
         (ii for ii in input_files if ii.endswith('.repaired.pdf')))
     input_files.remove(metadata_file)
@@ -849,6 +874,31 @@ def merge_pages_qpdf(
     pdf_pages[0] = writer_file
 
     qpdf.merge(pdf_pages, output_file)
+
+
+def merge_sidecars(
+        input_files_groups,
+        output_file,
+        log,
+        context):
+    options = context.get_options()
+
+    txt_files = sorted(f for f in flatten_groups(input_files_groups)
+                       if f.endswith('.txt'))
+
+    def write_pages(stream):
+        for page_number, txt_file in enumerate(txt_files):
+            if page_number != 0:
+                stream.write('\f')  # Form feed between pages
+            with open(txt_file, 'r') as in_:
+                stream.write(in_.read())
+
+    if output_file == '-':
+        write_pages(sys.stdout)
+        sys.stdout.flush()
+    else:
+        with open(output_file, 'w', encoding='utf-8') as out:
+            write_pages(out)
 
 
 def copy_final(
@@ -955,7 +1005,7 @@ def build_pipeline(options, work_folder, log, context):
         task_func=ocr_tesseract_hocr,
         input=task_select_ocr_image,
         filter=suffix(".ocr.png"),
-        output=".hocr",
+        output=[".hocr", ".txt"],
         extras=[log, context])
     task_ocr_tesseract_hocr.graphviz(fillcolor='"#00cc66"')
     task_ocr_tesseract_hocr.active_if(options.pdf_renderer == 'hocr')
@@ -987,8 +1037,8 @@ def build_pipeline(options, work_folder, log, context):
     task_render_hocr_page = main_pipeline.transform(
         task_func=render_hocr_page,
         input=task_ocr_tesseract_hocr,
-        filter=suffix('.hocr'),
-        output='.text.pdf',
+        filter=regex(r".*/(\d{6})(?:\.hocr)"),
+        output=os.path.join(work_folder, r'\1.text.pdf'),
         extras=[log, context])
     task_render_hocr_page.graphviz(fillcolor='"#00cc66"')
     task_render_hocr_page.active_if(options.pdf_renderer == 'hocr')
@@ -1008,7 +1058,8 @@ def build_pipeline(options, work_folder, log, context):
         task_func=ocr_tesseract_textonly_pdf,
         input=[task_select_ocr_image, task_orient_page],
         filter=regex(r".*/(\d{6})(?:\.ocr.png|\.ocr\.oriented\.pdf)"),
-        output=os.path.join(work_folder, r'\1.text.pdf'),
+        output=[os.path.join(work_folder, r'\1.text.pdf'),
+                os.path.join(work_folder, r'\1.text.txt')],
         extras=[log, context])
     task_ocr_tesseract_textonly_pdf.graphviz(fillcolor='"#ff69b4"')
     task_ocr_tesseract_textonly_pdf.active_if(options.pdf_renderer == 'tess4')
@@ -1031,7 +1082,8 @@ def build_pipeline(options, work_folder, log, context):
         task_func=ocr_tesseract_and_render_pdf,
         input=[task_select_visible_page_image, task_orient_page],
         filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
-        output=os.path.join(work_folder, r'\1.rendered.pdf'),
+        output=[os.path.join(work_folder, r'\1.rendered.pdf'),
+                os.path.join(work_folder, r'\1.rendered.txt')],
         extras=[log, context])
     task_ocr_tesseract_and_render_pdf.graphviz(fillcolor='"#66ccff"')
     task_ocr_tesseract_and_render_pdf.active_if(options.pdf_renderer == 'tesseract')
@@ -1079,6 +1131,15 @@ def build_pipeline(options, work_folder, log, context):
         output=os.path.join(work_folder, 'merged.pdf'),
         extras=[log, context])
     task_merge_pages_qpdf.active_if(options.output_type == 'pdf')
+
+    task_merge_sidecars = main_pipeline.merge(
+        task_func=merge_sidecars,
+        input=[task_ocr_tesseract_hocr,
+               task_ocr_tesseract_and_render_pdf,
+               task_ocr_tesseract_textonly_pdf],
+        output=options.sidecar,
+        extras=[log, context])
+    task_merge_sidecars.active_if(options.sidecar)
 
     # Finalize
     task_copy_final = main_pipeline.merge(

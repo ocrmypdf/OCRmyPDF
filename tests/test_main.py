@@ -147,13 +147,17 @@ def test_remove_background(spoof_tesseract_noop, resources, outdir):
 @pytest.mark.parametrize("output_type", ['pdf', 'pdfa'])
 def test_exotic_image(spoof_tesseract_cache, pdf, renderer, output_type,
                       resources, outdir):
+    outfile = outdir / 'test_{0}_{1}.pdf'.format(pdf, renderer)
     check_ocrmypdf(
         resources / pdf,
-        outdir / 'test_{0}_{1}.pdf'.format(pdf, renderer),
+        outfile,
         '-dc',
         '-v', '1',
         '--output-type', output_type,
+        '--sidecar',
         '--pdf-renderer', renderer, env=spoof_tesseract_cache)
+
+    assert outfile.with_suffix('.pdf.txt').exists()
 
 
 @pytest.mark.parametrize("output_type", [

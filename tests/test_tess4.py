@@ -53,6 +53,7 @@ def test_textonly_pdf(ensure_tess4, resources, outdir):
     check_ocrmypdf(
         resources / 'linn.pdf',
         outdir / 'linn_textonly.pdf', '--pdf-renderer', 'tess4',
+        '--sidecar', 'foo',
         env=ensure_tess4)
 
 
