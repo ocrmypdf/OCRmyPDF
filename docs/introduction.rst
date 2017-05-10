@@ -60,9 +60,9 @@ There are two routes to manually applying OCR to an existing PDF, both of which 
 
 1. Rasterize each page as an image, OCR the images, and combine the output into a PDF. This preserves the appearance of each page, but resamples all images (possibly losing quality, increasing file size, introducing compression artifacts, etc.)
 
-2. Extract each image, OCR, and combine the output into a PDF. This loses the context in which images are used in the PDF, meaning that cropping, rotation and scaling of pages may be lost. Some PDFs use multiple images per page with stencil masks, which would quite difficult to reassemble correctly. This also loses and text or vector art on any pages in a PDF with both scanned and pure digital content.
+2. Extract each image, OCR, and combine the output into a PDF. This loses the context in which images are used in the PDF, meaning that cropping, rotation and scaling of pages may be lost. Some scanned PDFs use multiple images segmented into black and white, grayscale and color regions, with stencil masks to prevent overlap, as this can enhance the appearance of a file while reducing file size. Clearly, reassembling these images will be easy. This also loses and text or vector art on any pages in a PDF with both scanned and pure digital content.
 
-In the case of a PDF that is nothing other than a container of images (no rotation, scaling, cropping, one image per page), the second approach is can be lossless.
+In the case of a PDF that is nothing other than a container of images (no rotation, scaling, cropping, one image per page), the second approach can be lossless.
 
 OCRmyPDF uses several strategies depending on input options and the input PDF itself, but generally speaking it rasterizes a page for OCR and then grafts the OCR back onto the original. As such it can handle complex PDFs and still preserve their contents as much as possible.
 
@@ -88,6 +88,7 @@ Ghostscript also imposes some limitations:
 
 * PDFs containing JBIG2-encoded content will be converted to CCITT Group4 encoding, which has lower compression ratios, if Ghostscript PDF/A is enabled.
 * PDFs containing JPEG 2000-encoded content will be converted to JPEG encoding, which may introduce compression artifacts, if Ghostscript PDF/A is enabled.
+* Ghostscript may transcode grayscale and color images, either lossy to lossless or lossless to lossy, based on an internal algorithm. This behavior can be suppressed by setting ``--pdfa-image-compression`` to ``jpeg`` or ``lossless`` to set all images to one type or the other. Ghostscript has no option to maintain the input image's format.
   
 OCRmyPDF is currently not designed to be used as a Python API; it is designed to be run as a command line tool. ``import ocrmypf`` currently attempts to process the command line on ``sys.argv`` at import time so it has side effects that will interfere with its use as a package. The API it presents should not be considered stable.
 

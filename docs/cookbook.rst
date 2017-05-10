@@ -28,6 +28,13 @@ Add an OCR layer and output a standard PDF
 
 	ocrmypdf --output-type pdf input.pdf output.pdf
 
+Create a PDF/A with all color and grayscale images converted to JPEG
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+.. code-block:: bash
+
+	ocrmypdf --output-type pdfa --pdfa-image-compression jpeg input.pdf output.pdf
+
 Modify a file in place
 """"""""""""""""""""""
 
