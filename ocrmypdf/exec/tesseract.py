@@ -214,7 +214,8 @@ def _generate_null_hocr(output_hocr, image):
 
 def generate_hocr(input_file, output_hocr, language: list, engine_mode,
                   tessconfig: list,
-                  timeout: float, pagesegmode: int, log):
+                  timeout: float, pagesegmode: int, user_words, user_patterns,
+                  log):
 
     badxml = os.path.splitext(output_hocr)[0] + '.badxml'
 
@@ -222,6 +223,12 @@ def generate_hocr(input_file, output_hocr, language: list, engine_mode,
 
     if pagesegmode is not None:
         args_tesseract.extend([psm(), str(pagesegmode)])
+
+    if user_words:
+        args_tesseract.extend(['--user-words', user_words])
+
+    if user_patterns:
+        args_tesseract.extend(['--user-patterns', user_patterns])
 
     args_tesseract.extend([
         input_file,
@@ -293,7 +300,8 @@ def use_skip_page(text_only, skip_pdf, output_pdf):
 
 def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
                  engine_mode, text_only: bool,
-                 tessconfig: list, timeout: float, pagesegmode: int, log):
+                 tessconfig: list, timeout: float, pagesegmode: int,
+                 user_words, user_patterns, log):
     '''Use Tesseract to render a PDF.
 
     input_image -- image to analyze
@@ -314,6 +322,12 @@ def generate_pdf(input_image, skip_pdf, output_pdf, language: list,
 
     if text_only:
         args_tesseract.extend(['-c', 'textonly_pdf=1'])
+
+    if user_words:
+        args_tesseract.extend(['--user-words', user_words])
+
+    if user_patterns:
+        args_tesseract.extend(['--user-patterns', user_patterns])
 
     args_tesseract.extend([
         input_image,

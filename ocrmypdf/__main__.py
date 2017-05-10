@@ -255,6 +255,15 @@ advanced.add_argument(
          "are applied to all pages, including those for which OCR was "
          "skipped.  Not supported for --output-type=pdf ; that setting "
          "preserves the original compression of all images.")
+advanced.add_argument(
+    '--user-words', metavar='FILE',
+    help="Specify the location of the Tesseract user words file. This is a "
+         "list of words Tesseract should consider while performing OCR in "
+         "addition to its standard language dictionaries. This can improve "
+         "OCR quality especially for specialized and technical documents.")
+advanced.add_argument(
+    '--user-patterns', metavar='FILE',
+    help="Specify the location of the Tesseract user patterns file.")
 
 debugging = parser.add_argument_group(
     "Debugging",
