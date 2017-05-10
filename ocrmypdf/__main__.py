@@ -119,15 +119,14 @@ parser.add_argument(
          "standard input)")
 parser.add_argument(
     'output_file',
-    help="Output searchable PDF file (or '-' to write to standard output)")
+    help="Output searchable PDF file (or '-' to write to standard output). "
+         "Existing files will be ovewritten. If same as input file, the "
+         "input file will be updated only if processing is successful.")
 parser.add_argument(
     '-l', '--language', action='append',
     help="Language(s) of the file to be OCRed (see tesseract --list-langs for "
          "all language packs installed in your system). Use -l eng+deu for "
          "multiple languages.")
-parser.add_argument(
-    '-j', '--jobs', metavar='N', type=int,
-    help="Use up to N CPU cores simultaneously (default: use all).")
 parser.add_argument(
     '--image-dpi', metavar='DPI', type=int,
     help="For input image instead of PDF, use this DPI instead of file's.")
@@ -139,17 +138,23 @@ parser.add_argument(
          "also has problems with full Unicode text. 'pdf' attempts to "
          "preserve file contents as much as possible.")
 parser.add_argument(
-    '-q', '--quiet', action='store_true', help="Suppress INFO messages")
-parser.add_argument(
-    '-v', '--verbose', const="+", default=[], nargs='?', action="append",
-    help="Print more verbose messages for each additional verbose level")
-parser.add_argument(
     '--version', action='version', version=VERSION,
     help="Print program version and exit")
 
+jobcontrol = parser.add_argument_group(
+    "Job control options")
+jobcontrol.add_argument(
+    '-j', '--jobs', metavar='N', type=int,
+    help="Use up to N CPU cores simultaneously (default: use all).")
+jobcontrol.add_argument(
+    '-q', '--quiet', action='store_true', help="Suppress INFO messages")
+jobcontrol.add_argument(
+    '-v', '--verbose', const="+", default=[], nargs='?', action="append",
+    help="Print more verbose messages for each additional verbose level")
+
 metadata = parser.add_argument_group(
     "Metadata options",
-    "Set output PDF/A metadata (default: use input document's metadata)")
+    "Set output PDF/A metadata (default: copy input document's metadata)")
 metadata.add_argument(
     '--title', type=str,
     help="Set document title (place multiple words in quotes)")
@@ -209,7 +214,7 @@ ocrsettings.add_argument(
 
 advanced = parser.add_argument_group(
     "Advanced",
-    "Advanced options for power users")
+    "Advanced options to control Tesseract's OCR behavior")
 advanced.add_argument(
     '--tesseract-config', action='append', metavar='CFG', default=[],
     help="Additional Tesseract configuration files -- see documentation")
