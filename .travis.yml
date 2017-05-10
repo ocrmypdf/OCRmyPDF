@@ -47,7 +47,7 @@ install:
 
 script:
 - mv ocrmypdf dont_import_this_ocrmypdf
-- pytest
+- pytest -n auto
 - mv dont_import_this_ocrmypdf ocrmypdf
 
 deploy:
