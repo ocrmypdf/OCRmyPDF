@@ -593,14 +593,22 @@ def render_hocr_page(
                          showBoundingboxes=False, invisibleText=True)
 
 
+def flatten_groups(groups):
+    for obj in groups:
+        if is_iterable_notstr(obj):
+            yield from obj
+        else:
+            yield obj
+
+
 def render_hocr_debug_page(
         infiles,
         output_file,
         log,
         context):
     options = context.get_options()
-    hocr = next(ii for ii in infiles if ii.endswith('.hocr'))
-    image = next(ii for ii in infiles if ii.endswith('.image'))
+    hocr = next(ii for ii in flatten_groups(infiles) if ii.endswith('.hocr'))
+    image = next(ii for ii in flatten_groups(infiles) if ii.endswith('.image'))
 
     pageinfo = get_pageinfo(image, context)
     dpi = get_page_square_dpi(pageinfo, options)
@@ -608,14 +616,6 @@ def render_hocr_debug_page(
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=None,
                          showBoundingboxes=True, invisibleText=False)
-
-
-def flatten_groups(groups):
-    for obj in groups:
-        if is_iterable_notstr(obj):
-            yield from obj
-        else:
-            yield obj
 
 
 def combine_layers(

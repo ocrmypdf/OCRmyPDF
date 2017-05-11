@@ -220,18 +220,20 @@ def generate_hocr(input_file, output_files, language: list, engine_mode,
 
     output_hocr = next(o for o in output_files if o.endswith('.hocr'))
     output_sidecar = next(o for o in output_files if o.endswith('.txt'))
-    badxml = os.path.splitext(output_hocr)[0] + '.badxml'
+    prefix = os.path.splitext(output_hocr)[0]
 
     args_tesseract = tess_base_args(language, engine_mode)
 
     if pagesegmode is not None:
         args_tesseract.extend([psm(), str(pagesegmode)])
 
+    # Reminder: test suite tesseract spoofers will break after any changes
+    # to the number of order parameters here
     args_tesseract.extend([
         input_file,
-        badxml,
-        'hocr',
-        'txt'
+        prefix,
+        'txt',
+        'hocr'
     ] + tessconfig)
     try:
         log.debug(args_tesseract)
@@ -256,15 +258,17 @@ def generate_hocr(input_file, output_files, language: list, engine_mode,
     else:
         tesseract_log_output(log, stdout, input_file)
 
-        if os.path.exists(badxml + '.html'):
-            # Tesseract 3.02 appends suffix ".html" on its own (.badxml.html)
-            shutil.move(badxml + '.html', badxml)
-        elif os.path.exists(badxml + '.hocr'):
-            # Tesseract 3.03 appends suffix ".hocr" on its own (.badxml.hocr)
-            shutil.move(badxml + '.hocr', badxml)
+        # Tesseract 3.02 appends suffix ".html" instead of ".hocr". For
+        # consistency rename its output to .hocr
+        if os.path.exists(prefix + '.html'):
+            shutil.move(prefix + '.html', prefix + '.tmp')
+        elif os.path.exists(prefix + '.hocr'):
+            shutil.move(prefix + '.hocr', prefix + '.tmp')
 
-        if os.path.exists(badxml + '.txt'):
-            shutil.move(badxml + '.txt', output_sidecar)
+        # The sidecar text file will get the suffix .txt; rename it to
+        # whatever caller wants it named
+        if os.path.exists(prefix + '.txt'):
+            shutil.move(prefix + '.txt', output_sidecar)
 
         # Tesseract 3.03 inserts source filename into hocr file without
         # escaping it, creating invalid XML and breaking the parser.
@@ -273,7 +277,7 @@ def generate_hocr(input_file, output_files, language: list, engine_mode,
 
         regex_nested_single_quotes = re.compile(
             r"""title='image "([^"]*)";""")
-        with open(badxml, mode='r', encoding='utf-8') as f_in, \
+        with open(prefix + '.tmp', mode='r', encoding='utf-8') as f_in, \
                 open(output_hocr, mode='w', encoding='utf-8') as f_out:
             for line in f_in:
                 line = regex_nested_single_quotes.sub(
@@ -329,10 +333,13 @@ def generate_pdf(*, input_image, skip_pdf, output_pdf, output_text,
 
     prefix = os.path.splitext(output_pdf)[0]  # Tesseract appends suffixes
 
+    # Reminder: test suite tesseract spoofers will break after any changes
+    # to the number of order parameters here
     args_tesseract.extend([
         input_image,
         prefix,
-        'pdf', 'txt'
+        'txt',
+        'pdf',
     ] + tessconfig)
 
     try:
