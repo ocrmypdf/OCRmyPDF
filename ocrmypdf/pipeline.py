@@ -882,16 +882,25 @@ def merge_sidecars(
         log,
         context):
     options = context.get_options()
+    pdfinfo = context.get_pdfinfo()
 
-    txt_files = sorted(f for f in flatten_groups(input_files_groups)
-                       if f.endswith('.txt'))
+    txt_files = [None] * len(pdfinfo)
+
+    for infile in flatten_groups(input_files_groups):
+        if infile.endswith('.txt'):
+            idx = page_number(infile) - 1
+            txt_files[idx] = infile
 
     def write_pages(stream):
         for page_number, txt_file in enumerate(txt_files):
             if page_number != 0:
                 stream.write('\f')  # Form feed between pages
-            with open(txt_file, 'r') as in_:
-                stream.write(in_.read())
+            if txt_file:
+                with open(txt_file, 'r') as in_:
+                    stream.write(in_.read())
+            else:
+                stream.write('[OCR skipped on page {}]'.format(
+                        page_number + 1))
 
     if output_file == '-':
         write_pages(sys.stdout)

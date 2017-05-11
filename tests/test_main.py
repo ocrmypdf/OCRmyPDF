@@ -971,3 +971,23 @@ def test_compression_changed(spoof_tesseract_noop, ocrmypdf_exec,
     elif im.mode.startswith('L'):
         assert pdfimage['color'] == 'gray', \
             "Colorspace changed"
+
+
+def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
+    sidecar = outpdf + '.txt'
+    check_ocrmypdf(
+        resources / 'multipage.pdf', outpdf,
+        '--skip-text',
+        '--sidecar', sidecar,
+        env=spoof_tesseract_cache)
+
+    pdfinfo = pdf_get_all_pageinfo(str(resources / 'multipage.pdf'))
+    num_pages = len(pdfinfo)
+
+    with open(sidecar, 'r') as f:
+        ocr_text = f.read()
+
+    # There should a formfeed between each pair of pages, so the count of
+    # formfeeds is the page count less one
+    assert ocr_text.count('\f') == num_pages - 1, \
+        "Sidecar page count does not match PDF page count"
