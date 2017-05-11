@@ -114,11 +114,11 @@ Online documentation is located at:
 """)
 
 parser.add_argument(
-    'input_file',
+    'input_file', metavar="input_pdf_or_image",
     help="PDF file containing the images to be OCRed (or '-' to read from "
          "standard input)")
 parser.add_argument(
-    'output_file',
+    'output_file', metavar="output_pdf",
     help="Output searchable PDF file (or '-' to write to standard output). "
          "Existing files will be ovewritten. If same as input file, the "
          "input file will be updated only if processing is successful.")
@@ -137,6 +137,19 @@ parser.add_argument(
          "for users who want their file altered as little as possible. 'pdfa' "
          "also has problems with full Unicode text. 'pdf' attempts to "
          "preserve file contents as much as possible.")
+
+# Use null string '\0' as sentinel to indicate the user supplied no argument,
+# since that is the only invalid character for filepaths on all platforms
+# bool('\0') is True in Python
+parser.add_argument(
+    '--sidecar', nargs='?', const='\0', default=None, metavar='FILE',
+    help="Generate sidecar text files that contain the same text recognized "
+         "by Tesseract. This may be useful for building a OCR text database. "
+         "If FILE is omitted, the sidecar file be named {output_file}.txt "
+         "If FILE is set to '-', the sidecar is written to stdout (a "
+         "convenient way to preview OCR quality). The output file and sidecar "
+         "may not both use stdout at the same time.")
+
 parser.add_argument(
     '--version', action='version', version=VERSION,
     help="Print program version and exit")
@@ -322,6 +335,16 @@ def check_options_output(options, log):
     options.lossless_reconstruction = lossless_reconstruction
 
 
+def check_options_sidecar(options, log):
+    if options.sidecar == '\0':
+        if options.output_file == '-':
+            raise argparse.ArgumentError(
+                None,
+                "--sidecar filename must be specified when output file is "
+                "stdout.")
+        options.sidecar = options.output_file + '.txt'
+
+
 def check_options_preprocessing(options, log):
     if any((options.clean, options.clean_final)):
         from .exec import unpaper
@@ -394,6 +417,7 @@ def check_options(options, log):
         check_options_languages(options, log)
         check_options_metadata(options, log)
         check_options_output(options, log)
+        check_options_sidecar(options, log)
         check_options_preprocessing(options, log)
         check_options_ocr_behavior(options, log)
         check_options_advanced(options, log)
