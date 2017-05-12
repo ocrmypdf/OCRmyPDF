@@ -376,9 +376,9 @@ def check_options_ocr_behavior(options, log):
             None,
             "Error: --force-ocr and --skip-text are mutually incompatible.")
 
-    if options.redo_ocr and (options.skip_text or options.force_ocr):
-        raise argparse.ArgumentError(
-            "Error: --redo-ocr and other OCR options are incompatible.")
+    # if options.redo_ocr and (options.skip_text or options.force_ocr):
+    #     raise argparse.ArgumentError(
+    #         "Error: --redo-ocr and other OCR options are incompatible.")
 
     if set(options.language) & {'chi_sim', 'chi_tra'} and \
             (options.pdf_renderer == 'hocr' or options.output_type == 'pdfa'):
