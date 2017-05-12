@@ -10,19 +10,18 @@ Users of Debian 9 ("stretch") or later or Ubuntu 16.10 or later may simply
 
 .. code-block:: bash
 
-	apt-get install ocrmypdf
+    apt-get install ocrmypdf
 
 Installing on macOS
 -------------------
 
 .. code-block:: bash
-
-   brew tap jbarlow83/ocrmypdf
-   brew install ocrmypdf
+    brew tap jbarlow83/ocrmypdf
+    brew install ocrmypdf
 
 .. warning::
 
-Users who previously installed OCRmyPDF on macOS using ``pip install ocrmypdf`` should remove the pip version (``pip3 uninstall ocrmypdf``) before switching to the Homebrew version.
+    Users who previously installed OCRmyPDF on macOS using ``pip install ocrmypdf`` should remove the pip version (``pip3 uninstall ocrmypdf``) before switching to the Homebrew version.
 
 .. _Docker:
 
@@ -38,18 +37,17 @@ Follow the Docker installation instructions for your platform.  If you can run t
 successfully, your system is ready to download and execute the image:
 
 .. code-block:: bash
-
-   docker run hello-world
+    docker run hello-world
    
 OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine instance on Windows and macOS has only a single CPU core enabled. Use the VirtualBox Manager to determine the name of your Docker engine host, and then follow these optional steps to enable multiple CPUs:
 
 .. code-block:: bash
 
-   # Optional step for Mac OS X users
-   docker-machine stop "yourVM"
-   VBoxManage modifyvm "yourVM" --cpus 2  # or whatever number of core is desired
-   docker-machine start "yourVM"
-   eval $(docker-machine env "yourVM")
+    # Optional step for Mac OS X users
+    docker-machine stop "yourVM"
+    VBoxManage modifyvm "yourVM" --cpus 2  # or whatever number of core is desired
+    docker-machine start "yourVM"
+    eval $(docker-machine env "yourVM")
 
 Assuming you have a Docker engine running, you can download one of the three available images:
 
@@ -68,13 +66,13 @@ For example:
 
 .. code-block:: bash
 
-   docker pull jbarlow83/ocrmypdf-tess4
+    docker pull jbarlow83/ocrmypdf-tess4
 
 Then tag it to give a more convenient name, just ocrmypdf:
 
 .. code-block:: bash
 
-   docker tag jbarlow83/ocrmypdf-tess4 ocrmypdf
+    docker tag jbarlow83/ocrmypdf-tess4 ocrmypdf
 
 .. _docker-polyglot:
 
@@ -84,19 +82,19 @@ You can then run ocrmypdf using the command:
 
 .. code-block:: bash
 
-   docker run --rm ocrmypdf --help
+    docker run --rm ocrmypdf --help
   
 To execute the OCRmyPDF on a local file, you must `provide a writable volume to the Docker image <https://docs.docker.com/userguide/dockervolumes/>`_, and both the input and output file must be inside the writable volume.  This example command uses the current working directory as the writable volume:
 
 .. code-block:: bash
 
-   docker run --rm -v "$(pwd):/home/docker" <other docker arguments>   ocrmypdf <your arguments to ocrmypdf>
+    docker run --rm -v "$(pwd):/home/docker" <other docker arguments>   ocrmypdf <your arguments to ocrmypdf>
 
 In this worked example, the current working directory contains an input file called ``test.pdf`` and the output will go to ``output.pdf``: 
 
 .. code-block:: bash
 
-   docker run --rm -v "$(pwd):/home/docker"   ocrmypdf --skip-text test.pdf output.pdf
+    docker run --rm -v "$(pwd):/home/docker"   ocrmypdf --skip-text test.pdf output.pdf
 
 .. note:: The working directory should be a writable local volume or Docker may not have permission to access it.
 
@@ -106,15 +104,15 @@ For convenience, a shell alias can hide the docker command:
 
 .. code-block:: bash
 
-   alias ocrmypdf='docker run --rm -v "$(pwd):/home/docker" ocrmypdf' 
-   ocrmypdf --version  # runs docker version
+    alias ocrmypdf='docker run --rm -v "$(pwd):/home/docker" ocrmypdf'
+    ocrmypdf --version  # runs docker version
 
 Or in the wonderful `fish shell <https://fishshell.com/>`_:
 
 .. code-block:: fish
 
-   alias ocrmypdf 'docker run --rm -v (pwd):/home/docker ocrmypdf'
-   funcsave ocrmypdf
+    alias ocrmypdf 'docker run --rm -v (pwd):/home/docker ocrmypdf'
+    funcsave ocrmypdf
 
 
 Manual installation on macOS
@@ -128,18 +126,18 @@ Update Homebrew:
 
 .. code-block:: bash
 
-   brew update
-   
+    brew update
+
 Install or upgrade the required Homebrew packages, if any are missing:
 
 .. code-block:: bash
 
-   brew install libpng openjpeg jbig2dec libtiff     # image libraries
-   brew install qpdf
-   brew install ghostscript
-   brew install python3
-   brew install libxml2 libffi leptonica
-   brew install unpaper   # optional
+    brew install libpng openjpeg jbig2dec libtiff     # image libraries
+    brew install qpdf
+    brew install ghostscript
+    brew install python3
+    brew install libxml2 libffi leptonica
+    brew install unpaper   # optional
    
 Python 3.5 and 3.6 are supported.
 
@@ -147,32 +145,32 @@ Install the required Tesseract OCR engine with the language packs you plan to us
    
 .. code-block:: bash
 
-   brew install tesseract                       # Option 1: for English, French, German, Spanish
+    brew install tesseract                       # Option 1: for English, French, German, Spanish
 
 .. _macos-all-languages:
 
 .. code-block:: bash
-   
-   brew install tesseract --with-all-languages  # Option 2: for all language packs 
-   
+
+    brew install tesseract --with-all-languages  # Option 2: for all language packs
+
 Update the homebrew pip and install Pillow:
 
 .. code-block:: bash
 
-   pip3 install --upgrade pip
-   pip3 install --upgrade pillow
+    pip3 install --upgrade pip
+    pip3 install --upgrade pillow
 
 You can then install OCRmyPDF from PyPI:
 
 .. code-block:: bash
 
-   pip3 install ocrmypdf
+    pip3 install ocrmypdf
 
 The command line program should now be available:
 
 .. code-block:: bash
 
-   ocrmypdf --help
+    ocrmypdf --help
 
 
 Installing on Ubuntu 16.04 LTS
@@ -182,30 +180,30 @@ No package is currently available for Ubuntu 16.04, but you can install the depe
 
 .. code-block:: bash
 
-   sudo apt-get update
-   sudo apt-get install \
-      unpaper \
-      ghostscript \
-      tesseract-ocr \
-      qpdf \
-      python3-pip \
-      python3-cffi
+    sudo apt-get update
+    sudo apt-get install \
+        unpaper \
+        ghostscript \
+        tesseract-ocr \
+        qpdf \
+        python3-pip \
+        python3-cffi
 
 If you wish install OCRmyPDF to the system Python, then install as follows (note this installs new packages
 into your system Python, which could interfere with other programs):
 
 .. code-block:: bash
 
-   sudo pip3 install ocrmypdf
+    sudo pip3 install ocrmypdf
 
 If you wish to install OCRmyPDF to a virtual environment to isolate the system Python, you can
 follow these steps.
 
 .. code-block:: bash
 
-   python3 -m venv venv-ocrmypdf
-   source venv-ocrmypdf/bin/activate
-   pip3 install ocrmypdf
+    python3 -m venv venv-ocrmypdf
+    source venv-ocrmypdf/bin/activate
+    pip3 install ocrmypdf
 
 
 Installing on Ubuntu 14.04 LTS
@@ -217,65 +215,65 @@ Add new "apt" repositories needed for backports of Ghostscript 9.16, libav-11 (f
 
 .. code-block:: bash
 
-   sudo add-apt-repository ppa:vshn/ghostscript -y 
-   sudo add-apt-repository ppa:heyarje/libav-11 -y
-   sudo add-apt-repository ppa:alex-p/tesseract-ocr
+    sudo add-apt-repository ppa:vshn/ghostscript -y
+    sudo add-apt-repository ppa:heyarje/libav-11 -y
+    sudo add-apt-repository ppa:alex-p/tesseract-ocr
 
 Update apt-get:
 
 .. code-block:: bash
 
-   sudo apt-get update
-   
+    sudo apt-get update
+
 Install system dependencies:
 
 .. code-block:: bash
 
-   sudo apt-get install \
-      software-properties-common python-software-properties \
-      zlib1g-dev \
-      libjpeg-dev \
-      libffi-dev \
-      libavformat56 libavcodec56 libavutil54 \
-      ghostscript \
-      qpdf \
-      python3-pip \
-      python3-pil \
-      python3-pytest \
-      python3-reportlab \
-      python3-wheel \
-      python3-venv \
-      tesseract-ocr \
-      tesseract-ocr-eng
+    sudo apt-get install \
+        software-properties-common python-software-properties \
+        zlib1g-dev \
+        libjpeg-dev \
+        libffi-dev \
+        libavformat56 libavcodec56 libavutil54 \
+        ghostscript \
+        qpdf \
+        python3-pip \
+        python3-pil \
+        python3-pytest \
+        python3-reportlab \
+        python3-wheel \
+        python3-venv \
+        tesseract-ocr \
+        tesseract-ocr-eng
 
 If you wish install OCRmyPDF to the system Python, then install as follows (note this installs new packages
 into your system Python, which could interfere with other programs):
 
 .. code-block:: bash
 
-   sudo pip3 install ocrmypdf
-   
+    sudo pip3 install ocrmypdf
+
 If you wish to install OCRmyPDF to a virtual environment to isolate the system Python, you can
 follow these steps.  This includes a workaround `for a known, unresolved issue in Ubuntu 14.04's ensurepip
 package <http://www.thefourtheye.in/2014/12/Python-venv-problem-with-ensurepip-in-Ubuntu.html>`_:
 
 .. code-block:: bash
 
-   sudo apt-get install python3-venv
-   python3 -m venv venv-ocrmypdf --without-pip
-   source venv-ocrmypdf/bin/activate
-   wget -O - -o /dev/null https://bootstrap.pypa.io/get-pip.py | python
-   deactivate
-   python3 -m venv --system-site-packages venv-ocrmypdf
-   source venv-ocrmypdf/bin/activate
-   pip install ocrmypdf
+    sudo apt-get install python3-venv
+    python3 -m venv venv-ocrmypdf --without-pip
+    source venv-ocrmypdf/bin/activate
+    wget -O - -o /dev/null https://bootstrap.pypa.io/get-pip.py | python
+    deactivate
+    python3 -m venv --system-site-packages venv-ocrmypdf
+    source venv-ocrmypdf/bin/activate
+    pip install ocrmypdf
 
 These installation instructions omit the optional dependency ``unpaper``, which is only available at version 0.4.2 in Ubuntu 14.04. The author could not find a backport of ``unpaper``, and created a .deb package to do the job of installing unpaper 6.1 (for x86 64-bit only):
 
 .. code-block:: bash
 
-   wget -q https://dl.dropboxusercontent.com/u/28971240/unpaper_6.1-1.deb -O unpaper_6.1-1.deb
-   sudo dpkg -i unpaper_6.1-1.deb
+    wget -q https://dl.dropboxusercontent.com/u/28971240/unpaper_6.1-1.deb -O unpaper_6.1-1.deb
+    sudo dpkg -i unpaper_6.1-1.deb
 
 
 Installing on ArchLinux
@@ -285,7 +283,7 @@ The author is aware of an `ArchLinux package for ocrmypdf <https://aur.archlinux
 
 .. code-block::
 
-   pacman -S ocrmypdf
+    pacman -S ocrmypdf
 
 
 Installing on Windows
@@ -300,10 +298,10 @@ The command line syntax to run ocrmypdf from a command prompt will resemble:
 
 .. code-block:: bat
 
-   docker run -v /c/Users/sampleuser:/home/docker ocrmypdf --skip-text test.pdf output.pdf
+    docker run -v /c/Users/sampleuser:/home/docker ocrmypdf --skip-text test.pdf output.pdf
 
 where /c/Users/sampleuser is a Unix representation of the Windows path C:\\Users\\sampleuser, assuming a user named "sampleuser" is running ocrmypdf on a file in their home directory, and the files "test.pdf" and "output.pdf" are in the sampleuser folder. The Windows user must have read and write permissions.
-      
+
 Installing HEAD revision from sources
 -------------------------------------
 
@@ -314,31 +312,31 @@ To install the HEAD revision from sources in the current Python 3 environment:
 
 .. code-block:: bash
 
-   pip3 install git+https://github.com/jbarlow83/OCRmyPDF.git
+    pip3 install git+https://github.com/jbarlow83/OCRmyPDF.git
 
 Or, to install in `development mode <https://pythonhosted.org/setuptools/setuptools.html#development-mode>`_,  allowing customization of OCRmyPDF, use the ``-e`` flag:
 
 .. code-block:: bash
 
-   pip3 install -e git+https://github.com/jbarlow83/OCRmyPDF.git
-   
+    pip3 install -e git+https://github.com/jbarlow83/OCRmyPDF.git
+
 On certain Linux distributions such as Ubuntu, you may need to use 
 run the install command as superuser:
 
 .. code-block:: bash
 
-   sudo pip3 install [-e] git+https://github.com/jbarlow83/OCRmyPDF.git
-   
+    sudo pip3 install [-e] git+https://github.com/jbarlow83/OCRmyPDF.git
+
 Note that this will alter your system's Python distribution. If you prefer 
 to not install as superuser, you can install the package in a Python virtual environment:
 
 .. code-block:: bash
 
-   git clone -b master https://github.com/jbarlow83/OCRmyPDF.git
-   python3 -m venv
-   source venv/bin/activate
-   cd OCRmyPDF
-   pip3 install .
+    git clone -b master https://github.com/jbarlow83/OCRmyPDF.git
+    python3 -m venv
+    source venv/bin/activate
+    cd OCRmyPDF
+    pip3 install .
 
 However, ``ocrmypdf`` will only be accessible on the system PATH after
 you activate the virtual environment.
@@ -346,8 +344,8 @@ you activate the virtual environment.
 To run the program:
 
 .. code-block:: bash
-   
-   ocrmypdf --help
+
+    ocrmypdf --help
 
 If not yet installed, the script will notify you about dependencies that
 need to be installed. The script requires specific versions of the
