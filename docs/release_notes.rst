@@ -3,12 +3,21 @@ Release notes
 
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
+
 next
 ====
 
--   Python 3.4 compatibility dropped
--   Remove deprecated API functions: ocrmypdf.main
--   Remove OCRmyPDF.sh script
+-   Backward incompatible changes
+
+    + Support for Python 3.4 dropped. Python 3.5 is now required.
+    + Support for Tesseract 3.02 and 3.03 dropped. Tesseract 3.04 or newer is required. Tesseract 4.00 (alpha) is supported.
+    + The OCRmyPDF.sh script was removed.
+
+-   Add a new feature, ``--sidecar``, which allows creating "sidecar" text files which contain the OCR results in plain text. These OCR text is more reliable than extracting text from PDFs. Closes #126.
+-   New feature: ``--pdfa-image-compression``, which allows overriding Ghostscript's lossy-or-lossless image encoding heuristic and making all images JPEG encoded or lossless encoded as desired. Fixes #163.
+-   Fixed issue #143, added ``--quiet`` to suppress "INFO" messages
+-   Fixed issue #164, a typo
+-   Removed the command line parameters ``-n`` and ``--just-print`` since they have not worked for some time (reported as Ubuntu bug `#1687308 <https://bugs.launchpad.net/ubuntu/+source/ocrmypdf/+bug/1687308>`_)
 
 
 v4.5.6
