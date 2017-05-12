@@ -220,10 +220,10 @@ ocrsettings.add_argument(
     help="Skip OCR on any pages that already contain text, but include the "
          "page in final output; useful for PDFs that contain a mix of "
          "images, text pages, and/or previously OCRed pages")
-ocrsettings.add_argument(
-    '--redo-ocr', action='store_true',
-    help="removing any existing OCR text, but otherwise preserve mixed PDF "
-         "pages")
+# ocrsettings.add_argument(
+#     '--redo-ocr', action='store_true',
+#     help="removing any existing OCR text, but otherwise preserve mixed PDF "
+#          "pages")
 
 ocrsettings.add_argument(
     '--skip-big', type=float, metavar='MPixels',
