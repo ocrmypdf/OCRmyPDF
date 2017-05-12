@@ -5,8 +5,9 @@ from tempfile import NamedTemporaryFile
 from subprocess import run, PIPE, STDOUT, CalledProcessError
 from shutil import copy
 from functools import lru_cache
+import re
 from . import get_program
-from ..pdfa import SRGB_ICC_PROFILE
+from ..exceptions import SubprocessOutputError
 
 
 @lru_cache(maxsize=1)
@@ -25,6 +26,10 @@ def version():
         raise MissingDependencyError from e
 
     return version.strip()
+
+
+def _gs_error_reported(stream):
+    return re.search(r'error', stream, flags=re.IGNORECASE)
 
 
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
@@ -46,7 +51,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
 
         p = run(args_gs, stdout=PIPE, stderr=STDOUT,
                 universal_newlines=True)
-        if 'error' in p.stdout.lower():
+        if _gs_error_reported(p.stdout):
             log.error(p.stdout)
         else:
             log.debug(p.stdout)
@@ -54,10 +59,32 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
         if p.returncode == 0:
             copy(tmp.name, output_file)
         else:
-            log.error('Ghostscript rendering failed')
+            log.error('Ghostscript rasterizing failed')
+            raise SubprocessOutputError()
 
 
-def generate_pdfa(pdf_pages, output_file, log, threads=1):
+def generate_pdfa(pdf_pages, output_file, compression, log, threads=1):
+    compression_args = []
+    if compression == 'jpeg':
+        compression_args = [
+            "-dAutoFilterColorImages=false",
+            "-dColorImageFilter=/DCTEncode",
+            "-dAutoFilterGrayImages=false",
+            "-dGrayImageFilter=/DCTEncode",
+        ]
+    elif compression == 'lossless':
+        compression_args = [
+            "-dAutoFilterColorImages=false",
+            "-dColorImageFilter=/FlateEncode",
+            "-dAutoFilterGrayImages=false",
+            "-dGrayImageFilter=/FlateEncode",
+        ]
+    else:
+        compression_args = [
+            "-dAutoFilterColorImages=true",
+            "-dAutoFilterGrayImages=true",
+        ]
+
     with NamedTemporaryFile(delete=True) as gs_pdf:
         args_gs = [
             get_program("gs"),
@@ -68,7 +95,8 @@ def generate_pdfa(pdf_pages, output_file, log, threads=1):
             "-sDEVICE=pdfwrite",
             "-dAutoRotatePages=/None",
             "-sColorConversionStrategy=/RGB",
-            "-sProcessColorModel=DeviceRGB",
+            "-sProcessColorModel=DeviceRGB"
+        ] + compression_args + [
             "-dJPEGQ=95",
             "-dPDFA=2",
             "-dPDFACompatibilityPolicy=1",
@@ -78,7 +106,7 @@ def generate_pdfa(pdf_pages, output_file, log, threads=1):
         p = run(args_gs, stdout=PIPE, stderr=STDOUT,
                 universal_newlines=True)
 
-        if 'error' in p.stdout.lower():
+        if _gs_error_reported(p.stdout):
             log.error(p.stdout)
         elif 'overprint mode not set' in p.stdout:
             # Unless someone is going to print PDF/A documents on a
@@ -96,4 +124,5 @@ def generate_pdfa(pdf_pages, output_file, log, threads=1):
             # PDF/A - check PDF/A status elsewhere
             copy(gs_pdf.name, output_file)
         else:
-            log.error('Ghostscript PDF/A failed')
+            log.error('Ghostscript PDF/A rendering failed')
+            raise SubprocessOutputError()

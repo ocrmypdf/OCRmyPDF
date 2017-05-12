@@ -35,7 +35,7 @@ Main features
 -  Supports more than `100 languages <https://github.com/tesseract-ocr/tessdata>`_ recognized by Tesseract
 -  Battle-tested on thousands of PDFs, a test suite and continuous integration
 
-For details: please consult the `release notes <RELEASE_NOTES.rst>`_.
+For details: please consult the `documentation <https://ocrmypdf.readthedocs.io/en/latest/>`_.
 
 Motivation
 ----------

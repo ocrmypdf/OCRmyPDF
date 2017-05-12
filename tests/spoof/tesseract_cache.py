@@ -36,6 +36,10 @@ def real_tesseract():
 
 def main():
     operation = sys.argv[-1]
+    sidecar = False
+    if sys.argv[-2] == 'txt':
+        sidecar = True
+
     # For anything unexpected operation, defer to real tesseract binary
     # Currently this includes all use of "--tesseract-config"
     if operation != 'hocr' and operation != 'pdf' and operation != 'stdout':
@@ -92,16 +96,22 @@ def main():
         return
 
     if operation == 'stdout':
+        # tesseract [--options] ... input stdout
         input_file = sys.argv[-2]
         output_file = 'stdout'
+        sidecar_file = ''
     else:
-        input_file = sys.argv[-3]
-        output_file = sys.argv[-2]
+        # tesseract [--options] ... input output txt hocr|pdf
+        input_file = sys.argv[-4]
+        output_file = sys.argv[-3]
+        sidecar_file = sys.argv[-3]
 
     if operation == 'hocr':
         output_file += '.hocr'
+        sidecar_file += '.txt'
     elif operation == 'pdf':
         output_file += '.pdf'
+        sidecar_file += '.txt'
 
     with open(input_file, 'rb') as f:
         m.update(f.read())
@@ -112,6 +122,8 @@ def main():
         print("Tesseract cache hit", file=sys.stderr)
         if operation != 'stdout':
             shutil.copy(cache_name, output_file)
+            if sidecar:
+                shutil.copy(cache_name + '.sidecar', sidecar_file)
 
         # Replicate output
         with open(cache_name + '.stdout', 'rb') as f:
@@ -149,6 +161,8 @@ def main():
             shutil.copy(output_file, cache_name)
         else:
             print("Could not find output file", file=sys.stderr)
+        if sidecar and os.path.exists(sidecar_file):
+            shutil.copy(sidecar_file, cache_name + '.sidecar')
     else:
         open(cache_name, 'w').close()
 

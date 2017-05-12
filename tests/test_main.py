@@ -52,6 +52,16 @@ def spoof_no_tess_pdfa_warning():
 
 
 @pytest.fixture
+def spoof_no_tess_gs_render_fail():
+    return spoof(tesseract='tesseract_noop.py', gs='gs_render_failure.py')
+
+
+@pytest.fixture
+def spoof_no_tess_gs_raster_fail():
+    return spoof(tesseract='tesseract_noop.py', gs='gs_raster_failure.py')
+
+
+@pytest.fixture
 def spoof_qpdf_always_error():
     return spoof(qpdf='qpdf_dummy_return2.py')
 
@@ -137,13 +147,17 @@ def test_remove_background(spoof_tesseract_noop, resources, outdir):
 @pytest.mark.parametrize("output_type", ['pdf', 'pdfa'])
 def test_exotic_image(spoof_tesseract_cache, pdf, renderer, output_type,
                       resources, outdir):
+    outfile = outdir / 'test_{0}_{1}.pdf'.format(pdf, renderer)
     check_ocrmypdf(
         resources / pdf,
-        outdir / 'test_{0}_{1}.pdf'.format(pdf, renderer),
+        outfile,
         '-dc',
         '-v', '1',
         '--output-type', output_type,
+        '--sidecar',
         '--pdf-renderer', renderer, env=spoof_tesseract_cache)
+
+    assert outfile.with_suffix('.pdf.txt').exists()
 
 
 @pytest.mark.parametrize("output_type", [
@@ -738,6 +752,11 @@ def test_very_high_dpi(spoof_tesseract_cache, resources, outpdf):
     "Checks for a Decimal quantize error with high DPI, etc"
     check_ocrmypdf(resources / '2400dpi.pdf', outpdf,
                    env=spoof_tesseract_cache)
+    pdfinfo = pdf_get_all_pageinfo(outpdf)
+
+    image = pdfinfo[0]['images'][0]
+    assert image['dpi_w'] == image['dpi_h']
+    assert image['dpi_w'] == 2400
 
 
 def test_overlay(spoof_tesseract_noop, resources, outpdf):
@@ -835,3 +854,138 @@ def test_pagesize_consistency(renderer, resources, outpdf):
 
     assert isclose(before_dims[0], after_dims[0])
     assert isclose(before_dims[1], after_dims[1])
+
+
+def test_skip_big_with_no_images(spoof_tesseract_noop, resources, outpdf):
+    check_ocrmypdf(resources / 'blank.pdf', outpdf,
+                   '--skip-big', '5',
+                   '--force-ocr',
+                   env=spoof_tesseract_noop)
+
+
+def test_gs_render_failure(spoof_no_tess_gs_render_fail, resources, outpdf):
+    p, out, err = run_ocrmypdf(
+        resources / 'blank.pdf', outpdf,
+        env=spoof_no_tess_gs_render_fail)
+    print(err)
+    assert p.returncode == ExitCode.child_process_error
+
+
+def test_gs_raster_failure(spoof_no_tess_gs_raster_fail, resources, outpdf):
+    p, out, err = run_ocrmypdf(
+        resources / 'ccitt.pdf', outpdf,
+        env=spoof_no_tess_gs_raster_fail)
+    print(err)
+    assert p.returncode == ExitCode.child_process_error
+
+
+def test_no_contents(spoof_tesseract_noop, resources, outpdf):
+    check_ocrmypdf(resources / 'no_contents.pdf', outpdf, '--force-ocr',
+                   env=spoof_tesseract_noop)
+
+
+@pytest.mark.parametrize('image', [
+    'baiona.png',
+    'baiona_gray.png',
+    'congress.jpg'
+    ])
+def test_compression_preserved(spoof_tesseract_noop, ocrmypdf_exec,
+                               resources, image, outpdf):
+    from PIL import Image
+
+    input_file = str(resources / image)
+    output_file = str(outpdf)
+
+    im = Image.open(input_file)
+
+    # Runs: ocrmypdf - output.pdf < testfile
+    with open(input_file, 'rb') as input_stream:
+        p_args = ocrmypdf_exec + [
+            '--image-dpi', '150', '--output-type', 'pdf', '-', output_file]
+        p = Popen(
+            p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
+            stdin=input_stream, env=spoof_tesseract_noop)
+        out, err = p.communicate()
+
+        assert p.returncode == ExitCode.ok
+
+    pdfinfo = pdf_get_all_pageinfo(output_file)
+
+    pdfimage = pdfinfo[0]['images'][0]
+
+    if input_file.endswith('.png'):
+        assert pdfimage['enc'] != 'jpeg', \
+            "Lossless compression changed to lossy!"
+    elif input_file.endswith('.jpg'):
+        assert pdfimage['enc'] == 'jpeg', \
+            "Lossy compression changed to lossless!"
+    if im.mode.startswith('RGB') or im.mode.startswith('BGR'):
+        assert pdfimage['color'] == 'rgb', \
+            "Colorspace changed"
+    elif im.mode.startswith('L'):
+        assert pdfimage['color'] == 'gray', \
+            "Colorspace changed"
+
+
+@pytest.mark.parametrize('image,compression', [
+    ('baiona.png', 'jpeg'),
+    ('baiona_gray.png', 'lossless'),
+    ('congress.jpg', 'lossless')
+    ])
+def test_compression_changed(spoof_tesseract_noop, ocrmypdf_exec,
+                             resources, image, compression, outpdf):
+    from PIL import Image
+
+    input_file = str(resources / image)
+    output_file = str(outpdf)
+
+    im = Image.open(input_file)
+
+    # Runs: ocrmypdf - output.pdf < testfile
+    with open(input_file, 'rb') as input_stream:
+        p_args = ocrmypdf_exec + [
+            '--image-dpi', '150', '--output-type', 'pdfa',
+            '--pdfa-image-compression', compression,
+            '-', output_file]
+        p = Popen(
+            p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
+            stdin=input_stream, env=spoof_tesseract_noop)
+        out, err = p.communicate()
+
+        assert p.returncode == ExitCode.ok
+
+    pdfinfo = pdf_get_all_pageinfo(output_file)
+
+    pdfimage = pdfinfo[0]['images'][0]
+
+    if compression == 'jpeg':
+        assert pdfimage['enc'] == 'jpeg'
+    elif compression == 'lossless':
+        assert pdfimage['enc'] == 'image'
+
+    if im.mode.startswith('RGB') or im.mode.startswith('BGR'):
+        assert pdfimage['color'] == 'rgb', \
+            "Colorspace changed"
+    elif im.mode.startswith('L'):
+        assert pdfimage['color'] == 'gray', \
+            "Colorspace changed"
+
+
+def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
+    sidecar = outpdf + '.txt'
+    check_ocrmypdf(
+        resources / 'multipage.pdf', outpdf,
+        '--skip-text',
+        '--sidecar', sidecar,
+        env=spoof_tesseract_cache)
+
+    pdfinfo = pdf_get_all_pageinfo(str(resources / 'multipage.pdf'))
+    num_pages = len(pdfinfo)
+
+    with open(sidecar, 'r') as f:
+        ocr_text = f.read()
+
+    # There should a formfeed between each pair of pages, so the count of
+    # formfeeds is the page count less one
+    assert ocr_text.count('\f') == num_pages - 1, \
+        "Sidecar page count does not match PDF page count"

@@ -1,4 +1,4 @@
-PDF Security Issues
+PDF security issues
 ===================
 
 	OCRmyPDF should only be used on PDFs you trust. It is not designed to protect you against malware. 

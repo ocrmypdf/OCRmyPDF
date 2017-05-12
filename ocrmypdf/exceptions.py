@@ -48,7 +48,7 @@ class InputFileError(ExitCodeException):
 
 
 class SubprocessOutputError(ExitCodeException):
-    exit_code = ExitCode.other_error
+    exit_code = ExitCode.child_process_error
 
 
 class EncryptedPdfError(ExitCodeException):

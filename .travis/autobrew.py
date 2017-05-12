@@ -13,7 +13,6 @@ class Ocrmypdf < Formula
 
   depends_on :python3
   depends_on "pkg-config" => :build
-  depends_on "zlib"
   depends_on "libffi"
   depends_on "tesseract"
   depends_on "ghostscript"

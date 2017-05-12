@@ -53,18 +53,22 @@ def main():
         print('List of available languages (1):\neng', file=sys.stderr)
         sys.exit(0)
     elif sys.argv[-1] == 'hocr':
-        inputf = sys.argv[-3]
-        output = sys.argv[-2]
+        inputf = sys.argv[-4]
+        output = sys.argv[-3]
         with Image.open(inputf) as im, \
                 open(output + '.hocr', 'w', encoding='utf-8') as f:
             w, h = im.size
             f.write(HOCR_TEMPLATE.format(str(w), str(h)))
+        with open(output + '.txt', 'w') as f:
+            f.write('')
     elif sys.argv[-1] == 'pdf':
-        inputf = sys.argv[-3]
-        output = sys.argv[-2]
+        inputf = sys.argv[-4]
+        output = sys.argv[-3]
         pdf_bytes = img2pdf.convert([inputf], dpi=300)
         with open(output + '.pdf', 'wb') as f:
             f.write(pdf_bytes)
+        with open(output + '.txt', 'w') as f:
+            f.write('')
     elif sys.argv[-1] == 'stdout':
         inputf = sys.argv[-2]
         print("""Orientation: 0
