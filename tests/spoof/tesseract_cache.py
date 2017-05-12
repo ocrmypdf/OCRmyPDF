@@ -57,11 +57,6 @@ def main():
         ['tesseract', '--version'],
         stderr=subprocess.STDOUT)
 
-    if b'4.00.00alpha' in tess_version:
-        # Tesseract 4.x alpha is a moving target, don't cache it
-        real_tesseract()
-        return
-
     m.update(tess_version)
 
     # Insert this source file into the hash function, to ensure that any
