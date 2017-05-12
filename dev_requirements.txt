@@ -1,8 +1,8 @@
-check-manifest >= 0.34
+check-manifest >= 0.35
 twine >= 1.8.1
-coverage >= 4.3.1
-pytest-xdist >= 1.15.0
-GitPython == 2.1.0
+coverage >= 4.4
+pytest-xdist >= 1.16.0
+GitPython == 2.1.3
 
 # Known good versions: 1.11.1
 # Known broken versions: 1.15.0
