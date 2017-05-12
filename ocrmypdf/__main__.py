@@ -39,7 +39,7 @@ warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 # -------------
 # External dependencies
 
-MINIMUM_TESS_VERSION = '3.02.02'
+MINIMUM_TESS_VERSION = '3.04'
 
 
 def complain(message):
