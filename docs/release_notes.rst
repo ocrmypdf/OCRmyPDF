@@ -4,8 +4,8 @@ Release notes
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
 
-next
-====
+v5.0
+----
 
 -   Backward incompatible changes
 
