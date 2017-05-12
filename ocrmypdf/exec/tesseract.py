@@ -257,32 +257,10 @@ def generate_hocr(input_file, output_files, language: list, engine_mode,
         raise e from e
     else:
         tesseract_log_output(log, stdout, input_file)
-
-        # Tesseract 3.02 appends suffix ".html" instead of ".hocr". For
-        # consistency rename its output to .hocr
-        if os.path.exists(prefix + '.html'):
-            shutil.move(prefix + '.html', prefix + '.tmp')
-        elif os.path.exists(prefix + '.hocr'):
-            shutil.move(prefix + '.hocr', prefix + '.tmp')
-
         # The sidecar text file will get the suffix .txt; rename it to
         # whatever caller wants it named
         if os.path.exists(prefix + '.txt'):
             shutil.move(prefix + '.txt', output_sidecar)
-
-        # Tesseract 3.03 inserts source filename into hocr file without
-        # escaping it, creating invalid XML and breaking the parser.
-        # As a workaround, rewrite the hocr file, replacing the filename
-        # with a space.  Don't know if Tesseract 3.02 does the same.
-
-        regex_nested_single_quotes = re.compile(
-            r"""title='image "([^"]*)";""")
-        with open(prefix + '.tmp', mode='r', encoding='utf-8') as f_in, \
-                open(output_hocr, mode='w', encoding='utf-8') as f_out:
-            for line in f_in:
-                line = regex_nested_single_quotes.sub(
-                    r"""title='image " ";""", line)
-                f_out.write(line)
 
 
 def use_skip_page(text_only, skip_pdf, output_pdf, output_text):
