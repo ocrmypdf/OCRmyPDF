@@ -3,7 +3,7 @@
 
 from subprocess import Popen, PIPE
 from decimal import Decimal
-from math import hypot
+from math import hypot, isclose
 import re
 import sys
 import PyPDF2 as pypdf
