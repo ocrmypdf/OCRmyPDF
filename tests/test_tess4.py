@@ -13,17 +13,23 @@ import PyPDF2 as pypdf
 spoof = pytest.helpers.spoof
 
 
-def tess4_possible_location():
-    """The location of tesseract 4 may be OCRMYPDF_TESS4, OCRMYPDF_TESSERACT,
-    or the installed version on PATH."""
-    return os.environ.get('OCRMYPDF_TESS4') or \
-           os.environ.get('OCRMYPDF_TESSERACT') or \
-            'tesseract'
-
-
 @pytest.fixture
 def ensure_tess4():
-    return spoof(tesseract=tess4_possible_location())
+    if tesseract.v4():
+        # Either "tesseract" on $PATH is already v4, or
+        # OCRMYPDF_TESSERACT is tess4 already
+        return os.environ.copy()
+
+    if os.environ.get('OCRMYPDF_TESS4'):
+        # OCRMYPDF_TESS4 is a hint environment variable that tells us to look
+        # somewhere special for tess4 if and only if we need it. This allows
+        # setting OCRMYPDF_TESS4 to test tess4 and PATH to point to tess3
+        # on a system with both installed.
+        env = os.environ.copy()
+        env['OCRMYPDF_TESSERACT'] = env['OCRMYPDF_TESS4']
+        return env
+
+    raise EnvironmentError("Can't find Tesseract 4")
 
 
 def tess4_available():
@@ -31,13 +37,13 @@ def tess4_available():
     official "tesseract" on PATH
 
     """
-    old_environ = os.environ.copy()
     try:
-        os.environ['OCRMYPDF_TESSERACT'] = tess4_possible_location()
-        return tesseract.v4() and tesseract.has_textonly_pdf()
-    finally:
-        os.environ = old_environ
+        ensure_tess4()
+        return True
+    except EnvironmentError:
+        pass
 
+    return False
 
 # Skip all tests in this file if not tesseract 4
 pytestmark = pytest.mark.skipif(
