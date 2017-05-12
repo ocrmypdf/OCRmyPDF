@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © 2015 James R. Barlow: github.com/jbarlow83
 
-from subprocess import CalledProcessError, STDOUT, run, check_output
+from subprocess import CalledProcessError, STDOUT, PIPE, run, check_output
 from functools import lru_cache
 import sys
 import os
