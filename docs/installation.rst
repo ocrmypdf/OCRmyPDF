@@ -1,15 +1,16 @@
 Installation
 ============
 
-Installing on Debian and Ubuntu
--------------------------------
+OCRmyPDF requires Python 3.5 (or newer) and Tesseract 3.04 (or newer).
+
+Installing on Debian and Ubuntu 16.10 or newer
+----------------------------------------------
 
 Users of Debian 9 ("stretch") or later or Ubuntu 16.10 or later may simply
 
 .. code-block:: bash
 
 	apt-get install ocrmypdf
-
 
 Installing on macOS
 -------------------
@@ -19,8 +20,9 @@ Installing on macOS
    brew tap jbarlow83/ocrmypdf
    brew install ocrmypdf
 
+.. warning::
 
-Users who previously installed OCRmyPDF on macOS may need to remove the ``pip`` based installation (``pip3 uninstall ocrmypdf``).
+Users who previously installed OCRmyPDF on macOS using ``pip install ocrmypdf`` should remove the pip version (``pip3 uninstall ocrmypdf``) before switching to the Homebrew version.
 
 .. _Docker:
 
@@ -209,14 +211,15 @@ follow these steps.
 Installing on Ubuntu 14.04 LTS
 ------------------------------
 
-Installing on Ubuntu 14.04 LTS (trusty) is more difficult than some other options, because of bugs in Python package installation.
+Installing on Ubuntu 14.04 LTS (trusty) is more difficult than some other options, because of bugs in Python package installation and because OCRmyPDF depends on some packages newer than are available in the main distribution.
 
-Add new "apt" repositories needed for backports of Ghostscript 9.16 and libav-11, which supports unpaper 6.1. This will replace Ghostscript on your system.
+Add new "apt" repositories needed for backports of Ghostscript 9.16, libav-11 (for unpaper 6.1) and Tesseract 4.00 (alpha). This will replace Ghostscript and Tesseract 3.x on your system. If you prefer to not modify your system in this matter, consider using a Docker container.
 
 .. code-block:: bash
 
    sudo add-apt-repository ppa:vshn/ghostscript -y 
    sudo add-apt-repository ppa:heyarje/libav-11 -y
+   sudo add-apt-repository ppa:alex-p/tesseract-ocr
 
 Update apt-get:
 
@@ -229,17 +232,21 @@ Install system dependencies:
 .. code-block:: bash
 
    sudo apt-get install \
+      software-properties-common python-software-properties \
       zlib1g-dev \
       libjpeg-dev \
       libffi-dev \
       libavformat56 libavcodec56 libavutil54 \
       ghostscript \
-      tesseract-ocr \
       qpdf \
       python3-pip \
       python3-pil \
       python3-pytest \
-      python3-reportlab
+      python3-reportlab \
+      python3-wheel \
+      python3-venv \
+      tesseract-ocr \
+      tesseract-ocr-eng
 
 If you wish install OCRmyPDF to the system Python, then install as follows (note this installs new packages
 into your system Python, which could interfere with other programs):
@@ -269,6 +276,16 @@ These installation instructions omit the optional dependency ``unpaper``, which 
 
    wget -q https://dl.dropboxusercontent.com/u/28971240/unpaper_6.1-1.deb -O unpaper_6.1-1.deb
    sudo dpkg -i unpaper_6.1-1.deb
+
+
+Installing on ArchLinux
+-----------------------
+
+The author is aware of an `ArchLinux package for ocrmypdf <https://aur.archlinux.org/packages/ocrmypdf/>`_. It seems like the following command might work.
+
+.. code-block::
+
+   pacman -S ocrmypdf
 
 
 Installing on Windows
