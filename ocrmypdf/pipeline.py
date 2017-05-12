@@ -159,17 +159,20 @@ def triage(
         log,
         context):
 
+    options = context.get_options()
     try:
         with open(input_file, 'rb') as f:
             signature = f.read(4)
             if signature == b'%PDF':
+                if options.image_dpi:
+                    log.warning("Argument --image-dpi ignored because the "
+                                "input file is a PDF, not an image.")
                 re_symlink(input_file, output_file, log)
                 return
     except EnvironmentError as e:
         log.error(e)
         raise InputFileError() from e
 
-    options = context.get_options()
     triage_image_file(input_file, output_file, log, options)
 
 
