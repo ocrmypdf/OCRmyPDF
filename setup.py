@@ -5,8 +5,8 @@
 from __future__ import print_function, unicode_literals
 
 import sys
-if sys.version_info < (3, 4):
-    print("Python 3.4 or newer is required", file=sys.stderr)
+if sys.version_info < (3, 5):
+    print("Python 3.5 or newer is required", file=sys.stderr)
     sys.exit(1)
 
 from setuptools import setup, find_packages  # nopep8
@@ -195,8 +195,6 @@ setup(
     packages=find_packages(exclude=["tests", "tests.*"]),
     keywords=['PDF', 'OCR', 'optical character recognition', 'PDF/A', 'scanning'],
     classifiers=[
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Development Status :: 5 - Production/Stable",
