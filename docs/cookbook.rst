@@ -95,13 +95,19 @@ Use a program like `img2pdf <https://gitlab.mister-muffin.de/josch/img2pdf>`_ to
 
 	img2pdf my-images*.jpg | ocrmypdf - myfile.pdf
 
-If given a single image as input, OCRmyPDF will try converting it to a PDF on its own.  If the DPI specified in the image is incorrect, it can be overridden with ``--image-dpi``:
+``img2pdf`` also has features to control the position of images on a page, if desired.
+
+For convenience, OCRmyPDF can convert single images to PDFs on its own. If the resolution (dots per inch, DPI) of an image is not set or is incorrect, it can be overridden with ``--image-dpi``. (As 1 inch is 2.54 cm, 1 dpi = 0.39 dpcm).
 
 .. code-block:: bash
 
 	ocrmypdf --image-dpi 300 image.png myfile.pdf
 
-This feature may be removed at some point, because OCRmyPDF does not specialize in converting images to PDFs.
+If you have multiple images, you must use ``img2pdf`` to convert the images to PDF.
+
+.. note::
+
+    ImageMagick ``convert`` can also convert a group of images to PDF, but in the author's experience it takes a long time, transcodes unnecessarily and gives poor results.
 
 You can also use Tesseract 3.04+ directly to convert single page images or multi-page TIFFs to PDF:
 
@@ -148,4 +154,13 @@ Image processing commands can be combined. The order in which options are given 
 
 	ocrmypdf --deskew --clean --rotate-pages input.pdf output.pdf
 
+
+Improving OCR quality
+---------------------
+
+The `Image processing`_ features can improve OCR quality.
+
+Rotating pages and deskewing helps to ensure that the page orientation is correct before OCR begins. Removing the background and/or cleaning the page can also improve results. The ``--oversample DPI`` argument can be specified to resample images to higher resolution before attempting OCR; this can improve results as well.
+
+OCR quality will suffer if the resolution of input images is not correct (since the range of pixel sizes that will be checked for possible fonts will also be incorrect).
 
