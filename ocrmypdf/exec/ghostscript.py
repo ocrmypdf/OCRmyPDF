@@ -6,6 +6,7 @@ from subprocess import run, PIPE, STDOUT, CalledProcessError
 from shutil import copy
 from functools import lru_cache
 import re
+import sys
 from . import get_program
 from ..exceptions import SubprocessOutputError
 
