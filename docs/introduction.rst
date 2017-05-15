@@ -102,3 +102,6 @@ To the author's knowledge, OCRmyPDF is the most feature-rich and thoroughly test
 * pdfsandwich
 * pypdfocr
 * pdfbeads
+
+If you are looking for a micro web-frontend for OCRmyPDF, consider the third-party `OCRmyPDF-web <https://github.com/sseemayer/OCRmyPDF-web>`_. Bear in mind that OCRmyPDF is not designed to be secure against malware-bearing PDFs (see `Using OCRmyPDF online`_).
+
