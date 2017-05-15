@@ -87,7 +87,7 @@ deploy:
     condition: $TRAVIS_OS_NAME == "osx"
 
 after_deploy: |
-  if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+  if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_BRANCH" == "master" ]]; then
     bash .travis/osx_brew.sh
   elif [[ "$TRAVIS_PYTHON_VERSION" == "3.6" && "$TRAVIS_OS_NAME" == "linux" ]]; then
     curl -H "Content-Type: application/json" --data '{"build": true}' -X POST https://registry.hub.docker.com/u/jbarlow83/ocrmypdf/trigger/$DOCKERHUB_OCRMYPDF_TOKEN/
