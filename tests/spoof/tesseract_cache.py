@@ -11,18 +11,27 @@ import subprocess
 """Cache output of tesseract to speed up test suite
 
 The cache is keyed by a hash that includes the tesseract version, some of
-the command line, and the binary dump of the input file. The output file,
-stdout, and stderr are replicated on a cache hit.
+the command line, and the binary dump of the input file, and this file itself.
+ Therefore any updates to this file invalidate cache. Uses SHA-1 because it is
+ fast and defeating a hash collision here is not exactly a priority. :P
+
+The output files, stdout, and stderr are replicated on a cache hit. The output
+files are either a .pdf and .txt or .hocr and .txt.
 
 Page orientation checks are also cached (-psm 0 stdout)
 
-Errors and crashes are not cached.
+Errors and crashes are not cached. If the arguments don't match a known
+caching template then real tesseract is called with the same arguments.
 
 Things not checked:
 -changes to tesseract installation that don't affect --version
 
+Assumes Tesseract 3.04 or higher.
+
 Will fail on Tesseract 3.02.02 in "hocr" mode because it doesn't produce
-the incorrect file extension.
+the incorrect file extension. Will fail on 3.03 because that has no sidecar
+text support. Will fail to replicate a 3.04 bug if wrong parameter order is
+given.
 
 """
 
