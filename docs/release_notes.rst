@@ -4,6 +4,12 @@ Release notes
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
 
+v5.0.1
+------
+
+-   Fixed issue #169, exception due to failure to create sidecar text files on some versions of Tesseract 3.04, including the jbarlow83/ocrmypdf image
+
+
 v5.0
 ----
 
