@@ -4,8 +4,6 @@
 from subprocess import Popen, PIPE, check_output, check_call, DEVNULL
 import os
 import shutil
-from contextlib import suppress
-import sys
 import pytest
 from ocrmypdf.pageinfo import pdf_get_all_pageinfo
 import PyPDF2 as pypdf
@@ -13,6 +11,7 @@ from ocrmypdf.exceptions import ExitCode
 from ocrmypdf import leptonica
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.exec import ghostscript
+import logging
 
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
@@ -78,13 +77,11 @@ def test_deskew(spoof_tesseract_noop, resources, outdir):
 
     # Now render as an image again and use Leptonica to find the skew angle
     # to confirm that it was deskewed
-    from ocrmypdf.exec.ghostscript import rasterize_pdf
-    import logging
     log = logging.getLogger()
 
     deskewed_png = outdir / 'deskewed.png'
 
-    rasterize_pdf(
+    ghostscript.rasterize_pdf(
         str(deskewed_pdf),
         str(deskewed_png),
         xres=150,
@@ -119,13 +116,11 @@ def test_remove_background(spoof_tesseract_noop, resources, outdir):
         '--image-dpi', '150',
         env=spoof_tesseract_noop)
 
-    from ocrmypdf.exec.ghostscript import rasterize_pdf
-    import logging
     log = logging.getLogger()
 
     output_png = outdir / 'remove_bg.png'
 
-    rasterize_pdf(
+    ghostscript.rasterize_pdf(
         str(output_pdf),
         str(output_png),
         xres=100,
@@ -271,10 +266,6 @@ def test_argsfile(spoof_tesseract_noop, resources, outdir):
 def check_monochrome_correlation(
         outdir,
         reference_pdf, reference_pageno, test_pdf, test_pageno):
-
-    import ocrmypdf.exec.ghostscript as ghostscript
-    import logging
-
     gslog = logging.getLogger()
 
     reference_png = outdir / '{}.ref{:04d}.png'.format(
