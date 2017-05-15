@@ -25,7 +25,6 @@ class Ocrmypdf < Formula
   depends_on "libpng"
 
 ${resources}
-
   def install
     ENV.append ["SETUPTOOLS_SCM_PRETEND_VERSION"], "v${ocrmypdf_version}"
     ENV.each do |key, value|
