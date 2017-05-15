@@ -1,4 +1,5 @@
 #!/bin/bash
+# © 2017 James R. Barlow: github.com/jbarlow83
 set -euo pipefail
 set -x
 

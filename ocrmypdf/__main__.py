@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2015-16 James R. Barlow: github.com/jbarlow83
+# © 2015-17 James R. Barlow: github.com/jbarlow83
 
 from contextlib import suppress
 from tempfile import mkdtemp
