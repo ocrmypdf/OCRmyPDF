@@ -43,7 +43,6 @@ HOCR_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
  </body>
 </html>'''
 
-
 @lru_cache(maxsize=1)
 def version():
     args_tess = [
@@ -229,11 +228,13 @@ def generate_hocr(input_file, output_files, language: list, engine_mode,
 
     # Reminder: test suite tesseract spoofers will break after any changes
     # to the number of order parameters here
+    # Tesseract 3.04 requires the order here to be "hocr txt" and will fail
+    # on "txt hocr"
     args_tesseract.extend([
         input_file,
         prefix,
-        'txt',
-        'hocr'
+        'hocr',
+        'txt'
     ] + tessconfig)
     try:
         log.debug(args_tesseract)
@@ -316,8 +317,8 @@ def generate_pdf(*, input_image, skip_pdf, output_pdf, output_text,
     args_tesseract.extend([
         input_image,
         prefix,
-        'txt',
         'pdf',
+        'txt'
     ] + tessconfig)
 
     try:

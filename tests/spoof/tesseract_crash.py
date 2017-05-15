@@ -28,10 +28,10 @@ def main():
     elif sys.argv[1] == '--list-langs':
         print('List of available languages (1):\neng', file=sys.stderr)
         sys.exit(0)
-    elif sys.argv[-1] == 'hocr':
+    elif sys.argv[-2] == 'hocr':
         print("KABOOM! Tesseract failed for some reason", file=sys.stderr)
         sys.exit(128 + signal.SIGSEGV)
-    elif sys.argv[-1] == 'pdf':
+    elif sys.argv[-2] == 'pdf':
         print("KABOOM! Tesseract failed for some reason", file=sys.stderr)
         sys.exit(128 + signal.SIGSEGV)
     elif sys.argv[-1] == 'stdout':

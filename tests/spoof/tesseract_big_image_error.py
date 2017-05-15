@@ -20,11 +20,11 @@ def main():
     elif sys.argv[1] == '--list-langs':
         print('List of available languages (1):\neng', file=sys.stderr)
         sys.exit(0)
-    elif sys.argv[-1] == 'hocr':
+    elif sys.argv[-2] == 'hocr':
         print("Image too large: (33830, 14959)\n"
               "Error during processing.", file=sys.stderr)
         sys.exit(1)
-    elif sys.argv[-1] == 'pdf':
+    elif sys.argv[-2] == 'pdf':
         print("Image too large: (33830, 14959)\n"
               "Error during processing.", file=sys.stderr)
         sys.exit(1)

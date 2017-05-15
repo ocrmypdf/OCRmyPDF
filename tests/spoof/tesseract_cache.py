@@ -35,10 +35,12 @@ def real_tesseract():
     return  # Not reachable
 
 def main():
-    operation = sys.argv[-1]
+    operation = sys.argv[-2]
     sidecar = False
-    if sys.argv[-2] == 'txt':
+    if sys.argv[-1] == 'txt':
         sidecar = True
+    elif sys.argv[-1] == 'stdout':
+        operation = 'stdout'
 
     # For anything unexpected operation, defer to real tesseract binary
     # Currently this includes all use of "--tesseract-config"

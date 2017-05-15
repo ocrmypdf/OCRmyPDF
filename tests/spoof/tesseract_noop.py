@@ -52,7 +52,7 @@ def main():
     elif sys.argv[1] == '--list-langs':
         print('List of available languages (1):\neng', file=sys.stderr)
         sys.exit(0)
-    elif sys.argv[-1] == 'hocr':
+    elif sys.argv[-2] == 'hocr':
         inputf = sys.argv[-4]
         output = sys.argv[-3]
         with Image.open(inputf) as im, \
@@ -61,7 +61,7 @@ def main():
             f.write(HOCR_TEMPLATE.format(str(w), str(h)))
         with open(output + '.txt', 'w') as f:
             f.write('')
-    elif sys.argv[-1] == 'pdf':
+    elif sys.argv[-2] == 'pdf':
         inputf = sys.argv[-4]
         output = sys.argv[-3]
         pdf_bytes = img2pdf.convert([inputf], dpi=300)
