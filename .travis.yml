@@ -80,7 +80,7 @@ deploy:
   # we really just want to run after_deploy *after* pypi upload is done, but
   # after_deploy on runs if a given box deployed
 - provider: script
-  script: true
+  script: /usr/bin/true
   on:
     branch: master
     tags: false
