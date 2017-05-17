@@ -16,6 +16,7 @@ Installing on macOS
 -------------------
 
 .. code-block:: bash
+
     brew tap jbarlow83/ocrmypdf
     brew install ocrmypdf
 
@@ -37,6 +38,7 @@ Follow the Docker installation instructions for your platform.  If you can run t
 successfully, your system is ready to download and execute the image:
 
 .. code-block:: bash
+
     docker run hello-world
    
 OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine instance on Windows and macOS has only a single CPU core enabled. Use the VirtualBox Manager to determine the name of your Docker engine host, and then follow these optional steps to enable multiple CPUs:
@@ -281,7 +283,7 @@ Installing on ArchLinux
 
 The author is aware of an `ArchLinux package for ocrmypdf <https://aur.archlinux.org/packages/ocrmypdf/>`_. It seems like the following command might work.
 
-.. code-block::
+.. code-block:: bash
 
     pacman -S ocrmypdf
 
