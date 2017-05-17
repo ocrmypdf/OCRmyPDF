@@ -302,6 +302,8 @@ The command line syntax to run ocrmypdf from a command prompt will resemble:
 
 where /c/Users/sampleuser is a Unix representation of the Windows path C:\\Users\\sampleuser, assuming a user named "sampleuser" is running ocrmypdf on a file in their home directory, and the files "test.pdf" and "output.pdf" are in the sampleuser folder. The Windows user must have read and write permissions.
 
+`Bash on Ubuntu on Windows <https://github.com/Microsoft/BashOnWindows>`_ should also be a viable route for running the OCRmyPDF Docker container.
+
 Installing HEAD revision from sources
 -------------------------------------
 
