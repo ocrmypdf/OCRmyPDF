@@ -1,6 +1,9 @@
 OCRmyPDF
 ========
 
+.. image:: https://travis-ci.org/jbarlow83/OCRmyPDF.svg?branch=master
+    :target: https://travis-ci.org/jbarlow83/OCRmyPDF
+
 OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to
 be searched or copy-pasted.
 
