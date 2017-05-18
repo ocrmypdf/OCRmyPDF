@@ -22,7 +22,7 @@ from PIL import Image
 from ruffus import formatter, regex, Pipeline, suffix
 
 from .hocrtransform import HocrTransform
-from .pageinfo import pdf_get_all_pageinfo
+from .pageinfo import PdfInfo
 from .pdfa import generate_pdfa_ps, file_claims_pdfa
 from .helpers import re_symlink, is_iterable_notstr, page_number
 from .exec import ghostscript, tesseract, qpdf
@@ -50,7 +50,7 @@ class JobContext:
     """
 
     def __init__(self):
-        self.pdfinfo = []
+        self.pdfinfo = None
 
     def get_pdfinfo(self):
         "What we know about the input PDF"
@@ -183,7 +183,7 @@ def repair_pdf(
         context):
 
     qpdf.repair(input_file, output_file, log)
-    pdfinfo = pdf_get_all_pageinfo(output_file)
+    pdfinfo = PdfInfo(output_file)
     context.set_pdfinfo(pdfinfo)
     log.debug(pdfinfo)
 

@@ -26,7 +26,7 @@ def test_single_page_text(outdir):
     pdf.showPage()
     pdf.save()
 
-    pdfinfo = pageinfo.pdf_get_all_pageinfo(str(filename))
+    pdfinfo = pageinfo.PdfInfo(str(filename))
 
     assert len(pdfinfo) == 1
     page = pdfinfo[0]
@@ -53,7 +53,7 @@ def test_single_page_image(outdir):
             layout_fun=layout_fun)
     filename.write_bytes(pdf_bytes)
 
-    pdfinfo = pageinfo.pdf_get_all_pageinfo(str(filename))
+    pdfinfo = pageinfo.PdfInfo(str(filename))
 
     assert len(pdfinfo) == 1
     page = pdfinfo[0]
@@ -83,7 +83,7 @@ def test_single_page_inline_image(outdir):
         pdf.showPage()
         pdf.save()
 
-    pdfinfo = pageinfo.pdf_get_all_pageinfo(str(filename))
+    pdfinfo = pageinfo.PdfInfo(str(filename))
     print(pdfinfo)
     pdfimage = pdfinfo[0]['images'][0]
     assert (pdfimage['dpi_w'] - 8) < 1e-5
@@ -94,7 +94,7 @@ def test_single_page_inline_image(outdir):
 def test_jpeg(resources, outdir):
     filename = resources / 'c02-22.pdf'
 
-    pdfinfo = pageinfo.pdf_get_all_pageinfo(str(filename))
+    pdfinfo = pageinfo.PdfInfo(str(filename))
 
     pdfimage = pdfinfo[0]['images'][0]
     assert pdfimage['enc'] == 'jpeg'
@@ -104,7 +104,7 @@ def test_jpeg(resources, outdir):
 def test_form_xobject(resources):
     filename = resources / 'formxobject.pdf'
 
-    pdfinfo = pageinfo.pdf_get_all_pageinfo(str(filename))
+    pdfinfo = pageinfo.PdfInfo(str(filename))
     pdfimage = pdfinfo[0]['images'][0]
     assert pdfimage['width'] == 50
 
@@ -112,6 +112,6 @@ def test_form_xobject(resources):
 def test_no_contents(resources):
     filename = resources / 'no_contents.pdf'
 
-    pdfinfo = pageinfo.pdf_get_all_pageinfo(str(filename))
+    pdfinfo = pageinfo.PdfInfo(str(filename))
     assert len(pdfinfo[0]['images']) == 0
     assert pdfinfo[0]['has_text'] == False

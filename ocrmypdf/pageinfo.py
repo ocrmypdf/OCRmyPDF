@@ -8,6 +8,7 @@ import re
 import sys
 import PyPDF2 as pypdf
 from collections import namedtuple
+import warnings
 
 
 matrix_mult = pypdf.pdf.utils.matrixMultiply
@@ -518,6 +519,69 @@ def _pdf_get_pageinfo(infile, pageno: int):
 def pdf_get_all_pageinfo(infile):
     pdf = pypdf.PdfFileReader(infile)
     return [_pdf_get_pageinfo(infile, n) for n in range(pdf.numPages)]
+
+
+class PageInfo:
+    def __init__(self, infile, pageno):
+        self._infile = infile
+        self._pageno = pageno
+        self._pageinfo = _pdf_get_pageinfo(infile, pageno)
+
+    @property
+    def pageno(self):
+        return self._pageno
+
+    @property
+    def has_text(self):
+        return self._pageinfo['has_text']
+
+    @property
+    def width_inches(self):
+        return self._pageinfo['width_inches']
+
+    @property
+    def height_inches(self):
+        return self._pageinfo['height_inches']
+
+    @property
+    def rotation(self):
+        return self._pageinfo['rotate']
+
+    @property
+    def images(self):
+        return self._pageinfo['images']
+
+    @property
+    def xres(self):
+        return self._pageinfo['xres']
+
+    @property
+    def yres(self):
+        return self._pageinfo['yres']
+
+    def __getitem__(self, item):
+        warnings.warn("pageinfo[item] is deprecated", DeprecationWarning)
+        return self._pageinfo[item]
+
+    def __setitem__(self, item, value):
+        warnings.warn("pageinfo[item] is deprecated", DeprecationWarning)
+        self._pageinfo[item] = value
+
+
+class PdfInfo:
+    def __init__(self, infile):
+        self._pages = pdf_get_all_pageinfo(infile)
+
+    @property
+    def pages(self, index):
+        return self._pages[index]
+
+    def __getitem__(self, item):
+        warnings.warn("pageinfo[item] is deprecated", DeprecationWarning)
+        return self._pages[item]
+
+    def __len__(self):
+        return len(self._pages)
 
 
 def main():

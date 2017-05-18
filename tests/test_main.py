@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE, check_output, check_call, DEVNULL
 import os
 import shutil
 import pytest
-from ocrmypdf.pageinfo import pdf_get_all_pageinfo
+from ocrmypdf.pageinfo import PdfInfo
 import PyPDF2 as pypdf
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf import leptonica
@@ -230,7 +230,7 @@ def test_oversample(spoof_tesseract_cache, renderer, resources, outpdf):
         '-f',
         '--pdf-renderer', renderer, env=spoof_tesseract_cache)
 
-    pdfinfo = pdf_get_all_pageinfo(str(oversampled_pdf))
+    pdfinfo = PdfInfo(str(oversampled_pdf))
 
     print(pdfinfo[0]['xres'])
     assert abs(pdfinfo[0]['xres'] - 350) < 1
@@ -244,7 +244,7 @@ def test_repeat_ocr(resources, no_outpdf):
 def test_force_ocr(spoof_tesseract_cache, resources, outpdf):
     out = check_ocrmypdf(resources / 'graph_ocred.pdf', outpdf, '-f',
                          env=spoof_tesseract_cache)
-    pdfinfo = pdf_get_all_pageinfo(out)
+    pdfinfo = PdfInfo(out)
     assert pdfinfo[0]['has_text']
 
 
@@ -358,14 +358,14 @@ def test_autorotate_threshold(
 def test_ocr_timeout(renderer, resources, outpdf):
     out = check_ocrmypdf(resources / 'skew.pdf', outpdf,
                          '--tesseract-timeout', '1.0')
-    pdfinfo = pdf_get_all_pageinfo(str(out))
+    pdfinfo = PdfInfo(str(out))
     assert not pdfinfo[0]['has_text']
 
 
 def test_skip_big(spoof_tesseract_cache, resources, outpdf):
     out = check_ocrmypdf(resources / 'enormous.pdf', outpdf,
                          '--skip-big', '10', env=spoof_tesseract_cache)
-    pdfinfo = pdf_get_all_pageinfo(str(out))
+    pdfinfo = PdfInfo(str(out))
     assert not pdfinfo[0]['has_text']
 
 
@@ -562,14 +562,14 @@ def test_algo4(resources, no_outpdf):
 def test_non_square_resolution(renderer, spoof_tesseract_cache,
                                resources, outpdf):
     # Confirm input image is non-square resolution
-    in_pageinfo = pdf_get_all_pageinfo(str(resources / 'aspect.pdf'))
+    in_pageinfo = PdfInfo(str(resources / 'aspect.pdf'))
     assert in_pageinfo[0]['xres'] != in_pageinfo[0]['yres']
 
     check_ocrmypdf(
         resources / 'aspect.pdf', outpdf,
         '--pdf-renderer', renderer, env=spoof_tesseract_cache)
 
-    out_pageinfo = pdf_get_all_pageinfo(str(outpdf))
+    out_pageinfo = PdfInfo(str(outpdf))
 
     # Confirm resolution was kept the same
     assert in_pageinfo[0]['xres'] == out_pageinfo[0]['xres']
@@ -585,7 +585,7 @@ def test_convert_to_square_resolution(renderer, spoof_tesseract_cache,
     from math import isclose
 
     # Confirm input image is non-square resolution
-    in_pageinfo = pdf_get_all_pageinfo(str(resources / 'aspect.pdf'))
+    in_pageinfo = PdfInfo(str(resources / 'aspect.pdf'))
     assert in_pageinfo[0]['xres'] != in_pageinfo[0]['yres']
 
     # --force-ocr requires means forced conversion to square resolution
@@ -594,7 +594,7 @@ def test_convert_to_square_resolution(renderer, spoof_tesseract_cache,
         '--force-ocr',
         '--pdf-renderer', renderer, env=spoof_tesseract_cache)
 
-    out_pageinfo = pdf_get_all_pageinfo(str(outpdf))
+    out_pageinfo = PdfInfo(str(outpdf))
 
     in_p0, out_p0 = in_pageinfo[0], out_pageinfo[0]
 
@@ -628,7 +628,7 @@ def test_jbig2_passthrough(spoof_tesseract_cache, resources, outpdf):
         '--pdf-renderer', 'hocr',
         env=spoof_tesseract_cache)
 
-    out_pageinfo = pdf_get_all_pageinfo(str(out))
+    out_pageinfo = PdfInfo(str(out))
     assert out_pageinfo[0]['images'][0]['enc'] == 'jbig2'
 
 
@@ -702,7 +702,7 @@ def test_rotated_skew_timeout(resources, outpdf):
     """
 
     input_file = str(resources / 'rotated_skew.pdf')
-    in_pageinfo = pdf_get_all_pageinfo(input_file)[0]
+    in_pageinfo = PdfInfo(input_file)[0]
 
     assert in_pageinfo['height_pixels'] < in_pageinfo['width_pixels'], \
         "Expected the input page to be landscape"
@@ -713,7 +713,7 @@ def test_rotated_skew_timeout(resources, outpdf):
         '--pdf-renderer', 'hocr',
         '--deskew', '--tesseract-timeout', '0')
 
-    out_pageinfo = pdf_get_all_pageinfo(str(out))[0]
+    out_pageinfo = PdfInfo(str(out))[0]
 
     assert out_pageinfo['height_pixels'] > out_pageinfo['width_pixels'], \
         "Expected the output page to be portrait"
@@ -743,7 +743,7 @@ def test_very_high_dpi(spoof_tesseract_cache, resources, outpdf):
     "Checks for a Decimal quantize error with high DPI, etc"
     check_ocrmypdf(resources / '2400dpi.pdf', outpdf,
                    env=spoof_tesseract_cache)
-    pdfinfo = pdf_get_all_pageinfo(outpdf)
+    pdfinfo = PdfInfo(outpdf)
 
     image = pdfinfo[0]['images'][0]
     assert image['dpi_w'] == image['dpi_h']
@@ -900,7 +900,7 @@ def test_compression_preserved(spoof_tesseract_noop, ocrmypdf_exec,
 
         assert p.returncode == ExitCode.ok
 
-    pdfinfo = pdf_get_all_pageinfo(output_file)
+    pdfinfo = PdfInfo(output_file)
 
     pdfimage = pdfinfo[0]['images'][0]
 
@@ -945,7 +945,7 @@ def test_compression_changed(spoof_tesseract_noop, ocrmypdf_exec,
 
         assert p.returncode == ExitCode.ok
 
-    pdfinfo = pdf_get_all_pageinfo(output_file)
+    pdfinfo = PdfInfo(output_file)
 
     pdfimage = pdfinfo[0]['images'][0]
 
@@ -970,7 +970,7 @@ def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
         '--sidecar', sidecar,
         env=spoof_tesseract_cache)
 
-    pdfinfo = pdf_get_all_pageinfo(str(resources / 'multipage.pdf'))
+    pdfinfo = PdfInfo(str(resources / 'multipage.pdf'))
     num_pages = len(pdfinfo)
 
     with open(sidecar, 'r') as f:
