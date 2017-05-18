@@ -8,6 +8,7 @@ import re
 import sys
 import PyPDF2 as pypdf
 from collections import namedtuple
+from collections.abc import MutableMapping
 import warnings
 from pathlib import Path
 
@@ -483,12 +484,16 @@ def _page_has_text(pdf, page):
     return False
 
 
-def _pdf_get_pageinfo(infile, pageno: int):
+def _pdf_get_pageinfo(pdf, pageno: int):
     pageinfo = {}
     pageinfo['pageno'] = pageno
     pageinfo['images'] = []
 
-    pdf = pypdf.PdfFileReader(infile)
+    if isinstance(pdf, Path):
+        pdf = pypdf.PdfFileReader(str(pdf))
+    elif isinstance(pdf, str):
+        pdf = pypdf.PdfFileReader(pdf)
+
     page = pdf.pages[pageno]
 
     pageinfo['has_text'] = _page_has_text(pdf, page)
@@ -521,10 +526,10 @@ def pdf_get_all_pageinfo(infile):
     if isinstance(infile, Path):
         infile = str(infile)
     pdf = pypdf.PdfFileReader(infile)
-    return [_pdf_get_pageinfo(infile, n) for n in range(pdf.numPages)]
+    return [PageInfo(pdf, n) for n in range(pdf.numPages)]
 
 
-class PageInfo:
+class PageInfo(MutableMapping):
     def __init__(self, infile, pageno):
         self._infile = infile
         self._pageno = pageno
@@ -566,9 +571,18 @@ class PageInfo:
         warnings.warn("pageinfo[item] is deprecated", DeprecationWarning)
         return self._pageinfo[item]
 
-    def __setitem__(self, item, value):
+    def __len__(self):
+        return len(self._pageinfo)
+
+    def __iter__(self):
+        return iter(self._pageinfo)
+
+    def __setitem__(self, key, value):
         warnings.warn("pageinfo[item] is deprecated", DeprecationWarning)
-        self._pageinfo[item] = value
+        self._pageinfo[key] = value
+
+    def __delitem__(self, key):
+        del self._pageinfo[key]
 
 
 class PdfInfo:
