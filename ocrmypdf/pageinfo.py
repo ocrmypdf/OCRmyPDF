@@ -9,6 +9,7 @@ import sys
 import PyPDF2 as pypdf
 from collections import namedtuple
 import warnings
+from pathlib import Path
 
 
 matrix_mult = pypdf.pdf.utils.matrixMultiply
@@ -517,6 +518,8 @@ def _pdf_get_pageinfo(infile, pageno: int):
 
 
 def pdf_get_all_pageinfo(infile):
+    if isinstance(infile, Path):
+        infile = str(infile)
     pdf = pypdf.PdfFileReader(infile)
     return [_pdf_get_pageinfo(infile, n) for n in range(pdf.numPages)]
 

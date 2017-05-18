@@ -96,9 +96,9 @@ def test_skip_pages_does_not_replicate(
         env=ensure_tess4
     )
 
-    info_in = pageinfo.pdf_get_all_pageinfo(str(infile))
+    info_in = pageinfo.PdfInfo(infile)
 
-    info = pageinfo.pdf_get_all_pageinfo(str(outpdf))
+    info = pageinfo.PdfInfo(outpdf)
     for page in info:
         assert len(page['images']) == 1, "skipped page was replicated"
 
@@ -115,6 +115,6 @@ def test_content_preservation(ensure_tess4, resources, outpdf):
         env=ensure_tess4
     )
 
-    info = pageinfo.pdf_get_all_pageinfo(str(outpdf))
+    info = pageinfo.PdfInfo(outpdf)
     page = info[0]
     assert len(page['images']) > 1, "masked were rasterized"

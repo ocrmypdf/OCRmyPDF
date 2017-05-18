@@ -130,6 +130,6 @@ def run_ocrmypdf(input_file, output_file, *args, env=None):
 @pytest.helpers.register
 def first_page_dimensions(pdf):
     from ocrmypdf import pageinfo
-    info = pageinfo.pdf_get_all_pageinfo(str(pdf))
+    info = pageinfo.PdfInfo(pdf)
     page0 = info[0]
     return (page0['width_inches'], page0['height_inches'])
