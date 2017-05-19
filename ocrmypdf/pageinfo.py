@@ -468,10 +468,11 @@ def _find_form_xobject_images(pdf, container, contentsinfo):
             # but in practice both Form XObjects and multiple drawing of the
             # same object are both very rare.
             ctm_shorthand = settings.shorthand
-            yield from _find_images(pdf, form_xobject, ctm_shorthand)
+            yield from _find_images(
+                pdf=pdf, container=form_xobject, shorthand=ctm_shorthand)
 
 
-def _find_images(pdf, container, shorthand=None):
+def _find_images(*, pdf, container, shorthand=None):
     """Find all individual instances of images drawn in the container
 
     Usually the container is a page, but it may also be a Form XObject.
@@ -564,16 +565,24 @@ def _pdf_get_pageinfo(pdf, pageno: int):
 
     width_pt = page.mediaBox.getWidth()
     height_pt = page.mediaBox.getHeight()
-    pageinfo['width_inches'] = width_pt / Decimal(72.0)
-    pageinfo['height_inches'] = height_pt / Decimal(72.0)
+
+    userunit = page.get('/UserUnit',
+                        [Decimal(1.0), Decimal(1.0)])
+    if isinstance(userunit, pypdf.generic.FloatObject):
+        userunit = [userunit, userunit]
+    pageinfo['userunit'] = userunit
+    pageinfo['width_inches'] = width_pt * userunit[0] / Decimal(72.0)
+    pageinfo['height_inches'] = height_pt * userunit[1] / Decimal(72.0)
 
     try:
         pageinfo['rotate'] = int(page['/Rotate'])
     except KeyError:
         pageinfo['rotate'] = 0
 
+    userunit_shorthand = (userunit[0], 0, 0, userunit[1], 0, 0)
     pageinfo['images'] = [im for im in
-                          _find_images(pdf, page)]
+                          _find_images(pdf=pdf, container=page,
+                                       shorthand=userunit_shorthand)]
     if pageinfo['images']:
         xres = max(image['dpi_w'] for image in pageinfo['images'])
         yres = max(image['dpi_h'] for image in pageinfo['images'])
@@ -633,11 +642,11 @@ class PageInfo(MutableMapping):
 
     @property
     def xres(self):
-        return self._pageinfo['xres']
+        return self._pageinfo.get('xres', None)
 
     @property
     def yres(self):
-        return self._pageinfo['yres']
+        return self._pageinfo.get('yres', None)
 
     @property
     def images(self):
@@ -665,6 +674,7 @@ class PageInfo(MutableMapping):
             '<PageInfo '
             'pageno={} {}"x{}" rotation={} res={}x{} has_text={}>').format(
             self.pageno, self.width_inches, self.height_inches,
+            self.rotation,
             self.xres, self.yres, self.has_text
         )
 
@@ -674,8 +684,8 @@ class PdfInfo:
         self._pages = pdf_get_all_pageinfo(infile)
 
     @property
-    def pages(self, index):
-        return self._pages[index]
+    def pages(self):
+        return self._pages
 
     def __getitem__(self, item):
         return self._pages[item]
