@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE, check_output, check_call, DEVNULL
 import os
 import shutil
 import pytest
-from ocrmypdf.pageinfo import PdfInfo
+from ocrmypdf.pageinfo import PdfInfo, Colorspace, Encoding
 import PyPDF2 as pypdf
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf import leptonica
@@ -630,7 +630,7 @@ def test_jbig2_passthrough(spoof_tesseract_cache, resources, outpdf):
         env=spoof_tesseract_cache)
 
     out_pageinfo = PdfInfo(out)
-    assert out_pageinfo[0].images[0].enc == 'jbig2'
+    assert out_pageinfo[0].images[0].enc == Encoding.jbig2
 
 
 def test_stdin(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
@@ -906,16 +906,16 @@ def test_compression_preserved(spoof_tesseract_noop, ocrmypdf_exec,
     pdfimage = pdfinfo[0].images[0]
 
     if input_file.endswith('.png'):
-        assert pdfimage.enc != 'jpeg', \
+        assert pdfimage.enc != Encoding.jpeg, \
             "Lossless compression changed to lossy!"
     elif input_file.endswith('.jpg'):
-        assert pdfimage.enc == 'jpeg', \
+        assert pdfimage.enc == Encoding.jpeg, \
             "Lossy compression changed to lossless!"
     if im.mode.startswith('RGB') or im.mode.startswith('BGR'):
-        assert pdfimage.color == 'rgb', \
+        assert pdfimage.color == Colorspace.rgb, \
             "Colorspace changed"
     elif im.mode.startswith('L'):
-        assert pdfimage.color == 'gray', \
+        assert pdfimage.color == Colorspace.gray, \
             "Colorspace changed"
 
 
@@ -950,16 +950,16 @@ def test_compression_changed(spoof_tesseract_noop, ocrmypdf_exec,
 
     pdfimage = pdfinfo[0].images[0]
 
-    if compression == 'jpeg':
-        assert pdfimage.enc == 'jpeg'
+    if compression == "jpeg":
+        assert pdfimage.enc == Encoding.jpeg
     elif compression == 'lossless':
-        assert pdfimage.enc == 'image'
+        assert pdfimage.enc not in (Encoding.jpeg, Encoding.jpeg2000)
 
     if im.mode.startswith('RGB') or im.mode.startswith('BGR'):
-        assert pdfimage.color == 'rgb', \
+        assert pdfimage.color == Colorspace.rgb, \
             "Colorspace changed"
     elif im.mode.startswith('L'):
-        assert pdfimage.color == 'gray', \
+        assert pdfimage.color == Colorspace.gray, \
             "Colorspace changed"
 
 

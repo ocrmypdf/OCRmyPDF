@@ -11,48 +11,57 @@ from collections import namedtuple
 from collections.abc import MutableMapping, Mapping
 import warnings
 from pathlib import Path
+from enum import Enum
 
 
 matrix_mult = pypdf.pdf.utils.matrixMultiply
 
+Colorspace = Enum('Colorspace',
+                  'gray rgb cmyk lab icc index sep devn pattern jpeg2000')
+
+Encoding = Enum('Encoding',
+                'ccitt jpeg jpeg2000 jbig2 asciihex ascii85 lzw flate ' + \
+                'runlength')
+
+
 FRIENDLY_COLORSPACE = {
-    '/DeviceGray': 'gray',
-    '/CalGray': 'gray',
-    '/DeviceRGB': 'rgb',
-    '/CalRGB': 'rgb',
-    '/DeviceCMYK': 'cmyk',
-    '/Lab': 'lab',
-    '/ICCBased': 'icc',
-    '/Indexed': 'index',
-    '/Separation': 'sep',
-    '/DeviceN': 'devn',
-    '/Pattern': '-',
-    '/G': 'gray',  # Abbreviations permitted in inline images
-    '/RGB': 'rgb',
-    '/CMYK': 'cmyk',
-    '/I': 'index',
+    '/DeviceGray': Colorspace.gray,
+    '/CalGray': Colorspace.gray,
+    '/DeviceRGB': Colorspace.rgb,
+    '/CalRGB': Colorspace.rgb,
+    '/DeviceCMYK': Colorspace.cmyk,
+    '/Lab': Colorspace.lab,
+    '/ICCBased': Colorspace.icc,
+    '/Indexed': Colorspace.index,
+    '/Separation': Colorspace.sep,
+    '/DeviceN': Colorspace.devn,
+    '/Pattern': Colorspace.pattern,
+    '/G': Colorspace.gray,  # Abbreviations permitted in inline images
+    '/RGB': Colorspace.rgb,
+    '/CMYK': Colorspace.cmyk,
+    '/I': Colorspace.index,
 }
 
 FRIENDLY_ENCODING = {
-    '/CCITTFaxDecode': 'ccitt',
-    '/DCTDecode': 'jpeg',
-    '/JPXDecode': 'jpx',
-    '/JBIG2Decode': 'jbig2',
-    '/CCF': 'ccitt',  # Abbreviations permitted in inline images
-    '/DCT': 'jpeg',
-    '/AHx': 'asciihex',
-    '/A85': 'ascii85',
-    '/LZW': 'lzw',
-    '/Fl': 'flate',
-    '/RL': 'runlength'
+    '/CCITTFaxDecode': Encoding.ccitt,
+    '/DCTDecode': Encoding.jpeg,
+    '/JPXDecode': Encoding.jpeg2000,
+    '/JBIG2Decode': Encoding.jbig2,
+    '/CCF': Encoding.ccitt,  # Abbreviations permitted in inline images
+    '/DCT': Encoding.jpeg,
+    '/AHx': Encoding.asciihex,
+    '/A85': Encoding.ascii85,
+    '/LZW': Encoding.lzw,
+    '/Fl': Encoding.flate,
+    '/RL': Encoding.runlength
 }
 
 FRIENDLY_COMP = {
-    'gray': 1,
-    'rgb': 3,
-    'cmyk': 4,
-    'lab': 3,
-    'index': 1
+    Colorspace.gray: 1,
+    Colorspace.rgb: 3,
+    Colorspace.cmyk: 4,
+    Colorspace.lab: 3,
+    Colorspace.index: 1
 }
 
 
@@ -296,7 +305,8 @@ class ImageInfo:
                     cs = cs[0]
                 self._color = FRIENDLY_COLORSPACE.get(cs, '-')
             else:
-                self._color = 'jpx' if self._enc == 'jpx' else '?'
+                self._color = FRIENDLY_COLORSPACE[Colorspace.jpeg2000] \
+                    if self._enc == Encoding.jpeg2000 else '?'
 
             self._comp = FRIENDLY_COMP.get(self._color, '?')
 
@@ -304,8 +314,8 @@ class ImageInfo:
             # but encoding must be monochrome. This happens if a monochrome image
             # has an ICC profile attached. Better solution would be to examine
             # the ICC profile.
-            if self._comp == '?' and self._enc in ('ccitt', 'jbig2'):
-                self._comp = FRIENDLY_COMP['gray']
+            if self._comp == '?' and self._enc in (Encoding.ccitt, 'jbig2'):
+                self._comp = FRIENDLY_COMP[Colorspace.gray]
 
     @property
     def name(self):

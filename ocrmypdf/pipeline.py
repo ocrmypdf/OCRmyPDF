@@ -22,7 +22,7 @@ from PIL import Image
 from ruffus import formatter, regex, Pipeline, suffix
 
 from .hocrtransform import HocrTransform
-from .pageinfo import PdfInfo
+from .pageinfo import PdfInfo, Encoding, Colorspace
 from .pdfa import generate_pdfa_ps, file_claims_pdfa
 from .helpers import re_symlink, is_iterable_notstr, page_number
 from .exec import ghostscript, tesseract, qpdf
@@ -400,10 +400,10 @@ def rasterize_with_ghostscript(
         if all(image.comp == 1 for image in pageinfo.images):
             if all(image.bpc == 1 for image in pageinfo.images):
                 device = 'pngmono'
-            elif all(image.bpc > 1 and image.color == 'index'
+            elif all(image.bpc > 1 and image.color == Colorspace.index
                      for image in pageinfo.images):
                 device = 'png256'
-            elif all(image.bpc > 1 and image.color == 'gray'
+            elif all(image.bpc > 1 and image.color == Colorspace.gray
                      for image in pageinfo.images):
                 device = 'pnggray'
 

@@ -6,6 +6,7 @@ from reportlab.pdfgen.canvas import Canvas
 from PIL import Image
 from tempfile import NamedTemporaryFile
 from math import isclose
+from ocrmypdf.pageinfo import Colorspace, Encoding
 from contextlib import suppress
 import os
 import shutil
@@ -64,7 +65,7 @@ def test_single_page_image(outdir):
 
     pdfimage = page.images[0]
     assert pdfimage.width == 8
-    assert pdfimage.color == 'gray'
+    assert pdfimage.color == Colorspace.gray
 
     # DPI in a 1"x1" is the image width
     assert isclose(pdfimage.xres, 8)
@@ -88,7 +89,7 @@ def test_single_page_inline_image(outdir):
     print(pdfinfo)
     pdfimage = pdfinfo[0].images[0]
     assert isclose(pdfimage.xres, 8)
-    assert pdfimage.color != '-'
+    assert pdfimage.color == Colorspace.rgb  # reportlab produces color image
     assert pdfimage.width == 8
 
 
@@ -98,7 +99,7 @@ def test_jpeg(resources, outdir):
     pdfinfo = pageinfo.PdfInfo(filename)
 
     pdfimage = pdfinfo[0].images[0]
-    assert pdfimage.enc == 'jpeg'
+    assert pdfimage.enc == Encoding.jpeg
     assert isclose(pdfimage.xres, 150)
 
 
