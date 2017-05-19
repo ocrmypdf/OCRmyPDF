@@ -27,5 +27,5 @@ sudo apt-get install -y --no-install-recommends \
 
 pip install --upgrade pip
 mkdir -p packages
-[ -f packages/unpaper_6.1-1.deb ] || wget -q https://dl.dropboxusercontent.com/u/28971240/unpaper_6.1-1.deb -O packages/unpaper_6.1-1.deb
+[ -f packages/unpaper_6.1-1.deb ] || wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O packages/unpaper_6.1-1.deb
 sudo dpkg -i packages/unpaper_6.1-1.deb
