@@ -566,20 +566,17 @@ def _pdf_get_pageinfo(pdf, pageno: int):
     width_pt = page.mediaBox.getWidth()
     height_pt = page.mediaBox.getHeight()
 
-    userunit = page.get('/UserUnit',
-                        [Decimal(1.0), Decimal(1.0)])
-    if isinstance(userunit, pypdf.generic.FloatObject):
-        userunit = [userunit, userunit]
+    userunit = page.get('/UserUnit', Decimal(1.0))
     pageinfo['userunit'] = userunit
-    pageinfo['width_inches'] = width_pt * userunit[0] / Decimal(72.0)
-    pageinfo['height_inches'] = height_pt * userunit[1] / Decimal(72.0)
+    pageinfo['width_inches'] = width_pt * userunit / Decimal(72.0)
+    pageinfo['height_inches'] = height_pt * userunit / Decimal(72.0)
 
     try:
         pageinfo['rotate'] = int(page['/Rotate'])
     except KeyError:
         pageinfo['rotate'] = 0
 
-    userunit_shorthand = (userunit[0], 0, 0, userunit[1], 0, 0)
+    userunit_shorthand = (userunit, 0, 0, userunit, 0, 0)
     pageinfo['images'] = [im for im in
                           _find_images(pdf=pdf, container=page,
                                        shorthand=userunit_shorthand)]
