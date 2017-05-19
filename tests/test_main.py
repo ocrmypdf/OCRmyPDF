@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE, check_output, check_call, DEVNULL
 import os
 import shutil
 import pytest
-from ocrmypdf.pageinfo import PdfInfo, Colorspace, Encoding
+from ocrmypdf.pdfinfo import PdfInfo, Colorspace, Encoding
 import PyPDF2 as pypdf
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf import leptonica

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # © 2015 James R. Barlow: github.com/jbarlow83
 
-from ocrmypdf import pageinfo
+from ocrmypdf import pdfinfo
 from reportlab.pdfgen.canvas import Canvas
 from PIL import Image
 from tempfile import NamedTemporaryFile
 from math import isclose
-from ocrmypdf.pageinfo import Colorspace, Encoding
+from ocrmypdf.pdfinfo import Colorspace, Encoding
 from contextlib import suppress
 import os
 import shutil
@@ -28,7 +28,7 @@ def test_single_page_text(outdir):
     pdf.showPage()
     pdf.save()
 
-    pdfinfo = pageinfo.PdfInfo(filename)
+    pdfinfo = pdfinfo.PdfInfo(filename)
 
     assert len(pdfinfo) == 1
     page = pdfinfo[0]
@@ -55,7 +55,7 @@ def test_single_page_image(outdir):
             layout_fun=layout_fun)
     filename.write_bytes(pdf_bytes)
 
-    pdfinfo = pageinfo.PdfInfo(filename)
+    pdfinfo = pdfinfo.PdfInfo(filename)
 
     assert len(pdfinfo) == 1
     page = pdfinfo[0]
@@ -85,7 +85,7 @@ def test_single_page_inline_image(outdir):
         pdf.showPage()
         pdf.save()
 
-    pdfinfo = pageinfo.PdfInfo(filename)
+    pdfinfo = pdfinfo.PdfInfo(filename)
     print(pdfinfo)
     pdfimage = pdfinfo[0].images[0]
     assert isclose(pdfimage.xres, 8)
@@ -96,7 +96,7 @@ def test_single_page_inline_image(outdir):
 def test_jpeg(resources, outdir):
     filename = resources / 'c02-22.pdf'
 
-    pdfinfo = pageinfo.PdfInfo(filename)
+    pdfinfo = pdfinfo.PdfInfo(filename)
 
     pdfimage = pdfinfo[0].images[0]
     assert pdfimage.enc == Encoding.jpeg
@@ -106,7 +106,7 @@ def test_jpeg(resources, outdir):
 def test_form_xobject(resources):
     filename = resources / 'formxobject.pdf'
 
-    pdfinfo = pageinfo.PdfInfo(filename)
+    pdfinfo = pdfinfo.PdfInfo(filename)
     pdfimage = pdfinfo[0].images[0]
     assert pdfimage.width == 50
 
@@ -114,6 +114,6 @@ def test_form_xobject(resources):
 def test_no_contents(resources):
     filename = resources / 'no_contents.pdf'
 
-    pdfinfo = pageinfo.PdfInfo(filename)
+    pdfinfo = pdfinfo.PdfInfo(filename)
     assert len(pdfinfo[0].images) == 0
     assert pdfinfo[0].has_text == False

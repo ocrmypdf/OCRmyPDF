@@ -22,7 +22,7 @@ from PIL import Image
 from ruffus import formatter, regex, Pipeline, suffix
 
 from .hocrtransform import HocrTransform
-from .pageinfo import PdfInfo, Encoding, Colorspace
+from .pdfinfo import PdfInfo, Encoding, Colorspace
 from .pdfa import generate_pdfa_ps, file_claims_pdfa
 from .helpers import re_symlink, is_iterable_notstr, page_number
 from .exec import ghostscript, tesseract, qpdf
