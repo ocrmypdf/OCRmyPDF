@@ -15,16 +15,19 @@ Users of Debian 9 ("stretch") or later or Ubuntu 16.10 or later may simply
 Installing on macOS
 -------------------
 
+A `Homebrew <https://brew.sh>`_ tap is available for macOS:
+
 .. code-block:: bash
 
     brew tap jbarlow83/ocrmypdf
     brew install ocrmypdf
 
+
 .. warning::
 
     Users who previously installed OCRmyPDF on macOS using ``pip install ocrmypdf`` should remove the pip version (``pip3 uninstall ocrmypdf``) before switching to the Homebrew version.
 
-.. _Docker:
+.. _Docker-install:
 
 Installing the Docker image
 ---------------------------
@@ -274,7 +277,7 @@ These installation instructions omit the optional dependency ``unpaper``, which 
 
 .. code-block:: bash
 
-    wget -q https://dl.dropboxusercontent.com/u/28971240/unpaper_6.1-1.deb -O unpaper_6.1-1.deb
+    wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O unpaper_6.1-1.deb
     sudo dpkg -i unpaper_6.1-1.deb
 
 
