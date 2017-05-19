@@ -28,10 +28,10 @@ def test_single_page_text(outdir):
     pdf.showPage()
     pdf.save()
 
-    pdfinfo = pdfinfo.PdfInfo(filename)
+    info = pdfinfo.PdfInfo(filename)
 
-    assert len(pdfinfo) == 1
-    page = pdfinfo[0]
+    assert len(info) == 1
+    page = info[0]
 
     assert page.has_text
     assert len(page.images) == 0
@@ -55,10 +55,10 @@ def test_single_page_image(outdir):
             layout_fun=layout_fun)
     filename.write_bytes(pdf_bytes)
 
-    pdfinfo = pdfinfo.PdfInfo(filename)
+    info = pdfinfo.PdfInfo(filename)
 
-    assert len(pdfinfo) == 1
-    page = pdfinfo[0]
+    assert len(info) == 1
+    page = info[0]
 
     assert not page.has_text
     assert len(page.images) == 1
@@ -85,9 +85,9 @@ def test_single_page_inline_image(outdir):
         pdf.showPage()
         pdf.save()
 
-    pdfinfo = pdfinfo.PdfInfo(filename)
-    print(pdfinfo)
-    pdfimage = pdfinfo[0].images[0]
+    pdf = pdfinfo.PdfInfo(filename)
+    print(pdf)
+    pdfimage = pdf[0].images[0]
     assert isclose(pdfimage.xres, 8)
     assert pdfimage.color == Colorspace.rgb  # reportlab produces color image
     assert pdfimage.width == 8
@@ -96,9 +96,9 @@ def test_single_page_inline_image(outdir):
 def test_jpeg(resources, outdir):
     filename = resources / 'c02-22.pdf'
 
-    pdfinfo = pdfinfo.PdfInfo(filename)
+    pdf = pdfinfo.PdfInfo(filename)
 
-    pdfimage = pdfinfo[0].images[0]
+    pdfimage = pdf[0].images[0]
     assert pdfimage.enc == Encoding.jpeg
     assert isclose(pdfimage.xres, 150)
 
@@ -106,14 +106,14 @@ def test_jpeg(resources, outdir):
 def test_form_xobject(resources):
     filename = resources / 'formxobject.pdf'
 
-    pdfinfo = pdfinfo.PdfInfo(filename)
-    pdfimage = pdfinfo[0].images[0]
+    pdf = pdfinfo.PdfInfo(filename)
+    pdfimage = pdf[0].images[0]
     assert pdfimage.width == 50
 
 
 def test_no_contents(resources):
     filename = resources / 'no_contents.pdf'
 
-    pdfinfo = pdfinfo.PdfInfo(filename)
-    assert len(pdfinfo[0].images) == 0
-    assert pdfinfo[0].has_text == False
+    pdf = pdfinfo.PdfInfo(filename)
+    assert len(pdf[0].images) == 0
+    assert pdf[0].has_text == False

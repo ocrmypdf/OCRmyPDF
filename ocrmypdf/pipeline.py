@@ -196,16 +196,16 @@ def get_pageinfo(input_file, context):
 
 def get_page_dpi(pageinfo, options):
     "Get the DPI when nonsquare DPI is tolerable"
-    xres = max(pageinfo.get('xres', VECTOR_PAGE_DPI), options.oversample or 0)
-    yres = max(pageinfo.get('yres', VECTOR_PAGE_DPI), options.oversample or 0)
+    xres = max(pageinfo.xres or VECTOR_PAGE_DPI, options.oversample or 0)
+    yres = max(pageinfo.yres or VECTOR_PAGE_DPI, options.oversample or 0)
     return (float(xres), float(yres))
 
 
 def get_page_square_dpi(pageinfo, options):
     "Get the DPI when we require xres == yres"
     return float(max(
-        pageinfo.get('xres', VECTOR_PAGE_DPI),
-        pageinfo.get('yres', VECTOR_PAGE_DPI),
+        pageinfo.xres or VECTOR_PAGE_DPI,
+        pageinfo.yres or VECTOR_PAGE_DPI,
         options.oversample or 0))
 
 
@@ -383,7 +383,7 @@ def orient_page(
 
         pageno = int(os.path.basename(page_pdf)[0:6]) - 1
         pdfinfo = context.get_pdfinfo()
-        pdfinfo[pageno]['rotated'] = orient_conf.angle
+        pdfinfo[pageno].rotation = orient_conf.angle
         context.set_pdfinfo(pdfinfo)
 
 

@@ -592,14 +592,14 @@ def _pdf_get_pageinfo(pdf, pageno: int):
     return pageinfo
 
 
-def pdf_get_all_pageinfo(infile):
+def _pdf_get_all_pageinfo(infile):
     if isinstance(infile, Path):
         infile = str(infile)
     pdf = pypdf.PdfFileReader(infile)
     return [PageInfo(pdf, n) for n in range(pdf.numPages)]
 
 
-class PageInfo(MutableMapping):
+class PageInfo:
     def __init__(self, infile, pageno):
         self._infile = infile
         self._pageno = pageno
@@ -631,7 +631,14 @@ class PageInfo(MutableMapping):
 
     @property
     def rotation(self):
-        return self._pageinfo['rotate']
+        return self._pageinfo.get('rotate', None)
+
+    @rotation.setter
+    def rotation(self, value):
+        if value in (0, 90, 180, 270, 360, -90, -180, -270):
+            self._pageinfo['rotate'] = value
+        else:
+            raise ValueError("rotation must be a cardinal angle")
 
     @property
     def images(self):
@@ -646,25 +653,19 @@ class PageInfo(MutableMapping):
         return self._pageinfo.get('yres', None)
 
     @property
+    def userunit(self):
+        return self._pageinfo.get('userunit', None)
+
+    @property
+    def min_version(self):
+        if self.userunit is not None:
+            return '1.6'
+        else:
+            return '1.5'
+
+    @property
     def images(self):
         return self._pageinfo['images']
-
-    def __getitem__(self, item):
-        warnings.warn("pageinfo[item] is deprecated", DeprecationWarning)
-        return self._pageinfo[item]
-
-    def __len__(self):
-        return len(self._pageinfo)
-
-    def __iter__(self):
-        return iter(self._pageinfo)
-
-    def __setitem__(self, key, value):
-        warnings.warn("pageinfo[item] is deprecated", DeprecationWarning)
-        self._pageinfo[key] = value
-
-    def __delitem__(self, key):
-        del self._pageinfo[key]
 
     def __repr__(self):
         return (
@@ -677,12 +678,20 @@ class PageInfo(MutableMapping):
 
 
 class PdfInfo:
+    """Get summary information about a PDF
+    
+    """
     def __init__(self, infile):
-        self._pages = pdf_get_all_pageinfo(infile)
+        self._pages = _pdf_get_all_pageinfo(infile)
 
     @property
     def pages(self):
         return self._pages
+
+    @property
+    def min_version(self):
+        # The minimum PDF is the maximum version that any particular page needs
+        return max(page.min_version for page in self.pages)
 
     def __getitem__(self, item):
         return self._pages[item]
@@ -699,7 +708,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('infile')
     args = parser.parse_args()
-    info = pdf_get_all_pageinfo(args.infile)
+    info = _pdf_get_all_pageinfo(args.infile)
     from pprint import pprint
     pprint(info)
 

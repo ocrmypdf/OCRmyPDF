@@ -132,4 +132,4 @@ def first_page_dimensions(pdf):
     from ocrmypdf import pdfinfo
     info = pdfinfo.PdfInfo(pdf)
     page0 = info[0]
-    return (page0['width_inches'], page0['height_inches'])
+    return (page0.width_inches, page0.height_inches)
