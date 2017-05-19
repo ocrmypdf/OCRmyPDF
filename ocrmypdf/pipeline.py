@@ -397,13 +397,13 @@ def rasterize_with_ghostscript(
 
     device = 'png16m'  # 24-bit
     if pageinfo.images:
-        if all(image['comp'] == 1 for image in pageinfo.images):
-            if all(image['bpc'] == 1 for image in pageinfo.images):
+        if all(image.comp == 1 for image in pageinfo.images):
+            if all(image.bpc == 1 for image in pageinfo.images):
                 device = 'pngmono'
-            elif all(image['bpc'] > 1 and image['color'] == 'index'
+            elif all(image.bpc > 1 and image.color == 'index'
                      for image in pageinfo.images):
                 device = 'png256'
-            elif all(image['bpc'] > 1 and image['color'] == 'gray'
+            elif all(image.bpc > 1 and image.color == 'gray'
                      for image in pageinfo.images):
                 device = 'pnggray'
 
@@ -430,7 +430,7 @@ def preprocess_remove_background(
 
     pageinfo = get_pageinfo(input_file, context)
 
-    if any(image['bpc'] > 1 for image in pageinfo.images):
+    if any(image.bpc > 1 for image in pageinfo.images):
         leptonica.remove_background(input_file, output_file)
     else:
         log.info("{0:4d}: background removal skipped on mono page".format(

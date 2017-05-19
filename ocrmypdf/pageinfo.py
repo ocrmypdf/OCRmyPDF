@@ -619,6 +619,10 @@ class PageInfo(MutableMapping):
     def yres(self):
         return self._pageinfo['yres']
 
+    @property
+    def images(self):
+        return self._pageinfo['images']
+
     def __getitem__(self, item):
         warnings.warn("pageinfo[item] is deprecated", DeprecationWarning)
         return self._pageinfo[item]

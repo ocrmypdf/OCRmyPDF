@@ -117,4 +117,4 @@ def test_content_preservation(ensure_tess4, resources, outpdf):
 
     info = pageinfo.PdfInfo(outpdf)
     page = info[0]
-    assert len(page['images']) > 1, "masked were rasterized"
+    assert len(page.images) > 1, "masked were rasterized"

@@ -5,6 +5,7 @@ from ocrmypdf import pageinfo
 from reportlab.pdfgen.canvas import Canvas
 from PIL import Image
 from tempfile import NamedTemporaryFile
+from math import isclose
 from contextlib import suppress
 import os
 import shutil
@@ -62,12 +63,12 @@ def test_single_page_image(outdir):
     assert len(page.images) == 1
 
     pdfimage = page.images[0]
-    assert pdfimage['width'] == 8
-    assert pdfimage['color'] == 'gray'
+    assert pdfimage.width == 8
+    assert pdfimage.color == 'gray'
 
     # DPI in a 1"x1" is the image width
-    assert abs(pdfimage['dpi_w'] - 8) < 1e-5
-    assert abs(pdfimage['dpi_h'] - 8) < 1e-5
+    assert isclose(pdfimage.xres, 8)
+    assert isclose(pdfimage.yres, 8)
 
 
 def test_single_page_inline_image(outdir):
@@ -86,9 +87,9 @@ def test_single_page_inline_image(outdir):
     pdfinfo = pageinfo.PdfInfo(filename)
     print(pdfinfo)
     pdfimage = pdfinfo[0].images[0]
-    assert (pdfimage['dpi_w'] - 8) < 1e-5
-    assert pdfimage['color'] != '-'
-    assert pdfimage['width'] == 8
+    assert isclose(pdfimage.xres, 8)
+    assert pdfimage.color != '-'
+    assert pdfimage.width == 8
 
 
 def test_jpeg(resources, outdir):
@@ -97,8 +98,8 @@ def test_jpeg(resources, outdir):
     pdfinfo = pageinfo.PdfInfo(filename)
 
     pdfimage = pdfinfo[0].images[0]
-    assert pdfimage['enc'] == 'jpeg'
-    assert (pdfimage['dpi_w'] - 150) < 1e-5
+    assert pdfimage.enc == 'jpeg'
+    assert isclose(pdfimage.xres, 150)
 
 
 def test_form_xobject(resources):
@@ -106,7 +107,7 @@ def test_form_xobject(resources):
 
     pdfinfo = pageinfo.PdfInfo(filename)
     pdfimage = pdfinfo[0].images[0]
-    assert pdfimage['width'] == 50
+    assert pdfimage.width == 50
 
 
 def test_no_contents(resources):
