@@ -53,6 +53,7 @@ deploy:
   # OTOH if we ever need separate binary wheels then each version needs its
   # own deploy
 - provider: pypi
+  server: https://upload.pypi.org/legacy/
   user: ocrmypdf-travis
   password:
     secure: "DTFOmmNL6olA0+yXvp4u9jXZlZeqrJsJ0526jzqf4a3gZ6jnGTq5UI6WzRsslSyoMMfXKtHQebqHM6ogSgCZinyZ3ufHJo8fn9brxbEc2gsiWkbj5o3bGwdWMT1vNNE7XW0VCpw87rZ1EEwjl4FJHFudMlPR1yfU5+uq0k0PACo="
@@ -65,7 +66,7 @@ deploy:
 
   # test pypi
 - provider: pypi
-  server: https://testpypi.python.org/pypi
+  server: https://testpypi.pypi.org/legacy/
   user: ocrmypdf-travis
   password:
     secure: "DTFOmmNL6olA0+yXvp4u9jXZlZeqrJsJ0526jzqf4a3gZ6jnGTq5UI6WzRsslSyoMMfXKtHQebqHM6ogSgCZinyZ3ufHJo8fn9brxbEc2gsiWkbj5o3bGwdWMT1vNNE7XW0VCpw87rZ1EEwjl4FJHFudMlPR1yfU5+uq0k0PACo="
