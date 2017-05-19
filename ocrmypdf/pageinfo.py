@@ -8,7 +8,11 @@ import re
 import sys
 import PyPDF2 as pypdf
 from collections import namedtuple
+import warnings
 
+
+warnings.warn("ocrmypdf.pageinfo is deprecated'; use ocrmypdf.pdfinfo",
+              DeprecationWarning)
 
 matrix_mult = pypdf.pdf.utils.matrixMultiply
 
