@@ -226,7 +226,7 @@ def _get_dpi(ctm_shorthand, image_size):
     image_drawn_width = hypot(a, b)
     image_drawn_height = hypot(c, d)
 
-    # The scale of the image is pixels per PDF unit (1/72")
+    # The scale of the image is pixels per unit of default user space (1/72")
     scale_w = image_size[0] / image_drawn_width
     scale_h = image_size[1] / image_drawn_height
 
@@ -307,10 +307,13 @@ class ImageInfo:
             if self._comp == '?' and self._enc in ('ccitt', 'jbig2'):
                 self._comp = FRIENDLY_COMP['gray']
 
-
     @property
     def name(self):
         return self._name
+
+    @property
+    def type_(self):
+        return self._type
 
     @property
     def width(self):
@@ -357,6 +360,13 @@ class ImageInfo:
                 self.DPI_PREC)
         else:
             raise KeyError(item)
+
+    def __repr__(self):
+        class_locals = {attr: getattr(self, attr, None) for attr in dir(self)
+                        if not attr.startswith('_')}
+        return (
+            "<ImageInfo '{name}' {type_} {width}x{height} {color} "
+            "{comp} {bpc} {enc} {xres}x{yres}>").format(**class_locals)
 
 
 def _find_inline_images(contentsinfo):
