@@ -31,8 +31,8 @@ def test_single_page_text(outdir):
     assert len(pdfinfo) == 1
     page = pdfinfo[0]
 
-    assert page['has_text']
-    assert len(page['images']) == 0
+    assert page.has_text
+    assert len(page.images) == 0
 
 
 def test_single_page_image(outdir):
@@ -58,10 +58,10 @@ def test_single_page_image(outdir):
     assert len(pdfinfo) == 1
     page = pdfinfo[0]
 
-    assert not page['has_text']
-    assert len(page['images']) == 1
+    assert not page.has_text
+    assert len(page.images) == 1
 
-    pdfimage = page['images'][0]
+    pdfimage = page.images[0]
     assert pdfimage['width'] == 8
     assert pdfimage['color'] == 'gray'
 
@@ -85,7 +85,7 @@ def test_single_page_inline_image(outdir):
 
     pdfinfo = pageinfo.PdfInfo(filename)
     print(pdfinfo)
-    pdfimage = pdfinfo[0]['images'][0]
+    pdfimage = pdfinfo[0].images[0]
     assert (pdfimage['dpi_w'] - 8) < 1e-5
     assert pdfimage['color'] != '-'
     assert pdfimage['width'] == 8
@@ -96,7 +96,7 @@ def test_jpeg(resources, outdir):
 
     pdfinfo = pageinfo.PdfInfo(filename)
 
-    pdfimage = pdfinfo[0]['images'][0]
+    pdfimage = pdfinfo[0].images[0]
     assert pdfimage['enc'] == 'jpeg'
     assert (pdfimage['dpi_w'] - 150) < 1e-5
 
@@ -105,7 +105,7 @@ def test_form_xobject(resources):
     filename = resources / 'formxobject.pdf'
 
     pdfinfo = pageinfo.PdfInfo(filename)
-    pdfimage = pdfinfo[0]['images'][0]
+    pdfimage = pdfinfo[0].images[0]
     assert pdfimage['width'] == 50
 
 
@@ -113,5 +113,5 @@ def test_no_contents(resources):
     filename = resources / 'no_contents.pdf'
 
     pdfinfo = pageinfo.PdfInfo(filename)
-    assert len(pdfinfo[0]['images']) == 0
-    assert pdfinfo[0]['has_text'] == False
+    assert len(pdfinfo[0].images) == 0
+    assert pdfinfo[0].has_text == False

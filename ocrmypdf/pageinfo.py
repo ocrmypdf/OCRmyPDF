@@ -552,6 +552,14 @@ class PageInfo(MutableMapping):
         return self._pageinfo['height_inches']
 
     @property
+    def width_pixels(self):
+        return int(round(self.width_inches * self.xres))
+
+    @property
+    def height_pixels(self):
+        return int(round(self.height_inches * self.yres))
+
+    @property
     def rotation(self):
         return self._pageinfo['rotate']
 
@@ -594,7 +602,6 @@ class PdfInfo:
         return self._pages[index]
 
     def __getitem__(self, item):
-        warnings.warn("pageinfo[item] is deprecated", DeprecationWarning)
         return self._pages[item]
 
     def __len__(self):

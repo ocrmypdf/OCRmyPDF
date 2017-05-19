@@ -210,9 +210,9 @@ def get_page_square_dpi(pageinfo, options):
 
 
 def is_ocr_required(pageinfo, log, options):
-    page = pageinfo['pageno'] + 1
+    page = pageinfo.pageno + 1
     ocr_required = True
-    if not pageinfo['images']:
+    if not pageinfo.images:
         if options.force_ocr and options.oversample:
             # The user really wants to reprocess this file
             log.info(
@@ -234,7 +234,7 @@ def is_ocr_required(pageinfo, log, options):
                 "skipping all processing on this page".format(page))
             ocr_required = False
 
-    elif pageinfo['has_text']:
+    elif pageinfo.has_text:
         msg = "{0:4d}: page already has text! – {1}"
 
         if not options.force_ocr and not options.skip_text:
@@ -250,8 +250,8 @@ def is_ocr_required(pageinfo, log, options):
                                 "skipping all processing on this page"))
             ocr_required = False
 
-    if ocr_required and options.skip_big and pageinfo['images']:
-        pixel_count = pageinfo['width_pixels'] * pageinfo['height_pixels']
+    if ocr_required and options.skip_big and pageinfo.images:
+        pixel_count = pageinfo.width_pixels * pageinfo.height_pixels
         if pixel_count > (options.skip_big * 1000000):
             ocr_required = False
             log.warning(
@@ -396,15 +396,15 @@ def rasterize_with_ghostscript(
     pageinfo = get_pageinfo(input_file, context)
 
     device = 'png16m'  # 24-bit
-    if pageinfo['images']:
-        if all(image['comp'] == 1 for image in pageinfo['images']):
-            if all(image['bpc'] == 1 for image in pageinfo['images']):
+    if pageinfo.images:
+        if all(image['comp'] == 1 for image in pageinfo.images):
+            if all(image['bpc'] == 1 for image in pageinfo.images):
                 device = 'pngmono'
             elif all(image['bpc'] > 1 and image['color'] == 'index'
-                     for image in pageinfo['images']):
+                     for image in pageinfo.images):
                 device = 'png256'
             elif all(image['bpc'] > 1 and image['color'] == 'gray'
-                     for image in pageinfo['images']):
+                     for image in pageinfo.images):
                 device = 'pnggray'
 
     log.debug("Rasterize {0} with {1}".format(
@@ -430,11 +430,11 @@ def preprocess_remove_background(
 
     pageinfo = get_pageinfo(input_file, context)
 
-    if any(image['bpc'] > 1 for image in pageinfo['images']):
+    if any(image['bpc'] > 1 for image in pageinfo.images):
         leptonica.remove_background(input_file, output_file)
     else:
         log.info("{0:4d}: background removal skipped on mono page".format(
-            pageinfo['pageno']))
+            pageinfo.pageno))
         re_symlink(input_file, output_file, log)
 
 
@@ -521,8 +521,8 @@ def select_visible_page_image(
     image = next(ii for ii in infiles if ii.endswith(image_suffix))
 
     pageinfo = get_pageinfo(image, context)
-    if pageinfo['images'] and \
-            all(im['enc'] == 'jpeg' for im in pageinfo['images']):
+    if pageinfo.images and \
+            all(im['enc'] == 'jpeg' for im in pageinfo.images):
         log.debug('{:4d}: JPEG input -> JPEG output'.format(
             page_number(image)))
         # If all images were JPEGs originally, produce a JPEG as output
