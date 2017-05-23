@@ -52,6 +52,9 @@ class JobContext:
     def __init__(self):
         self.pdfinfo = None
 
+    def generate_pdfinfo(self, infile):
+        self.pdfinfo = PdfInfo(infile)
+
     def get_pdfinfo(self):
         "What we know about the input PDF"
         return self.pdfinfo
@@ -72,8 +75,8 @@ class JobContext:
         self.work_folder = work_folder
 
 
-from multiprocessing.managers import BaseManager
-class JobContextManager(BaseManager):
+from multiprocessing.managers import SyncManager
+class JobContextManager(SyncManager):
     pass
 
 

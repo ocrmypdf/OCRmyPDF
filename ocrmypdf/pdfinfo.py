@@ -682,6 +682,7 @@ class PdfInfo:
     
     """
     def __init__(self, infile):
+        self._infile = infile
         self._pages = _pdf_get_all_pageinfo(infile)
 
     @property
@@ -701,6 +702,14 @@ class PdfInfo:
 
     def __repr__(self):
         return "<PdfInfo('...'), page count={}>".format(len(self))
+
+    # def __getstate__(self):
+    #     state = {'_infile': self._infile}
+    #     return state
+    #
+    # def __setstate__(self, state):
+    #     self._infile = state['_infile']
+    #     self._pages = _pdf_get_all_pageinfo(self._infile)
 
 
 def main():
