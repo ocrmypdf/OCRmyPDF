@@ -26,6 +26,9 @@ class Ocrmypdf < Formula
   depends_on "openjpeg"
   depends_on "freetype"
   depends_on "libpng"
+  depends_on "libjpeg"
+  depends_on "webp"
+  depends_on "little-cms2"
 
 ${resources}
   def install
