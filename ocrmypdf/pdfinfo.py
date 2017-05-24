@@ -12,6 +12,7 @@ from collections.abc import MutableMapping, Mapping
 import warnings
 from pathlib import Path
 from enum import Enum
+from .helpers import universal_open
 
 
 matrix_mult = pypdf.pdf.utils.matrixMultiply
@@ -593,17 +594,15 @@ def _pdf_get_pageinfo(pdf, pageno: int):
 
 
 def _pdf_get_all_pageinfo(infile):
-    if isinstance(infile, Path):
-        infile = str(infile)
-    pdf = pypdf.PdfFileReader(infile)
-    return [PageInfo(pdf, n) for n in range(pdf.numPages)]
+    with universal_open(infile, 'rb') as f:
+        pdf = pypdf.PdfFileReader(f)
+        return [PageInfo(pdf, n) for n in range(pdf.numPages)]
 
 
 class PageInfo:
-    def __init__(self, infile, pageno):
-        self._infile = infile
+    def __init__(self, pdf, pageno):
         self._pageno = pageno
-        self._pageinfo = _pdf_get_pageinfo(infile, pageno)
+        self._pageinfo = _pdf_get_pageinfo(pdf, pageno)
 
     @property
     def pageno(self):

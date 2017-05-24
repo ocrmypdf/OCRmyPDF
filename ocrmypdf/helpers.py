@@ -3,7 +3,7 @@
 
 from functools import partial
 from collections.abc import Iterable
-from contextlib import suppress
+from contextlib import suppress, contextmanager
 import sys
 import os
 
@@ -77,3 +77,12 @@ def is_file_writable(test_file):
             with suppress(OSError):
                 os.unlink(test_file)
         return True
+
+
+@contextmanager
+def universal_open(p, *args, **kwargs):
+    "Work around Python 3.5's inability to open(pathlib.Path())"
+    try:
+        yield p.open(*args, **kwargs)
+    except AttributeError:
+        yield open(p, *args, **kwargs)
