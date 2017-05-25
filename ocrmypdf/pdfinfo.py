@@ -693,6 +693,10 @@ class PdfInfo:
         # The minimum PDF is the maximum version that any particular page needs
         return max(page.min_version for page in self.pages)
 
+    @property
+    def has_userunit(self):
+        return any(page.userunit for page in self.pages)
+
     def __getitem__(self, item):
         return self._pages[item]
 

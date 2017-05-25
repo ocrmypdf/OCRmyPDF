@@ -184,9 +184,19 @@ def repair_pdf(
         output_file,
         log,
         context):
-
+    options = context.get_options()
     qpdf.repair(input_file, output_file, log)
     pdfinfo = PdfInfo(output_file)
+
+    if pdfinfo.has_userunit and options.output_type == 'pdfa':
+        log.error("This input file uses a PDF feature that is not supported "
+            "by Ghostscript, so you cannot use --output-type=pdfa for this "
+            "file. (Specifically, it uses the PDF-1.6 /UserUnit feature to "
+            "support very large or small page sizes, and Ghostscript cannot "
+            "output these files.)  Use --output-type=pdf instead."
+        )
+        raise InputFileError()
+
     context.set_pdfinfo(pdfinfo)
     log.debug(pdfinfo)
 
@@ -432,8 +442,8 @@ def rasterize_with_ghostscript(
             input_file, output_file, xres=dpi, yres=dpi,
             raster_device=device, log=log)
     else:
-        # Ghostscript respects /UserUnit when rasterizing so replace the
-        # image's DPI with the working DPI
+        # Ghostscript respects /UserUnit when rasterizing. Rasterize at
+        # the true DPI but rewrite the output image to the working DPI.
         ghostscript.rasterize_pdf(
             input_file, output_file + '.tmp', xres=true_dpi, yres=true_dpi,
             raster_device=device, log=log)
@@ -499,7 +509,7 @@ def select_ocr_image(
         infiles,
         output_file,
         log,
-        contenxt):
+        context):
     """Select the image we send for OCR. May not be the same as the display
     image depending on preprocessing."""
 
