@@ -117,3 +117,9 @@ def test_no_contents(resources):
     pdf = pdfinfo.PdfInfo(filename)
     assert len(pdf[0].images) == 0
     assert pdf[0].has_text == False
+
+
+def test_oversized_page(resources):
+    pdf = pdfinfo.PdfInfo(resources / 'poster.pdf')
+    image = pdf[0].images[0]
+    assert image.width * image.xres > 200, "this is supposed to be oversized"

@@ -205,10 +205,18 @@ def get_page_dpi(pageinfo, options):
 
 
 def get_page_square_dpi(pageinfo, options):
-    "Get the DPI when we require xres == yres"
+    "Get the working DPI when we require xres == yres"
     return float(max(
-        pageinfo.xres or VECTOR_PAGE_DPI,
-        pageinfo.yres or VECTOR_PAGE_DPI,
+        (pageinfo.xres * pageinfo.userunit) or VECTOR_PAGE_DPI,
+        (pageinfo.yres * pageinfo.userunit) or VECTOR_PAGE_DPI,
+        options.oversample or 0))
+
+
+def get_page_true_square_dpi(pageinfo, options):
+    "Get the true DPI when we require xres == yres, and scaled in userunits"
+    return float(max(
+        (pageinfo.xres) or VECTOR_PAGE_DPI,
+        (pageinfo.yres) or VECTOR_PAGE_DPI,
         options.oversample or 0))
 
 
@@ -414,11 +422,24 @@ def rasterize_with_ghostscript(
               os.path.basename(input_file), device))
 
     # Produce the page image with square resolution or else deskew and OCR
-    # will not work properly
-    dpi = get_page_square_dpi(pageinfo, options)
-    ghostscript.rasterize_pdf(
-        input_file, output_file, xres=dpi, yres=dpi, raster_device=device,
-        log=log)
+    # will not work properly.
+    true_dpi = get_page_true_square_dpi(pageinfo, options)
+    working_dpi = get_page_square_dpi(pageinfo, options)
+
+    if true_dpi == working_dpi:
+        dpi = true_dpi
+        ghostscript.rasterize_pdf(
+            input_file, output_file, xres=dpi, yres=dpi,
+            raster_device=device, log=log)
+    else:
+        # Ghostscript respects /UserUnit when rasterizing so replace the
+        # image's DPI with the working DPI
+        ghostscript.rasterize_pdf(
+            input_file, output_file + '.tmp', xres=true_dpi, yres=true_dpi,
+            raster_device=device, log=log)
+
+        with Image.open(output_file + ".tmp") as im:
+            im.save(output_file, dpi=(working_dpi, working_dpi))
 
 
 def preprocess_remove_background(
@@ -692,6 +713,12 @@ def combine_layers(
     pdf_output = pypdf.PdfFileWriter()
     pdf_output.addPage(page_text)
 
+    # If the input was scaled, re-apply the scaling
+    pageinfo = get_pageinfo(text, context)
+    if pageinfo.userunit != 1:
+        page_text[pypdf.generic.NameObject('/UserUnit')] = pageinfo.userunit
+        pdf_output._header = b'%PDF-1.6'  # Hack header to correct version
+
     with open(output_file, "wb") as out:
         pdf_output.write(out)
 
@@ -835,9 +862,14 @@ def merge_pages_ghostscript(
                    if not f.endswith('.txt'))
     pdf_pages = sorted(input_files, key=input_file_order)
     log.debug("Final pages: " + "\n".join(pdf_pages))
+    input_pdfinfo = context.get_pdfinfo()
     ghostscript.generate_pdfa(
-        pdf_pages, output_file, options.pdfa_image_compression,
-        log, options.jobs or 1)
+        pdf_version=input_pdfinfo.min_version,
+        pdf_pages=pdf_pages,
+        output_file=output_file,
+        compression=options.pdfa_image_compression,
+        log=log,
+        threads=options.jobs or 1)
 
 
 def merge_pages_qpdf(
@@ -879,7 +911,8 @@ def merge_pages_qpdf(
 
     pdf_pages[0] = writer_file
 
-    qpdf.merge(pdf_pages, output_file)
+    qpdf.merge(input_files=pdf_pages, output_file=output_file,
+               min_version=context.get_pdfinfo().min_version)
 
 
 def merge_sidecars(

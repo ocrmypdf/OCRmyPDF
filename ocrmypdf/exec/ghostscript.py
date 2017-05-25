@@ -64,7 +64,8 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             raise SubprocessOutputError()
 
 
-def generate_pdfa(pdf_pages, output_file, compression, log, threads=1):
+def generate_pdfa(*, pdf_version, pdf_pages, output_file, compression, log,
+                  threads=1):
     compression_args = []
     if compression == 'jpeg':
         compression_args = [
@@ -92,6 +93,7 @@ def generate_pdfa(pdf_pages, output_file, compression, log, threads=1):
             "-dQUIET",
             "-dBATCH",
             "-dNOPAUSE",
+            '-dCompatibilityLevel=' + str(pdf_version),
             '-dNumRenderingThreads=' + str(threads),
             "-sDEVICE=pdfwrite",
             "-dAutoRotatePages=/None",
