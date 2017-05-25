@@ -7,8 +7,10 @@ from shutil import copy
 from functools import lru_cache
 import re
 import sys
+from math import isclose
 from . import get_program
 from ..exceptions import SubprocessOutputError
+from PIL import Image
 
 
 @lru_cache(maxsize=1)
@@ -33,8 +35,22 @@ def _gs_error_reported(stream):
     return re.search(r'error', stream, flags=re.IGNORECASE)
 
 
+def _correct_image_size(input_fp, output_file, res, int_res, log):
+    # If the output size was reduced due to rounding DPI to an
+    # integer, resize the image to its expected size
+    input_fp.seek(0)
+    with Image.open(input_fp) as im:
+        expected_size = round(res[0] / int_res[0] * im.size[0]), \
+                        round(res[1] / int_res[1] * im.size[1])
+        log.info(im.size)
+        log.info(expected_size)
+        im.resize(expected_size).save(output_file)
+
+
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
                   pageno=1):
+    res = xres, yres
+    int_res = round(xres), round(yres)
     with NamedTemporaryFile(delete=True) as tmp:
         args_gs = [
             get_program('gs'),
@@ -46,7 +62,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             '-dFirstPage=%i' % pageno,
             '-dLastPage=%i' % pageno,
             '-o', tmp.name,
-            '-r{0}x{1}'.format(str(round(xres)), str(round(yres))),
+            '-r{0}x{1}'.format(str(int_res[0]), str(int_res[1])),
             input_file
         ]
 
@@ -58,7 +74,13 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             log.debug(p.stdout)
 
         if p.returncode == 0:
-            copy(tmp.name, output_file)
+            if isclose(int_res[0], res[0], abs_tol=0.1) and \
+                    isclose(int_res[1], res[1], abs_tol=0.1):
+                copy(tmp.name, output_file)
+            else:
+                # If the output size was reduced due to rounding DPI to an
+                # integer, resize the image to its expected size
+                _correct_image_size(tmp, output_file, res, int_res, log)
         else:
             log.error('Ghostscript rasterizing failed')
             raise SubprocessOutputError()

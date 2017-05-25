@@ -39,3 +39,13 @@ def poster(resources):
 def test_userunit_ghostscript_fails(poster, no_outpdf):
     p, out, err = run_ocrmypdf(poster, no_outpdf, '--output-type=pdfa')
     assert p.returncode == ExitCode.input_file
+
+
+def test_userunit_qpdf_passes(spoof_tesseract_cache, poster, outpdf):
+    before = PdfInfo(poster)
+    check_ocrmypdf(poster, outpdf, '--output-type=pdf',
+                   env=spoof_tesseract_cache)
+
+    after = PdfInfo(outpdf)
+    assert isclose(before[0].width_inches, after[0].width_inches)
+

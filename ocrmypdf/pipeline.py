@@ -445,10 +445,10 @@ def rasterize_with_ghostscript(
         # Ghostscript respects /UserUnit when rasterizing. Rasterize at
         # the true DPI but rewrite the output image to the working DPI.
         ghostscript.rasterize_pdf(
-            input_file, output_file + '.tmp', xres=true_dpi, yres=true_dpi,
+            input_file, output_file + '.jpg', xres=true_dpi, yres=true_dpi,
             raster_device=device, log=log)
 
-        with Image.open(output_file + ".tmp") as im:
+        with Image.open(output_file + ".jpg") as im:
             im.save(output_file, dpi=(working_dpi, working_dpi))
 
 
