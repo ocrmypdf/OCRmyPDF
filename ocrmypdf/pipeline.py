@@ -333,13 +333,14 @@ def rasterize_preview(
         output_file,
         log,
         context):
+    pageinfo = get_pageinfo(input_file, context)
+    options = context.get_options()
+    canvas_dpi = get_canvas_square_dpi(pageinfo, options) / 2
+    page_dpi = get_page_square_dpi(pageinfo, options) / 2
+
     ghostscript.rasterize_pdf(
-        input_file=input_file,
-        output_file=output_file,
-        xres=200,
-        yres=200,
-        raster_device='jpeggray',
-        log=log)
+        input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
+        raster_device='jpeggray', log=log, page_dpi=(page_dpi, page_dpi))
 
 
 def orient_page(

@@ -38,3 +38,8 @@ def test_userunit_qpdf_passes(spoof_tesseract_cache, poster, outpdf):
     after = PdfInfo(outpdf)
     assert isclose(before[0].width_inches, after[0].width_inches)
 
+
+def test_rotate_interaction(spoof_tesseract_cache, poster, outpdf):
+    check_ocrmypdf(poster, outpdf, '--output-type=pdf',
+                   '--rotate-pages',
+                   env=spoof_tesseract_cache)
