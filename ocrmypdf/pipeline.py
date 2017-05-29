@@ -215,15 +215,18 @@ def get_page_dpi(pageinfo, options):
 
 
 def get_page_square_dpi(pageinfo, options):
-    "Get the working DPI when we require xres == yres"
+    "Get the DPI when we require xres == yres, scaled to physical units"
+    xres = pageinfo.xres or 0
+    yres = pageinfo.yres or 0
+    userunit = pageinfo.userunit or 1
     return float(max(
-        (pageinfo.xres * pageinfo.userunit) or VECTOR_PAGE_DPI,
-        (pageinfo.yres * pageinfo.userunit) or VECTOR_PAGE_DPI,
+        (xres * userunit) or VECTOR_PAGE_DPI,
+        (yres * userunit) or VECTOR_PAGE_DPI,
         options.oversample or 0))
 
 
-def get_page_true_square_dpi(pageinfo, options):
-    "Get the true DPI when we require xres == yres, and scaled in userunits"
+def get_canvas_square_dpi(pageinfo, options):
+    """Get the DPI when we require xres == yres, in Postscript units"""
     return float(max(
         (pageinfo.xres) or VECTOR_PAGE_DPI,
         (pageinfo.yres) or VECTOR_PAGE_DPI,
@@ -433,23 +436,12 @@ def rasterize_with_ghostscript(
 
     # Produce the page image with square resolution or else deskew and OCR
     # will not work properly.
-    true_dpi = get_page_true_square_dpi(pageinfo, options)
-    working_dpi = get_page_square_dpi(pageinfo, options)
+    canvas_dpi = get_canvas_square_dpi(pageinfo, options)
+    page_dpi = get_page_square_dpi(pageinfo, options)
 
-    if true_dpi == working_dpi:
-        dpi = true_dpi
-        ghostscript.rasterize_pdf(
-            input_file, output_file, xres=dpi, yres=dpi,
-            raster_device=device, log=log)
-    else:
-        # Ghostscript respects /UserUnit when rasterizing. Rasterize at
-        # the true DPI but rewrite the output image to the working DPI.
-        ghostscript.rasterize_pdf(
-            input_file, output_file + '.jpg', xres=true_dpi, yres=true_dpi,
-            raster_device=device, log=log)
-
-        with Image.open(output_file + ".jpg") as im:
-            im.save(output_file, dpi=(working_dpi, working_dpi))
+    ghostscript.rasterize_pdf(
+        input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
+        raster_device=device, log=log, page_dpi=(page_dpi, page_dpi))
 
 
 def preprocess_remove_background(

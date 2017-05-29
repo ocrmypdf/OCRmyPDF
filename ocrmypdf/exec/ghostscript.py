@@ -35,9 +35,28 @@ def _gs_error_reported(stream):
 
 
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
-                  pageno=1):
+                  pageno=1, page_dpi=None):
+    """
+    Rasterize one page of a PDF at resolution (xres, yres) in canvas units.
+    
+    The image is sized to match the integer pixels dimensions implied by 
+    (xres, yres) even if those numbers are noninteger. The image's DPI will
+     be overridden with the values in page_dpi.
+    
+    :param input_file: 
+    :param output_file: 
+    :param xres: resolution at which to rasterize page
+    :param yres: 
+    :param raster_device: 
+    :param log: 
+    :param pageno: page number to rasterize
+    :param page_dpi: resolution tuple (x, y) overriding output image DPI 
+    :return: 
+    """
     res = xres, yres
     int_res = round(xres), round(yres)
+    if not page_dpi:
+        page_dpi = res
     with NamedTemporaryFile(delete=True) as tmp:
         args_gs = [
             get_program('gs'),
@@ -64,20 +83,19 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             log.error('Ghostscript rasterizing failed')
             raise SubprocessOutputError()
 
-        tmp.seek(0)
-
         # Ghostscript only accepts integers for output resolution
         # if the resolution happens to be fractional, then the discrepancy
         # would change the size of the output page, especially if the DPI
         # is quite low. Resize the image to the expected size
+        tmp.seek(0)
         with Image.open(tmp) as im:
             expected_size = round(im.size[0] / int_res[0] * res[0]), \
                             round(im.size[1] / int_res[1] * res[1])
-            if expected_size != im.size:
+            if expected_size != im.size or page_dpi != (xres, yres):
                 log.debug(
                     "Ghostscript: resize output image {} -> {}".format(
                         im.size, expected_size))
-                im.resize(expected_size).save(output_file)
+                im.resize(expected_size).save(output_file, dpi=page_dpi)
             else:
                 copy(tmp.name, output_file)
 
