@@ -7,7 +7,6 @@ from shutil import copy
 from functools import lru_cache
 import re
 import sys
-from math import isclose
 from . import get_program
 from ..exceptions import SubprocessOutputError
 from PIL import Image
@@ -33,18 +32,6 @@ def version():
 
 def _gs_error_reported(stream):
     return re.search(r'error', stream, flags=re.IGNORECASE)
-
-
-def _correct_image_size(input_fp, output_file, res, int_res, log):
-    # If the output size was reduced due to rounding DPI to an
-    # integer, resize the image to its expected size
-    input_fp.seek(0)
-    with Image.open(input_fp) as im:
-        expected_size = round(res[0] / int_res[0] * im.size[0]), \
-                        round(res[1] / int_res[1] * im.size[1])
-        log.info(im.size)
-        log.info(expected_size)
-        im.resize(expected_size).save(output_file)
 
 
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
@@ -73,17 +60,26 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
         else:
             log.debug(p.stdout)
 
-        if p.returncode == 0:
-            if isclose(int_res[0], res[0], abs_tol=0.1) and \
-                    isclose(int_res[1], res[1], abs_tol=0.1):
-                copy(tmp.name, output_file)
-            else:
-                # If the output size was reduced due to rounding DPI to an
-                # integer, resize the image to its expected size
-                _correct_image_size(tmp, output_file, res, int_res, log)
-        else:
+        if p.returncode != 0:
             log.error('Ghostscript rasterizing failed')
             raise SubprocessOutputError()
+
+        tmp.seek(0)
+
+        # Ghostscript only accepts integers for output resolution
+        # if the resolution happens to be fractional, then the discrepancy
+        # would change the size of the output page, especially if the DPI
+        # is quite low. Resize the image to the expected size
+        with Image.open(tmp) as im:
+            expected_size = round(im.size[0] / int_res[0] * res[0]), \
+                            round(im.size[1] / int_res[1] * res[1])
+            if expected_size != im.size:
+                log.debug(
+                    "Ghostscript: resize output image {} -> {}".format(
+                        im.size, expected_size))
+                im.resize(expected_size).save(output_file)
+            else:
+                copy(tmp.name, output_file)
 
 
 def generate_pdfa(pdf_pages, output_file, compression, log,
