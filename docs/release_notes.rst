@@ -3,6 +3,11 @@ Release notes
 
 OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
 
+v5.1
+----
+
+-   Files with pages larger than 200" (5080 mm) in either dimension are now supported with ``--output-type=pdf`` with the page size preserved (in the PDF specification this feature is called UserUnit scaling). Due to Ghostscript limitations this is not available in conjunction with PDF/A output.
+
 
 v5.0.1
 ------

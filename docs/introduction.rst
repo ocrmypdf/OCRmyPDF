@@ -56,9 +56,11 @@ Depending on the settings selected, OCRmyPDF may "graft" the OCR layer into the 
 Why you shouldn't do this manually
 ----------------------------------
 
-There are two routes to manually applying OCR to an existing PDF, both of which destroy information in the original PDF.
+A PDF is similar to an HTML file, in that it contains document structure along with images.  Sometimes a PDF does nothing more than present a full page image, but often there is additional content that would be lost.
 
-1. Rasterize each page as an image, OCR the images, and combine the output into a PDF. This preserves the appearance of each page, but resamples all images (possibly losing quality, increasing file size, introducing compression artifacts, etc.)
+A manual process could work like either of these:
+
+1. Rasterize each page as an image, OCR the images, and combine the output into a PDF. This preserves the layout of each page, but resamples all images (possibly losing quality, increasing file size, introducing compression artifacts, etc.).
 
 2. Extract each image, OCR, and combine the output into a PDF. This loses the context in which images are used in the PDF, meaning that cropping, rotation and scaling of pages may be lost. Some scanned PDFs use multiple images segmented into black and white, grayscale and color regions, with stencil masks to prevent overlap, as this can enhance the appearance of a file while reducing file size. Clearly, reassembling these images will be easy. This also loses and text or vector art on any pages in a PDF with both scanned and pure digital content.
 
