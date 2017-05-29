@@ -100,10 +100,10 @@ def test_skip_pages_does_not_replicate(
 
     info = pdfinfo.PdfInfo(outpdf)
     for page in info:
-        assert len(page['images']) == 1, "skipped page was replicated"
+        assert len(page.images) == 1, "skipped page was replicated"
 
     for n in range(len(info_in)):
-        assert info[n]['width_inches'] == info_in[n]['width_inches']
+        assert info[n].width_inches == info_in[n].width_inches
 
 
 def test_content_preservation(ensure_tess4, resources, outpdf):
@@ -117,4 +117,4 @@ def test_content_preservation(ensure_tess4, resources, outpdf):
 
     info = pdfinfo.PdfInfo(outpdf)
     page = info[0]
-    assert len(page.images) > 1, "masked were rasterized"
+    assert len(page.images) > 1, "masks were rasterized"
