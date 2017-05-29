@@ -19,17 +19,6 @@ check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
 spoof = pytest.helpers.spoof
 
-@pytest.fixture
-def spoof_tesseract_noop():
-    return spoof(tesseract='tesseract_noop.py')
-
-
-@pytest.fixture
-def spoof_tesseract_cache():
-    if pytest.helpers.running_in_docker():
-        return os.environ.copy()
-    return spoof(tesseract="tesseract_cache.py")
-
 
 @pytest.fixture
 def spoof_tesseract_crash():

@@ -67,6 +67,18 @@ def spoof(**kwargs):
 
 
 @pytest.fixture
+def spoof_tesseract_noop():
+    return spoof(tesseract='tesseract_noop.py')
+
+
+@pytest.fixture
+def spoof_tesseract_cache():
+    if running_in_docker():
+        return os.environ.copy()
+    return spoof(tesseract="tesseract_cache.py")
+
+
+@pytest.fixture
 def resources():
     return Path(TESTS_ROOT) / 'resources'
 
