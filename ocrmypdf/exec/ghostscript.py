@@ -9,6 +9,7 @@ import re
 import sys
 from . import get_program
 from ..exceptions import SubprocessOutputError
+from PIL import Image
 
 
 @lru_cache(maxsize=1)
@@ -34,7 +35,28 @@ def _gs_error_reported(stream):
 
 
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
-                  pageno=1):
+                  pageno=1, page_dpi=None):
+    """
+    Rasterize one page of a PDF at resolution (xres, yres) in canvas units.
+    
+    The image is sized to match the integer pixels dimensions implied by 
+    (xres, yres) even if those numbers are noninteger. The image's DPI will
+     be overridden with the values in page_dpi.
+    
+    :param input_file: 
+    :param output_file: 
+    :param xres: resolution at which to rasterize page
+    :param yres: 
+    :param raster_device: 
+    :param log: 
+    :param pageno: page number to rasterize
+    :param page_dpi: resolution tuple (x, y) overriding output image DPI 
+    :return: 
+    """
+    res = xres, yres
+    int_res = round(xres), round(yres)
+    if not page_dpi:
+        page_dpi = res
     with NamedTemporaryFile(delete=True) as tmp:
         args_gs = [
             get_program('gs'),
@@ -46,7 +68,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             '-dFirstPage=%i' % pageno,
             '-dLastPage=%i' % pageno,
             '-o', tmp.name,
-            '-r{0}x{1}'.format(str(round(xres)), str(round(yres))),
+            '-r{0}x{1}'.format(str(int_res[0]), str(int_res[1])),
             input_file
         ]
 
@@ -57,14 +79,29 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
         else:
             log.debug(p.stdout)
 
-        if p.returncode == 0:
-            copy(tmp.name, output_file)
-        else:
+        if p.returncode != 0:
             log.error('Ghostscript rasterizing failed')
             raise SubprocessOutputError()
 
+        # Ghostscript only accepts integers for output resolution
+        # if the resolution happens to be fractional, then the discrepancy
+        # would change the size of the output page, especially if the DPI
+        # is quite low. Resize the image to the expected size
+        tmp.seek(0)
+        with Image.open(tmp) as im:
+            expected_size = round(im.size[0] / int_res[0] * res[0]), \
+                            round(im.size[1] / int_res[1] * res[1])
+            if expected_size != im.size or page_dpi != (xres, yres):
+                log.debug(
+                    "Ghostscript: resize output image {} -> {}".format(
+                        im.size, expected_size))
+                im.resize(expected_size).save(output_file, dpi=page_dpi)
+            else:
+                copy(tmp.name, output_file)
 
-def generate_pdfa(pdf_pages, output_file, compression, log, threads=1):
+
+def generate_pdfa(pdf_pages, output_file, compression, log,
+                  threads=1, pdf_version='1.5'):
     compression_args = []
     if compression == 'jpeg':
         compression_args = [
@@ -92,7 +129,8 @@ def generate_pdfa(pdf_pages, output_file, compression, log, threads=1):
             "-dQUIET",
             "-dBATCH",
             "-dNOPAUSE",
-            '-dNumRenderingThreads=' + str(threads),
+            "-dCompatibilityLevel=" + str(pdf_version),
+            "-dNumRenderingThreads=" + str(threads),
             "-sDEVICE=pdfwrite",
             "-dAutoRotatePages=/None",
             "-sColorConversionStrategy=/RGB",

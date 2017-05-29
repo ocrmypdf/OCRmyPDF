@@ -120,13 +120,18 @@ def split_pages(input_file, work_folder, npages):
         run(args_qpdf, check=True)
 
 
-def merge(input_files, output_file):
+def merge(input_files, output_file, min_version=None):
     """Merge the list of input files (all filenames) into the output file.
 
     The input files may contain one or more pages.
     """
+    version_arg = ['--min-version={}'.format(min_version)] \
+                  if min_version else []
+
     args_qpdf = [
-        get_program('qpdf'), input_files[0], '--pages'
+        get_program('qpdf')
+    ] + version_arg + [
+        input_files[0], '--pages'
     ] + input_files + ['--', output_file]
     run(args_qpdf, check=True)
 

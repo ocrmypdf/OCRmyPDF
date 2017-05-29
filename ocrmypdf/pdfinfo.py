@@ -8,52 +8,61 @@ import re
 import sys
 import PyPDF2 as pypdf
 from collections import namedtuple
+from collections.abc import MutableMapping, Mapping
 import warnings
+from pathlib import Path
+from enum import Enum
+from .helpers import universal_open
 
-
-warnings.warn("ocrmypdf.pageinfo is deprecated'; use ocrmypdf.pdfinfo",
-              DeprecationWarning)
 
 matrix_mult = pypdf.pdf.utils.matrixMultiply
 
+Colorspace = Enum('Colorspace',
+                  'gray rgb cmyk lab icc index sep devn pattern jpeg2000')
+
+Encoding = Enum('Encoding',
+                'ccitt jpeg jpeg2000 jbig2 asciihex ascii85 lzw flate ' + \
+                'runlength')
+
+
 FRIENDLY_COLORSPACE = {
-    '/DeviceGray': 'gray',
-    '/CalGray': 'gray',
-    '/DeviceRGB': 'rgb',
-    '/CalRGB': 'rgb',
-    '/DeviceCMYK': 'cmyk',
-    '/Lab': 'lab',
-    '/ICCBased': 'icc',
-    '/Indexed': 'index',
-    '/Separation': 'sep',
-    '/DeviceN': 'devn',
-    '/Pattern': '-',
-    '/G': 'gray',  # Abbreviations permitted in inline images
-    '/RGB': 'rgb',
-    '/CMYK': 'cmyk',
-    '/I': 'index',
+    '/DeviceGray': Colorspace.gray,
+    '/CalGray': Colorspace.gray,
+    '/DeviceRGB': Colorspace.rgb,
+    '/CalRGB': Colorspace.rgb,
+    '/DeviceCMYK': Colorspace.cmyk,
+    '/Lab': Colorspace.lab,
+    '/ICCBased': Colorspace.icc,
+    '/Indexed': Colorspace.index,
+    '/Separation': Colorspace.sep,
+    '/DeviceN': Colorspace.devn,
+    '/Pattern': Colorspace.pattern,
+    '/G': Colorspace.gray,  # Abbreviations permitted in inline images
+    '/RGB': Colorspace.rgb,
+    '/CMYK': Colorspace.cmyk,
+    '/I': Colorspace.index,
 }
 
 FRIENDLY_ENCODING = {
-    '/CCITTFaxDecode': 'ccitt',
-    '/DCTDecode': 'jpeg',
-    '/JPXDecode': 'jpx',
-    '/JBIG2Decode': 'jbig2',
-    '/CCF': 'ccitt',  # Abbreviations permitted in inline images
-    '/DCT': 'jpeg',
-    '/AHx': 'asciihex',
-    '/A85': 'ascii85',
-    '/LZW': 'lzw',
-    '/Fl': 'flate',
-    '/RL': 'runlength'
+    '/CCITTFaxDecode': Encoding.ccitt,
+    '/DCTDecode': Encoding.jpeg,
+    '/JPXDecode': Encoding.jpeg2000,
+    '/JBIG2Decode': Encoding.jbig2,
+    '/CCF': Encoding.ccitt,  # Abbreviations permitted in inline images
+    '/DCT': Encoding.jpeg,
+    '/AHx': Encoding.asciihex,
+    '/A85': Encoding.ascii85,
+    '/LZW': Encoding.lzw,
+    '/Fl': Encoding.flate,
+    '/RL': Encoding.runlength
 }
 
 FRIENDLY_COMP = {
-    'gray': 1,
-    'rgb': 3,
-    'cmyk': 4,
-    'lab': 3,
-    'index': 1
+    Colorspace.gray: 1,
+    Colorspace.rgb: 3,
+    Colorspace.cmyk: 4,
+    Colorspace.lab: 3,
+    Colorspace.index: 1
 }
 
 
@@ -227,7 +236,7 @@ def _get_dpi(ctm_shorthand, image_size):
     image_drawn_width = hypot(a, b)
     image_drawn_height = hypot(c, d)
 
-    # The scale of the image is pixels per PDF unit (1/72")
+    # The scale of the image is pixels per unit of default user space (1/72")
     scale_w = image_size[0] / image_drawn_width
     scale_h = image_size[1] / image_drawn_height
 
@@ -235,38 +244,148 @@ def _get_dpi(ctm_shorthand, image_size):
     dpi_w = scale_w * 72.0
     dpi_h = scale_h * 72.0
 
-    return (dpi_w, dpi_h)
+    return dpi_w, dpi_h
+
+
+class ImageInfo:
+    DPI_PREC = Decimal('1.000')
+
+    def __init__(self, *, name='', pdfimage=None, inline=None,
+                 shorthand=None):
+
+        self._name = name
+        self._shorthand = shorthand
+        if inline:
+            # Fixme does not work for inline images with non abbreviated
+            # fields
+            self._origin = 'inline'
+            self._width = inline.settings['/W']
+            self._height = inline.settings['/H']
+            self._bpc = inline.settings.get('/BPC', 8)
+            try:
+                self._color = FRIENDLY_COLORSPACE[inline.settings['/CS']]
+            except Exception:
+                self._color = '-'
+            self._comp = FRIENDLY_COMP.get(self._color, '?')
+            if '/F' in inline.settings:
+                filter_ = inline.settings['/F']
+                if isinstance(filter_, pypdf.generic.ArrayObject):
+                    filter_ = filter_[0]
+                self._enc = FRIENDLY_ENCODING.get(filter_, 'image')
+            else:
+                self._enc = 'image'
+        elif pdfimage:
+            self._origin = 'xobject'
+            self._width = pdfimage['/Width']
+            self._height = pdfimage['/Height']
+            if '/BitsPerComponent' in pdfimage:
+                self._bpc = pdfimage['/BitsPerComponent']
+            else:
+                self._bpc = 8
+
+            # Fixme: this is incorrectly treats explicit masks as stencil masks,
+            # but good enough for now. Explicit masks have /ImageMask true but are
+            # never called for in content stream, instead are drawn as a /Mask on
+            # other images. For our purposes finding out the details of /Mask
+            # will seldom matter.
+            if '/ImageMask' in pdfimage:
+                self._type = 'stencil' if pdfimage['/ImageMask'].value \
+                    else 'image'
+            else:
+                self._type = 'image'
+            if '/Filter' in pdfimage:
+                filter_ = pdfimage['/Filter']
+                if isinstance(filter_, pypdf.generic.ArrayObject):
+                    filter_ = filter_[0]
+                self._enc = FRIENDLY_ENCODING.get(filter_, 'image')
+            else:
+                self._enc = 'image'
+            if '/ColorSpace' in pdfimage:
+                cs = pdfimage['/ColorSpace']
+                if isinstance(cs, pypdf.generic.ArrayObject):
+                    cs = cs[0]
+                self._color = FRIENDLY_COLORSPACE.get(cs, '-')
+            else:
+                self._color = FRIENDLY_COLORSPACE[Colorspace.jpeg2000] \
+                    if self._enc == Encoding.jpeg2000 else '?'
+
+            self._comp = FRIENDLY_COMP.get(self._color, '?')
+
+            # Bit of a hack... infer grayscale if component count is uncertain
+            # but encoding must be monochrome. This happens if a monochrome image
+            # has an ICC profile attached. Better solution would be to examine
+            # the ICC profile.
+            if self._comp == '?' and self._enc in (Encoding.ccitt, 'jbig2'):
+                self._comp = FRIENDLY_COMP[Colorspace.gray]
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def type_(self):
+        return self._type
+
+    @property
+    def width(self):
+        return self._width
+
+    @property
+    def height(self):
+        return self._height
+
+    @property
+    def bpc(self):
+        return self._bpc
+
+    @property
+    def color(self):
+        return self._color
+
+    @property
+    def comp(self):
+        return self._comp
+
+    @property
+    def enc(self):
+        return self._enc
+
+    @property
+    def xres(self):
+        return _get_dpi(self._shorthand, (self._width, self._height))[0]
+
+    @property
+    def yres(self):
+        return _get_dpi(self._shorthand, (self._width, self._height))[1]
+
+    def __getitem__(self, item):
+        warnings.warn("ImageInfo.__getitem__", DeprecationWarning)
+        if item in ('name', 'width', 'height', 'bpc', 'color', 'comp', 'enc'):
+            return getattr(self, item)
+        elif item == 'dpi_w':
+            return Decimal(self.xres).quantize(self.DPI_PREC)
+        elif item == 'dpi_h':
+            return Decimal(self.yres).quantize(self.DPI_PREC)
+        elif item == 'dpi':
+            return Decimal(self.xres * self.yres).sqrt().quantize(
+                self.DPI_PREC)
+        else:
+            raise KeyError(item)
+
+    def __repr__(self):
+        class_locals = {attr: getattr(self, attr, None) for attr in dir(self)
+                        if not attr.startswith('_')}
+        return (
+            "<ImageInfo '{name}' {type_} {width}x{height} {color} "
+            "{comp} {bpc} {enc} {xres}x{yres}>").format(**class_locals)
 
 
 def _find_inline_images(contentsinfo):
     "Find inline images in the contentstream"
 
     for n, inline in enumerate(contentsinfo.inline_images):
-        image = {}
-        image['name'] = str('inline-%02d' % n)
-        image['width'] = inline.settings['/W']
-        image['height'] = inline.settings['/H']
-        if '/BPC' in inline.settings:
-            image['bpc'] = inline.settings['/BPC']
-        else:
-            image['bpc'] = 8
-        if '/CS' in inline.settings:
-            image['color'] = FRIENDLY_COLORSPACE.get(inline.settings['/CS'], '-')
-        else:
-            image['color'] = '-'
-        image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
-        if '/F' in inline.settings:
-            filter_ = inline.settings['/F']
-            if isinstance(filter_, pypdf.generic.ArrayObject):
-                filter_ = filter_[0]
-            image['enc'] = FRIENDLY_ENCODING.get(filter_, 'image')
-        else:
-            image['enc'] = 'image'
-
-        dpi_w, dpi_h = _get_dpi(
-            inline.shorthand, (image['width'], image['height']))
-        image['dpi_w'], image['dpi_h'] = Decimal(dpi_w), Decimal(dpi_h)
-        yield image
+        yield ImageInfo(name='inline-%02d' % n, shorthand=inline.shorthand,
+                        inline=inline)
 
 
 def _image_xobjects(container):
@@ -290,8 +409,8 @@ def _image_xobjects(container):
     for xobj in resources['/XObject']:
         candidate = resources['/XObject'][xobj]
         if candidate['/Subtype'] == '/Image':
-            image = candidate
-            yield (image, xobj)
+            pdfimage = candidate
+            yield (pdfimage, xobj)
 
 
 def _find_regular_images(container, contentsinfo):
@@ -305,57 +424,14 @@ def _find_regular_images(container, contentsinfo):
     """
 
     for pdfimage, xobj in _image_xobjects(container):
-        image = {}
-        image['name'] = xobj
-        image['width'] = pdfimage['/Width']
-        image['height'] = pdfimage['/Height']
-        if '/BitsPerComponent' in pdfimage:
-            image['bpc'] = pdfimage['/BitsPerComponent']
-        else:
-            image['bpc'] = 8
 
-        # Fixme: this is incorrectly treats explicit masks as stencil masks,
-        # but good enough for now. Explicit masks have /ImageMask true but are
-        # never called for in content stream, instead are drawn as a /Mask on
-        # other images. For our purposes finding out the details of /Mask
-        # will seldom matter.
-        if '/ImageMask' in pdfimage:
-            image['type'] = 'stencil' if pdfimage['/ImageMask'].value \
-                            else 'image'
-        else:
-            image['type'] = 'image'
-        if '/Filter' in pdfimage:
-            filter_ = pdfimage['/Filter']
-            if isinstance(filter_, pypdf.generic.ArrayObject):
-                filter_ = filter_[0]
-            image['enc'] = FRIENDLY_ENCODING.get(filter_, 'image')
-        else:
-            image['enc'] = 'image'
-        if '/ColorSpace' in pdfimage:
-            cs = pdfimage['/ColorSpace']
-            if isinstance(cs, pypdf.generic.ArrayObject):
-                cs = cs[0]
-            image['color'] = FRIENDLY_COLORSPACE.get(cs, '-')
-        else:
-            image['color'] = 'jpx' if image['enc'] == 'jpx' else '?'
-
-        image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
-
-        # Bit of a hack... infer grayscale if component count is uncertain
-        # but encoding must be monochrome. This happens if a monochrome image
-        # has an ICC profile attached. Better solution would be to examine
-        # the ICC profile.
-        if image['comp'] == '?' and image['enc'] in ('ccitt', 'jbig2'):
-            image['comp'] = FRIENDLY_COMP['gray']
-
-        image['dpi_w'] = image['dpi_h'] = 0
-
-        for xobj in contentsinfo.xobject_settings:
-            # Loop in case the same image is display multiple times on a page
-            if xobj.name != image['name']:
+        # For each image that is drawn on this, check if we drawing the
+        # current image - yes this is O(n^2), but n == 1 almost always
+        for draw in contentsinfo.xobject_settings:
+            if draw.name != xobj:
                 continue
 
-            if xobj.stack_depth == 0 and _is_unit_square(xobj.shorthand):
+            if draw.stack_depth == 0 and _is_unit_square(draw.shorthand):
                 # At least one PDF in the wild (and test suite) draws an image
                 # when the graphics stack depth is 0, meaning that the image
                 # gets drawn into a square of 1x1 PDF units (or 1/72",
@@ -363,20 +439,8 @@ def _find_regular_images(container, contentsinfo):
                 # these from our DPI calculation for the page.
                 continue
 
-            dpi_w, dpi_h = _get_dpi(
-                xobj.shorthand, (image['width'], image['height']))
-
-            # When image is used multiple times take the highest DPI it is
-            # rendered at
-            image['dpi_w'] = max(dpi_w, image.get('dpi_w', 0))
-            image['dpi_h'] = max(dpi_h, image.get('dpi_h', 0))
-
-        DPI_PREC = Decimal('1.000')
-        dpi = Decimal(image['dpi_w'] * image['dpi_h']).sqrt()
-        image['dpi_w'] = Decimal(image['dpi_w']).quantize(DPI_PREC)
-        image['dpi_h'] = Decimal(image['dpi_h']).quantize(DPI_PREC)
-        image['dpi'] = dpi.quantize(DPI_PREC)
-        yield image
+            yield ImageInfo(name=draw.name, pdfimage=pdfimage, shorthand=
+                            draw.shorthand)
 
 
 def _find_form_xobject_images(pdf, container, contentsinfo):
@@ -405,10 +469,11 @@ def _find_form_xobject_images(pdf, container, contentsinfo):
             # but in practice both Form XObjects and multiple drawing of the
             # same object are both very rare.
             ctm_shorthand = settings.shorthand
-            yield from _find_images(pdf, form_xobject, ctm_shorthand)
+            yield from _find_images(
+                pdf=pdf, container=form_xobject, shorthand=ctm_shorthand)
 
 
-def _find_images(pdf, container, shorthand=None):
+def _find_images(*, pdf, container, shorthand=None):
     """Find all individual instances of images drawn in the container
 
     Usually the container is a page, but it may also be a Form XObject.
@@ -485,28 +550,37 @@ def _page_has_text(pdf, page):
     return False
 
 
-def _pdf_get_pageinfo(infile, pageno: int):
+def _pdf_get_pageinfo(pdf, pageno: int):
     pageinfo = {}
     pageinfo['pageno'] = pageno
     pageinfo['images'] = []
 
-    pdf = pypdf.PdfFileReader(infile)
+    if isinstance(pdf, Path):
+        pdf = pypdf.PdfFileReader(str(pdf))
+    elif isinstance(pdf, str):
+        pdf = pypdf.PdfFileReader(pdf)
+
     page = pdf.pages[pageno]
 
     pageinfo['has_text'] = _page_has_text(pdf, page)
 
     width_pt = page.mediaBox.getWidth()
     height_pt = page.mediaBox.getHeight()
-    pageinfo['width_inches'] = width_pt / Decimal(72.0)
-    pageinfo['height_inches'] = height_pt / Decimal(72.0)
+
+    userunit = page.get('/UserUnit', Decimal(1.0))
+    pageinfo['userunit'] = userunit
+    pageinfo['width_inches'] = width_pt * userunit / Decimal(72.0)
+    pageinfo['height_inches'] = height_pt * userunit / Decimal(72.0)
 
     try:
         pageinfo['rotate'] = int(page['/Rotate'])
     except KeyError:
         pageinfo['rotate'] = 0
 
+    userunit_shorthand = (userunit, 0, 0, userunit, 0, 0)
     pageinfo['images'] = [im for im in
-                          _find_images(pdf, page)]
+                          _find_images(pdf=pdf, container=page,
+                                       shorthand=userunit_shorthand)]
     if pageinfo['images']:
         xres = max(image['dpi_w'] for image in pageinfo['images'])
         yres = max(image['dpi_h'] for image in pageinfo['images'])
@@ -519,9 +593,126 @@ def _pdf_get_pageinfo(infile, pageno: int):
     return pageinfo
 
 
-def pdf_get_all_pageinfo(infile):
-    pdf = pypdf.PdfFileReader(infile)
-    return [_pdf_get_pageinfo(infile, n) for n in range(pdf.numPages)]
+def _pdf_get_all_pageinfo(infile):
+    with universal_open(infile, 'rb') as f:
+        pdf = pypdf.PdfFileReader(f)
+        return [PageInfo(pdf, n) for n in range(pdf.numPages)]
+
+
+class PageInfo:
+    def __init__(self, pdf, pageno):
+        self._pageno = pageno
+        self._pageinfo = _pdf_get_pageinfo(pdf, pageno)
+
+    @property
+    def pageno(self):
+        return self._pageno
+
+    @property
+    def has_text(self):
+        return self._pageinfo['has_text']
+
+    @property
+    def width_inches(self):
+        return self._pageinfo['width_inches']
+
+    @property
+    def height_inches(self):
+        return self._pageinfo['height_inches']
+
+    @property
+    def width_pixels(self):
+        return int(round(self.width_inches * self.xres))
+
+    @property
+    def height_pixels(self):
+        return int(round(self.height_inches * self.yres))
+
+    @property
+    def rotation(self):
+        return self._pageinfo.get('rotate', None)
+
+    @rotation.setter
+    def rotation(self, value):
+        if value in (0, 90, 180, 270, 360, -90, -180, -270):
+            self._pageinfo['rotate'] = value
+        else:
+            raise ValueError("rotation must be a cardinal angle")
+
+    @property
+    def images(self):
+        return self._pageinfo['images']
+
+    @property
+    def xres(self):
+        return self._pageinfo.get('xres', None)
+
+    @property
+    def yres(self):
+        return self._pageinfo.get('yres', None)
+
+    @property
+    def userunit(self):
+        return self._pageinfo.get('userunit', None)
+
+    @property
+    def min_version(self):
+        if self.userunit is not None:
+            return '1.6'
+        else:
+            return '1.5'
+
+    @property
+    def images(self):
+        return self._pageinfo['images']
+
+    def __repr__(self):
+        return (
+            '<PageInfo '
+            'pageno={} {}"x{}" rotation={} res={}x{} has_text={}>').format(
+            self.pageno, self.width_inches, self.height_inches,
+            self.rotation,
+            self.xres, self.yres, self.has_text
+        )
+
+
+class PdfInfo:
+    """Get summary information about a PDF
+    
+    """
+    def __init__(self, infile):
+        self._infile = infile
+        self._pages = _pdf_get_all_pageinfo(infile)
+
+    @property
+    def pages(self):
+        return self._pages
+
+    @property
+    def min_version(self):
+        # The minimum PDF is the maximum version that any particular page needs
+        return max(page.min_version for page in self.pages)
+
+    @property
+    def has_userunit(self):
+        return any(page.userunit != 1.0 for page in self.pages)
+
+    def __getitem__(self, item):
+        return self._pages[item]
+
+    def __len__(self):
+        return len(self._pages)
+
+    def __repr__(self):
+        return "<PdfInfo('...'), page count={}>".format(len(self))
+
+    # def __getstate__(self):
+    #     state = {'_infile': self._infile}
+    #     return state
+    #
+    # def __setstate__(self, state):
+    #     self._infile = state['_infile']
+    #     self._pages = _pdf_get_all_pageinfo(self._infile)
 
 
 def main():
@@ -529,7 +720,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('infile')
     args = parser.parse_args()
-    info = pdf_get_all_pageinfo(args.infile)
+    info = _pdf_get_all_pageinfo(args.infile)
     from pprint import pprint
     pprint(info)
 

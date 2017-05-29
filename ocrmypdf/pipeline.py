@@ -22,7 +22,7 @@ from PIL import Image
 from ruffus import formatter, regex, Pipeline, suffix
 
 from .hocrtransform import HocrTransform
-from .pageinfo import pdf_get_all_pageinfo
+from .pdfinfo import PdfInfo, Encoding, Colorspace
 from .pdfa import generate_pdfa_ps, file_claims_pdfa
 from .helpers import re_symlink, is_iterable_notstr, page_number
 from .exec import ghostscript, tesseract, qpdf
@@ -50,7 +50,10 @@ class JobContext:
     """
 
     def __init__(self):
-        self.pdfinfo = []
+        self.pdfinfo = None
+
+    def generate_pdfinfo(self, infile):
+        self.pdfinfo = PdfInfo(infile)
 
     def get_pdfinfo(self):
         "What we know about the input PDF"
@@ -72,8 +75,8 @@ class JobContext:
         self.work_folder = work_folder
 
 
-from multiprocessing.managers import BaseManager
-class JobContextManager(BaseManager):
+from multiprocessing.managers import SyncManager
+class JobContextManager(SyncManager):
     pass
 
 
@@ -181,9 +184,19 @@ def repair_pdf(
         output_file,
         log,
         context):
-
+    options = context.get_options()
     qpdf.repair(input_file, output_file, log)
-    pdfinfo = pdf_get_all_pageinfo(output_file)
+    pdfinfo = PdfInfo(output_file)
+
+    if pdfinfo.has_userunit and options.output_type == 'pdfa':
+        log.error("This input file uses a PDF feature that is not supported "
+            "by Ghostscript, so you cannot use --output-type=pdfa for this "
+            "file. (Specifically, it uses the PDF-1.6 /UserUnit feature to "
+            "support very large or small page sizes, and Ghostscript cannot "
+            "output these files.)  Use --output-type=pdf instead."
+        )
+        raise InputFileError()
+
     context.set_pdfinfo(pdfinfo)
     log.debug(pdfinfo)
 
@@ -196,23 +209,34 @@ def get_pageinfo(input_file, context):
 
 def get_page_dpi(pageinfo, options):
     "Get the DPI when nonsquare DPI is tolerable"
-    xres = max(pageinfo.get('xres', VECTOR_PAGE_DPI), options.oversample or 0)
-    yres = max(pageinfo.get('yres', VECTOR_PAGE_DPI), options.oversample or 0)
+    xres = max(pageinfo.xres or VECTOR_PAGE_DPI, options.oversample or 0)
+    yres = max(pageinfo.yres or VECTOR_PAGE_DPI, options.oversample or 0)
     return (float(xres), float(yres))
 
 
 def get_page_square_dpi(pageinfo, options):
-    "Get the DPI when we require xres == yres"
+    "Get the DPI when we require xres == yres, scaled to physical units"
+    xres = pageinfo.xres or 0
+    yres = pageinfo.yres or 0
+    userunit = pageinfo.userunit or 1
     return float(max(
-        pageinfo.get('xres', VECTOR_PAGE_DPI),
-        pageinfo.get('yres', VECTOR_PAGE_DPI),
+        (xres * userunit) or VECTOR_PAGE_DPI,
+        (yres * userunit) or VECTOR_PAGE_DPI,
+        options.oversample or 0))
+
+
+def get_canvas_square_dpi(pageinfo, options):
+    """Get the DPI when we require xres == yres, in Postscript units"""
+    return float(max(
+        (pageinfo.xres) or VECTOR_PAGE_DPI,
+        (pageinfo.yres) or VECTOR_PAGE_DPI,
         options.oversample or 0))
 
 
 def is_ocr_required(pageinfo, log, options):
-    page = pageinfo['pageno'] + 1
+    page = pageinfo.pageno + 1
     ocr_required = True
-    if not pageinfo['images']:
+    if not pageinfo.images:
         if options.force_ocr and options.oversample:
             # The user really wants to reprocess this file
             log.info(
@@ -234,7 +258,7 @@ def is_ocr_required(pageinfo, log, options):
                 "skipping all processing on this page".format(page))
             ocr_required = False
 
-    elif pageinfo['has_text']:
+    elif pageinfo.has_text:
         msg = "{0:4d}: page already has text! – {1}"
 
         if not options.force_ocr and not options.skip_text:
@@ -250,8 +274,8 @@ def is_ocr_required(pageinfo, log, options):
                                 "skipping all processing on this page"))
             ocr_required = False
 
-    if ocr_required and options.skip_big and pageinfo['images']:
-        pixel_count = pageinfo['width_pixels'] * pageinfo['height_pixels']
+    if ocr_required and options.skip_big and pageinfo.images:
+        pixel_count = pageinfo.width_pixels * pageinfo.height_pixels
         if pixel_count > (options.skip_big * 1000000):
             ocr_required = False
             log.warning(
@@ -309,13 +333,14 @@ def rasterize_preview(
         output_file,
         log,
         context):
+    pageinfo = get_pageinfo(input_file, context)
+    options = context.get_options()
+    canvas_dpi = get_canvas_square_dpi(pageinfo, options) / 2
+    page_dpi = get_page_square_dpi(pageinfo, options) / 2
+
     ghostscript.rasterize_pdf(
-        input_file=input_file,
-        output_file=output_file,
-        xres=200,
-        yres=200,
-        raster_device='jpeggray',
-        log=log)
+        input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
+        raster_device='jpeggray', log=log, page_dpi=(page_dpi, page_dpi))
 
 
 def orient_page(
@@ -383,7 +408,7 @@ def orient_page(
 
         pageno = int(os.path.basename(page_pdf)[0:6]) - 1
         pdfinfo = context.get_pdfinfo()
-        pdfinfo[pageno]['rotated'] = orient_conf.angle
+        pdfinfo[pageno].rotation = orient_conf.angle
         context.set_pdfinfo(pdfinfo)
 
 
@@ -396,26 +421,28 @@ def rasterize_with_ghostscript(
     pageinfo = get_pageinfo(input_file, context)
 
     device = 'png16m'  # 24-bit
-    if pageinfo['images']:
-        if all(image['comp'] == 1 for image in pageinfo['images']):
-            if all(image['bpc'] == 1 for image in pageinfo['images']):
+    if pageinfo.images:
+        if all(image.comp == 1 for image in pageinfo.images):
+            if all(image.bpc == 1 for image in pageinfo.images):
                 device = 'pngmono'
-            elif all(image['bpc'] > 1 and image['color'] == 'index'
-                     for image in pageinfo['images']):
+            elif all(image.bpc > 1 and image.color == Colorspace.index
+                     for image in pageinfo.images):
                 device = 'png256'
-            elif all(image['bpc'] > 1 and image['color'] == 'gray'
-                     for image in pageinfo['images']):
+            elif all(image.bpc > 1 and image.color == Colorspace.gray
+                     for image in pageinfo.images):
                 device = 'pnggray'
 
     log.debug("Rasterize {0} with {1}".format(
               os.path.basename(input_file), device))
 
     # Produce the page image with square resolution or else deskew and OCR
-    # will not work properly
-    dpi = get_page_square_dpi(pageinfo, options)
+    # will not work properly.
+    canvas_dpi = get_canvas_square_dpi(pageinfo, options)
+    page_dpi = get_page_square_dpi(pageinfo, options)
+
     ghostscript.rasterize_pdf(
-        input_file, output_file, xres=dpi, yres=dpi, raster_device=device,
-        log=log)
+        input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
+        raster_device=device, log=log, page_dpi=(page_dpi, page_dpi))
 
 
 def preprocess_remove_background(
@@ -430,11 +457,11 @@ def preprocess_remove_background(
 
     pageinfo = get_pageinfo(input_file, context)
 
-    if any(image['bpc'] > 1 for image in pageinfo['images']):
+    if any(image.bpc > 1 for image in pageinfo.images):
         leptonica.remove_background(input_file, output_file)
     else:
         log.info("{0:4d}: background removal skipped on mono page".format(
-            pageinfo['pageno']))
+            pageinfo.pageno))
         re_symlink(input_file, output_file, log)
 
 
@@ -475,7 +502,7 @@ def select_ocr_image(
         infiles,
         output_file,
         log,
-        contenxt):
+        context):
     """Select the image we send for OCR. May not be the same as the display
     image depending on preprocessing."""
 
@@ -521,8 +548,8 @@ def select_visible_page_image(
     image = next(ii for ii in infiles if ii.endswith(image_suffix))
 
     pageinfo = get_pageinfo(image, context)
-    if pageinfo['images'] and \
-            all(im['enc'] == 'jpeg' for im in pageinfo['images']):
+    if pageinfo.images and \
+            all(im['enc'] == 'jpeg' for im in pageinfo.images):
         log.debug('{:4d}: JPEG input -> JPEG output'.format(
             page_number(image)))
         # If all images were JPEGs originally, produce a JPEG as output
@@ -689,6 +716,12 @@ def combine_layers(
     pdf_output = pypdf.PdfFileWriter()
     pdf_output.addPage(page_text)
 
+    # If the input was scaled, re-apply the scaling
+    pageinfo = get_pageinfo(text, context)
+    if pageinfo.userunit != 1:
+        page_text[pypdf.generic.NameObject('/UserUnit')] = pageinfo.userunit
+        pdf_output._header = b'%PDF-1.6'  # Hack header to correct version
+
     with open(output_file, "wb") as out:
         pdf_output.write(out)
 
@@ -832,9 +865,14 @@ def merge_pages_ghostscript(
                    if not f.endswith('.txt'))
     pdf_pages = sorted(input_files, key=input_file_order)
     log.debug("Final pages: " + "\n".join(pdf_pages))
+    input_pdfinfo = context.get_pdfinfo()
     ghostscript.generate_pdfa(
-        pdf_pages, output_file, options.pdfa_image_compression,
-        log, options.jobs or 1)
+        pdf_version=input_pdfinfo.min_version,
+        pdf_pages=pdf_pages,
+        output_file=output_file,
+        compression=options.pdfa_image_compression,
+        log=log,
+        threads=options.jobs or 1)
 
 
 def merge_pages_qpdf(
@@ -876,7 +914,8 @@ def merge_pages_qpdf(
 
     pdf_pages[0] = writer_file
 
-    qpdf.merge(pdf_pages, output_file)
+    qpdf.merge(input_files=pdf_pages, output_file=output_file,
+               min_version=context.get_pdfinfo().min_version)
 
 
 def merge_sidecars(

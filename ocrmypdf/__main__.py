@@ -734,7 +734,7 @@ def run_pipeline():
                  180: 's', 270: 'w'}
     orientations = []
     for n, page in enumerate(pdfinfo):
-        angle = pdfinfo[n].get('rotated', 0)
+        angle = pdfinfo[n].rotation or 0
         if angle != 0:
             orientations.append('{0}{1}'.format(
                 n + 1,

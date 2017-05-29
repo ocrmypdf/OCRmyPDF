@@ -67,6 +67,18 @@ def spoof(**kwargs):
 
 
 @pytest.fixture
+def spoof_tesseract_noop():
+    return spoof(tesseract='tesseract_noop.py')
+
+
+@pytest.fixture
+def spoof_tesseract_cache():
+    if running_in_docker():
+        return os.environ.copy()
+    return spoof(tesseract="tesseract_cache.py")
+
+
+@pytest.fixture
 def resources():
     return Path(TESTS_ROOT) / 'resources'
 
@@ -129,7 +141,7 @@ def run_ocrmypdf(input_file, output_file, *args, env=None):
 
 @pytest.helpers.register
 def first_page_dimensions(pdf):
-    from ocrmypdf import pageinfo
-    info = pageinfo.pdf_get_all_pageinfo(str(pdf))
+    from ocrmypdf import pdfinfo
+    info = pdfinfo.PdfInfo(pdf)
     page0 = info[0]
-    return (page0['width_inches'], page0['height_inches'])
+    return (page0.width_inches, page0.height_inches)

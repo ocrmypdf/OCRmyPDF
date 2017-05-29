@@ -4,7 +4,7 @@
 import pytest
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.exec import tesseract
-from ocrmypdf import pageinfo
+from ocrmypdf import pdfinfo
 import sys
 import os
 import PyPDF2 as pypdf
@@ -96,9 +96,9 @@ def test_skip_pages_does_not_replicate(
         env=ensure_tess4
     )
 
-    info_in = pageinfo.pdf_get_all_pageinfo(str(infile))
+    info_in = pdfinfo.PdfInfo(infile)
 
-    info = pageinfo.pdf_get_all_pageinfo(str(outpdf))
+    info = pdfinfo.PdfInfo(outpdf)
     for page in info:
         assert len(page['images']) == 1, "skipped page was replicated"
 
@@ -115,6 +115,6 @@ def test_content_preservation(ensure_tess4, resources, outpdf):
         env=ensure_tess4
     )
 
-    info = pageinfo.pdf_get_all_pageinfo(str(outpdf))
+    info = pdfinfo.PdfInfo(outpdf)
     page = info[0]
-    assert len(page['images']) > 1, "masked were rasterized"
+    assert len(page.images) > 1, "masked were rasterized"
