@@ -63,7 +63,6 @@ def test_textonly_pdf(ensure_tess4, resources, outdir):
         env=ensure_tess4)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 5), reason="needs math.isclose")
 def test_pagesize_consistency_tess4(ensure_tess4, resources, outpdf):
     from math import isclose
 
