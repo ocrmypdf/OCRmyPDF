@@ -1,7 +1,10 @@
 Release notes
 =============
 
-OCRmyPDF uses `semantic versioning <http://semver.org/>`_.
+OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line interface.
+
+The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
+
 
 v5.1
 ----
