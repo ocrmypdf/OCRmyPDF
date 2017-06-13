@@ -8,6 +8,7 @@ from ocrmypdf import pdfinfo
 import sys
 import os
 import PyPDF2 as pypdf
+from contextlib import contextmanager
 
 
 spoof = pytest.helpers.spoof
@@ -32,14 +33,25 @@ def ensure_tess4():
     raise EnvironmentError("Can't find Tesseract 4")
 
 
+@contextmanager
+def modified_os_environ(env):
+    old_env = os.environ.copy()
+    os.environ = env
+    yield
+    os.environ = old_env
+
+
 def tess4_available():
     """Check if a tesseract 4 binary is available, even if it's not the
     official "tesseract" on PATH
 
     """
     try:
-        ensure_tess4()
-        return True
+        # ensure_tess4 locates the tess4 binary we are going to check
+        env = ensure_tess4()
+        with modified_os_environ(env):
+            # Now jump into this environment and make sure it really is Tess4
+            return tesseract.v4() and tesseract.has_textonly_pdf()
     except EnvironmentError:
         pass
 

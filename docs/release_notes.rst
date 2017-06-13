@@ -6,6 +6,14 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
 
 
+v5.2
+----
+
+-   When using Tesseract 3.05.01 or newer, OCRmyPDF will select the "sandwich" PDF renderer by default, unless another PDF renderer is specified with the ``--pdf-renderer`` argument. The previous behavior was to select ``--pdf-renderer=hocr``.
+-   The "tesseract" PDF renderer is now deprecated, since it can cause problems with Ghostscript on Tesseract 3.05.00
+-   The "tess4" PDF renderer has been renamed to "sandwich". "tess4" is now a deprecated alias for "sandwich".
+
+
 v5.1
 ----
 
@@ -15,7 +23,7 @@ v5.1
 v5.0.1
 ------
 
--   Fixed issue #169, exception due to failure to create sidecar text files on some versions of Tesseract 3.04, including the jbarlow83/ocrmypdf image
+-   Fixed issue #169, exception due to failure to create sidecar text files on some versions of Tesseract 3.04, including the jbarlow83/ocrmypdf Docker image
 
 
 v5.0

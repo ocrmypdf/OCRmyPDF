@@ -29,6 +29,9 @@ def main():
     elif sys.argv[1] == '--list-langs':
         print('List of available languages (1):\neng', file=sys.stderr)
         sys.exit(0)
+    elif sys.argv[1] == '--print-parameters':
+        print('List of parameters would go here', file=sys.stderr)
+        sys.exit(0)
     elif sys.argv[-2] == 'hocr':
         print("KABOOM! Tesseract failed for some reason", file=sys.stderr)
         sys.exit(128 + signal.SIGSEGV)

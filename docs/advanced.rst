@@ -42,10 +42,9 @@ For example, if you are testing tesseract 4.00 and don't wish to disturb your te
 	env \
 		OCRMYPDF_TESSERACT=/home/user/src/tesseract4/api/tesseract \
 		TESSDATA_PREFIX=/home/user/src/tesseract4 \
-		ocrmypdf --pdf-renderer tess4 --tesseract-oem 2 input.pdf output.pdf
+		ocrmypdf --tesseract-oem 2 input.pdf output.pdf
 
 * ``TESSDATA_PREFIX`` directs tesseract 4.0 to use LSTM training data. This is a tesseract environment variable.
-* ``--pdf-renderer tess4`` takes advantage of new tesseract 4.0 PDF renderer in OCRmyPDF. (Tesseract 4.0 only.)
 * ``--tesseract-oem 1`` requests tesseract 4.0's new LSTM engine. (Tesseract 4.0 only.)
 
 Overriding other support programs
@@ -95,33 +94,29 @@ rendering
   Creating a new PDF from other data (such as an existing PDF).
 
 
-OCRmyPDF has three PDF renderers: ``hocr``, ``tesseract`` and ``tess4``. The renderer may be selected using ``--pdf-renderer``. The default is ``auto`` which lets OCRmyPDF select the renderer to use. Currently, ``auto`` always selects ``hocr``. 
+OCRmyPDF has three PDF renderers: ``sandwich``, ``hocr``, ``tesseract``. The renderer may be selected using ``--pdf-renderer``. The default is ``auto`` which lets OCRmyPDF select the renderer to use. Currently, ``auto`` selects ``sandwich`` for Tesseract 3.05.01, and newer, ``hocr`` for older versions of Tesseract.
+
+The ``sandwich`` renderer
+"""""""""""""""""""""""""
+
+The ``sandwich`` renderer uses Tesseract's new text-only PDF feature, which produces a PDF page that lays out the OCR in invisible text. This page is then "sandwiched" onto the original PDF page, allowing lossless application of OCR even to PDF pages that contain other vector objects.
+
+When image preprocessing features like ``--deskew`` are used, the original PDF will be rendered as a full page and the OCR layer will be placed on top.
+
+This renderer requires Tesseract 3.05.01 or newer.
 
 The ``hocr`` renderer
 """""""""""""""""""""
 
-The ``hocr`` renderer is the default because it works in most cases. In this mode the whole PDF is rasterized, the raster image is run through OCR to generate a .hocr file, which is an HTML-like file that specifies the location of all identified words.
+The ``hocr`` renderer works with older versions of Tesseract. The image layer is copied from the original PDF page if possible, avoiding potentially lossy transcoding or loss of other PDF information. If preprocessing is specified, then the image layer is a new PDF.
 
-The .hocr file is then rendered as a PDF and merged with the image layer.
-
-The image layer is copied from the original PDF page if possible, avoiding potentially lossy transcoding or loss of other PDF information. If preprocessing is specified, then the image layer is a new PDF.
-
-This is the only option for tesseract 3.02 and older.
-
+This works in all versions of Tesseract.
 
 The ``tesseract`` renderer
 """"""""""""""""""""""""""
 
-The tesseract renderer uses tesseract's capability to produce a PDF directly. In version 3, tesseract automatically combined the image layer and text, meaning that this mode *always* transcodes and loses potentially loses image quality and other PDF information.
+The ``tesseract`` renderer creates a PDF with the image and text layers precomposed, meaning that it always transcodes, loses image quality and rasterizes and vector objects. It does a better job on non-Latin text and document structure than ``hocr``.
 
-It does a much better job on non-Latin text.
+If a PDF created with this renderer using Tesseract versions older than 3.05.00 is then passed through Ghostscript's pdfwrite feature, the OCR text *may* be corrupted. The ``--output-type=pdfa`` argument will produce a warning in this situation.
 
-In a future release this will become the "tess3" renderer and ultimately will be dropped.
-
-
-The ``tess4`` renderer
-""""""""""""""""""""""
-
-The tess4 renderer uses tesseract 4.00 alpha's text-only PDF feature added in January 2017. This combines the advantages of the tesseract and hocr renderers, transcoding the image layer only if required by preprocessing options.
-
-Ghostscript PDF/A still sometimes inserts spaces between words when the tess4 renderer is used, affecting search quality.  ``--output-pdf pdf`` may be used to avoid this issue.
+*This renderer is deprecated and will be removed whenever support for older versions of Tesseract is dropped.*

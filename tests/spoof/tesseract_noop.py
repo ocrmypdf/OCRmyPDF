@@ -2,6 +2,7 @@
 # © 2016 James R. Barlow: github.com/jbarlow83
 import sys
 import img2pdf
+import PyPDF2 as pypdf
 from PIL import Image
 
 
@@ -17,7 +18,7 @@ In orientation check mode, report the orientation is upright.
 """
 
 
-VERSION_STRING = '''tesseract 3.04.00
+VERSION_STRING = '''tesseract 3.05.01
  leptonica-1.72
   libjpeg 8d : libpng 1.6.19 : libtiff 4.0.6 : zlib 1.2.5
 SPOOFED
@@ -53,6 +54,10 @@ def main():
     elif sys.argv[1] == '--list-langs':
         print('List of available languages (1):\neng', file=sys.stderr)
         sys.exit(0)
+    elif sys.argv[1] == '--print-parameters':
+        print("Some parameters", file=sys.stderr)
+        print("textonly_pdf\t1\tSome help text")
+        sys.exit(0)
     elif sys.argv[-2] == 'hocr':
         inputf = sys.argv[-4]
         output = sys.argv[-3]
@@ -63,13 +68,27 @@ def main():
         with open(output + '.txt', 'w') as f:
             f.write('')
     elif sys.argv[-2] == 'pdf':
-        inputf = sys.argv[-4]
-        output = sys.argv[-3]
-        pdf_bytes = img2pdf.convert([inputf], dpi=300)
-        with open(output + '.pdf', 'wb') as f:
-            f.write(pdf_bytes)
-        with open(output + '.txt', 'w') as f:
-            f.write('')
+        if 'textonly_pdf=1' in sys.argv:
+            inputf = sys.argv[-4]
+            output = sys.argv[-3]
+            with Image.open(inputf) as im:
+                dpi = im.info['dpi']
+                imsize = im.size[0] * dpi[0] / 72, im.size[1] * dpi[1] / 72
+
+            pdf_out = pypdf.PdfFileWriter()
+            pdf_out.addBlankPage(imsize[0], imsize[1])
+            with open(output + '.pdf', 'wb') as f:
+                pdf_out.write(f)
+            with open(output + '.txt', 'w') as f:
+                f.write('')
+        else:
+            inputf = sys.argv[-4]
+            output = sys.argv[-3]
+            pdf_bytes = img2pdf.convert([inputf], dpi=300)
+            with open(output + '.pdf', 'wb') as f:
+                f.write(pdf_bytes)
+            with open(output + '.txt', 'w') as f:
+                f.write('')
     elif sys.argv[-1] == 'stdout':
         inputf = sys.argv[-2]
         print("""Orientation: 0

@@ -250,15 +250,18 @@ advanced.add_argument(
          "3 - default.")
     )
 advanced.add_argument(
-    '--pdf-renderer', choices=['auto', 'tesseract', 'hocr', 'tess4'], default='auto',
+    '--pdf-renderer',
+    choices=['auto', 'tesseract', 'hocr', 'tess4', 'sandwich'], default='auto',
     help="Choose OCR PDF renderer - the default option is to let OCRmyPDF "
-         "choose.  The 'tesseract' PDF renderer is more accurate and does a "
-         "better job and document structure such as recognizing columns. It "
-         "also does a better job on non-Latin languages. However, it does "
-         "not work as well when older versions of Tesseract or Ghostscript "
-         "are installed, and some combinations of arguments to do not work "
-         "with --pdf-renderer tesseract.  The 'tess4' PDF renderer is similar "
-         "to 'tesseract', requires tesseract 4, and gives superior results.")
+         "choose."
+         "auto - let OCRmyPDF choose; "
+         "sandwich - default renderer for Tesseract 3.05.01 and newer; "
+         "hocr - default renderer for older versions of Tesseract; "
+         "tesseract - gives better results for non-Latin languages and "
+         "Tesseract older than 3.05.01 but has problems with some versions "
+         " of Ghostscript; deprecated"
+         "tess4 - deprecated alias for 'sandwich'"
+    )
 advanced.add_argument(
     '--tesseract-timeout', default=180.0, type=float, metavar='SECONDS',
     help='Give up on OCR after the timeout, but copy the preprocessed page '
@@ -312,27 +315,31 @@ def check_options_languages(options, _log):
 
 def check_options_output(options, log):
     if options.pdf_renderer == 'auto':
-        options.pdf_renderer = 'hocr'
+        if tesseract.has_textonly_pdf():
+            options.pdf_renderer = 'sandwich'
+        else:
+            options.pdf_renderer = 'hocr'
 
-    if options.pdf_renderer in ('tesseract', 'tess4'):
-        if tesseract.version() < '3.05':
+    if options.pdf_renderer == 'tess4':
+        log.warning("The 'tess4' PDF renderer has been renamed to 'sandwich'. "
+                    "Please use --pdf-renderer=sandwich.")
+        options.pdf_renderer = 'sandwich'
+
+    if options.pdf_renderer == 'tesseract':
+        log.warning("The 'tesseract' PDF renderer is deprecated.")
+        if tesseract.version() < '3.05' and options.output_type == 'pdfa':
             log.warning(
-                "The setting --pdf-renderer=tesseract is not recommend for "
-                " use with tesseract versions less than 3.05, because it "
-                " produces OCR text that is incompatible with Ghostscript and "
-                " some other software.")
-        elif tesseract.version() == '4.00.00alpha':
-            log.warning(
-                "The setting --pdf-renderer={tesseract,tess4} is not"
-                " recommended for builds of tesseract 4.00.00alpha older than"
-                " February 2017. Make sure you are using a recent build.")
+                "For best results use --pdf-renderer=tesseract "
+                "--output-type=pdf to disable PDF/A generation via "
+                "Ghostscript, which is known to corrupt the OCR text of "
+                "some PDFs produced your version of Tesseract.")
 
     if options.debug_rendering and options.pdf_renderer != 'hocr':
         log.info(
             "Ignoring --debug-rendering because it requires --pdf-renderer=hocr")
 
     lossless_reconstruction = False
-    if options.pdf_renderer in ('hocr', 'tess4'):
+    if options.pdf_renderer in ('hocr', 'sandwich'):
         if not any((options.deskew, options.clean_final, options.force_ocr,
                    options.remove_background)):
             lossless_reconstruction = True

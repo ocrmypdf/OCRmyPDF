@@ -10,7 +10,7 @@ import PyPDF2 as pypdf
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf import leptonica
 from ocrmypdf.pdfa import file_claims_pdfa
-from ocrmypdf.exec import ghostscript
+from ocrmypdf.exec import ghostscript, tesseract
 import logging
 from math import isclose
 
@@ -18,6 +18,11 @@ from math import isclose
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
 spoof = pytest.helpers.spoof
+
+
+RENDERERS = ['hocr', 'tesseract']
+if tesseract.has_textonly_pdf():
+    RENDERERS.append('sandwich')
 
 
 @pytest.fixture
@@ -210,10 +215,7 @@ def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
     assert p.returncode == ExitCode.bad_args, err
 
 
-@pytest.mark.parametrize('renderer', [
-    'hocr',
-    'tesseract',
-    ])
+@pytest.mark.parametrize('renderer', RENDERERS)
 def test_oversample(spoof_tesseract_cache, renderer, resources, outpdf):
     oversampled_pdf = check_ocrmypdf(
         resources / 'skew.pdf', outpdf, '--oversample', '350',
@@ -303,10 +305,7 @@ def test_monochrome_correlation(resources, outdir):
     assert corr > 0.90
 
 
-@pytest.mark.parametrize('renderer', [
-    'hocr',
-    'tesseract',
-    ])
+@pytest.mark.parametrize('renderer', RENDERERS)
 def test_autorotate(spoof_tesseract_cache, renderer, resources, outdir):
     # cardinal.pdf contains four copies of an image rotated in each cardinal
     # direction - these ones are "burned in" not tagged with /Rotate
@@ -341,10 +340,7 @@ def test_autorotate_threshold(
     assert eval(correlation_test)
 
 
-@pytest.mark.parametrize('renderer', [
-    'hocr',
-    'tesseract',
-    ])
+@pytest.mark.parametrize('renderer',RENDERERS)
 def test_ocr_timeout(renderer, resources, outpdf):
     out = check_ocrmypdf(resources / 'skew.pdf', outpdf,
                          '--tesseract-timeout', '1.0')
@@ -359,7 +355,7 @@ def test_skip_big(spoof_tesseract_cache, resources, outpdf):
     assert not pdfinfo[0].has_text
 
 
-@pytest.mark.parametrize('renderer', ['hocr', 'tesseract'])
+@pytest.mark.parametrize('renderer', RENDERERS)
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
 def test_maximum_options(spoof_tesseract_cache, renderer, output_type,
                          resources, outpdf):
@@ -515,10 +511,7 @@ def test_tesseract_crash_autorotate(spoof_tesseract_crash,
     print(err)
 
 
-@pytest.mark.parametrize('renderer', [
-    'hocr',
-    'tesseract',
-    ])
+@pytest.mark.parametrize('renderer', RENDERERS)
 def test_tesseract_image_too_big(renderer, spoof_tesseract_big_image_error,
                                  resources, outpdf):
     check_ocrmypdf(
@@ -566,10 +559,7 @@ def test_non_square_resolution(renderer, spoof_tesseract_cache,
     assert in_pageinfo[0].yres == out_pageinfo[0].yres
 
 
-@pytest.mark.parametrize('renderer', [
-    'hocr',
-    'tesseract'
-    ])
+@pytest.mark.parametrize('renderer', RENDERERS)
 def test_convert_to_square_resolution(renderer, spoof_tesseract_cache,
                                       resources, outpdf):
     from math import isclose
@@ -773,10 +763,7 @@ language_model_penalty_non_freq_dict_word 0
         '--tesseract-config', str(cfg_file))
 
 
-@pytest.mark.parametrize('renderer', [
-    'hocr',
-    'tesseract',
-    ])
+@pytest.mark.parametrize('renderer', RENDERERS)
 def test_tesseract_config_notfound(renderer, resources, outdir):
     cfg_file = outdir / 'nofile.cfg'
 
@@ -788,10 +775,7 @@ def test_tesseract_config_notfound(renderer, resources, outdir):
     assert p.returncode == ExitCode.ok
 
 
-@pytest.mark.parametrize('renderer', [
-    'hocr',
-    'tesseract',
-    ])
+@pytest.mark.parametrize('renderer', RENDERERS)
 def test_tesseract_config_invalid(renderer, resources, outdir):
     cfg_file = outdir / 'test.cfg'
     with cfg_file.open('w') as f:
@@ -813,10 +797,7 @@ def test_form_xobject(spoof_tesseract_noop, resources, outpdf):
                    env=spoof_tesseract_noop)
 
 
-@pytest.mark.parametrize('renderer', [
-    'hocr',
-    'tesseract',
-])
+@pytest.mark.parametrize('renderer', RENDERERS)
 def test_pagesize_consistency(renderer, resources, outpdf):
     from math import isclose
 

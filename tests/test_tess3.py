@@ -11,12 +11,24 @@ pytestmark = pytest.mark.skipif(tesseract.v4(),
                                 reason="tesseract 3.x required")
 
 
-def test_textonly_pdf_on_tess3(resources, no_outpdf):
+@pytest.mark.skipif(tesseract.has_textonly_pdf(),
+                    reason="check that missing dep is reported on old tess3")
+def test_textonly_pdf_on_older_tess3(resources, no_outpdf):
     p, _, _ = pytest.helpers.run_ocrmypdf(
         resources / 'linn.pdf',
-        no_outpdf, '--pdf-renderer', 'tess4')
+        no_outpdf, '--pdf-renderer', 'sandwich')
 
     assert p.returncode == ExitCode.missing_dependency
+
+
+@pytest.mark.skipif(not tesseract.has_textonly_pdf(),
+                    reason="check that feature is exercised on new test3")
+def test_textonly_pdf_on_newer_tess3(resources, no_outpdf):
+    p, _, _ = pytest.helpers.run_ocrmypdf(
+        resources / 'linn.pdf',
+        no_outpdf, '--pdf-renderer', 'sandwich')
+
+    assert p.returncode == ExitCode.ok
 
 
 def test_oem_on_tess3(resources, no_outpdf):

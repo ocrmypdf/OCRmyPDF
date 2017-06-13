@@ -595,7 +595,7 @@ def select_image_layer(
         # as it accurately describes the image. It would be possible to
         # resample the image at this stage back to non-square DPI to more
         # closely resemble the input, except that the hocr renderer does not
-        # understand non-square DPI. The tess4 renderer would be fine.
+        # understand non-square DPI. The sandwich renderer would be fine.
         dpi = get_page_square_dpi(pageinfo, options)
         layout_fun = img2pdf.get_fixed_dpi_layout_fun((dpi, dpi))
 
@@ -812,9 +812,16 @@ def get_pdfmark(base_pdf, options):
     if options.subject:
         pdfmark['/Subject'] = options.subject
 
-    pdfmark['/Creator'] = '{0} {1} / Tesseract OCR{2} {3}'.format(
+    if options.pdf_renderer == 'tesseract':
+        renderer_tag = 'OCR+PDF'
+    elif options.pdf_renderer == 'sandwich':
+        renderer_tag = 'OCR-PDF'
+    else:
+        renderer_tag = 'OCR'
+
+    pdfmark['/Creator'] = '{0} {1} / Tesseract {2} {3}'.format(
             PROGRAM_NAME, VERSION,
-            '+PDF' if options.pdf_renderer == 'tesseract' else '',
+            renderer_tag,
             tesseract.version())
     return pdfmark
 
@@ -1083,7 +1090,7 @@ def build_pipeline(options, work_folder, log, context):
     task_select_image_layer.graphviz(
         fillcolor='"#00cc66"', shape='diamond')
     task_select_image_layer.active_if(
-        options.pdf_renderer == 'hocr' or options.pdf_renderer == 'tess4')
+        options.pdf_renderer == 'hocr' or options.pdf_renderer == 'sandwich')
 
     task_render_hocr_page = main_pipeline.transform(
         task_func=render_hocr_page,
@@ -1113,7 +1120,7 @@ def build_pipeline(options, work_folder, log, context):
                 os.path.join(work_folder, r'\1.text.txt')],
         extras=[log, context])
     task_ocr_tesseract_textonly_pdf.graphviz(fillcolor='"#ff69b4"')
-    task_ocr_tesseract_textonly_pdf.active_if(options.pdf_renderer == 'tess4')
+    task_ocr_tesseract_textonly_pdf.active_if(options.pdf_renderer == 'sandwich')
     if tesseract.v4():
         task_ocr_tesseract_textonly_pdf.jobs_limit(2)
 
@@ -1126,7 +1133,7 @@ def build_pipeline(options, work_folder, log, context):
         output=os.path.join(work_folder, r'\1.rendered.pdf'),
         extras=[log, context])
     task_combine_layers.graphviz(fillcolor='"#00cc66"')
-    task_combine_layers.active_if(options.pdf_renderer == 'hocr' or options.pdf_renderer == 'tess4')
+    task_combine_layers.active_if(options.pdf_renderer == 'hocr' or options.pdf_renderer == 'sandwich')
 
     # Tesseract OCR+PDF
     task_ocr_tesseract_and_render_pdf = main_pipeline.collate(

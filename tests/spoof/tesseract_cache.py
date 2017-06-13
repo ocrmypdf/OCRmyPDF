@@ -85,6 +85,12 @@ def main():
     except ValueError:
         m.update(b'default-lang')
 
+    try:
+        textonly = sys.argv[sys.argv.index('-c') + 1]
+        m.update(textonly.encode())
+    except ValueError:
+        m.update(b'textonly_pdf=0')
+
     psm_arg = ''
     if '--psm' in sys.argv:
         psm_arg = '--psm'

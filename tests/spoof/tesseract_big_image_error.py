@@ -22,6 +22,9 @@ def main():
     elif sys.argv[1] == '--list-langs':
         print('List of available languages (1):\neng', file=sys.stderr)
         sys.exit(0)
+    elif sys.argv[1] == '--print-parameters':
+        print('A parameter list would go here', file=sys.stderr)
+        sys.exit(0)
     elif sys.argv[-2] == 'hocr':
         print("Image too large: (33830, 14959)\n"
               "Error during processing.", file=sys.stderr)
