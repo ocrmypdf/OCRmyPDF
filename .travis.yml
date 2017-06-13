@@ -84,7 +84,6 @@ deploy:
   script: /usr/bin/true
   on:
     branch: master
-    tags: true
     condition: $TRAVIS_OS_NAME == "osx"
 
 after_deploy: |
