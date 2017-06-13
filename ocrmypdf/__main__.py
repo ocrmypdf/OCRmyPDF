@@ -327,10 +327,9 @@ def check_options_output(options, log):
                 " recommended for builds of tesseract 4.00.00alpha older than"
                 " February 2017. Make sure you are using a recent build.")
 
-    if options.debug_rendering and options.pdf_renderer == 'tesseract':
+    if options.debug_rendering and options.pdf_renderer != 'hocr':
         log.info(
-            "Ignoring --debug-rendering because it is not supported with"
-            "--pdf-renderer=tesseract.")
+            "Ignoring --debug-rendering because it requires --pdf-renderer=hocr")
 
     lossless_reconstruction = False
     if options.pdf_renderer in ('hocr', 'tess4'):

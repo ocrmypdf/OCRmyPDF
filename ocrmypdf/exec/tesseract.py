@@ -63,26 +63,28 @@ def v4():
     return (version() >= '4')
 
 
+@lru_cache(maxsize=1)
 def has_textonly_pdf():
-    if version() == '4.00.00alpha':
-        # textonly_pdf added during the 4.00.00alpha cycle, so we must test
-        # more carefully to see if it is present
-        args_tess = [
-            get_program('tesseract'),
-            '--print-parameters'
-        ]
-        try:
-            params = check_output(
-                    args_tess, close_fds=True, universal_newlines=True,
-                    stderr=STDOUT)
-        except CalledProcessError as e:
-            print("Could not --print-parameters from tesseract",
-                  file=sys.stderr)
-            raise MissingDependencyError from e
-        if 'textonly_pdf' in params:
-            return True
-    else:
-        return v4()
+    """Does Tesseract have textonly_pdf capability?
+    
+    Available in 3.05.01, and v4.00.00alpha since January 2017. Best to 
+    parse the parameter list
+    """
+    args_tess = [
+        get_program('tesseract'),
+        '--print-parameters'
+    ]
+    try:
+        params = check_output(
+                args_tess, close_fds=True, universal_newlines=True,
+                stderr=STDOUT)
+    except CalledProcessError as e:
+        print("Could not --print-parameters from tesseract",
+              file=sys.stderr)
+        raise MissingDependencyError from e
+    if 'textonly_pdf' in params:
+        return True
+    return False
 
 
 def psm():
