@@ -15,6 +15,7 @@ class Ocrmypdf < Formula
   ${ocrmypdf_sha256}
 
   depends_on :python3
+  depends_on :x11  # Pillow needs XQuartz
   depends_on "pkg-config" => :build
   depends_on "libffi"
   depends_on "tesseract"
