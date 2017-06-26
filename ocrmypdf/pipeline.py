@@ -202,7 +202,7 @@ def repair_pdf(
 
 
 def get_pageinfo(input_file, context):
-    pageno = int(os.path.basename(input_file)[0:6]) - 1
+    pageno = page_number(input_file) - 1
     pageinfo = context.get_pdfinfo()[pageno]
     return pageinfo
 
@@ -406,7 +406,7 @@ def orient_page(
         with open(output_file, 'wb') as out:
             writer.write(out)
 
-        pageno = int(os.path.basename(page_pdf)[0:6]) - 1
+        pageno = page_number(page_pdf) - 1
         pdfinfo = context.get_pdfinfo()
         pdfinfo[pageno].rotation = orient_conf.angle
         context.set_pdfinfo(pdfinfo)
@@ -863,7 +863,7 @@ def merge_pages_ghostscript(
         right that way.'''
         if s.endswith('.ps'):
             return 99999999
-        key = int(os.path.basename(s)[0:6]) * 10
+        key = page_number(s) * 10
         if 'debug' in os.path.basename(s):
             key += 1
         return key
@@ -898,7 +898,7 @@ def merge_pages_qpdf(
     def input_file_order(s):
         '''Sort order: All rendered pages followed
         by their debug page.'''
-        key = int(os.path.basename(s)[0:6]) * 10
+        key = page_number(s) * 10
         if 'debug' in os.path.basename(s):
             key += 1
         return key
