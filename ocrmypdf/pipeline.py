@@ -165,8 +165,8 @@ def triage(
     options = context.get_options()
     try:
         with open(input_file, 'rb') as f:
-            signature = f.read(4)
-            if signature == b'%PDF':
+            signature = f.read(1024)
+            if b'%PDF' in signature:
                 if options.image_dpi:
                     log.warning("Argument --image-dpi ignored because the "
                                 "input file is a PDF, not an image.")
