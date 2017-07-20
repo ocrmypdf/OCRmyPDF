@@ -72,19 +72,11 @@ Language packs must be installed for all languages specified. See :ref:`Installi
 Produce PDF and text file containing OCR text
 """""""""""""""""""""""""""""""""""""""""""""
 
-This produces a file named "output.pdf" and a companion text file named "output.txt". The ``pdftotext`` program from 
-`Poppler <https://poppler.freedesktop.org/>`_ is used to extract text from the finished PDF.
-
+This produces a file named "output.pdf" and a companion text file named "output.txt".
 
 .. code-block:: bash
 
-	ocrmypdf input.pdf - | tee output.pdf | pdftotext - output.txt
-
-.. note::
-
-	To get pdftotext, Debian/Ubuntu users may ``apt-get install poppler-utils`` 
-	and macOS users may ``brew install poppler`` respectively.
-
+	ocrmypdf --sidecar output.txt input.pdf output.pdf
 
 OCR images, not PDFs
 --------------------
