@@ -213,7 +213,8 @@ def _generate_null_hocr(output_hocr, output_sidecar, image):
 
 def generate_hocr(input_file, output_files, language: list, engine_mode,
                   tessconfig: list,
-                  timeout: float, pagesegmode: int, log):
+                  timeout: float, pagesegmode: int, user_words, user_patterns,
+                  log):
 
     output_hocr = next(o for o in output_files if o.endswith('.hocr'))
     output_sidecar = next(o for o in output_files if o.endswith('.txt'))
@@ -224,10 +225,17 @@ def generate_hocr(input_file, output_files, language: list, engine_mode,
     if pagesegmode is not None:
         args_tesseract.extend([psm(), str(pagesegmode)])
 
+    if user_words:
+        args_tesseract.extend(['--user-words', user_words])
+
+    if user_patterns:
+        args_tesseract.extend(['--user-patterns', user_patterns])
+
     # Reminder: test suite tesseract spoofers will break after any changes
     # to the number of order parameters here
     # Tesseract 3.04 requires the order here to be "hocr txt" and will fail
     # on "txt hocr"
+
     args_tesseract.extend([
         input_file,
         prefix,
@@ -285,7 +293,8 @@ def use_skip_page(text_only, skip_pdf, output_pdf, output_text):
 
 def generate_pdf(*, input_image, skip_pdf, output_pdf, output_text,
                  language: list, engine_mode, text_only: bool,
-                 tessconfig: list, timeout: float, pagesegmode: int, log):
+                 tessconfig: list, timeout: float, pagesegmode: int,
+                 user_words, user_patterns, log):
     '''Use Tesseract to render a PDF.
 
     input_image -- image to analyze
@@ -308,10 +317,17 @@ def generate_pdf(*, input_image, skip_pdf, output_pdf, output_text,
     if text_only:
         args_tesseract.extend(['-c', 'textonly_pdf=1'])
 
+    if user_words:
+        args_tesseract.extend(['--user-words', user_words])
+
+    if user_patterns:
+        args_tesseract.extend(['--user-patterns', user_patterns])
+
     prefix = os.path.splitext(output_pdf)[0]  # Tesseract appends suffixes
 
-    # Reminder: test suite tesseract spoofers will break after any changes
+    # Reminder: test suite tesseract spoofers might break after any changes
     # to the number of order parameters here
+
     args_tesseract.extend([
         input_image,
         prefix,
