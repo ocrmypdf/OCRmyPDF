@@ -33,9 +33,17 @@ If you want to adjust the amount of time spent on OCR, change ``--tesseract-time
 Overriding default tesseract
 """"""""""""""""""""""""""""
 
-OCRmyPDF checks the environment variable ``OCRMYPDF_TESSERACT`` for the full path *to the tesseract executable* first. 
+OCRmyPDF checks the environment variable ``OCRMYPDF_TESSERACT`` for the full path *to the tesseract binary* first. 
 
-For example, if you are testing tesseract 4.00 and don't wish to disturb your tesseract 3.04 installation, you can launch OCRmyPDF as follows:
+.. envvar:: OCRMYPDF_TESSERACT
+
+	Specify the location of the Tesseract binary.
+
+.. envvar:: TESSDATA_PREFIX
+
+	A Tesseract environment variable that overrides the path to Tesseract's data files.
+
+For example, if you are testing tesseract 4.00 and don't wish to disturb use an existing tesseract 3.04 installation, you can launch OCRmyPDF as follows:
 
 .. code-block:: bash
 
@@ -44,8 +52,8 @@ For example, if you are testing tesseract 4.00 and don't wish to disturb your te
 		TESSDATA_PREFIX=/home/user/src/tesseract4 \
 		ocrmypdf --tesseract-oem 2 input.pdf output.pdf
 
-* ``TESSDATA_PREFIX`` directs tesseract 4.0 to use LSTM training data. This is a tesseract environment variable.
-* ``--tesseract-oem 1`` requests tesseract 4.0's new LSTM engine. (Tesseract 4.0 only.)
+In this example ``TESSDATA_PREFIX`` directs tesseract 4.0 to use LSTM training data. ``--tesseract-oem 1`` requests tesseract 4.0's new LSTM engine. (Tesseract 4.0 only.)
+
 
 Overriding other support programs
 """""""""""""""""""""""""""""""""
@@ -56,7 +64,20 @@ In addition to tesseract, OCRmyPDF uses the following external binaries:
 * ``unpaper``
 * ``qpdf``
 
-In each case OCRmyPDF will check the environment variable ``OCRMYPDF_{program}`` before asking the system to find ``{program}`` on the PATH. For example, you could redirect OCRmyPDF to ``OCRMYPDF_GS`` to override Ghostscript.
+In each case OCRmyPDF will check the environment variable ``OCRMYPDF_{program}`` before asking the system to find ``{program}`` on the PATH. For example, you could redirect OCRmyPDF to ``OCRMYPDF_GS`` to override Ghostscript. The full list is below:
+
+.. envvar:: OCRMYPDF_GS
+
+	Specify the location of the Ghostscript binary.
+
+.. envvar:: OCRMYPDF_UNPAPER
+
+	Specify the location of the unpaper binary.
+
+.. envvar:: OCRMYPDF_QPDF
+
+	Specify the location of the qpdf binary.
+
 
 Changing tesseract configuration variables
 """"""""""""""""""""""""""""""""""""""""""
