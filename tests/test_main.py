@@ -786,6 +786,32 @@ THIS FILE IS INVALID
     assert p.returncode == ExitCode.invalid_config
 
 
+def test_user_words(resources, outdir):
+    word_list = outdir / 'wordlist.txt'
+    sidecar_before = outdir / 'sidecar_before.txt'
+    sidecar_after = outdir / 'sidecar_after.txt'
+
+    check_ocrmypdf(
+        resources / 'crom.png', outdir / 'out.pdf',
+        '--image-dpi', 150,
+        '--sidecar', sidecar_before
+    )
+
+    assert 'cromulent' not in sidecar_before.open().read()
+
+    with word_list.open('w') as f:
+        f.write('cromulent\n')  # a perfectly cromulent word
+
+    check_ocrmypdf(
+        resources / 'crom.png', outdir / 'out.pdf',
+        '--image-dpi', 150,
+        '--sidecar', sidecar_after,
+        '--user-words', word_list
+    )
+
+    assert 'cromulent' in sidecar_after.open().read()
+
+
 def test_form_xobject(spoof_tesseract_noop, resources, outpdf):
     check_ocrmypdf(resources / 'formxobject.pdf', outpdf,
                    '--force-ocr',
