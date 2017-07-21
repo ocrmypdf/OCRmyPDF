@@ -77,8 +77,8 @@ def test_deskew(spoof_tesseract_noop, resources, outdir):
     deskewed_png = outdir / 'deskewed.png'
 
     ghostscript.rasterize_pdf(
-        str(deskewed_pdf),
-        str(deskewed_png),
+        deskewed_pdf,
+        deskewed_png,
         xres=150,
         yres=150,
         raster_device='pngmono',
@@ -116,8 +116,8 @@ def test_remove_background(spoof_tesseract_noop, resources, outdir):
     output_png = outdir / 'remove_bg.png'
 
     ghostscript.rasterize_pdf(
-        str(output_pdf),
-        str(output_png),
+        output_pdf,
+        output_png,
         xres=100,
         yres=100,
         raster_device='png16m',
@@ -270,9 +270,7 @@ def check_monochrome_correlation(
             print(png)
             return
         ghostscript.rasterize_pdf(
-            str(pdf),
-            str(png),
-            xres=100, yres=100,
+            pdf, png, xres=100, yres=100,
             raster_device='pngmono', log=gslog, pageno=pageno)
 
     rasterize(reference_pdf, reference_pageno, reference_png)

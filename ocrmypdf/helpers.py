@@ -79,10 +79,42 @@ def is_file_writable(test_file):
         return True
 
 
-@contextmanager
-def universal_open(p, *args, **kwargs):
-    "Work around Python 3.5's inability to open(pathlib.Path())"
-    try:
-        yield p.open(*args, **kwargs)
-    except AttributeError:
-        yield open(p, *args, **kwargs)
+if sys.version_info <= (3, 5):
+    def universal_open(p, *args, **kwargs):
+        "Work around Python 3.5's inability to open(pathlib.Path())"
+        try:
+            return p.open(*args, **kwargs)
+        except AttributeError:
+            return open(p, *args, **kwargs)
+
+
+    def fspath(path):
+        '''https://www.python.org/dev/peps/pep-0519/#os'''
+        if isinstance(path, (str, bytes)):
+            return path
+
+        # Work from the object's type to match method resolution of other magic
+        # methods.
+        path_type = type(path)
+        try:
+            path = path_type.__fspath__(path)
+        except AttributeError:
+            # Added for Python 3.5 support.
+            if isinstance(path, pathlib.Path):
+                return str(path)
+            elif hasattr(path_type, '__fspath__'):
+                raise
+        else:
+            if isinstance(path, (str, bytes)):
+                return path
+            else:
+                raise TypeError("expected __fspath__() to return str or bytes, "
+                                "not " + type(path).__name__)
+
+        raise TypeError(
+            "expected str, bytes, pathlib.Path or os.PathLike object, not "
+            + path_type.__name__)
+
+else:
+    universal_open = open
+    fspath = os.fspath

@@ -10,6 +10,7 @@ import sys
 from . import get_program
 from ..exceptions import SubprocessOutputError
 from PIL import Image
+from ..helpers import fspath
 
 
 @lru_cache(maxsize=1)
@@ -43,8 +44,8 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
     (xres, yres) even if those numbers are noninteger. The image's DPI will
      be overridden with the values in page_dpi.
     
-    :param input_file: 
-    :param output_file: 
+    :param input_file: pathlike
+    :param output_file: pathlike
     :param xres: resolution at which to rasterize page
     :param yres: 
     :param raster_device: 
@@ -69,7 +70,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             '-dLastPage=%i' % pageno,
             '-o', tmp.name,
             '-r{0}x{1}'.format(str(int_res[0]), str(int_res[1])),
-            input_file
+            fspath(input_file)
         ]
 
         p = run(args_gs, stdout=PIPE, stderr=STDOUT,
@@ -95,9 +96,10 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
                 log.debug(
                     "Ghostscript: resize output image {} -> {}".format(
                         im.size, expected_size))
-                im.resize(expected_size).save(output_file, dpi=page_dpi)
+                im.resize(expected_size).save(
+                    fspath(output_file), dpi=page_dpi)
             else:
-                copy(tmp.name, output_file)
+                copy(tmp.name, fspath(output_file))
 
 
 def generate_pdfa(pdf_pages, output_file, compression, log,

@@ -14,6 +14,7 @@ from ctypes.util import find_library
 from .lib._leptonica import ffi
 from functools import lru_cache
 from enum import Enum
+from .helpers import fspath
 
 lept = ffi.dlopen(find_library('lept'))
 
@@ -208,26 +209,27 @@ class Pix:
             return 'P'
 
     @classmethod
-    def read(cls, filename):
+    def read(cls, path):
         """Load an image file into a PIX object.
 
         Leptonica can load TIFF, PNM (PBM, PGM, PPM), PNG, and JPEG.  If
         loading fails then the object will wrap a C null pointer.
         """
+        filename = fspath(path)
         with LeptonicaErrorTrap():
-            return cls(lept.pixRead(
-                filename.encode(sys.getfilesystemencoding())))
+            return cls(lept.pixRead(os.fsencode(filename)))
 
     def write_implied_format(
-            self, filename, jpeg_quality=0, jpeg_progressive=0):
+            self, path, jpeg_quality=0, jpeg_progressive=0):
         """Write pix to the filename, with the extension indicating format.
 
         jpeg_quality -- quality (iff JPEG; 1 - 100, 0 for default)
         jpeg_progressive -- (iff JPEG; 0 for baseline seq., 1 for progressive)
         """
+        filename = fspath(path)
         with LeptonicaErrorTrap():
             lept.pixWriteImpliedFormat(
-                filename.encode(sys.getfilesystemencoding()),
+                os.fsencode(filename),
                 self._pix, jpeg_quality, jpeg_progressive)
 
     def topil(self):
