@@ -483,10 +483,7 @@ def test_pagesegmode(renderer, spoof_tesseract_cache, resources, outpdf):
         '--pdf-renderer', renderer, env=spoof_tesseract_cache)
 
 
-@pytest.mark.parametrize('renderer', [
-    'hocr',
-    'tesseract',
-    ])
+@pytest.mark.parametrize('renderer', RENDERERS)
 def test_tesseract_crash(renderer, spoof_tesseract_crash,
                          resources, no_outpdf):
     p, out, err = run_ocrmypdf(
