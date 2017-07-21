@@ -755,7 +755,7 @@ language_model_penalty_non_freq_dict_word 0
 
     check_ocrmypdf(
         resources / 'ccitt.pdf', outdir / 'out.pdf',
-        '--tesseract-config', str(cfg_file))
+        '--tesseract-config', cfg_file)
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
@@ -765,7 +765,7 @@ def test_tesseract_config_notfound(renderer, resources, outdir):
     p, out, err = run_ocrmypdf(
         resources / 'ccitt.pdf', outdir / 'out.pdf',
         '--pdf-renderer', renderer,
-        '--tesseract-config', str(cfg_file))
+        '--tesseract-config', cfg_file)
     assert "Can't open" in err, "No error message about missing config file"
     assert p.returncode == ExitCode.ok
 
@@ -781,7 +781,7 @@ THIS FILE IS INVALID
     p, out, err = run_ocrmypdf(
         resources / 'ccitt.pdf', outdir / 'out.pdf',
         '--pdf-renderer', renderer,
-        '--tesseract-config', str(cfg_file))
+        '--tesseract-config', cfg_file)
     assert "parameter not found" in err, "No error message"
     assert p.returncode == ExitCode.invalid_config
 

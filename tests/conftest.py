@@ -129,7 +129,8 @@ def run_ocrmypdf(input_file, output_file, *args, env=None):
     if env is None:
         env = os.environ
 
-    p_args = OCRMYPDF + list(args) + [str(input_file), str(output_file)]
+    p_args = OCRMYPDF + [str(arg) for arg in args] + \
+             [str(input_file), str(output_file)]
     p = Popen(
         p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
         universal_newlines=True, env=env)
