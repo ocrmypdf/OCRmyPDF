@@ -787,6 +787,8 @@ def ocr_tesseract_textonly_pdf(
         tessconfig=options.tesseract_config,
         timeout=options.tesseract_timeout,
         pagesegmode=options.tesseract_pagesegmode,
+        user_words=options.user_words,
+        user_patterns=options.user_patterns,
         log=log)
 
 
