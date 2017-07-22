@@ -79,7 +79,7 @@ def is_file_writable(test_file):
         return True
 
 
-if sys.version_info <= (3, 5):
+if sys.version_info[0:2] <= (3, 5):
     def universal_open(p, *args, **kwargs):
         "Work around Python 3.5's inability to open(pathlib.Path())"
         try:
