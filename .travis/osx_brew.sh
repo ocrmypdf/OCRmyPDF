@@ -6,7 +6,9 @@ set -x
 pip3 install homebrew-pypi-poet
 python3 .travis/autobrew.py
 cat ocrmypdf.rb
-brew audit ocrmypdf.rb
+
+# brew audit crashes Travis
+#brew audit ocrmypdf.rb
 
 # Important: disable debug output so token is hidden
 set +x
