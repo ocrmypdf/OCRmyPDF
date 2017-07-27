@@ -89,6 +89,7 @@ if sys.version_info[0:2] <= (3, 5):
 
 
     def fspath(path):
+        import pathlib
         '''https://www.python.org/dev/peps/pep-0519/#os'''
         if isinstance(path, (str, bytes)):
             return path
