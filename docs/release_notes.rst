@@ -6,6 +6,15 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
 
 
+v5.3
+----
+
+-   Added ``--user-words`` and ``--user-patterns`` arguments which are forwarded to Tesseract OCR as words and regular expressions respective to use to guide OCR. Supplying a list of subject-domain words should assist Tesseract with resolving words. (#165)
+-   Using a non Latin-1 language with the "hocr" renderer now warns about possible OCR quality and recommends workarounds (#176)
+-   Output file path added to error message when that location is not writable (#175)
+-   Otherwise valid PDFs with leading whitespace at the beginning of the file are now accepted
+
+
 v5.2
 ----
 
