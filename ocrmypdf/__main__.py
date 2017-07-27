@@ -41,6 +41,9 @@ warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
 MINIMUM_TESS_VERSION = '3.04'
 
+HOCR_OK_LANGS = frozenset([
+    'eng', 'deu', 'spa', 'ita', 'por'
+])
 
 def complain(message):
     print(*textwrap.wrap(message), file=sys.stderr)
@@ -395,12 +398,20 @@ def check_options_ocr_behavior(options, log):
     #     raise argparse.ArgumentError(
     #         "Error: --redo-ocr and other OCR options are incompatible.")
 
-    if set(options.language) & {'chi_sim', 'chi_tra'} and \
-            (options.pdf_renderer == 'hocr' or options.output_type == 'pdfa'):
-        log.warning(
-            "Your settings are known to cause problems with OCR of Chinese text. "
-            "Try adding these arguments: "
-            "    ocrmypdf --pdf-renderer tesseract --output-type pdf")
+    if options.pdf_renderer == 'hocr' and \
+            not set(options.language).issubset(HOCR_OK_LANGS):
+        msg = (
+            "The 'hocr' PDF renderer is known to cause problems with one "
+            "or more of the languages in your document. ")
+
+        if tesseract.has_textonly_pdf():
+            msg += (
+                "Use --pdf-renderer auto (the default) to avoid this issue.")
+        else:
+            msg += (
+                "Use --pdf-renderer tesseract --output-type pdf to avoid "
+                "this issue")
+        log.warning(msg)
 
 
 def check_options_advanced(options, log):
