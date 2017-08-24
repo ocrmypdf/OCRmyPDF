@@ -416,7 +416,7 @@ def test_french(spoof_tesseract_cache, resources, outpdf):
 def test_klingon(resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / 'francais.pdf', outpdf, '-l', 'klz')
-    assert p.returncode == ExitCode.bad_args
+    assert p.returncode == ExitCode.missing_dependency
 
 
 def test_missing_docinfo(spoof_tesseract_noop, resources, outpdf):
