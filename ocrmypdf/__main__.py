@@ -322,7 +322,7 @@ def check_options_languages(options, _log):
             "data for the following requested languages: \n")
         for lang in (set(options.language) - tesseract.languages()):
             msg += lang + '\n'
-        raise argparse.ArgumentError(None, msg)
+        raise MissingDependencyError(msg)
 
 
 def check_options_output(options, log):
