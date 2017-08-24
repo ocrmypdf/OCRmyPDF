@@ -185,9 +185,15 @@ if 'upload' in sys.argv[1:]:
 
 tests_require = open('test_requirements.txt').read().splitlines()
 
+
+def readme():
+    with open('README.rst') as f:
+        return f.read()
+
 setup(
     name='ocrmypdf',
     description='OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched',
+    long_description=readme(),
     url='https://github.com/jbarlow83/OCRmyPDF',
     author='James R. Barlow',
     author_email='jim@purplerock.ca',
