@@ -4,6 +4,12 @@ OCRmyPDF
 .. image:: https://travis-ci.org/jbarlow83/OCRmyPDF.svg?branch=master
     :target: https://travis-ci.org/jbarlow83/OCRmyPDF
 
+.. image:: https://img.shields.io/pypi/v/ocrmypdf.svg   
+    :target: https://pypi.org/project/ocrmypdf/
+
+.. image:: https://img.shields.io/docker/build/jbarlow83/ocrmypdf.svg
+    :target: https://hub.docker.com/r/jbarlow83/ocrmypdf/
+
 OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to
 be searched or copy-pasted.
 
