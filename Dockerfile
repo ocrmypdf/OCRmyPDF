@@ -20,6 +20,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   tesseract-ocr-spa \
   tesseract-ocr-deu
 
+# Set the locale.
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
 RUN python3 -m venv --system-site-packages /appenv
 
 # This installs the latest binary wheel instead of the code in the current
