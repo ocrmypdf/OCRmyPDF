@@ -30,6 +30,8 @@ RUN apt-get update \
 		tesseract-ocr-rus \
 		tesseract-ocr-chi-sim 
 
+ENV LANG=C.UTF-8
+
 RUN python3 -m venv --system-site-packages /appenv
 
 # This installs the latest binary wheel instead of the code in the current
