@@ -332,6 +332,11 @@ def check_options_output(options, log):
         else:
             options.pdf_renderer = 'hocr'
 
+    if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf():
+        raise MissingDependencyError(
+            "The 'sandwich' renderer requires Tesseract 3.05.01 or newer; "
+            "or Tesseract 4.00 alpha newer than February 2017.")
+
     if options.pdf_renderer == 'tess4':
         log.warning("The 'tess4' PDF renderer has been renamed to 'sandwich'. "
                     "Please use --pdf-renderer=sandwich.")
