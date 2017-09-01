@@ -43,6 +43,7 @@ install:
 
 script:
 - mv ocrmypdf dont_import_this_ocrmypdf
+- tesseract --version
 - pytest -n auto
 - mv dont_import_this_ocrmypdf ocrmypdf
 
