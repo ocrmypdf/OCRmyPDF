@@ -5,6 +5,15 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 
 The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
 
+
+next
+----
+
+-   Fix missing error message that should occur when trying to force ``--pdf-renderer sandwich`` on old versions of Tesseract
+-   Update copyright information in test files
+-   Set system ``LANG`` to UTF-8 in Dockerfiles to avoid UTF-8 encoding errors
+
+
 v5.3.2
 ------
 
