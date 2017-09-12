@@ -4,6 +4,7 @@
 from subprocess import Popen, PIPE, check_output, check_call, DEVNULL
 import os
 import shutil
+import resource
 import pytest
 from ocrmypdf.pdfinfo import PdfInfo, Colorspace, Encoding
 import PyPDF2 as pypdf
@@ -1025,3 +1026,12 @@ def test_qpdf_negative_zero(resources, outpdf):
     qpdf.merge([str(negzero), str(hugemono)], outpdf)  # raises exception on err
     
     
+def test_page_merge_ulimit(spoof_tesseract_noop, resources, outpdf):
+    # Ensure we can merge pages without opening one file descriptor per page
+    ulimits = resource.getrlimit(resource.RLIMIT_NOFILE)
+    page_count = ulimits[0]
+    print(page_count)
+    input_files = [str(resources / 'trivial.pdf')] * page_count
+
+    qpdf.merge(input_files, outpdf)
+
