@@ -343,13 +343,18 @@ def check_options_output(options, log):
         options.pdf_renderer = 'sandwich'
 
     if options.pdf_renderer == 'tesseract':
-        log.warning("The 'tesseract' PDF renderer is deprecated.")
         if tesseract.version() < '3.05' and options.output_type == 'pdfa':
             log.warning(
                 "For best results use --pdf-renderer=tesseract "
                 "--output-type=pdf to disable PDF/A generation via "
                 "Ghostscript, which is known to corrupt the OCR text of "
                 "some PDFs produced your version of Tesseract.")
+        elif tesseract.has_textonly_pdf():
+            log.warning(
+                "The argument --pdf-renderer=tesseract provides support for "
+                "versions of tesseract older than your version. For best "
+                "results omit this argument and let OCRmyPDF choose the "
+                "best available renderer.")
 
     if options.debug_rendering and options.pdf_renderer != 'hocr':
         log.info(
