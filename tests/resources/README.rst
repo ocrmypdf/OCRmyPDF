@@ -97,6 +97,9 @@ under the terms of the license in LICENSE.rst.
     *   - no_contents.pdf
         - @jbarlow83
         - synthetic PDF with a blank page that has no /Contents entry
+    *   - trivial.pdf
+        - @jbarlow83
+        - smallest possible valid PDF-1.3 with all required fields
 
 
 Assemblies
