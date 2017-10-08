@@ -1,7 +1,6 @@
 # OCRmyPDF
 #
-# VERSION               4.4.2
-FROM 	ubuntu:16.10
+FROM 	ubuntu:17.04
 MAINTAINER James R. Barlow <jim@purplerock.ca>
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
