@@ -427,7 +427,7 @@ def check_options_ocr_behavior(options, log):
 def check_options_advanced(options, log):
     if tesseract.v4():
         log.info(
-            "Tesseract v4.x.alpha found. OCRmyPDF support is experimental.")
+            "Tesseract v4.x.alpha found.")
     if options.tesseract_oem and not tesseract.v4():
         log.warning(
             "--tesseract-oem requires Tesseract 4.x -- argument ignored")
