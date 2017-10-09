@@ -1,6 +1,5 @@
 # OCRmyPDF polyglot
 #
-# VERSION               4.4.2
 FROM      jbarlow83/ocrmypdf:latest
 MAINTAINER James R. Barlow <jim@purplerock.ca>
 
