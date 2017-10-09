@@ -39,3 +39,4 @@ tests/output/
 tests/resources/private/
 tmp/
 pdfbox-app*.jar
+.vscode/
