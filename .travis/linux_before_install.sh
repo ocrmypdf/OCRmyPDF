@@ -15,7 +15,7 @@ sudo apt-get install -y \
 	libavutil54 \
 	libffi-dev
 
-sudo add-apt-repository ppa:alex-p/tesseract-ocr -y
+# sudo add-apt-repository ppa:alex-p/tesseract-ocr -y
 
 sudo apt-get update
 sudo apt-get autoremove -y
