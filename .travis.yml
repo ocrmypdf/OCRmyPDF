@@ -44,6 +44,8 @@ install:
 jobs:
   include:
     - stage: test
+      python: 3.6
+      sudo: required
       script:
       - mv ocrmypdf dont_import_this_ocrmypdf
       - pytest -n auto
