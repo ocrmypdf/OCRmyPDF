@@ -1,7 +1,6 @@
 # OCRmyPDF polyglot
 #
 FROM      jbarlow83/ocrmypdf:latest
-MAINTAINER James R. Barlow <jim@purplerock.ca>
 
 USER root
 

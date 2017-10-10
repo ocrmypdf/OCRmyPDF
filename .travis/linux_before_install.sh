@@ -15,7 +15,7 @@ sudo apt-get install -y \
 	libavutil54 \
 	libffi-dev
 
-# sudo add-apt-repository ppa:alex-p/tesseract-ocr -y
+sudo add-apt-repository ppa:alex-p/tesseract-ocr -y
 
 sudo apt-get update
 sudo apt-get autoremove -y
@@ -24,6 +24,12 @@ sudo apt-get install -y --no-install-recommends \
 		tesseract-ocr-eng \
 		tesseract-ocr-fra \
 		tesseract-ocr-deu
+
+# Workaround for https://github.com/tesseract-ocr/tesseract/issues/1167
+# Replace tesseract data installed by tesseract-ocr-eng with a known good version
+sudo apt-get install -y wget
+wget -q https://github.com/tesseract-ocr/tessdata_best/raw/master/eng.traineddata -O packages/eng.traineddata
+cp packages/eng.traineddata /usr/share/tesseract-ocr/4.00/tessdata/eng.traineddata
 
 pip install --upgrade pip
 mkdir -p packages
