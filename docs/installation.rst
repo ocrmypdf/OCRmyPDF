@@ -214,15 +214,8 @@ follow these steps.
 Installing on Ubuntu 14.04 LTS
 ------------------------------
 
-Installing on Ubuntu 14.04 LTS (trusty) is more difficult than some other options, because of bugs in Python package installation and because OCRmyPDF depends on some packages newer than are available in the main distribution.
-
-Add new "apt" repositories needed for backports of Ghostscript 9.16, libav-11 (for unpaper 6.1) and Tesseract 4.00 (alpha). This will replace Ghostscript and Tesseract 3.x on your system. If you prefer to not modify your system in this matter, consider using a Docker container.
-
-.. code-block:: bash
-
-    sudo add-apt-repository ppa:vshn/ghostscript -y
-    sudo add-apt-repository ppa:heyarje/libav-11 -y
-    sudo add-apt-repository ppa:alex-p/tesseract-ocr
+Installing on Ubuntu 14.04 LTS (trusty) is more difficult than some other options,
+because it is older.
 
 Update apt-get:
 
@@ -239,39 +232,38 @@ Install system dependencies:
         zlib1g-dev \
         libjpeg-dev \
         libffi-dev \
-        libavformat56 libavcodec56 libavutil54 \
+        qpdf
+
+We will need backports of Ghostscript 9.16, libav-11 (for unpaper 6.1),
+Tesseract 4.00 (alpha), and Python 3.6. This will replace Ghostscript and
+Tesseract 3.x on your system. Python 3.6 will be installed alongside the system
+Python 3.
+
+If you prefer to not modify your system in this matter, consider using a Docker container.
+
+.. code-block:: bash
+
+    sudo add-apt-repository ppa:vshn/ghostscript -y
+    sudo add-apt-repository ppa:heyarje/libav-11 -y
+    sudo add-apt-repository ppa:alex-p/tesseract-ocr -y
+    sudo add-apt-repository ppa:jonathonf/python-3.6 -y
+
+    sudo apt-get update
+
+    sudo apt-get install \
+        python3.6 \
         ghostscript \
-        qpdf \
-        python3-pip \
-        python3-pil \
-        python3-pytest \
-        python3-reportlab \
-        python3-wheel \
-        python3-venv \
         tesseract-ocr \
-        tesseract-ocr-eng
+        tesseract-ocr-eng \
+        libavformat56 libavcodec56 libavutil54 \
+        wget
 
-If you wish install OCRmyPDF to the system Python, then install as follows (note this installs new packages
-into your system Python, which could interfere with other programs):
-
-.. code-block:: bash
-
-    sudo pip3 install ocrmypdf
-
-If you wish to install OCRmyPDF to a virtual environment to isolate the system Python, you can
-follow these steps.  This includes a workaround `for a known, unresolved issue in Ubuntu 14.04's ensurepip
-package <http://www.thefourtheye.in/2014/12/Python-venv-problem-with-ensurepip-in-Ubuntu.html>`_:
+Now we need to install ``pip`` and let it install ocrmypdf:
 
 .. code-block:: bash
 
-    sudo apt-get install python3-venv
-    python3 -m venv venv-ocrmypdf --without-pip
-    source venv-ocrmypdf/bin/activate
-    wget -O - -o /dev/null https://bootstrap.pypa.io/get-pip.py | python
-    deactivate
-    python3 -m venv --system-site-packages venv-ocrmypdf
-    source venv-ocrmypdf/bin/activate
-    pip install ocrmypdf
+    wget -O - -o /dev/null https://bootstrap.pypa.io/get-pip.py | python3.6
+    pip3.6 install ocrmypdf
 
 These installation instructions omit the optional dependency ``unpaper``, which is only available at version 0.4.2 in Ubuntu 14.04. The author could not find a backport of ``unpaper``, and created a .deb package to do the job of installing unpaper 6.1 (for x86 64-bit only):
 

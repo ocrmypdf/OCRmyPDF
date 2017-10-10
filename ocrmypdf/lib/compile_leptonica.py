@@ -183,10 +183,39 @@ pixColorMagnitude(PIX     *pixs,
                   l_int32  bwhite,
                   l_int32  type);
 
-void
+PIX *
+pixMaskOverColorPixels(PIX     *pixs,
+                       l_int32  threshdiff,
+                       l_int32  mindist);
+
+l_int32
+pixGetAverageMaskedRGB(PIX        *pixs,
+                       PIX        *pixm,
+                       l_int32     x,
+                       l_int32     y,
+                       l_int32     factor,
+                       l_int32     type,
+                       l_float32  *prval,
+                       l_float32  *pgval,
+                       l_float32  *pbval);
+
+PIX * 
+pixGlobalNormRGB(PIX * 	pixd,
+                 PIX * 	pixs,
+                 l_int32 	rval,
+                 l_int32 	gval,
+                 l_int32 	bval,
+                 l_int32 	mapval); 
+
+PIX *
+pixInvert(PIX * pixd,
+          PIX * pixs);
+
+void                 
 boxDestroy(BOX  **pbox);
 
-void lept_free(void *ptr);
+void
+lept_free(void *ptr);  
 """)
 
 

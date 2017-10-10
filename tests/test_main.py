@@ -404,9 +404,13 @@ def test_force_ocr_on_pdf_with_no_images(spoof_tesseract_crash, resources,
 @pytest.mark.skipif(
     pytest.helpers.is_macos() and pytest.helpers.running_in_travis(),
     reason="takes too long to install language packs in Travis macOS homebrew")
-def test_french(spoof_tesseract_cache, resources, outpdf):
+def test_french(spoof_tesseract_cache, resources, outdir):
+    # Produce a sidecar too - implicit test that system locale is set up
+    # properly
+    sidecar = outdir / 'francais.txt'
     p, out, err = run_ocrmypdf(
-        resources / 'francais.pdf', outpdf, '-l', 'fra',
+        resources / 'francais.pdf', outdir / 'francais.pdf', '-l', 'fra',
+        '--sidecar', sidecar,
         env=spoof_tesseract_cache)
     print(os.environ)
     assert p.returncode == ExitCode.ok, \
@@ -416,7 +420,7 @@ def test_french(spoof_tesseract_cache, resources, outpdf):
 def test_klingon(resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / 'francais.pdf', outpdf, '-l', 'klz')
-    assert p.returncode == ExitCode.bad_args
+    assert p.returncode == ExitCode.missing_dependency
 
 
 def test_missing_docinfo(spoof_tesseract_noop, resources, outpdf):

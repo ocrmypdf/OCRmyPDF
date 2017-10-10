@@ -11,7 +11,7 @@ ocrmypdf has built-in help.
 
 .. code-block:: bash
 
-	ocrmypdf --help
+    ocrmypdf --help
 
 
 Add an OCR layer and convert to PDF/A
@@ -19,21 +19,21 @@ Add an OCR layer and convert to PDF/A
 
 .. code-block:: bash
 
-	ocrmypdf input.pdf output.pdf
+    ocrmypdf input.pdf output.pdf
 
 Add an OCR layer and output a standard PDF
 """"""""""""""""""""""""""""""""""""""""""
 
 .. code-block:: bash
 
-	ocrmypdf --output-type pdf input.pdf output.pdf
+    ocrmypdf --output-type pdf input.pdf output.pdf
 
 Create a PDF/A with all color and grayscale images converted to JPEG
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 .. code-block:: bash
 
-	ocrmypdf --output-type pdfa --pdfa-image-compression jpeg input.pdf output.pdf
+    ocrmypdf --output-type pdfa --pdfa-image-compression jpeg input.pdf output.pdf
 
 Modify a file in place
 """"""""""""""""""""""
@@ -42,7 +42,7 @@ The file will only be overwritten if OCRmyPDF is successful.
 
 .. code-block:: bash
 
-	ocrmypdf myfile.pdf myfile.pdf
+    ocrmypdf myfile.pdf myfile.pdf
 
 Correct page rotation
 """""""""""""""""""""
@@ -51,7 +51,7 @@ OCR will attempt to automatic correct the rotation of each page. This can help f
 
 .. code-block:: bash
 
-	ocrmypdf --rotate-pages myfile.pdf myfile.pdf
+    ocrmypdf --rotate-pages myfile.pdf myfile.pdf
 
 You can increase (decrease) the parameter ``--rotate-pages-threshold`` to make page rotation more (less) aggressive.
 
@@ -63,8 +63,8 @@ By default OCRmyPDF assumes the document is English.
 
 .. code-block:: bash
 
-	ocrmypdf -l fre LeParisien.pdf LeParisien.pdf
-	ocrmypdf -l eng+fre Bilingual-English-French.pdf Bilingual-English-French.pdf
+    ocrmypdf -l fre LeParisien.pdf LeParisien.pdf
+    ocrmypdf -l eng+fre Bilingual-English-French.pdf Bilingual-English-French.pdf
 
 Language packs must be installed for all languages specified. See :ref:`Installing additional language packs <lang-packs>`.
 
@@ -76,7 +76,7 @@ This produces a file named "output.pdf" and a companion text file named "output.
 
 .. code-block:: bash
 
-	ocrmypdf --sidecar output.txt input.pdf output.pdf
+    ocrmypdf --sidecar output.txt input.pdf output.pdf
 
 OCR images, not PDFs
 --------------------
@@ -85,7 +85,7 @@ Use a program like `img2pdf <https://gitlab.mister-muffin.de/josch/img2pdf>`_ to
 
 .. code-block:: bash
 
-	img2pdf my-images*.jpg | ocrmypdf - myfile.pdf
+    img2pdf my-images*.jpg | ocrmypdf - myfile.pdf
 
 ``img2pdf`` also has features to control the position of images on a page, if desired.
 
@@ -93,7 +93,7 @@ For convenience, OCRmyPDF can convert single images to PDFs on its own. If the r
 
 .. code-block:: bash
 
-	ocrmypdf --image-dpi 300 image.png myfile.pdf
+    ocrmypdf --image-dpi 300 image.png myfile.pdf
 
 If you have multiple images, you must use ``img2pdf`` to convert the images to PDF.
 
@@ -105,7 +105,7 @@ You can also use Tesseract 3.04+ directly to convert single page images or multi
 
 .. code-block:: bash
 
-	tesseract my-image.jpg output-prefix pdf 
+    tesseract my-image.jpg output-prefix pdf
 
 Image processing
 ----------------
@@ -124,11 +124,11 @@ OCRmyPDF perform some image processing on each page of a PDF, if desired.  The s
 
 .. note::
 
-	In many cases image processing will rasterize PDF pages as images, potentially losing quality.
+    In many cases image processing will rasterize PDF pages as images, potentially losing quality.
 
 .. warning::
 
-	``--clean-final`` and ``-remove-background`` may leave undesirable visual artifacts in some images where their algorithms have shortcomings. Files should be visually reviewed after using these options.
+    ``--clean-final`` and ``-remove-background`` may leave undesirable visual artifacts in some images where their algorithms have shortcomings. Files should be visually reviewed after using these options.
 
 
 OCR and correct document skew (crooked scan)
@@ -138,13 +138,23 @@ Deskew:
 
 .. code-block:: bash
 
-	ocrmypdf --deskew input.pdf output.pdf
+    ocrmypdf --deskew input.pdf output.pdf
 
 Image processing commands can be combined. The order in which options are given does not matter. OCRmyPDF always applies the steps of the image processing pipeline in the same order (rotate, remove background, deskew, clean).
 
 .. code-block:: bash
 
-	ocrmypdf --deskew --clean --rotate-pages input.pdf output.pdf
+    ocrmypdf --deskew --clean --rotate-pages input.pdf output.pdf
+
+
+Don't actually OCR my PDF
+"""""""""""""""""""""""""
+
+If you set ``--tesseract-timeout 0`` OCRmyPDF will apply its image processing without performing OCR, if all you want to is to apply image processing or PDF/A conversion.
+
+.. code-block:: bash
+
+    ocrmypdf --tesseract-timeout=0 --remove-background input.pdf output.pdf
 
 
 Improving OCR quality

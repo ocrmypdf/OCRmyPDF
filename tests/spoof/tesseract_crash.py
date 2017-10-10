@@ -5,9 +5,9 @@ import os
 import signal
 
 
-VERSION_STRING = '''tesseract 3.04.00
- leptonica-1.72
-  libjpeg 8d : libpng 1.6.19 : libtiff 4.0.6 : zlib 1.2.5
+VERSION_STRING = '''tesseract 3.05.01
+ leptonica-1.74.4
+  libjpeg 9b : libpng 1.6.32 : libtiff 4.0.8 : zlib 1.2.8
 SPOOFED: CRASH ON OCR or -psm 0
 '''
 
@@ -30,7 +30,8 @@ def main():
         print('List of available languages (1):\neng', file=sys.stderr)
         sys.exit(0)
     elif sys.argv[1] == '--print-parameters':
-        print('List of parameters would go here', file=sys.stderr)
+        print('A parameter list would go here\ntextonly_pdf 0\n',
+              file=sys.stderr)
         sys.exit(0)
     elif sys.argv[-2] == 'hocr':
         print("KABOOM! Tesseract failed for some reason", file=sys.stderr)

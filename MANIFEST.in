@@ -7,8 +7,7 @@ include dev_requirements.txt
 include .git_archival.txt
 
 # docker
-include Dockerfile
-include Dockerfile.polyglot
+include Dockerfile*
 include .dockerignore
 
 # tests
@@ -38,6 +37,10 @@ recursive-exclude docs/_build *
 recursive-include ocrmypdf/data *
 include *.py
 exclude tasks.py
+exclude debug-runner.py
+recursive-exclude .travis *
+exclude .travis*
+
 
 # code
 recursive-include ocrmypdf *.py

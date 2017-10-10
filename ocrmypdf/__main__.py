@@ -322,7 +322,7 @@ def check_options_languages(options, _log):
             "data for the following requested languages: \n")
         for lang in (set(options.language) - tesseract.languages()):
             msg += lang + '\n'
-        raise argparse.ArgumentError(None, msg)
+        raise MissingDependencyError(msg)
 
 
 def check_options_output(options, log):
@@ -332,19 +332,29 @@ def check_options_output(options, log):
         else:
             options.pdf_renderer = 'hocr'
 
+    if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf():
+        raise MissingDependencyError(
+            "The 'sandwich' renderer requires Tesseract 3.05.01 or newer; "
+            "or Tesseract 4.00 alpha newer than February 2017.")
+
     if options.pdf_renderer == 'tess4':
         log.warning("The 'tess4' PDF renderer has been renamed to 'sandwich'. "
                     "Please use --pdf-renderer=sandwich.")
         options.pdf_renderer = 'sandwich'
 
     if options.pdf_renderer == 'tesseract':
-        log.warning("The 'tesseract' PDF renderer is deprecated.")
         if tesseract.version() < '3.05' and options.output_type == 'pdfa':
             log.warning(
                 "For best results use --pdf-renderer=tesseract "
                 "--output-type=pdf to disable PDF/A generation via "
                 "Ghostscript, which is known to corrupt the OCR text of "
                 "some PDFs produced your version of Tesseract.")
+        elif tesseract.has_textonly_pdf():
+            log.warning(
+                "The argument --pdf-renderer=tesseract provides support for "
+                "versions of tesseract older than your version. For best "
+                "results omit this argument and let OCRmyPDF choose the "
+                "best available renderer.")
 
     if options.debug_rendering and options.pdf_renderer != 'hocr':
         log.info(
@@ -417,7 +427,7 @@ def check_options_ocr_behavior(options, log):
 def check_options_advanced(options, log):
     if tesseract.v4():
         log.info(
-            "Tesseract v4.x.alpha found. OCRmyPDF support is experimental.")
+            "Tesseract v4.x.alpha found.")
     if options.tesseract_oem and not tesseract.v4():
         log.warning(
             "--tesseract-oem requires Tesseract 4.x -- argument ignored")

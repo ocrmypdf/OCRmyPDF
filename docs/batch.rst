@@ -90,13 +90,83 @@ This user contributed script also provides an example of batch processing.
 API
 """
 
-OCRmyPDF is currently supported as a command line interface. Due to limitations in one of the libraries OCRmyPDF depends on, it is not yet usable as an API.
+OCRmyPDF is currently supported as a command line interface. This means that even if you are using OCRmyPDF in a Python script, you should run it in a subprocess rather importing the ocrmypdf package.
+
+The reason for this limitation is that the `ruffus <https://github.com/bunbun/ruffus/>`_ library that OCRmyPDF depends on is unfortunately not reentrant. OCRmyPDF works by defining each operation it does as a ruffus task that takes one or more files as input and generates one or more files as output. As such ruffus is fairly fundamental.
+
+(If you find individual functions implemented in OCRmyPDF useful (such as ``ocrmypdf.pdfinfo``), you can use these if you wish to.)
+
+
+Synology DiskStations
+"""""""""""""""""""""
+
+Synology DiskStations (Network Attached Storage devices) can run the Docker image of OCRmyPDF if the Synology `Docker package <https://www.synology.com/en-global/dsm/packages/Docker>`_ is installed. Attached is a script to address particular quirks of using OCRmyPDF on one of these devices.
+
+This is only possible for x86-based Synology products. Some Synology products use ARM or Power processors and do not support Docker. Further adjustments might be needed to deal with the Synology's relatively limited CPU and RAM.
+
+.. code-block:: python
+
+	#!/bin/env python3
+	# Contributed by github.com/Enantiomerie
+
+	# script needs 2 arguments
+	# 1. source dir with *.pdf - default is location of script
+	# 2. move dir where *.pdf and *_OCR.pdf are moved to
+
+	import logging
+	import os
+	import subprocess
+	import sys
+	import time
+	import shutil
+
+	script_dir = os.path.dirname(os.path.realpath(__file__))
+	timestamp = time.strftime("%Y-%m-%d-%H%M_")
+	log_file = script_dir + '/' + timestamp + 'ocrmypdf.log'
+	logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', filename=log_file, filemode='w')
+
+	if len(sys.argv) > 1:
+	    start_dir = sys.argv[1]
+	else:
+	    start_dir = '.'
+
+	for dir_name, subdirs, file_list in os.walk(start_dir):
+	    logging.info('\n')
+	    logging.info(dir_name + '\n')
+	    os.chdir(dir_name)
+	    for filename in file_list:
+	        file_ext = os.path.splitext(filename)[1]
+	        if file_ext == '.pdf':
+	            full_path = dir_name + '/' + filename
+	            file_noext = os.path.splitext(filename)[0]
+	            timestamp_OCR = time.strftime("%Y-%m-%d-%H%M_OCR_")
+	            filename_OCR = timestamp_OCR + file_noext + '.pdf'
+	            docker_mount = dir_name + ':/home/docker'
+	# create string for pdf processing 
+	# diskstation needs a user:group docker:docker. find uid:gid of your diskstation docker:docker with id docker.
+	# use this uid:gid in -u flag
+	# rw rights for docker:docker at source dir are also necessary
+	# the script is processed as root user via chron 
+	            cmd = ['docker', 'run', '--rm', '-v', docker_mount, '-u="1030:65538"', 'jbarlow83/ocrmypdf', , '--deskew' , filename, filename_OCR]
+	            logging.info(cmd)
+	            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+	            result = proc.stdout.read()
+	            logging.info(result)
+	            full_path_OCR = dir_name + '/' + filename_OCR
+	            os.chmod(full_path_OCR, 0o666)
+	            os.chmod(full_path, 0o666)
+	            full_path_OCR_archive = sys.argv[2]
+	            full_path_archive = sys.argv[2] + '/no_ocr'
+	            shutil.move(full_path_OCR,full_path_OCR_archive)
+	            shutil.move(full_path, full_path_archive)
+	logging.info('Finished.\n')
+
 
 
 Huge batch jobs
 """""""""""""""
 
-If you have thousands of files to work with, contact the author.
+If you have thousands of files to work with, contact the author. Consulting work related to OCRmyPDF helps fund this open source project and all inquiries are appreciated.
 
 
 Hot (watched) folders
