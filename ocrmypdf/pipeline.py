@@ -51,6 +51,7 @@ class JobContext:
 
     def __init__(self):
         self.pdfinfo = None
+        self.options = None
 
     def generate_pdfinfo(self, infile):
         self.pdfinfo = PdfInfo(infile)
@@ -706,7 +707,7 @@ def combine_layers(
 
     if rotation != 0:
         log.info("{0:4d}: rotating image layer {1} degrees".format(
-            page_number(image), rotation, tx, ty))
+            page_number(image), rotation))
 
     try:
         page_text.mergeRotatedScaledTranslatedPage(
