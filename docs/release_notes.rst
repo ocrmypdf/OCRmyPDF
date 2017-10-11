@@ -5,10 +5,11 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 
 The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
 
-v5.3.4
+v5.4
 ------
 
 -   Change wording of a deprecation warning to improve clarity
+-   Added option to generate PDF/A-1b output if desired (``--output-type pdfa-1``); default remains PDF/A-2b generation
 -   Update documentation
 
 

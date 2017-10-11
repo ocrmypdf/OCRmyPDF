@@ -982,3 +982,14 @@ def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
     # formfeeds is the page count less one
     assert ocr_text.count('\f') == num_pages - 1, \
         "Sidecar page count does not match PDF page count"
+
+
+def test_pdfa_1(spoof_tesseract_cache, resources, outpdf):
+    check_ocrmypdf(
+        resources / 'ccitt.pdf', outpdf,
+        '--output-type', 'pdfa-1',
+        env=spoof_tesseract_cache
+    )
+
+    pdfa_info = file_claims_pdfa(outpdf)
+    assert pdfa_info['conformance'] == 'PDF/A-1B'

@@ -879,7 +879,8 @@ def merge_pages_ghostscript(
         output_file=output_file,
         compression=options.pdfa_image_compression,
         log=log,
-        threads=options.jobs or 1)
+        threads=options.jobs or 1,
+        pdfa_part=('1' if options.output_type == 'pdfa-1' else '2'))
 
 
 def merge_pages_qpdf(
@@ -1164,7 +1165,7 @@ def build_pipeline(options, work_folder, log, context):
         filter=formatter(r'\.repaired\.pdf'),
         output=os.path.join(work_folder, 'pdfa.ps'),
         extras=[log, context])
-    task_generate_postscript_stub.active_if(options.output_type == 'pdfa')
+    task_generate_postscript_stub.active_if(options.output_type.startswith('pdfa'))
 
 
     # Bypass valve
@@ -1186,7 +1187,7 @@ def build_pipeline(options, work_folder, log, context):
                task_generate_postscript_stub],
         output=os.path.join(work_folder, 'merged.pdf'),
         extras=[log, context])
-    task_merge_pages_ghostscript.active_if(options.output_type == 'pdfa')
+    task_merge_pages_ghostscript.active_if(options.output_type.startswith('pdfa'))
 
     task_merge_pages_qpdf = main_pipeline.merge(
         task_func=merge_pages_qpdf,

@@ -130,12 +130,15 @@ parser.add_argument(
     '--image-dpi', metavar='DPI', type=int,
     help="For input image instead of PDF, use this DPI instead of file's.")
 parser.add_argument(
-    '--output-type', choices=['pdfa', 'pdf'], default='pdfa',
+    '--output-type', choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2'], 
+    default='pdfa',
     help="Choose output type. 'pdfa' creates a PDF/A-2b compliant file for "
          "long term archiving (default, recommended) but may not suitable "
          "for users who want their file altered as little as possible. 'pdfa' "
          "also has problems with full Unicode text. 'pdf' attempts to "
-         "preserve file contents as much as possible.")
+         "preserve file contents as much as possible. 'pdf-a1' creates a "
+         "PDF/A1-b file. 'pdf-a2' is equivalent to 'pdfa'."
+         )
 
 # Use null string '\0' as sentinel to indicate the user supplied no argument,
 # since that is the only invalid character for filepaths on all platforms
@@ -759,7 +762,7 @@ def run_pipeline():
     if options.flowchart:
         _log.info("Flowchart saved to {}".format(options.flowchart))
     elif options.output_file != '-':
-        if options.output_type == 'pdfa':
+        if options.output_type.startswith('pdfa'):
             pdfa_info = file_claims_pdfa(options.output_file)
             if pdfa_info['pass']:
                 msg = 'Output file is a {} (as expected)'
@@ -767,7 +770,6 @@ def run_pipeline():
             else:
                 msg = 'Output file is okay but is not PDF/A (seems to be {})'
                 _log.warning(msg.format(pdfa_info['conformance']))
-
                 return ExitCode.invalid_output_pdf
         if not qpdf.check(options.output_file, _log):
             _log.warning('Output file: The generated PDF is INVALID')

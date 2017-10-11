@@ -104,7 +104,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
 
 
 def generate_pdfa(pdf_pages, output_file, compression, log,
-                  threads=1, pdf_version='1.5'):
+                  threads=1, pdf_version='1.5', pdfa_part='2'):
     compression_args = []
     if compression == 'jpeg':
         compression_args = [
@@ -140,7 +140,7 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
             "-sProcessColorModel=DeviceRGB"
         ] + compression_args + [
             "-dJPEGQ=95",
-            "-dPDFA=2",
+            "-dPDFA=" + pdfa_part,
             "-dPDFACompatibilityPolicy=1",
             "-sOutputFile=" + gs_pdf.name,
         ]
