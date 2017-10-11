@@ -1,5 +1,6 @@
 dist: trusty
 language: python
+sudo: required
 python:
   - "3.5"
   - "3.6"
@@ -16,47 +17,46 @@ env:
     - secure: "WlyII8YLsiUUyLtEA563GvEZmbneDb/T8q/P1uNbyQ2ps1U82tH0nSUV2CspSMxOFtZzPHCrRvnAmuTYKshBj+GNnBb1J9FKQmFwF+4NPeqsFdUkQ1NeeCmfIRShuNC3Otg2GGwj4Zssdg+QnVy43t2L11qizzfY+lY+MVzAYcM="  # DOCKERHUB_OCRMYPDF_TESS4_TOKEN
     - secure: "hsf6MT+n2x3OiDM2fQyJZdV0/PWYmv81LdVqC6cfnHBE/8N3DloJRqQ7WfO14TxhiK9PEC7MpyCj0lSabUHEO7gSH6Vks6I1asoSkt8S9/bSMlhT4hei+pwVpeGEiU5xHVATNjY+D919VC3IFvc3XmjT74h/2SLhaZ+jhEmDggM="  # HOMEBREW_OCRMYPDF_TOKEN
 
-matrix:
-  include:
-    - os: linux
-      sudo: required
-      language: python
-      python: 3.5
-    - os: linux
-      sudo: required
-      language: python
-      python: 3.6
-    - os: osx
-      osx_image: xcode8
-      language: generic
+# matrix:
+#   include:
+#     - os: linux
+#       sudo: required
+#       language: python
+#       python: "3.5"
+#     - os: linux
+#       sudo: required
+#       language: python
+#       python: "3.6"
+#     - os: osx
+#       osx_image: xcode8
+#       language: generic
 
 before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
-
-before_install: |
-  if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-    bash .travis/linux_before_install.sh
-  elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-    bash .travis/osx_before_install.sh
-  fi
-
-install:
-- pip3 install .
-- pip3 install -r requirements.txt -r test_requirements.txt
 
 jobs:
   include:
     - stage: test
       sudo: required
+      before_install: |
+      if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+        bash .travis/linux_before_install.sh
+      elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+        bash .travis/osx_before_install.sh
+      fi
+      install:
+      - pip3 install .
+      - pip3 install -r requirements.txt -r test_requirements.txt
       script:
       - mv ocrmypdf dont_import_this_ocrmypdf
       - pytest -n auto
       - mv dont_import_this_ocrmypdf ocrmypdf
-            
+
     - stage: deploy
       os: linux
-      python: 3.6
-      install: skip
+      python: "3.6"
+      install:
+      - pip3 install --upgrade pip wheel setuptools
       script: skip
       deploy: 
         # release for main pypi
