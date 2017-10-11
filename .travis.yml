@@ -1,9 +1,5 @@
 dist: trusty
 language: python
-sudo: required
-python:
-  - "3.5"
-  - "3.6"
 cache:
   pip: true
   directories:
@@ -17,73 +13,84 @@ env:
     - secure: "WlyII8YLsiUUyLtEA563GvEZmbneDb/T8q/P1uNbyQ2ps1U82tH0nSUV2CspSMxOFtZzPHCrRvnAmuTYKshBj+GNnBb1J9FKQmFwF+4NPeqsFdUkQ1NeeCmfIRShuNC3Otg2GGwj4Zssdg+QnVy43t2L11qizzfY+lY+MVzAYcM="  # DOCKERHUB_OCRMYPDF_TESS4_TOKEN
     - secure: "hsf6MT+n2x3OiDM2fQyJZdV0/PWYmv81LdVqC6cfnHBE/8N3DloJRqQ7WfO14TxhiK9PEC7MpyCj0lSabUHEO7gSH6Vks6I1asoSkt8S9/bSMlhT4hei+pwVpeGEiU5xHVATNjY+D919VC3IFvc3XmjT74h/2SLhaZ+jhEmDggM="  # HOMEBREW_OCRMYPDF_TOKEN
 
-# matrix:
-#   include:
-#     - os: linux
-#       sudo: required
-#       language: python
-#       python: "3.5"
-#     - os: linux
-#       sudo: required
-#       language: python
-#       python: "3.6"
-#     - os: osx
-#       osx_image: xcode8
-#       language: generic
+matrix:
+  include:
+    - os: linux
+      sudo: required
+      language: python
+      python: 3.5
+    - os: linux
+      sudo: required
+      language: python
+      python: 3.6
+    - os: osx
+      osx_image: xcode8
+      language: generic
 
 before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
 
-jobs:
-  include:
-    - stage: test
-      sudo: required
-      before_install: |
-        if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-          bash .travis/linux_before_install.sh
-        elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-          bash .travis/osx_before_install.sh
-        fi
-      install:
-      - pip3 install .
-      - pip3 install -r requirements.txt -r test_requirements.txt
-      script:
-      - mv ocrmypdf dont_import_this_ocrmypdf
-      - pytest -n auto
-      - mv dont_import_this_ocrmypdf ocrmypdf
+before_install: |
+  if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+    bash .travis/linux_before_install.sh
+  elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    bash .travis/osx_before_install.sh
+  fi
 
-    - stage: deploy
-      os: linux
-      python: "3.6"
-      install:
-      - pip3 install --upgrade pip wheel setuptools
-      script: skip
-      deploy: 
-        # release for main pypi
-        # 3.6 does the deploy
-        # OTOH if we ever need separate binary wheels then each version needs its
-        # own deploy
-      - provider: pypi
-        server: https://upload.pypi.org/legacy/
-        user: ocrmypdf-travis
-        password:
-          secure: "DTFOmmNL6olA0+yXvp4u9jXZlZeqrJsJ0526jzqf4a3gZ6jnGTq5UI6WzRsslSyoMMfXKtHQebqHM6ogSgCZinyZ3ufHJo8fn9brxbEc2gsiWkbj5o3bGwdWMT1vNNE7XW0VCpw87rZ1EEwjl4FJHFudMlPR1yfU5+uq0k0PACo="
-        distributions: "sdist bdist_wheel"
-        on:
-          branch: master
-          tags: true
-        skip_upload_docs: true        
-      - provider: pypi
-        server: https://testpypi.pypi.org/legacy/
-        user: ocrmypdf-travis
-        password:
-          secure: "DTFOmmNL6olA0+yXvp4u9jXZlZeqrJsJ0526jzqf4a3gZ6jnGTq5UI6WzRsslSyoMMfXKtHQebqHM6ogSgCZinyZ3ufHJo8fn9brxbEc2gsiWkbj5o3bGwdWMT1vNNE7XW0VCpw87rZ1EEwjl4FJHFudMlPR1yfU5+uq0k0PACo="
-        distributions: "sdist"
-        skip_upload_docs: true
-      after_deploy: |
-        curl -H "Content-Type: application/json" --data '{"build": true}' -X POST https://registry.hub.docker.com/u/jbarlow83/ocrmypdf/trigger/$DOCKERHUB_OCRMYPDF_TOKEN/
-        curl -H "Content-Type: application/json" --data '{"build": true}' -X POST https://registry.hub.docker.com/u/jbarlow83/ocrmypdf-tess4/trigger/$DOCKERHUB_OCRMYPDF_TESS4_TOKEN/
+install:
+- pip3 install .
+- pip3 install -r requirements.txt -r test_requirements.txt
 
-    - stage: homebrew
-      os: osx
-      script: bash .travis/osx_brew.sh
+script:
+- mv ocrmypdf dont_import_this_ocrmypdf
+- tesseract --version
+- pytest -n auto
+- mv dont_import_this_ocrmypdf ocrmypdf
+
+deploy:
+  # release for main pypi
+  # 3.6 is considered the build leader and does the deploy, otherwise there is
+  # a race and all versions will try to deploy
+  # OTOH if we ever need separate binary wheels then each version needs its
+  # own deploy
+- provider: pypi
+  server: https://upload.pypi.org/legacy/
+  user: ocrmypdf-travis
+  password:
+    secure: "DTFOmmNL6olA0+yXvp4u9jXZlZeqrJsJ0526jzqf4a3gZ6jnGTq5UI6WzRsslSyoMMfXKtHQebqHM6ogSgCZinyZ3ufHJo8fn9brxbEc2gsiWkbj5o3bGwdWMT1vNNE7XW0VCpw87rZ1EEwjl4FJHFudMlPR1yfU5+uq0k0PACo="
+  distributions: "sdist bdist_wheel"
+  on:
+    branch: master
+    tags: true
+    condition: $TRAVIS_PYTHON_VERSION == "3.6" && $TRAVIS_OS_NAME == "linux"
+  skip_upload_docs: true
+
+  # test pypi
+- provider: pypi
+  server: https://testpypi.pypi.org/legacy/
+  user: ocrmypdf-travis
+  password:
+    secure: "DTFOmmNL6olA0+yXvp4u9jXZlZeqrJsJ0526jzqf4a3gZ6jnGTq5UI6WzRsslSyoMMfXKtHQebqHM6ogSgCZinyZ3ufHJo8fn9brxbEc2gsiWkbj5o3bGwdWMT1vNNE7XW0VCpw87rZ1EEwjl4FJHFudMlPR1yfU5+uq0k0PACo="
+  distributions: "sdist"
+  on:
+    branch: develop
+    tags: false
+    condition: $TRAVIS_OS_NAME == "osx"
+  skip_upload_docs: true
+
+  # null deploy for osx
+  # we really just want to run after_deploy *after* pypi upload is done, but
+  # after_deploy on runs if a given box deployed
+- provider: script
+  script: /usr/bin/true
+  on:
+    branch: master
+    condition: $TRAVIS_OS_NAME == "osx"
+
+after_deploy: |
+  if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    bash .travis/osx_brew.sh
+  elif [[ "$TRAVIS_PYTHON_VERSION" == "3.6" && "$TRAVIS_OS_NAME" == "linux" ]]; then
+    curl -H "Content-Type: application/json" --data '{"build": true}' -X POST https://registry.hub.docker.com/u/jbarlow83/ocrmypdf/trigger/$DOCKERHUB_OCRMYPDF_TOKEN/
+    curl -H "Content-Type: application/json" --data '{"build": true}' -X POST https://registry.hub.docker.com/u/jbarlow83/ocrmypdf-tess4/trigger/$DOCKERHUB_OCRMYPDF_TESS4_TOKEN/
+  fi
