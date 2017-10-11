@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2015 James R. Barlow: github.com/jbarlow83
+# © 2017 James R. Barlow: github.com/jbarlow83
 
 from tempfile import NamedTemporaryFile
 from subprocess import run, PIPE, STDOUT, CalledProcessError
@@ -8,7 +8,7 @@ from functools import lru_cache
 import re
 import sys
 from . import get_program
-from ..exceptions import SubprocessOutputError
+from ..exceptions import SubprocessOutputError, MissingDependencyError
 from PIL import Image
 from ..helpers import fspath
 
@@ -20,15 +20,16 @@ def version():
         '--version'
     ]
     try:
-        version = check_output(
+        proc = run(
                 args_gs, close_fds=True, universal_newlines=True,
-                stderr=STDOUT)
+                stdout=PIPE, stderr=STDOUT, check=True)
+        ver = proc.stdout
     except CalledProcessError as e:
         print("Could not find Ghostscript executable on system PATH.",
               file=sys.stderr)
         raise MissingDependencyError from e
 
-    return version.strip()
+    return ver.strip()
 
 
 def _gs_error_reported(stream):
