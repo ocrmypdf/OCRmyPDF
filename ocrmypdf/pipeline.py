@@ -952,7 +952,16 @@ def merge_sidecars(
                 stream.write('\f')  # Form feed between pages
             if txt_file:
                 with open(txt_file, 'r') as in_:
-                    stream.write(in_.read())
+                    txt = in_.read()
+                    # Tesseract v4 alpha started adding form feeds in 
+                    # commit aa6eb6b
+                    # No obvious way to detect what binaries will do this, so
+                    # for consistency just ignore its form feeds and insert our
+                    # own
+                    if txt.endswith('\f'):
+                        stream.write(in_.read()[:-1])
+                    else:
+                        stream.write(in_.read())
             else:
                 stream.write('[OCR skipped on page {}]'.format(
                         page_number + 1))
