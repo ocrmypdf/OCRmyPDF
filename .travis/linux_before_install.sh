@@ -28,7 +28,7 @@ sudo apt-get install -y --no-install-recommends \
 # Workaround for https://github.com/tesseract-ocr/tesseract/issues/1167
 # Replace tesseract data installed by tesseract-ocr-eng with a known good version
 sudo apt-get install -y wget
-wget -q https://github.com/tesseract-ocr/tessdata_best/raw/master/eng.traineddata -O packages/eng.traineddata
+wget -q https://github.com/tesseract-ocr/tessdata/raw/master/eng.traineddata -O packages/eng.traineddata
 sha1sum packages/eng.traineddata
 sha1sum /usr/share/tesseract-ocr/4.00/tessdata/eng.traineddata
 sudo cp packages/eng.traineddata /usr/share/tesseract-ocr/4.00/tessdata/eng.traineddata
