@@ -39,11 +39,11 @@ jobs:
     - stage: test
       sudo: required
       before_install: |
-      if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-        bash .travis/linux_before_install.sh
-      elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-        bash .travis/osx_before_install.sh
-      fi
+        if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+          bash .travis/linux_before_install.sh
+        elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+          bash .travis/osx_before_install.sh
+        fi
       install:
       - pip3 install .
       - pip3 install -r requirements.txt -r test_requirements.txt
