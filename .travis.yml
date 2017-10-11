@@ -44,7 +44,6 @@ install:
 jobs:
   include:
     - stage: test
-      python: 3.6
       sudo: required
       script:
       - mv ocrmypdf dont_import_this_ocrmypdf
@@ -53,7 +52,8 @@ jobs:
     - stage: deploy
       os: linux
       python: 3.6
-      script: true
+      install: skip
+      script: skip
       deploy: 
         # release for main pypi
         # 3.6 does the deploy
