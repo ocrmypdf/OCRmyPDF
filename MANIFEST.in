@@ -12,6 +12,7 @@ include .dockerignore
 
 # tests
 include pytest.ini
+include .coveragerc
 recursive-include tests *.jpg
 recursive-include tests *.png
 recursive-include tests *.pdf
@@ -45,7 +46,6 @@ exclude .travis*
 # code
 recursive-include ocrmypdf *.py
 exclude ocrmypdf/lib/_leptonica.py
-include OCRmyPDF.sh
 include docker-wrapper.sh
 
 

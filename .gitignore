@@ -40,3 +40,5 @@ tests/resources/private/
 tmp/
 pdfbox-app*.jar
 .vscode/
+IDEAS
+_Dockerfile.local
