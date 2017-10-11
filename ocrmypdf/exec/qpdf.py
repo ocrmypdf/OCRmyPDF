@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2015 James R. Barlow: github.com/jbarlow83
+# © 2017 James R. Barlow: github.com/jbarlow83
 
 from subprocess import CalledProcessError, STDOUT, PIPE, run, check_output
 from functools import lru_cache
@@ -134,4 +134,4 @@ def merge(input_files, output_file, min_version=None):
         input_files[0], '--pages'
     ] + input_files + ['--', output_file]
     run(args_qpdf, check=True)
-
+    

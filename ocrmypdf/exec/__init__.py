@@ -7,5 +7,6 @@ import os
 
 
 def get_program(name):
+    "Check environment variables for overrides to this program"
     envvar = 'OCRMYPDF_' + name.upper()
     return os.environ.get(envvar, name)

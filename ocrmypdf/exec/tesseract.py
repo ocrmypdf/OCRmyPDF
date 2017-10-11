@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
-# © 2015 James R. Barlow: github.com/jbarlow83
+# © 2017 James R. Barlow: github.com/jbarlow83
 
 import sys
 import os
 import re
 import shutil
 from functools import lru_cache
-from ..exceptions import MissingDependencyError, TesseractConfigError
-from ..helpers import page_number
-from . import get_program
 from collections import namedtuple
 from textwrap import dedent
 import PyPDF2 as pypdf
+from subprocess import PIPE, CalledProcessError, \
+    TimeoutExpired, check_output, STDOUT
 
-from subprocess import Popen, PIPE, CalledProcessError, \
-    TimeoutExpired, check_output, STDOUT, DEVNULL
-
+from ..exceptions import MissingDependencyError, TesseractConfigError
+from ..helpers import page_number
+from . import get_program
 
 OrientationConfidence = namedtuple(
     'OrientationConfidence',
@@ -60,7 +59,7 @@ def version():
 
 def v4():
     "Is this Tesseract v4.0?"
-    return (version() >= '4')
+    return version() >= '4'
 
 
 @lru_cache(maxsize=1)
@@ -74,6 +73,7 @@ def has_textonly_pdf():
         get_program('tesseract'),
         '--print-parameters'
     ]
+    params = ''
     try:
         params = check_output(
                 args_tess, close_fds=True, universal_newlines=True,
@@ -113,12 +113,12 @@ def languages():
     return set(lang.strip() for lang in langs.splitlines()[1:])
 
 
-def tess_base_args(languages, engine_mode):
+def tess_base_args(langs, engine_mode):
     args = [
         get_program('tesseract'),
     ]
-    if languages:
-        args.extend(['-l', '+'.join(languages)])
+    if langs:
+        args.extend(['-l', '+'.join(langs)])
     if engine_mode is not None and v4():
         args.extend(['--oem', str(engine_mode)])
     return args

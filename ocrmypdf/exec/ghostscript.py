@@ -7,9 +7,9 @@ from shutil import copy
 from functools import lru_cache
 import re
 import sys
+from PIL import Image
 from . import get_program
 from ..exceptions import SubprocessOutputError, MissingDependencyError
-from PIL import Image
 from ..helpers import fspath
 
 

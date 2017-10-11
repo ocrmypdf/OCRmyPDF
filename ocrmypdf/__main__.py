@@ -1,29 +1,25 @@
 #!/usr/bin/env python3
 # © 2015-17 James R. Barlow: github.com/jbarlow83
 
-from contextlib import suppress
 from tempfile import mkdtemp
 from collections.abc import Sequence
 import sys
 import os
 import re
-import shutil
 import warnings
 import multiprocessing
 import atexit
 import textwrap
-import img2pdf
 import logging
 import argparse
 
 import PyPDF2 as pypdf
-from PIL import Image
 
 import ruffus.ruffus_exceptions as ruffus_exceptions
 import ruffus.cmdline as cmdline
 import ruffus.proxy_logger as proxy_logger
 
-from .pipeline import JobContext, JobContextManager, re_symlink, \
+from .pipeline import JobContext, JobContextManager, \
     cleanup_working_files, build_pipeline
 from .pdfa import file_claims_pdfa
 from .helpers import is_iterable_notstr, re_symlink, is_file_writable
@@ -445,9 +441,9 @@ def check_options_advanced(options, log):
 
 def check_options_metadata(options, log):
     import unicodedata
-    metadata = [options.title, options.author, options.keywords,
-                options.subject]
-    for s in (m for m in metadata if m):
+    docinfo = [options.title, options.author, options.keywords,
+               options.subject]
+    for s in (m for m in docinfo if m):
         for c in s:
             if unicodedata.category(c) == 'Co' or ord(c) >= 0x10000:
                 raise ValueError(
@@ -529,31 +525,31 @@ def cleanup_ruffus_error_message(msg):
 def do_ruffus_exception(ruffus_five_tuple, options, log):
     """Replace the elaborate ruffus stack trace with a user friendly
     description of the error message that occurred."""
+    exit_code = None
 
     task_name, job_name, exc_name, exc_value, exc_stack = ruffus_five_tuple
     if exc_name == 'builtins.SystemExit':
         match = re.search(r"\.(.+?)\)", exc_value)
         exit_code_name = match.groups()[0]
-        exit_code = getattr(ExitCode, exit_code_name, 'other_error')
-        return exit_code
+        exit_code = getattr(ExitCode, exit_code_name, 'other_error')        
     elif exc_name == 'ruffus.ruffus_exceptions.MissingInputFileError':
         log.error(cleanup_ruffus_error_message(exc_value))
-        return ExitCode.input_file
+        exit_code = ExitCode.input_file
     elif exc_name == 'builtins.TypeError':
         # Even though repair_pdf will fail, ruffus will still try
         # to call split_pages with no input files, likely due to a bug
         if task_name == 'split_pages':
             log.error("Input file '{0}' is not a valid PDF".format(
                 options.input_file))
-            return ExitCode.input_file
+            exit_code = ExitCode.input_file
     elif exc_name == 'builtins.KeyboardInterrupt':
         log.error("Interrupted by user")
-        return ExitCode.ctrl_c
+        exit_code = ExitCode.ctrl_c
     elif exc_name == 'subprocess.CalledProcessError':
         # It's up to the subprocess handler to report something useful
         msg = "Error occurred while running this command:"
         log.error(msg + '\n' + exc_value)
-        return ExitCode.child_process_error
+        exit_code = ExitCode.child_process_error
     elif exc_name == 'ocrmypdf.exceptions.PdfMergeFailedError':
         log.error(textwrap.dedent("""\
             Failed to merge PDF image layer with OCR layer
@@ -564,11 +560,11 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
             Try using
                 ocrmypdf --pdf-renderer tesseract  [..other args..]
             """))
-        return ExitCode.input_file
+        exit_code = ExitCode.input_file
     elif exc_name.startswith('ocrmypdf.exceptions.'):
         base_exc_name = exc_name.replace('ocrmypdf.exceptions.', '')
         exc_class = getattr(ocrmypdf_exceptions, base_exc_name)
-        return exc_class.exit_code
+        exit_code = exc_class.exit_code
     elif exc_name == 'PyPDF2.utils.PdfReadError' and \
             'not been decrypted' in exc_value:
         log.error(textwrap.dedent("""\
@@ -581,7 +577,10 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
             (Only algorithms "R = 1" and "R = 2" are supported.)
 
             """))
-        return ExitCode.encrypted_pdf
+        exit_code = ExitCode.encrypted_pdf
+
+    if exit_code is not None:
+        return exit_code
 
     if not options.verbose:
         log.error(exc_stack)
@@ -645,6 +644,20 @@ def check_closed_streams(options):
         sys.stdout = open(os.devnull, 'w')
 
     return True
+
+
+def log_page_orientations(pdfinfo, _log):
+    direction = {0: 'n', 90: 'e',
+                180: 's', 270: 'w'}
+    orientations = []
+    for n, page in enumerate(pdfinfo):
+        angle = pdfinfo[n].rotation or 0
+        if angle != 0:
+            orientations.append('{0}{1}'.format(
+                n + 1,
+                direction.get(angle, '')))
+    if orientations:
+        _log.info('Page orientations detected: ' + ' '.join(orientations))
 
 
 def run_pipeline():
@@ -736,8 +749,7 @@ def run_pipeline():
             _log.error("Unexpected ruffus exception: " + str(e))
             _log.error(repr(e))
             return ExitCode.other_error
-        else:
-            return exitcode
+        return exitcode
     except ExitCodeException as e:
         return e.exit_code
     except Exception as e:
@@ -767,17 +779,8 @@ def run_pipeline():
     if options.verbose:
         from pprint import pformat
         _log.debug(pformat(pdfinfo))
-    direction = {0: 'n', 90: 'e',
-                 180: 's', 270: 'w'}
-    orientations = []
-    for n, page in enumerate(pdfinfo):
-        angle = pdfinfo[n].rotation or 0
-        if angle != 0:
-            orientations.append('{0}{1}'.format(
-                n + 1,
-                direction.get(angle, '')))
-    if orientations:
-        _log.info('Page orientations detected: ' + ' '.join(orientations))
+
+    log_page_orientations(pdfinfo, _log)
 
     return ExitCode.ok
 

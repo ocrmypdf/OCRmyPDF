@@ -3,7 +3,7 @@
 # unpaper documentation:
 # https://github.com/Flameeyes/unpaper/blob/master/doc/basic-concepts.md
 
-from subprocess import CalledProcessError, STDOUT, check_output, check_call
+from subprocess import CalledProcessError, STDOUT, check_output
 from tempfile import NamedTemporaryFile
 import sys
 import os
@@ -18,10 +18,10 @@ def version():
         get_program('unpaper'),
         '--version'
     ]
-    version = check_output(
+    ver = check_output(
         args_unpaper, close_fds=True, universal_newlines=True,
         stderr=STDOUT, timeout=5)
-    return version.strip()
+    return ver.strip()
 
 
 try:

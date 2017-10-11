@@ -2,19 +2,10 @@
 # © 2016 James R. Barlow: github.com/jbarlow83
 
 from contextlib import suppress
-from tempfile import mkdtemp
-from functools import partial
 import sys
 import os
-import re
 import shutil
-import warnings
-import multiprocessing
-import atexit
-import textwrap
 import img2pdf
-import logging
-import argparse
 
 import PyPDF2 as pypdf
 from PIL import Image
@@ -23,7 +14,7 @@ from ruffus import formatter, regex, Pipeline, suffix
 
 from .hocrtransform import HocrTransform
 from .pdfinfo import PdfInfo, Encoding, Colorspace
-from .pdfa import generate_pdfa_ps, file_claims_pdfa
+from .pdfa import generate_pdfa_ps
 from .helpers import re_symlink, is_iterable_notstr, page_number
 from .exec import ghostscript, tesseract, qpdf
 from .exceptions import *
@@ -52,6 +43,7 @@ class JobContext:
     def __init__(self):
         self.pdfinfo = None
         self.options = None
+        self.work_folder = None
 
     def generate_pdfinfo(self, infile):
         self.pdfinfo = PdfInfo(infile)
@@ -190,7 +182,8 @@ def repair_pdf(
     pdfinfo = PdfInfo(output_file)
 
     if pdfinfo.has_userunit and options.output_type == 'pdfa':
-        log.error("This input file uses a PDF feature that is not supported "
+        log.error(
+            "This input file uses a PDF feature that is not supported "
             "by Ghostscript, so you cannot use --output-type=pdfa for this "
             "file. (Specifically, it uses the PDF-1.6 /UserUnit feature to "
             "support very large or small page sizes, and Ghostscript cannot "
@@ -827,9 +820,9 @@ def get_pdfmark(base_pdf, options):
         renderer_tag = 'OCR'
 
     pdfmark['/Creator'] = '{0} {1} / Tesseract {2} {3}'.format(
-            PROGRAM_NAME, VERSION,
-            renderer_tag,
-            tesseract.version())
+        PROGRAM_NAME, VERSION,
+        renderer_tag,
+        tesseract.version())
     return pdfmark
 
 
@@ -937,7 +930,6 @@ def merge_sidecars(
         output_file,
         log,
         context):
-    options = context.get_options()
     pdfinfo = context.get_pdfinfo()
 
     txt_files = [None] * len(pdfinfo)
@@ -948,8 +940,8 @@ def merge_sidecars(
             txt_files[idx] = infile
 
     def write_pages(stream):
-        for page_number, txt_file in enumerate(txt_files):
-            if page_number != 0:
+        for page_num, txt_file in enumerate(txt_files):
+            if page_num != 0:
                 stream.write('\f')  # Form feed between pages
             if txt_file:
                 with open(txt_file, 'r') as in_:
@@ -965,7 +957,7 @@ def merge_sidecars(
                         stream.write(in_.read())
             else:
                 stream.write('[OCR skipped on page {}]'.format(
-                        page_number + 1))
+                        page_num + 1))
 
     if output_file == '-':
         write_pages(sys.stdout)
@@ -1149,7 +1141,8 @@ def build_pipeline(options, work_folder, log, context):
         output=os.path.join(work_folder, r'\1.rendered.pdf'),
         extras=[log, context])
     task_combine_layers.graphviz(fillcolor='"#00cc66"')
-    task_combine_layers.active_if(options.pdf_renderer == 'hocr' or options.pdf_renderer == 'sandwich')
+    task_combine_layers.active_if(options.pdf_renderer == 'hocr' or 
+                                  options.pdf_renderer == 'sandwich')
 
     # Tesseract OCR+PDF
     task_ocr_tesseract_and_render_pdf = main_pipeline.collate(

@@ -20,7 +20,7 @@ class ExitCode(IntEnum):
 
 
 class ExitCodeException(Exception):
-    pass
+    exit_code = ExitCode.other_error
 
 
 class PdfMergeFailedError(ExitCodeException):
