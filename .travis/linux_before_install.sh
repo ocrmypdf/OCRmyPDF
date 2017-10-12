@@ -25,14 +25,6 @@ sudo apt-get install -y --no-install-recommends \
 		tesseract-ocr-fra \
 		tesseract-ocr-deu
 
-# Workaround for https://github.com/tesseract-ocr/tesseract/issues/1167
-# Replace tesseract data installed by tesseract-ocr-eng with a known good version
-sudo apt-get install -y wget
-wget -q https://github.com/tesseract-ocr/tessdata/raw/master/eng.traineddata -O packages/eng.traineddata
-sha1sum packages/eng.traineddata
-sha1sum /usr/share/tesseract-ocr/4.00/tessdata/eng.traineddata
-sudo cp packages/eng.traineddata /usr/share/tesseract-ocr/4.00/tessdata/eng.traineddata
-
 pip install --upgrade pip
 mkdir -p packages
 [ -f packages/unpaper_6.1-1.deb ] || wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O packages/unpaper_6.1-1.deb
