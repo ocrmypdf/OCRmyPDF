@@ -105,6 +105,12 @@ In this worked example, the current working directory contains an input file cal
 
 Note that ``ocrmypdf`` has its own separate ``-v VERBOSITYLEVEL`` argument to control debug verbosity. All Docker arguments should before the ``ocrmypdf`` image name and all arguments to ``ocrmypdf`` should be listed after.
 
+In some environments the permissions associated with Docker can be complex to configure. The process that executes Docker may end up not having the permissions to write the specified file system. In that case one can stream the file into and out of the Docker process and avoid all permission hassles, using ``-`` as the input and output filename:
+
+.. code-block:: bash
+
+    docker run --rm -i   ocrmypdf <other arguments to ocrmypdf> - - <input.pdf >output.pdf
+
 For convenience, a shell alias can hide the docker command:
 
 .. code-block:: bash
