@@ -30,6 +30,7 @@ class Ocrmypdf < Formula
   depends_on "libjpeg"
   depends_on "webp"
   depends_on "little-cms2"
+  depends_on "zlib"
 
 ${resources}
   def install
