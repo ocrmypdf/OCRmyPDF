@@ -805,7 +805,6 @@ def test_user_words(resources, outdir):
             '--image-dpi', 150,
             '--sidecar', sidecar_before
         )
-
         assert 'cromulent' not in sidecar_before.open().read()
 
     with word_list.open('w') as f:
@@ -982,6 +981,19 @@ def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
     # formfeeds is the page count less one
     assert ocr_text.count('\f') == num_pages - 1, \
         "Sidecar page count does not match PDF page count"
+
+
+def test_sidecar_nonempty(spoof_tesseract_cache, resources, outpdf):
+    sidecar = outpdf + '.txt'
+    check_ocrmypdf(
+        resources / 'ccitt.pdf', outpdf,
+        '--sidecar', sidecar,
+        env=spoof_tesseract_cache
+    )
+
+    with open(sidecar, 'r') as f:
+        ocr_text = f.read()
+    assert 'the' in ocr_text
 
 
 def test_pdfa_1(spoof_tesseract_cache, resources, outpdf):
