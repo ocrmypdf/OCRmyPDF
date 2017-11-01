@@ -9,19 +9,7 @@ import sys
 import os
 from functools import lru_cache
 from ..exceptions import MissingDependencyError
-from . import get_program
-
-
-@lru_cache(maxsize=1)
-def version():
-    args_unpaper = [
-        get_program('unpaper'),
-        '--version'
-    ]
-    ver = check_output(
-        args_unpaper, close_fds=True, universal_newlines=True,
-        stderr=STDOUT, timeout=5)
-    return ver.strip()
+from . import get_program, get_version
 
 
 try:
@@ -29,6 +17,11 @@ try:
 except ImportError:
     print("Could not find Python3 imaging library", file=sys.stderr)
     raise
+
+
+@lru_cache(maxsize=1)
+def version():
+    return get_version('unpaper')
 
 
 def run(input_file, output_file, dpi, log, mode_args):

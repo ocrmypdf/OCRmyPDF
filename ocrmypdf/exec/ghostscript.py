@@ -8,28 +8,14 @@ from functools import lru_cache
 import re
 import sys
 from PIL import Image
-from . import get_program
+from . import get_program, get_version
 from ..exceptions import SubprocessOutputError, MissingDependencyError
 from ..helpers import fspath
 
 
 @lru_cache(maxsize=1)
 def version():
-    args_gs = [
-        get_program('gs'),
-        '--version'
-    ]
-    try:
-        proc = run(
-                args_gs, close_fds=True, universal_newlines=True,
-                stdout=PIPE, stderr=STDOUT, check=True)
-        ver = proc.stdout
-    except CalledProcessError as e:
-        print("Could not find Ghostscript executable on system PATH.",
-              file=sys.stderr)
-        raise MissingDependencyError from e
-
-    return ver.strip()
+    return get_version('gs')
 
 
 def _gs_error_reported(stream):

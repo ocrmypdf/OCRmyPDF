@@ -14,7 +14,7 @@ from subprocess import PIPE, CalledProcessError, \
 
 from ..exceptions import MissingDependencyError, TesseractConfigError
 from ..helpers import page_number
-from . import get_program
+from . import get_program, get_version
 
 OrientationConfidence = namedtuple(
     'OrientationConfidence',
@@ -40,21 +40,7 @@ HOCR_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
 
 @lru_cache(maxsize=1)
 def version():
-    args_tess = [
-        get_program('tesseract'),
-        '--version'
-    ]
-    try:
-        versions = check_output(
-                args_tess, close_fds=True, universal_newlines=True,
-                stderr=STDOUT)
-    except CalledProcessError as e:
-        print("Could not find Tesseract executable on system PATH.",
-              file=sys.stderr)
-        raise MissingDependencyError from e
-
-    tesseract_version = re.match(r'tesseract\s(.+)', versions).group(1)
-    return tesseract_version
+    return get_version('tesseract', regex=r'tesseract\s(.+)')
 
 
 def v4():

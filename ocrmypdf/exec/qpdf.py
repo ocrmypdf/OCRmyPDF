@@ -9,25 +9,12 @@ import re
 
 from ..exceptions import InputFileError, SubprocessOutputError, \
     MissingDependencyError, EncryptedPdfError
-from . import get_program
+from . import get_program, get_version
 
 
 @lru_cache(maxsize=1)
 def version():
-    args_qpdf = [
-        get_program('qpdf'),
-        '--version'
-    ]
-    try:
-        p = run(args_qpdf, universal_newlines=True, stderr=STDOUT,
-                stdout=PIPE)
-    except CalledProcessError as e:
-        print("Could not find qpdf executable on system PATH.",
-              file=sys.stderr)
-        raise MissingDependencyError() from e
-
-    qpdf_version = re.match(r'qpdf version (.+)', p.stdout).group(1)
-    return qpdf_version
+    return get_version('qpdf', regex=r'qpdf version (.+)')    
 
 
 def check(input_file, log=None):
