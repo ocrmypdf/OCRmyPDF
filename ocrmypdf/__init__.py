@@ -4,6 +4,7 @@ import pkg_resources
 
 PROGRAM_NAME = 'ocrmypdf'
 
-VERSION = pkg_resources.get_distribution('ocrmypdf').version
+# Official PEP 396
+__version__ = pkg_resources.get_distribution('ocrmypdf').version
 
-
+VERSION = __version__
