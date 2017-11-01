@@ -32,7 +32,7 @@ def re_symlink(input_file, soft_link_name, log=None):
                 "%s exists and is not a link" % soft_link_name)
         try:
             os.unlink(soft_link_name)
-        except:
+        except OSError:
             prdebug("Can't unlink %s" % (soft_link_name))
 
     if not os.path.exists(input_file):
