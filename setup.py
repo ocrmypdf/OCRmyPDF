@@ -217,6 +217,7 @@ setup(
         "Topic :: Text Processing :: Indexing",
         "Topic :: Text Processing :: Linguistic",
         ],
+    python_requires='>=3.5',
     setup_requires=[
         'setuptools_scm',       # so that version will work
         'cffi>=1.9.1'           # to build the leptonica module
