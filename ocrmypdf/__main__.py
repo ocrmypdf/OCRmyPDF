@@ -28,6 +28,7 @@ from . import PROGRAM_NAME, VERSION
 
 from .exceptions import *
 from . import exceptions as ocrmypdf_exceptions
+from . import _unicodefun
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
@@ -48,6 +49,8 @@ def complain(message):
 # Hack to help debugger context find /usr/local/bin
 if 'IDE_PROJECT_ROOTS' in os.environ:
     os.environ['PATH'] = '/usr/local/bin:' + os.environ['PATH']
+
+_unicodefun._verify_python3_env()
 
 if tesseract.version() < MINIMUM_TESS_VERSION:
     complain(

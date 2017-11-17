@@ -1005,3 +1005,15 @@ def test_pdfa_1(spoof_tesseract_cache, resources, outpdf):
 
     pdfa_info = file_claims_pdfa(outpdf)
     assert pdfa_info['conformance'] == 'PDF/A-1B'
+
+
+def test_bad_locale():
+    env = os.environ.copy()
+    env['LANG'] = 'C'
+
+    p, out, err = run_ocrmypdf(
+        'a', 'b', env=env
+    )
+    assert out == '', "stdout not clean"
+    assert p.returncode != 0
+    assert 'configured to use ASCII as encoding' in err, "should whine"
