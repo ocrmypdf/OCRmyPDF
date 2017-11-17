@@ -1009,7 +1009,7 @@ def test_pdfa_1(spoof_tesseract_cache, resources, outpdf):
 
 def test_bad_locale():
     env = os.environ.copy()
-    env['LANG'] = 'C'
+    env['LC_ALL'] = 'C'
 
     p, out, err = run_ocrmypdf(
         'a', 'b', env=env
