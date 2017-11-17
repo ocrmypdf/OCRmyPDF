@@ -5,6 +5,15 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 
 The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
 
+v5.4.3
+------
+
+-   If a subprocess fails to report its version when queried, exit cleanly with an error instead of throwing an exception
+-   Added test to confirm that the system locale is Unicode-aware and fail early if it's not
+-   Clarified some copyright information
+-   Updated pinned requirements.txt so the homebrew formula captures more recent versions
+
+
 v5.4.2
 ------
 
