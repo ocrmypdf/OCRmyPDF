@@ -125,6 +125,9 @@ Or in the wonderful `fish shell <https://fishshell.com/>`_:
     alias ocrmypdf 'docker run --rm -v (pwd):/home/docker ocrmypdf'
     funcsave ocrmypdf
 
+.. note::
+
+    The ocrmypdf Docker containers are designed to be used for a single OCR job. The ``docker run --rm`` argument tells Docker to delete temporary storage associated with container when it is done executing.
 
 Manual installation on macOS
 ----------------------------
@@ -171,7 +174,13 @@ Update the homebrew pip and install Pillow:
     pip3 install --upgrade pip
     pip3 install --upgrade pillow
 
-You can then install OCRmyPDF from PyPI:
+You can then install OCRmyPDF from PyPI, for the current user:
+
+.. code-block:: bash
+
+    pip3 install --user ocrmypdf
+
+or system-wide:
 
 .. code-block:: bash
 
@@ -200,8 +209,13 @@ No package is currently available for Ubuntu 16.04, but you can install the depe
         python3-pip \
         python3-cffi
 
-If you wish install OCRmyPDF to the system Python, then install as follows (note this installs new packages
-into your system Python, which could interfere with other programs):
+If you wish install OCRmyPDF for the current user:
+
+.. code-block:: bash
+
+    pip3 install --user ocrmypdf
+
+Alternately, system-wide. Note that this may modify the system Python environment:
 
 .. code-block:: bash
 
@@ -221,7 +235,7 @@ Installing on Ubuntu 14.04 LTS
 ------------------------------
 
 Installing on Ubuntu 14.04 LTS (trusty) is more difficult than some other options,
-because it is older.
+because it is older and does not provide ``pip``.
 
 Update apt-get:
 

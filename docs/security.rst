@@ -10,7 +10,7 @@ The disclaimer applies: this software has no warranties of any kind.
 PDFs may contain malware
 ------------------------
 
-PDF is a rich, complex file format. The official PDF 1.7 specification, ISO 32000:2008, is hundreds of packages long and references several annexes each of which are similar in length. PDFs can contain video, audio, JavaScript and other programming, and forms. In some cases, they can open internet connections to pre-selected URLs. All of these possible attack vectors.
+PDF is a rich, complex file format. The official PDF 1.7 specification, ISO 32000:2008, is hundreds of pages long and references several annexes each of which are similar in length. PDFs can contain video, audio, XML, JavaScript and other programming, and forms. In some cases, they can open internet connections to pre-selected URLs. All of these possible attack vectors.
 
 In short, PDFs `may contain viruses <https://security.stackexchange.com/questions/64052/can-a-pdf-file-contain-a-virus>`_.
 
@@ -21,18 +21,45 @@ How OCRmyPDF processes PDFs
 
 OCRmyPDF must open and interpret your PDF in order to insert an OCR layer. First, it runs all PDFs through `qpdf <https://github.com/qpdf/qpdf>`_, a program that repairs PDFs with syntax errors. This is done because, in the author's experience, a significant number of PDFs in the wild especially those created by scanners are not well-formed files. qpdf makes it more likely that OCRmyPDF will succeed, but offers no security guarantees. qpdf is also used to split the PDF into single page PDFs.
 
-After qpdf, OCRmyPDF examines each page using `PyPDF2 <https://github.com/mstamy2/PyPDF2>`_. This library also has no warranties or guarantees.
+After qpdf, OCRmyPDF examines each page using `PyPDF2 <https://github.com/mstamy2/PyPDF2>`_. This library also has no warranties or guarantees. OCRmyPDF works with qpdf 5.0 and up, but version 7.0 is recommended because of known security vulnerabilities in early versions.
 
-Finally, OCRmyPDF rasterizes each page of the PDF using `Ghostscript <http://ghostscript.com/>`_ in ``-dSAFER`` mode. 
+Finally, OCRmyPDF rasterizes each page of the PDF using `Ghostscript <http://ghostscript.com/>`_ in ``-dSAFER`` mode.
 
 Depending on the options specified, OCRmyPDF may graft the OCR layer into the existing PDF or it may essentially reconstruct ("re-fry") a visually identical PDF that may be quite different at the binary level. That said, OCRmyPDF is not a tool designed for sanitizing PDFs.
 
-Using OCRmyPDF online
----------------------
+Using OCRmyPDF online or as a service
+-------------------------------------
 
-OCRmyPDF is not designed to be deployed "as a service", in a setting where a user/attacker could upload a file for OCR processing online. It is not designed to be secure in this case.
+OCRmyPDF should not be deployed as a public-facing service, like a website where a potential attacker could upload a PDF of their choice for OCR. OCRmyPDF is not designed to be secure against PDF malware. Another concern is PDFs specifically designed to be a denial of service attack: PDFs can contain recursive data structures that sometimes send parsers into infinite loops, and issue complex graphics drawing commands.
 
-Abbyy Cloud OCR is a viable commercial alternative with a web services API. The author also provides professional services that include OCR and building databases around PDFs, and is happy to provide consultation.
+OCRmyPDF should be relatively safe to use in a trusted intranet, with some considerations:
+
+Limiting CPU usage
+^^^^^^^^^^^^^^^^^^
+
+OCRmyPDF will attempt to use all available CPUs and storage, so executing ``nice ocrmypdf`` or limiting the number of jobs with the ``-j`` argument may ensure the server remains available. Another option would be run OCRmyPDF jobs inside a Docker container or virtual machine, which can impose its own limits on CPU usage.
+
+Temporary storage requirements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+OCRmyPDF will use a large amount of temporary storage for its work, proportional to the total number of pixels needed to rasterize the PDF. The raster image of a 8.5×11" color page at 300 DPI takes 25 MB uncompressed; OCRmyPDF saves its intermediates as PNG, but that still means it requires about 9 MB per intermediate based on average compression ratios. Multiple intermediates per page are also required, depending on the command line given. A rule of thumb would be to allow 100 MB of temporary storage per page in a file – meaning that a small cloud servers or small VM partitions should be provisioned with plenty of extra space, if say, a 500 page file might be sent.
+
+To check temporary storage usage on actual files, run ``ocrmypdf -k ...`` which will preserve and print the path to temporary storage when the job is done.
+
+To change where temporary files are stored, change the ``TMPDIR`` environment variable for ocrmypdf's environment. (Python's ``tempfile.gettempdir()`` returns the root directory in which temporary files will be stored.)
+
+Timeouts
+^^^^^^^^
+
+To prevent excessively long OCR jobs consider setting ``--tesseract-timeout`` and/or ``--skip-big`` arguments. ``--skip-big`` is particularly helpful if your PDFs include documents such as reports on standard page sizes with large images attached - often large images are not worth OCR'ing anyway.
+
+Commercial alternatives
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The author also provides professional services that include OCR and building databases around PDFs, and is happy to provide consultation.
+
+Abbyy Cloud OCR is a viable commercial alternative with a web services API. 
+
 
 Password protection, digital signatures and certification
 ---------------------------------------------------------
