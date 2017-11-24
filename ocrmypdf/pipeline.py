@@ -6,7 +6,7 @@ import sys
 import os
 import shutil
 import img2pdf
-
+import re
 import PyPDF2 as pypdf
 from PIL import Image
 
@@ -149,6 +149,22 @@ def triage_image_file(input_file, output_file, log, options):
         raise UnsupportedImageFormatError() from e
 
 
+def _pdf_guess_version(input_file, search_window=1024):
+    """Try to find version signature at start of file.
+    
+    Not robust enough to deal with appended files.
+
+    Returns empty string if not found, indicating file is probably not PDF.
+    """
+
+    with open(input_file, 'rb') as f:
+        signature = f.read(1024)
+    m = re.search(b'%PDF-(\d\.\d)', signature)
+    if m:
+        return m.group(1)
+    return ''
+
+
 def triage(
         input_file,
         output_file,
@@ -157,14 +173,12 @@ def triage(
 
     options = context.get_options()
     try:
-        with open(input_file, 'rb') as f:
-            signature = f.read(1024)
-            if b'%PDF' in signature:
-                if options.image_dpi:
-                    log.warning("Argument --image-dpi ignored because the "
-                                "input file is a PDF, not an image.")
-                re_symlink(input_file, output_file, log)
-                return
+        if _pdf_guess_version(input_file):
+            if options.image_dpi:
+                log.warning("Argument --image-dpi ignored because the "
+                            "input file is a PDF, not an image.")
+            re_symlink(input_file, output_file, log)
+            return
     except EnvironmentError as e:
         log.error(e)
         raise InputFileError() from e
@@ -914,6 +928,7 @@ def merge_pages_qpdf(
     first_page = pypdf.PdfFileReader(pdf_pages[0])
 
     writer = pypdf.PdfFileWriter()
+    writer._header = b'%PDF-' + _pdf_guess_version(pdf_pages[0])  # copy version from source
     writer.appendPagesFromReader(first_page)
     writer.addMetadata(pdfmark)
     writer_file = pdf_pages[0].replace('.pdf', '.metadata.pdf')
