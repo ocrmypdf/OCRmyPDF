@@ -147,7 +147,7 @@ This is only possible for x86-based Synology products. Some Synology products us
 	# use this uid:gid in -u flag
 	# rw rights for docker:docker at source dir are also necessary
 	# the script is processed as root user via chron 
-	            cmd = ['docker', 'run', '--rm', '-v', docker_mount, '-u="1030:65538"', 'jbarlow83/ocrmypdf', , '--deskew' , filename, filename_OCR]
+	            cmd = ['docker', 'run', '--rm', '-v', docker_mount, '-u=1030:65538', 'jbarlow83/ocrmypdf', , '--deskew' , filename, filename_OCR]
 	            logging.info(cmd)
 	            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 	            result = proc.stdout.read()
