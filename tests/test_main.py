@@ -1021,6 +1021,7 @@ def test_bad_locale():
     assert 'configured to use ASCII as encoding' in err, "should whine"
 
 
+@pytest.mark.timeout(30)
 def test_qpdf_negative_zero(resources, outpdf):
     negzero = resources / 'negzero.pdf'
     hugemono = resources / 'hugemono.pdf'
@@ -1028,6 +1029,7 @@ def test_qpdf_negative_zero(resources, outpdf):
     qpdf.merge([str(negzero), str(hugemono)], outpdf, log=logging.getLogger())
     
 
+@pytest.mark.timeout(30)
 @pytest.mark.parametrize('max_files,skip', [
     (2, 0),  # Can we merge correctly without opening more than 2 files at once?
     (16, 0), # And does this work properly when we can one-shot it?
@@ -1049,6 +1051,7 @@ def test_qpdf_merge_correctness(resources, outpdf, max_files, skip):
     assert len(PdfInfo(outpdf).pages) == len(input_files[skip:])
     
 
+@pytest.mark.timeout(30)
 @pytest.mark.skipif(
     True, 
     reason='qpdf binary cannot open multiple files multiple times')
