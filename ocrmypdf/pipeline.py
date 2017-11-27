@@ -938,7 +938,8 @@ def merge_pages_qpdf(
     pdf_pages[0] = writer_file
 
     qpdf.merge(input_files=pdf_pages, output_file=output_file,
-               min_version=context.get_pdfinfo().min_version)
+               min_version=context.get_pdfinfo().min_version,
+               log=log)
 
 
 def merge_sidecars(

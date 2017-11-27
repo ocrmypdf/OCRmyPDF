@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © 2017 James R. Barlow: github.com/jbarlow83
 
-from subprocess import CalledProcessError, STDOUT, PIPE, run, check_output
+from subprocess import CalledProcessError, STDOUT, PIPE, run
 from functools import lru_cache
 import sys
 import os
@@ -28,7 +28,8 @@ def check(input_file, log=None):
         import logging as log
 
     try:
-        check_output(args_qpdf, stderr=STDOUT, universal_newlines=True)
+        run(args_qpdf, stderr=STDOUT, stdout=PIPE, universal_newlines=True, 
+            check=True)
     except CalledProcessError as e:
         if e.returncode == 2:
             log.error("{0}: not a valid PDF, and could not repair it.".format(
@@ -57,11 +58,11 @@ def repair(input_file, output_file, log):
         get_program('qpdf'), input_file, output_file
     ]
     try:
-        check_output(args_qpdf, stderr=STDOUT, universal_newlines=True)
+        run(args_qpdf, stderr=STDOUT, stdout=PIPE, universal_newlines=True, 
+            check=True)
     except CalledProcessError as e:
         if e.returncode == 3 and e.output.find("operation succeeded"):
             log.debug('qpdf found and fixed errors: ' + e.output)
-            log.debug(e.output)
             return
 
         if _probably_encrypted(e):
@@ -82,9 +83,9 @@ def repair(input_file, output_file, log):
 
 def get_npages(input_file, log):
     try:
-        pages = check_output(
+        pages = run(
             [get_program('qpdf'), '--show-npages', input_file],
-             universal_newlines=True, close_fds=True)
+            universal_newlines=True, check=True, stdout=PIPE, stderr=STDOUT)
     except CalledProcessError as e:
         if e.returncode == 2 and e.output.find('No such file'):
             log.error(e.output)
@@ -107,7 +108,7 @@ def split_pages(input_file, work_folder, npages):
         run(args_qpdf, check=True)
 
 
-def merge(input_files, output_file, min_version=None):
+def merge(input_files, output_file, min_version=None, log=None):
     """Merge the list of input files (all filenames) into the output file.
 
     The input files may contain one or more pages.
@@ -115,10 +116,24 @@ def merge(input_files, output_file, min_version=None):
     version_arg = ['--min-version={}'.format(min_version)] \
                   if min_version else []
 
+    if log is None:
+        import logging as log
+
     args_qpdf = [
         get_program('qpdf')
     ] + version_arg + [
         input_files[0], '--pages'
     ] + input_files + ['--', output_file]
-    run(args_qpdf, check=True)
+
+    try:
+        run(args_qpdf, check=True, stderr=PIPE, universal_newlines=True)
+    except CalledProcessError as e:
+        if e.returncode == 3 and \
+                e.stderr.find("unknown token while reading object") and \
+                e.stderr.find("operation succeeded"):
+            # Only whitelist the 'unknown token' problem (decimal/string issue)
+            # qpdf issue #165
+            log.warning('qpdf found and fixed errors: ' + e.stderr)
+            return
+        raise e from e
     
