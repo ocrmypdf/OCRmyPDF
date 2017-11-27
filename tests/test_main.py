@@ -65,6 +65,7 @@ def test_quick(spoof_tesseract_cache, resources, outpdf):
     check_ocrmypdf(resources / 'ccitt.pdf', outpdf, env=spoof_tesseract_cache)
 
 
+@pytest.mark.filterwarnings('ignore:Image size')
 def test_deskew(spoof_tesseract_noop, resources, outdir):
     # Run with deskew
     deskewed_pdf = check_ocrmypdf(
@@ -1023,7 +1024,8 @@ def test_bad_locale():
 def test_qpdf_negative_zero(resources, outpdf):
     negzero = resources / 'negzero.pdf'
     hugemono = resources / 'hugemono.pdf'
-    qpdf.merge([str(negzero), str(hugemono)], outpdf)  # raises exception on err
+    # raises exception on err
+    qpdf.merge([str(negzero), str(hugemono)], outpdf, log=logging.getLogger())
     
 
 @pytest.mark.parametrize('max_files,skip', [
