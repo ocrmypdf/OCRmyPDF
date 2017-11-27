@@ -6,10 +6,12 @@ from functools import lru_cache
 import sys
 import os
 import re
+import resource
 
 from ..exceptions import InputFileError, SubprocessOutputError, \
     MissingDependencyError, EncryptedPdfError
 from . import get_program, get_version
+from ..helpers import re_symlink
 
 
 @lru_cache(maxsize=1)
@@ -108,11 +110,15 @@ def split_pages(input_file, work_folder, npages):
         run(args_qpdf, check=True)
 
 
-def merge(input_files, output_file, min_version=None, log=None):
+def _merge_inner(input_files, output_file, min_version=None, log=None):
     """Merge the list of input files (all filenames) into the output file.
 
     The input files may contain one or more pages.
     """
+
+    # Single page 'merges' should still be attempted to that the same error
+    # checking is applied to single page case
+
     version_arg = ['--min-version={}'.format(min_version)] \
                   if min_version else []
 
@@ -136,4 +142,61 @@ def merge(input_files, output_file, min_version=None, log=None):
             log.warning('qpdf found and fixed errors: ' + e.stderr)
             return
         raise e from e
-    
+
+
+def merge(input_files, output_file, min_version=None, log=None, max_files=None):
+    """Merge the list of input files (all filenames) into the output file.
+
+    The input files may contain one or more pages.
+
+    """
+    # qpdf requires that every file that contributes to the output has a file 
+    # descriptor that remains open. That means, given our approach of one 
+    # intermediate PDF per, we can practically hit the number of file 
+    # descriptors. 
+
+    if max_files is None or max_files < 2:
+        # Find out how many open file descriptors we can get away with
+        ulimits = resource.getrlimit(resource.RLIMIT_NOFILE)
+        max_open_files = ulimits[0]
+        max_files = max_open_files // 2  # Conservative guess
+
+    # We'll write things alongside the output file
+    output_dir = os.path.dirname(output_file)
+
+    # How many files to grab at once, merging all their contents
+    step_size = max_files
+
+    workqueue = input_files.copy()
+    counter = 1
+    next_workqueue = []
+    while len(workqueue) > 0:
+        # Take n files out of the queue
+        n = min(step_size, len(workqueue))
+        job = workqueue[0:n]
+        del workqueue[0:n]
+        log.debug('merging ' + repr(job))
+
+        # Merge them into 1 file, which will contain n^depth pages
+        merge_file = os.path.join(
+            output_dir, "merge-{0:06d}.pdf".format(counter))
+        counter += 1
+        _merge_inner(job, merge_file, min_version=min_version, log=log)
+
+        # On the next 
+        next_workqueue.append(merge_file)
+        log.debug('next_workqueue ' + repr(next_workqueue))
+
+        # If we're out of things to do in this queue, move on to the next
+        # queue. On the counter-th pass of the workqueue we can chew through
+        # (step_size)**N pages, so on most systems the second pass finishes
+        # the job.
+        if len(workqueue) == 0:
+            workqueue = next_workqueue
+            next_workqueue = []
+            if len(workqueue) == 1:
+                break
+
+    re_symlink(workqueue.pop(), output_file)
+
+
