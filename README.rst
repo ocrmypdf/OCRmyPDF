@@ -122,6 +122,13 @@ If you detect an issue, please:
 -  If possible provide your input PDF file as well as the content of the
    temporary folder (using a file sharing service like Dropbox)
 
+Requirements
+------------
+
+Runs on CPython 3.6, and requires external program installations of Ghostscript, Tesseract OCR, QPDF, and Leptonica. ocrmypdf is pure Python, but uses CFFI to portably generate library bindings.
+
+Python 3.5 is fully supported, but support will end at the end of 2017, to allow f-strings in the code base.
+
 Press & Media
 -------------
 
