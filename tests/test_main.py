@@ -10,7 +10,7 @@ import PyPDF2 as pypdf
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf import leptonica
 from ocrmypdf.pdfa import file_claims_pdfa
-from ocrmypdf.exec import ghostscript, tesseract
+from ocrmypdf.exec import ghostscript, tesseract, qpdf
 import logging
 from math import isclose
 
@@ -1017,3 +1017,11 @@ def test_bad_locale():
     assert out == '', "stdout not clean"
     assert p.returncode != 0
     assert 'configured to use ASCII as encoding' in err, "should whine"
+
+
+def test_qpdf_negative_zero(resources, outpdf):
+    negzero = resources / 'negzero.pdf'
+    hugemono = resources / 'hugemono.pdf'
+    qpdf.merge([str(negzero), str(hugemono)], outpdf)  # raises exception on err
+    
+    
