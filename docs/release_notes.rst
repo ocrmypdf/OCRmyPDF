@@ -9,9 +9,10 @@ v5.4.4
 ------
 
 -   Support for Python 3.5 is now deprecated and will be removed at the end of 2017
--   Adding previously unlisted setup requirement, pytest-runner
+-   Fix issue #181, fix final merge failure for PDFs with more pages than the system file handle limit (``ulimit -n``)
 -   Fix issue #200, an uncommon syntax for formatting decimal numbers in a PDF would cause qpdf to issue a warning, which ocrmypdf treated as an error. Now this the warning is relayed.
 -   Fix an issue where intermediate PDFs would be created at version 1.3 instead of the version of the original file. It's possible but unlikely this had side effects.
+-   Adding previously unlisted setup requirement, pytest-runner
 -   Update documentation: fix an error in the example script for Synology with Docker images, improved security guidance, advised ``pip install --user``
 
 v5.4.3
