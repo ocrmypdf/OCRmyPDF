@@ -62,8 +62,7 @@ def has_textonly_pdf():
     params = ''
     try:
         params = check_output(
-                args_tess, close_fds=True, universal_newlines=True,
-                stderr=STDOUT)
+                args_tess, universal_newlines=True, stderr=STDOUT)
     except CalledProcessError as e:
         print("Could not --print-parameters from tesseract",
               file=sys.stderr)
@@ -86,8 +85,7 @@ def languages():
     ]
     try:
         langs = check_output(
-                args_tess, close_fds=True, universal_newlines=True,
-                stderr=STDOUT)
+                args_tess, universal_newlines=True, stderr=STDOUT)
     except CalledProcessError as e:
         msg = dedent("""Tesseract failed to report available languages.
         Output from Tesseract:
@@ -120,19 +118,18 @@ def get_orientation(input_file, language: list, engine_mode, timeout: float,
 
     try:
         stdout = check_output(
-            args_tesseract, close_fds=True, stderr=STDOUT,
-            universal_newlines=True, timeout=timeout)
+            args_tesseract, stderr=STDOUT, timeout=timeout)
     except TimeoutExpired:
         return OrientationConfidence(angle=0, confidence=0.0)
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_file)
-        if ('Too few characters. Skipping this page' in e.output or
-                'Image too large' in e.output):
+        if (b'Too few characters. Skipping this page' in e.output or
+                b'Image too large' in e.output):
             return OrientationConfidence(0, 0)
         raise e from e
     else:
         osd = {}
-        for line in stdout.splitlines():
+        for line in stdout.decode().splitlines():
             line = line.strip()
             parts = line.split(':', maxsplit=2)
             if len(parts) == 2:
@@ -240,7 +237,7 @@ def generate_hocr(input_file, output_files, language: list, engine_mode,
     try:
         log.debug(args_tesseract)
         stdout = check_output(
-            args_tesseract, close_fds=True, stderr=STDOUT,
+            args_tesseract, stderr=STDOUT,
             timeout=timeout)
     except TimeoutExpired:
         # Generate a HOCR file with no recognized text if tesseract times out
@@ -333,7 +330,7 @@ def generate_pdf(*, input_image, skip_pdf, output_pdf, output_text,
     try:
         log.debug(args_tesseract)
         stdout = check_output(
-            args_tesseract, close_fds=True, stderr=STDOUT,
+            args_tesseract, stderr=STDOUT,
             timeout=timeout)
         if os.path.exists(prefix + '.txt'):
             shutil.move(prefix + '.txt', output_text)
