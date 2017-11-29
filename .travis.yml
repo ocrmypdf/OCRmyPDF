@@ -23,9 +23,9 @@ matrix:
       sudo: required
       language: python
       python: 3.6
-    # - os: osx
-    #   osx_image: xcode8
-    #   language: generic
+    - os: osx
+      osx_image: xcode8
+      language: generic
 
 before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
