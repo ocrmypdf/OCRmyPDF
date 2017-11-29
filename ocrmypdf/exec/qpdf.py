@@ -164,28 +164,34 @@ def merge(input_files, output_file, min_version=None, log=None, max_files=None):
     # We'll write things alongside the output file
     output_dir = os.path.dirname(output_file)
 
+    import random
+    import string    
+
+    def randstr():
+        return ''.join(random.sample(string.ascii_lowercase, 6))
+
     # How many files to grab at once, merging all their contents
     step_size = max_files
 
     workqueue = input_files.copy()
     counter = 1
     next_workqueue = []
-    while len(workqueue) > 0:
+    while len(workqueue) > 1 or len(next_workqueue) > 0:
         # Take n files out of the queue
         n = min(step_size, len(workqueue))
         job = workqueue[0:n]
         del workqueue[0:n]
-        log.debug('merging ' + repr(job))
+        print('merging ' + repr(job))
 
         # Merge them into 1 file, which will contain n^depth pages
         merge_file = os.path.join(
-            output_dir, "merge-{0:06d}.pdf".format(counter))
+            output_dir, "merge-{:06d}-{}.pdf".format(counter, randstr()))
         counter += 1
         _merge_inner(job, merge_file, min_version=min_version, log=log)
 
         # On the next 
         next_workqueue.append(merge_file)
-        log.debug('next_workqueue ' + repr(next_workqueue))
+        print('next_workqueue ' + repr(next_workqueue))
 
         # If we're out of things to do in this queue, move on to the next
         # queue. On the counter-th pass of the workqueue we can chew through
@@ -194,8 +200,6 @@ def merge(input_files, output_file, min_version=None, log=None, max_files=None):
         if len(workqueue) == 0:
             workqueue = next_workqueue
             next_workqueue = []
-            if len(workqueue) == 1:
-                break
 
     re_symlink(workqueue.pop(), output_file)
 
