@@ -157,8 +157,17 @@ def get_orientation(input_file, language: list, engine_mode, timeout: float,
 
 
 def tesseract_log_output(log, stdout, input_file):
-    lines = stdout.splitlines()
     prefix = "{0:4d}: [tesseract] ".format(page_number(input_file))
+
+    try:
+        text = stdout.decode()
+    except UnicodeDecodeError as e:
+        log.error(prefix + "command line output was not utf-8. " +
+            "This usually means Tesseract's language packs do not match "
+            "the installed version of Tesseract.")
+        text = stdout.decode('utf-8', 'backslashreplace')
+
+    lines = text.splitlines()
     for line in lines:
         if line.startswith("Tesseract Open Source"):
             continue
@@ -232,7 +241,7 @@ def generate_hocr(input_file, output_files, language: list, engine_mode,
         log.debug(args_tesseract)
         stdout = check_output(
             args_tesseract, close_fds=True, stderr=STDOUT,
-            universal_newlines=True, timeout=timeout)
+            timeout=timeout)
     except TimeoutExpired:
         # Generate a HOCR file with no recognized text if tesseract times out
         # Temporary workaround to hocrTransform not being able to function if
@@ -325,7 +334,7 @@ def generate_pdf(*, input_image, skip_pdf, output_pdf, output_text,
         log.debug(args_tesseract)
         stdout = check_output(
             args_tesseract, close_fds=True, stderr=STDOUT,
-            universal_newlines=True, timeout=timeout)
+            timeout=timeout)
         if os.path.exists(prefix + '.txt'):
             shutil.move(prefix + '.txt', output_text)
     except TimeoutExpired:
