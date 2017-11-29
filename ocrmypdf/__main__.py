@@ -28,7 +28,7 @@ from . import PROGRAM_NAME, VERSION
 
 from .exceptions import *
 from . import exceptions as ocrmypdf_exceptions
-from . import _unicodefun
+from ._unicodefun import verify_python3_env
 
 warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
@@ -50,7 +50,10 @@ def complain(message):
 if 'IDE_PROJECT_ROOTS' in os.environ:
     os.environ['PATH'] = '/usr/local/bin:' + os.environ['PATH']
 
-_unicodefun._verify_python3_env()
+# -------- 
+# Critical environment tests
+
+verify_python3_env()
 
 if tesseract.version() < MINIMUM_TESS_VERSION:
     complain(

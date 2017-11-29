@@ -38,7 +38,7 @@ import sys
 import codecs
 
 
-def _verify_python3_env():
+def verify_python3_env():
     """Ensures that the environment is good for unicode on Python 3."""
     try:
         import locale
