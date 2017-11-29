@@ -59,6 +59,12 @@ if tesseract.version() < MINIMUM_TESS_VERSION:
             MINIMUM_TESS_VERSION, tesseract.version()))
     sys.exit(ExitCode.missing_dependency)
 
+if qpdf.version() < '7.0.0':
+    complain(
+        "You are using qpdf version {0} which has known issues and security "
+        "vulnerabilities handling certain PDFs. Consider upgrading to the "
+        "latest version.".format(qpdf.version()))
+
 # -------------
 # Parser
 
@@ -679,6 +685,7 @@ def run_pipeline():
         logging_factory, __name__, logger_args)
     _log.debug('ocrmypdf ' + VERSION)
     _log.debug('tesseract ' + tesseract.version())
+    _log.debug('qpdf ' + qpdf.version())
 
     check_options(options, _log)
 

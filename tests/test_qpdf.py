@@ -5,7 +5,7 @@ import resource
 import pytest
 
 from ocrmypdf.exec import ghostscript, tesseract, qpdf
-from ocrmypdf.pdfinfo import PdfInfo, Colorspace, Encoding
+from ocrmypdf.pdfinfo import PdfInfo
 
 
 @pytest.mark.skipif(
