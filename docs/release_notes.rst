@@ -8,11 +8,14 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
 v5.4.4
 ------
 
--   Fix issue #181, fix final merge failure for PDFs with more pages than the system file handle limit (``ulimit -n``)
--   Fix issue #200, an uncommon syntax for formatting decimal numbers in a PDF would cause qpdf to issue a warning, which ocrmypdf treated as an error. Now this the warning is relayed.
+-   Fix issue #181: fix final merge failure for PDFs with more pages than the system file handle limit (``ulimit -n``)
+-   Fix issue #200: an uncommon syntax for formatting decimal numbers in a PDF would cause qpdf to issue a warning, which ocrmypdf treated as an error. Now this the warning is relayed.
 -   Fix an issue where intermediate PDFs would be created at version 1.3 instead of the version of the original file. It's possible but unlikely this had side effects.
+-   A warning is now issued when older versions of qpdf are used since issues like #200 cause qpdf to infinite-loop
+-   Address issue #140: if Tesseract outputs invalid UTF-8, escape it and print its message instead of aborting with a Unicode error 
 -   Adding previously unlisted setup requirement, pytest-runner
 -   Update documentation: fix an error in the example script for Synology with Docker images, improved security guidance, advised ``pip install --user``
+
 
 v5.4.3
 ------

@@ -56,6 +56,11 @@ def spoof_no_tess_gs_raster_fail():
 
 
 @pytest.fixture
+def spoof_tess_bad_utf8():
+    return spoof(tesseract='tesseract_badutf8.py')
+
+
+@pytest.fixture
 def spoof_qpdf_always_error():
     return spoof(qpdf='qpdf_dummy_return2.py')
 
@@ -1019,3 +1024,16 @@ def test_bad_locale():
     assert p.returncode != 0
     assert 'configured to use ASCII as encoding' in err, "should whine"
 
+
+@pytest.mark.parametrize('renderer', RENDERERS)
+def test_bad_utf8(spoof_tess_bad_utf8, renderer, resources, no_outpdf):
+    p, out, err = run_ocrmypdf(
+        resources / 'ccitt.pdf', no_outpdf,
+        '--pdf-renderer', renderer,
+        env=spoof_tess_bad_utf8
+    )
+
+    assert out == '', "stdout not clean"
+    assert p.returncode != 0
+    assert 'not utf-8' in err, "should whine about utf-8"
+    assert '\\x96' in err, 'should repeat backslash encoded output'
