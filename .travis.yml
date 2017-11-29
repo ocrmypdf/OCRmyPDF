@@ -45,7 +45,7 @@ script:
 - mv ocrmypdf dont_import_this_ocrmypdf
 - tesseract --version
 - qpdf --version
-- pytest -s tests/test_main.py::test_qpdf_negative_zero
+- pytest -n0 -s tests/test_qpdf.py
 - mv dont_import_this_ocrmypdf ocrmypdf
 
 deploy:
