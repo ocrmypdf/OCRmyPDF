@@ -5,6 +5,9 @@ import sys
 
 
 def main():
+    if sys.argv[-1] == '--version':
+        print('qpdf version 7.0.0')
+        sys.exit(0)
     print('qpdf dummy')
     sys.exit(2)
 
