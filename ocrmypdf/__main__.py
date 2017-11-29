@@ -59,12 +59,6 @@ if tesseract.version() < MINIMUM_TESS_VERSION:
             MINIMUM_TESS_VERSION, tesseract.version()))
     sys.exit(ExitCode.missing_dependency)
 
-if qpdf.version() < '7.0.0':
-    complain(
-        "You are using qpdf version {0} which has known issues and security "
-        "vulnerabilities handling certain PDFs. Consider upgrading to the "
-        "latest version.".format(qpdf.version()))
-
 # -------------
 # Parser
 
@@ -688,6 +682,15 @@ def run_pipeline():
     _log.debug('qpdf ' + qpdf.version())
 
     check_options(options, _log)
+
+    # Complain about qpdf version < 7.0.0
+    # Suppress the warning if in the test suite, since there are no PPAs
+    # for qpdf 7.0.0 for Ubuntu trusty (i.e. Travis)
+    if qpdf.version() < '7.0.0' and not os.environ.get('PYTEST_CURRENT_TEST'):
+        complain(
+            "You are using qpdf version {0} which has known issues including "
+            "security vulnerabilities with certain malformed PDFs. Consider "
+            "upgrading to version 7.0.0 or newer.".format(qpdf.version()))
 
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
