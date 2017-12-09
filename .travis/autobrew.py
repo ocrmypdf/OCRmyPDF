@@ -15,7 +15,7 @@ class Ocrmypdf < Formula
   ${ocrmypdf_sha256}
 
   depends_on :python3
-  depends_on :x11  # Pillow needs XQuartz
+  depends_on :x11 # Pillow needs XQuartz
   depends_on "pkg-config" => :build
   depends_on "libffi"
   depends_on "tesseract"
@@ -23,18 +23,18 @@ class Ocrmypdf < Formula
   depends_on "unpaper"
   depends_on "qpdf"
 
-  # mactex installs its own ghostscript by default which causes problems
-  # mactex users should use caskroom/cask/mactex-no-ghostscript instead
-  conflicts_with cask: "caskroom/cask/mactex"
-
   # For Pillow source install
   depends_on "openjpeg"
   depends_on "freetype"
   depends_on "libpng"
-  depends_on "libjpeg"
+  depends_on "jpeg"
   depends_on "webp"
   depends_on "little-cms2"
   depends_on "zlib"
+
+  # mactex installs its own ghostscript by default which causes problems
+  # mactex users should use caskroom/cask/mactex-no-ghostscript instead
+  conflicts_with :cask => "caskroom/cask/mactex"
 
 ${resources}
   def install
