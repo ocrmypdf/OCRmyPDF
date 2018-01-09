@@ -279,6 +279,10 @@ def use_skip_page(text_only, skip_pdf, output_pdf, output_text):
     with open(output_pdf, 'wb') as out:
         pdf_out = pypdf.PdfFileWriter()
         w, h = page0.mediaBox.getWidth(), page0.mediaBox.getHeight()
+        # If skip page has a /Rotate key, replicate the rotation
+        rotation = int(page0.get('/Rotate', 0))
+        if rotation % 180 == 90:
+            w, h = h, w
         pdf_out.addBlankPage(w, h)
         pdf_out.write(out)
 

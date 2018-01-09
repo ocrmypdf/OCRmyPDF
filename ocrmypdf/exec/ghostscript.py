@@ -37,7 +37,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
     :param yres: 
     :param raster_device: 
     :param log: 
-    :param pageno: page number to rasterize
+    :param pageno: page number to rasterize (beginning at page 1)
     :param page_dpi: resolution tuple (x, y) overriding output image DPI 
     :return: 
     """

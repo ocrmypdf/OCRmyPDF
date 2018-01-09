@@ -1037,3 +1037,26 @@ def test_bad_utf8(spoof_tess_bad_utf8, renderer, resources, no_outpdf):
     assert p.returncode != 0
     assert 'not utf-8' in err, "should whine about utf-8"
     assert '\\x96' in err, 'should repeat backslash encoded output'
+
+
+@pytest.mark.skipif(
+    not tesseract.has_textonly_pdf(), 
+    reason="issue only affects sandwich")
+def test_rotate_deskew_timeout(resources, outdir):
+    check_ocrmypdf(
+        resources / 'rotated_skew.pdf',
+        outdir / 'deskewed.pdf',
+        '--deskew',
+        '--tesseract-timeout', '0',
+        '--pdf-renderer', 'sandwich'
+    )
+
+    correlation = check_monochrome_correlation(
+        outdir,
+        reference_pdf=resources / 'ccitt.pdf',
+        reference_pageno=1,
+        test_pdf=outdir / 'deskewed.pdf',
+        test_pageno=1)
+
+    # Confirm that the page still got deskewed
+    assert correlation > 0.50
