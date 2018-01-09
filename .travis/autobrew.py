@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2016 James R. Barlow: github.com/jbarlow83
+# © 2016-7 James R. Barlow: github.com/jbarlow83
 
 from string import Template
 from subprocess import run, PIPE
@@ -14,43 +14,69 @@ class Ocrmypdf < Formula
   ${ocrmypdf_url}
   ${ocrmypdf_sha256}
 
-  depends_on :python3
-  depends_on :x11 # Pillow needs XQuartz
-  depends_on "pkg-config" => :build
-  depends_on "libffi"
-  depends_on "tesseract"
-  depends_on "ghostscript"
-  depends_on "unpaper"
-  depends_on "qpdf"
-
-  # For Pillow source install
-  depends_on "openjpeg"
   depends_on "freetype"
-  depends_on "libpng"
+  depends_on "ghostscript"
   depends_on "jpeg"
-  depends_on "webp"
-  depends_on "little-cms2"
-  depends_on "zlib"
-
-  # mactex installs its own ghostscript by default which causes problems
-  # mactex users should use caskroom/cask/mactex-no-ghostscript instead
-  conflicts_with :cask => "caskroom/cask/mactex"
+  depends_on "libpng"
+  depends_on "pkg-config" => :build
+  depends_on "python3"
+  depends_on "qpdf"
+  depends_on "tesseract"
+  depends_on "unpaper"
 
 ${resources}
   def install
-    ENV.append ["SETUPTOOLS_SCM_PRETEND_VERSION"], "v${ocrmypdf_version}"
-    ENV.each do |key, value|
-      puts "#{key}:#{value}"
+    venv = virtualenv_create(libexec, "python3")
+
+    resource("Pillow").stage do
+      inreplace "setup.py" do |s|
+        sdkprefix = MacOS::CLT.installed? ? "" : MacOS.sdk_path
+        s.gsub! "openjpeg.h", "probably_not_a_header_called_this_eh.h"
+        s.gsub! "ZLIB_ROOT = None", "ZLIB_ROOT = ('#{sdkprefix}/usr/lib', '#{sdkprefix}/usr/include')"
+        s.gsub! "JPEG_ROOT = None", "JPEG_ROOT = ('#{Formula["jpeg"].opt_prefix}/lib', '#{Formula["jpeg"].opt_prefix}/include')"
+        s.gsub! "FREETYPE_ROOT = None", "FREETYPE_ROOT = ('#{Formula["freetype"].opt_prefix}/lib', '#{Formula["freetype"].opt_prefix}/include')"
+      end
+
+      # avoid triggering "helpful" distutils code that doesn't recognize Xcode 7 .tbd stubs
+      ENV.append "CFLAGS", "-I#{MacOS.sdk_path}/System/Library/Frameworks/Tk.framework/Versions/8.5/Headers" unless MacOS::CLT.installed?
+      venv.pip_install Pathname.pwd
     end
-    virtualenv_install_with_resources
+
+    res = resources.map(&:name).to_set - ["Pillow"]
+
+    res.each do |r|
+      venv.pip_install resource(r)
+    end
+
+    venv.pip_install_and_link buildpath
   end
 
   test do
-    # `test do` will create, run in and delete a temporary directory.
-    #
-    # The installed folder is not in the path, so use the entire path to any
-    # executables being tested: `system "#{bin}/program", "do", "something"`.
-    system "#{bin}/ocrmypdf", "--version"
+    # Since we use Python 3, we require a UTF-8 locale
+    ENV["LC_ALL"] = "en_US.UTF-8"
+
+    # One page Postscript with the wording "Testing" on the page
+    # This is more compact than including a test PDF
+    (testpath/"test.ps").write(
+      <<~EOS
+        %!PS
+        /Times-Roman findfont
+        20 scalefont
+        setfont
+        gsave
+        newpath
+        200 400 moveto
+        (Testing) show
+        closepath
+        stroke
+        showpage
+      EOS
+    )
+
+    system "#{Formula["ghostscript"].opt_bin}/ps2pdf", testpath/"test.ps", testpath/"test.pdf"
+
+    # Use ocrmypdf -f to rasterize the PDF to image before doing OCR
+    system "#{bin}/ocrmypdf", "-f", "-q", "--deskew", testpath/"test.pdf", testpath/"ocr.pdf"
   end
 end
 """)
