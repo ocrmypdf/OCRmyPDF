@@ -157,6 +157,29 @@ If you set ``--tesseract-timeout 0`` OCRmyPDF will apply its image processing wi
     ocrmypdf --tesseract-timeout=0 --remove-background input.pdf output.pdf
 
 
+Redo OCR
+""""""""
+
+To redo OCR on a file OCRed with other OCR software or a previous version of OCRmyPDF and/or Tesseract, you may use the ``--force-ocr`` argument. Normally, OCRmyPDF does not modify files that already appear to contain OCR text.
+
+.. code-block:: bash
+
+    ocrmypdf --force-ocr input.pdf output.pdf
+
+Note that the method above will force rasterization of all pages, potentially reducing quality or losing vector content. 
+
+To ensure quality is preserved, one could extract all of the images and rebuild the PDF for a lossless transformation. This recipe does not work when PDFs contain multiple images per page, as many do in practice. It will also lose any page rotation information.
+
+.. code-block:: bash
+
+    pdfimages -all old-ocr.pdf prefix  # extract all images
+    img2pdf -o temp.pdf prefix*        # construct new PDF from the images
+    # review the new PDF to ensure it visually matches the old one
+    ocrmypdf --output-type pdf temp.pdf new-ocr.pdf
+
+``--output-type pdf`` is used here to avoid using Ghostscript which will also rasterize images.
+
+
 Improving OCR quality
 ---------------------
 
