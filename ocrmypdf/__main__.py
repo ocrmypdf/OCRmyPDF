@@ -23,7 +23,7 @@ from .pipeline import JobContext, JobContextManager, \
     cleanup_working_files, build_pipeline
 from .pdfa import file_claims_pdfa
 from .helpers import is_iterable_notstr, re_symlink, is_file_writable
-from .exec import tesseract, qpdf
+from .exec import tesseract, qpdf, ghostscript
 from . import PROGRAM_NAME, VERSION
 
 from .exceptions import *
@@ -321,11 +321,12 @@ def check_options_languages(options, _log):
     if '+' in options.language[0]:
         options.language = options.language[0].split('+')
 
-    if not set(options.language).issubset(tesseract.languages()):
+    languages = set(options.language)
+    if not languages.issubset(tesseract.languages()):
         msg = (
             "The installed version of tesseract does not have language "
             "data for the following requested languages: \n")
-        for lang in (set(options.language) - tesseract.languages()):
+        for lang in (languages - tesseract.languages()):
             msg += lang + '\n'
         raise MissingDependencyError(msg)
 
@@ -412,9 +413,9 @@ def check_options_ocr_behavior(options, log):
     # if options.redo_ocr and (options.skip_text or options.force_ocr):
     #     raise argparse.ArgumentError(
     #         "Error: --redo-ocr and other OCR options are incompatible.")
-
+    languages = set(options.language)
     if options.pdf_renderer == 'hocr' and \
-            not set(options.language).issubset(HOCR_OK_LANGS):
+            not languages.issubset(HOCR_OK_LANGS):
         msg = (
             "The 'hocr' PDF renderer is known to cause problems with one "
             "or more of the languages in your document. ")
@@ -426,6 +427,15 @@ def check_options_ocr_behavior(options, log):
             msg += (
                 "Use --pdf-renderer tesseract --output-type pdf to avoid "
                 "this issue")
+        log.warning(msg)
+    elif ghostscript.version() < '9.20' and \
+            not languages.issubset(HOCR_OK_LANGS) \
+            and options.output_type != 'pdf':
+        msg = (
+            "The installed version of Ghostscript does not work correctly "
+            "with the OCR languages you specified. Use --output-type pdf or "
+            "upgrade to Ghostscript 9.20 or later to avoid this issue.")
+        msg += "Found Ghostscript {}".format(ghostscript.version())
         log.warning(msg)
 
 
