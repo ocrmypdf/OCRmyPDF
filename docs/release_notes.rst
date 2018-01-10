@@ -5,6 +5,15 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 
 The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
 
+v5.5
+----
+
+-   Add new argument ``--max-image-mpixels``. Pillow 5.0 now raises an exception when images may be decompression bombs. This argument can be used to override the limit Pillow sets.
+-   Fix output page cropped when using the sandwich renderer and OCR is skipped on a rotated and image-processed page
+-   A warning is now issued when old versions of Ghostscript are used in cases known to cause issues with non-Latin characters
+-   Fix a few parameter validation checks for ``-output-type pdfa-1`` and ``pdfa-2`` 
+
+
 v5.4.4
 ------
 

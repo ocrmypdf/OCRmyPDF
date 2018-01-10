@@ -14,6 +14,8 @@ from ocrmypdf.exec import ghostscript, tesseract, qpdf
 import logging
 from math import isclose
 
+import PIL
+
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
@@ -1060,3 +1062,21 @@ def test_rotate_deskew_timeout(resources, outdir):
 
     # Confirm that the page still got deskewed
     assert correlation > 0.50
+
+
+@pytest.mark.skipif(
+    PIL.PILLOW_VERSION < '5.0.0',
+    reason="Pillow < 5.0.0 doesn't raise the exception")
+def test_decompression_bomb(resources, outpdf):
+    p, out, err = run_ocrmypdf(
+        resources / 'hugemono.pdf',
+        outpdf
+    )
+    assert 'decompression bomb' in err
+
+    p, out, err = run_ocrmypdf(
+        resources / 'hugemono.pdf',
+        outpdf,
+        '--max-image-mpixels', '2000'
+    )
+    assert p.returncode == 0

@@ -14,6 +14,7 @@ import logging
 import argparse
 
 import PyPDF2 as pypdf
+import PIL
 
 import ruffus.ruffus_exceptions as ruffus_exceptions
 import ruffus.cmdline as cmdline
@@ -241,6 +242,11 @@ ocrsettings.add_argument(
 advanced = parser.add_argument_group(
     "Advanced",
     "Advanced options to control Tesseract's OCR behavior")
+advanced.add_argument(
+    '--max-image-mpixels', action='store', type=float, metavar='MPixels',
+    help="Set maximum number of pixels to unpack before treating an image as a "
+         "decompression bomb",
+    default=128.0)
 advanced.add_argument(
     '--tesseract-config', action='append', metavar='CFG', default=[],
     help="Additional Tesseract configuration files -- see documentation")
@@ -598,6 +604,12 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
 
             """))
         exit_code = ExitCode.encrypted_pdf
+    elif exc_name == 'PIL.Image.DecompressionBombError':
+        msg = cleanup_ruffus_error_message(exc_value)
+        msg += ("\nUse the --max-image-mpixels argument to set increase the "
+                "maximum number of megapixels to accept.")
+        log.error(msg)
+        exit_code = ExitCode.input_file
 
     if exit_code is not None:
         return exit_code
@@ -696,6 +708,10 @@ def run_pipeline():
     _log.debug('qpdf ' + qpdf.version())
 
     check_options(options, _log)
+
+    PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1000000)
+    if PIL.Image.MAX_IMAGE_PIXELS == 0:
+        PIL.Image.MAX_IMAGE_PIXELS = None
 
     # Complain about qpdf version < 7.0.0
     # Suppress the warning if in the test suite, since there are no PPAs
