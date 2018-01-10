@@ -349,7 +349,8 @@ def check_options_output(options, log):
         options.pdf_renderer = 'sandwich'
 
     if options.pdf_renderer == 'tesseract':
-        if tesseract.version() < '3.05' and options.output_type == 'pdfa':
+        if tesseract.version() < '3.05' and \
+                options.output_type.startswith('pdfa'):
             log.warning(
                 "For best results use --pdf-renderer=tesseract "
                 "--output-type=pdf to disable PDF/A generation via "
@@ -451,10 +452,10 @@ def check_options_advanced(options, log):
             "--pdf-renderer tess4 requires Tesseract 4.x "
             "commit 3d9fb3b or later")
     if options.pdfa_image_compression != 'auto' and \
-            options.output_type != 'pdfa':
+            options.output_type.startswith('pdfa'):
         log.warning(
             "--pdfa-image-compression argument has no effect when "
-            "--output-type is not 'pdfa'"
+            "--output-type is not 'pdfa', 'pdfa-1', or 'pdfa-2'"
         )
 
 
