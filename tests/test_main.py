@@ -523,7 +523,9 @@ def test_tesseract_image_too_big(renderer, spoof_tesseract_big_image_error,
                                  resources, outpdf):
     check_ocrmypdf(
         resources / 'hugemono.pdf', outpdf, '-r',
-        '--pdf-renderer', renderer, env=spoof_tesseract_big_image_error)
+        '--pdf-renderer', renderer, 
+        '--max-image-mpixels', '0',
+        env=spoof_tesseract_big_image_error)
 
 
 def test_no_unpaper(resources, no_outpdf):
