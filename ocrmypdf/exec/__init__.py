@@ -29,8 +29,14 @@ def get_version(program, *,
             stdout=PIPE, stderr=STDOUT, check=True)
         output = proc.stdout
     except CalledProcessError as e:
-        raise MissingDependencyError(
-            "Could not find program '{}' on the PATH".format(program)) from e
+        if get_program(program) == program:
+            raise MissingDependencyError(
+                "Could not find program '{}' on the PATH".format(
+                    program)) from e
+        else:
+            raise MissingDependencyError(
+                "Could not find program '{}'".format(
+                    get_program(program))) from e            
 
     try:
         version = re.match(regex, output.strip()).group(1)
