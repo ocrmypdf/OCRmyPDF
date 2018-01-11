@@ -73,10 +73,11 @@ def main():
             output = sys.argv[-3]
             with Image.open(inputf) as im:
                 dpi = im.info['dpi']
-                imsize = im.size[0] * dpi[0] / 72, im.size[1] * dpi[1] / 72
+                pagesize = im.size[0] / dpi[0], im.size[1] / dpi[1]
+                ptsize = pagesize[0] * 72, pagesize[1] * 72
 
             pdf_out = pypdf.PdfFileWriter()
-            pdf_out.addBlankPage(imsize[0], imsize[1])
+            pdf_out.addBlankPage(ptsize[0], ptsize[1])
             with open(output + '.pdf', 'wb') as f:
                 pdf_out.write(f)
             with open(output + '.txt', 'w') as f:

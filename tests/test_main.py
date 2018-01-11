@@ -71,11 +71,10 @@ def test_quick(spoof_tesseract_cache, resources, outpdf):
     check_ocrmypdf(resources / 'ccitt.pdf', outpdf, env=spoof_tesseract_cache)
 
 
-@pytest.mark.filterwarnings('ignore:Image size')
 def test_deskew(spoof_tesseract_noop, resources, outdir):
     # Run with deskew
     deskewed_pdf = check_ocrmypdf(
-        resources / 'skew.pdf', outdir / 'skew.pdf', '-d', '-v', '1',
+        resources / 'skew.pdf', outdir / 'skew.pdf', '-d',
         env=spoof_tesseract_noop)
 
     # Now render as an image again and use Leptonica to find the skew angle
@@ -90,7 +89,8 @@ def test_deskew(spoof_tesseract_noop, resources, outdir):
         xres=150,
         yres=150,
         raster_device='pngmono',
-        log=log)
+        log=log,
+        pageno=1)
 
     from ocrmypdf.leptonica import Pix
     pix = Pix.read(str(deskewed_png))
@@ -129,8 +129,8 @@ def test_remove_background(spoof_tesseract_noop, resources, outdir):
         xres=100,
         yres=100,
         raster_device='png16m',
-        log=log)
-
+        log=log,
+        pageno=1)
 
     # The output image should contain pure white and black
     im = Image.open(output_png)
