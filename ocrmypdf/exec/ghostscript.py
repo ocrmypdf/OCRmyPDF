@@ -55,11 +55,11 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             '-sDEVICE=%s' % raster_device,
             '-dFirstPage=%i' % pageno,
             '-dLastPage=%i' % pageno,
-            '-o', tmp.name,
             '-r{0}x{1}'.format(str(int_res[0]), str(int_res[1])),
+            '-o', tmp.name,
             fspath(input_file)
         ]
-
+        
         p = run(args_gs, stdout=PIPE, stderr=STDOUT,
                 universal_newlines=True)
         if _gs_error_reported(p.stdout):
@@ -75,6 +75,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
         # if the resolution happens to be fractional, then the discrepancy
         # would change the size of the output page, especially if the DPI
         # is quite low. Resize the image to the expected size
+
         tmp.seek(0)
         with Image.open(tmp) as im:
             expected_size = round(im.size[0] / int_res[0] * res[0]), \
