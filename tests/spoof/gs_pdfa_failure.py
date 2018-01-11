@@ -17,7 +17,7 @@ def real_ghostscript(argv):
 def main():
     if '--version' in sys.argv:
         print('9.20')
-        print('SPOOFED: ' + os.path.basename(__filename__))
+        print('SPOOFED: ' + os.path.basename(__file__))
         sys.exit(0)
 
     # Unless some argument is calling for PDFA generation, forward to
