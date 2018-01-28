@@ -1,6 +1,6 @@
 # OCRmyPDF
 #
-FROM 	ubuntu:17.04
+FROM 	ubuntu:17.10
 MAINTAINER James R. Barlow <jim@purplerock.ca>
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
