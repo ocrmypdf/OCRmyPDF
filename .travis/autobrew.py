@@ -55,28 +55,8 @@ ${resources}
     # Since we use Python 3, we require a UTF-8 locale
     ENV["LC_ALL"] = "en_US.UTF-8"
 
-    # One page Postscript with the wording "Testing" on the page
-    # This is more compact than including a test PDF
-    (testpath/"test.ps").write(
-      <<~EOS
-        %!PS
-        /Times-Roman findfont
-        20 scalefont
-        setfont
-        gsave
-        newpath
-        200 400 moveto
-        (Testing) show
-        closepath
-        stroke
-        showpage
-      EOS
-    )
-
-    system "#{Formula["ghostscript"].opt_bin}/ps2pdf", testpath/"test.ps", testpath/"test.pdf"
-
     # Use ocrmypdf -f to rasterize the PDF to image before doing OCR
-    system "#{bin}/ocrmypdf", "-f", "-q", "--deskew", testpath/"test.pdf", testpath/"ocr.pdf"
+    system "#{bin}/ocrmypdf", "-f", "-q", "--deskew", test_fixtures("test.pdf"), testpath/"ocr.pdf"
   end
 end
 """)
