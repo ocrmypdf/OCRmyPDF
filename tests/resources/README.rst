@@ -100,6 +100,9 @@ under the terms of the license in LICENSE.rst.
     *   - trivial.pdf
         - @jbarlow83
         - smallest possible valid PDF-1.3 with all required fields
+    *   - vector.pdf
+        - @Catscratch
+        - a PDF with vector art and text rendered as curves with no fonts
 
 
 Assemblies

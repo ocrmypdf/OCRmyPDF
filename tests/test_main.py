@@ -1082,3 +1082,19 @@ def test_decompression_bomb(resources, outpdf):
         '--max-image-mpixels', '2000'
     )
     assert p.returncode == 0
+
+
+def test_text_curves(spoof_tesseract_noop, resources, outpdf):
+    check_ocrmypdf(
+        resources / 'vector.pdf', outpdf, env=spoof_tesseract_noop)
+
+    info = PdfInfo(outpdf)
+    assert len(info.pages[0].images) == 0, "added images to the vector PDF"
+
+    check_ocrmypdf(
+        resources / 'vector.pdf', outpdf, '--force-ocr',
+        env=spoof_tesseract_noop)
+    
+    info = PdfInfo(outpdf)
+    assert len(info.pages[0].images) != 0, "force did not rasterize"
+    
