@@ -433,7 +433,7 @@ def test_klingon(resources, outpdf):
 
 def test_missing_docinfo(spoof_tesseract_noop, resources, outpdf):
     p, out, err = run_ocrmypdf(
-        resources / 'missing_docinfo.pdf', outpdf, '-l', 'eng', '-c',
+        resources / 'missing_docinfo.pdf', outpdf, '-l', 'eng', '--skip-text',
         env=spoof_tesseract_noop)
     assert p.returncode == ExitCode.ok, err
 

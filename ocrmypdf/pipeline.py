@@ -244,7 +244,30 @@ def get_canvas_square_dpi(pageinfo, options):
 def is_ocr_required(pageinfo, log, options):
     page = pageinfo.pageno + 1
     ocr_required = True
-    if not pageinfo.images:
+
+    if pageinfo.has_text:
+        msg = "{0:4d}: page already has text! – {1}"
+
+        if not options.force_ocr and not options.skip_text:
+            log.error(msg.format(page,
+                                 "aborting (use --force-ocr to force OCR)"))
+            raise PriorOcrFoundError()
+        elif options.force_ocr:
+            log.info(msg.format(page,
+                                "rasterizing text and running OCR anyway"))
+            ocr_required = True
+        elif options.skip_text:
+            log.info(msg.format(page,
+                                "skipping all processing on this page"))
+            ocr_required = False
+    elif not pageinfo.images and not options.lossless_reconstruction:
+        # We found a page with no images and no text. That means it may
+        # have vector art that the user wants to OCR. If we determined
+        # lossless reconstruction is not possible then we have to rasterize
+        # the image. So if OCR is being forced, take that to mean YES, go 
+        # ahead and rasterize. If not forced, then pretend there's no text
+        # on the page at all so we don't lose anything.
+        # This could be made smarter by explicitly searching for vector art.
         if options.force_ocr and options.oversample:
             # The user really wants to reprocess this file
             log.info(
@@ -263,23 +286,9 @@ def is_ocr_required(pageinfo, log, options):
         else:
             log.info(
                 "{0:4d}: page has no images - "
-                "skipping all processing on this page".format(page))
-            ocr_required = False
-
-    elif pageinfo.has_text:
-        msg = "{0:4d}: page already has text! – {1}"
-
-        if not options.force_ocr and not options.skip_text:
-            log.error(msg.format(page,
-                                 "aborting (use --force-ocr to force OCR)"))
-            raise PriorOcrFoundError()
-        elif options.force_ocr:
-            log.info(msg.format(page,
-                                "rasterizing text and running OCR anyway"))
-            ocr_required = True
-        elif options.skip_text:
-            log.info(msg.format(page,
-                                "skipping all processing on this page"))
+                "skipping all processing on this page to avoid losing detail. "
+                "Use --force-ocr if you wish to perform OCR on pages that "
+                "have vector content.".format(page))
             ocr_required = False
 
     if ocr_required and options.skip_big and pageinfo.images:
