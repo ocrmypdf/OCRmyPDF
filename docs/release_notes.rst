@@ -5,6 +5,14 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 
 The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
 
+v5.6.0
+------
+
+-   Fix issue #216: preserve "text as curves" PDFs without rasterizing file
+-   Related to the above, messages about rasterizing are more consistent
+-   For consistency versions minor releases will now get the trailing .0 they always should have had.
+
+
 v5.5
 ----
 

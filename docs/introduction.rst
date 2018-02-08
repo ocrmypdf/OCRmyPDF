@@ -16,7 +16,7 @@ OCRmyPDF uses `Tesseract <https://github.com/tesseract-ocr/tesseract>`_, the bes
 About PDFs
 ----------
 
-PDFs are page description files that attempts to preserve a layout exactly. They can contain `vector graphic files <http://vector-conversions.com/vectorizing/raster_vs_vector.html>`_ that can contain raster objects such as scanned images. Because PDFs can contain multiple pages (unlike many image formats) and can contain fonts and text, it is a good formats for exchanging scanned documents.
+PDFs are page description files that attempts to preserve a layout exactly. They  contain `vector graphics <http://vector-conversions.com/vectorizing/raster_vs_vector.html>`_ that can contain raster objects such as scanned images. Because PDFs can contain multiple pages (unlike many image formats) and can contain fonts and text, it is a good formats for exchanging scanned documents.
 
 .. image:: bitmap_vs_svg.svg
 
@@ -42,15 +42,13 @@ PDF/A has a few drawbacks.  Some PDF viewers include an alert that the file is a
 What OCRmyPDF does
 ------------------
 
-OCRmyPDF analyzes each page of a PDF to determine the colorspace and resolution (DPI) needed to capture all of the information on that page without losing content.  It uses `Ghostscript <http://ghostscript.com/>`_ to rasterize the page, and then performs on OCR on the rasterized image.  It is not enough to simply extract the images from each page and run OCR on them individually.  Of course one could use Ghostscript or another PDF rasterizer and then pass the image to Tesseract.  OCRmyPDF automates this process and produces a minimally changed output file that contains the same information, colorspace and resolution.
+OCRmyPDF analyzes each page of a PDF to determine the colorspace and resolution (DPI) needed to capture all of the information on that page without losing content.  It uses `Ghostscript <http://ghostscript.com/>`_ to rasterize the page, and then performs on OCR on the rasterized image to create an OCR "layer". The layer is then grafted back onto the original PDF.
 
-The Tesseract OCR engine can output 'hOCR' files, which are XML files that contain a description of the text it found on the page.  OCRmyPDF will render a new PDF that contains only the hidden text layer, and merge this with the original page.
+While one can use a program like Ghostscript or ImageMagick to get an image and put the image through Tesseract, that actually creates a new PDF and many details may be lost. OCRmyPDF can produce a minimally changed PDF as output.
 
-Alternately, OCRmyPDF can use the Tesseract OCR engine to directly output PDFs for each page, then merge them.
+OCRmyPDF also some image processing options like deskew which improve the appearance of files and quality of OCR. When these are used, the OCR layer is grafted onto the processed image instead.
 
-By default, OCRmyPDF will convert the file to a PDF/A.  This behavior can be disabled with the ``--output-type pdf`` argument.
-
-Depending on the settings selected, OCRmyPDF may "graft" the OCR layer into the existing PDF, or reconstruct a visually equivalent new PDF.
+By default, OCRmyPDF produces archival PDFs – PDF/A, which are a stricter subset of PDF features designed for long term archives. If regular PDFs are desired, this can be disabled with ``--output-type pdf``.
 
 
 Why you shouldn't do this manually

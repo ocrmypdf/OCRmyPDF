@@ -285,6 +285,8 @@ Now we need to install ``pip`` and let it install ocrmypdf:
     wget -O - -o /dev/null https://bootstrap.pypa.io/get-pip.py | python3.6
     pip3.6 install ocrmypdf
 
+The ``wget`` command will download a program and run it.
+
 These installation instructions omit the optional dependency ``unpaper``, which is only available at version 0.4.2 in Ubuntu 14.04. The author could not find a backport of ``unpaper``, and created a .deb package to do the job of installing unpaper 6.1 (for x86 64-bit only):
 
 .. code-block:: bash
