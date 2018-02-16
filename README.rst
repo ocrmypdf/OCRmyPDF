@@ -74,11 +74,10 @@ Users of Debian 9 or later or Ubuntu 16.10 or later may simply
 
    apt-get install ocrmypdf
 
-and macOS users may simply
+and macOS users with Homebrew may simply
 
 .. code-block:: bash
 
-   brew tap jbarlow83/ocrmypdf
    brew install ocrmypdf
 
 For everyone else, `see our documentation <https://ocrmypdf.readthedocs.io/en/latest/installation.html>`_ for installation steps.

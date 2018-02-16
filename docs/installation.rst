@@ -15,13 +15,18 @@ Users of Debian 9 ("stretch") or later or Ubuntu 16.10 or later may simply
 Installing on macOS
 -------------------
 
-A `Homebrew <https://brew.sh>`_ tap is available for macOS:
+OCRmyPDF is now a standard `Homebrew <https://brew.sh>`_ formula. To install on macOS:
+
+.. code-block:: bash
+
+    brew install ocrmypdf
+
+OCRmyPDF is also available in a private Homebrew tap that may have more recent versions than the current Homebrew version. If you prefer to use the private tap:
 
 .. code-block:: bash
 
     brew tap jbarlow83/ocrmypdf
     brew install ocrmypdf
-
 
 .. warning::
 
