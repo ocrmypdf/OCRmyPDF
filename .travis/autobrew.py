@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2016-7 James R. Barlow: github.com/jbarlow83
+# © 2017-18 James R. Barlow: github.com/jbarlow83
 
 from string import Template
 from subprocess import run, PIPE
@@ -55,8 +55,9 @@ ${resources}
     # Since we use Python 3, we require a UTF-8 locale
     ENV["LC_ALL"] = "en_US.UTF-8"
 
-    # Use ocrmypdf -f to rasterize the PDF to image before doing OCR
-    system "#{bin}/ocrmypdf", "-f", "-q", "--deskew", test_fixtures("test.pdf"), testpath/"ocr.pdf"
+    system "#{bin}/ocrmypdf", "-f", "-q", "--deskew",
+                              test_fixtures("test.pdf"), "ocr.pdf"
+    assert_predicate testpath/"ocr.pdf", :exist?
   end
 end
 """)
