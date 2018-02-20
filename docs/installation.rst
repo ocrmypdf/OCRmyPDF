@@ -21,16 +21,13 @@ OCRmyPDF is now a standard `Homebrew <https://brew.sh>`_ formula. To install on 
 
     brew install ocrmypdf
 
-OCRmyPDF is also available in a private Homebrew tap that may have more recent versions than the current Homebrew version. If you prefer to use the private tap:
-
-.. code-block:: bash
-
-    brew tap jbarlow83/ocrmypdf
-    brew install ocrmypdf
-
-.. warning::
+.. note::
 
     Users who previously installed OCRmyPDF on macOS using ``pip install ocrmypdf`` should remove the pip version (``pip3 uninstall ocrmypdf``) before switching to the Homebrew version.
+
+.. note::
+
+    Users who previously installed OCRmyPDF from the private tap should switch to the mainline version (``brew untap jbarlow83/ocrmypdf``) and install from there.
 
 .. _Docker-install:
 
