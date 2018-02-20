@@ -1,6 +1,7 @@
 # © 2015-17 James R. Barlow: github.com/jbarlow83
 
 from subprocess import Popen, PIPE, check_output, check_call, DEVNULL
+from pathlib import Path
 import os
 import shutil
 import resource
@@ -1097,4 +1098,39 @@ def test_text_curves(spoof_tesseract_noop, resources, outpdf):
     
     info = PdfInfo(outpdf)
     assert len(info.pages[0].images) != 0, "force did not rasterize"
+    
+
+def test_dev_null(spoof_tesseract_noop, resources):
+    p, out, err = run_ocrmypdf(
+        resources / 'trivial.pdf',
+        os.devnull,
+        '--force-ocr',
+        env=spoof_tesseract_noop
+    )
+    assert p.returncode == 0, "could not send output to /dev/null"
+    assert len(out) == 0, "wrote to stdout"
+
+
+def test_output_is_dir(spoof_tesseract_noop, resources, outdir):
+    p, out, err = run_ocrmypdf(
+        resources / 'trivial.pdf',
+        outdir,
+        '--force-ocr',
+        env=spoof_tesseract_noop
+    )
+    assert p.returncode == ExitCode.file_access_error
+    assert 'is not a writable file' in err
+
+
+def test_output_is_symlink(spoof_tesseract_noop, resources, outdir):
+    sym = Path(outdir / 'this_is_a_symlink')
+    sym.symlink_to(outdir / 'out.pdf')
+    p, out, err = run_ocrmypdf(
+        resources / 'trivial.pdf',
+        sym,
+        '--force-ocr',
+        env=spoof_tesseract_noop
+    )
+    assert p.returncode == ExitCode.ok
+    assert (outdir / 'out.pdf').stat().st_size > 0, 'target file not created'
     

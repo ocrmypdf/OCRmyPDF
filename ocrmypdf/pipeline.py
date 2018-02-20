@@ -2,6 +2,7 @@
 # © 2016 James R. Barlow: github.com/jbarlow83
 
 from contextlib import suppress
+from shutil import copyfileobj
 import sys
 import os
 import shutil
@@ -1001,12 +1002,16 @@ def copy_final(
     input_file = next((ii for ii in input_files if ii.endswith('.pdf')))
 
     if output_file == '-':
-        from shutil import copyfileobj
         with open(input_file, 'rb') as input_stream:
             copyfileobj(input_stream, sys.stdout.buffer)
             sys.stdout.flush()
     else:
-        shutil.copy(input_file, output_file)
+        # At this point we overwrite the output_file specified by the user
+        # use copyfileobj because then we use open() to create the file and 
+        # get the appropriate umask, ownership, etc.
+        with open(input_file, 'rb') as input_stream, \
+                open(output_file, 'wb') as output_stream:
+            copyfileobj(input_stream, output_stream)
 
 
 def build_pipeline(options, work_folder, log, context):

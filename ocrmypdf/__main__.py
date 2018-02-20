@@ -757,7 +757,7 @@ def run_pipeline():
         elif not is_file_writable(options.output_file):
             _log.error(
                 "Output file location (" + options.output_file + ") " +
-                "is not writable.")
+                "is not a writable file.")
             return ExitCode.file_access_error
 
         manager = JobContextManager()
@@ -804,7 +804,11 @@ def run_pipeline():
 
     if options.flowchart:
         _log.info("Flowchart saved to {}".format(options.flowchart))
-    elif options.output_file != '-':
+    elif os.path.samefile(options.output_file, os.devnull):
+        pass  # Say nothing when sending to dev null
+    elif options.output_file == '-':
+        _log.info("Output sent to stdout")
+    else:
         if options.output_type.startswith('pdfa'):
             pdfa_info = file_claims_pdfa(options.output_file)
             if pdfa_info['pass']:
@@ -817,8 +821,6 @@ def run_pipeline():
         if not qpdf.check(options.output_file, _log):
             _log.warning('Output file: The generated PDF is INVALID')
             return ExitCode.invalid_output_pdf
-    else:
-        _log.info("Output sent to stdout")
 
     pdfinfo = context.get_pdfinfo()
     if options.verbose:
