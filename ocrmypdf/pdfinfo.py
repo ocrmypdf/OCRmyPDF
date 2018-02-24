@@ -662,10 +662,6 @@ class PageInfo:
         else:
             return '1.5'
 
-    @property
-    def images(self):
-        return self._pageinfo['images']
-
     def __repr__(self):
         return (
             '<PageInfo '
