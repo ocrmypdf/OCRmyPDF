@@ -40,7 +40,7 @@ def main():
         sys.stdout.buffer.write(BAD_UTF8)
         sys.exit(1)
     elif sys.argv[-1] == 'stdout':
-        inputf = sys.argv[-2]
+        # input file is at sys.argv[-2] but we don't look at it
         print("""Orientation: 0
 Orientation in degrees: 0
 Orientation confidence: 100.00

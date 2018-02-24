@@ -27,7 +27,7 @@ from .helpers import is_iterable_notstr, re_symlink, is_file_writable
 from .exec import tesseract, qpdf, ghostscript
 from . import PROGRAM_NAME, VERSION
 
-from .exceptions import *
+from .exceptions import ExitCode, ExitCodeException, MissingDependencyError
 from . import exceptions as ocrmypdf_exceptions
 from ._unicodefun import verify_python3_env
 
@@ -554,6 +554,7 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
     exit_code = None
 
     task_name, job_name, exc_name, exc_value, exc_stack = ruffus_five_tuple
+    job_name = job_name  # unused
     if exc_name == 'builtins.SystemExit':
         match = re.search(r"\.(.+?)\)", exc_value)
         exit_code_name = match.groups()[0]
@@ -683,7 +684,7 @@ def log_page_orientations(pdfinfo, _log):
                 180: 's', 270: 'w'}
     orientations = []
     for n, page in enumerate(pdfinfo):
-        angle = pdfinfo[n].rotation or 0
+        angle = page.rotation or 0
         if angle != 0:
             orientations.append('{0}{1}'.format(
                 n + 1,
@@ -761,10 +762,10 @@ def run_pipeline():
             return ExitCode.file_access_error
 
         manager = JobContextManager()
-        manager.register('JobContext', JobContext)
+        manager.register('JobContext', JobContext)  # pylint: disable=no-member
         manager.start()
 
-        context = manager.JobContext()
+        context = manager.JobContext()  # pylint: disable=no-member
         context.set_options(options)
         context.set_work_folder(work_folder)
 
