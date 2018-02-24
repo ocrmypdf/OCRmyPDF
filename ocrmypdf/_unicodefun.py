@@ -97,7 +97,7 @@ def verify_python3_env():
                 break
         if bad_locale is not None:
             extra += (
-                '\n\ocrmypdf discovered that you exported a UTF-8 locale\n'
+                '\nocrmypdf discovered that you exported a UTF-8 locale\n'
                 'but the locale system could not pick up from it because\n'
                 'it does not exist.  The exported locale is "%s" but it\n'
                 'is not supported'
