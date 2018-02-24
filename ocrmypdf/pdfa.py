@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # © 2015 James R. Barlow: github.com/jbarlow83
 #
 # Generate a PDFA_def.ps file for Ghostscript >= 9.14

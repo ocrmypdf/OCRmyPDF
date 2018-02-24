@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # © 2016 James R. Barlow: github.com/jbarlow83
 
 from functools import partial
@@ -74,7 +73,7 @@ def is_file_writable(test_file):
     else:
         try:
             fp = p.open('wb')
-        except OSError as e:
+        except OSError:
             return False
         else:
             fp.close()

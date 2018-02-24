@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # © 2017 James R. Barlow: github.com/jbarlow83
 
 import sys
@@ -158,7 +157,7 @@ def tesseract_log_output(log, stdout, input_file):
 
     try:
         text = stdout.decode()
-    except UnicodeDecodeError as e:
+    except UnicodeDecodeError:
         log.error(prefix + "command line output was not utf-8. " +
             "This usually means Tesseract's language packs do not match "
             "the installed version of Tesseract.")

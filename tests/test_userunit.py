@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # © 2017 James R. Barlow: github.com/jbarlow83
 
 from subprocess import Popen, PIPE, check_output, check_call, DEVNULL

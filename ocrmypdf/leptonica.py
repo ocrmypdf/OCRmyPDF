@@ -566,10 +566,6 @@ if __name__ == '__main__':
     parser_deskew.set_defaults(func=deskew)
 
     args = parser.parse_args()
-
-    if get_leptonica_version() != u'leptonica-1.69':
-        print("Unexpected leptonica version: %s" % getLeptonicaVersion())
-
     args.func(args)
 
 
