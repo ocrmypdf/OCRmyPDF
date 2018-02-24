@@ -17,6 +17,9 @@ from math import isclose
 
 import PIL
 
+# pytest.helpers is dynamic
+# pylint: disable=no-member
+# pylint: disable=w0612
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf

@@ -18,7 +18,8 @@ from .pdfinfo import PdfInfo, Encoding, Colorspace
 from .pdfa import generate_pdfa_ps
 from .helpers import re_symlink, is_iterable_notstr, page_number
 from .exec import ghostscript, tesseract, qpdf
-from .exceptions import *
+from .exceptions import PdfMergeFailedError, UnsupportedImageFormatError, \
+    DpiError, PriorOcrFoundError, InputFileError
 from . import leptonica
 from . import PROGRAM_NAME, VERSION
 
@@ -160,7 +161,7 @@ def _pdf_guess_version(input_file, search_window=1024):
 
     with open(input_file, 'rb') as f:
         signature = f.read(1024)
-    m = re.search(b'%PDF-(\d\.\d)', signature)
+    m = re.search(br'%PDF-(\d\.\d)', signature)
     if m:
         return m.group(1)
     return ''
@@ -1240,7 +1241,7 @@ def build_pipeline(options, work_folder, log, context):
     task_merge_sidecars.active_if(options.sidecar)
 
     # Finalize
-    task_copy_final = main_pipeline.merge(
+    main_pipeline.merge(
         task_func=copy_final,
         input=[task_merge_pages_ghostscript, task_merge_pages_qpdf],
         output=options.output_file,
