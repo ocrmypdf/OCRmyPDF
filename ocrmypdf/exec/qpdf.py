@@ -67,8 +67,6 @@ def repair(input_file, output_file, log):
             return
 
         if _probably_encrypted(e):
-            log.error("{0}: this PDF is password-protected - password must "
-                      "be removed for OCR".format(input_file))
             raise EncryptedPdfError() from e
         elif e.returncode == 2:
             log.error("{0}: not a valid PDF, and could not repair it.".format(

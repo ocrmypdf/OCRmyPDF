@@ -484,7 +484,7 @@ def test_encrypted(resources, no_outpdf):
     p, out, err = run_ocrmypdf(
         resources / 'skew-encrypted.pdf', no_outpdf)
     assert p.returncode == ExitCode.encrypted_pdf
-    assert out.find('password')
+    assert out.find('encrypted')
 
 
 @pytest.mark.parametrize('renderer', [

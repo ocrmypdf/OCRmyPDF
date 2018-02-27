@@ -577,6 +577,21 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
         msg = "Error occurred while running this command:"
         log.error(msg + '\n' + exc_value)
         exit_code = ExitCode.child_process_error
+    elif (exc_name == 'PyPDF2.utils.PdfReadError' and \
+            'not been decrypted' in exc_value) or \
+            (exc_name == 'ocrmypdf.exceptions.EncryptedPdfError'):
+        log.error(textwrap.dedent("""\
+            Input PDF is encrypted. The encryption must be removed to
+            perform OCR. 
+
+            For information about this PDF's security use
+                qpdf --show-encryption infilename
+
+            You can remove the encryption using
+                qpdf --decrypt [--password=[password]] infilename
+
+            """))
+        exit_code = ExitCode.encrypted_pdf        
     elif exc_name == 'ocrmypdf.exceptions.PdfMergeFailedError':
         log.error(textwrap.dedent("""\
             Failed to merge PDF image layer with OCR layer
@@ -592,19 +607,6 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
         base_exc_name = exc_name.replace('ocrmypdf.exceptions.', '')
         exc_class = getattr(ocrmypdf_exceptions, base_exc_name)
         exit_code = exc_class.exit_code
-    elif exc_name == 'PyPDF2.utils.PdfReadError' and \
-            'not been decrypted' in exc_value:
-        log.error(textwrap.dedent("""\
-            Input PDF uses either an encryption algorithm or a PDF security
-            handler that is not supported by ocrmypdf.
-
-            For information about this PDF's security use
-                qpdf --show-encryption [...input PDF...]
-
-            (Only algorithms "R = 1" and "R = 2" are supported.)
-
-            """))
-        exit_code = ExitCode.encrypted_pdf
     elif exc_name == 'PIL.Image.DecompressionBombError':
         msg = cleanup_ruffus_error_message(exc_value)
         msg += ("\nUse the --max-image-mpixels argument to set increase the "
