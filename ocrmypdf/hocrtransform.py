@@ -137,7 +137,7 @@ class HocrTransform():
         return s
 
     def to_pdf(self, outFileName, imageFileName=None, showBoundingboxes=False,
-               fontname="Helvetica", invisibleText=False):
+               fontname="Helvetica", invisibleText=False, interwordSpaces=False):
         """
         Creates a PDF file with an image superimposed on top of the text.
         Text is positioned according to the bounding box of the lines in
@@ -196,6 +196,9 @@ class HocrTransform():
             if len(elemtxt) == 0:
                 continue
 
+            if interwordSpaces:
+                elemtxt += ' '
+
             pxl_coords = self.element_coordinates(elem)
             pt = self.pt_from_pixel(pxl_coords)
 
@@ -242,10 +245,12 @@ if __name__ == "__main__":
                         help='Resolution of the image that was OCRed')
     parser.add_argument('-i', '--image', default=None,
                         help='Path to the image to be placed above the text')
+    parser.add_argument('--interword-spaces', action='store_true',
+                         default=False, help='Add spaces between words')
     parser.add_argument('hocrfile', help='Path to the hocr file to be parsed')
     parser.add_argument(
         'outputfile', help='Path to the PDF file to be generated')
     args = parser.parse_args()
 
     hocr = HocrTransform(args.hocrfile, args.resolution)
-    hocr.to_pdf(args.outputfile, args.image, args.boundingboxes)
+    hocr.to_pdf(args.outputfile, args.image, args.boundingboxes, interwordSpaces=args.interword_spaces)
