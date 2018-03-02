@@ -196,14 +196,16 @@ class HocrTransform():
             if len(elemtxt) == 0:
                 continue
 
+            pxl_coords = self.element_coordinates(elem)
+            pt = self.pt_from_pixel(pxl_coords)
+
             # if the advanced option `--interword-spaces` is true, append a space
             # to the end of each text element to allow simpler PDF viewers such
             # as PDF.js to better recognize words in search and copy and paste
             if interwordSpaces:
                 elemtxt += ' '
-
-            pxl_coords = self.element_coordinates(elem)
-            pt = self.pt_from_pixel(pxl_coords)
+                pt = Rect._make((pt.x1, pt.y1,
+                                 pt.x2 + pdf.stringWidth(' ', fontname, pt.y2 - pt.y1), pt.y2))
 
             # draw the bbox border
             if showBoundingboxes:
