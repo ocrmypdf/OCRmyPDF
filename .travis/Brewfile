@@ -1,0 +1,12 @@
+brew 'python'
+
+brew 'ghostscript'
+brew 'jbig2dec'
+brew 'leptonica'
+brew 'libffi'
+brew 'libtiff'
+brew 'libxml2'
+brew 'openjpeg'
+brew 'qpdf'
+brew 'tesseract'
+brew 'unpaper'
