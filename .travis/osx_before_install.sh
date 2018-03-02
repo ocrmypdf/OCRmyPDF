@@ -8,7 +8,7 @@ brew update
 brew install openjpeg jbig2dec libtiff     # image libraries
 brew install qpdf
 brew install ghostscript
-brew install python3
+brew upgrade python # Brew removed python3 and python now defaults to python3
 brew install libxml2 libffi leptonica
 brew install unpaper   # optional
 brew install tesseract
