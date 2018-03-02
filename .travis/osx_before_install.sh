@@ -8,7 +8,9 @@ brew update
 brew install openjpeg jbig2dec libtiff     # image libraries
 brew install qpdf
 brew install ghostscript
-brew install python3
+
+# Brew removed the python3 package and python now defaults Python 3.6
+brew upgrade python
 brew install libxml2 libffi leptonica
 brew install unpaper   # optional
 brew install tesseract
