@@ -807,10 +807,10 @@ def run_pipeline():
 
     if options.flowchart:
         _log.info("Flowchart saved to {}".format(options.flowchart))
-    elif os.path.samefile(options.output_file, os.devnull):
-        pass  # Say nothing when sending to dev null
     elif options.output_file == '-':
         _log.info("Output sent to stdout")
+    elif os.path.samefile(options.output_file, os.devnull):
+        pass  # Say nothing when sending to dev null
     else:
         if options.output_type.startswith('pdfa'):
             pdfa_info = file_claims_pdfa(options.output_file)
