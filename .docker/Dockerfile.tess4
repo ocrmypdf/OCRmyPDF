@@ -61,4 +61,4 @@ WORKDIR /home/docker
 
 # Must use array form of ENTRYPOINT
 # Non-array form does not append other arguments, because that is "intuitive"
-ENTRYPOINT ["/application/docker-wrapper.sh"]
+ENTRYPOINT ["/application/.docker/docker-wrapper.sh"]
