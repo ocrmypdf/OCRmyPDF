@@ -1,7 +1,6 @@
 # OCRmyPDF
 #
 FROM      ubuntu:17.10
-MAINTAINER James R. Barlow <jim@purplerock.ca>
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   software-properties-common python-software-properties \
@@ -52,4 +51,4 @@ WORKDIR /home/docker
 
 # Must use array form of ENTRYPOINT
 # Non-array form does not append other arguments, because that is "intuitive"
-ENTRYPOINT ["/application/docker-wrapper.sh"]
+ENTRYPOINT ["/application/.docker/docker-wrapper.sh"]
