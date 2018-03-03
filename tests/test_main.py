@@ -1134,6 +1134,6 @@ def test_output_is_symlink(spoof_tesseract_noop, resources, outdir):
         '--force-ocr',
         env=spoof_tesseract_noop
     )
-    assert p.returncode == ExitCode.ok
+    assert p.returncode == ExitCode.ok, err
     assert (outdir / 'out.pdf').stat().st_size > 0, 'target file not created'
     

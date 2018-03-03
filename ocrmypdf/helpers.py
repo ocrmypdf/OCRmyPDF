@@ -64,9 +64,20 @@ def is_file_writable(test_file):
     the location is writable.
     """
     p = Path(test_file)
+
     if p.is_symlink():
-        p = p.resolve()
-    if p.is_file():
+        # Python 3.5 does not accept parameters for Path.resolve() and behaves
+        # as if strict=True (throws an exception on failure). Python 3.6 
+        # defaults to strict=False. This implements strict=False like behavior
+        # for Python 3.5.
+        if sys.version_info[0:2] <= (3, 5):
+            resolve = lambda: Path(os.path.realpath(str(p)))
+        else:
+            resolve = lambda: p.resolve(strict=False)
+        p = resolve()
+
+    # p.is_file() throws an exception in some cases
+    if p.exists() and p.is_file():
         return os.access(
             str(p), os.W_OK,
             effective_ids=(os.access in os.supports_effective_ids))
