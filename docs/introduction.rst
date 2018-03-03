@@ -82,7 +82,8 @@ OCRmyPDF is limited by the Tesseract OCR engine.  As such it experiences these l
   
 OCRmyPDF is also limited by the PDF specification:
 
-* PDF encodes the position of text glyphs but does not encode document structure.  There is no markup that divides a document in sections, paragraphs, sentences, or even words (since blank spaces are not represented). As such all elements of document structure including the spaces between words must be derived heuristically.  Some PDF viewers do a better job of this than others.
+* PDF encodes the position of text glyphs but does not encode document structure.  There is no markup that divides a document in sections, paragraphs, sentences, or even words (since blank spaces are not represented). As such all elements of document structure including the spaces between words must be derived heuristically.  Some PDF viewers do a better job of this than others.  
+* Because some popular opensource PDF viewers have a particularly hard time with spaces betweem words, OCRmyPDF does provide an optional command option ``--interword-spaces`` that appends a space to each text element as a workaround, but discourages its use unless absolutely necessary as it mixes document structure with graphical information that ideally should be left to the PDF viewer to interpret.  This option produces output similar to the aptly named ``-sloppy-text`` option of pdfsandwich mentioned in the Similar Programs section below.
 
 Ghostscript also imposes some limitations:
 

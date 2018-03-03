@@ -640,8 +640,8 @@ def render_hocr_page(
 
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=None,
-                         showBoundingboxes=False, invisibleText=True)
-
+                         showBoundingboxes=False, invisibleText=True,
+                         interwordSpaces=options.interword_spaces)
 
 def flatten_groups(groups):
     for obj in groups:
@@ -665,8 +665,8 @@ def render_hocr_debug_page(
 
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(output_file, imageFileName=None,
-                         showBoundingboxes=True, invisibleText=False)
-
+                         showBoundingboxes=True, invisibleText=False,
+                         interwordSpaces=options.interword_spaces)
 
 def combine_layers(
         infiles,

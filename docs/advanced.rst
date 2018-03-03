@@ -131,6 +131,8 @@ The ``hocr`` renderer
 
 The ``hocr`` renderer works with older versions of Tesseract. The image layer is copied from the original PDF page if possible, avoiding potentially lossy transcoding or loss of other PDF information. If preprocessing is specified, then the image layer is a new PDF.
 
+When combined with an additional option ``--interword-spaces`, this renderer will append a space at the end of each recognized text element to help simpler viewers such as PDF.js correctly recognize words for search and copy and paste operations.
+
 This works in all versions of Tesseract.
 
 The ``tesseract`` renderer
@@ -141,3 +143,14 @@ The ``tesseract`` renderer creates a PDF with the image and text layers precompo
 If a PDF created with this renderer using Tesseract versions older than 3.05.00 is then passed through Ghostscript's pdfwrite feature, the OCR text *may* be corrupted. The ``--output-type=pdfa`` argument will produce a warning in this situation.
 
 *This renderer is deprecated and will be removed whenever support for older versions of Tesseract is dropped.*
+
+Adding Interword Spaces
+-------------------------
+
+OCRmyPDF has an option ``--interword-spaces`` that appends a space at the end of each text element.  Without the space, simpler PDF viewers such as PDF.js have difficulty detecting individuals words and maintaining white space between them.  As a result, searching for multi-word phrases and selecting text for copy and paste are severely impacted.  With this option set, these viewers are able to locate multi-word phrases while more advanced viewers remain unaffected. 
+
+.. code-block:: bash
+
+	ocrmypdf --output-type pdf --interword-spaces --pdf-renderer hocr input.pdf output.pdf
+
+This option defaults to ``False`` and must be combined with ``--pdf-renderer hocr`` or it will be ignored with a warning. This works in all versions of Tesseract.
