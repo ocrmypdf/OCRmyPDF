@@ -198,6 +198,6 @@ def merge(input_files, output_file, min_version=None, log=None, max_files=None):
             workqueue = next_workqueue
             next_workqueue = []
 
-    re_symlink(workqueue.pop(), output_file)
+    re_symlink(workqueue.pop(), output_file, log)
 
 
