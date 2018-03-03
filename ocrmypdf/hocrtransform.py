@@ -215,6 +215,7 @@ class HocrTransform():
         if invisibleText:
             text.setTextRenderMode(3)  # Invisible (indicates OCR text)
 
+        text.setTextOrigin(pt_line.x1, self.height - pt_line.y2)
         elements = line.findall(
                 ".//%sspan[@class='%s']" % (self.xmlns, elemclass))
         for n, elem in enumerate(elements):
@@ -245,8 +246,19 @@ class HocrTransform():
                     pt.x1, self.height - pt_line.y2, pt.x2 - pt.x1, line_height,
                     fill=0)
 
-            # set cursor to bottom left corner of bbox (adjust for dpi)
-            text.setTextOrigin(pt.x1, self.height - pt_line.y2)
+            # Adjust relative position of cursor
+            # This is equivalent to:
+            #   text.setTextOrigin(pt.x1, self.height - pt_line.y2)
+            # but the former generates a full text reposition matrix (Tm) in the
+            # content stream while this issues a "offset" (Td) command.
+            # .moveCursor() is relative to start of the text line, where the
+            # "text line" means whatever reportlab defines it as. Do not use
+            # use .getCursor(), since moveCursor() rather unintuitively plans 
+            # its moves relative to .getStartOfLine().
+            cursor = text.getStartOfLine()
+            dx = pt.x1 - cursor[0]
+            dy = (self.height - pt_line.y2) - cursor[1]
+            text.moveCursor(dx, dy)
 
             # scale the width of the text to fill the width of the bbox
             text.setHorizScale(
