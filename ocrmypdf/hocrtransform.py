@@ -52,14 +52,21 @@ class HocrTransform():
     http://kba.cloud/hocr-spec/
     """
 
+    box_pattern = re.compile(r'bbox((\s+\d+){4})')
+    baseline_pattern = re.compile(r'''
+        baseline \s+ 
+        ([\-\+]?\d*\.?\d*) \s+  # +/- decimal float
+        ([\-\+]?\d+)            # +/- int''', re.VERBOSE)
+    ligatures = str.maketrans({
+        'ﬀ': 'ff',
+        'ﬃ': 'f‌f‌i',
+        'ﬄ': 'f‌f‌l',
+        'ﬁ': 'fi',
+        'ﬂ': 'fl',
+    })
+
     def __init__(self, hocrFileName, dpi):
         self.dpi = dpi
-        self.boxPattern = re.compile(r'bbox((\s+\d+){4})')
-        self.baselinePattern = re.compile(r'''
-            baseline \s+ 
-            ([\-\+]?\d*\.?\d*) \s+  # +/- decimal float
-            ([\-\+]?\d+)            # +/- int''', re.VERBOSE)
-
         self.hocr = ElementTree.parse(hocrFileName)
 
         # if the hOCR file has a namespace, ElementTree requires its use to
@@ -108,25 +115,27 @@ class HocrTransform():
             text += element.tail
         return text
 
-    def element_coordinates(self, element):
+    @classmethod
+    def element_coordinates(cls, element):
         """
         Returns a tuple containing the coordinates of the bounding box around
         an element
         """
         out = (0, 0, 0, 0)
         if 'title' in element.attrib:
-            matches = self.boxPattern.search(element.attrib['title'])
+            matches = cls.box_pattern.search(element.attrib['title'])
             if matches:
                 coords = matches.group(1).split()
                 out = Rect._make(int(coords[n]) for n in range(4))
         return out
 
-    def baseline(self, element):
+    @classmethod
+    def baseline(cls, element):
         """
         Returns a tuple containing the baseline slope and intercept.
         """
         if 'title' in element.attrib:
-            matches = self.baselinePattern.search(element.attrib['title'])
+            matches = cls.baseline_pattern.search(element.attrib['title'])
             if matches:
                 return float(matches.group(1)), int(matches.group(2))
         return (0, 0) 
@@ -138,17 +147,14 @@ class HocrTransform():
         return Rect._make(
             (c / self.dpi * inch) for c in pxl)
 
-    def replace_unsupported_chars(self, s):
+    @classmethod
+    def replace_unsupported_chars(cls, s):
         """
         Given an input string, returns the corresponding string that:
         - is available in the helvetica facetype
         - does not contain any ligature (to allow easy search in the PDF file)
         """
-        # The 'u' before the character to replace indicates that it is a
-        # unicode character
-        s = s.replace(u"ﬂ", "fl")
-        s = s.replace(u"ﬁ", "fi")
-        return s
+        return s.translate(cls.ligatures)
 
     def to_pdf(self, outFileName, imageFileName=None, showBoundingboxes=False,
                fontname="Helvetica", invisibleText=False, interwordSpaces=False):
