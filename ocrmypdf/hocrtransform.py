@@ -172,13 +172,35 @@ class HocrTransform():
                 pdf.rect(
                     pt.x1, self.height - pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1,
                     fill=1)
+                    
+        found_lines = False
+        for line in self.hocr.findall(
+                ".//%sspan[@class='%s']" % (self.xmlns, "ocr_line")):
+            found_lines = True
+            self._do_line(pdf, line, "ocrx_word", fontname, invisibleText, 
+                          interwordSpaces, showBoundingboxes)
 
-        # check if element with class 'ocrx_word' are available
-        # otherwise use 'ocr_line' as fallback
-        elemclass = "ocr_line"
-        if self.hocr.find(
-                ".//%sspan[@class='ocrx_word']" % (self.xmlns)) is not None:
-            elemclass = "ocrx_word"
+        if not found_lines:
+            # Tesseract did not report any lines (just words)
+            root = self.hocr.find(".//%sdiv[@class='%s']" % (self.xmlns, "ocr_page"))
+            self._do_line(pdf, root, "ocrx_word", fontname, invisibleText,
+                          interwordSpaces, showBoundingboxes)
+        # put the image on the page, scaled to fill the page
+        if imageFileName is not None:
+            pdf.drawImage(imageFileName, 0, 0,
+                          width=self.width, height=self.height)
+
+        # finish up the page and save it
+        pdf.showPage()
+        pdf.save()
+
+
+    def _do_line(self, pdf, line, elemclass, fontname, invisibleText, 
+                 interwordSpaces, showBoundingboxes):
+        # line height
+        pxl_line_coords = self.element_coordinates(line)
+        pt_line = self.pt_from_pixel(pxl_line_coords)
+        line_height = pt_line.y2 - pt_line.y1
 
         # iterate all text elements
         # light green for bounding box of word/line
@@ -186,7 +208,7 @@ class HocrTransform():
         pdf.setLineWidth(0.5)		# bounding box line width
         pdf.setDash(6, 3)		# bounding box is dashed
         pdf.setFillColorRGB(0, 0, 0)  # text in black
-        for elem in self.hocr.findall(
+        for elem in line.findall(
                 ".//%sspan[@class='%s']" % (self.xmlns, elemclass)):
 
             elemtxt = self._get_element_text(elem).rstrip()
@@ -204,23 +226,23 @@ class HocrTransform():
             # as PDF.js to better recognize words in search and copy and paste
             if interwordSpaces:
                 elemtxt += ' '
-                pt = Rect._make((pt.x1, pt.y1,
-                                 pt.x2 + pdf.stringWidth(' ', fontname, pt.y2 - pt.y1), pt.y2))
+                pt = Rect._make((pt.x1, pt_line.y1,
+                                 pt.x2 + pdf.stringWidth(' ', fontname, line_height), pt_line.y2))
 
             # draw the bbox border
             if showBoundingboxes:
                 pdf.rect(
-                    pt.x1, self.height - pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1,
+                    pt.x1, self.height - pt_line.y2, pt.x2 - pt.x1, line_height,
                     fill=0)
 
             text = pdf.beginText()
-            fontsize = pt.y2 - pt.y1
+            fontsize = line_height
             text.setFont(fontname, fontsize)
             if invisibleText:
                 text.setTextRenderMode(3)  # Invisible (indicates OCR text)
 
             # set cursor to bottom left corner of bbox (adjust for dpi)
-            text.setTextOrigin(pt.x1, self.height - pt.y2)
+            text.setTextOrigin(pt.x1, self.height - pt_line.y2)
 
             # scale the width of the text to fill the width of the bbox
             text.setHorizScale(
@@ -230,15 +252,6 @@ class HocrTransform():
             # write the text to the page
             text.textLine(elemtxt)
             pdf.drawText(text)
-
-        # put the image on the page, scaled to fill the page
-        if imageFileName is not None:
-            pdf.drawImage(imageFileName, 0, 0,
-                          width=self.width, height=self.height)
-
-        # finish up the page and save it
-        pdf.showPage()
-        pdf.save()
 
 
 if __name__ == "__main__":
