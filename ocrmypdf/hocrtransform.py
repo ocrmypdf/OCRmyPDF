@@ -208,9 +208,16 @@ class HocrTransform():
         pdf.setLineWidth(0.5)		# bounding box line width
         pdf.setDash(6, 3)		# bounding box is dashed
         pdf.setFillColorRGB(0, 0, 0)  # text in black
-        for elem in line.findall(
-                ".//%sspan[@class='%s']" % (self.xmlns, elemclass)):
 
+        text = pdf.beginText()
+        fontsize = line_height
+        text.setFont(fontname, fontsize)
+        if invisibleText:
+            text.setTextRenderMode(3)  # Invisible (indicates OCR text)
+
+        elements = line.findall(
+                ".//%sspan[@class='%s']" % (self.xmlns, elemclass))
+        for n, elem in enumerate(elements):
             elemtxt = self._get_element_text(elem).rstrip()
 
             elemtxt = self.replace_unsupported_chars(elemtxt)
@@ -221,10 +228,13 @@ class HocrTransform():
             pxl_coords = self.element_coordinates(elem)
             pt = self.pt_from_pixel(pxl_coords)
 
-            # if the advanced option `--interword-spaces` is true, append a space
-            # to the end of each text element to allow simpler PDF viewers such
-            # as PDF.js to better recognize words in search and copy and paste
             if interwordSpaces:
+                # if  `--interword-spaces` is true, append a space
+                # to the end of each text element to allow simpler PDF viewers 
+                # such as PDF.js to better recognize words in search and copy 
+                # and paste. Do not remove space from last word in line, even
+                # though it would look better, because it will interfere with
+                # naive text extraction. \n does not work either.
                 elemtxt += ' '
                 pt = Rect._make((pt.x1, pt_line.y1,
                                  pt.x2 + pdf.stringWidth(' ', fontname, line_height), pt_line.y2))
@@ -235,12 +245,6 @@ class HocrTransform():
                     pt.x1, self.height - pt_line.y2, pt.x2 - pt.x1, line_height,
                     fill=0)
 
-            text = pdf.beginText()
-            fontsize = line_height
-            text.setFont(fontname, fontsize)
-            if invisibleText:
-                text.setTextRenderMode(3)  # Invisible (indicates OCR text)
-
             # set cursor to bottom left corner of bbox (adjust for dpi)
             text.setTextOrigin(pt.x1, self.height - pt_line.y2)
 
@@ -250,8 +254,8 @@ class HocrTransform():
                     elemtxt, fontname, fontsize))
 
             # write the text to the page
-            text.textLine(elemtxt)
-            pdf.drawText(text)
+            text.textOut(elemtxt)
+        pdf.drawText(text)
 
 
 if __name__ == "__main__":
