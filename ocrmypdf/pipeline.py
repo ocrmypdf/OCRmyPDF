@@ -1001,17 +1001,16 @@ def copy_final(
         context):
     input_file = next((ii for ii in input_files if ii.endswith('.pdf')))
 
-    if output_file == '-':
-        with open(input_file, 'rb') as input_stream:
+    with open(input_file, 'rb') as input_stream:
+        if output_file == '-':
             copyfileobj(input_stream, sys.stdout.buffer)
             sys.stdout.flush()
-    else:
-        # At this point we overwrite the output_file specified by the user
-        # use copyfileobj because then we use open() to create the file and 
-        # get the appropriate umask, ownership, etc.
-        with open(input_file, 'rb') as input_stream, \
-                open(output_file, 'wb') as output_stream:
-            copyfileobj(input_stream, output_stream)
+        else:
+            # At this point we overwrite the output_file specified by the user
+            # use copyfileobj because then we use open() to create the file and 
+            # get the appropriate umask, ownership, etc.
+            with open(output_file, 'wb') as output_stream:
+                copyfileobj(input_stream, output_stream)
 
 
 def build_pipeline(options, work_folder, log, context):
