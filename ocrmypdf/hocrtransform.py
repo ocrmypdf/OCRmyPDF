@@ -49,12 +49,16 @@ class HocrTransform():
     """
     A class for converting documents from the hOCR format.
     For details of the hOCR format, see:
-    http://docs.google.com/View?docid=dfxcv4vc_67g844kf
+    http://kba.cloud/hocr-spec/
     """
 
     def __init__(self, hocrFileName, dpi):
         self.dpi = dpi
         self.boxPattern = re.compile(r'bbox((\s+\d+){4})')
+        self.baselinePattern = re.compile(r'''
+            baseline \s+ 
+            ([\-\+]?\d*\.?\d*) \s+  # +/- decimal float
+            ([\-\+]?\d+)            # +/- int''', re.VERBOSE)
 
         self.hocr = ElementTree.parse(hocrFileName)
 
@@ -116,6 +120,16 @@ class HocrTransform():
                 coords = matches.group(1).split()
                 out = Rect._make(int(coords[n]) for n in range(4))
         return out
+
+    def baseline(self, element):
+        """
+        Returns a tuple containing the baseline slope and intercept.
+        """
+        if 'title' in element.attrib:
+            matches = self.baselinePattern.search(element.attrib['title'])
+            if matches:
+                return float(matches.group(1)), int(matches.group(2))
+        return (0, 0) 
 
     def pt_from_pixel(self, pxl):
         """
@@ -215,14 +229,16 @@ class HocrTransform():
         if invisibleText:
             text.setTextRenderMode(3)  # Invisible (indicates OCR text)
 
+        baseline = self.baseline(line)
+        if abs(baseline[0]) < 0.005:
+            baseline = (0, baseline[1])
+
         text.setTextOrigin(pt_line.x1, self.height - pt_line.y2)
         elements = line.findall(
                 ".//%sspan[@class='%s']" % (self.xmlns, elemclass))
-        for n, elem in enumerate(elements):
+        for elem in elements:
             elemtxt = self._get_element_text(elem).rstrip()
-
             elemtxt = self.replace_unsupported_chars(elemtxt)
-
             if len(elemtxt) == 0:
                 continue
 
