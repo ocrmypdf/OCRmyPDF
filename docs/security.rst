@@ -30,14 +30,16 @@ Depending on the options specified, OCRmyPDF may graft the OCR layer into the ex
 Using OCRmyPDF online or as a service
 -------------------------------------
 
-OCRmyPDF should not be deployed as a public-facing service, like a website where a potential attacker could upload a PDF of their choice for OCR. OCRmyPDF is not designed to be secure against PDF malware. Another concern is PDFs specifically designed to be a denial of service attack: PDFs can contain recursive data structures that sometimes send parsers into infinite loops, and issue complex graphics drawing commands.
+OCRmyPDF should not be deployed as a public-facing service, such as a website where a potential attacker could upload a PDF of their choice for OCR. OCRmyPDF is not designed to be secure against PDF malware. Another concern is PDFs specifically designed to be a denial of service attack: PDFs can contain recursive data structures that sometimes send parsers into infinite loops, and issue complex graphics drawing commands.
+
+Setting aside these concerns, a side effect of OCRmyPDF is it may incidentally sanitize PDFs that contain malware. It runs ``qpdf`` to repair the PDF, which could correct malformed PDF structures that are part of an attack. When PDF/A output is selected (the default), the input PDF is partially reconstructed by Ghostscript. When ``--force-ocr`` is used, all pages are rasterized and reconverted to PDF, which could remove malware in embedded images. No guarantees.
 
 OCRmyPDF should be relatively safe to use in a trusted intranet, with some considerations:
 
 Limiting CPU usage
 ^^^^^^^^^^^^^^^^^^
 
-OCRmyPDF will attempt to use all available CPUs and storage, so executing ``nice ocrmypdf`` or limiting the number of jobs with the ``-j`` argument may ensure the server remains available. Another option would be run OCRmyPDF jobs inside a Docker container or virtual machine, which can impose its own limits on CPU usage.
+OCRmyPDF will attempt to use all available CPUs and storage, so executing ``nice ocrmypdf`` or limiting the number of jobs with the ``-j`` argument may ensure the server remains available. Another option would be run OCRmyPDF jobs inside a Docker container, a virtual machine, or a cloud instance, which can impose its own limits on CPU usage and be terminated "from orbit" if it fails to complete.
 
 Temporary storage requirements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -46,7 +48,7 @@ OCRmyPDF will use a large amount of temporary storage for its work, proportional
 
 To check temporary storage usage on actual files, run ``ocrmypdf -k ...`` which will preserve and print the path to temporary storage when the job is done.
 
-To change where temporary files are stored, change the ``TMPDIR`` environment variable for ocrmypdf's environment. (Python's ``tempfile.gettempdir()`` returns the root directory in which temporary files will be stored.)
+To change where temporary files are stored, change the ``TMPDIR`` environment variable for ocrmypdf's environment. (Python's ``tempfile.gettempdir()`` returns the root directory in which temporary files will be stored.) For example, one could redirect ``TMPDIR`` to a large RAM disk to avoid wear on HDD/SSD and potentially improve performance. On Amazon Web Services, ``TMPDIR`` can be set to `empheral storage <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/InstanceStorage.html>`_.
 
 Timeouts
 ^^^^^^^^
@@ -64,7 +66,13 @@ Abbyy Cloud OCR is a viable commercial alternative with a web services API.
 Password protection, digital signatures and certification
 ---------------------------------------------------------
 
-OCRmyPDF cannot remove password protection from a PDF. ``qpdf``, one of its dependencies, has this capability. After OCR is applied, password protection is not permitted on PDF/A documents but the file can be converted to regular PDF.
+Password protected PDFs usually have two passwords, and owner and user password. When the user password is set to empty, PDF readers will open the file automatically and marked it as "(SECURED)". While not as reliable as a digital signature, this indicates that whoever set the password approved of the file at that time. When the user password is set, the document cannot be viewed without the password. 
+
+Either way, OCRmyPDF does not remove passwords from PDFs and exits with an error on encountering them.
+
+``qpdf``, one of OCRmyPDF's dependencies, can remove passwords. If the owner and user password are set, a password is required for ``qpdf``. If only the owner password is set, then the password can be stripped, even if one does not have the owner password.
+
+After OCR is applied, password protection is not permitted on PDF/A documents but the file can be converted to regular PDF.
 
 Many programs exist which are capable of inserting an image of someone's signature. On its own, this offers no security guarantees. It is trivial to remove the signature image and apply it to other files. This practice offers no real security.
 

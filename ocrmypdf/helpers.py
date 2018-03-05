@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
 # © 2016 James R. Barlow: github.com/jbarlow83
 
 from functools import partial
 from collections.abc import Iterable
 from contextlib import suppress, contextmanager
+from pathlib import Path
 import sys
 import os
 
@@ -63,19 +63,22 @@ def is_file_writable(test_file):
     can replace it atomically. Before doing the OCR work, make sure
     the location is writable.
     """
-    if os.path.exists(test_file):
+    p = Path(test_file)
+    if p.is_symlink():
+        p = p.resolve()
+    if p.is_file():
         return os.access(
-            test_file, os.W_OK,
+            str(p), os.W_OK,
             effective_ids=(os.access in os.supports_effective_ids))
     else:
         try:
-            fp = open(test_file, 'wb')
-        except OSError as e:
+            fp = p.open('wb')
+        except OSError:
             return False
         else:
             fp.close()
             with suppress(OSError):
-                os.unlink(test_file)
+                p.unlink()
         return True
 
 

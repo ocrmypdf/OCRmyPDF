@@ -1,7 +1,6 @@
 # OCRmyPDF
 #
-FROM      ubuntu:17.10
-MAINTAINER James R. Barlow <jim@purplerock.ca>
+FROM 	ubuntu:17.10
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   software-properties-common python-software-properties \
@@ -12,12 +11,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   qpdf \
   poppler-utils \
   unpaper \
-  libffi-dev \ 
-  tesseract-ocr \
-  tesseract-ocr-eng \
-  tesseract-ocr-fra \
-  tesseract-ocr-spa \
-  tesseract-ocr-deu
+  libffi-dev
+
+RUN add-apt-repository ppa:alex-p/tesseract-ocr
+
+RUN apt-get update \
+	&& apt-get autoremove -y \
+	&& apt-get install -y --no-install-recommends \
+		tesseract-ocr \
+		tesseract-ocr-eng \
+		tesseract-ocr-fra \
+		tesseract-ocr-deu \
+		tesseract-ocr-spa \
+		tesseract-ocr-por \
+		tesseract-ocr-ara \
+		tesseract-ocr-rus \
+		tesseract-ocr-chi-sim 
 
 ENV LANG=C.UTF-8
 
@@ -52,4 +61,4 @@ WORKDIR /home/docker
 
 # Must use array form of ENTRYPOINT
 # Non-array form does not append other arguments, because that is "intuitive"
-ENTRYPOINT ["/application/docker-wrapper.sh"]
+ENTRYPOINT ["/application/.docker/docker-wrapper.sh"]

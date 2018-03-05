@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # © 2017 James R. Barlow: github.com/jbarlow83
 
 import pytest
@@ -10,7 +9,7 @@ import os
 import PyPDF2 as pypdf
 from contextlib import contextmanager
 
-
+# pylint: disable=no-member
 spoof = pytest.helpers.spoof
 
 

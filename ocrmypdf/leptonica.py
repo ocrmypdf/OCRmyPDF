@@ -566,35 +566,4 @@ if __name__ == '__main__':
     parser_deskew.set_defaults(func=deskew)
 
     args = parser.parse_args()
-
-    if get_leptonica_version() != u'leptonica-1.69':
-        print("Unexpected leptonica version: %s" % getLeptonicaVersion())
-
     args.func(args)
-
-
-def test_skew_angle():
-    from PIL import Image, ImageDraw
-    from tempfile import NamedTemporaryFile
-
-    im = Image.new(mode='1', size=(1000, 1000), color=1)
-
-    draw = ImageDraw.Draw(im)
-    for n in range(20):
-        draw.line([(50, 25 + 50*n), (950, 25 + 50*n)], width=1)
-    del draw
-
-    test_angles = [0.1 * ang for ang in range(1, 10)] + \
-                  [float(ang) for ang in range(1, 7)]
-    test_angles += [-ang for ang in test_angles]
-    test_angles = sorted(test_angles)
-
-    for rotate_angle in test_angles:
-        rotated_im = im.rotate(rotate_angle)
-        with NamedTemporaryFile(prefix='lept-skew', suffix='.png', delete=True) as tmpfile:
-            rotated_im.save(tmpfile)
-            pix = pixRead(tmpfile.name)
-            angle, confidence = pixFindSkew(pix)
-            print('{0} {1}  {2}'.format(rotate_angle, angle, confidence), file=sys.stderr)
-
-

@@ -19,7 +19,7 @@ class Ocrmypdf < Formula
   depends_on "ghostscript"
   depends_on "jpeg"
   depends_on "libpng"
-  depends_on "python3"
+  depends_on "python"
   depends_on "qpdf"
   depends_on "tesseract"
   depends_on "unpaper"

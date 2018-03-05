@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
 # © 2016 James R. Barlow: github.com/jbarlow83
 
 from contextlib import suppress
+from shutil import copyfileobj
 import sys
 import os
 import shutil
@@ -17,7 +17,8 @@ from .pdfinfo import PdfInfo, Encoding, Colorspace
 from .pdfa import generate_pdfa_ps
 from .helpers import re_symlink, is_iterable_notstr, page_number
 from .exec import ghostscript, tesseract, qpdf
-from .exceptions import *
+from .exceptions import PdfMergeFailedError, UnsupportedImageFormatError, \
+    DpiError, PriorOcrFoundError, InputFileError
 from . import leptonica
 from . import PROGRAM_NAME, VERSION
 
@@ -159,7 +160,7 @@ def _pdf_guess_version(input_file, search_window=1024):
 
     with open(input_file, 'rb') as f:
         signature = f.read(1024)
-    m = re.search(b'%PDF-(\d\.\d)', signature)
+    m = re.search(br'%PDF-(\d\.\d)', signature)
     if m:
         return m.group(1)
     return ''
@@ -1001,12 +1002,16 @@ def copy_final(
     input_file = next((ii for ii in input_files if ii.endswith('.pdf')))
 
     if output_file == '-':
-        from shutil import copyfileobj
         with open(input_file, 'rb') as input_stream:
             copyfileobj(input_stream, sys.stdout.buffer)
             sys.stdout.flush()
     else:
-        shutil.copy(input_file, output_file)
+        # At this point we overwrite the output_file specified by the user
+        # use copyfileobj because then we use open() to create the file and 
+        # get the appropriate umask, ownership, etc.
+        with open(input_file, 'rb') as input_stream, \
+                open(output_file, 'wb') as output_stream:
+            copyfileobj(input_stream, output_stream)
 
 
 def build_pipeline(options, work_folder, log, context):
@@ -1235,7 +1240,7 @@ def build_pipeline(options, work_folder, log, context):
     task_merge_sidecars.active_if(options.sidecar)
 
     # Finalize
-    task_copy_final = main_pipeline.merge(
+    main_pipeline.merge(
         task_func=copy_final,
         input=[task_merge_pages_ghostscript, task_merge_pages_qpdf],
         output=options.output_file,

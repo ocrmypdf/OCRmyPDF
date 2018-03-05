@@ -34,7 +34,9 @@ before_install: |
   if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
     bash .travis/linux_before_install.sh
   elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-    bash .travis/osx_before_install.sh
+    brew update && brew bundle --file=.travis/Brewfile
+    pip3 install --upgrade pip
+    pip3 install wheel
   fi
 
 install:

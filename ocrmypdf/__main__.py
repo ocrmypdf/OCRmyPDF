@@ -27,7 +27,7 @@ from .helpers import is_iterable_notstr, re_symlink, is_file_writable
 from .exec import tesseract, qpdf, ghostscript
 from . import PROGRAM_NAME, VERSION
 
-from .exceptions import *
+from .exceptions import ExitCode, ExitCodeException, MissingDependencyError
 from . import exceptions as ocrmypdf_exceptions
 from ._unicodefun import verify_python3_env
 
@@ -561,6 +561,7 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
     exit_code = None
 
     task_name, job_name, exc_name, exc_value, exc_stack = ruffus_five_tuple
+    job_name = job_name  # unused
     if exc_name == 'builtins.SystemExit':
         match = re.search(r"\.(.+?)\)", exc_value)
         exit_code_name = match.groups()[0]
@@ -583,6 +584,21 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
         msg = "Error occurred while running this command:"
         log.error(msg + '\n' + exc_value)
         exit_code = ExitCode.child_process_error
+    elif (exc_name == 'PyPDF2.utils.PdfReadError' and \
+            'not been decrypted' in exc_value) or \
+            (exc_name == 'ocrmypdf.exceptions.EncryptedPdfError'):
+        log.error(textwrap.dedent("""\
+            Input PDF is encrypted. The encryption must be removed to
+            perform OCR. 
+
+            For information about this PDF's security use
+                qpdf --show-encryption infilename
+
+            You can remove the encryption using
+                qpdf --decrypt [--password=[password]] infilename
+
+            """))
+        exit_code = ExitCode.encrypted_pdf        
     elif exc_name == 'ocrmypdf.exceptions.PdfMergeFailedError':
         log.error(textwrap.dedent("""\
             Failed to merge PDF image layer with OCR layer
@@ -598,19 +614,6 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
         base_exc_name = exc_name.replace('ocrmypdf.exceptions.', '')
         exc_class = getattr(ocrmypdf_exceptions, base_exc_name)
         exit_code = exc_class.exit_code
-    elif exc_name == 'PyPDF2.utils.PdfReadError' and \
-            'not been decrypted' in exc_value:
-        log.error(textwrap.dedent("""\
-            Input PDF uses either an encryption algorithm or a PDF security
-            handler that is not supported by ocrmypdf.
-
-            For information about this PDF's security use
-                qpdf --show-encryption [...input PDF...]
-
-            (Only algorithms "R = 1" and "R = 2" are supported.)
-
-            """))
-        exit_code = ExitCode.encrypted_pdf
     elif exc_name == 'PIL.Image.DecompressionBombError':
         msg = cleanup_ruffus_error_message(exc_value)
         msg += ("\nUse the --max-image-mpixels argument to set increase the "
@@ -690,7 +693,7 @@ def log_page_orientations(pdfinfo, _log):
                 180: 's', 270: 'w'}
     orientations = []
     for n, page in enumerate(pdfinfo):
-        angle = pdfinfo[n].rotation or 0
+        angle = page.rotation or 0
         if angle != 0:
             orientations.append('{0}{1}'.format(
                 n + 1,
@@ -764,14 +767,14 @@ def run_pipeline():
         elif not is_file_writable(options.output_file):
             _log.error(
                 "Output file location (" + options.output_file + ") " +
-                "is not writable.")
+                "is not a writable file.")
             return ExitCode.file_access_error
 
         manager = JobContextManager()
-        manager.register('JobContext', JobContext)
+        manager.register('JobContext', JobContext)  # pylint: disable=no-member
         manager.start()
 
-        context = manager.JobContext()
+        context = manager.JobContext()  # pylint: disable=no-member
         context.set_options(options)
         context.set_work_folder(work_folder)
 
@@ -811,7 +814,11 @@ def run_pipeline():
 
     if options.flowchart:
         _log.info("Flowchart saved to {}".format(options.flowchart))
-    elif options.output_file != '-':
+    elif options.output_file == '-':
+        _log.info("Output sent to stdout")
+    elif os.path.samefile(options.output_file, os.devnull):
+        pass  # Say nothing when sending to dev null
+    else:
         if options.output_type.startswith('pdfa'):
             pdfa_info = file_claims_pdfa(options.output_file)
             if pdfa_info['pass']:
@@ -824,8 +831,6 @@ def run_pipeline():
         if not qpdf.check(options.output_file, _log):
             _log.warning('Output file: The generated PDF is INVALID')
             return ExitCode.invalid_output_pdf
-    else:
-        _log.info("Output sent to stdout")
 
     pdfinfo = context.get_pdfinfo()
     if options.verbose:

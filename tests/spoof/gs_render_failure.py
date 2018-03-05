@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# © 2016 James R. Barlow: github.com/jbarlow83
+# © 2016-18 James R. Barlow: github.com/jbarlow83
 
 import sys
 import os

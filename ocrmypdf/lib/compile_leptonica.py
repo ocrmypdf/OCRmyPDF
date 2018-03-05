@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # © 2017 James R. Barlow: github.com/jbarlow83
 
 from cffi import FFI

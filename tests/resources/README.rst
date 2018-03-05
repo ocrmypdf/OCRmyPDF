@@ -33,7 +33,7 @@ In some cases they were converted from one image format to another without other
         - Creative Commons BY-SA 3.0
     *   - typewriter.png, 2400dpi.pdf
         - `Wikimedia: Triumph typewrtier text Linzensoep`_
-        * Creative Commons BY-SA 2.5
+        - Creative Commons BY-SA 2.5
     *   - baiona.png
         - `Wikimedia: Baionako udalerri mugakideak`_
         - Creative Commons BY-SA 4.0
@@ -119,7 +119,7 @@ These test resources are assemblies or derivatives from other previously mention
 - palette.pdf (congress.jpg, converted to a 256-color palette)
 - rotated_skew.pdf (a /Rotate'd and skewed document from LinnSequencer.jpg)
 - skew.pdf (from LinnSequencer.jpg, skew simulated by adjusting the transformation matrix)
-- skew-encrypted.pdf (skew.pdf with encryption - access supported by PyPDF2)
+- skew-encrypted.pdf (skew.pdf with encryption - access supported by PyPDF2, password is "password")
 - baiona_gray.png (from baiona.png)
 - poster.pdf (from LinnSequencer.jpg)
 
