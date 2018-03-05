@@ -33,6 +33,7 @@ from reportlab.lib.units import inch
 from xml.etree import ElementTree
 from PIL import Image
 from collections import namedtuple
+from math import atan, sin, cos
 import re
 import argparse
 
@@ -238,8 +239,14 @@ class HocrTransform():
         baseline = self.baseline(line)
         if abs(baseline[0]) < 0.005:
             baseline = (0, baseline[1])
+        angle = atan(baseline[0])
+        cos_a, sin_a = cos(angle), sin(angle)
 
-        text.setTextOrigin(pt_line.x1, self.height - pt_line.y2)
+        text.setTextTransform(
+            cos_a, -sin_a, sin_a, cos_a,
+            pt_line.x1, self.height - pt_line.y2
+        )
+
         elements = line.findall(
                 ".//%sspan[@class='%s']" % (self.xmlns, elemclass))
         for elem in elements:
