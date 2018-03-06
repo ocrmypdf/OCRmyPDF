@@ -885,6 +885,8 @@ def test_gs_raster_failure(spoof_no_tess_gs_raster_fail, resources, outpdf):
     assert p.returncode == ExitCode.child_process_error
 
 
+@pytest.mark.skipif('8.0.0' <= qpdf.version() <= '8.0.1',
+                    reason="qpdf regression")
 def test_no_contents(spoof_tesseract_noop, resources, outpdf):
     check_ocrmypdf(resources / 'no_contents.pdf', outpdf, '--force-ocr',
                    env=spoof_tesseract_noop)
