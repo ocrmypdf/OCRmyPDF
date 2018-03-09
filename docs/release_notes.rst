@@ -5,10 +5,11 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 
 The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
 
-next
-----
+v5.6.1
+------
 
 -   Fix issue #219: change how the final output file is created to avoid triggering permission errors when the output is a special file such as ``/dev/null``
+-   Fix test suite failures due to a qpdf 8.0.0 regression and Python 3.5's handling of symlink
 -   The "encrypted PDF" error message was different depending on the type of PDF encryption. Now a single clear message appears for all types of PDF encryption.
 -   ocrmypdf is now in Homebrew. Homebrew users are advised to the version of ocrmypdf in the official homebrew-core formulas rather than the private tap.
 -   Some linting
