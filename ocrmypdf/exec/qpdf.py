@@ -178,7 +178,7 @@ def merge(input_files, output_file, min_version=None, log=None, max_files=None):
         n = min(step_size, len(workqueue))
         job = workqueue[0:n]
         del workqueue[0:n]
-        print('merging ' + repr(job))
+        log.debug('merging ' + repr(job))
 
         # Merge them into 1 file, which will contain n^depth pages
         merge_file = os.path.join(
@@ -188,7 +188,7 @@ def merge(input_files, output_file, min_version=None, log=None, max_files=None):
 
         # On the next 
         next_workqueue.append(merge_file)
-        print('next_workqueue ' + repr(next_workqueue))
+        log.debug('next_workqueue ' + repr(next_workqueue))
 
         # If we're out of things to do in this queue, move on to the next
         # queue. On the counter-th pass of the workqueue we can chew through
