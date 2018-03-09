@@ -223,30 +223,36 @@ class HocrTransform():
         pt_line = self.pt_from_pixel(pxl_line_coords)
         line_height = pt_line.y2 - pt_line.y1
 
-        # iterate all text elements
-        # light green for bounding box of word/line
-        pdf.setStrokeColorRGB(1, 0, 0)
-        pdf.setLineWidth(0.5)		# bounding box line width
-        pdf.setDash(6, 3)		# bounding box is dashed
-        pdf.setFillColorRGB(0, 0, 0)  # text in black
+        slope, intercept = self.baseline(line)
+        if abs(slope) < 0.005:
+            slope = 0.0
+        angle = atan(slope)
+        cos_a, sin_a = cos(angle), sin(angle)
 
+        # iterate all text elements
         text = pdf.beginText()
-        fontsize = line_height
+        fontsize = line_height - abs(intercept / self.dpi * inch)
         text.setFont(fontname, fontsize)
         if invisibleText:
             text.setTextRenderMode(3)  # Invisible (indicates OCR text)
 
-        baseline = self.baseline(line)
-        if abs(baseline[0]) < 0.005:
-            baseline = (0, baseline[1])
-        angle = atan(baseline[0])
-        cos_a, sin_a = cos(angle), sin(angle)
+        baseline_y1 = self.height - pt_line.y2 - intercept / self.dpi * inch
+
+        if showBoundingboxes:
+            # draw the baseline in magenta
+            pdf.setStrokeColorRGB(0.95, 0.65, 0.95)
+            pdf.setLineWidth(0.5)		# bounding box line width
+            pdf.setDash(6, 3)		# bounding box is dashed
+            pdf.line(pt_line.x1, baseline_y1,
+                     pt_line.x2, baseline_y1 - slope * (pt_line.x2 - pt_line.x1))
+            # light green for bounding box of word/line
+            pdf.setStrokeColorRGB(1, 0, 0)
 
         text.setTextTransform(
             cos_a, -sin_a, sin_a, cos_a,
             pt_line.x1, self.height - pt_line.y2
         )
-
+        pdf.setFillColorRGB(0, 0, 0)  # text in black
         elements = line.findall(
                 ".//%sspan[@class='%s']" % (self.xmlns, elemclass))
         for elem in elements:
@@ -286,7 +292,7 @@ class HocrTransform():
             # its moves relative to .getStartOfLine().
             cursor = text.getStartOfLine()
             dx = pt.x1 - cursor[0]
-            dy = (self.height - pt_line.y2) - cursor[1]
+            dy = (self.height - pt_line.y2 + intercept / self.dpi * inch) - cursor[1]
             text.moveCursor(dx, dy)
 
             # scale the width of the text to fill the width of the bbox
