@@ -730,6 +730,13 @@ def run_pipeline():
     # options.input_file, options.pdf_renderer are already bound.)
     if not options.jobs:
         options.jobs = available_cpu_count()
+
+    # Performance is improved by setting Tesseract to single threaded. In tests
+    # this gives better throughput than letting a smaller number of Tesseract
+    # jobs run multithreaded.
+    if tesseract.v4():
+        os.environ.setdefault('OMP_THREAD_LIMIT', '1')
+
     try:
         work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
         options.history_file = os.path.join(
