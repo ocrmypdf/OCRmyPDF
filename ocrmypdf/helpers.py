@@ -71,10 +71,9 @@ def is_file_writable(test_file):
         # defaults to strict=False. This implements strict=False like behavior
         # for Python 3.5.
         if sys.version_info[0:2] <= (3, 5):
-            resolve = lambda: Path(os.path.realpath(str(p)))
+            p = Path(os.path.realpath(str(p)))
         else:
-            resolve = lambda: p.resolve(strict=False)
-        p = resolve()
+            p = p.resolve(strict=False)
 
     # p.is_file() throws an exception in some cases
     if p.exists() and p.is_file():

@@ -22,6 +22,10 @@ class ExitCodeException(Exception):
     exit_code = ExitCode.other_error
 
 
+class BadArgsError(ExitCodeException):
+    exit_code = ExitCode.bad_args
+
+
 class PdfMergeFailedError(ExitCodeException):
     exit_code = ExitCode.input_file
 
@@ -36,6 +40,10 @@ class UnsupportedImageFormatError(ExitCodeException):
 
 class DpiError(ExitCodeException):
     exit_code = ExitCode.input_file
+
+
+class OutputFileAccessError(ExitCodeException):
+    exit_code = ExitCode.file_access_error
 
 
 class PriorOcrFoundError(ExitCodeException):

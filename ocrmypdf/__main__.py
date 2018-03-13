@@ -27,7 +27,8 @@ from .helpers import is_iterable_notstr, re_symlink, is_file_writable
 from .exec import tesseract, qpdf, ghostscript
 from . import PROGRAM_NAME, VERSION
 
-from .exceptions import ExitCode, ExitCodeException, MissingDependencyError
+from .exceptions import ExitCode, ExitCodeException, MissingDependencyError, \
+    InputFileError, BadArgsError, OutputFileAccessError
 from . import exceptions as ocrmypdf_exceptions
 from ._unicodefun import verify_python3_env
 
@@ -479,6 +480,12 @@ def check_options_metadata(options, log):
                 ))
 
 
+def check_options_pillow(options, log):
+    PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1000000)
+    if PIL.Image.MAX_IMAGE_PIXELS == 0:
+        PIL.Image.MAX_IMAGE_PIXELS = None
+
+
 def check_options(options, log):
     try:
         check_options_languages(options, log)
@@ -488,6 +495,7 @@ def check_options(options, log):
         check_options_preprocessing(options, log)
         check_options_ocr_behavior(options, log)
         check_options_advanced(options, log)
+        check_options_pillow(options, log)
     except ValueError as e:
         log.error(e)
         sys.exit(ExitCode.bad_args)
@@ -625,6 +633,21 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
 def traverse_ruffus_exception(e_args, options, log):
     """Walk through a RethrownJobError and find the first exception.
 
+    Ruffus flattens exception to 5 element tuples. Because of a bug
+    in <= 2.6.3 it may present either the single:
+      (task, job, exc, value, stack)
+    or something like:
+      [[(task, job, exc, value, stack)]]
+    
+    Generally cross-process exception marshalling doesn't work well
+    and ruffus doesn't support because BaseException has its own
+    implementation of __reduce__ that attempts to reconstruct the
+    exception based on e.__init__(e.args).
+    
+    Attempting to log the exception directly marshalls it to the logger
+    which is probably in another process, so it's better to log only
+    data from the exception at this point.
+
     The exit code will be based on this, even if multiple exceptions occurred
     at the same time."""
 
@@ -655,6 +678,9 @@ def check_closed_streams(options):
     a closed handle with /dev/null seems safe.
 
     """
+
+    if sys.version_info[0:3] >= (3, 6, 4):
+        return True  # Issued fixed in Python 3.6.4+
 
     if sys.stderr is None:
         sys.stderr = open(os.devnull, 'w')
@@ -695,6 +721,42 @@ def log_page_orientations(pdfinfo, _log):
         _log.info('Page orientations detected: ' + ' '.join(orientations))
 
 
+def preamble(_log):
+    _log.debug('ocrmypdf ' + VERSION)
+    _log.debug('tesseract ' + tesseract.version())
+    _log.debug('qpdf ' + qpdf.version())
+
+
+def check_input_file(options, _log, start_input_file):
+    if options.input_file == '-':
+        # stdin
+        _log.info('reading file from standard input')
+        with open(start_input_file, 'wb') as stream_buffer:
+            from shutil import copyfileobj
+            copyfileobj(sys.stdin.buffer, stream_buffer)
+    else:
+        try:
+            re_symlink(options.input_file, start_input_file, _log)
+        except FileNotFoundError:
+            _log.error("File not found - " + options.input_file)
+            raise InputFileError()
+
+
+def check_output_file(options, _log):
+    if options.output_file == '-':
+        if sys.stdout.isatty():
+            _log.error(textwrap.dedent("""\
+                Output was set to stdout '-' but it looks like stdout
+                is connected to a terminal.  Please redirect stdout to a
+                file."""))
+            raise BadArgsError()
+    elif not is_file_writable(options.output_file):
+        _log.error(
+            "Output file location (" + options.output_file + ") " +
+            "is not a writable file.")
+        raise OutputFileAccessError()
+
+
 def run_pipeline():
     options = parser.parse_args()
     options.verbose_abbreviated_path = 1
@@ -706,15 +768,8 @@ def run_pipeline():
 
     _log, _log_mutex = proxy_logger.make_shared_logger_and_proxy(
         logging_factory, __name__, logger_args)
-    _log.debug('ocrmypdf ' + VERSION)
-    _log.debug('tesseract ' + tesseract.version())
-    _log.debug('qpdf ' + qpdf.version())
-
+    preamble(_log)
     check_options(options, _log)
-
-    PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1000000)
-    if PIL.Image.MAX_IMAGE_PIXELS == 0:
-        PIL.Image.MAX_IMAGE_PIXELS = None
 
     # Complain about qpdf version < 7.0.0
     # Suppress the warning if in the test suite, since there are no PPAs
@@ -744,31 +799,8 @@ def run_pipeline():
         start_input_file = os.path.join(
             work_folder, 'origin')
 
-        if options.input_file == '-':
-            # stdin
-            _log.info('reading file from standard input')
-            with open(start_input_file, 'wb') as stream_buffer:
-                from shutil import copyfileobj
-                copyfileobj(sys.stdin.buffer, stream_buffer)
-        else:
-            try:
-                re_symlink(options.input_file, start_input_file, _log)
-            except FileNotFoundError:
-                _log.error("File not found - " + options.input_file)
-                return ExitCode.input_file
-
-        if options.output_file == '-':
-            if sys.stdout.isatty():
-                _log.error(textwrap.dedent("""\
-                    Output was set to stdout '-' but it looks like stdout
-                    is connected to a terminal.  Please redirect stdout to a
-                    file."""))
-                return ExitCode.bad_args
-        elif not is_file_writable(options.output_file):
-            _log.error(
-                "Output file location (" + options.output_file + ") " +
-                "is not a writable file.")
-            return ExitCode.file_access_error
+        check_input_file(options, _log, start_input_file)
+        check_output_file(options, _log)
 
         manager = JobContextManager()
         manager.register('JobContext', JobContext)  # pylint: disable=no-member
@@ -784,22 +816,6 @@ def run_pipeline():
     except ruffus_exceptions.RethrownJobError as e:
         if options.verbose:
             _log.debug(str(e))  # stringify exception so logger doesn't have to
-
-        # Ruffus flattens exception to 5 element tuples. Because of a bug
-        # in <= 2.6.3 it may present either the single:
-        #   (task, job, exc, value, stack)
-        # or something like:
-        #   [[(task, job, exc, value, stack)]]
-        #
-        # Generally cross-process exception marshalling doesn't work well
-        # and ruffus doesn't support because BaseException has its own
-        # implementation of __reduce__ that attempts to reconstruct the
-        # exception based on e.__init__(e.args).
-        #
-        # Attempting to log the exception directly marshalls it to the logger
-        # which is probably in another process, so it's better to log only
-        # data from the exception at this point.
-
         exitcode = traverse_ruffus_exception(e.args, options, _log)
         if exitcode is None:
             _log.error("Unexpected ruffus exception: " + str(e))
