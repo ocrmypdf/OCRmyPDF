@@ -243,6 +243,7 @@ class HocrTransform():
 
         if showBoundingboxes:
             # draw the baseline in magenta, dashed
+            pdf.setDash()
             pdf.setStrokeColorRGB(0.95, 0.65, 0.95)
             pdf.setLineWidth(0.5)
             pdf.line(line_box.x1, 
