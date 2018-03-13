@@ -216,12 +216,16 @@ class HocrTransform():
         pdf.save()
 
 
+    @classmethod
+    def polyval(cls, poly, x):
+        return x * poly[0] + poly[1]
+
+
     def _do_line(self, pdf, line, elemclass, fontname, invisibleText, 
                  interwordSpaces, showBoundingboxes):
-        # line height
         pxl_line_coords = self.element_coordinates(line)
-        pt_line = self.pt_from_pixel(pxl_line_coords)
-        line_height = pt_line.y2 - pt_line.y1
+        line_box = self.pt_from_pixel(pxl_line_coords)
+        line_height = line_box.y2 - line_box.y1
 
         slope, intercept = self.baseline(line)
         if abs(slope) < 0.005:
@@ -229,41 +233,43 @@ class HocrTransform():
         angle = atan(slope)
         cos_a, sin_a = cos(angle), sin(angle)
 
-        # iterate all text elements
         text = pdf.beginText()
         fontsize = line_height - abs(intercept / self.dpi * inch)
         text.setFont(fontname, fontsize)
         if invisibleText:
             text.setTextRenderMode(3)  # Invisible (indicates OCR text)
 
-        baseline_y1 = self.height - pt_line.y2 - intercept / self.dpi * inch
+        baseline_y1 = self.height - (line_box.y2 + intercept / self.dpi * inch)
 
         if showBoundingboxes:
-            # draw the baseline in magenta
+            # draw the baseline in magenta, dashed
             pdf.setStrokeColorRGB(0.95, 0.65, 0.95)
-            pdf.setLineWidth(0.5)		# bounding box line width
-            pdf.setDash(6, 3)		# bounding box is dashed
-            pdf.line(pt_line.x1, baseline_y1,
-                     pt_line.x2, baseline_y1 - slope * (pt_line.x2 - pt_line.x1))
+            pdf.setLineWidth(0.5)
+            pdf.line(line_box.x1, 
+                     baseline_y1,
+                     line_box.x2,
+                     self.polyval((-slope, baseline_y1), 
+                                  line_box.x2 - line_box.x1))
             # light green for bounding box of word/line
+            pdf.setDash(6, 3)
             pdf.setStrokeColorRGB(1, 0, 0)
 
         text.setTextTransform(
             cos_a, -sin_a, sin_a, cos_a,
-            pt_line.x1, self.height - pt_line.y2
+            line_box.x1, self.height - line_box.y2
         )
         pdf.setFillColorRGB(0, 0, 0)  # text in black
+
         elements = line.findall(
                 ".//%sspan[@class='%s']" % (self.xmlns, elemclass))
         for elem in elements:
-            elemtxt = self._get_element_text(elem).rstrip()
+            elemtxt = self._get_element_text(elem).strip()
             elemtxt = self.replace_unsupported_chars(elemtxt)
-            if len(elemtxt) == 0:
+            if elemtxt == '':
                 continue
 
             pxl_coords = self.element_coordinates(elem)
-            pt = self.pt_from_pixel(pxl_coords)
-
+            box = self.pt_from_pixel(pxl_coords)
             if interwordSpaces:
                 # if  `--interword-spaces` is true, append a space
                 # to the end of each text element to allow simpler PDF viewers 
@@ -272,18 +278,26 @@ class HocrTransform():
                 # though it would look better, because it will interfere with
                 # naive text extraction. \n does not work either.
                 elemtxt += ' '
-                pt = Rect._make((pt.x1, pt_line.y1,
-                                 pt.x2 + pdf.stringWidth(' ', fontname, line_height), pt_line.y2))
+                box = Rect._make((
+                    box.x1, 
+                    line_box.y1,
+                    box.x2 + pdf.stringWidth(' ', fontname, line_height), 
+                    line_box.y2))
+            box_width = box.x2 - box.x1
+            font_width = pdf.stringWidth(elemtxt, fontname, fontsize)
 
             # draw the bbox border
             if showBoundingboxes:
                 pdf.rect(
-                    pt.x1, self.height - pt_line.y2, pt.x2 - pt.x1, line_height,
+                    box.x1,
+                    self.height - line_box.y2,
+                    box_width,
+                    line_height,
                     fill=0)
 
             # Adjust relative position of cursor
             # This is equivalent to:
-            #   text.setTextOrigin(pt.x1, self.height - pt_line.y2)
+            #   text.setTextOrigin(pt.x1, self.height - line_box.y2)
             # but the former generates a full text reposition matrix (Tm) in the
             # content stream while this issues a "offset" (Td) command.
             # .moveCursor() is relative to start of the text line, where the
@@ -291,16 +305,11 @@ class HocrTransform():
             # use .getCursor(), since moveCursor() rather unintuitively plans 
             # its moves relative to .getStartOfLine().
             cursor = text.getStartOfLine()
-            dx = pt.x1 - cursor[0]
-            dy = (self.height - pt_line.y2 + intercept / self.dpi * inch) - cursor[1]
+            dx = box.x1 - cursor[0]
+            dy = (self.height - line_box.y2 + intercept / self.dpi * inch) - cursor[1]
             text.moveCursor(dx, dy)
 
-            # scale the width of the text to fill the width of the bbox
-            text.setHorizScale(
-                100 * (pt.x2 - pt.x1) / pdf.stringWidth(
-                    elemtxt, fontname, fontsize))
-
-            # write the text to the page
+            text.setHorizScale(100 * box_width / font_width)
             text.textOut(elemtxt)
         pdf.drawText(text)
 
