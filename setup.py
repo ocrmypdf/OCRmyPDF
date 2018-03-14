@@ -1,6 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # © 2015 James R. Barlow: github.com/jbarlow83
+#
+# This file is part of OCRmyPDF.
+#
+# OCRmyPDF is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OCRmyPDF is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import print_function, unicode_literals
 
@@ -197,7 +212,6 @@ setup(
     url='https://github.com/jbarlow83/OCRmyPDF',
     author='James R. Barlow',
     author_email='jim@purplerock.ca',
-    license='MIT',
     packages=find_packages(exclude=["tests", "tests.*"]),
     keywords=['PDF', 'OCR', 'optical character recognition', 'PDF/A', 'scanning'],
     classifiers=[
@@ -208,7 +222,7 @@ setup(
         "Intended Audience :: End Users/Desktop",
         "Intended Audience :: Science/Research",
         "Intended Audience :: System Administrators",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: MacOS :: MacOS X",
         "Operating System :: POSIX",
         "Operating System :: POSIX :: BSD",
