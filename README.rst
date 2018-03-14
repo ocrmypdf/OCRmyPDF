@@ -139,6 +139,15 @@ Press & Media
 -  `heise Open Source, 09/2014: Texterkennung mit
    OCRmyPDF <http://heise.de/-2356670>`_
 
+License
+-------
+
+The OCRmyPDF software is licensed under the GNU GPLv3. Certain files are covered by other licenses, as noted in their source files. 
+
+The license for each test file varies, and is noted in tests/resources/README.rst. The documentation is licensed under Creative Commons Attribution-ShareAlike 4.0 (CC-BY-SA 4.0).
+
+OCRmyPDF versions prior to 6.0 were licensed under the MIT License.
+
 Disclaimer
 ----------
 

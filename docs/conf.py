@@ -52,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'ocrmypdf'
-copyright = '2017, James R. Barlow'
+copyright = '2018, James R. Barlow. Licensed under Creative Commons Attribution-ShareAlike 4.0.'
 author = 'James R. Barlow'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -60,7 +60,7 @@ author = 'James R. Barlow'
 # built documents.
 #
 # The short X.Y version.
-from ocrmypdf import VERSION as OCRMYPDF_VERSION
+from ocrmypdf import __version__ as OCRMYPDF_VERSION
 
 _version_parts = OCRMYPDF_VERSION.split('.')
 
