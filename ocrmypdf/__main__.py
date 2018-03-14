@@ -305,6 +305,9 @@ advanced.add_argument(
 advanced.add_argument(
     '--user-patterns', metavar='FILE',
     help="Specify the location of the Tesseract user patterns file.")
+advanced.add_argument(
+    '--interword-spaces', action='store_true',
+    help="Add spaces between words with HOCR transformation.")
 
 debugging = parser.add_argument_group(
     "Debugging",
@@ -464,7 +467,11 @@ def check_options_advanced(options, log):
             "--pdfa-image-compression argument has no effect when "
             "--output-type is not 'pdfa', 'pdfa-1', or 'pdfa-2'"
         )
-
+    if options.interword_spaces and options.pdf_renderer != 'hocr':
+        log.warning(
+            "--interword-spaces argument has no effect when "
+            "--pdf-renderer is not 'hocr'"
+        )
 
 def check_options_metadata(options, log):
     import unicodedata

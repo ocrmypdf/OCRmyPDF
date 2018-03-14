@@ -137,7 +137,7 @@ class HocrTransform():
         return s
 
     def to_pdf(self, outFileName, imageFileName=None, showBoundingboxes=False,
-               fontname="Helvetica", invisibleText=False):
+               fontname="Helvetica", invisibleText=False, interwordSpaces=False):
         """
         Creates a PDF file with an image superimposed on top of the text.
         Text is positioned according to the bounding box of the lines in
@@ -180,7 +180,7 @@ class HocrTransform():
                 ".//%sspan[@class='ocrx_word']" % (self.xmlns)) is not None:
             elemclass = "ocrx_word"
 
-        # itterate all text elements
+        # iterate all text elements
         # light green for bounding box of word/line
         pdf.setStrokeColorRGB(1, 0, 0)
         pdf.setLineWidth(0.5)		# bounding box line width
@@ -198,6 +198,14 @@ class HocrTransform():
 
             pxl_coords = self.element_coordinates(elem)
             pt = self.pt_from_pixel(pxl_coords)
+
+            # if the advanced option `--interword-spaces` is true, append a space
+            # to the end of each text element to allow simpler PDF viewers such
+            # as PDF.js to better recognize words in search and copy and paste
+            if interwordSpaces:
+                elemtxt += ' '
+                pt = Rect._make((pt.x1, pt.y1,
+                                 pt.x2 + pdf.stringWidth(' ', fontname, pt.y2 - pt.y1), pt.y2))
 
             # draw the bbox border
             if showBoundingboxes:
@@ -242,10 +250,12 @@ if __name__ == "__main__":
                         help='Resolution of the image that was OCRed')
     parser.add_argument('-i', '--image', default=None,
                         help='Path to the image to be placed above the text')
+    parser.add_argument('--interword-spaces', action='store_true',
+                         default=False, help='Add spaces between words')
     parser.add_argument('hocrfile', help='Path to the hocr file to be parsed')
     parser.add_argument(
         'outputfile', help='Path to the PDF file to be generated')
     args = parser.parse_args()
 
     hocr = HocrTransform(args.hocrfile, args.resolution)
-    hocr.to_pdf(args.outputfile, args.image, args.boundingboxes)
+    hocr.to_pdf(args.outputfile, args.image, args.boundingboxes, interwordSpaces=args.interword_spaces)
