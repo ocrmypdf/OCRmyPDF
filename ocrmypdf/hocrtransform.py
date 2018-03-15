@@ -227,29 +227,38 @@ class HocrTransform():
         line_box = self.pt_from_pixel(pxl_line_coords)
         line_height = line_box.y2 - line_box.y1
 
-        slope, intercept = self.baseline(line)
+        slope, pxl_intercept = self.baseline(line)
         if abs(slope) < 0.005:
             slope = 0.0
         angle = atan(slope)
         cos_a, sin_a = cos(angle), sin(angle)
 
         text = pdf.beginText()
-        fontsize = line_height - abs(intercept / self.dpi * inch)
+        intercept = pxl_intercept / self.dpi * inch
+
+        # Don't allow the font to break out of the bounding box. Division by
+        # cos_a accounts for extra clearance between the glyph's vertical axis
+        # on a sloped baseline and the edge of the bounding box.
+        fontsize = (line_height - abs(intercept)) / cos_a
         text.setFont(fontname, fontsize)
         if invisibleText:
             text.setTextRenderMode(3)  # Invisible (indicates OCR text)
 
-        baseline_y1 = self.height - (line_box.y2 + intercept / self.dpi * inch)
+        # Intercept is normally negative, so this places it above the bottom
+        # of the line box
+        baseline_y2 = self.height - (line_box.y2 + intercept)
 
         if showBoundingboxes:
             # draw the baseline in magenta, dashed
             pdf.setDash()
             pdf.setStrokeColorRGB(0.95, 0.65, 0.95)
             pdf.setLineWidth(0.5)
+            # negate slope because it is defined as a rise/run in pixel
+            # coordinates and page coordinates have the y axis flipped
             pdf.line(line_box.x1, 
-                     baseline_y1,
+                     baseline_y2,
                      line_box.x2,
-                     self.polyval((-slope, baseline_y1), 
+                     self.polyval((-slope, baseline_y2), 
                                   line_box.x2 - line_box.x1))
             # light green for bounding box of word/line
             pdf.setDash(6, 3)
@@ -257,7 +266,7 @@ class HocrTransform():
 
         text.setTextTransform(
             cos_a, -sin_a, sin_a, cos_a,
-            line_box.x1, self.height - line_box.y2
+            line_box.x1, baseline_y2
         )
         pdf.setFillColorRGB(0, 0, 0)  # text in black
 
@@ -305,9 +314,12 @@ class HocrTransform():
             # "text line" means whatever reportlab defines it as. Do not use
             # use .getCursor(), since moveCursor() rather unintuitively plans 
             # its moves relative to .getStartOfLine().
+            # For skewed lines, in the text transform we set up a rotated
+            # coordinate system, so we don't have to account for the 
+            # incremental offset. Surprisingly most PDF viewers can handle this.
             cursor = text.getStartOfLine()
             dx = box.x1 - cursor[0]
-            dy = (self.height - line_box.y2 + intercept / self.dpi * inch) - cursor[1]
+            dy = baseline_y2 - cursor[1]            
             text.moveCursor(dx, dy)
 
             text.setHorizScale(100 * box_width / font_width)
