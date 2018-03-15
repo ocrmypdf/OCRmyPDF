@@ -83,6 +83,7 @@ OCRmyPDF is limited by the Tesseract OCR engine.  As such it experiences these l
 OCRmyPDF is also limited by the PDF specification:
 
 * PDF encodes the position of text glyphs but does not encode document structure.  There is no markup that divides a document in sections, paragraphs, sentences, or even words (since blank spaces are not represented). As such all elements of document structure including the spaces between words must be derived heuristically.  Some PDF viewers do a better job of this than others.
+* Because some popular open source PDF viewers have a particularly hard time with spaces betweem words, OCRmyPDF appends a space to each text element as a workaround. While this mixes document structure with graphical information that ideally should be left to the PDF viewer to interpret, it improves compatibility with some viewers and does not cause problems for better ones.
 
 Ghostscript also imposes some limitations:
 
