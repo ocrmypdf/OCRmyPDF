@@ -233,7 +233,8 @@ setup(
         'reportlab>=3.3.0',     # oldest released version with sane image handling
         'PyPDF2>=1.26',         # pure Python, so track HEAD closely
         'img2pdf>=0.2.3',       # pure Python, so track HEAD closely
-        'cffi>=1.9.1'           # must be a setup and install requirement
+        'cffi>=1.9.1',          # must be a setup and install requirement
+        'PyMuPDF >= 1.12.3'
     ],
     tests_require=tests_require,
     entry_points={
