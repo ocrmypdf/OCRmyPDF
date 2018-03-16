@@ -8,6 +8,15 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
 v5.7.0
 ------
 
+-   Fixed an issue that caused poor CPU utilization on machines more than 4 cores when running Tesseract 4.
+
+-   The 'hocr' renderer has been improved. The 'sandwich' and 'tesseract' renderers are still better for most use cases, but 'hocr' may be useful for people who work with the PDF.js renderer in English/ASCII languages.
+
+    + It now formats text in a matter that is easier for certain PDF viewers to select and extract copy and paste text. This should help macOS Preview and PDF.js in particular.
+    + The appearance of selected text and behavior of selecting text is improved.
+    + The PDF content stream now uses relative moves, making it more compact and easier for viewers to determine when two words on the same line.
+    + It can now deal with text on a skewed baseline.
+    + Thanks to @cforcey for the pull request, @jbreiden for many helpful suggestions, @ctbarbour for another round of improvements, and @acaloiaro for an independent review.
 
 v5.6.3
 ------
