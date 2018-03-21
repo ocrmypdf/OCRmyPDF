@@ -2,14 +2,15 @@
 
 from contextlib import suppress
 from shutil import copyfileobj
+from pathlib import Path
 import sys
 import os
 import shutil
 import img2pdf
 import re
 import PyPDF2 as pypdf
-from PIL import Image
 
+from PIL import Image
 from ruffus import formatter, regex, Pipeline, suffix
 
 from .hocrtransform import HocrTransform
@@ -211,6 +212,7 @@ def repair_pdf(
 
 
 def get_pageinfo(input_file, context):
+    "Get zero-based page info implied by filename, e.g. 000002.pdf -> 1"
     pageno = page_number(input_file) - 1
     pageinfo = context.get_pdfinfo()[pageno]
     return pageinfo
