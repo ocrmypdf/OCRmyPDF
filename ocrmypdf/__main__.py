@@ -23,7 +23,8 @@ import ruffus.proxy_logger as proxy_logger
 from .pipeline import JobContext, JobContextManager, \
     cleanup_working_files, build_pipeline
 from .pdfa import file_claims_pdfa
-from .helpers import is_iterable_notstr, re_symlink, is_file_writable
+from .helpers import is_iterable_notstr, re_symlink, is_file_writable, \
+    available_cpu_count
 from .exec import tesseract, qpdf, ghostscript
 from . import PROGRAM_NAME, VERSION
 
@@ -529,24 +530,6 @@ def logging_factory(logger_name, logger_args):
         handler.setLevel(logging.INFO)
     root_logger.addHandler(handler)
     return root_logger
-
-
-def available_cpu_count():
-    try:
-        return multiprocessing.cpu_count()
-    except NotImplementedError:
-        pass
-
-    try:
-        import psutil
-        return psutil.cpu_count()
-    except (ImportError, AttributeError):
-        pass
-
-    complain(
-        "Could not get CPU count.  Assuming one (1) CPU."
-        "Use -j N to set manually.")
-    return 1
 
 
 def cleanup_ruffus_error_message(msg):

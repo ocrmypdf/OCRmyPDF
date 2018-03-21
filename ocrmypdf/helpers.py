@@ -6,6 +6,7 @@ from contextlib import suppress, contextmanager
 from pathlib import Path
 import sys
 import os
+import multiprocessing
 
 
 def re_symlink(input_file, soft_link_name, log=None):
@@ -55,6 +56,24 @@ def is_iterable_notstr(thing):
 def page_number(input_file):
     "Get one-based page number implied by filename (000002.pdf -> 2)"
     return int(os.path.basename(input_file)[0:6])
+
+
+def available_cpu_count():
+    try:
+        return multiprocessing.cpu_count()
+    except NotImplementedError:
+        pass
+
+    try:
+        import psutil
+        return psutil.cpu_count()
+    except (ImportError, AttributeError):
+        pass
+
+    complain(
+        "Could not get CPU count.  Assuming one (1) CPU."
+        "Use -j N to set manually.")
+    return 1
 
 
 def is_file_writable(test_file):
