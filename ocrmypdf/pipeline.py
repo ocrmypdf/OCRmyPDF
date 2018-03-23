@@ -978,6 +978,29 @@ def merge_pages_qpdf(
                log=log)
 
 
+def merge_pages_mupdf(
+        input_files_groups,
+        output_file,
+        log,
+        context):
+    options = context.get_options()
+
+    pdf_pages, metadata_file = _merge_pages_common(
+        input_files_groups, output_file, log, context)
+
+    import fitz
+    doc = fitz.Document()
+    
+    for pdf_page in pdf_pages:
+        page = fitz.open(pdf_page)
+        doc.insertPDF(page)
+
+    metadata = fitz.open(metadata_file)
+    doc.setToC(metadata.getToC())
+    doc.setMetadata(metadata.metadata)
+    doc.save(output_file, garbage=4)
+
+
 def merge_sidecars(
         input_files_groups,
         output_file,
@@ -1254,7 +1277,7 @@ def build_pipeline(options, work_folder, log, context):
     task_merge_pages_ghostscript.active_if(options.output_type.startswith('pdfa'))
 
     task_merge_pages_qpdf = main_pipeline.merge(
-        task_func=merge_pages_qpdf,
+        task_func=merge_pages_mupdf,
         input=[task_combine_layers,
                task_render_hocr_debug_page,
                task_skip_page,
