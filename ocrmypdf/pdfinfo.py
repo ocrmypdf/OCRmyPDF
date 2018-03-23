@@ -693,6 +693,12 @@ class PdfInfo:
     def has_userunit(self):
         return any(page.userunit != 1.0 for page in self.pages)
 
+    @property
+    def filename(self):
+        if not isinstance(self._infile, (str, Path)):
+            raise NotImplementedError("can't get filename from stream")
+        return self._infile
+
     def __getitem__(self, item):
         return self._pages[item]
 

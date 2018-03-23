@@ -2,14 +2,15 @@
 
 from contextlib import suppress
 from shutil import copyfileobj
+from pathlib import Path
 import sys
 import os
 import shutil
 import img2pdf
 import re
 import PyPDF2 as pypdf
-from PIL import Image
 
+from PIL import Image
 from ruffus import formatter, regex, Pipeline, suffix
 
 from .hocrtransform import HocrTransform
@@ -211,6 +212,7 @@ def repair_pdf(
 
 
 def get_pageinfo(input_file, context):
+    "Get zero-based page info implied by filename, e.g. 000002.pdf -> 1"
     pageno = page_number(input_file) - 1
     pageinfo = context.get_pdfinfo()[pageno]
     return pageinfo
@@ -303,7 +305,7 @@ def is_ocr_required(pageinfo, log, options):
     return ocr_required
 
 
-def split_pages(
+def pre_split_pages(
         input_files,
         output_files,
         log,
@@ -329,20 +331,45 @@ def split_pages(
 
     pdfinfo = context.get_pdfinfo()
     npages = len(pdfinfo)
-    qpdf.split_pages(input_file, work_folder, npages)
 
-    from glob import glob
-    for filename in glob(os.path.join(work_folder, '*.page.pdf')):
-        pageinfo = get_pageinfo(filename, context)
+    # Ruffus needs to see a file for any task it generates, so create
+    # empty placeholders for every page.
+    for n in range(npages):
+        page = Path(work_folder) / '{0:06d}.presplit.pdf'.format(n + 1)
+        page.touch()
 
+
+def split_page(
+        placeholder_file,
+        output_file,
+        log,
+        context):
+    pageno = page_number(placeholder_file) - 1
+    input_pdf = context.get_pdfinfo().filename
+    qpdf.extract_page(input_pdf, output_file, pageno)
+
+
+def ocr_or_skip(
+        input_files,
+        output_files,
+        log,
+        context):
+    options = context.get_options()
+    work_folder = context.get_work_folder()
+    pdfinfo =  context.get_pdfinfo()
+
+    for input_file in input_files:
+        pageno = page_number(input_file) - 1
+        pageinfo = pdfinfo[pageno]
         alt_suffix = \
             '.ocr.page.pdf' if is_ocr_required(pageinfo, log, options) \
             else '.skip.page.pdf'
+
         re_symlink(
-            filename,
+            input_file,
             os.path.join(
                 work_folder,
-                os.path.basename(filename)[0:6] + alt_suffix),
+                os.path.basename(input_file)[0:6] + alt_suffix),
             log)
 
 
@@ -1033,16 +1060,31 @@ def build_pipeline(options, work_folder, log, context):
         extras=[log, context])
 
     # Split (kwargs for split seems to be broken, so pass plain args)
-    task_split_pages = main_pipeline.split(
-        split_pages,
+    task_pre_split_pages = main_pipeline.split(
+        pre_split_pages,
         task_repair_pdf,
-        os.path.join(work_folder, '*.page.pdf'),
+        os.path.join(work_folder, '*.presplit.pdf'),
+        extras=[log, context])
+
+    task_split_pages = main_pipeline.transform(
+        task_func=split_page,
+        input=task_pre_split_pages,
+        filter=suffix('.presplit.pdf'),
+        output='.page.pdf',
+        output_dir=work_folder,
+        extras=[log, context])
+
+    task_ocr_or_skip = main_pipeline.split(
+        ocr_or_skip,
+        task_split_pages,
+        [os.path.join(work_folder, '*.ocr.page.pdf'),
+         os.path.join(work_folder, '*.skip.page.pdf')],
         extras=[log, context])
 
     # Rasterize preview
     task_rasterize_preview = main_pipeline.transform(
         task_func=rasterize_preview,
-        input=task_split_pages,
+        input=task_ocr_or_skip,
         filter=suffix('.page.pdf'),
         output='.preview.jpg',
         output_dir=work_folder,
@@ -1052,7 +1094,7 @@ def build_pipeline(options, work_folder, log, context):
     # Orient
     task_orient_page = main_pipeline.collate(
         task_func=orient_page,
-        input=[task_split_pages, task_rasterize_preview],
+        input=[task_ocr_or_skip, task_rasterize_preview],
         filter=regex(r".*/(\d{6})(\.ocr|\.skip)(?:\.page\.pdf|\.preview\.jpg)"),
         output=os.path.join(work_folder, r'\1\2.oriented.pdf'),
         extras=[log, context])
