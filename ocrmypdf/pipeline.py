@@ -705,8 +705,8 @@ def combine_layers(
     image = next(ii for ii in flatten_groups(infiles)
                  if ii.endswith('.image-layer.pdf'))
 
-    pdf_text = pypdf.PdfFileReader(open(text, "rb"))
-    pdf_image = pypdf.PdfFileReader(open(image, "rb"))
+    pdf_text = pypdf.PdfFileReader(text)
+    pdf_image = pypdf.PdfFileReader(image)
 
     page_text = pdf_text.getPage(0)
 
