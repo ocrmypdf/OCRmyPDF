@@ -705,8 +705,8 @@ def combine_layers(
     image = next(ii for ii in flatten_groups(infiles)
                  if ii.endswith('.image-layer.pdf'))
 
-    pdf_text = pypdf.PdfFileReader(open(text, "rb"))
-    pdf_image = pypdf.PdfFileReader(open(image, "rb"))
+    pdf_text = pypdf.PdfFileReader(text)
+    pdf_image = pypdf.PdfFileReader(image)
 
     page_text = pdf_text.getPage(0)
 
@@ -900,12 +900,21 @@ def skip_page(
     re_symlink(input_file, output_file, log)
 
 
-def merge_pages_ghostscript(
+def _merge_pages_common(
         input_files_groups,
         output_file,
         log,
         context):
-    options = context.get_options()
+    """Determine ordered list of PDF pages to merge. Returns PDF from which
+    metadata should be drawn if present (for qpdf)."""
+
+    input_files = list(f for f in flatten_groups(input_files_groups)
+                       if not f.endswith('.txt'))
+    metadata_file = next(
+        (ii for ii in input_files if ii.endswith('.repaired.pdf')), None)
+    if metadata_file in input_files:
+        input_files.remove(metadata_file)
+
     def input_file_order(s):
         '''Sort order: All rendered pages followed
         by their debug page, if any, followed by Postscript stub.
@@ -919,10 +928,20 @@ def merge_pages_ghostscript(
             key += 1
         return key
 
-    input_files = (f for f in flatten_groups(input_files_groups)
-                   if not f.endswith('.txt'))
     pdf_pages = sorted(input_files, key=input_file_order)
     log.debug("Final pages: " + "\n".join(pdf_pages))
+
+    return pdf_pages, metadata_file
+
+
+def merge_pages_ghostscript(
+        input_files_groups,
+        output_file,
+        log,
+        context):
+    options = context.get_options()
+    pdf_pages, _ = _merge_pages_common(
+        input_files_groups, output_file, log, context)
     input_pdfinfo = context.get_pdfinfo()
     ghostscript.generate_pdfa(
         pdf_version=input_pdfinfo.min_version,
@@ -940,23 +959,8 @@ def merge_pages_qpdf(
         log,
         context):
     options = context.get_options()
-
-    input_files = list(f for f in flatten_groups(input_files_groups)
-                       if not f.endswith('.txt'))
-    metadata_file = next(
-        (ii for ii in input_files if ii.endswith('.repaired.pdf')))
-    input_files.remove(metadata_file)
-
-    def input_file_order(s):
-        '''Sort order: All rendered pages followed
-        by their debug page.'''
-        key = page_number(s) * 10
-        if 'debug' in os.path.basename(s):
-            key += 1
-        return key
-
-    pdf_pages = sorted(input_files, key=input_file_order)
-    log.debug("Final pages: " + "\n".join(pdf_pages))
+    pdf_pages, metadata_file = _merge_pages_common(
+        input_files_groups, output_file, log, context)
 
     reader_metadata = pypdf.PdfFileReader(metadata_file)
     pdfmark = get_pdfmark(reader_metadata, options)
@@ -965,7 +969,8 @@ def merge_pages_qpdf(
     first_page = pypdf.PdfFileReader(pdf_pages[0])
 
     writer = pypdf.PdfFileWriter()
-    writer._header = b'%PDF-' + _pdf_guess_version(pdf_pages[0])  # copy version from source
+    # copy version from source
+    writer._header = b'%PDF-' + _pdf_guess_version(pdf_pages[0])
     writer.appendPagesFromReader(first_page)
     writer.addMetadata(pdfmark)
     writer_file = pdf_pages[0].replace('.pdf', '.metadata.pdf')
@@ -977,6 +982,34 @@ def merge_pages_qpdf(
     qpdf.merge(input_files=pdf_pages, output_file=output_file,
                min_version=context.get_pdfinfo().min_version,
                log=log)
+
+
+def merge_pages_mupdf(
+        input_files_groups,
+        output_file,
+        log,
+        context):
+    options = context.get_options()
+
+    pdf_pages, metadata_file = _merge_pages_common(
+        input_files_groups, output_file, log, context)
+
+    import fitz
+    doc = fitz.Document()
+
+    reader_metadata = pypdf.PdfFileReader(metadata_file)
+    pdfmark = get_pdfmark(reader_metadata, options)
+    pdfmark['/Producer'] = 'qpdf ' + qpdf.version()
+    pymupdf_metadata = {k[1:].lower() : v for k, v in pdfmark.items()}
+
+    for pdf_page in pdf_pages:
+        page = fitz.open(pdf_page)
+        doc.insertPDF(page)
+
+    metadata = fitz.open(metadata_file)
+    doc.setToC(metadata.getToC())
+    doc.setMetadata(pymupdf_metadata)
+    doc.save(output_file, garbage=4)
 
 
 def merge_sidecars(
@@ -1255,7 +1288,7 @@ def build_pipeline(options, work_folder, log, context):
     task_merge_pages_ghostscript.active_if(options.output_type.startswith('pdfa'))
 
     task_merge_pages_qpdf = main_pipeline.merge(
-        task_func=merge_pages_qpdf,
+        task_func=merge_pages_mupdf,
         input=[task_combine_layers,
                task_render_hocr_debug_page,
                task_skip_page,
