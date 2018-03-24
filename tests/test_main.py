@@ -157,6 +157,7 @@ def test_exotic_image(spoof_tesseract_cache, pdf, renderer, output_type,
         '-v', '1',
         '--output-type', output_type,
         '--sidecar',
+        '--skip-text',
         '--pdf-renderer', renderer, env=spoof_tesseract_cache)
 
     assert outfile.with_suffix('.pdf.txt').exists()
@@ -745,6 +746,7 @@ def test_very_high_dpi(spoof_tesseract_cache, resources, outpdf):
 
 def test_overlay(spoof_tesseract_noop, resources, outpdf):
     check_ocrmypdf(resources / 'overlay.pdf', outpdf,
+                   '--skip-text',
                    env=spoof_tesseract_noop)
 
 
