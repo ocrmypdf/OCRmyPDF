@@ -248,7 +248,7 @@ setup(
         'PyPDF2>=1.26',         # pure Python, so track HEAD closely
         'img2pdf>=0.2.3',       # pure Python, so track HEAD closely
         'cffi>=1.9.1',          # must be a setup and install requirement
-        'PyMuPDF >= 1.12.4'
+        'PyMuPDF >= 1.12.4, != 1.12.4.1'
     ],
     tests_require=tests_require,
     entry_points={
