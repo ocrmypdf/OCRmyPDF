@@ -66,6 +66,7 @@ def real_tesseract():
     return  # Not reachable
 
 def main():
+    os.environ['PATH'] = os.environ['_OCRMYPDF_SAVE_PATH']
     operation = sys.argv[-2]
     sidecar = False
     if sys.argv[-1] == 'txt':

@@ -24,7 +24,7 @@ import resource
 
 from ..exceptions import InputFileError, SubprocessOutputError, \
     MissingDependencyError, EncryptedPdfError
-from . import get_program, get_version
+from . import  get_version
 from ..helpers import re_symlink
 
 
@@ -35,7 +35,7 @@ def version():
 
 def check(input_file, log=None):
     args_qpdf = [
-        get_program('qpdf'),
+        'qpdf',
         '--check',
         input_file
     ]
@@ -71,7 +71,7 @@ def _probably_encrypted(e):
 
 def repair(input_file, output_file, log):
     args_qpdf = [
-        get_program('qpdf'), input_file, output_file
+        'qpdf', input_file, output_file
     ]
     try:
         run(args_qpdf, stderr=STDOUT, stdout=PIPE, universal_newlines=True, 
@@ -98,7 +98,7 @@ def repair(input_file, output_file, log):
 def get_npages(input_file, log):
     try:
         pages = run(
-            [get_program('qpdf'), '--show-npages', input_file],
+            ['qpdf', '--show-npages', input_file],
             universal_newlines=True, check=True, stdout=PIPE, stderr=STDOUT)
     except CalledProcessError as e:
         if e.returncode == 2 and e.output.find('No such file'):
@@ -115,7 +115,7 @@ def split_pages(input_file, work_folder, npages):
     """
     for n in range(int(npages)):
         args_qpdf = [
-            get_program('qpdf'), input_file,
+            'qpdf', input_file,
             '--pages', input_file, '{0}'.format(n + 1), '--',
             os.path.join(work_folder, '{0:06d}.page.pdf'.format(n + 1))
         ]
@@ -124,7 +124,7 @@ def split_pages(input_file, work_folder, npages):
 
 def extract_page(input_file, output_file, pageno):
     args_qpdf = [
-        get_program('qpdf'), input_file,
+        'qpdf', input_file,
         '--pages', input_file, '{0}'.format(pageno + 1), '--',
         output_file
     ]
@@ -147,7 +147,7 @@ def _merge_inner(input_files, output_file, min_version=None, log=None):
         import logging as log
 
     args_qpdf = [
-        get_program('qpdf')
+        'qpdf'
     ] + version_arg + [
         input_files[0], '--pages'
     ] + input_files + ['--', output_file]

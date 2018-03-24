@@ -8,15 +8,26 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
 v6.0.0
 ------
 
--   The software license has been changed to GPLv3. The license of test files 
+
+-   The software license has been changed to GPLv3. Test resource files and some individual sources may have other licenses.
 
 -   OCRmyPDF now depends on `PyMuPDF <https://pymupdf.readthedocs.io/en/latest/installation/>`_. Including PyMuPDF is the primary reason for the change to GPLv3.
+
+-   Other backward incompatible changes
+
+    + The ``OCRMYPDF_TESSERACT``, ``OCRMYPDF_QPDF``, ``OCRMYPDF_GS`` and ``OCRMYPDF_UNPAPER`` environment variables are no longer used. Change ``PATH`` if you need to override the external programs OCRmyPDF uses.
+
+    + The function ``ocrmypdf.exec.get_program`` was removed.
+
+    + The deprecated module ``ocrmypdf.pageinfo`` was removed.
 
 -   Fixed an issue where OCRmyPDF failed to detect existing text on pages, depending on how the text and fonts were stored within the PDF. (#233, #232)
 
 -   Fixed an issue that caused dramatic inflation of file sizes when ``--skip-text --output-type pdf`` was used. OCRmyPDF now removes duplicate resources such as fonts, images and other objects that it generates. (#237)
 
 -   Improved performance of the inital page splitting step. Originally this step was not believed to be expensive and ran in a process. Large file testing revealed it to be a bottleneck, so it is now parallelized. (#234)
+
+-
 
 
 v5.7.0

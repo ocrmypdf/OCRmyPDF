@@ -28,7 +28,7 @@ from subprocess import PIPE, CalledProcessError, \
 
 from ..exceptions import MissingDependencyError, TesseractConfigError
 from ..helpers import page_number
-from . import get_program, get_version
+from . import get_version
 
 OrientationConfidence = namedtuple(
     'OrientationConfidence',
@@ -70,7 +70,7 @@ def has_textonly_pdf():
     parse the parameter list
     """
     args_tess = [
-        get_program('tesseract'),
+        'tesseract',
         '--print-parameters'
     ]
     params = ''
@@ -94,7 +94,7 @@ def psm():
 @lru_cache(maxsize=1)
 def languages():
     args_tess = [
-        get_program('tesseract'),
+        'tesseract',
         '--list-langs'
     ]
     try:
@@ -113,7 +113,7 @@ def languages():
 
 def tess_base_args(langs, engine_mode):
     args = [
-        get_program('tesseract'),
+        'tesseract',
     ]
     if langs:
         args.extend(['-l', '+'.join(langs)])

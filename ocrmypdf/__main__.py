@@ -725,6 +725,19 @@ def preamble(_log):
     _log.debug('qpdf ' + qpdf.version())
 
 
+def check_environ(options, _log):
+    old_envvars = (
+        'OCRMYPDF_TESSERACT',
+        'OCRMYPDF_QPDF',
+        'OCRMYPDF_GS',
+        'OCRMYPDF_UNPAPER')
+    for k in old_envvars:
+        if k in os.environ:
+            _log.warning(textwrap.dedent("""\
+                OCRmyPDF no longer uses the environment variable {}. 
+                Change PATH to select alternate programs.""".format(k)))
+
+
 def check_input_file(options, _log, start_input_file):
     if options.input_file == '-':
         # stdin
@@ -789,6 +802,7 @@ def run_pipeline():
     # jobs run multithreaded.
     if tesseract.v4():
         os.environ.setdefault('OMP_THREAD_LIMIT', '1')
+    check_environ(options, _log)
 
     try:
         work_folder = mkdtemp(prefix="com.github.ocrmypdf.")

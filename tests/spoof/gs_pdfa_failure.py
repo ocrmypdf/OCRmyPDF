@@ -34,6 +34,7 @@ def real_ghostscript(argv):
 
 
 def main():
+    os.environ['PATH'] = os.environ['_OCRMYPDF_SAVE_PATH']
     if '--version' in sys.argv:
         print('9.20')
         print('SPOOFED: ' + os.path.basename(__file__))

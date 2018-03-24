@@ -40,11 +40,11 @@ not permitted in PDF/A-2, overprint mode not set"""
 
 
 def main():
+    os.environ['PATH'] = os.environ['_OCRMYPDF_SAVE_PATH']
     if '--version' in sys.argv:
         print('9.20')
         print('SPOOFED: ' + os.path.basename(__file__))
         sys.exit(0)
-
     gs_args = ['gs'] + sys.argv[1:]
     check_call(gs_args)
 

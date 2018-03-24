@@ -23,6 +23,7 @@ import sys
 import os
 import PyPDF2 as pypdf
 from contextlib import contextmanager
+from pathlib import Path
 
 # pylint: disable=no-member
 spoof = pytest.helpers.spoof
@@ -31,8 +32,7 @@ spoof = pytest.helpers.spoof
 @pytest.fixture
 def ensure_tess4():
     if tesseract.v4():
-        # Either "tesseract" on $PATH is already v4, or
-        # OCRMYPDF_TESSERACT is tess4 already
+        # "tesseract" on $PATH is already v4
         return os.environ.copy()
 
     if os.environ.get('OCRMYPDF_TESS4'):
@@ -41,7 +41,9 @@ def ensure_tess4():
         # setting OCRMYPDF_TESS4 to test tess4 and PATH to point to tess3
         # on a system with both installed.
         env = os.environ.copy()
-        env['OCRMYPDF_TESSERACT'] = env['OCRMYPDF_TESS4']
+        tess4 = Path(os.environ['OCRMYPDF_TESS4'])
+        assert tess4.is_file()
+        env['PATH'] = tess4.parent + ':' + env['PATH']
         return env
 
     raise EnvironmentError("Can't find Tesseract 4")

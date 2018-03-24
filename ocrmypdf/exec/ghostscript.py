@@ -22,7 +22,7 @@ from functools import lru_cache
 import re
 import sys
 from PIL import Image
-from . import get_program, get_version
+from . import get_version
 from ..exceptions import SubprocessOutputError, MissingDependencyError
 from ..helpers import fspath
 
@@ -61,7 +61,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
         page_dpi = res
     with NamedTemporaryFile(delete=True) as tmp:
         args_gs = [
-            get_program('gs'),
+            'gs',
             '-dQUIET',
             '-dSAFER',
             '-dBATCH',
@@ -129,7 +129,7 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
 
     with NamedTemporaryFile(delete=True) as gs_pdf:
         args_gs = [
-            get_program("gs"),
+            "gs",
             "-dQUIET",
             "-dBATCH",
             "-dNOPAUSE",

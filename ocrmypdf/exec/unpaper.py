@@ -24,7 +24,7 @@ import sys
 import os
 from functools import lru_cache
 from ..exceptions import MissingDependencyError
-from . import get_program, get_version
+from . import get_version
 
 
 try:
@@ -41,7 +41,7 @@ def version():
 
 def run(input_file, output_file, dpi, log, mode_args):
     args_unpaper = [
-        get_program('unpaper'),
+        'unpaper',
         '-v',
         '--dpi', str(dpi)
     ] + mode_args

@@ -60,36 +60,41 @@ OCRMYPDF = [sys.executable, '-m', 'ocrmypdf']
 
 
 @pytest.helpers.register
-def spoof(**kwargs):
-    """Modify environment variables to override subprocess executables
+def spoof(tmpdir_factory, **kwargs):
+    """Modify PATH to override subprocess executables
 
     spoof(program1='replacement', ...)
 
-    Before running any executable, ocrmypdf checks the environment variable
-    OCRMYPDF_PROGRAMNAME to override default program name/location, e.g.
-    OCRMYPDF_GS redirects from the system path Ghostscript ("gs") to elsewhere.
+    Creates temporary directory with symlinks to targets.
 
     """
     env = os.environ.copy()
+    slug = '-'.join(v.replace('.py', '') for v in sorted(kwargs.values()))
+    spoofer_base = Path(tmpdir_factory.mktemp('spoofers'))
+    tmpdir = spoofer_base / slug
+    tmpdir.mkdir(parents=True)
 
     for replace_program, with_spoof in kwargs.items():
-        spoofer = os.path.join(SPOOF_PATH, with_spoof)
-        if not os.access(spoofer, os.X_OK):
-            os.chmod(spoofer, 0o755)
-        env['OCRMYPDF_' + replace_program.upper()] = spoofer
+        spoofer = Path(SPOOF_PATH) / with_spoof
+        spoofer.chmod(0o755)
+        (tmpdir / replace_program).symlink_to(spoofer)
+
+    env['_OCRMYPDF_SAVE_PATH'] = env['PATH']
+    env['PATH'] = str(tmpdir) + ":" + env['PATH']
+    
     return env
 
 
-@pytest.fixture
-def spoof_tesseract_noop():
-    return spoof(tesseract='tesseract_noop.py')
+@pytest.fixture(scope='session')
+def spoof_tesseract_noop(tmpdir_factory):
+    return spoof(tmpdir_factory, tesseract='tesseract_noop.py')
 
 
-@pytest.fixture
-def spoof_tesseract_cache():
+@pytest.fixture(scope='session')
+def spoof_tesseract_cache(tmpdir_factory):
     if running_in_docker():
         return os.environ.copy()
-    return spoof(tesseract="tesseract_cache.py")
+    return spoof(tmpdir_factory, tesseract="tesseract_cache.py")
 
 
 @pytest.fixture
