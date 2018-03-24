@@ -6,5 +6,5 @@ Pillow == 5.0.0
 reportlab == 3.4.0
 PyPDF2 == 1.26.0
 img2pdf == 0.2.4
-cffi == 1.11.2
+cffi == 1.11.5
 PyMuPDF == 1.12.4
