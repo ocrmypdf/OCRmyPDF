@@ -912,11 +912,17 @@ def _merge_pages_common(
                        if not f.endswith('.txt'))
     metadata_file = next(
         (ii for ii in input_files if ii.endswith('.repaired.pdf')), None)
-    input_files.remove(metadata_file)
+    if metadata_file in input_files:
+        input_files.remove(metadata_file)
 
     def input_file_order(s):
         '''Sort order: All rendered pages followed
-        by their debug page.'''
+        by their debug page, if any, followed by Postscript stub.
+        Ghostscript documentation has the Postscript stub at the
+        beginning, but it works at the end and also gets document info
+        right that way.'''
+        if s.endswith('.ps'):
+            return 99999999
         key = page_number(s) * 10
         if 'debug' in os.path.basename(s):
             key += 1
@@ -990,14 +996,19 @@ def merge_pages_mupdf(
 
     import fitz
     doc = fitz.Document()
-    
+
+    reader_metadata = pypdf.PdfFileReader(metadata_file)
+    pdfmark = get_pdfmark(reader_metadata, options)
+    pdfmark['/Producer'] = 'qpdf ' + qpdf.version()
+    pymupdf_metadata = {k[1:].lower() : v for k, v in pdfmark.items()}
+
     for pdf_page in pdf_pages:
         page = fitz.open(pdf_page)
         doc.insertPDF(page)
 
     metadata = fitz.open(metadata_file)
     doc.setToC(metadata.getToC())
-    doc.setMetadata(metadata.metadata)
+    doc.setMetadata(pymupdf_metadata)
     doc.save(output_file, garbage=4)
 
 
