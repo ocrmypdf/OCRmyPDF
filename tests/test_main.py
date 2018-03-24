@@ -87,12 +87,7 @@ def spoof_qpdf_always_error(tmpdir_factory):
 
 
 @pytest.fixture(scope='session')
-def spoof_unpaper_missing(tmpdir_factory):
-    return spoof(tmpdir_factory)  # 
-
-
-@pytest.fixture(scope='session')
-def spoof_unpaper_old(tmpdir_factory):
+def spoof_unpaper_oldversion(tmpdir_factory):
     return spoof(tmpdir_factory, unpaper='unpaper_oldversion.py')
 
 
