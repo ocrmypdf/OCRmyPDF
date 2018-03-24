@@ -6,9 +6,11 @@ from pathlib import Path
 import sys
 import os
 import shutil
-import img2pdf
 import re
+
+import img2pdf
 import PyPDF2 as pypdf
+import fitz
 
 from PIL import Image
 from ruffus import formatter, regex, Pipeline, suffix
@@ -994,12 +996,11 @@ def merge_pages_mupdf(
     pdf_pages, metadata_file = _merge_pages_common(
         input_files_groups, output_file, log, context)
 
-    import fitz
     doc = fitz.Document()
 
     reader_metadata = pypdf.PdfFileReader(metadata_file)
     pdfmark = get_pdfmark(reader_metadata, options)
-    pdfmark['/Producer'] = 'qpdf ' + qpdf.version()
+    pdfmark['/Producer'] = 'PyMuPDF ' + fitz.version[0]
     pymupdf_metadata = {k[1:].lower() : v for k, v in pdfmark.items()}
 
     for pdf_page in pdf_pages:
@@ -1009,7 +1010,7 @@ def merge_pages_mupdf(
     metadata = fitz.open(metadata_file)
     doc.setToC(metadata.getToC())
     doc.setMetadata(pymupdf_metadata)
-    doc.save(output_file, garbage=4)
+    doc.save(output_file, garbage=4, deflate=True)
 
 
 def merge_sidecars(
@@ -1287,7 +1288,7 @@ def build_pipeline(options, work_folder, log, context):
         extras=[log, context])
     task_merge_pages_ghostscript.active_if(options.output_type.startswith('pdfa'))
 
-    task_merge_pages_qpdf = main_pipeline.merge(
+    task_merge_pages_mupdf = main_pipeline.merge(
         task_func=merge_pages_mupdf,
         input=[task_combine_layers,
                task_render_hocr_debug_page,
@@ -1296,7 +1297,7 @@ def build_pipeline(options, work_folder, log, context):
                task_repair_pdf],
         output=os.path.join(work_folder, 'merged.pdf'),
         extras=[log, context])
-    task_merge_pages_qpdf.active_if(options.output_type == 'pdf')
+    task_merge_pages_mupdf.active_if(options.output_type == 'pdf')
 
     task_merge_sidecars = main_pipeline.merge(
         task_func=merge_sidecars,
@@ -1310,6 +1311,6 @@ def build_pipeline(options, work_folder, log, context):
     # Finalize
     main_pipeline.merge(
         task_func=copy_final,
-        input=[task_merge_pages_ghostscript, task_merge_pages_qpdf],
+        input=[task_merge_pages_ghostscript, task_merge_pages_mupdf],
         output=options.output_file,
         extras=[log, context])
