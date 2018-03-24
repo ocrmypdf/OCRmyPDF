@@ -6,13 +6,18 @@ from decimal import Decimal
 from math import hypot, isclose
 import re
 import sys
-import PyPDF2 as pypdf
 from collections import namedtuple
 from collections.abc import MutableMapping, Mapping
 import warnings
 from pathlib import Path
 from enum import Enum
+from contextlib import contextmanager
+
+import PyPDF2 as pypdf
+from fitz import Document
+
 from .helpers import universal_open
+
 
 
 matrix_mult = pypdf.pdf.utils.matrixMultiply
@@ -525,32 +530,24 @@ def _find_images(*, pdf, container, shorthand=None):
     yield from _find_form_xobject_images(pdf, container, contentsinfo)
 
 
-def _page_has_text(pdf, page):
-    if not '/Contents' in page:
-        return False
+@contextmanager
+def borrow_stream(stream):
+    "Borrow a file stream from elsewhere and restore the offset when done"
+    offset = stream.tell()
+    stream.seek(0)
+    yield stream
+    stream.seek(offset)
 
-    # Simple test
-    text = page.extractText()
+
+def _page_has_text(infile, pageno):
+    doc = Document(infile)
+    text = doc.getPageText(pageno)
     if text.strip() != '':
         return True
-
-    # More nuanced test to deal with quirks of Tesseract PDF generation
-    # Check if there's a Glyphless font
-    try:
-        font = page['/Resources']['/Font']
-    except KeyError:
-        pass
-    else:
-        font_objects = list(font.keys())
-        for font_object in font_objects:
-            basefont = font[font_object]['/BaseFont']
-            if basefont.endswith('GlyphLessFont'):
-                return True
-
     return False
 
 
-def _pdf_get_pageinfo(pdf, pageno: int):
+def _pdf_get_pageinfo(pdf, pageno: int, infile):
     pageinfo = {}
     pageinfo['pageno'] = pageno
     pageinfo['images'] = []
@@ -562,7 +559,7 @@ def _pdf_get_pageinfo(pdf, pageno: int):
 
     page = pdf.pages[pageno]
 
-    pageinfo['has_text'] = _page_has_text(pdf, page)
+    pageinfo['has_text'] = _page_has_text(str(infile), pageno)
 
     width_pt = page.mediaBox.getWidth()
     height_pt = page.mediaBox.getHeight()
@@ -596,13 +593,14 @@ def _pdf_get_pageinfo(pdf, pageno: int):
 def _pdf_get_all_pageinfo(infile):
     with universal_open(infile, 'rb') as f:
         pdf = pypdf.PdfFileReader(f)
-        return [PageInfo(pdf, n) for n in range(pdf.numPages)]
+        return [PageInfo(pdf, n, infile) for n in range(pdf.numPages)]
 
 
 class PageInfo:
-    def __init__(self, pdf, pageno):
+    def __init__(self, pdf, pageno, infile):
         self._pageno = pageno
-        self._pageinfo = _pdf_get_pageinfo(pdf, pageno)
+        self._infile = infile
+        self._pageinfo = _pdf_get_pageinfo(pdf, pageno, infile)
 
     @property
     def pageno(self):
