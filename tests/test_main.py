@@ -124,11 +124,6 @@ def test_deskew(spoof_tesseract_noop, resources, outdir):
     assert -0.5 < skew_angle < 0.5, "Deskewing failed"
 
 
-def test_clean(spoof_tesseract_noop, resources, outpdf):
-    check_ocrmypdf(resources / 'skew.pdf', outpdf, '-c',
-                   env=spoof_tesseract_noop)
-
-
 def test_remove_background(spoof_tesseract_noop, resources, outdir):
     from PIL import Image
 
@@ -549,22 +544,6 @@ def test_tesseract_image_too_big(renderer, spoof_tesseract_big_image_error,
         '--pdf-renderer', renderer, 
         '--max-image-mpixels', '0',
         env=spoof_tesseract_big_image_error)
-
-
-@pytest.mark.skipif(True, reason="need new implementation")
-def test_no_unpaper(resources, no_outpdf):
-    env = os.environ.copy()
-    env['OCRMYPDF_UNPAPER'] = os.path.abspath('./spoof/no_unpaper_here.py')
-    p, out, err = run_ocrmypdf(
-        resources / 'c02-22.pdf', no_outpdf, '--clean', env=env)
-    assert p.returncode == ExitCode.missing_dependency
-
-
-def test_old_unpaper(spoof_unpaper_oldversion, resources, no_outpdf):
-    p, out, err = run_ocrmypdf(
-        resources / 'c02-22.pdf', no_outpdf, '--clean', 
-        env=spoof_unpaper_oldversion)
-    assert p.returncode == ExitCode.missing_dependency
 
 
 def test_algo4(resources, no_outpdf):
