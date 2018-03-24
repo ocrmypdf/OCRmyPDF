@@ -15,22 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from subprocess import Popen, PIPE, check_output, check_call, DEVNULL
 from pathlib import Path
-import os
-import shutil
-import resource
 import pytest
-from ocrmypdf.pdfinfo import PdfInfo, Colorspace, Encoding
-import PyPDF2 as pypdf
 from ocrmypdf.exceptions import ExitCode
-from ocrmypdf import leptonica
-from ocrmypdf.pdfa import file_claims_pdfa
-from ocrmypdf.exec import ghostscript, tesseract, qpdf
-import logging
-from math import isclose
-
-import PIL
 
 # pytest.helpers is dynamic
 # pylint: disable=no-member
@@ -46,7 +33,7 @@ spoof = pytest.helpers.spoof
 def test_no_unpaper(resources, no_outpdf):
     # <disable unpaper here>
     p, out, err = run_ocrmypdf(
-        resources / 'c02-22.pdf', no_outpdf, '--clean', env=env)
+        resources / 'c02-22.pdf', no_outpdf, '--clean', env=os.environ)
     assert p.returncode == ExitCode.missing_dependency
 
 

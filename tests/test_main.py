@@ -21,6 +21,7 @@ import os
 import shutil
 import resource
 import pytest
+import sys
 from ocrmypdf.pdfinfo import PdfInfo, Colorspace, Encoding
 import PyPDF2 as pypdf
 from ocrmypdf.exceptions import ExitCode
@@ -552,7 +553,7 @@ def test_algo4(resources, no_outpdf):
 
 
 @pytest.mark.parametrize('renderer', [
-    'hocr'])  # tesseract cannot pass this test - resamples to square image
+    'hocr', 'sandwich'])  # tesseract cannot pass this test - resamples to square image
 def test_non_square_resolution(renderer, spoof_tesseract_cache,
                                resources, outpdf):
     # Confirm input image is non-square resolution
@@ -656,6 +657,8 @@ def test_stdout(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
     assert qpdf.check(output_file, log=None)
 
 
+@pytest.mark.skipif(sys.version_info[0:3] >= (3, 6, 4),
+                    reason="issue fixed in Python 3.6.4")
 def test_closed_streams(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
     input_file = str(resources / 'francais.pdf')
     output_file = str(outpdf)
