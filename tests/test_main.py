@@ -463,8 +463,6 @@ def test_missing_docinfo(spoof_tesseract_noop, resources, outpdf):
     assert p.returncode == ExitCode.ok, err
 
 
-@pytest.mark.skipif(pytest.helpers.running_in_docker(),
-                    reason="<no longer true> writes to tests/resources")
 def test_uppercase_extension(spoof_tesseract_noop, resources, outdir):
     shutil.copy(
         str(resources / "skew.pdf"),
@@ -770,11 +768,9 @@ def test_overlay(spoof_tesseract_noop, resources, outpdf):
                    env=spoof_tesseract_noop)
 
 
-@pytest.mark.skipif(
-    os.getuid() == 0 or os.geteuid() == 0,
-    reason="root can write to anything"
-    )
 def test_destination_not_writable(spoof_tesseract_noop, resources, outdir):
+    if os.getuid() == 0 or os.geteuid() == 0:
+        pytest.xfail(reason="root can write to anything")
     protected_file = outdir / 'protected.pdf'
     protected_file.touch()
     protected_file.chmod(0o400)  # Read-only
@@ -908,7 +904,7 @@ def test_gs_raster_failure(spoof_no_tess_gs_raster_fail, resources, outpdf):
 
 
 @pytest.mark.skipif('8.0.0' <= qpdf.version() <= '8.0.1',
-                    reason="qpdf regression")
+                    reason="qpdf regression on pages with no contents")
 def test_no_contents(spoof_tesseract_noop, resources, outpdf):
     check_ocrmypdf(resources / 'no_contents.pdf', outpdf, '--force-ocr',
                    env=spoof_tesseract_noop)
