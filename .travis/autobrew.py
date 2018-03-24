@@ -15,6 +15,7 @@ class Ocrmypdf < Formula
   ${ocrmypdf_sha256}
 
   depends_on "pkg-config" => :build
+  depends_on "mupdf-tools" => :build  # statically links libmupdf.a
   depends_on "freetype"
   depends_on "ghostscript"
   depends_on "jpeg"

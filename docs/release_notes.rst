@@ -5,6 +5,20 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 
 The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
 
+v6.0.0
+------
+
+-   The software license has been changed to GPLv3. The license of test files 
+
+-   OCRmyPDF now depends on `PyMuPDF <https://pymupdf.readthedocs.io/en/latest/installation/>`_. Including PyMuPDF is the primary reason for the change to GPLv3.
+
+-   Fixed an issue where OCRmyPDF failed to detect existing text on pages, depending on how the text and fonts were stored within the PDF. (#233, #232)
+
+-   Fixed an issue that caused dramatic inflation of file sizes when ``--skip-text --output-type pdf`` was used. OCRmyPDF now removes duplicate resources such as fonts, images and other objects that it generates. (#237)
+
+-   Improved performance of the inital page splitting step. Originally this step was not believed to be expensive and ran in a process. Large file testing revealed it to be a bottleneck, so it is now parallelized. (#234)
+
+
 v5.7.0
 ------
 
