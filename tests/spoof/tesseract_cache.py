@@ -98,6 +98,9 @@ def main():
             '--print-parameters', '--list-langs', '--version')):
         real_tesseract()  # jump into real tesseract, replacing this process
 
+    # Convert non-standard but supported -psm to --psm
+    sys.argv = ['--psm' if arg == '-psm' else arg for arg in sys.argv]
+
     source = os.environ['_OCRMYPDF_TEST_INFILE']  # required
     args = parser.parse_args()
 
