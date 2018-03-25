@@ -27,6 +27,10 @@ check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
 spoof = pytest.helpers.spoof
 
+@pytest.fixture(scope='session')
+def spoof_unpaper_oldversion(tmpdir_factory):
+    return spoof(tmpdir_factory, unpaper='unpaper_oldversion.py')
+
 
 @pytest.mark.skipif(True, 
                     reason="needs new fixture implementation")

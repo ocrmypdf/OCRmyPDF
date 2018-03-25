@@ -87,11 +87,6 @@ def spoof_qpdf_always_error(tmpdir_factory):
     return spoof(tmpdir_factory, qpdf='qpdf_dummy_return2.py')
 
 
-@pytest.fixture(scope='session')
-def spoof_unpaper_oldversion(tmpdir_factory):
-    return spoof(tmpdir_factory, unpaper='unpaper_oldversion.py')
-
-
 def test_quick(spoof_tesseract_cache, resources, outpdf):
     check_ocrmypdf(resources / 'ccitt.pdf', outpdf, env=spoof_tesseract_cache)
 
