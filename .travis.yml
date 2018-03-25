@@ -4,7 +4,6 @@ cache:
   pip: true
   directories:
   - packages
-  - tests/cache
   - $HOME/Library/Caches/Homebrew
 
 env:
