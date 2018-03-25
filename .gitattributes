@@ -8,6 +8,6 @@
 *.PDF	binary
 *.png	binary
 *.jpg	binary
-
+*.bin   binary
 
 .git_archival.txt  export-subst

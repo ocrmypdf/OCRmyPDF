@@ -136,7 +136,8 @@ def main():
             for configfile in args.configfiles:
                 # cp cache -> output
                 tessfile = args.outputbase + '.' + configfile
-                shutil.copy(str(cache_folder / configfile), tessfile)
+                shutil.copy(str(cache_folder / configfile + '.bin'), 
+                            tessfile)
         sys.exit(0)
 
     # Cache miss
@@ -166,7 +167,7 @@ def main():
                 continue
             # cp pwd/{outputbase}.{configfile} -> {cache}/{configfile}
             tessfile = args.outputbase + '.' + configfile
-            shutil.copy(tessfile, str(cache_folder / configfile))
+            shutil.copy(tessfile, str(cache_folder / configfile + '.bin'))
 
     (cache_folder / 'stderr').write_bytes(p.stderr)
 

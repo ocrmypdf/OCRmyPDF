@@ -35,7 +35,6 @@ log/
 /*.qdf
 *.ipynb
 .ipynb_checkpoints/
-tests/cache/
 tests/output/
 tests/resources/private/
 tmp/
