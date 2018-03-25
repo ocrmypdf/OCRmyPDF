@@ -123,20 +123,20 @@ def main():
     print("Tesseract cache folder {} - ".format(cache_folder), end='', 
           file=sys.stderr)
 
-    if (cache_folder / 'stderr').exists():
+    if (cache_folder / 'stderr.bin').exists():
         # Cache hit
         print("HIT", file=sys.stderr)
 
         # Replicate stdout/err
-        sys.stdout.buffer.write((cache_folder / 'stdout').read_bytes())
-        sys.stderr.buffer.write((cache_folder / 'stderr').read_bytes())
+        sys.stdout.buffer.write((cache_folder / 'stdout.bin').read_bytes())
+        sys.stderr.buffer.write((cache_folder / 'stderr.bin').read_bytes())
         if args.outputbase != 'stdout':
             if not args.configfiles:
                 args.configfiles.append('txt')
             for configfile in args.configfiles:
                 # cp cache -> output
                 tessfile = args.outputbase + '.' + configfile
-                shutil.copy(str(cache_folder / configfile + '.bin'), 
+                shutil.copy(str(cache_folder / configfile) + '.bin', 
                             tessfile)
         sys.exit(0)
 
@@ -156,7 +156,7 @@ def main():
         print("Tesseract error", file=sys.stderr)
         return p.returncode
 
-    (cache_folder / 'stdout').write_bytes(p.stdout)
+    (cache_folder / 'stdout.bin').write_bytes(p.stdout)
 
     if args.outputbase != 'stdout':
         if not args.configfiles:
@@ -167,9 +167,9 @@ def main():
                 continue
             # cp pwd/{outputbase}.{configfile} -> {cache}/{configfile}
             tessfile = args.outputbase + '.' + configfile
-            shutil.copy(tessfile, str(cache_folder / configfile + '.bin'))
+            shutil.copy(tessfile, str(cache_folder / configfile) + '.bin')
 
-    (cache_folder / 'stderr').write_bytes(p.stderr)
+    (cache_folder / 'stderr.bin').write_bytes(p.stderr)
 
     manifest = {}
     manifest['tesseract_version'] = __version__.replace('\n', ' ')
