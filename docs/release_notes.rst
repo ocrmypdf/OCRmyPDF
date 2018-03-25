@@ -27,9 +27,9 @@ v6.0.0
 
 -   Fixed an issue that caused dramatic inflation of file sizes when ``--skip-text --output-type pdf`` was used. OCRmyPDF now removes duplicate resources such as fonts, images and other objects that it generates. (#237)
 
--   Improved performance of the inital page splitting step. Originally this step was not believed to be expensive and ran in a process. Large file testing revealed it to be a bottleneck, so it is now parallelized. (#234)
+-   Improved performance of the inital page splitting step. Originally this step was not believed to be expensive and ran in a process. Large file testing revealed it to be a bottleneck, so it is now parallelized. On a 700 page file with quad core machine, this change saves about 2 minutes. (#234)
 
--   The test suite now includes a cache that can be used to speed up test runs across platforms. (#217)
+-   The test suite now includes a cache that can be used to speed up test runs across platforms. This also does not require computing checksums, so it's faster. (#217)
 
 
 v5.7.0
