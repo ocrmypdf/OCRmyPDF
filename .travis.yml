@@ -42,11 +42,9 @@ install:
 - pip3 install -r requirements.txt -r test_requirements.txt
 
 script:
-- mv ocrmypdf dont_import_this_ocrmypdf
 - tesseract --version
 - qpdf --version
 - pytest
-- mv dont_import_this_ocrmypdf ocrmypdf
 
 deploy:
   # release for main pypi

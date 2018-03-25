@@ -24,6 +24,7 @@ recursive-exclude tests/output_pageinfo *
 recursive-exclude tests/resources/private *
 
 # documentation
+include LICENSE
 include *.rst
 recursive-exclude .github * 
 recursive-include docs *.py
