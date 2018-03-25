@@ -70,7 +70,7 @@ def spoof(tmpdir_factory, **kwargs):
     """
     env = os.environ.copy()
     slug = '-'.join(v.replace('.py', '') for v in sorted(kwargs.values()))
-    spoofer_base = Path(tmpdir_factory.mktemp('spoofers'))
+    spoofer_base = Path(str(tmpdir_factory.mktemp('spoofers')))
     tmpdir = spoofer_base / slug
     tmpdir.mkdir(parents=True)
 
