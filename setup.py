@@ -212,7 +212,8 @@ setup(
     url='https://github.com/jbarlow83/OCRmyPDF',
     author='James R. Barlow',
     author_email='jim@purplerock.ca',
-    packages=find_packages(exclude=["tests", "tests.*"]),
+    packages=find_packages('src', exclude=["tests", "tests.*"]),
+    package_dir={'': 'src'},
     keywords=['PDF', 'OCR', 'optical character recognition', 'PDF/A', 'scanning'],
     classifiers=[
         "Programming Language :: Python :: 3.5",
@@ -239,7 +240,7 @@ setup(
     ],
     use_scm_version={'version_scheme': 'post-release'},
     cffi_modules=[
-        'ocrmypdf/lib/compile_leptonica.py:ffibuilder'
+        'src/ocrmypdf/lib/compile_leptonica.py:ffibuilder'
     ],
     install_requires=[
         'ruffus==2.6.3',        # pinned - ocrmypdf implements a 2.6.3 workaround

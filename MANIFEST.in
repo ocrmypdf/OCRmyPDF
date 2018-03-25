@@ -33,7 +33,7 @@ recursive-exclude docs/_build *
 
 
 # support files
-recursive-include ocrmypdf/data *
+recursive-include src/ocrmypdf/data *
 include *.py
 exclude tasks.py
 recursive-exclude .travis *
@@ -41,7 +41,7 @@ exclude .travis*
 
 
 # code
-recursive-include ocrmypdf *.py
+recursive-include src/ocrmypdf *.py
 exclude ocrmypdf/lib/_leptonica.py
 
 
