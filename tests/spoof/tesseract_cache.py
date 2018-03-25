@@ -21,30 +21,40 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+from pathlib import Path
 import sys
 import os
-import hashlib
 import shutil
 import subprocess
+import argparse
+import json
+import platform
 
 
 """Cache output of tesseract to speed up test suite
 
-The cache is keyed by a hash that includes the tesseract version, some of
-the command line, and the binary dump of the input file, and this file itself.
- Therefore any updates to this file invalidate cache. Uses SHA-1 because it is
- fast and defeating a hash collision here is not exactly a priority. :P
+The cache is keyed by an environment variable that slips the input test file
+from tests/resources/ to us.  The input arguments are slugged into a hideous
+filename that more or less represents them literally.  Joined together, this
+becomes the name of the cache folder.  A few name files like stdout, stderr,
+hocr, pdf, describe the output to reproduce.
 
-The output files, stdout, and stderr are replicated on a cache hit. The output
-files are either a .pdf and .txt or .hocr and .txt.
+Changes to tests/resources/ or image processing algorithms don't trigger a
+cache miss.  By design, an input image that varies according to platform
+differences (e.g. JPEG decoders are allowed to produce differing outputs,
+and in practice they do) will still be a cache hit.  By design, an
+invocation of tesseract with the same parameters from a different test case
+will be a hit.  It's fragile.
 
-Page orientation checks are also cached (-psm 0 stdout)
+The tests/cache/manifest.jsonl is a JSON lines file that contains
+information about the system that produced the results used when cache was
+generated.  This mainly a log to answer questions about how the files
+were produced.
 
-Errors and crashes are not cached. If the arguments don't match a known
-caching template then real tesseract is called with the same arguments.
+For performance reasons, especially the slow performance of Tesseract on
+machines with AVX2, the cache is now bundled.
 
-Things not checked:
--changes to tesseract installation that don't affect --version
+Certain operations are not cached and routed to tesseract directly.
 
 Assumes Tesseract 3.04 or higher.
 
@@ -55,151 +65,121 @@ given.
 
 """
 
+if '_OCRMYPDF_SAVE_PATH' in os.environ:
+    os.environ['PATH'] = os.environ['_OCRMYPDF_SAVE_PATH']
 
-CACHE_PATH = os.path.abspath(os.path.join(
-        os.path.dirname(__file__), '..', 'cache'))
+__version__ = subprocess.check_output(
+        ['tesseract', '--version'],
+        stderr=subprocess.STDOUT).decode()
 
+
+parser = argparse.ArgumentParser(
+    prog='tesseract-cache', description='cache output of tesseract')
+parser.add_argument('-l', '--language', action='append')
+parser.add_argument('imagename')
+parser.add_argument('outputbase')
+parser.add_argument('configfiles', nargs='*')
+parser.add_argument('--user-words', type=str)
+parser.add_argument('--user-patterns', type=str)
+parser.add_argument('-c', action='append')
+parser.add_argument('--psm', type=int)
+parser.add_argument('--oem', type=int)
+
+CACHE_ROOT = Path(__file__).resolve().parent.parent / 'cache'
 
 def real_tesseract():
     tess_args = ['tesseract'] + sys.argv[1:]
     os.execvp("tesseract", tess_args)
     return  # Not reachable
 
+
 def main():
-    os.environ['PATH'] = os.environ['_OCRMYPDF_SAVE_PATH']
-    operation = sys.argv[-2]
-    sidecar = False
-    if sys.argv[-1] == 'txt':
-        sidecar = True
-    elif sys.argv[-1] == 'stdout':
-        operation = 'stdout'
+    if any(opt in sys.argv[1:] for opt in (
+            '--print-parameters', '--list-langs', '--version')):
+        real_tesseract()  # jump into real tesseract, replacing this process
 
-    # For anything unexpected operation, defer to real tesseract binary
-    # Currently this includes all use of "--tesseract-config"
-    if operation != 'hocr' and operation != 'pdf' and operation != 'stdout':
+    source = os.environ['_OCRMYPDF_TEST_INFILE']  # required
+    args = parser.parse_args()
+
+    if args.imagename == 'stdin':
         real_tesseract()
-        return  # Not reachable
 
-    try:
-        os.makedirs(CACHE_PATH)
-    except FileExistsError:
-        pass
+    def slugs():
+        yield ''  # so we don't start with a '-' which makes rm difficult
+        for arg in sys.argv[1:]:
+            if arg == args.imagename:
+                yield Path(args.imagename).name
+            elif arg == args.outputbase:
+                yield Path(args.outputbase).name
+            else:
+                yield arg
 
-    m = hashlib.sha1()
+    argv_slug = '__'.join(slugs())
+    argv_slug = argv_slug.replace('/', '___')
+    
+    cache_folder = Path(CACHE_ROOT) / Path(source).stem / argv_slug
+    cache_folder.mkdir(parents=True, exist_ok=True)        
 
-    tess_version = subprocess.check_output(
-        ['tesseract', '--version'],
-        stderr=subprocess.STDOUT)
+    print("Tesseract cache folder {} - ".format(cache_folder), end='', 
+          file=sys.stderr)
 
-    m.update(tess_version)
-
-    # Insert this source file into the hash function, to ensure that any
-    # changes to this file invalidate previous hashes
-    with open(__file__, 'rb') as f:
-        m.update(f.read())
-
-    m.update(operation.encode())
-
-    try:
-        lang = sys.argv[sys.argv.index('-l') + 1]
-        m.update(lang.encode())
-    except ValueError:
-        m.update(b'default-lang')
-
-    try:
-        textonly = sys.argv[sys.argv.index('-c') + 1]
-        m.update(textonly.encode())
-    except ValueError:
-        m.update(b'textonly_pdf=0')
-
-    psm_arg = ''
-    if '--psm' in sys.argv:
-        psm_arg = '--psm'
-    elif '-psm' in sys.argv:
-        psm_arg = '-psm'
-    if psm_arg:
-        try:
-            psm = sys.argv[sys.argv.index(psm_arg) + 1]
-            m.update(psm.encode())
-        except ValueError:
-            m.update(b'default-psm')
-    else:
-        m.update(b'default-psm')
-
-    if operation == 'stdout' and psm != '0':
-        real_tesseract()
-        return
-
-    if operation == 'stdout':
-        # tesseract [--options] ... input stdout
-        input_file = sys.argv[-2]
-        output_file = 'stdout'
-        sidecar_file = ''
-    else:
-        # tesseract [--options] ... input output txt hocr|pdf
-        input_file = sys.argv[-4]
-        output_file = sys.argv[-3]
-        sidecar_file = sys.argv[-3]
-
-    if operation == 'hocr':
-        output_file += '.hocr'
-        sidecar_file += '.txt'
-    elif operation == 'pdf':
-        output_file += '.pdf'
-        sidecar_file += '.txt'
-
-    with open(input_file, 'rb') as f:
-        m.update(f.read())
-    cache_name = os.path.join(CACHE_PATH, m.hexdigest())
-    print(cache_name)
-    if os.path.exists(cache_name):
+    if (cache_folder / 'stderr').exists():
         # Cache hit
-        print("Tesseract cache hit", file=sys.stderr)
-        if operation != 'stdout':
-            shutil.copy(cache_name, output_file)
-            if sidecar:
-                shutil.copy(cache_name + '.sidecar', sidecar_file)
+        print("HIT", file=sys.stderr)
 
-        # Replicate output
-        with open(cache_name + '.stdout', 'rb') as f:
-            sys.stdout.buffer.write(f.read())
-        with open(cache_name + '.stderr', 'rb') as f:
-            sys.stderr.buffer.write(f.read())
+        # Replicate stdout/err
+        sys.stdout.buffer.write((cache_folder / 'stdout').read_bytes())
+        sys.stderr.buffer.write((cache_folder / 'stderr').read_bytes())
+        if args.outputbase != 'stdout':
+            if not args.configfiles:
+                args.configfiles.append('txt')
+            for configfile in args.configfiles:
+                # cp cache -> output
+                tessfile = args.outputbase + '.' + configfile
+                shutil.copy(str(cache_folder / configfile), tessfile)
         sys.exit(0)
 
     # Cache miss
-    print("Tesseract cache miss", file=sys.stderr)
+    print("MISS", file=sys.stderr)
 
     # Call tesseract
-    p = subprocess.Popen(
+    print(sys.argv[1:])
+    p = subprocess.run(
             ['tesseract'] + sys.argv[1:],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = p.communicate()
+    sys.stdout.buffer.write(p.stdout)
+    sys.stderr.buffer.write(p.stderr)
 
     if p.returncode != 0:
         # Do not cache errors or crashes
         print("Tesseract error", file=sys.stderr)
-        sys.stdout.buffer.write(stdout)
-        sys.stderr.buffer.write(stderr)
         return p.returncode
 
-    with open(cache_name + '.stdout', 'wb') as f:
-        f.write(stdout)
-    with open(cache_name + '.stderr', 'wb') as f:
-        f.write(stderr)
-    sys.stdout.buffer.write(stdout)
-    sys.stderr.buffer.write(stderr)
+    (cache_folder / 'stdout').write_bytes(p.stdout)
 
-    # Insert file into cache
-    if output_file != 'stdout':
-        if os.path.exists(output_file):
-            shutil.copy(output_file, cache_name)
-        else:
-            print("Could not find output file", file=sys.stderr)
-        if sidecar and os.path.exists(sidecar_file):
-            shutil.copy(sidecar_file, cache_name + '.sidecar')
-    else:
-        open(cache_name, 'w').close()
+    if args.outputbase != 'stdout':
+        if not args.configfiles:
+            args.configfiles.append('txt')
+
+        for configfile in args.configfiles:
+            if configfile not in ('hocr', 'pdf', 'txt'):
+                continue
+            # cp pwd/{outputbase}.{configfile} -> {cache}/{configfile}
+            tessfile = args.outputbase + '.' + configfile
+            shutil.copy(tessfile, str(cache_folder / configfile))
+
+    (cache_folder / 'stderr').write_bytes(p.stderr)
+
+    manifest = {}
+    manifest['tesseract_version'] = __version__.replace('\n', ' ')
+    manifest['platform'] = platform.platform()
+    manifest['python'] = platform.python_version()
+    manifest['args'] = sys.argv[1:]
+    manifest['argv_slug'] = argv_slug
+    manifest['sourcefile'] = source
+    with (Path(CACHE_ROOT) / 'manifest.jsonl').open('a') as f:
+        json.dump(manifest, f)
+        f.write('\n')
 
 
 if __name__ == '__main__':

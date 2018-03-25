@@ -131,8 +131,8 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
     "Run ocrmypdf and confirmed that a valid file was created"
 
     p, out, err = run_ocrmypdf(input_file, output_file, *args, env=env)
-    #print(err)  # ensure py.test collects the output, use -s to view
-    assert p.returncode == 0, "<stderr>\n" + err + "\n</stderr>"
+    print(err)  # ensure py.test collects the output, use -s to view
+    assert p.returncode == 0
     assert os.path.exists(str(output_file)), "Output file not created"
     assert os.stat(str(output_file)).st_size > 100, "PDF too small or empty"
     assert out == "", \

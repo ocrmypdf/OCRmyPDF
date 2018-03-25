@@ -803,6 +803,8 @@ def run_pipeline():
     if tesseract.v4():
         os.environ.setdefault('OMP_THREAD_LIMIT', '1')
     check_environ(options, _log)
+    if os.environ.get('PYTEST_CURRENT_TEST'):
+        os.environ['_OCRMYPDF_TEST_INFILE'] = options.input_file
 
     try:
         work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
