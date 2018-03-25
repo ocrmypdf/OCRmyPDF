@@ -7,11 +7,10 @@ include dev_requirements.txt
 include .git_archival.txt
 
 # docker
-include Dockerfile*
 include .dockerignore
+recursive-include .docker *
 
 # tests
-include pytest.ini
 include .coveragerc
 recursive-include tests *.jpg
 recursive-include tests *.png
@@ -19,14 +18,13 @@ recursive-include tests *.pdf
 recursive-include tests *.py
 recursive-include tests *.rst
 recursive-include tests *.txt
+recursive-include tests/cache *
 recursive-exclude tests/output *
 recursive-exclude tests/output_pageinfo *
 recursive-exclude tests/resources/private *
-recursive-exclude tests/cache *
 
 # documentation
 include *.rst
-include pipeline.svg
 recursive-exclude .github * 
 recursive-include docs *.py
 recursive-include docs *.rst
@@ -38,7 +36,6 @@ recursive-exclude docs/_build *
 recursive-include ocrmypdf/data *
 include *.py
 exclude tasks.py
-exclude debug-runner.py
 recursive-exclude .travis *
 exclude .travis*
 
@@ -46,6 +43,6 @@ exclude .travis*
 # code
 recursive-include ocrmypdf *.py
 exclude ocrmypdf/lib/_leptonica.py
-include docker-wrapper.sh
+
 
 
