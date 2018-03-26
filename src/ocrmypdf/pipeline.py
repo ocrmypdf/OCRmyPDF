@@ -963,11 +963,14 @@ def merge_pages_ghostscript(
     ghostscript.generate_pdfa(
         pdf_version=input_pdfinfo.min_version,
         pdf_pages=pdf_pages,
-        output_file=output_file,
+        output_file=output_file + '_toc.pdf',
         compression=options.pdfa_image_compression,
         log=log,
         threads=options.jobs or 1,
         pdfa_part=('1' if options.output_type == 'pdfa-1' else '2'))
+    doc = fitz.Document(output_file + '_toc.pdf')
+    doc.setToC(input_pdfinfo.table_of_contents)
+    doc.save(output_file)
 
 
 def merge_pages_qpdf(

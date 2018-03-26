@@ -29,7 +29,7 @@ from enum import Enum
 from contextlib import contextmanager
 
 import PyPDF2 as pypdf
-from fitz import Document
+import fitz
 
 from .helpers import universal_open
 
@@ -555,7 +555,7 @@ def borrow_stream(stream):
 
 
 def _page_has_text(infile, pageno):
-    doc = Document(infile)
+    doc = fitz.Document(infile)
     text = doc.getPageText(pageno)
     if text.strip() != '':
         return True
@@ -692,6 +692,7 @@ class PdfInfo:
     def __init__(self, infile):
         self._infile = infile
         self._pages = _pdf_get_all_pageinfo(infile)
+        self._toc = fitz.Document(infile).getToC()
 
     @property
     def pages(self):
@@ -711,6 +712,10 @@ class PdfInfo:
         if not isinstance(self._infile, (str, Path)):
             raise NotImplementedError("can't get filename from stream")
         return self._infile
+
+    @property
+    def table_of_contents(self):
+        return self._toc
 
     def __getitem__(self, item):
         return self._pages[item]

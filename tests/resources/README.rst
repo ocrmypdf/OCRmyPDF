@@ -128,6 +128,7 @@ Assemblies
 
 These test resources are assemblies or derivatives from other previously mentioned files, released under the same license terms as their input files.
 
+- baiona_gray.png (from baiona.png)
 - cardinal.pdf (four cardinal directions, baked-in rotated copies of LinnSequencer.jpg)
 - ccitt.pdf (LinnSequencer.jpg, converted to CCITT encoding)
 - encrypted_algo4.pdf (congress.jpg, encrypted with algorithm 4 - not supported by PyPDF2)
@@ -135,12 +136,11 @@ These test resources are assemblies or derivatives from other previously mention
 - jbig2.pdf (congress.jpg, converted to JBIG2 encoding)
 - multipage.pdf (from several other files)
 - palette.pdf (congress.jpg, converted to a 256-color palette)
-- rotated_skew.pdf (a /Rotate'd and skewed document from LinnSequencer.jpg)
-- skew.pdf (from LinnSequencer.jpg, skew simulated by adjusting the transformation matrix)
-- skew-encrypted.pdf (skew.pdf with encryption - access supported by PyPDF2, password is "password")
-- baiona_gray.png (from baiona.png)
 - poster.pdf (from LinnSequencer.jpg)
-
+- rotated_skew.pdf (a /Rotate'd and skewed document from LinnSequencer.jpg)
+- skew-encrypted.pdf (skew.pdf with encryption - access supported by PyPDF2, password is "password")
+- skew.pdf (from LinnSequencer.jpg, skew simulated by adjusting the transformation matrix)
+- toc.pdf (from formxobject.pdf, trivial.pdf)
 
 
 .. _`Wikimedia: LinnSequencer`: https://upload.wikimedia.org/wikipedia/en/b/b7/LinnSequencer_hardware_MIDI_sequencer_brochure_page_2_300dpi.jpg

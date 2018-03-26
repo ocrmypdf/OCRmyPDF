@@ -18,6 +18,7 @@
 
 import pytest
 import PyPDF2 as pypdf
+import fitz
 
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.exceptions import ExitCode
@@ -94,3 +95,22 @@ def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
         env=spoof_tesseract_noop)
 
     assert p.returncode == ExitCode.bad_args, err
+
+
+@pytest.mark.parametrize('ocr_option', ['--skip-text', '--force-ocr'])
+@pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
+def test_bookmarks_preserved(spoof_tesseract_noop, output_type, ocr_option,
+                             resources, outpdf):
+    input_file = resources / 'toc.pdf'
+    before_toc = fitz.Document(str(input_file)).getToC()
+
+    check_ocrmypdf(
+        input_file, outpdf,
+        ocr_option,
+        '--output-type', output_type,
+        env=spoof_tesseract_noop)
+
+    after_toc = fitz.Document(str(outpdf)).getToC()
+    print(before_toc)
+    print(after_toc)
+    assert before_toc == after_toc
