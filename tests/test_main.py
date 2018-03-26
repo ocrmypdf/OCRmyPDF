@@ -26,7 +26,6 @@ from ocrmypdf.pdfinfo import PdfInfo, Colorspace, Encoding
 import PyPDF2 as pypdf
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf import leptonica
-from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.exec import ghostscript, tesseract, qpdf
 import logging
 from math import isclose
@@ -172,71 +171,6 @@ def test_exotic_image(spoof_tesseract_cache, pdf, renderer, output_type,
         '--pdf-renderer', renderer, env=spoof_tesseract_cache)
 
     assert outfile.with_suffix('.pdf.txt').exists()
-
-
-@pytest.mark.parametrize("output_type", [
-    'pdfa', 'pdf'
-    ])
-def test_preserve_metadata(spoof_tesseract_noop, output_type,
-                           resources, outpdf):
-    pdf_before = pypdf.PdfFileReader(str(resources / 'graph.pdf'))
-
-    output = check_ocrmypdf(
-            resources / 'graph.pdf', outpdf,
-            '--output-type', output_type,
-            env=spoof_tesseract_noop)
-
-    pdf_after = pypdf.PdfFileReader(str(output))
-
-    for key in ('/Title', '/Author'):
-        assert pdf_before.documentInfo[key] == pdf_after.documentInfo[key]
-
-    pdfa_info = file_claims_pdfa(str(output))
-    assert pdfa_info['output'] == output_type
-
-
-@pytest.mark.parametrize("output_type", [
-    'pdfa', 'pdf'
-    ])
-def test_override_metadata(spoof_tesseract_noop, output_type, resources,
-                           outpdf):
-    input_file = resources / 'c02-22.pdf'
-    german = 'Du siehst den Wald vor lauter Bäumen nicht.'
-    chinese = '孔子'
-
-    p, out, err = run_ocrmypdf(
-        input_file, outpdf,
-        '--title', german,
-        '--author', chinese,
-        '--output-type', output_type,
-        env=spoof_tesseract_noop)
-
-    assert p.returncode == ExitCode.ok, err
-
-    reader = pypdf.PdfFileReader(outpdf)
-
-    assert reader.documentInfo['/Title'] == german
-    assert reader.documentInfo['/Author'] == chinese
-    assert reader.documentInfo.get('/Keywords', '') == ''
-
-    pdfa_info = file_claims_pdfa(outpdf)
-    assert pdfa_info['output'] == output_type
-
-
-def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
-
-    # Ghostscript doesn't support high Unicode, so neither do we, to be
-    # safe
-    input_file = resources / 'c02-22.pdf'
-    high_unicode = 'U+1030C is: 𐌌'
-
-    p, out, err = run_ocrmypdf(
-        input_file, no_outpdf,
-        '--subject', high_unicode,
-        '--output-type', 'pdfa',
-        env=spoof_tesseract_noop)
-
-    assert p.returncode == ExitCode.bad_args, err
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
