@@ -25,7 +25,6 @@ import re
 
 import img2pdf
 import PyPDF2 as pypdf
-import fitz
 
 from PIL import Image
 from ruffus import formatter, regex, Pipeline, suffix
@@ -39,6 +38,11 @@ from .exceptions import PdfMergeFailedError, UnsupportedImageFormatError, \
     DpiError, PriorOcrFoundError, InputFileError
 from . import leptonica
 from . import PROGRAM_NAME, VERSION
+
+try:
+    import fitz
+except ImportError:
+    fitz = None
 
 
 VECTOR_PAGE_DPI = 400
@@ -968,9 +972,10 @@ def merge_pages_ghostscript(
         log=log,
         threads=options.jobs or 1,
         pdfa_part=('1' if options.output_type == 'pdfa-1' else '2'))
-    doc = fitz.Document(output_file + '_toc.pdf')
-    doc.setToC(input_pdfinfo.table_of_contents)
-    doc.save(output_file)
+    if fitz:
+        doc = fitz.Document(output_file + '_toc.pdf')
+        doc.setToC(input_pdfinfo.table_of_contents)
+        doc.save(output_file)
 
 
 def merge_pages_qpdf(
@@ -1009,6 +1014,8 @@ def merge_pages_mupdf(
         output_file,
         log,
         context):
+    assert fitz
+
     options = context.get_options()
 
     pdf_pages, metadata_file = _merge_pages_common(
@@ -1304,7 +1311,20 @@ def build_pipeline(options, work_folder, log, context):
                task_generate_postscript_stub],
         output=os.path.join(work_folder, 'merged.pdf'),
         extras=[log, context])
-    task_merge_pages_ghostscript.active_if(options.output_type.startswith('pdfa'))
+    task_merge_pages_ghostscript.active_if(
+        options.output_type.startswith('pdfa'))
+
+    task_merge_pages_qpdf = main_pipeline.merge(
+        task_func=merge_pages_qpdf,
+        input=[task_combine_layers,
+               task_render_hocr_debug_page,
+               task_skip_page,
+               task_ocr_tesseract_and_render_pdf,
+               task_repair_pdf],
+        output=os.path.join(work_folder, 'merged.pdf'),
+        extras=[log, context])
+    task_merge_pages_qpdf.active_if(
+        options.output_type == 'pdf' and not fitz)
 
     task_merge_pages_mupdf = main_pipeline.merge(
         task_func=merge_pages_mupdf,
@@ -1315,7 +1335,8 @@ def build_pipeline(options, work_folder, log, context):
                task_repair_pdf],
         output=os.path.join(work_folder, 'merged.pdf'),
         extras=[log, context])
-    task_merge_pages_mupdf.active_if(options.output_type == 'pdf')
+    task_merge_pages_mupdf.active_if(
+        options.output_type == 'pdf' and fitz)
 
     task_merge_sidecars = main_pipeline.merge(
         task_func=merge_sidecars,
@@ -1329,6 +1350,8 @@ def build_pipeline(options, work_folder, log, context):
     # Finalize
     main_pipeline.merge(
         task_func=copy_final,
-        input=[task_merge_pages_ghostscript, task_merge_pages_mupdf],
+        input=[task_merge_pages_ghostscript,
+               task_merge_pages_mupdf,
+               task_merge_pages_qpdf],
         output=options.output_file,
         extras=[log, context])

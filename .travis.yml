@@ -16,13 +16,16 @@ matrix:
       sudo: required
       language: python
       python: 3.5
+      env: EXTRAS=
     - os: linux
       sudo: required
       language: python
       python: 3.6
+      env: EXTRAS=[fitz]
     - os: osx
       osx_image: xcode8
       language: generic
+      env: EXTRAS=[fitz]
 
 before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
@@ -37,7 +40,7 @@ before_install: |
   fi
 
 install:
-- pip3 install .
+- pip3 install ".$EXTRAS"
 - pip3 install -r requirements.txt -r test_requirements.txt
 
 script:
