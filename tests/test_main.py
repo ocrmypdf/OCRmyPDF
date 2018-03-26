@@ -27,6 +27,7 @@ import PyPDF2 as pypdf
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf import leptonica
 from ocrmypdf.exec import ghostscript, tesseract, qpdf
+from ocrmypdf.pdfa import file_claims_pdfa
 import logging
 from math import isclose
 
