@@ -22,9 +22,11 @@ import shutil
 from functools import lru_cache
 from collections import namedtuple
 from textwrap import dedent
-import PyPDF2 as pypdf
 from subprocess import PIPE, CalledProcessError, \
     TimeoutExpired, check_output, STDOUT
+from contextlib import suppress
+
+import PyPDF2 as pypdf
 
 from ..exceptions import MissingDependencyError, TesseractConfigError
 from ..helpers import page_number
@@ -281,6 +283,8 @@ def use_skip_page(text_only, skip_pdf, output_pdf, output_text):
         f.write('[skipped page]')
 
     if not text_only:
+        with suppress(FileNotFoundError):
+            os.remove(output_pdf)  # In case it was partially created
         os.symlink(skip_pdf, output_pdf)
         return
 
