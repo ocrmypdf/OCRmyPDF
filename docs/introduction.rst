@@ -104,5 +104,11 @@ To the author's knowledge, OCRmyPDF is the most feature-rich and thoroughly test
 * pypdfocr
 * pdfbeads
 
-If you are looking for a micro web-frontend for OCRmyPDF, consider the third-party `OCRmyPDF-web <https://github.com/sseemayer/OCRmyPDF-web>`_. Bear in mind that OCRmyPDF is not designed to be secure against malware-bearing PDFs (see `Using OCRmyPDF online`_).
+Web front-ends
+--------------
+
+* `Nextcloud OCR <https://github.com/janis91/ocr>`_ is a free software plugin for the Nextcloud private cloud software
+* `OCRmyPDF-web <https://github.com/sseemayer/OCRmyPDF-web>`_, a micro web-frontend for OCRmyPDF (third-party, not actively maintained)
+
+Bear in mind that OCRmyPDF is not designed to be secure against malware-bearing PDFs (see `Using OCRmyPDF online`_).
 
