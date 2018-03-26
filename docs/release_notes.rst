@@ -5,9 +5,14 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 
 The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
 
-v6.0.0
+v6.0.1
 ------
 
+-   Fix ``FileExistsError`` that could occur if OCR timed out while it was generating the output file. (#218)
+
+
+v6.0.0
+------
 
 -   The software license has been changed to GPLv3. Test resource files and some individual sources may have other licenses.
 
@@ -22,6 +27,8 @@ v6.0.0
     + The function ``ocrmypdf.exec.get_program`` was removed.
 
     + The deprecated module ``ocrmypdf.pageinfo`` was removed.
+
+    + The ``--pdf-renderer tess4`` alias for ``sandwich`` was removed.
 
 -   Fixed an issue where OCRmyPDF failed to detect existing text on pages, depending on how the text and fonts were encoded within the PDF. (#233, #232)
 
