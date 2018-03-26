@@ -282,7 +282,7 @@ advanced.add_argument(
     )
 advanced.add_argument(
     '--pdf-renderer',
-    choices=['auto', 'tesseract', 'hocr', 'tess4', 'sandwich'], default='auto',
+    choices=['auto', 'tesseract', 'hocr', 'sandwich'], default='auto',
     help="Choose OCR PDF renderer - the default option is to let OCRmyPDF "
          "choose."
          "auto - let OCRmyPDF choose; "
@@ -291,7 +291,6 @@ advanced.add_argument(
          "tesseract - gives better results for non-Latin languages and "
          "Tesseract older than 3.05.01 but has problems with some versions "
          " of Ghostscript; deprecated"
-         "tess4 - deprecated alias for 'sandwich'"
     )
 advanced.add_argument(
     '--tesseract-timeout', default=180.0, type=float, metavar='SECONDS',
@@ -365,11 +364,6 @@ def check_options_output(options, log):
         raise MissingDependencyError(
             "The 'sandwich' renderer requires Tesseract 3.05.01 or newer; "
             "or Tesseract 4.00 alpha newer than February 2017.")
-
-    if options.pdf_renderer == 'tess4':
-        log.warning("The 'tess4' PDF renderer has been renamed to 'sandwich'. "
-                    "Please use --pdf-renderer=sandwich.")
-        options.pdf_renderer = 'sandwich'
 
     if options.pdf_renderer == 'tesseract':
         if tesseract.version() < '3.05' and \
@@ -467,9 +461,9 @@ def check_options_advanced(options, log):
     if options.tesseract_oem and not tesseract.v4():
         log.warning(
             "--tesseract-oem requires Tesseract 4.x -- argument ignored")
-    if options.pdf_renderer == 'tess4' and not tesseract.has_textonly_pdf():
+    if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf():
         raise MissingDependencyError(
-            "--pdf-renderer tess4 requires Tesseract 4.x "
+            "--pdf-renderer sandwich requires Tesseract 4.x "
             "commit 3d9fb3b or later")
     if options.pdfa_image_compression != 'auto' and \
             options.output_type.startswith('pdfa'):

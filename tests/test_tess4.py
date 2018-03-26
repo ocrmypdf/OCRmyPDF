@@ -86,7 +86,7 @@ spoof = pytest.helpers.spoof
 def test_textonly_pdf(ensure_tess4, resources, outdir):
     check_ocrmypdf(
         resources / 'linn.pdf',
-        outdir / 'linn_textonly.pdf', '--pdf-renderer', 'tess4',
+        outdir / 'linn_textonly.pdf', '--pdf-renderer', 'sandwich',
         '--sidecar', outdir / 'foo.txt',
         env=ensure_tess4)
 
@@ -100,7 +100,7 @@ def test_pagesize_consistency_tess4(ensure_tess4, resources, outpdf):
 
     check_ocrmypdf(
         infile,
-        outpdf, '--pdf-renderer', 'tess4',
+        outpdf, '--pdf-renderer', 'sandwich',
         '--clean', '--deskew', '--remove-background', '--clean-final',
         env=ensure_tess4)
 
@@ -118,7 +118,7 @@ def test_skip_pages_does_not_replicate(
 
     check_ocrmypdf(
         infile,
-        outpdf, '--pdf-renderer', 'tess4', '--force-ocr',
+        outpdf, '--pdf-renderer', 'sandwich', '--force-ocr',
         '--tesseract-timeout', '0',
         env=ensure_tess4
     )
@@ -138,7 +138,7 @@ def test_content_preservation(ensure_tess4, resources, outpdf):
 
     check_ocrmypdf(
         infile,
-        outpdf, '--pdf-renderer', 'tess4', '--tesseract-timeout', '0',
+        outpdf, '--pdf-renderer', 'sandwich', '--tesseract-timeout', '0',
         env=ensure_tess4
     )
 
