@@ -29,9 +29,12 @@ from enum import Enum
 from contextlib import contextmanager
 
 import PyPDF2 as pypdf
-import fitz
+try:
+    import fitz
+except ImportError:
+    fitz = None
 
-from .helpers import universal_open
+from .helpers import universal_open, fspath
 
 
 
@@ -121,7 +124,8 @@ XobjectSettings = namedtuple('XobjectSettings',
 InlineSettings = namedtuple('InlineSettings',
     ['settings', 'shorthand', 'stack_depth'])
 
-ContentsInfo = namedtuple('ContentsInfo', ['xobject_settings', 'inline_images'])
+ContentsInfo = namedtuple('ContentsInfo', 
+    ['xobject_settings', 'inline_images', 'found_text'])
 
 
 def _normalize_stack(operations):
@@ -168,6 +172,7 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     ctm = _matrix_from_shorthand(initial_shorthand)
     xobject_settings = []
     inline_images = []
+    found_text = False
 
     for n, op in enumerate(_normalize_stack(operations)):
         operands, command = op
@@ -197,10 +202,14 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
                 settings=settings, shorthand=_shorthand_from_matrix(ctm),
                 stack_depth=len(stack))
             inline_images.append(inline)
+        elif command in (b'Tj', b'TJ', b'"', b"'"):
+            found_text = True
+
 
     return ContentsInfo(
         xobject_settings=xobject_settings,
-        inline_images=inline_images)
+        inline_images=inline_images,
+        found_text=True)
 
 
 def _get_dpi(ctm_shorthand, image_size):
@@ -545,13 +554,36 @@ def _find_images(*, pdf, container, shorthand=None):
     yield from _find_form_xobject_images(pdf, container, contentsinfo)
 
 
-@contextmanager
-def borrow_stream(stream):
-    "Borrow a file stream from elsewhere and restore the offset when done"
-    offset = stream.tell()
-    stream.seek(0)
-    yield stream
-    stream.seek(offset)
+def _naive_find_text(*, pdf, page):
+    if not(page.get('/Type') == '/Page' and '/Contents' in page):
+        # Not a page, or has no /Contents => no text
+        return False
+
+    # First we check the main content stream    
+    contentstream = pypdf.pdf.ContentStream(page.getContents(), pdf)
+    contentsinfo = _interpret_contents(contentstream, UNIT_SQUARE)
+    if contentsinfo.found_text:
+        return True
+
+    # Then see if there is a Form XObject with with a content stream
+    # that might have text.  For full completeness we should recursively
+    # search nested Form XObjects, as we do with images.  But that is
+    # rare.
+    if '/Resources' in page:
+        resources = page['/Resources']
+        if '/XObject' in resources:    
+            for xobj in resources['/XObject']:
+                candidate = resources['/XObject'][xobj]
+                if candidate['/Subtype'] != '/Form':
+                    continue
+                form_xobject = candidate                
+                # Content stream is attached to Form XObject dictionary
+                contentstream = pypdf.pdf.ContentStream(form_xobject, pdf)
+                sub_contentsinfo = _interpret_contents(
+                    contentstream, UNIT_SQUARE)
+                if sub_contentsinfo.found_text:
+                    return True
+    return False
 
 
 def _page_has_text(infile, pageno):
@@ -574,7 +606,10 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile):
 
     page = pdf.pages[pageno]
 
-    pageinfo['has_text'] = _page_has_text(str(infile), pageno)
+    if fitz:
+        pageinfo['has_text'] = _page_has_text(str(infile), pageno)
+    else:
+        pageinfo['has_text'] = _naive_find_text(pdf=pdf, page=page)
 
     width_pt = page.mediaBox.getWidth()
     height_pt = page.mediaBox.getHeight()
@@ -692,7 +727,11 @@ class PdfInfo:
     def __init__(self, infile):
         self._infile = infile
         self._pages = _pdf_get_all_pageinfo(infile)
-        self._toc = fitz.Document(infile).getToC()
+        if fitz:
+            self._toc = fitz.Document(fspath(infile)).getToC()
+        else:
+            self._toc = []
+
 
     @property
     def pages(self):

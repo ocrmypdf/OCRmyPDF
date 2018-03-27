@@ -28,6 +28,7 @@ import pytest
 import img2pdf
 import pytest
 import sys
+import PyPDF2 as pypdf
 
 
 def test_single_page_text(outdir):
@@ -123,6 +124,13 @@ def test_form_xobject(resources):
     pdf = pdfinfo.PdfInfo(filename)
     pdfimage = pdf[0].images[0]
     assert pdfimage.width == 50
+
+
+def test_naive_find_text(resources):
+    filename = resources / 'formxobject.pdf'
+    reader = pypdf.PdfFileReader(str(filename))
+    page = reader.getPage(0)
+    assert pdfinfo._naive_find_text(pdf=reader, page=page)
 
 
 def test_no_contents(resources):

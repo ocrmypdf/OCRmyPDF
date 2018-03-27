@@ -18,7 +18,10 @@
 
 import pytest
 import PyPDF2 as pypdf
-import fitz
+try:
+    import fitz
+except ImportError:
+    fitz = None
 
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.exceptions import ExitCode
@@ -97,6 +100,7 @@ def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
     assert p.returncode == ExitCode.bad_args, err
 
 
+@pytest.mark.xfail(not fitz, raises=ImportError, reason="needs fitz")
 @pytest.mark.parametrize('ocr_option', ['--skip-text', '--force-ocr'])
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
 def test_bookmarks_preserved(spoof_tesseract_noop, output_type, ocr_option,
