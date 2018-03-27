@@ -18,6 +18,7 @@
 
 from tempfile import mkdtemp
 from collections.abc import Sequence
+from pathlib import Path
 import sys
 import os
 import re
@@ -30,6 +31,11 @@ import argparse
 
 import PyPDF2 as pypdf
 import PIL
+
+try:
+    import fitz
+except ImportError:
+    fitz = None
 
 import ruffus.ruffus_exceptions as ruffus_exceptions
 import ruffus.cmdline as cmdline
@@ -744,7 +750,7 @@ def check_input_file(options, _log, start_input_file):
             raise InputFileError()
 
 
-def check_output_file(options, _log):
+def check_requested_output_file(options, _log):
     if options.output_file == '-':
         if sys.stdout.isatty():
             _log.error(textwrap.dedent("""\
@@ -757,6 +763,35 @@ def check_output_file(options, _log):
             "Output file location (" + options.output_file + ") " +
             "is not a writable file.")
         raise OutputFileAccessError()
+
+
+def report_output_file_size(options, _log, input_file, output_file):
+    try:
+        output_size = Path(output_file).stat().st_size
+        input_size = Path(input_file).stat().st_size
+    except FileNotFoundError:
+        return  # Outputting to stream or something
+    ratio = output_size / input_size
+    if ratio < 1.35 or input_size < 25000:
+        return  # Seems fine
+    
+    reasons = []
+    if not fitz:
+        reasons.append("The optional dependency PyMuPDF is not installed.")
+    if options.force_ocr:
+        reasons.append("The argument --force-ocr was issued.")
+
+    if reasons:
+        explanation = (
+            "Possible reasons for this include:\n" + '\n'.join(reasons) + "\n")
+    else:
+        explanation = (
+            "No reason for this increase is known.  Please report this issue.")
+
+    _log.warning(textwrap.dedent("""\
+        The output file size is {:.2f}× larger than the input file.
+        {}
+        """.format(ratio, explanation)))
 
 
 def run_pipeline():
@@ -805,7 +840,7 @@ def run_pipeline():
             work_folder, 'origin')
 
         check_input_file(options, _log, start_input_file)
-        check_output_file(options, _log)
+        check_requested_output_file(options, _log)
 
         manager = JobContextManager()
         manager.register('JobContext', JobContext)  # pylint: disable=no-member
@@ -852,6 +887,9 @@ def run_pipeline():
         if not qpdf.check(options.output_file, _log):
             _log.warning('Output file: The generated PDF is INVALID')
             return ExitCode.invalid_output_pdf
+
+        report_output_file_size(options, _log, start_input_file, 
+                                options.output_file)
 
     pdfinfo = context.get_pdfinfo()
     if options.verbose:
