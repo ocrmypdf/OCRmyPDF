@@ -554,20 +554,35 @@ def _find_images(*, pdf, container, shorthand=None):
     yield from _find_form_xobject_images(pdf, container, contentsinfo)
 
 
-def _naive_find_text(*, pdf, container):
-    if container.get('/Type') == '/Page' and '/Contents' in container:
-        # For a /Page the content stream is attached to the page's /Contents
-        page = container
-        contentstream = pypdf.pdf.ContentStream(page.getContents(), pdf)
-    elif container.get('/Type') == '/XObject' and \
-            container['/Subtype'] == '/Form':
-        # For a Form XObject that content stream is attached to the XObject
-        contentstream = pypdf.pdf.ContentStream(container, pdf)
+def _naive_find_text(*, pdf, page):
+    if not(page.get('/Type') == '/Page' and '/Contents' in page):
+        # Not a page, or has no /Contents => no text
+        return False
 
+    # First we check the main content stream    
+    contentstream = pypdf.pdf.ContentStream(page.getContents(), pdf)
     contentsinfo = _interpret_contents(contentstream, UNIT_SQUARE)
-
     if contentsinfo.found_text:
         return True
+
+    # Then see if there is a Form XObject with with a content stream
+    # that might have text.  For full completeness we should recursively
+    # search nested Form XObjects, as we do with images.  But that is
+    # rare.
+    if '/Resources' in page:
+        resources = page['/Resources']
+        if '/XObject' in resources:    
+            for xobj in resources['/XObject']:
+                candidate = resources['/XObject'][xobj]
+                if candidate['/Subtype'] != '/Form':
+                    continue
+                form_xobject = candidate                
+                # Content stream is attached to Form XObject dictionary
+                contentstream = pypdf.pdf.ContentStream(form_xobject, pdf)
+                sub_contentsinfo = _interpret_contents(
+                    contentstream, UNIT_SQUARE)
+                if sub_contentsinfo.found_text:
+                    return True
     return False
 
 
@@ -594,7 +609,7 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile):
     if fitz:
         pageinfo['has_text'] = _page_has_text(str(infile), pageno)
     else:
-        pageinfo['has_text'] = _naive_find_text(pdf=pdf, container=page)
+        pageinfo['has_text'] = _naive_find_text(pdf=pdf, page=page)
 
     width_pt = page.mediaBox.getWidth()
     height_pt = page.mediaBox.getHeight()
