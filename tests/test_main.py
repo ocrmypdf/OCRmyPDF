@@ -1068,4 +1068,12 @@ def test_output_is_symlink(spoof_tesseract_noop, resources, outdir):
     )
     assert p.returncode == ExitCode.ok, err
     assert (outdir / 'out.pdf').stat().st_size > 0, 'target file not created'
-    
+
+
+def test_skip_repair(spoof_tesseract_noop, resources, outpdf):
+    check_ocrmypdf(
+        resources / 'trivial.pdf',
+        outpdf,
+        '--skip-repair',
+        env=spoof_tesseract_noop
+    )

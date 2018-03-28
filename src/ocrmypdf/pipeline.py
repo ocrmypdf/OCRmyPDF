@@ -206,16 +206,19 @@ def triage(
     triage_image_file(input_file, output_file, log, options)
 
 
-def repair_pdf(
+def repair_and_parse_pdf(
         input_file,
         output_file,
         log,
         context):
     options = context.get_options()
-    log.debug("Beginning qpdf repair...")
-    qpdf.repair(input_file, output_file, log)
+    if not options.skip_repair:
+        log.debug("Beginning qpdf repair...")
+        qpdf.repair(input_file, output_file, log)
+        log.debug("Repair OK; beginning parse...")
+    else:
+        re_symlink(input_file, output_file, log)
 
-    log.debug("Repair OK; beginning parse...")
     pdfinfo = PdfInfo(output_file)
 
     if pdfinfo.has_userunit and options.output_type == 'pdfa':
@@ -1112,8 +1115,8 @@ def build_pipeline(options, work_folder, log, context):
         output=os.path.join(work_folder, 'origin.pdf'),
         extras=[log, context])
 
-    task_repair_pdf = main_pipeline.transform(
-        task_func=repair_pdf,
+    task_repair_and_parse_pdf = main_pipeline.transform(
+        task_func=repair_and_parse_pdf,
         input=task_triage,
         filter=suffix('.pdf'),
         output='.repaired.pdf',
@@ -1123,7 +1126,7 @@ def build_pipeline(options, work_folder, log, context):
     # Split (kwargs for split seems to be broken, so pass plain args)
     task_pre_split_pages = main_pipeline.split(
         pre_split_pages,
-        task_repair_pdf,
+        task_repair_and_parse_pdf,
         os.path.join(work_folder, '*.presplit.pdf'),
         extras=[log, context])
 
@@ -1287,7 +1290,7 @@ def build_pipeline(options, work_folder, log, context):
     # PDF/A
     task_generate_postscript_stub = main_pipeline.transform(
         task_func=generate_postscript_stub,
-        input=task_repair_pdf,
+        input=task_repair_and_parse_pdf,
         filter=formatter(r'\.repaired\.pdf'),
         output=os.path.join(work_folder, 'pdfa.ps'),
         extras=[log, context])
@@ -1322,7 +1325,7 @@ def build_pipeline(options, work_folder, log, context):
                task_render_hocr_debug_page,
                task_skip_page,
                task_ocr_tesseract_and_render_pdf,
-               task_repair_pdf],
+               task_repair_and_parse_pdf],
         output=os.path.join(work_folder, 'merged.pdf'),
         extras=[log, context])
     task_merge_pages_qpdf.active_if(
@@ -1334,7 +1337,7 @@ def build_pipeline(options, work_folder, log, context):
                task_render_hocr_debug_page,
                task_skip_page,
                task_ocr_tesseract_and_render_pdf,
-               task_repair_pdf],
+               task_repair_and_parse_pdf],
         output=os.path.join(work_folder, 'merged.pdf'),
         extras=[log, context])
     task_merge_pages_mupdf.active_if(
