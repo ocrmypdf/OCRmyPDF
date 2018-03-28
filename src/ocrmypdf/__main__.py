@@ -720,6 +720,11 @@ def preamble(_log):
     _log.debug('ocrmypdf ' + VERSION)
     _log.debug('tesseract ' + tesseract.version())
     _log.debug('qpdf ' + qpdf.version())
+    if fitz:
+        _log.debug('PyMuPDF ' + fitz.version[0])
+        _log.debug('libmupdf ' + fitz.version[1])
+    else:
+        _log.debug('PyMuPDF not installed')
 
 
 def check_environ(options, _log):
