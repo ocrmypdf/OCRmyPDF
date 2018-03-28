@@ -5,10 +5,14 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 
 The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
 
-v6.0.1
+v6.1.0
 ------
 
+-   PyMuPDF is now an optional but recommended dependency, to alleviate installation difficulties on platforms that have less access to PyMuPDF than the author anticipated.  Install OCRmyPDF with ``pip install ocrmypdf[fitz]`` to use it to its full potential.
+
 -   Fix ``FileExistsError`` that could occur if OCR timed out while it was generating the output file. (#218)
+
+-   Fix table of contents/bookmarks all being redirected to page 1 when generating a PDF/A (with PyMuPDF).  (Without PyMuPDF the table of contents is removed in PDF/A mode.)
 
 
 v6.0.0

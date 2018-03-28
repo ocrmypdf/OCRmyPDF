@@ -728,7 +728,6 @@ class PdfInfo:
         else:
             self._toc = []
 
-
     @property
     def pages(self):
         return self._pages

@@ -212,7 +212,10 @@ def repair_pdf(
         log,
         context):
     options = context.get_options()
+    log.debug("Beginning qpdf repair...")
     qpdf.repair(input_file, output_file, log)
+
+    log.debug("Repair OK; beginning parse...")
     pdfinfo = PdfInfo(output_file)
 
     if pdfinfo.has_userunit and options.output_type == 'pdfa':
