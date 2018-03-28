@@ -976,6 +976,8 @@ def merge_pages_ghostscript(
         doc = fitz.Document(output_file + '_toc.pdf')
         doc.setToC(input_pdfinfo.table_of_contents)
         doc.save(output_file)
+    else:
+        os.replace(output_file + '_toc.pdf', output_file)
 
 
 def merge_pages_qpdf(
