@@ -1,4 +1,3 @@
-"""Bindings to external libraries"""
 # © 2017 James R. Barlow: github.com/jbarlow83
 #
 # This file is part of OCRmyPDF.
@@ -15,3 +14,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Bindings to external libraries"""
+
+try:
+    import fitz
+except ImportError:
+    fitz = None

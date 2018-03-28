@@ -34,15 +34,12 @@ from .pdfinfo import PdfInfo, Encoding, Colorspace
 from .pdfa import generate_pdfa_ps
 from .helpers import re_symlink, is_iterable_notstr, page_number
 from .exec import ghostscript, tesseract, qpdf
+from .lib import fitz
 from .exceptions import PdfMergeFailedError, UnsupportedImageFormatError, \
     DpiError, PriorOcrFoundError, InputFileError
 from . import leptonica
 from . import PROGRAM_NAME, VERSION
 
-try:
-    import fitz
-except ImportError:
-    fitz = None
 
 
 VECTOR_PAGE_DPI = 400

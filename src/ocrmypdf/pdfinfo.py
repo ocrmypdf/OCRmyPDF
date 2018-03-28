@@ -29,11 +29,7 @@ from enum import Enum
 from contextlib import contextmanager
 
 import PyPDF2 as pypdf
-try:
-    import fitz
-except ImportError:
-    fitz = None
-
+from .lib import fitz
 from .helpers import universal_open, fspath
 
 

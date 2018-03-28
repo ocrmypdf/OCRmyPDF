@@ -32,11 +32,6 @@ import argparse
 import PyPDF2 as pypdf
 import PIL
 
-try:
-    import fitz
-except ImportError:
-    fitz = None
-
 import ruffus.ruffus_exceptions as ruffus_exceptions
 import ruffus.cmdline as cmdline
 import ruffus.proxy_logger as proxy_logger
@@ -47,6 +42,7 @@ from .pdfa import file_claims_pdfa
 from .helpers import is_iterable_notstr, re_symlink, is_file_writable, \
     available_cpu_count
 from .exec import tesseract, qpdf, ghostscript
+from .lib import fitz
 from . import PROGRAM_NAME, VERSION
 
 from .exceptions import ExitCode, ExitCodeException, MissingDependencyError, \

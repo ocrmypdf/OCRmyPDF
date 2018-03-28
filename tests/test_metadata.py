@@ -18,13 +18,10 @@
 
 import pytest
 import PyPDF2 as pypdf
-try:
-    import fitz
-except ImportError:
-    fitz = None
 
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.lib import fitz
 
 # pytest.helpers is dynamic
 # pylint: disable=no-member
