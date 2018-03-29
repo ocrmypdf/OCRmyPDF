@@ -21,6 +21,11 @@ matrix:
       sudo: required
       language: python
       python: 3.6
+      env: EXTRAS=
+    - os: linux
+      sudo: required
+      language: python
+      python: 3.6
       env: EXTRAS=[fitz]
     - os: osx
       osx_image: xcode8
@@ -50,7 +55,7 @@ script:
 
 deploy:
   # release for main pypi
-  # 3.6 is considered the build leader and does the deploy, otherwise there is
+  # 3.6 w/o fitz is considered the build leader and does the deploy, otherwise there is
   # a race and all versions will try to deploy
   # OTOH if we ever need separate binary wheels then each version needs its
   # own deploy
@@ -62,7 +67,7 @@ deploy:
   on:
     branch: master
     tags: true
-    condition: $TRAVIS_PYTHON_VERSION == "3.6" && $TRAVIS_OS_NAME == "linux"
+    condition: $TRAVIS_PYTHON_VERSION == "3.6" && $TRAVIS_OS_NAME == "linux" && $EXTRAS == ""
   skip_upload_docs: true
 
   # test pypi
