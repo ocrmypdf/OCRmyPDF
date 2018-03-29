@@ -97,7 +97,7 @@ def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
     assert p.returncode == ExitCode.bad_args, err
 
 
-@pytest.mark.xfail(not fitz, raises=ImportError, reason="needs fitz")
+@pytest.mark.xfail(not fitz, reason="needs fitz")
 @pytest.mark.parametrize('ocr_option', ['--skip-text', '--force-ocr'])
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
 def test_bookmarks_preserved(spoof_tesseract_noop, output_type, ocr_option,
