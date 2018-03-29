@@ -14,6 +14,10 @@ v6.1.0
 
 -   Fix table of contents/bookmarks all being redirected to page 1 when generating a PDF/A (with PyMuPDF).  (Without PyMuPDF the table of contents is removed in PDF/A mode.)
 
+-   Fix "RuntimeError: invalid key in dict" when table of contents/bookmarks titles contained the character ``)``. (#239)
+
+-   Added a new argument ``--skip-repair`` to skip the initial PDF repair step if the PDF is already well-formed (because another program repaired it).
+
 
 v6.0.0
 ------
