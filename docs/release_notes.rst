@@ -10,6 +10,8 @@ v6.1.2
 
 -   Upgrade to PyMuPDF v1.12.5 which includes a more complete fix to #239.
 
+-   Add ``defusedxml`` dependency.
+
 
 v6.1.1
 ------

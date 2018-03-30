@@ -234,8 +234,8 @@ setup(
         ],
     python_requires=' >= 3.5',
     setup_requires=[
-        'cffi >= 1.9.1',          # to build the leptonica module
-        'pytest-runner'         # to enable python setup.py test
+        'cffi >= 1.9.1',        # to build the leptonica module
+        'pytest-runner',        # to enable python setup.py test
         'setuptools_scm',       # so that version will work
     ],
     use_scm_version={'version_scheme': 'post-release'},
