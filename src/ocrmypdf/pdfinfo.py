@@ -205,7 +205,7 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     return ContentsInfo(
         xobject_settings=xobject_settings,
         inline_images=inline_images,
-        found_text=True)
+        found_text=found_text)
 
 
 def _get_dpi(ctm_shorthand, image_size):
