@@ -232,23 +232,24 @@ setup(
         "Topic :: Text Processing :: Indexing",
         "Topic :: Text Processing :: Linguistic",
         ],
-    python_requires='>=3.5',
+    python_requires=' >= 3.5',
     setup_requires=[
-        'setuptools_scm',       # so that version will work
-        'cffi>=1.9.1',          # to build the leptonica module
+        'cffi >= 1.9.1',          # to build the leptonica module
         'pytest-runner'         # to enable python setup.py test
+        'setuptools_scm',       # so that version will work
     ],
     use_scm_version={'version_scheme': 'post-release'},
     cffi_modules=[
         'src/ocrmypdf/lib/compile_leptonica.py:ffibuilder'
     ],
     install_requires=[
-        'ruffus==2.6.3',        # pinned - ocrmypdf implements a 2.6.3 workaround
-        'Pillow>=4.0.0',        # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
-        'reportlab>=3.3.0',     # oldest released version with sane image handling
-        'PyPDF2>=1.26',         # pure Python, so track HEAD closely
-        'img2pdf>=0.2.3',       # pure Python, so track HEAD closely
-        'cffi>=1.9.1',          # must be a setup and install requirement
+        'cffi >= 1.9.1',          # must be a setup and install requirement
+        'defusedxml >= 0.5.0',    # pure Python, so track HEAD closely
+        'img2pdf >= 0.2.4',       # pure Python, so track HEAD closely
+        'Pillow >= 4.0.0',        # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
+        'PyPDF2 >= 1.26',         # pure Python, so track HEAD closely
+        'reportlab >= 3.3.0',     # oldest released version with sane image handling
+        'ruffus == 2.6.3',        # pinned - ocrmypdf implements a 2.6.3 workaround
     ],
     extras_require={
         'fitz': ['PyMuPDF >= 1.12.5']     # for table of contents bug
