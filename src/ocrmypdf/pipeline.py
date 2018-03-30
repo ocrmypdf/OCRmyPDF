@@ -1039,12 +1039,7 @@ def merge_pages_mupdf(
 
     metadata = fitz.open(metadata_file)
     toc = metadata.getToC(simple=False)
-    def filter_toc_pages():
-        "fitz does not escape parens properly"
-        for entry in toc:
-            entry[1] = entry[1].replace('(', '').replace(')', '')
-            yield entry
-    doc.setToC([item for item in filter_toc_pages()])
+    doc.setToC(toc)
     doc.setMetadata(pymupdf_metadata)
     doc.save(output_file, garbage=4, deflate=True)
 
