@@ -18,7 +18,7 @@
 # Generate a PDFA_def.ps file for Ghostscript >= 9.14
 
 from string import Template
-import codecs
+from binascii import hexlify
 import pkg_resources
 import PyPDF2 as pypdf
 
@@ -93,7 +93,7 @@ def encode_text_string(s: str) -> str:
         return ''
 
     utf16_bytes = s.encode('utf-16be')
-    ascii_hex_bytes = codecs.encode(b'\xfe\xff' + utf16_bytes, 'hex')
+    ascii_hex_bytes = hexlify(b'\xfe\xff' + utf16_bytes)
     ascii_hex_str = ascii_hex_bytes.decode('ascii').lower()
     return ascii_hex_str
 
