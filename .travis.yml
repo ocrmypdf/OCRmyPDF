@@ -30,6 +30,10 @@ matrix:
     - os: osx
       osx_image: xcode8
       language: generic
+      env: EXTRAS=
+    - os: osx
+      osx_image: xcode8
+      language: generic
       env: EXTRAS=[fitz]
 
 before_cache:
