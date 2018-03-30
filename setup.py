@@ -251,7 +251,7 @@ setup(
         'cffi>=1.9.1',          # must be a setup and install requirement
     ],
     extras_require={
-        'fitz': ['PyMuPDF == 1.12.4']     # pinned to avoid problems with 1.12.4.x
+        'fitz': ['PyMuPDF >= 1.12.5']     # for table of contents bug
     },
     tests_require=tests_require,
     entry_points={
