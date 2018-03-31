@@ -803,6 +803,60 @@ def combine_layers(
         pdf_output.write(out)
 
 
+def jbig2_10to1(
+        infiles,
+        output_file,
+        log,
+        context):
+    assert fitz
+    options = context.get_options()
+    infiles = list(flatten_groups(infiles))
+
+    doc = fitz.open()
+    for infile in infiles:
+        subdoc = fitz.open(infile)
+        doc.insertPDF(subdoc)
+    
+    root = Path(output_file).parent / Path(output_file).stem
+    root.mkdir()
+    
+    changed_xrefs = []
+    for pageno in range(len(infiles)):
+        images = doc.getPageImageList(pageno)
+        for image in images:
+            xref, smask, w, h, bpc, cs, alt_cs, name, filt = image
+            if bpc != 1:
+                continue
+            pix = fitz.Pixmap(doc, xref)
+            pix.writePNG(str(root / '{:08d}.png'.format(xref)), savealpha=False)
+            changed_xrefs.append(xref)
+    doc.save(output_file + '_tmp.pdf')
+    doc = fitz.open(output_file + '_tmp.pdf')
+
+    from subprocess import run, PIPE
+    args = ['jbig2', '-s', '-p', '-v', '-S']
+    args.extend(root.glob('*.png'))
+    proc = run(args, cwd=str(root), stdout=PIPE, stderr=PIPE)
+    proc.check_returncode()
+    log.debug(proc.stderr)
+
+    jbig2_globals_xref = doc._getNewXref()
+    log.info(jbig2_globals_xref)
+    doc._updateStream(xref, (root / 'output.sym').read_bytes())
+
+    for n, xref in enumerate(changed_xrefs):
+        jbig2_im_file = root / 'output.{:04d}'.format(n)
+        obj_str = doc._getObjectString(xref)
+        log.info(xref)
+        log.info(obj_str)
+        obj_str = obj_str.replace('/Filter/FlateDecode', '/Filter/JBIG2Decode')
+        obj_str = obj_str.replace(
+            '>>', '/DecodeParms << /JBIG2Globals {} 0 R >> >>'.format(jbig2_globals_xref))
+        doc._updateObject(xref, obj_str)
+        doc._updateStream(xref, jbig2_im_file.read_bytes())
+    doc.save(output_file, garbage=0, deflate=0, clean=0, expand=0)
+
+
 def ocr_tesseract_and_render_pdf(
         infiles,
         outfiles,
@@ -1279,6 +1333,16 @@ def build_pipeline(options, work_folder, log, context):
     task_combine_layers.graphviz(fillcolor='"#00cc66"')
     task_combine_layers.active_if(options.pdf_renderer == 'hocr' or 
                                   options.pdf_renderer == 'sandwich')
+
+    task_jbig2_10to1 = main_pipeline.collate(
+        task_func=jbig2_10to1,
+        input=[combine_layers],
+        filter=regex(r".*/(\d{5})(\d)(?:\.rendered\.pdf)"),
+        output=os.path.join(work_folder, r'\1x.opt.pdf'),
+        extras=[log, context])
+    task_jbig2_10to1.graphviz(fillcolor='"#00cc66"')
+    task_jbig2_10to1.active_if(fitz and (options.pdf_renderer == 'hocr' or 
+                                         options.pdf_renderer == 'sandwich'))
 
     # Tesseract OCR+PDF
     task_ocr_tesseract_and_render_pdf = main_pipeline.collate(
