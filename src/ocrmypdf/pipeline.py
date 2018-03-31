@@ -624,19 +624,18 @@ def select_visible_page_image(
         log.debug('{:4d}: JPEG input -> JPEG output'.format(
             page_number(image)))
         # If all images were JPEGs originally, produce a JPEG as output
-        im = Image.open(image)
+        with Image.open(image) as im:
+            # At this point the image should be a .png, but deskew, unpaper
+            # might have removed the DPI information. In this case, fall back to
+            # square DPI used to rasterize. When the preview image was
+            # rasterized, it was also converted to square resolution, which is
+            # what we want to give tesseract, so keep it square.
+            fallback_dpi = get_page_square_dpi(pageinfo, options)
+            dpi = im.info.get('dpi', (fallback_dpi, fallback_dpi))
 
-        # At this point the image should be a .png, but deskew, unpaper might
-        # have removed the DPI information. In this case, fall back to square
-        # DPI used to rasterize. When the preview image was rasterized, it
-        # was also converted to square resolution, which is what we want to
-        # give tesseract, so keep it square.
-        fallback_dpi = get_page_square_dpi(pageinfo, options)
-        dpi = im.info.get('dpi', (fallback_dpi, fallback_dpi))
-
-        # Pillow requires integer DPI
-        dpi = round(dpi[0]), round(dpi[1])
-        im.save(output_file, format='JPEG', dpi=dpi)
+            # Pillow requires integer DPI
+            dpi = round(dpi[0]), round(dpi[1])
+            im.save(output_file, format='JPEG', dpi=dpi)
     else:
         re_symlink(image, output_file, log)
 
@@ -658,25 +657,25 @@ def select_image_layer(
         log.debug("{:4d}: page eligible for lossless reconstruction".format(
             page_number(page_pdf)))
         re_symlink(page_pdf, output_file, log)
-    else:
-        pageinfo = get_pageinfo(image, context)
+        return
 
-        # We rasterize a square DPI version of each page because most image
-        # processing tools don't support rectangular DPI. Use the square DPI
-        # as it accurately describes the image. It would be possible to
-        # resample the image at this stage back to non-square DPI to more
-        # closely resemble the input, except that the hocr renderer does not
-        # understand non-square DPI. The sandwich renderer would be fine.
-        dpi = get_page_square_dpi(pageinfo, options)
-        layout_fun = img2pdf.get_fixed_dpi_layout_fun((dpi, dpi))
+    pageinfo = get_pageinfo(image, context)
 
-        with open(image, 'rb') as imfile, \
-                open(output_file, 'wb') as pdf:
-            log.debug('{:4d}: convert'.format(page_number(page_pdf)))
-            img2pdf.convert(
-                imfile, with_pdfrw=False,
-                layout_fun=layout_fun, outputstream=pdf)
-            log.debug('{:4d}: convert done'.format(page_number(page_pdf)))
+    # We rasterize a square DPI version of each page because most image
+    # processing tools don't support rectangular DPI. Use the square DPI as it
+    # accurately describes the image. It would be possible to resample the image
+    # at this stage back to non-square DPI to more closely resemble the input,
+    # except that the hocr renderer does not understand non-square DPI. The
+    # sandwich renderer would be fine.
+    dpi = get_page_square_dpi(pageinfo, options)
+    layout_fun = img2pdf.get_fixed_dpi_layout_fun((dpi, dpi))
+
+    with open(image, 'rb') as imfile, open(output_file, 'wb') as pdf:
+        log.debug('{:4d}: convert'.format(page_number(page_pdf)))
+        img2pdf.convert(
+            imfile, with_pdfrw=False,
+            layout_fun=layout_fun, outputstream=pdf)
+        log.debug('{:4d}: convert done'.format(page_number(page_pdf)))
 
 
 def render_hocr_page(
