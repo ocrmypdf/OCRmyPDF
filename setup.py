@@ -190,9 +190,6 @@ if not forced and command.startswith('install') or \
         package='qpdf',
         version_check_args=['--version']
     )
-else:
-    print('Skipping external program tests because of --force')
-
 
 if 'upload' in sys.argv[1:]:
     print('Use twine to upload the package - setup.py upload is insecure')
