@@ -808,9 +808,15 @@ def jbig2_10to1(
         output_file,
         log,
         context):
-    assert fitz
+    import fitz
+    import pikepdf
     options = context.get_options()
     infiles = list(flatten_groups(infiles))
+
+    # pdf = pikepdf.Pdf.new()
+    # for infile in infiles:
+    #     subdoc = pikepdf.Pdf.open(infile)
+    #     pdf.pages.extend(subdoc.pages)
 
     doc = fitz.open()
     for infile in infiles:
@@ -831,7 +837,6 @@ def jbig2_10to1(
             pix.writePNG(str(root / '{:08d}.png'.format(xref)), savealpha=False)
             changed_xrefs.append(xref)
     doc.save(output_file + '_tmp.pdf')
-    doc = fitz.open(output_file + '_tmp.pdf')
 
     from subprocess import run, PIPE
     args = ['jbig2', '-s', '-p', '-v', '-S']
@@ -840,21 +845,28 @@ def jbig2_10to1(
     proc.check_returncode()
     log.debug(proc.stderr)
 
-    jbig2_globals_xref = doc._getNewXref()
-    log.info(jbig2_globals_xref)
-    doc._updateStream(xref, (root / 'output.sym').read_bytes())
+    pike = pikepdf.Pdf.open(output_file + '_tmp.pdf')
+    jbig2_globals_data = (root / 'output.sym').read_bytes()
+    jbig2_globals = pikepdf.Stream(pike, jbig2_globals_data)
+    jbig2_globals_indirect = pike.make_indirect(jbig2_globals)
 
     for n, xref in enumerate(changed_xrefs):
         jbig2_im_file = root / 'output.{:04d}'.format(n)
-        obj_str = doc._getObjectString(xref)
+        jbig2_im_data = jbig2_im_file.read_bytes()
+
+        im_obj = pike._get_object_id(xref, 0)
         log.info(xref)
-        log.info(obj_str)
-        obj_str = obj_str.replace('/Filter/FlateDecode', '/Filter/JBIG2Decode')
-        obj_str = obj_str.replace(
-            '>>', '/DecodeParms << /JBIG2Globals {} 0 R >> >>'.format(jbig2_globals_xref))
-        doc._updateObject(xref, obj_str)
-        doc._updateStream(xref, jbig2_im_file.read_bytes())
-    doc.save(output_file, garbage=0, deflate=0, clean=0, expand=0)
+        log.info(repr(im_obj))
+
+        im_obj.write(
+            jbig2_im_data, pikepdf.Name('/JBIG2Decode'), 
+            pikepdf.Dictionary({
+                '/JBIG2Globals': pike.make_indirect(jbig2_globals_indirect)
+            })
+        )
+        log.info(repr(im_obj))
+        
+    pike.save(output_file, preserve_pdfa=True)
 
 
 def ocr_tesseract_and_render_pdf(
@@ -1341,7 +1353,7 @@ def build_pipeline(options, work_folder, log, context):
         output=os.path.join(work_folder, r'\1x.opt.pdf'),
         extras=[log, context])
     task_jbig2_10to1.graphviz(fillcolor='"#00cc66"')
-    task_jbig2_10to1.active_if(fitz and (options.pdf_renderer == 'hocr' or 
+    task_jbig2_10to1.active_if((options.pdf_renderer == 'hocr' or 
                                          options.pdf_renderer == 'sandwich'))
 
     # Tesseract OCR+PDF
