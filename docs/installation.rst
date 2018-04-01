@@ -169,24 +169,25 @@ Install the required Tesseract OCR engine with the language packs you plan to us
 
     brew install tesseract --with-all-languages  # Option 2: for all language packs
 
-Update the homebrew pip and install Pillow:
+Update the homebrew pip:
 
 .. code-block:: bash
 
     pip3 install --upgrade pip
-    pip3 install --upgrade pillow
 
 You can then install OCRmyPDF from PyPI, for the current user:
 
 .. code-block:: bash
 
-    pip3 install --user ocrmypdf
+    pip3 install --user ocrmypdf[fitz]
 
 or system-wide:
 
 .. code-block:: bash
 
-    pip3 install ocrmypdf
+    pip3 install ocrmypdf[fitz]
+
+``[fitz]`` includes the optional dependency on PyMuPDF, which improves OCRmyPDF's output in many cases.
 
 The command line program should now be available:
 
@@ -230,7 +231,9 @@ follow these steps.
 
     python3 -m venv venv-ocrmypdf
     source venv-ocrmypdf/bin/activate
-    pip3 install ocrmypdf
+    pip3 install ocrmypdf[fitz]
+
+``[fitz]`` includes the optional dependency on PyMuPDF, which improves OCRmyPDF's output in many cases.
 
 
 Installing on Ubuntu 14.04 LTS
@@ -285,7 +288,7 @@ Now we need to install ``pip`` and let it install ocrmypdf:
 .. code-block:: bash
 
     wget -O - -o /dev/null https://bootstrap.pypa.io/get-pip.py | python3.6
-    pip3.6 install ocrmypdf
+    pip3.6 install ocrmypdf[fitz]
 
 The ``wget`` command will download a program and run it.
 
@@ -343,15 +346,7 @@ Or, to install in `development mode <https://pythonhosted.org/setuptools/setupto
 
     pip3 install -e git+https://github.com/jbarlow83/OCRmyPDF.git
 
-On certain Linux distributions such as Ubuntu, you may need to use 
-run the install command as superuser:
-
-.. code-block:: bash
-
-    sudo pip3 install [-e] git+https://github.com/jbarlow83/OCRmyPDF.git
-
-Note that this will alter your system's Python distribution. If you prefer 
-to not install as superuser, you can install the package in a Python virtual environment:
+You may find it easiest to install in a virtual environment, rather than system-wide:
 
 .. code-block:: bash
 
