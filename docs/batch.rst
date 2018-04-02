@@ -18,7 +18,7 @@ The ``--tag`` argument tells parallel to print the filename as a prefix whenever
 
 	parallel --tag -j 2 ocrmypdf '{}' 'output/{}' ::: *.pdf
 
-OCRmyPDF automaticaly repairs PDFs before parsing and gathering information from them.  If you are already repairing PDFs with ``qpdf`` prior to attempting OCR, or you can use ``--skip-repair`` to skip this step.  It may improve performance for large files, since repairing PDFs is single-threaded.
+OCRmyPDF automatically repairs PDFs before parsing and gathering information from them.  If you are already repairing PDFs with ``qpdf`` prior to attempting OCR, or you can use ``--skip-repair`` to skip this step.  It may improve performance for large files, since repairing PDFs is single-threaded.
 
 Directory trees
 ---------------

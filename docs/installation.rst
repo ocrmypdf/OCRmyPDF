@@ -1,7 +1,16 @@
 Installation
 ============
 
-OCRmyPDF requires Python 3.5 (or newer) and Tesseract 3.04 (or newer).
+OCRmyPDF requires Python 3.5 (or newer) and Tesseract 3.04 (or newer). 
+
+Python 3.6 and Tesseract 4.x are recommended for best OCR results and best performance.
+
+OCRmyPDF 6.x adds a dependency on PyMuPDF ("fitz"). This library is not widely available in platform distributions, and it improves OCRmyPDF in certain conditions. Consider installing OCRmyPDF from the Python binary wheels, which include a precompiled version of this library.
+
+
+.. contents:: Platform-specific steps
+    :depth: 1
+    :local:
 
 Installing on Debian and Ubuntu 16.10 or newer
 ----------------------------------------------
@@ -12,8 +21,14 @@ Users of Debian 9 ("stretch") or later or Ubuntu 16.10 or later may simply
 
     apt-get install ocrmypdf
 
-Installing on macOS
--------------------
+To see what versions are available, check the `Debian Package Tracker <https://tracker.debian.org/pkg/ocrmypdf>`_ or `Ubuntu launchpad.net <https://launchpad.net/ocrmypdf>`_.
+
+Installing on macOS with Homebrew
+---------------------------------
+
+.. image:: https://img.shields.io/homebrew/v/ocrmypdf.svg   
+    :alt: homebrew
+    :target: http://brewformulas.org/Ocrmypdf
 
 OCRmyPDF is now a standard `Homebrew <https://brew.sh>`_ formula. To install on macOS:
 
@@ -36,11 +51,9 @@ Installing the Docker image
 
 For many users, installing the Docker image will be easier than installing all of OCRmyPDF's dependencies. For Windows, it is the only option.
 
-If you have `Docker <https://docs.docker.com/>`_ installed on your system, you can install
-a Docker image of the latest release.
+If you have `Docker <https://docs.docker.com/>`_ installed on your system, you can install a Docker image of the latest release.
 
-Follow the Docker installation instructions for your platform.  If you can run this command
-successfully, your system is ready to download and execute the image:
+Follow the Docker installation instructions for your platform.  If you can run this command successfully, your system is ready to download and execute the image:
 
 .. code-block:: bash
 
@@ -58,16 +71,22 @@ OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine i
 
 Assuming you have a Docker engine running, you can download one of the three available images:
 
-+-----------------------------+---------------------------------------------+---------------------------------------------------------------------------------+
-| Image name                  | Download command                            | Notes                                                                           |
-+-----------------------------+---------------------------------------------+---------------------------------------------------------------------------------+
-| ocrmypdf                    | ``docker pull jbarlow83/ocrmypdf``          | Latest ocrmypdf with Tesseract 3.04. Includes English, French, German, Spanish. |
-+-----------------------------+---------------------------------------------+---------------------------------------------------------------------------------+
-| ocrmypdf-polyglot           | ``docker pull jbarlow83/ocrmypdf-polyglot`` | As above, with all available language packs.                                    |
-+-----------------------------+---------------------------------------------+---------------------------------------------------------------------------------+
-| ocrmypdf-tess4              | ``docker pull jbarlow83/ocrmypdf-tess4``    | Latest ocrmypdf with Tesseract 4.00.00alpha and English, French, German,        |
-|                             |                                             | Spanish, Portuguese, Chinese Simplified, Arabic and Russian (the top 8).        |
-+-----------------------------+---------------------------------------------+---------------------------------------------------------------------------------+
+.. list-table::
+    :widths: auto
+    :header-rows: 1
+
+    *   - Image name
+        - Download command
+        - Notes
+    *   - ocrmypdf
+        - ``docker pull jbarlow83/ocrmypdf``
+        - Latest ocrmypdf with Tesseract 3.x. Includes English, French, German, Spanish.
+    *   - ocrmypdf-polyglot
+        - ``docker pull jbarlow83/ocrmypdf-polyglot``
+        - As above, with all available language packs.
+    *   - ocrmypdf-tess4
+        - ``docker pull jbarlow83/ocrmypdf-tess4``
+        - Latest ocrmypdf with Tesseract 4.x and English, French, German, Spanish, Portuguese, Chinese Simplified, Arabic and Russian (the top 8).
 
 For example:
 
@@ -216,16 +235,15 @@ If you wish install OCRmyPDF for the current user:
 
 .. code-block:: bash
 
-    pip3 install --user ocrmypdf
+    pip3 install --user ocrmypdf[fitz]
 
 Alternately, system-wide. Note that this may modify the system Python environment:
 
 .. code-block:: bash
 
-    sudo pip3 install ocrmypdf
+    sudo pip3 install ocrmypdf[fitz]
 
-If you wish to install OCRmyPDF to a virtual environment to isolate the system Python, you can
-follow these steps.
+If you wish to install OCRmyPDF to a virtual environment to isolate the system Python, you can follow these steps.
 
 .. code-block:: bash
 
@@ -239,8 +257,7 @@ follow these steps.
 Installing on Ubuntu 14.04 LTS
 ------------------------------
 
-Installing on Ubuntu 14.04 LTS (trusty) is more difficult than some other options,
-because it is older and does not provide ``pip``.
+Installing on Ubuntu 14.04 LTS (trusty) is more difficult than some other options, because it is older and does not provide ``pip``.
 
 Update apt-get:
 
@@ -259,10 +276,7 @@ Install system dependencies:
         libffi-dev \
         qpdf
 
-We will need backports of Ghostscript 9.16, libav-11 (for unpaper 6.1),
-Tesseract 4.00 (alpha), and Python 3.6. This will replace Ghostscript and
-Tesseract 3.x on your system. Python 3.6 will be installed alongside the system
-Python 3.
+We will need backports of Ghostscript 9.16, libav-11 (for unpaper 6.1), Tesseract 4.00 (alpha), and Python 3.6. This will replace Ghostscript and Tesseract 3.x on your system. Python 3.6 will be installed alongside the system Python 3.
 
 If you prefer to not modify your system in this matter, consider using a Docker container.
 
@@ -314,6 +328,9 @@ Installing on Windows
 ---------------------
 
 Direct installation on Windows is not possible.  Install the _`Docker` container as described above.  Ensure that your command prompt can run the docker "hello world" container.
+
+It would probably not be too difficult to run on Windows.  The main reason this has been avoided is the difficulty of packaging and installing the various non-Python dependencies: Tesseract, QPDF, Ghostscript, Leptonica.  Pull requests to add or improve Windows support would be quite welcome.
+
 
 Running on Windows
 ~~~~~~~~~~~~~~~~~~
