@@ -55,7 +55,7 @@ install:
 script:
 - tesseract --version
 - qpdf --version
-- pytest
+- pytest -n auto
 
 deploy:
   # release for main pypi
