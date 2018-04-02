@@ -28,7 +28,7 @@ RUN python3 -m venv --system-site-packages /appenv
 # (i.e. "pip install ."). It's unclear to me why this is the case.
 RUN . /appenv/bin/activate; \
   pip install --upgrade pip \
-  && pip install ocrmypdf
+  && pip install ocrmypdf[fitz]
 
 # Now copy the application in, mainly to get the test suite.
 # Do this now to make the best use of Docker cache.
