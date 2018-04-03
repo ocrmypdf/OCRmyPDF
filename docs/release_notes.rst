@@ -5,6 +5,12 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 
 The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
 
+v6.1.3
+------
+
+-   Fix issue #247, ``/CreationDate`` metadata not copied from input to output.
+
+
 v6.1.2
 ------
 
