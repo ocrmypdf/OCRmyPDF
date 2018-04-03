@@ -231,6 +231,12 @@ def repair_and_parse_pdf(
             "output these files.)  Use --output-type=pdf instead."
         )
         raise InputFileError()
+    
+    if len(pdfinfo.pages) > 2000 and sys.version_info[0:2] <= (3, 5):
+        log.warning(
+            "Performance regressions are known occur with Python 3.5 for "
+            "high page count files.  Python 3.6 or newer is recommended."
+        )
 
     context.set_pdfinfo(pdfinfo)
     log.debug(pdfinfo)
