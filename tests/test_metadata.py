@@ -18,8 +18,9 @@
 
 import pytest
 import PyPDF2 as pypdf
+import datetime
 
-from ocrmypdf.pdfa import file_claims_pdfa
+from ocrmypdf.pdfa import file_claims_pdfa, encode_pdf_date, decode_pdf_date
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.lib import fitz
 
@@ -115,3 +116,40 @@ def test_bookmarks_preserved(spoof_tesseract_noop, output_type, ocr_option,
     print(before_toc)
     print(after_toc)
     assert before_toc == after_toc
+
+
+def seconds_between_dates(date1, date2):
+    return (date2 - date1).total_seconds()
+
+
+@pytest.mark.parametrize('infile', ['trivial.pdf', 'jbig2.pdf'])
+@pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
+def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
+                                 infile, outpdf):
+    input_file = resources / infile
+
+    before = pypdf.PdfFileReader(str(input_file)).getDocumentInfo()
+    check_ocrmypdf(
+        input_file, outpdf, '--output-type', output_type, 
+        env=spoof_tesseract_noop)
+    after = pypdf.PdfFileReader(str(outpdf)).getDocumentInfo()
+
+    if not before:
+        # If there was input creation date, none should be output
+        # because of Ghostscript quirks we set it to null
+        # This test would be better if we had a test file with /DocumentInfo but
+        # no /CreationDate, which we don't
+        assert not after['/CreationDate'] or \
+                isinstance(after['/CreationDate'], pypdf.generic.NullObject)
+    else:
+        # We expect that the creation date stayed the same
+        date_before = decode_pdf_date(before['/CreationDate'])
+        date_after = decode_pdf_date(after['/CreationDate'])
+        assert seconds_between_dates(date_before, date_after) < 1000
+
+    # We expect that the modified date is quite recent
+    date_after = decode_pdf_date(after['/ModDate'])
+    assert seconds_between_dates(
+        date_after, datetime.datetime.utcnow()) < 1000
+
+

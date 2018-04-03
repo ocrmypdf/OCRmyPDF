@@ -19,6 +19,8 @@
 
 from string import Template
 from binascii import hexlify
+from datetime import datetime
+from xml.parsers.expat import ExpatError
 import pkg_resources
 import PyPDF2 as pypdf
 
@@ -98,7 +100,79 @@ def encode_text_string(s: str) -> str:
     return ascii_hex_str
 
 
+def encode_pdf_date(d: datetime) -> str:
+    """Encode Python datetime object as PDF date string
+
+    From Adobe pdfmark manual:    
+    (D:YYYYMMDDHHmmSSOHH'mm')
+    D: is an optional prefix. YYYY is the year. All fields after the year are
+    optional. MM is the month (01-12), DD is the day (01-31), HH is the
+    hour (00-23), mm are the minutes (00-59), and SS are the seconds
+    (00-59). The remainder of the string defines the relation of local
+    time to GMT. O is either + for a positive difference (local time is
+    later than GMT) or - (minus) for a negative difference. HH' is the
+    absolute value of the offset from GMT in hours, and mm' is the
+    absolute value of the offset in minutes. If no GMT information is
+    specified, the relation between the specified time and GMT is
+    considered unknown. Regardless of whether or not GMT
+    information is specified, the remainder of the string should specify
+    the local time.
+    """
+
+    pdfmark_date_fmt = r'%Y%m%d%H%M%S'
+    s = d.strftime(pdfmark_date_fmt)
+
+    tz = d.strftime('%z')
+    if tz == 'Z':
+        s += "+00'00'"
+    elif tz != '':
+        sign, tz_hours, tz_mins = tz[0], tz[1:3], tz[3:5]
+        s += "{}{}'{tz}'".format(sign, tz_hours, tz_mins)
+    return s
+
+
+def decode_pdf_date(s: str) -> datetime:
+    pdfmark_date_fmts = (
+        r'%Y%m%d%H%M%S%z',  # +0430 etc
+        r'%Y%m%d%H%M%S',    # no time zone
+        r'%Y%m%d%H%M%SZ')   # trailing Z
+
+    if s.startswith('D:'):
+        s = s[2:]
+    for fmt in pdfmark_date_fmts:
+        try:
+            return datetime.strptime(s, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def _get_pdfmark_dates(pdfmark):
+    """Encode dates for pdfmark Postscript.  The best way to deal with a
+    missing date entry is set it to null, because if the key is omitted 
+    Ghostscript will set it to now - we do not want to erase the fact that
+    the value was unknown.  Setting to an empty string breaks Ghostscript
+    9.22 as reported here:
+    https://bugs.ghostscript.com/show_bug.cgi?id=699182
+    """
+
+    for key in ('/CreationDate', '/ModDate'):
+        if key not in pdfmark:
+            continue
+        if pdfmark[key].strip() == '':
+            yield '  {} null'.format(key)
+            continue
+        date_str = pdfmark[key]
+        if date_str.startswith('D:'):
+            date_str = date_str[2:]
+        yield '  {} (D:{})'.format(key, date_str)
+
+
 def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
+    """Create a Postscript file for Ghostscript.  pdfmark contains the various
+    objects as strings; these must be encoded in ASCII, and dates have a 
+    special format."""
+
     # Ghostscript <= 9.21 has a bug where null entries in DOCINFO might produce
     # ERROR: VMerror (-25) on closing pdfwrite device.
     # https://bugs.ghostscript.com/show_bug.cgi?id=697684
@@ -107,12 +181,12 @@ def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
     docinfo_line_template = '  {key} <{value}>'
 
     def docinfo_gen():
+        yield from _get_pdfmark_dates(pdfmark)
         for key in docinfo_keys:
             if key in pdfmark and pdfmark[key].strip() != '':
                 line = docinfo_line_template.format(
                     key=key, value=encode_text_string(pdfmark[key]))
                 yield line
-
     docinfo = '\n'.join(docinfo_gen())
 
     t = Template(pdfa_def_template)
@@ -145,9 +219,12 @@ def file_claims_pdfa(filename):
 
     This checks if the XMP metadata contains a PDF/A marker.
     """
-
     pdf = pypdf.PdfFileReader(filename)
-    xmp = pdf.getXmpMetadata()
+    try:
+        xmp = pdf.getXmpMetadata()
+    except ExpatError:
+        return {'pass': False, 'output': 'pdf',
+                'conformance': 'Invalid XML metadata'}
 
     try:
         pdfa_nodes = xmp.getNodesInNamespace(

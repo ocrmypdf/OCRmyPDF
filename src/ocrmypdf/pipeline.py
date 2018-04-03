@@ -18,6 +18,7 @@
 from contextlib import suppress
 from shutil import copyfileobj
 from pathlib import Path
+from datetime import datetime
 import sys
 import os
 import shutil
@@ -31,7 +32,7 @@ from ruffus import formatter, regex, Pipeline, suffix
 
 from .hocrtransform import HocrTransform
 from .pdfinfo import PdfInfo, Encoding, Colorspace
-from .pdfa import generate_pdfa_ps
+from .pdfa import generate_pdfa_ps, encode_pdf_date
 from .helpers import re_symlink, is_iterable_notstr, page_number
 from .exec import ghostscript, tesseract, qpdf
 from .lib import fitz
@@ -871,12 +872,8 @@ def get_pdfmark(base_pdf, options):
         except (KeyError, TypeError):
             return ''
 
-    pdfmark = {
-        '/Title': from_document_info('/Title'),
-        '/Author': from_document_info('/Author'),
-        '/Keywords': from_document_info('/Keywords'),
-        '/Subject': from_document_info('/Subject'),
-    }
+    pdfmark = {k: from_document_info(k) for k in 
+        ('/Title', '/Author', '/Keywords', '/Subject', '/CreationDate')}
     if options.title:
         pdfmark['/Title'] = options.title
     if options.author:
@@ -897,6 +894,7 @@ def get_pdfmark(base_pdf, options):
         PROGRAM_NAME, VERSION,
         renderer_tag,
         tesseract.version())
+    pdfmark['/ModDate'] = encode_pdf_date(datetime.utcnow())
     return pdfmark
 
 
@@ -1030,7 +1028,7 @@ def merge_pages_mupdf(
     reader_metadata = pypdf.PdfFileReader(metadata_file)
     pdfmark = get_pdfmark(reader_metadata, options)
     pdfmark['/Producer'] = 'PyMuPDF ' + fitz.version[0]
-    pymupdf_metadata = {k[1:].lower() : v for k, v in pdfmark.items()}
+    pymupdf_metadata = {(k[1].lower() + k[2:]) : v for k, v in pdfmark.items()}
 
     for pdf_page in pdf_pages:
         page = fitz.open(pdf_page)
