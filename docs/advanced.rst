@@ -19,7 +19,7 @@ If ``--force-ocr`` is issued, then all pages will be rasterized to images, disca
 Time and image size limits
 """"""""""""""""""""""""""
 
-By default, OCRmyPDF permits tesseract to run for only three minutes (180 seconds) per page. This is usually more than enough time to find all text on a reasonably sized page with modern hardware. 
+By default, OCRmyPDF permits tesseract to run for three minutes (180 seconds) per page. This is usually more than enough time to find all text on a reasonably sized page with modern hardware. 
 
 If a page is skipped, it will be inserted without OCR. If preprocessing was requested, the preprocessed image layer will be inserted.
 
@@ -33,11 +33,17 @@ If you want to adjust the amount of time spent on OCR, change ``--tesseract-time
 Overriding default tesseract
 """"""""""""""""""""""""""""
 
-OCRmyPDF checks the system ``PATH`` for the ``tesseract`` binary.
+OCRmyPDF checks the system ``PATH`` for the ``tesseract`` binary.  
+
+Some relevant environment variables that influence Tesseract's behavior include:
 
 .. envvar:: TESSDATA_PREFIX
 
-	A Tesseract environment variable that overrides the path to Tesseract's data files.
+	Overrides the path to Tesseract's data files. This can allow simultaneous installation of the "best" and "fast" training data sets. OCRmyPDF does not manage this environment variable.
+
+.. envvar:: OMP_THREAD_LIMIT
+
+	Controls the number of threads Tesseract will use. OCRmyPDF will manage this environment if it is not already set. (Currently, it will set it to 1 because this gives the best results in testing.)
 
 For example, if you are testing tesseract 4.00 and don't wish to use an existing tesseract 3.04 installation, you can launch OCRmyPDF as follows:
 
@@ -106,6 +112,8 @@ The ``sandwich`` renderer
 
 The ``sandwich`` renderer uses Tesseract's new text-only PDF feature, which produces a PDF page that lays out the OCR in invisible text. This page is then "sandwiched" onto the original PDF page, allowing lossless application of OCR even to PDF pages that contain other vector objects.
 
+Currently this is the best renderer for most uses, however it is implemented in Tesseract so OCRmyPDF cannot influence it. Currently some problematic PDF viewers like Mozilla PDF.js and macOS Preview have problems with segmenting its text output, and mightrunseveralwordstogether.
+
 When image preprocessing features like ``--deskew`` are used, the original PDF will be rendered as a full page and the OCR layer will be placed on top.
 
 This renderer requires Tesseract 3.05.01 or newer.
@@ -114,6 +122,10 @@ The ``hocr`` renderer
 """""""""""""""""""""
 
 The ``hocr`` renderer works with older versions of Tesseract. The image layer is copied from the original PDF page if possible, avoiding potentially lossy transcoding or loss of other PDF information. If preprocessing is specified, then the image layer is a new PDF.
+
+Unlike ``sandwich`` this renderer is implemented within OCRmyPDF; anyone looking to customize how OCR is presented should look here. A major disadvantage of this renderer is it not capable of correctly handling text outside the Latin alphabet. Pull requests to improve the situation are welcome.
+
+Currently, this renderer has the best compatibility with Mozilla's PDF.js viewer.
 
 This works in all versions of Tesseract.
 
