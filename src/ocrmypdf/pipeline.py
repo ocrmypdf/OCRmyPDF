@@ -803,72 +803,6 @@ def combine_layers(
         pdf_output.write(out)
 
 
-def jbig2_10to1(
-        infiles,
-        output_file,
-        log,
-        context):
-    import fitz
-    import pikepdf
-    options = context.get_options()
-    infiles = list(flatten_groups(infiles))
-
-    # pdf = pikepdf.Pdf.new()
-    # for infile in infiles:
-    #     subdoc = pikepdf.Pdf.open(infile)
-    #     pdf.pages.extend(subdoc.pages)
-
-    doc = fitz.open()
-    for infile in infiles:
-        subdoc = fitz.open(infile)
-        doc.insertPDF(subdoc)
-    
-    root = Path(output_file).parent / Path(output_file).stem
-    root.mkdir()
-    
-    changed_xrefs = []
-    for pageno in range(len(infiles)):
-        images = doc.getPageImageList(pageno)
-        for image in images:
-            xref, smask, w, h, bpc, cs, alt_cs, name, filt = image
-            if bpc != 1:
-                continue
-            pix = fitz.Pixmap(doc, xref)
-            pix.writePNG(str(root / '{:08d}.png'.format(xref)), savealpha=False)
-            changed_xrefs.append(xref)
-    doc.save(output_file + '_tmp.pdf')
-
-    from subprocess import run, PIPE
-    args = ['jbig2', '-s', '-p', '-v', '-S']
-    args.extend(root.glob('*.png'))
-    proc = run(args, cwd=str(root), stdout=PIPE, stderr=PIPE)
-    proc.check_returncode()
-    log.debug(proc.stderr)
-
-    pike = pikepdf.Pdf.open(output_file + '_tmp.pdf')
-    jbig2_globals_data = (root / 'output.sym').read_bytes()
-    jbig2_globals = pikepdf.Stream(pike, jbig2_globals_data)
-    jbig2_globals_indirect = pike.make_indirect(jbig2_globals)
-
-    for n, xref in enumerate(changed_xrefs):
-        jbig2_im_file = root / 'output.{:04d}'.format(n)
-        jbig2_im_data = jbig2_im_file.read_bytes()
-
-        im_obj = pike._get_object_id(xref, 0)
-        log.info(xref)
-        log.info(repr(im_obj))
-
-        im_obj.write(
-            jbig2_im_data, pikepdf.Name('/JBIG2Decode'), 
-            pikepdf.Dictionary({
-                '/JBIG2Globals': pike.make_indirect(jbig2_globals_indirect)
-            })
-        )
-        log.info(repr(im_obj))
-        
-    pike.save(output_file, preserve_pdfa=True)
-
-
 def ocr_tesseract_and_render_pdf(
         infiles,
         outfiles,
@@ -1113,6 +1047,79 @@ def _do_merge_mupdf(
     doc.setToC(toc)
     doc.setMetadata(pymupdf_metadata)
     doc.save(output_file, garbage=4, deflate=True)
+
+
+def optimize_pdf(
+        input_file,
+        output_file,
+        log,
+        context):
+    import fitz
+    import pikepdf
+
+    doc = fitz.open(input_file)
+
+    root = Path(output_file).parent / 'images'
+    root.mkdir()
+
+    def make_img_name(xref):
+        return str(root / '{:08d}.png'.format(xref))
+    
+    # Write all images out
+    PAGE_GROUP_SIZE = 20
+    changed_xrefs = set()
+    from collections import defaultdict
+    image_groups = defaultdict(lambda: [])
+    for pageno in range(doc.pageCount):
+        group, index = divmod(pageno, PAGE_GROUP_SIZE)
+        page_images = doc.getPageImageList(pageno)
+        for image in page_images:
+            xref, smask, w, h, bpc, cs, alt_cs, name, filt = image
+            if xref in changed_xrefs:
+                continue
+            if bpc != 1:
+                continue
+            pix = fitz.Pixmap(doc, xref)
+            pix.writePNG(make_img_name(xref), savealpha=False)
+            changed_xrefs.add(xref)
+            image_groups[group].append(xref)
+
+    from subprocess import run, PIPE
+
+    for imgrp, xrefs in image_groups.items():
+        prefix = 'group{:08d}'.format(imgrp)
+        args = ['jbig2', '-b', prefix, '-s', '-p', '-S']
+        for xref in xrefs:
+            args.append(make_img_name(xref))
+
+        proc = run(args, cwd=str(root), stdout=PIPE, stderr=PIPE)
+        proc.check_returncode()
+        log.debug(proc.stderr)
+
+    pike = pikepdf.Pdf.open(input_file)
+
+    for imgrp, xrefs in image_groups.items():
+        prefix = 'group{:08d}'.format(imgrp)
+        jbig2_globals_data = (root / (prefix + '.sym')).read_bytes()
+        jbig2_globals = pikepdf.Stream(pike, jbig2_globals_data)
+        jbig2_globals_indirect = pike.make_indirect(jbig2_globals)
+
+        for n, xref in enumerate(xrefs):
+            jbig2_im_file = root / (prefix + '.{:04d}'.format(n))
+            jbig2_im_data = jbig2_im_file.read_bytes()
+            im_obj = pike._get_object_id(xref, 0)
+            log.info(xref)
+            log.info(repr(im_obj))
+
+            im_obj.write(
+                jbig2_im_data, pikepdf.Name('/JBIG2Decode'), 
+                pikepdf.Dictionary({
+                    '/JBIG2Globals': pike.make_indirect(jbig2_globals_indirect)
+                })
+            )
+            log.info(repr(im_obj))
+        
+    pike.save(output_file, preserve_pdfa=True)
 
 
 def merge_sidecars(
@@ -1408,9 +1415,18 @@ def build_pipeline(options, work_folder, log, context):
         extras=[log, context])
     task_merge_sidecars.active_if(options.sidecar)
 
+    # Optimize
+    task_optimize_pdf = main_pipeline.transform(
+        task_func=optimize_pdf,
+        input=task_merge_pages,
+        filter=suffix('.pdf'),
+        output='.optimized.pdf',
+        output_dir=work_folder,
+        extras=[log, context])
+
     # Finalize
     main_pipeline.merge(
         task_func=copy_final,
-        input=[task_merge_pages],
+        input=[task_optimize_pdf, task_merge_pages],
         output=options.output_file,
         extras=[log, context])
