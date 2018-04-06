@@ -386,3 +386,9 @@ If not yet installed, the script will notify you about dependencies that
 need to be installed. The script requires specific versions of the
 dependencies. Older version than the ones mentioned in the release notes
 are likely not to be compatible to OCRmyPDF.
+
+
+Other Linux packages
+--------------------
+
+See the `Repology <https://repology.org/metapackage/ocrmypdf/versions>`_ page.
