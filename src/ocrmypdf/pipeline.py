@@ -927,13 +927,14 @@ def skip_page(
     re_symlink(input_file, output_file, log)
 
 
-def _merge_pages_common(
+def merge_pages(
         input_files_groups,
         output_file,
         log,
         context):
     """Determine ordered list of PDF pages to merge. Returns PDF from which
     metadata should be drawn if present (for qpdf)."""
+    options = context.get_options()
 
     input_files = list(f for f in flatten_groups(input_files_groups)
                        if not f.endswith('.txt'))
@@ -958,17 +959,22 @@ def _merge_pages_common(
     pdf_pages = sorted(input_files, key=input_file_order)
     log.debug("Final pages: " + "\n".join(pdf_pages))
 
-    return pdf_pages, metadata_file
+    args = (pdf_pages, metadata_file, output_file, log, context)
+    if options.output_type.startswith('pdfa'):
+        _do_merge_ghostscript(*args)
+    elif fitz:
+        _do_merge_mupdf(*args)
+    else:
+        _do_merge_qpdf(*args)
 
 
-def merge_pages_ghostscript(
-        input_files_groups,
+def _do_merge_ghostscript(
+        pdf_pages,
+        metadata_file,
         output_file,
         log,
         context):
     options = context.get_options()
-    pdf_pages, _ = _merge_pages_common(
-        input_files_groups, output_file, log, context)
     input_pdfinfo = context.get_pdfinfo()
     ghostscript.generate_pdfa(
         pdf_version=input_pdfinfo.min_version,
@@ -986,14 +992,13 @@ def merge_pages_ghostscript(
         os.replace(output_file + '_toc.pdf', output_file)
 
 
-def merge_pages_qpdf(
-        input_files_groups,
+def _do_merge_qpdf(
+        pdf_pages,
+        metadata_file,
         output_file,
         log,
         context):
     options = context.get_options()
-    pdf_pages, metadata_file = _merge_pages_common(
-        input_files_groups, output_file, log, context)
 
     reader_metadata = pypdf.PdfFileReader(metadata_file)
     pdfmark = get_pdfmark(reader_metadata, options)
@@ -1017,18 +1022,15 @@ def merge_pages_qpdf(
                log=log)
 
 
-def merge_pages_mupdf(
-        input_files_groups,
+def _do_merge_mupdf(
+        pdf_pages,
+        metadata_file,
         output_file,
         log,
         context):
     assert fitz
 
     options = context.get_options()
-
-    pdf_pages, metadata_file = _merge_pages_common(
-        input_files_groups, output_file, log, context)
-
     doc = fitz.Document()
 
     reader_metadata = pypdf.PdfFileReader(metadata_file)
@@ -1300,7 +1302,6 @@ def build_pipeline(options, work_folder, log, context):
         extras=[log, context])
     task_generate_postscript_stub.active_if(options.output_type.startswith('pdfa'))
 
-
     # Bypass valve
     task_skip_page = main_pipeline.transform(
         task_func=skip_page,
@@ -1311,41 +1312,16 @@ def build_pipeline(options, work_folder, log, context):
         extras=[log, context])
 
     # Merge pages
-    task_merge_pages_ghostscript = main_pipeline.merge(
-        task_func=merge_pages_ghostscript,
+    task_merge_pages = main_pipeline.merge(
+        task_func=merge_pages,
         input=[task_combine_layers,
+               task_repair_and_parse_pdf,
                task_render_hocr_debug_page,
                task_skip_page,
                task_ocr_tesseract_and_render_pdf,
                task_generate_postscript_stub],
         output=os.path.join(work_folder, 'merged.pdf'),
         extras=[log, context])
-    task_merge_pages_ghostscript.active_if(
-        options.output_type.startswith('pdfa'))
-
-    task_merge_pages_qpdf = main_pipeline.merge(
-        task_func=merge_pages_qpdf,
-        input=[task_combine_layers,
-               task_render_hocr_debug_page,
-               task_skip_page,
-               task_ocr_tesseract_and_render_pdf,
-               task_repair_and_parse_pdf],
-        output=os.path.join(work_folder, 'merged.pdf'),
-        extras=[log, context])
-    task_merge_pages_qpdf.active_if(
-        options.output_type == 'pdf' and not fitz)
-
-    task_merge_pages_mupdf = main_pipeline.merge(
-        task_func=merge_pages_mupdf,
-        input=[task_combine_layers,
-               task_render_hocr_debug_page,
-               task_skip_page,
-               task_ocr_tesseract_and_render_pdf,
-               task_repair_and_parse_pdf],
-        output=os.path.join(work_folder, 'merged.pdf'),
-        extras=[log, context])
-    task_merge_pages_mupdf.active_if(
-        options.output_type == 'pdf' and fitz)
 
     task_merge_sidecars = main_pipeline.merge(
         task_func=merge_sidecars,
@@ -1359,8 +1335,6 @@ def build_pipeline(options, work_folder, log, context):
     # Finalize
     main_pipeline.merge(
         task_func=copy_final,
-        input=[task_merge_pages_ghostscript,
-               task_merge_pages_mupdf,
-               task_merge_pages_qpdf],
+        input=[task_merge_pages],
         output=options.output_file,
         extras=[log, context])
