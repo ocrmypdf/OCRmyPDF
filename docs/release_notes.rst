@@ -5,16 +5,20 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 
 The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
 
+.. Issue regex
+   find:    [^`]\#([0-9]{1,3})[^0-9]  
+   replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
+
 v6.1.3
 ------
 
--   Fix issue #247, ``/CreationDate`` metadata not copied from input to output.
+-   Fix issue `#247 <https://github.com/jbarlow83/OCRmyPDF/issues/247>`_, ``/CreationDate`` metadata not copied from input to output.
 
 
 v6.1.2
 ------
 
--   Upgrade to PyMuPDF v1.12.5 which includes a more complete fix to #239.
+-   Upgrade to PyMuPDF v1.12.5 which includes a more complete fix to `#239 <https://github.com/jbarlow83/OCRmyPDF/issues/239>`_.
 
 -   Add ``defusedxml`` dependency.
 
@@ -30,11 +34,11 @@ v6.1.0
 
 -   PyMuPDF is now an optional but recommended dependency, to alleviate installation difficulties on platforms that have less access to PyMuPDF than the author anticipated.  Install OCRmyPDF with ``pip install ocrmypdf[fitz]`` to use it to its full potential.
 
--   Fix ``FileExistsError`` that could occur if OCR timed out while it was generating the output file. (#218)
+-   Fix ``FileExistsError`` that could occur if OCR timed out while it was generating the output file. (`#218 <https://github.com/jbarlow83/OCRmyPDF/issues/218>`_)
 
 -   Fix table of contents/bookmarks all being redirected to page 1 when generating a PDF/A (with PyMuPDF).  (Without PyMuPDF the table of contents is removed in PDF/A mode.)
 
--   Fix "RuntimeError: invalid key in dict" when table of contents/bookmarks titles contained the character ``)``. (#239)
+-   Fix "RuntimeError: invalid key in dict" when table of contents/bookmarks titles contained the character ``)``. (`#239 <https://github.com/jbarlow83/OCRmyPDF/issues/239>`_)
 
 -   Added a new argument ``--skip-repair`` to skip the initial PDF repair step if the PDF is already well-formed (because another program repaired it).
 
@@ -58,21 +62,21 @@ v6.0.0
 
     + The ``--pdf-renderer tess4`` alias for ``sandwich`` was removed.
 
--   Fixed an issue where OCRmyPDF failed to detect existing text on pages, depending on how the text and fonts were encoded within the PDF. (#233, #232)
+-   Fixed an issue where OCRmyPDF failed to detect existing text on pages, depending on how the text and fonts were encoded within the PDF. (`#233 <https://github.com/jbarlow83/OCRmyPDF/issues/233>`_, `#232 <https://github.com/jbarlow83/OCRmyPDF/issues/232>`_)
 
--   Fixed an issue that caused dramatic inflation of file sizes when ``--skip-text --output-type pdf`` was used. OCRmyPDF now removes duplicate resources such as fonts, images and other objects that it generates. (#237)
+-   Fixed an issue that caused dramatic inflation of file sizes when ``--skip-text --output-type pdf`` was used. OCRmyPDF now removes duplicate resources such as fonts, images and other objects that it generates. (`#237 <https://github.com/jbarlow83/OCRmyPDF/issues/237>`_)
 
--   Improved performance of the initial page splitting step. Originally this step was not believed to be expensive and ran in a process. Large file testing revealed it to be a bottleneck, so it is now parallelized. On a 700 page file with quad core machine, this change saves about 2 minutes. (#234)
+-   Improved performance of the initial page splitting step. Originally this step was not believed to be expensive and ran in a process. Large file testing revealed it to be a bottleneck, so it is now parallelized. On a 700 page file with quad core machine, this change saves about 2 minutes. (`#234 <https://github.com/jbarlow83/OCRmyPDF/issues/234>`_)
 
--   The test suite now includes a cache that can be used to speed up test runs across platforms. This also does not require computing checksums, so it's faster. (#217)
+-   The test suite now includes a cache that can be used to speed up test runs across platforms. This also does not require computing checksums, so it's faster. (`#217 <https://github.com/jbarlow83/OCRmyPDF/issues/217>`_)
 
 
 v5.7.0
 ------
 
--   Fixed an issue that caused poor CPU utilization on machines more than 4 cores when running Tesseract 4. (Related to issue #217.)
+-   Fixed an issue that caused poor CPU utilization on machines more than 4 cores when running Tesseract 4. (Related to issue `#217 <https://github.com/jbarlow83/OCRmyPDF/issues/217>`_.)
 
--   The 'hocr' renderer has been improved. The 'sandwich' and 'tesseract' renderers are still better for most use cases, but 'hocr' may be useful for people who work with the PDF.js renderer in English/ASCII languages. (#225)
+-   The 'hocr' renderer has been improved. The 'sandwich' and 'tesseract' renderers are still better for most use cases, but 'hocr' may be useful for people who work with the PDF.js renderer in English/ASCII languages. (`#225 <https://github.com/jbarlow83/OCRmyPDF/issues/225>`_)
 
     + It now formats text in a matter that is easier for certain PDF viewers to select and extract copy and paste text. This should help macOS Preview and PDF.js in particular.
     + The appearance of selected text and behavior of selecting text is improved.
@@ -95,7 +99,7 @@ v5.6.2
 v5.6.1
 ------
 
--   Fix issue #219: change how the final output file is created to avoid triggering permission errors when the output is a special file such as ``/dev/null``
+-   Fix issue `#219 <https://github.com/jbarlow83/OCRmyPDF/issues/219>`_: change how the final output file is created to avoid triggering permission errors when the output is a special file such as ``/dev/null``
 -   Fix test suite failures due to a qpdf 8.0.0 regression and Python 3.5's handling of symlink
 -   The "encrypted PDF" error message was different depending on the type of PDF encryption. Now a single clear message appears for all types of PDF encryption.
 -   ocrmypdf is now in Homebrew. Homebrew users are advised to the version of ocrmypdf in the official homebrew-core formulas rather than the private tap.
@@ -105,7 +109,7 @@ v5.6.1
 v5.6.0
 ------
 
--   Fix issue #216: preserve "text as curves" PDFs without rasterizing file
+-   Fix issue `#216 <https://github.com/jbarlow83/OCRmyPDF/issues/216>`_: preserve "text as curves" PDFs without rasterizing file
 -   Related to the above, messages about rasterizing are more consistent
 -   For consistency versions minor releases will now get the trailing .0 they always should have had.
 
@@ -122,11 +126,11 @@ v5.5
 v5.4.4
 ------
 
--   Fix issue #181: fix final merge failure for PDFs with more pages than the system file handle limit (``ulimit -n``)
--   Fix issue #200: an uncommon syntax for formatting decimal numbers in a PDF would cause qpdf to issue a warning, which ocrmypdf treated as an error. Now this the warning is relayed.
+-   Fix issue `#181 <https://github.com/jbarlow83/OCRmyPDF/issues/181>`_: fix final merge failure for PDFs with more pages than the system file handle limit (``ulimit -n``)
+-   Fix issue `#200 <https://github.com/jbarlow83/OCRmyPDF/issues/200>`_: an uncommon syntax for formatting decimal numbers in a PDF would cause qpdf to issue a warning, which ocrmypdf treated as an error. Now this the warning is relayed.
 -   Fix an issue where intermediate PDFs would be created at version 1.3 instead of the version of the original file. It's possible but unlikely this had side effects.
--   A warning is now issued when older versions of qpdf are used since issues like #200 cause qpdf to infinite-loop
--   Address issue #140: if Tesseract outputs invalid UTF-8, escape it and print its message instead of aborting with a Unicode error 
+-   A warning is now issued when older versions of qpdf are used since issues like `#200 <https://github.com/jbarlow83/OCRmyPDF/issues/200>`_ cause qpdf to infinite-loop
+-   Address issue `#140 <https://github.com/jbarlow83/OCRmyPDF/issues/140>`_: if Tesseract outputs invalid UTF-8, escape it and print its message instead of aborting with a Unicode error 
 -   Adding previously unlisted setup requirement, pytest-runner
 -   Update documentation: fix an error in the example script for Synology with Docker images, improved security guidance, advised ``pip install --user``
 
@@ -184,9 +188,9 @@ v5.3.1
 v5.3
 ----
 
--   Added ``--user-words`` and ``--user-patterns`` arguments which are forwarded to Tesseract OCR as words and regular expressions respective to use to guide OCR. Supplying a list of subject-domain words should assist Tesseract with resolving words. (#165)
--   Using a non Latin-1 language with the "hocr" renderer now warns about possible OCR quality and recommends workarounds (#176)
--   Output file path added to error message when that location is not writable (#175)
+-   Added ``--user-words`` and ``--user-patterns`` arguments which are forwarded to Tesseract OCR as words and regular expressions respective to use to guide OCR. Supplying a list of subject-domain words should assist Tesseract with resolving words. (`#165 <https://github.com/jbarlow83/OCRmyPDF/issues/165>`_)
+-   Using a non Latin-1 language with the "hocr" renderer now warns about possible OCR quality and recommends workarounds (`#176 <https://github.com/jbarlow83/OCRmyPDF/issues/176>`_)
+-   Output file path added to error message when that location is not writable (`#175 <https://github.com/jbarlow83/OCRmyPDF/issues/175>`_)
 -   Otherwise valid PDFs with leading whitespace at the beginning of the file are now accepted
 
 
@@ -207,7 +211,7 @@ v5.1
 v5.0.1
 ------
 
--   Fixed issue #169, exception due to failure to create sidecar text files on some versions of Tesseract 3.04, including the jbarlow83/ocrmypdf Docker image
+-   Fixed issue `#169 <https://github.com/jbarlow83/OCRmyPDF/issues/169>`_, exception due to failure to create sidecar text files on some versions of Tesseract 3.04, including the jbarlow83/ocrmypdf Docker image
 
 
 v5.0
@@ -219,33 +223,33 @@ v5.0
      + Support for Tesseract 3.02 and 3.03 dropped. Tesseract 3.04 or newer is required. Tesseract 4.00 (alpha) is supported.
      + The OCRmyPDF.sh script was removed.
 
--   Add a new feature, ``--sidecar``, which allows creating "sidecar" text files which contain the OCR results in plain text. These OCR text is more reliable than extracting text from PDFs. Closes #126.
--   New feature: ``--pdfa-image-compression``, which allows overriding Ghostscript's lossy-or-lossless image encoding heuristic and making all images JPEG encoded or lossless encoded as desired. Fixes #163.
--   Fixed issue #143, added ``--quiet`` to suppress "INFO" messages
--   Fixed issue #164, a typo
+-   Add a new feature, ``--sidecar``, which allows creating "sidecar" text files which contain the OCR results in plain text. These OCR text is more reliable than extracting text from PDFs. Closes `#126 <https://github.com/jbarlow83/OCRmyPDF/issues/126>`_.
+-   New feature: ``--pdfa-image-compression``, which allows overriding Ghostscript's lossy-or-lossless image encoding heuristic and making all images JPEG encoded or lossless encoded as desired. Fixes `#163 <https://github.com/jbarlow83/OCRmyPDF/issues/163>`_.
+-   Fixed issue `#143 <https://github.com/jbarlow83/OCRmyPDF/issues/143>`_, added ``--quiet`` to suppress "INFO" messages
+-   Fixed issue `#164 <https://github.com/jbarlow83/OCRmyPDF/issues/164>`_, a typo
 -   Removed the command line parameters ``-n`` and ``--just-print`` since they have not worked for some time (reported as Ubuntu bug `#1687308 <https://bugs.launchpad.net/ubuntu/+source/ocrmypdf/+bug/1687308>`_)
 
 
 v4.5.6
 ------
 
--   Fixed issue #156, 'NoneType' object has no attribute 'getObject' on pages with no optional /Contents record.  This should resolve all issues related to pages with no /Contents record.
--   Fixed issue #158, ocrmypdf now stops and terminates if Ghostscript fails on an intermediate step, as it is not possible to proceed.
--   Fixed issue #160, exception thrown on certain invalid arguments instead of error message
+-   Fixed issue `#156 <https://github.com/jbarlow83/OCRmyPDF/issues/156>`_, 'NoneType' object has no attribute 'getObject' on pages with no optional /Contents record.  This should resolve all issues related to pages with no /Contents record.
+-   Fixed issue `#158 <https://github.com/jbarlow83/OCRmyPDF/issues/158>`_, ocrmypdf now stops and terminates if Ghostscript fails on an intermediate step, as it is not possible to proceed.
+-   Fixed issue `#160 <https://github.com/jbarlow83/OCRmyPDF/issues/160>`_, exception thrown on certain invalid arguments instead of error message
 
 
 v4.5.5
 ------
 
 -   Automated update of macOS homebrew tap
--   Fixed issue #154, KeyError '/Contents' when searching for text on blank pages that have no /Contents record.  Note: incomplete fix for this issue.
+-   Fixed issue `#154 <https://github.com/jbarlow83/OCRmyPDF/issues/154>`_, KeyError '/Contents' when searching for text on blank pages that have no /Contents record.  Note: incomplete fix for this issue.
 
 
 v4.5.4
 ------
 
--   Fix ``--skip-big`` raising an exception if a page contains no images (#152) (thanks to @TomRaz)
--   Fix an issue where pages with no images might trigger "cannot write mode P as JPEG" (#151)
+-   Fix ``--skip-big`` raising an exception if a page contains no images (`#152 <https://github.com/jbarlow83/OCRmyPDF/issues/152>`_) (thanks to @TomRaz)
+-   Fix an issue where pages with no images might trigger "cannot write mode P as JPEG" (`#151 <https://github.com/jbarlow83/OCRmyPDF/issues/151>`_)
 
 
 v4.5.3
@@ -260,7 +264,7 @@ v4.5.3
 v4.5.2
 ------
 
--   Fix issue #147. ``--pdf-renderer tess4 --clean`` will produce an oversized page containing the original image in the bottom left corner, due to loss DPI information.
+-   Fix issue `#147 <https://github.com/jbarlow83/OCRmyPDF/issues/147>`_. ``--pdf-renderer tess4 --clean`` will produce an oversized page containing the original image in the bottom left corner, due to loss DPI information.
 -   Make "using Tesseract 4.0" warning less ominous
 -   Set up machinery for homebrew OCRmyPDF tap
 
@@ -268,13 +272,13 @@ v4.5.2
 v4.5.1
 ------
 
--   Fix issue #137, proportions of images with a non-square pixel aspect ratio would be distorted in output for ``--force-ocr`` and some other combinations of flags
+-   Fix issue `#137 <https://github.com/jbarlow83/OCRmyPDF/issues/137>`_, proportions of images with a non-square pixel aspect ratio would be distorted in output for ``--force-ocr`` and some other combinations of flags
 
 
 v4.5
 ----
 
--   Exotic PDFs containing "Form XObjects" are now supported (issue #134; PDF reference manual 8.10), and images they contain are taken into account when determining the resolution for rasterizing
+-   Exotic PDFs containing "Form XObjects" are now supported (issue `#134 <https://github.com/jbarlow83/OCRmyPDF/issues/134>`_; PDF reference manual 8.10), and images they contain are taken into account when determining the resolution for rasterizing
 -   The Tesseract 4 Docker image no longer includes all languages, because it took so long to build something would tend to fail
 -   OCRmyPDF now warns about using ``--pdf-renderer tesseract`` with Tesseract 3.04 or lower due to issues with Ghostscript corrupting the OCR text in these cases
 
@@ -367,14 +371,14 @@ v4.3
 v4.2.5
 ------
 
--   Fixed an issue (#100) with PDFs that omit the optional /BitsPerComponent parameter on images
+-   Fixed an issue (`#100 <https://github.com/jbarlow83/OCRmyPDF/issues/100>`_) with PDFs that omit the optional /BitsPerComponent parameter on images
 -   Removed non-free file milk.pdf
 
 
 v4.2.4
 ------
 
--   Fixed an error (#90) caused by PDFs that use stencil masks properly
+-   Fixed an error (`#90 <https://github.com/jbarlow83/OCRmyPDF/issues/90>`_) caused by PDFs that use stencil masks properly
 -   Fixed handling of PDFs that try to draw images or stencil masks without properly setting up the graphics state (such images are now ignored for the purposes of calculating DPI)
 
 v4.2.3
@@ -407,7 +411,7 @@ v4.2.1
 v4.2
 ----
 
--   ocrmypdf will now try to convert single image files to PDFs if they are provided as input (#15)
+-   ocrmypdf will now try to convert single image files to PDFs if they are provided as input (`#15 <https://github.com/jbarlow83/OCRmyPDF/issues/15>`_)
 
     +  This is a basic convenience feature. It only supports a single image and always makes the image fill the whole page.
     +  For better control over image to PDF conversion, use ``img2pdf`` (one of ocrmypdf's dependencies)
@@ -423,9 +427,9 @@ v4.2
 
     +  supports users who want to use OCRmyPDF to reconstruct text information in PDFs with damaged Unicode maps (copy and paste text does not match displayed text)
     +  supports reinterpreting PDFs where text was rendered as curves for printing, and text needs to be recovered
-    +  fixes issue #82
+    +  fixes issue `#82 <https://github.com/jbarlow83/OCRmyPDF/issues/82>`_
 
--   Fixes an issue where, with certain settings, monochrome images in PDFs would be converted to 8-bit grayscale, increasing file size (#79)
+-   Fixes an issue where, with certain settings, monochrome images in PDFs would be converted to 8-bit grayscale, increasing file size (`#79 <https://github.com/jbarlow83/OCRmyPDF/issues/79>`_)
 -   Support for Ubuntu 12.04 LTS "precise" has been dropped in favor of (roughly) Ubuntu 14.04 LTS "trusty" 
 
     +  Some Ubuntu "PPAs" (backports) are needed to make it work
@@ -541,7 +545,7 @@ New features
 
 -   Automatic page rotation (``-r``) is now available. It uses ignores any prior rotation information
     on PDFs and sets rotation based on the dominant orientation of detectable text. This feature is
-    fairly reliable but some false positives occur especially if there is not much text to work with. (#4) 
+    fairly reliable but some false positives occur especially if there is not much text to work with. (`#4 <https://github.com/jbarlow83/OCRmyPDF/issues/4>`_) 
 -   Deskewing is now performed using Leptonica instead of unpaper. Leptonica is faster and more reliable
     at image deskewing than unpaper.
 
@@ -552,14 +556,14 @@ Fixes
 -   Fixed an issue where lossless reconstruction could cause some pages to be appear incorrectly
     if the page was rotated by the user in Acrobat after being scanned (specifically if it a /Rotate tag)
 -   Fixed an issue where lossless reconstruction could misalign the graphics layer with respect to
-    text layer if the page had been cropped such that its origin is not (0, 0) (#49)
+    text layer if the page had been cropped such that its origin is not (0, 0) (`#49 <https://github.com/jbarlow83/OCRmyPDF/issues/49>`_)
 
 
 Changes
 ^^^^^^^
 
 -   Logging output is now much easier to read
--   ``--deskew`` is now performed by Leptonica instead of unpaper (#25)
+-   ``--deskew`` is now performed by Leptonica instead of unpaper (`#25 <https://github.com/jbarlow83/OCRmyPDF/issues/25>`_)
 -   libffi is now required
 -   Some changes were made to the Docker and Travis build environments to support libffi
 -   ``--pdf-renderer=tesseract`` now displays a warning if the Tesseract version is less than 3.04.01,
@@ -574,7 +578,7 @@ v3.2.1
 Changes
 ^^^^^^^
 
--   Fixed issue #47 "convert() got and unexpected keyword argument 'dpi'" by upgrading to img2pdf 0.2
+-   Fixed issue `#47 <https://github.com/jbarlow83/OCRmyPDF/issues/47>`_ "convert() got and unexpected keyword argument 'dpi'" by upgrading to img2pdf 0.2
 -   Tweaked the Dockerfiles
 
 
@@ -618,7 +622,7 @@ Changes
 -   Python 3.5 and macOS El Capitan are now supported platforms - no changes were
     needed to implement support
 -   Improved some error messages related to missing input files
--   Fixed issue #20 - uppercase .PDF extension not accepted
+-   Fixed issue `#20 <https://github.com/jbarlow83/OCRmyPDF/issues/20>`_ - uppercase .PDF extension not accepted
 -   Fixed an issue where OCRmyPDF failed to text that certain pages contained previously OCR'ed text, 
     such as OCR text produced by Tesseract 3.04
 -   Inserts /Creator tag into PDFs so that errors can be traced back to this project
@@ -695,14 +699,14 @@ Release candidates
 
 -   rc9:
 
-    - fix issue #118: report error if ghostscript iccprofiles are missing
-    - fixed another issue related to #111: PDF rasterized to palette file
+    - fix issue `#118 <https://github.com/jbarlow83/OCRmyPDF/issues/118>`_: report error if ghostscript iccprofiles are missing
+    - fixed another issue related to `#111 <https://github.com/jbarlow83/OCRmyPDF/issues/111>`_: PDF rasterized to palette file
     - add support image files with a palette
     - don't try to validate PDF file after an exception occurs
 
 -   rc8:
 
-    - fix issue #111: exception thrown if PDF is missing DocumentInfo dictionary
+    - fix issue `#111 <https://github.com/jbarlow83/OCRmyPDF/issues/111>`_: exception thrown if PDF is missing DocumentInfo dictionary
 
 -   rc7:
 
