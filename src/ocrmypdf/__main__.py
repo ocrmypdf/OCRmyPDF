@@ -879,6 +879,7 @@ def run_pipeline():
 
     if options.flowchart:
         _log.info("Flowchart saved to {}".format(options.flowchart))
+        return ExitCode.ok
     elif options.output_file == '-':
         _log.info("Output sent to stdout")
     elif os.path.samefile(options.output_file, os.devnull):
