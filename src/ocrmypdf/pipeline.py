@@ -1086,17 +1086,23 @@ def optimize_pdf(
             image_groups[group].append(xref)
 
     from subprocess import run, PIPE
+    import concurrent.futures
 
-    for imgrp, xrefs in image_groups.items():
-        prefix = 'group{:08d}'.format(imgrp)
-        args = ['jbig2', '-b', prefix, '-s', '-p', '-S']
-        for xref in xrefs:
-            args.append(make_img_name(xref))
-
-        proc = run(args, cwd=str(root), stdout=PIPE, stderr=PIPE)
-        proc.check_returncode()
-        log.debug(proc.stderr)
-
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=options.jobs) as executor:
+        futures = []
+        for imgrp, xrefs in image_groups.items():
+            prefix = 'group{:08d}'.format(imgrp)
+            cmd = ['jbig2', '-b', prefix, '-s', '-p', '-S']
+            cmd.extend(make_img_name(xref) for xref in xrefs)
+            future = executor.submit(
+                run, cmd, cwd=str(root), stdout=PIPE, stderr=PIPE)
+            futures.append(future)
+        for future in concurrent.futures.as_completed(futures):
+            proc = future.result()
+            proc.check_returncode()
+            log.debug(proc.stderr)
+        
     pike = pikepdf.Pdf.open(input_file)
 
     for imgrp, xrefs in image_groups.items():
