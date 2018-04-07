@@ -1109,7 +1109,6 @@ def optimize_pdf(
         prefix = 'group{:08d}'.format(imgrp)
         jbig2_globals_data = (root / (prefix + '.sym')).read_bytes()
         jbig2_globals = pikepdf.Stream(pike, jbig2_globals_data)
-        jbig2_globals_indirect = pike.make_indirect(jbig2_globals)
 
         for n, xref in enumerate(xrefs):
             jbig2_im_file = root / (prefix + '.{:04d}'.format(n))
@@ -1121,7 +1120,7 @@ def optimize_pdf(
             im_obj.write(
                 jbig2_im_data, pikepdf.Name('/JBIG2Decode'), 
                 pikepdf.Dictionary({
-                    '/JBIG2Globals': jbig2_globals_indirect
+                    '/JBIG2Globals': jbig2_globals
                 })
             )
             log.info(repr(im_obj))
