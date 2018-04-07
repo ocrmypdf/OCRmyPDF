@@ -1057,6 +1057,7 @@ def optimize_pdf(
     import fitz
     import pikepdf
 
+    options = context.get_options()
     doc = fitz.open(input_file)
 
     root = Path(output_file).parent / 'images'
@@ -1114,7 +1115,7 @@ def optimize_pdf(
             im_obj.write(
                 jbig2_im_data, pikepdf.Name('/JBIG2Decode'), 
                 pikepdf.Dictionary({
-                    '/JBIG2Globals': pike.make_indirect(jbig2_globals_indirect)
+                    '/JBIG2Globals': jbig2_globals_indirect
                 })
             )
             log.info(repr(im_obj))
