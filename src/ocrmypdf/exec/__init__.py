@@ -24,6 +24,7 @@ from subprocess import run, STDOUT, PIPE, CalledProcessError
 from ..exceptions import MissingDependencyError
 
 
+
 def get_version(program, *, 
         version_arg='--version', regex=r'(\d+(\.\d+)*)'):
     "Get the version of the specified program"
@@ -37,6 +38,10 @@ def get_version(program, *,
             stdout=PIPE, stderr=STDOUT, check=True)
         output = proc.stdout
     except CalledProcessError as e:
+        if e.returncode < 0:
+            raise MissingDependencyError(
+                "Ran program '{}' but it exited with an error:\n{}".format(
+                    program, e.output)) from e
         raise MissingDependencyError(
             "Could not find program '{}' on the PATH".format(
                 program)) from e
