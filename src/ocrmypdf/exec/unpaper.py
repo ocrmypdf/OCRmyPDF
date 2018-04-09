@@ -57,15 +57,15 @@ def run(input_file, output_file, dpi, log, mode_args):
             else:
                 im = im.convert(mode='RGB')
         except IOError as e:
-            log.error(
-                    "Could not convert image with type " + im.mode)
+            log.error("Could not convert image with type " + im.mode)
+            im.close()
             raise MissingDependencyError() from e
 
     try:
         suffix = SUFFIXES[im.mode]
     except KeyError:
-        log.error(
-                "Failed to convert image to a supported format.")
+        log.error("Failed to convert image to a supported format.")
+        im.close()
         raise MissingDependencyError() from e
 
     with NamedTemporaryFile(suffix=suffix) as input_pnm, \
