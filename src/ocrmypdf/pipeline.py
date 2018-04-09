@@ -1054,6 +1054,7 @@ def optimize_pdf(
         output_file,
         log,
         context):
+
     import fitz
     import pikepdf
 
@@ -1066,24 +1067,30 @@ def optimize_pdf(
     def make_img_name(xref):
         return str(root / '{:08d}.png'.format(xref))
     
-    # Write all images out
-    PAGE_GROUP_SIZE = 20
+    # Extract images we can improve
+    PAGE_GROUP_SIZE = 10
     changed_xrefs = set()
     from collections import defaultdict
-    image_groups = defaultdict(lambda: [])
+    jbig2_groups = defaultdict(lambda: [])
     for pageno in range(doc.pageCount):
         group, index = divmod(pageno, PAGE_GROUP_SIZE)
         page_images = doc.getPageImageList(pageno)
         for image in page_images:
             xref, smask, w, h, bpc, cs, alt_cs, name, filt = image
             if xref in changed_xrefs:
-                continue
-            if bpc != 1:
-                continue
-            pix = fitz.Pixmap(doc, xref)
-            pix.writePNG(make_img_name(xref), savealpha=False)
-            changed_xrefs.add(xref)
-            image_groups[group].append(xref)
+                continue  # Don't improve same image twice
+            if bpc == 1 and filt != 'JBIG2Decode':
+                # Monochrome: convert to JBIG2 if not already
+                pix = fitz.Pixmap(doc, xref)
+                pix.writePNG(make_img_name(xref), savealpha=False)
+                changed_xrefs.add(xref)
+                jbig2_groups[group].append(xref)
+            elif filt == 'DCTDecode':
+                # JPEG: apply quality setting
+                # would have to use pike to get the raw DCT because fitz
+                # has no API for it...
+                # or leptonica convertToPdfData
+                pass
 
     from subprocess import run, PIPE
     import concurrent.futures
@@ -1091,8 +1098,8 @@ def optimize_pdf(
     with concurrent.futures.ThreadPoolExecutor(
             max_workers=options.jobs) as executor:
         futures = []
-        for imgrp, xrefs in image_groups.items():
-            prefix = 'group{:08d}'.format(imgrp)
+        for group, xrefs in jbig2_groups.items():
+            prefix = 'group{:08d}'.format(group)
             cmd = ['jbig2', '-b', prefix, '-s', '-p', '-S']
             cmd.extend(make_img_name(xref) for xref in xrefs)
             future = executor.submit(
@@ -1105,8 +1112,8 @@ def optimize_pdf(
         
     pike = pikepdf.Pdf.open(input_file)
 
-    for imgrp, xrefs in image_groups.items():
-        prefix = 'group{:08d}'.format(imgrp)
+    for group, xrefs in jbig2_groups.items():
+        prefix = 'group{:08d}'.format(group)
         jbig2_globals_data = (root / (prefix + '.sym')).read_bytes()
         jbig2_globals = pikepdf.Stream(pike, jbig2_globals_data)
 
@@ -1360,16 +1367,6 @@ def build_pipeline(options, work_folder, log, context):
     task_combine_layers.graphviz(fillcolor='"#00cc66"')
     task_combine_layers.active_if(options.pdf_renderer == 'hocr' or 
                                   options.pdf_renderer == 'sandwich')
-
-    # task_jbig2_10to1 = main_pipeline.collate(
-    #     task_func=jbig2_10to1,
-    #     input=[combine_layers],
-    #     filter=regex(r".*/(\d{5})(\d)(?:\.rendered\.pdf)"),
-    #     output=os.path.join(work_folder, r'\1x.opt.pdf'),
-    #     extras=[log, context])
-    # task_jbig2_10to1.graphviz(fillcolor='"#00cc66"')
-    # task_jbig2_10to1.active_if((options.pdf_renderer == 'hocr' or 
-    #                             options.pdf_renderer == 'sandwich'))
 
     # Tesseract OCR+PDF
     task_ocr_tesseract_and_render_pdf = main_pipeline.collate(
