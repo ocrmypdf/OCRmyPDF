@@ -79,7 +79,8 @@ OCRmyPDF is limited by the Tesseract OCR engine.  As such it experiences these l
 * It is not always good at analyzing the natural reading order of documents. For example, it may fail to recognize that a document contains two columns and join text across the columns.
 * Poor quality scans may produce poor quality OCR. Garbage in, garbage out.
 * PDFs that use transparent layers are not currently checked in the test suite, so they may not work correctly.
-  
+* It does not expose information about what font family text belongs to.
+
 OCRmyPDF is also limited by the PDF specification:
 
 * PDF encodes the position of text glyphs but does not encode document structure.  There is no markup that divides a document in sections, paragraphs, sentences, or even words (since blank spaces are not represented). As such all elements of document structure including the spaces between words must be derived heuristically.  Some PDF viewers do a better job of this than others.
