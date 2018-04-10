@@ -9,10 +9,21 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
    find:    [^`]\#([0-9]{1,3})[^0-9]  
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+
+next
+----
+
+-   XMP metadata in PDFs is now examined using ``defusedxml`` for safety.
+
+-   If an external process exits with a signal when asked to report its version, we now print the system error message instead of suppressing it.  This occurred when the required executable was found but was missing a shared library.
+
+
 v6.1.3
 ------
 
 -   Fix issue `#247 <https://github.com/jbarlow83/OCRmyPDF/issues/247>`_, ``/CreationDate`` metadata not copied from input to output.
+
+-   A warning is now issued when Python 3.5 is used on files with a large page count, as this case is known to regress to single core performance. The cause of this problem is unknown.
 
 
 v6.1.2
