@@ -23,6 +23,8 @@ from datetime import datetime
 from xml.parsers.expat import ExpatError
 import pkg_resources
 import PyPDF2 as pypdf
+from defusedxml.minidom import parseString as defused_parseString
+from unittest.mock import patch
 
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
 
@@ -221,7 +223,9 @@ def file_claims_pdfa(filename):
     """
     pdf = pypdf.PdfFileReader(filename)
     try:
-        xmp = pdf.getXmpMetadata()
+        # Monkeypatch PyPDF2 to use defusedxml as its XML parser, for safety
+        with patch('xml.dom.minidom.parseString', new=defused_parseString):
+            xmp = pdf.getXmpMetadata()
     except ExpatError:
         return {'pass': False, 'output': 'pdf',
                 'conformance': 'Invalid XML metadata'}
