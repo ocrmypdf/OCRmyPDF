@@ -9,14 +9,16 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
    find:    [^`]\#([0-9]{1,3})[^0-9]  
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v6.1.4
+------
 
-next
-----
+-   Fix issue #248, ``--clean`` argument may remove OCR from left column of text on certain documents. We now set ``--layout none``.
 
 -   XMP metadata in PDFs is now examined using ``defusedxml`` for safety.
 
 -   If an external process exits with a signal when asked to report its version, we now print the system error message instead of suppressing it.  This occurred when the required executable was found but was missing a shared library.
 
+-   qpdf 7.0.0 or newer is now required as the test suite can no longer pass without it.
 
 v6.1.3
 ------
