@@ -224,6 +224,10 @@ class Pix:
             return 'P'
 
     @classmethod
+    def open(cls, path):
+        return cls.read(path)
+
+    @classmethod
     def read(cls, path):
         """Load an image file into a PIX object.
 
@@ -477,11 +481,32 @@ class Pix:
                 raise LeptonicaError("Correlation failed")
             return correlation[0]
 
+    def generate_pdf_data(self, type_, quality):
+        p_compdata = ffi.new('L_COMP_DATA **')
+        result = lept.pixGenerateCIData(self._pix, type_, quality, 0, 
+                                        p_compdata)
+        if result != 0:
+            raise LeptonicaError("Generate PDF data failed")
+        return CompressedData(p_compdata[0])
+
     @staticmethod
     def _pix_destroy(pix):
         p_pix = ffi.new('PIX **', pix)
         lept.pixDestroy(p_pix)
         # print('pix destroy ' + repr(pix))
+
+
+class CompressedData:
+    def __init__(self, compdata):
+        self._compdata = ffi.gc(compdata, CompressedData._destroy)
+
+    def read(self):
+        buf = ffi.buffer(self._compdata.datacomp, self._compdata.nbytescomp)
+        return bytes(buf)
+
+    @staticmethod
+    def _destroy(compdata):
+        lept.lept_free(compdata)
 
 
 class Box:
