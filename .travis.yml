@@ -1,9 +1,9 @@
 dist: trusty
 language: python
 cache:
+  ccache: true
   pip: true
   directories:
-  - packages
   - $HOME/Library/Caches/Homebrew
 
 env:

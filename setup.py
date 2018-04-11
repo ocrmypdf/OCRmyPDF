@@ -186,7 +186,7 @@ if not forced and command.startswith('install') or \
     )
     check_external_program(
         program='qpdf',
-        need_version='5.1.1',   # limited by Travis CI / Ubuntu 14.04 backports
+        need_version='7.0.0', # test suite known to fail on 5.1.1
         package='qpdf',
         version_check_args=['--version']
     )
