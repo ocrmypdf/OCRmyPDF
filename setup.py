@@ -244,6 +244,7 @@ setup(
         'defusedxml >= 0.5.0',    # pure Python, so track HEAD closely
         'img2pdf >= 0.2.4',       # pure Python, so track HEAD closely
         'Pillow >= 4.0.0',        # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
+        'Pillow != 5.1.0 ; platform_system == "Darwin"',  # block 5.1.0, broken wheels
         'PyPDF2 >= 1.26',         # pure Python, so track HEAD closely
         'reportlab >= 3.3.0',     # oldest released version with sane image handling
         'ruffus == 2.6.3',        # pinned - ocrmypdf implements a 2.6.3 workaround
