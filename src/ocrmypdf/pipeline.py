@@ -1060,6 +1060,7 @@ def optimize_pdf(
 
     options = context.get_options()
     doc = fitz.open(input_file)
+    pike = pikepdf.Pdf.open(input_file)
 
     root = Path(output_file).parent / 'images'
     root.mkdir()
@@ -1072,6 +1073,7 @@ def optimize_pdf(
     changed_xrefs = set()
     from collections import defaultdict
     jbig2_groups = defaultdict(lambda: [])
+    jpegs = []
     for pageno in range(doc.pageCount):
         group, index = divmod(pageno, PAGE_GROUP_SIZE)
         page_images = doc.getPageImageList(pageno)
@@ -1086,11 +1088,13 @@ def optimize_pdf(
                 changed_xrefs.add(xref)
                 jbig2_groups[group].append(xref)
             elif filt == 'DCTDecode':
-                # JPEG: apply quality setting
-                # would have to use pike to get the raw DCT because fitz
-                # has no API for it...
-                # or leptonica convertToPdfData
-                pass
+                raw_jpeg = pike._get_object_id(xref, 0)
+                if raw_jpeg.stream_dict.get('/ColorTransform', 1) != 1:
+                    continue  # Don't mess with JPEGs other than YUV
+                raw_jpeg_data = raw_jpeg.read_raw_bytes()
+                (root / '{:08d}.jpg'.format(xref)).write_bytes(raw_jpeg_data)
+                changed_xrefs.add(xref)
+                jpegs.append(xref)
 
     from subprocess import run, PIPE
     import concurrent.futures
@@ -1110,7 +1114,7 @@ def optimize_pdf(
             proc.check_returncode()
             log.debug(proc.stderr)
         
-    pike = pikepdf.Pdf.open(input_file)
+    #pike = pikepdf.Pdf.open(input_file)            
 
     for group, xrefs in jbig2_groups.items():
         prefix = 'group{:08d}'.format(group)
@@ -1131,7 +1135,16 @@ def optimize_pdf(
                 })
             )
             log.info(repr(im_obj))
-        
+
+    for xref in jpegs:
+        pix = leptonica.Pix.read((root / '{:08d}.jpg'.format(xref)))
+        compdata = pix.generate_pdf_data(1, 10)
+        im_obj = pike._get_object_id(xref, 0)
+        im_obj.write(
+            compdata.read(), pikepdf.Name('/DCTDecode'),
+            pikepdf.Null()
+        )
+
     pike.save(output_file, preserve_pdfa=True)
 
 
