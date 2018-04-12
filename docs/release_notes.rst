@@ -16,6 +16,8 @@ v6.1.4
 
 -   The test cache was updated to reflect the change above.
 
+-   Change test suite to accommodate Ghostscript 9.23's new ability to insert JPEGs into PDFs without transcoding.  An apparent `regression in Ghostscript 9.23 <https://bugs.ghostscript.com/show_bug.cgi?id=699216>`_ will cause some ocrmypdf output files to become invalid in rare cases; the workaround for the moment is to set ``--force-ocr``.
+
 -   XMP metadata in PDFs is now examined using ``defusedxml`` for safety.
 
 -   If an external process exits with a signal when asked to report its version, we now print the system error message instead of suppressing it.  This occurred when the required executable was found but was missing a shared library.

@@ -607,7 +607,14 @@ def test_closed_streams(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
 
 
 def test_masks(spoof_tesseract_noop, resources, outpdf):
-    check_ocrmypdf(resources / 'masks.pdf', outpdf, env=spoof_tesseract_noop)
+    p, out, err = run_ocrmypdf(
+        resources / 'masks.pdf', outpdf, env=spoof_tesseract_noop)
+
+    if ghostscript.version() == '9.23' and \
+            p.returncode == ExitCode.invalid_output_pdf:
+        pytest.xfail('https://bugs.ghostscript.com/show_bug.cgi?id=699216')
+
+    assert p.returncode == ExitCode.ok
 
 
 def test_linearized_pdf_and_indirect_object(spoof_tesseract_noop,
@@ -898,8 +905,14 @@ def test_compression_changed(spoof_tesseract_noop, ocrmypdf_exec,
 
     if compression == "jpeg":
         assert pdfimage.enc == Encoding.jpeg
-    elif compression == 'lossless':
-        assert pdfimage.enc not in (Encoding.jpeg, Encoding.jpeg2000)
+    else:
+        if ghostscript.version() >= '9.23':
+            # Ghostscript 9.23 adds JPEG passthrough, which allows a JPEG to be
+            # copied without transcoding - so report
+            if image.endswith('jpg'):
+                assert pdfimage.enc == Encoding.jpeg
+        else:
+            assert pdfimage.enc not in (Encoding.jpeg, Encoding.jpeg2000)
 
     if im.mode.startswith('RGB') or im.mode.startswith('BGR'):
         assert pdfimage.color == Colorspace.rgb, \

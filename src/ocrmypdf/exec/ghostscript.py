@@ -137,7 +137,7 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
             "-dNumRenderingThreads=" + str(threads),
             "-sDEVICE=pdfwrite",
             "-dAutoRotatePages=/None",
-            "-sColorConversionStrategy=/RGB",
+            "-sColorConversionStrategy=RGB",
             "-sProcessColorModel=DeviceRGB"
         ] + compression_args + [
             "-dJPEGQ=95",
