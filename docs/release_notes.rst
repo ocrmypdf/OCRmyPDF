@@ -12,13 +12,16 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
 v6.1.4
 ------
 
--   Fix issue #248, ``--clean`` argument may remove OCR from left column of text on certain documents. We now set ``--layout none``.
+-   Fix issue #248, ``--clean`` argument may remove OCR from left column of text on certain documents. We now set ``--layout none`` to suppress this.  
+
+-   The test cache was updated to reflect the change above.
 
 -   XMP metadata in PDFs is now examined using ``defusedxml`` for safety.
 
 -   If an external process exits with a signal when asked to report its version, we now print the system error message instead of suppressing it.  This occurred when the required executable was found but was missing a shared library.
 
 -   qpdf 7.0.0 or newer is now required as the test suite can no longer pass without it.
+
 
 v6.1.3
 ------
