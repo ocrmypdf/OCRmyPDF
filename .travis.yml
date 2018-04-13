@@ -1,9 +1,9 @@
 dist: trusty
 language: python
 cache:
+  ccache: true
   pip: true
   directories:
-  - packages
   - $HOME/Library/Caches/Homebrew
 
 env:
@@ -50,7 +50,7 @@ before_install: |
 
 install:
 - pip3 install ".$EXTRAS"
-- pip3 install -r requirements.txt -r test_requirements.txt
+- pip3 install -r test_requirements.txt
 
 script:
 - tesseract --version

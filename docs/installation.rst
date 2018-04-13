@@ -1,12 +1,9 @@
 Installation
 ============
 
-OCRmyPDF requires Python 3.5 (or newer) and Tesseract 3.04 (or newer). 
+The easiest way to install OCRmyPDF to follow the steps for your operating system/platform. 
 
-Python 3.6 and Tesseract 4.x are recommended for best OCR results and best performance.
-
-OCRmyPDF 6.x adds a dependency on PyMuPDF ("fitz"). This library is not widely available in platform distributions, and it improves OCRmyPDF in certain conditions. Consider installing OCRmyPDF from the Python binary wheels, which include a precompiled version of this library.
-
+If you want to use the latest version of OCRmyPDF, your best bet is to install the most recent version your platform provides, and then upgrade that version by installing the Python binary wheels.
 
 .. contents:: Platform-specific steps
     :depth: 1
@@ -345,11 +342,56 @@ where /c/Users/sampleuser is a Unix representation of the Windows path C:\\Users
 
 `Bash on Ubuntu on Windows <https://github.com/Microsoft/BashOnWindows>`_ should also be a viable route for running the OCRmyPDF Docker container.
 
+
+Installing with Python pip
+--------------------------
+
+First, install `your platform's version <https://repology.org/metapackage/ocrmypdf/versions>`_ of ``ocrmypdf``, if available, as a way of ensuring that external dependencies are (mostly) satisified, even though the platform version may be out of date. Use ``ocrmypdf --version`` to confirm what version was installed.
+
+Then you can install the latest OCRmyPDF from the Python wheels. First try:
+
+.. code-block:: bash
+
+    pip3 install --user ocrmypdf
+
+You should then be able to run ``ocrmypdf --version`` and see that the latest version was located.
+
+Since ``pip3 install --user`` does not work correctly on some platforms, notably Ubuntu 16.04 and older, and the Homebrew version of Python, instead use this for a system wide installation:
+
+.. code-block:: bash
+
+    pip3 install ocrmypdf
+
+Requirements for pip and HEAD install
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+OCRmyPDF currently requires these external programs to be installed:
+
+- Python 3.5 or newer
+- Tesseract 3.04 or newer
+- Ghostscript 9.15 or newer
+- qpdf 7.0.0 or newer
+
+The following dependencies are recommended:
+
+- Python 3.6
+- Tesseract 4.00 or newer
+- Ghostscript 9.22 or newer
+- qpdf 8.0.2 or newer
+- unpaper 6.1
+- PyMuPDF 1.12.5 or newer
+
+These are in addition to the Python packaging dependencies, meaning that unfortunately, the ``pip install`` command cannot satisfy all of them. 
+
+Python 3.6 and Tesseract 4.x are recommended for best OCR results and best performance.
+
+The library PyMuPDF is not widely available in platform distributions, and it improves OCRmyPDF in certain conditions. Consider installing OCRmyPDF from the Python binary wheels, which include a precompiled version of this library.
+
+
 Installing HEAD revision from sources
 -------------------------------------
 
-If you have ``git`` and Python 3.5 or newer installed, you can install from source. When the ``pip`` installer runs,
-it will alert you if dependencies are missing.
+If you have ``git`` and Python 3.5 or newer installed, you can install from source. When the ``pip`` installer runs, it will alert you if dependencies are missing.
 
 To install the HEAD revision from sources in the current Python 3 environment:
 

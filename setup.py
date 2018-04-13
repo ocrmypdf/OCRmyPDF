@@ -186,7 +186,7 @@ if not forced and command.startswith('install') or \
     )
     check_external_program(
         program='qpdf',
-        need_version='5.1.1',   # limited by Travis CI / Ubuntu 14.04 backports
+        need_version='7.0.0', # test suite known to fail on 5.1.1
         package='qpdf',
         version_check_args=['--version']
     )
@@ -243,7 +243,9 @@ setup(
         'cffi >= 1.9.1',          # must be a setup and install requirement
         'defusedxml >= 0.5.0',    # pure Python, so track HEAD closely
         'img2pdf >= 0.2.4',       # pure Python, so track HEAD closely
-        'Pillow >= 4.0.0',        # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
+        'Pillow >= 4.0.0, != 5.1.0 ; sys_platform == "darwin"',        
+                                  # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
+                                  # block 5.1.0, broken wheels
         'PyPDF2 >= 1.26',         # pure Python, so track HEAD closely
         'reportlab >= 3.3.0',     # oldest released version with sane image handling
         'ruffus == 2.6.3',        # pinned - ocrmypdf implements a 2.6.3 workaround

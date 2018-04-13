@@ -57,15 +57,15 @@ def run(input_file, output_file, dpi, log, mode_args):
             else:
                 im = im.convert(mode='RGB')
         except IOError as e:
-            log.error(
-                    "Could not convert image with type " + im.mode)
+            log.error("Could not convert image with type " + im.mode)
+            im.close()
             raise MissingDependencyError() from e
 
     try:
         suffix = SUFFIXES[im.mode]
     except KeyError:
-        log.error(
-                "Failed to convert image to a supported format.")
+        log.error("Failed to convert image to a supported format.")
+        im.close()
         raise MissingDependencyError() from e
 
     with NamedTemporaryFile(suffix=suffix) as input_pnm, \
@@ -90,20 +90,9 @@ def run(input_file, output_file, dpi, log, mode_args):
             Image.open(output_pnm.name).save(output_file, dpi=(dpi, dpi))
 
 
-def deskew(input_file, output_file, dpi, log):
-    run(input_file, output_file, dpi, log, [
-        '--mask-scan-size', '100',  # don't blank out narrow columns
-        '--no-border-align',  # don't align visible content to borders
-        '--no-mask-center',   # don't center visible content within page
-        '--no-grayfilter',    # don't remove light gray areas
-        '--no-blackfilter',   # don't remove solid black areas
-        '--no-noisefilter',   # don't remove salt and pepper noise
-        '--no-blurfilter'     # don't remove blurry objects/debris
-    ])
-
-
 def clean(input_file, output_file, dpi, log):
     run(input_file, output_file, dpi, log, [
+        '--layout', 'none',
         '--mask-scan-size', '100',  # don't blank out narrow columns
         '--no-border-align',  # don't align visible content to borders
         '--no-mask-center',   # don't center visible content within page

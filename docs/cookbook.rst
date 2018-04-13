@@ -55,6 +55,8 @@ OCR will attempt to automatic correct the rotation of each page. This can help f
 
 You can increase (decrease) the parameter ``--rotate-pages-threshold`` to make page rotation more (less) aggressive.
 
+If the page is "just a little off horizontal", like a crooked picture, then you want ``--deskew``. ``--rotate-pages`` is for when the cardinal angle is wrong.
+
 
 OCR languages other than English
 """"""""""""""""""""""""""""""""
@@ -81,15 +83,28 @@ This produces a file named "output.pdf" and a companion text file named "output.
 OCR images, not PDFs
 --------------------
 
-Use a program like `img2pdf <https://gitlab.mister-muffin.de/josch/img2pdf>`_ to convert your images to PDFs, and then pipe the results to run ocrmypdf:
+If you are starting with images, you can just use Tesseract 3.04 or later directly to convert images to PDFs:
+
+.. code-block:: bash
+
+    tesseract my-image.jpg output-prefix pdf
+
+.. code-block:: bash
+
+    # When there are multiple images
+    tesseract text-file-containing-list-of-image-filenames.txt output-prefix pdf
+
+Tesseract's PDF output is quite good – OCRmyPDF uses it by internally by default. However, OCRmyPDF has many features not available in Tesseract like like image processing, metadata control, and PDF/A generation.
+
+Use a program like `img2pdf <https://gitlab.mister-muffin.de/josch/img2pdf>`_ to convert your images to PDFs, and then pipe the results to run ocrmypdf.  The `-` tells ocrmypdf to read standard input.
 
 .. code-block:: bash
 
     img2pdf my-images*.jpg | ocrmypdf - myfile.pdf
 
-``img2pdf`` also has features to control the position of images on a page, if desired.
+``img2pdf`` is recommended because it does an excellent job at generating PDFs without transcoding images.
 
-For convenience, OCRmyPDF can convert single images to PDFs on its own. If the resolution (dots per inch, DPI) of an image is not set or is incorrect, it can be overridden with ``--image-dpi``. (As 1 inch is 2.54 cm, 1 dpi = 0.39 dpcm).
+For convenience, OCRmyPDF can also convert single images to PDFs on its own. If the resolution (dots per inch, DPI) of an image is not set or is incorrect, it can be overridden with ``--image-dpi``. (As 1 inch is 2.54 cm, 1 dpi = 0.39 dpcm).
 
 .. code-block:: bash
 
@@ -101,11 +116,6 @@ If you have multiple images, you must use ``img2pdf`` to convert the images to P
 
     ImageMagick ``convert`` can also convert a group of images to PDF, but in the author's experience it takes a long time, transcodes unnecessarily and gives poor results.
 
-You can also use Tesseract 3.04+ directly to convert single page images or multi-page TIFFs to PDF:
-
-.. code-block:: bash
-
-    tesseract my-image.jpg output-prefix pdf
 
 Image processing
 ----------------

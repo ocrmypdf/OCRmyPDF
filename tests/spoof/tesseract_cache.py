@@ -29,6 +29,7 @@ import subprocess
 import argparse
 import json
 import platform
+import re
 
 
 """Cache output of tesseract to speed up test suite
@@ -85,7 +86,8 @@ parser.add_argument('-c', action='append')
 parser.add_argument('--psm', type=int)
 parser.add_argument('--oem', type=int)
 
-CACHE_ROOT = Path(__file__).resolve().parent.parent / 'cache'
+TESTS_ROOT = Path(__file__).resolve().parent.parent
+CACHE_ROOT = TESTS_ROOT / 'cache'
 
 def real_tesseract():
     tess_args = ['tesseract'] + sys.argv[1:]
@@ -178,12 +180,17 @@ def main():
     manifest['tesseract_version'] = __version__.replace('\n', ' ')
     manifest['platform'] = platform.platform()
     manifest['python'] = platform.python_version()
-    manifest['args'] = sys.argv[1:]
     manifest['argv_slug'] = argv_slug
-    manifest['sourcefile'] = source
+    manifest['sourcefile'] = str(Path(source).relative_to(TESTS_ROOT))
+    def clean_sys_argv():
+        for arg in sys.argv[1:]:
+            yield re.sub(r'.*/com.github.ocrmypdf[^/]+[/](.*)', 
+                         r'$TMPDIR/\1', arg)
+    manifest['args'] = list(clean_sys_argv())
     with (Path(CACHE_ROOT) / 'manifest.jsonl').open('a') as f:
         json.dump(manifest, f)
         f.write('\n')
+        f.flush()
 
 
 if __name__ == '__main__':
