@@ -127,9 +127,10 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
             "-dAutoFilterGrayImages=true",
         ]
 
-    # Older versions of Ghostscript expect a leading slash, newer ones should
-    # not have it. See Ghostscript git commit fe1c025d.
-    strategy = 'RGB' if ghostscript.version() >= '9.19' else '/RGB'
+    # Older versions of Ghostscript expect a leading slash in 
+    # sColorConversionStrategy, newer ones should not have it. See Ghostscript 
+    # git commit fe1c025d.
+    strategy = 'RGB' if version() >= '9.19' else '/RGB'
 
     with NamedTemporaryFile(delete=True) as gs_pdf:
         args_gs = [
