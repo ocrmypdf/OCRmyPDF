@@ -72,6 +72,16 @@ struct Box
 };
 typedef struct Box    BOX;
 
+
+/*! Pdf formatted encoding types */
+enum {
+    L_DEFAULT_ENCODE  = 0,  /*!< use default encoding based on image        */
+    L_JPEG_ENCODE     = 1,  /*!< use dct encoding: 8 and 32 bpp, no cmap    */
+    L_G4_ENCODE       = 2,  /*!< use ccitt g4 fax encoding: 1 bpp           */
+    L_FLATE_ENCODE    = 3,  /*!< use flate encoding: any depth, cmap ok     */
+    L_JP2K_ENCODE     = 4   /*!< use jp2k encoding: 8 and 32 bpp, no cmap   */
+};
+
 struct L_Compressed_Data
 {
     l_int32            type;         /*!< encoding type: L_JPEG_ENCODE, etc   */
@@ -92,6 +102,15 @@ struct L_Compressed_Data
     l_int32            res;          /*!< resolution (ppi)                    */
 };
 typedef struct L_Compressed_Data L_COMP_DATA;
+
+enum {
+    REMOVE_CMAP_TO_BINARY = 0,     /*!< remove colormap for conv to 1 bpp  */
+    REMOVE_CMAP_TO_GRAYSCALE = 1,  /*!< remove colormap for conv to 8 bpp  */
+    REMOVE_CMAP_TO_FULL_COLOR = 2, /*!< remove colormap for conv to 32 bpp */
+    REMOVE_CMAP_WITH_ALPHA = 3,    /*!< remove colormap and alpha          */
+    REMOVE_CMAP_BASED_ON_SRC = 4   /*!< remove depending on src format     */
+};
+
 
 """)
 

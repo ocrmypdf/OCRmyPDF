@@ -108,13 +108,6 @@ class LeptonicaIOError(LeptonicaError):
     pass
 
 
-class RemoveColormap(Enum):
-    to_binary = 0
-    to_grayscale = 1
-    to_full_color = 2
-    based_on_src = 3
-
-
 class Pix:
     """Wrapper around leptonica's PIX object.
 
@@ -503,6 +496,11 @@ class CompressedData:
     def read(self):
         buf = ffi.buffer(self._compdata.datacomp, self._compdata.nbytescomp)
         return bytes(buf)
+
+    def __getattr__(self, name):
+        if hasattr(self._compdata, name):
+            return getattr(self._compdata, name)
+        raise AttributeError(name)
 
     @staticmethod
     def _destroy(compdata):

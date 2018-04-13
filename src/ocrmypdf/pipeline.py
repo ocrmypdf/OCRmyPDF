@@ -1070,10 +1070,12 @@ def optimize_pdf(
     
     # Extract images we can improve
     PAGE_GROUP_SIZE = 10
+    SIMPLE_COLORSPACES = ('DeviceRGB', 'DeviceGray', 'CalRGB', 'CalGray')
     changed_xrefs = set()
     from collections import defaultdict
     jbig2_groups = defaultdict(lambda: [])
     jpegs = []
+    pngs = []
     for pageno in range(doc.pageCount):
         group, index = divmod(pageno, PAGE_GROUP_SIZE)
         page_images = doc.getPageImageList(pageno)
@@ -1087,14 +1089,26 @@ def optimize_pdf(
                 pix.writePNG(make_img_name(xref), savealpha=False)
                 changed_xrefs.add(xref)
                 jbig2_groups[group].append(xref)
-            elif filt == 'DCTDecode':
+            elif filt == 'DCTDecode' and cs in SIMPLE_COLORSPACES:
                 raw_jpeg = pike._get_object_id(xref, 0)
-                if raw_jpeg.stream_dict.get('/ColorTransform', 1) != 1:
-                    continue  # Don't mess with JPEGs other than YUV
+                try:
+                    if raw_jpeg.DecodeParms.ColorTransform != 1:
+                        continue  # Don't mess with JPEGs other than YUV
+                except AttributeError:
+                    pass
                 raw_jpeg_data = raw_jpeg.read_raw_bytes()
                 (root / '{:08d}.jpg'.format(xref)).write_bytes(raw_jpeg_data)
                 changed_xrefs.add(xref)
                 jpegs.append(xref)
+            elif filt == 'FlateDecode' and cs in SIMPLE_COLORSPACES:
+                # raw_png = pike._get_object_id(xref, 0)
+                # raw_png_data = raw_png.read_raw_bytes()
+                # (root / '{:08d}.png'.format(xref)).write_bytes(raw_png_data)
+                pix = fitz.Pixmap(doc, xref)
+                pix.writePNG(make_img_name(xref), savealpha=False)
+                changed_xrefs.add(xref)
+                pngs.append(xref)
+
 
     from subprocess import run, PIPE
     import concurrent.futures
@@ -1104,7 +1118,7 @@ def optimize_pdf(
         futures = []
         for group, xrefs in jbig2_groups.items():
             prefix = 'group{:08d}'.format(group)
-            cmd = ['jbig2', '-b', prefix, '-s', '-p', '-S']
+            cmd = ['jbig2', '-b', prefix, '-s', '-p']
             cmd.extend(make_img_name(xref) for xref in xrefs)
             future = executor.submit(
                 run, cmd, cwd=str(root), stdout=PIPE, stderr=PIPE)
@@ -1138,14 +1152,30 @@ def optimize_pdf(
 
     for xref in jpegs:
         pix = leptonica.Pix.read((root / '{:08d}.jpg'.format(xref)))
-        compdata = pix.generate_pdf_data(1, 10)
+        compdata = pix.generate_pdf_data(leptonica.lept.L_JPEG_ENCODE, 10)
         im_obj = pike._get_object_id(xref, 0)
         im_obj.write(
             compdata.read(), pikepdf.Name('/DCTDecode'),
             pikepdf.Null()
         )
 
+    for xref in pngs:
+        pix = leptonica.Pix.read((root / '{:08d}.png'.format(xref)))
+        compdata = pix.generate_pdf_data(leptonica.lept.L_FLATE_ENCODE, 0)
+        im_obj = pike._get_object_id(xref, 0)
+        im_obj.write(
+            compdata.read(), pikepdf.Name('/FlateDecode'),
+            pikepdf.Dictionary({
+                '/Predictor': compdata.predictor
+            })
+        )
+        
+
     pike.save(output_file, preserve_pdfa=True)
+    input_size = Path(input_file).stat().st_size
+    output_size = Path(output_file).stat().st_size
+    improvement = 100.0 * ((input_size/output_size) - 1)
+    log.info("Optimize reduced size by {:.1f}".format(improvement))
 
 
 def merge_sidecars(
