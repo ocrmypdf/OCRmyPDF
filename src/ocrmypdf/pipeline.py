@@ -1152,7 +1152,7 @@ def optimize_pdf(
 
     for xref in jpegs:
         pix = leptonica.Pix.read((root / '{:08d}.jpg'.format(xref)))
-        compdata = pix.generate_pdf_data(leptonica.lept.L_JPEG_ENCODE, 10)
+        compdata = pix.generate_pdf_ci_data(leptonica.lept.L_JPEG_ENCODE, 10)
         im_obj = pike._get_object_id(xref, 0)
         im_obj.write(
             compdata.read(), pikepdf.Name('/DCTDecode'),
@@ -1160,9 +1160,9 @@ def optimize_pdf(
         )
 
     for xref in pngs:
-        png = root / '{:08d}.png'.format(xref)
-        compdata = leptonica.CompressedData.open(png)
         im_obj = pike._get_object_id(xref, 0)
+        pix = leptonica.Pix.read((root / '{:08d}.png'.format(xref)))
+        compdata = pix.generate_pdf_ci_data(leptonica.lept.L_FLATE_ENCODE, 0)
         im_obj.write(
             compdata.read(), pikepdf.Name('/FlateDecode'),
             pikepdf.Dictionary({
