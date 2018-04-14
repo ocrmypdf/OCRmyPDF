@@ -24,6 +24,7 @@ import argparse
 import sys
 import os
 import logging
+import warnings
 from tempfile import TemporaryFile
 from ctypes.util import find_library
 from .lib._leptonica import ffi
@@ -217,11 +218,12 @@ class Pix:
             return 'P'
 
     @classmethod
-    def open(cls, path):
-        return cls.read(path)
+    def read(cls, path):
+        warnings.warn('Use Pix.open() instead', DeprecationWarning)
+        return cls.open(path)
 
     @classmethod
-    def read(cls, path):
+    def open(cls, path):
         """Load an image file into a PIX object.
 
         Leptonica can load TIFF, PNM (PBM, PGM, PPM), PNG, and JPEG.  If
