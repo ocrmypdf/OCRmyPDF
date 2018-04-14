@@ -1159,9 +1159,9 @@ def optimize_pdf(
             pikepdf.Null()
         )
 
-    # from ocrmypdf.exec import pngquant
-    # for xref in pngs:
-    #     pngquant.quantize(make_img_name(xref), make_img_name(xref), 65, 80)
+    from ocrmypdf.exec import pngquant
+    for xref in pngs:
+        pngquant.quantize(make_img_name(xref), make_img_name(xref), 65, 80)
 
     for xref in pngs:
         im_obj = pike._get_object_id(xref, 0)
