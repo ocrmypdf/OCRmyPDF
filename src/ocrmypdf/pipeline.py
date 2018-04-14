@@ -1159,15 +1159,20 @@ def optimize_pdf(
             pikepdf.Null()
         )
 
+    # from ocrmypdf.exec import pngquant
+    # for xref in pngs:
+    #     pngquant.quantize(make_img_name(xref), make_img_name(xref), 65, 80)
+
     for xref in pngs:
         im_obj = pike._get_object_id(xref, 0)
-        pix = leptonica.Pix.read((root / '{:08d}.png'.format(xref)))
+        pix = leptonica.Pix.read(make_img_name(xref))
         compdata = pix.generate_pdf_ci_data(leptonica.lept.L_FLATE_ENCODE, 0)
+        predictor = pikepdf.Null()
+        if compdata.predictor > 0:
+            predictor = pikepdf.Dictionary({'/Predictor': compdata.predictor})
+
         im_obj.write(
-            compdata.read(), pikepdf.Name('/FlateDecode'),
-            pikepdf.Dictionary({
-                '/Predictor': compdata.predictor
-            })
+            compdata.read(), pikepdf.Name('/FlateDecode'), predictor
         )
         
 
