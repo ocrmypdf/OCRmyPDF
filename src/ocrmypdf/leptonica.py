@@ -506,7 +506,8 @@ class CompressedData:
 
     @staticmethod
     def _destroy(compdata):
-        lept.lept_free(compdata)
+        pp = ffi.new('L_COMP_DATA **', compdata)
+        lept.l_CIDataDestroy(pp)
 
 
 class Box:
