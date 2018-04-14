@@ -476,7 +476,8 @@ class Pix:
                 raise LeptonicaError("Correlation failed")
             return correlation[0]
 
-    def generate_pdf_data(self, type_, quality):
+    def generate_pdf_ci_data(self, type_, quality):
+        "Convert to PDF data, with transcoding"
         p_compdata = ffi.new('L_COMP_DATA **')
         result = lept.pixGenerateCIData(self._pix, type_, quality, 0, 
                                         p_compdata)
@@ -494,6 +495,18 @@ class Pix:
 class CompressedData:
     def __init__(self, compdata):
         self._compdata = ffi.gc(compdata, CompressedData._destroy)
+
+    @classmethod
+    def open(cls, path, jpeg_quality=75):
+        "Open compressed data, without transcoding"
+        filename = fspath(path)
+
+        p_compdata = ffi.new('L_COMP_DATA **')
+        result = lept.l_generateCIDataForPdf(
+            os.fsencode(filename), ffi.NULL, jpeg_quality, p_compdata)
+        if result != 0:
+            raise LeptonicaError("CompressedData.open")
+        return CompressedData(p_compdata[0])
 
     def read(self):
         buf = ffi.buffer(self._compdata.datacomp, self._compdata.nbytescomp)

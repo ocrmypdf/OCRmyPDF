@@ -275,8 +275,19 @@ pixGenerateCIData(PIX           *pixs,
                   l_int32        ascii85,
                   L_COMP_DATA **pcid);
 
+l_int32 
+l_generateCIDataForPdf(const char *fname, 
+                       PIX *pix, 
+                       l_int32 quality, 
+                       L_COMP_DATA **pcid);
+
+
+
 void                 
 boxDestroy(BOX  **pbox);
+
+void
+l_CIDataDestroy(L_COMP_DATA **pcid);
 
 void
 lept_free(void *ptr);  
