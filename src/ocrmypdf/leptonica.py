@@ -27,7 +27,6 @@ import logging
 import warnings
 from tempfile import TemporaryFile
 from ctypes.util import find_library
-from binascii import unhexlify
 from .lib._leptonica import ffi
 from functools import lru_cache
 from enum import Enum
@@ -518,12 +517,11 @@ class CompressedData:
             return getattr(self._compdata, name)
         raise AttributeError(name)
 
-    def get_palette(self):
-        buf = ffi.buffer(self._compdata.cmapdatahex, 
-                         self._compdata.ncolors * 7 + 3)
-        hex_str = bytes(buf).decode('ascii')
-        hex_str = hex_str[1:-1].replace(' ', '')
-        return unhexlify(hex_str)
+    def get_palette_pdf_string(self):
+        "Returns palette pre-formatted for use in PDF"
+        buflen = len('< ') + len(' rrggbb') * self._compdata.ncolors + len('>')
+        buf = ffi.buffer(self._compdata.cmapdatahex, buflen)
+        return bytes(buf)
 
     @staticmethod
     def _destroy(compdata):

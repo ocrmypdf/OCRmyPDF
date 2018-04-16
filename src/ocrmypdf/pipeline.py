@@ -1176,10 +1176,12 @@ def optimize_pdf(
         im_obj.Height = compdata.h
 
         if compdata.ncolors > 0:
-            palette_stream = pikepdf.Stream(pike, compdata.get_palette())
+            palette_pdf_string = compdata.get_palette_pdf_string()
+            log.info(palette_pdf_string)
+            palette_data = pikepdf.Object.parse(palette_pdf_string)
+            palette_stream = pikepdf.Stream(pike, bytes(palette_data))
             palette = [pikepdf.Name('/Indexed'), pikepdf.Name('/DeviceRGB'),
                        compdata.ncolors - 1, palette_stream]
-            #cs = pike.make_indirect(palette)
             cs = palette
         else:
             if compdata.spp == 1:
@@ -1192,13 +1194,13 @@ def optimize_pdf(
 
         im_obj.write(compdata.read(), pikepdf.Name('/FlateDecode'), predictor)
 
-        
-
+    # Not object_stream_mode + preserve_pdfa generates noncompliant PDFs
     pike.save(output_file, preserve_pdfa=True)
+
     input_size = Path(input_file).stat().st_size
     output_size = Path(output_file).stat().st_size
     improvement = input_size / output_size
-    log.info("Optimize reduced size by {:.1f}".format(improvement))
+    log.info("Optimize reduced size by {:.3f}".format(improvement))
 
 
 def merge_sidecars(
