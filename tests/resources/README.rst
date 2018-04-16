@@ -111,6 +111,7 @@ licensed under the specified license.
         - CC-BY-SA 3.0
     *   - missing_docinfo.pdf
         - @jbarlow83
+        - @jbarlow83
         - PDF file with no /DocumentInfo section 
         - CC-BY-SA 4.0
     *   - overlay.pdf
