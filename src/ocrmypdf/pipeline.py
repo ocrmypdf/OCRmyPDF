@@ -1171,15 +1171,33 @@ def optimize_pdf(
         if compdata.predictor > 0:
             predictor = pikepdf.Dictionary({'/Predictor': compdata.predictor})
 
-        im_obj.write(
-            compdata.read(), pikepdf.Name('/FlateDecode'), predictor
-        )
+        im_obj.BitsPerComponent = compdata.bps
+        im_obj.Width = compdata.w
+        im_obj.Height = compdata.h
+
+        if compdata.ncolors > 0:
+            palette_stream = pikepdf.Stream(pike, compdata.get_palette())
+            palette = [pikepdf.Name('/Indexed'), pikepdf.Name('/DeviceRGB'),
+                       compdata.ncolors - 1, palette_stream]
+            #cs = pike.make_indirect(palette)
+            cs = palette
+        else:
+            if compdata.spp == 1:
+                cs = pikepdf.Name('/DeviceGray')
+            elif compdata.spp == 3:
+                cs = pikepdf.Name('/DeviceRGB')
+            elif compdata.spp == 4:
+                cs = pikepdf.Name('/DeviceCMYK')
+        im_obj.ColorSpace = cs
+
+        im_obj.write(compdata.read(), pikepdf.Name('/FlateDecode'), predictor)
+
         
 
     pike.save(output_file, preserve_pdfa=True)
     input_size = Path(input_file).stat().st_size
     output_size = Path(output_file).stat().st_size
-    improvement = 100.0 * ((input_size/output_size) - 1)
+    improvement = input_size / output_size
     log.info("Optimize reduced size by {:.1f}".format(improvement))
 
 

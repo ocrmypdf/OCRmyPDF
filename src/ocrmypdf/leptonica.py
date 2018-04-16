@@ -27,6 +27,7 @@ import logging
 import warnings
 from tempfile import TemporaryFile
 from ctypes.util import find_library
+from binascii import unhexlify
 from .lib._leptonica import ffi
 from functools import lru_cache
 from enum import Enum
@@ -516,6 +517,13 @@ class CompressedData:
         if hasattr(self._compdata, name):
             return getattr(self._compdata, name)
         raise AttributeError(name)
+
+    def get_palette(self):
+        buf = ffi.buffer(self._compdata.cmapdatahex, 
+                         self._compdata.ncolors * 7 + 3)
+        hex_str = bytes(buf).decode('ascii')
+        hex_str = hex_str[1:-1].replace(' ', '')
+        return unhexlify(hex_str)
 
     @staticmethod
     def _destroy(compdata):
