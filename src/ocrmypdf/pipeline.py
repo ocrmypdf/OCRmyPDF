@@ -1152,7 +1152,7 @@ def optimize_pdf(
 
     for xref in jpegs:
         pix = leptonica.Pix.read((root / '{:08d}.jpg'.format(xref)))
-        compdata = pix.generate_pdf_ci_data(leptonica.lept.L_JPEG_ENCODE, 10)
+        compdata = pix.generate_pdf_ci_data(leptonica.lept.L_JPEG_ENCODE, 75)
         im_obj = pike._get_object_id(xref, 0)
         im_obj.write(
             compdata.read(), pikepdf.Name('/DCTDecode'),
@@ -1160,8 +1160,12 @@ def optimize_pdf(
         )
 
     from ocrmypdf.exec import pngquant
-    for xref in pngs:
-        pngquant.quantize(make_img_name(xref), make_img_name(xref), 65, 80)
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=options.jobs) as executor:
+        for xref in pngs:
+            executor.submit(
+                pngquant.quantize, 
+                make_img_name(xref), make_img_name(xref), 65, 80)
 
     for xref in pngs:
         im_obj = pike._get_object_id(xref, 0)
@@ -1177,7 +1181,6 @@ def optimize_pdf(
 
         if compdata.ncolors > 0:
             palette_pdf_string = compdata.get_palette_pdf_string()
-            log.info(palette_pdf_string)
             palette_data = pikepdf.Object.parse(palette_pdf_string)
             palette_stream = pikepdf.Stream(pike, bytes(palette_data))
             palette = [pikepdf.Name('/Indexed'), pikepdf.Name('/DeviceRGB'),
@@ -1191,7 +1194,6 @@ def optimize_pdf(
             elif compdata.spp == 4:
                 cs = pikepdf.Name('/DeviceCMYK')
         im_obj.ColorSpace = cs
-
         im_obj.write(compdata.read(), pikepdf.Name('/FlateDecode'), predictor)
 
     # Not object_stream_mode + preserve_pdfa generates noncompliant PDFs
