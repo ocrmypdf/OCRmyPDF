@@ -143,6 +143,7 @@ def decode_pdf_date(s: str) -> datetime:
 
     if s.startswith('D:'):
         s = s[2:]
+    s = s.replace("'", "")  # Remove apos from PDF time strings
     for fmt in pdfmark_date_fmts:
         try:
             return datetime.strptime(s, fmt)
