@@ -82,9 +82,13 @@ def extract_images(doc, pike, root, log):
     pngs = []
     for pageno, page in enumerate(pike.pages):
         group, index = divmod(pageno, PAGE_GROUP_SIZE)
-        for imname, image in page.images.items():
-            if image.type_code == pikepdf.ObjectType.inlineimage:
-                continue  # Don't work with inline images
+        try:
+            xobjs = page.Resources.XObject
+        except AttributeError:
+            continue
+        for imname, image in dict(xobjs).items():
+            if image.Subtype != '/Image':
+                continue
 
             xref = image._objgen[0]
             if xref in changed_xrefs:
