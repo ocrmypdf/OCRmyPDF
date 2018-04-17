@@ -120,7 +120,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
                     '/JBIG2Globals': jbig2_globals
                 })
             )
-            log.info(repr(im_obj))
+            log.debug(repr(im_obj))
 
 
 def transcode_jpegs(pike, jpegs, root):
