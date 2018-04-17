@@ -129,7 +129,9 @@ def encode_pdf_date(d: datetime) -> str:
         s += "+00'00'"
     elif tz != '':
         sign, tz_hours, tz_mins = tz[0], tz[1:3], tz[3:5]
-        s += "{}{}'{tz}'".format(sign, tz_hours, tz_mins)
+        s += "{}{}'{}'".format(sign, tz_hours, tz_mins)
+    else:
+        raise ValueError("Naive timezone not supported")
     return s
 
 

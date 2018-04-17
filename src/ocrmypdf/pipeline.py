@@ -18,7 +18,7 @@
 from contextlib import suppress
 from shutil import copyfileobj
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 import sys
 import os
 import shutil
@@ -900,7 +900,7 @@ def get_pdfmark(base_pdf, options):
         PROGRAM_NAME, VERSION,
         renderer_tag,
         tesseract.version())
-    pdfmark['/ModDate'] = encode_pdf_date(datetime.utcnow())
+    pdfmark['/ModDate'] = encode_pdf_date(datetime.now(timezone.utc))
     return pdfmark
 
 
