@@ -19,6 +19,9 @@ from pathlib import Path
 from subprocess import run, PIPE
 import concurrent.futures
 from collections import defaultdict
+import struct
+from io import BytesIO
+from PIL import Image
 
 from .lib import fitz
 import pikepdf
@@ -28,7 +31,43 @@ from .helpers import re_symlink
 from .exec import pngquant
 
 PAGE_GROUP_SIZE = 10
-SIMPLE_COLORSPACES = ('DeviceRGB', 'DeviceGray', 'CalRGB', 'CalGray')
+SIMPLE_COLORSPACES = ('/DeviceRGB', '/DeviceGray', '/CalRGB', '/CalGray')
+
+
+def generate_ccitt_header(data, w, h, decode_parms):
+    if decode_parms:
+        if decode_parms.get("/K", 1) == -1:
+            ccitt_group = 4
+        else:
+            ccitt_group = 3
+
+    if not ccitt_group:
+        raise ValueError("/CCITTFaxDecode without /DecodeParms")
+    try:
+        width = decode_parms.Columns
+    except AttributeError:
+        raise ValueError("/DecodeParms without /Columns")
+
+    img_size = len(data)
+    tiff_header_struct = '<' + '2s' + 'h' + 'l' + 'h' + 'hhll' * 8 + 'h'
+    tiff_header = struct.pack(
+            tiff_header_struct,
+            b'II',  # Byte order indication: Little endian
+            42,  # Version number (always 42)
+            8,  # Offset to first IFD
+            8,  # Number of tags in IFD
+            256, 4, 1, w,  # ImageWidth, LONG, 1, width
+            257, 4, 1, h,  # ImageLength, LONG, 1, length
+            258, 3, 1, 1,  # BitsPerSample, SHORT, 1, 1
+            259, 3, 1, ccitt_group,  # Compression, SHORT, 1, 4 = CCITT Group 4 fax encoding
+            262, 3, 1, 0,  # Thresholding, SHORT, 1, 0 = WhiteIsZero
+            273, 4, 1, struct.calcsize(tiff_header_struct),  # StripOffsets, LONG, 1, length of header
+            278, 4, 1, h,  # RowsPerStrip, LONG, 1, length
+            279, 4, 1, img_size,  # StripByteCounts, LONG, 1, size of image
+            0  # last IFD
+            )
+
+    return tiff_header
 
 
 def make_img_name(root, xref):
@@ -41,25 +80,47 @@ def extract_images(doc, pike, root, log):
     jbig2_groups = defaultdict(lambda: [])
     jpegs = []
     pngs = []
-    for pageno in range(doc.pageCount):
+    for pageno, page in enumerate(pike.pages):
         group, index = divmod(pageno, PAGE_GROUP_SIZE)
-        page_images = doc.getPageImageList(pageno)
-        for image in page_images:
-            xref, smask, w, h, bpc, cs, alt_cs, name, filt = image
+        for imname, image in page.images.items():
+            if image.type_code == pikepdf.ObjectType.inlineimage:
+                continue  # Don't work with inline images
+
+            xref = image._objgen[0]
             if xref in changed_xrefs:
                 continue  # Don't improve same image twice
-            if bpc == 1 and filt != 'JBIG2Decode':
-                # Monochrome: convert to JBIG2 if not already
-                pix = fitz.Pixmap(doc, xref)
-                try:
-                    pix.writePNG(make_img_name(root, xref), savealpha=False)
-                except RuntimeError as e:
-                    log.error('page {} xref {}'.format(pageno, xref))
-                    log.error(e)
+
+            bpc = image.get('/BitsPerComponent', 8)
+            filt = image.get('/Filter', [])
+            cs = image.get('/ColorSpace', '')
+            w = int(image.Width)
+            h = int(image.Height)
+            if filt.type_code == pikepdf.ObjectType.array:
+                if len(filt) == 1:
+                    filt = filt[0]
+                else:
+                    continue  # Not supported: multiple filters 
+            if bpc == 1 and filt != '/JBIG2Decode':
+                decode_parms = image.get('/DecodeParms')
+                if filt == '/CCITTFaxDecode':
+                    data = image.read_raw_bytes()
+                    try:
+                        header = generate_ccitt_header(data, w, h, decode_parms)
+                    except ValueError as e:
+                        log.info(e)
+                        continue
+                    stream = BytesIO()
+                    stream.write(header)
+                    stream.write(data)
+                    stream.seek(0)
+                    with Image.open(stream) as im:
+                        im.save(make_img_name(root, xref))
+                else:
                     continue
+                
                 changed_xrefs.add(xref)
                 jbig2_groups[group].append(xref)
-            elif filt == 'DCTDecode' and cs in SIMPLE_COLORSPACES:
+            elif filt == '/DCTDecode' and cs in SIMPLE_COLORSPACES:
                 raw_jpeg = pike._get_object_id(xref, 0)
                 try:
                     if raw_jpeg.DecodeParms.ColorTransform != 1:
@@ -70,7 +131,7 @@ def extract_images(doc, pike, root, log):
                 (root / '{:08d}.jpg'.format(xref)).write_bytes(raw_jpeg_data)
                 changed_xrefs.add(xref)
                 jpegs.append(xref)
-            elif filt == 'FlateDecode' and cs in SIMPLE_COLORSPACES:
+            elif filt == '/FlateDecode' and cs in SIMPLE_COLORSPACES:
                 # raw_png = pike._get_object_id(xref, 0)
                 # raw_png_data = raw_png.read_raw_bytes()
                 # (root / '{:08d}.png'.format(xref)).write_bytes(raw_png_data)
