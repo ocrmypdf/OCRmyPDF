@@ -132,6 +132,11 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
     # git commit fe1c025d.
     strategy = 'RGB' if version() >= '9.19' else '/RGB'
 
+    if version() == '9.23':
+        # 9.23: JPEG passthrough broken for image masks?
+        # https://bugs.ghostscript.com/show_bug.cgi?id=699216
+        compression_args.append('-dPassThroughJPEGImages=false')
+
     with NamedTemporaryFile(delete=True) as gs_pdf:
         args_gs = [
             "gs",
