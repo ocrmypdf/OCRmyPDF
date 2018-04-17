@@ -35,7 +35,7 @@ def make_img_name(root, xref):
     return str(root / '{:08d}.png'.format(xref))
 
 
-def extract_images(doc, pike, root):
+def extract_images(doc, pike, root, log):
     # Extract images we can improve
     changed_xrefs = set()
     jbig2_groups = defaultdict(lambda: [])
@@ -51,7 +51,12 @@ def extract_images(doc, pike, root):
             if bpc == 1 and filt != 'JBIG2Decode':
                 # Monochrome: convert to JBIG2 if not already
                 pix = fitz.Pixmap(doc, xref)
-                pix.writePNG(make_img_name(root, xref), savealpha=False)
+                try:
+                    pix.writePNG(make_img_name(root, xref), savealpha=False)
+                except RuntimeError as e:
+                    log.error('page {} xref {}'.format(pageno, xref))
+                    log.error(e)
+                    continue
                 changed_xrefs.add(xref)
                 jbig2_groups[group].append(xref)
             elif filt == 'DCTDecode' and cs in SIMPLE_COLORSPACES:
@@ -70,7 +75,12 @@ def extract_images(doc, pike, root):
                 # raw_png_data = raw_png.read_raw_bytes()
                 # (root / '{:08d}.png'.format(xref)).write_bytes(raw_png_data)
                 pix = fitz.Pixmap(doc, xref)
-                pix.writePNG(make_img_name(root, xref), savealpha=False)
+                try:
+                    pix.writePNG(make_img_name(root, xref), savealpha=False)
+                except RuntimeError as e:
+                    log.error('page {} xref {}'.format(pageno, xref))
+                    log.error(e)
+                    continue    
                 changed_xrefs.add(xref)
                 pngs.append(xref)
     return changed_xrefs, jbig2_groups, jpegs, pngs
@@ -179,7 +189,8 @@ def optimize(
 
     root = Path(output_file).parent / 'images'
     root.mkdir()
-    changed_xrefs, jbig2_groups, jpegs, pngs = extract_images(doc, pike, root)
+    changed_xrefs, jbig2_groups, jpegs, pngs = extract_images(
+        doc, pike, root, log)
 
     convert_to_jbig2(pike, jbig2_groups, root, log, options)
 
