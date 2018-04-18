@@ -72,12 +72,91 @@ def make_img_name(root, xref):
     return str(root / '{:08d}.png'.format(xref))
 
 
+def extract_image(doc, pike, root, log, image, changed_xrefs, jbig2_group, 
+                  pngs, jpegs):
+    if image.Subtype != '/Image':
+        return
+
+    xref = image._objgen[0]
+    if xref in changed_xrefs:
+        return  # Don't improve same image twice
+
+    bpc = image.get('/BitsPerComponent', 8)
+    filt = image.get('/Filter', pikepdf.Array([]))
+    cs = image.get('/ColorSpace', '')
+    w = int(image.Width)
+    h = int(image.Height)
+    if filt.type_code == pikepdf.ObjectType.array:
+        if len(filt) > 1:
+            log.debug("Skipping multiply filtered {}".format(filt))
+            return  # Not supported: multiple filters 
+        elif len(filt) == 1:
+            filt = filt[0]
+        else:
+            filt = ''
+    if bpc == 1 and filt != '/JBIG2Decode':
+        decode_parms = image.get('/DecodeParms')
+        if filt == '/CCITTFaxDecode':
+            data = image.read_raw_bytes()
+            try:
+                header = generate_ccitt_header(data, w, h, decode_parms)
+            except ValueError as e:
+                log.info(e)
+                return
+            stream = BytesIO()
+            stream.write(header)
+            stream.write(data)
+            stream.seek(0)
+            with Image.open(stream) as im:
+                im.save(make_img_name(root, xref))
+        else:
+            return
+        
+        changed_xrefs.add(xref)
+        jbig2_group.append(xref)
+    elif filt == '/JPXDecode':
+        return
+    elif filt == '/DCTDecode' and cs in SIMPLE_COLORSPACES:
+        raw_jpeg = pike._get_object_id(xref, 0)
+        dp = raw_jpeg.get('/DecodeParms', None)
+        color_transform = None
+        try:
+            color_transform = dp[0].get('/ColorTransform', 1)
+        except ValueError:
+            try:
+                color_transform = dp.get('/ColorTransform', 1)
+            except ValueError:
+                pass
+        if color_transform is not None and color_transform != 1:
+            return  # Don't mess with JPEGs other than YUV
+        raw_jpeg_data = raw_jpeg.read_raw_bytes()
+        (root / '{:08d}.jpg'.format(xref)).write_bytes(raw_jpeg_data)
+        changed_xrefs.add(xref)
+        jpegs.append(xref)
+    elif cs in SIMPLE_COLORSPACES:
+        # For any 'inferior' filter include /FlateDecode we extract
+        # and recode as /FlateDecode
+        # raw_png = pike._get_object_id(xref, 0)
+        # raw_png_data = raw_png.read_raw_bytes()
+        # (root / '{:08d}.png'.format(xref)).write_bytes(raw_png_data)
+        pix = fitz.Pixmap(doc, xref)
+        try:
+            pix.writePNG(make_img_name(root, xref), savealpha=False)
+        except RuntimeError as e:
+            log.error('xref {}'.format(xref))
+            log.error(e)
+            return    
+        changed_xrefs.add(xref)
+        pngs.append(xref)
+
+
 def extract_images(doc, pike, root, log):
     # Extract images we can improve
     changed_xrefs = set()
     jbig2_groups = defaultdict(lambda: [])
     jpegs = []
     pngs = []
+    errors = 0
     for pageno, page in enumerate(pike.pages):
         group, index = divmod(pageno, PAGE_GROUP_SIZE)
         try:
@@ -85,80 +164,20 @@ def extract_images(doc, pike, root, log):
         except AttributeError:
             continue
         for imname, image in dict(xobjs).items():
-            if image.Subtype != '/Image':
-                continue
+            try:
+                extract_image(
+                    doc, pike, root, log, image, changed_xrefs, 
+                    jbig2_groups[group], pngs, jpegs)
+            except Exception as e:
+                log.debug("Image {}".format(imname))
+                log.debug(e)
+                errors += 1
 
-            xref = image._objgen[0]
-            if xref in changed_xrefs:
-                continue  # Don't improve same image twice
+    log.debug(
+        "Optimizable images: JBIG2: {} JPEGs: {} PNGs: {} Errors: {}".format(
+        len(jbig2_groups), len(jpegs), len(pngs), errors
+    ))
 
-            bpc = image.get('/BitsPerComponent', 8)
-            filt = image.get('/Filter', pikepdf.Array([]))
-            cs = image.get('/ColorSpace', '')
-            w = int(image.Width)
-            h = int(image.Height)
-            if filt.type_code == pikepdf.ObjectType.array:
-                if len(filt) > 1:
-                    log.debug("Skipping multiply filtered {}".format(filt))
-                    continue  # Not supported: multiple filters 
-                elif len(filt) == 1:
-                    filt = filt[0]
-                else:
-                    filt = ''
-            if bpc == 1 and filt != '/JBIG2Decode':
-                decode_parms = image.get('/DecodeParms')
-                if filt == '/CCITTFaxDecode':
-                    data = image.read_raw_bytes()
-                    try:
-                        header = generate_ccitt_header(data, w, h, decode_parms)
-                    except ValueError as e:
-                        log.info(e)
-                        continue
-                    stream = BytesIO()
-                    stream.write(header)
-                    stream.write(data)
-                    stream.seek(0)
-                    with Image.open(stream) as im:
-                        im.save(make_img_name(root, xref))
-                else:
-                    continue
-                
-                changed_xrefs.add(xref)
-                jbig2_groups[group].append(xref)
-            elif filt == '/JPXDecode':
-                continue
-            elif filt == '/DCTDecode' and cs in SIMPLE_COLORSPACES:
-                raw_jpeg = pike._get_object_id(xref, 0)
-                dp = raw_jpeg.get('/DecodeParms', None)
-                color_transform = None
-                try:
-                    color_transform = dp[0].get('/ColorTransform', 1)
-                except ValueError:
-                    try:
-                        color_transform = dp.get('/ColorTransform', 1)
-                    except ValueError:
-                        pass
-                if color_transform is not None and color_transform != 1:
-                    continue  # Don't mess with JPEGs other than YUV
-                raw_jpeg_data = raw_jpeg.read_raw_bytes()
-                (root / '{:08d}.jpg'.format(xref)).write_bytes(raw_jpeg_data)
-                changed_xrefs.add(xref)
-                jpegs.append(xref)
-            elif cs in SIMPLE_COLORSPACES:
-                # For any 'inferior' filter include /FlateDecode we extract
-                # and recode as /FlateDecode
-                # raw_png = pike._get_object_id(xref, 0)
-                # raw_png_data = raw_png.read_raw_bytes()
-                # (root / '{:08d}.png'.format(xref)).write_bytes(raw_png_data)
-                pix = fitz.Pixmap(doc, xref)
-                try:
-                    pix.writePNG(make_img_name(root, xref), savealpha=False)
-                except RuntimeError as e:
-                    log.error('page {} xref {}'.format(pageno, xref))
-                    log.error(e)
-                    continue    
-                changed_xrefs.add(xref)
-                pngs.append(xref)
     return changed_xrefs, jbig2_groups, jpegs, pngs
 
 
