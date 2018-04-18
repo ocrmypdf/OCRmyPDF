@@ -1012,7 +1012,7 @@ def test_rotate_deskew_timeout(resources, outdir):
 
 
 @pytest.mark.skipif(
-    PIL.PILLOW_VERSION < '5.0.0',
+    PIL.__version__ < '5.0.0',
     reason="Pillow < 5.0.0 doesn't raise the exception")
 def test_decompression_bomb(resources, outpdf):
     p, out, err = run_ocrmypdf(
