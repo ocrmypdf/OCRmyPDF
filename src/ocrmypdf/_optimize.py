@@ -72,14 +72,10 @@ def make_img_name(root, xref):
     return str(root / '{:08d}.png'.format(xref))
 
 
-def extract_image(doc, pike, root, log, image, changed_xrefs, jbig2_group, 
+def extract_image(doc, pike, root, log, image, xref, jbig2s, 
                   pngs, jpegs):
     if image.Subtype != '/Image':
-        return
-
-    xref = image._objgen[0]
-    if xref in changed_xrefs:
-        return  # Don't improve same image twice
+        return False
 
     bpc = image.get('/BitsPerComponent', 8)
     filt = image.get('/Filter', pikepdf.Array([]))
@@ -88,8 +84,8 @@ def extract_image(doc, pike, root, log, image, changed_xrefs, jbig2_group,
     h = int(image.Height)
     if filt.type_code == pikepdf.ObjectType.array:
         if len(filt) > 1:
-            log.debug("Skipping multiply filtered {}".format(filt))
-            return  # Not supported: multiple filters 
+            log.debug("Skipping multiply filtered, xref {}".format(xref))
+            return False  # Not supported: multiple filters 
         elif len(filt) == 1:
             filt = filt[0]
         else:
@@ -102,7 +98,7 @@ def extract_image(doc, pike, root, log, image, changed_xrefs, jbig2_group,
                 header = generate_ccitt_header(data, w, h, decode_parms)
             except ValueError as e:
                 log.info(e)
-                return
+                return False
             stream = BytesIO()
             stream.write(header)
             stream.write(data)
@@ -110,12 +106,10 @@ def extract_image(doc, pike, root, log, image, changed_xrefs, jbig2_group,
             with Image.open(stream) as im:
                 im.save(make_img_name(root, xref))
         else:
-            return
-        
-        changed_xrefs.add(xref)
-        jbig2_group.append(xref)
+            return False        
+        jbig2s.append(xref)
     elif filt == '/JPXDecode':
-        return
+        return False
     elif filt == '/DCTDecode' and cs in SIMPLE_COLORSPACES:
         raw_jpeg = pike._get_object_id(xref, 0)
         dp = raw_jpeg.get('/DecodeParms', None)
@@ -128,10 +122,9 @@ def extract_image(doc, pike, root, log, image, changed_xrefs, jbig2_group,
             except ValueError:
                 pass
         if color_transform is not None and color_transform != 1:
-            return  # Don't mess with JPEGs other than YUV
+            return False  # Don't mess with JPEGs other than YUV
         raw_jpeg_data = raw_jpeg.read_raw_bytes()
         (root / '{:08d}.jpg'.format(xref)).write_bytes(raw_jpeg_data)
-        changed_xrefs.add(xref)
         jpegs.append(xref)
     elif cs in SIMPLE_COLORSPACES:
         # For any 'inferior' filter include /FlateDecode we extract
@@ -140,14 +133,12 @@ def extract_image(doc, pike, root, log, image, changed_xrefs, jbig2_group,
         # raw_png_data = raw_png.read_raw_bytes()
         # (root / '{:08d}.png'.format(xref)).write_bytes(raw_png_data)
         pix = fitz.Pixmap(doc, xref)
-        try:
-            pix.writePNG(make_img_name(root, xref), savealpha=False)
-        except RuntimeError as e:
-            log.error('xref {}'.format(xref))
-            log.error(e)
-            return    
-        changed_xrefs.add(xref)
+        pix.writePNG(make_img_name(root, xref), savealpha=False)
         pngs.append(xref)
+    else:
+        return False
+    
+    return True
 
 
 def extract_images(doc, pike, root, log):
@@ -158,19 +149,24 @@ def extract_images(doc, pike, root, log):
     pngs = []
     errors = 0
     for pageno, page in enumerate(pike.pages):
-        group, index = divmod(pageno, PAGE_GROUP_SIZE)
+        group, _ = divmod(pageno, PAGE_GROUP_SIZE)
         try:
             xobjs = page.Resources.XObject
         except AttributeError:
             continue
         for imname, image in dict(xobjs).items():
+            xref = image._objgen[0]
+            if xref in changed_xrefs:
+                continue  # Don't improve same image twice
             try:
-                extract_image(
-                    doc, pike, root, log, image, changed_xrefs, 
+                result = extract_image(
+                    doc, pike, root, log, image, xref, 
                     jbig2_groups[group], pngs, jpegs)
+                if result:
+                    changed_xrefs.add(xref)
             except Exception as e:
-                log.debug("Image {}".format(imname))
-                log.debug(e)
+                log.debug("Image {} xref {}".format(imname, xref))
+                log.debug(repr(e))
                 errors += 1
 
     log.debug(
@@ -283,7 +279,7 @@ def optimize(
     pike = pikepdf.Pdf.open(input_file)
 
     root = Path(output_file).parent / 'images'
-    root.mkdir()
+    root.mkdir(exist_ok=True)
     changed_xrefs, jbig2_groups, jpegs, pngs = extract_images(
         doc, pike, root, log)
 
@@ -300,3 +296,20 @@ def optimize(
     output_size = Path(output_file).stat().st_size
     improvement = input_size / output_size
     log.info("Optimize reduced size by {:.3f}".format(improvement))    
+
+
+if __name__ == '__main__':
+    import logging
+    import sys
+    from .pipeline import JobContext
+    from collections import namedtuple
+    Options = namedtuple('Options', 'jobs')
+
+    logging.basicConfig(level=logging.DEBUG)
+    log = logging.getLogger()
+
+    ctx = JobContext()
+    options = Options(jobs=4)
+    ctx.set_options(options)
+
+    optimize(sys.argv[1], sys.argv[2], log, ctx)
