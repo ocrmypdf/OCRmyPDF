@@ -35,21 +35,19 @@ SIMPLE_COLORSPACES = ('/DeviceRGB', '/DeviceGray', '/CalRGB', '/CalGray')
 
 
 def generate_ccitt_header(data, w, h, decode_parms):
-    if decode_parms:
-        if decode_parms.get("/K", 1) == -1:
-            ccitt_group = 4
+    # https://stackoverflow.com/questions/2641770/
+    # https://www.itu.int/itudoc/itu-t/com16/tiff-fx/docs/tiff6.pdf
+
+    if not decode_parms:
+        raise ValueError("/CCITTFaxDecode without /DecodeParms")
+
+    if decode_parms.get("/K", 1) < 0:
+        ccitt_group = 4  # Pure two-dimensional encoding (Group 4)
         else:
             ccitt_group = 3
 
-    if not ccitt_group:
-        raise ValueError("/CCITTFaxDecode without /DecodeParms")
-    try:
-        width = decode_parms.Columns
-    except AttributeError:
-        raise ValueError("/DecodeParms without /Columns")
-
     img_size = len(data)
-    tiff_header_struct = '<' + '2s' + 'h' + 'l' + 'h' + 'hhll' * 8 + 'h'
+    tiff_header_struct = '<' + '2s' + 'H' + 'L' + 'H' + 'HHLL' * 8 + 'L'
     tiff_header = struct.pack(
             tiff_header_struct,
             b'II',  # Byte order indication: Little endian
