@@ -43,8 +43,8 @@ def generate_ccitt_header(data, w, h, decode_parms):
 
     if decode_parms.get("/K", 1) < 0:
         ccitt_group = 4  # Pure two-dimensional encoding (Group 4)
-        else:
-            ccitt_group = 3
+    else:
+        ccitt_group = 3
 
     img_size = len(data)
     tiff_header_struct = '<' + '2s' + 'H' + 'L' + 'H' + 'HHLL' * 8 + 'L'
@@ -93,15 +93,15 @@ def extract_images(doc, pike, root, log):
                 continue  # Don't improve same image twice
 
             bpc = image.get('/BitsPerComponent', 8)
-            filt = image.get('/Filter', [])
+            filt = image.get('/Filter', pikepdf.Array([]))
             cs = image.get('/ColorSpace', '')
             w = int(image.Width)
             h = int(image.Height)
-            if filt.type_code == pikepdf.ObjectType.array:
-                if len(filt) == 1:
-                    filt = filt[0]
-                else:
-                    continue  # Not supported: multiple filters 
+            if len(filt) == 1:
+                filt = filt[0]
+            else:
+                log.debug("Skipping multiply filtered {}".format(filt))
+                continue  # Not supported: multiple filters 
             if bpc == 1 and filt != '/JBIG2Decode':
                 decode_parms = image.get('/DecodeParms')
                 if filt == '/CCITTFaxDecode':
