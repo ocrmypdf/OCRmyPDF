@@ -34,6 +34,44 @@ PAGE_GROUP_SIZE = 10
 SIMPLE_COLORSPACES = ('/DeviceRGB', '/DeviceGray', '/CalRGB', '/CalGray')
 
 
+def filter_decodeparms(obj):
+    """
+    PDF has a lot of optional data structures concerning /Filter and 
+    /DecodeParms. /Filter can be absent or a name or an array, /DecodeParms
+    can be absent or a dictionary (if /Filter is a name) or an array (if
+    /Filter is an array). When both are arrays the lengths match.
+    
+    Normalize this into:
+    [(/FilterName, {/DecodeParmName: Value, ...}), ...]
+
+    The order of /Filter matters as indicates the encoding/decoding sequence.
+
+    """
+    normalized = []
+    filters = []
+    filt = obj.get('/Filter', pikepdf.Array([]))
+    if filt.type_code == pikepdf.ObjectType.array:
+        filters.extend(filt)
+    elif filt.type_code == pikepdf.ObjectType.name:
+        filters.append(filt)
+
+    decodeparms = obj.get('/DecodeParms', pikepdf.Array([]))
+    if decodeparms.type_code == pikepdf.ObjectType.dictionary:
+        decodeparms = pikepdf.Array([decodeparms])
+
+    for n, dp in enumerate(decodeparms):
+        filt_parm = (filters[n], dp)
+        normalized.append(filt_parm)
+    if len(normalized) == 0:
+        for filt in filters:
+            filt_parm = (filt, {})
+            normalized.append(filt_parm)
+
+    if len(normalized) == 0:
+        return None
+    return normalized
+
+
 def generate_ccitt_header(data, w, h, decode_parms):
     # https://stackoverflow.com/questions/2641770/
     # https://www.itu.int/itudoc/itu-t/com16/tiff-fx/docs/tiff6.pdf
@@ -82,20 +120,17 @@ def extract_image(doc, pike, root, log, image, xref, jbig2s,
     cs = image.get('/ColorSpace', '')
     w = int(image.Width)
     h = int(image.Height)
-    if filt.type_code == pikepdf.ObjectType.array:
-        if len(filt) > 1:
-            log.debug("Skipping multiply filtered, xref {}".format(xref))
-            return False  # Not supported: multiple filters 
-        elif len(filt) == 1:
-            filt = filt[0]
-        else:
-            filt = ''
-    if bpc == 1 and filt != '/JBIG2Decode':
-        decode_parms = image.get('/DecodeParms')
+    filtdps = filter_decodeparms(image)
+    if filtdps and len(filtdps) > 1:
+        log.debug("Skipping multiply filtered, xref {}".format(xref))
+        return False
+    filtdp = filtdps[0]
+
+    if bpc == 1 and filtdp[0] != '/JBIG2Decode':
         if filt == '/CCITTFaxDecode':
             data = image.read_raw_bytes()
             try:
-                header = generate_ccitt_header(data, w, h, decode_parms)
+                header = generate_ccitt_header(data, w, h, filtdp[1])
             except ValueError as e:
                 log.info(e)
                 return False
@@ -108,20 +143,12 @@ def extract_image(doc, pike, root, log, image, xref, jbig2s,
         else:
             return False        
         jbig2s.append(xref)
-    elif filt == '/JPXDecode':
+    elif filtdp[0] == '/JPXDecode':
         return False
-    elif filt == '/DCTDecode' and cs in SIMPLE_COLORSPACES:
+    elif filtdp[0] == '/DCTDecode' and cs in SIMPLE_COLORSPACES:
         raw_jpeg = pike._get_object_id(xref, 0)
-        dp = raw_jpeg.get('/DecodeParms', None)
-        color_transform = None
-        try:
-            color_transform = dp[0].get('/ColorTransform', 1)
-        except ValueError:
-            try:
-                color_transform = dp.get('/ColorTransform', 1)
-            except ValueError:
-                pass
-        if color_transform is not None and color_transform != 1:
+        color_transform = filtdp[1].get('/ColorTransform', 1)
+        if color_transform != 1:
             return False  # Don't mess with JPEGs other than YUV
         raw_jpeg_data = raw_jpeg.read_raw_bytes()
         (root / '{:08d}.jpg'.format(xref)).write_bytes(raw_jpeg_data)
