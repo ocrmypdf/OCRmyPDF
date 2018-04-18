@@ -93,7 +93,7 @@ def extract_images(doc, pike, root, log):
                 continue  # Don't improve same image twice
 
             bpc = image.get('/BitsPerComponent', 8)
-            filt = image.get('/Filter', 'pikepdf.Array([])')
+            filt = image.get('/Filter', pikepdf.Array([]))
             cs = image.get('/ColorSpace', '')
             w = int(image.Width)
             h = int(image.Height)
@@ -129,8 +129,16 @@ def extract_images(doc, pike, root, log):
                 continue
             elif filt == '/DCTDecode' and cs in SIMPLE_COLORSPACES:
                 raw_jpeg = pike._get_object_id(xref, 0)
-                dp = raw_jpeg.get('/DecodeParms')
-                if dp and dp.get('/ColorTransform', 1) != 1:
+                dp = raw_jpeg.get('/DecodeParms', None)
+                color_transform = None
+                try:
+                    color_transform = dp[0].get('/ColorTransform', 1)
+                except ValueError:
+                    try:
+                        color_transform = dp.get('/ColorTransform', 1)
+                    except ValueError:
+                        pass
+                if color_transform is not None and color_transform != 1:
                     continue  # Don't mess with JPEGs other than YUV
                 raw_jpeg_data = raw_jpeg.read_raw_bytes()
                 (root / '{:08d}.jpg'.format(xref)).write_bytes(raw_jpeg_data)
