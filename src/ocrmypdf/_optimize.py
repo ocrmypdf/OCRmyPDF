@@ -174,6 +174,10 @@ def extract_images(doc, pike, root, log):
         len(jbig2_groups), len(jpegs), len(pngs), errors
     ))
 
+    # Elide empty groups
+    jbig2_groups = {group: xrefs for group, xrefs in jbig2_groups.items()
+                    if len(xrefs) > 0}
+
     return changed_xrefs, jbig2_groups, jpegs, pngs
 
 
@@ -182,8 +186,6 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             max_workers=options.jobs) as executor:
         futures = []
         for group, xrefs in jbig2_groups.items():
-            if len(xrefs) == 0:
-                continue
             prefix = 'group{:08d}'.format(group)
             cmd = ['jbig2', '-b', prefix, '-s', '-p']
             cmd.extend(make_img_name(root, xref) for xref in xrefs)
