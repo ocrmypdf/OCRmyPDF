@@ -97,11 +97,12 @@ def extract_images(doc, pike, root, log):
             cs = image.get('/ColorSpace', '')
             w = int(image.Width)
             h = int(image.Height)
-            if len(filt) == 1:
-                filt = filt[0]
-            else:
-                log.debug("Skipping multiply filtered {}".format(filt))
-                continue  # Not supported: multiple filters 
+            if filt.type_code == pikepdf.ObjectType.array:
+                if len(filt) == 1:
+                    filt = filt[0]
+                else:
+                    log.debug("Skipping multiply filtered {}".format(filt))
+                    continue  # Not supported: multiple filters 
             if bpc == 1 and filt != '/JBIG2Decode':
                 decode_parms = image.get('/DecodeParms')
                 if filt == '/CCITTFaxDecode':
