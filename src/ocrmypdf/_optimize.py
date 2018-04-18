@@ -44,12 +44,17 @@ def filter_decodeparms(obj):
     Normalize this into:
     [(/FilterName, {/DecodeParmName: Value, ...}), ...]
 
+    If there are no filters then the return is
+    [('', {})]
+
     The order of /Filter matters as indicates the encoding/decoding sequence.
 
     """
     normalized = []
     filters = []
-    filt = obj.get('/Filter', pikepdf.Array([]))
+    filt = obj.get('/Filter', None)
+    if filt is None:
+        return [('', {})]
     if filt.type_code == pikepdf.ObjectType.array:
         filters.extend(filt)
     elif filt.type_code == pikepdf.ObjectType.name:
@@ -68,7 +73,7 @@ def filter_decodeparms(obj):
             normalized.append(filt_parm)
 
     if len(normalized) == 0:
-        return None
+        return [('', {})]
     return normalized
 
 
@@ -114,20 +119,22 @@ def extract_image(doc, pike, root, log, image, xref, jbig2s,
                   pngs, jpegs):
     if image.Subtype != '/Image':
         return False
+    if image.Length < 100:
+        log.debug("Skipping small image, xref {}".format(xref))
+        return False
 
     bpc = image.get('/BitsPerComponent', 8)
-    filt = image.get('/Filter', pikepdf.Array([]))
     cs = image.get('/ColorSpace', '')
     w = int(image.Width)
     h = int(image.Height)
     filtdps = filter_decodeparms(image)
-    if filtdps and len(filtdps) > 1:
+    if len(filtdps) > 1:
         log.debug("Skipping multiply filtered, xref {}".format(xref))
         return False
     filtdp = filtdps[0]
 
     if bpc == 1 and filtdp[0] != '/JBIG2Decode':
-        if filt == '/CCITTFaxDecode':
+        if filtdp[0] == '/CCITTFaxDecode':
             data = image.read_raw_bytes()
             try:
                 header = generate_ccitt_header(data, w, h, filtdp[1])
