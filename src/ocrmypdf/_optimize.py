@@ -93,16 +93,18 @@ def extract_images(doc, pike, root, log):
                 continue  # Don't improve same image twice
 
             bpc = image.get('/BitsPerComponent', 8)
-            filt = image.get('/Filter', pikepdf.Array([]))
+            filt = image.get('/Filter', 'pikepdf.Array([])')
             cs = image.get('/ColorSpace', '')
             w = int(image.Width)
             h = int(image.Height)
             if filt.type_code == pikepdf.ObjectType.array:
-                if len(filt) == 1:
-                    filt = filt[0]
-                else:
+                if len(filt) > 1:
                     log.debug("Skipping multiply filtered {}".format(filt))
                     continue  # Not supported: multiple filters 
+                elif len(filt) == 1:
+                    filt = filt[0]
+                else:
+                    filt = ''
             if bpc == 1 and filt != '/JBIG2Decode':
                 decode_parms = image.get('/DecodeParms')
                 if filt == '/CCITTFaxDecode':
@@ -123,18 +125,20 @@ def extract_images(doc, pike, root, log):
                 
                 changed_xrefs.add(xref)
                 jbig2_groups[group].append(xref)
+            elif filt == '/JPXDecode':
+                continue
             elif filt == '/DCTDecode' and cs in SIMPLE_COLORSPACES:
                 raw_jpeg = pike._get_object_id(xref, 0)
-                try:
-                    if raw_jpeg.DecodeParms.ColorTransform != 1:
-                        continue  # Don't mess with JPEGs other than YUV
-                except AttributeError:
-                    pass
+                dp = raw_jpeg.get('/DecodeParms')
+                if dp and dp.get('/ColorTransform', 1) != 1:
+                    continue  # Don't mess with JPEGs other than YUV
                 raw_jpeg_data = raw_jpeg.read_raw_bytes()
                 (root / '{:08d}.jpg'.format(xref)).write_bytes(raw_jpeg_data)
                 changed_xrefs.add(xref)
                 jpegs.append(xref)
-            elif filt == '/FlateDecode' and cs in SIMPLE_COLORSPACES:
+            elif cs in SIMPLE_COLORSPACES:
+                # For any 'inferior' filter include /FlateDecode we extract
+                # and recode as /FlateDecode
                 # raw_png = pike._get_object_id(xref, 0)
                 # raw_png_data = raw_png.read_raw_bytes()
                 # (root / '{:08d}.png'.format(xref)).write_bytes(raw_png_data)
