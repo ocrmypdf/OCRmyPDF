@@ -176,8 +176,8 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             jbig2_im_file = root / (prefix + '.{:04d}'.format(n))
             jbig2_im_data = jbig2_im_file.read_bytes()
             im_obj = pike._get_object_id(xref, 0)
-            log.info(xref)
-            log.info(repr(im_obj))
+            log.debug(xref)
+            log.debug(repr(im_obj))
 
             im_obj.write(
                 jbig2_im_data, pikepdf.Name('/JBIG2Decode'), 
