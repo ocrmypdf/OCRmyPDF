@@ -32,6 +32,18 @@ def version():
     return get_version('gs')
 
 
+def jpeg_passthrough_available():
+    """
+    Ghostscript 9.23 introduced JPEG passthrough but it seems to corrupt the
+    last two bytes of certain images, for now we disable it for 9.23 and
+    do not mention it for < 9.23.
+
+    https://bugs.ghostscript.com/show_bug.cgi?id=699216
+
+    """
+    return False
+
+
 def _gs_error_reported(stream):
     return re.search(r'error', stream, flags=re.IGNORECASE)
 
@@ -133,7 +145,8 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
     strategy = 'RGB' if version() >= '9.19' else '/RGB'
 
     if version() == '9.23':
-        # 9.23: JPEG passthrough broken for image masks?
+        # 9.23: new feature JPEG passthrough is broken in some cases, best to
+        # disable it always
         # https://bugs.ghostscript.com/show_bug.cgi?id=699216
         compression_args.append('-dPassThroughJPEGImages=false')
 

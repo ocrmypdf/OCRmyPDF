@@ -610,10 +610,6 @@ def test_masks(spoof_tesseract_noop, resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / 'masks.pdf', outpdf, env=spoof_tesseract_noop)
 
-    if ghostscript.version() == '9.23' and \
-            p.returncode == ExitCode.invalid_output_pdf:
-        pytest.xfail('https://bugs.ghostscript.com/show_bug.cgi?id=699216')
-
     assert p.returncode == ExitCode.ok
 
 
@@ -906,7 +902,7 @@ def test_compression_changed(spoof_tesseract_noop, ocrmypdf_exec,
     if compression == "jpeg":
         assert pdfimage.enc == Encoding.jpeg
     else:
-        if ghostscript.version() >= '9.23':
+        if ghostscript.jpeg_passthrough_available():
             # Ghostscript 9.23 adds JPEG passthrough, which allows a JPEG to be
             # copied without transcoding - so report
             if image.endswith('jpg'):
