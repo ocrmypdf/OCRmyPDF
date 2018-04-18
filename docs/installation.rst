@@ -287,7 +287,7 @@ If you prefer to not modify your system in this matter, consider using a Docker 
     sudo apt-get update
 
     sudo apt-get install \
-        python3.6 \
+        python3.6-dev \
         ghostscript \
         tesseract-ocr \
         tesseract-ocr-eng \
@@ -298,7 +298,7 @@ Now we need to install ``pip`` and let it install ocrmypdf:
 
 .. code-block:: bash
 
-    wget -O - -o /dev/null https://bootstrap.pypa.io/get-pip.py | python3.6
+    curl https://bootstrap.pypa.io/ez_setup.py -o - | python3.6 && python3.6 -m easy_install pip
     pip3.6 install ocrmypdf[fitz]
 
 The ``wget`` command will download a program and run it.

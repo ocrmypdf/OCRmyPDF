@@ -322,8 +322,11 @@ class HocrTransform():
             dy = baseline_y2 - cursor[1]            
             text.moveCursor(dx, dy)
 
-            text.setHorizScale(100 * box_width / font_width)
-            text.textOut(elemtxt)
+            # If reportlab tells us this word is 0 units wide, our best seems
+            # to be to suppress this text
+            if font_width > 0:
+                text.setHorizScale(100 * box_width / font_width)
+                text.textOut(elemtxt)
         pdf.drawText(text)
 
 

@@ -19,6 +19,7 @@
 import pytest
 import PyPDF2 as pypdf
 import datetime
+from datetime import timezone
 
 from ocrmypdf.pdfa import file_claims_pdfa, encode_pdf_date, decode_pdf_date
 from ocrmypdf.exceptions import ExitCode
@@ -150,6 +151,6 @@ def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
     # We expect that the modified date is quite recent
     date_after = decode_pdf_date(after['/ModDate'])
     assert seconds_between_dates(
-        date_after, datetime.datetime.utcnow()) < 1000
+        date_after, datetime.datetime.now(timezone.utc)) < 1000
 
 

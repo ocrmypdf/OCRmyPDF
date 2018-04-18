@@ -9,10 +9,18 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
    find:    [^`]\#([0-9]{1,3})[^0-9]  
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v6.1.5
+------
+
+-   Fix issue `#253 <https://github.com/jbarlow83/OCRmyPDF/issues/248>`_, a possible division by zero when using the ``hocr`` renderer.
+
+-   Fix incorrectly formatted ``<xmp:ModifyDate>`` field inside XMP metadata for PDF/As.  veraPDF flags this as a PDF/A validation failure. The error is caused the timezone and final digit of the seconds of modified time to be omitted, so at worst the modification time stamp is rounded to the nearest 10 seconds.
+
+
 v6.1.4
 ------
 
--   Fix issue #248, ``--clean`` argument may remove OCR from left column of text on certain documents. We now set ``--layout none`` to suppress this.  
+-   Fix issue `#248 <https://github.com/jbarlow83/OCRmyPDF/issues/248>`_ ``--clean`` argument may remove OCR from left column of text on certain documents. We now set ``--layout none`` to suppress this.  
 
 -   The test cache was updated to reflect the change above.
 
