@@ -157,6 +157,16 @@ def extract_image(doc, pike, root, log, image, xref, jbig2s,
         color_transform = filtdp[1].get('/ColorTransform', 1)
         if color_transform != 1:
             return False  # Don't mess with JPEGs other than YUV
+
+        # This is a simple heuristic derived from some training data, that has
+        # about a 70% chance of guessing whether the JPEG is high quality,
+        # and possibly recompressible, or not. The number itself doesn't mean
+        # anything.
+        # bytes_per_pixel = int(raw_jpeg.Length) / (w * h)
+        # jpeg_quality_estimate = 117.0 * (bytes_per_pixel ** 0.213)
+        # if jpeg_quality_estimate < 65:
+        #     return False
+
         raw_jpeg_data = raw_jpeg.read_raw_bytes()
         (root / '{:08d}.jpg'.format(xref)).write_bytes(raw_jpeg_data)
         jpegs.append(xref)
@@ -216,6 +226,19 @@ def extract_images(doc, pike, root, log):
 
 
 def convert_to_jbig2(pike, jbig2_groups, root, log, options):
+    """
+    Convert a group of JBIG2 images and insert into PDF.
+
+    We use a group because JBIG2 works best with a symbol dictionary that spans
+    multiple pages. When inserted back into the PDF, each JBIG2 must reference
+    the symbol dictionary it is associated with. So convert a group at a time,
+    and replace their streams with a parameter set that points to the 
+    appropriate dictionary.
+
+    If too many pages shared the same dictionary JBIG2 encoding becomes more
+    expensive and less efficient.
+
+    """
     with concurrent.futures.ThreadPoolExecutor(
             max_workers=options.jobs) as executor:
         futures = []
@@ -240,22 +263,27 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             jbig2_im_file = root / (prefix + '.{:04d}'.format(n))
             jbig2_im_data = jbig2_im_file.read_bytes()
             im_obj = pike._get_object_id(xref, 0)
-            log.debug(xref)
-            log.debug(repr(im_obj))
-
             im_obj.write(
                 jbig2_im_data, pikepdf.Name('/JBIG2Decode'), 
                 pikepdf.Dictionary({
                     '/JBIG2Globals': jbig2_globals
                 })
             )
-            log.debug(repr(im_obj))
 
 
-def transcode_jpegs(pike, jpegs, root):
+def transcode_jpegs(pike, jpegs, root, log, options):
     for xref in jpegs:
-        pix = leptonica.Pix.read((root / '{:08d}.jpg'.format(xref)))
-        compdata = pix.generate_pdf_ci_data(leptonica.lept.L_JPEG_ENCODE, 75)
+        in_jpg = root / '{:08d}.jpg'.format(xref)
+        opt_jpg = root / '{:08d}_opt.jpg'.format(xref)
+        with Image.open(str(in_jpg)) as im:
+            im.save(str(opt_jpg), 
+                    optimize=True,
+                    quality=70)
+        if opt_jpg.stat().st_size > in_jpg.stat().st_size:
+            log.debug("xref {}, jpeg, made larger - skip".format(xref))
+            continue
+
+        compdata = leptonica.CompressedData.open(opt_jpg)
         im_obj = pike._get_object_id(xref, 0)
         im_obj.write(
             compdata.read(), pikepdf.Name('/DCTDecode'),
@@ -264,7 +292,6 @@ def transcode_jpegs(pike, jpegs, root):
 
 
 def transcode_pngs(pike, pngs, root, options):
-
     with concurrent.futures.ThreadPoolExecutor(
             max_workers=options.jobs) as executor:
         for xref in pngs:
@@ -323,18 +350,27 @@ def optimize(
 
     convert_to_jbig2(pike, jbig2_groups, root, log, options)
 
-    transcode_jpegs(pike, jpegs, root)
+    transcode_jpegs(pike, jpegs, root, log, options)
 
     transcode_pngs(pike, pngs, root, options)
 
     # Not object_stream_mode + preserve_pdfa generates noncompliant PDFs
-    pike.save(output_file, preserve_pdfa=True)
+    target_file = output_file + '_opt.pdf'
+    pike.save(target_file, preserve_pdfa=True)
 
     input_size = Path(input_file).stat().st_size
-    output_size = Path(output_file).stat().st_size
-    improvement = input_size / output_size
-    log.info("Optimize reduced size by {:.3f}".format(improvement))    
-
+    output_size = Path(target_file).stat().st_size
+    ratio = input_size / output_size
+    savings = 1 - output_size / input_size
+    log.info("Optimize ratio: {:.2f} savings: {:.1f}%".format(
+        ratio, 100 * savings))
+    
+    if savings < 0:
+        log.info("Optimize did not improve the file - discarded")
+        re_symlink(input_file, output_file)
+    else:
+        re_symlink(target_file, output_file)
+        
 
 if __name__ == '__main__':
     import logging
