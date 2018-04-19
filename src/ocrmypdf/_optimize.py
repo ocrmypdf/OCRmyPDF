@@ -213,14 +213,14 @@ def extract_images(doc, pike, root, log):
                 log.debug(repr(e))
                 errors += 1
 
-    log.debug(
-        "Optimizable images: JBIG2: {} JPEGs: {} PNGs: {} Errors: {}".format(
-        len(jbig2_groups), len(jpegs), len(pngs), errors
-    ))
-
     # Elide empty groups
     jbig2_groups = {group: xrefs for group, xrefs in jbig2_groups.items()
                     if len(xrefs) > 0}
+    log.debug(
+        "Optimizable images: " 
+        "JBIG2 groups: {} JPEGs: {} PNGs: {} Errors: {}".format(
+            len(jbig2_groups), len(jpegs), len(pngs), errors
+    ))
 
     return changed_xrefs, jbig2_groups, jpegs, pngs
 
