@@ -156,14 +156,15 @@ parser.add_argument(
     '--image-dpi', metavar='DPI', type=int,
     help="For input image instead of PDF, use this DPI instead of file's.")
 parser.add_argument(
-    '--output-type', choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2'], 
+    '--output-type', choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'], 
     default='pdfa',
     help="Choose output type. 'pdfa' creates a PDF/A-2b compliant file for "
          "long term archiving (default, recommended) but may not suitable "
          "for users who want their file altered as little as possible. 'pdfa' "
          "also has problems with full Unicode text. 'pdf' attempts to "
          "preserve file contents as much as possible. 'pdf-a1' creates a "
-         "PDF/A1-b file. 'pdf-a2' is equivalent to 'pdfa'."
+         "PDF/A1-b file. 'pdf-a2' is equivalent to 'pdfa'. 'pdf-a3' creates a "
+         "PDF/A3-b file."
          )
 
 # Use null string '\0' as sentinel to indicate the user supplied no argument,
@@ -393,6 +394,9 @@ def check_options_output(options, log):
     if options.debug_rendering and options.pdf_renderer != 'hocr':
         log.info(
             "Ignoring --debug-rendering because it requires --pdf-renderer=hocr")
+
+    if options.output_type == 'pdfa':
+        options.output_type == 'pdfa-2'
 
     lossless_reconstruction = False
     if options.pdf_renderer in ('hocr', 'sandwich'):

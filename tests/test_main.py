@@ -951,15 +951,16 @@ def test_sidecar_nonempty(spoof_tesseract_cache, resources, outpdf):
     assert 'the' in ocr_text
 
 
-def test_pdfa_1(spoof_tesseract_cache, resources, outpdf):
+@pytest.mark.parametrize('pdfa_level', ['1', '2', '3'])
+def test_pdfa_n(spoof_tesseract_cache, pdfa_level, resources, outpdf):
     check_ocrmypdf(
         resources / 'ccitt.pdf', outpdf,
-        '--output-type', 'pdfa-1',
+        '--output-type', 'pdfa-' + pdfa_level,
         env=spoof_tesseract_cache
     )
 
     pdfa_info = file_claims_pdfa(outpdf)
-    assert pdfa_info['conformance'] == 'PDF/A-1B'
+    assert pdfa_info['conformance'] == 'PDF/A-{}B'.format(pdfa_level)
 
 
 def test_bad_locale():
