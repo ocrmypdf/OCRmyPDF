@@ -336,7 +336,7 @@ def is_ocr_required(pageinfo, log, options):
     return ocr_required
 
 
-def pre_split_pages(
+def marker_pages(
         input_files,
         output_files,
         log,
@@ -363,11 +363,11 @@ def pre_split_pages(
     pdfinfo = context.get_pdfinfo()
     npages = len(pdfinfo)
 
-    # Ruffus needs to see a file for any task it generates, so create
-    # empty placeholders for every page.
+    # Ruffus needs to see a file for any task it generates, so make very
+    # file a symlink back to the source.
     for n in range(npages):
-        page = Path(work_folder) / '{0:06d}.presplit.pdf'.format(n + 1)
-        page.touch()
+        page = Path(work_folder) / '{0:06d}.page.pdf'.format(n + 1)
+        page.symlink_to(input_file)
 
 
 def split_page(
@@ -416,7 +416,8 @@ def rasterize_preview(
 
     ghostscript.rasterize_pdf(
         input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
-        raster_device='jpeggray', log=log, page_dpi=(page_dpi, page_dpi))
+        raster_device='jpeggray', log=log, page_dpi=(page_dpi, page_dpi),
+        pageno=page_number(input_file))
 
 
 def orient_page(
@@ -472,15 +473,15 @@ def orient_page(
     if not apply_correction:
         re_symlink(page_pdf, output_file, log)
     else:
-        writer = pypdf.PdfFileWriter()
-        reader = pypdf.PdfFileReader(page_pdf)
-        page = reader.pages[0]
+        # writer = pypdf.PdfFileWriter()
+        # reader = pypdf.PdfFileReader(page_pdf)
+        # page = reader.pages[0]
 
-        # angle is a clockwise angle, so rotating ccw will correct the error
-        rotated_page = page.rotateCounterClockwise(orient_conf.angle)
-        writer.addPage(rotated_page)
-        with open(output_file, 'wb') as out:
-            writer.write(out)
+        # # angle is a clockwise angle, so rotating ccw will correct the error
+        # rotated_page = page.rotateCounterClockwise(orient_conf.angle)
+        # writer.addPage(rotated_page)
+        # with open(output_file, 'wb') as out:
+        #     writer.write(out)
 
         pageno = page_number(page_pdf) - 1
         pdfinfo = context.get_pdfinfo()
@@ -518,7 +519,8 @@ def rasterize_with_ghostscript(
 
     ghostscript.rasterize_pdf(
         input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
-        raster_device=device, log=log, page_dpi=(page_dpi, page_dpi))
+        raster_device=device, log=log, page_dpi=(page_dpi, page_dpi),
+        pageno=page_number(input_file))
 
 
 def preprocess_remove_background(
@@ -663,7 +665,7 @@ def select_image_layer(
     if options.lossless_reconstruction:
         log.debug("{:4d}: page eligible for lossless reconstruction".format(
             page_number(page_pdf)))
-        re_symlink(page_pdf, output_file, log)
+        re_symlink(page_pdf, output_file, log)  # Still points to multipage
         return
 
     pageinfo = get_pageinfo(image, context)
@@ -677,6 +679,7 @@ def select_image_layer(
     dpi = get_page_square_dpi(pageinfo, options)
     layout_fun = img2pdf.get_fixed_dpi_layout_fun((dpi, dpi))
 
+    # This create a single page PDF
     with open(image, 'rb') as imfile, open(output_file, 'wb') as pdf:
         log.debug('{:4d}: convert'.format(page_number(page_pdf)))
         img2pdf.convert(
@@ -699,6 +702,7 @@ def render_hocr_page(
     hocrtransform.to_pdf(output_file, imageFileName=None,
                          showBoundingboxes=False, invisibleText=True,
                          interwordSpaces=True)
+
 
 def flatten_groups(groups):
     for obj in groups:
@@ -730,10 +734,34 @@ def combine_layers(
         output_file,
         log,
         context):
+    # Needs to work on whole file at once
+    # Doable
+    # Take repaired file as input
+    # For each image layer file/symlink thingy
+    #   If symlink resolves to input then we are adding to the original page
+    #       Perform rotation compensation (?)
+    #       Graft the text layer under the page
+    #   Else
+    #       Remove contents, graft text and image
+
+    # Which to use? 
+    #   PyPDF2 would duplicate glyphless
+    #   pikepdf
+    #       Because we know what's in text PDFs, we just need to
+    #       - Prepend text PDF content stream
+    #       - Embed and link to Glyphless
+    #       - Fiddle with things like /ProcSet to indicate text is present
+    #       - Deal with rotation and translation
+    #       Except when we generated an image layer, in which we need to
+    #       - Replace page with image layer in a way that doesn't destroy
+    #       bookmarks
+
+    # Consider removing ocr_tesseract_and_render_pdf as it becomes too special
+
     text = next(ii for ii in flatten_groups(infiles)
-                if ii.endswith('.text.pdf'))
+                if ii.endswith('.text.pdf'))  # single page PDF from tesseract
     image = next(ii for ii in flatten_groups(infiles)
-                 if ii.endswith('.image-layer.pdf'))
+                 if ii.endswith('.image-layer.pdf'))  # single/multipage
 
     pdf_text = pypdf.PdfFileReader(text)
     pdf_image = pypdf.PdfFileReader(image)
@@ -1130,23 +1158,23 @@ def build_pipeline(options, work_folder, log, context):
         extras=[log, context])
 
     # Split (kwargs for split seems to be broken, so pass plain args)
-    task_pre_split_pages = main_pipeline.split(
-        pre_split_pages,
+    task_marker_pages = main_pipeline.split(
+        marker_pages,
         task_repair_and_parse_pdf,
-        os.path.join(work_folder, '*.presplit.pdf'),
+        os.path.join(work_folder, '*.marker.pdf'),
         extras=[log, context])
 
-    task_split_pages = main_pipeline.transform(
-        task_func=split_page,
-        input=task_pre_split_pages,
-        filter=suffix('.presplit.pdf'),
-        output='.page.pdf',
-        output_dir=work_folder,
-        extras=[log, context])
+    # task_split_pages = main_pipeline.transform(
+    #     task_func=split_page,
+    #     input=task_pre_split_pages,
+    #     filter=suffix('.presplit.pdf'),
+    #     output='.page.pdf',
+    #     output_dir=work_folder,
+    #     extras=[log, context])
 
     task_ocr_or_skip = main_pipeline.split(
         ocr_or_skip,
-        task_split_pages,
+        task_marker_pages,
         [os.path.join(work_folder, '*.ocr.page.pdf'),
          os.path.join(work_folder, '*.skip.page.pdf')],
         extras=[log, context])
