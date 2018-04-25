@@ -41,6 +41,11 @@ check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
 spoof = pytest.helpers.spoof
 
+# Tesseract has issues on big endian architectures.  This should not
+# cause OCRmyPDF's test suite to fail because we are an
+# architecture-independent package.  See https://bugs.debian.org/849094
+bigendian = pytest.mark.xfail(sys.byteorder == 'big',
+                              reason="fails on BE archs due to a bug in Tesseract")
 
 RENDERERS = ['hocr', 'tesseract']
 if tesseract.has_textonly_pdf():
@@ -695,6 +700,7 @@ def test_destination_not_writable(spoof_tesseract_noop, resources, outdir):
     assert p.returncode == ExitCode.file_access_error, "Expected error"
 
 
+@bigendian
 def test_tesseract_config_valid(resources, outdir):
     cfg_file = outdir / 'test.cfg'
     with cfg_file.open('w') as f:
@@ -709,6 +715,7 @@ language_model_penalty_non_freq_dict_word 0
         '--tesseract-config', cfg_file)
 
 
+@bigendian
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_tesseract_config_notfound(renderer, resources, outdir):
     cfg_file = outdir / 'nofile.cfg'
@@ -737,6 +744,7 @@ THIS FILE IS INVALID
     assert p.returncode == ExitCode.invalid_config
 
 
+@bigendian
 def test_user_words(resources, outdir):
     word_list = outdir / 'wordlist.txt'
     sidecar_before = outdir / 'sidecar_before.txt'
@@ -774,6 +782,7 @@ def test_form_xobject(spoof_tesseract_noop, resources, outpdf):
                    env=spoof_tesseract_noop)
 
 
+@bigendian
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_pagesize_consistency(renderer, resources, outpdf):
     from math import isclose

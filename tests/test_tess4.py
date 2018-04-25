@@ -28,6 +28,11 @@ from pathlib import Path
 # pylint: disable=no-member
 spoof = pytest.helpers.spoof
 
+# Tesseract has issues on big endian architectures.  This should not
+# cause OCRmyPDF's test suite to fail because we are an
+# architecture-independent package.  See https://bugs.debian.org/849094
+bigendian = pytest.mark.xfail(sys.byteorder == 'big',
+                              reason="fails on BE archs due to a bug in Tesseract")
 
 @pytest.fixture
 def ensure_tess4():
@@ -83,6 +88,7 @@ run_ocrmypdf = pytest.helpers.run_ocrmypdf
 spoof = pytest.helpers.spoof
 
 
+@bigendian
 def test_textonly_pdf(ensure_tess4, resources, outdir):
     check_ocrmypdf(
         resources / 'linn.pdf',
@@ -91,6 +97,7 @@ def test_textonly_pdf(ensure_tess4, resources, outdir):
         env=ensure_tess4)
 
 
+@bigendian
 def test_pagesize_consistency_tess4(ensure_tess4, resources, outpdf):
     from math import isclose
 
