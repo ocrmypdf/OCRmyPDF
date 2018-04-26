@@ -718,7 +718,7 @@ def test_tesseract_config_notfound(renderer, resources, outdir):
         '--pdf-renderer', renderer,
         '--tesseract-config', cfg_file)
     assert "Can't open" in err, "No error message about missing config file"
-    assert p.returncode == ExitCode.ok
+    assert p.returncode == ExitCode.ok, err
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
