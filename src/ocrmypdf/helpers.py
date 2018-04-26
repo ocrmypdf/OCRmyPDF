@@ -22,6 +22,7 @@ from pathlib import Path
 import sys
 import os
 import multiprocessing
+import warnings
 
 
 def re_symlink(input_file, soft_link_name, log=None):
@@ -70,7 +71,7 @@ def is_iterable_notstr(thing):
 
 def page_number(input_file):
     "Get one-based page number implied by filename (000002.pdf -> 2)"
-    return int(os.path.basename(input_file)[0:6])
+    return int(os.path.basename(fspath(input_file)[0:6]))
 
 
 def available_cpu_count():
@@ -85,7 +86,7 @@ def available_cpu_count():
     except (ImportError, AttributeError):
         pass
 
-    complain(
+    warnings.warn(
         "Could not get CPU count.  Assuming one (1) CPU."
         "Use -j N to set manually.")
     return 1
