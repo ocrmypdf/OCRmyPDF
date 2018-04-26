@@ -736,6 +736,9 @@ def combine_layers(
         context):
     # Needs to work on whole file at once
     # Doable
+    # text layer is generated, always
+    # image layer is either a symlink back to the repaired file, or a generated
+    #   page
     # Take repaired file as input
     # For each image layer file/symlink thingy
     #   If symlink resolves to input then we are adding to the original page
@@ -755,9 +758,43 @@ def combine_layers(
     #       Except when we generated an image layer, in which we need to
     #       - Replace page with image layer in a way that doesn't destroy
     #       bookmarks
+    #   or fitz
+    #   
 
     # Consider removing ocr_tesseract_and_render_pdf as it becomes too special
 
+    from itertools import groupby
+
+    path_base = None
+
+    for layers in groupby(sorted(flatten_groups(infiles)), key=page_number):
+        layers = list(layers)
+        if not path_base and layers[0].endswith('000000.pdf'):
+            path_base = Path(layers[0])
+            base = pikepdf.open(path_base)
+            continue
+
+        text = next(ii for ii in layers if ii.endswith('.text.pdf'))
+        image = next(ii for ii in layers if ii.endswith('.image-layer.pdf'))
+
+        # if text is a skip page:
+        #   continue
+
+        path_image = Path(image).resolve()
+        if path_image == path_base:
+            # This is a pointer indicating a specific page in the base file
+            page_num = page_number(text)
+            base_page = base.pages.p(page_num)
+            
+            
+        else:
+            # We are going to replace the old page
+            assert False
+
+
+    
+
+def _old_combine_layers():
     text = next(ii for ii in flatten_groups(infiles)
                 if ii.endswith('.text.pdf'))  # single page PDF from tesseract
     image = next(ii for ii in flatten_groups(infiles)
@@ -881,7 +918,7 @@ def ocr_tesseract_textonly_pdf(
 
     tesseract.generate_pdf(
         input_image=input_image,
-        skip_pdf=skip_pdf,
+        skip_pdf=skip_pdf,  # only needs dimensions of skip page
         output_pdf=output_pdf,
         output_text=output_text,
         language=options.language,
@@ -1298,13 +1335,19 @@ def build_pipeline(options, work_folder, log, context):
     task_ocr_tesseract_textonly_pdf.graphviz(fillcolor='"#ff69b4"')
     task_ocr_tesseract_textonly_pdf.active_if(options.pdf_renderer == 'sandwich')
 
+    task_copy_repaired = main_pipeline.transform(
+        task_func=shutil.copy,
+        input=task_repair_and_parse_pdf,
+        output='000000.pdf')
+
     task_combine_layers = main_pipeline.collate(
         task_func=combine_layers,
-        input=[task_render_hocr_page,
+        input=[task_copy_repaired,
+               task_render_hocr_page,
                task_ocr_tesseract_textonly_pdf,
                task_select_image_layer],
         filter=regex(r".*/(\d{6})(?:\.text\.pdf|\.image-layer\.pdf)"),
-        output=os.path.join(work_folder, r'\1.rendered.pdf'),
+        output=os.path.join(work_folder, r'layers.rendered.pdf'),
         extras=[log, context])
     task_combine_layers.graphviz(fillcolor='"#00cc66"')
     task_combine_layers.active_if(options.pdf_renderer == 'hocr' or 
