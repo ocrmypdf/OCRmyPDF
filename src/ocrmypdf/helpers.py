@@ -71,7 +71,7 @@ def is_iterable_notstr(thing):
 
 def page_number(input_file):
     "Get one-based page number implied by filename (000002.pdf -> 2)"
-    return int(os.path.basename(fspath(input_file)[0:6]))
+    return int(os.path.basename(fspath(input_file))[0:6])
 
 
 def available_cpu_count():
