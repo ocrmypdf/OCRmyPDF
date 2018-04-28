@@ -764,14 +764,19 @@ def combine_layers(
     # Consider removing ocr_tesseract_and_render_pdf as it becomes too special
 
     from itertools import groupby
+    import pikepdf
 
     path_base = None
+    pdf_base = None
+    font = None
 
-    for layers in groupby(sorted(flatten_groups(infiles)), key=page_number):
+    for prefix, layers in groupby(sorted(flatten_groups(infiles)), 
+                                         key=page_number):
         layers = list(layers)
+        log.info(layers)
         if not path_base and layers[0].endswith('000000.pdf'):
             path_base = Path(layers[0])
-            base = pikepdf.open(path_base)
+            pdf_base = pikepdf.open(path_base)
             continue
 
         text = next(ii for ii in layers if ii.endswith('.text.pdf'))
@@ -784,14 +789,29 @@ def combine_layers(
         if path_image == path_base:
             # This is a pointer indicating a specific page in the base file
             page_num = page_number(text)
-            base_page = base.pages.p(page_num)
-            
-            
+            pdf_text = pikepdf.open(text)
+            pdf_text_contents = pdf_text.pages[0].Contents.read_bytes()
+
+            base_page = pdf_base.pages.p(page_num)
+            new_text_layer = pikepdf.Stream(pdf_base, pdf_text_contents)
+            base_page.page_contents_add(new_text_layer)
+
+            if not font:
+                font = pdf_base.make_indirect(
+                        pdf_text.pages[0].Resources.Font['/f0-0-0'])
+            fonts = base_page.Resources['/Font']
+            fonts['/f0-0-0'] = font
+            procset = base_page.ProcSet
+            if not '/Text' in procset:
+                list_procset = procset.as_list()
+                list_procset.append(pikepdf.name('/Text'))
+                base_page.ProcSet = pikepdf.Array(list_procset)
+
         else:
             # We are going to replace the old page
             assert False
 
-
+    pdf_base.save(output_file)
     
 
 def _old_combine_layers():
@@ -1008,6 +1028,11 @@ def merge_pages(
     if metadata_file in input_files:
         input_files.remove(metadata_file)
 
+    layers_file = next(
+        (ii for ii in input_files if ii.endswith('layers.rendered.pdf')), None)
+    if layers_file in input_files:
+        input_files.remove(layers_file)
+
     def input_file_order(s):
         '''Sort order: All rendered pages followed
         by their debug page, if any, followed by Postscript stub.
@@ -1023,6 +1048,9 @@ def merge_pages(
 
     pdf_pages = sorted(input_files, key=input_file_order)
     log.debug("Final pages: " + "\n".join(pdf_pages))
+    
+    if layers_file:
+        pdf_pages.insert(0, layers_file)
 
     args = (pdf_pages, metadata_file, output_file, log, context)
     if options.output_type.startswith('pdfa'):
@@ -1338,7 +1366,9 @@ def build_pipeline(options, work_folder, log, context):
     task_copy_repaired = main_pipeline.transform(
         task_func=shutil.copy,
         input=task_repair_and_parse_pdf,
-        output='000000.pdf')
+        filter=formatter(r'\.repaired\.pdf'),
+        output=os.path.join(work_folder, '000000.pdf')
+    )
 
     task_combine_layers = main_pipeline.collate(
         task_func=combine_layers,
@@ -1346,7 +1376,7 @@ def build_pipeline(options, work_folder, log, context):
                task_render_hocr_page,
                task_ocr_tesseract_textonly_pdf,
                task_select_image_layer],
-        filter=regex(r".*/(\d{6})(?:\.text\.pdf|\.image-layer\.pdf)"),
+        filter=regex(r".*/(\d{6})(?:\.text\.pdf|\.image-layer\.pdf|\.pdf)"),
         output=os.path.join(work_folder, r'layers.rendered.pdf'),
         extras=[log, context])
     task_combine_layers.graphviz(fillcolor='"#00cc66"')
