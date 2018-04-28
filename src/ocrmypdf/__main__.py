@@ -787,8 +787,20 @@ def report_output_file_size(options, _log, input_file, output_file):
     reasons = []
     if not fitz:
         reasons.append("The optional dependency PyMuPDF is not installed.")
-    if options.force_ocr:
-        reasons.append("The argument --force-ocr was issued.")
+    image_preproc = {
+        'deskew', 
+        'clean_final', 
+        'remove_background', 
+        'oversample',
+        'force_ocr'
+    }
+    for arg in image_preproc:
+        attr = getattr(options, arg, None)
+        if not attr:
+            continue
+        reasons.append(
+                "The argument --{} was issued, causing transcoding.".format(
+                        arg.replace('_', '-')))
 
     if reasons:
         explanation = (
