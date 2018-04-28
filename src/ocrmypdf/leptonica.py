@@ -108,13 +108,6 @@ class LeptonicaIOError(LeptonicaError):
     pass
 
 
-class RemoveColormap(Enum):
-    to_binary = 0
-    to_grayscale = 1
-    to_full_color = 2
-    based_on_src = 3
-
-
 class Pix:
     """Wrapper around leptonica's PIX object.
 
@@ -141,9 +134,10 @@ class Pix:
 
     def __repr__(self):
         if self._pix:
-            s = "<leptonica.Pix image size={0}x{1} depth={2} at 0x{3:x}>"
+            s = "<leptonica.Pix image size={0}x{1} depth={2}{4} at 0x{3:x}>"
             return s.format(self._pix.w, self._pix.h, self._pix.d,
-                            int(ffi.cast("intptr_t", self._pix)))
+                            int(ffi.cast('intptr_t', self._pix)),
+                            '(colormapped)' if self._pix.colormap else '')
         else:
             return "<leptonica.Pix image NULL>"
 
@@ -328,13 +322,16 @@ class Pix:
             return None
 
     def remove_colormap(self, removal_type):
-        """Remove a palette
+        """Remove a palette (colormap); if no colormap, returns a copy of this 
+        image
 
-            removal_type - RemovalColormap()
+            removal_type - any of lept.REMOVE_CMAP_*
+
         """
-
-        with LeptonicaErrorTrap():
-            return Pix(lept.pixRemoveColormap(self._pix, removal_type))
+        return self
+        # with LeptonicaErrorTrap():
+        #     return Pix(lept.pixRemoveColormapGeneral(
+        #             self._pix, removal_type, lept.L_COPY))
 
     def otsu_adaptive_threshold(
             self, tile_size=(300, 300), kernel_size=(4, 4), scorefract=0.1):
@@ -426,9 +423,11 @@ class Pix:
     def background_norm(
             self, mask=None, grayscale=None, tile_size=(10, 15), fg_threshold=60,
             min_count=40, bg_val=200, smooth_kernel=(2, 1)):
+        # Background norm doesn't work on color mapped Pix, so remove colormap
+        target_pix = self.remove_colormap(lept.REMOVE_CMAP_BASED_ON_SRC)
         with LeptonicaErrorTrap():
             return Pix(lept.pixBackgroundNorm(
-                self._pix,
+                target_pix._pix,
                 mask or ffi.NULL,
                 grayscale or ffi.NULL,
                 tile_size[0],
@@ -450,8 +449,8 @@ class Pix:
         if get_leptonica_version() < 'leptonica-1.72':
             # Older versions of Leptonica (pre-1.72) have a buggy
             # implementation of pixCorrelationBinary that overflows on larger
-            # images.  Ubuntu trusty has 1.70. Ubuntu PPA
-            # ppa:rebuntu16/avidemux+unofficial has "leptonlib" 1.73.
+            # images.  Ubuntu 14.04/trusty has 1.70. Ubuntu PPA
+            # ppa:alex-p/tesseract-ocr has leptonlib 1.75.
             pix1_count = ffi.new('l_int32 *')
             pix2_count = ffi.new('l_int32 *')
             pixn_count = ffi.new('l_int32 *')

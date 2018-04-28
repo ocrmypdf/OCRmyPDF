@@ -147,6 +147,7 @@ Assemblies
 These test resources are assemblies or derivatives from other previously mentioned files, released under the same license terms as their input files.
 
 - baiona_gray.png (from baiona.png)
+- baiona_colormapped.png (from baiona.png)
 - cardinal.pdf (four cardinal directions, baked-in rotated copies of LinnSequencer.jpg)
 - ccitt.pdf (LinnSequencer.jpg, converted to CCITT encoding)
 - encrypted_algo4.pdf (congress.jpg, encrypted with algorithm 4 - not supported by PyPDF2)
