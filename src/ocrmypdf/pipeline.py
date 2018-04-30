@@ -729,7 +729,40 @@ def render_hocr_debug_page(
                          showBoundingboxes=True, invisibleText=False,
                          interwordSpaces=True)
 
-def combine_layers(
+
+def _weave_layers_graft(pdf_base, page_num, text, font, log):
+    import pikepdf
+
+    log.info("Graft")
+    if Path(text).stat().st_size == 0:
+        return
+
+    # This is a pointer indicating a specific page in the base file
+    pdf_text = pikepdf.open(text)
+    pdf_text_contents = pdf_text.pages[0].Contents.read_bytes()
+
+    base_page = pdf_base.pages.p(page_num)
+    new_text_layer = pikepdf.Stream(pdf_base, pdf_text_contents)
+    base_page.page_contents_add(new_text_layer)
+
+    # Update page fonts with reference to Glyphless
+    try:
+        base_fonts = base_page['/Resources']['/Font']
+    except KeyError:
+        base_fonts = pikepdf.Dictionary({})
+    if not '/f-0-0' in base_fonts:
+        base_fonts['/f-0-0'] = font
+    base_page['/Resources']['/Font'] = base_fonts
+
+    # Technical we should add /Text to /ProcSet, but /ProcSet is
+    # both optional and useless, so just remove it if it exists
+    try:
+        del base_page['/ProcSet']
+    except KeyError:
+        pass
+
+
+def weave_layers(
         infiles,
         output_file,
         log,
@@ -766,9 +799,6 @@ def combine_layers(
     from itertools import groupby
     import pikepdf
 
-    path_base = None
-    pdf_base = None
-    font = None
 
     def input_sorter(key):
         try:
@@ -776,61 +806,44 @@ def combine_layers(
         except ValueError:
             return -1
     flat_inputs = sorted(flatten_groups(infiles), key=input_sorter)
+    groups = groupby(flat_inputs, key=input_sorter)
 
-    for prefix, layers in groupby(flat_inputs, key=input_sorter):
+    # Extract first item
+    _, basegroup = next(groups)
+    base = list(basegroup)[0]
+    path_base = Path(base).resolve()
+    pdf_base = pikepdf.open(path_base)
+    keep_open = []
+    font = None
+
+    # Iterate rest
+    for page_num, layers in groups:
         layers = list(layers)
-        log.info(prefix)
+        log.info(page_num)
         log.info(layers)
-        if not path_base:
-            path_base = Path(layers[0]).resolve()
-            pdf_base = pikepdf.open(path_base)
-            continue
 
         text = next(ii for ii in layers if ii.endswith('.text.pdf'))
         image = next(ii for ii in layers if ii.endswith('.image-layer.pdf'))
-
-        # if text is a skip page:
-        #   continue
-
+        
         path_image = Path(image).resolve()
         if path_image == path_base:
-            # This is a pointer indicating a specific page in the base file
-            page_num = page_number(text)
-            pdf_text = pikepdf.open(text)
-            pdf_text_contents = pdf_text.pages[0].Contents.read_bytes()
-
-            base_page = pdf_base.pages.p(page_num)
-            new_text_layer = pikepdf.Stream(pdf_base, pdf_text_contents)
-            base_page.page_contents_add(new_text_layer)
-
             if not font:
+                pdf_text = pikepdf.open(text)
                 pdf_text_font = pdf_text.pages[0].Resources.Font['/f-0-0']
                 font = pdf_base._copy_foreign(pdf_text_font)
-
-            # Update page fonts with reference to Glyphless
-            try:
-                base_fonts = base_page['/Resources']['/Font']
-            except KeyError:
-                base_fonts = pikepdf.Dictionary({})
-            if not '/f-0-0' in base_fonts:
-                base_fonts['/f-0-0'] = font
-            base_page['/Resources']['/Font'] = base_fonts
-
-            # Technical we should add /Text to /ProcSet, but /ProcSet is
-            # both optional and useless, so just remove it if it exists
-            try:
-                del base_page['/ProcSet']
-            except KeyError:
-                pass
-
+            _weave_layers_graft(pdf_base, page_num, text, font, log)
         else:
             # We are going to replace the old page
-            assert False
+            log.info("Replace")
+            pdf_image = pikepdf.open(image)
+            keep_open.append(pdf_image)
+            image_page = pdf_image.pages[0]
+            pdf_base.pages[page_num - 1] = image_page
 
     pdf_base.save(output_file)
     
 
-# def _old_combine_layers():
+# def combine_layers():
 #     text = next(ii for ii in flatten_groups(infiles)
 #                 if ii.endswith('.text.pdf'))  # single page PDF from tesseract
 #     image = next(ii for ii in flatten_groups(infiles)
@@ -1028,6 +1041,32 @@ def skip_page(
     re_symlink(input_file, output_file, log)
 
 
+def metadata_fixup(
+        input_files_groups,
+        output_file,
+        log,
+        context):
+    options = context.get_options()
+
+    input_files = list(f for f in flatten_groups(input_files_groups))
+    metadata_file = next(
+        (ii for ii in input_files if ii.endswith('.repaired.pdf')), None
+    )
+    layers_file = next(
+        (ii for ii in input_files if ii.endswith('layers.rendered.pdf')), None
+    )
+    ps = next(
+        (ii for ii in input_files if ii.endswith('.ps')), None
+    )
+
+    if options.output_type.startswith('pdfa'):
+        _do_merge_ghostscript([layers_file], ps, output_file, log, context)
+    elif fitz:
+        _do_merge_mupdf([layers_file], metadata_file, output_file, log, context)
+    else:
+        pass
+
+
 def merge_pages(
         input_files_groups,
         output_file,
@@ -1064,9 +1103,6 @@ def merge_pages(
 
     pdf_pages = sorted(input_files, key=input_file_order)
     log.debug("Final pages: " + "\n".join(pdf_pages))
-    
-    if layers_file:
-        pdf_pages.insert(0, layers_file)
 
     args = (pdf_pages, metadata_file, output_file, log, context)
     if options.output_type.startswith('pdfa'):
@@ -1140,16 +1176,19 @@ def _do_merge_mupdf(
     assert fitz
 
     options = context.get_options()
-    doc = fitz.Document()
 
     reader_metadata = pypdf.PdfFileReader(metadata_file)
     pdfmark = get_pdfmark(reader_metadata, options)
     pdfmark['/Producer'] = 'PyMuPDF ' + fitz.version[0]
     pymupdf_metadata = {(k[1].lower() + k[2:]) : v for k, v in pdfmark.items()}
 
-    for pdf_page in pdf_pages:
-        page = fitz.open(pdf_page)
-        doc.insertPDF(page)
+    if len(pdf_pages) == 1:
+        doc = fitz.open(pdf_pages[0])
+    else:
+        doc = fitz.Document()
+        for pdf_page in pdf_pages:
+            page = fitz.open(pdf_page)
+            doc.insertPDF(page)
 
     metadata = fitz.open(metadata_file)
     toc = metadata.getToC(simple=False)
@@ -1379,8 +1418,8 @@ def build_pipeline(options, work_folder, log, context):
     task_ocr_tesseract_textonly_pdf.graphviz(fillcolor='"#ff69b4"')
     task_ocr_tesseract_textonly_pdf.active_if(options.pdf_renderer == 'sandwich')
 
-    task_combine_layers = main_pipeline.collate(
-        task_func=combine_layers,
+    task_weave_layers = main_pipeline.collate(
+        task_func=weave_layers,
         input=[task_repair_and_parse_pdf,
                task_render_hocr_page,
                task_ocr_tesseract_textonly_pdf,
@@ -1389,9 +1428,9 @@ def build_pipeline(options, work_folder, log, context):
             r".*/((?:\d{6}(?:\.text\.pdf|\.image-layer\.pdf))|(?:origin\.repaired\.pdf))"),
         output=os.path.join(work_folder, r'layers.rendered.pdf'),
         extras=[log, context])
-    task_combine_layers.graphviz(fillcolor='"#00cc66"')
-    task_combine_layers.active_if(options.pdf_renderer == 'hocr' or 
-                                  options.pdf_renderer == 'sandwich')
+    task_weave_layers.graphviz(fillcolor='"#00cc66"')
+    task_weave_layers.active_if(options.pdf_renderer == 'hocr' or 
+                                options.pdf_renderer == 'sandwich')
 
     # Tesseract OCR+PDF
     task_ocr_tesseract_and_render_pdf = main_pipeline.collate(
@@ -1422,17 +1461,26 @@ def build_pipeline(options, work_folder, log, context):
         output_dir=work_folder,
         extras=[log, context])
 
+    task_metadata_fixup = main_pipeline.merge(
+        task_func=metadata_fixup,
+        input=[task_repair_and_parse_pdf,
+               task_weave_layers,
+               task_generate_postscript_stub],
+        output=os.path.join(work_folder, 'metafix.pdf'),
+        extras=[log, context]
+    )
+
     # Merge pages
     task_merge_pages = main_pipeline.merge(
         task_func=merge_pages,
-        input=[task_combine_layers,
-               task_repair_and_parse_pdf,
+        input=[task_repair_and_parse_pdf,
                task_render_hocr_debug_page,
                task_skip_page,
                task_ocr_tesseract_and_render_pdf,
                task_generate_postscript_stub],
         output=os.path.join(work_folder, 'merged.pdf'),
         extras=[log, context])
+    task_merge_pages.active_if(options.pdf_renderer == 'tesseract')
 
     task_merge_sidecars = main_pipeline.merge(
         task_func=merge_sidecars,
@@ -1446,6 +1494,6 @@ def build_pipeline(options, work_folder, log, context):
     # Finalize
     main_pipeline.merge(
         task_func=copy_final,
-        input=[task_merge_pages],
+        input=[task_metadata_fixup, task_merge_pages],
         output=options.output_file,
         extras=[log, context])

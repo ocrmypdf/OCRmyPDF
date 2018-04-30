@@ -288,21 +288,9 @@ def use_skip_page(text_only, skip_pdf, output_pdf, output_text):
         os.symlink(skip_pdf, output_pdf)
         return
 
-    # For text only we must create a blank page with dimensions identical
-    # to the skip page because this is equivalent to a page with no text
-
-    pdf_in = pypdf.PdfFileReader(skip_pdf)
-    page0 = pdf_in.pages[0]
-
+    # For text only we must create an empty file 
     with open(output_pdf, 'wb') as out:
-        pdf_out = pypdf.PdfFileWriter()
-        w, h = page0.mediaBox.getWidth(), page0.mediaBox.getHeight()
-        # If skip page has a /Rotate key, replicate the rotation
-        rotation = int(page0.get('/Rotate', 0))
-        if rotation % 180 == 90:
-            w, h = h, w
-        pdf_out.addBlankPage(w, h)
-        pdf_out.write(out)
+        out.write(b'')
 
 
 def generate_pdf(*, input_image, skip_pdf, output_pdf, output_text,
