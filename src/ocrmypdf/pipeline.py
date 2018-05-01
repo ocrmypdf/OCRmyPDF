@@ -720,7 +720,7 @@ def render_hocr_debug_page(
                          interwordSpaces=True)
 
 
-def _weave_layers_graft(pdf_base, page_num, text, font, log):
+def _weave_layers_graft(pdf_base, page_num, text, font, font_key, log):
     import pikepdf
     from math import cos, sin, pi
 
@@ -773,8 +773,8 @@ def _weave_layers_graft(pdf_base, page_num, text, font, log):
         base_fonts = base_page['/Resources']['/Font']
     except KeyError:
         base_fonts = pikepdf.Dictionary({})
-    if not '/f-0-0' in base_fonts:
-        base_fonts['/f-0-0'] = font
+    if not font_key in base_fonts:
+        base_fonts[font_key] = font
     base_page['/Resources']['/Font'] = base_fonts
 
     # Technically we should add /Text to /ProcSet, but /ProcSet is
@@ -834,7 +834,7 @@ def weave_layers(
     path_base = Path(base).resolve()
     pdf_base = pikepdf.open(path_base)
     keep_open = []
-    font = None
+    font, font_key = None, None
 
     # Iterate rest
     for page_num, layers in groups:
@@ -842,99 +842,38 @@ def weave_layers(
         log.info(page_num)
         log.info(layers)
 
-        text = next(ii for ii in layers if ii.endswith('.text.pdf'))
-        image = next(ii for ii in layers if ii.endswith('.image-layer.pdf'))
-        
+        text = next(
+            (ii for ii in layers if ii.endswith('.text.pdf')), None
+        )
+        image = next(
+            (ii for ii in layers if ii.endswith('.image-layer.pdf')), None
+        )
+
+        if text and not font:
+            possible_font_names = ('/f-0-0', '/F1')
+            pdf_text = pikepdf.open(text)
+            pdf_text_fonts = pdf_text.pages[0].Resources.Font
+            for f in possible_font_names:
+                pdf_text_font = pdf_text_fonts.get(f, None)
+                if pdf_text_font is not None:
+                    font_key = f
+                    break
+            font = pdf_base._copy_foreign(pdf_text_font)
+
         path_image = Path(image).resolve()
-        if path_image == path_base:
-            if not font:
-                pdf_text = pikepdf.open(text)
-                pdf_text_font = pdf_text.pages[0].Resources.Font['/f-0-0']
-                font = pdf_base._copy_foreign(pdf_text_font)
-            _weave_layers_graft(pdf_base, page_num, text, font, log)
-        else:
-            # We are going to replace the old page
+        if path_image != path_base:
+            # We are replacing the old page
             log.info("Replace")
             pdf_image = pikepdf.open(image)
             keep_open.append(pdf_image)
             image_page = pdf_image.pages[0]
             pdf_base.pages[page_num - 1] = image_page
 
+        if text:
+            # Graft the text layer onto this page, whether new or old
+            _weave_layers_graft(pdf_base, page_num, text, font, font_key, log)
+
     pdf_base.save(output_file)
-    
-
-# def combine_layers():
-#     text = next(ii for ii in flatten_groups(infiles)
-#                 if ii.endswith('.text.pdf'))  # single page PDF from tesseract
-#     image = next(ii for ii in flatten_groups(infiles)
-#                  if ii.endswith('.image-layer.pdf'))  # single/multipage
-
-#     pdf_text = pypdf.PdfFileReader(text)
-#     pdf_image = pypdf.PdfFileReader(image)
-
-#     page_text = pdf_text.getPage(0)
-
-#     # The text page always will be oriented up by this stage
-#     # but if lossless_reconstruction, pdf_image may have a rotation applied
-#     # We have to eliminate the /Rotate tag (because it applies to the whole
-#     # page) and rotate the image layer to match the text page
-#     # Also, pdf_image may not have its mediabox nailed to (0, 0), so may need
-#     # translation
-#     page_image = pdf_image.getPage(0)
-#     try:
-#         # pypdf DictionaryObject.get() does not resolve indirect objects but
-#         # __getitem__ does
-#         rotation = page_image['/Rotate']
-#     except KeyError:
-#         rotation = 0
-
-#     # /Rotate is a clockwise rotation: 90 means page facing "east"
-#     # The negative of this value is the angle that eliminates that rotation
-#     rotation = -rotation % 360
-
-#     x1 = page_image.mediaBox.getLowerLeft_x()
-#     x2 = page_image.mediaBox.getUpperRight_x()
-#     y1 = page_image.mediaBox.getLowerLeft_y()
-#     y2 = page_image.mediaBox.getUpperRight_y()
-
-#     # Rotation occurs about the page's (0, 0). Most pages will have the media
-#     # box at (0, 0) with all content in the first quadrant but some cropped
-#     # files may have an offset mediabox. We translate the page so that its
-#     # bottom left corner after rotation is pinned to (0, 0) with the image
-#     # in the first quadrant.
-#     if rotation == 0:
-#         tx, ty = -x1, -y1
-#     elif rotation == 90:
-#         tx, ty = y2, -x1
-#     elif rotation == 180:
-#         tx, ty = x2, y2
-#     elif rotation == 270:
-#         tx, ty = -y1, x2
-#     else:
-#         pass
-
-#     if rotation != 0:
-#         log.info("{0:4d}: rotating image layer {1} degrees".format(
-#             page_number(image), rotation))
-
-#     try:
-#         page_text.mergeRotatedScaledTranslatedPage(
-#             page_image, rotation, 1.0, tx, ty, expand=False)
-#     except (AttributeError, ValueError) as e:
-#         if 'writeToStream' in str(e) or 'invalid literal' in str(e):
-#             raise PdfMergeFailedError() from e
-
-#     pdf_output = pypdf.PdfFileWriter()
-#     pdf_output.addPage(page_text)
-
-#     # If the input was scaled, re-apply the scaling
-#     pageinfo = get_pageinfo(text, context)
-#     if pageinfo.userunit != 1:
-#         page_text[pypdf.generic.NameObject('/UserUnit')] = pageinfo.userunit
-#         pdf_output._header = b'%PDF-1.6'  # Hack header to correct version
-
-#     with open(output_file, "wb") as out:
-#         pdf_output.write(out)
 
 
 def ocr_tesseract_textonly_pdf(
@@ -1012,18 +951,6 @@ def generate_postscript_stub(
     generate_pdfa_ps(output_file, pdfmark)
 
 
-def skip_page(
-        input_file,
-        output_file,
-        log,
-        context):
-    # The purpose of this step is its filter to forward only the skipped
-    # files (.skip.oriented.pdf) while disregarding the processed ones
-    # (.ocr.oriented.pdf).  Alternative would be for merge_pages to filter
-    # pages itself if it gets multiple copies of a page.
-    re_symlink(input_file, output_file, log)
-
-
 def metadata_fixup(
         input_files_groups,
         output_file,
@@ -1065,11 +992,6 @@ def merge_pages(
         (ii for ii in input_files if ii.endswith('.repaired.pdf')), None)
     if metadata_file in input_files:
         input_files.remove(metadata_file)
-
-    layers_file = next(
-        (ii for ii in input_files if ii.endswith('layers.rendered.pdf')), None)
-    if layers_file in input_files:
-        input_files.remove(layers_file)
 
     def input_file_order(s):
         '''Sort order: All rendered pages followed
@@ -1338,7 +1260,6 @@ def build_pipeline(options, work_folder, log, context):
         output=os.path.join(work_folder, r"\1.ocr.png"),
         extras=[log, context])
 
-
     # HOCR OCR
     task_ocr_tesseract_hocr = main_pipeline.transform(
         task_func=ocr_tesseract_hocr,
@@ -1423,15 +1344,6 @@ def build_pipeline(options, work_folder, log, context):
         extras=[log, context])
     task_generate_postscript_stub.active_if(options.output_type.startswith('pdfa'))
 
-    # Bypass valve
-    task_skip_page = main_pipeline.transform(
-        task_func=skip_page,
-        input=task_orient_page,
-        filter=suffix('.skip.oriented.pdf'),
-        output='.done.pdf',
-        output_dir=work_folder,
-        extras=[log, context])
-
     task_metadata_fixup = main_pipeline.merge(
         task_func=metadata_fixup,
         input=[task_repair_and_parse_pdf,
@@ -1441,17 +1353,6 @@ def build_pipeline(options, work_folder, log, context):
         output=os.path.join(work_folder, 'metafix.pdf'),
         extras=[log, context]
     )
-
-    # Merge pages
-    task_merge_pages = main_pipeline.merge(
-        task_func=merge_pages,
-        input=[task_repair_and_parse_pdf,
-               task_render_hocr_debug_page,
-               task_skip_page,
-               task_generate_postscript_stub],
-        output=os.path.join(work_folder, 'merged.pdf'),
-        extras=[log, context])
-    task_merge_pages.active_if(options.pdf_renderer == 'tesseract')
 
     task_merge_sidecars = main_pipeline.merge(
         task_func=merge_sidecars,
@@ -1464,6 +1365,6 @@ def build_pipeline(options, work_folder, log, context):
     # Finalize
     main_pipeline.merge(
         task_func=copy_final,
-        input=[task_metadata_fixup, task_merge_pages],
+        input=[task_metadata_fixup],
         output=options.output_file,
         extras=[log, context])
