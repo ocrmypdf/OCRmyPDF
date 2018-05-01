@@ -849,6 +849,7 @@ def weave_layers(
     pdf_base = pikepdf.open(path_base)
     keep_open = []
     font, font_key = None, None
+    pdfinfo = context.get_pdfinfo()
 
     # Iterate rest
     for page_num, layers in groups:
@@ -877,7 +878,15 @@ def weave_layers(
 
         if text and font:
             # Graft the text layer onto this page, whether new or old
-            _weave_layers_graft(pdf_base, page_num, text, font, font_key, log)
+            _weave_layers_graft(
+                pdf_base, page_num, text, font, font_key, log)
+
+        # Correct the rotation
+        rotation = pdfinfo[page_num - 1].rotation
+        rotation = -rotation % 360
+        if rotation != 0:
+            pdf_base.pages[page_num - 1].Rotate = rotation
+
 
     pdf_base.save(output_file)
 
