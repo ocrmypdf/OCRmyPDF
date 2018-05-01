@@ -26,6 +26,7 @@ import re
 
 import img2pdf
 import PyPDF2 as pypdf
+import pikepdf
 
 from PIL import Image
 from ruffus import formatter, regex, Pipeline, suffix
@@ -470,9 +471,8 @@ def orient_page(
             description)
     )
 
-    if not apply_correction:
-        re_symlink(page_pdf, output_file, log)
-    else:
+    re_symlink(page_pdf, output_file, log)
+    if apply_correction:
         pageno = page_number(page_pdf) - 1
         pdfinfo = context.get_pdfinfo()
         pdfinfo[pageno].rotation = orient_conf.angle
@@ -721,7 +721,6 @@ def render_hocr_debug_page(
 
 
 def _weave_layers_graft(pdf_base, page_num, text, font, font_key, log):
-    import pikepdf
     from math import cos, sin, pi
 
     log.info("Graft")
@@ -785,6 +784,22 @@ def _weave_layers_graft(pdf_base, page_num, text, font, font_key, log):
         pass
 
 
+def _find_font(text, pdf_base):
+    font, font_key = None, None
+    possible_font_names = ('/f-0-0', '/F1')
+    pdf_text = pikepdf.open(text)
+    pdf_text_fonts = pdf_text.pages[0].Resources.get('/Font', {})
+
+    for f in possible_font_names:
+        pdf_text_font = pdf_text_fonts.get(f, None)
+        if pdf_text_font is not None:
+            font_key = f
+            break
+    if pdf_text_font:
+        font = pdf_base._copy_foreign(pdf_text_font)
+    return font, font_key
+
+
 def weave_layers(
         infiles,
         output_file,
@@ -818,7 +833,6 @@ def weave_layers(
     #   
 
     from itertools import groupby
-    import pikepdf
 
     def input_sorter(key):
         try:
@@ -850,18 +864,10 @@ def weave_layers(
         )
 
         if text and not font:
-            possible_font_names = ('/f-0-0', '/F1')
-            pdf_text = pikepdf.open(text)
-            pdf_text_fonts = pdf_text.pages[0].Resources.Font
-            for f in possible_font_names:
-                pdf_text_font = pdf_text_fonts.get(f, None)
-                if pdf_text_font is not None:
-                    font_key = f
-                    break
-            font = pdf_base._copy_foreign(pdf_text_font)
+            font, font_key = _find_font(text, pdf_base)
 
-        path_image = Path(image).resolve()
-        if path_image != path_base:
+        path_image = Path(image).resolve() if image else None
+        if path_image is not None and path_image != path_base:
             # We are replacing the old page
             log.info("Replace")
             pdf_image = pikepdf.open(image)
@@ -869,7 +875,7 @@ def weave_layers(
             image_page = pdf_image.pages[0]
             pdf_base.pages[page_num - 1] = image_page
 
-        if text:
+        if text and font:
             # Graft the text layer onto this page, whether new or old
             _weave_layers_graft(pdf_base, page_num, text, font, font_key, log)
 
