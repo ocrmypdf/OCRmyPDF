@@ -874,7 +874,7 @@ def run_pipeline():
     except ExitCodeException as e:
         return e.exit_code
     except Exception as e:
-        _log.error(e)
+        _log.error(str(e))
         return ExitCode.other_error
 
     if options.flowchart:

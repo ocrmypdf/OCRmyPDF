@@ -282,18 +282,19 @@ def use_skip_page(text_only, skip_pdf, output_pdf, output_text):
     with open(output_text, 'w') as f:
         f.write('[skipped page]')
 
-    if not text_only:
+    if skip_pdf and not text_only:
+        # Substitute a "skipped page"
         with suppress(FileNotFoundError):
             os.remove(output_pdf)  # In case it was partially created
         os.symlink(skip_pdf, output_pdf)
         return
 
-    # For text only we must create an empty file 
+    # Or normally, just write a 0 byte file to the output to indicate a skip
     with open(output_pdf, 'wb') as out:
         out.write(b'')
 
 
-def generate_pdf(*, input_image, skip_pdf, output_pdf, output_text,
+def generate_pdf(*, input_image, skip_pdf=None, output_pdf, output_text,
                  language: list, engine_mode, text_only: bool,
                  tessconfig: list, timeout: float, pagesegmode: int,
                  user_words, user_patterns, log):

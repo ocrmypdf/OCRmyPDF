@@ -817,8 +817,6 @@ def weave_layers(
     #   or fitz
     #   
 
-    # Consider removing ocr_tesseract_and_render_pdf as it becomes too special
-
     from itertools import groupby
     import pikepdf
 
@@ -948,14 +946,13 @@ def ocr_tesseract_textonly_pdf(
     input_image = next((ii for ii in infiles if ii.endswith('.ocr.png')), '')
     if not input_image:
         raise ValueError("No image rendered?")
-    skip_pdf = next((ii for ii in infiles if ii.endswith('.pdf')))
 
     output_pdf = next((ii for ii in outfiles if ii.endswith('.pdf')))
     output_text = next((ii for ii in outfiles if ii.endswith('.txt')))
 
     tesseract.generate_pdf(
         input_image=input_image,
-        skip_pdf=skip_pdf,  # only needs dimensions of skip page
+        skip_pdf=None,
         output_pdf=output_pdf,
         output_text=output_text,
         language=options.language,
@@ -1396,8 +1393,8 @@ def build_pipeline(options, work_folder, log, context):
     # Tesseract OCR + text only PDF
     task_ocr_tesseract_textonly_pdf = main_pipeline.collate(
         task_func=ocr_tesseract_textonly_pdf,
-        input=[task_select_ocr_image, task_orient_page],
-        filter=regex(r".*/(\d{6})(?:\.ocr.png|\.ocr\.oriented\.pdf)"),
+        input=[task_select_ocr_image],
+        filter=regex(r".*/(\d{6})(?:\.ocr.png)"),
         output=[os.path.join(work_folder, r'\1.text.pdf'),
                 os.path.join(work_folder, r'\1.text.txt')],
         extras=[log, context])
@@ -1439,6 +1436,7 @@ def build_pipeline(options, work_folder, log, context):
         task_func=metadata_fixup,
         input=[task_repair_and_parse_pdf,
                task_weave_layers,
+               task_render_hocr_debug_page,
                task_generate_postscript_stub],
         output=os.path.join(work_folder, 'metafix.pdf'),
         extras=[log, context]
