@@ -732,6 +732,7 @@ def render_hocr_debug_page(
 
 def _weave_layers_graft(pdf_base, page_num, text, font, log):
     import pikepdf
+    from math import cos, sin, pi
 
     log.info("Graft")
     if Path(text).stat().st_size == 0:
@@ -742,8 +743,41 @@ def _weave_layers_graft(pdf_base, page_num, text, font, log):
     pdf_text_contents = pdf_text.pages[0].Contents.read_bytes()
 
     base_page = pdf_base.pages.p(page_num)
+    rotation = int(base_page.get('/Rotate', 0))
+    rotation = -rotation % 360
+
+    # The text page always will be oriented up by this stage but the original
+    # content may have a rotation applied (in a /Rotate tag) and we might have
+    # separated determined that we are going to adjust to some other rotation.
+    # The Tm text matrix operator does *not* concatenate so we can't rotate
+    # the text layer. Instead we have to rotate the original content so it is
+    # aligned with the text layer.
+
+    if rotation != 0:
+        mediabox = [float(base_page.MediaBox[v].decode()) 
+                    for v in range(4)]
+        w, h = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
+        translate = pikepdf.PdfMatrix((1, 0, 0, 1, -w / 2, -h / 2))
+
+        mediabox = [float(pdf_text.pages[0].MediaBox[v].decode()) 
+                    for v in range(4)]
+        w, h = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
+        untranslate = pikepdf.PdfMatrix((1, 0, 0, 1, w / 2, h / 2))
+        
+        c, s = cos(rotation * pi / 180), sin(rotation * pi / 180)
+        rotate = pikepdf.PdfMatrix((c, s, -s, c, 0, 0))
+
+        ctm = translate @ rotate @ untranslate
+            
+        pdf_text_contents += b'\nq %s cm\n' % ctm.encode()
+
     new_text_layer = pikepdf.Stream(pdf_base, pdf_text_contents)
-    base_page.page_contents_add(new_text_layer)
+    base_page.page_contents_add(new_text_layer, prepend=True)
+
+    closing_statement = pikepdf.Stream(pdf_base, b'\nQ\n')
+    base_page.page_contents_add(closing_statement, prepend=False)
+
+    base_page.page_contents_coalesce()
 
     # Update page fonts with reference to Glyphless
     try:
@@ -754,7 +788,7 @@ def _weave_layers_graft(pdf_base, page_num, text, font, log):
         base_fonts['/f-0-0'] = font
     base_page['/Resources']['/Font'] = base_fonts
 
-    # Technical we should add /Text to /ProcSet, but /ProcSet is
+    # Technically we should add /Text to /ProcSet, but /ProcSet is
     # both optional and useless, so just remove it if it exists
     try:
         del base_page['/ProcSet']
@@ -798,7 +832,6 @@ def weave_layers(
 
     from itertools import groupby
     import pikepdf
-
 
     def input_sorter(key):
         try:
