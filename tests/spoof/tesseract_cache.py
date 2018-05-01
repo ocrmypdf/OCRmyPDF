@@ -106,6 +106,8 @@ def main():
     source = os.environ['_OCRMYPDF_TEST_INFILE']  # required
     args = parser.parse_args()
 
+    cache_disabled = os.environ.get('_OCRMYPDF_CACHE_DISABLED', False)
+
     if args.imagename == 'stdin':
         real_tesseract()
 
@@ -128,7 +130,7 @@ def main():
     print("Tesseract cache folder {} - ".format(cache_folder), end='', 
           file=sys.stderr)
 
-    if (cache_folder / 'stderr.bin').exists():
+    if (cache_folder / 'stderr.bin').exists() and not cache_disabled:
         # Cache hit
         print("HIT", file=sys.stderr)
 
