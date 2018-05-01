@@ -939,40 +939,6 @@ def weave_layers(
 #         pdf_output.write(out)
 
 
-def ocr_tesseract_and_render_pdf(
-        infiles,
-        outfiles,
-        log,
-        context):
-    options = context.get_options()
-    input_image = next((ii for ii in infiles if ii.endswith('.image')), '')
-    input_pdf = next((ii for ii in infiles if ii.endswith('.pdf')))
-    output_pdf = next((ii for ii in outfiles if ii.endswith('.pdf')))
-    output_text = next((ii for ii in outfiles if ii.endswith('.txt')))
-
-    if not input_image:
-        # Skipping this page
-        re_symlink(input_pdf, output_pdf, log)
-        with open(output_text, 'w') as f:
-            f.write('[skipped page]')
-        return
-
-    tesseract.generate_pdf(
-        input_image=input_image,
-        skip_pdf=input_pdf,
-        output_pdf=output_pdf,
-        output_text=output_text,
-        language=options.language,
-        engine_mode=options.tesseract_oem,
-        text_only=False,
-        tessconfig=options.tesseract_config,
-        timeout=options.tesseract_timeout,
-        pagesegmode=options.tesseract_pagesegmode,
-        user_words=options.user_words,
-        user_patterns=options.user_patterns,
-        log=log)
-
-
 def ocr_tesseract_textonly_pdf(
         infiles,
         outfiles,
@@ -1025,9 +991,7 @@ def get_pdfmark(base_pdf, options):
     if options.subject:
         pdfmark['/Subject'] = options.subject
 
-    if options.pdf_renderer == 'tesseract':
-        renderer_tag = 'OCR+PDF'
-    elif options.pdf_renderer == 'sandwich':
+    if options.pdf_renderer == 'sandwich':
         renderer_tag = 'OCR-PDF'
     else:
         renderer_tag = 'OCR'
@@ -1438,7 +1402,8 @@ def build_pipeline(options, work_folder, log, context):
                 os.path.join(work_folder, r'\1.text.txt')],
         extras=[log, context])
     task_ocr_tesseract_textonly_pdf.graphviz(fillcolor='"#ff69b4"')
-    task_ocr_tesseract_textonly_pdf.active_if(options.pdf_renderer == 'sandwich')
+    task_ocr_tesseract_textonly_pdf.active_if(
+        options.pdf_renderer == 'tesseract' or options.pdf_renderer == 'sandwich')
 
     task_weave_layers = main_pipeline.collate(
         task_func=weave_layers,
@@ -1451,19 +1416,6 @@ def build_pipeline(options, work_folder, log, context):
         output=os.path.join(work_folder, r'layers.rendered.pdf'),
         extras=[log, context])
     task_weave_layers.graphviz(fillcolor='"#00cc66"')
-    task_weave_layers.active_if(options.pdf_renderer == 'hocr' or 
-                                options.pdf_renderer == 'sandwich')
-
-    # Tesseract OCR+PDF
-    task_ocr_tesseract_and_render_pdf = main_pipeline.collate(
-        task_func=ocr_tesseract_and_render_pdf,
-        input=[task_select_visible_page_image, task_orient_page],
-        filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
-        output=[os.path.join(work_folder, r'\1.rendered.pdf'),
-                os.path.join(work_folder, r'\1.rendered.txt')],
-        extras=[log, context])
-    task_ocr_tesseract_and_render_pdf.graphviz(fillcolor='"#66ccff"')
-    task_ocr_tesseract_and_render_pdf.active_if(options.pdf_renderer == 'tesseract')
 
     # PDF/A
     task_generate_postscript_stub = main_pipeline.transform(
@@ -1498,7 +1450,6 @@ def build_pipeline(options, work_folder, log, context):
         input=[task_repair_and_parse_pdf,
                task_render_hocr_debug_page,
                task_skip_page,
-               task_ocr_tesseract_and_render_pdf,
                task_generate_postscript_stub],
         output=os.path.join(work_folder, 'merged.pdf'),
         extras=[log, context])
@@ -1507,7 +1458,6 @@ def build_pipeline(options, work_folder, log, context):
     task_merge_sidecars = main_pipeline.merge(
         task_func=merge_sidecars,
         input=[task_ocr_tesseract_hocr,
-               task_ocr_tesseract_and_render_pdf,
                task_ocr_tesseract_textonly_pdf],
         output=options.sidecar,
         extras=[log, context])

@@ -316,7 +316,7 @@ def generate_pdf(*, input_image, skip_pdf, output_pdf, output_text,
     if pagesegmode is not None:
         args_tesseract.extend([psm(), str(pagesegmode)])
 
-    if text_only:
+    if text_only and has_textonly_pdf():
         args_tesseract.extend(['-c', 'textonly_pdf=1'])
 
     if user_words:
