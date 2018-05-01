@@ -744,40 +744,39 @@ def _weave_layers_graft(pdf_base, page_num, text, font, log):
 
     base_page = pdf_base.pages.p(page_num)
     rotation = int(base_page.get('/Rotate', 0))
-    rotation = -rotation % 360
+    rotation = rotation % 360
 
     # The text page always will be oriented up by this stage but the original
-    # content may have a rotation applied (in a /Rotate tag) and we might have
-    # separated determined that we are going to adjust to some other rotation.
-    # The Tm text matrix operator does *not* concatenate so we can't rotate
-    # the text layer. Instead we have to rotate the original content so it is
-    # aligned with the text layer.
-
+    # content may have a rotation applied. Wrap the text stream with a rotation
+    # so it will be oriented the same way as the rest of the page content.
+    # (Previous versions OCRmyPDF rotated the content layer to match the text.)
     if rotation != 0:
-        mediabox = [float(base_page.MediaBox[v].decode()) 
-                    for v in range(4)]
-        w, h = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
-        translate = pikepdf.PdfMatrix((1, 0, 0, 1, -w / 2, -h / 2))
-
         mediabox = [float(pdf_text.pages[0].MediaBox[v].decode()) 
                     for v in range(4)]
-        w, h = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
-        untranslate = pikepdf.PdfMatrix((1, 0, 0, 1, w / 2, h / 2))
+        wt, ht = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
+        translate = pikepdf.PdfMatrix((1, 0, 0, 1, -wt / 2, -ht / 2))
+
+        mediabox = [float(base_page.MediaBox[v].decode()) 
+                    for v in range(4)]
+        wp, hp = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
+        untranslate = pikepdf.PdfMatrix((1, 0, 0, 1, wp / 2, hp / 2))
         
         c, s = cos(rotation * pi / 180), sin(rotation * pi / 180)
         rotate = pikepdf.PdfMatrix((c, s, -s, c, 0, 0))
 
+        # Translate the text so it is centered at (0, 0), rotate it there, and
+        # translate it to the center of the target page
         ctm = translate @ rotate @ untranslate
             
-        pdf_text_contents += b'\nq %s cm\n' % ctm.encode()
+        pdf_text_contents = (
+            b'q %s cm\n' % ctm.encode() +
+            pdf_text_contents +
+            b'\nQ\n'
+        )
 
     new_text_layer = pikepdf.Stream(pdf_base, pdf_text_contents)
+
     base_page.page_contents_add(new_text_layer, prepend=True)
-
-    closing_statement = pikepdf.Stream(pdf_base, b'\nQ\n')
-    base_page.page_contents_add(closing_statement, prepend=False)
-
-    base_page.page_contents_coalesce()
 
     # Update page fonts with reference to Glyphless
     try:
