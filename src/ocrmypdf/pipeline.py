@@ -473,20 +473,10 @@ def orient_page(
     if not apply_correction:
         re_symlink(page_pdf, output_file, log)
     else:
-        # writer = pypdf.PdfFileWriter()
-        # reader = pypdf.PdfFileReader(page_pdf)
-        # page = reader.pages[0]
-
-        # # angle is a clockwise angle, so rotating ccw will correct the error
-        # rotated_page = page.rotateCounterClockwise(orient_conf.angle)
-        # writer.addPage(rotated_page)
-        # with open(output_file, 'wb') as out:
-        #     writer.write(out)
-
         pageno = page_number(page_pdf) - 1
         pdfinfo = context.get_pdfinfo()
         pdfinfo[pageno].rotation = orient_conf.angle
-        context.set_pdfinfo(pdfinfo)
+        context.set_pdfinfo(pdfinfo)  # This is expensive for large files
 
 
 def rasterize_with_ghostscript(
