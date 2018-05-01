@@ -169,6 +169,7 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
             "-sOutputFile=" + gs_pdf.name,
         ]
         args_gs.extend(pdf_pages)
+        log.debug(args_gs)
         p = run(args_gs, stdout=PIPE, stderr=STDOUT,
                 universal_newlines=True)
 

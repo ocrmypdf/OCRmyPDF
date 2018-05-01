@@ -787,8 +787,11 @@ def _weave_layers_graft(pdf_base, page_num, text, font, font_key, log):
 def _find_font(text, pdf_base):
     font, font_key = None, None
     possible_font_names = ('/f-0-0', '/F1')
-    pdf_text = pikepdf.open(text)
-    pdf_text_fonts = pdf_text.pages[0].Resources.get('/Font', {})
+    try:
+        pdf_text = pikepdf.open(text)
+        pdf_text_fonts = pdf_text.pages[0].Resources.get('/Font', {})
+    except Exception:
+        return None, None
 
     for f in possible_font_names:
         pdf_text_font = pdf_text_fonts.get(f, None)
@@ -985,57 +988,15 @@ def metadata_fixup(
     )
 
     if options.output_type.startswith('pdfa'):
-        _do_merge_ghostscript([layers_file], ps, output_file, log, context)
+        _do_merge_ghostscript([layers_file, ps], output_file, log, context)
     elif fitz:
         _do_merge_mupdf([layers_file], metadata_file, output_file, log, context)
     else:
         pass
 
 
-def merge_pages(
-        input_files_groups,
-        output_file,
-        log,
-        context):
-    """Determine ordered list of PDF pages to merge. Returns PDF from which
-    metadata should be drawn if present (for qpdf)."""
-    options = context.get_options()
-
-    input_files = list(f for f in flatten_groups(input_files_groups)
-                       if not f.endswith('.txt'))
-    metadata_file = next(
-        (ii for ii in input_files if ii.endswith('.repaired.pdf')), None)
-    if metadata_file in input_files:
-        input_files.remove(metadata_file)
-
-    def input_file_order(s):
-        '''Sort order: All rendered pages followed
-        by their debug page, if any, followed by Postscript stub.
-        Ghostscript documentation has the Postscript stub at the
-        beginning, but it works at the end and also gets document info
-        right that way.'''
-        if s.endswith('.ps'):
-            return 99999999
-        key = page_number(s) * 10
-        if 'debug' in os.path.basename(s):
-            key += 1
-        return key
-
-    pdf_pages = sorted(input_files, key=input_file_order)
-    log.debug("Final pages: " + "\n".join(pdf_pages))
-
-    args = (pdf_pages, metadata_file, output_file, log, context)
-    if options.output_type.startswith('pdfa'):
-        _do_merge_ghostscript(*args)
-    elif fitz:
-        _do_merge_mupdf(*args)
-    else:
-        _do_merge_qpdf(*args)
-
-
 def _do_merge_ghostscript(
         pdf_pages,
-        metadata_file,
         output_file,
         log,
         context):
