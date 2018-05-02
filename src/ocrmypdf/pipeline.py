@@ -731,7 +731,8 @@ def render_hocr_debug_page(
                          interwordSpaces=True)
 
 
-def _weave_layers_graft(pdf_base, page_num, text, font, font_key, rotation, log):
+def _weave_layers_graft(
+        *, pdf_base, page_num, text, font, font_key, procset, rotation, log):
     log.debug("Grafting")
     if Path(text).stat().st_size == 0:
         return
@@ -788,20 +789,20 @@ def _weave_layers_graft(pdf_base, page_num, text, font, font_key, rotation, log)
     base_page.page_contents_add(new_text_layer, prepend=True)
 
     # Update page fonts with reference to Glyphless
+    if '/Resources' not in base_page:
+        base_page['/Resources'] = pikepdf.Dictionary({})
+    resources = base_page['/Resources']
     try:
-        base_fonts = base_page['/Resources']['/Font']
+        base_fonts = resources['/Font']
     except KeyError:
         base_fonts = pikepdf.Dictionary({})
-    if not font_key in base_fonts:
+    if font_key not in base_fonts:
         base_fonts[font_key] = font
-    base_page['/Resources']['/Font'] = base_fonts
+    resources['/Font'] = base_fonts
 
-    # Technically we should add /Text to /ProcSet, but /ProcSet is
-    # both optional and useless, so just remove it if it exists
-    try:
-        del base_page['/ProcSet']
-    except KeyError:
-        pass
+    # Reassign /ProcSet to one that just lists everything - ProcSet is
+    # obsolete and doesn't matter but recommended for old viewer support
+    resources['/ProcSet'] = procset
 
 
 def _find_font(text, pdf_base):
@@ -846,9 +847,12 @@ def weave_layers(
     path_base = Path(base).resolve()
     pdf_base = pikepdf.open(path_base)
     keep_open = []
-    font, font_key = None, None
+    font, font_key, procset = None, None, None
     pdfinfo = context.get_pdfinfo()
     
+    procset = pdf_base.make_indirect(
+        pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]'))
+
     # Iterate rest
     for page_num, layers in groups:
         layers = list(layers)
@@ -891,8 +895,9 @@ def weave_layers(
         if text and font:
             # Graft the text layer onto this page, whether new or old
             _weave_layers_graft(
-                pdf_base, page_num, text, font, font_key, text_misaligned, 
-                log
+                pdf_base=pdf_base, page_num=page_num, text=text, font=font, 
+                font_key=font_key, rotation=text_misaligned, procset=procset,
+                log=log
             )
 
         # Correct the rotation if applicable
