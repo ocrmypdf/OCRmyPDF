@@ -757,7 +757,9 @@ def _weave_layers_graft(pdf_base, page_num, text, font, font_key, rotation, log)
         wp, hp = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
         untranslate = pikepdf.PdfMatrix((1, 0, 0, 1, wp / 2, hp / 2))
         
-        c, s = cos(rotation * pi / 180), sin(rotation * pi / 180)
+        # -rotation because the input is a clockwise angle and this formula
+        # uses CCW
+        c, s = cos(-rotation * pi / 180), sin(-rotation * pi / 180)
         rotate = pikepdf.PdfMatrix((c, s, -s, c, 0, 0))
 
         # Translate the text so it is centered at (0, 0), rotate it there, and
@@ -877,6 +879,9 @@ def weave_layers(
         if text and not font:
             font, font_key = _find_font(text, pdf_base)
 
+        replacing = False
+        content_rotation = pdfinfo[page_num - 1].rotation
+
         path_image = Path(image).resolve() if image else None
         if path_image is not None and path_image != path_base:
             # We are replacing the old page
@@ -885,27 +890,27 @@ def weave_layers(
             keep_open.append(pdf_image)
             image_page = pdf_image.pages[0]
             pdf_base.pages[page_num - 1] = image_page
-            #pdfinfo[page_num - 1].rotation = 0
+            content_rotation = 0
+            replacing = True
 
-        log.debug("Content rotation " + str(pdfinfo[page_num - 1].rotation))
-
-        text_content_rotation = 0  #pdfinfo[page_num - 1].rotation
-        log.debug("Text content rotation ±" + str(text_content_rotation))
-
-        ctx_rotation = context.get_rotation(page_num - 1)
-        log.debug("Saved correction ±" + str(ctx_rotation))
+        autorotate_correction = context.get_rotation(page_num - 1)
+        text_rotation = autorotate_correction
+        text_misaligned = (text_rotation - content_rotation) % 360
+        log.debug('%r', [
+            text_rotation, autorotate_correction, text_misaligned, 
+            content_rotation]
+        )
 
         if text and font:
             # Graft the text layer onto this page, whether new or old
             _weave_layers_graft(
-                pdf_base, page_num, text, font, font_key, text_content_rotation, 
+                pdf_base, page_num, text, font, font_key, text_misaligned, 
                 log
             )
 
         # Correct the rotation if applicable
-        rotation = context.get_rotation(page_num - 1)
-        if rotation != 0:
-            pdf_base.pages[page_num - 1].Rotate = rotation
+        pdf_base.pages[page_num - 1].Rotate = \
+            (content_rotation + autorotate_correction) % 360
 
         # Might need something like this
         # if page_num % 100 == 0:
