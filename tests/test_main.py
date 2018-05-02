@@ -15,23 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from subprocess import Popen, PIPE, check_output, check_call, DEVNULL
+from subprocess import Popen, PIPE, DEVNULL
 from pathlib import Path
+from math import isclose
 import os
 import shutil
-import resource
-import pytest
 import sys
-from ocrmypdf.pdfinfo import PdfInfo, Colorspace, Encoding
-import PyPDF2 as pypdf
-from ocrmypdf.exceptions import ExitCode
-from ocrmypdf import leptonica
-from ocrmypdf.exec import ghostscript, tesseract, qpdf
-from ocrmypdf.pdfa import file_claims_pdfa
 import logging
-from math import isclose
 
+from PIL import Image
 import PIL
+import pytest
+
+from ocrmypdf.pdfinfo import PdfInfo, Colorspace, Encoding
+from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.exec import ghostscript, qpdf
+from ocrmypdf.pdfa import file_claims_pdfa
+
 
 # pytest.helpers is dynamic
 # pylint: disable=no-member
@@ -109,8 +109,7 @@ def test_deskew(spoof_tesseract_noop, resources, outdir):
         raster_device='pngmono',
         log=log,
         pageno=1)
-
-    from ocrmypdf.leptonica import Pix
+    
     pix = Pix.read(str(deskewed_png))
     skew_angle, skew_confidence = pix.find_skew()
 
@@ -119,8 +118,6 @@ def test_deskew(spoof_tesseract_noop, resources, outdir):
 
 
 def test_remove_background(spoof_tesseract_noop, resources, outdir):
-    from PIL import Image
-
     # Ensure the input image does not contain pure white/black
     im = Image.open(resources / 'congress.jpg')
     assert im.getextrema() != ((0, 255), (0, 255), (0, 255))
@@ -214,90 +211,7 @@ def test_argsfile(spoof_tesseract_noop, resources, outdir):
                    env=spoof_tesseract_noop)
 
 
-def check_monochrome_correlation(
-        outdir,
-        reference_pdf, reference_pageno, test_pdf, test_pageno):
-    gslog = logging.getLogger()
-
-    reference_png = outdir / '{}.ref{:04d}.png'.format(
-        reference_pdf.name, reference_pageno)
-    test_png = outdir / '{}.test{:04d}.png'.format(
-        test_pdf.name, test_pageno)
-
-    def rasterize(pdf, pageno, png):
-        if png.exists():
-            print(png)
-            return
-        ghostscript.rasterize_pdf(
-            pdf, png, xres=100, yres=100,
-            raster_device='pngmono', log=gslog, pageno=pageno)
-
-    rasterize(reference_pdf, reference_pageno, reference_png)
-    rasterize(test_pdf, test_pageno, test_png)
-
-    pix_ref = leptonica.Pix.read(str(reference_png))
-    pix_test = leptonica.Pix.read(str(test_png))
-
-    return leptonica.Pix.correlation_binary(pix_ref, pix_test)
-
-
-def test_monochrome_correlation(resources, outdir):
-    # Verify leptonica: check that an incorrect rotated image has poor
-    # correlation with reference
-    corr = check_monochrome_correlation(
-        outdir,
-        reference_pdf=resources / 'cardinal.pdf',
-        reference_pageno=1,  # north facing page
-        test_pdf=resources / 'cardinal.pdf',
-        test_pageno=3,  # south facing page
-        )
-    assert corr < 0.10
-    corr = check_monochrome_correlation(
-        outdir,
-        reference_pdf=resources / 'cardinal.pdf',
-        reference_pageno=2,
-        test_pdf=resources / 'cardinal.pdf',
-        test_pageno=2,
-        )
-    assert corr > 0.90
-
-
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_autorotate(spoof_tesseract_cache, renderer, resources, outdir):
-    # cardinal.pdf contains four copies of an image rotated in each cardinal
-    # direction - these ones are "burned in" not tagged with /Rotate
-    out = check_ocrmypdf(resources / 'cardinal.pdf', outdir / 'out.pdf',
-                         '-r', '-v', '1', env=spoof_tesseract_cache)
-    for n in range(1, 4+1):
-        correlation = check_monochrome_correlation(
-            outdir,
-            reference_pdf=resources / 'cardinal.pdf',
-            reference_pageno=1,
-            test_pdf=outdir / 'out.pdf',
-            test_pageno=n)
-        assert correlation > 0.80
-
-
-@pytest.mark.parametrize('threshold, correlation_test', [
-    ('1', 'correlation > 0.80'),  # Low thresh -> always rotate -> high corr
-    ('99', 'correlation < 0.10'),  # High thres -> never rotate -> low corr
-])
-def test_autorotate_threshold(
-    spoof_tesseract_cache, threshold, correlation_test, resources, outdir):
-    out = check_ocrmypdf(resources / 'cardinal.pdf', outdir / 'out.pdf',
-                         '--rotate-pages-threshold', threshold,
-                         '-r', '-v', '1', env=spoof_tesseract_cache)
-
-    correlation = check_monochrome_correlation(
-        outdir,
-        reference_pdf=resources / 'cardinal.pdf',
-        reference_pageno=1,
-        test_pdf=outdir / 'out.pdf',
-        test_pageno=3)
-    assert eval(correlation_test)
-
-
-@pytest.mark.parametrize('renderer',RENDERERS)
 def test_ocr_timeout(renderer, resources, outpdf):
     out = check_ocrmypdf(resources / 'skew.pdf', outpdf,
                          '--tesseract-timeout', '1.0')
@@ -504,8 +418,6 @@ def test_non_square_resolution(renderer, spoof_tesseract_cache,
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_convert_to_square_resolution(renderer, spoof_tesseract_cache,
                                       resources, outpdf):
-    from math import isclose
-
     # Confirm input image is non-square resolution
     in_pageinfo = PdfInfo(resources / 'aspect.pdf')
     assert in_pageinfo[0].xres != in_pageinfo[0].yres
@@ -583,7 +495,6 @@ def test_stdout(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
 
         assert p.returncode == ExitCode.ok
 
-    from ocrmypdf.exec import qpdf
     assert qpdf.check(output_file, log=None)
 
 
@@ -620,40 +531,6 @@ def test_linearized_pdf_and_indirect_object(spoof_tesseract_noop,
         env=spoof_tesseract_noop)
 
 
-def test_rotated_skew_timeout(resources, outpdf):
-    """This document contains an image that is rotated 90 into place with a
-    /Rotate tag and intentionally skewed by altering the transformation matrix.
-
-    This tests for a bug where the combination of preprocessing and a tesseract
-    timeout produced a page whose dimensions did not match the original's.
-    """
-
-    input_file = str(resources / 'rotated_skew.pdf')
-    in_pageinfo = PdfInfo(input_file)[0]
-
-    assert in_pageinfo.height_pixels < in_pageinfo.width_pixels, \
-        "Expected the input page to be landscape"
-    assert in_pageinfo.rotation == 90, "Expected a rotated page"
-
-    out = check_ocrmypdf(
-        input_file, outpdf,
-        '--pdf-renderer', 'hocr',
-        '--deskew', '--tesseract-timeout', '0')
-
-    out_pageinfo = PdfInfo(out)[0]
-    w, h = out_pageinfo.width_pixels, out_pageinfo.height_pixels
-
-    assert h > w, \
-        "Expected the output page to be portrait"
-
-    assert out_pageinfo.rotation == 0, \
-        "Expected no page rotation for output"
-
-    assert in_pageinfo.width_pixels == h and \
-        in_pageinfo.height_pixels == w, \
-        "Expected page rotation to be baked in"
-
-
 def test_ghostscript_pdfa_failure(spoof_no_tess_no_pdfa, resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / 'ccitt.pdf', outpdf,
@@ -661,8 +538,8 @@ def test_ghostscript_pdfa_failure(spoof_no_tess_no_pdfa, resources, outpdf):
     assert p.returncode == 4, "Expected return code 4 when PDF/A fails"
 
 
-def test_ghostscript_feature_elision(spoof_no_tess_pdfa_warning,
-        resources, outpdf):
+def test_ghostscript_feature_elision(
+        spoof_no_tess_pdfa_warning, resources, outpdf):
     check_ocrmypdf(resources / 'ccitt.pdf', outpdf,
                    env=spoof_no_tess_pdfa_warning)
 
@@ -777,7 +654,7 @@ def test_form_xobject(spoof_tesseract_noop, resources, outpdf):
 
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_pagesize_consistency(renderer, resources, outpdf):
-    from math import isclose
+    
 
     first_page_dimensions = pytest.helpers.first_page_dimensions
 
@@ -833,8 +710,6 @@ def test_no_contents(spoof_tesseract_noop, resources, outpdf):
     ])
 def test_compression_preserved(spoof_tesseract_noop, ocrmypdf_exec,
                                resources, image, outpdf):
-    from PIL import Image
-
     input_file = str(resources / image)
     output_file = str(outpdf)
 
@@ -876,8 +751,6 @@ def test_compression_preserved(spoof_tesseract_noop, ocrmypdf_exec,
     ])
 def test_compression_changed(spoof_tesseract_noop, ocrmypdf_exec,
                              resources, image, compression, outpdf):
-    from PIL import Image
-
     input_file = str(resources / image)
     output_file = str(outpdf)
 
@@ -987,26 +860,6 @@ def test_bad_utf8(spoof_tess_bad_utf8, renderer, resources, no_outpdf):
     assert p.returncode != 0
     assert 'not utf-8' in err, "should whine about utf-8"
     assert '\\x96' in err, 'should repeat backslash encoded output'
-
-
-def test_rotate_deskew_timeout(resources, outdir):
-    check_ocrmypdf(
-        resources / 'rotated_skew.pdf',
-        outdir / 'deskewed.pdf',
-        '--deskew',
-        '--tesseract-timeout', '0',
-        '--pdf-renderer', 'sandwich'
-    )
-
-    correlation = check_monochrome_correlation(
-        outdir,
-        reference_pdf=resources / 'ccitt.pdf',
-        reference_pageno=1,
-        test_pdf=outdir / 'deskewed.pdf',
-        test_pageno=1)
-
-    # Confirm that the page still got deskewed
-    assert correlation > 0.50
 
 
 @pytest.mark.skipif(
