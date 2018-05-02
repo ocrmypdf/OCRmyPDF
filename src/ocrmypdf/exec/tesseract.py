@@ -159,7 +159,7 @@ def get_orientation(input_file, language: list, engine_mode, timeout: float,
             assert 'Rotate' not in osd
             angle = -angle % 360
         else:
-            # Tesseract == 3.04.01, hopefully also Tesseract > 3.04.01
+            # Tesseract >= 3.04.01
             # reports "Orientation in degrees" as a clockwise angle
             assert 'Rotate' in osd
 
