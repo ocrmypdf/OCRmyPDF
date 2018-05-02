@@ -482,7 +482,7 @@ def orient_page(
     if apply_correction:
         pageno = page_number(page_pdf) - 1
         pdfinfo = context.get_pdfinfo()
-        correction = (pdfinfo[pageno].rotation - orient_conf.angle) % 360
+        correction = (orient_conf.angle - pdfinfo[pageno].rotation) % 360
         context.set_rotation(pageno, correction)
 
 
@@ -890,10 +890,11 @@ def weave_layers(
             keep_open.append(pdf_image)
             image_page = pdf_image.pages[0]
             pdf_base.pages[page_num - 1] = image_page
-            content_rotation = 0
             replacing = True
 
         autorotate_correction = context.get_rotation(page_num - 1)
+        if replacing:
+            content_rotation = autorotate_correction
         text_rotation = autorotate_correction
         text_misaligned = (text_rotation - content_rotation) % 360
         log.debug('%r', [
@@ -910,7 +911,7 @@ def weave_layers(
 
         # Correct the rotation if applicable
         pdf_base.pages[page_num - 1].Rotate = \
-            (content_rotation + autorotate_correction) % 360
+            (content_rotation - autorotate_correction) % 360
 
         # Might need something like this
         # if page_num % 100 == 0:
