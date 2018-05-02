@@ -116,7 +116,7 @@ Currently this is the best renderer for most uses, however it is implemented in 
 
 When image preprocessing features like ``--deskew`` are used, the original PDF will be rendered as a full page and the OCR layer will be placed on top.
 
-This renderer requires Tesseract 3.05.01 or newer.
+If a PDF created with this renderer using Tesseract versions older than 3.05.00 is then passed through Ghostscript's pdfwrite feature, the OCR text *may* be corrupted. The ``--output-type=pdfa`` argument will produce a warning in this situation.  For this reason, OCRmyPDF automatically selects the ``hocr`` for older Tesseract versions.
 
 The ``hocr`` renderer
 """""""""""""""""""""
@@ -132,8 +132,4 @@ This works in all versions of Tesseract.
 The ``tesseract`` renderer
 """"""""""""""""""""""""""
 
-The ``tesseract`` renderer creates a PDF with the image and text layers precomposed, meaning that it always transcodes, loses image quality and rasterizes any vector objects. It does a better job on non-Latin text and document structure than ``hocr``.
-
-If a PDF created with this renderer using Tesseract versions older than 3.05.00 is then passed through Ghostscript's pdfwrite feature, the OCR text *may* be corrupted. The ``--output-type=pdfa`` argument will produce a warning in this situation.
-
-*This renderer is deprecated and will be removed whenever support for older versions of Tesseract is dropped.*
+The ``tesseract`` renderer is deprecated, and is now an alias for the ``sandwich`` renderer.  The alias will be removed in a future release.
