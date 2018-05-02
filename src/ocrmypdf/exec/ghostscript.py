@@ -122,14 +122,14 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
                 log.debug("Rotating output by %i", rotation)
                 # rotation is a clockwise angle and Image.ROTATE_* is 
                 # counterclockwise so this cancels out the rotation
-                # if rotation == 90:
-                #     im = im.transpose(Image.ROTATE_90)
-                # elif rotation == 180:
-                #     im = im.transpose(Image.ROTATE_180)
-                # elif rotation == 270:
-                #     im = im.transpose(Image.ROTATE_270)
-                # if rotation % 180 == 90:
-                #     page_dpi = page_dpi[1], page_dpi[0]
+                if rotation == 90:
+                    im = im.transpose(Image.ROTATE_90)
+                elif rotation == 180:
+                    im = im.transpose(Image.ROTATE_180)
+                elif rotation == 270:
+                    im = im.transpose(Image.ROTATE_270)
+                if rotation % 180 == 90:
+                    page_dpi = page_dpi[1], page_dpi[0]
             im.save(fspath(output_file), dpi=page_dpi)
 
 
