@@ -198,8 +198,10 @@ def test_force_ocr(spoof_tesseract_cache, resources, outpdf):
 
 
 def test_skip_ocr(spoof_tesseract_cache, resources, outpdf):
-    check_ocrmypdf(resources / 'graph_ocred.pdf', outpdf, '-s',
+    out = check_ocrmypdf(resources / 'graph_ocred.pdf', outpdf, '-s',
                    env=spoof_tesseract_cache)
+    pdfinfo = PdfInfo(out)
+    assert pdfinfo[0].has_text
 
 
 def test_argsfile(spoof_tesseract_noop, resources, outdir):
