@@ -49,7 +49,7 @@ def _gs_error_reported(stream):
 
 
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
-                  pageno=1, page_dpi=None):
+                  pageno=1, page_dpi=None, rotation=None):
     """
     Rasterize one page of a PDF at resolution (xres, yres) in canvas units.
     
@@ -71,6 +71,9 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
     int_res = round(xres), round(yres)
     if not page_dpi:
         page_dpi = res
+
+    autorotate = '/PageByPage' if rotation is None else '/None'
+
     with NamedTemporaryFile(delete=True) as tmp:
         args_gs = [
             'gs',
@@ -83,9 +86,12 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             '-dLastPage=%i' % pageno,
             '-r{0}x{1}'.format(str(int_res[0]), str(int_res[1])),
             '-o', tmp.name,
+            '-dAutoRotatePages=%s' % autorotate,
+            '-f',
             fspath(input_file)
         ]
         
+        log.debug(args_gs)
         p = run(args_gs, stdout=PIPE, stderr=STDOUT,
                 universal_newlines=True)
         if _gs_error_reported(p.stdout):
@@ -110,10 +116,21 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
                 log.debug(
                     "Ghostscript: resize output image {} -> {}".format(
                         im.size, expected_size))
-                im.resize(expected_size).save(
-                    fspath(output_file), dpi=page_dpi)
-            else:
-                copy(tmp.name, fspath(output_file))
+                im = im.resize(expected_size)
+
+            if rotation is not None:
+                log.debug("Rotating output by %i", rotation)
+                # rotation is a clockwise angle and Image.ROTATE_* is 
+                # counterclockwise so this cancels out the rotation
+                # if rotation == 90:
+                #     im = im.transpose(Image.ROTATE_90)
+                # elif rotation == 180:
+                #     im = im.transpose(Image.ROTATE_180)
+                # elif rotation == 270:
+                #     im = im.transpose(Image.ROTATE_270)
+                # if rotation % 180 == 90:
+                #     page_dpi = page_dpi[1], page_dpi[0]
+            im.save(fspath(output_file), dpi=page_dpi)
 
 
 def generate_pdfa(pdf_pages, output_file, compression, log,

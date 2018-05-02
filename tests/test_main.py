@@ -639,15 +639,16 @@ def test_rotated_skew_timeout(resources, outpdf):
         '--deskew', '--tesseract-timeout', '0')
 
     out_pageinfo = PdfInfo(out)[0]
+    w, h = out_pageinfo.width_pixels, out_pageinfo.height_pixels
 
-    assert out_pageinfo.height_pixels > out_pageinfo.width_pixels, \
+    assert h > w, \
         "Expected the output page to be portrait"
 
     assert out_pageinfo.rotation == 0, \
         "Expected no page rotation for output"
 
-    assert in_pageinfo.width_pixels == out_pageinfo.height_pixels and \
-        in_pageinfo.height_pixels == out_pageinfo.width_pixels, \
+    assert in_pageinfo.width_pixels == h and \
+        in_pageinfo.height_pixels == w, \
         "Expected page rotation to be baked in"
 
 
@@ -986,9 +987,6 @@ def test_bad_utf8(spoof_tess_bad_utf8, renderer, resources, no_outpdf):
     assert '\\x96' in err, 'should repeat backslash encoded output'
 
 
-@pytest.mark.skipif(
-    not tesseract.has_textonly_pdf(), 
-    reason="issue only affects sandwich")
 def test_rotate_deskew_timeout(resources, outdir):
     check_ocrmypdf(
         resources / 'rotated_skew.pdf',

@@ -66,6 +66,7 @@ class JobContext:
         self.pdfinfo = None
         self.options = None
         self.work_folder = None
+        self.rotations = {}
 
     def generate_pdfinfo(self, infile):
         self.pdfinfo = PdfInfo(infile)
@@ -88,6 +89,12 @@ class JobContext:
 
     def set_work_folder(self, work_folder):
         self.work_folder = work_folder
+
+    def get_rotation(self, pageno):
+        return self.rotations.get(pageno, 0)
+
+    def set_rotation(self, pageno, value):
+        self.rotations[pageno] = value
 
 
 from multiprocessing.managers import SyncManager
@@ -418,7 +425,7 @@ def rasterize_preview(
     ghostscript.rasterize_pdf(
         input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
         raster_device='jpeggray', log=log, page_dpi=(page_dpi, page_dpi),
-        pageno=page_number(input_file))
+        pageno=page_number(input_file), rotation=pageinfo.rotation)
 
 
 def orient_page(
@@ -475,8 +482,8 @@ def orient_page(
     if apply_correction:
         pageno = page_number(page_pdf) - 1
         pdfinfo = context.get_pdfinfo()
-        pdfinfo[pageno].rotation = orient_conf.angle
-        context.set_pdfinfo(pdfinfo)  # This is expensive for large files
+        correction = (pdfinfo[pageno].rotation - orient_conf.angle) % 360
+        context.set_rotation(pageno, correction)
 
 
 def rasterize_with_ghostscript(
@@ -507,10 +514,12 @@ def rasterize_with_ghostscript(
     canvas_dpi = get_canvas_square_dpi(pageinfo, options)
     page_dpi = get_page_square_dpi(pageinfo, options)
 
+    correction = context.get_rotation(page_number(input_file))
+
     ghostscript.rasterize_pdf(
         input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
         raster_device=device, log=log, page_dpi=(page_dpi, page_dpi),
-        pageno=page_number(input_file))
+        pageno=page_number(input_file), rotation=correction)
 
 
 def preprocess_remove_background(
@@ -720,7 +729,7 @@ def render_hocr_debug_page(
                          interwordSpaces=True)
 
 
-def _weave_layers_graft(pdf_base, page_num, text, font, font_key, log):
+def _weave_layers_graft(pdf_base, page_num, text, font, font_key, rotation, log):
     from math import cos, sin, pi
 
     log.info("Graft")
@@ -732,8 +741,6 @@ def _weave_layers_graft(pdf_base, page_num, text, font, font_key, log):
     pdf_text_contents = pdf_text.pages[0].Contents.read_bytes()
 
     base_page = pdf_base.pages.p(page_num)
-    rotation = int(base_page.get('/Rotate', 0))
-    rotation = rotation % 360
 
     # The text page always will be oriented up by this stage but the original
     # content may have a rotation applied. Wrap the text stream with a rotation
@@ -878,15 +885,25 @@ def weave_layers(
             keep_open.append(pdf_image)
             image_page = pdf_image.pages[0]
             pdf_base.pages[page_num - 1] = image_page
+            #pdfinfo[page_num - 1].rotation = 0
+
+        log.info("Content rotation " + str(pdfinfo[page_num - 1].rotation))
+
+        text_content_rotation = 0  #pdfinfo[page_num - 1].rotation
+        log.info("Text content rotation ±" + str(text_content_rotation))
+
+        ctx_rotation = context.get_rotation(page_num - 1)
+        log.info("Saved correction ±" + str(ctx_rotation))
 
         if text and font:
             # Graft the text layer onto this page, whether new or old
             _weave_layers_graft(
-                pdf_base, page_num, text, font, font_key, log)
+                pdf_base, page_num, text, font, font_key, text_content_rotation, 
+                log
+            )
 
-        # Correct the rotation
-        rotation = pdfinfo[page_num - 1].rotation
-        rotation = -rotation % 360
+        # Correct the rotation if applicable
+        rotation = context.get_rotation(page_num - 1)
         if rotation != 0:
             pdf_base.pages[page_num - 1].Rotate = rotation
 
