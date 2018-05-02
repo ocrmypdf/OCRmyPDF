@@ -732,7 +732,7 @@ def render_hocr_debug_page(
 def _weave_layers_graft(pdf_base, page_num, text, font, font_key, rotation, log):
     from math import cos, sin, pi
 
-    log.info("Graft")
+    log.debug("Grafting")
     if Path(text).stat().st_size == 0:
         return
 
@@ -864,8 +864,8 @@ def weave_layers(
     # Iterate rest
     for page_num, layers in groups:
         layers = list(layers)
-        log.info(page_num)
-        log.info(layers)
+        log.debug(page_num)
+        log.debug(layers)
 
         text = next(
             (ii for ii in layers if ii.endswith('.text.pdf')), None
@@ -880,20 +880,20 @@ def weave_layers(
         path_image = Path(image).resolve() if image else None
         if path_image is not None and path_image != path_base:
             # We are replacing the old page
-            log.info("Replace")
+            log.debug("Replace")
             pdf_image = pikepdf.open(image)
             keep_open.append(pdf_image)
             image_page = pdf_image.pages[0]
             pdf_base.pages[page_num - 1] = image_page
             #pdfinfo[page_num - 1].rotation = 0
 
-        log.info("Content rotation " + str(pdfinfo[page_num - 1].rotation))
+        log.debug("Content rotation " + str(pdfinfo[page_num - 1].rotation))
 
         text_content_rotation = 0  #pdfinfo[page_num - 1].rotation
-        log.info("Text content rotation ±" + str(text_content_rotation))
+        log.debug("Text content rotation ±" + str(text_content_rotation))
 
         ctx_rotation = context.get_rotation(page_num - 1)
-        log.info("Saved correction ±" + str(ctx_rotation))
+        log.debug("Saved correction ±" + str(ctx_rotation))
 
         if text and font:
             # Graft the text layer onto this page, whether new or old
@@ -906,6 +906,12 @@ def weave_layers(
         rotation = context.get_rotation(page_num - 1)
         if rotation != 0:
             pdf_base.pages[page_num - 1].Rotate = rotation
+
+        # Might need something like this
+        # if page_num % 100 == 0:
+        #     pdf_base.save(output_file)            
+        #     keep_open = []
+        #     pdf_base = pikepdf.open(path_base)
 
 
     pdf_base.save(output_file)
