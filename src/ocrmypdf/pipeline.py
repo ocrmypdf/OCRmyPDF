@@ -514,7 +514,7 @@ def rasterize_with_ghostscript(
     canvas_dpi = get_canvas_square_dpi(pageinfo, options)
     page_dpi = get_page_square_dpi(pageinfo, options)
 
-    correction = context.get_rotation(page_number(input_file))
+    correction = context.get_rotation(page_number(input_file) - 1)
 
     ghostscript.rasterize_pdf(
         input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
