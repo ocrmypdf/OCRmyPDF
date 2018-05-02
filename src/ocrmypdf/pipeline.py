@@ -1265,8 +1265,6 @@ def build_pipeline(options, work_folder, log, context):
         extras=[log, context])
     task_select_image_layer.graphviz(
         fillcolor='"#00cc66"', shape='diamond')
-    task_select_image_layer.active_if(
-        options.pdf_renderer == 'hocr' or options.pdf_renderer == 'sandwich')
 
     task_render_hocr_page = main_pipeline.transform(
         task_func=render_hocr_page,
@@ -1296,8 +1294,7 @@ def build_pipeline(options, work_folder, log, context):
                 os.path.join(work_folder, r'\1.text.txt')],
         extras=[log, context])
     task_ocr_tesseract_textonly_pdf.graphviz(fillcolor='"#ff69b4"')
-    task_ocr_tesseract_textonly_pdf.active_if(
-        options.pdf_renderer == 'tesseract' or options.pdf_renderer == 'sandwich')
+    task_ocr_tesseract_textonly_pdf.active_if(options.pdf_renderer == 'sandwich')
 
     task_weave_layers = main_pipeline.collate(
         task_func=weave_layers,

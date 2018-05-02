@@ -42,9 +42,7 @@ run_ocrmypdf = pytest.helpers.run_ocrmypdf
 spoof = pytest.helpers.spoof
 
 
-RENDERERS = ['hocr', 'tesseract']
-if tesseract.has_textonly_pdf():
-    RENDERERS.append('sandwich')
+RENDERERS = ['hocr', 'sandwich']
 
 
 @pytest.fixture(scope='session')
@@ -624,7 +622,7 @@ def test_rotated_skew_timeout(resources, outpdf):
     """This document contains an image that is rotated 90 into place with a
     /Rotate tag and intentionally skewed by altering the transformation matrix.
 
-    This tests for a bug where the combinatino of preprocessing and a tesseract
+    This tests for a bug where the combination of preprocessing and a tesseract
     timeout produced a page whose dimensions did not match the original's.
     """
 

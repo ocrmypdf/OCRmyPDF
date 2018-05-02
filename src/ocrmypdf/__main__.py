@@ -364,31 +364,27 @@ def check_options_languages(options, _log):
 
 
 def check_options_output(options, log):
-    if options.pdf_renderer == 'auto':
-        if tesseract.has_textonly_pdf():
-            options.pdf_renderer = 'sandwich'
-        else:
-            options.pdf_renderer = 'hocr'
-
-    if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf():
-        raise MissingDependencyError(
-            "The 'sandwich' renderer requires Tesseract 3.05.01 or newer; "
-            "or Tesseract 4.00 alpha newer than February 2017.")
-
     if options.pdf_renderer == 'tesseract':
-        if tesseract.version() < '3.05' and \
-                options.output_type.startswith('pdfa'):
-            log.warning(
-                "For best results use --pdf-renderer=tesseract "
-                "--output-type=pdf to disable PDF/A generation via "
-                "Ghostscript, which is known to corrupt the OCR text of "
-                "some PDFs produced your version of Tesseract.")
-        elif tesseract.has_textonly_pdf():
-            log.warning(
-                "The argument --pdf-renderer=tesseract provides support for "
-                "versions of tesseract older than your version. For best "
-                "results omit this argument and let OCRmyPDF choose the "
-                "best available renderer.")
+        log.warning(
+            "--pdf-renderer=tesseract is now the same as "
+            "--pdf-renderer=sandwich. The 'tesseract' option is deprecated.")
+        options.pdf_renderer = 'sandwich'
+
+    if options.pdf_renderer == 'auto':
+        if tesseract.version() < '3.05' \
+                and options.output_type.startswith('pdfa'):
+            options.pdf_renderer = 'hocr'
+        else:
+            options.pdf_renderer = 'sandwich'
+
+    if options.pdf_renderer == 'sandwich' \
+            and tesseract.version() < '3.05' \
+            and options.output_type.startswith('pdfa'):
+        log.warning(
+            "For best results use --pdf-renderer=tesseract "
+            "--output-type=pdf to disable PDF/A generation via "
+            "Ghostscript, which is known to corrupt the OCR text of "
+            "some PDFs produced your version of Tesseract.")
 
     if options.debug_rendering and options.pdf_renderer != 'hocr':
         log.info(
