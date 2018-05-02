@@ -19,6 +19,8 @@ from contextlib import suppress
 from shutil import copyfileobj
 from pathlib import Path
 from datetime import datetime, timezone
+from itertools import groupby
+
 import sys
 import os
 import shutil
@@ -730,8 +732,6 @@ def render_hocr_debug_page(
 
 
 def _weave_layers_graft(pdf_base, page_num, text, font, font_key, rotation, log):
-    from math import cos, sin, pi
-
     log.debug("Grafting")
     if Path(text).stat().st_size == 0:
         return
@@ -759,7 +759,18 @@ def _weave_layers_graft(pdf_base, page_num, text, font, font_key, rotation, log)
         
         # -rotation because the input is a clockwise angle and this formula
         # uses CCW
-        c, s = cos(-rotation * pi / 180), sin(-rotation * pi / 180)
+        rotation = -rotation % 360
+        if rotation == 0:
+            c, s = 1, 0
+        elif rotation == 90:
+            c, s = 0, 1
+        elif rotation == 180:
+            c, s = -1, 0
+        elif rotation == 270:
+            c, s = 0, -1
+        else:
+            raise NotImplementedError("rotation to arbitrary angle")
+        
         rotate = pikepdf.PdfMatrix((c, s, -s, c, 0, 0))
 
         # Translate the text so it is centered at (0, 0), rotate it there, and
@@ -794,6 +805,8 @@ def _weave_layers_graft(pdf_base, page_num, text, font, font_key, rotation, log)
 
 
 def _find_font(text, pdf_base):
+    "Copy a font from the filename text into pdf_base"
+
     font, font_key = None, None
     possible_font_names = ('/f-0-0', '/F1')
     try:
@@ -817,34 +830,7 @@ def weave_layers(
         output_file,
         log,
         context):
-    # Needs to work on whole file at once
-    # Doable
-    # text layer is generated, always
-    # image layer is either a symlink back to the repaired file, or a generated
-    #   page
-    # Take repaired file as input
-    # For each image layer file/symlink thingy
-    #   If symlink resolves to input then we are adding to the original page
-    #       Perform rotation compensation (?)
-    #       Graft the text layer under the page
-    #   Else
-    #       Remove contents, graft text and image
-
-    # Which to use? 
-    #   PyPDF2 would duplicate glyphless
-    #   pikepdf
-    #       Because we know what's in text PDFs, we just need to
-    #       - Prepend text PDF content stream
-    #       - Embed and link to Glyphless
-    #       - Fiddle with things like /ProcSet to indicate text is present
-    #       - Deal with rotation and translation
-    #       Except when we generated an image layer, in which we need to
-    #       - Replace page with image layer in a way that doesn't destroy
-    #       bookmarks
-    #   or fitz
-    #   
-
-    from itertools import groupby
+    "Apply text layer and/or image layer changes to baseline file"
 
     def input_sorter(key):
         try:
@@ -862,7 +848,7 @@ def weave_layers(
     keep_open = []
     font, font_key = None, None
     pdfinfo = context.get_pdfinfo()
-
+    
     # Iterate rest
     for page_num, layers in groups:
         layers = list(layers)
