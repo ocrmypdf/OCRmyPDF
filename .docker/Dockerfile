@@ -1,22 +1,17 @@
 # OCRmyPDF
 #
-FROM      ubuntu:17.10
+FROM      ubuntu:18.04
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  software-properties-common python-software-properties \
-  python3-wheel \
-  python3-reportlab \
-  python3-venv \
-  ghostscript \
-  qpdf \
-  poppler-utils \
-  unpaper \
-  libffi-dev \ 
-  tesseract-ocr \
+  ocrmypdf \
   tesseract-ocr-eng \
   tesseract-ocr-fra \
+  tesseract-ocr-deu \
   tesseract-ocr-spa \
-  tesseract-ocr-deu
+  tesseract-ocr-por \
+  tesseract-ocr-chi-sim \
+  python3-venv \
+  python3-pip
 
 ENV LANG=C.UTF-8
 
