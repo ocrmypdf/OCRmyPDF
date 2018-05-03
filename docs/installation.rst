@@ -208,6 +208,26 @@ The command line program should now be available:
 
     ocrmypdf --help
 
+Installing the latest version on Ubuntu 18.04 LTS
+-------------------------------------------------
+
+Ubuntu 18.04 includes ocrmypdf 6.1.2. To install a more recent version, first
+install the system version to get all the dependencies:
+
+.. code-block:: bash
+
+    sudo apt-get update
+    sudo apt-get install \
+        ocrmypdf \
+        python3-pip
+
+Then install ocrmypdf 6.1.5 for the local user and set the user's ``PATH`` to check for the user's Python packages.
+
+.. code-block:: bash
+
+    export PATH=$HOME/.local/bin:$PATH
+    pip3 install --user ocrmypdf[fitz]
+
 
 Installing on Ubuntu 16.04 LTS
 ------------------------------
