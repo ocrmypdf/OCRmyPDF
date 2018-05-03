@@ -970,6 +970,7 @@ def merge_pages_ghostscript(
     pdf_pages, _ = _merge_pages_common(
         input_files_groups, output_file, log, context)
     input_pdfinfo = context.get_pdfinfo()
+
     ghostscript.generate_pdfa(
         pdf_version=input_pdfinfo.min_version,
         pdf_pages=pdf_pages,
@@ -977,7 +978,7 @@ def merge_pages_ghostscript(
         compression=options.pdfa_image_compression,
         log=log,
         threads=options.jobs or 1,
-        pdfa_part=('1' if options.output_type == 'pdfa-1' else '2'))
+        pdfa_part=options.output_type[-1])  # is pdfa-1, pdfa-2, or pdfa-3
     if fitz:
         doc = fitz.Document(output_file + '_toc.pdf')
         doc.setToC(input_pdfinfo.table_of_contents)
