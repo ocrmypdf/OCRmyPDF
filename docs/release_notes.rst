@@ -9,10 +9,24 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
    find:    [^`]\#([0-9]{1,3})[^0-9]  
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v6.2.0
+------
+
+-   **Docker**: The Docker image ``ocrmypdf-tess4`` has been removed. The main Docker images, ``ocrmypdf`` and ``ocrmypdf-polyglot`` now use Ubuntu 18.04 as a base image, and as such Tesseract 4.0.0-beta1 is now the Tesseract version they use. There is no Docker image based on Tesseract 3.05 anymore.
+
+-   Creation of PDF/A-3 is now supported. However, there is no ability to attach files to PDF/A-3.
+
+-   List more reasons why the file size might grow.
+
+-   Fix issue `#262 <https://github.com/jbarlow83/OCRmyPDF/issues/262>`_, ``--remove-background`` error on PDFs contained colormapped (paletted) images.
+
+-   Fix another XMP metadata validation issue, in cases where the input file's creation date has no timezone and the creation date is not overridden.
+
+
 v6.1.5
 ------
 
--   Fix issue `#253 <https://github.com/jbarlow83/OCRmyPDF/issues/248>`_, a possible division by zero when using the ``hocr`` renderer.
+-   Fix issue `#253 <https://github.com/jbarlow83/OCRmyPDF/issues/253>`_, a possible division by zero when using the ``hocr`` renderer.
 
 -   Fix incorrectly formatted ``<xmp:ModifyDate>`` field inside XMP metadata for PDF/As.  veraPDF flags this as a PDF/A validation failure. The error is caused the timezone and final digit of the seconds of modified time to be omitted, so at worst the modification time stamp is rounded to the nearest 10 seconds.
 
