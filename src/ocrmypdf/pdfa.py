@@ -125,31 +125,31 @@ def encode_pdf_date(d: datetime) -> str:
     s = d.strftime(pdfmark_date_fmt)
 
     tz = d.strftime('%z')
-    if tz == 'Z':
+    if tz == 'Z' or tz == '':
+        # Ghostscript <= 9.23 handles missing timezones incorrectly, so if
+        # timezone is missing, move it into GMT.
+        # https://bugs.ghostscript.com/show_bug.cgi?id=699182
         s += "+00'00'"
-    elif tz != '':
+    else:
         sign, tz_hours, tz_mins = tz[0], tz[1:3], tz[3:5]
         s += "{}{}'{}'".format(sign, tz_hours, tz_mins)
-    else:
-        raise ValueError("Naive timezone not supported")
     return s
 
 
 def decode_pdf_date(s: str) -> datetime:
-    pdfmark_date_fmts = (
-        r'%Y%m%d%H%M%S%z',  # +0430 etc
-        r'%Y%m%d%H%M%S',    # no time zone
-        r'%Y%m%d%H%M%SZ')   # trailing Z
-
     if s.startswith('D:'):
         s = s[2:]
+
+    # Literal Z00'00', is incorrect but found in the wild, 
+    # probably made by OS X Quartz -- standardize
+    if s.endswith("Z00'00'"):
+        s = s.replace("Z00'00'", '+0000')
+    elif s.endswith('Z'):
+        s = s.replace('Z', '+0000')
+    
     s = s.replace("'", "")  # Remove apos from PDF time strings
-    for fmt in pdfmark_date_fmts:
-        try:
-            return datetime.strptime(s, fmt)
-        except ValueError:
-            continue
-    return None
+
+    return datetime.strptime(s, r'%Y%m%d%H%M%S%z')
 
 
 def _get_pdfmark_dates(pdfmark):
@@ -170,7 +170,12 @@ def _get_pdfmark_dates(pdfmark):
         date_str = pdfmark[key]
         if date_str.startswith('D:'):
             date_str = date_str[2:]
-        yield '  {} (D:{})'.format(key, date_str)
+        try:
+            yield '  {} (D:{})'.format(
+                    key, 
+                    encode_pdf_date(decode_pdf_date(date_str)))
+        except ValueError:
+            yield '  {} null'.format(key)
 
 
 def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):

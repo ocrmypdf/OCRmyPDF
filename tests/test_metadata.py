@@ -73,11 +73,16 @@ def test_override_metadata(spoof_tesseract_noop, output_type, resources,
 
     assert p.returncode == ExitCode.ok, err
 
-    reader = pypdf.PdfFileReader(outpdf)
+    before = pypdf.PdfFileReader(str(input_file))
+    after = pypdf.PdfFileReader(outpdf)
 
-    assert reader.documentInfo['/Title'] == german
-    assert reader.documentInfo['/Author'] == chinese
-    assert reader.documentInfo.get('/Keywords', '') == ''
+    assert after.documentInfo['/Title'] == german
+    assert after.documentInfo['/Author'] == chinese
+    assert after.documentInfo.get('/Keywords', '') == ''
+
+    before_date = decode_pdf_date(before.documentInfo['/CreationDate'])
+    after_date = decode_pdf_date(after.documentInfo['/CreationDate'])
+    assert before_date == after_date
 
     pdfa_info = file_claims_pdfa(outpdf)
     assert pdfa_info['output'] == output_type
