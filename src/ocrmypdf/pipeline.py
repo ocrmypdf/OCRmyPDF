@@ -222,7 +222,7 @@ def repair_and_parse_pdf(
 
     pdfinfo = PdfInfo(output_file)
 
-    if pdfinfo.has_userunit and options.output_type == 'pdfa':
+    if pdfinfo.has_userunit and options.output_type.startswith('pdfa'):
         log.error(
             "This input file uses a PDF feature that is not supported "
             "by Ghostscript, so you cannot use --output-type=pdfa for this "
