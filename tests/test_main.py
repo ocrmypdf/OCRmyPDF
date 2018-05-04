@@ -953,6 +953,9 @@ def test_sidecar_nonempty(spoof_tesseract_cache, resources, outpdf):
 
 @pytest.mark.parametrize('pdfa_level', ['1', '2', '3'])
 def test_pdfa_n(spoof_tesseract_cache, pdfa_level, resources, outpdf):
+    if pdfa_level == '3' and ghostscript.version() < '9.19':
+        pytest.xfail(reason='Ghostscript >= 9.19 required')
+
     check_ocrmypdf(
         resources / 'ccitt.pdf', outpdf,
         '--output-type', 'pdfa-' + pdfa_level,

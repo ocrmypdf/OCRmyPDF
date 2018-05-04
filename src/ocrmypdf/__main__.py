@@ -398,6 +398,11 @@ def check_options_output(options, log):
     if options.output_type == 'pdfa':
         options.output_type = 'pdfa-2'
 
+    if options.output_type == 'pdfa-3' and ghostscript.version() < '9.19':
+        raise MissingDependencyError(
+            "--output-type pdfa-3 requires Ghostscript 9.19 or later"
+        )
+
     lossless_reconstruction = False
     if options.pdf_renderer in ('hocr', 'sandwich'):
         if not any((options.deskew, options.clean_final, options.force_ocr,
