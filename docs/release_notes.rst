@@ -18,7 +18,7 @@ v6.2.0
 
 -   List more reasons why the file size might grow.
 
--   Fix issue `#262 <https://github.com/jbarlow83/OCRmyPDF/issues/262>`_, ``--remove-background`` error on PDFs contained colormapped (paletted) images.
+-   Fix issue `#262 <https://github.com/ppjbarlow83/OCRmyPDF/issues/262>`_, ``--remove-background`` error on PDFs contained colormapped (paletted) images.
 
 -   Fix another XMP metadata validation issue, in cases where the input file's creation date has no timezone and the creation date is not overridden.
 

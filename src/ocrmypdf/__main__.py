@@ -396,7 +396,7 @@ def check_options_output(options, log):
             "Ignoring --debug-rendering because it requires --pdf-renderer=hocr")
 
     if options.output_type == 'pdfa':
-        options.output_type == 'pdfa-2'
+        options.output_type = 'pdfa-2'
 
     lossless_reconstruction = False
     if options.pdf_renderer in ('hocr', 'sandwich'):
