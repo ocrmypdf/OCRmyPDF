@@ -4,6 +4,7 @@ FROM      ubuntu:18.04
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ocrmypdf \
+  unpaper \
   tesseract-ocr-eng \
   tesseract-ocr-fra \
   tesseract-ocr-deu \
