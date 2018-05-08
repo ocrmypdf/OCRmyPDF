@@ -654,7 +654,7 @@ class PageInfo:
 
     @property
     def has_text(self):
-        return self._pageinfo['has_text']
+        return self._pageinfo['has_text']                
 
     @property
     def width_inches(self):
@@ -686,6 +686,15 @@ class PageInfo:
     @property
     def images(self):
         return self._pageinfo['images']
+
+    def get_textareas(self):
+        if not fitz:
+            raise NotImplementedError("no impl without fitz")
+        doc = fitz.open(self._infile)
+        page = doc[self._pageno]
+        text = page.getText('dict')
+        for block in text['blocks']:
+            yield block['bbox']
 
     @property
     def xres(self):

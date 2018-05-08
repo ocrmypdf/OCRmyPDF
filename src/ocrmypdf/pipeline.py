@@ -583,11 +583,37 @@ def select_ocr_image(
         log,
         context):
     """Select the image we send for OCR. May not be the same as the display
-    image depending on preprocessing."""
+    image depending on preprocessing. This image will never be shown to the
+    user."""
 
-    # For the moment this is always the .pp-clean.png image
     image = infiles[0]
-    re_symlink(image, output_file, log)
+    pageinfo = get_pageinfo(image, context)
+
+    with Image.open(image) as im:
+        from PIL import ImageColor
+        from PIL import ImageDraw
+        from decimal import Decimal
+        white = ImageColor.getcolor('#ffffff', im.mode)
+        draw = ImageDraw.ImageDraw(im)
+
+        for bbox in pageinfo.get_textareas():
+            # Calculate resolution based on the image size and page dimensions
+            # without regard whatever resolution is in pageinfo (may differ or
+            # be None)
+            xres = im.width / pageinfo.width_inches
+            yres = im.height / pageinfo.height_inches
+            log.debug('calculated resolution %r %r', xres, yres)
+
+            pixcoords = [Decimal(bbox[0]) / Decimal(72) * xres,
+                         Decimal(bbox[1]) / Decimal(72) * yres,
+                         Decimal(bbox[2]) / Decimal(72) * xres,
+                         Decimal(bbox[3]) / Decimal(72) * yres]
+            pixcoords = [int(c) for c in pixcoords]
+            log.debug('blanking %r', pixcoords)
+            draw.rectangle(pixcoords, fill=white)
+        
+        del draw
+        im.save(output_file)
 
 
 def ocr_tesseract_hocr(
