@@ -739,6 +739,24 @@ def flatten_groups(groups):
             yield obj
 
 
+def _update_page_resources(*, page, font, font_key, procset):
+    # Update page fonts with reference to Glyphless
+    if '/Resources' not in page:
+        page['/Resources'] = pikepdf.Dictionary({})
+    resources = page['/Resources']
+    try:
+        fonts = resources['/Font']
+    except KeyError:
+        fonts = pikepdf.Dictionary({})
+    if font_key not in fonts:
+        fonts[font_key] = font
+    resources['/Font'] = fonts
+
+    # Reassign /ProcSet to one that just lists everything - ProcSet is
+    # obsolete and doesn't matter but recommended for old viewer support
+    resources['/ProcSet'] = procset
+
+
 def _weave_layers_graft(
         *, pdf_base, page_num, text, font, font_key, procset, rotation, log):
     log.debug("Grafting")
@@ -796,21 +814,9 @@ def _weave_layers_graft(
 
     base_page.page_contents_add(new_text_layer, prepend=True)
 
-    # Update page fonts with reference to Glyphless
-    if '/Resources' not in base_page:
-        base_page['/Resources'] = pikepdf.Dictionary({})
-    resources = base_page['/Resources']
-    try:
-        base_fonts = resources['/Font']
-    except KeyError:
-        base_fonts = pikepdf.Dictionary({})
-    if font_key not in base_fonts:
-        base_fonts[font_key] = font
-    resources['/Font'] = base_fonts
-
-    # Reassign /ProcSet to one that just lists everything - ProcSet is
-    # obsolete and doesn't matter but recommended for old viewer support
-    resources['/ProcSet'] = procset
+    _update_page_resources(
+        page=base_page, font=font, font_key=font_key, procset=procset
+    )
 
 
 def _find_font(text, pdf_base):
@@ -912,11 +918,23 @@ def weave_layers(
         pdf_base.pages[page_num - 1].Rotate = \
             (content_rotation - autorotate_correction) % 360
 
-        # Might need something like this
-        # if page_num % 100 == 0:
-        #     pdf_base.save(output_file)            
-        #     keep_open = []
-        #     pdf_base = pikepdf.open(path_base)
+        if len(keep_open) > 100:
+            # qpdf limitations require us to keep files open when we intend
+            # to copy content from them before saving. However, we want to keep
+            # a lid on file handles and memory usage, so for big files we're
+            # going to stop and save periodically. Attach the font to page 1
+            # even if page 1 doesn't use it, so we have a way to get it back.
+            page0 = pdf_base.pages[0]
+            _update_page_resources(
+                page=page0, font=font, font_key=font_key, procset=procset)
+            interim = output_file + '_working{}.pdf'.format(page_num)
+            pdf_base.save(interim)
+            del pdf_base
+            keep_open = []
+
+            pdf_base = pikepdf.open(interim)
+            procset = pdf_base.pages[0].Resources.ProcSet
+            font = pdf_base.pages[0].Resources.Font.get(font_key)
 
 
     pdf_base.save(output_file)
