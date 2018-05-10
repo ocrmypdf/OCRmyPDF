@@ -714,7 +714,8 @@ class PageInfo:
         page = doc[self._pageno]
         text = page.getText('dict')
         for block in text['blocks']:
-            yield block['bbox']
+            if block['type'] == 0:  # 0=text, >0=image or something else
+                yield block['bbox']
 
     @property
     def xres(self):
