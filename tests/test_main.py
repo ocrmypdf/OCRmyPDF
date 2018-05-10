@@ -151,7 +151,7 @@ def test_remove_background(spoof_tesseract_noop, resources, outdir):
 @pytest.mark.parametrize(
     "pdf",
     ['palette.pdf', 'cmyk.pdf', 'ccitt.pdf', 'jbig2.pdf', 'lichtenstein.pdf'])
-@pytest.mark.parametrize("renderer", ['auto', 'tesseract'])
+@pytest.mark.parametrize("renderer", ['sandwich', 'hocr'])
 @pytest.mark.parametrize("output_type", ['pdf', 'pdfa'])
 def test_exotic_image(spoof_tesseract_cache, pdf, renderer, output_type,
                       resources, outdir):

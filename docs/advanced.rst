@@ -105,7 +105,7 @@ rendering
   Creating a new PDF from other data (such as an existing PDF).
 
 
-OCRmyPDF has three PDF renderers: ``sandwich``, ``hocr``, ``tesseract``. The renderer may be selected using ``--pdf-renderer``. The default is ``auto`` which lets OCRmyPDF select the renderer to use. Currently, ``auto`` selects ``sandwich`` for Tesseract 3.05.01 or newer, or ``hocr`` for older versions of Tesseract.
+OCRmyPDF has these PDF renderers: ``sandwich`` and ``hocr``. The renderer may be selected using ``--pdf-renderer``. The default is ``auto`` which lets OCRmyPDF select the renderer to use. Currently, ``auto`` selects ``sandwich`` for Tesseract 3.05.01 or newer, or ``hocr`` for older versions of Tesseract.
 
 The ``sandwich`` renderer
 """""""""""""""""""""""""
@@ -132,4 +132,4 @@ This works in all versions of Tesseract.
 The ``tesseract`` renderer
 """"""""""""""""""""""""""
 
-The ``tesseract`` renderer is deprecated, and is now an alias for the ``sandwich`` renderer.  The alias will be removed in a future release.
+The ``tesseract`` renderer was removed. OCRmyPDF's new approach to text layer grafting makes it functionally equivalent to ``sandwich``.

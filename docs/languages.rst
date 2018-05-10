@@ -59,18 +59,3 @@ If you wish to add a single language pack, you could do the following:
 .. code-block:: bash
 
     host$ docker commit <container_id> ocrmypdf-tess4-heb
-
-
-Known limitations
------------------
-
-As of v4.2, users of ocrmypdf working languages outside the Latin alphabet should use the following syntax:
-
-.. code-block:: bash
-
-	ocrmypdf -l eng+gre --output-type pdf --pdf-renderer tesseract
-
-The reasons for this are:
-
-* The latest version of Ghostscript (9.19 as of this writing) has unfixed bugs in Unicode handling that generate invalid character maps, so Ghostscript cannot be used for PDF/A conversion
-* The default "hocr" PDF renderer does not handle Asian fonts properly

@@ -248,10 +248,6 @@ ocrsettings.add_argument(
     help="Skip OCR on any pages that already contain text, but include the "
          "page in final output; useful for PDFs that contain a mix of "
          "images, text pages, and/or previously OCRed pages")
-# ocrsettings.add_argument(
-#     '--redo-ocr', action='store_true',
-#     help="removing any existing OCR text, but otherwise preserve mixed PDF "
-#          "pages")
 
 ocrsettings.add_argument(
     '--skip-big', type=float, metavar='MPixels',
@@ -284,15 +280,9 @@ advanced.add_argument(
     )
 advanced.add_argument(
     '--pdf-renderer',
-    choices=['auto', 'tesseract', 'hocr', 'sandwich'], default='auto',
+    choices=['auto', 'hocr', 'sandwich'], default='auto',
     help="Choose OCR PDF renderer - the default option is to let OCRmyPDF "
-         "choose."
-         "auto - let OCRmyPDF choose; "
-         "sandwich - default renderer for Tesseract 3.05.01 and newer; "
-         "hocr - default renderer for older versions of Tesseract; "
-         "tesseract - gives better results for non-Latin languages and "
-         "Tesseract older than 3.05.01 but has problems with some versions "
-         " of Ghostscript; deprecated"
+         "choose.  See documentation for discussion."
     )
 advanced.add_argument(
     '--tesseract-timeout', default=180.0, type=float, metavar='SECONDS',
@@ -361,12 +351,6 @@ def check_options_languages(options, _log):
 
 
 def check_options_output(options, log):
-    if options.pdf_renderer == 'tesseract':
-        log.warning(
-            "--pdf-renderer=tesseract is now the same as "
-            "--pdf-renderer=sandwich. The 'tesseract' option is deprecated.")
-        options.pdf_renderer = 'sandwich'
-
     if options.pdf_renderer == 'auto':
         if tesseract.version() < '3.05' \
                 and options.output_type.startswith('pdfa'):
@@ -378,7 +362,7 @@ def check_options_output(options, log):
             and tesseract.version() < '3.05' \
             and options.output_type.startswith('pdfa'):
         log.warning(
-            "For best results use --pdf-renderer=tesseract "
+            "For best results use --pdf-renderer=sandwich "
             "--output-type=pdf to disable PDF/A generation via "
             "Ghostscript, which is known to corrupt the OCR text of "
             "some PDFs produced your version of Tesseract.")
@@ -413,13 +397,6 @@ def check_options_preprocessing(options, log):
             raise MissingDependencyError(
                 "Install the 'unpaper' program to use --clean, --clean-final.")
 
-    if options.clean and \
-            not options.clean_final and \
-            options.pdf_renderer == 'tesseract':
-        log.info(
-            "Tesseract PDF renderer cannot render --clean pages without "
-            "also performing --clean-final, so --clean-final is assumed.")
-
 
 def check_options_ocr_behavior(options, log):
     if options.force_ocr and options.skip_text:
@@ -427,9 +404,6 @@ def check_options_ocr_behavior(options, log):
             None,
             "Error: --force-ocr and --skip-text are mutually incompatible.")
 
-    # if options.redo_ocr and (options.skip_text or options.force_ocr):
-    #     raise argparse.ArgumentError(
-    #         "Error: --redo-ocr and other OCR options are incompatible.")
     languages = set(options.language)
     if options.pdf_renderer == 'hocr' and \
             not languages.issubset(HOCR_OK_LANGS):
@@ -442,7 +416,7 @@ def check_options_ocr_behavior(options, log):
                 "Use --pdf-renderer auto (the default) to avoid this issue.")
         else:
             msg += (
-                "Use --pdf-renderer tesseract --output-type pdf to avoid "
+                "Use --pdf-renderer sandwich --output-type pdf to avoid "
                 "this issue")
         log.warning(msg)
     elif ghostscript.version() < '9.20' and \
@@ -460,10 +434,6 @@ def check_options_advanced(options, log):
     if options.tesseract_oem and not tesseract.v4():
         log.warning(
             "--tesseract-oem requires Tesseract 4.x -- argument ignored")
-    if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf():
-        raise MissingDependencyError(
-            "--pdf-renderer sandwich requires Tesseract 4.x "
-            "commit 3d9fb3b or later")
     if options.pdfa_image_compression != 'auto' and \
             options.output_type.startswith('pdfa'):
         log.warning(
@@ -596,7 +566,7 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
             ocrmypdf cannot automatically correct the problem on its own.
 
             Try using
-                ocrmypdf --pdf-renderer tesseract  [..other args..]
+                ocrmypdf --pdf-renderer sandwich  [..other args..]
             """))
         exit_code = ExitCode.input_file
     elif exc_name.startswith('ocrmypdf.exceptions.'):
