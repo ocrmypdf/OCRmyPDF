@@ -583,11 +583,31 @@ def _naive_find_text(*, pdf, page):
 
 
 def _page_has_text(infile, pageno):
+    "Smarter text detection that ignores text in margins"
+    
     doc = fitz.Document(infile)
-    text = doc.getPageText(pageno)
-    if text.strip() != '':
-        return True
-    return False
+    text = doc[pageno].getText('dict')
+    if not text:
+        return
+
+    pw, ph = text['width'], text['height']
+
+    margin_ratio = 0.125
+    interior_bbox = fitz.Rect(
+        margin_ratio * pw, margin_ratio * ph,
+        (1 - margin_ratio) * pw, (1 - margin_ratio) * ph
+    )
+
+    has_text = False
+    for block in text['blocks']:
+        if block['type'] != 0:
+            continue  # Not text
+        bbox = fitz.Rect(block['bbox'])
+
+        if bbox & interior_bbox:
+            has_text = True
+    
+    return has_text
 
 
 def _pdf_get_pageinfo(pdf, pageno: int, infile):
