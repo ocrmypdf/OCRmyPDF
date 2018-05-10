@@ -586,12 +586,7 @@ def _page_get_textblocks(infile, pageno):
     "Smarter text detection"
 
     doc = fitz.Document(infile)
-    if fitz.version[0] >= '1.13.0':
-        text = doc[pageno].getText('dict')
-    else:
-        import json
-        textjson = doc[pageno].getText('json')
-        text = json.loads(textjson)
+    text = doc[pageno].getText('dict')
     if not text:
         return
 
