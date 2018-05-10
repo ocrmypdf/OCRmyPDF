@@ -351,21 +351,58 @@ def check_options_languages(options, _log):
 
 
 def check_options_output(options, log):
+    # We have these constraints to check for.
+    # 1. Ghostscript < 9.20 mangles multibyte Unicode
+    # 2. Tesseract < 3.05 embeds an older version of GlyphlessFont with which
+    #    no version of Ghostscript handles correctly.
+    # 3. hocr doesn't work on non-Latin languages (so don't select it)
+
+    languages = set(options.language)
+    is_latin = languages.issubset(HOCR_OK_LANGS)
+
+    if options.pdf_renderer == 'hocr' and not is_latin:
+        msg = (
+            "The 'hocr' PDF renderer is known to cause problems with one "
+            "or more of the languages in your document.  Use " 
+            "--pdf-renderer auto (the default) to avoid this issue.")
+        log.warning(msg)
+    
+    if ghostscript.version() < '9.20' \
+            and options.output_type != 'pdf' \
+            and not is_latin:
+        # https://bugs.ghostscript.com/show_bug.cgi?id=696874
+        # Ghostscript < 9.20 fails to encode multibyte characters properly
+        msg = (
+            "The installed version of Ghostscript does not work correctly "
+            "with the OCR languages you specified. Use --output-type pdf or "
+            "upgrade to Ghostscript 9.20 or later to avoid this issue.")
+        msg += "Found Ghostscript {}".format(ghostscript.version())
+        log.warning(msg)
+
+    # Decide on what renderer to use
     if options.pdf_renderer == 'auto':
         if tesseract.version() < '3.05' \
-                and options.output_type.startswith('pdfa'):
+                and options.output_type.startswith('pdfa') \
+                and is_latin:
             options.pdf_renderer = 'hocr'
         else:
             options.pdf_renderer = 'sandwich'
 
     if options.pdf_renderer == 'sandwich' \
-            and tesseract.version() < '3.05' \
-            and options.output_type.startswith('pdfa'):
-        log.warning(
-            "For best results use --pdf-renderer=sandwich "
-            "--output-type=pdf to disable PDF/A generation via "
-            "Ghostscript, which is known to corrupt the OCR text of "
-            "some PDFs produced your version of Tesseract.")
+            and tesseract.version() < '3.05':
+        msg = (
+            "Ghostscript will corrupt the OCR text of PDFs produced by "
+            "Tesseract 3.04.xx and older.  For best results, upgrade to a "
+            "newer release of Tesseract. "
+        )
+
+        if options.output_type.startswith('pdfa'):
+            msg += (
+                "The argument --output-type=pdfa* requires Ghostscript, so "
+                "the PDF will be invalid.  If you cannot upgrade Tesseract, "
+                "use --output-type=pdf.")
+            raise MissingDependencyError(msg)
+        log.warning(msg)
 
     lossless_reconstruction = False
     if options.pdf_renderer in ('hocr', 'sandwich'):
@@ -403,31 +440,6 @@ def check_options_ocr_behavior(options, log):
         raise argparse.ArgumentError(
             None,
             "Error: --force-ocr and --skip-text are mutually incompatible.")
-
-    languages = set(options.language)
-    if options.pdf_renderer == 'hocr' and \
-            not languages.issubset(HOCR_OK_LANGS):
-        msg = (
-            "The 'hocr' PDF renderer is known to cause problems with one "
-            "or more of the languages in your document. ")
-
-        if tesseract.has_textonly_pdf():
-            msg += (
-                "Use --pdf-renderer auto (the default) to avoid this issue.")
-        else:
-            msg += (
-                "Use --pdf-renderer sandwich --output-type pdf to avoid "
-                "this issue")
-        log.warning(msg)
-    elif ghostscript.version() < '9.20' and \
-            not languages.issubset(HOCR_OK_LANGS) \
-            and options.output_type != 'pdf':
-        msg = (
-            "The installed version of Ghostscript does not work correctly "
-            "with the OCR languages you specified. Use --output-type pdf or "
-            "upgrade to Ghostscript 9.20 or later to avoid this issue.")
-        msg += "Found Ghostscript {}".format(ghostscript.version())
-        log.warning(msg)
 
 
 def check_options_advanced(options, log):
