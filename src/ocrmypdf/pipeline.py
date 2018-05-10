@@ -596,10 +596,11 @@ def select_ocr_image(
         white = ImageColor.getcolor('#ffffff', im.mode)
         draw = ImageDraw.ImageDraw(im)
 
-        for bbox in pageinfo.get_textareas():
+        for textarea in pageinfo.get_textareas():
             # Calculate resolution based on the image size and page dimensions
             # without regard whatever resolution is in pageinfo (may differ or
             # be None)
+            bbox = textarea['bbox']
             xres = im.width / pageinfo.width_inches
             yres = im.height / pageinfo.height_inches
             log.debug('calculated resolution %r %r', xres, yres)

@@ -582,9 +582,9 @@ def _naive_find_text(*, pdf, page):
     return False
 
 
-def _page_has_text(infile, pageno):
-    "Smarter text detection that ignores text in margins"
-    
+def _page_get_textblocks(infile, pageno):
+    "Smarter text detection"
+
     doc = fitz.Document(infile)
     if fitz.version[0] >= '1.13.0':
         text = doc[pageno].getText('dict')
@@ -595,6 +595,13 @@ def _page_has_text(infile, pageno):
     if not text:
         return
 
+    text['blocks'] = [blk for blk in text['blocks'] if blk['type'] == 0]
+    return text
+
+
+def _page_has_text(text):
+    "Smarter text detection that ignores text in margins"
+    
     pw, ph = text['width'], text['height']
 
     margin_ratio = 0.125
@@ -605,13 +612,9 @@ def _page_has_text(infile, pageno):
 
     has_text = False
     for block in text['blocks']:
-        if block['type'] != 0:
-            continue  # Not text
         bbox = fitz.Rect(block['bbox'])
-
         if bbox & interior_bbox:
             has_text = True
-    
     return has_text
 
 
@@ -628,7 +631,8 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile):
     page = pdf.pages[pageno]
 
     if fitz:
-        pageinfo['has_text'] = _page_has_text(str(infile), pageno)
+        pageinfo['textinfo'] = _page_get_textblocks(str(infile), pageno)
+        pageinfo['has_text'] = _page_has_text(pageinfo['textinfo'])
     else:
         pageinfo['has_text'] = _naive_find_text(pdf=pdf, page=page)
 
@@ -715,12 +719,7 @@ class PageInfo:
     def get_textareas(self):
         if not fitz:
             raise NotImplementedError("no impl without fitz")
-        doc = fitz.open(self._infile)
-        page = doc[self._pageno]
-        text = page.getText('dict')
-        for block in text['blocks']:
-            if block['type'] == 0:  # 0=text, >0=image or something else
-                yield block['bbox']
+        yield from self._pageinfo['textinfo']['blocks']
 
     @property
     def xres(self):
