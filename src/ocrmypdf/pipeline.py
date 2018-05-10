@@ -496,17 +496,23 @@ def rasterize_with_ghostscript(
     options = context.get_options()
     pageinfo = get_pageinfo(input_file, context)
 
-    device = 'png16m'  # 24-bit
-    if pageinfo.images:
-        if all(image.comp == 1 for image in pageinfo.images):
-            if all(image.bpc == 1 for image in pageinfo.images):
-                device = 'pngmono'
-            elif all(image.bpc > 1 and image.color == Colorspace.index
-                     for image in pageinfo.images):
-                device = 'png256'
-            elif all(image.bpc > 1 and image.color == Colorspace.gray
-                     for image in pageinfo.images):
-                device = 'pnggray'
+    colorspaces = ['pngmono', 'pnggray', 'png256', 'png16m']
+    device_idx = 0
+    def at_least(cs):
+        return max(device_idx, colorspaces.index(cs))
+
+    for image in pageinfo.images:
+        if image.type_ != 'image':
+            continue  # ignore masks
+        if image.bpc > 1:
+            if image.color == Colorspace.index:
+                device_idx = at_least('png256')
+            elif image.color == Colorspace.gray:
+                device_idx = at_least('pnggray')
+            else:
+                device_idx = at_least('png16m')
+
+    device = colorspaces[device_idx]
 
     log.debug("Rasterize {0} with {1}".format(
               os.path.basename(input_file), device))
