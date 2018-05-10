@@ -153,4 +153,57 @@ def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
     assert seconds_between_dates(
         date_after, datetime.datetime.now(timezone.utc)) < 1000
 
+        
+@pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
+def test_xml_metadata_preserved(spoof_tesseract_noop, output_type,
+                                resources, outpdf):
+    input_file = resources / 'graph.pdf'
+    before_xml = pypdf.PdfFileReader(str(input_file)).getXmpMetadata()
+
+    check_ocrmypdf(
+        input_file, outpdf,
+        '--output-type', output_type,
+        env=spoof_tesseract_noop)
+
+    after_xml = pypdf.PdfFileReader(str(outpdf)).getXmpMetadata()
+    equal_properties = [
+        'dc_contributor',
+        'dc_coverage',
+        'dc_creator',
+        'dc_description',
+        'dc_format',
+        'dc_identifier',
+        'dc_language',
+        'dc_publisher',
+        'dc_relation',
+        'dc_rights',
+        'dc_source',
+        'dc_subject',
+        'dc_title',
+        'dc_type',
+        'pdf_keywords',
+    ]
+    might_change_properties = [
+        'dc_date',
+        'pdf_pdfversion',
+        'pdf_producer',
+        'xmp_createDate',
+        'xmp_modifyDate',
+        'xmp_metadataDate',
+        'xmp_creatorTool',
+        'xmpmm_documentId',
+        'xmpmm_instanceId'
+    ]
+
+    def prop_str(prop):
+        return '{}: "{}" -> "{}"'.format(prop, \
+            getattr(before_xml, prop), getattr(after_xml, prop)) 
+
+    for prop in equal_properties:
+        assert getattr(before_xml, prop) == getattr(after_xml, prop),\
+            prop_str(prop)
+
+    for prop in might_change_properties:
+        print(prop_str(prop))
+
 
