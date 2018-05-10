@@ -39,7 +39,6 @@ Main features
 -  Keeps file size about the same
 -  If requested deskews and/or cleans the image before performing OCR
 -  Validates input and output files
--  Provides debug mode to enable easy verification of the OCR results
 -  Processes pages in parallel when more than one CPU core is
    available
 -  Uses `Tesseract OCR <https://github.com/tesseract-ocr/tesseract>`_ engine

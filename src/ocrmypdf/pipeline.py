@@ -739,24 +739,6 @@ def flatten_groups(groups):
             yield obj
 
 
-def render_hocr_debug_page(
-        infiles,
-        output_file,
-        log,
-        context):
-    options = context.get_options()
-    hocr = next(ii for ii in flatten_groups(infiles) if ii.endswith('.hocr'))
-    image = next(ii for ii in flatten_groups(infiles) if ii.endswith('.image'))
-
-    pageinfo = get_pageinfo(image, context)
-    dpi = get_page_square_dpi(pageinfo, options)
-
-    hocrtransform = HocrTransform(hocr, dpi)
-    hocrtransform.to_pdf(output_file, imageFileName=None,
-                         showBoundingboxes=True, invisibleText=False,
-                         interwordSpaces=True)
-
-
 def _weave_layers_graft(
         *, pdf_base, page_num, text, font, font_key, procset, rotation, log):
     log.debug("Grafting")
@@ -1321,16 +1303,6 @@ def build_pipeline(options, work_folder, log, context):
     task_render_hocr_page.graphviz(fillcolor='"#00cc66"')
     task_render_hocr_page.active_if(options.pdf_renderer == 'hocr')
 
-    task_render_hocr_debug_page = main_pipeline.collate(
-        task_func=render_hocr_debug_page,
-        input=[task_select_visible_page_image, task_ocr_tesseract_hocr],
-        filter=regex(r".*/(\d{6})(?:\.image|\.hocr)"),
-        output=os.path.join(work_folder, r'\1.debug.pdf'),
-        extras=[log, context])
-    task_render_hocr_debug_page.graphviz(fillcolor='"#00cc66"')
-    task_render_hocr_debug_page.active_if(options.pdf_renderer == 'hocr')
-    task_render_hocr_debug_page.active_if(options.debug_rendering)
-
     # Tesseract OCR + text only PDF
     task_ocr_tesseract_textonly_pdf = main_pipeline.collate(
         task_func=ocr_tesseract_textonly_pdf,
@@ -1366,8 +1338,7 @@ def build_pipeline(options, work_folder, log, context):
     task_metadata_fixup = main_pipeline.merge(
         task_func=metadata_fixup,
         input=[task_repair_and_parse_pdf,
-               task_weave_layers,
-               task_render_hocr_debug_page,
+               task_weave_layers,               
                task_generate_postscript_stub],
         output=os.path.join(work_folder, 'metafix.pdf'),
         extras=[log, context]

@@ -338,9 +338,6 @@ debugging.add_argument(
     '-k', '--keep-temporary-files', action='store_true',
     help="Keep temporary files (helpful for debugging)")
 debugging.add_argument(
-    '-g', '--debug-rendering', action='store_true',
-    help="Render each page twice with debug information on second page")
-debugging.add_argument(
     '--flowchart', type=str,
     help="Generate the pipeline execution flowchart")
 
@@ -385,10 +382,6 @@ def check_options_output(options, log):
             "--output-type=pdf to disable PDF/A generation via "
             "Ghostscript, which is known to corrupt the OCR text of "
             "some PDFs produced your version of Tesseract.")
-
-    if options.debug_rendering and options.pdf_renderer != 'hocr':
-        log.info(
-            "Ignoring --debug-rendering because it requires --pdf-renderer=hocr")
 
     lossless_reconstruction = False
     if options.pdf_renderer in ('hocr', 'sandwich'):
