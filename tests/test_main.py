@@ -232,7 +232,7 @@ def test_maximum_options(spoof_tesseract_cache, renderer, output_type,
                          resources, outpdf):
     check_ocrmypdf(
         resources / 'multipage.pdf', outpdf,
-        '-d', '-c', '-i', '-g', '-f', '-k', '--oversample', '300',
+        '-d', '-c', '-i', '-f', '-k', '--oversample', '300',
         '--remove-background',
         '--skip-big', '10', '--title', 'Too Many Weird Files',
         '--author', 'py.test', '--pdf-renderer', renderer,
@@ -346,10 +346,7 @@ def test_encrypted(resources, no_outpdf):
     assert out.find('encrypted')
 
 
-@pytest.mark.parametrize('renderer', [
-    'hocr',
-    'tesseract',
-    ])
+@pytest.mark.parametrize('renderer', RENDERERS)
 def test_pagesegmode(renderer, spoof_tesseract_cache, resources, outpdf):
     check_ocrmypdf(
         resources / 'skew.pdf', outpdf,
