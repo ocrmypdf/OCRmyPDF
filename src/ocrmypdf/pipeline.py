@@ -780,43 +780,53 @@ def _weave_layers_graft(
     # The text page always will be oriented up by this stage but the original
     # content may have a rotation applied. Wrap the text stream with a rotation
     # so it will be oriented the same way as the rest of the page content.
-    # (Previous versions OCRmyPDF rotated the content layer to match the text.)
-    if rotation != 0:
-        mediabox = [float(pdf_text.pages[0].MediaBox[v].decode()) 
-                    for v in range(4)]
-        wt, ht = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
-        translate = pikepdf.PdfMatrix((1, 0, 0, 1, -wt / 2, -ht / 2))
+    # (Previous versions OCRmyPDF rotated the content layer to match the text.)    
+    mediabox = [float(pdf_text.pages[0].MediaBox[v].decode()) 
+                for v in range(4)]
+    wt, ht = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
 
-        mediabox = [float(base_page.MediaBox[v].decode()) 
-                    for v in range(4)]
-        wp, hp = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
-        untranslate = pikepdf.PdfMatrix((1, 0, 0, 1, wp / 2, hp / 2))
-        
-        # -rotation because the input is a clockwise angle and this formula
-        # uses CCW
-        rotation = -rotation % 360
-        if rotation == 0:
-            c, s = 1, 0
-        elif rotation == 90:
-            c, s = 0, 1
-        elif rotation == 180:
-            c, s = -1, 0
-        elif rotation == 270:
-            c, s = 0, -1
-        else:
-            raise NotImplementedError("rotation to arbitrary angle")
-        
-        rotate = pikepdf.PdfMatrix((c, s, -s, c, 0, 0))
+    mediabox = [float(base_page.MediaBox[v].decode()) 
+                for v in range(4)]
+    wp, hp = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
 
-        # Translate the text so it is centered at (0, 0), rotate it there, and
-        # translate it to the center of the target page
-        ctm = translate @ rotate @ untranslate
-            
-        pdf_text_contents = (
-            b'q %s cm\n' % ctm.encode() +
-            pdf_text_contents +
-            b'\nQ\n'
-        )
+    translate = pikepdf.PdfMatrix((1, 0, 0, 1, -wt / 2, -ht / 2))
+    untranslate = pikepdf.PdfMatrix((1, 0, 0, 1, wp / 2, hp / 2))
+    # -rotation because the input is a clockwise angle and this formula
+    # uses CCW
+    rotation = -rotation % 360
+    if rotation == 0:
+        c, s = 1, 0
+    elif rotation == 90:
+        c, s = 0, 1
+    elif rotation == 180:
+        c, s = -1, 0
+    elif rotation == 270:
+        c, s = 0, -1
+    else:
+        raise NotImplementedError("rotation to arbitrary angle")
+    
+    rotate = pikepdf.PdfMatrix((c, s, -s, c, 0, 0))
+
+    # Because of rounding of DPI, we might get a text layer that is not
+    # identically sized to the target page. Scale to adjust. Normally this
+    # is within 0.998.
+    scale_x = wp / wt
+    scale_y = hp / ht
+    if rotation % 90 == 0:
+        scale_x, scale_y = scale_y, scale_x
+
+    log.debug('%r', (scale_x, scale_y))
+    scale = pikepdf.PdfMatrix((scale_x, 0, 0, scale_y, 0, 0))
+
+    # Translate the text so it is centered at (0, 0), rotate it there, adjust
+    # for a size different between initial and text PDF, then untranslate
+    ctm = translate @ rotate @ scale @ untranslate
+        
+    pdf_text_contents = (
+        b'q %s cm\n' % ctm.encode() +
+        pdf_text_contents +
+        b'\nQ\n'
+    )
 
     new_text_layer = pikepdf.Stream(pdf_base, pdf_text_contents)
 
