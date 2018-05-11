@@ -31,7 +31,7 @@ from ocrmypdf.pdfinfo import PdfInfo, Colorspace, Encoding
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.exec import ghostscript, qpdf
 from ocrmypdf.pdfa import file_claims_pdfa
-
+from ocrmypdf.leptonica import Pix
 
 # pytest.helpers is dynamic
 # pylint: disable=no-member
