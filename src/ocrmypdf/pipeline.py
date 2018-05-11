@@ -232,7 +232,7 @@ def repair_and_parse_pdf(
 
     pdfinfo = PdfInfo(output_file)
 
-    if pdfinfo.has_userunit and options.output_type == 'pdfa':
+    if pdfinfo.has_userunit and options.output_type.startswith('pdfa'):
         log.error(
             "This input file uses a PDF feature that is not supported "
             "by Ghostscript, so you cannot use --output-type=pdfa for this "
@@ -1067,6 +1067,7 @@ def _do_merge_ghostscript(
         context):
     options = context.get_options()
     input_pdfinfo = context.get_pdfinfo()
+
     ghostscript.generate_pdfa(
         pdf_version=input_pdfinfo.min_version,
         pdf_pages=pdf_pages,
@@ -1074,7 +1075,7 @@ def _do_merge_ghostscript(
         compression=options.pdfa_image_compression,
         log=log,
         threads=options.jobs or 1,
-        pdfa_part=('1' if options.output_type == 'pdfa-1' else '2'))
+        pdfa_part=options.output_type[-1])  # is pdfa-1, pdfa-2, or pdfa-3
     if fitz:
         doc = fitz.Document(output_file + '_toc.pdf')
         doc.setToC(input_pdfinfo.table_of_contents)

@@ -77,25 +77,22 @@ Assuming you have a Docker engine running, you can download one of the three ava
         - Notes
     *   - ocrmypdf
         - ``docker pull jbarlow83/ocrmypdf``
-        - Latest ocrmypdf with Tesseract 3.x. Includes English, French, German, Spanish.
+        - Latest ocrmypdf with Tesseract 4.0.0-beta1 on Ubuntu 18.04. Includes English, French, German, Spanish, Portugeuse and Simplified Chinese.
     *   - ocrmypdf-polyglot
         - ``docker pull jbarlow83/ocrmypdf-polyglot``
         - As above, with all available language packs.
-    *   - ocrmypdf-tess4
-        - ``docker pull jbarlow83/ocrmypdf-tess4``
-        - Latest ocrmypdf with Tesseract 4.x and English, French, German, Spanish, Portuguese, Chinese Simplified, Arabic and Russian (the top 8).
 
 For example:
 
 .. code-block:: bash
 
-    docker pull jbarlow83/ocrmypdf-tess4
+    docker pull jbarlow83/ocrmypdf
 
 Then tag it to give a more convenient name, just ocrmypdf:
 
 .. code-block:: bash
 
-    docker tag jbarlow83/ocrmypdf-tess4 ocrmypdf
+    docker tag jbarlow83/ocrmypdf ocrmypdf
 
 .. _docker-polyglot:
 
@@ -210,6 +207,26 @@ The command line program should now be available:
 .. code-block:: bash
 
     ocrmypdf --help
+
+Installing the latest version on Ubuntu 18.04 LTS
+-------------------------------------------------
+
+Ubuntu 18.04 includes ocrmypdf 6.1.2. To install a more recent version, first
+install the system version to get all the dependencies:
+
+.. code-block:: bash
+
+    sudo apt-get update
+    sudo apt-get install \
+        ocrmypdf \
+        python3-pip
+
+Then install ocrmypdf 6.1.5 for the local user and set the user's ``PATH`` to check for the user's Python packages.
+
+.. code-block:: bash
+
+    export PATH=$HOME/.local/bin:$PATH
+    pip3 install --user ocrmypdf[fitz]
 
 
 Installing on Ubuntu 16.04 LTS
@@ -383,7 +400,7 @@ The following dependencies are recommended:
 
 These are in addition to the Python packaging dependencies, meaning that unfortunately, the ``pip install`` command cannot satisfy all of them. 
 
-Python 3.6 and Tesseract 4.x are recommended for best OCR results and best performance.
+Python 3.6 and Tesseract 4.0.0-beta.1 are recommended for best OCR results and best performance.
 
 The library PyMuPDF is not widely available in platform distributions, and it improves OCRmyPDF in certain conditions. Consider installing OCRmyPDF from the Python binary wheels, which include a precompiled version of this library.
 

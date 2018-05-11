@@ -156,14 +156,15 @@ parser.add_argument(
     '--image-dpi', metavar='DPI', type=int,
     help="For input image instead of PDF, use this DPI instead of file's.")
 parser.add_argument(
-    '--output-type', choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2'], 
+    '--output-type', choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'], 
     default='pdfa',
     help="Choose output type. 'pdfa' creates a PDF/A-2b compliant file for "
          "long term archiving (default, recommended) but may not suitable "
          "for users who want their file altered as little as possible. 'pdfa' "
          "also has problems with full Unicode text. 'pdf' attempts to "
          "preserve file contents as much as possible. 'pdf-a1' creates a "
-         "PDF/A1-b file. 'pdf-a2' is equivalent to 'pdfa'."
+         "PDF/A1-b file. 'pdf-a2' is equivalent to 'pdfa'. 'pdf-a3' creates a "
+         "PDF/A3-b file."
          )
 
 # Use null string '\0' as sentinel to indicate the user supplied no argument,
@@ -403,6 +404,14 @@ def check_options_output(options, log):
                 "use --output-type=pdf.")
             raise MissingDependencyError(msg)
         log.warning(msg)
+
+    if options.output_type == 'pdfa':
+        options.output_type = 'pdfa-2'
+
+    if options.output_type == 'pdfa-3' and ghostscript.version() < '9.19':
+        raise MissingDependencyError(
+            "--output-type pdfa-3 requires Ghostscript 9.19 or later"
+        )
 
     lossless_reconstruction = False
     if options.pdf_renderer in ('hocr', 'sandwich'):
@@ -758,8 +767,20 @@ def report_output_file_size(options, _log, input_file, output_file):
     reasons = []
     if not fitz:
         reasons.append("The optional dependency PyMuPDF is not installed.")
-    if options.force_ocr:
-        reasons.append("The argument --force-ocr was issued.")
+    image_preproc = {
+        'deskew', 
+        'clean_final', 
+        'remove_background', 
+        'oversample',
+        'force_ocr'
+    }
+    for arg in image_preproc:
+        attr = getattr(options, arg, None)
+        if not attr:
+            continue
+        reasons.append(
+                "The argument --{} was issued, causing transcoding.".format(
+                        arg.replace('_', '-')))
 
     if reasons:
         explanation = (

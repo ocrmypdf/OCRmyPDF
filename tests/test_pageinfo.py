@@ -26,7 +26,6 @@ import os
 import shutil
 import pytest
 import img2pdf
-import pytest
 import sys
 import PyPDF2 as pypdf
 

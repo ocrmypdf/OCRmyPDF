@@ -72,6 +72,24 @@ struct Box
 };
 typedef struct Box    BOX;
 
+enum {
+    REMOVE_CMAP_TO_BINARY = 0,     /*!< remove colormap for conv to 1 bpp  */
+    REMOVE_CMAP_TO_GRAYSCALE = 1,  /*!< remove colormap for conv to 8 bpp  */
+    REMOVE_CMAP_TO_FULL_COLOR = 2, /*!< remove colormap for conv to 32 bpp */
+    REMOVE_CMAP_WITH_ALPHA = 3,    /*!< remove colormap and alpha          */
+    REMOVE_CMAP_BASED_ON_SRC = 4   /*!< remove depending on src format     */
+};
+
+/*! Access and storage flags */
+enum {
+    L_NOCOPY = 0,     /*!< do not copy the object; do not delete the ptr  */
+    L_INSERT = L_NOCOPY,    /*!< stuff it in; do not copy or clone        */
+    L_COPY = 1,       /*!< make/use a copy of the object                  */
+    L_CLONE = 2,      /*!< make/use clone (ref count) of the object       */
+    L_COPY_CLONE = 3  /*!< make a new array object (e.g., pixa) and fill  */
+                      /*!< the array with clones (e.g., pix)              */
+};
+
 """)
 
 ffibuilder.cdef("""
@@ -226,6 +244,11 @@ pixGlobalNormRGB(PIX * 	pixd,
 PIX *
 pixInvert(PIX * pixd,
           PIX * pixs);
+
+PIX *
+pixRemoveColormapGeneral(PIX     *pixs,
+                         l_int32  type,
+                         l_int32  ifnocmap);
 
 void                 
 boxDestroy(BOX  **pbox);

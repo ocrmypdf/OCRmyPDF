@@ -593,7 +593,7 @@ def test_tesseract_config_notfound(renderer, resources, outdir):
         '--pdf-renderer', renderer,
         '--tesseract-config', cfg_file)
     assert "Can't open" in err, "No error message about missing config file"
-    assert p.returncode == ExitCode.ok
+    assert p.returncode == ExitCode.ok, err
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
@@ -822,15 +822,19 @@ def test_sidecar_nonempty(spoof_tesseract_cache, resources, outpdf):
     assert 'the' in ocr_text
 
 
-def test_pdfa_1(spoof_tesseract_cache, resources, outpdf):
+@pytest.mark.parametrize('pdfa_level', ['1', '2', '3'])
+def test_pdfa_n(spoof_tesseract_cache, pdfa_level, resources, outpdf):
+    if pdfa_level == '3' and ghostscript.version() < '9.19':
+        pytest.xfail(reason='Ghostscript >= 9.19 required')
+
     check_ocrmypdf(
         resources / 'ccitt.pdf', outpdf,
-        '--output-type', 'pdfa-1',
+        '--output-type', 'pdfa-' + pdfa_level,
         env=spoof_tesseract_cache
     )
 
     pdfa_info = file_claims_pdfa(outpdf)
-    assert pdfa_info['conformance'] == 'PDF/A-1B'
+    assert pdfa_info['conformance'] == 'PDF/A-{}B'.format(pdfa_level)
 
 
 def test_bad_locale():
