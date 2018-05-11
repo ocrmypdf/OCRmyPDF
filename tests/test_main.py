@@ -29,7 +29,7 @@ import pytest
 
 from ocrmypdf.pdfinfo import PdfInfo, Colorspace, Encoding
 from ocrmypdf.exceptions import ExitCode
-from ocrmypdf.exec import ghostscript, qpdf
+from ocrmypdf.exec import ghostscript, qpdf, tesseract
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.leptonica import Pix
 
@@ -393,8 +393,7 @@ def test_algo4(resources, no_outpdf):
     assert p.returncode == ExitCode.encrypted_pdf
 
 
-@pytest.mark.parametrize('renderer', [
-    'hocr', 'sandwich'])  # tesseract cannot pass this test - resamples to square image
+@pytest.mark.parametrize('renderer', RENDERERS)
 def test_non_square_resolution(renderer, spoof_tesseract_cache,
                                resources, outpdf):
     # Confirm input image is non-square resolution
@@ -612,6 +611,7 @@ THIS FILE IS INVALID
     assert p.returncode == ExitCode.invalid_config
 
 
+@pytest.mark.skipif(tesseract.v4(), reason='arg has no effect in 4.0-beta1')
 def test_user_words(resources, outdir):
     word_list = outdir / 'wordlist.txt'
     sidecar_before = outdir / 'sidecar_before.txt'
