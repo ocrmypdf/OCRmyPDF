@@ -251,7 +251,7 @@ setup(
         'ruffus == 2.6.3',        # pinned - ocrmypdf implements a 2.6.3 workaround
     ],
     extras_require={
-        'fitz': ['PyMuPDF >= 1.13.3'],
+        'fitz': ['PyMuPDF == 1.12.5'],
     },
     tests_require=tests_require,
     entry_points={
