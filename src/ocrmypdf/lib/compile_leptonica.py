@@ -82,22 +82,11 @@ enum {
     L_JP2K_ENCODE     = 4   /*!< use jp2k encoding: 8 and 32 bpp, no cmap   */
 };
 
+/*! Compressed image data */
 struct L_Compressed_Data
 {
     l_int32            type;         /*!< encoding type: L_JPEG_ENCODE, etc   */
     l_uint8           *datacomp;     /*!< gzipped raster data                 */
-    size_t             nbytescomp;   /*!< number of compressed bytes          */
-    char              *data85;       /*!< ascii85-encoded gzipped raster data */
-    size_t             nbytes85;     /*!< number of ascii85 encoded bytes     */
-    char              *cmapdata85;   /*!< ascii85-encoded uncompressed cmap   */
-    char              *cmapdatahex;  /*!< hex pdf array for the cmap          */
-    l_int32            ncolors;      /*!< number of colors in cmap            */
-    l_int32            w;            /*!< image width                         */
-    l_int32            h;            /*!< image height                        */
-    l_int32            bps;          /*!< bits/sample; typ. 1, 2, 4 or 8      */
-    l_int32            spp;          /*!< samples/pixel; typ. 1 or 3          */
-    l_int32            minisblack;   /*!< tiff g4 photometry                  */
-    l_int32            predictor;    /*!< flate data has PNG predictors       */
     size_t             nbytescomp;   /*!< number of compressed bytes          */
     char              *data85;       /*!< ascii85-encoded gzipped raster data */
     size_t             nbytes85;     /*!< number of ascii85 encoded bytes     */
