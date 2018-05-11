@@ -1045,6 +1045,7 @@ def metadata_fixup(
         _do_merge_ghostscript([layers_file, ps], output_file, log, context)
     elif fitz:
         _do_merge_mupdf([layers_file], metadata_file, output_file, log, context)
+        #re_symlink(layers_file, output_file, log)
     else:
         pass
 
@@ -1067,7 +1068,7 @@ def _do_merge_ghostscript(
     if fitz:
         doc = fitz.Document(output_file + '_toc.pdf')
         doc.setToC(input_pdfinfo.table_of_contents)
-        doc.save(output_file)
+        doc.save(output_file, clean=False)
     else:
         os.replace(output_file + '_toc.pdf', output_file)
 
@@ -1129,7 +1130,7 @@ def _do_merge_mupdf(
     toc = metadata.getToC(simple=False)
     doc.setToC(toc)
     doc.setMetadata(pymupdf_metadata)
-    doc.save(output_file, garbage=4, deflate=True)
+    doc.save(output_file, clean=False, garbage=4, deflate=True)
 
 
 def merge_sidecars(
