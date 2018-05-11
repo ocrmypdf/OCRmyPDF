@@ -472,9 +472,12 @@ def check_options_ocr_behavior(options, log):
 
 def check_options_optimizing(options, log):
     if options.optimize >= 2:
-        from .exec import pngquant
+        from .exec import pngquant, jbig2enc
         _optional_program_check(
             'pngquant', pngquant.version, '2.0.1', '--optimize {2,3}'
+        )
+        _optional_program_check(
+            'jbig2', jbig2enc.version, '0.28', '--optimize {2,3}'
         )
 
 
