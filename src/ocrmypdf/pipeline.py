@@ -587,6 +587,10 @@ def select_ocr_image(
     user."""
 
     image = infiles[0]
+    if not fitz or context.get_options().force_ocr:
+        re_symlink(image, output_file, log)
+        return
+
     pageinfo = get_pageinfo(image, context)
 
     with Image.open(image) as im:
@@ -596,13 +600,13 @@ def select_ocr_image(
         white = ImageColor.getcolor('#ffffff', im.mode)
         draw = ImageDraw.ImageDraw(im)
 
+        xres = im.width / pageinfo.width_inches
+        yres = im.height / pageinfo.height_inches
         for textarea in pageinfo.get_textareas():
             # Calculate resolution based on the image size and page dimensions
             # without regard whatever resolution is in pageinfo (may differ or
             # be None)
             bbox = textarea['bbox']
-            xres = im.width / pageinfo.width_inches
-            yres = im.height / pageinfo.height_inches
             log.debug('calculated resolution %r %r', xres, yres)
 
             pixcoords = [Decimal(bbox[0]) / Decimal(72) * xres,
@@ -614,7 +618,10 @@ def select_ocr_image(
             draw.rectangle(pixcoords, fill=white)
         
         del draw
-        im.save(output_file)
+
+        # Pillow requires integer DPI
+        dpi = round(xres), round(yres)
+        im.save(output_file, dpi=dpi)
 
 
 def ocr_tesseract_hocr(
