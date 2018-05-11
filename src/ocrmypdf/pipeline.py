@@ -43,7 +43,7 @@ from .exceptions import PdfMergeFailedError, UnsupportedImageFormatError, \
     DpiError, PriorOcrFoundError, InputFileError
 from . import leptonica
 from . import PROGRAM_NAME, VERSION
-
+from ._optimize import optimize
 
 
 VECTOR_PAGE_DPI = 400
@@ -1144,6 +1144,14 @@ def _do_merge_mupdf(
     doc.save(output_file, clean=False, garbage=4, deflate=True)
 
 
+def optimize_pdf(
+        input_file,
+        output_file,
+        log,
+        context):
+    optimize(input_file, output_file, log, context)
+
+
 def merge_sidecars(
         input_files_groups,
         output_file,
@@ -1390,9 +1398,18 @@ def build_pipeline(options, work_folder, log, context):
         extras=[log, context])
     task_merge_sidecars.active_if(options.sidecar)
 
+    # Optimize
+    task_optimize_pdf = main_pipeline.transform(
+        task_func=optimize_pdf,
+        input=task_metadata_fixup,
+        filter=suffix('.pdf'),
+        output='.optimized.pdf',
+        output_dir=work_folder,
+        extras=[log, context])
+
     # Finalize
     main_pipeline.merge(
         task_func=copy_final,
-        input=[task_metadata_fixup],
+        input=[task_optimize_pdf],
         output=options.output_file,
         extras=[log, context])

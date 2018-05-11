@@ -826,9 +826,10 @@ def run_pipeline():
 
     # Performance is improved by setting Tesseract to single threaded. In tests
     # this gives better throughput than letting a smaller number of Tesseract
-    # jobs run multithreaded.
-    if tesseract.v4():
-        os.environ.setdefault('OMP_THREAD_LIMIT', '1')
+    # jobs run multithreaded. Same story for pngquant. Tess <4 ignores this
+    # variable, but harmless to set if ignored.
+    os.environ.setdefault('OMP_THREAD_LIMIT', '1')
+
     check_environ(options, _log)
     if os.environ.get('PYTEST_CURRENT_TEST'):
         os.environ['_OCRMYPDF_TEST_INFILE'] = options.input_file

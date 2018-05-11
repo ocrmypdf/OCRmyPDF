@@ -72,6 +72,49 @@ struct Box
 };
 typedef struct Box    BOX;
 
+
+/*! Pdf formatted encoding types */
+enum {
+    L_DEFAULT_ENCODE  = 0,  /*!< use default encoding based on image        */
+    L_JPEG_ENCODE     = 1,  /*!< use dct encoding: 8 and 32 bpp, no cmap    */
+    L_G4_ENCODE       = 2,  /*!< use ccitt g4 fax encoding: 1 bpp           */
+    L_FLATE_ENCODE    = 3,  /*!< use flate encoding: any depth, cmap ok     */
+    L_JP2K_ENCODE     = 4   /*!< use jp2k encoding: 8 and 32 bpp, no cmap   */
+};
+
+struct L_Compressed_Data
+{
+    l_int32            type;         /*!< encoding type: L_JPEG_ENCODE, etc   */
+    l_uint8           *datacomp;     /*!< gzipped raster data                 */
+    size_t             nbytescomp;   /*!< number of compressed bytes          */
+    char              *data85;       /*!< ascii85-encoded gzipped raster data */
+    size_t             nbytes85;     /*!< number of ascii85 encoded bytes     */
+    char              *cmapdata85;   /*!< ascii85-encoded uncompressed cmap   */
+    char              *cmapdatahex;  /*!< hex pdf array for the cmap          */
+    l_int32            ncolors;      /*!< number of colors in cmap            */
+    l_int32            w;            /*!< image width                         */
+    l_int32            h;            /*!< image height                        */
+    l_int32            bps;          /*!< bits/sample; typ. 1, 2, 4 or 8      */
+    l_int32            spp;          /*!< samples/pixel; typ. 1 or 3          */
+    l_int32            minisblack;   /*!< tiff g4 photometry                  */
+    l_int32            predictor;    /*!< flate data has PNG predictors       */
+    size_t             nbytescomp;   /*!< number of compressed bytes          */
+    char              *data85;       /*!< ascii85-encoded gzipped raster data */
+    size_t             nbytes85;     /*!< number of ascii85 encoded bytes     */
+    char              *cmapdata85;   /*!< ascii85-encoded uncompressed cmap   */
+    char              *cmapdatahex;  /*!< hex pdf array for the cmap          */
+    l_int32            ncolors;      /*!< number of colors in cmap            */
+    l_int32            w;            /*!< image width                         */
+    l_int32            h;            /*!< image height                        */
+    l_int32            bps;          /*!< bits/sample; typ. 1, 2, 4 or 8      */
+    l_int32            spp;          /*!< samples/pixel; typ. 1 or 3          */
+    l_int32            minisblack;   /*!< tiff g4 photometry                  */
+    l_int32            predictor;    /*!< flate data has PNG predictors       */
+    size_t             nbytes;       /*!< number of uncompressed raster bytes */
+    l_int32            res;          /*!< resolution (ppi)                    */
+};
+typedef struct L_Compressed_Data L_COMP_DATA;
+
 enum {
     REMOVE_CMAP_TO_BINARY = 0,     /*!< remove colormap for conv to 1 bpp  */
     REMOVE_CMAP_TO_GRAYSCALE = 1,  /*!< remove colormap for conv to 8 bpp  */
@@ -250,8 +293,24 @@ pixRemoveColormapGeneral(PIX     *pixs,
                          l_int32  type,
                          l_int32  ifnocmap);
 
+l_int32
+pixGenerateCIData(PIX           *pixs,
+                  l_int32        type,
+                  l_int32        quality,
+                  l_int32        ascii85,
+                  L_COMP_DATA **pcid);
+
+l_int32 
+l_generateCIDataForPdf(const char *fname, 
+                       PIX *pix, 
+                       l_int32 quality, 
+                       L_COMP_DATA **pcid);
+
 void                 
 boxDestroy(BOX  **pbox);
+
+void
+l_CIDataDestroy(L_COMP_DATA **pcid);
 
 void
 lept_free(void *ptr);  

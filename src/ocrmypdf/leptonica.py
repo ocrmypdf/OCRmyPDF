@@ -24,6 +24,7 @@ import argparse
 import sys
 import os
 import logging
+import warnings
 from tempfile import TemporaryFile
 from ctypes.util import find_library
 from .lib._leptonica import ffi
@@ -219,6 +220,11 @@ class Pix:
 
     @classmethod
     def read(cls, path):
+        warnings.warn('Use Pix.open() instead', DeprecationWarning)
+        return cls.open(path)
+
+    @classmethod
+    def open(cls, path):
         """Load an image file into a PIX object.
 
         Leptonica can load TIFF, PNM (PBM, PGM, PPM), PNG, and JPEG.  If
@@ -476,11 +482,57 @@ class Pix:
                 raise LeptonicaError("Correlation failed")
             return correlation[0]
 
+    def generate_pdf_ci_data(self, type_, quality):
+        "Convert to PDF data, with transcoding"
+        p_compdata = ffi.new('L_COMP_DATA **')
+        result = lept.pixGenerateCIData(self._pix, type_, quality, 0, 
+                                        p_compdata)
+        if result != 0:
+            raise LeptonicaError("Generate PDF data failed")
+        return CompressedData(p_compdata[0])
+
     @staticmethod
     def _pix_destroy(pix):
         p_pix = ffi.new('PIX **', pix)
         lept.pixDestroy(p_pix)
         # print('pix destroy ' + repr(pix))
+
+
+class CompressedData:
+    def __init__(self, compdata):
+        self._compdata = ffi.gc(compdata, CompressedData._destroy)
+
+    @classmethod
+    def open(cls, path, jpeg_quality=75):
+        "Open compressed data, without transcoding"
+        filename = fspath(path)
+
+        p_compdata = ffi.new('L_COMP_DATA **')
+        result = lept.l_generateCIDataForPdf(
+            os.fsencode(filename), ffi.NULL, jpeg_quality, p_compdata)
+        if result != 0:
+            raise LeptonicaError("CompressedData.open")
+        return CompressedData(p_compdata[0])
+
+    def read(self):
+        buf = ffi.buffer(self._compdata.datacomp, self._compdata.nbytescomp)
+        return bytes(buf)
+
+    def __getattr__(self, name):
+        if hasattr(self._compdata, name):
+            return getattr(self._compdata, name)
+        raise AttributeError(name)
+
+    def get_palette_pdf_string(self):
+        "Returns palette pre-formatted for use in PDF"
+        buflen = len('< ') + len(' rrggbb') * self._compdata.ncolors + len('>')
+        buf = ffi.buffer(self._compdata.cmapdatahex, buflen)
+        return bytes(buf)
+
+    @staticmethod
+    def _destroy(compdata):
+        pp = ffi.new('L_COMP_DATA **', compdata)
+        lept.l_CIDataDestroy(pp)
 
 
 class Box:
