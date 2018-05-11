@@ -249,11 +249,24 @@ ocrsettings.add_argument(
     help="Skip OCR on any pages that already contain text, but include the "
          "page in final output; useful for PDFs that contain a mix of "
          "images, text pages, and/or previously OCRed pages")
-
 ocrsettings.add_argument(
     '--skip-big', type=float, metavar='MPixels',
     help="Skip OCR on pages larger than the specified amount of megapixels, "
          "but include skipped pages in final output")
+
+optimizing = parser.add_argument_group(
+    "Optimization options",
+    "Control how the PDF is optimized after OCR"
+)
+optimizing.add_argument(
+    '-O', '--optimize', type=int, choices=range(0, 4), default=1,
+    help=("Control how PDF is optimized after processing:"
+        "0 - do not optimize;"
+        "1 - do safe, lossless optimizations (default);"
+        "2 - do lossy optimizations; "
+        "3 - do aggressive lossy optimizations"
+    )
+)
 
 advanced = parser.add_argument_group(
     "Advanced",
@@ -431,24 +444,38 @@ def check_options_sidecar(options, log):
         options.sidecar = options.output_file + '.txt'
 
 
+def _optional_program_check(name, version_fn, min_version, for_argument):
+    try:
+        if version_fn() < min_version:
+            raise MissingDependencyError(
+                "The installed '{}' is not supported. "
+                "Install version {} or newer.".format(name, min_version))
+    except FileNotFoundError:
+        raise MissingDependencyError(
+            "Install the '{}' program to use {}.".format(name, for_argument))
+
+
 def check_options_preprocessing(options, log):
     if any((options.clean, options.clean_final)):
         from .exec import unpaper
-        try:
-            if unpaper.version() < '6.1':
-                raise MissingDependencyError(
-                    "The installed 'unpaper' is not supported. "
-                    "Install version 6.1 or newer.")
-        except FileNotFoundError:
-            raise MissingDependencyError(
-                "Install the 'unpaper' program to use --clean, --clean-final.")
-
+        _optional_program_check(
+            'unpaper', unpaper.version, '6.1', '--clean, --clean-final'
+        )
+    
 
 def check_options_ocr_behavior(options, log):
     if options.force_ocr and options.skip_text:
         raise argparse.ArgumentError(
             None,
             "Error: --force-ocr and --skip-text are mutually incompatible.")
+
+
+def check_options_optimizing(options, log):
+    if options.optimize >= 2:
+        from .exec import pngquant
+        _optional_program_check(
+            'pngquant', pngquant.version, '2.0.1', '--optimize {2,3}'
+        )
 
 
 def check_options_advanced(options, log):
@@ -491,6 +518,7 @@ def check_options(options, log):
         check_options_sidecar(options, log)
         check_options_preprocessing(options, log)
         check_options_ocr_behavior(options, log)
+        check_options_optimizing(options, log)
         check_options_advanced(options, log)
         check_options_pillow(options, log)
     except ValueError as e:

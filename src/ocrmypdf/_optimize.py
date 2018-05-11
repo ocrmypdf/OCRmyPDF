@@ -16,7 +16,7 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 from pathlib import Path
-from subprocess import run, PIPE
+from subprocess import CalledProcessError
 import concurrent.futures
 from collections import defaultdict
 import struct
@@ -28,7 +28,7 @@ import pikepdf
 
 from . import leptonica
 from .helpers import re_symlink
-from .exec import pngquant
+from .exec import pngquant, jbig2enc
 
 PAGE_GROUP_SIZE = 10
 SIMPLE_COLORSPACES = ('/DeviceRGB', '/DeviceGray', '/CalRGB', '/CalGray')
@@ -115,8 +115,8 @@ def make_img_name(root, xref):
     return str(root / '{:08d}.png'.format(xref))
 
 
-def extract_image(doc, pike, root, log, image, xref, jbig2s, 
-                  pngs, jpegs):
+def extract_image(*, doc, pike, root, log, image, xref, jbig2s, 
+                  pngs, jpegs, options):
     if image.Subtype != '/Image':
         return False
     if image.Length < 100:
@@ -152,7 +152,9 @@ def extract_image(doc, pike, root, log, image, xref, jbig2s,
         jbig2s.append(xref)
     elif filtdp[0] == '/JPXDecode':
         return False
-    elif filtdp[0] == '/DCTDecode' and cs in SIMPLE_COLORSPACES:
+    elif filtdp[0] == '/DCTDecode' \
+            and cs in SIMPLE_COLORSPACES \
+            and options.optimize >= 2:
         raw_jpeg = pike._get_object_id(xref, 0)
         color_transform = filtdp[1].get('/ColorTransform', 1)
         if color_transform != 1:
@@ -170,8 +172,8 @@ def extract_image(doc, pike, root, log, image, xref, jbig2s,
         raw_jpeg_data = raw_jpeg.read_raw_bytes()
         (root / '{:08d}.jpg'.format(xref)).write_bytes(raw_jpeg_data)
         jpegs.append(xref)
-    elif cs in SIMPLE_COLORSPACES:
-        # For any 'inferior' filter include /FlateDecode we extract
+    elif cs in SIMPLE_COLORSPACES and fitz:
+        # For any 'inferior' filter including /FlateDecode we extract
         # and recode as /FlateDecode
         # raw_png = pike._get_object_id(xref, 0)
         # raw_png_data = raw_png.read_raw_bytes()
@@ -185,7 +187,7 @@ def extract_image(doc, pike, root, log, image, xref, jbig2s,
     return True
 
 
-def extract_images(doc, pike, root, log):
+def extract_images(doc, pike, root, log, options):
     # Extract images we can improve
     changed_xrefs = set()
     jbig2_groups = defaultdict(lambda: [])
@@ -204,8 +206,10 @@ def extract_images(doc, pike, root, log):
                 continue  # Don't improve same image twice
             try:
                 result = extract_image(
-                    doc, pike, root, log, image, xref, 
-                    jbig2_groups[group], pngs, jpegs)
+                    doc=doc, pike=pike, root=root, log=log, image=image, 
+                    xref=xref, jbig2s=jbig2_groups[group], pngs=pngs, 
+                    jpegs=jpegs, options=options
+                )
                 if result:
                     changed_xrefs.add(xref)
             except Exception as e:
@@ -244,14 +248,15 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
         futures = []
         for group, xrefs in jbig2_groups.items():
             prefix = 'group{:08d}'.format(group)
-            cmd = ['jbig2', '-b', prefix, '-s', '-p']
-            cmd.extend(make_img_name(root, xref) for xref in xrefs)
             future = executor.submit(
-                run, cmd, cwd=str(root), stdout=PIPE, stderr=PIPE)
+                jbig2enc.convert_group, 
+                cwd=str(root),
+                infiles=(make_img_name(root, xref) for xref in xrefs),
+                out_prefix=prefix
+            )
             futures.append(future)
         for future in concurrent.futures.as_completed(futures):
             proc = future.result()
-            proc.check_returncode()
             log.debug(proc.stderr)
 
     for group, xrefs in jbig2_groups.items():
@@ -292,12 +297,14 @@ def transcode_jpegs(pike, jpegs, root, log, options):
 
 
 def transcode_pngs(pike, pngs, root, options):
-    with concurrent.futures.ThreadPoolExecutor(
-            max_workers=options.jobs) as executor:
-        for xref in pngs:
-            executor.submit(
-                pngquant.quantize, 
-                make_img_name(root, xref), make_img_name(root, xref), 65, 80)
+    if options.optimize >= 2:
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=options.jobs) as executor:
+            for xref in pngs:
+                executor.submit(
+                    pngquant.quantize, 
+                    make_img_name(root, xref), make_img_name(root, xref), 
+                    65, 80)
 
     for xref in pngs:
         im_obj = pike._get_object_id(xref, 0)
@@ -335,18 +342,21 @@ def optimize(
     log,
     context):
 
-    if not fitz:
-        re_symlink(input_file, output_file)
+    options = context.get_options()
+    if options.optimize == 0:
+        re_symlink(input_file, output_file, log)
         return
 
-    options = context.get_options()
-    doc = fitz.open(input_file)
+    if fitz:
+        doc = fitz.open(input_file)
+    else:
+        doc = None
     pike = pikepdf.Pdf.open(input_file)
 
     root = Path(output_file).parent / 'images'
     root.mkdir(exist_ok=True)
     changed_xrefs, jbig2_groups, jpegs, pngs = extract_images(
-        doc, pike, root, log)
+        doc, pike, root, log, options)
 
     convert_to_jbig2(pike, jbig2_groups, root, log, options)
 
@@ -367,9 +377,9 @@ def optimize(
     
     if savings < 0:
         log.info("Optimize did not improve the file - discarded")
-        re_symlink(input_file, output_file)
+        re_symlink(input_file, output_file, log)
     else:
-        re_symlink(target_file, output_file)
+        re_symlink(target_file, output_file, log)
         
 
 if __name__ == '__main__':

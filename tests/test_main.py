@@ -715,6 +715,7 @@ def test_compression_preserved(spoof_tesseract_noop, ocrmypdf_exec,
     # Runs: ocrmypdf - output.pdf < testfile
     with open(input_file, 'rb') as input_stream:
         p_args = ocrmypdf_exec + [
+            '--optimize', '0',
             '--image-dpi', '150', '--output-type', 'pdf', '-', output_file]
         p = Popen(
             p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
@@ -757,6 +758,7 @@ def test_compression_changed(spoof_tesseract_noop, ocrmypdf_exec,
     with open(input_file, 'rb') as input_stream:
         p_args = ocrmypdf_exec + [
             '--image-dpi', '150', '--output-type', 'pdfa',
+            '--optimize', '0',
             '--pdfa-image-compression', compression,
             '-', output_file]
         p = Popen(
