@@ -3,3 +3,5 @@ pytest-helpers-namespace
 pytest-xdist
 pytest-cov
 pytest-timeout
+python-xmp-toolkit   # requires apt-get install libexempi3
+                     # or brew install exempi

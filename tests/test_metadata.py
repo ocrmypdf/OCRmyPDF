@@ -153,57 +153,83 @@ def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
     assert seconds_between_dates(
         date_after, datetime.datetime.now(timezone.utc)) < 1000
 
-        
+
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
 def test_xml_metadata_preserved(spoof_tesseract_noop, output_type,
                                 resources, outpdf):
     input_file = resources / 'graph.pdf'
-    before_xml = pypdf.PdfFileReader(str(input_file)).getXmpMetadata()
+
+    try:
+        import libxmp
+        from libxmp.utils import file_to_dict
+        from libxmp import consts
+    except Exception:
+        pytest.skip("libxmp not available or libexempi3 not installed")
+
+    before = file_to_dict(str(input_file))
 
     check_ocrmypdf(
         input_file, outpdf,
         '--output-type', output_type,
         env=spoof_tesseract_noop)
 
-    after_xml = pypdf.PdfFileReader(str(outpdf)).getXmpMetadata()
+    after = file_to_dict(str(outpdf))
+
     equal_properties = [
-        'dc_contributor',
-        'dc_coverage',
-        'dc_creator',
-        'dc_description',
-        'dc_format',
-        'dc_identifier',
-        'dc_language',
-        'dc_publisher',
-        'dc_relation',
-        'dc_rights',
-        'dc_source',
-        'dc_subject',
-        'dc_title',
-        'dc_type',
-        'pdf_keywords',
+        'dc:contributor',
+        'dc:coverage',
+        'dc:creator',
+        'dc:description',
+        'dc:format',
+        'dc:identifier',
+        'dc:language',
+        'dc:publisher',
+        'dc:relation',
+        'dc:rights',
+        'dc:source',
+        'dc:subject',
+        'dc:title',
+        'dc:type',
+        'pdf:keywords',
     ]
     might_change_properties = [
-        'dc_date',
-        'pdf_pdfversion',
-        'pdf_producer',
-        'xmp_createDate',
-        'xmp_modifyDate',
-        'xmp_metadataDate',
-        'xmp_creatorTool',
-        'xmpmm_documentId',
-        'xmpmm_instanceId'
+        'dc:date',
+        'pdf:pdfversion',
+        'pdf:Producer',
+        'xmp:CreateDate',
+        'xmp:ModifyDate',
+        'xmp:MetadataDate',
+        'xmp:CreatorTool',
+        'xmpMM:DocumentId',
+        'xmpMM:DnstanceId'
     ]
 
-    def prop_str(prop):
-        return '{}: "{}" -> "{}"'.format(prop, \
-            getattr(before_xml, prop), getattr(after_xml, prop)) 
+    # Cleanup messy data structure
+    # Top level is key-value mapping of namespaces to keys under namespace,
+    # so we put everything in the same namespace
+    def unify_namespaces(xmpdict):
+        for entries in xmpdict.values():
+            yield from entries
+
+    # Now we have a list of (key, value, {infodict}). We don't care about
+    # infodict. Just flatten to keys and values
+    def keyval_from_tuple(list_of_tuples):
+        for k, v, *_ in list_of_tuples:
+            yield k, v
+
+    before = dict(keyval_from_tuple(unify_namespaces(before)))
+    after = dict(keyval_from_tuple(unify_namespaces(after)))
 
     for prop in equal_properties:
-        assert getattr(before_xml, prop) == getattr(after_xml, prop),\
-            prop_str(prop)
-
-    for prop in might_change_properties:
-        print(prop_str(prop))
+        if prop in before:
+            assert prop in after, '{} dropped from xmp'.format(prop)
+            assert before[prop] == after[prop]
+        
+        # Certain entries like title appear as dc:title[1], with the possibility
+        # of several
+        propidx = '{}[1]'.format(prop)
+        if propidx in before:
+            assert after.get(propidx) == before[propidx] \
+                    or after.get(prop) == before[propidx]
 
 
