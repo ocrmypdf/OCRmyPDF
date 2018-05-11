@@ -22,12 +22,21 @@ import os
 import shutil
 
 from . import get_version
-from ..exceptions import ExitCode
+from ..exceptions import ExitCode, MissingDependencyError
 
 
 @lru_cache(maxsize=1)
 def version():
     return get_version('jbig2enc', regex=r'jbig2enc (\d+(\.\d+)*).*')
+
+
+@lru_cache(maxsize=1)
+def available():
+    try:
+        version()
+    except MissingDependencyError:
+        return False
+    return True
 
 
 def convert_group(*, cwd, infiles, out_prefix):
