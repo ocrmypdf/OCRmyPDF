@@ -10,16 +10,21 @@ addons:
   apt:
     update: true
     sources:
-    - sourceline: 'ppa:vshn/ghostscript'
+    - sourceline: 'ppa:alex-p/tesseract-ocr'
     - sourceline: 'ppa:heyarje/libav-11'
+    - sourceline: 'ppa:vshn/ghostscript'
     packages:
     - ghostscript
-    - poppler-utils
-    - libavformat56
     - libavcodec56
+    - libavformat56
     - libavutil54
     - libffi-dev
     - pngquant
+    - poppler-utils
+    - tesseract-ocr
+    - tesseract-ocr-deu
+    - tesseract-ocr-eng
+    - tesseract-ocr-fra
 
 env:
   global:

@@ -3,16 +3,6 @@
 set -euo pipefail
 set -x
 
-sudo add-apt-repository ppa:alex-p/tesseract-ocr -y
-
-sudo apt-get update
-sudo apt-get autoremove -y
-sudo apt-get install -y --no-install-recommends \
-		tesseract-ocr \
-		tesseract-ocr-eng \
-		tesseract-ocr-fra \
-		tesseract-ocr-deu
-
 pip install --upgrade pip
 mkdir -p packages
 wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O packages/unpaper_6.1-1.deb
