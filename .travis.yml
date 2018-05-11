@@ -6,6 +6,21 @@ cache:
   directories:
   - $HOME/Library/Caches/Homebrew
 
+addons:
+  apt:
+    update: true
+    sources:
+    - sourceline: 'ppa:vshn/ghostscript'
+    - sourceline: 'ppa:heyarje/libav-11'
+    packages:
+    - ghostscript
+    - poppler-utils
+    - libavformat56
+    - libavcodec56
+    - libavutil54
+    - libffi-dev
+    - pngquant
+
 env:
   global:
     - secure: "hsf6MT+n2x3OiDM2fQyJZdV0/PWYmv81LdVqC6cfnHBE/8N3DloJRqQ7WfO14TxhiK9PEC7MpyCj0lSabUHEO7gSH6Vks6I1asoSkt8S9/bSMlhT4hei+pwVpeGEiU5xHVATNjY+D919VC3IFvc3XmjT74h/2SLhaZ+jhEmDggM="  # HOMEBREW_OCRMYPDF_TOKEN

@@ -3,17 +3,6 @@
 set -euo pipefail
 set -x
 
-sudo add-apt-repository ppa:vshn/ghostscript -y
-sudo add-apt-repository ppa:heyarje/libav-11 -y
-sudo apt-get update -qq
-sudo apt-get install -y \
-	ghostscript \
-	poppler-utils \
-	libavformat56 \
-	libavcodec56 \
-	libavutil54 \
-	libffi-dev
-
 sudo add-apt-repository ppa:alex-p/tesseract-ocr -y
 
 sudo apt-get update
