@@ -31,7 +31,7 @@ from .helpers import re_symlink
 from .exec import pngquant, jbig2enc
 
 PAGE_GROUP_SIZE = 10
-SIMPLE_COLORSPACES = ('/DeviceRGB', '/DeviceGray', '/CalRGB', '/CalGray')
+SIMPLE_COLORSPACES = {'/DeviceRGB', '/DeviceGray', '/CalRGB', '/CalGray'}
 JPEG_QUALITY = 75
 PNG_QUALITY = (65, 75)
 
@@ -139,6 +139,17 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         return False
     filtdp = filtdps[0]
 
+    icc = None
+    indexed = False
+    log.debug(repr(cs))
+    if cs[0] == '/ICCBased':
+        icc = cs[1]
+        cs = icc.stream_dict.get('/Alternate', '')
+    elif cs[0] == '/Indexed':
+        indexed = True
+        cs = cs[1]
+    log.debug(repr(cs))
+
     if bpc > 8:
         return False  # Don't mess with wide gamut images
 
@@ -178,12 +189,20 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         # if jpeg_quality_estimate < 65:
         #     return False
 
+        # We could get the ICC profile here, but there's no need to look at it
+        # for quality transcoding
+        # if icc:
+        #     stream = BytesIO(raw_jpeg.read_raw_bytes())
+        #     iccbytes = icc.read_bytes()
+        #     with Image.open(stream) as im:
+        #         im.save(jpg_name(root, xref), icc_profile=iccbytes)
+        
         raw_jpeg_data = raw_jpeg.read_raw_bytes()
         Path(jpg_name(root, xref)).write_bytes(raw_jpeg_data)
 
         jpegs.append(xref)
-    elif cs[0] == '/Indexed' \
-            and cs[1] in SIMPLE_COLORSPACES \
+    elif indexed \
+            and cs in SIMPLE_COLORSPACES \
             and options.optimize >= 3 \
             and fitz:
         # Try to improve on indexed images - these are far from low hanging
