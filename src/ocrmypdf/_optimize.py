@@ -133,6 +133,9 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         return False
     filtdp = filtdps[0]
 
+    if bpc > 8:
+        return False  # Don't mess with wide gamut images
+
     if bpc == 1 and filtdp[0] != '/JBIG2Decode' and jbig2enc.available():
         if filtdp[0] == '/CCITTFaxDecode':
             data = image.read_raw_bytes()
