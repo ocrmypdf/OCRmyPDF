@@ -322,8 +322,18 @@ def transcode_pngs(pike, pngs, root, options):
 
     for xref in pngs:
         im_obj = pike._get_object_id(xref, 0)
-        pix = leptonica.Pix.read(make_img_name(root, xref))
+
+        # Open, transcode (!), package for PDF
+        pix = leptonica.Pix.open(make_img_name(root, xref))
         compdata = pix.generate_pdf_ci_data(leptonica.lept.L_FLATE_ENCODE, 0)
+        
+        # This is what we should be doing: open the compressed data without
+        # transcoding. However this shifts each pixel row by one for some
+        # reason.
+        #compdata = leptonica.CompressedData.open(make_img_name(root, xref))
+        if len(compdata) > int(im_obj.stream_dict.Length):
+            continue  # If we produced a larger image, don't use
+
         predictor = pikepdf.Null()
         if compdata.predictor > 0:
             predictor = pikepdf.Dictionary({'/Predictor': compdata.predictor})
