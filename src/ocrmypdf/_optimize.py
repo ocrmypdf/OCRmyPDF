@@ -113,8 +113,12 @@ def generate_ccitt_header(data, w, h, decode_parms):
     return tiff_header
 
 
-def make_img_name(root, xref):
+def png_name(root, xref):
     return str(root / '{:08d}.png'.format(xref))
+
+
+def jpg_name(root, xref):
+    return str(root / '{:08d}.jpg'.format(xref))
 
 
 def extract_image(*, doc, pike, root, log, image, xref, jbig2s, 
@@ -151,7 +155,7 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
             stream.write(data)
             stream.seek(0)
             with Image.open(stream) as im:
-                im.save(make_img_name(root, xref))
+                im.save(png_name(root, xref))
         else:
             return False        
         jbig2s.append(xref)
@@ -175,7 +179,8 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         #     return False
 
         raw_jpeg_data = raw_jpeg.read_raw_bytes()
-        (root / '{:08d}.jpg'.format(xref)).write_bytes(raw_jpeg_data)
+        Path(jpg_name(root, xref)).write_bytes(raw_jpeg_data)
+
         jpegs.append(xref)
     elif cs[0] == '/Indexed' \
             and cs[1] in SIMPLE_COLORSPACES \
@@ -184,7 +189,7 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         # Try to improve on indexed images - these are far from low hanging
         # fruit in most cases
         pix = fitz.Pixmap(doc, xref)
-        pix.writePNG(make_img_name(root, xref), savealpha=False)
+        pix.writePNG(png_name(root, xref), savealpha=False)
         pngs.append(xref)        
     elif cs in SIMPLE_COLORSPACES and fitz:
         # For any 'inferior' filter including /FlateDecode we extract
@@ -193,7 +198,7 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         # raw_png_data = raw_png.read_raw_bytes()
         # (root / '{:08d}.png'.format(xref)).write_bytes(raw_png_data)
         pix = fitz.Pixmap(doc, xref)
-        pix.writePNG(make_img_name(root, xref), savealpha=False)
+        pix.writePNG(png_name(root, xref), savealpha=False)
         pngs.append(xref)
     else:
         return False
@@ -265,7 +270,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             future = executor.submit(
                 jbig2enc.convert_group, 
                 cwd=str(root),
-                infiles=(make_img_name(root, xref) for xref in xrefs),
+                infiles=(png_name(root, xref) for xref in xrefs),
                 out_prefix=prefix
             )
             futures.append(future)
@@ -292,8 +297,13 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
 
 def transcode_jpegs(pike, jpegs, root, log, options):
     for xref in jpegs:
-        in_jpg = root / '{:08d}.jpg'.format(xref)
-        opt_jpg = root / '{:08d}_opt.jpg'.format(xref)
+        in_jpg = Path(jpg_name(root, xref))
+        opt_jpg = in_jpg.with_suffix('.opt.jpg')
+
+        # This produces a debug warning from PIL
+        # DEBUG:PIL.Image:Error closing: 'NoneType' object has no attribute
+        # 'close'.  Seems to be mostly harmless
+        # https://github.com/python-pillow/Pillow/issues/1144
         with Image.open(str(in_jpg)) as im:
             im.save(str(opt_jpg), 
                     optimize=True,
@@ -317,20 +327,20 @@ def transcode_pngs(pike, pngs, root, options):
             for xref in pngs:
                 executor.submit(
                     pngquant.quantize, 
-                    make_img_name(root, xref), make_img_name(root, xref), 
+                    png_name(root, xref), png_name(root, xref), 
                     PNG_QUALITY[0], PNG_QUALITY[1])
 
     for xref in pngs:
         im_obj = pike._get_object_id(xref, 0)
 
         # Open, transcode (!), package for PDF
-        pix = leptonica.Pix.open(make_img_name(root, xref))
+        pix = leptonica.Pix.open(png_name(root, xref))
         compdata = pix.generate_pdf_ci_data(leptonica.lept.L_FLATE_ENCODE, 0)
         
         # This is what we should be doing: open the compressed data without
         # transcoding. However this shifts each pixel row by one for some
         # reason.
-        #compdata = leptonica.CompressedData.open(make_img_name(root, xref))
+        #compdata = leptonica.CompressedData.open(png_name(root, xref))
         if len(compdata) > int(im_obj.stream_dict.Length):
             continue  # If we produced a larger image, don't use
 
