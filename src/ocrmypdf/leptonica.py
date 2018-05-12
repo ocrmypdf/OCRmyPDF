@@ -514,6 +514,9 @@ class CompressedData:
             raise LeptonicaError("CompressedData.open")
         return CompressedData(p_compdata[0])
 
+    def __len__(self):
+        return self._compdata.nbytescomp
+
     def read(self):
         buf = ffi.buffer(self._compdata.datacomp, self._compdata.nbytescomp)
         return bytes(buf)

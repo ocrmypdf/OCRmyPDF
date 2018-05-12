@@ -125,7 +125,7 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         log.debug("Skipping small image, xref {}".format(xref))
         return False
 
-    bpc = image.get('/BitsPerComponent', 8)
+    bpc = int(image.get('/BitsPerComponent', 8))
     cs = image.get('/ColorSpace', '')
     w = int(image.Width)
     h = int(image.Height)
@@ -177,6 +177,15 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         raw_jpeg_data = raw_jpeg.read_raw_bytes()
         (root / '{:08d}.jpg'.format(xref)).write_bytes(raw_jpeg_data)
         jpegs.append(xref)
+    elif cs[0] == '/Indexed' \
+            and cs[1] in SIMPLE_COLORSPACES \
+            and options.optimize >= 3 \
+            and fitz:
+        # Try to improve on indexed images - these are far from low hanging
+        # fruit in most cases
+        pix = fitz.Pixmap(doc, xref)
+        pix.writePNG(make_img_name(root, xref), savealpha=False)
+        pngs.append(xref)        
     elif cs in SIMPLE_COLORSPACES and fitz:
         # For any 'inferior' filter including /FlateDecode we extract
         # and recode as /FlateDecode

@@ -960,7 +960,6 @@ def weave_layers(
             procset = pdf_base.pages[0].Resources.ProcSet
             font = pdf_base.pages[0].Resources.Font.get(font_key)
 
-
     pdf_base.save(output_file)
 
 
