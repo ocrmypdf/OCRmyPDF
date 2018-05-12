@@ -96,6 +96,7 @@ def numeric(basetype, min_=None, max_=None):
             msg = "%r not in valid range %r" % (string, (min_, max_))
             raise argparse.ArgumentTypeError(msg)
         return value
+    _numeric.__name__ = basetype.__name__
     return _numeric
 
 
@@ -200,7 +201,7 @@ parser.add_argument(
 jobcontrol = parser.add_argument_group(
     "Job control options")
 jobcontrol.add_argument(
-    '-j', '--jobs', metavar='N', type=int,
+    '-j', '--jobs', metavar='N', type=numeric(int, 0, 256),
     help="Use up to N CPU cores simultaneously (default: use all).")
 jobcontrol.add_argument(
     '-q', '--quiet', action='store_true', help="Suppress INFO messages")
@@ -313,11 +314,13 @@ advanced.add_argument(
          "choose.  See documentation for discussion."
     )
 advanced.add_argument(
-    '--tesseract-timeout', default=180.0, type=numeric(float, 0), metavar='SECONDS',
+    '--tesseract-timeout', default=180.0, type=numeric(float, 0), 
+    metavar='SECONDS',
     help='Give up on OCR after the timeout, but copy the preprocessed page '
          'into the final output')
 advanced.add_argument(
-    '--rotate-pages-threshold', default=14.0, type=numeric(float, 1000), metavar='CONFIDENCE',
+    '--rotate-pages-threshold', default=14.0, type=numeric(float, 0, 1000), 
+    metavar='CONFIDENCE',
     help="Only rotate pages when confidence is above this value (arbitrary "
          "units reported by tesseract)")
 advanced.add_argument(
