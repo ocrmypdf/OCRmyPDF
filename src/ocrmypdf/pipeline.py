@@ -1055,9 +1055,8 @@ def metadata_fixup(
         _do_merge_ghostscript([layers_file, ps], output_file, log, context)
     elif fitz:
         _do_merge_mupdf([layers_file], metadata_file, output_file, log, context)
-        #re_symlink(layers_file, output_file, log)
     else:
-        pass
+        re_symlink(layers_file, output_file, log)
 
 
 def _do_merge_ghostscript(
