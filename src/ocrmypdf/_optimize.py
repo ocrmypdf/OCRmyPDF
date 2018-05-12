@@ -339,7 +339,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
         )
 
 
-def transcode_pngs(pike, pngs, root, options):
+def transcode_pngs(pike, pngs, root, log, options):
     if options.optimize >= 2:
         with concurrent.futures.ThreadPoolExecutor(
                 max_workers=options.jobs) as executor:
@@ -353,8 +353,14 @@ def transcode_pngs(pike, pngs, root, options):
         im_obj = pike._get_object_id(xref, 0)
 
         # Open, transcode (!), package for PDF
-        pix = leptonica.Pix.open(png_name(root, xref))
-        compdata = pix.generate_pdf_ci_data(leptonica.lept.L_FLATE_ENCODE, 0)
+        try:
+            pix = leptonica.Pix.open(png_name(root, xref))
+            compdata = pix.generate_pdf_ci_data(
+                leptonica.lept.L_FLATE_ENCODE, 0
+            )
+        except leptonica.LeptonicaError as e:
+            log.error(e)
+            continue
         
         # This is what we should be doing: open the compressed data without
         # transcoding. However this shifts each pixel row by one for some
@@ -420,7 +426,7 @@ def optimize(
 
     convert_to_jbig2(pike, jbig2_groups, root, log, options)
     transcode_jpegs(pike, jpegs, root, log, options)
-    transcode_pngs(pike, pngs, root, options)
+    transcode_pngs(pike, pngs, root, log, options)
 
     # Not object_stream_mode + preserve_pdfa generates noncompliant PDFs
     target_file = output_file + '_opt.pdf'
