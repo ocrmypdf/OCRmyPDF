@@ -85,6 +85,20 @@ if tesseract.version() < MINIMUM_TESS_VERSION:
 # -------------
 # Parser
 
+def numeric(basetype, min_=None, max_=None):
+    "Validator for numeric params"
+    min_ = basetype(min_) if min_ is not None else None
+    max_ = basetype(max_) if max_ is not None else None
+    def _numeric(string):
+        value = basetype(string)
+        if (min_ is not None and value < min_
+                or max_ is not None and value > max_):
+            msg = "%r not in valid range %r" % (string, (min_, max_))
+            raise argparse.ArgumentTypeError(msg)
+        return value
+    return _numeric
+
+
 parser = argparse.ArgumentParser(
     prog=PROGRAM_NAME,
     fromfile_prefix_chars='@',
@@ -233,7 +247,7 @@ preprocessing.add_argument(
     help="Clean page as above, and incorporate the cleaned image in the final "
          "PDF.  Might remove desired content.")
 preprocessing.add_argument(
-    '--oversample', metavar='DPI', type=int, default=0,
+    '--oversample', metavar='DPI', type=numeric(int, 0, 5000), default=0,
     help="Oversample images to at least the specified DPI, to improve OCR "
          "results slightly")
 
@@ -255,7 +269,7 @@ ocrsettings.add_argument(
 #          "pages")
 
 ocrsettings.add_argument(
-    '--skip-big', type=float, metavar='MPixels',
+    '--skip-big', type=numeric(float, 0, 5000), metavar='MPixels',
     help="Skip OCR on pages larger than the specified amount of megapixels, "
          "but include skipped pages in final output")
 
@@ -263,7 +277,7 @@ advanced = parser.add_argument_group(
     "Advanced",
     "Advanced options to control Tesseract's OCR behavior")
 advanced.add_argument(
-    '--max-image-mpixels', action='store', type=float, metavar='MPixels',
+    '--max-image-mpixels', action='store', type=numeric(float, 0), metavar='MPixels',
     help="Set maximum number of pixels to unpack before treating an image as a "
          "decompression bomb",
     default=128.0)
@@ -296,11 +310,11 @@ advanced.add_argument(
          " of Ghostscript; deprecated"
     )
 advanced.add_argument(
-    '--tesseract-timeout', default=180.0, type=float, metavar='SECONDS',
+    '--tesseract-timeout', default=180.0, type=numeric(float, 0), metavar='SECONDS',
     help='Give up on OCR after the timeout, but copy the preprocessed page '
          'into the final output')
 advanced.add_argument(
-    '--rotate-pages-threshold', default=14.0, type=float, metavar='CONFIDENCE',
+    '--rotate-pages-threshold', default=14.0, type=numeric(float, 1000), metavar='CONFIDENCE',
     help="Only rotate pages when confidence is above this value (arbitrary "
          "units reported by tesseract)")
 advanced.add_argument(
