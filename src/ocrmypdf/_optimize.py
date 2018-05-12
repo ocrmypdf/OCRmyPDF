@@ -31,7 +31,7 @@ from .helpers import re_symlink
 from .exec import pngquant, jbig2enc
 
 PAGE_GROUP_SIZE = 10
-SIMPLE_COLORSPACES = {'/DeviceRGB', '/DeviceGray', '/CalRGB', '/CalGray'}
+SIMPLE_COLORSPACES = ('/DeviceRGB', '/DeviceGray', '/CalRGB', '/CalGray')
 JPEG_QUALITY = 75
 PNG_QUALITY = (65, 75)
 
@@ -94,22 +94,21 @@ def generate_ccitt_header(data, w, h, decode_parms):
     img_size = len(data)
     tiff_header_struct = '<' + '2s' + 'H' + 'L' + 'H' + 'HHLL' * 8 + 'L'
     tiff_header = struct.pack(
-            tiff_header_struct,
-            b'II',  # Byte order indication: Little endian
-            42,  # Version number (always 42)
-            8,  # Offset to first IFD
-            8,  # Number of tags in IFD
-            256, 4, 1, w,  # ImageWidth, LONG, 1, width
-            257, 4, 1, h,  # ImageLength, LONG, 1, length
-            258, 3, 1, 1,  # BitsPerSample, SHORT, 1, 1
-            259, 3, 1, ccitt_group,  # Compression, SHORT, 1, 4 = CCITT Group 4 fax encoding
-            262, 3, 1, 0,  # Thresholding, SHORT, 1, 0 = WhiteIsZero
-            273, 4, 1, struct.calcsize(tiff_header_struct),  # StripOffsets, LONG, 1, length of header
-            278, 4, 1, h,  # RowsPerStrip, LONG, 1, length
-            279, 4, 1, img_size,  # StripByteCounts, LONG, 1, size of image
-            0  # last IFD
-            )
-
+        tiff_header_struct,
+        b'II',  # Byte order indication: Little endian
+        42,  # Version number (always 42)
+        8,  # Offset to first IFD
+        8,  # Number of tags in IFD
+        256, 4, 1, w,  # ImageWidth, LONG, 1, width
+        257, 4, 1, h,  # ImageLength, LONG, 1, length
+        258, 3, 1, 1,  # BitsPerSample, SHORT, 1, 1
+        259, 3, 1, ccitt_group,  # Compression, SHORT, 1, 4 = CCITT Group 4 fax encoding
+        262, 3, 1, 0,  # Thresholding, SHORT, 1, 0 = WhiteIsZero
+        273, 4, 1, struct.calcsize(tiff_header_struct),  # StripOffsets, LONG, 1, length of header
+        278, 4, 1, h,  # RowsPerStrip, LONG, 1, length
+        279, 4, 1, img_size,  # StripByteCounts, LONG, 1, size of image
+        0  # last IFD
+    )
     return tiff_header
 
 
@@ -141,14 +140,15 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
 
     icc = None
     indexed = False
-    log.debug(repr(cs))
-    if cs[0] == '/ICCBased':
-        icc = cs[1]
-        cs = icc.stream_dict.get('/Alternate', '')
-    elif cs[0] == '/Indexed':
-        indexed = True
-        cs = cs[1]
-    log.debug(repr(cs))
+    try:
+        if cs[0] == '/ICCBased':
+            icc = cs[1]
+            cs = icc.stream_dict.get('/Alternate', '')
+        elif cs[0] == '/Indexed':
+            indexed = True
+            cs = cs[1]
+    except ValueError:
+        pass
 
     if bpc > 8:
         return False  # Don't mess with wide gamut images
@@ -295,7 +295,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             futures.append(future)
         for future in concurrent.futures.as_completed(futures):
             proc = future.result()
-            log.debug(proc.stderr)
+            log.debug(proc.stderr.decode())
 
     for group, xrefs in jbig2_groups.items():
         prefix = 'group{:08d}'.format(group)
