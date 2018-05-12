@@ -286,7 +286,9 @@ class ImageInfo:
             self._origin = 'inline'
             self._width = inline.settings['/W']
             self._height = inline.settings['/H']
-            self._bpc = inline.settings.get('/BPC', 8)
+            self._type = 'stencil' if inline.settings.get('/IM') else 'image'
+            default_bpc = 8 if self._type == 'image' else 1
+            self._bpc = inline.settings.get('/BPC', default_bpc)
             try:
                 self._color = FRIENDLY_COLORSPACE[inline.settings['/CS']]
             except Exception:
@@ -303,21 +305,22 @@ class ImageInfo:
             self._origin = 'xobject'
             self._width = pdfimage['/Width']
             self._height = pdfimage['/Height']
-            if '/BitsPerComponent' in pdfimage:
-                self._bpc = pdfimage['/BitsPerComponent']
-            else:
-                self._bpc = 8
 
-            # Fixme: this is incorrectly treats explicit masks as stencil masks,
-            # but good enough for now. Explicit masks have /ImageMask true but are
-            # never called for in content stream, instead are drawn as a /Mask on
-            # other images. For our purposes finding out the details of /Mask
-            # will seldom matter.
+            # If /ImageMask is true, then this image is a stencil mask
+            # (Images that draw with this stencil mask will have a reference to
+            # it in their /Mask, but we don't actually need that information)
             if '/ImageMask' in pdfimage:
                 self._type = 'stencil' if pdfimage['/ImageMask'].value \
                     else 'image'
             else:
                 self._type = 'image'
+
+            default_bpc = 8 if self._type == 'image' else 1
+            if '/BitsPerComponent' in pdfimage:
+                self._bpc = pdfimage['/BitsPerComponent']
+            else:
+                self._bpc = default_bpc
+
             if '/Filter' in pdfimage:
                 filter_ = pdfimage['/Filter']
                 if isinstance(filter_, pypdf.generic.ArrayObject):
