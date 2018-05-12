@@ -32,6 +32,8 @@ from .exec import pngquant, jbig2enc
 
 PAGE_GROUP_SIZE = 10
 SIMPLE_COLORSPACES = ('/DeviceRGB', '/DeviceGray', '/CalRGB', '/CalGray')
+JPEG_QUALITY = 75
+PNG_QUALITY = (65, 75)
 
 
 def filter_decodeparms(obj):
@@ -286,7 +288,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
         with Image.open(str(in_jpg)) as im:
             im.save(str(opt_jpg), 
                     optimize=True,
-                    quality=70)
+                    quality=JPEG_QUALITY)
         if opt_jpg.stat().st_size > in_jpg.stat().st_size:
             log.debug("xref {}, jpeg, made larger - skip".format(xref))
             continue
@@ -307,7 +309,7 @@ def transcode_pngs(pike, pngs, root, options):
                 executor.submit(
                     pngquant.quantize, 
                     make_img_name(root, xref), make_img_name(root, xref), 
-                    65, 80)
+                    PNG_QUALITY[0], PNG_QUALITY[1])
 
     for xref in pngs:
         im_obj = pike._get_object_id(xref, 0)
@@ -350,6 +352,13 @@ def optimize(
         re_symlink(input_file, output_file, log)
         return
 
+    global PNG_QUALITY
+    global JPEG_QUALITY
+
+    if options.optimize == 3:
+        PNG_QUALITY = (20, 40)
+        JPEG_QUALITY = 40
+
     if fitz:
         doc = fitz.open(input_file)
     else:
@@ -362,9 +371,7 @@ def optimize(
         doc, pike, root, log, options)
 
     convert_to_jbig2(pike, jbig2_groups, root, log, options)
-
     transcode_jpegs(pike, jpegs, root, log, options)
-
     transcode_pngs(pike, pngs, root, options)
 
     # Not object_stream_mode + preserve_pdfa generates noncompliant PDFs
@@ -390,13 +397,13 @@ if __name__ == '__main__':
     import sys
     from .pipeline import JobContext
     from collections import namedtuple
-    Options = namedtuple('Options', 'jobs')
+    Options = namedtuple('Options', 'jobs optimize')
 
     logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger()
 
     ctx = JobContext()
-    options = Options(jobs=4)
+    options = Options(jobs=4, optimize=3)
     ctx.set_options(options)
 
     optimize(sys.argv[1], sys.argv[2], log, ctx)
