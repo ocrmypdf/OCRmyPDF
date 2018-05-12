@@ -43,7 +43,7 @@ def stderr(*objs):
     print("leptonica.py:", *objs, file=sys.stderr)
 
 
-class LeptonicaErrorTrap(object):
+class _LeptonicaErrorTrap(object):
     """Context manager to trap errors reported by Leptonica.
 
     Leptonica's error return codes are unreliable to the point of being
@@ -231,7 +231,7 @@ class Pix:
         loading fails then the object will wrap a C null pointer.
         """
         filename = fspath(path)
-        with LeptonicaErrorTrap():
+        with _LeptonicaErrorTrap():
             return cls(lept.pixRead(os.fsencode(filename)))
 
     def write_implied_format(
@@ -242,7 +242,7 @@ class Pix:
         jpeg_progressive -- (iff JPEG; 0 for baseline seq., 1 for progressive)
         """
         filename = fspath(path)
-        with LeptonicaErrorTrap():
+        with _LeptonicaErrorTrap():
             lept.pixWriteImpliedFormat(
                 os.fsencode(filename),
                 self._pix, jpeg_quality, jpeg_progressive)
@@ -289,21 +289,21 @@ class Pix:
         reduction_factor -- amount to downsample (0 for default) when searching
             for skew angle
         """
-        with LeptonicaErrorTrap():
+        with _LeptonicaErrorTrap():
             return Pix(lept.pixDeskew(self._pix, reduction_factor))
 
     def scale(self, scale_xy):
         "Returns the pix object rescaled according to the proportions given."
-        with LeptonicaErrorTrap():
+        with _LeptonicaErrorTrap():
             return Pix(lept.pixScale(self._pix, scale_xy[0], scale_xy[1]))
 
     def rotate180(self):
-        with LeptonicaErrorTrap():
+        with _LeptonicaErrorTrap():
             return Pix(lept.pixRotate180(ffi.NULL, self._pix))
 
     def rotate_orth(self, quads):
         "Orthographic rotation, quads: 0-3, number of clockwise rotations"
-        with LeptonicaErrorTrap():
+        with _LeptonicaErrorTrap():
             return Pix(lept.pixRotateOrth(self._pix, quads))
 
     def find_skew(self):
@@ -311,7 +311,7 @@ class Pix:
 
         Returns (None, None) if no angle is available.
         """
-        with LeptonicaErrorTrap():
+        with _LeptonicaErrorTrap():
             angle = ffi.new('float *', 0.0)
             confidence = ffi.new('float *', 0.0)
             result = lept.pixFindSkew(self._pix, angle, confidence)
@@ -321,7 +321,7 @@ class Pix:
                 return (None, None)
 
     def convert_rgb_to_luminance(self):
-        with LeptonicaErrorTrap():
+        with _LeptonicaErrorTrap():
             gray_pix = lept.pixConvertRGBToLuminance(self._pix)
             if gray_pix:
                 return Pix(gray_pix)
@@ -335,13 +335,13 @@ class Pix:
 
         """
         return self
-        # with LeptonicaErrorTrap():
+        # with _LeptonicaErrorTrap():
         #     return Pix(lept.pixRemoveColormapGeneral(
         #             self._pix, removal_type, lept.L_COPY))
 
     def otsu_adaptive_threshold(
             self, tile_size=(300, 300), kernel_size=(4, 4), scorefract=0.1):
-        with LeptonicaErrorTrap():
+        with _LeptonicaErrorTrap():
             sx, sy = tile_size
             smoothx, smoothy = kernel_size
             p_pix = ffi.new('PIX **')
@@ -361,7 +361,7 @@ class Pix:
     def otsu_threshold_on_background_norm(
             self, mask=None, tile_size=(10, 15), thresh=100, mincount=50,
             bgval=255, kernel_size=(2, 2), scorefract=0.1):
-        with LeptonicaErrorTrap():
+        with _LeptonicaErrorTrap():
             sx, sy = tile_size
             smoothx, smoothy = kernel_size
             if mask is None:
@@ -385,7 +385,7 @@ class Pix:
     def crop_to_foreground(
             self, threshold=128, mindist=70, erasedist=30, pagenum=0,
             showmorph=0, display=0, pdfdir=ffi.NULL):
-        with LeptonicaErrorTrap():
+        with _LeptonicaErrorTrap():
             cropbox = Box(lept.pixFindPageForeground(
                 self._pix,
                 threshold,
@@ -407,7 +407,7 @@ class Pix:
 
     def clean_background_to_white(
             self, mask=None, grayscale=None, gamma=1.0, black=0, white=255):
-        with LeptonicaErrorTrap():
+        with _LeptonicaErrorTrap():
             return Pix(lept.pixCleanBackgroundToWhite(
                 self._pix,
                 mask or ffi.NULL,
@@ -417,7 +417,7 @@ class Pix:
                 white))
 
     def gamma_trc(self, gamma=1.0, minval=0, maxval=255):
-        with LeptonicaErrorTrap():
+        with _LeptonicaErrorTrap():
             return Pix(lept.pixGammaTRC(
                 ffi.NULL,
                 self._pix,
@@ -431,7 +431,7 @@ class Pix:
             min_count=40, bg_val=200, smooth_kernel=(2, 1)):
         # Background norm doesn't work on color mapped Pix, so remove colormap
         target_pix = self.remove_colormap(lept.REMOVE_CMAP_BASED_ON_SRC)
-        with LeptonicaErrorTrap():
+        with _LeptonicaErrorTrap():
             return Pix(lept.pixBackgroundNorm(
                 target_pix._pix,
                 mask or ffi.NULL,
