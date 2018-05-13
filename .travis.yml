@@ -63,11 +63,13 @@ before_install: |
   if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
     bash .travis/linux_before_install.sh
     pip install --upgrade pip
-    mkdir -p packages /usr/local/bin
+    mkdir -p packages bin
     wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O packages/unpaper_6.1-1.deb
     sudo dpkg -i packages/unpaper_6.1-1.deb
-    wget -q 'https://github.com/qpdf/qpdf/releases/download/release-qpdf-8.0.2/qpdf-8.0.2-x86_64.AppImage' -O /usr/local/bin/qpdf
-    chmod +x /usr/local/bin/qpdf
+    wget -q 'https://github.com/qpdf/qpdf/releases/download/release-qpdf-8.0.2/qpdf-8.0.2-x86_64.AppImage' -O bin/qpdf.AppImage
+    chmod +x bin/qpdf.AppImage
+    ln -s qpdf.AppImage bin/qpdf
+    export PATH=$(pwd)/bin:$PATH
   elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
     brew update && brew bundle --file=.travis/Brewfile
     pip3 install --upgrade pip
