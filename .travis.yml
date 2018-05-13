@@ -60,14 +60,14 @@ before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
 
 before_install: |
+  mkdir -p bin
   if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
     pip install --upgrade pip
-    mkdir -p packages bin
+    mkdir -p packages
     wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O packages/unpaper_6.1-1.deb
     sudo dpkg -i packages/unpaper_6.1-1.deb
     wget -q 'https://github.com/qpdf/qpdf/releases/download/release-qpdf-8.0.2/qpdf-8.0.2-x86_64.AppImage' -O bin/qpdf
-    chmod +x bin/qpdf
-    export PATH=$PWD/bin:$PATH
+    chmod +x bin/qpdf  
   elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
     brew update && brew bundle --file=.travis/Brewfile
     pip3 install --upgrade pip
@@ -75,6 +75,7 @@ before_install: |
   fi
 
 install:
+- export PATH=$PWD/bin:$PATH
 - pip3 install ".$EXTRAS"
 - pip3 install -r test_requirements.txt
 
