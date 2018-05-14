@@ -1058,8 +1058,8 @@ def metadata_fixup(
 
     if options.output_type.startswith('pdfa'):
         _do_merge_ghostscript([layers_file, ps], output_file, log, context)
-    elif fitz:
-        _do_merge_mupdf([layers_file], metadata_file, output_file, log, context)
+    # elif fitz:
+    #     _do_merge_mupdf([layers_file], metadata_file, output_file, log, context)
     else:
         re_symlink(layers_file, output_file, log)
 
