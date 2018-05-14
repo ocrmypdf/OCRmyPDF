@@ -36,8 +36,8 @@ import ruffus.ruffus_exceptions as ruffus_exceptions
 import ruffus.cmdline as cmdline
 import ruffus.proxy_logger as proxy_logger
 
-from .pipeline import JobContext, JobContextManager, \
-    cleanup_working_files, build_pipeline
+from ._jobcontext import JobContext, JobContextManager, cleanup_working_files
+from .pipeline import build_pipeline
 from .pdfa import file_claims_pdfa
 from .helpers import is_iterable_notstr, re_symlink, is_file_writable, \
     available_cpu_count

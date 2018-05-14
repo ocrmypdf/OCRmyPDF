@@ -18,14 +18,18 @@
 from pathlib import Path
 from subprocess import CalledProcessError
 import concurrent.futures
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 import struct
+import logging
+import sys
+
 from io import BytesIO
 from PIL import Image
 
 from .lib import fitz
 import pikepdf
 
+from ._jobcontext import JobContext
 from . import leptonica
 from .helpers import re_symlink
 from .exec import pngquant, jbig2enc
@@ -446,18 +450,18 @@ def optimize(
         re_symlink(target_file, output_file, log)
         
 
-if __name__ == '__main__':
-    import logging
-    import sys
-    from .pipeline import JobContext
-    from collections import namedtuple
+def main(infile, outfile, level, jobs=1):
     Options = namedtuple('Options', 'jobs optimize')
 
     logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger()
 
     ctx = JobContext()
-    options = Options(jobs=4, optimize=3)
+    options = Options(jobs=jobs, optimize=int(level))
     ctx.set_options(options)
 
-    optimize(sys.argv[1], sys.argv[2], log, ctx)
+    optimize(infile, outfile, log, ctx)
+
+
+if __name__ == '__main__':
+    main(sys.argv[1], sys.argv[2], sys.argv[3])
