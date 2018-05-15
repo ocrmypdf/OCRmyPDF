@@ -82,7 +82,7 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         try:
             imgname = Path(root / '{:08d}'.format(xref))
             with imgname.open('wb') as f:
-                ext = pim.extract(f)
+                ext = pim.extract_to(stream=f)
             imgname.rename(imgname.with_suffix(ext))
         except pikepdf.UnsupportedImageTypeError:
             return False        
@@ -108,7 +108,7 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         try:
             imgname = Path(root / '{:08d}'.format(xref))
             with imgname.open('wb') as f:
-                ext = pim.extract(f)
+                ext = pim.extract_to(stream=f)
             imgname.rename(imgname.with_suffix(ext))
         except pikepdf.UnsupportedImageTypeError:
             return False        
