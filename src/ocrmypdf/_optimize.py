@@ -35,85 +35,8 @@ from .helpers import re_symlink
 from .exec import pngquant, jbig2enc
 
 PAGE_GROUP_SIZE = 10
-SIMPLE_COLORSPACES = ('/DeviceRGB', '/DeviceGray', '/CalRGB', '/CalGray')
 JPEG_QUALITY = 75
 PNG_QUALITY = (65, 75)
-
-
-def filter_decodeparms(obj):
-    """
-    PDF has a lot of optional data structures concerning /Filter and 
-    /DecodeParms. /Filter can be absent or a name or an array, /DecodeParms
-    can be absent or a dictionary (if /Filter is a name) or an array (if
-    /Filter is an array). When both are arrays the lengths match.
-    
-    Normalize this into:
-    [(/FilterName, {/DecodeParmName: Value, ...}), ...]
-
-    If there are no filters then the return is
-    [('', {})]
-
-    The order of /Filter matters as indicates the encoding/decoding sequence.
-
-    """
-    normalized = []
-    filters = []
-    filt = obj.get('/Filter', None)
-    if filt is None:
-        return [('', {})]
-    if filt.type_code == pikepdf.ObjectType.array:
-        filters.extend(filt)
-    elif filt.type_code == pikepdf.ObjectType.name:
-        filters.append(filt)
-
-    decodeparms = obj.get('/DecodeParms', pikepdf.Array([]))
-    if decodeparms.type_code == pikepdf.ObjectType.dictionary:
-        decodeparms = pikepdf.Array([decodeparms])
-
-    for n, dp in enumerate(decodeparms):
-        filt_parm = (filters[n], dp)
-        normalized.append(filt_parm)
-    if len(normalized) == 0:
-        for filt in filters:
-            filt_parm = (filt, {})
-            normalized.append(filt_parm)
-
-    if len(normalized) == 0:
-        return [('', {})]
-    return normalized
-
-
-def generate_ccitt_header(data, w, h, decode_parms):
-    # https://stackoverflow.com/questions/2641770/
-    # https://www.itu.int/itudoc/itu-t/com16/tiff-fx/docs/tiff6.pdf
-
-    if not decode_parms:
-        raise ValueError("/CCITTFaxDecode without /DecodeParms")
-
-    if decode_parms.get("/K", 1) < 0:
-        ccitt_group = 4  # Pure two-dimensional encoding (Group 4)
-    else:
-        ccitt_group = 3
-
-    img_size = len(data)
-    tiff_header_struct = '<' + '2s' + 'H' + 'L' + 'H' + 'HHLL' * 8 + 'L'
-    tiff_header = struct.pack(
-        tiff_header_struct,
-        b'II',  # Byte order indication: Little endian
-        42,  # Version number (always 42)
-        8,  # Offset to first IFD
-        8,  # Number of tags in IFD
-        256, 4, 1, w,  # ImageWidth, LONG, 1, width
-        257, 4, 1, h,  # ImageLength, LONG, 1, length
-        258, 3, 1, 1,  # BitsPerSample, SHORT, 1, 1
-        259, 3, 1, ccitt_group,  # Compression, SHORT, 1, 4 = CCITT Group 4 fax encoding
-        262, 3, 1, 0,  # Thresholding, SHORT, 1, 0 = WhiteIsZero
-        273, 4, 1, struct.calcsize(tiff_header_struct),  # StripOffsets, LONG, 1, length of header
-        278, 4, 1, h,  # RowsPerStrip, LONG, 1, length
-        279, 4, 1, img_size,  # StripByteCounts, LONG, 1, size of image
-        0  # last IFD
-    )
-    return tiff_header
 
 
 def png_name(root, xref):
@@ -124,6 +47,10 @@ def jpg_name(root, xref):
     return str(root / '{:08d}.jpg'.format(xref))
 
 
+def tif_name(root, xref):
+    return str(root / '{:08d}.tif'.format(xref))
+
+
 def extract_image(*, doc, pike, root, log, image, xref, jbig2s, 
                   pngs, jpegs, options):
     if image.Subtype != '/Image':
@@ -132,58 +59,29 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         log.debug("Skipping small image, xref {}".format(xref))
         return False
 
-    bpc = int(image.get('/BitsPerComponent', 8))
-    cs = image.get('/ColorSpace', '')
-    w = int(image.Width)
-    h = int(image.Height)
-    filtdps = filter_decodeparms(image)
-    if len(filtdps) > 1:
+    pim = pikepdf.PdfImage(image)
+
+    if len(pim.filter_decodeparms) > 1:
         log.debug("Skipping multiply filtered, xref {}".format(xref))
         return False
-    filtdp = filtdps[0]
+    filtdp = pim.filter_decodeparms[0]
 
-    icc = None
-    indexed = False
-    try:
-        if cs[0] == '/ICCBased':
-            icc = cs[1]
-            cs = icc.stream_dict.get('/Alternate', '')
-        elif cs[0] == '/Indexed':
-            indexed = True
-            cs = cs[1]
-    except ValueError:
-        pass
-
-    if bpc > 8:
+    if pim.bits_per_component > 8:
         return False  # Don't mess with wide gamut images
 
-    if bpc == 1 and filtdp[0] != '/JBIG2Decode' and jbig2enc.available():
-        if filtdp[0] == '/CCITTFaxDecode':
-            data = image.read_raw_bytes()
-            try:
-                header = generate_ccitt_header(data, w, h, filtdp[1])
-            except ValueError as e:
-                log.info(e)
-                return False
-            stream = BytesIO()
-            stream.write(header)
-            stream.write(data)
-            stream.seek(0)
-            with Image.open(stream) as im:
-                im.save(png_name(root, xref))
-        else:
+    if filtdp[0] == '/JPXDecode':
+        return False  # Don't do JPEG2000
+
+    if pim.bits_per_component == 1 \
+            and filtdp != '/JBIG2Decode' \
+            and jbig2enc.available():
+        with Path(tif_name(root, xref)).open('wb') as f:
+            result = pim.write_stream(f)
+        if not result:
             return False        
         jbig2s.append(xref)
-    elif filtdp[0] == '/JPXDecode':
-        return False
     elif filtdp[0] == '/DCTDecode' \
-            and cs in SIMPLE_COLORSPACES \
             and options.optimize >= 2:
-        raw_jpeg = pike._get_object_id(xref, 0)
-        color_transform = filtdp[1].get('/ColorTransform', 1)
-        if color_transform != 1:
-            return False  # Don't mess with JPEGs other than YUV
-
         # This is a simple heuristic derived from some training data, that has
         # about a 70% chance of guessing whether the JPEG is high quality,
         # and possibly recompressible, or not. The number itself doesn't mean
@@ -200,13 +98,13 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         #     iccbytes = icc.read_bytes()
         #     with Image.open(stream) as im:
         #         im.save(jpg_name(root, xref), icc_profile=iccbytes)
-        
-        raw_jpeg_data = raw_jpeg.read_raw_bytes()
-        Path(jpg_name(root, xref)).write_bytes(raw_jpeg_data)
-
+        with Path(jpg_name(root, xref)).open('wb') as f:
+            result = pim.write_stream(f)
+        if not result:
+            return False
         jpegs.append(xref)
-    elif indexed \
-            and cs in SIMPLE_COLORSPACES \
+    elif pim.indexed \
+            and pim.colorspace in pim.SIMPLE_COLORSPACES \
             and options.optimize >= 3 \
             and fitz:
         # Try to improve on indexed images - these are far from low hanging
@@ -214,7 +112,7 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         pix = fitz.Pixmap(doc, xref)
         pix.writePNG(png_name(root, xref), savealpha=False)
         pngs.append(xref)        
-    elif cs in SIMPLE_COLORSPACES and fitz:
+    elif pim.colorspace in pim.SIMPLE_COLORSPACES and fitz:
         # For any 'inferior' filter including /FlateDecode we extract
         # and recode as /FlateDecode
         # raw_png = pike._get_object_id(xref, 0)
@@ -418,7 +316,7 @@ def optimize(
         JPEG_QUALITY = 40
 
     if fitz:
-        doc = fitz.open(input_file)
+        doc = fitz.open(str(input_file))
     else:
         doc = None
     pike = pikepdf.Pdf.open(input_file)
