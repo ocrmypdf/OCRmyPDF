@@ -39,16 +39,20 @@ JPEG_QUALITY = 75
 PNG_QUALITY = (65, 75)
 
 
+def img_name(root, xref, ext):
+    return str(root / '{:08d}{}'.format(xref, ext))
+
+
 def png_name(root, xref):
-    return str(root / '{:08d}.png'.format(xref))
+    return img_name(root, xref, '.png')
 
 
 def jpg_name(root, xref):
-    return str(root / '{:08d}.jpg'.format(xref))
+    return img_name(root, xref, '.jpg')
 
 
 def tif_name(root, xref):
-    return str(root / '{:08d}.tif'.format(xref))
+    return img_name(root, xref, '.tif')
 
 
 def extract_image(*, doc, pike, root, log, image, xref, jbig2s, 
@@ -75,11 +79,14 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
     if pim.bits_per_component == 1 \
             and filtdp != '/JBIG2Decode' \
             and jbig2enc.available():
-        with Path(tif_name(root, xref)).open('wb') as f:
-            result = pim.write_stream(f)
-        if not result:
+        try:
+            imgname = Path(root / '{:08d}'.format(xref))
+            with imgname.open('wb') as f:
+                ext = pim.extract(f)
+            imgname.rename(imgname.with_suffix(ext))
+        except pikepdf.UnsupportedImageTypeError:
             return False        
-        jbig2s.append(xref)
+        jbig2s.append((xref, ext))
     elif filtdp[0] == '/DCTDecode' \
             and options.optimize >= 2:
         # This is a simple heuristic derived from some training data, that has
@@ -98,10 +105,13 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         #     iccbytes = icc.read_bytes()
         #     with Image.open(stream) as im:
         #         im.save(jpg_name(root, xref), icc_profile=iccbytes)
-        with Path(jpg_name(root, xref)).open('wb') as f:
-            result = pim.write_stream(f)
-        if not result:
-            return False
+        try:
+            imgname = Path(root / '{:08d}'.format(xref))
+            with imgname.open('wb') as f:
+                ext = pim.extract(f)
+            imgname.rename(imgname.with_suffix(ext))
+        except pikepdf.UnsupportedImageTypeError:
+            return False        
         jpegs.append(xref)
     elif pim.indexed \
             and pim.colorspace in pim.SIMPLE_COLORSPACES \
@@ -186,12 +196,12 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
     with concurrent.futures.ThreadPoolExecutor(
             max_workers=options.jobs) as executor:
         futures = []
-        for group, xrefs in jbig2_groups.items():
+        for group, xref_exts in jbig2_groups.items():
             prefix = 'group{:08d}'.format(group)
             future = executor.submit(
                 jbig2enc.convert_group, 
                 cwd=str(root),
-                infiles=(png_name(root, xref) for xref in xrefs),
+                infiles=(img_name(root, xref, ext) for xref, ext in xref_exts),
                 out_prefix=prefix
             )
             futures.append(future)
@@ -199,12 +209,13 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             proc = future.result()
             log.debug(proc.stderr.decode())
 
-    for group, xrefs in jbig2_groups.items():
+    for group, xref_exts in jbig2_groups.items():
         prefix = 'group{:08d}'.format(group)
         jbig2_globals_data = (root / (prefix + '.sym')).read_bytes()
         jbig2_globals = pikepdf.Stream(pike, jbig2_globals_data)
 
-        for n, xref in enumerate(xrefs):
+        for n, xref_ext in enumerate(xref_exts):
+            xref, ext = xref_ext
             jbig2_im_file = root / (prefix + '.{:04d}'.format(n))
             jbig2_im_data = jbig2_im_file.read_bytes()
             im_obj = pike._get_object_id(xref, 0)
