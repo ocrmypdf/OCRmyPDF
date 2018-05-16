@@ -28,6 +28,7 @@ from setuptools import setup, find_packages  # nopep8
 from subprocess import STDOUT, check_output, CalledProcessError  # nopep8
 from collections.abc import Mapping  # nopep8
 import re  # nopep8
+import os  # nopep8
 
 
 missing_program = '''
@@ -184,12 +185,13 @@ if not forced and command.startswith('install') or \
         package='unpaper',
         optional=True
     )
-    check_external_program(
-        program='qpdf',
-        need_version='7.0.0', # test suite known to fail on 5.1.1
-        package='qpdf',
-        version_check_args=['--version']
-    )
+    if not os.environ.get('OCRMYPDF_QPDF_APPIMAGE'):
+        check_external_program(
+            program='qpdf',
+            need_version='7.0.0', # test suite known to fail on 5.1.1
+            package='qpdf',
+            version_check_args=['--version']
+        )
 
 if 'upload' in sys.argv[1:]:
     print('Use twine to upload the package - setup.py upload is insecure')

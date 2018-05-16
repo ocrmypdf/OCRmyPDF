@@ -30,7 +30,9 @@ from ..helpers import re_symlink
 
 @lru_cache(maxsize=1)
 def version():
-    return get_version('qpdf', regex=r'qpdf version (.+)')    
+    if 'OCRMYPDF_QPDF_APPIMAGE' in os.environ:
+        return os.environ['OCRMYPDF_QPDF_APPIMAGE']
+    return get_version('qpdf', regex=r'qpdf version (.+)')
 
 
 def check(input_file, log=None):

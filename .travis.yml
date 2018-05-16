@@ -68,6 +68,7 @@ before_install: |
     sudo dpkg -i packages/unpaper_6.1-1.deb
     wget -q 'https://github.com/qpdf/qpdf/releases/download/release-qpdf-8.0.2/qpdf-8.0.2-x86_64.AppImage' -O bin/qpdf
     chmod +x bin/qpdf
+    export OCRMYPDF_QPDF_APPIMAGE=8.0.2
   elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
     brew update && brew bundle --file=.travis/Brewfile
     pip3 install --upgrade pip
@@ -76,13 +77,11 @@ before_install: |
 
 install:
 - export PATH=$PWD/bin:$PATH
-- qpdf --version
 - pip3 install ".$EXTRAS"
 - pip3 install -r test_requirements.txt
 
 script:
 - tesseract --version
-- qpdf --version
 - pytest -n auto
 
 deploy:
