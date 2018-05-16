@@ -794,7 +794,7 @@ def _find_font(text, pdf_base):
             font_key = f
             break
     if pdf_text_font:
-        font = pdf_base._copy_foreign(pdf_text_font)
+        font = pdf_base.copy_foreign(pdf_text_font)
     return font, font_key
 
 
@@ -928,11 +928,8 @@ def ocr_tesseract_textonly_pdf(
 
 def get_pdfmark(base_pdf, options):
     def from_document_info(key):
-        # pdf.documentInfo.get() DOES NOT behave as expected for a dict-like
-        # object, so call with precautions.  TypeError may occur if the PDF
-        # is missing the optional document info section.
         try:
-            s = base_pdf.documentInfo[key]
+            s = base_pdf.metadata[key]
             return str(s)
         except (KeyError, TypeError):
             return ''
@@ -967,7 +964,7 @@ def generate_postscript_stub(
         log,
         context):
     options = context.get_options()
-    pdf = pypdf.PdfFileReader(input_file)
+    pdf = pikepdf.open(input_file)
     pdfmark = get_pdfmark(pdf, options)
     generate_pdfa_ps(output_file, pdfmark)
 
@@ -995,7 +992,11 @@ def metadata_fixup(
     # elif fitz:
     #     _do_merge_mupdf([layers_file], metadata_file, output_file, log, context)
     else:
-        re_symlink(layers_file, output_file, log)
+        metadata = pikepdf.open(metadata_file)
+        pdfmark = get_pdfmark(metadata, options)
+        pdf = pikepdf.open(layers_file)
+        pdf.metadata = pikepdf.Dictionary(pdfmark)
+        pdf.save(output_file)
 
 
 def _do_merge_ghostscript(
@@ -1030,7 +1031,7 @@ def _do_merge_qpdf(
         context):
     options = context.get_options()
 
-    reader_metadata = pypdf.PdfFileReader(metadata_file)
+    reader_metadata = pikepdf.open(metadata_file)
     pdfmark = get_pdfmark(reader_metadata, options)
     pdfmark['/Producer'] = 'qpdf ' + qpdf.version()
 
@@ -1062,7 +1063,7 @@ def _do_merge_mupdf(
 
     options = context.get_options()
 
-    reader_metadata = pypdf.PdfFileReader(metadata_file)
+    reader_metadata = pikepdf.open(metadata_file)
     pdfmark = get_pdfmark(reader_metadata, options)
     pdfmark['/Producer'] = 'PyMuPDF ' + fitz.version[0]
     pymupdf_metadata = {(k[1].lower() + k[2:]) : v for k, v in pdfmark.items()}
