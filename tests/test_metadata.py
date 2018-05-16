@@ -145,8 +145,7 @@ def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
         # because of Ghostscript quirks we set it to null
         # This test would be better if we had a test file with /DocumentInfo but
         # no /CreationDate, which we don't
-        assert not after['/CreationDate'] or \
-                isinstance(after['/CreationDate'], pypdf.generic.NullObject)
+        assert not after.get('/CreationDate')
     else:
         # We expect that the creation date stayed the same
         date_before = decode_pdf_date(before['/CreationDate'])
