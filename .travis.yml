@@ -20,6 +20,7 @@ addons:
     - libffi-dev
     - pngquant
     - poppler-utils
+    - qpdf
     - tesseract-ocr
     - tesseract-ocr-deu
     - tesseract-ocr-eng
@@ -66,10 +67,6 @@ before_install: |
     mkdir -p packages
     wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O packages/unpaper_6.1-1.deb
     sudo dpkg -i packages/unpaper_6.1-1.deb
-    wget -q 'http://mirrors.kernel.org/ubuntu/pool/main/q/qpdf/qpdf_8.0.2-3_amd64.deb' -O packages/qpdf_8.0.2-3_amd64.deb
-    wget -q 'http://mirrors.kernel.org/ubuntu/pool/main/q/qpdf/libqpdf21_8.0.2-3_amd64.deb' -O packages/libqpdf21_8.0.2-3_amd64.deb
-    sudo dpkg -i packages/libqpdf21_8.0.2-3_amd64.deb
-    sudo dpkg -i packages/qpdf_8.0.2-3_amd64.deb
   elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
     brew update && brew bundle --file=.travis/Brewfile
     pip3 install --upgrade pip
