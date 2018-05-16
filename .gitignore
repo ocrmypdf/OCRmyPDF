@@ -8,6 +8,7 @@ tasks.py
 .ruffus_history.sqlite
 .idea/
 .pytest_cache/
+.pylintrc
 
 # Package building
 *.egg-info/
@@ -42,3 +43,4 @@ pdfbox-app*.jar
 .vscode/
 IDEAS
 _Dockerfile.local
+/scratch.py
