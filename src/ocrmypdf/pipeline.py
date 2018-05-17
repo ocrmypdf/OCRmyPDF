@@ -771,8 +771,6 @@ def metadata_fixup(
 
     if options.output_type.startswith('pdfa'):
         _do_merge_ghostscript([layers_file, ps], output_file, log, context)
-    # elif fitz:
-    #     _do_merge_mupdf([layers_file], metadata_file, output_file, log, context)
     else:
         metadata = pikepdf.open(metadata_file)
         pdfmark = get_pdfmark(metadata, options)
@@ -803,66 +801,6 @@ def _do_merge_ghostscript(
         doc.save(output_file, clean=False)
     else:
         os.replace(output_file + '_toc.pdf', output_file)
-
-
-def _do_merge_qpdf(
-        pdf_pages,
-        metadata_file,
-        output_file,
-        log,
-        context):
-    options = context.get_options()
-
-    reader_metadata = pikepdf.open(metadata_file)
-    pdfmark = get_pdfmark(reader_metadata, options)
-    pdfmark['/Producer'] = 'qpdf ' + qpdf.version()
-
-    first_page = pypdf.PdfFileReader(pdf_pages[0])
-
-    writer = pypdf.PdfFileWriter()
-    # copy version from source
-    writer._header = b'%PDF-' + _pdf_guess_version(pdf_pages[0])
-    writer.appendPagesFromReader(first_page)
-    writer.addMetadata(pdfmark)
-    writer_file = pdf_pages[0].replace('.pdf', '.metadata.pdf')
-    with open(writer_file, 'wb') as f:
-        writer.write(f)
-
-    pdf_pages[0] = writer_file
-
-    qpdf.merge(input_files=pdf_pages, output_file=output_file,
-               min_version=context.get_pdfinfo().min_version,
-               log=log)
-
-
-def _do_merge_mupdf(
-        pdf_pages,
-        metadata_file,
-        output_file,
-        log,
-        context):
-    assert fitz
-
-    options = context.get_options()
-
-    reader_metadata = pikepdf.open(metadata_file)
-    pdfmark = get_pdfmark(reader_metadata, options)
-    pdfmark['/Producer'] = 'PyMuPDF ' + fitz.version[0]
-    pymupdf_metadata = {(k[1].lower() + k[2:]) : v for k, v in pdfmark.items()}
-
-    if len(pdf_pages) == 1:
-        doc = fitz.open(pdf_pages[0])
-    else:
-        doc = fitz.Document()
-        for pdf_page in pdf_pages:
-            page = fitz.open(pdf_page)
-            doc.insertPDF(page)
-
-    metadata = fitz.open(metadata_file)
-    toc = metadata.getToC(simple=False)
-    doc.setToC(toc)
-    doc.setMetadata(pymupdf_metadata)
-    doc.save(output_file, clean=False, garbage=4, deflate=True)
 
 
 def optimize_pdf(
