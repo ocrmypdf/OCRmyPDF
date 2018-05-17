@@ -116,7 +116,7 @@ def triage_image_file(input_file, output_file, log, options):
 
 def _pdf_guess_version(input_file, search_window=1024):
     """Try to find version signature at start of file.
-    
+
     Not robust enough to deal with appended files.
 
     Returns empty string if not found, indicating file is probably not PDF.
@@ -175,7 +175,7 @@ def repair_and_parse_pdf(
             "output these files.)  Use --output-type=pdf instead."
         )
         raise InputFileError()
-    
+
     if len(pdfinfo.pages) > 2000 and sys.version_info[0:2] <= (3, 5):
         log.warning(
             "Performance regressions are known occur with Python 3.5 for "
@@ -242,7 +242,7 @@ def is_ocr_required(pageinfo, log, options):
         # We found a page with no images and no text. That means it may
         # have vector art that the user wants to OCR. If we determined
         # lossless reconstruction is not possible then we have to rasterize
-        # the image. So if OCR is being forced, take that to mean YES, go 
+        # the image. So if OCR is being forced, take that to mean YES, go
         # ahead and rasterize. If not forced, then pretend there's no text
         # on the page at all so we don't lose anything.
         # This could be made smarter by explicitly searching for vector art.
@@ -332,14 +332,14 @@ def ocr_or_skip(
     options = context.get_options()
     work_folder = context.get_work_folder()
     pdfinfo =  context.get_pdfinfo()
-    
+
     for input_file in input_files:
         pageno = page_number(input_file) - 1
         pageinfo = pdfinfo[pageno]
         alt_suffix = \
             '.ocr.page.pdf' if is_ocr_required(pageinfo, log, options) \
             else '.skip.page.pdf'
-        
+
         re_symlink(
             input_file,
             os.path.join(
@@ -556,7 +556,7 @@ def select_ocr_image(
             pixcoords = [int(c) for c in pixcoords]
             log.debug('blanking %r', pixcoords)
             draw.rectangle(pixcoords, fill=white)
-        
+
         del draw
 
         # Pillow requires integer DPI
@@ -716,7 +716,7 @@ def get_pdfmark(base_pdf, options):
         except (KeyError, TypeError):
             return ''
 
-    pdfmark = {k: from_document_info(k) for k in 
+    pdfmark = {k: from_document_info(k) for k in
         ('/Title', '/Author', '/Keywords', '/Subject', '/CreationDate')}
     if options.title:
         pdfmark['/Title'] = options.title
@@ -784,7 +784,7 @@ def metadata_fixup(
         metadata = pikepdf.open(metadata_file)
         pdfmark = get_pdfmark(metadata, options)
         pdf = pikepdf.open(layers_file)
-        pdf.metadata = pikepdf.Dictionary(pdfmark)
+        pdf.metadata = pdf.make_indirect(pikepdf.Dictionary(pdfmark))
         pdf.save(output_file)
 
 
@@ -817,7 +817,7 @@ def merge_sidecars(
             if txt_file:
                 with open(txt_file, 'r', encoding="utf-8") as in_:
                     txt = in_.read()
-                    # Tesseract v4 alpha started adding form feeds in 
+                    # Tesseract v4 alpha started adding form feeds in
                     # commit aa6eb6b
                     # No obvious way to detect what binaries will do this, so
                     # for consistency just ignore its form feeds and insert our
@@ -844,14 +844,14 @@ def copy_final(
         log,
         context):
     input_file = next((ii for ii in input_files if ii.endswith('.pdf')))
-
+    log.debug('%s -> %s', input_file, output_file)
     with open(input_file, 'rb') as input_stream:
         if output_file == '-':
             copyfileobj(input_stream, sys.stdout.buffer)
             sys.stdout.flush()
         else:
             # At this point we overwrite the output_file specified by the user
-            # use copyfileobj because then we use open() to create the file and 
+            # use copyfileobj because then we use open() to create the file and
             # get the appropriate umask, ownership, etc.
             with open(output_file, 'wb') as output_stream:
                 copyfileobj(input_stream, output_stream)
@@ -1028,7 +1028,7 @@ def build_pipeline(options, work_folder, log, context):
     task_metadata_fixup = main_pipeline.merge(
         task_func=metadata_fixup,
         input=[task_repair_and_parse_pdf,
-               task_weave_layers,               
+               task_weave_layers,
                task_generate_postscript_stub],
         output=os.path.join(work_folder, 'metafix.pdf'),
         extras=[log, context]
