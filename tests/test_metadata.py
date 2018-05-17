@@ -104,7 +104,7 @@ def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
     assert p.returncode == ExitCode.bad_args, err
 
 
-@pytest.mark.xfail(not fitz, reason="needs fitz")
+@pytest.mark.skipif(not fitz, reason="test uses fitz")
 @pytest.mark.parametrize('ocr_option', ['--skip-text', '--force-ocr'])
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
 def test_bookmarks_preserved(spoof_tesseract_noop, output_type, ocr_option,
@@ -136,7 +136,7 @@ def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
 
     before = pypdf.PdfFileReader(str(input_file)).getDocumentInfo()
     check_ocrmypdf(
-        input_file, outpdf, '--output-type', output_type, 
+        input_file, outpdf, '--output-type', output_type,
         env=spoof_tesseract_noop)
     after = pypdf.PdfFileReader(str(outpdf)).getDocumentInfo()
 
@@ -228,12 +228,10 @@ def test_xml_metadata_preserved(spoof_tesseract_noop, output_type,
         if prop in before:
             assert prop in after, '{} dropped from xmp'.format(prop)
             assert before[prop] == after[prop]
-        
+
         # Certain entries like title appear as dc:title[1], with the possibility
         # of several
         propidx = '{}[1]'.format(prop)
         if propidx in before:
             assert after.get(propidx) == before[propidx] \
                     or after.get(prop) == before[propidx]
-
-
