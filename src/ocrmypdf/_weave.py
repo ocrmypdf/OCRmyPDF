@@ -21,6 +21,7 @@ from itertools import groupby
 import pikepdf
 
 from .helpers import flatten_groups, page_number
+from .exec import tesseract
 
 
 def _update_page_resources(*, page, font, font_key, procset):
@@ -53,6 +54,16 @@ def _weave_layers_graft(
     # This is a pointer indicating a specific page in the base file
     pdf_text = pikepdf.open(text)
     pdf_text_contents = pdf_text.pages[0].Contents.read_bytes()
+
+    if not tesseract.has_textonly_pdf():
+        # If we don't have textonly_pdf, edit the stream to delete the
+        # instruction to draw the image Tesseract generated, which we do not
+        # use.
+        stream = bytearray(pdf_text_contents)
+        pattern = b'/Im1 Do'
+        idx = stream.find(pattern)
+        stream[idx:(idx + len(pattern))] = b' ' * len(pattern)
+        pdf_text_contents = bytes(stream)
 
     base_page = pdf_base.pages.p(page_num)
 
