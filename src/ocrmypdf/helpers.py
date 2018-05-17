@@ -168,3 +168,11 @@ if sys.version_info[0:2] <= (3, 5):
 else:
     universal_open = open
     fspath = os.fspath
+
+
+def flatten_groups(groups):
+    for obj in groups:
+        if is_iterable_notstr(obj):
+            yield from obj
+        else:
+            yield obj
