@@ -100,10 +100,10 @@ def _weave_layers_graft(
     # Because of rounding of DPI, we might get a text layer that is not
     # identically sized to the target page. Scale to adjust. Normally this
     # is within 0.998.
+    if rotation in (90, 270):
+        wt, ht = ht, wt
     scale_x = wp / wt
     scale_y = hp / ht
-    if rotation % 90 == 0:
-        scale_x, scale_y = scale_y, scale_x
 
     log.debug('%r', (scale_x, scale_y))
     scale = pikepdf.PdfMatrix((scale_x, 0, 0, scale_y, 0, 0))
