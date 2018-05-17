@@ -59,12 +59,12 @@ def _weave_layers_graft(
     # The text page always will be oriented up by this stage but the original
     # content may have a rotation applied. Wrap the text stream with a rotation
     # so it will be oriented the same way as the rest of the page content.
-    # (Previous versions OCRmyPDF rotated the content layer to match the text.)    
-    mediabox = [float(pdf_text.pages[0].MediaBox[v].decode()) 
+    # (Previous versions OCRmyPDF rotated the content layer to match the text.)
+    mediabox = [float(pdf_text.pages[0].MediaBox[v].decode())
                 for v in range(4)]
     wt, ht = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
 
-    mediabox = [float(base_page.MediaBox[v].decode()) 
+    mediabox = [float(base_page.MediaBox[v].decode())
                 for v in range(4)]
     wp, hp = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
 
@@ -83,7 +83,7 @@ def _weave_layers_graft(
         c, s = 0, -1
     else:
         raise NotImplementedError("rotation to arbitrary angle")
-    
+
     rotate = pikepdf.PdfMatrix((c, s, -s, c, 0, 0))
 
     # Because of rounding of DPI, we might get a text layer that is not
@@ -100,7 +100,7 @@ def _weave_layers_graft(
     # Translate the text so it is centered at (0, 0), rotate it there, adjust
     # for a size different between initial and text PDF, then untranslate
     ctm = translate @ rotate @ scale @ untranslate
-        
+
     pdf_text_contents = (
         b'q %s cm\n' % ctm.encode() +
         pdf_text_contents +
@@ -152,7 +152,7 @@ def _fix_toc(pdf_base, pageref_remap, log):
     the two types of object in the table of contents that can be page bookmarks
     and update the page entry.
 
-    It may ultimately be better to find a way to rebuild a page in place.    
+    It may ultimately be better to find a way to rebuild a page in place.
 
     """
 
@@ -191,7 +191,7 @@ def _fix_toc(pdf_base, pageref_remap, log):
             objgen = item._objgen
             if objgen not in visited:
                 queue.add(objgen)
-        
+
         if '/Dest' in node:
             remap_dest(node['/Dest'])
         elif '/A' in node:
@@ -205,7 +205,7 @@ def weave_layers(
         log,
         context):
     """Apply text layer and/or image layer changes to baseline file
-    
+
     This is where the magic happens. infiles will be the main PDF to modify,
     and optional .text.pdf and .image-layer.pdf files, organized however ruffus
     organizes them.
@@ -224,7 +224,7 @@ def weave_layers(
     doesn't actually copy the data until asked to write, so all the resources
     it may need to remain available.
 
-    For completeness, we set up a /ProcSet on every page, although it's 
+    For completeness, we set up a /ProcSet on every page, although it's
     unlikely any PDF viewer cares about this anymore.
 
     """
@@ -246,7 +246,7 @@ def weave_layers(
     font, font_key, procset = None, None, None
     pdfinfo = context.get_pdfinfo()
     pagerefs = {}
-    
+
     procset = pdf_base.make_indirect(
         pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]'))
 
@@ -294,14 +294,14 @@ def weave_layers(
         text_rotation = autorotate_correction
         text_misaligned = (text_rotation - content_rotation) % 360
         log.debug('%r', [
-            text_rotation, autorotate_correction, text_misaligned, 
+            text_rotation, autorotate_correction, text_misaligned,
             content_rotation]
         )
 
         if text and font:
             # Graft the text layer onto this page, whether new or old
             _weave_layers_graft(
-                pdf_base=pdf_base, page_num=page_num, text=text, font=font, 
+                pdf_base=pdf_base, page_num=page_num, text=text, font=font,
                 font_key=font_key, rotation=text_misaligned, procset=procset,
                 log=log
             )
