@@ -540,14 +540,13 @@ def select_ocr_image(
         white = ImageColor.getcolor('#ffffff', im.mode)
         draw = ImageDraw.ImageDraw(im)
 
-        xres = im.width / pageinfo.width_inches
-        yres = im.height / pageinfo.height_inches
+        xres, yres = im.info['dpi']
         for textarea in pageinfo.get_textareas():
             # Calculate resolution based on the image size and page dimensions
             # without regard whatever resolution is in pageinfo (may differ or
             # be None)
             bbox = textarea['bbox']
-            log.debug('calculated resolution %r %r', xres, yres)
+            log.debug('resolution %r %r', xres, yres)
 
             pixcoords = [Decimal(bbox[0]) / Decimal(72) * xres,
                          Decimal(bbox[1]) / Decimal(72) * yres,
