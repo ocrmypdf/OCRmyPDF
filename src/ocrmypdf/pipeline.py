@@ -798,6 +798,51 @@ def _find_font(text, pdf_base):
     return font, font_key
 
 
+def _fix_toc(pdf_base, pageref_remap, log):
+    visited = set()
+    queue = set()
+    link_keys = ('/Parent', '/First', '/Last', '/Prev', '/Next')
+
+    if not '/Outlines' in pdf_base.root:
+        return
+    if not pageref_remap:
+        return
+
+    def remap_dest(dest_node):
+        if not isinstance(dest_node, pikepdf.Array):
+            return
+        pageref = dest_node[0]
+        if pageref['/Type'] == '/Page' and \
+                pageref._objgen in pageref_remap:
+            new_objgen = pageref_remap[pageref._objgen]
+            dest_node[0] = pdf_base._get_object_id(*new_objgen)
+
+    queue.add(pdf_base.root.Outlines._objgen)
+    while queue:
+        objgen = queue.pop()
+        visited.add(objgen)
+        node = pdf_base._get_object_id(*objgen)
+        log.debug('fix toc: visiting %r', objgen)
+
+        # Enumerate other nodes we could visit from here
+        for key in link_keys:
+            if key not in node:
+                continue
+            item = node[key]
+            if not item.is_indirect:
+                continue
+            objgen = item._objgen
+            if objgen not in visited:
+                queue.add(objgen)
+        
+        log.debug(repr(node))
+        if '/Dest' in node:
+            remap_dest(node['/Dest'])
+        elif '/A' in node:
+            if '/S' in node['/A'] and node['/A']['/S'] == '/GoTo':
+                remap_dest(node['/A']['/D'])
+
+
 def weave_layers(
         infiles,
         output_file,
@@ -821,6 +866,7 @@ def weave_layers(
     keep_open = []
     font, font_key, procset = None, None, None
     pdfinfo = context.get_pdfinfo()
+    pagerefs = {}
     
     procset = pdf_base.make_indirect(
         pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]'))
@@ -848,10 +894,14 @@ def weave_layers(
         if path_image is not None and path_image != path_base:
             # We are replacing the old page
             log.debug("Replace")
+            old_objgen = pdf_base.pages[page_num - 1]._objgen
+
             pdf_image = pikepdf.open(image)
             keep_open.append(pdf_image)
             image_page = pdf_image.pages[0]
             pdf_base.pages[page_num - 1] = image_page
+
+            pagerefs[old_objgen] = pdf_base.pages[page_num - 1]._objgen
             replacing = True
 
         autorotate_correction = context.get_rotation(page_num - 1)
@@ -894,6 +944,7 @@ def weave_layers(
             procset = pdf_base.pages[0].Resources.ProcSet
             font = pdf_base.pages[0].Resources.Font.get(font_key)
 
+    _fix_toc(pdf_base, pagerefs, log)
     pdf_base.save(output_file)
 
 
