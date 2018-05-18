@@ -55,7 +55,7 @@ def tif_name(root, xref):
     return img_name(root, xref, '.tif')
 
 
-def extract_image(*, doc, pike, root, log, image, xref, jbig2s, 
+def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
                   pngs, jpegs, options):
     if image.Subtype != '/Image':
         return False
@@ -85,7 +85,7 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
                 ext = pim.extract_to(stream=f)
             imgname.rename(imgname.with_suffix(ext))
         except pikepdf.UnsupportedImageTypeError:
-            return False        
+            return False
         jbig2s.append((xref, ext))
     elif filtdp[0] == '/DCTDecode' \
             and options.optimize >= 2:
@@ -111,7 +111,7 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
                 ext = pim.extract_to(stream=f)
             imgname.rename(imgname.with_suffix(ext))
         except pikepdf.UnsupportedImageTypeError:
-            return False        
+            return False
         jpegs.append(xref)
     elif pim.indexed \
             and pim.colorspace in pim.SIMPLE_COLORSPACES \
@@ -121,19 +121,15 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         # fruit in most cases
         pix = fitz.Pixmap(doc, xref)
         pix.writePNG(png_name(root, xref), savealpha=False)
-        pngs.append(xref)        
-    elif pim.colorspace in pim.SIMPLE_COLORSPACES and fitz:
-        # For any 'inferior' filter including /FlateDecode we extract
-        # and recode as /FlateDecode
-        # raw_png = pike._get_object_id(xref, 0)
-        # raw_png_data = raw_png.read_raw_bytes()
-        # (root / '{:08d}.png'.format(xref)).write_bytes(raw_png_data)
-        pix = fitz.Pixmap(doc, xref)
-        pix.writePNG(png_name(root, xref), savealpha=False)
+        pngs.append(xref)
+    elif pim.colorspace in pim.SIMPLE_COLORSPACES:
+        # An optimization opportunity here, not currently taken, is directly
+        # generating a PNG from compressed data
+        pim.as_pil_image().save(png_name(root, xref))
         pngs.append(xref)
     else:
         return False
-    
+
     return True
 
 
@@ -156,8 +152,8 @@ def extract_images(doc, pike, root, log, options):
                 continue  # Don't improve same image twice
             try:
                 result = extract_image(
-                    doc=doc, pike=pike, root=root, log=log, image=image, 
-                    xref=xref, jbig2s=jbig2_groups[group], pngs=pngs, 
+                    doc=doc, pike=pike, root=root, log=log, image=image,
+                    xref=xref, jbig2s=jbig2_groups[group], pngs=pngs,
                     jpegs=jpegs, options=options
                 )
                 if result:
@@ -171,7 +167,7 @@ def extract_images(doc, pike, root, log, options):
     jbig2_groups = {group: xrefs for group, xrefs in jbig2_groups.items()
                     if len(xrefs) > 0}
     log.debug(
-        "Optimizable images: " 
+        "Optimizable images: "
         "JBIG2 groups: {} JPEGs: {} PNGs: {} Errors: {}".format(
             len(jbig2_groups), len(jpegs), len(pngs), errors
     ))
@@ -186,7 +182,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
     We use a group because JBIG2 works best with a symbol dictionary that spans
     multiple pages. When inserted back into the PDF, each JBIG2 must reference
     the symbol dictionary it is associated with. So convert a group at a time,
-    and replace their streams with a parameter set that points to the 
+    and replace their streams with a parameter set that points to the
     appropriate dictionary.
 
     If too many pages shared the same dictionary JBIG2 encoding becomes more
@@ -199,7 +195,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
         for group, xref_exts in jbig2_groups.items():
             prefix = 'group{:08d}'.format(group)
             future = executor.submit(
-                jbig2enc.convert_group, 
+                jbig2enc.convert_group,
                 cwd=str(root),
                 infiles=(img_name(root, xref, ext) for xref, ext in xref_exts),
                 out_prefix=prefix
@@ -220,7 +216,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             jbig2_im_data = jbig2_im_file.read_bytes()
             im_obj = pike._get_object_id(xref, 0)
             im_obj.write(
-                jbig2_im_data, pikepdf.Name('/JBIG2Decode'), 
+                jbig2_im_data, pikepdf.Name('/JBIG2Decode'),
                 pikepdf.Dictionary({
                     '/JBIG2Globals': jbig2_globals
                 })
@@ -237,7 +233,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
         # 'close'.  Seems to be mostly harmless
         # https://github.com/python-pillow/Pillow/issues/1144
         with Image.open(str(in_jpg)) as im:
-            im.save(str(opt_jpg), 
+            im.save(str(opt_jpg),
                     optimize=True,
                     quality=JPEG_QUALITY)
         if opt_jpg.stat().st_size > in_jpg.stat().st_size:
@@ -258,8 +254,8 @@ def transcode_pngs(pike, pngs, root, log, options):
                 max_workers=options.jobs) as executor:
             for xref in pngs:
                 executor.submit(
-                    pngquant.quantize, 
-                    png_name(root, xref), png_name(root, xref), 
+                    pngquant.quantize,
+                    png_name(root, xref), png_name(root, xref),
                     PNG_QUALITY[0], PNG_QUALITY[1])
 
     for xref in pngs:
@@ -274,7 +270,7 @@ def transcode_pngs(pike, pngs, root, log, options):
         except leptonica.LeptonicaError as e:
             log.error(e)
             continue
-        
+
         # This is what we should be doing: open the compressed data without
         # transcoding. However this shifts each pixel row by one for some
         # reason.
@@ -351,13 +347,13 @@ def optimize(
     savings = 1 - output_size / input_size
     log.info("Optimize ratio: {:.2f} savings: {:.1f}%".format(
         ratio, 100 * savings))
-    
+
     if savings < 0:
         log.info("Optimize did not improve the file - discarded")
         re_symlink(input_file, output_file, log)
     else:
         re_symlink(target_file, output_file, log)
-        
+
 
 def main(infile, outfile, level, jobs=1):
     Options = namedtuple('Options', 'jobs optimize')
