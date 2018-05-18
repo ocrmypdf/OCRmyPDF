@@ -9,6 +9,33 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
    find:    [^`]\#([0-9]{1,3})[^0-9]  
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+
+v7
+--
+
+-   The algorithm for combining OCR layers with existing PDF pages has been rewritten and improved considerably. Internally, this also allowed merging disparate code branches.
+
+-   Splitting PDFs into single page PDFs as part of processing has been removed. This should reduce the temporary disk space requirements and efficiency of processing large files, as it both avoids the duplication of objects that had to be copied to every single page PDF (in the worst case), and the elimination of those duplicates.
+
+-   Small amounts of text in the margins of a page, such as watermarks, page numbers, or digital stamps, will no longer prevent the rest of a page from being OCRed when ``--skip-text`` is issued. This behavior is based on a heuristic.
+
+-   New feature: PDF optimization. After OCR, OCRmyPDF will automatically perform some lossless PDF optimizations and can optionally perform some lossy ones, all on images.
+
+    +   This feature depends in part on the optional dependencies jbig2 and pngquant.
+
+-   New dependency: pikepdf
+
+-   Removed features
+
+    +   The deprecated ``tesseract`` PDF renderer was removed, because due to changes in how we construct PDFs.
+
+    +   ``-g``, the option to generate debug text pages, was removed because the extra pages it generates were too much of a maintenance burden and it never worked with the ``sandwich`` renderer (Tesseract) anyway. HOCR pages can still be previewed by running the hocrtransform.py with appropriate settings.
+
+-   The ``sandwich`` PDF renderer can be used with all supported versions of Tesseract, including that those priority to v3.05 which don't support ``-c textonly``
+
+-   ``--pdf-renderer auto`` and the diagnostics regarding the selection of PDF renderer are now more consistent.
+
+
 v6.2.0
 ------
 
