@@ -784,7 +784,7 @@ def metadata_fixup(
         pdfmark = get_pdfmark(metadata, options)
         pdf = pikepdf.open(layers_file)
         pdf.metadata = pdf.make_indirect(pikepdf.Dictionary(pdfmark))
-        pdf.save(output_file)
+        pdf.save(output_file, stream_data_mode=pikepdf.StreamDataMode.compress)
 
 
 def optimize_pdf(
