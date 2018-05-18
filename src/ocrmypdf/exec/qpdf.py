@@ -30,8 +30,6 @@ from ..helpers import re_symlink
 
 @lru_cache(maxsize=1)
 def version():
-    if 'OCRMYPDF_QPDF_APPIMAGE' in os.environ:
-        return os.environ['OCRMYPDF_QPDF_APPIMAGE']
     return get_version('qpdf', regex=r'qpdf version (.+)')
 
 
@@ -46,7 +44,7 @@ def check(input_file, log=None):
         import logging as log
 
     try:
-        run(args_qpdf, stderr=STDOUT, stdout=PIPE, universal_newlines=True, 
+        run(args_qpdf, stderr=STDOUT, stdout=PIPE, universal_newlines=True,
             check=True)
     except CalledProcessError as e:
         if e.returncode == 2:
@@ -76,7 +74,7 @@ def repair(input_file, output_file, log):
         'qpdf', input_file, output_file
     ]
     try:
-        run(args_qpdf, stderr=STDOUT, stdout=PIPE, universal_newlines=True, 
+        run(args_qpdf, stderr=STDOUT, stdout=PIPE, universal_newlines=True,
             check=True)
     except CalledProcessError as e:
         if e.returncode == 3 and e.output.find("operation succeeded"):
@@ -131,7 +129,7 @@ def extract_page(input_file, output_file, pageno):
         output_file
     ]
     run(args_qpdf, check=True)
-    
+
 
 def _merge_inner(input_files, output_file, min_version=None, log=None):
     """Merge the list of input files (all filenames) into the output file.
@@ -173,10 +171,10 @@ def merge(input_files, output_file, min_version=None, log=None, max_files=None):
     The input files may contain one or more pages.
 
     """
-    # qpdf requires that every file that contributes to the output has a file 
-    # descriptor that remains open. That means, given our approach of one 
-    # intermediate PDF per, we can practically hit the number of file 
-    # descriptors. 
+    # qpdf requires that every file that contributes to the output has a file
+    # descriptor that remains open. That means, given our approach of one
+    # intermediate PDF per, we can practically hit the number of file
+    # descriptors.
 
     if max_files is None or max_files < 2:
         # Find out how many open file descriptors we can get away with
@@ -188,7 +186,7 @@ def merge(input_files, output_file, min_version=None, log=None, max_files=None):
     output_dir = os.path.dirname(output_file)
 
     import random
-    import string    
+    import string
 
     def randstr():
         return ''.join(random.sample(string.ascii_lowercase, 6))
@@ -212,7 +210,7 @@ def merge(input_files, output_file, min_version=None, log=None, max_files=None):
         counter += 1
         _merge_inner(job, merge_file, min_version=min_version, log=log)
 
-        # On the next 
+        # On the next
         next_workqueue.append(merge_file)
         log.debug('next_workqueue ' + repr(next_workqueue))
 
@@ -225,5 +223,3 @@ def merge(input_files, output_file, min_version=None, log=None, max_files=None):
             next_workqueue = []
 
     re_symlink(workqueue.pop(), output_file, log)
-
-

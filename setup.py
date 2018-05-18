@@ -185,13 +185,17 @@ if not forced and command.startswith('install') or \
         package='unpaper',
         optional=True
     )
-    if not os.environ.get('OCRMYPDF_QPDF_APPIMAGE'):
-        check_external_program(
-            program='qpdf',
-            need_version='7.0.0', # test suite known to fail on 5.1.1
-            package='qpdf',
-            version_check_args=['--version']
-        )
+    check_external_program(
+        program='qpdf',
+        need_version='8.0.2', # test suite known to fail on 5.1.1
+        package='qpdf'
+    )
+    check_external_program(
+        program='pngquant',
+        need_version='2.0.0',
+        package='pngquant',
+        optional=True
+    )
 
 if 'upload' in sys.argv[1:]:
     print('Use twine to upload the package - setup.py upload is insecure')
@@ -246,7 +250,7 @@ setup(
         'defusedxml >= 0.5.0',    # pure Python, so track HEAD closely
         'img2pdf >= 0.2.4',       # pure Python, so track HEAD closely
         'pikepdf',
-        'Pillow >= 4.0.0, != 5.1.0 ; sys_platform == "darwin"',        
+        'Pillow >= 4.0.0, != 5.1.0 ; sys_platform == "darwin"',
                                   # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
                                   # block 5.1.0, broken wheels
         'PyPDF2 >= 1.26',         # pure Python, so track HEAD closely
