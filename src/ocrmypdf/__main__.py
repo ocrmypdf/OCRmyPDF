@@ -70,7 +70,7 @@ def complain(message):
 if 'IDE_PROJECT_ROOTS' in os.environ:
     os.environ['PATH'] = '/usr/local/bin:' + os.environ['PATH']
 
-# -------- 
+# --------
 # Critical environment tests
 
 verify_python3_env()
@@ -171,7 +171,7 @@ parser.add_argument(
     '--image-dpi', metavar='DPI', type=int,
     help="For input image instead of PDF, use this DPI instead of file's.")
 parser.add_argument(
-    '--output-type', choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'], 
+    '--output-type', choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'],
     default='pdfa',
     help="Choose output type. 'pdfa' creates a PDF/A-2b compliant file for "
          "long term archiving (default, recommended) but may not suitable "
@@ -314,12 +314,12 @@ advanced.add_argument(
          "choose.  See documentation for discussion."
     )
 advanced.add_argument(
-    '--tesseract-timeout', default=180.0, type=numeric(float, 0), 
+    '--tesseract-timeout', default=180.0, type=numeric(float, 0),
     metavar='SECONDS',
     help='Give up on OCR after the timeout, but copy the preprocessed page '
          'into the final output')
 advanced.add_argument(
-    '--rotate-pages-threshold', default=14.0, type=numeric(float, 0, 1000), 
+    '--rotate-pages-threshold', default=14.0, type=numeric(float, 0, 1000),
     metavar='CONFIDENCE',
     help="Only rotate pages when confidence is above this value (arbitrary "
          "units reported by tesseract)")
@@ -394,10 +394,10 @@ def check_options_output(options, log):
     if options.pdf_renderer == 'hocr' and not is_latin:
         msg = (
             "The 'hocr' PDF renderer is known to cause problems with one "
-            "or more of the languages in your document.  Use " 
+            "or more of the languages in your document.  Use "
             "--pdf-renderer auto (the default) to avoid this issue.")
         log.warning(msg)
-    
+
     if ghostscript.version() < '9.20' \
             and options.output_type != 'pdf' \
             and not is_latin:
@@ -478,13 +478,13 @@ def check_options_preprocessing(options, log):
         _optional_program_check(
             'unpaper', unpaper.version, '6.1', '--clean, --clean-final'
         )
-    
+
 
 def check_options_ocr_behavior(options, log):
     if options.force_ocr and options.skip_text:
         raise argparse.ArgumentError(
             None,
-            "Error: --force-ocr and --skip-text are mutually incompatible.")
+            "Error: --force-ocr and --skip-text are mutually exclusive.")
 
 
 def check_options_optimizing(options, log):
@@ -508,7 +508,7 @@ def check_options_advanced(options, log):
             "--pdfa-image-compression argument has no effect when "
             "--output-type is not 'pdfa', 'pdfa-1', or 'pdfa-2'"
         )
-    
+
     if tesseract.v4() and (options.user_words or options.user_patterns):
         log.warning(
             'Tesseract 4.x ignores --user-words, so this has no effect')
@@ -597,7 +597,7 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
     if exc_name == 'builtins.SystemExit':
         match = re.search(r"\.(.+?)\)", exc_value)
         exit_code_name = match.groups()[0]
-        exit_code = getattr(ExitCode, exit_code_name, 'other_error')        
+        exit_code = getattr(ExitCode, exit_code_name, 'other_error')
     elif exc_name == 'ruffus.ruffus_exceptions.MissingInputFileError':
         log.error(cleanup_ruffus_error_message(exc_value))
         exit_code = ExitCode.input_file
@@ -621,7 +621,7 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
             (exc_name == 'ocrmypdf.exceptions.EncryptedPdfError'):
         log.error(textwrap.dedent("""\
             Input PDF is encrypted. The encryption must be removed to
-            perform OCR. 
+            perform OCR.
 
             For information about this PDF's security use
                 qpdf --show-encryption infilename
@@ -630,7 +630,7 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
                 qpdf --decrypt [--password=[password]] infilename
 
             """))
-        exit_code = ExitCode.encrypted_pdf        
+        exit_code = ExitCode.encrypted_pdf
     elif exc_name == 'ocrmypdf.exceptions.PdfMergeFailedError':
         log.error(textwrap.dedent("""\
             Failed to merge PDF image layer with OCR layer
@@ -669,12 +669,12 @@ def traverse_ruffus_exception(e_args, options, log):
       (task, job, exc, value, stack)
     or something like:
       [[(task, job, exc, value, stack)]]
-    
+
     Generally cross-process exception marshalling doesn't work well
     and ruffus doesn't support because BaseException has its own
     implementation of __reduce__ that attempts to reconstruct the
     exception based on e.__init__(e.args).
-    
+
     Attempting to log the exception directly marshalls it to the logger
     which is probably in another process, so it's better to log only
     data from the exception at this point.
@@ -772,7 +772,7 @@ def check_environ(options, _log):
     for k in old_envvars:
         if k in os.environ:
             _log.warning(textwrap.dedent("""\
-                OCRmyPDF no longer uses the environment variable {}. 
+                OCRmyPDF no longer uses the environment variable {}.
                 Change PATH to select alternate programs.""".format(k)))
 
 
@@ -815,14 +815,14 @@ def report_output_file_size(options, _log, input_file, output_file):
     ratio = output_size / input_size
     if ratio < 1.35 or input_size < 25000:
         return  # Seems fine
-    
+
     reasons = []
     if not fitz:
         reasons.append("The optional dependency PyMuPDF is not installed.")
     image_preproc = {
-        'deskew', 
-        'clean_final', 
-        'remove_background', 
+        'deskew',
+        'clean_final',
+        'remove_background',
         'oversample',
         'force_ocr'
     }
@@ -943,7 +943,7 @@ def run_pipeline():
             _log.warning('Output file: The generated PDF is INVALID')
             return ExitCode.invalid_output_pdf
 
-        report_output_file_size(options, _log, start_input_file, 
+        report_output_file_size(options, _log, start_input_file,
                                 options.output_file)
 
     pdfinfo = context.get_pdfinfo()
