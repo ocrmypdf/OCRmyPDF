@@ -26,7 +26,6 @@ import sys
 from io import BytesIO
 from PIL import Image
 
-from .lib import fitz
 import pikepdf
 
 from ._jobcontext import JobContext
@@ -55,7 +54,7 @@ def tif_name(root, xref):
     return img_name(root, xref, '.tif')
 
 
-def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
+def extract_image(*, pike, root, log, image, xref, jbig2s,
                   pngs, jpegs, options):
     if image.Subtype != '/Image':
         return False
@@ -115,14 +114,12 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
         jpegs.append(xref)
     elif pim.indexed \
             and pim.colorspace in pim.SIMPLE_COLORSPACES \
-            and options.optimize >= 3 \
-            and fitz:
+            and options.optimize >= 3:
         # Try to improve on indexed images - these are far from low hanging
         # fruit in most cases
-        pix = fitz.Pixmap(doc, xref)
-        pix.writePNG(png_name(root, xref), savealpha=False)
+        pim.as_pil_image().save(png_name(root, xref))
         pngs.append(xref)
-    elif pim.colorspace in pim.SIMPLE_COLORSPACES:
+    elif not pim.indexed and pim.colorspace in pim.SIMPLE_COLORSPACES:
         # An optimization opportunity here, not currently taken, is directly
         # generating a PNG from compressed data
         pim.as_pil_image().save(png_name(root, xref))
@@ -133,7 +130,7 @@ def extract_image(*, doc, pike, root, log, image, xref, jbig2s,
     return True
 
 
-def extract_images(doc, pike, root, log, options):
+def extract_images(pike, root, log, options):
     # Extract images we can improve
     changed_xrefs = set()
     jbig2_groups = defaultdict(lambda: [])
@@ -152,7 +149,7 @@ def extract_images(doc, pike, root, log, options):
                 continue  # Don't improve same image twice
             try:
                 result = extract_image(
-                    doc=doc, pike=pike, root=root, log=log, image=image,
+                    pike=pike, root=root, log=log, image=image,
                     xref=xref, jbig2s=jbig2_groups[group], pngs=pngs,
                     jpegs=jpegs, options=options
                 )
@@ -322,16 +319,12 @@ def optimize(
         PNG_QUALITY = (20, 40)
         JPEG_QUALITY = 40
 
-    if fitz:
-        doc = fitz.open(str(input_file))
-    else:
-        doc = None
     pike = pikepdf.Pdf.open(input_file)
 
     root = Path(output_file).parent / 'images'
     root.mkdir(exist_ok=True)
     changed_xrefs, jbig2_groups, jpegs, pngs = extract_images(
-        doc, pike, root, log, options)
+        pike, root, log, options)
 
     convert_to_jbig2(pike, jbig2_groups, root, log, options)
     transcode_jpegs(pike, jpegs, root, log, options)

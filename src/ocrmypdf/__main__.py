@@ -817,8 +817,6 @@ def report_output_file_size(options, _log, input_file, output_file):
         return  # Seems fine
 
     reasons = []
-    if not fitz:
-        reasons.append("The optional dependency PyMuPDF is not installed.")
     image_preproc = {
         'deskew',
         'clean_final',
