@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+from pathlib import Path
+
 import pytest
 
 import pikepdf
@@ -22,7 +24,9 @@ import pikepdf
 from ocrmypdf import _optimize as opt
 
 
-def test_multipage(resources, outpdf):
-    opt.main(resources / 'multipage.pdf', outpdf, level=3)
+@pytest.mark.parametrize('pdf', ['multipage.pdf', 'palette.pdf'])
+def test_basic(resources, pdf, outpdf):
+    infile = resources / pdf
+    opt.main(infile, outpdf, level=3)
 
-
+    assert Path(outpdf).stat().st_size <= Path(infile).stat().st_size
