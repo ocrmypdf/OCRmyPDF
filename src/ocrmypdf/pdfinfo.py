@@ -120,7 +120,7 @@ XobjectSettings = namedtuple('XobjectSettings',
 InlineSettings = namedtuple('InlineSettings',
     ['settings', 'shorthand', 'stack_depth'])
 
-ContentsInfo = namedtuple('ContentsInfo', 
+ContentsInfo = namedtuple('ContentsInfo',
     ['xobject_settings', 'inline_images', 'found_text'])
 
 
@@ -558,7 +558,7 @@ def _naive_find_text(*, pdf, page):
         # Not a page, or has no /Contents => no text
         return False
 
-    # First we check the main content stream    
+    # First we check the main content stream
     contentstream = pypdf.pdf.ContentStream(page.getContents(), pdf)
     contentsinfo = _interpret_contents(contentstream, UNIT_SQUARE)
     if contentsinfo.found_text:
@@ -570,12 +570,12 @@ def _naive_find_text(*, pdf, page):
     # rare.
     if '/Resources' in page:
         resources = page['/Resources']
-        if '/XObject' in resources:    
+        if '/XObject' in resources:
             for xobj in resources['/XObject']:
                 candidate = resources['/XObject'][xobj]
                 if candidate['/Subtype'] != '/Form':
                     continue
-                form_xobject = candidate                
+                form_xobject = candidate
                 # Content stream is attached to Form XObject dictionary
                 contentstream = pypdf.pdf.ContentStream(form_xobject, pdf)
                 sub_contentsinfo = _interpret_contents(
@@ -604,7 +604,7 @@ def _page_get_textblocks(infile, pageno):
 
 def _page_has_text(text):
     "Smarter text detection that ignores text in margins"
-    
+
     pw, ph = text['width'], text['height']
 
     margin_ratio = 0.125
@@ -626,10 +626,8 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile):
     pageinfo['pageno'] = pageno
     pageinfo['images'] = []
 
-    if isinstance(pdf, Path):
-        pdf = pypdf.PdfFileReader(str(pdf))
-    elif isinstance(pdf, str):
-        pdf = pypdf.PdfFileReader(pdf)
+    if isinstance(pdf, (Path, str)):
+        pdf = pikepdf.open(pdf)
 
     page = pdf.pages[pageno]
 
@@ -639,8 +637,9 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile):
     else:
         pageinfo['has_text'] = _naive_find_text(pdf=pdf, page=page)
 
-    width_pt = page.mediaBox.getWidth()
-    height_pt = page.mediaBox.getHeight()
+    mediabox = page.MediaBox.as_list()
+    width_pt = mediabox[2] - mediabox[0]
+    height_pt = mediabox[3] - mediabox[1]
 
     userunit = page.get('/UserUnit', Decimal(1.0))
     pageinfo['userunit'] = userunit
@@ -686,7 +685,7 @@ class PageInfo:
 
     @property
     def has_text(self):
-        return self._pageinfo['has_text']                
+        return self._pageinfo['has_text']
 
     @property
     def width_inches(self):
@@ -755,7 +754,7 @@ class PageInfo:
 
 class PdfInfo:
     """Get summary information about a PDF
-    
+
     """
     def __init__(self, infile):
         self._infile = infile
