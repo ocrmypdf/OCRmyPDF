@@ -122,6 +122,22 @@ ContentsInfo = namedtuple('ContentsInfo',
     ['xobject_settings', 'inline_images', 'found_text'])
 
 
+
+def _normalize_stack(operations):
+    """Fix runs of qQ's in the stack
+    For some reason PyPDF2 converts runs of qqq, QQ, QQQq, etc. into single
+    operations.  Break this silliness up and issue each stack operation
+    individually so we don't lose count.
+    """
+    for operands, command in operations:
+        command = str(command)
+        if re.match(r'Q*q+$', command):   # Zero or more Q, one or more q
+            for char in command:          # Split into individual
+                yield ([], char)          # Yield individual
+        else:
+            yield (operands, command)
+
+
 def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     """Interpret the PDF content stream
 
@@ -152,29 +168,30 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
         pikepdf.Operator(op) for op in ('Tj', 'TJ', '"', "'"))
     operator_whitelist = """q Q Do cm TJ Tj " ' BI ID EI"""
 
-    for n, op in enumerate(
-            pikepdf.parse_content_stream(contentstream, operator_whitelist)):
+    for n, op in enumerate(_normalize_stack(
+            pikepdf.parse_content_stream(contentstream, operator_whitelist))):
         operands, command = op
-        if command == pikepdf.Operator('q'):
+
+        if command == 'q':
             stack.append(ctm)
             if len(stack) > 32:
                 raise RuntimeError(
                     "PDF graphics stack overflow, command %i" % n)
-        elif command == pikepdf.Operator('Q'):
+        elif command == 'Q':
             try:
                 ctm = stack.pop()
             except IndexError:
                 raise RuntimeError(
                     "PDF graphics stack underflow, command %i" % n)
-        elif command == pikepdf.Operator('cm'):
+        elif command == 'cm':
             ctm = PdfMatrix(operands) @ ctm
-        elif command == pikepdf.Operator('Do'):
+        elif command == 'Do':
             image_name = operands[0]
             settings = XobjectSettings(
                 name=image_name, shorthand=ctm.shorthand,
                 stack_depth=len(stack))
             xobject_settings.append(settings)
-        elif command == pikepdf.Operator('INLINE IMAGE'):
+        elif command == 'INLINE IMAGE':
             iimage = operands[0]
             inline = InlineSettings(
                 iimage=iimage, shorthand=ctm.shorthand,
