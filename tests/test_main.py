@@ -220,8 +220,8 @@ def test_ocr_timeout(renderer, resources, outpdf):
 
 
 def test_skip_big(spoof_tesseract_cache, resources, outpdf):
-    out = check_ocrmypdf(resources / 'enormous.pdf', outpdf,
-                         '--skip-big', '10', env=spoof_tesseract_cache)
+    out = check_ocrmypdf(resources / 'jbig2.pdf', outpdf,
+                         '--skip-big', '1', env=spoof_tesseract_cache)
     pdfinfo = PdfInfo(out)
     assert not pdfinfo[0].has_text
 
