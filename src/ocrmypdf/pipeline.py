@@ -603,7 +603,7 @@ def select_visible_page_image(
 
     pageinfo = get_pageinfo(image, context)
     if pageinfo.images and \
-            all(im['enc'] == 'jpeg' for im in pageinfo.images):
+            all(im.enc == 'jpeg' for im in pageinfo.images):
         log.debug('{:4d}: JPEG input -> JPEG output'.format(
             page_number(image)))
         # If all images were JPEGs originally, produce a JPEG as output

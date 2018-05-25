@@ -28,6 +28,8 @@ import pytest
 import img2pdf
 import sys
 import PyPDF2 as pypdf
+import pikepdf
+import pickle
 
 
 def test_single_page_text(outdir):
@@ -127,8 +129,8 @@ def test_form_xobject(resources):
 
 def test_naive_find_text(resources):
     filename = resources / 'formxobject.pdf'
-    reader = pypdf.PdfFileReader(str(filename))
-    page = reader.getPage(0)
+    reader = pikepdf.open(filename)
+    page = reader.pages[0]
     assert pdfinfo._naive_find_text(pdf=reader, page=page)
 
 

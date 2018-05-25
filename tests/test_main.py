@@ -109,7 +109,7 @@ def test_deskew(spoof_tesseract_noop, resources, outdir):
         raster_device='pngmono',
         log=log,
         pageno=1)
-    
+
     pix = Pix.read(str(deskewed_png))
     skew_angle, skew_confidence = pix.find_skew()
 
@@ -383,7 +383,7 @@ def test_tesseract_image_too_big(renderer, spoof_tesseract_big_image_error,
                                  resources, outpdf):
     check_ocrmypdf(
         resources / 'hugemono.pdf', outpdf, '-r',
-        '--pdf-renderer', renderer, 
+        '--pdf-renderer', renderer,
         '--max-image-mpixels', '0',
         env=spoof_tesseract_big_image_error)
 
@@ -439,8 +439,8 @@ def test_convert_to_square_resolution(renderer, spoof_tesseract_cache,
 
     # Because we rasterized the page to produce a new image, it should occupy
     # the entire page
-    out_im_w = out_p0.images[0]['width'] / out_p0.images[0]['dpi_w']
-    out_im_h = out_p0.images[0]['height'] / out_p0.images[0]['dpi_h']
+    out_im_w = out_p0.images[0].width / out_p0.images[0].xres
+    out_im_h = out_p0.images[0].height / out_p0.images[0].yres
     assert isclose(out_p0.width_inches, out_im_w)
     assert isclose(out_p0.height_inches, out_im_h)
 
@@ -651,7 +651,7 @@ def test_form_xobject(spoof_tesseract_noop, resources, outpdf):
 
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_pagesize_consistency(renderer, resources, outpdf):
-    
+
 
     first_page_dimensions = pytest.helpers.first_page_dimensions
 
@@ -893,10 +893,10 @@ def test_text_curves(spoof_tesseract_noop, resources, outpdf):
     check_ocrmypdf(
         resources / 'vector.pdf', outpdf, '--force-ocr',
         env=spoof_tesseract_noop)
-    
+
     info = PdfInfo(outpdf)
     assert len(info.pages[0].images) != 0, "force did not rasterize"
-    
+
 
 def test_dev_null(spoof_tesseract_noop, resources):
     p, out, err = run_ocrmypdf(
