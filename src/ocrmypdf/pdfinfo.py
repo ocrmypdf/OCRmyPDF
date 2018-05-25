@@ -164,8 +164,7 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     xobject_settings = []
     inline_images = []
     found_text = False
-    text_operators = tuple(
-        pikepdf.Operator(op) for op in ('Tj', 'TJ', '"', "'"))
+    text_operators = set(['Tj', 'TJ', '"', "'"])
     operator_whitelist = """q Q Do cm TJ Tj " ' BI ID EI"""
 
     for n, op in enumerate(_normalize_stack(
