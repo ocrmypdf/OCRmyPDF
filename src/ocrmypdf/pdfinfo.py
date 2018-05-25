@@ -557,9 +557,6 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile):
     pageinfo['pageno'] = pageno
     pageinfo['images'] = []
 
-    if isinstance(pdf, (Path, str)):
-        pdf = pikepdf.open(pdf)
-
     page = pdf.pages[pageno]
 
     if fitz:
