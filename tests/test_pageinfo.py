@@ -146,3 +146,12 @@ def test_oversized_page(resources):
     pdf = pdfinfo.PdfInfo(resources / 'poster.pdf')
     image = pdf[0].images[0]
     assert image.width * image.xres > 200, "this is supposed to be oversized"
+
+
+def test_pickle(resources):
+    # For multiprocessing we must be able to pickle our information - if
+    # this fails then we are probably storing some unpickleabe pikepdf or
+    # other external data around
+    filename = resources / 'formxobject.pdf'
+    pdf = pdfinfo.PdfInfo(filename)
+    pickle.dumps(pdf)
