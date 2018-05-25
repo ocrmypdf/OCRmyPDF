@@ -42,3 +42,4 @@ pdfbox-app*.jar
 .vscode/
 IDEAS
 _Dockerfile.local
+scratch.py
