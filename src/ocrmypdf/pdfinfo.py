@@ -150,8 +150,10 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     found_text = False
     text_operators = tuple(
         pikepdf.Operator(op) for op in ('Tj', 'TJ', '"', "'"))
+    operator_whitelist = """q Q Do cm TJ Tj " ' BI ID EI"""
 
-    for n, op in enumerate(pikepdf.parse_content_stream(contentstream)):
+    for n, op in enumerate(
+            pikepdf.parse_content_stream(contentstream, operator_whitelist)):
         operands, command = op
         if command == pikepdf.Operator('q'):
             stack.append(ctm)
