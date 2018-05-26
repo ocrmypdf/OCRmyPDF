@@ -297,9 +297,15 @@ class ImageInfo:
             self._type = 'image'
 
         self._bpc = int(pim.bits_per_component)
-        self._enc = FRIENDLY_ENCODING.get(pim.filters[0], 'image')
+        try:
+            self._enc = FRIENDLY_ENCODING.get(pim.filters[0], 'image')
+        except IndexError as e:
+            self._enc = '?'
 
-        self._color = FRIENDLY_COLORSPACE.get(pim.colorspace, '?')
+        try:
+            self._color = FRIENDLY_COLORSPACE.get(pim.colorspace, '?')
+        except NotImplementedError:
+            self._color = '?'
         if self._enc == Encoding.jpeg2000:
             self._color = Colorspace.jpeg2000
 
