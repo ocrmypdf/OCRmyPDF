@@ -6,24 +6,28 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
 
 .. Issue regex
-   find:    [^`]\#([0-9]{1,3})[^0-9]  
+   find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
 
 v7
 --
 
--   The algorithm for combining OCR layers with existing PDF pages has been rewritten and improved considerably. Internally, this also allowed merging disparate code branches.
+-   The core algorithm for combining OCR layers with existing PDF pages has been rewritten and improved considerably.  It works directly with the input file to minimize changes.  The new algorithm uses less temporary disk space and eliminates cost object duplication and deduplication that used to be a requirement.
 
--   Splitting PDFs into single page PDFs as part of processing has been removed. This should reduce the temporary disk space requirements and efficiency of processing large files, as it both avoids the duplication of objects that had to be copied to every single page PDF (in the worst case), and the elimination of those duplicates.
+-   New feature: PDF optimization with ``-O`` or ``--optimize``.  After OCR, OCRmyPDF will automatically performs image optimizations relevant to OCR PDFs.
+
+    +   If a JBIG2 encoder is available, then monochrome images will be converted, with the potential for huge savings on large black and white files, since JBIG2 is far more efficient than any other monochrome format. (All known US patents related to JBIG2 have probably expired, but it remains the responsibility of the user to supply a JBIG2 encoder such as `jbig2enc <https://github.com/agl/jbig2enc>`_. OCRmyPDF does not contain any portion of JBIG2.)
+
+    +   If ``pngquant`` is installed, OCRmyPDF will use to perform lossy compression of PNG images.
+
+    +   The quality of JPEGs can also be lowered, on the assumption that a lower quality image may be suitable for storage after OCR.
+
+    +   It is likely this component will be offered as a separate command line utility.
+
+-   New dependency: `pikepdf <https://github.com/pikepdf>`_. pikepdf is a  powerful new Python PDF library driving the latest OCRmyPDF features, built on the proven and mature libqpdf C++ library.
 
 -   Small amounts of text in the margins of a page, such as watermarks, page numbers, or digital stamps, will no longer prevent the rest of a page from being OCRed when ``--skip-text`` is issued. This behavior is based on a heuristic.
-
--   New feature: PDF optimization. After OCR, OCRmyPDF will automatically perform some lossless PDF optimizations and can optionally perform some lossy ones, all on images.
-
-    +   This feature depends in part on the optional dependencies jbig2 and pngquant.
-
--   New dependency: pikepdf
 
 -   Removed features
 
@@ -61,7 +65,7 @@ v6.1.5
 v6.1.4
 ------
 
--   Fix issue `#248 <https://github.com/jbarlow83/OCRmyPDF/issues/248>`_ ``--clean`` argument may remove OCR from left column of text on certain documents. We now set ``--layout none`` to suppress this.  
+-   Fix issue `#248 <https://github.com/jbarlow83/OCRmyPDF/issues/248>`_ ``--clean`` argument may remove OCR from left column of text on certain documents. We now set ``--layout none`` to suppress this.
 
 -   The test cache was updated to reflect the change above.
 
@@ -192,7 +196,7 @@ v5.5
 -   Add new argument ``--max-image-mpixels``. Pillow 5.0 now raises an exception when images may be decompression bombs. This argument can be used to override the limit Pillow sets.
 -   Fix output page cropped when using the sandwich renderer and OCR is skipped on a rotated and image-processed page
 -   A warning is now issued when old versions of Ghostscript are used in cases known to cause issues with non-Latin characters
--   Fix a few parameter validation checks for ``-output-type pdfa-1`` and ``pdfa-2`` 
+-   Fix a few parameter validation checks for ``-output-type pdfa-1`` and ``pdfa-2``
 
 
 v5.4.4
@@ -202,7 +206,7 @@ v5.4.4
 -   Fix issue `#200 <https://github.com/jbarlow83/OCRmyPDF/issues/200>`_: an uncommon syntax for formatting decimal numbers in a PDF would cause qpdf to issue a warning, which ocrmypdf treated as an error. Now this the warning is relayed.
 -   Fix an issue where intermediate PDFs would be created at version 1.3 instead of the version of the original file. It's possible but unlikely this had side effects.
 -   A warning is now issued when older versions of qpdf are used since issues like `#200 <https://github.com/jbarlow83/OCRmyPDF/issues/200>`_ cause qpdf to infinite-loop
--   Address issue `#140 <https://github.com/jbarlow83/OCRmyPDF/issues/140>`_: if Tesseract outputs invalid UTF-8, escape it and print its message instead of aborting with a Unicode error 
+-   Address issue `#140 <https://github.com/jbarlow83/OCRmyPDF/issues/140>`_: if Tesseract outputs invalid UTF-8, escape it and print its message instead of aborting with a Unicode error
 -   Adding previously unlisted setup requirement, pytest-runner
 -   Update documentation: fix an error in the example script for Synology with Docker images, improved security guidance, advised ``pip install --user``
 
@@ -371,7 +375,7 @@ v4.4.1
 
 -   To prevent a `TIFF output error <https://github.com/python-pillow/Pillow/issues/2206>`_ caused by img2pdf >= 0.2.1 and Pillow <= 3.4.2, dependencies have been tightened
 -   The Tesseract 4.00 simultaneous process limit was increased from 1 to 2, since it was observed that 1 lowers performance
--   Documentation improvements to describe the ``--tesseract-config`` feature 
+-   Documentation improvements to describe the ``--tesseract-config`` feature
 -   Added test cases and fixed error handling for ``--tesseract-config``
 -   Tweaks to setup.py to deal with issues in the v4.4 release
 
@@ -434,7 +438,7 @@ v4.3
 
 -   New feature ``--remove-background`` to detect and erase the background of color and grayscale images
 -   Better documentation
--   Fixed an issue with PDFs that draw images when the raster stack depth is zero 
+-   Fixed an issue with PDFs that draw images when the raster stack depth is zero
 -   ocrmypdf can now redirect its output to stdout for use in a shell pipeline
 
     +  This does not improve performance since temporary files are still used for buffering
@@ -502,7 +506,7 @@ v4.2
     +  fixes issue `#82 <https://github.com/jbarlow83/OCRmyPDF/issues/82>`_
 
 -   Fixes an issue where, with certain settings, monochrome images in PDFs would be converted to 8-bit grayscale, increasing file size (`#79 <https://github.com/jbarlow83/OCRmyPDF/issues/79>`_)
--   Support for Ubuntu 12.04 LTS "precise" has been dropped in favor of (roughly) Ubuntu 14.04 LTS "trusty" 
+-   Support for Ubuntu 12.04 LTS "precise" has been dropped in favor of (roughly) Ubuntu 14.04 LTS "trusty"
 
     +  Some Ubuntu "PPAs" (backports) are needed to make it work
 
@@ -617,7 +621,7 @@ New features
 
 -   Automatic page rotation (``-r``) is now available. It uses ignores any prior rotation information
     on PDFs and sets rotation based on the dominant orientation of detectable text. This feature is
-    fairly reliable but some false positives occur especially if there is not much text to work with. (`#4 <https://github.com/jbarlow83/OCRmyPDF/issues/4>`_) 
+    fairly reliable but some false positives occur especially if there is not much text to work with. (`#4 <https://github.com/jbarlow83/OCRmyPDF/issues/4>`_)
 -   Deskewing is now performed using Leptonica instead of unpaper. Leptonica is faster and more reliable
     at image deskewing than unpaper.
 
@@ -660,7 +664,7 @@ v3.2
 New features
 ^^^^^^^^^^^^
 
--   Lossless reconstruction: when possible, OCRmyPDF will inject text layers without 
+-   Lossless reconstruction: when possible, OCRmyPDF will inject text layers without
     otherwise manipulating the content and layout of a PDF page. For example, a PDF containing a mix
     of vector and raster content would see the vector content preserved. Images may still be transcoded
     during PDF/A conversion.  (``--deskew`` and ``--clean-final`` disable this mode, necessarily.)
@@ -695,10 +699,10 @@ Changes
     needed to implement support
 -   Improved some error messages related to missing input files
 -   Fixed issue `#20 <https://github.com/jbarlow83/OCRmyPDF/issues/20>`_ - uppercase .PDF extension not accepted
--   Fixed an issue where OCRmyPDF failed to text that certain pages contained previously OCR'ed text, 
+-   Fixed an issue where OCRmyPDF failed to text that certain pages contained previously OCR'ed text,
     such as OCR text produced by Tesseract 3.04
 -   Inserts /Creator tag into PDFs so that errors can be traced back to this project
--   Added new option ``--pdf-renderer=auto``, to let OCRmyPDF pick the best PDF renderer. 
+-   Added new option ``--pdf-renderer=auto``, to let OCRmyPDF pick the best PDF renderer.
     Currently it always chooses the 'hocrtransform' renderer but that behavior may change.
 -   Set up Travis CI automatic integration testing
 
@@ -708,19 +712,19 @@ v3.0
 New features
 ^^^^^^^^^^^^
 
--   Easier installation with a Docker container or Python's ``pip`` package manager 
+-   Easier installation with a Docker container or Python's ``pip`` package manager
 -   Eliminated many external dependencies, so it's easier to setup
 -   Now installs ``ocrmypdf`` to ``/usr/local/bin`` or equivalent for system-wide
     access and easier typing
 -   Improved command line syntax and usage help (``--help``)
 -   Tesseract 3.03+ PDF page rendering can be used instead for better positioning
     of recognized text (``--pdf-renderer tesseract``)
--   PDF metadata (title, author, keywords) are now transferred to the 
+-   PDF metadata (title, author, keywords) are now transferred to the
     output PDF
 -   PDF metadata can also be set from the command line (``--title``, etc.)
 -   Automatic repairs malformed input PDFs if possible
 -   Added test cases to confirm everything is working
--   Added option to skip extremely large pages that take too long to OCR and are 
+-   Added option to skip extremely large pages that take too long to OCR and are
     often not OCRable (e.g. large scanned maps or diagrams); other pages are still
     processed (``--skip-big``)
 -   Added option to kill Tesseract OCR process if it seems to be taking too long on
@@ -739,9 +743,9 @@ Changes
     available CPUs, increasing performance
 -   The ``-o DPI`` argument has been phased out, in favor of ``--oversample DPI``, in
     case we need ``-o OUTPUTFILE`` in the future
--   Removed several dependencies, so it's easier to install.  We no 
+-   Removed several dependencies, so it's easier to install.  We no
     longer use:
-    
+
     - GNU parallel_
     - ImageMagick_
     - Python 2.7
@@ -757,7 +761,7 @@ Changes
     - qpdf_ 5.0.0+
     - Unpaper_ 6.1 (optional)
     - some automatically managed Python packages
-  
+
 .. _ruffus: http://www.ruffus.org.uk/index.html
 .. _parallel: https://www.gnu.org/software/parallel/
 .. _ImageMagick: http://www.imagemagick.org/script/index.php
@@ -803,7 +807,7 @@ Release candidates
     - fixed some installer issues and errors in installation instructions
     - improve performance: run Ghostscript with multithreaded rendering
     - improve performance: use multiple cores by default
-    - bug fix: checking for wrong exception on process timeout 
+    - bug fix: checking for wrong exception on process timeout
 
 -   rc3: skipping version number intentionally to avoid confusion with Tesseract
 -   rc2: first release for public testing to test-PyPI, Github
@@ -826,11 +830,11 @@ where ``settings.txt`` contains *one argument per line*, for example:
 
 ::
 
-    -l 
-    deu 
-    --author 
-    A. Merkel 
-    --pdf-renderer 
+    -l
+    deu
+    --author
+    A. Merkel
+    --pdf-renderer
     tesseract
 
 
