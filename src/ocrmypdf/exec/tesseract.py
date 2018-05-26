@@ -26,8 +26,6 @@ from subprocess import PIPE, CalledProcessError, \
     TimeoutExpired, check_output, STDOUT
 from contextlib import suppress
 
-import PyPDF2 as pypdf
-
 from ..exceptions import MissingDependencyError, TesseractConfigError
 from ..helpers import page_number
 from . import get_version
@@ -67,8 +65,8 @@ def v4():
 @lru_cache(maxsize=1)
 def has_textonly_pdf():
     """Does Tesseract have textonly_pdf capability?
-    
-    Available in 3.05.01, and v4.00.00alpha since January 2017. Best to 
+
+    Available in 3.05.01, and v4.00.00alpha since January 2017. Best to
     parse the parameter list
     """
     args_tess = [

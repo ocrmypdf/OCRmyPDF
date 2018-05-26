@@ -124,11 +124,7 @@ ContentsInfo = namedtuple('ContentsInfo',
 
 
 def _normalize_stack(operations):
-    """Fix runs of qQ's in the stack
-    For some reason PyPDF2 converts runs of qqq, QQ, QQQq, etc. into single
-    operations.  Break this silliness up and issue each stack operation
-    individually so we don't lose count.
-    """
+    """Convert runs of qQ's in the stack into single operations"""
     for operands, command in operations:
         command = str(command)
         if re.match(r'Q*q+$', command):   # Zero or more Q, one or more q

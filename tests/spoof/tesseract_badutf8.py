@@ -22,14 +22,13 @@
 
 import sys
 import img2pdf
-import PyPDF2 as pypdf
 from PIL import Image
 
 
 """Tesseract bad utf8 spoof
 
 In 'hocr' mode or 'pdf' mode, return error code 1 and some non-Unicode
-text because tesseract seems to do that in some cases related to 
+text because tesseract seems to do that in some cases related to
 language pack version mismatches
 
 """

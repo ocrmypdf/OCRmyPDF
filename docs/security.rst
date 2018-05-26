@@ -1,7 +1,7 @@
 PDF security issues
 ===================
 
-	OCRmyPDF should only be used on PDFs you trust. It is not designed to protect you against malware. 
+	OCRmyPDF should only be used on PDFs you trust. It is not designed to protect you against malware.
 
 Recognizing that many users have an interest in handling PDFs and applying OCR to PDFs they did not generate themselves, this article discusses the security implications of PDFs and how users can protect themselves.
 
@@ -19,9 +19,7 @@ This `article <https://theinvisiblethings.blogspot.ca/2013/02/converting-untrust
 How OCRmyPDF processes PDFs
 ---------------------------
 
-OCRmyPDF must open and interpret your PDF in order to insert an OCR layer. First, it runs all PDFs through `qpdf <https://github.com/qpdf/qpdf>`_, a program that repairs PDFs with syntax errors. This is done because, in the author's experience, a significant number of PDFs in the wild especially those created by scanners are not well-formed files. qpdf makes it more likely that OCRmyPDF will succeed, but offers no security guarantees. qpdf is also used to split the PDF into single page PDFs.
-
-After qpdf, OCRmyPDF examines each page using `PyPDF2 <https://github.com/mstamy2/PyPDF2>`_. This library also has no warranties or guarantees. OCRmyPDF works with qpdf 5.0 and up, but version 7.0 is recommended because of known security vulnerabilities in early versions.
+OCRmyPDF must open and interpret your PDF in order to insert an OCR layer. First, it runs all PDFs through `pikepdf <https://github.com/pikepdf/pikepdf>`_, a library based on `qpdf <https://github.com/qpdf/qpdf>`_, a program that repairs PDFs with syntax errors. This is done because, in the author's experience, a significant number of PDFs in the wild especially those created by scanners are not well-formed files. qpdf makes it more likely that OCRmyPDF will succeed, but offers no security guarantees. qpdf is also used to split the PDF into single page PDFs.
 
 Finally, OCRmyPDF rasterizes each page of the PDF using `Ghostscript <http://ghostscript.com/>`_ in ``-dSAFER`` mode.
 
@@ -60,13 +58,13 @@ Commercial alternatives
 
 The author also provides professional services that include OCR and building databases around PDFs, and is happy to provide consultation.
 
-Abbyy Cloud OCR is a viable commercial alternative with a web services API. 
+Abbyy Cloud OCR is a viable commercial alternative with a web services API.
 
 
 Password protection, digital signatures and certification
 ---------------------------------------------------------
 
-Password protected PDFs usually have two passwords, and owner and user password. When the user password is set to empty, PDF readers will open the file automatically and marked it as "(SECURED)". While not as reliable as a digital signature, this indicates that whoever set the password approved of the file at that time. When the user password is set, the document cannot be viewed without the password. 
+Password protected PDFs usually have two passwords, and owner and user password. When the user password is set to empty, PDF readers will open the file automatically and marked it as "(SECURED)". While not as reliable as a digital signature, this indicates that whoever set the password approved of the file at that time. When the user password is set, the document cannot be viewed without the password.
 
 Either way, OCRmyPDF does not remove passwords from PDFs and exits with an error on encountering them.
 
@@ -76,4 +74,4 @@ After OCR is applied, password protection is not permitted on PDF/A documents bu
 
 Many programs exist which are capable of inserting an image of someone's signature. On its own, this offers no security guarantees. It is trivial to remove the signature image and apply it to other files. This practice offers no real security.
 
-Important documents can be digitally signed and certified to attest to their authorship. OCRmyPDF cannot do this. Open source tools such as pdfbox (Java) have this capability as does Adobe Acrobat. 
+Important documents can be digitally signed and certified to attest to their authorship. OCRmyPDF cannot do this. Open source tools such as pdfbox (Java) have this capability as does Adobe Acrobat.

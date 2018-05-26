@@ -22,14 +22,12 @@ from pathlib import Path
 import sys
 import os
 import re
-import warnings
 import multiprocessing
 import atexit
 import textwrap
 import logging
 import argparse
 
-import PyPDF2 as pypdf
 import PIL
 
 import ruffus.ruffus_exceptions as ruffus_exceptions
@@ -49,8 +47,6 @@ from .exceptions import ExitCode, ExitCodeException, MissingDependencyError, \
     InputFileError, BadArgsError, OutputFileAccessError
 from . import exceptions as ocrmypdf_exceptions
 from ._unicodefun import verify_python3_env
-
-warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
 
 # -------------
@@ -616,9 +612,7 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
         msg = "Error occurred while running this command:"
         log.error(msg + '\n' + exc_value)
         exit_code = ExitCode.child_process_error
-    elif (exc_name == 'PyPDF2.utils.PdfReadError' and \
-            'not been decrypted' in exc_value) or \
-            (exc_name == 'ocrmypdf.exceptions.EncryptedPdfError'):
+    elif exc_name == 'ocrmypdf.exceptions.EncryptedPdfError':
         log.error(textwrap.dedent("""\
             Input PDF is encrypted. The encryption must be removed to
             perform OCR.

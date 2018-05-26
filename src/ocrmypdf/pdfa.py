@@ -23,6 +23,7 @@ from datetime import datetime
 from xml.parsers.expat import ExpatError
 import pkg_resources
 import PyPDF2 as pypdf
+import warnings
 from defusedxml.minidom import parseString as defused_parseString
 from unittest.mock import patch
 
@@ -105,7 +106,7 @@ def encode_text_string(s: str) -> str:
 def encode_pdf_date(d: datetime) -> str:
     """Encode Python datetime object as PDF date string
 
-    From Adobe pdfmark manual:    
+    From Adobe pdfmark manual:
     (D:YYYYMMDDHHmmSSOHH'mm')
     D: is an optional prefix. YYYY is the year. All fields after the year are
     optional. MM is the month (01-12), DD is the day (01-31), HH is the
@@ -140,13 +141,13 @@ def decode_pdf_date(s: str) -> datetime:
     if s.startswith('D:'):
         s = s[2:]
 
-    # Literal Z00'00', is incorrect but found in the wild, 
+    # Literal Z00'00', is incorrect but found in the wild,
     # probably made by OS X Quartz -- standardize
     if s.endswith("Z00'00'"):
         s = s.replace("Z00'00'", '+0000')
     elif s.endswith('Z'):
         s = s.replace('Z', '+0000')
-    
+
     s = s.replace("'", "")  # Remove apos from PDF time strings
 
     return datetime.strptime(s, r'%Y%m%d%H%M%S%z')
@@ -154,7 +155,7 @@ def decode_pdf_date(s: str) -> datetime:
 
 def _get_pdfmark_dates(pdfmark):
     """Encode dates for pdfmark Postscript.  The best way to deal with a
-    missing date entry is set it to null, because if the key is omitted 
+    missing date entry is set it to null, because if the key is omitted
     Ghostscript will set it to now - we do not want to erase the fact that
     the value was unknown.  Setting to an empty string breaks Ghostscript
     9.22 as reported here:
@@ -172,7 +173,7 @@ def _get_pdfmark_dates(pdfmark):
             date_str = date_str[2:]
         try:
             yield '  {} (D:{})'.format(
-                    key, 
+                    key,
                     encode_pdf_date(decode_pdf_date(date_str)))
         except ValueError:
             yield '  {} null'.format(key)
@@ -180,7 +181,7 @@ def _get_pdfmark_dates(pdfmark):
 
 def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
     """Create a Postscript file for Ghostscript.  pdfmark contains the various
-    objects as strings; these must be encoded in ASCII, and dates have a 
+    objects as strings; these must be encoded in ASCII, and dates have a
     special format."""
 
     # Ghostscript <= 9.21 has a bug where null entries in DOCINFO might produce
@@ -229,6 +230,7 @@ def file_claims_pdfa(filename):
 
     This checks if the XMP metadata contains a PDF/A marker.
     """
+    warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
     pdf = pypdf.PdfFileReader(filename)
     try:
         # Monkeypatch PyPDF2 to use defusedxml as its XML parser, for safety
@@ -263,4 +265,3 @@ def file_claims_pdfa(filename):
     pdfa_dict['conformance'] = conformance
 
     return pdfa_dict
-

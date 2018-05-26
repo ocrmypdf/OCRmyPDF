@@ -26,7 +26,6 @@ import shutil
 import re
 
 import img2pdf
-import PyPDF2 as pypdf
 import pikepdf
 
 from PIL import Image
