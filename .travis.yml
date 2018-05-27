@@ -100,19 +100,6 @@ deploy:
     condition: $TRAVIS_PYTHON_VERSION == "3.6" && $TRAVIS_OS_NAME == "linux" && $EXTRAS == ""
   skip_upload_docs: true
 
-  # test pypi
-- provider: pypi
-  server: https://testpypi.pypi.org/legacy/
-  user: ocrmypdf-travis
-  password:
-    secure: "DTFOmmNL6olA0+yXvp4u9jXZlZeqrJsJ0526jzqf4a3gZ6jnGTq5UI6WzRsslSyoMMfXKtHQebqHM6ogSgCZinyZ3ufHJo8fn9brxbEc2gsiWkbj5o3bGwdWMT1vNNE7XW0VCpw87rZ1EEwjl4FJHFudMlPR1yfU5+uq0k0PACo="
-  distributions: "sdist"
-  on:
-    branch: develop
-    tags: false
-    condition: $TRAVIS_OS_NAME == "osx"
-  skip_upload_docs: true
-
   # null deploy for osx
   # we really just want to run after_deploy *after* pypi upload is done, but
   # after_deploy on runs if a given box deployed
