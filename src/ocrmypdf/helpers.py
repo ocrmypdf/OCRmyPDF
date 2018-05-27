@@ -29,7 +29,8 @@ def re_symlink(input_file, soft_link_name, log=None):
     """
     Helper function: relinks soft symbolic link if necessary
     """
-
+    input_file = str(input_file)  # For Py3.5
+    soft_link_name = str(soft_link_name)
     if log is None:
         prdebug = partial(print, file=sys.stderr)
     else:
@@ -103,7 +104,7 @@ def is_file_writable(test_file):
 
     if p.is_symlink():
         # Python 3.5 does not accept parameters for Path.resolve() and behaves
-        # as if strict=True (throws an exception on failure). Python 3.6 
+        # as if strict=True (throws an exception on failure). Python 3.6
         # defaults to strict=False. This implements strict=False like behavior
         # for Python 3.5.
         if sys.version_info[0:2] <= (3, 5):
