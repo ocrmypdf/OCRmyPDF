@@ -13,31 +13,33 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
 v7
 --
 
--   The core algorithm for combining OCR layers with existing PDF pages has been rewritten and improved considerably.  It works directly with the input file to minimize changes.  The new algorithm uses less temporary disk space and eliminates cost object duplication and deduplication that used to be a requirement.
+-   The core algorithm for combining OCR layers with existing PDF pages has been rewritten and improved considerably.  The new algorithm uses less temporary disk space and eliminates object duplication and deduplication that was required when processing certain PDFs.
 
--   New feature: PDF optimization with ``-O`` or ``--optimize``.  After OCR, OCRmyPDF will automatically performs image optimizations relevant to OCR PDFs.
+-   New dependency: `pikepdf <https://github.com/pikepdf>`_. pikepdf is a  powerful new Python PDF library driving the latest OCRmyPDF features, built on the proven and mature libqpdf C++ library.
 
-    +   If a JBIG2 encoder is available, then monochrome images will be converted, with the potential for huge savings on large black and white files, since JBIG2 is far more efficient than any other monochrome format. (All known US patents related to JBIG2 have probably expired, but it remains the responsibility of the user to supply a JBIG2 encoder such as `jbig2enc <https://github.com/agl/jbig2enc>`_. OCRmyPDF does not contain any portion of JBIG2.)
+-   New feature: PDF optimization with ``-O`` or ``--optimize``.  After OCR, OCRmyPDF will perform image optimizations relevant to OCR PDFs.
 
-    +   If ``pngquant`` is installed, OCRmyPDF will use to perform lossy compression of PNG images.
+    +   If a JBIG2 encoder is available, then monochrome images will be converted, with the potential for huge savings on large black and white files, since JBIG2 is far more efficient than any other monochrome (bi-level) compression. (All known US patents related to JBIG2 have probably expired, but it remains the responsibility of the user to supply a JBIG2 encoder such as `jbig2enc <https://github.com/agl/jbig2enc>`_. OCRmyPDF does not implement JBIG2 encoding.)
+
+    +   If ``pngquant`` is installed, OCRmyPDF will optionally use it to perform lossy quantization and compression of PNG images.
 
     +   The quality of JPEGs can also be lowered, on the assumption that a lower quality image may be suitable for storage after OCR.
 
-    +   It is likely this component will be offered as a separate command line utility.
+    +   This component will eventually be offered as an independent command line utility.
 
--   New dependency: `pikepdf <https://github.com/pikepdf>`_. pikepdf is a  powerful new Python PDF library driving the latest OCRmyPDF features, built on the proven and mature libqpdf C++ library.
+    +   Optimization ranges from ``-O0`` through ``-O3``, where ``0`` disables optimization and ``3`` implements all options. ``1``, the default, performs only safe and lossless optimizations. (This is similar to GCC's optimization parameter.) The exact type of optimizations performed will vary over time.
 
 -   Small amounts of text in the margins of a page, such as watermarks, page numbers, or digital stamps, will no longer prevent the rest of a page from being OCRed when ``--skip-text`` is issued. This behavior is based on a heuristic.
 
 -   Removed features
 
-    +   The deprecated ``tesseract`` PDF renderer was removed, because due to changes in how we construct PDFs.
+    +   The deprecated ``tesseract`` PDF renderer was removed, due to changes in how we construct PDFs.
 
-    +   ``-g``, the option to generate debug text pages, was removed because the extra pages it generates were too much of a maintenance burden and it never worked with the ``sandwich`` renderer (Tesseract) anyway. HOCR pages can still be previewed by running the hocrtransform.py with appropriate settings.
+    +   ``-g``, the option to generate debug text pages, was removed because it was a maintenance burden and only worked in isolated cases. HOCR pages can still be previewed by running the hocrtransform.py with appropriate settings.
 
 -   The ``sandwich`` PDF renderer can be used with all supported versions of Tesseract, including that those priority to v3.05 which don't support ``-c textonly``
 
--   ``--pdf-renderer auto`` and the diagnostics regarding the selection of PDF renderer are now more consistent.
+-   ``--pdf-renderer auto`` option and the diagnostics used to select a PDF renderer now work better with old versions, but may make different decisions than past versions.
 
 
 v6.2.0
