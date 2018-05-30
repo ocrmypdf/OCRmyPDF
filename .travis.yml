@@ -17,6 +17,7 @@ addons:
     - libavcodec56
     - libavformat56
     - libavutil54
+    - libexempi3
     - libffi-dev
     - pngquant
     - poppler-utils

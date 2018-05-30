@@ -15,7 +15,7 @@ v7
 
 -   The core algorithm for combining OCR layers with existing PDF pages has been rewritten and improved considerably.  The new algorithm uses less temporary disk space and eliminates object duplication and deduplication that was required when processing certain PDFs.
 
--   New dependency: `pikepdf <https://github.com/pikepdf>`_. pikepdf is a  powerful new Python PDF library driving the latest OCRmyPDF features, built on the proven and mature libqpdf C++ library.
+-   New dependency: `pikepdf <https://github.com/pikepdf>`_. pikepdf is a  powerful new Python PDF library driving the latest OCRmyPDF features, built on QPDF's proven and mature libqpdf C++ library.
 
 -   New feature: PDF optimization with ``-O`` or ``--optimize``.  After OCR, OCRmyPDF will perform image optimizations relevant to OCR PDFs.
 
@@ -36,6 +36,12 @@ v7
     +   The deprecated ``tesseract`` PDF renderer was removed, due to changes in how we construct PDFs.
 
     +   ``-g``, the option to generate debug text pages, was removed because it was a maintenance burden and only worked in isolated cases. HOCR pages can still be previewed by running the hocrtransform.py with appropriate settings.
+
+-   Removed dependencies
+
+    +   ``PyPDF2`` is no longer used except in the test suite.
+
+    +   ``defusedxml`` is no longer used anywhere.
 
 -   The ``sandwich`` PDF renderer can be used with all supported versions of Tesseract, including that those priority to v3.05 which don't support ``-c textonly``
 

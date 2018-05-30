@@ -20,12 +20,9 @@
 from string import Template
 from binascii import hexlify
 from datetime import datetime
-from xml.parsers.expat import ExpatError
 import pkg_resources
-import PyPDF2 as pypdf
-import warnings
-from defusedxml.minidom import parseString as defused_parseString
-from unittest.mock import patch
+from libxmp.utils import file_to_dict
+from libxmp import consts
 
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
 
@@ -230,35 +227,32 @@ def file_claims_pdfa(filename):
 
     This checks if the XMP metadata contains a PDF/A marker.
     """
-    warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
-    pdf = pypdf.PdfFileReader(filename)
-    try:
-        # Monkeypatch PyPDF2 to use defusedxml as its XML parser, for safety
-        with patch('xml.dom.minidom.parseString', new=defused_parseString):
-            xmp = pdf.getXmpMetadata()
-    except ExpatError:
-        return {'pass': False, 'output': 'pdf',
-                'conformance': 'Invalid XML metadata'}
 
-    try:
-        pdfa_nodes = xmp.getNodesInNamespace(
-            aboutUri='',
-            namespace='http://www.aiim.org/pdfa/ns/id/')
-    except AttributeError:
+    xmp = file_to_dict(filename)
+    if not xmp:
         return {'pass': False, 'output': 'pdf',
                 'conformance': 'No XMP metadata'}
 
-    pdfa_dict = {attr.localName: attr.value for attr in pdfa_nodes}
-    if not pdfa_dict:
+    if not consts.XMP_NS_PDFA_ID in xmp:
         return {'pass': False, 'output': 'pdf',
-                'conformance': 'No XMP metadata'}
+                'conformance': 'No PDF/A metadata in XMP'}
 
-    part_conformance = pdfa_dict['part'] + pdfa_dict['conformance']
+    pdfa_node = xmp[consts.XMP_NS_PDFA_ID]
+    def read_node(node, key):
+        return next(
+            (v for k, v, meta in pdfa_node if k == key), ''
+        )
+
+    part = read_node(pdfa_node, 'pdfaid:part')
+    conformance = read_node(pdfa_node, 'pdfaid:conformance')
+
+    part_conformance = part + conformance
     valid_part_conforms = {'1A', '1B', '2A', '2B', '2U', '3A', '3B', '3U'}
 
     conformance = 'PDF/A-{}'.format(
         part_conformance)
 
+    pdfa_dict = {}
     if part_conformance in valid_part_conforms:
         pdfa_dict['pass'] = True
         pdfa_dict['output'] = 'pdfa'
