@@ -2,5 +2,4 @@ Please include the command line and a test file with your issue report.
 
 If possible, please use a test file that we can include in future test cases (no personal information, no copyrighted material).
 
-If you wish to encrypt a test file so that only the maintainer of OCRmyPDF can view it, you may use:
-
+If you wish to encrypt a test file for the OCRmyPDF maintainer only, see the [Wiki](https://github.com/jbarlow83/OCRmyPDF/wiki).
