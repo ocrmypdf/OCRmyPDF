@@ -188,6 +188,10 @@ def tesseract_log_output(log, stdout, input_file):
             log.warning(prefix + "lots of diacritics - possibly poor OCR")
         elif line.startswith('OSD: Weak margin'):
             log.warning(prefix + "unsure about page orientation")
+        elif 'Error in pixScanForForeground' in line:
+            pass  # Appears to be spurious/problem with nonwhite borders
+        elif 'Error in boxClipToRectangle' in line:
+            pass  # Always appears with pixScanForForeground message
         elif 'error' in line.lower() or 'exception' in line.lower():
             log.error(prefix + line.strip())
         elif 'warning' in line.lower():
