@@ -4,9 +4,3 @@ If possible, please use a test file that we can include in future test cases (no
 
 If you wish to encrypt a test file so that only the maintainer of OCRmyPDF can view it, you may use:
 
-```bash
-
-gpg --recv-keys 4434eb74c4a35f7f --keyserver pgp.mit.edu
-gpg --output test.pdf.gpg --encrypt --receipient 4434eb74c4a35f7f test.pdf
-
-```
