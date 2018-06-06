@@ -30,7 +30,7 @@ import pikepdf
 
 from ._jobcontext import JobContext
 from . import leptonica
-from .helpers import re_symlink
+from .helpers import re_symlink, fspath
 from .exec import pngquant, jbig2enc
 
 PAGE_GROUP_SIZE = 10
@@ -363,7 +363,7 @@ def main(infile, outfile, level, jobs=1):
     with TemporaryDirectory() as td:
         tmpout = Path(td) / 'out.pdf'
         optimize(infile, tmpout, log, ctx)
-        copy(tmpout, outfile)
+        copy(fspath(tmpout), fspath(outfile))
 
 
 if __name__ == '__main__':
