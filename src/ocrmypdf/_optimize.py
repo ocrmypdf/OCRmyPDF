@@ -331,7 +331,7 @@ def optimize(
     transcode_pngs(pike, pngs, root, log, options)
 
     # Not object_stream_mode + preserve_pdfa generates noncompliant PDFs
-    target_file = output_file + '_opt.pdf'
+    target_file = Path(output_file).with_suffix('.opt.pdf')
     pike.save(target_file, preserve_pdfa=True)
 
     input_size = Path(input_file).stat().st_size
@@ -349,6 +349,8 @@ def optimize(
 
 
 def main(infile, outfile, level, jobs=1):
+    from tempfile import TemporaryDirectory
+    from shutil import copy
     Options = namedtuple('Options', 'jobs optimize')
 
     logging.basicConfig(level=logging.DEBUG)
@@ -358,7 +360,10 @@ def main(infile, outfile, level, jobs=1):
     options = Options(jobs=jobs, optimize=int(level))
     ctx.set_options(options)
 
-    optimize(infile, outfile, log, ctx)
+    with TemporaryDirectory() as td:
+        tmpout = Path(td) / 'out.pdf'
+        optimize(infile, tmpout, log, ctx)
+        copy(tmpout, outfile)
 
 
 if __name__ == '__main__':
