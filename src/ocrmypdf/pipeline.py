@@ -734,6 +734,12 @@ def get_pdfmark(base_pdf, options):
         PROGRAM_NAME, VERSION,
         renderer_tag,
         tesseract.version())
+    pdfmark['/Producer'] = 'pikepdf ' + pikepdf.__version__
+    if 'OCRMYPDF_CREATOR' in os.environ:
+        pdfmark['/Creator'] = os.environ['OCRMYPDF_CREATOR']
+    if 'OCRMYPDF_PRODUCER' in os.environ:
+        pdfmark['/Producer'] = os.environ['OCRMYPDF_PRODUCER']
+
     pdfmark['/ModDate'] = encode_pdf_date(datetime.now(timezone.utc))
     return pdfmark
 
