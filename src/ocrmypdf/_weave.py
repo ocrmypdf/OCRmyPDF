@@ -71,11 +71,11 @@ def _weave_layers_graft(
     # content may have a rotation applied. Wrap the text stream with a rotation
     # so it will be oriented the same way as the rest of the page content.
     # (Previous versions OCRmyPDF rotated the content layer to match the text.)
-    mediabox = [float(pdf_text.pages[0].MediaBox[v].decode())
+    mediabox = [float(pdf_text.pages[0].MediaBox[v])
                 for v in range(4)]
     wt, ht = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
 
-    mediabox = [float(base_page.MediaBox[v].decode())
+    mediabox = [float(base_page.MediaBox[v])
                 for v in range(4)]
     wp, hp = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
 

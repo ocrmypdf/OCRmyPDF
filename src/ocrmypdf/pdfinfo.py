@@ -583,13 +583,13 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile):
     else:
         pageinfo['has_text'] = _naive_find_text(pdf=pdf, page=page)
 
-    mediabox = [Decimal(d.decode()) for d in page.MediaBox.as_list()]
+    mediabox = [Decimal(d) for d in page.MediaBox.as_list()]
     width_pt = mediabox[2] - mediabox[0]
     height_pt = mediabox[3] - mediabox[1]
 
     userunit = page.get('/UserUnit', Decimal(1.0))
     if not isinstance(userunit, Decimal):
-        userunit = userunit.decode()
+        userunit = Decimal(userunit)
     pageinfo['userunit'] = userunit
     pageinfo['width_inches'] = width_pt * userunit / Decimal(72.0)
     pageinfo['height_inches'] = height_pt * userunit / Decimal(72.0)
