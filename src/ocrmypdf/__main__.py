@@ -40,7 +40,6 @@ from .pdfa import file_claims_pdfa
 from .helpers import is_iterable_notstr, re_symlink, is_file_writable, \
     available_cpu_count
 from .exec import tesseract, qpdf, ghostscript
-from .lib import fitz
 from . import PROGRAM_NAME, VERSION
 
 from .exceptions import ExitCode, ExitCodeException, MissingDependencyError, \
@@ -750,11 +749,6 @@ def preamble(_log):
     _log.debug('ocrmypdf ' + VERSION)
     _log.debug('tesseract ' + tesseract.version())
     _log.debug('qpdf ' + qpdf.version())
-    if fitz:
-        _log.debug('PyMuPDF ' + fitz.version[0])
-        _log.debug('libmupdf ' + fitz.version[1])
-    else:
-        _log.debug('PyMuPDF not installed')
 
 
 def check_environ(options, _log):

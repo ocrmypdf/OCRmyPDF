@@ -116,7 +116,7 @@ v6.1.1
 v6.1.0
 ------
 
--   PyMuPDF is now an optional but recommended dependency, to alleviate installation difficulties on platforms that have less access to PyMuPDF than the author anticipated.  Install OCRmyPDF with ``pip install ocrmypdf[fitz]`` to use it to its full potential.
+-   PyMuPDF is now an optional but recommended dependency, to alleviate installation difficulties on platforms that have less access to PyMuPDF than the author anticipated.  (For version 6.x only) install OCRmyPDF with ``pip install ocrmypdf[fitz]`` to use it to its full potential.
 
 -   Fix ``FileExistsError`` that could occur if OCR timed out while it was generating the output file. (`#218 <https://github.com/jbarlow83/OCRmyPDF/issues/218>`_)
 

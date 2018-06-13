@@ -23,7 +23,11 @@ from datetime import timezone
 
 from ocrmypdf.pdfa import file_claims_pdfa, encode_pdf_date, decode_pdf_date
 from ocrmypdf.exceptions import ExitCode
-from ocrmypdf.lib import fitz
+
+try:
+    import fitz
+except ImportError:
+    fitz = None
 
 # pytest.helpers is dynamic
 # pylint: disable=no-member

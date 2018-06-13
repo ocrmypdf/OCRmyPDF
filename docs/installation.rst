@@ -1,7 +1,7 @@
 Installation
 ============
 
-The easiest way to install OCRmyPDF to follow the steps for your operating system/platform. 
+The easiest way to install OCRmyPDF to follow the steps for your operating system/platform.
 
 If you want to use the latest version of OCRmyPDF, your best bet is to install the most recent version your platform provides, and then upgrade that version by installing the Python binary wheels.
 
@@ -23,7 +23,7 @@ To see what versions are available, check the `Debian Package Tracker <https://t
 Installing on macOS with Homebrew
 ---------------------------------
 
-.. image:: https://img.shields.io/homebrew/v/ocrmypdf.svg   
+.. image:: https://img.shields.io/homebrew/v/ocrmypdf.svg
     :alt: homebrew
     :target: http://brewformulas.org/Ocrmypdf
 
@@ -55,7 +55,7 @@ Follow the Docker installation instructions for your platform.  If you can run t
 .. code-block:: bash
 
     docker run hello-world
-   
+
 OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine instance on Windows and macOS has only a single CPU core enabled. Use the VirtualBox Manager to determine the name of your Docker engine host, and then follow these optional steps to enable multiple CPUs:
 
 .. code-block:: bash
@@ -103,14 +103,14 @@ You can then run ocrmypdf using the command:
 .. code-block:: bash
 
     docker run --rm ocrmypdf --help
-  
+
 To execute the OCRmyPDF on a local file, you must `provide a writable volume to the Docker image <https://docs.docker.com/userguide/dockervolumes/>`_, and both the input and output file must be inside the writable volume.  This example command uses the current working directory as the writable volume:
 
 .. code-block:: bash
 
     docker run --rm -v "$(pwd):/home/docker" <other docker arguments>   ocrmypdf <your arguments to ocrmypdf>
 
-In this worked example, the current working directory contains an input file called ``test.pdf`` and the output will go to ``output.pdf``: 
+In this worked example, the current working directory contains an input file called ``test.pdf`` and the output will go to ``output.pdf``:
 
 .. code-block:: bash
 
@@ -167,11 +167,11 @@ Install or upgrade the required Homebrew packages, if any are missing:
     brew install python3
     brew install libxml2 libffi leptonica
     brew install unpaper   # optional
-   
+
 Python 3.5 and 3.6 are supported.
 
 Install the required Tesseract OCR engine with the language packs you plan to use:
-   
+
 .. code-block:: bash
 
     brew install tesseract                       # Option 1: for English, French, German, Spanish
@@ -192,15 +192,13 @@ You can then install OCRmyPDF from PyPI, for the current user:
 
 .. code-block:: bash
 
-    pip3 install --user ocrmypdf[fitz]
+    pip3 install --user ocrmypdf
 
 or system-wide:
 
 .. code-block:: bash
 
-    pip3 install ocrmypdf[fitz]
-
-``[fitz]`` includes the optional dependency on PyMuPDF, which improves OCRmyPDF's output in many cases.
+    pip3 install ocrmypdf
 
 The command line program should now be available:
 
@@ -221,12 +219,12 @@ install the system version to get all the dependencies:
         ocrmypdf \
         python3-pip
 
-Then install ocrmypdf 6.1.5 for the local user and set the user's ``PATH`` to check for the user's Python packages.
+Then install the most recent ocrmypdf for the local user and set the user's ``PATH`` to check for the user's Python packages.
 
 .. code-block:: bash
 
     export PATH=$HOME/.local/bin:$PATH
-    pip3 install --user ocrmypdf[fitz]
+    pip3 install --user ocrmypdf
 
 
 Installing on Ubuntu 16.04 LTS
@@ -249,13 +247,13 @@ If you wish install OCRmyPDF for the current user:
 
 .. code-block:: bash
 
-    pip3 install --user ocrmypdf[fitz]
+    pip3 install --user ocrmypdf
 
 Alternately, system-wide. Note that this may modify the system Python environment:
 
 .. code-block:: bash
 
-    sudo pip3 install ocrmypdf[fitz]
+    sudo pip3 install ocrmypdf
 
 If you wish to install OCRmyPDF to a virtual environment to isolate the system Python, you can follow these steps.
 
@@ -263,10 +261,7 @@ If you wish to install OCRmyPDF to a virtual environment to isolate the system P
 
     python3 -m venv venv-ocrmypdf
     source venv-ocrmypdf/bin/activate
-    pip3 install ocrmypdf[fitz]
-
-``[fitz]`` includes the optional dependency on PyMuPDF, which improves OCRmyPDF's output in many cases.
-
+    pip3 install ocrmypdf
 
 Installing on Ubuntu 14.04 LTS
 ------------------------------
@@ -316,7 +311,7 @@ Now we need to install ``pip`` and let it install ocrmypdf:
 .. code-block:: bash
 
     curl https://bootstrap.pypa.io/ez_setup.py -o - | python3.6 && python3.6 -m easy_install pip
-    pip3.6 install ocrmypdf[fitz]
+    pip3.6 install ocrmypdf
 
 The ``wget`` command will download a program and run it.
 
@@ -398,7 +393,7 @@ The following dependencies are recommended:
 - unpaper 6.1
 - PyMuPDF 1.12.5 or newer
 
-These are in addition to the Python packaging dependencies, meaning that unfortunately, the ``pip install`` command cannot satisfy all of them. 
+These are in addition to the Python packaging dependencies, meaning that unfortunately, the ``pip install`` command cannot satisfy all of them.
 
 Python 3.6 and Tesseract 4.0.0-beta.1 are recommended for best OCR results and best performance.
 
