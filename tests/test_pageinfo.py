@@ -127,13 +127,6 @@ def test_form_xobject(resources):
     assert pdfimage.width == 50
 
 
-def test_naive_find_text(resources):
-    filename = resources / 'formxobject.pdf'
-    reader = pikepdf.open(filename)
-    page = reader.pages[0]
-    assert pdfinfo._naive_find_text(pdf=reader, page=page)
-
-
 def test_no_contents(resources):
     filename = resources / 'no_contents.pdf'
 
