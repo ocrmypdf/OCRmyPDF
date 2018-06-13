@@ -48,24 +48,64 @@ def _gs_error_reported(stream):
     return re.search(r'error', stream, flags=re.IGNORECASE)
 
 
+def extract_text(input_file, pageno=1):
+    """
+    Use the txtwrite device to get text layout information out
+
+    For details on options of -dTextFormat see
+    https://www.ghostscript.com/doc/current/VectorDevices.htm#TXT
+
+    Format is like
+    <page>
+    <line>
+    <span bbox="left top right bottom" font="..." size="...">
+    <char bbox="...." c="X"/>
+
+    :return: XML-ish text representation in bytes
+
+    """
+
+    args_gs = [
+        'gs',
+        '-dQUIET',
+        '-dSAFER',
+        '-dBATCH',
+        '-dNOPAUSE',
+        '-sDEVICE=txtwrite',
+        '-dTextFormat=0',
+        '-dFirstPage=%i' % pageno,
+        '-dLastPage=%i' % pageno,
+        '-o', '-',
+        input_file
+    ]
+
+    p = run(args_gs, stdout=PIPE, stderr=PIPE)
+    if p.returncode != 0:
+        raise SubprocessOutputError(
+            'Ghostscript text extraction failed\n%s\n%s\n%s',
+            input_file, p.stdout.decode(), p.stderr.decode())
+
+    return p.stdout
+
+
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
                   pageno=1, page_dpi=None, rotation=None):
     """
     Rasterize one page of a PDF at resolution (xres, yres) in canvas units.
-    
-    The image is sized to match the integer pixels dimensions implied by 
+
+    The image is sized to match the integer pixels dimensions implied by
     (xres, yres) even if those numbers are noninteger. The image's DPI will
      be overridden with the values in page_dpi.
-    
+
     :param input_file: pathlike
     :param output_file: pathlike
     :param xres: resolution at which to rasterize page
-    :param yres: 
-    :param raster_device: 
-    :param log: 
+    :param yres:
+    :param raster_device:
+    :param log:
     :param pageno: page number to rasterize (beginning at page 1)
-    :param page_dpi: resolution tuple (x, y) overriding output image DPI 
-    :return: 
+    :param page_dpi: resolution tuple (x, y) overriding output image DPI
+    :return:
     """
     res = xres, yres
     int_res = round(xres), round(yres)
@@ -90,7 +130,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             '-f',
             fspath(input_file)
         ]
-        
+
         log.debug(args_gs)
         p = run(args_gs, stdout=PIPE, stderr=STDOUT,
                 universal_newlines=True)
@@ -120,7 +160,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
 
             if rotation is not None:
                 log.debug("Rotating output by %i", rotation)
-                # rotation is a clockwise angle and Image.ROTATE_* is 
+                # rotation is a clockwise angle and Image.ROTATE_* is
                 # counterclockwise so this cancels out the rotation
                 if rotation == 90:
                     im = im.transpose(Image.ROTATE_90)
@@ -156,8 +196,8 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
             "-dAutoFilterGrayImages=true",
         ]
 
-    # Older versions of Ghostscript expect a leading slash in 
-    # sColorConversionStrategy, newer ones should not have it. See Ghostscript 
+    # Older versions of Ghostscript expect a leading slash in
+    # sColorConversionStrategy, newer ones should not have it. See Ghostscript
     # git commit fe1c025d.
     strategy = 'RGB' if version() >= '9.19' else '/RGB'
 

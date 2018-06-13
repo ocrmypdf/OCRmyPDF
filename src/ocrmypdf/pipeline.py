@@ -36,7 +36,6 @@ from .pdfinfo import PdfInfo, Encoding, Colorspace
 from .pdfa import generate_pdfa_ps, encode_pdf_date
 from .helpers import re_symlink, is_iterable_notstr, page_number, flatten_groups
 from .exec import ghostscript, tesseract, qpdf
-from .lib import fitz
 from .exceptions import PdfMergeFailedError, UnsupportedImageFormatError, \
     DpiError, PriorOcrFoundError, InputFileError
 from . import leptonica
@@ -526,7 +525,7 @@ def select_ocr_image(
     user."""
 
     image = infiles[0]
-    if not fitz or context.get_options().force_ocr:
+    if context.get_options().force_ocr:
         re_symlink(image, output_file, log)
         return
 
@@ -537,16 +536,16 @@ def select_ocr_image(
         from PIL import ImageDraw
         from decimal import Decimal
         white = ImageColor.getcolor('#ffffff', im.mode)
+        #pink = ImageColor.getcolor('#ff0080', im.mode)
         draw = ImageDraw.ImageDraw(im)
 
         xres, yres = im.info['dpi']
+        log.debug('resolution %r %r', xres, yres)
         for textarea in pageinfo.get_textareas():
             # Calculate resolution based on the image size and page dimensions
             # without regard whatever resolution is in pageinfo (may differ or
             # be None)
-            bbox = textarea['bbox']
-            log.debug('resolution %r %r', xres, yres)
-
+            bbox = textarea
             pixcoords = [Decimal(bbox[0]) / Decimal(72) * xres,
                          Decimal(bbox[1]) / Decimal(72) * yres,
                          Decimal(bbox[2]) / Decimal(72) * xres,
@@ -554,6 +553,7 @@ def select_ocr_image(
             pixcoords = [int(c) for c in pixcoords]
             log.debug('blanking %r', pixcoords)
             draw.rectangle(pixcoords, fill=white)
+            #draw.rectangle(pixcoords, outline=pink)
 
         del draw
 

@@ -16,13 +16,3 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 """Bindings to external libraries"""
-
-import os as _os
-
-try:
-    import fitz
-except ImportError:
-    fitz = None
-
-if _os.environ.get('_OCRMYPDF_NO_FITZ'):
-    fitz = None

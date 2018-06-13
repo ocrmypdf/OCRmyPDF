@@ -28,7 +28,7 @@ from pathlib import Path
 from enum import Enum
 from contextlib import contextmanager
 
-from .lib import fitz
+from .exec import ghostscript
 from .helpers import universal_open, fspath
 
 from pikepdf import PdfMatrix
@@ -503,70 +503,68 @@ def _find_images(*, pdf, container, shorthand=None):
     yield from _find_form_xobject_images(pdf, container, contentsinfo)
 
 
-def _naive_find_text(*, pdf, page):
-    if not(page.get('/Type') == '/Page' and '/Contents' in page):
-        # Not a page, or has no /Contents => no text
-        return False
-
-    # First we check the main content stream
-    contentsinfo = _interpret_contents(page, UNIT_SQUARE)
-    if contentsinfo.found_text:
-        return True
-
-    # Then see if there is a Form XObject with with a content stream
-    # that might have text.  For full completeness we should recursively
-    # search nested Form XObjects, as we do with images.  But that is
-    # rare.
-    if '/Resources' in page:
-        resources = page['/Resources']
-        if '/XObject' in resources:
-            xobjs = resources['/XObject'].as_dict()
-            for xobj in xobjs:
-                candidate = xobjs[xobj]
-                if candidate['/Subtype'] != '/Form':
-                    continue
-                form_xobject = candidate
-                # Content stream is attached to Form XObject dictionary
-                sub_contentsinfo = _interpret_contents(
-                    form_xobject, UNIT_SQUARE)
-                if sub_contentsinfo.found_text:
-                    return True
-    return False
-
-
 def _page_get_textblocks(infile, pageno):
-    "Smarter text detection"
+    """Smarter text detection"""
+    import xml.etree.ElementTree as ET
 
-    doc = fitz.Document(infile)
-    if fitz.version[0] >= '1.13.0':
-        text = doc[pageno].getText('dict')
-    else:
-        import json
-        textjson = doc[pageno].getText('json')
-        text = json.loads(textjson)
-    if not text:
-        return
+    gstext = ghostscript.extract_text(infile, pageno+1)
+    root = ET.fromstring(gstext)
 
-    text['blocks'] = [blk for blk in text['blocks'] if blk['type'] == 0]
-    return text
+    def blocks():
+        for span in root.findall('.//span'):
+            bbox_str = span.attrib['bbox']
+            font_size = span.attrib['size']
+            pts = [int(pt) for pt in bbox_str.split()]
+            pts[1] = pts[1] - int(float(font_size) + 0.5)
+            bbox = tuple(pts)
+            yield bbox
+
+    def joined_blocks():
+        prev = None
+        for bbox in blocks():
+            if prev is None:
+                prev = bbox
+            if bbox[1] == prev[1] and bbox[3] == prev[3]:
+                gap = prev[2] - bbox[0]
+                height = bbox[3] - bbox[1]
+                if gap < height:
+                    # Join boxes
+                    prev = (prev[0], prev[1], bbox[2], bbox[3])
+                    continue
+            # yield previously joined bboxes and start anew
+            yield prev
+            prev = bbox
+        if prev is not None:
+            yield prev
+
+    return [block for block in joined_blocks()]
 
 
-def _page_has_text(text):
-    "Smarter text detection that ignores text in margins"
+def _page_has_text(text_blocks, page_width, page_height):
+    """Smarter text detection that ignores text in margins"""
 
-    pw, ph = text['width'], text['height']
+    pw, ph = float(page_width), float(page_height)
 
     margin_ratio = 0.125
-    interior_bbox = fitz.Rect(
+    interior_bbox = (
         margin_ratio * pw, margin_ratio * ph,
         (1 - margin_ratio) * pw, (1 - margin_ratio) * ph
     )
 
+    def rects_intersect(a, b):
+        """
+        Where (a,b) are 4-tuple rects (left-0, top-1, right-2, bottom-3)
+        https://stackoverflow.com/questions/306316/determine-if-two-rectangles-overlap-each-other
+        Negative signs to account for our coordinates being in the fourth quadrant
+        and the formula assuming the first
+        """
+        return a[0] < b[2] and a[2] > b[0] and -a[1] > -b[3] and -a[3] < -b[1]
+
     has_text = False
-    for block in text['blocks']:
-        bbox = fitz.Rect(block['bbox'])
-        if bbox & interior_bbox:
+    for bbox in text_blocks:
+        if rects_intersect(bbox, interior_bbox):
             has_text = True
+            break
     return has_text
 
 
@@ -577,15 +575,14 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile):
 
     page = pdf.pages[pageno]
 
-    if fitz:
-        pageinfo['textinfo'] = _page_get_textblocks(str(infile), pageno)
-        pageinfo['has_text'] = _page_has_text(pageinfo['textinfo'])
-    else:
-        pageinfo['has_text'] = _naive_find_text(pdf=pdf, page=page)
+    pageinfo['textinfo'] = _page_get_textblocks(str(infile), pageno)
 
     mediabox = [Decimal(d) for d in page.MediaBox.as_list()]
     width_pt = mediabox[2] - mediabox[0]
     height_pt = mediabox[3] - mediabox[1]
+
+    pageinfo['has_text'] = _page_has_text(
+        pageinfo['textinfo'], width_pt, height_pt)
 
     userunit = page.get('/UserUnit', Decimal(1.0))
     if not isinstance(userunit, Decimal):
@@ -666,9 +663,7 @@ class PageInfo:
         return self._pageinfo['images']
 
     def get_textareas(self):
-        if not fitz:
-            raise NotImplementedError("no impl without fitz")
-        yield from self._pageinfo['textinfo']['blocks']
+        yield from self._pageinfo['textinfo']
 
     @property
     def xres(self):
@@ -706,10 +701,6 @@ class PdfInfo:
     def __init__(self, infile):
         self._infile = infile
         self._pages = _pdf_get_all_pageinfo(infile)
-        if fitz:
-            self._toc = fitz.Document(fspath(infile)).getToC()
-        else:
-            self._toc = []
 
     @property
     def pages(self):
@@ -729,10 +720,6 @@ class PdfInfo:
         if not isinstance(self._infile, (str, Path)):
             raise NotImplementedError("can't get filename from stream")
         return self._infile
-
-    @property
-    def table_of_contents(self):
-        return self._toc
 
     def __getitem__(self, item):
         return self._pages[item]
