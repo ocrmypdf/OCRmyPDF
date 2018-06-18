@@ -37,25 +37,13 @@ matrix:
       sudo: required
       language: python
       python: 3.5
-      env: EXTRAS=
     - os: linux
       sudo: required
       language: python
       python: 3.6
-      env: EXTRAS=
-    - os: linux
-      sudo: required
-      language: python
-      python: 3.6
-      env: EXTRAS=[fitz]
     - os: osx
       osx_image: xcode8
       language: generic
-      env: EXTRAS=
-    - os: osx
-      osx_image: xcode8
-      language: generic
-      env: EXTRAS=[fitz]
 
 before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
@@ -76,7 +64,7 @@ before_install: |
 
 install:
 - export PATH=$PWD/bin:$PATH
-- pip3 install ".$EXTRAS"
+- pip3 install .
 - pip3 install -r test_requirements.txt
 
 script:
@@ -86,7 +74,7 @@ script:
 
 deploy:
   # release for main pypi
-  # 3.6 w/o fitz is considered the build leader and does the deploy, otherwise there is
+  # 3.6 is considered the build leader and does the deploy, otherwise there is
   # a race and all versions will try to deploy
   # OTOH if we ever need separate binary wheels then each version needs its
   # own deploy
@@ -98,7 +86,7 @@ deploy:
   on:
     branch: master
     tags: true
-    condition: $TRAVIS_PYTHON_VERSION == "3.6" && $TRAVIS_OS_NAME == "linux" && $EXTRAS == ""
+    condition: $TRAVIS_PYTHON_VERSION == "3.6" && $TRAVIS_OS_NAME == "linux"
   skip_upload_docs: true
 
   # null deploy for osx
