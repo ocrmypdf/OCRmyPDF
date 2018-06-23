@@ -887,14 +887,6 @@ def build_pipeline(options, work_folder, log, context):
         os.path.join(work_folder, '*.marker.pdf'),
         extras=[log, context])
 
-    # task_split_pages = main_pipeline.transform(
-    #     task_func=split_page,
-    #     input=task_pre_split_pages,
-    #     filter=suffix('.presplit.pdf'),
-    #     output='.page.pdf',
-    #     output_dir=work_folder,
-    #     extras=[log, context])
-
     task_ocr_or_skip = main_pipeline.split(
         ocr_or_skip,
         task_marker_pages,

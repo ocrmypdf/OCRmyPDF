@@ -2,7 +2,6 @@ pytest >= 3.2
 pytest-helpers-namespace
 pytest-xdist
 pytest-cov
-pytest-timeout
 python-xmp-toolkit   # requires apt-get install libexempi3
                      # or brew install exempi
 PyPDF2 >= 1.26.0
