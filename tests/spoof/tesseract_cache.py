@@ -121,11 +121,11 @@ def main():
 
     argv_slug = '__'.join(slugs())
     argv_slug = argv_slug.replace('/', '___')
-    
-    cache_folder = Path(CACHE_ROOT) / Path(source).stem / argv_slug
-    cache_folder.mkdir(parents=True, exist_ok=True)        
 
-    print("Tesseract cache folder {} - ".format(cache_folder), end='', 
+    cache_folder = Path(CACHE_ROOT) / Path(source).stem / argv_slug
+    cache_folder.mkdir(parents=True, exist_ok=True)
+
+    print("Tesseract cache folder {} - ".format(cache_folder), end='',
           file=sys.stderr)
 
     if (cache_folder / 'stderr.bin').exists() and not cache_disabled:
@@ -141,7 +141,7 @@ def main():
             for configfile in args.configfiles:
                 # cp cache -> output
                 tessfile = args.outputbase + '.' + configfile
-                shutil.copy(str(cache_folder / configfile) + '.bin', 
+                shutil.copy(str(cache_folder / configfile) + '.bin',
                             tessfile)
         sys.exit(0)
 
@@ -184,7 +184,7 @@ def main():
     manifest['sourcefile'] = str(Path(source).relative_to(TESTS_ROOT))
     def clean_sys_argv():
         for arg in sys.argv[1:]:
-            yield re.sub(r'.*/com.github.ocrmypdf[^/]+[/](.*)', 
+            yield re.sub(r'.*/com.github.ocrmypdf[^/]+[/](.*)',
                          r'$TMPDIR/\1', arg)
     manifest['args'] = list(clean_sys_argv())
     with (Path(CACHE_ROOT) / 'manifest.jsonl').open('a') as f:
