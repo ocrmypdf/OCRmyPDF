@@ -596,13 +596,6 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
     elif exc_name == 'ruffus.ruffus_exceptions.MissingInputFileError':
         log.error(cleanup_ruffus_error_message(exc_value))
         exit_code = ExitCode.input_file
-    elif exc_name == 'builtins.TypeError':
-        # Even though repair_pdf will fail, ruffus will still try
-        # to call split_pages with no input files, likely due to a bug
-        if task_name == 'split_pages':
-            log.error("Input file '{0}' is not a valid PDF".format(
-                options.input_file))
-            exit_code = ExitCode.input_file
     elif exc_name == 'builtins.KeyboardInterrupt':
         log.error("Interrupted by user")
         exit_code = ExitCode.ctrl_c
