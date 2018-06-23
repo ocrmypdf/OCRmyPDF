@@ -225,7 +225,7 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
             "-dPDFACompatibilityPolicy=1",
             "-sOutputFile=" + gs_pdf.name,
         ]
-        args_gs.extend(pdf_pages)
+        args_gs.extend(fspath(s) for s in pdf_pages)  # Stringify Path objs
         log.debug(args_gs)
         p = run(args_gs, stdout=PIPE, stderr=STDOUT,
                 universal_newlines=True)
@@ -246,7 +246,7 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
         if p.returncode == 0:
             # Ghostscript does not change return code when it fails to create
             # PDF/A - check PDF/A status elsewhere
-            copy(gs_pdf.name, output_file)
+            copy(gs_pdf.name, fspath(output_file))
         else:
             log.error('Ghostscript PDF/A rendering failed')
             raise SubprocessOutputError()

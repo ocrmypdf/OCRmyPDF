@@ -24,6 +24,8 @@ import pkg_resources
 from libxmp.utils import file_to_dict
 from libxmp import consts
 
+from .helpers import universal_open
+
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
 
 SRGB_ICC_PROFILE = pkg_resources.resource_filename(
@@ -214,7 +216,7 @@ def generate_pdfa_ps(target_filename, pdfmark, icc='sRGB'):
 
     # We should have encoded everything to pure ASCII by this point, and
     # to be safe, only allow ASCII in PostScript
-    with open(target_filename, 'w', encoding='ascii') as f:
+    with universal_open(target_filename, 'w', encoding='ascii') as f:
         f.write(ps)
 
 
