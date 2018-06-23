@@ -34,8 +34,7 @@ import sys
 @pytest.fixture
 def blank_hocr(tmpdir):
     filename = Path(str(tmpdir)) / "blank.hocr"
-    with open(str(filename), 'w') as f:
-        f.write(HOCR_TEMPLATE)
+    filename.write_text(HOCR_TEMPLATE)
     return filename
 
 
@@ -50,6 +49,3 @@ def test_mono_image(blank_hocr, outdir):
         str(outdir / 'mono.pdf'), imageFileName=str(outdir / 'mono.tif'))
 
     qpdf.check(str(outdir / 'mono.pdf'))
-
-
-

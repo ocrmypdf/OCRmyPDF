@@ -575,7 +575,7 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile):
 
     page = pdf.pages[pageno]
 
-    pageinfo['textinfo'] = _page_get_textblocks(str(infile), pageno)
+    pageinfo['textinfo'] = _page_get_textblocks(fspath(infile), pageno)
 
     mediabox = [Decimal(d) for d in page.MediaBox.as_list()]
     width_pt = mediabox[2] - mediabox[0]

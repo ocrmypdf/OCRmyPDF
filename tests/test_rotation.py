@@ -56,8 +56,8 @@ def check_monochrome_correlation(
     rasterize(reference_pdf, reference_pageno, reference_png)
     rasterize(test_pdf, test_pageno, test_png)
 
-    pix_ref = leptonica.Pix.read(str(reference_png))
-    pix_test = leptonica.Pix.read(str(test_png))
+    pix_ref = leptonica.Pix.open(reference_png)
+    pix_test = leptonica.Pix.open(test_png)
 
     return leptonica.Pix.correlation_binary(pix_ref, pix_test)
 
@@ -127,7 +127,7 @@ def test_rotated_skew_timeout(resources, outpdf):
     timeout produced a page whose dimensions did not match the original's.
     """
 
-    input_file = str(resources / 'rotated_skew.pdf')
+    input_file = resources / 'rotated_skew.pdf'
     in_pageinfo = PdfInfo(input_file)[0]
 
     assert in_pageinfo.height_pixels < in_pageinfo.width_pixels, \

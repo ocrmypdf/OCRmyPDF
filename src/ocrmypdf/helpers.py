@@ -29,8 +29,8 @@ def re_symlink(input_file, soft_link_name, log=None):
     """
     Helper function: relinks soft symbolic link if necessary
     """
-    input_file = str(input_file)  # For Py3.5
-    soft_link_name = str(soft_link_name)
+    input_file = fspath(input_file)  # For Py3.5
+    soft_link_name = fspath(soft_link_name)
     if log is None:
         prdebug = partial(print, file=sys.stderr)
     else:
@@ -108,14 +108,14 @@ def is_file_writable(test_file):
         # defaults to strict=False. This implements strict=False like behavior
         # for Python 3.5.
         if sys.version_info[0:2] <= (3, 5):
-            p = Path(os.path.realpath(str(p)))
+            p = Path(os.path.realpath(fspath(p)))
         else:
             p = p.resolve(strict=False)
 
     # p.is_file() throws an exception in some cases
     if p.exists() and p.is_file():
         return os.access(
-            str(p), os.W_OK,
+            fspath(p), os.W_OK,
             effective_ids=(os.access in os.supports_effective_ids))
     else:
         try:

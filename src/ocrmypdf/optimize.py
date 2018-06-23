@@ -39,7 +39,7 @@ PNG_QUALITY = (65, 75)
 
 
 def img_name(root, xref, ext):
-    return str(root / '{:08d}{}'.format(xref, ext))
+    return fspath(root / '{:08d}{}'.format(xref, ext))
 
 
 def png_name(root, xref):
@@ -193,7 +193,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             prefix = 'group{:08d}'.format(group)
             future = executor.submit(
                 jbig2enc.convert_group,
-                cwd=str(root),
+                cwd=fspath(root),
                 infiles=(img_name(root, xref, ext) for xref, ext in xref_exts),
                 out_prefix=prefix
             )
@@ -229,8 +229,8 @@ def transcode_jpegs(pike, jpegs, root, log, options):
         # DEBUG:PIL.Image:Error closing: 'NoneType' object has no attribute
         # 'close'.  Seems to be mostly harmless
         # https://github.com/python-pillow/Pillow/issues/1144
-        with Image.open(str(in_jpg)) as im:
-            im.save(str(opt_jpg),
+        with Image.open(fspath(in_jpg)) as im:
+            im.save(fspath(opt_jpg),
                     optimize=True,
                     quality=JPEG_QUALITY)
         if opt_jpg.stat().st_size > in_jpg.stat().st_size:
