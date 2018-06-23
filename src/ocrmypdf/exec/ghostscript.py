@@ -16,14 +16,13 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 from tempfile import NamedTemporaryFile
-from subprocess import run, PIPE, STDOUT, CalledProcessError
+from subprocess import run, PIPE, STDOUT
 from shutil import copy
 from functools import lru_cache
 import re
-import sys
 from PIL import Image
 from . import get_version
-from ..exceptions import SubprocessOutputError, MissingDependencyError
+from ..exceptions import SubprocessOutputError
 from ..helpers import fspath
 
 

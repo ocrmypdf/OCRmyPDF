@@ -16,14 +16,11 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 from pathlib import Path
-from subprocess import CalledProcessError
 import concurrent.futures
 from collections import defaultdict, namedtuple
-import struct
 import logging
 import sys
 
-from io import BytesIO
 from PIL import Image
 
 import pikepdf

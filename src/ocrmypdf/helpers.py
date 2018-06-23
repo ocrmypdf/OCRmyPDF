@@ -17,7 +17,7 @@
 
 from functools import partial
 from collections.abc import Iterable
-from contextlib import suppress, contextmanager
+from contextlib import suppress
 from pathlib import Path
 import sys
 import os

@@ -16,17 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from subprocess import Popen, PIPE
 from decimal import Decimal
 from math import hypot, isclose
 import re
-import sys
 from collections import namedtuple
-from collections.abc import MutableMapping, Mapping
-import warnings
 from pathlib import Path
 from enum import Enum
-from contextlib import contextmanager
 
 from .exec import ghostscript
 from .helpers import fspath

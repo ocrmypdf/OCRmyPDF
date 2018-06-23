@@ -17,13 +17,11 @@
 
 import sys
 import os
-import re
 import shutil
 from functools import lru_cache
 from collections import namedtuple
 from textwrap import dedent
-from subprocess import PIPE, CalledProcessError, \
-    TimeoutExpired, check_output, STDOUT
+from subprocess import CalledProcessError, TimeoutExpired, check_output, STDOUT
 from contextlib import suppress
 
 from ..exceptions import MissingDependencyError, TesseractConfigError

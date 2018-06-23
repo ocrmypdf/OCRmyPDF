@@ -17,15 +17,10 @@
 
 from subprocess import CalledProcessError, STDOUT, PIPE, run
 from functools import lru_cache
-import sys
-import os
-import re
-import resource
 
 from ..exceptions import InputFileError, SubprocessOutputError, \
-    MissingDependencyError, EncryptedPdfError
+    EncryptedPdfError
 from . import  get_version
-from ..helpers import re_symlink
 
 
 @lru_cache(maxsize=1)

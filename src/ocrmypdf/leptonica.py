@@ -27,9 +27,9 @@ import logging
 import warnings
 from tempfile import TemporaryFile
 from ctypes.util import find_library
-from .lib._leptonica import ffi
 from functools import lru_cache
-from enum import Enum
+
+from .lib._leptonica import ffi
 from .helpers import fspath
 
 lept = ffi.dlopen(find_library('lept'))

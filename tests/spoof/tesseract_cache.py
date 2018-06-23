@@ -20,18 +20,6 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
-from pathlib import Path
-import sys
-import os
-import shutil
-import subprocess
-import argparse
-import json
-import platform
-import re
-
-
 """Cache output of tesseract to speed up test suite
 
 The cache is keyed by an environment variable that slips the input test file
@@ -65,6 +53,16 @@ text support. Will fail to replicate a 3.04 bug if wrong parameter order is
 given.
 
 """
+
+from pathlib import Path
+import sys
+import os
+import shutil
+import subprocess
+import argparse
+import json
+import platform
+import re
 
 if '_OCRMYPDF_SAVE_PATH' in os.environ:
     os.environ['PATH'] = os.environ['_OCRMYPDF_SAVE_PATH']

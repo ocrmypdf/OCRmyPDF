@@ -18,17 +18,11 @@
 from ocrmypdf import hocrtransform
 from ocrmypdf.exec.tesseract import HOCR_TEMPLATE
 from ocrmypdf.exec import qpdf
-from reportlab.pdfgen.canvas import Canvas
 from PIL import Image
-from tempfile import NamedTemporaryFile
-from contextlib import suppress
 from pathlib import Path
-import os
-import shutil
 import pytest
-import img2pdf
-import pytest
-import sys
+
+# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture

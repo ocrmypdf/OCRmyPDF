@@ -8,6 +8,7 @@ tasks.py
 .ruffus_history.sqlite
 .idea/
 .pytest_cache/
+.pylintrc
 
 # Package building
 *.egg-info/

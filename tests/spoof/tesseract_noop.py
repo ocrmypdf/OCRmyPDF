@@ -20,12 +20,6 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import sys
-import img2pdf
-import PyPDF2 as pypdf
-from PIL import Image
-
-
 """Tesseract no-op spoof
 
 To quickly run tests where getting OCR output is not necessary.
@@ -36,6 +30,11 @@ In 'pdf' mode, convert the image to PDF using another program.
 
 In orientation check mode, report the orientation is upright.
 """
+
+import sys
+import img2pdf
+import PyPDF2 as pypdf
+from PIL import Image
 
 
 VERSION_STRING = '''tesseract 3.05.01

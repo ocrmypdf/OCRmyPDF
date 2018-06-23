@@ -19,8 +19,6 @@ from pathlib import Path
 
 import pytest
 
-import pikepdf
-
 from ocrmypdf import optimize as opt
 
 

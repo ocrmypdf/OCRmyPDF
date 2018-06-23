@@ -22,7 +22,6 @@ from datetime import datetime, timezone
 
 import sys
 import os
-import shutil
 import re
 
 import img2pdf
@@ -32,11 +31,11 @@ from PIL import Image
 from ruffus import formatter, regex, Pipeline, suffix
 
 from .hocrtransform import HocrTransform
-from .pdfinfo import PdfInfo, Encoding, Colorspace
+from .pdfinfo import PdfInfo, Colorspace
 from .pdfa import generate_pdfa_ps, encode_pdf_date
 from .helpers import re_symlink, is_iterable_notstr, page_number, flatten_groups
 from .exec import ghostscript, tesseract, qpdf
-from .exceptions import PdfMergeFailedError, UnsupportedImageFormatError, \
+from .exceptions import UnsupportedImageFormatError, \
     DpiError, PriorOcrFoundError, InputFileError
 from . import leptonica
 from . import PROGRAM_NAME, VERSION

@@ -34,8 +34,7 @@ from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.leptonica import Pix
 
 # pytest.helpers is dynamic
-# pylint: disable=no-member
-# pylint: disable=w0612
+# pylint: disable=no-member,redefined-outer-name
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
