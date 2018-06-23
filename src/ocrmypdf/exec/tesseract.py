@@ -73,7 +73,8 @@ def has_textonly_pdf():
     """
     args_tess = [
         'tesseract',
-        '--print-parameters'
+        '--print-parameters',
+        'pdf'
     ]
     params = ''
     try:
