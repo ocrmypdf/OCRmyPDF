@@ -56,6 +56,11 @@ class _LeptonicaErrorTrap(object):
     from Leptonica are also suppressed.
 
     """
+
+    def __init__(self):
+        self.tmpfile = None
+        self.copy_of_stderr = -1
+
     def __enter__(self):
         from io import UnsupportedOperation
         self.tmpfile = TemporaryFile()
@@ -328,7 +333,7 @@ class Pix:
             return None
 
     def remove_colormap(self, removal_type):
-        """Remove a palette (colormap); if no colormap, returns a copy of this 
+        """Remove a palette (colormap); if no colormap, returns a copy of this
         image
 
             removal_type - any of lept.REMOVE_CMAP_*
@@ -485,7 +490,7 @@ class Pix:
     def generate_pdf_ci_data(self, type_, quality):
         "Convert to PDF data, with transcoding"
         p_compdata = ffi.new('L_COMP_DATA **')
-        result = lept.pixGenerateCIData(self._pix, type_, quality, 0, 
+        result = lept.pixGenerateCIData(self._pix, type_, quality, 0,
                                         p_compdata)
         if result != 0:
             raise LeptonicaError("Generate PDF data failed")
