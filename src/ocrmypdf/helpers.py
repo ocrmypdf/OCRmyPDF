@@ -71,7 +71,7 @@ def is_iterable_notstr(thing):
 
 
 def page_number(input_file):
-    "Get one-based page number implied by filename (000002.pdf -> 2)"
+    """Get one-based page number implied by filename (000002.pdf -> 2)"""
     return int(os.path.basename(fspath(input_file))[0:6])
 
 
@@ -131,7 +131,7 @@ def is_file_writable(test_file):
 
 if sys.version_info[0:2] <= (3, 5):
     def universal_open(p, *args, **kwargs):
-        "Work around Python 3.5's inability to open(pathlib.Path())"
+        """Work around Python 3.5's inability to open(pathlib.Path())"""
         try:
             return p.open(*args, **kwargs)
         except AttributeError:
@@ -139,8 +139,8 @@ if sys.version_info[0:2] <= (3, 5):
 
 
     def fspath(path):
+        """https://www.python.org/dev/peps/pep-0519/#os"""
         import pathlib
-        '''https://www.python.org/dev/peps/pep-0519/#os'''
         if isinstance(path, (str, bytes)):
             return path
 
