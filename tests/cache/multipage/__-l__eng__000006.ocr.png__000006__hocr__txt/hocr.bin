@@ -9,7 +9,7 @@
   <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word'/>
 </head>
 <body>
-  <div class='ocr_page' id='page_1' title='image "/var/folders/37/78_114p552q16vv6vmgm5kr00000gn/T/com.github.ocrmypdf.b07isxe5/000006.ocr.png"; bbox 0 0 3300 2550; ppageno 0'>
+  <div class='ocr_page' id='page_1' title='image "/var/folders/37/78_114p552q16vv6vmgm5kr00000gn/T/com.github.ocrmypdf.8h8gbca4/000006.ocr.png"; bbox 0 0 3300 2550; ppageno 0'>
    <div class='ocr_carea' id='block_1_1' title="bbox 439 20 1559 450">
     <p class='ocr_par' id='par_1_1' lang='eng' title="bbox 439 20 1559 450">
      <span class='ocr_line' id='line_1_1' title="bbox 439 20 1556 74; baseline 0 -12; x_size 54; x_descenders 12; x_ascenders 14"><span class='ocrx_word' id='word_1_1' title='bbox 439 20 541 62; x_wconf 96'><strong>with</strong></span> <span class='ocrx_word' id='word_1_2' title='bbox 571 34 596 62; x_wconf 96'><strong>a</strong></span> <span class='ocrx_word' id='word_1_3' title='bbox 625 20 741 74; x_wconf 96'><strong>plain</strong></span> <span class='ocrx_word' id='word_1_4' title='bbox 772 20 878 70; x_wconf 96'><strong>face,</strong></span> <span class='ocrx_word' id='word_1_5' title='bbox 911 34 968 62; x_wconf 96'><strong>on</strong></span> <span class='ocrx_word' id='word_1_6' title='bbox 997 20 1068 62; x_wconf 96'><strong>the</strong></span> <span class='ocrx_word' id='word_1_7' title='bbox 1098 20 1243 62; x_wconf 96'><strong>throne</strong></span> <span class='ocrx_word' id='word_1_8' title='bbox 1275 20 1329 62; x_wconf 96'><strong>of</strong></span> <span class='ocrx_word' id='word_1_9' title='bbox 1352 20 1556 74; x_wconf 96'><strong>England;</strong></span> 

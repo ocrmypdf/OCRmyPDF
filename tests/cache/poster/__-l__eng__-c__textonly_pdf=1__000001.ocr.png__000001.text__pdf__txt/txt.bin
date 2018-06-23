@@ -2,7 +2,6 @@ The LinnSequencer
 32 Track MIDI Sequence Recorder
 
 The LinnSequencer is a state-of-the-art composition and performance tool for the professional musician. It is
-
 extremely powerful, yet amazingly simple to learn and use. It’s many remarkable features include:
 
 © Operation is similar to multi-track tape recorder with PLAY, STOP, RECORD, FAST
@@ -54,7 +53,6 @@ Editing
 To erase a wrong note, simply hold ERASE and press
 the note to be erased just before it plays in the sequence—
 when played back, it will be gone. Notes may also be
-
 added, erased, or changed using the SINGLE STEP func-
 tion. To overdub notes at specific points within a sequence,
 

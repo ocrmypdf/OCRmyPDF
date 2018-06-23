@@ -9,7 +9,7 @@
   <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word'/>
 </head>
 <body>
-  <div class='ocr_page' id='page_1' title='image "/var/folders/37/78_114p552q16vv6vmgm5kr00000gn/T/com.github.ocrmypdf.b07isxe5/000003.ocr.png"; bbox 0 0 2272 1848; ppageno 0'>
+  <div class='ocr_page' id='page_1' title='image "/var/folders/37/78_114p552q16vv6vmgm5kr00000gn/T/com.github.ocrmypdf.g75m0tdg/000003.ocr.png"; bbox 0 0 2272 1848; ppageno 0'>
    <div class='ocr_carea' id='block_1_1' title="bbox 201 38 2167 118">
     <p class='ocr_par' id='par_1_1' lang='eng' title="bbox 201 38 2167 118">
      <span class='ocr_line' id='line_1_1' title="bbox 201 38 2167 118; baseline -0.001 -17; x_size 79; x_descenders 17; x_ascenders 16"><span class='ocrx_word' id='word_1_1' title='bbox 201 39 659 117; x_wconf 96'><strong>Replacement</strong></span> <span class='ocrx_word' id='word_1_2' title='bbox 665 38 784 101; x_wconf 96'><strong>of</strong></span> <span class='ocrx_word' id='word_1_3' title='bbox 808 39 1289 101; x_wconf 95'><strong>&quot;creationism&quot;</strong></span> <span class='ocrx_word' id='word_1_4' title='bbox 1316 39 1458 101; x_wconf 96'><strong>with</strong></span> <span class='ocrx_word' id='word_1_5' title='bbox 1491 39 1869 118; x_wconf 96'><strong>&quot;intelligent</strong></span> <span class='ocrx_word' id='word_1_6' title='bbox 1897 39 2167 118; x_wconf 92'><strong>design&quot;</strong></span> 
