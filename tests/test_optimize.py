@@ -21,7 +21,7 @@ import pytest
 
 import pikepdf
 
-from ocrmypdf import _optimize as opt
+from ocrmypdf import optimize as opt
 
 
 @pytest.mark.parametrize('pdf', ['multipage.pdf', 'palette.pdf'])

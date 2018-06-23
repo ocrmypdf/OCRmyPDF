@@ -40,7 +40,7 @@ from .exceptions import PdfMergeFailedError, UnsupportedImageFormatError, \
     DpiError, PriorOcrFoundError, InputFileError
 from . import leptonica
 from . import PROGRAM_NAME, VERSION
-from ._optimize import optimize
+from .optimize import optimize
 from ._weave import weave_layers
 
 
