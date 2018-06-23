@@ -29,7 +29,7 @@ from enum import Enum
 from contextlib import contextmanager
 
 from .exec import ghostscript
-from .helpers import universal_open, fspath
+from .helpers import fspath
 
 from pikepdf import PdfMatrix
 import pikepdf

@@ -23,8 +23,8 @@ from datetime import datetime
 import pkg_resources
 from libxmp.utils import file_to_dict
 from libxmp import consts
+from pathlib import Path
 
-from .helpers import universal_open
 
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
 
@@ -216,8 +216,7 @@ def generate_pdfa_ps(target_filename, pdfmark, icc='sRGB'):
 
     # We should have encoded everything to pure ASCII by this point, and
     # to be safe, only allow ASCII in PostScript
-    with universal_open(target_filename, 'w', encoding='ascii') as f:
-        f.write(ps)
+    Path(target_filename).write_text(ps, encoding='ascii')
 
 
 def file_claims_pdfa(filename):

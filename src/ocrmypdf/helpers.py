@@ -130,14 +130,6 @@ def is_file_writable(test_file):
 
 
 if sys.version_info[0:2] <= (3, 5):
-    def universal_open(p, *args, **kwargs):
-        """Work around Python 3.5's inability to open(pathlib.Path())"""
-        try:
-            return p.open(*args, **kwargs)
-        except AttributeError:
-            return open(p, *args, **kwargs)
-
-
     def fspath(path):
         """https://www.python.org/dev/peps/pep-0519/#os"""
         import pathlib
@@ -167,7 +159,6 @@ if sys.version_info[0:2] <= (3, 5):
             + path_type.__name__)
 
 else:
-    universal_open = open
     fspath = os.fspath
 
 
