@@ -120,7 +120,7 @@ def _pdf_guess_version(input_file, search_window=1024):
     """
 
     with open(input_file, 'rb') as f:
-        signature = f.read(1024)
+        signature = f.read(search_window)
     m = re.search(br'%PDF-(\d\.\d)', signature)
     if m:
         return m.group(1)
