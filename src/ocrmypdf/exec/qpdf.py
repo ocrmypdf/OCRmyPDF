@@ -43,8 +43,8 @@ def check(input_file, log=None):
             check=True)
     except CalledProcessError as e:
         if e.returncode == 2:
-            log.error("{0}: not a valid PDF, and could not repair it.".format(
-                input_file))
+            log.error("%s: not a valid PDF, and could not repair it.",
+                input_file)
             log.error("Details:")
             log.error(e.output)
         elif e.returncode == 3:
@@ -73,19 +73,18 @@ def repair(input_file, output_file, log):
             check=True)
     except CalledProcessError as e:
         if e.returncode == 3 and e.output.find("operation succeeded"):
-            log.debug('qpdf found and fixed errors: ' + e.output)
+            log.debug('qpdf found and fixed errors: %s', e.output)
             return
 
         if _probably_encrypted(e):
             raise EncryptedPdfError() from e
         elif e.returncode == 2:
-            log.error("{0}: not a valid PDF, and could not repair it.".format(
-                      input_file))
-            log.error("Details: " + e.output)
+            log.error("%s: not a valid PDF, and could not repair it.",
+                      input_file)
+            log.error("Details: %s", e.output)
             raise InputFileError() from e
         else:
-            log.error("{0}: unknown error".format(
-                      input_file))
+            log.error("%s: unknown error", input_file)
             log.error(e.output)
             raise SubprocessOutputError() from e
 

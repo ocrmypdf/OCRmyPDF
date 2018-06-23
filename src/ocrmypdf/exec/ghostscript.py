@@ -81,8 +81,10 @@ def extract_text(input_file, pageno=1):
     p = run(args_gs, stdout=PIPE, stderr=PIPE)
     if p.returncode != 0:
         raise SubprocessOutputError(
-            'Ghostscript text extraction failed\n%s\n%s\n%s',
-            input_file, p.stdout.decode(), p.stderr.decode())
+            'Ghostscript text extraction failed\n%s\n%s\n%s' % (
+                input_file, p.stdout.decode(), p.stderr.decode()
+            )
+        )
 
     return p.stdout
 
