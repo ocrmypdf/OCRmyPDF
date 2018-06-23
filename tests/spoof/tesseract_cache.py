@@ -116,6 +116,8 @@ def main():
                 yield Path(args.imagename).name
             elif arg == args.outputbase:
                 yield Path(args.outputbase).name
+            elif arg == '-c' or arg.startswith('textonly'):
+                pass
             else:
                 yield arg
 
