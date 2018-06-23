@@ -187,6 +187,8 @@ def main():
             yield re.sub(r'.*/com.github.ocrmypdf[^/]+[/](.*)',
                          r'$TMPDIR/\1', arg)
     manifest['args'] = list(clean_sys_argv())
+
+    # pylint: disable=E1101
     with (Path(CACHE_ROOT) / 'manifest.jsonl').open('a') as f:
         json.dump(manifest, f)
         f.write('\n')
