@@ -300,7 +300,8 @@ def test_autorotate_threshold(
 @pytest.mark.parametrize('renderer',RENDERERS)
 def test_ocr_timeout(renderer, resources, outpdf):
     out = check_ocrmypdf(resources / 'skew.pdf', outpdf,
-                         '--tesseract-timeout', '1.0')
+                         '--tesseract-timeout', '0.01',
+                         '--pdf-renderer', renderer)
     pdfinfo = PdfInfo(out)
     assert not pdfinfo[0].has_text
 
@@ -472,7 +473,7 @@ def test_tesseract_image_too_big(renderer, spoof_tesseract_big_image_error,
                                  resources, outpdf):
     check_ocrmypdf(
         resources / 'hugemono.pdf', outpdf, '-r',
-        '--pdf-renderer', renderer, 
+        '--pdf-renderer', renderer,
         '--max-image-mpixels', '0',
         env=spoof_tesseract_big_image_error)
 
@@ -993,7 +994,7 @@ def test_bad_utf8(spoof_tess_bad_utf8, renderer, resources, no_outpdf):
 
 
 @pytest.mark.skipif(
-    not tesseract.has_textonly_pdf(), 
+    not tesseract.has_textonly_pdf(),
     reason="issue only affects sandwich")
 def test_rotate_deskew_timeout(resources, outdir):
     check_ocrmypdf(
@@ -1043,10 +1044,10 @@ def test_text_curves(spoof_tesseract_noop, resources, outpdf):
     check_ocrmypdf(
         resources / 'vector.pdf', outpdf, '--force-ocr',
         env=spoof_tesseract_noop)
-    
+
     info = PdfInfo(outpdf)
     assert len(info.pages[0].images) != 0, "force did not rasterize"
-    
+
 
 def test_dev_null(spoof_tesseract_noop, resources):
     p, out, err = run_ocrmypdf(
