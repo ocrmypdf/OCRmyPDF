@@ -120,8 +120,7 @@ def tess_base_args(langs, engine_mode):
     return args
 
 
-def get_orientation(input_file, language: list, engine_mode, timeout: float,
-                    log):
+def get_orientation(input_file, engine_mode, timeout: float, log):
     args_tesseract = tess_base_args(['osd'], engine_mode) + [
         psm(), '0',
         input_file,

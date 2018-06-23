@@ -377,7 +377,6 @@ def orient_page(
 
     orient_conf = tesseract.get_orientation(
         preview,
-        language=options.language,
         engine_mode=options.tesseract_oem,
         timeout=options.tesseract_timeout,
         log=log)
