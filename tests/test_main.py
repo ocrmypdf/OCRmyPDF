@@ -213,7 +213,8 @@ def test_argsfile(spoof_tesseract_noop, resources, outdir):
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_ocr_timeout(renderer, resources, outpdf):
     out = check_ocrmypdf(resources / 'skew.pdf', outpdf,
-                         '--tesseract-timeout', '1.0')
+                         '--tesseract-timeout', '0.01',
+                         '--pdf-renderer', renderer)
     pdfinfo = PdfInfo(out)
     assert not pdfinfo[0].has_text
 
@@ -388,7 +389,8 @@ def test_tesseract_image_too_big(renderer, spoof_tesseract_big_image_error,
 
 
 def test_algo4(resources, spoof_tesseract_noop, outpdf):
-    p, _, _ = run_ocrmypdf(resources / 'encrypted_algo4.pdf', outpdf)
+    p, _, _ = run_ocrmypdf(resources / 'encrypted_algo4.pdf', outpdf,
+        env=spoof_tesseract_noop)
     assert p.returncode == ExitCode.ok
 
 
