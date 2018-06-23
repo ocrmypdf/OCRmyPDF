@@ -241,7 +241,7 @@ def file_claims_pdfa(filename):
     pdfa_node = xmp[consts.XMP_NS_PDFA_ID]
     def read_node(node, key):
         return next(
-            (v for k, v, meta in pdfa_node if k == key), ''
+            (v for k, v, meta in node if k == key), ''
         )
 
     part = read_node(pdfa_node, 'pdfaid:part')
