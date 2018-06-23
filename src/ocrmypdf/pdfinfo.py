@@ -295,7 +295,7 @@ class ImageInfo:
         self._bpc = int(pim.bits_per_component)
         try:
             self._enc = FRIENDLY_ENCODING.get(pim.filters[0], 'image')
-        except IndexError as e:
+        except IndexError:
             self._enc = '?'
 
         try:

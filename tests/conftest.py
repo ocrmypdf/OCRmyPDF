@@ -26,6 +26,9 @@ from pathlib import Path
 from subprocess import Popen, PIPE
 
 
+# pylint: disable=E1101
+# pytest.helpers is dynamic so it confuses pylint
+
 if sys.version_info.major < 3:
     print("Requires Python 3.4+")
     sys.exit(1)
@@ -81,7 +84,7 @@ def spoof(tmpdir_factory, **kwargs):
 
     env['_OCRMYPDF_SAVE_PATH'] = env['PATH']
     env['PATH'] = str(tmpdir) + ":" + env['PATH']
-    
+
     return env
 
 

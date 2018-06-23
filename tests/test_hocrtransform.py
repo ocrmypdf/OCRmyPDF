@@ -34,7 +34,7 @@ import sys
 @pytest.fixture
 def blank_hocr(tmpdir):
     filename = Path(str(tmpdir)) / "blank.hocr"
-    filename.write_text(HOCR_TEMPLATE)
+    filename.write_text(HOCR_TEMPLATE)  # pylint: disable=E1101
     return filename
 
 

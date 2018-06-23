@@ -309,7 +309,7 @@ def marker_pages(
     # file a symlink back to the source.
     for n in range(npages):
         page = Path(work_folder) / '{0:06d}.marker.pdf'.format(n + 1)
-        page.symlink_to(input_file)
+        page.symlink_to(input_file)  # pylint: disable=E1101
 
 
 def split_page(

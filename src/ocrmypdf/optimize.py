@@ -169,7 +169,7 @@ def extract_images(pike, root, log, options):
             len(jbig2_groups), len(jpegs), len(pngs), errors
     ))
 
-    return changed_xrefs, jbig2_groups, jpegs, pngs
+    return jbig2_groups, jpegs, pngs
 
 
 def convert_to_jbig2(pike, jbig2_groups, root, log, options):
@@ -208,7 +208,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
         jbig2_globals = pikepdf.Stream(pike, jbig2_globals_data)
 
         for n, xref_ext in enumerate(xref_exts):
-            xref, ext = xref_ext
+            xref, _ = xref_ext
             jbig2_im_file = root / (prefix + '.{:04d}'.format(n))
             jbig2_im_data = jbig2_im_file.read_bytes()
             im_obj = pike._get_object_id(xref, 0)
@@ -233,6 +233,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
             im.save(fspath(opt_jpg),
                     optimize=True,
                     quality=JPEG_QUALITY)
+        # pylint: disable=E1101
         if opt_jpg.stat().st_size > in_jpg.stat().st_size:
             log.debug("xref {}, jpeg, made larger - skip".format(xref))
             continue
@@ -322,8 +323,8 @@ def optimize(
     pike = pikepdf.Pdf.open(input_file)
 
     root = Path(output_file).parent / 'images'
-    root.mkdir(exist_ok=True)
-    changed_xrefs, jbig2_groups, jpegs, pngs = extract_images(
+    root.mkdir(exist_ok=True)  # pylint: disable=E1101
+    jbig2_groups, jpegs, pngs = extract_images(
         pike, root, log, options)
 
     convert_to_jbig2(pike, jbig2_groups, root, log, options)

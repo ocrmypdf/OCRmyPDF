@@ -588,6 +588,7 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
     exit_code = None
 
     task_name, job_name, exc_name, exc_value, exc_stack = ruffus_five_tuple
+    task_name = task_name  # unused
     job_name = job_name  # unused
     if exc_name == 'builtins.SystemExit':
         match = re.search(r"\.(.+?)\)", exc_value)
