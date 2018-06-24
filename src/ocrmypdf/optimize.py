@@ -141,7 +141,7 @@ def extract_images(pike, root, log, options):
         except AttributeError:
             continue
         for imname, image in dict(xobjs).items():
-            xref = image._objgen[0]
+            xref = image.objgen[0]
             if xref in changed_xrefs:
                 continue  # Don't improve same image twice
             try:
@@ -208,7 +208,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             xref, _ = xref_ext
             jbig2_im_file = root / (prefix + '.{:04d}'.format(n))
             jbig2_im_data = jbig2_im_file.read_bytes()
-            im_obj = pike._get_object_id(xref, 0)
+            im_obj = pike.get_object(xref, 0)
             im_obj.write(
                 jbig2_im_data, pikepdf.Name('/JBIG2Decode'),
                 pikepdf.Dictionary({
@@ -236,7 +236,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
             continue
 
         compdata = leptonica.CompressedData.open(opt_jpg)
-        im_obj = pike._get_object_id(xref, 0)
+        im_obj = pike.get_object(xref, 0)
         im_obj.write(
             compdata.read(), pikepdf.Name('/DCTDecode'),
             pikepdf.Null()
@@ -254,7 +254,7 @@ def transcode_pngs(pike, pngs, root, log, options):
                     PNG_QUALITY[0], PNG_QUALITY[1])
 
     for xref in pngs:
-        im_obj = pike._get_object_id(xref, 0)
+        im_obj = pike.get_object(xref, 0)
 
         # Open, transcode (!), package for PDF
         try:
