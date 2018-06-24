@@ -141,6 +141,8 @@ def extract_images(pike, root, log, options):
         except AttributeError:
             continue
         for imname, image in dict(xobjs).items():
+            if image.objgen[1] != 0:
+                continue  # Ignore images in an incremental PDF
             xref = image.objgen[0]
             if xref in changed_xrefs:
                 continue  # Don't improve same image twice
