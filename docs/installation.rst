@@ -1,7 +1,7 @@
 Installation
 ============
 
-The easiest way to install OCRmyPDF to follow the steps for your operating system/platform. 
+The easiest way to install OCRmyPDF to follow the steps for your operating system/platform.
 
 If you want to use the latest version of OCRmyPDF, your best bet is to install the most recent version your platform provides, and then upgrade that version by installing the Python binary wheels.
 
@@ -23,7 +23,7 @@ To see what versions are available, check the `Debian Package Tracker <https://t
 Installing on macOS with Homebrew
 ---------------------------------
 
-.. image:: https://img.shields.io/homebrew/v/ocrmypdf.svg   
+.. image:: https://img.shields.io/homebrew/v/ocrmypdf.svg
     :alt: homebrew
     :target: http://brewformulas.org/Ocrmypdf
 
@@ -55,7 +55,7 @@ Follow the Docker installation instructions for your platform.  If you can run t
 .. code-block:: bash
 
     docker run hello-world
-   
+
 OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine instance on Windows and macOS has only a single CPU core enabled. Use the VirtualBox Manager to determine the name of your Docker engine host, and then follow these optional steps to enable multiple CPUs:
 
 .. code-block:: bash
@@ -103,14 +103,14 @@ You can then run ocrmypdf using the command:
 .. code-block:: bash
 
     docker run --rm ocrmypdf --help
-  
+
 To execute the OCRmyPDF on a local file, you must `provide a writable volume to the Docker image <https://docs.docker.com/userguide/dockervolumes/>`_, and both the input and output file must be inside the writable volume.  This example command uses the current working directory as the writable volume:
 
 .. code-block:: bash
 
     docker run --rm -v "$(pwd):/home/docker" <other docker arguments>   ocrmypdf <your arguments to ocrmypdf>
 
-In this worked example, the current working directory contains an input file called ``test.pdf`` and the output will go to ``output.pdf``: 
+In this worked example, the current working directory contains an input file called ``test.pdf`` and the output will go to ``output.pdf``:
 
 .. code-block:: bash
 
@@ -167,11 +167,11 @@ Install or upgrade the required Homebrew packages, if any are missing:
     brew install python3
     brew install libxml2 libffi leptonica
     brew install unpaper   # optional
-   
-Python 3.5 and 3.6 are supported.
+
+Python 3.5, 3.6 and 3.7 are supported.
 
 Install the required Tesseract OCR engine with the language packs you plan to use:
-   
+
 .. code-block:: bash
 
     brew install tesseract                       # Option 1: for English, French, German, Spanish
@@ -398,7 +398,7 @@ The following dependencies are recommended:
 - unpaper 6.1
 - PyMuPDF 1.12.5 or newer
 
-These are in addition to the Python packaging dependencies, meaning that unfortunately, the ``pip install`` command cannot satisfy all of them. 
+These are in addition to the Python packaging dependencies, meaning that unfortunately, the ``pip install`` command cannot satisfy all of them.
 
 Python 3.6 and Tesseract 4.0.0-beta.1 are recommended for best OCR results and best performance.
 

@@ -40,6 +40,11 @@ import codecs
 
 def verify_python3_env():
     """Ensures that the environment is good for unicode on Python 3."""
+
+    # PEP 538 changes in Python 3.7 should make this wrangling unnecessary
+    if sys.version_info[0:3] >= (3, 7, 0):
+        return
+
     try:
         import locale
         fs_enc = codecs.lookup(locale.getpreferredencoding()).name
