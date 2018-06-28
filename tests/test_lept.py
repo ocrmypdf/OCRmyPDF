@@ -26,5 +26,5 @@ import ocrmypdf.leptonica as lept
 def test_colormap_backgroundnorm(resources):
     # Issue #262 - unclear how to reproduce exactly, so just ensure leptonica
     # can handle that case
-    pix = lept.Pix.read(resources / 'baiona-colormapped.png')
+    pix = lept.Pix.open(resources / 'baiona-colormapped.png')
     pix.background_norm()

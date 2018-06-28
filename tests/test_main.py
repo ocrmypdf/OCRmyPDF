@@ -109,7 +109,7 @@ def test_deskew(spoof_tesseract_noop, resources, outdir):
         log=log,
         pageno=1)
 
-    pix = Pix.read(str(deskewed_png))
+    pix = Pix.open(deskewed_png)
     skew_angle, skew_confidence = pix.find_skew()
 
     print(skew_angle)

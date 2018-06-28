@@ -132,7 +132,7 @@ class Pix:
     This class treats Pix objects as immutable.  All methods return new
     modified objects.  This allows convenient chaining:
 
-    >>>   Pix.read('filename.jpg').scale((0.5, 0.5)).deskew().show()
+    >>>   Pix.open('filename.jpg').scale((0.5, 0.5)).deskew().show()
 
     """
 
@@ -593,7 +593,7 @@ def get_leptonica_version():
 
 def deskew(infile, outfile, dpi):
     try:
-        pix_source = Pix.read(infile)
+        pix_source = Pix.open(infile)
     except LeptonicaIOError:
         raise LeptonicaIOError("Failed to open file: %s" % infile)
 
@@ -612,7 +612,7 @@ def deskew(infile, outfile, dpi):
 def remove_background(infile, outfile, tile_size=(40, 60), gamma=1.0,
                       black_threshold=70, white_threshold=190):
     try:
-        pix = Pix.read(infile)
+        pix = Pix.open(infile)
     except LeptonicaIOError:
         raise LeptonicaIOError("Failed to open file: %s" % infile)
 
