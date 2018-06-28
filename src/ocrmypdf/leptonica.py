@@ -32,18 +32,19 @@ from functools import lru_cache
 from .lib._leptonica import ffi
 from .helpers import fspath
 
+# pylint: disable=w0212
+
 lept = ffi.dlopen(find_library('lept'))
 
 logger = logging.getLogger(__name__)
 
 
 def stderr(*objs):
-    """Python 2/3 compatible print to stderr.
-    """
+    """Shorthand print to stderr."""
     print("leptonica.py:", *objs, file=sys.stderr)
 
 
-class _LeptonicaErrorTrap(object):
+class _LeptonicaErrorTrap:
     """Context manager to trap errors reported by Leptonica.
 
     Leptonica's error return codes are unreliable to the point of being
@@ -339,10 +340,9 @@ class Pix:
             removal_type - any of lept.REMOVE_CMAP_*
 
         """
-        return self
-        # with _LeptonicaErrorTrap():
-        #     return Pix(lept.pixRemoveColormapGeneral(
-        #             self._pix, removal_type, lept.L_COPY))
+        with _LeptonicaErrorTrap():
+            return Pix(lept.pixRemoveColormapGeneral(
+                    self._pix, removal_type, lept.L_COPY))
 
     def otsu_adaptive_threshold(
             self, tile_size=(300, 300), kernel_size=(4, 4), scorefract=0.1):
@@ -448,7 +448,7 @@ class Pix:
                 bg_val,
                 smooth_kernel[0],
                 smooth_kernel[1]
-                ))
+            ))
 
     @staticmethod
     @lru_cache(maxsize=1)
