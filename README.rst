@@ -4,10 +4,10 @@ OCRmyPDF
 .. image:: https://travis-ci.org/jbarlow83/OCRmyPDF.svg?branch=master
     :target: https://travis-ci.org/jbarlow83/OCRmyPDF
 
-.. image:: https://img.shields.io/pypi/v/ocrmypdf.svg   
+.. image:: https://img.shields.io/pypi/v/ocrmypdf.svg
     :target: https://pypi.org/project/ocrmypdf/
 
-.. image:: https://img.shields.io/homebrew/v/ocrmypdf.svg   
+.. image:: https://img.shields.io/homebrew/v/ocrmypdf.svg
     :alt: homebrew
     :target: http://brewformulas.org/Ocrmypdf
 
@@ -53,7 +53,7 @@ Motivation
 I searched the web for a free command line tool to OCR PDF files on
 Linux/UNIX: I found many, but none of them were really satisfying.
 
--  Either they produced PDF files with misplaced text under the image (making copy/paste impossible) 
+-  Either they produced PDF files with misplaced text under the image (making copy/paste impossible)
 -  Or they did not handle accents and multilingual characters
 -  Or they changed the resolution of the embedded images
 -  Or they generated ridiculously large PDF files
@@ -62,7 +62,7 @@ Linux/UNIX: I found many, but none of them were really satisfying.
 -  On top of that none of them produced PDF/A files (format dedicated for long time storage)
 
 ...so I decided to develop my own tool (using various existing scripts
-as an inspiration). 
+as an inspiration).
 
 Installation
 ------------
@@ -96,7 +96,7 @@ you can often find packages that provide language packs:
 
    # Debian/Ubuntu users
    apt-get install tesseract-ocr-chi-sim  # Example: Install Chinese Simplified language back
-   
+
 You can then pass the ``-l LANG`` argument to OCRmyPDF to give a hint as to what languages it should search for. Multiple
 languages can be requested.
 
@@ -125,9 +125,7 @@ If you detect an issue, please:
 Requirements
 ------------
 
-Runs on CPython 3.6, and requires external program installations of Ghostscript, Tesseract OCR, QPDF, and Leptonica. ocrmypdf is pure Python, but uses CFFI to portably generate library bindings.
-
-Python 3.5 is also supported.
+Runs on CPython 3.5, 3.6 and 3.7. Requires external program installations of Ghostscript, Tesseract OCR, QPDF, and Leptonica. ocrmypdf is pure Python, but uses CFFI to portably generate library bindings.
 
 Press & Media
 -------------
@@ -141,7 +139,7 @@ Press & Media
 License
 -------
 
-The OCRmyPDF software is licensed under the GNU GPLv3. Certain files are covered by other licenses, as noted in their source files. 
+The OCRmyPDF software is licensed under the GNU GPLv3. Certain files are covered by other licenses, as noted in their source files.
 
 The license for each test file varies, and is noted in tests/resources/README.rst. The documentation is licensed under Creative Commons Attribution-ShareAlike 4.0 (CC-BY-SA 4.0).
 

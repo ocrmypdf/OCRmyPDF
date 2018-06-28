@@ -168,7 +168,7 @@ Install or upgrade the required Homebrew packages, if any are missing:
     brew install libxml2 libffi leptonica
     brew install unpaper   # optional
 
-Python 3.5 and 3.6 are supported.
+Python 3.5, 3.6 and 3.7 are supported.
 
 Install the required Tesseract OCR engine with the language packs you plan to use:
 
