@@ -79,23 +79,12 @@ def _weave_layers_graft(
                 for v in range(4)]
     wp, hp = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
 
-    translate = pikepdf.PdfMatrix((1, 0, 0, 1, -wt / 2, -ht / 2))
-    untranslate = pikepdf.PdfMatrix((1, 0, 0, 1, wp / 2, hp / 2))
+    translate = pikepdf.PdfMatrix().translated(-wt / 2, -ht / 2)
+    untranslate = pikepdf.PdfMatrix().translated(wp / 2, hp / 2)
     # -rotation because the input is a clockwise angle and this formula
     # uses CCW
     rotation = -rotation % 360
-    if rotation == 0:
-        c, s = 1, 0
-    elif rotation == 90:
-        c, s = 0, 1
-    elif rotation == 180:
-        c, s = -1, 0
-    elif rotation == 270:
-        c, s = 0, -1
-    else:
-        raise NotImplementedError("rotation to arbitrary angle")
-
-    rotate = pikepdf.PdfMatrix((c, s, -s, c, 0, 0))
+    rotate = pikepdf.PdfMatrix().rotated(rotation)
 
     # Because of rounding of DPI, we might get a text layer that is not
     # identically sized to the target page. Scale to adjust. Normally this
@@ -106,7 +95,7 @@ def _weave_layers_graft(
     scale_y = hp / ht
 
     log.debug('%r', (scale_x, scale_y))
-    scale = pikepdf.PdfMatrix((scale_x, 0, 0, scale_y, 0, 0))
+    scale = pikepdf.PdfMatrix().scaled(scale_x, scale_y)
 
     # Translate the text so it is centered at (0, 0), rotate it there, adjust
     # for a size different between initial and text PDF, then untranslate
@@ -181,15 +170,15 @@ def _fix_toc(pdf_base, pageref_remap, log):
             return
         pageref = dest_node[0]
         if pageref['/Type'] == '/Page' and \
-                pageref._objgen in pageref_remap:
-            new_objgen = pageref_remap[pageref._objgen]
-            dest_node[0] = pdf_base._get_object_id(*new_objgen)
+                pageref.objgen in pageref_remap:
+            new_objgen = pageref_remap[pageref.objgen]
+            dest_node[0] = pdf_base.get_object(new_objgen)
 
-    queue.add(pdf_base.root.Outlines._objgen)
+    queue.add(pdf_base.root.Outlines.objgen)
     while queue:
         objgen = queue.pop()
         visited.add(objgen)
-        node = pdf_base._get_object_id(*objgen)
+        node = pdf_base.get_object(objgen)
         log.debug('fix toc: visiting %r', objgen)
 
         # Enumerate other nodes we could visit from here
@@ -199,7 +188,7 @@ def _fix_toc(pdf_base, pageref_remap, log):
             item = node[key]
             if not item.is_indirect:
                 continue
-            objgen = item._objgen
+            objgen = item.objgen
             if objgen not in visited:
                 queue.add(objgen)
 
@@ -285,7 +274,7 @@ def weave_layers(
             # We are replacing the old page with a rasterized PDF of the new
             # page
             log.debug("Replace")
-            old_objgen = pdf_base.pages[page_num - 1]._objgen
+            old_objgen = pdf_base.pages[page_num - 1].objgen
 
             pdf_image = pikepdf.open(image)
             keep_open.append(pdf_image)
@@ -296,7 +285,7 @@ def weave_layers(
             # so we need to update any references to it.  qpdf did not like
             # my attempt to update the old object in place, but that is an
             # option to consider
-            pagerefs[old_objgen] = pdf_base.pages[page_num - 1]._objgen
+            pagerefs[old_objgen] = pdf_base.pages[page_num - 1].objgen
             replacing = True
 
         autorotate_correction = context.get_rotation(page_num - 1)
