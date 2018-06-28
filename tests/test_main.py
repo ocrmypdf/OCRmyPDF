@@ -448,7 +448,7 @@ def test_convert_to_square_resolution(renderer, spoof_tesseract_cache,
 
 def test_image_to_pdf(spoof_tesseract_noop, resources, outpdf):
     check_ocrmypdf(
-        resources / 'LinnSequencer.jpg', outpdf, '--image-dpi', '200',
+        resources / 'crom.png', outpdf, '--image-dpi', '200',
         env=spoof_tesseract_noop)
 
 
