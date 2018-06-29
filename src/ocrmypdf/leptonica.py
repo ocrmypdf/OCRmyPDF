@@ -496,6 +496,9 @@ class Pix:
             raise LeptonicaError("Generate PDF data failed")
         return CompressedData(p_compdata[0])
 
+    def invert(self):
+        return Pix(lept.pixInvert(ffi.NULL, self._pix))
+
     @staticmethod
     def _pix_destroy(pix):
         p_pix = ffi.new('PIX **', pix)

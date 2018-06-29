@@ -261,6 +261,8 @@ def transcode_pngs(pike, pngs, root, log, options):
         # Open, transcode (!), package for PDF
         try:
             pix = leptonica.Pix.open(png_name(root, xref))
+            if pix.depth == 1:
+                pix = pix.invert()  # PDF assumes 1 is black for monochrome
             compdata = pix.generate_pdf_ci_data(
                 leptonica.lept.L_FLATE_ENCODE, 0
             )
