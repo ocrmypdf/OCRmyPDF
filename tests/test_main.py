@@ -840,6 +840,7 @@ def test_pdfa_n(spoof_tesseract_cache, pdfa_level, resources, outpdf):
     assert pdfa_info['conformance'] == 'PDF/A-{}B'.format(pdfa_level)
 
 
+@pytest.mark.skipif(sys.version_info >= (3, 7, 0), reason='better utf-8')
 def test_bad_locale():
     env = os.environ.copy()
     env['LC_ALL'] = 'C'

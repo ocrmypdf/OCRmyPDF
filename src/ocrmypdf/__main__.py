@@ -656,6 +656,9 @@ def traverse_ruffus_exception(e_args, options, log):
     or something like:
       [[(task, job, exc, value, stack)]]
 
+    For Ruffus > 2.6.4 the RethrownJobException has a list of exceptions like
+    e.job_exceptions = [(5-tuple), (5-tuple), ...]
+
     Generally cross-process exception marshalling doesn't work well
     and ruffus doesn't support because BaseException has its own
     implementation of __reduce__ that attempts to reconstruct the
@@ -668,8 +671,8 @@ def traverse_ruffus_exception(e_args, options, log):
     The exit code will be based on this, even if multiple exceptions occurred
     at the same time."""
 
-    if isinstance(e_args, Sequence) and isinstance(e_args[0], str) and \
-            len(e_args) == 5:
+    if isinstance(e_args, Sequence) and isinstance(e_args[0], str) \
+            and len(e_args) == 5:
         return do_ruffus_exception(e_args, options, log)
     elif is_iterable_notstr(e_args):
         for exc in e_args:
@@ -889,7 +892,11 @@ def run_pipeline():
     except ruffus_exceptions.RethrownJobError as e:
         if options.verbose:
             _log.debug(str(e))  # stringify exception so logger doesn't have to
-        exitcode = traverse_ruffus_exception(e.args, options, _log)
+        if hasattr(e, 'job_exceptions'):
+            exceptions = e.job_exceptions
+        else:
+            exceptions = e.args  # ruffus 2.6.3
+        exitcode = traverse_ruffus_exception(exceptions, options, _log)
         if exitcode is None:
             _log.error("Unexpected ruffus exception: " + str(e))
             _log.error(repr(e))

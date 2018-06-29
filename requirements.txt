@@ -1,10 +1,11 @@
 # requirements.txt can be used to replicate the developer's build environment
 # setup.py lists a separate set of requirements that are looser to simplify
 # installation
-ruffus == 2.6.3
-Pillow == 5.1.0
-reportlab == 3.4.0
-PyPDF2 == 1.26.0
-img2pdf == 0.2.4
 cffi == 1.11.5
-PyMuPDF == 1.12.5
+img2pdf == 0.2.4
+pikepdf == 0.2.2
+Pillow >= 5.0.0, != 5.1.0 ; sys_platform == "darwin"
+pycparser == 2.18
+python-xmp-toolkit == 2.0.1
+reportlab == 3.4.0
+https://github.com/jbarlow83/ruffus/archive/py37.zip
