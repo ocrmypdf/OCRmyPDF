@@ -18,8 +18,13 @@
 from pathlib import Path
 
 import pytest
+import logging
+
+from PIL import Image
 
 from ocrmypdf import optimize as opt
+from ocrmypdf.exec.ghostscript import rasterize_pdf
+from ocrmypdf.helpers import fspath
 
 
 @pytest.mark.parametrize('pdf', ['multipage.pdf', 'palette.pdf'])
@@ -28,3 +33,17 @@ def test_basic(resources, pdf, outpdf):
     opt.main(infile, outpdf, level=3)
 
     assert Path(outpdf).stat().st_size <= Path(infile).stat().st_size
+
+
+def test_mono_not_inverted(resources, outdir):
+    infile = resources / '2400dpi.pdf'
+    opt.main(infile, outdir / 'out.pdf', level=3)
+
+    rasterize_pdf(
+        outdir / 'out.pdf', outdir / 'im.png',
+        xres=10, yres=10, raster_device='pnggray',
+        log=logging.getLogger(name='test_mono_flip')
+    )
+
+    im = Image.open(fspath(outdir / 'im.png'))
+    assert im.getpixel((0, 0)) == 255, "Expected white background"
