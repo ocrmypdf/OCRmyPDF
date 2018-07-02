@@ -13,9 +13,9 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
 v7
 --
 
--   The core algorithm for combining OCR layers with existing PDF pages has been rewritten and improved considerably.  The new algorithm uses less temporary disk space and eliminates object duplication and deduplication that was required when processing certain PDFs.
+-   The core algorithm for combining OCR layers with existing PDF pages has been rewritten and improved considerably.  PDFs are no longer split into single page PDFs for processing; instead, images are rendered and the OCR results are grafted onto the input PDF.  The new algorithm uses less temporary disk space and is much more performant especially for large files.
 
--   New dependency: `pikepdf <https://github.com/pikepdf>`_. pikepdf is a  powerful new Python PDF library driving the latest OCRmyPDF features, built on QPDF's proven and mature libqpdf C++ library.
+-   New dependency: `pikepdf <https://github.com/pikepdf/pikepdf>`_. pikepdf is a  powerful new Python PDF library driving the latest OCRmyPDF features, built on the QPDF C++ library (libqpdf).
 
 -   New feature: PDF optimization with ``-O`` or ``--optimize``.  After OCR, OCRmyPDF will perform image optimizations relevant to OCR PDFs.
 
@@ -25,7 +25,7 @@ v7
 
     +   The quality of JPEGs can also be lowered, on the assumption that a lower quality image may be suitable for storage after OCR.
 
-    +   This component will eventually be offered as an independent command line utility.
+    +   This image optimization component will eventually be offered as an independent command line utility.
 
     +   Optimization ranges from ``-O0`` through ``-O3``, where ``0`` disables optimization and ``3`` implements all options. ``1``, the default, performs only safe and lossless optimizations. (This is similar to GCC's optimization parameter.) The exact type of optimizations performed will vary over time.
 
@@ -33,19 +33,29 @@ v7
 
 -   Removed features
 
-    +   The deprecated ``tesseract`` PDF renderer was removed, due to changes in how we construct PDFs.
+    +   The deprecated ``tesseract`` PDF renderer was removed. The new rendering algorithm made this older mode redundant (although it still uses the Tesseract OCR engine).
 
     +   ``-g``, the option to generate debug text pages, was removed because it was a maintenance burden and only worked in isolated cases. HOCR pages can still be previewed by running the hocrtransform.py with appropriate settings.
 
 -   Removed dependencies
 
-    +   ``PyPDF2`` is no longer used except in the test suite.
+    +   ``PyPDF2``
 
-    +   ``defusedxml`` is no longer used anywhere.
+    +   ``defusedxml``
+
+    +   ``PyMuPDF``
 
 -   The ``sandwich`` PDF renderer can be used with all supported versions of Tesseract, including that those priority to v3.05 which don't support ``-c textonly``
 
 -   ``--pdf-renderer auto`` option and the diagnostics used to select a PDF renderer now work better with old versions, but may make different decisions than past versions.
+
+-   Notes for downstream packagers
+
+    +   There is also a new dependency on ``python-xmp-toolkit`` and ``libexempi3``
+
+    +   We currently recommend a private fork of ``ruffus`` until its upstream `fixes Python 3.7 compatibility <https://github.com/cgat-developers/ruffus/pull/92>`_ and releases a new version. It would also be reasonable to apply a patch to ruffus 2.6.3 similar to `this one developed by Homebrew <https://github.com/sashkab/homebrew-core/blob/29e60345391b504c53fac47e9b39760054e2a298/Formula/ocrmypdf.rb#L113>`_.
+
+    +   It may be necessary to separately ``pip install pycparser`` to avoid `another Python 3.7 issue <https://github.com/eliben/pycparser/pull/135>`_.
 
 
 v6.2.0
