@@ -236,7 +236,6 @@ def test_maximum_options(spoof_tesseract_cache, renderer, output_type,
         '--remove-background',
         '--skip-big', '10', '--title', 'Too Many Weird Files',
         '--author', 'py.test', '--pdf-renderer', renderer,
-        '--optimize', '2', '--jpg-quality', '50', '--png-quality', '20',
         '--output-type', output_type,
         env=spoof_tesseract_cache)
 
