@@ -79,11 +79,6 @@ def spoof_tess_bad_utf8(tmpdir_factory):
     return spoof(tmpdir_factory, tesseract='tesseract_badutf8.py')
 
 
-@pytest.fixture(scope='session')
-def spoof_qpdf_always_error(tmpdir_factory):
-    return spoof(tmpdir_factory, qpdf='qpdf_dummy_return2.py')
-
-
 def test_quick(spoof_tesseract_cache, resources, outpdf):
     check_ocrmypdf(resources / 'ccitt.pdf', outpdf, env=spoof_tesseract_cache)
 
@@ -328,15 +323,6 @@ def test_input_file_not_a_pdf(no_outpdf):
         no_outpdf)
     assert p.returncode == ExitCode.input_file
     assert (input_file in out or input_file in err)
-
-
-def test_qpdf_repair_fails(spoof_qpdf_always_error, resources, no_outpdf):
-    p, out, err = run_ocrmypdf(
-        resources / 'c02-22.pdf', no_outpdf,
-        '-v', '1',
-        env=spoof_qpdf_always_error)
-    print(err)
-    assert p.returncode == ExitCode.input_file
 
 
 def test_encrypted(resources, no_outpdf):
@@ -933,12 +919,3 @@ def test_output_is_symlink(spoof_tesseract_noop, resources, outdir):
     )
     assert p.returncode == ExitCode.ok, err
     assert (outdir / 'out.pdf').stat().st_size > 0, 'target file not created'
-
-
-def test_skip_repair(spoof_tesseract_noop, resources, outpdf):
-    check_ocrmypdf(
-        resources / 'trivial.pdf',
-        outpdf,
-        '--skip-repair',
-        env=spoof_tesseract_noop
-    )

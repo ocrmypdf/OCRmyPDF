@@ -357,14 +357,6 @@ advanced.add_argument(
 advanced.add_argument(
     '--user-patterns', metavar='FILE',
     help="Specify the location of the Tesseract user patterns file.")
-advanced.add_argument(
-    '--skip-repair', action='store_true',
-    help="Normally OCRmyPDF automatically repairs PDFs using qpdf before "
-         "processing.  If you have already run qpdf or a similar program "
-         "that repairs PDF errors, you can tell OCRmyPDF to skip repair with "
-         "this option.  This may be helpful in batch processing where all "
-         "files are repaired prior to OCR occurs, since repair is single "
-         "threaded and time consuming for large files.")
 
 debugging = parser.add_argument_group(
     "Debugging",

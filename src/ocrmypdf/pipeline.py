@@ -16,7 +16,7 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 from contextlib import suppress
-from shutil import copyfileobj
+from shutil import copyfileobj, copyfile
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -36,7 +36,7 @@ from .pdfa import generate_pdfa_ps, encode_pdf_date
 from .helpers import re_symlink, is_iterable_notstr, page_number, flatten_groups
 from .exec import ghostscript, tesseract, qpdf
 from .exceptions import UnsupportedImageFormatError, \
-    DpiError, PriorOcrFoundError, InputFileError
+    DpiError, PriorOcrFoundError, InputFileError, EncryptedPdfError
 from . import leptonica
 from . import PROGRAM_NAME, VERSION
 from .optimize import optimize
@@ -154,14 +154,15 @@ def repair_and_parse_pdf(
         log,
         context):
     options = context.get_options()
-    if not options.skip_repair:
-        log.debug("Beginning qpdf repair...")
-        qpdf.repair(input_file, output_file, log)
-        log.debug("Repair OK; beginning parse...")
-    else:
-        re_symlink(input_file, output_file, log)
+    copyfile(input_file, output_file)
 
-    pdfinfo = PdfInfo(output_file)
+    try:
+        pdfinfo = PdfInfo(output_file)
+    except pikepdf.PasswordError as e:
+        raise EncryptedPdfError()
+    except pikepdf.PdfError as e:
+        log.error(e)
+        raise InputFileError()
 
     if pdfinfo.has_userunit and options.output_type.startswith('pdfa'):
         log.error(
