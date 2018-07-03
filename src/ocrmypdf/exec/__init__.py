@@ -25,7 +25,7 @@ from ..exceptions import MissingDependencyError
 
 
 
-def get_version(program, *, 
+def get_version(program, *,
         version_arg='--version', regex=r'(\d+(\.\d+)*)'):
     "Get the version of the specified program"
     args_prog = [
@@ -37,6 +37,10 @@ def get_version(program, *,
             args_prog, close_fds=True, universal_newlines=True,
             stdout=PIPE, stderr=STDOUT, check=True)
         output = proc.stdout
+    except FileNotFoundError as e:
+        raise MissingDependencyError(
+            "Could not find program '{}' on the PATH".format(
+                program)) from e
     except CalledProcessError as e:
         if e.returncode < 0:
             raise MissingDependencyError(
