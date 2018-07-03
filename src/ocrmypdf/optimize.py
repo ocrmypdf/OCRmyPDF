@@ -31,8 +31,8 @@ from .helpers import re_symlink, fspath
 from .exec import pngquant, jbig2enc
 
 PAGE_GROUP_SIZE = 10
-JPEG_QUALITY = 75
-PNG_QUALITY = (65, 75)
+DEFAULT_JPEG_QUALITY = 75
+DEFAULT_PNG_QUALITY = (65, 75)
 
 
 def img_name(root, xref, ext):
@@ -231,7 +231,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
         with Image.open(fspath(in_jpg)) as im:
             im.save(fspath(opt_jpg),
                     optimize=True,
-                    quality=JPEG_QUALITY)
+                    quality=options.jpeg_quality)
         # pylint: disable=E1101
         if opt_jpg.stat().st_size > in_jpg.stat().st_size:
             log.debug("xref {}, jpeg, made larger - skip".format(xref))
@@ -247,13 +247,17 @@ def transcode_jpegs(pike, jpegs, root, log, options):
 
 def transcode_pngs(pike, pngs, root, log, options):
     if options.optimize >= 2:
+        png_quality = (
+            max(10, options.png_quality - 10),
+            min(100, options.png_quality + 10)
+        )
         with concurrent.futures.ThreadPoolExecutor(
                 max_workers=options.jobs) as executor:
             for xref in pngs:
                 executor.submit(
                     pngquant.quantize,
                     png_name(root, xref), png_name(root, xref),
-                    PNG_QUALITY[0], PNG_QUALITY[1])
+                    png_quality[0], png_quality[1])
 
     for xref in pngs:
         im_obj = pike.get_object(xref, 0)
@@ -314,12 +318,12 @@ def optimize(
         re_symlink(input_file, output_file, log)
         return
 
-    global PNG_QUALITY
-    global JPEG_QUALITY
-
-    if options.optimize == 3:
-        PNG_QUALITY = (20, 40)
-        JPEG_QUALITY = 40
+    if options.jpeg_quality == 0:
+        options.jpeg_quality = \
+                DEFAULT_JPEG_QUALITY if options.optimize < 3 else 40
+    if options.png_quality == 0:
+        options.png_quality = \
+                DEFAULT_PNG_QUALITY if options.optimize < 3 else 30
 
     pike = pikepdf.Pdf.open(input_file)
 
@@ -353,13 +357,18 @@ def optimize(
 def main(infile, outfile, level, jobs=1):
     from tempfile import TemporaryDirectory
     from shutil import copy
-    Options = namedtuple('Options', 'jobs optimize')
+    Options = namedtuple('Options', 'jobs optimize png_quality jpeg_quality')
 
     logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger()
 
     ctx = JobContext()
-    options = Options(jobs=jobs, optimize=int(level))
+    options = Options(
+        jobs=jobs,
+        optimize=int(level),
+        jpeg_quality=0,  # Use default
+        png_quality=0
+    )
     ctx.set_options(options)
 
     with TemporaryDirectory() as td:

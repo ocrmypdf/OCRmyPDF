@@ -80,7 +80,7 @@ if tesseract.version() < MINIMUM_TESS_VERSION:
 # Parser
 
 def numeric(basetype, min_=None, max_=None):
-    "Validator for numeric params"
+    """Validator for numeric params"""
     min_ = basetype(min_) if min_ is not None else None
     max_ = basetype(max_) if max_ is not None else None
     def _numeric(string):
@@ -276,12 +276,32 @@ optimizing.add_argument(
         "3 - do aggressive lossy optimizations"
     )
 )
+optimizing.add_argument(
+    '--jpeg-quality', type=numeric(int, 0, 100), default=0, metavar='Q',
+    help=("Adjust JPEG quality level for JPEG optimization. "
+          "100 is best quality and largest output size; "
+          "1 is lowest quality and smallest output"
+          "0 uses the default."
+    )
+)
+optimizing.add_argument(
+    '--jpg-quality', type=numeric(int, 0, 100), default=0, metavar='Q',
+    dest='jpeg_quality',
+    help=argparse.SUPPRESS  # Alias for --jpeg-quality
+)
+optimizing.add_argument(
+    '--png-quality', type=numeric(int, 0, 100), default=0, metavar='Q',
+    help=("Adjust PNG quality level to use when quantizing PNGs. "
+          "Values have same meaning as with --jpeg-quality"
+    )
+)
 
 advanced = parser.add_argument_group(
     "Advanced",
     "Advanced options to control Tesseract's OCR behavior")
 advanced.add_argument(
-    '--max-image-mpixels', action='store', type=numeric(float, 0), metavar='MPixels',
+    '--max-image-mpixels', action='store', type=numeric(float, 0),
+    metavar='MPixels',
     help="Set maximum number of pixels to unpack before treating an image as a "
          "decompression bomb",
     default=128.0)
