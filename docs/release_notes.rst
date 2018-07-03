@@ -49,6 +49,8 @@ v7
 
 -   ``--pdf-renderer auto`` option and the diagnostics used to select a PDF renderer now work better with old versions, but may make different decisions than past versions.
 
+-   If everything succeeds but PDF/A conversion fails, a distinct return code is now returned (``ExitCode.pdfa_conversion_failed (10)``) where this situation previously returned ``ExitCode.invalid_output_pdf (4)``. The latter is now returned only if there is some indication that the output file is invalid.
+
 -   Notes for downstream packagers
 
     +   There is also a new dependency on ``python-xmp-toolkit`` and ``libexempi3``

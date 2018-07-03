@@ -936,7 +936,7 @@ def run_pipeline():
             else:
                 msg = 'Output file is okay but is not PDF/A (seems to be {})'
                 _log.warning(msg.format(pdfa_info['conformance']))
-                return ExitCode.invalid_output_pdf
+                return ExitCode.pdfa_conversion_failed
         if not qpdf.check(options.output_file, _log):
             _log.warning('Output file: The generated PDF is INVALID')
             return ExitCode.invalid_output_pdf
