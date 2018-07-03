@@ -357,13 +357,21 @@ def optimize(
 def main(infile, outfile, level, jobs=1):
     from tempfile import TemporaryDirectory
     from shutil import copy
-    Options = namedtuple('Options', 'jobs optimize png_quality jpeg_quality')
+
+    class OptimizeOptions:
+        """Emulate ocrmypdf's options"""
+
+        def __init__(self, jobs, optimize, jpeg_quality, png_quality):
+            self.jobs = jobs
+            self.optimize = optimize
+            self.jpeg_quality = jpeg_quality
+            self.png_quality = png_quality
 
     logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger()
 
     ctx = JobContext()
-    options = Options(
+    options = OptimizeOptions(
         jobs=jobs,
         optimize=int(level),
         jpeg_quality=0,  # Use default
