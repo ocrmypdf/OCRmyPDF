@@ -24,7 +24,11 @@ from PIL import Image
 
 from ocrmypdf import optimize as opt
 from ocrmypdf.exec.ghostscript import rasterize_pdf
+from ocrmypdf.exec import jbig2enc
 from ocrmypdf.helpers import fspath
+
+
+check_ocrmypdf = pytest.helpers.check_ocrmypdf
 
 
 @pytest.mark.parametrize('pdf', ['multipage.pdf', 'palette.pdf'])
@@ -47,3 +51,12 @@ def test_mono_not_inverted(resources, outdir):
 
     im = Image.open(fspath(outdir / 'im.png'))
     assert im.getpixel((0, 0)) == 255, "Expected white background"
+
+
+@pytest.mark.skipif(not jbig2enc.available(), reason='need jbig2enc')
+def test_jpg_png_params(resources, outpdf, spoof_tesseract_noop):
+    check_ocrmypdf(
+        resources / 'crom.png', outpdf, '--image-dpi', '200',
+        '--optimize', '2', '--jpg-quality', '50', '--png-quality', '20',
+        env=spoof_tesseract_noop
+    )
