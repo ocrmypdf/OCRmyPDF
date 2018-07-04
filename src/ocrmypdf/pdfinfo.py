@@ -36,6 +36,7 @@ Encoding = Enum('Encoding',
                 'ccitt jpeg jpeg2000 jbig2 asciihex ascii85 lzw flate ' + \
                 'runlength')
 
+regex_remove_char_tags = re.compile(br"<char[^\/]+\/>")
 
 FRIENDLY_COLORSPACE = {
     '/DeviceGray': Colorspace.gray,
@@ -503,6 +504,14 @@ def _page_get_textblocks(infile, pageno):
     import xml.etree.ElementTree as ET
 
     gstext = ghostscript.extract_text(infile, pageno+1)
+
+    # Remove all <char /> tags, because they might contain invalid XML entities
+    # like <char bbox="348 596 348 596" c="&#x1;"/> which chokes on the
+    # inclusion of U+0001. Understandably.
+    # Just remove the whole <char /> tag since we don't use it at all, and they
+    # are only generated as innermost self-closing tags.
+    gstext = regex_remove_char_tags.sub(b' ', gstext)
+
     root = ET.fromstring(gstext)
 
     def blocks():
