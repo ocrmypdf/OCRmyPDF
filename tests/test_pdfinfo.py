@@ -148,3 +148,24 @@ def test_pickle(resources):
     filename = resources / 'formxobject.pdf'
     pdf = pdfinfo.PdfInfo(filename)
     pickle.dumps(pdf)
+
+
+def test_regex():
+    rx = pdfinfo.regex_remove_char_tags
+
+    must_match = [
+        b'<char bbox="0 108 0 108" c="/"/>',
+        b'<char bbox="0 108 0 108" c=">"/>',
+        b'<char bbox="0 108 0 108" c="X"/>',
+    ]
+    must_not_match = [
+        b'<span stuff="c">',
+        b'<span>',
+        b'</span>',
+        b'</page>'
+    ]
+
+    for s in must_match:
+        assert rx.match(s)
+    for s in must_not_match:
+        assert not rx.match(s)
