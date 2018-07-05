@@ -518,7 +518,8 @@ def test_ghostscript_pdfa_failure(spoof_no_tess_no_pdfa, resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / 'ccitt.pdf', outpdf,
         env=spoof_no_tess_no_pdfa)
-    assert p.returncode == 4, "Expected return code 4 when PDF/A fails"
+    assert p.returncode == ExitCode.pdfa_conversion_failed, \
+            "Unexpected return when PDF/A fails"
 
 
 def test_ghostscript_feature_elision(
