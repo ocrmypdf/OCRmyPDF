@@ -521,7 +521,13 @@ def _page_get_textblocks(infile, pageno):
     # are only generated as innermost self-closing tags.
     gstext = regex_remove_char_tags.sub(b' ', gstext)
 
-    root = ET.fromstring(gstext)
+    if gstext.strip() == '':
+        return []
+
+    try:
+        root = ET.fromstring(gstext)
+    except ET.ParseError as e:
+        return []  # If we can't parse, assume none...
 
     def blocks():
         for span in root.findall('.//span'):
