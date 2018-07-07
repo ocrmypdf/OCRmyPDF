@@ -17,14 +17,18 @@
 
 # Generate a PDFA_def.ps file for Ghostscript >= 9.14
 
-from string import Template
 from binascii import hexlify
 from datetime import datetime
+from pathlib import Path
+from shutil import copyfile
+from string import Template
 import pkg_resources
+import os
+
 from libxmp.utils import file_to_dict
 from libxmp import consts
-from pathlib import Path
 
+from ocrmypdf.helpers import fspath
 
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
 
@@ -36,12 +40,8 @@ SRGB_ICC_PROFILE = pkg_resources.resource_filename(
 # files, from the Ghostscript documentation. Lines beginning with % are
 # comments. Python substitution variables have a '$' prefix.
 pdfa_def_template = u"""%!
-% This is derived from Ghostscript's template for creating a PDF/A document.
-% This is a small PostScript program that includes some necessary information
-% to create a PDF/A compliant file.
-
 % Define entries in the document Info dictionary :
-/ICCProfile ($icc_profile)
+/ICCProfile $icc_profile
 def
 
 [$docinfo
@@ -179,9 +179,19 @@ def _get_pdfmark_dates(pdfmark):
 
 
 def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
-    """Create a Postscript file for Ghostscript.  pdfmark contains the various
-    objects as strings; these must be encoded in ASCII, and dates have a
-    special format."""
+    """
+    Create a Postscript pdfmark file for Ghostscript.
+
+    pdfmark contains the various objects as strings; these must be encoded in
+    ASCII, and dates have a special format.
+
+    :param icc_profile: filename of the ICC profile to include in pdfmark
+    :param icc_identifier: ICC identifier such as 'sRGB'
+    :param pdfmark: a dictionary containing keys to include the pdfmark
+
+    :returns: a string containing the entire pdfmark
+
+    """
 
     # Ghostscript <= 9.21 has a bug where null entries in DOCINFO might produce
     # ERROR: VMerror (-25) on closing pdfwrite device.
@@ -211,6 +221,17 @@ def generate_pdfa_ps(target_filename, pdfmark, icc='sRGB'):
         icc_profile = SRGB_ICC_PROFILE
     else:
         raise NotImplementedError("Only supporting sRGB")
+
+    # pdfmark must contain the full path to the ICC profile, and pdfmark must
+    # also encoded in ASCII. ocrmypdf can be installed anywhere, including to
+    # paths that have a non-ASCII character in the filename. Ghostscript
+    # accepts hex-encoded strings and converts them to byte strings, so
+    # we encode the path with fsencode() and use the hex representation.
+    # UTF-16 not accepted here. (Even though ASCII encodable is the usual case,
+    # do this always to avoid making it a rare conditional.)
+    bytes_icc_profile = os.fsencode(icc_profile)
+    hex_icc_profile = hexlify(bytes_icc_profile)
+    icc_profile = '<' + hex_icc_profile.decode('ascii') + '>'
 
     ps = _get_pdfa_def(icc_profile, icc, pdfmark)
 

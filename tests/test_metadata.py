@@ -18,11 +18,19 @@
 
 import pytest
 import PyPDF2 as pypdf
-import datetime
-from datetime import timezone
 
-from ocrmypdf.pdfa import file_claims_pdfa, encode_pdf_date, decode_pdf_date
+from datetime import timezone
+from pathlib import Path
+from shutil import copyfile
+from unittest.mock import patch
+import datetime
+
 from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.helpers import fspath
+from ocrmypdf.pdfa import (
+    file_claims_pdfa, encode_pdf_date, decode_pdf_date, generate_pdfa_ps,
+    SRGB_ICC_PROFILE
+)
 
 try:
     import fitz
@@ -239,3 +247,16 @@ def test_xml_metadata_preserved(spoof_tesseract_noop, output_type,
         if propidx in before:
             assert after.get(propidx) == before[propidx] \
                     or after.get(prop) == before[propidx]
+
+
+def test_srgb_in_unicode_path(tmpdir):
+    """Test that we can produce pdfmark when install path is not ASCII"""
+
+    dstdir = Path(tmpdir) / b'\xe4\x80\x80'.decode('utf-8')
+    dstdir.mkdir()
+    dst = dstdir / 'sRGB.icc'
+
+    copyfile(SRGB_ICC_PROFILE, fspath(dst))
+
+    with patch('ocrmypdf.pdfa.SRGB_ICC_PROFILE', new=str(dst)):
+        generate_pdfa_ps(dstdir / 'out.ps', {})
