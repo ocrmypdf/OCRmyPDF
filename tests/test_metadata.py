@@ -252,7 +252,7 @@ def test_xml_metadata_preserved(spoof_tesseract_noop, output_type,
 def test_srgb_in_unicode_path(tmpdir):
     """Test that we can produce pdfmark when install path is not ASCII"""
 
-    dstdir = Path(tmpdir) / b'\xe4\x80\x80'.decode('utf-8')
+    dstdir = Path(fspath(tmpdir)) / b'\xe4\x80\x80'.decode('utf-8')
     dstdir.mkdir()
     dst = dstdir / 'sRGB.icc'
 
