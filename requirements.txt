@@ -8,4 +8,4 @@ Pillow >= 5.0.0, != 5.1.0 ; sys_platform == "darwin"
 pycparser == 2.18
 python-xmp-toolkit == 2.0.1
 reportlab == 3.4.0
-https://github.com/jbarlow83/ruffus/archive/py37.zip
+ruffus == 2.7

@@ -10,8 +10,8 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
 
-v7
---
+v7.0.0
+------
 
 -   The core algorithm for combining OCR layers with existing PDF pages has been rewritten and improved considerably.  PDFs are no longer split into single page PDFs for processing; instead, images are rendered and the OCR results are grafted onto the input PDF.  The new algorithm uses less temporary disk space and is much more performant especially for large files.
 
@@ -33,7 +33,7 @@ v7
 
 -   Removed features
 
-    +   The deprecated ``tesseract`` PDF renderer was removed. The new rendering algorithm made this older mode redundant (although it still uses the Tesseract OCR engine).
+    +   The deprecated ``--pdf-renderer tesseract`` PDF renderer was removed. With the rendering algorithm it became identical to ``sandwich`` PDF renderer.
 
     +   ``-g``, the option to generate debug text pages, was removed because it was a maintenance burden and only worked in isolated cases. HOCR pages can still be previewed by running the hocrtransform.py with appropriate settings.
 
@@ -45,7 +45,8 @@ v7
 
     +   ``PyMuPDF``
 
--   The ``sandwich`` PDF renderer can be used with all supported versions of Tesseract, including that those priority to v3.05 which don't support ``-c textonly``
+-   The ``sandwich`` PDF renderer can be used with all supported versions of Tesseract, including that those prior to v3.05 which don't support
+``-c textonly``. (Tesseract v4.0.0 is recommended and more efficient.)
 
 -   ``--pdf-renderer auto`` option and the diagnostics used to select a PDF renderer now work better with old versions, but may make different decisions than past versions.
 
@@ -53,9 +54,7 @@ v7
 
 -   Notes for downstream packagers
 
-    +   There is also a new dependency on ``python-xmp-toolkit`` and ``libexempi3``
-
-    +   We currently recommend a private fork of ``ruffus`` until its upstream `fixes Python 3.7 compatibility <https://github.com/cgat-developers/ruffus/pull/92>`_ and releases a new version. It would also be reasonable to apply a patch to ruffus 2.6.3 similar to `this one developed by Homebrew <https://github.com/sashkab/homebrew-core/blob/29e60345391b504c53fac47e9b39760054e2a298/Formula/ocrmypdf.rb#L113>`_.
+    +   There is also a new dependency on ``python-xmp-toolkit`` which in turn depends on ``libexempi3``.
 
     +   It may be necessary to separately ``pip install pycparser`` to avoid `another Python 3.7 issue <https://github.com/eliben/pycparser/pull/135>`_.
 
