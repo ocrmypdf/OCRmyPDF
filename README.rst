@@ -35,12 +35,11 @@ Main features
    `PDF/A <https://en.wikipedia.org/?title=PDF/A>`_ file from a regular PDF
 -  Places OCR text accurately below the image to ease copy / paste
 -  Keeps the exact resolution of the original embedded images
--  When possible, inserts OCR information as a "lossless" operation without rendering vector information
--  Keeps file size about the same
+-  When possible, inserts OCR information as a "lossless" operation without disrupting any other content
+-  Optimizes PDF images, often producing files smaller than the input file
 -  If requested deskews and/or cleans the image before performing OCR
 -  Validates input and output files
--  Processes pages in parallel when more than one CPU core is
-   available
+-  Distributes work across all available CPU cores
 -  Uses `Tesseract OCR <https://github.com/tesseract-ocr/tesseract>`_ engine
 -  Supports more than `100 languages <https://github.com/tesseract-ocr/tessdata>`_ recognized by Tesseract
 -  Battle-tested on thousands of PDFs, a test suite and continuous integration
@@ -57,12 +56,11 @@ Linux/UNIX: I found many, but none of them were really satisfying.
 -  Or they did not handle accents and multilingual characters
 -  Or they changed the resolution of the embedded images
 -  Or they generated ridiculously large PDF files
--  Or they crashed when trying to OCR some of my PDF files
--  Or they did not produce valid PDF files (even though they were readable with my current PDF reader)
+-  Or they crashed when trying to OCR
+-  Or they did not produce valid PDF files
 -  On top of that none of them produced PDF/A files (format dedicated for long time storage)
 
-...so I decided to develop my own tool (using various existing scripts
-as an inspiration).
+...so I decided to develop my own tool.
 
 Installation
 ------------
