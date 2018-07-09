@@ -659,36 +659,31 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
     return ExitCode.other_error
 
 
-def traverse_ruffus_exception(e_args, options, log):
-    """Walk through a RethrownJobError and find the first exception.
+def traverse_ruffus_exception(exceptions, options, log):
+    """Traverse a RethrownJobError and output the exceptions
 
-    Ruffus flattens exception to 5 element tuples. Because of a bug
-    in <= 2.6.3 it may present either the single:
-      (task, job, exc, value, stack)
-    or something like:
-      [[(task, job, exc, value, stack)]]
+    Ruffus presents exceptions as 5 element tuples. The RethrownJobException
+    has a list of exceptions like
+        e.job_exceptions = [(5-tuple), (5-tuple), ...]
 
-    For Ruffus > 2.6.4 the RethrownJobException has a list of exceptions like
-    e.job_exceptions = [(5-tuple), (5-tuple), ...]
+    ruffus < 2.7.0 had a bug with exception marshalling that would give
+    different output whether the main or child process raised the exception.
+    We no longer support this.
 
-    Generally cross-process exception marshalling doesn't work well
-    and ruffus doesn't support because BaseException has its own
-    implementation of __reduce__ that attempts to reconstruct the
-    exception based on e.__init__(e.args).
-
-    Attempting to log the exception directly marshalls it to the logger
-    which is probably in another process, so it's better to log only
-    data from the exception at this point.
+    Attempting to log the exception itself will re-marshall it to the logger
+    which is normally running in another process. It's better to avoid re-
+    marshalling.
 
     The exit code will be based on this, even if multiple exceptions occurred
     at the same time."""
 
-    if isinstance(e_args, Sequence) and isinstance(e_args[0], str) \
-            and len(e_args) == 5:
-        return do_ruffus_exception(e_args, options, log)
-    elif is_iterable_notstr(e_args):
-        for exc in e_args:
-            return traverse_ruffus_exception(exc, options, log)
+    exit_codes = []
+    for exc in exceptions:
+        exit_code = do_ruffus_exception(exceptions, options, log)
+        exit_codes.append(exit_code)
+
+    return exit_codes[0]  # Multiple codes are rare so take the first one
+
 
 
 def check_closed_streams(options):
@@ -904,10 +899,7 @@ def run_pipeline():
     except ruffus_exceptions.RethrownJobError as e:
         if options.verbose:
             _log.debug(str(e))  # stringify exception so logger doesn't have to
-        if hasattr(e, 'job_exceptions'):
-            exceptions = e.job_exceptions
-        else:
-            exceptions = e.args  # ruffus 2.6.3
+        exceptions = e.job_exceptions
         exitcode = traverse_ruffus_exception(exceptions, options, _log)
         if exitcode is None:
             _log.error("Unexpected ruffus exception: " + str(e))
