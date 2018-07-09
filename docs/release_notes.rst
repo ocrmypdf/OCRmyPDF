@@ -1,9 +1,13 @@
 Release notes
 =============
 
-OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line interface.
+OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line interface and its public API.
 
-The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
+The ``ocrmypdf`` package may now be imported. The public API may be useful in scripts that launch OCRmyPDF processes or that wish to use some of its features for working with PDFs.
+
+Unfortunately, the public API does **not** expose the ability to actually OCR a PDF. This is due to a limitation in an underlying library (ruffus) that makes OCRmyPDF non-reentrant.
+
+Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and are released publicly should probably also be licensed under GPLv3.
 
 .. Issue regex
    find:    [^`]\#([0-9]{1,3})[^0-9]
