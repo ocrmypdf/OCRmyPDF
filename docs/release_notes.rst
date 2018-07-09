@@ -19,7 +19,7 @@ v7.0.0
 
 -   New feature: PDF optimization with ``-O`` or ``--optimize``.  After OCR, OCRmyPDF will perform image optimizations relevant to OCR PDFs.
 
-    +   If a JBIG2 encoder is available, then monochrome images will be converted, with the potential for huge savings on large black and white files, since JBIG2 is far more efficient than any other monochrome (bi-level) compression. (All known US patents related to JBIG2 have probably expired, but it remains the responsibility of the user to supply a JBIG2 encoder such as `jbig2enc <https://github.com/agl/jbig2enc>`_. OCRmyPDF does not implement JBIG2 encoding.)
+    +   If a JBIG2 encoder is available, then monochrome images will be converted, with the potential for huge savings on large black and white images, since JBIG2 is far more efficient than any other monochrome (bi-level) compression. (All known US patents related to JBIG2 have probably expired, but it remains the responsibility of the user to supply a JBIG2 encoder such as `jbig2enc <https://github.com/agl/jbig2enc>`_. OCRmyPDF does not implement JBIG2 encoding.)
 
     +   If ``pngquant`` is installed, OCRmyPDF will optionally use it to perform lossy quantization and compression of PNG images.
 
@@ -33,7 +33,7 @@ v7.0.0
 
 -   Removed features
 
-    +   The deprecated ``--pdf-renderer tesseract`` PDF renderer was removed. With the rendering algorithm it became identical to ``sandwich`` PDF renderer.
+    +   The deprecated ``--pdf-renderer tesseract`` PDF renderer was removed.
 
     +   ``-g``, the option to generate debug text pages, was removed because it was a maintenance burden and only worked in isolated cases. HOCR pages can still be previewed by running the hocrtransform.py with appropriate settings.
 
@@ -66,7 +66,7 @@ v6.2.0
 
 -   Creation of PDF/A-3 is now supported. However, there is no ability to attach files to PDF/A-3.
 
--   List more reasons why the file size might grow.
+-   Lists more reasons why the file size might grow.
 
 -   Fix issue `#262 <https://github.com/ppjbarlow83/OCRmyPDF/issues/262>`_, ``--remove-background`` error on PDFs contained colormapped (paletted) images.
 
