@@ -70,7 +70,7 @@ def complain(message):
 if 'IDE_PROJECT_ROOTS' in os.environ:
     os.environ['PATH'] = '/usr/local/bin:' + os.environ['PATH']
 
-# -------- 
+# --------
 # Critical environment tests
 
 verify_python3_env()
@@ -156,7 +156,7 @@ parser.add_argument(
     '--image-dpi', metavar='DPI', type=int,
     help="For input image instead of PDF, use this DPI instead of file's.")
 parser.add_argument(
-    '--output-type', choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'], 
+    '--output-type', choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'],
     default='pdfa',
     help="Choose output type. 'pdfa' creates a PDF/A-2b compliant file for "
          "long term archiving (default, recommended) but may not suitable "
@@ -574,7 +574,7 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
     if exc_name == 'builtins.SystemExit':
         match = re.search(r"\.(.+?)\)", exc_value)
         exit_code_name = match.groups()[0]
-        exit_code = getattr(ExitCode, exit_code_name, 'other_error')        
+        exit_code = getattr(ExitCode, exit_code_name, 'other_error')
     elif exc_name == 'ruffus.ruffus_exceptions.MissingInputFileError':
         log.error(cleanup_ruffus_error_message(exc_value))
         exit_code = ExitCode.input_file
@@ -598,7 +598,7 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
             (exc_name == 'ocrmypdf.exceptions.EncryptedPdfError'):
         log.error(textwrap.dedent("""\
             Input PDF is encrypted. The encryption must be removed to
-            perform OCR. 
+            perform OCR.
 
             For information about this PDF's security use
                 qpdf --show-encryption infilename
@@ -607,7 +607,7 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
                 qpdf --decrypt [--password=[password]] infilename
 
             """))
-        exit_code = ExitCode.encrypted_pdf        
+        exit_code = ExitCode.encrypted_pdf
     elif exc_name == 'ocrmypdf.exceptions.PdfMergeFailedError':
         log.error(textwrap.dedent("""\
             Failed to merge PDF image layer with OCR layer
@@ -638,33 +638,31 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
     return ExitCode.other_error
 
 
-def traverse_ruffus_exception(e_args, options, log):
-    """Walk through a RethrownJobError and find the first exception.
+def traverse_ruffus_exception(exceptions, options, log):
+    """Traverse a RethrownJobError and output the exceptions
 
-    Ruffus flattens exception to 5 element tuples. Because of a bug
-    in <= 2.6.3 it may present either the single:
-      (task, job, exc, value, stack)
-    or something like:
-      [[(task, job, exc, value, stack)]]
-    
-    Generally cross-process exception marshalling doesn't work well
-    and ruffus doesn't support because BaseException has its own
-    implementation of __reduce__ that attempts to reconstruct the
-    exception based on e.__init__(e.args).
-    
-    Attempting to log the exception directly marshalls it to the logger
-    which is probably in another process, so it's better to log only
-    data from the exception at this point.
+    Ruffus presents exceptions as 5 element tuples. The RethrownJobException
+    has a list of exceptions like
+        e.job_exceptions = [(5-tuple), (5-tuple), ...]
+
+    ruffus < 2.7.0 had a bug with exception marshalling that would give
+    different output whether the main or child process raised the exception.
+    We no longer support this.
+
+    Attempting to log the exception itself will re-marshall it to the logger
+    which is normally running in another process. It's better to avoid re-
+    marshalling.
 
     The exit code will be based on this, even if multiple exceptions occurred
     at the same time."""
 
-    if isinstance(e_args, Sequence) and isinstance(e_args[0], str) and \
-            len(e_args) == 5:
-        return do_ruffus_exception(e_args, options, log)
-    elif is_iterable_notstr(e_args):
-        for exc in e_args:
-            return traverse_ruffus_exception(exc, options, log)
+    exit_codes = []
+    for exc in exceptions:
+        exit_code = do_ruffus_exception(exceptions, options, log)
+        exit_codes.append(exit_code)
+
+    return exit_codes[0]  # Multiple codes are rare so take the first one
+
 
 
 def check_closed_streams(options):
@@ -749,7 +747,7 @@ def check_environ(options, _log):
     for k in old_envvars:
         if k in os.environ:
             _log.warning(textwrap.dedent("""\
-                OCRmyPDF no longer uses the environment variable {}. 
+                OCRmyPDF no longer uses the environment variable {}.
                 Change PATH to select alternate programs.""".format(k)))
 
 
@@ -792,14 +790,14 @@ def report_output_file_size(options, _log, input_file, output_file):
     ratio = output_size / input_size
     if ratio < 1.35 or input_size < 25000:
         return  # Seems fine
-    
+
     reasons = []
     if not fitz:
         reasons.append("The optional dependency PyMuPDF is not installed.")
     image_preproc = {
-        'deskew', 
-        'clean_final', 
-        'remove_background', 
+        'deskew',
+        'clean_final',
+        'remove_background',
         'oversample',
         'force_ocr'
     }
@@ -886,7 +884,8 @@ def run_pipeline():
     except ruffus_exceptions.RethrownJobError as e:
         if options.verbose:
             _log.debug(str(e))  # stringify exception so logger doesn't have to
-        exitcode = traverse_ruffus_exception(e.args, options, _log)
+        exceptions = e.job_exceptions
+        exitcode = traverse_ruffus_exception(exceptions, options, _log)
         if exitcode is None:
             _log.error("Unexpected ruffus exception: " + str(e))
             _log.error(repr(e))
@@ -919,7 +918,7 @@ def run_pipeline():
             _log.warning('Output file: The generated PDF is INVALID')
             return ExitCode.invalid_output_pdf
 
-        report_output_file_size(options, _log, start_input_file, 
+        report_output_file_size(options, _log, start_input_file,
                                 options.output_file)
 
     pdfinfo = context.get_pdfinfo()

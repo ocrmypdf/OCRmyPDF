@@ -1,8 +1,8 @@
 # requirements.txt can be used to replicate the developer's build environment
 # setup.py lists a separate set of requirements that are looser to simplify
 # installation
-ruffus == 2.6.3
-Pillow == 5.1.0
+ruffus == 2.7.0
+Pillow == 5.2.0
 reportlab == 3.4.0
 PyPDF2 == 1.26.0
 img2pdf == 0.2.4

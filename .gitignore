@@ -2,6 +2,7 @@
 *.pyc
 *.sublime-*
 venv*/
+.venv/
 pyvenv.cfg
 tasks.py
 .bash_history
