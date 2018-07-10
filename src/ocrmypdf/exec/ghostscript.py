@@ -16,14 +16,13 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 from tempfile import NamedTemporaryFile
-from subprocess import run, PIPE, STDOUT, CalledProcessError
+from subprocess import run, PIPE, STDOUT
 from shutil import copy
 from functools import lru_cache
 import re
-import sys
 from PIL import Image
 from . import get_version
-from ..exceptions import SubprocessOutputError, MissingDependencyError
+from ..exceptions import SubprocessOutputError
 from ..helpers import fspath
 
 
@@ -48,29 +47,74 @@ def _gs_error_reported(stream):
     return re.search(r'error', stream, flags=re.IGNORECASE)
 
 
+def extract_text(input_file, pageno=1):
+    """
+    Use the txtwrite device to get text layout information out
+
+    For details on options of -dTextFormat see
+    https://www.ghostscript.com/doc/current/VectorDevices.htm#TXT
+
+    Format is like
+    <page>
+    <line>
+    <span bbox="left top right bottom" font="..." size="...">
+    <char bbox="...." c="X"/>
+
+    :return: XML-ish text representation in bytes
+
+    """
+
+    args_gs = [
+        'gs',
+        '-dQUIET',
+        '-dSAFER',
+        '-dBATCH',
+        '-dNOPAUSE',
+        '-sDEVICE=txtwrite',
+        '-dTextFormat=0',
+        '-dFirstPage=%i' % pageno,
+        '-dLastPage=%i' % pageno,
+        '-o', '-',
+        input_file
+    ]
+
+    p = run(args_gs, stdout=PIPE, stderr=PIPE)
+    if p.returncode != 0:
+        raise SubprocessOutputError(
+            'Ghostscript text extraction failed\n%s\n%s\n%s' % (
+                input_file, p.stdout.decode(), p.stderr.decode()
+            )
+        )
+
+    return p.stdout
+
+
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
-                  pageno=1, page_dpi=None):
+                  pageno=1, page_dpi=None, rotation=None):
     """
     Rasterize one page of a PDF at resolution (xres, yres) in canvas units.
-    
-    The image is sized to match the integer pixels dimensions implied by 
+
+    The image is sized to match the integer pixels dimensions implied by
     (xres, yres) even if those numbers are noninteger. The image's DPI will
      be overridden with the values in page_dpi.
-    
+
     :param input_file: pathlike
     :param output_file: pathlike
     :param xres: resolution at which to rasterize page
-    :param yres: 
-    :param raster_device: 
-    :param log: 
+    :param yres:
+    :param raster_device:
+    :param log:
     :param pageno: page number to rasterize (beginning at page 1)
-    :param page_dpi: resolution tuple (x, y) overriding output image DPI 
-    :return: 
+    :param page_dpi: resolution tuple (x, y) overriding output image DPI
+    :return:
     """
     res = xres, yres
     int_res = round(xres), round(yres)
     if not page_dpi:
         page_dpi = res
+
+    autorotate = '/PageByPage' if rotation is None else '/None'
+
     with NamedTemporaryFile(delete=True) as tmp:
         args_gs = [
             'gs',
@@ -83,9 +127,12 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             '-dLastPage=%i' % pageno,
             '-r{0}x{1}'.format(str(int_res[0]), str(int_res[1])),
             '-o', tmp.name,
+            '-dAutoRotatePages=%s' % autorotate,
+            '-f',
             fspath(input_file)
         ]
-        
+
+        log.debug(args_gs)
         p = run(args_gs, stdout=PIPE, stderr=STDOUT,
                 universal_newlines=True)
         if _gs_error_reported(p.stdout):
@@ -110,10 +157,21 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
                 log.debug(
                     "Ghostscript: resize output image {} -> {}".format(
                         im.size, expected_size))
-                im.resize(expected_size).save(
-                    fspath(output_file), dpi=page_dpi)
-            else:
-                copy(tmp.name, fspath(output_file))
+                im = im.resize(expected_size)
+
+            if rotation is not None:
+                log.debug("Rotating output by %i", rotation)
+                # rotation is a clockwise angle and Image.ROTATE_* is
+                # counterclockwise so this cancels out the rotation
+                if rotation == 90:
+                    im = im.transpose(Image.ROTATE_90)
+                elif rotation == 180:
+                    im = im.transpose(Image.ROTATE_180)
+                elif rotation == 270:
+                    im = im.transpose(Image.ROTATE_270)
+                if rotation % 180 == 90:
+                    page_dpi = page_dpi[1], page_dpi[0]
+            im.save(fspath(output_file), dpi=page_dpi)
 
 
 def generate_pdfa(pdf_pages, output_file, compression, log,
@@ -139,8 +197,8 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
             "-dAutoFilterGrayImages=true",
         ]
 
-    # Older versions of Ghostscript expect a leading slash in 
-    # sColorConversionStrategy, newer ones should not have it. See Ghostscript 
+    # Older versions of Ghostscript expect a leading slash in
+    # sColorConversionStrategy, newer ones should not have it. See Ghostscript
     # git commit fe1c025d.
     strategy = 'RGB' if version() >= '9.19' else '/RGB'
 
@@ -168,7 +226,8 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
             "-dPDFACompatibilityPolicy=1",
             "-sOutputFile=" + gs_pdf.name,
         ]
-        args_gs.extend(pdf_pages)
+        args_gs.extend(fspath(s) for s in pdf_pages)  # Stringify Path objs
+        log.debug(args_gs)
         p = run(args_gs, stdout=PIPE, stderr=STDOUT,
                 universal_newlines=True)
 
@@ -188,7 +247,7 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
         if p.returncode == 0:
             # Ghostscript does not change return code when it fails to create
             # PDF/A - check PDF/A status elsewhere
-            copy(gs_pdf.name, output_file)
+            copy(gs_pdf.name, fspath(output_file))
         else:
             log.error('Ghostscript PDF/A rendering failed')
             raise SubprocessOutputError()

@@ -9,7 +9,7 @@ OCRmyPDF provides many features to control the behavior of the OCR engine, Tesse
 When OCR is skipped
 """""""""""""""""""
 
-If a page in a PDF seems to have text, by default OCRmyPDF will exit without modifying the PDF. This is to ensure that PDFs that were previously OCRed or were "born digital" rather than scanned are not processed. 
+If a page in a PDF seems to have text, by default OCRmyPDF will exit without modifying the PDF. This is to ensure that PDFs that were previously OCRed or were "born digital" rather than scanned are not processed.
 
 If ``--skip-text`` is issued, then no OCR will be performed on pages that already have text. The page will be copied to the output. This may be useful for documents that contain both "born digital" and scanned content, or to use OCRmyPDF to normalize and convert to PDF/A regardless of their contents.
 
@@ -19,7 +19,7 @@ If ``--force-ocr`` is issued, then all pages will be rasterized to images, disca
 Time and image size limits
 """"""""""""""""""""""""""
 
-By default, OCRmyPDF permits tesseract to run for three minutes (180 seconds) per page. This is usually more than enough time to find all text on a reasonably sized page with modern hardware. 
+By default, OCRmyPDF permits tesseract to run for three minutes (180 seconds) per page. This is usually more than enough time to find all text on a reasonably sized page with modern hardware.
 
 If a page is skipped, it will be inserted without OCR. If preprocessing was requested, the preprocessed image layer will be inserted.
 
@@ -27,32 +27,32 @@ If you want to adjust the amount of time spent on OCR, change ``--tesseract-time
 
 .. code-block:: bash
 
-	# Allow 300 seconds for OCR; skip any page larger than 50 megapixels
-	ocrmypdf --tesseract-timeout 300 --skip-big 50 bigfile.pdf output.pdf
+    # Allow 300 seconds for OCR; skip any page larger than 50 megapixels
+    ocrmypdf --tesseract-timeout 300 --skip-big 50 bigfile.pdf output.pdf
 
 Overriding default tesseract
 """"""""""""""""""""""""""""
 
-OCRmyPDF checks the system ``PATH`` for the ``tesseract`` binary.  
+OCRmyPDF checks the system ``PATH`` for the ``tesseract`` binary.
 
 Some relevant environment variables that influence Tesseract's behavior include:
 
 .. envvar:: TESSDATA_PREFIX
 
-	Overrides the path to Tesseract's data files. This can allow simultaneous installation of the "best" and "fast" training data sets. OCRmyPDF does not manage this environment variable.
+    Overrides the path to Tesseract's data files. This can allow simultaneous installation of the "best" and "fast" training data sets. OCRmyPDF does not manage this environment variable.
 
 .. envvar:: OMP_THREAD_LIMIT
 
-	Controls the number of threads Tesseract will use. OCRmyPDF will manage this environment if it is not already set. (Currently, it will set it to 1 because this gives the best results in testing.)
+    Controls the number of threads Tesseract will use. OCRmyPDF will manage this environment if it is not already set. (Currently, it will set it to 1 because this gives the best results in testing.)
 
 For example, if you are testing tesseract 4.00 and don't wish to use an existing tesseract 3.04 installation, you can launch OCRmyPDF as follows:
 
 .. code-block:: bash
 
-	env \
-		PATH=/home/user/src/tesseract4/api:$PATH \
-		TESSDATA_PREFIX=/home/user/src/tesseract4 \
-		ocrmypdf --tesseract-oem 2 input.pdf output.pdf
+    env \
+        PATH=/home/user/src/tesseract4/api:$PATH \
+        TESSDATA_PREFIX=/home/user/src/tesseract4 \
+        ocrmypdf --tesseract-oem 2 input.pdf output.pdf
 
 In this example ``TESSDATA_PREFIX`` directs Tesseract 4.0 to use LSTM training data. ``--tesseract-oem 1`` requests tesseract 4.0's new LSTM engine. (Tesseract 4.0 only.)
 
@@ -80,19 +80,19 @@ Create a file named "no-dict.cfg" with these contents:
 
 ::
 
-	load_system_dawg 0
-	language_model_penalty_non_dict_word 0
-	language_model_penalty_non_freq_dict_word 0
+    load_system_dawg 0
+    language_model_penalty_non_dict_word 0
+    language_model_penalty_non_freq_dict_word 0
 
 then run ocrmypdf as follows (along with any other desired arguments):
 
 .. code-block:: bash
 
-	ocrmypdf --tesseract-config no-dict.cfg input.pdf output.pdf
+    ocrmypdf --tesseract-config no-dict.cfg input.pdf output.pdf
 
 .. warning::
 
-	Some combinations of control parameters will break Tesseract or break assumptions that OCRmyPDF makes about Tesseract's output.
+    Some combinations of control parameters will break Tesseract or break assumptions that OCRmyPDF makes about Tesseract's output.
 
 
 Changing the PDF renderer
@@ -105,7 +105,7 @@ rendering
   Creating a new PDF from other data (such as an existing PDF).
 
 
-OCRmyPDF has three PDF renderers: ``sandwich``, ``hocr``, ``tesseract``. The renderer may be selected using ``--pdf-renderer``. The default is ``auto`` which lets OCRmyPDF select the renderer to use. Currently, ``auto`` selects ``sandwich`` for Tesseract 3.05.01 or newer, or ``hocr`` for older versions of Tesseract.
+OCRmyPDF has these PDF renderers: ``sandwich`` and ``hocr``. The renderer may be selected using ``--pdf-renderer``. The default is ``auto`` which lets OCRmyPDF select the renderer to use. Currently, ``auto`` selects ``sandwich`` for Tesseract 3.05.01 or newer, or ``hocr`` for older versions of Tesseract.
 
 The ``sandwich`` renderer
 """""""""""""""""""""""""
@@ -116,7 +116,7 @@ Currently this is the best renderer for most uses, however it is implemented in 
 
 When image preprocessing features like ``--deskew`` are used, the original PDF will be rendered as a full page and the OCR layer will be placed on top.
 
-This renderer requires Tesseract 3.05.01 or newer.
+If a PDF created with this renderer using Tesseract versions older than 3.05.00 is then passed through Ghostscript's pdfwrite feature, the OCR text *may* be corrupted. The ``--output-type=pdfa`` argument will produce a warning in this situation.  For this reason, OCRmyPDF automatically selects the ``hocr`` for older Tesseract versions.
 
 The ``hocr`` renderer
 """""""""""""""""""""
@@ -132,8 +132,60 @@ This works in all versions of Tesseract.
 The ``tesseract`` renderer
 """"""""""""""""""""""""""
 
-The ``tesseract`` renderer creates a PDF with the image and text layers precomposed, meaning that it always transcodes, loses image quality and rasterizes any vector objects. It does a better job on non-Latin text and document structure than ``hocr``.
+The ``tesseract`` renderer was removed. OCRmyPDF's new approach to text layer grafting makes it functionally equivalent to ``sandwich``.
 
-If a PDF created with this renderer using Tesseract versions older than 3.05.00 is then passed through Ghostscript's pdfwrite feature, the OCR text *may* be corrupted. The ``--output-type=pdfa`` argument will produce a warning in this situation.
+Return code policy
+------------------
 
-*This renderer is deprecated and will be removed whenever support for older versions of Tesseract is dropped.*
+OCRmyPDF writes all messages to ``stderr``.  ``stdout`` is reserved for piping
+output files.  ``stdin`` is reserved for piping input files.
+
+The return codes generated by the OCRmyPDF are considered part of the stable
+user interface.  They may be imported from ``ocrmypdf.exceptions``.
+
+.. list-table:: Return codes
+    :widths: 5 35 60
+    :header-rows: 1
+
+    *	- Code
+        - Name
+        - Interpretation
+    *	- 0
+        - ``ExitCode.ok``
+        - Everything worked as expected.
+    *	- 1
+        - ``ExitCode.bad_args``
+        - Invalid arguments, exited with an error.
+    *	- 2
+        - ``ExitCode.input_file``
+        - The input file does not seem to be a valid PDF.
+    *	- 3
+        - ``ExitCode.missing_dependency``
+        - An external program required by OCRmyPDF is missing.
+    *	- 4
+        - ``ExitCode.invalid_output_pdf``
+        - An output file was created, but it does not seem to be a valid PDF. The file will be available.
+    *	- 5
+        - ``ExitCode.file_access_error``
+        - The user running OCRmyPDF does not have sufficient permissions to read the input file and write the output file.
+    *	- 6
+        - ``ExitCode.already_done_ocr``
+        - The file already appears to contain text so it may not need OCR. See output message.
+    *	- 7
+        - ``ExitCode.child_process_error``
+        - An error occurred in an external program (child process) and OCRmyPDF cannot continue.
+    *	- 8
+        - ``ExitCode.encrypted_pdf``
+        - The input PDF is encrypted. OCRmyPDF does not read encrypted PDFs. Use another program such as ``qpdf`` to remove encryption.
+    *	- 9
+        - ``ExitCode.invalid_config``
+        - A custom configuration file was forwarded to Tesseract using ``--tesseract-config``, and Tesseract rejected this file.
+    *   - 10
+        - ``ExitCode.pdfa_conversion_failed``
+        - A valid PDF was created, PDF/A conversion failed. The file will be available.
+    *	- 15
+        - ``ExitCode.other_error``
+        - Some other error occurred.
+    *	- 130
+        - ``ExitCode.ctrl_c``
+        - The program was interrupted by pressing Ctrl+C.

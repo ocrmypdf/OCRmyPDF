@@ -22,35 +22,29 @@ from pathlib import Path
 import sys
 import os
 import re
-import warnings
-import multiprocessing
 import atexit
 import textwrap
 import logging
 import argparse
 
-import PyPDF2 as pypdf
 import PIL
 
 import ruffus.ruffus_exceptions as ruffus_exceptions
 import ruffus.cmdline as cmdline
 import ruffus.proxy_logger as proxy_logger
 
-from .pipeline import JobContext, JobContextManager, \
-    cleanup_working_files, build_pipeline
+from ._jobcontext import JobContext, JobContextManager, cleanup_working_files
+from ._pipeline import build_pipeline
 from .pdfa import file_claims_pdfa
 from .helpers import is_iterable_notstr, re_symlink, is_file_writable, \
     available_cpu_count
 from .exec import tesseract, qpdf, ghostscript
-from .lib import fitz
 from . import PROGRAM_NAME, VERSION
 
 from .exceptions import ExitCode, ExitCodeException, MissingDependencyError, \
     InputFileError, BadArgsError, OutputFileAccessError
 from . import exceptions as ocrmypdf_exceptions
 from ._unicodefun import verify_python3_env
-
-warnings.simplefilter('ignore', pypdf.utils.PdfReadWarning)
 
 
 # -------------
@@ -70,7 +64,7 @@ def complain(message):
 if 'IDE_PROJECT_ROOTS' in os.environ:
     os.environ['PATH'] = '/usr/local/bin:' + os.environ['PATH']
 
-# -------- 
+# --------
 # Critical environment tests
 
 verify_python3_env()
@@ -84,6 +78,21 @@ if tesseract.version() < MINIMUM_TESS_VERSION:
 
 # -------------
 # Parser
+
+def numeric(basetype, min_=None, max_=None):
+    """Validator for numeric params"""
+    min_ = basetype(min_) if min_ is not None else None
+    max_ = basetype(max_) if max_ is not None else None
+    def _numeric(string):
+        value = basetype(string)
+        if (min_ is not None and value < min_
+                or max_ is not None and value > max_):
+            msg = "%r not in valid range %r" % (string, (min_, max_))
+            raise argparse.ArgumentTypeError(msg)
+        return value
+    _numeric.__name__ = basetype.__name__
+    return _numeric
+
 
 parser = argparse.ArgumentParser(
     prog=PROGRAM_NAME,
@@ -156,7 +165,7 @@ parser.add_argument(
     '--image-dpi', metavar='DPI', type=int,
     help="For input image instead of PDF, use this DPI instead of file's.")
 parser.add_argument(
-    '--output-type', choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'], 
+    '--output-type', choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'],
     default='pdfa',
     help="Choose output type. 'pdfa' creates a PDF/A-2b compliant file for "
          "long term archiving (default, recommended) but may not suitable "
@@ -186,7 +195,7 @@ parser.add_argument(
 jobcontrol = parser.add_argument_group(
     "Job control options")
 jobcontrol.add_argument(
-    '-j', '--jobs', metavar='N', type=int,
+    '-j', '--jobs', metavar='N', type=numeric(int, 0, 256),
     help="Use up to N CPU cores simultaneously (default: use all).")
 jobcontrol.add_argument(
     '-q', '--quiet', action='store_true', help="Suppress INFO messages")
@@ -233,7 +242,7 @@ preprocessing.add_argument(
     help="Clean page as above, and incorporate the cleaned image in the final "
          "PDF.  Might remove desired content.")
 preprocessing.add_argument(
-    '--oversample', metavar='DPI', type=int, default=0,
+    '--oversample', metavar='DPI', type=numeric(int, 0, 5000), default=0,
     help="Oversample images to at least the specified DPI, to improve OCR "
          "results slightly")
 
@@ -249,21 +258,50 @@ ocrsettings.add_argument(
     help="Skip OCR on any pages that already contain text, but include the "
          "page in final output; useful for PDFs that contain a mix of "
          "images, text pages, and/or previously OCRed pages")
-# ocrsettings.add_argument(
-#     '--redo-ocr', action='store_true',
-#     help="removing any existing OCR text, but otherwise preserve mixed PDF "
-#          "pages")
-
 ocrsettings.add_argument(
-    '--skip-big', type=float, metavar='MPixels',
+    '--skip-big', type=numeric(float, 0, 5000), metavar='MPixels',
     help="Skip OCR on pages larger than the specified amount of megapixels, "
          "but include skipped pages in final output")
+
+optimizing = parser.add_argument_group(
+    "Optimization options",
+    "Control how the PDF is optimized after OCR"
+)
+optimizing.add_argument(
+    '-O', '--optimize', type=int, choices=range(0, 4), default=1,
+    help=("Control how PDF is optimized after processing:"
+        "0 - do not optimize;"
+        "1 - do safe, lossless optimizations (default);"
+        "2 - do lossy optimizations; "
+        "3 - do aggressive lossy optimizations"
+    )
+)
+optimizing.add_argument(
+    '--jpeg-quality', type=numeric(int, 0, 100), default=0, metavar='Q',
+    help=("Adjust JPEG quality level for JPEG optimization. "
+          "100 is best quality and largest output size; "
+          "1 is lowest quality and smallest output"
+          "0 uses the default."
+    )
+)
+optimizing.add_argument(
+    '--jpg-quality', type=numeric(int, 0, 100), default=0, metavar='Q',
+    dest='jpeg_quality',
+    help=argparse.SUPPRESS  # Alias for --jpeg-quality
+)
+optimizing.add_argument(
+    '--png-quality', type=numeric(int, 0, 100), default=0, metavar='Q',
+    help=("Adjust PNG quality level to use when quantizing PNGs. "
+          "Values have same meaning as with --jpeg-quality"
+    )
+)
 
 advanced = parser.add_argument_group(
     "Advanced",
     "Advanced options to control Tesseract's OCR behavior")
 advanced.add_argument(
-    '--max-image-mpixels', action='store', type=float, metavar='MPixels',
+    '--max-image-mpixels', action='store', type=numeric(float, 0),
+    metavar='MPixels',
     help="Set maximum number of pixels to unpack before treating an image as a "
          "decompression bomb",
     default=128.0)
@@ -285,22 +323,18 @@ advanced.add_argument(
     )
 advanced.add_argument(
     '--pdf-renderer',
-    choices=['auto', 'tesseract', 'hocr', 'sandwich'], default='auto',
+    choices=['auto', 'hocr', 'sandwich'], default='auto',
     help="Choose OCR PDF renderer - the default option is to let OCRmyPDF "
-         "choose."
-         "auto - let OCRmyPDF choose; "
-         "sandwich - default renderer for Tesseract 3.05.01 and newer; "
-         "hocr - default renderer for older versions of Tesseract; "
-         "tesseract - gives better results for non-Latin languages and "
-         "Tesseract older than 3.05.01 but has problems with some versions "
-         " of Ghostscript; deprecated"
+         "choose.  See documentation for discussion."
     )
 advanced.add_argument(
-    '--tesseract-timeout', default=180.0, type=float, metavar='SECONDS',
+    '--tesseract-timeout', default=180.0, type=numeric(float, 0),
+    metavar='SECONDS',
     help='Give up on OCR after the timeout, but copy the preprocessed page '
          'into the final output')
 advanced.add_argument(
-    '--rotate-pages-threshold', default=14.0, type=float, metavar='CONFIDENCE',
+    '--rotate-pages-threshold', default=14.0, type=numeric(float, 0, 1000),
+    metavar='CONFIDENCE',
     help="Only rotate pages when confidence is above this value (arbitrary "
          "units reported by tesseract)")
 advanced.add_argument(
@@ -323,14 +357,6 @@ advanced.add_argument(
 advanced.add_argument(
     '--user-patterns', metavar='FILE',
     help="Specify the location of the Tesseract user patterns file.")
-advanced.add_argument(
-    '--skip-repair', action='store_true',
-    help="Normally OCRmyPDF automatically repairs PDFs using qpdf before "
-         "processing.  If you have already run qpdf or a similar program "
-         "that repairs PDF errors, you can tell OCRmyPDF to skip repair with "
-         "this option.  This may be helpful in batch processing where all "
-         "files are repaired prior to OCR occurs, since repair is single "
-         "threaded and time consuming for large files.")
 
 debugging = parser.add_argument_group(
     "Debugging",
@@ -338,9 +364,6 @@ debugging = parser.add_argument_group(
 debugging.add_argument(
     '-k', '--keep-temporary-files', action='store_true',
     help="Keep temporary files (helpful for debugging)")
-debugging.add_argument(
-    '-g', '--debug-rendering', action='store_true',
-    help="Render each page twice with debug information on second page")
 debugging.add_argument(
     '--flowchart', type=str,
     help="Generate the pipeline execution flowchart")
@@ -365,35 +388,58 @@ def check_options_languages(options, _log):
 
 
 def check_options_output(options, log):
+    # We have these constraints to check for.
+    # 1. Ghostscript < 9.20 mangles multibyte Unicode
+    # 2. Tesseract < 3.05 embeds an older version of GlyphlessFont with which
+    #    no version of Ghostscript handles correctly.
+    # 3. hocr doesn't work on non-Latin languages (so don't select it)
+
+    languages = set(options.language)
+    is_latin = languages.issubset(HOCR_OK_LANGS)
+
+    if options.pdf_renderer == 'hocr' and not is_latin:
+        msg = (
+            "The 'hocr' PDF renderer is known to cause problems with one "
+            "or more of the languages in your document.  Use "
+            "--pdf-renderer auto (the default) to avoid this issue.")
+        log.warning(msg)
+
+    if ghostscript.version() < '9.20' \
+            and options.output_type != 'pdf' \
+            and not is_latin:
+        # https://bugs.ghostscript.com/show_bug.cgi?id=696874
+        # Ghostscript < 9.20 fails to encode multibyte characters properly
+        msg = (
+            "The installed version of Ghostscript does not work correctly "
+            "with the OCR languages you specified. Use --output-type pdf or "
+            "upgrade to Ghostscript 9.20 or later to avoid this issue.")
+        msg += "Found Ghostscript {}".format(ghostscript.version())
+        log.warning(msg)
+
+    # Decide on what renderer to use
     if options.pdf_renderer == 'auto':
-        if tesseract.has_textonly_pdf():
-            options.pdf_renderer = 'sandwich'
-        else:
+        if tesseract.version() < '3.05' \
+                and options.output_type.startswith('pdfa') \
+                and is_latin:
             options.pdf_renderer = 'hocr'
+        else:
+            options.pdf_renderer = 'sandwich'
 
-    if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf():
-        raise MissingDependencyError(
-            "The 'sandwich' renderer requires Tesseract 3.05.01 or newer; "
-            "or Tesseract 4.00 alpha newer than February 2017.")
+    if options.pdf_renderer == 'sandwich' \
+            and tesseract.version() < '3.05':
+        msg = (
+            "Ghostscript will corrupt the OCR text of PDFs produced by "
+            "Tesseract 3.04.xx and older.  For best results, upgrade to a "
+            "newer release of Tesseract. "
+        )
 
-    if options.pdf_renderer == 'tesseract':
-        if tesseract.version() < '3.05' and \
-                options.output_type.startswith('pdfa'):
-            log.warning(
-                "For best results use --pdf-renderer=tesseract "
-                "--output-type=pdf to disable PDF/A generation via "
-                "Ghostscript, which is known to corrupt the OCR text of "
-                "some PDFs produced your version of Tesseract.")
-        elif tesseract.has_textonly_pdf():
-            log.warning(
-                "The argument --pdf-renderer=tesseract provides support for "
-                "versions of tesseract older than your version. For best "
-                "results omit this argument and let OCRmyPDF choose the "
-                "best available renderer.")
-
-    if options.debug_rendering and options.pdf_renderer != 'hocr':
-        log.info(
-            "Ignoring --debug-rendering because it requires --pdf-renderer=hocr")
+        if options.output_type.startswith('pdfa'):
+            msg += (
+                "The argument --output-type=pdfa* requires Ghostscript, so "
+                "the PDF will be invalid.  If you cannot upgrade Tesseract, "
+                "use --output-type=pdf.")
+            raise MissingDependencyError(msg)
+        log.warning(msg)
 
     if options.output_type == 'pdfa':
         options.output_type = 'pdfa-2'
@@ -421,75 +467,57 @@ def check_options_sidecar(options, log):
         options.sidecar = options.output_file + '.txt'
 
 
+def _optional_program_check(name, version_fn, min_version, for_argument):
+    try:
+        if version_fn() < min_version:
+            raise MissingDependencyError(
+                "The installed '{}' is not supported. "
+                "Install version {} or newer.".format(name, min_version))
+    except FileNotFoundError:
+        raise MissingDependencyError(
+            "Install the '{}' program to use {}.".format(name, for_argument))
+
+
 def check_options_preprocessing(options, log):
     if any((options.clean, options.clean_final)):
         from .exec import unpaper
-        try:
-            if unpaper.version() < '6.1':
-                raise MissingDependencyError(
-                    "The installed 'unpaper' is not supported. "
-                    "Install version 6.1 or newer.")
-        except FileNotFoundError:
-            raise MissingDependencyError(
-                "Install the 'unpaper' program to use --clean, --clean-final.")
-
-    if options.clean and \
-            not options.clean_final and \
-            options.pdf_renderer == 'tesseract':
-        log.info(
-            "Tesseract PDF renderer cannot render --clean pages without "
-            "also performing --clean-final, so --clean-final is assumed.")
+        _optional_program_check(
+            'unpaper', unpaper.version, '6.1', '--clean, --clean-final'
+        )
 
 
 def check_options_ocr_behavior(options, log):
     if options.force_ocr and options.skip_text:
         raise argparse.ArgumentError(
             None,
-            "Error: --force-ocr and --skip-text are mutually incompatible.")
+            "Error: --force-ocr and --skip-text are mutually exclusive.")
 
-    # if options.redo_ocr and (options.skip_text or options.force_ocr):
-    #     raise argparse.ArgumentError(
-    #         "Error: --redo-ocr and other OCR options are incompatible.")
-    languages = set(options.language)
-    if options.pdf_renderer == 'hocr' and \
-            not languages.issubset(HOCR_OK_LANGS):
-        msg = (
-            "The 'hocr' PDF renderer is known to cause problems with one "
-            "or more of the languages in your document. ")
 
-        if tesseract.has_textonly_pdf():
-            msg += (
-                "Use --pdf-renderer auto (the default) to avoid this issue.")
-        else:
-            msg += (
-                "Use --pdf-renderer tesseract --output-type pdf to avoid "
-                "this issue")
-        log.warning(msg)
-    elif ghostscript.version() < '9.20' and \
-            not languages.issubset(HOCR_OK_LANGS) \
-            and options.output_type != 'pdf':
-        msg = (
-            "The installed version of Ghostscript does not work correctly "
-            "with the OCR languages you specified. Use --output-type pdf or "
-            "upgrade to Ghostscript 9.20 or later to avoid this issue.")
-        msg += "Found Ghostscript {}".format(ghostscript.version())
-        log.warning(msg)
+def check_options_optimizing(options, log):
+    if options.optimize >= 2:
+        from .exec import pngquant, jbig2enc
+        _optional_program_check(
+            'pngquant', pngquant.version, '2.0.1', '--optimize {2,3}'
+        )
+        _optional_program_check(
+            'jbig2', jbig2enc.version, '0.28', '--optimize {2,3}'
+        )
 
 
 def check_options_advanced(options, log):
     if options.tesseract_oem and not tesseract.v4():
         log.warning(
             "--tesseract-oem requires Tesseract 4.x -- argument ignored")
-    if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf():
-        raise MissingDependencyError(
-            "--pdf-renderer sandwich requires Tesseract 4.x "
-            "commit 3d9fb3b or later")
     if options.pdfa_image_compression != 'auto' and \
             options.output_type.startswith('pdfa'):
         log.warning(
             "--pdfa-image-compression argument has no effect when "
             "--output-type is not 'pdfa', 'pdfa-1', or 'pdfa-2'"
         )
+
+    if tesseract.v4() and (options.user_words or options.user_patterns):
+        log.warning(
+            'Tesseract 4.x ignores --user-words, so this has no effect')
 
 
 def check_options_metadata(options, log):
@@ -520,6 +548,7 @@ def check_options(options, log):
         check_options_sidecar(options, log)
         check_options_preprocessing(options, log)
         check_options_ocr_behavior(options, log)
+        check_options_optimizing(options, log)
         check_options_advanced(options, log)
         check_options_pillow(options, log)
     except ValueError as e:
@@ -570,21 +599,15 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
     exit_code = None
 
     task_name, job_name, exc_name, exc_value, exc_stack = ruffus_five_tuple
+    task_name = task_name  # unused
     job_name = job_name  # unused
     if exc_name == 'builtins.SystemExit':
         match = re.search(r"\.(.+?)\)", exc_value)
         exit_code_name = match.groups()[0]
-        exit_code = getattr(ExitCode, exit_code_name, 'other_error')        
+        exit_code = getattr(ExitCode, exit_code_name, 'other_error')
     elif exc_name == 'ruffus.ruffus_exceptions.MissingInputFileError':
         log.error(cleanup_ruffus_error_message(exc_value))
         exit_code = ExitCode.input_file
-    elif exc_name == 'builtins.TypeError':
-        # Even though repair_pdf will fail, ruffus will still try
-        # to call split_pages with no input files, likely due to a bug
-        if task_name == 'split_pages':
-            log.error("Input file '{0}' is not a valid PDF".format(
-                options.input_file))
-            exit_code = ExitCode.input_file
     elif exc_name == 'builtins.KeyboardInterrupt':
         log.error("Interrupted by user")
         exit_code = ExitCode.ctrl_c
@@ -593,12 +616,10 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
         msg = "Error occurred while running this command:"
         log.error(msg + '\n' + exc_value)
         exit_code = ExitCode.child_process_error
-    elif (exc_name == 'PyPDF2.utils.PdfReadError' and \
-            'not been decrypted' in exc_value) or \
-            (exc_name == 'ocrmypdf.exceptions.EncryptedPdfError'):
+    elif exc_name == 'ocrmypdf.exceptions.EncryptedPdfError':
         log.error(textwrap.dedent("""\
             Input PDF is encrypted. The encryption must be removed to
-            perform OCR. 
+            perform OCR.
 
             For information about this PDF's security use
                 qpdf --show-encryption infilename
@@ -607,7 +628,7 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
                 qpdf --decrypt [--password=[password]] infilename
 
             """))
-        exit_code = ExitCode.encrypted_pdf        
+        exit_code = ExitCode.encrypted_pdf
     elif exc_name == 'ocrmypdf.exceptions.PdfMergeFailedError':
         log.error(textwrap.dedent("""\
             Failed to merge PDF image layer with OCR layer
@@ -616,7 +637,7 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
             ocrmypdf cannot automatically correct the problem on its own.
 
             Try using
-                ocrmypdf --pdf-renderer tesseract  [..other args..]
+                ocrmypdf --pdf-renderer sandwich  [..other args..]
             """))
         exit_code = ExitCode.input_file
     elif exc_name.startswith('ocrmypdf.exceptions.'):
@@ -638,33 +659,30 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
     return ExitCode.other_error
 
 
-def traverse_ruffus_exception(e_args, options, log):
-    """Walk through a RethrownJobError and find the first exception.
+def traverse_ruffus_exception(exceptions, options, log):
+    """Traverse a RethrownJobError and output the exceptions
 
-    Ruffus flattens exception to 5 element tuples. Because of a bug
-    in <= 2.6.3 it may present either the single:
-      (task, job, exc, value, stack)
-    or something like:
-      [[(task, job, exc, value, stack)]]
-    
-    Generally cross-process exception marshalling doesn't work well
-    and ruffus doesn't support because BaseException has its own
-    implementation of __reduce__ that attempts to reconstruct the
-    exception based on e.__init__(e.args).
-    
-    Attempting to log the exception directly marshalls it to the logger
-    which is probably in another process, so it's better to log only
-    data from the exception at this point.
+    Ruffus presents exceptions as 5 element tuples. The RethrownJobException
+    has a list of exceptions like
+        e.job_exceptions = [(5-tuple), (5-tuple), ...]
+
+    ruffus < 2.7.0 had a bug with exception marshalling that would give
+    different output whether the main or child process raised the exception.
+    We no longer support this.
+
+    Attempting to log the exception itself will re-marshall it to the logger
+    which is normally running in another process. It's better to avoid re-
+    marshalling.
 
     The exit code will be based on this, even if multiple exceptions occurred
     at the same time."""
 
-    if isinstance(e_args, Sequence) and isinstance(e_args[0], str) and \
-            len(e_args) == 5:
-        return do_ruffus_exception(e_args, options, log)
-    elif is_iterable_notstr(e_args):
-        for exc in e_args:
-            return traverse_ruffus_exception(exc, options, log)
+    exit_codes = []
+    for exc in exceptions:
+        exit_code = do_ruffus_exception(exc, options, log)
+        exit_codes.append(exit_code)
+
+    return exit_codes[0]  # Multiple codes are rare so take the first one
 
 
 def check_closed_streams(options):
@@ -733,11 +751,6 @@ def preamble(_log):
     _log.debug('ocrmypdf ' + VERSION)
     _log.debug('tesseract ' + tesseract.version())
     _log.debug('qpdf ' + qpdf.version())
-    if fitz:
-        _log.debug('PyMuPDF ' + fitz.version[0])
-        _log.debug('libmupdf ' + fitz.version[1])
-    else:
-        _log.debug('PyMuPDF not installed')
 
 
 def check_environ(options, _log):
@@ -749,7 +762,7 @@ def check_environ(options, _log):
     for k in old_envvars:
         if k in os.environ:
             _log.warning(textwrap.dedent("""\
-                OCRmyPDF no longer uses the environment variable {}. 
+                OCRmyPDF no longer uses the environment variable {}.
                 Change PATH to select alternate programs.""".format(k)))
 
 
@@ -792,14 +805,12 @@ def report_output_file_size(options, _log, input_file, output_file):
     ratio = output_size / input_size
     if ratio < 1.35 or input_size < 25000:
         return  # Seems fine
-    
+
     reasons = []
-    if not fitz:
-        reasons.append("The optional dependency PyMuPDF is not installed.")
     image_preproc = {
-        'deskew', 
-        'clean_final', 
-        'remove_background', 
+        'deskew',
+        'clean_final',
+        'remove_background',
         'oversample',
         'force_ocr'
     }
@@ -855,9 +866,10 @@ def run_pipeline():
 
     # Performance is improved by setting Tesseract to single threaded. In tests
     # this gives better throughput than letting a smaller number of Tesseract
-    # jobs run multithreaded.
-    if tesseract.v4():
-        os.environ.setdefault('OMP_THREAD_LIMIT', '1')
+    # jobs run multithreaded. Same story for pngquant. Tess <4 ignores this
+    # variable, but harmless to set if ignored.
+    os.environ.setdefault('OMP_THREAD_LIMIT', '1')
+
     check_environ(options, _log)
     if os.environ.get('PYTEST_CURRENT_TEST'):
         os.environ['_OCRMYPDF_TEST_INFILE'] = options.input_file
@@ -886,7 +898,8 @@ def run_pipeline():
     except ruffus_exceptions.RethrownJobError as e:
         if options.verbose:
             _log.debug(str(e))  # stringify exception so logger doesn't have to
-        exitcode = traverse_ruffus_exception(e.args, options, _log)
+        exceptions = e.job_exceptions
+        exitcode = traverse_ruffus_exception(exceptions, options, _log)
         if exitcode is None:
             _log.error("Unexpected ruffus exception: " + str(e))
             _log.error(repr(e))
@@ -895,7 +908,7 @@ def run_pipeline():
     except ExitCodeException as e:
         return e.exit_code
     except Exception as e:
-        _log.error(e)
+        _log.error(str(e))
         return ExitCode.other_error
 
     if options.flowchart:
@@ -914,12 +927,12 @@ def run_pipeline():
             else:
                 msg = 'Output file is okay but is not PDF/A (seems to be {})'
                 _log.warning(msg.format(pdfa_info['conformance']))
-                return ExitCode.invalid_output_pdf
+                return ExitCode.pdfa_conversion_failed
         if not qpdf.check(options.output_file, _log):
             _log.warning('Output file: The generated PDF is INVALID')
             return ExitCode.invalid_output_pdf
 
-        report_output_file_size(options, _log, start_input_file, 
+        report_output_file_size(options, _log, start_input_file,
                                 options.output_file)
 
     pdfinfo = context.get_pdfinfo()

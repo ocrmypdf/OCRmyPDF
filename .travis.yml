@@ -1,10 +1,31 @@
 dist: trusty
 language: python
 cache:
-  ccache: true
   pip: true
   directories:
   - $HOME/Library/Caches/Homebrew
+
+addons:
+  apt:
+    update: true
+    sources:
+    - sourceline: 'ppa:alex-p/tesseract-ocr'
+    - sourceline: 'ppa:heyarje/libav-11'
+    - sourceline: 'ppa:vshn/ghostscript'
+    packages:
+    - ghostscript
+    - libavcodec56
+    - libavformat56
+    - libavutil54
+    - libexempi3
+    - libffi-dev
+    - pngquant
+    - poppler-utils
+    - qpdf
+    - tesseract-ocr
+    - tesseract-ocr-deu
+    - tesseract-ocr-eng
+    - tesseract-ocr-fra
 
 env:
   global:
@@ -15,33 +36,30 @@ matrix:
     - os: linux
       sudo: required
       language: python
-      python: 3.5
-      env: EXTRAS=
+      python: "3.5"
     - os: linux
       sudo: required
       language: python
-      python: 3.6
-      env: EXTRAS=
+      python: "3.6"
     - os: linux
       sudo: required
       language: python
-      python: 3.6
-      env: EXTRAS=[fitz]
+      python: "3.7-dev"
     - os: osx
       osx_image: xcode8
       language: generic
-      env: EXTRAS=
-    - os: osx
-      osx_image: xcode8
-      language: generic
-      env: EXTRAS=[fitz]
 
 before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
 
 before_install: |
+  mkdir -p bin
   if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-    bash .travis/linux_before_install.sh
+    pip3 install --upgrade pip
+    pip3 install --upgrade wheel
+    mkdir -p packages
+    wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O packages/unpaper_6.1-1.deb
+    sudo dpkg -i packages/unpaper_6.1-1.deb
   elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
     brew update && brew bundle --file=.travis/Brewfile
     pip3 install --upgrade pip
@@ -49,7 +67,10 @@ before_install: |
   fi
 
 install:
-- pip3 install ".$EXTRAS"
+- export PATH=$PWD/bin:$PATH
+- pip3 install pycparser  # py3.7 workaround for https://github.com/eliben/pycparser/issues/251
+- pip3 install -r requirements.txt
+- pip3 install --no-deps .
 - pip3 install -r test_requirements.txt
 
 script:
@@ -59,7 +80,7 @@ script:
 
 deploy:
   # release for main pypi
-  # 3.6 w/o fitz is considered the build leader and does the deploy, otherwise there is
+  # 3.6 is considered the build leader and does the deploy, otherwise there is
   # a race and all versions will try to deploy
   # OTOH if we ever need separate binary wheels then each version needs its
   # own deploy
@@ -71,20 +92,7 @@ deploy:
   on:
     branch: master
     tags: true
-    condition: $TRAVIS_PYTHON_VERSION == "3.6" && $TRAVIS_OS_NAME == "linux" && $EXTRAS == ""
-  skip_upload_docs: true
-
-  # test pypi
-- provider: pypi
-  server: https://testpypi.pypi.org/legacy/
-  user: ocrmypdf-travis
-  password:
-    secure: "DTFOmmNL6olA0+yXvp4u9jXZlZeqrJsJ0526jzqf4a3gZ6jnGTq5UI6WzRsslSyoMMfXKtHQebqHM6ogSgCZinyZ3ufHJo8fn9brxbEc2gsiWkbj5o3bGwdWMT1vNNE7XW0VCpw87rZ1EEwjl4FJHFudMlPR1yfU5+uq0k0PACo="
-  distributions: "sdist"
-  on:
-    branch: develop
-    tags: false
-    condition: $TRAVIS_OS_NAME == "osx"
+    condition: $TRAVIS_PYTHON_VERSION == "3.6" && $TRAVIS_OS_NAME == "linux"
   skip_upload_docs: true
 
   # null deploy for osx

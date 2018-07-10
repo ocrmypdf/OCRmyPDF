@@ -1,20 +1,70 @@
 Release notes
 =============
 
-OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line interface.
+OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line interface and its public API.
 
-The OCRmyPDF package itself does not contain a public API, although it is fairly stable and breaking changes are usually timed with a major release. A future release will clearly define the stable public API.
+The ``ocrmypdf`` package may now be imported. The public API may be useful in scripts that launch OCRmyPDF processes or that wish to use some of its features for working with PDFs.
+
+Unfortunately, the public API does **not** expose the ability to actually OCR a PDF. This is due to a limitation in an underlying library (ruffus) that makes OCRmyPDF non-reentrant.
+
+Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and are released publicly should probably also be licensed under GPLv3.
 
 .. Issue regex
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v7.0.0
+------
+
+-   The core algorithm for combining OCR layers with existing PDF pages has been rewritten and improved considerably.  PDFs are no longer split into single page PDFs for processing; instead, images are rendered and the OCR results are grafted onto the input PDF.  The new algorithm uses less temporary disk space and is much more performant especially for large files.
+
+-   New dependency: `pikepdf <https://github.com/pikepdf/pikepdf>`_. pikepdf is a  powerful new Python PDF library driving the latest OCRmyPDF features, built on the QPDF C++ library (libqpdf).
+
+-   New feature: PDF optimization with ``-O`` or ``--optimize``.  After OCR, OCRmyPDF will perform image optimizations relevant to OCR PDFs.
+
+    +   If a JBIG2 encoder is available, then monochrome images will be converted, with the potential for huge savings on large black and white images, since JBIG2 is far more efficient than any other monochrome (bi-level) compression. (All known US patents related to JBIG2 have probably expired, but it remains the responsibility of the user to supply a JBIG2 encoder such as `jbig2enc <https://github.com/agl/jbig2enc>`_. OCRmyPDF does not implement JBIG2 encoding.)
+
+    +   If ``pngquant`` is installed, OCRmyPDF will optionally use it to perform lossy quantization and compression of PNG images.
+
+    +   The quality of JPEGs can also be lowered, on the assumption that a lower quality image may be suitable for storage after OCR.
+
+    +   This image optimization component will eventually be offered as an independent command line utility.
+
+    +   Optimization ranges from ``-O0`` through ``-O3``, where ``0`` disables optimization and ``3`` implements all options. ``1``, the default, performs only safe and lossless optimizations. (This is similar to GCC's optimization parameter.) The exact type of optimizations performed will vary over time.
+
+-   Small amounts of text in the margins of a page, such as watermarks, page numbers, or digital stamps, will no longer prevent the rest of a page from being OCRed when ``--skip-text`` is issued. This behavior is based on a heuristic.
+
+-   Removed features
+
+    +   The deprecated ``--pdf-renderer tesseract`` PDF renderer was removed.
+
+    +   ``-g``, the option to generate debug text pages, was removed because it was a maintenance burden and only worked in isolated cases. HOCR pages can still be previewed by running the hocrtransform.py with appropriate settings.
+
+-   Removed dependencies
+
+    +   ``PyPDF2``
+
+    +   ``defusedxml``
+
+    +   ``PyMuPDF``
+
+-   The ``sandwich`` PDF renderer can be used with all supported versions of Tesseract, including that those prior to v3.05 which don't support
+``-c textonly``. (Tesseract v4.0.0 is recommended and more efficient.)
+
+-   ``--pdf-renderer auto`` option and the diagnostics used to select a PDF renderer now work better with old versions, but may make different decisions than past versions.
+
+-   If everything succeeds but PDF/A conversion fails, a distinct return code is now returned (``ExitCode.pdfa_conversion_failed (10)``) where this situation previously returned ``ExitCode.invalid_output_pdf (4)``. The latter is now returned only if there is some indication that the output file is invalid.
+
+-   Notes for downstream packagers
+
+    +   There is also a new dependency on ``python-xmp-toolkit`` which in turn depends on ``libexempi3``.
+
+    +   It may be necessary to separately ``pip install pycparser`` to avoid `another Python 3.7 issue <https://github.com/eliben/pycparser/pull/135>`_.
 
 v6.2.1
 ------
 
 -   Fix recent versions of Tesseract (after 4.0.0-beta1) not being detected as supporting the ``sandwich`` renderer (`#271 <https://github.com/ppjbarlow83/OCRmyPDF/issues/271>`_).
-
 
 v6.2.0
 ------
@@ -23,7 +73,7 @@ v6.2.0
 
 -   Creation of PDF/A-3 is now supported. However, there is no ability to attach files to PDF/A-3.
 
--   List more reasons why the file size might grow.
+-   Lists more reasons why the file size might grow.
 
 -   Fix issue `#262 <https://github.com/ppjbarlow83/OCRmyPDF/issues/262>`_, ``--remove-background`` error on PDFs contained colormapped (paletted) images.
 
@@ -84,7 +134,7 @@ v6.1.1
 v6.1.0
 ------
 
--   PyMuPDF is now an optional but recommended dependency, to alleviate installation difficulties on platforms that have less access to PyMuPDF than the author anticipated.  Install OCRmyPDF with ``pip install ocrmypdf[fitz]`` to use it to its full potential.
+-   PyMuPDF is now an optional but recommended dependency, to alleviate installation difficulties on platforms that have less access to PyMuPDF than the author anticipated.  (For version 6.x only) install OCRmyPDF with ``pip install ocrmypdf[fitz]`` to use it to its full potential.
 
 -   Fix ``FileExistsError`` that could occur if OCR timed out while it was generating the output file. (`#218 <https://github.com/jbarlow83/OCRmyPDF/issues/218>`_)
 

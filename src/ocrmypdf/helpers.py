@@ -17,7 +17,7 @@
 
 from functools import partial
 from collections.abc import Iterable
-from contextlib import suppress, contextmanager
+from contextlib import suppress
 from pathlib import Path
 import sys
 import os
@@ -29,7 +29,8 @@ def re_symlink(input_file, soft_link_name, log=None):
     """
     Helper function: relinks soft symbolic link if necessary
     """
-
+    input_file = fspath(input_file)  # For Py3.5
+    soft_link_name = fspath(soft_link_name)
     if log is None:
         prdebug = partial(print, file=sys.stderr)
     else:
@@ -70,7 +71,7 @@ def is_iterable_notstr(thing):
 
 
 def page_number(input_file):
-    "Get one-based page number implied by filename (000002.pdf -> 2)"
+    """Get one-based page number implied by filename (000002.pdf -> 2)"""
     return int(os.path.basename(fspath(input_file))[0:6])
 
 
@@ -103,18 +104,18 @@ def is_file_writable(test_file):
 
     if p.is_symlink():
         # Python 3.5 does not accept parameters for Path.resolve() and behaves
-        # as if strict=True (throws an exception on failure). Python 3.6 
+        # as if strict=True (throws an exception on failure). Python 3.6
         # defaults to strict=False. This implements strict=False like behavior
         # for Python 3.5.
         if sys.version_info[0:2] <= (3, 5):
-            p = Path(os.path.realpath(str(p)))
+            p = Path(os.path.realpath(fspath(p)))
         else:
             p = p.resolve(strict=False)
 
     # p.is_file() throws an exception in some cases
     if p.exists() and p.is_file():
         return os.access(
-            str(p), os.W_OK,
+            fspath(p), os.W_OK,
             effective_ids=(os.access in os.supports_effective_ids))
     else:
         try:
@@ -129,17 +130,9 @@ def is_file_writable(test_file):
 
 
 if sys.version_info[0:2] <= (3, 5):
-    def universal_open(p, *args, **kwargs):
-        "Work around Python 3.5's inability to open(pathlib.Path())"
-        try:
-            return p.open(*args, **kwargs)
-        except AttributeError:
-            return open(p, *args, **kwargs)
-
-
     def fspath(path):
+        """https://www.python.org/dev/peps/pep-0519/#os"""
         import pathlib
-        '''https://www.python.org/dev/peps/pep-0519/#os'''
         if isinstance(path, (str, bytes)):
             return path
 
@@ -166,5 +159,12 @@ if sys.version_info[0:2] <= (3, 5):
             + path_type.__name__)
 
 else:
-    universal_open = open
     fspath = os.fspath
+
+
+def flatten_groups(groups):
+    for obj in groups:
+        if is_iterable_notstr(obj):
+            yield from obj
+        else:
+            yield obj

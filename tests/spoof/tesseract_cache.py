@@ -20,18 +20,6 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
-from pathlib import Path
-import sys
-import os
-import shutil
-import subprocess
-import argparse
-import json
-import platform
-import re
-
-
 """Cache output of tesseract to speed up test suite
 
 The cache is keyed by an environment variable that slips the input test file
@@ -65,6 +53,16 @@ text support. Will fail to replicate a 3.04 bug if wrong parameter order is
 given.
 
 """
+
+from pathlib import Path
+import sys
+import os
+import shutil
+import subprocess
+import argparse
+import json
+import platform
+import re
 
 if '_OCRMYPDF_SAVE_PATH' in os.environ:
     os.environ['PATH'] = os.environ['_OCRMYPDF_SAVE_PATH']
@@ -106,6 +104,8 @@ def main():
     source = os.environ['_OCRMYPDF_TEST_INFILE']  # required
     args = parser.parse_args()
 
+    cache_disabled = os.environ.get('_OCRMYPDF_CACHE_DISABLED', False)
+
     if args.imagename == 'stdin':
         real_tesseract()
 
@@ -116,19 +116,21 @@ def main():
                 yield Path(args.imagename).name
             elif arg == args.outputbase:
                 yield Path(args.outputbase).name
+            elif arg == '-c' or arg.startswith('textonly'):
+                pass
             else:
                 yield arg
 
     argv_slug = '__'.join(slugs())
     argv_slug = argv_slug.replace('/', '___')
-    
-    cache_folder = Path(CACHE_ROOT) / Path(source).stem / argv_slug
-    cache_folder.mkdir(parents=True, exist_ok=True)        
 
-    print("Tesseract cache folder {} - ".format(cache_folder), end='', 
+    cache_folder = Path(CACHE_ROOT) / Path(source).stem / argv_slug
+    cache_folder.mkdir(parents=True, exist_ok=True)
+
+    print("Tesseract cache folder {} - ".format(cache_folder), end='',
           file=sys.stderr)
 
-    if (cache_folder / 'stderr.bin').exists():
+    if (cache_folder / 'stderr.bin').exists() and not cache_disabled:
         # Cache hit
         print("HIT", file=sys.stderr)
 
@@ -141,7 +143,7 @@ def main():
             for configfile in args.configfiles:
                 # cp cache -> output
                 tessfile = args.outputbase + '.' + configfile
-                shutil.copy(str(cache_folder / configfile) + '.bin', 
+                shutil.copy(str(cache_folder / configfile) + '.bin',
                             tessfile)
         sys.exit(0)
 
@@ -184,9 +186,11 @@ def main():
     manifest['sourcefile'] = str(Path(source).relative_to(TESTS_ROOT))
     def clean_sys_argv():
         for arg in sys.argv[1:]:
-            yield re.sub(r'.*/com.github.ocrmypdf[^/]+[/](.*)', 
+            yield re.sub(r'.*/com.github.ocrmypdf[^/]+[/](.*)',
                          r'$TMPDIR/\1', arg)
     manifest['args'] = list(clean_sys_argv())
+
+    # pylint: disable=E1101
     with (Path(CACHE_ROOT) / 'manifest.jsonl').open('a') as f:
         json.dump(manifest, f)
         f.write('\n')

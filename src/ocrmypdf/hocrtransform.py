@@ -16,10 +16,10 @@
 # distribute, sublicense, and/or sell copies of the Software, and to
 # permit persons to whom the Software is furnished to do so, subject to
 # the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included
 # in all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -31,7 +31,6 @@
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.units import inch
 from xml.etree import ElementTree
-from PIL import Image
 from collections import namedtuple
 from math import atan, sin, cos
 import re
@@ -55,7 +54,7 @@ class HocrTransform():
 
     box_pattern = re.compile(r'bbox((\s+\d+){4})')
     baseline_pattern = re.compile(r'''
-        baseline \s+ 
+        baseline \s+
         ([\-\+]?\d*\.?\d*) \s+  # +/- decimal float
         ([\-\+]?\d+)            # +/- int''', re.VERBOSE)
     ligatures = str.maketrans({
@@ -139,7 +138,7 @@ class HocrTransform():
             matches = cls.baseline_pattern.search(element.attrib['title'])
             if matches:
                 return float(matches.group(1)), int(matches.group(2))
-        return (0, 0) 
+        return (0, 0)
 
     def pt_from_pixel(self, pxl):
         """
@@ -193,12 +192,12 @@ class HocrTransform():
                 pdf.rect(
                     pt.x1, self.height - pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1,
                     fill=1)
-                    
+
         found_lines = False
         for line in self.hocr.findall(
                 ".//%sspan[@class='%s']" % (self.xmlns, "ocr_line")):
             found_lines = True
-            self._do_line(pdf, line, "ocrx_word", fontname, invisibleText, 
+            self._do_line(pdf, line, "ocrx_word", fontname, invisibleText,
                           interwordSpaces, showBoundingboxes)
 
         if not found_lines:
@@ -221,7 +220,7 @@ class HocrTransform():
         return x * poly[0] + poly[1]
 
 
-    def _do_line(self, pdf, line, elemclass, fontname, invisibleText, 
+    def _do_line(self, pdf, line, elemclass, fontname, invisibleText,
                  interwordSpaces, showBoundingboxes):
         pxl_line_coords = self.element_coordinates(line)
         line_box = self.pt_from_pixel(pxl_line_coords)
@@ -255,10 +254,10 @@ class HocrTransform():
             pdf.setLineWidth(0.5)
             # negate slope because it is defined as a rise/run in pixel
             # coordinates and page coordinates have the y axis flipped
-            pdf.line(line_box.x1, 
+            pdf.line(line_box.x1,
                      baseline_y2,
                      line_box.x2,
-                     self.polyval((-slope, baseline_y2), 
+                     self.polyval((-slope, baseline_y2),
                                   line_box.x2 - line_box.x1))
             # light green for bounding box of word/line
             pdf.setDash(6, 3)
@@ -282,16 +281,16 @@ class HocrTransform():
             box = self.pt_from_pixel(pxl_coords)
             if interwordSpaces:
                 # if  `--interword-spaces` is true, append a space
-                # to the end of each text element to allow simpler PDF viewers 
-                # such as PDF.js to better recognize words in search and copy 
+                # to the end of each text element to allow simpler PDF viewers
+                # such as PDF.js to better recognize words in search and copy
                 # and paste. Do not remove space from last word in line, even
                 # though it would look better, because it will interfere with
                 # naive text extraction. \n does not work either.
                 elemtxt += ' '
                 box = Rect._make((
-                    box.x1, 
+                    box.x1,
                     line_box.y1,
-                    box.x2 + pdf.stringWidth(' ', fontname, line_height), 
+                    box.x2 + pdf.stringWidth(' ', fontname, line_height),
                     line_box.y2))
             box_width = box.x2 - box.x1
             font_width = pdf.stringWidth(elemtxt, fontname, fontsize)
@@ -312,14 +311,14 @@ class HocrTransform():
             # content stream while this issues a "offset" (Td) command.
             # .moveCursor() is relative to start of the text line, where the
             # "text line" means whatever reportlab defines it as. Do not use
-            # use .getCursor(), since moveCursor() rather unintuitively plans 
+            # use .getCursor(), since moveCursor() rather unintuitively plans
             # its moves relative to .getStartOfLine().
             # For skewed lines, in the text transform we set up a rotated
-            # coordinate system, so we don't have to account for the 
+            # coordinate system, so we don't have to account for the
             # incremental offset. Surprisingly most PDF viewers can handle this.
             cursor = text.getStartOfLine()
             dx = box.x1 - cursor[0]
-            dy = baseline_y2 - cursor[1]            
+            dy = baseline_y2 - cursor[1]
             text.moveCursor(dx, dy)
 
             # If reportlab tells us this word is 0 units wide, our best seems

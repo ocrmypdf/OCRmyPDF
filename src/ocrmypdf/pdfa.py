@@ -17,14 +17,18 @@
 
 # Generate a PDFA_def.ps file for Ghostscript >= 9.14
 
-from string import Template
 from binascii import hexlify
 from datetime import datetime
-from xml.parsers.expat import ExpatError
+from pathlib import Path
+from shutil import copyfile
+from string import Template
 import pkg_resources
-import PyPDF2 as pypdf
-from defusedxml.minidom import parseString as defused_parseString
-from unittest.mock import patch
+import os
+
+from libxmp.utils import file_to_dict
+from libxmp import consts
+
+from ocrmypdf.helpers import fspath
 
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
 
@@ -36,12 +40,8 @@ SRGB_ICC_PROFILE = pkg_resources.resource_filename(
 # files, from the Ghostscript documentation. Lines beginning with % are
 # comments. Python substitution variables have a '$' prefix.
 pdfa_def_template = u"""%!
-% This is derived from Ghostscript's template for creating a PDF/A document.
-% This is a small PostScript program that includes some necessary information
-% to create a PDF/A compliant file.
-
 % Define entries in the document Info dictionary :
-/ICCProfile ($icc_profile)
+/ICCProfile $icc_profile
 def
 
 [$docinfo
@@ -105,7 +105,7 @@ def encode_text_string(s: str) -> str:
 def encode_pdf_date(d: datetime) -> str:
     """Encode Python datetime object as PDF date string
 
-    From Adobe pdfmark manual:    
+    From Adobe pdfmark manual:
     (D:YYYYMMDDHHmmSSOHH'mm')
     D: is an optional prefix. YYYY is the year. All fields after the year are
     optional. MM is the month (01-12), DD is the day (01-31), HH is the
@@ -140,13 +140,13 @@ def decode_pdf_date(s: str) -> datetime:
     if s.startswith('D:'):
         s = s[2:]
 
-    # Literal Z00'00', is incorrect but found in the wild, 
+    # Literal Z00'00', is incorrect but found in the wild,
     # probably made by OS X Quartz -- standardize
     if s.endswith("Z00'00'"):
         s = s.replace("Z00'00'", '+0000')
     elif s.endswith('Z'):
         s = s.replace('Z', '+0000')
-    
+
     s = s.replace("'", "")  # Remove apos from PDF time strings
 
     return datetime.strptime(s, r'%Y%m%d%H%M%S%z')
@@ -154,7 +154,7 @@ def decode_pdf_date(s: str) -> datetime:
 
 def _get_pdfmark_dates(pdfmark):
     """Encode dates for pdfmark Postscript.  The best way to deal with a
-    missing date entry is set it to null, because if the key is omitted 
+    missing date entry is set it to null, because if the key is omitted
     Ghostscript will set it to now - we do not want to erase the fact that
     the value was unknown.  Setting to an empty string breaks Ghostscript
     9.22 as reported here:
@@ -172,16 +172,26 @@ def _get_pdfmark_dates(pdfmark):
             date_str = date_str[2:]
         try:
             yield '  {} (D:{})'.format(
-                    key, 
+                    key,
                     encode_pdf_date(decode_pdf_date(date_str)))
         except ValueError:
             yield '  {} null'.format(key)
 
 
 def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
-    """Create a Postscript file for Ghostscript.  pdfmark contains the various
-    objects as strings; these must be encoded in ASCII, and dates have a 
-    special format."""
+    """
+    Create a Postscript pdfmark file for Ghostscript.
+
+    pdfmark contains the various objects as strings; these must be encoded in
+    ASCII, and dates have a special format.
+
+    :param icc_profile: filename of the ICC profile to include in pdfmark
+    :param icc_identifier: ICC identifier such as 'sRGB'
+    :param pdfmark: a dictionary containing keys to include the pdfmark
+
+    :returns: a string containing the entire pdfmark
+
+    """
 
     # Ghostscript <= 9.21 has a bug where null entries in DOCINFO might produce
     # ERROR: VMerror (-25) on closing pdfwrite device.
@@ -212,12 +222,22 @@ def generate_pdfa_ps(target_filename, pdfmark, icc='sRGB'):
     else:
         raise NotImplementedError("Only supporting sRGB")
 
+    # pdfmark must contain the full path to the ICC profile, and pdfmark must
+    # also encoded in ASCII. ocrmypdf can be installed anywhere, including to
+    # paths that have a non-ASCII character in the filename. Ghostscript
+    # accepts hex-encoded strings and converts them to byte strings, so
+    # we encode the path with fsencode() and use the hex representation.
+    # UTF-16 not accepted here. (Even though ASCII encodable is the usual case,
+    # do this always to avoid making it a rare conditional.)
+    bytes_icc_profile = os.fsencode(icc_profile)
+    hex_icc_profile = hexlify(bytes_icc_profile)
+    icc_profile = '<' + hex_icc_profile.decode('ascii') + '>'
+
     ps = _get_pdfa_def(icc_profile, icc, pdfmark)
 
     # We should have encoded everything to pure ASCII by this point, and
     # to be safe, only allow ASCII in PostScript
-    with open(target_filename, 'w', encoding='ascii') as f:
-        f.write(ps)
+    Path(target_filename).write_text(ps, encoding='ascii')
 
 
 def file_claims_pdfa(filename):
@@ -229,38 +249,35 @@ def file_claims_pdfa(filename):
 
     This checks if the XMP metadata contains a PDF/A marker.
     """
-    pdf = pypdf.PdfFileReader(filename)
-    try:
-        # Monkeypatch PyPDF2 to use defusedxml as its XML parser, for safety
-        with patch('xml.dom.minidom.parseString', new=defused_parseString):
-            xmp = pdf.getXmpMetadata()
-    except ExpatError:
-        return {'pass': False, 'output': 'pdf',
-                'conformance': 'Invalid XML metadata'}
 
-    try:
-        pdfa_nodes = xmp.getNodesInNamespace(
-            aboutUri='',
-            namespace='http://www.aiim.org/pdfa/ns/id/')
-    except AttributeError:
+    xmp = file_to_dict(filename)
+    if not xmp:
         return {'pass': False, 'output': 'pdf',
                 'conformance': 'No XMP metadata'}
 
-    pdfa_dict = {attr.localName: attr.value for attr in pdfa_nodes}
-    if not pdfa_dict:
+    if not consts.XMP_NS_PDFA_ID in xmp:
         return {'pass': False, 'output': 'pdf',
-                'conformance': 'No XMP metadata'}
+                'conformance': 'No PDF/A metadata in XMP'}
 
-    part_conformance = pdfa_dict['part'] + pdfa_dict['conformance']
+    pdfa_node = xmp[consts.XMP_NS_PDFA_ID]
+    def read_node(node, key):
+        return next(
+            (v for k, v, meta in node if k == key), ''
+        )
+
+    part = read_node(pdfa_node, 'pdfaid:part')
+    conformance = read_node(pdfa_node, 'pdfaid:conformance')
+
+    part_conformance = part + conformance
     valid_part_conforms = {'1A', '1B', '2A', '2B', '2U', '3A', '3B', '3U'}
 
     conformance = 'PDF/A-{}'.format(
         part_conformance)
 
+    pdfa_dict = {}
     if part_conformance in valid_part_conforms:
         pdfa_dict['pass'] = True
         pdfa_dict['output'] = 'pdfa'
     pdfa_dict['conformance'] = conformance
 
     return pdfa_dict
-

@@ -15,7 +15,7 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 from ocrmypdf.pdfinfo import PdfInfo, PageInfo
-from ocrmypdf.pipeline import JobContext, JobContextManager
+from ocrmypdf._jobcontext import JobContext, JobContextManager
 from multiprocessing import Process
 from multiprocessing.managers import BaseProxy
 

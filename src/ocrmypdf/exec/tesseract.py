@@ -17,16 +17,12 @@
 
 import sys
 import os
-import re
 import shutil
 from functools import lru_cache
 from collections import namedtuple
 from textwrap import dedent
-from subprocess import PIPE, CalledProcessError, \
-    TimeoutExpired, check_output, STDOUT
+from subprocess import CalledProcessError, TimeoutExpired, check_output, STDOUT
 from contextlib import suppress
-
-import PyPDF2 as pypdf
 
 from ..exceptions import MissingDependencyError, TesseractConfigError
 from ..helpers import page_number
@@ -67,8 +63,8 @@ def v4():
 @lru_cache(maxsize=1)
 def has_textonly_pdf():
     """Does Tesseract have textonly_pdf capability?
-    
-    Available in 3.05.01, and v4.00.00alpha since January 2017. Best to 
+
+    Available in 3.05.01, and v4.00.00alpha since January 2017. Best to
     parse the parameter list
     """
     args_tess = [
@@ -125,8 +121,7 @@ def tess_base_args(langs, engine_mode):
     return args
 
 
-def get_orientation(input_file, language: list, engine_mode, timeout: float,
-                    log):
+def get_orientation(input_file, engine_mode, timeout: float, log):
     args_tesseract = tess_base_args(['osd'], engine_mode) + [
         psm(), '0',
         input_file,
@@ -160,7 +155,7 @@ def get_orientation(input_file, language: list, engine_mode, timeout: float,
             assert 'Rotate' not in osd
             angle = -angle % 360
         else:
-            # Tesseract == 3.04.01, hopefully also Tesseract > 3.04.01
+            # Tesseract >= 3.04.01
             # reports "Orientation in degrees" as a clockwise angle
             assert 'Rotate' in osd
 
@@ -191,6 +186,10 @@ def tesseract_log_output(log, stdout, input_file):
             log.warning(prefix + "lots of diacritics - possibly poor OCR")
         elif line.startswith('OSD: Weak margin'):
             log.warning(prefix + "unsure about page orientation")
+        elif 'Error in pixScanForForeground' in line:
+            pass  # Appears to be spurious/problem with nonwhite borders
+        elif 'Error in boxClipToRectangle' in line:
+            pass  # Always appears with pixScanForForeground message
         elif 'error' in line.lower() or 'exception' in line.lower():
             log.error(prefix + line.strip())
         elif 'warning' in line.lower():
@@ -283,30 +282,19 @@ def use_skip_page(text_only, skip_pdf, output_pdf, output_text):
     with open(output_text, 'w') as f:
         f.write('[skipped page]')
 
-    if not text_only:
+    if skip_pdf and not text_only:
+        # Substitute a "skipped page"
         with suppress(FileNotFoundError):
             os.remove(output_pdf)  # In case it was partially created
         os.symlink(skip_pdf, output_pdf)
         return
 
-    # For text only we must create a blank page with dimensions identical
-    # to the skip page because this is equivalent to a page with no text
-
-    pdf_in = pypdf.PdfFileReader(skip_pdf)
-    page0 = pdf_in.pages[0]
-
+    # Or normally, just write a 0 byte file to the output to indicate a skip
     with open(output_pdf, 'wb') as out:
-        pdf_out = pypdf.PdfFileWriter()
-        w, h = page0.mediaBox.getWidth(), page0.mediaBox.getHeight()
-        # If skip page has a /Rotate key, replicate the rotation
-        rotation = int(page0.get('/Rotate', 0))
-        if rotation % 180 == 90:
-            w, h = h, w
-        pdf_out.addBlankPage(w, h)
-        pdf_out.write(out)
+        out.write(b'')
 
 
-def generate_pdf(*, input_image, skip_pdf, output_pdf, output_text,
+def generate_pdf(*, input_image, skip_pdf=None, output_pdf, output_text,
                  language: list, engine_mode, text_only: bool,
                  tessconfig: list, timeout: float, pagesegmode: int,
                  user_words, user_patterns, log):
@@ -329,7 +317,7 @@ def generate_pdf(*, input_image, skip_pdf, output_pdf, output_text,
     if pagesegmode is not None:
         args_tesseract.extend([psm(), str(pagesegmode)])
 
-    if text_only:
+    if text_only and has_textonly_pdf():
         args_tesseract.extend(['-c', 'textonly_pdf=1'])
 
     if user_words:

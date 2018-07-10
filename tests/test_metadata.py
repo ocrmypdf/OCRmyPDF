@@ -18,12 +18,24 @@
 
 import pytest
 import PyPDF2 as pypdf
-import datetime
-from datetime import timezone
 
-from ocrmypdf.pdfa import file_claims_pdfa, encode_pdf_date, decode_pdf_date
+from datetime import timezone
+from pathlib import Path
+from shutil import copyfile
+from unittest.mock import patch
+import datetime
+
 from ocrmypdf.exceptions import ExitCode
-from ocrmypdf.lib import fitz
+from ocrmypdf.helpers import fspath
+from ocrmypdf.pdfa import (
+    file_claims_pdfa, encode_pdf_date, decode_pdf_date, generate_pdfa_ps,
+    SRGB_ICC_PROFILE
+)
+
+try:
+    import fitz
+except ImportError:
+    fitz = None
 
 # pytest.helpers is dynamic
 # pylint: disable=no-member
@@ -104,7 +116,7 @@ def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
     assert p.returncode == ExitCode.bad_args, err
 
 
-@pytest.mark.xfail(not fitz, reason="needs fitz")
+@pytest.mark.skipif(not fitz, reason="test uses fitz")
 @pytest.mark.parametrize('ocr_option', ['--skip-text', '--force-ocr'])
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
 def test_bookmarks_preserved(spoof_tesseract_noop, output_type, ocr_option,
@@ -136,7 +148,7 @@ def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
 
     before = pypdf.PdfFileReader(str(input_file)).getDocumentInfo()
     check_ocrmypdf(
-        input_file, outpdf, '--output-type', output_type, 
+        input_file, outpdf, '--output-type', output_type,
         env=spoof_tesseract_noop)
     after = pypdf.PdfFileReader(str(outpdf)).getDocumentInfo()
 
@@ -145,8 +157,7 @@ def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
         # because of Ghostscript quirks we set it to null
         # This test would be better if we had a test file with /DocumentInfo but
         # no /CreationDate, which we don't
-        assert not after['/CreationDate'] or \
-                isinstance(after['/CreationDate'], pypdf.generic.NullObject)
+        assert not after.get('/CreationDate')
     else:
         # We expect that the creation date stayed the same
         date_before = decode_pdf_date(before['/CreationDate'])
@@ -159,3 +170,93 @@ def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
         date_after, datetime.datetime.now(timezone.utc)) < 1000
 
 
+@pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
+def test_xml_metadata_preserved(spoof_tesseract_noop, output_type,
+                                resources, outpdf):
+    input_file = resources / 'graph.pdf'
+
+    try:
+        import libxmp
+        from libxmp.utils import file_to_dict
+        from libxmp import consts
+    except Exception:
+        pytest.skip("libxmp not available or libexempi3 not installed")
+
+    before = file_to_dict(str(input_file))
+
+    check_ocrmypdf(
+        input_file, outpdf,
+        '--output-type', output_type,
+        env=spoof_tesseract_noop)
+
+    after = file_to_dict(str(outpdf))
+
+    equal_properties = [
+        'dc:contributor',
+        'dc:coverage',
+        'dc:creator',
+        'dc:description',
+        'dc:format',
+        'dc:identifier',
+        'dc:language',
+        'dc:publisher',
+        'dc:relation',
+        'dc:rights',
+        'dc:source',
+        'dc:subject',
+        'dc:title',
+        'dc:type',
+        'pdf:keywords',
+    ]
+    might_change_properties = [
+        'dc:date',
+        'pdf:pdfversion',
+        'pdf:Producer',
+        'xmp:CreateDate',
+        'xmp:ModifyDate',
+        'xmp:MetadataDate',
+        'xmp:CreatorTool',
+        'xmpMM:DocumentId',
+        'xmpMM:DnstanceId'
+    ]
+
+    # Cleanup messy data structure
+    # Top level is key-value mapping of namespaces to keys under namespace,
+    # so we put everything in the same namespace
+    def unify_namespaces(xmpdict):
+        for entries in xmpdict.values():
+            yield from entries
+
+    # Now we have a list of (key, value, {infodict}). We don't care about
+    # infodict. Just flatten to keys and values
+    def keyval_from_tuple(list_of_tuples):
+        for k, v, *_ in list_of_tuples:
+            yield k, v
+
+    before = dict(keyval_from_tuple(unify_namespaces(before)))
+    after = dict(keyval_from_tuple(unify_namespaces(after)))
+
+    for prop in equal_properties:
+        if prop in before:
+            assert prop in after, '{} dropped from xmp'.format(prop)
+            assert before[prop] == after[prop]
+
+        # Certain entries like title appear as dc:title[1], with the possibility
+        # of several
+        propidx = '{}[1]'.format(prop)
+        if propidx in before:
+            assert after.get(propidx) == before[propidx] \
+                    or after.get(prop) == before[propidx]
+
+
+def test_srgb_in_unicode_path(tmpdir):
+    """Test that we can produce pdfmark when install path is not ASCII"""
+
+    dstdir = Path(fspath(tmpdir)) / b'\xe4\x80\x80'.decode('utf-8')
+    dstdir.mkdir()
+    dst = dstdir / 'sRGB.icc'
+
+    copyfile(SRGB_ICC_PROFILE, fspath(dst))
+
+    with patch('ocrmypdf.pdfa.SRGB_ICC_PROFILE', new=str(dst)):
+        generate_pdfa_ps(dstdir / 'out.ps', {})

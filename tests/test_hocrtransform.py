@@ -18,24 +18,17 @@
 from ocrmypdf import hocrtransform
 from ocrmypdf.exec.tesseract import HOCR_TEMPLATE
 from ocrmypdf.exec import qpdf
-from reportlab.pdfgen.canvas import Canvas
 from PIL import Image
-from tempfile import NamedTemporaryFile
-from contextlib import suppress
 from pathlib import Path
-import os
-import shutil
 import pytest
-import img2pdf
-import pytest
-import sys
+
+# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture
 def blank_hocr(tmpdir):
     filename = Path(str(tmpdir)) / "blank.hocr"
-    with open(str(filename), 'w') as f:
-        f.write(HOCR_TEMPLATE)
+    filename.write_text(HOCR_TEMPLATE)  # pylint: disable=E1101
     return filename
 
 
@@ -50,6 +43,3 @@ def test_mono_image(blank_hocr, outdir):
         str(outdir / 'mono.pdf'), imageFileName=str(outdir / 'mono.tif'))
 
     qpdf.check(str(outdir / 'mono.pdf'))
-
-
-

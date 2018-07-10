@@ -29,6 +29,7 @@ class ExitCode(IntEnum):
     child_process_error = 7
     encrypted_pdf = 8
     invalid_config = 9
+    pdfa_conversion_failed = 10
     other_error = 15
     ctrl_c = 130
 

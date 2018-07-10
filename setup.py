@@ -28,6 +28,7 @@ from setuptools import setup, find_packages  # nopep8
 from subprocess import STDOUT, check_output, CalledProcessError  # nopep8
 from collections.abc import Mapping  # nopep8
 import re  # nopep8
+import os  # nopep8
 
 
 missing_program = '''
@@ -186,9 +187,14 @@ if not forced and command.startswith('install') or \
     )
     check_external_program(
         program='qpdf',
-        need_version='7.0.0', # test suite known to fail on 5.1.1
-        package='qpdf',
-        version_check_args=['--version']
+        need_version='8.0.2', # test suite known to fail on 5.1.1
+        package='qpdf'
+    )
+    check_external_program(
+        program='pngquant',
+        need_version='2.0.0',
+        package='pngquant',
+        optional=True
     )
 
 if 'upload' in sys.argv[1:]:
@@ -215,6 +221,7 @@ setup(
     classifiers=[
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Development Status :: 5 - Production/Stable",
         "Environment :: Console",
         "Intended Audience :: End Users/Desktop",
@@ -241,17 +248,17 @@ setup(
     ],
     install_requires=[
         'cffi >= 1.9.1',          # must be a setup and install requirement
-        'defusedxml >= 0.5.0',    # pure Python, so track HEAD closely
         'img2pdf >= 0.2.4',       # pure Python, so track HEAD closely
-        'Pillow >= 4.0.0, != 5.1.0 ; sys_platform == "darwin"',        
+        'pikepdf >= 0.2.2, < 0.3',
+        'Pillow >= 4.0.0, != 5.1.0 ; sys_platform == "darwin"',
                                   # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
                                   # block 5.1.0, broken wheels
-        'PyPDF2 >= 1.26',         # pure Python, so track HEAD closely
+        'python-xmp-toolkit >= 2, < 3',
         'reportlab >= 3.3.0',     # oldest released version with sane image handling
-        'ruffus == 2.6.3',        # pinned - ocrmypdf implements a 2.6.3 workaround
+        'ruffus >= 2.7',
     ],
     extras_require={
-        'fitz': ['PyMuPDF >= 1.12.5']     # for table of contents bug
+        'fitz': [],  # Backward compatibility
     },
     tests_require=tests_require,
     entry_points={
