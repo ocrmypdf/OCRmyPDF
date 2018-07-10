@@ -679,11 +679,10 @@ def traverse_ruffus_exception(exceptions, options, log):
 
     exit_codes = []
     for exc in exceptions:
-        exit_code = do_ruffus_exception(exceptions, options, log)
+        exit_code = do_ruffus_exception(exc, options, log)
         exit_codes.append(exit_code)
 
     return exit_codes[0]  # Multiple codes are rare so take the first one
-
 
 
 def check_closed_streams(options):
