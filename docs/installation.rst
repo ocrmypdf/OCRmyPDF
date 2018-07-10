@@ -12,6 +12,35 @@ If you want to use the latest version of OCRmyPDF, your best bet is to install t
 Installing on Debian and Ubuntu 16.10 or newer
 ----------------------------------------------
 
+.. |deb-stable| image:: https://repology.org/badge/version-only-for-repo/debian_stable/ocrmypdf.svg
+    :alt: Debian 9 stable ("stretch")
+
+.. |deb-testing| image:: https://repology.org/badge/version-only-for-repo/debian_testing/ocrmypdf.svg
+    :alt: Debian 10 testing ("buster")
+
+.. |deb-unstable| image:: https://repology.org/badge/version-only-for-repo/debian_unstable/ocrmypdf.svg
+    :alt: Debian unstable
+
+.. |ubu-1710| image:: https://repology.org/badge/version-only-for-repo/ubuntu_17_10/ocrmypdf.svg
+    :alt: Ubuntu 17.10
+
+.. |ubu-1804| image:: https://repology.org/badge/version-only-for-repo/ubuntu_17_10/ocrmypdf.svg
+    :alt: Ubuntu 18.04 LTS
+
++------------------------------+-------------------------+
+| OS                           | OCRmyPDF Version        |
++------------------------------+-------------------------+
+| Debian 9 stable ("stretch")  | |deb-stable|            |
++------------------------------+-------------------------+
+| Debian 10 testing ("buster") | |deb-testing|           |
++------------------------------+-------------------------+
+| Debian unstable ("sid")      | |deb-unstable|          |
++------------------------------+-------------------------+
+| Ubuntu 17.10                 | |ubu-1710|              |
++------------------------------+-------------------------+
+| Ubuntu 18.04 LTS             | |ubu-1804|              |
++------------------------------+-------------------------+
+
 Users of Debian 9 ("stretch") or later or Ubuntu 16.10 or later may simply
 
 .. code-block:: bash
@@ -157,24 +186,14 @@ Update Homebrew:
 
     brew update
 
-Install or upgrade the required Homebrew packages, if any are missing:
+Install or upgrade the required Homebrew packages, if any are missing. To do this, download the ``Brewfile`` that lists all of the dependencies to the current directory, and run ``brew bundle`` to process them (installing or upgrading as needed). ``Brewfile`` is a plain text file.
 
 .. code-block:: bash
 
-    brew install libpng openjpeg jbig2dec libtiff     # image libraries
-    brew install qpdf
-    brew install ghostscript
-    brew install python3
-    brew install libxml2 libffi leptonica
-    brew install unpaper   # optional
+    wget https://github.com/jbarlow83/OCRmyPDF/raw/master/.travis/Brewfile
+    brew bundle
 
-Python 3.5, 3.6 and 3.7 are supported.
-
-Install the required Tesseract OCR engine with the language packs you plan to use:
-
-.. code-block:: bash
-
-    brew install tesseract                       # Option 1: for English, French, German, Spanish
+This will include the English, French, German and Spanish language packs. If you need other languages you can optionally install them all:
 
 .. _macos-all-languages:
 
@@ -210,7 +229,7 @@ Installing the latest version on Ubuntu 18.04 LTS
 -------------------------------------------------
 
 Ubuntu 18.04 includes ocrmypdf 6.1.2. To install a more recent version, first
-install the system version to get all the dependencies:
+install the system version to get most of the dependencies:
 
 .. code-block:: bash
 
@@ -219,6 +238,15 @@ install the system version to get all the dependencies:
         ocrmypdf \
         python3-pip
 
+There are a few dependency changes between ocrmypdf 6.1.2 and 7.x. Let's get
+these, too.
+
+.. code-block:: bash
+
+    sudo apt-get install \
+        libexempi3 \
+        pngquant
+
 Then install the most recent ocrmypdf for the local user and set the user's ``PATH`` to check for the user's Python packages.
 
 .. code-block:: bash
@@ -226,6 +254,7 @@ Then install the most recent ocrmypdf for the local user and set the user's ``PA
     export PATH=$HOME/.local/bin:$PATH
     pip3 install --user ocrmypdf
 
+To add JBIG2 encoding, see `Optional: installing the JBIG2 encoder`_.
 
 Installing on Ubuntu 16.04 LTS
 ------------------------------
@@ -236,32 +265,39 @@ No package is currently available for Ubuntu 16.04, but you can install the depe
 
     sudo apt-get update
     sudo apt-get install \
-        unpaper \
         ghostscript \
-        tesseract-ocr \
-        qpdf \
+        libexempi3 \
+        pngquant \
+        python3-cffi \
         python3-pip \
-        python3-cffi
+        qpdf \
+        tesseract-ocr \
+        unpaper
 
-If you wish install OCRmyPDF for the current user:
+If you wish install OCRmyPDF for the current user, and ensure that the ``PATH``
+environment variable contains ``$HOME/.local/bin``.
 
 .. code-block:: bash
 
+    export PATH=$HOME/.local/bin:$PATH
     pip3 install --user ocrmypdf
 
-Alternately, system-wide. Note that this may modify the system Python environment:
+Alternately, you can install ocrmypdf system-wide. (Not recommended.)
 
 .. code-block:: bash
 
     sudo pip3 install ocrmypdf
 
-If you wish to install OCRmyPDF to a virtual environment to isolate the system Python, you can follow these steps.
+At your option, you may upgrade Ubuntu 16.04 LTS to Tesseract 4.0 for improved OCR results.
 
 .. code-block:: bash
 
-    python3 -m venv venv-ocrmypdf
-    source venv-ocrmypdf/bin/activate
-    pip3 install ocrmypdf
+    sudo apt-get install -y software-properties-common python-software-properties
+    sudo add-apt-repository ppa:alex-p/tesseract-ocr -y
+    sudo apt-get update
+    sudo apt-get upgrade tesseract-ocr
+
+To add JBIG2 encoding, see `Optional: installing the JBIG2 encoder`_.
 
 Installing on Ubuntu 14.04 LTS
 ------------------------------
@@ -281,11 +317,13 @@ Install system dependencies:
     sudo apt-get install \
         software-properties-common python-software-properties \
         zlib1g-dev \
+        libexempi3 \
         libjpeg-dev \
         libffi-dev \
+        pngquant \
         qpdf
 
-We will need backports of Ghostscript 9.16, libav-11 (for unpaper 6.1), Tesseract 4.00 (alpha), and Python 3.6. This will replace Ghostscript and Tesseract 3.x on your system. Python 3.6 will be installed alongside the system Python 3.
+We will need backports of Ghostscript 9.16, libav-11 (for unpaper 6.1), Tesseract 4.00 (alpha), and Python 3.6. This will replace Ghostscript and Tesseract 3.x on your system. Python 3.6 will be installed alongside the system Python 3.4.
 
 If you prefer to not modify your system in this matter, consider using a Docker container.
 
@@ -321,6 +359,8 @@ These installation instructions omit the optional dependency ``unpaper``, which 
 
     wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O unpaper_6.1-1.deb
     sudo dpkg -i unpaper_6.1-1.deb
+
+To add JBIG2 encoding, see `Optional: installing the JBIG2 encoder`_.
 
 
 Installing on ArchLinux
@@ -377,27 +417,34 @@ Since ``pip3 install --user`` does not work correctly on some platforms, notably
 Requirements for pip and HEAD install
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-OCRmyPDF currently requires these external programs to be installed:
+OCRmyPDF currently requires these external programs and libraries to be installed:
 
 - Python 3.5 or newer
-- Tesseract 3.04 or newer
 - Ghostscript 9.15 or newer
+- libexempi3 2.2.0 or newer
 - qpdf 7.0.0 or newer
+- Tesseract 3.04 or newer
 
-The following dependencies are recommended:
+As of ocrmypdf 7.0.0, the following dependencies are recommended:
 
-- Python 3.6
-- Tesseract 4.00 or newer
-- Ghostscript 9.22 or newer
-- qpdf 8.0.2 or newer
-- unpaper 6.1
+- Python 3.7
+- Ghostscript 9.23
+- jbig2enc 0.29 or newer
+- pngquant 2.5 or newer
 - PyMuPDF 1.12.5 or newer
+- qpdf 8.0.2 or newer
+- Tesseract 4.0.0-beta1 or newer
+- unpaper 6.1
 
 These are in addition to the Python packaging dependencies, meaning that unfortunately, the ``pip install`` command cannot satisfy all of them.
 
-Python 3.6 and Tesseract 4.0.0-beta.1 are recommended for best OCR results and best performance.
+Python 3.7 and Tesseract 4.0.0-beta.1 are recommended for best OCR results and best performance.
 
-The library PyMuPDF is not widely available in platform distributions, and it improves OCRmyPDF in certain conditions. Consider installing OCRmyPDF from the Python binary wheels, which include a precompiled version of this library.
+**jbig2enc**, if present, will be used to optimize the encoding of monochrome images.  This can significantly reduce the file size of the output file.  It is not required.  `jbig2enc <https://github.com/agl/jbig2enc>`_ is not generally available for Ubuntu or Debian due to lingering concerns about patent issues, but can easily be built from source. To add JBIG2 encoding, see `Optional: installing the JBIG2 encoder`_.
+
+**pngquant**, if present, is optionally used to optimize the encoding of PNG-style images in PDFs (actually, any that are that losslessly encoded) by lossily quantizing to a smaller color palette. It is only activated then the ``--optimize`` argument is ``2`` or ``3``.
+
+**unpaper**, if present, enables the ``--clean`` and ``--clean-final`` command line options.
 
 
 Installing HEAD revision from sources
@@ -441,8 +488,25 @@ need to be installed. The script requires specific versions of the
 dependencies. Older version than the ones mentioned in the release notes
 are likely not to be compatible to OCRmyPDF.
 
+To add JBIG2 encoding, see `Optional: installing the JBIG2 encoder`_.
 
 Other Linux packages
 --------------------
 
 See the `Repology <https://repology.org/metapackage/ocrmypdf/versions>`_ page.
+
+
+Optional: installing the JBIG2 encoder
+--------------------------------------
+
+Most Linux distributions do not include a JBIG2 encoder since JBIG2 encoding was patented for a long time. All known JBIG2 US patents have expired as of 2017, but it is possible that unknown patents exist.
+
+To build a JBIG2 encoder from source:
+
+1. ``git clone https://github.com/agl/jbig2enc``
+2. ``cd jbig2enc``
+3. ``./autogen.sh``
+4. ``./configure && make``
+5. ``[sudo] make install``
+
+On macOS, Homebrew packages jbig2enc and OCRmyPDF includes it by default.
