@@ -60,6 +60,24 @@ author = 'James R. Barlow'
 # built documents.
 #
 # The short X.Y version.
+
+import os
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+if on_rtd:
+    # Help ReadTheDocs avoid having to install any binary extension modules
+    import sys
+    from unittest.mock import MagicMock
+
+    class Mock(MagicMock):
+        @classmethod
+        def __getattr__(cls, name):
+            return MagicMock()
+
+    MOCK_MODULES = ['pikepdf', 'libxmp', 'libxmp.utils']
+    sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
+
 from ocrmypdf import __version__ as OCRMYPDF_VERSION
 
 _version_parts = OCRMYPDF_VERSION.split('.')
