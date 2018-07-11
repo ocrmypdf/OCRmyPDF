@@ -1,6 +1,11 @@
 Installation
 ============
 
+.. |latest| image:: https://repology.org/badge/version-for-repo/debian_stable/ocrmypdf.svg
+    :alt: OCRmyPDF latest released version on PyPI
+
+|latest|
+
 The easiest way to install OCRmyPDF to follow the steps for your operating system/platform.
 
 If you want to use the latest version of OCRmyPDF, your best bet is to install the most recent version your platform provides, and then upgrade that version by installing the Python binary wheels.
@@ -12,34 +17,34 @@ If you want to use the latest version of OCRmyPDF, your best bet is to install t
 Installing on Debian and Ubuntu 16.10 or newer
 ----------------------------------------------
 
-.. |deb-stable| image:: https://repology.org/badge/version-only-for-repo/debian_stable/ocrmypdf.svg
+.. |deb-stable| image:: https://repology.org/badge/version-for-repo/debian_stable/ocrmypdf.svg
     :alt: Debian 9 stable ("stretch")
 
-.. |deb-testing| image:: https://repology.org/badge/version-only-for-repo/debian_testing/ocrmypdf.svg
+.. |deb-testing| image:: https://repology.org/badge/version-for-repo/debian_testing/ocrmypdf.svg
     :alt: Debian 10 testing ("buster")
 
-.. |deb-unstable| image:: https://repology.org/badge/version-only-for-repo/debian_unstable/ocrmypdf.svg
+.. |deb-unstable| image:: https://repology.org/badge/version-for-repo/debian_unstable/ocrmypdf.svg
     :alt: Debian unstable
 
-.. |ubu-1710| image:: https://repology.org/badge/version-only-for-repo/ubuntu_17_10/ocrmypdf.svg
+.. |ubu-1710| image:: https://repology.org/badge/version-for-repo/ubuntu_17_10/ocrmypdf.svg
     :alt: Ubuntu 17.10
 
-.. |ubu-1804| image:: https://repology.org/badge/version-only-for-repo/ubuntu_17_10/ocrmypdf.svg
+.. |ubu-1804| image:: https://repology.org/badge/version-for-repo/ubuntu_18_04/ocrmypdf.svg
     :alt: Ubuntu 18.04 LTS
 
-+------------------------------+-------------------------+
-| OS                           | OCRmyPDF Version        |
-+------------------------------+-------------------------+
-| Debian 9 stable ("stretch")  | |deb-stable|            |
-+------------------------------+-------------------------+
-| Debian 10 testing ("buster") | |deb-testing|           |
-+------------------------------+-------------------------+
-| Debian unstable ("sid")      | |deb-unstable|          |
-+------------------------------+-------------------------+
-| Ubuntu 17.10                 | |ubu-1710|              |
-+------------------------------+-------------------------+
-| Ubuntu 18.04 LTS             | |ubu-1804|              |
-+------------------------------+-------------------------+
+.. |ubu-1810| image:: https://repology.org/badge/version-for-repo/ubuntu_18_10/ocrmypdf.svg
+    :alt: Ubuntu 18.10
+
+
++-------------------------------------------+
+| **OCRmyPDF version**                      |
++-------------------------------------------+
+| |latest|                                  |
++-------------------------------------------+
+| |deb-stable| |deb-testing| |deb-unstable| |
++-------------------------------------------+
+| |ubu-1710| |ubu-1804| |ubu-1810|          |
++-------------------------------------------+
 
 Users of Debian 9 ("stretch") or later or Ubuntu 16.10 or later may simply
 
@@ -47,7 +52,14 @@ Users of Debian 9 ("stretch") or later or Ubuntu 16.10 or later may simply
 
     apt-get install ocrmypdf
 
-To see what versions are available, check the `Debian Package Tracker <https://tracker.debian.org/pkg/ocrmypdf>`_ or `Ubuntu launchpad.net <https://launchpad.net/ocrmypdf>`_.
+For full details on version availability, check the `Debian Package Tracker <https://tracker.debian.org/pkg/ocrmypdf>`_ or `Ubuntu launchpad.net <https://launchpad.net/ocrmypdf>`_.
+
+If the version available for your platform is out of date, you could opt to install the latest version from source. See `Installing HEAD revision from sources`_.
+
+.. note::
+
+    OCRmyPDF for Debian and Ubuntu currently omit the JBIG2 encoder. OCRmyPDF works fine without it but will produce larger output files. If you build jbig2enc from source, ocrmypdf 7.0.0 and later will automatically detect it on the ``PATH``. See `Optional: installing the JBIG2 encoder`_.
+
 
 Installing on macOS with Homebrew
 ---------------------------------
@@ -70,7 +82,7 @@ OCRmyPDF is now a standard `Homebrew <https://brew.sh>`_ formula. To install on 
 
     Users who previously installed OCRmyPDF from the private tap should switch to the mainline version (``brew untap jbarlow83/ocrmypdf``) and install from there.
 
-.. _Docker-install:
+.. _docker-install:
 
 Installing the Docker image
 ---------------------------
@@ -376,7 +388,7 @@ The author is aware of an `ArchLinux package for ocrmypdf <https://aur.archlinux
 Installing on Windows
 ---------------------
 
-Direct installation on Windows is not possible.  Install the _`Docker` container as described above.  Ensure that your command prompt can run the docker "hello world" container.
+Direct installation on Windows is not possible.  `Install the Docker <docker-install_>`_ container as described above.  Ensure that your command prompt can run the docker "hello world" container.
 
 It would probably not be too difficult to run on Windows.  The main reason this has been avoided is the difficulty of packaging and installing the various non-Python dependencies: Tesseract, QPDF, Ghostscript, Leptonica.  Pull requests to add or improve Windows support would be quite welcome.
 
@@ -503,10 +515,12 @@ Most Linux distributions do not include a JBIG2 encoder since JBIG2 encoding was
 
 To build a JBIG2 encoder from source:
 
-1. ``git clone https://github.com/agl/jbig2enc``
-2. ``cd jbig2enc``
-3. ``./autogen.sh``
-4. ``./configure && make``
-5. ``[sudo] make install``
+.. code-block:: bash
+
+    git clone https://github.com/agl/jbig2enc
+    cd jbig2enc
+    ./autogen.sh
+    ./configure && make
+    [sudo] make install
 
 On macOS, Homebrew packages jbig2enc and OCRmyPDF includes it by default.
