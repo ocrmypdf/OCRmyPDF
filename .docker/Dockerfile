@@ -5,6 +5,7 @@ FROM      ubuntu:18.04
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential autoconf automake libtool \
   libexempi3 \
+  libleptonica-dev \
   ocrmypdf \
   pngquant \
   python3-pip \
