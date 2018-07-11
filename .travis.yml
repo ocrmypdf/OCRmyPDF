@@ -27,10 +27,6 @@ addons:
     - tesseract-ocr-eng
     - tesseract-ocr-fra
 
-env:
-  global:
-    - secure: "hsf6MT+n2x3OiDM2fQyJZdV0/PWYmv81LdVqC6cfnHBE/8N3DloJRqQ7WfO14TxhiK9PEC7MpyCj0lSabUHEO7gSH6Vks6I1asoSkt8S9/bSMlhT4hei+pwVpeGEiU5xHVATNjY+D919VC3IFvc3XmjT74h/2SLhaZ+jhEmDggM="  # HOMEBREW_OCRMYPDF_TOKEN
-
 matrix:
   include:
     - os: linux
@@ -94,18 +90,3 @@ deploy:
     tags: true
     condition: $TRAVIS_PYTHON_VERSION == "3.6" && $TRAVIS_OS_NAME == "linux"
   skip_upload_docs: true
-
-  # null deploy for osx
-  # we really just want to run after_deploy *after* pypi upload is done, but
-  # after_deploy on runs if a given box deployed
-- provider: script
-  script: /usr/bin/true
-  on:
-    branch: master
-    tags: true
-    condition: $TRAVIS_OS_NAME == "osx"
-
-after_deploy: |
-  if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-    bash .travis/osx_brew.sh
-  fi
