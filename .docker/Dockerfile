@@ -4,8 +4,9 @@ FROM      ubuntu:18.04
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential autoconf automake libtool \
-  libexempi3 \
   libleptonica-dev \
+  zlib1g-dev \
+  libexempi3 \
   ocrmypdf \
   pngquant \
   python3-pip \
@@ -20,9 +21,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   unpaper \
   wget
 
+
 ENV LANG=C.UTF-8
 
 # Compile and install jbig2
+# Needs libleptonica-dev, zlib1g-dev
 RUN \
   mkdir jbig2 \
   && wget -q https://github.com/agl/jbig2enc/archive/0.29.tar.gz -O - | \
@@ -32,7 +35,7 @@ RUN \
   && cd .. \
   && rm -rf jbig2
 
-RUN apt-get uninstall autoconf automake libtool
+RUN apt-get remove -y autoconf automake libtool
 
 RUN python3 -m venv --system-site-packages /appenv
 
@@ -42,7 +45,7 @@ RUN python3 -m venv --system-site-packages /appenv
 # (i.e. "pip install ."). It's unclear to me why this is the case.
 RUN . /appenv/bin/activate; \
   pip install --upgrade pip \
-  && pip install ocrmypdf
+  && pip install --upgrade ocrmypdf
 
 # Now copy the application in, mainly to get the test suite.
 # Do this now to make the best use of Docker cache.
@@ -53,6 +56,7 @@ RUN . /appenv/bin/activate; \
 # Remove the junk, including the source version of application since it was
 # already installed
 RUN rm -rf /tmp/* /var/tmp/* /root/* /application/ocrmypdf \
+  && apt-get remove -y build-essential \
   && apt-get autoremove -y \
   && apt-get autoclean -y
 
