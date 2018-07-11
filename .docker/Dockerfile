@@ -22,10 +22,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV LANG=C.UTF-8
 
 # Compile and install jbig2
-RUN wget -q https://github.com/agl/jbig2enc/archive/0.29.tar.gz -O - | \
+RUN \
+  mkdir jbig2 \
+  && wget -q https://github.com/agl/jbig2enc/archive/0.29.tar.gz -O - | \
       tar xz -C jbig2 --strip-components=1 \
   && cd jbig2 \
-  && ./autogen.sh && ./configure && make install \
+  && ./autogen.sh && ./configure && make && make install \
   && cd .. \
   && rm -rf jbig2
 
