@@ -13,8 +13,9 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
 v6.2.2
 ------
 
--   Backport v7.0.0 fix for ruffus 2.7.0
-
+-   Backport compatibility fixes for Python 3.7 and ruffus 2.7.0 from v7.0.0
+-   Backport fix to ignore masks when deciding what colors are on a page
+-   Backport some minor improvements from v7.0.0: better argument validation and warnings about the Tesseract 4.0.0 ``--user-words`` regression
 
 v6.2.1
 ------
