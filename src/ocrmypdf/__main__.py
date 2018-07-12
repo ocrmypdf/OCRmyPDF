@@ -314,7 +314,7 @@ advanced.add_argument(
     help='Give up on OCR after the timeout, but copy the preprocessed page '
          'into the final output')
 advanced.add_argument(
-    '--rotate-pages-threshold', default=14.0, type=numeric(float, 1000), metavar='CONFIDENCE',
+    '--rotate-pages-threshold', default=14.0, type=numeric(float, max_=1000), metavar='CONFIDENCE',
     help="Only rotate pages when confidence is above this value (arbitrary "
          "units reported by tesseract)")
 advanced.add_argument(
@@ -504,7 +504,7 @@ def check_options_advanced(options, log):
             "--pdfa-image-compression argument has no effect when "
             "--output-type is not 'pdfa', 'pdfa-1', or 'pdfa-2'"
         )
-    
+
     if tesseract.v4() and (options.user_words or options.user_patterns):
         log.warning(
             'Tesseract 4.x ignores --user-words, so this has no effect')
@@ -676,7 +676,7 @@ def traverse_ruffus_exception(exceptions, options, log):
 
     exit_codes = []
     for exc in exceptions:
-        exit_code = do_ruffus_exception(exceptions, options, log)
+        exit_code = do_ruffus_exception(exc, options, log)
         exit_codes.append(exit_code)
 
     return exit_codes[0]  # Multiple codes are rare so take the first one
