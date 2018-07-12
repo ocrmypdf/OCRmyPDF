@@ -1,7 +1,7 @@
 Installation
 ============
 
-.. |latest| image:: https://repology.org/badge/version-for-repo/debian_stable/ocrmypdf.svg
+.. |latest| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
     :alt: OCRmyPDF latest released version on PyPI
 
 |latest|
@@ -437,26 +437,28 @@ OCRmyPDF currently requires these external programs and libraries to be installe
 - qpdf 7.0.0 or newer
 - Tesseract 3.04 or newer
 
-As of ocrmypdf 7.0.0, the following dependencies are recommended:
+As of ocrmypdf 7.0.0, the following versions are recommended:
 
 - Python 3.7
 - Ghostscript 9.23
+- libexempi3 2.4.5
+- qpdf 8.1.0
+- Tesseract 4.0.0-beta1
 - jbig2enc 0.29 or newer
 - pngquant 2.5 or newer
-- PyMuPDF 1.12.5 or newer
-- qpdf 8.0.2 or newer
-- Tesseract 4.0.0-beta1 or newer
 - unpaper 6.1
 
-These are in addition to the Python packaging dependencies, meaning that unfortunately, the ``pip install`` command cannot satisfy all of them.
-
-Python 3.7 and Tesseract 4.0.0-beta.1 are recommended for best OCR results and best performance.
+jbig2enc, pngquant, and unpaper are optional. If missing certain features are disabled. OCRmyPDF will discover them as soon as they are available.
 
 **jbig2enc**, if present, will be used to optimize the encoding of monochrome images.  This can significantly reduce the file size of the output file.  It is not required.  `jbig2enc <https://github.com/agl/jbig2enc>`_ is not generally available for Ubuntu or Debian due to lingering concerns about patent issues, but can easily be built from source. To add JBIG2 encoding, see `Optional: installing the JBIG2 encoder`_.
 
 **pngquant**, if present, is optionally used to optimize the encoding of PNG-style images in PDFs (actually, any that are that losslessly encoded) by lossily quantizing to a smaller color palette. It is only activated then the ``--optimize`` argument is ``2`` or ``3``.
 
 **unpaper**, if present, enables the ``--clean`` and ``--clean-final`` command line options.
+
+These are in addition to the Python packaging dependencies, meaning that unfortunately, the ``pip install`` command cannot satisfy all of them.
+
+Python 3.7 and Tesseract 4.0.0-beta.1 are recommended for best OCR results and best performance.
 
 
 Installing HEAD revision from sources

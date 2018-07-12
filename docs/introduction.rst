@@ -1,8 +1,6 @@
 Introduction
 ============
-
 OCRmyPDF is a Python 3 package that adds OCR layers to PDFs.
-
 
 About OCR
 ---------
@@ -66,6 +64,8 @@ In the case of a PDF that is nothing other than a container of images (no rotati
 
 OCRmyPDF uses several strategies depending on input options and the input PDF itself, but generally speaking it rasterizes a page for OCR and then grafts the OCR back onto the original. As such it can handle complex PDFs and still preserve their contents as much as possible.
 
+OCRmyPDF also supports a many, many edge cases that have cropped over several years of development. We support PDF features like images inside of Form XObjects, and pages with UserUnit scaling. We support rare image formats like non-monochrome 1-bit images. Thanks to pikepdf and QPDF, we auto-repair PDFs that are damaged. (Not that you need to know what any of these are! You should be able to throw any PDF at it.)
+
 
 Limitations
 -----------
@@ -78,7 +78,6 @@ OCRmyPDF is limited by the Tesseract OCR engine.  As such it experiences these l
 * If a document contains languages outside of those given in the ``-l LANG`` arguments, results may be poor.
 * It is not always good at analyzing the natural reading order of documents. For example, it may fail to recognize that a document contains two columns and join text across the columns.
 * Poor quality scans may produce poor quality OCR. Garbage in, garbage out.
-* PDFs that use transparent layers are not currently checked in the test suite, so they may not work correctly.
 * It does not expose information about what font family text belongs to.
 
 OCRmyPDF is also limited by the PDF specification:
@@ -91,9 +90,11 @@ Ghostscript also imposes some limitations:
 * PDFs containing JBIG2-encoded content will be converted to CCITT Group4 encoding, which has lower compression ratios, if Ghostscript PDF/A is enabled.
 * PDFs containing JPEG 2000-encoded content will be converted to JPEG encoding, which may introduce compression artifacts, if Ghostscript PDF/A is enabled.
 * Ghostscript may transcode grayscale and color images, either lossy to lossless or lossless to lossy, based on an internal algorithm. This behavior can be suppressed by setting ``--pdfa-image-compression`` to ``jpeg`` or ``lossless`` to set all images to one type or the other. Ghostscript has no option to maintain the input image's format.
-  
-OCRmyPDF is currently not designed to be used as a Python API; it is designed to be run as a command line tool. ``import ocrmypf`` currently attempts to process the command line on ``sys.argv`` at import time so it has side effects that will interfere with its use as a package. The API it presents should not be considered stable.
 
+Regarding OCRmyPDF itself:
+
+* PDFs that use transparency are not currently represented in the test suite
+* The Python API exported by ``import ocrmypdf`` is design to help scripts that use OCRmyPDF but is not currently capable of running OCRmyPDF jobs due to limitations in an underlying library.
 
 Similar programs
 ----------------
@@ -112,4 +113,3 @@ Web front-ends
 * `OCRmyPDF-web <https://github.com/sseemayer/OCRmyPDF-web>`_, a micro web-frontend for OCRmyPDF (third-party, not actively maintained)
 
 Bear in mind that OCRmyPDF is not designed to be secure against malware-bearing PDFs (see `Using OCRmyPDF online`_).
-
