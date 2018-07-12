@@ -1,3 +1,4 @@
+dist: trusty
 language: python
 cache:
   pip: true
@@ -27,28 +28,24 @@ addons:
 matrix:
   include:
     - os: linux
-      dist: trusty
       sudo: required
       language: python
       python: "3.5"
       env: EXTRAS=
     - os: linux
-      dist: trusty
       sudo: required
       language: python
       python: "3.6"
       env: EXTRAS=
     - os: linux
-      dist: trusty
       sudo: required
       language: python
       python: "3.6"
       env: EXTRAS=[fitz]
     - os: linux
-      dist: xenial
       sudo: required
       language: python
-      python: "3.7"
+      python: "3.7-dev"
     - os: osx
       osx_image: xcode8
       language: generic
