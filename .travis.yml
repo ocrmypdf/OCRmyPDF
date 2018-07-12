@@ -18,6 +18,7 @@ addons:
     - libavutil54
     - libffi-dev
     - poppler-utils
+    - qpdf
     - tesseract-ocr
     - tesseract-ocr-deu
     - tesseract-ocr-eng
@@ -74,8 +75,7 @@ before_install: |
 
 install:
 - pip3 install pycparser # py3.7 workaround for https://github.com/eliben/pycparser/issues/251
-- pip3 install -r requirements.txt
-- pip3 install --no-deps ".$EXTRAS"
+- pip3 install ".$EXTRAS"
 - pip3 install -r test_requirements.txt
 
 script:

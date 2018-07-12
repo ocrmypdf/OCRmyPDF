@@ -8,3 +8,4 @@ PyPDF2 == 1.26.0
 img2pdf == 0.2.4
 cffi == 1.11.5
 PyMuPDF == 1.12.5
+defusedxml == 0.5.0
