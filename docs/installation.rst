@@ -87,7 +87,7 @@ OCRmyPDF is now a standard `Homebrew <https://brew.sh>`_ formula. To install on 
 Installing the Docker image
 ---------------------------
 
-For many users, installing the Docker image will be easier than installing all of OCRmyPDF's dependencies. For Windows, it is the only option.
+For some users, installing the Docker image will be easier than installing all of OCRmyPDF's dependencies. For Windows, it is the only option.
 
 If you have `Docker <https://docs.docker.com/>`_ installed on your system, you can install a Docker image of the latest release.
 
@@ -183,7 +183,7 @@ Or in the wonderful `fish shell <https://fishshell.com/>`_:
 
 .. note::
 
-    The ocrmypdf Docker containers are designed to be used for a single OCR job. The ``docker run --rm`` argument tells Docker to delete temporary storage associated with container when it is done executing.
+    The ocrmypdf Docker images are designed for application delivery, to enable use of OCRmyPDF without fussing with dependencies. ``docker run --rm`` argument tells Docker to delete the container after it runs, because each container is only good for a single job. The Docker image is not designed for use as a persistent web service or for use on Amazon EC2 Container Service (AWS ECS).
 
 Manual installation on macOS
 ----------------------------
