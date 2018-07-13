@@ -61,6 +61,13 @@ v7.0.0
 
     +   It may be necessary to separately ``pip install pycparser`` to avoid `another Python 3.7 issue <https://github.com/eliben/pycparser/pull/135>`_.
 
+v6.2.2
+------
+
+-   Backport compatibility fixes for Python 3.7 and ruffus 2.7.0 from v7.0.0
+-   Backport fix to ignore masks when deciding what colors are on a page
+-   Backport some minor improvements from v7.0.0: better argument validation and warnings about the Tesseract 4.0.0 ``--user-words`` regression
+
 v6.2.1
 ------
 
