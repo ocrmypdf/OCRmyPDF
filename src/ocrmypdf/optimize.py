@@ -24,6 +24,11 @@ import sys
 from PIL import Image
 
 import pikepdf
+try:
+    from pikepdf import Null  # pikepdf <= 0.2.2
+except ImportError:
+    def Null():               # pikepdf > 0.2.2
+        return None
 
 from ._jobcontext import JobContext
 from . import leptonica
@@ -241,7 +246,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
         im_obj = pike.get_object(xref, 0)
         im_obj.write(
             compdata.read(), pikepdf.Name('/DCTDecode'),
-            pikepdf.Null()
+            Null()
         )
 
 
@@ -281,7 +286,7 @@ def transcode_pngs(pike, pngs, root, log, options):
         if len(compdata) > int(im_obj.stream_dict.Length):
             continue  # If we produced a larger image, don't use
 
-        predictor = pikepdf.Null()
+        predictor = Null()
         if compdata.predictor > 0:
             predictor = pikepdf.Dictionary({'/Predictor': compdata.predictor})
 
