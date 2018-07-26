@@ -19,6 +19,7 @@ from contextlib import suppress
 from shutil import copyfileobj
 from pathlib import Path
 from datetime import datetime, timezone
+from io import BytesIO
 import sys
 import os
 import shutil
@@ -33,7 +34,7 @@ from ruffus import formatter, regex, Pipeline, suffix
 from .hocrtransform import HocrTransform
 from .pdfinfo import PdfInfo, Encoding, Colorspace
 from .pdfa import generate_pdfa_ps, encode_pdf_date
-from .helpers import re_symlink, is_iterable_notstr, page_number
+from .helpers import re_symlink, is_iterable_notstr, page_number, discard_alpha
 from .exec import ghostscript, tesseract, qpdf
 from .lib import fitz
 from .exceptions import PdfMergeFailedError, UnsupportedImageFormatError, \
@@ -159,8 +160,14 @@ def triage_image_file(input_file, output_file, log, options):
             layout_fun = img2pdf.get_fixed_dpi_layout_fun(
                 (options.image_dpi, options.image_dpi))
         with open(output_file, 'wb') as outf:
+            im = Image.open(input_file)
+            im_format = im.format
+            im = discard_alpha(im)
+            im_bio = BytesIO()
+            im.save(im_bio, format=im_format)
+            im_bio.seek(0)
             img2pdf.convert(
-                input_file,
+                im_bio,
                 layout_fun=layout_fun,
                 with_pdfrw=False,
                 outputstream=outf)

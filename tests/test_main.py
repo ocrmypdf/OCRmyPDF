@@ -849,7 +849,7 @@ def test_compression_preserved(spoof_tesseract_noop, ocrmypdf_exec,
             stdin=input_stream, env=spoof_tesseract_noop)
         out, err = p.communicate()
 
-        assert p.returncode == ExitCode.ok
+        assert p.returncode == ExitCode.ok, err.decode('utf-8')
 
     pdfinfo = PdfInfo(output_file)
 

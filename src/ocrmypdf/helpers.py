@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+from PIL import Image
+
 from functools import partial
 from collections.abc import Iterable
 from contextlib import suppress, contextmanager
@@ -126,6 +128,15 @@ def is_file_writable(test_file):
             with suppress(OSError):
                 p.unlink()
         return True
+
+
+def discard_alpha(im):
+    if im.mode in ('RGBA', 'LA'):
+        fill_color = (1, 1, 1) if im.mode == 'RGBA' else 1
+        backgd = Image.new(im.mode[:-1], im.size, fill_color)
+        backgd.paste(im, im.split()[-1])
+        im = backgd
+    return im
 
 
 if sys.version_info[0:2] <= (3, 5):
