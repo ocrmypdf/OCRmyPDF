@@ -829,6 +829,7 @@ def test_no_contents(spoof_tesseract_noop, resources, outpdf):
 @pytest.mark.parametrize('image', [
     'baiona.png',
     'baiona_gray.png',
+    'baiona_alpha.png',
     'congress.jpg'
     ])
 def test_compression_preserved(spoof_tesseract_noop, ocrmypdf_exec,
@@ -839,7 +840,6 @@ def test_compression_preserved(spoof_tesseract_noop, ocrmypdf_exec,
     output_file = str(outpdf)
 
     im = Image.open(input_file)
-
     # Runs: ocrmypdf - output.pdf < testfile
     with open(input_file, 'rb') as input_stream:
         p_args = ocrmypdf_exec + [
@@ -848,6 +848,11 @@ def test_compression_preserved(spoof_tesseract_noop, ocrmypdf_exec,
             p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
             stdin=input_stream, env=spoof_tesseract_noop)
         out, err = p.communicate()
+
+        if im.mode in ('RGBA', 'LA'):
+            # If alpha image is input, expect an error
+            assert p.returncode != ExitCode.ok and b'alpha' in err
+            return
 
         assert p.returncode == ExitCode.ok, err.decode('utf-8')
 
@@ -894,7 +899,7 @@ def test_compression_changed(spoof_tesseract_noop, ocrmypdf_exec,
             stdin=input_stream, env=spoof_tesseract_noop)
         out, err = p.communicate()
 
-        assert p.returncode == ExitCode.ok
+        assert p.returncode == ExitCode.ok, err
 
     pdfinfo = PdfInfo(output_file)
 

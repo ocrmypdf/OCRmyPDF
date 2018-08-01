@@ -34,7 +34,7 @@ from ruffus import formatter, regex, Pipeline, suffix
 from .hocrtransform import HocrTransform
 from .pdfinfo import PdfInfo, Encoding, Colorspace
 from .pdfa import generate_pdfa_ps, encode_pdf_date
-from .helpers import re_symlink, is_iterable_notstr, page_number, discard_alpha
+from .helpers import re_symlink, is_iterable_notstr, page_number
 from .exec import ghostscript, tesseract, qpdf
 from .lib import fitz
 from .exceptions import PdfMergeFailedError, UnsupportedImageFormatError, \
@@ -145,6 +145,13 @@ def triage_image_file(input_file, output_file, log, options):
                 "image was scanned and specify it using --image-dpi.")
             raise DpiError()
 
+        if im.mode in ('RGBA', 'LA'):
+            log.error(
+                "The input image has an alpha channel. Remove the alpha "
+                "channel first."
+            )
+            raise UnsupportedImageFormatError()
+
         if 'iccprofile' not in im.info:
             if im.mode == 'RGB':
                 log.info('Input image has no ICC profile, assuming sRGB')
@@ -160,14 +167,8 @@ def triage_image_file(input_file, output_file, log, options):
             layout_fun = img2pdf.get_fixed_dpi_layout_fun(
                 (options.image_dpi, options.image_dpi))
         with open(output_file, 'wb') as outf:
-            im = Image.open(input_file)
-            im_format = im.format
-            im = discard_alpha(im)
-            im_bio = BytesIO()
-            im.save(im_bio, format=im_format)
-            im_bio.seek(0)
             img2pdf.convert(
-                im_bio,
+                input_file,
                 layout_fun=layout_fun,
                 with_pdfrw=False,
                 outputstream=outf)
@@ -179,7 +180,7 @@ def triage_image_file(input_file, output_file, log, options):
 
 def _pdf_guess_version(input_file, search_window=1024):
     """Try to find version signature at start of file.
-    
+
     Not robust enough to deal with appended files.
 
     Returns empty string if not found, indicating file is probably not PDF.
@@ -238,7 +239,7 @@ def repair_and_parse_pdf(
             "output these files.)  Use --output-type=pdf instead."
         )
         raise InputFileError()
-    
+
     if len(pdfinfo.pages) > 2000 and sys.version_info[0:2] <= (3, 5):
         log.warning(
             "Performance regressions are known occur with Python 3.5 for "
@@ -305,7 +306,7 @@ def is_ocr_required(pageinfo, log, options):
         # We found a page with no images and no text. That means it may
         # have vector art that the user wants to OCR. If we determined
         # lossless reconstruction is not possible then we have to rasterize
-        # the image. So if OCR is being forced, take that to mean YES, go 
+        # the image. So if OCR is being forced, take that to mean YES, go
         # ahead and rasterize. If not forced, then pretend there's no text
         # on the page at all so we don't lose anything.
         # This could be made smarter by explicitly searching for vector art.
@@ -891,7 +892,7 @@ def get_pdfmark(base_pdf, options):
         except (KeyError, TypeError):
             return ''
 
-    pdfmark = {k: from_document_info(k) for k in 
+    pdfmark = {k: from_document_info(k) for k in
         ('/Title', '/Author', '/Keywords', '/Subject', '/CreationDate')}
     if options.title:
         pdfmark['/Title'] = options.title
@@ -1082,7 +1083,7 @@ def merge_sidecars(
             if txt_file:
                 with open(txt_file, 'r', encoding="utf-8") as in_:
                     txt = in_.read()
-                    # Tesseract v4 alpha started adding form feeds in 
+                    # Tesseract v4 alpha started adding form feeds in
                     # commit aa6eb6b
                     # No obvious way to detect what binaries will do this, so
                     # for consistency just ignore its form feeds and insert our
@@ -1116,7 +1117,7 @@ def copy_final(
             sys.stdout.flush()
         else:
             # At this point we overwrite the output_file specified by the user
-            # use copyfileobj because then we use open() to create the file and 
+            # use copyfileobj because then we use open() to create the file and
             # get the appropriate umask, ownership, etc.
             with open(output_file, 'wb') as output_stream:
                 copyfileobj(input_stream, output_stream)
@@ -1291,7 +1292,7 @@ def build_pipeline(options, work_folder, log, context):
         output=os.path.join(work_folder, r'\1.rendered.pdf'),
         extras=[log, context])
     task_combine_layers.graphviz(fillcolor='"#00cc66"')
-    task_combine_layers.active_if(options.pdf_renderer == 'hocr' or 
+    task_combine_layers.active_if(options.pdf_renderer == 'hocr' or
                                   options.pdf_renderer == 'sandwich')
 
     # Tesseract OCR+PDF

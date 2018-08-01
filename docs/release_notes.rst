@@ -10,6 +10,12 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
 
+v6.2.3
+------
+
+-   Fix compatibility with img2pdf >= 0.3.0 by rejecting input images that have an alpha channel
+
+
 v6.2.2
 ------
 

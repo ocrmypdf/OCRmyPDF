@@ -105,7 +105,7 @@ def is_file_writable(test_file):
 
     if p.is_symlink():
         # Python 3.5 does not accept parameters for Path.resolve() and behaves
-        # as if strict=True (throws an exception on failure). Python 3.6 
+        # as if strict=True (throws an exception on failure). Python 3.6
         # defaults to strict=False. This implements strict=False like behavior
         # for Python 3.5.
         if sys.version_info[0:2] <= (3, 5):
@@ -128,15 +128,6 @@ def is_file_writable(test_file):
             with suppress(OSError):
                 p.unlink()
         return True
-
-
-def discard_alpha(im):
-    if im.mode in ('RGBA', 'LA'):
-        fill_color = (1, 1, 1) if im.mode == 'RGBA' else 1
-        backgd = Image.new(im.mode[:-1], im.size, fill_color)
-        backgd.paste(im, im.split()[-1])
-        im = backgd
-    return im
 
 
 if sys.version_info[0:2] <= (3, 5):
