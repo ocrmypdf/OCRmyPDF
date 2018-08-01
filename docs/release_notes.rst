@@ -13,6 +13,11 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v7.0.1
+------
+
+-   Fix compatibility with img2pdf >= 0.3.0 by rejecting input images that have an alpha channel
+
 v7.0.0
 ------
 
@@ -60,6 +65,12 @@ v7.0.0
     +   There is also a new dependency on ``python-xmp-toolkit`` which in turn depends on ``libexempi3``.
 
     +   It may be necessary to separately ``pip install pycparser`` to avoid `another Python 3.7 issue <https://github.com/eliben/pycparser/pull/135>`_.
+
+v6.2.3
+------
+
+-   Fix compatibility with img2pdf >= 0.3.0 by rejecting input images that have an alpha channel
+
 
 v6.2.2
 ------

@@ -146,8 +146,9 @@ Assemblies
 
 These test resources are assemblies or derivatives from other previously mentioned files, released under the same license terms as their input files.
 
-- baiona_gray.png (from baiona.png)
-- baiona_colormapped.png (from baiona.png)
+- baiona_gray.png (from baiona.png, grayscale version)
+- baiona_colormapped.png (from baiona.png, palette version)
+- baiona_alpha.png (from baiona.png, RGB+A version)
 - cardinal.pdf (four cardinal directions, baked-in rotated copies of linn.png)
 - ccitt.pdf (linn.png, converted to CCITT encoding)
 - encrypted_algo4.pdf (congress.jpg, encrypted with algorithm 4 - not supported by PyPDF2)

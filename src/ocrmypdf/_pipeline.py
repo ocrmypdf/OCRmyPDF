@@ -19,7 +19,6 @@ from contextlib import suppress
 from shutil import copyfileobj, copyfile
 from pathlib import Path
 from datetime import datetime, timezone
-
 import sys
 import os
 import re
@@ -84,6 +83,13 @@ def triage_image_file(input_file, output_file, log, options):
                 "in its metadata.  Estimate the resolution at which "
                 "image was scanned and specify it using --image-dpi.")
             raise DpiError()
+
+        if im.mode in ('RGBA', 'LA'):
+            log.error(
+                "The input image has an alpha channel. Remove the alpha "
+                "channel first."
+            )
+            raise UnsupportedImageFormatError()
 
         if 'iccprofile' not in im.info:
             if im.mode == 'RGB':
