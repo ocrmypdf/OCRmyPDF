@@ -248,8 +248,8 @@ setup(
     ],
     install_requires=[
         'cffi >= 1.9.1',          # must be a setup and install requirement
-        'img2pdf >= 0.2.4',       # pure Python, so track HEAD closely
-        'pikepdf >= 0.2.2, < 0.3',
+        'img2pdf >= 0.2.4, < 0.4',       # pure Python, so track HEAD closely
+        'pikepdf >= 0.2.2, < 0.4',
         'Pillow >= 4.0.0, != 5.1.0 ; sys_platform == "darwin"',
                                   # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
                                   # block 5.1.0, broken wheels

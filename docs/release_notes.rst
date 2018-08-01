@@ -18,12 +18,16 @@ v7.0.1
 
 -   Fix compatibility with img2pdf >= 0.3.0 by rejecting input images that have an alpha channel
 
+-   Add forward compatibility for pikepdf 0.3.0 (unrelated to img2pdf)
+
+-   Various documentation updates for v7.0.0 changes
+
 v7.0.0
 ------
 
 -   The core algorithm for combining OCR layers with existing PDF pages has been rewritten and improved considerably.  PDFs are no longer split into single page PDFs for processing; instead, images are rendered and the OCR results are grafted onto the input PDF.  The new algorithm uses less temporary disk space and is much more performant especially for large files.
 
--   New dependency: `pikepdf <https://github.com/pikepdf/pikepdf>`_. pikepdf is a  powerful new Python PDF library driving the latest OCRmyPDF features, built on the QPDF C++ library (libqpdf).
+-   New dependency: `pikepdf <https://github.com/pikepdf/pikepdf>`_. pikepdf is a powerful new Python PDF library driving the latest OCRmyPDF features, built on the QPDF C++ library (libqpdf).
 
 -   New feature: PDF optimization with ``-O`` or ``--optimize``.  After OCR, OCRmyPDF will perform image optimizations relevant to OCR PDFs.
 
@@ -70,7 +74,6 @@ v6.2.3
 ------
 
 -   Fix compatibility with img2pdf >= 0.3.0 by rejecting input images that have an alpha channel
-
 
 v6.2.2
 ------
