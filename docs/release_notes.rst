@@ -13,6 +13,13 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v7.0.2
+------
+
+-   Fix a regression with ``--rotate-pages`` on pages that already had rotations applied. (`#279 <https://github.com/jbarlow83/OCRmyPDF/issues/279>`_)
+
+-   Improve quality of page rotation in some cases by rasterizing a higher quality preview image. (`#281 <https://github.com/jbarlow83/OCRmyPDF/issues/281>`_)
+
 v7.0.1
 ------
 
