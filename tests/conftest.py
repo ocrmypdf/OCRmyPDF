@@ -145,7 +145,8 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
 
 
 @pytest.helpers.register
-def run_ocrmypdf(input_file, output_file, *args, env=None):
+def run_ocrmypdf(input_file, output_file, *args, env=None,
+        universal_newlines=True):
     "Run ocrmypdf and let caller deal with results"
 
     if env is None:
@@ -155,7 +156,7 @@ def run_ocrmypdf(input_file, output_file, *args, env=None):
              [str(input_file), str(output_file)]
     p = Popen(
         p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
-        universal_newlines=True, env=env)
+        universal_newlines=universal_newlines, env=env)
     out, err = p.communicate()
     #print(err)
 
@@ -168,3 +169,19 @@ def first_page_dimensions(pdf):
     info = pdfinfo.PdfInfo(pdf)
     page0 = info[0]
     return (page0.width_inches, page0.height_inches)
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--runslow", action="store_true", default=False, help="run slow tests"
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--runslow"):
+        # --runslow given in cli: do not skip slow tests
+        return
+    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(skip_slow)

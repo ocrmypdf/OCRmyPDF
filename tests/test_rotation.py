@@ -16,12 +16,17 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from io import BytesIO
 
+from PIL import Image
 import pytest
+import img2pdf
+import pikepdf
 
 from ocrmypdf import leptonica
 from ocrmypdf.pdfinfo import PdfInfo
 from ocrmypdf.exec import ghostscript
+from ocrmypdf.helpers import fspath
 
 
 # pytest.helpers is dynamic
@@ -51,7 +56,8 @@ def check_monochrome_correlation(
             return
         ghostscript.rasterize_pdf(
             pdf, png, xres=100, yres=100,
-            raster_device='pngmono', log=gslog, pageno=pageno)
+            raster_device='pngmono', log=gslog, pageno=pageno,
+            rotation=0)
 
     rasterize(reference_pdf, reference_pageno, reference_png)
     rasterize(test_pdf, test_pageno, test_png)
@@ -171,3 +177,46 @@ def test_rotate_deskew_timeout(resources, outdir):
 
     # Confirm that the page still got deskewed
     assert correlation > 0.50
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('page_angle', (0, 90, 180, 270))
+@pytest.mark.parametrize('image_angle', (0, 90, 180, 270))
+def test_rotate_page_level(image_angle, page_angle, resources, outdir):
+
+    def make_rotate_test(prefix, image_angle, page_angle):
+        im = Image.open(fspath(resources / 'typewriter.png'))
+        if image_angle != 0:
+            ccw_angle = -image_angle % 360
+            im = im.transpose(getattr(Image, 'ROTATE_{}'.format(ccw_angle)))
+        memimg = BytesIO()
+        im.save(memimg, format='PNG')
+        memimg.seek(0)
+        mempdf = BytesIO()
+        img2pdf.convert(
+            memimg.read(),
+            layout_fun=img2pdf.get_fixed_dpi_layout_fun((200, 200)),
+            outputstream=mempdf
+        )
+        mempdf.seek(0)
+        pike = pikepdf.open(mempdf)
+        pike.pages[0].Rotate = page_angle
+        target = outdir / '{}_{}_{}.pdf'.format(prefix, image_angle, page_angle)
+        pike.save(target)
+        return target
+
+    reference = make_rotate_test('ref', 0, 0)
+    test = make_rotate_test('test', image_angle, page_angle)
+    out = test.with_suffix('.out.pdf')
+
+    p, _, err = run_ocrmypdf(
+        test, out,
+        '-O0',
+        '--rotate-pages',
+        '--rotate-pages-threshold', '0.001',
+        universal_newlines=False
+    )
+    err = err.decode('utf-8', errors='replace')
+    assert p.returncode == 0, err
+
+    assert check_monochrome_correlation(outdir, reference, 1, out, 1) > 0.2
