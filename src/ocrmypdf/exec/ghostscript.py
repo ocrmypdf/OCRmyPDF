@@ -113,8 +113,6 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
     if not page_dpi:
         page_dpi = res
 
-    autorotate = '/PageByPage' if rotation is None else '/None'
-
     with NamedTemporaryFile(delete=True) as tmp:
         args_gs = [
             'gs',
@@ -127,7 +125,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             '-dLastPage=%i' % pageno,
             '-r{0}x{1}'.format(str(int_res[0]), str(int_res[1])),
             '-o', tmp.name,
-            '-dAutoRotatePages=%s' % autorotate,
+            '-dAutoRotatePages=/None',  # Probably has no effect on raster
             '-f',
             fspath(input_file)
         ]
