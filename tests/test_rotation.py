@@ -89,6 +89,7 @@ def test_monochrome_correlation(resources, outdir):
     assert corr > 0.90
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_autorotate(spoof_tesseract_cache, renderer, resources, outdir):
     # cardinal.pdf contains four copies of an image rotated in each cardinal

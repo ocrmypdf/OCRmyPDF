@@ -173,7 +173,9 @@ def first_page_dimensions(pdf):
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--runslow", action="store_true", default=False, help="run slow tests"
+        "--runslow", action="store_true", default=False,
+        help=("run slow tests only useful for development (unlikely to be "
+              "useful for downstream packagers)")
     )
 
 
