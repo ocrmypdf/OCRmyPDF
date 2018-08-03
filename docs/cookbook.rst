@@ -61,7 +61,7 @@ If the page is "just a little off horizontal", like a crooked picture, then you 
 OCR languages other than English
 """"""""""""""""""""""""""""""""
 
-By default OCRmyPDF assumes the document is English. 
+By default OCRmyPDF assumes the document is English.
 
 .. code-block:: bash
 
@@ -127,7 +127,7 @@ OCRmyPDF perform some image processing on each page of a PDF, if desired.  The s
 * ``--remove-background`` attempts to detect and remove a noisy background from grayscale or color images.  Monochrome images are ignored. This should not be used on documents that contain color photos as it may remove them.
 
 * ``--deskew`` will correct pages were scanned at a skewed angle by rotating them back into place.  Skew determination and correction is performed using `Postl's variance of line sums <http://www.leptonica.com/skew-measurement.html>`_ algorithm as implemented in `Leptonica <http://www.leptonica.com/index.html>`_.
-  
+
 * ``--clean`` uses `unpaper <https://www.flameeyes.eu/projects/unpaper>`_ to clean up pages before OCR, but does not alter the final output.  This makes it less likely that OCR will try to find text in background noise.
 
 * ``--clean-final`` uses unpaper to clean up pages before OCR and inserts the page into the final output.  You will want to review each page to ensure that unpaper did not remove something important.
@@ -176,7 +176,7 @@ To redo OCR on a file OCRed with other OCR software or a previous version of OCR
 
     ocrmypdf --force-ocr input.pdf output.pdf
 
-Note that the method above will force rasterization of all pages, potentially reducing quality or losing vector content. 
+Note that the method above will force rasterization of all pages, potentially reducing quality or losing vector content.
 
 To ensure quality is preserved, one could extract all of the images and rebuild the PDF for a lossless transformation. This recipe does not work when PDFs contain multiple images per page, as many do in practice. It will also lose any page rotation information.
 
@@ -198,3 +198,19 @@ The `Image processing`_ features can improve OCR quality.
 Rotating pages and deskewing helps to ensure that the page orientation is correct before OCR begins. Removing the background and/or cleaning the page can also improve results. The ``--oversample DPI`` argument can be specified to resample images to higher resolution before attempting OCR; this can improve results as well.
 
 OCR quality will suffer if the resolution of input images is not correct (since the range of pixel sizes that will be checked for possible fonts will also be incorrect).
+
+
+PDF optimization
+----------------
+
+By default OCRmyPDF will attempt to perform lossless optimizations on the images inside PDFs after OCR is complete. Optimization is performed even if no OCR text is found.
+
+The ``--optimize N`` (short form ``-O``) argument controls optimization, where ``N`` ranges from 0 to 3. ``--optimize 0`` disables optimizations. ``1`` enables lossless optimizations that can be performed safely with no quality loss. ``2`` enables lossy optimizations such as image color quantizations. ``3`` enables more aggressive optimizations and targets a lower JPEG quality.
+
+Optimization is improved when a JBIG2 encoder is available and when ``pngquant`` is installed. If either of these components are missing, then some types of images will not be optimized.
+
+Currently optimization attempts to find more efficient encodings for images. The types of optimization available may expand over time. By default, OCRmyPDF compresses data streams inside PDFs, and will change inefficient encodings to more modern versions. A program like ``qpdf`` can be used to change encodings, e.g. to inspect the internals fo a PDF.
+
+.. code-block:: bash
+
+    ocrmypdf --optimize 3 in.pdf out.pdf  # Make it as small as possible
