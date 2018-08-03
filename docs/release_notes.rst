@@ -57,8 +57,7 @@ v7.0.0
 
     +   ``PyMuPDF``
 
--   The ``sandwich`` PDF renderer can be used with all supported versions of Tesseract, including that those prior to v3.05 which don't support
-``-c textonly``. (Tesseract v4.0.0 is recommended and more efficient.)
+-   The ``sandwich`` PDF renderer can be used with all supported versions of Tesseract, including that those prior to v3.05 which don't support ``-c textonly``. (Tesseract v4.0.0 is recommended and more efficient.)
 
 -   ``--pdf-renderer auto`` option and the diagnostics used to select a PDF renderer now work better with old versions, but may make different decisions than past versions.
 
@@ -197,7 +196,7 @@ v6.0.0
 v5.7.0
 ------
 
--   Fixed an issue that caused poor CPU utilization on machines more than 4 cores when running Tesseract 4. (Related to issue `#217 <https://github.com/jbarlow83/OCRmyPDF/issues/217>`_.)
+-   Fixed an issue that caused poor CPU utilization on machines with more than 4 cores when running Tesseract 4. (Related to issue `#217 <https://github.com/jbarlow83/OCRmyPDF/issues/217>`_.)
 
 -   The 'hocr' renderer has been improved. The 'sandwich' and 'tesseract' renderers are still better for most use cases, but 'hocr' may be useful for people who work with the PDF.js renderer in English/ASCII languages. (`#225 <https://github.com/jbarlow83/OCRmyPDF/issues/225>`_)
 
