@@ -355,7 +355,7 @@ def rasterize_preview(
     ghostscript.rasterize_pdf(
         input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
         raster_device='jpeggray', log=log, page_dpi=(page_dpi, page_dpi),
-        pageno=page_number(input_file), rotation=pageinfo.rotation)
+        pageno=page_number(input_file))
 
 
 def orient_page(
@@ -363,6 +363,22 @@ def orient_page(
         output_file,
         log,
         context):
+    """
+    Work out orientation correct for each page.
+
+    We ask Ghostscript to draw a preview page, which will rasterize with the
+    current /Rotate applied, and then ask Tesseract which way the page is
+    oriented. If the value of /Rotate is correct (e.g., a user already
+    manually fixed rotation), then Tesseract will say the page is pointing
+    up and the correction is zero. Otherwise, the orientation found by
+    Tesseract represents the clockwise rotation, or the counterclockwise
+    correction to rotation.
+
+    When we draw the real page for OCR, we rotate it by the CCW correction,
+    which points it (hopefully) upright. _weave.py takes care of the orienting
+    the image and text layers.
+
+    """
 
     options = context.get_options()
     page_pdf = next(ii for ii in infiles if ii.endswith('.page.pdf'))
@@ -385,33 +401,43 @@ def orient_page(
         270: '⇦'
     }
 
+    pageno = page_number(page_pdf) - 1
+    pdfinfo = context.get_pdfinfo()
+    existing_rotation = pdfinfo[pageno].rotation
+
+    correction = orient_conf.angle % 360
+
     apply_correction = False
-    description = ''
+    action = ''
     if orient_conf.confidence >= options.rotate_pages_threshold:
-        if orient_conf.angle != 0:
+        if correction != 0:
             apply_correction = True
-            description = ' - will rotate'
+            action = ' - will rotate'
         else:
-            description = ' - rotation appears correct'
+            action = ' - rotation appears correct'
     else:
-        if orient_conf.angle != 0:
-            description = ' - confidence too low to rotate'
+        if correction != 0:
+            action = ' - confidence too low to rotate'
         else:
-            description = ' - no change'
+            action = ' - no change'
+
+    facing = ''
+    if existing_rotation != 0:
+        facing = 'with existing rotation {}, '.format(direction.get(
+                existing_rotation, '?'))
+    facing += 'page is facing {}'.format(direction.get(
+            orient_conf.angle, '?'))
 
     log.info(
-        '{0:4d}: page is facing {1}, confidence {2:.2f}{3}'.format(
-            page_number(preview),
-            direction.get(orient_conf.angle, '?'),
-            orient_conf.confidence,
-            description)
+        '{pagenum:4d}: {facing}, confidence {conf:.2f}{action}'.format(
+            pagenum=page_number(preview),
+            facing=facing,
+            conf=orient_conf.confidence,
+            action=action)
     )
 
     re_symlink(page_pdf, output_file, log)
     if apply_correction:
-        pageno = page_number(page_pdf) - 1
-        pdfinfo = context.get_pdfinfo()
-        correction = (orient_conf.angle - pdfinfo[pageno].rotation) % 360
         context.set_rotation(pageno, correction)
 
 
