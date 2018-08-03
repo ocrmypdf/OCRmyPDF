@@ -349,8 +349,8 @@ def rasterize_preview(
         context):
     pageinfo = get_pageinfo(input_file, context)
     options = context.get_options()
-    canvas_dpi = get_canvas_square_dpi(pageinfo, options) / 2
-    page_dpi = get_page_square_dpi(pageinfo, options) / 2
+    canvas_dpi = get_canvas_square_dpi(pageinfo, options)
+    page_dpi = get_page_square_dpi(pageinfo, options)
 
     ghostscript.rasterize_pdf(
         input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
