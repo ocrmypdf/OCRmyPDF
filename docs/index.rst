@@ -18,6 +18,7 @@ PDF is the best format for storing and exchanging scanned documents.  Unfortunat
    release_notes
    installation
    languages
+   jbig2
 
 .. toctree::
    :caption: Usage
@@ -36,4 +37,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
