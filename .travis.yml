@@ -10,14 +10,6 @@ matrix:
       sudo: required
       language: python
       python: "3.5"
-        env:
-        - DIST=trusty
-      addons: *trusty_apt
-    - os: linux
-      dist: trusty
-      sudo: required
-      language: python
-      python: "3.6"
       env:
         - DIST=trusty
       addons: &trusty_apt
@@ -41,6 +33,14 @@ matrix:
           - tesseract-ocr-deu
           - tesseract-ocr-eng
           - tesseract-ocr-fra
+    - os: linux
+      dist: trusty
+      sudo: required
+      language: python
+      python: "3.6"
+      env:
+        - DIST=trusty
+      addons: *trusty_apt
     - os: linux
       dist: xenial
       sudo: required
