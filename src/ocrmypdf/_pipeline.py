@@ -318,16 +318,6 @@ def marker_pages(
         page.symlink_to(input_file)  # pylint: disable=E1101
 
 
-def split_page(
-        placeholder_file,
-        output_file,
-        log,
-        context):
-    pageno = page_number(placeholder_file) - 1
-    input_pdf = context.get_pdfinfo().filename
-    qpdf.extract_page(input_pdf, output_file, pageno)
-
-
 def ocr_or_skip(
         input_files,
         output_files,
