@@ -1,4 +1,4 @@
-Installing a JBIG2 encoder
+Installing the JBIG2 encoder
 ==========================
 
 Most Linux distributions do not include a JBIG2 encoder since JBIG2 encoding was patented for a long time. All known JBIG2 US patents have expired as of 2017, but it is possible that unknown patents exist.
