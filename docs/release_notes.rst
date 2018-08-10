@@ -13,6 +13,11 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v7.0.3
+------
+
+-   Fix issue `#284 <https://github.com/jbarlow83/OCRmyPDF/issues/284>`_, an error when parsing inline images that have are also image masks, by upgrading pikepdf to 0.3.1
+
 v7.0.2
 ------
 
