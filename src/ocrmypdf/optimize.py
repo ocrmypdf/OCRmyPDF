@@ -32,7 +32,7 @@ from .exec import pngquant, jbig2enc
 
 PAGE_GROUP_SIZE = 10
 DEFAULT_JPEG_QUALITY = 75
-DEFAULT_PNG_QUALITY = (65, 75)
+DEFAULT_PNG_QUALITY = 70
 
 
 def img_name(root, xref, ext):
