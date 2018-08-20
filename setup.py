@@ -241,6 +241,7 @@ setup(
         'cffi >= 1.9.1',        # to build the leptonica module
         'pytest-runner',        # to enable python setup.py test
         'setuptools_scm',       # so that version will work
+        'setuptools_scm_git_archive'    # enable version from github tarballs
     ],
     use_scm_version={'version_scheme': 'post-release'},
     cffi_modules=[
