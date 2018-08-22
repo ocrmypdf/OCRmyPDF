@@ -55,13 +55,13 @@ Users of Debian 9 ("stretch") or later or Ubuntu 16.10 or later may simply
 
     apt-get install ocrmypdf
 
-For full details on version availability, check the `Debian Package Tracker <https://tracker.debian.org/pkg/ocrmypdf>`_ or `Ubuntu launchpad.net <https://launchpad.net/ocrmypdf>`_.
+As indicated in the table above, Debian and Ubuntu releases may lag behind the latest version. If the version available for your platform is out of date, you could opt to install the latest version from source. See `Installing HEAD revision from sources`_.
 
-If the version available for your platform is out of date, you could opt to install the latest version from source. See `Installing HEAD revision from sources`_.
+For full details on version availability for your platform, check the `Debian Package Tracker <https://tracker.debian.org/pkg/ocrmypdf>`_ or `Ubuntu launchpad.net <https://launchpad.net/ocrmypdf>`_.
 
 .. note::
 
-    OCRmyPDF for Debian and Ubuntu currently omit the JBIG2 encoder. OCRmyPDF works fine without it but will produce larger output files. If you build jbig2enc from source, ocrmypdf 7.0.0 and later will automatically detect it on the ``PATH``. To add JBIG2 encoding, see `Installing the JBIG2 encoder`_.
+    OCRmyPDF for Debian and Ubuntu currently omit the JBIG2 encoder. OCRmyPDF works fine without it but will produce larger output files. If you build jbig2enc from source, ocrmypdf 7.0.0 and later will automatically detect it (specifically the ``jbig2`` binary) on the ``PATH``. To add JBIG2 encoding, see `Installing the JBIG2 encoder`_.
 
 Installing the latest version on Ubuntu 18.04 LTS
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -447,12 +447,12 @@ Since ``pip3 install --user`` does not work correctly on some platforms, notably
 Requirements for pip and HEAD install
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-OCRmyPDF currently requires these external programs and libraries to be installed:
+OCRmyPDF currently requires these external programs and libraries to be installed, and must be satisfied using the operating system package manager. ``pip`` cannot provide them.
 
 - Python 3.5 or newer
 - Ghostscript 9.15 or newer
 - libexempi3 2.2.0 or newer
-- qpdf 7.0.0 or newer
+- qpdf 8.1.0 or newer
 - Tesseract 3.04 or newer
 
 As of ocrmypdf 7.0.0, the following versions are recommended:
@@ -483,6 +483,8 @@ Installing HEAD revision from sources
 -------------------------------------
 
 If you have ``git`` and Python 3.5 or newer installed, you can install from source. When the ``pip`` installer runs, it will alert you if dependencies are missing.
+
+If you prefer to build every from source, you will need to `build pikepdf from source <https://pikepdf.readthedocs.io/en/latest/installation.html#building-from-source>`_. First ensure you can build and install pikepdf.
 
 To install the HEAD revision from sources in the current Python 3 environment:
 
