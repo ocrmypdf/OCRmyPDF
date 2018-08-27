@@ -61,7 +61,7 @@ For full details on version availability for your platform, check the `Debian Pa
 
 .. note::
 
-    OCRmyPDF for Debian and Ubuntu currently omit the JBIG2 encoder. OCRmyPDF works fine without it but will produce larger output files. If you build jbig2enc from source, ocrmypdf 7.0.0 and later will automatically detect it (specifically the ``jbig2`` binary) on the ``PATH``. To add JBIG2 encoding, see `Installing the JBIG2 encoder`_.
+    OCRmyPDF for Debian and Ubuntu currently omit the JBIG2 encoder. OCRmyPDF works fine without it but will produce larger output files. If you build jbig2enc from source, ocrmypdf 7.0.0 and later will automatically detect it (specifically the ``jbig2`` binary) on the ``PATH``. To add JBIG2 encoding, see :ref:`jbig2`.
 
 Installing the latest version on Ubuntu 18.04 LTS
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -92,7 +92,7 @@ Then install the most recent ocrmypdf for the local user and set the user's ``PA
     export PATH=$HOME/.local/bin:$PATH
     pip3 install --user ocrmypdf
 
-To add JBIG2 encoding, see `Installing the JBIG2 encoder`_.
+To add JBIG2 encoding, see :ref:`jbig2`.
 
 Ubuntu 16.04 LTS
 ^^^^^^^^^^^^^^^^
@@ -135,7 +135,7 @@ At your option, you may upgrade Ubuntu 16.04 LTS to Tesseract 4.0 for improved O
     sudo apt-get update
     sudo apt-get upgrade tesseract-ocr
 
-To add JBIG2 encoding, see `Installing the JBIG2 encoder`_.
+To add JBIG2 encoding, see :ref:`jbig2`.
 
 Ubuntu 14.04 LTS
 ^^^^^^^^^^^^^^^^
@@ -198,7 +198,7 @@ These installation instructions omit the optional dependency ``unpaper``, which 
     wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O unpaper_6.1-1.deb
     sudo dpkg -i unpaper_6.1-1.deb
 
-To add JBIG2 encoding, see `Installing the JBIG2 encoder`_.
+To add JBIG2 encoding, see :ref:`jbig2`.
 
 ArchLinux
 ^^^^^^^^^
@@ -468,7 +468,7 @@ As of ocrmypdf 7.0.0, the following versions are recommended:
 
 jbig2enc, pngquant, and unpaper are optional. If missing certain features are disabled. OCRmyPDF will discover them as soon as they are available.
 
-**jbig2enc**, if present, will be used to optimize the encoding of monochrome images.  This can significantly reduce the file size of the output file.  It is not required.  `jbig2enc <https://github.com/agl/jbig2enc>`_ is not generally available for Ubuntu or Debian due to lingering concerns about patent issues, but can easily be built from source. To add JBIG2 encoding, see `Optional: installing the JBIG2 encoder`_.
+**jbig2enc**, if present, will be used to optimize the encoding of monochrome images.  This can significantly reduce the file size of the output file.  It is not required.  `jbig2enc <https://github.com/agl/jbig2enc>`_ is not generally available for Ubuntu or Debian due to lingering concerns about patent issues, but can easily be built from source. To add JBIG2 encoding, see :ref:`jbig2`.
 
 **pngquant**, if present, is optionally used to optimize the encoding of PNG-style images in PDFs (actually, any that are that losslessly encoded) by lossily quantizing to a smaller color palette. It is only activated then the ``--optimize`` argument is ``2`` or ``3``.
 
@@ -536,4 +536,4 @@ To install all of the development and test requirements:
     pip install -e .
     pip install -r dev_requirements.txt -r test_requirements.txt
 
-To add JBIG2 encoding, see `Installing the JBIG2 encoder`_.
+To add JBIG2 encoding, see :ref:`jbig2`.

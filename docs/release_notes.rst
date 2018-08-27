@@ -17,11 +17,11 @@ v7.0.4
 ------
 
 -   Fix exception thrown when trying to optimize a certain type of PNG embedded
-in a PDF with the ``-O2``
+    in a PDF with the ``-O2``
 
 -   Update to pikepdf 0.3.2, to gain support for optimizing some additional
-image types that were previously excluded from optimization (CMYK and grayscale).
-Fixes `#285 <https://github.com/jbarlow83/OCRmyPDF/issues/285>`_.
+    image types that were previously excluded from optimization (CMYK and grayscale).
+    Fixes `#285 <https://github.com/jbarlow83/OCRmyPDF/issues/285>`_.
 
 v7.0.3
 ------
@@ -95,6 +95,7 @@ v6.2.3
 ------
 
 -   Fix compatibility with img2pdf >= 0.3.0 by rejecting input images that have an alpha channel
+-   This version will be included in Ubuntu 18.10
 
 v6.2.2
 ------
@@ -357,7 +358,6 @@ v5.0.1
 
 -   Fixed issue `#169 <https://github.com/jbarlow83/OCRmyPDF/issues/169>`_, exception due to failure to create sidecar text files on some versions of Tesseract 3.04, including the jbarlow83/ocrmypdf Docker image
 
-
 v5.0
 ----
 
@@ -373,7 +373,6 @@ v5.0
 -   Fixed issue `#164 <https://github.com/jbarlow83/OCRmyPDF/issues/164>`_, a typo
 -   Removed the command line parameters ``-n`` and ``--just-print`` since they have not worked for some time (reported as Ubuntu bug `#1687308 <https://bugs.launchpad.net/ubuntu/+source/ocrmypdf/+bug/1687308>`_)
 
-
 v4.5.6
 ------
 
@@ -381,20 +380,17 @@ v4.5.6
 -   Fixed issue `#158 <https://github.com/jbarlow83/OCRmyPDF/issues/158>`_, ocrmypdf now stops and terminates if Ghostscript fails on an intermediate step, as it is not possible to proceed.
 -   Fixed issue `#160 <https://github.com/jbarlow83/OCRmyPDF/issues/160>`_, exception thrown on certain invalid arguments instead of error message
 
-
 v4.5.5
 ------
 
 -   Automated update of macOS homebrew tap
 -   Fixed issue `#154 <https://github.com/jbarlow83/OCRmyPDF/issues/154>`_, KeyError '/Contents' when searching for text on blank pages that have no /Contents record.  Note: incomplete fix for this issue.
 
-
 v4.5.4
 ------
 
 -   Fix ``--skip-big`` raising an exception if a page contains no images (`#152 <https://github.com/jbarlow83/OCRmyPDF/issues/152>`_) (thanks to @TomRaz)
 -   Fix an issue where pages with no images might trigger "cannot write mode P as JPEG" (`#151 <https://github.com/jbarlow83/OCRmyPDF/issues/151>`_)
-
 
 v4.5.3
 ------
@@ -404,7 +400,6 @@ v4.5.3
 -   Fixed an issue where the ``tess4`` renderer would duplicate content onto output pages if tesseract failed or timed out
 -   Fixed ``tess4`` renderer not recognized when lossless reconstruction is possible
 
-
 v4.5.2
 ------
 
@@ -412,20 +407,17 @@ v4.5.2
 -   Make "using Tesseract 4.0" warning less ominous
 -   Set up machinery for homebrew OCRmyPDF tap
 
-
 v4.5.1
 ------
 
 -   Fix issue `#137 <https://github.com/jbarlow83/OCRmyPDF/issues/137>`_, proportions of images with a non-square pixel aspect ratio would be distorted in output for ``--force-ocr`` and some other combinations of flags
 
-
 v4.5
 ----
 
--   Exotic PDFs containing "Form XObjects" are now supported (issue `#134 <https://github.com/jbarlow83/OCRmyPDF/issues/134>`_; PDF reference manual 8.10), and images they contain are taken into account when determining the resolution for rasterizing
+-   PDFs containing "Form XObjects" are now supported (issue `#134 <https://github.com/jbarlow83/OCRmyPDF/issues/134>`_; PDF reference manual 8.10), and images they contain are taken into account when determining the resolution for rasterizing
 -   The Tesseract 4 Docker image no longer includes all languages, because it took so long to build something would tend to fail
 -   OCRmyPDF now warns about using ``--pdf-renderer tesseract`` with Tesseract 3.04 or lower due to issues with Ghostscript corrupting the OCR text in these cases
-
 
 v4.4.2
 ------
@@ -436,7 +428,6 @@ v4.4.2
     + This could be a disruptive change for any Docker users who built customized these images with their own changes, and made those changes in a way that depends on Debian and not Ubuntu
 
 -   OCRmyPDF now prevents running the Tesseract 4 renderer with Tesseract 3.04, which was permitted in v4.4 and v4.4.1 but will not work
-
 
 v4.4.1
 ------
@@ -464,18 +455,15 @@ v4.4
 
     + However, OCRmyPDF's dependency "ruffus" is not re-entrant, so no Python API is available. Scripts should continue to use the command line interface.
 
-
 v4.3.5
 ------
 
 -   Update documentation to confirm Python 3.6.0 compatibility. No code changes were needed, so many earlier versions are likely supported.
 
-
 v4.3.4
 ------
 
 -   Fixed "decimal.InvalidOperation: quantize result has too many digits" for high DPI images
-
 
 v4.3.3
 ------
@@ -483,12 +471,10 @@ v4.3.3
 -   Fixed PDF/A creation with Ghostscript 9.20 properly
 -   Fixed an exception on inline stencil masks with a missing optional parameter
 
-
 v4.3.2
 ------
 
 -   Fixed a PDF/A creation issue with Ghostscript 9.20 (note: this fix did not actually work)
-
 
 v4.3.1
 ------
@@ -499,7 +485,6 @@ v4.3.1
 -   Reduced the file sizes of some test resources
 -   Cleaned up debug output
 -   Tesseract caching in test cases is now more cautious about false cache hits and reproducing exact output, not that any problems were observed
-
 
 v4.3
 ----
@@ -517,7 +502,6 @@ v4.2.5
 
 -   Fixed an issue (`#100 <https://github.com/jbarlow83/OCRmyPDF/issues/100>`_) with PDFs that omit the optional /BitsPerComponent parameter on images
 -   Removed non-free file milk.pdf
-
 
 v4.2.4
 ------
@@ -538,19 +522,16 @@ v4.2.3
 -   Added a test case for indirect objects and linearized PDFs
 -   Deprecated the OCRmyPDF.sh shell script
 
-
 v4.2.2
 ------
 
 -   Improvements to documentation
-
 
 v4.2.1
 ------
 
 -   Fixed an issue where PDF pages that contained stencil masks would report an incorrect DPI and cause Ghostscript to abort
 -   Implemented stdin streaming
-
 
 v4.2
 ----
@@ -590,7 +571,6 @@ v4.1.4
 
 -   Bug fix: monochrome images with an ICC profile attached were incorrectly converted to full color images if lossless reconstruction was not possible due to other settings; consequence was increased file size for these images
 
-
 v4.1.3
 ------
 
@@ -599,13 +579,11 @@ v4.1.3
 -   Fix order of operations for matrix multiplication (no effect on most users)
 -   Add a few leptonica wrapper functions (no effect on most users)
 
-
 v4.1.2
 ------
 
 -   Replace IEC sRGB ICC profile with Debian's sRGB (from icc-profiles-free) which is more compatible with the MIT license
 -   More helpful error message for an error related to certain types of malformed PDFs
-
 
 v4.1
 ----
@@ -614,19 +592,16 @@ v4.1
 -   Fixed problems in error checking if ``unpaper`` is uninstalled or missing at run-time
 -   Fixed problems with "RethrownJobError" errors during error handling that suppressed the useful error messages
 
-
 v4.0.7
 ------
 
 -   Minor correction to Ghostscript output settings
-
 
 v4.0.6
 ------
 
 -   Update install instructions
 -   Provide a sRGB profile instead of using Ghostscript's
-
 
 v4.0.5
 ------
@@ -641,18 +616,14 @@ v4.0.4
 
 Released with verbose debug message turned on. Do not use. Skip to v4.0.5.
 
-
 v4.0.3
 ------
 
 New features
-^^^^^^^^^^^^
 
 -   Page orientations detected are now reported in a summary comment
 
-
 Fixes
-^^^^^
 
 -   Show stack trace if unexpected errors occur
 -   Treat "too few characters" error message from Tesseract as a reason to skip that page rather than
@@ -664,7 +635,7 @@ v4.0.2
 ------
 
 Fixes
-^^^^^
+
 
 -   Fixed compatibility with Tesseract 3.04.01 release, particularly its different way of outputting
     orientation information
@@ -676,7 +647,7 @@ v4.0.1
 ------
 
 Fixes
-^^^^^
+
 
 -   Fixed a KeyError if tesseract fails to find page orientation information
 
@@ -685,7 +656,6 @@ v4.0
 ----
 
 New features
-^^^^^^^^^^^^
 
 -   Automatic page rotation (``-r``) is now available. It uses ignores any prior rotation information
     on PDFs and sets rotation based on the dominant orientation of detectable text. This feature is
@@ -695,7 +665,6 @@ New features
 
 
 Fixes
-^^^^^
 
 -   Fixed an issue where lossless reconstruction could cause some pages to be appear incorrectly
     if the page was rotated by the user in Acrobat after being scanned (specifically if it a /Rotate tag)
@@ -704,7 +673,6 @@ Fixes
 
 
 Changes
-^^^^^^^
 
 -   Logging output is now much easier to read
 -   ``--deskew`` is now performed by Leptonica instead of unpaper (`#25 <https://github.com/jbarlow83/OCRmyPDF/issues/25>`_)
@@ -720,7 +688,6 @@ v3.2.1
 ------
 
 Changes
-^^^^^^^
 
 -   Fixed issue `#47 <https://github.com/jbarlow83/OCRmyPDF/issues/47>`_ "convert() got and unexpected keyword argument 'dpi'" by upgrading to img2pdf 0.2
 -   Tweaked the Dockerfiles
@@ -730,7 +697,6 @@ v3.2
 ----
 
 New features
-^^^^^^^^^^^^
 
 -   Lossless reconstruction: when possible, OCRmyPDF will inject text layers without
     otherwise manipulating the content and layout of a PDF page. For example, a PDF containing a mix
@@ -742,7 +708,6 @@ New features
     for the polyglots among us. It is much larger.
 
 Changes
-^^^^^^^
 
 -   JPEG transcoding quality is now 95 instead of the default 75. Bigger file sizes for less degradation.
 
@@ -752,7 +717,6 @@ v3.1.1
 ------
 
 Changes
-^^^^^^^
 
 -   Fixed bug that caused incorrect page size and DPI calculations on documents with mixed page sizes
 
@@ -760,7 +724,6 @@ v3.1
 ----
 
 Changes
-^^^^^^^
 
 -   Default output format is now PDF/A-2b instead of PDF/A-1b
 -   Python 3.5 and macOS El Capitan are now supported platforms - no changes were
@@ -778,7 +741,6 @@ v3.0
 ----
 
 New features
-^^^^^^^^^^^^
 
 -   Easier installation with a Docker container or Python's ``pip`` package manager
 -   Eliminated many external dependencies, so it's easier to setup
@@ -801,7 +763,6 @@ New features
 -   Multiple images on the same PDF page are now supported
 
 Changes
-^^^^^^^
 
 -   New, robust rewrite in Python 3.4+ with ruffus_ pipelines
 -   Now uses Ghostscript 9.14's improved color conversion model to preserve PDF colors
@@ -838,8 +799,7 @@ Changes
 .. _Unpaper: https://github.com/Flameeyes/unpaper
 .. _JHOVE: http://jhove.sourceforge.net/
 
-Release candidates
-^^^^^^^^^^^^^^^^^^
+Release candidates^
 
 -   rc9:
 
@@ -907,12 +867,11 @@ where ``settings.txt`` contains *one argument per line*, for example:
 
 
 Fixes
-^^^^^
+
 
 -   Handling of filenames containing spaces: fixed
 
 Notes and known issues
-^^^^^^^^^^^^^^^^^^^^^^
 
 -   Some dependencies may work with lower versions than tested, so try
     overriding dependencies if they are "in the way" to see if they work.
