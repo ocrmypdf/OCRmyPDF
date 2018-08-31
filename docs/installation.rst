@@ -207,11 +207,15 @@ ArchLinux
     :alt: ArchLinux
     :target: https://repology.org/metapackage/ocrmypdf
 
-The author is aware of an `ArchLinux package for ocrmypdf <https://aur.archlinux.org/packages/ocrmypdf/>`_. It seems like the following command might work.
+The author is aware of an `ArchLinux User Repository package for ocrmypdf <https://aur.archlinux.org/packages/ocrmypdf/>`_. You can use the following command.
 
 .. code-block:: bash
 
-    pacman -S ocrmypdf
+    yaourt -S ocrmypdf
+
+It can crash on building pybind11 (for pikepdf), just edit the PKGBUILD:
+from: pybind11<3,>=2.2.3
+to: pybind11>=2.2.3
 
 Other Linux packages
 ^^^^^^^^^^^^^^^^^^^^
