@@ -213,9 +213,7 @@ The author is aware of an `ArchLinux User Repository package for ocrmypdf <https
 
     yaourt -S ocrmypdf
 
-It can crash on building pybind11 (for pikepdf), just edit the PKGBUILD:
-from: pybind11<3,>=2.2.3
-to: pybind11>=2.2.3
+If you have any difficulties with installation, check the repository package page.
 
 Other Linux packages
 ^^^^^^^^^^^^^^^^^^^^
