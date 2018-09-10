@@ -17,13 +17,14 @@
 
 
 import pytest
-import PyPDF2 as pypdf
 
 from datetime import timezone
 from pathlib import Path
 from shutil import copyfile
 from unittest.mock import patch
 import datetime
+
+import pikepdf
 
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import fspath
@@ -51,17 +52,17 @@ spoof = pytest.helpers.spoof
     ])
 def test_preserve_metadata(spoof_tesseract_noop, output_type,
                            resources, outpdf):
-    pdf_before = pypdf.PdfFileReader(str(resources / 'graph.pdf'))
+    pdf_before = pikepdf.open(resources / 'graph.pdf')
 
     output = check_ocrmypdf(
             resources / 'graph.pdf', outpdf,
             '--output-type', output_type,
             env=spoof_tesseract_noop)
 
-    pdf_after = pypdf.PdfFileReader(str(output))
+    pdf_after = pikepdf.open(output)
 
     for key in ('/Title', '/Author'):
-        assert pdf_before.documentInfo[key] == pdf_after.documentInfo[key]
+        assert pdf_before.metadata[key] == pdf_after.metadata[key]
 
     pdfa_info = file_claims_pdfa(str(output))
     assert pdfa_info['output'] == output_type
@@ -85,15 +86,15 @@ def test_override_metadata(spoof_tesseract_noop, output_type, resources,
 
     assert p.returncode == ExitCode.ok, err
 
-    before = pypdf.PdfFileReader(str(input_file))
-    after = pypdf.PdfFileReader(outpdf)
+    before = pikepdf.open(input_file)
+    after = pikepdf.open(outpdf)
 
-    assert after.documentInfo['/Title'] == german
-    assert after.documentInfo['/Author'] == chinese
-    assert after.documentInfo.get('/Keywords', '') == ''
+    assert after.metadata.Title == german
+    assert after.metadata.Author == chinese
+    assert after.metadata.get('/Keywords', '') == ''
 
-    before_date = decode_pdf_date(before.documentInfo['/CreationDate'])
-    after_date = decode_pdf_date(after.documentInfo['/CreationDate'])
+    before_date = decode_pdf_date(str(before.metadata.CreationDate))
+    after_date = decode_pdf_date(str(after.metadata.CreationDate))
     assert before_date == after_date
 
     pdfa_info = file_claims_pdfa(outpdf)
@@ -146,26 +147,30 @@ def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
                                  infile, outpdf):
     input_file = resources / infile
 
-    before = pypdf.PdfFileReader(str(input_file)).getDocumentInfo()
     check_ocrmypdf(
         input_file, outpdf, '--output-type', output_type,
         env=spoof_tesseract_noop)
-    after = pypdf.PdfFileReader(str(outpdf)).getDocumentInfo()
+
+    pdf_before = pikepdf.open(input_file)
+    pdf_after = pikepdf.open(outpdf)
+
+    before = pdf_before.trailer.get('/Info', {})
+    after = pdf_after.trailer.get('/Info', {})
 
     if not before:
         # If there was input creation date, none should be output
         # because of Ghostscript quirks we set it to null
         # This test would be better if we had a test file with /DocumentInfo but
         # no /CreationDate, which we don't
-        assert not after.get('/CreationDate')
+        assert after.get('/CreationDate', '') == ''
     else:
         # We expect that the creation date stayed the same
-        date_before = decode_pdf_date(before['/CreationDate'])
-        date_after = decode_pdf_date(after['/CreationDate'])
+        date_before = decode_pdf_date(str(before['/CreationDate']))
+        date_after = decode_pdf_date(str(after['/CreationDate']))
         assert seconds_between_dates(date_before, date_after) < 1000
 
     # We expect that the modified date is quite recent
-    date_after = decode_pdf_date(after['/ModDate'])
+    date_after = decode_pdf_date(str(after['/ModDate']))
     assert seconds_between_dates(
         date_after, datetime.datetime.now(timezone.utc)) < 1000
 
