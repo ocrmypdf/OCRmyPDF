@@ -32,7 +32,7 @@ from functools import lru_cache
 from .lib._leptonica import ffi
 from .helpers import fspath
 
-# pylint: disable=w0212
+# pylint: disable=protected-access
 
 lept = ffi.dlopen(find_library('lept'))
 
@@ -45,12 +45,13 @@ def stderr(*objs):
 
 
 class _LeptonicaErrorTrap:
-    """Context manager to trap errors reported by Leptonica.
+    """
+    Context manager to trap errors reported by Leptonica.
 
-    Leptonica's error return codes are unreliable to the point of being
-    almost useless.  It does, however, write errors to stderr provided that is
-    not disabled at its compile time.  Fortunately this is done using error
-    macros so it is very self-consistent.
+    Leptonica's error return codes don't provide much informatino about what
+    went wrong. Leptonica does, however, write more detailed errors to stderr
+    (provided this is not disabled at compile time). The Leptonica source
+    code is very consistent in its use of macros to generate errors.
 
     This context manager redirects stderr to a temporary file which is then
     read and parsed for error messages.  As a side benefit, debug messages
@@ -116,7 +117,8 @@ class LeptonicaIOError(LeptonicaError):
 
 
 class Pix:
-    """Wrapper around leptonica's PIX object.
+    """
+    Wrapper around leptonica's PIX object.
 
     Leptonica uses referencing counting on PIX objects. Also, many Leptonica
     functions return the original object with an increased reference count
