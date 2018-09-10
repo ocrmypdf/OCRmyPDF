@@ -207,11 +207,13 @@ ArchLinux
     :alt: ArchLinux
     :target: https://repology.org/metapackage/ocrmypdf
 
-The author is aware of an `ArchLinux package for ocrmypdf <https://aur.archlinux.org/packages/ocrmypdf/>`_. It seems like the following command might work.
+The author is aware of an `ArchLinux User Repository package for ocrmypdf <https://aur.archlinux.org/packages/ocrmypdf/>`_. You can use the following command.
 
 .. code-block:: bash
 
-    pacman -S ocrmypdf
+    yaourt -S ocrmypdf
+
+If you have any difficulties with installation, check the repository package page.
 
 Other Linux packages
 ^^^^^^^^^^^^^^^^^^^^
