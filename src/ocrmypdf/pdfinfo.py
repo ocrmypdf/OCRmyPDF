@@ -90,28 +90,6 @@ FRIENDLY_COMP = {
 
 UNIT_SQUARE = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
 
-
-def _matrix_from_shorthand(shorthand):
-    """Convert from PDF matrix shorthand to full matrix
-
-    PDF 1.7 spec defines a shorthand for describing the entries of a matrix
-    since the last column is always (0, 0, 1).
-    """
-
-    a, b, c, d, e, f = map(float, shorthand)
-    return ((a, b, 0),
-            (c, d, 0),
-            (e, f, 1))
-
-
-def _shorthand_from_matrix(matrix):
-    """Convert from transformation matrix to PDF shorthand."""
-    a, b = matrix[0][0], matrix[0][1]
-    c, d = matrix[1][0], matrix[1][1]
-    e, f = matrix[2][0], matrix[2][1]
-    return tuple(map(float, (a, b, c, d, e, f)))
-
-
 def _is_unit_square(shorthand):
     values = map(float, shorthand)
     pairwise = zip(values, UNIT_SQUARE)
