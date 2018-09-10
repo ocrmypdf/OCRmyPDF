@@ -16,12 +16,9 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
 v7.0.4
 ------
 
--   Fix exception thrown when trying to optimize a certain type of PNG embedded
-    in a PDF with the ``-O2``
+-   Fix exception thrown when trying to optimize a certain type of PNG embedded in a PDF with the ``-O2``
 
--   Update to pikepdf 0.3.2, to gain support for optimizing some additional
-    image types that were previously excluded from optimization (CMYK and grayscale).
-    Fixes `#285 <https://github.com/jbarlow83/OCRmyPDF/issues/285>`_.
+-   Update to pikepdf 0.3.2, to gain support for optimizing some additional image types that were previously excluded from optimization (CMYK and grayscale). Fixes `#285 <https://github.com/jbarlow83/OCRmyPDF/issues/285>`_.
 
 v7.0.3
 ------
