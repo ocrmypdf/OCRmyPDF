@@ -212,6 +212,9 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
         compression_args.append('-dPassThroughJPEGImages=false')
 
     with NamedTemporaryFile(delete=True) as gs_pdf:
+        # nb no need to specify ProcessColorModel when ColorConversionStrategy
+        # is set; see:
+        # https://bugs.ghostscript.com/show_bug.cgi?id=699392
         args_gs = [
             "gs",
             "-dQUIET",
@@ -221,8 +224,7 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
             "-dNumRenderingThreads=" + str(threads),
             "-sDEVICE=pdfwrite",
             "-dAutoRotatePages=/None",
-            "-sColorConversionStrategy=" + strategy,
-            "-sProcessColorModel=DeviceRGB"
+            "-sColorConversionStrategy=" + strategy
         ] + compression_args + [
             "-dJPEGQ=95",
             "-dPDFA=" + pdfa_part,
