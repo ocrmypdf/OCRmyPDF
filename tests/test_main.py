@@ -908,13 +908,7 @@ def test_compression_changed(spoof_tesseract_noop, ocrmypdf_exec,
     if compression == "jpeg":
         assert pdfimage.enc == Encoding.jpeg
     else:
-        if ghostscript.jpeg_passthrough_available():
-            # Ghostscript 9.23 adds JPEG passthrough, which allows a JPEG to be
-            # copied without transcoding - so report
-            if image.endswith('jpg'):
-                assert pdfimage.enc == Encoding.jpeg
-        else:
-            assert pdfimage.enc not in (Encoding.jpeg, Encoding.jpeg2000)
+        assert pdfimage.enc not in (Encoding.jpeg, Encoding.jpeg2000)
 
     if im.mode.startswith('RGB') or im.mode.startswith('BGR'):
         assert pdfimage.color == Colorspace.rgb, \

@@ -34,12 +34,19 @@ def version():
 
 def jpeg_passthrough_available():
     """
-    Ghostscript 9.23 introduced JPEG passthrough but it seems to corrupt the
-    last two bytes of certain images, for now we disable it for 9.23 and
-    do not mention it for < 9.23.
+    Returns True if the installed version of Ghostscript supports JPEG passthru
 
+    Prior to 9.23, Ghostscript decode and re-encoded JPEGs internally. In 9.23
+    it gained the ability to keep JPEGs unmodified. However, the 9.23
+    implementation was buggy and would deletes the last two bytes of images in
+    some cases, as reported here.
     https://bugs.ghostscript.com/show_bug.cgi?id=699216
 
+    The issue was fixed for 9.24, hence that is the first version we consider
+    the feature available.
+
+    Regardless, in ocrmypdf 6.x we are ignoring this new feature entirely to
+    avoid new behavior.
     """
     return False
 
@@ -52,20 +59,20 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
                   pageno=1, page_dpi=None):
     """
     Rasterize one page of a PDF at resolution (xres, yres) in canvas units.
-    
-    The image is sized to match the integer pixels dimensions implied by 
+
+    The image is sized to match the integer pixels dimensions implied by
     (xres, yres) even if those numbers are noninteger. The image's DPI will
      be overridden with the values in page_dpi.
-    
+
     :param input_file: pathlike
     :param output_file: pathlike
     :param xres: resolution at which to rasterize page
-    :param yres: 
-    :param raster_device: 
-    :param log: 
+    :param yres:
+    :param raster_device:
+    :param log:
     :param pageno: page number to rasterize (beginning at page 1)
-    :param page_dpi: resolution tuple (x, y) overriding output image DPI 
-    :return: 
+    :param page_dpi: resolution tuple (x, y) overriding output image DPI
+    :return:
     """
     res = xres, yres
     int_res = round(xres), round(yres)
@@ -85,7 +92,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             '-o', tmp.name,
             fspath(input_file)
         ]
-        
+
         p = run(args_gs, stdout=PIPE, stderr=STDOUT,
                 universal_newlines=True)
         if _gs_error_reported(p.stdout):
@@ -139,15 +146,17 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
             "-dAutoFilterGrayImages=true",
         ]
 
-    # Older versions of Ghostscript expect a leading slash in 
-    # sColorConversionStrategy, newer ones should not have it. See Ghostscript 
+    # Older versions of Ghostscript expect a leading slash in
+    # sColorConversionStrategy, newer ones should not have it. See Ghostscript
     # git commit fe1c025d.
     strategy = 'RGB' if version() >= '9.19' else '/RGB'
 
-    if version() == '9.23':
+    if version() >= '9.23':
         # 9.23: new feature JPEG passthrough is broken in some cases, best to
         # disable it always
         # https://bugs.ghostscript.com/show_bug.cgi?id=699216
+        # fixed in 9.24, but to avoid changing expected behavior we disable it
+        # for ocrmypdf 6.x
         compression_args.append('-dPassThroughJPEGImages=false')
 
     with NamedTemporaryFile(delete=True) as gs_pdf:
