@@ -137,22 +137,15 @@ def _find_font(text, pdf_base):
     return font, font_key
 
 
-def _fix_toc(pdf_base, pageref_remap, log):
-    """Repair the table of contents
-
-    Whenever we replace a page wholesale, it gets assigned a new objgen number
-    and other references to it within the PDF become invalid, most notably in
-    the table of contents (/Outlines in PDF-speak).  In weave_layers we collect
-    pageref_remap, a mapping that describes the new objgen number given an old
-    one.  (objgen is a tuple, and the gen is almost always zero.)
+def _traverse_toc(pdf_base, visitor_fn, log):
+    """
+    Walk the table of contents, calling visitor_fn() at each node
 
     The /Outlines data structure is a messy data structure, but rather than
     navigating hierarchically we just track unique nodes.  Enqueue nodes when
     we find them, and never visit them again.  set() is awesome.  We look for
     the two types of object in the table of contents that can be page bookmarks
     and update the page entry.
-
-    It may ultimately be better to find a way to rebuild a page in place.
 
     """
 
@@ -162,10 +155,54 @@ def _fix_toc(pdf_base, pageref_remap, log):
 
     if not '/Outlines' in pdf_base.root:
         return
+
+    queue.add(pdf_base.root.Outlines.objgen)
+    while queue:
+        objgen = queue.pop()
+        visited.add(objgen)
+        node = pdf_base.get_object(objgen)
+        log.debug('fix toc: exploring outline entries at %r', objgen)
+
+        # Enumerate other nodes we could visit from here
+        for key in link_keys:
+            if key not in node:
+                continue
+            item = node[key]
+            if not item.is_indirect:
+                #  or not isinstance(item, pikepdf.Dictionary):
+                # # If there is garbage data, replace the key with an indirect
+                # # ref to None. Kodak Capture Desktop produces keys like these.
+                # log.error('Removing invalid reference from TOC: %s', repr(item))
+                # node[key] = pdf_base.make_indirect(None)
+                continue
+            objgen = item.objgen
+            if objgen not in visited:
+                queue.add(objgen)
+
+        visitor_fn(pdf_base, node, log)
+
+
+def _fix_toc(pdf_base, pageref_remap, log):
+    """Repair the table of contents
+
+    Whenever we replace a page wholesale, it gets assigned a new objgen number
+    and other references to it within the PDF become invalid, most notably in
+    the table of contents (/Outlines in PDF-speak).  In weave_layers we collect
+    pageref_remap, a mapping that describes the new objgen number given an old
+    one.  (objgen is a tuple, and the gen is almost always zero.)
+
+    It may ultimately be better to find a way to rebuild a page in place.
+
+    """
+
     if not pageref_remap:
         return
 
     def remap_dest(dest_node):
+        """
+        Inner helper function: change the objgen for any page from the old we
+        invalidated to its new one.
+        """
         if not isinstance(dest_node, pikepdf.Array):
             return
         pageref = dest_node[0]
@@ -174,29 +211,23 @@ def _fix_toc(pdf_base, pageref_remap, log):
             new_objgen = pageref_remap[pageref.objgen]
             dest_node[0] = pdf_base.get_object(new_objgen)
 
-    queue.add(pdf_base.root.Outlines.objgen)
-    while queue:
-        objgen = queue.pop()
-        visited.add(objgen)
-        node = pdf_base.get_object(objgen)
-        log.debug('fix toc: visiting %r', objgen)
+    def visit_remap_dest(pdf_base, node, log):
+        """
+        Visitor function to fix ToC entries
 
-        # Enumerate other nodes we could visit from here
-        for key in link_keys:
-            if key not in node:
-                continue
-            item = node[key]
-            if not item.is_indirect:
-                continue
-            objgen = item.objgen
-            if objgen not in visited:
-                queue.add(objgen)
-
+        Test for the two types of references to pages that can occur in ToCs.
+        Both types have the same final format (an indirect reference to the
+        target page).
+        """
         if '/Dest' in node:
+            # /Dest reference to another page (old method)
             remap_dest(node['/Dest'])
         elif '/A' in node:
+            # /A (action) command set to "GoTo" (newer method)
             if '/S' in node['/A'] and node['/A']['/S'] == '/GoTo':
                 remap_dest(node['/A']['/D'])
+
+    _traverse_toc(pdf_base, visit_remap_dest, log)
 
 
 def weave_layers(
@@ -246,6 +277,12 @@ def weave_layers(
     font, font_key, procset = None, None, None
     pdfinfo = context.get_pdfinfo()
     pagerefs = {}
+
+    # Walk the table of contents first, to trigger pikepdf/qpdf to resolve all
+    # page references in the table of contents. Some PDF generators put invalid
+    # references in the ToC, so we want to resolve them to null before we
+    # create any references, or the ToC will be corrupted
+    _traverse_toc(pdf_base, lambda *args: None, log)
 
     procset = pdf_base.make_indirect(
         pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]'))

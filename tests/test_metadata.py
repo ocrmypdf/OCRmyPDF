@@ -265,3 +265,15 @@ def test_srgb_in_unicode_path(tmpdir):
 
     with patch('ocrmypdf.pdfa.SRGB_ICC_PROFILE', new=str(dst)):
         generate_pdfa_ps(dstdir / 'out.ps', {})
+
+
+def test_kodak_toc(resources, outpdf, spoof_tesseract_noop):
+    output = check_ocrmypdf(
+        resources / 'kcs.pdf', outpdf,
+        '--output-type', 'pdf',
+        env=spoof_tesseract_noop)
+
+    p = pikepdf.open(outpdf)
+
+    if pikepdf.Name.First in p.root.Outlines:
+        assert isinstance(p.root.Outlines.First, pikepdf.Dictionary)
