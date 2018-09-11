@@ -33,14 +33,19 @@ def version():
 
 def jpeg_passthrough_available():
     """
-    Ghostscript 9.23 introduced JPEG passthrough but it seems to corrupt the
-    last two bytes of certain images, for now we disable it for 9.23 and
-    do not mention it for < 9.23.
+    Returns True if the installed version of Ghostscript supports JPEG passthru
 
+    Prior to 9.23, Ghostscript decode and re-encoded JPEGs internally. In 9.23
+    it gained the ability to keep JPEGs unmodified. However, the 9.23
+    implementation was buggy and would deletes the last two bytes of images in
+    some cases, as reported here.
     https://bugs.ghostscript.com/show_bug.cgi?id=699216
 
+    The issue was fixed for 9.24, hence that is the first version we consider
+    the feature available.
+
     """
-    return False
+    return version() >= '9.24'
 
 
 def _gs_error_reported(stream):
