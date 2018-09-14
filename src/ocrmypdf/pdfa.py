@@ -15,7 +15,21 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-# Generate a PDFA_def.ps file for Ghostscript >= 9.14
+"""
+Generate a PDFMARK file for Ghostscript >= 9.14, for PDF/A conversion
+
+pdfmark is an extension to the Postscript language that describes some PDF
+features like bookmarks and annotations. It was originally specified Adobe
+Distiller, for Postscript to PDF conversion:
+https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/pdfmark_reference.pdf
+
+Ghostscript uses pdfmark for PDF to PDF/A conversion as well. To use Ghostscript
+to create a PDF/A, we need to create a pdfmark file with the necessary metadata.
+
+This takes care of the many version-specific bugs and pecularities in
+Ghostscript's handling of pdfmark.
+
+"""
 
 from string import Template
 from binascii import hexlify
@@ -78,7 +92,8 @@ def
 
 
 def encode_text_string(s: str) -> str:
-    '''Encode text string to hex string for use in a PDF
+    """
+    Encode text string to hex string for use in a PDF
 
     From PDF 32000-1:2008 a string object may be included in hexademical form
     if it is enclosed in angle brackets.  For general Unicode the string should
@@ -86,7 +101,7 @@ def encode_text_string(s: str) -> str:
     ASCII strings could be encoded as PdfDocEncoding literals provided
     that certain Postscript sequences are escaped.  But it's far simpler to
     encode everything as UTF-16.
-    '''
+    """
 
     # Sometimes lazy C programmers leave their NULs at the end of strings they
     # insert into PDFs
@@ -102,10 +117,29 @@ def encode_text_string(s: str) -> str:
     return ascii_hex_str
 
 
-def encode_pdf_date(d: datetime) -> str:
-    """Encode Python datetime object as PDF date string
+def _encode_ascii(s: str) -> str:
+    """
+    Aggressively strip non-ASCII and PDF escape sequences
 
-    From Adobe pdfmark manual:    
+    Ghostscript 9.24+ lost support for UTF-16BE in pdfmark files for reasons
+    given in GhostPDL commit e997c683. Our temporary workaround is use ASCII
+    and drop all non-ASCII characters. A slightly improved alternative would
+    be to implement PdfDocEncoding in pikepdf and encode to that, or handle
+    metadata there.
+    """
+    trans = str.maketrans({
+        '(': '',
+        ')': '',
+        '\\': '',
+    })
+    return s.translate(trans).encode('ascii', errors='replace').decode()
+
+
+def encode_pdf_date(d: datetime) -> str:
+    """
+    Encode Python datetime object as PDF date string
+
+    From Adobe pdfmark manual:
     (D:YYYYMMDDHHmmSSOHH'mm')
     D: is an optional prefix. YYYY is the year. All fields after the year are
     optional. MM is the month (01-12), DD is the day (01-31), HH is the
@@ -137,16 +171,23 @@ def encode_pdf_date(d: datetime) -> str:
 
 
 def decode_pdf_date(s: str) -> datetime:
+    """
+    Decode a pdfmark date to a Python datetime object
+
+    A pdfmark date is a string in a paritcular format. See the pdfmark
+    Reference for the specification.
+
+    """
     if s.startswith('D:'):
         s = s[2:]
 
-    # Literal Z00'00', is incorrect but found in the wild, 
+    # Literal Z00'00', is incorrect but found in the wild,
     # probably made by OS X Quartz -- standardize
     if s.endswith("Z00'00'"):
         s = s.replace("Z00'00'", '+0000')
     elif s.endswith('Z'):
         s = s.replace('Z', '+0000')
-    
+
     s = s.replace("'", "")  # Remove apos from PDF time strings
 
     return datetime.strptime(s, r'%Y%m%d%H%M%S%z')
@@ -154,7 +195,7 @@ def decode_pdf_date(s: str) -> datetime:
 
 def _get_pdfmark_dates(pdfmark):
     """Encode dates for pdfmark Postscript.  The best way to deal with a
-    missing date entry is set it to null, because if the key is omitted 
+    missing date entry is set it to null, because if the key is omitted
     Ghostscript will set it to now - we do not want to erase the fact that
     the value was unknown.  Setting to an empty string breaks Ghostscript
     9.22 as reported here:
@@ -172,30 +213,47 @@ def _get_pdfmark_dates(pdfmark):
             date_str = date_str[2:]
         try:
             yield '  {} (D:{})'.format(
-                    key, 
+                    key,
                     encode_pdf_date(decode_pdf_date(date_str)))
         except ValueError:
             yield '  {} null'.format(key)
 
 
-def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
-    """Create a Postscript file for Ghostscript.  pdfmark contains the various
-    objects as strings; these must be encoded in ASCII, and dates have a 
-    special format."""
+def _get_pdfa_def(icc_profile, icc_identifier, pdfmark, ascii_docinfo=False):
+    """Create a Postscript pdfmark file for Ghostscript.
+
+    pdfmark contains the various objects as strings; these must be encoded in
+    ASCII, and dates have a special format.
+
+    :param icc_profile: filename of the ICC profile to include in pdfmark
+    :param icc_identifier: ICC identifier such as 'sRGB'
+    :param pdfmark: a dictionary containing keys to include the pdfmark
+    :param ascii_docinfo: if True, the docinfo block must be encoded in pure
+        ASCII and may not contain UTF-16BE-BOM-hex encoded strings, as
+        required for Ghostscript 9.24+
+
+    :returns: a string containing the entire pdfmark
+
+    """
 
     # Ghostscript <= 9.21 has a bug where null entries in DOCINFO might produce
     # ERROR: VMerror (-25) on closing pdfwrite device.
     # https://bugs.ghostscript.com/show_bug.cgi?id=697684
     # Work around this by only adding keys that have a nontrivial value
     docinfo_keys = ('/Title', '/Author', '/Subject', '/Creator', '/Keywords')
-    docinfo_line_template = '  {key} <{value}>'
 
     def docinfo_gen():
+        if not ascii_docinfo:
+            docinfo_line_template = '  {key} <{value}>'
+            encode = encode_text_string
+        else:
+            docinfo_line_template = '  {key} ({value})'
+            encode = _encode_ascii
         yield from _get_pdfmark_dates(pdfmark)
         for key in docinfo_keys:
             if key in pdfmark and pdfmark[key].strip() != '':
                 line = docinfo_line_template.format(
-                    key=key, value=encode_text_string(pdfmark[key]))
+                    key=key, value=encode(pdfmark[key]))
                 yield line
     docinfo = '\n'.join(docinfo_gen())
 
@@ -206,7 +264,7 @@ def _get_pdfa_def(icc_profile, icc_identifier, pdfmark):
     return result
 
 
-def generate_pdfa_ps(target_filename, pdfmark, icc='sRGB'):
+def generate_pdfa_ps(target_filename, pdfmark, icc='sRGB', ascii_docinfo=False):
     if icc == 'sRGB':
         icc_profile = SRGB_ICC_PROFILE
     else:
@@ -263,4 +321,3 @@ def file_claims_pdfa(filename):
     pdfa_dict['conformance'] = conformance
 
     return pdfa_dict
-

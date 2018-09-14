@@ -24,6 +24,12 @@ from datetime import timezone
 from ocrmypdf.pdfa import file_claims_pdfa, encode_pdf_date, decode_pdf_date
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.lib import fitz
+from ocrmypdf.helpers import fspath
+from ocrmypdf.pdfa import (
+    file_claims_pdfa, encode_pdf_date, decode_pdf_date, generate_pdfa_ps,
+    SRGB_ICC_PROFILE
+)
+from ocrmypdf.exec import ghostscript
 
 # pytest.helpers is dynamic
 # pylint: disable=no-member
@@ -75,6 +81,9 @@ def test_override_metadata(spoof_tesseract_noop, output_type, resources,
 
     before = pypdf.PdfFileReader(str(input_file))
     after = pypdf.PdfFileReader(outpdf)
+
+    if ghostscript.version() >= '9.24':
+        pytest.xfail('Ghostscript 9.24+ does not support Unicode DOCINFO')
 
     assert after.documentInfo['/Title'] == german
     assert after.documentInfo['/Author'] == chinese
@@ -136,7 +145,7 @@ def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
 
     before = pypdf.PdfFileReader(str(input_file)).getDocumentInfo()
     check_ocrmypdf(
-        input_file, outpdf, '--output-type', output_type, 
+        input_file, outpdf, '--output-type', output_type,
         env=spoof_tesseract_noop)
     after = pypdf.PdfFileReader(str(outpdf)).getDocumentInfo()
 
@@ -157,5 +166,3 @@ def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
     date_after = decode_pdf_date(after['/ModDate'])
     assert seconds_between_dates(
         date_after, datetime.datetime.now(timezone.utc)) < 1000
-
-

@@ -926,7 +926,20 @@ def generate_postscript_stub(
     options = context.get_options()
     pdf = pypdf.PdfFileReader(input_file)
     pdfmark = get_pdfmark(pdf, options)
-    generate_pdfa_ps(output_file, pdfmark)
+
+    ascii_docinfo = False
+    if ghostscript.version() >= '9.24':
+        ascii_docinfo = True
+        try:
+            for v in pdfmark.values():
+                v.encode('ascii', errors='strict')
+        except UnicodeEncodeError:
+            log.warning(
+                "Ghostscript 9.24 does not support Unicode strings in metadata."
+                " These will be converted to ASCII if possible."
+            )
+
+    generate_pdfa_ps(output_file, pdfmark, ascii_docinfo=ascii_docinfo)
 
 
 def skip_page(
