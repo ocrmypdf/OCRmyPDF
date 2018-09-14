@@ -611,7 +611,7 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile):
 
 def _pdf_get_all_pageinfo(infile):
     pdf = pikepdf.open(infile)
-    return [PageInfo(pdf, n, infile) for n in range(len(pdf.pages))]
+    return [PageInfo(pdf, n, infile) for n in range(len(pdf.pages))], pdf
 
 
 class PageInfo:
@@ -697,7 +697,8 @@ class PdfInfo:
     """
     def __init__(self, infile):
         self._infile = infile
-        self._pages = _pdf_get_all_pageinfo(infile)
+        self._pages, pdf = _pdf_get_all_pageinfo(infile)
+        self._needs_rendering = pdf.root.get('/NeedsRendering', False)
 
     @property
     def pages(self):
@@ -718,6 +719,10 @@ class PdfInfo:
             raise NotImplementedError("can't get filename from stream")
         return self._infile
 
+    @property
+    def needs_rendering(self):
+        return self._needs_rendering
+
     def __getitem__(self, item):
         return self._pages[item]
 
@@ -726,15 +731,6 @@ class PdfInfo:
 
     def __repr__(self):
         return "<PdfInfo('...'), page count={}>".format(len(self))
-
-    # def __getstate__(self):
-    #     state = {'_infile': self._infile}
-    #     return state
-    #
-    # def __setstate__(self, state):
-    #     self._infile = state['_infile']
-    #     self._pages = _pdf_get_all_pageinfo(self._infile)
-
 
 def main():
     import argparse

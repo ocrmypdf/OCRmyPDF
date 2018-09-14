@@ -109,6 +109,11 @@ licensed under the specified license.
         - @jbarlow83
         - @jbarlow83
         - CC-BY-SA 4.0
+    *   - livecycle.pdf
+        - a minimal PDF that claims to use dynamic XFA forms
+        - @jbarlow83
+        - @jbarlow83
+        - CC-BY-SA 4.0
     *   - masks.pdf
         - file containing explicit masks and a stencil mask drawn without a proper transformation matrix; printout of a German Wikipedia article (CC-BY-SA)
         - @supergrobi

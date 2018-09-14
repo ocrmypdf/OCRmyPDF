@@ -170,6 +170,13 @@ def repair_and_parse_pdf(
         log.error(e)
         raise InputFileError()
 
+    if pdfinfo.needs_rendering:
+        log.error(
+            "This PDF contains dynamic XFA forms created by Adobe LiveCycle "
+            "Designer and can only be read by Adobe Acrobat or Adobe Reader."
+        )
+        raise InputFileError()
+
     if pdfinfo.has_userunit and options.output_type.startswith('pdfa'):
         log.error(
             "This input file uses a PDF feature that is not supported "

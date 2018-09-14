@@ -925,3 +925,12 @@ def test_output_is_symlink(spoof_tesseract_noop, resources, outdir):
     )
     assert p.returncode == ExitCode.ok, err
     assert (outdir / 'out.pdf').stat().st_size > 0, 'target file not created'
+
+
+def test_livecycle(resources, no_outpdf):
+    p, _, err = run_ocrmypdf(
+        resources / 'livecycle.pdf',
+        no_outpdf
+    )
+
+    assert p.returncode == ExitCode.input_file, err
