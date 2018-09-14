@@ -32,6 +32,7 @@ from ocrmypdf.pdfa import (
     file_claims_pdfa, encode_pdf_date, decode_pdf_date, generate_pdfa_ps,
     SRGB_ICC_PROFILE
 )
+from ocrmypdf.exec import ghostscript
 
 try:
     import fitz
@@ -89,8 +90,11 @@ def test_override_metadata(spoof_tesseract_noop, output_type, resources,
     before = pikepdf.open(input_file)
     after = pikepdf.open(outpdf)
 
-    assert after.metadata.Title == german
-    assert after.metadata.Author == chinese
+    if ghostscript.version() >= '9.24':
+        pytest.xfail('Ghostscript 9.24+ does not support Unicode DOCINFO')
+
+    assert after.metadata.Title == german, after.metadata
+    assert after.metadata.Author == chinese, after.metadata
     assert after.metadata.get('/Keywords', '') == ''
 
     before_date = decode_pdf_date(str(before.metadata.CreationDate))
