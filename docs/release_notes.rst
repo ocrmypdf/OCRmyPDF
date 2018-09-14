@@ -13,6 +13,12 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v7.0.6
+------
+
+-   Blacklist Ghostscript 9.24, now that 9.25 is available and fixes many regressions in 9.24.
+
+
 v7.0.5
 ------
 

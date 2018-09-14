@@ -42,7 +42,8 @@ def jpeg_passthrough_available():
     https://bugs.ghostscript.com/show_bug.cgi?id=699216
 
     The issue was fixed for 9.24, hence that is the first version we consider
-    the feature available.
+    the feature available. (However, we don't use 9.24 at all, so the first
+    version that allows JPEG passthrough is 9.25.
 
     """
     return version() >= '9.24'

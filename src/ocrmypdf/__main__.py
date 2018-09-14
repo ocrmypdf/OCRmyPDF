@@ -858,6 +858,14 @@ def run_pipeline():
             "security vulnerabilities with certain malformed PDFs. Consider "
             "upgrading to version 7.0.0 or newer.".format(qpdf.version()))
 
+    if ghostscript.version() == '9.24':
+        complain(
+            "Ghostscript 9.24 contains serious regressions and is not "
+            "supported. Please upgrade to Ghostscript 9.25 or use an older "
+            "version."
+        )
+        return ExitCode.missing_dependency
+
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
     # options.input_file, options.pdf_renderer are already bound.)
