@@ -750,6 +750,7 @@ def preamble(_log):
     _log.debug('ocrmypdf ' + VERSION)
     _log.debug('tesseract ' + tesseract.version())
     _log.debug('qpdf ' + qpdf.version())
+    _log.debug('gs ' + ghostscript.version())
 
 
 def check_environ(options, _log):
