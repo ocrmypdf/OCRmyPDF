@@ -17,7 +17,6 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 from tempfile import mkdtemp
-from collections.abc import Sequence
 from pathlib import Path
 import sys
 import os
@@ -36,7 +35,7 @@ import ruffus.proxy_logger as proxy_logger
 from ._jobcontext import JobContext, JobContextManager, cleanup_working_files
 from ._pipeline import build_pipeline
 from .pdfa import file_claims_pdfa
-from .helpers import is_iterable_notstr, re_symlink, is_file_writable, \
+from .helpers import re_symlink, is_file_writable, \
     available_cpu_count
 from .exec import tesseract, qpdf, ghostscript
 from . import PROGRAM_NAME, VERSION
@@ -835,8 +834,8 @@ def report_output_file_size(options, _log, input_file, output_file):
         """.format(ratio, explanation)))
 
 
-def run_pipeline():
-    options = parser.parse_args()
+def run_pipeline(args=None):
+    options = parser.parse_args(args=args)
     options.verbose_abbreviated_path = 1
 
     if not check_closed_streams(options):
