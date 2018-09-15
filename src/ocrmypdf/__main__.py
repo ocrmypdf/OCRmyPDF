@@ -838,6 +838,8 @@ def report_output_file_size(options, _log, input_file, output_file):
 def run_pipeline(args=None):
     options = parser.parse_args(args=args)
     options.verbose_abbreviated_path = 1
+    if os.environ.get('_OCRMYPDF_THREADS'):
+        options.use_threads = True
 
     if not check_closed_streams(options):
         return ExitCode.bad_args
