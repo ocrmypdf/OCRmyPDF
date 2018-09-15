@@ -1,47 +1,40 @@
 # Development environment
+.bash_history
+.pylintrc
+.pytest_cache/
+.ruffus_history.sqlite
+.venv/
 *.pyc
 *.sublime-*
-venv*/
-.venv/
-pyvenv.cfg
-tasks.py
-.bash_history
-.ruffus_history.sqlite
-.idea/
-.pytest_cache/
-.pylintrc
 
 # Package building
-*.egg-info/
-.cache/
 .eggs/
+*.egg-info/
 build/
 dist/
 wheelhouse/
 
 # Automatically generated files
-ocrmypdf/lib/_*.py
-ocrmypdf/version.py
 docs/_build/
 docs/_static/
 docs/_templates/
 docs/Makefile
+ocrmypdf/lib/_*.py
 
 # Code coverage
 .coverage
 htmlcov/
 
 # Testing
-log/
+.ipynb_checkpoints/
+.vscode/
+*.ipynb
+*.profile
 /*.pdf
 /*.qdf
-*.ipynb
-.ipynb_checkpoints/
+/scratch.py
+IDEAS
+log/
 tests/output/
 tests/resources/private/
 tmp/
-pdfbox-app*.jar
-.vscode/
-IDEAS
-_Dockerfile.local
-/scratch.py
