@@ -20,11 +20,11 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+"""Replicate Ghostscript render failure while allowing rasterizing"""
 
 import sys
 import os
 
-"""Replicate Ghostscript render failure while allowing rasterizing"""
 
 
 def real_ghostscript(argv):

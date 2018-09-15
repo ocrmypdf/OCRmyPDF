@@ -32,8 +32,7 @@ def version():
 
 
 def jpeg_passthrough_available():
-    """
-    Returns True if the installed version of Ghostscript supports JPEG passthru
+    """Returns True if the installed version of Ghostscript supports JPEG passthru
 
     Prior to 9.23, Ghostscript decode and re-encoded JPEGs internally. In 9.23
     it gained the ability to keep JPEGs unmodified. However, the 9.23
@@ -54,8 +53,7 @@ def _gs_error_reported(stream):
 
 
 def extract_text(input_file, pageno=1):
-    """
-    Use the txtwrite device to get text layout information out
+    """Use the txtwrite device to get text layout information out
 
     For details on options of -dTextFormat see
     https://www.ghostscript.com/doc/current/VectorDevices.htm#TXT
@@ -97,8 +95,7 @@ def extract_text(input_file, pageno=1):
 
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
                   pageno=1, page_dpi=None, rotation=None):
-    """
-    Rasterize one page of a PDF at resolution (xres, yres) in canvas units.
+    """Rasterize one page of a PDF at resolution (xres, yres) in canvas units.
 
     The image is sized to match the integer pixels dimensions implied by
     (xres, yres) even if those numbers are noninteger. The image's DPI will
@@ -180,6 +177,23 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
 
 def generate_pdfa(pdf_pages, output_file, compression, log,
                   threads=1, pdf_version='1.5', pdfa_part='2'):
+    """Generate a PDF/A.
+
+    The pdf_pages, a list files, will be merged into output_file. One or more
+    PDF files may be merged. One of the files in this list must be a pdfmark
+    file that provides Ghostscript with details on how to perform the PDF/A
+    conversion. By default with we pick PDF/A-2b, but this works for 1 or 3.
+
+    compression can be 'jpeg', 'lossless', or an empty string. In 'jpeg',
+    Ghostscript is instructed to convert color and grayscale images to DCT
+    (JPEG encoding). In 'lossless' Ghostscript is told to convert images to
+    Flate (lossless/PNG). If the parameter is omitted Ghostscript is left to
+    make its own decisions about how to encode images; it appears to use a
+    heuristic to decide how to encode images. As of Ghostscript 9.25, we
+    support passthrough JPEG which allows Ghostscript to avoid transcoding
+    images entirely. (The feature was added in 9.23 but broken, and the 9.24
+    release of Ghostscript had regressions, so we don't support it until 9.25.)
+    """
     compression_args = []
     if compression == 'jpeg':
         compression_args = [
