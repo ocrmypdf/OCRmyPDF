@@ -10,6 +10,14 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
 
+v6.2.4
+------
+
+-   Backport Ghostscript 9.25 compatibility fixes, which removes support for setting Unicode metadata
+-   Backport blacklisting Ghostscript 9.24
+-   Older versions of Ghostscript are still supported
+
+
 v6.2.3
 ------
 
