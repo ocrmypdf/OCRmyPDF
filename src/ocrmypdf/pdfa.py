@@ -131,6 +131,7 @@ def _encode_ascii(s: str) -> str:
         '(': '',
         ')': '',
         '\\': '',
+        '\0': ''
     })
     return s.translate(trans).encode('ascii', errors='replace').decode()
 
@@ -284,7 +285,7 @@ def generate_pdfa_ps(target_filename, pdfmark, icc='sRGB', ascii_docinfo=False):
     hex_icc_profile = hexlify(bytes_icc_profile)
     icc_profile = '<' + hex_icc_profile.decode('ascii') + '>'
 
-    ps = _get_pdfa_def(icc_profile, icc, pdfmark)
+    ps = _get_pdfa_def(icc_profile, icc, pdfmark, ascii_docinfo=ascii_docinfo)
 
     # We should have encoded everything to pure ASCII by this point, and
     # to be safe, only allow ASCII in PostScript
