@@ -105,6 +105,13 @@ v7.0.0
 
     +   It may be necessary to separately ``pip install pycparser`` to avoid `another Python 3.7 issue <https://github.com/eliben/pycparser/pull/135>`_.
 
+v6.2.4
+------
+
+-   Backport Ghostscript 9.25 compatibility fixes, which removes support for setting Unicode metadata
+-   Backport blacklisting Ghostscript 9.24
+-   Older versions of Ghostscript are still supported
+
 v6.2.3
 ------
 
