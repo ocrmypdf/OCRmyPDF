@@ -64,9 +64,17 @@ def extract_text(input_file, pageno=1):
     <span bbox="left top right bottom" font="..." size="...">
     <char bbox="...." c="X"/>
 
+    :param pageno: number of page to extract, or all pages if None
     :return: XML-ish text representation in bytes
-
     """
+
+    if pageno is not None:
+        pages = [
+            '-dFirstPage=%i' % pageno,
+            '-dLastPage=%i' % pageno
+        ]
+    else:
+        pages = []
 
     args_gs = [
         'gs',
@@ -76,8 +84,7 @@ def extract_text(input_file, pageno=1):
         '-dNOPAUSE',
         '-sDEVICE=txtwrite',
         '-dTextFormat=0',
-        '-dFirstPage=%i' % pageno,
-        '-dLastPage=%i' % pageno,
+    ] + pages + [
         '-o', '-',
         input_file
     ]

@@ -486,26 +486,10 @@ def _find_images(*, pdf, container, shorthand=None):
     yield from _find_form_xobject_images(pdf, container, contentsinfo)
 
 
-def _page_get_textblocks(infile, pageno):
+def _page_get_textblocks(infile, pageno, xmltext):
     """Smarter text detection"""
-    import xml.etree.ElementTree as ET
 
-    gstext = ghostscript.extract_text(infile, pageno+1)
-
-    # Remove all <char /> tags, because they might contain invalid XML entities
-    # like <char bbox="348 596 348 596" c="&#x1;"/> which chokes on the
-    # inclusion of U+0001. Understandably.
-    # Just remove the whole <char /> tag since we don't use it at all, and they
-    # are only generated as innermost self-closing tags.
-    gstext = regex_remove_char_tags.sub(b' ', gstext)
-
-    if gstext.strip() == '':
-        return []
-
-    try:
-        root = ET.fromstring(gstext)
-    except ET.ParseError as e:
-        return []  # If we can't parse, assume none...
+    root = xmltext
 
     def blocks():
         for span in root.findall('.//span'):
@@ -565,14 +549,15 @@ def _page_has_text(text_blocks, page_width, page_height):
     return has_text
 
 
-def _pdf_get_pageinfo(pdf, pageno: int, infile):
+def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     pageinfo = {}
     pageinfo['pageno'] = pageno
     pageinfo['images'] = []
 
     page = pdf.pages[pageno]
 
-    pageinfo['textinfo'] = _page_get_textblocks(fspath(infile), pageno)
+    pageinfo['textinfo'] = _page_get_textblocks(
+        fspath(infile), pageno, xmltext=xmltext)
 
     mediabox = [Decimal(d) for d in page.MediaBox.as_list()]
     width_pt = mediabox[2] - mediabox[0]
@@ -609,16 +594,35 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile):
     return pageinfo
 
 
-def _pdf_get_all_pageinfo(infile):
+def _pdf_get_all_pageinfo(infile, existing_text):
+    import xml.etree.ElementTree as ET
+
     pdf = pikepdf.open(infile)
-    return [PageInfo(pdf, n, infile) for n in range(len(pdf.pages))], pdf
+
+    existing_text = regex_remove_char_tags.sub(b' ', existing_text)
+    #if existing_text.strip() == '':
+    #    return []
+
+    try:
+        root = ET.fromstringlist([b'<document>\n', existing_text, b'</document>\n'])
+    except ET.ParseError as e:
+        return []  # If we can't parse, assume none...
+
+    pagetext = root.findall('page')
+
+    pages = []
+    for n in range(len(pdf.pages)):
+        page = PageInfo(pdf, n, infile, pagetext[n])
+        pages.append(page)
+
+    return pages, pdf
 
 
 class PageInfo:
-    def __init__(self, pdf, pageno, infile):
+    def __init__(self, pdf, pageno, infile, xmltext):
         self._pageno = pageno
         self._infile = infile
-        self._pageinfo = _pdf_get_pageinfo(pdf, pageno, infile)
+        self._pageinfo = _pdf_get_pageinfo(pdf, pageno, infile, xmltext)
 
     @property
     def pageno(self):
@@ -695,9 +699,9 @@ class PdfInfo:
     """Get summary information about a PDF
 
     """
-    def __init__(self, infile):
+    def __init__(self, infile, existing_text:bytes=None):
         self._infile = infile
-        self._pages, pdf = _pdf_get_all_pageinfo(infile)
+        self._pages, pdf = _pdf_get_all_pageinfo(infile, existing_text)
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
 
     @property

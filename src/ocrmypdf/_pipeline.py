@@ -162,8 +162,10 @@ def repair_and_parse_pdf(
     options = context.get_options()
     copyfile(input_file, output_file)
 
+    existing_text = ghostscript.extract_text(input_file, pageno=None)
+
     try:
-        pdfinfo = PdfInfo(output_file)
+        pdfinfo = PdfInfo(output_file, existing_text)
     except pikepdf.PasswordError as e:
         raise EncryptedPdfError()
     except pikepdf.PdfError as e:
