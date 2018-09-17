@@ -490,6 +490,8 @@ def _page_get_textblocks(infile, pageno, xmltext):
     """Smarter text detection"""
 
     root = xmltext
+    if not hasattr(xmltext, 'findall'):
+        return []
 
     def blocks():
         for span in root.findall('.//span'):
@@ -594,25 +596,24 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     return pageinfo
 
 
-def _pdf_get_all_pageinfo(infile, existing_text):
+def _pdf_get_all_pageinfo(infile):
     import xml.etree.ElementTree as ET
 
     pdf = pikepdf.open(infile)
 
+    existing_text = ghostscript.extract_text(infile, pageno=None)
     existing_text = regex_remove_char_tags.sub(b' ', existing_text)
-    #if existing_text.strip() == '':
-    #    return []
 
     try:
         root = ET.fromstringlist([b'<document>\n', existing_text, b'</document>\n'])
+        page_xml = root.findall('page')
     except ET.ParseError as e:
-        return []  # If we can't parse, assume none...
-
-    pagetext = root.findall('page')
+        # Need to log here
+        page_xml = [None] * len(pdf.pages)
 
     pages = []
     for n in range(len(pdf.pages)):
-        page = PageInfo(pdf, n, infile, pagetext[n])
+        page = PageInfo(pdf, n, infile, page_xml[n])
         pages.append(page)
 
     return pages, pdf
@@ -699,9 +700,9 @@ class PdfInfo:
     """Get summary information about a PDF
 
     """
-    def __init__(self, infile, existing_text:bytes=None):
+    def __init__(self, infile):
         self._infile = infile
-        self._pages, pdf = _pdf_get_all_pageinfo(infile, existing_text)
+        self._pages, pdf = _pdf_get_all_pageinfo(infile)
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
 
     @property
