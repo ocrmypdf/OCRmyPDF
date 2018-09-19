@@ -597,18 +597,24 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
     description of the error message that occurred."""
     exit_code = None
 
-    task_name, job_name, exc_name, exc_value, exc_stack = ruffus_five_tuple
-    task_name = task_name  # unused
-    job_name = job_name  # unused
-    if exc_name == 'builtins.SystemExit':
+    _task_name, _job_name, exc_name, exc_value, exc_stack = ruffus_five_tuple
+
+    if isinstance(exc_name, type):
+        # ruffus is full of mystery... sometimes (probably when the process
+        # group leader is killed) exc_name is the class object of the exception,
+        # rather than a str. So reach into the object and get its name.
+        exc_name = exc_name.__name__
+
+    if exc_name in ('builtins.SystemExit', 'SystemExit'):
         match = re.search(r"\.(.+?)\)", exc_value)
         exit_code_name = match.groups()[0]
         exit_code = getattr(ExitCode, exit_code_name, 'other_error')
     elif exc_name == 'ruffus.ruffus_exceptions.MissingInputFileError':
         log.error(cleanup_ruffus_error_message(exc_value))
         exit_code = ExitCode.input_file
-    elif exc_name == 'builtins.KeyboardInterrupt':
-        log.error("Interrupted by user")
+    elif exc_name in ('builtins.KeyboardInterrupt', 'KeyboardInterrupt'):
+        # We have to print in this case because the log daemon might be toast
+        print("Interrupted by user", file=sys.stderr)
         exit_code = ExitCode.ctrl_c
     elif exc_name == 'subprocess.CalledProcessError':
         # It's up to the subprocess handler to report something useful
