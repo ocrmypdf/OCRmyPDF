@@ -22,6 +22,7 @@ import re
 from collections import namedtuple
 from pathlib import Path
 from enum import Enum
+from unittest.mock import Mock
 
 from .exec import ghostscript
 from .helpers import fspath
@@ -596,7 +597,7 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     return pageinfo
 
 
-def _pdf_get_all_pageinfo(infile):
+def _pdf_get_all_pageinfo(infile, log=Mock()):
     import xml.etree.ElementTree as ET
 
     pdf = pikepdf.open(infile)
@@ -605,11 +606,23 @@ def _pdf_get_all_pageinfo(infile):
     existing_text = regex_remove_char_tags.sub(b' ', existing_text)
 
     try:
-        root = ET.fromstringlist([b'<document>\n', existing_text, b'</document>\n'])
+        root = ET.fromstringlist([
+            b'<document>\n', existing_text, b'</document>\n'
+        ])
         page_xml = root.findall('page')
     except ET.ParseError as e:
-        # Need to log here
+        log.error(
+            "An error occurred while attempting to retrieve existing text in "
+            "the input file. Will attempt to continue assuming that there is "
+            "no existing text in the file. The error was:")
+        log.error(e)
         page_xml = [None] * len(pdf.pages)
+
+    page_count_difference = len(pdf.pages) - len(page_xml)
+    if page_count_difference != 0:
+        log.error("The number of pages in the input file is inconsistent.")
+        if page_count_difference > 0:
+            page_xml.extend([None] * page_count_difference)
 
     pages = []
     for n in range(len(pdf.pages)):
@@ -700,9 +713,9 @@ class PdfInfo:
     """Get summary information about a PDF
 
     """
-    def __init__(self, infile):
+    def __init__(self, infile, log=None):
         self._infile = infile
-        self._pages, pdf = _pdf_get_all_pageinfo(infile)
+        self._pages, pdf = _pdf_get_all_pageinfo(infile, log)
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
 
     @property
