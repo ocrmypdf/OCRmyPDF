@@ -13,6 +13,19 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v7.1.0
+------
+
+-   Improve the performance of initial text extraction, which is done to determine if a file contains existing text of some kind or not. On large files, this initial processing is now about 20x times faster. (`#299 <https://github.com/jbarlow83/OCRmyPDF/issues/299>`_)
+
+-   pikepdf 0.3.3 is now required.
+
+-   Fixed issue `#231 <https://github.com/jbarlow83/OCRmyPDF/issues/231>`_, a problem with JPEG2000 images where image metadata was only available inside the JPEG2000 file.
+
+-   Fixed some additional Ghostscript 9.25 compatibility issues.
+
+-   Improved handling of KeyboardInterrupt error messages. (`#301 <https://github.com/jbarlow83/OCRmyPDF/issues/301>`_)
+
 v7.0.6
 ------
 
