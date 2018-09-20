@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from decimal import Decimal
-from math import hypot, isclose
-import re
 from collections import namedtuple
-from pathlib import Path
+from decimal import Decimal
 from enum import Enum
+from math import hypot, isclose
+from pathlib import Path
 from unittest.mock import Mock
+import re
+import xml.etree.ElementTree as ET
 
 from .exec import ghostscript
 from .helpers import fspath
@@ -597,8 +598,9 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     return pageinfo
 
 
-def _pdf_get_all_pageinfo(infile, log=Mock()):
-    import xml.etree.ElementTree as ET
+def _pdf_get_all_pageinfo(infile, log=None):
+    if not log:
+        log = Mock()
 
     pdf = pikepdf.open(infile)
 
@@ -715,7 +717,7 @@ class PdfInfo:
     """
     def __init__(self, infile, log=None):
         self._infile = infile
-        self._pages, pdf = _pdf_get_all_pageinfo(infile, log)
+        self._pages, pdf = _pdf_get_all_pageinfo(infile, log=log)
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
 
     @property

@@ -163,7 +163,7 @@ def repair_and_parse_pdf(
     copyfile(input_file, output_file)
 
     try:
-        pdfinfo = PdfInfo(output_file)
+        pdfinfo = PdfInfo(output_file, log=log)
     except pikepdf.PasswordError as e:
         raise EncryptedPdfError()
     except pikepdf.PdfError as e:
