@@ -86,7 +86,7 @@ def extract_text(input_file, pageno=1):
         '-dTextFormat=0',
     ] + pages + [
         '-o', '-',
-        input_file
+        fspath(input_file)
     ]
 
     p = run(args_gs, stdout=PIPE, stderr=PIPE)
