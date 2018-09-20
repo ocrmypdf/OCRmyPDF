@@ -205,13 +205,14 @@ tests_require = open('test_requirements.txt').read().splitlines()
 
 
 def readme():
-    with open('README.rst') as f:
+    with open('README.md') as f:
         return f.read()
 
 setup(
     name='ocrmypdf',
     description='OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched',
     long_description=readme(),
+    long_description_content_type='text/markdown',
     url='https://github.com/jbarlow83/OCRmyPDF',
     author='James R. Barlow',
     author_email='jim@purplerock.ca',
@@ -269,4 +270,10 @@ setup(
     },
     package_data={'ocrmypdf': ['data/sRGB.icc']},
     include_package_data=True,
-    zip_safe=False)
+    zip_safe=False,
+    project_urls={
+        'Documentation': 'https://ocrmypdf.readthedocs.io/',
+        'Source': 'https://github.com/jbarlow83/ocrmypdf',
+        'Tracker': 'https://github.com/jbarlow83/ocrmypdf/issues'
+    }
+)

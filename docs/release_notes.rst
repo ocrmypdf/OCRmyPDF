@@ -26,6 +26,8 @@ v7.1.0
 
 -   Improved handling of KeyboardInterrupt error messages. (`#301 <https://github.com/jbarlow83/OCRmyPDF/issues/301>`_)
 
+-   README.md is now served in GitHub markdown instead of reStructuredText.
+
 v7.0.6
 ------
 
