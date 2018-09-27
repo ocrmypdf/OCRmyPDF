@@ -169,10 +169,8 @@ def _traverse_toc(pdf_base, visitor_fn, log):
                 continue
             item = node[key]
             if not item.is_indirect:
-                #  or not isinstance(item, pikepdf.Dictionary):
-                # # If there is garbage data, replace the key with an indirect
-                # # ref to None. Kodak Capture Desktop produces keys like these.
-                # log.error('Removing invalid reference from TOC: %s', repr(item))
+                # Direct references are not allowed here, but it's not clear
+                # what we should do if we find any. Removing them is an option:
                 # node[key] = pdf_base.make_indirect(None)
                 continue
             objgen = item.objgen
