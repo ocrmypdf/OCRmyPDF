@@ -130,7 +130,7 @@ def extract_image(*, pike, root, log, image, xref, jbig2s,
 def extract_images(pike, root, log, options):
     # Extract images we can improve
     changed_xrefs = set()
-    jbig2_groups = defaultdict(lambda: [])
+    jbig2_groups = defaultdict(list)
     jpegs = []
     pngs = []
     errors = 0

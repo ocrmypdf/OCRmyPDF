@@ -179,7 +179,8 @@ def _traverse_toc(pdf_base, visitor_fn, log):
             if objgen not in visited:
                 queue.add(objgen)
 
-        visitor_fn(pdf_base, node, log)
+        if visitor_fn:
+            visitor_fn(pdf_base, node, log)
 
 
 def _fix_toc(pdf_base, pageref_remap, log):
@@ -282,7 +283,7 @@ def weave_layers(
     # page references in the table of contents. Some PDF generators put invalid
     # references in the ToC, so we want to resolve them to null before we
     # create any references, or the ToC will be corrupted
-    _traverse_toc(pdf_base, lambda *args: None, log)
+    _traverse_toc(pdf_base, None, log)
 
     procset = pdf_base.make_indirect(
         pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]'))
