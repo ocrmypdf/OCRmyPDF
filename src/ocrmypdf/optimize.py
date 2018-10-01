@@ -30,7 +30,7 @@ from . import leptonica
 from .helpers import re_symlink, fspath
 from .exec import pngquant, jbig2enc
 
-PAGE_GROUP_SIZE = 10
+PAGE_GROUP_SIZE = 1
 DEFAULT_JPEG_QUALITY = 75
 DEFAULT_PNG_QUALITY = 70
 
@@ -190,12 +190,20 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
         futures = []
         for group, xref_exts in jbig2_groups.items():
             prefix = 'group{:08d}'.format(group)
-            future = executor.submit(
-                jbig2enc.convert_group,
-                cwd=fspath(root),
-                infiles=(img_name(root, xref, ext) for xref, ext in xref_exts),
-                out_prefix=prefix
-            )
+            if PAGE_GROUP_SIZE > 1:
+                future = executor.submit(
+                    jbig2enc.convert_group,
+                    cwd=fspath(root),
+                    infiles=(img_name(root, xref, ext) for xref, ext in xref_exts),
+                    out_prefix=prefix
+                )
+            else:
+                future = executor.submit(
+                    jbig2enc.convert_single,
+                    cwd=fspath(root),
+                    infile=next((img_name(root, xref, ext) for xref, ext in xref_exts)),
+                    outfile=root / (prefix + '.0000')
+                )
             futures.append(future)
         for future in concurrent.futures.as_completed(futures):
             proc = future.result()
@@ -203,8 +211,15 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
 
     for group, xref_exts in jbig2_groups.items():
         prefix = 'group{:08d}'.format(group)
-        jbig2_globals_data = (root / (prefix + '.sym')).read_bytes()
-        jbig2_globals = pikepdf.Stream(pike, jbig2_globals_data)
+        jbig2_symfile = root / (prefix + '.sym')
+        if jbig2_symfile.exists():
+            jbig2_globals_data = jbig2_symfile.read_bytes()
+            jbig2_globals = pikepdf.Stream(pike, jbig2_globals_data)
+            jbig2_globals_dict = pikepdf.Dictionary({
+                    '/JBIG2Globals': jbig2_globals
+            })
+        elif PAGE_GROUP_SIZE == 1:
+            jbig2_globals_dict = None
 
         for n, xref_ext in enumerate(xref_exts):
             xref, _ = xref_ext
@@ -213,9 +228,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             im_obj = pike.get_object(xref, 0)
             im_obj.write(
                 jbig2_im_data, pikepdf.Name('/JBIG2Decode'),
-                pikepdf.Dictionary({
-                    '/JBIG2Globals': jbig2_globals
-                })
+                jbig2_globals_dict
             )
 
 
