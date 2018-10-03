@@ -22,6 +22,8 @@ import logging
 
 from PIL import Image
 
+import pikepdf
+
 from ocrmypdf import optimize as opt
 from ocrmypdf.exec.ghostscript import rasterize_pdf
 from ocrmypdf.exec import jbig2enc
@@ -53,10 +55,28 @@ def test_mono_not_inverted(resources, outdir):
     assert im.getpixel((0, 0)) == 255, "Expected white background"
 
 
-@pytest.mark.skipif(not jbig2enc.available(), reason='need jbig2enc')
 def test_jpg_png_params(resources, outpdf, spoof_tesseract_noop):
     check_ocrmypdf(
         resources / 'crom.png', outpdf, '--image-dpi', '200',
-        '--optimize', '2', '--jpg-quality', '50', '--png-quality', '20',
+        '--optimize', '3', '--jpg-quality', '50', '--png-quality', '20',
         env=spoof_tesseract_noop
     )
+
+
+@pytest.mark.skipif(not jbig2enc.available(), reason='need jbig2enc')
+@pytest.mark.parametrize('optimize', ['2', '3'])
+def test_jbig2(optimize, resources, outpdf, spoof_tesseract_noop):
+    check_ocrmypdf(
+        resources / 'ccitt.pdf', outpdf, '--image-dpi', '200',
+        '--optimize', optimize, '--jpg-quality', '50', '--png-quality', '20',
+        env=spoof_tesseract_noop
+    )
+
+    pdf = pikepdf.open(outpdf)
+    pim = pikepdf.PdfImage(next(iter(pdf.pages[0].images.values())))
+    assert pim.filters[0] == '/JBIG2Decode'
+
+    if optimize == '3':
+        assert '/JBIG2Globals' in pim.decode_parms[0]
+    else:
+        assert len(pim.decode_parms) == 0

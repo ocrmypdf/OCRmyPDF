@@ -30,7 +30,7 @@ from . import leptonica
 from .helpers import re_symlink, fspath
 from .exec import pngquant, jbig2enc
 
-PAGE_GROUP_SIZE = 1
+DEFAULT_PAGE_GROUP_SIZE = 1
 DEFAULT_JPEG_QUALITY = 75
 DEFAULT_PNG_QUALITY = 70
 
@@ -128,14 +128,15 @@ def extract_image(*, pike, root, log, image, xref, jbig2s,
 
 
 def extract_images(pike, root, log, options):
-    # Extract images we can improve
+    """Extract any image that we think we can improve"""
+
     changed_xrefs = set()
     jbig2_groups = defaultdict(list)
     jpegs = []
     pngs = []
     errors = 0
     for pageno, page in enumerate(pike.pages):
-        group, _ = divmod(pageno, PAGE_GROUP_SIZE)
+        group, _ = divmod(pageno, options.jbig2_page_group_size)
         try:
             xobjs = page.Resources.XObject
         except AttributeError:
@@ -172,6 +173,8 @@ def extract_images(pike, root, log, options):
 
 
 def _produce_jbig2_images(jbig2_groups, root, log, options):
+    """Produce JBIG2 images from their groups"""
+
     def jbig2_group_future(executor, root, group, xref_exts):
         prefix = 'group{:08d}'.format(group)
         future = executor.submit(
@@ -192,7 +195,7 @@ def _produce_jbig2_images(jbig2_groups, root, log, options):
         )
         return future
 
-    if PAGE_GROUP_SIZE > 1:
+    if options.jbig2_page_group_size > 1:
         jbig2_future = jbig2_group_future
     else:
         jbig2_future = jbig2_single_future
@@ -207,16 +210,17 @@ def _produce_jbig2_images(jbig2_groups, root, log, options):
 
 
 def convert_to_jbig2(pike, jbig2_groups, root, log, options):
-    """Convert a group of JBIG2 images and insert into PDF.
+    """Convert images to JBIG2 and insert into PDF.
 
-    We use a group because JBIG2 works best with a symbol dictionary that spans
-    multiple pages. When inserted back into the PDF, each JBIG2 must reference
-    the symbol dictionary it is associated with. So convert a group at a time,
-    and replace their streams with a parameter set that points to the
-    appropriate dictionary.
+    When the JBIG2 page group size is > 1 we do several JBIG2 images at once
+    and build a symbol dictionary that will span several pages. Each JBIG2
+    image must reference to its symbol dictionary. If too many pages shared the
+    same dictionary JBIG2 encoding becomes more expensive and less efficient.
+    The default value of 10 was determined through testing. Currently this
+    must be lossy encoding since jbig2enc does not support refinement coding.
 
-    If too many pages shared the same dictionary JBIG2 encoding becomes more
-    expensive and less efficient.
+    When the JBIG2 symbolic coder is not used, each JBIG2 stands on its own
+    and needs no dictionary. Currently this is must be lossless JBIG2.
     """
 
     _produce_jbig2_images(jbig2_groups, root, log, options)
@@ -230,8 +234,10 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             jbig2_globals_dict = pikepdf.Dictionary({
                     '/JBIG2Globals': jbig2_globals
             })
-        elif PAGE_GROUP_SIZE == 1:
+        elif options.jbig2_page_group_size == 1:
             jbig2_globals_dict = None
+        else:
+            raise FileNotFoundError(jbig2_symfile)
 
         for n, xref_ext in enumerate(xref_exts):
             xref, _ = xref_ext
@@ -257,7 +263,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
             im.save(fspath(opt_jpg),
                     optimize=True,
                     quality=options.jpeg_quality)
-        # pylint: disable=E1101
+        # pylint: disable=no-member
         if opt_jpg.stat().st_size > in_jpg.stat().st_size:
             log.debug("xref {}, jpeg, made larger - skip".format(xref))
             continue
@@ -351,11 +357,14 @@ def optimize(
     if options.png_quality == 0:
         options.png_quality = \
                 DEFAULT_PNG_QUALITY if options.optimize < 3 else 30
+    if options.jbig2_page_group_size == 0:
+        options.jbig2_page_group_size = \
+                DEFAULT_PAGE_GROUP_SIZE if options.optimize < 3 else 10
 
     pike = pikepdf.Pdf.open(input_file)
 
     root = Path(output_file).parent / 'images'
-    root.mkdir(exist_ok=True)  # pylint: disable=E1101
+    root.mkdir(exist_ok=True)  # pylint: disable=no-member
     jbig2_groups, jpegs, pngs = extract_images(
         pike, root, log, options)
 
@@ -393,6 +402,7 @@ def main(infile, outfile, level, jobs=1):
             self.optimize = optimize
             self.jpeg_quality = jpeg_quality
             self.png_quality = png_quality
+            self.jbig2_page_group_size = 0
 
     logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger()

@@ -269,17 +269,17 @@ optimizing = parser.add_argument_group(
 optimizing.add_argument(
     '-O', '--optimize', type=int, choices=range(0, 4), default=1,
     help=("Control how PDF is optimized after processing:"
-        "0 - do not optimize;"
-        "1 - do safe, lossless optimizations (default);"
-        "2 - do lossy optimizations; "
-        "3 - do aggressive lossy optimizations"
+        "0 - do not optimize; "
+        "1 - do safe, lossless optimizations (default); "
+        "2 - do some lossy optimizations; "
+        "3 - do aggressive lossy optimizations (including lossy JBIG2)"
     )
 )
 optimizing.add_argument(
     '--jpeg-quality', type=numeric(int, 0, 100), default=0, metavar='Q',
     help=("Adjust JPEG quality level for JPEG optimization. "
           "100 is best quality and largest output size; "
-          "1 is lowest quality and smallest output"
+          "1 is lowest quality and smallest output; "
           "0 uses the default."
     )
 )
@@ -293,6 +293,12 @@ optimizing.add_argument(
     help=("Adjust PNG quality level to use when quantizing PNGs. "
           "Values have same meaning as with --jpeg-quality"
     )
+)
+optimizing.add_argument(
+    '--jbig2-page-group-size', type=numeric(int, 1, 10000), default=0,
+    metavar='N',
+    # Adjust number of pages to consider at once for JBIG2 compression
+    help=argparse.SUPPRESS
 )
 
 advanced = parser.add_argument_group(
