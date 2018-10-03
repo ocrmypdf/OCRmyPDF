@@ -171,9 +171,43 @@ def extract_images(pike, root, log, options):
     return jbig2_groups, jpegs, pngs
 
 
+def _produce_jbig2_images(jbig2_groups, root, log, options):
+    def jbig2_group_future(executor, root, group, xref_exts):
+        prefix = 'group{:08d}'.format(group)
+        future = executor.submit(
+            jbig2enc.convert_group,
+            cwd=fspath(root),
+            infiles=(img_name(root, xref, ext) for xref, ext in xref_exts),
+            out_prefix=prefix
+        )
+        return future
+
+    def jbig2_single_future(executor, root, group, xref_exts):
+        prefix = 'group{:08d}'.format(group)
+        future = executor.submit(
+            jbig2enc.convert_single,
+            cwd=fspath(root),
+            infile=next((img_name(root, xref, ext) for xref, ext in xref_exts)),
+            outfile=root / (prefix + '.0000')
+        )
+        return future
+
+    if PAGE_GROUP_SIZE > 1:
+        jbig2_future = jbig2_group_future
+    else:
+        jbig2_future = jbig2_single_future
+
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=options.jobs) as executor:
+        futures = (jbig2_future(executor, root, group, xref_exts)
+                   for group, xref_exts in jbig2_groups.items())
+        for future in concurrent.futures.as_completed(futures):
+            proc = future.result()
+            log.debug(proc.stderr.decode())
+
+
 def convert_to_jbig2(pike, jbig2_groups, root, log, options):
-    """
-    Convert a group of JBIG2 images and insert into PDF.
+    """Convert a group of JBIG2 images and insert into PDF.
 
     We use a group because JBIG2 works best with a symbol dictionary that spans
     multiple pages. When inserted back into the PDF, each JBIG2 must reference
@@ -183,31 +217,9 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
 
     If too many pages shared the same dictionary JBIG2 encoding becomes more
     expensive and less efficient.
-
     """
-    with concurrent.futures.ThreadPoolExecutor(
-            max_workers=options.jobs) as executor:
-        futures = []
-        for group, xref_exts in jbig2_groups.items():
-            prefix = 'group{:08d}'.format(group)
-            if PAGE_GROUP_SIZE > 1:
-                future = executor.submit(
-                    jbig2enc.convert_group,
-                    cwd=fspath(root),
-                    infiles=(img_name(root, xref, ext) for xref, ext in xref_exts),
-                    out_prefix=prefix
-                )
-            else:
-                future = executor.submit(
-                    jbig2enc.convert_single,
-                    cwd=fspath(root),
-                    infile=next((img_name(root, xref, ext) for xref, ext in xref_exts)),
-                    outfile=root / (prefix + '.0000')
-                )
-            futures.append(future)
-        for future in concurrent.futures.as_completed(futures):
-            proc = future.result()
-            log.debug(proc.stderr.decode())
+
+    _produce_jbig2_images(jbig2_groups, root, log, options)
 
     for group, xref_exts in jbig2_groups.items():
         prefix = 'group{:08d}'.format(group)
