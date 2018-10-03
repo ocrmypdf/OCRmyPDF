@@ -194,6 +194,9 @@ def tesseract_log_output(log, stdout, input_file):
             log.error(prefix + line.strip())
         elif 'warning' in line.lower():
             log.warning(prefix + line.strip())
+        elif 'parameter not found: ' in line.lower():
+            problem = line.split('found: ')[1]
+            raise TesseractConfigError(problem)
         elif 'read_params_file' in line.lower():
             log.error(prefix + line.strip())
         else:
@@ -263,8 +266,6 @@ def generate_hocr(input_file, output_files, language: list, engine_mode,
         _generate_null_hocr(output_hocr, output_sidecar, input_file)
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_file)
-        if b'read_params_file: parameter not found' in e.output:
-            raise TesseractConfigError() from e
         if b'Image too large' in e.output:
             _generate_null_hocr(output_hocr, output_sidecar, input_file)
             return
@@ -350,9 +351,6 @@ def generate_pdf(*, input_image, skip_pdf=None, output_pdf, output_text,
         use_skip_page(text_only, skip_pdf, output_pdf, output_text)
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_image)
-        if b'read_params_file: parameter not found' in e.output:
-            raise TesseractConfigError() from e
-
         if b'Image too large' in e.output:
             use_skip_page(text_only, skip_pdf, output_pdf, output_text)
             return
