@@ -595,7 +595,7 @@ THIS FILE IS INVALID
         resources / 'ccitt.pdf', outdir / 'out.pdf',
         '--pdf-renderer', renderer,
         '--tesseract-config', cfg_file)
-    assert "parameter not found" in err, "No error message"
+    assert "parameter not found" in err.lower(), "No error message"
     assert p.returncode == ExitCode.invalid_config
 
 
