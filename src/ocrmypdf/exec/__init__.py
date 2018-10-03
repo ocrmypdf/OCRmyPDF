@@ -24,7 +24,6 @@ from subprocess import run, STDOUT, PIPE, CalledProcessError
 from ..exceptions import MissingDependencyError
 
 
-
 def get_version(program, *,
         version_arg='--version', regex=r'(\d+(\.\d+)*)'):
     "Get the version of the specified program"

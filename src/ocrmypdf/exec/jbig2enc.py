@@ -30,7 +30,6 @@ def version():
     return get_version('jbig2', regex=r'jbig2enc (\d+(\.\d+)*).*')
 
 
-@lru_cache(maxsize=1)
 def available():
     try:
         version()

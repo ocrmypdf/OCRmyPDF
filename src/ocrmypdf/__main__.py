@@ -472,21 +472,34 @@ def check_options_sidecar(options, log):
         options.sidecar = options.output_file + '.txt'
 
 
-def _optional_program_check(name, version_fn, min_version, for_argument):
+def _optional_program_required(name, version_fn, min_version, for_argument):
     try:
         if version_fn() < min_version:
             raise MissingDependencyError(
                 "The installed '{}' is not supported. "
                 "Install version {} or newer.".format(name, min_version))
-    except FileNotFoundError:
+    except (FileNotFoundError, MissingDependencyError):
         raise MissingDependencyError(
             "Install the '{}' program to use {}.".format(name, for_argument))
+
+
+def _optional_program_recommended(name, version_fn, min_version, for_argument):
+    try:
+        if version_fn() < min_version:
+            raise MissingDependencyError(
+                "The installed '{}' is not supported. "
+                "Install version {} or newer.".format(name, min_version))
+    except (FileNotFoundError, MissingDependencyError):
+        complain(
+            "For best results, install the optional program '{}' to use the "
+            "argument {}.".format(name, for_argument)
+        )
 
 
 def check_options_preprocessing(options, log):
     if any((options.clean, options.clean_final)):
         from .exec import unpaper
-        _optional_program_check(
+        _optional_program_required(
             'unpaper', unpaper.version, '6.1', '--clean, --clean-final'
         )
 
@@ -501,10 +514,10 @@ def check_options_ocr_behavior(options, log):
 def check_options_optimizing(options, log):
     if options.optimize >= 2:
         from .exec import pngquant, jbig2enc
-        _optional_program_check(
+        _optional_program_required(
             'pngquant', pngquant.version, '2.0.1', '--optimize {2,3}'
         )
-        _optional_program_check(
+        _optional_program_recommended(
             'jbig2', jbig2enc.version, '0.28', '--optimize {2,3}'
         )
 
