@@ -29,8 +29,7 @@ from pathlib import Path
 spoof = pytest.helpers.spoof
 
 
-@pytest.fixture
-def ensure_tess4():
+def _ensure_tess4():
     if tesseract.v4():
         # "tesseract" on $PATH is already v4
         return os.environ.copy()
@@ -49,6 +48,11 @@ def ensure_tess4():
     raise EnvironmentError("Can't find Tesseract 4")
 
 
+@pytest.fixture
+def ensure_tess4():
+    return _ensure_tess4()
+
+
 @contextmanager
 def modified_os_environ(env):
     old_env = os.environ.copy()
@@ -63,8 +67,8 @@ def tess4_available():
 
     """
     try:
-        # ensure_tess4 locates the tess4 binary we are going to check
-        env = ensure_tess4()
+        # _ensure_tess4 locates the tess4 binary we are going to check
+        env = _ensure_tess4()
         with modified_os_environ(env):
             # Now jump into this environment and make sure it really is Tess4
             return tesseract.v4() and tesseract.has_textonly_pdf()
