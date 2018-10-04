@@ -213,4 +213,6 @@ Currently optimization attempts to find more efficient encodings for images. The
 
 .. code-block:: bash
 
-    ocrmypdf --optimize 3 in.pdf out.pdf  # Make it as small as possible
+    ocrmypdf --optimize 3 in.pdf out.pdf  # Make it small
+
+Some users may consider enabling lossy JBIG2. See: :ref:`jbig2-lossy`.

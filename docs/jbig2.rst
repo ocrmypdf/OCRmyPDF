@@ -20,3 +20,16 @@ For all other Linux, you must build a JBIG2 encoder from source:
     ./autogen.sh
     ./configure && make
     [sudo] make install
+
+.. _jbig2-lossy:
+
+Lossy mode JBIG2
+----------------
+
+OCRmyPDF provides lossy mode JBIG2 as an advanced feature. Users should `review the technical concerns with JBIG2 in lossy mode <https://abbyy.technology/en:kb:tip:jbig2_compression_and_ocr>`_ and decide if this feature is acceptable for their use case.
+
+JBIG2 lossy mode does achieve higher compression ratios than any other monochrome (bitonal) compression technology; for large text documents the savings are considerable. JBIG2 lossless still gives great compression ratios and is a major improvement over the older CCITT G4 standard. As explained above, there is some risk of substitution errors.
+
+To turn on JBIG2 lossy mode, add the argument ``--jbig2-lossy``. ``--optimize {1,2,3}`` are necessary for the argument to take effect also required. Also, a JBIG2 encoder must be installed as described in the previous section.
+
+*ocrmypdf v7.0 and v7.1 used lossy mode by default.*
