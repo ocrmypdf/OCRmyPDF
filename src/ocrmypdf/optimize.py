@@ -50,26 +50,25 @@ def tif_name(root, xref):
     return img_name(root, xref, '.tif')
 
 
-def extract_image_jbig2(*, pike, root, log, image, xref, jbig2s,
-                        options):
+def extract_image_jbig2(*, pike, root, log, image, xref, options):
     if image.Subtype != '/Image':
-        return False
+        return None
     if image.Length < 100:
         log.debug("Skipping small image, xref {}".format(xref))
-        return False
+        return None
 
     pim = pikepdf.PdfImage(image)
 
     if len(pim.filter_decodeparms) > 1:
         log.debug("Skipping multiply filtered, xref {}".format(xref))
-        return False
+        return None
     filtdp = pim.filter_decodeparms[0]
 
     if pim.bits_per_component > 8:
-        return False  # Don't mess with wide gamut images
+        return None  # Don't mess with wide gamut images
 
     if filtdp[0] == '/JPXDecode':
-        return False  # Don't do JPEG2000
+        return None  # Don't do JPEG2000
 
     if pim.bits_per_component == 1 \
             and filtdp != '/JBIG2Decode' \
@@ -80,35 +79,32 @@ def extract_image_jbig2(*, pike, root, log, image, xref, jbig2s,
                 ext = pim.extract_to(stream=f)
             imgname.rename(imgname.with_suffix(ext))
         except pikepdf.UnsupportedImageTypeError:
-            return False
-        jbig2s.append((xref, ext))
-    else:
-        return False
-
-    return True
+            return None
+        return xref, ext
+    return None
 
 
-def extract_image(*, pike, root, log, image, xref,
-                  pngs, jpegs, options):
+def extract_image(*, pike, root, log, image, xref, options):
     if image.Subtype != '/Image':
-        return False
+        return None
     if image.Length < 100:
         log.debug("Skipping small image, xref {}".format(xref))
-        return False
+        return None
 
     pim = pikepdf.PdfImage(image)
 
     if len(pim.filter_decodeparms) > 1:
         log.debug("Skipping multiply filtered, xref {}".format(xref))
-        return False
+        return None
     filtdp = pim.filter_decodeparms[0]
 
     if pim.bits_per_component > 8:
-        return False  # Don't mess with wide gamut images
+        return None  # Don't mess with wide gamut images
 
     if filtdp[0] == '/JPXDecode':
-        return False  # Don't do JPEG2000
+        return None  # Don't do JPEG2000
 
+    outname = ''
     if filtdp[0] == '/DCTDecode' \
             and options.optimize >= 2:
         # This is a simple heuristic derived from some training data, that has
@@ -118,7 +114,7 @@ def extract_image(*, pike, root, log, image, xref,
         # bytes_per_pixel = int(raw_jpeg.Length) / (w * h)
         # jpeg_quality_estimate = 117.0 * (bytes_per_pixel ** 0.213)
         # if jpeg_quality_estimate < 65:
-        #     return False
+        #     return None
 
         # We could get the ICC profile here, but there's no need to look at it
         # for quality transcoding
@@ -133,22 +129,22 @@ def extract_image(*, pike, root, log, image, xref,
                 ext = pim.extract_to(stream=f)
             imgname.rename(imgname.with_suffix(ext))
         except pikepdf.UnsupportedImageTypeError:
-            return False
-        jpegs.append(xref)
+            return None
+        return xref, ext
     elif pim.indexed \
             and pim.colorspace in pim.SIMPLE_COLORSPACES \
             and options.optimize >= 3:
         # Try to improve on indexed images - these are far from low hanging
         # fruit in most cases
         pim.as_pil_image().save(png_name(root, xref))
-        pngs.append(xref)
+        return xref, '.png'
     elif not pim.indexed and pim.colorspace in pim.SIMPLE_COLORSPACES:
         # An optimization opportunity here, not currently taken, is directly
         # generating a PNG from compressed data
         pim.as_pil_image().save(png_name(root, xref))
-        pngs.append(xref)
+        return xref, '.png'
     else:
-        return False
+        return None
 
     return True
 
@@ -174,15 +170,16 @@ def extract_images_jbig2(pike, root, log, options):
             try:
                 result = extract_image_jbig2(
                     pike=pike, root=root, log=log, image=image,
-                    xref=xref, jbig2s=jbig2_groups[group],
-                    options=options
+                    xref=xref, options=options
                 )
-                if result:
-                    changed_xrefs.add(xref)
             except Exception as e:
                 log.debug("Image {} xref {}".format(imname, xref))
                 log.debug(repr(e))
                 errors += 1
+            else:
+                if result:
+                    jbig2_groups[group].append(result)
+                    changed_xrefs.add(xref)
 
     # Elide empty groups
     jbig2_groups = {group: xrefs for group, xrefs in jbig2_groups.items()
@@ -217,15 +214,20 @@ def extract_images(pike, root, log, options):
             try:
                 result = extract_image(
                     pike=pike, root=root, log=log, image=image,
-                    xref=xref, pngs=pngs,
-                    jpegs=jpegs, options=options
+                    xref=xref, options=options
                 )
-                if result:
-                    changed_xrefs.add(xref)
             except Exception as e:
                 log.debug("Image {} xref {}".format(imname, xref))
                 log.debug(repr(e))
                 errors += 1
+            else:
+                if result:
+                    changed_xrefs.add(xref)
+                    _, ext = result
+                    if ext == '.png':
+                        pngs.append(xref)
+                    elif ext == '.jpg':
+                        jpegs.append(xref)
 
     log.debug(
         "Optimizable images: "
