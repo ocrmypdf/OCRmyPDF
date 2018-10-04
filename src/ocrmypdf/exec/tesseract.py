@@ -67,8 +67,8 @@ def v4():
 @lru_cache(maxsize=1)
 def has_textonly_pdf():
     """Does Tesseract have textonly_pdf capability?
-    
-    Available in 3.05.01, and v4.00.00alpha since January 2017. Best to 
+
+    Available in 3.05.01, and v4.00.00alpha since January 2017. Best to
     parse the parameter list
     """
     args_tess = [
@@ -191,13 +191,18 @@ def tesseract_log_output(log, stdout, input_file):
             log.warning(prefix + "lots of diacritics - possibly poor OCR")
         elif line.startswith('OSD: Weak margin'):
             log.warning(prefix + "unsure about page orientation")
+        elif 'Error in pixScanForForeground' in line:
+            pass  # Appears to be spurious/problem with nonwhite borders
+        elif 'Error in boxClipToRectangle' in line:
+            pass  # Always appears with pixScanForForeground message
+        elif 'parameter not found: ' in line.lower():
+            log.error(prefix + line.strip())
+            problem = line.split('found: ')[1]
+            raise TesseractConfigError(problem)
         elif 'error' in line.lower() or 'exception' in line.lower():
             log.error(prefix + line.strip())
         elif 'warning' in line.lower():
             log.warning(prefix + line.strip())
-        elif 'parameter not found: ' in line.lower():
-            problem = line.split('found: ')[1]
-            raise TesseractConfigError(problem)
         elif 'read_params_file' in line.lower():
             log.error(prefix + line.strip())
         else:
