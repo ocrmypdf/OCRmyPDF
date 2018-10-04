@@ -50,17 +50,17 @@ def tif_name(root, xref):
     return img_name(root, xref, '.tif')
 
 
-def extract_image_jbig2(*, pike, root, log, image, xref, options):
+def extract_image_filter(pike, root, log, image, xref):
     if image.Subtype != '/Image':
         return None
     if image.Length < 100:
-        log.debug("Skipping small image, xref {}".format(xref))
+        log.debug("Skipping small image, xref %s", xref)
         return None
 
     pim = pikepdf.PdfImage(image)
 
     if len(pim.filter_decodeparms) > 1:
-        log.debug("Skipping multiply filtered, xref {}".format(xref))
+        log.debug("Skipping multiply filtered, xref %s", xref)
         return None
     filtdp = pim.filter_decodeparms[0]
 
@@ -69,6 +69,15 @@ def extract_image_jbig2(*, pike, root, log, image, xref, options):
 
     if filtdp[0] == '/JPXDecode':
         return None  # Don't do JPEG2000
+
+    return pim, filtdp
+
+
+def extract_image_jbig2(*, pike, root, log, image, xref, options):
+    result = extract_image_filter(pike, root, log, image, xref)
+    if result is None:
+        return None
+    pim, filtdp = result
 
     if pim.bits_per_component == 1 \
             and filtdp != '/JBIG2Decode' \
@@ -84,27 +93,12 @@ def extract_image_jbig2(*, pike, root, log, image, xref, options):
     return None
 
 
-def extract_image(*, pike, root, log, image, xref, options):
-    if image.Subtype != '/Image':
+def extract_image_generic(*, pike, root, log, image, xref, options):
+    result = extract_image_filter(pike, root, log, image, xref)
+    if result is None:
         return None
-    if image.Length < 100:
-        log.debug("Skipping small image, xref {}".format(xref))
-        return None
+    pim, filtdp = result
 
-    pim = pikepdf.PdfImage(image)
-
-    if len(pim.filter_decodeparms) > 1:
-        log.debug("Skipping multiply filtered, xref {}".format(xref))
-        return None
-    filtdp = pim.filter_decodeparms[0]
-
-    if pim.bits_per_component > 8:
-        return None  # Don't mess with wide gamut images
-
-    if filtdp[0] == '/JPXDecode':
-        return None  # Don't do JPEG2000
-
-    outname = ''
     if filtdp[0] == '/DCTDecode' \
             and options.optimize >= 2:
         # This is a simple heuristic derived from some training data, that has
@@ -149,56 +143,13 @@ def extract_image(*, pike, root, log, image, xref, options):
     return True
 
 
-def extract_images_jbig2(pike, root, log, options):
-    """Extract any image that we think we can improve"""
+def extract_images(pike, root, log, options, extract_fn):
+    """Extract image using extract_fn
+
+    extract_fn decides where the image is interesting in this case
+    """
 
     changed_xrefs = set()
-    jbig2_groups = defaultdict(list)
-    errors = 0
-    for pageno, page in enumerate(pike.pages):
-        group, _ = divmod(pageno, options.jbig2_page_group_size)
-        try:
-            xobjs = page.Resources.XObject
-        except AttributeError:
-            continue
-        for imname, image in dict(xobjs).items():
-            if image.objgen[1] != 0:
-                continue  # Ignore images in an incremental PDF
-            xref = image.objgen[0]
-            if xref in changed_xrefs:
-                continue  # Don't improve same image twice
-            try:
-                result = extract_image_jbig2(
-                    pike=pike, root=root, log=log, image=image,
-                    xref=xref, options=options
-                )
-            except Exception as e:
-                log.debug("Image {} xref {}".format(imname, xref))
-                log.debug(repr(e))
-                errors += 1
-            else:
-                if result:
-                    jbig2_groups[group].append(result)
-                    changed_xrefs.add(xref)
-
-    # Elide empty groups
-    jbig2_groups = {group: xrefs for group, xrefs in jbig2_groups.items()
-                    if len(xrefs) > 0}
-    log.debug(
-        "Optimizable images: "
-        "JBIG2 groups: {} Errors: {}".format(
-            len(jbig2_groups), errors
-    ))
-
-    return jbig2_groups
-
-
-def extract_images(pike, root, log, options):
-    """Extract any image that we think we can improve"""
-
-    changed_xrefs = set()
-    jpegs = []
-    pngs = []
     errors = 0
     for pageno, page in enumerate(pike.pages):
         try:
@@ -212,30 +163,57 @@ def extract_images(pike, root, log, options):
             if xref in changed_xrefs:
                 continue  # Don't improve same image twice
             try:
-                result = extract_image(
+                result = extract_fn(
                     pike=pike, root=root, log=log, image=image,
                     xref=xref, options=options
                 )
             except Exception as e:
-                log.debug("Image {} xref {}".format(imname, xref))
+                log.debug("Image %s xref %s", imname, xref)
                 log.debug(repr(e))
                 errors += 1
             else:
                 if result:
                     changed_xrefs.add(xref)
                     _, ext = result
-                    if ext == '.png':
-                        pngs.append(xref)
-                    elif ext == '.jpg':
-                        jpegs.append(xref)
+                    yield pageno, xref, ext
 
+
+def extract_images_generic(pike, root, log, options):
+    """Extract any >=2bpp image we think we can improve"""
+
+    jpegs = []
+    pngs = []
+    for _, xref, ext in extract_images(
+            pike, root, log, options, extract_image_generic):
+        log.debug('xref = %s ext = %s', xref, ext)
+        if ext == '.png':
+            pngs.append(xref)
+        elif ext == '.jpg':
+            jpegs.append(xref)
     log.debug(
         "Optimizable images: "
-        "JPEGs: {} PNGs: {} Errors: {}".format(
-            len(jpegs), len(pngs), errors
-    ))
-
+        "JPEGs: %s PNGs: %s", len(jpegs), len(pngs)
+    )
     return jpegs, pngs
+
+
+def extract_images_jbig2(pike, root, log, options):
+    """Extract any bitonal image that we think we can improve as JBIG2"""
+
+    jbig2_groups = defaultdict(list)
+    for pageno, xref, ext in extract_images(
+            pike, root, log, options, extract_image_jbig2):
+        group = pageno // options.jbig2_page_group_size
+        jbig2_groups[group].append((xref, ext))
+
+    # Elide empty groups
+    jbig2_groups = {group: xrefs for group, xrefs in jbig2_groups.items()
+                    if len(xrefs) > 0}
+    log.debug(
+        "Optimizable images: "
+        "JBIG2 groups: %s", (len(jbig2_groups),)
+    )
+    return jbig2_groups
 
 
 def _produce_jbig2_images(jbig2_groups, root, log, options):
@@ -335,7 +313,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
                     quality=options.jpeg_quality)
         # pylint: disable=no-member
         if opt_jpg.stat().st_size > in_jpg.stat().st_size:
-            log.debug("xref {}, jpeg, made larger - skip".format(xref))
+            log.debug("xref %s, jpeg, made larger - skip", xref)
             continue
 
         compdata = leptonica.CompressedData.open(opt_jpg)
@@ -436,7 +414,7 @@ def optimize(
     root = Path(output_file).parent / 'images'
     root.mkdir(exist_ok=True)  # pylint: disable=no-member
 
-    jpegs, pngs = extract_images(pike, root, log, options)
+    jpegs, pngs = extract_images_generic(pike, root, log, options)
     transcode_jpegs(pike, jpegs, root, log, options)
     transcode_pngs(pike, pngs, root, log, options)
 
