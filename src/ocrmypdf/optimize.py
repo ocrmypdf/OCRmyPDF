@@ -30,7 +30,6 @@ from . import leptonica
 from .helpers import re_symlink, fspath
 from .exec import pngquant, jbig2enc
 
-DEFAULT_PAGE_GROUP_SIZE = 1
 DEFAULT_JPEG_QUALITY = 75
 DEFAULT_PNG_QUALITY = 70
 
@@ -363,7 +362,7 @@ def optimize(
                 DEFAULT_PNG_QUALITY if options.optimize < 3 else 30
     if options.jbig2_page_group_size == 0:
         options.jbig2_page_group_size = \
-                DEFAULT_PAGE_GROUP_SIZE if options.optimize < 3 else 10
+                10 if options.jbig2_lossy else 1
 
     pike = pikepdf.Pdf.open(input_file)
 
@@ -401,12 +400,14 @@ def main(infile, outfile, level, jobs=1):
     class OptimizeOptions:
         """Emulate ocrmypdf's options"""
 
-        def __init__(self, jobs, optimize, jpeg_quality, png_quality):
+        def __init__(
+                self, jobs, optimize, jpeg_quality, png_quality, jb2lossy):
             self.jobs = jobs
             self.optimize = optimize
             self.jpeg_quality = jpeg_quality
             self.png_quality = png_quality
             self.jbig2_page_group_size = 0
+            self.jbig2_lossy = jb2lossy
 
     logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger()
@@ -416,7 +417,8 @@ def main(infile, outfile, level, jobs=1):
         jobs=jobs,
         optimize=int(level),
         jpeg_quality=0,  # Use default
-        png_quality=0
+        png_quality=0,
+        jb2lossy=False
     )
     ctx.set_options(options)
 

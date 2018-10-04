@@ -295,6 +295,12 @@ optimizing.add_argument(
     )
 )
 optimizing.add_argument(
+    '--jbig2-lossy', action='store_true',
+    help=("Enable JBIG2 lossy mode (better compression, not suitable for some "
+          "use cases - see documentation)."
+    )
+)
+optimizing.add_argument(
     '--jbig2-page-group-size', type=numeric(int, 1, 10000), default=0,
     metavar='N',
     # Adjust number of pages to consider at once for JBIG2 compression
@@ -517,8 +523,24 @@ def check_options_optimizing(options, log):
         _optional_program_required(
             'pngquant', pngquant.version, '2.0.1', '--optimize {2,3}'
         )
+
+    if options.jbig2_lossy:
+        _optional_program_required(
+            'jbig2', jbig2enc.version, '0.28', '--jbig2-lossy'
+        )
+    elif options.optimize >= 2:
+        # Although we use JBIG2 for optimize=1, don't nag about it unless the
+        # user is asking for more optimization
         _optional_program_recommended(
             'jbig2', jbig2enc.version, '0.28', '--optimize {2,3}'
+        )
+
+    if options.optimize == 0 and any([
+            options.jbig2_lossy, options.png_quality, options.jpeg_quality
+            ]):
+        log.warning(
+            "The arguments --jbig2-lossy, --png-quality, and --jpeg-quality "
+            "will be ignored because --optimize=0."
         )
 
 

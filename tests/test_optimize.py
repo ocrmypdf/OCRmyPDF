@@ -64,19 +64,22 @@ def test_jpg_png_params(resources, outpdf, spoof_tesseract_noop):
 
 
 @pytest.mark.skipif(not jbig2enc.available(), reason='need jbig2enc')
-@pytest.mark.parametrize('optimize', ['2', '3'])
-def test_jbig2(optimize, resources, outpdf, spoof_tesseract_noop):
-    check_ocrmypdf(
+@pytest.mark.parametrize('lossy', [False, True])
+def test_jbig2_lossy(lossy, resources, outpdf, spoof_tesseract_noop):
+    args = [
         resources / 'ccitt.pdf', outpdf, '--image-dpi', '200',
-        '--optimize', optimize, '--jpg-quality', '50', '--png-quality', '20',
-        env=spoof_tesseract_noop
-    )
+        '--optimize', 3, '--jpg-quality', '50', '--png-quality', '20'
+    ]
+    if lossy:
+        args.append('--jbig2-lossy')
+
+    check_ocrmypdf(*args, env=spoof_tesseract_noop)
 
     pdf = pikepdf.open(outpdf)
     pim = pikepdf.PdfImage(next(iter(pdf.pages[0].images.values())))
     assert pim.filters[0] == '/JBIG2Decode'
 
-    if optimize == '3':
+    if lossy:
         assert '/JBIG2Globals' in pim.decode_parms[0]
     else:
         assert len(pim.decode_parms) == 0
