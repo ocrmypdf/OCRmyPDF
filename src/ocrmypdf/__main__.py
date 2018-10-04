@@ -624,6 +624,11 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
         # rather than a str. So reach into the object and get its name.
         exc_name = exc_name.__name__
 
+    if exc_name.startswith('ocrmypdf.exceptions.'):
+        base_exc_name = exc_name.replace('ocrmypdf.exceptions.', '')
+        exc_class = getattr(ocrmypdf_exceptions, base_exc_name)
+        exit_code = getattr(exc_class, 'exit_code', ExitCode.other_error)
+
     if exc_name in ('builtins.SystemExit', 'SystemExit'):
         match = re.search(r"\.(.+?)\)", exc_value)
         exit_code_name = match.groups()[0]
@@ -652,7 +657,6 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
                 qpdf --decrypt [--password=[password]] infilename
 
             """))
-        exit_code = ExitCode.encrypted_pdf
     elif exc_name == 'ocrmypdf.exceptions.PdfMergeFailedError':
         log.error(textwrap.dedent("""\
             Failed to merge PDF image layer with OCR layer
@@ -663,11 +667,10 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
             Try using
                 ocrmypdf --pdf-renderer sandwich  [..other args..]
             """))
-        exit_code = ExitCode.input_file
-    elif exc_name.startswith('ocrmypdf.exceptions.'):
-        base_exc_name = exc_name.replace('ocrmypdf.exceptions.', '')
-        exc_class = getattr(ocrmypdf_exceptions, base_exc_name)
-        exit_code = exc_class.exit_code
+    elif exc_name == 'ocrmypdf.exceptions.TesseractConfigError':
+        log.error(textwrap.dedent("""\
+            Error occurred while parsing a tesseract configuration file
+            """))
     elif exc_name == 'PIL.Image.DecompressionBombError':
         msg = cleanup_ruffus_error_message(exc_value)
         msg += ("\nUse the --max-image-mpixels argument to set increase the "
