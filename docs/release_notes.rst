@@ -13,6 +13,26 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+
+v7.2.0
+------
+
+**About lossy JBIG2**
+
+A user reported that ocrmypdf was in fact using JBIG2 in **lossy** compression mode. This was not the intended behavior. Users should `review the technical concerns with JBIG2 in lossy mode <https://abbyy.technology/en:kb:tip:jbig2_compression_and_ocr>`_ and decide if this is a concern for their use case.
+
+JBIG2 lossy mode does achieve higher compression ratios than any other monochrome compression technology; for large text documents the savings are considerable. JBIG2 lossless still gives great compression ratios and is a major improvement over the older CCITT G4 standard.
+
+Only users who have reviewed the concerns with JBIG2 in lossy mode should opt-in. As such, lossy mode JBIG2 is only turned on when the new argument ``--jbig2-lossy`` is issued. This is independent of the setting for ``--optimize``.
+
+Users who did not install an optional JBIG2 encoder are unaffected.
+
+(Thanks to user 'bsdice' for reporting this issue.)
+
+**Other issues**
+
+-   Fixed handling of Tesseract 4.0-rc1 which now accepts invalid Tesseract configuration files, which broke the test suite.
+
 v7.1.0
 ------
 
