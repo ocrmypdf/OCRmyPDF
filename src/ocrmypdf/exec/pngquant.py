@@ -23,12 +23,20 @@ import os
 import shutil
 
 from . import get_version
-from ..exceptions import ExitCode
+from ..exceptions import ExitCode, MissingDependencyError
 
 
 @lru_cache(maxsize=1)
 def version():
     return get_version('pngquant', regex=r'(\d+(\.\d+)*).*')
+
+
+def available():
+    try:
+        version()
+    except MissingDependencyError:
+        return False
+    return True
 
 
 def quantize(input_file, output_file, quality_min, quality_max):

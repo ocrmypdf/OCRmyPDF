@@ -26,7 +26,7 @@ import pikepdf
 
 from ocrmypdf import optimize as opt
 from ocrmypdf.exec.ghostscript import rasterize_pdf
-from ocrmypdf.exec import jbig2enc
+from ocrmypdf.exec import jbig2enc, pngquant
 from ocrmypdf.helpers import fspath
 
 
@@ -83,3 +83,25 @@ def test_jbig2_lossy(lossy, resources, outpdf, spoof_tesseract_noop):
         assert '/JBIG2Globals' in pim.decode_parms[0]
     else:
         assert len(pim.decode_parms) == 0
+
+
+@pytest.mark.skipif(not jbig2enc.available() or not pngquant.available(),
+                    reason='need jbig2enc and pngquant')
+def test_flate_to_jbig2(resources, outdir, spoof_tesseract_noop):
+    # This test requires an image that pngquant is capable of converting to
+    # to 1bpp - so use an existing 1bpp image, convert up, confirm it can
+    # convert down
+    im = Image.open(fspath(resources / 'typewriter.png'))
+    assert im.mode in ('1', 'P')
+    im = im.convert('L')
+    im.save(fspath(outdir / 'type8.png'))
+
+    check_ocrmypdf(
+        outdir / 'type8.png', outdir / 'out.pdf',
+        '--image-dpi', '100', '--png-quality', '10', '--optimize', '3',
+        env=spoof_tesseract_noop
+    )
+
+    pdf = pikepdf.open(outdir / 'out.pdf')
+    pim = pikepdf.PdfImage(next(iter(pdf.pages[0].images.values())))
+    assert pim.filters[0] == '/JBIG2Decode'

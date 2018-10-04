@@ -50,8 +50,8 @@ def tif_name(root, xref):
     return img_name(root, xref, '.tif')
 
 
-def extract_image(*, pike, root, log, image, xref, jbig2s,
-                  pngs, jpegs, options):
+def extract_image_jbig2(*, pike, root, log, image, xref, jbig2s,
+                        options):
     if image.Subtype != '/Image':
         return False
     if image.Length < 100:
@@ -82,7 +82,34 @@ def extract_image(*, pike, root, log, image, xref, jbig2s,
         except pikepdf.UnsupportedImageTypeError:
             return False
         jbig2s.append((xref, ext))
-    elif filtdp[0] == '/DCTDecode' \
+    else:
+        return False
+
+    return True
+
+
+def extract_image(*, pike, root, log, image, xref,
+                  pngs, jpegs, options):
+    if image.Subtype != '/Image':
+        return False
+    if image.Length < 100:
+        log.debug("Skipping small image, xref {}".format(xref))
+        return False
+
+    pim = pikepdf.PdfImage(image)
+
+    if len(pim.filter_decodeparms) > 1:
+        log.debug("Skipping multiply filtered, xref {}".format(xref))
+        return False
+    filtdp = pim.filter_decodeparms[0]
+
+    if pim.bits_per_component > 8:
+        return False  # Don't mess with wide gamut images
+
+    if filtdp[0] == '/JPXDecode':
+        return False  # Don't do JPEG2000
+
+    if filtdp[0] == '/DCTDecode' \
             and options.optimize >= 2:
         # This is a simple heuristic derived from some training data, that has
         # about a 70% chance of guessing whether the JPEG is high quality,
@@ -126,13 +153,11 @@ def extract_image(*, pike, root, log, image, xref, jbig2s,
     return True
 
 
-def extract_images(pike, root, log, options):
+def extract_images_jbig2(pike, root, log, options):
     """Extract any image that we think we can improve"""
 
     changed_xrefs = set()
     jbig2_groups = defaultdict(list)
-    jpegs = []
-    pngs = []
     errors = 0
     for pageno, page in enumerate(pike.pages):
         group, _ = divmod(pageno, options.jbig2_page_group_size)
@@ -147,10 +172,10 @@ def extract_images(pike, root, log, options):
             if xref in changed_xrefs:
                 continue  # Don't improve same image twice
             try:
-                result = extract_image(
+                result = extract_image_jbig2(
                     pike=pike, root=root, log=log, image=image,
-                    xref=xref, jbig2s=jbig2_groups[group], pngs=pngs,
-                    jpegs=jpegs, options=options
+                    xref=xref, jbig2s=jbig2_groups[group],
+                    options=options
                 )
                 if result:
                     changed_xrefs.add(xref)
@@ -164,11 +189,51 @@ def extract_images(pike, root, log, options):
                     if len(xrefs) > 0}
     log.debug(
         "Optimizable images: "
-        "JBIG2 groups: {} JPEGs: {} PNGs: {} Errors: {}".format(
-            len(jbig2_groups), len(jpegs), len(pngs), errors
+        "JBIG2 groups: {} Errors: {}".format(
+            len(jbig2_groups), errors
     ))
 
-    return jbig2_groups, jpegs, pngs
+    return jbig2_groups
+
+
+def extract_images(pike, root, log, options):
+    """Extract any image that we think we can improve"""
+
+    changed_xrefs = set()
+    jpegs = []
+    pngs = []
+    errors = 0
+    for pageno, page in enumerate(pike.pages):
+        try:
+            xobjs = page.Resources.XObject
+        except AttributeError:
+            continue
+        for imname, image in dict(xobjs).items():
+            if image.objgen[1] != 0:
+                continue  # Ignore images in an incremental PDF
+            xref = image.objgen[0]
+            if xref in changed_xrefs:
+                continue  # Don't improve same image twice
+            try:
+                result = extract_image(
+                    pike=pike, root=root, log=log, image=image,
+                    xref=xref, pngs=pngs,
+                    jpegs=jpegs, options=options
+                )
+                if result:
+                    changed_xrefs.add(xref)
+            except Exception as e:
+                log.debug("Image {} xref {}".format(imname, xref))
+                log.debug(repr(e))
+                errors += 1
+
+    log.debug(
+        "Optimizable images: "
+        "JPEGs: {} PNGs: {} Errors: {}".format(
+            len(jpegs), len(pngs), errors
+    ))
+
+    return jpegs, pngs
 
 
 def _produce_jbig2_images(jbig2_groups, root, log, options):
@@ -368,16 +433,17 @@ def optimize(
 
     root = Path(output_file).parent / 'images'
     root.mkdir(exist_ok=True)  # pylint: disable=no-member
-    jbig2_groups, jpegs, pngs = extract_images(
-        pike, root, log, options)
 
-    convert_to_jbig2(pike, jbig2_groups, root, log, options)
+    jpegs, pngs = extract_images(pike, root, log, options)
     transcode_jpegs(pike, jpegs, root, log, options)
     transcode_pngs(pike, pngs, root, log, options)
 
-    # Not object_stream_mode + preserve_pdfa generates noncompliant PDFs
+    jbig2_groups = extract_images_jbig2(pike, root, log, options)
+    convert_to_jbig2(pike, jbig2_groups, root, log, options)
+
     target_file = Path(output_file).with_suffix('.opt.pdf')
-    pike.save(target_file, preserve_pdfa=True)
+    pike.save(target_file, preserve_pdfa=True,
+              object_stream_mode=pikepdf.ObjectStreamMode.generate)
 
     input_size = Path(input_file).stat().st_size
     output_size = Path(target_file).stat().st_size
