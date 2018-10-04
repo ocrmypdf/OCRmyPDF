@@ -628,6 +628,13 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
         base_exc_name = exc_name.replace('ocrmypdf.exceptions.', '')
         exc_class = getattr(ocrmypdf_exceptions, base_exc_name)
         exit_code = getattr(exc_class, 'exit_code', ExitCode.other_error)
+        try:
+            if isinstance(exc_value, exc_class):
+                exc_msg = str(exc_value)
+            else:
+                exc_msg = str(exc_class())
+        except Exception:
+            exc_msg = "Unknown"
 
     if exc_name in ('builtins.SystemExit', 'SystemExit'):
         match = re.search(r"\.(.+?)\)", exc_value)
@@ -645,32 +652,9 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
         msg = "Error occurred while running this command:"
         log.error(msg + '\n' + exc_value)
         exit_code = ExitCode.child_process_error
-    elif exc_name == 'ocrmypdf.exceptions.EncryptedPdfError':
-        log.error(textwrap.dedent("""\
-            Input PDF is encrypted. The encryption must be removed to
-            perform OCR.
-
-            For information about this PDF's security use
-                qpdf --show-encryption infilename
-
-            You can remove the encryption using
-                qpdf --decrypt [--password=[password]] infilename
-
-            """))
-    elif exc_name == 'ocrmypdf.exceptions.PdfMergeFailedError':
-        log.error(textwrap.dedent("""\
-            Failed to merge PDF image layer with OCR layer
-
-            Usually this happens because the input PDF file is mal-formed and
-            ocrmypdf cannot automatically correct the problem on its own.
-
-            Try using
-                ocrmypdf --pdf-renderer sandwich  [..other args..]
-            """))
-    elif exc_name == 'ocrmypdf.exceptions.TesseractConfigError':
-        log.error(textwrap.dedent("""\
-            Error occurred while parsing a tesseract configuration file
-            """))
+    elif exc_name.startswith('ocrmypdf.exceptions.'):
+        if exc_msg:
+            log.error(exc_msg)
     elif exc_name == 'PIL.Image.DecompressionBombError':
         msg = cleanup_ruffus_error_message(exc_value)
         msg += ("\nUse the --max-image-mpixels argument to set increase the "
