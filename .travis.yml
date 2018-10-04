@@ -66,7 +66,7 @@ matrix:
           - tesseract-ocr-fra
           - unpaper
     - os: osx
-      osx_image: xcode8
+      osx_image: xcode9.2
       language: generic
 
 before_cache:
@@ -83,7 +83,7 @@ before_install: |
       sudo dpkg -i packages/unpaper_6.1-1.deb
     fi
   elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-    brew update && brew bundle --file=.travis/Brewfile
+    brew update --quiet && brew bundle --file=.travis/Brewfile --quiet
     pip3 install --upgrade pip
     pip3 install wheel
   fi
