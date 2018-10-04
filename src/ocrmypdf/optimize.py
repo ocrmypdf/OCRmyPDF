@@ -175,35 +175,39 @@ def extract_images(pike, root, log, options):
 def _produce_jbig2_images(jbig2_groups, root, log, options):
     """Produce JBIG2 images from their groups"""
 
-    def jbig2_group_future(executor, root, group, xref_exts):
-        prefix = 'group{:08d}'.format(group)
-        future = executor.submit(
-            jbig2enc.convert_group,
-            cwd=fspath(root),
-            infiles=(img_name(root, xref, ext) for xref, ext in xref_exts),
-            out_prefix=prefix
-        )
-        return future
+    def jbig2_group_futures(executor, root, groups):
+        for group, xref_exts in groups.items():
+            prefix = 'group{:08d}'.format(group)
+            future = executor.submit(
+                jbig2enc.convert_group,
+                cwd=fspath(root),
+                infiles=(img_name(root, xref, ext) for xref, ext in xref_exts),
+                out_prefix=prefix
+            )
+            yield future
 
-    def jbig2_single_future(executor, root, group, xref_exts):
-        prefix = 'group{:08d}'.format(group)
-        future = executor.submit(
-            jbig2enc.convert_single,
-            cwd=fspath(root),
-            infile=next((img_name(root, xref, ext) for xref, ext in xref_exts)),
-            outfile=root / (prefix + '.0000')
-        )
-        return future
+    def jbig2_single_futures(executor, root, groups):
+        for group, xref_exts in groups.items():
+            prefix = 'group{:08d}'.format(group)
+            # Second loop is to ensure multiple images per page are unpacked
+            for n, xref_ext in enumerate(xref_exts):
+                xref, ext = xref_ext
+                future = executor.submit(
+                    jbig2enc.convert_single,
+                    cwd=fspath(root),
+                    infile=img_name(root, xref, ext),
+                    outfile=root / ('{}.{:04d}'.format(prefix, n))
+                )
+                yield future
 
     if options.jbig2_page_group_size > 1:
-        jbig2_future = jbig2_group_future
+        jbig2_futures = jbig2_group_futures
     else:
-        jbig2_future = jbig2_single_future
+        jbig2_futures = jbig2_single_futures
 
     with concurrent.futures.ThreadPoolExecutor(
             max_workers=options.jobs) as executor:
-        futures = (jbig2_future(executor, root, group, xref_exts)
-                   for group, xref_exts in jbig2_groups.items())
+        futures = jbig2_futures(executor, root, jbig2_groups)
         for future in concurrent.futures.as_completed(futures):
             proc = future.result()
             log.debug(proc.stderr.decode())
