@@ -17,7 +17,7 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
 v7.2.0
 ------
 
-**About lossy JBIG2**
+**Lossy JBIG2 behavior change**
 
 A user reported that ocrmypdf was in fact using JBIG2 in **lossy** compression mode. This was not the intended behavior. Users should `review the technical concerns with JBIG2 in lossy mode <https://abbyy.technology/en:kb:tip:jbig2_compression_and_ocr>`_ and decide if this is a concern for their use case.
 
@@ -30,6 +30,10 @@ Users who did not install an optional JBIG2 encoder are unaffected.
 (Thanks to user 'bsdice' for reporting this issue.)
 
 **Other issues**
+
+-   When the image optimizer quantizes an image to 1 bit per pixel, it will now attempt to further optimize that image as CCITT or JBIG2, instead of keeping it in the "flate" encoding which is not efficient for 1 bpp images. (`#297 <https://github.com/jbarlow83/OCRmyPDF/issues/297>`_)
+
+-   Images in PDFs that are used as soft masks (i.e. transparency masks or alpha channels) are now excluded from optimization.
 
 -   Fixed handling of Tesseract 4.0-rc1 which now accepts invalid Tesseract configuration files, which broke the test suite.
 
