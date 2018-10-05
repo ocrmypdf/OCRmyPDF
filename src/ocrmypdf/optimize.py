@@ -149,33 +149,40 @@ def extract_images(pike, root, log, options, extract_fn):
     extract_fn decides where the image is interesting in this case
     """
 
-    changed_xrefs = set()
+    include_xrefs = set()
+    exclude_xrefs = set()
     errors = 0
     for pageno, page in enumerate(pike.pages):
         try:
             xobjs = page.Resources.XObject
         except AttributeError:
             continue
-        for imname, image in dict(xobjs).items():
+        for _imname, image in dict(xobjs).items():
             if image.objgen[1] != 0:
                 continue  # Ignore images in an incremental PDF
             xref = image.objgen[0]
-            if xref in changed_xrefs:
-                continue  # Don't improve same image twice
-            try:
-                result = extract_fn(
-                    pike=pike, root=root, log=log, image=image,
-                    xref=xref, options=options
-                )
-            except Exception as e:
-                log.debug("Image %s xref %s", imname, xref)
-                log.debug(repr(e))
-                errors += 1
-            else:
-                if result:
-                    changed_xrefs.add(xref)
-                    _, ext = result
-                    yield pageno, xref, ext
+            if hasattr(image, 'SMask'):
+                # Ignore soft masks
+                smask_xref = image.SMask.objgen[0]
+                exclude_xrefs.add(smask_xref)
+            include_xrefs.add(xref)
+
+    working_xrefs = include_xrefs - exclude_xrefs
+    for xref in working_xrefs:
+        image = pike.get_object((xref, 0))
+        try:
+            result = extract_fn(
+                pike=pike, root=root, log=log, image=image,
+                xref=xref, options=options
+            )
+        except Exception as e:
+            log.debug("Image xref %s", xref)
+            log.debug(repr(e))
+            errors += 1
+        else:
+            if result:
+                _, ext = result
+                yield pageno, xref, ext
 
 
 def extract_images_generic(pike, root, log, options):
