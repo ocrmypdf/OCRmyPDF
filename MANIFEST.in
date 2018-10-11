@@ -1,7 +1,5 @@
 # requirements
-include requirements.txt
-include test_requirements.txt
-include dev_requirements.txt
+recursive-include requirements *
 
 # git
 include .git_archival.txt
@@ -12,21 +10,20 @@ recursive-include .docker *
 
 # tests
 include .coveragerc
+recursive-include tests *.bin
 recursive-include tests *.jpg
+recursive-include tests *.jsonl
 recursive-include tests *.png
 recursive-include tests *.pdf
 recursive-include tests *.py
 recursive-include tests *.rst
 recursive-include tests *.txt
-recursive-include tests/cache *
-recursive-exclude tests/output *
-recursive-exclude tests/output_pageinfo *
 recursive-exclude tests/resources/private *
 
 # documentation
 include LICENSE
 include *.rst
-recursive-exclude .github * 
+recursive-exclude .github *
 recursive-include docs *.py
 recursive-include docs *.rst
 recursive-include docs *.svg
@@ -42,8 +39,5 @@ exclude .travis*
 
 
 # code
-recursive-include src/ocrmypdf *.py
-exclude ocrmypdf/lib/_leptonica.py
-
-
-
+exclude src/ocrmypdf/lib/_leptonica.py
+exclude scratch.py

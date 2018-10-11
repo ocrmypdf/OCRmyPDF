@@ -201,11 +201,11 @@ if 'upload' in sys.argv[1:]:
     print('Use twine to upload the package - setup.py upload is insecure')
     sys.exit(1)
 
-tests_require = open('test_requirements.txt').read().splitlines()
+tests_require = open('requirements/test.txt', encoding='utf-8').read().splitlines()
 
 
 def readme():
-    with open('README.md') as f:
+    with open('README.md', encoding='utf-8') as f:
         return f.read()
 
 setup(

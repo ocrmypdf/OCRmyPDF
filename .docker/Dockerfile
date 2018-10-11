@@ -51,7 +51,7 @@ RUN . /appenv/bin/activate; \
 # Do this now to make the best use of Docker cache.
 COPY . /application
 RUN . /appenv/bin/activate; \
-  pip install -r /application/test_requirements.txt
+  pip install -r /application/requirements/test.txt
 
 # Remove the junk, including the source version of application since it was
 # already installed
