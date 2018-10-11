@@ -14,6 +14,14 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
 
+v7.2.1
+------
+
+-   Fix compatibility with an API change in pikepdf 0.3.5.
+
+-   A kludge to support Leptonica versions older than 1.72 in the test suite was dropped. Older versions of Leptonica are likely still compatible. The only impact is that a portion of the test suite will be skipped.
+
+
 v7.2.0
 ------
 
