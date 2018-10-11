@@ -33,6 +33,11 @@ from ocrmypdf.helpers import fspath
 # pylint: disable=no-member
 # pylint: disable=w0612
 
+pytestmark = pytest.mark.skipif(
+    leptonica.get_leptonica_version() < 'leptonica-1.72',
+    reason="Leptonica is too old, correlation doesn't work"
+)
+
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
 

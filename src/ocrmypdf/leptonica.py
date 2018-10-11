@@ -464,30 +464,14 @@ class Pix:
             # implementation of pixCorrelationBinary that overflows on larger
             # images.  Ubuntu 14.04/trusty has 1.70. Ubuntu PPA
             # ppa:alex-p/tesseract-ocr has leptonlib 1.75.
-            pix1_count = ffi.new('l_int32 *')
-            pix2_count = ffi.new('l_int32 *')
-            pixn_count = ffi.new('l_int32 *')
-            tab8 = Pix.make_pixel_sum_tab8()
+            raise LeptonicaError("Leptonica version is too old")
 
-            lept.pixCountPixels(pix1._pix, pix1_count, tab8)
-            lept.pixCountPixels(pix2._pix, pix2_count, tab8)
-            pixn = Pix(lept.pixAnd(ffi.NULL, pix1._pix, pix2._pix))
-            lept.pixCountPixels(pixn._pix, pixn_count, tab8)
-
-            # Python converts these int32s to larger units as needed
-            # to avoid overflow. Overflow happens easily here.
-            correlation = (
-                    (pixn_count[0] * pixn_count[0]) /
-                    (pix1_count[0] * pix2_count[0])
-                    )
-            return correlation
-        else:
-            correlation = ffi.new('float *', 0.0)
-            result = lept.pixCorrelationBinary(pix1._pix, pix2._pix,
-                                               correlation)
-            if result != 0:
-                raise LeptonicaError("Correlation failed")
-            return correlation[0]
+        correlation = ffi.new('float *', 0.0)
+        result = lept.pixCorrelationBinary(pix1._pix, pix2._pix,
+                                           correlation)
+        if result != 0:
+            raise LeptonicaError("Correlation failed")
+        return correlation[0]
 
     def generate_pdf_ci_data(self, type_, quality):
         "Convert to PDF data, with transcoding"
