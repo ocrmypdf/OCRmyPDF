@@ -1,11 +1,13 @@
 OCRmyPDF
 ========
 
-![image](https://travis-ci.org/jbarlow83/OCRmyPDF.svg?branch=master%0A%20:target:%20https://travis-ci.org/jbarlow83/OCRmyPDF)
+[![Travis build status][travis]](https://travis-ci.org/jbarlow83/OCRmyPDF) [![PyPI version][pypi]](https://pypi.org/project/ocrmypdf/) ![Homebrew version][homebrew]
 
-![image](https://img.shields.io/pypi/v/ocrmypdf.svg%0A%20:target:%20https://pypi.org/project/ocrmypdf/)
+[travis]: https://travis-ci.org/jbarlow83/OCRmyPDF.svg?branch=master "Travis build status"
 
-![image](https://img.shields.io/homebrew/v/ocrmypdf.svg%0A%20:alt:%20homebrew%0A%20:target:%20http://brewformulas.org/Ocrmypdf)
+[pypi]: https://img.shields.io/pypi/v/ocrmypdf.svg "PyPI version"
+
+[homebrew]: https://img.shields.io/homebrew/v/ocrmypdf.svg "Homebrew version"
 
 OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched or copy-pasted.
 
