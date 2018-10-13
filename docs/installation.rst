@@ -40,7 +40,7 @@ Debian and Ubuntu 16.10 or newer
 
 
 +-------------------------------------------+
-| **OCRmyPDF version**                      |
+| **OCRmyPDF versions in Debian & Ubuntu**  |
 +-------------------------------------------+
 | |latest|                                  |
 +-------------------------------------------+
@@ -457,13 +457,15 @@ OCRmyPDF currently requires these external programs and libraries to be installe
 - qpdf 8.1.0 or newer
 - Tesseract 3.04 or newer
 
-As of ocrmypdf 7.0.0, the following versions are recommended:
+Using Python 3.5 in production is discouraged. Python 3.6 and 3.7 give much better performance.
+
+As of ocrmypdf 7.2.1, the following versions are recommended:
 
 - Python 3.7
-- Ghostscript 9.23
-- libexempi3 2.4.5
-- qpdf 8.1.0
-- Tesseract 4.0.0-beta1
+- Ghostscript 9.23 or newer
+- libexempi3 2.4.5 or newer
+- qpdf 8.2.1
+- Tesseract 4.0.0-rc1
 - jbig2enc 0.29 or newer
 - pngquant 2.5 or newer
 - unpaper 6.1
@@ -477,8 +479,6 @@ jbig2enc, pngquant, and unpaper are optional. If missing certain features are di
 **unpaper**, if present, enables the ``--clean`` and ``--clean-final`` command line options.
 
 These are in addition to the Python packaging dependencies, meaning that unfortunately, the ``pip install`` command cannot satisfy all of them.
-
-Python 3.7 and Tesseract 4.0.0-beta.1 are recommended for best OCR results and best performance.
 
 
 Installing HEAD revision from sources
