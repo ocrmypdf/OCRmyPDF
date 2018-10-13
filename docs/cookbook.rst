@@ -94,7 +94,7 @@ If you are starting with images, you can just use Tesseract 3.04 or later direct
     # When there are multiple images
     tesseract text-file-containing-list-of-image-filenames.txt output-prefix pdf
 
-Tesseract's PDF output is quite good – OCRmyPDF uses it by internally by default. However, OCRmyPDF has many features not available in Tesseract like like image processing, metadata control, and PDF/A generation.
+Tesseract's PDF output is quite good – OCRmyPDF uses it internally by default. However, OCRmyPDF has many features not available in Tesseract like like image processing, metadata control, and PDF/A generation.
 
 Use a program like `img2pdf <https://gitlab.mister-muffin.de/josch/img2pdf>`_ to convert your images to PDFs, and then pipe the results to run ocrmypdf.  The `-` tells ocrmypdf to read standard input.
 
