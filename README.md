@@ -66,6 +66,12 @@ Users of Debian 9 or later or Ubuntu 16.10 or later may simply
 apt-get install ocrmypdf
 ```
 
+and users of Fedora 29 or later may simply
+
+```bash
+dnf install ocrmypdf
+```
+
 and macOS users with Homebrew may simply
 
 ```bash

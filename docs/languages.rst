@@ -17,11 +17,26 @@ Debian and Ubuntu users
    # Display a list of all Tesseract language packs
    apt-cache search tesseract-ocr
 
-   # Debian/Ubuntu users
-   apt-get install tesseract-ocr-chi-sim  # Example: Install Chinese Simplified language back
-   
+   # Install Chinese Simplified language pack
+   apt-get install tesseract-ocr-chi-sim
+
 You can then pass the ``-l LANG`` argument to OCRmyPDF to give a hint as to what languages it should search for. Multiple
 languages can be requested using either ``-l eng+fre`` (English and French) or ``-l eng -l fre``.
+
+Fedora users
+------------
+
+.. code-block:: bash
+
+   # Display a list of all Tesseract language packs
+   dnf search tesseract
+
+   # Install Chinese Simplified language pack
+   dnf install tesseract-langpack-chi_sim
+
+You can then pass the ``-l LANG`` argument to OCRmyPDF to give a hint as to
+what languages it should search for. Multiple languages can be requested using
+either ``-l eng+fre`` (English and French) or ``-l eng -l fre``.
 
 macOS users
 -----------
