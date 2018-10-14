@@ -69,7 +69,7 @@ Fedora 29 or newer
 .. |fedora-29| image:: https://repology.org/badge/version-for-repo/fedora29/ocrmypdf.svg
     :alt: Fedora 29
 
-.. |fedora-rawhide| image:: https://repology.org/badge/version-for-repo/fedora-rawhide/ocrmypdf.svg
+.. |fedora-rawhide| image:: https://repology.org/badge/version-for-repo/fedora_rawhide/ocrmypdf.svg
     :alt: Fedore Rawhide
 
 
