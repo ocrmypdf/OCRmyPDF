@@ -63,6 +63,45 @@ For full details on version availability for your platform, check the `Debian Pa
 
     OCRmyPDF for Debian and Ubuntu currently omit the JBIG2 encoder. OCRmyPDF works fine without it but will produce larger output files. If you build jbig2enc from source, ocrmypdf 7.0.0 and later will automatically detect it (specifically the ``jbig2`` binary) on the ``PATH``. To add JBIG2 encoding, see :ref:`jbig2`.
 
+Fedora 29 or newer
+^^^^^^^^^^^^^^^^^^
+
+.. |fedora-29| image:: https://repology.org/badge/version-for-repo/fedora29/ocrmypdf.svg
+    :alt: Fedora 29
+
+.. |fedora-rawhide| image:: https://repology.org/badge/version-for-repo/fedora_rawhide/ocrmypdf.svg
+    :alt: Fedore Rawhide
+
+
++------------------------------+
+| **OCRmyPDF version**         |
++------------------------------+
+| |latest|                     |
++------------------------------+
+| |fedora-29| |fedora-rawhide| |
++------------------------------+
+
+Users of Fedora 29 later may simply
+
+.. code-block:: bash
+
+    dnf install ocrmypdf
+
+For full details on version availability, check the `Fedora Package Tracker
+<https://apps.fedoraproject.org/packages/ocrmypdf>`_.
+
+If the version available for your platform is out of date, you could opt to
+install the latest version from source. See `Installing HEAD revision from
+sources`_.
+
+.. note::
+
+    OCRmyPDF for Fedora currently omits the JBIG2 encoder due to patent issues.
+    OCRmyPDF works fine without it but will produce larger output files. If you
+    build jbig2enc from source, ocrmypdf 7.0.0 and later will automatically
+    detect it on the ``PATH``. To add JBIG2 encoding, see `Installing the JBIG2
+    encoder`_.
+
 Installing the latest version on Ubuntu 18.04 LTS
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
