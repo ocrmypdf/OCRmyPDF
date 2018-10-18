@@ -206,8 +206,12 @@ def get_pageinfo(input_file, context):
 
 def get_page_dpi(pageinfo, options):
     "Get the DPI when nonsquare DPI is tolerable"
-    xres = max(pageinfo.xres or VECTOR_PAGE_DPI, options.oversample or 0)
-    yres = max(pageinfo.yres or VECTOR_PAGE_DPI, options.oversample or 0)
+    xres = max(pageinfo.xres or VECTOR_PAGE_DPI,
+               options.oversample or 0,
+               VECTOR_PAGE_DPI if pageinfo.has_vector else 0)
+    yres = max(pageinfo.yres or VECTOR_PAGE_DPI,
+               options.oversample or 0,
+               VECTOR_PAGE_DPI if pageinfo.has_vector else 0)
     return (float(xres), float(yres))
 
 
@@ -219,6 +223,7 @@ def get_page_square_dpi(pageinfo, options):
     return float(max(
         (xres * userunit) or VECTOR_PAGE_DPI,
         (yres * userunit) or VECTOR_PAGE_DPI,
+        VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
         options.oversample or 0))
 
 
@@ -227,6 +232,7 @@ def get_canvas_square_dpi(pageinfo, options):
     return float(max(
         (pageinfo.xres) or VECTOR_PAGE_DPI,
         (pageinfo.yres) or VECTOR_PAGE_DPI,
+        VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
         options.oversample or 0))
 
 
