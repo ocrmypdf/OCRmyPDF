@@ -169,3 +169,9 @@ def test_regex():
         assert rx.match(s)
     for s in must_not_match:
         assert not rx.match(s)
+
+
+def test_vector(resources):
+    filename = resources / 'vector.pdf'
+    pdf = pdfinfo.PdfInfo(filename)
+    assert pdf[0].has_vector

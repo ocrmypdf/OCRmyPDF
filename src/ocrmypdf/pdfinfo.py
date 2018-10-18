@@ -104,7 +104,7 @@ InlineSettings = namedtuple('InlineSettings',
     ['iimage', 'shorthand', 'stack_depth'])
 
 ContentsInfo = namedtuple('ContentsInfo',
-    ['xobject_settings', 'inline_images', 'found_text'])
+    ['xobject_settings', 'inline_images', 'found_text', 'found_vector'])
 
 
 def _normalize_stack(graphobjs):
@@ -119,7 +119,7 @@ def _normalize_stack(graphobjs):
 
 
 def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
-    """Interpret the PDF content stream
+    """Interpret the PDF content stream.
 
     The stack represents the state of the PDF graphics stack.  We are only
     interested in the current transformation matrix (CTM) so we only track
@@ -136,16 +136,16 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     page.
 
     PDF units suit our needs so we initialize ctm to the identity matrix.
-
     """
 
     stack = []
     ctm = PdfMatrix(initial_shorthand)
     xobject_settings = []
     inline_images = []
-    found_text = False
-    text_operators = set(['Tj', 'TJ', '"', "'"])
-    operator_whitelist = """q Q Do cm TJ Tj " ' BI ID EI"""
+    found_text, found_vector = False, False
+    text_operators = set("""Tj " ' TJ""".split())
+    vector_operators = set('S s f F f* B B* b b*'.split())
+    operator_whitelist = """q Q Do cm TJ Tj " ' BI ID EI S s f F f* B B* b b*"""
 
     for n, graphobj in enumerate(_normalize_stack(
             pikepdf.parse_content_stream(contentstream, operator_whitelist))):
@@ -178,12 +178,14 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
             inline_images.append(inline)
         elif operator in text_operators:
             found_text = True
-
+        elif operator in vector_operators:
+            found_vector = True
 
     return ContentsInfo(
         xobject_settings=xobject_settings,
         inline_images=inline_images,
-        found_text=found_text)
+        found_text=found_text,
+        found_vector=found_vector)
 
 
 def _get_dpi(ctm_shorthand, image_size):
@@ -248,6 +250,11 @@ def _get_dpi(ctm_shorthand, image_size):
     dpi_h = scale_h * 72.0
 
     return dpi_w, dpi_h
+
+
+class VectorInfo:
+    def __init__(self):
+        pass
 
 
 class ImageInfo:
@@ -482,6 +489,8 @@ def _find_images(*, pdf, container, shorthand=None):
 
     contentsinfo = _interpret_contents(container, initial_shorthand)
 
+    if contentsinfo.found_vector:
+        yield VectorInfo()
     yield from _find_inline_images(contentsinfo)
     yield from _find_regular_images(container, contentsinfo)
     yield from _find_form_xobject_images(pdf, container, contentsinfo)
@@ -585,6 +594,12 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     pageinfo['images'] = [im for im in
                           _find_images(pdf=pdf, container=page,
                                        shorthand=userunit_shorthand)]
+
+    if any(isinstance(im, VectorInfo) for im in pageinfo['images']):
+        pageinfo['has_vector'] = True
+
+    pageinfo['images'] = [im for im in pageinfo['images']
+                          if not isinstance(im, VectorInfo)]
     if pageinfo['images']:
         xres = Decimal(max(image.xres for image in pageinfo['images']))
         yres = Decimal(max(image.yres for image in pageinfo['images']))
@@ -646,6 +661,10 @@ class PageInfo:
     @property
     def has_text(self):
         return self._pageinfo['has_text']
+
+    @property
+    def has_vector(self):
+        return self._pageinfo['has_vector']
 
     @property
     def width_inches(self):
@@ -711,9 +730,8 @@ class PageInfo:
 
 
 class PdfInfo:
-    """Get summary information about a PDF
+    """Get summary information about a PDF"""
 
-    """
     def __init__(self, infile, log=None):
         self._infile = infile
         self._pages, pdf = _pdf_get_all_pageinfo(infile, log=log)
