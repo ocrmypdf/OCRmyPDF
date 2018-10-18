@@ -485,6 +485,16 @@ class Pix:
     def invert(self):
         return Pix(lept.pixInvert(ffi.NULL, self._pix))
 
+    def locate_barcodes(self, threshold=20):
+        p_mask = ffi.new('PIX **')
+        with _LeptonicaErrorTrap():
+            result = lept.pixLocateBarcodes(self._pix, threshold, ffi.NULL,
+                                            p_mask)
+            if result == ffi.NULL:
+                return None, None
+            return BoxArray(result), Pix(p_mask[0])
+
+
     @staticmethod
     def _pix_destroy(pix):
         p_pix = ffi.new('PIX **', pix)
@@ -567,6 +577,38 @@ class Box:
     def _box_destroy(box):
         p_box = ffi.new('BOX **', box)
         lept.boxDestroy(p_box)
+
+
+class BoxArray:
+    """Wrapper around Leptonica's BOXA (Array of BOX) objects."""
+
+    def __init__(self, boxa):
+        self._boxa = ffi.gc(boxa, BoxArray._boxa_destroy)
+
+    def __repr__(self):
+        if not self._boxa:
+            return '<BoxArray>'
+        boxes = (repr(box) for box in self)
+        return '<BoxArray [' + ', '.join(boxes) + ']>'
+
+    def __iter__(self):
+        for n in range(len(self)):
+            yield self[n]
+
+    def __len__(self):
+        return self._boxa.n
+
+    def __getitem__(self, n):
+        if not isinstance(n, int):
+            raise TypeError('list indices must be integers')
+        if 0 <= n < len(self):
+            return Box(lept.boxClone(self._boxa.box[n]))
+        raise IndexError(n)
+
+    @staticmethod
+    def _boxa_destroy(boxa):
+        p_boxa = ffi.new('BOXA **', boxa)
+        lept.boxaDestroy(p_boxa)
 
 
 @lru_cache(maxsize=1)

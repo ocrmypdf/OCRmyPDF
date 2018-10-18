@@ -72,6 +72,15 @@ struct Box
 };
 typedef struct Box    BOX;
 
+/*! Array of Box */
+struct Boxa
+{
+    l_int32            n;           /*!< number of box in ptr array        */
+    l_int32            nalloc;      /*!< number of box ptrs allocated      */
+    l_uint32           refcount;    /*!< reference count (1 if no clones)  */
+    struct Box       **box;         /*!< box ptr array                     */
+};
+typedef struct Boxa BOXA;
 
 /*! Pdf formatted encoding types */
 enum {
@@ -265,13 +274,13 @@ pixGetAverageMaskedRGB(PIX        *pixs,
                        l_float32  *pgval,
                        l_float32  *pbval);
 
-PIX * 
+PIX *
 pixGlobalNormRGB(PIX * 	pixd,
                  PIX * 	pixs,
                  l_int32 	rval,
                  l_int32 	gval,
                  l_int32 	bval,
-                 l_int32 	mapval); 
+                 l_int32 	mapval);
 
 PIX *
 pixInvert(PIX * pixd,
@@ -289,20 +298,29 @@ pixGenerateCIData(PIX           *pixs,
                   l_int32        ascii85,
                   L_COMP_DATA **pcid);
 
-l_int32 
-l_generateCIDataForPdf(const char *fname, 
-                       PIX *pix, 
-                       l_int32 quality, 
+BOXA *
+pixLocateBarcodes ( PIX *pixs, l_int32 thresh, PIX **ppixb, PIX **ppixm );
+
+l_int32
+l_generateCIDataForPdf(const char *fname,
+                       PIX *pix,
+                       l_int32 quality,
                        L_COMP_DATA **pcid);
 
-void                 
+BOX *
+boxClone ( BOX *box );
+
+void
 boxDestroy(BOX  **pbox);
+
+void
+boxaDestroy ( BOXA **pboxa );
 
 void
 l_CIDataDestroy(L_COMP_DATA **pcid);
 
 void
-lept_free(void *ptr);  
+lept_free(void *ptr);
 """)
 
 
