@@ -107,16 +107,15 @@ ContentsInfo = namedtuple('ContentsInfo',
     ['xobject_settings', 'inline_images', 'found_text'])
 
 
-
-def _normalize_stack(operations):
-    """Convert runs of qQ's in the stack into single operations"""
-    for operands, command in operations:
-        command = str(command)
-        if re.match(r'Q*q+$', command):   # Zero or more Q, one or more q
-            for char in command:          # Split into individual
-                yield ([], char)          # Yield individual
+def _normalize_stack(graphobjs):
+    """Convert runs of qQ's in the stack into single graphobjs"""
+    for operands, operator in graphobjs:
+        operator = str(operator)
+        if re.match(r'Q*q+$', operator):   # Zero or more Q, one or more q
+            for char in operator:          # Split into individual
+                yield ([], char)           # Yield individual
         else:
-            yield (operands, command)
+            yield (operands, operator)
 
 
 def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
@@ -148,36 +147,36 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     text_operators = set(['Tj', 'TJ', '"', "'"])
     operator_whitelist = """q Q Do cm TJ Tj " ' BI ID EI"""
 
-    for n, op in enumerate(_normalize_stack(
+    for n, graphobj in enumerate(_normalize_stack(
             pikepdf.parse_content_stream(contentstream, operator_whitelist))):
-        operands, command = op
+        operands, operator = graphobj
 
-        if command == 'q':
+        if operator == 'q':
             stack.append(ctm)
             if len(stack) > 32:
                 raise RuntimeError(
-                    "PDF graphics stack overflow, command %i" % n)
-        elif command == 'Q':
+                    "PDF graphics stack overflow, operator %i" % n)
+        elif operator == 'Q':
             try:
                 ctm = stack.pop()
             except IndexError:
                 raise RuntimeError(
-                    "PDF graphics stack underflow, command %i" % n)
-        elif command == 'cm':
+                    "PDF graphics stack underflow, operator %i" % n)
+        elif operator == 'cm':
             ctm = PdfMatrix(operands) @ ctm
-        elif command == 'Do':
+        elif operator == 'Do':
             image_name = operands[0]
             settings = XobjectSettings(
                 name=image_name, shorthand=ctm.shorthand,
                 stack_depth=len(stack))
             xobject_settings.append(settings)
-        elif command == 'INLINE IMAGE':
+        elif operator == 'INLINE IMAGE':
             iimage = operands[0]
             inline = InlineSettings(
                 iimage=iimage, shorthand=ctm.shorthand,
                 stack_depth=len(stack))
             inline_images.append(inline)
-        elif command in text_operators:
+        elif operator in text_operators:
             found_text = True
 
 
@@ -451,7 +450,7 @@ def _find_images(*, pdf, container, shorthand=None):
     in an XObject.
 
     Form XObjects may include inline images, XObject images,
-    and recursively, other Form XObjects; and also vector drawing commands.
+    and recursively, other Form XObjects; and also vector graphic objects.
 
     Every instance of an image being drawn somewhere is flattened and
     treated as a unique image, since if the same image is drawn multiple times
