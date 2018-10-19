@@ -493,7 +493,8 @@ def rasterize_with_ghostscript(
     ghostscript.rasterize_pdf(
         input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
         raster_device=device, log=log, page_dpi=(page_dpi, page_dpi),
-        pageno=page_number(input_file), rotation=correction)
+        pageno=page_number(input_file), rotation=correction,
+        filter_vector=options.remove_vectors)
 
 
 def preprocess_remove_background(

@@ -244,6 +244,11 @@ preprocessing.add_argument(
     '--oversample', metavar='DPI', type=numeric(int, 0, 5000), default=0,
     help="Oversample images to at least the specified DPI, to improve OCR "
          "results slightly")
+preprocessing.add_argument(
+    '--remove-vectors', action='store_true',
+    help="EXPERIMENTAL. Remove any vector graphics objects from the PDF, "
+         "including text rendered as curves. Useful when these objects "
+         "interfere with OCR.")
 
 ocrsettings = parser.add_argument_group(
     "OCR options",
