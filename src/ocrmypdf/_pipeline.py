@@ -243,13 +243,17 @@ def is_ocr_required(pageinfo, log, options):
     if pageinfo.has_text:
         msg = "{0:4d}: page already has text! – {1}"
 
-        if not options.force_ocr and not options.skip_text:
+        if not options.force_ocr and not (options.skip_text or options.redo_ocr):
             log.error(msg.format(page,
                                  "aborting (use --force-ocr to force OCR)"))
             raise PriorOcrFoundError()
         elif options.force_ocr:
             log.info(msg.format(page,
                                 "rasterizing text and running OCR anyway"))
+            ocr_required = True
+        elif options.redo_ocr and pageinfo.only_ocr_text:
+            log.info(msg.format(page,
+                                "redoing OCR"))
             ocr_required = True
         elif options.skip_text:
             log.info(msg.format(page,
@@ -559,11 +563,12 @@ def select_ocr_image(
     user."""
 
     image = infiles[0]
-    if context.get_options().force_ocr:
+    options = context.get_options()
+    pageinfo = get_pageinfo(image, context)
+
+    if options.force_ocr or (options.redo_ocr and pageinfo.only_ocr_text):
         re_symlink(image, output_file, log)
         return
-
-    pageinfo = get_pageinfo(image, context)
 
     with Image.open(image) as im:
         from PIL import ImageColor

@@ -43,8 +43,39 @@ def _update_page_resources(*, page, font, font_key, procset):
     resources['/ProcSet'] = procset
 
 
+def _strip_old_text(pdf, page):
+    stream = []
+    in_text_obj = False
+
+    page.page_contents_coalesce()
+    for operands, operator in pikepdf.parse_content_stream(page, ''):
+        if not in_text_obj:
+            if operator == pikepdf.Operator('BT'):
+                in_text_obj = True
+            else:
+                stream.append((operands, operator))
+        else:
+            if operator == pikepdf.Operator('ET'):
+                in_text_obj = False
+
+    def convert(op):
+        try:
+            return op.unparse()
+        except AttributeError:
+            return str(op).encode('ascii')
+
+    lines = []
+    for operands, operator in stream:
+        line = b' '.join(convert(op) for op in operands) + b' ' + operator.unparse()
+        lines.append(line)
+
+    content_stream = b'\n'.join(lines)
+    page.Contents = pikepdf.Stream(pdf, content_stream)
+
+
 def _weave_layers_graft(
-        *, pdf_base, page_num, text, font, font_key, procset, rotation, log):
+        *, pdf_base, page_num, text, font, font_key, procset, rotation,
+        strip_old_text, log):
     """Insert the text layer from text page 0 on to pdf_base at page_num"""
 
     log.debug("Grafting")
@@ -108,6 +139,9 @@ def _weave_layers_graft(
     )
 
     new_text_layer = pikepdf.Stream(pdf_base, pdf_text_contents)
+
+    if strip_old_text:
+        _strip_old_text(pdf_base, base_page)
 
     base_page.page_contents_add(new_text_layer, prepend=True)
 
@@ -336,10 +370,12 @@ def weave_layers(
 
         if text and font:
             # Graft the text layer onto this page, whether new or old
+            strip_old = (context.get_options().redo_ocr
+                         and pdfinfo[page_num - 1].only_ocr_text)
             _weave_layers_graft(
                 pdf_base=pdf_base, page_num=page_num, text=text, font=font,
                 font_key=font_key, rotation=text_misaligned, procset=procset,
-                log=log
+                strip_old_text=strip_old, log=log
             )
 
         # Correct the rotation if applicable

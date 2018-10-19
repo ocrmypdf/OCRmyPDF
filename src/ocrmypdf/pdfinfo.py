@@ -107,6 +107,20 @@ ContentsInfo = namedtuple('ContentsInfo',
     ['xobject_settings', 'inline_images', 'found_text', 'found_vector'])
 
 
+class VectorInfo:
+    def __init__(self):
+        pass
+
+
+class TextInfo:
+    def __init__(self, invisible, visible):
+        self.invisible = invisible
+        self.visible = visible
+
+    def __bool__(self):
+        return self.invisible or self.visible
+
+
 def _normalize_stack(graphobjs):
     """Convert runs of qQ's in the stack into single graphobjs"""
     for operands, operator in graphobjs:
@@ -143,9 +157,14 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     xobject_settings = []
     inline_images = []
     found_text, found_vector = False, False
-    text_operators = set("""Tj " ' TJ""".split())
-    vector_operators = set('S s f F f* B B* b b*'.split())
-    operator_whitelist = """q Q Do cm TJ Tj " ' BI ID EI S s f F f* B B* b b*"""
+    found_invisible_text, found_visible_text = False, False
+    text_mode_ops = set("""BT ET Tr""".split())
+    text_showing_ops = set("""Tj " ' TJ""".split())
+    vector_ops = set('S s f F f* B B* b b*'.split())
+    image_ops = set('BI ID EI q Q Do cm'.split())
+    text_render_mode = 0
+    operator_whitelist = ' '.join(
+        text_mode_ops | text_showing_ops | vector_ops | image_ops)
 
     for n, graphobj in enumerate(_normalize_stack(
             pikepdf.parse_content_stream(contentstream, operator_whitelist))):
@@ -176,15 +195,25 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
                 iimage=iimage, shorthand=ctm.shorthand,
                 stack_depth=len(stack))
             inline_images.append(inline)
-        elif operator in text_operators:
+        elif operator in text_mode_ops:
+            if operator == 'BT':
+                text_render_mode = 0
+            elif operator == 'Tr':
+                text_render_mode = operands[0]
+        elif operator in text_showing_ops:
             found_text = True
-        elif operator in vector_operators:
+            if text_render_mode == 3:
+                found_invisible_text = True
+            else:
+                found_visible_text = True
+        elif operator in vector_ops:
             found_vector = True
 
     return ContentsInfo(
         xobject_settings=xobject_settings,
         inline_images=inline_images,
-        found_text=found_text,
+        found_text=TextInfo(invisible=found_invisible_text,
+                            visible=found_visible_text),
         found_vector=found_vector)
 
 
@@ -250,11 +279,6 @@ def _get_dpi(ctm_shorthand, image_size):
     dpi_h = scale_h * 72.0
 
     return dpi_w, dpi_h
-
-
-class VectorInfo:
-    def __init__(self):
-        pass
 
 
 class ImageInfo:
@@ -444,11 +468,11 @@ def _find_form_xobject_images(pdf, container, contentsinfo):
             # but in practice both Form XObjects and multiple drawing of the
             # same object are both very rare.
             ctm_shorthand = settings.shorthand
-            yield from _find_images(
+            yield from _process_content_streams(
                 pdf=pdf, container=form_xobject, shorthand=ctm_shorthand)
 
 
-def _find_images(*, pdf, container, shorthand=None):
+def _process_content_streams(*, pdf, container, shorthand=None):
     """Find all individual instances of images drawn in the container
 
     Usually the container is a page, but it may also be a Form XObject.
@@ -491,6 +515,8 @@ def _find_images(*, pdf, container, shorthand=None):
 
     if contentsinfo.found_vector:
         yield VectorInfo()
+    if contentsinfo.found_text:
+        yield contentsinfo.found_text
     yield from _find_inline_images(contentsinfo)
     yield from _find_regular_images(container, contentsinfo)
     yield from _find_form_xobject_images(pdf, container, contentsinfo)
@@ -591,15 +617,20 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
         pageinfo['rotate'] = 0
 
     userunit_shorthand = (userunit, 0, 0, userunit, 0, 0)
-    pageinfo['images'] = [im for im in
-                          _find_images(pdf=pdf, container=page,
-                                       shorthand=userunit_shorthand)]
+    contentsinfo = [ci for ci in
+                    _process_content_streams(pdf=pdf, container=page,
+                                             shorthand=userunit_shorthand)]
 
-    if any(isinstance(im, VectorInfo) for im in pageinfo['images']):
+    pageinfo['has_vector'] = False
+    if any(isinstance(ci, VectorInfo) for ci in contentsinfo):
         pageinfo['has_vector'] = True
 
-    pageinfo['images'] = [im for im in pageinfo['images']
-                          if not isinstance(im, VectorInfo)]
+    textinfos = [ti for ti in contentsinfo if isinstance(ti, TextInfo)]
+    all_invisible = all(ti.invisible for ti in textinfos) and len(textinfos) > 0
+    pageinfo['only_ocr_text'] = all_invisible
+
+    pageinfo['images'] = [im for im in contentsinfo
+                          if isinstance(im, ImageInfo)]
     if pageinfo['images']:
         xres = Decimal(max(image.xres for image in pageinfo['images']))
         yres = Decimal(max(image.yres for image in pageinfo['images']))
@@ -665,6 +696,10 @@ class PageInfo:
     @property
     def has_vector(self):
         return self._pageinfo['has_vector']
+
+    @property
+    def only_ocr_text(self):
+        return self._pageinfo['only_ocr_text']
 
     @property
     def width_inches(self):

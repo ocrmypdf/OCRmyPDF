@@ -250,13 +250,17 @@ ocrsettings = parser.add_argument_group(
     "Control how OCR is applied")
 ocrsettings.add_argument(
     '-f', '--force-ocr', action='store_true',
-    help="Rasterize any fonts or vector objects on each page, apply OCR, and "
+    help="Rasterize any text or vector objects on each page, apply OCR, and "
          "save the rastered output (this rewrites the PDF)")
 ocrsettings.add_argument(
     '-s', '--skip-text', action='store_true',
     help="Skip OCR on any pages that already contain text, but include the "
          "page in final output; useful for PDFs that contain a mix of "
          "images, text pages, and/or previously OCRed pages")
+ocrsettings.add_argument(
+    '--redo-ocr', action='store_true',
+    help="Remove any invisible text, and apply OCR")
+
 ocrsettings.add_argument(
     '--skip-big', type=numeric(float, 0, 5000), metavar='MPixels',
     help="Skip OCR on pages larger than the specified amount of megapixels, "
