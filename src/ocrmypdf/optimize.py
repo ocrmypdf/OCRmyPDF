@@ -429,6 +429,7 @@ def optimize(
     convert_to_jbig2(pike, jbig2_groups, root, log, options)
 
     target_file = Path(output_file).with_suffix('.opt.pdf')
+    pike.remove_unreferenced_resources()
     pike.save(target_file, preserve_pdfa=True,
               object_stream_mode=pikepdf.ObjectStreamMode.generate)
 
