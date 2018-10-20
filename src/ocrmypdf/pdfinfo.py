@@ -595,6 +595,7 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
                           _find_images(pdf=pdf, container=page,
                                        shorthand=userunit_shorthand)]
 
+    pageinfo['has_vector'] = False
     if any(isinstance(im, VectorInfo) for im in pageinfo['images']):
         pageinfo['has_vector'] = True
 
