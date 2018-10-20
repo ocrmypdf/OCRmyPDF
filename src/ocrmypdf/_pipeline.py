@@ -251,9 +251,18 @@ def is_ocr_required(pageinfo, log, options):
             log.info(msg.format(page,
                                 "rasterizing text and running OCR anyway"))
             ocr_required = True
-        elif options.redo_ocr and pageinfo.only_ocr_text:
-            log.info(msg.format(page,
-                                "redoing OCR"))
+        elif options.redo_ocr:
+            if pageinfo.only_ocr_text:
+                log.info(msg.format(page,
+                                    "redoing OCR"))
+            else:
+                log.error(
+                    ("%4d: page has both printable and hidden text, so "
+                     "--redo-ocr is not currently possible for this file. "
+                     "Try --force-ocr."),
+                    page
+                )
+                raise PriorOcrFoundError()
             ocr_required = True
         elif options.skip_text:
             log.info(msg.format(page,
@@ -590,7 +599,7 @@ def select_ocr_image(
                          Decimal(bbox[1]) / Decimal(72) * yres,
                          Decimal(bbox[2]) / Decimal(72) * xres,
                          Decimal(bbox[3]) / Decimal(72) * yres]
-            pixcoords = [int(c) for c in pixcoords]
+            pixcoords = [int(round(c)) for c in pixcoords]
             log.debug('blanking %r', pixcoords)
             draw.rectangle(pixcoords, fill=white)
             #draw.rectangle(pixcoords, outline=pink)
