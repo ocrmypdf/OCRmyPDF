@@ -170,7 +170,7 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
                 name=image_name, shorthand=ctm.shorthand,
                 stack_depth=len(stack))
             xobject_settings.append(settings)
-        elif operator == 'INLINE IMAGE':
+        elif operator == 'INLINE IMAGE':   # BI/ID/EI are grouped into this
             iimage = operands[0]
             inline = InlineSettings(
                 iimage=iimage, shorthand=ctm.shorthand,
