@@ -101,7 +101,7 @@ def extract_text(input_file, pageno=1):
 
 
 def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
-                  pageno=1, page_dpi=None, rotation=None):
+                  pageno=1, page_dpi=None, rotation=None, filter_vector=False):
     """Rasterize one page of a PDF at resolution (xres, yres) in canvas units.
 
     The image is sized to match the integer pixels dimensions implied by
@@ -116,6 +116,8 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
     :param log:
     :param pageno: page number to rasterize (beginning at page 1)
     :param page_dpi: resolution tuple (x, y) overriding output image DPI
+    :param rotation: 0, 90, 180, 270: clockwise angle to rotate page
+    :param filter_vector: if True, remove vector graphics objects
     :return:
     """
     res = xres, yres
@@ -134,6 +136,7 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             '-dFirstPage=%i' % pageno,
             '-dLastPage=%i' % pageno,
             '-r{0}x{1}'.format(str(int_res[0]), str(int_res[1])),
+        ] + (['-dFILTERVECTOR'] if filter_vector else []) + [
             '-o', tmp.name,
             '-dAutoRotatePages=/None',  # Probably has no effect on raster
             '-f',
