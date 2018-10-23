@@ -470,10 +470,9 @@ def check_options_output(options, log):
         )
 
     lossless_reconstruction = False
-    if options.pdf_renderer in ('hocr', 'sandwich'):
-        if not any((options.deskew, options.clean_final, options.force_ocr,
-                   options.remove_background)):
-            lossless_reconstruction = True
+    if not any((options.deskew, options.clean_final, options.force_ocr,
+                options.remove_background)):
+        lossless_reconstruction = True
     options.lossless_reconstruction = lossless_reconstruction
 
 
