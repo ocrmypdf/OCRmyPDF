@@ -43,7 +43,7 @@ def _update_page_resources(*, page, font, font_key, procset):
     resources['/ProcSet'] = procset
 
 
-def _strip_old_invisible_text(pdf, page, log):
+def strip_invisible_text(pdf, page, log):
     stream = []
     in_text_obj = False
     render_mode = 0
@@ -150,7 +150,7 @@ def _weave_layers_graft(
     new_text_layer = pikepdf.Stream(pdf_base, pdf_text_contents)
 
     if strip_old_text:
-        _strip_old_invisible_text(pdf_base, base_page, log)
+        strip_invisible_text(pdf_base, base_page, log)
 
     base_page.page_contents_add(new_text_layer, prepend=True)
 
