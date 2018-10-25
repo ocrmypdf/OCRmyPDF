@@ -25,11 +25,12 @@ from unittest.mock import Mock
 import re
 import xml.etree.ElementTree as ET
 
+from pikepdf import PdfMatrix
+import pikepdf
+
 from ..exec import ghostscript
 from ..helpers import fspath
 
-from pikepdf import PdfMatrix
-import pikepdf
 
 Colorspace = Enum('Colorspace',
                   'gray rgb cmyk lab icc index sep devn pattern jpeg2000')
@@ -418,7 +419,6 @@ def _find_regular_images(container, contentsinfo):
     that contains images.
 
     Generates images with their DPI at time of drawing.
-
     """
 
     for pdfimage, xobj in _image_xobjects(container):
