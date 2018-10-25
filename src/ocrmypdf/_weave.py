@@ -380,9 +380,7 @@ def weave_layers(
 
         if text and font:
             # Graft the text layer onto this page, whether new or old
-#            strip_old = context.get_options().redo_ocr
-            strip_old = (context.get_options().redo_ocr
-                         and pdfinfo[page_num - 1].only_ocr_text)
+            strip_old = context.get_options().redo_ocr
             _weave_layers_graft(
                 pdf_base=pdf_base, page_num=page_num, text=text, font=font,
                 font_key=font_key, rotation=text_misaligned, procset=procset,

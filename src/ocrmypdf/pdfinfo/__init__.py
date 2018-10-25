@@ -594,15 +594,30 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
 
     page = pdf.pages[pageno]
 
-    pageinfo['textinfo'] = _page_get_textblocks(
-        fspath(infile), pageno, xmltext=xmltext)
+    # pageinfo['textinfo'] = _page_get_textblocks(
+    #     fspath(infile), pageno, xmltext=xmltext)
+
+    from .layout import get_textblocks
+    with Path(infile).open('rb') as f:
+        pageinfo['objects'] = get_textblocks(f, pageno)
 
     mediabox = [Decimal(d) for d in page.MediaBox.as_list()]
     width_pt = mediabox[2] - mediabox[0]
     height_pt = mediabox[3] - mediabox[1]
 
+    def bboxes(hierarchical_textinfo):
+        from pdfminer.layout import LTTextLine, LTTextBox
+        for obj in hierarchical_textinfo:
+            if isinstance(hierarchical_textinfo, (LTTextLine, LTTextBox)):
+                yield hierarchical_textinfo.bbox
+            else:
+                try:
+                    yield from bboxes(obj)
+                except TypeError:
+                    continue
+
     pageinfo['has_text'] = _page_has_text(
-        pageinfo['textinfo'], width_pt, height_pt)
+        bboxes(pageinfo['objects']), width_pt, height_pt)
 
     userunit = page.get('/UserUnit', Decimal(1.0))
     if not isinstance(userunit, Decimal):
@@ -732,8 +747,22 @@ class PageInfo:
     def images(self):
         return self._pageinfo['images']
 
-    def get_textareas(self):
-        yield from self._pageinfo['textinfo']
+    def get_textareas(self, visible=True, invisible=True):
+        def bboxes(objs):
+            from pdfminer.layout import LTTextBox
+            for obj in objs:
+                if isinstance(obj, LTTextBox):
+                    yield obj.bbox
+                else:
+                    try:
+                        yield from bboxes(obj)
+                    except TypeError:
+                        continue
+
+        if visible:
+            yield from bboxes(self._pageinfo['objects'][0])
+        if invisible:
+            yield from bboxes(self._pageinfo['objects'][1])
 
     @property
     def xres(self):

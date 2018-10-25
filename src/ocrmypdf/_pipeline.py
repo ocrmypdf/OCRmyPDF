@@ -576,7 +576,7 @@ def select_ocr_image(
     options = context.get_options()
     pageinfo = get_pageinfo(image, context)
 
-    if options.force_ocr or (options.redo_ocr and pageinfo.only_ocr_text):
+    if options.force_ocr:
         re_symlink(image, output_file, log)
         return
 
@@ -590,7 +590,7 @@ def select_ocr_image(
 
         xres, yres = im.info['dpi']
         log.debug('resolution %r %r', xres, yres)
-        for textarea in pageinfo.get_textareas():
+        for textarea in pageinfo.get_textareas(visible=True):
             # Calculate resolution based on the image size and page dimensions
             # without regard whatever resolution is in pageinfo (may differ or
             # be None)
