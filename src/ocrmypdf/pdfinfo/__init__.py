@@ -25,8 +25,8 @@ from unittest.mock import Mock
 import re
 import xml.etree.ElementTree as ET
 
-from .exec import ghostscript
-from .helpers import fspath
+from ..exec import ghostscript
+from ..helpers import fspath
 
 from pikepdf import PdfMatrix
 import pikepdf
