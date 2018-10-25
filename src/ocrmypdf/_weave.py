@@ -55,6 +55,7 @@ def strip_invisible_text(pdf, page, log):
             if operator == pikepdf.Operator('BT'):
                 in_text_obj = True
                 render_mode = 0
+                text_objects.append((operands, operator))
             else:
                 stream.append((operands, operator))
         else:
