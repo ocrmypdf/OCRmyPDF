@@ -23,7 +23,8 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.utils import matrix2str, bbox2str, fsplit
 from pdfminer.pdffont import PDFUnicodeNotDefined
 from pdfminer.layout import (
-    LTChar, LTContainer, LTLayoutContainer, LTPage, LTTextLine, LAParams
+    LTChar, LTContainer, LTLayoutContainer, LTPage, LTTextLine, LAParams,
+    LTTextBox
 )
 
 from pdfminer.converter import PDFLayoutAnalyzer
@@ -121,7 +122,7 @@ class TextPositionTracker(PDFLayoutAnalyzer):
         return item.adv
 
     def handle_undefined_char(self, font, cid):
-        log.info('undefined: %r, %r', font, cid)
+        #log.info('undefined: %r, %r', font, cid)
         return '(cid:%d)' % cid
 
     def receive_layout(self, ltpage):
@@ -141,3 +142,14 @@ def get_textblocks(infile, pageno):
     interp.process_page(next(page))
 
     return dev.get_result()
+
+
+def bboxes(hierarchical_textinfo):
+    for obj in hierarchical_textinfo:
+        if isinstance(hierarchical_textinfo, (LTTextBox)):
+            yield hierarchical_textinfo.bbox
+        else:
+            try:
+                yield from bboxes(obj)
+            except TypeError:
+                continue

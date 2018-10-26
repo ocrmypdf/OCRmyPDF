@@ -145,7 +145,7 @@ def test_pickle(resources):
     # For multiprocessing we must be able to pickle our information - if
     # this fails then we are probably storing some unpickleabe pikepdf or
     # other external data around
-    filename = resources / 'formxobject.pdf'
+    filename = resources / 'graph_ocred.pdf'
     pdf = pdfinfo.PdfInfo(filename)
     pickle.dumps(pdf)
 
