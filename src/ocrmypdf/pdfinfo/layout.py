@@ -15,32 +15,79 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import pdfminer.encodingdb
 import pdfminer.pdfinterp
 import pdfminer.pdfdevice
 
-from pdfminer.pdfpage import PDFPage
-
-from pdfminer.utils import matrix2str, bbox2str, fsplit
-from pdfminer.pdffont import PDFUnicodeNotDefined
+from pdfminer.converter import PDFLayoutAnalyzer
+from pdfminer.glyphlist import glyphname2unicode
 from pdfminer.layout import (
     LTChar, LTContainer, LTLayoutContainer, LTPage, LTTextLine, LAParams,
     LTTextBox
 )
+from pdfminer.pdffont import PDFUnicodeNotDefined, PDFType3Font
+from pdfminer.pdfpage import PDFPage
+from pdfminer.utils import matrix2str, bbox2str, fsplit
 
-from pdfminer.converter import PDFLayoutAnalyzer
+
+def PDFType3Font_to_unichr(self, cid):
+    """Patch Type3 fonts to fix misinterpretation of gids as Unicode mapping
+
+    In a Type3 font the /Encoding /Differences [ ] array describes the mapping
+    of character codes to glyph numbers like /g178 where 178 is an index into
+    Type3 font's /CharProcs data structure.
+
+    See PDF RM 1.7: 9.6.6.3 Encodings for Type 3 Fonts
+
+    There is no correspondence between glyph numbers and Unicode, however,
+    except by coincidence. So, if there is no ToUnicode table, then Unicode
+    mapping is impossible.
+
+    """
+    try:
+        if self.unicode_map:
+            return self.unicode_map.get_unichr(cid)
+    except KeyError:
+        pass
+    raise PDFUnicodeNotDefined(None, cid)
+
+PDFType3Font.to_unichr = PDFType3Font_to_unichr
+
 
 class LTStateAwareChar(LTChar):
     """A subclass of LTChar that tracks text render mode at time of drawing"""
+
+    __slots__ = (
+        'rendermode', '_text', 'matrix', 'fontname', 'adv', 'upright', 'size',
+        'width', 'height', 'bbox', 'x0', 'x1', 'y0', 'y1'
+    )
 
     def __init__(self, matrix, font, fontsize, scaling, rise, text, textwidth,                textdisp, textstate, *args):
         super().__init__(matrix, font, fontsize, scaling, rise, text, textwidth,                  textdisp, *args)
         self.rendermode = textstate.render
 
     def is_compatible(self, obj):
-        """We are only compatible with same rendering mode"""
-        if not hasattr(obj, 'rendermode'):
+        """Check if characters can be combined into a textline
+
+        We consider characters compatible if:
+            - the Unicode mapping is known, and both have the same render mode
+            - the Unicode mapping is unknown but both are part of the same font
+        """
+        both_unicode_mapped = (isinstance(self._text, str) and
+                               isinstance(obj._text, str))
+        try:
+            if both_unicode_mapped:
+                return self.rendermode == obj.rendermode
+            font0, _ = self._text
+            font1, _ = obj._text
+            return font0 == font1 and self.rendermode == obj.rendermode
+        except (ValueError, AttributeError):
             return False
-        return self.rendermode == obj.rendermode
+
+    def get_text(self):
+        if isinstance(self._text, tuple):
+            return '�'
+        return self._text
 
     def __repr__(self):
         return ('<%s %s matrix=%s rendermode=%r font=%r adv=%s text=%r>' %
@@ -59,7 +106,9 @@ class LTStateAwarePage(LTPage):
         """Analysis taking rendering mode into account
 
         Looks at visible and invisible characters separately.
-        Depends on some superclass implementation details...
+        Depends on some superclass implementation details, largely because only
+        LTPage has the "group into textboxes" code, so we have to manipulate
+        our _objs to create multiple collections.
         """
 
         objs = self._objs[:]
@@ -123,7 +172,7 @@ class TextPositionTracker(PDFLayoutAnalyzer):
 
     def handle_undefined_char(self, font, cid):
         #log.info('undefined: %r, %r', font, cid)
-        return '(cid:%d)' % cid
+        return (font, cid)
 
     def receive_layout(self, ltpage):
         self.result = (ltpage.visible, ltpage.invisible)
