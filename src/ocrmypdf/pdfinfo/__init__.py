@@ -28,7 +28,7 @@ import xml.etree.ElementTree as ET
 from pikepdf import PdfMatrix
 import pikepdf
 
-from .layout import get_textblocks, bboxes
+from .layout import get_textblocks, filter_textboxes, textbox_predicate
 from ..exec import ghostscript
 from ..helpers import fspath
 
@@ -567,18 +567,19 @@ def _page_has_text(text_blocks, page_width, page_height):
 
     margin_ratio = 0.125
     interior_bbox = (
-        margin_ratio * pw, margin_ratio * ph,
-        (1 - margin_ratio) * pw, (1 - margin_ratio) * ph
+        margin_ratio * pw,  # left
+        (1 - margin_ratio) * ph, # top
+        (1 - margin_ratio) * pw, # right
+        margin_ratio * ph  # bottom  (first quadrant: bottom < top)
     )
 
     def rects_intersect(a, b):
         """
         Where (a,b) are 4-tuple rects (left-0, top-1, right-2, bottom-3)
         https://stackoverflow.com/questions/306316/determine-if-two-rectangles-overlap-each-other
-        Negative signs to account for our coordinates being in the fourth quadrant
-        and the formula assuming the first
+        Formula assumes all boxes are in first quadrant
         """
-        return a[0] < b[2] and a[2] > b[0] and -a[1] > -b[3] and -a[3] < -b[1]
+        return a[0] < b[2] and a[2] > b[0] and a[1] > b[3] and a[3] < b[1]
 
     has_text = False
     for bbox in text_blocks:
@@ -605,8 +606,12 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     width_pt = mediabox[2] - mediabox[0]
     height_pt = mediabox[3] - mediabox[1]
 
+    bboxes = (textbox.bbox for textbox in filter_textboxes(
+            pageinfo['objects'], lambda obj: True)
+    )
     pageinfo['has_text'] = _page_has_text(
-        bboxes(pageinfo['objects']), width_pt, height_pt)
+        bboxes, width_pt, height_pt
+    )
 
     userunit = page.get('/UserUnit', Decimal(1.0))
     if not isinstance(userunit, Decimal):
@@ -629,7 +634,7 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     if any(isinstance(ci, VectorInfo) for ci in contentsinfo):
         pageinfo['has_vector'] = True
 
-    textinfos = [ti for ti in contentsinfo if isinstance(ti, TextInfo)]
+    textinfos = (ti for ti in contentsinfo if isinstance(ti, TextInfo))
     all_invisible = not any(ti.visible for ti in textinfos)
     pageinfo['only_ocr_text'] = all_invisible
 
@@ -736,11 +741,11 @@ class PageInfo:
     def images(self):
         return self._pageinfo['images']
 
-    def get_textareas(self, visible=True, invisible=True):
-        if visible:
-            yield from bboxes(self._pageinfo['objects'][0])
-        if invisible:
-            yield from bboxes(self._pageinfo['objects'][1])
+    def get_textareas(self, visible=None, corrupt=None):
+        return (obj.bbox for obj in filter_textboxes(
+                self._pageinfo['objects'],
+                textbox_predicate(visible=visible, corrupt=corrupt)
+            ))
 
     @property
     def xres(self):

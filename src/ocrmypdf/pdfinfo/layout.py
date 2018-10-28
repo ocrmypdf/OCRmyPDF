@@ -96,43 +96,6 @@ class LTStateAwareChar(LTChar):
                  self.get_text()))
 
 
-class LTStateAwarePage(LTPage):
-    """A page container that exploits character type information"""
-
-    def __init__(self, pageid, bbox, rotate=0):
-        LTPage.__init__(self, pageid, bbox, rotate)
-
-    def analyze(self, laparams):
-        """Analysis taking rendering mode into account
-
-        Looks at visible and invisible characters separately.
-        Depends on some superclass implementation details, largely because only
-        LTPage has the "group into textboxes" code, so we have to manipulate
-        our _objs to create multiple collections.
-        """
-
-        objs = self._objs[:]
-
-        # Split into invisible text objects and all others
-        (invisible_textobjs, other_objs) = fsplit(
-                lambda obj: getattr(obj, 'rendermode', 0) == 3, self)
-
-        # Analyze all invisible text objects and group them into text lines and
-        # text boxes
-        self._objs = invisible_textobjs
-        LTPage.analyze(self, laparams)
-        invisible_analyzed = self._objs[:]
-
-        # Analyze all other objects
-        self._objs = other_objs
-        LTPage.analyze(self, laparams)
-        other_analyzed = self._objs[:]
-
-        self._objs = invisible_analyzed + other_analyzed
-        self.visible = other_analyzed
-        self.invisible = invisible_analyzed
-
-
 class TextPositionTracker(PDFLayoutAnalyzer):
     """A page layout analyzer that pays attention to text visibility"""
 
@@ -143,7 +106,7 @@ class TextPositionTracker(PDFLayoutAnalyzer):
 
     def begin_page(self, page, ctm):
         super().begin_page(page, ctm)
-        self.cur_item = LTStateAwarePage(self.pageno, page.mediabox)
+        self.cur_item = LTPage(self.pageno, page.mediabox)
 
     def end_page(self, page):
         assert not self._stack, str(len(self._stack))
@@ -176,7 +139,7 @@ class TextPositionTracker(PDFLayoutAnalyzer):
         return (font, cid)
 
     def receive_layout(self, ltpage):
-        self.result = (ltpage.visible, ltpage.invisible)
+        self.result = ltpage
 
     def get_result(self):
         return self.result
@@ -194,12 +157,33 @@ def get_textblocks(infile, pageno):
     return dev.get_result()
 
 
-def bboxes(hierarchical_textinfo):
-    for obj in hierarchical_textinfo:
-        if isinstance(hierarchical_textinfo, (LTTextBox)):
-            yield hierarchical_textinfo.bbox
+def textbox_predicate(*, visible, corrupt):
+    def real_predicate(textbox, want_visible=visible, want_corrupt=corrupt):
+        textline = textbox._objs[0]
+        first_char = textline._objs[0]
+
+        result = True
+
+        is_visible = (first_char.rendermode != 3)
+        if want_visible is not None:
+            if is_visible != want_visible:
+                result = False
+        is_corrupt = (first_char.get_text() == '\ufffd')
+        if want_corrupt is not None:
+            if is_corrupt != want_corrupt:
+                result = False
+
+        return result
+    return real_predicate
+
+
+def filter_textboxes(obj, predicate):
+    for child in obj:
+        if isinstance(child, (LTTextBox)):
+            if predicate(child):
+                yield child
         else:
             try:
-                yield from bboxes(obj)
+                yield from filter_textboxes(child, predicate)
             except TypeError:
                 continue
