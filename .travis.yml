@@ -46,14 +46,6 @@ matrix:
       sudo: required
       language: python
       python: "3.7-dev"
-    - os: osx
-      osx_image: xcode8
-      language: generic
-      env: EXTRAS=
-    - os: osx
-      osx_image: xcode8
-      language: generic
-      env: EXTRAS=[fitz]
 
 before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
