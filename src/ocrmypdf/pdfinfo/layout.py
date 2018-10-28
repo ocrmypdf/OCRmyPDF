@@ -166,7 +166,8 @@ class TextPositionTracker(PDFLayoutAnalyzer):
         textwidth = font.char_width(cid)
         textdisp = font.char_disp(cid)
         item = LTStateAwareChar(
-                matrix, font, fontsize, scaling, rise, text,            textwidth, textdisp, self.textstate, *args)
+                matrix, font, fontsize, scaling, rise, text,
+                textwidth, textdisp, self.textstate, *args)
         self.cur_item.add(item)
         return item.adv
 
