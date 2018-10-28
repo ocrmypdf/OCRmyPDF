@@ -192,15 +192,13 @@ You can then install OCRmyPDF from PyPI, for the current user:
 
 .. code-block:: bash
 
-    pip3 install --user ocrmypdf[fitz]
+    pip3 install --user ocrmypdf
 
 or system-wide:
 
 .. code-block:: bash
 
-    pip3 install ocrmypdf[fitz]
-
-``[fitz]`` includes the optional dependency on PyMuPDF, which improves OCRmyPDF's output in many cases.
+    pip3 install ocrmypdf
 
 The command line program should now be available:
 
@@ -226,7 +224,7 @@ Then install ocrmypdf 6.1.5 for the local user and set the user's ``PATH`` to ch
 .. code-block:: bash
 
     export PATH=$HOME/.local/bin:$PATH
-    pip3 install --user ocrmypdf[fitz]
+    pip3 install --user ocrmypdf
 
 
 Installing on Ubuntu 16.04 LTS
@@ -249,13 +247,13 @@ If you wish install OCRmyPDF for the current user:
 
 .. code-block:: bash
 
-    pip3 install --user ocrmypdf[fitz]
+    pip3 install --user ocrmypdf
 
 Alternately, system-wide. Note that this may modify the system Python environment:
 
 .. code-block:: bash
 
-    sudo pip3 install ocrmypdf[fitz]
+    sudo pip3 install ocrmypdf
 
 If you wish to install OCRmyPDF to a virtual environment to isolate the system Python, you can follow these steps.
 
@@ -263,9 +261,7 @@ If you wish to install OCRmyPDF to a virtual environment to isolate the system P
 
     python3 -m venv venv-ocrmypdf
     source venv-ocrmypdf/bin/activate
-    pip3 install ocrmypdf[fitz]
-
-``[fitz]`` includes the optional dependency on PyMuPDF, which improves OCRmyPDF's output in many cases.
+    pip3 install ocrmypdf
 
 
 Installing on Ubuntu 14.04 LTS
@@ -316,7 +312,7 @@ Now we need to install ``pip`` and let it install ocrmypdf:
 .. code-block:: bash
 
     curl https://bootstrap.pypa.io/ez_setup.py -o - | python3.6 && python3.6 -m easy_install pip
-    pip3.6 install ocrmypdf[fitz]
+    pip3.6 install ocrmypdf
 
 The ``wget`` command will download a program and run it.
 
@@ -396,13 +392,10 @@ The following dependencies are recommended:
 - Ghostscript 9.22 or newer
 - qpdf 8.0.2 or newer
 - unpaper 6.1
-- PyMuPDF 1.12.5 or newer
 
 These are in addition to the Python packaging dependencies, meaning that unfortunately, the ``pip install`` command cannot satisfy all of them.
 
 Python 3.6 and Tesseract 4.0.0-beta.1 are recommended for best OCR results and best performance.
-
-The library PyMuPDF is not widely available in platform distributions, and it improves OCRmyPDF in certain conditions. Consider installing OCRmyPDF from the Python binary wheels, which include a precompiled version of this library.
 
 
 Installing HEAD revision from sources

@@ -31,17 +31,10 @@ matrix:
       sudo: required
       language: python
       python: "3.5"
-      env: EXTRAS=
     - os: linux
       sudo: required
       language: python
       python: "3.6"
-      env: EXTRAS=
-    - os: linux
-      sudo: required
-      language: python
-      python: "3.6"
-      env: EXTRAS=[fitz]
     - os: linux
       sudo: required
       language: python
@@ -64,7 +57,6 @@ before_install: |
 
 install:
 - pip3 install pycparser # py3.7 workaround for https://github.com/eliben/pycparser/issues/251
-- pip3 install ".$EXTRAS"
 - pip3 install -r test_requirements.txt
 
 script:
@@ -86,5 +78,5 @@ deploy:
   on:
     branch: master
     tags: true
-    condition: $TRAVIS_PYTHON_VERSION == "3.6" && $TRAVIS_OS_NAME == "linux" && $EXTRAS == ""
+    condition: $TRAVIS_PYTHON_VERSION == "3.6" && $TRAVIS_OS_NAME == "linux"
   skip_upload_docs: true
