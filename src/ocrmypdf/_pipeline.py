@@ -252,17 +252,8 @@ def is_ocr_required(pageinfo, log, options):
                                 "rasterizing text and running OCR anyway"))
             ocr_required = True
         elif options.redo_ocr:
-            if pageinfo.only_ocr_text:
-                log.info(msg.format(page,
-                                    "redoing OCR"))
-            else:
-                log.error(
-                    ("%4d: page has both printable and hidden text, so "
-                     "--redo-ocr is not currently possible for this file. "
-                     "Try --force-ocr."),
-                    page
-                )
-                raise PriorOcrFoundError()
+            log.info(msg.format(page,
+                                "redoing OCR"))
             ocr_required = True
         elif options.skip_text:
             log.info(msg.format(page,
@@ -590,15 +581,21 @@ def select_ocr_image(
 
         xres, yres = im.info['dpi']
         log.debug('resolution %r %r', xres, yres)
-        for textarea in pageinfo.get_textareas(visible=True):
+
+        mask = None  # Exclude both visible and invisible text from OCR
+        if options.redo_ocr:
+            mask = True  # Mask visible text, but not invisible text
+
+        for textarea in pageinfo.get_textareas(visible=mask, corrupt=None):
             # Calculate resolution based on the image size and page dimensions
             # without regard whatever resolution is in pageinfo (may differ or
             # be None)
             bbox = textarea
-            pixcoords = [Decimal(bbox[0]) / Decimal(72) * xres,
-                         Decimal(bbox[1]) / Decimal(72) * yres,
-                         Decimal(bbox[2]) / Decimal(72) * xres,
-                         Decimal(bbox[3]) / Decimal(72) * yres]
+            xscale, yscale = float(xres) / 72.0, float(yres) / 72.0
+            pixcoords = [bbox[0] * xscale,
+                         im.height - bbox[1] * yscale,
+                         bbox[2] * xscale,
+                         im.height - bbox[3] * yscale]
             pixcoords = [int(round(c)) for c in pixcoords]
             log.debug('blanking %r', pixcoords)
             draw.rectangle(pixcoords, fill=white)
