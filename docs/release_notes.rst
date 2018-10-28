@@ -172,6 +172,15 @@ v7.0.0
 
     +   It may be necessary to separately ``pip install pycparser`` to avoid `another Python 3.7 issue <https://github.com/eliben/pycparser/pull/135>`_.
 
+v6.2.5
+------
+
+-   Disable a failing test due to Tesseract 4.0rc1 behavior change. Previously, Tesseract would exit with an error message if its configuration was invalid, and OCRmyPDF would intercept this message. Now Tesseract issues a warning, which OCRmyPDF v6.2.5 may relay or ignore. (In v7.x, OCRmyPDF will respond to the warning.)
+
+-   This release branch no longer supports using the optional PyMuPDF installation, since it was removed in v7.x.
+
+-   This release branch no longer supports macOS. macOS users should upgrade to v7.x.
+
 v6.2.4
 ------
 
