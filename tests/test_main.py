@@ -723,6 +723,9 @@ def test_tesseract_config_notfound(renderer, resources, outdir):
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
+@pytest.mark.skipif(
+    tesseract.v4(),
+    reason='not valid due to behavior change in Tesseract >= 4.0-rc1')
 def test_tesseract_config_invalid(renderer, resources, outdir):
     cfg_file = outdir / 'test.cfg'
     with cfg_file.open('w') as f:
