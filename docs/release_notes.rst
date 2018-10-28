@@ -10,6 +10,12 @@ The OCRmyPDF package itself does not contain a public API, although it is fairly
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
 
+v6.2.5
+------
+
+-   Backport compatibility fixes for Tesseract 4.0.0-rcN from v7.2.0
+
+
 v6.2.4
 ------
 
