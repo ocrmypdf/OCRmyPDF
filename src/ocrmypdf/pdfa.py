@@ -34,7 +34,6 @@ Ghostscript's handling of pdfmark.
 from binascii import hexlify
 from datetime import datetime
 from pathlib import Path
-from shutil import copyfile
 from string import Template
 import pkg_resources
 import os
@@ -42,7 +41,6 @@ import os
 from libxmp.utils import file_to_dict
 from libxmp import consts
 
-from ocrmypdf.helpers import fspath
 
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
 

@@ -17,7 +17,7 @@
 
 from pathlib import Path
 import concurrent.futures
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 import logging
 import sys
 

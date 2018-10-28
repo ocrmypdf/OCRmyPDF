@@ -15,15 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from subprocess import CalledProcessError, run
-from tempfile import TemporaryFile
+from subprocess import run
 from functools import lru_cache
-import sys
-import os
-import shutil
 
 from . import get_version
-from ..exceptions import ExitCode, MissingDependencyError
+from ..exceptions import MissingDependencyError
 
 
 @lru_cache(maxsize=1)
