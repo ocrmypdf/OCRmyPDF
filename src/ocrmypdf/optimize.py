@@ -17,7 +17,7 @@
 
 from pathlib import Path
 import concurrent.futures
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 import logging
 import sys
 
@@ -137,10 +137,9 @@ def extract_image_generic(*, pike, root, log, image, xref, options):
         # generating a PNG from compressed data
         pim.as_pil_image().save(png_name(root, xref))
         return xref, '.png'
-    else:
-        return None
 
-    return True
+    return None
+
 
 
 def extract_images(pike, root, log, options, extract_fn):

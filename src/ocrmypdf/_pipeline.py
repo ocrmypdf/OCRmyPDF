@@ -33,7 +33,7 @@ from .hocrtransform import HocrTransform
 from .pdfinfo import PdfInfo, Colorspace
 from .pdfa import generate_pdfa_ps, encode_pdf_date
 from .helpers import re_symlink, is_iterable_notstr, page_number, flatten_groups
-from .exec import ghostscript, tesseract, qpdf
+from .exec import ghostscript, tesseract
 from .exceptions import UnsupportedImageFormatError, \
     DpiError, PriorOcrFoundError, InputFileError, EncryptedPdfError
 from . import leptonica
