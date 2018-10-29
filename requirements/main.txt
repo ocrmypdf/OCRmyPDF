@@ -3,7 +3,8 @@
 # installation
 cffi == 1.11.5
 img2pdf == 0.3.0
-pikepdf == 0.3.4
+pdfminer == 20170720
+pikepdf == 0.3.6
 Pillow >= 5.0.0, != 5.1.0 ; sys_platform == "darwin"
 pycparser == 2.18
 python-xmp-toolkit == 2.0.1
