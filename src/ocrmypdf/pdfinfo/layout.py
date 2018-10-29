@@ -121,7 +121,7 @@ class TextPositionTracker(PDFLayoutAnalyzer):
 
     def handle_undefined_char(self, font, cid):
         #log.info('undefined: %r, %r', font, cid)
-        return (font, cid)
+        return (font.fontname, cid)
 
     def receive_layout(self, ltpage):
         self.result = ltpage
