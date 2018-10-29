@@ -175,7 +175,6 @@ def test_vector(resources):
     filename = resources / 'vector.pdf'
     pdf = pdfinfo.PdfInfo(filename)
     assert pdf[0].has_vector
-    assert not pdf[0].only_ocr_text
     assert not pdf[0].has_text
 
 
@@ -183,5 +182,4 @@ def test_ocr_detection(resources):
     filename = resources / 'graph_ocred.pdf'
     pdf = pdfinfo.PdfInfo(filename)
     assert not pdf[0].has_vector
-    assert pdf[0].only_ocr_text
     assert pdf[0].has_text

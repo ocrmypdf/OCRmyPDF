@@ -634,10 +634,6 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     if any(isinstance(ci, VectorInfo) for ci in contentsinfo):
         pageinfo['has_vector'] = True
 
-    textinfos = (ti for ti in contentsinfo if isinstance(ti, TextInfo))
-    all_invisible = not any(ti.visible for ti in textinfos)
-    pageinfo['only_ocr_text'] = all_invisible
-
     pageinfo['images'] = [im for im in contentsinfo
                           if isinstance(im, ImageInfo)]
     if pageinfo['images']:
@@ -705,10 +701,6 @@ class PageInfo:
     @property
     def has_vector(self):
         return self._pageinfo['has_vector']
-
-    @property
-    def only_ocr_text(self):
-        return self._pageinfo['only_ocr_text']
 
     @property
     def width_inches(self):
