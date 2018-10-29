@@ -28,7 +28,7 @@ import xml.etree.ElementTree as ET
 from pikepdf import PdfMatrix
 import pikepdf
 
-from .layout import get_textblocks, filter_textboxes, textbox_predicate
+from .layout import get_page_analysis, get_text_boxes
 from ..exec import ghostscript
 from ..helpers import fspath
 
@@ -107,6 +107,9 @@ InlineSettings = namedtuple('InlineSettings',
 
 ContentsInfo = namedtuple('ContentsInfo',
     ['xobject_settings', 'inline_images', 'found_text', 'found_vector'])
+
+TextBoxInfo = namedtuple('TextBoxInfo',
+    ['bbox', 'is_visible', 'is_corrupt'])
 
 
 class VectorInfo:
@@ -590,15 +593,17 @@ def _page_has_text(text_blocks, page_width, page_height):
 
 
 def simplify_textboxes(miner):
-    for box in filter_textboxes(miner, lambda x: True):
-        result = {}
+    """Extract only limited content from text boxes
+
+    We do this to save memory and ensure that our objects are pickleable.
+    """
+    for box in get_text_boxes(miner):
         first_line = box._objs[0]
         first_char = first_line._objs[0]
 
-        result['is_visible'] = (first_char.rendermode != 3)
-        result['is_corrupt'] = (first_char.get_text() == '\ufffd')
-        result['bbox'] = box.bbox
-        yield result
+        visible = (first_char.rendermode != 3)
+        corrupt = (first_char.get_text() == '\ufffd')
+        yield TextBoxInfo(box.bbox, visible, corrupt)
 
 
 def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
@@ -612,14 +617,14 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     #     fspath(infile), pageno, xmltext=xmltext)
 
     with Path(infile).open('rb') as f:
-        miner = get_textblocks(f, pageno)
-    pageinfo['textobjs'] = list(simplify_textboxes(miner))
+        miner = get_page_analysis(f, pageno)
+    pageinfo['textboxes'] = list(simplify_textboxes(miner))
 
     mediabox = [Decimal(d) for d in page.MediaBox.as_list()]
     width_pt = mediabox[2] - mediabox[0]
     height_pt = mediabox[3] - mediabox[1]
 
-    bboxes = (obj['bbox'] for obj in pageinfo['textobjs'])
+    bboxes = (box.bbox for box in pageinfo['textboxes'])
     pageinfo['has_text'] = _page_has_text(
         bboxes, width_pt, height_pt
     )
@@ -748,14 +753,14 @@ class PageInfo:
         def predicate(obj, want_visible, want_corrupt):
             result = True
             if want_visible is not None:
-                if obj['is_visible'] != want_visible:
+                if obj.is_visible != want_visible:
                     result = False
             if want_corrupt is not None:
-                if obj['is_corrupt'] != want_corrupt:
+                if obj.is_corrupt != want_corrupt:
                     result = False
             return result
 
-        return (obj['bbox'] for obj in self._pageinfo['textobjs']
+        return (obj.bbox for obj in self._pageinfo['textboxes']
                 if predicate(obj, visible, corrupt))
 
     @property

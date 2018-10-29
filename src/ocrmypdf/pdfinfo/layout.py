@@ -133,7 +133,7 @@ class TextPositionTracker(PDFLayoutAnalyzer):
         return self.result
 
 
-def get_textblocks(infile, pageno):
+def get_page_analysis(infile, pageno):
     rman = pdfminer.pdfinterp.PDFResourceManager(caching=True)
     dev = TextPositionTracker(rman, laparams=LAParams())
     interp = pdfminer.pdfinterp.PDFPageInterpreter(rman, dev)
@@ -148,33 +148,12 @@ def get_textblocks(infile, pageno):
     return dev.get_result()
 
 
-def textbox_predicate(*, visible, corrupt):
-    def real_predicate(textbox, want_visible=visible, want_corrupt=corrupt):
-        textline = textbox._objs[0]
-        first_char = textline._objs[0]
-
-        result = True
-
-        is_visible = (first_char.rendermode != 3)
-        if want_visible is not None:
-            if is_visible != want_visible:
-                result = False
-        is_corrupt = (first_char.get_text() == '\ufffd')
-        if want_corrupt is not None:
-            if is_corrupt != want_corrupt:
-                result = False
-
-        return result
-    return real_predicate
-
-
-def filter_textboxes(obj, predicate):
+def get_text_boxes(obj):
     for child in obj:
         if isinstance(child, (LTTextBox)):
-            if predicate(child):
-                yield child
+            yield child
         else:
             try:
-                yield from filter_textboxes(child, predicate)
+                yield from get_text_boxes(child)
             except TypeError:
                 continue
