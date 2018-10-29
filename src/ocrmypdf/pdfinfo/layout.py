@@ -40,7 +40,7 @@ from ..exceptions import EncryptedPdfError
 # characters with no corresponding Unicode entry. These can be subsetted fonts
 # or symbolic fonts. There seems to be no way to map /g123 fonts to Unicode,
 # barring a ToUnicode data structure.
-pdfminer.encodingdb.STRIP_NAME = re.compile(r'[^g][0-9]+')
+pdfminer.encodingdb.STRIP_NAME = re.compile(r'(?![g])([0-9]+)')
 
 class LTStateAwareChar(LTChar):
     """A subclass of LTChar that tracks text render mode at time of drawing"""
