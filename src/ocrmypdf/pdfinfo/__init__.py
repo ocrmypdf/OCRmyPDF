@@ -589,6 +589,18 @@ def _page_has_text(text_blocks, page_width, page_height):
     return has_text
 
 
+def simplify_textboxes(miner):
+    for box in filter_textboxes(miner, lambda x: True):
+        result = {}
+        first_line = box._objs[0]
+        first_char = first_line._objs[0]
+
+        result['is_visible'] = (first_char.rendermode != 3)
+        result['is_corrupt'] = (first_char.get_text() == '\ufffd')
+        result['bbox'] = box.bbox
+        yield result
+
+
 def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     pageinfo = {}
     pageinfo['pageno'] = pageno
@@ -600,15 +612,14 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     #     fspath(infile), pageno, xmltext=xmltext)
 
     with Path(infile).open('rb') as f:
-        pageinfo['objects'] = get_textblocks(f, pageno)
+        miner = get_textblocks(f, pageno)
+    pageinfo['textobjs'] = list(simplify_textboxes(miner))
 
     mediabox = [Decimal(d) for d in page.MediaBox.as_list()]
     width_pt = mediabox[2] - mediabox[0]
     height_pt = mediabox[3] - mediabox[1]
 
-    bboxes = (textbox.bbox for textbox in filter_textboxes(
-            pageinfo['objects'], lambda obj: True)
-    )
+    bboxes = (obj['bbox'] for obj in pageinfo['textobjs'])
     pageinfo['has_text'] = _page_has_text(
         bboxes, width_pt, height_pt
     )
@@ -734,10 +745,18 @@ class PageInfo:
         return self._pageinfo['images']
 
     def get_textareas(self, visible=None, corrupt=None):
-        return (obj.bbox for obj in filter_textboxes(
-                self._pageinfo['objects'],
-                textbox_predicate(visible=visible, corrupt=corrupt)
-            ))
+        def predicate(obj, want_visible, want_corrupt):
+            result = True
+            if want_visible is not None:
+                if obj['is_visible'] != want_visible:
+                    result = False
+            if want_corrupt is not None:
+                if obj['is_corrupt'] != want_corrupt:
+                    result = False
+            return result
+
+        return (obj['bbox'] for obj in self._pageinfo['textobjs']
+                if predicate(obj, visible, corrupt))
 
     @property
     def xres(self):

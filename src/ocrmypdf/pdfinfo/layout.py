@@ -22,6 +22,7 @@ import pdfminer.pdfinterp
 import pdfminer.pdfdevice
 
 from pdfminer.converter import PDFLayoutAnalyzer
+from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
 from pdfminer.glyphlist import glyphname2unicode
 from pdfminer.layout import (
     LTChar, LTContainer, LTLayoutContainer, LTPage, LTTextLine, LAParams,
@@ -30,6 +31,8 @@ from pdfminer.layout import (
 from pdfminer.pdffont import PDFUnicodeNotDefined, PDFType3Font
 from pdfminer.pdfpage import PDFPage
 from pdfminer.utils import matrix2str, bbox2str, fsplit
+
+from ..exceptions import EncryptedPdfError
 
 
 # Fix pdfminer's regex in name2unicode function
@@ -137,7 +140,10 @@ def get_textblocks(infile, pageno):
 
     page = PDFPage.get_pages(infile, pagenos=[pageno], maxpages=0)
 
-    interp.process_page(next(page))
+    try:
+        interp.process_page(next(page))
+    except PDFTextExtractionNotAllowed as e:
+        raise EncryptedPdfError()
 
     return dev.get_result()
 

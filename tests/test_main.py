@@ -377,7 +377,7 @@ def test_tesseract_image_too_big(renderer, spoof_tesseract_big_image_error,
 def test_algo4(resources, spoof_tesseract_noop, outpdf):
     p, _, _ = run_ocrmypdf(resources / 'encrypted_algo4.pdf', outpdf,
         env=spoof_tesseract_noop)
-    assert p.returncode == ExitCode.ok
+    assert p.returncode == ExitCode.encrypted_pdf
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
