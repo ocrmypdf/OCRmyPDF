@@ -264,8 +264,10 @@ ocrsettings.add_argument(
          "images, text pages, and/or previously OCRed pages")
 ocrsettings.add_argument(
     '--redo-ocr', action='store_true',
-    help="Remove any invisible text, and apply OCR")
-
+    help="Attempt to detect and remove the hidden OCR layer from files that "
+         "were previously OCRed with OCRmyPDF or another program. Apply OCR "
+         "to text found in raster images. Existing visible text objects will "
+         "not be changed. If there is no existing OCR, OCR will be added.")
 ocrsettings.add_argument(
     '--skip-big', type=numeric(float, 0, 5000), metavar='MPixels',
     help="Skip OCR on pages larger than the specified amount of megapixels, "
