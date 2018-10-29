@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
+
 import pdfminer.encodingdb
 import pdfminer.pdfinterp
 import pdfminer.pdfdevice
@@ -30,29 +32,12 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.utils import matrix2str, bbox2str, fsplit
 
 
-def PDFType3Font_to_unichr(self, cid):
-    """Patch Type3 fonts to fix misinterpretation of gids as Unicode mapping
-
-    In a Type3 font the /Encoding /Differences [ ] array describes the mapping
-    of character codes to glyph numbers like /g178 where 178 is an index into
-    Type3 font's /CharProcs data structure.
-
-    See PDF RM 1.7: 9.6.6.3 Encodings for Type 3 Fonts
-
-    There is no correspondence between glyph numbers and Unicode, however,
-    except by coincidence. So, if there is no ToUnicode table, then Unicode
-    mapping is impossible.
-
-    """
-    try:
-        if self.unicode_map:
-            return self.unicode_map.get_unichr(cid)
-    except KeyError:
-        pass
-    raise PDFUnicodeNotDefined(None, cid)
-
-PDFType3Font.to_unichr = PDFType3Font_to_unichr
-
+# Fix pdfminer's regex in name2unicode function
+# Font cids that are mapped to names of the form /g123 seem to be, by convention
+# characters with no corresponding Unicode entry. These can be subsetted fonts
+# or symbolic fonts. There seems to be no way to map /g123 fonts to Unicode,
+# barring a ToUnicode data structure.
+pdfminer.encodingdb.STRIP_NAME = re.compile(r'[^g][0-9]+')
 
 class LTStateAwareChar(LTChar):
     """A subclass of LTChar that tracks text render mode at time of drawing"""
