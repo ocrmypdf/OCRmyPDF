@@ -108,7 +108,7 @@ InlineSettings = namedtuple('InlineSettings',
 ContentsInfo = namedtuple('ContentsInfo',
     ['xobject_settings', 'inline_images', 'found_text', 'found_vector'])
 
-TextBoxInfo = namedtuple('TextBoxInfo',
+TextboxInfo = namedtuple('TextboxInfo',
     ['bbox', 'is_visible', 'is_corrupt'])
 
 
@@ -603,7 +603,7 @@ def simplify_textboxes(miner):
 
         visible = (first_char.rendermode != 3)
         corrupt = (first_char.get_text() == '\ufffd')
-        yield TextBoxInfo(box.bbox, visible, corrupt)
+        yield TextboxInfo(box.bbox, visible, corrupt)
 
 
 def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
@@ -713,6 +713,10 @@ class PageInfo:
     @property
     def has_text(self):
         return self._pageinfo['has_text']
+
+    @property
+    def has_corrupt_text(self):
+        return any(tbox.is_corrupt for tbox in self._pageinfo['textboxes'])
 
     @property
     def has_vector(self):

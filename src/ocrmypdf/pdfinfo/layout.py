@@ -35,12 +35,27 @@ from pdfminer.utils import matrix2str, bbox2str, fsplit
 from ..exceptions import EncryptedPdfError
 
 
-# Fix pdfminer's regex in name2unicode function
-# Font cids that are mapped to names of the form /g123 seem to be, by convention
-# characters with no corresponding Unicode entry. These can be subsetted fonts
-# or symbolic fonts. There seems to be no way to map /g123 fonts to Unicode,
-# barring a ToUnicode data structure.
-pdfminer.encodingdb.STRIP_NAME = re.compile(r'(?![g])([0-9]+)')
+
+STRIP_NAME = re.compile(r'[0-9]+')
+
+def name2unicode(name):
+    """Fix pdfminer's regex in name2unicode function
+
+    Font cids that are mapped to names of the form /g123 seem to be, by convention
+    characters with no corresponding Unicode entry. These can be subsetted fonts
+    or symbolic fonts. There seems to be no way to map /g123 fonts to Unicode,
+    barring a ToUnicode data structure.
+    """
+    if name in glyphname2unicode:
+        return glyphname2unicode[name]
+    if name.startswith('g'):
+        raise KeyError(name)
+    m = STRIP_NAME.search(name)
+    if not m:
+        raise KeyError(name)
+    return chr(int(m.group(0)))
+
+pdfminer.encodingdb.name2unicode = name2unicode
 
 from math import copysign
 def PDFType3Font__get_height(self):

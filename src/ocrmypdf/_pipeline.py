@@ -252,6 +252,13 @@ def is_ocr_required(pageinfo, log, options):
                                 "rasterizing text and running OCR anyway"))
             ocr_required = True
         elif options.redo_ocr:
+            if pageinfo.has_corrupt_text:
+                log.warning(msg.format(
+                    page,
+                    "some text on this page cannot be mapped to characters: "
+                    "consider using --force-ocr instead")
+                )
+            else:
             log.info(msg.format(page,
                                 "redoing OCR"))
             ocr_required = True
