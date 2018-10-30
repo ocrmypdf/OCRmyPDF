@@ -28,7 +28,7 @@ from pdfminer.layout import (
     LTChar, LTContainer, LTLayoutContainer, LTPage, LTTextLine, LAParams,
     LTTextBox
 )
-from pdfminer.pdffont import PDFUnicodeNotDefined, PDFType3Font
+from pdfminer.pdffont import PDFUnicodeNotDefined, PDFType3Font, PDFFont, PDFCIDFont
 from pdfminer.pdfpage import PDFPage
 from pdfminer.utils import matrix2str, bbox2str, fsplit
 
@@ -58,6 +58,22 @@ def PDFType3Font__get_ascent(self):
 PDFType3Font.get_height = PDFType3Font__get_height
 PDFType3Font.get_ascent = PDFType3Font__get_ascent
 PDFType3Font.get_descent = PDFType3Font__get_descent
+
+
+original_PDFFont_init = PDFFont.__init__
+def PDFFont__init__(self, descriptor, widths, default_width=None):
+    original_PDFFont_init(self, descriptor, widths, default_width)
+    # PDF spec says descent should be negative
+    # A font with a positive descent implies it floats entirely above the
+    # baseline, i.e. it's not really a baseline anymore. I have fonts that
+    # claim a positive descent, but treating descent as positive always seems
+    # to misposition text.
+    if self.descent > 0:
+        self.descent = -self.descent
+
+PDFFont.__init__ = PDFFont__init__
+
+
 
 class LTStateAwareChar(LTChar):
     """A subclass of LTChar that tracks text render mode at time of drawing"""
