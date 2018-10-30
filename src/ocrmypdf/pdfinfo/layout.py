@@ -42,6 +42,23 @@ from ..exceptions import EncryptedPdfError
 # barring a ToUnicode data structure.
 pdfminer.encodingdb.STRIP_NAME = re.compile(r'(?![g])([0-9]+)')
 
+from math import copysign
+def PDFType3Font__get_height(self):
+    h = self.bbox[3]-self.bbox[1]
+    if h == 0:
+        h = self.ascent - self.descent
+    return h * copysign(1.0, self.vscale)
+
+def PDFType3Font__get_descent(self):
+    return self.descent * copysign(1.0, self.vscale)
+
+def PDFType3Font__get_ascent(self):
+    return self.ascent * copysign(1.0, self.vscale)
+
+PDFType3Font.get_height = PDFType3Font__get_height
+PDFType3Font.get_ascent = PDFType3Font__get_ascent
+PDFType3Font.get_descent = PDFType3Font__get_descent
+
 class LTStateAwareChar(LTChar):
     """A subclass of LTChar that tracks text render mode at time of drawing"""
 
@@ -50,8 +67,10 @@ class LTStateAwareChar(LTChar):
         'width', 'height', 'bbox', 'x0', 'x1', 'y0', 'y1'
     )
 
-    def __init__(self, matrix, font, fontsize, scaling, rise, text, textwidth,                textdisp, textstate, *args):
-        super().__init__(matrix, font, fontsize, scaling, rise, text, textwidth,                  textdisp, *args)
+    def __init__(self, matrix, font, fontsize, scaling, rise, text, textwidth,
+                 textdisp, textstate, *args):
+        super().__init__(matrix, font, fontsize, scaling, rise, text, textwidth,
+                         textdisp, *args)
         self.rendermode = textstate.render
 
     def is_compatible(self, obj):
