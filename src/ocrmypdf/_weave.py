@@ -75,8 +75,13 @@ def strip_invisible_text(pdf, page, log):
             return str(op).encode('ascii')
 
     lines = []
+
     for operands, operator in stream:
-        line = b' '.join(convert(op) for op in operands) + b' ' + operator.unparse()
+        if operator == pikepdf.Operator('INLINE IMAGE'):
+            iim = operands[0]
+            line = iim.unparse()
+        else:
+            line = b' '.join(convert(op) for op in operands) + b' ' + operator.unparse()
         lines.append(line)
 
     content_stream = b'\n'.join(lines)
