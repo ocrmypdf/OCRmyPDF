@@ -477,6 +477,13 @@ def check_options_output(options, log):
         lossless_reconstruction = True
     options.lossless_reconstruction = lossless_reconstruction
 
+    if not options.lossless_reconstruction and options.redo_ocr:
+        raise argparse.ArgumentError(
+            None,
+            "--redo-ocr is not currently compatible with --deskew, "
+            "--clean-final, and --remove-background"
+        )
+
 
 def check_options_sidecar(options, log):
     if options.sidecar == '\0':
@@ -521,10 +528,15 @@ def check_options_preprocessing(options, log):
 
 
 def check_options_ocr_behavior(options, log):
-    if options.force_ocr and options.skip_text:
+    exclusive_options = sum(
+        [(1 if opt else 0)
+         for opt in (options.force_ocr, options.skip_text, options.redo_ocr)
+        ]
+    )
+    if exclusive_options >= 2:
         raise argparse.ArgumentError(
             None,
-            "Error: --force-ocr and --skip-text are mutually exclusive.")
+            "Error: choose only one of --force-ocr, --skip-text, --redo-ocr.")
 
 
 def check_options_optimizing(options, log):
