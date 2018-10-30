@@ -258,9 +258,10 @@ def is_ocr_required(pageinfo, log, options):
                     "some text on this page cannot be mapped to characters: "
                     "consider using --force-ocr instead")
                 )
+                raise PriorOcrFoundError()  # Wrong error but will do for now
             else:
-            log.info(msg.format(page,
-                                "redoing OCR"))
+                log.info(msg.format(page,
+                                    "redoing OCR"))
             ocr_required = True
         elif options.skip_text:
             log.info(msg.format(page,
