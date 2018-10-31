@@ -803,6 +803,7 @@ class PdfInfo:
         self._infile = infile
         self._pages, pdf = _pdf_get_all_pageinfo(infile, log=log)
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
+        self._has_acroform = pdf.root.get('/AcroForm', False)
 
     @property
     def pages(self):
@@ -816,6 +817,10 @@ class PdfInfo:
     @property
     def has_userunit(self):
         return any(page.userunit != 1.0 for page in self.pages)
+
+    @property
+    def has_acroform(self):
+        return self._has_acroform
 
     @property
     def filename(self):

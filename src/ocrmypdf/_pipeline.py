@@ -193,6 +193,25 @@ def repair_and_parse_pdf(
             "high page count files.  Python 3.6 or newer is recommended."
         )
 
+    if pdfinfo.has_acroform:
+        if options.redo_ocr:
+            log.error(
+                "This PDF has a user fillable form. --redo-ocr is not "
+                "currently possible on such files."
+            )
+            raise PriorOcrFoundError()
+        else:
+            log.warning(
+                "This PDF has a fillable form. Chances are it is a pure digital "
+                "document that does not need OCR."
+            )
+            if not options.force_ocr:
+                log.info(
+                    "Use the option --force-ocr to produce an image of the "
+                    "form and all filled form fields. The output PDF will be "
+                    "'flattened' and will no longer be fillable."
+                )
+
     context.set_pdfinfo(pdfinfo)
     log.debug(pdfinfo)
 
