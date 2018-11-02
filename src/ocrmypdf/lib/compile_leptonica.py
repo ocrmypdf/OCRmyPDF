@@ -19,7 +19,6 @@
 from cffi import FFI
 
 ffibuilder = FFI()
-ffibuilder.set_source("ocrmypdf.lib._leptonica", None)
 ffibuilder.cdef("""
 typedef signed char             l_int8;
 typedef unsigned char           l_uint8;
@@ -323,6 +322,8 @@ void
 lept_free(void *ptr);
 """)
 
+
+ffibuilder.set_source("ocrmypdf.lib._leptonica", None)
 
 if __name__ == '__main__':
     ffibuilder.compile(verbose=True)
