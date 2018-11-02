@@ -208,7 +208,7 @@ def test_argsfile(spoof_tesseract_noop, resources, outdir):
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_ocr_timeout(renderer, resources, outpdf):
     out = check_ocrmypdf(resources / 'skew.pdf', outpdf,
-                         '--tesseract-timeout', '0.01',
+                         '--tesseract-timeout', '0',
                          '--pdf-renderer', renderer)
     pdfinfo = PdfInfo(out)
     assert not pdfinfo[0].has_text
