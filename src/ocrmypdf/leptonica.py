@@ -139,6 +139,8 @@ class Pix:
     """
 
     def __init__(self, pix):
+        if not pix:
+            raise ValueError('NULL box')
         self._pix = ffi.gc(pix, Pix._pix_destroy)
 
     def __repr__(self):
@@ -403,8 +405,6 @@ class Pix:
                 display,
                 pdfdir))
 
-            print(repr(cropbox))
-
             cropped_pix = lept.pixClipRectangle(
                 self._pix,
                 cropbox._box,
@@ -549,7 +549,10 @@ class Box:
     """
 
     def __init__(self, box):
+        if not box:
+            raise ValueError('NULL box')
         self._box = ffi.gc(box, Box._box_destroy)
+
 
     def __repr__(self):
         if self._box:
@@ -583,6 +586,8 @@ class BoxArray:
     """Wrapper around Leptonica's BOXA (Array of BOX) objects."""
 
     def __init__(self, boxa):
+        if not boxa:
+            raise ValueError('NULL boxa')
         self._boxa = ffi.gc(boxa, BoxArray._boxa_destroy)
 
     def __repr__(self):
