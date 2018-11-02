@@ -803,7 +803,7 @@ class PdfInfo:
         self._infile = infile
         self._pages, pdf = _pdf_get_all_pageinfo(infile, log=log)
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
-        self._has_acroform = pdf.root.get('/AcroForm', False)
+        self._has_acroform = '/AcroForm' in pdf.root
 
     @property
     def pages(self):
