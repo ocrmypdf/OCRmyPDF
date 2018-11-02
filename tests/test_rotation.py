@@ -169,6 +169,8 @@ def test_rotate_deskew_timeout(resources, outdir):
     check_ocrmypdf(
         resources / 'rotated_skew.pdf',
         outdir / 'deskewed.pdf',
+        '--rotate-pages',
+        '--rotate-pages-threshold', '0',
         '--deskew',
         '--tesseract-timeout', '0',
         '--pdf-renderer', 'sandwich'
