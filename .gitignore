@@ -22,7 +22,7 @@ docs/Makefile
 ocrmypdf/lib/_*.py
 
 # Code coverage
-.coverage
+.coverage*
 htmlcov/
 
 # Testing
