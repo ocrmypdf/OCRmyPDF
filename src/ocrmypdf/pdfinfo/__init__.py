@@ -95,7 +95,7 @@ InlineSettings = namedtuple('InlineSettings',
     ['iimage', 'shorthand', 'stack_depth'])
 
 ContentsInfo = namedtuple('ContentsInfo',
-    ['xobject_settings', 'inline_images', 'found_text', 'found_vector'])
+    ['xobject_settings', 'inline_images', 'found_vector'])
 
 TextboxInfo = namedtuple('TextboxInfo',
     ['bbox', 'is_visible', 'is_corrupt'])
@@ -104,15 +104,6 @@ TextboxInfo = namedtuple('TextboxInfo',
 class VectorInfo:
     def __init__(self):
         pass
-
-
-class TextInfo:
-    def __init__(self, invisible, visible):
-        self.invisible = invisible
-        self.visible = visible
-
-    def __bool__(self):
-        return self.invisible or self.visible
 
 
 def _normalize_stack(graphobjs):
@@ -150,15 +141,10 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     ctm = PdfMatrix(initial_shorthand)
     xobject_settings = []
     inline_images = []
-    found_text, found_vector = False, False
-    found_invisible_text, found_visible_text = False, False
-    text_mode_ops = set("""BT ET Tr""".split())
-    text_showing_ops = set("""Tj " ' TJ""".split())
+    found_vector = False
     vector_ops = set('S s f F f* B B* b b*'.split())
     image_ops = set('BI ID EI q Q Do cm'.split())
-    text_render_mode = 0
-    operator_whitelist = ' '.join(
-        text_mode_ops | text_showing_ops | vector_ops | image_ops)
+    operator_whitelist = ' '.join(vector_ops | image_ops)
 
     for n, graphobj in enumerate(_normalize_stack(
             pikepdf.parse_content_stream(contentstream, operator_whitelist))):
@@ -189,25 +175,12 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
                 iimage=iimage, shorthand=ctm.shorthand,
                 stack_depth=len(stack))
             inline_images.append(inline)
-        elif operator in text_mode_ops:
-            if operator == 'BT':
-                text_render_mode = 0
-            elif operator == 'Tr':
-                text_render_mode = operands[0]
-        elif operator in text_showing_ops:
-            found_text = True
-            if text_render_mode == 3:
-                found_invisible_text = True
-            else:
-                found_visible_text = True
         elif operator in vector_ops:
             found_vector = True
 
     return ContentsInfo(
         xobject_settings=xobject_settings,
         inline_images=inline_images,
-        found_text=TextInfo(invisible=found_invisible_text,
-                            visible=found_visible_text),
         found_vector=found_vector)
 
 
@@ -508,8 +481,6 @@ def _process_content_streams(*, pdf, container, shorthand=None):
 
     if contentsinfo.found_vector:
         yield VectorInfo()
-    if contentsinfo.found_text:
-        yield contentsinfo.found_text
     yield from _find_inline_images(contentsinfo)
     yield from _find_regular_images(container, contentsinfo)
     yield from _find_form_xobject_images(pdf, container, contentsinfo)
