@@ -653,6 +653,8 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
         try:
             if isinstance(exc_value, exc_class):
                 exc_msg = str(exc_value)
+            elif isinstance(exc_value, str):
+                exc_msg = exc_value
             else:
                 exc_msg = str(exc_class())
         except Exception:
