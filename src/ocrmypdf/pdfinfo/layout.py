@@ -16,27 +16,30 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+from math import copysign
+from pathlib import Path
+from unittest.mock import patch
 
 import pdfminer.encodingdb
-import pdfminer.pdfinterp
 import pdfminer.pdfdevice
-
+import pdfminer.pdfinterp
 from pdfminer.converter import PDFLayoutAnalyzer
-from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
 from pdfminer.glyphlist import glyphname2unicode
-from pdfminer.layout import (
-    LTChar, LTContainer, LTLayoutContainer, LTPage, LTTextLine, LAParams,
-    LTTextBox
-)
-from pdfminer.pdffont import PDFUnicodeNotDefined, PDFType3Font, PDFFont, PDFCIDFont
+from pdfminer.layout import (LAParams, LTChar, LTContainer, LTLayoutContainer,
+                             LTPage, LTTextBox, LTTextLine)
+from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
+from pdfminer.pdffont import (PDFCIDFont, PDFFont, PDFType3Font,
+                              PDFUnicodeNotDefined)
 from pdfminer.pdfpage import PDFPage
-from pdfminer.utils import matrix2str, bbox2str, fsplit
+from pdfminer.utils import bbox2str, fsplit, matrix2str
 
 from ..exceptions import EncryptedPdfError
 
-
-
 STRIP_NAME = re.compile(r'[0-9]+')
+
+#
+# Unconditional pdfminer patches
+#
 
 def name2unicode(name):
     """Fix pdfminer's regex in name2unicode function
@@ -54,26 +57,7 @@ def name2unicode(name):
     if not m:
         raise KeyError(name)
     return chr(int(m.group(0)))
-
 pdfminer.encodingdb.name2unicode = name2unicode
-
-from math import copysign
-def PDFType3Font__get_height(self):
-    h = self.bbox[3]-self.bbox[1]
-    if h == 0:
-        h = self.ascent - self.descent
-    return h * copysign(1.0, self.vscale)
-
-def PDFType3Font__get_descent(self):
-    return self.descent * copysign(1.0, self.vscale)
-
-def PDFType3Font__get_ascent(self):
-    return self.ascent * copysign(1.0, self.vscale)
-
-PDFType3Font.get_height = PDFType3Font__get_height
-PDFType3Font.get_ascent = PDFType3Font__get_ascent
-PDFType3Font.get_descent = PDFType3Font__get_descent
-
 
 original_PDFFont_init = PDFFont.__init__
 def PDFFont__init__(self, descriptor, widths, default_width=None):
@@ -85,9 +69,23 @@ def PDFFont__init__(self, descriptor, widths, default_width=None):
     # to misposition text.
     if self.descent > 0:
         self.descent = -self.descent
-
 PDFFont.__init__ = PDFFont__init__
 
+#
+# pdfminer patches when creator is PScript5.dll
+#
+
+def PDFType3Font__PScript5_get_height(self):
+    h = self.bbox[3]-self.bbox[1]
+    if h == 0:
+        h = self.ascent - self.descent
+    return h * copysign(1.0, self.vscale)
+
+def PDFType3Font__PScript5_get_descent(self):
+    return self.descent * copysign(1.0, self.vscale)
+
+def PDFType3Font__PScript5_get_ascent(self):
+    return self.ascent * copysign(1.0, self.vscale)
 
 
 class LTStateAwareChar(LTChar):
@@ -183,17 +181,30 @@ class TextPositionTracker(PDFLayoutAnalyzer):
         return self.result
 
 
-def get_page_analysis(infile, pageno):
+def get_page_analysis(infile, pageno, pscript5_mode):
     rman = pdfminer.pdfinterp.PDFResourceManager(caching=True)
     dev = TextPositionTracker(rman, laparams=LAParams())
     interp = pdfminer.pdfinterp.PDFPageInterpreter(rman, dev)
 
-    page = PDFPage.get_pages(infile, pagenos=[pageno], maxpages=0)
+    if pscript5_mode:
+        patcher = patch.multiple(
+            'pdfminer.pdffont.PDFType3Font',
+            spec=True,
+            get_ascent=PDFType3Font__PScript5_get_ascent,
+            get_descent=PDFType3Font__PScript5_get_descent,
+            get_height=PDFType3Font__PScript5_get_height
+        )
+        patcher.start()
 
-    try:
-        interp.process_page(next(page))
-    except PDFTextExtractionNotAllowed as e:
-        raise EncryptedPdfError()
+    with Path(infile).open('rb') as f:
+        page = PDFPage.get_pages(f, pagenos=[pageno], maxpages=0)
+        try:
+            interp.process_page(next(page))
+        except PDFTextExtractionNotAllowed as e:
+            raise EncryptedPdfError()
+        finally:
+            if pscript5_mode:
+                patcher.stop()
 
     return dev.get_result()
 

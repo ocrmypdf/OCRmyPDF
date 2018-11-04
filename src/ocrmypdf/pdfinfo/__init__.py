@@ -615,9 +615,8 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
 
     # pageinfo['textinfo'] = _page_get_textblocks(
     #     fspath(infile), pageno, xmltext=xmltext)
-
-    with Path(infile).open('rb') as f:
-        miner = get_page_analysis(f, pageno)
+    pscript5_mode = str(pdf.metadata.get('/Creator')).startswith('PScript5')
+    miner = get_page_analysis(infile, pageno, pscript5_mode)
     pageinfo['textboxes'] = list(simplify_textboxes(miner))
 
     mediabox = [Decimal(d) for d in page.MediaBox.as_list()]
