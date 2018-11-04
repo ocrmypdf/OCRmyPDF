@@ -190,9 +190,20 @@ def test_force_ocr(spoof_tesseract_cache, resources, outpdf):
 
 def test_skip_ocr(spoof_tesseract_cache, resources, outpdf):
     out = check_ocrmypdf(resources / 'graph_ocred.pdf', outpdf, '-s',
-                   env=spoof_tesseract_cache)
+                         env=spoof_tesseract_cache)
     pdfinfo = PdfInfo(out)
     assert pdfinfo[0].has_text
+
+
+def test_redo_ocr(spoof_tesseract_cache, resources, outpdf):
+    in_ = resources / 'graph_ocred.pdf'
+    before = PdfInfo(in_, detailed_page_analysis=True)
+    out = check_ocrmypdf(in_, outpdf, '--redo-ocr',
+                         env=spoof_tesseract_cache)
+    after = PdfInfo(out, detailed_page_analysis=True)
+    assert before[0].has_text and after[0].has_text
+    assert before[0].get_textareas() != after[0].get_textareas(), \
+        "Expected text to be different after re-OCR"
 
 
 def test_argsfile(spoof_tesseract_noop, resources, outdir):
