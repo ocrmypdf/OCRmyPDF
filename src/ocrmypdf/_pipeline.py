@@ -162,6 +162,10 @@ def repair_and_parse_pdf(
     options = context.get_options()
     copyfile(input_file, output_file)
 
+    detailed_page_analysis = False
+    if options.redo_ocr:
+        detailed_page_analysis = True
+
     try:
         pdfinfo = PdfInfo(output_file, log=log)
     except pikepdf.PasswordError as e:

@@ -27,7 +27,7 @@ import re
 from pikepdf import PdfMatrix
 import pikepdf
 
-from .ghosttext import extract_text_xml
+from . import ghosttext
 from .layout import get_page_analysis, get_text_boxes
 
 from ..helpers import fspath
@@ -564,18 +564,20 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     pageinfo['images'] = []
 
     page = pdf.pages[pageno]
-
-    # pageinfo['textinfo'] = _page_get_textblocks(
-    #     fspath(infile), pageno, xmltext=xmltext)
-    pscript5_mode = str(pdf.metadata.get('/Creator')).startswith('PScript5')
-    miner = get_page_analysis(infile, pageno, pscript5_mode)
-    pageinfo['textboxes'] = list(simplify_textboxes(miner))
-
     mediabox = [Decimal(d) for d in page.MediaBox.as_list()]
     width_pt = mediabox[2] - mediabox[0]
     height_pt = mediabox[3] - mediabox[1]
 
-    bboxes = (box.bbox for box in pageinfo['textboxes'])
+    if xmltext:
+        bboxes = ghosttext.page_get_textblocks(
+            fspath(infile), pageno, xmltext=xmltext, height=height_pt)
+        pageinfo['bboxes'] = bboxes
+    else:
+        pscript5_mode = str(pdf.metadata.get('/Creator')).startswith('PScript5')
+        miner = get_page_analysis(infile, pageno, pscript5_mode)
+        pageinfo['textboxes'] = list(simplify_textboxes(miner))
+        bboxes = (box.bbox for box in pageinfo['textboxes'])
+
     pageinfo['has_text'] = _page_has_text(
         bboxes, width_pt, height_pt
     )
@@ -615,16 +617,20 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     return pageinfo
 
 
-def _pdf_get_all_pageinfo(infile, log=None):
+def _pdf_get_all_pageinfo(infile, detailed_page_analysis, log=None):
     if not log:
         log = Mock()
 
     pdf = pikepdf.open(infile)
-    page_xml = extract_text_xml(infile, pdf, pageno=None, log=log)
+    if not detailed_page_analysis:
+        pages_xml = None
+    else:
+        pages_xml = ghosttext.extract_text_xml(infile, pdf, pageno=None, log=log)
 
     pages = []
     for n in range(len(pdf.pages)):
-        page = PageInfo(pdf, n, infile, page_xml[n])
+        page_xml = pages_xml[n] if pages_xml else None
+        page = PageInfo(pdf, n, infile, page_xml)
         pages.append(page)
 
     return pages, pdf
@@ -694,8 +700,15 @@ class PageInfo:
                     result = False
             return result
 
+        if 'textboxes' not in self._pageinfo:
+            if visible is not None and corrupt is not None:
+                raise NotImplementedError(
+                    'Ghostscript textboxes cannot be classified')
+            return self._pageinfo['bboxes']
+
         return (obj.bbox for obj in self._pageinfo['textboxes']
                 if predicate(obj, visible, corrupt))
+
 
     @property
     def xres(self):
@@ -729,9 +742,10 @@ class PageInfo:
 class PdfInfo:
     """Get summary information about a PDF"""
 
-    def __init__(self, infile, log=None):
+    def __init__(self, infile, detailed_page_analysis=False, log=None):
         self._infile = infile
-        self._pages, pdf = _pdf_get_all_pageinfo(infile, log=log)
+        self._pages, pdf = _pdf_get_all_pageinfo(
+            infile, detailed_page_analysis, log=log)
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
         self._has_acroform = '/AcroForm' in pdf.root
 

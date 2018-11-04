@@ -32,8 +32,8 @@ regex_remove_char_tags = re.compile(br"""
 """, re.VERBOSE)
 
 
-def _page_get_textblocks(infile, pageno, xmltext):
-    """Smarter text detection"""
+def page_get_textblocks(infile, pageno, xmltext, height):
+    """Get text boxes out of Ghostscript txtwrite xml"""
 
     root = xmltext
     if not hasattr(xmltext, 'findall'):
@@ -45,8 +45,10 @@ def _page_get_textblocks(infile, pageno, xmltext):
             font_size = span.attrib['size']
             pts = [int(pt) for pt in bbox_str.split()]
             pts[1] = pts[1] - int(float(font_size) + 0.5)
-            bbox = tuple(pts)
-            yield bbox
+            bbox_topdown = tuple(pts)
+            bb = bbox_topdown
+            bbox_bottomup = (bb[0], height - bb[3], bb[2], height - bb[1])
+            yield bbox_bottomup
 
     def joined_blocks():
         prev = None
@@ -55,7 +57,7 @@ def _page_get_textblocks(infile, pageno, xmltext):
                 prev = bbox
             if bbox[1] == prev[1] and bbox[3] == prev[3]:
                 gap = prev[2] - bbox[0]
-                height = bbox[3] - bbox[1]
+                height = abs(bbox[3] - bbox[1])
                 if gap < height:
                     # Join boxes
                     prev = (prev[0], prev[1], bbox[2], bbox[3])
