@@ -140,7 +140,7 @@ class Pix:
 
     def __init__(self, pix):
         if not pix:
-            raise ValueError('NULL box')
+            raise ValueError('NULL pix')
         self._pix = ffi.gc(pix, Pix._pix_destroy)
 
     def __repr__(self):
@@ -485,14 +485,24 @@ class Pix:
     def invert(self):
         return Pix(lept.pixInvert(ffi.NULL, self._pix))
 
-    def locate_barcodes(self, threshold=20):
-        p_mask = ffi.new('PIX **')
-        with _LeptonicaErrorTrap():
-            result = lept.pixLocateBarcodes(self._pix, threshold, ffi.NULL,
-                                            p_mask)
-            if result == ffi.NULL:
-                return None, None
-            return BoxArray(result), Pix(p_mask[0])
+    def locate_barcodes(self):
+        pixa_candidates = lept.pixExtractBarcodes(self._pix, 0)
+        if not pixa_candidates:
+            return
+        sarray = lept.pixReadBarcodes(pixa_candidates,
+                                      lept.L_BF_ANY,
+                                      lept.L_USE_WIDTHS,
+                                      ffi.NULL,
+                                      0)
+        if not sarray:
+            return
+        for n in range(sarray[0].n):
+            decoded = ffi.string(sarray[0].array[n]).decode()
+            if decoded.strip() == '':
+                continue
+            box = pixa_candidates[0].boxa[0].box[n][0]
+            left, top, right, bottom = box.x, box.y, box.x + box.w, box.y + box.h
+            yield (decoded, (left, top, right, bottom))
 
 
     @staticmethod
@@ -540,6 +550,19 @@ class CompressedData:
     def _destroy(compdata):
         pp = ffi.new('L_COMP_DATA **', compdata)
         lept.l_CIDataDestroy(pp)
+
+
+class PixArray:
+
+    def __init__(self, pixa):
+        if not pixa:
+            raise ValueError('NULL pixa')
+        self._pixa = ffi.gc(pixa, PixArray._pixa_destroy)
+
+    @staticmethod
+    def _pixa_destroy(pixa):
+        pp = ffi.new('PIXA **', pixa)
+        lept.pixaDestroy(pp)
 
 
 class Box:
@@ -607,7 +630,7 @@ class BoxArray:
         if not isinstance(n, int):
             raise TypeError('list indices must be integers')
         if 0 <= n < len(self):
-            return Box(lept.boxClone(self._boxa.box[n]))
+            return Box(lept.boxaGetBox(self._boxa, n, lept.L_CLONE))
         raise IndexError(n)
 
     @staticmethod

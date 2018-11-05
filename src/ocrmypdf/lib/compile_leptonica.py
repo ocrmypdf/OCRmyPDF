@@ -31,6 +31,8 @@ typedef double                  l_float64;
 typedef long long               l_int64;
 typedef unsigned long long      l_uint64;
 
+typedef int l_ok; /*!< return type 0 if OK, 1 on error */
+
 struct Pix
 {
     l_uint32             w;           /* width in pixels                   */
@@ -60,6 +62,17 @@ struct PixColormap
 };
 typedef struct PixColormap  PIXCMAP;
 
+/*! Array of pix */
+struct Pixa
+{
+    l_int32             n;          /*!< number of Pix in ptr array        */
+    l_int32             nalloc;     /*!< number of Pix ptrs allocated      */
+    l_uint32            refcount;   /*!< reference count (1 if no clones)  */
+    struct Pix        **pix;        /*!< the array of ptrs to pix          */
+    struct Boxa        *boxa;       /*!< array of boxes                    */
+};
+typedef struct Pixa PIXA;
+
 struct Box
 {
     l_int32            x;
@@ -80,6 +93,16 @@ struct Boxa
     struct Box       **box;         /*!< box ptr array                     */
 };
 typedef struct Boxa BOXA;
+
+/*! String array: an array of C strings */
+struct Sarray
+{
+    l_int32          nalloc;    /*!< size of allocated ptr array         */
+    l_int32          n;         /*!< number of strings allocated         */
+    l_int32          refcount;  /*!< reference count (1 if no clones)    */
+    char           **array;     /*!< string array                        */
+};
+typedef struct Sarray SARRAY;
 
 /*! Pdf formatted encoding types */
 enum {
@@ -128,6 +151,27 @@ enum {
     L_CLONE = 2,      /*!< make/use clone (ref count) of the object       */
     L_COPY_CLONE = 3  /*!< make a new array object (e.g., pixa) and fill  */
                       /*!< the array with clones (e.g., pix)              */
+};
+
+/*! Flags for method of extracting barcode widths */
+enum {
+    L_USE_WIDTHS = 1,     /*!< use histogram of barcode widths           */
+    L_USE_WINDOWS = 2     /*!< find best window for decoding transitions */
+};
+
+/*! Flags for barcode formats */
+enum {
+    L_BF_UNKNOWN = 0,     /*!< unknown format                            */
+    L_BF_ANY = 1,         /*!< try decoding with all known formats       */
+    L_BF_CODE128 = 2,     /*!< decode with Code128 format                */
+    L_BF_EAN8 = 3,        /*!< decode with EAN8 format                   */
+    L_BF_EAN13 = 4,       /*!< decode with EAN13 format                  */
+    L_BF_CODE2OF5 = 5,    /*!< decode with Code 2 of 5 format            */
+    L_BF_CODEI2OF5 = 6,   /*!< decode with Interleaved 2 of 5 format     */
+    L_BF_CODE39 = 7,      /*!< decode with Code39 format                 */
+    L_BF_CODE93 = 8,      /*!< decode with Code93 format                 */
+    L_BF_CODABAR = 9,     /*!< decode with Code93 format                 */
+    L_BF_UPCA = 10        /*!< decode with UPC A format                  */
 };
 
 """)
@@ -297,8 +341,26 @@ pixGenerateCIData(PIX           *pixs,
                   l_int32        ascii85,
                   L_COMP_DATA **pcid);
 
+SARRAY *
+pixProcessBarcodes(PIX      *pixs,
+                   l_int32   format,
+                   l_int32   method,
+                   SARRAY  **psaw,
+                   l_int32 debugflag);
+
+PIXA *
+pixExtractBarcodes(PIX     *pixs,
+                   l_int32 debugflag);
+
 BOXA *
 pixLocateBarcodes ( PIX *pixs, l_int32 thresh, PIX **ppixb, PIX **ppixm );
+
+SARRAY *
+pixReadBarcodes(PIXA     *pixa,
+                l_int32   format,
+                l_int32   method,
+                SARRAY  **psaw,
+                l_int32 debugflag);
 
 l_int32
 l_generateCIDataForPdf(const char *fname,
@@ -309,11 +371,20 @@ l_generateCIDataForPdf(const char *fname,
 BOX *
 boxClone ( BOX *box );
 
+BOX *
+boxaGetBox ( BOXA *boxa, l_int32 index, l_int32 accessflag );
+
 void
 boxDestroy(BOX  **pbox);
 
 void
 boxaDestroy ( BOXA **pboxa );
+
+void
+pixaDestroy(PIXA **ppixa);
+
+l_ok
+pixRenderBoxa ( PIX *pix, BOXA *boxa, l_int32 width, l_int32 op );
 
 void
 l_CIDataDestroy(L_COMP_DATA **pcid);
