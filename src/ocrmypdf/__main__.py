@@ -246,9 +246,13 @@ preprocessing.add_argument(
          "results slightly")
 preprocessing.add_argument(
     '--remove-vectors', action='store_true',
-    help="EXPERIMENTAL. Remove any vector graphics objects from the PDF, "
-         "including text rendered as curves. Useful when these objects "
-         "interfere with OCR.")
+    help="EXPERIMENTAL. Mask out any vector objects in the PDF so that they "
+         "will not be included in OCR. This can eliminate false characters.")
+preprocessing.add_argument(
+    '--mask-barcodes', action='store_true',
+    help="Mask out any barcodes that appear in the PDF so they are not "
+         "considered during OCR. Barcodes can introduce false characters into "
+         "OCR.")
 
 ocrsettings = parser.add_argument_group(
     "OCR options",

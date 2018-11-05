@@ -632,6 +632,14 @@ def select_ocr_image(
             draw.rectangle(pixcoords, fill=white)
             #draw.rectangle(pixcoords, outline=pink)
 
+        if options.mask_barcodes:
+            pix = leptonica.Pix.open(image)
+            barcodes = pix.locate_barcodes()
+            for barcode in barcodes:
+                decoded, rect = barcode
+                log.info('masking barcode %s %r', decoded, rect)
+                draw.rectangle(rect, fill=white)
+
         del draw
 
         # Pillow requires integer DPI

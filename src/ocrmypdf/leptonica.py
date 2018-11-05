@@ -103,6 +103,8 @@ class _LeptonicaErrorTrap:
                 raise FileNotFoundError()
             if 'pixWrite: stream not opened' in leptonica_output:
                 raise LeptonicaIOError()
+            if 'index not valid' in leptonica_output:
+                raise IndexError()
             raise LeptonicaError(leptonica_output)
 
         return False
@@ -486,10 +488,9 @@ class Pix:
         return Pix(lept.pixInvert(ffi.NULL, self._pix))
 
     def locate_barcodes(self):
-        pixa_candidates = lept.pixExtractBarcodes(self._pix, 0)
-        if not pixa_candidates:
-            return
-        sarray = lept.pixReadBarcodes(pixa_candidates,
+        pix = Pix(lept.pixConvertTo8(self._pix, 0))
+        pixa_candidates = PixArray(lept.pixExtractBarcodes(pix._pix, 0))
+        sarray = lept.pixReadBarcodes(pixa_candidates._pixa,
                                       lept.L_BF_ANY,
                                       lept.L_USE_WIDTHS,
                                       ffi.NULL,
@@ -500,7 +501,7 @@ class Pix:
             decoded = ffi.string(sarray[0].array[n]).decode()
             if decoded.strip() == '':
                 continue
-            box = pixa_candidates[0].boxa[0].box[n][0]
+            box = pixa_candidates.get_box(n)
             left, top, right, bottom = box.x, box.y, box.x + box.w, box.y + box.h
             yield (decoded, (left, top, right, bottom))
 
@@ -553,11 +554,23 @@ class CompressedData:
 
 
 class PixArray:
+    """Wrapper around PIXA (array of PIX)"""
 
     def __init__(self, pixa):
         if not pixa:
             raise ValueError('NULL pixa')
         self._pixa = ffi.gc(pixa, PixArray._pixa_destroy)
+
+    def __len__(self):
+        return self._pixa[0].n
+
+    def __getitem__(self, n):
+        with _LeptonicaErrorTrap():
+            return Pix(lept.pixaGetPix(self._pixa, n, lept.L_CLONE))
+
+    def get_box(self, n):
+        with _LeptonicaErrorTrap():
+            return Box(lept.pixaGetBox(self._pixa, n, lept.L_CLONE))
 
     @staticmethod
     def _pixa_destroy(pixa):
@@ -566,7 +579,7 @@ class PixArray:
 
 
 class Box:
-    """Wrapper around Leptonica's BOX objects.
+    """Wrapper around Leptonica's BOX objects (a pixel rectangle)
 
     See class Pix for notes about reference counting.
     """

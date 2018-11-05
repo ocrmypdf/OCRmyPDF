@@ -209,6 +209,8 @@ l_int32 pixSerializeToMemory ( PIX *pixs, l_uint32 **pdata, size_t *pnbytes );
 
 PIX * pixConvertRGBToLuminance(PIX *pixs);
 
+PIX * pixConvertTo8(PIX     *pixs, l_int32  cmapflag);
+
 PIX * pixRemoveColormap(PIX *pixs, l_int32  type);
 
 l_int32
@@ -347,6 +349,16 @@ pixProcessBarcodes(PIX      *pixs,
                    l_int32   method,
                    SARRAY  **psaw,
                    l_int32 debugflag);
+
+PIX *
+pixaGetPix(PIXA    *pixa,
+           l_int32  index,
+           l_int32 accesstype);
+
+BOX*
+pixaGetBox 	(PIXA *  	pixa,
+		    l_int32  	index,
+		    l_int32  	accesstype );
 
 PIXA *
 pixExtractBarcodes(PIX     *pixs,
