@@ -174,6 +174,16 @@ enum {
     L_BF_UPCA = 10        /*!< decode with UPC A format                  */
 };
 
+enum {
+    L_SEVERITY_EXTERNAL = 0,   /* Get the severity from the environment   */
+    L_SEVERITY_ALL      = 1,   /* Lowest severity: print all messages     */
+    L_SEVERITY_DEBUG    = 2,   /* Print debugging and higher messages     */
+    L_SEVERITY_INFO     = 3,   /* Print informational and higher messages */
+    L_SEVERITY_WARNING  = 4,   /* Print warning and higher messages       */
+    L_SEVERITY_ERROR    = 5,   /* Print error and higher messages         */
+    L_SEVERITY_NONE     = 6    /* Highest severity: print no messages     */
+};
+
 """)
 
 ffibuilder.cdef("""
@@ -188,6 +198,11 @@ pixWriteMemPng(l_uint8  **pdata,
                l_float32  gamma);
 
 void pixDestroy ( PIX **ppix );
+
+l_ok
+pixEqual(PIX      *pix1,
+         PIX      *pix2,
+         l_int32 *psame);
 
 PIX *
 pixEndianByteSwapNew(PIX  *pixs);
@@ -402,7 +417,13 @@ void
 l_CIDataDestroy(L_COMP_DATA **pcid);
 
 void
+sarrayDestroy(SARRAY  **psa);
+
+void
 lept_free(void *ptr);
+
+l_int32
+setMsgSeverity(l_int32 newsev);
 """)
 
 

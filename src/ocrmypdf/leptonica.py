@@ -38,6 +38,7 @@ lept = ffi.dlopen(find_library('lept'))
 
 logger = logging.getLogger(__name__)
 
+lept.setMsgSeverity(lept.L_SEVERITY_WARNING)
 
 def stderr(*objs):
     """Shorthand print to stderr."""
@@ -143,7 +144,7 @@ class Pix:
     def __init__(self, pix):
         if not pix:
             raise ValueError('NULL pix')
-        self._pix = ffi.gc(pix, Pix._pix_destroy)
+        self._pix = ffi.gc(pix, Pix._destroy)
 
     def __repr__(self):
         if self._pix:
@@ -191,12 +192,18 @@ class Pix:
         cdata_bytes = ffi.new('char[]', state['data'])
         cdata_uint32 = ffi.cast('l_uint32 *', cdata_bytes)
 
-        pix = lept.pixDeserializeFromMemory(
-            cdata_uint32, len(state['data']))
+        pix = lept.pixDeserializeFromMemory(cdata_uint32, len(state['data']))
         Pix.__init__(self, pix)
 
     def __eq__(self, other):
-        return self.__getstate__() == other.__getstate__()
+        if not isinstance(other, Pix):
+            return NotImplemented
+        same = ffi.new('l_int32 *', 0)
+        with _LeptonicaErrorTrap():
+            err = lept.pixEqual(self._pix, other._pix, same)
+            if err:
+                raise TypeError()
+        return bool(same[0])
 
     @property
     def width(self):
@@ -488,26 +495,26 @@ class Pix:
         return Pix(lept.pixInvert(ffi.NULL, self._pix))
 
     def locate_barcodes(self):
-        pix = Pix(lept.pixConvertTo8(self._pix, 0))
-        pixa_candidates = PixArray(lept.pixExtractBarcodes(pix._pix, 0))
-        sarray = lept.pixReadBarcodes(pixa_candidates._pixa,
-                                      lept.L_BF_ANY,
-                                      lept.L_USE_WIDTHS,
-                                      ffi.NULL,
-                                      0)
-        if not sarray:
-            return
-        for n in range(sarray[0].n):
-            decoded = ffi.string(sarray[0].array[n]).decode()
-            if decoded.strip() == '':
-                continue
-            box = pixa_candidates.get_box(n)
-            left, top, right, bottom = box.x, box.y, box.x + box.w, box.y + box.h
-            yield (decoded, (left, top, right, bottom))
+        with _LeptonicaErrorTrap():
+            pix = Pix(lept.pixConvertTo8(self._pix, 0))
+            pixa_candidates = PixArray(lept.pixExtractBarcodes(pix._pix, 0))
+            sarray = StringArray(lept.pixReadBarcodes(pixa_candidates._pixa,
+                                                    lept.L_BF_ANY,
+                                                    lept.L_USE_WIDTHS,
+                                                    ffi.NULL,
+                                                    0))
+            for n, s in enumerate(sarray):
+                decoded = s.decode()
+                if s.strip() == '':
+                    continue
+                box = pixa_candidates.get_box(n)
+                left, top = box.x, box.y
+                right, bottom = box.x + box.w, box.y + box.h
+                yield (decoded, (left, top, right, bottom))
 
 
     @staticmethod
-    def _pix_destroy(pix):
+    def _destroy(pix):
         p_pix = ffi.new('PIX **', pix)
         lept.pixDestroy(p_pix)
         # print('pix destroy ' + repr(pix))
@@ -559,7 +566,7 @@ class PixArray:
     def __init__(self, pixa):
         if not pixa:
             raise ValueError('NULL pixa')
-        self._pixa = ffi.gc(pixa, PixArray._pixa_destroy)
+        self._pixa = ffi.gc(pixa, PixArray._destroy)
 
     def __len__(self):
         return self._pixa[0].n
@@ -573,7 +580,7 @@ class PixArray:
             return Box(lept.pixaGetBox(self._pixa, n, lept.L_CLONE))
 
     @staticmethod
-    def _pixa_destroy(pixa):
+    def _destroy(pixa):
         pp = ffi.new('PIXA **', pixa)
         lept.pixaDestroy(pp)
 
@@ -587,7 +594,7 @@ class Box:
     def __init__(self, box):
         if not box:
             raise ValueError('NULL box')
-        self._box = ffi.gc(box, Box._box_destroy)
+        self._box = ffi.gc(box, Box._destroy)
 
 
     def __repr__(self):
@@ -613,7 +620,7 @@ class Box:
         return self._box.h
 
     @staticmethod
-    def _box_destroy(box):
+    def _destroy(box):
         p_box = ffi.new('BOX **', box)
         lept.boxDestroy(p_box)
 
@@ -650,6 +657,31 @@ class BoxArray:
     def _boxa_destroy(boxa):
         p_boxa = ffi.new('BOXA **', boxa)
         lept.boxaDestroy(p_boxa)
+
+
+class StringArray:
+
+    def __init__(self, sarray):
+        if not sarray:
+            raise ValueError('NULL sarray')
+        self._sarray = ffi.gc(sarray, StringArray._sarray_destroy)
+
+    def __len__(self):
+        return self._sarray.n
+
+    def __getitem__(self, n):
+        if 0 <= n < len(self):
+            return ffi.string(self._sarray.array[n])
+        raise IndexError(n)
+
+    def __iter__(self):
+        for n in range(len(self)):
+            yield self[n]
+
+    @staticmethod
+    def _sarray_destroy(sarray):
+        pp = ffi.new('SARRAY **', sarray)
+        lept.sarrayDestroy(pp)
 
 
 @lru_cache(maxsize=1)
