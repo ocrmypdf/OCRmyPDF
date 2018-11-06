@@ -151,7 +151,7 @@ def test_pickle(resources):
 
 
 def test_regex():
-    rx = pdfinfo.regex_remove_char_tags
+    rx = pdfinfo.ghosttext.regex_remove_char_tags
 
     must_match = [
         b'<char bbox="0 108 0 108" c="/"/>',

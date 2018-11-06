@@ -68,8 +68,8 @@ def test_crop(resources):
     assert foreground.width < pix.width
 
 
-def test_clean_bg(crom_pix):
-    pix, _ = crom_pix
+def test_clean_bg(resources):
+    pix = lept.Pix.open(resources / 'congress.jpg')
     imbg = pix.clean_background_to_white()
 
 
@@ -86,4 +86,4 @@ def test_leptonica_compile(tmpdir):
     # Compile the library but build it somewhere that won't interfere with
     # existing compiled library. Also compile in API mode so that we test
     # the interfaces, even though we use it ABI mode.
-    ffibuilder.compile(tmpdir=tmpdir, target=(tmpdir /'lepttest.*'))
+    ffibuilder.compile(tmpdir=tmpdir, target=(tmpdir / 'lepttest.*'))
