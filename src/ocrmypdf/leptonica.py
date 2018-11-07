@@ -28,6 +28,7 @@ import warnings
 from tempfile import TemporaryFile
 from ctypes.util import find_library
 from functools import lru_cache
+from collections.abc import Sequence
 
 from .lib._leptonica import ffi
 from .helpers import fspath
@@ -117,6 +118,21 @@ class LeptonicaError(Exception):
 
 class LeptonicaIOError(LeptonicaError):
     pass
+
+
+class LeptonicaObject:
+    cdata_destroy = lambda cdata: None
+    LEPTONICA_TYPENAME = ''
+
+    def __init__(self, cdata):
+        if not cdata:
+            raise ValueError('NULL cdata object')
+        self._cdata = ffi.gc(cdata, self._destroy)
+
+    @classmethod
+    def _destroy(cls, cdata):
+        pp = ffi.new('{} **'.format(cls.LEPTONICA_TYPENAME), cdata)
+        cls.cdata_destroy(pp)
 
 
 class Pix:
@@ -440,7 +456,7 @@ class Pix:
 
             cropped_pix = lept.pixClipRectangle(
                 self._pix,
-                cropbox._box,
+                cropbox._cdata,
                 ffi.NULL)
 
             return Pix(cropped_pix)
@@ -522,7 +538,7 @@ class Pix:
         with _LeptonicaErrorTrap():
             pix = Pix(lept.pixConvertTo8(self._pix, 0))
             pixa_candidates = PixArray(lept.pixExtractBarcodes(pix._pix, 0))
-            sarray = StringArray(lept.pixReadBarcodes(pixa_candidates._pixa,
+            sarray = StringArray(lept.pixReadBarcodes(pixa_candidates._cdata,
                                                     lept.L_BF_ANY,
                                                     lept.L_USE_WIDTHS,
                                                     ffi.NULL,
@@ -544,9 +560,11 @@ class Pix:
         # print('pix destroy ' + repr(pix))
 
 
-class CompressedData:
-    def __init__(self, compdata):
-        self._compdata = ffi.gc(compdata, CompressedData._destroy)
+class CompressedData(LeptonicaObject):
+    """Wrapper for L_COMP_DATA - abstract compressed image data"""
+
+    LEPTONICA_TYPENAME = 'L_COMP_DATA'
+    cdata_destroy = lept.l_CIDataDestroy
 
     @classmethod
     def open(cls, path, jpeg_quality=75):
@@ -561,151 +579,109 @@ class CompressedData:
         return CompressedData(p_compdata[0])
 
     def __len__(self):
-        return self._compdata.nbytescomp
+        return self._cdata.nbytescomp
 
     def read(self):
-        buf = ffi.buffer(self._compdata.datacomp, self._compdata.nbytescomp)
+        buf = ffi.buffer(self._cdata.datacomp, self._cdata.nbytescomp)
         return bytes(buf)
 
     def __getattr__(self, name):
-        if hasattr(self._compdata, name):
-            return getattr(self._compdata, name)
+        if hasattr(self._cdata, name):
+            return getattr(self._cdata, name)
         raise AttributeError(name)
 
     def get_palette_pdf_string(self):
         "Returns palette pre-formatted for use in PDF"
-        buflen = len('< ') + len(' rrggbb') * self._compdata.ncolors + len('>')
-        buf = ffi.buffer(self._compdata.cmapdatahex, buflen)
+        buflen = len('< ') + len(' rrggbb') * self._cdata.ncolors + len('>')
+        buf = ffi.buffer(self._cdata.cmapdatahex, buflen)
         return bytes(buf)
 
-    @staticmethod
-    def _destroy(compdata):
-        pp = ffi.new('L_COMP_DATA **', compdata)
-        lept.l_CIDataDestroy(pp)
 
-
-class PixArray:
+class PixArray(LeptonicaObject, Sequence):
     """Wrapper around PIXA (array of PIX)"""
 
-    def __init__(self, pixa):
-        if not pixa:
-            raise ValueError('NULL pixa')
-        self._pixa = ffi.gc(pixa, PixArray._destroy)
+    LEPTONICA_TYPENAME = 'PIXA'
+    cdata_destroy = lept.pixaDestroy
 
     def __len__(self):
-        return self._pixa[0].n
+        return self._cdata[0].n
 
     def __getitem__(self, n):
         with _LeptonicaErrorTrap():
-            return Pix(lept.pixaGetPix(self._pixa, n, lept.L_CLONE))
+            return Pix(lept.pixaGetPix(self._cdata, n, lept.L_CLONE))
 
     def get_box(self, n):
         with _LeptonicaErrorTrap():
-            return Box(lept.pixaGetBox(self._pixa, n, lept.L_CLONE))
-
-    @staticmethod
-    def _destroy(pixa):
-        pp = ffi.new('PIXA **', pixa)
-        lept.pixaDestroy(pp)
+            return Box(lept.pixaGetBox(self._cdata, n, lept.L_CLONE))
 
 
-class Box:
+class Box(LeptonicaObject):
     """Wrapper around Leptonica's BOX objects (a pixel rectangle)
 
-    See class Pix for notes about reference counting.
+    Uses x, y, w, h coordinates.
     """
 
-    def __init__(self, box):
-        if not box:
-            raise ValueError('NULL box')
-        self._box = ffi.gc(box, Box._destroy)
-
+    LEPTONICA_TYPENAME = 'BOX'
+    cdata_destroy = lept.boxDestroy
 
     def __repr__(self):
-        if self._box:
+        if self._cdata:
             return '<leptonica.Box x={0} y={1} w={2} h={3}>'.format(
                 self.x, self.y, self.w, self.h)
         return '<leptonica.Box NULL>'
 
     @property
     def x(self):
-        return self._box.x
+        return self._cdata.x
 
     @property
     def y(self):
-        return self._box.y
+        return self._cdata.y
 
     @property
     def w(self):
-        return self._box.w
+        return self._cdata.w
 
     @property
     def h(self):
-        return self._box.h
-
-    @staticmethod
-    def _destroy(box):
-        p_box = ffi.new('BOX **', box)
-        lept.boxDestroy(p_box)
+        return self._cdata.h
 
 
-class BoxArray:
+class BoxArray(LeptonicaObject, Sequence):
     """Wrapper around Leptonica's BOXA (Array of BOX) objects."""
 
-    def __init__(self, boxa):
-        if not boxa:
-            raise ValueError('NULL boxa')
-        self._boxa = ffi.gc(boxa, BoxArray._boxa_destroy)
+    LEPTONICA_TYPENAME = 'BOXA'
+    cdata_destroy = lept.boxaDestroy
 
     def __repr__(self):
-        if not self._boxa:
+        if not self._cdata:
             return '<BoxArray>'
         boxes = (repr(box) for box in self)
         return '<BoxArray [' + ', '.join(boxes) + ']>'
 
-    def __iter__(self):
-        for n in range(len(self)):
-            yield self[n]
-
     def __len__(self):
-        return self._boxa.n
+        return self._cdata.n
 
     def __getitem__(self, n):
         if not isinstance(n, int):
             raise TypeError('list indices must be integers')
         if 0 <= n < len(self):
-            return Box(lept.boxaGetBox(self._boxa, n, lept.L_CLONE))
+            return Box(lept.boxaGetBox(self._cdata, n, lept.L_CLONE))
         raise IndexError(n)
 
-    @staticmethod
-    def _boxa_destroy(boxa):
-        p_boxa = ffi.new('BOXA **', boxa)
-        lept.boxaDestroy(p_boxa)
 
+class StringArray(LeptonicaObject, Sequence):
 
-class StringArray:
-
-    def __init__(self, sarray):
-        if not sarray:
-            raise ValueError('NULL sarray')
-        self._sarray = ffi.gc(sarray, StringArray._sarray_destroy)
+    LEPTONICA_TYPENAME = 'SARRAY'
+    cdata_destroy = lept.sarrayDestroy
 
     def __len__(self):
-        return self._sarray.n
+        return self._cdata.n
 
     def __getitem__(self, n):
         if 0 <= n < len(self):
-            return ffi.string(self._sarray.array[n])
+            return ffi.string(self._cdata.array[n])
         raise IndexError(n)
-
-    def __iter__(self):
-        for n in range(len(self)):
-            yield self[n]
-
-    @staticmethod
-    def _sarray_destroy(sarray):
-        pp = ffi.new('SARRAY **', sarray)
-        lept.sarrayDestroy(pp)
 
 
 @lru_cache(maxsize=1)
