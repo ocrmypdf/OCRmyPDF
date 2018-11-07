@@ -400,6 +400,30 @@ class Pix:
                 return None
             return Pix(thresh_pix)
 
+    def masked_threshold_on_background_norm(
+            self, mask=None, tile_size=(10, 15), thresh=100, mincount=50,
+            kernel_size=(2, 2), scorefract=0.1):
+        with _LeptonicaErrorTrap():
+            sx, sy = tile_size
+            smoothx, smoothy = kernel_size
+            if mask is None:
+                mask = ffi.NULL
+            if isinstance(mask, Pix):
+                mask = mask._pix
+
+            new_pix = lept.pixMaskedThreshOnBackgroundNorm(
+                self._pix,
+                mask,
+                sx, sy,
+                thresh, mincount,
+                smoothx, smoothy,
+                scorefract,
+                ffi.NULL
+                )
+            if new_pix == ffi.NULL:
+                return None
+            return Pix(new_pix)
+
     def crop_to_foreground(
             self, threshold=128, mindist=70, erasedist=30, pagenum=0,
             showmorph=0, display=0, pdfdir=ffi.NULL):

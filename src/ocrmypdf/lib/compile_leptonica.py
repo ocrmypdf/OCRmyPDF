@@ -252,6 +252,18 @@ pixOtsuThreshOnBackgroundNorm(PIX       *pixs,
                               l_int32   *pthresh);
 
 PIX *
+pixMaskedThreshOnBackgroundNorm(PIX       *pixs,
+                                PIX       *pixim,
+                                l_int32    sx,
+                                l_int32    sy,
+                                l_int32    thresh,
+                                l_int32    mincount,
+                                l_int32    smoothx,
+                                l_int32    smoothy,
+                                l_float32  scorefract,
+                                l_int32   *pthresh);
+
+PIX *
 pixCleanBackgroundToWhite(PIX       *pixs,
                           PIX       *pixim,
                           PIX       *pixg,
