@@ -135,6 +135,18 @@ struct L_Compressed_Data
 };
 typedef struct L_Compressed_Data L_COMP_DATA;
 
+/*! Selection */
+struct Sel
+{
+    l_int32       sy;        /*!< sel height                               */
+    l_int32       sx;        /*!< sel width                                */
+    l_int32       cy;        /*!< y location of sel origin                 */
+    l_int32       cx;        /*!< x location of sel origin                 */
+    l_int32     **data;      /*!< {0,1,2}; data[i][j] in [row][col] order  */
+    char         *name;      /*!< used to find sel by name                 */
+};
+typedef struct Sel SEL;
+
 enum {
     REMOVE_CMAP_TO_BINARY = 0,     /*!< remove colormap for conv to 1 bpp  */
     REMOVE_CMAP_TO_GRAYSCALE = 1,  /*!< remove colormap for conv to 8 bpp  */
@@ -182,6 +194,12 @@ enum {
     L_SEVERITY_WARNING  = 4,   /* Print warning and higher messages       */
     L_SEVERITY_ERROR    = 5,   /* Print error and higher messages         */
     L_SEVERITY_NONE     = 6    /* Highest severity: print no messages     */
+};
+
+enum {
+    SEL_DONT_CARE  = 0,
+    SEL_HIT        = 1,
+    SEL_MISS       = 2
 };
 
 """)
@@ -407,11 +425,33 @@ l_generateCIDataForPdf(const char *fname,
                        l_int32 quality,
                        L_COMP_DATA **pcid);
 
+
 BOX *
 boxClone ( BOX *box );
 
 BOX *
 boxaGetBox ( BOXA *boxa, l_int32 index, l_int32 accessflag );
+
+SEL *
+selCreateFromString ( const char *text, l_int32 h, l_int32 w, const char *name );
+
+SEL *
+selCreateBrick ( l_int32 h, l_int32 w, l_int32 cy, l_int32 cx, l_int32 type );
+
+char *
+selPrintToString(SEL  *sel);
+
+PIX *
+pixDilate ( PIX *pixd, PIX *pixs, SEL *sel );
+
+PIX *
+pixErode ( PIX *pixd, PIX *pixs, SEL *sel );
+
+PIX *
+pixHMT ( PIX *pixd, PIX *pixs, SEL *sel );
+
+PIX *
+pixSubtract ( PIX *pixd, PIX *pixs1, PIX *pixs2 );
 
 void
 boxDestroy(BOX  **pbox);
@@ -434,8 +474,11 @@ sarrayDestroy(SARRAY  **psa);
 void
 lept_free(void *ptr);
 
+void selDestroy ( SEL **psel );
+
 l_int32
 setMsgSeverity(l_int32 newsev);
+
 """)
 
 

@@ -143,7 +143,7 @@ class LeptonicaObject:
 
     def __init__(self, cdata):
         if not cdata:
-            raise ValueError('NULL cdata object')
+            raise ValueError('Tried to wrap a NULL ' + self.LEPTONICA_TYPENAME)
         self._cdata = ffi.gc(cdata, self._destroy)
 
     @classmethod
@@ -570,6 +570,35 @@ class Pix(LeptonicaObject):
                 right, bottom = box.x + box.w, box.y + box.h
                 yield (decoded, (left, top, right, bottom))
 
+    def despeckle(self, size):
+        if size == 2:
+            speckle2 = """
+                oooo
+                oC o
+                o  o
+                oooo
+                """
+            sel1 = Sel.from_selstr(speckle2, 'speckle2')
+            sel2 = Sel.create_brick(2, 2, 0, 0, lept.SEL_HIT)
+        elif size == 3:
+            speckle3 = """
+                ooooo
+                oC  o
+                o   o
+                o   o
+                ooooo
+                """
+            sel1 = Sel.from_selstr(speckle3, 'speckle3')
+            sel2 = Sel.create_brick(3, 3, 0, 0, lept.SEL_HIT)
+        else:
+            raise ValueError(size)
+
+        pixhmt = Pix(lept.pixHMT(ffi.NULL, self._cdata, sel1._cdata))
+        pixdilated = Pix(lept.pixDilate(ffi.NULL, pixhmt._cdata, sel2._cdata))
+
+        pixsub = Pix(lept.pixSubtract(ffi.NULL, self._cdata, pixdilated._cdata))
+        return pixsub
+
 
 class CompressedData(LeptonicaObject):
     """Wrapper for L_COMP_DATA - abstract compressed image data"""
@@ -682,6 +711,7 @@ class BoxArray(LeptonicaObject, Sequence):
 
 
 class StringArray(LeptonicaObject, Sequence):
+    """Leptonica SARRAY/string array"""
 
     LEPTONICA_TYPENAME = 'SARRAY'
     cdata_destroy = lept.sarrayDestroy
@@ -693,6 +723,37 @@ class StringArray(LeptonicaObject, Sequence):
         if 0 <= n < len(self):
             return ffi.string(self._cdata.array[n])
         raise IndexError(n)
+
+
+class Sel(LeptonicaObject):
+    """Leptonica 'sel'/selection element for hit-miss transform"""
+
+    LEPTONICA_TYPENAME = 'SEL'
+    cdata_destroy = lept.selDestroy
+
+    @classmethod
+    def from_selstr(cls, selstr, name):
+        lines = [line.strip() for line in selstr.split('\n') if line.strip()]
+        h = len(lines)
+        w = len(lines[0])
+        lengths = set(len(line) for line in lines)
+        if len(lengths) != 1:
+            raise ValueError("All lines in selstr must be same length")
+
+        repacked = ''.join(line.strip() for line in lines)
+        buf_selstr = ffi.from_buffer(repacked.encode('ascii'))
+        buf_name = ffi.from_buffer(name.encode('ascii'))
+        sel = lept.selCreateFromString(buf_selstr, h, w, buf_name)
+        return cls(sel)
+
+    @classmethod
+    def create_brick(cls, h, w, cy, cx, type_):
+        sel = lept.selCreateBrick(h, w, cy, cx, type_)
+        return cls(sel)
+
+    def __repr__(self):
+        selstr = ffi.gc(lept.selPrintToString(self._cdata), lept.lept_free)
+        return '<Sel \n' + ffi.string(selstr).decode('ascii') + '\n>'
 
 
 @lru_cache(maxsize=1)
