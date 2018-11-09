@@ -21,7 +21,7 @@ import shutil
 from functools import lru_cache
 from collections import namedtuple
 from textwrap import dedent
-from subprocess import CalledProcessError, TimeoutExpired, check_output, STDOUT
+from subprocess import CalledProcessError, TimeoutExpired, check_output, STDOUT, run, PIPE
 from contextlib import suppress
 
 from ..exceptions import MissingDependencyError, TesseractConfigError
@@ -92,22 +92,33 @@ def psm():
 
 @lru_cache(maxsize=1)
 def languages():
+    def lang_error(output):
+        msg = dedent("""Tesseract failed to report available languages.
+        Output from Tesseract:
+        -----------
+        """)
+        msg += output
+        print(msg, file=sys.stderr)
+
     args_tess = [
         'tesseract',
         '--list-langs'
     ]
     try:
-        langs = check_output(
-                args_tess, universal_newlines=True, stderr=STDOUT)
+        proc = run(
+            args_tess, universal_newlines=True, stdout=PIPE, stderr=STDOUT,
+            check=True
+        )
+        output = proc.stdout
     except CalledProcessError as e:
-        msg = dedent("""Tesseract failed to report available languages.
-        Output from Tesseract:
-        -----------
-        """)
-        msg += e.output
-        print(msg, file=sys.stderr)
+        lang_error(e.output)
         raise MissingDependencyError from e
-    return set(lang.strip() for lang in langs.splitlines()[1:])
+
+    header, *rest = output.splitlines()
+    if not header.startswith('List of available languages'):
+        lang_error(output)
+        raise MissingDependencyError
+    return set(lang.strip() for lang in rest)
 
 
 def tess_base_args(langs, engine_mode):
