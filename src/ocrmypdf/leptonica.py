@@ -20,15 +20,16 @@
 #
 # Python FFI wrapper for Leptonica library
 
-import argparse
-import sys
-import os
-import logging
-import warnings
-from tempfile import TemporaryFile
+from collections.abc import Sequence
 from ctypes.util import find_library
 from functools import lru_cache
-from collections.abc import Sequence
+from io import BytesIO
+from tempfile import TemporaryFile
+import argparse
+import logging
+import os
+import sys
+import warnings
 
 from .lib._leptonica import ffi
 from .helpers import fspath
@@ -300,8 +301,19 @@ class Pix(LeptonicaObject):
                 os.fsencode(filename),
                 self._cdata, jpeg_quality, jpeg_progressive)
 
+    @classmethod
+    def frompil(self, pillow_image):
+        """Create a copy of a PIL.Image from this Pix"""
+        bio = BytesIO()
+        pillow_image.save(bio, format='png', compress_level=1)
+        py_buffer = bio.getbuffer()
+        c_buffer = ffi.from_buffer(py_buffer)
+        with _LeptonicaErrorTrap():
+            pix = Pix(lept.pixReadMem(c_buffer, len(c_buffer)))
+            return pix
+
     def topil(self):
-        "Returns a PIL.Image version of this Pix"
+        """Returns a PIL.Image version of this Pix"""
         from PIL import Image
 
         # Leptonica manages data in words, so it implicitly does an endian
@@ -416,8 +428,7 @@ class Pix(LeptonicaObject):
         with _LeptonicaErrorTrap():
             sx, sy = tile_size
             smoothx, smoothy = kernel_size
-            if mask is None:
-                mask = ffi.NULL
+            mask = ffi.NULL
             if isinstance(mask, Pix):
                 mask = mask._cdata
 
@@ -429,9 +440,7 @@ class Pix(LeptonicaObject):
                 smoothx, smoothy,
                 scorefract,
                 ffi.NULL
-                )
-            if thresh_pix == ffi.NULL:
-                return None
+            )
             return Pix(thresh_pix)
 
     def masked_threshold_on_background_norm(
@@ -440,23 +449,21 @@ class Pix(LeptonicaObject):
         with _LeptonicaErrorTrap():
             sx, sy = tile_size
             smoothx, smoothy = kernel_size
-            if mask is None:
-                mask = ffi.NULL
+            mask = ffi.NULL
             if isinstance(mask, Pix):
                 mask = mask._cdata
 
-            new_pix = lept.pixMaskedThreshOnBackgroundNorm(
-                self._cdata,
+            pix = Pix(lept.pixConvertTo8(self._cdata, 0))
+            thresh_pix = lept.pixMaskedThreshOnBackgroundNorm(
+                pix._cdata,
                 mask,
                 sx, sy,
                 thresh, mincount,
                 smoothx, smoothy,
                 scorefract,
                 ffi.NULL
-                )
-            if new_pix == ffi.NULL:
-                return None
-            return Pix(new_pix)
+            )
+            return Pix(thresh_pix)
 
     def crop_to_foreground(
             self, threshold=128, mindist=70, erasedist=30, pagenum=0,

@@ -631,16 +631,19 @@ def select_ocr_image(
             log.debug('blanking %r', pixcoords)
             draw.rectangle(pixcoords, fill=white)
             #draw.rectangle(pixcoords, outline=pink)
-
-        if options.mask_barcodes:
-            pix = leptonica.Pix.open(image)
-            barcodes = pix.locate_barcodes()
-            for barcode in barcodes:
-                decoded, rect = barcode
-                log.info('masking barcode %s %r', decoded, rect)
-                draw.rectangle(rect, fill=white)
-
         del draw
+
+        if options.mask_barcodes or options.threshold:
+            pix = leptonica.Pix.frompil(im)
+            if options.threshold:
+                pix = pix.masked_threshold_on_background_norm()
+            if options.mask_barcodes:
+                barcodes = pix.locate_barcodes()
+                for barcode in barcodes:
+                    decoded, rect = barcode
+                    log.info('masking barcode %s %r', decoded, rect)
+                    draw.rectangle(rect, fill=white)
+            im = pix.topil()
 
         # Pillow requires integer DPI
         dpi = round(xres), round(yres)

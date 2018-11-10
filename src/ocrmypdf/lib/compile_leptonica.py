@@ -206,6 +206,7 @@ enum {
 
 ffibuilder.cdef("""
 PIX * pixRead ( const char *filename );
+PIX * pixReadMem ( const l_uint8 *data, size_t size );
 PIX * pixScale ( PIX *pixs, l_float32 scalex, l_float32 scaley );
 l_int32 pixFindSkew ( PIX *pixs, l_float32 *pangle, l_float32 *pconf );
 l_int32 pixWriteImpliedFormat ( const char *filename, PIX *pix, l_int32 quality, l_int32 progressive );
