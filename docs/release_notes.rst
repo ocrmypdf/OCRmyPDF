@@ -14,6 +14,26 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
 
+v7.3.0
+------
+
+-   Added a new feature ``--redo-ocr`` to detect existing OCR in a file, remove it, and redo the OCR. This may be particularly helpful for anyone who wants to take advantage of OCR quality improvements in Tesseract 4.0. Note that OCR added by OCRmyPDF before version 3.0 cannot be detected since it was not properly marked as invisible text in the earliest versions. OCR that constructs a font from visible text, such as Adobe Acrobat's ClearScan.
+
+-   OCRmyPDF's content detection is generally more sophisticated. It learns more about the contents of each PDF and makes better recommendations:
+
+    -   OCRmyPDF can now detect when a PDF contains text that cannot be mapped to Unicode (meaning it is readable to human eyes but copy-pastes as gibberish). In these cases it recommends ``--force-ocr`` to make the text searchable.
+
+    -   PDFs containing vector objects are now rendered at more appropriate resolution for OCR.
+
+    -   We now exit with an error for PDFs that contain Adobe LiveCycle Designer's dynamic XFA forms. Currently the open source community does not have tools to work with these files.
+
+    -   OCRmyPDF now warns when a PDF that contains Adobe AcroForms, since such files probably do not need OCR. It can work with these files.
+
+-   Added a new feature ``--mask-barcodes`` to detect and suppress barcodes in files. We have observed that barcodes can interfere with OCR.
+
+-   Fixed an issue where an error message was not reported when the installed Ghostscript was very old.
+
+
 v7.2.1
 ------
 
