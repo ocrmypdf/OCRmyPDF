@@ -25,7 +25,7 @@ from subprocess import CalledProcessError, TimeoutExpired, check_output, STDOUT,
 from contextlib import suppress
 
 from ..exceptions import MissingDependencyError, TesseractConfigError
-from ..helpers import page_number
+from ..helpers import page_number, fspath
 from . import get_version
 
 OrientationConfidence = namedtuple(
@@ -135,7 +135,7 @@ def tess_base_args(langs, engine_mode):
 def get_orientation(input_file, engine_mode, timeout: float, log):
     args_tesseract = tess_base_args(['osd'], engine_mode) + [
         psm(), '0',
-        input_file,
+        fspath(input_file),
         'stdout'
     ]
 

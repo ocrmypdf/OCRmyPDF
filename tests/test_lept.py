@@ -25,6 +25,7 @@ import pytest
 from PIL import Image, ImageChops
 
 import ocrmypdf.leptonica as lept
+from ocrmypdf.helpers import fspath
 
 
 def test_colormap_backgroundnorm(resources):
@@ -86,4 +87,5 @@ def test_leptonica_compile(tmpdir):
     # Compile the library but build it somewhere that won't interfere with
     # existing compiled library. Also compile in API mode so that we test
     # the interfaces, even though we use it ABI mode.
-    ffibuilder.compile(tmpdir=tmpdir, target=(tmpdir / 'lepttest.*'))
+    ffibuilder.compile(tmpdir=fspath(tmpdir),
+                       target=fspath(tmpdir / 'lepttest.*'))
