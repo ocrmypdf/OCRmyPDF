@@ -1,10 +1,10 @@
 # requirements.txt can be used to replicate the developer's build environment
 # setup.py lists a separate set of requirements that are looser to simplify
 # installation
+chardet == 3.0.4
 cffi == 1.11.5
 img2pdf == 0.3.1
 pdfminer.six == 20181108
-chardet == 3.0.4
 pikepdf == 0.3.7
 Pillow >= 5.0.0, != 5.1.0 ; sys_platform == "darwin"
 pycparser == 2.19
