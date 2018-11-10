@@ -28,7 +28,7 @@ import PIL
 import pytest
 
 from ocrmypdf.pdfinfo import PdfInfo, Colorspace, Encoding
-from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 from ocrmypdf.exec import ghostscript, qpdf, tesseract
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.leptonica import Pix
@@ -945,3 +945,16 @@ def test_livecycle(resources, no_outpdf):
     )
 
     assert p.returncode == ExitCode.input_file, err
+
+
+def test_version_check():
+    from ocrmypdf.exec import get_version
+
+    with pytest.raises(MissingDependencyError):
+        get_version('NOT_FOUND_UNLIKELY_ON_PATH')
+
+    with pytest.raises(MissingDependencyError):
+        get_version('sh', version_arg='-c')
+
+    with pytest.raises(MissingDependencyError):
+        get_version('echo')
