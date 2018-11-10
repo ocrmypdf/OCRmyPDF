@@ -3,7 +3,7 @@
 # installation
 cffi == 1.11.5
 img2pdf == 0.3.1
-pdfminer == 20181108
+pdfminer.six == 20181108
 pikepdf == 0.3.7
 Pillow >= 5.0.0, != 5.1.0 ; sys_platform == "darwin"
 pycparser == 2.19

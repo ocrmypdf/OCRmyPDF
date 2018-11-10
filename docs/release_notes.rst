@@ -33,6 +33,7 @@ v7.3.0
 
 -   Fixed an issue where an error message was not reported when the installed Ghostscript was very old.
 
+-   New dependency: pdfminer.six 20181108.
 
 v7.2.1
 ------
