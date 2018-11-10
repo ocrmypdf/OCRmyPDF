@@ -29,7 +29,13 @@ v7.3.0
 
     -   OCRmyPDF now warns when a PDF that contains Adobe AcroForms, since such files probably do not need OCR. It can work with these files.
 
--   Added a new feature ``--mask-barcodes`` to detect and suppress barcodes in files. We have observed that barcodes can interfere with OCR.
+-   Added three new **experimental** features. The name, syntax and behavior of these arguments is subject to change. They may also be incompatible with some other features.
+
+    -   ``--remove-vectors`` which strips out vector graphics. This can improve OCR quality since OCR will not search artwork for readable text; however, it currently removes "text as curves" as well.
+
+    -   ``--mask-barcodes`` to detect and suppress barcodes in files. We have observed that barcodes can interfere with OCR.
+
+    -   ``--threshold`` which uses a more sophisticated thresholding algorithm than is currently in use in Tesseract OCR. This works around a `known issue in Tesseract <https://github.com/tesseract-ocr/tesseract/issues/1990>`_ with text on bright backgrounds.
 
 -   Fixed an issue where an error message was not reported when the installed Ghostscript was very old.
 
