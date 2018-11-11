@@ -38,7 +38,7 @@ import sys
 import codecs
 
 
-def verify_python3_env():
+def verify_python3_env():  # pragma: no cover
     """Ensures that the environment is good for unicode on Python 3."""
 
     # PEP 538 changes in Python 3.7 should make this wrangling unnecessary

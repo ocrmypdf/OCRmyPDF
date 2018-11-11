@@ -18,9 +18,14 @@
 
 import os
 import shutil
-import pytest
 import sys
+from pickle import dumps, loads
+
+import pytest
+from PIL import Image, ImageChops
+
 import ocrmypdf.leptonica as lept
+from ocrmypdf.helpers import fspath
 
 
 def test_colormap_backgroundnorm(resources):
@@ -28,3 +33,59 @@ def test_colormap_backgroundnorm(resources):
     # can handle that case
     pix = lept.Pix.open(resources / 'baiona_colormapped.png')
     pix.background_norm()
+
+
+@pytest.fixture
+def crom_pix(resources):
+    pix = lept.Pix.open(resources / 'crom.png')
+    im = Image.open(resources / 'crom.png')
+    return pix, im
+
+
+def test_pix_basic(crom_pix):
+    pix, im = crom_pix
+
+    assert pix.width == im.width
+    assert pix.height == im.height
+    assert pix.mode == im.mode
+
+
+def test_pil_conversion(crom_pix):
+    pix, im = crom_pix
+
+    # Check for pixel perfect
+    assert ImageChops.difference(pix.topil(), im).getbbox() is None
+
+
+def test_pix_otsu(crom_pix):
+    pix, _ = crom_pix
+    im1bpp = pix.otsu_adaptive_threshold()
+    assert im1bpp.mode == '1'
+
+
+def test_crop(resources):
+    pix = lept.Pix.open(resources / 'linn.png')
+    foreground = pix.crop_to_foreground()
+    assert foreground.width < pix.width
+
+
+def test_clean_bg(resources):
+    pix = lept.Pix.open(resources / 'congress.jpg')
+    imbg = pix.clean_background_to_white()
+
+
+def test_pickle(crom_pix):
+    pix, _ = crom_pix
+    pickled = dumps(pix)
+    pix2 = loads(pickled)
+    assert pix.mode == pix2.mode
+
+
+def test_leptonica_compile(tmpdir):
+    from ocrmypdf.lib.compile_leptonica import ffibuilder
+
+    # Compile the library but build it somewhere that won't interfere with
+    # existing compiled library. Also compile in API mode so that we test
+    # the interfaces, even though we use it ABI mode.
+    ffibuilder.compile(tmpdir=fspath(tmpdir),
+                       target=fspath(tmpdir / 'lepttest.*'))

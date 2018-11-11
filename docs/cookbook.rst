@@ -57,7 +57,6 @@ You can increase (decrease) the parameter ``--rotate-pages-threshold`` to make p
 
 If the page is "just a little off horizontal", like a crooked picture, then you want ``--deskew``. ``--rotate-pages`` is for when the cardinal angle is wrong.
 
-
 OCR languages other than English
 """"""""""""""""""""""""""""""""
 
@@ -69,7 +68,6 @@ By default OCRmyPDF assumes the document is English.
     ocrmypdf -l eng+fra Bilingual-English-French.pdf Bilingual-English-French.pdf
 
 Language packs must be installed for all languages specified. See :ref:`Installing additional language packs <lang-packs>`.
-
 
 Produce PDF and text file containing OCR text
 """""""""""""""""""""""""""""""""""""""""""""
@@ -116,7 +114,6 @@ If you have multiple images, you must use ``img2pdf`` to convert the images to P
 
     ImageMagick ``convert`` can also convert a group of images to PDF, but in the author's experience it takes a long time, transcodes unnecessarily and gives poor results.
 
-
 Image processing
 ----------------
 
@@ -132,6 +129,8 @@ OCRmyPDF perform some image processing on each page of a PDF, if desired.  The s
 
 * ``--clean-final`` uses unpaper to clean up pages before OCR and inserts the page into the final output.  You will want to review each page to ensure that unpaper did not remove something important.
 
+* ``-mask-barcodes`` will "cover up" any barcodes detected in the image of a page. Barcodes are known to confuse Tesseract OCR and interfere with the recognition of text on the same baseline as a barcode. The output file will contain the unaltered image of the barcode.
+
 .. note::
 
     In many cases image processing will rasterize PDF pages as images, potentially losing quality.
@@ -139,7 +138,6 @@ OCRmyPDF perform some image processing on each page of a PDF, if desired.  The s
 .. warning::
 
     ``--clean-final`` and ``-remove-background`` may leave undesirable visual artifacts in some images where their algorithms have shortcomings. Files should be visually reviewed after using these options.
-
 
 OCR and correct document skew (crooked scan)
 """"""""""""""""""""""""""""""""""""""""""""
@@ -167,28 +165,22 @@ If you set ``--tesseract-timeout 0`` OCRmyPDF will apply its image processing wi
     ocrmypdf --tesseract-timeout=0 --remove-background input.pdf output.pdf
 
 
-Redo OCR
-""""""""
+Redo existing OCR
+"""""""""""""""""
 
-To redo OCR on a file OCRed with other OCR software or a previous version of OCRmyPDF and/or Tesseract, you may use the ``--force-ocr`` argument. Normally, OCRmyPDF does not modify files that already appear to contain OCR text.
+To redo OCR on a file OCRed with other OCR software or a previous version of OCRmyPDF and/or Tesseract, you may use the ``--redo-ocr`` argument. (Normally, OCRmyPDF will exit with an error if asked to modify a file with OCR.)
 
-.. code-block:: bash
-
-    ocrmypdf --force-ocr input.pdf output.pdf
-
-Note that the method above will force rasterization of all pages, potentially reducing quality or losing vector content.
-
-To ensure quality is preserved, one could extract all of the images and rebuild the PDF for a lossless transformation. This recipe does not work when PDFs contain multiple images per page, as many do in practice. It will also lose any page rotation information.
+This may be helpful for users who want to take advantage of accuracy improvements in Tesseract 4.0 for files they previously OCRed with an earlier version of Tesseract and OCRmyPDF.
 
 .. code-block:: bash
 
-    pdfimages -all old-ocr.pdf prefix  # extract all images
-    img2pdf -o temp.pdf prefix*        # construct new PDF from the images
-    # review the new PDF to ensure it visually matches the old one
-    ocrmypdf --output-type pdf temp.pdf new-ocr.pdf
+    ocrmypdf --redo-ocr input.pdf output.pdf
 
-``--output-type pdf`` is used here to avoid using Ghostscript which will also rasterize images.
+This method will replace OCR without rasterizing, reducing quality or removing vector content. If a file contains a mix of pure digital text and OCR, digital text will be ignored and OCR will be replaced. As such this mode is incompatible with image processing options, since they alter the appearance of the file.
 
+In some cases, existing OCR cannot be detected or replaced. Files produced by OCRmyPDF v2.2 or earlier, for example, are internally represented as having visible text with an opaque image drawn on top. This situation cannot be detected.
+
+If ``--redo-ocr`` does not work, you can use ``--force-ocr``, which will force rasterization of all pages, potentially reducing quality or losing vector content.
 
 Improving OCR quality
 ---------------------
@@ -198,7 +190,6 @@ The `Image processing`_ features can improve OCR quality.
 Rotating pages and deskewing helps to ensure that the page orientation is correct before OCR begins. Removing the background and/or cleaning the page can also improve results. The ``--oversample DPI`` argument can be specified to resample images to higher resolution before attempting OCR; this can improve results as well.
 
 OCR quality will suffer if the resolution of input images is not correct (since the range of pixel sizes that will be checked for possible fonts will also be incorrect).
-
 
 PDF optimization
 ----------------

@@ -17,6 +17,7 @@
 
 import logging
 from io import BytesIO
+from unittest.mock import Mock
 
 from PIL import Image
 import pytest
@@ -25,7 +26,7 @@ import pikepdf
 
 from ocrmypdf import leptonica
 from ocrmypdf.pdfinfo import PdfInfo
-from ocrmypdf.exec import ghostscript
+from ocrmypdf.exec import ghostscript, tesseract
 from ocrmypdf.helpers import fspath
 
 
@@ -169,6 +170,8 @@ def test_rotate_deskew_timeout(resources, outdir):
     check_ocrmypdf(
         resources / 'rotated_skew.pdf',
         outdir / 'deskewed.pdf',
+        '--rotate-pages',
+        '--rotate-pages-threshold', '0',
         '--deskew',
         '--tesseract-timeout', '0',
         '--pdf-renderer', 'sandwich'
@@ -226,3 +229,13 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir):
     assert p.returncode == 0, err
 
     assert check_monochrome_correlation(outdir, reference, 1, out, 1) > 0.2
+
+
+def test_tesseract_orientation(resources, tmpdir):
+    pix = leptonica.Pix.open(resources / 'crom.png')
+    pix_rotated = pix.rotate_orth(2)  # 180 degrees clockwise
+    pix_rotated.write_implied_format(tmpdir / '000001.png')
+
+    log = Mock()
+    tesseract.get_orientation(  # Test results of this are unreliable
+        tmpdir / '000001.png', engine_mode='3', timeout=10, log=log)

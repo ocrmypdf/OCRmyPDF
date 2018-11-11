@@ -145,13 +145,13 @@ def test_pickle(resources):
     # For multiprocessing we must be able to pickle our information - if
     # this fails then we are probably storing some unpickleabe pikepdf or
     # other external data around
-    filename = resources / 'formxobject.pdf'
+    filename = resources / 'graph_ocred.pdf'
     pdf = pdfinfo.PdfInfo(filename)
     pickle.dumps(pdf)
 
 
 def test_regex():
-    rx = pdfinfo.regex_remove_char_tags
+    rx = pdfinfo.ghosttext.regex_remove_char_tags
 
     must_match = [
         b'<char bbox="0 108 0 108" c="/"/>',
@@ -175,3 +175,11 @@ def test_vector(resources):
     filename = resources / 'vector.pdf'
     pdf = pdfinfo.PdfInfo(filename)
     assert pdf[0].has_vector
+    assert not pdf[0].has_text
+
+
+def test_ocr_detection(resources):
+    filename = resources / 'graph_ocred.pdf'
+    pdf = pdfinfo.PdfInfo(filename)
+    assert not pdf[0].has_vector
+    assert pdf[0].has_text

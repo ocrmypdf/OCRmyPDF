@@ -244,19 +244,38 @@ preprocessing.add_argument(
     '--oversample', metavar='DPI', type=numeric(int, 0, 5000), default=0,
     help="Oversample images to at least the specified DPI, to improve OCR "
          "results slightly")
+preprocessing.add_argument(
+    '--remove-vectors', action='store_true',
+    help="EXPERIMENTAL. Mask out any vector objects in the PDF so that they "
+         "will not be included in OCR. This can eliminate false characters.")
+preprocessing.add_argument(
+    '--mask-barcodes', action='store_true',
+    help="EXPERIMENTAL. Mask out any barcodes that appear in the PDF so they are not "
+         "considered during OCR. Barcodes can introduce false characters into "
+         "OCR.")
+preprocessing.add_argument(
+    '--threshold', action='store_true',
+    help="EXPERIMENTAL. Threshold image to 1bpp before sending it to Tesseract for OCR. Can "
+         "improve OCR quality compared to Tesseract's thresholder.")
 
 ocrsettings = parser.add_argument_group(
     "OCR options",
     "Control how OCR is applied")
 ocrsettings.add_argument(
     '-f', '--force-ocr', action='store_true',
-    help="Rasterize any fonts or vector objects on each page, apply OCR, and "
+    help="Rasterize any text or vector objects on each page, apply OCR, and "
          "save the rastered output (this rewrites the PDF)")
 ocrsettings.add_argument(
     '-s', '--skip-text', action='store_true',
     help="Skip OCR on any pages that already contain text, but include the "
          "page in final output; useful for PDFs that contain a mix of "
          "images, text pages, and/or previously OCRed pages")
+ocrsettings.add_argument(
+    '--redo-ocr', action='store_true',
+    help="Attempt to detect and remove the hidden OCR layer from files that "
+         "were previously OCRed with OCRmyPDF or another program. Apply OCR "
+         "to text found in raster images. Existing visible text objects will "
+         "not be changed. If there is no existing OCR, OCR will be added.")
 ocrsettings.add_argument(
     '--skip-big', type=numeric(float, 0, 5000), metavar='MPixels',
     help="Skip OCR on pages larger than the specified amount of megapixels, "
@@ -461,11 +480,17 @@ def check_options_output(options, log):
         )
 
     lossless_reconstruction = False
-    if options.pdf_renderer in ('hocr', 'sandwich'):
-        if not any((options.deskew, options.clean_final, options.force_ocr,
-                   options.remove_background)):
-            lossless_reconstruction = True
+    if not any((options.deskew, options.clean_final, options.force_ocr,
+                options.remove_background)):
+        lossless_reconstruction = True
     options.lossless_reconstruction = lossless_reconstruction
+
+    if not options.lossless_reconstruction and options.redo_ocr:
+        raise argparse.ArgumentError(
+            None,
+            "--redo-ocr is not currently compatible with --deskew, "
+            "--clean-final, and --remove-background"
+        )
 
 
 def check_options_sidecar(options, log):
@@ -511,10 +536,15 @@ def check_options_preprocessing(options, log):
 
 
 def check_options_ocr_behavior(options, log):
-    if options.force_ocr and options.skip_text:
+    exclusive_options = sum(
+        [(1 if opt else 0)
+         for opt in (options.force_ocr, options.skip_text, options.redo_ocr)
+        ]
+    )
+    if exclusive_options >= 2:
         raise argparse.ArgumentError(
             None,
-            "Error: --force-ocr and --skip-text are mutually exclusive.")
+            "Error: choose only one of --force-ocr, --skip-text, --redo-ocr.")
 
 
 def check_options_optimizing(options, log):

@@ -28,7 +28,7 @@ import PIL
 import pytest
 
 from ocrmypdf.pdfinfo import PdfInfo, Colorspace, Encoding
-from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 from ocrmypdf.exec import ghostscript, qpdf, tesseract
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.leptonica import Pix
@@ -190,9 +190,20 @@ def test_force_ocr(spoof_tesseract_cache, resources, outpdf):
 
 def test_skip_ocr(spoof_tesseract_cache, resources, outpdf):
     out = check_ocrmypdf(resources / 'graph_ocred.pdf', outpdf, '-s',
-                   env=spoof_tesseract_cache)
+                         env=spoof_tesseract_cache)
     pdfinfo = PdfInfo(out)
     assert pdfinfo[0].has_text
+
+
+def test_redo_ocr(spoof_tesseract_cache, resources, outpdf):
+    in_ = resources / 'graph_ocred.pdf'
+    before = PdfInfo(in_, detailed_page_analysis=True)
+    out = check_ocrmypdf(in_, outpdf, '--redo-ocr',
+                         env=spoof_tesseract_cache)
+    after = PdfInfo(out, detailed_page_analysis=True)
+    assert before[0].has_text and after[0].has_text
+    assert before[0].get_textareas() != after[0].get_textareas(), \
+        "Expected text to be different after re-OCR"
 
 
 def test_argsfile(spoof_tesseract_noop, resources, outdir):
@@ -208,7 +219,7 @@ def test_argsfile(spoof_tesseract_noop, resources, outdir):
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_ocr_timeout(renderer, resources, outpdf):
     out = check_ocrmypdf(resources / 'skew.pdf', outpdf,
-                         '--tesseract-timeout', '0.01',
+                         '--tesseract-timeout', '0',
                          '--pdf-renderer', renderer)
     pdfinfo = PdfInfo(out)
     assert not pdfinfo[0].has_text
@@ -377,7 +388,7 @@ def test_tesseract_image_too_big(renderer, spoof_tesseract_big_image_error,
 def test_algo4(resources, spoof_tesseract_noop, outpdf):
     p, _, _ = run_ocrmypdf(resources / 'encrypted_algo4.pdf', outpdf,
         env=spoof_tesseract_noop)
-    assert p.returncode == ExitCode.ok
+    assert p.returncode == ExitCode.encrypted_pdf
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
@@ -934,3 +945,16 @@ def test_livecycle(resources, no_outpdf):
     )
 
     assert p.returncode == ExitCode.input_file, err
+
+
+def test_version_check():
+    from ocrmypdf.exec import get_version
+
+    with pytest.raises(MissingDependencyError):
+        get_version('NOT_FOUND_UNLIKELY_ON_PATH')
+
+    with pytest.raises(MissingDependencyError):
+        get_version('sh', version_arg='-c')
+
+    with pytest.raises(MissingDependencyError):
+        get_version('echo')

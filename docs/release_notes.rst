@@ -14,6 +14,33 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
 
+v7.3.0
+------
+
+-   Added a new feature ``--redo-ocr`` to detect existing OCR in a file, remove it, and redo the OCR. This may be particularly helpful for anyone who wants to take advantage of OCR quality improvements in Tesseract 4.0. Note that OCR added by OCRmyPDF before version 3.0 cannot be detected since it was not properly marked as invisible text in the earliest versions. OCR that constructs a font from visible text, such as Adobe Acrobat's ClearScan.
+
+-   OCRmyPDF's content detection is generally more sophisticated. It learns more about the contents of each PDF and makes better recommendations:
+
+    -   OCRmyPDF can now detect when a PDF contains text that cannot be mapped to Unicode (meaning it is readable to human eyes but copy-pastes as gibberish). In these cases it recommends ``--force-ocr`` to make the text searchable.
+
+    -   PDFs containing vector objects are now rendered at more appropriate resolution for OCR.
+
+    -   We now exit with an error for PDFs that contain Adobe LiveCycle Designer's dynamic XFA forms. Currently the open source community does not have tools to work with these files.
+
+    -   OCRmyPDF now warns when a PDF that contains Adobe AcroForms, since such files probably do not need OCR. It can work with these files.
+
+-   Added three new **experimental** features. The name, syntax and behavior of these arguments is subject to change. They may also be incompatible with some other features.
+
+    -   ``--remove-vectors`` which strips out vector graphics. This can improve OCR quality since OCR will not search artwork for readable text; however, it currently removes "text as curves" as well.
+
+    -   ``--mask-barcodes`` to detect and suppress barcodes in files. We have observed that barcodes can interfere with OCR.
+
+    -   ``--threshold`` which uses a more sophisticated thresholding algorithm than is currently in use in Tesseract OCR. This works around a `known issue in Tesseract <https://github.com/tesseract-ocr/tesseract/issues/1990>`_ with text on bright backgrounds.
+
+-   Fixed an issue where an error message was not reported when the installed Ghostscript was very old.
+
+-   New dependency: pdfminer.six 20181108.
+
 v7.2.1
 ------
 
@@ -151,6 +178,15 @@ v7.0.0
     +   There is also a new dependency on ``python-xmp-toolkit`` which in turn depends on ``libexempi3``.
 
     +   It may be necessary to separately ``pip install pycparser`` to avoid `another Python 3.7 issue <https://github.com/eliben/pycparser/pull/135>`_.
+
+v6.2.5
+------
+
+-   Disable a failing test due to Tesseract 4.0rc1 behavior change. Previously, Tesseract would exit with an error message if its configuration was invalid, and OCRmyPDF would intercept this message. Now Tesseract issues a warning, which OCRmyPDF v6.2.5 may relay or ignore. (In v7.x, OCRmyPDF will respond to the warning.)
+
+-   This release branch no longer supports using the optional PyMuPDF installation, since it was removed in v7.x.
+
+-   This release branch no longer supports macOS. macOS users should upgrade to v7.x.
 
 v6.2.4
 ------

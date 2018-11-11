@@ -16,8 +16,9 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
-from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 from ocrmypdf.exec import tesseract
+from ocrmypdf.helpers import fspath
 from ocrmypdf import pdfinfo
 import sys
 import os
@@ -43,6 +44,7 @@ def _ensure_tess4():
         tess4 = Path(os.environ['OCRMYPDF_TESS4'])
         assert tess4.is_file()
         env['PATH'] = tess4.parent + ':' + env['PATH']
+        env['OCRMYPDF_TESS4'] = os.environ['OCRMYPDF_TESS4']
         return env
 
     raise EnvironmentError("Can't find Tesseract 4")
@@ -56,9 +58,12 @@ def ensure_tess4():
 @contextmanager
 def modified_os_environ(env):
     old_env = os.environ.copy()
-    os.environ = env
+    os.environ.update(env)
     yield
-    os.environ = old_env
+    for key in env:
+        del os.environ[key]
+        if key in old_env:
+            os.environ[key] = old_env[key]
 
 
 def tess4_available():
@@ -149,3 +154,14 @@ def test_content_preservation(ensure_tess4, resources, outpdf):
     info = pdfinfo.PdfInfo(outpdf)
     page = info[0]
     assert len(page.images) > 1, "masks were rasterized"
+
+
+def test_no_languages(ensure_tess4, tmpdir):
+    env = ensure_tess4
+    (tmpdir / 'tessdata').mkdir()
+    env['TESSDATA_PREFIX'] = fspath(tmpdir)
+
+    with modified_os_environ(env):
+        with pytest.raises(MissingDependencyError):
+            tesseract.languages.cache_clear()
+            tesseract.languages()

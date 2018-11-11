@@ -19,6 +19,7 @@ from subprocess import CalledProcessError, STDOUT, PIPE, run
 from functools import lru_cache
 
 from . import  get_version
+from ..helpers import fspath
 
 
 @lru_cache(maxsize=1)
@@ -30,7 +31,7 @@ def check(input_file, log=None):
     args_qpdf = [
         'qpdf',
         '--check',
-        input_file
+        fspath(input_file)
     ]
 
     if log is None:

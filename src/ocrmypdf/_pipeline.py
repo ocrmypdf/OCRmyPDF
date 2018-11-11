@@ -162,6 +162,10 @@ def repair_and_parse_pdf(
     options = context.get_options()
     copyfile(input_file, output_file)
 
+    detailed_page_analysis = False
+    if options.redo_ocr:
+        detailed_page_analysis = True
+
     try:
         pdfinfo = PdfInfo(output_file, log=log)
     except pikepdf.PasswordError as e:
@@ -192,6 +196,25 @@ def repair_and_parse_pdf(
             "Performance regressions are known occur with Python 3.5 for "
             "high page count files.  Python 3.6 or newer is recommended."
         )
+
+    if pdfinfo.has_acroform:
+        if options.redo_ocr:
+            log.error(
+                "This PDF has a user fillable form. --redo-ocr is not "
+                "currently possible on such files."
+            )
+            raise PriorOcrFoundError()
+        else:
+            log.warning(
+                "This PDF has a fillable form. Chances are it is a pure digital "
+                "document that does not need OCR."
+            )
+            if not options.force_ocr:
+                log.info(
+                    "Use the option --force-ocr to produce an image of the "
+                    "form and all filled form fields. The output PDF will be "
+                    "'flattened' and will no longer be fillable."
+                )
 
     context.set_pdfinfo(pdfinfo)
     log.debug(pdfinfo)
@@ -243,13 +266,25 @@ def is_ocr_required(pageinfo, log, options):
     if pageinfo.has_text:
         msg = "{0:4d}: page already has text! – {1}"
 
-        if not options.force_ocr and not options.skip_text:
+        if not options.force_ocr and not (options.skip_text or options.redo_ocr):
             log.error(msg.format(page,
                                  "aborting (use --force-ocr to force OCR)"))
             raise PriorOcrFoundError()
         elif options.force_ocr:
             log.info(msg.format(page,
                                 "rasterizing text and running OCR anyway"))
+            ocr_required = True
+        elif options.redo_ocr:
+            if pageinfo.has_corrupt_text:
+                log.warning(msg.format(
+                    page,
+                    "some text on this page cannot be mapped to characters: "
+                    "consider using --force-ocr instead")
+                )
+                raise PriorOcrFoundError()  # Wrong error but will do for now
+            else:
+                log.info(msg.format(page,
+                                    "redoing OCR"))
             ocr_required = True
         elif options.skip_text:
             log.info(msg.format(page,
@@ -493,7 +528,8 @@ def rasterize_with_ghostscript(
     ghostscript.rasterize_pdf(
         input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
         raster_device=device, log=log, page_dpi=(page_dpi, page_dpi),
-        pageno=page_number(input_file), rotation=correction)
+        pageno=page_number(input_file), rotation=correction,
+        filter_vector=options.remove_vectors)
 
 
 def preprocess_remove_background(
@@ -559,11 +595,12 @@ def select_ocr_image(
     user."""
 
     image = infiles[0]
-    if context.get_options().force_ocr:
+    options = context.get_options()
+    pageinfo = get_pageinfo(image, context)
+
+    if options.force_ocr:
         re_symlink(image, output_file, log)
         return
-
-    pageinfo = get_pageinfo(image, context)
 
     with Image.open(image) as im:
         from PIL import ImageColor
@@ -575,21 +612,38 @@ def select_ocr_image(
 
         xres, yres = im.info['dpi']
         log.debug('resolution %r %r', xres, yres)
-        for textarea in pageinfo.get_textareas():
+
+        mask = None  # Exclude both visible and invisible text from OCR
+        if options.redo_ocr:
+            mask = True  # Mask visible text, but not invisible text
+
+        for textarea in pageinfo.get_textareas(visible=mask, corrupt=None):
             # Calculate resolution based on the image size and page dimensions
             # without regard whatever resolution is in pageinfo (may differ or
             # be None)
             bbox = textarea
-            pixcoords = [Decimal(bbox[0]) / Decimal(72) * xres,
-                         Decimal(bbox[1]) / Decimal(72) * yres,
-                         Decimal(bbox[2]) / Decimal(72) * xres,
-                         Decimal(bbox[3]) / Decimal(72) * yres]
-            pixcoords = [int(c) for c in pixcoords]
+            xscale, yscale = float(xres) / 72.0, float(yres) / 72.0
+            pixcoords = [bbox[0] * xscale,
+                         im.height - bbox[3] * yscale,
+                         bbox[2] * xscale,
+                         im.height - bbox[1] * yscale]
+            pixcoords = [int(round(c)) for c in pixcoords]
             log.debug('blanking %r', pixcoords)
             draw.rectangle(pixcoords, fill=white)
             #draw.rectangle(pixcoords, outline=pink)
-
         del draw
+
+        if options.mask_barcodes or options.threshold:
+            pix = leptonica.Pix.frompil(im)
+            if options.threshold:
+                pix = pix.masked_threshold_on_background_norm()
+            if options.mask_barcodes:
+                barcodes = pix.locate_barcodes()
+                for barcode in barcodes:
+                    decoded, rect = barcode
+                    log.info('masking barcode %s %r', decoded, rect)
+                    draw.rectangle(rect, fill=white)
+            im = pix.topil()
 
         # Pillow requires integer DPI
         dpi = round(xres), round(yres)

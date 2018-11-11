@@ -64,7 +64,7 @@ In the case of a PDF that is nothing other than a container of images (no rotati
 
 OCRmyPDF uses several strategies depending on input options and the input PDF itself, but generally speaking it rasterizes a page for OCR and then grafts the OCR back onto the original. As such it can handle complex PDFs and still preserve their contents as much as possible.
 
-OCRmyPDF also supports a many, many edge cases that have cropped over several years of development. We support PDF features like images inside of Form XObjects, and pages with UserUnit scaling. We support rare image formats like non-monochrome 1-bit images. Thanks to pikepdf and QPDF, we auto-repair PDFs that are damaged. (Not that you need to know what any of these are! You should be able to throw any PDF at it.)
+OCRmyPDF also supports a many, many edge cases that have cropped over several years of development. We support PDF features like images inside of Form XObjects, and pages with UserUnit scaling. We support rare image formats like non-monochrome 1-bit images. We warn about files you may not to OCR. Thanks to pikepdf and QPDF, we auto-repair PDFs that are damaged. (Not that you need to know what any of these are! You should be able to throw any PDF at it.)
 
 
 Limitations
@@ -76,20 +76,20 @@ OCRmyPDF is limited by the Tesseract OCR engine.  As such it experiences these l
 * It is not capable of recognizing handwriting.
 * It may find gibberish and report this as OCR output.
 * If a document contains languages outside of those given in the ``-l LANG`` arguments, results may be poor.
-* It is not always good at analyzing the natural reading order of documents. For example, it may fail to recognize that a document contains two columns and join text across the columns.
+* It is not always good at analyzing the natural reading order of documents. For example, it may fail to recognize that a document contains two columns, and may try to join text across columns.
 * Poor quality scans may produce poor quality OCR. Garbage in, garbage out.
 * It does not expose information about what font family text belongs to.
 
 OCRmyPDF is also limited by the PDF specification:
 
 * PDF encodes the position of text glyphs but does not encode document structure.  There is no markup that divides a document in sections, paragraphs, sentences, or even words (since blank spaces are not represented). As such all elements of document structure including the spaces between words must be derived heuristically.  Some PDF viewers do a better job of this than others.
-* Because some popular open source PDF viewers have a particularly hard time with spaces betweem words, OCRmyPDF appends a space to each text element as a workaround. While this mixes document structure with graphical information that ideally should be left to the PDF viewer to interpret, it improves compatibility with some viewers and does not cause problems for better ones.
+* Because some popular open source PDF viewers have a particularly hard time with spaces betweem words, OCRmyPDF appends a space to each text element as a workaround (when using ``--pdf-renderer hocr``). While this mixes document structure with graphical information that ideally should be left to the PDF viewer to interpret, it improves compatibility with some viewers and does not cause problems for better ones.
 
 Ghostscript also imposes some limitations:
 
 * PDFs containing JBIG2-encoded content will be converted to CCITT Group4 encoding, which has lower compression ratios, if Ghostscript PDF/A is enabled.
 * PDFs containing JPEG 2000-encoded content will be converted to JPEG encoding, which may introduce compression artifacts, if Ghostscript PDF/A is enabled.
-* Ghostscript may transcode grayscale and color images, either lossy to lossless or lossless to lossy, based on an internal algorithm. This behavior can be suppressed by setting ``--pdfa-image-compression`` to ``jpeg`` or ``lossless`` to set all images to one type or the other. Ghostscript has no option to maintain the input image's format.
+* Ghostscript may transcode grayscale and color images, either lossy to lossless or lossless to lossy, based on an internal algorithm. This behavior can be suppressed by setting ``--pdfa-image-compression`` to ``jpeg`` or ``lossless`` to set all images to one type or the other. Ghostscript has no option to maintain the input image's format. (Ghostscript 9.25+ can copy JPEG images without transcoding them; earlier versions will transcode.)
 
 Regarding OCRmyPDF itself:
 

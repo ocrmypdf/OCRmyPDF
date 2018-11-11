@@ -18,13 +18,18 @@
 import sys
 import os
 import platform
-
-pytest_plugins = ['helpers_namespace']
-
-import pytest
 from pathlib import Path
 from subprocess import Popen, PIPE
 
+pytest_plugins = ['helpers_namespace']
+import pytest
+
+try:
+    from pytest_cov.embed import cleanup_on_sigterm
+except ImportError:
+    pass
+else:
+    cleanup_on_sigterm()
 
 # pylint: disable=E1101
 # pytest.helpers is dynamic so it confuses pylint
