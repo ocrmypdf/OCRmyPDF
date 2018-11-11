@@ -29,17 +29,21 @@ v7.3.0
 
     -   OCRmyPDF now warns when a PDF that contains Adobe AcroForms, since such files probably do not need OCR. It can work with these files.
 
--   Added three new **experimental** features. The name, syntax and behavior of these arguments is subject to change. They may also be incompatible with some other features.
+-   Added three new **experimental** features to improve OCR quality in certain conditions. The name, syntax and behavior of these arguments is subject to change. They may also be incompatible with some other features.
 
     -   ``--remove-vectors`` which strips out vector graphics. This can improve OCR quality since OCR will not search artwork for readable text; however, it currently removes "text as curves" as well.
 
-    -   ``--mask-barcodes`` to detect and suppress barcodes in files. We have observed that barcodes can interfere with OCR.
+    -   ``--mask-barcodes`` to detect and suppress barcodes in files. We have observed that barcodes can interfere with OCR because they are "text-like" but not actually textual.
 
-    -   ``--threshold`` which uses a more sophisticated thresholding algorithm than is currently in use in Tesseract OCR. This works around a `known issue in Tesseract <https://github.com/tesseract-ocr/tesseract/issues/1990>`_ with text on bright backgrounds.
+    -   ``--threshold`` which uses a more sophisticated thresholding algorithm than is currently in use in Tesseract OCR. This works around a `known issue in Tesseract 4.0 <https://github.com/tesseract-ocr/tesseract/issues/1990>`_ with dark text on bright backgrounds.
 
 -   Fixed an issue where an error message was not reported when the installed Ghostscript was very old.
 
--   New dependency: pdfminer.six 20181108.
+-   The PDF optimizer now saves files with object streams enabled when the optimization level is ``--optimize 1`` or higher (the default). This makes files a little bit smaller, but requires PDF 1.5. PDF 1.5 was first released in 2003 and is broadly supported by PDF viewers, but some rudimentary PDF parsers such as PyPDF2 do not understand object streams. You can use the command line tool ``qpdf --object-streams=disable`` or `pikepdf <https://github.com/pikepdf/pikepdf>`_ library to remove them.
+
+-   New dependency: pdfminer.six 20181108. Note this is a fork of the Python 2-only pdfminer.
+
+-   Deprecation notice: At the end of 2018, we will be ending support for Python 3.5 and Tesseract 3.x. OCRmyPDF v7 will continue to work with older versions.
 
 v7.2.1
 ------
