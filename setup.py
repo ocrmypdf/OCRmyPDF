@@ -28,7 +28,6 @@ from setuptools import setup, find_packages  # nopep8
 from subprocess import STDOUT, check_output, CalledProcessError  # nopep8
 from collections.abc import Mapping  # nopep8
 import re  # nopep8
-import os  # nopep8
 
 
 missing_program = '''
