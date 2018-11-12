@@ -1,0 +1,10 @@
+build:
+  image: latest
+
+python:
+  version: 3.6
+
+formats:
+  - pdf
+
+requirements_file: requirements/main.txt
