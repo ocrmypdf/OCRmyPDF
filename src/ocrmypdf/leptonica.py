@@ -36,11 +36,11 @@ from .helpers import fspath
 
 # pylint: disable=protected-access
 
-lept = ffi.dlopen(find_library('lept'))
-
 logger = logging.getLogger(__name__)
 
+lept = ffi.dlopen(find_library('lept'))
 lept.setMsgSeverity(lept.L_SEVERITY_WARNING)
+
 
 def stderr(*objs):
     """Shorthand print to stderr."""

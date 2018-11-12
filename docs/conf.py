@@ -74,7 +74,7 @@ if on_rtd:
         def __getattr__(cls, name):
             return MagicMock()
 
-    MOCK_MODULES = ['pikepdf', 'libxmp', 'libxmp.utils']
+    MOCK_MODULES = ['pikepdf', 'libxmp', 'libxmp.utils', 'ocrmypdf.leptonica']
     sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 
