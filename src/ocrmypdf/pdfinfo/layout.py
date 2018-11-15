@@ -29,7 +29,7 @@ from pdfminer.layout import (LAParams, LTChar, LTContainer, LTLayoutContainer,
                              LTPage, LTTextBox, LTTextLine)
 from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
 from pdfminer.pdffont import (PDFCIDFont, PDFFont, PDFType3Font,
-                              PDFUnicodeNotDefined)
+                              PDFUnicodeNotDefined, PDFSimpleFont)
 from pdfminer.pdfpage import PDFPage
 from pdfminer.utils import bbox2str, fsplit, matrix2str
 
@@ -76,6 +76,18 @@ def PDFFont__init__(self, descriptor, widths, default_width=None):
         self.descent = -self.descent
 PDFFont.__init__ = PDFFont__init__
 
+original_PDFSimpleFont_init = PDFSimpleFont.__init__
+def PDFSimpleFont__init__(self, descriptor, widths, spec):
+    # Font encoding is specified either by a name of
+    # built-in encoding or a dictionary that describes
+    # the differences.
+    original_PDFSimpleFont_init(self, descriptor, widths, spec)
+    # pdfminer is incorrect. If there is no ToUnicode and no Encoding, do not
+    # assume Unicode conversion is possible. RM 9.10.2
+    if not self.unicode_map and 'Encoding' not in spec:
+        self.cid2unicode = {}
+    return
+PDFSimpleFont.__init__ = PDFSimpleFont__init__
 #
 # pdfminer patches when creator is PScript5.dll
 #
@@ -201,15 +213,15 @@ def get_page_analysis(infile, pageno, pscript5_mode):
         )
         patcher.start()
 
-    with Path(infile).open('rb') as f:
-        page = PDFPage.get_pages(f, pagenos=[pageno], maxpages=0)
-        try:
+    try:
+        with Path(infile).open('rb') as f:
+            page = PDFPage.get_pages(f, pagenos=[pageno], maxpages=0)
             interp.process_page(next(page))
-        except PDFTextExtractionNotAllowed as e:
-            raise EncryptedPdfError()
-        finally:
-            if pscript5_mode:
-                patcher.stop()
+    except PDFTextExtractionNotAllowed:
+        raise EncryptedPdfError()
+    finally:
+        if pscript5_mode:
+            patcher.stop()
 
     return dev.get_result()
 
