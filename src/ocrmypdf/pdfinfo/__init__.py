@@ -593,7 +593,7 @@ def _pdf_get_all_pageinfo(infile, detailed_page_analysis, log=None):
         log = Mock()
 
     pdf = pikepdf.open(infile)
-    if not detailed_page_analysis:
+    if detailed_page_analysis:
         pages_xml = None
     else:
         pages_xml = ghosttext.extract_text_xml(infile, pdf, pageno=None, log=log)
