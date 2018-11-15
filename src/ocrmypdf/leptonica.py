@@ -411,8 +411,9 @@ class Pix(LeptonicaObject):
             smoothx, smoothy = kernel_size
             p_pix = ffi.new('PIX **')
 
+            pix = Pix(lept.pixConvertTo8(self._cdata, 0))
             result = lept.pixOtsuAdaptiveThreshold(
-                self._cdata,
+                pix._cdata,
                 sx, sy,
                 smoothx, smoothy,
                 scorefract,
@@ -433,8 +434,9 @@ class Pix(LeptonicaObject):
             if isinstance(mask, Pix):
                 mask = mask._cdata
 
+            pix = Pix(lept.pixConvertTo8(self._cdata, 0))
             thresh_pix = lept.pixOtsuThreshOnBackgroundNorm(
-                self._cdata,
+                pix._cdata,
                 mask,
                 sx, sy,
                 thresh, mincount, bgval,
@@ -562,22 +564,22 @@ class Pix(LeptonicaObject):
 
     def locate_barcodes(self):
         with suppress(LeptonicaError):
-        with _LeptonicaErrorTrap():
-            pix = Pix(lept.pixConvertTo8(self._cdata, 0))
-            pixa_candidates = PixArray(lept.pixExtractBarcodes(pix._cdata, 0))
-            sarray = StringArray(lept.pixReadBarcodes(pixa_candidates._cdata,
-                                                    lept.L_BF_ANY,
-                                                    lept.L_USE_WIDTHS,
-                                                    ffi.NULL,
-                                                    0))
-            for n, s in enumerate(sarray):
-                decoded = s.decode()
+            with _LeptonicaErrorTrap():
+                pix = Pix(lept.pixConvertTo8(self._cdata, 0))
+                pixa_candidates = PixArray(lept.pixExtractBarcodes(pix._cdata, 0))
+                sarray = StringArray(lept.pixReadBarcodes(pixa_candidates._cdata,
+                                                        lept.L_BF_ANY,
+                                                        lept.L_USE_WIDTHS,
+                                                        ffi.NULL,
+                                                        0))
+        for n, s in enumerate(sarray):
+            decoded = s.decode()
             if decoded.strip() == '':
-                    continue
-                box = pixa_candidates.get_box(n)
-                left, top = box.x, box.y
-                right, bottom = box.x + box.w, box.y + box.h
-                yield (decoded, (left, top, right, bottom))
+                continue
+            box = pixa_candidates.get_box(n)
+            left, top = box.x, box.y
+            right, bottom = box.x + box.w, box.y + box.h
+            yield (decoded, (left, top, right, bottom))
 
     def despeckle(self, size):
         if size == 2:
