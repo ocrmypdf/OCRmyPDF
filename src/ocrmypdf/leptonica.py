@@ -21,6 +21,7 @@
 # Python FFI wrapper for Leptonica library
 
 from collections.abc import Sequence
+from contextlib import suppress
 from ctypes.util import find_library
 from functools import lru_cache
 from io import BytesIO
@@ -560,6 +561,7 @@ class Pix(LeptonicaObject):
         return Pix(lept.pixInvert(ffi.NULL, self._cdata))
 
     def locate_barcodes(self):
+        with suppress(LeptonicaError):
         with _LeptonicaErrorTrap():
             pix = Pix(lept.pixConvertTo8(self._cdata, 0))
             pixa_candidates = PixArray(lept.pixExtractBarcodes(pix._cdata, 0))
@@ -570,7 +572,7 @@ class Pix(LeptonicaObject):
                                                     0))
             for n, s in enumerate(sarray):
                 decoded = s.decode()
-                if s.strip() == '':
+            if decoded.strip() == '':
                     continue
                 box = pixa_candidates.get_box(n)
                 left, top = box.x, box.y
