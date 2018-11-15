@@ -51,8 +51,13 @@ def name2unicode(name):
     """
     if name in glyphname2unicode:
         return glyphname2unicode[name]
-    if name.startswith('g'):
+    if name.startswith('g') or name.startswith('a'):
         raise KeyError(name)
+    if name.startswith('uni'):
+        try:
+            return chr(int(name[3:], 16))
+        except ValueError:  # Not hexadecimal
+            raise KeyError(name)
     m = STRIP_NAME.search(name)
     if not m:
         raise KeyError(name)
