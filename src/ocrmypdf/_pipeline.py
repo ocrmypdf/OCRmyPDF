@@ -631,7 +631,6 @@ def select_ocr_image(
             log.debug('blanking %r', pixcoords)
             draw.rectangle(pixcoords, fill=white)
             #draw.rectangle(pixcoords, outline=pink)
-        del draw
 
         if options.mask_barcodes or options.threshold:
             pix = leptonica.Pix.frompil(im)
@@ -645,6 +644,7 @@ def select_ocr_image(
                     draw.rectangle(rect, fill=white)
             im = pix.topil()
 
+        del draw
         # Pillow requires integer DPI
         dpi = round(xres), round(yres)
         im.save(output_file, dpi=dpi)
