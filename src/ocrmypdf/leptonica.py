@@ -563,15 +563,20 @@ class Pix(LeptonicaObject):
         return Pix(lept.pixInvert(ffi.NULL, self._cdata))
 
     def locate_barcodes(self):
-        with suppress(LeptonicaError):
+        try:
             with _LeptonicaErrorTrap():
                 pix = Pix(lept.pixConvertTo8(self._cdata, 0))
                 pixa_candidates = PixArray(lept.pixExtractBarcodes(pix._cdata, 0))
-                sarray = StringArray(lept.pixReadBarcodes(pixa_candidates._cdata,
-                                                        lept.L_BF_ANY,
-                                                        lept.L_USE_WIDTHS,
-                                                        ffi.NULL,
-                                                        0))
+                sarray = StringArray(lept.pixReadBarcodes(
+                    pixa_candidates._cdata,
+                    lept.L_BF_ANY,
+                    lept.L_USE_WIDTHS,
+                    ffi.NULL,
+                    0
+                ))
+        except (LeptonicaError, ValueError) as e:
+            return
+
         for n, s in enumerate(sarray):
             decoded = s.decode()
             if decoded.strip() == '':
@@ -744,6 +749,7 @@ class Sel(LeptonicaObject):
 
     @classmethod
     def from_selstr(cls, selstr, name):
+        # TODO this will strip a horizontal line of don't care's
         lines = [line.strip() for line in selstr.split('\n') if line.strip()]
         h = len(lines)
         w = len(lines[0])
