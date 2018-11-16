@@ -14,6 +14,16 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
 
+v7.3.1
+------
+
+-   Fixed performance regression from v7.3.0; fast page analysis was not selected when it should be.
+
+-   Fixed a few exceptions related to the new ``--mask-barcodes`` feature and improved argument checking
+
+-   Added missing detection of TrueType fonts that lack a Unicode mapping
+
+
 v7.3.0
 ------
 
