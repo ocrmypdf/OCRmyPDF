@@ -185,8 +185,11 @@ def test_ocr_detection(resources):
     assert pdf[0].has_text
 
 
-def test_corrupt_font_detection(resources):
-    filename = resources / 'truetype_font_nomapping.pdf'
+@pytest.mark.parametrize(
+    'testfile', ('truetype_font_nomapping.pdf', 'type3_font_nomapping.pdf')
+)
+def test_corrupt_font_detection(resources, testfile):
+    filename = resources / testfile
     with pytest.raises(NotImplementedError):
         pdf = pdfinfo.PdfInfo(filename)
         pdf[0].has_corrupt_text

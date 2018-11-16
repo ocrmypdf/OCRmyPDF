@@ -149,6 +149,11 @@ licensed under the specified license.
         - @jbarlow83
         - @jbarlow83
         - CC-BY-SA 4.0
+    *   - type3_font_nomapping.pdf
+        - example of a PDF with an embedded subsetted TrueType font with no Unicode mapping
+        - @jbarlow83
+        - @jbarlow83
+        - CC-BY-SA 4.0
     *   - vector.pdf
         - a PDF with vector art and text rendered as curves with no fonts
         - @Catscratch
