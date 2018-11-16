@@ -139,6 +139,11 @@ licensed under the specified license.
         - @jbarlow83
         - @jbarlow83
         - CC-BY-SA 4.0
+    *   - truetype_font_nomapping.pdf
+        - example of a PDF with an embedded subsetted TrueType font with no Unicode mapping
+        - @jbarlow83
+        - @jbarlow83
+        - CC-BY-SA 4.0
     *   - trivial.pdf
         - smallest possible valid PDF-1.3 with all required fields
         - @jbarlow83

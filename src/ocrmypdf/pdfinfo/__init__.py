@@ -588,12 +588,12 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     return pageinfo
 
 
-def _pdf_get_all_pageinfo(infile, detailed_page_analysis, log=None):
+def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None):
     if not log:
         log = Mock()
 
     pdf = pikepdf.open(infile)
-    if detailed_page_analysis:
+    if detailed_analysis:
         pages_xml = None
     else:
         pages_xml = ghosttext.extract_text_xml(infile, pdf, pageno=None, log=log)
@@ -601,17 +601,18 @@ def _pdf_get_all_pageinfo(infile, detailed_page_analysis, log=None):
     pages = []
     for n in range(len(pdf.pages)):
         page_xml = pages_xml[n] if pages_xml else None
-        page = PageInfo(pdf, n, infile, page_xml)
+        page = PageInfo(pdf, n, infile, page_xml, detailed_analysis)
         pages.append(page)
 
     return pages, pdf
 
 
 class PageInfo:
-    def __init__(self, pdf, pageno, infile, xmltext):
+    def __init__(self, pdf, pageno, infile, xmltext, detailed_analysis=False):
         self._pageno = pageno
         self._infile = infile
         self._pageinfo = _pdf_get_pageinfo(pdf, pageno, infile, xmltext)
+        self._detailed_analysis = detailed_analysis
 
     @property
     def pageno(self):
@@ -623,6 +624,8 @@ class PageInfo:
 
     @property
     def has_corrupt_text(self):
+        if not self._detailed_analysis:
+            raise NotImplementedError('Did not do detailed analysis')
         return any(tbox.is_corrupt for tbox in self._pageinfo['textboxes'])
 
     @property

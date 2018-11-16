@@ -183,3 +183,13 @@ def test_ocr_detection(resources):
     pdf = pdfinfo.PdfInfo(filename)
     assert not pdf[0].has_vector
     assert pdf[0].has_text
+
+
+def test_corrupt_font_detection(resources):
+    filename = resources / 'truetype_font_nomapping.pdf'
+    with pytest.raises(NotImplementedError):
+        pdf = pdfinfo.PdfInfo(filename)
+        pdf[0].has_corrupt_text
+
+    pdf = pdfinfo.PdfInfo(filename, detailed_page_analysis=True)
+    assert pdf[0].has_corrupt_text
