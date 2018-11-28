@@ -42,7 +42,7 @@ STRIP_NAME = re.compile(r'[0-9]+')
 #
 
 def name2unicode(name):
-    """Fix pdfminer's regex in name2unicode function
+    """Fix pdfminer's name2unicode function
 
     Font cids that are mapped to names of the form /g123 seem to be, by convention
     characters with no corresponding Unicode entry. These can be subsetted fonts
