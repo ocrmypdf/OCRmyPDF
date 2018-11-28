@@ -567,6 +567,8 @@ class Pix(LeptonicaObject):
             with _LeptonicaErrorTrap():
                 pix = Pix(lept.pixConvertTo8(self._cdata, 0))
                 pixa_candidates = PixArray(lept.pixExtractBarcodes(pix._cdata, 0))
+                with suppress(FileNotFoundError):
+                    os.unlink('junkpixt.png')  # leptonica may produce this
                 sarray = StringArray(lept.pixReadBarcodes(
                     pixa_candidates._cdata,
                     lept.L_BF_ANY,
