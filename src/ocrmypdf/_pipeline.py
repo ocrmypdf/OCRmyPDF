@@ -598,10 +598,6 @@ def select_ocr_image(
     options = context.get_options()
     pageinfo = get_pageinfo(image, context)
 
-    if options.force_ocr:
-        re_symlink(image, output_file, log)
-        return
-
     with Image.open(image) as im:
         from PIL import ImageColor
         from PIL import ImageDraw
@@ -613,24 +609,27 @@ def select_ocr_image(
         xres, yres = im.info['dpi']
         log.debug('resolution %r %r', xres, yres)
 
-        mask = None  # Exclude both visible and invisible text from OCR
-        if options.redo_ocr:
-            mask = True  # Mask visible text, but not invisible text
+        if not options.force_ocr:
+            # Do not mask text areas when forcing OCR, because we need to OCR
+            # all text areas
+            mask = None  # Exclude both visible and invisible text from OCR
+            if options.redo_ocr:
+                mask = True  # Mask visible text, but not invisible text
 
-        for textarea in pageinfo.get_textareas(visible=mask, corrupt=None):
-            # Calculate resolution based on the image size and page dimensions
-            # without regard whatever resolution is in pageinfo (may differ or
-            # be None)
-            bbox = [float(v) for v in textarea]
-            xscale, yscale = float(xres) / 72.0, float(yres) / 72.0
-            pixcoords = [bbox[0] * xscale,
-                         im.height - bbox[3] * yscale,
-                         bbox[2] * xscale,
-                         im.height - bbox[1] * yscale]
-            pixcoords = [int(round(c)) for c in pixcoords]
-            log.debug('blanking %r', pixcoords)
-            draw.rectangle(pixcoords, fill=white)
-            #draw.rectangle(pixcoords, outline=pink)
+            for textarea in pageinfo.get_textareas(visible=mask, corrupt=None):
+                # Calculate resolution based on the image size and page dimensions
+                # without regard whatever resolution is in pageinfo (may differ or
+                # be None)
+                bbox = [float(v) for v in textarea]
+                xscale, yscale = float(xres) / 72.0, float(yres) / 72.0
+                pixcoords = [bbox[0] * xscale,
+                            im.height - bbox[3] * yscale,
+                            bbox[2] * xscale,
+                            im.height - bbox[1] * yscale]
+                pixcoords = [int(round(c)) for c in pixcoords]
+                log.debug('blanking %r', pixcoords)
+                draw.rectangle(pixcoords, fill=white)
+                #draw.rectangle(pixcoords, outline=pink)
 
         if options.mask_barcodes or options.threshold:
             pix = leptonica.Pix.frompil(im)

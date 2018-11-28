@@ -545,11 +545,6 @@ def check_options_ocr_behavior(options, log):
         raise argparse.ArgumentError(
             None,
             "Error: choose only one of --force-ocr, --skip-text, --redo-ocr.")
-    if options.force_ocr and any((options.mask_barcodes, options.threshold)):
-        raise argparse.ArgumentError(
-            '--force-ocr',
-            'Error: --force-ocr currently may not be used with --threshold or --mask-barcodes'
-        )
 
 
 def check_options_optimizing(options, log):
