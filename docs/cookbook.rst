@@ -129,7 +129,7 @@ OCRmyPDF perform some image processing on each page of a PDF, if desired.  The s
 
 * ``--clean-final`` uses unpaper to clean up pages before OCR and inserts the page into the final output.  You will want to review each page to ensure that unpaper did not remove something important.
 
-* ``-mask-barcodes`` will "cover up" any barcodes detected in the image of a page. Barcodes are known to confuse Tesseract OCR and interfere with the recognition of text on the same baseline as a barcode. The output file will contain the unaltered image of the barcode.
+* ``--mask-barcodes`` will "cover up" any barcodes detected in the image of a page. Barcodes are known to confuse Tesseract OCR and interfere with the recognition of text on the same baseline as a barcode. The output file will contain the unaltered image of the barcode.
 
 .. note::
 
