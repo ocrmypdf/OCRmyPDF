@@ -539,7 +539,7 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     width_pt = mediabox[2] - mediabox[0]
     height_pt = mediabox[3] - mediabox[1]
 
-    if xmltext:
+    if xmltext is not None:
         bboxes = ghosttext.page_get_textblocks(
             fspath(infile), pageno, xmltext=xmltext, height=height_pt)
         pageinfo['bboxes'] = bboxes
