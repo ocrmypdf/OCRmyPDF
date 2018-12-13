@@ -29,9 +29,11 @@ import pikepdf
 from PIL import Image
 from ruffus import formatter, regex, Pipeline, suffix
 
+from pikepdf.models.metadata import encode_pdf_date
+
 from .hocrtransform import HocrTransform
 from .pdfinfo import PdfInfo, Colorspace
-from .pdfa import generate_pdfa_ps, encode_pdf_date
+from .pdfa import generate_pdfa_ps
 from .helpers import re_symlink, is_iterable_notstr, page_number, flatten_groups
 from .exec import ghostscript, tesseract
 from .exceptions import UnsupportedImageFormatError, \

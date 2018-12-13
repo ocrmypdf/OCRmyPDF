@@ -42,7 +42,12 @@ from libxmp.utils import file_to_dict
 from libxmp import consts
 import pikepdf
 
-from pikepdf.models.metadata import encode_pdf_date, decode_pdf_date
+from pikepdf.models.metadata import (
+    encode_pdf_date as _encode_date,
+    decode_pdf_date as _decode_date
+)
+
+from .helpers import deprecated
 
 
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
@@ -137,6 +142,16 @@ def _encode_ascii(s: str) -> str:
     return s.translate(trans).encode('ascii', errors='replace').decode()
 
 
+@deprecated
+def encode_pdf_date(*args, **kwargs):
+    return _encode_date(*args, **kwargs)
+
+
+@deprecated
+def decode_pdf_date(*args, **kwargs):
+    return _decode_date(*args, **kwargs)
+
+
 def _get_pdfmark_dates(pdfmark):
     """
     Encode dates in the expected format for pdfmark Postscript
@@ -160,7 +175,7 @@ def _get_pdfmark_dates(pdfmark):
         try:
             yield '  {} (D:{})'.format(
                     key,
-                    encode_pdf_date(decode_pdf_date(date_str)))
+                    _encode_date(_decode_date(date_str)))
         except ValueError:
             yield '  {} null'.format(key)
 

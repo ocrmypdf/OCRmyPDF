@@ -25,11 +25,13 @@ from unittest.mock import patch
 import datetime
 
 import pikepdf
+from pikepdf.models.metadata import encode_pdf_date, decode_pdf_date
 
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import fspath
 from ocrmypdf.pdfa import (
-    file_claims_pdfa, encode_pdf_date, decode_pdf_date, generate_pdfa_ps,
+    file_claims_pdfa,
+    generate_pdfa_ps,
     SRGB_ICC_PROFILE
 )
 from ocrmypdf.exec import ghostscript
@@ -42,6 +44,8 @@ except ImportError:
 # pytest.helpers is dynamic
 # pylint: disable=no-member
 # pylint: disable=w0612
+
+pytestmark = pytest.mark.filterwarnings('ignore:.*XMLParser.*:DeprecationWarning')
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf

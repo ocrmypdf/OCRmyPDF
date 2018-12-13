@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from functools import partial
+from functools import partial, wraps
 from collections.abc import Iterable
 from contextlib import suppress
 from pathlib import Path
@@ -168,3 +168,16 @@ def flatten_groups(groups):
             yield from obj
         else:
             yield obj
+
+
+def deprecated(func):
+    """Warn that function is deprecated"""
+    @wraps(func)
+    def new_func(*args, **kwargs):
+        warnings.simplefilter('always', DeprecationWarning)  # turn off filter
+        warnings.warn("Call to deprecated function {}.".format(func.__name__),
+                      category=DeprecationWarning,
+                      stacklevel=2)
+        warnings.simplefilter('default', DeprecationWarning)  # reset filter
+        return func(*args, **kwargs)
+    return new_func
