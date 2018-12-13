@@ -1,4 +1,4 @@
-# OCRmyPDF polyglot
+# OCRmyPDF webservice
 #
 FROM      jbarlow83/ocrmypdf-polyglot:latest
 
@@ -12,8 +12,8 @@ RUN apt-get autoremove -y && apt-get clean -y
 
 EXPOSE 5000
 
-COPY .docker/webapp.py /application
+COPY .docker/webservice.py /application
 
 USER docker
 
-ENTRYPOINT ["python3", "/application/webapp.py"]
+ENTRYPOINT ["python3", "/application/webservice.py"]
