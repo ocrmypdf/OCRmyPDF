@@ -1,6 +1,6 @@
 # OCRmyPDF polyglot
 #
-FROM      jbarlow83/ocrmypdf:latest
+FROM      jbarlow83/ocrmypdf-polyglot:latest
 
 USER root
 
