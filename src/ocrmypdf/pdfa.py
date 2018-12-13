@@ -40,6 +40,9 @@ import os
 
 from libxmp.utils import file_to_dict
 from libxmp import consts
+import pikepdf
+
+from pikepdf.models.metadata import encode_pdf_date, decode_pdf_date
 
 
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
@@ -132,64 +135,6 @@ def _encode_ascii(s: str) -> str:
         '\0': ''
     })
     return s.translate(trans).encode('ascii', errors='replace').decode()
-
-
-def encode_pdf_date(d: datetime) -> str:
-    """
-    Encode Python datetime object as PDF date string
-
-    From Adobe pdfmark manual:
-    (D:YYYYMMDDHHmmSSOHH'mm')
-    D: is an optional prefix. YYYY is the year. All fields after the year are
-    optional. MM is the month (01-12), DD is the day (01-31), HH is the
-    hour (00-23), mm are the minutes (00-59), and SS are the seconds
-    (00-59). The remainder of the string defines the relation of local
-    time to GMT. O is either + for a positive difference (local time is
-    later than GMT) or - (minus) for a negative difference. HH' is the
-    absolute value of the offset from GMT in hours, and mm' is the
-    absolute value of the offset in minutes. If no GMT information is
-    specified, the relation between the specified time and GMT is
-    considered unknown. Regardless of whether or not GMT
-    information is specified, the remainder of the string should specify
-    the local time.
-    """
-
-    pdfmark_date_fmt = r'%Y%m%d%H%M%S'
-    s = d.strftime(pdfmark_date_fmt)
-
-    tz = d.strftime('%z')
-    if tz == 'Z' or tz == '':
-        # Ghostscript <= 9.23 handles missing timezones incorrectly, so if
-        # timezone is missing, move it into GMT.
-        # https://bugs.ghostscript.com/show_bug.cgi?id=699182
-        s += "+00'00'"
-    else:
-        sign, tz_hours, tz_mins = tz[0], tz[1:3], tz[3:5]
-        s += "{}{}'{}'".format(sign, tz_hours, tz_mins)
-    return s
-
-
-def decode_pdf_date(s: str) -> datetime:
-    """
-    Decode a pdfmark date to a Python datetime object
-
-    A pdfmark date is a string in a paritcular format. See the pdfmark
-    Reference for the specification.
-
-    """
-    if s.startswith('D:'):
-        s = s[2:]
-
-    # Literal Z00'00', is incorrect but found in the wild,
-    # probably made by OS X Quartz -- standardize
-    if s.endswith("Z00'00'"):
-        s = s.replace("Z00'00'", '+0000')
-    elif s.endswith('Z'):
-        s = s.replace('Z', '+0000')
-
-    s = s.replace("'", "")  # Remove apos from PDF time strings
-
-    return datetime.strptime(s, r'%Y%m%d%H%M%S%z')
 
 
 def _get_pdfmark_dates(pdfmark):
@@ -300,34 +245,16 @@ def file_claims_pdfa(filename):
     This checks if the XMP metadata contains a PDF/A marker.
     """
 
-    xmp = file_to_dict(filename)
-    if not xmp:
-        return {'pass': False, 'output': 'pdf',
-                'conformance': 'No XMP metadata'}
-
-    if not consts.XMP_NS_PDFA_ID in xmp:
+    pdf = pikepdf.open(filename)
+    pdfmeta = pdf.open_metadata()
+    if not pdfmeta.pdfa_status:
         return {'pass': False, 'output': 'pdf',
                 'conformance': 'No PDF/A metadata in XMP'}
-
-    pdfa_node = xmp[consts.XMP_NS_PDFA_ID]
-    def read_node(node, key):
-        return next(
-            (v for k, v, meta in node if k == key), ''
-        )
-
-    part = read_node(pdfa_node, 'pdfaid:part')
-    conformance = read_node(pdfa_node, 'pdfaid:conformance')
-
-    part_conformance = part + conformance
     valid_part_conforms = {'1A', '1B', '2A', '2B', '2U', '3A', '3B', '3U'}
-
-    conformance = 'PDF/A-{}'.format(
-        part_conformance)
-
+    conformance = 'PDF/A-{}'.format(pdfmeta.pdfa_status)
     pdfa_dict = {}
-    if part_conformance in valid_part_conforms:
+    if pdfmeta.pdfa_status in valid_part_conforms:
         pdfa_dict['pass'] = True
         pdfa_dict['output'] = 'pdfa'
     pdfa_dict['conformance'] = conformance
-
     return pdfa_dict
