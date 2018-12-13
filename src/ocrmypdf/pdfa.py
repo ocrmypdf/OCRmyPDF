@@ -32,14 +32,11 @@ Ghostscript's handling of pdfmark.
 """
 
 from binascii import hexlify
-from datetime import datetime
 from pathlib import Path
 from string import Template
 import pkg_resources
 import os
 
-from libxmp.utils import file_to_dict
-from libxmp import consts
 import pikepdf
 
 from pikepdf.models.metadata import (
