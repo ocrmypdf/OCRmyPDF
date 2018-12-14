@@ -868,13 +868,13 @@ def metadata_fixup(
         ghostscript.generate_pdfa(
             pdf_version=input_pdfinfo.min_version,
             pdf_pages=[layers_file, ps],
-            output_file=output_file,
+            output_file=output_file + '_gs.pdf',
             compression=options.pdfa_image_compression,
             log=log,
             threads=options.jobs or 1,
             pdfa_part=options.output_type[-1]  # is pdfa-1, pdfa-2, or pdfa-3
         )
-        pdf = pikepdf.open(output_file)
+        pdf = pikepdf.open(output_file + '_gs.pdf')
         with pdf.open_metadata() as meta:
             # Note Ghostscript will populate xmp:CreateDate or /CreationDate
             meta.load_from_docinfo(docinfo, delete_missing=False)
