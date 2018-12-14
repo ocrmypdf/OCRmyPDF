@@ -843,6 +843,33 @@ def generate_postscript_stub(
     generate_pdfa_ps(output_file)
 
 
+def convert_to_pdfa(
+    input_files_groups,
+    output_file,
+    log,
+    context
+):
+    options = context.get_options()
+    input_pdfinfo = context.get_pdfinfo()
+
+    input_files = list(f for f in flatten_groups(input_files_groups))
+    layers_file = next(
+        (ii for ii in input_files if ii.endswith('layers.rendered.pdf')), None
+    )
+    ps = next(
+        (ii for ii in input_files if ii.endswith('.ps')), None
+    )
+    ghostscript.generate_pdfa(
+        pdf_version=input_pdfinfo.min_version,
+        pdf_pages=[layers_file, ps],
+        output_file=output_file,
+        compression=options.pdfa_image_compression,
+        log=log,
+        threads=options.jobs or 1,
+        pdfa_part=options.output_type[-1]  # is pdfa-1, pdfa-2, or pdfa-3
+    )
+
+
 def metadata_fixup(
         input_files_groups,
         output_file,
@@ -857,38 +884,23 @@ def metadata_fixup(
     layers_file = next(
         (ii for ii in input_files if ii.endswith('layers.rendered.pdf')), None
     )
-    ps = next(
-        (ii for ii in input_files if ii.endswith('.ps')), None
+    pdfa = next(
+        (ii for ii in input_files if ii.endswith('pdfa.pdf')), None
     )
     metadata = pikepdf.open(metadata_file)
     docinfo = get_docinfo(metadata, options)
 
-    if options.output_type.startswith('pdfa'):
-        input_pdfinfo = context.get_pdfinfo()
-        ghostscript.generate_pdfa(
-            pdf_version=input_pdfinfo.min_version,
-            pdf_pages=[layers_file, ps],
-            output_file=output_file + '_gs.pdf',
-            compression=options.pdfa_image_compression,
-            log=log,
-            threads=options.jobs or 1,
-            pdfa_part=options.output_type[-1]  # is pdfa-1, pdfa-2, or pdfa-3
-        )
-        pdf = pikepdf.open(output_file + '_gs.pdf')
-        with pdf.open_metadata() as meta:
-            # Note Ghostscript will populate xmp:CreateDate or /CreationDate
-            meta.load_from_docinfo(docinfo, delete_missing=False)
-        pdf.save(output_file)
-    else:
-        pdf = pikepdf.open(layers_file)
-        with pdf.open_metadata() as meta:
-            meta.load_from_docinfo(docinfo, delete_missing=False)
-            # If xmp:CreateDate is missing, set it to the modify date to
-            # match Ghostscript, for consistency
-            if 'xmp:CreateDate' not in meta:
-                meta['xmp:CreateDate'] = meta.get('xmp:ModifyDate', '')
-        pdf.save(output_file, compress_streams=True,
-                    object_stream_mode=pikepdf.ObjectStreamMode.generate)
+    working_file = pdfa if pdfa else layers_file
+
+    pdf = pikepdf.open(working_file)
+    with pdf.open_metadata() as meta:
+        meta.load_from_docinfo(docinfo, delete_missing=False)
+        # If xmp:CreateDate is missing, set it to the modify date to
+        # match Ghostscript, for consistency
+        if 'xmp:CreateDate' not in meta:
+            meta['xmp:CreateDate'] = meta.get('xmp:ModifyDate', '')
+    pdf.save(output_file, compress_streams=True,
+             object_stream_mode=pikepdf.ObjectStreamMode.generate)
 
 
 def optimize_pdf(
@@ -1111,7 +1123,7 @@ def build_pipeline(options, work_folder, log, context):
         extras=[log, context])
     task_weave_layers.graphviz(fillcolor='"#00cc66"')
 
-    # PDF/A
+    # PDF/A pdfmark
     task_generate_postscript_stub = main_pipeline.transform(
         task_func=generate_postscript_stub,
         input=task_repair_and_parse_pdf,
@@ -1120,11 +1132,21 @@ def build_pipeline(options, work_folder, log, context):
         extras=[log, context])
     task_generate_postscript_stub.active_if(options.output_type.startswith('pdfa'))
 
+    # PDF/A conversion
+    task_convert_to_pdfa = main_pipeline.merge(
+        task_func=convert_to_pdfa,
+        input=[task_generate_postscript_stub,
+               task_weave_layers],
+        output=os.path.join(work_folder, 'pdfa.pdf'),
+        extras=[log, context]
+    )
+    task_convert_to_pdfa.active_if(options.output_type.startswith('pdfa'))
+
     task_metadata_fixup = main_pipeline.merge(
         task_func=metadata_fixup,
         input=[task_repair_and_parse_pdf,
                task_weave_layers,
-               task_generate_postscript_stub],
+               task_convert_to_pdfa],
         output=os.path.join(work_folder, 'metafix.pdf'),
         extras=[log, context]
     )
