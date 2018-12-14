@@ -94,9 +94,6 @@ def test_override_metadata(spoof_tesseract_noop, output_type, resources,
     before = pikepdf.open(input_file)
     after = pikepdf.open(outpdf)
 
-    if ghostscript.version() >= '9.24':
-        pytest.xfail('Ghostscript 9.24+ does not support Unicode DOCINFO')
-
     assert after.metadata.Title == german, after.metadata
     assert after.metadata.Author == chinese, after.metadata
     assert after.metadata.get('/Keywords', '') == ''
@@ -166,11 +163,7 @@ def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
     after = pdf_after.trailer.get('/Info', {})
 
     if not before:
-        # If there was input creation date, none should be output
-        # because of Ghostscript quirks we set it to null
-        # This test would be better if we had a test file with /DocumentInfo but
-        # no /CreationDate, which we don't
-        assert after.get('/CreationDate', '') == ''
+        assert after.get('/CreationDate', '') != ''
     else:
         # We expect that the creation date stayed the same
         date_before = decode_pdf_date(str(before['/CreationDate']))

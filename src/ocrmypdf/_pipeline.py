@@ -795,7 +795,7 @@ def ocr_tesseract_textonly_pdf(
         log=log)
 
 
-def get_pdfmark(base_pdf, options):
+def get_docinfo(base_pdf, options):
     def from_document_info(key):
         try:
             s = base_pdf.metadata[key]
@@ -840,21 +840,7 @@ def generate_postscript_stub(
         context):
     options = context.get_options()
     pdf = pikepdf.open(input_file)
-    pdfmark = get_pdfmark(pdf, options)
-
-    ascii_docinfo = False
-    if ghostscript.version() >= '9.24':
-        ascii_docinfo = True
-        try:
-            for v in pdfmark.values():
-                v.encode('ascii', errors='strict')
-        except UnicodeEncodeError:
-            log.warning(
-                "Ghostscript 9.24+ does not support Unicode strings in "
-                " metadata. These will be converted to ASCII if possible."
-            )
-
-    generate_pdfa_ps(output_file, pdfmark, ascii_docinfo=ascii_docinfo)
+    generate_pdfa_ps(output_file)
 
 
 def metadata_fixup(
@@ -874,6 +860,8 @@ def metadata_fixup(
     ps = next(
         (ii for ii in input_files if ii.endswith('.ps')), None
     )
+    metadata = pikepdf.open(metadata_file)
+    docinfo = get_docinfo(metadata, options)
 
     if options.output_type.startswith('pdfa'):
         input_pdfinfo = context.get_pdfinfo()
@@ -886,18 +874,21 @@ def metadata_fixup(
             threads=options.jobs or 1,
             pdfa_part=options.output_type[-1]  # is pdfa-1, pdfa-2, or pdfa-3
         )
+        pdf = pikepdf.open(output_file)
+        with pdf.open_metadata() as meta:
+            # Note Ghostscript will populate xmp:CreateDate or /CreationDate
+            meta.load_from_docinfo(docinfo, delete_missing=False)
+        pdf.save(output_file)
     else:
-        metadata = pikepdf.open(metadata_file)
-        pdfmark = get_pdfmark(metadata, options)
         pdf = pikepdf.open(layers_file)
-        pdf.metadata = pdf.make_indirect(pikepdf.Dictionary(pdfmark))
-        try:
-            pdf.save(output_file, compress_streams=True,
-                     object_stream_mode=pikepdf.ObjectStreamMode.generate)
-        except AttributeError:
-            # pikepdf <= 0.3.4
-            pdf.save(output_file,
-                     stream_data_mode=pikepdf.StreamDataMode.compress)
+        with pdf.open_metadata() as meta:
+            meta.load_from_docinfo(docinfo, delete_missing=False)
+            # If xmp:CreateDate is missing, set it to the modify date to
+            # match Ghostscript, for consistency
+            if 'xmp:CreateDate' not in meta:
+                meta['xmp:CreateDate'] = meta.get('xmp:ModifyDate', '')
+        pdf.save(output_file, compress_streams=True,
+                    object_stream_mode=pikepdf.ObjectStreamMode.generate)
 
 
 def optimize_pdf(

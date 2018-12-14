@@ -255,7 +255,6 @@ setup(
         'Pillow >= 4.0.0, != 5.1.0 ; sys_platform == "darwin"',
                                   # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
                                   # block 5.1.0, broken wheels
-        'python-xmp-toolkit >= 2, < 3',
         'reportlab >= 3.3.0',     # oldest released version with sane image handling
         'ruffus >= 2.7.0',
     ],

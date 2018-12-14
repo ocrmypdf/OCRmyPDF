@@ -61,9 +61,6 @@ pdfa_def_template = u"""%!
 /ICCProfile $icc_profile
 def
 
-[$docinfo
-  /DOCINFO pdfmark
-
 % Define an ICC profile :
 
 [/_objdef {icc_PDFA} /type /stream /OBJ pdfmark
@@ -94,6 +91,7 @@ def
 """
 
 
+@deprecated
 def encode_text_string(s: str) -> str:
     """
     Encode text string to hex string for use in a PDF
@@ -149,35 +147,7 @@ def decode_pdf_date(*args, **kwargs):
     return _decode_date(*args, **kwargs)
 
 
-def _get_pdfmark_dates(pdfmark):
-    """
-    Encode dates in the expected format for pdfmark Postscript
-
-    The best way to deal with amissing date entry is set it to null, because if
-    the key is omitted Ghostscript will set it to now - we do not want to erase
-    the fact that the value was unknown.  Setting to an empty string breaks
-    Ghostscript 9.22 as reported here:
-    https://bugs.ghostscript.com/show_bug.cgi?id=699182
-    """
-
-    for key in ('/CreationDate', '/ModDate'):
-        if key not in pdfmark:
-            continue
-        if pdfmark[key].strip() == '':
-            yield '  {} null'.format(key)
-            continue
-        date_str = pdfmark[key]
-        if date_str.startswith('D:'):
-            date_str = date_str[2:]
-        try:
-            yield '  {} (D:{})'.format(
-                    key,
-                    _encode_date(_decode_date(date_str)))
-        except ValueError:
-            yield '  {} null'.format(key)
-
-
-def _get_pdfa_def(icc_profile, icc_identifier, pdfmark, ascii_docinfo=False):
+def _get_pdfa_def(icc_profile, icc_identifier, pdfmark=None, ascii_docinfo=None):
     """
     Create a Postscript pdfmark file for Ghostscript.
 
@@ -187,43 +157,18 @@ def _get_pdfa_def(icc_profile, icc_identifier, pdfmark, ascii_docinfo=False):
     :param icc_profile: filename of the ICC profile to include in pdfmark
     :param icc_identifier: ICC identifier such as 'sRGB'
     :param pdfmark: a dictionary containing keys to include the pdfmark
-    :param ascii_docinfo: if True, the docinfo block must be encoded in pure
-        ASCII and may not contain UTF-16BE-BOM-hex encoded strings, as
-        required for Ghostscript 9.24+
+    :param ascii_docinfo: parameter is no longer meaningful
 
     :returns: a string containing the entire pdfmark
-
     """
-
-    # Ghostscript <= 9.21 has a bug where null entries in DOCINFO might produce
-    # ERROR: VMerror (-25) on closing pdfwrite device.
-    # https://bugs.ghostscript.com/show_bug.cgi?id=697684
-    # Work around this by only adding keys that have a nontrivial value
-    docinfo_keys = ('/Title', '/Author', '/Subject', '/Creator', '/Keywords')
-
-    def docinfo_gen():
-        if not ascii_docinfo:
-            docinfo_line_template = '  {key} <{value}>'
-            encode = encode_text_string
-        else:
-            docinfo_line_template = '  {key} ({value})'
-            encode = _encode_ascii
-        yield from _get_pdfmark_dates(pdfmark)
-        for key in docinfo_keys:
-            if key in pdfmark and pdfmark[key].strip() != '':
-                line = docinfo_line_template.format(
-                    key=key, value=encode(pdfmark[key]))
-                yield line
-    docinfo = '\n'.join(docinfo_gen())
 
     t = Template(pdfa_def_template)
     result = t.substitute(icc_profile=icc_profile,
-                          icc_identifier=icc_identifier,
-                          docinfo=docinfo)
+                          icc_identifier=icc_identifier)
     return result
 
 
-def generate_pdfa_ps(target_filename, pdfmark, icc='sRGB', ascii_docinfo=False):
+def generate_pdfa_ps(target_filename, pdfmark=None, icc='sRGB', ascii_docinfo=None):
     if icc == 'sRGB':
         icc_profile = SRGB_ICC_PROFILE
     else:
@@ -240,7 +185,7 @@ def generate_pdfa_ps(target_filename, pdfmark, icc='sRGB', ascii_docinfo=False):
     hex_icc_profile = hexlify(bytes_icc_profile)
     icc_profile = '<' + hex_icc_profile.decode('ascii') + '>'
 
-    ps = _get_pdfa_def(icc_profile, icc, pdfmark, ascii_docinfo=ascii_docinfo)
+    ps = _get_pdfa_def(icc_profile, icc, pdfmark)
 
     # We should have encoded everything to pure ASCII by this point, and
     # to be safe, only allow ASCII in PostScript
