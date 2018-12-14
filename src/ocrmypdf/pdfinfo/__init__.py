@@ -30,6 +30,7 @@ import pikepdf
 from . import ghosttext
 from .layout import get_page_analysis, get_text_boxes
 
+from ..exceptions import EncryptedPdfError
 from ..helpers import fspath
 
 
@@ -593,6 +594,8 @@ def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None):
         log = Mock()
 
     pdf = pikepdf.open(infile)
+    if pdf.is_encrypted:
+        raise EncryptedPdfError()  # Triggered by encryption with empty passwd
     if detailed_analysis:
         pages_xml = None
     else:
