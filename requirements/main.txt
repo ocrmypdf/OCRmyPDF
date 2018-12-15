@@ -5,7 +5,7 @@ chardet == 3.0.4
 cffi == 1.11.5
 img2pdf == 0.3.1
 pdfminer.six == 20181108
-pikepdf == 0.9.0
+pikepdf == 0.9.1
 Pillow >= 5.0.0, != 5.1.0 ; sys_platform == "darwin"
 pycparser == 2.19
 python-xmp-toolkit == 2.0.1
