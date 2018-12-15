@@ -299,8 +299,9 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             jbig2_im_data = jbig2_im_file.read_bytes()
             im_obj = pike.get_object(xref, 0)
             im_obj.write(
-                jbig2_im_data, pikepdf.Name('/JBIG2Decode'),
-                jbig2_globals_dict
+                jbig2_im_data,
+                filter=pikepdf.Name('/JBIG2Decode'),
+                decode_parms=jbig2_globals_dict
             )
 
 

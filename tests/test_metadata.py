@@ -25,7 +25,7 @@ from unittest.mock import patch
 import datetime
 
 import pikepdf
-from pikepdf.models.metadata import encode_pdf_date, decode_pdf_date
+from pikepdf.models.metadata import decode_pdf_date
 
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import fspath
@@ -67,7 +67,7 @@ def test_preserve_metadata(spoof_tesseract_noop, output_type,
     pdf_after = pikepdf.open(output)
 
     for key in ('/Title', '/Author'):
-        assert pdf_before.metadata[key] == pdf_after.metadata[key]
+        assert pdf_before.docinfo[key] == pdf_after.docinfo[key]
 
     pdfa_info = file_claims_pdfa(str(output))
     assert pdfa_info['output'] == output_type
@@ -94,12 +94,12 @@ def test_override_metadata(spoof_tesseract_noop, output_type, resources,
     before = pikepdf.open(input_file)
     after = pikepdf.open(outpdf)
 
-    assert after.metadata.Title == german, after.metadata
-    assert after.metadata.Author == chinese, after.metadata
-    assert after.metadata.get('/Keywords', '') == ''
+    assert after.docinfo.Title == german, after.docinfo
+    assert after.docinfo.Author == chinese, after.docinfo
+    assert after.docinfo.get('/Keywords', '') == ''
 
-    before_date = decode_pdf_date(str(before.metadata.CreationDate))
-    after_date = decode_pdf_date(str(after.metadata.CreationDate))
+    before_date = decode_pdf_date(str(before.docinfo.CreationDate))
+    after_date = decode_pdf_date(str(after.docinfo.CreationDate))
     assert before_date == after_date
 
     pdfa_info = file_claims_pdfa(outpdf)

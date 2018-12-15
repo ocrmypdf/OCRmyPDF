@@ -545,7 +545,7 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
             fspath(infile), pageno, xmltext=xmltext, height=height_pt)
         pageinfo['bboxes'] = bboxes
     else:
-        pscript5_mode = str(pdf.metadata.get('/Creator')).startswith('PScript5')
+        pscript5_mode = str(pdf.docinfo.get('/Creator')).startswith('PScript5')
         miner = get_page_analysis(infile, pageno, pscript5_mode)
         pageinfo['textboxes'] = list(simplify_textboxes(miner))
         bboxes = (box.bbox for box in pageinfo['textboxes'])

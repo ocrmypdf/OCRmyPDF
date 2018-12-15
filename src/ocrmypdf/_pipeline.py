@@ -798,7 +798,7 @@ def ocr_tesseract_textonly_pdf(
 def get_docinfo(base_pdf, options):
     def from_document_info(key):
         try:
-            s = base_pdf.metadata[key]
+            s = base_pdf.docinfo[key]
             return str(s)
         except (KeyError, TypeError):
             return ''
