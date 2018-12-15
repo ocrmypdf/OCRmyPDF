@@ -1,3 +1,28 @@
+# webservice.py wrapper for OCRmyPDF
+# Copyright (C) 2018 James R. Barlow: github.com/jbarlow83
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+"""This is a simple web service/HTTP wrapper for OCRmyPDF
+
+This may be more convenient than the command line tool for some Docker users.
+Note that OCRmyPDF uses Ghostscript, which is licensed under AGPL3+. While
+OCRmyPDF is under GPL3, this file is distributed under the Affero GPL3+ license,
+to emphasize that SaaS deployments should make sure they comply with
+Ghostscript's license as well as OCRmyPDF's.
+"""
+
 from flask import Flask, Response, flash, request, redirect, url_for, abort, send_from_directory
 from subprocess import run, PIPE
 from tempfile import TemporaryDirectory
