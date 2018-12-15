@@ -13,6 +13,22 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v7.4.0
+------
+
+-   ``--force-ocr`` may now be used with the new ``--threshold`` and ``--mask-barcodes`` features
+
+-   pikepdf >= 0.9.1 is now required.
+
+-   Changed metadata handling to pikepdf 0.9.1. As a result, metadata handling of non-ASCII characters in Ghostscript 9.25 or later is fixed.
+
+-   chardet >= 3.0.4 is temporarily listed as required. pdfminer.six depends on it, but the most recent release does not specify this requirement. (`#326 <https://github.com/jbarlow83/OCRmyPDF/issues/326>`_)
+
+-   python-xmp-toolkit and libexempi are no longer required.
+
+-   A new Docker image is now being provided for users who wish to access OCRmyPDF over a simple HTTP interface, instead of the command line.
+
+-   Increase tolerance of PDFs that overflow or underflow the PDF graphics stack. (`#325 <https://github.com/jbarlow83/OCRmyPDF/issues/325>`_)
 
 v7.3.1
 ------

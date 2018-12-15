@@ -248,6 +248,7 @@ setup(
         'src/ocrmypdf/lib/compile_leptonica.py:ffibuilder'
     ],
     install_requires=[
+        'chardet >= 3.0.4, < 4',  # unlisted requirement of pdfminer.six 20181108
         'cffi >= 1.9.1',          # must be a setup and install requirement
         'img2pdf >= 0.3.0, < 0.4',       # pure Python, so track HEAD closely
         'pdfminer.six == 20181108',
