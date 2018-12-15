@@ -27,7 +27,6 @@ import shutil
 import pytest
 import img2pdf
 import sys
-import PyPDF2 as pypdf
 import pikepdf
 import pickle
 
@@ -196,3 +195,22 @@ def test_corrupt_font_detection(resources, testfile):
 
     pdf = pdfinfo.PdfInfo(filename, detailed_page_analysis=True)
     assert pdf[0].has_corrupt_text
+
+
+def test_stack_abuse():
+    p = pikepdf.Pdf.new()
+
+    stream = pikepdf.Stream(p, b'q ' * 35)
+    with pytest.warns(None) as record:
+        pdfinfo._interpret_contents(stream)
+    assert 'overflowed' in str(record[0].message)
+
+    stream = pikepdf.Stream(p, b'q Q Q Q Q')
+    with pytest.warns(None) as record:
+        pdfinfo._interpret_contents(stream)
+    assert 'underflowed' in str(record[0].message)
+
+    stream = pikepdf.Stream(p, b'q ' * 135)
+    with pytest.warns(None):
+        with pytest.raises(RuntimeError):
+            pdfinfo._interpret_contents(stream)

@@ -22,6 +22,7 @@ from enum import Enum
 from math import hypot, isclose
 from pathlib import Path
 from unittest.mock import Mock
+from warnings import warn
 import re
 
 from pikepdf import PdfMatrix
@@ -136,6 +137,13 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     page.
 
     PDF units suit our needs so we initialize ctm to the identity matrix.
+
+    According to the PDF specification, the maximum stack depth is 32. Other
+    viewers tolerate some amount beyond this.  We issue a warning if the
+    stack depth exceeds the spec limit and set a hard limit beyond this to
+    bound our memory requirements.  If the stack underflows behavior is
+    undefined in the spec, but we just pretend nothing happened and leave the
+    CTM unchanged.
     """
 
     stack = []
@@ -150,18 +158,20 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     for n, graphobj in enumerate(_normalize_stack(
             pikepdf.parse_content_stream(contentstream, operator_whitelist))):
         operands, operator = graphobj
-
         if operator == 'q':
             stack.append(ctm)
-            if len(stack) > 32:
-                raise RuntimeError(
-                    "PDF graphics stack overflow, operator %i" % n)
+            if len(stack) > 32:  # See docstring
+                if len(stack) > 128:
+                    raise RuntimeError(
+                        "PDF graphics stack overflowed hard limit, operator %i" % n)
+                warn("PDF graphics stack overflowed spec limit")
         elif operator == 'Q':
             try:
                 ctm = stack.pop()
             except IndexError:
-                raise RuntimeError(
-                    "PDF graphics stack underflow, operator %i" % n)
+                # Keeping the ctm the same seems to be the only sensible thing
+                # to do. Just pretend nothing happened, keep calm and carry on.
+                warn("PDF graphics stack underflowed - PDF may be malformed")
         elif operator == 'cm':
             ctm = PdfMatrix(operands) @ ctm
         elif operator == 'Do':
