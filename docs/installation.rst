@@ -377,6 +377,9 @@ Assuming you have a Docker engine running, you can download one of the three ava
     *   - ocrmypdf-polyglot
         - ``docker pull jbarlow83/ocrmypdf-polyglot``
         - As above, with all available language packs.
+    *   - ocrmypdf-webservice
+        - ``docker pull jbarlow83/ocrmypdf-polyglot``
+        - All language packs, and a simple HTTP wrapper allowing OCRmyPDF to be used as a web service. Note that this component is licensed under AGPLv3.
 
 For example:
 

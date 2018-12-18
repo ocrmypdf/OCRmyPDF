@@ -90,6 +90,7 @@ Ghostscript also imposes some limitations:
 * PDFs containing JBIG2-encoded content will be converted to CCITT Group4 encoding, which has lower compression ratios, if Ghostscript PDF/A is enabled.
 * PDFs containing JPEG 2000-encoded content will be converted to JPEG encoding, which may introduce compression artifacts, if Ghostscript PDF/A is enabled.
 * Ghostscript may transcode grayscale and color images, either lossy to lossless or lossless to lossy, based on an internal algorithm. This behavior can be suppressed by setting ``--pdfa-image-compression`` to ``jpeg`` or ``lossless`` to set all images to one type or the other. Ghostscript has no option to maintain the input image's format. (Ghostscript 9.25+ can copy JPEG images without transcoding them; earlier versions will transcode.)
+* Ghostscript's PDF/A conversion removes any XMP metadata that is not one of the standard XMP metadata namespaces for PDFs. In particular, PRISM Metdata is removed.
 
 Regarding OCRmyPDF itself:
 
@@ -109,7 +110,10 @@ To the author's knowledge, OCRmyPDF is the most feature-rich and thoroughly test
 Web front-ends
 --------------
 
-* `Nextcloud OCR <https://github.com/janis91/ocr>`_ is a free software plugin for the Nextcloud private cloud software
-* `OCRmyPDF-web <https://github.com/sseemayer/OCRmyPDF-web>`_, a micro web-frontend for OCRmyPDF (third-party, not actively maintained)
+The Docker image ocrmypdf-webservice provides a web service front-end that allows files to submitted over HTTP and the results "downloaded". This is an HTTP server intended to simplify web services deployments; it is not intended to be deployed on the public internet and no real security measures to speak of.
 
-Bear in mind that OCRmyPDF is not designed to be secure against malware-bearing PDFs (see `Using OCRmyPDF online`_).
+In addition, the following integrations are available:
+
+* `Nextcloud OCR <https://github.com/janis91/ocr>`_ is a free software plugin for the Nextcloud private cloud software
+
+Bear in mind that OCRmyPDF is not designed to be secure against malware-bearing PDFs (see `Using OCRmyPDF online`_). Users should ensure they comply with OCRmyPDF's licenses and the licenses of all dependencies. In particular, OCRmyPDF requires Ghostscript, which is licensed under AGPLv3.
