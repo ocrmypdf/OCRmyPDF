@@ -28,17 +28,17 @@ ocrmypdf                      # it's a scriptable command line program
 Main features
 -------------
 
--   Generates a searchable [PDF/A](https://en.wikipedia.org/?title=PDF/A) file from a regular PDF
--   Places OCR text accurately below the image to ease copy / paste
--   Keeps the exact resolution of the original embedded images
--   When possible, inserts OCR information as a "lossless" operation without disrupting any other content
--   Optimizes PDF images, often producing files smaller than the input file
--   If requested deskews and/or cleans the image before performing OCR
--   Validates input and output files
--   Distributes work across all available CPU cores
--   Uses [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) engine
--   Supports more than [100 languages](https://github.com/tesseract-ocr/tessdata) recognized by Tesseract
--   Battle-tested on thousands of PDFs, a test suite and continuous integration
+- Generates a searchable [PDF/A](https://en.wikipedia.org/?title=PDF/A) file from a regular PDF
+- Places OCR text accurately below the image to ease copy / paste
+- Keeps the exact resolution of the original embedded images
+- When possible, inserts OCR information as a "lossless" operation without disrupting any other content
+- Optimizes PDF images, often producing files smaller than the input file
+- If requested deskews and/or cleans the image before performing OCR
+- Validates input and output files
+- Distributes work across all available CPU cores
+- Uses [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) engine
+- Supports more than [100 languages](https://github.com/tesseract-ocr/tessdata) recognized by Tesseract
+- Battle-tested on thousands of PDFs, a test suite and continuous integration
 
 For details: please consult the [documentation](https://ocrmypdf.readthedocs.io/en/latest/).
 
@@ -47,13 +47,13 @@ Motivation
 
 I searched the web for a free command line tool to OCR PDF files on Linux/UNIX: I found many, but none of them were really satisfying.
 
--   Either they produced PDF files with misplaced text under the image (making copy/paste impossible)
--   Or they did not handle accents and multilingual characters
--   Or they changed the resolution of the embedded images
--   Or they generated ridiculously large PDF files
--   Or they crashed when trying to OCR
--   Or they did not produce valid PDF files
--   On top of that none of them produced PDF/A files (format dedicated for long time storage)
+- Either they produced PDF files with misplaced text under the image (making copy/paste impossible)
+- Or they did not handle accents and multilingual characters
+- Or they changed the resolution of the embedded images
+- Or they generated ridiculously large PDF files
+- Or they crashed when trying to OCR
+- Or they did not produce valid PDF files
+- On top of that none of them produced PDF/A files (format dedicated for long time storage)
 
 ...so I decided to develop my own tool.
 
@@ -110,11 +110,11 @@ Our [documentation is served on Read the Docs](https://ocrmypdf.readthedocs.io/e
 
 If you detect an issue, please:
 
--   Check whether your issue is already known
--   If no problem report exists on github, please create one here: <https://github.com/jbarlow83/OCRmyPDF/issues>
--   Describe your problem thoroughly
--   Append the console output of the script when running the debug mode (`-v 1` option)
--   If possible provide your input PDF file as well as the content of the temporary folder (using a file sharing service like Dropbox)
+- Check whether your issue is already known
+- If no problem report exists on github, please create one here: <https://github.com/jbarlow83/OCRmyPDF/issues>
+- Describe your problem thoroughly
+- Append the console output of the script when running the debug mode (`-v 1` option)
+- If possible provide your input PDF file as well as the content of the temporary folder (using a file sharing service like Dropbox)
 
 Requirements
 ------------
@@ -124,8 +124,10 @@ Runs on CPython 3.5, 3.6 and 3.7. Requires external program installations of Gho
 Press & Media
 -------------
 
--   [c't 1-2014, page 59](http://heise.de/-2279695): Detailed presentation of OCRmyPDF v1.0 in the leading German IT magazine c't
--   [heise Open Source, 09/2014: Texterkennung mit OCRmyPDF](http://heise.de/-2356670)
+- [Going paperless with OCRmyPDF](https://medium.com/@ikirichenko/going-paperless-with-ocrmypdf-e2f36143f46a)
+- [Converting a scanned document into a compressed searchable PDF with redactions](https://medium.com/@treyharris/converting-a-scanned-document-into-a-compressed-searchable-pdf-with-redactions-63f61c34fe4c)
+- [c't 1-2014, page 59](http://heise.de/-2279695): Detailed presentation of OCRmyPDF v1.0 in the leading German IT magazine c't
+- [heise Open Source, 09/2014: Texterkennung mit OCRmyPDF](http://heise.de/-2356670)
 
 License
 -------
