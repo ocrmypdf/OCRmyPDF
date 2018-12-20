@@ -13,6 +13,12 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+
+v7.4.1
+------
+
+-   Fix a few documentation problems.
+
 v7.4.0
 ------
 
