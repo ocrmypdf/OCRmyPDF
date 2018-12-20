@@ -17,7 +17,9 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
 v7.4.1
 ------
 
--   Fix a few documentation problems.
+-   Fixed a few documentation problems.
+
+-   Fixed an unhandled exception when attempting to mask barcodes. #322 <https://github.com/jbarlow83/OCRmyPDF/issues/322>`_
 
 v7.4.0
 ------
