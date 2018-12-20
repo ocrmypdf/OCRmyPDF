@@ -68,6 +68,20 @@ matrix:
     - os: osx
       osx_image: xcode9.2
       language: generic
+      addons:
+        homebrew:
+          update: true
+          packages:
+            - exempi
+            - ghostscript
+            - jbig2enc
+            - leptonica
+            - openjpeg
+            - pngquant
+            - python
+            - qpdf
+            - tesseract
+            - unpaper
 
 before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
@@ -83,7 +97,6 @@ before_install: |
       sudo dpkg -i packages/unpaper_6.1-1.deb
     fi
   elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-    brew update --quiet && brew bundle --file=.travis/Brewfile --quiet
     pip3 install --upgrade pip
     pip3 install wheel
   fi
