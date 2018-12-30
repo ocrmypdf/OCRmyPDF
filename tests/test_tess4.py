@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from os import fspath
-import sys
 import os
+import sys
 from contextlib import contextmanager
+from os import fspath
 from pathlib import Path
 
 import PyPDF2 as pypdf

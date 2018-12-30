@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from ocrmypdf.pdfinfo import PdfInfo, PageInfo
-from ocrmypdf._jobcontext import JobContext, JobContextManager
 from multiprocessing import Process
 from multiprocessing.managers import BaseProxy
+
+from ocrmypdf._jobcontext import JobContext, JobContextManager
+from ocrmypdf.pdfinfo import PageInfo, PdfInfo
 
 
 def test_jobcontext_proxy(resources):

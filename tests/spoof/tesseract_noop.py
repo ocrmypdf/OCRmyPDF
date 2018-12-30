@@ -32,10 +32,10 @@ In orientation check mode, report the orientation is upright.
 """
 
 import sys
+
 import img2pdf
 import PyPDF2 as pypdf
 from PIL import Image
-
 
 VERSION_STRING = '''tesseract 4.0.0
  leptonica-1.77.0

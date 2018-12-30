@@ -15,23 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from subprocess import Popen, PIPE, DEVNULL
-from pathlib import Path
-from math import isclose
+import logging
 import os
 import shutil
 import sys
-import logging
+from math import isclose
+from pathlib import Path
+from subprocess import DEVNULL, PIPE, Popen
 
-from PIL import Image
 import PIL
 import pytest
+from PIL import Image
 
-from ocrmypdf.pdfinfo import PdfInfo, Colorspace, Encoding
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 from ocrmypdf.exec import ghostscript, qpdf, tesseract
-from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.leptonica import Pix
+from ocrmypdf.pdfa import file_claims_pdfa
+from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 
 # pytest.helpers is dynamic
 # pylint: disable=no-member,redefined-outer-name

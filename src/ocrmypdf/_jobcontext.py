@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import shutil
+import sys
 from contextlib import suppress
 from multiprocessing.managers import SyncManager
-import sys
-import shutil
 
 from .pdfinfo import PdfInfo
 

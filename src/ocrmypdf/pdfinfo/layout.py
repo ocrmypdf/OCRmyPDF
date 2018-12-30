@@ -38,9 +38,9 @@ from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
 from pdfminer.pdffont import (
     PDFCIDFont,
     PDFFont,
+    PDFSimpleFont,
     PDFType3Font,
     PDFUnicodeNotDefined,
-    PDFSimpleFont,
 )
 from pdfminer.pdfpage import PDFPage
 from pdfminer.utils import bbox2str, fsplit, matrix2str

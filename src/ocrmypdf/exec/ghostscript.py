@@ -15,15 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from tempfile import NamedTemporaryFile
-from subprocess import run, PIPE, STDOUT
-from shutil import copy
-from functools import lru_cache
 import re
+from functools import lru_cache
+from os import fspath
+from shutil import copy
+from subprocess import PIPE, STDOUT, run
+from tempfile import NamedTemporaryFile
+
 from PIL import Image
+
 from . import get_version
 from ..exceptions import SubprocessOutputError
-from os import fspath
 
 
 @lru_cache(maxsize=1)

@@ -15,13 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from pathlib import Path
 from itertools import groupby
+from pathlib import Path
 
 import pikepdf
 
-from .helpers import flatten_groups, page_number
 from .exec import tesseract
+from .helpers import flatten_groups, page_number
 
 
 def _update_page_resources(*, page, font, font_key, procset):

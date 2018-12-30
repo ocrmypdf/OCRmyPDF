@@ -16,40 +16,37 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from tempfile import mkdtemp
-from pathlib import Path
-import sys
+import argparse
+import atexit
+import logging
 import os
 import re
-import atexit
+import sys
 import textwrap
-import logging
-import argparse
+from pathlib import Path
+from tempfile import mkdtemp
 
 import PIL
-
-import ruffus.ruffus_exceptions as ruffus_exceptions
 import ruffus.cmdline as cmdline
 import ruffus.proxy_logger as proxy_logger
+import ruffus.ruffus_exceptions as ruffus_exceptions
 
+from . import PROGRAM_NAME, VERSION
+from . import exceptions as ocrmypdf_exceptions
 from ._jobcontext import JobContext, JobContextManager, cleanup_working_files
 from ._pipeline import build_pipeline
-from .pdfa import file_claims_pdfa
-from .helpers import re_symlink, is_file_writable, available_cpu_count
-from .exec import tesseract, qpdf, ghostscript
-from . import PROGRAM_NAME, VERSION
-
+from ._unicodefun import verify_python3_env
 from .exceptions import (
+    BadArgsError,
     ExitCode,
     ExitCodeException,
-    MissingDependencyError,
     InputFileError,
-    BadArgsError,
+    MissingDependencyError,
     OutputFileAccessError,
 )
-from . import exceptions as ocrmypdf_exceptions
-from ._unicodefun import verify_python3_env
-
+from .exec import ghostscript, qpdf, tesseract
+from .helpers import available_cpu_count, is_file_writable, re_symlink
+from .pdfa import file_claims_pdfa
 
 # -------------
 # External dependencies

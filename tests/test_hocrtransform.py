@@ -15,12 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from ocrmypdf import hocrtransform
-from ocrmypdf.exec.tesseract import HOCR_TEMPLATE
-from ocrmypdf.exec import qpdf
-from PIL import Image
 from pathlib import Path
+
 import pytest
+from PIL import Image
+
+from ocrmypdf import hocrtransform
+from ocrmypdf.exec import qpdf
+from ocrmypdf.exec.tesseract import HOCR_TEMPLATE
 
 # pylint: disable=redefined-outer-name
 

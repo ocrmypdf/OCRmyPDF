@@ -16,7 +16,9 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 from pathlib import Path
+
 import pytest
+
 from ocrmypdf.exceptions import ExitCode
 
 # pytest.helpers is dynamic

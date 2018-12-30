@@ -31,21 +31,18 @@ Ghostscript's handling of pdfmark.
 
 """
 
+import os
 from binascii import hexlify
 from pathlib import Path
 from string import Template
+
 import pkg_resources
-import os
 
 import pikepdf
-
-from pikepdf.models.metadata import (
-    encode_pdf_date as _encode_date,
-    decode_pdf_date as _decode_date,
-)
+from pikepdf.models.metadata import decode_pdf_date as _decode_date
+from pikepdf.models.metadata import encode_pdf_date as _encode_date
 
 from .helpers import deprecated
-
 
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
 

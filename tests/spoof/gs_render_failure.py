@@ -22,8 +22,8 @@
 
 """Replicate Ghostscript render failure while allowing rasterizing"""
 
-import sys
 import os
+import sys
 
 
 def real_ghostscript(argv):

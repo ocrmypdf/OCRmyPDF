@@ -20,20 +20,20 @@
 #
 # Python FFI wrapper for Leptonica library
 
-from collections.abc import Sequence
-from contextlib import suppress
-from ctypes.util import find_library
-from functools import lru_cache
-from io import BytesIO
-from tempfile import TemporaryFile
 import argparse
 import logging
 import os
 import sys
 import warnings
+from collections.abc import Sequence
+from contextlib import suppress
+from ctypes.util import find_library
+from functools import lru_cache
+from io import BytesIO
+from os import fspath
+from tempfile import TemporaryFile
 
 from .lib._leptonica import ffi
-from os import fspath
 
 # pylint: disable=protected-access
 

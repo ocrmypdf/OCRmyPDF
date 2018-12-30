@@ -16,21 +16,20 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import pytest
-
+import datetime
 from datetime import timezone
+from os import fspath
 from pathlib import Path
 from shutil import copyfile
-from unittest.mock import patch, MagicMock
-import datetime
-from os import fspath
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 import pikepdf
-from pikepdf.models.metadata import decode_pdf_date
-
 from ocrmypdf.exceptions import ExitCode
-from ocrmypdf.pdfa import file_claims_pdfa, generate_pdfa_ps, SRGB_ICC_PROFILE
 from ocrmypdf.exec import ghostscript
+from ocrmypdf.pdfa import SRGB_ICC_PROFILE, file_claims_pdfa, generate_pdfa_ps
+from pikepdf.models.metadata import decode_pdf_date
 
 try:
     import fitz

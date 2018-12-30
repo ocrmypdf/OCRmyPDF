@@ -15,19 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from subprocess import Popen, PIPE, check_output, check_call, DEVNULL
+import logging
 import os
 import shutil
-import pytest
-from ocrmypdf.pdfinfo import PdfInfo, Colorspace, Encoding
-import PyPDF2 as pypdf
-from ocrmypdf.exceptions import ExitCode
-from ocrmypdf import leptonica
-from ocrmypdf.pdfa import file_claims_pdfa
-from ocrmypdf.exec import ghostscript
-import logging
 from math import isclose
+from subprocess import DEVNULL, PIPE, Popen, check_call, check_output
 
+import PyPDF2 as pypdf
+import pytest
+
+from ocrmypdf import leptonica
+from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.exec import ghostscript
+from ocrmypdf.pdfa import file_claims_pdfa
+from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf

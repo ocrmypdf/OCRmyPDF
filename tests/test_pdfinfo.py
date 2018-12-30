@@ -15,20 +15,22 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from ocrmypdf import pdfinfo
-from reportlab.pdfgen.canvas import Canvas
-from PIL import Image
-from tempfile import NamedTemporaryFile
-from math import isclose
-from ocrmypdf.pdfinfo import Colorspace, Encoding
-from contextlib import suppress
 import os
-import shutil
-import pytest
-import img2pdf
-import sys
-import pikepdf
 import pickle
+import shutil
+import sys
+from contextlib import suppress
+from math import isclose
+from tempfile import NamedTemporaryFile
+
+import img2pdf
+import pytest
+from PIL import Image
+from reportlab.pdfgen.canvas import Canvas
+
+import pikepdf
+from ocrmypdf import pdfinfo
+from ocrmypdf.pdfinfo import Colorspace, Encoding
 
 
 def test_single_page_text(outdir):

@@ -33,9 +33,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+import codecs
 import os
 import sys
-import codecs
 
 
 def verify_python3_env():  # pragma: no cover

@@ -15,21 +15,21 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from pathlib import Path
 import concurrent.futures
-from collections import defaultdict
 import logging
 import sys
+from collections import defaultdict
 from os import fspath
+from pathlib import Path
 
 from PIL import Image
 
 import pikepdf
 
-from ._jobcontext import JobContext
 from . import leptonica
+from ._jobcontext import JobContext
+from .exec import jbig2enc, pngquant
 from .helpers import re_symlink
-from .exec import pngquant, jbig2enc
 
 DEFAULT_JPEG_QUALITY = 75
 DEFAULT_PNG_QUALITY = 70

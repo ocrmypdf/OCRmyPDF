@@ -15,14 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from functools import partial, wraps
+import multiprocessing
+import os
+import sys
+import warnings
 from collections.abc import Iterable
 from contextlib import suppress
+from functools import partial, wraps
 from pathlib import Path
-import sys
-import os
-import multiprocessing
-import warnings
 
 
 def re_symlink(input_file, soft_link_name, log=None):

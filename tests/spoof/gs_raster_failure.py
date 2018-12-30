@@ -21,8 +21,8 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-import sys
 import os
+import sys
 
 """Replicate Ghostscript raster failure while allowing rendering"""
 

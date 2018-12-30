@@ -23,7 +23,6 @@
 
 import sys
 
-
 VERSION_STRING = '''tesseract 4.0.0
  leptonica-1.77.0
   libjpeg 9c : libpng 1.6.35 : libtiff 4.0.10 : zlib 1.2.11 : libopenjp2 2.3.0

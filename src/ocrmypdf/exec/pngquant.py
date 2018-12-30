@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from subprocess import run
 from functools import lru_cache
+from subprocess import run
 
 from . import get_version
 from ..exceptions import MissingDependencyError

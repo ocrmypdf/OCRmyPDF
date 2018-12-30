@@ -15,11 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from subprocess import CalledProcessError, STDOUT, PIPE, run
 from functools import lru_cache
+from os import fspath
+from subprocess import PIPE, STDOUT, CalledProcessError, run
 
 from . import get_version
-from os import fspath
 
 
 @lru_cache(maxsize=1)

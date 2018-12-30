@@ -18,14 +18,14 @@
 # unpaper documentation:
 # https://github.com/Flameeyes/unpaper/blob/master/doc/basic-concepts.md
 
-from subprocess import CalledProcessError, STDOUT, check_output
-from tempfile import NamedTemporaryFile
-import sys
 import os
+import sys
 from functools import lru_cache
-from ..exceptions import MissingDependencyError
-from . import get_version
+from subprocess import STDOUT, CalledProcessError, check_output
+from tempfile import NamedTemporaryFile
 
+from . import get_version
+from ..exceptions import MissingDependencyError
 
 try:
     from PIL import Image

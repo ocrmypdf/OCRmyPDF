@@ -28,14 +28,14 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from reportlab.pdfgen.canvas import Canvas
-from reportlab.lib.units import inch
-from xml.etree import ElementTree
-from collections import namedtuple
-from math import atan, sin, cos
-import re
 import argparse
+import re
+from collections import namedtuple
+from math import atan, cos, sin
+from xml.etree import ElementTree
 
+from reportlab.lib.units import inch
+from reportlab.pdfgen.canvas import Canvas
 
 Rect = namedtuple('Rect', ['x1', 'y1', 'x2', 'y2'])
 

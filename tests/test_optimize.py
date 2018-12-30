@@ -15,20 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from pathlib import Path
+import logging
 from os import fspath
+from pathlib import Path
 
 import pytest
-import logging
-
 from PIL import Image
 
 import pikepdf
-
 from ocrmypdf import optimize as opt
-from ocrmypdf.exec.ghostscript import rasterize_pdf
 from ocrmypdf.exec import jbig2enc, pngquant
-
+from ocrmypdf.exec.ghostscript import rasterize_pdf
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 

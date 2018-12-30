@@ -20,10 +20,9 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import sys
 import os
 import signal
-
+import sys
 
 VERSION_STRING = '''tesseract 4.0.0
  leptonica-1.77.0

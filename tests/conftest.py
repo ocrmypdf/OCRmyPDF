@@ -15,14 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
 import os
 import platform
+import sys
 from pathlib import Path
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
+
+import pytest
 
 pytest_plugins = ['helpers_namespace']
-import pytest
 
 try:
     from pytest_cov.embed import cleanup_on_sigterm

@@ -17,18 +17,17 @@
 
 import logging
 from io import BytesIO
-from unittest.mock import Mock
 from os import fspath
+from unittest.mock import Mock
 
-from PIL import Image
-import pytest
 import img2pdf
+import pytest
+from PIL import Image
+
 import pikepdf
-
 from ocrmypdf import leptonica
-from ocrmypdf.pdfinfo import PdfInfo
 from ocrmypdf.exec import ghostscript, tesseract
-
+from ocrmypdf.pdfinfo import PdfInfo
 
 # pytest.helpers is dynamic
 # pylint: disable=no-member

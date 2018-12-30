@@ -49,15 +49,15 @@ Assumes Tesseract 4.0.0-alpha or higher.
 
 """
 
-from pathlib import Path
-import sys
-import os
-import shutil
-import subprocess
 import argparse
 import json
+import os
 import platform
 import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
 
 if '_OCRMYPDF_SAVE_PATH' in os.environ:
     os.environ['PATH'] = os.environ['_OCRMYPDF_SAVE_PATH']

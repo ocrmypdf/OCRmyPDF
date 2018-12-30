@@ -21,9 +21,10 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-import sys
 import os
+import sys
 from subprocess import check_call
+
 
 """Replicate one type of Ghostscript feature elision warning during
 PDF/A creation."""

@@ -15,39 +15,36 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from contextlib import suppress
-from shutil import copyfileobj, copyfile
-from pathlib import Path
-from datetime import datetime, timezone
-import sys
 import os
 import re
+import sys
+from contextlib import suppress
+from datetime import datetime, timezone
+from pathlib import Path
+from shutil import copyfile, copyfileobj
 
 import img2pdf
-import pikepdf
-
 from PIL import Image
-from ruffus import formatter, regex, Pipeline, suffix
+from ruffus import Pipeline, formatter, regex, suffix
 
+import pikepdf
 from pikepdf.models.metadata import encode_pdf_date
 
-from .hocrtransform import HocrTransform
-from .pdfinfo import PdfInfo, Colorspace
-from .pdfa import generate_pdfa_ps
-from .helpers import re_symlink, is_iterable_notstr, page_number, flatten_groups
-from .exec import ghostscript, tesseract
-from .exceptions import (
-    UnsupportedImageFormatError,
-    DpiError,
-    PriorOcrFoundError,
-    InputFileError,
-    EncryptedPdfError,
-)
-from . import leptonica
-from . import PROGRAM_NAME, VERSION
-from .optimize import optimize
+from . import PROGRAM_NAME, VERSION, leptonica
 from ._weave import weave_layers
-
+from .exceptions import (
+    DpiError,
+    EncryptedPdfError,
+    InputFileError,
+    PriorOcrFoundError,
+    UnsupportedImageFormatError,
+)
+from .exec import ghostscript, tesseract
+from .helpers import flatten_groups, is_iterable_notstr, page_number, re_symlink
+from .hocrtransform import HocrTransform
+from .optimize import optimize
+from .pdfa import generate_pdfa_ps
+from .pdfinfo import Colorspace, PdfInfo
 
 VECTOR_PAGE_DPI = 400
 

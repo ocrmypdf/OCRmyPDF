@@ -15,26 +15,26 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
 import os
 import shutil
-from functools import lru_cache
+import sys
 from collections import namedtuple
-from textwrap import dedent
+from contextlib import suppress
+from functools import lru_cache
+from os import fspath
 from subprocess import (
+    PIPE,
+    STDOUT,
     CalledProcessError,
     TimeoutExpired,
     check_output,
-    STDOUT,
     run,
-    PIPE,
 )
-from contextlib import suppress
-from os import fspath
+from textwrap import dedent
 
+from . import get_version
 from ..exceptions import MissingDependencyError, TesseractConfigError
 from ..helpers import page_number
-from . import get_version
 
 OrientationConfidence = namedtuple('OrientationConfidence', ('angle', 'confidence'))
 

@@ -21,9 +21,9 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import sys
+
 import img2pdf
 from PIL import Image
-
 
 """Tesseract bad utf8 spoof
 
