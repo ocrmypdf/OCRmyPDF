@@ -495,17 +495,15 @@ OCRmyPDF currently requires these external programs and libraries to be installe
 
 - Python 3.6 or newer
 - Ghostscript 9.15 or newer
-- libexempi3 2.2.0 or newer
 - qpdf 8.1.0 or newer
-- Tesseract 3.04 or newer
+- Tesseract 4.0.0-alpha or newer
 
 As of ocrmypdf 7.2.1, the following versions are recommended:
 
 - Python 3.7
 - Ghostscript 9.23 or newer
-- libexempi3 2.4.5 or newer
 - qpdf 8.2.1
-- Tesseract 4.0.0-rc1
+- Tesseract 4.0.0 or newer
 - jbig2enc 0.29 or newer
 - pngquant 2.5 or newer
 - unpaper 6.1

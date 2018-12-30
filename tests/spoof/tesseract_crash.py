@@ -25,10 +25,13 @@ import os
 import signal
 
 
-VERSION_STRING = '''tesseract 3.05.01
- leptonica-1.74.4
-  libjpeg 9b : libpng 1.6.32 : libtiff 4.0.8 : zlib 1.2.8
-SPOOFED: CRASH ON OCR or -psm 0
+VERSION_STRING = '''tesseract 4.0.0
+ leptonica-1.77.0
+  libjpeg 9c : libpng 1.6.35 : libtiff 4.0.10 : zlib 1.2.11 : libopenjp2 2.3.0
+ Found AVX2
+ Found AVX
+ Found SSE
+SPOOFED: CRASH ON OCR or --psm 0
 '''
 
 """Simulates a Tesseract crash when asked to run OCR

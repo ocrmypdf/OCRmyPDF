@@ -47,16 +47,16 @@ Some relevant environment variables that influence Tesseract's behavior include:
 
     Controls the number of threads Tesseract will use. OCRmyPDF will manage this environment if it is not already set. (Currently, it will set it to 1 because this gives the best results in testing.)
 
-For example, if you are testing tesseract 4.00 and don't wish to use an existing tesseract 3.04 installation, you can launch OCRmyPDF as follows:
+For example, if you have a development build of Tesseract don't wish to use the system installation, you can launch OCRmyPDF as follows:
 
 .. code-block:: bash
 
     env \
-        PATH=/home/user/src/tesseract4/api:$PATH \
-        TESSDATA_PREFIX=/home/user/src/tesseract4 \
-        ocrmypdf --tesseract-oem 2 input.pdf output.pdf
+        PATH=/home/user/src/tesseract/api:$PATH \
+        TESSDATA_PREFIX=/home/user/src/tesseract \
+        ocrmypdf input.pdf output.pdf
 
-In this example ``TESSDATA_PREFIX`` directs Tesseract 4.0 to use LSTM training data. ``--tesseract-oem 1`` requests tesseract 4.0's new LSTM engine. (Tesseract 4.0 only.)
+In this example ``TESSDATA_PREFIX`` is required to redirect Tesseract to an alternate folder for its "tessdata" files.
 
 
 Overriding other support programs
@@ -107,7 +107,7 @@ rendering
   Creating a new PDF from other data (such as an existing PDF).
 
 
-OCRmyPDF has these PDF renderers: ``sandwich`` and ``hocr``. The renderer may be selected using ``--pdf-renderer``. The default is ``auto`` which lets OCRmyPDF select the renderer to use. Currently, ``auto`` selects ``sandwich`` for Tesseract 3.05.01 or newer, or ``hocr`` for older versions of Tesseract.
+OCRmyPDF has these PDF renderers: ``sandwich`` and ``hocr``. The renderer may be selected using ``--pdf-renderer``. The default is ``auto`` which lets OCRmyPDF select the renderer to use. Currently, ``auto`` always selects ``sandwich``.
 
 The ``sandwich`` renderer
 """""""""""""""""""""""""
@@ -117,8 +117,6 @@ The ``sandwich`` renderer uses Tesseract's new text-only PDF feature, which prod
 Currently this is the best renderer for most uses, however it is implemented in Tesseract so OCRmyPDF cannot influence it. Currently some problematic PDF viewers like Mozilla PDF.js and macOS Preview have problems with segmenting its text output, and mightrunseveralwordstogether.
 
 When image preprocessing features like ``--deskew`` are used, the original PDF will be rendered as a full page and the OCR layer will be placed on top.
-
-If a PDF created with this renderer using Tesseract versions older than 3.05.00 is then passed through Ghostscript's pdfwrite feature, the OCR text *may* be corrupted. The ``--output-type=pdfa`` argument will produce a warning in this situation.  For this reason, OCRmyPDF automatically selects the ``hocr`` for older Tesseract versions.
 
 The ``hocr`` renderer
 """""""""""""""""""""

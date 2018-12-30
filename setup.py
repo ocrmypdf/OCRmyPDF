@@ -170,7 +170,7 @@ if not forced and command.startswith('install') or \
         command in ['check', 'test', 'nosetests', 'easy_install']:
     check_external_program(
         program='tesseract',
-        need_version='3.04',  # using backport for Travis CI
+        need_version='4.0.0',  # using backport for Travis CI
         package={'darwin': 'tesseract', 'linux': 'tesseract-ocr'}
     )
     check_external_program(

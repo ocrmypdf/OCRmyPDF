@@ -49,8 +49,6 @@ from ._unicodefun import verify_python3_env
 # -------------
 # External dependencies
 
-MINIMUM_TESS_VERSION = '3.04'
-
 HOCR_OK_LANGS = frozenset([
     'eng', 'deu', 'spa', 'ita', 'por'
 ])
@@ -68,11 +66,11 @@ if 'IDE_PROJECT_ROOTS' in os.environ:
 
 verify_python3_env()
 
-if tesseract.version() < MINIMUM_TESS_VERSION:
+if not tesseract.v4:
     complain(
-        "Please install tesseract {0} or newer "
+        "Please install tesseract 4.0.0 or newer "
         "(currently installed version is {1})".format(
-            MINIMUM_TESS_VERSION, tesseract.version()))
+            tesseract.version()))
     sys.exit(ExitCode.missing_dependency)
 
 # -------------
@@ -420,9 +418,7 @@ def check_options_languages(options, _log):
 def check_options_output(options, log):
     # We have these constraints to check for.
     # 1. Ghostscript < 9.20 mangles multibyte Unicode
-    # 2. Tesseract < 3.05 embeds an older version of GlyphlessFont with which
-    #    no version of Ghostscript handles correctly.
-    # 3. hocr doesn't work on non-Latin languages (so don't select it)
+    # 2. hocr doesn't work on non-Latin languages (so don't select it)
 
     languages = set(options.language)
     is_latin = languages.issubset(HOCR_OK_LANGS)
@@ -448,28 +444,7 @@ def check_options_output(options, log):
 
     # Decide on what renderer to use
     if options.pdf_renderer == 'auto':
-        if tesseract.version() < '3.05' \
-                and options.output_type.startswith('pdfa') \
-                and is_latin:
-            options.pdf_renderer = 'hocr'
-        else:
-            options.pdf_renderer = 'sandwich'
-
-    if options.pdf_renderer == 'sandwich' \
-            and tesseract.version() < '3.05':
-        msg = (
-            "Ghostscript will corrupt the OCR text of PDFs produced by "
-            "Tesseract 3.04.xx and older.  For best results, upgrade to a "
-            "newer release of Tesseract. "
-        )
-
-        if options.output_type.startswith('pdfa'):
-            msg += (
-                "The argument --output-type=pdfa* requires Ghostscript, so "
-                "the PDF will be invalid.  If you cannot upgrade Tesseract, "
-                "use --output-type=pdf.")
-            raise MissingDependencyError(msg)
-        log.warning(msg)
+        options.pdf_renderer = 'sandwich'
 
     if options.output_type == 'pdfa':
         options.output_type = 'pdfa-2'

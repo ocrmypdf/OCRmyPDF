@@ -45,12 +45,7 @@ machines with AVX2, the cache is now bundled.
 
 Certain operations are not cached and routed to tesseract directly.
 
-Assumes Tesseract 3.04 or higher.
-
-Will fail on Tesseract 3.02.02 in "hocr" mode because it doesn't produce
-the incorrect file extension. Will fail on 3.03 because that has no sidecar
-text support. Will fail to replicate a 3.04 bug if wrong parameter order is
-given.
+Assumes Tesseract 4.0.0-alpha or higher.
 
 """
 

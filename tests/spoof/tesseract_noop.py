@@ -37,9 +37,12 @@ import PyPDF2 as pypdf
 from PIL import Image
 
 
-VERSION_STRING = '''tesseract 3.05.01
- leptonica-1.72
-  libjpeg 8d : libpng 1.6.19 : libtiff 4.0.6 : zlib 1.2.5
+VERSION_STRING = '''tesseract 4.0.0
+ leptonica-1.77.0
+  libjpeg 9c : libpng 1.6.35 : libtiff 4.0.10 : zlib 1.2.11 : libopenjp2 2.3.0
+ Found AVX2
+ Found AVX
+ Found SSE
 SPOOFED
 '''
 
@@ -50,7 +53,7 @@ HOCR_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
  <head>
   <title></title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-  <meta name='ocr-system' content='tesseract 3.02.02' />
+  <meta name='ocr-system' content='tesseract 4.0.0' />
   <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word'/>
  </head>
  <body>

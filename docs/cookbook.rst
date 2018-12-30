@@ -81,7 +81,7 @@ This produces a file named "output.pdf" and a companion text file named "output.
 OCR images, not PDFs
 --------------------
 
-If you are starting with images, you can just use Tesseract 3.04 or later directly to convert images to PDFs:
+If you are starting with images, you can just use Tesseract directly to convert images to PDFs:
 
 .. code-block:: bash
 

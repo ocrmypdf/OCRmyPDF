@@ -40,8 +40,8 @@ HOCR_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
  <head>
   <title></title>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-  <meta name='ocr-system' content='tesseract 3.05.00' />
-  <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word'/>
+  <meta name='ocr-system' content='tesseract 4.0.0' />
+  <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word ocrp_wconf'/>
 </head>
 <body>
   <div class='ocr_page' id='page_1' title='image "_blank.png"; bbox 0 0 {0} {1}; ppageno 0'>
@@ -65,7 +65,7 @@ def v4():
 def has_textonly_pdf():
     """Does Tesseract have textonly_pdf capability?
 
-    Available in 3.05.01, and v4.00.00alpha since January 2017. Best to
+    Available in v4.00.00alpha since January 2017. Best to
     parse the parameter list
     """
     args_tess = [
@@ -84,11 +84,6 @@ def has_textonly_pdf():
     if 'textonly_pdf' in params:
         return True
     return False
-
-
-def psm():
-    "If Tesseract 4.0, use argument --psm instead of -psm"
-    return '--psm' if v4() else '-psm'
 
 
 @lru_cache(maxsize=1)
@@ -135,7 +130,7 @@ def tess_base_args(langs, engine_mode):
 
 def get_orientation(input_file, engine_mode, timeout: float, log):
     args_tesseract = tess_base_args(['osd'], engine_mode) + [
-        psm(), '0',
+        '--psm', '0',
         fspath(input_file),
         'stdout'
     ]
@@ -160,17 +155,6 @@ def get_orientation(input_file, engine_mode, timeout: float, log):
                 osd[parts[0].strip()] = parts[1].strip()
 
         angle = int(osd.get('Orientation in degrees', 0))
-        if 'Orientation' in osd:
-            # Tesseract < 3.04.01
-            # reports "Orientation in degrees" as a counterclockwise angle
-            # We keep it clockwise
-            assert 'Rotate' not in osd
-            angle = -angle % 360
-        else:
-            # Tesseract >= 3.04.01
-            # reports "Orientation in degrees" as a clockwise angle
-            assert 'Rotate' in osd
-
         oc = OrientationConfidence(
             angle=angle,
             confidence=float(osd.get('Orientation confidence', 0)))
@@ -247,7 +231,7 @@ def generate_hocr(input_file, output_files, language: list, engine_mode,
     args_tesseract = tess_base_args(language, engine_mode)
 
     if pagesegmode is not None:
-        args_tesseract.extend([psm(), str(pagesegmode)])
+        args_tesseract.extend(['--psm', str(pagesegmode)])
 
     if user_words:
         args_tesseract.extend(['--user-words', user_words])
@@ -257,9 +241,6 @@ def generate_hocr(input_file, output_files, language: list, engine_mode,
 
     # Reminder: test suite tesseract spoofers will break after any changes
     # to the number of order parameters here
-    # Tesseract 3.04 requires the order here to be "hocr txt" and will fail
-    # on "txt hocr"
-
     args_tesseract.extend([
         input_file,
         prefix,
@@ -329,7 +310,7 @@ def generate_pdf(*, input_image, skip_pdf=None, output_pdf, output_text,
     args_tesseract = tess_base_args(language, engine_mode)
 
     if pagesegmode is not None:
-        args_tesseract.extend([psm(), str(pagesegmode)])
+        args_tesseract.extend(['--psm', str(pagesegmode)])
 
     if text_only and has_textonly_pdf():
         args_tesseract.extend(['-c', 'textonly_pdf=1'])
