@@ -20,6 +20,7 @@ from collections import namedtuple
 from decimal import Decimal
 from enum import Enum
 from math import hypot, isclose
+from os import fspath
 from pathlib import Path
 from unittest.mock import Mock
 from warnings import warn
@@ -32,7 +33,6 @@ from . import ghosttext
 from .layout import get_page_analysis, get_text_boxes
 
 from ..exceptions import EncryptedPdfError
-from ..helpers import fspath
 
 
 Colorspace = Enum('Colorspace',

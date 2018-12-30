@@ -23,9 +23,10 @@ from collections import namedtuple
 from textwrap import dedent
 from subprocess import CalledProcessError, TimeoutExpired, check_output, STDOUT, run, PIPE
 from contextlib import suppress
+from os import fspath
 
 from ..exceptions import MissingDependencyError, TesseractConfigError
-from ..helpers import page_number, fspath
+from ..helpers import page_number
 from . import get_version
 
 OrientationConfidence = namedtuple(

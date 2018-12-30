@@ -20,6 +20,7 @@ import concurrent.futures
 from collections import defaultdict
 import logging
 import sys
+from os import fspath
 
 from PIL import Image
 
@@ -27,7 +28,7 @@ import pikepdf
 
 from ._jobcontext import JobContext
 from . import leptonica
-from .helpers import re_symlink, fspath
+from .helpers import re_symlink
 from .exec import pngquant, jbig2enc
 
 DEFAULT_JPEG_QUALITY = 75

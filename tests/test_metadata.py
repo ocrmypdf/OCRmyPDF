@@ -23,13 +23,12 @@ from pathlib import Path
 from shutil import copyfile
 from unittest.mock import patch, MagicMock
 import datetime
-from shutil import copyfile
+from os import fspath
 
 import pikepdf
 from pikepdf.models.metadata import decode_pdf_date
 
 from ocrmypdf.exceptions import ExitCode
-from ocrmypdf.helpers import fspath
 from ocrmypdf.pdfa import (
     file_claims_pdfa,
     generate_pdfa_ps,

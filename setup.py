@@ -20,8 +20,8 @@
 from __future__ import print_function, unicode_literals
 
 import sys
-if sys.version_info < (3, 5):
-    print("Python 3.5 or newer is required", file=sys.stderr)
+if sys.version_info < (3, 6):
+    print("Python 3.6 or newer is required", file=sys.stderr)
     sys.exit(1)
 
 from setuptools import setup, find_packages  # nopep8
@@ -219,7 +219,6 @@ setup(
     package_dir={'': 'src'},
     keywords=['PDF', 'OCR', 'optical character recognition', 'PDF/A', 'scanning'],
     classifiers=[
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Development Status :: 5 - Production/Stable",
@@ -236,7 +235,7 @@ setup(
         "Topic :: Text Processing :: Indexing",
         "Topic :: Text Processing :: Linguistic",
         ],
-    python_requires=' >= 3.5',
+    python_requires=' >= 3.6',
     setup_requires=[
         'cffi >= 1.9.1',        # to build the leptonica module
         'pytest-runner',        # to enable python setup.py test
@@ -252,7 +251,7 @@ setup(
         'cffi >= 1.9.1',          # must be a setup and install requirement
         'img2pdf >= 0.3.0, < 0.4',       # pure Python, so track HEAD closely
         'pdfminer.six == 20181108',
-        'pikepdf >= 0.9.1',
+        'pikepdf >= 0.10.0, < 0.11.0',
         'Pillow >= 4.0.0, != 5.1.0 ; sys_platform == "darwin"',
                                   # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
                                   # block 5.1.0, broken wheels

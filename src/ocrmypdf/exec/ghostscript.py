@@ -23,7 +23,7 @@ import re
 from PIL import Image
 from . import get_version
 from ..exceptions import SubprocessOutputError
-from ..helpers import fspath
+from os import fspath
 
 
 @lru_cache(maxsize=1)

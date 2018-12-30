@@ -15,16 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
-from ocrmypdf.exceptions import ExitCode, MissingDependencyError
-from ocrmypdf.exec import tesseract
-from ocrmypdf.helpers import fspath
-from ocrmypdf import pdfinfo
+from os import fspath
 import sys
 import os
-import PyPDF2 as pypdf
 from contextlib import contextmanager
 from pathlib import Path
+
+import PyPDF2 as pypdf
+import pytest
+
+from ocrmypdf import pdfinfo
+from ocrmypdf.exceptions import ExitCode, MissingDependencyError
+from ocrmypdf.exec import tesseract
 
 # pylint: disable=no-member
 spoof = pytest.helpers.spoof

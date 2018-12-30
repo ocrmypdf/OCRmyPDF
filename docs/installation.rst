@@ -493,13 +493,11 @@ Requirements for pip and HEAD install
 
 OCRmyPDF currently requires these external programs and libraries to be installed, and must be satisfied using the operating system package manager. ``pip`` cannot provide them.
 
-- Python 3.5 or newer
+- Python 3.6 or newer
 - Ghostscript 9.15 or newer
 - libexempi3 2.2.0 or newer
 - qpdf 8.1.0 or newer
 - Tesseract 3.04 or newer
-
-Using Python 3.5 in production is discouraged. Python 3.6 and 3.7 give much better performance.
 
 As of ocrmypdf 7.2.1, the following versions are recommended:
 
@@ -526,7 +524,7 @@ These are in addition to the Python packaging dependencies, meaning that unfortu
 Installing HEAD revision from sources
 -------------------------------------
 
-If you have ``git`` and Python 3.5 or newer installed, you can install from source. When the ``pip`` installer runs, it will alert you if dependencies are missing.
+If you have ``git`` and Python 3.6 or newer installed, you can install from source. When the ``pip`` installer runs, it will alert you if dependencies are missing.
 
 If you prefer to build every from source, you will need to `build pikepdf from source <https://pikepdf.readthedocs.io/en/latest/installation.html#building-from-source>`_. First ensure you can build and install pikepdf.
 

@@ -19,13 +19,13 @@
 import os
 import shutil
 import sys
+from os import fspath
 from pickle import dumps, loads
 
 import pytest
 from PIL import Image, ImageChops
 
 import ocrmypdf.leptonica as lept
-from ocrmypdf.helpers import fspath
 
 
 def test_colormap_backgroundnorm(resources):

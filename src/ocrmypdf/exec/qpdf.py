@@ -19,7 +19,7 @@ from subprocess import CalledProcessError, STDOUT, PIPE, run
 from functools import lru_cache
 
 from . import  get_version
-from ..helpers import fspath
+from os import fspath
 
 
 @lru_cache(maxsize=1)

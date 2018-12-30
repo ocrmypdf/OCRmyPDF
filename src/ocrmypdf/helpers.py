@@ -29,8 +29,8 @@ def re_symlink(input_file, soft_link_name, log=None):
     """
     Helper function: relinks soft symbolic link if necessary
     """
-    input_file = fspath(input_file)  # For Py3.5
-    soft_link_name = fspath(soft_link_name)
+    input_file = os.fspath(input_file)
+    soft_link_name = os.fspath(soft_link_name)
     if log is None:
         prdebug = partial(print, file=sys.stderr)
     else:
@@ -72,7 +72,7 @@ def is_iterable_notstr(thing):
 
 def page_number(input_file):
     """Get one-based page number implied by filename (000002.pdf -> 2)"""
-    return int(os.path.basename(fspath(input_file))[0:6])
+    return int(os.path.basename(os.fspath(input_file))[0:6])
 
 
 def available_cpu_count():
@@ -103,19 +103,12 @@ def is_file_writable(test_file):
     p = Path(test_file)
 
     if p.is_symlink():
-        # Python 3.5 does not accept parameters for Path.resolve() and behaves
-        # as if strict=True (throws an exception on failure). Python 3.6
-        # defaults to strict=False. This implements strict=False like behavior
-        # for Python 3.5.
-        if sys.version_info[0:2] <= (3, 5):
-            p = Path(os.path.realpath(fspath(p)))
-        else:
-            p = p.resolve(strict=False)
+        p = p.resolve(strict=False)
 
     # p.is_file() throws an exception in some cases
     if p.exists() and p.is_file():
         return os.access(
-            fspath(p), os.W_OK,
+            os.fspath(p), os.W_OK,
             effective_ids=(os.access in os.supports_effective_ids))
     else:
         try:
@@ -127,39 +120,6 @@ def is_file_writable(test_file):
             with suppress(OSError):
                 p.unlink()
         return True
-
-
-if sys.version_info[0:2] <= (3, 5):
-    def fspath(path):
-        """https://www.python.org/dev/peps/pep-0519/#os"""
-        import pathlib
-        if isinstance(path, (str, bytes)):
-            return path
-
-        # Work from the object's type to match method resolution of other magic
-        # methods.
-        path_type = type(path)
-        try:
-            path = path_type.__fspath__(path)
-        except AttributeError:
-            # Added for Python 3.5 support.
-            if isinstance(path, pathlib.Path):
-                return str(path)
-            elif hasattr(path_type, '__fspath__'):
-                raise
-        else:
-            if isinstance(path, (str, bytes)):
-                return path
-            else:
-                raise TypeError("expected __fspath__() to return str or bytes, "
-                                "not " + type(path).__name__)
-
-        raise TypeError(
-            "expected str, bytes, pathlib.Path or os.PathLike object, not "
-            + path_type.__name__)
-
-else:
-    fspath = os.fspath
 
 
 def flatten_groups(groups):

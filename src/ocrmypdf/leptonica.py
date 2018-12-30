@@ -33,7 +33,7 @@ import sys
 import warnings
 
 from .lib._leptonica import ffi
-from .helpers import fspath
+from os import fspath
 
 # pylint: disable=protected-access
 

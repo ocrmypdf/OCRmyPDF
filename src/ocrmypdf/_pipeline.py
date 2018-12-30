@@ -193,12 +193,6 @@ def repair_and_parse_pdf(
         )
         raise InputFileError()
 
-    if len(pdfinfo.pages) > 2000 and sys.version_info[0:2] <= (3, 5):
-        log.warning(
-            "Performance regressions are known occur with Python 3.5 for "
-            "high page count files.  Python 3.6 or newer is recommended."
-        )
-
     if pdfinfo.has_acroform:
         if options.redo_ocr:
             log.error(

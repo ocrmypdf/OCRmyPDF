@@ -16,6 +16,7 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 from pathlib import Path
+from os import fspath
 
 import pytest
 import logging
@@ -27,7 +28,6 @@ import pikepdf
 from ocrmypdf import optimize as opt
 from ocrmypdf.exec.ghostscript import rasterize_pdf
 from ocrmypdf.exec import jbig2enc, pngquant
-from ocrmypdf.helpers import fspath
 
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
