@@ -53,8 +53,7 @@ def main():
         print('List of available languages (1):\neng', file=sys.stderr)
         sys.exit(0)
     elif sys.argv[1] == '--print-parameters':
-        print('A parameter list would go here\ntextonly_pdf 0\n',
-              file=sys.stderr)
+        print('A parameter list would go here\ntextonly_pdf 0\n', file=sys.stderr)
         sys.exit(0)
     elif sys.argv[-2] == 'hocr':
         print("KABOOM! Tesseract failed for some reason", file=sys.stderr)
@@ -63,8 +62,11 @@ def main():
         print("KABOOM! Tesseract failed for some reason", file=sys.stderr)
         sys.exit(128 + signal.SIGSEGV)
     elif sys.argv[-1] == 'stdout':
-        print("libc++abi.dylib: terminating with uncaught exception of type "
-              "std::bad_alloc: std::bad_alloc", file=sys.stderr)
+        print(
+            "libc++abi.dylib: terminating with uncaught exception of type "
+            "std::bad_alloc: std::bad_alloc",
+            file=sys.stderr,
+        )
         sys.exit(128 + signal.SIGABRT)
     else:
         print("Spoof doesn't understand arguments", file=sys.stderr)

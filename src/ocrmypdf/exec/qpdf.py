@@ -18,7 +18,7 @@
 from subprocess import CalledProcessError, STDOUT, PIPE, run
 from functools import lru_cache
 
-from . import  get_version
+from . import get_version
 from os import fspath
 
 
@@ -28,22 +28,16 @@ def version():
 
 
 def check(input_file, log=None):
-    args_qpdf = [
-        'qpdf',
-        '--check',
-        fspath(input_file)
-    ]
+    args_qpdf = ['qpdf', '--check', fspath(input_file)]
 
     if log is None:
         import logging as log
 
     try:
-        run(args_qpdf, stderr=STDOUT, stdout=PIPE, universal_newlines=True,
-            check=True)
+        run(args_qpdf, stderr=STDOUT, stdout=PIPE, universal_newlines=True, check=True)
     except CalledProcessError as e:
         if e.returncode == 2:
-            log.error("%s: not a valid PDF, and could not repair it.",
-                input_file)
+            log.error("%s: not a valid PDF, and could not repair it.", input_file)
             log.error("Details:")
             log.error(e.output)
         elif e.returncode == 3:

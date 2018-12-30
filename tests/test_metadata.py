@@ -29,11 +29,7 @@ import pikepdf
 from pikepdf.models.metadata import decode_pdf_date
 
 from ocrmypdf.exceptions import ExitCode
-from ocrmypdf.pdfa import (
-    file_claims_pdfa,
-    generate_pdfa_ps,
-    SRGB_ICC_PROFILE
-)
+from ocrmypdf.pdfa import file_claims_pdfa, generate_pdfa_ps, SRGB_ICC_PROFILE
 from ocrmypdf.exec import ghostscript
 
 try:
@@ -52,17 +48,17 @@ run_ocrmypdf = pytest.helpers.run_ocrmypdf
 spoof = pytest.helpers.spoof
 
 
-@pytest.mark.parametrize("output_type", [
-    'pdfa', 'pdf'
-    ])
-def test_preserve_metadata(spoof_tesseract_noop, output_type,
-                           resources, outpdf):
+@pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])
+def test_preserve_metadata(spoof_tesseract_noop, output_type, resources, outpdf):
     pdf_before = pikepdf.open(resources / 'graph.pdf')
 
     output = check_ocrmypdf(
-            resources / 'graph.pdf', outpdf,
-            '--output-type', output_type,
-            env=spoof_tesseract_noop)
+        resources / 'graph.pdf',
+        outpdf,
+        '--output-type',
+        output_type,
+        env=spoof_tesseract_noop,
+    )
 
     pdf_after = pikepdf.open(output)
 
@@ -73,21 +69,23 @@ def test_preserve_metadata(spoof_tesseract_noop, output_type,
     assert pdfa_info['output'] == output_type
 
 
-@pytest.mark.parametrize("output_type", [
-    'pdfa', 'pdf'
-    ])
-def test_override_metadata(spoof_tesseract_noop, output_type, resources,
-                           outpdf):
+@pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])
+def test_override_metadata(spoof_tesseract_noop, output_type, resources, outpdf):
     input_file = resources / 'c02-22.pdf'
     german = 'Du siehst den Wald vor lauter Bäumen nicht.'
     chinese = '孔子'
 
     p, out, err = run_ocrmypdf(
-        input_file, outpdf,
-        '--title', german,
-        '--author', chinese,
-        '--output-type', output_type,
-        env=spoof_tesseract_noop)
+        input_file,
+        outpdf,
+        '--title',
+        german,
+        '--author',
+        chinese,
+        '--output-type',
+        output_type,
+        env=spoof_tesseract_noop,
+    )
 
     assert p.returncode == ExitCode.ok, err
 
@@ -114,10 +112,14 @@ def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
     high_unicode = 'U+1030C is: 𐌌'
 
     p, out, err = run_ocrmypdf(
-        input_file, no_outpdf,
-        '--subject', high_unicode,
-        '--output-type', 'pdfa',
-        env=spoof_tesseract_noop)
+        input_file,
+        no_outpdf,
+        '--subject',
+        high_unicode,
+        '--output-type',
+        'pdfa',
+        env=spoof_tesseract_noop,
+    )
 
     assert p.returncode == ExitCode.bad_args, err
 
@@ -125,16 +127,20 @@ def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
 @pytest.mark.skipif(not fitz, reason="test uses fitz")
 @pytest.mark.parametrize('ocr_option', ['--skip-text', '--force-ocr'])
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
-def test_bookmarks_preserved(spoof_tesseract_noop, output_type, ocr_option,
-                             resources, outpdf):
+def test_bookmarks_preserved(
+    spoof_tesseract_noop, output_type, ocr_option, resources, outpdf
+):
     input_file = resources / 'toc.pdf'
     before_toc = fitz.Document(str(input_file)).getToC()
 
     check_ocrmypdf(
-        input_file, outpdf,
+        input_file,
+        outpdf,
         ocr_option,
-        '--output-type', output_type,
-        env=spoof_tesseract_noop)
+        '--output-type',
+        output_type,
+        env=spoof_tesseract_noop,
+    )
 
     after_toc = fitz.Document(str(outpdf)).getToC()
     print(before_toc)
@@ -148,13 +154,14 @@ def seconds_between_dates(date1, date2):
 
 @pytest.mark.parametrize('infile', ['trivial.pdf', 'jbig2.pdf'])
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
-def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
-                                 infile, outpdf):
+def test_creation_date_preserved(
+    spoof_tesseract_noop, output_type, resources, infile, outpdf
+):
     input_file = resources / infile
 
     check_ocrmypdf(
-        input_file, outpdf, '--output-type', output_type,
-        env=spoof_tesseract_noop)
+        input_file, outpdf, '--output-type', output_type, env=spoof_tesseract_noop
+    )
 
     pdf_before = pikepdf.open(input_file)
     pdf_after = pikepdf.open(outpdf)
@@ -172,13 +179,11 @@ def test_creation_date_preserved(spoof_tesseract_noop, output_type, resources,
 
     # We expect that the modified date is quite recent
     date_after = decode_pdf_date(str(after['/ModDate']))
-    assert seconds_between_dates(
-        date_after, datetime.datetime.now(timezone.utc)) < 1000
+    assert seconds_between_dates(date_after, datetime.datetime.now(timezone.utc)) < 1000
 
 
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
-def test_xml_metadata_preserved(spoof_tesseract_noop, output_type,
-                                resources, outpdf):
+def test_xml_metadata_preserved(spoof_tesseract_noop, output_type, resources, outpdf):
     input_file = resources / 'graph.pdf'
 
     try:
@@ -191,9 +196,8 @@ def test_xml_metadata_preserved(spoof_tesseract_noop, output_type,
     before = file_to_dict(str(input_file))
 
     check_ocrmypdf(
-        input_file, outpdf,
-        '--output-type', output_type,
-        env=spoof_tesseract_noop)
+        input_file, outpdf, '--output-type', output_type, env=spoof_tesseract_noop
+    )
 
     after = file_to_dict(str(outpdf))
 
@@ -223,7 +227,7 @@ def test_xml_metadata_preserved(spoof_tesseract_noop, output_type,
         'xmp:MetadataDate',
         'xmp:CreatorTool',
         'xmpMM:DocumentId',
-        'xmpMM:DnstanceId'
+        'xmpMM:DnstanceId',
     ]
 
     # Cleanup messy data structure
@@ -251,8 +255,10 @@ def test_xml_metadata_preserved(spoof_tesseract_noop, output_type,
         # of several
         propidx = '{}[1]'.format(prop)
         if propidx in before:
-            assert after.get(propidx) == before[propidx] \
-                    or after.get(prop) == before[propidx]
+            assert (
+                after.get(propidx) == before[propidx]
+                or after.get(prop) == before[propidx]
+            )
 
 
 def test_srgb_in_unicode_path(tmpdir):
@@ -270,9 +276,8 @@ def test_srgb_in_unicode_path(tmpdir):
 
 def test_kodak_toc(resources, outpdf, spoof_tesseract_noop):
     output = check_ocrmypdf(
-        resources / 'kcs.pdf', outpdf,
-        '--output-type', 'pdf',
-        env=spoof_tesseract_noop)
+        resources / 'kcs.pdf', outpdf, '--output-type', 'pdf', env=spoof_tesseract_noop
+    )
 
     p = pikepdf.open(outpdf)
 
@@ -297,7 +302,8 @@ def test_metadata_fixup_warning(resources, outdir):
         input_files_groups=input_files,
         output_file=outdir / 'out.pdf',
         log=log,
-        context=context)
+        context=context,
+    )
     log.warning.assert_not_called()
 
     # Now add some metadata that will not be copyable
@@ -312,5 +318,6 @@ def test_metadata_fixup_warning(resources, outdir):
         input_files_groups=input_files,
         output_file=outdir / 'out.pdf',
         log=log,
-        context=context)
+        context=context,
+    )
     log.warning.assert_called_once()

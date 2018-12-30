@@ -35,12 +35,11 @@ from .layout import get_page_analysis, get_text_boxes
 from ..exceptions import EncryptedPdfError
 
 
-Colorspace = Enum('Colorspace',
-                  'gray rgb cmyk lab icc index sep devn pattern jpeg2000')
+Colorspace = Enum('Colorspace', 'gray rgb cmyk lab icc index sep devn pattern jpeg2000')
 
-Encoding = Enum('Encoding',
-                'ccitt jpeg jpeg2000 jbig2 asciihex ascii85 lzw flate ' + \
-                'runlength')
+Encoding = Enum(
+    'Encoding', 'ccitt jpeg jpeg2000 jbig2 asciihex ascii85 lzw flate ' + 'runlength'
+)
 
 FRIENDLY_COLORSPACE = {
     '/DeviceGray': Colorspace.gray,
@@ -71,7 +70,7 @@ FRIENDLY_ENCODING = {
     '/A85': Encoding.ascii85,
     '/LZW': Encoding.lzw,
     '/Fl': Encoding.flate,
-    '/RL': Encoding.runlength
+    '/RL': Encoding.runlength,
 }
 
 FRIENDLY_COMP = {
@@ -79,28 +78,28 @@ FRIENDLY_COMP = {
     Colorspace.rgb: 3,
     Colorspace.cmyk: 4,
     Colorspace.lab: 3,
-    Colorspace.index: 1
+    Colorspace.index: 1,
 }
 
 
 UNIT_SQUARE = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+
 
 def _is_unit_square(shorthand):
     values = map(float, shorthand)
     pairwise = zip(values, UNIT_SQUARE)
     return all([isclose(a, b, rel_tol=1e-3) for a, b in pairwise])
 
-XobjectSettings = namedtuple('XobjectSettings',
-    ['name', 'shorthand', 'stack_depth'])
 
-InlineSettings = namedtuple('InlineSettings',
-    ['iimage', 'shorthand', 'stack_depth'])
+XobjectSettings = namedtuple('XobjectSettings', ['name', 'shorthand', 'stack_depth'])
 
-ContentsInfo = namedtuple('ContentsInfo',
-    ['xobject_settings', 'inline_images', 'found_vector'])
+InlineSettings = namedtuple('InlineSettings', ['iimage', 'shorthand', 'stack_depth'])
 
-TextboxInfo = namedtuple('TextboxInfo',
-    ['bbox', 'is_visible', 'is_corrupt'])
+ContentsInfo = namedtuple(
+    'ContentsInfo', ['xobject_settings', 'inline_images', 'found_vector']
+)
+
+TextboxInfo = namedtuple('TextboxInfo', ['bbox', 'is_visible', 'is_corrupt'])
 
 
 class VectorInfo:
@@ -112,9 +111,9 @@ def _normalize_stack(graphobjs):
     """Convert runs of qQ's in the stack into single graphobjs"""
     for operands, operator in graphobjs:
         operator = str(operator)
-        if re.match(r'Q*q+$', operator):   # Zero or more Q, one or more q
-            for char in operator:          # Split into individual
-                yield ([], char)           # Yield individual
+        if re.match(r'Q*q+$', operator):  # Zero or more Q, one or more q
+            for char in operator:  # Split into individual
+                yield ([], char)  # Yield individual
         else:
             yield (operands, operator)
 
@@ -155,15 +154,19 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     image_ops = set('BI ID EI q Q Do cm'.split())
     operator_whitelist = ' '.join(vector_ops | image_ops)
 
-    for n, graphobj in enumerate(_normalize_stack(
-            pikepdf.parse_content_stream(contentstream, operator_whitelist))):
+    for n, graphobj in enumerate(
+        _normalize_stack(
+            pikepdf.parse_content_stream(contentstream, operator_whitelist)
+        )
+    ):
         operands, operator = graphobj
         if operator == 'q':
             stack.append(ctm)
             if len(stack) > 32:  # See docstring
                 if len(stack) > 128:
                     raise RuntimeError(
-                        "PDF graphics stack overflowed hard limit, operator %i" % n)
+                        "PDF graphics stack overflowed hard limit, operator %i" % n
+                    )
                 warn("PDF graphics stack overflowed spec limit")
         elif operator == 'Q':
             try:
@@ -177,14 +180,14 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
         elif operator == 'Do':
             image_name = operands[0]
             settings = XobjectSettings(
-                name=image_name, shorthand=ctm.shorthand,
-                stack_depth=len(stack))
+                name=image_name, shorthand=ctm.shorthand, stack_depth=len(stack)
+            )
             xobject_settings.append(settings)
-        elif operator == 'INLINE IMAGE':   # BI/ID/EI are grouped into this
+        elif operator == 'INLINE IMAGE':  # BI/ID/EI are grouped into this
             iimage = operands[0]
             inline = InlineSettings(
-                iimage=iimage, shorthand=ctm.shorthand,
-                stack_depth=len(stack))
+                iimage=iimage, shorthand=ctm.shorthand, stack_depth=len(stack)
+            )
             inline_images.append(inline)
         elif operator in vector_ops:
             found_vector = True
@@ -192,7 +195,8 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     return ContentsInfo(
         xobject_settings=xobject_settings,
         inline_images=inline_images,
-        found_vector=found_vector)
+        found_vector=found_vector,
+    )
 
 
 def _get_dpi(ctm_shorthand, image_size):
@@ -262,8 +266,7 @@ def _get_dpi(ctm_shorthand, image_size):
 class ImageInfo:
     DPI_PREC = Decimal('1.000')
 
-    def __init__(self, *, name='', pdfimage=None, inline=None,
-                 shorthand=None):
+    def __init__(self, *, name='', pdfimage=None, inline=None, shorthand=None):
 
         self._name = str(name)
         self._shorthand = shorthand
@@ -348,19 +351,24 @@ class ImageInfo:
         return _get_dpi(self._shorthand, (self._width, self._height))[1]
 
     def __repr__(self):
-        class_locals = {attr: getattr(self, attr, None) for attr in dir(self)
-                        if not attr.startswith('_')}
+        class_locals = {
+            attr: getattr(self, attr, None)
+            for attr in dir(self)
+            if not attr.startswith('_')
+        }
         return (
             "<ImageInfo '{name}' {type_} {width}x{height} {color} "
-            "{comp} {bpc} {enc} {xres}x{yres}>").format(**class_locals)
+            "{comp} {bpc} {enc} {xres}x{yres}>"
+        ).format(**class_locals)
 
 
 def _find_inline_images(contentsinfo):
     "Find inline images in the contentstream"
 
     for n, inline in enumerate(contentsinfo.inline_images):
-        yield ImageInfo(name='inline-%02d' % n, shorthand=inline.shorthand,
-                        inline=inline)
+        yield ImageInfo(
+            name='inline-%02d' % n, shorthand=inline.shorthand, inline=inline
+        )
 
 
 def _image_xobjects(container):
@@ -414,8 +422,7 @@ def _find_regular_images(container, contentsinfo):
                 # these from our DPI calculation for the page.
                 continue
 
-            yield ImageInfo(name=draw.name, pdfimage=pdfimage, shorthand=
-                            draw.shorthand)
+            yield ImageInfo(name=draw.name, pdfimage=pdfimage, shorthand=draw.shorthand)
 
 
 def _find_form_xobject_images(pdf, container, contentsinfo):
@@ -446,7 +453,8 @@ def _find_form_xobject_images(pdf, container, contentsinfo):
             # same object are both very rare.
             ctm_shorthand = settings.shorthand
             yield from _process_content_streams(
-                pdf=pdf, container=form_xobject, shorthand=ctm_shorthand)
+                pdf=pdf, container=form_xobject, shorthand=ctm_shorthand
+            )
 
 
 def _process_content_streams(*, pdf, container, shorthand=None):
@@ -470,8 +478,7 @@ def _process_content_streams(*, pdf, container, shorthand=None):
 
     if container.get('/Type') == '/Page' and '/Contents' in container:
         initial_shorthand = shorthand or UNIT_SQUARE
-    elif container.get('/Type') == '/XObject' and \
-            container['/Subtype'] == '/Form':
+    elif container.get('/Type') == '/XObject' and container['/Subtype'] == '/Form':
         # Set the CTM to the state it was when the "Do" operator was
         # encountered that is drawing this instance of the Form XObject
         ctm = PdfMatrix(shorthand) if shorthand else PdfMatrix.identity()
@@ -505,9 +512,9 @@ def _page_has_text(text_blocks, page_width, page_height):
     margin_ratio = 0.125
     interior_bbox = (
         margin_ratio * pw,  # left
-        (1 - margin_ratio) * ph, # top
-        (1 - margin_ratio) * pw, # right
-        margin_ratio * ph  # bottom  (first quadrant: bottom < top)
+        (1 - margin_ratio) * ph,  # top
+        (1 - margin_ratio) * pw,  # right
+        margin_ratio * ph,  # bottom  (first quadrant: bottom < top)
     )
 
     def rects_intersect(a, b):
@@ -535,8 +542,8 @@ def simplify_textboxes(miner):
         first_line = box._objs[0]
         first_char = first_line._objs[0]
 
-        visible = (first_char.rendermode != 3)
-        corrupt = (first_char.get_text() == '\ufffd')
+        visible = first_char.rendermode != 3
+        corrupt = first_char.get_text() == '\ufffd'
         yield TextboxInfo(box.bbox, visible, corrupt)
 
 
@@ -552,7 +559,8 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
 
     if xmltext is not None:
         bboxes = ghosttext.page_get_textblocks(
-            fspath(infile), pageno, xmltext=xmltext, height=height_pt)
+            fspath(infile), pageno, xmltext=xmltext, height=height_pt
+        )
         pageinfo['bboxes'] = bboxes
     else:
         pscript5_mode = str(pdf.docinfo.get('/Creator')).startswith('PScript5')
@@ -560,9 +568,7 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
         pageinfo['textboxes'] = list(simplify_textboxes(miner))
         bboxes = (box.bbox for box in pageinfo['textboxes'])
 
-    pageinfo['has_text'] = _page_has_text(
-        bboxes, width_pt, height_pt
-    )
+    pageinfo['has_text'] = _page_has_text(bboxes, width_pt, height_pt)
 
     userunit = page.get('/UserUnit', Decimal(1.0))
     if not isinstance(userunit, Decimal):
@@ -577,24 +583,24 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
         pageinfo['rotate'] = 0
 
     userunit_shorthand = (userunit, 0, 0, userunit, 0, 0)
-    contentsinfo = [ci for ci in
-                    _process_content_streams(pdf=pdf, container=page,
-                                             shorthand=userunit_shorthand)]
+    contentsinfo = [
+        ci
+        for ci in _process_content_streams(
+            pdf=pdf, container=page, shorthand=userunit_shorthand
+        )
+    ]
 
     pageinfo['has_vector'] = False
     if any(isinstance(ci, VectorInfo) for ci in contentsinfo):
         pageinfo['has_vector'] = True
 
-    pageinfo['images'] = [im for im in contentsinfo
-                          if isinstance(im, ImageInfo)]
+    pageinfo['images'] = [im for im in contentsinfo if isinstance(im, ImageInfo)]
     if pageinfo['images']:
         xres = Decimal(max(image.xres for image in pageinfo['images']))
         yres = Decimal(max(image.yres for image in pageinfo['images']))
         pageinfo['xres'], pageinfo['yres'] = xres, yres
-        pageinfo['width_pixels'] = \
-            int(round(xres * pageinfo['width_inches']))
-        pageinfo['height_pixels'] = \
-            int(round(yres * pageinfo['height_inches']))
+        pageinfo['width_pixels'] = int(round(xres * pageinfo['width_inches']))
+        pageinfo['height_pixels'] = int(round(yres * pageinfo['height_inches']))
 
     return pageinfo
 
@@ -689,13 +695,14 @@ class PageInfo:
 
         if 'textboxes' not in self._pageinfo:
             if visible is not None and corrupt is not None:
-                raise NotImplementedError(
-                    'Ghostscript textboxes cannot be classified')
+                raise NotImplementedError('Ghostscript textboxes cannot be classified')
             return self._pageinfo['bboxes']
 
-        return (obj.bbox for obj in self._pageinfo['textboxes']
-                if predicate(obj, visible, corrupt))
-
+        return (
+            obj.bbox
+            for obj in self._pageinfo['textboxes']
+            if predicate(obj, visible, corrupt)
+        )
 
     @property
     def xres(self):
@@ -718,11 +725,15 @@ class PageInfo:
 
     def __repr__(self):
         return (
-            '<PageInfo '
-            'pageno={} {}"x{}" rotation={} res={}x{} has_text={}>').format(
-            self.pageno, self.width_inches, self.height_inches,
+            '<PageInfo ' 'pageno={} {}"x{}" rotation={} res={}x{} has_text={}>'
+        ).format(
+            self.pageno,
+            self.width_inches,
+            self.height_inches,
             self.rotation,
-            self.xres, self.yres, self.has_text
+            self.xres,
+            self.yres,
+            self.has_text,
         )
 
 
@@ -732,7 +743,8 @@ class PdfInfo:
     def __init__(self, infile, detailed_page_analysis=False, log=None):
         self._infile = infile
         self._pages, pdf = _pdf_get_all_pageinfo(
-            infile, detailed_page_analysis, log=log)
+            infile, detailed_page_analysis, log=log
+        )
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
         self._has_acroform = '/AcroForm' in pdf.root
 
@@ -772,13 +784,16 @@ class PdfInfo:
     def __repr__(self):
         return "<PdfInfo('...'), page count={}>".format(len(self))
 
+
 def main():
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument('infile')
     args = parser.parse_args()
     info = _pdf_get_all_pageinfo(args.infile)
     from pprint import pprint
+
     pprint(info)
 
 

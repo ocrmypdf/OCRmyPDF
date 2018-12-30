@@ -80,9 +80,11 @@ def extract_image_jbig2(*, pike, root, log, image, xref, options):
         return None
     pim, filtdp = result
 
-    if pim.bits_per_component == 1 \
-            and filtdp != '/JBIG2Decode' \
-            and jbig2enc.available():
+    if (
+        pim.bits_per_component == 1
+        and filtdp != '/JBIG2Decode'
+        and jbig2enc.available()
+    ):
         try:
             imgname = Path(root / '{:08d}'.format(xref))
             with imgname.open('wb') as f:
@@ -100,8 +102,7 @@ def extract_image_generic(*, pike, root, log, image, xref, options):
         return None
     pim, filtdp = result
 
-    if filtdp[0] == '/DCTDecode' \
-            and options.optimize >= 2:
+    if filtdp[0] == '/DCTDecode' and options.optimize >= 2:
         # This is a simple heuristic derived from some training data, that has
         # about a 70% chance of guessing whether the JPEG is high quality,
         # and possibly recompressible, or not. The number itself doesn't mean
@@ -126,9 +127,11 @@ def extract_image_generic(*, pike, root, log, image, xref, options):
         except pikepdf.UnsupportedImageTypeError:
             return None
         return xref, ext
-    elif pim.indexed \
-            and pim.colorspace in pim.SIMPLE_COLORSPACES \
-            and options.optimize >= 3:
+    elif (
+        pim.indexed
+        and pim.colorspace in pim.SIMPLE_COLORSPACES
+        and options.optimize >= 3
+    ):
         # Try to improve on indexed images - these are far from low hanging
         # fruit in most cases
         pim.as_pil_image().save(png_name(root, xref))
@@ -140,7 +143,6 @@ def extract_image_generic(*, pike, root, log, image, xref, options):
         return xref, '.png'
 
     return None
-
 
 
 def extract_images(pike, root, log, options, extract_fn):
@@ -172,8 +174,7 @@ def extract_images(pike, root, log, options, extract_fn):
         image = pike.get_object((xref, 0))
         try:
             result = extract_fn(
-                pike=pike, root=root, log=log, image=image,
-                xref=xref, options=options
+                pike=pike, root=root, log=log, image=image, xref=xref, options=options
             )
         except Exception as e:
             log.debug("Image xref %s", xref)
@@ -190,17 +191,13 @@ def extract_images_generic(pike, root, log, options):
 
     jpegs = []
     pngs = []
-    for _, xref, ext in extract_images(
-            pike, root, log, options, extract_image_generic):
+    for _, xref, ext in extract_images(pike, root, log, options, extract_image_generic):
         log.debug('xref = %s ext = %s', xref, ext)
         if ext == '.png':
             pngs.append(xref)
         elif ext == '.jpg':
             jpegs.append(xref)
-    log.debug(
-        "Optimizable images: "
-        "JPEGs: %s PNGs: %s", len(jpegs), len(pngs)
-    )
+    log.debug("Optimizable images: " "JPEGs: %s PNGs: %s", len(jpegs), len(pngs))
     return jpegs, pngs
 
 
@@ -209,17 +206,16 @@ def extract_images_jbig2(pike, root, log, options):
 
     jbig2_groups = defaultdict(list)
     for pageno, xref, ext in extract_images(
-            pike, root, log, options, extract_image_jbig2):
+        pike, root, log, options, extract_image_jbig2
+    ):
         group = pageno // options.jbig2_page_group_size
         jbig2_groups[group].append((xref, ext))
 
     # Elide empty groups
-    jbig2_groups = {group: xrefs for group, xrefs in jbig2_groups.items()
-                    if len(xrefs) > 0}
-    log.debug(
-        "Optimizable images: "
-        "JBIG2 groups: %s", (len(jbig2_groups),)
-    )
+    jbig2_groups = {
+        group: xrefs for group, xrefs in jbig2_groups.items() if len(xrefs) > 0
+    }
+    log.debug("Optimizable images: " "JBIG2 groups: %s", (len(jbig2_groups),))
     return jbig2_groups
 
 
@@ -233,7 +229,7 @@ def _produce_jbig2_images(jbig2_groups, root, log, options):
                 jbig2enc.convert_group,
                 cwd=fspath(root),
                 infiles=(img_name(root, xref, ext) for xref, ext in xref_exts),
-                out_prefix=prefix
+                out_prefix=prefix,
             )
             yield future
 
@@ -247,7 +243,7 @@ def _produce_jbig2_images(jbig2_groups, root, log, options):
                     jbig2enc.convert_single,
                     cwd=fspath(root),
                     infile=img_name(root, xref, ext),
-                    outfile=root / ('{}.{:04d}'.format(prefix, n))
+                    outfile=root / ('{}.{:04d}'.format(prefix, n)),
                 )
                 yield future
 
@@ -256,8 +252,7 @@ def _produce_jbig2_images(jbig2_groups, root, log, options):
     else:
         jbig2_futures = jbig2_single_futures
 
-    with concurrent.futures.ThreadPoolExecutor(
-            max_workers=options.jobs) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=options.jobs) as executor:
         futures = jbig2_futures(executor, root, jbig2_groups)
         for future in concurrent.futures.as_completed(futures):
             proc = future.result()
@@ -286,9 +281,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
         if jbig2_symfile.exists():
             jbig2_globals_data = jbig2_symfile.read_bytes()
             jbig2_globals = pikepdf.Stream(pike, jbig2_globals_data)
-            jbig2_globals_dict = pikepdf.Dictionary({
-                    '/JBIG2Globals': jbig2_globals
-            })
+            jbig2_globals_dict = pikepdf.Dictionary({'/JBIG2Globals': jbig2_globals})
         elif options.jbig2_page_group_size == 1:
             jbig2_globals_dict = None
         else:
@@ -302,7 +295,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             im_obj.write(
                 jbig2_im_data,
                 filter=pikepdf.Name('/JBIG2Decode'),
-                decode_parms=jbig2_globals_dict
+                decode_parms=jbig2_globals_dict,
             )
 
 
@@ -316,9 +309,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
         # 'close'.  Seems to be mostly harmless
         # https://github.com/python-pillow/Pillow/issues/1144
         with Image.open(fspath(in_jpg)) as im:
-            im.save(fspath(opt_jpg),
-                    optimize=True,
-                    quality=options.jpeg_quality)
+            im.save(fspath(opt_jpg), optimize=True, quality=options.jpeg_quality)
         # pylint: disable=no-member
         if opt_jpg.stat().st_size > in_jpg.stat().st_size:
             log.debug("xref %s, jpeg, made larger - skip", xref)
@@ -326,24 +317,26 @@ def transcode_jpegs(pike, jpegs, root, log, options):
 
         compdata = leptonica.CompressedData.open(opt_jpg)
         im_obj = pike.get_object(xref, 0)
-        im_obj.write(
-            compdata.read(), filter=pikepdf.Name('/DCTDecode')
-        )
+        im_obj.write(compdata.read(), filter=pikepdf.Name('/DCTDecode'))
 
 
 def transcode_pngs(pike, pngs, root, log, options):
     if options.optimize >= 2:
         png_quality = (
             max(10, options.png_quality - 10),
-            min(100, options.png_quality + 10)
+            min(100, options.png_quality + 10),
         )
         with concurrent.futures.ThreadPoolExecutor(
-                max_workers=options.jobs) as executor:
+            max_workers=options.jobs
+        ) as executor:
             for xref in pngs:
                 executor.submit(
                     pngquant.quantize,
-                    png_name(root, xref), png_name(root, xref),
-                    png_quality[0], png_quality[1])
+                    png_name(root, xref),
+                    png_name(root, xref),
+                    png_quality[0],
+                    png_quality[1],
+                )
 
     for xref in pngs:
         im_obj = pike.get_object(xref, 0)
@@ -353,9 +346,7 @@ def transcode_pngs(pike, pngs, root, log, options):
             pix = leptonica.Pix.open(png_name(root, xref))
             if pix.depth == 1:
                 pix = pix.invert()  # PDF assumes 1 is black for monochrome
-            compdata = pix.generate_pdf_ci_data(
-                leptonica.lept.L_FLATE_ENCODE, 0
-            )
+            compdata = pix.generate_pdf_ci_data(leptonica.lept.L_FLATE_ENCODE, 0)
         except leptonica.LeptonicaError as e:
             log.error(e)
             continue
@@ -363,7 +354,7 @@ def transcode_pngs(pike, pngs, root, log, options):
         # This is what we should be doing: open the compressed data without
         # transcoding. However this shifts each pixel row by one for some
         # reason.
-        #compdata = leptonica.CompressedData.open(png_name(root, xref))
+        # compdata = leptonica.CompressedData.open(png_name(root, xref))
         if len(compdata) > int(im_obj.stream_dict.Length):
             continue  # If we produced a larger image, don't use
 
@@ -379,8 +370,12 @@ def transcode_pngs(pike, pngs, root, log, options):
             palette_pdf_string = compdata.get_palette_pdf_string()
             palette_data = pikepdf.Object.parse(palette_pdf_string)
             palette_stream = pikepdf.Stream(pike, bytes(palette_data))
-            palette = [pikepdf.Name('/Indexed'), pikepdf.Name('/DeviceRGB'),
-                       compdata.ncolors - 1, palette_stream]
+            palette = [
+                pikepdf.Name('/Indexed'),
+                pikepdf.Name('/DeviceRGB'),
+                compdata.ncolors - 1,
+                palette_stream,
+            ]
             cs = palette
         else:
             if compdata.spp == 1:
@@ -391,16 +386,11 @@ def transcode_pngs(pike, pngs, root, log, options):
                 cs = pikepdf.Name('/DeviceCMYK')
         im_obj.ColorSpace = cs
         im_obj.write(
-            compdata.read(),
-            filter=pikepdf.Name('/FlateDecode'), decode_parms=predictor
+            compdata.read(), filter=pikepdf.Name('/FlateDecode'), decode_parms=predictor
         )
 
 
-def optimize(
-    input_file,
-    output_file,
-    log,
-    context):
+def optimize(input_file, output_file, log, context):
 
     options = context.get_options()
     if options.optimize == 0:
@@ -408,14 +398,11 @@ def optimize(
         return
 
     if options.jpeg_quality == 0:
-        options.jpeg_quality = \
-                DEFAULT_JPEG_QUALITY if options.optimize < 3 else 40
+        options.jpeg_quality = DEFAULT_JPEG_QUALITY if options.optimize < 3 else 40
     if options.png_quality == 0:
-        options.png_quality = \
-                DEFAULT_PNG_QUALITY if options.optimize < 3 else 30
+        options.png_quality = DEFAULT_PNG_QUALITY if options.optimize < 3 else 30
     if options.jbig2_page_group_size == 0:
-        options.jbig2_page_group_size = \
-                10 if options.jbig2_lossy else 1
+        options.jbig2_page_group_size = 10 if options.jbig2_lossy else 1
 
     pike = pikepdf.Pdf.open(input_file)
 
@@ -431,15 +418,17 @@ def optimize(
 
     target_file = Path(output_file).with_suffix('.opt.pdf')
     pike.remove_unreferenced_resources()
-    pike.save(target_file, preserve_pdfa=True,
-              object_stream_mode=pikepdf.ObjectStreamMode.generate)
+    pike.save(
+        target_file,
+        preserve_pdfa=True,
+        object_stream_mode=pikepdf.ObjectStreamMode.generate,
+    )
 
     input_size = Path(input_file).stat().st_size
     output_size = Path(target_file).stat().st_size
     ratio = input_size / output_size
     savings = 1 - output_size / input_size
-    log.info("Optimize ratio: {:.2f} savings: {:.1f}%".format(
-        ratio, 100 * savings))
+    log.info("Optimize ratio: {:.2f} savings: {:.1f}%".format(ratio, 100 * savings))
 
     if savings < 0:
         log.info("Optimize did not improve the file - discarded")
@@ -455,8 +444,7 @@ def main(infile, outfile, level, jobs=1):
     class OptimizeOptions:
         """Emulate ocrmypdf's options"""
 
-        def __init__(
-                self, jobs, optimize, jpeg_quality, png_quality, jb2lossy):
+        def __init__(self, jobs, optimize, jpeg_quality, png_quality, jb2lossy):
             self.jobs = jobs
             self.optimize = optimize
             self.jpeg_quality = jpeg_quality
@@ -473,7 +461,7 @@ def main(infile, outfile, level, jobs=1):
         optimize=int(level),
         jpeg_quality=0,  # Use default
         png_quality=0,
-        jb2lossy=False
+        jb2lossy=False,
     )
     ctx.set_options(options)
 

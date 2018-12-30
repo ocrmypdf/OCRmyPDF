@@ -83,8 +83,9 @@ def main():
     elif sys.argv[-2] == 'hocr':
         inputf = sys.argv[-4]
         output = sys.argv[-3]
-        with Image.open(inputf) as im, \
-                open(output + '.hocr', 'w', encoding='utf-8') as f:
+        with Image.open(inputf) as im, open(
+            output + '.hocr', 'w', encoding='utf-8'
+        ) as f:
             w, h = im.size
             f.write(HOCR_TEMPLATE.format(str(w), str(h)))
         with open(output + '.txt', 'w') as f:
@@ -114,11 +115,14 @@ def main():
                 f.write('')
     elif sys.argv[-1] == 'stdout':
         inputf = sys.argv[-2]
-        print("""Orientation: 0
+        print(
+            """Orientation: 0
 Orientation in degrees: 0
 Orientation confidence: 100.00
 Script: 1
-Script confidence: 100.00""", file=sys.stderr)
+Script confidence: 100.00""",
+            file=sys.stderr,
+        )
     else:
         print("Spoof doesn't understand arguments", file=sys.stderr)
         print(sys.argv, file=sys.stderr)

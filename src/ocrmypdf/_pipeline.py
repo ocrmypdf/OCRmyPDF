@@ -36,8 +36,13 @@ from .pdfinfo import PdfInfo, Colorspace
 from .pdfa import generate_pdfa_ps
 from .helpers import re_symlink, is_iterable_notstr, page_number, flatten_groups
 from .exec import ghostscript, tesseract
-from .exceptions import UnsupportedImageFormatError, \
-    DpiError, PriorOcrFoundError, InputFileError, EncryptedPdfError
+from .exceptions import (
+    UnsupportedImageFormatError,
+    DpiError,
+    PriorOcrFoundError,
+    InputFileError,
+    EncryptedPdfError,
+)
 from . import leptonica
 from . import PROGRAM_NAME, VERSION
 from .optimize import optimize
@@ -49,6 +54,7 @@ VECTOR_PAGE_DPI = 400
 #
 # The Pipeline
 #
+
 
 def triage_image_file(input_file, output_file, log, options):
     try:
@@ -76,14 +82,16 @@ def triage_image_file(input_file, output_file, log, options):
                 log.error(
                     "Input file is an image, but the resolution (DPI) is "
                     "not credible.  Estimate the resolution at which the "
-                    "image was scanned and specify it using --image-dpi.")
+                    "image was scanned and specify it using --image-dpi."
+                )
                 raise DpiError()
         elif not options.image_dpi:
             log.info("Image size: (%d, %d)" % im.size)
             log.error(
                 "Input file is an image, but has no resolution (DPI) "
                 "in its metadata.  Estimate the resolution at which "
-                "image was scanned and specify it using --image-dpi.")
+                "image was scanned and specify it using --image-dpi."
+            )
             raise DpiError()
 
         if im.mode in ('RGBA', 'LA'):
@@ -106,13 +114,12 @@ def triage_image_file(input_file, output_file, log, options):
         layout_fun = img2pdf.default_layout_fun
         if options.image_dpi:
             layout_fun = img2pdf.get_fixed_dpi_layout_fun(
-                (options.image_dpi, options.image_dpi))
+                (options.image_dpi, options.image_dpi)
+            )
         with open(output_file, 'wb') as outf:
             img2pdf.convert(
-                input_file,
-                layout_fun=layout_fun,
-                with_pdfrw=False,
-                outputstream=outf)
+                input_file, layout_fun=layout_fun, with_pdfrw=False, outputstream=outf
+            )
         log.info("Successfully converted to PDF, processing...")
     except img2pdf.ImageOpenError as e:
         log.error(e)
@@ -135,18 +142,16 @@ def _pdf_guess_version(input_file, search_window=1024):
     return ''
 
 
-def triage(
-        input_file,
-        output_file,
-        log,
-        context):
+def triage(input_file, output_file, log, context):
 
     options = context.get_options()
     try:
         if _pdf_guess_version(input_file):
             if options.image_dpi:
-                log.warning("Argument --image-dpi ignored because the "
-                            "input file is a PDF, not an image.")
+                log.warning(
+                    "Argument --image-dpi ignored because the "
+                    "input file is a PDF, not an image."
+                )
             re_symlink(input_file, output_file, log)
             return
     except EnvironmentError as e:
@@ -156,11 +161,7 @@ def triage(
     triage_image_file(input_file, output_file, log, options)
 
 
-def repair_and_parse_pdf(
-        input_file,
-        output_file,
-        log,
-        context):
+def repair_and_parse_pdf(input_file, output_file, log, context):
     options = context.get_options()
     copyfile(input_file, output_file)
 
@@ -169,7 +170,9 @@ def repair_and_parse_pdf(
         detailed_page_analysis = True
 
     try:
-        pdfinfo = PdfInfo(output_file, detailed_page_analysis=detailed_page_analysis, log=log)
+        pdfinfo = PdfInfo(
+            output_file, detailed_page_analysis=detailed_page_analysis, log=log
+        )
     except pikepdf.PasswordError as e:
         raise EncryptedPdfError()
     except pikepdf.PdfError as e:
@@ -225,12 +228,16 @@ def get_pageinfo(input_file, context):
 
 def get_page_dpi(pageinfo, options):
     "Get the DPI when nonsquare DPI is tolerable"
-    xres = max(pageinfo.xres or VECTOR_PAGE_DPI,
-               options.oversample or 0,
-               VECTOR_PAGE_DPI if pageinfo.has_vector else 0)
-    yres = max(pageinfo.yres or VECTOR_PAGE_DPI,
-               options.oversample or 0,
-               VECTOR_PAGE_DPI if pageinfo.has_vector else 0)
+    xres = max(
+        pageinfo.xres or VECTOR_PAGE_DPI,
+        options.oversample or 0,
+        VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
+    )
+    yres = max(
+        pageinfo.yres or VECTOR_PAGE_DPI,
+        options.oversample or 0,
+        VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
+    )
     return (float(xres), float(yres))
 
 
@@ -239,20 +246,26 @@ def get_page_square_dpi(pageinfo, options):
     xres = pageinfo.xres or 0
     yres = pageinfo.yres or 0
     userunit = pageinfo.userunit or 1
-    return float(max(
-        (xres * userunit) or VECTOR_PAGE_DPI,
-        (yres * userunit) or VECTOR_PAGE_DPI,
-        VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
-        options.oversample or 0))
+    return float(
+        max(
+            (xres * userunit) or VECTOR_PAGE_DPI,
+            (yres * userunit) or VECTOR_PAGE_DPI,
+            VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
+            options.oversample or 0,
+        )
+    )
 
 
 def get_canvas_square_dpi(pageinfo, options):
     """Get the DPI when we require xres == yres, in Postscript units"""
-    return float(max(
-        (pageinfo.xres) or VECTOR_PAGE_DPI,
-        (pageinfo.yres) or VECTOR_PAGE_DPI,
-        VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
-        options.oversample or 0))
+    return float(
+        max(
+            (pageinfo.xres) or VECTOR_PAGE_DPI,
+            (pageinfo.yres) or VECTOR_PAGE_DPI,
+            VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
+            options.oversample or 0,
+        )
+    )
 
 
 def is_ocr_required(pageinfo, log, options):
@@ -263,28 +276,26 @@ def is_ocr_required(pageinfo, log, options):
         msg = "{0:4d}: page already has text! – {1}"
 
         if not options.force_ocr and not (options.skip_text or options.redo_ocr):
-            log.error(msg.format(page,
-                                 "aborting (use --force-ocr to force OCR)"))
+            log.error(msg.format(page, "aborting (use --force-ocr to force OCR)"))
             raise PriorOcrFoundError()
         elif options.force_ocr:
-            log.info(msg.format(page,
-                                "rasterizing text and running OCR anyway"))
+            log.info(msg.format(page, "rasterizing text and running OCR anyway"))
             ocr_required = True
         elif options.redo_ocr:
             if pageinfo.has_corrupt_text:
-                log.warning(msg.format(
-                    page,
-                    "some text on this page cannot be mapped to characters: "
-                    "consider using --force-ocr instead")
+                log.warning(
+                    msg.format(
+                        page,
+                        "some text on this page cannot be mapped to characters: "
+                        "consider using --force-ocr instead",
+                    )
                 )
                 raise PriorOcrFoundError()  # Wrong error but will do for now
             else:
-                log.info(msg.format(page,
-                                    "redoing OCR"))
+                log.info(msg.format(page, "redoing OCR"))
             ocr_required = True
         elif options.skip_text:
-            log.info(msg.format(page,
-                                "skipping all processing on this page"))
+            log.info(msg.format(page, "skipping all processing on this page"))
             ocr_required = False
     elif not pageinfo.images and not options.lossless_reconstruction:
         # We found a page with no images and no text. That means it may
@@ -300,7 +311,9 @@ def is_ocr_required(pageinfo, log, options):
                 "{0:4d}: page has no images - "
                 "rasterizing at {1} DPI because "
                 "--force-ocr --oversample was specified".format(
-                    page, options.oversample))
+                    page, options.oversample
+                )
+            )
         elif options.force_ocr:
             # Warn the user they might not want to do this
             log.warning(
@@ -308,31 +321,31 @@ def is_ocr_required(pageinfo, log, options):
                 "all vector content will be "
                 "rasterized at {1} DPI, losing some resolution and likely "
                 "increasing file size. Use --oversample to adjust the "
-                "DPI.".format(page, VECTOR_PAGE_DPI))
+                "DPI.".format(page, VECTOR_PAGE_DPI)
+            )
         else:
             log.info(
                 "{0:4d}: page has no images - "
                 "skipping all processing on this page to avoid losing detail. "
                 "Use --force-ocr if you wish to perform OCR on pages that "
-                "have vector content.".format(page))
+                "have vector content.".format(page)
+            )
             ocr_required = False
 
     if ocr_required and options.skip_big and pageinfo.images:
         pixel_count = pageinfo.width_pixels * pageinfo.height_pixels
-        if pixel_count > (options.skip_big * 1000000):
+        if pixel_count > (options.skip_big * 1_000_000):
             ocr_required = False
             log.warning(
                 "{0:4d}: page too big, skipping OCR "
                 "({1:.1f} MPixels > {2:.1f} MPixels --skip-big)".format(
-                    page, pixel_count / 1000000, options.skip_big))
+                    page, pixel_count / 1_000_000, options.skip_big
+                )
+            )
     return ocr_required
 
 
-def marker_pages(
-        input_files,
-        output_files,
-        log,
-        context):
+def marker_pages(input_files, output_files, log, context):
 
     options = context.get_options()
     work_folder = context.get_work_folder()
@@ -348,8 +361,7 @@ def marker_pages(
 
     # If no files were repaired the input will be empty
     if not input_file:
-        log.error("{0}: file not found or invalid argument".format(
-                options.input_file))
+        log.error("{0}: file not found or invalid argument".format(options.input_file))
         raise InputFileError()
 
     pdfinfo = context.get_pdfinfo()
@@ -362,51 +374,46 @@ def marker_pages(
         page.symlink_to(input_file)  # pylint: disable=E1101
 
 
-def ocr_or_skip(
-        input_files,
-        output_files,
-        log,
-        context):
+def ocr_or_skip(input_files, output_files, log, context):
     options = context.get_options()
     work_folder = context.get_work_folder()
-    pdfinfo =  context.get_pdfinfo()
+    pdfinfo = context.get_pdfinfo()
 
     for input_file in input_files:
         pageno = page_number(input_file) - 1
         pageinfo = pdfinfo[pageno]
-        alt_suffix = \
-            '.ocr.page.pdf' if is_ocr_required(pageinfo, log, options) \
+        alt_suffix = (
+            '.ocr.page.pdf'
+            if is_ocr_required(pageinfo, log, options)
             else '.skip.page.pdf'
+        )
 
         re_symlink(
             input_file,
-            os.path.join(
-                work_folder,
-                os.path.basename(input_file)[0:6] + alt_suffix),
-            log)
+            os.path.join(work_folder, os.path.basename(input_file)[0:6] + alt_suffix),
+            log,
+        )
 
 
-def rasterize_preview(
-        input_file,
-        output_file,
-        log,
-        context):
+def rasterize_preview(input_file, output_file, log, context):
     pageinfo = get_pageinfo(input_file, context)
     options = context.get_options()
     canvas_dpi = get_canvas_square_dpi(pageinfo, options)
     page_dpi = get_page_square_dpi(pageinfo, options)
 
     ghostscript.rasterize_pdf(
-        input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
-        raster_device='jpeggray', log=log, page_dpi=(page_dpi, page_dpi),
-        pageno=page_number(input_file))
-
-
-def orient_page(
-        infiles,
+        input_file,
         output_file,
-        log,
-        context):
+        xres=canvas_dpi,
+        yres=canvas_dpi,
+        raster_device='jpeggray',
+        log=log,
+        page_dpi=(page_dpi, page_dpi),
+        pageno=page_number(input_file),
+    )
+
+
+def orient_page(infiles, output_file, log, context):
     """
     Work out orientation correct for each page.
 
@@ -436,14 +443,10 @@ def orient_page(
         preview,
         engine_mode=options.tesseract_oem,
         timeout=options.tesseract_timeout,
-        log=log)
+        log=log,
+    )
 
-    direction = {
-        0: '⇧',
-        90: '⇨',
-        180: '⇩',
-        270: '⇦'
-    }
+    direction = {0: '⇧', 90: '⇨', 180: '⇩', 270: '⇦'}
 
     pageno = page_number(page_pdf) - 1
     pdfinfo = context.get_pdfinfo()
@@ -467,17 +470,18 @@ def orient_page(
 
     facing = ''
     if existing_rotation != 0:
-        facing = 'with existing rotation {}, '.format(direction.get(
-                existing_rotation, '?'))
-    facing += 'page is facing {}'.format(direction.get(
-            orient_conf.angle, '?'))
+        facing = 'with existing rotation {}, '.format(
+            direction.get(existing_rotation, '?')
+        )
+    facing += 'page is facing {}'.format(direction.get(orient_conf.angle, '?'))
 
     log.info(
         '{pagenum:4d}: {facing}, confidence {conf:.2f}{action}'.format(
             pagenum=page_number(preview),
             facing=facing,
             conf=orient_conf.confidence,
-            action=action)
+            action=action,
+        )
     )
 
     re_symlink(page_pdf, output_file, log)
@@ -485,16 +489,13 @@ def orient_page(
         context.set_rotation(pageno, correction)
 
 
-def rasterize_with_ghostscript(
-        input_file,
-        output_file,
-        log,
-        context):
+def rasterize_with_ghostscript(input_file, output_file, log, context):
     options = context.get_options()
     pageinfo = get_pageinfo(input_file, context)
 
     colorspaces = ['pngmono', 'pnggray', 'png256', 'png16m']
     device_idx = 0
+
     def at_least(cs):
         return max(device_idx, colorspaces.index(cs))
 
@@ -511,8 +512,7 @@ def rasterize_with_ghostscript(
 
     device = colorspaces[device_idx]
 
-    log.debug("Rasterize {0} with {1}".format(
-              os.path.basename(input_file), device))
+    log.debug("Rasterize {0} with {1}".format(os.path.basename(input_file), device))
 
     # Produce the page image with square resolution or else deskew and OCR
     # will not work properly.
@@ -522,17 +522,20 @@ def rasterize_with_ghostscript(
     correction = context.get_rotation(page_number(input_file) - 1)
 
     ghostscript.rasterize_pdf(
-        input_file, output_file, xres=canvas_dpi, yres=canvas_dpi,
-        raster_device=device, log=log, page_dpi=(page_dpi, page_dpi),
-        pageno=page_number(input_file), rotation=correction,
-        filter_vector=options.remove_vectors)
-
-
-def preprocess_remove_background(
         input_file,
         output_file,
-        log,
-        context):
+        xres=canvas_dpi,
+        yres=canvas_dpi,
+        raster_device=device,
+        log=log,
+        page_dpi=(page_dpi, page_dpi),
+        pageno=page_number(input_file),
+        rotation=correction,
+        filter_vector=options.remove_vectors,
+    )
+
+
+def preprocess_remove_background(input_file, output_file, log, context):
     options = context.get_options()
     if not options.remove_background:
         re_symlink(input_file, output_file, log)
@@ -543,16 +546,13 @@ def preprocess_remove_background(
     if any(image.bpc > 1 for image in pageinfo.images):
         leptonica.remove_background(input_file, output_file)
     else:
-        log.info("{0:4d}: background removal skipped on mono page".format(
-            pageinfo.pageno))
+        log.info(
+            "{0:4d}: background removal skipped on mono page".format(pageinfo.pageno)
+        )
         re_symlink(input_file, output_file, log)
 
 
-def preprocess_deskew(
-        input_file,
-        output_file,
-        log,
-        context):
+def preprocess_deskew(input_file, output_file, log, context):
     options = context.get_options()
     if not options.deskew:
         re_symlink(input_file, output_file, log)
@@ -564,28 +564,21 @@ def preprocess_deskew(
     leptonica.deskew(input_file, output_file, dpi)
 
 
-def preprocess_clean(
-        input_file,
-        output_file,
-        log,
-        context):
+def preprocess_clean(input_file, output_file, log, context):
     options = context.get_options()
     if not options.clean:
         re_symlink(input_file, output_file, log)
         return
 
     from .exec import unpaper
+
     pageinfo = get_pageinfo(input_file, context)
     dpi = get_page_square_dpi(pageinfo, options)
 
     unpaper.clean(input_file, output_file, dpi, log)
 
 
-def select_ocr_image(
-        infiles,
-        output_file,
-        log,
-        context):
+def select_ocr_image(infiles, output_file, log, context):
     """Select the image we send for OCR. May not be the same as the display
     image depending on preprocessing. This image will never be shown to the
     user."""
@@ -598,8 +591,9 @@ def select_ocr_image(
         from PIL import ImageColor
         from PIL import ImageDraw
         from decimal import Decimal
+
         white = ImageColor.getcolor('#ffffff', im.mode)
-        #pink = ImageColor.getcolor('#ff0080', im.mode)
+        # pink = ImageColor.getcolor('#ff0080', im.mode)
         draw = ImageDraw.ImageDraw(im)
 
         xres, yres = im.info['dpi']
@@ -618,14 +612,16 @@ def select_ocr_image(
                 # be None)
                 bbox = [float(v) for v in textarea]
                 xscale, yscale = float(xres) / 72.0, float(yres) / 72.0
-                pixcoords = [bbox[0] * xscale,
-                            im.height - bbox[3] * yscale,
-                            bbox[2] * xscale,
-                            im.height - bbox[1] * yscale]
+                pixcoords = [
+                    bbox[0] * xscale,
+                    im.height - bbox[3] * yscale,
+                    bbox[2] * xscale,
+                    im.height - bbox[1] * yscale,
+                ]
                 pixcoords = [int(round(c)) for c in pixcoords]
                 log.debug('blanking %r', pixcoords)
                 draw.rectangle(pixcoords, fill=white)
-                #draw.rectangle(pixcoords, outline=pink)
+                # draw.rectangle(pixcoords, outline=pink)
 
         if options.mask_barcodes or options.threshold:
             pix = leptonica.Pix.frompil(im)
@@ -645,11 +641,7 @@ def select_ocr_image(
         im.save(output_file, dpi=dpi)
 
 
-def ocr_tesseract_hocr(
-        input_file,
-        output_files,
-        log,
-        context):
+def ocr_tesseract_hocr(input_file, output_files, log, context):
     options = context.get_options()
     tesseract.generate_hocr(
         input_file=input_file,
@@ -661,15 +653,11 @@ def ocr_tesseract_hocr(
         pagesegmode=options.tesseract_pagesegmode,
         user_words=options.user_words,
         user_patterns=options.user_patterns,
-        log=log
-        )
+        log=log,
+    )
 
 
-def select_visible_page_image(
-        infiles,
-        output_file,
-        log,
-        context):
+def select_visible_page_image(infiles, output_file, log, context):
     "Selects a whole page image that we can show the user (if necessary)"
 
     options = context.get_options()
@@ -684,10 +672,8 @@ def select_visible_page_image(
     image = next(ii for ii in infiles if ii.endswith(image_suffix))
 
     pageinfo = get_pageinfo(image, context)
-    if pageinfo.images and \
-            all(im.enc == 'jpeg' for im in pageinfo.images):
-        log.debug('{:4d}: JPEG input -> JPEG output'.format(
-            page_number(image)))
+    if pageinfo.images and all(im.enc == 'jpeg' for im in pageinfo.images):
+        log.debug('{:4d}: JPEG input -> JPEG output'.format(page_number(image)))
         # If all images were JPEGs originally, produce a JPEG as output
         with Image.open(image) as im:
             # At this point the image should be a .png, but deskew, unpaper
@@ -705,11 +691,7 @@ def select_visible_page_image(
         re_symlink(image, output_file, log)
 
 
-def select_image_layer(
-        infiles,
-        output_file,
-        log,
-        context):
+def select_image_layer(infiles, output_file, log, context):
     """Selects the image layer for the output page. If possible this is the
     orientation-corrected input page, or an image of the whole page converted
     to PDF."""
@@ -719,8 +701,11 @@ def select_image_layer(
     image = next(ii for ii in infiles if ii.endswith('.image'))
 
     if options.lossless_reconstruction:
-        log.debug("{:4d}: page eligible for lossless reconstruction".format(
-            page_number(page_pdf)))
+        log.debug(
+            "{:4d}: page eligible for lossless reconstruction".format(
+                page_number(page_pdf)
+            )
+        )
         re_symlink(page_pdf, output_file, log)  # Still points to multipage
         return
 
@@ -739,32 +724,28 @@ def select_image_layer(
     with open(image, 'rb') as imfile, open(output_file, 'wb') as pdf:
         log.debug('{:4d}: convert'.format(page_number(page_pdf)))
         img2pdf.convert(
-            imfile, with_pdfrw=False,
-            layout_fun=layout_fun, outputstream=pdf)
+            imfile, with_pdfrw=False, layout_fun=layout_fun, outputstream=pdf
+        )
         log.debug('{:4d}: convert done'.format(page_number(page_pdf)))
 
 
-def render_hocr_page(
-        infiles,
-        output_file,
-        log,
-        context):
+def render_hocr_page(infiles, output_file, log, context):
     options = context.get_options()
     hocr = next(ii for ii in infiles if ii.endswith('.hocr'))
     pageinfo = get_pageinfo(hocr, context)
     dpi = get_page_square_dpi(pageinfo, options)
 
     hocrtransform = HocrTransform(hocr, dpi)
-    hocrtransform.to_pdf(output_file, imageFileName=None,
-                         showBoundingboxes=False, invisibleText=True,
-                         interwordSpaces=True)
+    hocrtransform.to_pdf(
+        output_file,
+        imageFileName=None,
+        showBoundingboxes=False,
+        invisibleText=True,
+        interwordSpaces=True,
+    )
 
 
-def ocr_tesseract_textonly_pdf(
-        infiles,
-        outfiles,
-        log,
-        context):
+def ocr_tesseract_textonly_pdf(infiles, outfiles, log, context):
     options = context.get_options()
     input_image = next((ii for ii in infiles if ii.endswith('.ocr.png')), '')
     if not input_image:
@@ -786,7 +767,8 @@ def ocr_tesseract_textonly_pdf(
         pagesegmode=options.tesseract_pagesegmode,
         user_words=options.user_words,
         user_patterns=options.user_patterns,
-        log=log)
+        log=log,
+    )
 
 
 def get_docinfo(base_pdf, options):
@@ -797,8 +779,10 @@ def get_docinfo(base_pdf, options):
         except (KeyError, TypeError):
             return ''
 
-    pdfmark = {k: from_document_info(k) for k in
-        ('/Title', '/Author', '/Keywords', '/Subject', '/CreationDate')}
+    pdfmark = {
+        k: from_document_info(k)
+        for k in ('/Title', '/Author', '/Keywords', '/Subject', '/CreationDate')
+    }
     if options.title:
         pdfmark['/Title'] = options.title
     if options.author:
@@ -814,9 +798,8 @@ def get_docinfo(base_pdf, options):
         renderer_tag = 'OCR'
 
     pdfmark['/Creator'] = '{0} {1} / Tesseract {2} {3}'.format(
-        PROGRAM_NAME, VERSION,
-        renderer_tag,
-        tesseract.version())
+        PROGRAM_NAME, VERSION, renderer_tag, tesseract.version()
+    )
     pdfmark['/Producer'] = 'pikepdf ' + pikepdf.__version__
     if 'OCRMYPDF_CREATOR' in os.environ:
         pdfmark['/Creator'] = os.environ['OCRMYPDF_CREATOR']
@@ -827,22 +810,13 @@ def get_docinfo(base_pdf, options):
     return pdfmark
 
 
-def generate_postscript_stub(
-        input_file,
-        output_file,
-        log,
-        context):
+def generate_postscript_stub(input_file, output_file, log, context):
     options = context.get_options()
     pdf = pikepdf.open(input_file)
     generate_pdfa_ps(output_file)
 
 
-def convert_to_pdfa(
-    input_files_groups,
-    output_file,
-    log,
-    context
-):
+def convert_to_pdfa(input_files_groups, output_file, log, context):
     options = context.get_options()
     input_pdfinfo = context.get_pdfinfo()
 
@@ -850,9 +824,7 @@ def convert_to_pdfa(
     layers_file = next(
         (ii for ii in input_files if ii.endswith('layers.rendered.pdf')), None
     )
-    ps = next(
-        (ii for ii in input_files if ii.endswith('.ps')), None
-    )
+    ps = next((ii for ii in input_files if ii.endswith('.ps')), None)
     ghostscript.generate_pdfa(
         pdf_version=input_pdfinfo.min_version,
         pdf_pages=[layers_file, ps],
@@ -860,15 +832,11 @@ def convert_to_pdfa(
         compression=options.pdfa_image_compression,
         log=log,
         threads=options.jobs or 1,
-        pdfa_part=options.output_type[-1]  # is pdfa-1, pdfa-2, or pdfa-3
+        pdfa_part=options.output_type[-1],  # is pdfa-1, pdfa-2, or pdfa-3
     )
 
 
-def metadata_fixup(
-        input_files_groups,
-        output_file,
-        log,
-        context):
+def metadata_fixup(input_files_groups, output_file, log, context):
     options = context.get_options()
 
     input_files = list(f for f in flatten_groups(input_files_groups))
@@ -878,9 +846,7 @@ def metadata_fixup(
     layers_file = next(
         (ii for ii in input_files if ii.endswith('layers.rendered.pdf')), None
     )
-    pdfa_file = next(
-        (ii for ii in input_files if ii.endswith('pdfa.pdf')), None
-    )
+    pdfa_file = next((ii for ii in input_files if ii.endswith('pdfa.pdf')), None)
     original = pikepdf.open(original_file)
     docinfo = get_docinfo(original, options)
 
@@ -903,27 +869,21 @@ def metadata_fixup(
                     "PDF's XMP metadata."
                 )
                 log.debug(
-                    "The following metadata fields were not copied: %r",
-                    not_copied
+                    "The following metadata fields were not copied: %r", not_copied
                 )
 
-    pdf.save(output_file, compress_streams=True,
-             object_stream_mode=pikepdf.ObjectStreamMode.generate)
-
-
-def optimize_pdf(
-        input_file,
+    pdf.save(
         output_file,
-        log,
-        context):
+        compress_streams=True,
+        object_stream_mode=pikepdf.ObjectStreamMode.generate,
+    )
+
+
+def optimize_pdf(input_file, output_file, log, context):
     optimize(input_file, output_file, log, context)
 
 
-def merge_sidecars(
-        input_files_groups,
-        output_file,
-        log,
-        context):
+def merge_sidecars(input_files_groups, output_file, log, context):
     pdfinfo = context.get_pdfinfo()
 
     txt_files = [None] * len(pdfinfo)
@@ -950,8 +910,7 @@ def merge_sidecars(
                     else:
                         stream.write(txt)
             else:
-                stream.write('[OCR skipped on page {}]'.format(
-                        page_num + 1))
+                stream.write('[OCR skipped on page {}]'.format(page_num + 1))
 
     if output_file == '-':
         write_pages(sys.stdout)
@@ -961,11 +920,7 @@ def merge_sidecars(
             write_pages(out)
 
 
-def copy_final(
-        input_files,
-        output_file,
-        log,
-        context):
+def copy_final(input_files, output_file, log, context):
     input_file = next((ii for ii in input_files if ii.endswith('.pdf')))
     log.debug('%s -> %s', input_file, output_file)
     with open(input_file, 'rb') as input_stream:
@@ -989,7 +944,8 @@ def build_pipeline(options, work_folder, log, context):
         input=os.path.join(work_folder, 'origin'),
         filter=formatter('(?i)'),
         output=os.path.join(work_folder, 'origin.pdf'),
-        extras=[log, context])
+        extras=[log, context],
+    )
 
     task_repair_and_parse_pdf = main_pipeline.transform(
         task_func=repair_and_parse_pdf,
@@ -997,21 +953,26 @@ def build_pipeline(options, work_folder, log, context):
         filter=suffix('.pdf'),
         output='.repaired.pdf',
         output_dir=work_folder,
-        extras=[log, context])
+        extras=[log, context],
+    )
 
     # Split (kwargs for split seems to be broken, so pass plain args)
     task_marker_pages = main_pipeline.split(
         marker_pages,
         task_repair_and_parse_pdf,
         os.path.join(work_folder, '*.marker.pdf'),
-        extras=[log, context])
+        extras=[log, context],
+    )
 
     task_ocr_or_skip = main_pipeline.split(
         ocr_or_skip,
         task_marker_pages,
-        [os.path.join(work_folder, '*.ocr.page.pdf'),
-         os.path.join(work_folder, '*.skip.page.pdf')],
-        extras=[log, context])
+        [
+            os.path.join(work_folder, '*.ocr.page.pdf'),
+            os.path.join(work_folder, '*.skip.page.pdf'),
+        ],
+        extras=[log, context],
+    )
 
     # Rasterize preview
     task_rasterize_preview = main_pipeline.transform(
@@ -1020,7 +981,8 @@ def build_pipeline(options, work_folder, log, context):
         filter=suffix('.page.pdf'),
         output='.preview.jpg',
         output_dir=work_folder,
-        extras=[log, context])
+        extras=[log, context],
+    )
     task_rasterize_preview.active_if(options.rotate_pages)
 
     # Orient
@@ -1029,7 +991,8 @@ def build_pipeline(options, work_folder, log, context):
         input=[task_ocr_or_skip, task_rasterize_preview],
         filter=regex(r".*/(\d{6})(\.ocr|\.skip)(?:\.page\.pdf|\.preview\.jpg)"),
         output=os.path.join(work_folder, r'\1\2.oriented.pdf'),
-        extras=[log, context])
+        extras=[log, context],
+    )
 
     # Rasterize actual
     task_rasterize_with_ghostscript = main_pipeline.transform(
@@ -1038,7 +1001,8 @@ def build_pipeline(options, work_folder, log, context):
         filter=suffix('.ocr.oriented.pdf'),
         output='.page.png',
         output_dir=work_folder,
-        extras=[log, context])
+        extras=[log, context],
+    )
 
     # Preprocessing subpipeline
     task_preprocess_remove_background = main_pipeline.transform(
@@ -1046,28 +1010,32 @@ def build_pipeline(options, work_folder, log, context):
         input=task_rasterize_with_ghostscript,
         filter=suffix(".page.png"),
         output=".pp-background.png",
-        extras=[log, context])
+        extras=[log, context],
+    )
 
     task_preprocess_deskew = main_pipeline.transform(
         task_func=preprocess_deskew,
         input=task_preprocess_remove_background,
         filter=suffix(".pp-background.png"),
         output=".pp-deskew.png",
-        extras=[log, context])
+        extras=[log, context],
+    )
 
     task_preprocess_clean = main_pipeline.transform(
         task_func=preprocess_clean,
         input=task_preprocess_deskew,
         filter=suffix(".pp-deskew.png"),
         output=".pp-clean.png",
-        extras=[log, context])
+        extras=[log, context],
+    )
 
     task_select_ocr_image = main_pipeline.collate(
         task_func=select_ocr_image,
         input=[task_preprocess_clean],
         filter=regex(r".*/(\d{6})(?:\.page|\.pp-.*)\.png"),
         output=os.path.join(work_folder, r"\1.ocr.png"),
-        extras=[log, context])
+        extras=[log, context],
+    )
 
     # HOCR OCR
     task_ocr_tesseract_hocr = main_pipeline.transform(
@@ -1075,19 +1043,23 @@ def build_pipeline(options, work_folder, log, context):
         input=task_select_ocr_image,
         filter=suffix(".ocr.png"),
         output=[".hocr", ".txt"],
-        extras=[log, context])
+        extras=[log, context],
+    )
     task_ocr_tesseract_hocr.graphviz(fillcolor='"#00cc66"')
     task_ocr_tesseract_hocr.active_if(options.pdf_renderer == 'hocr')
 
     task_select_visible_page_image = main_pipeline.collate(
         task_func=select_visible_page_image,
-        input=[task_rasterize_with_ghostscript,
-               task_preprocess_remove_background,
-               task_preprocess_deskew,
-               task_preprocess_clean],
+        input=[
+            task_rasterize_with_ghostscript,
+            task_preprocess_remove_background,
+            task_preprocess_deskew,
+            task_preprocess_clean,
+        ],
         filter=regex(r".*/(\d{6})(?:\.page|\.pp-.*)\.png"),
         output=os.path.join(work_folder, r'\1.image'),
-        extras=[log, context])
+        extras=[log, context],
+    )
     task_select_visible_page_image.graphviz(shape='diamond')
 
     task_select_image_layer = main_pipeline.collate(
@@ -1095,16 +1067,17 @@ def build_pipeline(options, work_folder, log, context):
         input=[task_select_visible_page_image, task_orient_page],
         filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
         output=os.path.join(work_folder, r'\1.image-layer.pdf'),
-        extras=[log, context])
-    task_select_image_layer.graphviz(
-        fillcolor='"#00cc66"', shape='diamond')
+        extras=[log, context],
+    )
+    task_select_image_layer.graphviz(fillcolor='"#00cc66"', shape='diamond')
 
     task_render_hocr_page = main_pipeline.transform(
         task_func=render_hocr_page,
         input=task_ocr_tesseract_hocr,
         filter=regex(r".*/(\d{6})(?:\.hocr)"),
         output=os.path.join(work_folder, r'\1.text.pdf'),
-        extras=[log, context])
+        extras=[log, context],
+    )
     task_render_hocr_page.graphviz(fillcolor='"#00cc66"')
     task_render_hocr_page.active_if(options.pdf_renderer == 'hocr')
 
@@ -1113,22 +1086,29 @@ def build_pipeline(options, work_folder, log, context):
         task_func=ocr_tesseract_textonly_pdf,
         input=[task_select_ocr_image],
         filter=regex(r".*/(\d{6})(?:\.ocr.png)"),
-        output=[os.path.join(work_folder, r'\1.text.pdf'),
-                os.path.join(work_folder, r'\1.text.txt')],
-        extras=[log, context])
+        output=[
+            os.path.join(work_folder, r'\1.text.pdf'),
+            os.path.join(work_folder, r'\1.text.txt'),
+        ],
+        extras=[log, context],
+    )
     task_ocr_tesseract_textonly_pdf.graphviz(fillcolor='"#ff69b4"')
     task_ocr_tesseract_textonly_pdf.active_if(options.pdf_renderer == 'sandwich')
 
     task_weave_layers = main_pipeline.collate(
         task_func=weave_layers,
-        input=[task_repair_and_parse_pdf,
-               task_render_hocr_page,
-               task_ocr_tesseract_textonly_pdf,
-               task_select_image_layer],
+        input=[
+            task_repair_and_parse_pdf,
+            task_render_hocr_page,
+            task_ocr_tesseract_textonly_pdf,
+            task_select_image_layer,
+        ],
         filter=regex(
-            r".*/((?:\d{6}(?:\.text\.pdf|\.image-layer\.pdf))|(?:origin\.repaired\.pdf))"),
+            r".*/((?:\d{6}(?:\.text\.pdf|\.image-layer\.pdf))|(?:origin\.repaired\.pdf))"
+        ),
         output=os.path.join(work_folder, r'layers.rendered.pdf'),
-        extras=[log, context])
+        extras=[log, context],
+    )
     task_weave_layers.graphviz(fillcolor='"#00cc66"')
 
     # PDF/A pdfmark
@@ -1137,34 +1117,32 @@ def build_pipeline(options, work_folder, log, context):
         input=task_repair_and_parse_pdf,
         filter=formatter(r'\.repaired\.pdf'),
         output=os.path.join(work_folder, 'pdfa.ps'),
-        extras=[log, context])
+        extras=[log, context],
+    )
     task_generate_postscript_stub.active_if(options.output_type.startswith('pdfa'))
 
     # PDF/A conversion
     task_convert_to_pdfa = main_pipeline.merge(
         task_func=convert_to_pdfa,
-        input=[task_generate_postscript_stub,
-               task_weave_layers],
+        input=[task_generate_postscript_stub, task_weave_layers],
         output=os.path.join(work_folder, 'pdfa.pdf'),
-        extras=[log, context]
+        extras=[log, context],
     )
     task_convert_to_pdfa.active_if(options.output_type.startswith('pdfa'))
 
     task_metadata_fixup = main_pipeline.merge(
         task_func=metadata_fixup,
-        input=[task_repair_and_parse_pdf,
-               task_weave_layers,
-               task_convert_to_pdfa],
+        input=[task_repair_and_parse_pdf, task_weave_layers, task_convert_to_pdfa],
         output=os.path.join(work_folder, 'metafix.pdf'),
-        extras=[log, context]
+        extras=[log, context],
     )
 
     task_merge_sidecars = main_pipeline.merge(
         task_func=merge_sidecars,
-        input=[task_ocr_tesseract_hocr,
-               task_ocr_tesseract_textonly_pdf],
+        input=[task_ocr_tesseract_hocr, task_ocr_tesseract_textonly_pdf],
         output=options.sidecar,
-        extras=[log, context])
+        extras=[log, context],
+    )
     task_merge_sidecars.active_if(options.sidecar)
 
     # Optimize
@@ -1174,11 +1152,13 @@ def build_pipeline(options, work_folder, log, context):
         filter=suffix('.pdf'),
         output='.optimized.pdf',
         output_dir=work_folder,
-        extras=[log, context])
+        extras=[log, context],
+    )
 
     # Finalize
     main_pipeline.merge(
         task_func=copy_final,
         input=[task_optimize_pdf],
         output=options.output_file,
-        extras=[log, context])
+        extras=[log, context],
+    )

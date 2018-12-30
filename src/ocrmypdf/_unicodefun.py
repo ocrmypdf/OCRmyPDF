@@ -47,6 +47,7 @@ def verify_python3_env():  # pragma: no cover
 
     try:
         import locale
+
         fs_enc = codecs.lookup(locale.getpreferredencoding()).name
     except Exception:
         fs_enc = 'ascii'
@@ -56,8 +57,10 @@ def verify_python3_env():  # pragma: no cover
     extra = ''
     if os.name == 'posix':
         import subprocess
-        rv = subprocess.Popen(['locale', '-a'], stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE).communicate()[0]
+
+        rv = subprocess.Popen(
+            ['locale', '-a'], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ).communicate()[0]
         good_locales = set()
         has_c_utf8 = False
 
@@ -108,6 +111,8 @@ def verify_python3_env():  # pragma: no cover
                 'is not supported'
             ) % bad_locale
 
-    raise RuntimeError('ocrmypdf will abort further execution because Python 3 '
-                       'was configured to use ASCII as encoding for the '
-                       'environment.' + extra)
+    raise RuntimeError(
+        'ocrmypdf will abort further execution because Python 3 '
+        'was configured to use ASCII as encoding for the '
+        'environment.' + extra
+    )

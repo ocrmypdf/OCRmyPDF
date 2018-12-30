@@ -63,11 +63,14 @@ def main():
         sys.exit(1)
     elif sys.argv[-1] == 'stdout':
         # input file is at sys.argv[-2] but we don't look at it
-        print("""Orientation: 0
+        print(
+            """Orientation: 0
 Orientation in degrees: 0
 Orientation confidence: 100.00
 Script: 1
-Script confidence: 100.00""", file=sys.stderr)
+Script confidence: 100.00""",
+            file=sys.stderr,
+        )
     else:
         print("Spoof doesn't understand arguments", file=sys.stderr)
         print(sys.argv, file=sys.stderr)

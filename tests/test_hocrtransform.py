@@ -39,7 +39,6 @@ def test_mono_image(blank_hocr, outdir):
     im.save(outdir / 'mono.tif', format='TIFF')
 
     hocr = hocrtransform.HocrTransform(str(blank_hocr), 300)
-    hocr.to_pdf(
-        str(outdir / 'mono.pdf'), imageFileName=str(outdir / 'mono.tif'))
+    hocr.to_pdf(str(outdir / 'mono.pdf'), imageFileName=str(outdir / 'mono.tif'))
 
     qpdf.check(str(outdir / 'mono.pdf'))

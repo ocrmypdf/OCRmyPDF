@@ -144,27 +144,33 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
     assert p.returncode == 0
     assert os.path.exists(str(output_file)), "Output file not created"
     assert os.stat(str(output_file)).st_size > 100, "PDF too small or empty"
-    assert out == "", \
-        "The following was written to stdout and should not have been: \n" + \
-        "<stdout>\n" + out + "\n</stdout>"
+    assert out == "", (
+        "The following was written to stdout and should not have been: \n"
+        + "<stdout>\n"
+        + out
+        + "\n</stdout>"
+    )
     return output_file
 
 
 @pytest.helpers.register
-def run_ocrmypdf(input_file, output_file, *args, env=None,
-        universal_newlines=True):
+def run_ocrmypdf(input_file, output_file, *args, env=None, universal_newlines=True):
     "Run ocrmypdf and let caller deal with results"
 
     if env is None:
         env = os.environ
 
-    p_args = OCRMYPDF + [str(arg) for arg in args] + \
-             [str(input_file), str(output_file)]
+    p_args = OCRMYPDF + [str(arg) for arg in args] + [str(input_file), str(output_file)]
     p = Popen(
-        p_args, close_fds=True, stdout=PIPE, stderr=PIPE,
-        universal_newlines=universal_newlines, env=env)
+        p_args,
+        close_fds=True,
+        stdout=PIPE,
+        stderr=PIPE,
+        universal_newlines=universal_newlines,
+        env=env,
+    )
     out, err = p.communicate()
-    #print(err)
+    # print(err)
 
     return p, out, err
 
@@ -172,6 +178,7 @@ def run_ocrmypdf(input_file, output_file, *args, env=None,
 @pytest.helpers.register
 def first_page_dimensions(pdf):
     from ocrmypdf import pdfinfo
+
     info = pdfinfo.PdfInfo(pdf)
     page0 = info[0]
     return (page0.width_inches, page0.height_inches)
@@ -179,9 +186,13 @@ def first_page_dimensions(pdf):
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--runslow", action="store_true", default=False,
-        help=("run slow tests only useful for development (unlikely to be "
-              "useful for downstream packagers)")
+        "--runslow",
+        action="store_true",
+        default=False,
+        help=(
+            "run slow tests only useful for development (unlikely to be "
+            "useful for downstream packagers)"
+        ),
     )
 
 

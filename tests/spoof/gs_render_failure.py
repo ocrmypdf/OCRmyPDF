@@ -26,7 +26,6 @@ import sys
 import os
 
 
-
 def real_ghostscript(argv):
     gs_args = ['gs'] + argv[1:]
     os.execvp("gs", gs_args)

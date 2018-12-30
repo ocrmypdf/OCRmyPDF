@@ -46,9 +46,12 @@ def test_mono_not_inverted(resources, outdir):
     opt.main(infile, outdir / 'out.pdf', level=3)
 
     rasterize_pdf(
-        outdir / 'out.pdf', outdir / 'im.png',
-        xres=10, yres=10, raster_device='pnggray',
-        log=logging.getLogger(name='test_mono_flip')
+        outdir / 'out.pdf',
+        outdir / 'im.png',
+        xres=10,
+        yres=10,
+        raster_device='pnggray',
+        log=logging.getLogger(name='test_mono_flip'),
     )
 
     im = Image.open(fspath(outdir / 'im.png'))
@@ -57,9 +60,17 @@ def test_mono_not_inverted(resources, outdir):
 
 def test_jpg_png_params(resources, outpdf, spoof_tesseract_noop):
     check_ocrmypdf(
-        resources / 'crom.png', outpdf, '--image-dpi', '200',
-        '--optimize', '3', '--jpg-quality', '50', '--png-quality', '20',
-        env=spoof_tesseract_noop
+        resources / 'crom.png',
+        outpdf,
+        '--image-dpi',
+        '200',
+        '--optimize',
+        '3',
+        '--jpg-quality',
+        '50',
+        '--png-quality',
+        '20',
+        env=spoof_tesseract_noop,
     )
 
 
@@ -67,8 +78,16 @@ def test_jpg_png_params(resources, outpdf, spoof_tesseract_noop):
 @pytest.mark.parametrize('lossy', [False, True])
 def test_jbig2_lossy(lossy, resources, outpdf, spoof_tesseract_noop):
     args = [
-        resources / 'ccitt.pdf', outpdf, '--image-dpi', '200',
-        '--optimize', 3, '--jpg-quality', '50', '--png-quality', '20'
+        resources / 'ccitt.pdf',
+        outpdf,
+        '--image-dpi',
+        '200',
+        '--optimize',
+        3,
+        '--jpg-quality',
+        '50',
+        '--png-quality',
+        '20',
     ]
     if lossy:
         args.append('--jbig2-lossy')
@@ -85,8 +104,10 @@ def test_jbig2_lossy(lossy, resources, outpdf, spoof_tesseract_noop):
         assert len(pim.decode_parms) == 0
 
 
-@pytest.mark.skipif(not jbig2enc.available() or not pngquant.available(),
-                    reason='need jbig2enc and pngquant')
+@pytest.mark.skipif(
+    not jbig2enc.available() or not pngquant.available(),
+    reason='need jbig2enc and pngquant',
+)
 def test_flate_to_jbig2(resources, outdir, spoof_tesseract_noop):
     # This test requires an image that pngquant is capable of converting to
     # to 1bpp - so use an existing 1bpp image, convert up, confirm it can
@@ -97,9 +118,15 @@ def test_flate_to_jbig2(resources, outdir, spoof_tesseract_noop):
     im.save(fspath(outdir / 'type8.png'))
 
     check_ocrmypdf(
-        outdir / 'type8.png', outdir / 'out.pdf',
-        '--image-dpi', '100', '--png-quality', '10', '--optimize', '3',
-        env=spoof_tesseract_noop
+        outdir / 'type8.png',
+        outdir / 'out.pdf',
+        '--image-dpi',
+        '100',
+        '--png-quality',
+        '10',
+        '--optimize',
+        '3',
+        env=spoof_tesseract_noop,
     )
 
     pdf = pikepdf.open(outdir / 'out.pdf')

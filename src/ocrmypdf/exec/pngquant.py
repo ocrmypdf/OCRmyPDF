@@ -40,10 +40,12 @@ def quantize(input_file, output_file, quality_min, quality_max):
         'pngquant',
         '--force',
         '--skip-if-larger',
-        '--output', output_file,
-        '--quality', '{}-{}'.format(quality_min, quality_max),
+        '--output',
+        output_file,
+        '--quality',
+        '{}-{}'.format(quality_min, quality_max),
         '--',
-        input_file
+        input_file,
     ]
     proc = run(args)
     proc.check_returncode()

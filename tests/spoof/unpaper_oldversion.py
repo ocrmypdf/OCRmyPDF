@@ -23,6 +23,7 @@
 
 import sys
 
+
 def main():
     if sys.argv[1] == '--version':
         print('0.5')

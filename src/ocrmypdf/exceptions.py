@@ -19,6 +19,7 @@
 from enum import IntEnum
 from textwrap import dedent
 
+
 class ExitCode(IntEnum):
     ok = 0
     bad_args = 1
@@ -52,7 +53,8 @@ class BadArgsError(ExitCodeException):
 
 class PdfMergeFailedError(ExitCodeException):
     exit_code = ExitCode.input_file
-    message = dedent('''\
+    message = dedent(
+        '''\
         Failed to merge PDF image layer with OCR layer
 
         Usually this happens because the input PDF file is malformed and
@@ -60,7 +62,9 @@ class PdfMergeFailedError(ExitCodeException):
 
         Try using
             ocrmypdf --pdf-renderer sandwich  [..other args..]
-        ''')
+        '''
+    )
+
 
 class MissingDependencyError(ExitCodeException):
     exit_code = ExitCode.missing_dependency
@@ -92,7 +96,8 @@ class SubprocessOutputError(ExitCodeException):
 
 class EncryptedPdfError(ExitCodeException):
     exit_code = ExitCode.encrypted_pdf
-    message = dedent('''\
+    message = dedent(
+        '''\
         Input PDF is encrypted. The encryption must be removed to
         perform OCR.
 
@@ -101,7 +106,8 @@ class EncryptedPdfError(ExitCodeException):
 
         You can remove the encryption using
             qpdf --decrypt [--password=[password]] infilename
-        ''')
+        '''
+    )
 
 
 class TesseractConfigError(ExitCodeException):

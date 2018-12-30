@@ -25,11 +25,23 @@ import pdfminer.pdfdevice
 import pdfminer.pdfinterp
 from pdfminer.converter import PDFLayoutAnalyzer
 from pdfminer.glyphlist import glyphname2unicode
-from pdfminer.layout import (LAParams, LTChar, LTContainer, LTLayoutContainer,
-                             LTPage, LTTextBox, LTTextLine)
+from pdfminer.layout import (
+    LAParams,
+    LTChar,
+    LTContainer,
+    LTLayoutContainer,
+    LTPage,
+    LTTextBox,
+    LTTextLine,
+)
 from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
-from pdfminer.pdffont import (PDFCIDFont, PDFFont, PDFType3Font,
-                              PDFUnicodeNotDefined, PDFSimpleFont)
+from pdfminer.pdffont import (
+    PDFCIDFont,
+    PDFFont,
+    PDFType3Font,
+    PDFUnicodeNotDefined,
+    PDFSimpleFont,
+)
 from pdfminer.pdfpage import PDFPage
 from pdfminer.utils import bbox2str, fsplit, matrix2str
 
@@ -40,6 +52,7 @@ STRIP_NAME = re.compile(r'[0-9]+')
 #
 # Unconditional pdfminer patches
 #
+
 
 def name2unicode(name):
     """Fix pdfminer's name2unicode function
@@ -62,9 +75,13 @@ def name2unicode(name):
     if not m:
         raise KeyError(name)
     return chr(int(m.group(0)))
+
+
 pdfminer.encodingdb.name2unicode = name2unicode
 
 original_PDFFont_init = PDFFont.__init__
+
+
 def PDFFont__init__(self, descriptor, widths, default_width=None):
     original_PDFFont_init(self, descriptor, widths, default_width)
     # PDF spec says descent should be negative
@@ -74,9 +91,13 @@ def PDFFont__init__(self, descriptor, widths, default_width=None):
     # to misposition text.
     if self.descent > 0:
         self.descent = -self.descent
+
+
 PDFFont.__init__ = PDFFont__init__
 
 original_PDFSimpleFont_init = PDFSimpleFont.__init__
+
+
 def PDFSimpleFont__init__(self, descriptor, widths, spec):
     # Font encoding is specified either by a name of
     # built-in encoding or a dictionary that describes
@@ -87,19 +108,24 @@ def PDFSimpleFont__init__(self, descriptor, widths, spec):
     if not self.unicode_map and 'Encoding' not in spec:
         self.cid2unicode = {}
     return
+
+
 PDFSimpleFont.__init__ = PDFSimpleFont__init__
 #
 # pdfminer patches when creator is PScript5.dll
 #
 
+
 def PDFType3Font__PScript5_get_height(self):
-    h = self.bbox[3]-self.bbox[1]
+    h = self.bbox[3] - self.bbox[1]
     if h == 0:
         h = self.ascent - self.descent
     return h * copysign(1.0, self.vscale)
 
+
 def PDFType3Font__PScript5_get_descent(self):
     return self.descent * copysign(1.0, self.vscale)
+
 
 def PDFType3Font__PScript5_get_ascent(self):
     return self.ascent * copysign(1.0, self.vscale)
@@ -109,14 +135,38 @@ class LTStateAwareChar(LTChar):
     """A subclass of LTChar that tracks text render mode at time of drawing"""
 
     __slots__ = (
-        'rendermode', '_text', 'matrix', 'fontname', 'adv', 'upright', 'size',
-        'width', 'height', 'bbox', 'x0', 'x1', 'y0', 'y1'
+        'rendermode',
+        '_text',
+        'matrix',
+        'fontname',
+        'adv',
+        'upright',
+        'size',
+        'width',
+        'height',
+        'bbox',
+        'x0',
+        'x1',
+        'y0',
+        'y1',
     )
 
-    def __init__(self, matrix, font, fontsize, scaling, rise, text, textwidth,
-                 textdisp, textstate, *args):
-        super().__init__(matrix, font, fontsize, scaling, rise, text, textwidth,
-                         textdisp, *args)
+    def __init__(
+        self,
+        matrix,
+        font,
+        fontsize,
+        scaling,
+        rise,
+        text,
+        textwidth,
+        textdisp,
+        textstate,
+        *args,
+    ):
+        super().__init__(
+            matrix, font, fontsize, scaling, rise, text, textwidth, textdisp, *args
+        )
         self.rendermode = textstate.render
 
     def is_compatible(self, obj):
@@ -126,8 +176,7 @@ class LTStateAwareChar(LTChar):
             - the Unicode mapping is known, and both have the same render mode
             - the Unicode mapping is unknown but both are part of the same font
         """
-        both_unicode_mapped = (isinstance(self._text, str) and
-                               isinstance(obj._text, str))
+        both_unicode_mapped = isinstance(self._text, str) and isinstance(obj._text, str)
         try:
             if both_unicode_mapped:
                 return self.rendermode == obj.rendermode
@@ -143,10 +192,15 @@ class LTStateAwareChar(LTChar):
         return self._text
 
     def __repr__(self):
-        return ('<%s %s matrix=%s rendermode=%r font=%r adv=%s text=%r>' %
-                (self.__class__.__name__, bbox2str(self.bbox),
-                 matrix2str(self.matrix), self.rendermode, self.fontname, self.adv,
-                 self.get_text()))
+        return '<%s %s matrix=%s rendermode=%r font=%r adv=%s text=%r>' % (
+            self.__class__.__name__,
+            bbox2str(self.bbox),
+            matrix2str(self.matrix),
+            self.rendermode,
+            self.fontname,
+            self.adv,
+            self.get_text(),
+        )
 
 
 class TextPositionTracker(PDFLayoutAnalyzer):
@@ -182,13 +236,22 @@ class TextPositionTracker(PDFLayoutAnalyzer):
         textwidth = font.char_width(cid)
         textdisp = font.char_disp(cid)
         item = LTStateAwareChar(
-                matrix, font, fontsize, scaling, rise, text,
-                textwidth, textdisp, self.textstate, *args)
+            matrix,
+            font,
+            fontsize,
+            scaling,
+            rise,
+            text,
+            textwidth,
+            textdisp,
+            self.textstate,
+            *args,
+        )
         self.cur_item.add(item)
         return item.adv
 
     def handle_undefined_char(self, font, cid):
-        #log.info('undefined: %r, %r', font, cid)
+        # log.info('undefined: %r, %r', font, cid)
         return (font.fontname, cid)
 
     def receive_layout(self, ltpage):
@@ -209,7 +272,7 @@ def get_page_analysis(infile, pageno, pscript5_mode):
             spec=True,
             get_ascent=PDFType3Font__PScript5_get_ascent,
             get_descent=PDFType3Font__PScript5_get_descent,
-            get_height=PDFType3Font__PScript5_get_height
+            get_height=PDFType3Font__PScript5_get_height,
         )
         patcher.start()
 

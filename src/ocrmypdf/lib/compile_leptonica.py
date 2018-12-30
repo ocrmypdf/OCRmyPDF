@@ -19,7 +19,8 @@
 from cffi import FFI
 
 ffibuilder = FFI()
-ffibuilder.cdef("""
+ffibuilder.cdef(
+    """
 typedef signed char             l_int8;
 typedef unsigned char           l_uint8;
 typedef short                   l_int16;
@@ -202,9 +203,11 @@ enum {
     SEL_MISS       = 2
 };
 
-""")
+"""
+)
 
-ffibuilder.cdef("""
+ffibuilder.cdef(
+    """
 PIX * pixRead ( const char *filename );
 PIX * pixReadMem ( const l_uint8 *data, size_t size );
 PIX * pixScale ( PIX *pixs, l_float32 scalex, l_float32 scaley );
@@ -480,7 +483,8 @@ void selDestroy ( SEL **psel );
 l_int32
 setMsgSeverity(l_int32 newsev);
 
-""")
+"""
+)
 
 
 ffibuilder.set_source("ocrmypdf.lib._leptonica", None)

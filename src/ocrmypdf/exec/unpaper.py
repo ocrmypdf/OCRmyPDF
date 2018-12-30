@@ -40,11 +40,7 @@ def version():
 
 
 def run(input_file, output_file, dpi, log, mode_args):
-    args_unpaper = [
-        'unpaper',
-        '-v',
-        '--dpi', str(dpi)
-    ] + mode_args
+    args_unpaper = ['unpaper', '-v', '--dpi', str(dpi)] + mode_args
 
     SUFFIXES = {'1': '.pbm', 'L': '.pgm', 'RGB': '.ppm'}
 
@@ -68,8 +64,9 @@ def run(input_file, output_file, dpi, log, mode_args):
         im.close()
         raise MissingDependencyError() from e
 
-    with NamedTemporaryFile(suffix=suffix) as input_pnm, \
-            NamedTemporaryFile(suffix=suffix, mode="r+b") as output_pnm:
+    with NamedTemporaryFile(suffix=suffix) as input_pnm, NamedTemporaryFile(
+        suffix=suffix, mode="r+b"
+    ) as output_pnm:
         im.save(input_pnm, format='PPM')
         im.close()
 
@@ -78,9 +75,8 @@ def run(input_file, output_file, dpi, log, mode_args):
         args_unpaper.extend([input_pnm.name, output_pnm.name])
         try:
             stdout = check_output(
-                args_unpaper, close_fds=True,
-                universal_newlines=True, stderr=STDOUT,
-                )
+                args_unpaper, close_fds=True, universal_newlines=True, stderr=STDOUT
+            )
         except CalledProcessError as e:
             log.debug(e.output)
             raise e from e
@@ -91,12 +87,20 @@ def run(input_file, output_file, dpi, log, mode_args):
 
 
 def clean(input_file, output_file, dpi, log):
-    run(input_file, output_file, dpi, log, [
-        '--layout', 'none',
-        '--mask-scan-size', '100',  # don't blank out narrow columns
-        '--no-border-align',  # don't align visible content to borders
-        '--no-mask-center',   # don't center visible content within page
-        '--no-grayfilter',    # don't remove light gray areas
-        '--no-blackfilter',   # don't remove solid black areas
-        '--no-deskew',        # don't deskew
-    ])
+    run(
+        input_file,
+        output_file,
+        dpi,
+        log,
+        [
+            '--layout',
+            'none',
+            '--mask-scan-size',
+            '100',  # don't blank out narrow columns
+            '--no-border-align',  # don't align visible content to borders
+            '--no-mask-center',  # don't center visible content within page
+            '--no-grayfilter',  # don't remove light gray areas
+            '--no-blackfilter',  # don't remove solid black areas
+            '--no-deskew',  # don't deskew
+        ],
+    )

@@ -84,10 +84,11 @@ def tess4_available():
 
     return False
 
+
 # Skip all tests in this file if not tesseract 4
 pytestmark = pytest.mark.skipif(
-    not tess4_available(),
-    reason="tesseract 4.0 with textonly_pdf feature required")
+    not tess4_available(), reason="tesseract 4.0 with textonly_pdf feature required"
+)
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
@@ -97,9 +98,13 @@ spoof = pytest.helpers.spoof
 def test_textonly_pdf(ensure_tess4, resources, outdir):
     check_ocrmypdf(
         resources / 'linn.pdf',
-        outdir / 'linn_textonly.pdf', '--pdf-renderer', 'sandwich',
-        '--sidecar', outdir / 'foo.txt',
-        env=ensure_tess4)
+        outdir / 'linn_textonly.pdf',
+        '--pdf-renderer',
+        'sandwich',
+        '--sidecar',
+        outdir / 'foo.txt',
+        env=ensure_tess4,
+    )
 
 
 def test_pagesize_consistency_tess4(ensure_tess4, resources, outpdf):
@@ -111,9 +116,15 @@ def test_pagesize_consistency_tess4(ensure_tess4, resources, outpdf):
 
     check_ocrmypdf(
         infile,
-        outpdf, '--pdf-renderer', 'sandwich',
-        '--clean', '--deskew', '--remove-background', '--clean-final',
-        env=ensure_tess4)
+        outpdf,
+        '--pdf-renderer',
+        'sandwich',
+        '--clean',
+        '--deskew',
+        '--remove-background',
+        '--clean-final',
+        env=ensure_tess4,
+    )
 
     after_dims = pytest.helpers.first_page_dimensions(outpdf)
 
@@ -122,16 +133,19 @@ def test_pagesize_consistency_tess4(ensure_tess4, resources, outpdf):
 
 
 @pytest.mark.parametrize('basename', ['graph_ocred.pdf', 'cardinal.pdf'])
-def test_skip_pages_does_not_replicate(
-        ensure_tess4, resources, basename, outdir):
+def test_skip_pages_does_not_replicate(ensure_tess4, resources, basename, outdir):
     infile = resources / basename
     outpdf = outdir / basename
 
     check_ocrmypdf(
         infile,
-        outpdf, '--pdf-renderer', 'sandwich', '--force-ocr',
-        '--tesseract-timeout', '0',
-        env=ensure_tess4
+        outpdf,
+        '--pdf-renderer',
+        'sandwich',
+        '--force-ocr',
+        '--tesseract-timeout',
+        '0',
+        env=ensure_tess4,
     )
 
     info_in = pdfinfo.PdfInfo(infile)
@@ -149,8 +163,12 @@ def test_content_preservation(ensure_tess4, resources, outpdf):
 
     check_ocrmypdf(
         infile,
-        outpdf, '--pdf-renderer', 'sandwich', '--tesseract-timeout', '0',
-        env=ensure_tess4
+        outpdf,
+        '--pdf-renderer',
+        'sandwich',
+        '--tesseract-timeout',
+        '0',
+        env=ensure_tess4,
     )
 
     info = pdfinfo.PdfInfo(outpdf)

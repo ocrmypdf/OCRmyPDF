@@ -35,13 +35,18 @@ import ruffus.proxy_logger as proxy_logger
 from ._jobcontext import JobContext, JobContextManager, cleanup_working_files
 from ._pipeline import build_pipeline
 from .pdfa import file_claims_pdfa
-from .helpers import re_symlink, is_file_writable, \
-    available_cpu_count
+from .helpers import re_symlink, is_file_writable, available_cpu_count
 from .exec import tesseract, qpdf, ghostscript
 from . import PROGRAM_NAME, VERSION
 
-from .exceptions import ExitCode, ExitCodeException, MissingDependencyError, \
-    InputFileError, BadArgsError, OutputFileAccessError
+from .exceptions import (
+    ExitCode,
+    ExitCodeException,
+    MissingDependencyError,
+    InputFileError,
+    BadArgsError,
+    OutputFileAccessError,
+)
 from . import exceptions as ocrmypdf_exceptions
 from ._unicodefun import verify_python3_env
 
@@ -49,9 +54,8 @@ from ._unicodefun import verify_python3_env
 # -------------
 # External dependencies
 
-HOCR_OK_LANGS = frozenset([
-    'eng', 'deu', 'spa', 'ita', 'por'
-])
+HOCR_OK_LANGS = frozenset(['eng', 'deu', 'spa', 'ita', 'por'])
+
 
 def complain(message):
     print(*textwrap.wrap(message), file=sys.stderr)
@@ -69,24 +73,26 @@ verify_python3_env()
 if not tesseract.v4:
     complain(
         "Please install tesseract 4.0.0 or newer "
-        "(currently installed version is {1})".format(
-            tesseract.version()))
+        "(currently installed version is {1})".format(tesseract.version())
+    )
     sys.exit(ExitCode.missing_dependency)
 
 # -------------
 # Parser
 
+
 def numeric(basetype, min_=None, max_=None):
     """Validator for numeric params"""
     min_ = basetype(min_) if min_ is not None else None
     max_ = basetype(max_) if max_ is not None else None
+
     def _numeric(string):
         value = basetype(string)
-        if (min_ is not None and value < min_
-                or max_ is not None and value > max_):
+        if min_ is not None and value < min_ or max_ is not None and value > max_:
             msg = "%r not in valid range %r" % (string, (min_, max_))
             raise argparse.ArgumentTypeError(msg)
         return value
+
     _numeric.__name__ = basetype.__name__
     return _numeric
 
@@ -142,259 +148,366 @@ ocrmypdf so it is already installed.
 Online documentation is located at:
     https://ocrmypdf.readthedocs.io/en/latest/introduction.html
 
-""")
+""",
+)
 
 parser.add_argument(
-    'input_file', metavar="input_pdf_or_image",
+    'input_file',
+    metavar="input_pdf_or_image",
     help="PDF file containing the images to be OCRed (or '-' to read from "
-         "standard input)")
+    "standard input)",
+)
 parser.add_argument(
-    'output_file', metavar="output_pdf",
+    'output_file',
+    metavar="output_pdf",
     help="Output searchable PDF file (or '-' to write to standard output). "
-         "Existing files will be ovewritten. If same as input file, the "
-         "input file will be updated only if processing is successful.")
+    "Existing files will be ovewritten. If same as input file, the "
+    "input file will be updated only if processing is successful.",
+)
 parser.add_argument(
-    '-l', '--language', action='append',
+    '-l',
+    '--language',
+    action='append',
     help="Language(s) of the file to be OCRed (see tesseract --list-langs for "
-         "all language packs installed in your system). Use -l eng+deu for "
-         "multiple languages.")
+    "all language packs installed in your system). Use -l eng+deu for "
+    "multiple languages.",
+)
 parser.add_argument(
-    '--image-dpi', metavar='DPI', type=int,
-    help="For input image instead of PDF, use this DPI instead of file's.")
+    '--image-dpi',
+    metavar='DPI',
+    type=int,
+    help="For input image instead of PDF, use this DPI instead of file's.",
+)
 parser.add_argument(
-    '--output-type', choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'],
+    '--output-type',
+    choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'],
     default='pdfa',
     help="Choose output type. 'pdfa' creates a PDF/A-2b compliant file for "
-         "long term archiving (default, recommended) but may not suitable "
-         "for users who want their file altered as little as possible. 'pdfa' "
-         "also has problems with full Unicode text. 'pdf' attempts to "
-         "preserve file contents as much as possible. 'pdf-a1' creates a "
-         "PDF/A1-b file. 'pdf-a2' is equivalent to 'pdfa'. 'pdf-a3' creates a "
-         "PDF/A3-b file."
-         )
+    "long term archiving (default, recommended) but may not suitable "
+    "for users who want their file altered as little as possible. 'pdfa' "
+    "also has problems with full Unicode text. 'pdf' attempts to "
+    "preserve file contents as much as possible. 'pdf-a1' creates a "
+    "PDF/A1-b file. 'pdf-a2' is equivalent to 'pdfa'. 'pdf-a3' creates a "
+    "PDF/A3-b file.",
+)
 
 # Use null string '\0' as sentinel to indicate the user supplied no argument,
 # since that is the only invalid character for filepaths on all platforms
 # bool('\0') is True in Python
 parser.add_argument(
-    '--sidecar', nargs='?', const='\0', default=None, metavar='FILE',
+    '--sidecar',
+    nargs='?',
+    const='\0',
+    default=None,
+    metavar='FILE',
     help="Generate sidecar text files that contain the same text recognized "
-         "by Tesseract. This may be useful for building a OCR text database. "
-         "If FILE is omitted, the sidecar file be named {output_file}.txt "
-         "If FILE is set to '-', the sidecar is written to stdout (a "
-         "convenient way to preview OCR quality). The output file and sidecar "
-         "may not both use stdout at the same time.")
+    "by Tesseract. This may be useful for building a OCR text database. "
+    "If FILE is omitted, the sidecar file be named {output_file}.txt "
+    "If FILE is set to '-', the sidecar is written to stdout (a "
+    "convenient way to preview OCR quality). The output file and sidecar "
+    "may not both use stdout at the same time.",
+)
 
 parser.add_argument(
-    '--version', action='version', version=VERSION,
-    help="Print program version and exit")
+    '--version',
+    action='version',
+    version=VERSION,
+    help="Print program version and exit",
+)
 
-jobcontrol = parser.add_argument_group(
-    "Job control options")
+jobcontrol = parser.add_argument_group("Job control options")
 jobcontrol.add_argument(
-    '-j', '--jobs', metavar='N', type=numeric(int, 0, 256),
-    help="Use up to N CPU cores simultaneously (default: use all).")
+    '-j',
+    '--jobs',
+    metavar='N',
+    type=numeric(int, 0, 256),
+    help="Use up to N CPU cores simultaneously (default: use all).",
+)
 jobcontrol.add_argument(
-    '-q', '--quiet', action='store_true', help="Suppress INFO messages")
+    '-q', '--quiet', action='store_true', help="Suppress INFO messages"
+)
 jobcontrol.add_argument(
-    '-v', '--verbose', const="+", default=[], nargs='?', action="append",
-    help="Print more verbose messages for each additional verbose level")
+    '-v',
+    '--verbose',
+    const="+",
+    default=[],
+    nargs='?',
+    action="append",
+    help="Print more verbose messages for each additional verbose level",
+)
 
 metadata = parser.add_argument_group(
     "Metadata options",
-    "Set output PDF/A metadata (default: copy input document's metadata)")
+    "Set output PDF/A metadata (default: copy input document's metadata)",
+)
 metadata.add_argument(
-    '--title', type=str,
-    help="Set document title (place multiple words in quotes)")
-metadata.add_argument(
-    '--author', type=str,
-    help="Set document author")
-metadata.add_argument(
-    '--subject', type=str,
-    help="Set document subject description")
-metadata.add_argument(
-    '--keywords', type=str,
-    help="Set document keywords")
+    '--title', type=str, help="Set document title (place multiple words in quotes)"
+)
+metadata.add_argument('--author', type=str, help="Set document author")
+metadata.add_argument('--subject', type=str, help="Set document subject description")
+metadata.add_argument('--keywords', type=str, help="Set document keywords")
 
 preprocessing = parser.add_argument_group(
     "Image preprocessing options",
-    "Options to improve the quality of the final PDF and OCR")
+    "Options to improve the quality of the final PDF and OCR",
+)
 preprocessing.add_argument(
-    '-r', '--rotate-pages', action='store_true',
-    help="Automatically rotate pages based on detected text orientation")
+    '-r',
+    '--rotate-pages',
+    action='store_true',
+    help="Automatically rotate pages based on detected text orientation",
+)
 preprocessing.add_argument(
-    '--remove-background', action='store_true',
+    '--remove-background',
+    action='store_true',
     help="Attempt to remove background from gray or color pages, setting it "
-         "to white ")
+    "to white ",
+)
 preprocessing.add_argument(
-    '-d', '--deskew', action='store_true',
-    help="Deskew each page before performing OCR")
+    '-d', '--deskew', action='store_true', help="Deskew each page before performing OCR"
+)
 preprocessing.add_argument(
-    '-c', '--clean', action='store_true',
+    '-c',
+    '--clean',
+    action='store_true',
     help="Clean pages from scanning artifacts before performing OCR, and send "
-         "the cleaned page to OCR, but do not include the cleaned page in "
-         "the output")
+    "the cleaned page to OCR, but do not include the cleaned page in "
+    "the output",
+)
 preprocessing.add_argument(
-    '-i', '--clean-final', action='store_true',
+    '-i',
+    '--clean-final',
+    action='store_true',
     help="Clean page as above, and incorporate the cleaned image in the final "
-         "PDF.  Might remove desired content.")
+    "PDF.  Might remove desired content.",
+)
 preprocessing.add_argument(
-    '--oversample', metavar='DPI', type=numeric(int, 0, 5000), default=0,
+    '--oversample',
+    metavar='DPI',
+    type=numeric(int, 0, 5000),
+    default=0,
     help="Oversample images to at least the specified DPI, to improve OCR "
-         "results slightly")
+    "results slightly",
+)
 preprocessing.add_argument(
-    '--remove-vectors', action='store_true',
+    '--remove-vectors',
+    action='store_true',
     help="EXPERIMENTAL. Mask out any vector objects in the PDF so that they "
-         "will not be included in OCR. This can eliminate false characters.")
+    "will not be included in OCR. This can eliminate false characters.",
+)
 preprocessing.add_argument(
-    '--mask-barcodes', action='store_true',
+    '--mask-barcodes',
+    action='store_true',
     help="EXPERIMENTAL. Mask out any barcodes that appear in the PDF so they are not "
-         "considered during OCR. Barcodes can introduce false characters into "
-         "OCR.")
+    "considered during OCR. Barcodes can introduce false characters into "
+    "OCR.",
+)
 preprocessing.add_argument(
-    '--threshold', action='store_true',
+    '--threshold',
+    action='store_true',
     help="EXPERIMENTAL. Threshold image to 1bpp before sending it to Tesseract for OCR. Can "
-         "improve OCR quality compared to Tesseract's thresholder.")
+    "improve OCR quality compared to Tesseract's thresholder.",
+)
 
-ocrsettings = parser.add_argument_group(
-    "OCR options",
-    "Control how OCR is applied")
+ocrsettings = parser.add_argument_group("OCR options", "Control how OCR is applied")
 ocrsettings.add_argument(
-    '-f', '--force-ocr', action='store_true',
+    '-f',
+    '--force-ocr',
+    action='store_true',
     help="Rasterize any text or vector objects on each page, apply OCR, and "
-         "save the rastered output (this rewrites the PDF)")
+    "save the rastered output (this rewrites the PDF)",
+)
 ocrsettings.add_argument(
-    '-s', '--skip-text', action='store_true',
+    '-s',
+    '--skip-text',
+    action='store_true',
     help="Skip OCR on any pages that already contain text, but include the "
-         "page in final output; useful for PDFs that contain a mix of "
-         "images, text pages, and/or previously OCRed pages")
+    "page in final output; useful for PDFs that contain a mix of "
+    "images, text pages, and/or previously OCRed pages",
+)
 ocrsettings.add_argument(
-    '--redo-ocr', action='store_true',
+    '--redo-ocr',
+    action='store_true',
     help="Attempt to detect and remove the hidden OCR layer from files that "
-         "were previously OCRed with OCRmyPDF or another program. Apply OCR "
-         "to text found in raster images. Existing visible text objects will "
-         "not be changed. If there is no existing OCR, OCR will be added.")
+    "were previously OCRed with OCRmyPDF or another program. Apply OCR "
+    "to text found in raster images. Existing visible text objects will "
+    "not be changed. If there is no existing OCR, OCR will be added.",
+)
 ocrsettings.add_argument(
-    '--skip-big', type=numeric(float, 0, 5000), metavar='MPixels',
+    '--skip-big',
+    type=numeric(float, 0, 5000),
+    metavar='MPixels',
     help="Skip OCR on pages larger than the specified amount of megapixels, "
-         "but include skipped pages in final output")
+    "but include skipped pages in final output",
+)
 
 optimizing = parser.add_argument_group(
-    "Optimization options",
-    "Control how the PDF is optimized after OCR"
+    "Optimization options", "Control how the PDF is optimized after OCR"
 )
 optimizing.add_argument(
-    '-O', '--optimize', type=int, choices=range(0, 4), default=1,
-    help=("Control how PDF is optimized after processing:"
+    '-O',
+    '--optimize',
+    type=int,
+    choices=range(0, 4),
+    default=1,
+    help=(
+        "Control how PDF is optimized after processing:"
         "0 - do not optimize; "
         "1 - do safe, lossless optimizations (default); "
         "2 - do some lossy optimizations; "
         "3 - do aggressive lossy optimizations (including lossy JBIG2)"
-    )
+    ),
 )
 optimizing.add_argument(
-    '--jpeg-quality', type=numeric(int, 0, 100), default=0, metavar='Q',
-    help=("Adjust JPEG quality level for JPEG optimization. "
-          "100 is best quality and largest output size; "
-          "1 is lowest quality and smallest output; "
-          "0 uses the default."
-    )
+    '--jpeg-quality',
+    type=numeric(int, 0, 100),
+    default=0,
+    metavar='Q',
+    help=(
+        "Adjust JPEG quality level for JPEG optimization. "
+        "100 is best quality and largest output size; "
+        "1 is lowest quality and smallest output; "
+        "0 uses the default."
+    ),
 )
 optimizing.add_argument(
-    '--jpg-quality', type=numeric(int, 0, 100), default=0, metavar='Q',
+    '--jpg-quality',
+    type=numeric(int, 0, 100),
+    default=0,
+    metavar='Q',
     dest='jpeg_quality',
-    help=argparse.SUPPRESS  # Alias for --jpeg-quality
+    help=argparse.SUPPRESS,  # Alias for --jpeg-quality
 )
 optimizing.add_argument(
-    '--png-quality', type=numeric(int, 0, 100), default=0, metavar='Q',
-    help=("Adjust PNG quality level to use when quantizing PNGs. "
-          "Values have same meaning as with --jpeg-quality"
-    )
+    '--png-quality',
+    type=numeric(int, 0, 100),
+    default=0,
+    metavar='Q',
+    help=(
+        "Adjust PNG quality level to use when quantizing PNGs. "
+        "Values have same meaning as with --jpeg-quality"
+    ),
 )
 optimizing.add_argument(
-    '--jbig2-lossy', action='store_true',
-    help=("Enable JBIG2 lossy mode (better compression, not suitable for some "
-          "use cases - see documentation)."
-    )
+    '--jbig2-lossy',
+    action='store_true',
+    help=(
+        "Enable JBIG2 lossy mode (better compression, not suitable for some "
+        "use cases - see documentation)."
+    ),
 )
 optimizing.add_argument(
-    '--jbig2-page-group-size', type=numeric(int, 1, 10000), default=0,
+    '--jbig2-page-group-size',
+    type=numeric(int, 1, 10000),
+    default=0,
     metavar='N',
     # Adjust number of pages to consider at once for JBIG2 compression
-    help=argparse.SUPPRESS
+    help=argparse.SUPPRESS,
 )
 
 advanced = parser.add_argument_group(
-    "Advanced",
-    "Advanced options to control Tesseract's OCR behavior")
+    "Advanced", "Advanced options to control Tesseract's OCR behavior"
+)
 advanced.add_argument(
-    '--max-image-mpixels', action='store', type=numeric(float, 0),
+    '--max-image-mpixels',
+    action='store',
+    type=numeric(float, 0),
     metavar='MPixels',
     help="Set maximum number of pixels to unpack before treating an image as a "
-         "decompression bomb",
-    default=128.0)
+    "decompression bomb",
+    default=128.0,
+)
 advanced.add_argument(
-    '--tesseract-config', action='append', metavar='CFG', default=[],
-    help="Additional Tesseract configuration files -- see documentation")
+    '--tesseract-config',
+    action='append',
+    metavar='CFG',
+    default=[],
+    help="Additional Tesseract configuration files -- see documentation",
+)
 advanced.add_argument(
-    '--tesseract-pagesegmode', action='store', type=int, metavar='PSM',
+    '--tesseract-pagesegmode',
+    action='store',
+    type=int,
+    metavar='PSM',
     choices=range(0, 14),
-    help="Set Tesseract page segmentation mode (see tesseract --help)")
+    help="Set Tesseract page segmentation mode (see tesseract --help)",
+)
 advanced.add_argument(
-    '--tesseract-oem', action='store', type=int, metavar='MODE',
+    '--tesseract-oem',
+    action='store',
+    type=int,
+    metavar='MODE',
     choices=range(0, 4),
-    help=("Set Tesseract 4.0 OCR engine mode: "
-         "0 - original Tesseract only; "
-         "1 - neural nets LSTM only; "
-         "2 - Tesseract + LSTM; "
-         "3 - default.")
-    )
+    help=(
+        "Set Tesseract 4.0 OCR engine mode: "
+        "0 - original Tesseract only; "
+        "1 - neural nets LSTM only; "
+        "2 - Tesseract + LSTM; "
+        "3 - default."
+    ),
+)
 advanced.add_argument(
     '--pdf-renderer',
-    choices=['auto', 'hocr', 'sandwich'], default='auto',
+    choices=['auto', 'hocr', 'sandwich'],
+    default='auto',
     help="Choose OCR PDF renderer - the default option is to let OCRmyPDF "
-         "choose.  See documentation for discussion."
-    )
+    "choose.  See documentation for discussion.",
+)
 advanced.add_argument(
-    '--tesseract-timeout', default=180.0, type=numeric(float, 0),
+    '--tesseract-timeout',
+    default=180.0,
+    type=numeric(float, 0),
     metavar='SECONDS',
     help='Give up on OCR after the timeout, but copy the preprocessed page '
-         'into the final output')
+    'into the final output',
+)
 advanced.add_argument(
-    '--rotate-pages-threshold', default=14.0, type=numeric(float, 0, 1000),
+    '--rotate-pages-threshold',
+    default=14.0,
+    type=numeric(float, 0, 1000),
     metavar='CONFIDENCE',
     help="Only rotate pages when confidence is above this value (arbitrary "
-         "units reported by tesseract)")
+    "units reported by tesseract)",
+)
 advanced.add_argument(
-    '--pdfa-image-compression', choices=['auto', 'jpeg', 'lossless'],
+    '--pdfa-image-compression',
+    choices=['auto', 'jpeg', 'lossless'],
     default='auto',
     help="Specify how to compress images in the output PDF/A. 'auto' lets "
-         "OCRmyPDF decide.  'jpeg' changes all grayscale and color images to "
-         "JPEG compression.  'lossless' uses PNG-style lossless compression "
-         "for all images.  Monochrome images are always compressed using a "
-         "lossless codec.  Compression settings "
-         "are applied to all pages, including those for which OCR was "
-         "skipped.  Not supported for --output-type=pdf ; that setting "
-         "preserves the original compression of all images.")
+    "OCRmyPDF decide.  'jpeg' changes all grayscale and color images to "
+    "JPEG compression.  'lossless' uses PNG-style lossless compression "
+    "for all images.  Monochrome images are always compressed using a "
+    "lossless codec.  Compression settings "
+    "are applied to all pages, including those for which OCR was "
+    "skipped.  Not supported for --output-type=pdf ; that setting "
+    "preserves the original compression of all images.",
+)
 advanced.add_argument(
-    '--user-words', metavar='FILE',
+    '--user-words',
+    metavar='FILE',
     help="Specify the location of the Tesseract user words file. This is a "
-         "list of words Tesseract should consider while performing OCR in "
-         "addition to its standard language dictionaries. This can improve "
-         "OCR quality especially for specialized and technical documents.")
+    "list of words Tesseract should consider while performing OCR in "
+    "addition to its standard language dictionaries. This can improve "
+    "OCR quality especially for specialized and technical documents.",
+)
 advanced.add_argument(
-    '--user-patterns', metavar='FILE',
-    help="Specify the location of the Tesseract user patterns file.")
+    '--user-patterns',
+    metavar='FILE',
+    help="Specify the location of the Tesseract user patterns file.",
+)
 
 debugging = parser.add_argument_group(
-    "Debugging",
-    "Arguments to help with troubleshooting and debugging")
+    "Debugging", "Arguments to help with troubleshooting and debugging"
+)
 debugging.add_argument(
-    '-k', '--keep-temporary-files', action='store_true',
-    help="Keep temporary files (helpful for debugging)")
+    '-k',
+    '--keep-temporary-files',
+    action='store_true',
+    help="Keep temporary files (helpful for debugging)",
+)
 debugging.add_argument(
-    '--flowchart', type=str,
-    help="Generate the pipeline execution flowchart")
+    '--flowchart', type=str, help="Generate the pipeline execution flowchart"
+)
 
 
 def check_options_languages(options, _log):
@@ -409,8 +522,9 @@ def check_options_languages(options, _log):
     if not languages.issubset(tesseract.languages()):
         msg = (
             "The installed version of tesseract does not have language "
-            "data for the following requested languages: \n")
-        for lang in (languages - tesseract.languages()):
+            "data for the following requested languages: \n"
+        )
+        for lang in languages - tesseract.languages():
             msg += lang + '\n'
         raise MissingDependencyError(msg)
 
@@ -427,18 +541,18 @@ def check_options_output(options, log):
         msg = (
             "The 'hocr' PDF renderer is known to cause problems with one "
             "or more of the languages in your document.  Use "
-            "--pdf-renderer auto (the default) to avoid this issue.")
+            "--pdf-renderer auto (the default) to avoid this issue."
+        )
         log.warning(msg)
 
-    if ghostscript.version() < '9.20' \
-            and options.output_type != 'pdf' \
-            and not is_latin:
+    if ghostscript.version() < '9.20' and options.output_type != 'pdf' and not is_latin:
         # https://bugs.ghostscript.com/show_bug.cgi?id=696874
         # Ghostscript < 9.20 fails to encode multibyte characters properly
         msg = (
             "The installed version of Ghostscript does not work correctly "
             "with the OCR languages you specified. Use --output-type pdf or "
-            "upgrade to Ghostscript 9.20 or later to avoid this issue.")
+            "upgrade to Ghostscript 9.20 or later to avoid this issue."
+        )
         msg += "Found Ghostscript {}".format(ghostscript.version())
         log.warning(msg)
 
@@ -455,8 +569,14 @@ def check_options_output(options, log):
         )
 
     lossless_reconstruction = False
-    if not any((options.deskew, options.clean_final, options.force_ocr,
-                options.remove_background)):
+    if not any(
+        (
+            options.deskew,
+            options.clean_final,
+            options.force_ocr,
+            options.remove_background,
+        )
+    ):
         lossless_reconstruction = True
     options.lossless_reconstruction = lossless_reconstruction
 
@@ -464,7 +584,7 @@ def check_options_output(options, log):
         raise argparse.ArgumentError(
             None,
             "--redo-ocr is not currently compatible with --deskew, "
-            "--clean-final, and --remove-background"
+            "--clean-final, and --remove-background",
         )
 
 
@@ -473,8 +593,8 @@ def check_options_sidecar(options, log):
         if options.output_file == '-':
             raise argparse.ArgumentError(
                 None,
-                "--sidecar filename must be specified when output file is "
-                "stdout.")
+                "--sidecar filename must be specified when output file is " "stdout.",
+            )
         options.sidecar = options.output_file + '.txt'
 
 
@@ -483,10 +603,12 @@ def _optional_program_required(name, version_fn, min_version, for_argument):
         if version_fn() < min_version:
             raise MissingDependencyError(
                 "The installed '{}' is not supported. "
-                "Install version {} or newer.".format(name, min_version))
+                "Install version {} or newer.".format(name, min_version)
+            )
     except (FileNotFoundError, MissingDependencyError):
         raise MissingDependencyError(
-            "Install the '{}' program to use {}.".format(name, for_argument))
+            "Install the '{}' program to use {}.".format(name, for_argument)
+        )
 
 
 def _optional_program_recommended(name, version_fn, min_version, for_argument):
@@ -494,7 +616,8 @@ def _optional_program_recommended(name, version_fn, min_version, for_argument):
         if version_fn() < min_version:
             raise MissingDependencyError(
                 "The installed '{}' is not supported. "
-                "Install version {} or newer.".format(name, min_version))
+                "Install version {} or newer.".format(name, min_version)
+            )
     except (FileNotFoundError, MissingDependencyError):
         complain(
             "For best results, install the optional program '{}' to use the "
@@ -505,6 +628,7 @@ def _optional_program_recommended(name, version_fn, min_version, for_argument):
 def check_options_preprocessing(options, log):
     if any((options.clean, options.clean_final)):
         from .exec import unpaper
+
         _optional_program_required(
             'unpaper', unpaper.version, '6.1', '--clean, --clean-final'
         )
@@ -512,27 +636,27 @@ def check_options_preprocessing(options, log):
 
 def check_options_ocr_behavior(options, log):
     exclusive_options = sum(
-        [(1 if opt else 0)
-         for opt in (options.force_ocr, options.skip_text, options.redo_ocr)
+        [
+            (1 if opt else 0)
+            for opt in (options.force_ocr, options.skip_text, options.redo_ocr)
         ]
     )
     if exclusive_options >= 2:
         raise argparse.ArgumentError(
-            None,
-            "Error: choose only one of --force-ocr, --skip-text, --redo-ocr.")
+            None, "Error: choose only one of --force-ocr, --skip-text, --redo-ocr."
+        )
 
 
 def check_options_optimizing(options, log):
     if options.optimize >= 2:
         from .exec import pngquant, jbig2enc
+
         _optional_program_required(
             'pngquant', pngquant.version, '2.0.1', '--optimize {2,3}'
         )
 
     if options.jbig2_lossy:
-        _optional_program_required(
-            'jbig2', jbig2enc.version, '0.28', '--jbig2-lossy'
-        )
+        _optional_program_required('jbig2', jbig2enc.version, '0.28', '--jbig2-lossy')
     elif options.optimize >= 2:
         # Although we use JBIG2 for optimize=1, don't nag about it unless the
         # user is asking for more optimization
@@ -540,9 +664,9 @@ def check_options_optimizing(options, log):
             'jbig2', jbig2enc.version, '0.28', '--optimize {2,3}'
         )
 
-    if options.optimize == 0 and any([
-            options.jbig2_lossy, options.png_quality, options.jpeg_quality
-            ]):
+    if options.optimize == 0 and any(
+        [options.jbig2_lossy, options.png_quality, options.jpeg_quality]
+    ):
         log.warning(
             "The arguments --jbig2-lossy, --png-quality, and --jpeg-quality "
             "will be ignored because --optimize=0."
@@ -551,24 +675,23 @@ def check_options_optimizing(options, log):
 
 def check_options_advanced(options, log):
     if options.tesseract_oem and not tesseract.v4():
-        log.warning(
-            "--tesseract-oem requires Tesseract 4.x -- argument ignored")
-    if options.pdfa_image_compression != 'auto' and \
-            options.output_type.startswith('pdfa'):
+        log.warning("--tesseract-oem requires Tesseract 4.x -- argument ignored")
+    if options.pdfa_image_compression != 'auto' and options.output_type.startswith(
+        'pdfa'
+    ):
         log.warning(
             "--pdfa-image-compression argument has no effect when "
             "--output-type is not 'pdfa', 'pdfa-1', or 'pdfa-2'"
         )
 
     if tesseract.v4() and (options.user_words or options.user_patterns):
-        log.warning(
-            'Tesseract 4.x ignores --user-words, so this has no effect')
+        log.warning('Tesseract 4.x ignores --user-words, so this has no effect')
 
 
 def check_options_metadata(options, log):
     import unicodedata
-    docinfo = [options.title, options.author, options.keywords,
-               options.subject]
+
+    docinfo = [options.title, options.author, options.keywords, options.subject]
     for s in (m for m in docinfo if m):
         for c in s:
             if unicodedata.category(c) == 'Co' or ord(c) >= 0x10000:
@@ -576,11 +699,12 @@ def check_options_metadata(options, log):
                     "One of the metadata strings contains "
                     "an unsupported Unicode character: '{}' (U+{})".format(
                         c, hex(ord(c))[2:].upper()
-                ))
+                    )
+                )
 
 
 def check_options_pillow(options, log):
-    PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1000000)
+    PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1_000_000)
     if PIL.Image.MAX_IMAGE_PIXELS == 0:
         PIL.Image.MAX_IMAGE_PIXELS = None
 
@@ -686,8 +810,10 @@ def do_ruffus_exception(ruffus_five_tuple, options, log):
             log.error(exc_msg)
     elif exc_name == 'PIL.Image.DecompressionBombError':
         msg = cleanup_ruffus_error_message(exc_value)
-        msg += ("\nUse the --max-image-mpixels argument to set increase the "
-                "maximum number of megapixels to accept.")
+        msg += (
+            "\nUse the --max-image-mpixels argument to set increase the "
+            "maximum number of megapixels to accept."
+        )
         log.error(msg)
         exit_code = ExitCode.input_file
 
@@ -753,8 +879,7 @@ def check_closed_streams(options):
 
     if sys.stdin is None:
         if options.input_file == '-':
-            print("Trying to read from stdin but stdin seems closed",
-                  file=sys.stderr)
+            print("Trying to read from stdin but stdin seems closed", file=sys.stderr)
             return False
         sys.stdin = open(os.devnull, 'r')
 
@@ -763,10 +888,15 @@ def check_closed_streams(options):
             # Can't replace stdout if the user is piping
             # If this case can even happen, it must be some kind of weird
             # stream.
-            print(textwrap.dedent("""\
+            print(
+                textwrap.dedent(
+                    """\
                 Output was set to stdout '-' but the stream attached to
                 stdout does not support the flush() system call.  This
-                will fail."""), file=sys.stderr)
+                will fail."""
+                ),
+                file=sys.stderr,
+            )
             return False
         sys.stdout = open(os.devnull, 'w')
 
@@ -774,15 +904,12 @@ def check_closed_streams(options):
 
 
 def log_page_orientations(pdfinfo, _log):
-    direction = {0: 'n', 90: 'e',
-                180: 's', 270: 'w'}
+    direction = {0: 'n', 90: 'e', 180: 's', 270: 'w'}
     orientations = []
     for n, page in enumerate(pdfinfo):
         angle = page.rotation or 0
         if angle != 0:
-            orientations.append('{0}{1}'.format(
-                n + 1,
-                direction.get(angle, '')))
+            orientations.append('{0}{1}'.format(n + 1, direction.get(angle, '')))
     if orientations:
         _log.info('Page orientations detected: ' + ' '.join(orientations))
 
@@ -799,12 +926,19 @@ def check_environ(options, _log):
         'OCRMYPDF_TESSERACT',
         'OCRMYPDF_QPDF',
         'OCRMYPDF_GS',
-        'OCRMYPDF_UNPAPER')
+        'OCRMYPDF_UNPAPER',
+    )
     for k in old_envvars:
         if k in os.environ:
-            _log.warning(textwrap.dedent("""\
+            _log.warning(
+                textwrap.dedent(
+                    """\
                 OCRmyPDF no longer uses the environment variable {}.
-                Change PATH to select alternate programs.""".format(k)))
+                Change PATH to select alternate programs.""".format(
+                        k
+                    )
+                )
+            )
 
 
 def check_input_file(options, _log, start_input_file):
@@ -813,6 +947,7 @@ def check_input_file(options, _log, start_input_file):
         _log.info('reading file from standard input')
         with open(start_input_file, 'wb') as stream_buffer:
             from shutil import copyfileobj
+
             copyfileobj(sys.stdin.buffer, stream_buffer)
     else:
         try:
@@ -825,15 +960,22 @@ def check_input_file(options, _log, start_input_file):
 def check_requested_output_file(options, _log):
     if options.output_file == '-':
         if sys.stdout.isatty():
-            _log.error(textwrap.dedent("""\
+            _log.error(
+                textwrap.dedent(
+                    """\
                 Output was set to stdout '-' but it looks like stdout
                 is connected to a terminal.  Please redirect stdout to a
-                file."""))
+                file."""
+                )
+            )
             raise BadArgsError()
     elif not is_file_writable(options.output_file):
         _log.error(
-            "Output file location (" + options.output_file + ") " +
-            "is not a writable file.")
+            "Output file location ("
+            + options.output_file
+            + ") "
+            + "is not a writable file."
+        )
         raise OutputFileAccessError()
 
 
@@ -853,27 +995,33 @@ def report_output_file_size(options, _log, input_file, output_file):
         'clean_final',
         'remove_background',
         'oversample',
-        'force_ocr'
+        'force_ocr',
     }
     for arg in image_preproc:
         attr = getattr(options, arg, None)
         if not attr:
             continue
         reasons.append(
-                "The argument --{} was issued, causing transcoding.".format(
-                        arg.replace('_', '-')))
+            "The argument --{} was issued, causing transcoding.".format(
+                arg.replace('_', '-')
+            )
+        )
 
     if reasons:
-        explanation = (
-            "Possible reasons for this include:\n" + '\n'.join(reasons) + "\n")
+        explanation = "Possible reasons for this include:\n" + '\n'.join(reasons) + "\n"
     else:
-        explanation = (
-            "No reason for this increase is known.  Please report this issue.")
+        explanation = "No reason for this increase is known.  Please report this issue."
 
-    _log.warning(textwrap.dedent("""\
+    _log.warning(
+        textwrap.dedent(
+            """\
         The output file size is {:.2f}× larger than the input file.
         {}
-        """.format(ratio, explanation)))
+        """.format(
+                ratio, explanation
+            )
+        )
+    )
 
 
 def run_pipeline(args=None):
@@ -888,7 +1036,8 @@ def run_pipeline(args=None):
     logger_args = {'verbose': options.verbose, 'quiet': options.quiet}
 
     _log, _log_mutex = proxy_logger.make_shared_logger_and_proxy(
-        logging_factory, __name__, logger_args)
+        logging_factory, __name__, logger_args
+    )
     preamble(_log)
     check_options(options, _log)
 
@@ -899,7 +1048,8 @@ def run_pipeline(args=None):
         complain(
             "You are using qpdf version {0} which has known issues including "
             "security vulnerabilities with certain malformed PDFs. Consider "
-            "upgrading to version 7.0.0 or newer.".format(qpdf.version()))
+            "upgrading to version 7.0.0 or newer.".format(qpdf.version())
+        )
 
     if ghostscript.version() == '9.24':
         complain(
@@ -927,10 +1077,8 @@ def run_pipeline(args=None):
 
     try:
         work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
-        options.history_file = os.path.join(
-            work_folder, 'ruffus_history.sqlite')
-        start_input_file = os.path.join(
-            work_folder, 'origin')
+        options.history_file = os.path.join(work_folder, 'ruffus_history.sqlite')
+        start_input_file = os.path.join(work_folder, 'origin')
 
         check_input_file(options, _log, start_input_file)
         check_requested_output_file(options, _log)
@@ -983,12 +1131,12 @@ def run_pipeline(args=None):
             _log.warning('Output file: The generated PDF is INVALID')
             return ExitCode.invalid_output_pdf
 
-        report_output_file_size(options, _log, start_input_file,
-                                options.output_file)
+        report_output_file_size(options, _log, start_input_file, options.output_file)
 
     pdfinfo = context.get_pdfinfo()
     if options.verbose:
         from pprint import pformat
+
         _log.debug(pformat(pdfinfo))
 
     log_page_orientations(pdfinfo, _log)

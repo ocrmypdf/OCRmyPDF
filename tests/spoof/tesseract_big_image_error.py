@@ -49,16 +49,22 @@ def main():
         print('A parameter list would go here\ntextonly_pdf 0\n', file=sys.stderr)
         sys.exit(0)
     elif sys.argv[-2] == 'hocr':
-        print("Image too large: (33830, 14959)\n"
-              "Error during processing.", file=sys.stderr)
+        print(
+            "Image too large: (33830, 14959)\n" "Error during processing.",
+            file=sys.stderr,
+        )
         sys.exit(1)
     elif sys.argv[-2] == 'pdf':
-        print("Image too large: (33830, 14959)\n"
-              "Error during processing.", file=sys.stderr)
+        print(
+            "Image too large: (33830, 14959)\n" "Error during processing.",
+            file=sys.stderr,
+        )
         sys.exit(1)
     elif sys.argv[-1] == 'stdout':
-        print("Image too large: (33830, 14959)\n"
-              "Error during processing.", file=sys.stderr)
+        print(
+            "Image too large: (33830, 14959)\n" "Error during processing.",
+            file=sys.stderr,
+        )
         sys.exit(1)
     else:
         print("Spoof doesn't understand arguments", file=sys.stderr)

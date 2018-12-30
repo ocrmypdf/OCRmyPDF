@@ -33,12 +33,13 @@ import pickle
 
 def test_single_page_text(outdir):
     filename = outdir / 'text.pdf'
-    pdf = Canvas(str(filename), pagesize=(8*72, 6*72))
+    pdf = Canvas(str(filename), pagesize=(8 * 72, 6 * 72))
     text = pdf.beginText()
     text.setFont('Helvetica', 12)
-    text.setTextOrigin(1*72, 3*72)
-    text.textLine("Methink'st thou art a general offence and every"
-                  " man should beat thee.")
+    text.setTextOrigin(1 * 72, 3 * 72)
+    text.textLine(
+        "Methink'st thou art a general offence and every" " man should beat thee."
+    )
     pdf.drawText(text)
     pdf.showPage()
     pdf.save()
@@ -66,8 +67,8 @@ def test_single_page_image(outdir):
 
     im_bytes = im_tmp.read_bytes()
     pdf_bytes = img2pdf.convert(
-            im_bytes, producer="img2pdf", with_pdfrw=False,
-            layout_fun=layout_fun)
+        im_bytes, producer="img2pdf", with_pdfrw=False, layout_fun=layout_fun
+    )
     filename.write_bytes(pdf_bytes)
 
     info = pdfinfo.PdfInfo(filename)
@@ -89,7 +90,7 @@ def test_single_page_image(outdir):
 
 def test_single_page_inline_image(outdir):
     filename = outdir / 'image-mono-inline.pdf'
-    pdf = Canvas(str(filename), pagesize=(8*72, 6*72))
+    pdf = Canvas(str(filename), pagesize=(8 * 72, 6 * 72))
     with NamedTemporaryFile() as im_tmp:
         im = Image.new('1', (8, 8), 0)
         for n in range(8):
@@ -157,12 +158,7 @@ def test_regex():
         b'<char bbox="0 108 0 108" c=">"/>',
         b'<char bbox="0 108 0 108" c="X"/>',
     ]
-    must_not_match = [
-        b'<span stuff="c">',
-        b'<span>',
-        b'</span>',
-        b'</page>'
-    ]
+    must_not_match = [b'<span stuff="c">', b'<span>', b'</span>', b'</page>']
 
     for s in must_match:
         assert rx.match(s)

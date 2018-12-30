@@ -44,7 +44,7 @@ class HocrTransformError(Exception):
     pass
 
 
-class HocrTransform():
+class HocrTransform:
 
     """
     A class for converting documents from the hOCR format.
@@ -53,17 +53,16 @@ class HocrTransform():
     """
 
     box_pattern = re.compile(r'bbox((\s+\d+){4})')
-    baseline_pattern = re.compile(r'''
+    baseline_pattern = re.compile(
+        r'''
         baseline \s+
         ([\-\+]?\d*\.?\d*) \s+  # +/- decimal float
-        ([\-\+]?\d+)            # +/- int''', re.VERBOSE)
-    ligatures = str.maketrans({
-        'ﬀ': 'ff',
-        'ﬃ': 'f‌f‌i',
-        'ﬄ': 'f‌f‌l',
-        'ﬁ': 'fi',
-        'ﬂ': 'fl',
-    })
+        ([\-\+]?\d+)            # +/- int''',
+        re.VERBOSE,
+    )
+    ligatures = str.maketrans(
+        {'ﬀ': 'ff', 'ﬃ': 'f‌f‌i', 'ﬄ': 'f‌f‌l', 'ﬁ': 'fi', 'ﬂ': 'fl'}
+    )
 
     def __init__(self, hocrFileName, dpi):
         self.dpi = dpi
@@ -78,8 +77,7 @@ class HocrTransform():
 
         # get dimension in pt (not pixel!!!!) of the OCRed image
         self.width, self.height = None, None
-        for div in self.hocr.findall(
-                ".//%sdiv[@class='ocr_page']" % (self.xmlns)):
+        for div in self.hocr.findall(".//%sdiv[@class='ocr_page']" % (self.xmlns)):
             coords = self.element_coordinates(div)
             pt_coords = self.pt_from_pixel(coords)
             self.width = pt_coords.x2 - pt_coords.x1
@@ -144,8 +142,7 @@ class HocrTransform():
         """
         Returns the quantity in PDF units (pt) given quantity in pixels
         """
-        return Rect._make(
-            (c / self.dpi * inch) for c in pxl)
+        return Rect._make((c / self.dpi * inch) for c in pxl)
 
     @classmethod
     def replace_unsupported_chars(cls, s):
@@ -156,8 +153,15 @@ class HocrTransform():
         """
         return s.translate(cls.ligatures)
 
-    def to_pdf(self, outFileName, imageFileName=None, showBoundingboxes=False,
-               fontname="Helvetica", invisibleText=False, interwordSpaces=False):
+    def to_pdf(
+        self,
+        outFileName,
+        imageFileName=None,
+        showBoundingboxes=False,
+        fontname="Helvetica",
+        invisibleText=False,
+        interwordSpaces=False,
+    ):
         """
         Creates a PDF file with an image superimposed on top of the text.
         Text is positioned according to the bounding box of the lines in
@@ -168,17 +172,15 @@ class HocrTransform():
         """
         # create the PDF file
         # page size in points (1/72 in.)
-        pdf = Canvas(
-            outFileName, pagesize=(self.width, self.height), pageCompression=1)
+        pdf = Canvas(outFileName, pagesize=(self.width, self.height), pageCompression=1)
 
         # draw bounding box for each paragraph
         # light blue for bounding box of paragraph
         pdf.setStrokeColorRGB(0, 1, 1)
         # light blue for bounding box of paragraph
         pdf.setFillColorRGB(0, 1, 1)
-        pdf.setLineWidth(0)		# no line for bounding box
-        for elem in self.hocr.findall(
-                ".//%sp[@class='%s']" % (self.xmlns, "ocr_par")):
+        pdf.setLineWidth(0)  # no line for bounding box
+        for elem in self.hocr.findall(".//%sp[@class='%s']" % (self.xmlns, "ocr_par")):
 
             elemtxt = self._get_element_text(elem).rstrip()
             if len(elemtxt) == 0:
@@ -190,38 +192,58 @@ class HocrTransform():
             # draw the bbox border
             if showBoundingboxes:
                 pdf.rect(
-                    pt.x1, self.height - pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1,
-                    fill=1)
+                    pt.x1, self.height - pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1, fill=1
+                )
 
         found_lines = False
         for line in self.hocr.findall(
-                ".//%sspan[@class='%s']" % (self.xmlns, "ocr_line")):
+            ".//%sspan[@class='%s']" % (self.xmlns, "ocr_line")
+        ):
             found_lines = True
-            self._do_line(pdf, line, "ocrx_word", fontname, invisibleText,
-                          interwordSpaces, showBoundingboxes)
+            self._do_line(
+                pdf,
+                line,
+                "ocrx_word",
+                fontname,
+                invisibleText,
+                interwordSpaces,
+                showBoundingboxes,
+            )
 
         if not found_lines:
             # Tesseract did not report any lines (just words)
             root = self.hocr.find(".//%sdiv[@class='%s']" % (self.xmlns, "ocr_page"))
-            self._do_line(pdf, root, "ocrx_word", fontname, invisibleText,
-                          interwordSpaces, showBoundingboxes)
+            self._do_line(
+                pdf,
+                root,
+                "ocrx_word",
+                fontname,
+                invisibleText,
+                interwordSpaces,
+                showBoundingboxes,
+            )
         # put the image on the page, scaled to fill the page
         if imageFileName is not None:
-            pdf.drawImage(imageFileName, 0, 0,
-                          width=self.width, height=self.height)
+            pdf.drawImage(imageFileName, 0, 0, width=self.width, height=self.height)
 
         # finish up the page and save it
         pdf.showPage()
         pdf.save()
 
-
     @classmethod
     def polyval(cls, poly, x):
         return x * poly[0] + poly[1]
 
-
-    def _do_line(self, pdf, line, elemclass, fontname, invisibleText,
-                 interwordSpaces, showBoundingboxes):
+    def _do_line(
+        self,
+        pdf,
+        line,
+        elemclass,
+        fontname,
+        invisibleText,
+        interwordSpaces,
+        showBoundingboxes,
+    ):
         pxl_line_coords = self.element_coordinates(line)
         line_box = self.pt_from_pixel(pxl_line_coords)
         line_height = line_box.y2 - line_box.y1
@@ -254,23 +276,20 @@ class HocrTransform():
             pdf.setLineWidth(0.5)
             # negate slope because it is defined as a rise/run in pixel
             # coordinates and page coordinates have the y axis flipped
-            pdf.line(line_box.x1,
-                     baseline_y2,
-                     line_box.x2,
-                     self.polyval((-slope, baseline_y2),
-                                  line_box.x2 - line_box.x1))
+            pdf.line(
+                line_box.x1,
+                baseline_y2,
+                line_box.x2,
+                self.polyval((-slope, baseline_y2), line_box.x2 - line_box.x1),
+            )
             # light green for bounding box of word/line
             pdf.setDash(6, 3)
             pdf.setStrokeColorRGB(1, 0, 0)
 
-        text.setTextTransform(
-            cos_a, -sin_a, sin_a, cos_a,
-            line_box.x1, baseline_y2
-        )
+        text.setTextTransform(cos_a, -sin_a, sin_a, cos_a, line_box.x1, baseline_y2)
         pdf.setFillColorRGB(0, 0, 0)  # text in black
 
-        elements = line.findall(
-                ".//%sspan[@class='%s']" % (self.xmlns, elemclass))
+        elements = line.findall(".//%sspan[@class='%s']" % (self.xmlns, elemclass))
         for elem in elements:
             elemtxt = self._get_element_text(elem).strip()
             elemtxt = self.replace_unsupported_chars(elemtxt)
@@ -287,22 +306,22 @@ class HocrTransform():
                 # though it would look better, because it will interfere with
                 # naive text extraction. \n does not work either.
                 elemtxt += ' '
-                box = Rect._make((
-                    box.x1,
-                    line_box.y1,
-                    box.x2 + pdf.stringWidth(' ', fontname, line_height),
-                    line_box.y2))
+                box = Rect._make(
+                    (
+                        box.x1,
+                        line_box.y1,
+                        box.x2 + pdf.stringWidth(' ', fontname, line_height),
+                        line_box.y2,
+                    )
+                )
             box_width = box.x2 - box.x1
             font_width = pdf.stringWidth(elemtxt, fontname, fontsize)
 
             # draw the bbox border
             if showBoundingboxes:
                 pdf.rect(
-                    box.x1,
-                    self.height - line_box.y2,
-                    box_width,
-                    line_height,
-                    fill=0)
+                    box.x1, self.height - line_box.y2, box_width, line_height, fill=0
+                )
 
             # Adjust relative position of cursor
             # This is equivalent to:
@@ -331,19 +350,40 @@ class HocrTransform():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Convert hocr file to PDF')
-    parser.add_argument('-b', '--boundingboxes', action="store_true",
-                        default=False, help='Show bounding boxes borders')
-    parser.add_argument('-r', '--resolution', type=int,
-                        default=300,
-                        help='Resolution of the image that was OCRed')
-    parser.add_argument('-i', '--image', default=None,
-                        help='Path to the image to be placed above the text')
-    parser.add_argument('--interword-spaces', action='store_true',
-                         default=False, help='Add spaces between words')
-    parser.add_argument('hocrfile', help='Path to the hocr file to be parsed')
     parser.add_argument(
-        'outputfile', help='Path to the PDF file to be generated')
+        '-b',
+        '--boundingboxes',
+        action="store_true",
+        default=False,
+        help='Show bounding boxes borders',
+    )
+    parser.add_argument(
+        '-r',
+        '--resolution',
+        type=int,
+        default=300,
+        help='Resolution of the image that was OCRed',
+    )
+    parser.add_argument(
+        '-i',
+        '--image',
+        default=None,
+        help='Path to the image to be placed above the text',
+    )
+    parser.add_argument(
+        '--interword-spaces',
+        action='store_true',
+        default=False,
+        help='Add spaces between words',
+    )
+    parser.add_argument('hocrfile', help='Path to the hocr file to be parsed')
+    parser.add_argument('outputfile', help='Path to the PDF file to be generated')
     args = parser.parse_args()
 
     hocr = HocrTransform(args.hocrfile, args.resolution)
-    hocr.to_pdf(args.outputfile, args.image, args.boundingboxes, interwordSpaces=args.interword_spaces)
+    hocr.to_pdf(
+        args.outputfile,
+        args.image,
+        args.boundingboxes,
+        interwordSpaces=args.interword_spaces,
+    )

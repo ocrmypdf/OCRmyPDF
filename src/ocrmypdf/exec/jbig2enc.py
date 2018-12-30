@@ -42,7 +42,7 @@ def convert_group(*, cwd, infiles, out_prefix):
         out_prefix,
         '-s',  # symbol mode (lossy)
         # '-r', # refinement mode (lossless symbol mode, currently disabled in
-                # jbig2)
+        # jbig2)
         '-p',
     ]
     args.extend(infiles)
@@ -52,11 +52,7 @@ def convert_group(*, cwd, infiles, out_prefix):
 
 
 def convert_single(*, cwd, infile, outfile):
-    args = [
-        'jbig2',
-        '-p',
-        infile
-    ]
+    args = ['jbig2', '-p', infile]
     with open(outfile, 'wb') as fstdout:
         proc = run(args, cwd=cwd, stdout=fstdout, stderr=PIPE)
     proc.check_returncode()

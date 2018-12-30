@@ -25,10 +25,18 @@ __version__ = pkg_resources.get_distribution('ocrmypdf').version
 VERSION = __version__
 
 from .exceptions import (
-    ExitCode, BadArgsError, PdfMergeFailedError, MissingDependencyError,
-    UnsupportedImageFormatError, DpiError, OutputFileAccessError,
-    PriorOcrFoundError, InputFileError, SubprocessOutputError,
-    EncryptedPdfError, TesseractConfigError
+    ExitCode,
+    BadArgsError,
+    PdfMergeFailedError,
+    MissingDependencyError,
+    UnsupportedImageFormatError,
+    DpiError,
+    OutputFileAccessError,
+    PriorOcrFoundError,
+    InputFileError,
+    SubprocessOutputError,
+    EncryptedPdfError,
+    TesseractConfigError,
 )
 
 from . import helpers

@@ -89,8 +89,8 @@ def strip_invisible_text(pdf, page, log):
 
 
 def _weave_layers_graft(
-        *, pdf_base, page_num, text, font, font_key, procset, rotation,
-        strip_old_text, log):
+    *, pdf_base, page_num, text, font, font_key, procset, rotation, strip_old_text, log
+):
     """Insert the text layer from text page 0 on to pdf_base at page_num"""
 
     log.debug("Grafting")
@@ -108,7 +108,7 @@ def _weave_layers_graft(
         stream = bytearray(pdf_text_contents)
         pattern = b'/Im1 Do'
         idx = stream.find(pattern)
-        stream[idx:(idx + len(pattern))] = b' ' * len(pattern)
+        stream[idx : (idx + len(pattern))] = b' ' * len(pattern)
         pdf_text_contents = bytes(stream)
 
     base_page = pdf_base.pages.p(page_num)
@@ -117,12 +117,10 @@ def _weave_layers_graft(
     # content may have a rotation applied. Wrap the text stream with a rotation
     # so it will be oriented the same way as the rest of the page content.
     # (Previous versions OCRmyPDF rotated the content layer to match the text.)
-    mediabox = [float(pdf_text.pages[0].MediaBox[v])
-                for v in range(4)]
+    mediabox = [float(pdf_text.pages[0].MediaBox[v]) for v in range(4)]
     wt, ht = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
 
-    mediabox = [float(base_page.MediaBox[v])
-                for v in range(4)]
+    mediabox = [float(base_page.MediaBox[v]) for v in range(4)]
     wp, hp = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
 
     translate = pikepdf.PdfMatrix().translated(-wt / 2, -ht / 2)
@@ -147,11 +145,7 @@ def _weave_layers_graft(
     # for a size different between initial and text PDF, then untranslate
     ctm = translate @ rotate @ scale @ untranslate
 
-    pdf_text_contents = (
-        b'q %s cm\n' % ctm.encode() +
-        pdf_text_contents +
-        b'\nQ\n'
-    )
+    pdf_text_contents = b'q %s cm\n' % ctm.encode() + pdf_text_contents + b'\nQ\n'
 
     new_text_layer = pikepdf.Stream(pdf_base, pdf_text_contents)
 
@@ -254,8 +248,7 @@ def _fix_toc(pdf_base, pageref_remap, log):
         if not isinstance(dest_node, pikepdf.Array):
             return
         pageref = dest_node[0]
-        if pageref['/Type'] == '/Page' and \
-                pageref.objgen in pageref_remap:
+        if pageref['/Type'] == '/Page' and pageref.objgen in pageref_remap:
             new_objgen = pageref_remap[pageref.objgen]
             dest_node[0] = pdf_base.get_object(new_objgen)
 
@@ -278,11 +271,7 @@ def _fix_toc(pdf_base, pageref_remap, log):
     _traverse_toc(pdf_base, visit_remap_dest, log)
 
 
-def weave_layers(
-        infiles,
-        output_file,
-        log,
-        context):
+def weave_layers(infiles, output_file, log, context):
     """Apply text layer and/or image layer changes to baseline file
 
     This is where the magic happens. infiles will be the main PDF to modify,
@@ -313,6 +302,7 @@ def weave_layers(
             return page_number(key)
         except ValueError:
             return -1
+
     flat_inputs = sorted(flatten_groups(infiles), key=input_sorter)
     groups = groupby(flat_inputs, key=input_sorter)
 
@@ -333,7 +323,8 @@ def weave_layers(
     _traverse_toc(pdf_base, None, log)
 
     procset = pdf_base.make_indirect(
-        pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]'))
+        pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]')
+    )
 
     # Iterate rest
     for page_num, layers in groups:
@@ -341,12 +332,8 @@ def weave_layers(
         log.debug(page_num)
         log.debug(layers)
 
-        text = next(
-            (ii for ii in layers if ii.endswith('.text.pdf')), None
-        )
-        image = next(
-            (ii for ii in layers if ii.endswith('.image-layer.pdf')), None
-        )
+        text = next((ii for ii in layers if ii.endswith('.text.pdf')), None)
+        image = next((ii for ii in layers if ii.endswith('.image-layer.pdf')), None)
 
         if text and not font:
             font, font_key = _find_font(text, pdf_base)
@@ -378,23 +365,30 @@ def weave_layers(
             content_rotation = autorotate_correction
         text_rotation = autorotate_correction
         text_misaligned = (text_rotation - content_rotation) % 360
-        log.debug('%r', [
-            text_rotation, autorotate_correction, text_misaligned,
-            content_rotation]
+        log.debug(
+            '%r',
+            [text_rotation, autorotate_correction, text_misaligned, content_rotation],
         )
 
         if text and font:
             # Graft the text layer onto this page, whether new or old
             strip_old = context.get_options().redo_ocr
             _weave_layers_graft(
-                pdf_base=pdf_base, page_num=page_num, text=text, font=font,
-                font_key=font_key, rotation=text_misaligned, procset=procset,
-                strip_old_text=strip_old, log=log
+                pdf_base=pdf_base,
+                page_num=page_num,
+                text=text,
+                font=font,
+                font_key=font_key,
+                rotation=text_misaligned,
+                procset=procset,
+                strip_old_text=strip_old,
+                log=log,
             )
 
         # Correct the rotation if applicable
-        pdf_base.pages[page_num - 1].Rotate = \
-            (content_rotation - autorotate_correction) % 360
+        pdf_base.pages[page_num - 1].Rotate = (
+            content_rotation - autorotate_correction
+        ) % 360
 
         if len(keep_open) > 100:
             # qpdf limitations require us to keep files open when we intend
@@ -404,7 +398,8 @@ def weave_layers(
             # even if page 1 doesn't use it, so we have a way to get it back.
             page0 = pdf_base.pages[0]
             _update_page_resources(
-                page=page0, font=font, font_key=font_key, procset=procset)
+                page=page0, font=font, font_key=font_key, procset=procset
+            )
             interim = output_file + '_working{}.pdf'.format(page_num)
             pdf_base.save(interim)
             del pdf_base

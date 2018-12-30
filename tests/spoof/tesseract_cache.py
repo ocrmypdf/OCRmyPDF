@@ -63,12 +63,13 @@ if '_OCRMYPDF_SAVE_PATH' in os.environ:
     os.environ['PATH'] = os.environ['_OCRMYPDF_SAVE_PATH']
 
 __version__ = subprocess.check_output(
-        ['tesseract', '--version'],
-        stderr=subprocess.STDOUT).decode()
+    ['tesseract', '--version'], stderr=subprocess.STDOUT
+).decode()
 
 
 parser = argparse.ArgumentParser(
-    prog='tesseract-cache', description='cache output of tesseract')
+    prog='tesseract-cache', description='cache output of tesseract'
+)
 parser.add_argument('-l', '--language', action='append')
 parser.add_argument('imagename')
 parser.add_argument('outputbase')
@@ -82,6 +83,7 @@ parser.add_argument('--oem', type=int)
 TESTS_ROOT = Path(__file__).resolve().parent.parent
 CACHE_ROOT = TESTS_ROOT / 'cache'
 
+
 def real_tesseract():
     tess_args = ['tesseract'] + sys.argv[1:]
     os.execvp("tesseract", tess_args)
@@ -89,8 +91,10 @@ def real_tesseract():
 
 
 def main():
-    if any(opt in sys.argv[1:] for opt in (
-            '--print-parameters', '--list-langs', '--version')):
+    if any(
+        opt in sys.argv[1:]
+        for opt in ('--print-parameters', '--list-langs', '--version')
+    ):
         real_tesseract()  # jump into real tesseract, replacing this process
 
     # Convert non-standard but supported -psm to --psm
@@ -122,8 +126,7 @@ def main():
     cache_folder = Path(CACHE_ROOT) / Path(source).stem / argv_slug
     cache_folder.mkdir(parents=True, exist_ok=True)
 
-    print("Tesseract cache folder {} - ".format(cache_folder), end='',
-          file=sys.stderr)
+    print("Tesseract cache folder {} - ".format(cache_folder), end='', file=sys.stderr)
 
     if (cache_folder / 'stderr.bin').exists() and not cache_disabled:
         # Cache hit
@@ -138,8 +141,7 @@ def main():
             for configfile in args.configfiles:
                 # cp cache -> output
                 tessfile = args.outputbase + '.' + configfile
-                shutil.copy(str(cache_folder / configfile) + '.bin',
-                            tessfile)
+                shutil.copy(str(cache_folder / configfile) + '.bin', tessfile)
         sys.exit(0)
 
     # Cache miss
@@ -148,8 +150,8 @@ def main():
     # Call tesseract
     print(sys.argv[1:])
     p = subprocess.run(
-            ['tesseract'] + sys.argv[1:],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ['tesseract'] + sys.argv[1:], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     sys.stdout.buffer.write(p.stdout)
     sys.stderr.buffer.write(p.stderr)
 
@@ -179,10 +181,11 @@ def main():
     manifest['python'] = platform.python_version()
     manifest['argv_slug'] = argv_slug
     manifest['sourcefile'] = str(Path(source).relative_to(TESTS_ROOT))
+
     def clean_sys_argv():
         for arg in sys.argv[1:]:
-            yield re.sub(r'.*/com.github.ocrmypdf[^/]+[/](.*)',
-                         r'$TMPDIR/\1', arg)
+            yield re.sub(r'.*/com.github.ocrmypdf[^/]+[/](.*)', r'$TMPDIR/\1', arg)
+
     manifest['args'] = list(clean_sys_argv())
 
     # pylint: disable=E1101

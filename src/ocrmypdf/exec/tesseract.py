@@ -21,7 +21,14 @@ import shutil
 from functools import lru_cache
 from collections import namedtuple
 from textwrap import dedent
-from subprocess import CalledProcessError, TimeoutExpired, check_output, STDOUT, run, PIPE
+from subprocess import (
+    CalledProcessError,
+    TimeoutExpired,
+    check_output,
+    STDOUT,
+    run,
+    PIPE,
+)
 from contextlib import suppress
 from os import fspath
 
@@ -29,9 +36,7 @@ from ..exceptions import MissingDependencyError, TesseractConfigError
 from ..helpers import page_number
 from . import get_version
 
-OrientationConfidence = namedtuple(
-    'OrientationConfidence',
-    ('angle', 'confidence'))
+OrientationConfidence = namedtuple('OrientationConfidence', ('angle', 'confidence'))
 
 HOCR_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -68,18 +73,12 @@ def has_textonly_pdf():
     Available in v4.00.00alpha since January 2017. Best to
     parse the parameter list
     """
-    args_tess = [
-        'tesseract',
-        '--print-parameters',
-        'pdf'
-    ]
+    args_tess = ['tesseract', '--print-parameters', 'pdf']
     params = ''
     try:
-        params = check_output(
-                args_tess, universal_newlines=True, stderr=STDOUT)
+        params = check_output(args_tess, universal_newlines=True, stderr=STDOUT)
     except CalledProcessError as e:
-        print("Could not --print-parameters from tesseract",
-              file=sys.stderr)
+        print("Could not --print-parameters from tesseract", file=sys.stderr)
         raise MissingDependencyError from e
     if 'textonly_pdf' in params:
         return True
@@ -89,21 +88,19 @@ def has_textonly_pdf():
 @lru_cache(maxsize=1)
 def languages():
     def lang_error(output):
-        msg = dedent("""Tesseract failed to report available languages.
+        msg = dedent(
+            """Tesseract failed to report available languages.
         Output from Tesseract:
         -----------
-        """)
+        """
+        )
         msg += output
         print(msg, file=sys.stderr)
 
-    args_tess = [
-        'tesseract',
-        '--list-langs'
-    ]
+    args_tess = ['tesseract', '--list-langs']
     try:
         proc = run(
-            args_tess, universal_newlines=True, stdout=PIPE, stderr=STDOUT,
-            check=True
+            args_tess, universal_newlines=True, stdout=PIPE, stderr=STDOUT, check=True
         )
         output = proc.stdout
     except CalledProcessError as e:
@@ -118,9 +115,7 @@ def languages():
 
 
 def tess_base_args(langs, engine_mode):
-    args = [
-        'tesseract',
-    ]
+    args = ['tesseract']
     if langs:
         args.extend(['-l', '+'.join(langs)])
     if engine_mode is not None and v4():
@@ -130,20 +125,22 @@ def tess_base_args(langs, engine_mode):
 
 def get_orientation(input_file, engine_mode, timeout: float, log):
     args_tesseract = tess_base_args(['osd'], engine_mode) + [
-        '--psm', '0',
+        '--psm',
+        '0',
         fspath(input_file),
-        'stdout'
+        'stdout',
     ]
 
     try:
-        stdout = check_output(
-            args_tesseract, stderr=STDOUT, timeout=timeout)
+        stdout = check_output(args_tesseract, stderr=STDOUT, timeout=timeout)
     except TimeoutExpired:
         return OrientationConfidence(angle=0, confidence=0.0)
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_file)
-        if (b'Too few characters. Skipping this page' in e.output or
-                b'Image too large' in e.output):
+        if (
+            b'Too few characters. Skipping this page' in e.output
+            or b'Image too large' in e.output
+        ):
             return OrientationConfidence(0, 0)
         raise e from e
     else:
@@ -156,8 +153,8 @@ def get_orientation(input_file, engine_mode, timeout: float, log):
 
         angle = int(osd.get('Orientation in degrees', 0))
         oc = OrientationConfidence(
-            angle=angle,
-            confidence=float(osd.get('Orientation confidence', 0)))
+            angle=angle, confidence=float(osd.get('Orientation confidence', 0))
+        )
         return oc
 
 
@@ -167,9 +164,12 @@ def tesseract_log_output(log, stdout, input_file):
     try:
         text = stdout.decode()
     except UnicodeDecodeError:
-        log.error(prefix + "command line output was not utf-8. " +
-            "This usually means Tesseract's language packs do not match "
-            "the installed version of Tesseract.")
+        log.error(
+            prefix
+            + "command line output was not utf-8. "
+            + "This usually means Tesseract's language packs do not match "
+            "the installed version of Tesseract."
+        )
         text = stdout.decode('utf-8', 'backslashreplace')
 
     lines = text.splitlines()
@@ -219,10 +219,18 @@ def _generate_null_hocr(output_hocr, output_sidecar, image):
         f.write('[skipped page]')
 
 
-def generate_hocr(input_file, output_files, language: list, engine_mode,
-                  tessconfig: list,
-                  timeout: float, pagesegmode: int, user_words, user_patterns,
-                  log):
+def generate_hocr(
+    input_file,
+    output_files,
+    language: list,
+    engine_mode,
+    tessconfig: list,
+    timeout: float,
+    pagesegmode: int,
+    user_words,
+    user_patterns,
+    log,
+):
 
     output_hocr = next(o for o in output_files if o.endswith('.hocr'))
     output_sidecar = next(o for o in output_files if o.endswith('.txt'))
@@ -241,17 +249,10 @@ def generate_hocr(input_file, output_files, language: list, engine_mode,
 
     # Reminder: test suite tesseract spoofers will break after any changes
     # to the number of order parameters here
-    args_tesseract.extend([
-        input_file,
-        prefix,
-        'hocr',
-        'txt'
-    ] + tessconfig)
+    args_tesseract.extend([input_file, prefix, 'hocr', 'txt'] + tessconfig)
     try:
         log.debug(args_tesseract)
-        stdout = check_output(
-            args_tesseract, stderr=STDOUT,
-            timeout=timeout)
+        stdout = check_output(args_tesseract, stderr=STDOUT, timeout=timeout)
     except TimeoutExpired:
         # Generate a HOCR file with no recognized text if tesseract times out
         # Temporary workaround to hocrTransform not being able to function if
@@ -289,10 +290,22 @@ def use_skip_page(text_only, skip_pdf, output_pdf, output_text):
         out.write(b'')
 
 
-def generate_pdf(*, input_image, skip_pdf=None, output_pdf, output_text,
-                 language: list, engine_mode, text_only: bool,
-                 tessconfig: list, timeout: float, pagesegmode: int,
-                 user_words, user_patterns, log):
+def generate_pdf(
+    *,
+    input_image,
+    skip_pdf=None,
+    output_pdf,
+    output_text,
+    language: list,
+    engine_mode,
+    text_only: bool,
+    tessconfig: list,
+    timeout: float,
+    pagesegmode: int,
+    user_words,
+    user_patterns,
+    log,
+):
     '''Use Tesseract to render a PDF.
 
     input_image -- image to analyze
@@ -326,18 +339,11 @@ def generate_pdf(*, input_image, skip_pdf=None, output_pdf, output_text,
     # Reminder: test suite tesseract spoofers might break after any changes
     # to the number of order parameters here
 
-    args_tesseract.extend([
-        input_image,
-        prefix,
-        'pdf',
-        'txt'
-    ] + tessconfig)
+    args_tesseract.extend([input_image, prefix, 'pdf', 'txt'] + tessconfig)
 
     try:
         log.debug(args_tesseract)
-        stdout = check_output(
-            args_tesseract, stderr=STDOUT,
-            timeout=timeout)
+        stdout = check_output(args_tesseract, stderr=STDOUT, timeout=timeout)
         if os.path.exists(prefix + '.txt'):
             shutil.move(prefix + '.txt', output_text)
     except TimeoutExpired:

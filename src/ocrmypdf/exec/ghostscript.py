@@ -69,39 +69,46 @@ def extract_text(input_file, pageno=1):
     """
 
     if pageno is not None:
-        pages = [
-            '-dFirstPage=%i' % pageno,
-            '-dLastPage=%i' % pageno
-        ]
+        pages = ['-dFirstPage=%i' % pageno, '-dLastPage=%i' % pageno]
     else:
         pages = []
 
-    args_gs = [
-        'gs',
-        '-dQUIET',
-        '-dSAFER',
-        '-dBATCH',
-        '-dNOPAUSE',
-        '-sDEVICE=txtwrite',
-        '-dTextFormat=0',
-    ] + pages + [
-        '-o', '-',
-        fspath(input_file)
-    ]
+    args_gs = (
+        [
+            'gs',
+            '-dQUIET',
+            '-dSAFER',
+            '-dBATCH',
+            '-dNOPAUSE',
+            '-sDEVICE=txtwrite',
+            '-dTextFormat=0',
+        ]
+        + pages
+        + ['-o', '-', fspath(input_file)]
+    )
 
     p = run(args_gs, stdout=PIPE, stderr=PIPE)
     if p.returncode != 0:
         raise SubprocessOutputError(
-            'Ghostscript text extraction failed\n%s\n%s\n%s' % (
-                input_file, p.stdout.decode(), p.stderr.decode()
-            )
+            'Ghostscript text extraction failed\n%s\n%s\n%s'
+            % (input_file, p.stdout.decode(), p.stderr.decode())
         )
 
     return p.stdout
 
 
-def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
-                  pageno=1, page_dpi=None, rotation=None, filter_vector=False):
+def rasterize_pdf(
+    input_file,
+    output_file,
+    xres,
+    yres,
+    raster_device,
+    log,
+    pageno=1,
+    page_dpi=None,
+    rotation=None,
+    filter_vector=False,
+):
     """Rasterize one page of a PDF at resolution (xres, yres) in canvas units.
 
     The image is sized to match the integer pixels dimensions implied by
@@ -126,26 +133,30 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
         page_dpi = res
 
     with NamedTemporaryFile(delete=True) as tmp:
-        args_gs = [
-            'gs',
-            '-dQUIET',
-            '-dSAFER',
-            '-dBATCH',
-            '-dNOPAUSE',
-            '-sDEVICE=%s' % raster_device,
-            '-dFirstPage=%i' % pageno,
-            '-dLastPage=%i' % pageno,
-            '-r{0}x{1}'.format(str(int_res[0]), str(int_res[1])),
-        ] + (['-dFILTERVECTOR'] if filter_vector else []) + [
-            '-o', tmp.name,
-            '-dAutoRotatePages=/None',  # Probably has no effect on raster
-            '-f',
-            fspath(input_file)
-        ]
+        args_gs = (
+            [
+                'gs',
+                '-dQUIET',
+                '-dSAFER',
+                '-dBATCH',
+                '-dNOPAUSE',
+                '-sDEVICE=%s' % raster_device,
+                '-dFirstPage=%i' % pageno,
+                '-dLastPage=%i' % pageno,
+                '-r{0}x{1}'.format(str(int_res[0]), str(int_res[1])),
+            ]
+            + (['-dFILTERVECTOR'] if filter_vector else [])
+            + [
+                '-o',
+                tmp.name,
+                '-dAutoRotatePages=/None',  # Probably has no effect on raster
+                '-f',
+                fspath(input_file),
+            ]
+        )
 
         log.debug(args_gs)
-        p = run(args_gs, stdout=PIPE, stderr=STDOUT,
-                universal_newlines=True)
+        p = run(args_gs, stdout=PIPE, stderr=STDOUT, universal_newlines=True)
         if _gs_error_reported(p.stdout):
             log.error(p.stdout)
         else:
@@ -162,12 +173,16 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
 
         tmp.seek(0)
         with Image.open(tmp) as im:
-            expected_size = round(im.size[0] / int_res[0] * res[0]), \
-                            round(im.size[1] / int_res[1] * res[1])
+            expected_size = (
+                round(im.size[0] / int_res[0] * res[0]),
+                round(im.size[1] / int_res[1] * res[1]),
+            )
             if expected_size != im.size or page_dpi != (xres, yres):
                 log.debug(
                     "Ghostscript: resize output image {} -> {}".format(
-                        im.size, expected_size))
+                        im.size, expected_size
+                    )
+                )
                 im = im.resize(expected_size)
 
             if rotation is not None:
@@ -185,8 +200,15 @@ def rasterize_pdf(input_file, output_file, xres, yres, raster_device, log,
             im.save(fspath(output_file), dpi=page_dpi)
 
 
-def generate_pdfa(pdf_pages, output_file, compression, log,
-                  threads=1, pdf_version='1.5', pdfa_part='2'):
+def generate_pdfa(
+    pdf_pages,
+    output_file,
+    compression,
+    log,
+    threads=1,
+    pdf_version='1.5',
+    pdfa_part='2',
+):
     """Generate a PDF/A.
 
     The pdf_pages, a list files, will be merged into output_file. One or more
@@ -240,26 +262,29 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
         # nb no need to specify ProcessColorModel when ColorConversionStrategy
         # is set; see:
         # https://bugs.ghostscript.com/show_bug.cgi?id=699392
-        args_gs = [
-            "gs",
-            "-dQUIET",
-            "-dBATCH",
-            "-dNOPAUSE",
-            "-dCompatibilityLevel=" + str(pdf_version),
-            "-dNumRenderingThreads=" + str(threads),
-            "-sDEVICE=pdfwrite",
-            "-dAutoRotatePages=/None",
-            "-sColorConversionStrategy=" + strategy
-        ] + compression_args + [
-            "-dJPEGQ=95",
-            "-dPDFA=" + pdfa_part,
-            "-dPDFACompatibilityPolicy=1",
-            "-sOutputFile=" + gs_pdf.name,
-        ]
+        args_gs = (
+            [
+                "gs",
+                "-dQUIET",
+                "-dBATCH",
+                "-dNOPAUSE",
+                "-dCompatibilityLevel=" + str(pdf_version),
+                "-dNumRenderingThreads=" + str(threads),
+                "-sDEVICE=pdfwrite",
+                "-dAutoRotatePages=/None",
+                "-sColorConversionStrategy=" + strategy,
+            ]
+            + compression_args
+            + [
+                "-dJPEGQ=95",
+                "-dPDFA=" + pdfa_part,
+                "-dPDFACompatibilityPolicy=1",
+                "-sOutputFile=" + gs_pdf.name,
+            ]
+        )
         args_gs.extend(fspath(s) for s in pdf_pages)  # Stringify Path objs
         log.debug(args_gs)
-        p = run(args_gs, stdout=PIPE, stderr=STDOUT,
-                universal_newlines=True)
+        p = run(args_gs, stdout=PIPE, stderr=STDOUT, universal_newlines=True)
 
         if _gs_error_reported(p.stdout):
             log.error(p.stdout)
@@ -270,7 +295,7 @@ def generate_pdfa(pdf_pages, output_file, compression, log,
             log.debug(
                 "Ghostscript had to remove PDF 'overprinting' from the "
                 "input file to complete PDF/A conversion. "
-                )
+            )
         else:
             log.debug(p.stdout)
 

@@ -41,7 +41,7 @@ import pikepdf
 
 from pikepdf.models.metadata import (
     encode_pdf_date as _encode_date,
-    decode_pdf_date as _decode_date
+    decode_pdf_date as _decode_date,
 )
 
 from .helpers import deprecated
@@ -49,8 +49,7 @@ from .helpers import deprecated
 
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
 
-SRGB_ICC_PROFILE = pkg_resources.resource_filename(
-    'ocrmypdf', ICC_PROFILE_RELPATH)
+SRGB_ICC_PROFILE = pkg_resources.resource_filename('ocrmypdf', ICC_PROFILE_RELPATH)
 
 
 # This is a template written in PostScript which is needed to create PDF/A
@@ -128,12 +127,7 @@ def _encode_ascii(s: str) -> str:
     be to implement PdfDocEncoding in pikepdf and encode to that, or handle
     metadata there.
     """
-    trans = str.maketrans({
-        '(': '',
-        ')': '',
-        '\\': '',
-        '\0': ''
-    })
+    trans = str.maketrans({'(': '', ')': '', '\\': '', '\0': ''})
     return s.translate(trans).encode('ascii', errors='replace').decode()
 
 
@@ -163,8 +157,7 @@ def _get_pdfa_def(icc_profile, icc_identifier, pdfmark=None, ascii_docinfo=None)
     """
 
     t = Template(pdfa_def_template)
-    result = t.substitute(icc_profile=icc_profile,
-                          icc_identifier=icc_identifier)
+    result = t.substitute(icc_profile=icc_profile, icc_identifier=icc_identifier)
     return result
 
 
@@ -205,8 +198,11 @@ def file_claims_pdfa(filename):
     pdf = pikepdf.open(filename)
     pdfmeta = pdf.open_metadata()
     if not pdfmeta.pdfa_status:
-        return {'pass': False, 'output': 'pdf',
-                'conformance': 'No PDF/A metadata in XMP'}
+        return {
+            'pass': False,
+            'output': 'pdf',
+            'conformance': 'No PDF/A metadata in XMP',
+        }
     valid_part_conforms = {'1A', '1B', '2A', '2B', '2U', '3A', '3B', '3U'}
     conformance = 'PDF/A-{}'.format(pdfmeta.pdfa_status)
     pdfa_dict = {}

@@ -69,14 +69,14 @@ class _LeptonicaErrorTrap:
 
     def __enter__(self):
         from io import UnsupportedOperation
+
         self.tmpfile = TemporaryFile()
 
         # Save the old stderr, and redirect stderr to temporary file
         sys.stderr.flush()
         try:
             self.copy_of_stderr = os.dup(sys.stderr.fileno())
-            os.dup2(self.tmpfile.fileno(), sys.stderr.fileno(),
-                    inheritable=False)
+            os.dup2(self.tmpfile.fileno(), sys.stderr.fileno(), inheritable=False)
         except UnsupportedOperation:
             self.copy_of_stderr = None
         return
@@ -185,9 +185,13 @@ class Pix(LeptonicaObject):
     def __repr__(self):
         if self._cdata:
             s = "<leptonica.Pix image size={0}x{1} depth={2}{4} at 0x{3:x}>"
-            return s.format(self._cdata.w, self._cdata.h, self._cdata.d,
-                            int(ffi.cast('intptr_t', self._cdata)),
-                            '(colormapped)' if self._cdata.colormap else '')
+            return s.format(
+                self._cdata.w,
+                self._cdata.h,
+                self._cdata.d,
+                int(ffi.cast('intptr_t', self._cdata)),
+                '(colormapped)' if self._cdata.colormap else '',
+            )
         else:
             return "<leptonica.Pix image NULL>"
 
@@ -289,8 +293,7 @@ class Pix(LeptonicaObject):
         with _LeptonicaErrorTrap():
             return cls(lept.pixRead(os.fsencode(filename)))
 
-    def write_implied_format(
-            self, path, jpeg_quality=0, jpeg_progressive=0):
+    def write_implied_format(self, path, jpeg_quality=0, jpeg_progressive=0):
         """Write pix to the filename, with the extension indicating format.
 
         jpeg_quality -- quality (iff JPEG; 1 - 100, 0 for default)
@@ -299,8 +302,8 @@ class Pix(LeptonicaObject):
         filename = fspath(path)
         with _LeptonicaErrorTrap():
             lept.pixWriteImpliedFormat(
-                os.fsencode(filename),
-                self._cdata, jpeg_quality, jpeg_progressive)
+                os.fsencode(filename), self._cdata, jpeg_quality, jpeg_progressive
+            )
 
     @classmethod
     def frompil(self, pillow_image):
@@ -401,11 +404,13 @@ class Pix(LeptonicaObject):
 
         """
         with _LeptonicaErrorTrap():
-            return Pix(lept.pixRemoveColormapGeneral(
-                    self._cdata, removal_type, lept.L_COPY))
+            return Pix(
+                lept.pixRemoveColormapGeneral(self._cdata, removal_type, lept.L_COPY)
+            )
 
     def otsu_adaptive_threshold(
-            self, tile_size=(300, 300), kernel_size=(4, 4), scorefract=0.1):
+        self, tile_size=(300, 300), kernel_size=(4, 4), scorefract=0.1
+    ):
         with _LeptonicaErrorTrap():
             sx, sy = tile_size
             smoothx, smoothy = kernel_size
@@ -413,20 +418,23 @@ class Pix(LeptonicaObject):
 
             pix = Pix(lept.pixConvertTo8(self._cdata, 0))
             result = lept.pixOtsuAdaptiveThreshold(
-                pix._cdata,
-                sx, sy,
-                smoothx, smoothy,
-                scorefract,
-                ffi.NULL,
-                p_pix)
+                pix._cdata, sx, sy, smoothx, smoothy, scorefract, ffi.NULL, p_pix
+            )
             if result == 0:
                 return Pix(p_pix[0])
             else:
                 return None
 
     def otsu_threshold_on_background_norm(
-            self, mask=None, tile_size=(10, 15), thresh=100, mincount=50,
-            bgval=255, kernel_size=(2, 2), scorefract=0.1):
+        self,
+        mask=None,
+        tile_size=(10, 15),
+        thresh=100,
+        mincount=50,
+        bgval=255,
+        kernel_size=(2, 2),
+        scorefract=0.1,
+    ):
         with _LeptonicaErrorTrap():
             sx, sy = tile_size
             smoothx, smoothy = kernel_size
@@ -438,17 +446,27 @@ class Pix(LeptonicaObject):
             thresh_pix = lept.pixOtsuThreshOnBackgroundNorm(
                 pix._cdata,
                 mask,
-                sx, sy,
-                thresh, mincount, bgval,
-                smoothx, smoothy,
+                sx,
+                sy,
+                thresh,
+                mincount,
+                bgval,
+                smoothx,
+                smoothy,
                 scorefract,
-                ffi.NULL
+                ffi.NULL,
             )
             return Pix(thresh_pix)
 
     def masked_threshold_on_background_norm(
-            self, mask=None, tile_size=(10, 15), thresh=100, mincount=50,
-            kernel_size=(2, 2), scorefract=0.1):
+        self,
+        mask=None,
+        tile_size=(10, 15),
+        thresh=100,
+        mincount=50,
+        kernel_size=(2, 2),
+        scorefract=0.1,
+    ):
         with _LeptonicaErrorTrap():
             sx, sy = tile_size
             smoothx, smoothy = kernel_size
@@ -460,74 +478,91 @@ class Pix(LeptonicaObject):
             thresh_pix = lept.pixMaskedThreshOnBackgroundNorm(
                 pix._cdata,
                 mask,
-                sx, sy,
-                thresh, mincount,
-                smoothx, smoothy,
+                sx,
+                sy,
+                thresh,
+                mincount,
+                smoothx,
+                smoothy,
                 scorefract,
-                ffi.NULL
+                ffi.NULL,
             )
             return Pix(thresh_pix)
 
     def crop_to_foreground(
-            self, threshold=128, mindist=70, erasedist=30, pagenum=0,
-            showmorph=0, display=0, pdfdir=ffi.NULL):
+        self,
+        threshold=128,
+        mindist=70,
+        erasedist=30,
+        pagenum=0,
+        showmorph=0,
+        display=0,
+        pdfdir=ffi.NULL,
+    ):
         with _LeptonicaErrorTrap():
-            cropbox = Box(lept.pixFindPageForeground(
-                self._cdata,
-                threshold,
-                mindist,
-                erasedist,
-                pagenum,
-                showmorph,
-                display,
-                pdfdir))
+            cropbox = Box(
+                lept.pixFindPageForeground(
+                    self._cdata,
+                    threshold,
+                    mindist,
+                    erasedist,
+                    pagenum,
+                    showmorph,
+                    display,
+                    pdfdir,
+                )
+            )
 
-            cropped_pix = lept.pixClipRectangle(
-                self._cdata,
-                cropbox._cdata,
-                ffi.NULL)
+            cropped_pix = lept.pixClipRectangle(self._cdata, cropbox._cdata, ffi.NULL)
 
             return Pix(cropped_pix)
 
     def clean_background_to_white(
-            self, mask=None, grayscale=None, gamma=1.0, black=0, white=255):
+        self, mask=None, grayscale=None, gamma=1.0, black=0, white=255
+    ):
         with _LeptonicaErrorTrap():
-            return Pix(lept.pixCleanBackgroundToWhite(
-                self._cdata,
-                mask or ffi.NULL,
-                grayscale or ffi.NULL,
-                gamma,
-                black,
-                white))
+            return Pix(
+                lept.pixCleanBackgroundToWhite(
+                    self._cdata,
+                    mask or ffi.NULL,
+                    grayscale or ffi.NULL,
+                    gamma,
+                    black,
+                    white,
+                )
+            )
 
     def gamma_trc(self, gamma=1.0, minval=0, maxval=255):
         with _LeptonicaErrorTrap():
-            return Pix(lept.pixGammaTRC(
-                ffi.NULL,
-                self._cdata,
-                gamma,
-                minval,
-                maxval
-                ))
+            return Pix(lept.pixGammaTRC(ffi.NULL, self._cdata, gamma, minval, maxval))
 
     def background_norm(
-            self, mask=None, grayscale=None, tile_size=(10, 15), fg_threshold=60,
-            min_count=40, bg_val=200, smooth_kernel=(2, 1)):
+        self,
+        mask=None,
+        grayscale=None,
+        tile_size=(10, 15),
+        fg_threshold=60,
+        min_count=40,
+        bg_val=200,
+        smooth_kernel=(2, 1),
+    ):
         # Background norm doesn't work on color mapped Pix, so remove colormap
         target_pix = self.remove_colormap(lept.REMOVE_CMAP_BASED_ON_SRC)
         with _LeptonicaErrorTrap():
-            return Pix(lept.pixBackgroundNorm(
-                target_pix._cdata,
-                mask or ffi.NULL,
-                grayscale or ffi.NULL,
-                tile_size[0],
-                tile_size[1],
-                fg_threshold,
-                min_count,
-                bg_val,
-                smooth_kernel[0],
-                smooth_kernel[1]
-            ))
+            return Pix(
+                lept.pixBackgroundNorm(
+                    target_pix._cdata,
+                    mask or ffi.NULL,
+                    grayscale or ffi.NULL,
+                    tile_size[0],
+                    tile_size[1],
+                    fg_threshold,
+                    min_count,
+                    bg_val,
+                    smooth_kernel[0],
+                    smooth_kernel[1],
+                )
+            )
 
     @staticmethod
     @lru_cache(maxsize=1)
@@ -544,8 +579,7 @@ class Pix(LeptonicaObject):
             raise LeptonicaError("Leptonica version is too old")
 
         correlation = ffi.new('float *', 0.0)
-        result = lept.pixCorrelationBinary(pix1._cdata, pix2._cdata,
-                                           correlation)
+        result = lept.pixCorrelationBinary(pix1._cdata, pix2._cdata, correlation)
         if result != 0:
             raise LeptonicaError("Correlation failed")
         return correlation[0]
@@ -553,8 +587,7 @@ class Pix(LeptonicaObject):
     def generate_pdf_ci_data(self, type_, quality):
         "Convert to PDF data, with transcoding"
         p_compdata = ffi.new('L_COMP_DATA **')
-        result = lept.pixGenerateCIData(self._cdata, type_, quality, 0,
-                                        p_compdata)
+        result = lept.pixGenerateCIData(self._cdata, type_, quality, 0, p_compdata)
         if result != 0:
             raise LeptonicaError("Generate PDF data failed")
         return CompressedData(p_compdata[0])
@@ -569,13 +602,15 @@ class Pix(LeptonicaObject):
                 pixa_candidates = PixArray(lept.pixExtractBarcodes(pix._cdata, 0))
                 if not pixa_candidates:
                     return
-                sarray = StringArray(lept.pixReadBarcodes(
-                    pixa_candidates._cdata,
-                    lept.L_BF_ANY,
-                    lept.L_USE_WIDTHS,
-                    ffi.NULL,
-                    0
-                ))
+                sarray = StringArray(
+                    lept.pixReadBarcodes(
+                        pixa_candidates._cdata,
+                        lept.L_BF_ANY,
+                        lept.L_USE_WIDTHS,
+                        ffi.NULL,
+                        0,
+                    )
+                )
         except (LeptonicaError, ValueError, IndexError) as e:
             return
         finally:
@@ -635,7 +670,8 @@ class CompressedData(LeptonicaObject):
 
         p_compdata = ffi.new('L_COMP_DATA **')
         result = lept.l_generateCIDataForPdf(
-            os.fsencode(filename), ffi.NULL, jpeg_quality, p_compdata)
+            os.fsencode(filename), ffi.NULL, jpeg_quality, p_compdata
+        )
         if result != 0:
             raise LeptonicaError("CompressedData.open")
         return CompressedData(p_compdata[0])
@@ -689,7 +725,8 @@ class Box(LeptonicaObject):
     def __repr__(self):
         if self._cdata:
             return '<leptonica.Box x={0} y={1} w={2} h={3}>'.format(
-                self.x, self.y, self.w, self.h)
+                self.x, self.y, self.w, self.h
+            )
         return '<leptonica.Box NULL>'
 
     @property
@@ -808,15 +845,22 @@ def deskew(infile, outfile, dpi):
         raise LeptonicaIOError("Failed to open destination file: %s" % outfile)
 
 
-def remove_background(infile, outfile, tile_size=(40, 60), gamma=1.0,
-                      black_threshold=70, white_threshold=190):
+def remove_background(
+    infile,
+    outfile,
+    tile_size=(40, 60),
+    gamma=1.0,
+    black_threshold=70,
+    white_threshold=190,
+):
     try:
         pix = Pix.open(infile)
     except LeptonicaIOError:
         raise LeptonicaIOError("Failed to open file: %s" % infile)
 
     pix = pix.background_norm(tile_size=tile_size).gamma_trc(
-            gamma, black_threshold, white_threshold)
+        gamma, black_threshold, white_threshold
+    )
 
     try:
         pix.write_implied_format(outfile)
@@ -825,15 +869,22 @@ def remove_background(infile, outfile, tile_size=(40, 60), gamma=1.0,
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description="Python wrapper to access Leptonica")
+    parser = argparse.ArgumentParser(description="Python wrapper to access Leptonica")
 
-    subparsers = parser.add_subparsers(title='commands',
-                                       description='supported operations')
+    subparsers = parser.add_subparsers(
+        title='commands', description='supported operations'
+    )
 
     parser_deskew = subparsers.add_parser('deskew')
-    parser_deskew.add_argument('-r', '--dpi', dest='dpi', action='store',
-                               type=int, default=300, help='input resolution')
+    parser_deskew.add_argument(
+        '-r',
+        '--dpi',
+        dest='dpi',
+        action='store',
+        type=int,
+        default=300,
+        help='input resolution',
+    )
     parser_deskew.add_argument('infile', help='image to deskew')
     parser_deskew.add_argument('outfile', help='deskewed output image')
     parser_deskew.set_defaults(func=deskew)
