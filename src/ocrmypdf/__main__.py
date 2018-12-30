@@ -671,8 +671,6 @@ def check_options_optimizing(options, log):
 
 
 def check_options_advanced(options, log):
-    if options.tesseract_oem and not tesseract.v4():
-        log.warning("--tesseract-oem requires Tesseract 4.x -- argument ignored")
     if options.pdfa_image_compression != 'auto' and options.output_type.startswith(
         'pdfa'
     ):
@@ -680,7 +678,6 @@ def check_options_advanced(options, log):
             "--pdfa-image-compression argument has no effect when "
             "--output-type is not 'pdfa', 'pdfa-1', or 'pdfa-2'"
         )
-
     if tesseract.v4() and (options.user_words or options.user_patterns):
         log.warning('Tesseract 4.x ignores --user-words, so this has no effect')
 
