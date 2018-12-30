@@ -21,8 +21,9 @@ import pytest
 from datetime import timezone
 from pathlib import Path
 from shutil import copyfile
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import datetime
+from shutil import copyfile
 
 import pikepdf
 from pikepdf.models.metadata import decode_pdf_date
@@ -278,3 +279,39 @@ def test_kodak_toc(resources, outpdf, spoof_tesseract_noop):
 
     if pikepdf.Name.First in p.root.Outlines:
         assert isinstance(p.root.Outlines.First, pikepdf.Dictionary)
+
+
+def test_metadata_fixup_warning(resources, outdir):
+    from ocrmypdf._pipeline import metadata_fixup
+
+    input_files = [
+        str(outdir / 'graph.repaired.pdf'),
+        str(outdir / 'layers.rendered.pdf'),
+        str(outdir / 'pdfa.pdf'),  # It is okay that this is not a PDF/A
+    ]
+    for f in input_files:
+        copyfile(resources / 'graph.pdf', f)
+
+    log = MagicMock()
+    context = MagicMock()
+    metadata_fixup(
+        input_files_groups=input_files,
+        output_file=outdir / 'out.pdf',
+        log=log,
+        context=context)
+    log.warning.assert_not_called()
+
+    # Now add some metadata that will not be copyable
+    graph = pikepdf.open(outdir / 'graph.repaired.pdf')
+    with graph.open_metadata() as meta:
+        meta['prism2:publicationName'] = 'OCRmyPDF Test'
+    graph.save(outdir / 'graph.repaired.pdf')
+
+    log = MagicMock()
+    context = MagicMock()
+    metadata_fixup(
+        input_files_groups=input_files,
+        output_file=outdir / 'out.pdf',
+        log=log,
+        context=context)
+    log.warning.assert_called_once()

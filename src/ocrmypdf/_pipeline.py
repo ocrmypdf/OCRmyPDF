@@ -878,19 +878,19 @@ def metadata_fixup(
     options = context.get_options()
 
     input_files = list(f for f in flatten_groups(input_files_groups))
-    metadata_file = next(
+    original_file = next(
         (ii for ii in input_files if ii.endswith('.repaired.pdf')), None
     )
     layers_file = next(
         (ii for ii in input_files if ii.endswith('layers.rendered.pdf')), None
     )
-    pdfa = next(
+    pdfa_file = next(
         (ii for ii in input_files if ii.endswith('pdfa.pdf')), None
     )
-    metadata = pikepdf.open(metadata_file)
-    docinfo = get_docinfo(metadata, options)
+    original = pikepdf.open(original_file)
+    docinfo = get_docinfo(original, options)
 
-    working_file = pdfa if pdfa else layers_file
+    working_file = pdfa_file if pdfa_file else layers_file
 
     pdf = pikepdf.open(working_file)
     with pdf.open_metadata() as meta:
@@ -899,6 +899,20 @@ def metadata_fixup(
         # match Ghostscript, for consistency
         if 'xmp:CreateDate' not in meta:
             meta['xmp:CreateDate'] = meta.get('xmp:ModifyDate', '')
+        if pdfa_file:
+            meta_original = original.open_metadata()
+            not_copied = set(meta_original.keys()) - set(meta.keys())
+            if not_copied:
+                log.warning(
+                    "Some input metadata could not be copied because it is not "
+                    "permitted in PDF/A. You may wish to examine the output "
+                    "PDF's XMP metadata."
+                )
+                log.debug(
+                    "The following metadata fields were not copied: %r",
+                    not_copied
+                )
+
     pdf.save(output_file, compress_streams=True,
              object_stream_mode=pikepdf.ObjectStreamMode.generate)
 
