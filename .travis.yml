@@ -117,7 +117,10 @@ install:
 - pip3 install pycparser  # py3.7 workaround for https://github.com/eliben/pycparser/issues/251
 - pip3 install -r requirements/main.txt
 - pip3 install --no-deps .
-- '[[ "$ADD_PDFMINER" == "1" ]] && pip3 install .[pdfminer]'
+- |
+  if [[ "$ADD_PDFMINER" == "1" ]]; then
+    pip3 install --no-deps .[pdfminer]
+  fi
 - pip3 install -r requirements/test.txt
 
 script:
