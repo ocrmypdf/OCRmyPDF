@@ -142,10 +142,10 @@ def rasterize_pdf(
                 '-dSAFER',
                 '-dBATCH',
                 '-dNOPAUSE',
-                '-sDEVICE=%s' % raster_device,
-                '-dFirstPage=%i' % pageno,
-                '-dLastPage=%i' % pageno,
-                '-r{0}x{1}'.format(str(int_res[0]), str(int_res[1])),
+                f'-sDEVICE={raster_device}',
+                f'-dFirstPage={pageno}',
+                f'-dLastPage={pageno}',
+                f'-r{str(int_res[0])}x{str(int_res[1])}',
             ]
             + (['-dFILTERVECTOR'] if filter_vector else [])
             + [
@@ -181,9 +181,7 @@ def rasterize_pdf(
             )
             if expected_size != im.size or page_dpi != (xres, yres):
                 log.debug(
-                    "Ghostscript: resize output image {} -> {}".format(
-                        im.size, expected_size
-                    )
+                    f"Ghostscript: resize output image {im.size} -> {expected_size}"
                 )
                 im = im.resize(expected_size)
 

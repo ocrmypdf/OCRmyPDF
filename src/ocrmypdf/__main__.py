@@ -69,8 +69,8 @@ verify_python3_env()
 
 if not tesseract.v4:
     complain(
-        "Please install tesseract 4.0.0 or newer "
-        "(currently installed version is {1})".format(tesseract.version())
+        f"Please install tesseract 4.0.0 or newer "
+        f"(currently installed version is {tesseract.version()})"
     )
     sys.exit(ExitCode.missing_dependency)
 
@@ -550,7 +550,7 @@ def check_options_output(options, log):
             "with the OCR languages you specified. Use --output-type pdf or "
             "upgrade to Ghostscript 9.20 or later to avoid this issue."
         )
-        msg += "Found Ghostscript {}".format(ghostscript.version())
+        msg += f"Found Ghostscript {ghostscript.version()}"
         log.warning(msg)
 
     # Decide on what renderer to use
@@ -599,12 +599,12 @@ def _optional_program_required(name, version_fn, min_version, for_argument):
     try:
         if version_fn() < min_version:
             raise MissingDependencyError(
-                "The installed '{}' is not supported. "
-                "Install version {} or newer.".format(name, min_version)
+                f"The installed '{name}' is not supported. "
+                f"Install version {min_version} or newer."
             )
     except (FileNotFoundError, MissingDependencyError):
         raise MissingDependencyError(
-            "Install the '{}' program to use {}.".format(name, for_argument)
+            f"Install the '{name}' program to use {for_argument}."
         )
 
 
@@ -612,13 +612,13 @@ def _optional_program_recommended(name, version_fn, min_version, for_argument):
     try:
         if version_fn() < min_version:
             raise MissingDependencyError(
-                "The installed '{}' is not supported. "
-                "Install version {} or newer.".format(name, min_version)
+                f"The installed '{name}' is not supported. "
+                f"Install version {min_version} or newer."
             )
     except (FileNotFoundError, MissingDependencyError):
         complain(
-            "For best results, install the optional program '{}' to use the "
-            "argument {}.".format(name, for_argument)
+            f"For best results, install the optional program '{name}' to use the "
+            f"argument {for_argument}."
         )
 
 
@@ -926,11 +926,9 @@ def check_environ(options, _log):
         if k in os.environ:
             _log.warning(
                 textwrap.dedent(
-                    """\
-                OCRmyPDF no longer uses the environment variable {}.
-                Change PATH to select alternate programs.""".format(
-                        k
-                    )
+                    f"""\
+                OCRmyPDF no longer uses the environment variable {k}.
+                Change PATH to select alternate programs."""
                 )
             )
 
@@ -996,9 +994,7 @@ def report_output_file_size(options, _log, input_file, output_file):
         if not attr:
             continue
         reasons.append(
-            "The argument --{} was issued, causing transcoding.".format(
-                arg.replace('_', '-')
-            )
+            f"The argument --{arg.replace('_', '-')} was issued, causing transcoding."
         )
 
     if reasons:
@@ -1008,12 +1004,10 @@ def report_output_file_size(options, _log, input_file, output_file):
 
     _log.warning(
         textwrap.dedent(
-            """\
-        The output file size is {:.2f}× larger than the input file.
-        {}
-        """.format(
-                ratio, explanation
-            )
+            f"""\
+        The output file size is {ratio:.2f}× larger than the input file.
+        {explanation}
+        """
         )
     )
 
@@ -1040,9 +1034,9 @@ def run_pipeline(args=None):
     # for qpdf 7.0.0 for Ubuntu trusty (i.e. Travis)
     if qpdf.version() < '7.0.0' and not os.environ.get('PYTEST_CURRENT_TEST'):
         complain(
-            "You are using qpdf version {0} which has known issues including "
-            "security vulnerabilities with certain malformed PDFs. Consider "
-            "upgrading to version 7.0.0 or newer.".format(qpdf.version())
+            f"You are using qpdf version {qpdf.version()} which has known issues including "
+            f"security vulnerabilities with certain malformed PDFs. Consider "
+            f"upgrading to version 7.0.0 or newer."
         )
 
     if ghostscript.version() == '9.24':
@@ -1105,7 +1099,7 @@ def run_pipeline(args=None):
         return ExitCode.other_error
 
     if options.flowchart:
-        _log.info("Flowchart saved to {}".format(options.flowchart))
+        _log.info(f"Flowchart saved to {options.flowchart}")
         return ExitCode.ok
     elif options.output_file == '-':
         _log.info("Output sent to stdout")
@@ -1115,11 +1109,11 @@ def run_pipeline(args=None):
         if options.output_type.startswith('pdfa'):
             pdfa_info = file_claims_pdfa(options.output_file)
             if pdfa_info['pass']:
-                msg = 'Output file is a {} (as expected)'
-                _log.info(msg.format(pdfa_info['conformance']))
+                msg = f"Output file is a {pdfa_info['conformance']} (as expected)"
+                _log.info(msg)
             else:
-                msg = 'Output file is okay but is not PDF/A (seems to be {})'
-                _log.warning(msg.format(pdfa_info['conformance']))
+                msg = f"Output file is okay but is not PDF/A (seems to be {pdfa_info['conformance']})"
+                _log.warning(msg)
                 return ExitCode.pdfa_conversion_failed
         if not qpdf.check(options.output_file, _log):
             _log.warning('Output file: The generated PDF is INVALID')

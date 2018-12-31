@@ -43,7 +43,7 @@ def quantize(input_file, output_file, quality_min, quality_max):
         '--output',
         output_file,
         '--quality',
-        '{}-{}'.format(quality_min, quality_max),
+        f'{quality_min}-{quality_max}',
         '--',
         input_file,
     ]

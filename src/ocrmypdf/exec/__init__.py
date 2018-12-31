@@ -39,25 +39,22 @@ def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)'):
         output = proc.stdout
     except FileNotFoundError as e:
         raise MissingDependencyError(
-            "Could not find program '{}' on the PATH".format(program)
+            f"Could not find program '{program}' on the PATH"
         ) from e
     except CalledProcessError as e:
         if e.returncode < 0:
             raise MissingDependencyError(
-                "Ran program '{}' but it exited with an error:\n{}".format(
-                    program, e.output
-                )
+                f"Ran program '{program}' but it exited with an error:\n{e.output}"
             ) from e
         raise MissingDependencyError(
-            "Could not find program '{}' on the PATH".format(program)
+            f"Could not find program '{program}' on the PATH"
         ) from e
     try:
         version = re.match(regex, output.strip()).group(1)
     except AttributeError as e:
         raise MissingDependencyError(
-            ("The program '{}' did not report its version. " "Message was:\n{}").format(
-                program, output
-            )
+            f"The program '{program}' did not report its version. "
+            f"Message was:\n{output}"
         )
 
     return version

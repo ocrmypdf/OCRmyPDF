@@ -789,7 +789,7 @@ class PdfInfo:
         return len(self._pages)
 
     def __repr__(self):
-        return "<PdfInfo('...'), page count={}>".format(len(self))
+        return f"<PdfInfo('...'), page count={len(self)}>"
 
 
 def main():

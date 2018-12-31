@@ -36,7 +36,7 @@ DEFAULT_PNG_QUALITY = 70
 
 
 def img_name(root, xref, ext):
-    return fspath(root / '{:08d}{}'.format(xref, ext))
+    return fspath(root / f'{xref:08d}{ext}')
 
 
 def png_name(root, xref):
@@ -86,7 +86,7 @@ def extract_image_jbig2(*, pike, root, log, image, xref, options):
         and jbig2enc.available()
     ):
         try:
-            imgname = Path(root / '{:08d}'.format(xref))
+            imgname = Path(root / f'{xref:08d}')
             with imgname.open('wb') as f:
                 ext = pim.extract_to(stream=f)
             imgname.rename(imgname.with_suffix(ext))
@@ -120,7 +120,7 @@ def extract_image_generic(*, pike, root, log, image, xref, options):
         #     with Image.open(stream) as im:
         #         im.save(jpg_name(root, xref), icc_profile=iccbytes)
         try:
-            imgname = Path(root / '{:08d}'.format(xref))
+            imgname = Path(root / f'{xref:08d}')
             with imgname.open('wb') as f:
                 ext = pim.extract_to(stream=f)
             imgname.rename(imgname.with_suffix(ext))
@@ -224,7 +224,7 @@ def _produce_jbig2_images(jbig2_groups, root, log, options):
 
     def jbig2_group_futures(executor, root, groups):
         for group, xref_exts in groups.items():
-            prefix = 'group{:08d}'.format(group)
+            prefix = f'group{group:08d}'
             future = executor.submit(
                 jbig2enc.convert_group,
                 cwd=fspath(root),
@@ -235,7 +235,7 @@ def _produce_jbig2_images(jbig2_groups, root, log, options):
 
     def jbig2_single_futures(executor, root, groups):
         for group, xref_exts in groups.items():
-            prefix = 'group{:08d}'.format(group)
+            prefix = f'group{group:08d}'
             # Second loop is to ensure multiple images per page are unpacked
             for n, xref_ext in enumerate(xref_exts):
                 xref, ext = xref_ext
@@ -243,7 +243,7 @@ def _produce_jbig2_images(jbig2_groups, root, log, options):
                     jbig2enc.convert_single,
                     cwd=fspath(root),
                     infile=img_name(root, xref, ext),
-                    outfile=root / ('{}.{:04d}'.format(prefix, n)),
+                    outfile=root / f'{prefix}.{n:04d}',
                 )
                 yield future
 
@@ -276,7 +276,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
     _produce_jbig2_images(jbig2_groups, root, log, options)
 
     for group, xref_exts in jbig2_groups.items():
-        prefix = 'group{:08d}'.format(group)
+        prefix = f'group{group:08d}'
         jbig2_symfile = root / (prefix + '.sym')
         if jbig2_symfile.exists():
             jbig2_globals_data = jbig2_symfile.read_bytes()
@@ -289,7 +289,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
 
         for n, xref_ext in enumerate(xref_exts):
             xref, _ = xref_ext
-            jbig2_im_file = root / (prefix + '.{:04d}'.format(n))
+            jbig2_im_file = root / (prefix + f'.{n:04d}')
             jbig2_im_data = jbig2_im_file.read_bytes()
             im_obj = pike.get_object(xref, 0)
             im_obj.write(
@@ -428,7 +428,7 @@ def optimize(input_file, output_file, log, context):
     output_size = Path(target_file).stat().st_size
     ratio = input_size / output_size
     savings = 1 - output_size / input_size
-    log.info("Optimize ratio: {:.2f} savings: {:.1f}%".format(ratio, 100 * savings))
+    log.info(f"Optimize ratio: {ratio:.2f} savings: {(100 * savings):.1f}%")
 
     if savings < 0:
         log.info("Optimize did not improve the file - discarded")

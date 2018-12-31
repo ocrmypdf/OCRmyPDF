@@ -247,12 +247,12 @@ def test_xml_metadata_preserved(spoof_tesseract_noop, output_type, resources, ou
 
     for prop in equal_properties:
         if prop in before:
-            assert prop in after, '{} dropped from xmp'.format(prop)
+            assert prop in after, f'{prop} dropped from xmp'
             assert before[prop] == after[prop]
 
         # Certain entries like title appear as dc:title[1], with the possibility
         # of several
-        propidx = '{}[1]'.format(prop)
+        propidx = f'{prop}[1]'
         if propidx in before:
             assert (
                 after.get(propidx) == before[propidx]

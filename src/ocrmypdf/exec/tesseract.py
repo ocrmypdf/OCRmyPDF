@@ -159,7 +159,7 @@ def get_orientation(input_file, engine_mode, timeout: float, log):
 
 
 def tesseract_log_output(log, stdout, input_file):
-    prefix = "{0:4d}: [tesseract] ".format(page_number(input_file))
+    prefix = f"{(page_number(input_file)):4d}: [tesseract] "
 
     try:
         text = stdout.decode()
@@ -201,7 +201,7 @@ def tesseract_log_output(log, stdout, input_file):
 
 
 def page_timedout(log, input_file):
-    prefix = "{0:4d}: [tesseract] ".format(page_number(input_file))
+    prefix = f"{(page_number(input_file)):4d}: [tesseract] "
     log.warning(prefix + " took too long to OCR - skipping")
 
 

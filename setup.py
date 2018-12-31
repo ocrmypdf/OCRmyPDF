@@ -135,8 +135,7 @@ def check_external_program(
         version_scrape_regex=re.compile(r'(\d+\.\d+(?:\.\d+)?)'),
         optional=False):
 
-    print('Checking for {program} >= {need_version}...'.format(
-            program=program, need_version=need_version))
+    print(f'Checking for {program} >= {need_version}...')
     try:
         result = check_output(
                 [program] + version_check_args,
@@ -145,7 +144,7 @@ def check_external_program(
         error_missing_program(program, package, optional)
         if not optional:
             sys.exit(1)
-        print('Continuing install without {program}'.format(program=program))
+        print(f'Continuing install without {program}')
         return
 
     try:
@@ -158,8 +157,7 @@ def check_external_program(
         error_old_version(program, package, optional, need_version,
                           found_version)
 
-    print('Found {program} {found_version}'.format(
-            program=program, found_version=found_version))
+    print(f'Found {program} {found_version}')
 
 
 command = next((arg for arg in sys.argv[1:] if not arg.startswith('-')), '')

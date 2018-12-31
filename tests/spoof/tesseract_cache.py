@@ -126,7 +126,7 @@ def main():
     cache_folder = Path(CACHE_ROOT) / Path(source).stem / argv_slug
     cache_folder.mkdir(parents=True, exist_ok=True)
 
-    print("Tesseract cache folder {} - ".format(cache_folder), end='', file=sys.stderr)
+    print(f"Tesseract cache folder {cache_folder} - ", end='', file=sys.stderr)
 
     if (cache_folder / 'stderr.bin').exists() and not cache_disabled:
         # Cache hit

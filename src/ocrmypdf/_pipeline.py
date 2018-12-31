@@ -270,29 +270,29 @@ def is_ocr_required(pageinfo, log, options):
     ocr_required = True
 
     if pageinfo.has_text:
-        msg = "{0:4d}: page already has text! – {1}"
+        prefix = f"{page:4d}: page already has text! - "
 
         if not options.force_ocr and not (options.skip_text or options.redo_ocr):
-            log.error(msg.format(page, "aborting (use --force-ocr to force OCR)"))
+            log.error(prefix + "aborting (use --force-ocr to force OCR)")
             raise PriorOcrFoundError()
         elif options.force_ocr:
-            log.info(msg.format(page, "rasterizing text and running OCR anyway"))
+            log.info(prefix + "rasterizing text and running OCR anyway")
             ocr_required = True
         elif options.redo_ocr:
             if pageinfo.has_corrupt_text:
                 log.warning(
-                    msg.format(
-                        page,
+                    prefix
+                    + (
                         "some text on this page cannot be mapped to characters: "
                         "consider using --force-ocr instead",
                     )
                 )
                 raise PriorOcrFoundError()  # Wrong error but will do for now
             else:
-                log.info(msg.format(page, "redoing OCR"))
+                log.info(prefix + "redoing OCR")
             ocr_required = True
         elif options.skip_text:
-            log.info(msg.format(page, "skipping all processing on this page"))
+            log.info(prefix + "skipping all processing on this page")
             ocr_required = False
     elif not pageinfo.images and not options.lossless_reconstruction:
         # We found a page with no images and no text. That means it may
@@ -305,27 +305,25 @@ def is_ocr_required(pageinfo, log, options):
         if options.force_ocr and options.oversample:
             # The user really wants to reprocess this file
             log.info(
-                "{0:4d}: page has no images - "
-                "rasterizing at {1} DPI because "
-                "--force-ocr --oversample was specified".format(
-                    page, options.oversample
-                )
+                f"{page:4d}: page has no images - "
+                f"rasterizing at {options.oversample} DPI because "
+                "--force-ocr --oversample was specified"
             )
         elif options.force_ocr:
             # Warn the user they might not want to do this
             log.warning(
-                "{0:4d}: page has no images - "
+                f"{page:4d}: page has no images - "
                 "all vector content will be "
-                "rasterized at {1} DPI, losing some resolution and likely "
+                f"rasterized at {VECTOR_PAGE_DPI} DPI, losing some resolution and likely "
                 "increasing file size. Use --oversample to adjust the "
-                "DPI.".format(page, VECTOR_PAGE_DPI)
+                "DPI."
             )
         else:
             log.info(
-                "{0:4d}: page has no images - "
+                f"{page:4d}: page has no images - "
                 "skipping all processing on this page to avoid losing detail. "
                 "Use --force-ocr if you wish to perform OCR on pages that "
-                "have vector content.".format(page)
+                "have vector content."
             )
             ocr_required = False
 
@@ -334,10 +332,8 @@ def is_ocr_required(pageinfo, log, options):
         if pixel_count > (options.skip_big * 1_000_000):
             ocr_required = False
             log.warning(
-                "{0:4d}: page too big, skipping OCR "
-                "({1:.1f} MPixels > {2:.1f} MPixels --skip-big)".format(
-                    page, pixel_count / 1_000_000, options.skip_big
-                )
+                f"{page:4d}: page too big, skipping OCR "
+                f"({(pixel_count / 1_000_000):.1f} MPixels > {options.skip_big:.1f} MPixels --skip-big)"
             )
     return ocr_required
 
@@ -358,7 +354,7 @@ def marker_pages(input_files, output_files, log, context):
 
     # If no files were repaired the input will be empty
     if not input_file:
-        log.error("{0}: file not found or invalid argument".format(options.input_file))
+        log.error(f"{options.input_file}: file not found or invalid argument")
         raise InputFileError()
 
     pdfinfo = context.get_pdfinfo()
@@ -367,7 +363,7 @@ def marker_pages(input_files, output_files, log, context):
     # Ruffus needs to see a file for any task it generates, so make very
     # file a symlink back to the source.
     for n in range(npages):
-        page = Path(work_folder) / '{0:06d}.marker.pdf'.format(n + 1)
+        page = Path(work_folder) / f'{(n + 1):06d}.marker.pdf'
         page.symlink_to(input_file)  # pylint: disable=E1101
 
 
@@ -509,7 +505,7 @@ def rasterize_with_ghostscript(input_file, output_file, log, context):
 
     device = colorspaces[device_idx]
 
-    log.debug("Rasterize {0} with {1}".format(os.path.basename(input_file), device))
+    log.debug(f"Rasterize {os.path.basename(input_file)} with {device}")
 
     # Produce the page image with square resolution or else deskew and OCR
     # will not work properly.
@@ -543,9 +539,7 @@ def preprocess_remove_background(input_file, output_file, log, context):
     if any(image.bpc > 1 for image in pageinfo.images):
         leptonica.remove_background(input_file, output_file)
     else:
-        log.info(
-            "{0:4d}: background removal skipped on mono page".format(pageinfo.pageno)
-        )
+        log.info(f"{pageinfo.pageno:4d}: background removal skipped on mono page")
         re_symlink(input_file, output_file, log)
 
 
@@ -670,7 +664,7 @@ def select_visible_page_image(infiles, output_file, log, context):
 
     pageinfo = get_pageinfo(image, context)
     if pageinfo.images and all(im.enc == 'jpeg' for im in pageinfo.images):
-        log.debug('{:4d}: JPEG input -> JPEG output'.format(page_number(image)))
+        log.debug(f'{page_number(image):4d}: JPEG input -> JPEG output')
         # If all images were JPEGs originally, produce a JPEG as output
         with Image.open(image) as im:
             # At this point the image should be a .png, but deskew, unpaper
@@ -699,9 +693,7 @@ def select_image_layer(infiles, output_file, log, context):
 
     if options.lossless_reconstruction:
         log.debug(
-            "{:4d}: page eligible for lossless reconstruction".format(
-                page_number(page_pdf)
-            )
+            f"{page_number(page_pdf):4d}: page eligible for lossless reconstruction"
         )
         re_symlink(page_pdf, output_file, log)  # Still points to multipage
         return
@@ -719,11 +711,11 @@ def select_image_layer(infiles, output_file, log, context):
 
     # This create a single page PDF
     with open(image, 'rb') as imfile, open(output_file, 'wb') as pdf:
-        log.debug('{:4d}: convert'.format(page_number(page_pdf)))
+        log.debug(f'{page_number(page_pdf):4d}: convert')
         img2pdf.convert(
             imfile, with_pdfrw=False, layout_fun=layout_fun, outputstream=pdf
         )
-        log.debug('{:4d}: convert done'.format(page_number(page_pdf)))
+        log.debug(f'{page_number(page_pdf):4d}: convert done')
 
 
 def render_hocr_page(infiles, output_file, log, context):
@@ -794,10 +786,10 @@ def get_docinfo(base_pdf, options):
     else:
         renderer_tag = 'OCR'
 
-    pdfmark['/Creator'] = '{0} {1} / Tesseract {2} {3}'.format(
-        PROGRAM_NAME, VERSION, renderer_tag, tesseract.version()
+    pdfmark['/Creator'] = (
+        f'{PROGRAM_NAME} {VERSION} / ' f'Tesseract {renderer_tag} {tesseract.version()}'
     )
-    pdfmark['/Producer'] = 'pikepdf ' + pikepdf.__version__
+    pdfmark['/Producer'] = f'pikepdf {pikepdf.__version__}'
     if 'OCRMYPDF_CREATOR' in os.environ:
         pdfmark['/Creator'] = os.environ['OCRMYPDF_CREATOR']
     if 'OCRMYPDF_PRODUCER' in os.environ:
@@ -907,7 +899,7 @@ def merge_sidecars(input_files_groups, output_file, log, context):
                     else:
                         stream.write(txt)
             else:
-                stream.write('[OCR skipped on page {}]'.format(page_num + 1))
+                stream.write(f'[OCR skipped on page {(page_num + 1)}]')
 
     if output_file == '-':
         write_pages(sys.stdout)

@@ -400,7 +400,7 @@ def weave_layers(infiles, output_file, log, context):
             _update_page_resources(
                 page=page0, font=font, font_key=font_key, procset=procset
             )
-            interim = output_file + '_working{}.pdf'.format(page_num)
+            interim = output_file + f'_working{page_num}.pdf'
             pdf_base.save(interim)
             del pdf_base
             keep_open = []

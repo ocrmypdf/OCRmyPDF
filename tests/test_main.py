@@ -160,7 +160,7 @@ def test_remove_background(spoof_tesseract_noop, resources, outdir):
 def test_exotic_image(
     spoof_tesseract_cache, pdf, renderer, output_type, resources, outdir
 ):
-    outfile = outdir / 'test_{0}_{1}.pdf'.format(pdf, renderer)
+    outfile = outdir / f'test_{pdf}_{renderer}.pdf'
     check_ocrmypdf(
         resources / pdf,
         outfile,
@@ -994,7 +994,7 @@ def test_pdfa_n(spoof_tesseract_cache, pdfa_level, resources, outpdf):
     )
 
     pdfa_info = file_claims_pdfa(outpdf)
-    assert pdfa_info['conformance'] == 'PDF/A-{}B'.format(pdfa_level)
+    assert pdfa_info['conformance'] == f'PDF/A-{pdfa_level}B'
 
 
 @pytest.mark.skipif(sys.version_info >= (3, 7, 0), reason='better utf-8')

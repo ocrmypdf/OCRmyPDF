@@ -77,10 +77,7 @@ class JobContextManager(SyncManager):
 
 def cleanup_working_files(work_folder, options):
     if options.keep_temporary_files:
-        print(
-            "Temporary working files saved at:\n{0}".format(work_folder),
-            file=sys.stderr,
-        )
+        print(f"Temporary working files saved at:\n{work_folder}", file=sys.stderr)
     else:
         with suppress(FileNotFoundError):
             shutil.rmtree(work_folder)

@@ -182,7 +182,6 @@ def test_ocr_detection(resources):
     assert pdf[0].has_text
 
 
-
 @pytest.mark.parametrize(
     'testfile', ('truetype_font_nomapping.pdf', 'type3_font_nomapping.pdf')
 )

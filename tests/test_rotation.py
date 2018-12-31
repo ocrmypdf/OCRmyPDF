@@ -50,10 +50,8 @@ def check_monochrome_correlation(
 ):
     gslog = logging.getLogger()
 
-    reference_png = outdir / '{}.ref{:04d}.png'.format(
-        reference_pdf.name, reference_pageno
-    )
-    test_png = outdir / '{}.test{:04d}.png'.format(test_pdf.name, test_pageno)
+    reference_png = outdir / f'{reference_pdf.name}.ref{reference_pageno:04d}.png'
+    test_png = outdir / f'{test_pdf.name}.test{test_pageno:04d}.png'
 
     def rasterize(pdf, pageno, png):
         if png.exists():
@@ -229,7 +227,7 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir):
         im = Image.open(fspath(resources / 'typewriter.png'))
         if image_angle != 0:
             ccw_angle = -image_angle % 360
-            im = im.transpose(getattr(Image, 'ROTATE_{}'.format(ccw_angle)))
+            im = im.transpose(getattr(Image, f'ROTATE_{ccw_angle}'))
         memimg = BytesIO()
         im.save(memimg, format='PNG')
         memimg.seek(0)
@@ -242,7 +240,7 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir):
         mempdf.seek(0)
         pike = pikepdf.open(mempdf)
         pike.pages[0].Rotate = page_angle
-        target = outdir / '{}_{}_{}.pdf'.format(prefix, image_angle, page_angle)
+        target = outdir / f'{prefix}_{image_angle}_{page_angle}.pdf'
         pike.save(target)
         return target
 
