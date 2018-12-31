@@ -39,10 +39,6 @@ from string import Template
 import pkg_resources
 
 import pikepdf
-from pikepdf.models.metadata import decode_pdf_date as _decode_date
-from pikepdf.models.metadata import encode_pdf_date as _encode_date
-
-from .helpers import deprecated
 
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
 
@@ -87,84 +83,29 @@ def
 """
 
 
-@deprecated
-def encode_text_string(s: str) -> str:
-    """
-    Encode text string to hex string for use in a PDF
+def generate_pdfa_ps(target_filename, icc='sRGB'):
+    """Create a Postscript pdfmark file for Ghostscript PDF/A conversion
 
-    From PDF 32000-1:2008 a string object may be included in hexademical form
-    if it is enclosed in angle brackets.  For general Unicode the string should
-    be UTF-16 (big endian) with byte order marks.  Many strings including all
-    ASCII strings could be encoded as PdfDocEncoding literals provided
-    that certain Postscript sequences are escaped.  But it's far simpler to
-    encode everything as UTF-16.
-    """
+    A pdfmark file is a small Postscript program that provides some information
+    Ghostscript needs to perform PDF/A conversion. The only information we put
+    in specifies that we want the file to be a PDF/A, and we want to Ghostscript
+    to convert objects to the sRGB colorspace if it runs into any object that
+    it decides must be converted.
 
-    # Sometimes lazy C programmers leave their NULs at the end of strings they
-    # insert into PDFs
-    # tests/resources/aspect.pdf is one example (created by ImageMagick)
-    s = s.replace('\x00', '')
+    See the Adobe pdfmark Reference for details:
+    https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/pdfmark_reference.pdf
 
-    if s == '':
-        return ''
-
-    utf16_bytes = s.encode('utf-16be')
-    ascii_hex_bytes = hexlify(b'\xfe\xff' + utf16_bytes)
-    ascii_hex_str = ascii_hex_bytes.decode('ascii').lower()
-    return ascii_hex_str
-
-
-def _encode_ascii(s: str) -> str:
-    """
-    Aggressively strip non-ASCII and PDF escape sequences
-
-    Ghostscript 9.24+ lost support for UTF-16BE in pdfmark files for reasons
-    given in GhostPDL commit e997c683. Our temporary workaround is use ASCII
-    and drop all non-ASCII characters. A slightly improved alternative would
-    be to implement PdfDocEncoding in pikepdf and encode to that, or handle
-    metadata there.
-    """
-    trans = str.maketrans({'(': '', ')': '', '\\': '', '\0': ''})
-    return s.translate(trans).encode('ascii', errors='replace').decode()
-
-
-@deprecated
-def encode_pdf_date(*args, **kwargs):
-    return _encode_date(*args, **kwargs)
-
-
-@deprecated
-def decode_pdf_date(*args, **kwargs):
-    return _decode_date(*args, **kwargs)
-
-
-def _get_pdfa_def(icc_profile, icc_identifier, pdfmark=None, ascii_docinfo=None):
-    """
-    Create a Postscript pdfmark file for Ghostscript.
-
-    pdfmark contains the various objects as strings; these must be encoded in
-    ASCII, and dates have a special format.
-
-    :param icc_profile: filename of the ICC profile to include in pdfmark
-    :param icc_identifier: ICC identifier such as 'sRGB'
-    :param pdfmark: a dictionary containing keys to include the pdfmark
-    :param ascii_docinfo: parameter is no longer meaningful
+    :param target_filename: filename to save
+    :param icc: ICC identifier such as 'sRGB'
 
     :returns: a string containing the entire pdfmark
     """
-
-    t = Template(pdfa_def_template)
-    result = t.substitute(icc_profile=icc_profile, icc_identifier=icc_identifier)
-    return result
-
-
-def generate_pdfa_ps(target_filename, pdfmark=None, icc='sRGB', ascii_docinfo=None):
     if icc == 'sRGB':
         icc_profile = SRGB_ICC_PROFILE
     else:
         raise NotImplementedError("Only supporting sRGB")
 
-    # pdfmark must contain the full path to the ICC profile, and pdfmark must
+    # pdfmark must contain the full path to the ICC profile, and pdfmark must be
     # also encoded in ASCII. ocrmypdf can be installed anywhere, including to
     # paths that have a non-ASCII character in the filename. Ghostscript
     # accepts hex-encoded strings and converts them to byte strings, so
@@ -175,7 +116,8 @@ def generate_pdfa_ps(target_filename, pdfmark=None, icc='sRGB', ascii_docinfo=No
     hex_icc_profile = hexlify(bytes_icc_profile)
     icc_profile = '<' + hex_icc_profile.decode('ascii') + '>'
 
-    ps = _get_pdfa_def(icc_profile, icc, pdfmark)
+    t = Template(pdfa_def_template)
+    ps = t.substitute(icc_profile=icc_profile, icc_identifier=icc)
 
     # We should have encoded everything to pure ASCII by this point, and
     # to be safe, only allow ASCII in PostScript
@@ -185,11 +127,8 @@ def generate_pdfa_ps(target_filename, pdfmark=None, icc='sRGB', ascii_docinfo=No
 def file_claims_pdfa(filename):
     """Determines if the file claims to be PDF/A compliant
 
-    Checking if a file is a truly compliant PDF/A is a massive undertaking
-    that no open source tool does properly.  Some commercial tools are
-    generally reliable (Acrobat).
-
-    This checks if the XMP metadata contains a PDF/A marker.
+    This only checks if the XMP metadata contains a PDF/A marker. It does not
+    do full PDF/A validation.
     """
 
     pdf = pikepdf.open(filename)

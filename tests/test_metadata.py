@@ -270,7 +270,7 @@ def test_srgb_in_unicode_path(tmpdir):
     copyfile(SRGB_ICC_PROFILE, fspath(dst))
 
     with patch('ocrmypdf.pdfa.SRGB_ICC_PROFILE', new=str(dst)):
-        generate_pdfa_ps(dstdir / 'out.ps', {})
+        generate_pdfa_ps(dstdir / 'out.ps')
 
 
 def test_kodak_toc(resources, outpdf, spoof_tesseract_noop):
