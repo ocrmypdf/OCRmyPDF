@@ -62,6 +62,16 @@ def running_in_travis():
     return os.environ.get('TRAVIS') == 'true'
 
 
+@pytest.helpers.register
+def needs_pdfminer(fn):
+    try:
+        import pdfminer
+    except ImportError:
+        skip = pytest.mark.skipif(True, reason="pdfminer not available")
+        return skip(fn)
+    return fn
+
+
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
 SPOOF_PATH = os.path.join(TESTS_ROOT, 'spoof')
 PROJECT_ROOT = os.path.dirname(TESTS_ROOT)

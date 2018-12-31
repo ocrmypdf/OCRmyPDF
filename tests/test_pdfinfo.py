@@ -182,10 +182,16 @@ def test_ocr_detection(resources):
     assert pdf[0].has_text
 
 
+
 @pytest.mark.parametrize(
     'testfile', ('truetype_font_nomapping.pdf', 'type3_font_nomapping.pdf')
 )
+@pytest.helpers.needs_pdfminer
 def test_corrupt_font_detection(resources, testfile):
+    try:
+        import pdfminer
+    except ImportError:
+        pytest.skip("Needs pdfminer")
     filename = resources / testfile
     with pytest.raises(NotImplementedError):
         pdf = pdfinfo.PdfInfo(filename)

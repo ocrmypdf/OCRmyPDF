@@ -250,7 +250,7 @@ setup(
         'chardet >= 3.0.4, < 4',  # unlisted requirement of pdfminer.six 20181108
         'cffi >= 1.9.1',          # must be a setup and install requirement
         'img2pdf >= 0.3.0, < 0.4',       # pure Python, so track HEAD closely
-        'pdfminer.six == 20181108',
+        'pdfminer.six == 20181108 ; sys_platform != "darwin"',
         'pikepdf >= 0.10.0, < 0.11.0',
         'Pillow >= 4.0.0, != 5.1.0 ; sys_platform == "darwin"',
                                   # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
@@ -259,7 +259,7 @@ setup(
         'ruffus >= 2.7.0',
     ],
     extras_require={
-        'fitz': [],  # Backward compatibility
+        'pdfminer': ['pdfminer.six == 20181108'],
     },
     tests_require=tests_require,
     entry_points={

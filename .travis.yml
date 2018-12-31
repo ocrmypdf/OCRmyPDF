@@ -74,6 +74,25 @@ matrix:
             - qpdf
             - tesseract
             - unpaper
+    - os: osx
+      osx_image: xcode9.2
+      language: generic
+      env:
+        - ADD_PDFMINER=1
+      addons:
+        homebrew:
+          update: true
+          packages:
+            - exempi
+            - ghostscript
+            - jbig2enc
+            - leptonica
+            - openjpeg
+            - pngquant
+            - python
+            - qpdf
+            - tesseract
+            - unpaper
 
 before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
@@ -98,6 +117,7 @@ install:
 - pip3 install pycparser  # py3.7 workaround for https://github.com/eliben/pycparser/issues/251
 - pip3 install -r requirements/main.txt
 - pip3 install --no-deps .
+- '[[ "$ADD_PDFMINER" == "1" ]] && pip3 install .[pdfminer]'
 - pip3 install -r requirements/test.txt
 
 script:

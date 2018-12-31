@@ -30,9 +30,8 @@ from pikepdf import PdfMatrix
 import pikepdf
 
 from . import ghosttext
-from .layout import get_page_analysis, get_text_boxes
 
-from ..exceptions import EncryptedPdfError
+from ..exceptions import EncryptedPdfError, MissingDependencyError
 
 
 Colorspace = Enum('Colorspace', 'gray rgb cmyk lab icc index sep devn pattern jpeg2000')
@@ -533,12 +532,12 @@ def _page_has_text(text_blocks, page_width, page_height):
     return has_text
 
 
-def simplify_textboxes(miner):
+def simplify_textboxes(miner, textbox_getter):
     """Extract only limited content from text boxes
 
     We do this to save memory and ensure that our objects are pickleable.
     """
-    for box in get_text_boxes(miner):
+    for box in textbox_getter(miner):
         first_line = box._objs[0]
         first_char = first_line._objs[0]
 
@@ -563,9 +562,17 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
         )
         pageinfo['bboxes'] = bboxes
     else:
+        # pdfminer required for this section
+        try:
+            from .layout import get_page_analysis, get_text_boxes
+        except ImportError:
+            raise MissingDependencyError(
+                "pdfminer is required for this feature. Your distribution "
+                "may not have installed it."
+            )
         pscript5_mode = str(pdf.docinfo.get('/Creator')).startswith('PScript5')
         miner = get_page_analysis(infile, pageno, pscript5_mode)
-        pageinfo['textboxes'] = list(simplify_textboxes(miner))
+        pageinfo['textboxes'] = list(simplify_textboxes(miner, get_text_boxes))
         bboxes = (box.bbox for box in pageinfo['textboxes'])
 
     pageinfo['has_text'] = _page_has_text(bboxes, width_pt, height_pt)
