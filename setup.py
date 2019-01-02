@@ -24,11 +24,12 @@ if sys.version_info < (3, 6):
     print("Python 3.6 or newer is required", file=sys.stderr)
     sys.exit(1)
 
-from setuptools import setup, find_packages  # nopep8
-from subprocess import STDOUT, check_output, CalledProcessError  # nopep8
-from collections.abc import Mapping  # nopep8
-import re  # nopep8
+from setuptools import setup, find_packages
+from subprocess import STDOUT, check_output, CalledProcessError
+from collections.abc import Mapping
+import re
 
+# pylint: disable=w0613
 
 missing_program = '''
 The program '{program}' could not be executed or was not found on your
@@ -131,10 +132,11 @@ def check_external_program(
         program,
         need_version,
         package,
-        version_check_args=['--version'],
+        version_check_args=None,
         version_scrape_regex=re.compile(r'(\d+\.\d+(?:\.\d+)?)'),
         optional=False):
-
+    if not version_check_args:
+        version_check_args = ['--version']
     print(f'Checking for {program} >= {need_version}...')
     try:
         result = check_output(

@@ -581,7 +581,6 @@ def select_ocr_image(infiles, output_file, log, context):
     with Image.open(image) as im:
         from PIL import ImageColor
         from PIL import ImageDraw
-        from decimal import Decimal
 
         white = ImageColor.getcolor('#ffffff', im.mode)
         # pink = ImageColor.getcolor('#ff0080', im.mode)
@@ -800,8 +799,6 @@ def get_docinfo(base_pdf, options):
 
 
 def generate_postscript_stub(input_file, output_file, log, context):
-    options = context.get_options()
-    pdf = pikepdf.open(input_file)
     generate_pdfa_ps(output_file)
 
 

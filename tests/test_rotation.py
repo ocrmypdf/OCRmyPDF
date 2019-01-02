@@ -152,7 +152,7 @@ def test_autorotate_threshold(
         test_pdf=outdir / 'out.pdf',
         test_pageno=3,
     )
-    assert eval(correlation_test)
+    assert eval(correlation_test)  # pylint: disable=w0123
 
 
 def test_rotated_skew_timeout(resources, outpdf):

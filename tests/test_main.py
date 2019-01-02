@@ -600,7 +600,7 @@ def test_closed_streams(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
         os.close(1)
 
     p_args = ocrmypdf_exec + [input_file, output_file]
-    p = Popen(
+    p = Popen(  # pylint: disable=subprocess-popen-preexec-fn
         p_args,
         close_fds=True,
         stdout=None,

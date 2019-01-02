@@ -611,7 +611,7 @@ class Pix(LeptonicaObject):
                         0,
                     )
                 )
-        except (LeptonicaError, ValueError, IndexError) as e:
+        except (LeptonicaError, ValueError, IndexError):
             return
         finally:
             with suppress(FileNotFoundError):

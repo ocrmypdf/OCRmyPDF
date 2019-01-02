@@ -27,7 +27,7 @@ from ocrmypdf import optimize as opt
 from ocrmypdf.exec import jbig2enc, pngquant
 from ocrmypdf.exec.ghostscript import rasterize_pdf
 
-check_ocrmypdf = pytest.helpers.check_ocrmypdf
+check_ocrmypdf = pytest.helpers.check_ocrmypdf  # pylint: disable=e1101
 
 
 @pytest.mark.parametrize('pdf', ['multipage.pdf', 'palette.pdf'])

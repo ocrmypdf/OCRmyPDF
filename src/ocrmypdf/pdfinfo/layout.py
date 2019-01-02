@@ -25,25 +25,11 @@ import pdfminer.pdfdevice
 import pdfminer.pdfinterp
 from pdfminer.converter import PDFLayoutAnalyzer
 from pdfminer.glyphlist import glyphname2unicode
-from pdfminer.layout import (
-    LAParams,
-    LTChar,
-    LTContainer,
-    LTLayoutContainer,
-    LTPage,
-    LTTextBox,
-    LTTextLine,
-)
+from pdfminer.layout import LAParams, LTChar, LTPage, LTTextBox
 from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
-from pdfminer.pdffont import (
-    PDFCIDFont,
-    PDFFont,
-    PDFSimpleFont,
-    PDFType3Font,
-    PDFUnicodeNotDefined,
-)
+from pdfminer.pdffont import PDFFont, PDFSimpleFont, PDFUnicodeNotDefined
 from pdfminer.pdfpage import PDFPage
-from pdfminer.utils import bbox2str, fsplit, matrix2str
+from pdfminer.utils import bbox2str, matrix2str
 
 from ..exceptions import EncryptedPdfError
 
@@ -161,11 +147,21 @@ class LTStateAwareChar(LTChar):
         text,
         textwidth,
         textdisp,
+        ncs,
+        graphicstate,
         textstate,
-        *args,
     ):
         super().__init__(
-            matrix, font, fontsize, scaling, rise, text, textwidth, textdisp, *args
+            matrix,
+            font,
+            fontsize,
+            scaling,
+            rise,
+            text,
+            textwidth,
+            textdisp,
+            ncs,
+            graphicstate,
         )
         self.rendermode = textstate.render
 
@@ -223,11 +219,13 @@ class TextPositionTracker(PDFLayoutAnalyzer):
         self.pageno += 1
         self.receive_layout(self.cur_item)
 
-    def render_string(self, textstate, seq, *args):
+    def render_string(self, textstate, seq, ncs, graphicstate):
         self.textstate = textstate.copy()
-        super().render_string(self.textstate, seq, *args)
+        super().render_string(self.textstate, seq, ncs, graphicstate)
 
-    def render_char(self, matrix, font, fontsize, scaling, rise, cid, *args):
+    def render_char(
+        self, matrix, font, fontsize, scaling, rise, cid, ncs, graphicstate
+    ):
         try:
             text = font.to_unichr(cid)
             assert isinstance(text, str), str(type(text))
@@ -244,8 +242,9 @@ class TextPositionTracker(PDFLayoutAnalyzer):
             text,
             textwidth,
             textdisp,
+            ncs,
+            graphicstate,
             self.textstate,
-            *args,
         )
         self.cur_item.add(item)
         return item.adv

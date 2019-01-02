@@ -15,11 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import pickle
-import shutil
-import sys
-from contextlib import suppress
 from math import isclose
 from tempfile import NamedTemporaryFile
 
@@ -31,6 +27,8 @@ from reportlab.pdfgen.canvas import Canvas
 import pikepdf
 from ocrmypdf import pdfinfo
 from ocrmypdf.pdfinfo import Colorspace, Encoding
+
+# pylint: disable=protected-access
 
 
 def test_single_page_text(outdir):
@@ -185,7 +183,7 @@ def test_ocr_detection(resources):
 @pytest.mark.parametrize(
     'testfile', ('truetype_font_nomapping.pdf', 'type3_font_nomapping.pdf')
 )
-@pytest.helpers.needs_pdfminer
+@pytest.helpers.needs_pdfminer  # pylint: disable=e1101
 def test_corrupt_font_detection(resources, testfile):
     try:
         import pdfminer

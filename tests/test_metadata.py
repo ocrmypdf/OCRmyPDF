@@ -27,7 +27,6 @@ import pytest
 
 import pikepdf
 from ocrmypdf.exceptions import ExitCode
-from ocrmypdf.exec import ghostscript
 from ocrmypdf.pdfa import SRGB_ICC_PROFILE, file_claims_pdfa, generate_pdfa_ps
 from pikepdf.models.metadata import decode_pdf_date
 

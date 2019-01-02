@@ -148,7 +148,7 @@ def extract_image_generic(*, pike, root, log, image, xref, options):
 def extract_images(pike, root, log, options, extract_fn):
     """Extract image using extract_fn
 
-    extract_fn decides where the image is interesting in this case
+    extract_fn decides whether the image is interesting in this case
     """
 
     include_xrefs = set()
