@@ -37,6 +37,9 @@ In some cases they were converted from one image format to another without other
     *   - baiona.png
         - `Wikimedia: Baionako udalerri mugakideak`_
         - Creative Commons BY-SA 4.0
+    *   - enron1.pdf
+        - EnronData.org
+        - Creative Commons BY 3.0
 
 
 Files generated for this project

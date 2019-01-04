@@ -95,6 +95,12 @@ Files: tests/resources/vector.pdf
 Copyright: (C) 2018 Catscratch
 License: Expat
 
+Files: test/resources/enron1.pdf
+Copyright: EnronData.org
+License: CC-BY-3.0
+ See: https://enrondata.readthedocs.io/en/latest/data/edo-enron-email-pst-dataset/
+Comment: Unprocessed.
+
 Files: src/ocrmypdf/data/sRGB.icc
 Copyright:  Kai-Uwe Behrmann <www.behrmann.name>
             Marti Maria <www.littlecms.com>

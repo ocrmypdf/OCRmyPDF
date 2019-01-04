@@ -18,6 +18,8 @@
 
 import datetime
 from datetime import timezone
+import logging
+import mmap
 from os import fspath
 from pathlib import Path
 from shutil import copyfile
@@ -26,6 +28,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import pikepdf
+from ocrmypdf._jobcontext import JobContext
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import SRGB_ICC_PROFILE, file_claims_pdfa, generate_pdfa_ps
 from pikepdf.models.metadata import decode_pdf_date
@@ -319,3 +322,43 @@ def test_metadata_fixup_warning(resources, outdir):
         context=context,
     )
     log.warning.assert_called_once()
+
+
+def test_prevent_gs_invalid_xml(resources, outdir):
+    from ocrmypdf.__main__ import parser
+    from ocrmypdf._pipeline import convert_to_pdfa
+    from ocrmypdf.pdfa import generate_pdfa_ps
+    from ocrmypdf.pdfinfo import PdfInfo
+
+    generate_pdfa_ps(outdir / 'pdfa.ps')
+    input_files = [
+        str(outdir / 'layers.rendered.pdf'),
+        str(outdir / 'pdfa.ps'),
+    ]
+    copyfile(resources / 'enron1.pdf', outdir / 'layers.rendered.pdf')
+    log = logging.getLogger()
+    context = JobContext()
+
+    options = parser.parse_args(args=[
+        '-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
+    )
+    context.options = options
+    context.pdfinfo = PdfInfo(resources / 'enron1.pdf')
+
+    convert_to_pdfa(
+        input_files_groups=input_files,
+        output_file=outdir / 'pdfa.pdf',
+        log=log,
+        context=context
+    )
+
+    with open(outdir / 'pdfa.pdf', 'rb') as f:
+        with mmap.mmap(f.fileno(), 0, flags=mmap.MAP_PRIVATE, prot=mmap.PROT_READ) as mm:
+            # Since the XML may be invalid, we scan instead of actually feeding it
+            # to a parser.
+            XMP_MAGIC = b'W5M0MpCehiHzreSzNTczkc9d'
+            xmp_start = mm.find(XMP_MAGIC)
+            xmp_end = mm.rfind(b'<?xpacket end', xmp_start)
+            assert 0 < xmp_start < xmp_end
+            assert mm.find(b'&#0;', xmp_start, xmp_end) == -1, "found escaped nul"
+            assert mm.find(b'\x00', xmp_start, xmp_end) == -1
