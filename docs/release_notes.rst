@@ -14,12 +14,34 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
 
-v7.4.1
+v8.0.0
 ------
+
+No major features. The intent of this release is to sever support for older versions of certain dependencies.
+
+**Breaking changes**
+
+-   Dropped support for Tesseract 3.x. Tesseract 4.0 or newer is now required.
+
+-   Dropped support for Python 3.5.
+
+-   Some ``ocrmypdf.pdfa`` APIs that were deprecated in v7.x were removed. This functionality has been moved to pikepdf.
+
+**Other changes**
+
+-   Fixed an unhandled exception when attempting to mask barcodes. `#322 <https://github.com/jbarlow83/OCRmyPDF/issues/322>`_
+
+-   It is now possible to use ocrmypdf without pdfminer.six, to support distributions that do not have it or cannot currently use it (e.g. Homebrew). Downstream maintainers should include pdfminer.six if possible.
+
+-   A warning is now issue when PDF/A conversion removes some XMP metadata from the input PDF. (Only a "whitelist" of certain XMP metadata types are allowed in PDF/A.)
+
+-   Fixed several issues that caused PDF/As to be produced with nonconforming XMP metadata (would fail validation with veraPDF).
+
+-   Fixed some instances where invalid DocumentInfo from a PDF cause XMP metadata creation to fail.
 
 -   Fixed a few documentation problems.
 
--   Fixed an unhandled exception when attempting to mask barcodes. #322 <https://github.com/jbarlow83/OCRmyPDF/issues/322>`_
+-   pikepdf 1.0.2 is now required.
 
 v7.4.0
 ------
