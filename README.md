@@ -25,6 +25,8 @@ ocrmypdf                      # it's a scriptable command line program
    output_searchable.pdf      # produces validated PDF output
 ```
 
+[See the release notes for details on the latest changes](https://ocrmypdf.readthedocs.io/en/latest/release_notes.html).
+
 Main features
 -------------
 

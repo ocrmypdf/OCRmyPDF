@@ -95,7 +95,7 @@ Files: tests/resources/vector.pdf
 Copyright: (C) 2018 Catscratch
 License: Expat
 
-Files: test/resources/enron1.pdf
+Files: test/resources/enron*.pdf
 Copyright: EnronData.org
 License: CC-BY-3.0
  See: https://enrondata.readthedocs.io/en/latest/data/edo-enron-email-pst-dataset/
