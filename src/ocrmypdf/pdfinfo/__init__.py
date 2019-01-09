@@ -391,6 +391,8 @@ def _image_xobjects(container):
     xobjs = resources['/XObject'].as_dict()
     for xobj in xobjs:
         candidate = xobjs[xobj]
+        if not '/Subtype' in candidate:
+            continue
         if candidate['/Subtype'] == '/Image':
             pdfimage = candidate
             yield (pdfimage, xobj)
