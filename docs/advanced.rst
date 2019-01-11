@@ -189,3 +189,25 @@ user interface.  They may be imported from ``ocrmypdf.exceptions``.
     *	- 130
         - ``ExitCode.ctrl_c``
         - The program was interrupted by pressing Ctrl+C.
+
+
+Debugging the intermediate files
+--------------------------------
+
+OCRmyPDF normally saves its intermediate results to a temporary folder and deletes this folder when it exits, whether it succeeded or failed.
+
+If the ``-k`` argument is issued on the command line, OCRmyPDF will keep the temporary folder and print the location, whether it succeeded or failed (provided the Python interpreter did not crash). An example message is:
+
+.. code-block::
+
+    Temporary working files saved at:
+    /tmp/com.github.ocrmypdf.u20wpz07
+
+The organization of this folder is an implementation detail and subject to change between releases. However the general organization is that working files on a per page basis have the page number as a prefix (starting with page 1), an infix indicates the processing stage, and a suffix indicates the file type. Some important files include:
+
+* ``.page.png`` - what the input page looks like
+* ``.image`` - the image we will show the user if we are in a mode that changes the final appearance; may be in one of several image formats
+* ``.text.pdf`` - the OCR file; this will load as a blank page but should have visible text if checked with a tool like pdftotext or pdfminder.six
+* ``.ocr.png`` - the file that is sent to Tesseract for OCR; depending on arguments this may differ from the presentation image
+* ``layers.rendered.pdf`` - the composite PDF, before metadata repair and optimization
+* ``images/*`` - images extracted during the optimization process; here the prefix indicates a PDF object ID not a page number
