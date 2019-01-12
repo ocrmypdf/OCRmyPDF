@@ -6,9 +6,12 @@ Installation
 
 |latest|
 
-The easiest way to install OCRmyPDF to follow the steps for your operating system/platform.
+The easiest way to install OCRmyPDF is to follow the steps for your operating
+system/platform, although sometimes this version may be out of date.
 
-If you want to use the latest version of OCRmyPDF, your best bet is to install the most recent version your platform provides, and then upgrade that version by installing the Python binary wheels.
+If you want to use the latest version of OCRmyPDF, your best bet is to install
+the most recent version your platform provides, and then upgrade that version by
+installing the Python binary wheels.
 
 .. contents:: Platform-specific steps
     :depth: 2
@@ -136,22 +139,56 @@ To add JBIG2 encoding, see :ref:`jbig2`.
 Ubuntu 16.04 LTS
 ^^^^^^^^^^^^^^^^
 
-No package is currently available for Ubuntu 16.04, but you can install the dependencies manually:
+No package is available for Ubuntu 16.04. OCRmyPDF 8.0 and newer require Python
+3.6. Ubuntu 16.04 ships Python 3.5, but you can install Python 3.6 on it. Or,
+you can skip Python 3.6 and install OCRmyPDF 7.x or older - for that procedure,
+please see the installation documentation for the version of OCRmyPDF you plan
+to use.
+
+**Install system packages for OCRmyPDF**
 
 .. code-block:: bash
 
     sudo apt-get update
-    sudo apt-get install \
+    sudo apt-get install -y software-properties-common python-software-properties
+    sudo add-apt-repository -y \
+        ppa:jonathonf/python-3.6 \
+        ppa:alex-p/tesseract-ocr
+    sudo apt-get update
+    sudo apt-get install -y \
         ghostscript \
         libexempi3 \
+        libffi6 \
         pngquant \
-        python3-cffi \
-        python3-pip \
+        python3.6 \
         qpdf \
         tesseract-ocr \
         unpaper
 
-If you wish install OCRmyPDF for the current user, and ensure that the ``PATH``
+This will install a Python 3.6 binary at ``/usr/bin/python3.6`` alongside the
+system's Python 3.5. Do not remove the system Python. This will also install
+Tesseract 4.0 from a PPA, since the version available in Ubuntu 16.04 is too old
+for OCRmyPDF.
+
+Now install pip for Python 3.6. This will install the Python 3.6 version of
+``pip`` at ``/usr/local/bin/pip``.
+
+.. code-block:: bash
+
+    curl https://bootstrap.pypa.io/get-pip.py | sudo python3.6
+
+**Install OCRmyPDF**
+
+OCRmyPDF requires the locale to be set for UTF-8. **On some minimal Ubuntu
+installations systems**, it may be necessary to set the locale.
+
+.. code-block:: bash
+
+    # Optional: Only need to set these if they are not already set
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+Now install OCRmyPDF for the current user, and ensure that the ``PATH``
 environment variable contains ``$HOME/.local/bin``.
 
 .. code-block:: bash
@@ -159,38 +196,20 @@ environment variable contains ``$HOME/.local/bin``.
     export PATH=$HOME/.local/bin:$PATH
     pip3 install --user ocrmypdf
 
-Alternately, you can install ocrmypdf system-wide. (Not recommended.)
-
-.. code-block:: bash
-
-    sudo pip3 install ocrmypdf
-
-At your option, you may upgrade Ubuntu 16.04 LTS to Tesseract 4.0 for improved OCR results.
-
-.. code-block:: bash
-
-    sudo apt-get install -y software-properties-common python-software-properties
-    sudo add-apt-repository ppa:alex-p/tesseract-ocr -y
-    sudo apt-get update
-    sudo apt-get upgrade tesseract-ocr
-
 To add JBIG2 encoding, see :ref:`jbig2`.
 
 Ubuntu 14.04 LTS
 ^^^^^^^^^^^^^^^^
 
-Installing on Ubuntu 14.04 LTS (trusty) is more difficult than some other options, because it is older and does not provide ``pip``.
-
-Update apt-get:
-
-.. code-block:: bash
-
-    sudo apt-get update
+Installing on Ubuntu 14.04 LTS (trusty) is more difficult than some other
+options, because of its age. Several backports are required. For explanations of
+some steps of this procedure, see the similar steps for Ubuntu 16.04.
 
 Install system dependencies:
 
 .. code-block:: bash
 
+    sudo apt-get update
     sudo apt-get install \
         software-properties-common python-software-properties \
         zlib1g-dev \
@@ -200,9 +219,13 @@ Install system dependencies:
         pngquant \
         qpdf
 
-We will need backports of Ghostscript 9.16, libav-11 (for unpaper 6.1), Tesseract 4.00 (alpha), and Python 3.6. This will replace Ghostscript and Tesseract 3.x on your system. Python 3.6 will be installed alongside the system Python 3.4.
+We will need backports of Ghostscript 9.16, libav-11 (for unpaper 6.1),
+Tesseract 4.00 (alpha), and Python 3.6. This will replace Ghostscript and
+Tesseract 3.x on your system. Python 3.6 will be installed alongside the system
+Python 3.4.
 
-If you prefer to not modify your system in this matter, consider using a Docker container.
+If you prefer to not modify your system in this matter, consider using a Docker
+container.
 
 .. code-block:: bash
 
@@ -227,8 +250,6 @@ Now we need to install ``pip`` and let it install ocrmypdf:
 
     curl https://bootstrap.pypa.io/ez_setup.py -o - | python3.6 && python3.6 -m easy_install pip
     pip3.6 install ocrmypdf
-
-The ``wget`` command will download a program and run it.
 
 These installation instructions omit the optional dependency ``unpaper``, which is only available at version 0.4.2 in Ubuntu 14.04. The author could not find a backport of ``unpaper``, and created a .deb package to do the job of installing unpaper 6.1 (for x86 64-bit only):
 
