@@ -14,6 +14,13 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
 
+v8.0.1
+------
+
+-   Fixed an exception when parsing PDFs that are missing a required field. `#325 <https://github.com/jbarlow83/OCRmyPDF/issues/325>`_
+
+-   pikepdf 1.0.5 is now required, to address some other PDF parsing issues.
+
 v8.0.0
 ------
 
