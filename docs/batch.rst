@@ -18,12 +18,12 @@ The ``--tag`` argument tells parallel to print the filename as a prefix whenever
 
 	parallel --tag -j 2 ocrmypdf '{}' 'output/{}' ::: *.pdf
 
-OCRmyPDF automatically repairs PDFs before parsing and gathering information from them.  If you are already repairing PDFs with ``qpdf`` prior to attempting OCR, or you can use ``--skip-repair`` to skip this step.  It may improve performance for large files, since repairing PDFs is single-threaded.
+OCRmyPDF automatically repairs PDFs before parsing and gathering information from them.
 
 Directory trees
 ---------------
 
-This will walk through a directory tree and run OCR on all files in place, printing the output in a way that makes 
+This will walk through a directory tree and run OCR on all files in place, printing the output in a way that makes
 
 .. code-block:: bash
 
@@ -66,7 +66,7 @@ This user contributed script also provides an example of batch processing.
 	    log_file = script_dir + '/ocr-tree.log'
 
 	logging.basicConfig(
-			level=logging.INFO, format='%(asctime)s %(message)s', 
+			level=logging.INFO, format='%(asctime)s %(message)s',
 			filename=log_file, filemode='w')
 
 	for dir_name, subdirs, file_list in os.walk(start_dir):
@@ -144,11 +144,11 @@ This is only possible for x86-based Synology products. Some Synology products us
 	            timestamp_OCR = time.strftime("%Y-%m-%d-%H%M_OCR_")
 	            filename_OCR = timestamp_OCR + file_noext + '.pdf'
 	            docker_mount = dir_name + ':/home/docker'
-	# create string for pdf processing 
+	# create string for pdf processing
 	# diskstation needs a user:group docker:docker. find uid:gid of your diskstation docker:docker with id docker.
 	# use this uid:gid in -u flag
 	# rw rights for docker:docker at source dir are also necessary
-	# the script is processed as root user via chron 
+	# the script is processed as root user via chron
 	            cmd = ['docker', 'run', '--rm', '-v', docker_mount, '-u=1030:65538', 'jbarlow83/ocrmypdf', , '--deskew' , filename, filename_OCR]
 	            logging.info(cmd)
 	            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -210,5 +210,3 @@ Alternatives
 """"""""""""
 
 * `Watchman <https://facebook.github.io/watchman/>`_ is a more powerful alternative to ``watchmedo``.
-
-
