@@ -260,14 +260,14 @@ These installation instructions omit the optional dependency ``unpaper``, which 
 
 To add JBIG2 encoding, see :ref:`jbig2`.
 
-ArchLinux
-^^^^^^^^^
+ArchLinux (AUR)
+^^^^^^^^^^^^^^^
 
 .. image:: https://repology.org/badge/version-for-repo/aur/ocrmypdf.svg
     :alt: ArchLinux
     :target: https://repology.org/metapackage/ocrmypdf
 
-The author is aware of an `ArchLinux User Repository package for ocrmypdf <https://aur.archlinux.org/packages/ocrmypdf/>`_. You can use the following command.
+There is an `ArchLinux User Repository package for ocrmypdf <https://aur.archlinux.org/packages/ocrmypdf/>`_. You can use the following command.
 
 .. code-block:: bash
 
