@@ -19,6 +19,7 @@
 # https://github.com/Flameeyes/unpaper/blob/master/doc/basic-concepts.md
 
 import os
+import shlex
 import sys
 from functools import lru_cache
 from subprocess import STDOUT, CalledProcessError, check_output
@@ -86,21 +87,25 @@ def run(input_file, output_file, dpi, log, mode_args):
             Image.open(output_pnm.name).save(output_file, dpi=(dpi, dpi))
 
 
-def clean(input_file, output_file, dpi, log):
-    run(
-        input_file,
-        output_file,
-        dpi,
-        log,
-        [
-            '--layout',
-            'none',
-            '--mask-scan-size',
-            '100',  # don't blank out narrow columns
-            '--no-border-align',  # don't align visible content to borders
-            '--no-mask-center',  # don't center visible content within page
-            '--no-grayfilter',  # don't remove light gray areas
-            '--no-blackfilter',  # don't remove solid black areas
-            '--no-deskew',  # don't deskew
-        ],
-    )
+def validate_custom_args(args: str):
+    unpaper_args = shlex.split(args)
+    if any('/' in arg for arg in unpaper_args):
+        raise ValueError('No filenames allowed in --unpaper-args')
+    return unpaper_args
+
+
+def clean(input_file, output_file, dpi, log, unpaper_args=None):
+    default_args = [
+        '--layout',
+        'none',
+        '--mask-scan-size',
+        '100',  # don't blank out narrow columns
+        '--no-border-align',  # don't align visible content to borders
+        '--no-mask-center',  # don't center visible content within page
+        '--no-grayfilter',  # don't remove light gray areas
+        '--no-blackfilter',  # don't remove solid black areas
+        '--no-deskew',  # don't deskew
+    ]
+    if not unpaper_args:
+        unpaper_args = default_args
+    run(input_file, output_file, dpi, log, unpaper_args)

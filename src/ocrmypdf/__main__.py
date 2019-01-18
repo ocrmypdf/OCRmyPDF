@@ -279,6 +279,13 @@ preprocessing.add_argument(
     "PDF.  Might remove desired content.",
 )
 preprocessing.add_argument(
+    '--unpaper-args',
+    type=str,
+    default=None,
+    help="A quoted string of arguments to pass to unpaper. Requires --clean. "
+    "Example: --unpaper-args '--layout double'.",
+)
+preprocessing.add_argument(
     '--oversample',
     metavar='DPI',
     type=numeric(int, 0, 5000),
@@ -623,12 +630,23 @@ def _optional_program_recommended(name, version_fn, min_version, for_argument):
 
 
 def check_options_preprocessing(options, log):
+    if options.unpaper_args and not options.clean:
+        raise argparse.ArgumentError(
+            None, "--clean is required for --unpaper-args"
+        )
     if any((options.clean, options.clean_final)):
         from .exec import unpaper
 
         _optional_program_required(
             'unpaper', unpaper.version, '6.1', '--clean, --clean-final'
         )
+        try:
+            if options.unpaper_args:
+                options.unpaper_args = unpaper.validate_custom_args(
+                    options.unpaper_args
+                )
+        except Exception as e:
+            raise argparse.ArgumentError(None, str(e))
 
 
 def check_options_ocr_behavior(options, log):
