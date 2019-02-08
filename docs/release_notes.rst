@@ -14,6 +14,11 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
 
+v8.1.0
+------
+
+-   Added a feature, ``--unpaper-args``, which allows passing arbitrary arguments to ``unpaper`` when using ``--clean`` or ``--clean-final``. The default, very conservative unpaper settings are suppressed.
+
 v8.0.1
 ------
 

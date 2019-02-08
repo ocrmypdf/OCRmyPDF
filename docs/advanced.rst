@@ -1,6 +1,30 @@
 Advanced features
 =================
 
+Control of unpaper
+------------------
+
+OCRmyPDF uses ``unpaper`` to provide the implementation of the ``--clean`` and ``--clean-final`` arguments. `unpaper <https://github.com/Flameeyes/unpaper/blob/master/doc/basic-concepts.md>`_ provides a variety of image processing filters to improve images.
+
+By default, OCRmyPDF uses only ``unpaper`` arguments that were found to be safe to use "blindly" on almost all files, without visually checking if the option is sensible for a given file.
+
+At your option, you may use ``--unpaper-args '...'`` to override the default arguments and forward other arguments to unpaper. The arguments passed to ``unpaper`` **must** be quoted, or ocrmypdf's will read them instead. No filename arguments should be provided. OCRmyPDF will assume it can append the input and output filenames, and that both are single files.
+
+In this example, we tell ``unpaper`` to expect two pages of text on a sheet (image), such as occurs when two facing pages of a book are scanned. ``unpaper`` uses this information to deskew each independently and clean up the margins of both.
+
+.. code-block:: bash
+
+    ocrmypdf --clean --clean-final --unpaper-args '--layout double' input.pdf output.pdf
+
+.. warning::
+
+    Some ``unpaper`` features will reposition text within the image, which will cause the OCR text layer to be mispositioned if only ``--
+
+.. warning::
+
+    Some ``unpaper`` features cause multiple input or output files to be consumed or produced. OCRmyPDF requires ``unpaper`` to consume one file and produce one file. An deviation from that condition.
+
+
 Control of OCR options
 ----------------------
 
@@ -16,7 +40,6 @@ If ``--skip-text`` is issued, then no OCR will be performed on pages that alread
 If ``--redo-ocr`` is issued, then a detailed text analysis is performed. Text is categorized as either visible or invisible. Invisible text (OCR) is stripped out. Then an image of each page is created with visible text masked out. The page image is sent for OCR, and any additional text is inserted as OCR. If a file contains a mix of text and bitmap images that contain text, OCRmyPDF will locate the additional text in images without disrupting the existing text.
 
 If ``--force-ocr`` is issued, then all pages will be rasterized to images, discarding any hidden OCR text, and rasterizing any printable text. This is useful for redoing OCR, for fixing OCR text with a damaged character map (text is selectable but not searchable), and destroying redacted information. Any forms and vector graphics will be rasterized as well.
-
 
 Time and image size limits
 """"""""""""""""""""""""""
