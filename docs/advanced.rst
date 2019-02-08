@@ -6,24 +6,28 @@ Control of unpaper
 
 OCRmyPDF uses ``unpaper`` to provide the implementation of the ``--clean`` and ``--clean-final`` arguments. `unpaper <https://github.com/Flameeyes/unpaper/blob/master/doc/basic-concepts.md>`_ provides a variety of image processing filters to improve images.
 
-By default, OCRmyPDF uses only ``unpaper`` arguments that were found to be safe to use "blindly" on almost all files, without visually checking if the option is sensible for a given file.
+By default, OCRmyPDF uses only ``unpaper`` arguments that were found to be safe to use on almost all files without having to inspect every page of the file afterwards. This is particularly true when only ``--clean`` is used, since that instructs OCRmyPDF to only clean the image before OCR and not the final image.
 
-At your option, you may use ``--unpaper-args '...'`` to override the default arguments and forward other arguments to unpaper. The arguments passed to ``unpaper`` **must** be quoted, or ocrmypdf's will read them instead. No filename arguments should be provided. OCRmyPDF will assume it can append the input and output filenames, and that both are single files.
+However, if you wish to use the more aggressive options in ``unpaper``, you may use ``--unpaper-args '...'`` to override the OCRmyPDF's defaults and forward other arguments to unpaper. This option will forward arguments to ``unpaper`` without any knowledge of what that program considers to be valid arguments. The string of arguments must be quoted as shown in the examples below. No filename arguments may be included. OCRmyPDF will assume it can append input and output filename of intermediate images to the ``--unpaper-args`` string.
 
 In this example, we tell ``unpaper`` to expect two pages of text on a sheet (image), such as occurs when two facing pages of a book are scanned. ``unpaper`` uses this information to deskew each independently and clean up the margins of both.
 
 .. code-block:: bash
 
     ocrmypdf --clean --clean-final --unpaper-args '--layout double' input.pdf output.pdf
+    ocrmypdf --clean --clean-final --unpaper-args '--layout double --no-noisefilter' input.pdf output.pdf
 
 .. warning::
 
-    Some ``unpaper`` features will reposition text within the image, which will cause the OCR text layer to be mispositioned if only ``--
+    Some ``unpaper`` features will reposition text within the image. ``--clean-final`` is recommended to avoid this issue.
 
 .. warning::
 
-    Some ``unpaper`` features cause multiple input or output files to be consumed or produced. OCRmyPDF requires ``unpaper`` to consume one file and produce one file. An deviation from that condition.
+    Some ``unpaper`` features cause multiple input or output files to be consumed or produced. OCRmyPDF requires ``unpaper`` to consume one file and produce one file. An deviation from that condition will result in errors.
 
+.. note::
+
+    ``unpaper`` uses uncompressed PBM/PGM/PPM files for its intermediate files. For large images or documents, it can take a lot of temporary disk space.
 
 Control of OCR options
 ----------------------
