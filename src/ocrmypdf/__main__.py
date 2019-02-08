@@ -1101,6 +1101,8 @@ def run_pipeline(args=None):
 
         build_pipeline(options, work_folder, _log, context)
         atexit.register(cleanup_working_files, work_folder, options)
+        if hasattr(os, 'nice'):
+            os.nice(5)
         cmdline.run(options)
     except ruffus_exceptions.RethrownJobError as e:
         if options.verbose:
