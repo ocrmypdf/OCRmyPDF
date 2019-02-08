@@ -630,6 +630,8 @@ def _optional_program_recommended(name, version_fn, min_version, for_argument):
 
 
 def check_options_preprocessing(options, log):
+    if options.clean_final:
+        options.clean = True
     if options.unpaper_args and not options.clean:
         raise argparse.ArgumentError(
             None, "--clean is required for --unpaper-args"
