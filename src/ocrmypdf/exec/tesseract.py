@@ -200,7 +200,9 @@ def tesseract_log_output(log, stdout, input_file):
             log.info(prefix + line.strip())
 
 
-def page_timedout(log, input_file):
+def page_timedout(log, input_file, timeout):
+    if timeout == 0:
+        return
     prefix = f"{(page_number(input_file)):4d}: [tesseract] "
     log.warning(prefix + " took too long to OCR - skipping")
 
@@ -257,7 +259,7 @@ def generate_hocr(
         # Generate a HOCR file with no recognized text if tesseract times out
         # Temporary workaround to hocrTransform not being able to function if
         # it does not have a valid hOCR file.
-        page_timedout(log, input_file)
+        page_timedout(log, input_file, timeout)
         _generate_null_hocr(output_hocr, output_sidecar, input_file)
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_file)
