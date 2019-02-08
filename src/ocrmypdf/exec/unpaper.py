@@ -20,13 +20,14 @@
 
 import os
 import shlex
+import subprocess
 import sys
 from functools import lru_cache
-from subprocess import STDOUT, CalledProcessError, check_output
-from tempfile import NamedTemporaryFile
+from subprocess import PIPE, STDOUT, CalledProcessError
+from tempfile import TemporaryDirectory
 
 from . import get_version
-from ..exceptions import MissingDependencyError
+from ..exceptions import MissingDependencyError, SubprocessOutputError
 
 try:
     from PIL import Image
@@ -65,26 +66,43 @@ def run(input_file, output_file, dpi, log, mode_args):
         im.close()
         raise MissingDependencyError() from e
 
-    with NamedTemporaryFile(suffix=suffix) as input_pnm, NamedTemporaryFile(
-        suffix=suffix, mode="r+b"
-    ) as output_pnm:
+    with TemporaryDirectory() as tmpdir:
+        input_pnm = os.path.join(tmpdir, f'input{suffix}')
+        output_pnm = os.path.join(tmpdir, f'output{suffix}')
         im.save(input_pnm, format='PPM')
         im.close()
 
-        os.unlink(output_pnm.name)
-
-        args_unpaper.extend([input_pnm.name, output_pnm.name])
+        # To prevent any shenanigans from accepting arbitrary parameters in
+        # --unpaper-args, we:
+        # 1) run with cwd set to a tmpdir with only unpaper's files
+        # 2) forbid the use of '/' in arguments, to prevent changing paths
+        # 3) append absolute paths for the input and output file
+        # This should ensure that a user cannot clobber some other file with
+        # their unpaper arguments (whether intentionally or otherwise)
+        args_unpaper.extend([input_pnm, output_pnm])
         try:
-            stdout = check_output(
-                args_unpaper, close_fds=True, universal_newlines=True, stderr=STDOUT
+            proc = subprocess.run(
+                args_unpaper,
+                check=True,
+                close_fds=True,
+                universal_newlines=True,
+                stderr=STDOUT,
+                cwd=tmpdir,
+                stdout=PIPE,
             )
         except CalledProcessError as e:
             log.debug(e.output)
             raise e from e
         else:
-            log.debug(stdout)
-            # unpaper sets dpi to 72
-            Image.open(output_pnm.name).save(output_file, dpi=(dpi, dpi))
+            log.debug(proc.stdout)
+            # unpaper sets dpi to 72; fix this
+            try:
+                Image.open(output_pnm).save(output_file, dpi=(dpi, dpi))
+            except (FileNotFoundError, OSError):
+                raise SubprocessOutputError(
+                    "unpaper: failed to produce the expected output file. Called with: "
+                    + str(args_unpaper)
+                ) from None
 
 
 def validate_custom_args(args: str):
