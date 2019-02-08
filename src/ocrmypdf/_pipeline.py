@@ -648,7 +648,7 @@ def ocr_tesseract_hocr(input_file, output_files, log, context):
 
 
 def select_visible_page_image(infiles, output_file, log, context):
-    "Selects a whole page image that we can show the user (if necessary)"
+    """Selects a whole page image that we can show the user (if necessary)"""
 
     options = context.get_options()
     if options.clean_final:
