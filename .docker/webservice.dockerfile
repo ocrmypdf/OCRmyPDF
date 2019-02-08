@@ -16,4 +16,9 @@ COPY .docker/webservice.py /application
 
 USER docker
 
+VOLUME ["/config"]
+
+# This config file is optional
+ENV OCRMYPDF_WEBSERVICE_SETTINGS "/config/config.py"
+
 ENTRYPOINT ["python3", "/application/webservice.py"]

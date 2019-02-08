@@ -32,11 +32,9 @@ import shlex
 
 app = Flask(__name__)
 app.secret_key = "secret"
+app.config['MAX_CONTENT_LENGTH'] = 50_000_000
+app.config.from_envvar("OCRMYPDF_WEBSERVICE_SETTINGS", silent=True)
 
-uploaddir = TemporaryDirectory(prefix="ocrmypdf-upload")
-downloaddir = TemporaryDirectory(prefix="ocrmypdf-download")
-
-app.config["UPLOAD_FOLDER"] = uploaddir
 ALLOWED_EXTENSIONS = set(["pdf"])
 
 
@@ -45,9 +43,13 @@ def allowed_file(filename):
 
 
 def do_ocrmypdf(file):
+    uploaddir = TemporaryDirectory(prefix="ocrmypdf-upload")
+    downloaddir = TemporaryDirectory(prefix="ocrmypdf-download")
+
     filename = secure_filename(file.filename)
     up_file = os.path.join(uploaddir.name, filename)
     file.save(up_file)
+
     down_file = os.path.join(downloaddir.name, filename)
 
     cmd_args = [arg for arg in shlex.split(request.form["params"])]
