@@ -147,7 +147,7 @@ def no_outpdf(tmpdir):
 
 @pytest.helpers.register
 def check_ocrmypdf(input_file, output_file, *args, env=None):
-    "Run ocrmypdf and confirmed that a valid file was created"
+    """Run ocrmypdf and confirmed that a valid file was created"""
 
     p, out, err = run_ocrmypdf(input_file, output_file, *args, env=env)
     # ensure py.test collects the output, use -s to view

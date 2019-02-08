@@ -566,7 +566,7 @@ def preprocess_clean(input_file, output_file, log, context):
     pageinfo = get_pageinfo(input_file, context)
     dpi = get_page_square_dpi(pageinfo, options)
 
-    unpaper.clean(input_file, output_file, dpi, log)
+    unpaper.clean(input_file, output_file, dpi, log, options.unpaper_args)
 
 
 def select_ocr_image(infiles, output_file, log, context):
