@@ -349,7 +349,7 @@ def generate_pdf(
         if os.path.exists(prefix + '.txt'):
             shutil.move(prefix + '.txt', output_text)
     except TimeoutExpired:
-        page_timedout(log, input_image)
+        page_timedout(log, input_image, timeout)
         use_skip_page(text_only, skip_pdf, output_pdf, output_text)
     except CalledProcessError as e:
         tesseract_log_output(log, e.output, input_image)

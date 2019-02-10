@@ -17,11 +17,15 @@
 
 from itertools import groupby
 from pathlib import Path
+import os
 
 import pikepdf
 
 from .exec import tesseract
 from .helpers import flatten_groups, page_number
+
+
+MAX_OPEN_PAGE_PDFS = int(os.environ.get('_OCRMYPDF_MAX_OPEN_PAGE_PDFS', 100))
 
 
 def _update_page_resources(*, page, font, font_key, procset):
@@ -34,7 +38,7 @@ def _update_page_resources(*, page, font, font_key, procset):
         fonts = resources['/Font']
     except KeyError:
         fonts = pikepdf.Dictionary({})
-    if font_key not in fonts:
+    if font_key is not None and font_key not in fonts:
         fonts[font_key] = font
     resources['/Font'] = fonts
 
@@ -177,6 +181,8 @@ def _find_font(text, pdf_base):
             break
     if pdf_text_font:
         font = pdf_base.copy_foreign(pdf_text_font)
+    if font_key is None:
+        print('font_key is None')
     return font, font_key
 
 
@@ -246,10 +252,10 @@ def _fix_toc(pdf_base, pageref_remap, log):
         invalidated to its new one.
         """
         try:
-        pageref = dest_node[0]
-        if pageref['/Type'] == '/Page' and pageref.objgen in pageref_remap:
-            new_objgen = pageref_remap[pageref.objgen]
-            dest_node[0] = pdf_base.get_object(new_objgen)
+            pageref = dest_node[0]
+            if pageref['/Type'] == '/Page' and pageref.objgen in pageref_remap:
+                new_objgen = pageref_remap[pageref.objgen]
+                dest_node[0] = pdf_base.get_object(new_objgen)
         except (IndexError, TypeError) as e:
             log.warning("This file may contain invalid table of contents entries")
             log.debug(e)
@@ -392,7 +398,7 @@ def weave_layers(infiles, output_file, log, context):
             content_rotation - autorotate_correction
         ) % 360
 
-        if len(keep_open) > 100:
+        if len(keep_open) > MAX_OPEN_PAGE_PDFS:
             # qpdf limitations require us to keep files open when we intend
             # to copy content from them before saving. However, we want to keep
             # a lid on file handles and memory usage, so for big files we're
@@ -409,7 +415,7 @@ def weave_layers(infiles, output_file, log, context):
 
             pdf_base = pikepdf.open(interim)
             procset = pdf_base.pages[0].Resources.ProcSet
-            font = pdf_base.pages[0].Resources.Font.get(font_key)
+            font, font_key = None, None  # Reacquire this information
 
     _fix_toc(pdf_base, pagerefs, log)
     pdf_base.save(output_file)

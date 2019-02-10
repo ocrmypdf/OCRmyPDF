@@ -17,20 +17,24 @@
 
 from unittest.mock import MagicMock
 import logging
+import os
 
 import pytest
 
 import pikepdf
-from ocrmypdf._weave import _fix_toc
+from ocrmypdf._weave import _fix_toc, _update_page_resources
 
-def test_invalid_toc(resources, tmpdir, caplog):
+check_ocrmypdf = pytest.helpers.check_ocrmypdf
+
+
+def test_invalid_toc(resources, outdir, caplog):
     pdf = pikepdf.open(resources / 'toc.pdf')
 
     # Corrupt a TOC entry
     pdf.Root.Outlines.Last.Dest = pikepdf.Array([None, 0.0, 0.1, 0.2])
-    pdf.save(tmpdir / 'test.pdf')
+    pdf.save(outdir / 'test.pdf')
 
-    pdf = pikepdf.open(tmpdir / 'test.pdf')
+    pdf = pikepdf.open(outdir / 'test.pdf')
     remap = {}
     remap[pdf.pages[0].objgen] = pdf.pages[0].objgen  # Dummy remap
 
@@ -38,3 +42,23 @@ def test_invalid_toc(resources, tmpdir, caplog):
     log = logging.getLogger()
     _fix_toc(pdf, remap, log)
     assert 'invalid table of contents entries' in caplog.text
+
+
+def test_no_glyphless_weave(resources, outdir):
+    pdf = pikepdf.open(resources / 'francais.pdf')
+    pdf_aspect = pikepdf.open(resources / 'aspect.pdf')
+    pdf_cmyk = pikepdf.open(resources / 'cmyk.pdf')
+    pdf.pages.extend(pdf_aspect.pages)
+    pdf.pages.extend(pdf_cmyk.pages)
+    pdf.save(outdir / 'test.pdf')
+
+    env = os.environ.copy()
+    env['_OCRMYPDF_MAX_OPEN_PAGE_PDFS'] = '2'
+    check_ocrmypdf(
+        outdir / 'test.pdf',
+        outdir / 'out.pdf',
+        '--deskew',
+        '--tesseract-timeout',
+        '0',
+        env=env,
+    )
