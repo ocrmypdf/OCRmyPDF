@@ -25,7 +25,7 @@ from .helpers import flatten_groups, page_number
 
 
 def _update_page_resources(*, page, font, font_key, procset):
-    "Update this page's fonts with a reference to the Glyphless font"
+    """Update this page's fonts with a reference to the Glyphless font"""
 
     if '/Resources' not in page:
         page['/Resources'] = pikepdf.Dictionary({})
@@ -160,7 +160,7 @@ def _weave_layers_graft(
 
 
 def _find_font(text, pdf_base):
-    "Copy a font from the filename text into pdf_base"
+    """Copy a font from the filename text into pdf_base"""
 
     font, font_key = None, None
     possible_font_names = ('/f-0-0', '/F1')
@@ -245,12 +245,14 @@ def _fix_toc(pdf_base, pageref_remap, log):
         Inner helper function: change the objgen for any page from the old we
         invalidated to its new one.
         """
-        if not isinstance(dest_node, pikepdf.Array):
-            return
+        try:
         pageref = dest_node[0]
         if pageref['/Type'] == '/Page' and pageref.objgen in pageref_remap:
             new_objgen = pageref_remap[pageref.objgen]
             dest_node[0] = pdf_base.get_object(new_objgen)
+        except (IndexError, TypeError) as e:
+            log.warning("This file may contain invalid table of contents entries")
+            log.debug(e)
 
     def visit_remap_dest(pdf_base, node, log):
         """
