@@ -18,6 +18,14 @@ v8.1.0
 
 -   Added a feature, ``--unpaper-args``, which allows passing arbitrary arguments to ``unpaper`` when using ``--clean`` or ``--clean-final``. The default, very conservative unpaper settings are suppressed.
 
+-   The argument ``--clean-final`` now implies ``--clean``. It was possible to issue ``--clean-final`` on its before this, but it would have no useful effect.
+
+-   Fixed an exception on traversing corrupt table of contents entries (specifically, those with invalid destination objects)
+
+-   Fixed an issue when using ``--tesseract-timeout`` and image processing features on a file with more than 100 pages. `#347 <https://github.com/jbarlow83/OCRmyPDF/issues/347>`_
+
+-   OCRmyPDF now always calls ``os.nice(5)`` to signal to operating systems that it is a background process.
+
 v8.0.1
 ------
 
