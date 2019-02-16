@@ -25,6 +25,7 @@ from pathlib import Path
 from PIL import Image
 
 import pikepdf
+from pikepdf import Name, Dictionary
 
 from . import leptonica
 from ._jobcontext import JobContext
@@ -52,7 +53,7 @@ def tif_name(root, xref):
 
 
 def extract_image_filter(pike, root, log, image, xref):
-    if image.Subtype != '/Image':
+    if image.Subtype != Name.Image:
         return None
     if image.Length < 100:
         log.debug("Skipping small image, xref %s", xref)
@@ -68,7 +69,7 @@ def extract_image_filter(pike, root, log, image, xref):
     if pim.bits_per_component > 8:
         return None  # Don't mess with wide gamut images
 
-    if filtdp[0] == '/JPXDecode':
+    if filtdp[0] == Name.JPXDecode:
         return None  # Don't do JPEG2000
 
     return pim, filtdp
@@ -82,7 +83,7 @@ def extract_image_jbig2(*, pike, root, log, image, xref, options):
 
     if (
         pim.bits_per_component == 1
-        and filtdp != '/JBIG2Decode'
+        and filtdp != Name.JBIG2Decode
         and jbig2enc.available()
     ):
         try:
@@ -102,7 +103,7 @@ def extract_image_generic(*, pike, root, log, image, xref, options):
         return None
     pim, filtdp = result
 
-    if filtdp[0] == '/DCTDecode' and options.optimize >= 2:
+    if filtdp[0] == Name.DCTDecode and options.optimize >= 2:
         # This is a simple heuristic derived from some training data, that has
         # about a 70% chance of guessing whether the JPEG is high quality,
         # and possibly recompressible, or not. The number itself doesn't mean
@@ -281,7 +282,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
         if jbig2_symfile.exists():
             jbig2_globals_data = jbig2_symfile.read_bytes()
             jbig2_globals = pikepdf.Stream(pike, jbig2_globals_data)
-            jbig2_globals_dict = pikepdf.Dictionary({'/JBIG2Globals': jbig2_globals})
+            jbig2_globals_dict = Dictionary(JBIG2Globals=jbig2_globals)
         elif options.jbig2_page_group_size == 1:
             jbig2_globals_dict = None
         else:
@@ -293,9 +294,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             jbig2_im_data = jbig2_im_file.read_bytes()
             im_obj = pike.get_object(xref, 0)
             im_obj.write(
-                jbig2_im_data,
-                filter=pikepdf.Name('/JBIG2Decode'),
-                decode_parms=jbig2_globals_dict,
+                jbig2_im_data, filter=Name.JBIG2Decode, decode_parms=jbig2_globals_dict
             )
 
 
@@ -317,7 +316,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
 
         compdata = leptonica.CompressedData.open(opt_jpg)
         im_obj = pike.get_object(xref, 0)
-        im_obj.write(compdata.read(), filter=pikepdf.Name('/DCTDecode'))
+        im_obj.write(compdata.read(), filter=Name.DCTDecode)
 
 
 def transcode_pngs(pike, pngs, root, log, options):
@@ -360,7 +359,7 @@ def transcode_pngs(pike, pngs, root, log, options):
 
         predictor = None
         if compdata.predictor > 0:
-            predictor = pikepdf.Dictionary({'/Predictor': compdata.predictor})
+            predictor = Dictionary(Predictor=compdata.predictor)
 
         im_obj.BitsPerComponent = compdata.bps
         im_obj.Width = compdata.w
@@ -371,23 +370,21 @@ def transcode_pngs(pike, pngs, root, log, options):
             palette_data = pikepdf.Object.parse(palette_pdf_string)
             palette_stream = pikepdf.Stream(pike, bytes(palette_data))
             palette = [
-                pikepdf.Name('/Indexed'),
-                pikepdf.Name('/DeviceRGB'),
+                Name.Indexed,
+                Name.DeviceRGB,
                 compdata.ncolors - 1,
                 palette_stream,
             ]
             cs = palette
         else:
             if compdata.spp == 1:
-                cs = pikepdf.Name('/DeviceGray')
+                cs = Name.DeviceGray
             elif compdata.spp == 3:
-                cs = pikepdf.Name('/DeviceRGB')
+                cs = Name.DeviceRGB
             elif compdata.spp == 4:
-                cs = pikepdf.Name('/DeviceCMYK')
+                cs = Name.DeviceCMYK
         im_obj.ColorSpace = cs
-        im_obj.write(
-            compdata.read(), filter=pikepdf.Name('/FlateDecode'), decode_parms=predictor
-        )
+        im_obj.write(compdata.read(), filter=Name.FlateDecode, decode_parms=predictor)
 
 
 def optimize(input_file, output_file, log, context):
