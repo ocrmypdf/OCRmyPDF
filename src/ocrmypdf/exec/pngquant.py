@@ -17,6 +17,9 @@
 
 from functools import lru_cache
 from subprocess import run
+from tempfile import NamedTemporaryFile
+
+from PIL import Image
 
 from . import get_version
 from ..exceptions import MissingDependencyError
@@ -36,16 +39,32 @@ def available():
 
 
 def quantize(input_file, output_file, quality_min, quality_max):
-    args = [
-        'pngquant',
-        '--force',
-        '--skip-if-larger',
-        '--output',
-        output_file,
-        '--quality',
-        f'{quality_min}-{quality_max}',
-        '--',
-        input_file,
-    ]
-    proc = run(args)
-    proc.check_returncode()
+    if input_file.endswith('.jpg'):
+        im = Image.open(input_file)
+        with NamedTemporaryFile(suffix='.png') as tmp:
+            im.save(tmp)
+            args = [
+                'pngquant',
+                '--force',
+                '--skip-if-larger',
+                '--output',
+                output_file,
+                '--quality',
+                f'{quality_min}-{quality_max}',
+                '--',
+                tmp.name,
+            ]
+            run(args)
+    else:
+        args = [
+            'pngquant',
+            '--force',
+            '--skip-if-larger',
+            '--output',
+            output_file,
+            '--quality',
+            f'{quality_min}-{quality_max}',
+            '--',
+            input_file,
+        ]
+        run(args)
