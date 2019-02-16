@@ -271,7 +271,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
     must be lossy encoding since jbig2enc does not support refinement coding.
 
     When the JBIG2 symbolic coder is not used, each JBIG2 stands on its own
-    and needs no dictionary. Currently this is must be lossless JBIG2.
+    and needs no dictionary. Currently this must be lossless JBIG2.
     """
 
     _produce_jbig2_images(jbig2_groups, root, log, options)
@@ -319,7 +319,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
         im_obj.write(compdata.read(), filter=Name.DCTDecode)
 
 
-def transcode_pngs(pike, pngs, root, log, options):
+def transcode_pngs(pike, images, image_name_fn, root, log, options):
     if options.optimize >= 2:
         png_quality = (
             max(10, options.png_quality - 10),
@@ -328,38 +328,50 @@ def transcode_pngs(pike, pngs, root, log, options):
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=options.jobs
         ) as executor:
-            for xref in pngs:
+            for xref in images:
+                log.info(image_name_fn(root, xref))
                 executor.submit(
                     pngquant.quantize,
-                    png_name(root, xref),
+                    image_name_fn(root, xref),
                     png_name(root, xref),
                     png_quality[0],
                     png_quality[1],
                 )
 
-    for xref in pngs:
+    for xref in images:
         im_obj = pike.get_object(xref, 0)
-
         # Open, transcode (!), package for PDF
         try:
-            pix = leptonica.Pix.open(png_name(root, xref))
-            if pix.depth == 1:
-                pix = pix.invert()  # PDF assumes 1 is black for monochrome
-            compdata = pix.generate_pdf_ci_data(leptonica.lept.L_FLATE_ENCODE, 0)
+            compdata = leptonica.CompressedData.open(png_name(root, xref))
         except leptonica.LeptonicaError as e:
             log.error(e)
             continue
 
-        # This is what we should be doing: open the compressed data without
-        # transcoding. However this shifts each pixel row by one for some
-        # reason.
-        # compdata = leptonica.CompressedData.open(png_name(root, xref))
+        # If re-coded image is larger don't use it
         if len(compdata) > int(im_obj.stream_dict.Length):
-            continue  # If we produced a larger image, don't use
+            log.debug(
+                f"pngquant: pngquant did not improve over original image "
+                f"{len(compdata)} > {int(im_obj.stream_dict.Length)}"
+            )
+            continue
 
-        predictor = None
-        if compdata.predictor > 0:
-            predictor = Dictionary(Predictor=compdata.predictor)
+        # We have to set the PDF predictor
+        # According to Leptonica source, PDF readers don't actually need us
+        # to specify the correct predictor, they just need a value of either
+        #   1 - there is no predictor
+        #   10-14 - there is a predictor
+        # Knowing that a predictor was used is the key information. From there
+        # the PNG decoder can infer the rest from the file.
+        # In practice the predictor should be Paeth, 14, so we'll use that.
+        # See:
+        #   - PDF RM 7.4.4.4 Table 10
+        #   - https://github.com/DanBloomberg/leptonica/blob/master/src/pdfio2.c#L757
+        predictor = 14 if compdata.predictor > 0 else 1
+        dparms = Dictionary(predictor=predictor)
+        if predictor > 1:
+            dparms.BitsPerComponent = compdata.bps  # Yes this is redundant
+            dparms.Colors = compdata.spp
+            dparms.Columns = compdata.w
 
         im_obj.BitsPerComponent = compdata.bps
         im_obj.Width = compdata.w
@@ -384,7 +396,7 @@ def transcode_pngs(pike, pngs, root, log, options):
             elif compdata.spp == 4:
                 cs = Name.DeviceCMYK
         im_obj.ColorSpace = cs
-        im_obj.write(compdata.read(), filter=Name.FlateDecode, decode_parms=predictor)
+        im_obj.write(compdata.read(), filter=Name.FlateDecode, decode_parms=dparms)
 
 
 def optimize(input_file, output_file, log, context):
@@ -408,7 +420,7 @@ def optimize(input_file, output_file, log, context):
 
     jpegs, pngs = extract_images_generic(pike, root, log, options)
     transcode_jpegs(pike, jpegs, root, log, options)
-    transcode_pngs(pike, pngs, root, log, options)
+    transcode_pngs(pike, pngs, png_name, root, log, options)
 
     jbig2_groups = extract_images_jbig2(pike, root, log, options)
     convert_to_jbig2(pike, jbig2_groups, root, log, options)
