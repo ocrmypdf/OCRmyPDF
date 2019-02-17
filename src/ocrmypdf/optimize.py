@@ -309,7 +309,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
         # https://github.com/python-pillow/Pillow/issues/1144
         with Image.open(fspath(in_jpg)) as im:
             im.save(fspath(opt_jpg), optimize=True, quality=options.jpeg_quality)
-        # pylint: disable=no-member
+
         if opt_jpg.stat().st_size > in_jpg.stat().st_size:
             log.debug("xref %s, jpeg, made larger - skip", xref)
             continue
@@ -340,14 +340,17 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
 
     for xref in images:
         im_obj = pike.get_object(xref, 0)
-        # Open, transcode (!), package for PDF
         try:
             compdata = leptonica.CompressedData.open(png_name(root, xref))
         except leptonica.LeptonicaError as e:
+            # Most likely this means file not found, i.e. quantize did not
+            # produce an improved version
             log.error(e)
             continue
 
-        # If re-coded image is larger don't use it
+        # If re-coded image is larger don't use it - we test here because
+        # pngquant knows the size of the temporary output file but not the actual
+        # object in the PDF
         if len(compdata) > int(im_obj.stream_dict.Length):
             log.debug(
                 f"pngquant: pngquant did not improve over original image "
@@ -355,13 +358,16 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
             )
             continue
 
-        # We have to set the PDF predictor
+        # When a PNG is inserted into a PDF, we more or less copy the IDAT section from
+        # the PDF and transfer the rest of the PNG headers to PDF image metadata.
+        # One thing we have to do is tell the PDF reader whether a predictor was used
+        # on the image before Flate encoding. (Typically one is.)
         # According to Leptonica source, PDF readers don't actually need us
-        # to specify the correct predictor, they just need a value of either
-        #   1 - there is no predictor
+        # to specify the correct predictor, they just need a value of either:
+        #   1 - no predictor
         #   10-14 - there is a predictor
-        # Knowing that a predictor was used is the key information. From there
-        # the PNG decoder can infer the rest from the file.
+        # Leptonica's compdata->predictor only tells TRUE or FALSE
+        # From there the PNG decoder can infer the rest from the file.
         # In practice the predictor should be Paeth, 14, so we'll use that.
         # See:
         #   - PDF RM 7.4.4.4 Table 10
@@ -369,7 +375,7 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
         predictor = 14 if compdata.predictor > 0 else 1
         dparms = Dictionary(predictor=predictor)
         if predictor > 1:
-            dparms.BitsPerComponent = compdata.bps  # Yes this is redundant
+            dparms.BitsPerComponent = compdata.bps  # Yes, this is redundant
             dparms.Colors = compdata.spp
             dparms.Columns = compdata.w
 
@@ -378,6 +384,8 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
         im_obj.Height = compdata.h
 
         if compdata.ncolors > 0:
+            # .ncolors is the number of colors in the palette, not the number of
+            # colors used in a true color image
             palette_pdf_string = compdata.get_palette_pdf_string()
             palette_data = pikepdf.Object.parse(palette_pdf_string)
             palette_stream = pikepdf.Stream(pike, bytes(palette_data))
@@ -416,7 +424,7 @@ def optimize(input_file, output_file, log, context):
     pike = pikepdf.Pdf.open(input_file)
 
     root = Path(output_file).parent / 'images'
-    root.mkdir(exist_ok=True)  # pylint: disable=no-member
+    root.mkdir(exist_ok=True)
 
     jpegs, pngs = extract_images_generic(pike, root, log, options)
     transcode_jpegs(pike, jpegs, root, log, options)
