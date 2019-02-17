@@ -149,11 +149,22 @@ def extract_image_generic(*, pike, root, log, image, xref, options):
 def extract_images(pike, root, log, options, extract_fn):
     """Extract image using extract_fn
 
-    extract_fn decides whether the image is interesting in this case
+    Enumerate images on each page, lookup their xref/ID number in the PDF.
+    Exclude images that are soft masks (i.e. alpha transparency related).
+    Record the page number on which an image is first used, since images may be
+    used on multiple pages (or multiple times on the same page).
+
+    Current we do not check Form XObjects or other objects that may contain
+    images, and we don't evaluate alternate images or thumbnails.
+
+    extract_fn must decide if wants to extract the image in this context. If
+    it does a tuple should be returned: (xref, ext) where .ext is the file
+    extension. extract_fn must also extract the file it finds interesting.
     """
 
     include_xrefs = set()
     exclude_xrefs = set()
+    pageno_for_xref = {}
     errors = 0
     for pageno, page in enumerate(pike.pages):
         try:
@@ -169,6 +180,8 @@ def extract_images(pike, root, log, options, extract_fn):
                 smask_xref = image.SMask.objgen[0]
                 exclude_xrefs.add(smask_xref)
             include_xrefs.add(xref)
+            if xref not in pageno_for_xref:
+                pageno_for_xref[xref] = pageno
 
     working_xrefs = include_xrefs - exclude_xrefs
     for xref in working_xrefs:
@@ -178,13 +191,12 @@ def extract_images(pike, root, log, options, extract_fn):
                 pike=pike, root=root, log=log, image=image, xref=xref, options=options
             )
         except Exception as e:
-            log.debug("Image xref %s", xref)
-            log.debug(repr(e))
+            log.debug("Image xref %s, error %s", xref, repr(e))
             errors += 1
         else:
             if result:
                 _, ext = result
-                yield pageno, xref, ext
+                yield pageno_for_xref[xref], xref, ext
 
 
 def extract_images_generic(pike, root, log, options):
@@ -198,7 +210,7 @@ def extract_images_generic(pike, root, log, options):
             pngs.append(xref)
         elif ext == '.jpg':
             jpegs.append(xref)
-    log.debug("Optimizable images: " "JPEGs: %s PNGs: %s", len(jpegs), len(pngs))
+    log.debug("Optimizable images: JPEGs: %s PNGs: %s", len(jpegs), len(pngs))
     return jpegs, pngs
 
 
@@ -216,7 +228,7 @@ def extract_images_jbig2(pike, root, log, options):
     jbig2_groups = {
         group: xrefs for group, xrefs in jbig2_groups.items() if len(xrefs) > 0
     }
-    log.debug("Optimizable images: " "JBIG2 groups: %s", (len(jbig2_groups),))
+    log.debug("Optimizable images: JBIG2 groups: %s", (len(jbig2_groups),))
     return jbig2_groups
 
 
