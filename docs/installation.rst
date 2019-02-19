@@ -298,6 +298,12 @@ OCRmyPDF is now a standard `Homebrew <https://brew.sh>`_ formula. To install on 
 
     brew install ocrmypdf
 
+This will include only the English language pack. If you need other languages you can optionally install them all:
+
+.. code-block:: bash
+
+    brew install tesseract-lang  # Optional: Install all language packs
+
 .. note::
 
     Users who previously installed OCRmyPDF on macOS using ``pip install ocrmypdf`` should remove the pip version (``pip3 uninstall ocrmypdf``) before switching to the Homebrew version.
