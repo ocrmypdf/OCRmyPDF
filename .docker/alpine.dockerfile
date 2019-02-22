@@ -14,10 +14,11 @@ RUN \
     libxslt-dev \
     zlib-dev \
     qpdf-dev \
-    py3-pybind11@testing \
     leptonica-dev \
     libffi-dev \
     binutils \
+  # Install pybind11 for pikepdf
+  && pip install pybind11 \
   # Add build dependencies
   && apk add --virtual build-dependencies \
     build-base \
