@@ -9,6 +9,7 @@ RUN \
     qpdf \
     tesseract-ocr \
     unpaper \
+    pngquant \
     libxml2-dev \
     libxslt-dev \
     zlib-dev \
