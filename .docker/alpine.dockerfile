@@ -34,6 +34,7 @@ RUN \
   rm -rf /app \
   && mkdir /app \
   && apk del build-dependencies \
-  && rm -rf /var/cache/apk/*
+  && rm -rf /var/cache/apk/* \
+  && rm -rf /root/.cache
 
 ENTRYPOINT ["/usr/local/bin/ocrmypdf"]
