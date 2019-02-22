@@ -1,4 +1,4 @@
-FROM python:3-alpine as base
+FROM alpine:3.9 as base
 
 FROM base as builder
 
@@ -6,6 +6,8 @@ RUN \
   echo '@testing http://nl.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories \
   # Add runtime dependencies
   && apk add --update \
+    python3-dev \
+    py3-setuptools \
     jbig2enc@testing \
     ghostscript \
     qpdf \
@@ -20,7 +22,7 @@ RUN \
     leptonica-dev \
     binutils \
   # Install pybind11 for pikepdf
-  && pip install pybind11 \
+  && pip3 install pybind11 \
   # Add build dependencies
   && apk add --virtual build-dependencies \
     build-base \
@@ -30,7 +32,7 @@ COPY . /app
 
 WORKDIR /app
 
-RUN pip install .
+RUN pip3 install .
 
 FROM base
 
@@ -38,6 +40,7 @@ RUN \
   echo '@testing http://nl.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories \
   # Add runtime dependencies
   && apk add --update \
+    python3 \
     jbig2enc@testing \
     ghostscript \
     qpdf \
@@ -52,6 +55,7 @@ RUN \
     leptonica-dev \
     binutils
 
-COPY --from=builder /usr/local /usr/local
+COPY --from=builder /usr/lib/python3.6/site-packages /usr/lib/python3.6/site-packages
+COPY --from=builder /usr/bin/ocrmypdf /usr/bin/dumppdf.py /usr/bin/latin2ascii.py /usr/bin/pdf2txt.py /usr/bin/img2pdf /usr/bin/chardetect /usr/bin/
 
-ENTRYPOINT ["/usr/local/bin/ocrmypdf"]
+ENTRYPOINT ["/usr/bin/ocrmypdf"]
