@@ -1,4 +1,6 @@
-FROM python:3-alpine
+FROM python:3-alpine as base
+
+FROM base as builder
 
 RUN \
   echo '@testing http://nl.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories \
@@ -14,8 +16,8 @@ RUN \
     libxslt-dev \
     zlib-dev \
     qpdf-dev \
-    leptonica-dev \
     libffi-dev \
+    leptonica-dev \
     binutils \
   # Install pybind11 for pikepdf
   && pip install pybind11 \
@@ -30,12 +32,26 @@ WORKDIR /app
 
 RUN pip install .
 
-# Delete build dependencies
+FROM base
+
 RUN \
-  rm -rf /app \
-  && mkdir /app \
-  && apk del build-dependencies \
-  && rm -rf /var/cache/apk/* \
-  && rm -rf /root/.cache
+  echo '@testing http://nl.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories \
+  # Add runtime dependencies
+  && apk add --update \
+    jbig2enc@testing \
+    ghostscript \
+    qpdf \
+    tesseract-ocr \
+    unpaper \
+    pngquant \
+    libxml2 \
+    libxslt \
+    zlib \
+    qpdf \
+    libffi \
+    leptonica-dev \
+    binutils
+
+COPY --from=builder /usr/local /usr/local
 
 ENTRYPOINT ["/usr/local/bin/ocrmypdf"]
