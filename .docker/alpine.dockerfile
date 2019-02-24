@@ -2,6 +2,8 @@ FROM alpine:3.9 as base
 
 FROM base as builder
 
+ENV LANG=C.UTF-8
+
 RUN \
   echo '@testing http://nl.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories \
   # Add runtime dependencies
@@ -37,6 +39,8 @@ WORKDIR /app
 RUN pip3 install .
 
 FROM base
+
+ENV LANG=C.UTF-8
 
 RUN \
   echo '@testing http://nl.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories \
