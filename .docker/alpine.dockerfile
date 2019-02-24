@@ -51,6 +51,8 @@ RUN \
     ghostscript \
     qpdf \
     tesseract-ocr \
+    tesseract-ocr-data-deu \
+    tesseract-ocr-data-chi_sim \
     unpaper \
     pngquant \
     libxml2 \
