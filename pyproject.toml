@@ -1,3 +1,12 @@
+[build-system]
+requires = [
+  "setuptools",
+  "wheel",
+  "cffi",
+  "setuptools_scm",
+  "setuptools_scm_git_archive"
+]
+
 [tool.black]
 line-length = 88
 py36 = true

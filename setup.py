@@ -20,6 +20,7 @@
 from __future__ import print_function, unicode_literals
 
 import sys
+
 if sys.version_info < (3, 6):
     print("Python 3.6 or newer is required", file=sys.stderr)
     sys.exit(1)
@@ -98,50 +99,36 @@ def _error_trailer(program, package, optional, **kwargs):
         print(linux_install_advice.format(**locals()), file=sys.stderr)
 
 
-def error_missing_program(
-        program,
-        package,
-        optional
-        ):
+def error_missing_program(program, package, optional):
     print(missing_program.format(**locals()), file=sys.stderr)
     _error_trailer(**locals())
 
 
-def error_unknown_version(
-        program,
-        package,
-        optional,
-        need_version
-        ):
+def error_unknown_version(program, package, optional, need_version):
     print(unknown_version.format(**locals()), file=sys.stderr)
     _error_trailer(**locals())
 
 
-def error_old_version(
-        program,
-        package,
-        optional,
-        need_version,
-        found_version
-        ):
+def error_old_version(program, package, optional, need_version, found_version):
     print(old_version.format(**locals()), file=sys.stderr)
     _error_trailer(**locals())
 
 
 def check_external_program(
-        program,
-        need_version,
-        package,
-        version_check_args=None,
-        version_scrape_regex=re.compile(r'(\d+\.\d+(?:\.\d+)?)'),
-        optional=False):
+    program,
+    need_version,
+    package,
+    version_check_args=None,
+    version_scrape_regex=re.compile(r'(\d+\.\d+(?:\.\d+)?)'),
+    optional=False,
+):
     if not version_check_args:
         version_check_args = ['--version']
     print(f'Checking for {program} >= {need_version}...')
     try:
         result = check_output(
-                [program] + version_check_args,
-                universal_newlines=True, stderr=STDOUT)
+            [program] + version_check_args, universal_newlines=True, stderr=STDOUT
+        )
     except (CalledProcessError, FileNotFoundError):
         error_missing_program(program, package, optional)
         if not optional:
@@ -156,44 +143,43 @@ def check_external_program(
         sys.exit(1)
 
     if found_version < need_version:
-        error_old_version(program, package, optional, need_version,
-                          found_version)
+        error_old_version(program, package, optional, need_version, found_version)
 
     print(f'Found {program} {found_version}')
 
 
 command = next((arg for arg in sys.argv[1:] if not arg.startswith('-')), '')
-forced = ('--force' in sys.argv)
+forced = '--force' in sys.argv
 
 
-if not forced and command.startswith('install') or \
-        command in ['check', 'test', 'nosetests', 'easy_install']:
+if (
+    not forced
+    and command.startswith('install')
+    or command in ['check', 'test', 'nosetests', 'easy_install']
+):
     check_external_program(
         program='tesseract',
         need_version='4.0.0',  # using backport for Travis CI
-        package={'darwin': 'tesseract', 'linux': 'tesseract-ocr'}
+        package={'darwin': 'tesseract', 'linux': 'tesseract-ocr'},
     )
     check_external_program(
         program='gs',
         need_version='9.15',  # limited by Travis CI / Ubuntu 14.04 backports
-        package='ghostscript'
+        package='ghostscript',
     )
     check_external_program(
         program='unpaper',
-        need_version='6.1',   # latest sane version
+        need_version='6.1',  # latest sane version
         package='unpaper',
-        optional=True
+        optional=True,
     )
     check_external_program(
         program='qpdf',
-        need_version='8.0.2', # test suite known to fail on 5.1.1
-        package='qpdf'
+        need_version='8.0.2',  # test suite known to fail on 5.1.1
+        package='qpdf',
     )
     check_external_program(
-        program='pngquant',
-        need_version='2.0.0',
-        package='pngquant',
-        optional=True
+        program='pngquant', need_version='2.0.0', package='pngquant', optional=True
     )
 
 if 'upload' in sys.argv[1:]:
@@ -206,6 +192,7 @@ tests_require = open('requirements/test.txt', encoding='utf-8').read().splitline
 def readme():
     with open('README.md', encoding='utf-8') as f:
         return f.read()
+
 
 setup(
     name='ocrmypdf',
@@ -234,45 +221,37 @@ setup(
         "Topic :: Scientific/Engineering :: Image Recognition",
         "Topic :: Text Processing :: Indexing",
         "Topic :: Text Processing :: Linguistic",
-        ],
+    ],
     python_requires=' >= 3.6',
-    setup_requires=[
-        'cffi >= 1.9.1',        # to build the leptonica module
-        'pytest-runner',        # to enable python setup.py test
-        'setuptools_scm',       # so that version will work
-        'setuptools_scm_git_archive'    # enable version from github tarballs
+    setup_requires=[  # can be removed whenever we can drop pip 9 support
+        'cffi >= 1.9.1',  # to build the leptonica module
+        'pytest-runner',  # to enable python setup.py test
+        'setuptools_scm',  # so that version will work
+        'setuptools_scm_git_archive',  # enable version from github tarballs
     ],
     use_scm_version={'version_scheme': 'post-release'},
-    cffi_modules=[
-        'src/ocrmypdf/lib/compile_leptonica.py:ffibuilder'
-    ],
+    cffi_modules=['src/ocrmypdf/lib/compile_leptonica.py:ffibuilder'],
     install_requires=[
         'chardet >= 3.0.4, < 4',  # unlisted requirement of pdfminer.six 20181108
-        'cffi >= 1.9.1',          # must be a setup and install requirement
-        'img2pdf >= 0.3.0, < 0.4',       # pure Python, so track HEAD closely
+        'cffi >= 1.9.1',  # must be a setup and install requirement
+        'img2pdf >= 0.3.0, < 0.4',  # pure Python, so track HEAD closely
         'pdfminer.six == 20181108 ; sys_platform != "darwin"',
         'pikepdf >= 1.0.5, < 2',
         'Pillow >= 4.0.0, != 5.1.0 ; sys_platform == "darwin"',
-                                  # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
-                                  # block 5.1.0, broken wheels
-        'reportlab >= 3.3.0',     # oldest released version with sane image handling
+        # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
+        # block 5.1.0, broken wheels
+        'reportlab >= 3.3.0',  # oldest released version with sane image handling
         'ruffus >= 2.7.0',
     ],
-    extras_require={
-        'pdfminer': ['pdfminer.six == 20181108'],
-    },
+    extras_require={'pdfminer': ['pdfminer.six == 20181108']},
     tests_require=tests_require,
-    entry_points={
-        'console_scripts': [
-            'ocrmypdf = ocrmypdf.__main__:run_pipeline'
-        ],
-    },
+    entry_points={'console_scripts': ['ocrmypdf = ocrmypdf.__main__:run_pipeline']},
     package_data={'ocrmypdf': ['data/sRGB.icc']},
     include_package_data=True,
     zip_safe=False,
     project_urls={
         'Documentation': 'https://ocrmypdf.readthedocs.io/',
         'Source': 'https://github.com/jbarlow83/ocrmypdf',
-        'Tracker': 'https://github.com/jbarlow83/ocrmypdf/issues'
-    }
+        'Tracker': 'https://github.com/jbarlow83/ocrmypdf/issues',
+    },
 )
