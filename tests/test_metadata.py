@@ -188,9 +188,8 @@ def test_xml_metadata_preserved(spoof_tesseract_noop, output_type, resources, ou
     input_file = resources / 'graph.pdf'
 
     try:
-        import libxmp
-        from libxmp.utils import file_to_dict
         from libxmp import consts
+        from libxmp.utils import file_to_dict
     except Exception:
         pytest.skip("libxmp not available or libexempi3 not installed")
 
@@ -331,16 +330,13 @@ def test_prevent_gs_invalid_xml(resources, outdir):
     from ocrmypdf.pdfinfo import PdfInfo
 
     generate_pdfa_ps(outdir / 'pdfa.ps')
-    input_files = [
-        str(outdir / 'layers.rendered.pdf'),
-        str(outdir / 'pdfa.ps'),
-    ]
+    input_files = [str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps')]
     copyfile(resources / 'enron1.pdf', outdir / 'layers.rendered.pdf')
     log = logging.getLogger()
     context = JobContext()
 
-    options = parser.parse_args(args=[
-        '-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
+    options = parser.parse_args(
+        args=['-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
     )
     context.options = options
     context.pdfinfo = PdfInfo(resources / 'enron1.pdf')
@@ -349,11 +345,13 @@ def test_prevent_gs_invalid_xml(resources, outdir):
         input_files_groups=input_files,
         output_file=outdir / 'pdfa.pdf',
         log=log,
-        context=context
+        context=context,
     )
 
     with open(outdir / 'pdfa.pdf', 'rb') as f:
-        with mmap.mmap(f.fileno(), 0, flags=mmap.MAP_PRIVATE, prot=mmap.PROT_READ) as mm:
+        with mmap.mmap(
+            f.fileno(), 0, flags=mmap.MAP_PRIVATE, prot=mmap.PROT_READ
+        ) as mm:
             # Since the XML may be invalid, we scan instead of actually feeding it
             # to a parser.
             XMP_MAGIC = b'W5M0MpCehiHzreSzNTczkc9d'

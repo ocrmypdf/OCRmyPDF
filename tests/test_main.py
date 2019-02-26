@@ -338,15 +338,16 @@ def test_force_ocr_on_pdf_with_no_images(spoof_tesseract_crash, resources, no_ou
     pytest.helpers.is_macos() and pytest.helpers.running_in_travis(),
     reason="takes too long to install language packs in Travis macOS homebrew",
 )
-def test_french(spoof_tesseract_cache, resources, outdir):
+def test_german(spoof_tesseract_cache, resources, outdir):
     # Produce a sidecar too - implicit test that system locale is set up
-    # properly
+    # properly. It is fine that we are testing -l deu on a French file because
+    # we are exercising the functionality not going for accuracy.
     sidecar = outdir / 'francais.txt'
     p, out, err = run_ocrmypdf(
         resources / 'francais.pdf',
         outdir / 'francais.pdf',
         '-l',
-        'fra',
+        'deu',  # more commonly installed
         '--sidecar',
         sidecar,
         env=spoof_tesseract_cache,
@@ -998,6 +999,9 @@ def test_pdfa_n(spoof_tesseract_cache, pdfa_level, resources, outpdf):
 
 
 @pytest.mark.skipif(sys.version_info >= (3, 7, 0), reason='better utf-8')
+@pytest.mark.skipif(
+    Path('/etc/alpine-release').exists(), reason="invalid test on alpine"
+)
 def test_bad_locale():
     env = os.environ.copy()
     env['LC_ALL'] = 'C'
