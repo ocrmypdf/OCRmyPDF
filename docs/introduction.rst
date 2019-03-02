@@ -110,10 +110,10 @@ To the author's knowledge, OCRmyPDF is the most feature-rich and thoroughly test
 Web front-ends
 --------------
 
-The Docker image ocrmypdf-webservice provides a web service front-end that allows files to submitted over HTTP and the results "downloaded". This is an HTTP server intended to simplify web services deployments; it is not intended to be deployed on the public internet and no real security measures to speak of.
+The Docker image ``ocrmypdf-alpine`` provides a web service front-end that allows files to submitted over HTTP and the results "downloaded". This is an HTTP server intended to simplify web services deployments; it is not intended to be deployed on the public internet and no real security measures to speak of.
 
 In addition, the following integrations are available:
 
 * `Nextcloud OCR <https://github.com/janis91/ocr>`_ is a free software plugin for the Nextcloud private cloud software
 
-Bear in mind that OCRmyPDF is not designed to be secure against malware-bearing PDFs (see `Using OCRmyPDF online`_). Users should ensure they comply with OCRmyPDF's licenses and the licenses of all dependencies. In particular, OCRmyPDF requires Ghostscript, which is licensed under AGPLv3.
+OCRmyPDF is not designed to be secure against malware-bearing PDFs (see `Using OCRmyPDF online <ocr-service>`_). Users should ensure they comply with OCRmyPDF's licenses and the licenses of all dependencies. In particular, OCRmyPDF requires Ghostscript, which is licensed under AGPLv3.

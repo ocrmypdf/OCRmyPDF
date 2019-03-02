@@ -25,12 +25,14 @@ Finally, OCRmyPDF rasterizes each page of the PDF using `Ghostscript <http://gho
 
 Depending on the options specified, OCRmyPDF may graft the OCR layer into the existing PDF or it may essentially reconstruct ("re-fry") a visually identical PDF that may be quite different at the binary level. That said, OCRmyPDF is not a tool designed for sanitizing PDFs.
 
+.. _ocr-service:
+
 Using OCRmyPDF online or as a service
 -------------------------------------
 
-OCRmyPDF should not be deployed as a public-facing service, such as a website where a potential attacker could upload a PDF of their choice for OCR. OCRmyPDF is not designed to be secure against PDF malware. Another concern is PDFs specifically designed to be a denial of service attack: PDFs can contain recursive data structures that sometimes send parsers into infinite loops, and issue complex graphics drawing commands.
+OCRmyPDF is not designed for use as a public web service where a malicious user could upload a chosen PDF. In particular, it is not necessarily secure against PDF malware or PDFs that cause denial of service. OCRmyPDF relies on Ghostscript, and therefore, if deployed online one should be prepared to comply with Ghostscript's Affero GPL license, OCRmyPDF's GPL license, and any other licenses.
 
-Setting aside these concerns, a side effect of OCRmyPDF is it may incidentally sanitize PDFs that contain malware. It runs ``qpdf`` to repair the PDF, which could correct malformed PDF structures that are part of an attack. When PDF/A output is selected (the default), the input PDF is partially reconstructed by Ghostscript. When ``--force-ocr`` is used, all pages are rasterized and reconverted to PDF, which could remove malware in embedded images. No guarantees.
+Setting aside these concerns, a side effect of OCRmyPDF is it may incidentally sanitize PDFs that contain certain types of malware. It runs ``qpdf`` to repair the PDF, which could correct malformed PDF structures that are part of an attack. When PDF/A output is selected (the default), the input PDF is partially reconstructed by Ghostscript. When ``--force-ocr`` is used, all pages are rasterized and reconverted to PDF, which could remove malware in embedded images.
 
 OCRmyPDF should be relatively safe to use in a trusted intranet, with some considerations:
 

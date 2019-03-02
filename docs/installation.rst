@@ -1,5 +1,5 @@
-Installation
-============
+Installing OCRmyPDF
+===================
 
 .. |latest| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
     :alt: OCRmyPDF latest released version on PyPI
@@ -103,7 +103,7 @@ sources`_.
     OCRmyPDF works fine without it but will produce larger output files. If you
     build jbig2enc from source, ocrmypdf 7.0.0 and later will automatically
     detect it on the ``PATH``. To add JBIG2 encoding, see `Installing the JBIG2
-    encoder`_.
+    encoder <jbig2>`_.
 
 Installing the latest version on Ubuntu 18.04 LTS
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -364,133 +364,19 @@ The command line program should now be available:
 
     ocrmypdf --help
 
-.. _docker-install:
-
 Installing the Docker image
 ---------------------------
 
 For some users, installing the Docker image will be easier than installing all of OCRmyPDF's dependencies. For Windows, it is the only option.
 
-If you have `Docker <https://docs.docker.com/>`_ installed on your system, you can install a Docker image of the latest release.
-
-Follow the Docker installation instructions for your platform.  If you can run this command successfully, your system is ready to download and execute the image:
-
-.. code-block:: bash
-
-    docker run hello-world
-
-OCRmyPDF will use all available CPU cores.  By default, the VirtualBox machine instance on Windows and macOS has only a single CPU core enabled. Use the VirtualBox Manager to determine the name of your Docker engine host, and then follow these optional steps to enable multiple CPUs:
-
-.. code-block:: bash
-
-    # Optional step for Mac OS X users
-    docker-machine stop "yourVM"
-    VBoxManage modifyvm "yourVM" --cpus 2  # or whatever number of core is desired
-    docker-machine start "yourVM"
-    eval $(docker-machine env "yourVM")
-
-Assuming you have a Docker engine running, you can download one of the three available images:
-
-.. list-table::
-    :widths: auto
-    :header-rows: 1
-
-    *   - Image name
-        - Download command
-        - Notes
-    *   - ocrmypdf
-        - ``docker pull jbarlow83/ocrmypdf``
-        - Latest ocrmypdf with Tesseract 4.0.0-beta1 on Ubuntu 18.04. Includes English, French, German, Spanish, Portugeuse and Simplified Chinese.
-    *   - ocrmypdf-polyglot
-        - ``docker pull jbarlow83/ocrmypdf-polyglot``
-        - As above, with all available language packs.
-    *   - ocrmypdf-webservice
-        - ``docker pull jbarlow83/ocrmypdf-webservice``
-        - All language packs, and a simple HTTP wrapper allowing OCRmyPDF to be used as a web service. Note that this component is licensed under AGPLv3.
-
-For example:
-
-.. code-block:: bash
-
-    docker pull jbarlow83/ocrmypdf
-
-Then tag it to give a more convenient name, just ocrmypdf:
-
-.. code-block:: bash
-
-    docker tag jbarlow83/ocrmypdf ocrmypdf
-
-.. _docker-polyglot:
-
-The alternative "polyglot" image provides `all available language packs <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.1.asc#languages>`_.
-
-You can then run ocrmypdf using the command:
-
-.. code-block:: bash
-
-    docker run --rm ocrmypdf --help
-
-To execute the OCRmyPDF on a local file, you must `provide a writable volume to the Docker image <https://docs.docker.com/userguide/dockervolumes/>`_, and both the input and output file must be inside the writable volume.  This example command uses the current working directory as the writable volume:
-
-.. code-block:: bash
-
-    docker run --rm -v "$(pwd):/home/docker" <other docker arguments>   ocrmypdf <your arguments to ocrmypdf>
-
-In this worked example, the current working directory contains an input file called ``test.pdf`` and the output will go to ``output.pdf``:
-
-.. code-block:: bash
-
-    docker run --rm -v "$(pwd):/home/docker"   ocrmypdf --skip-text test.pdf output.pdf
-
-.. note:: The working directory should be a writable local volume or Docker may not have permission to access it.
-
-Note that ``ocrmypdf`` has its own separate ``-v VERBOSITYLEVEL`` argument to control debug verbosity. All Docker arguments should before the ``ocrmypdf`` image name and all arguments to ``ocrmypdf`` should be listed after.
-
-In some environments the permissions associated with Docker can be complex to configure. The process that executes Docker may end up not having the permissions to write the specified file system. In that case one can stream the file into and out of the Docker process and avoid all permission hassles, using ``-`` as the input and output filename:
-
-.. code-block:: bash
-
-    docker run --rm -i   ocrmypdf <other arguments to ocrmypdf> - - <input.pdf >output.pdf
-
-For convenience, a shell alias can hide the docker command:
-
-.. code-block:: bash
-
-    alias ocrmypdf='docker run --rm -v "$(pwd):/home/docker" ocrmypdf'
-    ocrmypdf --version  # runs docker version
-
-Or in the wonderful `fish shell <https://fishshell.com/>`_:
-
-.. code-block:: fish
-
-    alias ocrmypdf 'docker run --rm -v (pwd):/home/docker ocrmypdf'
-    funcsave ocrmypdf
-
-.. note::
-
-    The ocrmypdf Docker images are designed for application delivery, to enable use of OCRmyPDF without fussing with dependencies. ``docker run --rm`` argument tells Docker to delete the container after it runs, because each container is only good for a single job. The Docker image is not designed for use as a persistent web service or for use on Amazon EC2 Container Service (AWS ECS).
+See `OCRmyPDF Docker Image <docker>`_ for more information.
 
 Installing on Windows
 ---------------------
 
-Direct installation on Windows is not possible.  `Install the Docker <docker-install_>`_ container as described above.  Ensure that your command prompt can run the docker "hello world" container.
+Direct installation on Windows is not possible.  `Install the Docker <docker-install>`_ container as described above.  Ensure that your command prompt can run the docker "hello world" container.
 
-It would probably not be too difficult to run on Windows.  The main reason this has been avoided is the difficulty of packaging and installing the various non-Python dependencies: Tesseract, QPDF, Ghostscript, Leptonica.  Pull requests to add or improve Windows support would be quite welcome.
-
-
-Running on Windows
-~~~~~~~~~~~~~~~~~~
-
-The command line syntax to run ocrmypdf from a command prompt will resemble:
-
-.. code-block:: bat
-
-    docker run -v /c/Users/sampleuser:/home/docker ocrmypdf --skip-text test.pdf output.pdf
-
-where /c/Users/sampleuser is a Unix representation of the Windows path C:\\Users\\sampleuser, assuming a user named "sampleuser" is running ocrmypdf on a file in their home directory, and the files "test.pdf" and "output.pdf" are in the sampleuser folder. The Windows user must have read and write permissions.
-
-`Bash on Ubuntu on Windows <https://github.com/Microsoft/BashOnWindows>`_ should also be a viable route for running the OCRmyPDF Docker container.
-
+It would probably not be too difficult to port on Windows.  The main reason this has been avoided is the difficulty of packaging and installing the various non-Python dependencies: Tesseract, QPDF, Ghostscript, Leptonica.  Pull requests to add or improve Windows support would be quite welcome.
 
 Installing with Python pip
 --------------------------
@@ -516,7 +402,7 @@ Since ``pip3 install --user`` does not work correctly on some platforms, notably
     pip3 install ocrmypdf
 
 Requirements for pip and HEAD install
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 OCRmyPDF currently requires these external programs and libraries to be installed, and must be satisfied using the operating system package manager. ``pip`` cannot provide them.
 
@@ -590,7 +476,7 @@ dependencies. Older version than the ones mentioned in the release notes
 are likely not to be compatible to OCRmyPDF.
 
 For development
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
 To install all of the development and test requirements:
 

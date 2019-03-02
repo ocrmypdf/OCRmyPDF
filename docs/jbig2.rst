@@ -32,4 +32,4 @@ JBIG2 lossy mode does achieve higher compression ratios than any other monochrom
 
 To turn on JBIG2 lossy mode, add the argument ``--jbig2-lossy``. ``--optimize {1,2,3}`` are necessary for the argument to take effect also required. Also, a JBIG2 encoder must be installed as described in the previous section.
 
-*ocrmypdf v7.0 and v7.1 used lossy mode by default.*
+*Due to an oversight, ocrmypdf v7.0 and v7.1 used lossy mode by default.*

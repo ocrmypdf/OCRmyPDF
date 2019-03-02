@@ -225,7 +225,7 @@ OCRmyPDF normally saves its intermediate results to a temporary folder and delet
 
 If the ``-k`` argument is issued on the command line, OCRmyPDF will keep the temporary folder and print the location, whether it succeeded or failed (provided the Python interpreter did not crash). An example message is:
 
-.. code-block::
+.. code-block:: none
 
     Temporary working files saved at:
     /tmp/com.github.ocrmypdf.u20wpz07

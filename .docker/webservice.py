@@ -1,5 +1,5 @@
 # webservice.py wrapper for OCRmyPDF
-# Copyright (C) 2018 James R. Barlow: github.com/jbarlow83
+# Copyright (C) 2019 James R. Barlow: github.com/jbarlow83
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -17,13 +17,22 @@
 """This is a simple web service/HTTP wrapper for OCRmyPDF
 
 This may be more convenient than the command line tool for some Docker users.
-Note that OCRmyPDF uses Ghostscript, which is licensed under AGPL3+. While
-OCRmyPDF is under GPL3, this file is distributed under the Affero GPL3+ license,
+Note that OCRmyPDF uses Ghostscript, which is licensed under AGPLv3+. While
+OCRmyPDF is under GPLv3, this file is distributed under the Affero GPLv3+ license,
 to emphasize that SaaS deployments should make sure they comply with
 Ghostscript's license as well as OCRmyPDF's.
 """
 
-from flask import Flask, Response, flash, request, redirect, url_for, abort, send_from_directory
+from flask import (
+    Flask,
+    Response,
+    flash,
+    request,
+    redirect,
+    url_for,
+    abort,
+    send_from_directory,
+)
 from subprocess import run, PIPE
 from tempfile import TemporaryDirectory
 from werkzeug.utils import secure_filename
@@ -81,7 +90,7 @@ def upload_file():
 
     return """
     <!doctype html>
-    <title>OCRmyPDF webapp</title>
+    <title>OCRmyPDF webservice</title>
     <h1>Upload a PDF (debug UI)</h1>
     <form method=post enctype=multipart/form-data>
       <label for="args">Command line parameters</label>
@@ -90,7 +99,27 @@ def upload_file():
       <input type=file name=file>
       <input type=submit value=Upload>
     </form>
+    <h4>Notice</h2>
+    <div style="font-size: 70%; max-width: 34em;">
+    <p>This is a webservice wrapper for OCRmyPDF.</p>
+    <p>Copyright 2019 James R. Barlow</p>
+    <p>This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    </p>
+    <p>This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    </p>
+    <p>
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
+    </p>
+    </div>
     """
 
+
 if __name__ == "__main__":
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=5000)
