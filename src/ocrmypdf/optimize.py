@@ -444,9 +444,9 @@ def optimize(input_file, output_file, log, context):
 
     jpegs, pngs = extract_images_generic(pike, root, log, options)
     transcode_jpegs(pike, jpegs, root, log, options)
-    if options.optimize >= 2:
-        # Try pngifying the jpegs
-        transcode_pngs(pike, jpegs, jpg_name, root, log, options)
+    # if options.optimize >= 2:
+    # Try pngifying the jpegs
+    #    transcode_pngs(pike, jpegs, jpg_name, root, log, options)
     transcode_pngs(pike, pngs, png_name, root, log, options)
 
     jbig2_groups = extract_images_jbig2(pike, root, log, options)
