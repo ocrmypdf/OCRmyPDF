@@ -20,6 +20,10 @@ v8.2.0
 
 -   Documentation reorganized especially around the use of Docker images.
 
+-   Fixed a problem with PDF image optimization, where the optimizer would unnecessarily decompress and recompress PNG images, in some cases losing the benefits of the quantization it just had just performed. The optimizer is now capable of embedding PNG images into PDFs without transcoding them.
+
+-   Fixed a minor regression with lossy JBIG2 image optimization. All JBIG2 candidates images were incorrectly placed into a single optimization group for the whole file, instead of grouping pages together. This usually makes a larger JBIG2Globals dictionary and results in inferior compression, so it worked less well than designed. However, quality would not be impacted. Lossless JBIG2 was entirely unaffected.
+
 -   Updated dependencies, including pikepdf to 1.1.0. This fixes `#358 <https://github.com/jbarlow83/OCRmyPDF/issues/358>`_.
 
 -   The install-time version checks for certain external programs have been removed from setup.py. These tests are now performed at run-time.
