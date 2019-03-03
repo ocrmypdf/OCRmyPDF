@@ -181,8 +181,6 @@ def _find_font(text, pdf_base):
             break
     if pdf_text_font:
         font = pdf_base.copy_foreign(pdf_text_font)
-    if font_key is None:
-        print('font_key is None')
     return font, font_key
 
 
