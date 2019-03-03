@@ -104,14 +104,14 @@ Clients must keep their open connection while waiting for OCR to complete. This 
 
 Unlike the rest of OCRmyPDF, this web service is licensed under the Affero GPLv3 (AGPLv3) since Ghostscript, a dependency of OCRmyPDF, is also licensed in this way.
 
-In addition to the above, please read our `general remarks on using OCRmyPDF as a service <ocr-service>`_.
+In addition to the above, please read our :ref:`general remarks on using OCRmyPDF as a service <ocr-service>`_.
 
-Legacy Docker images
---------------------
+Legacy Ubuntu Docker images
+---------------------------
 
-Previously OCRmyPDF was delivered in several Docker images for different purposes, based on Ubuntu. Thanks to help from a user we have migrated to the compact ``ocrmypdf-alpine`` image that supercedes the others.
+Previously OCRmyPDF was delivered in several Docker images for different purposes, based on Ubuntu.
 
-The Ubuntu-based images will be maintained for some time but should not be used for new installations. They are as follows:
+The Ubuntu-based images will be maintained for some time but should not be used for new deployments. They are as follows:
 
 .. list-table::
     :widths: auto

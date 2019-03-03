@@ -13,6 +13,19 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v8.2.0
+------
+
+-   A major improvement to our Docker image is now available thanks to hard work contributed by @mawi12345. The new Docker image, ocrmypdf-alpine, is based on Alpine Linux, and includes most of the functionality of three existed images in a smaller package. This image will replace the main Docker image eventually but for now all are being built. `See documentation for details <https://ocrmypdf.readthedocs.io/en/latest/docker.html>`_.
+
+-   Documentation reorganized especially around the use of Docker images.
+
+-   Updated dependencies, including pikepdf to 1.1.0. This fixes `#358 <https://github.com/jbarlow83/OCRmyPDF/issues/358>`_.
+
+-   The install-time version checks for certain external programs have been removed from setup.py. These tests are now performed at run-time.
+
+-   The non-standard option to override install-time checks (``setup.py install --force``) is now deprecated and prints a warning. It will be removed in a future release.
+
 v8.1.0
 ------
 
