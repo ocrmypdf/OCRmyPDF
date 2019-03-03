@@ -112,7 +112,7 @@ Web front-ends
 
 The Docker image ``ocrmypdf-alpine`` provides a web service front-end that allows files to submitted over HTTP and the results "downloaded". This is an HTTP server intended to simplify web services deployments; it is not intended to be deployed on the public internet and no real security measures to speak of.
 
-In addition, the following integrations are available:
+In addition, the following third-party integrations are available:
 
 * `Nextcloud OCR <https://github.com/janis91/ocr>`_ is a free software plugin for the Nextcloud private cloud software
 
