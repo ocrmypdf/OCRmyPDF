@@ -44,7 +44,14 @@ from .exceptions import (
     MissingDependencyError,
     OutputFileAccessError,
 )
-from .exec import ghostscript, qpdf, tesseract
+from .exec import (
+    ghostscript,
+    qpdf,
+    tesseract,
+    check_external_program,
+    unpaper,
+    pngquant,
+)
 from .helpers import available_cpu_count, is_file_writable, re_symlink
 from .pdfa import file_claims_pdfa
 
@@ -66,13 +73,6 @@ if 'IDE_PROJECT_ROOTS' in os.environ:
 # Critical environment tests
 
 verify_python3_env()
-
-if not tesseract.v4:
-    complain(
-        f"Please install tesseract 4.0.0 or newer "
-        f"(currently installed version is {tesseract.version()})"
-    )
-    sys.exit(ExitCode.missing_dependency)
 
 # -------------
 # Parser
@@ -633,9 +633,7 @@ def check_options_preprocessing(options, log):
     if options.clean_final:
         options.clean = True
     if options.unpaper_args and not options.clean:
-        raise argparse.ArgumentError(
-            None, "--clean is required for --unpaper-args"
-        )
+        raise argparse.ArgumentError(None, "--clean is required for --unpaper-args")
     if any((options.clean, options.clean_final)):
         from .exec import unpaper
 
@@ -930,9 +928,6 @@ def log_page_orientations(pdfinfo, _log):
 
 def preamble(_log):
     _log.debug('ocrmypdf ' + VERSION)
-    _log.debug('tesseract ' + tesseract.version())
-    _log.debug('qpdf ' + qpdf.version())
-    _log.debug('gs ' + ghostscript.version())
 
 
 def check_environ(options, _log):
@@ -1032,6 +1027,54 @@ def report_output_file_size(options, _log, input_file, output_file):
     )
 
 
+def check_dependency_versions(log):
+    check_external_program(
+        log=log,
+        program='tesseract',
+        package={'darwin': 'tesseract', 'linux': 'tesseract-ocr'},
+        version_checker=tesseract.version,
+        need_version='4.0.0',  # using backport for Travis CI
+    )
+    check_external_program(
+        log=log,
+        program='gs',
+        package='ghostscript',
+        version_checker=ghostscript.version,
+        need_version='9.15',  # limited by Travis CI / Ubuntu 14.04 backports
+    )
+    if ghostscript.version() == '9.24':
+        complain(
+            "Ghostscript 9.24 contains serious regressions and is not "
+            "supported. Please upgrade to Ghostscript 9.25 or use an older "
+            "version."
+        )
+        return ExitCode.missing_dependency
+    check_external_program(
+        log=log,
+        program='unpaper',
+        package='unpaper',
+        version_checker=unpaper.version,
+        need_version='6.1',  # latest sane version
+        optional=True,
+    )
+    if os.environ.get('TRAVIS') != 'true':  # Suppress for Ubuntu trusty
+        check_external_program(
+            log=log,
+            program='qpdf',
+            package='qpdf',
+            version_checker=qpdf.version,
+            need_version='8.0.2',
+        )
+    check_external_program(
+        log=log,
+        program='pngquant',
+        package='pngquant',
+        version_checker=pngquant.version,
+        need_version='2.0.0',
+        optional=True,
+    )
+
+
 def run_pipeline(args=None):
     options = parser.parse_args(args=args)
     options.verbose_abbreviated_path = 1
@@ -1048,24 +1091,7 @@ def run_pipeline(args=None):
     )
     preamble(_log)
     check_options(options, _log)
-
-    # Complain about qpdf version < 7.0.0
-    # Suppress the warning if in the test suite, since there are no PPAs
-    # for qpdf 7.0.0 for Ubuntu trusty (i.e. Travis)
-    if qpdf.version() < '7.0.0' and not os.environ.get('PYTEST_CURRENT_TEST'):
-        complain(
-            f"You are using qpdf version {qpdf.version()} which has known issues including "
-            f"security vulnerabilities with certain malformed PDFs. Consider "
-            f"upgrading to version 7.0.0 or newer."
-        )
-
-    if ghostscript.version() == '9.24':
-        complain(
-            "Ghostscript 9.24 contains serious regressions and is not "
-            "supported. Please upgrade to Ghostscript 9.25 or use an older "
-            "version."
-        )
-        return ExitCode.missing_dependency
+    check_dependency_versions(_log)
 
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example

@@ -32,155 +32,18 @@ import re
 
 # pylint: disable=w0613
 
-missing_program = '''
-The program '{program}' could not be executed or was not found on your
-system PATH.
-'''
-
-unknown_version = '''
-OCRmyPDF requires '{program}' {need_version} or higher.  Your system has
-'{program}' but we cannot tell what version is installed.  Contact the
-package maintainer.
-'''
-
-old_version = '''
-OCRmyPDF requires '{program}' {need_version} or higher.  Your system appears
-to have {found_version}.  Please update this program.
-'''
-
-okay_its_optional = '''
-This program is OPTIONAL, so installation of OCRmyPDF can proceed, but
-some functionality may be missing.
-'''
-
-not_okay_its_required = '''
-This program is REQUIRED for OCRmyPDF to work.  Installation will abort.
-'''
-
-osx_install_advice = '''
-If you have homebrew installed, try these command to install the missing
-packages:
-    brew update
-    brew upgrade
-    brew install {package}
-'''
-
-linux_install_advice = '''
-On systems with the aptitude package manager (Debian, Ubuntu), try these
-commands:
-    sudo apt-get update
-    sudo apt-get install {package}
-
-On RPM-based systems (Red Hat, Fedora), search for instructions on
-installing the RPM for {program}.
-'''
-
-
-def get_platform():
-    if sys.platform.startswith('freebsd'):
-        return 'freebsd'
-    elif sys.platform.startswith('linux'):
-        return 'linux'
-    return sys.platform
-
-
-def _error_trailer(program, package, optional, **kwargs):
-    if optional:
-        print(okay_its_optional.format(**locals()), file=sys.stderr)
-    else:
-        print(not_okay_its_required.format(**locals()), file=sys.stderr)
-
-    if isinstance(package, Mapping):
-        package = package[get_platform()]
-
-    if get_platform() == 'darwin':
-        print(osx_install_advice.format(**locals()), file=sys.stderr)
-    elif get_platform() == 'linux':
-        print(linux_install_advice.format(**locals()), file=sys.stderr)
-
-
-def error_missing_program(program, package, optional):
-    print(missing_program.format(**locals()), file=sys.stderr)
-    _error_trailer(**locals())
-
-
-def error_unknown_version(program, package, optional, need_version):
-    print(unknown_version.format(**locals()), file=sys.stderr)
-    _error_trailer(**locals())
-
-
-def error_old_version(program, package, optional, need_version, found_version):
-    print(old_version.format(**locals()), file=sys.stderr)
-    _error_trailer(**locals())
-
-
-def check_external_program(
-    program,
-    need_version,
-    package,
-    version_check_args=None,
-    version_scrape_regex=re.compile(r'(\d+\.\d+(?:\.\d+)?)'),
-    optional=False,
-):
-    if not version_check_args:
-        version_check_args = ['--version']
-    print(f'Checking for {program} >= {need_version}...')
-    try:
-        result = check_output(
-            [program] + version_check_args, universal_newlines=True, stderr=STDOUT
-        )
-    except (CalledProcessError, FileNotFoundError):
-        error_missing_program(program, package, optional)
-        if not optional:
-            sys.exit(1)
-        print(f'Continuing install without {program}')
-        return
-
-    try:
-        found_version = version_scrape_regex.search(result).group(1)
-    except AttributeError:
-        error_unknown_version(program, package, optional, need_version)
-        sys.exit(1)
-
-    if found_version < need_version:
-        error_old_version(program, package, optional, need_version, found_version)
-
-    print(f'Found {program} {found_version}')
-
 
 command = next((arg for arg in sys.argv[1:] if not arg.startswith('-')), '')
-forced = '--force' in sys.argv
+if command.startswith('install') or command in [
+    'check',
+    'test',
+    'nosetests',
+    'easy_install',
+]:
+    forced = '--force' in sys.argv
+    if forced:
+        print("The argument --force is deprecated. Please discontinue use.")
 
-
-if (
-    not forced
-    and command.startswith('install')
-    or command in ['check', 'test', 'nosetests', 'easy_install']
-):
-    check_external_program(
-        program='tesseract',
-        need_version='4.0.0',  # using backport for Travis CI
-        package={'darwin': 'tesseract', 'linux': 'tesseract-ocr'},
-    )
-    check_external_program(
-        program='gs',
-        need_version='9.15',  # limited by Travis CI / Ubuntu 14.04 backports
-        package='ghostscript',
-    )
-    check_external_program(
-        program='unpaper',
-        need_version='6.1',  # latest sane version
-        package='unpaper',
-        optional=True,
-    )
-    check_external_program(
-        program='qpdf',
-        need_version='8.0.2',  # test suite known to fail on 5.1.1
-        package='qpdf',
-    )
-    check_external_program(
-        program='pngquant', need_version='2.0.0', package='pngquant', optional=True
-    )
 
 if 'upload' in sys.argv[1:]:
     print('Use twine to upload the package - setup.py upload is insecure')
