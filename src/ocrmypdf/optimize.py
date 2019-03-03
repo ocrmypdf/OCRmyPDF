@@ -25,7 +25,7 @@ from pathlib import Path
 from PIL import Image
 
 import pikepdf
-from pikepdf import Name, Dictionary
+from pikepdf import Name, Dictionary, Array
 
 from . import leptonica
 from ._jobcontext import JobContext
@@ -385,7 +385,7 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
         #   - PDF RM 7.4.4.4 Table 10
         #   - https://github.com/DanBloomberg/leptonica/blob/master/src/pdfio2.c#L757
         predictor = 14 if compdata.predictor > 0 else 1
-        dparms = Dictionary(predictor=predictor)
+        dparms = Dictionary(Predictor=predictor)
         if predictor > 1:
             dparms.BitsPerComponent = compdata.bps  # Yes, this is redundant
             dparms.Colors = compdata.spp
@@ -410,7 +410,11 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
             cs = palette
         else:
             if compdata.spp == 1:
-                cs = Name.DeviceGray
+                # PDF interprets binary-1 as black in 1bpp, but PNG sets
+                # black to 0 for 1bpp. Create a palette that informs the PDF
+                # of the mapping.
+                palette = [Name.Indexed, Name.DeviceGray, 1, b"\xff\x00"]
+                cs = palette
             elif compdata.spp == 3:
                 cs = Name.DeviceRGB
             elif compdata.spp == 4:
