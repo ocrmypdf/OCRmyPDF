@@ -6,6 +6,7 @@ requires = [
   "setuptools_scm",
   "setuptools_scm_git_archive"
 ]
+build-backend = "setuptools.build_meta"
 
 [tool.black]
 line-length = 88
