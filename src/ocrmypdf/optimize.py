@@ -341,7 +341,7 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
             max_workers=options.jobs
         ) as executor:
             for xref in images:
-                log.info(image_name_fn(root, xref))
+                log.debug(image_name_fn(root, xref))
                 executor.submit(
                     pngquant.quantize,
                     image_name_fn(root, xref),
@@ -412,13 +412,17 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
             if compdata.spp == 1:
                 # PDF interprets binary-1 as black in 1bpp, but PNG sets
                 # black to 0 for 1bpp. Create a palette that informs the PDF
-                # of the mapping.
-                palette = [Name.Indexed, Name.DeviceGray, 1, b"\xff\x00"]
-                cs = palette
+                # of the mapping - seems cleaner to go this way but pikepdf
+                # needs to be patched to support it.
+                # palette = [Name.Indexed, Name.DeviceGray, 1, b"\xff\x00"]
+                # cs = palette
+                cs = Name.DeviceGray
             elif compdata.spp == 3:
                 cs = Name.DeviceRGB
             elif compdata.spp == 4:
                 cs = Name.DeviceCMYK
+        if compdata.bps == 1:
+            im_obj.Decode = [1, 0]  # Bit of a kludge but this inverts photometric too
         im_obj.ColorSpace = cs
         im_obj.write(compdata.read(), filter=Name.FlateDecode, decode_parms=dparms)
 

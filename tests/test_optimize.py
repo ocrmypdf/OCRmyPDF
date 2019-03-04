@@ -120,7 +120,7 @@ def test_flate_to_jbig2(resources, outdir, spoof_tesseract_noop):
         '--image-dpi',
         '100',
         '--png-quality',
-        '10',
+        '50',
         '--optimize',
         '3',
         env=spoof_tesseract_noop,
