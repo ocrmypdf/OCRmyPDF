@@ -77,7 +77,7 @@ class _LeptonicaErrorTrap:
         try:
             self.copy_of_stderr = os.dup(sys.stderr.fileno())
             os.dup2(self.tmpfile.fileno(), sys.stderr.fileno(), inheritable=False)
-        except UnsupportedOperation:
+        except (UnsupportedOperation, AttributeError):
             self.copy_of_stderr = None
         return
 
