@@ -604,29 +604,33 @@ def check_options_sidecar(options, log):
 
 def _optional_program_required(name, version_fn, min_version, for_argument):
     try:
-        if version_fn() < min_version:
-            raise MissingDependencyError(
-                f"The installed '{name}' is not supported. "
-                f"Install version {min_version} or newer."
-            )
+        version = version_fn()
     except (FileNotFoundError, MissingDependencyError):
         raise MissingDependencyError(
             f"Install the '{name}' program to use {for_argument}."
         )
-
-
-def _optional_program_recommended(name, version_fn, min_version, for_argument):
-    try:
-        if version_fn() < min_version:
+    else:
+        if version < min_version:
             raise MissingDependencyError(
                 f"The installed '{name}' is not supported. "
                 f"Install version {min_version} or newer."
             )
+
+
+def _optional_program_recommended(name, version_fn, min_version, for_argument):
+    try:
+        version = version_fn()
     except (FileNotFoundError, MissingDependencyError):
         complain(
             f"For best results, install the optional program '{name}' to use the "
             f"argument {for_argument}."
         )
+    else:
+        if version < min_version:
+            raise MissingDependencyError(
+                f"The installed '{name}' is not supported. "
+                f"Install version {min_version} or newer."
+            )
 
 
 def check_options_preprocessing(options, log):
