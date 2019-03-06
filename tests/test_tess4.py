@@ -120,7 +120,7 @@ def test_pagesize_consistency_tess4(ensure_tess4, resources, outpdf):
         '--clean' if pytest.helpers.have_unpaper() else None,
         '--deskew',
         '--remove-background',
-        '--clean-final',
+        '--clean-final' if pytest.helpers.have_unpaper() else None,
         env=ensure_tess4,
     )
 

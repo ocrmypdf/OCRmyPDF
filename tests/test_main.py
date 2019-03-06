@@ -576,8 +576,6 @@ def test_stdout(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
             stdin=DEVNULL,
             env=spoof_tesseract_noop,
         )
-        out, err = p.communicate()
-
         assert p.returncode == ExitCode.ok
 
     assert qpdf.check(output_file, log=None)
@@ -857,7 +855,7 @@ def test_compression_preserved(
 
         if im.mode in ('RGBA', 'LA'):
             # If alpha image is input, expect an error
-            assert p.returncode != ExitCode.ok and b'alpha' in p.stderr
+            assert p.returncode != ExitCode.ok and 'alpha' in p.stderr
             return
 
         assert p.returncode == ExitCode.ok, p.stderr

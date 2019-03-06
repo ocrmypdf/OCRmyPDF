@@ -20,6 +20,7 @@ from math import isclose
 import pytest
 
 from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.pdfinfo import PdfInfo
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
