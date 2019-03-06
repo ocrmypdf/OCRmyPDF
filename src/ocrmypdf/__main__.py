@@ -634,7 +634,7 @@ def check_options_preprocessing(options, log):
         options.clean = True
     if options.unpaper_args and not options.clean:
         raise argparse.ArgumentError(None, "--clean is required for --unpaper-args")
-    if any((options.clean, options.clean_final)):
+    if options.clean:
         from .exec import unpaper
 
         _optional_program_required(
