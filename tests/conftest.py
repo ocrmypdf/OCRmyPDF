@@ -72,6 +72,17 @@ def needs_pdfminer(fn):
     return fn
 
 
+@pytest.helpers.register
+def have_unpaper():
+    try:
+        from ocrmypdf.exec import unpaper
+
+        unpaper.version()
+    except Exception:
+        return False
+    return True
+
+
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
 SPOOF_PATH = os.path.join(TESTS_ROOT, 'spoof')
 PROJECT_ROOT = os.path.dirname(TESTS_ROOT)

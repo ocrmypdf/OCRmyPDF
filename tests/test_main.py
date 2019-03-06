@@ -28,7 +28,7 @@ import pytest
 from PIL import Image
 
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
-from ocrmypdf.exec import ghostscript, qpdf, tesseract
+from ocrmypdf.exec import ghostscript, qpdf, tesseract, unpaper
 from ocrmypdf.leptonica import Pix
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
@@ -164,7 +164,7 @@ def test_exotic_image(
     check_ocrmypdf(
         resources / pdf,
         outfile,
-        '-dc',
+        '-dc' if pytest.helpers.have_unpaper() else '-d',
         '-v',
         '1',
         '--output-type',
@@ -282,8 +282,7 @@ def test_maximum_options(
         resources / 'multipage.pdf',
         outpdf,
         '-d',
-        '-c',
-        '-i',
+        '-ci' if pytest.helpers.have_unpaper() else None,
         '-f',
         '-k',
         '--oversample',
@@ -542,7 +541,6 @@ def test_jbig2_passthrough(spoof_tesseract_cache, resources, outpdf):
         'hocr',
         env=spoof_tesseract_cache,
     )
-
     out_pageinfo = PdfInfo(out)
     assert out_pageinfo[0].images[0].enc == Encoding.jbig2
 
@@ -777,10 +775,10 @@ def test_pagesize_consistency(renderer, resources, outpdf):
         outpdf,
         '--pdf-renderer',
         renderer,
-        '--clean',
+        '--clean' if pytest.helpers.have_unpaper() else None,
         '--deskew',
         '--remove-background',
-        '--clean-final',
+        '--clean-final' if pytest.helpers.have_unpaper() else None,
     )
 
     after_dims = first_page_dimensions(outpdf)
