@@ -80,9 +80,9 @@ This user contributed script also provides an example of batch processing.
 	            print(full_path)
 	            cmd = ["ocrmypdf",  "--deskew", filename, filename]
 	            logging.info(cmd)
-	            proc = subprocess.Popen(
+	            proc = subprocess.run(
 	            	cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-	            result = proc.stdout.read()
+	            result = proc.stdout
 	            if proc.returncode == 6:
 	                print("Skipped document because it already contained text")
 	            elif proc.returncode == 0:
@@ -151,7 +151,7 @@ This is only possible for x86-based Synology products. Some Synology products us
 	# the script is processed as root user via chron
 	            cmd = ['docker', 'run', '--rm', '-v', docker_mount, '-u=1030:65538', 'jbarlow83/ocrmypdf', , '--deskew' , filename, filename_OCR]
 	            logging.info(cmd)
-	            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+	            proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 	            result = proc.stdout.read()
 	            logging.info(result)
 	            full_path_OCR = dir_name + '/' + filename_OCR

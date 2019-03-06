@@ -21,7 +21,7 @@ import shutil
 import sys
 from math import isclose
 from pathlib import Path
-from subprocess import DEVNULL, PIPE, Popen
+from subprocess import DEVNULL, PIPE, run, Popen
 
 import PIL
 import pytest
@@ -554,16 +554,13 @@ def test_stdin(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
     # Runs: ocrmypdf - output.pdf < testfile.pdf
     with open(input_file, 'rb') as input_stream:
         p_args = ocrmypdf_exec + ['-', output_file]
-        p = Popen(
+        p = run(
             p_args,
-            close_fds=True,
             stdout=PIPE,
             stderr=PIPE,
             stdin=input_stream,
             env=spoof_tesseract_noop,
         )
-        out, err = p.communicate()
-
         assert p.returncode == ExitCode.ok
 
 
@@ -574,9 +571,8 @@ def test_stdout(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
     # Runs: ocrmypdf francais.pdf - > test_stdout.pdf
     with open(output_file, 'wb') as output_stream:
         p_args = ocrmypdf_exec + [input_file, '-']
-        p = Popen(
+        p = run(
             p_args,
-            close_fds=True,
             stdout=output_stream,
             stderr=PIPE,
             stdin=DEVNULL,
@@ -852,22 +848,21 @@ def test_compression_preserved(
             '-',
             output_file,
         ]
-        p = Popen(
+        p = run(
             p_args,
-            close_fds=True,
             stdout=PIPE,
             stderr=PIPE,
             stdin=input_stream,
+            universal_newlines=True,
             env=spoof_tesseract_noop,
         )
-        out, err = p.communicate()
 
         if im.mode in ('RGBA', 'LA'):
             # If alpha image is input, expect an error
-            assert p.returncode != ExitCode.ok and b'alpha' in err
+            assert p.returncode != ExitCode.ok and b'alpha' in p.stderr
             return
 
-        assert p.returncode == ExitCode.ok, err.decode('utf-8')
+        assert p.returncode == ExitCode.ok, p.stderr
 
     pdfinfo = PdfInfo(output_file)
 
@@ -913,17 +908,15 @@ def test_compression_changed(
             '-',
             output_file,
         ]
-        p = Popen(
+        p = run(
             p_args,
-            close_fds=True,
             stdout=PIPE,
             stderr=PIPE,
             stdin=input_stream,
+            universal_newlines=True,
             env=spoof_tesseract_noop,
         )
-        out, err = p.communicate()
-
-        assert p.returncode == ExitCode.ok, err
+        assert p.returncode == ExitCode.ok, p.stderr
 
     pdfinfo = PdfInfo(output_file)
 

@@ -19,7 +19,7 @@ import os
 import platform
 import sys
 from pathlib import Path
-from subprocess import PIPE, Popen
+from subprocess import PIPE, run
 
 import pytest
 
@@ -171,19 +171,16 @@ def run_ocrmypdf(input_file, output_file, *args, env=None, universal_newlines=Tr
     if env is None:
         env = os.environ
 
-    p_args = OCRMYPDF + [str(arg) for arg in args] + [str(input_file), str(output_file)]
-    p = Popen(
-        p_args,
-        close_fds=True,
-        stdout=PIPE,
-        stderr=PIPE,
-        universal_newlines=universal_newlines,
-        env=env,
+    p_args = (
+        OCRMYPDF
+        + [str(arg) for arg in args if arg is not None]
+        + [str(input_file), str(output_file)]
     )
-    out, err = p.communicate()
-    # print(err)
-
-    return p, out, err
+    p = run(
+        p_args, stdout=PIPE, stderr=PIPE, universal_newlines=universal_newlines, env=env
+    )
+    # print(p.stderr)
+    return p, p.stdout, p.stderr
 
 
 @pytest.helpers.register

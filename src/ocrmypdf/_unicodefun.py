@@ -58,9 +58,9 @@ def verify_python3_env():  # pragma: no cover
     if os.name == 'posix':
         import subprocess
 
-        rv = subprocess.Popen(
+        rv = subprocess.run(
             ['locale', '-a'], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        ).communicate()[0]
+        ).stdout
         good_locales = set()
         has_c_utf8 = False
 
