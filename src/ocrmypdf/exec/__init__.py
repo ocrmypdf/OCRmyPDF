@@ -115,32 +115,32 @@ def get_platform():
 
 def _error_trailer(log, program, package, optional, **kwargs):
     if optional:
-        log.error(okay_its_optional.format(**locals()), file=sys.stderr)
+        log.error(okay_its_optional.format(**locals()))
     else:
-        log.error(not_okay_its_required.format(**locals()), file=sys.stderr)
+        log.error(not_okay_its_required.format(**locals()))
 
     if isinstance(package, Mapping):
         package = package[get_platform()]
 
     if get_platform() == 'darwin':
-        log.error(osx_install_advice.format(**locals()), file=sys.stderr)
+        log.error(osx_install_advice.format(**locals()))
     elif get_platform() == 'linux':
-        log.error(linux_install_advice.format(**locals()), file=sys.stderr)
+        log.error(linux_install_advice.format(**locals()))
 
 
 def error_missing_program(log, program, package, optional):
-    log.error(missing_program.format(**locals()), file=sys.stderr)
-    _error_trailer(log, **locals())
+    log.error(missing_program.format(**locals()))
+    _error_trailer(**locals())
 
 
 def error_unknown_version(log, program, package, optional, need_version):
-    log.error(unknown_version.format(**locals()), file=sys.stderr)
-    _error_trailer(log, **locals())
+    log.error(unknown_version.format(**locals()))
+    _error_trailer(**locals())
 
 
 def error_old_version(log, program, package, optional, need_version, found_version):
-    log.error(old_version.format(**locals()), file=sys.stderr)
-    _error_trailer(log, **locals())
+    log.error(old_version.format(**locals()))
+    _error_trailer(**locals())
 
 
 def check_external_program(
