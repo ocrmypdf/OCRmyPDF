@@ -21,7 +21,7 @@ import os
 import re
 import sys
 from subprocess import run, STDOUT, PIPE, CalledProcessError
-from ..exceptions import MissingDependencyError
+from ..exceptions import MissingDependencyError, ExitCode
 from collections.abc import Mapping
 
 
@@ -43,7 +43,7 @@ def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)'):
             f"Could not find program '{program}' on the PATH"
         ) from e
     except CalledProcessError as e:
-        if e.returncode < 0:
+        if e.returncode != 0:
             raise MissingDependencyError(
                 f"Ran program '{program}' but it exited with an error:\n{e.output}"
             ) from e
@@ -66,10 +66,17 @@ The program '{program}' could not be executed or was not found on your
 system PATH.
 '''
 
-unknown_version = '''
-OCRmyPDF requires '{program}' {need_version} or higher.  Your system has
-'{program}' but we cannot tell what version is installed.  Contact the
-package maintainer.
+missing_optional_program = '''
+The program '{program}' could not be executed or was not found on your
+system PATH.  This program is required when you use the
+{required_for} arguments.  You could try omitting these arguments, or install
+the package.
+'''
+
+missing_recommend_program = '''
+The program '{program}' could not be executed or was not found on your
+system PATH.  This program is recommended when using the {required_for} arguments,
+but not required, so we will proceed.  For best results, install the program.
 '''
 
 old_version = '''
@@ -77,20 +84,15 @@ OCRmyPDF requires '{program}' {need_version} or higher.  Your system appears
 to have {found_version}.  Please update this program.
 '''
 
-okay_its_optional = '''
-This program is OPTIONAL, so installation of OCRmyPDF can proceed, but
-some functionality may be missing.
-'''
-
-not_okay_its_required = '''
-This program is REQUIRED for OCRmyPDF to work.  Installation will abort.
+old_version_required_for = '''
+OCRmyPDF requires '{program}' {need_version} or higher when run with the
+{required_for} arguments.  If you omit these arguments, OCRmyPDF may be able to
+proceed.  For best results, install the program.
 '''
 
 osx_install_advice = '''
 If you have homebrew installed, try these command to install the missing
-packages:
-    brew update
-    brew upgrade
+package:
     brew install {package}
 '''
 
@@ -105,7 +107,7 @@ installing the RPM for {program}.
 '''
 
 
-def get_platform():
+def _get_platform():
     if sys.platform.startswith('freebsd'):
         return 'freebsd'
     elif sys.platform.startswith('linux'):
@@ -113,48 +115,59 @@ def get_platform():
     return sys.platform
 
 
-def _error_trailer(log, program, package, optional, **kwargs):
-    if optional:
-        log.error(okay_its_optional.format(**locals()))
-    else:
-        log.error(not_okay_its_required.format(**locals()))
-
+def _error_trailer(log, program, package, **kwargs):
     if isinstance(package, Mapping):
-        package = package[get_platform()]
+        package = package[_get_platform()]
 
-    if get_platform() == 'darwin':
-        log.error(osx_install_advice.format(**locals()))
-    elif get_platform() == 'linux':
-        log.error(linux_install_advice.format(**locals()))
+    if _get_platform() == 'darwin':
+        log.info(osx_install_advice.format(**locals()))
+    elif _get_platform() == 'linux':
+        log.info(linux_install_advice.format(**locals()))
 
 
-def error_missing_program(log, program, package, optional):
-    log.error(missing_program.format(**locals()))
+def _error_missing_program(log, program, package, required_for, recommended):
+    if required_for:
+        log.error(missing_optional_program.format(**locals()))
+    elif recommended:
+        log.info(missing_recommend_program.format(**locals()))
+    else:
+        log.error(missing_program.format(**locals()))
     _error_trailer(**locals())
 
 
-def error_unknown_version(log, program, package, optional, need_version):
-    log.error(unknown_version.format(**locals()))
-    _error_trailer(**locals())
-
-
-def error_old_version(log, program, package, optional, need_version, found_version):
-    log.error(old_version.format(**locals()))
+def _error_old_version(
+    log, program, package, need_version, found_version, required_for
+):
+    if required_for:
+        log.error(old_version_required_for.format(**locals()))
+    else:
+        log.error(old_version.format(**locals()))
     _error_trailer(**locals())
 
 
 def check_external_program(
-    log, program, package, version_checker, need_version, optional=False
+    *,
+    log,
+    program,
+    package,
+    version_checker,
+    need_version,
+    required_for=None,
+    recommended=False,
 ):
     try:
         found_version = version_checker()
     except (CalledProcessError, FileNotFoundError, MissingDependencyError):
-        error_missing_program(log, program, package, optional)
-        if not optional:
-            sys.exit(1)
+        _error_missing_program(log, program, package, required_for, recommended)
+        if not recommended:
+            sys.exit(ExitCode.missing_dependency)
         return
 
     if found_version < need_version:
-        error_old_version(log, program, package, optional, need_version, found_version)
+        _error_old_version(
+            log, program, package, need_version, found_version, required_for
+        )
+        if not recommended:
+            sys.exit(ExitCode.missing_dependency)
 
     log.debug(f'Found {program} {found_version}')

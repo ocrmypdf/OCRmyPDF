@@ -13,12 +13,17 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
-v8.2.1
+v8.2.2
 ------
 
 -   Fixed a regression from v8.2.0, an exception that occurred while attempting to report that ``unpaper`` or another optional dependency was unavailable.
 
 -   In some cases, ``ocrmypdf [-c|--clean]`` failed to exit with an error when ``unpaper`` is not installed.
+
+v8.2.1
+------
+
+-   This release was canceled.
 
 v8.2.0
 ------

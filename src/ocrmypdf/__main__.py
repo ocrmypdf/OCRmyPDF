@@ -46,6 +46,7 @@ from .exceptions import (
 )
 from .exec import (
     ghostscript,
+    jbig2enc,
     qpdf,
     tesseract,
     check_external_program,
@@ -602,47 +603,19 @@ def check_options_sidecar(options, log):
         options.sidecar = options.output_file + '.txt'
 
 
-def _optional_program_required(name, version_fn, min_version, for_argument):
-    try:
-        version = version_fn()
-    except (FileNotFoundError, MissingDependencyError):
-        raise MissingDependencyError(
-            f"Install the '{name}' program to use {for_argument}."
-        )
-    else:
-        if version < min_version:
-            raise MissingDependencyError(
-                f"The installed '{name}' is not supported. "
-                f"Install version {min_version} or newer."
-            )
-
-
-def _optional_program_recommended(name, version_fn, min_version, for_argument):
-    try:
-        version = version_fn()
-    except (FileNotFoundError, MissingDependencyError):
-        complain(
-            f"For best results, install the optional program '{name}' to use the "
-            f"argument {for_argument}."
-        )
-    else:
-        if version < min_version:
-            raise MissingDependencyError(
-                f"The installed '{name}' is not supported. "
-                f"Install version {min_version} or newer."
-            )
-
-
 def check_options_preprocessing(options, log):
     if options.clean_final:
         options.clean = True
     if options.unpaper_args and not options.clean:
         raise argparse.ArgumentError(None, "--clean is required for --unpaper-args")
     if options.clean:
-        from .exec import unpaper
-
-        _optional_program_required(
-            'unpaper', unpaper.version, '6.1', '--clean, --clean-final'
+        check_external_program(
+            log=log,
+            program='unpaper',
+            package='unpaper',
+            version_checker=unpaper.version,
+            need_version='6.1',
+            required_for=['--clean, --clean-final'],
         )
         try:
             if options.unpaper_args:
@@ -668,19 +641,26 @@ def check_options_ocr_behavior(options, log):
 
 def check_options_optimizing(options, log):
     if options.optimize >= 2:
-        from .exec import pngquant, jbig2enc
-
-        _optional_program_required(
-            'pngquant', pngquant.version, '2.0.1', '--optimize {2,3}'
+        check_external_program(
+            log=log,
+            program='pngquant',
+            package='pngquant',
+            version_checker=pngquant.version,
+            need_version='2.0.1',
+            required_for='--optimize {2,3}',
         )
 
-    if options.jbig2_lossy:
-        _optional_program_required('jbig2', jbig2enc.version, '0.28', '--jbig2-lossy')
-    elif options.optimize >= 2:
+    if options.optimize >= 2:
         # Although we use JBIG2 for optimize=1, don't nag about it unless the
         # user is asking for more optimization
-        _optional_program_recommended(
-            'jbig2', jbig2enc.version, '0.28', '--optimize {2,3}'
+        check_external_program(
+            log=log,
+            program='jbig2',
+            package='jbig2enc',
+            version_checker=jbig2enc.version,
+            need_version='0.28',
+            required_for='--optimize {2,3} | --jbig2-lossy',
+            recommended=True if not options.jbig2_lossy else False,
         )
 
     if options.optimize == 0 and any(
@@ -1031,7 +1011,7 @@ def report_output_file_size(options, _log, input_file, output_file):
     )
 
 
-def check_dependency_versions(log):
+def check_dependency_versions(options, log):
     check_external_program(
         log=log,
         program='tesseract',
@@ -1055,27 +1035,10 @@ def check_dependency_versions(log):
         return ExitCode.missing_dependency
     check_external_program(
         log=log,
-        program='unpaper',
-        package='unpaper',
-        version_checker=unpaper.version,
-        need_version='6.1',  # latest sane version
-        optional=True,
-    )
-    if os.environ.get('TRAVIS') != 'true':  # Suppress for Ubuntu trusty
-        check_external_program(
-            log=log,
-            program='qpdf',
-            package='qpdf',
-            version_checker=qpdf.version,
-            need_version='8.0.2',
-        )
-    check_external_program(
-        log=log,
-        program='pngquant',
-        package='pngquant',
-        version_checker=pngquant.version,
-        need_version='2.0.0',
-        optional=True,
+        program='qpdf',
+        package='qpdf',
+        version_checker=qpdf.version,
+        need_version='8.0.2',
     )
 
 
@@ -1095,7 +1058,7 @@ def run_pipeline(args=None):
     )
     preamble(_log)
     check_options(options, _log)
-    check_dependency_versions(_log)
+    check_dependency_versions(options, _log)
 
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example

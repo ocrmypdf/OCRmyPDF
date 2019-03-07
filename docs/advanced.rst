@@ -85,7 +85,6 @@ For example, if you have a development build of Tesseract don't wish to use the 
 
 In this example ``TESSDATA_PREFIX`` is required to redirect Tesseract to an alternate folder for its "tessdata" files.
 
-
 Overriding other support programs
 """""""""""""""""""""""""""""""""
 
