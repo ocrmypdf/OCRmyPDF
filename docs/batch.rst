@@ -163,13 +163,10 @@ This is only possible for x86-based Synology products. Some Synology products us
 	            shutil.move(full_path, full_path_archive)
 	logging.info('Finished.\n')
 
-
-
 Huge batch jobs
 """""""""""""""
 
 If you have thousands of files to work with, contact the author. Consulting work related to OCRmyPDF helps fund this open source project and all inquiries are appreciated.
-
 
 Hot (watched) folders
 ---------------------
@@ -210,3 +207,13 @@ Alternatives
 """"""""""""
 
 * `Watchman <https://facebook.github.io/watchman/>`_ is a more powerful alternative to ``watchmedo``.
+
+macOS Automator
+---------------
+
+You can use the Automator app with macOS, to create a Workflow or Quick Action. Use a *Run Shell Script* action in your workflow. In the context of Automator, the ``PATH`` may be set differently your Terminal's ``PATH``; you may need to explicitly set the PATH to include ``ocrmypdf``. The following example may serve as a starting point:
+
+.. image:: images/macos-workflow.png
+	:alt: Example macOS Automator script
+
+You may customize the command sent to ocrmypdf.
