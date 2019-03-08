@@ -16,7 +16,7 @@ About PDFs
 
 PDFs are page description files that attempts to preserve a layout exactly. They  contain `vector graphics <http://vector-conversions.com/vectorizing/raster_vs_vector.html>`_ that can contain raster objects such as scanned images. Because PDFs can contain multiple pages (unlike many image formats) and can contain fonts and text, it is a good formats for exchanging scanned documents.
 
-.. image:: bitmap_vs_svg.svg
+.. image:: images/bitmap_vs_svg.svg
 
 A PDF page might contain multiple images, even if it only appears to have one image.  Some scanners or scanning software will segment pages into monochromatic text and color regions for example, to improve the compression ratio and appearance of the page.
 
