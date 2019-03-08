@@ -27,7 +27,13 @@ This will walk through a directory tree and run OCR on all files in place, print
 
 .. code-block:: bash
 
-	find . --printf '%p' -name '*.pdf' -exec ocrmypdf '{}' '{}' \;
+	find . -printf '%p' -name '*.pdf' -exec ocrmypdf '{}' '{}' \;
+	
+Alternatively, with a docker container (mounts a volume to the container where the PDFs are stored):
+
+.. code-block:: bash
+
+	find . -printf '%p' -name '*.pdf' -exec docker run --rm -v <host dir>:<container dir> jbarlow83/ocrmypdf-alpine '<container dir>/{}' '<container dir>/{}' \;
 
 This only runs one ``ocrmypdf`` process at a time. This variation uses ``find`` to create a directory list and ``parallel`` to parallelize runs of ``ocrmypdf``, again updating files in place.
 
