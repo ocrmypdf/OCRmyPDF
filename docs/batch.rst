@@ -27,7 +27,7 @@ This will walk through a directory tree and run OCR on all files in place, print
 
 .. code-block:: bash
 
-	find . --printf '%p' -name '*.pdf' -exec ocrmypdf '{}' '{}' \;
+	find . -printf '%p' -name '*.pdf' -exec ocrmypdf '{}' '{}' \;
 
 This only runs one ``ocrmypdf`` process at a time. This variation uses ``find`` to create a directory list and ``parallel`` to parallelize runs of ``ocrmypdf``, again updating files in place.
 
