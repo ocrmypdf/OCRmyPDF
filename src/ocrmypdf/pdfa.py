@@ -32,6 +32,7 @@ Ghostscript's handling of pdfmark.
 """
 
 import os
+import shutil
 from binascii import hexlify
 from pathlib import Path
 from string import Template
@@ -104,6 +105,11 @@ def generate_pdfa_ps(target_filename, icc='sRGB'):
         icc_profile = SRGB_ICC_PROFILE
     else:
         raise NotImplementedError("Only supporting sRGB")
+
+    # copy icc profile to target directory, which is readable by Ghostscript
+    target_icc_profile = os.path.join(os.path.dirname(target_filename), os.path.basename(icc_profile))
+    shutil.copy(icc_profile, target_icc_profile)
+    icc_profile = target_icc_profile
 
     # pdfmark must contain the full path to the ICC profile, and pdfmark must be
     # also encoded in ASCII. ocrmypdf can be installed anywhere, including to
