@@ -614,9 +614,10 @@ class Pix(LeptonicaObject):
         except (LeptonicaError, ValueError, IndexError):
             return
         finally:
-            with suppress(FileNotFoundError):
-                os.unlink('junkpixt.png')  # leptonica may produce this
-                os.unlink('junkpixt')
+            leptonica_junk = ('junkpixt.png', 'junkpixt')
+            for junk in leptonica_junk:
+                with suppress(FileNotFoundError):
+                    os.unlink(junk)  # leptonica may produce this
 
         for n, s in enumerate(sarray):
             decoded = s.decode()
