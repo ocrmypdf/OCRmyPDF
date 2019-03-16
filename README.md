@@ -38,9 +38,9 @@ Main features
 - If requested deskews and/or cleans the image before performing OCR
 - Validates input and output files
 - Distributes work across all available CPU cores
-- Uses [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) engine
-- Supports more than [100 languages](https://github.com/tesseract-ocr/tessdata) recognized by Tesseract
-- Battle-tested on thousands of PDFs, a test suite and continuous integration
+- Uses [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) engine to recognize more than [100 languages](https://github.com/tesseract-ocr/tessdata)
+- Scales properly to handle files with thousands of pages
+- Battle-tested on millions of PDFs
 
 For details: please consult the [documentation](https://ocrmypdf.readthedocs.io/en/latest/).
 
@@ -131,6 +131,11 @@ Press & Media
 - [c't 1-2014, page 59](http://heise.de/-2279695): Detailed presentation of OCRmyPDF v1.0 in the leading German IT magazine c't
 - [heise Open Source, 09/2014: Texterkennung mit OCRmyPDF](http://heise.de/-2356670)
 
+Business enquiries
+------------------
+
+OCRmyPDF would not be the software that it is today is without companies and users choosing to provide support for feature development and consulting enquiries. We are happy to discuss all enquiries, whether for extending the existing feature set, or integrating OCRmyPDF into a larger system.
+
 License
 -------
 
@@ -138,7 +143,7 @@ The OCRmyPDF software is licensed under the GNU GPLv3. Certain files are covered
 
 The license for each test file varies, and is noted in tests/resources/README.rst. The documentation is licensed under Creative Commons Attribution-ShareAlike 4.0 (CC-BY-SA 4.0).
 
-OCRmyPDF versions prior to 6.0 were licensed under the MIT License.
+OCRmyPDF versions prior to 6.0 were distributed under the MIT License.
 
 Disclaimer
 ----------
