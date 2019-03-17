@@ -17,7 +17,9 @@
 
 
 from os import fspath
+import os
 from pickle import dumps, loads
+from unittest.mock import patch
 
 import pytest
 from PIL import Image, ImageChops
@@ -85,3 +87,18 @@ def test_leptonica_compile(tmpdir):
     # existing compiled library. Also compile in API mode so that we test
     # the interfaces, even though we use it ABI mode.
     ffibuilder.compile(tmpdir=fspath(tmpdir), target=fspath(tmpdir / 'lepttest.*'))
+
+
+def test_with_stderr(capsys):
+    # pytest redirects stderr too; we must disable this for the test to be valid
+    with capsys.disabled():
+        with pytest.raises(FileNotFoundError):
+            lept.Pix.open("does_not_exist1")
+
+
+def test_without_stderr(capsys):
+    # pytest redirects stderr too; we must disable this for the test to be valid
+    with capsys.disabled():
+        with patch('sys.stderr', new=None):
+            with pytest.raises(FileNotFoundError):
+                lept.Pix.open("does_not_exist2")

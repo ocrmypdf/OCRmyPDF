@@ -43,11 +43,6 @@ lept = ffi.dlopen(find_library('lept'))
 lept.setMsgSeverity(lept.L_SEVERITY_WARNING)
 
 
-def stderr(*objs):
-    """Shorthand print to stderr."""
-    print("leptonica.py:", *objs, file=sys.stderr)
-
-
 class _LeptonicaErrorTrap:
     """
     Context manager to trap errors reported by Leptonica.
@@ -66,6 +61,7 @@ class _LeptonicaErrorTrap:
     def __init__(self):
         self.tmpfile = None
         self.copy_of_stderr = -1
+        self.no_stderr = False
 
     def __enter__(self):
         from io import UnsupportedOperation
@@ -73,33 +69,40 @@ class _LeptonicaErrorTrap:
         self.tmpfile = TemporaryFile()
 
         # Save the old stderr, and redirect stderr to temporary file
-        sys.stderr.flush()
+        with suppress(AttributeError):
+            sys.stderr.flush()
         try:
             self.copy_of_stderr = os.dup(sys.stderr.fileno())
             os.dup2(self.tmpfile.fileno(), sys.stderr.fileno(), inheritable=False)
+        except AttributeError:
+            # We are in some unusual context where our Python process does not
+            # have a sys.stderr. Leptonica still expects to write to file
+            # descriptor 2, so we are going to ensure it is redirected.
+            self.copy_of_stderr = None
+            self.no_stderr = True
+            os.dup2(self.tmpfile.fileno(), 2, inheritable=False)
         except UnsupportedOperation:
             self.copy_of_stderr = None
         return
 
     def __exit__(self, exc_type, exc_value, traceback):
         # Restore old stderr
-        sys.stderr.flush()
+        with suppress(AttributeError):
+            sys.stderr.flush()
+
         if self.copy_of_stderr is not None:
             os.dup2(self.copy_of_stderr, sys.stderr.fileno())
             os.close(self.copy_of_stderr)
+        if self.no_stderr:
+            os.close(2)
 
-        # Get data from tmpfile (in with block to ensure it is closed)
-        with self.tmpfile as tmpfile:
-            tmpfile.seek(0)  # Cursor will be at end, so move back to beginning
-            leptonica_output = tmpfile.read().decode(errors='replace')
-
-        assert self.tmpfile.closed
-        assert not sys.stderr.closed
-
-        # If there are Python errors, let them bubble up
+        # Get data from tmpfile
+        self.tmpfile.seek(0)  # Cursor will be at end, so move back to beginning
+        leptonica_output = self.tmpfile.read().decode(errors='replace')
+        self.tmpfile.close()
+        # If there are Python errors, record them
         if exc_type:
             logger.warning(leptonica_output)
-            return False
 
         # If there are Leptonica errors, wrap them in Python excpetions
         if 'Error' in leptonica_output:
