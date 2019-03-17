@@ -231,7 +231,9 @@ jobcontrol.add_argument(
     default=[],
     nargs='?',
     action="append",
-    help="Print more verbose messages for each additional verbose level",
+    help="Print more verbose messages for each additional verbose level. Use "
+    "`-v 1` typically for much more detailed logging. Higher numbers "
+    "are probably only useful in debugging.",
 )
 
 metadata = parser.add_argument_group(
