@@ -22,7 +22,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ocrmypdf import __main__ as main
+from ocrmypdf.__main__ import parser
+from ocrmypdf.run import check_options
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.exec import unpaper
 
@@ -52,12 +53,12 @@ def spoof_unpaper_oldversion(tmpdir_factory):
 def test_no_unpaper(resources, no_outpdf):
     input_ = fspath(resources / "c02-22.pdf")
     output = fspath(no_outpdf)
-    options = main.parser.parse_args(args=["--clean", input_, output])
+    options = parser.parse_args(args=["--clean", input_, output])
 
     with patch("ocrmypdf.exec.unpaper.version") as mock_unpaper_version:
         mock_unpaper_version.side_effect = FileNotFoundError("unpaper")
         with pytest.raises(SystemExit):
-            main.check_options(options, log=MagicMock())
+            check_options(options, log=MagicMock())
 
 
 def test_old_unpaper(spoof_unpaper_oldversion, resources, no_outpdf):

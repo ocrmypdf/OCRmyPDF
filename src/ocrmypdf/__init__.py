@@ -44,4 +44,4 @@ from . import hocrtransform
 from . import leptonica
 from . import pdfa
 from . import pdfinfo
-from .run import run_pipeline as run
+from . import run
