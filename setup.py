@@ -108,7 +108,7 @@ setup(
     ],
     extras_require={'pdfminer': ['pdfminer.six == 20181108']},
     tests_require=tests_require,
-    entry_points={'console_scripts': ['ocrmypdf = ocrmypdf.__main__:run_pipeline']},
+    entry_points={'console_scripts': ['ocrmypdf = ocrmypdf.__main__:run']},
     package_data={'ocrmypdf': ['data/sRGB.icc']},
     include_package_data=True,
     zip_safe=False,
