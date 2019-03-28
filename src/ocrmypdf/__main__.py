@@ -21,7 +21,7 @@ import os
 import sys
 
 from . import PROGRAM_NAME, VERSION
-from .run import run_pipeline
+from ._ruffus import run_pipeline
 
 # Hack to help debugger context find /usr/local/bin
 if 'IDE_PROJECT_ROOTS' in os.environ:
@@ -29,6 +29,7 @@ if 'IDE_PROJECT_ROOTS' in os.environ:
 
 # -------------
 # Parser
+
 
 def numeric(basetype, min_=None, max_=None):
     """Validator for numeric params"""
@@ -465,9 +466,11 @@ debugging.add_argument(
     '--flowchart', type=str, help="Generate the pipeline execution flowchart"
 )
 
+
 def run(args=None):
     options = parser.parse_args(args=args)
     return run_pipeline(options)
+
 
 if __name__ == '__main__':
     sys.exit(run())

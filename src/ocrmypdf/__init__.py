@@ -44,4 +44,3 @@ from . import hocrtransform
 from . import leptonica
 from . import pdfa
 from . import pdfinfo
-from . import run

@@ -25,13 +25,11 @@ from shutil import copyfile, copyfileobj
 
 import img2pdf
 from PIL import Image
-from ruffus import Pipeline, formatter, regex, suffix
 
 import pikepdf
 from pikepdf.models.metadata import encode_pdf_date
 
 from . import PROGRAM_NAME, VERSION, leptonica
-from ._weave import weave_layers
 from .exceptions import (
     DpiError,
     EncryptedPdfError,
@@ -40,7 +38,12 @@ from .exceptions import (
     UnsupportedImageFormatError,
 )
 from .exec import ghostscript, tesseract
-from .helpers import flatten_groups, is_iterable_notstr, page_number, re_symlink
+from .helpers import (
+    flatten_groups,
+    is_iterable_notstr,
+    page_number,
+    re_symlink
+)
 from .hocrtransform import HocrTransform
 from .optimize import optimize
 from .pdfa import generate_pdfa_ps
@@ -115,7 +118,10 @@ def triage_image_file(input_file, output_file, log, options):
             )
         with open(output_file, 'wb') as outf:
             img2pdf.convert(
-                input_file, layout_fun=layout_fun, with_pdfrw=False, outputstream=outf
+                input_file,
+                layout_fun=layout_fun,
+                with_pdfrw=False,
+                outputstream=outf
             )
         log.info("Successfully converted to PDF, processing...")
     except img2pdf.ImageOpenError as e:
@@ -170,7 +176,7 @@ def repair_and_parse_pdf(input_file, output_file, log, context):
         pdfinfo = PdfInfo(
             output_file, detailed_page_analysis=detailed_page_analysis, log=log
         )
-    except pikepdf.PasswordError as e:
+    except pikepdf.PasswordError:
         raise EncryptedPdfError()
     except pikepdf.PdfError as e:
         log.error(e)
@@ -202,7 +208,8 @@ def repair_and_parse_pdf(input_file, output_file, log, context):
             raise PriorOcrFoundError()
         else:
             log.warning(
-                "This PDF has a fillable form. Chances are it is a pure digital "
+                "This PDF has a fillable form. "
+                "Chances are it is a pure digital "
                 "document that does not need OCR."
             )
             if not options.force_ocr:
@@ -281,8 +288,7 @@ def is_ocr_required(pageinfo, log, options):
         elif options.redo_ocr:
             if pageinfo.has_corrupt_text:
                 log.warning(
-                    prefix
-                    + (
+                    prefix + (
                         "some text on this page cannot be mapped to characters: "
                         "consider using --force-ocr instead",
                     )
@@ -936,232 +942,3 @@ def copy_final(input_files, output_file, log, context):
             # get the appropriate umask, ownership, etc.
             with open(output_file, 'wb') as output_stream:
                 copyfileobj(input_stream, output_stream)
-
-
-def build_pipeline(options, work_folder, log, context):
-    main_pipeline = Pipeline.pipelines['main']
-
-    # Triage
-    task_triage = main_pipeline.transform(
-        task_func=triage,
-        input=os.path.join(work_folder, 'origin'),
-        filter=formatter('(?i)'),
-        output=os.path.join(work_folder, 'origin.pdf'),
-        extras=[log, context],
-    )
-
-    task_repair_and_parse_pdf = main_pipeline.transform(
-        task_func=repair_and_parse_pdf,
-        input=task_triage,
-        filter=suffix('.pdf'),
-        output='.repaired.pdf',
-        output_dir=work_folder,
-        extras=[log, context],
-    )
-
-    # Split (kwargs for split seems to be broken, so pass plain args)
-    task_marker_pages = main_pipeline.split(
-        marker_pages,
-        task_repair_and_parse_pdf,
-        os.path.join(work_folder, '*.marker.pdf'),
-        extras=[log, context],
-    )
-
-    task_ocr_or_skip = main_pipeline.split(
-        ocr_or_skip,
-        task_marker_pages,
-        [
-            os.path.join(work_folder, '*.ocr.page.pdf'),
-            os.path.join(work_folder, '*.skip.page.pdf'),
-        ],
-        extras=[log, context],
-    )
-
-    # Rasterize preview
-    task_rasterize_preview = main_pipeline.transform(
-        task_func=rasterize_preview,
-        input=task_ocr_or_skip,
-        filter=suffix('.page.pdf'),
-        output='.preview.jpg',
-        output_dir=work_folder,
-        extras=[log, context],
-    )
-    task_rasterize_preview.active_if(options.rotate_pages)
-
-    # Orient
-    task_orient_page = main_pipeline.collate(
-        task_func=orient_page,
-        input=[task_ocr_or_skip, task_rasterize_preview],
-        filter=regex(r".*/(\d{6})(\.ocr|\.skip)(?:\.page\.pdf|\.preview\.jpg)"),
-        output=os.path.join(work_folder, r'\1\2.oriented.pdf'),
-        extras=[log, context],
-    )
-
-    # Rasterize actual
-    task_rasterize_with_ghostscript = main_pipeline.transform(
-        task_func=rasterize_with_ghostscript,
-        input=task_orient_page,
-        filter=suffix('.ocr.oriented.pdf'),
-        output='.page.png',
-        output_dir=work_folder,
-        extras=[log, context],
-    )
-
-    # Preprocessing subpipeline
-    task_preprocess_remove_background = main_pipeline.transform(
-        task_func=preprocess_remove_background,
-        input=task_rasterize_with_ghostscript,
-        filter=suffix(".page.png"),
-        output=".pp-background.png",
-        extras=[log, context],
-    )
-
-    task_preprocess_deskew = main_pipeline.transform(
-        task_func=preprocess_deskew,
-        input=task_preprocess_remove_background,
-        filter=suffix(".pp-background.png"),
-        output=".pp-deskew.png",
-        extras=[log, context],
-    )
-
-    task_preprocess_clean = main_pipeline.transform(
-        task_func=preprocess_clean,
-        input=task_preprocess_deskew,
-        filter=suffix(".pp-deskew.png"),
-        output=".pp-clean.png",
-        extras=[log, context],
-    )
-
-    task_select_ocr_image = main_pipeline.collate(
-        task_func=select_ocr_image,
-        input=[task_preprocess_clean],
-        filter=regex(r".*/(\d{6})(?:\.page|\.pp-.*)\.png"),
-        output=os.path.join(work_folder, r"\1.ocr.png"),
-        extras=[log, context],
-    )
-
-    # HOCR OCR
-    task_ocr_tesseract_hocr = main_pipeline.transform(
-        task_func=ocr_tesseract_hocr,
-        input=task_select_ocr_image,
-        filter=suffix(".ocr.png"),
-        output=[".hocr", ".txt"],
-        extras=[log, context],
-    )
-    task_ocr_tesseract_hocr.graphviz(fillcolor='"#00cc66"')
-    task_ocr_tesseract_hocr.active_if(options.pdf_renderer == 'hocr')
-
-    task_select_visible_page_image = main_pipeline.collate(
-        task_func=select_visible_page_image,
-        input=[
-            task_rasterize_with_ghostscript,
-            task_preprocess_remove_background,
-            task_preprocess_deskew,
-            task_preprocess_clean,
-        ],
-        filter=regex(r".*/(\d{6})(?:\.page|\.pp-.*)\.png"),
-        output=os.path.join(work_folder, r'\1.image'),
-        extras=[log, context],
-    )
-    task_select_visible_page_image.graphviz(shape='diamond')
-
-    task_select_image_layer = main_pipeline.collate(
-        task_func=select_image_layer,
-        input=[task_select_visible_page_image, task_orient_page],
-        filter=regex(r".*/(\d{6})(?:\.image|\.ocr\.oriented\.pdf)"),
-        output=os.path.join(work_folder, r'\1.image-layer.pdf'),
-        extras=[log, context],
-    )
-    task_select_image_layer.graphviz(fillcolor='"#00cc66"', shape='diamond')
-
-    task_render_hocr_page = main_pipeline.transform(
-        task_func=render_hocr_page,
-        input=task_ocr_tesseract_hocr,
-        filter=regex(r".*/(\d{6})(?:\.hocr)"),
-        output=os.path.join(work_folder, r'\1.text.pdf'),
-        extras=[log, context],
-    )
-    task_render_hocr_page.graphviz(fillcolor='"#00cc66"')
-    task_render_hocr_page.active_if(options.pdf_renderer == 'hocr')
-
-    # Tesseract OCR + text only PDF
-    task_ocr_tesseract_textonly_pdf = main_pipeline.collate(
-        task_func=ocr_tesseract_textonly_pdf,
-        input=[task_select_ocr_image],
-        filter=regex(r".*/(\d{6})(?:\.ocr.png)"),
-        output=[
-            os.path.join(work_folder, r'\1.text.pdf'),
-            os.path.join(work_folder, r'\1.text.txt'),
-        ],
-        extras=[log, context],
-    )
-    task_ocr_tesseract_textonly_pdf.graphviz(fillcolor='"#ff69b4"')
-    task_ocr_tesseract_textonly_pdf.active_if(options.pdf_renderer == 'sandwich')
-
-    task_weave_layers = main_pipeline.collate(
-        task_func=weave_layers,
-        input=[
-            task_repair_and_parse_pdf,
-            task_render_hocr_page,
-            task_ocr_tesseract_textonly_pdf,
-            task_select_image_layer,
-        ],
-        filter=regex(
-            r".*/((?:\d{6}(?:\.text\.pdf|\.image-layer\.pdf))|(?:origin\.repaired\.pdf))"
-        ),
-        output=os.path.join(work_folder, r'layers.rendered.pdf'),
-        extras=[log, context],
-    )
-    task_weave_layers.graphviz(fillcolor='"#00cc66"')
-
-    # PDF/A pdfmark
-    task_generate_postscript_stub = main_pipeline.transform(
-        task_func=generate_postscript_stub,
-        input=task_repair_and_parse_pdf,
-        filter=formatter(r'\.repaired\.pdf'),
-        output=os.path.join(work_folder, 'pdfa.ps'),
-        extras=[log, context],
-    )
-    task_generate_postscript_stub.active_if(options.output_type.startswith('pdfa'))
-
-    # PDF/A conversion
-    task_convert_to_pdfa = main_pipeline.merge(
-        task_func=convert_to_pdfa,
-        input=[task_generate_postscript_stub, task_weave_layers],
-        output=os.path.join(work_folder, 'pdfa.pdf'),
-        extras=[log, context],
-    )
-    task_convert_to_pdfa.active_if(options.output_type.startswith('pdfa'))
-
-    task_metadata_fixup = main_pipeline.merge(
-        task_func=metadata_fixup,
-        input=[task_repair_and_parse_pdf, task_weave_layers, task_convert_to_pdfa],
-        output=os.path.join(work_folder, 'metafix.pdf'),
-        extras=[log, context],
-    )
-
-    task_merge_sidecars = main_pipeline.merge(
-        task_func=merge_sidecars,
-        input=[task_ocr_tesseract_hocr, task_ocr_tesseract_textonly_pdf],
-        output=options.sidecar,
-        extras=[log, context],
-    )
-    task_merge_sidecars.active_if(options.sidecar)
-
-    # Optimize
-    task_optimize_pdf = main_pipeline.transform(
-        task_func=optimize_pdf,
-        input=task_metadata_fixup,
-        filter=suffix('.pdf'),
-        output='.optimized.pdf',
-        output_dir=work_folder,
-        extras=[log, context],
-    )
-
-    # Finalize
-    main_pipeline.merge(
-        task_func=copy_final,
-        input=[task_optimize_pdf],
-        output=options.output_file,
-        extras=[log, context],
-    )
