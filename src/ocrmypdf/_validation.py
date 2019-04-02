@@ -383,6 +383,25 @@ def check_environ(options, _log):
             )
 
 
+def create_input_file(options, log, work_folder):
+    if options.input_file == '-':
+        # stdin
+        log.info('reading file from standard input')
+        target = os.path.join(work_folder, 'stdin.pdf')
+        with open(target, 'wb') as stream_buffer:
+            from shutil import copyfileobj
+            copyfileobj(sys.stdin.buffer, stream_buffer)
+        return target
+    else:
+        try:
+            target = os.path.join(work_folder, os.path.basename(options.input_file))
+            re_symlink(options.input_file, target, log)
+            return target
+        except FileNotFoundError:
+            log.error("File not found - " + options.input_file)
+            raise InputFileError()
+
+
 def check_input_file(options, _log, start_input_file):
     if options.input_file == '-':
         # stdin

@@ -21,7 +21,7 @@ import os
 import sys
 
 from . import PROGRAM_NAME, VERSION
-from ._ruffus import run_pipeline
+from ._sync import run_pipeline
 
 # Hack to help debugger context find /usr/local/bin
 if 'IDE_PROJECT_ROOTS' in os.environ:

@@ -159,7 +159,7 @@ def get_orientation(input_file, engine_mode, timeout: float, log):
 
 
 def tesseract_log_output(log, stdout, input_file):
-    prefix = f"{(page_number(input_file)):4d}: [tesseract] "
+    prefix = "[tesseract] "
 
     try:
         text = stdout.decode()
