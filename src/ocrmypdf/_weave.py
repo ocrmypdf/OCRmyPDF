@@ -15,15 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from itertools import groupby
 from pathlib import Path
 import os
-
 import pikepdf
-
 from .exec import tesseract
-from .helpers import flatten_groups, page_number
-
 
 MAX_OPEN_PAGE_PDFS = int(os.environ.get('_OCRMYPDF_MAX_OPEN_PAGE_PDFS', 100))
 
@@ -112,7 +107,7 @@ def _weave_layers_graft(
         stream = bytearray(pdf_text_contents)
         pattern = b'/Im1 Do'
         idx = stream.find(pattern)
-        stream[idx : (idx + len(pattern))] = b' ' * len(pattern)
+        stream[idx:(idx + len(pattern))] = b' ' * len(pattern)
         pdf_text_contents = bytes(stream)
 
     base_page = pdf_base.pages.p(page_num)
@@ -142,7 +137,7 @@ def _weave_layers_graft(
     scale_x = wp / wt
     scale_y = hp / ht
 
-    log.debug('%r', (scale_x, scale_y))
+    # log.debug('%r', scale_x, scale_y)
     scale = pikepdf.PdfMatrix().scaled(scale_x, scale_y)
 
     # Translate the text so it is centered at (0, 0), rotate it there, adjust
@@ -200,7 +195,7 @@ def _traverse_toc(pdf_base, visitor_fn, log):
     queue = set()
     link_keys = ('/Parent', '/First', '/Last', '/Prev', '/Next')
 
-    if not '/Outlines' in pdf_base.root:
+    if '/Outlines' not in pdf_base.root:
         return
 
     queue.add(pdf_base.root.Outlines.objgen)
@@ -277,7 +272,7 @@ def _fix_toc(pdf_base, pageref_remap, log):
     _traverse_toc(pdf_base, visit_remap_dest, log)
 
 
-def weave_layers(infiles, output_file, log, context):
+def weave_layers(layers, context):
     """Apply text layer and/or image layer changes to baseline file
 
     This is where the magic happens. infiles will be the main PDF to modify,
@@ -303,23 +298,15 @@ def weave_layers(infiles, output_file, log, context):
 
     """
 
-    def input_sorter(key):
-        try:
-            return page_number(key)
-        except ValueError:
-            return -1
+    log = context.log
 
-    flat_inputs = sorted(flatten_groups(infiles), key=input_sorter)
-    groups = groupby(flat_inputs, key=input_sorter)
-
-    # Extract first item
-    _, basegroup = next(groups)
-    base = list(basegroup)[0]
-    path_base = Path(base).resolve()
+    path_base = Path(context.origin).resolve()
     pdf_base = pikepdf.open(path_base)
     keep_open = []
     font, font_key, procset = None, None, None
-    pdfinfo = context.get_pdfinfo()
+    pdfinfo = context.pdfinfo
+    interim_output_file = context.get_path('weave_layers_interim.pdf')
+    output_file = context.get_path('weave_layers.pdf')
     pagerefs = {}
 
     # Walk the table of contents first, to trigger pikepdf/qpdf to resolve all
@@ -333,40 +320,32 @@ def weave_layers(infiles, output_file, log, context):
     )
 
     # Iterate rest
-    for page_num, layers in groups:
-        layers = list(layers)
-        log.debug(page_num)
-        log.debug(layers)
-
-        text = next((ii for ii in layers if ii.endswith('.text.pdf')), None)
-        image = next((ii for ii in layers if ii.endswith('.image-layer.pdf')), None)
-
+    for (pageno, image, text, sidecar, autorotate_correction) in layers:
         if text and not font:
             font, font_key = _find_font(text, pdf_base)
 
         replacing = False
-        content_rotation = pdfinfo[page_num - 1].rotation
+        content_rotation = pdfinfo[pageno].rotation
 
         path_image = Path(image).resolve() if image else None
         if path_image is not None and path_image != path_base:
             # We are replacing the old page with a rasterized PDF of the new
             # page
             log.debug("Replace")
-            old_objgen = pdf_base.pages[page_num - 1].objgen
+            old_objgen = pdf_base.pages[pageno].objgen
 
             pdf_image = pikepdf.open(image)
             keep_open.append(pdf_image)
             image_page = pdf_image.pages[0]
-            pdf_base.pages[page_num - 1] = image_page
+            pdf_base.pages[pageno] = image_page
 
             # We're adding a new page, which will get a new objgen number pair,
             # so we need to update any references to it.  qpdf did not like
             # my attempt to update the old object in place, but that is an
             # option to consider
-            pagerefs[old_objgen] = pdf_base.pages[page_num - 1].objgen
+            pagerefs[old_objgen] = pdf_base.pages[pageno].objgen
             replacing = True
 
-        autorotate_correction = context.get_rotation(page_num - 1)
         if replacing:
             content_rotation = autorotate_correction
         text_rotation = autorotate_correction
@@ -378,10 +357,10 @@ def weave_layers(infiles, output_file, log, context):
 
         if text and font:
             # Graft the text layer onto this page, whether new or old
-            strip_old = context.get_options().redo_ocr
+            strip_old = context.options.redo_ocr
             _weave_layers_graft(
                 pdf_base=pdf_base,
-                page_num=page_num,
+                page_num=pageno + 1,
                 text=text,
                 font=font,
                 font_key=font_key,
@@ -392,7 +371,7 @@ def weave_layers(infiles, output_file, log, context):
             )
 
         # Correct the rotation if applicable
-        pdf_base.pages[page_num - 1].Rotate = (
+        pdf_base.pages[pageno].Rotate = (
             content_rotation - autorotate_correction
         ) % 360
 
@@ -406,14 +385,14 @@ def weave_layers(infiles, output_file, log, context):
             _update_page_resources(
                 page=page0, font=font, font_key=font_key, procset=procset
             )
-            interim = output_file + f'_working{page_num}.pdf'
-            pdf_base.save(interim)
+            pdf_base.save(interim_output_file)
             del pdf_base
             keep_open = []
 
-            pdf_base = pikepdf.open(interim)
+            pdf_base = pikepdf.open(interim_output_file)
             procset = pdf_base.pages[0].Resources.ProcSet
             font, font_key = None, None  # Reacquire this information
 
     _fix_toc(pdf_base, pagerefs, log)
     pdf_base.save(output_file)
+    return output_file

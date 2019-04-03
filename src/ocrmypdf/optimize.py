@@ -25,7 +25,7 @@ from pathlib import Path
 from PIL import Image
 
 import pikepdf
-from pikepdf import Name, Dictionary, Array
+from pikepdf import Name, Dictionary
 
 from . import leptonica
 from ._jobcontext import JobContext
@@ -427,9 +427,9 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
         im_obj.write(compdata.read(), filter=Name.FlateDecode, decode_parms=dparms)
 
 
-def optimize(input_file, output_file, log, context):
-
-    options = context.get_options()
+def optimize(input_file, output_file, context):
+    log = context.log
+    options = context.options
     if options.optimize == 0:
         re_symlink(input_file, output_file, log)
         return

@@ -20,10 +20,8 @@ import os
 # import sys
 import atexit
 from tempfile import mkdtemp
-from .helpers import re_symlink
 from ._jobcontext import cleanup_working_files
-from .exec import qpdf
-# from ._weave import weave_layers
+from ._weave import weave_layers
 from ._pipeline_simple import (
     get_pdfinfo,
     validate_pdfinfo_options,
@@ -41,21 +39,24 @@ from ._pipeline_simple import (
     create_pdf_page_from_image,
     render_hocr_page,
     ocr_tesseract_textonly_pdf,
+    generate_postscript_stub,
+    convert_to_pdfa,
+    metadata_fixup,
+    merge_sidecars,
+    optimize_pdf,
+    copy_final,
 )
 from .exceptions import (
     ExitCode,
 )
 from .helpers import available_cpu_count
-from .pdfa import file_claims_pdfa
 from ._validation import (
     check_closed_streams,
     preamble,
     check_options,
     check_dependency_versions,
     check_environ,
-    check_input_file,
     check_requested_output_file,
-    report_output_file_size,
     create_input_file,
 )
 
@@ -106,7 +107,7 @@ class PDFContext:
             yield PageContext(self, n)
 
 
-def build_pipeline(options, work_folder, origin):
+def _exec_pipeline(options, work_folder, origin):
     # Gather info of pdf
     pdfinfo = get_pdfinfo(origin)
     context = PDFContext(options, work_folder, origin, pdfinfo)
@@ -115,7 +116,7 @@ def build_pipeline(options, work_folder, origin):
     validate_pdfinfo_options(context)
 
     # For every page in the pdf
-    page_res = []
+    layers = []
     for page_context in context.get_page_contexts():
         # Check if OCR is required
         ocr_required = is_ocr_required(page_context)
@@ -156,9 +157,24 @@ def build_pipeline(options, work_folder, origin):
         if options.pdf_renderer == 'sandwich':
             (ocr_out, text_out) = ocr_tesseract_textonly_pdf(ocr_image_out, page_context)
 
-        page_res.append((pdf_page_from_image_out, ocr_out, orientation_correction))
+        layers.append((page_context.pageno, pdf_page_from_image_out, ocr_out, text_out, orientation_correction))
 
-    print(page_res)
+    weave_layers_out = weave_layers(layers, context)
+
+    pdf_out = weave_layers_out
+    if options.output_type.startswith('pdfa'):
+        ps_stub_out = generate_postscript_stub(context)
+        pdf_out = convert_to_pdfa(pdf_out, ps_stub_out, context)
+
+    pdf_out = metadata_fixup(pdf_out, context)
+
+    if options.sidecar:
+        sidecars = [layer[3] for layer in layers]
+        sidecar_out = merge_sidecars(sidecars, context)
+        copy_final(sidecar_out, context.options.sidecar, context)
+
+    pdf_out = optimize_pdf(pdf_out, context)
+    copy_final(pdf_out, context.options.output_file, context)
 
 
 def run_pipeline(options):
@@ -193,7 +209,11 @@ def run_pipeline(options):
     start_input_file = create_input_file(options, log, work_folder)
     check_requested_output_file(options, log)
 
-    build_pipeline(options, work_folder, start_input_file)
+    atexit.register(cleanup_working_files, work_folder, options)
+    if hasattr(os, 'nice'):
+        os.nice(5)
+
+    _exec_pipeline(options, work_folder, start_input_file)
 
     return ExitCode.ok
 
