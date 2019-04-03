@@ -13,6 +13,15 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v8.2.3
+------
+
+-   Fixed that ``--mask-barcodes`` would occasionally leave a unwanted temporary file named ``junkpixt`` in the current working folder.
+
+-   Fixed (hopefully) handling of Leptonica errors in an environment where a non-standard ``sys.stderr`` is present.
+
+-   Improved help text for ``--verbose``.
+
 v8.2.2
 ------
 
