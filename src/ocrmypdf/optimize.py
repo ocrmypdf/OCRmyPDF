@@ -16,7 +16,6 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import concurrent.futures
-import logging
 import sys
 from collections import defaultdict
 from os import fspath
@@ -28,7 +27,7 @@ import pikepdf
 from pikepdf import Name, Dictionary
 
 from . import leptonica
-from ._jobcontext import JobContext
+from ._jobcontext import PDFContext
 from .exec import jbig2enc, pngquant
 from .helpers import re_symlink
 
@@ -82,9 +81,7 @@ def extract_image_jbig2(*, pike, root, log, image, xref, options):
     pim, filtdp = result
 
     if (
-        pim.bits_per_component == 1
-        and filtdp != Name.JBIG2Decode
-        and jbig2enc.available()
+        pim.bits_per_component == 1 and filtdp != Name.JBIG2Decode and jbig2enc.available()
     ):
         try:
             imgname = Path(root / f'{xref:08d}')
@@ -129,9 +126,7 @@ def extract_image_generic(*, pike, root, log, image, xref, options):
             return None
         return xref, ext
     elif (
-        pim.indexed
-        and pim.colorspace in pim.SIMPLE_COLORSPACES
-        and options.optimize >= 3
+        pim.indexed and pim.colorspace in pim.SIMPLE_COLORSPACES and options.optimize >= 3
     ):
         # Try to improve on indexed images - these are far from low hanging
         # fruit in most cases
@@ -492,10 +487,6 @@ def main(infile, outfile, level, jobs=1):
             self.jbig2_page_group_size = 0
             self.jbig2_lossy = jb2lossy
 
-    logging.basicConfig(level=logging.DEBUG)
-    log = logging.getLogger()
-
-    ctx = JobContext()
     options = OptimizeOptions(
         jobs=jobs,
         optimize=int(level),
@@ -503,11 +494,11 @@ def main(infile, outfile, level, jobs=1):
         png_quality=0,
         jb2lossy=False,
     )
-    ctx.set_options(options)
 
     with TemporaryDirectory() as td:
+        context = PDFContext(options, td, infile, None)
         tmpout = Path(td) / 'out.pdf'
-        optimize(infile, tmpout, log, ctx)
+        optimize(infile, tmpout, context)
         copy(fspath(tmpout), fspath(outfile))
 
 

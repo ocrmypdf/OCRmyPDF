@@ -28,7 +28,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import pikepdf
-from ocrmypdf._jobcontext import JobContext
+from ocrmypdf._jobcontext import PDFContext
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import SRGB_ICC_PROFILE, file_claims_pdfa, generate_pdfa_ps
 from pikepdf.models.metadata import decode_pdf_date
@@ -330,23 +330,15 @@ def test_prevent_gs_invalid_xml(resources, outdir):
     from ocrmypdf.pdfinfo import PdfInfo
 
     generate_pdfa_ps(outdir / 'pdfa.ps')
-    input_files = [str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps')]
     copyfile(resources / 'enron1.pdf', outdir / 'layers.rendered.pdf')
-    log = logging.getLogger()
-    context = JobContext()
 
     options = parser.parse_args(
         args=['-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
     )
-    context.options = options
-    context.pdfinfo = PdfInfo(resources / 'enron1.pdf')
+    pdfinfo = PdfInfo(resources / 'enron1.pdf')
+    context = PDFContext(options, outdir, resources / 'enron1.pdf', pdfinfo)
 
-    convert_to_pdfa(
-        input_files_groups=input_files,
-        output_file=outdir / 'pdfa.pdf',
-        log=log,
-        context=context,
-    )
+    convert_to_pdfa(str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps'), context)
 
     with open(outdir / 'pdfa.pdf', 'rb') as f:
         with mmap.mmap(

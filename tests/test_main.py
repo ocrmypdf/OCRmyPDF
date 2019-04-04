@@ -28,7 +28,7 @@ import pytest
 from PIL import Image
 
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
-from ocrmypdf.exec import ghostscript, qpdf, tesseract, unpaper
+from ocrmypdf.exec import ghostscript, qpdf, tesseract
 from ocrmypdf.leptonica import Pix
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo

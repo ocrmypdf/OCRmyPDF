@@ -17,62 +17,41 @@
 
 import shutil
 import sys
+import os
 from contextlib import suppress
-from multiprocessing.managers import SyncManager
-
-from .pdfinfo import PdfInfo
 
 
-class JobContext:
-    """Holds our context for a particular run of the pipeline
+class PDFContext:
+    """Holds our context for a particular run of the pipeline"""
 
-    A multiprocessing manager effectively creates a separate process
-    that keeps the master job context object.  Other threads access
-    job context via multiprocessing proxy objects.
-
-    While this would naturally lend itself @property's it seems to make
-    a little more sense to use functions to make it explicitly that the
-    invocation requires marshalling data across a process boundary.
-
-    """
-
-    def __init__(self):
-        self.pdfinfo = None
-        self.options = None
-        self.work_folder = None
-        self.rotations = {}
-
-    def generate_pdfinfo(self, infile):
-        self.pdfinfo = PdfInfo(infile)
-
-    def get_pdfinfo(self):
-        "What we know about the input PDF"
-        return self.pdfinfo
-
-    def set_pdfinfo(self, pdfinfo):
-        self.pdfinfo = pdfinfo
-
-    def get_options(self):
-        return self.options
-
-    def set_options(self, options):
+    def __init__(self, options, work_folder, origin, pdfinfo):
         self.options = options
-
-    def get_work_folder(self):
-        return self.work_folder
-
-    def set_work_folder(self, work_folder):
         self.work_folder = work_folder
+        self.origin = origin
+        self.pdfinfo = pdfinfo
+        self.log = get_logger(options, '%s: ' % os.path.basename(origin))
 
-    def get_rotation(self, pageno):
-        return self.rotations.get(pageno, 0)
+    def get_path(self, name):
+        return os.path.join(self.work_folder, name)
 
-    def set_rotation(self, pageno, value):
-        self.rotations[pageno] = value
+    def get_page_contexts(self):
+        npages = len(self.pdfinfo)
+        for n in range(npages):
+            yield PageContext(self, n)
 
 
-class JobContextManager(SyncManager):
-    pass
+class PageContext:
+    """Holds our context for a page"""
+
+    def __init__(self, pdf_context, pageno):
+        self.pdf_context = pdf_context
+        self.options = pdf_context.options
+        self.pageno = pageno
+        self.pageinfo = pdf_context.pdfinfo[pageno]
+        self.log = get_logger(pdf_context.options, '%s Page %d: ' % (os.path.basename(pdf_context.origin), pageno + 1))
+
+    def get_path(self, name):
+        return os.path.join(self.pdf_context.work_folder, "page_%d_%s" % (self.pageno, name))
 
 
 def cleanup_working_files(work_folder, options):
@@ -81,3 +60,62 @@ def cleanup_working_files(work_folder, options):
     else:
         with suppress(FileNotFoundError):
             shutil.rmtree(work_folder)
+
+
+def get_logger(options=None, prefix=''):
+    level = INFO  # TODO: add option
+    if options is not None and options.output_file == '-' or options.sidecar == '-':
+        return NullLogger()
+    return Logger(prefix, level)
+
+
+ERROR = 40
+WARN = 30
+INFO = 20
+DEBUG = 10
+
+
+class Logger:
+    def __init__(self, prefix, level=INFO):
+        self.prefix = prefix
+        self.level = level
+
+    def debug(self, *args, **kwargs):
+        if self.level <= DEBUG:
+            print('DEBUG', self.prefix, end='')
+            print(*args, **kwargs)
+
+    def info(self, *args, **kwargs):
+        if self.level <= INFO:
+            print('INFO', self.prefix, end='')
+            print(*args, **kwargs)
+
+    def warning(self, *args, **kwargs):
+        self.warn(*args, **kwargs)
+
+    def warn(self, *args, **kwargs):
+        if self.level <= WARN:
+            print('WARN', self.prefix, end='')
+            print(*args, **kwargs)
+
+    def error(self, *args, **kwargs):
+        if self.level <= ERROR:
+            print('ERROR', self.prefix, end='')
+            print(*args, **kwargs)
+
+
+class NullLogger:
+    def debug(self, *args, **kwargs):
+        pass
+
+    def info(self, *args, **kwargs):
+        pass
+
+    def warning(self, *args, **kwargs):
+        pass
+
+    def warn(self, *args, **kwargs):
+        pass
+
+    def error(self, *args, **kwargs):
+        pass

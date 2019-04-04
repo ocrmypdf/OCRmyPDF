@@ -462,9 +462,9 @@ debugging.add_argument(
     action='store_true',
     help="Keep temporary files (helpful for debugging)",
 )
-debugging.add_argument(
-    '--flowchart', type=str, help="Generate the pipeline execution flowchart"
-)
+# debugging.add_argument(
+#     '--flowchart', type=str, help="Generate the pipeline execution flowchart"
+# )
 
 
 def run(args=None):

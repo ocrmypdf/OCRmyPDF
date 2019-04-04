@@ -16,13 +16,11 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-# import re
-# import sys
 import atexit
 from tempfile import mkdtemp
-from ._jobcontext import cleanup_working_files
+from ._jobcontext import PDFContext, get_logger, cleanup_working_files
 from ._weave import weave_layers
-from ._pipeline_simple import (
+from ._pipeline import (
     get_pdfinfo,
     validate_pdfinfo_options,
     is_ocr_required,
@@ -48,6 +46,7 @@ from ._pipeline_simple import (
 )
 from .exceptions import (
     ExitCode,
+    ExitCodeException,
 )
 from .helpers import available_cpu_count
 from ._validation import (
@@ -59,52 +58,6 @@ from ._validation import (
     check_requested_output_file,
     create_input_file,
 )
-
-
-class Logger:
-    def __init__(self, prefix):
-        self.prefix = prefix
-
-    def debug(self, *argv):
-        print(self.prefix, *argv)
-
-    def info(self, *argv):
-        print(self.prefix, *argv)
-
-    def warn(self, *argv):
-        print(self.prefix, *argv)
-
-    def error(self, *argv):
-        print(self.prefix, *argv)
-
-
-class PageContext:
-    def __init__(self, pdf_context, pageno):
-        self.pdf_context = pdf_context
-        self.options = pdf_context.options
-        self.pageno = pageno
-        self.pageinfo = pdf_context.pdfinfo[pageno]
-        self.log = Logger('%s Page %d: ' % (os.path.basename(pdf_context.origin), pageno + 1))
-
-    def get_path(self, name):
-        return os.path.join(self.pdf_context.work_folder, "page_%d_%s" % (self.pageno, name))
-
-
-class PDFContext:
-    def __init__(self, options, work_folder, origin, pdfinfo):
-        self.options = options
-        self.work_folder = work_folder
-        self.origin = origin
-        self.pdfinfo = pdfinfo
-        self.log = Logger('%s: ' % os.path.basename(origin))
-
-    def get_path(self, name):
-        return os.path.join(self.work_folder, name)
-
-    def get_page_contexts(self):
-        npages = len(self.pdfinfo)
-        for n in range(npages):
-            yield PageContext(self, n)
 
 
 def _exec_pipeline(options, work_folder, origin):
@@ -181,7 +134,7 @@ def run_pipeline(options):
     if not check_closed_streams(options):
         return ExitCode.bad_args
 
-    log = Logger('Pipeline')
+    log = get_logger(options, 'Pipeline')
     preamble(log)
     check_code = check_options(options, log)
     if check_code != ExitCode.ok:
@@ -213,7 +166,13 @@ def run_pipeline(options):
     if hasattr(os, 'nice'):
         os.nice(5)
 
-    _exec_pipeline(options, work_folder, start_input_file)
+    try:
+        _exec_pipeline(options, work_folder, start_input_file)
+    except ExitCodeException as e:
+        return e.exit_code
+    except Exception as e:
+        log.error(str(e))
+        return ExitCode.other_error
 
     return ExitCode.ok
 
