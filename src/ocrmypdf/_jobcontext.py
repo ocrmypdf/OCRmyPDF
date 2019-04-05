@@ -20,6 +20,11 @@ import sys
 import os
 from contextlib import suppress
 
+ERROR = 40
+WARN = 30
+INFO = 20
+DEBUG = 10
+
 
 class PDFContext:
     """Holds our context for a particular run of the pipeline"""
@@ -51,7 +56,7 @@ class PageContext:
         self.log = get_logger(pdf_context.options, '%s Page %d: ' % (os.path.basename(pdf_context.origin), pageno + 1))
 
     def get_path(self, name):
-        return os.path.join(self.pdf_context.work_folder, "page_%d_%s" % (self.pageno, name))
+        return os.path.join(self.pdf_context.work_folder, "%06d_%s" % (self.pageno + 1, name))
 
 
 def cleanup_working_files(work_folder, options):
@@ -63,20 +68,14 @@ def cleanup_working_files(work_folder, options):
 
 
 def get_logger(options=None, prefix=''):
-    level = INFO  # TODO: add option
+    level = ERROR  # TODO: add option
     if options is not None and options.output_file == '-' or options.sidecar == '-':
         return NullLogger()
     return Logger(prefix, level)
 
 
-ERROR = 40
-WARN = 30
-INFO = 20
-DEBUG = 10
-
-
 class Logger:
-    def __init__(self, prefix, level=INFO):
+    def __init__(self, prefix, level=DEBUG):
         self.prefix = prefix
         self.level = level
 
