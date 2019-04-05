@@ -18,6 +18,7 @@
 import os
 import atexit
 import concurrent.futures
+from tqdm import tqdm
 from tempfile import mkdtemp
 from ._jobcontext import PDFContext, get_logger, cleanup_working_files
 from ._weave import weave_layers
@@ -77,7 +78,7 @@ def exec_page_sync(page_context):
             orientation_correction = get_orientation_correction(rasterize_preview_out, page_context)
 
         rasterize_out = rasterize(page_context.pdf_context.origin, page_context, correction=orientation_correction)
-
+        page_context.tick()
         preprocess_out = rasterize_out
         if options.remove_background:
             preprocess_out = preprocess_remove_background(preprocess_out, page_context)
@@ -89,7 +90,7 @@ def exec_page_sync(page_context):
             preprocess_out = preprocess_clean(preprocess_out, page_context)
 
         ocr_image_out = create_ocr_image(preprocess_out, page_context)
-
+        page_context.tick()
         pdf_page_from_image_out = None
         if not options.lossless_reconstruction:
             visible_image_out = preprocess_out
@@ -103,7 +104,9 @@ def exec_page_sync(page_context):
 
         if options.pdf_renderer == 'sandwich':
             (ocr_out, text_out) = ocr_tesseract_textonly_pdf(ocr_image_out, page_context)
-
+        page_context.tick()
+    else:
+        page_context.tick(3)
     return (page_context.pageno, pdf_page_from_image_out, ocr_out, text_out, orientation_correction)
 
 
@@ -146,13 +149,14 @@ def exec_concurrent(context):
     """Execute the pipeline concurrent"""
 
     # TODO: triage
-
+    context.tick()
     # Run exec_page_sync on every page context
     max_workers = min(len(context.pdfinfo), context.options.jobs)
     context.log.info("Start processing %d pages concurrent" % max_workers)
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         layers = executor.map(exec_page_sync, context.get_page_contexts())
 
+    context.tick()
     # Output sidecar text
     if context.options.sidecar:
         sidecars = [layer[3] for layer in layers]
@@ -162,10 +166,10 @@ def exec_concurrent(context):
 
     # Merge layers to one single pdf
     pdf = weave_layers(layers, context)
-
+    context.tick()
     # PDF/A and metadata
     pdf = post_process(pdf, context)
-
+    context.tick()
     # Copy PDF file to destination
     copy_final(pdf, context.options.output_file, context)
 
@@ -209,13 +213,18 @@ def run_pipeline(options):
     try:
         # Gather pdfinfo and create context
         pdfinfo = get_pdfinfo(start_input_file)
-        context = PDFContext(options, work_folder, start_input_file, pdfinfo)
+        steps = 5 + len(pdfinfo) * 3
+        t = tqdm(total=steps, bar_format='{l_bar}{bar}{n_fmt}/{total_fmt}')
+
+        context = PDFContext(options, work_folder, start_input_file, pdfinfo, tick=lambda n: t.update(n))
 
         # Validate options are okey for this pdf
         validate_pdfinfo_options(context)
 
         # Execute the pipeline
         exec_concurrent(context)
+        t.update()
+        t.close()
     except ExitCodeException as e:
         return e.exit_code
     except Exception as e:

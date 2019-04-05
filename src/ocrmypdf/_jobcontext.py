@@ -29,12 +29,13 @@ DEBUG = 10
 class PDFContext:
     """Holds our context for a particular run of the pipeline"""
 
-    def __init__(self, options, work_folder, origin, pdfinfo):
+    def __init__(self, options, work_folder, origin, pdfinfo, tick=None):
         self.options = options
         self.work_folder = work_folder
         self.origin = origin
         self.pdfinfo = pdfinfo
         self.log = get_logger(options, '%s: ' % os.path.basename(origin))
+        self.tick_callback = tick
 
     def get_path(self, name):
         return os.path.join(self.work_folder, name)
@@ -43,6 +44,10 @@ class PDFContext:
         npages = len(self.pdfinfo)
         for n in range(npages):
             yield PageContext(self, n)
+
+    def tick(self, times=1):
+        if self.tick_callback:
+            self.tick_callback(times)
 
 
 class PageContext:
@@ -57,6 +62,9 @@ class PageContext:
 
     def get_path(self, name):
         return os.path.join(self.pdf_context.work_folder, "%06d_%s" % (self.pageno + 1, name))
+
+    def tick(self, times=1):
+        self.pdf_context.tick(times)
 
 
 def cleanup_working_files(work_folder, options):
