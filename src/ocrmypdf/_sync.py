@@ -17,6 +17,7 @@
 
 import os
 import atexit
+import concurrent.futures
 from tempfile import mkdtemp
 from ._jobcontext import PDFContext, get_logger, cleanup_working_files
 from ._weave import weave_layers
@@ -57,32 +58,25 @@ from ._validation import (
     check_environ,
     check_requested_output_file,
     create_input_file,
+    report_output_file_size,
 )
+from .pdfa import file_claims_pdfa
+from .exec import qpdf
 
 
-def _exec_pipeline(options, work_folder, origin):
-    # Gather info of pdf
-    pdfinfo = get_pdfinfo(origin)
-    context = PDFContext(options, work_folder, origin, pdfinfo)
-
-    # Validate options are okey for this pdf
-    validate_pdfinfo_options(context)
-
-    # For every page in the pdf
-    layers = []
-    for page_context in context.get_page_contexts():
-        # Check if OCR is required
-        ocr_required = is_ocr_required(page_context)
-        if not ocr_required:
-            continue
-
-        orientation_correction = 0
+def exec_page_sync(page_context):
+    options = page_context.options
+    orientation_correction = 0
+    pdf_page_from_image_out = None
+    ocr_out = None
+    text_out = None
+    if is_ocr_required(page_context):
         if options.rotate_pages:
             # Rasterize
-            rasterize_preview_out = rasterize_preview(origin, page_context)
+            rasterize_preview_out = rasterize_preview(page_context.pdf_context.origin, page_context)
             orientation_correction = get_orientation_correction(rasterize_preview_out, page_context)
 
-        rasterize_out = rasterize(origin, page_context, correction=orientation_correction)
+        rasterize_out = rasterize(page_context.pdf_context.origin, page_context, correction=orientation_correction)
 
         preprocess_out = rasterize_out
         if options.remove_background:
@@ -110,24 +104,70 @@ def _exec_pipeline(options, work_folder, origin):
         if options.pdf_renderer == 'sandwich':
             (ocr_out, text_out) = ocr_tesseract_textonly_pdf(ocr_image_out, page_context)
 
-        layers.append((page_context.pageno, pdf_page_from_image_out, ocr_out, text_out, orientation_correction))
+    return (page_context.pageno, pdf_page_from_image_out, ocr_out, text_out, orientation_correction)
 
-    weave_layers_out = weave_layers(layers, context)
 
-    pdf_out = weave_layers_out
-    if options.output_type.startswith('pdfa'):
+def post_process(pdf_file, context):
+    pdf_out = pdf_file
+    if context.options.output_type.startswith('pdfa'):
         ps_stub_out = generate_postscript_stub(context)
         pdf_out = convert_to_pdfa(pdf_out, ps_stub_out, context)
 
     pdf_out = metadata_fixup(pdf_out, context)
+    return optimize_pdf(pdf_out, context)
 
-    if options.sidecar:
+
+def exec_sync(context):
+    """Execute the pipeline single threaded"""
+
+    # TODO: triage
+
+    # Run exec_page_sync on every page context
+    layers = map(exec_page_sync, context.get_page_contexts())
+
+    # Output sidecar text
+    if context.options.sidecar:
         sidecars = [layer[3] for layer in layers]
-        sidecar_out = merge_sidecars(sidecars, context)
-        copy_final(sidecar_out, context.options.sidecar, context)
+        text = merge_sidecars(sidecars, context)
+        # Copy final text file to destination
+        copy_final(text, context.options.sidecar, context)
 
-    pdf_out = optimize_pdf(pdf_out, context)
-    copy_final(pdf_out, context.options.output_file, context)
+    # Merge layers to one single pdf
+    pdf = weave_layers(layers, context)
+
+    # PDF/A and metadata
+    pdf = post_process(pdf, context)
+
+    # Copy final PDF file to destination
+    copy_final(pdf, context.options.output_file, context)
+
+
+def exec_concurrent(context):
+    """Execute the pipeline concurrent"""
+
+    # TODO: triage
+
+    # Run exec_page_sync on every page context
+    max_workers = min(len(context.pdfinfo), context.options.jobs)
+    context.log.info("Start processing %d pages concurrent" % max_workers)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        layers = executor.map(exec_page_sync, context.get_page_contexts())
+
+    # Output sidecar text
+    if context.options.sidecar:
+        sidecars = [layer[3] for layer in layers]
+        text = merge_sidecars(sidecars, context)
+        # Copy text file to destination
+        copy_final(text, context.options.sidecar, context)
+
+    # Merge layers to one single pdf
+    pdf = weave_layers(layers, context)
+
+    # PDF/A and metadata
+    pdf = post_process(pdf, context)
+
+    # Copy PDF file to destination
+    copy_final(pdf, context.options.output_file, context)
 
 
 def run_pipeline(options):
@@ -167,30 +207,22 @@ def run_pipeline(options):
         os.nice(5)
 
     try:
-        _exec_pipeline(options, work_folder, start_input_file)
+        # Gather pdfinfo and create context
+        pdfinfo = get_pdfinfo(start_input_file)
+        context = PDFContext(options, work_folder, start_input_file, pdfinfo)
+
+        # Validate options are okey for this pdf
+        validate_pdfinfo_options(context)
+
+        # Execute the pipeline
+        exec_concurrent(context)
     except ExitCodeException as e:
         return e.exit_code
     except Exception as e:
         log.error(str(e))
         return ExitCode.other_error
 
-    return ExitCode.ok
-
-
-"""
-    try:
-        # build_pipeline(options, work_folder, log, context)
-        atexit.register(cleanup_working_files, work_folder, options)
-        if hasattr(os, 'nice'):
-            os.nice(5)
-    except Exception as e:
-        log.error(str(e))
-        return ExitCode.other_error
-
-    if options.flowchart:
-        log.info(f"Flowchart saved to {options.flowchart}")
-        return ExitCode.ok
-    elif options.output_file == '-':
+    if options.output_file == '-':
         log.info("Output sent to stdout")
     elif os.path.samefile(options.output_file, os.devnull):
         pass  # Say nothing when sending to dev null
@@ -210,12 +242,4 @@ def run_pipeline(options):
 
         report_output_file_size(options, log, start_input_file, options.output_file)
 
-    # pdfinfo = context.get_pdfinfo()
-    # if options.verbose:
-    #    from pprint import pformat
-    #    log.debug(pformat(pdfinfo))
-
-    # log_page_orientations(pdfinfo, log)
-
     return ExitCode.ok
-"""
