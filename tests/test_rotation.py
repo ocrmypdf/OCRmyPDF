@@ -140,8 +140,8 @@ def test_autorotate_threshold(
         '--rotate-pages-threshold',
         threshold,
         '-r',
-        '-v',
-        '1',
+        # '-v',
+        # '1',
         env=spoof_tesseract_cache,
     )
 

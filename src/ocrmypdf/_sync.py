@@ -149,6 +149,10 @@ def run_pipeline(options):
     if not check_closed_streams(options):
         return ExitCode.bad_args
 
+    # Default to INFO level
+    if options.verbose is None:
+        options.verbose = 2
+
     log = get_logger(options, 'Setup: ')
     log.debug('ocrmypdf ' + VERSION)
     check_code = check_options(options, log)
@@ -174,14 +178,14 @@ def run_pipeline(options):
 
     work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
 
-    start_input_file = create_input_file(options, log, work_folder)
-    check_requested_output_file(options, log)
-
     atexit.register(cleanup_working_files, work_folder, options)
     if hasattr(os, 'nice'):
         os.nice(5)
 
     try:
+        check_requested_output_file(options, log)
+        start_input_file = create_input_file(options, log, work_folder)
+
         # Triage image or pdf
         origin_pdf = triage(start_input_file, os.path.join(work_folder, 'origin.pdf'), options, log)
 
@@ -195,9 +199,10 @@ def run_pipeline(options):
         # Execute the pipeline
         exec_concurrent(context)
     except ExitCodeException as e:
+        log.error("%s: %s" % (type(e).__name__, str(e)))
         return e.exit_code
     except Exception as e:
-        log.error(str(e))
+        log.error("%s: %s" % (type(e).__name__, str(e)))
         return ExitCode.other_error
 
     if options.output_file == '-':

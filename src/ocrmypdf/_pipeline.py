@@ -33,6 +33,7 @@ from .exceptions import (
     EncryptedPdfError,
     InputFileError,
     UnsupportedImageFormatError,
+    PriorOcrFoundError,
 )
 from .exec import ghostscript, tesseract
 from .helpers import (
@@ -51,7 +52,8 @@ def triage_image_file(input_file, output_file, options, log):
         log.info("Input file is not a PDF, checking if it is an image...")
         im = Image.open(input_file)
     except EnvironmentError as e:
-        log.error(str(e))
+        # Recover the original filename
+        log.error(str(e).replace(input_file, options.input_file))
         raise UnsupportedImageFormatError() from e
     else:
         log.info("Input file is an image")
@@ -249,7 +251,7 @@ def is_ocr_required(page_context):
     if pageinfo.has_text:
         if not options.force_ocr and not (options.skip_text or options.redo_ocr):
             log.error("page already has text! - aborting (use --force-ocr to force OCR)")
-            ocr_required = False
+            raise PriorOcrFoundError()
         elif options.force_ocr:
             log.info("page already has text! - rasterizing text and running OCR anyway")
             ocr_required = True
@@ -632,19 +634,19 @@ def get_docinfo(base_pdf, options):
         k: from_document_info(k)
         for k in ('/Title', '/Author', '/Keywords', '/Subject', '/CreationDate')
     }
-    if options.title:
-        pdfmark['/Title'] = options.title
-    if options.author:
-        pdfmark['/Author'] = options.author
-    if options.keywords:
-        pdfmark['/Keywords'] = options.keywords
-    if options.subject:
-        pdfmark['/Subject'] = options.subject
+    renderer_tag = 'OCR'
+    if options is not None:
+        if options.title:
+            pdfmark['/Title'] = options.title
+        if options.author:
+            pdfmark['/Author'] = options.author
+        if options.keywords:
+            pdfmark['/Keywords'] = options.keywords
+        if options.subject:
+            pdfmark['/Subject'] = options.subject
 
-    if options.pdf_renderer == 'sandwich':
-        renderer_tag = 'OCR-PDF'
-    else:
-        renderer_tag = 'OCR'
+        if options.pdf_renderer == 'sandwich':
+            renderer_tag = 'OCR-PDF'
 
     pdfmark['/Creator'] = (
         f'{PROGRAM_NAME} {VERSION} / ' f'Tesseract {renderer_tag} {tesseract.version()}'

@@ -34,7 +34,10 @@ class PDFContext:
         self.work_folder = work_folder
         self.origin = origin
         self.pdfinfo = pdfinfo
-        self.name = os.path.basename(options.input_file)
+        if options:
+            self.name = os.path.basename(options.input_file)
+        else:
+            self.name = 'origin.pdf'
         if self.name == '-':
             self.name = 'stdin'
         self.log = get_logger(options, '%s: ' % self.name)
@@ -75,10 +78,15 @@ def get_logger(options=None, prefix=''):
     if options is not None:
         if options.quiet or options.output_file == '-' or options.sidecar == '-':
             return NullLogger()
-        if options.verbose > 0:
+        if options.verbose == 0:
+            level = ERROR
+        elif options.verbose == 1:
+            level = WARN
+        elif options.verbose == 2:
             level = INFO
-        if options.verbose > 1:
+        elif options.verbose >= 3:
             level = DEBUG
+
     return Logger(prefix, level)
 
 
@@ -107,8 +115,8 @@ class Logger:
 
     def error(self, *args, **kwargs):
         if self.level <= ERROR:
-            print('ERROR', self.prefix, end='')
-            print(*args, **kwargs)
+            print('ERROR', self.prefix, end='', file=sys.stderr)
+            print(*args, file=sys.stderr)
 
 
 class NullLogger:

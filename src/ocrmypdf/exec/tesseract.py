@@ -33,7 +33,7 @@ from subprocess import (
 from textwrap import dedent
 
 from . import get_version
-from ..exceptions import MissingDependencyError, TesseractConfigError
+from ..exceptions import MissingDependencyError, TesseractConfigError, SubprocessOutputError
 from ..helpers import page_number
 
 OrientationConfidence = namedtuple('OrientationConfidence', ('angle', 'confidence'))
@@ -142,7 +142,7 @@ def get_orientation(input_file, engine_mode, timeout: float, log):
             or b'Image too large' in e.output
         ):
             return OrientationConfidence(0, 0)
-        raise e from e
+        raise SubprocessOutputError() from e
     else:
         osd = {}
         for line in stdout.decode().splitlines():
@@ -267,7 +267,7 @@ def generate_hocr(
             _generate_null_hocr(output_hocr, output_sidecar, input_file)
             return
 
-        raise e from e
+        raise SubprocessOutputError() from e
     else:
         tesseract_log_output(log, stdout, input_file)
         # The sidecar text file will get the suffix .txt; rename it to
@@ -356,6 +356,6 @@ def generate_pdf(
         if b'Image too large' in e.output:
             use_skip_page(text_only, skip_pdf, output_pdf, output_text)
             return
-        raise e from e
+        raise SubprocessOutputError() from e
     else:
         tesseract_log_output(log, stdout, input_image)
