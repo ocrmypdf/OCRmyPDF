@@ -26,8 +26,6 @@ from pathlib import Path
 
 import PIL
 
-from . import VERSION
-
 from ._unicodefun import verify_python3_env
 
 from .exec import (
@@ -361,10 +359,6 @@ def log_page_orientations(pdfinfo, _log):
         _log.info('Page orientations detected: ' + ' '.join(orientations))
 
 
-def preamble(_log):
-    _log.debug('ocrmypdf ' + VERSION)
-
-
 def check_environ(options, _log):
     old_envvars = (
         'OCRMYPDF_TESSERACT',
@@ -387,14 +381,14 @@ def create_input_file(options, log, work_folder):
     if options.input_file == '-':
         # stdin
         log.info('reading file from standard input')
-        target = os.path.join(work_folder, 'stdin.pdf')
+        target = os.path.join(work_folder, 'stdin')
         with open(target, 'wb') as stream_buffer:
             from shutil import copyfileobj
             copyfileobj(sys.stdin.buffer, stream_buffer)
         return target
     else:
         try:
-            target = os.path.join(work_folder, os.path.basename(options.input_file))
+            target = os.path.join(work_folder, 'origin')
             re_symlink(options.input_file, target, log)
             return target
         except FileNotFoundError:

@@ -18,11 +18,11 @@
 import os
 import atexit
 import concurrent.futures
-from tqdm import tqdm
 from tempfile import mkdtemp
 from ._jobcontext import PDFContext, get_logger, cleanup_working_files
 from ._weave import weave_layers
 from ._pipeline import (
+    triage,
     get_pdfinfo,
     validate_pdfinfo_options,
     is_ocr_required,
@@ -50,10 +50,10 @@ from .exceptions import (
     ExitCode,
     ExitCodeException,
 )
+from . import VERSION
 from .helpers import available_cpu_count
 from ._validation import (
     check_closed_streams,
-    preamble,
     check_options,
     check_dependency_versions,
     check_environ,
@@ -78,7 +78,7 @@ def exec_page_sync(page_context):
             orientation_correction = get_orientation_correction(rasterize_preview_out, page_context)
 
         rasterize_out = rasterize(page_context.pdf_context.origin, page_context, correction=orientation_correction)
-        page_context.tick()
+
         preprocess_out = rasterize_out
         if options.remove_background:
             preprocess_out = preprocess_remove_background(preprocess_out, page_context)
@@ -90,7 +90,7 @@ def exec_page_sync(page_context):
             preprocess_out = preprocess_clean(preprocess_out, page_context)
 
         ocr_image_out = create_ocr_image(preprocess_out, page_context)
-        page_context.tick()
+
         pdf_page_from_image_out = None
         if not options.lossless_reconstruction:
             visible_image_out = preprocess_out
@@ -104,9 +104,7 @@ def exec_page_sync(page_context):
 
         if options.pdf_renderer == 'sandwich':
             (ocr_out, text_out) = ocr_tesseract_textonly_pdf(ocr_image_out, page_context)
-        page_context.tick()
-    else:
-        page_context.tick(3)
+
     return (page_context.pageno, pdf_page_from_image_out, ocr_out, text_out, orientation_correction)
 
 
@@ -120,43 +118,16 @@ def post_process(pdf_file, context):
     return optimize_pdf(pdf_out, context)
 
 
-def exec_sync(context):
-    """Execute the pipeline single threaded"""
-
-    # TODO: triage
-
-    # Run exec_page_sync on every page context
-    layers = map(exec_page_sync, context.get_page_contexts())
-
-    # Output sidecar text
-    if context.options.sidecar:
-        sidecars = [layer[3] for layer in layers]
-        text = merge_sidecars(sidecars, context)
-        # Copy final text file to destination
-        copy_final(text, context.options.sidecar, context)
-
-    # Merge layers to one single pdf
-    pdf = weave_layers(layers, context)
-
-    # PDF/A and metadata
-    pdf = post_process(pdf, context)
-
-    # Copy final PDF file to destination
-    copy_final(pdf, context.options.output_file, context)
-
-
 def exec_concurrent(context):
     """Execute the pipeline concurrent"""
 
-    # TODO: triage
-    context.tick()
     # Run exec_page_sync on every page context
     max_workers = min(len(context.pdfinfo), context.options.jobs)
-    context.log.info("Start processing %d pages concurrent" % max_workers)
+    if max_workers > 1:
+        context.log.info("Start processing %d pages concurrent" % max_workers)
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         layers = executor.map(exec_page_sync, context.get_page_contexts())
 
-    context.tick()
     # Output sidecar text
     if context.options.sidecar:
         sidecars = [layer[3] for layer in layers]
@@ -166,10 +137,10 @@ def exec_concurrent(context):
 
     # Merge layers to one single pdf
     pdf = weave_layers(layers, context)
-    context.tick()
+
     # PDF/A and metadata
     pdf = post_process(pdf, context)
-    context.tick()
+
     # Copy PDF file to destination
     copy_final(pdf, context.options.output_file, context)
 
@@ -178,8 +149,8 @@ def run_pipeline(options):
     if not check_closed_streams(options):
         return ExitCode.bad_args
 
-    log = get_logger(options, 'Pipeline')
-    preamble(log)
+    log = get_logger(options, 'Setup: ')
+    log.debug('ocrmypdf ' + VERSION)
     check_code = check_options(options, log)
     if check_code != ExitCode.ok:
         return check_code
@@ -211,20 +182,18 @@ def run_pipeline(options):
         os.nice(5)
 
     try:
-        # Gather pdfinfo and create context
-        pdfinfo = get_pdfinfo(start_input_file)
-        steps = 5 + len(pdfinfo) * 3
-        t = tqdm(total=steps, bar_format='{l_bar}{bar}{n_fmt}/{total_fmt}')
+        # Triage image or pdf
+        origin_pdf = triage(start_input_file, os.path.join(work_folder, 'origin.pdf'), options, log)
 
-        context = PDFContext(options, work_folder, start_input_file, pdfinfo, tick=lambda n: t.update(n))
+        # Gather pdfinfo and create context
+        pdfinfo = get_pdfinfo(origin_pdf)
+        context = PDFContext(options, work_folder, origin_pdf, pdfinfo)
 
         # Validate options are okey for this pdf
         validate_pdfinfo_options(context)
 
         # Execute the pipeline
         exec_concurrent(context)
-        t.update()
-        t.close()
     except ExitCodeException as e:
         return e.exit_code
     except Exception as e:

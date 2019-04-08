@@ -179,10 +179,8 @@ jobcontrol.add_argument(
 jobcontrol.add_argument(
     '-v',
     '--verbose',
-    const="+",
-    default=[],
-    nargs='?',
-    action="append",
+    default=0,
+    action="count",
     help="Print more verbose messages for each additional verbose level",
 )
 

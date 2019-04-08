@@ -29,13 +29,15 @@ DEBUG = 10
 class PDFContext:
     """Holds our context for a particular run of the pipeline"""
 
-    def __init__(self, options, work_folder, origin, pdfinfo, tick=None):
+    def __init__(self, options, work_folder, origin, pdfinfo):
         self.options = options
         self.work_folder = work_folder
         self.origin = origin
         self.pdfinfo = pdfinfo
-        self.log = get_logger(options, '%s: ' % os.path.basename(origin))
-        self.tick_callback = tick
+        self.name = os.path.basename(options.input_file)
+        if self.name == '-':
+            self.name = 'stdin'
+        self.log = get_logger(options, '%s: ' % self.name)
 
     def get_path(self, name):
         return os.path.join(self.work_folder, name)
@@ -44,10 +46,6 @@ class PDFContext:
         npages = len(self.pdfinfo)
         for n in range(npages):
             yield PageContext(self, n)
-
-    def tick(self, times=1):
-        if self.tick_callback:
-            self.tick_callback(times)
 
 
 class PageContext:
@@ -58,13 +56,10 @@ class PageContext:
         self.options = pdf_context.options
         self.pageno = pageno
         self.pageinfo = pdf_context.pdfinfo[pageno]
-        self.log = get_logger(pdf_context.options, '%s Page %d: ' % (os.path.basename(pdf_context.origin), pageno + 1))
+        self.log = get_logger(pdf_context.options, '%s Page %d: ' % (pdf_context.name, pageno + 1))
 
     def get_path(self, name):
         return os.path.join(self.pdf_context.work_folder, "%06d_%s" % (self.pageno + 1, name))
-
-    def tick(self, times=1):
-        self.pdf_context.tick(times)
 
 
 def cleanup_working_files(work_folder, options):
@@ -77,8 +72,13 @@ def cleanup_working_files(work_folder, options):
 
 def get_logger(options=None, prefix=''):
     level = ERROR  # TODO: add option
-    if options is not None and options.output_file == '-' or options.sidecar == '-':
-        return NullLogger()
+    if options is not None:
+        if options.quiet or options.output_file == '-' or options.sidecar == '-':
+            return NullLogger()
+        if options.verbose > 0:
+            level = INFO
+        if options.verbose > 1:
+            level = DEBUG
     return Logger(prefix, level)
 
 

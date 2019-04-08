@@ -46,21 +46,12 @@ from .pdfinfo import Colorspace, PdfInfo
 VECTOR_PAGE_DPI = 400
 
 
-def triage_image_file(input_file, output_file, log, options):
+def triage_image_file(input_file, output_file, options, log):
     try:
         log.info("Input file is not a PDF, checking if it is an image...")
         im = Image.open(input_file)
     except EnvironmentError as e:
-        msg = str(e)
-
-        # Recover the original filename
-        realpath = ''
-        if os.path.islink(input_file):
-            realpath = os.path.realpath(input_file)
-        elif os.path.isfile(input_file):
-            realpath = '<stdin>'
-        msg = msg.replace(input_file, realpath)
-        log.error(msg)
+        log.error(str(e))
         raise UnsupportedImageFormatError() from e
     else:
         log.info("Input file is an image")
@@ -135,9 +126,7 @@ def _pdf_guess_version(input_file, search_window=1024):
     return ''
 
 
-def triage(input_file, output_file, log, context):
-
-    options = context.get_options()
+def triage(input_file, output_file, options, log):
     try:
         if _pdf_guess_version(input_file):
             if options.image_dpi:
@@ -145,13 +134,15 @@ def triage(input_file, output_file, log, context):
                     "Argument --image-dpi ignored because the "
                     "input file is a PDF, not an image."
                 )
+            # Origin file is a pdf create a symlink with pdf extension
             re_symlink(input_file, output_file, log)
-            return
+            return output_file
     except EnvironmentError as e:
         log.error(e)
         raise InputFileError() from e
 
-    triage_image_file(input_file, output_file, log, options)
+    triage_image_file(input_file, output_file, options, log)
+    return output_file
 
 
 def get_pdfinfo(input_file, detailed_page_analysis=False):
