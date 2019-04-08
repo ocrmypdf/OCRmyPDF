@@ -186,11 +186,11 @@ jobcontrol.add_argument(
     choices=range(0, 4),
     help=(
         "Print more verbose messages for each additional verbose level. Use "
-        "`-v 1` typically for much more detailed logging. Higher numbers "
+        "`-v 2` typically for much more detailed logging. Higher numbers "
         "are probably only useful in debugging. "
         "0 - Only errors (default); "
-        "1 - Error and warngings; "
-        "2 - Info, errors and warngings; "
+        "1 - Error and warnings; "
+        "2 - Info, errors and warnings; "
         "3 - All messages including debug messages"
     ),
 )
