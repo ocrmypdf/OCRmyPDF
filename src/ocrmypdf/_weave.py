@@ -322,12 +322,6 @@ def weave_layers(infiles, output_file, log, context):
     pdfinfo = context.get_pdfinfo()
     pagerefs = {}
 
-    # Walk the table of contents first, to trigger pikepdf/qpdf to resolve all
-    # page references in the table of contents. Some PDF generators put invalid
-    # references in the ToC, so we want to resolve them to null before we
-    # create any references, or the ToC will be corrupted
-    _traverse_toc(pdf_base, None, log)
-
     procset = pdf_base.make_indirect(
         pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]')
     )
