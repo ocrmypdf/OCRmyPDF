@@ -46,10 +46,7 @@ from ._pipeline import (
     optimize_pdf,
     copy_final,
 )
-from .exceptions import (
-    ExitCode,
-    ExitCodeException,
-)
+from .exceptions import ExitCode, ExitCodeException
 from . import VERSION
 from .helpers import available_cpu_count
 from ._validation import (
@@ -74,10 +71,18 @@ def exec_page_sync(page_context):
     if is_ocr_required(page_context):
         if options.rotate_pages:
             # Rasterize
-            rasterize_preview_out = rasterize_preview(page_context.pdf_context.origin, page_context)
-            orientation_correction = get_orientation_correction(rasterize_preview_out, page_context)
+            rasterize_preview_out = rasterize_preview(
+                page_context.pdf_context.origin, page_context
+            )
+            orientation_correction = get_orientation_correction(
+                rasterize_preview_out, page_context
+            )
 
-        rasterize_out = rasterize(page_context.pdf_context.origin, page_context, correction=orientation_correction)
+        rasterize_out = rasterize(
+            page_context.pdf_context.origin,
+            page_context,
+            correction=orientation_correction,
+        )
 
         preprocess_out = rasterize_out
         if options.remove_background:
@@ -95,17 +100,29 @@ def exec_page_sync(page_context):
         if not options.lossless_reconstruction:
             visible_image_out = preprocess_out
             if should_visible_page_image_use_jpg(page_context.pageinfo):
-                visible_image_out = create_visible_page_jpg(visible_image_out, page_context)
-            pdf_page_from_image_out = create_pdf_page_from_image(visible_image_out, page_context)
+                visible_image_out = create_visible_page_jpg(
+                    visible_image_out, page_context
+                )
+            pdf_page_from_image_out = create_pdf_page_from_image(
+                visible_image_out, page_context
+            )
 
         if options.pdf_renderer == 'hocr':
             (hocr_out, text_out) = ocr_tesseract_hocr(ocr_image_out, page_context)
             ocr_out = render_hocr_page(hocr_out, page_context)
 
         if options.pdf_renderer == 'sandwich':
-            (ocr_out, text_out) = ocr_tesseract_textonly_pdf(ocr_image_out, page_context)
+            (ocr_out, text_out) = ocr_tesseract_textonly_pdf(
+                ocr_image_out, page_context
+            )
 
-    return (page_context.pageno, pdf_page_from_image_out, ocr_out, text_out, orientation_correction)
+    return (
+        page_context.pageno,
+        pdf_page_from_image_out,
+        ocr_out,
+        text_out,
+        orientation_correction,
+    )
 
 
 def post_process(pdf_file, context):
@@ -187,10 +204,12 @@ def run_pipeline(options):
         start_input_file = create_input_file(options, log, work_folder)
 
         # Triage image or pdf
-        origin_pdf = triage(start_input_file, os.path.join(work_folder, 'origin.pdf'), options, log)
+        origin_pdf = triage(
+            start_input_file, os.path.join(work_folder, 'origin.pdf'), options, log
+        )
 
         # Gather pdfinfo and create context
-        pdfinfo = get_pdfinfo(origin_pdf)
+        pdfinfo = get_pdfinfo(origin_pdf, detailed_page_analysis=options.redo_ocr)
         context = PDFContext(options, work_folder, origin_pdf, pdfinfo)
 
         # Validate options are okey for this pdf
