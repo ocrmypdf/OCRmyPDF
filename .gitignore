@@ -13,6 +13,7 @@
 build/
 dist/
 wheelhouse/
+pip-wheel-metadata/
 
 # Automatically generated files
 docs/_build/
