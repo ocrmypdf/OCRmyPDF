@@ -25,7 +25,7 @@ from .exec import tesseract
 from .helpers import flatten_groups, page_number
 
 
-MAX_OPEN_PAGE_PDFS = int(os.environ.get('_OCRMYPDF_MAX_OPEN_PAGE_PDFS', 100))
+MAX_REPLACE_PAGES = int(os.environ.get('_OCRMYPDF_MAX_REPLACE_PAGES', 100))
 
 
 def _update_page_resources(*, page, font, font_key, procset):
@@ -321,7 +321,6 @@ def weave_layers(infiles, output_file, log, context):
     base = list(basegroup)[0]
     path_base = Path(base).resolve()
     pdf_base = pikepdf.open(path_base)
-    keep_open = []
     font, font_key, procset = None, None, None
     pdfinfo = context.get_pdfinfo()
     pagerefs = {}
@@ -329,6 +328,8 @@ def weave_layers(infiles, output_file, log, context):
     procset = pdf_base.make_indirect(
         pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]')
     )
+
+    replacements = 0
 
     # Iterate rest
     for page_num, layers in groups:
@@ -353,7 +354,7 @@ def weave_layers(infiles, output_file, log, context):
             old_objgen = pdf_base.pages[page_num - 1].objgen
 
             with pikepdf.open(image) as pdf_image:
-                keep_open.append(pdf_image)
+                replacements += 1
                 image_page = pdf_image.pages[0]
                 pdf_base.pages[page_num - 1] = image_page
 
@@ -394,20 +395,19 @@ def weave_layers(infiles, output_file, log, context):
             content_rotation - autorotate_correction
         ) % 360
 
-        if len(keep_open) > MAX_OPEN_PAGE_PDFS:
-            # qpdf limitations require us to keep files open when we intend
-            # to copy content from them before saving. However, we want to keep
-            # a lid on file handles and memory usage, so for big files we're
-            # going to stop and save periodically. Attach the font to page 1
-            # even if page 1 doesn't use it, so we have a way to get it back.
+        if replacements % MAX_REPLACE_PAGES == 0:
+            # Periodically save and reload the Pdf object. This will keep a
+            # lid on our memory usage for very large files. Attach the font to
+            # page 1 even if page 1 doesn't use it, so we have a way to get it
+            # back.
+            # TODO refactor this to outside the loop
             page0 = pdf_base.pages[0]
             _update_page_resources(
                 page=page0, font=font, font_key=font_key, procset=procset
             )
             interim = output_file + f'_working{page_num}.pdf'
             pdf_base.save(interim)
-            del pdf_base
-            keep_open = []
+            pdf_base.close()
 
             pdf_base = pikepdf.open(interim)
             procset = pdf_base.pages[0].Resources.ProcSet
@@ -415,3 +415,4 @@ def weave_layers(infiles, output_file, log, context):
 
     _fix_toc(pdf_base, pagerefs, log)
     pdf_base.save(output_file)
+    pdf_base.close()

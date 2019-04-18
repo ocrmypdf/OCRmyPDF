@@ -53,7 +53,7 @@ def test_no_glyphless_weave(resources, outdir):
     pdf.save(outdir / 'test.pdf')
 
     env = os.environ.copy()
-    env['_OCRMYPDF_MAX_OPEN_PAGE_PDFS'] = '2'
+    env['_OCRMYPDF_MAX_REPLACE_PAGES'] = '2'
     check_ocrmypdf(
         outdir / 'test.pdf',
         outdir / 'out.pdf',
