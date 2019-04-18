@@ -66,10 +66,6 @@ def complain(message):
     print(*textwrap.wrap(message), file=sys.stderr)
 
 
-# Hack to help debugger context find /usr/local/bin
-if 'IDE_PROJECT_ROOTS' in os.environ:
-    os.environ['PATH'] = '/usr/local/bin:' + os.environ['PATH']
-
 # --------
 # Critical environment tests
 
