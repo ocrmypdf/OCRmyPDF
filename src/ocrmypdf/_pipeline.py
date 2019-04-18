@@ -816,16 +816,15 @@ def convert_to_pdfa(input_files_groups, output_file, log, context):
     # NULs in DocumentInfo seem to be common since older Acrobats included them.
     # pikepdf can deal with this, but we make the world a better place by
     # stamping them out as soon as possible.
-    pdf_layers_file = pikepdf.open(layers_file)
-    if pdf_layers_file.docinfo:
-        modified = False
-        for k, v in pdf_layers_file.docinfo.items():
-            if b'\x00' in bytes(v):
-                pdf_layers_file.docinfo[k] = bytes(v).replace(b'\x00', b'')
-                modified = True
-        if modified:
-            pdf_layers_file.save(layers_file)
-    del pdf_layers_file
+    with pikepdf.open(layers_file) as pdf_layers_file:
+        if pdf_layers_file.docinfo:
+            modified = False
+            for k, v in pdf_layers_file.docinfo.items():
+                if b'\x00' in bytes(v):
+                    pdf_layers_file.docinfo[k] = bytes(v).replace(b'\x00', b'')
+                    modified = True
+            if modified:
+                pdf_layers_file.save(layers_file)
 
     ps = next((ii for ii in input_files if ii.endswith('.ps')), None)
     ghostscript.generate_pdfa(
@@ -880,6 +879,8 @@ def metadata_fixup(input_files_groups, output_file, log, context):
         compress_streams=True,
         object_stream_mode=pikepdf.ObjectStreamMode.generate,
     )
+    original.close()
+    pdf.close()
 
 
 def optimize_pdf(input_file, output_file, log, context):

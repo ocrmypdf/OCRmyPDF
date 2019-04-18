@@ -161,6 +161,7 @@ def _weave_layers_graft(
     _update_page_resources(
         page=base_page, font=font, font_key=font_key, procset=procset
     )
+    pdf_text.close()
 
 
 def _find_font(text, pdf_base):
@@ -169,19 +170,22 @@ def _find_font(text, pdf_base):
     font, font_key = None, None
     possible_font_names = ('/f-0-0', '/F1')
     try:
-        pdf_text = pikepdf.open(text)
-        pdf_text_fonts = pdf_text.pages[0].Resources.get('/Font', {})
-    except Exception:
+        with pikepdf.open(text) as pdf_text:
+            try:
+                pdf_text_fonts = pdf_text.pages[0].Resources.get('/Font', {})
+            except (AttributeError, IndexError, KeyError):
+                return None, None
+            for f in possible_font_names:
+                pdf_text_font = pdf_text_fonts.get(f, None)
+                if pdf_text_font is not None:
+                    font_key = f
+                    break
+            if pdf_text_font:
+                font = pdf_base.copy_foreign(pdf_text_font)
+            return font, font_key
+    except (FileNotFoundError, pikepdf.PdfError):
+        # PdfError occurs if a 0-length file is written e.g. due to OCR timeout
         return None, None
-
-    for f in possible_font_names:
-        pdf_text_font = pdf_text_fonts.get(f, None)
-        if pdf_text_font is not None:
-            font_key = f
-            break
-    if pdf_text_font:
-        font = pdf_base.copy_foreign(pdf_text_font)
-    return font, font_key
 
 
 def _traverse_toc(pdf_base, visitor_fn, log):
@@ -348,10 +352,10 @@ def weave_layers(infiles, output_file, log, context):
             log.debug("Replace")
             old_objgen = pdf_base.pages[page_num - 1].objgen
 
-            pdf_image = pikepdf.open(image)
-            keep_open.append(pdf_image)
-            image_page = pdf_image.pages[0]
-            pdf_base.pages[page_num - 1] = image_page
+            with pikepdf.open(image) as pdf_image:
+                keep_open.append(pdf_image)
+                image_page = pdf_image.pages[0]
+                pdf_base.pages[page_num - 1] = image_page
 
             # We're adding a new page, which will get a new objgen number pair,
             # so we need to update any references to it.  qpdf did not like
