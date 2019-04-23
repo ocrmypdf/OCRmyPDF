@@ -1,6 +1,6 @@
-pytest == 4.3.0
+pytest >= 4.4.1, < 5
 pytest-helpers-namespace >= 2019.1.8
-pytest-xdist
+pytest-xdist == 1.28.0
 pytest-cov >= 2.6.1
 python-xmp-toolkit   # requires apt-get install libexempi3
                      # or brew install exempi
