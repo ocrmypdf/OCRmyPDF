@@ -13,6 +13,17 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v8.2.4
+------
+
+-   Fixed a false positive while checking for a certain type of PDF that only Acrobat can read. We now more accurately detect Acrobat-only PDFs.
+
+-   OCRmyPDF holds fewer open file handles and is more prompt about releasing those it no longer needs.
+
+-   Minor optimization: we no longer traverse the table of contents to ensure all references in it are resolved, as changes to libqpdf have made this unnecessary.
+
+-   pikepdf 1.2.0 is now required
+
 v8.2.3
 ------
 
