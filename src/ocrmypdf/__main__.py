@@ -15,8 +15,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
+#
+# PYTHON_ARGCOMPLETE_OK
 
 import argparse
+import argcomplete
 import atexit
 import logging
 import os
@@ -1042,6 +1045,7 @@ def check_dependency_versions(options, log):
 
 def run_pipeline(args=None):
     options = parser.parse_args(args=args)
+    argcomplete.autocomplete(parser)
     options.verbose_abbreviated_path = 1
     if os.environ.get('_OCRMYPDF_THREADS'):
         options.use_threads = True

@@ -1,6 +1,7 @@
 # requirements.txt can be used to replicate the developer's build environment
 # setup.py lists a separate set of requirements that are looser to simplify
 # installation
+argcomplete == 1.9.5
 chardet == 3.0.4
 cffi == 1.12.2
 img2pdf == 0.3.3
