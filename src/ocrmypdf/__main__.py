@@ -21,6 +21,7 @@
 import argparse
 import argcomplete
 import atexit
+import itertools
 import logging
 import os
 import re
@@ -73,6 +74,17 @@ def complain(message):
 # Critical environment tests
 
 verify_python3_env()
+
+
+# -------------
+# Completions
+
+def complete_number(prefix, parsed_args, **kwargs):
+    if not prefix:
+        return (str(x) for x in range(1,9))
+    else:
+        return itertools.chain([prefix], (prefix + str(x) for x in range(9)))
+
 
 # -------------
 # Parser
@@ -174,7 +186,7 @@ parser.add_argument(
     metavar='DPI',
     type=int,
     help="For input image instead of PDF, use this DPI instead of file's.",
-)
+).completer = complete_number
 parser.add_argument(
     '--output-type',
     choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'],
@@ -219,7 +231,7 @@ jobcontrol.add_argument(
     metavar='N',
     type=numeric(int, 0, 256),
     help="Use up to N CPU cores simultaneously (default: use all).",
-)
+).completer = complete_number
 jobcontrol.add_argument(
     '-q', '--quiet', action='store_true', help="Suppress INFO messages"
 )
@@ -294,7 +306,7 @@ preprocessing.add_argument(
     default=0,
     help="Oversample images to at least the specified DPI, to improve OCR "
     "results slightly",
-)
+).completer = complete_number
 preprocessing.add_argument(
     '--remove-vectors',
     action='store_true',
@@ -345,7 +357,7 @@ ocrsettings.add_argument(
     metavar='MPixels',
     help="Skip OCR on pages larger than the specified amount of megapixels, "
     "but include skipped pages in final output",
-)
+).completer = complete_number
 
 optimizing = parser.add_argument_group(
     "Optimization options", "Control how the PDF is optimized after OCR"
@@ -375,7 +387,7 @@ optimizing.add_argument(
         "1 is lowest quality and smallest output; "
         "0 uses the default."
     ),
-)
+).completer = complete_number
 optimizing.add_argument(
     '--jpg-quality',
     type=numeric(int, 0, 100),
@@ -383,7 +395,7 @@ optimizing.add_argument(
     metavar='Q',
     dest='jpeg_quality',
     help=argparse.SUPPRESS,  # Alias for --jpeg-quality
-)
+).completer = complete_number
 optimizing.add_argument(
     '--png-quality',
     type=numeric(int, 0, 100),
@@ -393,7 +405,7 @@ optimizing.add_argument(
         "Adjust PNG quality level to use when quantizing PNGs. "
         "Values have same meaning as with --jpeg-quality"
     ),
-)
+).completer = complete_number
 optimizing.add_argument(
     '--jbig2-lossy',
     action='store_true',
@@ -422,7 +434,7 @@ advanced.add_argument(
     help="Set maximum number of pixels to unpack before treating an image as a "
     "decompression bomb",
     default=128.0,
-)
+).completer = complete_number
 advanced.add_argument(
     '--tesseract-config',
     action='append',
