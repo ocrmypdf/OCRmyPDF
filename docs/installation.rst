@@ -490,3 +490,16 @@ To install all of the development and test requirements:
     pip install -r requirements/dev.txt -r requirements/test.txt
 
 To add JBIG2 encoding, see :ref:`jbig2`.
+
+Shell completions
+-----------------
+
+Completions for ``bash`` and ``fish`` are available in the project's ``misc/`` folder.
+The ``bash`` completions are likely ``zsh`` compatible but this has not been confirmed.
+Package maintainers, please install these at the appropriate locations for your system.
+
+To manually install the ``bash`` completion, copy ``misc/ocrmypdf`` to
+``/etc/bash_completion.d/``.
+
+To manually install the ``fish`` completion, copy ``misc/completions.fish`` to
+``~/.config/fish/completions/ocrmypdf.fish``.
