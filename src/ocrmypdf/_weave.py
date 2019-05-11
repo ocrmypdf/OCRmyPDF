@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+from contextlib import suppress
 from itertools import groupby
 from pathlib import Path
 import os
@@ -329,7 +330,8 @@ def weave_layers(infiles, output_file, log, context):
         pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]')
     )
 
-    replacements = 0
+    replacements = 1
+    interim_count = 0
 
     # Iterate rest
     for page_num, layers in groups:
@@ -405,13 +407,25 @@ def weave_layers(infiles, output_file, log, context):
             _update_page_resources(
                 page=page0, font=font, font_key=font_key, procset=procset
             )
-            interim = output_file + f'_working{page_num}.pdf'
-            pdf_base.save(interim)
+
+            # We cannot read and write the same file, that will corrupt it
+            # but we don't to keep more copies than we need to. Delete intermediates.
+            # {interim_count} is the opened file we were updateing
+            # {interim_count - 1} can be deleted
+            # {interim_count + 1} is the new file will produce and open
+            old_file = output_file + f'_working{interim_count - 1}.pdf'
+            if not context.get_options().keep_temporary_files:
+                with suppress(FileNotFoundError):
+                    os.unlink(old_file)
+
+            next_file = output_file + f'_working{interim_count + 1}.pdf'
+            pdf_base.save(next_file)
             pdf_base.close()
 
-            pdf_base = pikepdf.open(interim)
+            pdf_base = pikepdf.open(next_file)
             procset = pdf_base.pages[0].Resources.ProcSet
-            font, font_key = None, None  # Reacquire this information
+            font, font_key = None, None  # Ensure we reacquire this information
+            interim_count += 1
 
     _fix_toc(pdf_base, pagerefs, log)
     pdf_base.save(output_file)
