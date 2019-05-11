@@ -189,99 +189,6 @@ def _find_font(text, pdf_base):
         return None, None
 
 
-def _traverse_toc(pdf_base, visitor_fn, log):
-    """
-    Walk the table of contents, calling visitor_fn() at each node
-
-    The /Outlines data structure is a messy data structure, but rather than
-    navigating hierarchically we just track unique nodes.  Enqueue nodes when
-    we find them, and never visit them again.  set() is awesome.  We look for
-    the two types of object in the table of contents that can be page bookmarks
-    and update the page entry.
-
-    """
-
-    visited = set()
-    queue = set()
-    link_keys = ('/Parent', '/First', '/Last', '/Prev', '/Next')
-
-    if not '/Outlines' in pdf_base.root:
-        return
-
-    queue.add(pdf_base.root.Outlines.objgen)
-    while queue:
-        objgen = queue.pop()
-        visited.add(objgen)
-        node = pdf_base.get_object(objgen)
-        log.debug('fix toc: exploring outline entries at %r', objgen)
-
-        # Enumerate other nodes we could visit from here
-        for key in link_keys:
-            if key not in node:
-                continue
-            item = node[key]
-            if not item.is_indirect:
-                # Direct references are not allowed here, but it's not clear
-                # what we should do if we find any. Removing them is an option:
-                # node[key] = pdf_base.make_indirect(None)
-                continue
-            objgen = item.objgen
-            if objgen not in visited:
-                queue.add(objgen)
-
-        if visitor_fn:
-            visitor_fn(pdf_base, node, log)
-
-
-def _fix_toc(pdf_base, pageref_remap, log):
-    """Repair the table of contents
-
-    Whenever we replace a page wholesale, it gets assigned a new objgen number
-    and other references to it within the PDF become invalid, most notably in
-    the table of contents (/Outlines in PDF-speak).  In weave_layers we collect
-    pageref_remap, a mapping that describes the new objgen number given an old
-    one.  (objgen is a tuple, and the gen is almost always zero.)
-
-    It may ultimately be better to find a way to rebuild a page in place.
-
-    """
-
-    if not pageref_remap:
-        return
-
-    def remap_dest(dest_node):
-        """
-        Inner helper function: change the objgen for any page from the old we
-        invalidated to its new one.
-        """
-        try:
-            pageref = dest_node[0]
-            if pageref['/Type'] == '/Page' and pageref.objgen in pageref_remap:
-                new_objgen = pageref_remap[pageref.objgen]
-                dest_node[0] = pdf_base.get_object(new_objgen)
-        except (IndexError, TypeError) as e:
-            log.warning("This file may contain invalid table of contents entries")
-            log.debug(e)
-
-    def visit_remap_dest(pdf_base, node, log):
-        """
-        Visitor function to fix ToC entries
-
-        Test for the two types of references to pages that can occur in ToCs.
-        Both types have the same final format (an indirect reference to the
-        target page).
-        """
-        if '/Dest' in node:
-            # /Dest reference to another page (old method)
-            remap_dest(node['/Dest'])
-        elif '/A' in node:
-            # /A (action) command set to "GoTo" (newer method)
-            if '/S' in node['/A'] and node['/A']['/S'] == '/GoTo':
-                remap_dest(node['/A']['/D'])
-
-    _traverse_toc(pdf_base, visit_remap_dest, log)
-
-
 def weave_layers(infiles, output_file, log, context):
     """Apply text layer and/or image layer changes to baseline file
 
@@ -324,13 +231,12 @@ def weave_layers(infiles, output_file, log, context):
     pdf_base = pikepdf.open(path_base)
     font, font_key, procset = None, None, None
     pdfinfo = context.get_pdfinfo()
-    pagerefs = {}
 
     procset = pdf_base.make_indirect(
         pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]')
     )
 
-    replacements = 1
+    emplacements = 1
     interim_count = 0
 
     # Iterate rest
@@ -345,30 +251,25 @@ def weave_layers(infiles, output_file, log, context):
         if text and not font:
             font, font_key = _find_font(text, pdf_base)
 
-        replacing = False
+        emplaced_page = False
         content_rotation = pdfinfo[page_num - 1].rotation
 
         path_image = Path(image).resolve() if image else None
         if path_image is not None and path_image != path_base:
-            # We are replacing the old page with a rasterized PDF of the new
-            # page
-            log.debug("Replace")
-            old_objgen = pdf_base.pages[page_num - 1].objgen
-
+            # We are updating the old page with a rasterized PDF of the new
+            # page (without changing objgen, to preserve references)
+            log.debug("Emplacement update")
             with pikepdf.open(image) as pdf_image:
-                replacements += 1
-                image_page = pdf_image.pages[0]
-                pdf_base.pages[page_num - 1] = image_page
-
-            # We're adding a new page, which will get a new objgen number pair,
-            # so we need to update any references to it.  qpdf did not like
-            # my attempt to update the old object in place, but that is an
-            # option to consider
-            pagerefs[old_objgen] = pdf_base.pages[page_num - 1].objgen
-            replacing = True
+                emplacements += 1
+                foreign_image_page = pdf_image.pages[0]
+                pdf_base.pages.append(foreign_image_page)
+                local_image_page = pdf_base.pages[-1]
+                pdf_base.pages[page_num - 1].emplace(local_image_page)
+                del pdf_base.pages[-1]
+            emplaced_page = True
 
         autorotate_correction = context.get_rotation(page_num - 1)
-        if replacing:
+        if emplaced_page:
             content_rotation = autorotate_correction
         text_rotation = autorotate_correction
         text_misaligned = (text_rotation - content_rotation) % 360
@@ -397,7 +298,7 @@ def weave_layers(infiles, output_file, log, context):
             content_rotation - autorotate_correction
         ) % 360
 
-        if replacements % MAX_REPLACE_PAGES == 0:
+        if emplacements % MAX_REPLACE_PAGES == 0:
             # Periodically save and reload the Pdf object. This will keep a
             # lid on our memory usage for very large files. Attach the font to
             # page 1 even if page 1 doesn't use it, so we have a way to get it
@@ -427,6 +328,5 @@ def weave_layers(infiles, output_file, log, context):
             font, font_key = None, None  # Ensure we reacquire this information
             interim_count += 1
 
-    _fix_toc(pdf_base, pagerefs, log)
     pdf_base.save(output_file)
     pdf_base.close()
