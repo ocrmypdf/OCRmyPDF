@@ -13,6 +13,21 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v8.3.0
+------
+
+-   Improved the strategy for replacing pages, emplacing the contents in an existing page. This preserves any types of references to the original page, and eliminates the need to manually fix the table of contents.
+
+-   For PDFs with more than 100 pages and a sequence where one PDF page was replaced and one or more subsequent ones were skipped, an intermediate file would be corrupted while grafting OCR text, causing processing to fail.
+
+-   Previously, we resized the images produced by Ghostscript by a small number of pixels to ensure the output image size was an exactly what we wanted. Having discovered a way to get Ghostscript to produce the exact image sizes we require, we eliminated the resizing step.
+
+-   Command line completions for ``bash`` are now available, in addition to ``fish``, both in ``misc/``. Package maintainers, please install these so users can take advantage.
+
+-   Updated requirements.
+
+-   pikepdf 1.3.0 is now required.
+
 v8.2.4
 ------
 
@@ -22,7 +37,7 @@ v8.2.4
 
 -   Minor optimization: we no longer traverse the table of contents to ensure all references in it are resolved, as changes to libqpdf have made this unnecessary.
 
--   pikepdf 1.2.0 is now required
+-   pikepdf 1.2.0 is now required.
 
 v8.2.3
 ------
