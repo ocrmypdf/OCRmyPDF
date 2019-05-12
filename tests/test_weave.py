@@ -42,3 +42,21 @@ def test_no_glyphless_weave(resources, outdir):
         '0',
         env=env,
     )
+
+
+@pytest.helpers.needs_pdfminer
+def test_links(resources, outpdf):
+    check_ocrmypdf(
+        resources / 'link.pdf',
+        outpdf,
+        '--redo-ocr',
+        '--oversample',
+        '200',
+        '--output-type',
+        'pdf',
+    )
+    pdf = pikepdf.open(outpdf)
+    p1 = pdf.pages[0]
+    p2 = pdf.pages[1]
+    assert p1.Annots[0].A.D[0].objgen == p2.objgen
+    assert p2.Annots[0].A.D[0].objgen == p1.objgen
