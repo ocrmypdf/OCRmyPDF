@@ -253,7 +253,6 @@ def generate_pdfa(
                 "-dBATCH",
                 "-dNOPAUSE",
                 "-dCompatibilityLevel=" + str(pdf_version),
-                "-dNumRenderingThreads=" + str(threads),
                 "-sDEVICE=pdfwrite",
                 "-dAutoRotatePages=/None",
                 "-sColorConversionStrategy=" + strategy,
