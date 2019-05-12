@@ -16,7 +16,7 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
 v8.3.0
 ------
 
--   Improved the strategy for replacing pages, emplacing the contents in an existing page. This preserves any types of references to the original page, and eliminates the need to manually fix the table of contents.
+-   Improved the strategy for updating pages when a new image of the page was produced. We know attempt to preserve more content from the original file, for annotations in particular.
 
 -   For PDFs with more than 100 pages and a sequence where one PDF page was replaced and one or more subsequent ones were skipped, an intermediate file would be corrupted while grafting OCR text, causing processing to fail.
 
