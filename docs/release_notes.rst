@@ -22,7 +22,7 @@ v8.3.0
 
 -   Previously, we resized the images produced by Ghostscript by a small number of pixels to ensure the output image size was an exactly what we wanted. Having discovered a way to get Ghostscript to produce the exact image sizes we require, we eliminated the resizing step.
 
--   Command line completions for ``bash`` are now available, in addition to ``fish``, both in ``misc/``. Package maintainers, please install these so users can take advantage.
+-   Command line completions for ``bash`` are now available, in addition to ``fish``, both in ``misc/completion``. Package maintainers, please install these so users can take advantage.
 
 -   Updated requirements.
 
