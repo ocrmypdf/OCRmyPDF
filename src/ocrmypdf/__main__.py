@@ -23,10 +23,6 @@ import sys
 from . import PROGRAM_NAME, VERSION
 from ._sync import run_pipeline
 
-# Hack to help debugger context find /usr/local/bin
-if 'IDE_PROJECT_ROOTS' in os.environ:
-    os.environ['PATH'] = '/usr/local/bin:' + os.environ['PATH']
-
 # -------------
 # Parser
 
@@ -182,17 +178,9 @@ jobcontrol.add_argument(
     type=int,
     default=0,
     nargs='?',
-    metavar='LEVEL',
-    choices=range(0, 4),
-    help=(
-        "Print more verbose messages for each additional verbose level. Use "
-        "`-v 2` typically for much more detailed logging. Higher numbers "
-        "are probably only useful in debugging. "
-        "0 - Only errors (default); "
-        "1 - Error and warnings; "
-        "2 - Info, errors and warnings; "
-        "3 - All messages including debug messages"
-    ),
+    help="Print more verbose messages for each additional verbose level. Use "
+    "`-v 1` typically for much more detailed logging. Higher numbers "
+    "are probably only useful in debugging.",
 )
 
 metadata = parser.add_argument_group(

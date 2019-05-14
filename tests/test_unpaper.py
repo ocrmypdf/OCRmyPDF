@@ -15,8 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import argparse
+import logging
 from os import fspath
-from unittest.mock import MagicMock, patch
+from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -56,7 +59,7 @@ def test_no_unpaper(resources, no_outpdf):
     with patch("ocrmypdf.exec.unpaper.version") as mock_unpaper_version:
         mock_unpaper_version.side_effect = FileNotFoundError("unpaper")
         with pytest.raises(SystemExit):
-            check_options(options, log=MagicMock())
+            check_options(options, log=logging.getLogger())
 
 
 def test_old_unpaper(spoof_unpaper_oldversion, resources, no_outpdf):

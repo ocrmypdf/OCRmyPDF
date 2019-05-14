@@ -129,8 +129,7 @@ def rasterize_pdf(
     :param filter_vector: if True, remove vector graphics objects
     :return:
     """
-    res = xres, yres
-    int_res = round(xres), round(yres)
+    res = round(xres, 6), round(yres, 6)
     if not page_dpi:
         page_dpi = res
 
@@ -145,7 +144,7 @@ def rasterize_pdf(
                 f'-sDEVICE={raster_device}',
                 f'-dFirstPage={pageno}',
                 f'-dLastPage={pageno}',
-                f'-r{str(int_res[0])}x{str(int_res[1])}',
+                f'-r{res[0]:f}x{res[1]:f}',
             ]
             + (['-dFILTERVECTOR'] if filter_vector else [])
             + [
@@ -168,23 +167,8 @@ def rasterize_pdf(
             log.error('Ghostscript rasterizing failed')
             raise SubprocessOutputError()
 
-        # Ghostscript only accepts integers for output resolution
-        # if the resolution happens to be fractional, then the discrepancy
-        # would change the size of the output page, especially if the DPI
-        # is quite low. Resize the image to the expected size
-
         tmp.seek(0)
         with Image.open(tmp) as im:
-            expected_size = (
-                round(im.size[0] / int_res[0] * res[0]),
-                round(im.size[1] / int_res[1] * res[1]),
-            )
-            if expected_size != im.size or page_dpi != (xres, yres):
-                log.debug(
-                    f"Ghostscript: resize output image {im.size} -> {expected_size}"
-                )
-                im = im.resize(expected_size)
-
             if rotation is not None:
                 log.debug("Rotating output by %i", rotation)
                 # rotation is a clockwise angle and Image.ROTATE_* is
@@ -269,7 +253,6 @@ def generate_pdfa(
                 "-dBATCH",
                 "-dNOPAUSE",
                 "-dCompatibilityLevel=" + str(pdf_version),
-                "-dNumRenderingThreads=" + str(threads),
                 "-sDEVICE=pdfwrite",
                 "-dAutoRotatePages=/None",
                 "-sColorConversionStrategy=" + strategy,

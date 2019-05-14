@@ -59,10 +59,14 @@ class PageContext:
         self.options = pdf_context.options
         self.pageno = pageno
         self.pageinfo = pdf_context.pdfinfo[pageno]
-        self.log = get_logger(pdf_context.options, '%s Page %d: ' % (pdf_context.name, pageno + 1))
+        self.log = get_logger(
+            pdf_context.options, '%s Page %d: ' % (pdf_context.name, pageno + 1)
+        )
 
     def get_path(self, name):
-        return os.path.join(self.pdf_context.work_folder, "%06d_%s" % (self.pageno + 1, name))
+        return os.path.join(
+            self.pdf_context.work_folder, "%06d_%s" % (self.pageno + 1, name)
+        )
 
 
 def cleanup_working_files(work_folder, options):
@@ -97,21 +101,21 @@ class Logger:
 
     def debug(self, *args, **kwargs):
         if self.level <= DEBUG:
-            print('DEBUG', self.prefix, end='')
-            print(*args, **kwargs)
+            print('DEBUG', self.prefix, end='', file=sys.stderr)
+            print(*args, file=sys.stderr, **kwargs)
 
     def info(self, *args, **kwargs):
         if self.level <= INFO:
-            print('INFO', self.prefix, end='')
-            print(*args, **kwargs)
+            print('INFO', self.prefix, end='', file=sys.stderr)
+            print(*args, file=sys.stderr, **kwargs)
 
     def warning(self, *args, **kwargs):
         self.warn(*args, **kwargs)
 
     def warn(self, *args, **kwargs):
         if self.level <= WARN:
-            print('WARN', self.prefix, end='')
-            print(*args, **kwargs)
+            print('WARN', self.prefix, end='', file=sys.stderr)
+            print(*args, file=sys.stderr, **kwargs)
 
     def error(self, *args, **kwargs):
         if self.level <= ERROR:

@@ -18,6 +18,7 @@
 
 import datetime
 from datetime import timezone
+import logging
 import mmap
 from os import fspath
 from pathlib import Path
@@ -284,7 +285,7 @@ def test_kodak_toc(resources, outpdf, spoof_tesseract_noop):
         assert isinstance(p.root.Outlines.First, pikepdf.Dictionary)
 
 
-def test_metadata_fixup_warning(resources, outdir):
+def test_metadata_fixup_warning(resources, outdir, caplog):
     from ocrmypdf.__main__ import parser
     from ocrmypdf._pipeline import metadata_fixup
 
@@ -295,13 +296,10 @@ def test_metadata_fixup_warning(resources, outdir):
     copyfile(resources / 'graph.pdf', outdir / 'graph.pdf')
 
     context = PDFContext(options, outdir, outdir / 'graph.pdf', None)
-    context.log = MagicMock()
-    metadata_fixup(
-        working_file=outdir / 'graph.pdf',
-        context=context,
-    )
-    context.log.warn.assert_not_called()
-    context.log.error.assert_not_called()
+    context.log = logging.getLogger()
+    metadata_fixup(working_file=outdir / 'graph.pdf', context=context)
+    for record in caplog.records:
+        assert record.levelname != 'WARNING'
 
     # Now add some metadata that will not be copyable
     graph = pikepdf.open(outdir / 'graph.pdf')
@@ -310,12 +308,9 @@ def test_metadata_fixup_warning(resources, outdir):
     graph.save(outdir / 'graph_mod.pdf')
 
     context = PDFContext(options, outdir, outdir / 'graph_mod.pdf', None)
-    context.log = MagicMock()
-    metadata_fixup(
-        working_file=outdir / 'graph.pdf',
-        context=context,
-    )
-    context.log.warn.assert_called_once()
+    context.log = logging.getLogger()
+    metadata_fixup(working_file=outdir / 'graph.pdf', context=context)
+    assert any(record.levelname == 'WARNING' for record in caplog.records)
 
 
 def test_prevent_gs_invalid_xml(resources, outdir):
@@ -333,7 +328,9 @@ def test_prevent_gs_invalid_xml(resources, outdir):
     pdfinfo = PdfInfo(resources / 'enron1.pdf')
     context = PDFContext(options, outdir, resources / 'enron1.pdf', pdfinfo)
 
-    convert_to_pdfa(str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps'), context)
+    convert_to_pdfa(
+        str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps'), context
+    )
 
     with open(outdir / 'pdfa.pdf', 'rb') as f:
         with mmap.mmap(

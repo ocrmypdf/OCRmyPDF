@@ -131,19 +131,19 @@ def file_claims_pdfa(filename):
     do full PDF/A validation.
     """
 
-    pdf = pikepdf.open(filename)
-    pdfmeta = pdf.open_metadata()
-    if not pdfmeta.pdfa_status:
-        return {
-            'pass': False,
-            'output': 'pdf',
-            'conformance': 'No PDF/A metadata in XMP',
-        }
-    valid_part_conforms = {'1A', '1B', '2A', '2B', '2U', '3A', '3B', '3U'}
-    conformance = f'PDF/A-{pdfmeta.pdfa_status}'
-    pdfa_dict = {}
-    if pdfmeta.pdfa_status in valid_part_conforms:
-        pdfa_dict['pass'] = True
-        pdfa_dict['output'] = 'pdfa'
-    pdfa_dict['conformance'] = conformance
+    with pikepdf.open(filename) as pdf:
+        pdfmeta = pdf.open_metadata()
+        if not pdfmeta.pdfa_status:
+            return {
+                'pass': False,
+                'output': 'pdf',
+                'conformance': 'No PDF/A metadata in XMP',
+            }
+        valid_part_conforms = {'1A', '1B', '2A', '2B', '2U', '3A', '3B', '3U'}
+        conformance = f'PDF/A-{pdfmeta.pdfa_status}'
+        pdfa_dict = {}
+        if pdfmeta.pdfa_status in valid_part_conforms:
+            pdfa_dict['pass'] = True
+            pdfa_dict['output'] = 'pdfa'
+        pdfa_dict['conformance'] = conformance
     return pdfa_dict

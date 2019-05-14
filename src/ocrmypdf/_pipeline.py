@@ -36,9 +36,7 @@ from .exceptions import (
     PriorOcrFoundError,
 )
 from .exec import ghostscript, tesseract
-from .helpers import (
-    re_symlink
-)
+from .helpers import re_symlink
 from .hocrtransform import HocrTransform
 from .optimize import optimize
 from .pdfa import generate_pdfa_ps
@@ -101,10 +99,7 @@ def triage_image_file(input_file, output_file, options, log):
             )
         with open(output_file, 'wb') as outf:
             img2pdf.convert(
-                input_file,
-                layout_fun=layout_fun,
-                with_pdfrw=False,
-                outputstream=outf
+                input_file, layout_fun=layout_fun, with_pdfrw=False, outputstream=outf
             )
         log.info("Successfully converted to PDF, processing...")
     except img2pdf.ImageOpenError as e:
@@ -149,9 +144,7 @@ def triage(input_file, output_file, options, log):
 
 def get_pdfinfo(input_file, detailed_page_analysis=False):
     try:
-        return PdfInfo(
-            input_file, detailed_page_analysis=detailed_page_analysis
-        )
+        return PdfInfo(input_file, detailed_page_analysis=detailed_page_analysis)
     except pikepdf.PasswordError:
         raise EncryptedPdfError()
     except pikepdf.PdfError:
@@ -250,7 +243,9 @@ def is_ocr_required(page_context):
 
     if pageinfo.has_text:
         if not options.force_ocr and not (options.skip_text or options.redo_ocr):
-            log.error("page already has text! - aborting (use --force-ocr to force OCR)")
+            log.error(
+                "page already has text! - aborting (use --force-ocr to force OCR)"
+            )
             raise PriorOcrFoundError()
         elif options.force_ocr:
             log.info("page already has text! - rasterizing text and running OCR anyway")
@@ -259,7 +254,7 @@ def is_ocr_required(page_context):
             if pageinfo.has_corrupt_text:
                 log.warn(
                     "some text on this page cannot be mapped to characters: "
-                    "consider using --force-ocr instead",
+                    "consider using --force-ocr instead"
                 )
             else:
                 log.info("redoing OCR")
@@ -457,9 +452,16 @@ def preprocess_deskew(input_file, page_context):
 
 def preprocess_clean(input_file, page_context):
     from .exec import unpaper
+
     output_file = page_context.get_path('pp_clean.png')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
-    unpaper.clean(input_file, output_file, dpi, page_context.log, page_context.options.unpaper_args)
+    unpaper.clean(
+        input_file,
+        output_file,
+        dpi,
+        page_context.log,
+        page_context.options.unpaper_args,
+    )
     return output_file
 
 
@@ -479,7 +481,7 @@ def create_ocr_image(image, page_context):
         draw = ImageDraw.ImageDraw(im)
 
         xres, yres = im.info['dpi']
-        page_context.log.info('resolution %r %r' % (xres, yres))
+        page_context.log.debug('resolution %r %r' % (xres, yres))
 
         if not options.force_ocr:
             # Do not mask text areas when forcing OCR, because we need to OCR
@@ -488,7 +490,9 @@ def create_ocr_image(image, page_context):
             if options.redo_ocr:
                 mask = True  # Mask visible text, but not invisible text
 
-            for textarea in page_context.pageinfo.get_textareas(visible=mask, corrupt=None):
+            for textarea in page_context.pageinfo.get_textareas(
+                visible=mask, corrupt=None
+            ):
                 # Calculate resolution based on the image size and page dimensions
                 # without regard whatever resolution is in pageinfo (may differ or
                 # be None)
@@ -501,7 +505,7 @@ def create_ocr_image(image, page_context):
                     im.height - bbox[1] * yscale,
                 ]
                 pixcoords = [int(round(c)) for c in pixcoords]
-                print('blanking %r', pixcoords)
+                page_context.log.debug('blanking %r', pixcoords)
                 draw.rectangle(pixcoords, fill=white)
                 # draw.rectangle(pixcoords, outline=pink)
 
@@ -677,16 +681,15 @@ def convert_to_pdfa(input_pdf, input_ps_stub, context):
     # NULs in DocumentInfo seem to be common since older Acrobats included them.
     # pikepdf can deal with this, but we make the world a better place by
     # stamping them out as soon as possible.
-    pdf_file = pikepdf.open(input_pdf)
-    if pdf_file.docinfo:
-        modified = False
-        for k, v in pdf_file.docinfo.items():
-            if b'\x00' in bytes(v):
-                pdf_file.docinfo[k] = bytes(v).replace(b'\x00', b'')
-                modified = True
-        if modified:
-            pdf_file.save(input_pdf)
-    del pdf_file
+    with pikepdf.open(input_pdf) as pdf_file:
+        if pdf_file.docinfo:
+            modified = False
+            for k, v in pdf_file.docinfo.items():
+                if b'\x00' in bytes(v):
+                    pdf_file.docinfo[k] = bytes(v).replace(b'\x00', b'')
+                    modified = True
+            if modified:
+                pdf_file.save(input_pdf)
 
     ghostscript.generate_pdfa(
         pdf_version=input_pdfinfo.min_version,
@@ -740,6 +743,8 @@ def metadata_fixup(working_file, context):
         compress_streams=True,
         object_stream_mode=pikepdf.ObjectStreamMode.generate,
     )
+    original.close()
+    pdf.close()
     return output_file
 
 

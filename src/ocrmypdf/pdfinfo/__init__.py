@@ -618,8 +618,9 @@ def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None):
     if not log:
         log = Mock()
 
-    pdf = pikepdf.open(infile)
+    pdf = pikepdf.open(infile)  # Do not close in this function
     if pdf.is_encrypted:
+        pdf.close()
         raise EncryptedPdfError()  # Triggered by encryption with empty passwd
     if detailed_analysis:
         pages_xml = None
@@ -755,7 +756,13 @@ class PdfInfo:
             infile, detailed_page_analysis, log=log
         )
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
-        self._has_acroform = '/AcroForm' in pdf.root
+        self._has_acroform = False
+        if '/AcroForm' in pdf.root:
+            if len(pdf.root.AcroForm.get('/Fields', [])) > 0:
+                self._has_acroform = True
+            elif '/XFA' in pdf.root.AcroForm:
+                self._has_acroform = True
+        pdf.close()
 
     @property
     def pages(self):

@@ -15,12 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+from contextlib import suppress
+from itertools import groupby
 from pathlib import Path
 import os
 import pikepdf
 from .exec import tesseract
 
-MAX_OPEN_PAGE_PDFS = int(os.environ.get('_OCRMYPDF_MAX_OPEN_PAGE_PDFS', 100))
+MAX_REPLACE_PAGES = int(os.environ.get('_OCRMYPDF_MAX_REPLACE_PAGES', 100))
 
 
 def _update_page_resources(*, page, font, font_key, procset):
@@ -107,7 +109,7 @@ def _weave_layers_graft(
         stream = bytearray(pdf_text_contents)
         pattern = b'/Im1 Do'
         idx = stream.find(pattern)
-        stream[idx:(idx + len(pattern))] = b' ' * len(pattern)
+        stream[idx : (idx + len(pattern))] = b' ' * len(pattern)
         pdf_text_contents = bytes(stream)
 
     base_page = pdf_base.pages.p(page_num)
@@ -156,6 +158,7 @@ def _weave_layers_graft(
     _update_page_resources(
         page=base_page, font=font, font_key=font_key, procset=procset
     )
+    pdf_text.close()
 
 
 def _find_font(text, pdf_base):
@@ -164,112 +167,22 @@ def _find_font(text, pdf_base):
     font, font_key = None, None
     possible_font_names = ('/f-0-0', '/F1')
     try:
-        pdf_text = pikepdf.open(text)
-        pdf_text_fonts = pdf_text.pages[0].Resources.get('/Font', {})
-    except Exception:
+        with pikepdf.open(text) as pdf_text:
+            try:
+                pdf_text_fonts = pdf_text.pages[0].Resources.get('/Font', {})
+            except (AttributeError, IndexError, KeyError):
+                return None, None
+            for f in possible_font_names:
+                pdf_text_font = pdf_text_fonts.get(f, None)
+                if pdf_text_font is not None:
+                    font_key = f
+                    break
+            if pdf_text_font:
+                font = pdf_base.copy_foreign(pdf_text_font)
+            return font, font_key
+    except (FileNotFoundError, pikepdf.PdfError):
+        # PdfError occurs if a 0-length file is written e.g. due to OCR timeout
         return None, None
-
-    for f in possible_font_names:
-        pdf_text_font = pdf_text_fonts.get(f, None)
-        if pdf_text_font is not None:
-            font_key = f
-            break
-    if pdf_text_font:
-        font = pdf_base.copy_foreign(pdf_text_font)
-    return font, font_key
-
-
-def _traverse_toc(pdf_base, visitor_fn, log):
-    """
-    Walk the table of contents, calling visitor_fn() at each node
-
-    The /Outlines data structure is a messy data structure, but rather than
-    navigating hierarchically we just track unique nodes.  Enqueue nodes when
-    we find them, and never visit them again.  set() is awesome.  We look for
-    the two types of object in the table of contents that can be page bookmarks
-    and update the page entry.
-
-    """
-
-    visited = set()
-    queue = set()
-    link_keys = ('/Parent', '/First', '/Last', '/Prev', '/Next')
-
-    if '/Outlines' not in pdf_base.root:
-        return
-
-    queue.add(pdf_base.root.Outlines.objgen)
-    while queue:
-        objgen = queue.pop()
-        visited.add(objgen)
-        node = pdf_base.get_object(objgen)
-        log.debug('fix toc: exploring outline entries at %r', objgen)
-
-        # Enumerate other nodes we could visit from here
-        for key in link_keys:
-            if key not in node:
-                continue
-            item = node[key]
-            if not item.is_indirect:
-                # Direct references are not allowed here, but it's not clear
-                # what we should do if we find any. Removing them is an option:
-                # node[key] = pdf_base.make_indirect(None)
-                continue
-            objgen = item.objgen
-            if objgen not in visited:
-                queue.add(objgen)
-
-        if visitor_fn:
-            visitor_fn(pdf_base, node, log)
-
-
-def _fix_toc(pdf_base, pageref_remap, log):
-    """Repair the table of contents
-
-    Whenever we replace a page wholesale, it gets assigned a new objgen number
-    and other references to it within the PDF become invalid, most notably in
-    the table of contents (/Outlines in PDF-speak).  In weave_layers we collect
-    pageref_remap, a mapping that describes the new objgen number given an old
-    one.  (objgen is a tuple, and the gen is almost always zero.)
-
-    It may ultimately be better to find a way to rebuild a page in place.
-
-    """
-
-    if not pageref_remap:
-        return
-
-    def remap_dest(dest_node):
-        """
-        Inner helper function: change the objgen for any page from the old we
-        invalidated to its new one.
-        """
-        try:
-            pageref = dest_node[0]
-            if pageref['/Type'] == '/Page' and pageref.objgen in pageref_remap:
-                new_objgen = pageref_remap[pageref.objgen]
-                dest_node[0] = pdf_base.get_object(new_objgen)
-        except (IndexError, TypeError) as e:
-            log.warning("This file may contain invalid table of contents entries")
-            log.debug(e)
-
-    def visit_remap_dest(pdf_base, node, log):
-        """
-        Visitor function to fix ToC entries
-
-        Test for the two types of references to pages that can occur in ToCs.
-        Both types have the same final format (an indirect reference to the
-        target page).
-        """
-        if '/Dest' in node:
-            # /Dest reference to another page (old method)
-            remap_dest(node['/Dest'])
-        elif '/A' in node:
-            # /A (action) command set to "GoTo" (newer method)
-            if '/S' in node['/A'] and node['/A']['/S'] == '/GoTo':
-                remap_dest(node['/A']['/D'])
-
-    _traverse_toc(pdf_base, visit_remap_dest, log)
 
 
 def weave_layers(layers, context):
@@ -302,51 +215,40 @@ def weave_layers(layers, context):
 
     path_base = Path(context.origin).resolve()
     pdf_base = pikepdf.open(path_base)
-    keep_open = []
     font, font_key, procset = None, None, None
-    pdfinfo = context.pdfinfo
-    interim_output_file = context.get_path('weave_layers_interim.pdf')
-    output_file = context.get_path('weave_layers.pdf')
-    pagerefs = {}
 
-    # Walk the table of contents first, to trigger pikepdf/qpdf to resolve all
-    # page references in the table of contents. Some PDF generators put invalid
-    # references in the ToC, so we want to resolve them to null before we
-    # create any references, or the ToC will be corrupted
-    _traverse_toc(pdf_base, None, log)
+    pdfinfo = context.pdfinfo
+    output_file = context.get_path('weave_layers.pdf')
 
     procset = pdf_base.make_indirect(
         pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]')
     )
+
+    emplacements = 1
+    interim_count = 0
 
     # Iterate rest
     for (pageno, image, text, sidecar, autorotate_correction) in layers:
         if text and not font:
             font, font_key = _find_font(text, pdf_base)
 
-        replacing = False
+        emplaced_page = False
         content_rotation = pdfinfo[pageno].rotation
-
         path_image = Path(image).resolve() if image else None
         if path_image is not None and path_image != path_base:
-            # We are replacing the old page with a rasterized PDF of the new
-            # page
-            log.debug("Replace")
-            old_objgen = pdf_base.pages[pageno].objgen
+            # We are updating the old page with a rasterized PDF of the new
+            # page (without changing objgen, to preserve references)
+            log.debug("Emplacement update")
+            with pikepdf.open(image) as pdf_image:
+                emplacements += 1
+                foreign_image_page = pdf_image.pages[0]
+                pdf_base.pages.append(foreign_image_page)
+                local_image_page = pdf_base.pages[-1]
+                pdf_base.pages[pageno].emplace(local_image_page)
+                del pdf_base.pages[-1]
+            emplaced_page = True
 
-            pdf_image = pikepdf.open(image)
-            keep_open.append(pdf_image)
-            image_page = pdf_image.pages[0]
-            pdf_base.pages[pageno] = image_page
-
-            # We're adding a new page, which will get a new objgen number pair,
-            # so we need to update any references to it.  qpdf did not like
-            # my attempt to update the old object in place, but that is an
-            # option to consider
-            pagerefs[old_objgen] = pdf_base.pages[pageno].objgen
-            replacing = True
-
-        if replacing:
+        if emplaced_page:
             content_rotation = autorotate_correction
         text_rotation = autorotate_correction
         text_misaligned = (text_rotation - content_rotation) % 360
@@ -371,28 +273,38 @@ def weave_layers(layers, context):
             )
 
         # Correct the rotation if applicable
-        pdf_base.pages[pageno].Rotate = (
-            content_rotation - autorotate_correction
-        ) % 360
+        pdf_base.pages[pageno].Rotate = (content_rotation - autorotate_correction) % 360
 
-        if len(keep_open) > MAX_OPEN_PAGE_PDFS:
-            # qpdf limitations require us to keep files open when we intend
-            # to copy content from them before saving. However, we want to keep
-            # a lid on file handles and memory usage, so for big files we're
-            # going to stop and save periodically. Attach the font to page 1
-            # even if page 1 doesn't use it, so we have a way to get it back.
+        if emplacements % MAX_REPLACE_PAGES == 0:
+            # Periodically save and reload the Pdf object. This will keep a
+            # lid on our memory usage for very large files. Attach the font to
+            # page 1 even if page 1 doesn't use it, so we have a way to get it
+            # back.
+            # TODO refactor this to outside the loop
             page0 = pdf_base.pages[0]
             _update_page_resources(
                 page=page0, font=font, font_key=font_key, procset=procset
             )
-            pdf_base.save(interim_output_file)
-            del pdf_base
-            keep_open = []
 
-            pdf_base = pikepdf.open(interim_output_file)
+            # We cannot read and write the same file, that will corrupt it
+            # but we don't to keep more copies than we need to. Delete intermediates.
+            # {interim_count} is the opened file we were updateing
+            # {interim_count - 1} can be deleted
+            # {interim_count + 1} is the new file will produce and open
+            old_file = output_file + f'_working{interim_count - 1}.pdf'
+            if not context.options.keep_temporary_files:
+                with suppress(FileNotFoundError):
+                    os.unlink(old_file)
+
+            next_file = output_file + f'_working{interim_count + 1}.pdf'
+            pdf_base.save(next_file)
+            pdf_base.close()
+
+            pdf_base = pikepdf.open(next_file)
             procset = pdf_base.pages[0].Resources.ProcSet
-            font, font_key = None, None  # Reacquire this information
+            font, font_key = None, None  # Ensure we reacquire this information
+            interim_count += 1
 
-    _fix_toc(pdf_base, pagerefs, log)
     pdf_base.save(output_file)
+    pdf_base.close()
     return output_file

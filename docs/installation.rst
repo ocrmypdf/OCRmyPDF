@@ -364,6 +364,16 @@ The command line program should now be available:
 
     ocrmypdf --help
 
+Installing on FreeBSD
+---------------------
+
+FreeBSD 11.2 is known to work. Other versions likely work but have not been tested.
+
+In general it should work to:
+
+#. `Install and build pikepdf <https://pikepdf.readthedocs.io/en/latest/installation.html#installing-on-freebsd-11-2>`_.
+#. Install the equivalent list of dependencies for Linux.
+
 Installing the Docker image
 ---------------------------
 
@@ -490,3 +500,17 @@ To install all of the development and test requirements:
     pip install -r requirements/dev.txt -r requirements/test.txt
 
 To add JBIG2 encoding, see :ref:`jbig2`.
+
+Shell completions
+-----------------
+
+Completions for ``bash`` and ``fish`` are available in the project's
+``misc/completion`` folder. The ``bash`` completions are likely ``zsh``
+compatible but this has not been confirmed. Package maintainers, please install
+these at the appropriate locations for your system.
+
+To manually install the ``bash`` completion, copy ``misc/completion/ocrmypdf.bash`` to
+``/etc/bash_completion.d/ocrmypdf`` (rename the file).
+
+To manually install the ``fish`` completion, copy ``misc/completion/ocrmypdf.fish`` to
+``~/.config/fish/completions/ocrmypdf.fish``.
