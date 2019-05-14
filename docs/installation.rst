@@ -364,6 +364,16 @@ The command line program should now be available:
 
     ocrmypdf --help
 
+Installing on FreeBSD
+---------------------
+
+FreeBSD 11.2 is known to work. Other versions likely work but have not been tested.
+
+In general it should work to:
+
+#. `Install and build pikepdf <https://pikepdf.readthedocs.io/en/latest/installation.html#installing-on-freebsd-11-2>`_.
+#. Install the equivalent list of dependencies for Linux.
+
 Installing the Docker image
 ---------------------------
 
