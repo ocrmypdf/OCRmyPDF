@@ -721,7 +721,7 @@ def metadata_fixup(working_file, context):
         not_copied = set(meta_original.keys()) - set(meta.keys())
         if not_copied:
             if options.output_type.startswith('pdfa'):
-                context.log.warn(
+                context.log.warning(
                     "Some input metadata could not be copied because it is not "
                     "permitted in PDF/A. You may wish to examine the output "
                     "PDF's XMP metadata."
