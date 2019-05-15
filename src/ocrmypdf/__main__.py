@@ -17,6 +17,7 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
+import logging
 import os
 import sys
 
@@ -459,14 +460,18 @@ debugging.add_argument(
     action='store_true',
     help="Keep temporary files (helpful for debugging)",
 )
-# debugging.add_argument(
-#     '--flowchart', type=str, help="Generate the pipeline execution flowchart"
-# )
 
 
 def run(args=None):
     options = parser.parse_args(args=args)
-    return run_pipeline(options)
+
+    log = logging.getLogger()
+    console = logging.StreamHandler(stream=sys.stderr)
+    console.setLevel(logging.DEBUG)
+    log.addHandler(console)
+
+    result = run_pipeline(options)
+    return result
 
 
 if __name__ == '__main__':

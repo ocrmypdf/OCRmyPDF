@@ -36,7 +36,7 @@ class PDFContext:
             self.name = 'origin.pdf'
         if self.name == '-':
             self.name = 'stdin'
-        self.log = get_logger(options, '%s: ' % self.name)
+        self.log = get_logger(options, filename=self.name)
 
     def get_path(self, name):
         return os.path.join(self.work_folder, name)
@@ -56,7 +56,7 @@ class PageContext:
         self.pageno = pageno
         self.pageinfo = pdf_context.pdfinfo[pageno]
         self.log = get_logger(
-            pdf_context.options, '%s Page %d: ' % (pdf_context.name, pageno + 1)
+            pdf_context.options, filename=self.pdf_context.name, page=(self.pageno + 1)
         )
 
     def get_path(self, name):
@@ -73,5 +73,31 @@ def cleanup_working_files(work_folder, options):
             shutil.rmtree(work_folder)
 
 
-def get_logger(options=None, prefix=''):
-    return logging.getLogger(prefix)
+class LogNameAdapter(logging.LoggerAdapter):
+    def process(self, msg, kwargs):
+        return '[%s] %s' % (self.extra['filename'], msg), kwargs
+
+
+class LogNamePageAdapter(logging.LoggerAdapter):
+    def process(self, msg, kwargs):
+        return (
+            '[%s:%05u] %s' % (self.extra['filename'], self.extra['page'], msg),
+            kwargs,
+        )
+
+
+def get_logger(options=None, prefix='ocrmypdf', filename=None, page=None):
+    log = logging.getLogger(prefix)
+    if filename and page:
+        adapter = LogNamePageAdapter(log, dict(filename=filename, page=page))
+    elif filename:
+        adapter = LogNameAdapter(log, dict(filename=filename))
+    else:
+        adapter = log
+    if options.quiet:
+        log.setLevel(logging.ERROR)
+    elif options.verbose >= 2:
+        log.setLevel(logging.DEBUG)
+    else:
+        log.setLevel(logging.INFO)
+    return adapter
