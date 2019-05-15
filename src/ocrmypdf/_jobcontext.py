@@ -15,15 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import shutil
 import sys
 import os
 from contextlib import suppress
-
-ERROR = 40
-WARN = 30
-INFO = 20
-DEBUG = 10
 
 
 class PDFContext:
@@ -78,63 +74,4 @@ def cleanup_working_files(work_folder, options):
 
 
 def get_logger(options=None, prefix=''):
-    level = ERROR  # TODO: add option
-    if options is not None:
-        if options.quiet or options.output_file == '-' or options.sidecar == '-':
-            return NullLogger()
-        if options.verbose == 0:
-            level = ERROR
-        elif options.verbose == 1:
-            level = WARN
-        elif options.verbose == 2:
-            level = INFO
-        elif options.verbose >= 3:
-            level = DEBUG
-
-    return Logger(prefix, level)
-
-
-class Logger:
-    def __init__(self, prefix, level=DEBUG):
-        self.prefix = prefix
-        self.level = level
-
-    def debug(self, *args, **kwargs):
-        if self.level <= DEBUG:
-            print('DEBUG', self.prefix, end='', file=sys.stderr)
-            print(*args, file=sys.stderr, **kwargs)
-
-    def info(self, *args, **kwargs):
-        if self.level <= INFO:
-            print('INFO', self.prefix, end='', file=sys.stderr)
-            print(*args, file=sys.stderr, **kwargs)
-
-    def warning(self, *args, **kwargs):
-        self.warn(*args, **kwargs)
-
-    def warn(self, *args, **kwargs):
-        if self.level <= WARN:
-            print('WARN', self.prefix, end='', file=sys.stderr)
-            print(*args, file=sys.stderr, **kwargs)
-
-    def error(self, *args, **kwargs):
-        if self.level <= ERROR:
-            print('ERROR', self.prefix, end='', file=sys.stderr)
-            print(*args, file=sys.stderr)
-
-
-class NullLogger:
-    def debug(self, *args, **kwargs):
-        pass
-
-    def info(self, *args, **kwargs):
-        pass
-
-    def warning(self, *args, **kwargs):
-        pass
-
-    def warn(self, *args, **kwargs):
-        pass
-
-    def error(self, *args, **kwargs):
-        pass
+    return logging.getLogger(prefix)

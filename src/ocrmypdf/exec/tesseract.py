@@ -33,7 +33,11 @@ from subprocess import (
 from textwrap import dedent
 
 from . import get_version
-from ..exceptions import MissingDependencyError, TesseractConfigError, SubprocessOutputError
+from ..exceptions import (
+    MissingDependencyError,
+    TesseractConfigError,
+    SubprocessOutputError,
+)
 from ..helpers import page_number
 
 OrientationConfidence = namedtuple('OrientationConfidence', ('angle', 'confidence'))
@@ -342,7 +346,6 @@ def generate_pdf(
     # to the number of order parameters here
 
     args_tesseract.extend([input_image, prefix, 'pdf', 'txt'] + tessconfig)
-
     try:
         log.debug(args_tesseract)
         stdout = check_output(args_tesseract, stderr=STDOUT, timeout=timeout)

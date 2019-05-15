@@ -1014,8 +1014,7 @@ def test_bad_utf8(spoof_tess_bad_utf8, renderer, resources, no_outpdf):
     assert out == '', "stdout not clean"
     assert p.returncode != 0
     assert 'not utf-8' in err, "should whine about utf-8"
-    # TODO: find out why this should be tested
-    # assert '\\x96' in err, 'should repeat backslash encoded output'
+    assert '\\x96' in err, 'should repeat backslash encoded output'
 
 
 @pytest.mark.skipif(
