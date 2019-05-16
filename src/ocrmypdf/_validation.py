@@ -51,6 +51,8 @@ from .exceptions import (
 
 HOCR_OK_LANGS = frozenset(['eng', 'deu', 'spa', 'ita', 'por'])
 
+log = logging.getLogger(__name__)
+
 
 def complain(message):
     print(*textwrap.wrap(message), file=sys.stderr)
@@ -61,7 +63,7 @@ def complain(message):
 verify_python3_env()
 
 
-def check_options_languages(options, _log):
+def check_options_languages(options):
     if not options.language:
         options.language = ['eng']  # Enforce English hegemony
 
@@ -80,7 +82,7 @@ def check_options_languages(options, _log):
         raise MissingDependencyError(msg)
 
 
-def check_options_output(options, log):
+def check_options_output(options):
     # We have these constraints to check for.
     # 1. Ghostscript < 9.20 mangles multibyte Unicode
     # 2. hocr doesn't work on non-Latin languages (so don't select it)
@@ -134,27 +136,26 @@ def check_options_output(options, log):
     if not options.lossless_reconstruction and options.redo_ocr:
         raise BadArgsError(
             "--redo-ocr is not currently compatible with --deskew, "
-            "--clean-final, and --remove-background",
+            "--clean-final, and --remove-background"
         )
 
 
-def check_options_sidecar(options, log):
+def check_options_sidecar(options):
     if options.sidecar == '\0':
         if options.output_file == '-':
             raise BadArgsError(
-                "--sidecar filename must be specified when output file is " "stdout.",
+                "--sidecar filename must be specified when output file is " "stdout."
             )
         options.sidecar = options.output_file + '.txt'
 
 
-def check_options_preprocessing(options, log):
+def check_options_preprocessing(options):
     if options.clean_final:
         options.clean = True
     if options.unpaper_args and not options.clean:
         raise BadArgsError("--clean is required for --unpaper-args")
     if options.clean:
         check_external_program(
-            log=log,
             program='unpaper',
             package='unpaper',
             version_checker=unpaper.version,
@@ -170,7 +171,7 @@ def check_options_preprocessing(options, log):
             raise BadArgsError(str(e))
 
 
-def check_options_ocr_behavior(options, log):
+def check_options_ocr_behavior(options):
     exclusive_options = sum(
         [
             (1 if opt else 0)
@@ -183,10 +184,9 @@ def check_options_ocr_behavior(options, log):
         )
 
 
-def check_options_optimizing(options, log):
+def check_options_optimizing(options):
     if options.optimize >= 2:
         check_external_program(
-            log=log,
             program='pngquant',
             package='pngquant',
             version_checker=pngquant.version,
@@ -198,7 +198,6 @@ def check_options_optimizing(options, log):
         # Although we use JBIG2 for optimize=1, don't nag about it unless the
         # user is asking for more optimization
         check_external_program(
-            log=log,
             program='jbig2',
             package='jbig2enc',
             version_checker=jbig2enc.version,
@@ -216,7 +215,7 @@ def check_options_optimizing(options, log):
         )
 
 
-def check_options_advanced(options, log):
+def check_options_advanced(options):
     if options.pdfa_image_compression != 'auto' and options.output_type.startswith(
         'pdfa'
     ):
@@ -228,7 +227,7 @@ def check_options_advanced(options, log):
         log.warning('Tesseract 4.x ignores --user-words, so this has no effect')
 
 
-def check_options_metadata(options, log):
+def check_options_metadata(options):
     import unicodedata
 
     docinfo = [options.title, options.author, options.keywords, options.subject]
@@ -243,23 +242,23 @@ def check_options_metadata(options, log):
                 )
 
 
-def check_options_pillow(options, log):
+def check_options_pillow(options):
     PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1_000_000)
     if PIL.Image.MAX_IMAGE_PIXELS == 0:
         PIL.Image.MAX_IMAGE_PIXELS = None
 
 
-def check_options(options, log):
+def check_options(options):
     try:
-        check_options_languages(options, log)
-        check_options_metadata(options, log)
-        check_options_output(options, log)
-        check_options_sidecar(options, log)
-        check_options_preprocessing(options, log)
-        check_options_ocr_behavior(options, log)
-        check_options_optimizing(options, log)
-        check_options_advanced(options, log)
-        check_options_pillow(options, log)
+        check_options_languages(options)
+        check_options_metadata(options)
+        check_options_output(options)
+        check_options_sidecar(options)
+        check_options_preprocessing(options)
+        check_options_ocr_behavior(options)
+        check_options_optimizing(options)
+        check_options_advanced(options)
+        check_options_pillow(options)
         return ExitCode.ok
     except ValueError as e:
         log.error(e)
@@ -270,30 +269,6 @@ def check_options(options, log):
     except MissingDependencyError as e:
         log.error(e)
         return ExitCode.missing_dependency
-
-
-# ----------
-# Logging
-
-
-def logging_factory(logger_name, logger_args):
-    verbose = logger_args['verbose']
-    quiet = logger_args['quiet']
-
-    root_logger = logging.getLogger(logger_name)
-    root_logger.setLevel(logging.DEBUG)
-
-    handler = logging.StreamHandler(sys.stderr)
-    formatter_ = logging.Formatter("%(levelname)7s - %(message)s")
-    handler.setFormatter(formatter_)
-    if verbose:
-        handler.setLevel(logging.DEBUG)
-    elif quiet:
-        handler.setLevel(logging.WARNING)
-    else:
-        handler.setLevel(logging.INFO)
-    root_logger.addHandler(handler)
-    return root_logger
 
 
 def check_closed_streams(options):
@@ -348,7 +323,7 @@ def check_closed_streams(options):
     return True
 
 
-def log_page_orientations(pdfinfo, _log):
+def log_page_orientations(pdfinfo):
     direction = {0: 'n', 90: 'e', 180: 's', 270: 'w'}
     orientations = []
     for n, page in enumerate(pdfinfo):
@@ -356,10 +331,10 @@ def log_page_orientations(pdfinfo, _log):
         if angle != 0:
             orientations.append('{0}{1}'.format(n + 1, direction.get(angle, '')))
     if orientations:
-        _log.info('Page orientations detected: ' + ' '.join(orientations))
+        log.info('Page orientations detected: ' + ' '.join(orientations))
 
 
-def check_environ(options, _log):
+def check_environ(options):
     old_envvars = (
         'OCRMYPDF_TESSERACT',
         'OCRMYPDF_QPDF',
@@ -368,7 +343,7 @@ def check_environ(options, _log):
     )
     for k in old_envvars:
         if k in os.environ:
-            _log.warning(
+            log.warning(
                 textwrap.dedent(
                     f"""\
                 OCRmyPDF no longer uses the environment variable {k}.
@@ -377,13 +352,14 @@ def check_environ(options, _log):
             )
 
 
-def create_input_file(options, log, work_folder):
+def create_input_file(options, work_folder):
     if options.input_file == '-':
         # stdin
         log.info('reading file from standard input')
         target = os.path.join(work_folder, 'stdin')
         with open(target, 'wb') as stream_buffer:
             from shutil import copyfileobj
+
             copyfileobj(sys.stdin.buffer, stream_buffer)
         return target
     else:
@@ -392,30 +368,30 @@ def create_input_file(options, log, work_folder):
             re_symlink(options.input_file, target, log)
             return target
         except FileNotFoundError:
-            log.error("File not found - " + options.input_file)
+            log.error("File not found - %s", options.input_file)
             raise InputFileError()
 
 
-def check_input_file(options, _log, start_input_file):
+def check_input_file(options, start_input_file):
     if options.input_file == '-':
         # stdin
-        _log.info('reading file from standard input')
+        log.info('reading file from standard input')
         with open(start_input_file, 'wb') as stream_buffer:
             from shutil import copyfileobj
 
             copyfileobj(sys.stdin.buffer, stream_buffer)
     else:
         try:
-            re_symlink(options.input_file, start_input_file, _log)
+            re_symlink(options.input_file, start_input_file, log)
         except FileNotFoundError:
-            _log.error("File not found - " + options.input_file)
+            log.error("File not found - " + options.input_file)
             raise InputFileError()
 
 
-def check_requested_output_file(options, _log):
+def check_requested_output_file(options):
     if options.output_file == '-':
         if sys.stdout.isatty():
-            _log.error(
+            log.error(
                 textwrap.dedent(
                     """\
                 Output was set to stdout '-' but it looks like stdout
@@ -425,13 +401,13 @@ def check_requested_output_file(options, _log):
             )
             raise BadArgsError()
     elif not is_file_writable(options.output_file):
-        _log.error(
+        log.error(
             "Output file location (" + options.output_file + ") is not a writable file."
         )
         raise OutputFileAccessError()
 
 
-def report_output_file_size(options, _log, input_file, output_file):
+def report_output_file_size(options, input_file, output_file):
     try:
         output_size = Path(output_file).stat().st_size
         input_size = Path(input_file).stat().st_size
@@ -462,7 +438,7 @@ def report_output_file_size(options, _log, input_file, output_file):
     else:
         explanation = "No reason for this increase is known.  Please report this issue."
 
-    _log.warning(
+    log.warning(
         textwrap.dedent(
             f"""\
         The output file size is {ratio:.2f}× larger than the input file.
@@ -472,16 +448,14 @@ def report_output_file_size(options, _log, input_file, output_file):
     )
 
 
-def check_dependency_versions(options, log):
+def check_dependency_versions(options):
     check_external_program(
-        log=log,
         program='tesseract',
         package={'darwin': 'tesseract', 'linux': 'tesseract-ocr'},
         version_checker=tesseract.version,
         need_version='4.0.0',  # using backport for Travis CI
     )
     check_external_program(
-        log=log,
         program='gs',
         package='ghostscript',
         version_checker=ghostscript.version,
@@ -495,7 +469,6 @@ def check_dependency_versions(options, log):
         )
         return ExitCode.missing_dependency
     check_external_program(
-        log=log,
         program='qpdf',
         package='qpdf',
         version_checker=qpdf.version,

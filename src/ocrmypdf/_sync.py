@@ -165,10 +165,10 @@ def run_pipeline(options):
     log = get_logger(options, __name__)
     log.debug('ocrmypdf ' + VERSION)
 
-    result = check_options(options, log)
+    result = check_options(options)
     if result != ExitCode.ok:
         return result
-    check_dependency_versions(options, log)
+    check_dependency_versions(options)
 
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
@@ -182,7 +182,7 @@ def run_pipeline(options):
     # variable, but harmless to set if ignored.
     os.environ.setdefault('OMP_THREAD_LIMIT', '1')
 
-    check_environ(options, log)
+    check_environ(options)
     if os.environ.get('PYTEST_CURRENT_TEST'):
         os.environ['_OCRMYPDF_TEST_INFILE'] = options.input_file
 
@@ -191,8 +191,8 @@ def run_pipeline(options):
     atexit.register(cleanup_working_files, work_folder, options)
 
     try:
-        check_requested_output_file(options, log)
-        start_input_file = create_input_file(options, log, work_folder)
+        check_requested_output_file(options)
+        start_input_file = create_input_file(options, work_folder)
 
         # Triage image or pdf
         origin_pdf = triage(
@@ -212,7 +212,7 @@ def run_pipeline(options):
         log.error("%s: %s" % (type(e).__name__, str(e)))
         return e.exit_code
     except Exception as e:
-        log.error("%s: %s" % (type(e).__name__, str(e)))
+        log.exception("An exception occurred while executing the pipeline")
         return ExitCode.other_error
 
     if options.output_file == '-':
@@ -236,6 +236,6 @@ def run_pipeline(options):
             log.warning('Output file: The generated PDF is INVALID')
             return ExitCode.invalid_output_pdf
 
-        report_output_file_size(options, log, start_input_file, options.output_file)
+        report_output_file_size(options, start_input_file, options.output_file)
 
     return ExitCode.ok
