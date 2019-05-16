@@ -104,6 +104,7 @@ setup(
         # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
         # block 5.1.0, broken wheels
         'reportlab >= 3.3.0',  # oldest released version with sane image handling
+        'tqdm >= 4',
     ],
     extras_require={'pdfminer': ['pdfminer.six == 20181108']},
     tests_require=tests_require,

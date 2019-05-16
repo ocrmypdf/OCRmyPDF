@@ -59,7 +59,7 @@ def test_no_unpaper(resources, no_outpdf):
     with patch("ocrmypdf.exec.unpaper.version") as mock_unpaper_version:
         mock_unpaper_version.side_effect = FileNotFoundError("unpaper")
         with pytest.raises(SystemExit):
-            check_options(options, log=logging.getLogger())
+            check_options(options)
 
 
 def test_old_unpaper(spoof_unpaper_oldversion, resources, no_outpdf):

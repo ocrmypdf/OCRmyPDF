@@ -185,126 +185,109 @@ def _find_font(text, pdf_base):
         return None, None
 
 
-def weave_layers(layers, context):
-    """Apply text layer and/or image layer changes to baseline file
+class OcrGrafter:
+    def __init__(self, context):
+        self.context = context
+        self.log = context.log
+        self.path_base = Path(context.origin).resolve()
 
-    This is where the magic happens. infiles will be the main PDF to modify,
-    and optional .text.pdf and .image-layer.pdf files, organized however ruffus
-    organizes them.
+        self.pdf_base = pikepdf.open(self.path_base)
+        self.font, self.font_key = None, None
 
-    From .text.pdf, we copy the content stream (which contains the Tesseract
-    OCR results), and rotate it into place. The first time we do this, we also
-    copy the GlyphlessFont, and then reference that font again.
+        self.pdfinfo = context.pdfinfo
+        self.output_file = context.get_path('weave_layers.pdf')
 
-    For .image-layer.pdf, we check if this is a "pointer" to the original file,
-    or a new file. If a new file, we replace the page and remember that we
-    replaced this page.
+        self.procset = self.pdf_base.make_indirect(
+            pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]')
+        )
 
-    Every 100 open files, we save intermediate results, to avoid any resource
-    limits, since pikepdf/qpdf need to keep a lot of open file handles in the
-    background. When objects are copied from one file to another qpdf, qpdf
-    doesn't actually copy the data until asked to write, so all the resources
-    it may need to remain available.
+        self.emplacements = 1
+        self.interim_count = 0
 
-    For completeness, we set up a /ProcSet on every page, although it's
-    unlikely any PDF viewer cares about this anymore.
-
-    """
-
-    log = context.log
-
-    path_base = Path(context.origin).resolve()
-    pdf_base = pikepdf.open(path_base)
-    font, font_key, procset = None, None, None
-
-    pdfinfo = context.pdfinfo
-    output_file = context.get_path('weave_layers.pdf')
-
-    procset = pdf_base.make_indirect(
-        pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]')
-    )
-
-    emplacements = 1
-    interim_count = 0
-
-    # Iterate rest
-    for (pageno, image, text, sidecar, autorotate_correction) in layers:
-        if text and not font:
-            font, font_key = _find_font(text, pdf_base)
+    def graft_page(self, page_result):
+        pageno, image, text, sidecar, autorotate_correction = page_result
+        if text and not self.font:
+            self.font, self.font_key = _find_font(text, self.pdf_base)
 
         emplaced_page = False
-        content_rotation = pdfinfo[pageno].rotation
+        content_rotation = self.pdfinfo[pageno].rotation
         path_image = Path(image).resolve() if image else None
-        if path_image is not None and path_image != path_base:
+        if path_image is not None and path_image != self.path_base:
             # We are updating the old page with a rasterized PDF of the new
             # page (without changing objgen, to preserve references)
-            log.debug("Emplacement update")
+            self.log.debug("Emplacement update")
             with pikepdf.open(image) as pdf_image:
-                emplacements += 1
+                self.emplacements += 1
                 foreign_image_page = pdf_image.pages[0]
-                pdf_base.pages.append(foreign_image_page)
-                local_image_page = pdf_base.pages[-1]
-                pdf_base.pages[pageno].emplace(local_image_page)
-                del pdf_base.pages[-1]
+                self.pdf_base.pages.append(foreign_image_page)
+                local_image_page = self.pdf_base.pages[-1]
+                self.pdf_base.pages[pageno].emplace(local_image_page)
+                del self.pdf_base.pages[-1]
             emplaced_page = True
 
         if emplaced_page:
             content_rotation = autorotate_correction
         text_rotation = autorotate_correction
         text_misaligned = (text_rotation - content_rotation) % 360
-        log.debug(
+        self.log.debug(
             '%r',
             [text_rotation, autorotate_correction, text_misaligned, content_rotation],
         )
 
-        if text and font:
+        if text and self.font:
             # Graft the text layer onto this page, whether new or old
-            strip_old = context.options.redo_ocr
+            strip_old = self.context.options.redo_ocr
             _weave_layers_graft(
-                pdf_base=pdf_base,
+                pdf_base=self.pdf_base,
                 page_num=pageno + 1,
                 text=text,
-                font=font,
-                font_key=font_key,
+                font=self.font,
+                font_key=self.font_key,
                 rotation=text_misaligned,
-                procset=procset,
+                procset=self.procset,
                 strip_old_text=strip_old,
-                log=log,
+                log=self.log,
             )
 
         # Correct the rotation if applicable
-        pdf_base.pages[pageno].Rotate = (content_rotation - autorotate_correction) % 360
+        self.pdf_base.pages[pageno].Rotate = (
+            content_rotation - autorotate_correction
+        ) % 360
 
-        if emplacements % MAX_REPLACE_PAGES == 0:
-            # Periodically save and reload the Pdf object. This will keep a
-            # lid on our memory usage for very large files. Attach the font to
-            # page 1 even if page 1 doesn't use it, so we have a way to get it
-            # back.
-            # TODO refactor this to outside the loop
-            page0 = pdf_base.pages[0]
-            _update_page_resources(
-                page=page0, font=font, font_key=font_key, procset=procset
-            )
+        if self.emplacements % MAX_REPLACE_PAGES == 0:
+            self.save_and_reload()
 
-            # We cannot read and write the same file, that will corrupt it
-            # but we don't to keep more copies than we need to. Delete intermediates.
-            # {interim_count} is the opened file we were updateing
-            # {interim_count - 1} can be deleted
-            # {interim_count + 1} is the new file will produce and open
-            old_file = output_file + f'_working{interim_count - 1}.pdf'
-            if not context.options.keep_temporary_files:
-                with suppress(FileNotFoundError):
-                    os.unlink(old_file)
+    def save_and_reload(self):
+        # Periodically save and reload the Pdf object. This will keep a
+        # lid on our memory usage for very large files. Attach the font to
+        # page 1 even if page 1 doesn't use it, so we have a way to get it
+        # back.
+        # TODO refactor this to outside the loop
+        page0 = self.pdf_base.pages[0]
+        _update_page_resources(
+            page=page0, font=self.font, font_key=self.font_key, procset=self.procset
+        )
 
-            next_file = output_file + f'_working{interim_count + 1}.pdf'
-            pdf_base.save(next_file)
-            pdf_base.close()
+        # We cannot read and write the same file, that will corrupt it
+        # but we don't to keep more copies than we need to. Delete intermediates.
+        # {interim_count} is the opened file we were updateing
+        # {interim_count - 1} can be deleted
+        # {interim_count + 1} is the new file will produce and open
+        old_file = self.output_file + f'_working{self.interim_count - 1}.pdf'
+        if not self.context.options.keep_temporary_files:
+            with suppress(FileNotFoundError):
+                os.unlink(old_file)
 
-            pdf_base = pikepdf.open(next_file)
-            procset = pdf_base.pages[0].Resources.ProcSet
-            font, font_key = None, None  # Ensure we reacquire this information
-            interim_count += 1
+        next_file = self.output_file + f'_working{self.interim_count + 1}.pdf'
+        self.pdf_base.save(next_file)
+        self.pdf_base.close()
 
-    pdf_base.save(output_file)
-    pdf_base.close()
-    return output_file
+        self.pdf_base = pikepdf.open(next_file)
+        self.procset = self.pdf_base.pages[0].Resources.ProcSet
+        self.font, self.font_key = None, None  # Ensure we reacquire this information
+        self.interim_count += 1
+
+    def finalize(self):
+        self.pdf_base.save(self.output_file)
+        self.pdf_base.close()
+        return self.output_file

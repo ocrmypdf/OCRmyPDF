@@ -10,3 +10,4 @@ Pillow >= 5.0.0, != 5.1.0 ; sys_platform == "darwin"
 pycparser == 2.19
 python-xmp-toolkit == 2.0.1
 reportlab == 3.5.13
+tqdm == 4.32.1

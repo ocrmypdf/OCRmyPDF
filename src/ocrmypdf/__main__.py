@@ -21,6 +21,8 @@ import logging
 import os
 import sys
 
+from tqdm import tqdm
+
 from . import PROGRAM_NAME, VERSION
 from .exceptions import ExitCode
 from ._sync import run_pipeline
@@ -462,6 +464,21 @@ debugging.add_argument(
     action='store_true',
     help="Keep temporary files (helpful for debugging)",
 )
+
+
+class TqdmConsole:
+    """Wrapper to log messages in a way that is compatible with the progress bar"""
+
+    def __init__(self, file):
+        self.file = file
+
+    def write(self, msg):
+        # When no progress bar is active, tqdm.write() routes to print()
+        tqdm.write(msg.rstrip(), file=self.file)
+
+    def flush(self):
+        if hasattr(self.file, "flush"):
+            self.file.flush()
 
 
 def setup_app_logging(options):

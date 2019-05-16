@@ -18,9 +18,10 @@
 import os
 import atexit
 import concurrent.futures
+from collections import namedtuple
 from tempfile import mkdtemp
 from ._jobcontext import PDFContext, get_logger, cleanup_working_files
-from ._weave import weave_layers
+from ._weave import OcrGrafter
 from ._pipeline import (
     triage,
     get_pdfinfo,
@@ -59,6 +60,12 @@ from ._validation import (
 )
 from .pdfa import file_claims_pdfa
 from .exec import qpdf
+
+from tqdm import tqdm
+
+PageResult = namedtuple(
+    'PageResult', 'pageno, pdf_page_from_image, ocr, text, orientation_correction'
+)
 
 
 def exec_page_sync(page_context):
@@ -115,12 +122,12 @@ def exec_page_sync(page_context):
                 ocr_image_out, page_context
             )
 
-    return (
-        page_context.pageno,
-        pdf_page_from_image_out,
-        ocr_out,
-        text_out,
-        orientation_correction,
+    return PageResult(
+        pageno=page_context.pageno,
+        pdf_page_from_image=pdf_page_from_image_out,
+        ocr=ocr_out,
+        text=text_out,
+        orientation_correction=orientation_correction,
     )
 
 
@@ -141,18 +148,36 @@ def exec_concurrent(context):
     max_workers = min(len(context.pdfinfo), context.options.jobs)
     if max_workers > 1:
         context.log.info("Start processing %d pages concurrent" % max_workers)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        layers = executor.map(exec_page_sync, context.get_page_contexts())
+
+    sidecars = {}
+    layers = []
+    ocrgraft = OcrGrafter(context)
+    with tqdm(
+        total=(2 * len(context.pdfinfo)), desc='OCR', unit='page', unit_scale=0.5
+    ) as pbar, concurrent.futures.ProcessPoolExecutor(
+        max_workers=max_workers
+    ) as executor:
+        # layers = executor.map(exec_page_sync, context.get_page_contexts())
+        futures = [
+            executor.submit(exec_page_sync, ctx) for ctx in context.get_page_contexts()
+        ]
+        for future in concurrent.futures.as_completed(futures):
+            page_result = future.result()
+            sidecars[page_result.pageno] = page_result.text
+            pbar.update()
+            ocrgraft.graft_page(page_result)
+            pbar.update()
 
     # Output sidecar text
     if context.options.sidecar:
-        sidecars = [layer[3] for layer in layers]
-        text = merge_sidecars(sidecars, context)
+        ordered_sidecars = [sidecars[pageno] for pageno in sorted(sidecars)]
+        text = merge_sidecars(ordered_sidecars, context)
         # Copy text file to destination
         copy_final(text, context.options.sidecar, context)
 
     # Merge layers to one single pdf
-    pdf = weave_layers(layers, context)
+    # pdf = weave_layers(layers, context)
+    pdf = ocrgraft.finalize()
 
     # PDF/A and metadata
     pdf = post_process(pdf, context)
