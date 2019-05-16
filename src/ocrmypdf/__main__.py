@@ -466,7 +466,7 @@ def run(args=None):
     options = parser.parse_args(args=args)
 
     log = logging.getLogger()
-    formatter = logging.Formatter('%(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(levelname)7s - %(message)s')
     console = logging.StreamHandler(stream=sys.stderr)
     console.setLevel(logging.DEBUG)
     console.setFormatter(formatter)

@@ -75,13 +75,15 @@ def cleanup_working_files(work_folder, options):
 
 class LogNameAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
-        return '[%s] %s' % (self.extra['filename'], msg), kwargs
+        # return '[%s] %s' % (self.extra['filename'], msg), kwargs
+        return '%s' % (msg,), kwargs
 
 
 class LogNamePageAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
         return (
-            '[%s:%05u] %s' % (self.extra['filename'], self.extra['page'], msg),
+            #'[%s:%05u] %s' % (self.extra['filename'], self.extra['page'], msg),
+            '%4u: %s' % (self.extra['page'], msg),
             kwargs,
         )
 
