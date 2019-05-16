@@ -22,7 +22,9 @@ import os
 import sys
 
 from . import PROGRAM_NAME, VERSION
+from .exceptions import ExitCode
 from ._sync import run_pipeline
+from ._validation import check_closed_streams
 
 # -------------
 # Parser
@@ -35,7 +37,7 @@ def numeric(basetype, min_=None, max_=None):
 
     def _numeric(string):
         value = basetype(string)
-        if min_ is not None and value < min_ or max_ is not None and value > max_:
+        if (min_ is not None and value < min_) or (max_ is not None and value > max_):
             msg = "%r not in valid range %r" % (string, (min_, max_))
             raise argparse.ArgumentTypeError(msg)
         return value
@@ -462,16 +464,37 @@ debugging.add_argument(
 )
 
 
-def run(args=None):
-    options = parser.parse_args(args=args)
+def setup_app_logging(options):
+    """Set up logging"""
 
     log = logging.getLogger()
     formatter = logging.Formatter('%(levelname)7s - %(message)s')
     console = logging.StreamHandler(stream=sys.stderr)
-    console.setLevel(logging.DEBUG)
     console.setFormatter(formatter)
     log.addHandler(console)
+    if options.quiet:
+        log.setLevel(logging.ERROR)
+    elif options.verbose >= 2:
+        log.setLevel(logging.DEBUG)
+    else:
+        log.setLevel(logging.INFO)
 
+
+def configure_app_environment(options):
+    """Configure the application environment
+
+    Don't do anything here that a library user would not expect.
+    """
+    if not check_closed_streams(options):
+        return ExitCode.bad_args
+    if hasattr(os, 'nice'):
+        os.nice(5)
+
+
+def run(args=None):
+    options = parser.parse_args(args=args)
+    setup_app_logging(options)
+    configure_app_environment(options)
     result = run_pipeline(options)
     return result
 

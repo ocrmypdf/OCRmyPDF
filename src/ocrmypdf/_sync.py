@@ -50,7 +50,6 @@ from .exceptions import ExitCode, ExitCodeException
 from . import VERSION
 from .helpers import available_cpu_count
 from ._validation import (
-    check_closed_streams,
     check_options,
     check_dependency_versions,
     check_environ,
@@ -163,18 +162,12 @@ def exec_concurrent(context):
 
 
 def run_pipeline(options):
-    if not check_closed_streams(options):
-        return ExitCode.bad_args
-
-    # Default to INFO level
-    if options.verbose is None:
-        options.verbose = 2
-
-    log = get_logger(options, 'Setup: ')
+    log = get_logger(options, __name__)
     log.debug('ocrmypdf ' + VERSION)
-    check_code = check_options(options, log)
-    if check_code != ExitCode.ok:
-        return check_code
+
+    result = check_options(options, log)
+    if result != ExitCode.ok:
+        return result
     check_dependency_versions(options, log)
 
     # Any changes to options will not take effect for options that are already
@@ -196,8 +189,6 @@ def run_pipeline(options):
     work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
 
     atexit.register(cleanup_working_files, work_folder, options)
-    if hasattr(os, 'nice'):
-        os.nice(5)
 
     try:
         check_requested_output_file(options, log)
@@ -212,7 +203,7 @@ def run_pipeline(options):
         pdfinfo = get_pdfinfo(origin_pdf, detailed_page_analysis=options.redo_ocr)
         context = PDFContext(options, work_folder, origin_pdf, pdfinfo)
 
-        # Validate options are okey for this pdf
+        # Validate options are okay for this pdf
         validate_pdfinfo_options(context)
 
         # Execute the pipeline
@@ -235,7 +226,10 @@ def run_pipeline(options):
                 msg = f"Output file is a {pdfa_info['conformance']} (as expected)"
                 log.info(msg)
             else:
-                msg = f"Output file is okay but is not PDF/A (seems to be {pdfa_info['conformance']})"
+                msg = (
+                    f"Output file is okay but is not PDF/A "
+                    f"(seems to be {pdfa_info['conformance']})"
+                )
                 log.warning(msg)
                 return ExitCode.pdfa_conversion_failed
         if not qpdf.check(options.output_file, log):
