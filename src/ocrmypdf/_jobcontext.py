@@ -96,5 +96,4 @@ def get_logger(options=None, prefix='ocrmypdf', filename=None, page=None):
         adapter = LogNameAdapter(log, dict(filename=filename))
     else:
         adapter = log
-    adapter.setLevel(logging.DEBUG)
     return adapter

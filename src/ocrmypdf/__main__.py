@@ -468,16 +468,21 @@ def setup_app_logging(options):
     """Set up logging"""
 
     log = logging.getLogger()
+    log.setLevel(logging.INFO)
     formatter = logging.Formatter('%(levelname)7s - %(message)s')
-    console = logging.StreamHandler(stream=sys.stderr)
-    console.setFormatter(formatter)
-    log.addHandler(console)
+    console = logging.StreamHandler(stream=TqdmConsole(sys.stderr))
     if options.quiet:
-        log.setLevel(logging.ERROR)
+        console.setLevel(logging.ERROR)
     elif options.verbose >= 2:
+        console.setLevel(logging.DEBUG)
         log.setLevel(logging.DEBUG)
     else:
-        log.setLevel(logging.INFO)
+        console.setLevel(logging.INFO)
+    console.setFormatter(formatter)
+    log.addHandler(console)
+
+    pdfminer_log = logging.getLogger('pdfminer')
+    pdfminer_log.setLevel(logging.ERROR)
 
 
 def configure_app_environment(options):
