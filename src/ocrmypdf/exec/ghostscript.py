@@ -164,8 +164,7 @@ def rasterize_pdf(
             log.debug(p.stdout)
 
         if p.returncode != 0:
-            log.error('Ghostscript rasterizing failed')
-            raise SubprocessOutputError()
+            raise SubprocessOutputError('Ghostscript rasterizing failed')
 
         tmp.seek(0)
         with Image.open(tmp) as im:
@@ -287,5 +286,4 @@ def generate_pdfa(
             # PDF/A - check PDF/A status elsewhere
             copy(gs_pdf.name, fspath(output_file))
         else:
-            log.error('Ghostscript PDF/A rendering failed')
-            raise SubprocessOutputError()
+            raise SubprocessOutputError('Ghostscript PDF/A rendering failed')
