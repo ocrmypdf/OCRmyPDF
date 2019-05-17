@@ -471,10 +471,15 @@ class TqdmConsole:
 
     def __init__(self, file):
         self.file = file
+        self.py36 = sys.version_info >= (3, 6)
 
     def write(self, msg):
         # When no progress bar is active, tqdm.write() routes to print()
-        tqdm.write(msg.rstrip(), file=self.file)
+        if self.py36:
+            if msg.strip() != '':
+                tqdm.write(msg.rstrip(), end='\n', file=self.file)
+        else:
+            tqdm.write(msg.rstrip(), end='\n', file=self.file)
 
     def flush(self):
         if hasattr(self.file, "flush"):
