@@ -118,13 +118,13 @@ install the system version to get most of the dependencies:
         ocrmypdf \
         python3-pip
 
-There are a few dependency changes between ocrmypdf 6.1.2 and 7.x. Let's get
+There are a few system dependency changes since ocrmypdf 6.1.2. Let's get
 these, too.
 
 .. code-block:: bash
 
     sudo apt-get install \
-        libexempi3 \
+        libxml2 \
         pngquant
 
 Then install the most recent ocrmypdf for the local user and set the user's ``PATH`` to check for the user's Python packages.

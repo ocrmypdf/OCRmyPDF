@@ -4,6 +4,7 @@
 .pytest_cache/
 .ruffus_history.sqlite
 .venv/
+.venv*/
 *.pyc
 *.sublime-*
 

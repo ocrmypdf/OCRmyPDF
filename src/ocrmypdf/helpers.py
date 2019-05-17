@@ -66,10 +66,6 @@ def re_symlink(input_file, soft_link_name, *args, **kwargs):
     os.symlink(os.path.abspath(input_file), soft_link_name)
 
 
-def is_iterable_notstr(thing):
-    return isinstance(thing, Iterable) and not isinstance(thing, str)
-
-
 def page_number(input_file):
     """Get one-based page number implied by filename (000002.pdf -> 2)"""
     return int(os.path.basename(os.fspath(input_file))[0:6])
@@ -123,14 +119,6 @@ def is_file_writable(test_file):
             with suppress(OSError):
                 p.unlink()
         return True
-
-
-def flatten_groups(groups):
-    for obj in groups:
-        if is_iterable_notstr(obj):
-            yield from obj
-        else:
-            yield obj
 
 
 def deprecated(func):
