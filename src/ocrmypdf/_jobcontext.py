@@ -22,10 +22,29 @@ import os
 from contextlib import suppress
 
 
-class PDFContext:
+class PicklableLoggerMixin:
+    def __init__(self):
+        self._log = None
+
+    @property
+    def log(self):
+        if not self._log:
+            self._log = self.get_logger()
+        return self._log
+
+    def __getstate__(self):
+        log = self._log
+        self._log = None
+        state = self.__dict__
+        self._log = log
+        return state
+
+
+class PDFContext(PicklableLoggerMixin):
     """Holds our context for a particular run of the pipeline"""
 
     def __init__(self, options, work_folder, origin, pdfinfo):
+        PicklableLoggerMixin.__init__(self)
         self.options = options
         self.work_folder = work_folder
         self.origin = origin
@@ -36,7 +55,9 @@ class PDFContext:
             self.name = 'origin.pdf'
         if self.name == '-':
             self.name = 'stdin'
-        self.log = get_logger(options, filename=self.name)
+
+    def get_logger(self):
+        return make_logger(self.options, filename=self.name)
 
     def get_path(self, name):
         return os.path.join(self.work_folder, name)
@@ -47,22 +68,27 @@ class PDFContext:
             yield PageContext(self, n)
 
 
-class PageContext:
-    """Holds our context for a page"""
+class PageContext(PicklableLoggerMixin):
+    """Holds our context for a page
+
+    Must be pickable, so only store intrinsic/simple data elements
+    """
 
     def __init__(self, pdf_context, pageno):
-        self.pdf_context = pdf_context
+        PicklableLoggerMixin.__init__(self)
+        self.work_folder = pdf_context.work_folder
+        self.origin = pdf_context.origin
         self.options = pdf_context.options
+        self.name = pdf_context.name
         self.pageno = pageno
         self.pageinfo = pdf_context.pdfinfo[pageno]
-        self.log = get_logger(
-            pdf_context.options, filename=self.pdf_context.name, page=(self.pageno + 1)
-        )
+        self._log = None
+
+    def get_logger(self):
+        return make_logger(self.options, filename=self.name, page=self.pageno + 1)
 
     def get_path(self, name):
-        return os.path.join(
-            self.pdf_context.work_folder, "%06d_%s" % (self.pageno + 1, name)
-        )
+        return os.path.join(self.work_folder, "%06d_%s" % (self.pageno + 1, name))
 
 
 def cleanup_working_files(work_folder, options):
@@ -88,7 +114,7 @@ class LogNamePageAdapter(logging.LoggerAdapter):
         )
 
 
-def get_logger(options=None, prefix='ocrmypdf', filename=None, page=None):
+def make_logger(options=None, prefix='ocrmypdf', filename=None, page=None):
     log = logging.getLogger(prefix)
     if filename and page:
         adapter = LogNamePageAdapter(log, dict(filename=filename, page=page))

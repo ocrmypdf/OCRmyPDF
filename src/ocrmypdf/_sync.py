@@ -29,7 +29,7 @@ from tempfile import mkdtemp
 from tqdm import tqdm
 
 from . import VERSION
-from ._jobcontext import PDFContext, cleanup_working_files, get_logger
+from ._jobcontext import PDFContext, cleanup_working_files, make_logger
 from ._pipeline import (
     convert_to_pdfa,
     copy_final,
@@ -83,17 +83,13 @@ def exec_page_sync(page_context):
     if is_ocr_required(page_context):
         if options.rotate_pages:
             # Rasterize
-            rasterize_preview_out = rasterize_preview(
-                page_context.pdf_context.origin, page_context
-            )
+            rasterize_preview_out = rasterize_preview(page_context.origin, page_context)
             orientation_correction = get_orientation_correction(
                 rasterize_preview_out, page_context
             )
 
         rasterize_out = rasterize(
-            page_context.pdf_context.origin,
-            page_context,
-            correction=orientation_correction,
+            page_context.origin, page_context, correction=orientation_correction
         )
 
         preprocess_out = rasterize_out
@@ -240,7 +236,7 @@ def exec_concurrent(context):
 
 
 def run_pipeline(options):
-    log = get_logger(options, __name__)
+    log = make_logger(options, __name__)
     log.debug('ocrmypdf ' + VERSION)
 
     result = check_options(options)
