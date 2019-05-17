@@ -296,7 +296,6 @@ def test_metadata_fixup_warning(resources, outdir, caplog):
     copyfile(resources / 'graph.pdf', outdir / 'graph.pdf')
 
     context = PDFContext(options, outdir, outdir / 'graph.pdf', None)
-    context.log = logging.getLogger()
     metadata_fixup(working_file=outdir / 'graph.pdf', context=context)
     for record in caplog.records:
         assert record.levelname != 'WARNING'
@@ -308,7 +307,6 @@ def test_metadata_fixup_warning(resources, outdir, caplog):
     graph.save(outdir / 'graph_mod.pdf')
 
     context = PDFContext(options, outdir, outdir / 'graph_mod.pdf', None)
-    context.log = logging.getLogger()
     metadata_fixup(working_file=outdir / 'graph.pdf', context=context)
     assert any(record.levelname == 'WARNING' for record in caplog.records)
 
