@@ -15,14 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import argparse
-import logging
 from os import fspath
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
 from ocrmypdf.__main__ import parser
 from ocrmypdf._validation import check_options
 from ocrmypdf.exceptions import ExitCode

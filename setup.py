@@ -26,9 +26,6 @@ if sys.version_info < (3, 6):
     sys.exit(1)
 
 from setuptools import setup, find_packages
-from subprocess import STDOUT, check_output, CalledProcessError
-from collections.abc import Mapping
-import re
 
 # pylint: disable=w0613
 

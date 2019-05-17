@@ -112,7 +112,7 @@ def test_deskew(spoof_tesseract_noop, resources, outdir):
     )
 
     pix = Pix.open(deskewed_png)
-    skew_angle, skew_confidence = pix.find_skew()
+    skew_angle, _skew_confidence = pix.find_skew()
 
     print(skew_angle)
     assert -0.5 < skew_angle < 0.5, "Deskewing failed"

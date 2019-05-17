@@ -19,7 +19,6 @@
 
 import logging
 import os
-
 import sys
 import textwrap
 from pathlib import Path
@@ -27,17 +26,6 @@ from pathlib import Path
 import PIL
 
 from ._unicodefun import verify_python3_env
-
-from .exec import (
-    ghostscript,
-    jbig2enc,
-    qpdf,
-    tesseract,
-    check_external_program,
-    unpaper,
-    pngquant,
-)
-from .helpers import is_file_writable, re_symlink
 from .exceptions import (
     BadArgsError,
     ExitCode,
@@ -45,6 +33,16 @@ from .exceptions import (
     MissingDependencyError,
     OutputFileAccessError,
 )
+from .exec import (
+    check_external_program,
+    ghostscript,
+    jbig2enc,
+    pngquant,
+    qpdf,
+    tesseract,
+    unpaper,
+)
+from .helpers import is_file_writable, re_symlink
 
 # -------------
 # External dependencies
@@ -331,7 +329,7 @@ def log_page_orientations(pdfinfo):
         if angle != 0:
             orientations.append('{0}{1}'.format(n + 1, direction.get(angle, '')))
     if orientations:
-        log.info('Page orientations detected: ' + ' '.join(orientations))
+        log.info('Page orientations detected: %s', ' '.join(orientations))
 
 
 def check_environ(options):
@@ -384,7 +382,7 @@ def check_input_file(options, start_input_file):
         try:
             re_symlink(options.input_file, start_input_file, log)
         except FileNotFoundError:
-            log.error("File not found - " + options.input_file)
+            log.error("File not found - %s", options.input_file)
             raise InputFileError()
 
 
@@ -402,7 +400,7 @@ def check_requested_output_file(options):
             raise BadArgsError()
     elif not is_file_writable(options.output_file):
         log.error(
-            "Output file location (" + options.output_file + ") is not a writable file."
+            "Output file location (%s) is not a writable file.", options.output_file
         )
         raise OutputFileAccessError()
 

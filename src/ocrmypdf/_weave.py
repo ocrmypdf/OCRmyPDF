@@ -15,11 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from contextlib import suppress
-from itertools import groupby
-from pathlib import Path
 import os
+from contextlib import suppress
+from pathlib import Path
+
 import pikepdf
+
 from .exec import tesseract
 
 MAX_REPLACE_PAGES = int(os.environ.get('_OCRMYPDF_MAX_REPLACE_PAGES', 100))
@@ -44,7 +45,7 @@ def _update_page_resources(*, page, font, font_key, procset):
     resources['/ProcSet'] = procset
 
 
-def strip_invisible_text(pdf, page, log):
+def strip_invisible_text(pdf, page):
     stream = []
     in_text_obj = False
     render_mode = 0
@@ -151,7 +152,7 @@ def _weave_layers_graft(
     new_text_layer = pikepdf.Stream(pdf_base, pdf_text_contents)
 
     if strip_old_text:
-        strip_invisible_text(pdf_base, base_page, log)
+        strip_invisible_text(pdf_base, base_page)
 
     base_page.page_contents_add(new_text_layer, prepend=True)
 
@@ -205,7 +206,7 @@ class OcrGrafter:
         self.interim_count = 0
 
     def graft_page(self, page_result):
-        pageno, image, text, sidecar, autorotate_correction = page_result
+        pageno, image, text, _sidecar, autorotate_correction = page_result
         if text and not self.font:
             self.font, self.font_key = _find_font(text, self.pdf_base)
 
@@ -262,7 +263,6 @@ class OcrGrafter:
         # lid on our memory usage for very large files. Attach the font to
         # page 1 even if page 1 doesn't use it, so we have a way to get it
         # back.
-        # TODO refactor this to outside the loop
         page0 = self.pdf_base.pages[0]
         _update_page_resources(
             page=page0, font=self.font, font_key=self.font_key, procset=self.procset

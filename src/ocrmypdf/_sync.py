@@ -15,59 +15,59 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import atexit
-import concurrent.futures
 import logging
 import logging.handlers
 import multiprocessing
-import threading
-import sys
+import os
 import signal
+import sys
+import threading
 from collections import namedtuple
 from tempfile import mkdtemp
-from ._jobcontext import PDFContext, get_logger, cleanup_working_files
-from ._weave import OcrGrafter
-from ._pipeline import (
-    triage,
-    get_pdfinfo,
-    validate_pdfinfo_options,
-    is_ocr_required,
-    rasterize_preview,
-    get_orientation_correction,
-    rasterize,
-    preprocess_remove_background,
-    preprocess_deskew,
-    preprocess_clean,
-    create_ocr_image,
-    ocr_tesseract_hocr,
-    should_visible_page_image_use_jpg,
-    create_visible_page_jpg,
-    create_pdf_page_from_image,
-    render_hocr_page,
-    ocr_tesseract_textonly_pdf,
-    generate_postscript_stub,
-    convert_to_pdfa,
-    metadata_fixup,
-    merge_sidecars,
-    optimize_pdf,
-    copy_final,
-)
-from .exceptions import ExitCode, ExitCodeException
+
+from tqdm import tqdm
+
 from . import VERSION
-from .helpers import available_cpu_count
+from ._jobcontext import PDFContext, cleanup_working_files, get_logger
+from ._pipeline import (
+    convert_to_pdfa,
+    copy_final,
+    create_ocr_image,
+    create_pdf_page_from_image,
+    create_visible_page_jpg,
+    generate_postscript_stub,
+    get_orientation_correction,
+    get_pdfinfo,
+    is_ocr_required,
+    merge_sidecars,
+    metadata_fixup,
+    ocr_tesseract_hocr,
+    ocr_tesseract_textonly_pdf,
+    optimize_pdf,
+    preprocess_clean,
+    preprocess_deskew,
+    preprocess_remove_background,
+    rasterize,
+    rasterize_preview,
+    render_hocr_page,
+    should_visible_page_image_use_jpg,
+    triage,
+    validate_pdfinfo_options,
+)
 from ._validation import (
-    check_options,
     check_dependency_versions,
     check_environ,
+    check_options,
     check_requested_output_file,
     create_input_file,
     report_output_file_size,
 )
-from .pdfa import file_claims_pdfa
+from ._weave import OcrGrafter
+from .exceptions import ExitCode, ExitCodeException
 from .exec import qpdf
-
-from tqdm import tqdm
+from .helpers import available_cpu_count
+from .pdfa import file_claims_pdfa
 
 PageResult = namedtuple(
     'PageResult', 'pageno, pdf_page_from_image, ocr, text, orientation_correction'
@@ -178,7 +178,7 @@ def log_listener(queue):
             logger = logging.getLogger(record.name)
             logger.handle(record)
         except Exception:
-            import sys, traceback
+            import traceback
 
             print("Logging problem", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)

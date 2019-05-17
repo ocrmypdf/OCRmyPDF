@@ -172,6 +172,7 @@ class LTStateAwareChar(LTChar):
             - the Unicode mapping is known, and both have the same render mode
             - the Unicode mapping is unknown but both are part of the same font
         """
+        # pylint: disable=protected-access
         both_unicode_mapped = isinstance(self._text, str) and isinstance(obj._text, str)
         try:
             if both_unicode_mapped:
