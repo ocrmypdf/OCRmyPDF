@@ -445,6 +445,7 @@ def test_tesseract_crash_autorotate(spoof_tesseract_crash, resources, no_outpdf)
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
+@pytest.mark.slow
 def test_tesseract_image_too_big(
     renderer, spoof_tesseract_big_image_error, resources, outpdf
 ):
@@ -1020,6 +1021,7 @@ def test_bad_utf8(spoof_tess_bad_utf8, renderer, resources, no_outpdf):
 @pytest.mark.skipif(
     PIL.__version__ < '5.0.0', reason="Pillow < 5.0.0 doesn't raise the exception"
 )
+@pytest.mark.slow
 def test_decompression_bomb(resources, outpdf):
     p, out, err = run_ocrmypdf(resources / 'hugemono.pdf', outpdf)
     assert 'decompression bomb' in err
