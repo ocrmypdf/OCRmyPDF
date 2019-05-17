@@ -132,7 +132,7 @@ def triage(input_file, output_file, options, log):
                     "input file is a PDF, not an image."
                 )
             # Origin file is a pdf create a symlink with pdf extension
-            re_symlink(input_file, output_file, log)
+            re_symlink(input_file, output_file)
             return output_file
     except EnvironmentError as e:
         log.error(e)

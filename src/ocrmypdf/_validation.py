@@ -355,7 +355,7 @@ def create_input_file(options, work_folder):
     else:
         try:
             target = os.path.join(work_folder, 'origin')
-            re_symlink(options.input_file, target, log)
+            re_symlink(options.input_file, target)
             return target
         except FileNotFoundError:
             log.error("File not found - %s", options.input_file)
@@ -372,7 +372,7 @@ def check_input_file(options, start_input_file):
             copyfileobj(sys.stdin.buffer, stream_buffer)
     else:
         try:
-            re_symlink(options.input_file, start_input_file, log)
+            re_symlink(options.input_file, start_input_file)
         except FileNotFoundError:
             log.error("File not found - %s", options.input_file)
             raise InputFileError()

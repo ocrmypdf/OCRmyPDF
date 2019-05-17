@@ -81,7 +81,9 @@ def extract_image_jbig2(*, pike, root, log, image, xref, options):
     pim, filtdp = result
 
     if (
-        pim.bits_per_component == 1 and filtdp != Name.JBIG2Decode and jbig2enc.available()
+        pim.bits_per_component == 1
+        and filtdp != Name.JBIG2Decode
+        and jbig2enc.available()
     ):
         try:
             imgname = Path(root / f'{xref:08d}')
@@ -126,7 +128,9 @@ def extract_image_generic(*, pike, root, log, image, xref, options):
             return None
         return xref, ext
     elif (
-        pim.indexed and pim.colorspace in pim.SIMPLE_COLORSPACES and options.optimize >= 3
+        pim.indexed
+        and pim.colorspace in pim.SIMPLE_COLORSPACES
+        and options.optimize >= 3
     ):
         # Try to improve on indexed images - these are far from low hanging
         # fruit in most cases
@@ -426,7 +430,7 @@ def optimize(input_file, output_file, context):
     log = context.log
     options = context.options
     if options.optimize == 0:
-        re_symlink(input_file, output_file, log)
+        re_symlink(input_file, output_file)
         return
 
     if options.jpeg_quality == 0:
@@ -467,9 +471,9 @@ def optimize(input_file, output_file, context):
 
     if savings < 0:
         log.info("Optimize did not improve the file - discarded")
-        re_symlink(input_file, output_file, log)
+        re_symlink(input_file, output_file)
     else:
-        re_symlink(target_file, output_file, log)
+        re_symlink(target_file, output_file)
 
 
 def main(infile, outfile, level, jobs=1):
@@ -479,7 +483,9 @@ def main(infile, outfile, level, jobs=1):
     class OptimizeOptions:
         """Emulate ocrmypdf's options"""
 
-        def __init__(self, input_file, jobs, optimize, jpeg_quality, png_quality, jb2lossy):
+        def __init__(
+            self, input_file, jobs, optimize, jpeg_quality, png_quality, jb2lossy
+        ):
             self.input_file = input_file
             self.jobs = jobs
             self.optimize = optimize
