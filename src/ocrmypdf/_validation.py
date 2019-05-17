@@ -52,10 +52,6 @@ HOCR_OK_LANGS = frozenset(['eng', 'deu', 'spa', 'ita', 'por'])
 log = logging.getLogger(__name__)
 
 
-def complain(message):
-    print(*textwrap.wrap(message), file=sys.stderr)
-
-
 # --------
 # Critical environment tests
 verify_python3_env()
@@ -297,7 +293,7 @@ def check_closed_streams(options):
 
     if sys.stdin is None:
         if options.input_file == '-':
-            print("Trying to read from stdin but stdin seems closed", file=sys.stderr)
+            log.error("Trying to read from stdin but stdin seems closed")
             return False
         sys.stdin = open(os.devnull, 'r')
 
@@ -306,14 +302,10 @@ def check_closed_streams(options):
             # Can't replace stdout if the user is piping
             # If this case can even happen, it must be some kind of weird
             # stream.
-            print(
-                textwrap.dedent(
-                    """\
-                Output was set to stdout '-' but the stream attached to
-                stdout does not support the flush() system call.  This
-                will fail."""
-                ),
-                file=sys.stderr,
+            log.error(
+                "Output was set to stdout '-' but the stream attached to "
+                "stdout does not support the flush() system call.  This "
+                "will fail."
             )
             return False
         sys.stdout = open(os.devnull, 'w')
@@ -460,7 +452,7 @@ def check_dependency_versions(options):
         need_version='9.15',  # limited by Travis CI / Ubuntu 14.04 backports
     )
     if ghostscript.version() == '9.24':
-        complain(
+        log.error(
             "Ghostscript 9.24 contains serious regressions and is not "
             "supported. Please upgrade to Ghostscript 9.25 or use an older "
             "version."
