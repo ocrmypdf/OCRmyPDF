@@ -28,7 +28,7 @@ This will walk through a directory tree and run OCR on all files in place, print
 .. code-block:: bash
 
 	find . -printf '%p' -name '*.pdf' -exec ocrmypdf '{}' '{}' \;
-	
+
 Alternatively, with a docker container (mounts a volume to the container where the PDFs are stored):
 
 .. code-block:: bash
@@ -99,8 +99,6 @@ API
 """
 
 OCRmyPDF is currently supported as a command line interface. This means that even if you are using OCRmyPDF in a Python script, you should run it in a subprocess rather importing the ocrmypdf package.
-
-The reason for this limitation is that the `ruffus <https://github.com/bunbun/ruffus/>`_ library that OCRmyPDF depends on is unfortunately not reentrant. OCRmyPDF works by defining each operation it does as a ruffus task that takes one or more files as input and generates one or more files as output. As such ruffus is fairly fundamental.
 
 (If you find individual functions implemented in OCRmyPDF useful (such as ``ocrmypdf.pdfinfo``), you can use these if you wish to.)
 
