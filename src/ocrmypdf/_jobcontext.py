@@ -33,10 +33,11 @@ class PicklableLoggerMixin:
         return self._log
 
     def __getstate__(self):
-        log = self._log
-        self._log = None
-        state = self.__dict__
-        self._log = log
+        # Python 3.6 is incapable of pickling a logger and marshalling it to another
+        # process (threading._RLock error), so we disconnect it before pickling,
+        # and create a new logger in the worker process.
+        state = self.__dict__.copy()
+        state['_log'] = None
         return state
 
 
