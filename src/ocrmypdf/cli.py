@@ -20,10 +20,6 @@ import argparse
 from . import PROGRAM_NAME, VERSION
 
 
-# -------------
-# Parser
-
-
 def numeric(basetype, min_=None, max_=None):
     """Validator for numeric params"""
     min_ = basetype(min_) if min_ is not None else None

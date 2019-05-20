@@ -46,11 +46,11 @@ class TqdmConsole:
             self.file.flush()
 
 
-def configure_logging(options, progress_bar_friendly=True, manage_root_logger=False):
+def configure_logging(verbosity, progress_bar_friendly=True, manage_root_logger=False):
     """Set up logging
 
     Library users may wish to use this function if they want their log output to be
-    similar to ocrmypdf's when run as a command. If not use, the external application
+    similar to ocrmypdf command line interface. If not used, the external application
     should configure logging on its own.
 
     ocrmypdf will perform all of its logging under the `"ocrmypdf"` logging namespace.
@@ -61,11 +61,15 @@ def configure_logging(options, progress_bar_friendly=True, manage_root_logger=Fa
     Library users may perform additional configuration afterwards.
 
     Args:
-        options: OCRmyPDF options
-        progress_bar_friendly (bool): install the TqdmConsole log handler, which is
+        verbosity: Verbosity level.
+            * `-1`: Quiet
+            * `0`: Default
+            * `1`: Output ocrmypdf debug messages
+            * `2`: More detailed debugging from ocrmypdf and dependent modules
+        progress_bar_friendly (bool): Install the TqdmConsole log handler, which is
             compatible with the tqdm progress bar; without this log messages will
             overwrite the progress bar
-        manage_root_logger (bool): configure the process's root logger, to ensure
+        manage_root_logger (bool): Configure the process's root logger, to ensure
             all log output is sent through
     """
 
@@ -75,23 +79,27 @@ def configure_logging(options, progress_bar_friendly=True, manage_root_logger=Fa
 
     if progress_bar_friendly:
         console = logging.StreamHandler(stream=TqdmConsole(sys.stderr))
-        if options.quiet:
+        if verbosity < 0:
             console.setLevel(logging.ERROR)
-        elif options.verbose >= 2:
+        elif verbosity >= 1:
             console.setLevel(logging.DEBUG)
         else:
             console.setLevel(logging.INFO)
 
     formatter = logging.Formatter('%(levelname)7s - %(message)s')
-
-    if options.verbose >= 2:
+    if verbosity >= 1:
         log.setLevel(logging.DEBUG)
+    if verbosity >= 2:
+        formatter = logging.Formatter('%(name)s - %(levelname)7s - %(message)s')
 
     console.setFormatter(formatter)
     log.addHandler(console)
 
-    pdfminer_log = logging.getLogger('pdfminer')
-    pdfminer_log.setLevel(logging.ERROR)
+    if verbosity <= 1:
+        pdfminer_log = logging.getLogger('pdfminer')
+        pdfminer_log.setLevel(logging.ERROR)
+        pil_log = logging.getLogger('PIL')
+        pil_log.setLevel(logging.INFO)
 
 
 def create_options(*, input_file, output_file, **kwargs):

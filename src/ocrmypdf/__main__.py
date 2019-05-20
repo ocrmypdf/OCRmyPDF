@@ -37,7 +37,10 @@ def run(args=None):
     if hasattr(os, 'nice'):
         os.nice(5)
 
-    configure_logging(options, manage_root_logger=True)
+    verbosity = options.verbose
+    if options.quiet:
+        verbosity = -1
+    configure_logging(verbosity, manage_root_logger=True)
     result = api_run(options=options)
     return result
 
