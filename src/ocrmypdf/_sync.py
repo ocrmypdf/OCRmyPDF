@@ -257,8 +257,6 @@ def run_pipeline(options):
     os.environ.setdefault('OMP_THREAD_LIMIT', '1')
 
     check_environ(options)
-    if os.environ.get('PYTEST_CURRENT_TEST'):
-        os.environ['_OCRMYPDF_TEST_INFILE'] = options.input_file
 
     work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
 
