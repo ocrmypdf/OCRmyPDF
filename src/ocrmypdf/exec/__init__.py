@@ -164,12 +164,12 @@ def check_external_program(
     except (CalledProcessError, FileNotFoundError, MissingDependencyError):
         _error_missing_program(program, package, required_for, recommended)
         if not recommended:
-            sys.exit(ExitCode.missing_dependency)
+            raise MissingDependencyError()
         return
 
     if found_version < need_version:
         _error_old_version(program, package, need_version, found_version, required_for)
         if not recommended:
-            sys.exit(ExitCode.missing_dependency)
+            raise MissingDependencyError()
 
-    log.debug(f'Found {program} {found_version}')
+    log.debug('Found %s %s', program, found_version)
