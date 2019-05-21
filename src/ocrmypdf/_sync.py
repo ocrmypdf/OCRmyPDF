@@ -28,7 +28,7 @@ from tempfile import mkdtemp
 
 from tqdm import tqdm
 
-from . import VERSION
+from . import __version__
 from ._jobcontext import PDFContext, cleanup_working_files, make_logger
 from ._pipeline import (
     convert_to_pdfa,
@@ -237,12 +237,6 @@ def exec_concurrent(context):
 
 def run_pipeline(options):
     log = make_logger(options, __name__)
-    log.debug('ocrmypdf ' + VERSION)
-
-    result = check_options(options)
-    if result != ExitCode.ok:
-        return result
-    check_dependency_versions(options)
 
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
@@ -255,8 +249,6 @@ def run_pipeline(options):
     # jobs run multithreaded. Same story for pngquant. Tess <4 ignores this
     # variable, but harmless to set if ignored.
     os.environ.setdefault('OMP_THREAD_LIMIT', '1')
-
-    check_environ(options)
 
     work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
 

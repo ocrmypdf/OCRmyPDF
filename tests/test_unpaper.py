@@ -19,9 +19,10 @@ from os import fspath
 from unittest.mock import patch
 
 import pytest
-from ocrmypdf.__main__ import parser
+
+from ocrmypdf.cli import parser
 from ocrmypdf._validation import check_options
-from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 from ocrmypdf.exec import unpaper
 
 # pytest.helpers is dynamic
@@ -54,7 +55,7 @@ def test_no_unpaper(resources, no_outpdf):
 
     with patch("ocrmypdf.exec.unpaper.version") as mock_unpaper_version:
         mock_unpaper_version.side_effect = FileNotFoundError("unpaper")
-        with pytest.raises(SystemExit):
+        with pytest.raises(MissingDependencyError):
             check_options(options)
 
 

@@ -24,6 +24,7 @@ from tqdm import tqdm
 
 from .cli import parser
 from ._sync import run_pipeline
+from ._validation import check_options
 
 
 class TqdmConsole:
@@ -178,8 +179,5 @@ def ocrmypdf(  # pylint: disable=unused-argument
     keep_temporary_files=None,
 ):
     options = create_options(**locals())
-    return run(options)
-
-
-def run(options):
+    check_options(options)
     return run_pipeline(options)

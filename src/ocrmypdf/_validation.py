@@ -20,7 +20,6 @@
 import logging
 import os
 import sys
-import textwrap
 from pathlib import Path
 
 import PIL
@@ -28,7 +27,6 @@ import PIL
 from ._unicodefun import verify_python3_env
 from .exceptions import (
     BadArgsError,
-    ExitCode,
     InputFileError,
     MissingDependencyError,
     OutputFileAccessError,
@@ -243,26 +241,17 @@ def check_options_pillow(options):
 
 
 def check_options(options):
-    try:
-        check_options_languages(options)
-        check_options_metadata(options)
-        check_options_output(options)
-        check_options_sidecar(options)
-        check_options_preprocessing(options)
-        check_options_ocr_behavior(options)
-        check_options_optimizing(options)
-        check_options_advanced(options)
-        check_options_pillow(options)
-        return ExitCode.ok
-    except ValueError as e:
-        log.error(e)
-        return ExitCode.bad_args
-    except BadArgsError as e:
-        log.error(e)
-        return e.exit_code
-    except MissingDependencyError as e:
-        log.error(e)
-        return ExitCode.missing_dependency
+    check_options_languages(options)
+    check_options_metadata(options)
+    check_options_output(options)
+    check_options_sidecar(options)
+    check_options_preprocessing(options)
+    check_options_ocr_behavior(options)
+    check_options_optimizing(options)
+    check_options_advanced(options)
+    check_options_pillow(options)
+    check_dependency_versions(options)
+    check_environ(options)
 
 
 def check_closed_streams(options):
@@ -334,11 +323,8 @@ def check_environ(options):
     for k in old_envvars:
         if k in os.environ:
             log.warning(
-                textwrap.dedent(
-                    f"""\
-                OCRmyPDF no longer uses the environment variable {k}.
-                Change PATH to select alternate programs."""
-                )
+                "OCRmyPDF no longer uses the environment variable {k}."
+                "Change PATH to select alternate programs."
             )
 
 
@@ -358,8 +344,7 @@ def create_input_file(options, work_folder):
             re_symlink(options.input_file, target)
             return target
         except FileNotFoundError:
-            log.error("File not found - %s", options.input_file)
-            raise InputFileError()
+            raise InputFileError(f"File not found - {options.input_file}")
 
 
 def check_input_file(options, start_input_file):
@@ -374,27 +359,21 @@ def check_input_file(options, start_input_file):
         try:
             re_symlink(options.input_file, start_input_file)
         except FileNotFoundError:
-            log.error("File not found - %s", options.input_file)
-            raise InputFileError()
+            raise InputFileError(f"File not found - {options.input_file}")
 
 
 def check_requested_output_file(options):
     if options.output_file == '-':
         if sys.stdout.isatty():
-            log.error(
-                textwrap.dedent(
-                    """\
-                Output was set to stdout '-' but it looks like stdout
-                is connected to a terminal.  Please redirect stdout to a
-                file."""
-                )
+            raise BadArgsError(
+                "Output was set to stdout '-' but it looks like stdout "
+                "is connected to a terminal.  Please redirect stdout to a "
+                "file."
             )
-            raise BadArgsError()
     elif not is_file_writable(options.output_file):
-        log.error(
-            "Output file location (%s) is not a writable file.", options.output_file
+        raise OutputFileAccessError(
+            f"Output file location ({options.output_file}) is not a writable file."
         )
-        raise OutputFileAccessError()
 
 
 def report_output_file_size(options, input_file, output_file):
@@ -429,12 +408,8 @@ def report_output_file_size(options, input_file, output_file):
         explanation = "No reason for this increase is known.  Please report this issue."
 
     log.warning(
-        textwrap.dedent(
-            f"""\
-        The output file size is {ratio:.2f}× larger than the input file.
-        {explanation}
-        """
-        )
+        f"The output file size is {ratio:.2f}× larger than the input file.\n"
+        f"{explanation}"
     )
 
 
@@ -452,12 +427,11 @@ def check_dependency_versions(options):
         need_version='9.15',  # limited by Travis CI / Ubuntu 14.04 backports
     )
     if ghostscript.version() == '9.24':
-        log.error(
+        raise MissingDependencyError(
             "Ghostscript 9.24 contains serious regressions and is not "
             "supported. Please upgrade to Ghostscript 9.25 or use an older "
             "version."
         )
-        return ExitCode.missing_dependency
     check_external_program(
         program='qpdf',
         package='qpdf',

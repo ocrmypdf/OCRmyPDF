@@ -20,13 +20,16 @@ import logging
 import os
 import sys
 
+from . import __version__
 from .cli import parser
-from .api import configure_logging, run as api_run
-from ._validation import check_closed_streams
-from .exceptions import ExitCode
+from .api import configure_logging
+from ._jobcontext import make_logger
+from ._sync import run_pipeline
+from ._validation import check_closed_streams, check_options
+from .exceptions import ExitCode, BadArgsError, MissingDependencyError
 
 
-def run(args=None):
+def main(args=None):
     options = parser.parse_args(args=args)
 
     if not check_closed_streams(options):
@@ -41,9 +44,23 @@ def run(args=None):
     if options.quiet:
         verbosity = -1
     configure_logging(verbosity, manage_root_logger=True)
-    result = api_run(options=options)
+    log = make_logger('ocrmypdf')
+    log.debug('ocrmypdf ' + __version__)
+    try:
+        check_options(options)
+    except ValueError as e:
+        log.error(e)
+        return ExitCode.bad_args
+    except BadArgsError as e:
+        log.error(e)
+        return e.exit_code
+    except MissingDependencyError as e:
+        log.error(e)
+        return ExitCode.missing_dependency
+
+    result = run_pipeline(options=options)
     return result
 
 
 if __name__ == '__main__':
-    sys.exit(run())
+    sys.exit(main())
