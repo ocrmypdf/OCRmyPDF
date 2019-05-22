@@ -16,9 +16,9 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
 v8.3.0
 ------
 
--   Improved the strategy for updating pages when a new image of the page was produced. We know attempt to preserve more content from the original file, for annotations in particular.
+-   Improved the strategy for updating pages when a new image of the page was produced. We now attempt to preserve more content from the original file, for annotations in particular.
 
--   For PDFs with more than 100 pages and a sequence where one PDF page was replaced and one or more subsequent ones were skipped, an intermediate file would be corrupted while grafting OCR text, causing processing to fail.
+-   For PDFs with more than 100 pages and a sequence where one PDF page was replaced and one or more subsequent ones were skipped, an intermediate file would be corrupted while grafting OCR text, causing processing to fail. This is a regression, likely introduced in v8.2.4.
 
 -   Previously, we resized the images produced by Ghostscript by a small number of pixels to ensure the output image size was an exactly what we wanted. Having discovered a way to get Ghostscript to produce the exact image sizes we require, we eliminated the resizing step.
 
