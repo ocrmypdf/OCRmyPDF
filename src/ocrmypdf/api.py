@@ -128,10 +128,8 @@ def create_options(*, input_file, output_file, **kwargs):
     cmdline.append(str(input_file))
     cmdline.append(str(output_file))
 
-    try:
-        options = parser.parse_args(cmdline)
-    except argparse.ArgumentError as e:
-        raise ValueError(str(e))
+    parser.api_mode = True
+    options = parser.parse_args(cmdline)
     return options
 
 

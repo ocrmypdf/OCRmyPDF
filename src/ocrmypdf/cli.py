@@ -36,7 +36,24 @@ def numeric(basetype, min_=None, max_=None):
     return _numeric
 
 
-parser = argparse.ArgumentParser(
+class ArgumentParser(argparse.ArgumentParser):
+    """Override parser's default behavior of calling sys.exit()
+
+    https://stackoverflow.com/questions/5943249/python-argparse-and-controlling-overriding-the-exit-status-code
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.api_mode = False
+
+    def error(self, message):
+        if not self.api_mode:
+            super().error(message)
+            return
+        raise ValueError(message)
+
+
+parser = ArgumentParser(
     prog=PROGRAM_NAME,
     fromfile_prefix_chars='@',
     formatter_class=argparse.RawDescriptionHelpFormatter,
