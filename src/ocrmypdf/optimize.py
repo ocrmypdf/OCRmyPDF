@@ -22,7 +22,7 @@ from os import fspath
 from pathlib import Path
 
 from PIL import Image
-
+from tqdm import tqdm
 import pikepdf
 from pikepdf import Name, Dictionary
 
@@ -266,9 +266,13 @@ def _produce_jbig2_images(jbig2_groups, root, log, options):
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=options.jobs) as executor:
         futures = jbig2_futures(executor, root, jbig2_groups)
-        for future in concurrent.futures.as_completed(futures):
-            proc = future.result()
-            log.debug(proc.stderr.decode())
+        with tqdm(
+            total=len(jbig2_groups), desc="JBIG2", disable=not options.progress_bar
+        ) as pbar:
+            for future in concurrent.futures.as_completed(futures):
+                proc = future.result()
+                log.debug(proc.stderr.decode())
+                pbar.update()
 
 
 def convert_to_jbig2(pike, jbig2_groups, root, log, options):
@@ -310,7 +314,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
 
 
 def transcode_jpegs(pike, jpegs, root, log, options):
-    for xref in jpegs:
+    for xref in tqdm(jpegs, desc="JPEGs", disable=not options.progress_bar):
         in_jpg = Path(jpg_name(root, xref))
         opt_jpg = in_jpg.with_suffix('.opt.jpg')
 
@@ -339,15 +343,23 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=options.jobs
         ) as executor:
+            futures = []
             for xref in images:
                 log.debug(image_name_fn(root, xref))
-                executor.submit(
-                    pngquant.quantize,
-                    image_name_fn(root, xref),
-                    png_name(root, xref),
-                    png_quality[0],
-                    png_quality[1],
+                futures.append(
+                    executor.submit(
+                        pngquant.quantize,
+                        image_name_fn(root, xref),
+                        png_name(root, xref),
+                        png_quality[0],
+                        png_quality[1],
+                    )
                 )
+            with tqdm(
+                desc="PNGs", total=len(futures), disable=not options.progress_bar
+            ) as pbar:
+                for _future in concurrent.futures.as_completed(futures):
+                    pbar.update()
 
     for xref in images:
         im_obj = pike.get_object(xref, 0)
@@ -440,28 +452,27 @@ def optimize(input_file, output_file, context):
     if options.jbig2_page_group_size == 0:
         options.jbig2_page_group_size = 10 if options.jbig2_lossy else 1
 
-    pike = pikepdf.Pdf.open(input_file)
+    with pikepdf.Pdf.open(input_file) as pike:
+        root = Path(output_file).parent / 'images'
+        root.mkdir(exist_ok=True)
 
-    root = Path(output_file).parent / 'images'
-    root.mkdir(exist_ok=True)
+        jpegs, pngs = extract_images_generic(pike, root, log, options)
+        transcode_jpegs(pike, jpegs, root, log, options)
+        # if options.optimize >= 2:
+        # Try pngifying the jpegs
+        #    transcode_pngs(pike, jpegs, jpg_name, root, log, options)
+        transcode_pngs(pike, pngs, png_name, root, log, options)
 
-    jpegs, pngs = extract_images_generic(pike, root, log, options)
-    transcode_jpegs(pike, jpegs, root, log, options)
-    # if options.optimize >= 2:
-    # Try pngifying the jpegs
-    #    transcode_pngs(pike, jpegs, jpg_name, root, log, options)
-    transcode_pngs(pike, pngs, png_name, root, log, options)
+        jbig2_groups = extract_images_jbig2(pike, root, log, options)
+        convert_to_jbig2(pike, jbig2_groups, root, log, options)
 
-    jbig2_groups = extract_images_jbig2(pike, root, log, options)
-    convert_to_jbig2(pike, jbig2_groups, root, log, options)
-
-    target_file = Path(output_file).with_suffix('.opt.pdf')
-    pike.remove_unreferenced_resources()
-    pike.save(
-        target_file,
-        preserve_pdfa=True,
-        object_stream_mode=pikepdf.ObjectStreamMode.generate,
-    )
+        target_file = Path(output_file).with_suffix('.opt.pdf')
+        pike.remove_unreferenced_resources()
+        pike.save(
+            target_file,
+            preserve_pdfa=True,
+            object_stream_mode=pikepdf.ObjectStreamMode.generate,
+        )
 
     input_size = Path(input_file).stat().st_size
     output_size = Path(target_file).stat().st_size
@@ -494,6 +505,7 @@ def main(infile, outfile, level, jobs=1):
             self.jbig2_page_group_size = 0
             self.jbig2_lossy = jb2lossy
             self.quiet = True
+            self.progress_bar = False
 
     options = OptimizeOptions(
         input_file=infile,

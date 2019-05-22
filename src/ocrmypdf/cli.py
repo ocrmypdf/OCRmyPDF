@@ -175,6 +175,12 @@ jobcontrol.add_argument(
     "`-v 1` typically for much more detailed logging. Higher numbers "
     "are probably only useful in debugging.",
 )
+jobcontrol.add_argument(
+    '--no-progress-bar',
+    action='store_false',
+    dest='progress_bar',
+    help=argparse.SUPPRESS,
+)
 
 metadata = parser.add_argument_group(
     "Metadata options",

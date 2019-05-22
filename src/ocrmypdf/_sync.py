@@ -195,7 +195,11 @@ def exec_concurrent(context):
     listener = threading.Thread(target=log_listener, args=(log_queue,))
     listener.start()
     with tqdm(
-        total=(2 * len(context.pdfinfo)), desc='OCR', unit='page', unit_scale=0.5
+        total=(2 * len(context.pdfinfo)),
+        desc='OCR',
+        unit='page',
+        unit_scale=0.5,
+        disable=not context.options.progress_bar,
     ) as pbar, multiprocessing.Pool(
         processes=max_workers, initializer=worker_init, initargs=(log_queue,)
     ) as pool:

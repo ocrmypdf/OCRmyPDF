@@ -43,7 +43,10 @@ def main(args=None):
     verbosity = options.verbose
     if options.quiet:
         verbosity = -1
-    configure_logging(verbosity, manage_root_logger=True)
+        options.progress_bar = False
+    configure_logging(
+        verbosity, progress_bar_friendly=options.progress_bar, manage_root_logger=True
+    )
     log = make_logger('ocrmypdf')
     log.debug('ocrmypdf ' + __version__)
     try:
