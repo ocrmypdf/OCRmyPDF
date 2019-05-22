@@ -80,12 +80,15 @@ def configure_logging(verbosity, progress_bar_friendly=True, manage_root_logger=
 
     if progress_bar_friendly:
         console = logging.StreamHandler(stream=TqdmConsole(sys.stderr))
-        if verbosity < 0:
-            console.setLevel(logging.ERROR)
-        elif verbosity >= 1:
-            console.setLevel(logging.DEBUG)
-        else:
-            console.setLevel(logging.INFO)
+    else:
+        console = logging.StreamHandler(stream=sys.stderr)
+
+    if verbosity < 0:
+        console.setLevel(logging.ERROR)
+    elif verbosity >= 1:
+        console.setLevel(logging.DEBUG)
+    else:
+        console.setLevel(logging.INFO)
 
     formatter = logging.Formatter('%(levelname)7s - %(message)s')
     if verbosity >= 1:
@@ -141,8 +144,6 @@ def ocrmypdf(  # pylint: disable=unused-argument
     output_type=None,
     sidecar=None,
     jobs=None,
-    quiet=None,
-    verbose=None,
     title=None,
     author=None,
     subject=None,
