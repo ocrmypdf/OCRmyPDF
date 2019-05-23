@@ -267,7 +267,10 @@ def _produce_jbig2_images(jbig2_groups, root, log, options):
     with concurrent.futures.ThreadPoolExecutor(max_workers=options.jobs) as executor:
         futures = jbig2_futures(executor, root, jbig2_groups)
         with tqdm(
-            total=len(jbig2_groups), desc="JBIG2", disable=not options.progress_bar
+            total=len(jbig2_groups),
+            desc="JBIG2",
+            unit='item',
+            disable=not options.progress_bar,
         ) as pbar:
             for future in concurrent.futures.as_completed(futures):
                 proc = future.result()
@@ -314,7 +317,9 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
 
 
 def transcode_jpegs(pike, jpegs, root, log, options):
-    for xref in tqdm(jpegs, desc="JPEGs", disable=not options.progress_bar):
+    for xref in tqdm(
+        jpegs, desc="JPEGs", unit='image', disable=not options.progress_bar
+    ):
         in_jpg = Path(jpg_name(root, xref))
         opt_jpg = in_jpg.with_suffix('.opt.jpg')
 
@@ -356,7 +361,10 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
                     )
                 )
             with tqdm(
-                desc="PNGs", total=len(futures), disable=not options.progress_bar
+                desc="PNGs",
+                total=len(futures),
+                unit='image',
+                disable=not options.progress_bar,
             ) as pbar:
                 for _future in concurrent.futures.as_completed(futures):
                     pbar.update()

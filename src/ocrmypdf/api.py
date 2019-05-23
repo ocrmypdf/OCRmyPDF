@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import argparse
 import logging
 import sys
 from pathlib import Path
@@ -176,6 +175,7 @@ def ocrmypdf(  # pylint: disable=unused-argument
     user_words=None,
     user_patterns=None,
     keep_temporary_files=None,
+    progress_bar=None,
 ):
     options = create_options(**locals())
     check_options(options)
