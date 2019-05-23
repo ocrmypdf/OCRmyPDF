@@ -179,4 +179,4 @@ def ocrmypdf(  # pylint: disable=unused-argument
 ):
     options = create_options(**locals())
     check_options(options)
-    return run_pipeline(options)
+    return run_pipeline(options, api=True)

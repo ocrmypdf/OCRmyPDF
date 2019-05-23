@@ -239,7 +239,7 @@ def exec_concurrent(context):
     copy_final(pdf, context.options.output_file, context)
 
 
-def run_pipeline(options):
+def run_pipeline(options, api=False):
     log = make_logger(options, __name__)
 
     # Any changes to options will not take effect for options that are already
@@ -277,12 +277,21 @@ def run_pipeline(options):
         # Execute the pipeline
         exec_concurrent(context)
     except KeyboardInterrupt as e:
+        if api:
+            raise
         log.error("KeyboardInterrupt")
         return ExitCode.ctrl_c
     except ExitCodeException as e:
-        log.error("%s: %s" % (type(e).__name__, str(e)))
+        if api:
+            raise
+        if str(e):
+            log.error("%s: %s", type(e).__name__, str(e))
+        else:
+            log.error(type(e).__name__)
         return e.exit_code
     except Exception as e:
+        if api:
+            raise
         log.exception("An exception occurred while executing the pipeline")
         return ExitCode.other_error
 
