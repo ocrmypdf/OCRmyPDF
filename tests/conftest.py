@@ -18,6 +18,7 @@
 import os
 import platform
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from subprocess import PIPE, run
 
@@ -113,6 +114,22 @@ def spoof(tmpdir_factory, **kwargs):
     env['PATH'] = str(tmpdir) + ":" + env['PATH']
 
     return env
+
+
+@pytest.helpers.register
+@contextmanager
+def os_environ(new_env):
+    old_env = os.environ.copy()
+
+    for k, v in new_env.items():
+        os.environ[k] = v
+    yield
+    new_keys = set(os.environ.copy()) - set(old_env)
+    for k in new_keys:
+        del os.environ[k]
+    for k in old_env:
+        os.environ[k] = old_env[k]
+    assert os.environ.copy() == old_env
 
 
 @pytest.fixture(scope='session')

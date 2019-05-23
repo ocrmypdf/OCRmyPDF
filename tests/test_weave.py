@@ -19,9 +19,10 @@ import os
 
 import pytest
 
+from ocrmypdf import ocrmypdf
 import pikepdf
 
-check_ocrmypdf = pytest.helpers.check_ocrmypdf
+os_environ = pytest.helpers.os_environ
 
 
 def test_no_glyphless_weave(resources, outdir):
@@ -34,26 +35,16 @@ def test_no_glyphless_weave(resources, outdir):
 
     env = os.environ.copy()
     env['_OCRMYPDF_MAX_REPLACE_PAGES'] = '2'
-    check_ocrmypdf(
-        outdir / 'test.pdf',
-        outdir / 'out.pdf',
-        '--deskew',
-        '--tesseract-timeout',
-        '0',
-        env=env,
-    )
+    with os_environ(env):
+        ocrmypdf(
+            outdir / 'test.pdf', outdir / 'out.pdf', deskew=True, tesseract_timeout=0
+        )
 
 
 @pytest.helpers.needs_pdfminer
 def test_links(resources, outpdf):
-    check_ocrmypdf(
-        resources / 'link.pdf',
-        outpdf,
-        '--redo-ocr',
-        '--oversample',
-        '200',
-        '--output-type',
-        'pdf',
+    ocrmypdf(
+        resources / 'link.pdf', outpdf, redo_ocr=True, oversample=200, output_type='pdf'
     )
     pdf = pikepdf.open(outpdf)
     p1 = pdf.pages[0]
