@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import atexit
 import logging
 import logging.handlers
 import multiprocessing
@@ -264,9 +263,6 @@ def run_pipeline(options, api=False):
     os.environ.setdefault('OMP_THREAD_LIMIT', '1')
 
     work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
-
-    atexit.register(cleanup_working_files, work_folder, options)
-
     try:
         check_requested_output_file(options)
         start_input_file = create_input_file(options, work_folder)
@@ -303,6 +299,8 @@ def run_pipeline(options, api=False):
             raise
         log.exception("An exception occurred while executing the pipeline")
         return ExitCode.other_error
+    finally:
+        cleanup_working_files(work_folder, options)
 
     if options.output_file == '-':
         log.info("Output sent to stdout")
