@@ -136,7 +136,7 @@ def check_options_sidecar(options):
     if options.sidecar == '\0':
         if options.output_file == '-':
             raise BadArgsError(
-                "--sidecar filename must be specified when output file is " "stdout."
+                "--sidecar filename must be specified when output file is stdout."
             )
         options.sidecar = options.output_file + '.txt'
 

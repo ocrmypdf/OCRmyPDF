@@ -92,17 +92,26 @@ def exec_page_sync(page_context):
             page_context.origin, page_context, correction=orientation_correction
         )
 
-        preprocess_out = rasterize_out
+        preprocess = rasterize_out
         if options.remove_background:
-            preprocess_out = preprocess_remove_background(preprocess_out, page_context)
+            preprocess = preprocess_remove_background(preprocess, page_context)
 
         if options.deskew:
-            preprocess_out = preprocess_deskew(preprocess_out, page_context)
+            preprocess = preprocess_deskew(preprocess, page_context)
 
         if options.clean:
-            preprocess_out = preprocess_clean(preprocess_out, page_context)
+            cleaned = preprocess_clean(preprocess, page_context)
+            if options.clean_final:
+                preprocess_out = cleaned
+                ocr_image = cleaned
+            else:
+                preprocess_out = preprocess
+                ocr_image = cleaned
+        else:
+            preprocess_out = preprocess
+            ocr_image = preprocess
 
-        ocr_image_out = create_ocr_image(preprocess_out, page_context)
+        ocr_image_out = create_ocr_image(ocr_image, page_context)
 
         pdf_page_from_image_out = None
         if not options.lossless_reconstruction:
