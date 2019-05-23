@@ -41,6 +41,8 @@ def main(args=None):
         os.nice(5)
 
     verbosity = options.verbose
+    if not os.isatty(sys.stderr.fileno()):
+        options.progress_bar = False
     if options.quiet:
         verbosity = -1
         options.progress_bar = False
