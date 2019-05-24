@@ -17,6 +17,7 @@
 
 import logging
 import sys
+from enum import IntEnum
 from pathlib import Path
 
 from tqdm import tqdm
@@ -46,8 +47,17 @@ class TqdmConsole:
             self.file.flush()
 
 
+class Verbosity(IntEnum):
+    """Verbosity level for configure_logging."""
+
+    quiet = -1  #: Suppress most messages
+    default = 0  #: Default level of logging
+    debug = 1  #: Output ocrmypdf debug messages
+    debug_all = 2  #: More detailed debugging from ocrmypdf and dependent modules
+
+
 def configure_logging(verbosity, progress_bar_friendly=True, manage_root_logger=False):
-    """Set up logging
+    """Set up logging.
 
     Library users may wish to use this function if they want their log output to be
     similar to ocrmypdf command line interface. If not used, the external application
@@ -61,11 +71,7 @@ def configure_logging(verbosity, progress_bar_friendly=True, manage_root_logger=
     Library users may perform additional configuration afterwards.
 
     Args:
-        verbosity: Verbosity level.
-            * `-1`: Quiet
-            * `0`: Default
-            * `1`: Output ocrmypdf debug messages
-            * `2`: More detailed debugging from ocrmypdf and dependent modules
+        verbosity (Verbosity): Verbosity level.
         progress_bar_friendly (bool): Install the TqdmConsole log handler, which is
             compatible with the tqdm progress bar; without this log messages will
             overwrite the progress bar
@@ -176,7 +182,34 @@ def ocrmypdf(  # pylint: disable=unused-argument
     user_patterns=None,
     keep_temporary_files=None,
     progress_bar=None,
+    process_ocr_image=None,
 ):
+    """Run OCRmyPDF on one PDF or image.
+
+    Raises:
+        ocrmypdf.PdfMergeFailedError: If the input PDF is malformed, preventing merging
+            with the OCR layer.
+        ocrmypdf.MissingDependencyError: If a required dependency program is missing or
+            was not found on PATH.
+        ocrmypdf.UnsupportedImageFormatError: If the input file type was an image that
+            could not be read, or some other file type that is not a PDF.
+        ocrmypdf.DpiError: If the input file is an image, but the resolution of the
+            image is not credible (allowing it to proceed would cause poor OCR).
+        ocrmypdf.OutputFileAccessError: If an attempt to write to the intended output
+            file failed.
+        ocrmypdf.PriorOcrFoundError: If the input PDF seems to have OCR or digital
+            text already, and settings did not tell us to proceed.
+        ocrmypdf.InputFileError: Any other problem with the input file.
+        ocrmypdf.SubprocessOutputError: Any error related to executing a subprocess.
+        ocrmypdf.EncryptedPdfERror: If the input PDF is encrypted (password protected).
+            OCRmyPDF does not remove passwords.
+        ocrmypdf.TesseractConfigError: If Tesseract reported its configuration was not
+            valid.
+
+    Returns:
+        :class:`ocrmypdf.ExitCode`
+    """
+
     options = create_options(**locals())
     check_options(options)
     return run_pipeline(options, api=True)

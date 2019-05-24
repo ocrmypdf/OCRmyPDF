@@ -22,14 +22,14 @@ import sys
 
 from . import __version__
 from .cli import parser
-from .api import configure_logging
+from .api import configure_logging, Verbosity
 from ._jobcontext import make_logger
 from ._sync import run_pipeline
 from ._validation import check_closed_streams, check_options
 from .exceptions import ExitCode, BadArgsError, MissingDependencyError
 
 
-def main(args=None):
+def run(args=None):
     options = parser.parse_args(args=args)
 
     if not check_closed_streams(options):
@@ -44,7 +44,7 @@ def main(args=None):
     if not os.isatty(sys.stderr.fileno()):
         options.progress_bar = False
     if options.quiet:
-        verbosity = -1
+        verbosity = Verbosity.quiet
         options.progress_bar = False
     configure_logging(
         verbosity, progress_bar_friendly=options.progress_bar, manage_root_logger=True
@@ -68,4 +68,4 @@ def main(args=None):
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(run())

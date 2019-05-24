@@ -95,7 +95,6 @@ Ghostscript also imposes some limitations:
 Regarding OCRmyPDF itself:
 
 * PDFs that use transparency are not currently represented in the test suite
-* The Python API exported by ``import ocrmypdf`` is design to help scripts that use OCRmyPDF but is not currently capable of running OCRmyPDF jobs due to limitations in an underlying library.
 
 Similar programs
 ----------------

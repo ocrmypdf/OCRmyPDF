@@ -5,8 +5,6 @@ OCRmyPDF uses `semantic versioning <http://semver.org/>`_ for its command line i
 
 The ``ocrmypdf`` package may now be imported. The public API may be useful in scripts that launch OCRmyPDF processes or that wish to use some of its features for working with PDFs.
 
-Unfortunately, the public API does **not** expose the ability to actually OCR a PDF. This is due to a limitation in an underlying library (ruffus) that makes OCRmyPDF non-reentrant.
-
 Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and are released publicly should probably also be licensed under GPLv3.
 
 .. Issue regex

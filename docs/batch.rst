@@ -95,14 +95,6 @@ This user contributed script also provides an example of batch processing.
 	                print("OCR complete")
 	            logging.info(result)
 
-API
-"""
-
-OCRmyPDF is currently supported as a command line interface. This means that even if you are using OCRmyPDF in a Python script, you should run it in a subprocess rather importing the ocrmypdf package.
-
-(If you find individual functions implemented in OCRmyPDF useful (such as ``ocrmypdf.pdfinfo``), you can use these if you wish to.)
-
-
 Synology DiskStations
 """""""""""""""""""""
 
