@@ -27,6 +27,7 @@ import PIL
 import pytest
 from PIL import Image
 
+from ocrmypdf import ocrmypdf
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 from ocrmypdf.exec import ghostscript, qpdf, tesseract
 from ocrmypdf.leptonica import Pix
@@ -39,6 +40,7 @@ from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
 spoof = pytest.helpers.spoof
+os_environ = pytest.helpers.os_environ
 
 
 RENDERERS = ['hocr', 'sandwich']
@@ -609,11 +611,8 @@ def test_closed_streams(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
 
 
 def test_masks(spoof_tesseract_noop, resources, outpdf):
-    p, out, err = run_ocrmypdf(
-        resources / 'masks.pdf', outpdf, env=spoof_tesseract_noop
-    )
-
-    assert p.returncode == ExitCode.ok
+    with os_environ(spoof_tesseract_noop):
+        assert ocrmypdf(resources / 'masks.pdf', outpdf) == ExitCode.ok
 
 
 def test_linearized_pdf_and_indirect_object(spoof_tesseract_noop, resources, outpdf):
