@@ -113,9 +113,13 @@ def configure_logging(verbosity, progress_bar_friendly=True, manage_root_logger=
 
 def create_options(*, input_file, output_file, **kwargs):
     cmdline = []
+    filters = []
 
     for arg, val in kwargs.items():
         if val is None:
+            continue
+        if arg.startswith('filter') and callable(val):
+            filters.append((arg, val))
             continue
         cmd_style_arg = arg.replace('_', '-')
         cmdline.append(f"--{cmd_style_arg}")
@@ -135,6 +139,8 @@ def create_options(*, input_file, output_file, **kwargs):
 
     parser.api_mode = True
     options = parser.parse_args(cmdline)
+    for keyword, function in filters:
+        setattr(options, keyword, function)
     return options
 
 

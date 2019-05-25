@@ -521,6 +521,9 @@ def create_ocr_image(image, page_context):
                     draw.rectangle(rect, fill=white)
             im = pix.topil()
 
+        if options.filter_ocr_image:
+            im = options.filter_ocr_image(im)
+
         del draw
         # Pillow requires integer DPI
         dpi = round(xres), round(yres)

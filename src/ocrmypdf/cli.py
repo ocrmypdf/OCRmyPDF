@@ -466,6 +466,10 @@ advanced.add_argument(
     help="Specify the location of the Tesseract user patterns file.",
 )
 
+
+filters = parser.add_argument_group("Filters", argparse.SUPPRESS)
+filters.add_argument('--filter-ocr-image', help=argparse.SUPPRESS)
+
 debugging = parser.add_argument_group(
     "Debugging", "Arguments to help with troubleshooting and debugging"
 )
