@@ -76,6 +76,8 @@ By default the Docker image includes English, German and Simplified Chinese, the
     # Add French
     RUN apk add tesseract-ocr-data-fra
 
+You can also copy training data to ``/usr/share/tessdata``.
+
 Executing the test suite
 ------------------------
 
@@ -84,6 +86,15 @@ The OCRmyPDF test suite is installed with image.  To run it:
 .. code-block:: bash
 
     docker run --entrypoint python3 jbarlow83/ocrmypdf-alpine setup.py test
+
+Accessing the shell
+-------------------
+
+``bash`` is not installed in the image. To use the busybox shell in the Docker image:
+
+.. code-block:: bash
+
+    docker run -it --entrypoint busybox  jbarlow83/ocrmypdf-alpine sh
 
 Using the OCRmyPDF web service wrapper
 --------------------------------------

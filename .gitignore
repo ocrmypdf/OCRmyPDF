@@ -42,4 +42,4 @@ tests/output/
 tests/resources/private/
 tmp/
 /debug_tests.py
-*.traineddata
+private/
