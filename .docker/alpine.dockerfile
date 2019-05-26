@@ -17,13 +17,13 @@ RUN \
     jbig2enc@testing \
     ghostscript \
   qpdf@community \
+  qpdf-dev@community \
     tesseract-ocr \
     unpaper \
     pngquant \
     libxml2-dev \
     libxslt-dev \
     zlib-dev \
-  qpdf-dev@community \
     libffi-dev \
     leptonica-dev \
     binutils \
@@ -59,6 +59,7 @@ RUN \
     jbig2enc@testing \
     ghostscript \
   qpdf@community \
+  qpdf-dev@community \
     tesseract-ocr \
     tesseract-ocr-data-deu \
     tesseract-ocr-data-chi_sim \
