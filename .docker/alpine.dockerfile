@@ -12,21 +12,21 @@ RUN \
   >> /etc/apk/repositories \
   # Add runtime dependencies
   && apk add --update \
-    python3-dev \
-    py3-setuptools \
-    jbig2enc@testing \
-    ghostscript \
+  python3-dev \
+  py3-setuptools \
+  jbig2enc@testing \
+  ghostscript \
   qpdf@community \
   qpdf-dev@community \
-    tesseract-ocr \
-    unpaper \
-    pngquant \
-    libxml2-dev \
-    libxslt-dev \
-    zlib-dev \
-    libffi-dev \
-    leptonica-dev \
-    binutils \
+  tesseract-ocr \
+  unpaper \
+  pngquant \
+  libxml2-dev \
+  libxslt-dev \
+  zlib-dev \
+  libffi-dev \
+  leptonica-dev \
+  binutils \
   && pip3 install --upgrade pip \
   # Install pybind11 for pikepdf
   && pip3 install pybind11 \
@@ -34,8 +34,8 @@ RUN \
   && pip3 install flask \
   # Add build dependencies
   && apk add --virtual build-dependencies \
-    build-base \
-    git
+  build-base \
+  git
 
 COPY . /app
 
@@ -55,22 +55,22 @@ RUN \
   >> /etc/apk/repositories \
   # Add runtime dependencies
   && apk add --update \
-    python3 \
-    jbig2enc@testing \
-    ghostscript \
+  python3 \
+  jbig2enc@testing \
+  ghostscript \
   qpdf@community \
   qpdf-dev@community \
-    tesseract-ocr \
-    tesseract-ocr-data-deu \
-    tesseract-ocr-data-chi_sim \
-    unpaper \
-    pngquant \
-    libxml2 \
-    libxslt \
-    zlib \
-    libffi \
-    leptonica-dev \
-    binutils \
+  tesseract-ocr \
+  tesseract-ocr-data-deu \
+  tesseract-ocr-data-chi_sim \
+  unpaper \
+  pngquant \
+  libxml2 \
+  libxslt \
+  zlib \
+  libffi \
+  leptonica-dev \
+  binutils \
   && mkdir /app
 
 WORKDIR /app
@@ -87,7 +87,7 @@ COPY --from=builder /app/setup.cfg /app/setup.py /app/README.md /app/
 COPY --from=builder /app/requirements /app/requirements
 COPY --from=builder /app/tests /app/tests
 COPY --from=builder /app/src /app/src
-# Copy PKG-INFO from build artifact in app dir to make setuptools-scm happy
-RUN cp /usr/lib/python3.6/site-packages/ocrmypdf-*.egg-info/PKG-INFO /app
+
+WORKDIR /data
 
 ENTRYPOINT ["/usr/bin/ocrmypdf"]
