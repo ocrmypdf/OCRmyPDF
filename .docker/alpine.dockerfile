@@ -4,25 +4,30 @@ FROM base as builder
 
 ENV LANG=C.UTF-8
 
+# Normally:
+# echo '@testing http://nl.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories
+
 RUN \
-  echo '@testing http://nl.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories \
+  echo -e '@testing http://nl.alpinelinux.org/alpine/edge/testing\n@community http://nl.alpinelinux.org/alpine/edge/community'\
+  >> /etc/apk/repositories \
   # Add runtime dependencies
   && apk add --update \
     python3-dev \
     py3-setuptools \
     jbig2enc@testing \
     ghostscript \
-    qpdf \
+  qpdf@community \
     tesseract-ocr \
     unpaper \
     pngquant \
     libxml2-dev \
     libxslt-dev \
     zlib-dev \
-    qpdf-dev \
+  qpdf-dev@community \
     libffi-dev \
     leptonica-dev \
     binutils \
+  && pip3 install --upgrade pip \
   # Install pybind11 for pikepdf
   && pip3 install pybind11 \
   # Install flask for the webservice
@@ -42,14 +47,18 @@ FROM base
 
 ENV LANG=C.UTF-8
 
+# Normally:
+# echo '@testing http://nl.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories
+
 RUN \
-  echo '@testing http://nl.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories \
+  echo -e '@testing http://nl.alpinelinux.org/alpine/edge/testing\n@community http://nl.alpinelinux.org/alpine/edge/community'\
+  >> /etc/apk/repositories \
   # Add runtime dependencies
   && apk add --update \
     python3 \
     jbig2enc@testing \
     ghostscript \
-    qpdf \
+  qpdf@community \
     tesseract-ocr \
     tesseract-ocr-data-deu \
     tesseract-ocr-data-chi_sim \
@@ -58,7 +67,6 @@ RUN \
     libxml2 \
     libxslt \
     zlib \
-    qpdf \
     libffi \
     leptonica-dev \
     binutils \
