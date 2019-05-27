@@ -118,7 +118,7 @@ def create_options(*, input_file, output_file, **kwargs):
     for arg, val in kwargs.items():
         if val is None:
             continue
-        if arg.startswith('filter') and callable(val):
+        if arg.startswith('filter') and (callable(val) or isinstance(val, str)):
             filters.append((arg, val))
             continue
         cmd_style_arg = arg.replace('_', '-')
@@ -188,7 +188,7 @@ def ocrmypdf(  # pylint: disable=unused-argument
     user_patterns=None,
     keep_temporary_files=None,
     progress_bar=None,
-    process_ocr_image=None,
+    filter_ocr_image=None,
 ):
     """Run OCRmyPDF on one PDF or image.
 
