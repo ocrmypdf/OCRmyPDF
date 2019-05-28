@@ -62,21 +62,21 @@ def _load_function_from_pyfile(location):
     return fn
 
 
-def load_filter(filt):
-    if callable(filt):
-        return filt
+def load_plugin(plugin):
+    if callable(plugin):
+        return plugin
 
-    if not isinstance(filt, str):
+    if not isinstance(plugin, str):
         raise TypeError()
 
-    if '::' not in filt:
-        filt = _load_function_from_module(filt)
+    if '::' not in plugin:
+        plugin = _load_function_from_module(plugin)
     else:
-        filt = _load_function_from_pyfile(filt)
+        plugin = _load_function_from_pyfile(plugin)
 
-    return filt
+    return plugin
 
 
-def check_filter_loadable(filt):
-    load_filter(filt)
-    return filt
+def check_plugin_loadable(plugin):
+    load_plugin(plugin)
+    return plugin

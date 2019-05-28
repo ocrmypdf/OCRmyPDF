@@ -23,7 +23,7 @@ import pytest
 
 from ocrmypdf import ocrmypdf
 from ocrmypdf.filters import invert, whiteout
-from ocrmypdf._filters import load_filter
+from ocrmypdf._plugins import load_plugin
 
 
 os_environ = pytest.helpers.os_environ
@@ -35,28 +35,28 @@ def filter_42():
 
 
 def test_pyfile():
-    obj = load_filter(f'{__file__}::filter_42')
+    obj = load_plugin(f'{__file__}::filter_42')
     assert obj() == 42
 
 
 def test_pyfile_notexist():
     with pytest.raises(FileNotFoundError):
-        load_filter('thisfile.doesnot.exist.py::filter_42')
+        load_plugin('thisfile.doesnot.exist.py::filter_42')
 
 
 def test_pyfile_noobject():
     with pytest.raises(AttributeError):
-        load_filter(f'{__file__}::no_function_with_this_name')
+        load_plugin(f'{__file__}::no_function_with_this_name')
 
 
 def test_module():
-    obj = load_filter(f'os.getuid')
+    obj = load_plugin(f'os.getuid')
     assert obj() == os.getuid()
 
 
 def test_module_notexist():
     with pytest.raises(ModuleNotFoundError):
-        load_filter('thismodule.doesnot.exist')
+        load_plugin('thismodule.doesnot.exist')
 
 
 def test_filter_from_cmdline(resources, outdir):

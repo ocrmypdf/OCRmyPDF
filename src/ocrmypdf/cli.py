@@ -18,7 +18,7 @@
 import argparse
 
 from . import PROGRAM_NAME, VERSION
-from ._filters import check_filter_loadable
+from ._plugins import check_plugin_loadable
 
 
 def numeric(basetype, min_=None, max_=None):
@@ -469,7 +469,7 @@ advanced.add_argument(
 
 filters = parser.add_argument_group("Filters", argparse.SUPPRESS)
 filters.add_argument(
-    '--filter-ocr-image', help=argparse.SUPPRESS, type=check_filter_loadable
+    '--filter-ocr-image', help=argparse.SUPPRESS, type=check_plugin_loadable
 )
 
 debugging = parser.add_argument_group(

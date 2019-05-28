@@ -29,7 +29,7 @@ from pikepdf.models.metadata import encode_pdf_date
 
 from . import PROGRAM_NAME, VERSION, leptonica
 
-from ._filters import load_filter
+from ._plugins import load_plugin
 from .exceptions import (
     DpiError,
     EncryptedPdfError,
@@ -524,7 +524,7 @@ def create_ocr_image(image, page_context):
             im = pix.topil()
 
         if options.filter_ocr_image:
-            filt = load_filter(options.filter_ocr_image)
+            filt = load_plugin(options.filter_ocr_image)
             im = filt(im)
 
         del draw
