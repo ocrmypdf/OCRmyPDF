@@ -5,7 +5,7 @@ OCRmyPDF is also available in a Docker image that packages recent versions of al
 
 For users who already have Docker installed this may be an easy and convenient option. However, it is less performant than a system installation and may require Docker engine configuration.
 
-OCRmyPDF needs a generous amount of RAM, CPU cores, and temporary storage space.
+OCRmyPDF needs a generous amount of RAM, CPU cores, temporary storage space, whether running in a Docker container or on its own. It may be necessary to ensure the container is provisioned with additional resources.
 
 .. _docker-install:
 
@@ -109,7 +109,7 @@ Unlike command line usage this program will open a socket and wait for connectio
 
 .. warning::
 
-    The OCRmyPDF web service wrapper is intended for demonstration or development. It provides no security, no authentication, no protection against denial of service attacks, and no load balancing. The default Flask WSGI server is used, which is intended for development only. The server is single-threaded and so can respond to only one client at a time. It cannot respond to clients while busy with OCR.
+    The OCRmyPDF web service wrapper is intended for demonstration or development. It provides no security, no authentication, no protection against denial of service attacks, and no load balancing. The default Flask WSGI server is used, which is intended for development only. The server is single-threaded and so can respond to only one client at a time. While running OCR, it cannot respond to any other clients.
 
 Clients must keep their open connection while waiting for OCR to complete. This may entail setting a long timeout; this interface is more useful for internal HTTP API calls.
 
@@ -117,50 +117,11 @@ Unlike the rest of OCRmyPDF, this web service is licensed under the Affero GPLv3
 
 In addition to the above, please read our :ref:`general remarks on using OCRmyPDF as a service <ocr-service>`.
 
-Legacy Ubuntu Docker images
----------------------------
+Ubuntu-based Docker image
+-------------------------
 
-Previously OCRmyPDF was delivered in several Docker images for different purposes, based on Ubuntu.
-
-The Ubuntu-based images will be maintained for some time but should not be used for new deployments. They are as follows:
-
-.. list-table::
-    :widths: auto
-    :header-rows: 1
-
-    *   - Image name
-        - Download command
-        - Notes
-    *   - ocrmypdf
-        - ``docker pull jbarlow83/ocrmypdf``
-        - Latest ocrmypdf with Tesseract 4.0.0-beta1 on Ubuntu 18.04. Includes English, French, German, Spanish, Portugeuse and Simplified Chinese.
-    *   - ocrmypdf-polyglot
-        - ``docker pull jbarlow83/ocrmypdf-polyglot``
-        - As above, with all available language packs.
-    *   - ocrmypdf-webservice
-        - ``docker pull jbarlow83/ocrmypdf-webservice``
-        - All language packs, and a simple HTTP wrapper allowing OCRmyPDF to be used as a web service. Note that this component is licensed under AGPLv3.
-
-To execute the Ubuntu-based OCRmyPDF on a local file, you must `provide a writable volume to the Docker image <https://docs.docker.com/userguide/dockervolumes/>`_, and both the input and output file must be inside the writable volume. This limitation applies only to the legacy images.
-
-This example command uses the current working directory as the writable volume:
+A Ubuntu-based OCRmyPDF image is also available. The main advantage this image offers is that it supports manylinux Python wheels (which are not supported on Alpine Linux). This may be useful for plugins.
 
 .. code-block:: bash
 
-    docker run --rm -v "$(pwd):/home/docker" <other docker arguments>   ocrmypdf <your arguments to ocrmypdf>
-
-In this worked example, the current working directory contains an input file called ``test.pdf`` and the output will go to ``output.pdf``:
-
-.. code-block:: bash
-
-    docker run --rm -v "$(pwd):/home/docker"   ocrmypdf --skip-text test.pdf output.pdf
-
-.. note:: The working directory should be a writable local volume or Docker may not have permission to access it.
-
-Note that ``ocrmypdf`` has its own separate ``-v VERBOSITYLEVEL`` argument to control debug verbosity. All Docker arguments should before the ``ocrmypdf`` image name and all arguments to ``ocrmypdf`` should be listed after.
-
-In some environments the permissions associated with Docker can be complex to configure. The process that executes Docker may end up not having the permissions to write the specified file system. In that case one can stream the file into and out of the Docker process and avoid all permission hassles, using ``-`` as the input and output filename:
-
-.. code-block:: bash
-
-    docker run --rm -i   ocrmypdf <other arguments to ocrmypdf> - - <input.pdf >output.pdf
+    docker pull jbarlow83/ocrmypdf

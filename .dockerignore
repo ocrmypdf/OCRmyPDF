@@ -16,7 +16,6 @@ include/
 lib/
 MANIFEST.in
 ocrmypdf.egg-info/
-private/
 staging/
 tests/cache/
 tests/output/
