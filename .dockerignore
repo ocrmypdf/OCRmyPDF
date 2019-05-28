@@ -6,7 +6,6 @@
 **/*.pyc
 .*/
 !.git/
-!.docker/
 .ruffus_history.sqlite
 bin/
 build/
@@ -17,6 +16,7 @@ include/
 lib/
 MANIFEST.in
 ocrmypdf.egg-info/
+private/
 staging/
 tests/cache/
 tests/output/
