@@ -15,10 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import re
 import xml.etree.ElementTree as ET
 
 from ..exec import ghostscript
+
+gslog = logging.getLogger()
 
 # Forgive me for I have sinned
 # I am using regular expressions to parse XML. However the XML in this case,
@@ -74,7 +77,7 @@ def page_get_textblocks(infile, pageno, xmltext, height):
     return [block for block in joined_blocks()]
 
 
-def extract_text_xml(infile, pdf, pageno=None, log=None):
+def extract_text_xml(infile, pdf, pageno=None, log=gslog):
     existing_text = ghostscript.extract_text(infile, pageno=None)
     existing_text = regex_remove_char_tags.sub(b' ', existing_text)
 

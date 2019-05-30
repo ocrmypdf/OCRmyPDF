@@ -268,7 +268,7 @@ def test_tesseract_orientation(resources, tmpdir):
     pix_rotated = pix.rotate_orth(2)  # 180 degrees clockwise
     pix_rotated.write_implied_format(tmpdir / '000001.png')
 
-    log = Mock()
+    log = logging.getLogger()
     tesseract.get_orientation(  # Test results of this are unreliable
         tmpdir / '000001.png', engine_mode='3', timeout=10, log=log
     )

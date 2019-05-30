@@ -19,10 +19,10 @@
 from collections import namedtuple
 from decimal import Decimal
 from enum import Enum
+import logging
 from math import hypot, isclose
 from os import fspath
 from pathlib import Path
-from unittest.mock import Mock
 from warnings import warn
 import re
 
@@ -33,6 +33,8 @@ from . import ghosttext
 
 from ..exceptions import EncryptedPdfError, MissingDependencyError
 
+
+logger = logging.getLogger()
 
 Colorspace = Enum('Colorspace', 'gray rgb cmyk lab icc index sep devn pattern jpeg2000')
 
@@ -615,9 +617,6 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
 
 
 def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None):
-    if not log:
-        log = Mock()
-
     pdf = pikepdf.open(infile)  # Do not close in this function
     if pdf.is_encrypted:
         pdf.close()
@@ -750,7 +749,7 @@ class PageInfo:
 class PdfInfo:
     """Get summary information about a PDF"""
 
-    def __init__(self, infile, detailed_page_analysis=False, log=None):
+    def __init__(self, infile, detailed_page_analysis=False, log=logger):
         self._infile = infile
         self._pages, pdf = _pdf_get_all_pageinfo(
             infile, detailed_page_analysis, log=log
