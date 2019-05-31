@@ -21,6 +21,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+from shutil import copyfileobj
 
 import PIL
 
@@ -334,8 +335,6 @@ def create_input_file(options, work_folder):
         log.info('reading file from standard input')
         target = os.path.join(work_folder, 'stdin')
         with open(target, 'wb') as stream_buffer:
-            from shutil import copyfileobj
-
             copyfileobj(sys.stdin.buffer, stream_buffer)
         return target
     else:
@@ -343,21 +342,6 @@ def create_input_file(options, work_folder):
             target = os.path.join(work_folder, 'origin')
             re_symlink(options.input_file, target)
             return target
-        except FileNotFoundError:
-            raise InputFileError(f"File not found - {options.input_file}")
-
-
-def check_input_file(options, start_input_file):
-    if options.input_file == '-':
-        # stdin
-        log.info('reading file from standard input')
-        with open(start_input_file, 'wb') as stream_buffer:
-            from shutil import copyfileobj
-
-            copyfileobj(sys.stdin.buffer, stream_buffer)
-    else:
-        try:
-            re_symlink(options.input_file, start_input_file)
         except FileNotFoundError:
             raise InputFileError(f"File not found - {options.input_file}")
 
