@@ -703,7 +703,6 @@ def convert_to_pdfa(input_pdf, input_ps_stub, context):
         output_file=output_file,
         compression=options.pdfa_image_compression,
         log=context.log,
-        threads=options.jobs or 1,
         pdfa_part=options.output_type[-1],  # is pdfa-1, pdfa-2, or pdfa-3
     )
 
