@@ -199,6 +199,7 @@ jobcontrol.add_argument(
     dest='progress_bar',
     help=argparse.SUPPRESS,
 )
+jobcontrol.add_argument('--use-threads', action='store_true', help=argparse.SUPPRESS)
 
 metadata = parser.add_argument_group(
     "Metadata options",

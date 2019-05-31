@@ -153,6 +153,7 @@ def ocrmypdf(  # pylint: disable=unused-argument
     output_type=None,
     sidecar=None,
     jobs=None,
+    use_threads=None,
     title=None,
     author=None,
     subject=None,

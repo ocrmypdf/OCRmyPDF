@@ -164,6 +164,10 @@ def worker_init(queue):
     root.addHandler(h)
 
 
+def worker_thread_init(queue):
+    pass
+
+
 def log_listener(queue):
     """Listen to the worker processes and forward the messages to logging
 
@@ -196,6 +200,14 @@ def exec_concurrent(context):
     if max_workers > 1:
         context.log.info("Start processing %d pages concurrent" % max_workers)
 
+    if context.options.use_threads:
+        from multiprocessing.dummy import Pool
+
+        initializer = worker_thread_init
+    else:
+        Pool = multiprocessing.Pool
+        initializer = worker_init
+
     sidecars = [None] * len(context.pdfinfo)
     ocrgraft = OcrGrafter(context)
 
@@ -208,8 +220,8 @@ def exec_concurrent(context):
         unit='page',
         unit_scale=0.5,
         disable=not context.options.progress_bar,
-    ) as pbar, multiprocessing.Pool(
-        processes=max_workers, initializer=worker_init, initargs=(log_queue,)
+    ) as pbar, Pool(
+        processes=max_workers, initializer=initializer, initargs=(log_queue,)
     ) as pool:
         results = pool.imap_unordered(exec_page_sync, context.get_page_contexts())
         while True:
