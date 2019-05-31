@@ -19,7 +19,6 @@ import logging
 import shutil
 import sys
 import os
-from contextlib import suppress
 
 
 class PicklableLoggerMixin:
@@ -96,8 +95,7 @@ def cleanup_working_files(work_folder, options):
     if options.keep_temporary_files:
         print(f"Temporary working files saved at:\n{work_folder}", file=sys.stderr)
     else:
-        with suppress(FileNotFoundError):
-            shutil.rmtree(work_folder)
+        shutil.rmtree(work_folder, ignore_errors=True)
 
 
 class LogNameAdapter(logging.LoggerAdapter):
