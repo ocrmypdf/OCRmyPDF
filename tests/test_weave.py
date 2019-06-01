@@ -15,33 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from unittest.mock import MagicMock
-import logging
 import os
 
 import pytest
 
 import pikepdf
-from ocrmypdf._weave import _fix_toc, _update_page_resources
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
-
-
-def test_invalid_toc(resources, outdir, caplog):
-    pdf = pikepdf.open(resources / 'toc.pdf')
-
-    # Corrupt a TOC entry
-    pdf.Root.Outlines.Last.Dest = pikepdf.Array([None, 0.0, 0.1, 0.2])
-    pdf.save(outdir / 'test.pdf')
-
-    pdf = pikepdf.open(outdir / 'test.pdf')
-    remap = {}
-    remap[pdf.pages[0].objgen] = pdf.pages[0].objgen  # Dummy remap
-
-    # Confirm we complain about the TOC and don't throw an exception
-    log = logging.getLogger()
-    _fix_toc(pdf, remap, log)
-    assert 'invalid table of contents entries' in caplog.text
 
 
 def test_no_glyphless_weave(resources, outdir):
@@ -62,3 +42,21 @@ def test_no_glyphless_weave(resources, outdir):
         '0',
         env=env,
     )
+
+
+@pytest.helpers.needs_pdfminer
+def test_links(resources, outpdf):
+    check_ocrmypdf(
+        resources / 'link.pdf',
+        outpdf,
+        '--redo-ocr',
+        '--oversample',
+        '200',
+        '--output-type',
+        'pdf',
+    )
+    pdf = pikepdf.open(outpdf)
+    p1 = pdf.pages[0]
+    p2 = pdf.pages[1]
+    assert p1.Annots[0].A.D[0].objgen == p2.objgen
+    assert p2.Annots[0].A.D[0].objgen == p1.objgen

@@ -285,7 +285,7 @@ def test_kodak_toc(resources, outpdf, spoof_tesseract_noop):
         assert isinstance(p.root.Outlines.First, pikepdf.Dictionary)
 
 
-def test_metadata_fixup_warning(resources, outdir):
+def test_metadata_fixup_warning(resources, outdir, caplog):
     from ocrmypdf._pipeline import metadata_fixup
 
     input_files = [
@@ -296,7 +296,7 @@ def test_metadata_fixup_warning(resources, outdir):
     for f in input_files:
         copyfile(resources / 'graph.pdf', f)
 
-    log = MagicMock()
+    log = logging.getLogger()
     context = MagicMock()
     metadata_fixup(
         input_files_groups=input_files,
@@ -304,7 +304,8 @@ def test_metadata_fixup_warning(resources, outdir):
         log=log,
         context=context,
     )
-    log.warning.assert_not_called()
+    for record in caplog.records:
+        assert record.levelname != 'WARNING'
 
     # Now add some metadata that will not be copyable
     graph = pikepdf.open(outdir / 'graph.repaired.pdf')
@@ -312,7 +313,7 @@ def test_metadata_fixup_warning(resources, outdir):
         meta['prism2:publicationName'] = 'OCRmyPDF Test'
     graph.save(outdir / 'graph.repaired.pdf')
 
-    log = MagicMock()
+    log = logging.getLogger()
     context = MagicMock()
     metadata_fixup(
         input_files_groups=input_files,
@@ -320,7 +321,7 @@ def test_metadata_fixup_warning(resources, outdir):
         log=log,
         context=context,
     )
-    log.warning.assert_called_once()
+    assert any(record.levelname == 'WARNING' for record in caplog.records)
 
 
 def test_prevent_gs_invalid_xml(resources, outdir):
