@@ -259,6 +259,12 @@ def exec_concurrent(context):
     copy_final(pdf, context.options.output_file, context)
 
 
+class NeverRaise(Exception):
+    """An exception that is never raised"""
+
+    pass
+
+
 def run_pipeline(options, api=False):
     log = make_logger(options, __name__)
 
@@ -293,22 +299,16 @@ def run_pipeline(options, api=False):
 
         # Execute the pipeline
         exec_concurrent(context)
-    except KeyboardInterrupt as e:
-        if api:
-            raise
+    except (KeyboardInterrupt if not api else NeverRaise) as e:
         log.error("KeyboardInterrupt")
         return ExitCode.ctrl_c
-    except ExitCodeException as e:
-        if api:
-            raise
+    except (ExitCodeException if not api else NeverRaise) as e:
         if str(e):
             log.error("%s: %s", type(e).__name__, str(e))
         else:
             log.error(type(e).__name__)
         return e.exit_code
-    except Exception as e:
-        if api:
-            raise
+    except (Exception if not api else NeverRaise) as e:
         log.exception("An exception occurred while executing the pipeline")
         return ExitCode.other_error
     finally:
