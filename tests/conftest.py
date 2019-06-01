@@ -120,16 +120,24 @@ def spoof(tmpdir_factory, **kwargs):
 @contextmanager
 def os_environ(new_env):
     old_env = os.environ.copy()
+    if new_env is None:
+        new_env = {}
 
     for k, v in new_env.items():
-        os.environ[k] = v
+        if k != 'PYTEST_CURRENT_TEST':
+            os.environ[k] = v
     yield
     new_keys = set(os.environ.copy()) - set(old_env)
     for k in new_keys:
-        del os.environ[k]
+        if k != 'PYTEST_CURRENT_TEST':
+            del os.environ[k]
     for k in old_env:
-        os.environ[k] = old_env[k]
-    assert os.environ.copy() == old_env
+        if k != 'PYTEST_CURRENT_TEST':
+            os.environ[k] = old_env[k]
+
+    for k, v in os.environ.copy().items():
+        if k != 'PYTEST_CURRENT_TEST':
+            assert v == old_env[k]
 
 
 @pytest.fixture(scope='session')
