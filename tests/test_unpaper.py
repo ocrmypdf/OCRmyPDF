@@ -44,8 +44,8 @@ def have_unpaper():
 
 
 @pytest.fixture(scope="session")
-def spoof_unpaper_oldversion(tmpdir_factory):
-    return spoof(tmpdir_factory, unpaper="unpaper_oldversion.py")
+def spoof_unpaper_oldversion(tmp_path_factory):
+    return spoof(tmp_path_factory, unpaper="unpaper_oldversion.py")
 
 
 def test_no_unpaper(resources, no_outpdf):

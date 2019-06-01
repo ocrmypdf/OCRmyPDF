@@ -28,8 +28,8 @@ from ocrmypdf.exec.tesseract import HOCR_TEMPLATE
 
 
 @pytest.fixture
-def blank_hocr(tmpdir):
-    filename = Path(str(tmpdir)) / "blank.hocr"
+def blank_hocr(tmp_path):
+    filename = tmp_path / "blank.hocr"
     filename.write_text(HOCR_TEMPLATE)  # pylint: disable=E1101
     return filename
 

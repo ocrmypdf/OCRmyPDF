@@ -47,44 +47,46 @@ RENDERERS = ['hocr', 'sandwich']
 
 
 @pytest.fixture(scope='session')
-def spoof_tesseract_crash(tmpdir_factory):
-    return spoof(tmpdir_factory, tesseract='tesseract_crash.py')
+def spoof_tesseract_crash(tmp_path_factory):
+    return spoof(tmp_path_factory, tesseract='tesseract_crash.py')
 
 
 @pytest.fixture(scope='session')
-def spoof_tesseract_big_image_error(tmpdir_factory):
-    return spoof(tmpdir_factory, tesseract='tesseract_big_image_error.py')
+def spoof_tesseract_big_image_error(tmp_path_factory):
+    return spoof(tmp_path_factory, tesseract='tesseract_big_image_error.py')
 
 
 @pytest.fixture(scope='session')
-def spoof_no_tess_no_pdfa(tmpdir_factory):
-    return spoof(tmpdir_factory, tesseract='tesseract_noop.py', gs='gs_pdfa_failure.py')
-
-
-@pytest.fixture(scope='session')
-def spoof_no_tess_pdfa_warning(tmpdir_factory):
+def spoof_no_tess_no_pdfa(tmp_path_factory):
     return spoof(
-        tmpdir_factory, tesseract='tesseract_noop.py', gs='gs_feature_elision.py'
+        tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_pdfa_failure.py'
     )
 
 
 @pytest.fixture(scope='session')
-def spoof_no_tess_gs_render_fail(tmpdir_factory):
+def spoof_no_tess_pdfa_warning(tmp_path_factory):
     return spoof(
-        tmpdir_factory, tesseract='tesseract_noop.py', gs='gs_render_failure.py'
+        tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_feature_elision.py'
     )
 
 
 @pytest.fixture(scope='session')
-def spoof_no_tess_gs_raster_fail(tmpdir_factory):
+def spoof_no_tess_gs_render_fail(tmp_path_factory):
     return spoof(
-        tmpdir_factory, tesseract='tesseract_noop.py', gs='gs_raster_failure.py'
+        tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_render_failure.py'
     )
 
 
 @pytest.fixture(scope='session')
-def spoof_tess_bad_utf8(tmpdir_factory):
-    return spoof(tmpdir_factory, tesseract='tesseract_badutf8.py')
+def spoof_no_tess_gs_raster_fail(tmp_path_factory):
+    return spoof(
+        tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_raster_failure.py'
+    )
+
+
+@pytest.fixture(scope='session')
+def spoof_tess_bad_utf8(tmp_path_factory):
+    return spoof(tmp_path_factory, tesseract='tesseract_badutf8.py')
 
 
 def test_quick(spoof_tesseract_cache, resources, outpdf):
@@ -225,7 +227,8 @@ def test_skip_ocr(spoof_tesseract_cache, resources, outpdf):
 def test_redo_ocr(spoof_tesseract_cache, resources, outpdf):
     in_ = resources / 'graph_ocred.pdf'
     before = PdfInfo(in_, detailed_page_analysis=True)
-    out = check_ocrmypdf(in_, outpdf, '--redo-ocr', env=spoof_tesseract_cache)
+    out = outpdf
+    out = check_ocrmypdf(in_, out, '--redo-ocr')
     after = PdfInfo(out, detailed_page_analysis=True)
     assert before[0].has_text and after[0].has_text
     assert (
@@ -936,7 +939,7 @@ def test_compression_changed(
 
 
 def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
-    sidecar = outpdf + '.txt'
+    sidecar = outpdf.with_suffix('.txt')
     check_ocrmypdf(
         resources / 'multipage.pdf',
         outpdf,
@@ -960,7 +963,7 @@ def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
 
 
 def test_sidecar_nonempty(spoof_tesseract_cache, resources, outpdf):
-    sidecar = outpdf + '.txt'
+    sidecar = outpdf.with_suffix('.txt')
     check_ocrmypdf(
         resources / 'ccitt.pdf', outpdf, '--sidecar', sidecar, env=spoof_tesseract_cache
     )

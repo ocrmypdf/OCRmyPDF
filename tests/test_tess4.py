@@ -174,10 +174,10 @@ def test_content_preservation(ensure_tess4, resources, outpdf):
     assert len(page.images) > 1, "masks were rasterized"
 
 
-def test_no_languages(ensure_tess4, tmpdir):
+def test_no_languages(ensure_tess4, tmp_path):
     env = ensure_tess4
-    (tmpdir / 'tessdata').mkdir()
-    env['TESSDATA_PREFIX'] = fspath(tmpdir)
+    (tmp_path / 'tessdata').mkdir()
+    env['TESSDATA_PREFIX'] = fspath(tmp_path)
 
     with modified_os_environ(env):
         with pytest.raises(MissingDependencyError):

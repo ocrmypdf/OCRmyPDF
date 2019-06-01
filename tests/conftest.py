@@ -91,7 +91,7 @@ OCRMYPDF = [sys.executable, '-m', 'ocrmypdf']
 
 
 @pytest.helpers.register
-def spoof(tmpdir_factory, **kwargs):
+def spoof(tmp_path_factory, **kwargs):
     """Modify PATH to override subprocess executables
 
     spoof(program1='replacement', ...)
@@ -101,8 +101,8 @@ def spoof(tmpdir_factory, **kwargs):
     """
     env = os.environ.copy()
     slug = '-'.join(v.replace('.py', '') for v in sorted(kwargs.values()))
-    spoofer_base = Path(str(tmpdir_factory.mktemp('spoofers')))
-    tmpdir = spoofer_base / slug
+    spoofer_base = tmp_path_factory.mktemp('spoofers')
+    tmpdir = Path(spoofer_base / slug)
     tmpdir.mkdir(parents=True)
 
     for replace_program, with_spoof in kwargs.items():
@@ -141,15 +141,15 @@ def os_environ(new_env):
 
 
 @pytest.fixture(scope='session')
-def spoof_tesseract_noop(tmpdir_factory):
-    return spoof(tmpdir_factory, tesseract='tesseract_noop.py')
+def spoof_tesseract_noop(tmp_path_factory):
+    return spoof(tmp_path_factory, tesseract='tesseract_noop.py')
 
 
 @pytest.fixture(scope='session')
-def spoof_tesseract_cache(tmpdir_factory):
+def spoof_tesseract_cache(tmp_path_factory):
     if running_in_docker():
         return os.environ.copy()
-    return spoof(tmpdir_factory, tesseract="tesseract_cache.py")
+    return spoof(tmp_path_factory, tesseract="tesseract_cache.py")
 
 
 @pytest.fixture
@@ -163,22 +163,22 @@ def ocrmypdf_exec():
 
 
 @pytest.fixture(scope="function")
-def outdir(tmpdir):
-    return Path(str(tmpdir))
+def outdir(tmp_path):
+    return tmp_path
 
 
 @pytest.fixture(scope="function")
-def outpdf(tmpdir):
-    return str(Path(str(tmpdir)) / 'out.pdf')
+def outpdf(tmp_path):
+    return tmp_path / 'out.pdf'
 
 
 @pytest.fixture(scope="function")
-def no_outpdf(tmpdir):
+def no_outpdf(tmp_path):
     """This just documents the fact that a test is not expected to produce
     output. Unfortunately an assertion failure inside a test fixture produces
     an error rather than a test failure, so no testing is done. It's up to
     the test to confirm that no output file was created."""
-    return str(Path(str(tmpdir)) / 'no_output.pdf')
+    return tmp_path / 'no_output.pdf'
 
 
 @pytest.helpers.register
