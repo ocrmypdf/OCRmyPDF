@@ -103,16 +103,6 @@ def _weave_layers_graft(
     pdf_text = pikepdf.open(text)
     pdf_text_contents = pdf_text.pages[0].Contents.read_bytes()
 
-    if not tesseract.has_textonly_pdf():
-        # If we don't have textonly_pdf, edit the stream to delete the
-        # instruction to draw the image Tesseract generated, which we do not
-        # use.
-        stream = bytearray(pdf_text_contents)
-        pattern = b'/Im1 Do'
-        idx = stream.find(pattern)
-        stream[idx : (idx + len(pattern))] = b' ' * len(pattern)
-        pdf_text_contents = bytes(stream)
-
     base_page = pdf_base.pages.p(page_num)
 
     # The text page always will be oriented up by this stage but the original

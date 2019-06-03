@@ -106,6 +106,14 @@ def check_options_output(options):
     if options.pdf_renderer == 'auto':
         options.pdf_renderer = 'sandwich'
 
+    if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf(
+        options.tesseract_env
+    ):
+        raise MissingDependencyError(
+            "You are using an alpha version of Tesseract 4.0 that does not support "
+            "the textonly_pdf parameter. We don't support versions this old."
+        )
+
     if options.output_type == 'pdfa':
         options.output_type = 'pdfa-2'
 
@@ -216,7 +224,9 @@ def check_options_advanced(options):
             "--pdfa-image-compression argument has no effect when "
             "--output-type is not 'pdfa', 'pdfa-1', or 'pdfa-2'"
         )
-    if tesseract.v4() and (options.user_words or options.user_patterns):
+    if tesseract.v4(options.tesseract_env) and (
+        options.user_words or options.user_patterns
+    ):
         log.warning('Tesseract 4.x ignores --user-words, so this has no effect')
 
 
