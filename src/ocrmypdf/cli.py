@@ -482,3 +482,4 @@ debugging.add_argument(
     action='store_true',
     help="Keep temporary files (helpful for debugging)",
 )
+debugging.add_argument('--tesseract-env', type=str, help=argparse.SUPPRESS)

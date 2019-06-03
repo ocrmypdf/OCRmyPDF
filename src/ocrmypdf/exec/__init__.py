@@ -28,7 +28,7 @@ from collections.abc import Mapping
 log = logging.Logger(__name__)
 
 
-def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)'):
+def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)', env=None):
     "Get the version of the specified program"
     args_prog = [program, version_arg]
     try:
@@ -39,6 +39,7 @@ def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)'):
             stdout=PIPE,
             stderr=STDOUT,
             check=True,
+            env=env,
         )
         output = proc.stdout
     except FileNotFoundError as e:

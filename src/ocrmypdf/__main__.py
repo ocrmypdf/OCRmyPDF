@@ -35,8 +35,6 @@ def run(args=None):
     if not check_closed_streams(options):
         return ExitCode.bad_args
 
-    if os.environ.get('PYTEST_CURRENT_TEST'):
-        os.environ['_OCRMYPDF_TEST_INFILE'] = options.input_file
     if hasattr(os, 'nice'):
         os.nice(5)
 

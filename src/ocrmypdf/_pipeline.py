@@ -348,6 +348,7 @@ def get_orientation_correction(preview, page_context):
         engine_mode=page_context.options.tesseract_oem,
         timeout=page_context.options.tesseract_timeout,
         log=page_context.log,
+        tesseract_env=page_context.options.tesseract_env,
     )
 
     direction = {0: '⇧', 90: '⇨', 180: '⇩', 270: '⇦'}
@@ -548,6 +549,7 @@ def ocr_tesseract_hocr(input_file, page_context):
         pagesegmode=options.tesseract_pagesegmode,
         user_words=options.user_words,
         user_patterns=options.user_patterns,
+        tesseract_env=options.tesseract_env,
         log=page_context.log,
     )
     return (hocr_out, hocr_text_out)
@@ -627,6 +629,7 @@ def ocr_tesseract_textonly_pdf(input_image, page_context):
         pagesegmode=options.tesseract_pagesegmode,
         user_words=options.user_words,
         user_patterns=options.user_patterns,
+        tesseract_env=options.tesseract_env,
         log=page_context.log,
     )
     return (output_pdf, output_text)

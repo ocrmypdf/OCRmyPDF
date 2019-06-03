@@ -21,6 +21,7 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 from subprocess import PIPE, run
+from ocrmypdf import api, cli
 
 import pytest
 
@@ -185,18 +186,21 @@ def no_outpdf(tmp_path):
 def check_ocrmypdf(input_file, output_file, *args, env=None):
     """Run ocrmypdf and confirmed that a valid file was created"""
 
-    p, out, err = run_ocrmypdf(input_file, output_file, *args, env=env)
-    # ensure py.test collects the output, use -s to view
-    print(err, file=sys.stderr)
-    assert p.returncode == 0
+    # p, out, err = run_ocrmypdf(input_file, output_file, *args, env=env)
+
+    options = cli.parser.parse_args(
+        [str(input_file), str(output_file)] + [str(arg) for arg in args]
+    )
+    api.check_options(options)
+    if env:
+        options.tesseract_env = env
+        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = input_file
+    result = api.run_pipeline(options, api=True)
+
+    assert result == 0
     assert os.path.exists(str(output_file)), "Output file not created"
     assert os.stat(str(output_file)).st_size > 100, "PDF too small or empty"
-    assert out == "", (
-        "The following was written to stdout and should not have been: \n"
-        + "<stdout>\n"
-        + out
-        + "\n</stdout>"
-    )
+
     return output_file
 
 

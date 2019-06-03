@@ -40,7 +40,6 @@ from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
 spoof = pytest.helpers.spoof
-os_environ = pytest.helpers.os_environ
 
 
 RENDERERS = ['hocr', 'sandwich']
@@ -614,8 +613,10 @@ def test_closed_streams(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
 
 
 def test_masks(spoof_tesseract_noop, resources, outpdf):
-    with os_environ(spoof_tesseract_noop):
-        assert ocrmypdf(resources / 'masks.pdf', outpdf) == ExitCode.ok
+    assert (
+        ocrmypdf(resources / 'masks.pdf', outpdf, tesseract_env=spoof_tesseract_noop)
+        == ExitCode.ok
+    )
 
 
 def test_linearized_pdf_and_indirect_object(spoof_tesseract_noop, resources, outpdf):

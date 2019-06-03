@@ -16,6 +16,7 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import os
 import sys
 from enum import IntEnum
 from pathlib import Path
@@ -113,13 +114,16 @@ def configure_logging(verbosity, progress_bar_friendly=True, manage_root_logger=
 
 def create_options(*, input_file, output_file, **kwargs):
     cmdline = []
-    filters = []
+    deferred = []
 
     for arg, val in kwargs.items():
         if val is None:
             continue
         if arg.startswith('filter') and (callable(val) or isinstance(val, str)):
-            filters.append((arg, val))
+            deferred.append((arg, val))
+            continue
+        elif arg == 'tesseract_env':
+            deferred.append((arg, val))
             continue
         cmd_style_arg = arg.replace('_', '-')
         cmdline.append(f"--{cmd_style_arg}")
@@ -132,15 +136,20 @@ def create_options(*, input_file, output_file, **kwargs):
         elif isinstance(val, Path):
             cmdline.append(str(val))
         else:
-            raise TypeError(f"{val} ({type(val)})")
+            raise TypeError(f"{arg}: {val} ({type(val)})")
 
     cmdline.append(str(input_file))
     cmdline.append(str(output_file))
 
     parser.api_mode = True
     options = parser.parse_args(cmdline)
-    for keyword, function in filters:
-        setattr(options, keyword, function)
+    for keyword, val in deferred:
+        setattr(options, keyword, val)
+
+    # If we are running a Tesseract spoof, ensure it knows what the input file is
+    if os.environ.get('PYTEST_CURRENT_TEST') and options.tesseract_env:
+        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = input_file
+
     return options
 
 
@@ -190,9 +199,18 @@ def ocrmypdf(  # pylint: disable=unused-argument
     keep_temporary_files=None,
     progress_bar=None,
     filter_ocr_image=None,
+    tesseract_env=None,
 ):
     """Run OCRmyPDF on one PDF or image.
 
+    For most arguments, see documentation for the equivalent command line parameter.
+    A few specific arguments are discussed here:
+
+    Args:
+        use_threads (bool): Use worker threads instead of processes. This reduces
+            performance but may make debugging easier since it is easier to set
+            breakpoints.
+        tesseract_env (dict): Override environment variables for Tesseract
     Raises:
         ocrmypdf.PdfMergeFailedError: If the input PDF is malformed, preventing merging
             with the OCR layer.

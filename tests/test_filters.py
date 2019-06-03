@@ -26,7 +26,6 @@ from ocrmypdf.filters import invert, whiteout
 from ocrmypdf._plugins import load_plugin
 
 
-os_environ = pytest.helpers.os_environ
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 
 
