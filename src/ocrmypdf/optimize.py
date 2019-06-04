@@ -17,6 +17,7 @@
 
 import concurrent.futures
 import sys
+import tempfile
 from collections import defaultdict
 from os import fspath
 from pathlib import Path
@@ -29,6 +30,7 @@ from pikepdf import Name, Dictionary
 from . import leptonica
 from ._jobcontext import PDFContext
 from .exec import jbig2enc, pngquant
+from .exceptions import OutputFileAccessError
 from .helpers import re_symlink
 
 DEFAULT_JPEG_QUALITY = 75
@@ -484,6 +486,11 @@ def optimize(input_file, output_file, context):
 
     input_size = Path(input_file).stat().st_size
     output_size = Path(target_file).stat().st_size
+    if output_size == 0:
+        raise OutputFileAccessError(
+            f"Output file not created after optimizing. We probably ran "
+            f"out of disk space in the temporary folder: {tempfile.gettempdir()}."
+        )
     ratio = input_size / output_size
     savings = 1 - output_size / input_size
     log.info(f"Optimize ratio: {ratio:.2f} savings: {(100 * savings):.1f}%")
