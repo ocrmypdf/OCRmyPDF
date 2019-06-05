@@ -392,10 +392,16 @@ def get_orientation_correction(preview, page_context):
     return 0
 
 
-def rasterize(input_file, page_context, correction=0):
+def rasterize(
+    input_file, page_context, correction=0, output_tag='', remove_vectors=None
+):
     colorspaces = ['pngmono', 'pnggray', 'png256', 'png16m']
     device_idx = 0
-    output_file = page_context.get_path('rasterize.png')
+
+    if remove_vectors is None:
+        remove_vectors = page_context.options.remove_vectors
+
+    output_file = page_context.get_path(f'rasterize{output_tag}.png')
     pageinfo = page_context.pageinfo
 
     def at_least(cs):
@@ -431,7 +437,7 @@ def rasterize(input_file, page_context, correction=0):
         page_dpi=(page_dpi, page_dpi),
         pageno=pageinfo.pageno + 1,
         rotation=correction,
-        filter_vector=page_context.options.remove_vectors,
+        filter_vector=remove_vectors,
     )
     return output_file
 
@@ -520,7 +526,7 @@ def create_ocr_image(image, page_context):
                 barcodes = pix.locate_barcodes()
                 for barcode in barcodes:
                     decoded, rect = barcode
-                    print('masking barcode %s %r', decoded, rect)
+                    page_context.log.debug('masking barcode %s %r', decoded, rect)
                     draw.rectangle(rect, fill=white)
             im = pix.topil()
 

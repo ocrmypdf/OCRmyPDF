@@ -73,6 +73,16 @@ PageResult = namedtuple(
 )
 
 
+def preprocess(page_context, image, remove_background, deskew, clean):
+    if remove_background:
+        image = preprocess_remove_background(image, page_context)
+    if deskew:
+        image = preprocess_deskew(image, page_context)
+    if clean:
+        image = preprocess_clean(image, page_context)
+    return image
+
+
 def exec_page_sync(page_context):
     options = page_context.options
     orientation_correction = 0
@@ -88,27 +98,46 @@ def exec_page_sync(page_context):
             )
 
         rasterize_out = rasterize(
-            page_context.origin, page_context, correction=orientation_correction
+            page_context.origin,
+            page_context,
+            correction=orientation_correction,
+            remove_vectors=False,
         )
 
-        preprocess = rasterize_out
-        if options.remove_background:
-            preprocess = preprocess_remove_background(preprocess, page_context)
-
-        if options.deskew:
-            preprocess = preprocess_deskew(preprocess, page_context)
-
-        if options.clean:
-            cleaned = preprocess_clean(preprocess, page_context)
-            if options.clean_final:
-                preprocess_out = cleaned
-                ocr_image = cleaned
-            else:
-                preprocess_out = preprocess
-                ocr_image = cleaned
+        if not any([options.clean, options.clean_final, options.remove_vectors]):
+            ocr_image = preprocess_out = preprocess(
+                page_context,
+                rasterize_out,
+                options.remove_background,
+                options.deskew,
+                clean=False,
+            )
         else:
-            preprocess_out = preprocess
-            ocr_image = preprocess
+            if not options.lossless_reconstruction:
+                preprocess_out = preprocess(
+                    page_context,
+                    rasterize_out,
+                    options.remove_background,
+                    options.deskew,
+                    clean=options.clean_final,
+                )
+            if options.remove_vectors:
+                rasterize_ocr_out = rasterize(
+                    page_context.origin,
+                    page_context,
+                    correction=orientation_correction,
+                    remove_vectors=True,
+                    output_tag='_ocr',
+                )
+            else:
+                rasterize_ocr_out = rasterize_out
+            ocr_image = preprocess(
+                page_context,
+                rasterize_ocr_out,
+                options.remove_background,
+                options.deskew,
+                clean=options.clean,
+            )
 
         ocr_image_out = create_ocr_image(ocr_image, page_context)
 
