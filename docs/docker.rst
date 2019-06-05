@@ -46,14 +46,15 @@ To start a Docker container (instance of the image):
 .. code-block:: bash
 
     docker tag jbarlow83/ocrmypdf-alpine ocrmypdf
-    docker run --rm ocrmypdf (... all other arguments here...)
+    docker run --rm -i ocrmypdf (... all other arguments here...)
 
-For convenience, create a shell alias to hide the Docker command:
+For convenience, create a shell alias to hide the Docker command. It is easier to send the input file to file stdin and read the output from stdout – this avoids the occasionally messy permission issues with Docker entirely.
 
 .. code-block:: bash
 
-    alias ocrmypdf='docker run --rm -v "$(pwd):/home/docker" ocrmypdf'
+    alias ocrmypdf='docker run --rm -i ocrmypdf'
     ocrmypdf --version  # runs docker version
+    ocrmypdf <input.pdf >output.pdf
 
 Or in the wonderful `fish shell <https://fishshell.com/>`_:
 
@@ -61,6 +62,12 @@ Or in the wonderful `fish shell <https://fishshell.com/>`_:
 
     alias ocrmypdf 'docker run --rm ocrmypdf'
     funcsave ocrmypdf
+
+Alternately, you could mount the local current working directory as a Docker volume:
+
+.. code-block:: bash
+
+    docker run --rm -v $(pwd):/data ocrmypdf /data/input.pdf /data/output.pdf
 
 .. _docker-lang-packs:
 

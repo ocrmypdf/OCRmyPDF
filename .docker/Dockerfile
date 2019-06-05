@@ -76,6 +76,4 @@ COPY --from=builder /app/src /app/src
 COPY --from=builder /appenv /appenv
 COPY --from=builder /usr/local /usr/local
 
-WORKDIR /data
-
 ENTRYPOINT ["/appenv/bin/ocrmypdf"]

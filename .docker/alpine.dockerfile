@@ -88,6 +88,4 @@ COPY --from=builder /app/requirements /app/requirements
 COPY --from=builder /app/tests /app/tests
 COPY --from=builder /app/src /app/src
 
-WORKDIR /data
-
 ENTRYPOINT ["/usr/bin/ocrmypdf"]
