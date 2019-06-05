@@ -19,7 +19,7 @@ import logging
 import importlib
 import os
 import sys
-
+from pathlib import Path
 
 log = logging.getLogger(__name__)
 
@@ -51,10 +51,7 @@ def _load_function_from_pyfile(location):
     filename, object_name = location.split('::', maxsplit=1)
     log.debug(f"Loading function {object_name} from {filename}")
 
-    module_name = os.path.basename(filename)
-    if module_name.endswith('.py'):
-        module_name = module_name[:-3]
-
+    module_name = Path(filename).stem
     spec = importlib.util.spec_from_file_location(module_name, filename)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
