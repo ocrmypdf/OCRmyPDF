@@ -55,9 +55,6 @@ from ._pipeline import (
     validate_pdfinfo_options,
 )
 from ._validation import (
-    check_dependency_versions,
-    check_environ,
-    check_options,
     check_requested_output_file,
     create_input_file,
     report_output_file_size,
@@ -320,7 +317,11 @@ def run_pipeline(options, api=False):
         )
 
         # Gather pdfinfo and create context
-        pdfinfo = get_pdfinfo(origin_pdf, detailed_page_analysis=options.redo_ocr)
+        pdfinfo = get_pdfinfo(
+            origin_pdf,
+            detailed_page_analysis=options.redo_ocr,
+            progbar=options.progress_bar,
+        )
         context = PDFContext(options, work_folder, origin_pdf, pdfinfo)
 
         # Validate options are okay for this pdf

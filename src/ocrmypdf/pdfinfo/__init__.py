@@ -28,6 +28,7 @@ import re
 
 from pikepdf import PdfMatrix
 import pikepdf
+from tqdm import tqdm
 
 from . import ghosttext
 
@@ -616,7 +617,7 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
     return pageinfo
 
 
-def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None):
+def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None, progbar=False):
     pdf = pikepdf.open(infile)  # Do not close in this function
     if pdf.is_encrypted:
         pdf.close()
@@ -627,7 +628,13 @@ def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None):
         pages_xml = ghosttext.extract_text_xml(infile, pdf, pageno=None, log=log)
 
     pages = []
-    for n in range(len(pdf.pages)):
+    for n, _ in tqdm(
+        enumerate(pdf.pages),
+        total=len(pdf.pages),
+        desc="Scan",
+        unit='page',
+        disable=not progbar,
+    ):
         page_xml = pages_xml[n] if pages_xml else None
         page = PageInfo(pdf, n, infile, page_xml, detailed_analysis)
         pages.append(page)
@@ -749,10 +756,10 @@ class PageInfo:
 class PdfInfo:
     """Get summary information about a PDF"""
 
-    def __init__(self, infile, detailed_page_analysis=False, log=logger):
+    def __init__(self, infile, detailed_page_analysis=False, log=logger, progbar=False):
         self._infile = infile
         self._pages, pdf = _pdf_get_all_pageinfo(
-            infile, detailed_page_analysis, log=log
+            infile, detailed_page_analysis, log=log, progbar=progbar
         )
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
         self._has_acroform = False
