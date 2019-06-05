@@ -22,15 +22,7 @@ from collections import namedtuple
 from contextlib import suppress
 from functools import lru_cache
 from os import fspath
-from subprocess import (
-    PIPE,
-    STDOUT,
-    CalledProcessError,
-    TimeoutExpired,
-    check_output,
-    run,
-)
-from textwrap import dedent
+from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired, run
 
 from . import get_version
 from ..exceptions import (
@@ -88,8 +80,9 @@ def has_textonly_pdf(tesseract_env=None):
         )
         params = proc.stdout
     except CalledProcessError as e:
-        print("Could not --print-parameters from tesseract", file=sys.stderr)
-        raise MissingDependencyError from e
+        raise MissingDependencyError(
+            "Could not --print-parameters from tesseract"
+        ) from e
     if 'textonly_pdf' in params:
         return True
     return False
@@ -97,14 +90,13 @@ def has_textonly_pdf(tesseract_env=None):
 
 def languages(tesseract_env=None):
     def lang_error(output):
-        msg = dedent(
-            """Tesseract failed to report available languages.
-        Output from Tesseract:
-        -----------
-        """
+        msg = (
+            "Tesseract failed to report available languages.\n"
+            "Output from Tesseract:\n"
+            "-----------\n"
         )
         msg += output
-        print(msg, file=sys.stderr)
+        return msg
 
     args_tess = ['tesseract', '--list-langs']
     try:
@@ -118,13 +110,11 @@ def languages(tesseract_env=None):
         )
         output = proc.stdout
     except CalledProcessError as e:
-        lang_error(e.output)
-        raise MissingDependencyError from e
+        raise MissingDependencyError(lang_error(e.output)) from e
 
     header, *rest = output.splitlines()
     if not header.startswith('List of available languages'):
-        lang_error(output)
-        raise MissingDependencyError
+        raise MissingDependencyError(lang_error(output))
     return set(lang.strip() for lang in rest)
 
 

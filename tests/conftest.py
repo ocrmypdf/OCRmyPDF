@@ -37,8 +37,8 @@ else:
 # pylint: disable=E1101
 # pytest.helpers is dynamic so it confuses pylint
 
-if sys.version_info.major < 3:
-    print("Requires Python 3.4+")
+if sys.version_info < (3, 5):
+    print("Requires Python 3.5+")
     sys.exit(1)
 
 

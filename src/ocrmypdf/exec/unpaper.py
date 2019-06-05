@@ -29,11 +29,7 @@ from tempfile import TemporaryDirectory
 from . import get_version
 from ..exceptions import MissingDependencyError, SubprocessOutputError
 
-try:
-    from PIL import Image
-except ImportError:
-    print("Could not find Python3 imaging library", file=sys.stderr)
-    raise
+from PIL import Image
 
 
 @lru_cache(maxsize=1)
@@ -55,16 +51,18 @@ def run(input_file, output_file, dpi, log, mode_args):
             else:
                 im = im.convert(mode='RGB')
         except IOError as e:
-            log.error("Could not convert image with type " + im.mode)
             im.close()
-            raise MissingDependencyError() from e
+            raise MissingDependencyError(
+                "Could not convert image with type " + im.mode
+            ) from e
 
     try:
         suffix = SUFFIXES[im.mode]
     except KeyError:
-        log.error("Failed to convert image to a supported format.")
         im.close()
-        raise MissingDependencyError() from e
+        raise MissingDependencyError(
+            "Failed to convert image to a supported format."
+        ) from e
 
     with TemporaryDirectory() as tmpdir:
         input_pnm = os.path.join(tmpdir, f'input{suffix}')
