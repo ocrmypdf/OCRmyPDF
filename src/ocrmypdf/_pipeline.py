@@ -160,6 +160,12 @@ def validate_pdfinfo_options(context):
     pdfinfo = context.pdfinfo
     options = context.options
 
+    if options.plugin_validation:
+        validate = load_plugin(options.plugin_validation)
+        result = validate(context)
+        if result is not None:
+            return result
+
     if pdfinfo.needs_rendering:
         log.error(
             "This PDF contains dynamic XFA forms created by Adobe LiveCycle "

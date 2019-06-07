@@ -119,7 +119,9 @@ def create_options(*, input_file, output_file, **kwargs):
     for arg, val in kwargs.items():
         if val is None:
             continue
-        if arg.startswith('filter') and (callable(val) or isinstance(val, str)):
+        if (arg.startswith('plugin') or arg.startswith('filter')) and (
+            callable(val) or isinstance(val, str)
+        ):
             deferred.append((arg, val))
             continue
         elif arg == 'tesseract_env':
@@ -199,6 +201,7 @@ def ocrmypdf(  # pylint: disable=unused-argument
     keep_temporary_files=None,
     progress_bar=None,
     filter_ocr_image=None,
+    plugin_validation=None,
     tesseract_env=None,
 ):
     """Run OCRmyPDF on one PDF or image.
