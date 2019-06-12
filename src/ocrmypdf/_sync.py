@@ -330,7 +330,10 @@ def run_pipeline(options, api=False):
         # Execute the pipeline
         exec_concurrent(context)
     except (KeyboardInterrupt if not api else NeverRaise) as e:
-        log.error("KeyboardInterrupt")
+        if options.verbose >= 1:
+            log.exception("KeyboardInterrupt")
+        else:
+            log.error("KeyboardInterrupt")
         return ExitCode.ctrl_c
     except (ExitCodeException if not api else NeverRaise) as e:
         if str(e):
