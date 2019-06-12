@@ -226,7 +226,7 @@ If the ``-k`` argument is issued on the command line, OCRmyPDF will keep the tem
 
 .. code-block:: none
 
-    Temporary working files saved at:
+    Temporary working files retained at:
     /tmp/com.github.ocrmypdf.u20wpz07
 
 The organization of this folder is an implementation detail and subject to change between releases. However the general organization is that working files on a per page basis have the page number as a prefix (starting with page 1), an infix indicates the processing stage, and a suffix indicates the file type. Some important files include:

@@ -93,7 +93,7 @@ class PageContext(PicklableLoggerMixin):
 
 def cleanup_working_files(work_folder, options):
     if options.keep_temporary_files:
-        print(f"Temporary working files saved at:\n{work_folder}", file=sys.stderr)
+        print(f"Temporary working files retained at:\n{work_folder}", file=sys.stderr)
     else:
         shutil.rmtree(work_folder, ignore_errors=True)
 
