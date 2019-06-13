@@ -25,7 +25,7 @@ import pikepdf
 os_environ = pytest.helpers.os_environ
 
 
-def test_no_glyphless_weave(resources, outdir):
+def test_no_glyphless_graft(resources, outdir):
     pdf = pikepdf.open(resources / 'francais.pdf')
     pdf_aspect = pikepdf.open(resources / 'aspect.pdf')
     pdf_cmyk = pikepdf.open(resources / 'cmyk.pdf')

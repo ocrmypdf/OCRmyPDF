@@ -348,7 +348,7 @@ def get_orientation_correction(preview, page_context):
     correction to rotation.
 
     When we draw the real page for OCR, we rotate it by the CCW correction,
-    which points it (hopefully) upright. _weave.py takes care of the orienting
+    which points it (hopefully) upright. _graft.py takes care of the orienting
     the image and text layers.
 
     """

@@ -90,7 +90,7 @@ def strip_invisible_text(pdf, page):
     page.Contents = pikepdf.Stream(pdf, content_stream)
 
 
-def _weave_layers_graft(
+def _graft_text_layer(
     *, pdf_base, page_num, text, font, font_key, procset, rotation, strip_old_text, log
 ):
     """Insert the text layer from text page 0 on to pdf_base at page_num"""
@@ -186,7 +186,7 @@ class OcrGrafter:
         self.font, self.font_key = None, None
 
         self.pdfinfo = context.pdfinfo
-        self.output_file = context.get_path('weave_layers.pdf')
+        self.output_file = context.get_path('graft_layers.pdf')
 
         self.procset = self.pdf_base.make_indirect(
             pikepdf.Object.parse(b'[ /PDF /Text /ImageB /ImageC /ImageI ]')
@@ -228,7 +228,7 @@ class OcrGrafter:
         if text and self.font:
             # Graft the text layer onto this page, whether new or old
             strip_old = self.context.options.redo_ocr
-            _weave_layers_graft(
+            _graft_text_layer(
                 pdf_base=self.pdf_base,
                 page_num=pageno + 1,
                 text=text,

@@ -59,7 +59,7 @@ from ._validation import (
     create_input_file,
     report_output_file_size,
 )
-from ._weave import OcrGrafter
+from ._graft import OcrGrafter
 from .exceptions import ExitCode, ExitCodeException
 from .exec import qpdf
 from .helpers import available_cpu_count
@@ -289,7 +289,6 @@ def exec_concurrent(context):
         copy_final(text, context.options.sidecar, context)
 
     # Merge layers to one single pdf
-    # pdf = weave_layers(layers, context)
     pdf = ocrgraft.finalize()
 
     # PDF/A and metadata
