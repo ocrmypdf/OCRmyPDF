@@ -66,6 +66,15 @@ def re_symlink(input_file, soft_link_name, *args, **kwargs):
     os.symlink(os.path.abspath(input_file), soft_link_name)
 
 
+def is_iterable_notstr(thing):
+    return isinstance(thing, Iterable) and not isinstance(thing, str)
+
+
+def monotonic(L):
+    """Does list increase monotonically?"""
+    return all(b > a for a, b in zip(L, L[1:]))
+
+
 def page_number(input_file):
     """Get one-based page number implied by filename (000002.pdf -> 2)"""
     return int(os.path.basename(os.fspath(input_file))[0:6])

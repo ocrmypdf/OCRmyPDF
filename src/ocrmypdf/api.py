@@ -188,6 +188,7 @@ def ocrmypdf(  # pylint: disable=unused-argument
     png_quality=None,
     jbig2_lossy=None,
     jbig2_page_group_size=None,
+    pages=None,
     max_image_mpixels=None,
     tesseract_config=None,
     tesseract_pagesegmode=None,

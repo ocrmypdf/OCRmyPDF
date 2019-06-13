@@ -41,7 +41,7 @@ from .exec import (
     tesseract,
     unpaper,
 )
-from .helpers import is_file_writable, re_symlink
+from .helpers import is_file_writable, re_symlink, is_iterable_notstr, monotonic
 
 # -------------
 # External dependencies
@@ -172,6 +172,33 @@ def check_options_preprocessing(options):
             raise BadArgsError(str(e))
 
 
+def _pages_from_ranges(ranges):
+    if is_iterable_notstr(ranges):
+        return set(ranges)
+    pages = []
+    page_groups = ranges.replace(' ', '').split(',')
+    for g in page_groups:
+        if not g:
+            continue
+        try:
+            start, end = g.split('-')
+        except ValueError:
+            pages.append(int(g) - 1)
+        else:
+            pages.extend(range(int(start) - 1, int(end)))
+
+    if not monotonic(pages):
+        log.warning(
+            "List of pages to process contains duplicate pages, or pages that are "
+            "out of order"
+        )
+    if any(page < 0 for page in pages):
+        raise BadArgsError("pages refers to a page number less than 1")
+
+    log.debug("OCRing only these pages: %s", pages)
+    return set(pages)
+
+
 def check_options_ocr_behavior(options):
     exclusive_options = sum(
         [
@@ -180,9 +207,11 @@ def check_options_ocr_behavior(options):
         ]
     )
     if exclusive_options >= 2:
-        raise BadArgsError(
-            "Error: choose only one of --force-ocr, --skip-text, --redo-ocr."
-        )
+        raise BadArgsError("Choose only one of --force-ocr, --skip-text, --redo-ocr.")
+    if options.pages and options.sidecar:
+        raise BadArgsError("--pages and --sidecar are mutually exclusive")
+    if options.pages:
+        options.pages = _pages_from_ranges(options.pages)
 
 
 def check_options_optimizing(options):

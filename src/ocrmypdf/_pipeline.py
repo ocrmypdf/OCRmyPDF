@@ -251,12 +251,14 @@ def is_ocr_required(page_context):
 
     ocr_required = True
 
-    if pageinfo.has_text:
+    if options.pages and pageinfo.pageno not in options.pages:
+        log.debug(f"skipped {pageinfo.pageno} as requested by --pages {options.pages}")
+        ocr_required = False
+    elif pageinfo.has_text:
         if not options.force_ocr and not (options.skip_text or options.redo_ocr):
-            log.error(
+            raise PriorOcrFoundError(
                 "page already has text! - aborting (use --force-ocr to force OCR)"
             )
-            raise PriorOcrFoundError()
         elif options.force_ocr:
             log.info("page already has text! - rasterizing text and running OCR anyway")
             ocr_required = True

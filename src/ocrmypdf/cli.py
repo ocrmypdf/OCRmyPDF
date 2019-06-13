@@ -381,6 +381,11 @@ advanced = parser.add_argument_group(
     "Advanced", "Advanced options to control Tesseract's OCR behavior"
 )
 advanced.add_argument(
+    '--pages',
+    type=str,
+    help="Limit OCR to the specified pages (ranges or comma separated), skipping others",
+)
+advanced.add_argument(
     '--max-image-mpixels',
     action='store',
     type=numeric(float, 0),
