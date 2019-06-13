@@ -111,6 +111,9 @@ def configure_logging(verbosity, progress_bar_friendly=True, manage_root_logger=
         pil_log = logging.getLogger('PIL')
         pil_log.setLevel(logging.INFO)
 
+    if manage_root_logger:
+        logging.captureWarnings(True)
+
 
 def create_options(*, input_file, output_file, **kwargs):
     cmdline = []
