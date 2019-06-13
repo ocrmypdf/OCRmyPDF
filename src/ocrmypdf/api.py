@@ -158,7 +158,7 @@ def create_options(*, input_file, output_file, **kwargs):
     return options
 
 
-def ocrmypdf(  # pylint: disable=unused-argument
+def run(  # pylint: disable=unused-argument
     input_file,
     output_file,
     *,

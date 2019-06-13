@@ -44,4 +44,4 @@ from . import hocrtransform
 from . import leptonica
 from . import pdfa
 from . import pdfinfo
-from .api import ocrmypdf, configure_logging, Verbosity
+from .api import run, configure_logging, Verbosity

@@ -27,7 +27,7 @@ import PIL
 import pytest
 from PIL import Image
 
-from ocrmypdf import ocrmypdf
+import ocrmypdf
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 from ocrmypdf.exec import ghostscript, qpdf, tesseract
 from ocrmypdf.leptonica import Pix
@@ -614,7 +614,9 @@ def test_closed_streams(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
 
 def test_masks(spoof_tesseract_noop, resources, outpdf):
     assert (
-        ocrmypdf(resources / 'masks.pdf', outpdf, tesseract_env=spoof_tesseract_noop)
+        ocrmypdf.run(
+            resources / 'masks.pdf', outpdf, tesseract_env=spoof_tesseract_noop
+        )
         == ExitCode.ok
     )
 

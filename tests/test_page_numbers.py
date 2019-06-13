@@ -17,7 +17,7 @@
 
 import pytest
 
-from ocrmypdf import ocrmypdf as run
+import ocrmypdf
 from ocrmypdf._validation import _pages_from_ranges
 from ocrmypdf.pdfinfo import PdfInfo
 
@@ -42,7 +42,7 @@ def test_list_range():
 
 def test_limited_pages(resources, outpdf, spoof_tesseract_cache):
     multi = resources / 'multipage.pdf'
-    run(
+    ocrmypdf.run(
         multi,
         outpdf,
         pages='5-6',

@@ -12,9 +12,9 @@ OCRmyPDF one high-level function to run its main engine from an application. The
 
 .. code-block:: python
 
-    from ocrmypdf import ocrmypdf
+    import ocrmypdf
 
-    ocrmypdf('input.pdf', 'output.pdf', deskew=True)
+    ocrmypdf.run('input.pdf', 'output.pdf', deskew=True)
 
 With a few exceptions, all of the command line arguments are available and may be passed as equivalent keywords.
 
@@ -29,11 +29,11 @@ The :func:`ocrmypdf.ocrmypdf` function runs OCRmyPDF similar to command line exe
 - manage the signal flags of worker processes
 0 execute other subprocesses (forking and executing other programs)
 
-The Python process that calls ``ocrmypdf()`` must be sufficiently privileged to perform these actions. If it is not, ``ocrmypdf()`` will fail.
+The Python process that calls ``ocrmypdf.run()`` must be sufficiently privileged to perform these actions. If it is not, ``ocrmypdf()`` will fail.
 
 There is no currently no option to manage how jobs are scheduled other than the argument ``jobs=`` which will limit the number of worker processes.
 
-Forking a child process to call ``ocrmypdf()`` is suggested. That way your application will survive even if OCRmyPDF does not.
+Forking a child process to call ``ocrmypdf.run()`` is suggested. That way your application will survive even if OCRmyPDF does not.
 
 Logging
 ^^^^^^^
@@ -59,7 +59,7 @@ When OCRmyPDF succeeds conditionally, it may return an integer exit code.
 Reference
 ---------
 
-.. autofunction:: ocrmypdf.ocrmypdf
+.. autofunction:: ocrmypdf.run
 
 .. autoclass:: ocrmypdf.Verbosity
     :members:

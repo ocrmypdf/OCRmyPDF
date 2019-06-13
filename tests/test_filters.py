@@ -21,7 +21,7 @@ from PIL import Image
 import pytest
 
 
-from ocrmypdf import ocrmypdf
+import ocrmypdf
 from ocrmypdf.filters import invert, whiteout
 from ocrmypdf._plugins import load_plugin
 
@@ -80,7 +80,7 @@ def test_filter_from_cmdline(resources, outdir):
 
 
 def test_filter_from_api(resources, outdir):
-    ocrmypdf(
+    ocrmypdf.run(
         resources / 'crom.png',
         outdir / 'out.pdf',
         image_dpi=100,
