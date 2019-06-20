@@ -24,39 +24,39 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 
-def _load_function_from_module(location):
-    """Load a function given a module location
+def _load_object_from_module(location):
+    """Load a object given a module location
 
     For location=a.b.c, will effectively run "from a.b import c"
 
     Example:
-        _load_function_from_module("a.b.c")
+        _load_object_from_module("a.b.c")
 
     """
     module_parts = location.split('.')
     module_name = '.'.join(module_parts[:-1])
     object_name = module_parts[-1]
     module = importlib.import_module(module_name)
-    fn = getattr(module, object_name)
-    log.debug(f"Loaded function: from {module_name} import {object_name}")
-    return fn
+    obj = getattr(module, object_name)
+    log.debug(f"Loaded object: from {module_name} import {object_name}")
+    return obj
 
 
-def _load_function_from_pyfile(location):
-    """Load a function from a file
+def _load_object_from_pyfile(location):
+    """Load a object from a file
 
     Example:
-        _load_function_from_pyfile("test.py::blur_filter")
+        _load_object_from_pyfile("test.py::blur_filter")
     """
     filename, object_name = location.split('::', maxsplit=1)
-    log.debug(f"Loading function {object_name} from {filename}")
+    log.debug(f"Loading object {object_name} from {filename}")
 
     module_name = Path(filename).stem
     spec = importlib.util.spec_from_file_location(module_name, filename)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    fn = getattr(module, object_name)
-    return fn
+    obj = getattr(module, object_name)
+    return obj
 
 
 def load_plugin(plugin):
@@ -67,9 +67,9 @@ def load_plugin(plugin):
         raise TypeError()
 
     if '::' not in plugin:
-        plugin = _load_function_from_module(plugin)
+        plugin = _load_object_from_module(plugin)
     else:
-        plugin = _load_function_from_pyfile(plugin)
+        plugin = _load_object_from_pyfile(plugin)
 
     return plugin
 

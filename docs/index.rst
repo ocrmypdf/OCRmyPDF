@@ -28,6 +28,7 @@ PDF is the best format for storing and exchanging scanned documents.  Unfortunat
    docker
    advanced
    api
+   plugins
    batch
    security
    errors
