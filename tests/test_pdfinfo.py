@@ -203,15 +203,15 @@ def test_stack_abuse():
 
     stream = pikepdf.Stream(p, b'q ' * 35)
     with pytest.warns(None) as record:
-        pdfinfo._interpret_contents(stream)
+        pdfinfo.info._interpret_contents(stream)
     assert 'overflowed' in str(record[0].message)
 
     stream = pikepdf.Stream(p, b'q Q Q Q Q')
     with pytest.warns(None) as record:
-        pdfinfo._interpret_contents(stream)
+        pdfinfo.info._interpret_contents(stream)
     assert 'underflowed' in str(record[0].message)
 
     stream = pikepdf.Stream(p, b'q ' * 135)
     with pytest.warns(None):
         with pytest.raises(RuntimeError):
-            pdfinfo._interpret_contents(stream)
+            pdfinfo.info._interpret_contents(stream)
