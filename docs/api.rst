@@ -23,7 +23,7 @@ A few differences are that ``verbose`` and ``quiet`` are not available. Instead,
 Parent process requirements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :func:`ocrmypdf.ocrmypdf` function runs OCRmyPDF similar to command line execution. To do this, it will:
+The :func:`ocrmypdf.run` function runs OCRmyPDF similar to command line execution. To do this, it will:
 - create a monitoring thread
 - create worker processes (forking itself)
 - manage the signal flags of worker processes
@@ -33,14 +33,15 @@ The Python process that calls ``ocrmypdf.run()`` must be sufficiently privileged
 
 There is no currently no option to manage how jobs are scheduled other than the argument ``jobs=`` which will limit the number of worker processes.
 
-Forking a child process to call ``ocrmypdf.run()`` is suggested. That way your application will survive even if OCRmyPDF does not.
+Forking a child process to call ``ocrmypdf.run()`` is suggested. That way your application will survive and remain interactive even if OCRmyPDF does not.
 
 Logging
 ^^^^^^^
 
 OCRmyPDF will log under loggers named ``ocrmypdf``. In addition, it imports ``pdfminer`` and ``PIL``, both of which post log messages under those logging namespaces.
 
-You can configure the logging as desired for your application or call :func:`ocrmypdf.configure_logging` to configure logging the same way OCRmyPDF itself does. The command line parameters such as ``--quiet`` and ``--verbose`` have no equivalents in the API; you must configure logging.
+You can configure the logging as desired for your application or call :func:`ocrmypdf.configure_logging` to configure logging the same way OCRmyPDF itself does. The command line parameters such as ``--quiet`` and ``--verbose`` have no equivalents in the API; you must use the provided configuration function or do configuration in a
+way that suits your use case.
 
 Progress monitoring
 ^^^^^^^^^^^^^^^^^^^
@@ -54,7 +55,7 @@ OCRmyPDF may throw standard Python exceptions, ``ocrmypdf.exceptions.*`` excepti
 
 Programs that call OCRmyPDF should consider trapping KeyboardInterrupt so that they allow OCR to terminate with the whole program terminating.
 
-When OCRmyPDF succeeds conditionally, it may return an integer exit code.
+When OCRmyPDF succeeds conditionally, it returns an integer exit code.
 
 Reference
 ---------
