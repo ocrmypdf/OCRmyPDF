@@ -85,14 +85,6 @@ def available_cpu_count():
         return multiprocessing.cpu_count()
     except NotImplementedError:
         pass
-
-    try:
-        import psutil
-
-        return psutil.cpu_count()
-    except (ImportError, AttributeError):
-        pass
-
     warnings.warn(
         "Could not get CPU count.  Assuming one (1) CPU." "Use -j N to set manually."
     )
