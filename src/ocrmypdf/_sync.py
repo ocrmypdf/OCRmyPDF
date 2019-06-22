@@ -232,8 +232,9 @@ def exec_concurrent(context):
     # parallelizing ocrmypdf and forcing Tesseract to be single threaded, which we
     # get by setting the envvar OMP_THREAD_LIMIT to 1. But if the page count of the
     # input file is small, then we allow Tesseract to use threads, subject to the
-    # constraint: (ocrmypdf workers) * (tesseract threads) <= max_workers
-    tess_threads = min(1, context.options.jobs // max_workers)
+    # constraint: (ocrmypdf workers) * (tesseract threads) <= max_workers and limiting
+    # Tesseract to 4 threads.
+    tess_threads = min(4, context.options.jobs // max_workers)
     if context.options.tesseract_env is None:
         context.options.tesseract_env = os.environ.copy()
     context.options.tesseract_env.setdefault('OMP_THREAD_LIMIT', str(tess_threads))
