@@ -291,7 +291,6 @@ def check_options(options):
     check_options_advanced(options)
     check_options_pillow(options)
     check_dependency_versions(options)
-    check_environ(options)
 
 
 def check_closed_streams(options):
@@ -353,21 +352,6 @@ def log_page_orientations(pdfinfo):
         log.info('Page orientations detected: %s', ' '.join(orientations))
 
 
-def check_environ(options):
-    old_envvars = (
-        'OCRMYPDF_TESSERACT',
-        'OCRMYPDF_QPDF',
-        'OCRMYPDF_GS',
-        'OCRMYPDF_UNPAPER',
-    )
-    for k in old_envvars:
-        if k in os.environ:
-            log.warning(
-                "OCRmyPDF no longer uses the environment variable {k}."
-                "Change PATH to select alternate programs."
-            )
-
-
 def create_input_file(options, work_folder):
     if options.input_file == '-':
         # stdin
@@ -418,12 +402,10 @@ def report_output_file_size(options, input_file, output_file):
         'force_ocr',
     }
     for arg in image_preproc:
-        attr = getattr(options, arg, None)
-        if not attr:
-            continue
-        reasons.append(
-            f"The argument --{arg.replace('_', '-')} was issued, causing transcoding."
-        )
+        if getattr(options, arg, False):
+            reasons.append(
+                f"The argument --{arg.replace('_', '-')} was issued, causing transcoding."
+            )
 
     if reasons:
         explanation = "Possible reasons for this include:\n" + '\n'.join(reasons) + "\n"
