@@ -13,6 +13,36 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+next
+====
+
+**Breaking changes**
+
+-   The ``--mask-barcodes`` experimental feature has been dropped due to poor
+    reliability and occasional crashes, both due to the underlying library that
+    implements this feature (Leptonica).
+
+**Major changes**
+
+-   Added a high level API for applications that want to integrate OCRmyPDF.
+    Special thanks to Martin Wind (@mawi1988) whose made significant contributions
+    to this effort.
+-   Added a simple plugin interface that makes certain steps of the pipeline
+    configurable.
+-   Added progress bars for long-running steps. As such, the behavior of output
+    messages is different.
+-   Dropped the ``ocrmypdf-polyglot`` and ``ocrmypdf-webservice`` images.
+-   Removed dependency on ``ruffus``, and with that, the non-reentrancy
+    restrictions that previous made an API impossible.
+-   Internal code reorganization.
+
+**Minor changes**
+
+-   Test suite now spawns processes less frequently, allowing more accurate
+    measurement of code coverage.
+-   Updated Docker images to use newer versions.
+
+
 v8.3.0
 ======
 
