@@ -174,10 +174,6 @@ might remove desirable content, especially from poor quality scans.
 -  ``--clean-final`` uses unpaper to clean up pages before OCR and
    inserts the page into the final output. You will want to review each
    page to ensure that unpaper did not remove something important.
--  ``--mask-barcodes`` will suppress any barcodes detected in a page
-   image. Barcodes are known to confuse Tesseract OCR and interfere with
-   the recognition of text on the same baseline as a barcode. The output
-   file will contain the unaltered image of the barcode.
 
 .. note::
 

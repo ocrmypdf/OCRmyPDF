@@ -268,13 +268,6 @@ preprocessing.add_argument(
     "will not be included in OCR. This can eliminate false characters.",
 )
 preprocessing.add_argument(
-    '--mask-barcodes',
-    action='store_true',
-    help="EXPERIMENTAL. Mask out any barcodes that appear in the PDF so they are not "
-    "considered during OCR. Barcodes can introduce false characters into "
-    "OCR.",
-)
-preprocessing.add_argument(
     '--threshold',
     action='store_true',
     help="EXPERIMENTAL. Threshold image to 1bpp before sending it to Tesseract for OCR. Can "

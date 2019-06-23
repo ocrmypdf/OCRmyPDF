@@ -531,16 +531,9 @@ def create_ocr_image(image, page_context):
                 draw.rectangle(pixcoords, fill=white)
                 # draw.rectangle(pixcoords, outline=pink)
 
-        if options.mask_barcodes or options.threshold:
+        if options.threshold:
             pix = leptonica.Pix.frompil(im)
-            if options.threshold:
-                pix = pix.masked_threshold_on_background_norm()
-            if options.mask_barcodes:
-                barcodes = pix.locate_barcodes()
-                for barcode in barcodes:
-                    decoded, rect = barcode
-                    page_context.log.debug('masking barcode %s %r', decoded, rect)
-                    draw.rectangle(rect, fill=white)
+            pix = pix.masked_threshold_on_background_norm()
             im = pix.topil()
 
         if options.filter_ocr_image:

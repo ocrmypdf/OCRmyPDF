@@ -180,7 +180,6 @@ def run(  # pylint: disable=unused-argument
     unpaper_args=None,
     oversample=None,
     remove_vectors=None,
-    mask_barcodes=None,
     threshold=None,
     force_ocr=None,
     skip_text=None,
