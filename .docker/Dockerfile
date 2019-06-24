@@ -49,6 +49,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
   img2pdf \
   liblept5 \
+  libsm6 libxext6 libxrender-dev \
   zlib1g \
   pngquant \
   python3 \
