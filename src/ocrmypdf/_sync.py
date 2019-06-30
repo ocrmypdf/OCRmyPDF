@@ -337,6 +337,29 @@ def run_pipeline(options, api=False):
 
         # Execute the pipeline
         exec_concurrent(context)
+
+        if options.output_file == '-':
+            log.info("Output sent to stdout")
+        elif os.path.samefile(options.output_file, os.devnull):
+            pass  # Say nothing when sending to dev null
+        else:
+            if options.output_type.startswith('pdfa'):
+                pdfa_info = file_claims_pdfa(options.output_file)
+                if pdfa_info['pass']:
+                    log.info(
+                        "Output file is a %s (as expected)", pdfa_info['conformance']
+                    )
+                else:
+                    log.warning(
+                        "Output file is okay but is not PDF/A (seems to be %s)",
+                        pdfa_info['conformance'],
+                    )
+                    return ExitCode.pdfa_conversion_failed
+            if not qpdf.check(options.output_file, log):
+                log.warning('Output file: The generated PDF is INVALID')
+                return ExitCode.invalid_output_pdf
+            report_output_file_size(options, start_input_file, options.output_file)
+
     except (KeyboardInterrupt if not api else NeverRaise) as e:
         if options.verbose >= 1:
             log.exception("KeyboardInterrupt")
@@ -354,28 +377,5 @@ def run_pipeline(options, api=False):
         return ExitCode.other_error
     finally:
         cleanup_working_files(work_folder, options)
-
-    if options.output_file == '-':
-        log.info("Output sent to stdout")
-    elif os.path.samefile(options.output_file, os.devnull):
-        pass  # Say nothing when sending to dev null
-    else:
-        if options.output_type.startswith('pdfa'):
-            pdfa_info = file_claims_pdfa(options.output_file)
-            if pdfa_info['pass']:
-                msg = f"Output file is a {pdfa_info['conformance']} (as expected)"
-                log.info(msg)
-            else:
-                msg = (
-                    f"Output file is okay but is not PDF/A "
-                    f"(seems to be {pdfa_info['conformance']})"
-                )
-                log.warning(msg)
-                return ExitCode.pdfa_conversion_failed
-        if not qpdf.check(options.output_file, log):
-            log.warning('Output file: The generated PDF is INVALID')
-            return ExitCode.invalid_output_pdf
-
-        report_output_file_size(options, start_input_file, options.output_file)
 
     return ExitCode.ok
