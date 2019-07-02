@@ -307,7 +307,7 @@ class ImageInfo:
         # but encoding must be monochrome. This happens if a monochrome image
         # has an ICC profile attached. Better solution would be to examine
         # the ICC profile.
-        if self._comp == '?' and self._enc in (Encoding.ccitt, 'jbig2'):
+        if self._comp == '?' and self._enc in (Encoding.ccitt, Encoding.jbig2):
             self._comp = FRIENDLY_COMP[Colorspace.gray]
 
     @property
