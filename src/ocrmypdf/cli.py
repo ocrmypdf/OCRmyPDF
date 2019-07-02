@@ -186,8 +186,9 @@ jobcontrol.add_argument(
 jobcontrol.add_argument(
     '-v',
     '--verbose',
-    type=int,
+    type=numeric(int, 0, 2),
     default=0,
+    const=1,
     nargs='?',
     help="Print more verbose messages for each additional verbose level. Use "
     "`-v 1` typically for much more detailed logging. Higher numbers "

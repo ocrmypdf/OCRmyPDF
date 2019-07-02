@@ -49,7 +49,7 @@ _ocrmypdf()
             return
             ;;
         -v|--verbose)
-            COMPREPLY=( $( compgen -W '{1..9}' -- "$cur" ) ) # max level ?
+            COMPREPLY=( $( compgen -W '{0..2}' -- "$cur" ) ) # max level ?
             return
             ;;
         --tesseract-pagesegmode)

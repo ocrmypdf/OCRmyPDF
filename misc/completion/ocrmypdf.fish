@@ -46,8 +46,14 @@ function __fish_ocrmypdf_optimize
 end
 complete -c ocrmypdf -x -s O -l optimize -a '(__fish_ocrmypdf_optimize)' -d "select optimization level"
 
+function __fish_ocrmypdf_verbose
+    echo -e "0\t"(_ "standard output messages")
+    echo -e "1\t"(_ "troubleshooting output messages")
+    echo -e "2\t"(_ "debugging output messages")
+end
+complete -c ocrmypdf -x -s v -l verbose -a '(__fish_ocrmypdf_verbose)' -d "set verbosity level"
+
 complete -c ocrmypdf -x -s j -l jobs -d "how many worker processes to use"
-complete -c ocrmypdf -x -s v -a '(seq 1 9)'
 complete -c ocrmypdf -x -l title -d "set metadata"
 complete -c ocrmypdf -x -l author -d "set metadata"
 complete -c ocrmypdf -x -l subject -d "set metadata"
