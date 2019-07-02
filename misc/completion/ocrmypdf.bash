@@ -1,5 +1,7 @@
 # ocrmypdf completion                                     -*- shell-script -*-
 
+set -o errexit
+
 _ocrmypdf()
 {
     local cur prev cword words split
@@ -83,5 +85,7 @@ _ocrmypdf()
     fi
 } &&
 complete -F _ocrmypdf ocrmypdf
+
+set +o errexit
 
 # ex: filetype=sh
