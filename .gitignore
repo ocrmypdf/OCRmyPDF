@@ -3,9 +3,10 @@
 .pylintrc
 .pytest_cache/
 .ruffus_history.sqlite
-.venv/
+.venv*/
 *.pyc
 *.sublime-*
+*.DS_Store
 
 # Package building
 .eggs/
@@ -42,3 +43,4 @@ tests/resources/private/
 tmp/
 /debug_tests.py
 *.traineddata
+/private

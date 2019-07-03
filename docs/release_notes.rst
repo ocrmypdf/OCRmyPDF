@@ -13,6 +13,11 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v8.3.1
+------
+
+-   Fixed an issue where PDFs with malformed metadata would be rendered as blank pages. `#398 <https://github.com/jbarlow83/OCRmyPDF/issues/398>`_.
+
 v8.3.0
 ------
 
