@@ -384,9 +384,19 @@ See `OCRmyPDF Docker Image <docker>`_ for more information.
 Installing on Windows
 ---------------------
 
-Direct installation on Windows is not possible.  `Install the Docker <docker-install>`_ container as described above.  Ensure that your command prompt can run the docker "hello world" container.
+Direct installation on Windows is not possible, because there are a
+POSIX dependencies. Your options are:
 
-It would probably not be too difficult to port on Windows.  The main reason this has been avoided is the difficulty of packaging and installing the various non-Python dependencies: Tesseract, QPDF, Ghostscript, Leptonica.  Pull requests to add or improve Windows support would be quite welcome.
+* Install Ubuntu 18.04 in Windows 10 Subsystem for Linux, then follow
+  the Ubuntu 18.04 procedure.
+* `Install the Docker <docker-install>`__ container. Ensure that
+  your command prompt can run the docker "hello world" container.
+
+It would probably not be too difficult to port on Windows. The main
+reason this has been avoided is the difficulty of packaging and
+installing the various non-Python dependencies: Tesseract, QPDF,
+Ghostscript, Leptonica. Pull requests to add or improve Windows support
+would be quite welcome.
 
 Installing with Python pip
 --------------------------
