@@ -695,6 +695,7 @@ def generate_postscript_stub(context):
 def convert_to_pdfa(input_pdf, input_ps_stub, context):
     options = context.options
     input_pdfinfo = context.pdfinfo
+    fix_docinfo_file = context.get_path('fix_docinfo.pdf')
     output_file = context.get_path('pdfa.pdf')
 
     # If the DocumentInfo record contains NUL characters, Ghostscript will
@@ -702,19 +703,21 @@ def convert_to_pdfa(input_pdf, input_ps_stub, context):
     # NULs in DocumentInfo seem to be common since older Acrobats included them.
     # pikepdf can deal with this, but we make the world a better place by
     # stamping them out as soon as possible.
+    modified = False
     with pikepdf.open(input_pdf) as pdf_file:
         if pdf_file.docinfo:
-            modified = False
             for k, v in pdf_file.docinfo.items():
                 if b'\x00' in bytes(v):
                     pdf_file.docinfo[k] = bytes(v).replace(b'\x00', b'')
                     modified = True
-            if modified:
-                pdf_file.save(input_pdf)
+        if modified:
+            pdf_file.save(fix_docinfo_file)
+        else:
+            os.symlink(input_pdf, fix_docinfo_file)
 
     ghostscript.generate_pdfa(
         pdf_version=input_pdfinfo.min_version,
-        pdf_pages=[input_pdf, input_ps_stub],
+        pdf_pages=[fix_docinfo_file, input_ps_stub],
         output_file=output_file,
         compression=options.pdfa_image_compression,
         log=context.log,
