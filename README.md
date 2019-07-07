@@ -1,5 +1,4 @@
-OCRmyPDF
-========
+<img src="docs/images/logo.svg" width="240" alt="OCRmyPDF">
 
 [![Travis build status][travis]](https://travis-ci.org/jbarlow83/OCRmyPDF) [![PyPI version][pypi]](https://pypi.org/project/ocrmypdf/) ![Homebrew version][homebrew] ![ReadTheDocs][docs]
 
