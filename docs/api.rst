@@ -20,7 +20,7 @@ and largely have the same functions.
 
     import ocrmypdf
 
-    ocrmypdf.run('input.pdf', 'output.pdf', deskew=True)
+    ocrmypdf.ocr('input.pdf', 'output.pdf', deskew=True)
 
 With a few exceptions, all of the command line arguments are available
 and may be passed as equivalent keywords.
@@ -37,7 +37,7 @@ worker processes (forking itself) - manage the signal flags of worker
 processes 0 execute other subprocesses (forking and executing other
 programs)
 
-The Python process that calls ``ocrmypdf.run()`` must be sufficiently
+The Python process that calls ``ocrmypdf.ocr()`` must be sufficiently
 privileged to perform these actions. If it is not, ``ocrmypdf()`` will
 fail.
 
@@ -45,7 +45,7 @@ There is no currently no option to manage how jobs are scheduled other
 than the argument ``jobs=`` which will limit the number of worker
 processes.
 
-Forking a child process to call ``ocrmypdf.run()`` is suggested. That
+Forking a child process to call ``ocrmypdf.ocr()`` is suggested. That
 way your application will survive and remain interactive even if
 OCRmyPDF does not.
 

@@ -80,7 +80,7 @@ def test_filter_from_cmdline(resources, outdir):
 
 
 def test_filter_from_api(resources, outdir):
-    ocrmypdf.run(
+    ocrmypdf.ocr(
         resources / 'crom.png',
         outdir / 'out.pdf',
         image_dpi=100,

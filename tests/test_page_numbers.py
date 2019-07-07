@@ -42,7 +42,7 @@ def test_list_range():
 
 def test_limited_pages(resources, outpdf, spoof_tesseract_cache):
     multi = resources / 'multipage.pdf'
-    ocrmypdf.run(
+    ocrmypdf.ocr(
         multi,
         outpdf,
         pages='5-6',

@@ -614,7 +614,7 @@ def test_closed_streams(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
 
 def test_masks(spoof_tesseract_noop, resources, outpdf):
     assert (
-        ocrmypdf.run(
+        ocrmypdf.ocr(
             resources / 'masks.pdf', outpdf, tesseract_env=spoof_tesseract_noop
         )
         == ExitCode.ok
