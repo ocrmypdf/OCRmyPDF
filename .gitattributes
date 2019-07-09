@@ -9,5 +9,6 @@
 *.png	binary
 *.jpg	binary
 *.bin   binary
+*.afdesign  binary
 
 .git_archival.txt  export-subst
