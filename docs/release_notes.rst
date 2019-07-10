@@ -13,6 +13,14 @@ Note that it is licensed under GPLv3, so scripts that ``import ocrmypdf`` and ar
    find:    [^`]\#([0-9]{1,3})[^0-9]
    replace: `#$1 <https://github.com/jbarlow83/OCRmyPDF/issues/$1>`_
 
+v8.3.2
+------
+
+-   Dropped workaround for macOS that allowed it work without pdfminer.six,
+    now a proper sdist release of pdfminer.six is available.
+
+-   pikepdf 1.5.0 is now required.
+
 v8.3.1
 ------
 

@@ -30,6 +30,7 @@ from pikepdf import PdfMatrix
 import pikepdf
 
 from . import ghosttext
+from .layout import get_page_analysis, get_text_boxes
 
 from ..exceptions import EncryptedPdfError, MissingDependencyError
 
@@ -564,14 +565,6 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
         )
         pageinfo['bboxes'] = bboxes
     else:
-        # pdfminer required for this section
-        try:
-            from .layout import get_page_analysis, get_text_boxes
-        except ImportError:
-            raise MissingDependencyError(
-                "pdfminer is required for this feature. Your distribution "
-                "may not have installed it."
-            )
         pscript5_mode = str(pdf.docinfo.get('/Creator')).startswith('PScript5')
         miner = get_page_analysis(infile, pageno, pscript5_mode)
         pageinfo['textboxes'] = list(simplify_textboxes(miner, get_text_boxes))

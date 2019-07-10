@@ -44,7 +44,6 @@ def test_no_glyphless_weave(resources, outdir):
     )
 
 
-@pytest.helpers.needs_pdfminer
 def test_links(resources, outpdf):
     check_ocrmypdf(
         resources / 'link.pdf',

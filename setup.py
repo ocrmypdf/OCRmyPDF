@@ -98,15 +98,14 @@ setup(
         'chardet >= 3.0.4, < 4',  # unlisted requirement of pdfminer.six 20181108
         'cffi >= 1.9.1',  # must be a setup and install requirement
         'img2pdf >= 0.3.0, < 0.4',  # pure Python, so track HEAD closely
-        'pdfminer.six == 20181108 ; sys_platform != "darwin"',
-        'pikepdf >= 1.3.0, < 2',
+        'pdfminer.six == 20181108',
+        'pikepdf >= 1.5.0, < 2',
         'Pillow >= 4.0.0, != 5.1.0 ; sys_platform == "darwin"',
         # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
         # block 5.1.0, broken wheels
         'reportlab >= 3.3.0',  # oldest released version with sane image handling
         'ruffus >= 2.7.0',
     ],
-    extras_require={'pdfminer': ['pdfminer.six == 20181108']},
     tests_require=tests_require,
     entry_points={'console_scripts': ['ocrmypdf = ocrmypdf.__main__:run_pipeline']},
     package_data={'ocrmypdf': ['data/sRGB.icc']},

@@ -63,16 +63,6 @@ def running_in_travis():
 
 
 @pytest.helpers.register
-def needs_pdfminer(fn):
-    try:
-        import pdfminer
-    except ImportError:
-        skip = pytest.mark.skipif(True, reason="pdfminer not available")
-        return skip(fn)
-    return fn
-
-
-@pytest.helpers.register
 def have_unpaper():
     try:
         from ocrmypdf.exec import unpaper

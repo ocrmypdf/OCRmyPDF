@@ -22,7 +22,7 @@ import logging
 import mmap
 from os import fspath
 from pathlib import Path
-from shutil import copyfile
+from shutil import copyfile, move
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -308,10 +308,11 @@ def test_metadata_fixup_warning(resources, outdir, caplog):
         assert record.levelname != 'WARNING'
 
     # Now add some metadata that will not be copyable
-    graph = pikepdf.open(outdir / 'graph.repaired.pdf')
-    with graph.open_metadata() as meta:
-        meta['prism2:publicationName'] = 'OCRmyPDF Test'
-    graph.save(outdir / 'graph.repaired.pdf')
+    with pikepdf.open(outdir / 'graph.repaired.pdf') as graph:
+        with graph.open_metadata() as meta:
+            meta['prism2:publicationName'] = 'OCRmyPDF Test'
+        graph.save(outdir / 'graph.repaired.modified.pdf')
+    move(outdir / 'graph.repaired.modified.pdf', outdir / 'graph.repaired.pdf')
 
     log = logging.getLogger()
     context = MagicMock()
