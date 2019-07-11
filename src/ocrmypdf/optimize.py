@@ -276,7 +276,8 @@ def _produce_jbig2_images(jbig2_groups, root, log, options):
         ) as pbar:
             for future in concurrent.futures.as_completed(futures):
                 proc = future.result()
-                log.debug(proc.stderr.decode())
+                if proc.stderr:
+                    log.debug(proc.stderr.decode())
                 pbar.update()
 
 

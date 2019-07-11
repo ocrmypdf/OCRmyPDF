@@ -166,7 +166,7 @@ def rasterize_pdf(
         p = run(args_gs, stdout=PIPE, stderr=STDOUT, universal_newlines=True)
         if _gs_error_reported(p.stdout):
             log.error(p.stdout)
-        else:
+        elif p.stdout:
             log.debug(p.stdout)
 
         if p.returncode != 0:
