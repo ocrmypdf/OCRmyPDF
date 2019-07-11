@@ -21,8 +21,6 @@ from pathlib import Path
 
 import pikepdf
 
-from .exec import tesseract
-
 MAX_REPLACE_PAGES = int(os.environ.get('_OCRMYPDF_MAX_REPLACE_PAGES', 100))
 
 
@@ -117,6 +115,7 @@ def _graft_text_layer(
 
     translate = pikepdf.PdfMatrix().translated(-wt / 2, -ht / 2)
     untranslate = pikepdf.PdfMatrix().translated(wp / 2, hp / 2)
+    corner = pikepdf.PdfMatrix().translated(mediabox[0], mediabox[1])
     # -rotation because the input is a clockwise angle and this formula
     # uses CCW
     rotation = -rotation % 360
@@ -134,8 +133,9 @@ def _graft_text_layer(
     scale = pikepdf.PdfMatrix().scaled(scale_x, scale_y)
 
     # Translate the text so it is centered at (0, 0), rotate it there, adjust
-    # for a size different between initial and text PDF, then untranslate
-    ctm = translate @ rotate @ scale @ untranslate
+    # for a size different between initial and text PDF, then untranslate, and
+    # finally move the lower left corner to match the mediabox
+    ctm = translate @ rotate @ scale @ untranslate @ corner
 
     pdf_text_contents = b'q %s cm\n' % ctm.encode() + pdf_text_contents + b'\nQ\n'
 
@@ -221,8 +221,9 @@ class OcrGrafter:
         text_rotation = autorotate_correction
         text_misaligned = (text_rotation - content_rotation) % 360
         self.log.debug(
-            '%r',
-            [text_rotation, autorotate_correction, text_misaligned, content_rotation],
+            f"Rotations for page {pageno}: [text, auto, misalign, content] = "
+            f"{text_rotation}, {autorotate_correction}, "
+            f"{text_misaligned}, {content_rotation}"
         )
 
         if text and self.font:
