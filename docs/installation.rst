@@ -105,6 +105,8 @@ sources`_.
     detect it on the ``PATH``. To add JBIG2 encoding, see `Installing the JBIG2
     encoder <jbig2>`_.
 
+.. _ubuntu-lts-latest:
+
 Installing the latest version on Ubuntu 18.04 LTS
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -384,19 +386,40 @@ See `OCRmyPDF Docker Image <docker>`_ for more information.
 Installing on Windows
 ---------------------
 
-Direct installation on Windows is not possible, because there are a
-POSIX dependencies. Your options are:
+Direct installation on Windows is not currently possible, but it works well in
+Windows Subsystem for Linux:
 
-* Install Ubuntu 18.04 in Windows 10 Subsystem for Linux, then follow
-  the Ubuntu 18.04 procedure.
-* `Install the Docker <docker-install>`__ container. Ensure that
-  your command prompt can run the docker "hello world" container.
+#. Install Ubuntu 18.04 for Windows Subsystem for Linux, if not already installed.
+#. Follow the procedure to install :ref:`OCRmyPDF on Ubuntu 18.04 <ubuntu-lts-latest>`.
+#. Open the Windows command prompt and create a symlink:
+
+.. code-block:: powershell
+
+    wsl sudo ln -s  /home/user/.local/bin/ocrmypdf /usr/local/bin/ocrmypdf
+
+Then confirm that the expected version from PyPI (|latest|) is installed:
+
+.. code-block:: powershell
+
+    wsl ocrmypdf --version
+
+You can then run OCRmyPDF in the Windows command prompt or Powershell, prefixing
+``wsl``, and call it from Windows programs or batch files.
+
+Why no native Windows?
+^^^^^^^^^^^^^^^^^^^^^^
 
 It would probably not be too difficult to port on Windows. The main
 reason this has been avoided is the difficulty of packaging and
 installing the various non-Python dependencies: Tesseract, QPDF,
 Ghostscript, Leptonica. Pull requests to add or improve Windows support
 would be quite welcome.
+
+Docker
+^^^^^^
+
+You can also :ref:`Install the Docker <docker-install>` container on Windows. Ensure that
+your command prompt can run the docker "hello world" container.
 
 Installing with Python pip
 --------------------------
