@@ -21,24 +21,43 @@ v9.0.0
 -  The ``--mask-barcodes`` experimental feature has been dropped due to poor
    reliability and occasional crashes, both due to the underlying library that
    implements this feature (Leptonica).
+-  The ``-v`` (verbosity level) parameter now accepts only ``0``, ``1``, and
+   ``2``.
+-  Dropped support for Tesseract "4.00.00-alpha" releases. Tesseract 4.0 beta and
+   later remain supported.
 
 **Major changes**
 
 -  Added a high level API for applications that want to integrate OCRmyPDF.
    Special thanks to Martin Wind (@mawi1988) whose made significant contributions
-   to this effort.
--  Added progress bars for long-running steps. As such, the behavior of output
-   messages is different.
+   to this effort. OCRmyPDF is GPLv3-licensed.
+-  Major internal code reorganization.
+-  Added progress bars for long-running steps. ■■■■■■■□□
+-  When the number of pages is small compared to the number of allowed jobs, we
+   run Tesseract in multithreaded (OpenMP) mode when available. This should
+   improve performance on files with low page counts.
+-  Pages with vector artwork are treated as full color. Previously, vectors
+   were ignored when considering the colorspace needed to cover a page, which
+   could cause loss of color under certain settings.
 -  Dropped the ``ocrmypdf-polyglot`` and ``ocrmypdf-webservice`` images.
 -  Removed dependency on ``ruffus``, and with that, the non-reentrancy
    restrictions that previous made an API impossible.
--  Internal code reorganization.
+-  Added a new ``--pages`` feature to limit OCR to only a specific page range.
+   The list may contain commas or single pages, such as ``1, 3, 5-11``.
+-  Output and logging messages overhauled so that ocrmypdf may be integrated
+   into applications that use the logging module.
+-  pikepdf 1.6.0 is required.
 
 **Minor changes**
 
 -  Test suite now spawns processes less frequently, allowing more accurate
    measurement of code coverage.
+-  Improved test coverage.
+-  Fixed a rare division by zero (if optimization produced an invalid file).
 -  Updated Docker images to use newer versions.
+-  Fixed images encoded as JBIG2 with a colorspace other than ``/DeviceGray``
+   were not interpreted correctly.
+-  We have a logo. 😊
 
 v8.3.2
 ======
