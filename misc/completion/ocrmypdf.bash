@@ -76,7 +76,7 @@ _ocrmypdf()
             --max-image-mpixels --tesseract-config --tesseract-pagesegmode
             --help --tesseract-oem --pdf-renderer --tesseract-timeout
             --rotate-pages-threshold --pdfa-image-compression --user-words
-            --user-patterns --keep-temporary-files --flowchart --output-type' \
+            --user-patterns --keep-temporary-files --output-type' \
             --  "$cur" ) )
         return
     else
