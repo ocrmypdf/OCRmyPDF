@@ -81,8 +81,13 @@ def test_optimizing(caplog):
 
 
 def test_user_words(caplog):
-    vd.check_options_advanced(make_opts(user_words='foo'))
-    assert 'ignores --user-words' in caplog.text
+    with patch('ocrmypdf.exec.tesseract.version', return_value='4.0.0'):
+        vd.check_options_advanced(make_opts(user_words='foo'))
+        assert '4.0 ignores --user-words' in caplog.text
+    caplog.clear()
+    with patch('ocrmypdf.exec.tesseract.version', return_value='4.1.0'):
+        vd.check_options_advanced(make_opts(user_patterns='foo'))
+        assert '4.0 ignores --user-words' not in caplog.text
 
 
 def test_pillow_options():

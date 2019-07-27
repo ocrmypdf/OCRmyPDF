@@ -253,10 +253,13 @@ def check_options_advanced(options):
             "--pdfa-image-compression argument has no effect when "
             "--output-type is not 'pdfa', 'pdfa-1', or 'pdfa-2'"
         )
-    if tesseract.v4(options.tesseract_env) and (
+    if not tesseract.has_user_words(options.tesseract_env) and (
         options.user_words or options.user_patterns
     ):
-        log.warning('Tesseract 4.x ignores --user-words, so this has no effect')
+        log.warning(
+            "Tesseract 4.0 ignores --user-words and --user-patterns, so these "
+            "arguments have no effect."
+        )
 
 
 def check_options_metadata(options):

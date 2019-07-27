@@ -88,6 +88,15 @@ def has_textonly_pdf(tesseract_env=None):
     return False
 
 
+def has_user_words(tesseract_env=None):
+    """Does Tesseract have --user-words capability?
+
+    Not available in 4.0, but available in 4.1. Also available in 3.x, but
+    we no longer support 3.x.
+    """
+    return version(tesseract_env) >= '4.1'
+
+
 def languages(tesseract_env=None):
     def lang_error(output):
         msg = (
