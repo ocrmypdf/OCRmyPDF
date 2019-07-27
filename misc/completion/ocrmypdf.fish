@@ -78,6 +78,7 @@ complete -c ocrmypdf -x -l jpeg-quality -d "JPEG quality [0..100]"
 complete -c ocrmypdf -x -l png-quality -d "PNG quality [0..100]"
 complete -c ocrmypdf -x -l jbig2-lossy -d "enable lossy JBIG2 (see docs)"
 complete -c ocrmypdf -x -l max-image-mpixels -d "image decompression bomb threshold"
+complete -c ocrmypdf -x -l pages -d "apply OCR to only the specified pages"
 complete -c ocrmypdf -x -l tesseract-config -d "set custom tesseract config file"
 
 function __fish_ocrmypdf_tesseract_pagesegmode

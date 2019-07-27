@@ -58,7 +58,7 @@ _ocrmypdf()
             COMPREPLY=( $( compgen -W '{1..13}' -- "$cur" ) )
             return
             ;;
-        --sidecar|--title|--author|--subject|--keywords|--unpaper-args)
+        --sidecar|--title|--author|--subject|--keywords|--unpaper-args|--pages)
             # argument required but no completions available
             return
             ;;
