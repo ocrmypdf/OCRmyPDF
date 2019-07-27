@@ -23,9 +23,9 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from .cli import parser
 from ._sync import run_pipeline
 from ._validation import check_options
+from .cli import parser
 
 
 class TqdmConsole:

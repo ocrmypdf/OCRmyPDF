@@ -24,24 +24,19 @@ __version__ = pkg_resources.get_distribution('ocrmypdf').version
 
 VERSION = __version__
 
+from . import helpers, hocrtransform, leptonica, pdfa, pdfinfo
+from .api import Verbosity, configure_logging, ocr
 from .exceptions import (
-    ExitCode,
     BadArgsError,
-    PdfMergeFailedError,
-    MissingDependencyError,
-    UnsupportedImageFormatError,
     DpiError,
-    OutputFileAccessError,
-    PriorOcrFoundError,
-    InputFileError,
-    SubprocessOutputError,
     EncryptedPdfError,
+    ExitCode,
+    InputFileError,
+    MissingDependencyError,
+    OutputFileAccessError,
+    PdfMergeFailedError,
+    PriorOcrFoundError,
+    SubprocessOutputError,
     TesseractConfigError,
+    UnsupportedImageFormatError,
 )
-
-from . import helpers
-from . import hocrtransform
-from . import leptonica
-from . import pdfa
-from . import pdfinfo
-from .api import ocr, configure_logging, Verbosity

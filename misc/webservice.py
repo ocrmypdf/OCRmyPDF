@@ -23,21 +23,22 @@ to emphasize that SaaS deployments should make sure they comply with
 Ghostscript's license as well as OCRmyPDF's.
 """
 
+import os
+import shlex
+from subprocess import PIPE, run
+from tempfile import TemporaryDirectory
+
 from flask import (
     Flask,
     Response,
-    flash,
-    request,
-    redirect,
-    url_for,
     abort,
+    flash,
+    redirect,
+    request,
     send_from_directory,
+    url_for,
 )
-from subprocess import run, PIPE
-from tempfile import TemporaryDirectory
 from werkzeug.utils import secure_filename
-import os
-import shlex
 
 app = Flask(__name__)
 app.secret_key = "secret"

@@ -18,8 +18,8 @@
 from functools import lru_cache
 from subprocess import PIPE, run
 
-from . import get_version
 from ..exceptions import MissingDependencyError
+from . import get_version
 
 
 @lru_cache(maxsize=1)

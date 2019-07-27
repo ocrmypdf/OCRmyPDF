@@ -16,23 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+import re
 from collections import namedtuple
 from decimal import Decimal
 from enum import Enum
-import logging
 from math import hypot, isclose
 from os import fspath
 from pathlib import Path
 from warnings import warn
-import re
 
-from pikepdf import PdfMatrix
 import pikepdf
+from pikepdf import PdfMatrix
 from tqdm import tqdm
+
+from ocrmypdf.exceptions import EncryptedPdfError, MissingDependencyError
 
 from . import ghosttext
 from .layout import get_page_analysis, get_text_boxes
-from ocrmypdf.exceptions import EncryptedPdfError, MissingDependencyError
 
 logger = logging.getLogger()
 

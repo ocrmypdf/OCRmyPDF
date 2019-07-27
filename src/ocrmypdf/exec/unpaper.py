@@ -26,10 +26,10 @@ from functools import lru_cache
 from subprocess import PIPE, STDOUT, CalledProcessError
 from tempfile import TemporaryDirectory
 
-from . import get_version
-from ..exceptions import MissingDependencyError, SubprocessOutputError
-
 from PIL import Image
+
+from ..exceptions import MissingDependencyError, SubprocessOutputError
+from . import get_version
 
 
 @lru_cache(maxsize=1)

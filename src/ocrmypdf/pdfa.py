@@ -36,9 +36,8 @@ from binascii import hexlify
 from pathlib import Path
 from string import Template
 
-import pkg_resources
-
 import pikepdf
+import pkg_resources
 
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
 

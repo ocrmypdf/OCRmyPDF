@@ -21,8 +21,8 @@ from tempfile import NamedTemporaryFile
 
 from PIL import Image
 
-from . import get_version
 from ..exceptions import MissingDependencyError
+from . import get_version
 
 
 @lru_cache(maxsize=1)

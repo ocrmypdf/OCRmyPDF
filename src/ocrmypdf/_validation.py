@@ -41,7 +41,7 @@ from .exec import (
     tesseract,
     unpaper,
 )
-from .helpers import is_file_writable, re_symlink, is_iterable_notstr, monotonic
+from .helpers import is_file_writable, is_iterable_notstr, monotonic, re_symlink
 
 # -------------
 # External dependencies

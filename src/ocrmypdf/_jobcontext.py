@@ -16,9 +16,9 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import os
 import shutil
 import sys
-import os
 
 
 class PicklableLoggerMixin:

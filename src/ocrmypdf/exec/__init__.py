@@ -21,9 +21,10 @@ import logging
 import os
 import re
 import sys
-from subprocess import run, STDOUT, PIPE, CalledProcessError
-from ..exceptions import MissingDependencyError, ExitCode
 from collections.abc import Mapping
+from subprocess import PIPE, STDOUT, CalledProcessError, run
+
+from ..exceptions import ExitCode, MissingDependencyError
 
 log = logging.Logger(__name__)
 

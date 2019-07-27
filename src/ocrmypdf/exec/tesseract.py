@@ -24,13 +24,13 @@ from functools import lru_cache
 from os import fspath
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired, run
 
-from . import get_version
 from ..exceptions import (
     MissingDependencyError,
-    TesseractConfigError,
     SubprocessOutputError,
+    TesseractConfigError,
 )
 from ..helpers import page_number
+from . import get_version
 
 OrientationConfidence = namedtuple('OrientationConfidence', ('angle', 'confidence'))
 

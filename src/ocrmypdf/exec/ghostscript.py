@@ -28,7 +28,6 @@ from PIL import Image
 from ..exceptions import SubprocessOutputError
 from . import get_version
 
-
 gslog = logging.getLogger()
 
 

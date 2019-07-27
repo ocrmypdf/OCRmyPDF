@@ -16,4 +16,4 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from .info import PdfInfo, Colorspace, Encoding
+from .info import Colorspace, Encoding, PdfInfo

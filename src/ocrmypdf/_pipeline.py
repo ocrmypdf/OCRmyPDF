@@ -22,18 +22,17 @@ from datetime import datetime, timezone
 from shutil import copyfileobj
 
 import img2pdf
-from PIL import Image
-
 import pikepdf
 from pikepdf.models.metadata import encode_pdf_date
+from PIL import Image
 
 from . import PROGRAM_NAME, VERSION, leptonica
 from .exceptions import (
     DpiError,
     EncryptedPdfError,
     InputFileError,
-    UnsupportedImageFormatError,
     PriorOcrFoundError,
+    UnsupportedImageFormatError,
 )
 from .exec import ghostscript, tesseract
 from .helpers import re_symlink

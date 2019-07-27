@@ -22,15 +22,15 @@ from collections import defaultdict
 from os import fspath
 from pathlib import Path
 
+import pikepdf
+from pikepdf import Dictionary, Name
 from PIL import Image
 from tqdm import tqdm
-import pikepdf
-from pikepdf import Name, Dictionary
 
 from . import leptonica
 from ._jobcontext import PDFContext
-from .exec import jbig2enc, pngquant
 from .exceptions import OutputFileAccessError
+from .exec import jbig2enc, pngquant
 from .helpers import re_symlink
 
 DEFAULT_JPEG_QUALITY = 75

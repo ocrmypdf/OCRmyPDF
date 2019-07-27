@@ -1,5 +1,5 @@
-from PIL import Image
 import PIL.ImageOps
+from PIL import Image
 
 
 def invert(im):

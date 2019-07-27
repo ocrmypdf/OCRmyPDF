@@ -28,6 +28,7 @@ from tempfile import mkdtemp
 from tqdm import tqdm
 
 from . import __version__
+from ._graft import OcrGrafter
 from ._jobcontext import PDFContext, cleanup_working_files, make_logger
 from ._pipeline import (
     convert_to_pdfa,
@@ -59,7 +60,6 @@ from ._validation import (
     create_input_file,
     report_output_file_size,
 )
-from ._graft import OcrGrafter
 from .exceptions import ExitCode, ExitCodeException
 from .exec import qpdf
 from .helpers import available_cpu_count

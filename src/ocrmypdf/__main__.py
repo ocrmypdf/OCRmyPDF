@@ -21,12 +21,12 @@ import os
 import sys
 
 from . import __version__
-from .cli import parser
-from .api import configure_logging, Verbosity
 from ._jobcontext import make_logger
 from ._sync import run_pipeline
 from ._validation import check_closed_streams, check_options
-from .exceptions import ExitCode, BadArgsError, MissingDependencyError
+from .api import Verbosity, configure_logging
+from .cli import parser
+from .exceptions import BadArgsError, ExitCode, MissingDependencyError
 
 
 def run(args=None):
