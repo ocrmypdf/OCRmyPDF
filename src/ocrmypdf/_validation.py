@@ -185,7 +185,10 @@ def _pages_from_ranges(ranges):
         except ValueError:
             pages.append(int(g) - 1)
         else:
-            pages.extend(range(int(start) - 1, int(end)))
+            try:
+                pages.extend(range(int(start) - 1, int(end)))
+            except ValueError:
+                raise BadArgsError("invalid page range")
 
     if not monotonic(pages):
         log.warning(

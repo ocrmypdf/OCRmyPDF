@@ -20,14 +20,32 @@ import pytest
 import ocrmypdf
 from ocrmypdf._validation import _pages_from_ranges
 from ocrmypdf.pdfinfo import PdfInfo
+from ocrmypdf.exceptions import BadArgsError
 
 
-def test_str_ranges():
-    assert _pages_from_ranges('43') == {42}
-    assert _pages_from_ranges('1, 2, 3') == {0, 1, 2}
-    assert _pages_from_ranges('1-3') == {0, 1, 2}
-    assert _pages_from_ranges('1-3,5,7,42') == {0, 1, 2, 4, 6, 41}
-    assert _pages_from_ranges('3, 3, 3, 3,') == {2}
+@pytest.mark.parametrize(
+    'pages, result',
+    [
+        ['1', {0}],
+        ['1,2', {0, 1}],
+        ['1-3', {0, 1, 2}],
+        ['2,5,6', {1, 4, 5}],
+        ['11-15, 18, ', {10, 11, 12, 13, 14, 17}],
+        [',,3', {2}],
+        ['3, 3, 3, 3,', {2}],
+        ['3, 2, 1, 42', {0, 1, 2, 41}],
+        ['-1', BadArgsError],
+        ['1,3,-11', BadArgsError],
+        ['1-,', BadArgsError],
+        ['start-end', BadArgsError],
+    ],
+)
+def test_pages(pages, result):
+    if isinstance(result, type):
+        with pytest.raises(result):
+            _pages_from_ranges(pages)
+    else:
+        assert _pages_from_ranges(pages) == result
 
 
 def test_nonmonotonic_warning(caplog):
