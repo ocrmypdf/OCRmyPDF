@@ -28,8 +28,6 @@ import pikepdf
 from pikepdf.models.metadata import encode_pdf_date
 
 from . import PROGRAM_NAME, VERSION, leptonica
-
-from ._plugins import load_plugin
 from .exceptions import (
     DpiError,
     EncryptedPdfError,
@@ -159,12 +157,6 @@ def validate_pdfinfo_options(context):
     log = context.log
     pdfinfo = context.pdfinfo
     options = context.options
-
-    if options.plugin_validation:
-        validate = load_plugin(options.plugin_validation)
-        result = validate(context)
-        if result is not None:
-            return result
 
     if pdfinfo.needs_rendering:
         log.error(
@@ -535,10 +527,6 @@ def create_ocr_image(image, page_context):
             pix = leptonica.Pix.frompil(im)
             pix = pix.masked_threshold_on_background_norm()
             im = pix.topil()
-
-        if options.filter_ocr_image:
-            filt = load_plugin(options.filter_ocr_image)
-            im = filt(im)
 
         del draw
         # Pillow requires integer DPI

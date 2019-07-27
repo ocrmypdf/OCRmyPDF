@@ -18,7 +18,6 @@
 import argparse
 
 from . import PROGRAM_NAME, VERSION
-from ._plugins import check_plugin_loadable
 
 
 def numeric(basetype, min_=None, max_=None):
@@ -465,14 +464,6 @@ advanced.add_argument(
     '--user-patterns',
     metavar='FILE',
     help="Specify the location of the Tesseract user patterns file.",
-)
-
-plugins = parser.add_argument_group("Filters and Plugins", argparse.SUPPRESS)
-plugins.add_argument(
-    '--filter-ocr-image', help=argparse.SUPPRESS, type=check_plugin_loadable
-)
-plugins.add_argument(
-    '--plugin-validation', help=argparse.SUPPRESS, type=check_plugin_loadable
 )
 
 debugging = parser.add_argument_group(

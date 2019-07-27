@@ -27,8 +27,6 @@ next
 -   Added a high level API for applications that want to integrate OCRmyPDF.
     Special thanks to Martin Wind (@mawi1988) whose made significant contributions
     to this effort.
--   Added a simple plugin interface that makes certain steps of the pipeline
-    configurable.
 -   Added progress bars for long-running steps. As such, the behavior of output
     messages is different.
 -   Dropped the ``ocrmypdf-polyglot`` and ``ocrmypdf-webservice`` images.
