@@ -18,8 +18,10 @@
 import os
 import platform
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from subprocess import PIPE, run
+from ocrmypdf import api, cli
 
 import pytest
 
@@ -35,8 +37,8 @@ else:
 # pylint: disable=E1101
 # pytest.helpers is dynamic so it confuses pylint
 
-if sys.version_info.major < 3:
-    print("Requires Python 3.4+")
+if sys.version_info < (3, 5):
+    print("Requires Python 3.5+")
     sys.exit(1)
 
 
@@ -80,7 +82,7 @@ OCRMYPDF = [sys.executable, '-m', 'ocrmypdf']
 
 
 @pytest.helpers.register
-def spoof(tmpdir_factory, **kwargs):
+def spoof(tmp_path_factory, **kwargs):
     """Modify PATH to override subprocess executables
 
     spoof(program1='replacement', ...)
@@ -90,8 +92,8 @@ def spoof(tmpdir_factory, **kwargs):
     """
     env = os.environ.copy()
     slug = '-'.join(v.replace('.py', '') for v in sorted(kwargs.values()))
-    spoofer_base = Path(str(tmpdir_factory.mktemp('spoofers')))
-    tmpdir = spoofer_base / slug
+    spoofer_base = tmp_path_factory.mktemp('spoofers')
+    tmpdir = Path(spoofer_base / slug)
     tmpdir.mkdir(parents=True)
 
     for replace_program, with_spoof in kwargs.items():
@@ -105,16 +107,40 @@ def spoof(tmpdir_factory, **kwargs):
     return env
 
 
-@pytest.fixture(scope='session')
-def spoof_tesseract_noop(tmpdir_factory):
-    return spoof(tmpdir_factory, tesseract='tesseract_noop.py')
+@pytest.helpers.register
+@contextmanager
+def os_environ(new_env):
+    old_env = os.environ.copy()
+    if new_env is None:
+        new_env = {}
+
+    for k, v in new_env.items():
+        if k != 'PYTEST_CURRENT_TEST':
+            os.environ[k] = v
+    yield
+    new_keys = set(os.environ.copy()) - set(old_env)
+    for k in new_keys:
+        if k != 'PYTEST_CURRENT_TEST':
+            del os.environ[k]
+    for k in old_env:
+        if k != 'PYTEST_CURRENT_TEST':
+            os.environ[k] = old_env[k]
+
+    for k, v in os.environ.copy().items():
+        if k != 'PYTEST_CURRENT_TEST':
+            assert v == old_env[k]
 
 
 @pytest.fixture(scope='session')
-def spoof_tesseract_cache(tmpdir_factory):
+def spoof_tesseract_noop(tmp_path_factory):
+    return spoof(tmp_path_factory, tesseract='tesseract_noop.py')
+
+
+@pytest.fixture(scope='session')
+def spoof_tesseract_cache(tmp_path_factory):
     if running_in_docker():
         return os.environ.copy()
-    return spoof(tmpdir_factory, tesseract="tesseract_cache.py")
+    return spoof(tmp_path_factory, tesseract="tesseract_cache.py")
 
 
 @pytest.fixture
@@ -128,40 +154,43 @@ def ocrmypdf_exec():
 
 
 @pytest.fixture(scope="function")
-def outdir(tmpdir):
-    return Path(str(tmpdir))
+def outdir(tmp_path):
+    return tmp_path
 
 
 @pytest.fixture(scope="function")
-def outpdf(tmpdir):
-    return str(Path(str(tmpdir)) / 'out.pdf')
+def outpdf(tmp_path):
+    return tmp_path / 'out.pdf'
 
 
 @pytest.fixture(scope="function")
-def no_outpdf(tmpdir):
+def no_outpdf(tmp_path):
     """This just documents the fact that a test is not expected to produce
     output. Unfortunately an assertion failure inside a test fixture produces
     an error rather than a test failure, so no testing is done. It's up to
     the test to confirm that no output file was created."""
-    return str(Path(str(tmpdir)) / 'no_output.pdf')
+    return tmp_path / 'no_output.pdf'
 
 
 @pytest.helpers.register
 def check_ocrmypdf(input_file, output_file, *args, env=None):
     """Run ocrmypdf and confirmed that a valid file was created"""
 
-    p, out, err = run_ocrmypdf(input_file, output_file, *args, env=env)
-    # ensure py.test collects the output, use -s to view
-    print(err, file=sys.stderr)
-    assert p.returncode == 0
+    # p, out, err = run_ocrmypdf(input_file, output_file, *args, env=env)
+
+    options = cli.parser.parse_args(
+        [str(input_file), str(output_file)] + [str(arg) for arg in args]
+    )
+    api.check_options(options)
+    if env:
+        options.tesseract_env = env
+        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = input_file
+    result = api.run_pipeline(options, api=True)
+
+    assert result == 0
     assert os.path.exists(str(output_file)), "Output file not created"
     assert os.stat(str(output_file)).st_size > 100, "PDF too small or empty"
-    assert out == "", (
-        "The following was written to stdout and should not have been: \n"
-        + "<stdout>\n"
-        + out
-        + "\n</stdout>"
-    )
+
     return output_file
 
 

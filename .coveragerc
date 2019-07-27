@@ -1,9 +1,18 @@
 # Coverage isn't really compatible with subprocesses so results are unreliable
 
+[paths]
+source =
+	src
+	*/site-packages
+
 [run]
-branch = True
-#concurrency = multiprocessing
-source = ocrmypdf/
+branch = true
+parallel = true
+source =
+	src/ocrmypdf
+	tests
+omit =
+	tests/spoof/*
 
 [report]
 exclude_lines =

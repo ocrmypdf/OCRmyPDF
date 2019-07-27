@@ -1,5 +1,7 @@
 # ocrmypdf completion                                     -*- shell-script -*-
 
+set -o errexit
+
 _ocrmypdf()
 {
     local cur prev cword words split
@@ -49,7 +51,7 @@ _ocrmypdf()
             return
             ;;
         -v|--verbose)
-            COMPREPLY=( $( compgen -W '{1..9}' -- "$cur" ) ) # max level ?
+            COMPREPLY=( $( compgen -W '{0..2}' -- "$cur" ) ) # max level ?
             return
             ;;
         --tesseract-pagesegmode)
@@ -69,7 +71,7 @@ _ocrmypdf()
             --sidecar --version --jobs --quiet --verbose --title --author
             --subject --keywords --rotate-pages --remove-background --deskew
             --clean --clean-final --unpaper-args --oversample --remove-vectors
-            --mask-barcodes --threshold --force-ocr --skip-text --redo-ocr
+            --threshold --force-ocr --skip-text --redo-ocr
             --skip-big --jpeg-quality --png-quality --jbig2-lossy
             --max-image-mpixels --tesseract-config --tesseract-pagesegmode
             --help --tesseract-oem --pdf-renderer --tesseract-timeout
@@ -83,5 +85,7 @@ _ocrmypdf()
     fi
 } &&
 complete -F _ocrmypdf ocrmypdf
+
+set +o errexit
 
 # ex: filetype=sh

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+  <title></title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+  <meta name='ocr-system' content='tesseract 4.0.0' />
+  <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word ocrp_wconf'/>
+</head>
+<body>
+  <div class='ocr_page' id='page_1' title='image "/var/folders/2s/7t022mgj0h5cprbq0dtb1ksm0000gn/T/com.github.ocrmypdf.iw9uvooj/000001_ocr.png"; bbox 0 0 900 900; ppageno 0'>
+   <div class='ocr_carea' id='block_1_1' title="bbox 97 87 502 204">
+    <p class='ocr_par' id='par_1_1' lang='eng' title="bbox 97 87 502 204">
+     <span class='ocr_line' id='line_1_1' title="bbox 97 87 399 122; baseline 0 0; x_size 40.714287; x_descenders 5.7142859; x_ascenders 15">
+      <span class='ocrx_word' id='word_1_1' title='bbox 97 87 285 122; x_wconf 95'>Multicolor</span>
+      <span class='ocrx_word' id='word_1_2' title='bbox 302 87 399 122; x_wconf 96'>Black</span>
+     </span>
+     <span class='ocr_line' id='line_1_2' title="bbox 114 160 502 204; baseline 0 -9; x_size 44; x_descenders 9; x_ascenders 15">
+      <span class='ocrx_word' id='word_1_3' title='bbox 114 163 191 195; x_wconf 96'>Pure</span>
+      <span class='ocrx_word' id='word_1_4' title='bbox 210 160 308 195; x_wconf 93'>Black</span>
+      <span class='ocrx_word' id='word_1_5' title='bbox 325 160 363 204; x_wconf 93'>(K</span>
+      <span class='ocrx_word' id='word_1_6' title='bbox 378 174 400 183; x_wconf 96'>=</span>
+      <span class='ocrx_word' id='word_1_7' title='bbox 421 160 502 204; x_wconf 70'>100}</span>
+     </span>
+    </p>
+   </div>
+   <div class='ocr_carea' id='block_1_2' title="bbox 121 282 383 326">
+    <p class='ocr_par' id='par_1_2' lang='eng' title="bbox 121 282 383 326">
+     <span class='ocr_line' id='line_1_3' title="bbox 121 282 383 326; baseline 0 -11; x_size 44; x_descenders 11; x_ascenders 13">
+      <span class='ocrx_word' id='word_1_8' title='bbox 121 283 199 315; x_wconf 96'>Pure</span>
+      <span class='ocrx_word' id='word_1_9' title='bbox 216 282 383 326; x_wconf 96'>Magenta</span>
+     </span>
+    </p>
+   </div>
+   <div class='ocr_carea' id='block_1_3' title="bbox 140 375 329 418">
+    <p class='ocr_par' id='par_1_3' lang='eng' title="bbox 140 375 329 418">
+     <span class='ocr_line' id='line_1_4' title="bbox 140 375 329 418; baseline 0 -11; x_size 43; x_descenders 11; x_ascenders 12">
+      <span class='ocrx_word' id='word_1_10' title='bbox 140 375 218 407; x_wconf 96'>Pure</span>
+      <span class='ocrx_word' id='word_1_11' title='bbox 234 375 329 418; x_wconf 96'>Cyan</span>
+     </span>
+    </p>
+   </div>
+   <div class='ocr_carea' id='block_1_4' title="bbox 207 570 422 605">
+    <p class='ocr_par' id='par_1_4' lang='eng' title="bbox 207 570 422 605">
+     <span class='ocr_line' id='line_1_5' title="bbox 207 570 422 605; baseline 0 0; x_size 40.365852; x_descenders 5.3658538; x_ascenders 15">
+      <span class='ocrx_word' id='word_1_12' title='bbox 207 573 285 605; x_wconf 96'>Pure</span>
+      <span class='ocrx_word' id='word_1_13' title='bbox 299 570 422 605; x_wconf 95'>Yellow</span>
+     </span>
+    </p>
+   </div>
+  </div>
+ </body>
+</html>

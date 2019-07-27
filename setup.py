@@ -26,9 +26,6 @@ if sys.version_info < (3, 6):
     sys.exit(1)
 
 from setuptools import setup, find_packages
-from subprocess import STDOUT, check_output, CalledProcessError
-from collections.abc import Mapping
-import re
 
 # pylint: disable=w0613
 
@@ -104,10 +101,10 @@ setup(
         # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
         # block 5.1.0, broken wheels
         'reportlab >= 3.3.0',  # oldest released version with sane image handling
-        'ruffus >= 2.7.0',
+        'tqdm >= 4',
     ],
     tests_require=tests_require,
-    entry_points={'console_scripts': ['ocrmypdf = ocrmypdf.__main__:run_pipeline']},
+    entry_points={'console_scripts': ['ocrmypdf = ocrmypdf.__main__:run']},
     package_data={'ocrmypdf': ['data/sRGB.icc']},
     include_package_data=True,
     zip_safe=False,

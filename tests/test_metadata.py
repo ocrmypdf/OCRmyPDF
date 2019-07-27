@@ -28,7 +28,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import pikepdf
-from ocrmypdf._jobcontext import JobContext
+from ocrmypdf._jobcontext import PDFContext
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import SRGB_ICC_PROFILE, file_claims_pdfa, generate_pdfa_ps
 from pikepdf.models.metadata import decode_pdf_date
@@ -261,10 +261,10 @@ def test_xml_metadata_preserved(spoof_tesseract_noop, output_type, resources, ou
             )
 
 
-def test_srgb_in_unicode_path(tmpdir):
+def test_srgb_in_unicode_path(tmp_path):
     """Test that we can produce pdfmark when install path is not ASCII"""
 
-    dstdir = Path(fspath(tmpdir)) / b'\xe4\x80\x80'.decode('utf-8')
+    dstdir = tmp_path / b'\xe4\x80\x80'.decode('utf-8')
     dstdir.mkdir()
     dst = dstdir / 'sRGB.icc'
 
@@ -286,42 +286,28 @@ def test_kodak_toc(resources, outpdf, spoof_tesseract_noop):
 
 
 def test_metadata_fixup_warning(resources, outdir, caplog):
+    from ocrmypdf.__main__ import parser
     from ocrmypdf._pipeline import metadata_fixup
 
-    input_files = [
-        str(outdir / 'graph.repaired.pdf'),
-        str(outdir / 'layers.rendered.pdf'),
-        str(outdir / 'pdfa.pdf'),  # It is okay that this is not a PDF/A
-    ]
-    for f in input_files:
-        copyfile(resources / 'graph.pdf', f)
-
-    log = logging.getLogger()
-    context = MagicMock()
-    metadata_fixup(
-        input_files_groups=input_files,
-        output_file=outdir / 'out.pdf',
-        log=log,
-        context=context,
+    options = parser.parse_args(
+        args=['--output-type', 'pdfa-2', 'graph.pdf', 'out.pdf']
     )
+
+    copyfile(resources / 'graph.pdf', outdir / 'graph.pdf')
+
+    context = PDFContext(options, outdir, outdir / 'graph.pdf', None)
+    metadata_fixup(working_file=outdir / 'graph.pdf', context=context)
     for record in caplog.records:
         assert record.levelname != 'WARNING'
 
     # Now add some metadata that will not be copyable
-    with pikepdf.open(outdir / 'graph.repaired.pdf') as graph:
-        with graph.open_metadata() as meta:
-            meta['prism2:publicationName'] = 'OCRmyPDF Test'
-        graph.save(outdir / 'graph.repaired.modified.pdf')
-    move(outdir / 'graph.repaired.modified.pdf', outdir / 'graph.repaired.pdf')
+    graph = pikepdf.open(outdir / 'graph.pdf')
+    with graph.open_metadata() as meta:
+        meta['prism2:publicationName'] = 'OCRmyPDF Test'
+    graph.save(outdir / 'graph_mod.pdf')
 
-    log = logging.getLogger()
-    context = MagicMock()
-    metadata_fixup(
-        input_files_groups=input_files,
-        output_file=outdir / 'out.pdf',
-        log=log,
-        context=context,
-    )
+    context = PDFContext(options, outdir, outdir / 'graph_mod.pdf', None)
+    metadata_fixup(working_file=outdir / 'graph.pdf', context=context)
     assert any(record.levelname == 'WARNING' for record in caplog.records)
 
 
@@ -332,22 +318,16 @@ def test_prevent_gs_invalid_xml(resources, outdir):
     from ocrmypdf.pdfinfo import PdfInfo
 
     generate_pdfa_ps(outdir / 'pdfa.ps')
-    input_files = [str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps')]
     copyfile(resources / 'enron1.pdf', outdir / 'layers.rendered.pdf')
-    log = logging.getLogger()
-    context = JobContext()
 
     options = parser.parse_args(
         args=['-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
     )
-    context.options = options
-    context.pdfinfo = PdfInfo(resources / 'enron1.pdf')
+    pdfinfo = PdfInfo(resources / 'enron1.pdf')
+    context = PDFContext(options, outdir, resources / 'enron1.pdf', pdfinfo)
 
     convert_to_pdfa(
-        input_files_groups=input_files,
-        output_file=outdir / 'pdfa.pdf',
-        log=log,
-        context=context,
+        str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps'), context
     )
 
     with open(outdir / 'pdfa.pdf', 'rb') as f:

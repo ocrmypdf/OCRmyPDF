@@ -80,13 +80,13 @@ def test_pickle(crom_pix):
     assert pix.mode == pix2.mode
 
 
-def test_leptonica_compile(tmpdir):
+def test_leptonica_compile(tmp_path):
     from ocrmypdf.lib.compile_leptonica import ffibuilder
 
     # Compile the library but build it somewhere that won't interfere with
     # existing compiled library. Also compile in API mode so that we test
     # the interfaces, even though we use it ABI mode.
-    ffibuilder.compile(tmpdir=fspath(tmpdir), target=fspath(tmpdir / 'lepttest.*'))
+    ffibuilder.compile(tmpdir=fspath(tmp_path), target=fspath(tmp_path / 'lepttest.*'))
 
 
 def test_with_stderr(capsys):

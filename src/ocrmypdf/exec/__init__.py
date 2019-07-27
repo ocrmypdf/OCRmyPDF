@@ -17,6 +17,7 @@
 
 """Wrappers to manage subprocess calls"""
 
+import logging
 import os
 import re
 import sys
@@ -24,8 +25,10 @@ from subprocess import run, STDOUT, PIPE, CalledProcessError
 from ..exceptions import MissingDependencyError, ExitCode
 from collections.abc import Mapping
 
+log = logging.Logger(__name__)
 
-def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)'):
+
+def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)', env=None):
     "Get the version of the specified program"
     args_prog = [program, version_arg]
     try:
@@ -36,6 +39,7 @@ def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)'):
             stdout=PIPE,
             stderr=STDOUT,
             check=True,
+            env=env,
         )
         output = proc.stdout
     except FileNotFoundError as e:
@@ -115,7 +119,7 @@ def _get_platform():
     return sys.platform
 
 
-def _error_trailer(log, program, package, **kwargs):
+def _error_trailer(program, package, **kwargs):
     if isinstance(package, Mapping):
         package = package[_get_platform()]
 
@@ -125,7 +129,7 @@ def _error_trailer(log, program, package, **kwargs):
         log.info(linux_install_advice.format(**locals()))
 
 
-def _error_missing_program(log, program, package, required_for, recommended):
+def _error_missing_program(program, package, required_for, recommended):
     if required_for:
         log.error(missing_optional_program.format(**locals()))
     elif recommended:
@@ -135,9 +139,7 @@ def _error_missing_program(log, program, package, required_for, recommended):
     _error_trailer(**locals())
 
 
-def _error_old_version(
-    log, program, package, need_version, found_version, required_for
-):
+def _error_old_version(program, package, need_version, found_version, required_for):
     if required_for:
         log.error(old_version_required_for.format(**locals()))
     else:
@@ -147,27 +149,28 @@ def _error_old_version(
 
 def check_external_program(
     *,
-    log,
     program,
     package,
     version_checker,
     need_version,
     required_for=None,
     recommended=False,
+    **kwargs,  # To consume log parameter
 ):
+    if kwargs:
+        if not 'log' in kwargs:
+            log.warning('check_external_program(log=...) is deprecated')
     try:
         found_version = version_checker()
     except (CalledProcessError, FileNotFoundError, MissingDependencyError):
-        _error_missing_program(log, program, package, required_for, recommended)
+        _error_missing_program(program, package, required_for, recommended)
         if not recommended:
-            sys.exit(ExitCode.missing_dependency)
+            raise MissingDependencyError()
         return
 
     if found_version < need_version:
-        _error_old_version(
-            log, program, package, need_version, found_version, required_for
-        )
+        _error_old_version(program, package, need_version, found_version, required_for)
         if not recommended:
-            sys.exit(ExitCode.missing_dependency)
+            raise MissingDependencyError()
 
-    log.debug(f'Found {program} {found_version}')
+    log.debug('Found %s %s', program, found_version)

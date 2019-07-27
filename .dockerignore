@@ -6,7 +6,6 @@
 **/*.pyc
 .*/
 !.git/
-!.docker/
 .ruffus_history.sqlite
 bin/
 build/

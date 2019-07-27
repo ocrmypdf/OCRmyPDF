@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import re
 from functools import lru_cache
 from os import fspath
@@ -24,8 +25,11 @@ from tempfile import NamedTemporaryFile
 
 from PIL import Image
 
-from . import get_version
 from ..exceptions import SubprocessOutputError
+from . import get_version
+
+
+gslog = logging.getLogger()
 
 
 @lru_cache(maxsize=1)
@@ -132,6 +136,8 @@ def rasterize_pdf(
     res = round(xres, 6), round(yres, 6)
     if not page_dpi:
         page_dpi = res
+    if not log:
+        log = gslog
 
     with NamedTemporaryFile(delete=True) as tmp:
         args_gs = (
@@ -160,12 +166,11 @@ def rasterize_pdf(
         p = run(args_gs, stdout=PIPE, stderr=STDOUT, universal_newlines=True)
         if _gs_error_reported(p.stdout):
             log.error(p.stdout)
-        else:
+        elif p.stdout:
             log.debug(p.stdout)
 
         if p.returncode != 0:
-            log.error('Ghostscript rasterizing failed')
-            raise SubprocessOutputError()
+            raise SubprocessOutputError('Ghostscript rasterizing failed')
 
         tmp.seek(0)
         with Image.open(tmp) as im:
@@ -210,6 +215,9 @@ def generate_pdfa(
     images entirely. (The feature was added in 9.23 but broken, and the 9.24
     release of Ghostscript had regressions, so we don't support it until 9.25.)
     """
+    if not log:
+        log = gslog
+
     compression_args = []
     if compression == 'jpeg':
         compression_args = [
@@ -287,5 +295,4 @@ def generate_pdfa(
             # PDF/A - check PDF/A status elsewhere
             copy(gs_pdf.name, fspath(output_file))
         else:
-            log.error('Ghostscript PDF/A rendering failed')
-            raise SubprocessOutputError()
+            raise SubprocessOutputError('Ghostscript PDF/A rendering failed')

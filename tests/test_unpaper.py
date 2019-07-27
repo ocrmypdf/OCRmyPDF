@@ -15,16 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import argparse
-import logging
 from os import fspath
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
-from ocrmypdf import __main__ as main
-from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.cli import parser
+from ocrmypdf._validation import check_options
+from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 from ocrmypdf.exec import unpaper
 
 # pytest.helpers is dynamic
@@ -46,19 +44,19 @@ def have_unpaper():
 
 
 @pytest.fixture(scope="session")
-def spoof_unpaper_oldversion(tmpdir_factory):
-    return spoof(tmpdir_factory, unpaper="unpaper_oldversion.py")
+def spoof_unpaper_oldversion(tmp_path_factory):
+    return spoof(tmp_path_factory, unpaper="unpaper_oldversion.py")
 
 
 def test_no_unpaper(resources, no_outpdf):
     input_ = fspath(resources / "c02-22.pdf")
     output = fspath(no_outpdf)
-    options = main.parser.parse_args(args=["--clean", input_, output])
+    options = parser.parse_args(args=["--clean", input_, output])
 
     with patch("ocrmypdf.exec.unpaper.version") as mock_unpaper_version:
         mock_unpaper_version.side_effect = FileNotFoundError("unpaper")
-        with pytest.raises(SystemExit):
-            main.check_options(options, log=logging.getLogger())
+        with pytest.raises(MissingDependencyError):
+            check_options(options)
 
 
 def test_old_unpaper(spoof_unpaper_oldversion, resources, no_outpdf):
