@@ -27,7 +27,6 @@ from tempfile import mkdtemp
 
 from tqdm import tqdm
 
-from . import __version__
 from ._graft import OcrGrafter
 from ._jobcontext import PDFContext, cleanup_working_files, make_logger
 from ._pipeline import (

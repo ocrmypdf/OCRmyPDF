@@ -26,7 +26,9 @@ import pikepdf
 from pikepdf.models.metadata import encode_pdf_date
 from PIL import Image
 
-from . import PROGRAM_NAME, VERSION, leptonica
+from . import leptonica
+from ._version import PROGRAM_NAME
+from ._version import __version__ as VERSION
 from .exceptions import (
     DpiError,
     EncryptedPdfError,

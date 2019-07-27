@@ -17,7 +17,8 @@
 
 import argparse
 
-from . import PROGRAM_NAME, VERSION
+from ._version import PROGRAM_NAME as _PROGRAM_NAME
+from ._version import __version__ as _VERSION
 
 
 def numeric(basetype, min_=None, max_=None):
@@ -54,7 +55,7 @@ class ArgumentParser(argparse.ArgumentParser):
 
 
 parser = ArgumentParser(
-    prog=PROGRAM_NAME,
+    prog=_PROGRAM_NAME,
     fromfile_prefix_chars='@',
     formatter_class=argparse.RawDescriptionHelpFormatter,
     description="""\
@@ -167,7 +168,7 @@ parser.add_argument(
 parser.add_argument(
     '--version',
     action='version',
-    version=VERSION,
+    version=_VERSION,
     help="Print program version and exit",
 )
 

@@ -15,20 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import helpers, hocrtransform, leptonica, pdfa, pdfinfo
-from ._version import PROGRAM_NAME, __version__
-from .api import Verbosity, configure_logging, ocr
-from .exceptions import (
-    BadArgsError,
-    DpiError,
-    EncryptedPdfError,
-    ExitCode,
-    InputFileError,
-    MissingDependencyError,
-    OutputFileAccessError,
-    PdfMergeFailedError,
-    PriorOcrFoundError,
-    SubprocessOutputError,
-    TesseractConfigError,
-    UnsupportedImageFormatError,
-)
+
+import pkg_resources
+
+PROGRAM_NAME = 'ocrmypdf'
+
+# Official PEP 396
+__version__ = pkg_resources.get_distribution('ocrmypdf').version
