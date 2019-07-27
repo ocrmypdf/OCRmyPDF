@@ -35,7 +35,7 @@ def test_basic(resources, pdf, outpdf):
     infile = resources / pdf
     opt.main(infile, outpdf, level=3)
 
-    assert Path(outpdf).stat().st_size <= Path(infile).stat().st_size
+    assert 0.98 * Path(outpdf).stat().st_size <= Path(infile).stat().st_size
 
 
 def test_mono_not_inverted(resources, outdir):
