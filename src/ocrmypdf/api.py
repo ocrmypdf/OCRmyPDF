@@ -64,10 +64,10 @@ def configure_logging(verbosity, progress_bar_friendly=True, manage_root_logger=
     similar to ocrmypdf command line interface. If not used, the external application
     should configure logging on its own.
 
-    ocrmypdf will perform all of its logging under the `"ocrmypdf"` logging namespace.
-    In addition, ocrmypdf imports pdfminer, which logs under `"pdfminer"`. A library
+    ocrmypdf will perform all of its logging under the ``"ocrmypdf"`` logging namespace.
+    In addition, ocrmypdf imports pdfminer, which logs under ``"pdfminer"``. A library
     user may wish to configure both; note that pdfminer is extremely chatty at the log
-    level logging.INFO.
+    level ``logging.INFO``.
 
     Library users may perform additional configuration afterwards.
 

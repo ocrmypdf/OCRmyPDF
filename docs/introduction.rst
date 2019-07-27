@@ -161,7 +161,7 @@ OCRmyPDF is also limited by the PDF specification:
    the spaces between words must be derived heuristically. Some PDF
    viewers do a better job of this than others.
 -  Because some popular open source PDF viewers have a particularly hard
-   time with spaces betweem words, OCRmyPDF appends a space to each text
+   time with spaces between words, OCRmyPDF appends a space to each text
    element as a workaround (when using ``--pdf-renderer hocr``). While
    this mixes document structure with graphical information that ideally
    should be left to the PDF viewer to interpret, it improves

@@ -31,11 +31,13 @@ Instead, output should be managed by configuring logging.
 Parent process requirements
 ---------------------------
 
-The :func:`ocrmypdf.run` function runs OCRmyPDF similar to command line
-execution. To do this, it will: - create a monitoring thread - create
-worker processes (forking itself) - manage the signal flags of worker
-processes 0 execute other subprocesses (forking and executing other
-programs)
+The :func:`ocrmypdf.ocr` function runs OCRmyPDF similar to command line
+execution. To do this, it will:
+
+- create a monitoring thread
+- create worker processes (forking itself)
+- manage the signal flags of worker processes
+- execute other subprocesses (forking and executing other programs)
 
 The Python process that calls ``ocrmypdf.ocr()`` must be sufficiently
 privileged to perform these actions. If it is not, ``ocrmypdf()`` will
@@ -88,7 +90,7 @@ When OCRmyPDF succeeds conditionally, it returns an integer exit code.
 Reference
 ---------
 
-.. autofunction:: ocrmypdf.run
+.. autofunction:: ocrmypdf.ocr
 
 .. autoclass:: ocrmypdf.Verbosity
     :members:
