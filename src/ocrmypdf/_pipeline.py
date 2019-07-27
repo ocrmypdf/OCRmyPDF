@@ -716,6 +716,13 @@ def convert_to_pdfa(input_pdf, input_ps_stub, context):
     return output_file
 
 
+def should_linearize(working_file, context):
+    filesize = os.stat(working_file).st_size
+    if filesize > (context.options.fast_web_view * 1_000_000):
+        return True
+    return False
+
+
 def metadata_fixup(working_file, context):
     output_file = context.get_path('metafix.pdf')
     options = context.options
@@ -749,11 +756,14 @@ def metadata_fixup(working_file, context):
                 context.log.info(
                     "The following metadata fields were not copied: %r", not_copied
                 )
-
     pdf.save(
         output_file,
         compress_streams=True,
+        preserve_pdfa=True,
         object_stream_mode=pikepdf.ObjectStreamMode.generate,
+        linearize=(  # Don't linearize if optimize() will be linearizing too
+            should_linearize(working_file, context) if options.optimize == 0 else False
+        ),
     )
     original.close()
     pdf.close()
@@ -762,7 +772,13 @@ def metadata_fixup(working_file, context):
 
 def optimize_pdf(input_file, context):
     output_file = context.get_path('optimize.pdf')
-    optimize(input_file, output_file, context)
+    save_settings = dict(
+        compress_streams=True,
+        preserve_pdfa=True,
+        object_stream_mode=pikepdf.ObjectStreamMode.generate,
+        linearize=should_linearize(input_file, context),
+    )
+    optimize(input_file, output_file, context, save_settings)
     return output_file
 
 

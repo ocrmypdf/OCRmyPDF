@@ -449,7 +449,7 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
         im_obj.write(compdata.read(), filter=Name.FlateDecode, decode_parms=dparms)
 
 
-def optimize(input_file, output_file, context):
+def optimize(input_file, output_file, context, save_settings):
     log = context.log
     options = context.options
     if options.optimize == 0:
@@ -479,11 +479,7 @@ def optimize(input_file, output_file, context):
 
         target_file = Path(output_file).with_suffix('.opt.pdf')
         pike.remove_unreferenced_resources()
-        pike.save(
-            target_file,
-            preserve_pdfa=True,
-            object_stream_mode=pikepdf.ObjectStreamMode.generate,
-        )
+        pike.save(target_file, **save_settings)
 
     input_size = Path(input_file).stat().st_size
     output_size = Path(target_file).stat().st_size
@@ -497,8 +493,11 @@ def optimize(input_file, output_file, context):
     log.info(f"Optimize ratio: {ratio:.2f} savings: {(100 * savings):.1f}%")
 
     if savings < 0:
-        log.info("Optimize did not improve the file - discarded")
-        re_symlink(input_file, output_file)
+        log.info("Image optimization did not improve the file - discarded")
+        # We still need to save the file
+        with pikepdf.open(input_file) as pike:
+            pike.remove_unreferenced_resources()
+            pike.save(output_file, **save_settings)
     else:
         re_symlink(target_file, output_file)
 
@@ -535,7 +534,16 @@ def main(infile, outfile, level, jobs=1):
     with TemporaryDirectory() as td:
         context = PDFContext(options, td, infile, None)
         tmpout = Path(td) / 'out.pdf'
-        optimize(infile, tmpout, context)
+        optimize(
+            infile,
+            tmpout,
+            context,
+            dict(
+                compress_streams=True,
+                preserve_pdfa=True,
+                object_stream_mode=pikepdf.ObjectStreamMode.generate,
+            ),
+        )
         copy(fspath(tmpout), fspath(outfile))
 
 

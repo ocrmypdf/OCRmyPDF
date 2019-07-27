@@ -196,6 +196,7 @@ def ocr(  # pylint: disable=unused-argument
     pdfa_image_compression=None,
     user_words=None,
     user_patterns=None,
+    fast_web_view=None,
     keep_temporary_files=None,
     progress_bar=None,
     tesseract_env=None,

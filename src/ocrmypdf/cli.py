@@ -466,6 +466,18 @@ advanced.add_argument(
     metavar='FILE',
     help="Specify the location of the Tesseract user patterns file.",
 )
+advanced.add_argument(
+    '--fast-web-view',
+    type=numeric(float, 0),
+    default=1.0,
+    metavar="MEGABYTES",
+    help="If the size of file is more than this threshold (in MB), then "
+    "linearize the PDF for fast web viewing. This allows the PDF to be "
+    "displayed before it is fully downloaded in web browsers, but increases "
+    "the space required slightly. By default we skip this for small files "
+    "which do not benefit. If the threshold is 0 it will be apply to all files. "
+    "Set the threshold very high to disable.",
+)
 
 debugging = parser.add_argument_group(
     "Debugging", "Arguments to help with troubleshooting and debugging"

@@ -28,6 +28,7 @@ import pytest
 from PIL import Image
 
 import ocrmypdf
+import pikepdf
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 from ocrmypdf.exec import ghostscript, qpdf, tesseract
 from ocrmypdf.leptonica import Pix
@@ -1093,3 +1094,34 @@ def test_version_check():
 
     with pytest.raises(MissingDependencyError):
         get_version('echo')
+
+
+@pytest.mark.parametrize(
+    'threshold, optimize, output_type, expected',
+    [
+        [1.0, 0, 'pdfa', False],
+        [1.0, 0, 'pdf', False],
+        [0.0, 0, 'pdfa', True],
+        [0.0, 0, 'pdf', True],
+        [1.0, 1, 'pdfa', False],
+        [1.0, 1, 'pdf', False],
+        [0.0, 1, 'pdfa', True],
+        [0.0, 1, 'pdf', True],
+    ],
+)
+def test_fast_web_view(
+    spoof_tesseract_noop, resources, outpdf, threshold, optimize, output_type, expected
+):
+    check_ocrmypdf(
+        resources / 'trivial.pdf',
+        outpdf,
+        '--fast-web-view',
+        threshold,
+        '--optimize',
+        optimize,
+        '--output-type',
+        output_type,
+        env=spoof_tesseract_noop,
+    )
+    with pikepdf.open(outpdf) as pdf:
+        assert pdf.is_linearized == expected
