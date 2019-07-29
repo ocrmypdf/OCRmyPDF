@@ -10,8 +10,8 @@ chmod +x OCRmyPDF*.AppImage
 ```  
   
   Beside OCRmyPDF additional command line programs can be run with this AppImage like:
-* img2pdf
 * ghostscript
+* img2pdf
 * pngquant
 * python3.6
 * qpdf
