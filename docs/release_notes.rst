@@ -59,6 +59,8 @@ v9.0.0
 -  Updated Docker images to use newer versions.
 -  Fixed images encoded as JBIG2 with a colorspace other than ``/DeviceGray``
    were not interpreted correctly.
+-  Fixed a OCR text-image registration (i.e. alignment) problem when the page
+   when MediaBox had a nonzero corner.
 
 v8.3.2
 ======
