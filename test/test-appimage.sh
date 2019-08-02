@@ -39,22 +39,7 @@ run_appimage
 
 run_appimagelint
 
-# run_pytest # commented out in order to get the AppImage uploaded to github release
+ run_pytest
 
-# 'test_flate_to_jbig2' fails
-# >       assert pim.filters[0] == '/JBIG2Decode'
-# E       AssertionError: assert '/FlateDecode' == '/JBIG2Decode'
-# E         - /FlateDecode
-# E         + /JBIG2Decode
-
-# ../OCRmyPDF/tests/test_optimize.py:131: AssertionError
-# ----------------------------- Captured stderr call -----------------------------
-#    INFO - Input file is not a PDF, checking if it is an image...
-#    INFO - Input file is an image
-#    INFO - Image seems valid. Try converting to PDF...
-#    INFO - Successfully converted to PDF, processing...
-# pngquant: unrecognized option '--skip-if-larger'
-#    INFO - Optimize ratio: 1.02 savings: 1.7%
-#    INFO - Output file is a PDF/A-2B (as expected)
 
 
