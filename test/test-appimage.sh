@@ -8,7 +8,11 @@ chmod +x OCRmyPDF*.AppImage
 # run OCRmyPDF to test if the AppImage can ocr a test file
 run_appimage()
 {
+    echo ""
+    ./OCRmyPDF*.AppImage --help
+    echo ""
     ./OCRmyPDF*.AppImage -l deu -s -d --jbig2-lossy --optimize 1 "$TRAVIS_BUILD_DIR"/test/test.pdf output.pdf
+    echo ""
 }
 
 
@@ -39,7 +43,7 @@ run_appimage
 
 run_appimagelint
 
- run_pytest
+# run_pytest
 
 
 
