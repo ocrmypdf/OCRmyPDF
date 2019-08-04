@@ -1,10 +1,5 @@
 #! /bin/bash
 
-# TODO: Add "usage" ouput and additional functions like displaying of licences
-#       and man pages
-#       could be in a similar manner as the AppRun script of qpdf AppImage
-#       refer to: https://github.com/qpdf/qpdf/blob/master/appimage/AppRun
-
 HERE="$(dirname "$(readlink -f "${0}")")"
 
 export PATH="$HERE/usr/bin:$HERE/usr/local/bin:$HERE/usr/python/bin:$PATH"
@@ -17,31 +12,89 @@ export GS_LIB="$HERE/usr/share/ghostscript/9.26/lib:$HERE/usr/share/ghostscript/
 # or called with ./Some*.AppImage commandname ...
 # refer to https://github.com/AppImage/AppImageKit/wiki/Bundling-command-line-tools
 
-if [ ! -z $APPIMAGE ] ; then
+if [ ! -z "$APPIMAGE" ] ; then
   BINARY_NAME=$(basename "$ARGV0")
 else
   BINARY_NAME=$(basename "$0")
   export APPDIR="$HERE"       # required for the wrapper scripts of linuxdeploy-plugin-python
 fi
 
+usage() {
+echo "
+==============================================================================
+                          AppImage for OCRmyPDF
+==============================================================================
+OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be
+searched or copy-pasted.
+
+usage:
+$ARGV0 [ocrmypdf] [--help] [--list-programs]
+                [--list-licenses] [--show-license]
+
+ocrmypdf                    execute OCRmyPDF
+
+--help                      show this help message
+
+--list-programs             list all programs contained in this AppImage
+
+--list-licenses             list all licenses contained in this AppImage
+
+--show-license [LICENSE]    show content of license file
+"
+}
+
+if [ "$1" == "--help" ] ; then
+    usage ; exit $?
+fi
+
+if [ "$1" == "--list-programs" ] ; then
+    echo ""
+    echo "Run \"$ARGV0\" with one of the following arguments to run the respective program."
+    echo ""
+    find . -type f -executable ! -path '*/lib/*' -execdir basename {} ";" | sort | column
+    echo ""
+    exit $?
+fi
+
+if [ "$1" == "--list-licenses" ] ; then
+    echo ""
+    echo "Run \"$ARGV0\" with one of the following arguments to display the respective license file."
+    echo ""
+    find . -type f \( -iname "license*" -o -iname "*copyright*" -o -iname "*copying*" \) \
+        -printf "--show-license %P\n" | sort | column
+    echo ""
+    exit $?
+fi
+
+if [ "$1" == "--show-license" ] ; then
+    if [ -f "$2" ] ; then
+        less -N "$2"
+        exit $?
+    else
+        echo "$2 is not a valid license file path."
+        exit 1
+    fi
+fi
+
 if [ ! -z "$1" ] && [ -e "$HERE/bin/$1" ] ; then
-  MAIN="$HERE/bin/$1" ; shift
+    MAIN="$HERE/bin/$1" ; shift
 elif [ ! -z "$1" ] && [ -e "$HERE/usr/bin/$1" ] ; then
-  MAIN="$HERE/usr/bin/$1" ; shift
+    MAIN="$HERE/usr/bin/$1" ; shift
 elif [ ! -z "$1" ] && [ -e "$HERE/usr/python/bin/$1" ] ; then
-  MAIN="$HERE/usr/python/bin/$1" ; shift
+    MAIN="$HERE/usr/python/bin/$1" ; shift
 elif [ ! -z "$1" ] && [ -e "$HERE/usr/local/bin/$1" ] ; then
-  MAIN="$HERE/usr/local/bin/$1" ; shift
+    MAIN="$HERE/usr/local/bin/$1" ; shift
 elif [ -e "$HERE/bin/$BINARY_NAME" ] ; then
-  MAIN="$HERE/bin/$BINARY_NAME"
+    MAIN="$HERE/bin/$BINARY_NAME"
 elif [ -e "$HERE/usr/bin/$BINARY_NAME" ] ; then
-  MAIN="$HERE/usr/bin/$BINARY_NAME"
+    MAIN="$HERE/usr/bin/$BINARY_NAME"
 elif [ -e "$HERE/usr/python/bin/$BINARY_NAME" ] ; then
-  MAIN="$HERE/usr/python/bin/$BINARY_NAME"
+    MAIN="$HERE/usr/python/bin/$BINARY_NAME"
 elif [ -e "$HERE/usr/local/bin/$BINARY_NAME" ] ; then
-  MAIN="$HERE/usr/local/bin/$BINARY_NAME"
+    MAIN="$HERE/usr/local/bin/$BINARY_NAME"
 else
-  MAIN="$HERE/usr/python/bin/ocrmypdf"
+    usage #"$HERE/usr/python/bin/ocrmypdf"
+    exit $?
 fi
 
 exec "${MAIN}" "$@"
