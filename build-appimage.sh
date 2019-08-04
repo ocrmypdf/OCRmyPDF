@@ -65,11 +65,11 @@ convert logo-social.png -resize 512x512\> -size 512x512 xc:white +swap -gravity 
 
 # download and intsall packages required by OCRmyPDF
 pushd PackageDir
-packages=(tesseract-ocr tesseract-ocr-all libavformat56 ghostscript qpdf pngquant)
+packages=(tesseract-ocr tesseract-ocr-all libavformat56 ghostscript qpdf pngquant less)
 
 for i in "${packages[@]}"
 do
-    apt-get -d -o dir::cache="$PWD" -o Debug::NoLocking=1 install "$i" -y
+    apt-get -d -o dir::cache="$PWD" -o Debug::NoLocking=1 --reinstall install "$i" -y
 done
 
 wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O unpaper_6.1-1.deb
@@ -88,9 +88,20 @@ pushd jbig2
 make && make install
 popd
 
+# clean up AppDir
+pushd "$BUILD_DIR"/AppDir
+# remove "less" symlinks in ./usr/bin
+[ -h bin/less ]     && rm -f ./bin/less
+[ -h bin/lessecho ] && rm -f ./bin/lessecho
+[ -h bin/lesspipe ] && rm -f ./bin/lesspipe
+[ -h bin/lesskey ]  && rm -f ./bin/lesskey
+[ -h bin/lesspipe ] && rm -f ./bin/lesspipe
+
+# copy "less" binaries from ./bin to ./usr/bin
+cp ./bin/less* ./usr/bin/
 
 # remove unnecessary data from AppDir
-pushd "$BUILD_DIR"/AppDir
+[ -d bin ] && rm -rf ./bin
 [ -d etc ] && rm -rf ./etc
 [ -d var ] && rm -rf ./var
 popd
