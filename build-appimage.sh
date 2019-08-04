@@ -98,7 +98,7 @@ pushd "$BUILD_DIR"/AppDir
 [ -h bin/lesspipe ] && rm -f ./bin/lesspipe
 
 # copy "less" binaries from ./bin to ./usr/bin
-cp ./bin/less* ./usr/bin/
+cp -f ./bin/less* ./usr/bin/
 
 # remove unnecessary data from AppDir
 [ -d bin ] && rm -rf ./bin
