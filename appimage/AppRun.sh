@@ -53,7 +53,7 @@ if [ "$1" == "--list-programs" ] ; then
     echo ""
     echo "Run \"$ARGV0\" with one of the following arguments to run the respective program."
     echo ""
-    find . -type f -executable ! -path '*/lib/*' -execdir basename {} ";" | sort | column
+    find . -type f -perm /111 ! -path '*/lib/*' -execdir basename {} ";" | sort | column
     echo ""
     exit $?
 fi
