@@ -11,6 +11,10 @@ run_appimage()
     echo ""
     ./OCRmyPDF*.AppImage --help
     echo ""
+    ./OCRmyPDF*.AppImage --list-programs
+    echo ""
+    ./OCRmyPDF*.AppImage --list-licenses
+    echo ""
     ./OCRmyPDF*.AppImage ocrmypdf -l deu -s -d --jbig2-lossy --optimize 1 "$TRAVIS_BUILD_DIR"/test/test.pdf output.pdf
     echo ""
 }
