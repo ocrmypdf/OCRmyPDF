@@ -65,7 +65,7 @@ convert logo-social.png -resize 512x512\> -size 512x512 xc:white +swap -gravity 
 
 # download and intsall packages required by OCRmyPDF
 pushd PackageDir
-packages=(tesseract-ocr tesseract-ocr-all libavformat56 ghostscript qpdf pngquant less)
+packages=(tesseract-ocr tesseract-ocr-all libavformat56 ghostscript qpdf pngquant)
 
 for i in "${packages[@]}"
 do
@@ -88,17 +88,10 @@ pushd jbig2
 make && make install
 popd
 
-# clean up AppDir
 pushd "$BUILD_DIR"/AppDir
-# remove "less" symlinks in ./usr/bin
-[ -h bin/less ]     && rm -f ./bin/less
-[ -h bin/lessecho ] && rm -f ./bin/lessecho
-[ -h bin/lesspipe ] && rm -f ./bin/lesspipe
-[ -h bin/lesskey ]  && rm -f ./bin/lesskey
-[ -h bin/lesspipe ] && rm -f ./bin/lesspipe
-
-# copy "less" binaries from ./bin to ./usr/bin
-cp -f ./bin/less* ./usr/bin/
+# add some tools to AppDir
+cp -f   /usr/bin/column     ./usr/bin/
+cp -f   /bin/less           ./usr/bin/
 
 # remove unnecessary data from AppDir
 [ -d bin ] && rm -rf ./bin
