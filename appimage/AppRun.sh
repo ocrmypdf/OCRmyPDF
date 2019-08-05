@@ -53,7 +53,7 @@ if [ "$1" == "--list-programs" ] ; then
     echo ""
     echo "Run \"$ARGV0\" with one of the following arguments to run the respective program."
     echo ""
-    find . -type f -perm /111 ! -path '*/lib/*' -execdir basename {} ";" | sort | column
+    find . -type f -perm /111 ! -path '*/lib/*' -execdir basename {} ";" | sort -u | column
     echo ""
     exit $?
 fi
@@ -63,8 +63,8 @@ if [ "$1" == "--list-licenses" ] ; then
     echo ""
     echo "Run \"$ARGV0\" with one of the following arguments to display the respective license file."
     echo ""
-    find . -type f \( -iname "license*" -o -iname "*copyright*" -o -iname "*copying*" \) \
-        -printf "--show-license %P\n" | sort | column
+    find . -type f \( ! -path '*/tesseract-ocr-*' -o -path '*/tesseract-ocr-eng/*' \) \
+        \( -iname "license*" -o -iname "*copyright*" -o -iname "*copying*" \) -printf "--show-license %P\n" | sort | column
     echo ""
     exit $?
 fi

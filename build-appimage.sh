@@ -90,8 +90,8 @@ popd
 
 pushd "$BUILD_DIR"/AppDir
 # add some tools to AppDir
-cp -f   /usr/bin/column     ./usr/bin/
-cp -f   /bin/less           ./usr/bin/
+#cp -f   /usr/bin/column     ./usr/bin/
+#cp -f   /bin/less           ./usr/bin/
 
 # remove unnecessary data from AppDir
 [ -d bin ] && rm -rf ./bin
