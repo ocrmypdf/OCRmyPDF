@@ -29,7 +29,7 @@ searched or copy-pasted.
 
 usage:
 $ARGV0 [ocrmypdf] [--help] [--list-programs]
-                [--list-licenses] [--show-license]
+                                 [--list-licenses] [--show-license]
 
 ocrmypdf                    execute OCRmyPDF
 
@@ -44,10 +44,12 @@ ocrmypdf                    execute OCRmyPDF
 }
 
 if [ "$1" == "--help" ] ; then
-    usage ; exit $?
+    usage
+    exit $?
 fi
 
 if [ "$1" == "--list-programs" ] ; then
+    pushd "$HERE"
     echo ""
     echo "Run \"$ARGV0\" with one of the following arguments to run the respective program."
     echo ""
@@ -57,6 +59,7 @@ if [ "$1" == "--list-programs" ] ; then
 fi
 
 if [ "$1" == "--list-licenses" ] ; then
+    pushd "$HERE"
     echo ""
     echo "Run \"$ARGV0\" with one of the following arguments to display the respective license file."
     echo ""
@@ -67,11 +70,13 @@ if [ "$1" == "--list-licenses" ] ; then
 fi
 
 if [ "$1" == "--show-license" ] ; then
-    if [ -f "$2" ] ; then
-        less -N "$2"
+    pushd "$HERE"
+    shift
+    if [ -f "$1" ] ; then
+        less -N "$1"
         exit $?
     else
-        echo "$2 is not a valid license file path."
+        echo "\"$1\" is not a valid license file path."
         exit 1
     fi
 fi
@@ -93,7 +98,7 @@ elif [ -e "$HERE/usr/python/bin/$BINARY_NAME" ] ; then
 elif [ -e "$HERE/usr/local/bin/$BINARY_NAME" ] ; then
     MAIN="$HERE/usr/local/bin/$BINARY_NAME"
 else
-    usage #"$HERE/usr/python/bin/ocrmypdf"
+    usage
     exit $?
 fi
 
