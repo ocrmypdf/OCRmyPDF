@@ -6,16 +6,16 @@ dist: trusty
 before_install:
   - sudo add-apt-repository ppa:heyarje/libav-11 -y
   - sudo add-apt-repository ppa:alex-p/tesseract-ocr -y
-  - sudo add-apt-repository ppa:evl.ms/evil -y # for a newer version (2.5.0) of pngquant
+  - sudo add-apt-repository ppa:evl.ms/evil -y  # for a newer version (2.5.0) of pngquant
   - sudo apt-get update -qq
-  - sudo apt-get install libleptonica-dev -y # required to build jbig2enc
-  - sudo apt-get install zlib1g-dev -y       # required to build jbig2enc
-  - sudo apt-get install imagemagick -y      # required to convert logo to desktop icon
+  - sudo apt-get install libleptonica-dev -y    # required to build jbig2enc
+  - sudo apt-get install zlib1g-dev -y          # required to build jbig2enc
+ # - sudo apt-get install imagemagick -y         # required to convert logo to desktop icon
 
 script:
   - export OCRMYPDF_VERSION=8.3.2
   - bash build-appimage.sh
-  - # remove previous installed libraries to ensure that the tests use the libraries of the AppImage
+  # remove previous installed libraries to ensure that the tests use the libraries of the AppImage
   - sudo apt-get remove libleptonica-dev zlib1g-dev -y
   - bash test/test-appimage.sh
   - wget https://github.com/probonopd/uploadtool/raw/master/upload.sh
@@ -25,5 +25,5 @@ after_success:
 
 branches:
   except:
-    - # Do not build tags that we create when we upload to GitHub Releases
+    # Do not build tags that we create when we upload to GitHub Releases
     - /^(?i:continuous)/

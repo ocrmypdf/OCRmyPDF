@@ -28,7 +28,7 @@ run_appimagelint()
 # extract the OCRmyPDF AppImage, install pytest & test requirements and run pytest
 run_pytest()
 {
-    git clone --depth=1 --branch v$OCRMYPDF_VERSION https://github.com/jbarlow83/OCRmyPDF.git
+    git clone --depth=1 --branch "v$OCRMYPDF_VERSION" https://github.com/jbarlow83/OCRmyPDF.git
     ./OCRmyPDF*.AppImage --appimage-extract
 
     pushd squashfs-root
