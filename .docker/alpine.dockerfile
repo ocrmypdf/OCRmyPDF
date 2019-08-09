@@ -56,7 +56,7 @@ RUN \
   # Add runtime dependencies
   && apk add --update \
   python3 \
-  jbig2enc@testing \
+  jbig2enc@community \
   ghostscript \
   qpdf@community \
   qpdf-dev@community \
