@@ -1125,3 +1125,14 @@ def test_fast_web_view(
     )
     with pikepdf.open(outpdf) as pdf:
         assert pdf.is_linearized == expected
+
+
+def test_image_dpi_not_image(caplog, spoof_tesseract_noop, resources, outpdf):
+    check_ocrmypdf(
+        resources / 'trivial.pdf',
+        outpdf,
+        '--image-dpi',
+        '100',
+        env=spoof_tesseract_noop,
+    )
+    assert '--image-dpi is being ignored' in caplog.text

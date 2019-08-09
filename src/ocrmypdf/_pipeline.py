@@ -129,7 +129,7 @@ def triage(input_file, output_file, options, log):
         if _pdf_guess_version(input_file):
             if options.image_dpi:
                 log.warning(
-                    "Argument --image-dpi ignored because the "
+                    "Argument --image-dpi is being ignored because the "
                     "input file is a PDF, not an image."
                 )
             # Origin file is a pdf create a symlink with pdf extension
