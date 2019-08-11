@@ -87,7 +87,6 @@ Fedora 29 or newer
 .. |fedora-rawhide| image:: https://repology.org/badge/version-for-repo/fedora_rawhide/ocrmypdf.svg
     :alt: Fedore Rawhide
 
-
 +------------------------------+
 | **OCRmyPDF version**         |
 +------------------------------+
@@ -403,14 +402,19 @@ The command line program should now be available:
 Installing on FreeBSD
 =====================
 
-FreeBSD 11.2 is known to work. Other versions likely work but have not
-been tested.
+.. image:: https://repology.org/badge/version-for-repo/freebsd/python:ocrmypdf.svg
+    :alt: FreeBSD
+    :target: https://repology.org/project/python:ocrmypdf/versions
 
-In general it should work to:
+FreeBSD 11.2, 11.3, 12.0-RELEASE and 13.0-CURRENT are supported. Other
+versions likely work but have not been tested.
 
-#. `Install and build
-   pikepdf <https://pikepdf.readthedocs.io/en/latest/installation.html#installing-on-freebsd-11-2>`__.
-#. Install the equivalent list of dependencies for Linux.
+.. code-block:: bash
+
+    pkg install py36-ocrmypdf
+
+To install a more recent version, you could attempt to first install the system
+version with ``pkg``, then use ``pip install --user ocrmypdf``.
 
 Installing the Docker image
 ===========================
