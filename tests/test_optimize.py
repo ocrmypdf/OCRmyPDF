@@ -55,6 +55,7 @@ def test_mono_not_inverted(resources, outdir):
     assert im.getpixel((0, 0)) == 255, "Expected white background"
 
 
+@pytest.mark.skipif(not pngquant.available(), reason='need pngquant')
 def test_jpg_png_params(resources, outpdf, spoof_tesseract_noop):
     check_ocrmypdf(
         resources / 'crom.png',
