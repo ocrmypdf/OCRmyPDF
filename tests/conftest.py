@@ -176,10 +176,9 @@ def no_outpdf(tmp_path):
 def check_ocrmypdf(input_file, output_file, *args, env=None):
     """Run ocrmypdf and confirmed that a valid file was created"""
 
-    # p, out, err = run_ocrmypdf(input_file, output_file, *args, env=env)
-
     options = cli.parser.parse_args(
-        [str(input_file), str(output_file)] + [str(arg) for arg in args]
+        [str(input_file), str(output_file)]
+        + [str(arg) for arg in args if arg is not None]
     )
     api.check_options(options)
     if env:
