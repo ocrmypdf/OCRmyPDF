@@ -12,7 +12,8 @@ matrix:
       python: "3.6"
       env:
         - DIST=trusty
-      addons: &trusty_apt
+        - MINIMAL=true
+      addons:
         apt:
           update: true
           sources:
@@ -24,15 +25,49 @@ matrix:
             - libavcodec56
             - libavformat56
             - libavutil54
-            - libexempi3
             - libffi-dev
-            - pngquant
-            - poppler-utils
             - qpdf
             - tesseract-ocr
             - tesseract-ocr-deu
             - tesseract-ocr-eng
             - tesseract-ocr-fra
+      before_install: |
+        pip3 install --upgrade pip
+        pip3 install --upgrade wheel
+    - os: linux
+      dist: trusty
+      sudo: required
+      language: python
+      python: "3.6"
+      env:
+        - DIST=trusty
+      addons:
+        apt:
+          update: true
+          sources:
+            - sourceline: "ppa:alex-p/tesseract-ocr"
+            - sourceline: "ppa:heyarje/libav-11"
+            - sourceline: "ppa:vshn/ghostscript"
+          packages:
+            - ghostscript
+            - libavcodec56
+            - libavformat56
+            - libavutil54
+            - libffi-dev
+            - qpdf
+            - tesseract-ocr
+            - tesseract-ocr-deu
+            - tesseract-ocr-eng
+            - tesseract-ocr-fra
+            - libexempi3 # --- optional extras from here ---
+            - pngquant
+            - poppler-utils
+      before_install: |
+        mkdir -p bin packages
+        pip3 install --upgrade pip
+        pip3 install --upgrade wheel
+        wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O packages/unpaper_6.1-1.deb
+        sudo dpkg -i packages/unpaper_6.1-1.deb
     - os: linux
       dist: xenial
       sudo: required
@@ -74,26 +109,15 @@ matrix:
             - qpdf
             - tesseract
             - unpaper
+      before_install: |
+        pip3 install --upgrade pip
+        pip3 install wheel
 
 before_cache:
   - rm -f $HOME/.cache/pip/log/debug.log
 
-before_install: |
-  mkdir -p bin
-  if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-    pip3 install --upgrade pip
-    pip3 install --upgrade wheel
-    if [[ "$DIST" == "trusty" ]]; then
-      mkdir -p packages
-      wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O packages/unpaper_6.1-1.deb
-      sudo dpkg -i packages/unpaper_6.1-1.deb
-    fi
-  elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-    pip3 install --upgrade pip
-    pip3 install wheel
-  fi
-
 install:
+  - mkdir -p bin
   - export PATH=$PWD/bin:$PATH
   - pip3 install pycparser # py3.7 workaround for https://github.com/eliben/pycparser/issues/251
   - pip3 install -r requirements/main.txt
