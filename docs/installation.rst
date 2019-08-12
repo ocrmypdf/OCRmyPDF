@@ -21,7 +21,7 @@ installing the Python binary wheels.
 Installing on Linux
 ===================
 
-Debian and Ubuntu 16.10 or newer
+Debian and Ubuntu 18.04 or newer
 --------------------------------
 
 .. |deb-stable| image:: https://repology.org/badge/version-for-repo/debian_stable/ocrmypdf.svg
@@ -33,27 +33,29 @@ Debian and Ubuntu 16.10 or newer
 .. |deb-unstable| image:: https://repology.org/badge/version-for-repo/debian_unstable/ocrmypdf.svg
     :alt: Debian unstable
 
-.. |ubu-1710| image:: https://repology.org/badge/version-for-repo/ubuntu_17_10/ocrmypdf.svg
-    :alt: Ubuntu 17.10
-
 .. |ubu-1804| image:: https://repology.org/badge/version-for-repo/ubuntu_18_04/ocrmypdf.svg
     :alt: Ubuntu 18.04 LTS
 
 .. |ubu-1810| image:: https://repology.org/badge/version-for-repo/ubuntu_18_10/ocrmypdf.svg
     :alt: Ubuntu 18.10
 
+.. |ubu-1904| image:: https://repology.org/badge/version-for-repo/ubuntu_19_04/ocrmypdf.svg
+    :alt: Ubuntu 19.04
 
-+-------------------------------------------+
-| **OCRmyPDF versions in Debian & Ubuntu**  |
-+-------------------------------------------+
-| |latest|                                  |
-+-------------------------------------------+
-| |deb-stable| |deb-testing| |deb-unstable| |
-+-------------------------------------------+
-| |ubu-1710| |ubu-1804| |ubu-1810|          |
-+-------------------------------------------+
+.. |ubu-1910| image:: https://repology.org/badge/version-for-repo/ubuntu_19_10/ocrmypdf.svg
+    :alt: Ubuntu 19.10
 
-Users of Debian 9 ("stretch") or later or Ubuntu 16.10 or later may
++-----------------------------------------------+
+| **OCRmyPDF versions in Debian & Ubuntu**      |
++-----------------------------------------------+
+| |latest|                                      |
++-----------------------------------------------+
+| |deb-stable| |deb-testing| |deb-unstable|     |
++-----------------------------------------------+
+| |ubu-1804| |ubu-1810| |ubu-1904| |ubu-1910|   |
++-----------------------------------------------+
+
+Users of Debian 9 ("stretch") or later or Ubuntu 18.04 or later may
 simply
 
 .. code-block:: bash
@@ -64,7 +66,8 @@ As indicated in the table above, Debian and Ubuntu releases may lag
 behind the latest version. If the version available for your platform is
 out of date, you could opt to install the latest version from source.
 See `Installing HEAD revision from
-sources <#installing-head-revision-from-sources>`__.
+sources <#installing-head-revision-from-sources>`__. Ubuntu 16.10 to 17.10
+inclusive also had ocrmypdf, but these versions are end of life.
 
 For full details on version availability for your platform, check the
 `Debian Package Tracker <https://tracker.debian.org/pkg/ocrmypdf>`__ or
@@ -81,19 +84,22 @@ For full details on version availability for your platform, check the
 Fedora 29 or newer
 ------------------
 
-.. |fedora-29| image:: https://repology.org/badge/version-for-repo/fedora29/ocrmypdf.svg
+.. |fedora-29| image:: https://repology.org/badge/version-for-repo/fedora_29/ocrmypdf.svg
     :alt: Fedora 29
+
+.. |fedora-30| image:: https://repology.org/badge/version-for-repo/fedora_30/ocrmypdf.svg
+    :alt: Fedora 30
 
 .. |fedora-rawhide| image:: https://repology.org/badge/version-for-repo/fedora_rawhide/ocrmypdf.svg
     :alt: Fedore Rawhide
 
-+------------------------------+
-| **OCRmyPDF version**         |
-+------------------------------+
-| |latest|                     |
-+------------------------------+
-| |fedora-29| |fedora-rawhide| |
-+------------------------------+
++-----------------------------------------------+
+| **OCRmyPDF version**                          |
++-----------------------------------------------+
+| |latest|                                      |
++-----------------------------------------------+
+| |fedora-29| |fedora-30| |fedora-rawhide|      |
++-----------------------------------------------+
 
 Users of Fedora 29 later may simply
 
