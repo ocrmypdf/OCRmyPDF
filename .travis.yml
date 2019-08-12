@@ -18,13 +18,9 @@ matrix:
           update: true
           sources:
             - sourceline: "ppa:alex-p/tesseract-ocr"
-            - sourceline: "ppa:heyarje/libav-11"
             - sourceline: "ppa:vshn/ghostscript"
           packages:
             - ghostscript
-            - libavcodec56
-            - libavformat56
-            - libavutil54
             - libffi-dev
             - qpdf
             - tesseract-ocr
