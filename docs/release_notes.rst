@@ -13,6 +13,15 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.0.1
+======
+
+-  Fixed test suite failing when either of optional dependencies unpaper and
+   pngquant were missing.
+-  Fixed Alpine Docker image build.
+-  Documented that FreeBSD ports are now available.
+-  Changed to pikepdf 1.6.1 (also for Alpine Docker).
+
 v9.0.0
 ======
 
