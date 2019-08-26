@@ -165,8 +165,8 @@ might remove desirable content, especially from poor quality scans.
 -  ``--deskew`` will correct pages were scanned at a skewed angle by
    rotating them back into place. Skew determination and correction is
    performed using `Postl's variance of line
-   sums <http://www.leptonica.com/skew-measurement.html>`__ algorithm as
-   implemented in `Leptonica <http://www.leptonica.com/index.html>`__.
+   sums <http://www.leptonica.org/skew-measurement.html>`__ algorithm as
+   implemented in `Leptonica <http://www.leptonica.org/index.html>`__.
 -  ``--clean`` uses
    `unpaper <https://www.flameeyes.eu/projects/unpaper>`__ to clean up
    pages before OCR, but does not alter the final output. This makes it
