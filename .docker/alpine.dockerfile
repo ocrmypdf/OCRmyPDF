@@ -14,7 +14,7 @@ RUN \
   && apk add --update \
   python3-dev \
   py3-setuptools \
-  jbig2enc@testing \
+  jbig2enc@community \
   ghostscript \
   qpdf@community \
   qpdf-dev@community \
