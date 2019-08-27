@@ -107,7 +107,7 @@ def check_options_output(options):
         options.pdf_renderer = 'sandwich'
 
     if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf(
-        options.tesseract_env
+        options.tesseract_env, languages
     ):
         raise MissingDependencyError(
             "You are using an alpha version of Tesseract 4.0 that does not support "
