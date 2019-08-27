@@ -652,26 +652,11 @@ THIS FILE IS INVALID
     assert p.returncode == ExitCode.invalid_config
 
 
-@pytest.mark.skipif(tesseract.v4(), reason='arg has no effect in 4.0-beta1')
-def test_user_words(resources, outdir):
+@pytest.mark.skipif(not tesseract.has_user_words(), reason='not functional until 4.1.0')
+def test_user_words_ocr(resources, outdir):
+    # Does not actually test if --user-words causes output to differ
     word_list = outdir / 'wordlist.txt'
-    sidecar_before = outdir / 'sidecar_before.txt'
-    sidecar_after = outdir / 'sidecar_after.txt'
-
-    # Don't know how to make this test pass on various versions and platforms
-    # so weaken to merely testing that the argument is accepted
-    consistent = False
-
-    if consistent:
-        check_ocrmypdf(
-            resources / 'crom.png',
-            outdir / 'out.pdf',
-            '--image-dpi',
-            150,
-            '--sidecar',
-            sidecar_before,
-        )
-        assert 'cromulent' not in sidecar_before.open().read()
+    sidecar_after = outdir / 'sidecar.txt'
 
     with word_list.open('w') as f:
         f.write('cromulent\n')  # a perfectly cromulent word
@@ -686,9 +671,6 @@ def test_user_words(resources, outdir):
         '--user-words',
         word_list,
     )
-
-    if consistent:
-        assert 'cromulent' in sidecar_after.open().read()
 
 
 def test_form_xobject(spoof_tesseract_noop, resources, outpdf):
