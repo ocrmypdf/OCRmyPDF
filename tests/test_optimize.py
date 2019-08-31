@@ -48,7 +48,7 @@ def test_mono_not_inverted(resources, outdir):
         xres=10,
         yres=10,
         raster_device='pnggray',
-        log=logging.getLogger(name='test_mono_flip'),
+        log=logging.getLogger(name='test_mono_not_inverted'),
     )
 
     im = Image.open(fspath(outdir / 'im.png'))

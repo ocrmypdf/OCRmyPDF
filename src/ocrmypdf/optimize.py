@@ -401,12 +401,14 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
         #   1 - no predictor
         #   10-14 - there is a predictor
         # Leptonica's compdata->predictor only tells TRUE or FALSE
-        # From there the PNG decoder can infer the rest from the file.
-        # In practice the predictor should be Paeth, 14, so we'll use that.
+        # 10-14 means the actual predictor is specified in the data, so for any
+        # number >= 10 the PDF reader will use whatever the PNG data specifies.
+        # In practice Leptonica should use Paeth, 14, but 15 seems to be the
+        # designated value for "optimal". So we will use 15.
         # See:
         #   - PDF RM 7.4.4.4 Table 10
         #   - https://github.com/DanBloomberg/leptonica/blob/master/src/pdfio2.c#L757
-        predictor = 14 if compdata.predictor > 0 else 1
+        predictor = 15 if compdata.predictor > 0 else 1
         dparms = Dictionary(Predictor=predictor)
         if predictor > 1:
             dparms.BitsPerComponent = compdata.bps  # Yes, this is redundant
@@ -417,9 +419,14 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
         im_obj.Width = compdata.w
         im_obj.Height = compdata.h
 
+        log.debug(
+            f"PNG {xref}: palette={compdata.ncolors} spp={compdata.spp} bps={compdata.bps}"
+        )
         if compdata.ncolors > 0:
             # .ncolors is the number of colors in the palette, not the number of
-            # colors used in a true color image
+            # colors used in a true color image. The palette string is always
+            # given as RGB tuples even when the image is grayscale; see
+            # https://github.com/DanBloomberg/leptonica/blob/master/src/colormap.c#L2067
             palette_pdf_string = compdata.get_palette_pdf_string()
             palette_data = pikepdf.Object.parse(palette_pdf_string)
             palette_stream = pikepdf.Stream(pike, bytes(palette_data))
@@ -431,20 +438,19 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
             ]
             cs = palette
         else:
+            # ncolors == 0 means we are using a colorspace without a palette
             if compdata.spp == 1:
-                # PDF interprets binary-1 as black in 1bpp, but PNG sets
-                # black to 0 for 1bpp. Create a palette that informs the PDF
-                # of the mapping - seems cleaner to go this way but pikepdf
-                # needs to be patched to support it.
-                # palette = [Name.Indexed, Name.DeviceGray, 1, b"\xff\x00"]
-                # cs = palette
+                if compdata.bps == 1:
+                    # PDF interprets binary-1 as black in 1bpp, but PNG sets
+                    # black to 0 for 1bpp. Use Decode to ensure color is
+                    # correct.
+                    log.debug("Inverting photometry")
+                    im_obj.Decode = [1, 0]
                 cs = Name.DeviceGray
             elif compdata.spp == 3:
                 cs = Name.DeviceRGB
             elif compdata.spp == 4:
                 cs = Name.DeviceCMYK
-        if compdata.bps == 1:
-            im_obj.Decode = [1, 0]  # Bit of a kludge but this inverts photometric too
         im_obj.ColorSpace = cs
         im_obj.write(compdata.read(), filter=Name.FlateDecode, decode_parms=dparms)
 
