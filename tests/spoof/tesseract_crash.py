@@ -50,7 +50,7 @@ def main():
     elif sys.argv[1] == '--list-langs':
         print('List of available languages (1):\neng', file=sys.stderr)
         sys.exit(0)
-    elif sys.argv[1] == '--print-parameters':
+    elif sys.argv[-2] == '--print-parameters':
         print('A parameter list would go here\ntextonly_pdf 0\n', file=sys.stderr)
         sys.exit(0)
     elif sys.argv[-2] == 'hocr':

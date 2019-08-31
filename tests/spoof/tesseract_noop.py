@@ -76,7 +76,7 @@ def main():
     elif sys.argv[1] == '--list-langs':
         print('List of available languages (1):\neng', file=sys.stderr)
         sys.exit(0)
-    elif sys.argv[1] == '--print-parameters':
+    elif sys.argv[-2] == '--print-parameters':
         print("Some parameters", file=sys.stderr)
         print("textonly_pdf\t1\tSome help text")
         sys.exit(0)
