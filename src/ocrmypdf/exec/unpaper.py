@@ -42,33 +42,30 @@ def run(input_file, output_file, dpi, log, mode_args):
 
     SUFFIXES = {'1': '.pbm', 'L': '.pgm', 'RGB': '.ppm'}
 
-    im = Image.open(input_file)
-    if im.mode not in SUFFIXES.keys():
-        log.info("Converting image to other colorspace")
+    with TemporaryDirectory() as tmpdir, Image.open(input_file) as im:
+        if im.mode not in SUFFIXES.keys():
+            log.info("Converting image to other colorspace")
+            try:
+                if im.mode == 'P' and len(im.getcolors()) == 2:
+                    im = im.convert(mode='1')
+                else:
+                    im = im.convert(mode='RGB')
+            except IOError as e:
+                im.close()
+                raise MissingDependencyError(
+                    "Could not convert image with type " + im.mode
+                ) from e
+
         try:
-            if im.mode == 'P' and len(im.getcolors()) == 2:
-                im = im.convert(mode='1')
-            else:
-                im = im.convert(mode='RGB')
-        except IOError as e:
-            im.close()
+            suffix = SUFFIXES[im.mode]
+        except KeyError:
             raise MissingDependencyError(
-                "Could not convert image with type " + im.mode
+                "Failed to convert image to a supported format."
             ) from e
 
-    try:
-        suffix = SUFFIXES[im.mode]
-    except KeyError:
-        im.close()
-        raise MissingDependencyError(
-            "Failed to convert image to a supported format."
-        ) from e
-
-    with TemporaryDirectory() as tmpdir:
         input_pnm = os.path.join(tmpdir, f'input{suffix}')
         output_pnm = os.path.join(tmpdir, f'output{suffix}')
         im.save(input_pnm, format='PPM')
-        im.close()
 
         # To prevent any shenanigans from accepting arbitrary parameters in
         # --unpaper-args, we:
@@ -95,10 +92,12 @@ def run(input_file, output_file, dpi, log, mode_args):
             log.debug(proc.stdout)
             # unpaper sets dpi to 72; fix this
             try:
-                Image.open(output_pnm).save(output_file, dpi=(dpi, dpi))
+                with Image.open(output_pnm) as imout:
+                    imout.save(output_file, dpi=(dpi, dpi))
             except (FileNotFoundError, OSError):
                 raise SubprocessOutputError(
-                    "unpaper: failed to produce the expected output file. Called with: "
+                    "unpaper: failed to produce the expected output file. "
+                    + " Called with: "
                     + str(args_unpaper)
                 ) from None
 

@@ -51,8 +51,8 @@ def test_mono_not_inverted(resources, outdir):
         log=logging.getLogger(name='test_mono_not_inverted'),
     )
 
-    im = Image.open(fspath(outdir / 'im.png'))
-    assert im.getpixel((0, 0)) == 255, "Expected white background"
+    with Image.open(fspath(outdir / 'im.png')) as im:
+        assert im.getpixel((0, 0)) == 255, "Expected white background"
 
 
 @pytest.mark.skipif(not pngquant.available(), reason='need pngquant')
@@ -110,10 +110,10 @@ def test_flate_to_jbig2(resources, outdir, spoof_tesseract_noop):
     # This test requires an image that pngquant is capable of converting to
     # to 1bpp - so use an existing 1bpp image, convert up, confirm it can
     # convert down
-    im = Image.open(fspath(resources / 'typewriter.png'))
-    assert im.mode in ('1', 'P')
-    im = im.convert('L')
-    im.save(fspath(outdir / 'type8.png'))
+    with Image.open(fspath(resources / 'typewriter.png')) as im:
+        assert im.mode in ('1', 'P')
+        im = im.convert('L')
+        im.save(fspath(outdir / 'type8.png'))
 
     check_ocrmypdf(
         outdir / 'type8.png',

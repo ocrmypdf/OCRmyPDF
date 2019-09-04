@@ -118,8 +118,8 @@ def test_deskew(spoof_tesseract_noop, resources, outdir):
 
 def test_remove_background(spoof_tesseract_noop, resources, outdir):
     # Ensure the input image does not contain pure white/black
-    im = Image.open(resources / 'congress.jpg')
-    assert im.getextrema() != ((0, 255), (0, 255), (0, 255))
+    with Image.open(resources / 'congress.jpg') as im:
+        assert im.getextrema() != ((0, 255), (0, 255), (0, 255))
 
     output_pdf = check_ocrmypdf(
         resources / 'congress.jpg',
@@ -145,8 +145,8 @@ def test_remove_background(spoof_tesseract_noop, resources, outdir):
     )
 
     # The output image should contain pure white and black
-    im = Image.open(output_png)
-    assert im.getextrema() == ((0, 255), (0, 255), (0, 255))
+    with Image.open(output_png) as im:
+        assert im.getextrema() == ((0, 255), (0, 255), (0, 255))
 
 
 # This will run 5 * 2 * 2 = 20 test cases
@@ -792,6 +792,7 @@ def test_compression_preserved(
         assert pdfimage.color == Colorspace.rgb, "Colorspace changed"
     elif im.mode.startswith('L'):
         assert pdfimage.color == Colorspace.gray, "Colorspace changed"
+    im.close()
 
 
 @pytest.mark.parametrize(
@@ -853,6 +854,7 @@ def test_compression_changed(
         assert pdfimage.color == Colorspace.rgb, "Colorspace changed"
     elif im.mode.startswith('L'):
         assert pdfimage.color == Colorspace.gray, "Colorspace changed"
+    im.close()
 
 
 def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):

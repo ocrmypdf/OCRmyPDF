@@ -233,8 +233,8 @@ def _generate_null_hocr(output_hocr, output_sidecar, image):
     the same size as the input image."""
     from PIL import Image
 
-    im = Image.open(image)
-    w, h = im.size
+    with Image.open(image) as im:
+        w, h = im.size
 
     with open(output_hocr, 'w', encoding="utf-8") as f:
         f.write(HOCR_TEMPLATE.format(w, h))

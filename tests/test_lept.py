@@ -38,7 +38,8 @@ def test_colormap_backgroundnorm(resources):
 def crom_pix(resources):
     pix = lept.Pix.open(resources / 'crom.png')
     im = Image.open(resources / 'crom.png')
-    return pix, im
+    yield pix, im
+    im.close()
 
 
 def test_pix_basic(crom_pix):

@@ -54,9 +54,9 @@ def triage_image_file(input_file, output_file, options, log):
         # Recover the original filename
         log.error(str(e).replace(input_file, options.input_file))
         raise UnsupportedImageFormatError() from e
-    else:
-        log.info("Input file is an image")
 
+    with im:
+        log.info("Input file is an image")
         if 'dpi' in im.info:
             if im.info['dpi'] <= (96, 96) and not options.image_dpi:
                 log.info("Image size: (%d, %d)" % im.size)
@@ -89,7 +89,6 @@ def triage_image_file(input_file, output_file, options, log):
             elif im.mode == 'CMYK':
                 log.info('Input CMYK image has no ICC profile, not usable')
                 raise UnsupportedImageFormatError()
-        im.close()
 
     try:
         log.info("Image seems valid. Try converting to PDF...")

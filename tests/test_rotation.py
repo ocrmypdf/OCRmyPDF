@@ -224,12 +224,12 @@ def test_rotate_deskew_timeout(resources, outdir):
 @pytest.mark.parametrize('image_angle', (0, 90, 180, 270))
 def test_rotate_page_level(image_angle, page_angle, resources, outdir):
     def make_rotate_test(prefix, image_angle, page_angle):
-        im = Image.open(fspath(resources / 'typewriter.png'))
-        if image_angle != 0:
-            ccw_angle = -image_angle % 360
-            im = im.transpose(getattr(Image, f'ROTATE_{ccw_angle}'))
         memimg = BytesIO()
-        im.save(memimg, format='PNG')
+        with Image.open(fspath(resources / 'typewriter.png')) as im:
+            if image_angle != 0:
+                ccw_angle = -image_angle % 360
+                im = im.transpose(getattr(Image, f'ROTATE_{ccw_angle}'))
+            im.save(memimg, format='PNG')
         memimg.seek(0)
         mempdf = BytesIO()
         img2pdf.convert(

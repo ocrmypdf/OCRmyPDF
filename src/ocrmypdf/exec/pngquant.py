@@ -40,8 +40,7 @@ def available():
 
 def quantize(input_file, output_file, quality_min, quality_max):
     if input_file.endswith('.jpg'):
-        im = Image.open(input_file)
-        with NamedTemporaryFile(suffix='.png') as tmp:
+        with Image.open(input_file) as im, NamedTemporaryFile(suffix='.png') as tmp:
             im.save(tmp)
             args = [
                 'pngquant',
