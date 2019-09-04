@@ -13,14 +13,31 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.0.2
+======
+
+-  The image optimizer now skips optimizing flate (PNG) encoded images in some
+   situations where the optimization effort was likely wasted.
+-  The image optimizer now ignores images that specify arbitrary decode arrays,
+   since these are rare.
+-  Fixed an issue that caused inversion of black and white in monochrome images.
+   We are not certain but the problem seems to be linked to Leptonica 1.76.0 and
+   older.
+-  Fixed some cases where the test suite failed or produced unexpected if
+   English or German Tesseract language packs were not installed.
+-  Fixed a runtime error if the Tesseract English language is not installed.
+-  Improved explicit closing of Pillow images after use.
+-  Actually fixed of Alpine Docker image build.
+-  Changed to pikepdf 1.6.3.
+
 v9.0.1
 ======
 
 -  Fixed test suite failing when either of optional dependencies unpaper and
    pngquant were missing.
--  Fixed Alpine Docker image build.
+-  Attempted fix of Alpine Docker image build.
 -  Documented that FreeBSD ports are now available.
--  Changed to pikepdf 1.6.1 (also for Alpine Docker).
+-  Changed to pikepdf 1.6.1.
 
 v9.0.0
 ======
