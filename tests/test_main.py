@@ -349,10 +349,9 @@ def test_german(spoof_tesseract_cache, resources, outdir):
         sidecar,
         env=spoof_tesseract_cache,
     )
-    print(os.environ)
-    assert (
-        p.returncode == ExitCode.ok
-    ), "This test may fail if Tesseract language packs are missing"
+    if 'deu' not in tesseract.languages():
+        pytest.xfail(reason="tesseract-deu language pack not installed")
+    assert p.returncode == ExitCode.ok, "Requires tesseract deu language pack"
 
 
 def test_klingon(resources, outpdf):

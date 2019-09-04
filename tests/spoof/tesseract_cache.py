@@ -100,6 +100,8 @@ def main():
     # Convert non-standard but supported -psm to --psm
     sys.argv = ['--psm' if arg == '-psm' else arg for arg in sys.argv]
 
+    if '_OCRMYPDF_TEST_INFILE' not in os.environ:
+        real_tesseract()  # test not properly set up
     source = os.environ['_OCRMYPDF_TEST_INFILE']  # required
     args = parser.parse_args()
 
