@@ -37,15 +37,21 @@ def test_hocr_notlatin_warning(caplog):
 
 
 def test_old_ghostscript(caplog):
-    with patch('ocrmypdf.exec.ghostscript.version', return_value='9.19'):
+    with patch('ocrmypdf.exec.ghostscript.version', return_value='9.19'), patch(
+        'ocrmypdf.exec.tesseract.has_textonly_pdf', return_value=True
+    ):
         vd.check_options_output(make_opts(language='chi_sim', output_type='pdfa'))
         assert 'Ghostscript does not work correctly' in caplog.text
 
-    with patch('ocrmypdf.exec.ghostscript.version', return_value='9.18'):
+    with patch('ocrmypdf.exec.ghostscript.version', return_value='9.18'), patch(
+        'ocrmypdf.exec.tesseract.has_textonly_pdf', return_value=True
+    ):
         with pytest.raises(MissingDependencyError):
             vd.check_options_output(make_opts(output_type='pdfa-3'))
 
-    with patch('ocrmypdf.exec.ghostscript.version', return_value='9.24'):
+    with patch('ocrmypdf.exec.ghostscript.version', return_value='9.24'), patch(
+        'ocrmypdf.exec.tesseract.has_textonly_pdf', return_value=True
+    ):
         with pytest.raises(MissingDependencyError):
             vd.check_dependency_versions(make_opts())
 
