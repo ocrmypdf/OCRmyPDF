@@ -346,6 +346,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
 
 
 def transcode_pngs(pike, images, image_name_fn, root, log, options):
+    modified = set()
     if options.optimize >= 2:
         png_quality = (
             max(10, options.png_quality - 10),
@@ -366,6 +367,7 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
                         png_quality[1],
                     )
                 )
+                modified.add(xref)
             with tqdm(
                 desc="PNGs",
                 total=len(futures),
@@ -375,7 +377,7 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
                 for _future in concurrent.futures.as_completed(futures):
                     pbar.update()
 
-    for xref in images:
+    for xref in modified:
         im_obj = pike.get_object(xref, 0)
         try:
             compdata = leptonica.CompressedData.open(png_name(root, xref))
