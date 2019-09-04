@@ -73,6 +73,9 @@ def extract_image_filter(pike, root, log, image, xref):
     if filtdp[0] == Name.JPXDecode:
         return None  # Don't do JPEG2000
 
+    if Name.Decode in image:
+        return None  # Don't mess with custom Decode tables
+
     return pim, filtdp
 
 
