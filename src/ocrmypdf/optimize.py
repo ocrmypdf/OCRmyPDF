@@ -107,6 +107,10 @@ def extract_image_generic(*, pike, root, log, image, xref, options):
         return None
     pim, filtdp = result
 
+    # Don't try to PNG-optimize 1bpp images, since JBIG2 does it better.
+    if pim.bits_per_component == 1:
+        return None
+
     if filtdp[0] == Name.DCTDecode and options.optimize >= 2:
         # This is a simple heuristic derived from some training data, that has
         # about a 70% chance of guessing whether the JPEG is high quality,
