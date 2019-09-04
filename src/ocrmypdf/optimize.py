@@ -392,6 +392,13 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
             )
             continue
 
+        if compdata.bps == 1:
+            # Discard 1bpp images due to issues with preserving the photometric
+            # interpretation. In particular Leptonica changed behavior in
+            # version 1.77.0, such that it transcodes 1bpp.
+            log.debug(f"discarded optimized image {xref} because it was 1bpp")
+            continue
+
         # When a PNG is inserted into a PDF, we more or less copy the IDAT section from
         # the PDF and transfer the rest of the PNG headers to PDF image metadata.
         # One thing we have to do is tell the PDF reader whether a predictor was used
@@ -440,12 +447,6 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
         else:
             # ncolors == 0 means we are using a colorspace without a palette
             if compdata.spp == 1:
-                if compdata.bps == 1:
-                    # PDF interprets binary-1 as black in 1bpp, but PNG sets
-                    # black to 0 for 1bpp. Use Decode to ensure color is
-                    # correct.
-                    log.debug("Inverting photometry")
-                    im_obj.Decode = [1, 0]
                 cs = Name.DeviceGray
             elif compdata.spp == 3:
                 cs = Name.DeviceRGB
