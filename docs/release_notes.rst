@@ -22,6 +22,8 @@ v9.0.3
    security, Ghostscript 9.28 enables ``-dSAFER`` and as such, no longer
    permits access to any file by default. This fix is necessary for
    compatibility with Ghostscript 9.28.
+-  Exclude a test that sometimes times out and fails in continuous integration
+   from the standard test suite.
 
 v9.0.2
 ======
@@ -33,7 +35,7 @@ v9.0.2
 -  Fixed an issue that caused inversion of black and white in monochrome images.
    We are not certain but the problem seems to be linked to Leptonica 1.76.0 and
    older.
--  Fixed some cases where the test suite failed or produced unexpected if
+-  Fixed some cases where the test suite failed if
    English or German Tesseract language packs were not installed.
 -  Fixed a runtime error if the Tesseract English language is not installed.
 -  Improved explicit closing of Pillow images after use.
