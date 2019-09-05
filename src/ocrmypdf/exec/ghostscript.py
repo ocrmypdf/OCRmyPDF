@@ -259,6 +259,7 @@ def generate_pdfa(
                 "-dQUIET",
                 "-dBATCH",
                 "-dNOPAUSE",
+                "-dSAFER",
                 "-dCompatibilityLevel=" + str(pdf_version),
                 "-sDEVICE=pdfwrite",
                 "-dAutoRotatePages=/None",

@@ -31,6 +31,7 @@ Ghostscript's handling of pdfmark.
 
 """
 
+import base64
 import os
 from binascii import hexlify
 from pathlib import Path
@@ -48,11 +49,9 @@ SRGB_ICC_PROFILE = pkg_resources.resource_filename('ocrmypdf', ICC_PROFILE_RELPA
 # files, from the Ghostscript documentation. Lines beginning with % are
 # comments. Python substitution variables have a '$' prefix.
 pdfa_def_template = u"""%!
-% Define entries in the document Info dictionary :
+% Define an ICC profile :
 /ICCProfile $icc_profile
 def
-
-% Define an ICC profile :
 
 [/_objdef {icc_PDFA} /type /stream /OBJ pdfmark
 [{icc_PDFA}
@@ -67,7 +66,7 @@ def
     (ERROR, unable to determine ProcessColorModel) == flush
   } ifelse
 >> /PUT pdfmark
-[{icc_PDFA} ICCProfile (r) file /PUT pdfmark
+[{icc_PDFA} ICCProfile /PUT pdfmark
 
 % Define the output intent dictionary :
 
@@ -104,16 +103,10 @@ def generate_pdfa_ps(target_filename, icc='sRGB'):
     else:
         raise NotImplementedError("Only supporting sRGB")
 
-    # pdfmark must contain the full path to the ICC profile, and pdfmark must be
-    # also encoded in ASCII. ocrmypdf can be installed anywhere, including to
-    # paths that have a non-ASCII character in the filename. Ghostscript
-    # accepts hex-encoded strings and converts them to byte strings, so
-    # we encode the path with fsencode() and use the hex representation.
-    # UTF-16 not accepted here. (Even though ASCII encodable is the usual case,
-    # do this always to avoid making it a rare conditional.)
-    bytes_icc_profile = os.fsencode(icc_profile)
-    hex_icc_profile = hexlify(bytes_icc_profile)
-    icc_profile = '<' + hex_icc_profile.decode('ascii') + '>'
+    # Read the ICC profile, encode as ASCII85 and convert to a string which we
+    # will insert in the .ps file
+    bytes_icc_profile = Path(icc_profile).read_bytes()
+    icc_profile = base64.a85encode(bytes_icc_profile, adobe=True).decode('ascii')
 
     t = Template(pdfa_def_template)
     ps = t.substitute(icc_profile=icc_profile, icc_identifier=icc)

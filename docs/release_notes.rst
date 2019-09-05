@@ -13,6 +13,16 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.0.3
+======
+
+-  Embed an encoded version of the sRGB ICC profile in the intermediate
+   Postscript file (used for PDF/A conversion). Previously we included the
+   filename, which required Postscript to run with file access enabled. For
+   security, Ghostscript 9.28 enables ``-dSAFER`` and as such, no longer
+   permits access to any file by default. This fix is necessary for
+   compatibility with Ghostscript 9.28.
+
 v9.0.2
 ======
 
