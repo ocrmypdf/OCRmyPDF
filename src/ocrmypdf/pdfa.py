@@ -54,18 +54,7 @@ pdfa_def_template = u"""%!
 def
 
 [/_objdef {icc_PDFA} /type /stream /OBJ pdfmark
-[{icc_PDFA}
-<<
-  /N currentpagedevice /ProcessColorModel known {
-    currentpagedevice /ProcessColorModel get dup /DeviceGray eq
-    {pop 1} {
-      /DeviceRGB eq
-      {3}{4} ifelse
-    } ifelse
-  } {
-    (ERROR, unable to determine ProcessColorModel) == flush
-  } ifelse
->> /PUT pdfmark
+[{icc_PDFA} << /N 3 >> /PUT pdfmark
 [{icc_PDFA} ICCProfile /PUT pdfmark
 
 % Define the output intent dictionary :
