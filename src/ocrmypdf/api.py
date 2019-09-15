@@ -122,13 +122,23 @@ def create_options(*, input_file, output_file, **kwargs):
     for arg, val in kwargs.items():
         if val is None:
             continue
-        if arg == 'tesseract_env':
+
+        # These arguments with special handling for which we bypass
+        # argparse
+        if arg in {'tesseract_env', 'progress_bar'}:
             deferred.append((arg, val))
             continue
+
         cmd_style_arg = arg.replace('_', '-')
-        cmdline.append(f"--{cmd_style_arg}")
+
+        # Booleans are special: add only if True, omit for False
         if isinstance(val, bool):
+            if val:
+                cmdline.append(f"--{cmd_style_arg}")
             continue
+
+        # We have a parameter
+        cmdline.append(f"--{cmd_style_arg}")
         if isinstance(val, (int, float)):
             cmdline.append(str(val))
         elif isinstance(val, str):
