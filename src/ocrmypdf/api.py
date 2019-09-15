@@ -33,7 +33,7 @@ class TqdmConsole:
 
     def __init__(self, file):
         self.file = file
-        self.py36 = sys.version_info >= (3, 6)
+        self.py36 = sys.version_info[0:2] == (3, 6)
 
     def write(self, msg):
         # When no progress bar is active, tqdm.write() routes to print()
