@@ -630,6 +630,7 @@ def test_tesseract_config_notfound(renderer, resources, outdir):
     assert p.returncode == ExitCode.ok, err
 
 
+@pytest.mark.slow  # This test sometimes times out in CI
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_tesseract_config_invalid(renderer, resources, outdir):
     cfg_file = outdir / 'test.cfg'
