@@ -22,11 +22,16 @@ PDF is the best format for storing and exchanging scanned documents.  Unfortunat
    cookbook
    docker
    advanced
-   api
    batch
    security
    errors
 
+.. toctree::
+   :caption: Developers
+   :maxdepth: 2
+
+   api
+   contributing
 
 Indices and tables
 ==================
