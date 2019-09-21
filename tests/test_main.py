@@ -217,7 +217,7 @@ def test_skip_ocr(spoof_tesseract_cache, resources, outpdf):
     assert pdfinfo[0].has_text
 
 
-def test_redo_ocr(spoof_tesseract_cache, resources, outpdf):
+def test_redo_ocr(resources, outpdf):
     in_ = resources / 'graph_ocred.pdf'
     before = PdfInfo(in_, detailed_page_analysis=True)
     out = outpdf

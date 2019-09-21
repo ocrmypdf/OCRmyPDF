@@ -16,7 +16,7 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import patch
 
 import pytest
 
@@ -135,6 +135,7 @@ def test_no_progress_bar(progress_bar, resources):
     with patch('ocrmypdf.pdfinfo.info.tqdm', autospec=True) as tqdmpatch:
         vd.check_options(opts)
         pdfinfo = PdfInfo(opts.input_file, progbar=opts.progress_bar)
+        assert pdfinfo is not None
         assert tqdmpatch.called
         _args, kwargs = tqdmpatch.call_args
         assert kwargs['disable'] != progress_bar

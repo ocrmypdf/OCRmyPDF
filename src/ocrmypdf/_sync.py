@@ -189,7 +189,7 @@ def worker_init(queue):
     root.addHandler(h)
 
 
-def worker_thread_init(queue):
+def worker_thread_init(_queue):
     pass
 
 
@@ -301,7 +301,7 @@ def exec_concurrent(context):
 class NeverRaise(Exception):
     """An exception that is never raised"""
 
-    pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 def run_pipeline(options, api=False):

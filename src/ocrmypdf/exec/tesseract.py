@@ -17,10 +17,8 @@
 
 import os
 import shutil
-import sys
 from collections import namedtuple
 from contextlib import suppress
-from functools import lru_cache
 from os import fspath
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired, run
 

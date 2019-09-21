@@ -549,11 +549,11 @@ def main(infile, outfile, level, jobs=1):
         """Emulate ocrmypdf's options"""
 
         def __init__(
-            self, input_file, jobs, optimize, jpeg_quality, png_quality, jb2lossy
+            self, input_file, jobs, optimize_, jpeg_quality, png_quality, jb2lossy
         ):
             self.input_file = input_file
             self.jobs = jobs
-            self.optimize = optimize
+            self.optimize = optimize_
             self.jpeg_quality = jpeg_quality
             self.png_quality = png_quality
             self.jbig2_page_group_size = 0
@@ -564,7 +564,7 @@ def main(infile, outfile, level, jobs=1):
     options = OptimizeOptions(
         input_file=infile,
         jobs=jobs,
-        optimize=int(level),
+        optimize_=int(level),
         jpeg_quality=0,  # Use default
         png_quality=0,
         jb2lossy=False,
