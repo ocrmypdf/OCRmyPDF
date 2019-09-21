@@ -225,15 +225,15 @@ def exec_concurrent(context):
     if max_workers > 1:
         context.log.info("Start processing %d pages concurrent", max_workers)
 
-    # Tesseract 4.0 is multithreaded, and we also run multiple workers. We want to
-    # avoid the situation where we end up trying to run NxN jobs on N CPU cores,
-    # as that gives poor performance. Performance testing shows we're better off
+    # Tesseract 4.x can be multithreaded, and we also run multiple workers. We want
+    # to manage how many threads it uses to avoid creating total threads than cores.
+    # Performance testing shows we're better off
     # parallelizing ocrmypdf and forcing Tesseract to be single threaded, which we
     # get by setting the envvar OMP_THREAD_LIMIT to 1. But if the page count of the
     # input file is small, then we allow Tesseract to use threads, subject to the
-    # constraint: (ocrmypdf workers) * (tesseract threads) <= max_workers and limiting
-    # Tesseract to 4 threads.
-    tess_threads = min(4, context.options.jobs // max_workers)
+    # constraint: (ocrmypdf workers) * (tesseract threads) <= max_workers.
+    # As of Tesseract 4.1, 3 threads is the most effective on a 4 core/8 thread system.
+    tess_threads = min(3, context.options.jobs // max_workers)
     if context.options.tesseract_env is None:
         context.options.tesseract_env = os.environ.copy()
     context.options.tesseract_env.setdefault('OMP_THREAD_LIMIT', str(tess_threads))
