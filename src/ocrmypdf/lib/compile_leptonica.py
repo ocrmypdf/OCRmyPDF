@@ -443,6 +443,12 @@ pixReadBarcodes(PIXA     *pixa,
                 SARRAY  **psaw,
                 l_int32 debugflag);
 
+PIX *
+pixGenHalftoneMask(PIX      *pixs,
+                        PIX     **ppixtext,
+                        l_int32  *phtfound,
+                        PIXA     *pixadb);
+
 l_int32
 l_generateCIDataForPdf(const char *fname,
                        PIX *pix,
