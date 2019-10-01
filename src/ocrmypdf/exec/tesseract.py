@@ -269,6 +269,9 @@ def generate_hocr(
     if user_patterns:
         args_tesseract.extend(['--user-patterns', user_patterns])
 
+    if user_words or user_patterns:
+        args_tesseract.extend(['-c', 'lstm_use_matrix=1'])
+
     # Reminder: test suite tesseract spoofers will break after any changes
     # to the number of order parameters here
     args_tesseract.extend([input_file, prefix, 'hocr', 'txt'] + tessconfig)
