@@ -68,6 +68,7 @@ setup(
     classifiers=[
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Development Status :: 5 - Production/Stable",
         "Environment :: Console",
         "Intended Audience :: End Users/Desktop",
@@ -96,7 +97,7 @@ setup(
         'cffi >= 1.9.1',  # must be a setup and install requirement
         'img2pdf >= 0.3.0, < 0.4',  # pure Python, so track HEAD closely
         'pdfminer.six == 20181108',
-        'pikepdf >= 1.6.0, < 2',
+        'pikepdf >= 1.6.5, < 2',
         'Pillow >= 4.0.0, != 5.1.0 ; sys_platform == "darwin"',
         # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
         # block 5.1.0, broken wheels

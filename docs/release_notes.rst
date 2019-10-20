@@ -13,6 +13,13 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.0.4
+======
+
+-  Fixed compatibility with Python 3.8.
+-  Fixed Tesseract settings for ``--user-words`` and ``--user-patterns``.
+-  We now require pikepdf 1.6.5.
+
 v9.0.3
 ======
 

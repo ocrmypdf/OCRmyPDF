@@ -517,7 +517,7 @@ manager. ``pip`` cannot provide them.
 
 As of ocrmypdf 7.2.1, the following versions are recommended:
 
--  Python 3.7
+-  Python 3.7 or 3.8
 -  Ghostscript 9.23 or newer
 -  qpdf 8.2.1
 -  Tesseract 4.0.0 or newer

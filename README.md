@@ -1,6 +1,6 @@
 <img src="docs/images/logo.svg" width="240" alt="OCRmyPDF">
 
-[![Travis build status][travis]](https://travis-ci.org/jbarlow83/OCRmyPDF) [![PyPI version][pypi]](https://pypi.org/project/ocrmypdf/) ![Homebrew version][homebrew] ![ReadTheDocs][docs]
+[![Travis build status][travis]](https://travis-ci.org/jbarlow83/OCRmyPDF) [![PyPI version][pypi]](https://pypi.org/project/ocrmypdf/) ![Homebrew version][homebrew] ![ReadTheDocs][docs] ![Python versions][pyversions]
 
 [travis]: https://travis-ci.org/jbarlow83/OCRmyPDF.svg?branch=master "Travis build status"
 
@@ -9,6 +9,8 @@
 [homebrew]: https://img.shields.io/homebrew/v/ocrmypdf.svg "Homebrew version"
 
 [docs]: https://readthedocs.org/projects/ocrmypdf/badge/?version=latest "RTD"
+
+[pyversions]: https://img.shields.io/pypi/pyversions/ocrmypdf "Supported Python versions"
 
 OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched or copy-pasted.
 
@@ -120,7 +122,7 @@ If you detect an issue, please:
 Requirements
 ------------
 
-Runs on CPython 3.5, 3.6 and 3.7. Requires external program installations of Ghostscript, Tesseract OCR, QPDF, and Leptonica. ocrmypdf is pure Python, but uses CFFI to portably generate library bindings.
+In addition to the required Python version (3.6+), OCRmyPDF requires external program installations of Ghostscript, Tesseract OCR, QPDF, and Leptonica. ocrmypdf is pure Python, but uses CFFI to portably generate library bindings.
 
 Press & Media
 -------------
