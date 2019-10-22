@@ -17,6 +17,7 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import locale
 import logging
 import os
 import sys
@@ -47,6 +48,7 @@ from .helpers import is_file_writable, is_iterable_notstr, monotonic, re_symlink
 # External dependencies
 
 HOCR_OK_LANGS = frozenset(['eng', 'deu', 'spa', 'ita', 'por'])
+DEFAULT_LANGUAGE = 'eng'  # Enforce English hegemony
 
 log = logging.getLogger(__name__)
 
@@ -58,7 +60,12 @@ verify_python3_env()
 
 def check_options_languages(options):
     if not options.language:
-        options.language = ['eng']  # Enforce English hegemony
+        options.language = [DEFAULT_LANGUAGE]
+        system_lang = locale.getlocale()[0]
+        if system_lang and not system_lang.startswith('en'):
+            log.debug(
+                "No language specified; assuming --language %s" % DEFAULT_LANGUAGE
+            )
 
     # Support v2.x "eng+deu" language syntax
     if '+' in options.language[0]:

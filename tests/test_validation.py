@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import locale
+import logging
 import os
 from unittest.mock import patch
 
@@ -27,9 +29,9 @@ from ocrmypdf.pdfinfo import PdfInfo
 
 
 def make_opts(input_file='a.pdf', output_file='b.pdf', language='eng', **kwargs):
-    return create_options(
-        input_file=input_file, output_file=output_file, language=language, **kwargs
-    )
+    if language is not None:
+        kwargs['language'] = language
+    return create_options(input_file=input_file, output_file=output_file, **kwargs)
 
 
 def test_hocr_notlatin_warning(caplog):
@@ -139,3 +141,21 @@ def test_no_progress_bar(progress_bar, resources):
         assert tqdmpatch.called
         _args, kwargs = tqdmpatch.call_args
         assert kwargs['disable'] != progress_bar
+
+
+def test_language_warning(caplog):
+    opts = make_opts(language=None)
+    caplog.set_level(logging.DEBUG)
+    with patch(
+        'ocrmypdf._validation.locale.getlocale', return_value=('en_US', 'UTF-8')
+    ):
+        vd.check_options_languages(opts)
+        assert opts.language == ['eng']
+        assert '' in caplog.text
+
+    with patch(
+        'ocrmypdf._validation.locale.getlocale', return_value=('fr_FR', 'UTF-8')
+    ):
+        vd.check_options_languages(opts)
+        assert opts.language == ['eng']
+        assert 'assuming --language' in caplog.text
