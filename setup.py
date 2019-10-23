@@ -98,9 +98,7 @@ setup(
         'img2pdf >= 0.3.0, < 0.4',  # pure Python, so track HEAD closely
         'pdfminer.six == 20181108',
         'pikepdf >= 1.6.5, < 2',
-        'Pillow >= 4.0.0, != 5.1.0 ; sys_platform == "darwin"',
-        # Pillow < 4 has BytesIO/TIFF bug w/img2pdf 0.2.3
-        # block 5.1.0, broken wheels
+        'Pillow >= 6.2.0',
         'reportlab >= 3.3.0',  # oldest released version with sane image handling
         'tqdm >= 4',
     ],

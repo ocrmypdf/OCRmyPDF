@@ -6,7 +6,7 @@ cffi == 1.12.2
 img2pdf == 0.3.3
 pdfminer.six == 20181108
 pikepdf == 1.6.5
-Pillow >= 5.0.0, != 5.1.0 ; sys_platform == "darwin"
+Pillow >= 6.2.0
 pycparser == 2.19
 python-xmp-toolkit == 2.0.1
 reportlab == 3.5.13
