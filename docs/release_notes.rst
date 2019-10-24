@@ -18,7 +18,10 @@ v9.0.4
 
 -  Fixed compatibility with Python 3.8.
 -  Fixed Tesseract settings for ``--user-words`` and ``--user-patterns``.
--  We now require pikepdf 1.6.5.
+-  Changed to pikepdf 1.6.5 (for Python 3.8).
+-  Changed to Pillow 6.2.0 (to mitigate a security vulnerability in earlier Pillow).
+-  A debug message now mentions when English is automatically selected if the locale
+   is not English.
 
 v9.0.3
 ======
