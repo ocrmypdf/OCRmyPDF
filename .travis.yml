@@ -88,30 +88,30 @@ matrix:
             - tesseract-ocr-eng
             - tesseract-ocr-fra
             - unpaper
-    - os: linux
-      dist: xenial
-      sudo: required
-      language: python
-      python: "3.8"
-      env:
-        - DIST=xenial
-      addons:
-        apt:
-          update: true
-          sources:
-            - sourceline: "ppa:alex-p/tesseract-ocr"
-          packages:
-            - ghostscript
-            - libexempi3
-            - libffi-dev
-            - pngquant
-            - poppler-utils
-            - qpdf
-            - tesseract-ocr
-            - tesseract-ocr-deu
-            - tesseract-ocr-eng
-            - tesseract-ocr-fra
-            - unpaper
+    # - os: linux
+    #   dist: xenial
+    #   sudo: required
+    #   language: python
+    #   python: "3.8"
+    #   env:
+    #     - DIST=xenial
+    #   addons:
+    #     apt:
+    #       update: true
+    #       sources:
+    #         - sourceline: "ppa:alex-p/tesseract-ocr"
+    #       packages:
+    #         - ghostscript
+    #         - libexempi3
+    #         - libffi-dev
+    #         - pngquant
+    #         - poppler-utils
+    #         - qpdf
+    #         - tesseract-ocr
+    #         - tesseract-ocr-deu
+    #         - tesseract-ocr-eng
+    #         - tesseract-ocr-fra
+    #         - unpaper
     - os: osx
       language: generic
       addons:
