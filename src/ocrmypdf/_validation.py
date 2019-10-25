@@ -63,9 +63,7 @@ def check_options_languages(options):
         options.language = [DEFAULT_LANGUAGE]
         system_lang = locale.getlocale()[0]
         if system_lang and not system_lang.startswith('en'):
-            log.debug(
-                "No language specified; assuming --language %s" % DEFAULT_LANGUAGE
-            )
+            log.debug("No language specified; assuming --language %s", DEFAULT_LANGUAGE)
 
     # Support v2.x "eng+deu" language syntax
     if '+' in options.language[0]:

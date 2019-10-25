@@ -153,6 +153,7 @@ def test_language_warning(caplog):
         assert opts.language == ['eng']
         assert '' in caplog.text
 
+    opts = make_opts(language=None)
     with patch(
         'ocrmypdf._validation.locale.getlocale', return_value=('fr_FR', 'UTF-8')
     ):
