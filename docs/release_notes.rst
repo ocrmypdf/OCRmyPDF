@@ -16,7 +16,7 @@ licensed under GPLv3.
 v9.0.4
 ======
 
--  Fixed compatibility with Python 3.8.
+-  Fixed compatibility with Python 3.8 (but requires source install for the moment).
 -  Fixed Tesseract settings for ``--user-words`` and ``--user-patterns``.
 -  Changed to pikepdf 1.6.5 (for Python 3.8).
 -  Changed to Pillow 6.2.0 (to mitigate a security vulnerability in earlier Pillow).
