@@ -19,6 +19,11 @@ from subprocess import run, PIPE
 
 import pytest
 
+pytestmark = pytest.mark.skipif(
+    pytest.helpers.running_in_docker(),  # pylint: disable=no-member
+    reason="docker can't complete",
+)
+
 
 def test_fish():
     try:

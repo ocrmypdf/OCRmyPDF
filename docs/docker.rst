@@ -117,7 +117,7 @@ The OCRmyPDF test suite is installed with image. To run it:
 
 .. code-block:: bash
 
-   docker run --entrypoint python3  jbarlow83/ocrmypdf setup.py test
+   docker run --entrypoint python3  jbarlow83/ocrmypdf -m pytest
 
 Accessing the shell
 ===================

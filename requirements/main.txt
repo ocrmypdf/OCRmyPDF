@@ -1,13 +1,10 @@
 # requirements.txt can be used to replicate the developer's build environment
 # setup.py lists a separate set of requirements that are looser to simplify
 # installation
-chardet == 3.0.4
-cffi == 1.12.2
+cffi == 1.13.2
 img2pdf == 0.3.3
 pdfminer.six == 20181108
 pikepdf == 1.6.5
 Pillow >= 6.2.0
-pycparser == 2.19
-python-xmp-toolkit == 2.0.1
-reportlab == 3.5.13
-tqdm == 4.32.1
+reportlab == 3.5.32
+tqdm == 4.37.0

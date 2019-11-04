@@ -1,6 +1,6 @@
 # OCRmyPDF
 #
-FROM ubuntu:19.04 as base
+FROM ubuntu:19.10 as base
 
 FROM base as builder
 
@@ -10,15 +10,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential autoconf automake libtool \
   libleptonica-dev \
   zlib1g-dev \
-  ocrmypdf \
-  pngquant \
+  python3-setuptools \
   python3-pip \
-  python3-venv \
-  tesseract-ocr \
-  unpaper \
   wget \
   git
-
 
 # Compile and install jbig2
 # Needs libleptonica-dev, zlib1g-dev
@@ -31,15 +26,15 @@ RUN \
   && cd .. \
   && rm -rf jbig2
 
-RUN python3 -m venv /appenv
-
 COPY . /app
 
 WORKDIR /app
 
-RUN . /appenv/bin/activate; \
-  pip install --upgrade pip \
-  && pip install .
+RUN pip3 install \
+  -r requirements/main.txt \
+  -r requirements/webservice.txt \
+  -r requirements/test.txt \
+  .
 
 FROM base
 
@@ -53,7 +48,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   zlib1g \
   pngquant \
   python3 \
-  python3-venv \
   qpdf \
   tesseract-ocr \
   tesseract-ocr-chi-sim \
@@ -62,10 +56,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   tesseract-ocr-fra \
   tesseract-ocr-por \
   tesseract-ocr-spa \
-  unpaper \
-  wget
+  unpaper
 
-# Copy
+WORKDIR /app
+
+COPY --from=builder /usr/local/lib/python3.7/dist-packages/ /usr/local/lib/python3.7/dist-packages/
+COPY --from=builder /usr/local/bin/ocrmypdf /usr/local/bin/ocrmypdf
+
 COPY --from=builder /app/misc/webservice.py /app/
 
 # Copy minimal project files to get the test suite.
@@ -74,7 +71,4 @@ COPY --from=builder /app/requirements /app/requirements
 COPY --from=builder /app/tests /app/tests
 COPY --from=builder /app/src /app/src
 
-COPY --from=builder /appenv /appenv
-COPY --from=builder /usr/local /usr/local
-
-ENTRYPOINT ["/appenv/bin/ocrmypdf"]
+ENTRYPOINT ["/usr/local/bin/ocrmypdf"]
