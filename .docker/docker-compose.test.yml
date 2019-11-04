@@ -1,3 +1,5 @@
 sut:
-  build: ../
+  build:
+    context: ../
+    dockerfile: .docker/Dockerfile
   command: python3 -m pytest
