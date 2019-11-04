@@ -272,15 +272,11 @@ Now we need to install ``pip`` and let it install ocrmypdf:
     curl https://bootstrap.pypa.io/ez_setup.py -o - | python3.6 && python3.6 -m easy_install pip
     pip3.6 install ocrmypdf
 
-These installation instructions omit the optional dependency
-``unpaper``, which is only available at version 0.4.2 in Ubuntu 14.04.
-The author could not find a backport of ``unpaper``, and created a .deb
-package to do the job of installing unpaper 6.1 (for x86 64-bit only):
-
-.. code-block:: bash
-
-    wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O unpaper_6.1-1.deb
-    sudo dpkg -i unpaper_6.1-1.deb
+The optional dependency ``unpaper`` is only available at 0.4.2 in Ubuntu 14.04,
+and no backports are available. Previously the author maintained a backported
+.deb package for unpaper 6.1, but since Ubuntu 14.04 is now end of life, this is
+not supported. As such, ``unpaper`` is not available on Ubuntu 14.04 or must by
+compiled by hand.
 
 To add JBIG2 encoding, see :ref:`jbig2`.
 

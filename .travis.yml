@@ -62,8 +62,6 @@ matrix:
         mkdir -p bin packages
         pip3 install --upgrade pip
         pip3 install --upgrade wheel
-        wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O packages/unpaper_6.1-1.deb
-        sudo dpkg -i packages/unpaper_6.1-1.deb
     - os: linux
       dist: xenial
       sudo: required
