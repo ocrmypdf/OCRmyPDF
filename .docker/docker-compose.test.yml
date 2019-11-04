@@ -1,0 +1,3 @@
+sut:
+  build: .
+  command: python3 -m pytest
