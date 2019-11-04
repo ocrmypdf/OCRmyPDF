@@ -47,7 +47,7 @@ where the PDFs are stored):
 
 .. code-block:: bash
 
-   find . -printf '%p' -name '*.pdf' -exec docker run --rm -v <host dir>:<container dir> jbarlow83/ocrmypdf-alpine '<container dir>/{}' '<container dir>/{}' \;
+   find . -printf '%p' -name '*.pdf' -exec docker run --rm -v <host dir>:<container dir> jbarlow83/ocrmypdf '<container dir>/{}' '<container dir>/{}' \;
 
 This only runs one ``ocrmypdf`` process at a time. This variation uses
 ``find`` to create a directory list and ``parallel`` to parallelize runs

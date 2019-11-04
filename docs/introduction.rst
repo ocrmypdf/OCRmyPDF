@@ -208,7 +208,7 @@ consider one of these similar open source programs:
 Web front-ends
 ==============
 
-The Docker image ``ocrmypdf-alpine`` provides a web service front-end
+The Docker image ``ocrmypdf`` provides a web service front-end
 that allows files to submitted over HTTP and the results "downloaded".
 This is an HTTP server intended to simplify web services deployments; it
 is not intended to be deployed on the public internet and no real

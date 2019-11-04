@@ -23,11 +23,11 @@ If you have `Docker <https://docs.docker.com/>`__ installed on your
 system, you can install a Docker image of the latest release.
 
 The recommended OCRmyPDF Docker image is currently named
-``ocrmypdf-alpine``:
+``ocrmypdf``:
 
 .. code-block:: bash
 
-   docker pull jbarlow83/ocrmypdf-alpine
+   docker pull jbarlow83/ocrmypdf
 
 Follow the Docker installation instructions for your platform. If you
 can run this command successfully, your system is ready to download and
@@ -63,7 +63,7 @@ To start a Docker container (instance of the image):
 
 .. code-block:: bash
 
-   docker tag jbarlow83/ocrmypdf-alpine ocrmypdf
+   docker tag jbarlow83/ocrmypdf ocrmypdf
    docker run --rm -i ocrmypdf (... all other arguments here...)
 
 For convenience, create a shell alias to hide the Docker command. It is
@@ -103,7 +103,7 @@ on the public one:
 
 .. code-block:: dockerfile
 
-   FROM jbarlow83/ocrmypdf-alpine
+   FROM jbarlow83/ocrmypdf
 
    # Add French
    RUN apk add tesseract-ocr-data-fra
@@ -117,17 +117,16 @@ The OCRmyPDF test suite is installed with image. To run it:
 
 .. code-block:: bash
 
-   docker run --entrypoint python3 jbarlow83/ocrmypdf-alpine setup.py test
+   docker run --entrypoint python3  jbarlow83/ocrmypdf setup.py test
 
 Accessing the shell
 ===================
 
-``bash`` is not installed in the image. To use the busybox shell in the
-Docker image:
+To use the bash shell in the Docker image:
 
 .. code-block:: bash
 
-   docker run -it --entrypoint busybox  jbarlow83/ocrmypdf-alpine sh
+   docker run -it --entrypoint bash  jbarlow83/ocrmypdf
 
 Using the OCRmyPDF web service wrapper
 ======================================
@@ -137,7 +136,12 @@ service. The webservice may be launched as follows:
 
 .. code-block:: bash
 
-   docker run --entrypoint python3 -p 5000:5000 jbarlow83/ocrmypdf-alpine webservice.py
+   docker run --entrypoint python3 -p 5000:5000  jbarlow83/ocrmypdf webservice.py
+
+This will configure the machine to listen on port 5000. On Linux machines
+this is port 5000 of localhost. On macOS or Windows machines running
+Docker, this is port 5000 of the virtual machine that runs your Docker
+images. You can find its IP address using the command ``docker-machine ip``.
 
 Unlike command line usage this program will open a socket and wait for
 connections.
