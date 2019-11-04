@@ -21,6 +21,7 @@ v9.0.5
 -  The primary Docker image (jbarlow83/ocrmypdf) has been improved to take on
    the extra features that used to be exclusive to the Alpine image.
 -  No changes to application code.
+-  pdfminer.six version 20191020 is now supported.
 
 v9.0.4
 ======
