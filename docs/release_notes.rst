@@ -13,6 +13,15 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.0.5
+======
+
+-  The Alpine Docker image (jbarlow83/ocrmypdf-alpine) has been dropped due to
+   the difficulties of supporting Alpine Linux.
+-  The primary Docker image (jbarlow83/ocrmypdf) has been improved to take on
+   the extra features that used to be exclusive to the Alpine image.
+-  No changes to application code.
+
 v9.0.4
 ======
 
