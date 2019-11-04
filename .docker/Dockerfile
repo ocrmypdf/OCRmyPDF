@@ -60,8 +60,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY --from=builder /usr/local/lib/python3.7/dist-packages/ /usr/local/lib/python3.7/dist-packages/
-COPY --from=builder /usr/local/bin/ocrmypdf /usr/local/bin/ocrmypdf
+COPY --from=builder /usr/local/lib/ /usr/local/lib/
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 COPY --from=builder /app/misc/webservice.py /app/
 
