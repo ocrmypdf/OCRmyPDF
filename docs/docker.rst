@@ -22,20 +22,19 @@ Installing the Docker image
 If you have `Docker <https://docs.docker.com/>`__ installed on your
 system, you can install a Docker image of the latest release.
 
-The recommended OCRmyPDF Docker image is currently named
-``ocrmypdf``:
-
-.. code-block:: bash
-
-   docker pull jbarlow83/ocrmypdf
-
-Follow the Docker installation instructions for your platform. If you
-can run this command successfully, your system is ready to download and
+If you can run this command successfully, your system is ready to download and
 execute the image:
 
 .. code-block:: bash
 
    docker run hello-world
+
+The recommended OCRmyPDF Docker image is currently named ``ocrmypdf``:
+
+.. code-block:: bash
+
+   docker pull jbarlow83/ocrmypdf
+
 
 OCRmyPDF will use all available CPU cores. By default, the VirtualBox
 machine instance on Windows and macOS has only a single CPU core
@@ -50,6 +49,9 @@ CPUs:
    VBoxManage modifyvm "yourVM" --cpus 2  # or whatever number of core is desired
    docker-machine start "yourVM"
    eval $(docker-machine env "yourVM")
+
+See the Docker documentation for
+`adjusting memory and CPU on other platforms <https://docs.docker.com/config/containers/resource_constraints/>`__.
 
 Using the Docker image on the command line
 ==========================================
@@ -166,14 +168,3 @@ also licensed in this way.
 
 In addition to the above, please read our
 :ref:`general remarks on using OCRmyPDF as a service <ocr-service>`.
-
-Ubuntu-based Docker image
-=========================
-
-A Ubuntu-based OCRmyPDF image is also available. The main advantage this
-image offers is that it supports manylinux Python wheels (which are not
-supported on Alpine Linux). This may be useful for plugins.
-
-.. code-block:: bash
-
-   docker pull jbarlow83/ocrmypdf
