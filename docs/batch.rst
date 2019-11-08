@@ -244,6 +244,9 @@ Caveats
 Alternatives
 ------------
 
+-  `systemd user services <https://wiki.archlinux.org/index.php/Systemd/User>`__
+   can be configured to automatically perform OCR on a collection of files.
+
 -  `Watchman <https://facebook.github.io/watchman/>`__ is a more
    powerful alternative to ``watchmedo``.
 
