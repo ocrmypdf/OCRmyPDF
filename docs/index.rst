@@ -12,6 +12,7 @@ PDF is the best format for storing and exchanging scanned documents.  Unfortunat
    introduction
    release_notes
    installation
+   optimizer
    languages
    jbig2
 
