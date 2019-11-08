@@ -71,7 +71,8 @@ Progress monitoring
 OCRmyPDF uses the ``tqdm`` package to implement its progress bars.
 :func:`ocrmypdf.configure_logging` will set up logging output to
 ``sys.stderr`` in a way that is compatible with the display of the
-progress bar.
+progress bar. Use ``ocrmypdf.ocr(...progress_bar=False)`` to disable
+the progress bar.
 
 Exceptions
 ----------
