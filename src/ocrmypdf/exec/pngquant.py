@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Interface to pngquant executable"""
+
 from functools import lru_cache
 from subprocess import run
 from tempfile import NamedTemporaryFile

@@ -15,8 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Interface to Ghostscript executable"""
+
 import logging
 import re
+import warnings
 from functools import lru_cache
 from os import fspath
 from shutil import copy
@@ -193,7 +196,7 @@ def generate_pdfa(
     output_file,
     compression,
     log,
-    threads=1,
+    threads=None,  # deprecated parameter
     pdf_version='1.5',
     pdfa_part='2',
 ):
@@ -216,6 +219,10 @@ def generate_pdfa(
     """
     if not log:
         log = gslog
+    if threads is not None:
+        warnings.warn(
+            "use of deprecated parameter 'threads'", category=DeprecationWarning
+        )
 
     compression_args = []
     if compression == 'jpeg':

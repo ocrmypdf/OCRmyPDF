@@ -32,8 +32,6 @@ Ghostscript's handling of pdfmark.
 """
 
 import base64
-import os
-from binascii import hexlify
 from pathlib import Path
 from string import Template
 

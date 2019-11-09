@@ -18,10 +18,11 @@
 # unpaper documentation:
 # https://github.com/Flameeyes/unpaper/blob/master/doc/basic-concepts.md
 
+"""Interface to unpaper executable"""
+
 import os
 import shlex
 import subprocess
-import sys
 from functools import lru_cache
 from subprocess import PIPE, STDOUT, CalledProcessError
 from tempfile import TemporaryDirectory
