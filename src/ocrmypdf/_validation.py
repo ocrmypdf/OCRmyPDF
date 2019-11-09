@@ -418,6 +418,20 @@ def report_output_file_size(options, input_file, output_file):
                 f"The argument --{arg.replace('_', '-')} was issued, causing transcoding."
             )
 
+    if options.optimize == 0:
+        reasons.append("Optimization was disabled.")
+    else:
+        image_optimizers = {
+            'jbig2': jbig2enc.available(),
+            'pngquant': pngquant.available(),
+        }
+        for name, available in image_optimizers.items():
+            if not available:
+                reasons.append(
+                    f"The optional dependency '{name}' was not found, so some image "
+                    f"optimizations could not be attempted."
+                )
+
     if reasons:
         explanation = "Possible reasons for this include:\n" + '\n'.join(reasons) + "\n"
     else:

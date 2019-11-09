@@ -117,11 +117,23 @@ def test_report_file_size(tmp_path, caplog):
     opts = make_opts()
     vd.report_output_file_size(opts, in_, out)
     assert caplog.text == ''
+    caplog.clear()
 
     os.truncate(in_, 25001)
     os.truncate(out, 50000)
     vd.report_output_file_size(opts, in_, out)
     assert 'No reason' in caplog.text
+    caplog.clear()
+
+    with patch('ocrmypdf._validation.jbig2enc.available', return_value=False):
+        vd.report_output_file_size(opts, in_, out)
+        assert 'optional dependency' in caplog.text
+    caplog.clear()
+
+    opts = make_opts(in_, out, optimize=0)
+    vd.report_output_file_size(opts, in_, out)
+    assert 'disabled' in caplog.text
+    caplog.clear()
 
 
 def test_false_action_store_true():
