@@ -212,6 +212,7 @@ class TextPositionTracker(PDFLayoutAnalyzer):
         super().__init__(rsrcmgr, pageno, laparams)
         self.textstate = None
         self.result = None
+        self.cur_item = None  # not defined in pdfminer code as it should be
 
     def begin_page(self, page, ctm):
         super().begin_page(page, ctm)
