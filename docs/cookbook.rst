@@ -216,6 +216,15 @@ processing or PDF/A conversion.
 
     ocrmypdf --tesseract-timeout=0 --remove-background input.pdf output.pdf
 
+Optimize images without performing OCR
+--------------------------------------
+
+You can also optimize all images without performing any OCR:
+
+.. code-block:: bash
+
+    ocrmypdf --tesseract-timeout=0 --optimize 3 --skip-text input.pdf output.pdf
+
 Redo existing OCR
 =================
 

@@ -19,6 +19,7 @@ import os
 import shutil
 from collections import namedtuple
 from contextlib import suppress
+import logging
 from os import fspath
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired, run
 
@@ -48,6 +49,11 @@ HOCR_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
  </body>
 </html>
 """
+
+
+class TesseractLoggerAdapter(logging.LoggerAdapter):
+    def process(self, msg, kwargs):
+        return '[tesseract] %s' % (msg), kwargs
 
 
 def version(tesseract_env=None):
@@ -177,15 +183,14 @@ def get_orientation(input_file, engine_mode, timeout: float, log, tesseract_env=
         return oc
 
 
-def tesseract_log_output(log, stdout, input_file):
-    prefix = "[tesseract] "
+def tesseract_log_output(mainlog, stdout, input_file):
+    log = TesseractLoggerAdapter(mainlog, extra=mainlog.extra)
 
     try:
         text = stdout.decode()
     except UnicodeDecodeError:
         log.error(
-            prefix
-            + "command line output was not utf-8. "
+            "command line output was not utf-8. "
             + "This usually means Tesseract's language packs do not match "
             "the installed version of Tesseract."
         )
@@ -198,25 +203,25 @@ def tesseract_log_output(log, stdout, input_file):
         elif line.startswith("Warning in pixReadMem"):
             continue
         elif 'diacritics' in line:
-            log.warning(prefix + "lots of diacritics - possibly poor OCR")
+            log.warning("lots of diacritics - possibly poor OCR")
         elif line.startswith('OSD: Weak margin'):
-            log.warning(prefix + "unsure about page orientation")
+            log.warning("unsure about page orientation")
         elif 'Error in pixScanForForeground' in line:
             pass  # Appears to be spurious/problem with nonwhite borders
         elif 'Error in boxClipToRectangle' in line:
             pass  # Always appears with pixScanForForeground message
         elif 'parameter not found: ' in line.lower():
-            log.error(prefix + line.strip())
+            log.error(line.strip())
             problem = line.split('found: ')[1]
             raise TesseractConfigError(problem)
         elif 'error' in line.lower() or 'exception' in line.lower():
-            log.error(prefix + line.strip())
+            log.error(line.strip())
         elif 'warning' in line.lower():
-            log.warning(prefix + line.strip())
+            log.warning(line.strip())
         elif 'read_params_file' in line.lower():
-            log.error(prefix + line.strip())
+            log.error(line.strip())
         else:
-            log.info(prefix + line.strip())
+            log.info(line.strip())
 
 
 def page_timedout(log, input_file, timeout):

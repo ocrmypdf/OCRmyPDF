@@ -62,8 +62,6 @@ matrix:
         mkdir -p bin packages
         pip3 install --upgrade pip
         pip3 install --upgrade wheel
-        wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O packages/unpaper_6.1-1.deb
-        sudo dpkg -i packages/unpaper_6.1-1.deb
     - os: linux
       dist: xenial
       sudo: required
@@ -89,12 +87,12 @@ matrix:
             - tesseract-ocr-fra
             - unpaper
     # - os: linux
-    #   dist: xenial
+    #   dist: bionic
     #   sudo: required
     #   language: python
     #   python: "3.8"
     #   env:
-    #     - DIST=xenial
+    #     - DIST=bionic
     #   addons:
     #     apt:
     #       update: true
@@ -138,10 +136,7 @@ before_cache:
 install:
   - mkdir -p bin
   - export PATH=$PWD/bin:$PATH
-  - pip3 install pycparser # py3.7 workaround for https://github.com/eliben/pycparser/issues/251
-  - pip3 install -r requirements/main.txt
-  - pip3 install --no-deps .
-  - pip3 install -r requirements/test.txt
+  - pip3 install -r requirements/main.txt -r requirements/test.txt .
 
 script:
   - tesseract --version

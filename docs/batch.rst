@@ -47,7 +47,7 @@ where the PDFs are stored):
 
 .. code-block:: bash
 
-   find . -printf '%p' -name '*.pdf' -exec docker run --rm -v <host dir>:<container dir> jbarlow83/ocrmypdf-alpine '<container dir>/{}' '<container dir>/{}' \;
+   find . -printf '%p' -name '*.pdf' -exec docker run --rm -v <host dir>:<container dir> jbarlow83/ocrmypdf '<container dir>/{}' '<container dir>/{}' \;
 
 This only runs one ``ocrmypdf`` process at a time. This variation uses
 ``find`` to create a directory list and ``parallel`` to parallelize runs
@@ -243,6 +243,9 @@ Caveats
 
 Alternatives
 ------------
+
+-  `systemd user services <https://wiki.archlinux.org/index.php/Systemd/User>`__
+   can be configured to automatically perform OCR on a collection of files.
 
 -  `Watchman <https://facebook.github.io/watchman/>`__ is a more
    powerful alternative to ``watchmedo``.
