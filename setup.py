@@ -97,7 +97,7 @@ setup(
         'cffi >= 1.9.1',  # must be a setup and install requirement
         'img2pdf >= 0.3.0, < 0.4',  # pure Python, so track HEAD closely
         'pdfminer.six >= 20181108, <= 20191020',
-        'pikepdf >= 1.6.5, < 2',
+        'pikepdf >= 1.7.0, < 2',
         'Pillow >= 6.2.0',
         'reportlab >= 3.3.0',  # oldest released version with sane image handling
         'tqdm >= 4',

@@ -4,7 +4,7 @@
 cffi == 1.13.2
 img2pdf == 0.3.3
 pdfminer.six == 20191020
-pikepdf == 1.6.5
+pikepdf == 1.7.0
 Pillow >= 6.2.0
 reportlab == 3.5.32
 tqdm == 4.37.0
