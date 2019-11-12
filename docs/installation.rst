@@ -134,8 +134,7 @@ first install the system version to get most of the dependencies:
 
     sudo apt-get update
     sudo apt-get install \
-        ocrmypdf \
-        python3-pip
+        ocrmypdf
 
 There are a few system dependency changes since ocrmypdf 6.1.2. Let's
 get these, too.
@@ -146,13 +145,18 @@ get these, too.
         libxml2 \
         pngquant
 
+We will need a newer version of ``pip`` then was available for Ubuntu 18.04:
+
+.. code-block:: bash
+
+    wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py
+
 Then install the most recent ocrmypdf for the local user and set the
 user's ``PATH`` to check for the user's Python packages.
 
 .. code-block:: bash
 
     export PATH=$HOME/.local/bin:$PATH
-    python3 -m pip install --user --upgrade pip
     python3 -m pip install --user ocrmypdf
 
 To add JBIG2 encoding, see :ref:`jbig2`.
