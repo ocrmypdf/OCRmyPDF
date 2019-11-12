@@ -120,8 +120,9 @@ def test_report_file_size(tmp_path, caplog):
 
     os.truncate(in_, 25001)
     os.truncate(out, 50000)
-    vd.report_output_file_size(opts, in_, out)
-    assert 'No reason' in caplog.text
+    with patch('ocrmypdf._validation.jbig2enc.available', return_value=False):
+        vd.report_output_file_size(opts, in_, out)
+        assert 'No reason' in caplog.text
     caplog.clear()
 
     with patch('ocrmypdf._validation.jbig2enc.available', return_value=False):
