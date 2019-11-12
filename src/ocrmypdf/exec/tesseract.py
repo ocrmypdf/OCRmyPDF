@@ -186,7 +186,9 @@ def get_orientation(input_file, engine_mode, timeout: float, log, tesseract_env=
 
 
 def tesseract_log_output(mainlog, stdout, input_file):
-    log = TesseractLoggerAdapter(mainlog, extra=mainlog.extra)
+    log = TesseractLoggerAdapter(
+        mainlog, extra=mainlog.extra if hasattr(mainlog, 'extra') else None
+    )
 
     try:
         text = stdout.decode()
