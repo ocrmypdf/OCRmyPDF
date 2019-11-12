@@ -152,7 +152,8 @@ user's ``PATH`` to check for the user's Python packages.
 .. code-block:: bash
 
     export PATH=$HOME/.local/bin:$PATH
-    pip3 install --user ocrmypdf
+    python3 -m pip install --user --upgrade pip
+    python3 -m pip install --user ocrmypdf
 
 To add JBIG2 encoding, see :ref:`jbig2`.
 
