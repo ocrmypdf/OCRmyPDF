@@ -13,6 +13,14 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.1.0
+======
+
+-  Improved diagnostics when file size increases at output. Now warns if JBIG2
+   or pngquant were not available.
+-  pikepdf 1.7.0 is now required, to pick up changes that remove the need for
+   a source install on Linux systems running Python 3.8.
+
 v9.0.5
 ======
 
