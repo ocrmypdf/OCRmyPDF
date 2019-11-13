@@ -20,11 +20,12 @@
 import logging
 import re
 import warnings
+from contextlib import suppress
 from functools import lru_cache
+from io import BytesIO
 from os import fspath
-from shutil import copy
-from subprocess import PIPE, STDOUT, run
-from tempfile import NamedTemporaryFile
+from pathlib import Path
+from subprocess import PIPE, run
 
 from PIL import Image
 
@@ -141,54 +142,57 @@ def rasterize_pdf(
     if not log:
         log = gslog
 
-    with NamedTemporaryFile(delete=True) as tmp:
-        args_gs = (
-            [
-                'gs',
-                '-dQUIET',
-                '-dSAFER',
-                '-dBATCH',
-                '-dNOPAUSE',
-                f'-sDEVICE={raster_device}',
-                f'-dFirstPage={pageno}',
-                f'-dLastPage={pageno}',
-                f'-r{res[0]:f}x{res[1]:f}',
-            ]
-            + (['-dFILTERVECTOR'] if filter_vector else [])
-            + [
-                '-o',
-                tmp.name,
-                '-dAutoRotatePages=/None',  # Probably has no effect on raster
-                '-f',
-                fspath(input_file),
-            ]
-        )
+    args_gs = (
+        [
+            'gs',
+            '-dQUIET',
+            '-dSAFER',
+            '-dBATCH',
+            '-dNOPAUSE',
+            f'-sDEVICE={raster_device}',
+            f'-dFirstPage={pageno}',
+            f'-dLastPage={pageno}',
+            f'-r{res[0]:f}x{res[1]:f}',
+        ]
+        + (['-dFILTERVECTOR'] if filter_vector else [])
+        + [
+            '-o',
+            '%stdout',
+            '-sstdout=%stderr',
+            '-dAutoRotatePages=/None',  # Probably has no effect on raster
+            '-f',
+            fspath(input_file),
+        ]
+    )
 
-        log.debug(args_gs)
-        p = run(args_gs, stdout=PIPE, stderr=STDOUT, universal_newlines=True)
-        if _gs_error_reported(p.stdout):
-            log.error(p.stdout)
-        elif p.stdout:
-            log.debug(p.stdout)
+    log.debug(args_gs)
+    with Path(output_file).open("wb") as output:
+        p = run(args_gs, stdout=PIPE, stderr=PIPE, check=False)
+    stderr = p.stderr.decode('utf-8', errors='replace')
+    if _gs_error_reported(stderr):
+        log.error(stderr)
+    elif stderr:
+        log.debug(stderr)
 
-        if p.returncode != 0:
-            raise SubprocessOutputError('Ghostscript rasterizing failed')
+    if p.returncode != 0:
+        with suppress(OSError):
+            Path(output_file).unlink()  # no unfinished files
+        raise SubprocessOutputError('Ghostscript rasterizing failed')
 
-        tmp.seek(0)
-        with Image.open(tmp) as im:
-            if rotation is not None:
-                log.debug("Rotating output by %i", rotation)
-                # rotation is a clockwise angle and Image.ROTATE_* is
-                # counterclockwise so this cancels out the rotation
-                if rotation == 90:
-                    im = im.transpose(Image.ROTATE_90)
-                elif rotation == 180:
-                    im = im.transpose(Image.ROTATE_180)
-                elif rotation == 270:
-                    im = im.transpose(Image.ROTATE_270)
-                if rotation % 180 == 90:
-                    page_dpi = page_dpi[1], page_dpi[0]
-            im.save(fspath(output_file), dpi=page_dpi)
+    with Image.open(BytesIO(p.stdout)) as im:
+        if rotation is not None:
+            log.debug("Rotating output by %i", rotation)
+            # rotation is a clockwise angle and Image.ROTATE_* is
+            # counterclockwise so this cancels out the rotation
+            if rotation == 90:
+                im = im.transpose(Image.ROTATE_90)
+            elif rotation == 180:
+                im = im.transpose(Image.ROTATE_180)
+            elif rotation == 270:
+                im = im.transpose(Image.ROTATE_270)
+            if rotation % 180 == 90:
+                page_dpi = page_dpi[1], page_dpi[0]
+        im.save(fspath(output_file), dpi=page_dpi)
 
 
 def generate_pdfa(
@@ -256,50 +260,52 @@ def generate_pdfa(
         # https://bugs.ghostscript.com/show_bug.cgi?id=699216
         compression_args.append('-dPassThroughJPEGImages=false')
 
-    with NamedTemporaryFile(delete=True) as gs_pdf:
-        # nb no need to specify ProcessColorModel when ColorConversionStrategy
-        # is set; see:
-        # https://bugs.ghostscript.com/show_bug.cgi?id=699392
-        args_gs = (
-            [
-                "gs",
-                "-dQUIET",
-                "-dBATCH",
-                "-dNOPAUSE",
-                "-dSAFER",
-                "-dCompatibilityLevel=" + str(pdf_version),
-                "-sDEVICE=pdfwrite",
-                "-dAutoRotatePages=/None",
-                "-sColorConversionStrategy=" + strategy,
-            ]
-            + compression_args
-            + [
-                "-dJPEGQ=95",
-                "-dPDFA=" + pdfa_part,
-                "-dPDFACompatibilityPolicy=1",
-                "-sOutputFile=" + gs_pdf.name,
-            ]
+    # nb no need to specify ProcessColorModel when ColorConversionStrategy
+    # is set; see:
+    # https://bugs.ghostscript.com/show_bug.cgi?id=699392
+    args_gs = (
+        [
+            "gs",
+            "-dQUIET",
+            "-dBATCH",
+            "-dNOPAUSE",
+            "-dSAFER",
+            "-dCompatibilityLevel=" + str(pdf_version),
+            "-sDEVICE=pdfwrite",
+            "-dAutoRotatePages=/None",
+            "-sColorConversionStrategy=" + strategy,
+        ]
+        + compression_args
+        + [
+            "-dJPEGQ=95",
+            "-dPDFA=" + pdfa_part,
+            "-dPDFACompatibilityPolicy=1",
+            "-sOutputFile=%stdout",
+            "-sstdout=%stderr",
+        ]
+    )
+    args_gs.extend(fspath(s) for s in pdf_pages)  # Stringify Path objs
+    log.debug(args_gs)
+    with Path(output_file).open('wb') as output:
+        p = run(args_gs, stdout=output, stderr=PIPE, check=False)
+
+    stderr = p.stderr.decode('utf-8', errors='replace')
+    if _gs_error_reported(stderr):
+        log.error(stderr)
+    elif 'overprint mode not set' in stderr:
+        # Unless someone is going to print PDF/A documents on a
+        # magical sRGB printer I can't see the removal of overprinting
+        # being a problem....
+        log.debug(
+            "Ghostscript had to remove PDF 'overprinting' from the "
+            "input file to complete PDF/A conversion. "
         )
-        args_gs.extend(fspath(s) for s in pdf_pages)  # Stringify Path objs
-        log.debug(args_gs)
-        p = run(args_gs, stdout=PIPE, stderr=STDOUT, universal_newlines=True)
+    else:
+        log.debug(stderr)
 
-        if _gs_error_reported(p.stdout):
-            log.error(p.stdout)
-        elif 'overprint mode not set' in p.stdout:
-            # Unless someone is going to print PDF/A documents on a
-            # magical sRGB printer I can't see the removal of overprinting
-            # being a problem....
-            log.debug(
-                "Ghostscript had to remove PDF 'overprinting' from the "
-                "input file to complete PDF/A conversion. "
-            )
-        else:
-            log.debug(p.stdout)
-
-        if p.returncode == 0:
-            # Ghostscript does not change return code when it fails to create
-            # PDF/A - check PDF/A status elsewhere
-            copy(gs_pdf.name, fspath(output_file))
-        else:
-            raise SubprocessOutputError('Ghostscript PDF/A rendering failed')
+    if p.returncode != 0:
+        # Ghostscript does not change return code when it fails to create
+        # PDF/A - check PDF/A status elsewhere
+        with suppress(OSError):
+            Path(output_file).unlink()
+        raise SubprocessOutputError('Ghostscript PDF/A rendering failed')
