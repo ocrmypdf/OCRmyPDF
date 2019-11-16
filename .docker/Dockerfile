@@ -10,16 +10,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential autoconf automake libtool \
   libleptonica-dev \
   zlib1g-dev \
-  python3-setuptools \
-  python3-pip \
-  wget \
+  python3 \
+  python3-distutils \
+  ca-certificates \
+  curl \
   git
+
+# Get the latest pip (Ubuntu version doesn't support manylinux2010)
+RUN \
+  curl https://bootstrap.pypa.io/get-pip.py | python3
 
 # Compile and install jbig2
 # Needs libleptonica-dev, zlib1g-dev
 RUN \
   mkdir jbig2 \
-  && wget -q https://github.com/agl/jbig2enc/archive/0.29.tar.gz -O - | \
+  && curl -L https://github.com/agl/jbig2enc/archive/0.29.tar.gz | \
   tar xz -C jbig2 --strip-components=1 \
   && cd jbig2 \
   && ./autogen.sh && ./configure && make && make install \
