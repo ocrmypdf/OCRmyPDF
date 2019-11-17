@@ -19,6 +19,7 @@
 
 import logging
 import re
+import os
 import warnings
 from contextlib import suppress
 from functools import lru_cache
@@ -29,15 +30,24 @@ from subprocess import PIPE, run
 
 from PIL import Image
 
-from ..exceptions import SubprocessOutputError
+from ..exceptions import SubprocessOutputError, MissingDependencyError
 from . import get_version
 
 gslog = logging.getLogger()
 
+GS = 'gs'
+if os.name == 'nt':
+    GS = 'gswin64c'
+    try:
+        get_version(GS)
+    except MissingDependencyError:
+        GS = 'gswin32c'
+        get_version(GS)
+
 
 @lru_cache(maxsize=1)
 def version():
-    return get_version('gs')
+    return get_version(GS)
 
 
 def jpeg_passthrough_available():
@@ -84,7 +94,7 @@ def extract_text(input_file, pageno=1):
 
     args_gs = (
         [
-            'gs',
+            GS,
             '-dQUIET',
             '-dSAFER',
             '-dBATCH',
@@ -144,7 +154,7 @@ def rasterize_pdf(
 
     args_gs = (
         [
-            'gs',
+            GS,
             '-dQUIET',
             '-dSAFER',
             '-dBATCH',
@@ -265,7 +275,7 @@ def generate_pdfa(
     # https://bugs.ghostscript.com/show_bug.cgi?id=699392
     args_gs = (
         [
-            "gs",
+            GS,
             "-dQUIET",
             "-dBATCH",
             "-dNOPAUSE",
