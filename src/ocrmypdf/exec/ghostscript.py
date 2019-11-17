@@ -26,7 +26,7 @@ from functools import lru_cache
 from io import BytesIO
 from os import fspath
 from pathlib import Path
-from subprocess import PIPE, run
+from subprocess import PIPE, run, CalledProcessError
 
 from PIL import Image
 
@@ -103,14 +103,15 @@ def extract_text(input_file, pageno=1):
             '-dTextFormat=0',
         ]
         + pages
-        + ['-o', '-', fspath(input_file)]
+        + ['-o', '-', fspath(input_file), "-sstdout=%stderr"]
     )
 
-    p = run(args_gs, stdout=PIPE, stderr=PIPE)
-    if p.returncode != 0:
+    try:
+        p = run(args_gs, stdout=PIPE, stderr=PIPE, check=True)
+    except CalledProcessError as e:
         raise SubprocessOutputError(
-            'Ghostscript text extraction failed\n%s\n%s\n%s'
-            % (input_file, p.stdout.decode(), p.stderr.decode())
+            'Ghostscript text extraction failed\n%s\n%s'
+            % (input_file, e.stderr.decode(errors='replace'))
         )
 
     return p.stdout
@@ -167,7 +168,7 @@ def rasterize_pdf(
         + (['-dFILTERVECTOR'] if filter_vector else [])
         + [
             '-o',
-            '%stdout',
+            '-',
             '-sstdout=%stderr',
             '-dAutoRotatePages=/None',  # Probably has no effect on raster
             '-f',
@@ -176,18 +177,19 @@ def rasterize_pdf(
     )
 
     log.debug(args_gs)
-    with Path(output_file).open("wb") as output:
-        p = run(args_gs, stdout=PIPE, stderr=PIPE, check=False)
-    stderr = p.stderr.decode('utf-8', errors='replace')
-    if _gs_error_reported(stderr):
-        log.error(stderr)
-    elif stderr:
-        log.debug(stderr)
-
-    if p.returncode != 0:
+    try:
+        p = run(args_gs, stdout=PIPE, stderr=PIPE, check=True)
+    except CalledProcessError as e:
         with suppress(OSError):
             Path(output_file).unlink()  # no unfinished files
+        log.error(e.stderr.decode(errors='replace'))
         raise SubprocessOutputError('Ghostscript rasterizing failed')
+    else:
+        stderr = p.stderr.decode(errors='replace')
+        if _gs_error_reported(stderr):
+            log.error(stderr)
+        elif stderr:
+            log.debug(stderr)
 
     with Image.open(BytesIO(p.stdout)) as im:
         if rotation is not None:
@@ -290,32 +292,34 @@ def generate_pdfa(
             "-dJPEGQ=95",
             "-dPDFA=" + pdfa_part,
             "-dPDFACompatibilityPolicy=1",
-            "-sOutputFile=%stdout",
+            "-o",
+            "-",
             "-sstdout=%stderr",
         ]
     )
     args_gs.extend(fspath(s) for s in pdf_pages)  # Stringify Path objs
     log.debug(args_gs)
-    with Path(output_file).open('wb') as output:
-        p = run(args_gs, stdout=output, stderr=PIPE, check=False)
-
-    stderr = p.stderr.decode('utf-8', errors='replace')
-    if _gs_error_reported(stderr):
-        log.error(stderr)
-    elif 'overprint mode not set' in stderr:
-        # Unless someone is going to print PDF/A documents on a
-        # magical sRGB printer I can't see the removal of overprinting
-        # being a problem....
-        log.debug(
-            "Ghostscript had to remove PDF 'overprinting' from the "
-            "input file to complete PDF/A conversion. "
-        )
-    else:
-        log.debug(stderr)
-
-    if p.returncode != 0:
+    try:
+        with Path(output_file).open('wb') as output:
+            p = run(args_gs, stdout=output, stderr=PIPE, check=True)
+    except CalledProcessError as e:
         # Ghostscript does not change return code when it fails to create
         # PDF/A - check PDF/A status elsewhere
         with suppress(OSError):
             Path(output_file).unlink()
+        log.error(e.stderr.decode(errors='replace'))
         raise SubprocessOutputError('Ghostscript PDF/A rendering failed')
+    else:
+        stderr = p.stderr.decode('utf-8', errors='replace')
+        if _gs_error_reported(stderr):
+            log.error(stderr)
+        elif 'overprint mode not set' in stderr:
+            # Unless someone is going to print PDF/A documents on a
+            # magical sRGB printer I can't see the removal of overprinting
+            # being a problem....
+            log.debug(
+                "Ghostscript had to remove PDF 'overprinting' from the "
+                "input file to complete PDF/A conversion. "
+            )
+        else:
+            log.debug(stderr)
