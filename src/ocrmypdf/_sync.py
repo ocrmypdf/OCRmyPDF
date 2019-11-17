@@ -304,6 +304,13 @@ class NeverRaise(Exception):
     pass  # pylint: disable=unnecessary-pass
 
 
+def samefile(f1, f2):
+    if os.name == 'nt':
+        return f1 == f2
+    else:
+        return os.path.samefile(f1, f2)
+
+
 def run_pipeline(options, api=False):
     log = make_logger(options, __name__)
 
@@ -339,7 +346,7 @@ def run_pipeline(options, api=False):
 
         if options.output_file == '-':
             log.info("Output sent to stdout")
-        elif os.path.samefile(options.output_file, os.devnull):
+        elif samefile(options.output_file, os.devnull):
             pass  # Say nothing when sending to dev null
         else:
             if options.output_type.startswith('pdfa'):
