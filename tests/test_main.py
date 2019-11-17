@@ -946,6 +946,7 @@ def test_output_is_dir(spoof_tesseract_noop, resources, outdir):
     assert 'is not a writable file' in err
 
 
+@pytest.mark.skipif(os.name == 'nt', reason="symlink needs admin permissions")
 def test_output_is_symlink(spoof_tesseract_noop, resources, outdir):
     sym = Path(outdir / 'this_is_a_symlink')
     sym.symlink_to(outdir / 'out.pdf')

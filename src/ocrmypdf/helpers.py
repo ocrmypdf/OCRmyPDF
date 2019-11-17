@@ -18,6 +18,7 @@
 import logging
 import multiprocessing
 import os
+import shutil
 import warnings
 from collections.abc import Iterable
 from contextlib import suppress
@@ -27,14 +28,14 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 
-def re_symlink(input_file, soft_link_name, *args, **kwargs):
+def safe_symlink(input_file, soft_link_name, *args, **kwargs):
     """
     Helper function: relinks soft symbolic link if necessary
     """
     if len(args) == 1 and isinstance(args[0], logging.Logger):
-        log.warning("Deprecated: re_symlink(,log)")
+        log.warning("Deprecated: safe_symlink(,log)")
     if 'log' in kwargs:
-        log.warning('Deprecated: re_symlink(...log=)')
+        log.warning('Deprecated: safe_symlink(...log=)')
 
     input_file = os.fspath(input_file)
     soft_link_name = os.fspath(soft_link_name)
@@ -59,6 +60,11 @@ def re_symlink(input_file, soft_link_name, *args, **kwargs):
 
     if not os.path.exists(input_file):
         raise FileNotFoundError(f"trying to create a broken symlink to {input_file}")
+
+    if os.name == 'nt':
+        # Don't actually use symlinks on Windows due to permission issues
+        shutil.copyfile(input_file, soft_link_name)
+        return
 
     log.debug("os.symlink(%s, %s)", input_file, soft_link_name)
 

@@ -31,7 +31,7 @@ from . import leptonica
 from ._jobcontext import PDFContext
 from .exceptions import OutputFileAccessError
 from .exec import jbig2enc, pngquant
-from .helpers import re_symlink
+from .helpers import safe_symlink
 
 DEFAULT_JPEG_QUALITY = 75
 DEFAULT_PNG_QUALITY = 70
@@ -492,7 +492,7 @@ def optimize(input_file, output_file, context, save_settings):
     log = context.log
     options = context.options
     if options.optimize == 0:
-        re_symlink(input_file, output_file)
+        safe_symlink(input_file, output_file)
         return
 
     if options.jpeg_quality == 0:
@@ -538,7 +538,7 @@ def optimize(input_file, output_file, context, save_settings):
             pike.remove_unreferenced_resources()
             pike.save(output_file, **save_settings)
     else:
-        re_symlink(target_file, output_file)
+        safe_symlink(target_file, output_file)
 
 
 def main(infile, outfile, level, jobs=1):

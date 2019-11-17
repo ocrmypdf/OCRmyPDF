@@ -30,7 +30,7 @@ from ..exceptions import (
     SubprocessOutputError,
     TesseractConfigError,
 )
-from ..helpers import page_number
+from ..helpers import page_number, safe_symlink
 from . import get_version
 
 OrientationConfidence = namedtuple('OrientationConfidence', ('angle', 'confidence'))
@@ -324,7 +324,7 @@ def use_skip_page(text_only, skip_pdf, output_pdf, output_text):
         # Substitute a "skipped page"
         with suppress(FileNotFoundError):
             os.remove(output_pdf)  # In case it was partially created
-        os.symlink(skip_pdf, output_pdf)
+        safe_symlink(skip_pdf, output_pdf)
         return
 
     # Or normally, just write a 0 byte file to the output to indicate a skip

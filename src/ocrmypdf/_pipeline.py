@@ -37,7 +37,7 @@ from .exceptions import (
     UnsupportedImageFormatError,
 )
 from .exec import ghostscript, tesseract
-from .helpers import re_symlink
+from .helpers import safe_symlink
 from .hocrtransform import HocrTransform
 from .optimize import optimize
 from .pdfa import generate_pdfa_ps
@@ -132,7 +132,7 @@ def triage(input_file, output_file, options, log):
                     "input file is a PDF, not an image."
                 )
             # Origin file is a pdf create a symlink with pdf extension
-            re_symlink(input_file, output_file)
+            safe_symlink(input_file, output_file)
             return output_file
     except EnvironmentError as e:
         log.error(e)
@@ -701,7 +701,7 @@ def convert_to_pdfa(input_pdf, input_ps_stub, context):
         if modified:
             pdf_file.save(fix_docinfo_file)
         else:
-            os.symlink(input_pdf, fix_docinfo_file)
+            safe_symlink(input_pdf, fix_docinfo_file)
 
     ghostscript.generate_pdfa(
         pdf_version=input_pdfinfo.min_version,
