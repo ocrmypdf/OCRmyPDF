@@ -39,7 +39,11 @@ from .lib._leptonica import ffi
 
 logger = logging.getLogger(__name__)
 
-lept = ffi.dlopen(find_library('lept'))
+if os.name == 'nt':
+    libname = 'liblept-5'
+else:
+    libname = 'lept'
+lept = ffi.dlopen(find_library(libname))
 lept.setMsgSeverity(lept.L_SEVERITY_WARNING)
 
 
