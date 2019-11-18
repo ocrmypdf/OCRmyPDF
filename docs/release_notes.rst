@@ -13,6 +13,13 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.1.1
+======
+
+-  Expand the range of pdfminer.six versions that are supported.
+-  Fixed Docker build when using pikepdf 1.7.0.
+-  Fixed documentation to recommend using pip from get-pip.py.
+
 v9.1.0
 ======
 
