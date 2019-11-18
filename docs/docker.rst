@@ -108,9 +108,9 @@ on the public one:
    FROM jbarlow83/ocrmypdf
 
    # Add French
-   RUN apk add tesseract-ocr-data-fra
+   RUN apt install tesseract-ocr-fra
 
-You can also copy training data to ``/usr/share/tessdata``.
+You can also copy training data to ``/usr/share/tesseract-ocr/<tesseract version>/tessdata``.
 
 Executing the test suite
 ========================
