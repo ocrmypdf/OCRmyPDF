@@ -431,8 +431,24 @@ See `OCRmyPDF Docker Image <docker>`__ for more information.
 Installing on Windows
 =====================
 
-Direct installation on Windows is not currently possible, but it works well in
-Windows Subsystem for Linux:
+You must install the following for Windows using their installers:
+
+* Python 3.7 (64-bit recommended)
+* Tesseract 4.0 or later
+* Ghostscript 9.50 or later
+* QPDF 9.0.2 or later
+
+You can install all except Tesseract with the Chocolatey package manager:
+
+* ``choco install python3``
+* ``choco install ghostscript``
+* ``choco install qpdf``
+
+Modify your ``PATH`` environment variable so that Tesseract, Ghostscript and QPDF
+executables on the ``PATH``.
+
+Installing on Windows Subsystem for Linux
+=========================================
 
 #. Install Ubuntu 18.04 for Windows Subsystem for Linux, if not already installed.
 #. Follow the procedure to install :ref:`OCRmyPDF on Ubuntu 18.04 <ubuntu-lts-latest>`.
@@ -450,15 +466,6 @@ Then confirm that the expected version from PyPI (|latest|) is installed:
 
 You can then run OCRmyPDF in the Windows command prompt or Powershell, prefixing
 ``wsl``, and call it from Windows programs or batch files.
-
-Why no native Windows?
-^^^^^^^^^^^^^^^^^^^^^^
-
-It would probably not be too difficult to port on Windows. The main
-reason this has been avoided is the difficulty of packaging and
-installing the various non-Python dependencies: Tesseract, QPDF,
-Ghostscript, Leptonica. Pull requests to add or improve Windows support
-would be quite welcome.
 
 Docker
 ^^^^^^
