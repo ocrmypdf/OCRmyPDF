@@ -586,7 +586,7 @@ def test_overlay(spoof_tesseract_noop, resources, outpdf):
 
 
 def test_destination_not_writable(spoof_tesseract_noop, resources, outdir):
-    if os.getuid() == 0 or os.geteuid() == 0:
+    if os.name != 'nt' and (os.getuid() == 0 or os.geteuid() == 0):
         pytest.xfail(reason="root can write to anything")
     protected_file = outdir / 'protected.pdf'
     protected_file.touch()
@@ -872,7 +872,7 @@ def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
     pdfinfo = PdfInfo(resources / 'multipage.pdf')
     num_pages = len(pdfinfo)
 
-    with open(sidecar, 'r') as f:
+    with open(sidecar, 'r', encoding='utf-8') as f:
         ocr_text = f.read()
 
     # There should a formfeed between each pair of pages, so the count of
@@ -888,7 +888,7 @@ def test_sidecar_nonempty(spoof_tesseract_cache, resources, outpdf):
         resources / 'ccitt.pdf', outpdf, '--sidecar', sidecar, env=spoof_tesseract_cache
     )
 
-    with open(sidecar, 'r') as f:
+    with open(sidecar, 'r', encoding='utf-8') as f:
         ocr_text = f.read()
     assert 'the' in ocr_text
 
