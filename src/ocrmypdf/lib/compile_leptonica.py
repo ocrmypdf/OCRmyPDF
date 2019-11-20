@@ -74,6 +74,17 @@ struct Pixa
 };
 typedef struct Pixa PIXA;
 
+/*! Array of compressed pix */
+struct PixaComp
+{
+    l_int32              n;         /*!< number of PixComp in ptr array    */
+    l_int32              nalloc;    /*!< number of PixComp ptrs allocated  */
+    l_int32              offset;    /*!< indexing offset into ptr array    */
+    struct PixComp     **pixc;      /*!< the array of ptrs to PixComp      */
+    struct Boxa         *boxa;      /*!< array of boxes                    */
+};
+typedef struct PixaComp PIXAC;
+
 struct Box
 {
     l_int32            x;
@@ -294,14 +305,12 @@ pixCleanBackgroundToWhite(PIX       *pixs,
                           l_int32    whiteval);
 
 BOX *
-pixFindPageForeground(PIX         *pixs,
-                      l_int32      threshold,
-                      l_int32      mindist,
-                      l_int32      erasedist,
-                      l_int32      pagenum,
-                      l_int32      showmorph,
-                      l_int32      display,
-                      const char  *pdfdir);
+pixFindPageForeground ( PIX *pixs,
+                        l_int32 threshold,
+                        l_int32 mindist,
+                        l_int32 erasedist,
+                        l_int32 showmorph,
+                        PIXAC *pixac );
 
 PIX *
 pixClipRectangle(PIX   *pixs,
@@ -414,7 +423,10 @@ pixExtractBarcodes(PIX     *pixs,
                    l_int32 debugflag);
 
 BOXA *
-pixLocateBarcodes ( PIX *pixs, l_int32 thresh, PIX **ppixb, PIX **ppixm );
+pixLocateBarcodes ( PIX *pixs,
+ l_int32 thresh,
+ PIX **ppixb,
+ PIX **ppixm );
 
 SARRAY *
 pixReadBarcodes(PIXA     *pixa,

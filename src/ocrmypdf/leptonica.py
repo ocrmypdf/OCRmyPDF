@@ -506,17 +506,14 @@ class Pix(LeptonicaObject):
         display=0,
         pdfdir=ffi.NULL,
     ):
+        if get_leptonica_version() < 'leptonica-1.76':
+            # Leptonica 1.76 changed the API for pixFindPageForeground; we don't
+            # support the old version
+            raise LeptonicaError("Not available in this version of Leptonica")
         with _LeptonicaErrorTrap():
             cropbox = Box(
                 lept.pixFindPageForeground(
-                    self._cdata,
-                    threshold,
-                    mindist,
-                    erasedist,
-                    pagenum,
-                    showmorph,
-                    display,
-                    pdfdir,
+                    self._cdata, threshold, mindist, erasedist, showmorph, ffi.NULL
                 )
             )
 

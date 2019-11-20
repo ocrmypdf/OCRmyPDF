@@ -63,6 +63,10 @@ def test_pix_otsu(crom_pix):
     assert im1bpp.mode == '1'
 
 
+@pytest.mark.skipif(
+    lept.get_leptonica_version() < 'leptonica-1.76',
+    reason="needs new leptonica for API change",
+)
 def test_crop(resources):
     pix = lept.Pix.open(resources / 'linn.png')
     foreground = pix.crop_to_foreground()
