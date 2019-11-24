@@ -100,14 +100,14 @@ def cleanup_working_files(work_folder, options):
 
 class LogNameAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
-        # return '[%s] %s' % (self.extra['filename'], msg), kwargs
+        # return '[%s] %s' % (self.extra['input_filename'], msg), kwargs
         return '%s' % (msg,), kwargs
 
 
 class LogNamePageAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
         return (
-            #'[%s:%05u] %s' % (self.extra['filename'], self.extra['page'], msg),
+            #'[%s:%05u] %s' % (self.extra['input_filename'], self.extra['page'], msg),
             '%4u: %s' % (self.extra['page'], msg),
             kwargs,
         )
@@ -116,9 +116,9 @@ class LogNamePageAdapter(logging.LoggerAdapter):
 def make_logger(options=None, prefix='ocrmypdf', filename=None, page=None):
     log = logging.getLogger(prefix)
     if filename and page:
-        adapter = LogNamePageAdapter(log, dict(filename=filename, page=page))
+        adapter = LogNamePageAdapter(log, dict(input_filename=filename, page=page))
     elif filename:
-        adapter = LogNameAdapter(log, dict(filename=filename))
+        adapter = LogNameAdapter(log, dict(input_filename=filename))
     else:
         adapter = log
     return adapter

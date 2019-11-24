@@ -55,6 +55,7 @@ HOCR_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
 
 class TesseractLoggerAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
+        kwargs['extra'] = self.extra
         return '[tesseract] %s' % (msg), kwargs
 
 
@@ -194,8 +195,8 @@ def tesseract_log_output(mainlog, stdout, input_file):
         text = stdout.decode()
     except UnicodeDecodeError:
         log.error(
-            "command line output was not utf-8. "
-            + "This usually means Tesseract's language packs do not match "
+            "Tesseract's output was not utf-8. "
+            "This usually means Tesseract's language packs do not match "
             "the installed version of Tesseract."
         )
         text = stdout.decode('utf-8', 'backslashreplace')
