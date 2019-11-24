@@ -138,7 +138,7 @@ def tess_base_args(langs, engine_mode):
     args = ['tesseract']
     if langs:
         args.extend(['-l', '+'.join(langs)])
-    if engine_mode is not None and v4():
+    if engine_mode is not None:
         args.extend(['--oem', str(engine_mode)])
     return args
 
