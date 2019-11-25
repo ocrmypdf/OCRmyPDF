@@ -28,5 +28,6 @@ exclude = '''
   | docs
   | misc
   | \.egg-info
+  | src/ocrmypdf/lib/_leptonica.py
 )/
 '''

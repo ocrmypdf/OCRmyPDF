@@ -1,6 +1,6 @@
 repos:
--   repo: https://github.com/ambv/black
+  - repo: https://github.com/psf/black
     rev: stable
     hooks:
-    - id: black
-      language_version: python3.7
+      - id: black
+        language_version: python3.7
