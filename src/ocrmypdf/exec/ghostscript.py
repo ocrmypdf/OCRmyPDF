@@ -27,6 +27,7 @@ from io import BytesIO
 from os import fspath
 from pathlib import Path
 from subprocess import PIPE, run, CalledProcessError
+from shutil import which
 
 from PIL import Image
 
@@ -37,12 +38,11 @@ gslog = logging.getLogger()
 
 GS = 'gs'
 if os.name == 'nt':
-    GS = 'gswin64c'
-    try:
-        get_version(GS)
-    except MissingDependencyError:
-        GS = 'gswin32c'
-        get_version(GS)
+    GS = which('gswin64c')
+    if not GS:
+        GS = which('gswin32c')
+        if not GS:
+            raise MissingDependencyError("Ghostscript (gswin64c or gswin32c)")
 
 
 @lru_cache(maxsize=1)

@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# © 2016 James R. Barlow: github.com/jbarlow83
+# © 2019 James R. Barlow: github.com/jbarlow83
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,37 +19,22 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+"""Find Ghostscript executable"""
+
 
 import os
-import sys
-from subprocess import check_call
+import shutil
 
 
-"""Replicate one type of Ghostscript feature elision warning during
-PDF/A creation."""
+def real_ghostscript(argv):
+    if os.name != 'nt':
+        gs = shutil.which('gs')
+        gs_args = [gs] + argv[1:]
+        os.execv(gs_args[0], gs_args)
+    else:
+        gs = shutil.which('gswin64c')
+        if not gs:
+            gs = shutil.which('gswin32c')
+        os.execv(gs, argv[1:])
 
-
-from gs import real_ghostscript
-
-
-elision_warning = """GPL Ghostscript 9.20: Setting Overprint Mode to 1
-not permitted in PDF/A-2, overprint mode not set"""
-
-
-def main():
-    os.environ['PATH'] = os.environ['_OCRMYPDF_SAVE_PATH']
-    if '--version' in sys.argv:
-        print('9.20')
-        print('SPOOFED: ' + os.path.basename(__file__))
-        sys.exit(0)
-    gs_args = ['gs'] + sys.argv[1:]
-    check_call(gs_args)
-
-    if '-sDEVICE=pdfwrite' in sys.argv[1:]:
-        print(elision_warning)
-
-    sys.exit(0)
-
-
-if __name__ == '__main__':
-    main()
+    return  # Not reachable

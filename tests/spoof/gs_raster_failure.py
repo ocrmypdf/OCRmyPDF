@@ -27,10 +27,7 @@ import sys
 """Replicate Ghostscript raster failure while allowing rendering"""
 
 
-def real_ghostscript(argv):
-    gs_args = ['gs'] + argv[1:]
-    os.execvp("gs", gs_args)
-    return  # Not reachable
+from gs import real_ghostscript
 
 
 def main():
