@@ -34,6 +34,7 @@ from os import fspath
 from tempfile import TemporaryFile
 
 from .lib._leptonica import ffi
+from .exceptions import MissingDependencyError
 
 # pylint: disable=protected-access
 
@@ -43,7 +44,12 @@ if os.name == 'nt':
     libname = 'liblept-5'
 else:
     libname = 'lept'
-lept = ffi.dlopen(find_library(libname))
+_libpath = find_library(libname)
+if not _libpath and os.name == 'nt':
+    raise MissingDependencyError(
+        "Please ensure that 'tesseract' is on your PATH environment variable. "
+    )
+lept = ffi.dlopen(_libpath)
 lept.setMsgSeverity(lept.L_SEVERITY_WARNING)
 
 
