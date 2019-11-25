@@ -4,3 +4,13 @@ repos:
     hooks:
       - id: black
         language_version: python3.7
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.4.0
+    hooks:
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: debug-statements
+      - id: name-tests-test
+        args: ["--django"]
