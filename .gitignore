@@ -7,6 +7,7 @@
 *.pyc
 *.sublime-*
 *.DS_Store
+.mypy_cache/
 
 # Package building
 .eggs/
