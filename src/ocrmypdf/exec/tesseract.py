@@ -127,9 +127,10 @@ def languages(tesseract_env=None):
     except CalledProcessError as e:
         raise MissingDependencyError(lang_error(e.output)) from e
 
+    for line in output.splitlines():
+        if line.startswith('Error'):
+            raise MissingDependencyError(lang_error(output))
     header, *rest = output.splitlines()
-    if not header.startswith('List of available languages'):
-        raise MissingDependencyError(lang_error(output))
     return set(lang.strip() for lang in rest)
 
 
