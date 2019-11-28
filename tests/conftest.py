@@ -205,6 +205,8 @@ def run_ocrmypdf_api(input_file, output_file, *args, env=None):
     if env:
         options.tesseract_env = env
         options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
+    if options.tesseract_env:
+        assert all(isinstance(v, (str, bytes)) for v in options.tesseract_env.values())
 
     return api.run_pipeline(options, api=False)
 

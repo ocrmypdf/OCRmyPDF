@@ -303,7 +303,7 @@ def test_maximum_options(
 
 def test_tesseract_missing_tessdata(resources, no_outpdf, tmpdir):
     env = os.environ.copy()
-    env['TESSDATA_PREFIX'] = tmpdir
+    env['TESSDATA_PREFIX'] = os.fspath(tmpdir)
 
     returncode = run_ocrmypdf_api(
         resources / 'graph.pdf', no_outpdf, '-v', '1', '--skip-text', env=env
