@@ -77,6 +77,7 @@ def test_stdout(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
 @pytest.mark.skipif(
     sys.version_info[0:3] >= (3, 6, 4), reason="issue fixed in Python 3.6.4"
 )
+@pytest.mark.skipif(os.name == 'nt', reason="POSIX problem")
 def test_closed_streams(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
     input_file = str(resources / 'francais.pdf')
     output_file = str(outpdf)
