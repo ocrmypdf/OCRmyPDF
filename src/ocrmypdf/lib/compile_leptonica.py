@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+from pathlib import Path
+
 from cffi import FFI
 
 ffibuilder = FFI()
@@ -221,9 +223,15 @@ ffibuilder.cdef(
     """
 PIX * pixRead ( const char *filename );
 PIX * pixReadMem ( const l_uint8 *data, size_t size );
+PIX * pixReadStream ( FILE *fp, l_int32 hint );
 PIX * pixScale ( PIX *pixs, l_float32 scalex, l_float32 scaley );
 l_int32 pixFindSkew ( PIX *pixs, l_float32 *pangle, l_float32 *pconf );
 l_int32 pixWriteImpliedFormat ( const char *filename, PIX *pix, l_int32 quality, l_int32 progressive );
+l_int32 getImpliedFileFormat ( const char *filename );
+l_ok pixWriteStream ( FILE *fp, PIX *pix, l_int32 format );
+l_ok pixWriteStreamJpeg ( FILE *fp, PIX *pixs, l_int32 quality, l_int32 progressive );
+l_ok pixWriteMem ( l_uint8 **pdata, size_t *psize, PIX *pix, l_int32 format );
+l_ok pixWriteMemJpeg ( l_uint8 **pdata, size_t *psize, PIX *pix, l_int32 quality, l_int32 progressive );
 l_int32
 pixWriteMemPng(l_uint8  **pdata,
                size_t    *psize,

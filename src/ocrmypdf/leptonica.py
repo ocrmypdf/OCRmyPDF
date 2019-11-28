@@ -296,9 +296,11 @@ class Pix(LeptonicaObject):
         Leptonica can load TIFF, PNM (PBM, PGM, PPM), PNG, and JPEG.  If
         loading fails then the object will wrap a C null pointer.
         """
-        filename = fspath(path)
-        with _LeptonicaErrorTrap():
-            return cls(lept.pixRead(os.fsencode(filename)))
+        with open(path, 'rb') as py_file:
+            data = py_file.read()
+            buffer = ffi.from_buffer(data)
+            with _LeptonicaErrorTrap():
+                return cls(lept.pixReadMem(buffer, len(buffer)))
 
     def write_implied_format(self, path, jpeg_quality=0, jpeg_progressive=0):
         """Write pix to the filename, with the extension indicating format.
@@ -306,11 +308,19 @@ class Pix(LeptonicaObject):
         jpeg_quality -- quality (iff JPEG; 1 - 100, 0 for default)
         jpeg_progressive -- (iff JPEG; 0 for baseline seq., 1 for progressive)
         """
-        filename = fspath(path)
-        with _LeptonicaErrorTrap():
-            lept.pixWriteImpliedFormat(
-                os.fsencode(filename), self._cdata, jpeg_quality, jpeg_progressive
-            )
+        lept_format = lept.getImpliedFileFormat(os.fsencode(path))
+        with open(path, 'wb') as py_file:
+            data = ffi.new('l_uint8 **pdata')
+            size = ffi.new('size_t *psize')
+            with _LeptonicaErrorTrap():
+                if lept_format == lept.L_JPEG_ENCODE:
+                    lept.pixWriteMemJpeg(
+                        data, size, self._cdata, jpeg_quality, jpeg_progressive
+                    )
+                else:
+                    lept.pixWriteMem(data, size, self._cdata, lept_format)
+            buffer = ffi.buffer(data[0], size[0])
+            py_file.write(buffer)
 
     @classmethod
     def frompil(self, pillow_image):
