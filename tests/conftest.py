@@ -194,6 +194,22 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
 
 
 @pytest.helpers.register
+def run_ocrmypdf_api(input_file, output_file, *args, env=None):
+    "Run ocrmypdf and let caller deal with results"
+
+    options = cli.parser.parse_args(
+        [str(input_file), str(output_file)]
+        + [str(arg) for arg in args if arg is not None]
+    )
+    api.check_options(options)
+    if env:
+        options.tesseract_env = env
+        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
+
+    return api.run_pipeline(options, api=False)
+
+
+@pytest.helpers.register
 def run_ocrmypdf(input_file, output_file, *args, env=None, universal_newlines=True):
     "Run ocrmypdf and let caller deal with results"
 

@@ -29,6 +29,7 @@ from ocrmypdf.exec import qpdf
 # pylint: disable=no-member,redefined-outer-name
 
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
+run_ocrmypdf_api = pytest.helpers.run_ocrmypdf
 spoof = pytest.helpers.spoof
 
 

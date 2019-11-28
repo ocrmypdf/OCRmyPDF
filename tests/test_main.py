@@ -39,6 +39,7 @@ from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
+run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
 spoof = pytest.helpers.spoof
 
 
@@ -197,8 +198,8 @@ def test_oversample(spoof_tesseract_cache, renderer, resources, outpdf):
 
 
 def test_repeat_ocr(resources, no_outpdf):
-    p, _, _ = run_ocrmypdf(resources / 'graph_ocred.pdf', no_outpdf)
-    assert p.returncode != 0
+    result = run_ocrmypdf_api(resources / 'graph_ocred.pdf', no_outpdf)
+    assert result == ExitCode.already_done_ocr
 
 
 def test_force_ocr(spoof_tesseract_cache, resources, outpdf):
@@ -300,34 +301,34 @@ def test_maximum_options(
     )
 
 
-def test_tesseract_missing_tessdata(resources, no_outpdf):
+def test_tesseract_missing_tessdata(resources, no_outpdf, tmpdir):
     env = os.environ.copy()
-    env['TESSDATA_PREFIX'] = '/tmp'
+    env['TESSDATA_PREFIX'] = tmpdir
 
-    p, _, err = run_ocrmypdf(
-        resources / 'graph_ocred.pdf', no_outpdf, '-v', '1', '--skip-text', env=env
+    returncode = run_ocrmypdf_api(
+        resources / 'graph.pdf', no_outpdf, '-v', '1', '--skip-text', env=env
     )
-    assert p.returncode == ExitCode.missing_dependency, err
+    assert returncode == ExitCode.missing_dependency
 
 
 def test_invalid_input_pdf(resources, no_outpdf):
-    p, out, err = run_ocrmypdf(resources / 'invalid.pdf', no_outpdf)
-    assert p.returncode == ExitCode.input_file, err
+    result = run_ocrmypdf_api(resources / 'invalid.pdf', no_outpdf)
+    assert result == ExitCode.input_file
 
 
 def test_blank_input_pdf(resources, outpdf):
-    p, out, err = run_ocrmypdf(resources / 'blank.pdf', outpdf)
-    assert p.returncode == ExitCode.ok
+    result = run_ocrmypdf_api(resources / 'blank.pdf', outpdf)
+    assert result == ExitCode.ok
 
 
 def test_force_ocr_on_pdf_with_no_images(spoof_tesseract_crash, resources, no_outpdf):
     # As a correctness test, make sure that --force-ocr on a PDF with no
     # content still triggers tesseract. If tesseract crashes, then it was
     # called.
-    p, _, err = run_ocrmypdf(
+    result = run_ocrmypdf_api(
         resources / 'blank.pdf', no_outpdf, '--force-ocr', env=spoof_tesseract_crash
     )
-    assert p.returncode == ExitCode.child_process_error, err
+    assert result == ExitCode.child_process_error
     assert not os.path.exists(no_outpdf)
 
 
@@ -340,7 +341,7 @@ def test_german(spoof_tesseract_cache, resources, outdir):
     # properly. It is fine that we are testing -l deu on a French file because
     # we are exercising the functionality not going for accuracy.
     sidecar = outdir / 'francais.txt'
-    p, out, err = run_ocrmypdf(
+    result = run_ocrmypdf_api(
         resources / 'francais.pdf',
         outdir / 'francais.pdf',
         '-l',
@@ -351,16 +352,16 @@ def test_german(spoof_tesseract_cache, resources, outdir):
     )
     if 'deu' not in tesseract.languages():
         pytest.xfail(reason="tesseract-deu language pack not installed")
-    assert p.returncode == ExitCode.ok, "Requires tesseract deu language pack"
+    assert result == ExitCode.ok, "Requires tesseract deu language pack"
 
 
 def test_klingon(resources, outpdf):
-    p, out, err = run_ocrmypdf(resources / 'francais.pdf', outpdf, '-l', 'klz')
+    p, _, _ = run_ocrmypdf(resources / 'francais.pdf', outpdf, '-l', 'klz')
     assert p.returncode == ExitCode.missing_dependency
 
 
 def test_missing_docinfo(spoof_tesseract_noop, resources, outpdf):
-    p, out, err = run_ocrmypdf(
+    result = run_ocrmypdf_api(
         resources / 'missing_docinfo.pdf',
         outpdf,
         '-l',
@@ -368,7 +369,7 @@ def test_missing_docinfo(spoof_tesseract_noop, resources, outpdf):
         '--skip-text',
         env=spoof_tesseract_noop,
     )
-    assert p.returncode == ExitCode.ok, err
+    assert result == ExitCode.ok
 
 
 def test_uppercase_extension(spoof_tesseract_noop, resources, outdir):
@@ -379,24 +380,24 @@ def test_uppercase_extension(spoof_tesseract_noop, resources, outdir):
     )
 
 
-def test_input_file_not_found(no_outpdf):
+def test_input_file_not_found(caplog, no_outpdf):
     input_file = "does not exist.pdf"
-    p, out, err = run_ocrmypdf(input_file, no_outpdf)
-    assert p.returncode == ExitCode.input_file
-    assert input_file in out or input_file in err
+    result = run_ocrmypdf_api(input_file, no_outpdf)
+    assert result == ExitCode.input_file
+    assert input_file in caplog.text
 
 
-def test_input_file_not_a_pdf(no_outpdf):
+def test_input_file_not_a_pdf(caplog, no_outpdf):
     input_file = __file__  # Try to OCR this file
-    p, out, err = run_ocrmypdf(input_file, no_outpdf)
-    assert p.returncode == ExitCode.input_file
-    assert input_file in out or input_file in err
+    result = run_ocrmypdf_api(input_file, no_outpdf)
+    assert result == ExitCode.input_file
+    assert input_file in caplog.text
 
 
-def test_encrypted(resources, no_outpdf):
-    p, out, err = run_ocrmypdf(resources / 'skew-encrypted.pdf', no_outpdf)
-    assert p.returncode == ExitCode.encrypted_pdf
-    assert out.find('encrypted')
+def test_encrypted(resources, caplog, no_outpdf):
+    result = run_ocrmypdf_api(resources / 'skew-encrypted.pdf', no_outpdf)
+    assert result == ExitCode.encrypted_pdf
+    assert 'encryption must be removed' in caplog.text
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
@@ -415,8 +416,8 @@ def test_pagesegmode(renderer, spoof_tesseract_cache, resources, outpdf):
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_tesseract_crash(renderer, spoof_tesseract_crash, resources, no_outpdf):
-    p, out, err = run_ocrmypdf(
+def test_tesseract_crash(renderer, spoof_tesseract_crash, resources, no_outpdf, caplog):
+    result = run_ocrmypdf_api(
         resources / 'ccitt.pdf',
         no_outpdf,
         '-v',
@@ -425,9 +426,9 @@ def test_tesseract_crash(renderer, spoof_tesseract_crash, resources, no_outpdf):
         renderer,
         env=spoof_tesseract_crash,
     )
-    assert p.returncode == ExitCode.child_process_error
+    assert result == ExitCode.child_process_error
     assert not os.path.exists(no_outpdf)
-    assert "ERROR" in err
+    assert "SubprocessOutputError" in caplog.text
 
 
 def test_tesseract_crash_autorotate(spoof_tesseract_crash, resources, no_outpdf):

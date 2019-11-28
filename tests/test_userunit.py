@@ -24,6 +24,7 @@ from ocrmypdf.pdfinfo import PdfInfo
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
+run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
 spoof = pytest.helpers.spoof
 
 
@@ -32,9 +33,10 @@ def poster(resources):
     return resources / 'poster.pdf'
 
 
-def test_userunit_ghostscript_fails(poster, no_outpdf):
-    p, out, err = run_ocrmypdf(poster, no_outpdf, '--output-type=pdfa')
-    assert p.returncode == ExitCode.input_file
+def test_userunit_ghostscript_fails(poster, no_outpdf, caplog):
+    result = run_ocrmypdf_api(poster, no_outpdf, '--output-type=pdfa')
+    assert result == ExitCode.input_file
+    assert 'not supported by Ghostscript' in caplog.text
 
 
 def test_userunit_qpdf_passes(spoof_tesseract_cache, poster, outpdf):
