@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pikepdf
 
-MAX_REPLACE_PAGES = int(os.environ.get('_OCRMYPDF_MAX_REPLACE_PAGES', 100))
+MAX_REPLACE_PAGES = 100
 
 
 def _update_page_resources(*, page, font, font_key, procset):
