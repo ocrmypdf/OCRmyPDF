@@ -313,7 +313,17 @@ def generate_pdfa(
     else:
         stderr = p.stderr.decode('utf-8', errors='replace')
         if _gs_error_reported(stderr):
-            log.error(stderr)
+            last_part = None
+            repcount = 0
+            for part in p.stdout.split('****'):
+                if part != last_part:
+                    if repcount > 1:
+                        log.error(f"(previous error message repeated {repcount} times)")
+                        repcount = 0
+                    log.error(part)
+                else:
+                    repcount += 1
+                last_part = part
         elif 'overprint mode not set' in stderr:
             # Unless someone is going to print PDF/A documents on a
             # magical sRGB printer I can't see the removal of overprinting
