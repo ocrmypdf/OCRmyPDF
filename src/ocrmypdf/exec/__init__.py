@@ -21,12 +21,33 @@ import logging
 import os
 import re
 import sys
+import shutil
 from collections.abc import Mapping
-from subprocess import PIPE, STDOUT, CalledProcessError, run
+from subprocess import PIPE, STDOUT, CalledProcessError, run as subprocess_run
 
 from ..exceptions import ExitCode, MissingDependencyError
 
 log = logging.Logger(__name__)
+
+
+def _get_program(args, env=None):
+    program = args[0]
+    test_path = env.get('_OCRMYPDF_TEST_PATH', '')
+    if test_path:
+        program = shutil.which(program, path=test_path)
+    return program
+
+
+def run(args, *, env=None, **kwargs):
+    if not env:
+        env = os.environ
+    program = _get_program(args, env)
+    if os.name == 'nt' and program.lower().endswith('.py'):
+        args = [sys.executable, program] + args[1:]
+    else:
+        args = [program] + args[1:]
+    log.debug(args)
+    return subprocess_run(args, env=env, **kwargs)
 
 
 def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)', env=None):

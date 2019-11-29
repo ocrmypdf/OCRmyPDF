@@ -80,6 +80,19 @@ PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
 OCRMYPDF = [sys.executable, '-m', 'ocrmypdf']
 
 
+PY_FILE_TEMPLATE = """
+import os
+import subprocess
+import sys
+
+args = [sys.executable, {spoofer}, *sys.argv[1:]]
+p = subprocess.run(args, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+sys.stdout.buffer.write(p.stdout)
+sys.stderr.buffer.write(p.stderr)
+sys.exit(p.returncode)
+"""
+
+
 @pytest.helpers.register
 def spoof(tmp_path_factory, **kwargs):
     """Modify PATH to override subprocess executables
@@ -97,12 +110,24 @@ def spoof(tmp_path_factory, **kwargs):
 
     for replace_program, with_spoof in kwargs.items():
         spoofer = Path(SPOOF_PATH) / with_spoof
-        spoofer.chmod(0o755)
-        (tmpdir / replace_program).symlink_to(spoofer)
+        if os.name != 'nt':
+            spoofer.chmod(0o755)
+            (tmpdir / replace_program).symlink_to(spoofer)
+        else:
+            py_file = PY_FILE_TEMPLATE.format(
+                python=sys.executable, spoofer=repr(os.fspath(spoofer.absolute()))
+            )
+            if replace_program == 'gs':
+                programs = ['gswin64c', 'gswin32c']
+            else:
+                programs = [replace_program]
+            for prog in programs:
+                (tmpdir / f'{prog}.py').write_text(py_file, encoding='utf-8')
 
-    env['_OCRMYPDF_SAVE_PATH'] = env['PATH']
-    env['PATH'] = str(tmpdir) + ":" + env['PATH']
-
+    env['_OCRMYPDF_TEST_PATH'] = str(tmpdir) + os.pathsep + env['PATH']
+    if os.name == 'nt':
+        if '.py' not in env['PATHEXT'].lower():
+            raise EnvironmentError("PATHEXT is not configured to support .py")
     return env
 
 
@@ -178,7 +203,7 @@ def run_ocrmypdf_api(input_file, output_file, *args, env=None):
     )
     api.check_options(options)
     if env:
-        options.tesseract_env = env
+        options.tesseract_env = env.copy()
         options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
     if options.tesseract_env:
         assert all(isinstance(v, (str, bytes)) for v in options.tesseract_env.values())

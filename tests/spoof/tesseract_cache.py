@@ -59,8 +59,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-if '_OCRMYPDF_SAVE_PATH' in os.environ:
-    os.environ['PATH'] = os.environ['_OCRMYPDF_SAVE_PATH']
 
 __version__ = subprocess.check_output(
     ['tesseract', '--version'], stderr=subprocess.STDOUT

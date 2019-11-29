@@ -297,10 +297,10 @@ def test_force_ocr_on_pdf_with_no_images(spoof_tesseract_crash, resources, no_ou
     # As a correctness test, make sure that --force-ocr on a PDF with no
     # content still triggers tesseract. If tesseract crashes, then it was
     # called.
-    result = run_ocrmypdf_api(
+    p, _, _ = run_ocrmypdf(
         resources / 'blank.pdf', no_outpdf, '--force-ocr', env=spoof_tesseract_crash
     )
-    assert result == ExitCode.child_process_error
+    assert p.returncode == ExitCode.child_process_error
     assert not os.path.exists(no_outpdf)
 
 
@@ -389,7 +389,7 @@ def test_pagesegmode(renderer, spoof_tesseract_cache, resources, outpdf):
 
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_tesseract_crash(renderer, spoof_tesseract_crash, resources, no_outpdf, caplog):
-    result = run_ocrmypdf_api(
+    p, _, err = run_ocrmypdf(
         resources / 'ccitt.pdf',
         no_outpdf,
         '-v',
@@ -398,9 +398,9 @@ def test_tesseract_crash(renderer, spoof_tesseract_crash, resources, no_outpdf, 
         renderer,
         env=spoof_tesseract_crash,
     )
-    assert result == ExitCode.child_process_error
+    assert p.returncode == ExitCode.child_process_error
     assert not os.path.exists(no_outpdf)
-    assert "SubprocessOutputError" in caplog.text
+    assert "SubprocessOutputError" in err
 
 
 def test_tesseract_crash_autorotate(spoof_tesseract_crash, resources, no_outpdf):

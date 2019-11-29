@@ -23,7 +23,7 @@ from collections import namedtuple
 from contextlib import suppress
 import logging
 from os import fspath
-from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired, run
+from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
 
 from ..exceptions import (
     MissingDependencyError,
@@ -31,7 +31,7 @@ from ..exceptions import (
     TesseractConfigError,
 )
 from ..helpers import page_number, safe_symlink
-from . import get_version
+from . import get_version, run
 
 OrientationConfidence = namedtuple('OrientationConfidence', ('angle', 'confidence'))
 
