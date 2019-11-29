@@ -18,11 +18,46 @@
 import logging
 from decimal import Decimal
 
+
 import pikepdf
 import pytest
 from PIL import Image
 
+from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.exec.ghostscript import rasterize_pdf
+
+check_ocrmypdf = pytest.helpers.check_ocrmypdf
+run_ocrmypdf = pytest.helpers.run_ocrmypdf
+run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
+spoof = pytest.helpers.spoof
+
+
+@pytest.fixture(scope='session')
+def spoof_no_tess_gs_render_fail(tmp_path_factory):
+    return spoof(
+        tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_render_failure.py'
+    )
+
+
+@pytest.fixture(scope='session')
+def spoof_no_tess_gs_raster_fail(tmp_path_factory):
+    return spoof(
+        tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_raster_failure.py'
+    )
+
+
+@pytest.fixture(scope='session')
+def spoof_no_tess_no_pdfa(tmp_path_factory):
+    return spoof(
+        tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_pdfa_failure.py'
+    )
+
+
+@pytest.fixture(scope='session')
+def spoof_no_tess_pdfa_warning(tmp_path_factory):
+    return spoof(
+        tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_feature_elision.py'
+    )
 
 
 @pytest.fixture
@@ -79,3 +114,32 @@ def test_rasterize_rotated(linn, outdir, caplog):
     with Image.open(outdir / 'out.png') as im:
         assert im.size == (target_size[1], target_size[0])
         assert im.info['dpi'] == (target_dpi[1], target_dpi[0])
+
+
+def test_gs_render_failure(spoof_no_tess_gs_render_fail, resources, outpdf):
+    p, out, err = run_ocrmypdf(
+        resources / 'blank.pdf', outpdf, env=spoof_no_tess_gs_render_fail
+    )
+    print(err)
+    assert p.returncode == ExitCode.child_process_error
+
+
+def test_gs_raster_failure(spoof_no_tess_gs_raster_fail, resources, outpdf):
+    p, out, err = run_ocrmypdf(
+        resources / 'ccitt.pdf', outpdf, env=spoof_no_tess_gs_raster_fail
+    )
+    print(err)
+    assert p.returncode == ExitCode.child_process_error
+
+
+def test_ghostscript_pdfa_failure(spoof_no_tess_no_pdfa, resources, outpdf):
+    p, out, err = run_ocrmypdf(
+        resources / 'ccitt.pdf', outpdf, env=spoof_no_tess_no_pdfa
+    )
+    assert (
+        p.returncode == ExitCode.pdfa_conversion_failed
+    ), "Unexpected return when PDF/A fails"
+
+
+def test_ghostscript_feature_elision(spoof_no_tess_pdfa_warning, resources, outpdf):
+    check_ocrmypdf(resources / 'ccitt.pdf', outpdf, env=spoof_no_tess_pdfa_warning)

@@ -56,34 +56,6 @@ def spoof_tesseract_big_image_error(tmp_path_factory):
     return spoof(tmp_path_factory, tesseract='tesseract_big_image_error.py')
 
 
-@pytest.fixture(scope='session')
-def spoof_no_tess_no_pdfa(tmp_path_factory):
-    return spoof(
-        tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_pdfa_failure.py'
-    )
-
-
-@pytest.fixture(scope='session')
-def spoof_no_tess_pdfa_warning(tmp_path_factory):
-    return spoof(
-        tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_feature_elision.py'
-    )
-
-
-@pytest.fixture(scope='session')
-def spoof_no_tess_gs_render_fail(tmp_path_factory):
-    return spoof(
-        tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_render_failure.py'
-    )
-
-
-@pytest.fixture(scope='session')
-def spoof_no_tess_gs_raster_fail(tmp_path_factory):
-    return spoof(
-        tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_raster_failure.py'
-    )
-
-
 def test_quick(spoof_tesseract_cache, resources, outpdf):
     check_ocrmypdf(resources / 'ccitt.pdf', outpdf, env=spoof_tesseract_cache)
 
@@ -557,19 +529,6 @@ def test_linearized_pdf_and_indirect_object(spoof_tesseract_noop, resources, out
     check_ocrmypdf(resources / 'epson.pdf', outpdf, env=spoof_tesseract_noop)
 
 
-def test_ghostscript_pdfa_failure(spoof_no_tess_no_pdfa, resources, outpdf):
-    p, out, err = run_ocrmypdf(
-        resources / 'ccitt.pdf', outpdf, env=spoof_no_tess_no_pdfa
-    )
-    assert (
-        p.returncode == ExitCode.pdfa_conversion_failed
-    ), "Unexpected return when PDF/A fails"
-
-
-def test_ghostscript_feature_elision(spoof_no_tess_pdfa_warning, resources, outpdf):
-    check_ocrmypdf(resources / 'ccitt.pdf', outpdf, env=spoof_no_tess_pdfa_warning)
-
-
 def test_very_high_dpi(spoof_tesseract_cache, resources, outpdf):
     "Checks for a Decimal quantize error with high DPI, etc"
     check_ocrmypdf(resources / '2400dpi.pdf', outpdf, env=spoof_tesseract_cache)
@@ -716,22 +675,6 @@ def test_skip_big_with_no_images(spoof_tesseract_noop, resources, outpdf):
         '--force-ocr',
         env=spoof_tesseract_noop,
     )
-
-
-def test_gs_render_failure(spoof_no_tess_gs_render_fail, resources, outpdf):
-    p, out, err = run_ocrmypdf(
-        resources / 'blank.pdf', outpdf, env=spoof_no_tess_gs_render_fail
-    )
-    print(err)
-    assert p.returncode == ExitCode.child_process_error
-
-
-def test_gs_raster_failure(spoof_no_tess_gs_raster_fail, resources, outpdf):
-    p, out, err = run_ocrmypdf(
-        resources / 'ccitt.pdf', outpdf, env=spoof_no_tess_gs_raster_fail
-    )
-    print(err)
-    assert p.returncode == ExitCode.child_process_error
 
 
 @pytest.mark.skipif(
