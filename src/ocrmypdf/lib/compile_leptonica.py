@@ -491,3 +491,8 @@ ffibuilder.set_source("ocrmypdf.lib._leptonica", None)
 
 if __name__ == '__main__':
     ffibuilder.compile(verbose=True)
+    if Path('ocrmypdf/lib/_leptonica.py').exists() and Path('src/ocrmypdf').exists():
+        output = Path('ocrmypdf/lib/_leptonica.py')
+        output.rename('src/ocrmypdf/lib/_leptonica.py')
+        Path('ocrmypdf/lib').rmdir()
+        Path('ocrmypdf').rmdir()
