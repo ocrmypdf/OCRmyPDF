@@ -313,18 +313,20 @@ def test_german(spoof_tesseract_cache, resources, outdir):
     # properly. It is fine that we are testing -l deu on a French file because
     # we are exercising the functionality not going for accuracy.
     sidecar = outdir / 'francais.txt'
-    result = run_ocrmypdf_api(
-        resources / 'francais.pdf',
-        outdir / 'francais.pdf',
-        '-l',
-        'deu',  # more commonly installed
-        '--sidecar',
-        sidecar,
-        env=spoof_tesseract_cache,
-    )
-    if 'deu' not in tesseract.languages():
-        pytest.xfail(reason="tesseract-deu language pack not installed")
-    assert result == ExitCode.ok, "Requires tesseract deu language pack"
+    try:
+        check_ocrmypdf(
+            resources / 'francais.pdf',
+            outdir / 'francais.pdf',
+            '-l',
+            'deu',  # more commonly installed
+            '--sidecar',
+            sidecar,
+            env=spoof_tesseract_cache,
+        )
+    except MissingDependencyError:
+        if 'deu' not in tesseract.languages():
+            pytest.xfail(reason="tesseract-deu language pack not installed")
+        raise
 
 
 def test_klingon(resources, outpdf):
