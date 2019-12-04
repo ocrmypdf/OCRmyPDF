@@ -363,7 +363,8 @@ def test_input_file_not_a_pdf(caplog, no_outpdf):
     input_file = __file__  # Try to OCR this file
     result = run_ocrmypdf_api(input_file, no_outpdf)
     assert result == ExitCode.input_file
-    assert input_file in caplog.text
+    if os.name != 'nt':  # name will be mangled with \\'s on nt
+        assert input_file in caplog.text
 
 
 def test_encrypted(resources, caplog, no_outpdf):
