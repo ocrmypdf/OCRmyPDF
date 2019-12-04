@@ -18,7 +18,7 @@
 import os
 import sys
 from pathlib import Path
-from subprocess import DEVNULL, PIPE, run, Popen
+from subprocess import DEVNULL, PIPE, run, Popen, CalledProcessError
 
 import pytest
 
@@ -113,22 +113,6 @@ def test_bad_locale():
     assert out == '', "stdout not clean"
     assert p.returncode != 0
     assert 'configured to use ASCII as encoding' in err, "should whine"
-
-
-@pytest.mark.parametrize('renderer', ['hocr', 'sandwich'])
-def test_bad_utf8(spoof_tess_bad_utf8, renderer, resources, no_outpdf):
-    p, out, err = run_ocrmypdf(
-        resources / 'ccitt.pdf',
-        no_outpdf,
-        '--pdf-renderer',
-        renderer,
-        env=spoof_tess_bad_utf8,
-    )
-
-    assert out == '', "stdout not clean"
-    assert p.returncode != 0
-    assert 'not utf-8' in err, "should whine about utf-8"
-    assert '\\x96' in err, 'should repeat backslash encoded output'
 
 
 def test_dev_null(spoof_tesseract_noop, resources):

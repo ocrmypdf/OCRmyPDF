@@ -194,12 +194,7 @@ def tesseract_log_output(mainlog, stdout, input_file):
     try:
         text = stdout.decode()
     except UnicodeDecodeError:
-        log.error(
-            "command line output was not utf-8. "
-            + "This usually means Tesseract's language packs do not match "
-            "the installed version of Tesseract."
-        )
-        text = stdout.decode('utf-8', 'backslashreplace')
+        text = stdout.decode('utf-8', 'ignore')
 
     lines = text.splitlines()
     for line in lines:
