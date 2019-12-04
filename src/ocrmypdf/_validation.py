@@ -446,7 +446,7 @@ def report_output_file_size(options, input_file, output_file):
 def check_dependency_versions(options):
     check_external_program(
         program='tesseract',
-        package={'darwin': 'tesseract', 'linux': 'tesseract-ocr'},
+        package={'linux': 'tesseract-ocr'},
         version_checker=tesseract.version,
         need_version='4.0.0',  # using backport for Travis CI
     )
