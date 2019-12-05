@@ -26,6 +26,7 @@ from collections import namedtuple
 from tempfile import mkdtemp
 
 from tqdm import tqdm
+import PIL
 
 from ._graft import OcrGrafter
 from ._jobcontext import PDFContext, cleanup_working_files, make_logger
@@ -176,7 +177,7 @@ def post_process(pdf_file, context):
     return optimize_pdf(pdf_out, context)
 
 
-def worker_init(queue):
+def worker_init(queue, max_pixels):
     """Initialize a process pool worker"""
 
     # Ignore SIGINT (our parent process will kill us gracefully)
@@ -188,9 +189,15 @@ def worker_init(queue):
     root.handlers = []
     root.addHandler(h)
 
+    # In Windows, child process will not inherit our change to this value in
+    # the parent process, so ensure workers get it set
+    PIL.Image.MAX_IMAGE_PIXELS = max_pixels
 
-def worker_thread_init(_queue):
-    pass
+
+def worker_thread_init(_queue, max_pixels):
+    # This is probably not needed since threads should all see the same memory,
+    # but done for consistency.
+    PIL.Image.MAX_IMAGE_PIXELS = max_pixels
 
 
 def log_listener(queue):
@@ -261,7 +268,9 @@ def exec_concurrent(context):
         unit_scale=0.5,
         disable=not context.options.progress_bar,
     ) as pbar, Pool(
-        processes=max_workers, initializer=initializer, initargs=(log_queue,)
+        processes=max_workers,
+        initializer=initializer,
+        initargs=(log_queue, PIL.Image.MAX_IMAGE_PIXELS),
     ) as pool:
         results = pool.imap_unordered(exec_page_sync, context.get_page_contexts())
         while True:
