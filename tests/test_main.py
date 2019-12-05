@@ -612,7 +612,10 @@ THIS FILE IS INVALID
         '--tesseract-config',
         cfg_file,
     )
-    assert "parameter not found" in err.lower(), "No error message"
+    assert (
+        "parameter not found" in err.lower()
+        or "error occurred while parsing" in err.lower()
+    ), "No error message"
     assert p.returncode == ExitCode.invalid_config
 
 
