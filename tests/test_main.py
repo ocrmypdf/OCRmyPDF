@@ -578,23 +578,6 @@ language_model_penalty_non_freq_dict_word 0
 
 @pytest.mark.slow  # This test sometimes times out in CI
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_tesseract_config_notfound(renderer, resources, outdir):
-    cfg_file = outdir / 'nofile.cfg'
-
-    p, out, err = run_ocrmypdf(
-        resources / 'ccitt.pdf',
-        outdir / 'out.pdf',
-        '--pdf-renderer',
-        renderer,
-        '--tesseract-config',
-        cfg_file,
-    )
-    assert "Can't open" in err, "No error message about missing config file"
-    assert p.returncode == ExitCode.ok, err
-
-
-@pytest.mark.slow  # This test sometimes times out in CI
-@pytest.mark.parametrize('renderer', RENDERERS)
 def test_tesseract_config_invalid(renderer, resources, outdir):
     cfg_file = outdir / 'test.cfg'
     with cfg_file.open('w') as f:
