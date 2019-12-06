@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import ast
 import os
 import platform
 import sys
@@ -80,7 +81,9 @@ PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
 OCRMYPDF = [sys.executable, '-m', 'ocrmypdf']
 
 
-PY_FILE_TEMPLATE = """
+WINDOWS_SHIM_TEMPLATE = """
+# This is a shim for Windows that has the same effect as a symlink to the target .py
+# file
 import os
 import subprocess
 import sys
@@ -91,6 +94,8 @@ sys.stdout.buffer.write(p.stdout)
 sys.stderr.buffer.write(p.stderr)
 sys.exit(p.returncode)
 """
+
+assert ast.parse(WINDOWS_SHIM_TEMPLATE.format(spoofer=repr(r"C:\\Temp\\file.py")))
 
 
 @pytest.helpers.register
@@ -114,8 +119,8 @@ def spoof(tmp_path_factory, **kwargs):
             spoofer.chmod(0o755)
             (tmpdir / replace_program).symlink_to(spoofer)
         else:
-            py_file = PY_FILE_TEMPLATE.format(
-                python=sys.executable, spoofer=repr(os.fspath(spoofer.absolute()))
+            py_file = WINDOWS_SHIM_TEMPLATE.format(
+                spoofer=repr(os.fspath(spoofer.absolute()))
             )
             if replace_program == 'gs':
                 programs = ['gswin64c', 'gswin32c']
