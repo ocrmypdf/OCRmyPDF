@@ -431,6 +431,13 @@ See `OCRmyPDF Docker Image <docker>`__ for more information.
 Installing on Windows
 =====================
 
+.. warning::
+
+    Native Windows support is new. Consider it "beta" software. Some
+    functionality is missing or may be more difficult to enable. If you need a
+    production-ready solution, use Windows Subsystem for Linux or a Docker
+    image.
+
 You must install the following for Windows using their installers:
 
 * Python 3.7 (64-bit recommended)
@@ -438,11 +445,16 @@ You must install the following for Windows using their installers:
 * Ghostscript 9.50 or later
 * QPDF 9.0.2 or later
 
-You can install all except Tesseract with the Chocolatey package manager:
+You can install these with the Chocolatey package manager:
 
 * ``choco install python3``
+* ``choco install tesseract``
 * ``choco install ghostscript``
 * ``choco install qpdf``
+
+Also consider adding:
+
+* ``choco install pngquant``
 
 Modify your ``PATH`` environment variable so that Tesseract, Ghostscript and QPDF
 executables on the ``PATH``.
