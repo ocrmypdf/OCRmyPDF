@@ -96,6 +96,7 @@ def extract_text_xml(infile, pdf, pageno=None, log=gslog):
     page_count_difference = len(pdf.pages) - len(page_xml)
     if page_count_difference != 0:
         log.error("The number of pages in the input file is inconsistent.")
+        log.error(f"Expected {len(pdf.pages)}, txtwrite says {len(page_xml)}")
         if page_count_difference > 0:
             page_xml.extend([None] * page_count_difference)
     return page_xml

@@ -19,9 +19,9 @@
 
 from functools import lru_cache
 from os import fspath
-from subprocess import PIPE, STDOUT, CalledProcessError, run
+from subprocess import PIPE, STDOUT, CalledProcessError
 
-from . import get_version
+from . import get_version, run
 
 
 @lru_cache(maxsize=1)

@@ -30,10 +30,7 @@ from subprocess import check_call
 PDF/A creation."""
 
 
-def real_ghostscript(argv):
-    gs_args = ['gs'] + argv[1:]
-    os.execvp("gs", gs_args)
-    return  # Not reachable
+from gs import real_ghostscript
 
 
 elision_warning = """GPL Ghostscript 9.20: Setting Overprint Mode to 1
@@ -41,7 +38,6 @@ not permitted in PDF/A-2, overprint mode not set"""
 
 
 def main():
-    os.environ['PATH'] = os.environ['_OCRMYPDF_SAVE_PATH']
     if '--version' in sys.argv:
         print('9.20')
         print('SPOOFED: ' + os.path.basename(__file__))

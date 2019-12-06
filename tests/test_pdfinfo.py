@@ -91,21 +91,21 @@ def test_single_page_image(outdir):
 def test_single_page_inline_image(outdir):
     filename = outdir / 'image-mono-inline.pdf'
     pdf = Canvas(str(filename), pagesize=(8 * 72, 6 * 72))
-    with NamedTemporaryFile() as im_tmp:
-        im = Image.new('1', (8, 8), 0)
-        for n in range(8):
-            im.putpixel((n, n), 1)
-        im.save(im_tmp.name, format='PNG')
-        # Draw image in a 72x72 pt or 1"x1" area
-        pdf.drawInlineImage(im_tmp.name, 0, 0, width=72, height=72)
-        pdf.showPage()
-        pdf.save()
 
-    pdf = pdfinfo.PdfInfo(filename)
-    print(pdf)
-    pdfimage = pdf[0].images[0]
+    im = Image.new('1', (8, 8), 0)
+    for n in range(8):
+        im.putpixel((n, n), 1)
+
+    # Draw image in a 72x72 pt or 1"x1" area
+    pdf.drawInlineImage(im, 0, 0, width=72, height=72)
+    pdf.showPage()
+    pdf.save()
+
+    info = pdfinfo.PdfInfo(filename)
+    print(info)
+    pdfimage = info[0].images[0]
     assert isclose(pdfimage.xres, 8)
-    assert pdfimage.color == Colorspace.rgb  # reportlab produces color image
+    assert pdfimage.color == Colorspace.gray
     assert pdfimage.width == 8
 
 

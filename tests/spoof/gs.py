@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# © 2016 James R. Barlow: github.com/jbarlow83
+# © 2019 James R. Barlow: github.com/jbarlow83
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,41 +19,22 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+"""Find Ghostscript executable"""
+
+
 import os
-import sys
+import shutil
 
 
-"""Replicate Ghostscript PDF/A conversion failure by suppressing some
-arguments"""
+def real_ghostscript(argv):
+    if os.name != 'nt':
+        gs = shutil.which('gs')
+        gs_args = [gs] + argv[1:]
+        os.execv(gs_args[0], gs_args)
+    else:
+        gs = shutil.which('gswin64c')
+        if not gs:
+            gs = shutil.which('gswin32c')
+        os.execv(gs, argv[1:])
 
-from gs import real_ghostscript
-
-
-def main():
-    if '--version' in sys.argv:
-        print('9.20')
-        print('SPOOFED: ' + os.path.basename(__file__))
-        sys.exit(0)
-
-    # Unless some argument is calling for PDFA generation, forward to
-    # real ghostscript
-    if not any(arg.startswith('-dPDFA') for arg in sys.argv):
-        real_ghostscript(sys.argv)
-        return
-
-    # Remove the two arguments that tell ghostscript to create a PDF/A
-    # Does not remove the Postscript definition file - not necessary
-    # to cause PDF/A creation failure
-    argv = []
-    for arg in sys.argv:
-        if arg.startswith('-dPDFA'):
-            continue
-        elif arg.startswith('-dPDFACompatibilityPolicy'):
-            continue
-        argv.append(arg)
-
-    real_ghostscript(argv)
-
-
-if __name__ == '__main__':
-    main()
+    return  # Not reachable

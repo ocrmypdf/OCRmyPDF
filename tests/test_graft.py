@@ -16,13 +16,12 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from unittest.mock import patch
 
 import pytest
 
 import ocrmypdf
 import pikepdf
-
-os_environ = pytest.helpers.os_environ
 
 
 def test_no_glyphless_graft(resources, outdir):
@@ -33,9 +32,7 @@ def test_no_glyphless_graft(resources, outdir):
     pdf.pages.extend(pdf_cmyk.pages)
     pdf.save(outdir / 'test.pdf')
 
-    env = os.environ.copy()
-    env['_OCRMYPDF_MAX_REPLACE_PAGES'] = '2'
-    with os_environ(env):
+    with patch('ocrmypdf._graft.MAX_REPLACE_PAGES', 2):
         ocrmypdf.ocr(
             outdir / 'test.pdf', outdir / 'out.pdf', deskew=True, tesseract_timeout=0
         )

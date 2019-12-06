@@ -15,10 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import ast
 import os
 import platform
 import sys
-from contextlib import contextmanager
 from pathlib import Path
 from subprocess import PIPE, run
 from ocrmypdf import api, cli
@@ -81,6 +81,23 @@ PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
 OCRMYPDF = [sys.executable, '-m', 'ocrmypdf']
 
 
+WINDOWS_SHIM_TEMPLATE = """
+# This is a shim for Windows that has the same effect as a symlink to the target .py
+# file
+import os
+import subprocess
+import sys
+
+args = [sys.executable, {spoofer}, *sys.argv[1:]]
+p = subprocess.run(args, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+sys.stdout.buffer.write(p.stdout)
+sys.stderr.buffer.write(p.stderr)
+sys.exit(p.returncode)
+"""
+
+assert ast.parse(WINDOWS_SHIM_TEMPLATE.format(spoofer=repr(r"C:\\Temp\\file.py")))
+
+
 @pytest.helpers.register
 def spoof(tmp_path_factory, **kwargs):
     """Modify PATH to override subprocess executables
@@ -98,37 +115,25 @@ def spoof(tmp_path_factory, **kwargs):
 
     for replace_program, with_spoof in kwargs.items():
         spoofer = Path(SPOOF_PATH) / with_spoof
-        spoofer.chmod(0o755)
-        (tmpdir / replace_program).symlink_to(spoofer)
+        if os.name != 'nt':
+            spoofer.chmod(0o755)
+            (tmpdir / replace_program).symlink_to(spoofer)
+        else:
+            py_file = WINDOWS_SHIM_TEMPLATE.format(
+                spoofer=repr(os.fspath(spoofer.absolute()))
+            )
+            if replace_program == 'gs':
+                programs = ['gswin64c', 'gswin32c']
+            else:
+                programs = [replace_program]
+            for prog in programs:
+                (tmpdir / f'{prog}.py').write_text(py_file, encoding='utf-8')
 
-    env['_OCRMYPDF_SAVE_PATH'] = env['PATH']
-    env['PATH'] = str(tmpdir) + ":" + env['PATH']
-
+    env['_OCRMYPDF_TEST_PATH'] = str(tmpdir) + os.pathsep + env['PATH']
+    if os.name == 'nt':
+        if '.py' not in env['PATHEXT'].lower():
+            raise EnvironmentError("PATHEXT is not configured to support .py")
     return env
-
-
-@pytest.helpers.register
-@contextmanager
-def os_environ(new_env):
-    old_env = os.environ.copy()
-    if new_env is None:
-        new_env = {}
-
-    for k, v in new_env.items():
-        if k != 'PYTEST_CURRENT_TEST':
-            os.environ[k] = v
-    yield
-    new_keys = set(os.environ.copy()) - set(old_env)
-    for k in new_keys:
-        if k != 'PYTEST_CURRENT_TEST':
-            del os.environ[k]
-    for k in old_env:
-        if k != 'PYTEST_CURRENT_TEST':
-            os.environ[k] = old_env[k]
-
-    for k, v in os.environ.copy().items():
-        if k != 'PYTEST_CURRENT_TEST':
-            assert v == old_env[k]
 
 
 @pytest.fixture(scope='session')
@@ -183,7 +188,7 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
     api.check_options(options)
     if env:
         options.tesseract_env = env
-        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = input_file
+        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
     result = api.run_pipeline(options, api=True)
 
     assert result == 0
@@ -191,6 +196,24 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
     assert os.stat(str(output_file)).st_size > 100, "PDF too small or empty"
 
     return output_file
+
+
+@pytest.helpers.register
+def run_ocrmypdf_api(input_file, output_file, *args, env=None):
+    "Run ocrmypdf and let caller deal with results"
+
+    options = cli.parser.parse_args(
+        [str(input_file), str(output_file)]
+        + [str(arg) for arg in args if arg is not None]
+    )
+    api.check_options(options)
+    if env:
+        options.tesseract_env = env.copy()
+        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
+    if options.tesseract_env:
+        assert all(isinstance(v, (str, bytes)) for v in options.tesseract_env.values())
+
+    return api.run_pipeline(options, api=False)
 
 
 @pytest.helpers.register

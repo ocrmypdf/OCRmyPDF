@@ -18,6 +18,7 @@
 import logging
 import os
 import sys
+import warnings
 from enum import IntEnum
 from pathlib import Path
 
@@ -158,7 +159,7 @@ def create_options(*, input_file, output_file, **kwargs):
 
     # If we are running a Tesseract spoof, ensure it knows what the input file is
     if os.environ.get('PYTEST_CURRENT_TEST') and options.tesseract_env:
-        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = input_file
+        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
 
     return options
 

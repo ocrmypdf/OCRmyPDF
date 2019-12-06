@@ -18,10 +18,10 @@
 """Interface to jbig2 executable"""
 
 from functools import lru_cache
-from subprocess import PIPE, run
+from subprocess import PIPE
 
 from ..exceptions import MissingDependencyError
-from . import get_version
+from . import get_version, run
 
 
 @lru_cache(maxsize=1)

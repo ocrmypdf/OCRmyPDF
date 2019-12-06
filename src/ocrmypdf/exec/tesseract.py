@@ -23,15 +23,15 @@ from collections import namedtuple
 from contextlib import suppress
 import logging
 from os import fspath
-from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired, run
+from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
 
 from ..exceptions import (
     MissingDependencyError,
     SubprocessOutputError,
     TesseractConfigError,
 )
-from ..helpers import page_number
-from . import get_version
+from ..helpers import page_number, safe_symlink
+from . import get_version, run
 
 OrientationConfidence = namedtuple('OrientationConfidence', ('angle', 'confidence'))
 
@@ -128,9 +128,10 @@ def languages(tesseract_env=None):
     except CalledProcessError as e:
         raise MissingDependencyError(lang_error(e.output)) from e
 
+    for line in output.splitlines():
+        if line.startswith('Error'):
+            raise MissingDependencyError(lang_error(output))
     header, *rest = output.splitlines()
-    if not header.startswith('List of available languages'):
-        raise MissingDependencyError(lang_error(output))
     return set(lang.strip() for lang in rest)
 
 
@@ -194,12 +195,7 @@ def tesseract_log_output(mainlog, stdout, input_file):
     try:
         text = stdout.decode()
     except UnicodeDecodeError:
-        log.error(
-            "Tesseract's output was not utf-8. "
-            "This usually means Tesseract's language packs do not match "
-            "the installed version of Tesseract."
-        )
-        text = stdout.decode('utf-8', 'backslashreplace')
+        text = stdout.decode('utf-8', 'ignore')
 
     lines = text.splitlines()
     for line in lines:
@@ -325,7 +321,7 @@ def use_skip_page(text_only, skip_pdf, output_pdf, output_text):
         # Substitute a "skipped page"
         with suppress(FileNotFoundError):
             os.remove(output_pdf)  # In case it was partially created
-        os.symlink(skip_pdf, output_pdf)
+        safe_symlink(skip_pdf, output_pdf)
         return
 
     # Or normally, just write a 0 byte file to the output to indicate a skip

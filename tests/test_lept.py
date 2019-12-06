@@ -63,6 +63,10 @@ def test_pix_otsu(crom_pix):
     assert im1bpp.mode == '1'
 
 
+@pytest.mark.skipif(
+    lept.get_leptonica_version() < 'leptonica-1.76',
+    reason="needs new leptonica for API change",
+)
 def test_crop(resources):
     pix = lept.Pix.open(resources / 'linn.png')
     foreground = pix.crop_to_foreground()
@@ -90,16 +94,6 @@ def test_leptonica_compile(tmp_path):
     ffibuilder.compile(tmpdir=fspath(tmp_path), target=fspath(tmp_path / 'lepttest.*'))
 
 
-def test_with_stderr(capsys):
-    # pytest redirects stderr too; we must disable this for the test to be valid
-    with capsys.disabled():
-        with pytest.raises(FileNotFoundError):
-            lept.Pix.open("does_not_exist1")
-
-
-def test_without_stderr(capsys):
-    # pytest redirects stderr too; we must disable this for the test to be valid
-    with capsys.disabled():
-        with patch('sys.stderr', new=None):
-            with pytest.raises(FileNotFoundError):
-                lept.Pix.open("does_not_exist2")
+def test_file_not_found():
+    with pytest.raises(FileNotFoundError):
+        lept.Pix.open("does_not_exist1")

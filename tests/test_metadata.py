@@ -21,6 +21,7 @@ from datetime import timezone
 import logging
 import mmap
 from os import fspath
+import os
 from pathlib import Path
 from shutil import copyfile, move
 from unittest.mock import MagicMock, patch
@@ -330,10 +331,8 @@ def test_prevent_gs_invalid_xml(resources, outdir):
         str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps'), context
     )
 
-    with open(outdir / 'pdfa.pdf', 'rb') as f:
-        with mmap.mmap(
-            f.fileno(), 0, flags=mmap.MAP_PRIVATE, prot=mmap.PROT_READ
-        ) as mm:
+    with open(outdir / 'pdfa.pdf', 'r+b') as f:
+        with mmap.mmap(f.fileno(), 0) as mm:
             # Since the XML may be invalid, we scan instead of actually feeding it
             # to a parser.
             XMP_MAGIC = b'W5M0MpCehiHzreSzNTczkc9d'

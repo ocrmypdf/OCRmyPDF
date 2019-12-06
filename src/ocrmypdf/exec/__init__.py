@@ -21,12 +21,33 @@ import logging
 import os
 import re
 import sys
+import shutil
 from collections.abc import Mapping
-from subprocess import PIPE, STDOUT, CalledProcessError, run
+from subprocess import PIPE, STDOUT, CalledProcessError, run as subprocess_run
 
 from ..exceptions import ExitCode, MissingDependencyError
 
 log = logging.Logger(__name__)
+
+
+def _get_program(args, env=None):
+    program = args[0]
+    test_path = env.get('_OCRMYPDF_TEST_PATH', '')
+    if test_path:
+        program = shutil.which(program, path=test_path)
+    return program
+
+
+def run(args, *, env=None, **kwargs):
+    if not env:
+        env = os.environ
+    program = _get_program(args, env)
+    if os.name == 'nt' and program.lower().endswith('.py'):
+        args = [sys.executable, program] + args[1:]
+    else:
+        args = [program] + args[1:]
+    log.debug(args)
+    return subprocess_run(args, env=env, **kwargs)
 
 
 def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)', env=None):
@@ -111,23 +132,33 @@ On RPM-based systems (Red Hat, Fedora), search for instructions on
 installing the RPM for {program}.
 '''
 
+windows_install_advice = '''
+If not already installed, install the Chocolatey package manager. Then use
+a command prompt to install the missing package:
+    choco install {package}
+'''
+
 
 def _get_platform():
     if sys.platform.startswith('freebsd'):
         return 'freebsd'
     elif sys.platform.startswith('linux'):
         return 'linux'
+    elif sys.platform.startswith('win'):
+        return 'windows'
     return sys.platform
 
 
 def _error_trailer(program, package, **kwargs):
     if isinstance(package, Mapping):
-        package = package[_get_platform()]
+        package = package.get(_get_platform(), program)
 
     if _get_platform() == 'darwin':
         log.info(osx_install_advice.format(**locals()))
     elif _get_platform() == 'linux':
         log.info(linux_install_advice.format(**locals()))
+    elif _get_platform() == 'windows':
+        log.info(windows_install_advice.format(**locals()))
 
 
 def _error_missing_program(program, package, required_for, recommended):

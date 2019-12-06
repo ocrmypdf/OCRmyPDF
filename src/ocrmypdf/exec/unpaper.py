@@ -22,7 +22,6 @@
 
 import os
 import shlex
-import subprocess
 from functools import lru_cache
 from subprocess import PIPE, STDOUT, CalledProcessError
 from tempfile import TemporaryDirectory
@@ -30,7 +29,7 @@ from tempfile import TemporaryDirectory
 from PIL import Image
 
 from ..exceptions import MissingDependencyError, SubprocessOutputError
-from . import get_version
+from . import get_version, run as external_run
 
 
 @lru_cache(maxsize=1)
@@ -77,7 +76,7 @@ def run(input_file, output_file, dpi, log, mode_args):
         # their unpaper arguments (whether intentionally or otherwise)
         args_unpaper.extend([input_pnm, output_pnm])
         try:
-            proc = subprocess.run(
+            proc = external_run(
                 args_unpaper,
                 check=True,
                 close_fds=True,

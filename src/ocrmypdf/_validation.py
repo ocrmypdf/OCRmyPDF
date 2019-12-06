@@ -42,7 +42,7 @@ from .exec import (
     tesseract,
     unpaper,
 )
-from .helpers import is_file_writable, is_iterable_notstr, monotonic, re_symlink
+from .helpers import is_file_writable, is_iterable_notstr, monotonic, safe_symlink
 
 # -------------
 # External dependencies
@@ -374,7 +374,7 @@ def create_input_file(options, work_folder):
     else:
         try:
             target = os.path.join(work_folder, 'origin')
-            re_symlink(options.input_file, target)
+            safe_symlink(options.input_file, target)
             return target
         except FileNotFoundError:
             raise InputFileError(f"File not found - {options.input_file}")
@@ -446,7 +446,7 @@ def report_output_file_size(options, input_file, output_file):
 def check_dependency_versions(options):
     check_external_program(
         program='tesseract',
-        package={'darwin': 'tesseract', 'linux': 'tesseract-ocr'},
+        package={'linux': 'tesseract-ocr'},
         version_checker=tesseract.version,
         need_version='4.0.0',  # using backport for Travis CI
     )
