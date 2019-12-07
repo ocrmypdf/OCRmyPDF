@@ -1,3 +1,7 @@
+branches:
+  except:
+    - azure
+
 cache:
   pip: true
   directories:
