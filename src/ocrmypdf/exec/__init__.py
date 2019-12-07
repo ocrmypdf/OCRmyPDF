@@ -47,6 +47,10 @@ def run(args, *, env=None, **kwargs):
     else:
         args = [program] + args[1:]
     log.debug(args)
+    if sys.version_info < (3, 7) and os.name == 'nt':
+        # Can't use close_fds=True on Windows with Python 3.6 or older
+        # https://bugs.python.org/issue19575, etc.
+        kwargs['close_fds'] = False
     return subprocess_run(args, env=env, **kwargs)
 
 
