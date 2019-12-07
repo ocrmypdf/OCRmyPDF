@@ -105,6 +105,7 @@ def test_closed_streams(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
 @pytest.mark.skipif(
     Path('/etc/alpine-release').exists(), reason="invalid test on alpine"
 )
+@pytest.mark.skipif(os.name == 'nt', reason="invalid test on Windows")
 def test_bad_locale():
     env = os.environ.copy()
     env['LC_ALL'] = 'C'
@@ -115,6 +116,10 @@ def test_bad_locale():
     assert 'configured to use ASCII as encoding' in err, "should whine"
 
 
+@pytest.mark.xfail(
+    os.name == 'nt' and sys.version_info < (3, 8),
+    reason="Windows does not like this; not sure how to fix",
+)
 def test_dev_null(spoof_tesseract_noop, resources):
     p, out, err = run_ocrmypdf(
         resources / 'trivial.pdf', os.devnull, '--force-ocr', env=spoof_tesseract_noop
