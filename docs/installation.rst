@@ -442,7 +442,7 @@ Installing on Windows
     production-ready solution, use Windows Subsystem for Linux or a Docker
     image.
 
-You must install the following for Windows using their installers:
+You must install the following for Windows:
 
 * Python 3.7 (64-bit recommended)
 * Tesseract 4.0 or later
@@ -452,13 +452,16 @@ You must install the following for Windows using their installers:
 You can install these with the Chocolatey package manager:
 
 * ``choco install python3``
-* ``choco install tesseract``
+* ``choco install --pre tesseract``
 * ``choco install ghostscript``
 * ``choco install qpdf``
 
 Also consider adding:
 
 * ``choco install pngquant``
+
+Windows 10 64-bit and 64-bit versions of applications are recommended. Earlier
+versions of Windows and 32-bit versions of these programs are not tested.
 
 Modify your ``PATH`` environment variable so that Tesseract, Ghostscript and QPDF
 executables on the ``PATH``.
