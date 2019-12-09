@@ -37,30 +37,6 @@ def test_tesseract_v4():
     assert tesseract.v4()
 
 
-def test_pagesize_consistency_tess4(resources, outpdf):
-    from math import isclose
-
-    infile = resources / 'linn.pdf'
-
-    before_dims = pytest.helpers.first_page_dimensions(infile)
-
-    check_ocrmypdf(
-        infile,
-        outpdf,
-        '--pdf-renderer',
-        'sandwich',
-        '--clean' if pytest.helpers.have_unpaper() else None,
-        '--deskew',
-        '--remove-background',
-        '--clean-final' if pytest.helpers.have_unpaper() else None,
-    )
-
-    after_dims = pytest.helpers.first_page_dimensions(outpdf)
-
-    assert isclose(before_dims[0], after_dims[0])
-    assert isclose(before_dims[1], after_dims[1])
-
-
 @pytest.mark.parametrize('basename', ['graph_ocred.pdf', 'cardinal.pdf'])
 def test_skip_pages_does_not_replicate(resources, basename, outdir):
     infile = resources / basename

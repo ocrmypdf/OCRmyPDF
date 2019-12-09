@@ -21,6 +21,7 @@ import shutil
 from math import isclose
 from pathlib import Path
 from subprocess import PIPE, run
+from unittest.mock import patch
 
 import PIL
 import pytest
@@ -572,7 +573,12 @@ language_model_penalty_non_freq_dict_word 0
         )
 
     check_ocrmypdf(
-        resources / 'ccitt.pdf', outdir / 'out.pdf', '--tesseract-config', cfg_file
+        resources / '3small.pdf',
+        outdir / 'out.pdf',
+        '--tesseract-config',
+        cfg_file,
+        '--pages',
+        '1',
     )
 
 
@@ -634,7 +640,7 @@ def test_pagesize_consistency(renderer, resources, outpdf):
 
     first_page_dimensions = pytest.helpers.first_page_dimensions
 
-    infile = resources / 'linn.pdf'
+    infile = resources / '3small.pdf'
 
     before_dims = first_page_dimensions(infile)
 
@@ -647,12 +653,14 @@ def test_pagesize_consistency(renderer, resources, outpdf):
         '--deskew',
         '--remove-background',
         '--clean-final' if pytest.helpers.have_unpaper() else None,
+        '--pages',
+        '1',
     )
 
     after_dims = first_page_dimensions(outpdf)
 
-    assert isclose(before_dims[0], after_dims[0])
-    assert isclose(before_dims[1], after_dims[1])
+    assert isclose(before_dims[0], after_dims[0], rel_tol=1e-4)
+    assert isclose(before_dims[1], after_dims[1], rel_tol=1e-4)
 
 
 def test_skip_big_with_no_images(spoof_tesseract_noop, resources, outpdf):
@@ -794,7 +802,7 @@ def test_compression_changed(
 def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
     sidecar = outpdf.with_suffix('.txt')
     check_ocrmypdf(
-        resources / 'multipage.pdf',
+        resources / '3small.pdf',
         outpdf,
         '--skip-text',
         '--sidecar',
@@ -802,7 +810,7 @@ def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
         env=spoof_tesseract_cache,
     )
 
-    pdfinfo = PdfInfo(resources / 'multipage.pdf')
+    pdfinfo = PdfInfo(resources / '3small.pdf')
     num_pages = len(pdfinfo)
 
     with open(sidecar, 'r', encoding='utf-8') as f:
@@ -858,17 +866,18 @@ def test_decompression_bomb(resources, outpdf):
 
 
 def test_text_curves(spoof_tesseract_noop, resources, outpdf):
-    check_ocrmypdf(resources / 'vector.pdf', outpdf, env=spoof_tesseract_noop)
+    with patch('ocrmypdf._pipeline.VECTOR_PAGE_DPI', 100):
+        check_ocrmypdf(resources / 'vector.pdf', outpdf, env=spoof_tesseract_noop)
 
-    info = PdfInfo(outpdf)
-    assert len(info.pages[0].images) == 0, "added images to the vector PDF"
+        info = PdfInfo(outpdf)
+        assert len(info.pages[0].images) == 0, "added images to the vector PDF"
 
-    check_ocrmypdf(
-        resources / 'vector.pdf', outpdf, '--force-ocr', env=spoof_tesseract_noop
-    )
+        check_ocrmypdf(
+            resources / 'vector.pdf', outpdf, '--force-ocr', env=spoof_tesseract_noop
+        )
 
-    info = PdfInfo(outpdf)
-    assert len(info.pages[0].images) != 0, "force did not rasterize"
+        info = PdfInfo(outpdf)
+        assert len(info.pages[0].images) != 0, "force did not rasterize"
 
 
 def test_output_is_dir(spoof_tesseract_noop, resources, outdir):

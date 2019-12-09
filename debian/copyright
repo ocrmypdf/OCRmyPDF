@@ -79,7 +79,7 @@ Copyright: held by the contributors to the Wikipedia article "Optical character 
  (epson.pdf generated from Wikipedia article as of 2016-09-14)
 License: CC-BY-SA-3.0
 
-Files: tests/resources/typewriter.png tests/resources/2400dpi.pdf
+Files: tests/resources/typewriter.png tests/resources/2400dpi.pdf tests/resources/3small.pdf
 Copyright: (C) 2005 Ellywa
 License: GFDL-1.2+ or CC-BY-SA-1.0 or CC-BY-SA-2.0 or CC-BY-SA-2.5 or CC-BY-SA-3.0
 
@@ -87,7 +87,7 @@ Files: tests/resources/overlay.pdf
 Copyright: (C) 2017 Max Anderson
 License: Expat
 
-Files: tests/resources/baiona*.png
+Files: tests/resources/baiona*.png tests/resources/3small.pdf
 Copyright: (C) 2014 Euskaldunaa
 License: CC-BY-SA-4.0
 
