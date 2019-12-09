@@ -93,6 +93,9 @@ def extract_text(input_file, pageno=1):
     else:
         pages = []
 
+    # Note due to bug https://bugs.ghostscript.com/show_bug.cgi?id=701971
+    # Ghostscript <= 9.50 will truncate output unless we write to stdout, so
+    # don't write to a file.
     args_gs = (
         [
             GS,
