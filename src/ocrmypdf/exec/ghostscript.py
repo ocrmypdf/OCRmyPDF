@@ -42,7 +42,18 @@ if os.name == 'nt':
     if not GS:
         GS = which('gswin32c')
         if not GS:
-            raise MissingDependencyError("Ghostscript (gswin64c or gswin32c)")
+            raise MissingDependencyError(
+                """
+                ---------------------------------------------------------------------
+                This error normally occurs when ocrmypdf can't Ghostscript.  Please
+                ensure Ghostscript is installed and its location is added to the
+                system PATH environment variable.
+
+                For details see:
+                    https://ocrmypdf.readthedocs.io/en/latest/installation.html
+                ---------------------------------------------------------------------
+                """
+            )
     GS = Path(GS).stem
 
 

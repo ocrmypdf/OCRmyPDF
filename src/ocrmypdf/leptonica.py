@@ -47,7 +47,16 @@ else:
 _libpath = find_library(libname)
 if not _libpath and os.name == 'nt':
     raise MissingDependencyError(
-        "Please ensure that 'tesseract' is on your PATH environment variable. "
+        """
+        ---------------------------------------------------------------------
+        This error normally occurs when ocrmypdf can't find a file named
+        liblept-5.dll (Leptonica).  Please ensure Tesseract-OCR is installed
+        and its location is added to the system PATH environment variable.
+
+        For details see:
+            https://ocrmypdf.readthedocs.io/en/latest/installation.html
+        ---------------------------------------------------------------------
+        """
     )
 lept = ffi.dlopen(_libpath)
 lept.setMsgSeverity(lept.L_SEVERITY_WARNING)
