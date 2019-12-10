@@ -41,7 +41,7 @@ from .helpers import safe_symlink
 from .hocrtransform import HocrTransform
 from .optimize import optimize
 from .pdfa import generate_pdfa_ps
-from .pdfinfo import Colorspace, PdfInfo
+from .pdfinfo import Colorspace, PdfInfo, Encoding
 
 VECTOR_PAGE_DPI = 400
 
@@ -557,7 +557,7 @@ def ocr_tesseract_hocr(input_file, page_context):
 
 def should_visible_page_image_use_jpg(pageinfo):
     # If all images were JPEGs originally, produce a JPEG as output
-    return pageinfo.images and all(im.enc == 'jpeg' for im in pageinfo.images)
+    return pageinfo.images and all(im.enc == Encoding.jpeg for im in pageinfo.images)
 
 
 def create_visible_page_jpg(image, page_context):
