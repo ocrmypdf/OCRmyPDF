@@ -57,3 +57,8 @@ Docker users
 Users of the OCRmyPDF Docker image should install language packs into a
 derived Docker image as
 :ref:`described in that section <docker-lang-packs>`.
+
+Windows users
+=============
+
+The Tesseract installer provided by Chocolatey already includes 100 languages.

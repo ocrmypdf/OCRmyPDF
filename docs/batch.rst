@@ -57,6 +57,12 @@ of ``ocrmypdf``, again updating files in place.
 
    find . -name '*.pdf' | parallel --tag -j 2 ocrmypdf '{}' '{}'
 
+In a Windows batch file, use
+
+.. code-block:: bat
+
+   for /r %%f in (*.pdf) do ocrmypdf %%f %%f
+
 Sample script
 -------------
 
@@ -67,12 +73,14 @@ processing.
 
    #!/usr/bin/env python3
    # Walk through directory tree, replacing all files with OCR'd version
-   # Contributed by DeliciousPickle@github
+   # Original version by DeliciousPickle@github; modified
 
    import logging
    import os
    import subprocess
    import sys
+
+   import ocrmypdf
 
    script_dir = os.path.dirname(os.path.realpath(__file__))
    print(script_dir + '/ocr-tree.py: Start')
@@ -91,6 +99,8 @@ processing.
            level=logging.INFO, format='%(asctime)s %(message)s',
            filename=log_file, filemode='w')
 
+   ocrmypdf.configure_logging(ocrmypdf.Verbosity.default)
+
    for dir_name, subdirs, file_list in os.walk(start_dir):
        logging.info('\n')
        logging.info(dir_name + '\n')
@@ -100,14 +110,10 @@ processing.
            if file_ext == '.pdf':
                full_path = dir_name + '/' + filename
                print(full_path)
-               cmd = ["ocrmypdf",  "--deskew", filename, filename]
-               logging.info(cmd)
-               proc = subprocess.run(
-                   cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-               result = proc.stdout
-               if proc.returncode == 6:
+               result = ocrmypdf.ocr(filename, filename, deskew=True)
+               if result == ocrmypdf.ExitCode.already_done_ocr:
                    print("Skipped document because it already contained text")
-               elif proc.returncode == 0:
+               elif result == ocrmypdf.ExitCode.ok:
                    print("OCR complete")
                logging.info(result)
 

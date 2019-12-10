@@ -14,6 +14,10 @@ optimization and ``3`` implements all options. ``1``, the default, performs only
 safe and lossless optimizations. (This is similar to GCC's optimization
 parameter.) The exact type of optimizations performed will vary over time.
 
+PDF optimization requires third-party, optional tools for certain optimizations.
+If these are not installed or cannot be found by OCRmyPDF, optimization will not
+be as good.
+
 Optimizations that always occurs
 ================================
 
