@@ -47,8 +47,8 @@ VECTOR_PAGE_DPI = 400
 
 
 def triage_image_file(input_file, output_file, options, log):
+    log.info("Input file is not a PDF, checking if it is an image...")
     try:
-        log.info("Input file is not a PDF, checking if it is an image...")
         im = Image.open(input_file)
     except EnvironmentError as e:
         # Recover the original filename
@@ -85,9 +85,9 @@ def triage_image_file(input_file, output_file, options, log):
 
         if 'iccprofile' not in im.info:
             if im.mode == 'RGB':
-                log.info('Input image has no ICC profile, assuming sRGB')
+                log.info("Input image has no ICC profile, assuming sRGB")
             elif im.mode == 'CMYK':
-                log.info('Input CMYK image has no ICC profile, not usable')
+                log.error("Input CMYK image has no ICC profile, not usable")
                 raise UnsupportedImageFormatError()
 
     try:

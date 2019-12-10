@@ -350,12 +350,6 @@ def test_algo4(resources, spoof_tesseract_noop, outpdf):
     assert p.returncode == ExitCode.encrypted_pdf
 
 
-def test_image_to_pdf(spoof_tesseract_noop, resources, outpdf):
-    check_ocrmypdf(
-        resources / 'crom.png', outpdf, '--image-dpi', '200', env=spoof_tesseract_noop
-    )
-
-
 def test_jbig2_passthrough(spoof_tesseract_cache, resources, outpdf):
     out = check_ocrmypdf(
         resources / 'jbig2.pdf',
