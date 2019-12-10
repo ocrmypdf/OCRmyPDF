@@ -249,8 +249,7 @@ stages:
                     versionSpec: "3.8"
                     architecture: x64
                 - script: |
-                    pip3 install --upgrade pip wheel twine
-                    python setup.py sdist bdist_wheel
+                    pip install --upgrade twine
                   displayName: "Generate artifacts"
                 - script: |
                     cat <<FILE >.pypirc
