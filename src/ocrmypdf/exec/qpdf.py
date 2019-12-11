@@ -17,35 +17,45 @@
 
 """Interface to qpdf executable"""
 
-from functools import lru_cache
-from os import fspath
-from subprocess import PIPE, STDOUT, CalledProcessError
+from io import StringIO
 
-from . import get_version, run
+import pikepdf
 
 
-@lru_cache(maxsize=1)
 def version():
-    return get_version('qpdf', regex=r'qpdf version (.+)')
+    return pikepdf.__libqpdf_version__
 
 
 def check(input_file, log=None):
-    args_qpdf = ['qpdf', '--check', fspath(input_file)]
-
-    if log is None:
-        import logging as log
-
+    pdf = None
     try:
-        run(args_qpdf, stderr=STDOUT, stdout=PIPE, universal_newlines=True, check=True)
-    except CalledProcessError as e:
-        if e.returncode == 2:
-            log.error("%s: not a valid PDF, and could not repair it.", input_file)
-            log.error("Details:")
-            log.error(e.output)
-        elif e.returncode == 3:
-            log.info("qpdf --check returned warnings:")
-            log.info(e.output)
-        else:
-            log.warning(e.output)
+        pdf = pikepdf.open(input_file)
+    except pikepdf.PdfError as e:
+        if log:
+            log.error(e)
         return False
-    return True
+    else:
+        messages = pdf.check()
+        for msg in messages:
+            if 'error' in msg.lower():
+                log.error(msg)
+            else:
+                log.warning(msg)
+
+        sio = StringIO()
+        linearize = None
+        try:
+            pdf.check_linearization(sio)
+        except RuntimeError:
+            pass
+        else:
+            linearize = sio.getvalue()
+            if linearize:
+                log.warning(linearize)
+
+        if not messages and not linearize:
+            return True
+        return False
+    finally:
+        if pdf:
+            pdf.close()
