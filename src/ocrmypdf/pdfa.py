@@ -82,8 +82,6 @@ def generate_pdfa_ps(target_filename, icc='sRGB'):
 
     :param target_filename: filename to save
     :param icc: ICC identifier such as 'sRGB'
-
-    :returns: a string containing the entire pdfmark
     """
     if icc == 'sRGB':
         icc_profile = SRGB_ICC_PROFILE
@@ -101,6 +99,7 @@ def generate_pdfa_ps(target_filename, icc='sRGB'):
     # We should have encoded everything to pure ASCII by this point, and
     # to be safe, only allow ASCII in PostScript
     Path(target_filename).write_text(ps, encoding='ascii')
+    return target_filename
 
 
 def file_claims_pdfa(filename):
