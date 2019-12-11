@@ -442,19 +442,21 @@ Installing on Windows
     production-ready solution, use Windows Subsystem for Linux or a Docker
     image.
 
+.. note::
+
+    Administrator privileges will be required for some of these steps.
+
 You must install the following for Windows:
 
 * Python 3.7 (64-bit recommended)
 * Tesseract 4.0 or later
 * Ghostscript 9.50 or later
-* QPDF 9.0.2 or later
 
 You can install these with the Chocolatey package manager:
 
 * ``choco install python3``
 * ``choco install --pre tesseract``
 * ``choco install ghostscript``
-* ``choco install qpdf``
 
 Also consider adding:
 
@@ -463,8 +465,14 @@ Also consider adding:
 Windows 10 64-bit and 64-bit versions of applications are recommended. Earlier
 versions of Windows and 32-bit versions of these programs are not tested.
 
-Modify your ``PATH`` environment variable so that Tesseract, Ghostscript and QPDF
-executables on the ``PATH``.
+Modify your ``PATH`` environment variable so that Tesseract and Ghostscript, and
+any optional executables can be found. You can enter it in the command line
+or `follow these directions <https://www.computerhope.com/issues/ch000549.htm#dospath>`_
+to make the change persistent and system-wide.
+
+You may then use pip to install ocrmypdf:
+
+* ``pip install ocrmypdf``
 
 Installing on Windows Subsystem for Linux
 =========================================

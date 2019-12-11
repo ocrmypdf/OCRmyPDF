@@ -13,6 +13,26 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.2.0
+======
+
+-  Native Windows is now supported.
+-  Continuous integration moved to Azure Pipelines.
+-  Improved test coverage and speed of tests.
+-  Fixed an issue where a page that was originally a JPEG would be saved as a
+   PNG, increasing file size. This occurred only when a preprocessing option
+   was selected along with ``--output-type=pdf`` and all images on the original
+   page were JPEGs. Regression since v7.0.0.
+-  OCRmyPDF no longer depends on the QPDF executable ``qpdf`` or ``libqpdf``.
+   It uses pikepdf (which in turn depends on ``libqpdf``). Package maintainers
+   should adjust dependencies so that OCRmyPDF no longer calls for libqpdf on
+   its own. For users of Python binary wheels, this change means a separate
+   installation of QPDF is no longer necessary. This change is mainly to
+   simplify installation on Windows.
+-  Fixed a rare case where log messages from Tesseract would be discarded.
+-  Fixed incorrect function signature for pixFindPageForeground, causing
+   exceptions on certain platforms/Leptonica versions.
+
 v9.1.1
 ======
 

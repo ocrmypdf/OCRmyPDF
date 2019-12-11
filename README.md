@@ -1,6 +1,8 @@
 <img src="docs/images/logo.svg" width="240" alt="OCRmyPDF">
 
-[![Travis build status][travis]](https://travis-ci.org/jbarlow83/OCRmyPDF) [![PyPI version][pypi]](https://pypi.org/project/ocrmypdf/) ![Homebrew version][homebrew] ![ReadTheDocs][docs] ![Python versions][pyversions]
+[![Build Status][azure]](https://dev.azure.com/jim0585/ocrmypdf/_build/latest?definitionId=2&branchName=master) [![PyPI version][pypi]](https://pypi.org/project/ocrmypdf/) ![Homebrew version][homebrew] ![ReadTheDocs][docs] ![Python versions][pyversions]
+
+[azure]: https://dev.azure.com/jim0585/ocrmypdf/_apis/build/status/jbarlow83.OCRmyPDF?branchName=master
 
 [travis]: https://travis-ci.org/jbarlow83/OCRmyPDF.svg?branch=master "Travis build status"
 
@@ -48,7 +50,7 @@ For details: please consult the [documentation](https://ocrmypdf.readthedocs.io/
 Motivation
 ----------
 
-I searched the web for a free command line tool to OCR PDF files on Linux/UNIX: I found many, but none of them were really satisfying.
+I searched the web for a free command line tool to OCR PDF files: I found many, but none of them were really satisfying.
 
 - Either they produced PDF files with misplaced text under the image (making copy/paste impossible)
 - Or they did not handle accents and multilingual characters
@@ -63,7 +65,7 @@ I searched the web for a free command line tool to OCR PDF files on Linux/UNIX: 
 Installation
 ------------
 
-Linux, UNIX, and macOS are supported. Windows is not directly supported but there is a Docker image available that runs on Windows.
+Linux, Windows, macOS and FreeBSD are supported. Docker images are also available.
 
 Users of Debian 9 or later or Ubuntu 16.10 or later may simply
 
