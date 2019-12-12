@@ -26,7 +26,6 @@ matrix:
           packages:
             - ghostscript
             - libffi-dev
-            - qpdf
             - tesseract-ocr
             - tesseract-ocr-deu
             - tesseract-ocr-eng
@@ -54,7 +53,6 @@ matrix:
             - libavformat56
             - libavutil54
             - libffi-dev
-            - qpdf
             - tesseract-ocr
             - tesseract-ocr-deu
             - tesseract-ocr-eng
@@ -84,7 +82,6 @@ matrix:
             - libffi-dev
             - pngquant
             - poppler-utils
-            - qpdf
             - tesseract-ocr
             - tesseract-ocr-deu
             - tesseract-ocr-eng
@@ -108,7 +105,6 @@ matrix:
             - libffi-dev
             - pngquant
             - poppler-utils
-            - qpdf
             - tesseract-ocr
             - tesseract-ocr-deu
             - tesseract-ocr-eng
@@ -144,7 +140,6 @@ install:
 
 script:
   - tesseract --version
-  - qpdf --version
   - pytest -n auto
 # deploy:
 #   # release for main pypi

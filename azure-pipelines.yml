@@ -30,7 +30,6 @@ stages:
               choco install --yes --no-progress --pre tesseract
               choco install --yes --no-progress python3
               choco install --yes --no-progress ghostscript
-              choco install --yes --no-progress qpdf
               choco install --yes --no-progress pngquant
             displayName: "Install system packages"
           - pwsh: |
@@ -39,7 +38,6 @@ stages:
               pip install --upgrade pip wheel
               pip install -r requirements/main.txt -r requirements/test.txt .
               tesseract --version
-              qpdf --version
             displayName: "Install Python packages"
           - pwsh: |
               refreshenv
@@ -85,7 +83,6 @@ stages:
                 libsm6 libxext6 libxrender-dev \
                 pngquant \
                 poppler-utils \
-                qpdf \
                 tesseract-ocr \
                 tesseract-ocr-deu \
                 tesseract-ocr-eng \
@@ -98,7 +95,6 @@ stages:
             displayName: "Install Python packages"
           - bash: |
               tesseract --version
-              qpdf --version
             displayName: "Record versions"
           - bash: |
               # -n auto is slower on Linux and breaks on Python 3.8
@@ -139,7 +135,6 @@ stages:
                 libsm6 libxext6 libxrender-dev \
                 pngquant \
                 poppler-utils \
-                qpdf \
                 tesseract-ocr \
                 tesseract-ocr-deu \
                 tesseract-ocr-eng \
@@ -152,7 +147,6 @@ stages:
             displayName: "Install Python packages"
           - bash: |
               tesseract --version
-              qpdf --version
             displayName: "Record versions"
           - bash: |
               # -n auto is slower on Linux and breaks on Python 3.8
@@ -189,7 +183,6 @@ stages:
                 leptonica \
                 openjpeg \
                 pngquant \
-                qpdf \
                 tesseract \
                 unpaper
             displayName: "Install system packages"
@@ -199,7 +192,6 @@ stages:
             displayName: "Install Python packages"
           - bash: |
               tesseract --version
-              qpdf --version
             displayName: "Record versions"
           - bash: pytest -nauto --junitxml=test.xml --cov=ocrmypdf --cov-report=xml
             displayName: "Test"
