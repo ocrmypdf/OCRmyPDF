@@ -20,11 +20,12 @@
 import logging
 import os
 import re
-import sys
 import shutil
+import sys
 from collections.abc import Mapping
 from functools import lru_cache
-from subprocess import PIPE, STDOUT, CalledProcessError, run as subprocess_run
+from subprocess import PIPE, STDOUT, CalledProcessError
+from subprocess import run as subprocess_run
 
 from ..exceptions import ExitCode, MissingDependencyError
 

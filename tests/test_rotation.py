@@ -21,10 +21,10 @@ from os import fspath
 from unittest.mock import Mock
 
 import img2pdf
+import pikepdf
 import pytest
 from PIL import Image
 
-import pikepdf
 from ocrmypdf import leptonica
 from ocrmypdf.exec import ghostscript, tesseract
 from ocrmypdf.pdfinfo import PdfInfo

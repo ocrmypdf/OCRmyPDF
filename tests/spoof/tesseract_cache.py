@@ -59,7 +59,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 __version__ = subprocess.check_output(
     ['tesseract', '--version'], stderr=subprocess.STDOUT
 ).decode()

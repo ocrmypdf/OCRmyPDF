@@ -33,9 +33,9 @@ from io import BytesIO
 from os import fspath
 from tempfile import TemporaryFile
 
-from .lib._leptonica import ffi
 from .exceptions import MissingDependencyError
 from .exec import shim_paths_with_program_files
+from .lib._leptonica import ffi
 
 # pylint: disable=protected-access
 

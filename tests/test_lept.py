@@ -16,8 +16,8 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from os import fspath
 import os
+from os import fspath
 from pickle import dumps, loads
 from unittest.mock import patch
 

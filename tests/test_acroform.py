@@ -19,7 +19,6 @@ import pytest
 
 import ocrmypdf
 
-
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 
 

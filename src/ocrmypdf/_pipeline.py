@@ -41,7 +41,7 @@ from .helpers import safe_symlink
 from .hocrtransform import HocrTransform
 from .optimize import optimize
 from .pdfa import generate_pdfa_ps
-from .pdfinfo import Colorspace, PdfInfo, Encoding
+from .pdfinfo import Colorspace, Encoding, PdfInfo
 
 VECTOR_PAGE_DPI = 400
 

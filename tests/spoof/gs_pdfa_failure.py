@@ -23,11 +23,11 @@
 import os
 import sys
 
+from gs import real_ghostscript
+
 
 """Replicate Ghostscript PDF/A conversion failure by suppressing some
 arguments"""
-
-from gs import real_ghostscript
 
 
 def main():

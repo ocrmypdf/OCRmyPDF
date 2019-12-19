@@ -17,11 +17,11 @@
 
 """Interface to Tesseract executable"""
 
+import logging
 import os
 import shutil
 from collections import namedtuple
 from contextlib import suppress
-import logging
 from os import fspath
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
 

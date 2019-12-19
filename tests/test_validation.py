@@ -23,7 +23,7 @@ import pytest
 
 import ocrmypdf._validation as vd
 from ocrmypdf.api import create_options
-from ocrmypdf.exceptions import MissingDependencyError, BadArgsError
+from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
 from ocrmypdf.pdfinfo import PdfInfo
 
 

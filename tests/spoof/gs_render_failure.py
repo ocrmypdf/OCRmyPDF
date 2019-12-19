@@ -25,7 +25,6 @@
 import os
 import sys
 
-
 from gs import real_ghostscript
 
 

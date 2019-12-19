@@ -20,8 +20,8 @@ from unittest.mock import patch
 
 import pytest
 
-from ocrmypdf.cli import parser
 from ocrmypdf._validation import check_options
+from ocrmypdf.cli import parser
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 from ocrmypdf.exec import unpaper
 

@@ -24,10 +24,9 @@
 import os
 import sys
 
-"""Replicate Ghostscript raster failure while allowing rendering"""
-
-
 from gs import real_ghostscript
+
+"""Replicate Ghostscript raster failure while allowing rendering"""
 
 
 def main():

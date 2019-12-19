@@ -17,22 +17,22 @@
 
 
 import datetime
-from datetime import timezone
 import logging
 import mmap
-from os import fspath
 import os
+from datetime import timezone
+from os import fspath
 from pathlib import Path
 from shutil import copyfile, move
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 import pikepdf
+import pytest
+from pikepdf.models.metadata import decode_pdf_date
+
 from ocrmypdf._jobcontext import PDFContext
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import SRGB_ICC_PROFILE, file_claims_pdfa, generate_pdfa_ps
-from pikepdf.models.metadata import decode_pdf_date
 
 try:
     import fitz

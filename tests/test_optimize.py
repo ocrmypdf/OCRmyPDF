@@ -19,10 +19,10 @@ import logging
 from os import fspath
 from pathlib import Path
 
+import pikepdf
 import pytest
 from PIL import Image
 
-import pikepdf
 from ocrmypdf import optimize as opt
 from ocrmypdf.exec import jbig2enc, pngquant
 from ocrmypdf.exec.ghostscript import rasterize_pdf

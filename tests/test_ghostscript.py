@@ -18,7 +18,6 @@
 import logging
 from decimal import Decimal
 
-
 import pikepdf
 import pytest
 from PIL import Image

@@ -20,11 +20,11 @@ from math import isclose
 from tempfile import NamedTemporaryFile
 
 import img2pdf
+import pikepdf
 import pytest
 from PIL import Image
 from reportlab.pdfgen.canvas import Canvas
 
-import pikepdf
 from ocrmypdf import pdfinfo
 from ocrmypdf.pdfinfo import Colorspace, Encoding
 

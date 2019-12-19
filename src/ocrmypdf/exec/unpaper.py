@@ -29,7 +29,8 @@ from tempfile import TemporaryDirectory
 from PIL import Image
 
 from ..exceptions import MissingDependencyError, SubprocessOutputError
-from . import get_version, run as external_run
+from . import get_version
+from . import run as external_run
 
 
 @lru_cache(maxsize=1)

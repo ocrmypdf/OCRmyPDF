@@ -18,20 +18,20 @@
 """Interface to Ghostscript executable"""
 
 import logging
-import re
 import os
+import re
 import warnings
 from contextlib import suppress
 from functools import lru_cache
 from io import BytesIO
 from os import fspath
 from pathlib import Path
-from subprocess import PIPE, CalledProcessError
 from shutil import which
+from subprocess import PIPE, CalledProcessError
 
 from PIL import Image
 
-from ..exceptions import SubprocessOutputError, MissingDependencyError
+from ..exceptions import MissingDependencyError, SubprocessOutputError
 from . import get_version, run
 
 gslog = logging.getLogger()

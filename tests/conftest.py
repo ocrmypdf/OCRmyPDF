@@ -21,9 +21,10 @@ import platform
 import sys
 from pathlib import Path
 from subprocess import PIPE, run
-from ocrmypdf import api, cli
 
 import pytest
+
+from ocrmypdf import api, cli
 
 pytest_plugins = ['helpers_namespace']
 

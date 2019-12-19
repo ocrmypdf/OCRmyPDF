@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from subprocess import run, PIPE
+from subprocess import PIPE, run
 
 import pytest
 

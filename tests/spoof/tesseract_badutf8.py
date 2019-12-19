@@ -22,7 +22,6 @@
 
 import sys
 
-
 """Tesseract bad utf8 spoof
 
 In 'hocr' mode or 'pdf' mode, return error code 1 and some non-Unicode

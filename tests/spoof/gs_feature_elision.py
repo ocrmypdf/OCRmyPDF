@@ -25,12 +25,10 @@ import os
 import sys
 from subprocess import check_call
 
+from gs import real_ghostscript
 
 """Replicate one type of Ghostscript feature elision warning during
 PDF/A creation."""
-
-
-from gs import real_ghostscript
 
 
 elision_warning = """GPL Ghostscript 9.20: Setting Overprint Mode to 1

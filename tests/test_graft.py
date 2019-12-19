@@ -18,10 +18,10 @@
 import os
 from unittest.mock import patch
 
+import pikepdf
 import pytest
 
 import ocrmypdf
-import pikepdf
 
 
 def test_no_glyphless_graft(resources, outdir):

@@ -25,8 +25,8 @@ import threading
 from collections import namedtuple
 from tempfile import mkdtemp
 
-from tqdm import tqdm
 import PIL
+from tqdm import tqdm
 
 from ._graft import OcrGrafter
 from ._jobcontext import PDFContext, cleanup_working_files, make_logger

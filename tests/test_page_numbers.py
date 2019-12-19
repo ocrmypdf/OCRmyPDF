@@ -19,8 +19,8 @@ import pytest
 
 import ocrmypdf
 from ocrmypdf._validation import _pages_from_ranges
-from ocrmypdf.pdfinfo import PdfInfo
 from ocrmypdf.exceptions import BadArgsError
+from ocrmypdf.pdfinfo import PdfInfo
 
 
 @pytest.mark.parametrize(

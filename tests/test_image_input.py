@@ -17,10 +17,10 @@
 
 from unittest.mock import patch
 
-import pytest
-from PIL import Image
 import img2pdf
 import pikepdf
+import pytest
+from PIL import Image
 
 import ocrmypdf
 

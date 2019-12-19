@@ -18,7 +18,7 @@
 import os
 import sys
 from pathlib import Path
-from subprocess import DEVNULL, PIPE, run, Popen, CalledProcessError
+from subprocess import DEVNULL, PIPE, CalledProcessError, Popen, run
 
 import pytest
 
