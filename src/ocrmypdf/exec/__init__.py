@@ -23,6 +23,7 @@ import re
 import sys
 import shutil
 from collections.abc import Mapping
+from functools import lru_cache
 from subprocess import PIPE, STDOUT, CalledProcessError, run as subprocess_run
 
 from ..exceptions import ExitCode, MissingDependencyError
@@ -39,13 +40,40 @@ def _get_program(args, env=None):
 
 
 def run(args, *, env=None, **kwargs):
+    """Wrapper around subprocess.run()
+
+    The main purpose of this wrapper is to allow us to substitute the main program
+    for a spoof in the test suite. The hidden variable _OCRMYPDF_TEST_PATH replaces
+    the main PATH as a location to check for programs to run.
+
+    Secondly we have to account for behavioral differences in Windows in particular.
+    Creating symbolic links in Windows requires administrator privileges and
+    may not work if for some reason we're using a FAT file system or the temporary
+    folder is on a different drive from the working folder. The test suite
+    works around this by creating shim Python scripts that perform the same function
+    as a symbolic link, but those shims require support on this side, to ensure
+    we call them with Python.
+
+    """
     if not env:
         env = os.environ
+
+    # Search in spoof path if necessary
     program = _get_program(args, env)
+
+    # If we are running a .py on Windows, ensure we call it with this Python
+    # (to support test suite shims)
     if os.name == 'nt' and program.lower().endswith('.py'):
         args = [sys.executable, program] + args[1:]
     else:
         args = [program] + args[1:]
+
+    if os.name == 'nt' and not shutil.which(args[0], path=os.get_exec_path(env)):
+        shimmed_path = shim_paths_with_program_files(env)
+        new_args0 = shutil.which(args[0], path=shimmed_path)
+        if new_args0:
+            args[0] = new_args0
+
     log.debug(args)
     if sys.version_info < (3, 7) and os.name == 'nt':
         # Can't use close_fds=True on Windows with Python 3.6 or older
@@ -55,7 +83,7 @@ def run(args, *, env=None, **kwargs):
 
 
 def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)', env=None):
-    "Get the version of the specified program"
+    """Get the version of the specified program"""
     args_prog = [program, version_arg]
     try:
         proc = run(
@@ -89,6 +117,35 @@ def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)', env
         )
 
     return version
+
+
+@lru_cache(maxsize=1)
+def shim_paths_with_program_files(env=None):
+    if not env:
+        env = os.environ
+    program_files = env.get('PROGRAMFILES', '')
+    if not program_files:
+        return env.get('PATH', '')
+    paths = []
+    try:
+        for dirname in os.listdir(program_files):
+            if dirname.lower() == 'tesseract-ocr':
+                paths.append(os.path.join(program_files, dirname))
+            if dirname.lower() == 'gs':
+                try:
+                    latest_gs = max(
+                        os.listdir(os.path.join(program_files, dirname)),
+                        key=lambda d: float(d[2:]),
+                    )
+                except (FileNotFoundError, NotADirectoryError):
+                    continue
+                paths.append(os.path.join(program_files, dirname, latest_gs, 'bin'))
+    except EnvironmentError:
+        pass
+    paths.extend(
+        path for path in os.environ['PATH'].split(os.pathsep) if path not in set(paths)
+    )
+    return os.pathsep.join(paths)
 
 
 missing_program = '''

@@ -35,6 +35,7 @@ from tempfile import TemporaryFile
 
 from .lib._leptonica import ffi
 from .exceptions import MissingDependencyError
+from .exec import shim_paths_with_program_files
 
 # pylint: disable=protected-access
 
@@ -42,6 +43,7 @@ logger = logging.getLogger(__name__)
 
 if os.name == 'nt':
     libname = 'liblept-5'
+    os.environ['PATH'] = shim_paths_with_program_files()
 else:
     libname = 'lept'
 _libpath = find_library(libname)

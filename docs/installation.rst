@@ -487,9 +487,11 @@ Windows 10 64-bit and 64-bit versions of applications are recommended. Earlier
 versions of Windows and 32-bit versions of these programs are not tested, and not
 supported at this time.
 
-Modify your ``PATH`` environment variable so that Tesseract and Ghostscript, and
-any optional executables can be found. You can enter it in the command line
-or `follow these directions <https://www.computerhope.com/issues/ch000549.htm#dospath>`_
+OCRmyPDF will check for Tesseract-OCR and Ghostscript in your Program Files folder.
+If they are in some other location, you may need to modify the ``PATH``
+environment variable so Tesseract, Ghostscript, and other any optional executables can
+be found. You can enter it in the command line or
+`follow these directions <https://www.computerhope.com/issues/ch000549.htm#dospath>`_
 to make the change persistent and system-wide.
 
 You may then use pip to install ocrmypdf:
