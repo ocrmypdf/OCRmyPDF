@@ -79,7 +79,7 @@ and users of Fedora 29 or later may simply
 dnf install ocrmypdf
 ```
 
-and macOS users with Homebrew may simply
+and Homebrew users (macOS, Linux, Windows Subsystem for Linux) may simply
 
 ```bash
 brew install ocrmypdf
@@ -113,18 +113,12 @@ ocrmypdf --help
 
 Our [documentation is served on Read the Docs](https://ocrmypdf.readthedocs.io/en/latest/index.html).
 
-If you detect an issue, please:
-
-- Check whether your issue is already known
-- If no problem report exists on github, please create one here: <https://github.com/jbarlow83/OCRmyPDF/issues>
-- Describe your problem thoroughly
-- Append the console output of the script when running the debug mode (`-v 1` option)
-- If possible provide your input PDF file as well as the content of the temporary folder (using a file sharing service like Dropbox)
+Please report issues on our [GitHub issues](https://github.com/jbarlow83/OCRmyPDF/issues) page, and follow the issue template for quick response.
 
 Requirements
 ------------
 
-In addition to the required Python version (3.6+), OCRmyPDF requires external program installations of Ghostscript, Tesseract OCR, QPDF, and Leptonica. ocrmypdf is pure Python, but uses CFFI to portably generate library bindings.
+In addition to the required Python version (3.6+), OCRmyPDF requires external program installations of Ghostscript, Tesseract OCR, QPDF, and Leptonica. ocrmypdf is pure Python, but uses CFFI to portably generate library bindings. OCRmyPDF works on pretty much  everything: Linux, macOS, Windows and FreeBSD.
 
 Press & Media
 -------------

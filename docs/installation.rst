@@ -8,11 +8,20 @@ Installing OCRmyPDF
 |latest|
 
 The easiest way to install OCRmyPDF is to follow the steps for your operating
-system/platform, although sometimes this version may be out of date.
+system/platform, although sometimes this version may be out of date. This
+installation guide provides information allowing you to compare the current
+version to the one provided by your platform.
 
-If you want to use the latest version of OCRmyPDF, your best bet is to install
-the most recent version your platform provides, and then upgrade that version by
-installing the Python binary wheels.
+If you want to use the latest version of OCRmyPDF and all of its optional
+dependencies, the easiest way to get that is install the Homebrew package. Homebrew
+is best known as a macOS package manger, but also works for
+`Linux and Windows Subsystem for Linux <https://docs.brew.sh/Homebrew-on-Linux>`__.
+After Homebrew is installed, simply run ``brew install ocrmypdf``.
+
+You can also use the more detailed procedures here to manually install OCRmyPDF
+from source or with the ``pip`` package manager for binary wheels. The reason
+for these varied steps is that OCRmyPDF requires third-party executables that are
+not part of Python.
 
 .. contents:: Platform-specific steps
     :depth: 2
@@ -55,8 +64,8 @@ Debian and Ubuntu 18.04 or newer
 | |ubu-1804| |ubu-1810| |ubu-1904| |ubu-1910|   |
 +-----------------------------------------------+
 
-Users of Debian 9 ("stretch") or later or Ubuntu 18.04 or later may
-simply
+Users of Debian 9 ("stretch") or later or Ubuntu 18.04 or later, including users
+of Windows Subsystem for Linux, may simply
 
 .. code-block:: bash
 
@@ -303,6 +312,19 @@ the following command.
 If you have any difficulties with installation, check the repository
 package page.
 
+Alpine Linux
+------------
+
+.. image:: https://repology.org/badge/version-for-repo/alpine_edge/ocrmypdf.svg
+    :alt: Alpine Linux
+    :target: https://repology.org/metapackage/ocrmypdf
+
+To install OCRmyPDF for Alpine Linux:
+
+.. code-block:: bash
+
+    apk add ocrmypdf
+
 Other Linux packages
 --------------------
 
@@ -427,8 +449,7 @@ Installing the Docker image
 ===========================
 
 For some users, installing the Docker image will be easier than
-installing all of OCRmyPDF's dependencies. For Windows, it is the only
-option.
+installing all of OCRmyPDF's dependencies.
 
 See `OCRmyPDF Docker Image <docker>`__ for more information.
 
@@ -448,7 +469,7 @@ Installing on Windows
 
 You must install the following for Windows:
 
-* Python 3.7 (64-bit recommended)
+* Python 3.7 (64-bit)
 * Tesseract 4.0 or later
 * Ghostscript 9.50 or later
 
@@ -463,7 +484,8 @@ Also consider adding:
 * ``choco install pngquant``
 
 Windows 10 64-bit and 64-bit versions of applications are recommended. Earlier
-versions of Windows and 32-bit versions of these programs are not tested.
+versions of Windows and 32-bit versions of these programs are not tested, and not
+supported at this time.
 
 Modify your ``PATH`` environment variable so that Tesseract and Ghostscript, and
 any optional executables can be found. You can enter it in the command line

@@ -2,7 +2,7 @@
 Introduction
 ============
 
-OCRmyPDF is a Python 3 package that adds OCR layers to PDFs.
+OCRmyPDF is a Python 3 application and library that adds OCR layers to PDFs.
 
 About OCR
 =========

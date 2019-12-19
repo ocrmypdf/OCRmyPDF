@@ -15,7 +15,10 @@ Code style
 ==========
 
 We use PEP8, ``black`` for code formatting and ``isort`` for import sorting. The
-settings for programs are in ``pyproject.toml`` and ``setup.cfg``.
+settings for these programs are in ``pyproject.toml`` and ``setup.cfg``. Pull
+requests should follow the style guide. One difference we use from "black" style
+is that strings shown to the user are always in double quotes (``"``) and strings
+for internal uses are in single quotes (``'``).
 
 Tests
 =====
@@ -36,3 +39,19 @@ New non-Python dependencies
 
 OCRmyPDF uses several external programs (Tesseract, Ghostscript and others) for
 its functionality. In general we prefer to avoid adding new external programs.
+
+Style guide: Is it OCRmyPDF or ocrmypdf?
+========================================
+
+The program/project is OCRmyPDF and the name of the executable or library is ocrmypdf.
+
+Known ports/packagers
+=====================
+
+OCRmyPDF has been ported to many platforms already. If you are interesting in
+porting to a new platform, check with
+`Repology <https://repology.org/projects/?search=ocrmypdf>`__ to see the status
+of that platform.
+
+Packager maintainers, please ensure that the command line completion scripts in
+``misc/`` are installed.

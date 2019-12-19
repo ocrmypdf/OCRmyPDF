@@ -58,6 +58,15 @@ log = logging.getLogger(__name__)
 verify_python3_env()
 
 
+def check_platform():
+    if os.name == 'nt' and sys.maxsize <= 2 ** 32:  # pragma: no cover
+        # 32-bit interpreter on Windows
+        log.error(
+            "You are running OCRmyPDF in a 32-bit (x86) Python interpreter."
+            "Please use a 64-bit (x86-64) version of Python."
+        )
+
+
 def check_options_languages(options):
     if not options.language:
         options.language = [DEFAULT_LANGUAGE]
@@ -292,6 +301,7 @@ def check_options_pillow(options):
 
 
 def check_options(options):
+    check_platform()
     check_options_languages(options)
     check_options_metadata(options)
     check_options_output(options)
