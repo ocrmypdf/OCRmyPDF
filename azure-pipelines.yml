@@ -51,10 +51,6 @@ stages:
               testResultsFiles: "test.xml"
               testRunTitle: "$(Agent.OS) - $(Build.DefinitionName) - Python $(python.version)"
             condition: succeededOrFailed()
-          - task: PublishCodeCoverageResults@1
-            inputs:
-              codeCoverageTool: Cobertura
-              summaryFileLocation: "$(System.DefaultWorkingDirectory)/**/coverage.xml"
       - job: "Ubuntu_1804"
         pool:
           vmImage: "ubuntu-18.04"
@@ -105,10 +101,6 @@ stages:
               testResultsFiles: "test.xml"
               testRunTitle: "$(Agent.OS) - $(Build.DefinitionName) - Python $(python.version)"
             condition: succeededOrFailed()
-          - task: PublishCodeCoverageResults@1
-            inputs:
-              codeCoverageTool: Cobertura
-              summaryFileLocation: "$(System.DefaultWorkingDirectory)/**/coverage.xml"
       - job: "Ubuntu_1604"
         pool:
           vmImage: "ubuntu-16.04"
@@ -157,10 +149,6 @@ stages:
               testResultsFiles: "test.xml"
               testRunTitle: "$(Agent.OS) - $(Build.DefinitionName) - Python $(python.version)"
             condition: succeededOrFailed()
-          - task: PublishCodeCoverageResults@1
-            inputs:
-              codeCoverageTool: Cobertura
-              summaryFileLocation: "$(System.DefaultWorkingDirectory)/**/coverage.xml"
       - job: "macOS_Mojave"
         pool:
           vmImage: "macos-10.14"
