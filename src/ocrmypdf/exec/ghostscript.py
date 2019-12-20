@@ -329,7 +329,7 @@ def generate_pdfa(
         if _gs_error_reported(stderr):
             last_part = None
             repcount = 0
-            for part in p.stdout.split('****'):
+            for part in stderr.split('****'):
                 if part != last_part:
                     if repcount > 1:
                         log.error(f"(previous error message repeated {repcount} times)")
