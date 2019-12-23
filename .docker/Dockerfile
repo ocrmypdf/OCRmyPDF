@@ -39,6 +39,7 @@ RUN pip3 install --no-cache-dir \
   -r requirements/main.txt \
   -r requirements/webservice.txt \
   -r requirements/test.txt \
+  -r requirements/watcher.txt \
   .
 
 FROM base
@@ -69,6 +70,7 @@ COPY --from=builder /usr/local/lib/ /usr/local/lib/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 COPY --from=builder /app/misc/webservice.py /app/
+COPY --from=builder /app/misc/watcher.py /app/
 
 # Copy minimal project files to get the test suite.
 COPY --from=builder /app/setup.cfg /app/setup.py /app/README.md /app/
