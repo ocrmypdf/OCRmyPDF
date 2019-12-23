@@ -195,8 +195,11 @@ If you have thousands of files to work with, contact the author.
 Consulting work related to OCRmyPDF helps fund this open source project
 and all inquiries are appreciated.
 
-Watched folders
-===============
+Hot (watched) folders
+=====================
+
+Watched folders with Docker
+---------------------------
 
 The OCRmyPDF Docker image includes a watcher service. This service can
 be launched as follows:
@@ -227,6 +230,67 @@ convert it to a OCR'ed PDF in /output/. The parameters to this image are:
 |                                      | folder in {output_directory}\\     |
 |                                      | {year}\\{month}\\{filename}        |
 +--------------------------------------+------------------------------------+
+
+Watched Folders with CLI
+------------
+
+To set up a "hot folder" that will trigger OCR for every file inserted,
+use a program like Python
+`watchdog <https://pypi.python.org/pypi/watchdog>`__ (supports all major
+OS).
+
+One could then configure a scanner to automatically place scanned files
+in a hot folder, so that they will be queued for OCR and copied to the
+destination.
+
+.. code-block:: bash
+
+   pip install watchdog
+
+watchdog installs the command line program ``watchmedo``, which can be
+told to run ``ocrmypdf`` on any .pdf added to the current directory
+(``.``) and place the result in the previously created ``out/`` folder.
+
+.. code-block:: bash
+
+   cd hot-folder
+   mkdir out
+   watchmedo shell-command \
+       --patterns="*.pdf" \
+       --ignore-directories \
+       --command='ocrmypdf "${watch_src_path}" "out/${watch_src_path}" ' \
+       .  # don't forget the final dot
+
+On file servers, you could configure watchmedo as a system service so it
+will run all the time.
+
+For more complex behavior you can write a Python script around to use
+the watchdog API. You can refer to the watcher.py script as an example.
+
+Caveats
+-------
+
+-  ``watchmedo`` may not work properly on a networked file system,
+   depending on the capabilities of the file system client and server.
+-  This simple recipe does not filter for the type of file system event,
+   so file copies, deletes and moves, and directory operations, will all
+   be sent to ocrmypdf, producing errors in several cases. Disable your
+   watched folder if you are doing anything other than copying files to
+   it.
+-  If the source and destination directory are the same, watchmedo may
+   create an infinite loop.
+-  On BSD, FreeBSD and older versions of macOS, you may need to increase
+   the number of file descriptors to monitor more files, using
+   ``ulimit -n 1024`` to watch a folder of up to 1024 files.
+
+Alternatives
+------------
+
+-  `systemd user services <https://wiki.archlinux.org/index.php/Systemd/User>`__
+   can be configured to automatically perform OCR on a collection of files.
+
+-  `Watchman <https://facebook.github.io/watchman/>`__ is a more
+   powerful alternative to ``watchmedo``.
 
 macOS Automator
 ===============

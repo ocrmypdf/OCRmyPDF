@@ -2,6 +2,7 @@ import sys
 import time
 import os
 import ntpath
+from pathlib import Path
 from datetime import datetime
 import ocrmypdf
 from watchdog.observers import Observer
@@ -14,14 +15,14 @@ OUTPUT_DIRECTORY_YEAR_MONTH = \
 PATTERNS = ['*.pdf']
 
 
-def execute_OCRmyPDF(file_path):
-    filename = ntpath.basename(file_path)
+def execute_ocrmypdf(file_path):
+    filename = Path(file_path).name
     if OUTPUT_DIRECTORY_YEAR_MONTH:
         today = datetime.today()
         output_directory_year_month = \
             f'{OUTPUT_DIRECTORY}/{today.year}/{today.month}'
-        if not os.path.exists(output_directory_year_month):
-            os.makedirs(output_directory_year_month)
+        if not Path(output_directory_year_month).exists():
+            Path(output_directory_year_month).mkdir(parents=True, exist_ok=True)
         output_path = f'{output_directory_year_month}/{filename}'
     else:
         output_path = f'{OUTPUT_DIRECTORY}/{filename}'
@@ -35,7 +36,7 @@ def execute_OCRmyPDF(file_path):
 class HandleObserverEvent(PatternMatchingEventHandler):
     def on_any_event(self, event):
         if event.event_type in ['created', 'modified']:
-            execute_OCRmyPDF(event.src_path)
+            execute_ocrmypdf(event.src_path)
 
 
 if __name__ == "__main__":
