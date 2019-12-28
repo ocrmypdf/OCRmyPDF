@@ -13,6 +13,19 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.3.0
+======
+
+-  Improved native Windows support: we now check in the obvious places in
+   the "Program Files" folders installations of Tesseract and Ghostscript,
+   rather than relying on the user to edit ``PATH`` to specify their location.
+   The ``PATH`` environment variable can still be used to differentiate when
+   multiple installations are present or the programs are installed to non-
+   standard locations.
+-  Fixed an exception on parsing Ghostscript error messages.
+-  Added an improved example demonstrating how to set up a watched folder
+   for automated OCR processing (thanks to @ianalexander for the contribution).
+
 v9.2.0
 ======
 
