@@ -198,6 +198,54 @@ and all inquiries are appreciated.
 Hot (watched) folders
 =====================
 
+Watched folders with Docker
+---------------------------
+
+The OCRmyPDF Docker image includes a watcher service. This service can
+be launched as follows:
+
+.. code-block:: bash
+
+    docker run \
+        -v <path to files to convert>:/input \
+        -v <path to store results>:/output \
+        -e OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1 \
+        -it --entrypoint python3 \
+        jbarlow83/ocrmypdf \
+        watcher.py
+
+This service will watch for a file that matches ``/input/\*.pdf`` and will
+convert it to a OCRed PDF in ``/output/``. The parameters to this image are:
+
+.. csv-table:: watcher.py parameters for Docker
+    :header: "Parameter", "Description"
+    :widths: 50, 50
+
+    "``-v <path to files to convert>:/input``", "Files placed in this location will be OCRed"
+    "``-v <path to store results>:/output``", "This is where OCRed files will be stored"
+    "``-e OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1``", "This will place files in the output in {output}/{year}/{month}/{filename}"
+
+This service relies on polling to check for changes to the filesystem. It
+may not be suitable for some environments, such as filesystems shared on a
+slow network.
+
+Watched folders with watcher.py
+-------------------------------
+
+The watcher service may also be run natively.
+
+.. code-block:: bash
+
+    pip3 install -r reqs/watcher.txt
+
+    env OCR_INPUT_DIRECTORY=/mnt/input-pdfs \
+        OCR_OUTPUT_DIRECTORY=/mnt/output-pdfs \
+        OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1 \
+        python3 watcher.py
+
+Watched folders with CLI
+------------------------
+
 To set up a "hot folder" that will trigger OCR for every file inserted,
 use a program like Python
 `watchdog <https://pypi.python.org/pypi/watchdog>`__ (supports all major
@@ -225,11 +273,11 @@ told to run ``ocrmypdf`` on any .pdf added to the current directory
        --command='ocrmypdf "${watch_src_path}" "out/${watch_src_path}" ' \
        .  # don't forget the final dot
 
-For more complex behavior you can write a Python script around to use
-the watchdog API.
-
 On file servers, you could configure watchmedo as a system service so it
 will run all the time.
+
+For more complex behavior you can write a Python script around to use
+the watchdog API. You can refer to the watcher.py script as an example.
 
 Caveats
 -------
@@ -250,7 +298,7 @@ Caveats
 Alternatives
 ------------
 
--  `systemd user services <https://wiki.archlinux.org/index.php/Systemd/User>`__
+-  On Linux, `systemd user services <https://wiki.archlinux.org/index.php/Systemd/User>`__
    can be configured to automatically perform OCR on a collection of files.
 
 -  `Watchman <https://facebook.github.io/watchman/>`__ is a more
