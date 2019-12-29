@@ -402,7 +402,7 @@ packs. If you need other languages you can optionally install them all:
 
    .. code-block:: bash
 
-    brew install tesseract --with-all-languages  # Option 2: for all language packs
+    brew install tesseract-lang  # Option 2: for all language packs
 
 Update the homebrew pip:
 
