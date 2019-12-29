@@ -164,6 +164,7 @@ stages:
               versionSpec: "$(python.version)"
           - bash: |
               brew update
+              brew unlink python@2
               brew install \
                 exempi \
                 ghostscript \
