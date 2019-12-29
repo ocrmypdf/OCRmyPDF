@@ -34,15 +34,14 @@ stages:
             displayName: "Install system packages"
           - pwsh: |
               refreshenv
-              pip install --upgrade pip wheel
-              pip install -r requirements/main.txt -r requirements/test.txt .
-              tesseract --version
+              python -m pip install --upgrade pip wheel
+              python -m pip install -r requirements/main.txt -r requirements/test.txt .
             displayName: "Install Python packages"
           - pwsh: |
               refreshenv
               $env:pathext += ';.py'
               # -n auto helps Windows
-              python3 -m pytest -n auto --junitxml=test.xml --cov=ocrmypdf --cov-report=xml
+              python -m pytest -n auto --junitxml=test.xml --cov=ocrmypdf --cov-report=xml
             displayName: "Test"
           - task: PublishTestResults@2
             inputs:

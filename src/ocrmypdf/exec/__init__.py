@@ -122,7 +122,6 @@ def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)', env
     return version
 
 
-@lru_cache(maxsize=1)
 def shim_paths_with_program_files(env=None):
     if not env:
         env = os.environ
@@ -134,7 +133,7 @@ def shim_paths_with_program_files(env=None):
         for dirname in os.listdir(program_files):
             if dirname.lower() == 'tesseract-ocr':
                 paths.append(os.path.join(program_files, dirname))
-            if dirname.lower() == 'gs':
+            elif dirname.lower() == 'gs':
                 try:
                     latest_gs = max(
                         os.listdir(os.path.join(program_files, dirname)),
