@@ -69,11 +69,13 @@ def run(args, *, env=None, **kwargs):
     else:
         args = [program] + args[1:]
 
-    if os.name == 'nt' and not shutil.which(args[0], path=os.get_exec_path(env)):
-        shimmed_path = shim_paths_with_program_files(env)
-        new_args0 = shutil.which(args[0], path=shimmed_path)
-        if new_args0:
-            args[0] = new_args0
+    if os.name == 'nt':
+        paths = os.pathsep.join(os.get_exec_path(env))
+        if not shutil.which(args[0], path=paths):
+            shimmed_path = shim_paths_with_program_files(env)
+            new_args0 = shutil.which(args[0], path=shimmed_path)
+            if new_args0:
+                args[0] = new_args0
 
     log.debug(args)
     if sys.version_info < (3, 7) and os.name == 'nt':
@@ -143,9 +145,7 @@ def shim_paths_with_program_files(env=None):
                 paths.append(os.path.join(program_files, dirname, latest_gs, 'bin'))
     except EnvironmentError:
         pass
-    paths.extend(
-        path for path in os.environ['PATH'].split(os.pathsep) if path not in set(paths)
-    )
+    paths.extend(path for path in os.get_exec_path(env) if path not in set(paths))
     return os.pathsep.join(paths)
 
 
