@@ -34,17 +34,15 @@ stages:
             displayName: "Install system packages"
           - pwsh: |
               refreshenv
-              $env:path = "C:\Program Files\Tesseract-OCR;C:\Program Files\gs\gs9.50\bin;" + $env:path
               pip install --upgrade pip wheel
               pip install -r requirements/main.txt -r requirements/test.txt .
               tesseract --version
             displayName: "Install Python packages"
           - pwsh: |
               refreshenv
-              $env:path = "C:\Program Files\Tesseract-OCR;C:\Program Files\gs\gs9.50\bin;" + $env:path
               $env:pathext += ';.py'
               # -n auto helps Windows
-              pytest -n auto --junitxml=test.xml --cov=ocrmypdf --cov-report=xml
+              python3 -m pytest -n auto --junitxml=test.xml --cov=ocrmypdf --cov-report=xml
             displayName: "Test"
           - task: PublishTestResults@2
             inputs:
