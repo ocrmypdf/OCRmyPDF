@@ -59,6 +59,8 @@ function __fish_ocrmypdf_verbose
 end
 complete -c ocrmypdf -x -s v -l verbose -a '(__fish_ocrmypdf_verbose)' -d "set verbosity level"
 
+complete -c ocrmypdf -x -l no-progress-bar -d "disable the progress bar"
+
 function __fish_ocrmypdf_pdfa_compression
     echo -e "auto\t"(_ "let Ghostscript decide how to compress images")
     echo -e "jpeg\t"(_ "convert color and grayscale images to JPEG")
@@ -111,5 +113,6 @@ complete -c ocrmypdf -x -l rotate-pages-threshold -d "page rotation confidence"
 
 complete -c ocrmypdf -r -l user-words -d "specify location of user words file"
 complete -c ocrmypdf -r -l user-patterns -d "specify location of user patterns file"
+complete -c ocrmypdf -x -l fast-web-view -d "if file size if above this amount in MB, linearize PDF"
 
 complete -c ocrmypdf -x -a "(__fish_complete_suffix .pdf)"

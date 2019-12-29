@@ -58,7 +58,7 @@ _ocrmypdf()
             COMPREPLY=( $( compgen -W '{1..13}' -- "$cur" ) )
             return
             ;;
-        --sidecar|--title|--author|--subject|--keywords|--unpaper-args|--pages)
+        --sidecar|--title|--author|--subject|--keywords|--unpaper-args|--pages|--fast-web-view)
             # argument required but no completions available
             return
             ;;
@@ -76,7 +76,8 @@ _ocrmypdf()
             --max-image-mpixels --tesseract-config --tesseract-pagesegmode
             --help --tesseract-oem --pdf-renderer --tesseract-timeout
             --rotate-pages-threshold --pdfa-image-compression --user-words
-            --user-patterns --keep-temporary-files --output-type' \
+            --user-patterns --keep-temporary-files --output-type
+            --no-progress-bar --pages --fast-web-view' \
             --  "$cur" ) )
         return
     else
