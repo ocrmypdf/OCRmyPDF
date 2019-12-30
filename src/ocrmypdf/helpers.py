@@ -104,28 +104,36 @@ def is_file_writable(test_file):
     can replace it atomically. Before doing the OCR work, make sure
     the location is writable.
     """
-    p = Path(test_file)
-
-    if p.is_symlink():
-        p = p.resolve(strict=False)
-
-    # p.is_file() throws an exception in some cases
-    if p.exists() and p.is_file():
-        return os.access(
-            os.fspath(p),
-            os.W_OK,
-            effective_ids=(os.access in os.supports_effective_ids),
-        )
-    else:
-        try:
-            fp = p.open('wb')
-        except OSError:
-            return False
+    try:
+        if not isinstance(test_file, Path):
+            p = Path(test_file)
         else:
-            fp.close()
-            with suppress(OSError):
-                p.unlink()
-        return True
+            p = test_file
+
+        if p.is_symlink():
+            p = p.resolve(strict=False)
+
+        # p.is_file() throws an exception in some cases
+        if p.exists() and p.is_file():
+            return os.access(
+                os.fspath(p),
+                os.W_OK,
+                effective_ids=(os.access in os.supports_effective_ids),
+            )
+        else:
+            try:
+                fp = p.open('wb')
+            except OSError:
+                return False
+            else:
+                fp.close()
+                with suppress(OSError):
+                    p.unlink()
+            return True
+    except (EnvironmentError, RuntimeError) as e:
+        log.debug(e)
+        log.error(str(e))
+        return False
 
 
 def deprecated(func):

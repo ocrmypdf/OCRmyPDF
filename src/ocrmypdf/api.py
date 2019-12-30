@@ -19,6 +19,7 @@ import logging
 import os
 import sys
 import warnings
+from contextlib import suppress
 from enum import IntEnum
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -46,7 +47,7 @@ class TqdmConsole:
             tqdm.write(msg.rstrip(), end='\n', file=self.file)
 
     def flush(self):
-        if hasattr(self.file, "flush"):
+        with suppress(AttributeError):
             self.file.flush()
 
 
