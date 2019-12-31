@@ -332,11 +332,15 @@ def run_pipeline(options, api=False):
     work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
     try:
         check_requested_output_file(options)
-        start_input_file = create_input_file(options, work_folder)
+        start_input_file, original_filename = create_input_file(options, work_folder)
 
         # Triage image or pdf
         origin_pdf = triage(
-            start_input_file, os.path.join(work_folder, 'origin.pdf'), options, log
+            original_filename,
+            start_input_file,
+            os.path.join(work_folder, 'origin.pdf'),
+            options,
+            log,
         )
 
         # Gather pdfinfo and create context

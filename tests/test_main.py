@@ -270,6 +270,15 @@ def test_input_file_not_found(caplog, no_outpdf):
     assert input_file in caplog.text
 
 
+def test_input_file_not_readable(caplog, resources, outdir, no_outpdf):
+    input_file = outdir / 'trivial.pdf'
+    shutil.copy(resources / 'trivial.pdf', input_file)
+    input_file.chmod(0o000)
+    result = run_ocrmypdf_api(input_file, no_outpdf)
+    assert result == ExitCode.input_file
+    assert input_file in caplog.text
+
+
 def test_input_file_not_a_pdf(caplog, no_outpdf):
     input_file = __file__  # Try to OCR this file
     result = run_ocrmypdf_api(input_file, no_outpdf)

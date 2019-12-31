@@ -19,6 +19,7 @@ import os
 import re
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from shutil import copyfileobj
 
 import img2pdf
@@ -123,7 +124,7 @@ def _pdf_guess_version(input_file, search_window=1024):
     return ''
 
 
-def triage(input_file, output_file, options, log):
+def triage(original_filename, input_file, output_file, options, log):
     try:
         if _pdf_guess_version(input_file):
             if options.image_dpi:
@@ -135,8 +136,9 @@ def triage(input_file, output_file, options, log):
             safe_symlink(input_file, output_file)
             return output_file
     except EnvironmentError as e:
-        log.error(e)
-        raise InputFileError() from e
+        log.debug(f"Temporary file was at: {input_file}")
+        msg = str(e).replace(input_file, original_filename)
+        raise InputFileError(msg) from e
 
     triage_image_file(input_file, output_file, options, log)
     return output_file
