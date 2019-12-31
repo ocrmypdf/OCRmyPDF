@@ -119,7 +119,7 @@ def test_gs_render_failure(spoof_no_tess_gs_render_fail, resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / 'blank.pdf', outpdf, env=spoof_no_tess_gs_render_fail
     )
-    print(err)
+    assert 'Casper is not a friendly ghost' in err
     assert p.returncode == ExitCode.child_process_error
 
 
@@ -127,7 +127,7 @@ def test_gs_raster_failure(spoof_no_tess_gs_raster_fail, resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / 'ccitt.pdf', outpdf, env=spoof_no_tess_gs_raster_fail
     )
-    print(err)
+    assert 'Ghost story archive not found' in err
     assert p.returncode == ExitCode.child_process_error
 
 

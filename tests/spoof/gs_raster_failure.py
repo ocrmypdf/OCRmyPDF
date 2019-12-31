@@ -35,13 +35,13 @@ def main():
         print('SPOOFED: ' + os.path.basename(__file__))
         sys.exit(0)
 
-    # For any rendering calls (device == pdfwrite) call real ghostscript
-    if '-sDEVICE=pdfwrite' in sys.argv:
+    # For non-image rastering calls, use real ghostscript
+    if '-sDEVICE=pdfwrite' in sys.argv or '-sDEVICE=txtwrite' in sys.argv:
         real_ghostscript(sys.argv)
         return
 
     # Fail
-    print("ERROR: Ghost story archive not found")
+    print("ERROR: Ghost story archive not found", file=sys.stderr)
     sys.exit(1)
 
 

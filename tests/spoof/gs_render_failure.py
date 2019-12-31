@@ -40,7 +40,7 @@ def main():
         return
 
     # Fail
-    print("ERROR: Casper is not a friendly ghost")
+    print("ERROR: Casper is not a friendly ghost", file=sys.stderr)
     sys.exit(1)
 
 
