@@ -88,7 +88,7 @@ class HocrTransform:
         if self.width is None or self.height is None:
             raise HocrTransformError("hocr file is missing page dimensions")
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         """
         Return the textual content of the HTML body
         """
@@ -190,7 +190,7 @@ class HocrTransform:
             pt = self.pt_from_pixel(pxl_coords)
 
             # draw the bbox border
-            if showBoundingboxes:
+            if showBoundingboxes:  # pragma: no cover
                 pdf.rect(
                     pt.x1, self.height - pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1, fill=1
                 )
@@ -231,7 +231,7 @@ class HocrTransform:
         pdf.save()
 
     @classmethod
-    def polyval(cls, poly, x):
+    def polyval(cls, poly, x):  # pragma: no cover
         return x * poly[0] + poly[1]
 
     def _do_line(
@@ -269,7 +269,7 @@ class HocrTransform:
         # of the line box
         baseline_y2 = self.height - (line_box.y2 + intercept)
 
-        if showBoundingboxes:
+        if showBoundingboxes:  # pragma: no cover
             # draw the baseline in magenta, dashed
             pdf.setDash()
             pdf.setStrokeColorRGB(0.95, 0.65, 0.95)
@@ -318,7 +318,7 @@ class HocrTransform:
             font_width = pdf.stringWidth(elemtxt, fontname, fontsize)
 
             # draw the bbox border
-            if showBoundingboxes:
+            if showBoundingboxes:  # pragma: no cover
                 pdf.rect(
                     box.x1, self.height - line_box.y2, box_width, line_height, fill=0
                 )

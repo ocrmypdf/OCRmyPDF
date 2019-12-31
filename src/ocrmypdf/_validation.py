@@ -314,7 +314,7 @@ def check_options(options):
     check_dependency_versions(options)
 
 
-def check_closed_streams(options):
+def check_closed_streams(options):  # pragma: no cover
     """Work around Python issue with multiprocessing forking on closed streams
 
     https://bugs.python.org/issue28326
