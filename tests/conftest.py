@@ -201,7 +201,10 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
 
 @pytest.helpers.register
 def run_ocrmypdf_api(input_file, output_file, *args, env=None):
-    "Run ocrmypdf and let caller deal with results"
+    """Run ocrmypdf via API and let caller deal with results
+
+    Does not currently have a way to manipulate the PATH except for Tesseract.
+    """
 
     options = cli.parser.parse_args(
         [str(input_file), str(output_file)]
@@ -211,6 +214,10 @@ def run_ocrmypdf_api(input_file, output_file, *args, env=None):
     if env:
         options.tesseract_env = env.copy()
         options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
+        first_path = env.get('_OCRMYPDF_TEST_PATH', '').split(os.pathsep)[0]
+        if 'spoof' in first_path:
+            assert 'gs' not in first_path, "use run_ocrmypdf() for gs"
+            assert 'tesseract' in first_path
     if options.tesseract_env:
         assert all(isinstance(v, (str, bytes)) for v in options.tesseract_env.values())
 

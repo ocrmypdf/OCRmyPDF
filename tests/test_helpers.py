@@ -59,7 +59,7 @@ def test_deprecated():
     def old_function():
         return 42
 
-    with pytest.warns(expected_warning=DeprecationWarning):
+    with pytest.deprecated_call():
         assert old_function() == 42
 
 
