@@ -32,7 +32,15 @@ from .cli import parser
 
 
 class TqdmConsole:
-    """Wrapper to log messages in a way that is compatible with tqdm progress bar"""
+    """Wrapper to log messages in a way that is compatible with tqdm progress bar
+
+    This routes log messages through tqdm so that it can print them above the
+    progress bar, and then refresh the progress bar, rather than overwriting
+    it which looks messy.
+
+    For some reason Python 3.6 prints extra empty messages from time to time,
+    so we suppress those.
+    """
 
     def __init__(self, file):
         self.file = file
