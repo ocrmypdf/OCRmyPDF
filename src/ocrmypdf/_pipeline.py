@@ -183,7 +183,7 @@ def validate_pdfinfo_options(context):
             )
             raise InputFileError()
         else:
-            log.warn(
+            log.warning(
                 "This PDF has a fillable form. "
                 "Chances are it is a pure digital "
                 "document that does not need OCR."

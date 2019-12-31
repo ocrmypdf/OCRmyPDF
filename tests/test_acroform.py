@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+
 import pytest
 
 import ocrmypdf
@@ -30,4 +32,11 @@ def acroform(resources):
 def test_acroform_and_redo(acroform, caplog, no_outpdf):
     with pytest.raises(ocrmypdf.exceptions.InputFileError):
         check_ocrmypdf(acroform, no_outpdf, '--redo-ocr')
-        assert '--redo-ocr is not currently possible' in caplog.text
+    assert '--redo-ocr is not currently possible' in caplog.text
+
+
+def test_acroform_message(acroform, caplog, spoof_tesseract_noop, outpdf):
+    caplog.set_level(logging.INFO)
+    check_ocrmypdf(acroform, outpdf, env=spoof_tesseract_noop)
+    assert 'fillable form' in caplog.text
+    assert '--force-ocr' in caplog.text

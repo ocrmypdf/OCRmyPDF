@@ -276,7 +276,7 @@ def test_input_file_not_readable(caplog, resources, outdir, no_outpdf):
     input_file.chmod(0o000)
     result = run_ocrmypdf_api(input_file, no_outpdf)
     assert result == ExitCode.input_file
-    assert input_file in caplog.text
+    assert str(input_file) in caplog.text
 
 
 def test_input_file_not_a_pdf(caplog, no_outpdf):
