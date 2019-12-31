@@ -229,13 +229,21 @@ def run_ocrmypdf(input_file, output_file, *args, env=None, universal_newlines=Tr
     "Run ocrmypdf and let caller deal with results"
 
     if env is None:
-        env = os.environ
+        env = os.environ.copy()
 
     p_args = (
         OCRMYPDF
         + [str(arg) for arg in args if arg is not None]
         + [str(input_file), str(output_file)]
     )
+
+    # Tell subprocess where to find coverage.py configuration
+    # This has no effect except when coverage is running
+    # Details: https://coverage.readthedocs.io/en/coverage-5.0/subprocess.html
+    coverage_rc = Path(__file__).parent.parent / '.coveragerc'
+    assert coverage_rc.exists()
+    env['COVERAGE_PROCESS_START'] = os.fspath(coverage_rc)
+
     p = run(
         p_args, stdout=PIPE, stderr=PIPE, universal_newlines=universal_newlines, env=env
     )

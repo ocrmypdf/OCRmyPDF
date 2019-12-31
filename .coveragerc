@@ -1,5 +1,3 @@
-# Coverage isn't really compatible with subprocesses so results are unreliable
-
 [paths]
 source =
 	src
@@ -8,9 +6,11 @@ source =
 [run]
 branch = true
 parallel = true
+concurrency =
+	thread
+	multiprocessing
 source =
 	src/ocrmypdf
-	tests
 omit =
 	tests/spoof/*
 
