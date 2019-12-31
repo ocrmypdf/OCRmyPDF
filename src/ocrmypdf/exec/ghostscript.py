@@ -195,8 +195,6 @@ def rasterize_pdf(
     try:
         p = run(args_gs, stdout=PIPE, stderr=PIPE, check=True)
     except CalledProcessError as e:
-        with suppress(OSError):
-            Path(output_file).unlink()  # no unfinished files
         log.error(e.stderr.decode(errors='replace'))
         raise SubprocessOutputError('Ghostscript rasterizing failed')
     else:
@@ -320,8 +318,6 @@ def generate_pdfa(
     except CalledProcessError as e:
         # Ghostscript does not change return code when it fails to create
         # PDF/A - check PDF/A status elsewhere
-        with suppress(OSError):
-            Path(output_file).unlink()
         log.error(e.stderr.decode(errors='replace'))
         raise SubprocessOutputError('Ghostscript PDF/A rendering failed')
     else:
