@@ -60,18 +60,18 @@ def spoof_no_tess_pdfa_warning(tmp_path_factory):
 
 
 @pytest.fixture
-def linn(resources):
-    path = resources / 'linn.pdf'
+def francais(resources):
+    path = resources / 'francais.pdf'
     return path, pikepdf.open(path)
 
 
-def test_rasterize_size(linn, outdir, caplog):
-    path, pdf = linn
+def test_rasterize_size(francais, outdir, caplog):
+    path, pdf = francais
     page_size_pts = (pdf.pages[0].MediaBox[2], pdf.pages[0].MediaBox[3])
     assert pdf.pages[0].MediaBox[0] == pdf.pages[0].MediaBox[1] == 0
     page_size = (page_size_pts[0] / Decimal(72), page_size_pts[1] / Decimal(72))
-    target_size = Decimal('200.0'), Decimal('150.0')
-    target_dpi = 42.0, 4242.0
+    target_size = Decimal('50.0'), Decimal('30.0')
+    forced_dpi = 42.0, 4242.0
 
     log = logging.getLogger()
     rasterize_pdf(
@@ -81,21 +81,21 @@ def test_rasterize_size(linn, outdir, caplog):
         target_size[1] / page_size[1],
         raster_device='pngmono',
         log=log,
-        page_dpi=target_dpi,
+        page_dpi=forced_dpi,
     )
 
     with Image.open(outdir / 'out.png') as im:
         assert im.size == target_size
-        assert im.info['dpi'] == target_dpi
+        assert im.info['dpi'] == forced_dpi
 
 
-def test_rasterize_rotated(linn, outdir, caplog):
-    path, pdf = linn
+def test_rasterize_rotated(francais, outdir, caplog):
+    path, pdf = francais
     page_size_pts = (pdf.pages[0].MediaBox[2], pdf.pages[0].MediaBox[3])
     assert pdf.pages[0].MediaBox[0] == pdf.pages[0].MediaBox[1] == 0
     page_size = (page_size_pts[0] / Decimal(72), page_size_pts[1] / Decimal(72))
-    target_size = Decimal('200.0'), Decimal('150.0')
-    target_dpi = 42.0, 4242.0
+    target_size = Decimal('50.0'), Decimal('30.0')
+    forced_dpi = 42.0, 4242.0
 
     log = logging.getLogger()
     caplog.set_level(logging.DEBUG)
@@ -106,13 +106,13 @@ def test_rasterize_rotated(linn, outdir, caplog):
         target_size[1] / page_size[1],
         raster_device='pngmono',
         log=log,
-        page_dpi=target_dpi,
+        page_dpi=forced_dpi,
         rotation=90,
     )
 
     with Image.open(outdir / 'out.png') as im:
         assert im.size == (target_size[1], target_size[0])
-        assert im.info['dpi'] == (target_dpi[1], target_dpi[0])
+        assert im.info['dpi'] == (forced_dpi[1], forced_dpi[0])
 
 
 def test_gs_render_failure(spoof_no_tess_gs_render_fail, resources, outpdf):
@@ -125,7 +125,7 @@ def test_gs_render_failure(spoof_no_tess_gs_render_fail, resources, outpdf):
 
 def test_gs_raster_failure(spoof_no_tess_gs_raster_fail, resources, outpdf):
     p, out, err = run_ocrmypdf(
-        resources / 'ccitt.pdf', outpdf, env=spoof_no_tess_gs_raster_fail
+        resources / 'francais.pdf', outpdf, env=spoof_no_tess_gs_raster_fail
     )
     assert 'Ghost story archive not found' in err
     assert p.returncode == ExitCode.child_process_error
@@ -133,7 +133,7 @@ def test_gs_raster_failure(spoof_no_tess_gs_raster_fail, resources, outpdf):
 
 def test_ghostscript_pdfa_failure(spoof_no_tess_no_pdfa, resources, outpdf):
     p, out, err = run_ocrmypdf(
-        resources / 'ccitt.pdf', outpdf, env=spoof_no_tess_no_pdfa
+        resources / 'francais.pdf', outpdf, env=spoof_no_tess_no_pdfa
     )
     assert (
         p.returncode == ExitCode.pdfa_conversion_failed
@@ -141,4 +141,4 @@ def test_ghostscript_pdfa_failure(spoof_no_tess_no_pdfa, resources, outpdf):
 
 
 def test_ghostscript_feature_elision(spoof_no_tess_pdfa_warning, resources, outpdf):
-    check_ocrmypdf(resources / 'ccitt.pdf', outpdf, env=spoof_no_tess_pdfa_warning)
+    check_ocrmypdf(resources / 'francais.pdf', outpdf, env=spoof_no_tess_pdfa_warning)
