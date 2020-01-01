@@ -267,28 +267,43 @@ def exec_concurrent(context):
         unit='page',
         unit_scale=0.5,
         disable=not context.options.progress_bar,
-    ) as pbar, Pool(
-        processes=max_workers,
-        initializer=initializer,
-        initargs=(log_queue, PIL.Image.MAX_IMAGE_PIXELS),
-    ) as pool:
-        results = pool.imap_unordered(exec_page_sync, context.get_page_contexts())
-        while True:
-            try:
-                page_result = results.next()
-                sidecars[page_result.pageno] = page_result.text
-                pbar.update()
-                ocrgraft.graft_page(page_result)
-                pbar.update()
-            except StopIteration:
-                break
-            except (Exception, KeyboardInterrupt):
+    ) as pbar:
+        pool = Pool(
+            processes=max_workers,
+            initializer=initializer,
+            initargs=(log_queue, PIL.Image.MAX_IMAGE_PIXELS),
+        )
+        try:
+            results = pool.imap_unordered(exec_page_sync, context.get_page_contexts())
+            while True:
+                try:
+                    page_result = results.next()
+                    sidecars[page_result.pageno] = page_result.text
+                    pbar.update()
+                    ocrgraft.graft_page(page_result)
+                    pbar.update()
+                except StopIteration:
+                    break
+        except KeyboardInterrupt:
+            # Terminate pool so we exit instantly
+            pool.terminate()
+            # Don't try listener.join() here, will deadlock
+            raise
+        except Exception:
+            if not os.environ.get("PYTEST_CURRENT_TEST", ""):
+                # Unless inside pytest, exit immediately because no one wants
+                # to wait for child processes to finalize results that will be
+                # thrown away. Inside pytest, we want child processes to exit
+                # cleanly so that they output an error messages or coverage data
+                # we need from them.
                 pool.terminate()
-                log_queue.put_nowait(None)  # Terminate log listener
-                # Don't try listener.join() here, will deadlock
-                raise
+            raise
+        finally:
+            # Terminate log listener
+            log_queue.put_nowait(None)
+            pool.close()
+            pool.join()
 
-    log_queue.put_nowait(None)
     listener.join()
 
     # Output sidecar text

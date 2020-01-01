@@ -28,12 +28,6 @@ from ocrmypdf import api, cli
 
 pytest_plugins = ['helpers_namespace']
 
-try:
-    from pytest_cov.embed import cleanup_on_sigterm
-except ImportError:
-    pass
-else:
-    cleanup_on_sigterm()
 
 # pylint: disable=E1101
 # pytest.helpers is dynamic so it confuses pylint
