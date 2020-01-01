@@ -131,12 +131,12 @@ def spoof(tmp_path_factory, **kwargs):
     return env
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def spoof_tesseract_noop(tmp_path_factory):
     return spoof(tmp_path_factory, tesseract='tesseract_noop.py')
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def spoof_tesseract_cache(tmp_path_factory):
     if running_in_docker():
         return os.environ.copy()

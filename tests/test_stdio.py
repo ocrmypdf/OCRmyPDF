@@ -33,7 +33,7 @@ run_ocrmypdf_api = pytest.helpers.run_ocrmypdf
 spoof = pytest.helpers.spoof
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def spoof_tess_bad_utf8(tmp_path_factory):
     return spoof(tmp_path_factory, tesseract='tesseract_badutf8.py')
 

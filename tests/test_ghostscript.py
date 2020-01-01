@@ -31,28 +31,28 @@ run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
 spoof = pytest.helpers.spoof
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def spoof_no_tess_gs_render_fail(tmp_path_factory):
     return spoof(
         tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_render_failure.py'
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def spoof_no_tess_gs_raster_fail(tmp_path_factory):
     return spoof(
         tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_raster_failure.py'
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def spoof_no_tess_no_pdfa(tmp_path_factory):
     return spoof(
         tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_pdfa_failure.py'
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def spoof_no_tess_pdfa_warning(tmp_path_factory):
     return spoof(
         tmp_path_factory, tesseract='tesseract_noop.py', gs='gs_feature_elision.py'

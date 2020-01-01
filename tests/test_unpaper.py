@@ -43,7 +43,7 @@ def have_unpaper():
         return True
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def spoof_unpaper_oldversion(tmp_path_factory):
     return spoof(tmp_path_factory, unpaper="unpaper_oldversion.py")
 

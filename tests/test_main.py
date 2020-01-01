@@ -45,12 +45,12 @@ spoof = pytest.helpers.spoof
 RENDERERS = ['hocr', 'sandwich']
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def spoof_tesseract_crash(tmp_path_factory):
     return spoof(tmp_path_factory, tesseract='tesseract_crash.py')
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def spoof_tesseract_big_image_error(tmp_path_factory):
     return spoof(tmp_path_factory, tesseract='tesseract_big_image_error.py')
 
