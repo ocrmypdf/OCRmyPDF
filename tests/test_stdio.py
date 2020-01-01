@@ -56,6 +56,9 @@ def test_stdin(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
 
 
 def test_stdout(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
+    if 'COV_CORE_DATAFILE' in spoof_tesseract_noop:
+        pytest.skip(msg="Coverage uses stdout")
+
     input_file = str(resources / 'francais.pdf')
     output_file = str(outpdf)
 
@@ -121,6 +124,9 @@ def test_bad_locale():
     reason="Windows does not like this; not sure how to fix",
 )
 def test_dev_null(spoof_tesseract_noop, resources):
+    if 'COV_CORE_DATAFILE' in spoof_tesseract_noop:
+        pytest.skip(msg="Coverage uses stdout")
+
     p, out, err = run_ocrmypdf(
         resources / 'trivial.pdf', os.devnull, '--force-ocr', env=spoof_tesseract_noop
     )
