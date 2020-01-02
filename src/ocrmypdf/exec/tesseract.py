@@ -282,7 +282,6 @@ def generate_hocr(
     # to the number of order parameters here
     args_tesseract.extend([input_file, prefix, 'hocr', 'txt'] + tessconfig)
     try:
-        log.debug(args_tesseract)
         p = run(
             args_tesseract,
             stdout=PIPE,
@@ -381,7 +380,6 @@ def generate_pdf(
 
     args_tesseract.extend([input_image, prefix, 'pdf', 'txt'] + tessconfig)
     try:
-        log.debug(args_tesseract)
         p = run(
             args_tesseract,
             stdout=PIPE,

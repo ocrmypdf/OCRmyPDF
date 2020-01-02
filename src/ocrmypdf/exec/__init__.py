@@ -77,12 +77,21 @@ def run(args, *, env=None, **kwargs):
             if new_args0:
                 args[0] = new_args0
 
-    log.debug(args)
+    process_log = log.getChild(os.path.basename(program))
+    process_log.debug("Running: %s", args)
     if sys.version_info < (3, 7) and os.name == 'nt':
         # Can't use close_fds=True on Windows with Python 3.6 or older
         # https://bugs.python.org/issue19575, etc.
         kwargs['close_fds'] = False
-    return subprocess_run(args, env=env, **kwargs)
+    proc = subprocess_run(args, env=env, **kwargs)
+    if process_log.isEnabledFor(logging.DEBUG):
+        try:
+            stderr = proc.stderr.decode('utf-8', 'replace')
+        except AttributeError:
+            stderr = proc.stderr
+        if stderr:
+            process_log.debug("stderr = %s", stderr)
+    return proc
 
 
 def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)', env=None):

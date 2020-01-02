@@ -311,7 +311,6 @@ def generate_pdfa(
         ]
     )
     args_gs.extend(fspath(s) for s in pdf_pages)  # Stringify Path objs
-    log.debug(args_gs)
     try:
         with Path(output_file).open('wb') as output:
             p = run(args_gs, stdout=output, stderr=PIPE, check=True)
@@ -342,5 +341,3 @@ def generate_pdfa(
                 "Ghostscript had to remove PDF 'overprinting' from the "
                 "input file to complete PDF/A conversion. "
             )
-        else:
-            log.debug(stderr)
