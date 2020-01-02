@@ -29,7 +29,7 @@ from subprocess import run as subprocess_run
 
 from ..exceptions import ExitCode, MissingDependencyError
 
-log = logging.Logger(__name__)
+log = logging.getLogger(__name__)
 
 
 def _get_program(args, env=None):
