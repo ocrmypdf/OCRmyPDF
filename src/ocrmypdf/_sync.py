@@ -23,6 +23,7 @@ import signal
 import sys
 import threading
 from collections import namedtuple
+from pathlib import Path
 from tempfile import mkdtemp
 
 import PIL
@@ -335,6 +336,17 @@ def samefile(f1, f2):
         return os.path.samefile(f1, f2)
 
 
+def configure_debug_logging(log_filename, prefix=''):
+    log_file_handler = logging.FileHandler(log_filename, delay=True)
+    log_file_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(
+        '[%(asctime)s] - %(name)s - %(levelname)7s - %(message)s'
+    )
+    log_file_handler.setFormatter(formatter)
+    logging.getLogger(prefix).addHandler(log_file_handler)
+    return
+
+
 def run_pipeline(options, api=False):
     log = make_logger(options, __name__)
 
@@ -345,6 +357,9 @@ def run_pipeline(options, api=False):
         options.jobs = available_cpu_count()
 
     work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
+    if options.keep_temporary_files:
+        configure_debug_logging(Path(work_folder) / "debug.log")
+
     try:
         check_requested_output_file(options)
         start_input_file, original_filename = create_input_file(options, work_folder)

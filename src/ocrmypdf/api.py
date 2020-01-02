@@ -89,11 +89,14 @@ def configure_logging(verbosity, progress_bar_friendly=True, manage_root_logger=
             overwrite the progress bar
         manage_root_logger (bool): Configure the process's root logger, to ensure
             all log output is sent through
+
+    Returns:
+        The toplevel logger for ocrmypdf (or the root logger, if we are managing it).
     """
 
     prefix = '' if manage_root_logger else 'ocrmypdf'
     log = logging.getLogger(prefix)
-    log.setLevel(logging.INFO)
+    log.setLevel(logging.DEBUG)
 
     if progress_bar_friendly:
         console = logging.StreamHandler(stream=TqdmConsole(sys.stderr))
@@ -108,8 +111,6 @@ def configure_logging(verbosity, progress_bar_friendly=True, manage_root_logger=
         console.setLevel(logging.INFO)
 
     formatter = logging.Formatter('%(levelname)7s - %(message)s')
-    if verbosity >= 1:
-        log.setLevel(logging.DEBUG)
     if verbosity >= 2:
         formatter = logging.Formatter('%(name)s - %(levelname)7s - %(message)s')
 
@@ -124,6 +125,8 @@ def configure_logging(verbosity, progress_bar_friendly=True, manage_root_logger=
 
     if manage_root_logger:
         logging.captureWarnings(True)
+
+    return log
 
 
 def create_options(*, input_file, output_file, **kwargs):
