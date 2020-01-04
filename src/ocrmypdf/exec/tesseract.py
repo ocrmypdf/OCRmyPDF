@@ -260,8 +260,8 @@ def generate_hocr(
     log,
 ):
 
-    output_hocr = next(o for o in output_files if o.endswith('.hocr'))
-    output_sidecar = next(o for o in output_files if o.endswith('.txt'))
+    output_hocr = next(o for o in output_files if fspath(o).endswith('.hocr'))
+    output_sidecar = next(o for o in output_files if fspath(o).endswith('.txt'))
     prefix = os.path.splitext(output_hocr)[0]
 
     args_tesseract = tess_base_args(language, engine_mode)
