@@ -32,9 +32,10 @@ In orientation check mode, report the orientation is upright.
 """
 
 import sys
+from pathlib import Path
 
 import img2pdf
-import PyPDF2 as pypdf
+import pikepdf
 from PIL import Image
 
 VERSION_STRING = '''tesseract 4.0.0
@@ -99,12 +100,10 @@ def main():
                 pagesize = im.size[0] / dpi[0], im.size[1] / dpi[1]
                 ptsize = pagesize[0] * 72, pagesize[1] * 72
 
-            pdf_out = pypdf.PdfFileWriter()
-            pdf_out.addBlankPage(ptsize[0], ptsize[1])
-            with open(output + '.pdf', 'wb') as f:
-                pdf_out.write(f)
-            with open(output + '.txt', 'w') as f:
-                f.write('')
+            pdf_out = pikepdf.new()
+            pdf_out.add_blank_page(page_size=ptsize)
+            pdf_out.save(Path(output).with_suffix('.pdf'), static_id=True)
+            Path(output).with_suffix('.txt').write_text('')
         else:
             inputf = sys.argv[-4]
             output = sys.argv[-3]

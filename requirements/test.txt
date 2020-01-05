@@ -4,5 +4,4 @@ pytest-xdist >= 1.29.0  # For DumpError fix
 pytest-cov >= 2.6.1
 python-xmp-toolkit == 2.0.1  # requires apt-get install libexempi3
                      # or brew install exempi
-PyPDF2 >= 1.26.0
 #PyMuPDF == 1.13.4    # optional
