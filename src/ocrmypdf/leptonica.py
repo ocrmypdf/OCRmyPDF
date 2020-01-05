@@ -47,21 +47,32 @@ if os.name == 'nt':
 else:
     libname = 'lept'
 _libpath = find_library(libname)
-if not _libpath and os.name == 'nt':
+if not _libpath:
     raise MissingDependencyError(
         """
         ---------------------------------------------------------------------
-        This error normally occurs when ocrmypdf can't find a file named
-        liblept-5.dll (Leptonica).  Please ensure Tesseract-OCR is installed
-        and its location is added to the system PATH environment variable.
+        This error normally occurs when ocrmypdf can't find the Leptonica
+        library, which is usually installed with Tesseract OCR. It could be that
+        Tesseract is not installed properly, we can't find the installation
+        on your system PATH environment variable.
 
-        For details see:
+        The library we are looking for is usually called:
+            liblept-5.dll   (Windows)
+            liblept*.dylib  (macOS)
+            liblept*.so     (Linux/BSD)
+
+        Please review our installation procedures to find a solution:
             https://ocrmypdf.readthedocs.io/en/latest/installation.html
         ---------------------------------------------------------------------
         """
     )
-lept = ffi.dlopen(_libpath)
-lept.setMsgSeverity(lept.L_SEVERITY_WARNING)
+try:
+    lept = ffi.dlopen(_libpath)
+    lept.setMsgSeverity(lept.L_SEVERITY_WARNING)
+except ffi.error as e:
+    raise MissingDependencyError(
+        f"Leptonica library found at {_libpath}, but we could not access it"
+    ) from e
 
 
 class _LeptonicaErrorTrap:
