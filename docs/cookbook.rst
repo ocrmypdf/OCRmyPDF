@@ -89,6 +89,18 @@ This produces a file named "output.pdf" and a companion text file named
 
     ocrmypdf --sidecar output.txt input.pdf output.pdf
 
+.. note::
+
+    The sidecar file contains the **OCR text** found by OCRmyPDF. If the document
+    contains pages that already have text, that text will not appear in the
+    sidecar. If the option ``--pages`` is used, only those pages on which OCR
+    was performed will be included in the sidecar. If certain pages were skipped
+    because of options like ``--skip-big`` or ``--tesseract-timeout``, those pages
+    will not be in the sidecar.
+
+    To extract all text from a PDF, whether generated from OCR or otherwise,
+    use a program like Poppler's ``pdftotext``.
+
 OCR images, not PDFs
 --------------------
 
