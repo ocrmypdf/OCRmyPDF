@@ -99,7 +99,7 @@ This produces a file named "output.pdf" and a companion text file named
     will not be in the sidecar.
 
     To extract all text from a PDF, whether generated from OCR or otherwise,
-    use a program like Poppler's ``pdftotext``.
+    use a program like Poppler's ``pdftotext`` or ``pdfgrep``.
 
 OCR images, not PDFs
 --------------------
