@@ -95,11 +95,10 @@ setup(
     use_scm_version={'version_scheme': 'post-release'},
     cffi_modules=['src/ocrmypdf/lib/compile_leptonica.py:ffibuilder'],
     install_requires=[
-        'chardet >= 3.0.4, < 4',  # unlisted requirement of pdfminer.six 20181108
         'cffi >= 1.9.1',  # must be a setup and install requirement
         'coloredlogs >= 14.0',  # strictly optional
         'img2pdf >= 0.3.0, < 0.4',  # pure Python, so track HEAD closely
-        'pdfminer.six >= 20181108, <= 20200124',
+        'pdfminer.six >= 20191110, <= 20200124',
         'pikepdf >= 1.8.1, < 2',
         'Pillow >= 6.2.0',
         'reportlab >= 3.3.0',  # oldest released version with sane image handling
