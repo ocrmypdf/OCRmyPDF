@@ -357,7 +357,7 @@ def run_pipeline(options, api=False):
         options.jobs = available_cpu_count()
 
     work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
-    if options.keep_temporary_files:
+    if options.keep_temporary_files or options.verbose >= 1:
         configure_debug_logging(Path(work_folder) / "debug.log")
 
     try:
