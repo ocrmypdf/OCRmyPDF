@@ -132,7 +132,8 @@ def test_image_too_large_pdf(monkeypatch, resources, outdir):
         tesseract_env=None,
     )
     assert Path(outdir / 'txt.txt').read_text() == '[skipped page]'
-    assert Path(outdir / 'pdf.pdf').samefile(resources / 'blank.pdf')
+    if os.name != 'nt':  # different semantics
+        assert Path(outdir / 'pdf.pdf').samefile(resources / 'blank.pdf')
 
 
 def test_timeout(caplog):
