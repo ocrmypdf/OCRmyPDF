@@ -344,7 +344,7 @@ def configure_debug_logging(log_filename, prefix=''):
     )
     log_file_handler.setFormatter(formatter)
     logging.getLogger(prefix).addHandler(log_file_handler)
-    return
+    return log_file_handler
 
 
 def run_pipeline(options, api=False):
@@ -357,7 +357,9 @@ def run_pipeline(options, api=False):
         options.jobs = available_cpu_count()
 
     work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
-    if options.keep_temporary_files or options.verbose >= 1:
+    if (options.keep_temporary_files or options.verbose >= 1) and not os.environ.get(
+        'PYTEST_CURRENT_TEST', ''
+    ):
         configure_debug_logging(Path(work_folder) / "debug.log")
 
     try:
