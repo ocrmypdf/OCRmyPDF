@@ -3,8 +3,8 @@
 # installation
 cffi == 1.13.2
 img2pdf == 0.3.3
-pdfminer.six == 20191110
-pikepdf == 1.8.1
-Pillow >= 6.2.0
+pdfminer.six == 20200104
+pikepdf == 1.8.2
+Pillow == 7.0.0
 reportlab == 3.5.32
-tqdm == 4.37.0
+tqdm == 4.41.1

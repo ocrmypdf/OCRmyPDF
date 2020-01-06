@@ -21,11 +21,12 @@ from __future__ import print_function, unicode_literals
 
 import sys
 
+from setuptools import find_packages, setup
+
 if sys.version_info < (3, 6):
     print("Python 3.6 or newer is required", file=sys.stderr)
     sys.exit(1)
 
-from setuptools import setup, find_packages
 
 # pylint: disable=w0613
 
@@ -97,7 +98,7 @@ setup(
         'chardet >= 3.0.4, < 4',  # unlisted requirement of pdfminer.six 20181108
         'cffi >= 1.9.1',  # must be a setup and install requirement
         'img2pdf >= 0.3.0, < 0.4',  # pure Python, so track HEAD closely
-        'pdfminer.six >= 20181108, <= 20191110',
+        'pdfminer.six >= 20181108, <= 20200104',
         'pikepdf >= 1.8.1, < 2',
         'Pillow >= 6.2.0',
         'reportlab >= 3.3.0',  # oldest released version with sane image handling

@@ -13,6 +13,18 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.4.0
+======
+
+-  Updated recommended dependency versions.
+-  Improvements to test coverage and changes to facilitate better measurement of
+   test coverage, such as when tests run in subprocesses.
+-  Improvements to error messages when Leptonica is not installed correctly.
+-  Fixed use of pytest "session scope" that may have caused some intermittent
+   CI failures.
+-  When the argument ``--keep-temporary-files`` or verbosity is set to ``-v1``,
+   a debug log file is generated in the working temporary folder.
+
 v9.3.0
 ======
 
