@@ -38,7 +38,7 @@ Main features
 - Keeps the exact resolution of the original embedded images
 - When possible, inserts OCR information as a "lossless" operation without disrupting any other content
 - Optimizes PDF images, often producing files smaller than the input file
-- If requested deskews and/or cleans the image before performing OCR
+- If requested, deskews and/or cleans the image before performing OCR
 - Validates input and output files
 - Distributes work across all available CPU cores
 - Uses [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) engine to recognize more than [100 languages](https://github.com/tesseract-ocr/tessdata)
@@ -50,7 +50,7 @@ For details: please consult the [documentation](https://ocrmypdf.readthedocs.io/
 Motivation
 ----------
 
-I searched the web for a free command line tool to OCR PDF files: I found many, but none of them were really satisfying.
+I searched the web for a free command line tool to OCR PDF files: I found many, but none of them were really satisfying:
 
 - Either they produced PDF files with misplaced text under the image (making copy/paste impossible)
 - Or they did not handle accents and multilingual characters
@@ -97,7 +97,10 @@ OCRmyPDF uses Tesseract for OCR, and relies on its language packs. For Linux use
 apt-cache search tesseract-ocr
 
 # Debian/Ubuntu users
-apt-get install tesseract-ocr-chi-sim  # Example: Install Chinese Simplified language back
+apt-get install tesseract-ocr-chi-sim  # Example: Install Chinese Simplified language pack
+
+# Arch Linux users
+pacman -S tesseract-data-eng tesseract-data-deu # Example: Install the English and German language packs
 ```
 
 You can then pass the `-l LANG` argument to OCRmyPDF to give a hint as to what languages it should search for. Multiple languages can be requested.
@@ -105,7 +108,7 @@ You can then pass the `-l LANG` argument to OCRmyPDF to give a hint as to what l
 Documentation and support
 -------------------------
 
-Once ocrmypdf is installed, the built-in help which explains the command syntax and options can be accessed via:
+Once OCRmyPDF is installed, the built-in help which explains the command syntax and options can be accessed via:
 
 ```bash
 ocrmypdf --help
@@ -118,20 +121,20 @@ Please report issues on our [GitHub issues](https://github.com/jbarlow83/OCRmyPD
 Requirements
 ------------
 
-In addition to the required Python version (3.6+), OCRmyPDF requires external program installations of Ghostscript, Tesseract OCR, QPDF, and Leptonica. ocrmypdf is pure Python, but uses CFFI to portably generate library bindings. OCRmyPDF works on pretty much  everything: Linux, macOS, Windows and FreeBSD.
+In addition to the required Python version (3.6+), OCRmyPDF requires external program installations of Ghostscript, Tesseract OCR, QPDF, and Leptonica. OCRmyPDF is pure Python, but uses CFFI to portably generate library bindings. OCRmyPDF works on pretty much everything: Linux, macOS, Windows and FreeBSD.
 
 Press & Media
 -------------
 
 - [Going paperless with OCRmyPDF](https://medium.com/@ikirichenko/going-paperless-with-ocrmypdf-e2f36143f46a)
 - [Converting a scanned document into a compressed searchable PDF with redactions](https://medium.com/@treyharris/converting-a-scanned-document-into-a-compressed-searchable-pdf-with-redactions-63f61c34fe4c)
-- [c't 1-2014, page 59](http://heise.de/-2279695): Detailed presentation of OCRmyPDF v1.0 in the leading German IT magazine c't
-- [heise Open Source, 09/2014: Texterkennung mit OCRmyPDF](http://heise.de/-2356670)
+- [c't 1-2014, page 59](https://heise.de/-2279695): Detailed presentation of OCRmyPDF v1.0 in the leading German IT magazine c't
+- [heise Open Source, 09/2014: Texterkennung mit OCRmyPDF](https://heise.de/-2356670)
 
 Business enquiries
 ------------------
 
-OCRmyPDF would not be the software that it is today is without companies and users choosing to provide support for feature development and consulting enquiries. We are happy to discuss all enquiries, whether for extending the existing feature set, or integrating OCRmyPDF into a larger system.
+OCRmyPDF would not be the software that it is today without companies and users choosing to provide support for feature development and consulting enquiries. We are happy to discuss all enquiries, whether for extending the existing feature set, or integrating OCRmyPDF into a larger system.
 
 License
 -------
