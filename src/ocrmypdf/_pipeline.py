@@ -727,47 +727,53 @@ def should_linearize(working_file, context):
 def metadata_fixup(working_file, context):
     output_file = context.get_path('metafix.pdf')
     options = context.options
-    original = pikepdf.open(context.origin)
-    docinfo = get_docinfo(original, options)
-    pdf = pikepdf.open(working_file)
-    with pdf.open_metadata() as meta:
-        meta.load_from_docinfo(docinfo, delete_missing=False)
-        # If xmp:CreateDate is missing, set it to the modify date to
-        # match Ghostscript, for consistency
-        if 'xmp:CreateDate' not in meta:
-            meta['xmp:CreateDate'] = meta.get('xmp:ModifyDate', '')
 
-        meta_original = original.open_metadata()
-        not_copied = set(meta_original.keys()) - set(meta.keys())
-        if not_copied:
-            if options.output_type.startswith('pdfa'):
-                context.log.warning(
-                    "Some input metadata could not be copied because it is not "
-                    "permitted in PDF/A. You may wish to examine the output "
-                    "PDF's XMP metadata."
-                )
-                context.log.debug(
-                    "The following metadata fields were not copied: %r", not_copied
-                )
-            else:
-                context.log.error(
-                    "Some input metadata could not be copied."
-                    "You may wish to examine the output PDF's XMP metadata."
-                )
-                context.log.info(
-                    "The following metadata fields were not copied: %r", not_copied
-                )
-    pdf.save(
-        output_file,
-        compress_streams=True,
-        preserve_pdfa=True,
-        object_stream_mode=pikepdf.ObjectStreamMode.generate,
-        linearize=(  # Don't linearize if optimize() will be linearizing too
-            should_linearize(working_file, context) if options.optimize == 0 else False
-        ),
-    )
-    original.close()
-    pdf.close()
+    def report_on_metadata(missing):
+        if not missing:
+            return
+        if options.output_type.startswith('pdfa'):
+            context.log.warning(
+                "Some input metadata could not be copied because it is not "
+                "permitted in PDF/A. You may wish to examine the output "
+                "PDF's XMP metadata."
+            )
+            context.log.debug(
+                "The following metadata fields were not copied: %r", missing
+            )
+        else:
+            context.log.error(
+                "Some input metadata could not be copied."
+                "You may wish to examine the output PDF's XMP metadata."
+            )
+            context.log.info(
+                "The following metadata fields were not copied: %r", missing
+            )
+
+    with pikepdf.open(context.origin) as original:
+        docinfo = get_docinfo(original, options)
+        with pikepdf.open(working_file) as pdf, pdf.open_metadata() as meta:
+            meta.load_from_docinfo(docinfo, delete_missing=False, raise_failure=False)
+            # If xmp:CreateDate is missing, set it to the modify date to
+            # match Ghostscript, for consistency
+            if 'xmp:CreateDate' not in meta:
+                meta['xmp:CreateDate'] = meta.get('xmp:ModifyDate', '')
+
+            meta_original = original.open_metadata()
+            missing = set(meta_original.keys()) - set(meta.keys())
+            report_on_metadata(missing)
+
+            pdf.save(
+                output_file,
+                compress_streams=True,
+                preserve_pdfa=True,
+                object_stream_mode=pikepdf.ObjectStreamMode.generate,
+                linearize=(  # Don't linearize if optimize() will be linearizing too
+                    should_linearize(working_file, context)
+                    if options.optimize == 0
+                    else False
+                ),
+            )
+
     return output_file
 
 
