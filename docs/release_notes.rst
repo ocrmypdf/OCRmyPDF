@@ -13,6 +13,11 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.5.0
+======
+
+-  Added API functions to measure OCR quality.
+
 v9.4.0
 ======
 
