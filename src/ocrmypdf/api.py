@@ -18,11 +18,10 @@
 import logging
 import os
 import sys
-import warnings
 from contextlib import suppress
 from enum import IntEnum
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from tqdm import tqdm
 

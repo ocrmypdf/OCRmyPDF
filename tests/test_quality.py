@@ -1,4 +1,4 @@
-# © 2017 James R. Barlow: github.com/jbarlow83
+# © 2020 James R. Barlow: github.com/jbarlow83
 #
 # This file is part of OCRmyPDF.
 #
@@ -15,21 +15,21 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import helpers, hocrtransform, leptonica, pdfa, pdfinfo
-from ._version import PROGRAM_NAME, __version__
-from .api import Verbosity, configure_logging, ocr
-from .exceptions import (
-    BadArgsError,
-    DpiError,
-    EncryptedPdfError,
-    ExitCode,
-    ExitCodeException,
-    InputFileError,
-    MissingDependencyError,
-    OutputFileAccessError,
-    PdfMergeFailedError,
-    PriorOcrFoundError,
-    SubprocessOutputError,
-    TesseractConfigError,
-    UnsupportedImageFormatError,
-)
+import pytest
+
+import ocrmypdf.quality as qual
+
+
+def test_quality_measurement():
+    oqd = qual.OcrQualityDictionary(
+        wordlist=["words", "words", "quick", "brown", "fox", "dog", "lazy"]
+    )
+    assert len(oqd.dictionary) == 6  # 6 unique
+
+    assert (
+        oqd.measure_words_matched("The quick brown fox jumps quickly over the lazy dog")
+        == 0.5
+    )
+    assert oqd.measure_words_matched("12345 10% _f  7fox -brown   | words") == 1.0
+
+    assert oqd.measure_words_matched("quick quick quick") == 1.0

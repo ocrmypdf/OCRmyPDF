@@ -381,6 +381,7 @@ def run_pipeline(options, api=False):
             detailed_page_analysis=options.redo_ocr,
             progbar=options.progress_bar,
         )
+
         context = PDFContext(options, work_folder, origin_pdf, pdfinfo)
 
         # Validate options are okay for this pdf
