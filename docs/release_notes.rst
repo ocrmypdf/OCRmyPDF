@@ -17,6 +17,7 @@ v9.5.0
 ======
 
 -  Added API functions to measure OCR quality.
+-  Modest improvements to handling PDFs with difficult/non compliant metadata.
 
 v9.4.0
 ======
