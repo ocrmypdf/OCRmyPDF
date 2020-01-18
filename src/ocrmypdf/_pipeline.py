@@ -749,9 +749,9 @@ def metadata_fixup(working_file, context):
                 "The following metadata fields were not copied: %r", missing
             )
 
-    with pikepdf.open(context.origin) as original:
+    with pikepdf.open(context.origin) as original, pikepdf.open(working_file) as pdf:
         docinfo = get_docinfo(original, options)
-        with pikepdf.open(working_file) as pdf, pdf.open_metadata() as meta:
+        with pdf.open_metadata() as meta:
             meta.load_from_docinfo(docinfo, delete_missing=False, raise_failure=False)
             # If xmp:CreateDate is missing, set it to the modify date to
             # match Ghostscript, for consistency
@@ -762,17 +762,17 @@ def metadata_fixup(working_file, context):
             missing = set(meta_original.keys()) - set(meta.keys())
             report_on_metadata(missing)
 
-            pdf.save(
-                output_file,
-                compress_streams=True,
-                preserve_pdfa=True,
-                object_stream_mode=pikepdf.ObjectStreamMode.generate,
-                linearize=(  # Don't linearize if optimize() will be linearizing too
-                    should_linearize(working_file, context)
-                    if options.optimize == 0
-                    else False
-                ),
-            )
+        pdf.save(
+            output_file,
+            compress_streams=True,
+            preserve_pdfa=True,
+            object_stream_mode=pikepdf.ObjectStreamMode.generate,
+            linearize=(  # Don't linearize if optimize() will be linearizing too
+                should_linearize(working_file, context)
+                if options.optimize == 0
+                else False
+            ),
+        )
 
     return output_file
 
