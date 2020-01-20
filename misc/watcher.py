@@ -25,12 +25,15 @@ import ocrmypdf
 
 INPUT_DIRECTORY = os.getenv('OCR_INPUT_DIRECTORY', '/input')
 OUTPUT_DIRECTORY = os.getenv('OCR_OUTPUT_DIRECTORY', '/output')
+ON_SUCCESS_DELETE = bool(os.getenv('OCR_ON_SUCCESS_DELETE', False))
+DESKEW = bool(os.getenv('OCR_DESKEW', False))
 OUTPUT_DIRECTORY_YEAR_MONTH = bool(os.getenv('OCR_OUTPUT_DIRECTORY_YEAR_MONTH', False))
 PATTERNS = ['*.pdf']
 
 
 def execute_ocrmypdf(file_path):
-    filename = Path(file_path).name
+    new_file = Path(file_path)
+    filename = new_file.name
     if OUTPUT_DIRECTORY_YEAR_MONTH:
         today = datetime.today()
         output_directory_year_month = Path(
@@ -41,13 +44,29 @@ def execute_ocrmypdf(file_path):
         output_path = Path(output_directory_year_month) / filename
     else:
         output_path = Path(OUTPUT_DIRECTORY) / filename
-    print(f'New file: {file_path}.\nAttempting to OCRmyPDF to: {output_path}')
-    ocrmypdf.ocr(file_path, output_path)
+    print(f'New file: {file_path}. Waiting until fully loaded...')
+    # This loop waits to make sure that the file is completely loaded on
+    # disk before attempting to read. Docker sometimes will publish the
+    # watchdog event before the file is actually fully on disk, causing
+    # pikepdf to fail.
+    current_size = None
+    while current_size != new_file.stat().st_size:
+        current_size = new_file.stat().st_size
+        time.sleep(1)
+    print(f'Attempting to OCRmyPDF to: {output_path}')
+    exit_code = ocrmypdf.ocr(
+        input_file=file_path, output_file=output_path, deskew=DESKEW
+    )
+    if exit_code == 0 and ON_SUCCESS_DELETE:
+        print(f'Done. Deleting: {file_path}')
+        new_file.unlink()
+    else:
+        print('Done')
 
 
 class HandleObserverEvent(PatternMatchingEventHandler):
     def on_any_event(self, event):
-        if event.event_type in ['created', 'modified']:
+        if event.event_type in ['created']:
             execute_ocrmypdf(event.src_path)
 
 
