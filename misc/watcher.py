@@ -15,6 +15,7 @@
 
 import os
 import time
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -25,11 +26,15 @@ import ocrmypdf
 
 INPUT_DIRECTORY = os.getenv('OCR_INPUT_DIRECTORY', '/input')
 OUTPUT_DIRECTORY = os.getenv('OCR_OUTPUT_DIRECTORY', '/output')
+OUTPUT_DIRECTORY_YEAR_MONTH = bool(os.getenv('OCR_OUTPUT_DIRECTORY_YEAR_MONTH', False))
 ON_SUCCESS_DELETE = bool(os.getenv('OCR_ON_SUCCESS_DELETE', False))
 DESKEW = bool(os.getenv('OCR_DESKEW', False))
-OUTPUT_DIRECTORY_YEAR_MONTH = bool(os.getenv('OCR_OUTPUT_DIRECTORY_YEAR_MONTH', False))
+POLL_NEW_FILE_SECONDS = os.getenv('OCR_POLL_NEW_FILE_SECONDS', 1)
+LOGLEVEL = os.environ.get('OCR_LOGLEVEL', 'INFO').upper()
 PATTERNS = ['*.pdf']
 
+logging.basicConfig(level=LOGLEVEL)
+logger = logging.getLogger('ocrmypdf-watcher')
 
 def execute_ocrmypdf(file_path):
     new_file = Path(file_path)
@@ -44,7 +49,7 @@ def execute_ocrmypdf(file_path):
         output_path = Path(output_directory_year_month) / filename
     else:
         output_path = Path(OUTPUT_DIRECTORY) / filename
-    print(f'New file: {file_path}. Waiting until fully loaded...')
+    logger.info(f'New file: {file_path}. Waiting until fully loaded...')
     # This loop waits to make sure that the file is completely loaded on
     # disk before attempting to read. Docker sometimes will publish the
     # watchdog event before the file is actually fully on disk, causing
@@ -52,16 +57,17 @@ def execute_ocrmypdf(file_path):
     current_size = None
     while current_size != new_file.stat().st_size:
         current_size = new_file.stat().st_size
-        time.sleep(1)
-    print(f'Attempting to OCRmyPDF to: {output_path}')
+        logger.debug(f'new_file current_size: {current_size}')
+        time.sleep(POLL_NEW_FILE_SECONDS)
+    logger.info(f'Attempting to OCRmyPDF to: {output_path}')
     exit_code = ocrmypdf.ocr(
         input_file=file_path, output_file=output_path, deskew=DESKEW
     )
     if exit_code == 0 and ON_SUCCESS_DELETE:
-        print(f'Done. Deleting: {file_path}')
+        logger.info(f'Done. Deleting: {file_path}')
         new_file.unlink()
     else:
-        print('Done')
+        logger.info('Done')
 
 
 class HandleObserverEvent(PatternMatchingEventHandler):
@@ -71,11 +77,20 @@ class HandleObserverEvent(PatternMatchingEventHandler):
 
 
 if __name__ == "__main__":
-    print(
+    logger.info(
         f"Starting OCRmyPDF watcher with config:\n"
         f"Input Directory: {INPUT_DIRECTORY}\n"
         f"Output Directory: {OUTPUT_DIRECTORY}\n"
         f"Output Directory Year & Month: {OUTPUT_DIRECTORY_YEAR_MONTH}"
+    )
+    logger.debug(
+        f"INPUT_DIRECTORY: {INPUT_DIRECTORY}\n"
+        f"OUTPUT_DIRECTORY: {OUTPUT_DIRECTORY}\n"
+        f"OUTPUT_DIRECTORY_YEAR_MONTH: {OUTPUT_DIRECTORY_YEAR_MONTH}\n"
+        f"ON_SUCCESS_DELETE: {ON_SUCCESS_DELETE}\n"
+        f"DESKEW: {DESKEW}\n"
+        f"POLL_NEW_FILE_SECONDS: {POLL_NEW_FILE_SECONDS}\n"
+        f"LOGLEVEL: {LOGLEVEL}\n"
     )
     handler = HandleObserverEvent(patterns=PATTERNS)
     observer = Observer()
