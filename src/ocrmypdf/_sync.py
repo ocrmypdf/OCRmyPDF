@@ -231,7 +231,7 @@ def exec_concurrent(context):
     # Run exec_page_sync on every page context
     max_workers = min(len(context.pdfinfo), context.options.jobs)
     if max_workers > 1:
-        context.log.info("Start processing %d pages concurrent", max_workers)
+        context.log.info("Start processing %d pages concurrently", max_workers)
 
     # Tesseract 4.x can be multithreaded, and we also run multiple workers. We want
     # to manage how many threads it uses to avoid creating total threads than cores.
