@@ -13,9 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import os
 import time
-import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -33,41 +33,52 @@ POLL_NEW_FILE_SECONDS = os.getenv('OCR_POLL_NEW_FILE_SECONDS', 1)
 LOGLEVEL = os.environ.get('OCR_LOGLEVEL', 'INFO').upper()
 PATTERNS = ['*.pdf']
 
-logging.basicConfig(level=LOGLEVEL)
-logger = logging.getLogger('ocrmypdf-watcher')
+log = logging.getLogger('ocrmypdf-watcher')
 
-def execute_ocrmypdf(file_path):
-    new_file = Path(file_path)
-    filename = new_file.name
+
+def get_output_dir(root, basename):
     if OUTPUT_DIRECTORY_YEAR_MONTH:
         today = datetime.today()
-        output_directory_year_month = Path(
-            f'{OUTPUT_DIRECTORY}/{today.year}/{today.month}'
+        output_directory_year_month = (
+            Path(root) / str(today.year) / f'{today.month:02d}'
         )
         if not output_directory_year_month.exists():
             output_directory_year_month.mkdir(parents=True, exist_ok=True)
-        output_path = Path(output_directory_year_month) / filename
+        output_path = Path(output_directory_year_month) / basename
     else:
-        output_path = Path(OUTPUT_DIRECTORY) / filename
-    logger.info(f'New file: {file_path}. Waiting until fully loaded...')
+        output_path = Path(OUTPUT_DIRECTORY) / basename
+    return output_path
+
+
+def wait_for_file_ready(file_path):
     # This loop waits to make sure that the file is completely loaded on
     # disk before attempting to read. Docker sometimes will publish the
     # watchdog event before the file is actually fully on disk, causing
     # pikepdf to fail.
+
     current_size = None
-    while current_size != new_file.stat().st_size:
-        current_size = new_file.stat().st_size
-        logger.debug(f'new_file current_size: {current_size}')
+    while current_size != file_path.stat().st_size:
+        current_size = file_path.stat().st_size
+        log.debug(f'file_path current_size: {current_size}')
         time.sleep(POLL_NEW_FILE_SECONDS)
-    logger.info(f'Attempting to OCRmyPDF to: {output_path}')
+
+
+def execute_ocrmypdf(file_path):
+    file_path = Path(file_path)
+    output_path = get_output_dir(OUTPUT_DIRECTORY, file_path.name)
+
+    log.info("-" * 20)
+    log.info(f'New file: {file_path}. Waiting until fully loaded...')
+    log.info(f'Attempting to OCRmyPDF to: {output_path}')
+    wait_for_file_ready(file_path)
     exit_code = ocrmypdf.ocr(
         input_file=file_path, output_file=output_path, deskew=DESKEW
     )
     if exit_code == 0 and ON_SUCCESS_DELETE:
-        logger.info(f'Done. Deleting: {file_path}')
-        new_file.unlink()
+        log.info(f'OCR is done. Deleting: {file_path}')
+        file_path.unlink()
     else:
-        logger.info('Done')
+        log.info('OCR is done')
 
 
 class HandleObserverEvent(PatternMatchingEventHandler):
@@ -77,13 +88,16 @@ class HandleObserverEvent(PatternMatchingEventHandler):
 
 
 if __name__ == "__main__":
-    logger.info(
+    ocrmypdf.configure_logging(
+        verbosity=ocrmypdf.Verbosity.default, manage_root_logger=True
+    )
+    log.info(
         f"Starting OCRmyPDF watcher with config:\n"
         f"Input Directory: {INPUT_DIRECTORY}\n"
         f"Output Directory: {OUTPUT_DIRECTORY}\n"
         f"Output Directory Year & Month: {OUTPUT_DIRECTORY_YEAR_MONTH}"
     )
-    logger.debug(
+    log.debug(
         f"INPUT_DIRECTORY: {INPUT_DIRECTORY}\n"
         f"OUTPUT_DIRECTORY: {OUTPUT_DIRECTORY}\n"
         f"OUTPUT_DIRECTORY_YEAR_MONTH: {OUTPUT_DIRECTORY_YEAR_MONTH}\n"
@@ -92,6 +106,7 @@ if __name__ == "__main__":
         f"POLL_NEW_FILE_SECONDS: {POLL_NEW_FILE_SECONDS}\n"
         f"LOGLEVEL: {LOGLEVEL}\n"
     )
+
     handler = HandleObserverEvent(patterns=PATTERNS)
     observer = Observer()
     observer.schedule(handler, INPUT_DIRECTORY, recursive=True)
