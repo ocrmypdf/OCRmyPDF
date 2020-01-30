@@ -56,11 +56,20 @@ def wait_for_file_ready(file_path):
     # watchdog event before the file is actually fully on disk, causing
     # pikepdf to fail.
 
-    current_size = None
-    while current_size != file_path.stat().st_size:
-        current_size = file_path.stat().st_size
-        log.debug(f'file_path current_size: {current_size}')
-        time.sleep(POLL_NEW_FILE_SECONDS)
+    retries = 5
+    while retries:
+        try:
+            pdf = pikepdf.open(file_path)
+        except (FileNotFoundError, pikepdf.PdfError) as e:
+            log.info(f"File {file_path} is not ready yet")
+            log.debug("Exception was", exc_info=e)
+            time.sleep(POLL_NEW_FILE_SECONDS)
+            retries -= 1
+        else:
+            pdf.close()
+            return True
+
+    return False
 
 
 def execute_ocrmypdf(file_path):
@@ -69,7 +78,9 @@ def execute_ocrmypdf(file_path):
 
     log.info("-" * 20)
     log.info(f'New file: {file_path}. Waiting until fully loaded...')
-    wait_for_file_ready(file_path)
+    if not wait_for_file_ready(file_path):
+        log.info(f"Gave up waiting for {file_path} to become ready")
+        return
     log.info(f'Attempting to OCRmyPDF to: {output_path}')
     exit_code = ocrmypdf.ocr(
         input_file=file_path, output_file=output_path, deskew=DESKEW
