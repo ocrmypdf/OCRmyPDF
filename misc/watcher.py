@@ -69,8 +69,8 @@ def execute_ocrmypdf(file_path):
 
     log.info("-" * 20)
     log.info(f'New file: {file_path}. Waiting until fully loaded...')
-    log.info(f'Attempting to OCRmyPDF to: {output_path}')
     wait_for_file_ready(file_path)
+    log.info(f'Attempting to OCRmyPDF to: {output_path}')
     exit_code = ocrmypdf.ocr(
         input_file=file_path, output_file=output_path, deskew=DESKEW
     )
