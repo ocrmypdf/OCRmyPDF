@@ -329,6 +329,35 @@ def rasterize_preview(input_file, page_context):
     return output_file
 
 
+def describe_rotation(page_context, orient_conf, correction):
+    """
+    Describe the page rotation we are going to perform.
+    """
+    direction = {0: '⇧', 90: '⇨', 180: '⇩', 270: '⇦'}
+    turns = {0: ' ', 90: '⬏', 180: '↻', 270: '⬑'}
+
+    existing_rotation = page_context.pageinfo.rotation
+    action = ''
+    if orient_conf.confidence >= page_context.options.rotate_pages_threshold:
+        if correction != 0:
+            action = 'will rotate ' + turns[correction]
+        else:
+            action = 'rotation appears correct'
+    else:
+        if correction != 0:
+            action = 'confidence too low to rotate'
+        else:
+            action = 'no change'
+
+    facing = ''
+
+    if existing_rotation != 0:
+        facing = f"with existing rotation {direction.get(existing_rotation, '?')}, "
+    facing += f"page is facing {direction.get(orient_conf.angle, '?')}"
+
+    return f"{facing}, confidence {orient_conf.confidence:.2f} - {action}"
+
+
 def get_orientation_correction(preview, page_context):
     """
     Work out orientation correct for each page.
@@ -355,44 +384,14 @@ def get_orientation_correction(preview, page_context):
         tesseract_env=page_context.options.tesseract_env,
     )
 
-    direction = {0: '⇧', 90: '⇨', 180: '⇩', 270: '⇦'}
-
-    existing_rotation = page_context.pageinfo.rotation
-
     correction = orient_conf.angle % 360
-
-    apply_correction = False
-    action = ''
-    if orient_conf.confidence >= page_context.options.rotate_pages_threshold:
-        if correction != 0:
-            apply_correction = True
-            action = ' - will rotate'
-        else:
-            action = ' - rotation appears correct'
-    else:
-        if correction != 0:
-            action = ' - confidence too low to rotate'
-        else:
-            action = ' - no change'
-
-    facing = ''
-    if existing_rotation != 0:
-        facing = 'with existing rotation {}, '.format(
-            direction.get(existing_rotation, '?')
-        )
-    facing += 'page is facing {}'.format(direction.get(orient_conf.angle, '?'))
-
-    page_context.log.debug(
-        '{pagenum:4d}: {facing}, confidence {conf:.2f}{action}'.format(
-            pagenum=page_context.pageinfo.pageno,
-            facing=facing,
-            conf=orient_conf.confidence,
-            action=action,
-        )
-    )
-
-    if apply_correction:
+    page_context.log.info(describe_rotation(page_context, orient_conf, correction))
+    if (
+        orient_conf.confidence >= page_context.options.rotate_pages_threshold
+        and correction != 0
+    ):
         return correction
+
     return 0
 
 
