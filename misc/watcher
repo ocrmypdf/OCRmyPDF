@@ -39,8 +39,19 @@ shift $((OPTIND-1))
 
 OCRMYPDFOPTS="$*"
 
+outfilename() {
+	OUTFILE="$1"
+	if [ -e "$OUTFILE" ]; then
+		name="${1%.*}"
+		ext="${1##*.}"
+		OUTFILE="$name".$NUM.$ext
+	fi
+}
+
 while true
 do 
 	F=$(inotifywait -e CLOSE_WRITE -q "$INPUTDIR" --format %f)
-	ocrmypdf $OCRMYPDFOPTS "$INPUTDIR/$F" "$OUTPUTDIR/$F" && $REMOVEONSUCCESS "$INPUTDIR/$F"
-done 
+	outfilename "$OUTPUTDIR/$F"
+
+	ocrmypdf $OCRMYPDFOPTS "$INPUTDIR/$F" "$OUTFILE" && $REMOVEONSUCCESS "$INPUTDIR/$F"
+done
