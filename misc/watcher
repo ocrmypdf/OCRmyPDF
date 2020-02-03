@@ -1,0 +1,46 @@
+#!/bin/sh
+
+usage() {
+	cat <<EOF 1>&2
+Usage: $0 [-i <inputdir>] [-o <outputdir>] [-r] [-- ocroptions]"
+Automatically OCRmyPDF files in input directory and put the result into
+output directory. Specify the options for OCRmyPDF after the double
+hyphen (--).
+
+Arguments:
+	   -i: Input directory
+	   -o: Output directory
+	   -r: Remove input file on successful conversion
+EOF
+		  exit 1;
+		}
+
+INPUTDIR=/input
+OUTPUTDIR=/output
+REMOVEONSUCCESS=true
+
+while getopts ":i:o:hr" o; do
+	case "${o}" in
+		i)
+			INPUTDIR="${OPTARG}"
+			;;
+		o)
+			OUTPUTDIR="${OPTARG}"
+			;;
+		r)
+			REMOVEONSUCCESS=rm
+			;;
+		h)
+			usage
+			;;
+	esac
+done
+shift $((OPTIND-1))
+
+OCRMYPDFOPTS="$*"
+
+while true
+do 
+	F=$(inotifywait -e CLOSE_WRITE -q "$INPUTDIR" --format %f)
+	ocrmypdf $OCRMYPDFOPTS "$INPUTDIR/$F" "$OUTPUTDIR/$F" && $REMOVEONSUCCESS "$INPUTDIR/$F"
+done 
