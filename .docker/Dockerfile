@@ -55,6 +55,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   pngquant \
   python3 \
   qpdf \
+  inotify-tools \
   tesseract-ocr \
   tesseract-ocr-chi-sim \
   tesseract-ocr-deu \
@@ -71,6 +72,7 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 COPY --from=builder /app/misc/webservice.py /app/
 COPY --from=builder /app/misc/watcher.py /app/
+COPY --from=builder /app/misc/watcher /app/
 
 # Copy minimal project files to get the test suite.
 COPY --from=builder /app/setup.cfg /app/setup.py /app/README.md /app/
