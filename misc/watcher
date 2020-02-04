@@ -44,14 +44,19 @@ outfilename() {
 	if [ -e "$OUTFILE" ]; then
 		name="${1%.*}"
 		ext="${1##*.}"
+		NUM=$(ls "$name"* | wc -l)
 		OUTFILE="$name".$NUM.$ext
 	fi
 }
 
-while true
-do 
-	F=$(inotifywait -e CLOSE_WRITE -q "$INPUTDIR" --format %f)
-	outfilename "$OUTPUTDIR/$F"
+convert_infile()
+{
+	outfilename "$OUTPUTDIR/$1"
 
 	ocrmypdf $OCRMYPDFOPTS "$INPUTDIR/$F" "$OUTFILE" && $REMOVEONSUCCESS "$INPUTDIR/$F"
-done
+}
+
+inotifywait -m -e CLOSE_WRITE -q "$INPUTDIR" --format %f |
+	while read F; do
+		  convert_infile $F
+	done
