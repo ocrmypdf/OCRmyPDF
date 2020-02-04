@@ -168,3 +168,17 @@ also licensed in this way.
 
 In addition to the above, please read our
 :ref:`general remarks on using OCRmyPDF as a service <ocr-service>`.
+
+Using OCRmyPDF for automatic file conversion
+============================================
+
+The OCRmyPDF Docker image includes a script to automatically OCR files put
+into an input directory. The watcher script is started as follows:
+
+.. code-block:: bash
+
+   docker run --name ocrwatcher --entrypoint ./watcher -v $PWD/input:/input -v $PWD/output:/output jbarlow83/ocrmypdf <watcher-options> -- <ocrmypdf-options>
+
+where ``<watcher-options>`` may optionally include ``-r`` to remove correctly
+processed input files from input folder, and after the two hyphens all command
+line options for OCRmyPDF can be included.
