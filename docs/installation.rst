@@ -141,18 +141,20 @@ first install the system version to get most of the dependencies:
 
 .. code-block:: bash
 
-    sudo apt-get update
-    sudo apt-get install \
-        ocrmypdf
-
-There are a few system dependency changes since ocrmypdf 6.1.2. Let's
-get these, too.
-
-.. code-block:: bash
-
-    sudo apt-get install \
+    sudo apt-get -y update
+    sudo apt-get -y install \
+        ghostscript \
+        icc-profiles-free \
+        liblept5 \
         libxml2 \
-        pngquant
+        pngquant \
+        python3-cffi \
+        python3-distutils \
+        python3-pkg-resources \
+        python3-reportlab \
+        qpdf \
+        tesseract-ocr \
+        zlib1g
 
 We will need a newer version of ``pip`` then was available for Ubuntu 18.04:
 
