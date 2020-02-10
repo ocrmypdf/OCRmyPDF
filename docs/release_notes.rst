@@ -16,10 +16,13 @@ licensed under GPLv3.
 v9.6.0
 ======
 
+-  Fixed a regression with transferring metadata from the input PDF to the output
+   PDF in certain situations.
 -  pdfminer.six is now supported up to version 2020-01-24.
 -  Messages are explaining page rotation decisions are now shown at the standard
    verbosity level again when ``--rotate-pages``. In some previous version they
    were set to debug level messages that only appeared with the parameter ``-v1``.
+-  Improvements to ``misc/watcher.py``. Thanks to @ianalexander and @svenihoney.
 -  Documentation improvements.
 
 v9.5.0
