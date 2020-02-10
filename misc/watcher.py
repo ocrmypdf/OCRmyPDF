@@ -19,10 +19,13 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+import pikepdf
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer
 
 import ocrmypdf
+
+# pylint: disable=logging-format-interpolation
 
 INPUT_DIRECTORY = os.getenv('OCR_INPUT_DIRECTORY', '/input')
 OUTPUT_DIRECTORY = os.getenv('OCR_OUTPUT_DIRECTORY', '/output')
@@ -98,7 +101,7 @@ class HandleObserverEvent(PatternMatchingEventHandler):
             execute_ocrmypdf(event.src_path)
 
 
-if __name__ == "__main__":
+def main():
     ocrmypdf.configure_logging(
         verbosity=ocrmypdf.Verbosity.default, manage_root_logger=True
     )
@@ -128,3 +131,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
+
+
+if __name__ == "__main__":
+    main()
