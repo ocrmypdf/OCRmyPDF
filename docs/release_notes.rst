@@ -13,6 +13,15 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.6.0
+======
+
+-  pdfminer.six is now supported up to version 2020-01-24.
+-  Messages are explaining page rotation decisions are now shown at the standard
+   verbosity level again when ``--rotate-pages``. In some previous version they
+   were set to debug level messages that only appeared with the parameter ``-v1``.
+-  Documentation improvements.
+
 v9.5.0
 ======
 
