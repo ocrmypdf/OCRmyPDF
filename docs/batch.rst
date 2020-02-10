@@ -210,6 +210,9 @@ be launched as follows:
         -v <path to files to convert>:/input \
         -v <path to store results>:/output \
         -e OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1 \
+        -e OCR_ON_SUCCESS_DELETE=1 \
+        -e OCR_DESKEW=1 \
+        -e PYTHONUNBUFFERED=1 \
         -it --entrypoint python3 \
         jbarlow83/ocrmypdf \
         watcher.py
@@ -224,6 +227,9 @@ convert it to a OCRed PDF in ``/output/``. The parameters to this image are:
     "``-v <path to files to convert>:/input``", "Files placed in this location will be OCRed"
     "``-v <path to store results>:/output``", "This is where OCRed files will be stored"
     "``-e OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1``", "This will place files in the output in {output}/{year}/{month}/{filename}"
+    "``-e OCR_ON_SUCCESS_DELETE=1``", "This will delete the input file if the exit code is 0 (OK)"
+    "``-e OCR_DESKEW=1``", "This will enable deskew for crooked PDFs"
+    "``-e PYTHONBUFFERED=1``", "This will force STDOUT to be unbuffered and allow you to see messages in docker logs"
 
 This service relies on polling to check for changes to the filesystem. It
 may not be suitable for some environments, such as filesystems shared on a
