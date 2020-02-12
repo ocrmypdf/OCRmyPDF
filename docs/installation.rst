@@ -216,7 +216,8 @@ of ``pip`` at ``/usr/local/bin/pip``.
 **Install OCRmyPDF**
 
 OCRmyPDF requires the locale to be set for UTF-8. **On some minimal
-Ubuntu installations systems**, it may be necessary to set the locale.
+Ubuntu installations**, such as the Ubuntu 16.04 Docker images it may be
+necessary to set the locale.
 
 .. code-block:: bash
 
