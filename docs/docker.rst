@@ -91,7 +91,7 @@ Docker volume:
 
 .. code-block:: bash
 
-   docker run --rm -v $(pwd):/data ocrmypdf /data/input.pdf /data/output.pdf
+   docker run --rm -v $(pwd):/app/ ocrmypdf /your_folder/input.pdf /your_folder/output.pdf
 
 .. _docker-lang-packs:
 
