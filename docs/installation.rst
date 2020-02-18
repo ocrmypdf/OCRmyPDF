@@ -305,12 +305,9 @@ ArchLinux (AUR)
     :target: https://repology.org/metapackage/ocrmypdf
 
 There is an `ArchLinux User Repository package for
-ocrmypdf <https://aur.archlinux.org/packages/ocrmypdf/>`__. You can use
-the following command.
-
-.. code-block:: bash
-
-    yaourt -S ocrmypdf
+ocrmypdf <https://aur.archlinux.org/packages/ocrmypdf/>`__. If you have any
+idea how to actually install the package, please feel free to contribute
+appropriate instructions, as this author is completely mystified by ArchLinux.
 
 If you have any difficulties with installation, check the repository
 package page.
