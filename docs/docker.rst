@@ -98,10 +98,10 @@ Docker volume:
 Adding languages to the Docker image
 ====================================
 
-By default the Docker image includes English, German and Simplified
-Chinese, the most popular languages for OCRmyPDF users based on
-feedback. You may add other languages by creating a new Dockerfile based
-on the public one:
+By default the Docker image includes English, German, Simplified Chinese,
+French, Portuguese and Spanish, the most popular languages for OCRmyPDF
+users based on feedback. You may add other languages by creating a new
+Dockerfile based on the public one:
 
 .. code-block:: dockerfile
 
