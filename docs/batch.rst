@@ -235,6 +235,25 @@ This service relies on polling to check for changes to the filesystem. It
 may not be suitable for some environments, such as filesystems shared on a
 slow network.
 
+A configuration manager such as Docker Compose could be used to ensure that the
+service is always available.
+
+.. code-block:: yaml
+
+    ---
+    ocrmypdf:
+      restart: always
+      container_name: ocrmypdf
+      image: jbarlow83/ocrmypdf
+      volumes:
+        - '/media/scan:/input'
+        - '/mnt/scan:/output'
+      environment:
+        - OCR_OUTPUT_DIRECTORY_YEAR_MONT=0
+      entrypoint:
+        - python3:
+          command: "watcher.py"
+
 Watched folders with watcher.py
 -------------------------------
 
