@@ -435,12 +435,12 @@ Installing on FreeBSD
     :alt: FreeBSD
     :target: https://repology.org/project/python:ocrmypdf/versions
 
-FreeBSD 11.2, 11.3, 12.0-RELEASE and 13.0-CURRENT are supported. Other
+FreeBSD 11.3, 12.0, 12.1-RELEASE and 13.0-CURRENT are supported. Other
 versions likely work but have not been tested.
 
 .. code-block:: bash
 
-    pkg install py36-ocrmypdf
+    pkg install py37-ocrmypdf
 
 To install a more recent version, you could attempt to first install the system
 version with ``pkg``, then use ``pip install --user ocrmypdf``.
