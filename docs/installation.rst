@@ -304,13 +304,16 @@ ArchLinux (AUR)
     :alt: ArchLinux
     :target: https://repology.org/metapackage/ocrmypdf
 
-There is an `ArchLinux User Repository package for
-ocrmypdf <https://aur.archlinux.org/packages/ocrmypdf/>`__. If you have any
-idea how to actually install the package, please feel free to contribute
-appropriate instructions, as this author is completely mystified by ArchLinux.
+There is an `ArchLinux User Repository package for ocrmypdf
+<https://aur.archlinux.org/packages/ocrmypdf/>`__. You can install it with an
+AUR helper such as `yay <http://https://github.com/Jguer/yay>`_.
 
-If you have any difficulties with installation, check the repository
-package page.
+.. code-block:: bash
+
+    yay -S ocrmypdf
+
+If you have any difficulties with installation, check the repository package
+page.
 
 Alpine Linux
 ------------
