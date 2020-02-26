@@ -110,7 +110,7 @@ Fedora 29 or newer
 | |fedora-29| |fedora-30| |fedora-rawhide|      |
 +-----------------------------------------------+
 
-Users of Fedora 29 later may simply
+Users of Fedora 29 or later may simply
 
 .. code-block:: bash
 

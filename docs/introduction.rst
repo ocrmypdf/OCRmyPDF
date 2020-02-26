@@ -10,7 +10,7 @@ About OCR
 `Optical character
 recognition <https://en.wikipedia.org/wiki/Optical_character_recognition>`__
 is technology that converts images of typed or handwritten text, such as
-in a scanned document, to computer text that can be searched and copied.
+in a scanned document, to computer text that can be selected, searched and copied.
 
 OCRmyPDF uses
 `Tesseract <https://github.com/tesseract-ocr/tesseract>`__, the best
