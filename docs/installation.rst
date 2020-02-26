@@ -297,20 +297,88 @@ compiled by hand.
 
 To add JBIG2 encoding, see :ref:`jbig2`.
 
-ArchLinux (AUR)
----------------
+Arch Linux (AUR)
+----------------
 
 .. image:: https://repology.org/badge/version-for-repo/aur/ocrmypdf.svg
     :alt: ArchLinux
     :target: https://repology.org/metapackage/ocrmypdf
 
-There is an `ArchLinux User Repository package for
-ocrmypdf <https://aur.archlinux.org/packages/ocrmypdf/>`__. If you have any
-idea how to actually install the package, please feel free to contribute
-appropriate instructions, as this author is completely mystified by ArchLinux.
+There is an `Arch User Repository (AUR) package for OCRmyPDF
+<https://aur.archlinux.org/packages/ocrmypdf/>`__.
 
-If you have any difficulties with installation, check the repository
-package page.
+Installing AUR packages as root is not allowed, so you must first `setup a
+non-root user
+<https://wiki.archlinux.org/index.php/Users_and_groups#User_management>`__ and
+`configure sudo <https://wiki.archlinux.org/index.php/Sudo#Configuration>`__.
+If you are using a VM image, such as `the official Vagrant image
+<https://app.vagrantup.com/archlinux/boxes/archlinux>`__, this may already be
+completed for you.
+
+Next you should install the `base-devel package group
+<https://www.archlinux.org/groups/x86_64/base-devel/>`__. This includes the
+standard tooling needed to build packages, such as a compiler and binary tools.
+`As noted in the Arch Wiki
+<https://wiki.archlinux.org/index.php/Makepkg#Usage>`__, "packages belonging to
+this group are not required to be listed as build-time dependencies
+(makedepends) in PKGBUILD files".
+
+.. code-block:: bash
+
+   sudo pacman -S base-devel
+
+The OCRmyPDF package depends on `the python-pdfminer.six AUR package
+<https://aur.archlinux.org/packages/python-pdfminer.six/>`__.  Dependencies on
+AUR packages are not automatically resolved, so this package must be manually
+installed first.
+
+.. code-block:: bash
+
+   curl -O https://aur.archlinux.org/cgit/aur.git/snapshot/python-pdfminer.six.tar.gz
+   tar xvzf python-pdfminer.six.tar.gz
+   cd python-pdfminer.six
+   makepkg -sri
+
+With that complete you can then repeat the same series of steps for the
+OCRmyPDF package.
+
+.. code-block:: bash
+
+   curl -O https://aur.archlinux.org/cgit/aur.git/snapshot/ocrmypdf.tar.gz
+   tar xvzf ocrmypdf.tar.gz
+   cd ocrmypdf
+   makepkg -sri
+
+At this point you will have a working install of OCRmyPDF, but the Tesseract
+install won’t include any OCR language data. You can install `the
+tesseract-data package group
+<https://www.archlinux.org/groups/any/tesseract-data/>`__ to add all supported
+languages, or use that package listing to identify the appropriate package for
+your desired language.
+
+.. code-block:: bash
+
+   sudo pacman -S tesseract-data-eng
+
+As an alternative to this manual procedure, consider using an `AUR helper
+<https://wiki.archlinux.org/index.php/AUR_helpers>`__. Such a tool will
+automatically fetch, build and install the AUR package, resolve dependencies
+(including dependencies on AUR packages), and ease the upgrade procedure.
+
+If you have any difficulties with installation, check the repository package
+page.
+
+.. note::
+
+    The OCRmyPDF AUR package currently omits the JBIG2 encoder. OCRmyPDF works
+    fine without it but will produce larger output files. The encoder is
+    available from `the jbig2enc-git AUR package
+    <https://aur.archlinux.org/packages/jbig2enc-git/>`__ and may be installed
+    using the same series of steps as for the installation of the pdfminer.six
+    and OCRmyPDF AUR packages. Alternatively, it may be built manually from
+    source following the instructions in `Installing the JBIG2 encoder
+    <jbig2>`__.  If JBIG2 is installed, OCRmyPDF 7.0.0 and later will
+    automatically detect it.
 
 Alpine Linux
 ------------
@@ -435,12 +503,12 @@ Installing on FreeBSD
     :alt: FreeBSD
     :target: https://repology.org/project/python:ocrmypdf/versions
 
-FreeBSD 11.2, 11.3, 12.0-RELEASE and 13.0-CURRENT are supported. Other
+FreeBSD 11.3, 12.0, 12.1-RELEASE and 13.0-CURRENT are supported. Other
 versions likely work but have not been tested.
 
 .. code-block:: bash
 
-    pkg install py36-ocrmypdf
+    pkg install py37-ocrmypdf
 
 To install a more recent version, you could attempt to first install the system
 version with ``pkg``, then use ``pip install --user ocrmypdf``.
