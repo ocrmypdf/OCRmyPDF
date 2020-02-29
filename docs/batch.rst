@@ -250,9 +250,8 @@ service is always available.
         - '/mnt/scan:/output'
       environment:
         - OCR_OUTPUT_DIRECTORY_YEAR_MONT=0
-      entrypoint:
-        - python3:
-          command: "watcher.py"
+      entrypoint: python3
+      command: watcher.py
 
 Watched folders with watcher.py
 -------------------------------
