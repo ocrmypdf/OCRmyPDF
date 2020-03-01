@@ -35,6 +35,7 @@ DESKEW = bool(os.getenv('OCR_DESKEW', False))
 POLL_NEW_FILE_SECONDS = os.getenv('OCR_POLL_NEW_FILE_SECONDS', 1)
 LOGLEVEL = os.environ.get('OCR_LOGLEVEL', 'INFO').upper()
 PATTERNS = ['*.pdf']
+WATCHER_CHMOD = int(os.getenv('WATCHER_CHMOD', 644), base=8)
 
 log = logging.getLogger('ocrmypdf-watcher')
 
@@ -88,6 +89,10 @@ def execute_ocrmypdf(file_path):
     exit_code = ocrmypdf.ocr(
         input_file=file_path, output_file=output_path, deskew=DESKEW
     )
+    if exit_code == 0:
+        log.info('Set file permissions to {}'.format(WATCHER_CHMOD))
+        os.chmod(output_path, WATCHER_CHMOD)
+
     if exit_code == 0 and ON_SUCCESS_DELETE:
         log.info(f'OCR is done. Deleting: {file_path}')
         file_path.unlink()
