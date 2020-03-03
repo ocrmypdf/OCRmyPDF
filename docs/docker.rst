@@ -66,7 +66,7 @@ To start a Docker container (instance of the image):
 .. code-block:: bash
 
    docker tag jbarlow83/ocrmypdf ocrmypdf
-   docker run --rm -i ocrmypdf (... all other arguments here...)
+   docker run --rm -i ocrmypdf (... all other arguments here...) - -
 
 For convenience, create a shell alias to hide the Docker command. It is
 easier to send the input file as stdin and read the output from
@@ -76,7 +76,7 @@ stdout – **this avoids the messy permission issues with Docker entirely**.
 
    alias docker_ocrmypdf='docker run --rm -i ocrmypdf'
    docker_ocrmypdf --version  # runs docker version
-   docker_ocrmypdf <input.pdf >output.pdf
+   docker_ocrmypdf - - <input.pdf >output.pdf
 
 Or in the wonderful `fish shell <https://fishshell.com/>`__:
 
