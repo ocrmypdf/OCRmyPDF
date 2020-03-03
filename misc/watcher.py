@@ -1,4 +1,5 @@
 # Copyright (C) 2019 Ian Alexander: https://github.com/ianalexander
+# Copyright (C) 2020 James R Barlow: https://github.com/jbarlow83
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
