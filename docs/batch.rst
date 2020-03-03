@@ -69,53 +69,8 @@ Sample script
 This user contributed script also provides an example of batch
 processing.
 
-.. code-block:: python
-
-   #!/usr/bin/env python3
-   # Walk through directory tree, replacing all files with OCR'd version
-   # Original version by DeliciousPickle@github; modified
-
-   import logging
-   import os
-   import subprocess
-   import sys
-
-   import ocrmypdf
-
-   script_dir = os.path.dirname(os.path.realpath(__file__))
-   print(script_dir + '/ocr-tree.py: Start')
-
-   if len(sys.argv) > 1:
-       start_dir = sys.argv[1]
-   else:
-       start_dir = '.'
-
-   if len(sys.argv) > 2:
-       log_file = sys.argv[2]
-   else:
-       log_file = script_dir + '/ocr-tree.log'
-
-   logging.basicConfig(
-           level=logging.INFO, format='%(asctime)s %(message)s',
-           filename=log_file, filemode='w')
-
-   ocrmypdf.configure_logging(ocrmypdf.Verbosity.default)
-
-   for dir_name, subdirs, file_list in os.walk(start_dir):
-       logging.info('\n')
-       logging.info(dir_name + '\n')
-       os.chdir(dir_name)
-       for filename in file_list:
-           file_ext = os.path.splitext(filename)[1]
-           if file_ext == '.pdf':
-               full_path = dir_name + '/' + filename
-               print(full_path)
-               result = ocrmypdf.ocr(filename, filename, deskew=True)
-               if result == ocrmypdf.ExitCode.already_done_ocr:
-                   print("Skipped document because it already contained text")
-               elif result == ocrmypdf.ExitCode.ok:
-                   print("OCR complete")
-               logging.info(result)
+.. literalinclude:: ../misc/batch.py
+    :caption: misc/batch.py
 
 Synology DiskStations
 ---------------------
@@ -131,62 +86,8 @@ products use ARM or Power processors and do not support Docker. Further
 adjustments might be needed to deal with the Synology's relatively
 limited CPU and RAM.
 
-.. code-block:: python
-
-   #!/bin/env python3
-   # Contributed by github.com/Enantiomerie
-
-   # script needs 2 arguments
-   # 1. source dir with *.pdf - default is location of script
-   # 2. move dir where *.pdf and *_OCR.pdf are moved to
-
-   import logging
-   import os
-   import subprocess
-   import sys
-   import time
-   import shutil
-
-   script_dir = os.path.dirname(os.path.realpath(__file__))
-   timestamp = time.strftime("%Y-%m-%d-%H%M_")
-   log_file = script_dir + '/' + timestamp + 'ocrmypdf.log'
-   logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', filename=log_file, filemode='w')
-
-   if len(sys.argv) > 1:
-       start_dir = sys.argv[1]
-   else:
-       start_dir = '.'
-
-   for dir_name, subdirs, file_list in os.walk(start_dir):
-       logging.info('\n')
-       logging.info(dir_name + '\n')
-       os.chdir(dir_name)
-       for filename in file_list:
-           file_ext = os.path.splitext(filename)[1]
-           if file_ext == '.pdf':
-               full_path = dir_name + '/' + filename
-               file_noext = os.path.splitext(filename)[0]
-               timestamp_OCR = time.strftime("%Y-%m-%d-%H%M_OCR_")
-               filename_OCR = timestamp_OCR + file_noext + '.pdf'
-               docker_mount = dir_name + ':/home/docker'
-   # create string for pdf processing
-   # diskstation needs a user:group docker:docker. find uid:gid of your diskstation docker:docker with id docker.
-   # use this uid:gid in -u flag
-   # rw rights for docker:docker at source dir are also necessary
-   # the script is processed as root user via chron
-               cmd = ['docker', 'run', '--rm', '-v', docker_mount, '-u=1030:65538', 'jbarlow83/ocrmypdf', , '--deskew' , filename, filename_OCR]
-               logging.info(cmd)
-               proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-               result = proc.stdout.read()
-               logging.info(result)
-               full_path_OCR = dir_name + '/' + filename_OCR
-               os.chmod(full_path_OCR, 0o666)
-               os.chmod(full_path, 0o666)
-               full_path_OCR_archive = sys.argv[2]
-               full_path_archive = sys.argv[2] + '/no_ocr'
-               shutil.move(full_path_OCR,full_path_OCR_archive)
-               shutil.move(full_path, full_path_archive)
-   logging.info('Finished.\n')
+.. literalinclude:: ../misc/synology.py
+    :caption: misc/synology.py - Sample script for Synology DiskStations
 
 Huge batch jobs
 ---------------
@@ -238,29 +139,18 @@ slow network.
 A configuration manager such as Docker Compose could be used to ensure that the
 service is always available.
 
-.. code-block:: yaml
-
-    ---
-    ocrmypdf:
-      restart: always
-      container_name: ocrmypdf
-      image: jbarlow83/ocrmypdf
-      volumes:
-        - '/media/scan:/input'
-        - '/mnt/scan:/output'
-      environment:
-        - OCR_OUTPUT_DIRECTORY_YEAR_MONT=0
-      entrypoint: python3
-      command: watcher.py
+.. literalinclude:: ../misc/docker-compose.example.yaml
+    :language: yaml
+    :caption: misc/docker-compose.example.yaml
 
 Watched folders with watcher.py
 -------------------------------
 
-The watcher service may also be run natively.
+The watcher service may also be run natively, without Docker:
 
 .. code-block:: bash
 
-    pip3 install -r reqs/watcher.txt
+    pip3 install -r requirements/watcher.txt
 
     env OCR_INPUT_DIRECTORY=/mnt/input-pdfs \
         OCR_OUTPUT_DIRECTORY=/mnt/output-pdfs \
@@ -337,8 +227,7 @@ of Automator, the ``PATH`` may be set differently your Terminal's
 ``PATH``; you may need to explicitly set the PATH to include
 ``ocrmypdf``. The following example may serve as a starting point:
 
-|Example macOS Automator script|
+.. figure:: images/macos-workflow.png
+    :alt: Example macOS Automator workflow
 
 You may customize the command sent to ocrmypdf.
-
-.. |Example macOS Automator script| image:: images/macos-workflow.png
