@@ -237,6 +237,32 @@ You can also optimize all images without performing any OCR:
 
     ocrmypdf --tesseract-timeout=0 --optimize 3 --skip-text input.pdf output.pdf
 
+Perform OCR only certain pages
+------------------------------
+
+You can ask OCRmyPDF to only apply OCR to certain pages.
+
+.. code-block:: bash
+
+    ocrmypdf --pages 2,3,13-17 input.pdf output.pdf
+
+Hyphens denote a range of pages and commas separate page numbers. If you prefer
+to use spaces, quote all of the page numbers: ``--pages '2, 3, 5, 7'``.
+
+OCRmyPDF will warn if your list of page numbers contains duplicates or
+overlap pages. OCRmyPDF does not currently account for document page numbers,
+such as an introduction section of a book that uses Roman numerals. It simply
+counts the number of virtual pieces of paper since the start.
+
+Regardless of the argument to ``--pages``, OCRmyPDF will optimize all pages in
+the file and convert it to PDF/A, unless you disable those options. In this
+example, we want to OCR only the title and otherwise change the PDF as little
+as possible:
+
+.. code-block:: bash
+
+    ocrmypdf --pages 1 --output-type pdf --optimize 0 input.pdf output.pdf
+
 Redo existing OCR
 =================
 
