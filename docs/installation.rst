@@ -311,17 +311,15 @@ Installing AUR packages as root is not allowed, so you must first `setup a
 non-root user
 <https://wiki.archlinux.org/index.php/Users_and_groups#User_management>`__ and
 `configure sudo <https://wiki.archlinux.org/index.php/Sudo#Configuration>`__.
-If you are using a VM image, such as `the official Vagrant image
-<https://app.vagrantup.com/archlinux/boxes/archlinux>`__, this may already be
-completed for you.
+The standard Docker image, ``archlinux/base:latest``, does **not** have a
+non-root user configured, so users of that image must follow these guides. If
+you are using a VM image, such as `the official Vagrant image
+<https://app.vagrantup.com/archlinux/boxes/archlinux>`__, this work may already
+be completed for you.
 
 Next you should install the `base-devel package group
 <https://www.archlinux.org/groups/x86_64/base-devel/>`__. This includes the
 standard tooling needed to build packages, such as a compiler and binary tools.
-`As noted in the Arch Wiki
-<https://wiki.archlinux.org/index.php/Makepkg#Usage>`__, "packages belonging to
-this group are not required to be listed as build-time dependencies
-(makedepends) in PKGBUILD files".
 
 .. code-block:: bash
 

@@ -56,10 +56,10 @@ See the Docker documentation for
 Using the Docker image on the command line
 ==========================================
 
-**Unlike typical Docker containers**, in this mode we are using the
-OCRmyPDF Docker container is intended to be emphemeral – it runs for one
-OCR job and then terminates, just like a command line program. We are
-using Docker as a way of delivering an application, not a server.
+**Unlike typical Docker containers**, in this section the OCRmyPDF Docker
+container is emphemeral – it runs for one OCR job and terminates, just like a
+command line program. We are using Docker to deliver an application (as opposed
+to the more conventional case, where a Docker container runs as a server).
 
 To start a Docker container (instance of the image):
 
@@ -69,22 +69,21 @@ To start a Docker container (instance of the image):
    docker run --rm -i ocrmypdf (... all other arguments here...)
 
 For convenience, create a shell alias to hide the Docker command. It is
-easier to send the input file to file stdin and read the output from
-stdout – this avoids the occasionally messy permission issues with
-Docker entirely.
+easier to send the input file as stdin and read the output from
+stdout – **this avoids the messy permission issues with Docker entirely**.
 
 .. code-block:: bash
 
-   alias ocrmypdf='docker run --rm -i ocrmypdf'
-   ocrmypdf --version  # runs docker version
-   ocrmypdf <input.pdf >output.pdf
+   alias docker_ocrmypdf='docker run --rm -i ocrmypdf'
+   docker_ocrmypdf --version  # runs docker version
+   docker_ocrmypdf <input.pdf >output.pdf
 
 Or in the wonderful `fish shell <https://fishshell.com/>`__:
 
 .. code-block:: fish
 
-   alias ocrmypdf 'docker run --rm ocrmypdf'
-   funcsave ocrmypdf
+   alias docker_ocrmypdf 'docker run --rm ocrmypdf'
+   funcsave docker_ocrmypdf
 
 Alternately, you could mount the local current working directory as a
 Docker volume:
@@ -92,6 +91,9 @@ Docker volume:
 .. code-block:: bash
 
    docker run --rm -v $(pwd):/data ocrmypdf /data/input.pdf /data/output.pdf
+
+(However, when done this way, ``output.pdf`` may be owned by the root
+user.)
 
 .. _docker-lang-packs:
 
