@@ -13,6 +13,30 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+
+v9.6.1
+======
+
+-  Documentation improvements - thanks to many users for their contributions!
+
+      - Fixed installation instructions for ArchLinux (@pigmonkey)
+      - Updated installation instructions for FreeBSD and other OSes (@knobix)
+      - Added instructions for using Docker Compose with watchdog (@ianalexander,
+        @deisi)
+      - Other miscellany (@mb720, @toy, @caiofacchinato)
+      - Some scripts provided in the documentation have been migrated out so that
+        they can be copied out as whole files, and to ensure syntax checking
+        is maintained.
+
+-  Fixed an error that caused bash completions to fail on macOS. (#502, #504;
+   @AlexanderWillner)
+-  Fixed a rare case where OCRmyPDF threw an exception while processing a PDF
+   with the wrong object type in its ``/Trailer /Info``. The error is now logged
+   and incorrect object is ignored. (#497)
+-  Removed potentially non-free file ``enron1.pdf`` and simplified the test that
+   used it.
+-  Removed potentially non-free file ``misc/media/logo.afdesign``.
+
 v9.6.0
 ======
 
