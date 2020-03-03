@@ -31,8 +31,11 @@ import pytest
 from pikepdf.models.metadata import decode_pdf_date
 
 from ocrmypdf._jobcontext import PDFContext
+from ocrmypdf._pipeline import convert_to_pdfa
+from ocrmypdf.cli import parser
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import SRGB_ICC_PROFILE, file_claims_pdfa, generate_pdfa_ps
+from ocrmypdf.pdfinfo import PdfInfo
 
 try:
     import fitz
@@ -313,11 +316,6 @@ def test_metadata_fixup_warning(resources, outdir, caplog):
 
 
 def test_prevent_gs_invalid_xml(resources, outdir):
-    from ocrmypdf.cli import parser
-    from ocrmypdf._pipeline import convert_to_pdfa
-    from ocrmypdf.pdfa import generate_pdfa_ps
-    from ocrmypdf.pdfinfo import PdfInfo
-
     generate_pdfa_ps(outdir / 'pdfa.ps')
     copyfile(resources / 'trivial.pdf', outdir / 'layers.rendered.pdf')
 
@@ -349,3 +347,27 @@ def test_prevent_gs_invalid_xml(resources, outdir):
             # Ensure we did not carry the nul forward.
             assert mm.find(b'&#0;', xmp_start, xmp_end) == -1, "found escaped nul"
             assert mm.find(b'\x00', xmp_start, xmp_end) == -1
+
+
+def test_malformed_docinfo(caplog, resources, outdir):
+    generate_pdfa_ps(outdir / 'pdfa.ps')
+    # copyfile(resources / 'trivial.pdf', outdir / 'layers.rendered.pdf')
+
+    with pikepdf.open(resources / 'trivial.pdf') as pike:
+        pike.trailer.Info = pikepdf.Stream(pike, b"<xml></xml>")
+        pike.save(outdir / 'layers.rendered.pdf', fix_metadata_version=False)
+
+    options = parser.parse_args(
+        args=['-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
+    )
+    pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
+    context = PDFContext(options, outdir, outdir / 'layers.rendered.pdf', pdfinfo)
+
+    convert_to_pdfa(
+        str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps'), context
+    )
+
+    print(caplog.records)
+    assert any(
+        'malformed DocumentInfo block' in record.message for record in caplog.records
+    )

@@ -694,11 +694,18 @@ def convert_to_pdfa(input_pdf, input_ps_stub, context):
     # stamping them out as soon as possible.
     modified = False
     with pikepdf.open(input_pdf) as pdf_file:
-        if pdf_file.docinfo:
-            for k, v in pdf_file.docinfo.items():
-                if b'\x00' in bytes(v):
-                    pdf_file.docinfo[k] = bytes(v).replace(b'\x00', b'')
-                    modified = True
+        try:
+            len(pdf_file.docinfo)
+        except TypeError:
+            context.log.error(
+                "File contains a malformed DocumentInfo block - continuing anyway"
+            )
+        else:
+            if pdf_file.docinfo:
+                for k, v in pdf_file.docinfo.items():
+                    if b'\x00' in bytes(v):
+                        pdf_file.docinfo[k] = bytes(v).replace(b'\x00', b'')
+                        modified = True
         if modified:
             pdf_file.save(fix_docinfo_file)
         else:
