@@ -136,8 +136,9 @@ from sources <#installing-head-revision-from-sources>`__.
 Installing the latest version on Ubuntu 18.04 LTS
 -------------------------------------------------
 
-Ubuntu 18.04 includes ocrmypdf 6.1.2. To install a more recent version,
-first install the system version to get most of the dependencies:
+Ubuntu 18.04 includes ocrmypdf 6.1.2 - you can install that with ``apt``, but
+it is quite old now. To install a more recent version, first install several
+system dependencies:
 
 .. code-block:: bash
 
