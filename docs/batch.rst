@@ -139,9 +139,9 @@ slow network.
 A configuration manager such as Docker Compose could be used to ensure that the
 service is always available.
 
-.. literalinclude:: ../misc/docker-compose.example.yaml
+.. literalinclude:: ../misc/docker-compose.example.yml
     :language: yaml
-    :caption: misc/docker-compose.example.yaml
+    :caption: misc/docker-compose.example.yml
 
 Watched folders with watcher.py
 -------------------------------
