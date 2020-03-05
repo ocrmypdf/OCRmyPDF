@@ -17,22 +17,24 @@
 
 """Interface to qpdf executable"""
 
+import logging
 from io import StringIO
 
 import pikepdf
+
+log = logging.getLogger(__name__)
 
 
 def version():
     return pikepdf.__libqpdf_version__
 
 
-def check(input_file, log=None):
+def check(input_file):
     pdf = None
     try:
         pdf = pikepdf.open(input_file)
     except pikepdf.PdfError as e:
-        if log:
-            log.error(e)
+        log.error(e)
         return False
     else:
         messages = pdf.check()

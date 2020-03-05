@@ -74,7 +74,7 @@ def test_stdout(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
         )
         assert p.returncode == ExitCode.ok
 
-    assert qpdf.check(output_file, log=None)
+    assert qpdf.check(output_file)
 
 
 @pytest.mark.skipif(

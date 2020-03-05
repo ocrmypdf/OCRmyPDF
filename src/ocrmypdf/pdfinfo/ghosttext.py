@@ -21,7 +21,7 @@ import xml.etree.ElementTree as ET
 
 from ..exec import ghostscript
 
-gslog = logging.getLogger()
+log = logging.getLogger(__name__)
 
 # Forgive me for I have sinned
 # I am using regular expressions to parse XML. However the XML in this case,
@@ -77,7 +77,7 @@ def page_get_textblocks(infile, pageno, xmltext, height):
     return [block for block in joined_blocks()]
 
 
-def extract_text_xml(infile, pdf, pageno=None, log=gslog):
+def extract_text_xml(infile, pdf, pageno=None):
     existing_text = ghostscript.extract_text(infile, pageno=None)
     existing_text = regex_remove_char_tags.sub(b' ', existing_text)
 

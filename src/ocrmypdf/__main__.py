@@ -21,12 +21,13 @@ import os
 import sys
 
 from . import __version__
-from ._jobcontext import make_logger
 from ._sync import run_pipeline
 from ._validation import check_closed_streams, check_options
 from .api import Verbosity, configure_logging
 from .cli import parser
 from .exceptions import BadArgsError, ExitCode, MissingDependencyError
+
+log = logging.getLogger('ocrmypdf')
 
 
 def run(args=None):
@@ -47,7 +48,6 @@ def run(args=None):
     configure_logging(
         verbosity, progress_bar_friendly=options.progress_bar, manage_root_logger=True
     )
-    log = make_logger('ocrmypdf')
     log.debug('ocrmypdf ' + __version__)
     try:
         check_options(options)

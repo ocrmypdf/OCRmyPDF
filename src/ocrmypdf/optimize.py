@@ -16,6 +16,7 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import concurrent.futures
+import logging
 import sys
 import tempfile
 from collections import defaultdict
@@ -32,6 +33,8 @@ from ._jobcontext import PDFContext
 from .exceptions import OutputFileAccessError
 from .exec import jbig2enc, pngquant
 from .helpers import safe_symlink
+
+log = logging.getLogger(__name__)
 
 DEFAULT_JPEG_QUALITY = 75
 DEFAULT_PNG_QUALITY = 70
@@ -53,7 +56,7 @@ def tif_name(root, xref):
     return img_name(root, xref, '.tif')
 
 
-def extract_image_filter(pike, root, log, image, xref):
+def extract_image_filter(pike, root, image, xref):
     if image.Subtype != Name.Image:
         return None
     if image.Length < 100:
@@ -79,8 +82,8 @@ def extract_image_filter(pike, root, log, image, xref):
     return pim, filtdp
 
 
-def extract_image_jbig2(*, pike, root, log, image, xref, options):
-    result = extract_image_filter(pike, root, log, image, xref)
+def extract_image_jbig2(*, pike, root, image, xref, options):
+    result = extract_image_filter(pike, root, image, xref)
     if result is None:
         return None
     pim, filtdp = result
@@ -101,8 +104,8 @@ def extract_image_jbig2(*, pike, root, log, image, xref, options):
     return None
 
 
-def extract_image_generic(*, pike, root, log, image, xref, options):
-    result = extract_image_filter(pike, root, log, image, xref)
+def extract_image_generic(*, pike, root, image, xref, options):
+    result = extract_image_filter(pike, root, image, xref)
     if result is None:
         return None
     pim, filtdp = result
@@ -170,7 +173,7 @@ def extract_image_generic(*, pike, root, log, image, xref, options):
     return None
 
 
-def extract_images(pike, root, log, options, extract_fn):
+def extract_images(pike, root, options, extract_fn):
     """Extract image using extract_fn
 
     Enumerate images on each page, lookup their xref/ID number in the PDF.
@@ -212,7 +215,7 @@ def extract_images(pike, root, log, options, extract_fn):
         image = pike.get_object((xref, 0))
         try:
             result = extract_fn(
-                pike=pike, root=root, log=log, image=image, xref=xref, options=options
+                pike=pike, root=root, image=image, xref=xref, options=options
             )
         except Exception as e:
             log.debug("Image xref %s, error %s", xref, repr(e))
@@ -223,12 +226,12 @@ def extract_images(pike, root, log, options, extract_fn):
                 yield pageno_for_xref[xref], xref, ext
 
 
-def extract_images_generic(pike, root, log, options):
+def extract_images_generic(pike, root, options):
     """Extract any >=2bpp image we think we can improve"""
 
     jpegs = []
     pngs = []
-    for _, xref, ext in extract_images(pike, root, log, options, extract_image_generic):
+    for _, xref, ext in extract_images(pike, root, options, extract_image_generic):
         log.debug('xref = %s ext = %s', xref, ext)
         if ext == '.png':
             pngs.append(xref)
@@ -238,13 +241,11 @@ def extract_images_generic(pike, root, log, options):
     return jpegs, pngs
 
 
-def extract_images_jbig2(pike, root, log, options):
+def extract_images_jbig2(pike, root, options):
     """Extract any bitonal image that we think we can improve as JBIG2"""
 
     jbig2_groups = defaultdict(list)
-    for pageno, xref, ext in extract_images(
-        pike, root, log, options, extract_image_jbig2
-    ):
+    for pageno, xref, ext in extract_images(pike, root, options, extract_image_jbig2):
         group = pageno // options.jbig2_page_group_size
         jbig2_groups[group].append((xref, ext))
 
@@ -256,7 +257,7 @@ def extract_images_jbig2(pike, root, log, options):
     return jbig2_groups
 
 
-def _produce_jbig2_images(jbig2_groups, root, log, options):
+def _produce_jbig2_images(jbig2_groups, root, options):
     """Produce JBIG2 images from their groups"""
 
     def jbig2_group_futures(executor, root, groups):
@@ -304,7 +305,7 @@ def _produce_jbig2_images(jbig2_groups, root, log, options):
                 pbar.update()
 
 
-def convert_to_jbig2(pike, jbig2_groups, root, log, options):
+def convert_to_jbig2(pike, jbig2_groups, root, options):
     """Convert images to JBIG2 and insert into PDF.
 
     When the JBIG2 page group size is > 1 we do several JBIG2 images at once
@@ -318,7 +319,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
     and needs no dictionary. Currently this must be lossless JBIG2.
     """
 
-    _produce_jbig2_images(jbig2_groups, root, log, options)
+    _produce_jbig2_images(jbig2_groups, root, options)
 
     for group, xref_exts in jbig2_groups.items():
         prefix = f'group{group:08d}'
@@ -342,7 +343,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             )
 
 
-def transcode_jpegs(pike, jpegs, root, log, options):
+def transcode_jpegs(pike, jpegs, root, options):
     for xref in tqdm(
         jpegs, desc="JPEGs", unit='image', disable=not options.progress_bar
     ):
@@ -365,7 +366,7 @@ def transcode_jpegs(pike, jpegs, root, log, options):
         im_obj.write(compdata.read(), filter=Name.DCTDecode)
 
 
-def transcode_pngs(pike, images, image_name_fn, root, log, options):
+def transcode_pngs(pike, images, image_name_fn, root, options):
     modified = set()
     if options.optimize >= 2:
         png_quality = (
@@ -500,7 +501,6 @@ def rewrite_png(pike, im_obj, compdata, log):
 
 
 def optimize(input_file, output_file, context, save_settings):
-    log = context.log
     options = context.options
     if options.optimize == 0:
         safe_symlink(input_file, output_file)
@@ -517,15 +517,15 @@ def optimize(input_file, output_file, context, save_settings):
         root = Path(output_file).parent / 'images'
         root.mkdir(exist_ok=True)
 
-        jpegs, pngs = extract_images_generic(pike, root, log, options)
-        transcode_jpegs(pike, jpegs, root, log, options)
+        jpegs, pngs = extract_images_generic(pike, root, options)
+        transcode_jpegs(pike, jpegs, root, options)
         # if options.optimize >= 2:
         # Try pngifying the jpegs
-        #    transcode_pngs(pike, jpegs, jpg_name, root, log, options)
-        transcode_pngs(pike, pngs, png_name, root, log, options)
+        #    transcode_pngs(pike, jpegs, jpg_name, root, options)
+        transcode_pngs(pike, pngs, png_name, root, options)
 
-        jbig2_groups = extract_images_jbig2(pike, root, log, options)
-        convert_to_jbig2(pike, jbig2_groups, root, log, options)
+        jbig2_groups = extract_images_jbig2(pike, root, options)
+        convert_to_jbig2(pike, jbig2_groups, root, options)
 
         target_file = Path(output_file).with_suffix('.opt.pdf')
         pike.remove_unreferenced_resources()

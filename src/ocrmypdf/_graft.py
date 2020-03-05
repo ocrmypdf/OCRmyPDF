@@ -15,12 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import os
 from contextlib import suppress
 from pathlib import Path
 
 import pikepdf
 
+log = logging.getLogger(__name__)
 MAX_REPLACE_PAGES = 100
 
 
@@ -89,7 +91,7 @@ def strip_invisible_text(pdf, page):
 
 
 def _graft_text_layer(
-    *, pdf_base, page_num, text, font, font_key, procset, rotation, strip_old_text, log
+    *, pdf_base, page_num, text, font, font_key, procset, rotation, strip_old_text
 ):
     """Insert the text layer from text page 0 on to pdf_base at page_num"""
 
@@ -179,7 +181,6 @@ def _find_font(text, pdf_base):
 class OcrGrafter:
     def __init__(self, context):
         self.context = context
-        self.log = context.log
         self.path_base = Path(context.origin).resolve()
 
         self.pdf_base = pikepdf.open(self.path_base)
@@ -206,7 +207,7 @@ class OcrGrafter:
         if path_image is not None and path_image != self.path_base:
             # We are updating the old page with a rasterized PDF of the new
             # page (without changing objgen, to preserve references)
-            self.log.debug("Emplacement update")
+            log.debug("Emplacement update")
             with pikepdf.open(image) as pdf_image:
                 self.emplacements += 1
                 foreign_image_page = pdf_image.pages[0]
@@ -220,7 +221,7 @@ class OcrGrafter:
             content_rotation = autorotate_correction
         text_rotation = autorotate_correction
         text_misaligned = (text_rotation - content_rotation) % 360
-        self.log.debug(
+        log.debug(
             f"Rotations for page {pageno}: [text, auto, misalign, content] = "
             f"{text_rotation}, {autorotate_correction}, "
             f"{text_misaligned}, {content_rotation}"
@@ -238,7 +239,6 @@ class OcrGrafter:
                 rotation=text_misaligned,
                 procset=self.procset,
                 strip_old_text=strip_old,
-                log=self.log,
             )
 
         # Correct the rotation if applicable

@@ -268,9 +268,6 @@ def check_external_program(
     recommended=False,
     **kwargs,  # To consume log parameter
 ):
-    if kwargs:
-        if not 'log' in kwargs:
-            log.warning('check_external_program(log=...) is deprecated')
     try:
         found_version = version_checker()
     except (CalledProcessError, FileNotFoundError, MissingDependencyError):

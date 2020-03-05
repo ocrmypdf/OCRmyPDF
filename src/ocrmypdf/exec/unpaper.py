@@ -20,6 +20,7 @@
 
 """Interface to unpaper executable"""
 
+import logging
 import os
 import shlex
 from functools import lru_cache
@@ -32,13 +33,15 @@ from ..exceptions import MissingDependencyError, SubprocessOutputError
 from . import get_version
 from . import run as external_run
 
+log = logging.getLogger(__name__)
+
 
 @lru_cache(maxsize=1)
 def version():
     return get_version('unpaper')
 
 
-def run(input_file, output_file, dpi, log, mode_args):
+def run(input_file, output_file, dpi, mode_args):
     args_unpaper = ['unpaper', '-v', '--dpi', str(dpi)] + mode_args
 
     SUFFIXES = {'1': '.pbm', 'L': '.pgm', 'RGB': '.ppm'}
@@ -110,7 +113,7 @@ def validate_custom_args(args: str):
     return unpaper_args
 
 
-def clean(input_file, output_file, dpi, log, unpaper_args=None):
+def clean(input_file, output_file, dpi, unpaper_args=None):
     default_args = [
         '--layout',
         'none',
@@ -124,4 +127,4 @@ def clean(input_file, output_file, dpi, log, unpaper_args=None):
     ]
     if not unpaper_args:
         unpaper_args = default_args
-    run(input_file, output_file, dpi, log, unpaper_args)
+    run(input_file, output_file, dpi, unpaper_args)

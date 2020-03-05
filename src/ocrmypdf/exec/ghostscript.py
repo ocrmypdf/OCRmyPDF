@@ -34,7 +34,7 @@ from PIL import Image
 from ..exceptions import MissingDependencyError, SubprocessOutputError
 from . import get_version, run
 
-gslog = logging.getLogger()
+log = logging.getLogger(__name__)
 
 GS = 'gs'
 if os.name == 'nt':
@@ -138,7 +138,6 @@ def rasterize_pdf(
     xres,
     yres,
     raster_device,
-    log,
     pageno=1,
     page_dpi=None,
     rotation=None,
@@ -155,7 +154,6 @@ def rasterize_pdf(
     :param xres: resolution at which to rasterize page
     :param yres:
     :param raster_device:
-    :param log:
     :param pageno: page number to rasterize (beginning at page 1)
     :param page_dpi: resolution tuple (x, y) overriding output image DPI
     :param rotation: 0, 90, 180, 270: clockwise angle to rotate page
@@ -165,8 +163,6 @@ def rasterize_pdf(
     res = round(xres, 6), round(yres, 6)
     if not page_dpi:
         page_dpi = res
-    if not log:
-        log = gslog
 
     args_gs = (
         [
@@ -191,7 +187,6 @@ def rasterize_pdf(
         ]
     )
 
-    log.debug(args_gs)
     try:
         p = run(args_gs, stdout=PIPE, stderr=PIPE, check=True)
     except CalledProcessError as e:
@@ -224,7 +219,6 @@ def generate_pdfa(
     pdf_pages,
     output_file,
     compression,
-    log,
     threads=None,  # deprecated parameter
     pdf_version='1.5',
     pdfa_part='2',
@@ -246,8 +240,6 @@ def generate_pdfa(
     images entirely. (The feature was added in 9.23 but broken, and the 9.24
     release of Ghostscript had regressions, so we don't support it until 9.25.)
     """
-    if not log:
-        log = gslog
     if threads is not None:
         warnings.warn(
             "use of deprecated parameter 'threads'", category=DeprecationWarning

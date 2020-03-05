@@ -48,8 +48,6 @@ RENDERERS = ['hocr', 'sandwich']
 def check_monochrome_correlation(
     outdir, reference_pdf, reference_pageno, test_pdf, test_pageno
 ):
-    gslog = logging.getLogger()
-
     reference_png = outdir / f'{reference_pdf.name}.ref{reference_pageno:04d}.png'
     test_png = outdir / f'{test_pdf.name}.test{test_pageno:04d}.png'
 
@@ -63,7 +61,6 @@ def check_monochrome_correlation(
             xres=100,
             yres=100,
             raster_device='pngmono',
-            log=gslog,
             pageno=pageno,
             rotation=0,
         )
@@ -268,7 +265,6 @@ def test_tesseract_orientation(resources, tmp_path):
     pix_rotated = pix.rotate_orth(2)  # 180 degrees clockwise
     pix_rotated.write_implied_format(tmp_path / '000001.png')
 
-    log = logging.getLogger()
     tesseract.get_orientation(  # Test results of this are unreliable
-        tmp_path / '000001.png', engine_mode='3', timeout=10, log=log
+        tmp_path / '000001.png', engine_mode='3', timeout=10
     )

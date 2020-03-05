@@ -86,8 +86,6 @@ def test_no_languages(tmp_path):
 
 
 def test_image_too_large_hocr(monkeypatch, resources, outdir):
-    log = logging.getLogger('test_image_too_large_hocr')
-
     def dummy_run(args, *, env=None, **kwargs):
         raise subprocess.CalledProcessError(1, 'tesseract', output=b'Image too large')
 
@@ -100,7 +98,6 @@ def test_image_too_large_hocr(monkeypatch, resources, outdir):
         tessconfig=[],
         timeout=180.0,
         pagesegmode=None,
-        log=log,
         user_words=None,
         user_patterns=None,
         tesseract_env=None,
@@ -109,8 +106,6 @@ def test_image_too_large_hocr(monkeypatch, resources, outdir):
 
 
 def test_image_too_large_pdf(monkeypatch, resources, outdir):
-    log = logging.getLogger('test_image_too_large_pdf')
-
     def dummy_run(args, *, env=None, **kwargs):
         raise subprocess.CalledProcessError(1, 'tesseract', output=b'Image too large')
 
@@ -126,7 +121,6 @@ def test_image_too_large_pdf(monkeypatch, resources, outdir):
         tessconfig=[],
         timeout=180.0,
         pagesegmode=None,
-        log=log,
         user_words=None,
         user_patterns=None,
         tesseract_env=None,
@@ -137,8 +131,7 @@ def test_image_too_large_pdf(monkeypatch, resources, outdir):
 
 
 def test_timeout(caplog):
-    log = logging.getLogger('test_timeout')
-    tesseract.page_timedout(log, '123456.png', 5)
+    tesseract.page_timedout('123456.png', 5)
     assert "123456" in caplog.text
     assert "took too long" in caplog.text
 
@@ -160,10 +153,8 @@ def test_timeout(caplog):
     ],
 )
 def test_tesseract_log_output(caplog, in_, logged):
-    log = logging.getLogger('tesseract_log_output')
-    log.setLevel(logging.INFO)
-
-    tesseract.tesseract_log_output(log, in_, 'dummy')
+    caplog.set_level(logging.INFO)
+    tesseract.tesseract_log_output(in_, 'dummy')
     if logged == '':
         assert caplog.text == ''
     else:
@@ -171,7 +162,6 @@ def test_tesseract_log_output(caplog, in_, logged):
 
 
 def test_tesseract_log_output_raises(caplog):
-    log = logging.getLogger('tesseract_log_output')
     with pytest.raises(tesseract.TesseractConfigError):
-        tesseract.tesseract_log_output(log, b'parameter not found: moo', 'dummy')
+        tesseract.tesseract_log_output(b'parameter not found: moo', 'dummy')
     assert 'not found' in caplog.text

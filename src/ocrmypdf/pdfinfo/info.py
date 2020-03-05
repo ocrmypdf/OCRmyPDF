@@ -616,7 +616,7 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, xmltext: str):
     return pageinfo
 
 
-def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None, progbar=False):
+def _pdf_get_all_pageinfo(infile, detailed_analysis=False, progbar=False):
     pdf = pikepdf.open(infile)  # Do not close in this function
     try:
         if pdf.is_encrypted:
@@ -624,7 +624,7 @@ def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None, progbar=Fal
         if detailed_analysis:
             pages_xml = None
         else:
-            pages_xml = ghosttext.extract_text_xml(infile, pdf, pageno=None, log=log)
+            pages_xml = ghosttext.extract_text_xml(infile, pdf, pageno=None)
 
         pages = []
         for n, _ in tqdm(
@@ -758,12 +758,12 @@ class PageInfo:
 class PdfInfo:
     """Get summary information about a PDF"""
 
-    def __init__(self, infile, detailed_page_analysis=False, log=logger, progbar=False):
+    def __init__(self, infile, detailed_page_analysis=False, progbar=False):
         self._infile = infile
         if ghostscript.version() in ('9.52',):
             detailed_page_analysis = True  # txtwrite doesn't work in these versions
         self._pages, pdf = _pdf_get_all_pageinfo(
-            infile, detailed_page_analysis, log=log, progbar=progbar
+            infile, detailed_page_analysis, progbar=progbar
         )
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
         self._has_acroform = False

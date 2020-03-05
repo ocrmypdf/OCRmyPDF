@@ -30,7 +30,7 @@ import PIL
 from tqdm import tqdm
 
 from ._graft import OcrGrafter
-from ._jobcontext import PDFContext, cleanup_working_files, make_logger
+from ._jobcontext import PDFContext, cleanup_working_files
 from ._pipeline import (
     convert_to_pdfa,
     copy_final,
@@ -65,6 +65,8 @@ from .exceptions import ExitCode, ExitCodeException
 from .exec import qpdf
 from .helpers import available_cpu_count
 from .pdfa import file_claims_pdfa
+
+log = logging.getLogger(__name__)
 
 PageResult = namedtuple(
     'PageResult', 'pageno, pdf_page_from_image, ocr, text, orientation_correction'
@@ -231,7 +233,7 @@ def exec_concurrent(context):
     # Run exec_page_sync on every page context
     max_workers = min(len(context.pdfinfo), context.options.jobs)
     if max_workers > 1:
-        context.log.info("Start processing %d pages concurrently", max_workers)
+        log.info("Start processing %d pages concurrently", max_workers)
 
     # Tesseract 4.x can be multithreaded, and we also run multiple workers. We want
     # to manage how many threads it uses to avoid creating total threads than cores.
@@ -250,7 +252,7 @@ def exec_concurrent(context):
     except ValueError:  # OMP_THREAD_LIMIT initialized to non-numeric
         context.log.error("Environment variable OMP_THREAD_LIMIT is not numeric")
     if tess_threads > 1:
-        context.log.info("Using Tesseract OpenMP thread limit %d", tess_threads)
+        log.info("Using Tesseract OpenMP thread limit %d", tess_threads)
 
     if context.options.use_threads:
         from multiprocessing.dummy import Pool
@@ -352,8 +354,6 @@ def configure_debug_logging(log_filename, prefix=''):
 
 
 def run_pipeline(options, api=False):
-    log = make_logger(options, __name__)
-
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
     # options.input_file, options.pdf_renderer are already bound.)
@@ -377,7 +377,6 @@ def run_pipeline(options, api=False):
             start_input_file,
             os.path.join(work_folder, 'origin.pdf'),
             options,
-            log,
         )
 
         # Gather pdfinfo and create context
@@ -412,7 +411,7 @@ def run_pipeline(options, api=False):
                         pdfa_info['conformance'],
                     )
                     return ExitCode.pdfa_conversion_failed
-            if not qpdf.check(options.output_file, log):
+            if not qpdf.check(options.output_file):
                 log.warning('Output file: The generated PDF is INVALID')
                 return ExitCode.invalid_output_pdf
             report_output_file_size(options, start_input_file, options.output_file)

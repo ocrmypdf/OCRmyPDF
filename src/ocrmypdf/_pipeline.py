@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import os
 import re
 import sys
@@ -44,10 +45,12 @@ from .optimize import optimize
 from .pdfa import generate_pdfa_ps
 from .pdfinfo import Colorspace, Encoding, PdfInfo
 
+log = logging.getLogger(__name__)
+
 VECTOR_PAGE_DPI = 400
 
 
-def triage_image_file(input_file, output_file, options, log):
+def triage_image_file(input_file, output_file, options):
     log.info("Input file is not a PDF, checking if it is an image...")
     try:
         im = Image.open(input_file)
@@ -124,7 +127,7 @@ def _pdf_guess_version(input_file, search_window=1024):
     return ''
 
 
-def triage(original_filename, input_file, output_file, options, log):
+def triage(original_filename, input_file, output_file, options):
     try:
         if _pdf_guess_version(input_file):
             if options.image_dpi:
@@ -140,7 +143,7 @@ def triage(original_filename, input_file, output_file, options, log):
         msg = str(e).replace(input_file, original_filename)
         raise InputFileError(msg) from e
 
-    triage_image_file(input_file, output_file, options, log)
+    triage_image_file(input_file, output_file, options)
     return output_file
 
 
@@ -156,7 +159,6 @@ def get_pdfinfo(input_file, detailed_page_analysis=False, progbar=False):
 
 
 def validate_pdfinfo_options(context):
-    log = context.log
     pdfinfo = context.pdfinfo
     options = context.options
 
@@ -241,7 +243,6 @@ def get_canvas_square_dpi(pageinfo, options):
 def is_ocr_required(page_context):
     pageinfo = page_context.pageinfo
     options = page_context.options
-    log = page_context.log
 
     ocr_required = True
 
@@ -322,7 +323,6 @@ def rasterize_preview(input_file, page_context):
         xres=canvas_dpi,
         yres=canvas_dpi,
         raster_device='jpeggray',
-        log=page_context.log,
         page_dpi=(page_dpi, page_dpi),
         pageno=page_context.pageinfo.pageno + 1,
     )
@@ -380,12 +380,11 @@ def get_orientation_correction(preview, page_context):
         preview,
         engine_mode=page_context.options.tesseract_oem,
         timeout=page_context.options.tesseract_timeout,
-        log=page_context.log,
         tesseract_env=page_context.options.tesseract_env,
     )
 
     correction = orient_conf.angle % 360
-    page_context.log.info(describe_rotation(page_context, orient_conf, correction))
+    log.info(describe_rotation(page_context, orient_conf, correction))
     if (
         orient_conf.confidence >= page_context.options.rotate_pages_threshold
         and correction != 0
@@ -426,7 +425,7 @@ def rasterize(
 
     device = colorspaces[device_idx]
 
-    page_context.log.debug(f"Rasterize with {device}")
+    log.debug(f"Rasterize with {device}")
 
     # Produce the page image with square resolution or else deskew and OCR
     # will not work properly.
@@ -439,7 +438,6 @@ def rasterize(
         xres=canvas_dpi,
         yres=canvas_dpi,
         raster_device=device,
-        log=page_context.log,
         page_dpi=(page_dpi, page_dpi),
         pageno=pageinfo.pageno + 1,
         rotation=correction,
@@ -454,7 +452,7 @@ def preprocess_remove_background(input_file, page_context):
         leptonica.remove_background(input_file, output_file)
         return output_file
     else:
-        page_context.log.info("background removal skipped on mono page")
+        log.info("background removal skipped on mono page")
         return input_file
 
 
@@ -470,13 +468,7 @@ def preprocess_clean(input_file, page_context):
 
     output_file = page_context.get_path('pp_clean.png')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
-    unpaper.clean(
-        input_file,
-        output_file,
-        dpi,
-        page_context.log,
-        page_context.options.unpaper_args,
-    )
+    unpaper.clean(input_file, output_file, dpi, page_context.options.unpaper_args)
     return output_file
 
 
@@ -496,7 +488,7 @@ def create_ocr_image(image, page_context):
         draw = ImageDraw.ImageDraw(im)
 
         xres, yres = im.info['dpi']
-        page_context.log.debug('resolution %r %r' % (xres, yres))
+        log.debug('resolution %r %r' % (xres, yres))
 
         if not options.force_ocr:
             # Do not mask text areas when forcing OCR, because we need to OCR
@@ -520,7 +512,7 @@ def create_ocr_image(image, page_context):
                     im.height - bbox[1] * yscale,
                 ]
                 pixcoords = [int(round(c)) for c in pixcoords]
-                page_context.log.debug('blanking %r', pixcoords)
+                log.debug('blanking %r', pixcoords)
                 draw.rectangle(pixcoords, fill=white)
                 # draw.rectangle(pixcoords, outline=pink)
 
@@ -551,7 +543,6 @@ def ocr_tesseract_hocr(input_file, page_context):
         user_words=options.user_words,
         user_patterns=options.user_patterns,
         tesseract_env=options.tesseract_env,
-        log=page_context.log,
     )
     return (hocr_out, hocr_text_out)
 
@@ -591,11 +582,11 @@ def create_pdf_page_from_image(image, page_context):
 
     # This create a single page PDF
     with open(image, 'rb') as imfile, open(output_file, 'wb') as pdf:
-        page_context.log.debug('convert')
+        log.debug('convert')
         img2pdf.convert(
             imfile, with_pdfrw=False, layout_fun=layout_fun, outputstream=pdf
         )
-        page_context.log.debug('convert done')
+        log.debug('convert done')
     return output_file
 
 
@@ -631,7 +622,6 @@ def ocr_tesseract_textonly_pdf(input_image, page_context):
         user_words=options.user_words,
         user_patterns=options.user_patterns,
         tesseract_env=options.tesseract_env,
-        log=page_context.log,
     )
     return (output_pdf, output_text)
 
@@ -697,7 +687,7 @@ def convert_to_pdfa(input_pdf, input_ps_stub, context):
         try:
             len(pdf_file.docinfo)
         except TypeError:
-            context.log.error(
+            log.error(
                 "File contains a malformed DocumentInfo block - continuing anyway"
             )
         else:
@@ -716,7 +706,6 @@ def convert_to_pdfa(input_pdf, input_ps_stub, context):
         pdf_pages=[fix_docinfo_file, input_ps_stub],
         output_file=output_file,
         compression=options.pdfa_image_compression,
-        log=context.log,
         pdfa_part=options.output_type[-1],  # is pdfa-1, pdfa-2, or pdfa-3
     )
 
@@ -738,22 +727,18 @@ def metadata_fixup(working_file, context):
         if not missing:
             return
         if options.output_type.startswith('pdfa'):
-            context.log.warning(
+            log.warning(
                 "Some input metadata could not be copied because it is not "
                 "permitted in PDF/A. You may wish to examine the output "
                 "PDF's XMP metadata."
             )
-            context.log.debug(
-                "The following metadata fields were not copied: %r", missing
-            )
+            log.debug("The following metadata fields were not copied: %r", missing)
         else:
-            context.log.error(
+            log.error(
                 "Some input metadata could not be copied."
                 "You may wish to examine the output PDF's XMP metadata."
             )
-            context.log.info(
-                "The following metadata fields were not copied: %r", missing
-            )
+            log.info("The following metadata fields were not copied: %r", missing)
 
     with pikepdf.open(context.origin) as original, pikepdf.open(working_file) as pdf:
         docinfo = get_docinfo(original, options)
@@ -819,7 +804,7 @@ def merge_sidecars(txt_files, context):
 
 
 def copy_final(input_file, output_file, context):
-    context.log.debug('%s -> %s', input_file, output_file)
+    log.debug('%s -> %s', input_file, output_file)
     with open(input_file, 'rb') as input_stream:
         if output_file == '-':
             copyfileobj(input_stream, sys.stdout.buffer)

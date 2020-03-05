@@ -73,14 +73,12 @@ def test_rasterize_size(francais, outdir, caplog):
     target_size = Decimal('50.0'), Decimal('30.0')
     forced_dpi = 42.0, 4242.0
 
-    log = logging.getLogger()
     rasterize_pdf(
         path,
         outdir / 'out.png',
         target_size[0] / page_size[0],
         target_size[1] / page_size[1],
         raster_device='pngmono',
-        log=log,
         page_dpi=forced_dpi,
     )
 
@@ -97,7 +95,6 @@ def test_rasterize_rotated(francais, outdir, caplog):
     target_size = Decimal('50.0'), Decimal('30.0')
     forced_dpi = 42.0, 4242.0
 
-    log = logging.getLogger()
     caplog.set_level(logging.DEBUG)
     rasterize_pdf(
         path,
@@ -105,7 +102,6 @@ def test_rasterize_rotated(francais, outdir, caplog):
         target_size[0] / page_size[0],
         target_size[1] / page_size[1],
         raster_device='pngmono',
-        log=log,
         page_dpi=forced_dpi,
         rotation=90,
     )

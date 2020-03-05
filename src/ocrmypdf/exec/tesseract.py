@@ -33,6 +33,8 @@ from ..exceptions import (
 from ..helpers import page_number, safe_symlink
 from . import get_version, run
 
+log = logging.getLogger(__name__)
+
 OrientationConfidence = namedtuple('OrientationConfidence', ('angle', 'confidence'))
 
 HOCR_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
@@ -144,7 +146,7 @@ def tess_base_args(langs, engine_mode):
     return args
 
 
-def get_orientation(input_file, engine_mode, timeout: float, log, tesseract_env=None):
+def get_orientation(input_file, engine_mode, timeout: float, tesseract_env=None):
     args_tesseract = tess_base_args(['osd'], engine_mode) + [
         '--psm',
         '0',
@@ -165,7 +167,7 @@ def get_orientation(input_file, engine_mode, timeout: float, log, tesseract_env=
     except TimeoutExpired:
         return OrientationConfidence(angle=0, confidence=0.0)
     except CalledProcessError as e:
-        tesseract_log_output(log, e.output, input_file)
+        tesseract_log_output(e.output, input_file)
         if (
             b'Too few characters. Skipping this page' in e.output
             or b'Image too large' in e.output
@@ -187,9 +189,9 @@ def get_orientation(input_file, engine_mode, timeout: float, log, tesseract_env=
         return oc
 
 
-def tesseract_log_output(mainlog, stdout, input_file):
-    log = TesseractLoggerAdapter(
-        mainlog, extra=mainlog.extra if hasattr(mainlog, 'extra') else None
+def tesseract_log_output(stdout, input_file):
+    tlog = TesseractLoggerAdapter(
+        log, extra=log.extra if hasattr(log, 'extra') else None
     )
 
     try:
@@ -204,28 +206,28 @@ def tesseract_log_output(mainlog, stdout, input_file):
         elif line.startswith("Warning in pixReadMem"):
             continue
         elif 'diacritics' in line:
-            log.warning("lots of diacritics - possibly poor OCR")
+            tlog.warning("lots of diacritics - possibly poor OCR")
         elif line.startswith('OSD: Weak margin'):
-            log.warning("unsure about page orientation")
+            tlog.warning("unsure about page orientation")
         elif 'Error in pixScanForForeground' in line:
             pass  # Appears to be spurious/problem with nonwhite borders
         elif 'Error in boxClipToRectangle' in line:
             pass  # Always appears with pixScanForForeground message
         elif 'parameter not found: ' in line.lower():
-            log.error(line.strip())
+            tlog.error(line.strip())
             problem = line.split('found: ')[1]
             raise TesseractConfigError(problem)
         elif 'error' in line.lower() or 'exception' in line.lower():
-            log.error(line.strip())
+            tlog.error(line.strip())
         elif 'warning' in line.lower():
-            log.warning(line.strip())
+            tlog.warning(line.strip())
         elif 'read_params_file' in line.lower():
-            log.error(line.strip())
+            tlog.error(line.strip())
         else:
-            log.info(line.strip())
+            tlog.info(line.strip())
 
 
-def page_timedout(log, input_file, timeout):
+def page_timedout(input_file, timeout):
     if timeout == 0:
         return
     prefix = f"{(page_number(input_file)):4d}: [tesseract] "
@@ -257,7 +259,6 @@ def generate_hocr(
     user_words,
     user_patterns,
     tesseract_env,
-    log,
 ):
 
     output_hocr = next(o for o in output_files if fspath(o).endswith('.hocr'))
@@ -292,17 +293,17 @@ def generate_hocr(
         # Generate a HOCR file with no recognized text if tesseract times out
         # Temporary workaround to hocrTransform not being able to function if
         # it does not have a valid hOCR file.
-        page_timedout(log, input_file, timeout)
+        page_timedout(input_file, timeout)
         _generate_null_hocr(output_hocr, output_sidecar, input_file)
     except CalledProcessError as e:
-        tesseract_log_output(log, e.output, input_file)
+        tesseract_log_output(e.output, input_file)
         if b'Image too large' in e.output:
             _generate_null_hocr(output_hocr, output_sidecar, input_file)
             return
 
         raise SubprocessOutputError() from e
     else:
-        tesseract_log_output(log, stdout, input_file)
+        tesseract_log_output(stdout, input_file)
         # The sidecar text file will get the suffix .txt; rename it to
         # whatever caller wants it named
         if os.path.exists(prefix + '.txt'):
@@ -340,7 +341,6 @@ def generate_pdf(
     user_words,
     user_patterns,
     tesseract_env,
-    log,
 ):
     """Use Tesseract to render a PDF.
 
@@ -389,13 +389,13 @@ def generate_pdf(
         if os.path.exists(prefix + '.txt'):
             shutil.move(prefix + '.txt', output_text)
     except TimeoutExpired:
-        page_timedout(log, input_image, timeout)
+        page_timedout(input_image, timeout)
         use_skip_page(text_only, skip_pdf, output_pdf, output_text)
     except CalledProcessError as e:
-        tesseract_log_output(log, e.output, input_image)
+        tesseract_log_output(e.output, input_image)
         if b'Image too large' in e.output:
             use_skip_page(text_only, skip_pdf, output_pdf, output_text)
             return
         raise SubprocessOutputError() from e
     else:
-        tesseract_log_output(log, stdout, input_image)
+        tesseract_log_output(stdout, input_image)

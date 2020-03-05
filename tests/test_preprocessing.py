@@ -55,7 +55,6 @@ def test_deskew(spoof_tesseract_noop, resources, outdir):
         xres=150,
         yres=150,
         raster_device='pngmono',
-        log=log,
         pageno=1,
     )
 
@@ -80,18 +79,10 @@ def test_remove_background(spoof_tesseract_noop, resources, outdir):
         env=spoof_tesseract_noop,
     )
 
-    log = logging.getLogger()
-
     output_png = outdir / 'remove_bg.png'
 
     ghostscript.rasterize_pdf(
-        output_pdf,
-        output_png,
-        xres=100,
-        yres=100,
-        raster_device='png16m',
-        log=log,
-        pageno=1,
+        output_pdf, output_png, xres=100, yres=100, raster_device='png16m', pageno=1
     )
 
     # The output image should contain pure white and black
