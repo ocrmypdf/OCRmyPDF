@@ -62,21 +62,10 @@ def run(args, *, env=None, **kwargs):
 
     # Search in spoof path if necessary
     program = _get_program(args, env)
-
-    # If we are running a .py on Windows, ensure we call it with this Python
-    # (to support test suite shims)
-    if os.name == 'nt' and program.lower().endswith('.py'):
-        args = [sys.executable, program] + args[1:]
-    else:
-        args = [program] + args[1:]
+    args = [program] + args[1:]
 
     if os.name == 'nt':
-        paths = os.pathsep.join(os.get_exec_path(env))
-        if not shutil.which(args[0], path=paths):
-            shimmed_path = shim_paths_with_program_files(env)
-            new_args0 = shutil.which(args[0], path=shimmed_path)
-            if new_args0:
-                args[0] = new_args0
+        args = fix_windows_args(program, args, env)
 
     process_log = log.getChild(os.path.basename(program))
     process_log.debug("Running: %s", args)
@@ -93,6 +82,25 @@ def run(args, *, env=None, **kwargs):
         if stderr:
             process_log.debug("stderr = %s", stderr)
     return proc
+
+
+def fix_windows_args(program, args, env):
+    """Adjust our desired program and command line arguments for use on Windows"""
+
+    # If we are running a .py on Windows, ensure we call it with this Python
+    # (to support test suite shims)
+    if program.lower().endswith('.py'):
+        args = [sys.executable] + args
+
+    paths = os.pathsep.join(os.get_exec_path(env))
+    if not shutil.which(args[0], path=paths):
+        # If the program we want is not on the PATH, add some interesting
+        # locations in %PROGRAMFILES% to the PATH and try again
+        shimmed_path = shim_paths_with_program_files(env)
+        new_args0 = shutil.which(args[0], path=shimmed_path)
+        if new_args0:
+            args[0] = new_args0
+    return args
 
 
 def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)', env=None):
