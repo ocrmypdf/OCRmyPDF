@@ -97,6 +97,7 @@ setup(
     install_requires=[
         'chardet >= 3.0.4, < 4',  # unlisted requirement of pdfminer.six 20181108
         'cffi >= 1.9.1',  # must be a setup and install requirement
+        'coloredlogs >= 14.0',  # strictly optional
         'img2pdf >= 0.3.0, < 0.4',  # pure Python, so track HEAD closely
         'pdfminer.six >= 20181108, <= 20200124',
         'pikepdf >= 1.8.1, < 2',

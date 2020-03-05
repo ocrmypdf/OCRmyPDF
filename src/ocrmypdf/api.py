@@ -28,6 +28,11 @@ from ._sync import run_pipeline
 from ._validation import check_options
 from .cli import parser
 
+try:
+    import coloredlogs
+except ModuleNotFoundError:
+    coloredlogs = None
+
 
 class Verbosity(IntEnum):
     """Verbosity level for configure_logging."""
@@ -92,7 +97,18 @@ def configure_logging(
     else:
         fmt = '%(levelname)7s -%(pageno)s %(message)s'
 
-    formatter = logging.Formatter(fmt=fmt)
+    use_colors = progress_bar_friendly
+    if not coloredlogs:
+        use_colors = False
+    if use_colors:
+        if os.name == 'nt':
+            use_colors = coloredlogs.enable_ansi_support()
+        if use_colors:
+            use_colors = coloredlogs.terminal_supports_colors()
+    if use_colors:
+        formatter = coloredlogs.ColoredFormatter(fmt=fmt)
+    else:
+        formatter = logging.Formatter(fmt=fmt)
 
     console.setFormatter(formatter)
     log.addHandler(console)
