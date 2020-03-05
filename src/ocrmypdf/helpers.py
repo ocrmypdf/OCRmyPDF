@@ -32,11 +32,6 @@ def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike, *args, **
     """
     Helper function: relinks soft symbolic link if necessary
     """
-    if len(args) == 1 and isinstance(args[0], logging.Logger):
-        log.warning("Deprecated: safe_symlink(,log)")
-    if 'log' in kwargs:
-        log.warning('Deprecated: safe_symlink(...log=)')
-
     input_file = os.fspath(input_file)
     soft_link_name = os.fspath(soft_link_name)
 
