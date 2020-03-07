@@ -33,6 +33,7 @@ OUTPUT_DIRECTORY = os.getenv('OCR_OUTPUT_DIRECTORY', '/output')
 OUTPUT_DIRECTORY_YEAR_MONTH = bool(os.getenv('OCR_OUTPUT_DIRECTORY_YEAR_MONTH', False))
 ON_SUCCESS_DELETE = bool(os.getenv('OCR_ON_SUCCESS_DELETE', False))
 DESKEW = bool(os.getenv('OCR_DESKEW', False))
+FORCE_OCR = bool(os.getenv('OCR_FORCE', False))
 POLL_NEW_FILE_SECONDS = os.getenv('OCR_POLL_NEW_FILE_SECONDS', 1)
 LOGLEVEL = os.environ.get('OCR_LOGLEVEL', 'INFO').upper()
 PATTERNS = ['*.pdf']
@@ -87,7 +88,7 @@ def execute_ocrmypdf(file_path):
         return
     log.info(f'Attempting to OCRmyPDF to: {output_path}')
     exit_code = ocrmypdf.ocr(
-        input_file=file_path, output_file=output_path, deskew=DESKEW
+        input_file=file_path, output_file=output_path, deskew=DESKEW, force_ocr=FORCE_OCR
     )
     if exit_code == 0 and ON_SUCCESS_DELETE:
         log.info(f'OCR is done. Deleting: {file_path}')
