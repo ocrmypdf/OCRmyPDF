@@ -303,14 +303,22 @@ class ImageInfo:
         if self._enc == Encoding.jpeg2000:
             self._color = Colorspace.jpeg2000
 
-        self._comp = FRIENDLY_COMP.get(self._color, '?')
+        if self._color == Colorspace.icc:
+            # Check the ICC profile to determine actual colorspace
+            pim_icc = pim.icc
+            if pim_icc.profile.xcolor_space == 'GRAY':
+                self._comp = 1
+            elif pim_icc.profile.xcolor_space == 'CMYK':
+                self._comp = 4
+            else:
+                self._comp = 3
+        else:
+            self._comp = FRIENDLY_COMP.get(self._color, '?')
 
-        # Bit of a hack... infer grayscale if component count is uncertain
-        # but encoding must be monochrome. This happens if a monochrome image
-        # has an ICC profile attached. Better solution would be to examine
-        # the ICC profile.
-        if self._comp == '?' and self._enc in (Encoding.ccitt, Encoding.jbig2):
-            self._comp = FRIENDLY_COMP[Colorspace.gray]
+            # Bit of a hack... infer grayscale if component count is uncertain
+            # but encoding only supports monochrome.
+            if self._comp == '?' and self._enc in (Encoding.ccitt, Encoding.jbig2):
+                self._comp = FRIENDLY_COMP[Colorspace.gray]
 
     @property
     def name(self):
@@ -805,10 +813,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('infile')
     args = parser.parse_args()
-    info = _pdf_get_all_pageinfo(args.infile)
+    pagesinfo, pdfinfo = _pdf_get_all_pageinfo(args.infile)
     from pprint import pprint
 
-    pprint(info)
+    pprint(pdfinfo)
+    for page in pagesinfo:
+        pprint(page)
+        for im in page.images:
+            pprint(im)
 
 
 if __name__ == '__main__':
