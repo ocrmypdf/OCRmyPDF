@@ -155,6 +155,17 @@ def extract_image_generic(*, pike, root, log, image, xref, options):
         # generating a PNG from compressed data
         pim.as_pil_image().save(png_name(root, xref))
         return xref, '.png'
+    elif (
+        not pim.indexed
+        and pim.colorspace == Name.ICCBased
+        and pim.bits_per_component == 1
+        and not options.jbig2_lossy
+    ):
+        # We can losslessly optimize 1-bit images to CCITT or JBIG2 without
+        # paying any attention to the ICC profile, provided we're not doing
+        # lossy JBIG2
+        pim.as_pil_image().save(png_name(root, xref))
+        return xref, '.png'
 
     return None
 
