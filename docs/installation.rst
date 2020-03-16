@@ -232,7 +232,7 @@ environment variable contains ``$HOME/.local/bin``.
 .. code-block:: bash
 
     export PATH=$HOME/.local/bin:$PATH
-    pip3 install --user ocrmypdf
+    pip3.6 install --user ocrmypdf
 
 To add JBIG2 encoding, see :ref:`jbig2`.
 
