@@ -99,11 +99,45 @@ and all inquiries are appreciated.
 Hot (watched) folders
 =====================
 
+Watched folders with watcher.py
+-------------------------------
+
+OCRmyPDF has a folder watcher called watcher.py, which is currently included in source
+distributions but not part of the main program. It may be used natively or may run
+in a Docker container. Native instances tend to give better performance. watcher.py
+works on all platforms.
+
+Users may need to customize the script to meet their requirements.
+
+.. code-block:: bash
+
+    pip3 install -r requirements/watcher.txt
+
+    env OCR_INPUT_DIRECTORY=/mnt/input-pdfs \
+        OCR_OUTPUT_DIRECTORY=/mnt/output-pdfs \
+        OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1 \
+        python3 watcher.py
+
+.. csv-table:: watcher.py environment variables
+    :header: "Environment variable", "Description"
+    :widths: 50, 50
+
+    "OCR_INPUT_DIRECTORY", "Set input directory to monitor (recursive)"
+    "OCR_OUTPUT_DIRECTORY", "Set output directory (should not be under input)"
+    "OCR_ON_SUCCESS_DELETE", "This will delete the input file if the exit code is 0 (OK)"
+    "OCR_OUTPUT_DIRECTORY_YEAR_MONTH", "This will place files in the output in ``{output}/{year}/{month}/{filename}``"
+    "OCR_DESKEW", "Apply deskew to crooked input PDFs"
+    "OCR_JSON_SETTINGS", "A JSON string specifying any other arguments for ``ocrmypdf.ocr``"
+    "OCR_POLL_NEW_FILE_SECONDS", "Polling interval"
+    "OCR_LOGLEVEL", "Level of log messages to report"
+
+One could configure a networked scanner or scanning computer to drop files in the
+watched folder.
+
 Watched folders with Docker
 ---------------------------
 
-The OCRmyPDF Docker image includes a watcher service. This service can
-be launched as follows:
+The watcher service is included in the OCRmyPDF Docker image. To run it:
 
 .. code-block:: bash
 
@@ -127,9 +161,9 @@ convert it to a OCRed PDF in ``/output/``. The parameters to this image are:
 
     "``-v <path to files to convert>:/input``", "Files placed in this location will be OCRed"
     "``-v <path to store results>:/output``", "This is where OCRed files will be stored"
-    "``-e OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1``", "This will place files in the output in {output}/{year}/{month}/{filename}"
-    "``-e OCR_ON_SUCCESS_DELETE=1``", "This will delete the input file if the exit code is 0 (OK)"
-    "``-e OCR_DESKEW=1``", "This will enable deskew for crooked PDFs"
+    "``-e OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1``", "Define environment variable OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1"
+    "``-e OCR_ON_SUCCESS_DELETE=1``", "Define environment variable"
+    "``-e OCR_DESKEW=1``", "Define environment variable"
     "``-e PYTHONBUFFERED=1``", "This will force STDOUT to be unbuffered and allow you to see messages in docker logs"
 
 This service relies on polling to check for changes to the filesystem. It
@@ -142,56 +176,6 @@ service is always available.
 .. literalinclude:: ../misc/docker-compose.example.yml
     :language: yaml
     :caption: misc/docker-compose.example.yml
-
-Watched folders with watcher.py
--------------------------------
-
-The watcher service may also be run natively, without Docker:
-
-.. code-block:: bash
-
-    pip3 install -r requirements/watcher.txt
-
-    env OCR_INPUT_DIRECTORY=/mnt/input-pdfs \
-        OCR_OUTPUT_DIRECTORY=/mnt/output-pdfs \
-        OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1 \
-        python3 watcher.py
-
-Watched folders with CLI
-------------------------
-
-To set up a "hot folder" that will trigger OCR for every file inserted,
-use a program like Python
-`watchdog <https://pypi.python.org/pypi/watchdog>`__ (supports all major
-OS).
-
-One could then configure a scanner to automatically place scanned files
-in a hot folder, so that they will be queued for OCR and copied to the
-destination.
-
-.. code-block:: bash
-
-   pip install watchdog
-
-watchdog installs the command line program ``watchmedo``, which can be
-told to run ``ocrmypdf`` on any .pdf added to the current directory
-(``.``) and place the result in the previously created ``out/`` folder.
-
-.. code-block:: bash
-
-   cd hot-folder
-   mkdir out
-   watchmedo shell-command \
-       --patterns="*.pdf" \
-       --ignore-directories \
-       --command='ocrmypdf "${watch_src_path}" "out/${watch_src_path}" ' \
-       .  # don't forget the final dot
-
-On file servers, you could configure watchmedo as a system service so it
-will run all the time.
-
-For more complex behavior you can write a Python script around to use
-the watchdog API. You can refer to the watcher.py script as an example.
 
 Caveats
 -------

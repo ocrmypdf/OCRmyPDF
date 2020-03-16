@@ -14,8 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import logging
 import os
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -33,6 +35,7 @@ OUTPUT_DIRECTORY = os.getenv('OCR_OUTPUT_DIRECTORY', '/output')
 OUTPUT_DIRECTORY_YEAR_MONTH = bool(os.getenv('OCR_OUTPUT_DIRECTORY_YEAR_MONTH', False))
 ON_SUCCESS_DELETE = bool(os.getenv('OCR_ON_SUCCESS_DELETE', False))
 DESKEW = bool(os.getenv('OCR_DESKEW', False))
+OCR_JSON_SETTINGS = json.loads(os.getenv('OCR_JSON_SETTINGS', ''))
 POLL_NEW_FILE_SECONDS = os.getenv('OCR_POLL_NEW_FILE_SECONDS', 1)
 LOGLEVEL = os.environ.get('OCR_LOGLEVEL', 'INFO').upper()
 PATTERNS = ['*.pdf']
@@ -87,7 +90,10 @@ def execute_ocrmypdf(file_path):
         return
     log.info(f'Attempting to OCRmyPDF to: {output_path}')
     exit_code = ocrmypdf.ocr(
-        input_file=file_path, output_file=output_path, deskew=DESKEW
+        input_file=file_path,
+        output_file=output_path,
+        deskew=DESKEW,
+        **OCR_JSON_SETTINGS,
     )
     if exit_code == 0 and ON_SUCCESS_DELETE:
         log.info(f'OCR is done. Deleting: {file_path}')
@@ -118,9 +124,14 @@ def main():
         f"OUTPUT_DIRECTORY_YEAR_MONTH: {OUTPUT_DIRECTORY_YEAR_MONTH}\n"
         f"ON_SUCCESS_DELETE: {ON_SUCCESS_DELETE}\n"
         f"DESKEW: {DESKEW}\n"
+        f"ARGS: {OCR_JSON_SETTINGS}\n"
         f"POLL_NEW_FILE_SECONDS: {POLL_NEW_FILE_SECONDS}\n"
         f"LOGLEVEL: {LOGLEVEL}\n"
     )
+
+    if 'input_file' in OCR_JSON_SETTINGS or 'output_file' in OCR_JSON_SETTINGS:
+        log.error('OCR_JSON_SETTINGS should not specify input file or output file')
+        sys.exit(1)
 
     handler = HandleObserverEvent(patterns=PATTERNS)
     observer = Observer()

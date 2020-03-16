@@ -20,6 +20,8 @@ import argparse
 from ._version import PROGRAM_NAME as _PROGRAM_NAME
 from ._version import __version__ as _VERSION
 
+__all__ = ['parser']
+
 
 def numeric(basetype, min_=None, max_=None):
     """Validator for numeric params"""
