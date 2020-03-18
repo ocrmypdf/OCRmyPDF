@@ -331,7 +331,7 @@ def test_tesseract_crash_autorotate(spoof_tesseract_crash, resources, no_outpdf)
     )
     assert p.returncode == ExitCode.child_process_error
     assert not os.path.exists(no_outpdf)
-    assert "ERROR" in err
+    assert "uncaught exception" in err
     print(out)
     print(err)
 

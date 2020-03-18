@@ -26,7 +26,7 @@ class PageNumberFilter(logging.Filter):
     def filter(self, record):
         pageno = getattr(record, 'pageno', None)
         if pageno is not None:
-            record.pageno = f' [{pageno:5d}]'
+            record.pageno = f'{pageno:5d} '
         else:
             record.pageno = ''
         return True

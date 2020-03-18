@@ -95,7 +95,7 @@ def configure_logging(
     if verbosity >= 2:
         fmt = '%(levelname)7s %(name)s -%(pageno)s %(message)s'
     else:
-        fmt = '%(levelname)7s -%(pageno)s %(message)s'
+        fmt = '%(pageno)s%(message)s'
 
     use_colors = progress_bar_friendly
     if not coloredlogs:
