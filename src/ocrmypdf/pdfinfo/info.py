@@ -18,7 +18,7 @@
 
 import logging
 import re
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 from decimal import Decimal
 from enum import Enum
 from math import hypot, isclose
@@ -98,7 +98,7 @@ XobjectSettings = namedtuple('XobjectSettings', ['name', 'shorthand', 'stack_dep
 InlineSettings = namedtuple('InlineSettings', ['iimage', 'shorthand', 'stack_depth'])
 
 ContentsInfo = namedtuple(
-    'ContentsInfo', ['xobject_settings', 'inline_images', 'found_vector']
+    'ContentsInfo', ['xobject_settings', 'inline_images', 'found_vector', 'name_index']
 )
 
 TextboxInfo = namedtuple('TextboxInfo', ['bbox', 'is_visible', 'is_corrupt'])
@@ -151,6 +151,7 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     ctm = PdfMatrix(initial_shorthand)
     xobject_settings = []
     inline_images = []
+    name_index = defaultdict(lambda: [])
     found_vector = False
     vector_ops = set('S s f F f* B B* b b*'.split())
     image_ops = set('BI ID EI q Q Do cm'.split())
@@ -185,6 +186,7 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
                 name=image_name, shorthand=ctm.shorthand, stack_depth=len(stack)
             )
             xobject_settings.append(settings)
+            name_index[image_name].append(settings)
         elif operator == 'INLINE IMAGE':  # BI/ID/EI are grouped into this
             iimage = operands[0]
             inline = InlineSettings(
@@ -198,6 +200,7 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
         xobject_settings=xobject_settings,
         inline_images=inline_images,
         found_vector=found_vector,
+        name_index=name_index,
     )
 
 
@@ -419,13 +422,9 @@ def _find_regular_images(container, contentsinfo):
     """
 
     for pdfimage, xobj in _image_xobjects(container):
-
-        # For each image that is drawn on this, check if we drawing the
-        # current image - yes this is O(n^2), but n == 1 almost always
-        for draw in contentsinfo.xobject_settings:
-            if draw.name != xobj:
-                continue
-
+        if xobj not in contentsinfo.name_index:
+            continue
+        for draw in contentsinfo.name_index[xobj]:
             if draw.stack_depth == 0 and _is_unit_square(draw.shorthand):
                 # At least one PDF in the wild (and test suite) draws an image
                 # when the graphics stack depth is 0, meaning that the image
