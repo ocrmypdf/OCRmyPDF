@@ -245,6 +245,10 @@ def exec_concurrent(context):
     if context.options.tesseract_env is None:
         context.options.tesseract_env = os.environ.copy()
     context.options.tesseract_env.setdefault('OMP_THREAD_LIMIT', str(tess_threads))
+    try:
+        tess_threads = int(context.options.tesseract_env['OMP_THREAD_LIMIT'])
+    except ValueError:  # OMP_THREAD_LIMIT initialized to non-numeric
+        context.log.error("Environment variable OMP_THREAD_LIMIT is not numeric")
     if tess_threads > 1:
         context.log.info("Using Tesseract OpenMP thread limit %d", tess_threads)
 
