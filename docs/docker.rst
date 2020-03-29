@@ -90,10 +90,8 @@ Docker volume:
 
 .. code-block:: bash
 
-   docker run --rm -v $(pwd):/data ocrmypdf /data/input.pdf /data/output.pdf
-
-(However, when done this way, ``output.pdf`` may be owned by the root
-user.)
+   alias docker_ocrmypdf='docker run --rm  -i --user "$(id -u):$(id -g)" --workdir /data -v "$PWD:/data" ocrmypdf'
+   docker_ocrmypdf /data/input.pdf /data/output.pdf
 
 .. _docker-lang-packs:
 
