@@ -14,6 +14,22 @@ Note that it is licensed under GPLv3, so scripts that
 licensed under GPLv3.
 
 
+v9.7.0
+======
+
+-  Fixed an error in watcher.py if ``OCR_JSON_SETTINGS`` was not defined.
+-  Ghostscript 9.51 is now blacklisted, due to numerous problems with this version.
+-  Added a workaround for a problem with "txtwrite" in Ghostscript 9.52.
+-  Fixed an issue where the incorrect number of threads used was shown when
+   ``OMP_THREAD_LIMIT`` was manipulated.
+-  Removed a possible performance bottlenecks for files that use hundreds to
+   thousands of images on the same page.
+-  Documentation improvements.
+-  Optimization will now be applied to some monochrome images that have a color
+   profile defined instead of only black and white.
+-  ICC profiles are consulted when determining the simplified colorspace of an
+   image.
+
 v9.6.1
 ======
 
