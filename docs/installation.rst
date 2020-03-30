@@ -574,7 +574,7 @@ Installing on Windows Subsystem for Linux
 
 .. code-block:: powershell
 
-    wsl sudo ln -s  /home/user/.local/bin/ocrmypdf /usr/local/bin/ocrmypdf
+    wsl sudo ln -s  /home/$USER/.local/bin/ocrmypdf /usr/local/bin/ocrmypdf
 
 Then confirm that the expected version from PyPI (|latest|) is installed:
 
