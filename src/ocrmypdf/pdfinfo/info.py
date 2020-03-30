@@ -30,10 +30,10 @@ import pikepdf
 from pikepdf import PdfMatrix
 from tqdm import tqdm
 
-from ocrmypdf.exceptions import EncryptedPdfError, MissingDependencyError
-
-from . import ghosttext
-from .layout import get_page_analysis, get_text_boxes
+from ocrmypdf.exceptions import EncryptedPdfError
+from ocrmypdf.exec import ghostscript
+from ocrmypdf.pdfinfo import ghosttext
+from ocrmypdf.pdfinfo.layout import get_page_analysis, get_text_boxes
 
 logger = logging.getLogger()
 
@@ -618,25 +618,28 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
 
 def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None, progbar=False):
     pdf = pikepdf.open(infile)  # Do not close in this function
-    if pdf.is_encrypted:
-        pdf.close()
-        raise EncryptedPdfError()  # Triggered by encryption with empty passwd
-    if detailed_analysis:
-        pages_xml = None
-    else:
-        pages_xml = ghosttext.extract_text_xml(infile, pdf, pageno=None, log=log)
+    try:
+        if pdf.is_encrypted:
+            raise EncryptedPdfError()  # Triggered by encryption with empty passwd
+        if detailed_analysis:
+            pages_xml = None
+        else:
+            pages_xml = ghosttext.extract_text_xml(infile, pdf, pageno=None, log=log)
 
-    pages = []
-    for n, _ in tqdm(
-        enumerate(pdf.pages),
-        total=len(pdf.pages),
-        desc="Scan",
-        unit='page',
-        disable=not progbar,
-    ):
-        page_xml = pages_xml[n] if pages_xml else None
-        page = PageInfo(pdf, n, infile, page_xml, detailed_analysis)
-        pages.append(page)
+        pages = []
+        for n, _ in tqdm(
+            enumerate(pdf.pages),
+            total=len(pdf.pages),
+            desc="Scan",
+            unit='page',
+            disable=not progbar,
+        ):
+            page_xml = pages_xml[n] if pages_xml else None
+            page = PageInfo(pdf, n, infile, page_xml, detailed_analysis)
+            pages.append(page)
+    except Exception:
+        pdf.close()
+        raise
 
     return pages, pdf
 
@@ -757,6 +760,8 @@ class PdfInfo:
 
     def __init__(self, infile, detailed_page_analysis=False, log=logger, progbar=False):
         self._infile = infile
+        if ghostscript.version() in ('9.52',):
+            detailed_page_analysis = True  # txtwrite doesn't work in these versions
         self._pages, pdf = _pdf_get_all_pageinfo(
             infile, detailed_page_analysis, log=log, progbar=progbar
         )

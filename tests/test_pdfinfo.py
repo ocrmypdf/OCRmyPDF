@@ -26,6 +26,7 @@ from PIL import Image
 from reportlab.pdfgen.canvas import Canvas
 
 from ocrmypdf import pdfinfo
+from ocrmypdf.exec import ghostscript
 from ocrmypdf.pdfinfo import Colorspace, Encoding
 
 # pylint: disable=protected-access
@@ -182,6 +183,9 @@ def test_ocr_detection(resources):
 
 @pytest.mark.parametrize(
     'testfile', ('truetype_font_nomapping.pdf', 'type3_font_nomapping.pdf')
+)
+@pytest.mark.xfail(
+    ghostscript.version() in ('9.52',), reason="gs 9.52 txtwrite doesn't work"
 )
 def test_corrupt_font_detection(resources, testfile):
     filename = resources / testfile
