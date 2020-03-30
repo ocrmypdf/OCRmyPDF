@@ -361,10 +361,11 @@ def run_pipeline(options, api=False):
         options.jobs = available_cpu_count()
 
     work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
+    debug_log_handler = None
     if (options.keep_temporary_files or options.verbose >= 1) and not os.environ.get(
         'PYTEST_CURRENT_TEST', ''
     ):
-        configure_debug_logging(Path(work_folder) / "debug.log")
+        debug_log_handler = configure_debug_logging(Path(work_folder) / "debug.log")
 
     try:
         check_requested_output_file(options)
@@ -432,6 +433,12 @@ def run_pipeline(options, api=False):
         log.exception("An exception occurred while executing the pipeline")
         return ExitCode.other_error
     finally:
+        if debug_log_handler:
+            try:
+                debug_log_handler.close()
+                log.removeHandler(debug_log_handler)
+            except EnvironmentError as e:
+                print(e, file=sys.stderr)
         cleanup_working_files(work_folder, options)
 
     return ExitCode.ok
