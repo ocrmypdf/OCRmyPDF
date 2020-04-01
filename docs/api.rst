@@ -51,6 +51,14 @@ Forking a child process to call ``ocrmypdf.ocr()`` is suggested. That
 way your application will survive and remain interactive even if
 OCRmyPDF does not.
 
+.. warning::
+
+    On Windows, the script that calls ``ocrmypdf.ocr()`` must be protected
+    by an "ifmain" guard (``if __name__ == '__main__'``) or you must use
+    ``ocrmypdf.ocr(...use_threads=True)``. If you do not take at least one
+    of these steps, Windows fork semantics will prevent OCRmyPDF from working
+    correct.
+
 Logging
 -------
 
