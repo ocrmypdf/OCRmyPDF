@@ -597,10 +597,10 @@ def render_hocr_page(hocr, page_context):
     hocrtransform = HocrTransform(hocr, dpi)
     hocrtransform.to_pdf(
         output_file,
-        imageFileName=None,
-        showBoundingboxes=False,
-        invisibleText=True,
-        interwordSpaces=True,
+        image_filename=None,
+        show_bounding_boxes=False,
+        invisible_text=True,
+        interword_spaces=True,
     )
     return output_file
 

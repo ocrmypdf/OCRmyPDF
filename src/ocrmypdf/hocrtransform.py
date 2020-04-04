@@ -64,9 +64,9 @@ class HocrTransform:
         {'ﬀ': 'ff', 'ﬃ': 'f‌f‌i', 'ﬄ': 'f‌f‌l', 'ﬁ': 'fi', 'ﬂ': 'fl'}
     )
 
-    def __init__(self, hocrFileName, dpi):
+    def __init__(self, hocr_filename: str, dpi: float):
         self.dpi = dpi
-        self.hocr = ElementTree.parse(hocrFileName)
+        self.hocr = ElementTree.parse(hocr_filename)
 
         # if the hOCR file has a namespace, ElementTree requires its use to
         # find elements
@@ -114,12 +114,12 @@ class HocrTransform:
         return text
 
     @classmethod
-    def element_coordinates(cls, element):
+    def element_coordinates(cls, element) -> Rect:
         """
         Returns a tuple containing the coordinates of the bounding box around
         an element
         """
-        out = (0, 0, 0, 0)
+        out = Rect._make(0 for _ in range(4))
         if 'title' in element.attrib:
             matches = cls.box_pattern.search(element.attrib['title'])
             if matches:
@@ -136,7 +136,7 @@ class HocrTransform:
             matches = cls.baseline_pattern.search(element.attrib['title'])
             if matches:
                 return float(matches.group(1)), int(matches.group(2))
-        return (0, 0)
+        return (0.0, 0.0)
 
     def pt_from_pixel(self, pxl):
         """
@@ -145,7 +145,7 @@ class HocrTransform:
         return Rect._make((c / self.dpi * inch) for c in pxl)
 
     @classmethod
-    def replace_unsupported_chars(cls, s):
+    def replace_unsupported_chars(cls, s: str):
         """
         Given an input string, returns the corresponding string that:
         - is available in the helvetica facetype
@@ -155,12 +155,12 @@ class HocrTransform:
 
     def to_pdf(
         self,
-        outFileName,
-        imageFileName=None,
-        showBoundingboxes=False,
-        fontname="Helvetica",
-        invisibleText=False,
-        interwordSpaces=False,
+        out_filename: str,
+        image_filename: str = None,
+        show_bounding_boxes: bool = False,
+        fontname: str = "Helvetica",
+        invisible_text: bool = False,
+        interword_spaces: bool = False,
     ):
         """
         Creates a PDF file with an image superimposed on top of the text.
@@ -172,7 +172,9 @@ class HocrTransform:
         """
         # create the PDF file
         # page size in points (1/72 in.)
-        pdf = Canvas(outFileName, pagesize=(self.width, self.height), pageCompression=1)
+        pdf = Canvas(
+            out_filename, pagesize=(self.width, self.height), pageCompression=1
+        )
 
         # draw bounding box for each paragraph
         # light blue for bounding box of paragraph
@@ -190,7 +192,7 @@ class HocrTransform:
             pt = self.pt_from_pixel(pxl_coords)
 
             # draw the bbox border
-            if showBoundingboxes:  # pragma: no cover
+            if show_bounding_boxes:  # pragma: no cover
                 pdf.rect(
                     pt.x1, self.height - pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1, fill=1
                 )
@@ -205,9 +207,9 @@ class HocrTransform:
                 line,
                 "ocrx_word",
                 fontname,
-                invisibleText,
-                interwordSpaces,
-                showBoundingboxes,
+                invisible_text,
+                interword_spaces,
+                show_bounding_boxes,
             )
 
         if not found_lines:
@@ -218,13 +220,13 @@ class HocrTransform:
                 root,
                 "ocrx_word",
                 fontname,
-                invisibleText,
-                interwordSpaces,
-                showBoundingboxes,
+                invisible_text,
+                interword_spaces,
+                show_bounding_boxes,
             )
         # put the image on the page, scaled to fill the page
-        if imageFileName is not None:
-            pdf.drawImage(imageFileName, 0, 0, width=self.width, height=self.height)
+        if image_filename is not None:
+            pdf.drawImage(image_filename, 0, 0, width=self.width, height=self.height)
 
         # finish up the page and save it
         pdf.showPage()
@@ -236,13 +238,13 @@ class HocrTransform:
 
     def _do_line(
         self,
-        pdf,
+        pdf: Canvas,
         line,
-        elemclass,
-        fontname,
-        invisibleText,
-        interwordSpaces,
-        showBoundingboxes,
+        elemclass: str,
+        fontname: str,
+        invisible_text: bool,
+        interword_spaces: bool,
+        show_bounding_boxes: bool,
     ):
         pxl_line_coords = self.element_coordinates(line)
         line_box = self.pt_from_pixel(pxl_line_coords)
@@ -262,14 +264,14 @@ class HocrTransform:
         # on a sloped baseline and the edge of the bounding box.
         fontsize = (line_height - abs(intercept)) / cos_a
         text.setFont(fontname, fontsize)
-        if invisibleText:
+        if invisible_text:
             text.setTextRenderMode(3)  # Invisible (indicates OCR text)
 
         # Intercept is normally negative, so this places it above the bottom
         # of the line box
         baseline_y2 = self.height - (line_box.y2 + intercept)
 
-        if showBoundingboxes:  # pragma: no cover
+        if show_bounding_boxes:  # pragma: no cover
             # draw the baseline in magenta, dashed
             pdf.setDash()
             pdf.setStrokeColorRGB(0.95, 0.65, 0.95)
@@ -298,7 +300,7 @@ class HocrTransform:
 
             pxl_coords = self.element_coordinates(elem)
             box = self.pt_from_pixel(pxl_coords)
-            if interwordSpaces:
+            if interword_spaces:
                 # if  `--interword-spaces` is true, append a space
                 # to the end of each text element to allow simpler PDF viewers
                 # such as PDF.js to better recognize words in search and copy
@@ -318,7 +320,7 @@ class HocrTransform:
             font_width = pdf.stringWidth(elemtxt, fontname, fontsize)
 
             # draw the bbox border
-            if showBoundingboxes:  # pragma: no cover
+            if show_bounding_boxes:  # pragma: no cover
                 pdf.rect(
                     box.x1, self.height - line_box.y2, box_width, line_height, fill=0
                 )
@@ -385,5 +387,5 @@ if __name__ == "__main__":
         args.outputfile,
         args.image,
         args.boundingboxes,
-        interwordSpaces=args.interword_spaces,
+        interword_spaces=args.interword_spaces,
     )
