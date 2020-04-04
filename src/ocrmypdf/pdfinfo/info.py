@@ -22,7 +22,7 @@ from collections import defaultdict, namedtuple
 from decimal import Decimal
 from enum import Enum
 from math import hypot, isclose
-from os import fspath
+from os import PathLike, fspath
 from pathlib import Path
 from warnings import warn
 
@@ -40,7 +40,7 @@ logger = logging.getLogger()
 Colorspace = Enum('Colorspace', 'gray rgb cmyk lab icc index sep devn pattern jpeg2000')
 
 Encoding = Enum(
-    'Encoding', 'ccitt jpeg jpeg2000 jbig2 asciihex ascii85 lzw flate ' + 'runlength'
+    'Encoding', 'ccitt jpeg jpeg2000 jbig2 asciihex ascii85 lzw flate runlength'
 )
 
 FRIENDLY_COLORSPACE = {
@@ -558,7 +558,7 @@ def simplify_textboxes(miner, textbox_getter):
         yield TextboxInfo(box.bbox, visible, corrupt)
 
 
-def _pdf_get_pageinfo(pdf, pageno: int, infile, xmltext):
+def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, xmltext: str):
     pageinfo = {}
     pageinfo['pageno'] = pageno
     pageinfo['images'] = []

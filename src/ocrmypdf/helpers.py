@@ -28,7 +28,7 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 
-def safe_symlink(input_file, soft_link_name, *args, **kwargs):
+def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike, *args, **kwargs):
     """
     Helper function: relinks soft symbolic link if necessary
     """
@@ -76,12 +76,12 @@ def is_iterable_notstr(thing):
     return isinstance(thing, Iterable) and not isinstance(thing, str)
 
 
-def monotonic(L):
+def monotonic(L: Iterable):
     """Does list increase monotonically?"""
     return all(b > a for a, b in zip(L, L[1:]))
 
 
-def page_number(input_file):
+def page_number(input_file: os.PathLike):
     """Get one-based page number implied by filename (000002.pdf -> 2)"""
     return int(os.path.basename(os.fspath(input_file))[0:6])
 
@@ -97,7 +97,7 @@ def available_cpu_count():
     return 1
 
 
-def is_file_writable(test_file):
+def is_file_writable(test_file: os.PathLike):
     """Intentionally racy test if target is writable.
 
     We intend to write to the output file if and only if we succeed and

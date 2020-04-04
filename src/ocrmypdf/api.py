@@ -67,7 +67,11 @@ class Verbosity(IntEnum):
     debug_all = 2  #: More detailed debugging from ocrmypdf and dependent modules
 
 
-def configure_logging(verbosity, progress_bar_friendly=True, manage_root_logger=False):
+def configure_logging(
+    verbosity: Verbosity,
+    progress_bar_friendly: bool = True,
+    manage_root_logger: bool = False,
+):
     """Set up logging.
 
     Library users may wish to use this function if they want their log output to be
@@ -128,7 +132,7 @@ def configure_logging(verbosity, progress_bar_friendly=True, manage_root_logger=
     return log
 
 
-def create_options(*, input_file, output_file, **kwargs):
+def create_options(*, input_file: os.PathLike, output_file: os.PathLike, **kwargs):
     cmdline = []
     deferred = []
 
