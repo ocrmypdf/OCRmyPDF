@@ -17,11 +17,13 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import os
 import re
 from collections import defaultdict, namedtuple
 from decimal import Decimal
 from enum import Enum
 from math import hypot, isclose
+from multiprocessing import Pool
 from os import PathLike, fspath
 from pathlib import Path
 from warnings import warn
@@ -616,6 +618,77 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, xmltext: str):
     return pageinfo
 
 
+worker_pdf = None
+
+
+def _pdf_pageinfo_sync(args):
+    global worker_pdf
+
+    infile, pageno, xmltext, detailed_analysis = args
+    page = PageInfo(worker_pdf, pageno, infile, xmltext, detailed_analysis)
+    return page
+
+
+def _pdf_pageinfo_sync_init(infile):
+    global worker_pdf
+    worker_pdf = pikepdf.open(infile)
+
+
+def _pdf_pageinfo_concurrent(pdf, infile, pages_xml, detailed_analysis, progbar):
+    pages = [None] * len(pdf.pages)
+    with tqdm(
+        total=len(pdf.pages), desc="Scan", unit='page', disable=not progbar
+    ) as pbar:
+        pool = Pool(
+            processes=4,  # max_workers,
+            initializer=_pdf_pageinfo_sync_init,
+            initargs=(infile,),
+        )
+        contexts = (
+            (infile, n, pages_xml[n] if pages_xml else None, detailed_analysis)
+            for n in range(len(pdf.pages))
+        )
+        try:
+            results = pool.imap_unordered(_pdf_pageinfo_sync, contexts, chunksize=1)
+            while True:
+                try:
+                    # page = results.next()
+                    page = next(results)
+                    pages[page.pageno] = page
+                    pbar.update()
+                except StopIteration:
+                    break
+        except KeyboardInterrupt:
+            pool.terminate()
+            raise
+        except Exception:
+            if not os.environ.get("PYTEST_CURRENT_TEST", ""):
+                # Unless inside pytest, exit immediately because no one wants
+                # to wait for child processes to finalize results that will be
+                # thrown away. Inside pytest, we want child processes to exit
+                # cleanly so that they output an error messages or coverage data
+                # we need from them.
+                pool.terminate()
+            raise
+        finally:
+            # Terminate log listener
+            # log_queue.put_nowait(None)
+            pool.close()
+            pool.join()
+
+    # for n, _ in tqdm(
+    #     enumerate(pdf.pages),
+    #     total=len(pdf.pages),
+    #     desc="Scan",
+    #     unit='page',
+    #     disable=not progbar,
+    # ):
+    #     page_xml = pages_xml[n] if pages_xml else None
+    #     page = PageInfo(pdf, n, infile, page_xml, detailed_analysis)
+    #     pages.append(page)
+    return pages
+
+
 def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None, progbar=False):
     pdf = pikepdf.open(infile)  # Do not close in this function
     try:
@@ -626,17 +699,9 @@ def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None, progbar=Fal
         else:
             pages_xml = ghosttext.extract_text_xml(infile, pdf, pageno=None, log=log)
 
-        pages = []
-        for n, _ in tqdm(
-            enumerate(pdf.pages),
-            total=len(pdf.pages),
-            desc="Scan",
-            unit='page',
-            disable=not progbar,
-        ):
-            page_xml = pages_xml[n] if pages_xml else None
-            page = PageInfo(pdf, n, infile, page_xml, detailed_analysis)
-            pages.append(page)
+        pages = _pdf_pageinfo_concurrent(
+            pdf, infile, pages_xml, detailed_analysis, progbar
+        )
     except Exception:
         pdf.close()
         raise
