@@ -25,6 +25,7 @@ from pathlib import Path
 import pikepdf
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer
+from watchdog.observers.polling import PollingObserver
 
 import ocrmypdf
 
@@ -37,7 +38,8 @@ ON_SUCCESS_DELETE = bool(os.getenv('OCR_ON_SUCCESS_DELETE', False))
 DESKEW = bool(os.getenv('OCR_DESKEW', False))
 OCR_JSON_SETTINGS = json.loads(os.getenv('OCR_JSON_SETTINGS', '{}'))
 POLL_NEW_FILE_SECONDS = os.getenv('OCR_POLL_NEW_FILE_SECONDS', 1)
-LOGLEVEL = os.environ.get('OCR_LOGLEVEL', 'INFO').upper()
+USE_POLLING = bool(os.getenv('OCR_USE_POLLING', False))
+LOGLEVEL = os.getenv('OCR_LOGLEVEL', 'INFO').upper()
 PATTERNS = ['*.pdf']
 
 log = logging.getLogger('ocrmypdf-watcher')
@@ -112,6 +114,7 @@ def main():
     ocrmypdf.configure_logging(
         verbosity=ocrmypdf.Verbosity.default, manage_root_logger=True
     )
+    log.setLevel(LOGLEVEL)
     log.info(
         f"Starting OCRmyPDF watcher with config:\n"
         f"Input Directory: {INPUT_DIRECTORY}\n"
@@ -126,6 +129,7 @@ def main():
         f"DESKEW: {DESKEW}\n"
         f"ARGS: {OCR_JSON_SETTINGS}\n"
         f"POLL_NEW_FILE_SECONDS: {POLL_NEW_FILE_SECONDS}\n"
+        f"USE_POLLING: {USE_POLLING}\n"
         f"LOGLEVEL: {LOGLEVEL}\n"
     )
 
@@ -134,7 +138,10 @@ def main():
         sys.exit(1)
 
     handler = HandleObserverEvent(patterns=PATTERNS)
-    observer = Observer()
+    if USE_POLLING:
+        observer = PollingObserver()
+    else:
+        observer = Observer()
     observer.schedule(handler, INPUT_DIRECTORY, recursive=True)
     observer.start()
     try:
