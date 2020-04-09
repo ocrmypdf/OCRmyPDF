@@ -137,11 +137,12 @@ Installing the latest version on Ubuntu 18.04 LTS
 -------------------------------------------------
 
 Ubuntu 18.04 includes ocrmypdf 6.1.2 - you can install that with ``apt``, but
-it is quite old now. To install a more recent version, first install several
-system dependencies:
+it is quite old now. To install a more recent version, uninstall the old version
+of ocrmypdf, and install the following dependencies:
 
 .. code-block:: bash
 
+    sudo apt-get -y remove ocrmypdf
     sudo apt-get -y update
     sudo apt-get -y install \
         ghostscript \
