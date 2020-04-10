@@ -29,6 +29,8 @@ from subprocess import run as subprocess_run
 
 from ..exceptions import ExitCode, MissingDependencyError
 
+from packaging import version
+
 log = logging.getLogger(__name__)
 
 
@@ -270,7 +272,7 @@ def check_external_program(
             raise MissingDependencyError()
         return
 
-    if found_version < need_version:
+    if version.parse(found_version) < version.parse(need_version):
         _error_old_version(program, package, need_version, found_version, required_for)
         if not recommended:
             raise MissingDependencyError()
