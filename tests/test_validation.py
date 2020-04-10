@@ -176,3 +176,31 @@ def test_language_warning(caplog):
         vd.check_options_languages(opts)
         assert opts.language == ['eng']
         assert 'assuming --language' in caplog.text
+
+
+def test_version_comparison():
+    vd.check_external_program(
+        program="dummy_basic",
+        package="dummy",
+        version_checker=lambda: '9.0',
+        need_version='8.0.2',
+    )
+    vd.check_external_program(
+        program="dummy_doubledigit",
+        package="dummy",
+        version_checker=lambda: '10.0',
+        need_version='8.0.2',
+    )
+    vd.check_external_program(
+        program="tesseract",
+        package="tesseract",
+        version_checker=lambda: '4.0.0-beta.1',
+        need_version='4.0.0',
+    )
+    with pytest.raises(MissingDependencyError):
+        vd.check_external_program(
+            program="dummy_fails",
+            package="dummy",
+            version_checker=lambda: '1.0',
+            need_version='2.0',
+        )

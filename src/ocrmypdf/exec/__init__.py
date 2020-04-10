@@ -23,6 +23,7 @@ import re
 import shutil
 import sys
 from collections.abc import Mapping
+from distutils.version import LooseVersion
 from functools import lru_cache
 from subprocess import PIPE, STDOUT, CalledProcessError
 from subprocess import run as subprocess_run
@@ -270,7 +271,7 @@ def check_external_program(
             raise MissingDependencyError()
         return
 
-    if found_version < need_version:
+    if LooseVersion(found_version) < LooseVersion(need_version):
         _error_old_version(program, package, need_version, found_version, required_for)
         if not recommended:
             raise MissingDependencyError()
