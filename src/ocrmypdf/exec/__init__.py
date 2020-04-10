@@ -271,6 +271,14 @@ def check_external_program(
             raise MissingDependencyError()
         return
 
+    def remove_leading_v(s):
+        if s.startswith('v'):
+            return s[1:]
+        return s
+
+    found_version = remove_leading_v(found_version)
+    need_version = remove_leading_v(need_version)
+
     if LooseVersion(found_version) < LooseVersion(need_version):
         _error_old_version(program, package, need_version, found_version, required_for)
         if not recommended:

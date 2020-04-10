@@ -197,6 +197,12 @@ def test_version_comparison():
         version_checker=lambda: '4.0.0-beta.1',
         need_version='4.0.0',
     )
+    vd.check_external_program(
+        program="tesseract",
+        package="tesseract",
+        version_checker=lambda: 'v5.0.0-alpha.20200201',
+        need_version='4.0.0',
+    )
     with pytest.raises(MissingDependencyError):
         vd.check_external_program(
             program="dummy_fails",
