@@ -14,6 +14,13 @@ Note that it is licensed under GPLv3, so scripts that
 licensed under GPLv3.
 
 
+v9.7.1
+======
+
+-  Fixed version check failing when used with qpdf 10.0.0.
+-  Added some missing type annotations.
+-  Updated documentation to warn about need for "ifmain" guard and Windows.
+
 v9.7.0
 ======
 
