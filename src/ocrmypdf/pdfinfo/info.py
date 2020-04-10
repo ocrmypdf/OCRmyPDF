@@ -624,14 +624,13 @@ worker_pdf = None
 def _pdf_pageinfo_sync(args):
     global worker_pdf
 
-    infile, pageno, xmltext, detailed_analysis = args
+    pageno, infile, xmltext, detailed_analysis = args
     page = PageInfo(worker_pdf, pageno, infile, xmltext, detailed_analysis)
     return page
 
 
-def _pdf_pageinfo_sync_init(infile):
-    global worker_pdf
-    worker_pdf = pikepdf.open(infile)
+def _pdf_pageinfo_sync_init():
+    pass
 
 
 def _pdf_pageinfo_concurrent(pdf, infile, pages_xml, detailed_analysis, progbar):
@@ -639,13 +638,15 @@ def _pdf_pageinfo_concurrent(pdf, infile, pages_xml, detailed_analysis, progbar)
     with tqdm(
         total=len(pdf.pages), desc="Scan", unit='page', disable=not progbar
     ) as pbar:
+        global worker_pdf
+        worker_pdf = pdf
         pool = Pool(
             processes=4,  # max_workers,
             initializer=_pdf_pageinfo_sync_init,
-            initargs=(infile,),
+            initargs=tuple(),
         )
         contexts = (
-            (infile, n, pages_xml[n] if pages_xml else None, detailed_analysis)
+            (n, infile, pages_xml[n] if pages_xml else None, detailed_analysis)
             for n in range(len(pdf.pages))
         )
         try:
