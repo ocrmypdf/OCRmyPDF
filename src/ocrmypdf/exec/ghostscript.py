@@ -83,55 +83,6 @@ def _gs_error_reported(stream) -> bool:
     return re.search(r'error', stream, flags=re.IGNORECASE)
 
 
-def extract_text(input_file, pageno=1):
-    """Use the txtwrite device to get text layout information out
-
-    For details on options of -dTextFormat see
-    https://www.ghostscript.com/doc/current/VectorDevices.htm#TXT
-
-    Format is like
-    <page>
-    <line>
-    <span bbox="left top right bottom" font="..." size="...">
-    <char bbox="...." c="X"/>
-
-    :param pageno: number of page to extract, or all pages if None
-    :return: XML-ish text representation in bytes
-    """
-
-    if pageno is not None:
-        pages = ['-dFirstPage=%i' % pageno, '-dLastPage=%i' % pageno]
-    else:
-        pages = []
-
-    # Note due to bug https://bugs.ghostscript.com/show_bug.cgi?id=701971
-    # Ghostscript <= 9.50 will truncate output unless we write to stdout, so
-    # don't write to a file.
-    args_gs = (
-        [
-            GS,
-            '-dQUIET',
-            '-dSAFER',
-            '-dBATCH',
-            '-dNOPAUSE',
-            '-sDEVICE=txtwrite',
-            '-dTextFormat=0',
-        ]
-        + pages
-        + ['-o', '-', fspath(input_file), "-sstdout=%stderr"]
-    )
-
-    try:
-        p = run(args_gs, stdout=PIPE, stderr=PIPE, check=True)
-    except CalledProcessError as e:
-        raise SubprocessOutputError(
-            'Ghostscript text extraction failed\n%s\n%s'
-            % (input_file, e.stderr.decode(errors='replace'))
-        )
-
-    return p.stdout
-
-
 def rasterize_pdf(
     input_file: os.PathLike,
     output_file: os.PathLike,
