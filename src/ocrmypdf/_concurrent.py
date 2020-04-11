@@ -53,6 +53,27 @@ def log_listener(queue):
             traceback.print_exc(file=sys.stderr)
 
 
+def process_init(queue, userfn, *userargs):
+    """Initialize a process pool worker"""
+
+    # Ignore SIGINT (our parent process will kill us gracefully)
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+    # Reconfigure the root logger for this process to send all messages to a queue
+    h = logging.handlers.QueueHandler(queue)
+    root = logging.getLogger()
+    root.handlers = []
+    root.addHandler(h)
+
+    if userfn:
+        userfn(*userargs)
+
+
+def thread_init(_queue, userfn, *userargs):
+    if userfn:
+        userfn(*userargs)
+
+
 def exec_progress_pool(
     *,
     use_threads,
@@ -67,17 +88,22 @@ def exec_progress_pool(
     log_queue = multiprocessing.Queue(-1)
     listener = threading.Thread(target=log_listener, args=(log_queue,))
 
+    if not task_initargs:
+        task_initargs = tuple()
+
     if use_threads:
         pool_class = ThreadPool
+        initializer = thread_init
     else:
         pool_class = ProcessPool
+        initializer = process_init
     listener.start()
 
     with tqdm(**tqdm_kwargs) as pbar:
         pool = pool_class(
             processes=max_workers,
-            initializer=task_initializer,
-            initargs=(log_queue, *task_initargs),
+            initializer=initializer,
+            initargs=(log_queue, task_initializer, *task_initargs),
         )
         try:
             results = pool.imap_unordered(task, task_arguments)

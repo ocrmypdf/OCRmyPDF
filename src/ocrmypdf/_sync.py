@@ -199,51 +199,11 @@ def post_process(pdf_file, context):
     return optimize_pdf(pdf_out, context)
 
 
-def worker_init(queue, max_pixels):
-    """Initialize a process pool worker"""
-
-    # Ignore SIGINT (our parent process will kill us gracefully)
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-    # Reconfigure the root logger for this process to send all messages to a queue
-    h = logging.handlers.QueueHandler(queue)
-    root = logging.getLogger()
-    root.handlers = []
-    root.addHandler(h)
-
+def worker_init(max_pixels):
     # In Windows, child process will not inherit our change to this value in
-    # the parent process, so ensure workers get it set
+    # the parent process, so ensure workers get it set. Not needed when running
+    # threaded, but harmless to set again.
     PIL.Image.MAX_IMAGE_PIXELS = max_pixels
-
-
-def worker_thread_init(_queue, max_pixels):
-    # This is probably not needed since threads should all see the same memory,
-    # but done for consistency.
-    PIL.Image.MAX_IMAGE_PIXELS = max_pixels
-
-
-def log_listener(queue):
-    """Listen to the worker processes and forward the messages to logging
-
-    For simplicity this is a thread rather than a process. Only one process
-    should actually write to sys.stderr or whatever we're using, so if this is
-    made into a process the main application needs to be directed to it.
-
-    See https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
-    """
-
-    while True:
-        try:
-            record = queue.get()
-            if record is None:
-                break
-            logger = logging.getLogger(record.name)
-            logger.handle(record)
-        except Exception:
-            import traceback
-
-            print("Logging problem", file=sys.stderr)
-            traceback.print_exc(file=sys.stderr)
 
 
 def exec_concurrent(context):
@@ -273,11 +233,6 @@ def exec_concurrent(context):
     if tess_threads > 1:
         log.info("Using Tesseract OpenMP thread limit %d", tess_threads)
 
-    if context.options.use_threads:
-        initializer = worker_thread_init
-    else:
-        initializer = worker_init
-
     sidecars = [None] * len(context.pdfinfo)
     ocrgraft = OcrGrafter(context)
 
@@ -297,7 +252,7 @@ def exec_concurrent(context):
             unit_scale=0.5,
             disable=not context.options.progress_bar,
         ),
-        task_initializer=initializer,
+        task_initializer=worker_init,
         task_initargs=(PIL.Image.MAX_IMAGE_PIXELS,),
         task=exec_page_sync,
         task_arguments=context.get_page_contexts(),
