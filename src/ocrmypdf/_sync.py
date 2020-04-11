@@ -27,8 +27,8 @@ from pathlib import Path
 from tempfile import mkdtemp
 
 import PIL
-from tqdm import tqdm
 
+from ._concurrent import exec_progress_pool
 from ._graft import OcrGrafter
 from ._jobcontext import PDFContext, cleanup_working_files
 from ._logging import PageNumberFilter
@@ -274,63 +274,35 @@ def exec_concurrent(context):
         log.info("Using Tesseract OpenMP thread limit %d", tess_threads)
 
     if context.options.use_threads:
-        from multiprocessing.dummy import Pool
-
         initializer = worker_thread_init
     else:
-        Pool = multiprocessing.Pool
         initializer = worker_init
 
     sidecars = [None] * len(context.pdfinfo)
     ocrgraft = OcrGrafter(context)
 
-    log_queue = multiprocessing.Queue(-1)
-    listener = threading.Thread(target=log_listener, args=(log_queue,))
-    listener.start()
-    with tqdm(
-        total=(2 * len(context.pdfinfo)),
-        desc='OCR',
-        unit='page',
-        unit_scale=0.5,
-        disable=not context.options.progress_bar,
-    ) as pbar:
-        pool = Pool(
-            processes=max_workers,
-            initializer=initializer,
-            initargs=(log_queue, PIL.Image.MAX_IMAGE_PIXELS),
-        )
-        try:
-            results = pool.imap_unordered(exec_page_sync, context.get_page_contexts())
-            while True:
-                try:
-                    page_result = results.next()
-                    sidecars[page_result.pageno] = page_result.text
-                    pbar.update()
-                    ocrgraft.graft_page(page_result)
-                    pbar.update()
-                except StopIteration:
-                    break
-        except KeyboardInterrupt:
-            # Terminate pool so we exit instantly
-            pool.terminate()
-            # Don't try listener.join() here, will deadlock
-            raise
-        except Exception:
-            if not os.environ.get("PYTEST_CURRENT_TEST", ""):
-                # Unless inside pytest, exit immediately because no one wants
-                # to wait for child processes to finalize results that will be
-                # thrown away. Inside pytest, we want child processes to exit
-                # cleanly so that they output an error messages or coverage data
-                # we need from them.
-                pool.terminate()
-            raise
-        finally:
-            # Terminate log listener
-            log_queue.put_nowait(None)
-            pool.close()
-            pool.join()
+    def update_page(result, pbar):
+        sidecars[result.pageno] = result.text
+        pbar.update()
+        ocrgraft.graft_page(result)
+        pbar.update()
 
-    listener.join()
+    exec_progress_pool(
+        use_threads=context.options.use_threads,
+        max_workers=max_workers,
+        tqdm_kwargs=dict(
+            total=(2 * len(context.pdfinfo)),
+            desc='OCR',
+            unit='page',
+            unit_scale=0.5,
+            disable=not context.options.progress_bar,
+        ),
+        task_initializer=initializer,
+        task_initargs=(PIL.Image.MAX_IMAGE_PIXELS,),
+        task=exec_page_sync,
+        task_arguments=context.get_page_contexts(),
+        task_finished=update_page,
+    )
 
     # Output sidecar text
     if context.options.sidecar:
