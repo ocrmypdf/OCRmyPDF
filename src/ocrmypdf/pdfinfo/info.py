@@ -641,7 +641,7 @@ def _pdf_pageinfo_concurrent(pdf, infile, pages_xml, detailed_analysis, progbar)
         global worker_pdf
         worker_pdf = pdf
         pool = Pool(
-            processes=4,  # max_workers,
+            processes=1,  # max_workers,
             initializer=_pdf_pageinfo_sync_init,
             initargs=tuple(),
         )
