@@ -101,10 +101,10 @@ def test_skip_ocr(spoof_tesseract_cache, resources, outpdf):
 
 def test_redo_ocr(resources, outpdf):
     in_ = resources / 'graph_ocred.pdf'
-    before = PdfInfo(in_, detailed_page_analysis=True)
+    before = PdfInfo(in_)
     out = outpdf
     out = check_ocrmypdf(in_, out, '--redo-ocr')
-    after = PdfInfo(out, detailed_page_analysis=True)
+    after = PdfInfo(out)
     assert before[0].has_text and after[0].has_text
     assert (
         before[0].get_textareas() != after[0].get_textareas()

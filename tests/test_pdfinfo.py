@@ -151,22 +151,6 @@ def test_pickle(resources):
     pickle.dumps(pdf)
 
 
-def test_regex():
-    rx = pdfinfo.ghosttext.regex_remove_char_tags
-
-    must_match = [
-        b'<char bbox="0 108 0 108" c="/"/>',
-        b'<char bbox="0 108 0 108" c=">"/>',
-        b'<char bbox="0 108 0 108" c="X"/>',
-    ]
-    must_not_match = [b'<span stuff="c">', b'<span>', b'</span>', b'</page>']
-
-    for s in must_match:
-        assert rx.match(s)
-    for s in must_not_match:
-        assert not rx.match(s)
-
-
 def test_vector(resources):
     filename = resources / 'vector.pdf'
     pdf = pdfinfo.PdfInfo(filename)
@@ -184,16 +168,9 @@ def test_ocr_detection(resources):
 @pytest.mark.parametrize(
     'testfile', ('truetype_font_nomapping.pdf', 'type3_font_nomapping.pdf')
 )
-@pytest.mark.xfail(
-    ghostscript.version() in ('9.52',), reason="gs 9.52 txtwrite doesn't work"
-)
 def test_corrupt_font_detection(resources, testfile):
     filename = resources / testfile
-    with pytest.raises(NotImplementedError):
-        pdf = pdfinfo.PdfInfo(filename)
-        pdf[0].has_corrupt_text
-
-    pdf = pdfinfo.PdfInfo(filename, detailed_page_analysis=True)
+    pdf = pdfinfo.PdfInfo(filename)
     assert pdf[0].has_corrupt_text
 
 

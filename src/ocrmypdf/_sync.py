@@ -307,11 +307,7 @@ def run_pipeline(options, api=False):
         )
 
         # Gather pdfinfo and create context
-        pdfinfo = get_pdfinfo(
-            origin_pdf,
-            detailed_page_analysis=options.redo_ocr,
-            progbar=options.progress_bar,
-        )
+        pdfinfo = get_pdfinfo(origin_pdf, progbar=options.progress_bar)
 
         context = PDFContext(options, work_folder, origin_pdf, pdfinfo)
 

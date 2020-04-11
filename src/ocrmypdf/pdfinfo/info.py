@@ -32,8 +32,6 @@ from pikepdf import PdfMatrix
 
 from ocrmypdf._concurrent import exec_progress_pool
 from ocrmypdf.exceptions import EncryptedPdfError
-from ocrmypdf.exec import ghostscript
-from ocrmypdf.pdfinfo import ghosttext
 from ocrmypdf.pdfinfo.layout import get_page_analysis, get_text_boxes
 
 logger = logging.getLogger()
@@ -559,7 +557,7 @@ def simplify_textboxes(miner, textbox_getter):
         yield TextboxInfo(box.bbox, visible, corrupt)
 
 
-def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, xmltext: str):
+def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike):
     pageinfo = {}
     pageinfo['pageno'] = pageno
     pageinfo['images'] = []
@@ -569,16 +567,10 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, xmltext: str):
     width_pt = mediabox[2] - mediabox[0]
     height_pt = mediabox[3] - mediabox[1]
 
-    if xmltext is not None:
-        bboxes = ghosttext.page_get_textblocks(
-            fspath(infile), pageno, xmltext=xmltext, height=height_pt
-        )
-        pageinfo['bboxes'] = bboxes
-    else:
-        pscript5_mode = str(pdf.docinfo.get('/Creator')).startswith('PScript5')
-        miner = get_page_analysis(infile, pageno, pscript5_mode)
-        pageinfo['textboxes'] = list(simplify_textboxes(miner, get_text_boxes))
-        bboxes = (box.bbox for box in pageinfo['textboxes'])
+    pscript5_mode = str(pdf.docinfo.get('/Creator')).startswith('PScript5')
+    miner = get_page_analysis(infile, pageno, pscript5_mode)
+    pageinfo['textboxes'] = list(simplify_textboxes(miner, get_text_boxes))
+    bboxes = (box.bbox for box in pageinfo['textboxes'])
 
     pageinfo['has_text'] = _page_has_text(bboxes, width_pt, height_pt)
 
@@ -621,12 +613,12 @@ worker_pdf = None
 
 
 def _pdf_pageinfo_sync(args):
-    pageno, infile, xmltext, detailed_analysis = args
-    page = PageInfo(worker_pdf, pageno, infile, xmltext, detailed_analysis)
+    pageno, infile = args
+    page = PageInfo(worker_pdf, pageno, infile)
     return page
 
 
-def _pdf_pageinfo_concurrent(pdf, infile, pages_xml, detailed_analysis, progbar):
+def _pdf_pageinfo_concurrent(pdf, infile, progbar):
     pages = [None] * len(pdf.pages)
 
     def update_pageinfo(result, pbar):
@@ -634,10 +626,7 @@ def _pdf_pageinfo_concurrent(pdf, infile, pages_xml, detailed_analysis, progbar)
         pages[page.pageno] = page
         pbar.update()
 
-    contexts = (
-        (n, infile, pages_xml[n] if pages_xml else None, detailed_analysis)
-        for n in range(len(pdf.pages))
-    )
+    contexts = ((n, infile) for n in range(len(pdf.pages)))
     global worker_pdf
     worker_pdf = pdf
 
@@ -668,19 +657,12 @@ def _pdf_pageinfo_concurrent(pdf, infile, pages_xml, detailed_analysis, progbar)
     return pages
 
 
-def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None, progbar=False):
+def _pdf_get_all_pageinfo(infile, log=None, progbar=False):
     pdf = pikepdf.open(infile)  # Do not close in this function
     try:
         if pdf.is_encrypted:
             raise EncryptedPdfError()  # Triggered by encryption with empty passwd
-        if detailed_analysis:
-            pages_xml = None
-        else:
-            pages_xml = ghosttext.extract_text_xml(infile, pdf, pageno=None, log=log)
-
-        pages = _pdf_pageinfo_concurrent(
-            pdf, infile, pages_xml, detailed_analysis, progbar
-        )
+        pages = _pdf_pageinfo_concurrent(pdf, infile, progbar)
     except Exception:
         pdf.close()
         raise
@@ -689,11 +671,10 @@ def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None, progbar=Fal
 
 
 class PageInfo:
-    def __init__(self, pdf, pageno, infile, xmltext, detailed_analysis=False):
+    def __init__(self, pdf, pageno, infile):
         self._pageno = pageno
         self._infile = infile
-        self._pageinfo = _pdf_get_pageinfo(pdf, pageno, infile, xmltext)
-        self._detailed_analysis = detailed_analysis
+        self._pageinfo = _pdf_get_pageinfo(pdf, pageno, infile)
 
     @property
     def pageno(self):
@@ -705,8 +686,6 @@ class PageInfo:
 
     @property
     def has_corrupt_text(self):
-        if not self._detailed_analysis:
-            raise NotImplementedError('Did not do detailed analysis')
         return any(tbox.is_corrupt for tbox in self._pageinfo['textboxes'])
 
     @property
@@ -757,7 +736,7 @@ class PageInfo:
 
         if 'textboxes' not in self._pageinfo:
             if visible is not None and corrupt is not None:
-                raise NotImplementedError('Ghostscript textboxes cannot be classified')
+                raise NotImplementedError('Incomplete information on textboxes')
             return self._pageinfo['bboxes']
 
         return (
@@ -802,13 +781,9 @@ class PageInfo:
 class PdfInfo:
     """Get summary information about a PDF"""
 
-    def __init__(self, infile, detailed_page_analysis=False, log=logger, progbar=False):
+    def __init__(self, infile, log=logger, progbar=False):
         self._infile = infile
-        if ghostscript.version() in ('9.52',):
-            detailed_page_analysis = True  # txtwrite doesn't work in these versions
-        self._pages, pdf = _pdf_get_all_pageinfo(
-            infile, detailed_page_analysis, log=log, progbar=progbar
-        )
+        self._pages, pdf = _pdf_get_all_pageinfo(infile, log=log, progbar=progbar)
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
         self._has_acroform = False
         if '/AcroForm' in pdf.root:
