@@ -24,7 +24,7 @@ import sys
 import threading
 from multiprocessing import Pool as ProcessPool
 from multiprocessing.dummy import Pool as ThreadPool
-from pathlib import Path
+from typing import Callable, Iterable, Optional
 
 from tqdm import tqdm
 
@@ -76,14 +76,14 @@ def thread_init(_queue, userfn, *userargs):
 
 def exec_progress_pool(
     *,
-    use_threads,
-    max_workers,
-    tqdm_kwargs,
-    task_initializer=None,
-    task_initargs=None,
-    task=None,
-    task_arguments=None,
-    task_finished=None,
+    use_threads: bool,
+    max_workers: int,
+    tqdm_kwargs: dict,
+    task_initializer: Optional[Callable] = None,
+    task_initargs: Optional[tuple] = None,
+    task: Optional[Callable] = None,
+    task_arguments: Optional[Iterable] = None,
+    task_finished: Optional[Callable] = None,
 ):
     log_queue = multiprocessing.Queue(-1)
     listener = threading.Thread(target=log_listener, args=(log_queue,))

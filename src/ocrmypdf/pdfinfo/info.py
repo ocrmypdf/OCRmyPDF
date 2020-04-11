@@ -655,7 +655,7 @@ def _pdf_pageinfo_concurrent(pdf, infile, pages_xml, detailed_analysis, progbar)
 
     exec_progress_pool(
         use_threads=use_threads,
-        max_workers=1,
+        max_workers=max_workers,
         tqdm_kwargs=dict(
             total=len(pdf.pages), desc="Scan", unit='page', disable=not progbar
         ),

@@ -150,7 +150,7 @@ def test_false_action_store_true():
 @pytest.mark.parametrize('progress_bar', [True, False])
 def test_no_progress_bar(progress_bar, resources):
     opts = make_opts(progress_bar=progress_bar, input_file=(resources / 'trivial.pdf'))
-    with patch('ocrmypdf.pdfinfo.info.tqdm', autospec=True) as tqdmpatch:
+    with patch('ocrmypdf._concurrent.tqdm', autospec=True) as tqdmpatch:
         vd.check_options(opts)
         pdfinfo = PdfInfo(opts.input_file, progbar=opts.progress_bar)
         assert pdfinfo is not None
