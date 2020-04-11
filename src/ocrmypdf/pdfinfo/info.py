@@ -23,15 +23,14 @@ from collections import defaultdict, namedtuple
 from decimal import Decimal
 from enum import Enum
 from math import hypot, isclose
-from multiprocessing import Pool
 from os import PathLike, fspath
 from pathlib import Path
 from warnings import warn
 
 import pikepdf
 from pikepdf import PdfMatrix
-from tqdm import tqdm
 
+from ocrmypdf._concurrent import exec_progress_pool
 from ocrmypdf.exceptions import EncryptedPdfError
 from ocrmypdf.exec import ghostscript
 from ocrmypdf.pdfinfo import ghosttext
@@ -622,71 +621,50 @@ worker_pdf = None
 
 
 def _pdf_pageinfo_sync(args):
-    global worker_pdf
-
     pageno, infile, xmltext, detailed_analysis = args
     page = PageInfo(worker_pdf, pageno, infile, xmltext, detailed_analysis)
     return page
 
 
-def _pdf_pageinfo_sync_init():
-    pass
-
-
 def _pdf_pageinfo_concurrent(pdf, infile, pages_xml, detailed_analysis, progbar):
     pages = [None] * len(pdf.pages)
-    with tqdm(
-        total=len(pdf.pages), desc="Scan", unit='page', disable=not progbar
-    ) as pbar:
-        global worker_pdf
-        worker_pdf = pdf
-        pool = Pool(
-            processes=1,  # max_workers,
-            initializer=_pdf_pageinfo_sync_init,
-            initargs=tuple(),
-        )
-        contexts = (
-            (n, infile, pages_xml[n] if pages_xml else None, detailed_analysis)
-            for n in range(len(pdf.pages))
-        )
-        try:
-            results = pool.imap_unordered(_pdf_pageinfo_sync, contexts, chunksize=1)
-            while True:
-                try:
-                    # page = results.next()
-                    page = next(results)
-                    pages[page.pageno] = page
-                    pbar.update()
-                except StopIteration:
-                    break
-        except KeyboardInterrupt:
-            pool.terminate()
-            raise
-        except Exception:
-            if not os.environ.get("PYTEST_CURRENT_TEST", ""):
-                # Unless inside pytest, exit immediately because no one wants
-                # to wait for child processes to finalize results that will be
-                # thrown away. Inside pytest, we want child processes to exit
-                # cleanly so that they output an error messages or coverage data
-                # we need from them.
-                pool.terminate()
-            raise
-        finally:
-            # Terminate log listener
-            # log_queue.put_nowait(None)
-            pool.close()
-            pool.join()
 
-    # for n, _ in tqdm(
-    #     enumerate(pdf.pages),
-    #     total=len(pdf.pages),
-    #     desc="Scan",
-    #     unit='page',
-    #     disable=not progbar,
-    # ):
-    #     page_xml = pages_xml[n] if pages_xml else None
-    #     page = PageInfo(pdf, n, infile, page_xml, detailed_analysis)
-    #     pages.append(page)
+    def update_pageinfo(result, pbar):
+        page = result
+        pages[page.pageno] = page
+        pbar.update()
+
+    contexts = (
+        (n, infile, pages_xml[n] if pages_xml else None, detailed_analysis)
+        for n in range(len(pdf.pages))
+    )
+    global worker_pdf
+    worker_pdf = pdf
+
+    if os.name == 'nt':
+        # We can't parallelize on Windows, because Windows cannot fork.
+        # We are trying to fork, then take advantage of the preloaded pikepdf.Pdf
+        # object in memory to save time reloading it, hence the silly global
+        # variable. Hey, it works. Threads are not helpful here because they
+        # will all just fight over the lock. So on Windows just run sequentially.
+        use_threads = True
+        max_workers = 1
+    else:
+        use_threads = False
+        max_workers = min(len(pages), 16)
+
+    exec_progress_pool(
+        use_threads=use_threads,
+        max_workers=1,
+        tqdm_kwargs=dict(
+            total=len(pdf.pages), desc="Scan", unit='page', disable=not progbar
+        ),
+        task_initializer=None,
+        task_initargs=None,
+        task=_pdf_pageinfo_sync,
+        task_arguments=contexts,
+        task_finished=update_pageinfo,
+    )
     return pages
 
 
