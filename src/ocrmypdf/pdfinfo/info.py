@@ -630,7 +630,7 @@ def _pdf_pageinfo_concurrent(pdf, infile, progbar):
     global worker_pdf
     worker_pdf = pdf
 
-    if os.name == 'nt':
+    if os.name == 'nt' or True:
         # We can't parallelize on Windows, because Windows cannot fork.
         # We are trying to fork, then take advantage of the preloaded pikepdf.Pdf
         # object in memory to save time reloading it, hence the silly global
