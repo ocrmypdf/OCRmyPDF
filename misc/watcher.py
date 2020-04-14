@@ -96,6 +96,7 @@ def execute_ocrmypdf(file_path):
         **OCR_JSON_SETTINGS,
     )
     if exit_code == 0 and ON_SUCCESS_DELETE:
+        os.chmod(output_path, 0o664)
         log.info(f'OCR is done. Deleting: {file_path}')
         file_path.unlink()
     else:
