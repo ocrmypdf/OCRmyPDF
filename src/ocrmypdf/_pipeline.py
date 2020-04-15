@@ -252,7 +252,8 @@ def is_ocr_required(page_context):
     elif pageinfo.has_text:
         if not options.force_ocr and not (options.skip_text or options.redo_ocr):
             raise PriorOcrFoundError(
-                "page already has text! - aborting (use --force-ocr to force OCR)"
+                "page already has text! - aborting (use --force-ocr to force OCR; "
+                " see also help for the arguments --skip-text and --redo-ocr"
             )
         elif options.force_ocr:
             log.info("page already has text! - rasterizing text and running OCR anyway")

@@ -22,6 +22,12 @@ As the error message suggests, your options are:
 -  ``ocrmypdf --skip-text`` to skip OCR and other processing on any
    pages that contain text. Text pages will be copied into the output
    PDF without modification.
+-  ``ocrmypdf --redo-ocr`` to scan the file for any existing OCR
+   (non-printing text), remove it, and do OCR again. This is one way
+   to take advantage of improvements in OCR accuracy. Printable vector
+   text is excluded from OCR, so this can be used on files that contain
+   a mix of digital and scanned files.
+
 
 Input file 'filename' is not a valid PDF
 ========================================
