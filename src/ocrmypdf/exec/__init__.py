@@ -23,6 +23,7 @@ import re
 import shutil
 import sys
 from collections.abc import Mapping
+from contextlib import suppress
 from distutils.version import LooseVersion
 from functools import lru_cache
 from subprocess import PIPE, STDOUT, CalledProcessError
@@ -67,19 +68,25 @@ def run(args, *, env=None, **kwargs):
     if os.name == 'nt':
         args = fix_windows_args(program, args, env)
 
-    process_log = log.getChild(os.path.basename(program))
-    process_log.debug("Running: %s", args)
+    log.debug("Running: %s", args)
+    process_log = log.getChild('subprocess.' + os.path.basename(program))
     if sys.version_info < (3, 7) and os.name == 'nt':
         # Can't use close_fds=True on Windows with Python 3.6 or older
         # https://bugs.python.org/issue19575, etc.
         kwargs['close_fds'] = False
-    proc = subprocess_run(args, env=env, **kwargs)
-    if process_log.isEnabledFor(logging.DEBUG):
-        try:
-            stderr = proc.stderr.decode('utf-8', 'replace')
-        except AttributeError:
-            stderr = proc.stderr
-        if stderr:
+
+    stderr = None
+    try:
+        proc = subprocess_run(args, env=env, **kwargs)
+    except CalledProcessError as e:
+        stderr = getattr(e, 'stderr', None)
+        raise
+    else:
+        stderr = getattr(proc, 'stderr', None)
+    finally:
+        if process_log.isEnabledFor(logging.DEBUG) and stderr:
+            with suppress(AttributeError, UnicodeDecodeError):
+                stderr = stderr.decode('utf-8', 'replace')
             process_log.debug("stderr = %s", stderr)
     return proc
 
