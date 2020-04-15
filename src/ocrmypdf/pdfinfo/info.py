@@ -613,12 +613,13 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, xmltext: str):
     return pageinfo
 
 
-worker_pdf = None
+# worker_pdf = None
 
 
 def _pdf_pageinfo_sync(args):
     pageno, infile, xmltext, detailed_analysis = args
-    page = PageInfo(worker_pdf, pageno, infile, xmltext, detailed_analysis)
+    with pikepdf.open(infile) as worker_pdf:
+        page = PageInfo(worker_pdf, pageno, infile, xmltext, detailed_analysis)
     return page
 
 
@@ -634,8 +635,8 @@ def _pdf_pageinfo_concurrent(pdf, infile, pages_xml, detailed_analysis, progbar)
         (n, infile, pages_xml[n] if pages_xml else None, detailed_analysis)
         for n in range(len(pdf.pages))
     )
-    global worker_pdf
-    worker_pdf = pdf
+    # global worker_pdf
+    # worker_pdf = pdf
 
     if os.name == 'nt':
         # We can't parallelize on Windows, because Windows cannot fork.
