@@ -31,6 +31,7 @@ from tqdm import tqdm
 
 from ._graft import OcrGrafter
 from ._jobcontext import PDFContext, cleanup_working_files
+from ._logging import PageNumberFilter
 from ._pipeline import (
     convert_to_pdfa,
     copy_final,
@@ -72,6 +73,9 @@ PageResult = namedtuple(
     'PageResult', 'pageno, pdf_page_from_image, ocr, text, orientation_correction'
 )
 
+tls = threading.local()
+tls.pageno = None
+
 
 def preprocess(page_context, image, remove_background, deskew, clean):
     if remove_background:
@@ -83,8 +87,23 @@ def preprocess(page_context, image, remove_background, deskew, clean):
     return image
 
 
+old_factory = logging.getLogRecordFactory()
+
+
+def record_factory(*args, **kwargs):
+    record = old_factory(*args, **kwargs)
+    if hasattr(tls, 'pageno'):
+        record.pageno = tls.pageno
+    return record
+
+
+logging.setLogRecordFactory(record_factory)
+
+
 def exec_page_sync(page_context):
     options = page_context.options
+    tls.pageno = page_context.pageno + 1
+
     orientation_correction = 0
     pdf_page_from_image_out = None
     ocr_out = None
@@ -346,7 +365,7 @@ def configure_debug_logging(log_filename, prefix=''):
     log_file_handler = logging.FileHandler(log_filename, delay=True)
     log_file_handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
-        '[%(asctime)s] - %(name)s - %(levelname)7s - %(message)s'
+        '[%(asctime)s] - %(name)s - %(levelname)7s -%(pageno)s %(message)s'
     )
     log_file_handler.setFormatter(formatter)
     logging.getLogger(prefix).addHandler(log_file_handler)

@@ -58,7 +58,6 @@ class PageContext:
         self.name = pdf_context.name
         self.pageno = pageno
         self.pageinfo = pdf_context.pdfinfo[pageno]
-        self._log = None
 
     def get_path(self, name):
         return os.path.join(self.work_folder, "%06d_%s" % (self.pageno + 1, name))
@@ -69,18 +68,3 @@ def cleanup_working_files(work_folder, options):
         print(f"Temporary working files retained at:\n{work_folder}", file=sys.stderr)
     else:
         shutil.rmtree(work_folder, ignore_errors=True)
-
-
-class LogNameAdapter(logging.LoggerAdapter):
-    def process(self, msg, kwargs):
-        # return '[%s] %s' % (self.extra['input_filename'], msg), kwargs
-        return '%s' % (msg,), kwargs
-
-
-class LogNamePageAdapter(logging.LoggerAdapter):
-    def process(self, msg, kwargs):
-        return (
-            #'[%s:%05u] %s' % (self.extra['input_filename'], self.extra['page'], msg),
-            '%4u: %s' % (self.extra['page'], msg),
-            kwargs,
-        )

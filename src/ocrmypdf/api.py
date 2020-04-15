@@ -23,39 +23,10 @@ from enum import IntEnum
 from pathlib import Path
 from typing import Dict, Iterable
 
-from tqdm import tqdm
-
+from ._logging import PageNumberFilter, TqdmConsole
 from ._sync import run_pipeline
 from ._validation import check_options
 from .cli import parser
-
-
-class TqdmConsole:
-    """Wrapper to log messages in a way that is compatible with tqdm progress bar
-
-    This routes log messages through tqdm so that it can print them above the
-    progress bar, and then refresh the progress bar, rather than overwriting
-    it which looks messy.
-
-    For some reason Python 3.6 prints extra empty messages from time to time,
-    so we suppress those.
-    """
-
-    def __init__(self, file):
-        self.file = file
-        self.py36 = sys.version_info[0:2] == (3, 6)
-
-    def write(self, msg):
-        # When no progress bar is active, tqdm.write() routes to print()
-        if self.py36:
-            if msg.strip() != '':
-                tqdm.write(msg.rstrip(), end='\n', file=self.file)
-        else:
-            tqdm.write(msg.rstrip(), end='\n', file=self.file)
-
-    def flush(self):
-        with suppress(AttributeError):
-            self.file.flush()
 
 
 class Verbosity(IntEnum):
@@ -98,6 +69,7 @@ def configure_logging(
     """
 
     prefix = '' if manage_root_logger else 'ocrmypdf'
+
     log = logging.getLogger(prefix)
     log.setLevel(logging.DEBUG)
 
@@ -113,9 +85,14 @@ def configure_logging(
     else:
         console.setLevel(logging.INFO)
 
-    formatter = logging.Formatter('%(levelname)7s - %(message)s')
+    console.addFilter(PageNumberFilter())
+
     if verbosity >= 2:
-        formatter = logging.Formatter('%(name)s - %(levelname)7s - %(message)s')
+        fmt = '%(levelname)7s %(name)s -%(pageno)s %(message)s'
+    else:
+        fmt = '%(levelname)7s -%(pageno)s %(message)s'
+
+    formatter = logging.Formatter(fmt=fmt)
 
     console.setFormatter(formatter)
     log.addHandler(console)
