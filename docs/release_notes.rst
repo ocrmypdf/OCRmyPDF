@@ -13,6 +13,12 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.7.2
+======
+
+-  Fixed an issue with ``ocrmypdf.ocr(...language=)`` not accepting a list of
+   languages as documented.
+-  Updated setup.py to confirm that pdfminer.six version 20200402 is supported.
 
 v9.7.1
 ======
