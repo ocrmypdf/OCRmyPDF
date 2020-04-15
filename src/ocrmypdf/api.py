@@ -154,7 +154,7 @@ def create_options(*, input_file: os.PathLike, output_file: os.PathLike, **kwarg
                 cmdline.append(f"--{cmd_style_arg}")
             continue
 
-        if isinstance(val, Iterable):
+        if isinstance(val, Iterable) and not isinstance(val, str):
             for elem in val:
                 cmdline.append(f"--{cmd_style_arg}")
                 cmdline.append(elem)
