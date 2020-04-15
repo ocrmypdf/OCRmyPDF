@@ -657,7 +657,6 @@ def _pdf_pageinfo_concurrent(pdf, infile, pages_xml, detailed_analysis, progbar)
             total=len(pdf.pages), desc="Scan", unit='page', disable=not progbar
         ),
         task_initializer=None,
-        task_initargs=None,
         task=_pdf_pageinfo_sync,
         task_arguments=contexts,
         task_finished=update_pageinfo,

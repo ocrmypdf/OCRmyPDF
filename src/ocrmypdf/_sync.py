@@ -23,6 +23,7 @@ import signal
 import sys
 import threading
 from collections import namedtuple
+from functools import partial
 from pathlib import Path
 from tempfile import mkdtemp
 
@@ -252,8 +253,7 @@ def exec_concurrent(context):
             unit_scale=0.5,
             disable=not context.options.progress_bar,
         ),
-        task_initializer=worker_init,
-        task_initargs=(PIL.Image.MAX_IMAGE_PIXELS,),
+        task_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
         task=exec_page_sync,
         task_arguments=context.get_page_contexts(),
         task_finished=update_page,
