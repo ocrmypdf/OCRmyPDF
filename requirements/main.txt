@@ -3,7 +3,7 @@
 # installation
 cffi == 1.14.0
 img2pdf == 0.3.3
-pdfminer.six == 20200124
+pdfminer.six == 20200402
 pikepdf == 1.10.2
 Pillow == 7.0.0
 reportlab == 3.5.34
