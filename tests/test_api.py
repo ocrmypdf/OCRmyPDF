@@ -62,5 +62,7 @@ def test_tqdm_console():
 
 
 def test_language_list():
-    with pytest.raises(ocrmypdf.exceptions.InputFileError):
-        ocrmypdf.ocr('doesnotexist.pdf', '_.pdf', language=['eng', 'ita'])
+    with pytest.raises(
+        [ocrmypdf.exceptions.InputFileError, ocrmypdf.exceptions.MissingDependencyError]
+    ):
+        ocrmypdf.ocr('doesnotexist.pdf', '_.pdf', language=['eng', 'deu'])
