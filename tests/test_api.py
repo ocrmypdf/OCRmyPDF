@@ -59,3 +59,8 @@ def test_tqdm_console():
 
     log.info("done")
     assert not before_pbar("done")
+
+
+def test_language_list():
+    with pytest.raises(ocrmypdf.exceptions.InputFileError):
+        ocrmypdf.ocr('doesnotexist.pdf', '_.pdf', language=['eng', 'ita'])

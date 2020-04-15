@@ -21,7 +21,7 @@ import sys
 from contextlib import suppress
 from enum import IntEnum
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, Iterable
 
 from tqdm import tqdm
 
@@ -154,6 +154,12 @@ def create_options(*, input_file: os.PathLike, output_file: os.PathLike, **kwarg
                 cmdline.append(f"--{cmd_style_arg}")
             continue
 
+        if isinstance(val, Iterable):
+            for elem in val:
+                cmdline.append(f"--{cmd_style_arg}")
+                cmdline.append(elem)
+            continue
+
         # We have a parameter
         cmdline.append(f"--{cmd_style_arg}")
         if isinstance(val, (int, float)):
@@ -184,7 +190,7 @@ def ocr(  # pylint: disable=unused-argument
     input_file: os.PathLike,
     output_file: os.PathLike,
     *,
-    language: List[str] = None,
+    language: Iterable[str] = None,
     image_dpi: int = None,
     output_type=None,
     sidecar: os.PathLike = None,
@@ -214,7 +220,7 @@ def ocr(  # pylint: disable=unused-argument
     jbig2_page_group_size: int = None,
     pages: str = None,
     max_image_mpixels: float = None,
-    tesseract_config: List[str] = None,
+    tesseract_config: Iterable[str] = None,
     tesseract_pagesegmode: int = None,
     tesseract_oem: int = None,
     pdf_renderer=None,
