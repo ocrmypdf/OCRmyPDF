@@ -85,8 +85,8 @@ def test_single_page_image(outdir):
     assert pdfimage.color == Colorspace.gray
 
     # DPI in a 1"x1" is the image width
-    assert isclose(pdfimage.xres, 8)
-    assert isclose(pdfimage.yres, 8)
+    assert isclose(pdfimage.xyres[0], 8)
+    assert isclose(pdfimage.xyres[1], 8)
 
 
 def test_single_page_inline_image(outdir):
@@ -105,7 +105,7 @@ def test_single_page_inline_image(outdir):
     info = pdfinfo.PdfInfo(filename)
     print(info)
     pdfimage = info[0].images[0]
-    assert isclose(pdfimage.xres, 8)
+    assert isclose(pdfimage.xyres[0], 8)
     assert pdfimage.color == Colorspace.gray
     assert pdfimage.width == 8
 
@@ -117,7 +117,7 @@ def test_jpeg(resources, outdir):
 
     pdfimage = pdf[0].images[0]
     assert pdfimage.enc == Encoding.jpeg
-    assert isclose(pdfimage.xres, 150)
+    assert isclose(pdfimage.xyres[0], 150)
 
 
 def test_form_xobject(resources):
@@ -139,7 +139,7 @@ def test_no_contents(resources):
 def test_oversized_page(resources):
     pdf = pdfinfo.PdfInfo(resources / 'poster.pdf')
     image = pdf[0].images[0]
-    assert image.width * image.xres > 200, "this is supposed to be oversized"
+    assert image.width * image.xyres[0] > 200, "this is supposed to be oversized"
 
 
 def test_pickle(resources):

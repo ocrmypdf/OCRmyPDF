@@ -356,12 +356,11 @@ class ImageInfo:
         return self._enc
 
     @property
-    def xres(self):
-        return _get_dpi(self._shorthand, (self._width, self._height))[0]
-
-    @property
-    def yres(self):
-        return _get_dpi(self._shorthand, (self._width, self._height))[1]
+    def xyres(self):
+        return (
+            _get_dpi(self._shorthand, (self._width, self._height))[0],
+            _get_dpi(self._shorthand, (self._width, self._height))[1],
+        )
 
     def __repr__(self):
         class_locals = {
@@ -371,7 +370,7 @@ class ImageInfo:
         }
         return (
             "<ImageInfo '{name}' {type_} {width}x{height} {color} "
-            "{comp} {bpc} {enc} {xres}x{yres}>"
+            "{comp} {bpc} {enc} {xyres}>"
         ).format(**class_locals)
 
 
@@ -607,9 +606,9 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, xmltext: str):
 
     pageinfo['images'] = [im for im in contentsinfo if isinstance(im, ImageInfo)]
     if pageinfo['images']:
-        xres = Decimal(max(image.xres for image in pageinfo['images']))
-        yres = Decimal(max(image.yres for image in pageinfo['images']))
-        pageinfo['xres'], pageinfo['yres'] = xres, yres
+        xres = Decimal(max(image.xyres[0] for image in pageinfo['images']))
+        yres = Decimal(max(image.xyres[1] for image in pageinfo['images']))
+        pageinfo['xyres'] = xres, yres
         pageinfo['width_pixels'] = int(round(xres * pageinfo['width_inches']))
         pageinfo['height_pixels'] = int(round(yres * pageinfo['height_inches']))
 
@@ -679,11 +678,11 @@ class PageInfo:
 
     @property
     def width_pixels(self):
-        return int(round(self.width_inches * self.xres))
+        return int(round(self.width_inches * self.xyres[0]))
 
     @property
     def height_pixels(self):
-        return int(round(self.height_inches * self.yres))
+        return int(round(self.height_inches * self.xyres[1]))
 
     @property
     def rotation(self):
@@ -723,12 +722,8 @@ class PageInfo:
         )
 
     @property
-    def xres(self):
-        return self._pageinfo.get('xres', None)
-
-    @property
-    def yres(self):
-        return self._pageinfo.get('yres', None)
+    def xyres(self):
+        return self._pageinfo.get('xyres', (0, 0))
 
     @property
     def userunit(self):
@@ -743,14 +738,13 @@ class PageInfo:
 
     def __repr__(self):
         return (
-            '<PageInfo ' 'pageno={} {}"x{}" rotation={} res={}x{} has_text={}>'
+            '<PageInfo ' 'pageno={} {}"x{}" rotation={} res={} has_text={}>'
         ).format(
             self.pageno,
             self.width_inches,
             self.height_inches,
             self.rotation,
-            self.xres,
-            self.yres,
+            self.xyres,
             self.has_text,
         )
 

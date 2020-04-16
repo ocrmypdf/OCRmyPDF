@@ -201,12 +201,12 @@ def validate_pdfinfo_options(context):
 def get_page_dpi(pageinfo, options):
     "Get the DPI when nonsquare DPI is tolerable"
     xres = max(
-        pageinfo.xres or VECTOR_PAGE_DPI,
+        pageinfo.xyres[0] or VECTOR_PAGE_DPI,
         options.oversample or 0,
         VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
     )
     yres = max(
-        pageinfo.yres or VECTOR_PAGE_DPI,
+        pageinfo.xyres[1] or VECTOR_PAGE_DPI,
         options.oversample or 0,
         VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
     )
@@ -215,8 +215,8 @@ def get_page_dpi(pageinfo, options):
 
 def get_page_square_dpi(pageinfo, options):
     "Get the DPI when we require xres == yres, scaled to physical units"
-    xres = pageinfo.xres or 0
-    yres = pageinfo.yres or 0
+    xres = pageinfo.xyres[0] or 0
+    yres = pageinfo.xyres[1] or 0
     userunit = pageinfo.userunit or 1
     return float(
         max(
@@ -232,8 +232,8 @@ def get_canvas_square_dpi(pageinfo, options):
     """Get the DPI when we require xres == yres, in Postscript units"""
     return float(
         max(
-            (pageinfo.xres) or VECTOR_PAGE_DPI,
-            (pageinfo.yres) or VECTOR_PAGE_DPI,
+            (pageinfo.xyres[0]) or VECTOR_PAGE_DPI,
+            (pageinfo.xyres[1]) or VECTOR_PAGE_DPI,
             VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
             options.oversample or 0,
         )
@@ -321,9 +321,8 @@ def rasterize_preview(input_file, page_context):
     ghostscript.rasterize_pdf(
         input_file,
         output_file,
-        xres=canvas_dpi,
-        yres=canvas_dpi,
         raster_device='jpeggray',
+        xyres=(canvas_dpi, canvas_dpi),
         page_dpi=(page_dpi, page_dpi),
         pageno=page_context.pageinfo.pageno + 1,
     )
@@ -436,9 +435,8 @@ def rasterize(
     ghostscript.rasterize_pdf(
         input_file,
         output_file,
-        xres=canvas_dpi,
-        yres=canvas_dpi,
         raster_device=device,
+        xyres=(canvas_dpi, canvas_dpi),
         page_dpi=(page_dpi, page_dpi),
         pageno=pageinfo.pageno + 1,
         rotation=correction,
@@ -488,8 +486,7 @@ def create_ocr_image(image, page_context):
         # pink = ImageColor.getcolor('#ff0080', im.mode)
         draw = ImageDraw.ImageDraw(im)
 
-        xres, yres = im.info['dpi']
-        log.debug('resolution %r %r' % (xres, yres))
+        log.debug('resolution %r', im.info['dpi'])
 
         if not options.force_ocr:
             # Do not mask text areas when forcing OCR, because we need to OCR
@@ -505,12 +502,12 @@ def create_ocr_image(image, page_context):
                 # without regard whatever resolution is in pageinfo (may differ or
                 # be None)
                 bbox = [float(v) for v in textarea]
-                xscale, yscale = float(xres) / 72.0, float(yres) / 72.0
+                xyscale = tuple(float(coord) / 72.0 for coord in im.info['dpi'])
                 pixcoords = [
-                    bbox[0] * xscale,
-                    im.height - bbox[3] * yscale,
-                    bbox[2] * xscale,
-                    im.height - bbox[1] * yscale,
+                    bbox[0] * xyscale[0],
+                    im.height - bbox[3] * xyscale[1],
+                    bbox[2] * xyscale[0],
+                    im.height - bbox[1] * xyscale[1],
                 ]
                 pixcoords = [int(round(c)) for c in pixcoords]
                 log.debug('blanking %r', pixcoords)
@@ -524,7 +521,7 @@ def create_ocr_image(image, page_context):
 
         del draw
         # Pillow requires integer DPI
-        dpi = round(xres), round(yres)
+        dpi = tuple(round(coord) for coord in im.info['dpi'])
         im.save(output_file, dpi=dpi)
     return output_file
 

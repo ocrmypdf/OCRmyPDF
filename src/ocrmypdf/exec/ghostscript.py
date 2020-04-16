@@ -135,32 +135,31 @@ def extract_text(input_file, pageno=1):
 def rasterize_pdf(
     input_file,
     output_file,
-    xres,
-    yres,
+    *,
     raster_device,
+    xyres,
     pageno=1,
     page_dpi=None,
     rotation=None,
     filter_vector=False,
 ):
-    """Rasterize one page of a PDF at resolution (xres, yres) in canvas units.
+    """Rasterize one page of a PDF at resolution xyres in canvas units.
 
     The image is sized to match the integer pixels dimensions implied by
-    (xres, yres) even if those numbers are noninteger. The image's DPI will
+    (xyres[0], xyres[1]) even if those numbers are noninteger. The image's DPI will
      be overridden with the values in page_dpi.
 
     :param input_file: pathlike
     :param output_file: pathlike
-    :param xres: resolution at which to rasterize page
-    :param yres:
     :param raster_device:
+    :param xyres: resolution at which to rasterize page
     :param pageno: page number to rasterize (beginning at page 1)
     :param page_dpi: resolution tuple (x, y) overriding output image DPI
     :param rotation: 0, 90, 180, 270: clockwise angle to rotate page
     :param filter_vector: if True, remove vector graphics objects
     :return:
     """
-    res = round(xres, 6), round(yres, 6)
+    res = round(xyres[0], 6), round(xyres[1], 6)
     if not page_dpi:
         page_dpi = res
 

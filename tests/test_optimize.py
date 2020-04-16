@@ -43,7 +43,7 @@ def test_mono_not_inverted(resources, outdir):
     opt.main(infile, outdir / 'out.pdf', level=3)
 
     rasterize_pdf(
-        outdir / 'out.pdf', outdir / 'im.png', xres=10, yres=10, raster_device='pnggray'
+        outdir / 'out.pdf', outdir / 'im.png', raster_device='pnggray', xyres=(10, 10)
     )
 
     with Image.open(fspath(outdir / 'im.png')) as im:

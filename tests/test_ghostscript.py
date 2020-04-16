@@ -76,9 +76,8 @@ def test_rasterize_size(francais, outdir, caplog):
     rasterize_pdf(
         path,
         outdir / 'out.png',
-        target_size[0] / page_size[0],
-        target_size[1] / page_size[1],
         raster_device='pngmono',
+        xyres=(target_size[0] / page_size[0], target_size[1] / page_size[1]),
         page_dpi=forced_dpi,
     )
 
@@ -99,9 +98,8 @@ def test_rasterize_rotated(francais, outdir, caplog):
     rasterize_pdf(
         path,
         outdir / 'out.png',
-        target_size[0] / page_size[0],
-        target_size[1] / page_size[1],
         raster_device='pngmono',
+        xyres=(target_size[0] / page_size[0], target_size[1] / page_size[1]),
         page_dpi=forced_dpi,
         rotation=90,
     )

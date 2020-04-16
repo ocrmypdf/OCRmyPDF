@@ -58,9 +58,8 @@ def check_monochrome_correlation(
         ghostscript.rasterize_pdf(
             pdf,
             png,
-            xres=100,
-            yres=100,
             raster_device='pngmono',
+            xyres=(100, 100),
             pageno=pageno,
             rotation=0,
         )
