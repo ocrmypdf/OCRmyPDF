@@ -39,7 +39,7 @@ from .exceptions import (
     UnsupportedImageFormatError,
 )
 from .exec import ghostscript, tesseract
-from .helpers import safe_symlink
+from .helpers import Resolution, safe_symlink
 from .hocrtransform import HocrTransform
 from .optimize import optimize
 from .pdfa import generate_pdfa_ps
@@ -99,7 +99,7 @@ def triage_image_file(input_file, output_file, options):
         layout_fun = img2pdf.default_layout_fun
         if options.image_dpi:
             layout_fun = img2pdf.get_fixed_dpi_layout_fun(
-                (options.image_dpi, options.image_dpi)
+                Resolution(options.image_dpi, options.image_dpi)
             )
         with open(output_file, 'wb') as outf:
             img2pdf.convert(
@@ -201,43 +201,45 @@ def validate_pdfinfo_options(context):
 def get_page_dpi(pageinfo, options):
     "Get the DPI when nonsquare DPI is tolerable"
     xres = max(
-        pageinfo.xyres[0] or VECTOR_PAGE_DPI,
-        options.oversample or 0,
-        VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
+        pageinfo.dpi.x or VECTOR_PAGE_DPI,
+        options.oversample or 0.0,
+        VECTOR_PAGE_DPI if pageinfo.has_vector else 0.0,
     )
     yres = max(
-        pageinfo.xyres[1] or VECTOR_PAGE_DPI,
+        pageinfo.dpi.y or VECTOR_PAGE_DPI,
         options.oversample or 0,
-        VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
+        VECTOR_PAGE_DPI if pageinfo.has_vector else 0.0,
     )
-    return (float(xres), float(yres))
+    return Resolution(float(xres), float(yres))
 
 
-def get_page_square_dpi(pageinfo, options):
+def get_page_square_dpi(pageinfo, options) -> Resolution:
     "Get the DPI when we require xres == yres, scaled to physical units"
-    xres = pageinfo.xyres[0] or 0
-    yres = pageinfo.xyres[1] or 0
-    userunit = pageinfo.userunit or 1
-    return float(
+    xres = pageinfo.dpi.x or 0.0
+    yres = pageinfo.dpi.y or 0.0
+    userunit = float(pageinfo.userunit) or 1.0
+    units = float(
         max(
             (xres * userunit) or VECTOR_PAGE_DPI,
             (yres * userunit) or VECTOR_PAGE_DPI,
-            VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
-            options.oversample or 0,
+            VECTOR_PAGE_DPI if pageinfo.has_vector else 0.0,
+            options.oversample or 0.0,
         )
     )
+    return Resolution(units, units)
 
 
-def get_canvas_square_dpi(pageinfo, options):
+def get_canvas_square_dpi(pageinfo, options) -> Resolution:
     """Get the DPI when we require xres == yres, in Postscript units"""
-    return float(
+    units = float(
         max(
-            (pageinfo.xyres[0]) or VECTOR_PAGE_DPI,
-            (pageinfo.xyres[1]) or VECTOR_PAGE_DPI,
-            VECTOR_PAGE_DPI if pageinfo.has_vector else 0,
-            options.oversample or 0,
+            (pageinfo.dpi.x) or VECTOR_PAGE_DPI,
+            (pageinfo.dpi.y) or VECTOR_PAGE_DPI,
+            VECTOR_PAGE_DPI if pageinfo.has_vector else 0.0,
+            options.oversample or 0.0,
         )
     )
+    return Resolution(units, units)
 
 
 def is_ocr_required(page_context):
@@ -322,8 +324,8 @@ def rasterize_preview(input_file, page_context):
         input_file,
         output_file,
         raster_device='jpeggray',
-        xyres=(canvas_dpi, canvas_dpi),
-        page_dpi=(page_dpi, page_dpi),
+        raster_dpi=canvas_dpi,
+        page_dpi=page_dpi,
         pageno=page_context.pageinfo.pageno + 1,
     )
     return output_file
@@ -436,8 +438,8 @@ def rasterize(
         input_file,
         output_file,
         raster_device=device,
-        xyres=(canvas_dpi, canvas_dpi),
-        page_dpi=(page_dpi, page_dpi),
+        raster_dpi=canvas_dpi,
+        page_dpi=page_dpi,
         pageno=pageinfo.pageno + 1,
         rotation=correction,
         filter_vector=remove_vectors,
@@ -458,7 +460,7 @@ def preprocess_remove_background(input_file, page_context):
 def preprocess_deskew(input_file, page_context):
     output_file = page_context.get_path('pp_deskew.png')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
-    leptonica.deskew(input_file, output_file, dpi)
+    leptonica.deskew(input_file, output_file, dpi.x)
     return output_file
 
 
@@ -467,7 +469,7 @@ def preprocess_clean(input_file, page_context):
 
     output_file = page_context.get_path('pp_clean.png')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
-    unpaper.clean(input_file, output_file, dpi, page_context.options.unpaper_args)
+    unpaper.clean(input_file, output_file, dpi.x, page_context.options.unpaper_args)
     return output_file
 
 
@@ -558,12 +560,14 @@ def create_visible_page_jpg(image, page_context):
         # square DPI used to rasterize. When the preview image was
         # rasterized, it was also converted to square resolution, which is
         # what we want to give tesseract, so keep it square.
-        fallback_dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
-        dpi = im.info.get('dpi', (fallback_dpi, fallback_dpi))
+        if 'dpi' in im.info:
+            dpi = Resolution(*im.info['dpi'])
+        else:
+            # Fallback to page-implied DPI
+            dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
 
         # Pillow requires integer DPI
-        dpi = round(dpi[0]), round(dpi[1])
-        im.save(output_file, format='JPEG', dpi=dpi)
+        im.save(output_file, format='JPEG', dpi=dpi.to_int())
     return output_file
 
 
@@ -576,7 +580,7 @@ def create_pdf_page_from_image(image, page_context):
     # sandwich renderer would be fine.
     output_file = page_context.get_path('visible.pdf')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
-    layout_fun = img2pdf.get_fixed_dpi_layout_fun((dpi, dpi))
+    layout_fun = img2pdf.get_fixed_dpi_layout_fun(dpi)
 
     # This create a single page PDF
     with open(image, 'rb') as imfile, open(output_file, 'wb') as pdf:
@@ -591,7 +595,7 @@ def create_pdf_page_from_image(image, page_context):
 def render_hocr_page(hocr, page_context):
     output_file = page_context.get_path('ocr_hocr.pdf')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
-    hocrtransform = HocrTransform(hocr, dpi)
+    hocrtransform = HocrTransform(hocr, dpi.x)  # square
     hocrtransform.to_pdf(
         output_file,
         image_filename=None,

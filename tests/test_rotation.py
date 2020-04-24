@@ -27,6 +27,7 @@ from PIL import Image
 
 from ocrmypdf import leptonica
 from ocrmypdf.exec import ghostscript, tesseract
+from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo import PdfInfo
 
 # pytest.helpers is dynamic
@@ -59,7 +60,7 @@ def check_monochrome_correlation(
             pdf,
             png,
             raster_device='pngmono',
-            xyres=(100, 100),
+            raster_dpi=Resolution(100, 100),
             pageno=pageno,
             rotation=0,
         )

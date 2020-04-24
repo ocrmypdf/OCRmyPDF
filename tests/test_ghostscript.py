@@ -24,6 +24,7 @@ from PIL import Image
 
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.exec.ghostscript import rasterize_pdf
+from ocrmypdf.helpers import Resolution
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
@@ -71,13 +72,15 @@ def test_rasterize_size(francais, outdir, caplog):
     assert pdf.pages[0].MediaBox[0] == pdf.pages[0].MediaBox[1] == 0
     page_size = (page_size_pts[0] / Decimal(72), page_size_pts[1] / Decimal(72))
     target_size = Decimal('50.0'), Decimal('30.0')
-    forced_dpi = 42.0, 4242.0
+    forced_dpi = Resolution(42.0, 4242.0)
 
     rasterize_pdf(
         path,
         outdir / 'out.png',
         raster_device='pngmono',
-        xyres=(target_size[0] / page_size[0], target_size[1] / page_size[1]),
+        raster_dpi=Resolution(
+            target_size[0] / page_size[0], target_size[1] / page_size[1]
+        ),
         page_dpi=forced_dpi,
     )
 
@@ -92,14 +95,16 @@ def test_rasterize_rotated(francais, outdir, caplog):
     assert pdf.pages[0].MediaBox[0] == pdf.pages[0].MediaBox[1] == 0
     page_size = (page_size_pts[0] / Decimal(72), page_size_pts[1] / Decimal(72))
     target_size = Decimal('50.0'), Decimal('30.0')
-    forced_dpi = 42.0, 4242.0
+    forced_dpi = Resolution(42.0, 4242.0)
 
     caplog.set_level(logging.DEBUG)
     rasterize_pdf(
         path,
         outdir / 'out.png',
         raster_device='pngmono',
-        xyres=(target_size[0] / page_size[0], target_size[1] / page_size[1]),
+        raster_dpi=Resolution(
+            target_size[0] / page_size[0], target_size[1] / page_size[1]
+        ),
         page_dpi=forced_dpi,
         rotation=90,
     )

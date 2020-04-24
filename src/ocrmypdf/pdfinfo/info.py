@@ -32,6 +32,7 @@ from tqdm import tqdm
 
 from ocrmypdf.exceptions import EncryptedPdfError
 from ocrmypdf.exec import ghostscript
+from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo import ghosttext
 from ocrmypdf.pdfinfo.layout import get_page_analysis, get_text_boxes
 
@@ -265,7 +266,7 @@ def _get_dpi(ctm_shorthand, image_size):
     dpi_w = scale_w * 72.0
     dpi_h = scale_h * 72.0
 
-    return dpi_w, dpi_h
+    return Resolution(dpi_w, dpi_h)
 
 
 class ImageInfo:
@@ -356,11 +357,8 @@ class ImageInfo:
         return self._enc
 
     @property
-    def xyres(self):
-        return (
-            _get_dpi(self._shorthand, (self._width, self._height))[0],
-            _get_dpi(self._shorthand, (self._width, self._height))[1],
-        )
+    def dpi(self):
+        return _get_dpi(self._shorthand, (self._width, self._height))
 
     def __repr__(self):
         class_locals = {
@@ -370,7 +368,7 @@ class ImageInfo:
         }
         return (
             "<ImageInfo '{name}' {type_} {width}x{height} {color} "
-            "{comp} {bpc} {enc} {xyres}>"
+            "{comp} {bpc} {enc} {dpi}>"
         ).format(**class_locals)
 
 
@@ -606,11 +604,10 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, xmltext: str):
 
     pageinfo['images'] = [im for im in contentsinfo if isinstance(im, ImageInfo)]
     if pageinfo['images']:
-        xres = Decimal(max(image.xyres[0] for image in pageinfo['images']))
-        yres = Decimal(max(image.xyres[1] for image in pageinfo['images']))
-        pageinfo['xyres'] = xres, yres
-        pageinfo['width_pixels'] = int(round(xres * pageinfo['width_inches']))
-        pageinfo['height_pixels'] = int(round(yres * pageinfo['height_inches']))
+        dpi = Resolution(0.0, 0.0).take_max(image.dpi for image in pageinfo['images'])
+        pageinfo['dpi'] = dpi
+        pageinfo['width_pixels'] = int(round(dpi.x * float(pageinfo['width_inches'])))
+        pageinfo['height_pixels'] = int(round(dpi.y * float(pageinfo['height_inches'])))
 
     return pageinfo
 
@@ -678,11 +675,11 @@ class PageInfo:
 
     @property
     def width_pixels(self):
-        return int(round(self.width_inches * self.xyres[0]))
+        return int(round(float(self.width_inches) * self.dpi.x))
 
     @property
     def height_pixels(self):
-        return int(round(self.height_inches * self.xyres[1]))
+        return int(round(float(self.height_inches) * self.dpi.y))
 
     @property
     def rotation(self):
@@ -722,8 +719,8 @@ class PageInfo:
         )
 
     @property
-    def xyres(self):
-        return self._pageinfo.get('xyres', (0, 0))
+    def dpi(self):
+        return self._pageinfo.get('dpi', Resolution(0.0, 0.0))
 
     @property
     def userunit(self):
@@ -738,14 +735,9 @@ class PageInfo:
 
     def __repr__(self):
         return (
-            '<PageInfo ' 'pageno={} {}"x{}" rotation={} res={} has_text={}>'
-        ).format(
-            self.pageno,
-            self.width_inches,
-            self.height_inches,
-            self.rotation,
-            self.xyres,
-            self.has_text,
+            f'<PageInfo '
+            f'pageno={self.pageno} {self.width_inches}"x{self.height_inches}" '
+            f'rotation={self.rotation} dpi={self.dpi} has_text={self.has_text}>'
         )
 
 

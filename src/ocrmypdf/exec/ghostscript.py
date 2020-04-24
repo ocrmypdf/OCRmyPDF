@@ -21,7 +21,6 @@ import logging
 import os
 import re
 import warnings
-from contextlib import suppress
 from functools import lru_cache
 from io import BytesIO
 from os import fspath
@@ -31,8 +30,9 @@ from subprocess import PIPE, CalledProcessError
 
 from PIL import Image
 
-from ..exceptions import MissingDependencyError, SubprocessOutputError
-from . import get_version, run
+from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
+from ocrmypdf.exec import get_version, run
+from ocrmypdf.helpers import Resolution
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ def version():
     return get_version(GS)
 
 
-def jpeg_passthrough_available():
+def jpeg_passthrough_available() -> bool:
     """Returns True if the installed version of Ghostscript supports JPEG passthru
 
     Prior to 9.23, Ghostscript decode and re-encoded JPEGs internally. In 9.23
@@ -79,7 +79,7 @@ def jpeg_passthrough_available():
     return version() >= '9.24'
 
 
-def _gs_error_reported(stream):
+def _gs_error_reported(stream) -> bool:
     return re.search(r'error', stream, flags=re.IGNORECASE)
 
 
@@ -133,35 +133,35 @@ def extract_text(input_file, pageno=1):
 
 
 def rasterize_pdf(
-    input_file,
-    output_file,
+    input_file: os.PathLike,
+    output_file: os.PathLike,
     *,
-    raster_device,
-    xyres,
-    pageno=1,
-    page_dpi=None,
-    rotation=None,
-    filter_vector=False,
+    raster_device: str,
+    raster_dpi: Resolution,
+    pageno: int = 1,
+    page_dpi: Resolution = None,
+    rotation: int = None,
+    filter_vector: bool = False,
 ):
-    """Rasterize one page of a PDF at resolution xyres in canvas units.
+    """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
 
     The image is sized to match the integer pixels dimensions implied by
-    (xyres[0], xyres[1]) even if those numbers are noninteger. The image's DPI will
+    raster_dpi even if those numbers are noninteger. The image's DPI will
      be overridden with the values in page_dpi.
 
     :param input_file: pathlike
     :param output_file: pathlike
     :param raster_device:
-    :param xyres: resolution at which to rasterize page
+    :param raster_dpi: resolution at which to rasterize page
     :param pageno: page number to rasterize (beginning at page 1)
     :param page_dpi: resolution tuple (x, y) overriding output image DPI
     :param rotation: 0, 90, 180, 270: clockwise angle to rotate page
     :param filter_vector: if True, remove vector graphics objects
     :return:
     """
-    res = round(xyres[0], 6), round(xyres[1], 6)
+    raster_dpi = raster_dpi.round(6)
     if not page_dpi:
-        page_dpi = res
+        page_dpi = raster_dpi
 
     args_gs = (
         [
@@ -173,7 +173,7 @@ def rasterize_pdf(
             f'-sDEVICE={raster_device}',
             f'-dFirstPage={pageno}',
             f'-dLastPage={pageno}',
-            f'-r{res[0]:f}x{res[1]:f}',
+            f'-r{raster_dpi.x:f}x{raster_dpi.y:f}',
         ]
         + (['-dFILTERVECTOR'] if filter_vector else [])
         + [
@@ -210,17 +210,17 @@ def rasterize_pdf(
             elif rotation == 270:
                 im = im.transpose(Image.ROTATE_270)
             if rotation % 180 == 90:
-                page_dpi = page_dpi[1], page_dpi[0]
+                page_dpi = page_dpi.flip_axis()
         im.save(fspath(output_file), dpi=page_dpi)
 
 
 def generate_pdfa(
     pdf_pages,
-    output_file,
-    compression,
+    output_file: os.PathLike,
+    compression: str,
     threads=None,  # deprecated parameter
-    pdf_version='1.5',
-    pdfa_part='2',
+    pdf_version: str = '1.5',
+    pdfa_part: str = '2',
 ):
     """Generate a PDF/A.
 

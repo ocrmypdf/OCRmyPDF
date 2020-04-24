@@ -26,6 +26,7 @@ from PIL import Image
 from ocrmypdf import optimize as opt
 from ocrmypdf.exec import jbig2enc, pngquant
 from ocrmypdf.exec.ghostscript import rasterize_pdf
+from ocrmypdf.helpers import Resolution
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf  # pylint: disable=e1101
 
@@ -43,7 +44,10 @@ def test_mono_not_inverted(resources, outdir):
     opt.main(infile, outdir / 'out.pdf', level=3)
 
     rasterize_pdf(
-        outdir / 'out.pdf', outdir / 'im.png', raster_device='pnggray', xyres=(10, 10)
+        outdir / 'out.pdf',
+        outdir / 'im.png',
+        raster_device='pnggray',
+        raster_dpi=Resolution(10, 10),
     )
 
     with Image.open(fspath(outdir / 'im.png')) as im:

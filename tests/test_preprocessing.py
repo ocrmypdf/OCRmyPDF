@@ -22,6 +22,7 @@ import pytest
 from PIL import Image
 
 from ocrmypdf.exec import ghostscript
+from ocrmypdf.helpers import Resolution
 from ocrmypdf.leptonica import Pix
 from ocrmypdf.pdfinfo import PdfInfo
 
@@ -50,7 +51,11 @@ def test_deskew(spoof_tesseract_noop, resources, outdir):
     deskewed_png = outdir / 'deskewed.png'
 
     ghostscript.rasterize_pdf(
-        deskewed_pdf, deskewed_png, raster_device='pngmono', xyres=(150, 150), pageno=1
+        deskewed_pdf,
+        deskewed_png,
+        raster_device='pngmono',
+        raster_dpi=Resolution(150, 150),
+        pageno=1,
     )
 
     pix = Pix.open(deskewed_png)
@@ -77,7 +82,11 @@ def test_remove_background(spoof_tesseract_noop, resources, outdir):
     output_png = outdir / 'remove_bg.png'
 
     ghostscript.rasterize_pdf(
-        output_pdf, output_png, raster_device='png16m', xyres=(100, 100), pageno=1
+        output_pdf,
+        output_png,
+        raster_device='png16m',
+        raster_dpi=Resolution(100, 100),
+        pageno=1,
     )
 
     # The output image should contain pure white and black
@@ -117,7 +126,7 @@ def test_exotic_image(
 def test_non_square_resolution(renderer, spoof_tesseract_cache, resources, outpdf):
     # Confirm input image is non-square resolution
     in_pageinfo = PdfInfo(resources / 'aspect.pdf')
-    assert in_pageinfo[0].xyres[0] != in_pageinfo[0].xyres[1]
+    assert in_pageinfo[0].dpi.x != in_pageinfo[0].dpi.y
 
     check_ocrmypdf(
         resources / 'aspect.pdf',
@@ -130,7 +139,7 @@ def test_non_square_resolution(renderer, spoof_tesseract_cache, resources, outpd
     out_pageinfo = PdfInfo(outpdf)
 
     # Confirm resolution was kept the same
-    assert in_pageinfo[0].xyres == out_pageinfo[0].xyres
+    assert in_pageinfo[0].dpi == out_pageinfo[0].dpi
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
@@ -139,7 +148,7 @@ def test_convert_to_square_resolution(
 ):
     # Confirm input image is non-square resolution
     in_pageinfo = PdfInfo(resources / 'aspect.pdf')
-    assert in_pageinfo[0].xyres[0] != in_pageinfo[0].xyres[1]
+    assert in_pageinfo[0].dpi.x != in_pageinfo[0].dpi.y
 
     # --force-ocr requires means forced conversion to square resolution
     check_ocrmypdf(
@@ -156,7 +165,7 @@ def test_convert_to_square_resolution(
     in_p0, out_p0 = in_pageinfo[0], out_pageinfo[0]
 
     # Resolution show now be equal
-    assert out_p0.xyres[0] == out_p0.xyres[1]
+    assert out_p0.dpi.x == out_p0.dpi.y
 
     # Page size should match input page size
     assert isclose(in_p0.width_inches, out_p0.width_inches)
@@ -164,7 +173,7 @@ def test_convert_to_square_resolution(
 
     # Because we rasterized the page to produce a new image, it should occupy
     # the entire page
-    out_im_w = out_p0.images[0].width / out_p0.images[0].xyres[0]
-    out_im_h = out_p0.images[0].height / out_p0.images[0].xyres[1]
+    out_im_w = out_p0.images[0].width / out_p0.images[0].dpi.x
+    out_im_h = out_p0.images[0].height / out_p0.images[0].dpi.y
     assert isclose(out_p0.width_inches, out_im_w)
     assert isclose(out_p0.height_inches, out_im_h)

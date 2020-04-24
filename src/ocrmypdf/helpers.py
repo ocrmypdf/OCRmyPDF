@@ -20,12 +20,46 @@ import multiprocessing
 import os
 import shutil
 import warnings
+from collections import namedtuple
 from collections.abc import Iterable
 from contextlib import suppress
 from functools import wraps
+from math import inf, isclose
 from pathlib import Path
 
 log = logging.getLogger(__name__)
+
+
+class Resolution(namedtuple('Resolution', ('x', 'y'))):
+    __slots__ = ()
+
+    def round(self, ndigits):
+        return Resolution(round(self.x, ndigits), round(self.y, ndigits))
+
+    def to_int(self):
+        return Resolution(int(round(self.x)), int(round(self.y)))
+
+    @property
+    def is_square(self):
+        return isclose(self.x, self.y, rel_tol=1e-3)
+
+    def take_max(self, vals, yvals=None):
+        if yvals is not None:
+            return Resolution(max(self.x, *vals), max(self.y, *yvals))
+        max_x, max_y = self.x, self.y
+        for x, y in vals:
+            max_x = max(x, max_x)
+            max_y = max(y, max_y)
+        return Resolution(max_x, max_y)
+
+    def flip_axis(self):
+        return Resolution(self.y, self.x)
+
+    def __str__(self):
+        return f"{self.x:f}x{self.y:f}"
+
+    def __repr__(self):
+        return f"Resolution({self.x}x{self.y} dpi)"
 
 
 def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike, *args, **kwargs):

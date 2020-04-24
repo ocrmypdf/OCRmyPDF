@@ -74,8 +74,8 @@ def test_oversample(spoof_tesseract_cache, renderer, resources, outpdf):
 
     pdfinfo = PdfInfo(oversampled_pdf)
 
-    print(pdfinfo[0].xyres[0])
-    assert abs(pdfinfo[0].xyres[0] - 350) < 1
+    print(pdfinfo[0].dpi.x)
+    assert abs(pdfinfo[0].dpi.x - 350) < 1
 
 
 def test_repeat_ocr(resources, no_outpdf):
@@ -393,8 +393,8 @@ def test_very_high_dpi(spoof_tesseract_cache, resources, outpdf):
     pdfinfo = PdfInfo(outpdf)
 
     image = pdfinfo[0].images[0]
-    assert isclose(image.xyres[0], image.xyres[1])
-    assert isclose(image.xyres[0], 2400)
+    assert isclose(image.dpi.x, image.dpi.y)
+    assert isclose(image.dpi.x, 2400)
 
 
 def test_overlay(spoof_tesseract_noop, resources, outpdf):
