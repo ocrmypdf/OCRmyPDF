@@ -421,9 +421,9 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
             )
             continue
         if compdata.type == leptonica.lept.L_FLATE_ENCODE:
-            return rewrite_png(pike, im_obj, compdata, log)
+            rewrite_png(pike, im_obj, compdata, log)
         elif compdata.type == leptonica.lept.L_G4_ENCODE:
-            return rewrite_png_as_g4(pike, im_obj, compdata, log)
+            rewrite_png_as_g4(pike, im_obj, compdata, log)
 
 
 def rewrite_png_as_g4(pike, im_obj, compdata, log):

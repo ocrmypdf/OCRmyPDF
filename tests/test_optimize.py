@@ -18,10 +18,12 @@
 import logging
 from os import fspath
 from pathlib import Path
+from unittest.mock import patch
 
+import img2pdf
 import pikepdf
 import pytest
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from ocrmypdf import optimize as opt
 from ocrmypdf.exec import jbig2enc, pngquant
@@ -130,3 +132,41 @@ def test_flate_to_jbig2(resources, outdir, spoof_tesseract_noop):
     pdf = pikepdf.open(outdir / 'out.pdf')
     pim = pikepdf.PdfImage(next(iter(pdf.pages[0].images.values())))
     assert pim.filters[0] == '/JBIG2Decode'
+
+
+def test_multiple_pngs(resources, outdir, spoof_tesseract_noop):
+    with Path.open(outdir / 'in.pdf', 'wb') as inpdf:
+        img2pdf.convert(
+            fspath(resources / 'baiona_colormapped.png'),
+            fspath(resources / 'baiona_gray.png'),
+            with_pdfrw=False,
+            outputstream=inpdf,
+        )
+
+    def mockquant(input_file, output_file, _quality_min, _quality_max):
+        with Image.open(input_file) as im:
+            draw = ImageDraw.Draw(im)
+            draw.rectangle((0, 0, im.width, im.height), fill=128)
+            im.save(output_file)
+
+    with patch('ocrmypdf.optimize.pngquant.quantize', new=mockquant):
+        check_ocrmypdf(
+            outdir / 'in.pdf',
+            outdir / 'out.pdf',
+            '--optimize',
+            '3',
+            '--jobs',
+            '1',
+            '--use-threads',
+            '--output-type',
+            'pdf',
+            env=spoof_tesseract_noop,
+        )
+
+    with pikepdf.open(outdir / 'in.pdf') as inpdf, pikepdf.open(
+        outdir / 'out.pdf'
+    ) as outpdf:
+        for n in range(len(inpdf.pages)):
+            inim = next(iter(inpdf.pages[n].images.values()))
+            outim = next(iter(outpdf.pages[n].images.values()))
+            assert len(outim.read_raw_bytes()) < len(inim.read_raw_bytes()), n
