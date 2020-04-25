@@ -2,9 +2,9 @@
 # setup.py lists a separate set of requirements that are looser to simplify
 # installation
 cffi == 1.14.0
-img2pdf == 0.3.3
+img2pdf == 0.3.4
 pdfminer.six == 20200402
-pikepdf == 1.10.2
-Pillow == 7.0.0
+pikepdf == 1.11.1
+Pillow == 7.1.1
 reportlab == 3.5.34
-tqdm == 4.42.1
+tqdm == 4.45.0
