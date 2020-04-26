@@ -27,22 +27,6 @@ if sys.version_info < (3, 6):
     print("Python 3.6 or newer is required", file=sys.stderr)
     sys.exit(1)
 
-
-# pylint: disable=w0613
-
-
-command = next((arg for arg in sys.argv[1:] if not arg.startswith('-')), '')
-if command.startswith('install') or command in [
-    'check',
-    'test',
-    'nosetests',
-    'easy_install',
-]:
-    forced = '--force' in sys.argv
-    if forced:
-        print("The argument --force is deprecated. Please discontinue use.")
-
-
 if 'upload' in sys.argv[1:]:
     print('Use twine to upload the package - setup.py upload is insecure')
     sys.exit(1)
