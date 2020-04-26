@@ -22,6 +22,7 @@ import re
 from collections import defaultdict, namedtuple
 from decimal import Decimal
 from enum import Enum
+from functools import partial
 from math import hypot, isclose
 from os import PathLike, fspath
 from pathlib import Path
@@ -613,13 +614,18 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, xmltext: str):
     return pageinfo
 
 
-# worker_pdf = None
+worker_pdf = None
+
+
+def _pdf_pageinfo_sync_init(infile):
+    global worker_pdf  # pylint: disable=global-statement
+    worker_pdf = pikepdf.open(infile)
 
 
 def _pdf_pageinfo_sync(args):
+    global worker_pdf  # pylint: disable=global-statement
     pageno, infile, xmltext, detailed_analysis = args
-    with pikepdf.open(infile) as worker_pdf:
-        page = PageInfo(worker_pdf, pageno, infile, xmltext, detailed_analysis)
+    page = PageInfo(worker_pdf, pageno, infile, xmltext, detailed_analysis)
     return page
 
 
@@ -635,8 +641,6 @@ def _pdf_pageinfo_concurrent(pdf, infile, pages_xml, detailed_analysis, progbar)
         (n, infile, pages_xml[n] if pages_xml else None, detailed_analysis)
         for n in range(len(pdf.pages))
     )
-    # global worker_pdf
-    # worker_pdf = pdf
 
     if os.name == 'nt':
         # We can't parallelize on Windows, because Windows cannot fork.
@@ -656,7 +660,7 @@ def _pdf_pageinfo_concurrent(pdf, infile, pages_xml, detailed_analysis, progbar)
         tqdm_kwargs=dict(
             total=len(pdf.pages), desc="Scan", unit='page', disable=not progbar
         ),
-        task_initializer=None,
+        task_initializer=partial(_pdf_pageinfo_sync_init, infile),
         task=_pdf_pageinfo_sync,
         task_arguments=contexts,
         task_finished=update_pageinfo,

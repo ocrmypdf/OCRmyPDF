@@ -98,7 +98,7 @@ setup(
         'cffi >= 1.9.1',  # must be a setup and install requirement
         'coloredlogs >= 14.0',  # strictly optional
         'img2pdf >= 0.3.0, < 0.4',  # pure Python, so track HEAD closely
-        'pdfminer.six >= 20191110, <= 20200124',
+        'pdfminer.six >= 20191110, <= 20200402',
         'pikepdf >= 1.8.1, < 2',
         'Pillow >= 6.2.0',
         'reportlab >= 3.3.0',  # oldest released version with sane image handling
