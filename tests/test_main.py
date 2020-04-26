@@ -29,7 +29,8 @@ from PIL import Image
 
 import ocrmypdf
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
-from ocrmypdf.exec import ghostscript, qpdf, tesseract
+from ocrmypdf.exec import ghostscript, tesseract
+from ocrmypdf.helpers import check_pdf
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 
@@ -529,8 +530,8 @@ def test_skip_big_with_no_images(spoof_tesseract_noop, resources, outpdf):
 
 
 @pytest.mark.skipif(
-    '8.0.0' <= qpdf.version() <= '8.0.1',
-    reason="qpdf regression on pages with no contents",
+    '8.0.0' <= pikepdf.__libqpdf_version__ <= '8.0.1',
+    reason="libqpdf regression on pages with no contents",
 )
 def test_no_contents(spoof_tesseract_noop, resources, outpdf):
     check_ocrmypdf(

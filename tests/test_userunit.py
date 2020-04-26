@@ -39,7 +39,7 @@ def test_userunit_ghostscript_fails(poster, no_outpdf, caplog):
     assert 'not supported by Ghostscript' in caplog.text
 
 
-def test_userunit_qpdf_passes(spoof_tesseract_cache, poster, outpdf):
+def test_userunit_pdf_passes(spoof_tesseract_cache, poster, outpdf):
     before = PdfInfo(poster)
     check_ocrmypdf(poster, outpdf, '--output-type=pdf', env=spoof_tesseract_cache)
 

@@ -30,6 +30,7 @@ v10.0.0 (not yet released)
    ``ocrmypdf.helpers.Resolution`` class.
 -  A deprecated parameter in ``ocrmypdf.exec.ghostscript.generate_pdfa`` was
    removed.
+-  The deprecated module ``ocrmypdf.exec.qpdf`` was removed.
 -  The ``ocrmypdf.hocrtransform`` module has been updated to follow PEP8 naming
    conventions.
 

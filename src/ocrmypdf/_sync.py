@@ -64,8 +64,7 @@ from ._validation import (
     report_output_file_size,
 )
 from .exceptions import ExitCode, ExitCodeException
-from .exec import qpdf
-from .helpers import available_cpu_count
+from .helpers import available_cpu_count, check_pdf
 from .pdfa import file_claims_pdfa
 
 log = logging.getLogger(__name__)
@@ -357,7 +356,7 @@ def run_pipeline(options, api=False):
                         pdfa_info['conformance'],
                     )
                     return ExitCode.pdfa_conversion_failed
-            if not qpdf.check(options.output_file):
+            if not check_pdf(options.output_file):
                 log.warning('Output file: The generated PDF is INVALID')
                 return ExitCode.invalid_output_pdf
             report_output_file_size(options, start_input_file, options.output_file)

@@ -24,8 +24,11 @@ from collections import namedtuple
 from collections.abc import Iterable
 from contextlib import suppress
 from functools import wraps
+from io import StringIO
 from math import inf, isclose
 from pathlib import Path
+
+import pikepdf
 
 log = logging.getLogger(__name__)
 
@@ -163,6 +166,40 @@ def is_file_writable(test_file: os.PathLike):
         log.debug(e)
         log.error(str(e))
         return False
+
+
+def check_pdf(input_file):
+    pdf = None
+    try:
+        pdf = pikepdf.open(input_file)
+    except pikepdf.PdfError as e:
+        log.error(e)
+        return False
+    else:
+        messages = pdf.check()
+        for msg in messages:
+            if 'error' in msg.lower():
+                log.error(msg)
+            else:
+                log.warning(msg)
+
+        sio = StringIO()
+        linearize = None
+        try:
+            pdf.check_linearization(sio)
+        except RuntimeError:
+            pass
+        else:
+            linearize = sio.getvalue()
+            if linearize:
+                log.warning(linearize)
+
+        if not messages and not linearize:
+            return True
+        return False
+    finally:
+        if pdf:
+            pdf.close()
 
 
 def deprecated(func):

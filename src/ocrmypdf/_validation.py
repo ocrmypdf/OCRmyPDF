@@ -38,7 +38,6 @@ from .exec import (
     ghostscript,
     jbig2enc,
     pngquant,
-    qpdf,
     tesseract,
     unpaper,
 )
@@ -473,9 +472,3 @@ def check_dependency_versions(options):
             "supported. Please upgrade to a newer version, or downgrade to the "
             "previous version."
         )
-    check_external_program(
-        program='qpdf',
-        package='qpdf',
-        version_checker=qpdf.version,
-        need_version='8.0.2',
-    )

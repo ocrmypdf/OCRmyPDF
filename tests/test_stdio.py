@@ -23,7 +23,7 @@ from subprocess import DEVNULL, PIPE, CalledProcessError, Popen, run
 import pytest
 
 from ocrmypdf.exceptions import ExitCode
-from ocrmypdf.exec import qpdf
+from ocrmypdf.helpers import check_pdf
 
 # pytest.helpers is dynamic
 # pylint: disable=no-member,redefined-outer-name
@@ -74,7 +74,7 @@ def test_stdout(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
         )
         assert p.returncode == ExitCode.ok
 
-    assert qpdf.check(output_file)
+    assert check_pdf(output_file)
 
 
 @pytest.mark.skipif(

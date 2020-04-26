@@ -17,9 +17,9 @@
 
 import pytest
 
-import ocrmypdf.exec.qpdf as qpdf
+from ocrmypdf.helpers import check_pdf
 
 
-def test_qpdf_error(resources):
-    assert qpdf.check(resources / 'blank.pdf')
-    assert not qpdf.check(__file__)
+def test_pdf_error(resources):
+    assert check_pdf(resources / 'blank.pdf')
+    assert not check_pdf(__file__)

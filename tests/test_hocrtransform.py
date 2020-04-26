@@ -21,8 +21,8 @@ import pytest
 from PIL import Image
 
 from ocrmypdf import hocrtransform
-from ocrmypdf.exec import qpdf
 from ocrmypdf.exec.tesseract import HOCR_TEMPLATE
+from ocrmypdf.helpers import check_pdf
 
 # pylint: disable=redefined-outer-name
 
@@ -43,4 +43,4 @@ def test_mono_image(blank_hocr, outdir):
     hocr = hocrtransform.HocrTransform(str(blank_hocr), 300)
     hocr.to_pdf(str(outdir / 'mono.pdf'), image_filename=str(outdir / 'mono.tif'))
 
-    qpdf.check(str(outdir / 'mono.pdf'))
+    check_pdf(str(outdir / 'mono.pdf'))
