@@ -168,12 +168,13 @@ stages:
                 jbig2enc \
                 leptonica \
                 openjpeg \
+                openssl \
                 pngquant \
                 tesseract \
                 unpaper
             displayName: "Install system packages"
           - bash: |
-              pip3 install --upgrade pip
+              pip3 install --upgrade pip certifi
               pip3 install -r requirements/main.txt -r requirements/test.txt .
             displayName: "Install Python packages"
           - bash: |
