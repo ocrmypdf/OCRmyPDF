@@ -153,12 +153,13 @@ stages:
           matrix:
             Python37:
               python.version: "3.7"
-            Python38:
-              python.version: "3.8"
+            # Python38:
+            #   python.version: "3.8"
         steps:
-          - task: UsePythonVersion@0
-            inputs:
-              versionSpec: "$(python.version)"
+          # https://github.com/actions/virtual-environments/issues/664
+          # - task: UsePythonVersion@0
+          #   inputs:
+          #     versionSpec: "$(python.version)"
           - bash: |
               brew update
               brew unlink python@2
@@ -168,13 +169,13 @@ stages:
                 jbig2enc \
                 leptonica \
                 openjpeg \
-                openssl \
                 pngquant \
+                python \
                 tesseract \
                 unpaper
             displayName: "Install system packages"
           - bash: |
-              pip3 install --upgrade pip certifi
+              pip3 install --upgrade pip
               pip3 install -r requirements/main.txt -r requirements/test.txt .
             displayName: "Install Python packages"
           - bash: |
