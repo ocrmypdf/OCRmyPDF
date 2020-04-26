@@ -169,7 +169,6 @@ def generate_pdfa(
     pdf_pages,
     output_file: os.PathLike,
     compression: str,
-    threads=None,  # deprecated parameter
     pdf_version: str = '1.5',
     pdfa_part: str = '2',
 ):
@@ -190,10 +189,6 @@ def generate_pdfa(
     images entirely. (The feature was added in 9.23 but broken, and the 9.24
     release of Ghostscript had regressions, so we don't support it until 9.25.)
     """
-    if threads is not None:
-        warnings.warn(
-            "use of deprecated parameter 'threads'", category=DeprecationWarning
-        )
 
     compression_args = []
     if compression == 'jpeg':
