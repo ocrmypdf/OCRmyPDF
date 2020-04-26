@@ -326,7 +326,11 @@ def run_pipeline(options, api=False):
         )
 
         # Gather pdfinfo and create context
-        pdfinfo = get_pdfinfo(origin_pdf, progbar=options.progress_bar)
+        pdfinfo = get_pdfinfo(
+            origin_pdf,
+            progbar=options.progress_bar,
+            max_workers=options.jobs if not options.use_threads else 1,  # To help debug
+        )
 
         context = PDFContext(options, work_folder, origin_pdf, pdfinfo)
 

@@ -147,9 +147,9 @@ def triage(original_filename, input_file, output_file, options):
     return output_file
 
 
-def get_pdfinfo(input_file, progbar=False):
+def get_pdfinfo(input_file, progbar=False, max_workers=None):
     try:
-        return PdfInfo(input_file, progbar=progbar)
+        return PdfInfo(input_file, progbar=progbar, max_workers=max_workers)
     except pikepdf.PasswordError:
         raise EncryptedPdfError()
     except pikepdf.PdfError:

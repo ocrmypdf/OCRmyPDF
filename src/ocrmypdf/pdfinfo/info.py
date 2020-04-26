@@ -33,7 +33,7 @@ from pikepdf import PdfMatrix
 
 from ocrmypdf._concurrent import exec_progress_pool
 from ocrmypdf.exceptions import EncryptedPdfError
-from ocrmypdf.helpers import Resolution
+from ocrmypdf.helpers import Resolution, available_cpu_count
 from ocrmypdf.pdfinfo.layout import get_page_analysis, get_text_boxes
 
 logger = logging.getLogger()
@@ -621,7 +621,7 @@ def _pdf_pageinfo_sync(args):
     return page
 
 
-def _pdf_pageinfo_concurrent(pdf, infile, progbar):
+def _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers):
     pages = [None] * len(pdf.pages)
 
     def update_pageinfo(result, pbar):
@@ -629,22 +629,21 @@ def _pdf_pageinfo_concurrent(pdf, infile, progbar):
         pages[page.pageno] = page
         pbar.update()
 
+    if max_workers is None:
+        max_workers = available_cpu_count()
+
     contexts = ((n, infile) for n in range(len(pdf.pages)))
-    if os.name == 'nt':
-        # We can't parallelize on Windows, because Windows cannot fork.
-        # We are trying to fork, then take advantage of the preloaded pikepdf.Pdf
-        # object in memory to save time reloading it, hence the silly global
-        # variable. Hey, it works. Threads are not helpful here because they
-        # will all just fight over the lock. So on Windows just run sequentially.
+
+    use_threads = False  # No performance gain if threaded due to GIL
+    n_workers = min(1 + len(pages) // 4, max_workers)
+    if n_workers == 1:
+        # But if we decided on only one worker, there is no point in using
+        # a separate process.
         use_threads = True
-        max_workers = 1
-    else:
-        use_threads = False
-        max_workers = min(len(pages), 16)
 
     exec_progress_pool(
         use_threads=use_threads,
-        max_workers=max_workers,
+        max_workers=n_workers,
         tqdm_kwargs=dict(
             total=len(pdf.pages), desc="Scan", unit='page', disable=not progbar
         ),
@@ -656,12 +655,12 @@ def _pdf_pageinfo_concurrent(pdf, infile, progbar):
     return pages
 
 
-def _pdf_get_all_pageinfo(infile, progbar=False):
+def _pdf_get_all_pageinfo(infile, progbar=False, max_workers=None):
     pdf = pikepdf.open(infile)  # Do not close in this function
     try:
         if pdf.is_encrypted:
             raise EncryptedPdfError()  # Triggered by encryption with empty passwd
-        pages = _pdf_pageinfo_concurrent(pdf, infile, progbar)
+        pages = _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers)
     except Exception:
         pdf.close()
         raise
@@ -770,9 +769,11 @@ class PageInfo:
 class PdfInfo:
     """Get summary information about a PDF"""
 
-    def __init__(self, infile, progbar=False):
+    def __init__(self, infile, progbar=False, max_workers=None):
         self._infile = infile
-        self._pages, pdf = _pdf_get_all_pageinfo(infile, progbar=progbar)
+        self._pages, pdf = _pdf_get_all_pageinfo(
+            infile, progbar=progbar, max_workers=max_workers
+        )
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
         self._has_acroform = False
         if '/AcroForm' in pdf.root:
