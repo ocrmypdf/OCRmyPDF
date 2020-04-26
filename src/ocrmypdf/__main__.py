@@ -19,6 +19,7 @@
 import logging
 import os
 import sys
+from multiprocessing import set_start_method
 
 from . import __version__
 from ._sync import run_pipeline
@@ -66,4 +67,6 @@ def run(args=None):
 
 
 if __name__ == '__main__':
+    if sys.platform == 'darwin' and sys.version_info < (3, 8):
+        set_start_method('spawn')  # see python bpo-33725
     sys.exit(run())
