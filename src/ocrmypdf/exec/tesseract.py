@@ -77,20 +77,14 @@ def has_textonly_pdf(tesseract_env=None, langs=None):
     args_tess = tess_base_args(langs, engine_mode=None) + ['--print-parameters', 'pdf']
     params = ''
     try:
-        proc = run(
-            args_tess,
-            check=True,
-            universal_newlines=True,
-            stdout=PIPE,
-            stderr=STDOUT,
-            env=tesseract_env,
-        )
+        # print-parameters can return non-UTF8 if the parameters are so initialized
+        proc = run(args_tess, check=True, stdout=PIPE, stderr=STDOUT, env=tesseract_env)
         params = proc.stdout
     except CalledProcessError as e:
         raise MissingDependencyError(
             "Could not --print-parameters from tesseract"
         ) from e
-    if 'textonly_pdf' in params:
+    if b'textonly_pdf' in params:
         return True
     return False
 
