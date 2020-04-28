@@ -33,11 +33,6 @@ run_ocrmypdf_api = pytest.helpers.run_ocrmypdf
 spoof = pytest.helpers.spoof
 
 
-@pytest.fixture
-def spoof_tess_bad_utf8(tmp_path_factory):
-    return spoof(tmp_path_factory, tesseract='tesseract_badutf8.py')
-
-
 def test_stdin(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
     input_file = str(resources / 'francais.pdf')
     output_file = str(outpdf)
