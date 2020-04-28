@@ -13,6 +13,14 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.8.0
+======
+
+-  Fixed issue where only the first PNG (FlateDecode) image in a file would be
+   considered for optimization. File sizes should be improved from here on.
+-  Fixed a startup crash when the chosen language was Japanese (#543).
+-  Added options to configure polling and log level to watcher.py.
+
 v9.7.2
 ======
 
