@@ -276,6 +276,11 @@ def check_options_advanced(options):
             "Tesseract 4.0 ignores --user-words and --user-patterns, so these "
             "arguments have no effect."
         )
+    if options.tesseract_pagesegmode in (0, 2):
+        log.warning(
+            "The --tesseract-pagesegmode argument you select will disable OCR. "
+            "This may cause processing to fail."
+        )
 
 
 def check_options_metadata(options):

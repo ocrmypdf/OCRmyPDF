@@ -210,3 +210,9 @@ def test_version_comparison():
             version_checker=lambda: '1.0',
             need_version='2.0',
         )
+
+
+def test_pagesegmode_warning(caplog):
+    opts = make_opts(tesseract_pagesegmode='0')
+    vd.check_options_advanced(opts)
+    assert 'disable OCR' in caplog.text
