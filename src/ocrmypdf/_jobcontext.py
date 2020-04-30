@@ -19,6 +19,8 @@ import os
 import shutil
 import sys
 from argparse import Namespace
+from copy import copy
+from io import IOBase
 from pathlib import Path
 from typing import Iterator
 
@@ -41,9 +43,6 @@ class PdfContext:
         self.origin = origin
         self.pdfinfo = pdfinfo
         self.plugin_manager = plugin_manager
-        self.name = os.path.basename(options.input_file)
-        if self.name == '-':
-            self.name = 'stdin'
 
     def get_path(self, name: str) -> Path:
         return self.work_folder / name
@@ -65,13 +64,22 @@ class PageContext:
         self.work_folder = pdf_context.work_folder
         self.origin = pdf_context.origin
         self.options = pdf_context.options
-        self.name = pdf_context.name
         self.pageno = pageno
         self.pageinfo = pdf_context.pdfinfo[pageno]
         self.plugin_manager = pdf_context.plugin_manager
 
     def get_path(self, name: str) -> Path:
         return self.work_folder / ("%06d_%s" % (self.pageno + 1, name))
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+
+        state['options'] = copy(self.options)
+        if not isinstance(state['options'].input_file, (str, bytes, os.PathLike)):
+            state['options'].input_file = 'stream'
+        if not isinstance(state['options'].output_file, (str, bytes, os.PathLike)):
+            state['options'].output_file = 'stream'
+        return state
 
 
 def cleanup_working_files(work_folder: Path, options: Namespace):

@@ -19,6 +19,7 @@ import logging
 import os
 import re
 import sys
+from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
 from shutil import copyfileobj
@@ -822,6 +823,10 @@ def copy_final(input_file: Path, output_file: Path, _context: PdfContext):
         if output_file == '-':
             copyfileobj(input_stream, sys.stdout.buffer)
             sys.stdout.flush()
+        elif hasattr(output_file, 'writable'):
+            copyfileobj(input_stream, output_file)
+            with suppress(AttributeError):
+                output_file.flush()
         else:
             # At this point we overwrite the output_file specified by the user
             # use copyfileobj because then we use open() to create the file and

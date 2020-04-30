@@ -357,6 +357,10 @@ def run_pipeline(options, *, plugin_manager, api=False):
 
         if options.output_file == '-':
             log.info("Output sent to stdout")
+        elif (
+            hasattr(options.output_file, 'writable') and options.output_file.writable()
+        ):
+            log.info("Output written to stream")
         elif samefile(options.output_file, os.devnull):
             pass  # Say nothing when sending to dev null
         else:

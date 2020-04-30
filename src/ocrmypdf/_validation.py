@@ -337,7 +337,15 @@ def create_input_file(options, work_folder: Path) -> Tuple[Path, str]:
         target = work_folder / 'stdin'
         with open(target, 'wb') as stream_buffer:
             copyfileobj(sys.stdin.buffer, stream_buffer)
-        return target, "<stdin>"
+        return target, "stdin"
+    elif hasattr(options.input_file, 'readable'):
+        if not options.input_file.readable():
+            raise InputFileError("Input file stream is not readable")
+        log.info('reading file from input stream')
+        target = os.path.join(work_folder, 'stream')
+        with open(target, 'wb') as stream_buffer:
+            copyfileobj(options.input_file, stream_buffer)
+        return target, "stream"
     else:
         try:
             target = work_folder / 'origin'
@@ -355,6 +363,9 @@ def check_requested_output_file(options):
                 "is connected to a terminal.  Please redirect stdout to a "
                 "file."
             )
+    elif hasattr(options.output_file, 'writable'):
+        if not options.output_file.writable():
+            raise OutputFileAccessError("Output stream is not writable")
     elif not is_file_writable(options.output_file):
         raise OutputFileAccessError(
             f"Output file location ({options.output_file}) is not a writable file."

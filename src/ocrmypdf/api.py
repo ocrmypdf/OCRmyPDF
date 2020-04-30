@@ -21,7 +21,7 @@ import sys
 from argparse import ArgumentParser
 from enum import IntEnum
 from pathlib import Path
-from typing import Iterable
+from typing import BinaryIO, Iterable, Union
 
 from ocrmypdf._logging import PageNumberFilter, TqdmConsole
 from ocrmypdf._plugin_manager import get_plugin_manager
@@ -33,6 +33,9 @@ try:
     import coloredlogs
 except ModuleNotFoundError:
     coloredlogs = None
+
+
+PathOrIO = Union[BinaryIO, os.PathLike]
 
 
 class Verbosity(IntEnum):
@@ -127,11 +130,7 @@ def configure_logging(
 
 
 def create_options(
-    *,
-    input_file: os.PathLike,
-    output_file: os.PathLike,
-    parser: ArgumentParser,
-    **kwargs,
+    *, input_file: PathOrIO, output_file: PathOrIO, parser: ArgumentParser, **kwargs
 ):
     cmdline = []
     deferred = []
@@ -171,19 +170,31 @@ def create_options(
         else:
             raise TypeError(f"{arg}: {val} ({type(val)})")
 
-    cmdline.append(str(input_file))
-    cmdline.append(str(output_file))
+    try:
+        cmdline.append(os.fspath(input_file))
+    except TypeError:
+        cmdline.append('stream://input_file')
+    try:
+        cmdline.append(os.fspath(output_file))
+    except TypeError:
+        cmdline.append('stream://output_file')
 
     parser._api_mode = True
     options = parser.parse_args(cmdline)
     for keyword, val in deferred:
         setattr(options, keyword, val)
+
+    if options.input_file == 'stream://input_file':
+        options.input_file = input_file
+    if options.output_file == 'stream://output_file':
+        options.output_file = output_file
+
     return options
 
 
 def ocr(  # pylint: disable=unused-argument
-    input_file: os.PathLike,
-    output_file: os.PathLike,
+    input_file: PathOrIO,
+    output_file: PathOrIO,
     *,
     language: Iterable[str] = None,
     image_dpi: int = None,

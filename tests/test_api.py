@@ -16,7 +16,7 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from io import StringIO
+from io import BytesIO, StringIO
 
 import pytest
 from tqdm import tqdm
@@ -66,3 +66,12 @@ def test_language_list():
         (ocrmypdf.exceptions.InputFileError, ocrmypdf.exceptions.MissingDependencyError)
     ):
         ocrmypdf.ocr('doesnotexist.pdf', '_.pdf', language=['eng', 'deu'])
+
+
+def test_stream_api(resources):
+    in_ = (resources / 'graph.pdf').open('rb')
+    out = BytesIO()
+
+    ocrmypdf.ocr(in_, out, tesseract_timeout=0.0)
+    out.seek(0)
+    assert b'%PDF' in out.read(1024)
