@@ -104,6 +104,13 @@ def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike, *args, **
     os.symlink(os.path.abspath(input_file), soft_link_name)
 
 
+def samefile(f1, f2):
+    if os.name == 'nt':
+        return f1 == f2
+    else:
+        return os.path.samefile(f1, f2)
+
+
 def is_iterable_notstr(thing):
     return isinstance(thing, Iterable) and not isinstance(thing, str)
 

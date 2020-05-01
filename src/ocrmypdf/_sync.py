@@ -67,7 +67,7 @@ from ocrmypdf._validation import (
     report_output_file_size,
 )
 from ocrmypdf.exceptions import ExitCode, ExitCodeException
-from ocrmypdf.helpers import available_cpu_count, check_pdf
+from ocrmypdf.helpers import available_cpu_count, check_pdf, samefile
 from ocrmypdf.pdfa import file_claims_pdfa
 
 log = logging.getLogger(__name__)
@@ -281,13 +281,6 @@ class NeverRaise(Exception):
     """An exception that is never raised"""
 
     pass  # pylint: disable=unnecessary-pass
-
-
-def samefile(f1, f2):
-    if os.name == 'nt':
-        return f1 == f2
-    else:
-        return os.path.samefile(f1, f2)
 
 
 def configure_debug_logging(log_filename, prefix=''):
