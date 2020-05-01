@@ -18,9 +18,7 @@
 import importlib
 import logging
 import logging.handlers
-import multiprocessing
 import os
-import signal
 import sys
 import threading
 from collections import namedtuple
@@ -294,22 +292,14 @@ def configure_debug_logging(log_filename, prefix=''):
     return log_file_handler
 
 
-def _load_object_from_module(location):
-    """Load a object given a module location
+def get_plugin_manager(options):
+    pm = pluggy.PluginManager('ocrmypdf')
+    pm.add_hookspecs(_pluginspec)
 
-    For location=a.b.c, will effectively run "from a.b import c"
-
-    Example:
-        _load_object_from_module("a.b.c")
-
-    """
-    module_parts = location.split('.')
-    module_name = '.'.join(module_parts[:-1])
-    object_name = module_parts[-1]
-    module = importlib.import_module(module_name)
-    obj = getattr(module, object_name)
-    log.debug(f"Loaded object: from {module_name} import {object_name}")
-    return obj
+    for name in options.plugins:
+        module = importlib.import_module(name)
+        pm.register(module)
+    return pm
 
 
 def run_pipeline(options, api=False):
@@ -326,14 +316,7 @@ def run_pipeline(options, api=False):
     ):
         debug_log_handler = configure_debug_logging(Path(work_folder) / "debug.log")
 
-    pm = pluggy.PluginManager('ocrmypdf')
-    pm.add_hookspecs(_pluginspec)
-
-    for name in options.plugins:
-        # module = _load_object_from_module(name)
-        module = importlib.import_module(name)
-        pm.register(module)
-
+    pm = get_plugin_manager(options)
     try:
         check_requested_output_file(options)
         start_input_file, original_filename = create_input_file(options, work_folder)
