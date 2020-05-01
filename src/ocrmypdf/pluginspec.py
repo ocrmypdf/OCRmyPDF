@@ -33,13 +33,6 @@ def prepare(options: Namespace) -> None:
 
 	The plugin may modify the options. All objects that are in options must
 	be picklable so they can be marshalled to child worker processes.
-
-    Typically, a plugin will call ``registry.register_plugin(__name__)`` to register
-    all of its public functions with the plugin registry. Functions that are
-    not intended for registration should be prefixed with an underscore.
-    Functions that imported from other modules will be ignored by
-    ``.register_plugin()``. For example if you use ``from os import basename``,
-    ``basename`` will not be registered.
 	"""
 
 
@@ -57,7 +50,7 @@ def validate(pdfinfo: PdfInfo, options: Namespace) -> None:
     """
 
 
-@hookspec
+@hookspec(firstresult=True)
 def filter_ocr_image(image: Image) -> Image:
     """Called to filter the image before it is sent to OCR.
 

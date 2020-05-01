@@ -320,6 +320,8 @@ def run_pipeline(options, api=False):
             options,
         )
 
+        pm.hook.prepare(options=options)
+
         # Gather pdfinfo and create context
         pdfinfo = get_pdfinfo(
             origin_pdf,

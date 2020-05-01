@@ -194,7 +194,7 @@ def validate_pdfinfo_options(context):
                     "form and all filled form fields. The output PDF will be "
                     "'flattened' and will no longer be fillable."
                 )
-    context.plugin_manager.hook.prepare(options=options)
+    context.plugin_manager.hook.validate(pdfinfo=pdfinfo, options=options)
 
 
 def get_page_dpi(pageinfo, options):
