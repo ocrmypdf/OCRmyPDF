@@ -1,6 +1,11 @@
-import ocrmypdf
+from ocrmypdf import hookimpl
 
 
-@ocrmypdf.hookimpl
+@hookimpl
 def prepare(options):
-    raise ValueError('foo')
+    pass
+
+
+@hookimpl
+def filter_ocr_image(image):
+    return image

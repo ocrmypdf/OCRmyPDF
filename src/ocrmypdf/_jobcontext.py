@@ -19,6 +19,9 @@ import logging
 import os
 import shutil
 import sys
+from functools import partial
+
+from ocrmypdf._plugin_manager import get_plugin_manager
 
 
 class PDFContext:
@@ -59,9 +62,21 @@ class PageContext:
         self.name = pdf_context.name
         self.pageno = pageno
         self.pageinfo = pdf_context.pdfinfo[pageno]
+        self.plugin_manager = pdf_context.plugin_manager
 
     def get_path(self, name):
         return os.path.join(self.work_folder, "%06d_%s" % (self.pageno + 1, name))
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['plugin_manager']
+        state['construct_plugin_manager'] = partial(get_plugin_manager, self.options)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.plugin_manager = self.__dict__['construct_plugin_manager']()
+        del self.__dict__['construct_plugin_manager']
 
 
 def cleanup_working_files(work_folder, options):

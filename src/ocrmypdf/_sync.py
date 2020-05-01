@@ -29,7 +29,7 @@ from tempfile import mkdtemp
 import PIL
 import pluggy
 
-from ocrmypdf import _pluginspec
+from ocrmypdf import pluginspec
 from ocrmypdf._concurrent import exec_progress_pool
 from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PDFContext, cleanup_working_files
@@ -59,6 +59,7 @@ from ocrmypdf._pipeline import (
     triage,
     validate_pdfinfo_options,
 )
+from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._validation import (
     check_requested_output_file,
     create_input_file,
@@ -290,16 +291,6 @@ def configure_debug_logging(log_filename, prefix=''):
     log_file_handler.setFormatter(formatter)
     logging.getLogger(prefix).addHandler(log_file_handler)
     return log_file_handler
-
-
-def get_plugin_manager(options):
-    pm = pluggy.PluginManager('ocrmypdf')
-    pm.add_hookspecs(_pluginspec)
-
-    for name in options.plugins:
-        module = importlib.import_module(name)
-        pm.register(module)
-    return pm
 
 
 def run_pipeline(options, api=False):
