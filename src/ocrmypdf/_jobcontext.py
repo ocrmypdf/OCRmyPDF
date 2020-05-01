@@ -24,11 +24,12 @@ import sys
 class PDFContext:
     """Holds our context for a particular run of the pipeline"""
 
-    def __init__(self, options, work_folder, origin, pdfinfo):
+    def __init__(self, options, work_folder, origin, pdfinfo, plugin_manager):
         self.options = options
         self.work_folder = work_folder
         self.origin = origin
         self.pdfinfo = pdfinfo
+        self.plugin_manager = plugin_manager
         if options:
             self.name = os.path.basename(options.input_file)
         else:

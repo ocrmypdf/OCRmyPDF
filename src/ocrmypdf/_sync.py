@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import importlib
 import logging
 import logging.handlers
 import multiprocessing
@@ -28,12 +29,14 @@ from pathlib import Path
 from tempfile import mkdtemp
 
 import PIL
+import pluggy
 
-from ._concurrent import exec_progress_pool
-from ._graft import OcrGrafter
-from ._jobcontext import PDFContext, cleanup_working_files
-from ._logging import PageNumberFilter
-from ._pipeline import (
+from ocrmypdf import _pluginspec
+from ocrmypdf._concurrent import exec_progress_pool
+from ocrmypdf._graft import OcrGrafter
+from ocrmypdf._jobcontext import PDFContext, cleanup_working_files
+from ocrmypdf._logging import PageNumberFilter
+from ocrmypdf._pipeline import (
     convert_to_pdfa,
     copy_final,
     create_ocr_image,
@@ -58,14 +61,14 @@ from ._pipeline import (
     triage,
     validate_pdfinfo_options,
 )
-from ._validation import (
+from ocrmypdf._validation import (
     check_requested_output_file,
     create_input_file,
     report_output_file_size,
 )
-from .exceptions import ExitCode, ExitCodeException
-from .helpers import available_cpu_count, check_pdf
-from .pdfa import file_claims_pdfa
+from ocrmypdf.exceptions import ExitCode, ExitCodeException
+from ocrmypdf.helpers import available_cpu_count, check_pdf
+from ocrmypdf.pdfa import file_claims_pdfa
 
 log = logging.getLogger(__name__)
 
@@ -298,6 +301,24 @@ def configure_debug_logging(log_filename, prefix=''):
     return log_file_handler
 
 
+def _load_object_from_module(location):
+    """Load a object given a module location
+
+    For location=a.b.c, will effectively run "from a.b import c"
+
+    Example:
+        _load_object_from_module("a.b.c")
+
+    """
+    module_parts = location.split('.')
+    module_name = '.'.join(module_parts[:-1])
+    object_name = module_parts[-1]
+    module = importlib.import_module(module_name)
+    obj = getattr(module, object_name)
+    log.debug(f"Loaded object: from {module_name} import {object_name}")
+    return obj
+
+
 def run_pipeline(options, api=False):
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
@@ -311,6 +332,14 @@ def run_pipeline(options, api=False):
         'PYTEST_CURRENT_TEST', ''
     ):
         debug_log_handler = configure_debug_logging(Path(work_folder) / "debug.log")
+
+    pm = pluggy.PluginManager('ocrmypdf')
+    pm.add_hookspecs(_pluginspec)
+
+    for name in options.plugins:
+        # module = _load_object_from_module(name)
+        module = importlib.import_module(name)
+        pm.register(module)
 
     try:
         check_requested_output_file(options)
@@ -331,7 +360,7 @@ def run_pipeline(options, api=False):
             max_workers=options.jobs if not options.use_threads else 1,  # To help debug
         )
 
-        context = PDFContext(options, work_folder, origin_pdf, pdfinfo)
+        context = PDFContext(options, work_folder, origin_pdf, pdfinfo, pm)
 
         # Validate options are okay for this pdf
         validate_pdfinfo_options(context)

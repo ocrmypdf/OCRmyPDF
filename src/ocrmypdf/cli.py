@@ -480,6 +480,12 @@ advanced.add_argument(
     "which do not benefit. If the threshold is 0 it will be apply to all files. "
     "Set the threshold very high to disable.",
 )
+advanced.add_argument(
+    '--plugins',
+    action='append',
+    default=[],
+    help="Path to a folder than contains plugins.",
+)
 
 debugging = parser.add_argument_group(
     "Debugging", "Arguments to help with troubleshooting and debugging"
