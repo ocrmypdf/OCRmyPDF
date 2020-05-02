@@ -497,3 +497,13 @@ debugging.add_argument(
     help="Keep temporary files (helpful for debugging)",
 )
 debugging.add_argument('--tesseract-env', type=str, help=argparse.SUPPRESS)
+
+plugins_only_parser = ArgumentParser(
+    prog=_PROGRAM_NAME, fromfile_prefix_chars='@', add_help=False, allow_abbrev=False
+)
+plugins_only_parser.add_argument(
+    '--plugins',
+    action='append',
+    default=[],
+    help="Path to a folder than contains plugins.",
+)

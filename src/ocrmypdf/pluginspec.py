@@ -15,16 +15,22 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from argparse import Namespace
+from argparse import ArgumentParser, Namespace
 
 import pluggy
 from PIL import Image
 
+from ocrmypdf._jobcontext import PageContext
 from ocrmypdf.pdfinfo import PdfInfo
 
 hookspec = pluggy.HookspecMarker('ocrmypdf')
 
 # pylint: disable=unused-argument
+
+
+@hookspec
+def install_cli(parser: ArgumentParser) -> None:
+    """Allows the plugin to add its own command line arguments."""
 
 
 @hookspec
@@ -51,7 +57,7 @@ def validate(pdfinfo: PdfInfo, options: Namespace) -> None:
 
 
 @hookspec(firstresult=True)
-def filter_ocr_image(image: Image) -> Image:
+def filter_ocr_image(page: PageContext, image: Image) -> Image:
     """Called to filter the image before it is sent to OCR.
 
     This is the image that OCR sees, not what the user sees when they view the

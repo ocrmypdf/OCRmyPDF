@@ -522,7 +522,9 @@ def create_ocr_image(image, page_context):
 
         del draw
 
-        im = page_context.plugin_manager.hook.filter_ocr_image(image=im)
+        im = page_context.plugin_manager.hook.filter_ocr_image(
+            page=page_context, image=im
+        )
 
         # Pillow requires integer DPI
         dpi = tuple(round(coord) for coord in im.info['dpi'])

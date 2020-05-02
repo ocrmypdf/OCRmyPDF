@@ -21,17 +21,23 @@ import os
 import sys
 from multiprocessing import set_start_method
 
-from . import __version__
-from ._sync import run_pipeline
-from ._validation import check_closed_streams, check_options
-from .api import Verbosity, configure_logging
-from .cli import parser
-from .exceptions import BadArgsError, ExitCode, MissingDependencyError
+from ocrmypdf import __version__
+from ocrmypdf._plugin_manager import get_plugin_manager
+from ocrmypdf._sync import run_pipeline
+from ocrmypdf._validation import check_closed_streams, check_options
+from ocrmypdf.api import Verbosity, configure_logging
+from ocrmypdf.cli import parser, plugins_only_parser
+from ocrmypdf.exceptions import BadArgsError, ExitCode, MissingDependencyError
 
 log = logging.getLogger('ocrmypdf')
 
 
 def run(args=None):
+    pre_options, _unused = plugins_only_parser.parse_known_args(args=args)
+    if pre_options.plugins:
+        pm = get_plugin_manager(pre_options)
+        pm.hook.install_cli(parser=parser)
+
     options = parser.parse_args(args=args)
 
     if not check_closed_streams(options):
