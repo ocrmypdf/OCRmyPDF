@@ -24,7 +24,7 @@ from functools import partial
 from ocrmypdf._plugin_manager import get_plugin_manager
 
 
-class PDFContext:
+class PdfContext:
     """Holds our context for a particular run of the pipeline"""
 
     def __init__(self, options, work_folder, origin, pdfinfo, plugin_manager):

@@ -29,7 +29,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from . import leptonica
-from ._jobcontext import PDFContext
+from ._jobcontext import PdfContext
 from .exceptions import OutputFileAccessError
 from .exec import jbig2enc, pngquant
 from .helpers import safe_symlink
@@ -582,7 +582,7 @@ def main(infile, outfile, level, jobs=1):
     )
 
     with TemporaryDirectory() as td:
-        context = PDFContext(options, td, infile, None, None)
+        context = PdfContext(options, td, infile, None, None)
         tmpout = Path(td) / 'out.pdf'
         optimize(
             infile,

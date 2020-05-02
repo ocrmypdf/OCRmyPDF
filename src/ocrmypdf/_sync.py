@@ -32,7 +32,7 @@ import pluggy
 from ocrmypdf import pluginspec
 from ocrmypdf._concurrent import exec_progress_pool
 from ocrmypdf._graft import OcrGrafter
-from ocrmypdf._jobcontext import PDFContext, cleanup_working_files
+from ocrmypdf._jobcontext import PdfContext, cleanup_working_files
 from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._pipeline import (
     convert_to_pdfa,
@@ -330,7 +330,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
             max_workers=options.jobs if not options.use_threads else 1,  # To help debug
         )
 
-        context = PDFContext(options, work_folder, origin_pdf, pdfinfo, plugin_manager)
+        context = PdfContext(options, work_folder, origin_pdf, pdfinfo, plugin_manager)
 
         # Validate options are okay for this pdf
         validate_pdfinfo_options(context)
