@@ -20,9 +20,6 @@ from argparse import ArgumentParser, Namespace
 import pluggy
 from PIL import Image
 
-from ocrmypdf._jobcontext import PageContext
-from ocrmypdf.pdfinfo import PdfInfo
-
 hookspec = pluggy.HookspecMarker('ocrmypdf')
 
 # pylint: disable=unused-argument
@@ -43,7 +40,7 @@ def prepare(options: Namespace) -> None:
 
 
 @hookspec
-def validate(pdfinfo: PdfInfo, options: Namespace) -> None:
+def validate(pdfinfo: 'PdfInfo', options: Namespace) -> None:
     """Called to give a plugin an opportunity to review options and pdfinfo.
 
     options contains the "work order" to process a particular file. pdfinfo
@@ -57,7 +54,7 @@ def validate(pdfinfo: PdfInfo, options: Namespace) -> None:
 
 
 @hookspec(firstresult=True)
-def filter_ocr_image(page: PageContext, image: Image) -> Image:
+def filter_ocr_image(page: 'PageContext', image: Image) -> Image:
     """Called to filter the image before it is sent to OCR.
 
     This is the image that OCR sees, not what the user sees when they view the
