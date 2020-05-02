@@ -18,15 +18,17 @@
 import logging
 import os
 import sys
+from argparse import ArgumentParser
 from contextlib import suppress
 from enum import IntEnum
 from pathlib import Path
 from typing import Dict, Iterable
 
-from ._logging import PageNumberFilter, TqdmConsole
-from ._sync import run_pipeline
-from ._validation import check_options
-from .cli import parser
+from ocrmypdf._logging import PageNumberFilter, TqdmConsole
+from ocrmypdf._plugin_manager import get_plugin_manager
+from ocrmypdf._sync import run_pipeline
+from ocrmypdf._validation import check_options
+from ocrmypdf.cli import get_parser, plugins_only_parser
 
 try:
     import coloredlogs
@@ -125,7 +127,13 @@ def configure_logging(
     return log
 
 
-def create_options(*, input_file: os.PathLike, output_file: os.PathLike, **kwargs):
+def create_options(
+    *,
+    input_file: os.PathLike,
+    output_file: os.PathLike,
+    parser: ArgumentParser,
+    **kwargs,
+):
     cmdline = []
     deferred = []
 
@@ -223,9 +231,11 @@ def ocr(  # pylint: disable=unused-argument
     user_words: os.PathLike = None,
     user_patterns: os.PathLike = None,
     fast_web_view: float = None,
+    plugins: Iterable[str] = None,
     keep_temporary_files: bool = None,
     progress_bar: bool = None,
     tesseract_env: Dict[str, str] = None,
+    **kwargs,
 ):
     """Run OCRmyPDF on one PDF or image.
 
@@ -260,7 +270,15 @@ def ocr(  # pylint: disable=unused-argument
     Returns:
         :class:`ocrmypdf.ExitCode`
     """
+    if not plugins:
+        plugins = []
 
-    options = create_options(**locals())
+    parser = get_parser()
+    _plugin_manager = get_plugin_manager(plugins)
+    _plugin_manager.hook.install_cli(parser=parser)
+
+    options = create_options(
+        **{k: v for k, v in locals().items() if not k.startswith('_')}
+    )
     check_options(options)
-    return run_pipeline(options, api=True)
+    return run_pipeline(options=options, plugin_manager=_plugin_manager, api=True)

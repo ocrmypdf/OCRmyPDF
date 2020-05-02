@@ -21,7 +21,7 @@ from unittest.mock import patch
 import pytest
 
 from ocrmypdf._validation import check_options
-from ocrmypdf.cli import parser
+from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 from ocrmypdf.exec import unpaper
 
@@ -51,7 +51,7 @@ def spoof_unpaper_oldversion(tmp_path_factory):
 def test_no_unpaper(resources, no_outpdf):
     input_ = fspath(resources / "c02-22.pdf")
     output = fspath(no_outpdf)
-    options = parser.parse_args(args=["--clean", input_, output])
+    options = get_parser().parse_args(args=["--clean", input_, output])
 
     with patch("ocrmypdf.exec.unpaper.version") as mock_unpaper_version:
         mock_unpaper_version.side_effect = FileNotFoundError("unpaper")

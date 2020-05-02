@@ -23,6 +23,7 @@ import pytest
 
 import ocrmypdf._validation as vd
 from ocrmypdf.api import create_options
+from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
 from ocrmypdf.pdfinfo import PdfInfo
 
@@ -30,7 +31,9 @@ from ocrmypdf.pdfinfo import PdfInfo
 def make_opts(input_file='a.pdf', output_file='b.pdf', language='eng', **kwargs):
     if language is not None:
         kwargs['language'] = language
-    return create_options(input_file=input_file, output_file=output_file, **kwargs)
+    return create_options(
+        input_file=input_file, output_file=output_file, parser=get_parser(), **kwargs
+    )
 
 
 def test_hocr_notlatin_warning(caplog):

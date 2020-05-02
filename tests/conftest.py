@@ -214,7 +214,7 @@ def no_outpdf(tmp_path):
 def check_ocrmypdf(input_file, output_file, *args, env=None):
     """Run ocrmypdf and confirmed that a valid file was created"""
 
-    options = cli.parser.parse_args(
+    options = cli.get_parser().parse_args(
         [str(input_file), str(output_file)]
         + [str(arg) for arg in args if arg is not None]
     )
@@ -222,7 +222,7 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
     if env:
         options.tesseract_env = env
         options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
-    result = api.run_pipeline(options, api=True)
+    result = api.run_pipeline(options, plugin_manager=None, api=True)
 
     assert result == 0
     assert os.path.exists(str(output_file)), "Output file not created"
@@ -238,7 +238,7 @@ def run_ocrmypdf_api(input_file, output_file, *args, env=None):
     Does not currently have a way to manipulate the PATH except for Tesseract.
     """
 
-    options = cli.parser.parse_args(
+    options = cli.get_parser().parse_args(
         [str(input_file), str(output_file)]
         + [str(arg) for arg in args if arg is not None]
     )
@@ -253,7 +253,7 @@ def run_ocrmypdf_api(input_file, output_file, *args, env=None):
     if options.tesseract_env:
         assert all(isinstance(v, (str, bytes)) for v in options.tesseract_env.values())
 
-    return api.run_pipeline(options, api=False)
+    return api.run_pipeline(options, plugin_manager=None, api=False)
 
 
 @pytest.helpers.register

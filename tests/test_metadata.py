@@ -32,7 +32,7 @@ from pikepdf.models.metadata import decode_pdf_date
 
 from ocrmypdf._jobcontext import PDFContext
 from ocrmypdf._pipeline import convert_to_pdfa
-from ocrmypdf.cli import parser
+from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import SRGB_ICC_PROFILE, file_claims_pdfa, generate_pdfa_ps
 from ocrmypdf.pdfinfo import PdfInfo
@@ -290,16 +290,15 @@ def test_kodak_toc(resources, outpdf, spoof_tesseract_noop):
 
 
 def test_metadata_fixup_warning(resources, outdir, caplog):
-    from ocrmypdf.__main__ import parser
     from ocrmypdf._pipeline import metadata_fixup
 
-    options = parser.parse_args(
+    options = get_parser().parse_args(
         args=['--output-type', 'pdfa-2', 'graph.pdf', 'out.pdf']
     )
 
     copyfile(resources / 'graph.pdf', outdir / 'graph.pdf')
 
-    context = PDFContext(options, outdir, outdir / 'graph.pdf', None)
+    context = PDFContext(options, outdir, outdir / 'graph.pdf', None, None)
     metadata_fixup(working_file=outdir / 'graph.pdf', context=context)
     for record in caplog.records:
         assert record.levelname != 'WARNING'
@@ -310,7 +309,7 @@ def test_metadata_fixup_warning(resources, outdir, caplog):
         meta['prism2:publicationName'] = 'OCRmyPDF Test'
     graph.save(outdir / 'graph_mod.pdf')
 
-    context = PDFContext(options, outdir, outdir / 'graph_mod.pdf', None)
+    context = PDFContext(options, outdir, outdir / 'graph_mod.pdf', None, None)
     metadata_fixup(working_file=outdir / 'graph.pdf', context=context)
     assert any(record.levelname == 'WARNING' for record in caplog.records)
 
@@ -326,11 +325,11 @@ def test_prevent_gs_invalid_xml(resources, outdir):
             Title=b'String with trailing nul\x00'
         )
 
-    options = parser.parse_args(
+    options = get_parser().parse_args(
         args=['-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
     )
     pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
-    context = PDFContext(options, outdir, outdir / 'layers.rendered.pdf', pdfinfo)
+    context = PDFContext(options, outdir, outdir / 'layers.rendered.pdf', pdfinfo, None)
 
     convert_to_pdfa(
         str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps'), context
@@ -357,11 +356,11 @@ def test_malformed_docinfo(caplog, resources, outdir):
         pike.trailer.Info = pikepdf.Stream(pike, b"<xml></xml>")
         pike.save(outdir / 'layers.rendered.pdf', fix_metadata_version=False)
 
-    options = parser.parse_args(
+    options = get_parser().parse_args(
         args=['-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
     )
     pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
-    context = PDFContext(options, outdir, outdir / 'layers.rendered.pdf', pdfinfo)
+    context = PDFContext(options, outdir, outdir / 'layers.rendered.pdf', pdfinfo, None)
 
     convert_to_pdfa(
         str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps'), context

@@ -69,13 +69,19 @@ class PageContext:
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        del state['plugin_manager']
-        state['construct_plugin_manager'] = partial(get_plugin_manager, self.options)
+        if state['plugin_manager'] is not None:
+            del state['plugin_manager']
+            state['construct_plugin_manager'] = partial(
+                get_plugin_manager, self.options.plugins
+            )
         return state
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        self.plugin_manager = self.__dict__['construct_plugin_manager']()
+        if 'construct_plugin_manager' in state:
+            self.plugin_manager = state['construct_plugin_manager']()
+        else:
+            self.plugin_manager = None
         del self.__dict__['construct_plugin_manager']
 
 

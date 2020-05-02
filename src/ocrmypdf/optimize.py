@@ -582,7 +582,7 @@ def main(infile, outfile, level, jobs=1):
     )
 
     with TemporaryDirectory() as td:
-        context = PDFContext(options, td, infile, None)
+        context = PDFContext(options, td, infile, None, None)
         tmpout = Path(td) / 'out.pdf'
         optimize(
             infile,

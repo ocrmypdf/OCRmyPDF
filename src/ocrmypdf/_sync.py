@@ -293,12 +293,14 @@ def configure_debug_logging(log_filename, prefix=''):
     return log_file_handler
 
 
-def run_pipeline(options, api=False):
+def run_pipeline(options, *, plugin_manager, api=False):
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
     # options.input_file, options.pdf_renderer are already bound.)
     if not options.jobs:
         options.jobs = available_cpu_count()
+    if not plugin_manager:
+        plugin_manager = get_plugin_manager([])
 
     work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
     debug_log_handler = None
@@ -307,7 +309,6 @@ def run_pipeline(options, api=False):
     ):
         debug_log_handler = configure_debug_logging(Path(work_folder) / "debug.log")
 
-    pm = get_plugin_manager(options)
     try:
         check_requested_output_file(options)
         start_input_file, original_filename = create_input_file(options, work_folder)
@@ -320,7 +321,7 @@ def run_pipeline(options, api=False):
             options,
         )
 
-        pm.hook.prepare(options=options)
+        plugin_manager.hook.prepare(options=options)
 
         # Gather pdfinfo and create context
         pdfinfo = get_pdfinfo(
@@ -329,7 +330,7 @@ def run_pipeline(options, api=False):
             max_workers=options.jobs if not options.use_threads else 1,  # To help debug
         )
 
-        context = PDFContext(options, work_folder, origin_pdf, pdfinfo, pm)
+        context = PDFContext(options, work_folder, origin_pdf, pdfinfo, plugin_manager)
 
         # Validate options are okay for this pdf
         validate_pdfinfo_options(context)
