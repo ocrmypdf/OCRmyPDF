@@ -24,7 +24,8 @@ from subprocess import PIPE, run
 
 import pytest
 
-from ocrmypdf import api, cli
+from ocrmypdf import api, cli, pdfinfo
+from ocrmypdf.exec import unpaper
 
 pytest_plugins = ['helpers_namespace']
 
@@ -62,10 +63,8 @@ def running_in_travis():
 @pytest.helpers.register
 def have_unpaper():
     try:
-        from ocrmypdf.exec import unpaper
-
         unpaper.version()
-    except Exception:
+    except Exception:  # pylint: disable=broad-except
         return False
     return True
 
@@ -95,7 +94,7 @@ assert ast.parse(WINDOWS_SHIM_TEMPLATE.format(spoofer=repr(r"C:\\Temp\\file.py")
 
 @pytest.helpers.register
 def spoof(tmp_path_factory, **kwargs):
-    """Modify PATH to override subprocess executables
+    r"""Modify PATH to override subprocess executables
 
     spoof(tmp_path_factory, program1='replacement', ...)
 
@@ -277,7 +276,12 @@ def run_ocrmypdf(input_file, output_file, *args, env=None, universal_newlines=Tr
     env['COVERAGE_PROCESS_START'] = os.fspath(coverage_rc)
 
     p = run(
-        p_args, stdout=PIPE, stderr=PIPE, universal_newlines=universal_newlines, env=env
+        p_args,
+        stdout=PIPE,
+        stderr=PIPE,
+        universal_newlines=universal_newlines,
+        env=env,
+        check=False,
     )
     # print(p.stderr)
     return p, p.stdout, p.stderr
@@ -285,8 +289,6 @@ def run_ocrmypdf(input_file, output_file, *args, env=None, universal_newlines=Tr
 
 @pytest.helpers.register
 def first_page_dimensions(pdf):
-    from ocrmypdf import pdfinfo
-
     info = pdfinfo.PdfInfo(pdf)
     page0 = info[0]
     return (page0.width_inches, page0.height_inches)

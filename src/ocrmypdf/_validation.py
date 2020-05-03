@@ -21,6 +21,7 @@ import locale
 import logging
 import os
 import sys
+import unicodedata
 from pathlib import Path
 from shutil import copyfileobj
 
@@ -284,8 +285,6 @@ def check_options_advanced(options):
 
 
 def check_options_metadata(options):
-    import unicodedata
-
     docinfo = [options.title, options.author, options.keywords, options.subject]
     for s in (m for m in docinfo if m):
         for c in s:

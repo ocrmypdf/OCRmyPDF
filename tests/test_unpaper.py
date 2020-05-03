@@ -23,24 +23,15 @@ import pytest
 from ocrmypdf._validation import check_options
 from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
-from ocrmypdf.exec import unpaper
 
 # pytest.helpers is dynamic
-# pylint: disable=no-member
+# pylint: disable=no-member,redefined-outer-name
 # pylint: disable=w0612
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
 spoof = pytest.helpers.spoof
-
-
-def have_unpaper():
-    try:
-        unpaper.version()
-    except Exception:
-        return False
-    else:
-        return True
+have_unpaper = pytest.helpers.have_unpaper
 
 
 @pytest.fixture

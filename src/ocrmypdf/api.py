@@ -19,7 +19,6 @@ import logging
 import os
 import sys
 from argparse import ArgumentParser
-from contextlib import suppress
 from enum import IntEnum
 from pathlib import Path
 from typing import Dict, Iterable
@@ -28,7 +27,7 @@ from ocrmypdf._logging import PageNumberFilter, TqdmConsole
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._sync import run_pipeline
 from ocrmypdf._validation import check_options
-from ocrmypdf.cli import get_parser, plugins_only_parser
+from ocrmypdf.cli import get_parser
 
 try:
     import coloredlogs

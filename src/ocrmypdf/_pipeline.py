@@ -20,30 +20,29 @@ import os
 import re
 import sys
 from datetime import datetime, timezone
-from pathlib import Path
 from shutil import copyfileobj
 
 import img2pdf
 import pikepdf
 from pikepdf.models.metadata import encode_pdf_date
-from PIL import Image
+from PIL import Image, ImageColor, ImageDraw
 
-from . import leptonica
-from ._version import PROGRAM_NAME
-from ._version import __version__ as VERSION
-from .exceptions import (
+from ocrmypdf import leptonica
+from ocrmypdf._version import PROGRAM_NAME
+from ocrmypdf._version import __version__ as VERSION
+from ocrmypdf.exceptions import (
     DpiError,
     EncryptedPdfError,
     InputFileError,
     PriorOcrFoundError,
     UnsupportedImageFormatError,
 )
-from .exec import ghostscript, tesseract
-from .helpers import Resolution, safe_symlink
-from .hocrtransform import HocrTransform
-from .optimize import optimize
-from .pdfa import generate_pdfa_ps
-from .pdfinfo import Colorspace, Encoding, PdfInfo
+from ocrmypdf.exec import ghostscript, tesseract, unpaper
+from ocrmypdf.helpers import Resolution, safe_symlink
+from ocrmypdf.hocrtransform import HocrTransform
+from ocrmypdf.optimize import optimize
+from ocrmypdf.pdfa import generate_pdfa_ps
+from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 
 log = logging.getLogger(__name__)
 
@@ -63,8 +62,8 @@ def triage_image_file(input_file, output_file, options):
         log.info("Input file is an image")
         if 'dpi' in im.info:
             if im.info['dpi'] <= (96, 96) and not options.image_dpi:
-                log.info("Image size: (%d, %d)" % im.size)
-                log.info("Image resolution: (%d, %d)" % im.info['dpi'])
+                log.info("Image size: (%d, %d)", *im.size)
+                log.info("Image resolution: (%d, %d)", *im.info['dpi'])
                 log.error(
                     "Input file is an image, but the resolution (DPI) is "
                     "not credible.  Estimate the resolution at which the "
@@ -72,7 +71,7 @@ def triage_image_file(input_file, output_file, options):
                 )
                 raise DpiError()
         elif not options.image_dpi:
-            log.info("Image size: (%d, %d)" % im.size)
+            log.info("Image size: (%d, %d)", *im.size)
             log.error(
                 "Input file is an image, but has no resolution (DPI) "
                 "in its metadata.  Estimate the resolution at which "
@@ -261,7 +260,7 @@ def is_ocr_required(page_context):
             ocr_required = True
         elif options.redo_ocr:
             if pageinfo.has_corrupt_text:
-                log.warn(
+                log.warning(
                     "some text on this page cannot be mapped to characters: "
                     "consider using --force-ocr instead"
                 )
@@ -288,7 +287,7 @@ def is_ocr_required(page_context):
             )
         elif options.force_ocr:
             # Warn the user they might not want to do this
-            log.warn(
+            log.warning(
                 "page has no images - "
                 "all vector content will be "
                 f"rasterized at {VECTOR_PAGE_DPI} DPI, losing some resolution and likely "
@@ -308,7 +307,7 @@ def is_ocr_required(page_context):
         pixel_count = pageinfo.width_pixels * pageinfo.height_pixels
         if pixel_count > (options.skip_big * 1_000_000):
             ocr_required = False
-            log.warn(
+            log.warning(
                 "page too big, skipping OCR "
                 f"({(pixel_count / 1_000_000):.1f} MPixels > {options.skip_big:.1f} MPixels --skip-big)"
             )
@@ -464,8 +463,6 @@ def preprocess_deskew(input_file, page_context):
 
 
 def preprocess_clean(input_file, page_context):
-    from .exec import unpaper
-
     output_file = page_context.get_path('pp_clean.png')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
     unpaper.clean(input_file, output_file, dpi.x, page_context.options.unpaper_args)
@@ -480,9 +477,6 @@ def create_ocr_image(image, page_context):
     output_file = page_context.get_path('ocr.png')
     options = page_context.options
     with Image.open(image) as im:
-        from PIL import ImageColor
-        from PIL import ImageDraw
-
         white = ImageColor.getcolor('#ffffff', im.mode)
         # pink = ImageColor.getcolor('#ff0080', im.mode)
         draw = ImageDraw.ImageDraw(im)
@@ -811,7 +805,7 @@ def merge_sidecars(txt_files, context):
     return output_file
 
 
-def copy_final(input_file, output_file, context):
+def copy_final(input_file, output_file, _context):
     log.debug('%s -> %s', input_file, output_file)
     with open(input_file, 'rb') as input_stream:
         if output_file == '-':

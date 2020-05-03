@@ -25,13 +25,15 @@ from contextlib import suppress
 from os import fspath
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
 
-from ..exceptions import (
+from PIL import Image
+
+from ocrmypdf.exceptions import (
     MissingDependencyError,
     SubprocessOutputError,
     TesseractConfigError,
 )
-from ..helpers import page_number, safe_symlink
-from . import get_version, run
+from ocrmypdf.exec import get_version, run
+from ocrmypdf.helpers import safe_symlink
 
 log = logging.getLogger(__name__)
 
@@ -133,7 +135,7 @@ def languages(tesseract_env=None):
     for line in output.splitlines():
         if line.startswith('Error'):
             raise MissingDependencyError(lang_error(output))
-    header, *rest = output.splitlines()
+    _header, *rest = output.splitlines()
     return set(lang.strip() for lang in rest)
 
 
@@ -227,18 +229,15 @@ def tesseract_log_output(stdout, input_file):
             tlog.info(line.strip())
 
 
-def page_timedout(input_file, timeout):
+def page_timedout(timeout):
     if timeout == 0:
         return
-    prefix = f"{(page_number(input_file)):4d}: [tesseract] "
-    log.warning(prefix + " took too long to OCR - skipping")
+    log.warning("[tesseract] took too long to OCR - skipping")
 
 
 def _generate_null_hocr(output_hocr, output_sidecar, image):
     """Produce a .hocr file that reports no text detected on a page that is
     the same size as the input image."""
-    from PIL import Image
-
     with Image.open(image) as im:
         w, h = im.size
 
@@ -293,7 +292,7 @@ def generate_hocr(
         # Generate a HOCR file with no recognized text if tesseract times out
         # Temporary workaround to hocrTransform not being able to function if
         # it does not have a valid hOCR file.
-        page_timedout(input_file, timeout)
+        page_timedout(timeout)
         _generate_null_hocr(output_hocr, output_sidecar, input_file)
     except CalledProcessError as e:
         tesseract_log_output(e.output, input_file)
@@ -389,7 +388,7 @@ def generate_pdf(
         if os.path.exists(prefix + '.txt'):
             shutil.move(prefix + '.txt', output_text)
     except TimeoutExpired:
-        page_timedout(input_image, timeout)
+        page_timedout(timeout)
         use_skip_page(text_only, skip_pdf, output_pdf, output_text)
     except CalledProcessError as e:
         tesseract_log_output(e.output, input_image)

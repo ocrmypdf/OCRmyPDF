@@ -217,7 +217,7 @@ def extract_images(pike, root, options, extract_fn):
             result = extract_fn(
                 pike=pike, root=root, image=image, xref=xref, options=options
             )
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             log.debug("Image xref %s, error %s", xref, repr(e))
             errors += 1
         else:
@@ -422,12 +422,12 @@ def transcode_pngs(pike, images, image_name_fn, root, options):
             )
             continue
         if compdata.type == leptonica.lept.L_FLATE_ENCODE:
-            return rewrite_png(pike, im_obj, compdata, log)
+            return rewrite_png(pike, im_obj, compdata)
         elif compdata.type == leptonica.lept.L_G4_ENCODE:
-            return rewrite_png_as_g4(pike, im_obj, compdata, log)
+            return rewrite_png_as_g4(pike, im_obj, compdata)
 
 
-def rewrite_png_as_g4(pike, im_obj, compdata, log):
+def rewrite_png_as_g4(pike, im_obj, compdata):
     im_obj.BitsPerComponent = 1
     im_obj.Width = compdata.w
     im_obj.Height = compdata.h
@@ -447,7 +447,7 @@ def rewrite_png_as_g4(pike, im_obj, compdata, log):
     return
 
 
-def rewrite_png(pike, im_obj, compdata, log):
+def rewrite_png(pike, im_obj, compdata):
     # When a PNG is inserted into a PDF, we more or less copy the IDAT section from
     # the PDF and transfer the rest of the PNG headers to PDF image metadata.
     # One thing we have to do is tell the PDF reader whether a predictor was used
@@ -553,8 +553,8 @@ def optimize(input_file, output_file, context, save_settings):
 
 
 def main(infile, outfile, level, jobs=1):
-    from tempfile import TemporaryDirectory
-    from shutil import copy
+    from tempfile import TemporaryDirectory  # pylint: disable=import-outside-toplevel
+    from shutil import copy  # pylint: disable=import-outside-toplevel
 
     class OptimizeOptions:
         """Emulate ocrmypdf's options"""

@@ -17,21 +17,18 @@
 
 
 import datetime
-import logging
 import mmap
-import os
 from datetime import timezone
 from os import fspath
-from pathlib import Path
-from shutil import copyfile, move
-from unittest.mock import MagicMock, patch
+from shutil import copyfile
+from unittest.mock import patch
 
 import pikepdf
 import pytest
 from pikepdf.models.metadata import decode_pdf_date
 
 from ocrmypdf._jobcontext import PdfContext
-from ocrmypdf._pipeline import convert_to_pdfa
+from ocrmypdf._pipeline import convert_to_pdfa, metadata_fixup
 from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import SRGB_ICC_PROFILE, file_claims_pdfa, generate_pdfa_ps
@@ -192,9 +189,8 @@ def test_xml_metadata_preserved(spoof_tesseract_noop, output_type, resources, ou
     input_file = resources / 'graph.pdf'
 
     try:
-        from libxmp import consts
-        from libxmp.utils import file_to_dict
-    except Exception:
+        from libxmp.utils import file_to_dict  # pylint: disable=import-outside-toplevel
+    except Exception:  # pylint: disable=broad-except
         pytest.skip("libxmp not available or libexempi3 not installed")
 
     before = file_to_dict(str(input_file))
@@ -290,8 +286,6 @@ def test_kodak_toc(resources, outpdf, spoof_tesseract_noop):
 
 
 def test_metadata_fixup_warning(resources, outdir, caplog):
-    from ocrmypdf._pipeline import metadata_fixup
-
     options = get_parser().parse_args(
         args=['--output-type', 'pdfa-2', 'graph.pdf', 'out.pdf']
     )

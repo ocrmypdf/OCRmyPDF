@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import importlib
 import logging
 import logging.handlers
 import os
@@ -27,13 +26,10 @@ from pathlib import Path
 from tempfile import mkdtemp
 
 import PIL
-import pluggy
 
-from ocrmypdf import pluginspec
 from ocrmypdf._concurrent import exec_progress_pool
 from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PdfContext, cleanup_working_files
-from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._pipeline import (
     convert_to_pdfa,
     copy_final,
@@ -372,7 +368,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
         else:
             log.error(type(e).__name__)
         return e.exit_code
-    except (Exception if not api else NeverRaise) as e:
+    except (Exception if not api else NeverRaise) as e:  # pylint: disable=broad-except
         log.exception("An exception occurred while executing the pipeline")
         return ExitCode.other_error
     finally:

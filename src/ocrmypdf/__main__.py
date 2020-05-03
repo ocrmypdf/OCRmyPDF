@@ -56,7 +56,7 @@ def run(args=None):
     configure_logging(
         verbosity, progress_bar_friendly=options.progress_bar, manage_root_logger=True
     )
-    log.debug('ocrmypdf ' + __version__)
+    log.debug('ocrmypdf %s', __version__)
     try:
         check_options(options)
     except ValueError as e:

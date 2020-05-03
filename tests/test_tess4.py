@@ -18,7 +18,6 @@
 import logging
 import os
 import subprocess
-from contextlib import contextmanager
 from os import fspath
 from pathlib import Path
 
@@ -60,8 +59,8 @@ def test_skip_pages_does_not_replicate(resources, basename, outdir):
     for page in info:
         assert len(page.images) == 1, "skipped page was replicated"
 
-    for n in range(len(info_in)):
-        assert info[n].width_inches == info_in[n].width_inches
+    for n, info_out_n in enumerate(info):
+        assert info_out_n.width_inches == info_in[n].width_inches
 
 
 def test_content_preservation(resources, outpdf):
@@ -131,8 +130,7 @@ def test_image_too_large_pdf(monkeypatch, resources, outdir):
 
 
 def test_timeout(caplog):
-    tesseract.page_timedout('123456.png', 5)
-    assert "123456" in caplog.text
+    tesseract.page_timedout(5)
     assert "took too long" in caplog.text
 
 

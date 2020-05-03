@@ -29,7 +29,7 @@ from collections.abc import Sequence
 from contextlib import suppress
 from ctypes.util import find_library
 from functools import lru_cache
-from io import BytesIO
+from io import BytesIO, UnsupportedOperation
 from os import fspath
 from tempfile import TemporaryFile
 
@@ -96,7 +96,6 @@ class _LeptonicaErrorTrap:
         self.no_stderr = False
 
     def __enter__(self):
-        from io import UnsupportedOperation
 
         self.tmpfile = TemporaryFile()
 
@@ -351,7 +350,7 @@ class Pix(LeptonicaObject):
             py_file.write(buffer)
 
     @classmethod
-    def frompil(self, pillow_image):
+    def frompil(cls, pillow_image):
         """Create a copy of a PIL.Image from this Pix"""
         bio = BytesIO()
         pillow_image.save(bio, format='png', compress_level=1)
@@ -363,7 +362,7 @@ class Pix(LeptonicaObject):
 
     def topil(self):
         """Returns a PIL.Image version of this Pix"""
-        from PIL import Image
+        from PIL import Image  # pylint: disable=import-outside-toplevel
 
         # Leptonica manages data in words, so it implicitly does an endian
         # swap.  Tell Pillow about this when it reads the data.
@@ -534,16 +533,7 @@ class Pix(LeptonicaObject):
             )
             return Pix(thresh_pix)
 
-    def crop_to_foreground(
-        self,
-        threshold=128,
-        mindist=70,
-        erasedist=30,
-        pagenum=0,
-        showmorph=0,
-        display=0,
-        pdfdir=ffi.NULL,
-    ):
+    def crop_to_foreground(self, threshold=128, mindist=70, erasedist=30, showmorph=0):
         if get_leptonica_version() < 'leptonica-1.76':
             # Leptonica 1.76 changed the API for pixFindPageForeground; we don't
             # support the old version

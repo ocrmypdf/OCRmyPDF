@@ -145,9 +145,9 @@ def test_report_file_size(tmp_path, caplog):
 
 def test_false_action_store_true():
     opts = make_opts(keep_temporary_files=True)
-    assert opts.keep_temporary_files == True
+    assert opts.keep_temporary_files
     opts = make_opts(keep_temporary_files=False)
-    assert opts.keep_temporary_files == False
+    assert not opts.keep_temporary_files
 
 
 @pytest.mark.parametrize('progress_bar', [True, False])

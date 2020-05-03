@@ -29,8 +29,7 @@ from PIL import Image
 
 import ocrmypdf
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
-from ocrmypdf.exec import ghostscript, tesseract
-from ocrmypdf.helpers import check_pdf
+from ocrmypdf.exec import get_version, ghostscript, tesseract
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 
@@ -311,7 +310,7 @@ def test_pagesegmode(renderer, spoof_tesseract_cache, resources, outpdf):
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_tesseract_crash(renderer, spoof_tesseract_crash, resources, no_outpdf, caplog):
+def test_tesseract_crash(renderer, spoof_tesseract_crash, resources, no_outpdf):
     p, _, err = run_ocrmypdf(
         resources / 'ccitt.pdf',
         no_outpdf,
@@ -410,7 +409,7 @@ def test_destination_not_writable(spoof_tesseract_noop, resources, outdir):
     protected_file = outdir / 'protected.pdf'
     protected_file.touch()
     protected_file.chmod(0o400)  # Read-only
-    p, out, err = run_ocrmypdf(
+    p, _out, _err = run_ocrmypdf(
         resources / 'jbig2.pdf', protected_file, env=spoof_tesseract_noop
     )
     assert p.returncode == ExitCode.file_access_error, "Expected error"
@@ -448,7 +447,7 @@ THIS FILE IS INVALID
 '''
         )
 
-    p, out, err = run_ocrmypdf(
+    p, _out, err = run_ocrmypdf(
         resources / 'ccitt.pdf',
         outdir / 'out.pdf',
         '--pdf-renderer',
@@ -568,6 +567,7 @@ def test_compression_preserved(
             stdin=input_stream,
             universal_newlines=True,
             env=spoof_tesseract_noop,
+            check=False,
         )
 
         if im.mode in ('RGBA', 'LA'):
@@ -629,6 +629,7 @@ def test_compression_changed(
             stdin=input_stream,
             universal_newlines=True,
             env=spoof_tesseract_noop,
+            check=False,
         )
         assert p.returncode == ExitCode.ok, p.stderr
 
@@ -711,10 +712,10 @@ def test_pdfa_n(spoof_tesseract_cache, pdfa_level, resources, outpdf):
 )
 @pytest.mark.slow
 def test_decompression_bomb(resources, outpdf):
-    p, out, err = run_ocrmypdf(resources / 'hugemono.pdf', outpdf)
+    p, _out, err = run_ocrmypdf(resources / 'hugemono.pdf', outpdf)
     assert 'decompression bomb' in err
 
-    p, out, err = run_ocrmypdf(
+    p, _out, err = run_ocrmypdf(
         resources / 'hugemono.pdf', outpdf, '--max-image-mpixels', '2000'
     )
     assert p.returncode == 0
@@ -736,7 +737,7 @@ def test_text_curves(spoof_tesseract_noop, resources, outpdf):
 
 
 def test_output_is_dir(spoof_tesseract_noop, resources, outdir):
-    p, out, err = run_ocrmypdf(
+    p, _out, err = run_ocrmypdf(
         resources / 'trivial.pdf', outdir, '--force-ocr', env=spoof_tesseract_noop
     )
     assert p.returncode == ExitCode.file_access_error
@@ -747,7 +748,7 @@ def test_output_is_dir(spoof_tesseract_noop, resources, outdir):
 def test_output_is_symlink(spoof_tesseract_noop, resources, outdir):
     sym = Path(outdir / 'this_is_a_symlink')
     sym.symlink_to(outdir / 'out.pdf')
-    p, out, err = run_ocrmypdf(
+    p, _out, err = run_ocrmypdf(
         resources / 'trivial.pdf', sym, '--force-ocr', env=spoof_tesseract_noop
     )
     assert p.returncode == ExitCode.ok, err
@@ -761,8 +762,6 @@ def test_livecycle(resources, no_outpdf):
 
 
 def test_version_check():
-    from ocrmypdf.exec import get_version
-
     with pytest.raises(MissingDependencyError):
         get_version('NOT_FOUND_UNLIKELY_ON_PATH')
 

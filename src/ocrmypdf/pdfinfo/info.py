@@ -17,14 +17,13 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import os
 import re
 from collections import defaultdict, namedtuple
 from decimal import Decimal
 from enum import Enum
 from functools import partial
 from math import hypot, isclose
-from os import PathLike, fspath
+from os import PathLike
 from pathlib import Path
 from warnings import warn
 
@@ -821,13 +820,14 @@ class PdfInfo:
 
 
 def main():
+    # pylint: disable=import-outside-toplevel
     import argparse
+    from pprint import pprint
 
     parser = argparse.ArgumentParser()
     parser.add_argument('infile')
     args = parser.parse_args()
     pagesinfo, pdfinfo = _pdf_get_all_pageinfo(args.infile)
-    from pprint import pprint
 
     pprint(pdfinfo)
     for page in pagesinfo:

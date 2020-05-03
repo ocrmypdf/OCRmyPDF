@@ -25,7 +25,7 @@ from collections.abc import Iterable
 from contextlib import suppress
 from functools import wraps
 from io import StringIO
-from math import inf, isclose
+from math import isclose
 from pathlib import Path
 
 import pikepdf
