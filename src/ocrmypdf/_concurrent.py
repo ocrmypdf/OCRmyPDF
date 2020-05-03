@@ -46,7 +46,7 @@ def log_listener(queue):
                 break
             logger = logging.getLogger(record.name)
             logger.handle(record)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             import traceback
 
             print("Logging problem", file=sys.stderr)
@@ -106,7 +106,10 @@ def exec_progress_pool(
             while True:
                 try:
                     result = results.next()
-                    task_finished(result, pbar)
+                    if task_finished:
+                        task_finished(result, pbar)
+                    else:
+                        pbar.update()
                 except StopIteration:
                     break
         except KeyboardInterrupt:
