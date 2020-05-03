@@ -65,7 +65,7 @@ class Resolution(namedtuple('Resolution', ('x', 'y'))):
         return f"Resolution({self.x}x{self.y} dpi)"
 
 
-def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike, *args, **kwargs):
+def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike):
     """
     Helper function: relinks soft symbolic link if necessary
     """
