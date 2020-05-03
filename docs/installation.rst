@@ -443,7 +443,10 @@ languages you can optionally install them all:
 Manual installation on macOS
 ----------------------------
 
-These instructions probably work on all macOS supported by Homebrew.
+These instructions probably work on all macOS supported by Homebrew, and are
+for installing a more current version of OCRmyPDF than is available from
+Homebrew. Note that the Homebrew versions usually track the release versions
+fairly closely.
 
 If it's not already present, `install Homebrew <http://brew.sh/>`__.
 
@@ -454,14 +457,8 @@ Update Homebrew:
     brew update
 
 Install or upgrade the required Homebrew packages, if any are missing.
-To do this, download the ``Brewfile`` that lists all of the dependencies
-to the current directory, and run ``brew bundle`` to process them
-(installing or upgrading as needed). ``Brewfile`` is a plain text file.
-
-.. code-block:: bash
-
-    wget https://github.com/jbarlow83/OCRmyPDF/raw/master/.travis/Brewfile
-    brew bundle
+To do this, use ``brew edit ocrmypdf`` to obtain a recent list of Homebrew
+dependencies. You could also check the ``azure-pipelines.yml``.
 
 This will include the English, French, German and Spanish language
 packs. If you need other languages you can optionally install them all:
