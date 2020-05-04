@@ -327,20 +327,7 @@ standard tooling needed to build packages, such as a compiler and binary tools.
 
    sudo pacman -S base-devel
 
-The OCRmyPDF package depends on `the python-pdfminer.six AUR package
-<https://aur.archlinux.org/packages/python-pdfminer.six/>`__.  Dependencies on
-AUR packages are not automatically resolved, so this package must be manually
-installed first.
-
-.. code-block:: bash
-
-   curl -O https://aur.archlinux.org/cgit/aur.git/snapshot/python-pdfminer.six.tar.gz
-   tar xvzf python-pdfminer.six.tar.gz
-   cd python-pdfminer.six
-   makepkg -sri
-
-With that complete you can then repeat the same series of steps for the
-OCRmyPDF package.
+Now you are ready to install the OCRmyPDF package.
 
 .. code-block:: bash
 
@@ -374,11 +361,10 @@ page.
     fine without it but will produce larger output files. The encoder is
     available from `the jbig2enc-git AUR package
     <https://aur.archlinux.org/packages/jbig2enc-git/>`__ and may be installed
-    using the same series of steps as for the installation of the pdfminer.six
-    and OCRmyPDF AUR packages. Alternatively, it may be built manually from
-    source following the instructions in `Installing the JBIG2 encoder
-    <jbig2>`__.  If JBIG2 is installed, OCRmyPDF 7.0.0 and later will
-    automatically detect it.
+    using the same series of steps as for the installation OCRmyPDF AUR
+    package. Alternatively, it may be built manually from source following the
+    instructions in `Installing the JBIG2 encoder <jbig2>`__.  If JBIG2 is
+    installed, OCRmyPDF 7.0.0 and later will automatically detect it.
 
 Alpine Linux
 ------------
