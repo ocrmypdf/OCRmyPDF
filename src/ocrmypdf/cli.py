@@ -492,10 +492,11 @@ Online documentation is located at:
         "Set the threshold very high to disable.",
     )
     advanced.add_argument(
-        '--plugins',
+        '--plugin',
+        dest='plugins',
         action='append',
         default=[],
-        help="Path to a folder than contains plugins.",
+        help="Name of plugin to import.",
     )
 
     debugging = parser.add_argument_group(
@@ -515,8 +516,9 @@ plugins_only_parser = ArgumentParser(
     prog=_PROGRAM_NAME, fromfile_prefix_chars='@', add_help=False, allow_abbrev=False
 )
 plugins_only_parser.add_argument(
-    '--plugins',
+    '--plugin',
+    dest='plugins',
     action='append',
     default=[],
-    help="Path to a folder than contains plugins.",
+    help="Name of plugin to import.",
 )
