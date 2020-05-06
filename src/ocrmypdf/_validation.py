@@ -376,17 +376,17 @@ def log_page_orientations(pdfinfo):
         log.info('Page orientations detected: %s', ' '.join(orientations))
 
 
-def create_input_file(options, work_folder):
+def create_input_file(options, work_folder: Path) -> (Path, str):
     if options.input_file == '-':
         # stdin
         log.info('reading file from standard input')
-        target = os.path.join(work_folder, 'stdin')
+        target = work_folder / 'stdin'
         with open(target, 'wb') as stream_buffer:
             copyfileobj(sys.stdin.buffer, stream_buffer)
         return target, "<stdin>"
     else:
         try:
-            target = os.path.join(work_folder, 'origin')
+            target = work_folder / 'origin'
             safe_symlink(options.input_file, target)
             return target, os.fspath(options.input_file)
         except FileNotFoundError:

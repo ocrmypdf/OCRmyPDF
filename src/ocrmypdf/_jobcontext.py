@@ -19,6 +19,7 @@ import os
 import shutil
 import sys
 from functools import partial
+from pathlib import Path
 
 from ocrmypdf._plugin_manager import get_plugin_manager
 
@@ -26,10 +27,12 @@ from ocrmypdf._plugin_manager import get_plugin_manager
 class PdfContext:
     """Holds our context for a particular run of the pipeline"""
 
-    def __init__(self, options, work_folder, origin, pdfinfo, plugin_manager):
+    def __init__(
+        self, options, work_folder: Path, origin: Path, pdfinfo, plugin_manager
+    ):
         self.options = options
-        self.work_folder = work_folder
-        self.origin = origin
+        self.work_folder = Path(work_folder)
+        self.origin = Path(origin)
         self.pdfinfo = pdfinfo
         self.plugin_manager = plugin_manager
         if options:
@@ -39,8 +42,8 @@ class PdfContext:
         if self.name == '-':
             self.name = 'stdin'
 
-    def get_path(self, name):
-        return os.path.join(self.work_folder, name)
+    def get_path(self, name: str) -> Path:
+        return self.work_folder / name
 
     def get_page_contexts(self):
         npages = len(self.pdfinfo)
@@ -54,7 +57,7 @@ class PageContext:
     Must be pickable, so only store intrinsic/simple data elements
     """
 
-    def __init__(self, pdf_context, pageno):
+    def __init__(self, pdf_context: PdfContext, pageno):
         self.work_folder = pdf_context.work_folder
         self.origin = pdf_context.origin
         self.options = pdf_context.options
@@ -63,8 +66,8 @@ class PageContext:
         self.pageinfo = pdf_context.pdfinfo[pageno]
         self.plugin_manager = pdf_context.plugin_manager
 
-    def get_path(self, name):
-        return os.path.join(self.work_folder, "%06d_%s" % (self.pageno + 1, name))
+    def get_path(self, name: str) -> Path:
+        return self.work_folder / ("%06d_%s" % (self.pageno + 1, name))
 
     def __getstate__(self):
         state = self.__dict__.copy()

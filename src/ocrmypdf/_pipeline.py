@@ -55,7 +55,7 @@ def triage_image_file(input_file, output_file, options):
         im = Image.open(input_file)
     except EnvironmentError as e:
         # Recover the original filename
-        log.error(str(e).replace(input_file, options.input_file))
+        log.error(str(e).replace(str(input_file), str(options.input_file)))
         raise UnsupportedImageFormatError() from e
 
     with im:
@@ -102,7 +102,10 @@ def triage_image_file(input_file, output_file, options):
             )
         with open(output_file, 'wb') as outf:
             img2pdf.convert(
-                input_file, layout_fun=layout_fun, with_pdfrw=False, outputstream=outf
+                os.fspath(input_file),
+                layout_fun=layout_fun,
+                with_pdfrw=False,
+                outputstream=outf,
             )
         log.info("Successfully converted to PDF, processing...")
     except img2pdf.ImageOpenError as e:
@@ -139,7 +142,7 @@ def triage(original_filename, input_file, output_file, options):
             return output_file
     except EnvironmentError as e:
         log.debug(f"Temporary file was at: {input_file}")
-        msg = str(e).replace(input_file, original_filename)
+        msg = str(e).replace(str(input_file), original_filename)
         raise InputFileError(msg) from e
 
     triage_image_file(input_file, output_file, options)

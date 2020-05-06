@@ -304,7 +304,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
     if not plugin_manager:
         plugin_manager = get_plugin_manager([])
 
-    work_folder = mkdtemp(prefix="com.github.ocrmypdf.")
+    work_folder = Path(mkdtemp(prefix="com.github.ocrmypdf."))
     debug_log_handler = None
     if (options.keep_temporary_files or options.verbose >= 1) and not os.environ.get(
         'PYTEST_CURRENT_TEST', ''
@@ -317,10 +317,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
 
         # Triage image or pdf
         origin_pdf = triage(
-            original_filename,
-            start_input_file,
-            os.path.join(work_folder, 'origin.pdf'),
-            options,
+            original_filename, start_input_file, work_folder / 'origin.pdf', options
         )
 
         plugin_manager.hook.prepare(options=options)

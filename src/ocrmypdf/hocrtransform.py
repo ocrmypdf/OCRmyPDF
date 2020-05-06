@@ -29,9 +29,11 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import argparse
+import os
 import re
 from collections import namedtuple
 from math import atan, cos, sin
+from pathlib import Path
 from xml.etree import ElementTree
 
 from reportlab.lib.units import inch
@@ -155,8 +157,8 @@ class HocrTransform:
 
     def to_pdf(
         self,
-        out_filename: str,
-        image_filename: str = None,
+        out_filename: Path,
+        image_filename: Path = None,
         show_bounding_boxes: bool = False,
         fontname: str = "Helvetica",
         invisible_text: bool = False,
@@ -173,7 +175,9 @@ class HocrTransform:
         # create the PDF file
         # page size in points (1/72 in.)
         pdf = Canvas(
-            out_filename, pagesize=(self.width, self.height), pageCompression=1
+            os.fspath(out_filename),
+            pagesize=(self.width, self.height),
+            pageCompression=1,
         )
 
         # draw bounding box for each paragraph
@@ -226,7 +230,9 @@ class HocrTransform:
             )
         # put the image on the page, scaled to fill the page
         if image_filename is not None:
-            pdf.drawImage(image_filename, 0, 0, width=self.width, height=self.height)
+            pdf.drawImage(
+                os.fspath(image_filename), 0, 0, width=self.width, height=self.height
+            )
 
         # finish up the page and save it
         pdf.showPage()

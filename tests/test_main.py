@@ -210,7 +210,7 @@ def test_force_ocr_on_pdf_with_no_images(spoof_tesseract_crash, resources, no_ou
         resources / 'blank.pdf', no_outpdf, '--force-ocr', env=spoof_tesseract_crash
     )
     assert p.returncode == ExitCode.child_process_error
-    assert not os.path.exists(no_outpdf)
+    assert not no_outpdf.exists()
 
 
 @pytest.mark.skipif(
@@ -321,7 +321,7 @@ def test_tesseract_crash(renderer, spoof_tesseract_crash, resources, no_outpdf):
         env=spoof_tesseract_crash,
     )
     assert p.returncode == ExitCode.child_process_error
-    assert not os.path.exists(no_outpdf)
+    assert not no_outpdf.exists()
     assert "SubprocessOutputError" in err
 
 
@@ -330,7 +330,7 @@ def test_tesseract_crash_autorotate(spoof_tesseract_crash, resources, no_outpdf)
         resources / 'ccitt.pdf', no_outpdf, '-r', env=spoof_tesseract_crash
     )
     assert p.returncode == ExitCode.child_process_error
-    assert not os.path.exists(no_outpdf)
+    assert not no_outpdf.exists()
     assert "uncaught exception" in err
     print(out)
     print(err)

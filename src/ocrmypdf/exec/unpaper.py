@@ -24,6 +24,7 @@ import logging
 import os
 import shlex
 from functools import lru_cache
+from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError
 from tempfile import TemporaryDirectory
 
@@ -67,8 +68,8 @@ def run(input_file, output_file, dpi, mode_args):
                 "Failed to convert image to a supported format."
             ) from e
 
-        input_pnm = os.path.join(tmpdir, f'input{suffix}')
-        output_pnm = os.path.join(tmpdir, f'output{suffix}')
+        input_pnm = Path(tmpdir) / f'input{suffix}'
+        output_pnm = Path(tmpdir) / f'output{suffix}'
         im.save(input_pnm, format='PPM')
 
         # To prevent any shenanigans from accepting arbitrary parameters in
@@ -78,7 +79,7 @@ def run(input_file, output_file, dpi, mode_args):
         # 3) append absolute paths for the input and output file
         # This should ensure that a user cannot clobber some other file with
         # their unpaper arguments (whether intentionally or otherwise)
-        args_unpaper.extend([input_pnm, output_pnm])
+        args_unpaper.extend([os.fspath(input_pnm), os.fspath(output_pnm)])
         try:
             proc = external_run(
                 args_unpaper,

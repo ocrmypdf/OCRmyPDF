@@ -52,7 +52,7 @@ def is_macos():
 def running_in_docker():
     # Docker creates a file named /.dockerenv (newer versions) or
     # /.dockerinit (older) -- this is undocumented, not an offical test
-    return os.path.exists('/.dockerenv') or os.path.exists('/.dockerinit')
+    return Path('/.dockerenv').exists() or Path('/.dockerinit').exists()
 
 
 @pytest.helpers.register
@@ -69,9 +69,9 @@ def have_unpaper():
     return True
 
 
-TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
-SPOOF_PATH = os.path.join(TESTS_ROOT, 'spoof')
-PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
+TESTS_ROOT = Path(__file__).parent.resolve()
+SPOOF_PATH = TESTS_ROOT / 'spoof'
+PROJECT_ROOT = TESTS_ROOT
 OCRMYPDF = [sys.executable, '-m', 'ocrmypdf']
 
 
@@ -146,7 +146,7 @@ def spoof(tmp_path_factory, **kwargs):
     tmpdir.mkdir(parents=True)
 
     for replace_program, with_spoof in kwargs.items():
-        spoofer = Path(SPOOF_PATH) / with_spoof
+        spoofer = SPOOF_PATH / with_spoof
         if os.name != 'nt':
             spoofer.chmod(0o755)
             (tmpdir / replace_program).symlink_to(spoofer)
@@ -224,8 +224,8 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
     result = api.run_pipeline(options, plugin_manager=None, api=True)
 
     assert result == 0
-    assert os.path.exists(str(output_file)), "Output file not created"
-    assert os.stat(str(output_file)).st_size > 100, "PDF too small or empty"
+    assert output_file.exists(), "Output file not created"
+    assert output_file.stat().st_size > 100, "PDF too small or empty"
 
     return output_file
 

@@ -47,7 +47,7 @@ def log_listener(queue):
             logger = logging.getLogger(record.name)
             logger.handle(record)
         except Exception:  # pylint: disable=broad-except
-            import traceback
+            import traceback  # pylint: disable=import-outside-toplevel
 
             print("Logging problem", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)

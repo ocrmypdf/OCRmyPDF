@@ -16,7 +16,6 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import os
 from contextlib import suppress
 from pathlib import Path
 
@@ -181,7 +180,7 @@ def _find_font(text, pdf_base):
 class OcrGrafter:
     def __init__(self, context):
         self.context = context
-        self.path_base = Path(context.origin).resolve()
+        self.path_base = context.origin
 
         self.pdf_base = pikepdf.open(self.path_base)
         self.font, self.font_key = None, None
@@ -264,12 +263,14 @@ class OcrGrafter:
         # {interim_count} is the opened file we were updateing
         # {interim_count - 1} can be deleted
         # {interim_count + 1} is the new file will produce and open
-        old_file = self.output_file + f'_working{self.interim_count - 1}.pdf'
+        old_file = self.output_file.with_suffix(f'.working{self.interim_count - 1}.pdf')
         if not self.context.options.keep_temporary_files:
             with suppress(FileNotFoundError):
-                os.unlink(old_file)
+                old_file.unlink()
 
-        next_file = self.output_file + f'_working{self.interim_count + 1}.pdf'
+        next_file = self.output_file.with_suffix(
+            f'.working{self.interim_count + 1}.pdf'
+        )
         self.pdf_base.save(next_file)
         self.pdf_base.close()
 

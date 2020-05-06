@@ -820,9 +820,8 @@ class PdfInfo:
 
 
 def main():
-    # pylint: disable=import-outside-toplevel
-    import argparse
-    from pprint import pprint
+    import argparse  # pylint: disable=import-outside-toplevel
+    from pprint import pprint  # pylint: disable=import-outside-toplevel
 
     parser = argparse.ArgumentParser()
     parser.add_argument('infile')
