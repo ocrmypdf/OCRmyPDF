@@ -16,6 +16,9 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import importlib
+import importlib.util
+import sys
+from pathlib import Path
 from typing import List
 
 import pluggy
@@ -27,6 +30,15 @@ def get_plugin_manager(plugins: List[str]):
     pm = pluggy.PluginManager('ocrmypdf')
     pm.add_hookspecs(pluginspec)
     for name in plugins:
-        module = importlib.import_module(name)
+        if name.endswith('.py'):
+            # Import by filename
+            module_name = Path(name).stem
+            spec = importlib.util.spec_from_file_location(module_name, name)
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
+        else:
+            # Import by dotted module name
+            module = importlib.import_module(name)
         pm.register(module)
     return pm
