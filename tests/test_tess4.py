@@ -91,7 +91,8 @@ def test_image_too_large_hocr(monkeypatch, resources, outdir):
     monkeypatch.setattr(tesseract, 'run', dummy_run)
     tesseract.generate_hocr(
         input_file=resources / 'crom.png',
-        output_files=[outdir / 'out.hocr', outdir / 'out.txt'],
+        output_hocr=outdir / 'out.hocr',
+        output_sidecar=outdir / 'out.txt',
         language=['eng'],
         engine_mode=None,
         tessconfig=[],
@@ -152,7 +153,7 @@ def test_timeout(caplog):
 )
 def test_tesseract_log_output(caplog, in_, logged):
     caplog.set_level(logging.INFO)
-    tesseract.tesseract_log_output(in_, 'dummy')
+    tesseract.tesseract_log_output(in_)
     if logged == '':
         assert caplog.text == ''
     else:
@@ -161,5 +162,5 @@ def test_tesseract_log_output(caplog, in_, logged):
 
 def test_tesseract_log_output_raises(caplog):
     with pytest.raises(tesseract.TesseractConfigError):
-        tesseract.tesseract_log_output(b'parameter not found: moo', 'dummy')
+        tesseract.tesseract_log_output(b'parameter not found: moo')
     assert 'not found' in caplog.text

@@ -537,7 +537,8 @@ def ocr_tesseract_hocr(input_file, page_context):
     options = page_context.options
     tesseract.generate_hocr(
         input_file=input_file,
-        output_files=[hocr_out, hocr_text_out],
+        output_hocr=hocr_out,
+        output_sidecar=hocr_text_out,
         language=options.language,
         engine_mode=options.tesseract_oem,
         tessconfig=options.tesseract_config,

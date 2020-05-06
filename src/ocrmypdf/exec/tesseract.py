@@ -23,7 +23,9 @@ import shutil
 from collections import namedtuple
 from contextlib import suppress
 from os import fspath
+from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
+from typing import List, Optional
 
 from PIL import Image
 
@@ -139,7 +141,7 @@ def languages(tesseract_env=None):
     return set(lang.strip() for lang in rest)
 
 
-def tess_base_args(langs, engine_mode):
+def tess_base_args(langs: List[str], engine_mode) -> List[str]:
     args = ['tesseract']
     if langs:
         args.extend(['-l', '+'.join(langs)])
@@ -148,7 +150,7 @@ def tess_base_args(langs, engine_mode):
     return args
 
 
-def get_orientation(input_file, engine_mode, timeout: float, tesseract_env=None):
+def get_orientation(input_file: Path, engine_mode, timeout: float, tesseract_env=None):
     args_tesseract = tess_base_args(['osd'], engine_mode) + [
         '--psm',
         '0',
@@ -169,7 +171,7 @@ def get_orientation(input_file, engine_mode, timeout: float, tesseract_env=None)
     except TimeoutExpired:
         return OrientationConfidence(angle=0, confidence=0.0)
     except CalledProcessError as e:
-        tesseract_log_output(e.output, input_file)
+        tesseract_log_output(e.output)
         if (
             b'Too few characters. Skipping this page' in e.output
             or b'Image too large' in e.output
@@ -191,7 +193,7 @@ def get_orientation(input_file, engine_mode, timeout: float, tesseract_env=None)
         return oc
 
 
-def tesseract_log_output(stdout, input_file):
+def tesseract_log_output(stdout):
     tlog = TesseractLoggerAdapter(
         log, extra=log.extra if hasattr(log, 'extra') else None
     )
@@ -241,15 +243,14 @@ def _generate_null_hocr(output_hocr, output_sidecar, image):
     with Image.open(image) as im:
         w, h = im.size
 
-    with open(output_hocr, 'w', encoding="utf-8") as f:
-        f.write(HOCR_TEMPLATE.format(w, h))
-    with open(output_sidecar, 'w', encoding='utf-8') as f:
-        f.write('[skipped page]')
+    output_hocr.write_text(HOCR_TEMPLATE.format(w, h), encoding='utf-8')
+    output_sidecar.write_text('[skipped page]', encoding='utf-8')
 
 
 def generate_hocr(
-    input_file,
-    output_files,
+    input_file: Path,
+    output_hocr: Path,
+    output_sidecar: Path,
     language: list,
     engine_mode,
     tessconfig: list,
@@ -259,10 +260,7 @@ def generate_hocr(
     user_patterns,
     tesseract_env,
 ):
-
-    output_hocr = next(o for o in output_files if fspath(o).endswith('.hocr'))
-    output_sidecar = next(o for o in output_files if fspath(o).endswith('.txt'))
-    prefix = os.path.splitext(output_hocr)[0]
+    prefix = output_hocr.with_suffix('')
 
     args_tesseract = tess_base_args(language, engine_mode)
 
@@ -295,46 +293,44 @@ def generate_hocr(
         page_timedout(timeout)
         _generate_null_hocr(output_hocr, output_sidecar, input_file)
     except CalledProcessError as e:
-        tesseract_log_output(e.output, input_file)
+        tesseract_log_output(e.output)
         if b'Image too large' in e.output:
             _generate_null_hocr(output_hocr, output_sidecar, input_file)
             return
 
         raise SubprocessOutputError() from e
     else:
-        tesseract_log_output(stdout, input_file)
+        tesseract_log_output(stdout)
         # The sidecar text file will get the suffix .txt; rename it to
         # whatever caller wants it named
-        if os.path.exists(prefix + '.txt'):
-            shutil.move(prefix + '.txt', output_sidecar)
+        if prefix.with_suffix('.txt').exists():
+            shutil.move(prefix.with_suffix('.txt'), output_sidecar)
 
 
 def use_skip_page(text_only, skip_pdf, output_pdf, output_text):
-    with open(output_text, 'w') as f:
-        f.write('[skipped page]')
+    output_text.write_text('[skipped page]', encoding='utf-8')
 
     if skip_pdf and not text_only:
         # Substitute a "skipped page"
         with suppress(FileNotFoundError):
-            os.remove(output_pdf)  # In case it was partially created
+            output_pdf.unlink()  # In case it was partially created
         safe_symlink(skip_pdf, output_pdf)
         return
 
     # Or normally, just write a 0 byte file to the output to indicate a skip
-    with open(output_pdf, 'wb') as out:
-        out.write(b'')
+    output_pdf.write_bytes(b'')
 
 
 def generate_pdf(
     *,
-    input_image,
-    skip_pdf=None,
-    output_pdf,
-    output_text,
-    language: list,
+    input_image: Path,
+    skip_pdf: Optional[Path] = None,
+    output_pdf: Path,
+    output_text: Path,
+    language: List[str],
     engine_mode,
     text_only: bool,
-    tessconfig: list,
+    tessconfig: List[str],
     timeout: float,
     pagesegmode: int,
     user_words,
@@ -391,10 +387,10 @@ def generate_pdf(
         page_timedout(timeout)
         use_skip_page(text_only, skip_pdf, output_pdf, output_text)
     except CalledProcessError as e:
-        tesseract_log_output(e.output, input_image)
+        tesseract_log_output(e.output)
         if b'Image too large' in e.output:
             use_skip_page(text_only, skip_pdf, output_pdf, output_text)
             return
         raise SubprocessOutputError() from e
     else:
-        tesseract_log_output(stdout, input_image)
+        tesseract_log_output(stdout)
