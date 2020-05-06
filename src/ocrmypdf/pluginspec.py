@@ -16,6 +16,8 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 from argparse import ArgumentParser, Namespace
+from pathlib import Path
+from typing import Optional
 
 import pluggy
 from PIL import Image
@@ -49,11 +51,15 @@ def validate(pdfinfo: 'PdfInfo', options: Namespace) -> None:
 
     options contains the "work order" to process a particular file. pdfinfo
     contains information about the input file obtained after loading and
-    parsing.
+    parsing. The plugin may modify the options. For example, you could decide
+    that a certain type of file should be treated with ``options.force_ocr = True``
+    based on information in its pdfinfo.
 
     The plugin may raise InputFileError or any ExitCodeException to request
-    normal termination. If the plugin raises another exception type, ocrmypdf
-    will abort with an error and hold the plugin responsible.
+    normal termination. ocrmypdf will hold the plugin responsible for raising
+    exceptions of any other type.
+
+    The return value is ignored. To abort processing, raise an ExitCodeException.
     """
 
 
@@ -63,4 +69,20 @@ def filter_ocr_image(page: 'PageContext', image: Image) -> Image:
 
     This is the image that OCR sees, not what the user sees when they view the
     PDF.
+    """
+
+
+@hookspec(firstresult=True)
+def filter_page_image(page: 'PageContext', image_filename: Path) -> Path:
+    """Called to filter the whole page before it is inserted into the PDF.
+
+    A whole page image is only produced when preprocessing command line arguments
+    are issued or when ``--force-ocr`` is issued. If no whole page is image is
+    produced for a given page, this function will not be called. This is not
+    the image that will be shown to OCR.
+
+    ocrmypdf will create the PDF page based on the image format used. If you
+    convert the image to a JPEG, the output page will be created as a JPEG, etc.
+    Note that the ocrmypdf image optimization stage may ultimately chose a
+    different format.
     """

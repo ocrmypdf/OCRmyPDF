@@ -165,6 +165,12 @@ def exec_page_sync(page_context):
                 visible_image_out = create_visible_page_jpg(
                     visible_image_out, page_context
                 )
+            visible_image_out = (
+                page_context.plugin_manager.hook.filter_page_image(
+                    page=page_context, image_filename=Path(visible_image_out)
+                )
+                or visible_image_out
+            )
             pdf_page_from_image_out = create_pdf_page_from_image(
                 visible_image_out, page_context
             )
