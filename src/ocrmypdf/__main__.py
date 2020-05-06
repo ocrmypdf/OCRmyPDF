@@ -37,7 +37,7 @@ def run(args=None):
     plugin_manager = get_plugin_manager(pre_options.plugins)
 
     parser = get_parser()
-    plugin_manager.hook.install_cli(parser=parser)
+    plugin_manager.hook.add_options(parser=parser)
 
     options = parser.parse_args(args=args)
 

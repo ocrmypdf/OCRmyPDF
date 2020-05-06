@@ -274,7 +274,7 @@ def ocr(  # pylint: disable=unused-argument
 
     parser = get_parser()
     _plugin_manager = get_plugin_manager(plugins)
-    _plugin_manager.hook.install_cli(parser=parser)
+    _plugin_manager.hook.add_options(parser=parser)
 
     options = create_options(
         **{k: v for k, v in locals().items() if not k.startswith('_')}

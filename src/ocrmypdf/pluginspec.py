@@ -26,8 +26,12 @@ hookspec = pluggy.HookspecMarker('ocrmypdf')
 
 
 @hookspec
-def install_cli(parser: ArgumentParser) -> None:
-    """Allows the plugin to add its own command line arguments."""
+def add_options(parser: ArgumentParser) -> None:
+    """Allows the plugin to add its own command line arguments.
+
+    Even if you do not intend to use plugins in a command line context, you
+    should use this function to create your options.
+    """
 
 
 @hookspec
