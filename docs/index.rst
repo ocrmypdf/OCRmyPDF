@@ -26,7 +26,7 @@ image processing and OCR to existing PDFs.
    docker
    advanced
    batch
-   security
+   pdfsecurity
    errors
 
 .. toctree::
