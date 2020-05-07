@@ -105,8 +105,8 @@ Reference
     :members:
     :undoc-members:
 
-.. autoclass:: ocrmypdf.ExitCode
+.. autofunction:: ocrmypdf.configure_logging
+
+.. automodule:: ocrmypdf.exceptions
     :members:
     :undoc-members:
-
-.. autofunction:: ocrmypdf.configure_logging

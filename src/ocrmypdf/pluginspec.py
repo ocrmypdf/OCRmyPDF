@@ -40,26 +40,27 @@ def add_options(parser: ArgumentParser) -> None:
 def prepare(options: Namespace) -> None:
     """Called to notify a plugin that a file will be processed.
 
-	The plugin may modify the options. All objects that are in options must
+	The plugin may modify the *options*. All objects that are in options must
 	be picklable so they can be marshalled to child worker processes.
 	"""
 
 
 @hookspec
 def validate(pdfinfo: 'PdfInfo', options: Namespace) -> None:
-    """Called to give a plugin an opportunity to review options and pdfinfo.
+    """Called to give a plugin an opportunity to review *options* and *pdfinfo*.
 
-    options contains the "work order" to process a particular file. pdfinfo
+    *options* contains the "work order" to process a particular file. *pdfinfo*
     contains information about the input file obtained after loading and
-    parsing. The plugin may modify the options. For example, you could decide
+    parsing. The plugin may modify the *options*. For example, you could decide
     that a certain type of file should be treated with ``options.force_ocr = True``
-    based on information in its pdfinfo.
+    based on information in its *pdfinfo*.
 
-    The plugin may raise InputFileError or any ExitCodeException to request
+    The plugin may raise :class:`ocrmypdf.exceptions.InputFileError` or any
+    :class:`ocrmypdf.exceptions.ExitCodeException` to request
     normal termination. ocrmypdf will hold the plugin responsible for raising
     exceptions of any other type.
 
-    The return value is ignored. To abort processing, raise an ExitCodeException.
+    The return value is ignored. To abort processing, raise an ``ExitCodeException``.
     """
 
 
