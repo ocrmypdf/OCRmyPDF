@@ -243,7 +243,12 @@ def exec_concurrent(context):
     def update_page(result, pbar):
         sidecars[result.pageno] = result.text
         pbar.update()
-        ocrgraft.graft_page(result)
+        ocrgraft.graft_page(
+            pageno=result.pageno,
+            image=result.pdf_page_from_image,
+            textpdf=result.ocr,
+            autorotate_correction=result.orientation_correction,
+        )
         pbar.update()
 
     exec_progress_pool(

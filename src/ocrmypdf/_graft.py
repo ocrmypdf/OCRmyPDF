@@ -89,94 +89,6 @@ def strip_invisible_text(pdf, page):
     page.Contents = pikepdf.Stream(pdf, content_stream)
 
 
-def _graft_text_layer(
-    *, pdf_base, page_num, text, font, font_key, procset, rotation, strip_old_text
-):
-    """Insert the text layer from text page 0 on to pdf_base at page_num"""
-
-    log.debug("Grafting")
-    if Path(text).stat().st_size == 0:
-        return
-
-    # This is a pointer indicating a specific page in the base file
-    pdf_text = pikepdf.open(text)
-    pdf_text_contents = pdf_text.pages[0].Contents.read_bytes()
-
-    base_page = pdf_base.pages.p(page_num)
-
-    # The text page always will be oriented up by this stage but the original
-    # content may have a rotation applied. Wrap the text stream with a rotation
-    # so it will be oriented the same way as the rest of the page content.
-    # (Previous versions OCRmyPDF rotated the content layer to match the text.)
-    mediabox = [float(pdf_text.pages[0].MediaBox[v]) for v in range(4)]
-    wt, ht = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
-
-    mediabox = [float(base_page.MediaBox[v]) for v in range(4)]
-    wp, hp = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
-
-    translate = pikepdf.PdfMatrix().translated(-wt / 2, -ht / 2)
-    untranslate = pikepdf.PdfMatrix().translated(wp / 2, hp / 2)
-    corner = pikepdf.PdfMatrix().translated(mediabox[0], mediabox[1])
-    # -rotation because the input is a clockwise angle and this formula
-    # uses CCW
-    rotation = -rotation % 360
-    rotate = pikepdf.PdfMatrix().rotated(rotation)
-
-    # Because of rounding of DPI, we might get a text layer that is not
-    # identically sized to the target page. Scale to adjust. Normally this
-    # is within 0.998.
-    if rotation in (90, 270):
-        wt, ht = ht, wt
-    scale_x = wp / wt
-    scale_y = hp / ht
-
-    # log.debug('%r', scale_x, scale_y)
-    scale = pikepdf.PdfMatrix().scaled(scale_x, scale_y)
-
-    # Translate the text so it is centered at (0, 0), rotate it there, adjust
-    # for a size different between initial and text PDF, then untranslate, and
-    # finally move the lower left corner to match the mediabox
-    ctm = translate @ rotate @ scale @ untranslate @ corner
-
-    pdf_text_contents = b'q %s cm\n' % ctm.encode() + pdf_text_contents + b'\nQ\n'
-
-    new_text_layer = pikepdf.Stream(pdf_base, pdf_text_contents)
-
-    if strip_old_text:
-        strip_invisible_text(pdf_base, base_page)
-
-    base_page.page_contents_add(new_text_layer, prepend=True)
-
-    _update_page_resources(
-        page=base_page, font=font, font_key=font_key, procset=procset
-    )
-    pdf_text.close()
-
-
-def _find_font(text, pdf_base):
-    """Copy a font from the filename text into pdf_base"""
-
-    font, font_key = None, None
-    possible_font_names = ('/f-0-0', '/F1')
-    try:
-        with pikepdf.open(text) as pdf_text:
-            try:
-                pdf_text_fonts = pdf_text.pages[0].Resources.get('/Font', {})
-            except (AttributeError, IndexError, KeyError):
-                return None, None
-            for f in possible_font_names:
-                pdf_text_font = pdf_text_fonts.get(f, None)
-                if pdf_text_font is not None:
-                    font_key = f
-                    break
-            if pdf_text_font:
-                font = pdf_base.copy_foreign(pdf_text_font)
-            return font, font_key
-    except (FileNotFoundError, pikepdf.PdfError):
-        # PdfError occurs if a 0-length file is written e.g. due to OCR timeout
-        return None, None
-
-
 class OcrGrafter:
     def __init__(self, context):
         self.context = context
@@ -195,10 +107,11 @@ class OcrGrafter:
         self.emplacements = 1
         self.interim_count = 0
 
-    def graft_page(self, page_result):
-        pageno, image, text, _sidecar, autorotate_correction = page_result
-        if text and not self.font:
-            self.font, self.font_key = _find_font(text, self.pdf_base)
+    def graft_page(
+        self, *, pageno: int, image: Path, textpdf: Path, autorotate_correction: int
+    ):
+        if textpdf and not self.font:
+            self.font, self.font_key = self._find_font(textpdf)
 
         emplaced_page = False
         content_rotation = self.pdfinfo[pageno].rotation
@@ -226,13 +139,12 @@ class OcrGrafter:
             f"{text_misaligned}, {content_rotation}"
         )
 
-        if text and self.font:
+        if textpdf and self.font:
             # Graft the text layer onto this page, whether new or old
             strip_old = self.context.options.redo_ocr
-            _graft_text_layer(
-                pdf_base=self.pdf_base,
+            self._graft_text_layer(
                 page_num=pageno + 1,
-                text=text,
+                textpdf=textpdf,
                 font=self.font,
                 font_key=self.font_key,
                 rotation=text_misaligned,
@@ -283,3 +195,97 @@ class OcrGrafter:
         self.pdf_base.save(self.output_file)
         self.pdf_base.close()
         return self.output_file
+
+    def _find_font(self, text):
+        """Copy a font from the filename text into pdf_base"""
+
+        font, font_key = None, None
+        possible_font_names = ('/f-0-0', '/F1')
+        try:
+            with pikepdf.open(text) as pdf_text:
+                try:
+                    pdf_text_fonts = pdf_text.pages[0].Resources.get('/Font', {})
+                except (AttributeError, IndexError, KeyError):
+                    return None, None
+                for f in possible_font_names:
+                    pdf_text_font = pdf_text_fonts.get(f, None)
+                    if pdf_text_font is not None:
+                        font_key = f
+                        break
+                if pdf_text_font:
+                    font = self.pdf_base.copy_foreign(pdf_text_font)
+                return font, font_key
+        except (FileNotFoundError, pikepdf.PdfError):
+            # PdfError occurs if a 0-length file is written e.g. due to OCR timeout
+            return None, None
+
+    def _graft_text_layer(
+        self,
+        *,
+        page_num: int,
+        textpdf: Path,
+        font: pikepdf.Object,
+        font_key: pikepdf.Object,
+        procset: pikepdf.Object,
+        rotation: int,
+        strip_old_text: bool,
+    ):
+        """Insert the text layer from text page 0 on to pdf_base at page_num"""
+
+        log.debug("Grafting")
+        if Path(textpdf).stat().st_size == 0:
+            return
+
+        # This is a pointer indicating a specific page in the base file
+        pdf_text = pikepdf.open(textpdf)
+        pdf_text_contents = pdf_text.pages[0].Contents.read_bytes()
+
+        base_page = self.pdf_base.pages.p(page_num)
+
+        # The text page always will be oriented up by this stage but the original
+        # content may have a rotation applied. Wrap the text stream with a rotation
+        # so it will be oriented the same way as the rest of the page content.
+        # (Previous versions OCRmyPDF rotated the content layer to match the text.)
+        mediabox = [float(pdf_text.pages[0].MediaBox[v]) for v in range(4)]
+        wt, ht = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
+
+        mediabox = [float(base_page.MediaBox[v]) for v in range(4)]
+        wp, hp = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
+
+        translate = pikepdf.PdfMatrix().translated(-wt / 2, -ht / 2)
+        untranslate = pikepdf.PdfMatrix().translated(wp / 2, hp / 2)
+        corner = pikepdf.PdfMatrix().translated(mediabox[0], mediabox[1])
+        # -rotation because the input is a clockwise angle and this formula
+        # uses CCW
+        rotation = -rotation % 360
+        rotate = pikepdf.PdfMatrix().rotated(rotation)
+
+        # Because of rounding of DPI, we might get a text layer that is not
+        # identically sized to the target page. Scale to adjust. Normally this
+        # is within 0.998.
+        if rotation in (90, 270):
+            wt, ht = ht, wt
+        scale_x = wp / wt
+        scale_y = hp / ht
+
+        # log.debug('%r', scale_x, scale_y)
+        scale = pikepdf.PdfMatrix().scaled(scale_x, scale_y)
+
+        # Translate the text so it is centered at (0, 0), rotate it there, adjust
+        # for a size different between initial and text PDF, then untranslate, and
+        # finally move the lower left corner to match the mediabox
+        ctm = translate @ rotate @ scale @ untranslate @ corner
+
+        pdf_text_contents = b'q %s cm\n' % ctm.encode() + pdf_text_contents + b'\nQ\n'
+
+        new_text_layer = pikepdf.Stream(self.pdf_base, pdf_text_contents)
+
+        if strip_old_text:
+            strip_invisible_text(self.pdf_base, base_page)
+
+        base_page.page_contents_add(new_text_layer, prepend=True)
+
+        _update_page_resources(
+            page=base_page, font=font, font_key=font_key, procset=procset
+        )
+        pdf_text.close()
