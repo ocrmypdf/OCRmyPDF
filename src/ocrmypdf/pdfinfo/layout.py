@@ -25,10 +25,9 @@ import pdfminer.encodingdb
 import pdfminer.pdfdevice
 import pdfminer.pdfinterp
 from pdfminer.converter import PDFLayoutAnalyzer
-from pdfminer.glyphlist import glyphname2unicode
 from pdfminer.layout import LAParams, LTChar, LTPage, LTTextBox
 from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
-from pdfminer.pdffont import PDFFont, PDFSimpleFont, PDFUnicodeNotDefined
+from pdfminer.pdffont import PDFSimpleFont, PDFUnicodeNotDefined
 from pdfminer.pdfpage import PDFPage
 from pdfminer.utils import bbox2str, matrix2str
 

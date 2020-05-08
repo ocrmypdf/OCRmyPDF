@@ -41,7 +41,6 @@ except ImportError:
 
 # pytest.helpers is dynamic
 # pylint: disable=no-member
-# pylint: disable=w0612
 
 pytestmark = pytest.mark.filterwarnings('ignore:.*XMLParser.*:DeprecationWarning')
 
@@ -77,7 +76,7 @@ def test_override_metadata(spoof_tesseract_noop, output_type, resources, outpdf)
     german = 'Du siehst den Wald vor lauter Bäumen nicht.'
     chinese = '孔子'
 
-    p, out, err = run_ocrmypdf(
+    p, _out, err = run_ocrmypdf(
         input_file,
         outpdf,
         '--title',
@@ -113,7 +112,7 @@ def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
     input_file = resources / 'c02-22.pdf'
     high_unicode = 'U+1030C is: 𐌌'
 
-    p, out, err = run_ocrmypdf(
+    p, _out, err = run_ocrmypdf(
         input_file,
         no_outpdf,
         '--subject',
@@ -275,7 +274,7 @@ def test_srgb_in_unicode_path(tmp_path):
 
 
 def test_kodak_toc(resources, outpdf, spoof_tesseract_noop):
-    output = check_ocrmypdf(
+    _output = check_ocrmypdf(
         resources / 'kcs.pdf', outpdf, '--output-type', 'pdf', env=spoof_tesseract_noop
     )
 
