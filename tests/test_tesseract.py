@@ -27,15 +27,11 @@ from ocrmypdf import pdfinfo
 from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.exec import tesseract
 
-# pylint: disable=no-member,w0621
+# pylint: disable=no-member,redefined-outer-name
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
 spoof = pytest.helpers.spoof
-
-
-def test_tesseract_v4():
-    assert tesseract.v4()
 
 
 @pytest.mark.parametrize('basename', ['graph_ocred.pdf', 'cardinal.pdf'])

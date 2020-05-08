@@ -69,11 +69,6 @@ def version(tesseract_env=None):
     return get_version('tesseract', regex=r'tesseract\s(.+)', env=tesseract_env)
 
 
-def v4(tesseract_env=None):
-    "Is this Tesseract v4.0?"
-    return version(tesseract_env) >= '4'
-
-
 def has_textonly_pdf(tesseract_env=None, langs=None):
     """Does Tesseract have textonly_pdf capability?
 
