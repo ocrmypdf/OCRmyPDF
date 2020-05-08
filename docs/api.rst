@@ -56,8 +56,8 @@ OCRmyPDF does not.
     On Windows, the script that calls ``ocrmypdf.ocr()`` must be protected
     by an "ifmain" guard (``if __name__ == '__main__'``) or you must use
     ``ocrmypdf.ocr(...use_threads=True)``. If you do not take at least one
-    of these steps, Windows fork semantics will prevent OCRmyPDF from working
-    correct.
+    of these steps, Windows process semantics will prevent OCRmyPDF from working
+    correctly.
 
 Logging
 -------

@@ -94,6 +94,11 @@ def run(args, *, env=None, **kwargs):
 def fix_windows_args(program, args, env):
     """Adjust our desired program and command line arguments for use on Windows"""
 
+    if sys.version_info < (3, 8):
+        # bpo-33617 - Windows needs manual Path -> str conversion
+        args = [os.fspath(arg) for arg in args]
+        program = os.fspath(program)
+
     # If we are running a .py on Windows, ensure we call it with this Python
     # (to support test suite shims)
     if program.lower().endswith('.py'):
