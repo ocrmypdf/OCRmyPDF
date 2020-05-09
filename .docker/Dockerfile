@@ -11,10 +11,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libleptonica-dev \
   zlib1g-dev \
   python3 \
+  python3-dev \
+  libssl-dev \
+  libffi-dev \
+  libjpeg-dev \
+  zlib1g-dev \
+  libqpdf-dev \
+  pybind11-dev \
+  libxml2-dev \ 
+  libxslt1-dev \
   python3-distutils \
   ca-certificates \
   curl \
-  git
+  git 
 
 # Get the latest pip (Ubuntu version doesn't support manylinux2010)
 RUN \
@@ -52,6 +61,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   liblept5 \
   libsm6 libxext6 libxrender-dev \
   zlib1g \
+  libxslt-dev \
   pngquant \
   python3 \
   qpdf \
@@ -62,7 +72,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   tesseract-ocr-fra \
   tesseract-ocr-por \
   tesseract-ocr-spa \
-  unpaper
+  unpaper \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
