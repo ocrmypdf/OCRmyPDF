@@ -210,3 +210,24 @@ def test_version_comparison():
             version_checker=lambda: '1.0',
             need_version='2.0',
         )
+
+
+def test_optional_program_recommended(caplog):
+    caplog.clear()
+
+    def raiser():
+        raise FileNotFoundError('jbig2')
+
+    with caplog.at_level(logging.WARNING):
+        vd.check_external_program(
+            program="jbig2",
+            package="jbig2enc",
+            version_checker=raiser,
+            need_version='42',
+            required_for='this test case',
+            recommended=True,
+        )
+        assert any(
+            (loglevel == logging.WARNING and "recommended" in msg)
+            for _logger_name, loglevel, msg in caplog.record_tuples
+        )

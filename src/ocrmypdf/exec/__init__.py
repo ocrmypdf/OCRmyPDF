@@ -233,10 +233,10 @@ def _error_trailer(program, package, **kwargs):
 
 
 def _error_missing_program(program, package, required_for, recommended):
-    if required_for:
+    if recommended:
+        log.warning(missing_recommend_program.format(**locals()))
+    elif required_for:
         log.error(missing_optional_program.format(**locals()))
-    elif recommended:
-        log.info(missing_recommend_program.format(**locals()))
     else:
         log.error(missing_program.format(**locals()))
     _error_trailer(**locals())
@@ -279,7 +279,7 @@ def check_external_program(
     found_version = remove_leading_v(found_version)
     need_version = remove_leading_v(need_version)
 
-    if LooseVersion(found_version) < LooseVersion(need_version):
+    if found_version and LooseVersion(found_version) < LooseVersion(need_version):
         _error_old_version(program, package, need_version, found_version, required_for)
         if not recommended:
             raise MissingDependencyError()
