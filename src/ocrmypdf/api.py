@@ -174,7 +174,7 @@ def create_options(
     cmdline.append(str(input_file))
     cmdline.append(str(output_file))
 
-    parser.api_mode = True
+    parser._api_mode = True
     options = parser.parse_args(cmdline)
     for keyword, val in deferred:
         setattr(options, keyword, val)

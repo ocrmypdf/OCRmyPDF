@@ -45,10 +45,10 @@ class ArgumentParser(argparse.ArgumentParser):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.api_mode = False
+        self._api_mode = False
 
     def error(self, message):
-        if not self.api_mode:
+        if not self._api_mode:
             super().error(message)
             return
         raise ValueError(message)
