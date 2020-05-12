@@ -108,12 +108,10 @@ def test_image_too_large_pdf(monkeypatch, resources, outdir):
     monkeypatch.setattr(tesseract, 'run', dummy_run)
     tesseract.generate_pdf(
         input_image=resources / 'crom.png',
-        skip_pdf=resources / 'blank.pdf',
         output_pdf=outdir / 'pdf.pdf',
         output_text=outdir / 'txt.txt',
         language=['eng'],
         engine_mode=None,
-        text_only=False,
         tessconfig=[],
         timeout=180.0,
         pagesegmode=None,
@@ -123,7 +121,7 @@ def test_image_too_large_pdf(monkeypatch, resources, outdir):
     )
     assert Path(outdir / 'txt.txt').read_text() == '[skipped page]'
     if os.name != 'nt':  # different semantics
-        assert Path(outdir / 'pdf.pdf').samefile(resources / 'blank.pdf')
+        assert Path(outdir / 'pdf.pdf').stat().st_size == 0
 
 
 def test_timeout(caplog):

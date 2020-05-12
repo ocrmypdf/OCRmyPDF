@@ -302,29 +302,20 @@ def generate_hocr(
             shutil.move(prefix.with_suffix('.txt'), output_sidecar)
 
 
-def use_skip_page(text_only, skip_pdf, output_pdf, output_text):
+def use_skip_page(output_pdf, output_text):
     output_text.write_text('[skipped page]', encoding='utf-8')
 
-    if skip_pdf and not text_only:
-        # Substitute a "skipped page"
-        with suppress(FileNotFoundError):
-            output_pdf.unlink()  # In case it was partially created
-        safe_symlink(skip_pdf, output_pdf)
-        return
-
-    # Or normally, just write a 0 byte file to the output to indicate a skip
+    # A 0 byte file to the output to indicate a skip
     output_pdf.write_bytes(b'')
 
 
 def generate_pdf(
     *,
     input_image: Path,
-    skip_pdf: Optional[Path] = None,
     output_pdf: Path,
     output_text: Path,
     language: List[str],
     engine_mode,
-    text_only: bool,
     tessconfig: List[str],
     timeout: float,
     pagesegmode: int,
@@ -335,12 +326,10 @@ def generate_pdf(
     """Use Tesseract to render a PDF.
 
     input_image -- image to analyze
-    skip_pdf -- if we time out, use this file as output
     output_pdf -- file to generate
     output_text -- OCR text file
     language -- list of languages to consider
     engine_mode -- engine mode argument for tess v4
-    text_only -- enable tesseract text only mode?
     tessconfig -- tesseract configuration
     timeout -- timeout (seconds)
     log -- logger object
@@ -351,8 +340,8 @@ def generate_pdf(
     if pagesegmode is not None:
         args_tesseract.extend(['--psm', str(pagesegmode)])
 
-    if text_only and has_textonly_pdf(tesseract_env, language):
-        args_tesseract.extend(['-c', 'textonly_pdf=1'])
+    # has_textonly_pdf(tesseract_env=tesseract_env, langs=language)
+    args_tesseract.extend(['-c', 'textonly_pdf=1'])
 
     if user_words:
         args_tesseract.extend(['--user-words', user_words])
@@ -380,11 +369,11 @@ def generate_pdf(
             shutil.move(prefix + '.txt', output_text)
     except TimeoutExpired:
         page_timedout(timeout)
-        use_skip_page(text_only, skip_pdf, output_pdf, output_text)
+        use_skip_page(output_pdf, output_text)
     except CalledProcessError as e:
         tesseract_log_output(e.output)
         if b'Image too large' in e.output:
-            use_skip_page(text_only, skip_pdf, output_pdf, output_text)
+            use_skip_page(output_pdf, output_text)
             return
         raise SubprocessOutputError() from e
     else:

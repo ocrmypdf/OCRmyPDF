@@ -616,12 +616,10 @@ def ocr_tesseract_textonly_pdf(input_image, page_context):
     options = page_context.options
     tesseract.generate_pdf(
         input_image=input_image,
-        skip_pdf=None,
         output_pdf=output_pdf,
         output_text=output_text,
         language=options.language,
         engine_mode=options.tesseract_oem,
-        text_only=True,
         tessconfig=options.tesseract_config,
         timeout=options.tesseract_timeout,
         pagesegmode=options.tesseract_pagesegmode,
