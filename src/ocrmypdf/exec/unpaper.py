@@ -23,7 +23,6 @@
 import logging
 import os
 import shlex
-from functools import lru_cache
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError
 from tempfile import TemporaryDirectory
@@ -37,7 +36,6 @@ from ocrmypdf.exec import run as external_run
 log = logging.getLogger(__name__)
 
 
-@lru_cache(maxsize=1)
 def version():
     return get_version('unpaper')
 

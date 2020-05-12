@@ -25,6 +25,7 @@ import sys
 from collections.abc import Mapping
 from contextlib import suppress
 from distutils.version import LooseVersion
+from functools import lru_cache
 from subprocess import PIPE, STDOUT, CalledProcessError
 from subprocess import run as subprocess_run
 

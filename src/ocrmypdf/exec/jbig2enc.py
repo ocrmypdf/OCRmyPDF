@@ -17,14 +17,12 @@
 
 """Interface to jbig2 executable"""
 
-from functools import lru_cache
 from subprocess import PIPE
 
 from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.exec import get_version, run
 
 
-@lru_cache(maxsize=1)
 def version():
     return get_version('jbig2', regex=r'jbig2enc (\d+(\.\d+)*).*')
 

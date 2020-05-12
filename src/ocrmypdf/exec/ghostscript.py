@@ -21,7 +21,6 @@ import logging
 import os
 import re
 import warnings
-from functools import lru_cache
 from io import BytesIO
 from os import fspath
 from pathlib import Path
@@ -57,7 +56,6 @@ if os.name == 'nt':
     GS = Path(GS).stem
 
 
-@lru_cache(maxsize=1)
 def version():
     return get_version(GS)
 

@@ -17,7 +17,6 @@
 
 """Interface to pngquant executable"""
 
-from functools import lru_cache
 from subprocess import run
 from tempfile import NamedTemporaryFile
 
@@ -27,7 +26,6 @@ from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.exec import get_version
 
 
-@lru_cache(maxsize=1)
 def version():
     return get_version('pngquant', regex=r'(\d+(\.\d+)*).*')
 
