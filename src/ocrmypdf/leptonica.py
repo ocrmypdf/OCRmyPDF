@@ -33,9 +33,9 @@ from io import BytesIO, UnsupportedOperation
 from os import fspath
 from tempfile import TemporaryFile
 
-from .exceptions import MissingDependencyError
-from .exec import shim_paths_with_program_files
-from .lib._leptonica import ffi
+from ocrmypdf.exceptions import MissingDependencyError
+from ocrmypdf.exec import shim_paths_with_program_files
+from ocrmypdf.lib._leptonica import ffi
 
 # pylint: disable=protected-access
 
