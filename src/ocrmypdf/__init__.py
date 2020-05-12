@@ -16,7 +16,7 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from pluggy import HookimplMarker
+from pluggy import HookimplMarker as _HookimplMarker
 
 from ocrmypdf import helpers, hocrtransform, leptonica, pdfa, pdfinfo
 from ocrmypdf._version import PROGRAM_NAME, __version__
@@ -37,4 +37,4 @@ from ocrmypdf.exceptions import (
     UnsupportedImageFormatError,
 )
 
-hookimpl = HookimplMarker('ocrmypdf')
+hookimpl = _HookimplMarker('ocrmypdf')
