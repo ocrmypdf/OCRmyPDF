@@ -20,8 +20,8 @@
 from functools import lru_cache
 from subprocess import PIPE
 
-from ..exceptions import MissingDependencyError
-from . import get_version, run
+from ocrmypdf.exceptions import MissingDependencyError
+from ocrmypdf.exec import get_version, run
 
 
 @lru_cache(maxsize=1)

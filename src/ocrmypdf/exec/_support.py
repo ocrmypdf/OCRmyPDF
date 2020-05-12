@@ -28,7 +28,7 @@ from distutils.version import LooseVersion
 from subprocess import PIPE, STDOUT, CalledProcessError
 from subprocess import run as subprocess_run
 
-from ..exceptions import MissingDependencyError
+from ocrmypdf.exceptions import MissingDependencyError
 
 log = logging.getLogger(__name__)
 

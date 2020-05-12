@@ -31,7 +31,7 @@ from pdfminer.pdffont import PDFSimpleFont, PDFUnicodeNotDefined
 from pdfminer.pdfpage import PDFPage
 from pdfminer.utils import bbox2str, matrix2str
 
-from ..exceptions import EncryptedPdfError
+from ocrmypdf.exceptions import EncryptedPdfError
 
 STRIP_NAME = re.compile(r'[0-9]+')
 

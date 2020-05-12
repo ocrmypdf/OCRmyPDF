@@ -27,14 +27,14 @@ from shutil import copyfileobj
 
 import PIL
 
-from ._unicodefun import verify_python3_env
-from .exceptions import (
+from ocrmypdf._unicodefun import verify_python3_env
+from ocrmypdf.exceptions import (
     BadArgsError,
     InputFileError,
     MissingDependencyError,
     OutputFileAccessError,
 )
-from .exec import (
+from ocrmypdf.exec import (
     check_external_program,
     ghostscript,
     jbig2enc,
@@ -42,7 +42,12 @@ from .exec import (
     tesseract,
     unpaper,
 )
-from .helpers import is_file_writable, is_iterable_notstr, monotonic, safe_symlink
+from ocrmypdf.helpers import (
+    is_file_writable,
+    is_iterable_notstr,
+    monotonic,
+    safe_symlink,
+)
 
 # -------------
 # External dependencies

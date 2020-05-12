@@ -23,8 +23,8 @@ from tempfile import NamedTemporaryFile
 
 from PIL import Image
 
-from ..exceptions import MissingDependencyError
-from . import get_version
+from ocrmypdf.exceptions import MissingDependencyError
+from ocrmypdf.exec import get_version
 
 
 @lru_cache(maxsize=1)
