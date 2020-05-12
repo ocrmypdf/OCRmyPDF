@@ -144,11 +144,7 @@ def is_file_writable(test_file: os.PathLike):
     the location is writable.
     """
     try:
-        if not isinstance(test_file, Path):
-            p = Path(test_file)
-        else:
-            p = test_file
-
+        p = Path(test_file)
         if p.is_symlink():
             p = p.resolve(strict=False)
 
