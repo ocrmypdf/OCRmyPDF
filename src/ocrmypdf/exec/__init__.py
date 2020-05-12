@@ -278,7 +278,6 @@ def check_external_program(
     need_version,
     required_for=None,
     recommended=False,
-    **kwargs,  # To consume log parameter
 ):
     try:
         found_version = version_checker()
