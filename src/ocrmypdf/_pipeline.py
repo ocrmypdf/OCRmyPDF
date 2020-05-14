@@ -379,11 +379,8 @@ def get_orientation_correction(preview, page_context):
 
     """
 
-    orient_conf = tesseract.get_orientation(
-        preview,
-        engine_mode=page_context.options.tesseract_oem,
-        timeout=page_context.options.tesseract_timeout,
-        tesseract_env=page_context.options.tesseract_env,
+    orient_conf = page_context.plugin_manager.hook.get_ocr_engine().get_orientation(
+        preview, page_context.options
     )
 
     correction = orient_conf.angle % 360
@@ -531,22 +528,17 @@ def create_ocr_image(image, page_context):
     return output_file
 
 
-def ocr_tesseract_hocr(input_file, page_context):
+def ocr_engine_hocr(input_file, page_context):
     hocr_out = page_context.get_path('ocr_hocr.hocr')
     hocr_text_out = page_context.get_path('ocr_hocr.txt')
     options = page_context.options
-    tesseract.generate_hocr(
+
+    ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
+    ocr_engine.generate_hocr(
         input_file=input_file,
         output_hocr=hocr_out,
         output_text=hocr_text_out,
-        languages=options.language,
-        engine_mode=options.tesseract_oem,
-        tessconfig=options.tesseract_config,
-        timeout=options.tesseract_timeout,
-        pagesegmode=options.tesseract_pagesegmode,
-        user_words=options.user_words,
-        user_patterns=options.user_patterns,
-        tesseract_env=options.tesseract_env,
+        options=options,
     )
     return (hocr_out, hocr_text_out)
 
@@ -610,22 +602,17 @@ def render_hocr_page(hocr, page_context):
     return output_file
 
 
-def ocr_tesseract_textonly_pdf(input_image, page_context):
+def ocr_engine_textonly_pdf(input_image, page_context):
     output_pdf = page_context.get_path('ocr_tess.pdf')
     output_text = page_context.get_path('ocr_tess.txt')
     options = page_context.options
-    tesseract.generate_pdf(
+
+    ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
+    ocr_engine.generate_pdf(
         input_file=input_image,
         output_pdf=output_pdf,
         output_text=output_text,
-        languages=options.language,
-        engine_mode=options.tesseract_oem,
-        tessconfig=options.tesseract_config,
-        timeout=options.tesseract_timeout,
-        pagesegmode=options.tesseract_pagesegmode,
-        user_words=options.user_words,
-        user_patterns=options.user_patterns,
-        tesseract_env=options.tesseract_env,
+        options=options,
     )
     return (output_pdf, output_text)
 

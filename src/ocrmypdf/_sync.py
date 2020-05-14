@@ -42,8 +42,8 @@ from ocrmypdf._pipeline import (
     is_ocr_required,
     merge_sidecars,
     metadata_fixup,
-    ocr_tesseract_hocr,
-    ocr_tesseract_textonly_pdf,
+    ocr_engine_hocr,
+    ocr_engine_textonly_pdf,
     optimize_pdf,
     preprocess_clean,
     preprocess_deskew,
@@ -176,13 +176,11 @@ def exec_page_sync(page_context):
             )
 
         if options.pdf_renderer == 'hocr':
-            (hocr_out, text_out) = ocr_tesseract_hocr(ocr_image_out, page_context)
+            (hocr_out, text_out) = ocr_engine_hocr(ocr_image_out, page_context)
             ocr_out = render_hocr_page(hocr_out, page_context)
 
         if options.pdf_renderer == 'sandwich':
-            (ocr_out, text_out) = ocr_tesseract_textonly_pdf(
-                ocr_image_out, page_context
-            )
+            (ocr_out, text_out) = ocr_engine_textonly_pdf(ocr_image_out, page_context)
 
     return PageResult(
         pageno=page_context.pageno,

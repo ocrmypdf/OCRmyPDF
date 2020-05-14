@@ -15,9 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
+from collections import namedtuple
 from pathlib import Path
-from typing import Optional
+from typing import AbstractSet, Optional
 
 import pluggy
 from PIL import Image
@@ -87,3 +89,35 @@ def filter_page_image(page: 'PageContext', image_filename: Path) -> Path:
     Note that the ocrmypdf image optimization stage may ultimately chose a
     different format.
     """
+
+
+OrientationConfidence = namedtuple('OrientationConfidence', ('angle', 'confidence'))
+
+
+class OcrEngine(ABC):
+    @abstractmethod
+    def languages(self) -> AbstractSet[str]:
+        """Returns set of languages that are supported."""
+
+    @abstractmethod
+    def get_orientation(
+        self, input_file: Path, options: Namespace
+    ) -> OrientationConfidence:
+        """Returns the orientation of the image."""
+
+    @abstractmethod
+    def generate_hocr(
+        self, input_file: Path, output_hocr: Path, output_text: Path, options: Namespace
+    ) -> None:
+        pass
+
+    @abstractmethod
+    def generate_pdf(
+        self, input_file: Path, output_pdf: Path, output_text: Path, options: Namespace
+    ) -> None:
+        pass
+
+
+@hookspec(firstresult=True)
+def get_ocr_engine() -> OcrEngine:
+    pass
