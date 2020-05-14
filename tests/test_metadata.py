@@ -29,6 +29,7 @@ from pikepdf.models.metadata import decode_pdf_date
 
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._pipeline import convert_to_pdfa, metadata_fixup
+from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import SRGB_ICC_PROFILE, file_claims_pdfa, generate_pdfa_ps
@@ -291,7 +292,9 @@ def test_metadata_fixup_warning(resources, outdir, caplog):
 
     copyfile(resources / 'graph.pdf', outdir / 'graph.pdf')
 
-    context = PdfContext(options, outdir, outdir / 'graph.pdf', None, None)
+    context = PdfContext(
+        options, outdir, outdir / 'graph.pdf', None, get_plugin_manager([])
+    )
     metadata_fixup(working_file=outdir / 'graph.pdf', context=context)
     for record in caplog.records:
         assert record.levelname != 'WARNING'
@@ -302,7 +305,9 @@ def test_metadata_fixup_warning(resources, outdir, caplog):
         meta['prism2:publicationName'] = 'OCRmyPDF Test'
     graph.save(outdir / 'graph_mod.pdf')
 
-    context = PdfContext(options, outdir, outdir / 'graph_mod.pdf', None, None)
+    context = PdfContext(
+        options, outdir, outdir / 'graph_mod.pdf', None, get_plugin_manager([])
+    )
     metadata_fixup(working_file=outdir / 'graph.pdf', context=context)
     assert any(record.levelname == 'WARNING' for record in caplog.records)
 

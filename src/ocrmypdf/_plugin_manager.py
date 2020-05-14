@@ -29,9 +29,12 @@ from ocrmypdf import pluginspec
 def get_plugin_manager(plugins: List[str], builtins=True):
     pm = pluggy.PluginManager('ocrmypdf')
     pm.add_hookspecs(pluginspec)
+
     if builtins:
-        plugins.insert(0, 'ocrmypdf.builtin_plugins')
-    for name in plugins:
+        all_plugins = ['ocrmypdf.builtin_plugins'] + plugins
+    else:
+        all_plugins = plugins
+    for name in all_plugins:
         if name.endswith('.py'):
             # Import by filename
             module_name = Path(name).stem

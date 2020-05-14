@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from abc import ABC, abstractmethod
+from abc import ABC, abstractstaticmethod
 from argparse import ArgumentParser, Namespace
 from collections import namedtuple
 from pathlib import Path
@@ -95,27 +95,33 @@ OrientationConfidence = namedtuple('OrientationConfidence', ('angle', 'confidenc
 
 
 class OcrEngine(ABC):
-    @abstractmethod
-    def languages(self) -> AbstractSet[str]:
+    @abstractstaticmethod
+    def version() -> str:
+        """Returns the version of the OCR engine."""
+
+    @abstractstaticmethod
+    def creator_tag(options) -> str:
+        """Returns the creator tag to identify this software's role in creating the PDF."""
+
+    @abstractstaticmethod
+    def languages() -> AbstractSet[str]:
         """Returns set of languages that are supported."""
 
-    @abstractmethod
-    def get_orientation(
-        self, input_file: Path, options: Namespace
-    ) -> OrientationConfidence:
+    @abstractstaticmethod
+    def get_orientation(input_file: Path, options: Namespace) -> OrientationConfidence:
         """Returns the orientation of the image."""
 
-    @abstractmethod
+    @abstractstaticmethod
     def generate_hocr(
-        self, input_file: Path, output_hocr: Path, output_text: Path, options: Namespace
+        input_file: Path, output_hocr: Path, output_text: Path, options: Namespace
     ) -> None:
-        pass
+        """Called to produce a hOCR file."""
 
-    @abstractmethod
+    @abstractstaticmethod
     def generate_pdf(
-        self, input_file: Path, output_pdf: Path, output_text: Path, options: Namespace
+        input_file: Path, output_pdf: Path, output_text: Path, options: Namespace
     ) -> None:
-        pass
+        """Called to produce a text only PDF (no image, invisible text)."""
 
 
 @hookspec(firstresult=True)

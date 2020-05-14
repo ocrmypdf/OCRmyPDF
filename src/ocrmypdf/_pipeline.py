@@ -37,7 +37,7 @@ from ocrmypdf.exceptions import (
     PriorOcrFoundError,
     UnsupportedImageFormatError,
 )
-from ocrmypdf.exec import ghostscript, tesseract, unpaper
+from ocrmypdf.exec import ghostscript, unpaper
 from ocrmypdf.helpers import Resolution, safe_symlink
 from ocrmypdf.hocrtransform import HocrTransform
 from ocrmypdf.optimize import optimize
@@ -362,21 +362,19 @@ def describe_rotation(page_context, orient_conf, correction):
 
 
 def get_orientation_correction(preview, page_context):
-    """
-    Work out orientation correct for each page.
+    """Work out orientation correct for each page.
 
     We ask Ghostscript to draw a preview page, which will rasterize with the
-    current /Rotate applied, and then ask Tesseract which way the page is
+    current /Rotate applied, and then ask OCR which way the page is
     oriented. If the value of /Rotate is correct (e.g., a user already
-    manually fixed rotation), then Tesseract will say the page is pointing
+    manually fixed rotation), then OCR will say the page is pointing
     up and the correction is zero. Otherwise, the orientation found by
-    Tesseract represents the clockwise rotation, or the counterclockwise
+    OCR represents the clockwise rotation, or the counterclockwise
     correction to rotation.
 
     When we draw the real page for OCR, we rotate it by the CCW correction,
     which points it (hopefully) upright. _graft.py takes care of the orienting
     the image and text layers.
-
     """
 
     orient_conf = page_context.plugin_manager.hook.get_ocr_engine().get_orientation(
@@ -555,7 +553,7 @@ def create_visible_page_jpg(image, page_context):
         # might have removed the DPI information. In this case, fall back to
         # square DPI used to rasterize. When the preview image was
         # rasterized, it was also converted to square resolution, which is
-        # what we want to give tesseract, so keep it square.
+        # what we want to give to the OCR engine, so keep it square.
         if 'dpi' in im.info:
             dpi = Resolution(*im.info['dpi'])
         else:
@@ -617,7 +615,9 @@ def ocr_engine_textonly_pdf(input_image, page_context):
     return (output_pdf, output_text)
 
 
-def get_docinfo(base_pdf, options):
+def get_docinfo(base_pdf, context):
+    options = context.options
+
     def from_document_info(key):
         try:
             s = base_pdf.docinfo[key]
@@ -629,7 +629,6 @@ def get_docinfo(base_pdf, options):
         k: from_document_info(k)
         for k in ('/Title', '/Author', '/Keywords', '/Subject', '/CreationDate')
     }
-    renderer_tag = 'OCR'
     if options is not None:
         if options.title:
             pdfmark['/Title'] = options.title
@@ -640,12 +639,9 @@ def get_docinfo(base_pdf, options):
         if options.subject:
             pdfmark['/Subject'] = options.subject
 
-        if options.pdf_renderer == 'sandwich':
-            renderer_tag = 'OCR-PDF'
+    creator_tag = context.plugin_manager.hook.get_ocr_engine().creator_tag(options)
 
-    pdfmark['/Creator'] = (
-        f'{PROGRAM_NAME} {VERSION} / ' f'Tesseract {renderer_tag} {tesseract.version()}'
-    )
+    pdfmark['/Creator'] = f'{PROGRAM_NAME} {VERSION} / {creator_tag}'
     pdfmark['/Producer'] = f'pikepdf {pikepdf.__version__}'
     if 'OCRMYPDF_CREATOR' in os.environ:
         pdfmark['/Creator'] = os.environ['OCRMYPDF_CREATOR']
@@ -732,7 +728,7 @@ def metadata_fixup(working_file, context):
             log.info("The following metadata fields were not copied: %r", missing)
 
     with pikepdf.open(context.origin) as original, pikepdf.open(working_file) as pdf:
-        docinfo = get_docinfo(original, options)
+        docinfo = get_docinfo(original, context)
         with pdf.open_metadata() as meta:
             meta.load_from_docinfo(docinfo, delete_missing=False, raise_failure=False)
             # If xmp:CreateDate is missing, set it to the modify date to
@@ -780,11 +776,9 @@ def merge_sidecars(txt_files, context):
             if txt_file:
                 with open(txt_file, 'r', encoding="utf-8") as in_:
                     txt = in_.read()
-                    # Tesseract v4 alpha started adding form feeds in
-                    # commit aa6eb6b
-                    # No obvious way to detect what binaries will do this, so
-                    # for consistency just ignore its form feeds and insert our
-                    # own
+                    # Some OCR engines (e.g. Tesseract v4 alpha) add form feeds
+                    # between pages, and some do not. For consistency, we ignore
+                    # any added by the OCR engine and them on our own.
                     if txt.endswith('\f'):
                         stream.write(txt[:-1])
                     else:

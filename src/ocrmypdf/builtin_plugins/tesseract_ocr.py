@@ -21,10 +21,21 @@ from ocrmypdf.pluginspec import OcrEngine
 
 
 class TesseractOcrEngine(OcrEngine):
-    def languages(self):
+    @staticmethod
+    def version():
+        return tesseract.version()
+
+    @staticmethod
+    def creator_tag(options):
+        tag = '-PDF' if options.pdf_renderer == 'sandwich' else ''
+        return f"Tesseract OCR{tag} {TesseractOcrEngine.version()}"
+
+    @staticmethod
+    def languages():
         return tesseract.get_languages()
 
-    def get_orientation(self, input_file, options):
+    @staticmethod
+    def get_orientation(input_file, options):
         return tesseract.get_orientation(
             input_file,
             engine_mode=options.tesseract_oem,
@@ -32,7 +43,8 @@ class TesseractOcrEngine(OcrEngine):
             tesseract_env=options.tesseract_env,
         )
 
-    def generate_hocr(self, input_file, output_hocr, output_text, options):
+    @staticmethod
+    def generate_hocr(input_file, output_hocr, output_text, options):
         tesseract.generate_hocr(
             input_file=input_file,
             output_hocr=output_hocr,
@@ -47,7 +59,8 @@ class TesseractOcrEngine(OcrEngine):
             tesseract_env=options.tesseract_env,
         )
 
-    def generate_pdf(self, input_file, output_pdf, output_text, options):
+    @staticmethod
+    def generate_pdf(input_file, output_pdf, output_text, options):
         tesseract.generate_pdf(
             input_file=input_file,
             output_pdf=output_pdf,
