@@ -89,7 +89,8 @@ def has_textonly_pdf(tesseract_env=None, langs=None):
         params = proc.stdout
     except CalledProcessError as e:
         raise MissingDependencyError(
-            "Could not --print-parameters from tesseract"
+            "Could not --print-parameters from tesseract. This can happen if the "
+            "TESSDATA_PREFIX environment is not set to a valid tessdata folder. "
         ) from e
     if 'textonly_pdf' in params:
         return True
@@ -105,7 +106,7 @@ def has_user_words(tesseract_env=None):
     return version(tesseract_env) >= '4.1'
 
 
-def languages(tesseract_env=None):
+def get_languages(tesseract_env=None):
     def lang_error(output):
         msg = (
             "Tesseract failed to report available languages.\n"
@@ -232,21 +233,21 @@ def page_timedout(timeout):
     log.warning("[tesseract] took too long to OCR - skipping")
 
 
-def _generate_null_hocr(output_hocr, output_sidecar, image):
+def _generate_null_hocr(output_hocr, output_text, image):
     """Produce a .hocr file that reports no text detected on a page that is
     the same size as the input image."""
     with Image.open(image) as im:
         w, h = im.size
 
     output_hocr.write_text(HOCR_TEMPLATE.format(w, h), encoding='utf-8')
-    output_sidecar.write_text('[skipped page]', encoding='utf-8')
+    output_text.write_text('[skipped page]', encoding='utf-8')
 
 
 def generate_hocr(
     input_file: Path,
     output_hocr: Path,
-    output_sidecar: Path,
-    language: list,
+    output_text: Path,
+    languages: list,
     engine_mode,
     tessconfig: list,
     timeout: float,
@@ -257,7 +258,7 @@ def generate_hocr(
 ):
     prefix = output_hocr.with_suffix('')
 
-    args_tesseract = tess_base_args(language, engine_mode)
+    args_tesseract = tess_base_args(languages, engine_mode)
 
     if pagesegmode is not None:
         args_tesseract.extend(['--psm', str(pagesegmode)])
@@ -286,11 +287,11 @@ def generate_hocr(
         # Temporary workaround to hocrTransform not being able to function if
         # it does not have a valid hOCR file.
         page_timedout(timeout)
-        _generate_null_hocr(output_hocr, output_sidecar, input_file)
+        _generate_null_hocr(output_hocr, output_text, input_file)
     except CalledProcessError as e:
         tesseract_log_output(e.output)
         if b'Image too large' in e.output:
-            _generate_null_hocr(output_hocr, output_sidecar, input_file)
+            _generate_null_hocr(output_hocr, output_text, input_file)
             return
 
         raise SubprocessOutputError() from e
@@ -299,7 +300,7 @@ def generate_hocr(
         # The sidecar text file will get the suffix .txt; rename it to
         # whatever caller wants it named
         if prefix.with_suffix('.txt').exists():
-            shutil.move(prefix.with_suffix('.txt'), output_sidecar)
+            shutil.move(prefix.with_suffix('.txt'), output_text)
 
 
 def use_skip_page(output_pdf, output_text):
@@ -311,10 +312,10 @@ def use_skip_page(output_pdf, output_text):
 
 def generate_pdf(
     *,
-    input_image: Path,
+    input_file: Path,
     output_pdf: Path,
     output_text: Path,
-    language: List[str],
+    languages: List[str],
     engine_mode,
     tessconfig: List[str],
     timeout: float,
@@ -325,22 +326,20 @@ def generate_pdf(
 ):
     """Use Tesseract to render a PDF.
 
-    input_image -- image to analyze
+    input_file -- image to analyze
     output_pdf -- file to generate
     output_text -- OCR text file
-    language -- list of languages to consider
+    languages -- list of languages to consider
     engine_mode -- engine mode argument for tess v4
     tessconfig -- tesseract configuration
     timeout -- timeout (seconds)
-    log -- logger object
     """
 
-    args_tesseract = tess_base_args(language, engine_mode)
+    args_tesseract = tess_base_args(languages, engine_mode)
 
     if pagesegmode is not None:
         args_tesseract.extend(['--psm', str(pagesegmode)])
 
-    # has_textonly_pdf(tesseract_env=tesseract_env, langs=language)
     args_tesseract.extend(['-c', 'textonly_pdf=1'])
 
     if user_words:
@@ -354,7 +353,7 @@ def generate_pdf(
     # Reminder: test suite tesseract spoofers might break after any changes
     # to the number of order parameters here
 
-    args_tesseract.extend([input_image, prefix, 'pdf', 'txt'] + tessconfig)
+    args_tesseract.extend([input_file, prefix, 'pdf', 'txt'] + tessconfig)
     try:
         p = run(
             args_tesseract,

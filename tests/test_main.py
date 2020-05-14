@@ -233,7 +233,7 @@ def test_german(spoof_tesseract_cache, resources, outdir):
             env=spoof_tesseract_cache,
         )
     except MissingDependencyError:
-        if 'deu' not in tesseract.languages():
+        if 'deu' not in tesseract.get_languages():
             pytest.xfail(reason="tesseract-deu language pack not installed")
         raise
 

@@ -77,7 +77,7 @@ def test_no_languages(tmp_path):
     env['TESSDATA_PREFIX'] = fspath(tmp_path)
 
     with pytest.raises(MissingDependencyError):
-        tesseract.languages(tesseract_env=env)
+        tesseract.get_languages(tesseract_env=env)
 
 
 def test_image_too_large_hocr(monkeypatch, resources, outdir):
@@ -88,8 +88,8 @@ def test_image_too_large_hocr(monkeypatch, resources, outdir):
     tesseract.generate_hocr(
         input_file=resources / 'crom.png',
         output_hocr=outdir / 'out.hocr',
-        output_sidecar=outdir / 'out.txt',
-        language=['eng'],
+        output_text=outdir / 'out.txt',
+        languages=['eng'],
         engine_mode=None,
         tessconfig=[],
         timeout=180.0,
@@ -107,10 +107,10 @@ def test_image_too_large_pdf(monkeypatch, resources, outdir):
 
     monkeypatch.setattr(tesseract, 'run', dummy_run)
     tesseract.generate_pdf(
-        input_image=resources / 'crom.png',
+        input_file=resources / 'crom.png',
         output_pdf=outdir / 'pdf.pdf',
         output_text=outdir / 'txt.txt',
-        language=['eng'],
+        languages=['eng'],
         engine_mode=None,
         tessconfig=[],
         timeout=180.0,

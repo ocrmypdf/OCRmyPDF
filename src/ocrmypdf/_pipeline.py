@@ -538,8 +538,8 @@ def ocr_tesseract_hocr(input_file, page_context):
     tesseract.generate_hocr(
         input_file=input_file,
         output_hocr=hocr_out,
-        output_sidecar=hocr_text_out,
-        language=options.language,
+        output_text=hocr_text_out,
+        languages=options.language,
         engine_mode=options.tesseract_oem,
         tessconfig=options.tesseract_config,
         timeout=options.tesseract_timeout,
@@ -615,10 +615,10 @@ def ocr_tesseract_textonly_pdf(input_image, page_context):
     output_text = page_context.get_path('ocr_tess.txt')
     options = page_context.options
     tesseract.generate_pdf(
-        input_image=input_image,
+        input_file=input_image,
         output_pdf=output_pdf,
         output_text=output_text,
-        language=options.language,
+        languages=options.language,
         engine_mode=options.tesseract_oem,
         tessconfig=options.tesseract_config,
         timeout=options.tesseract_timeout,

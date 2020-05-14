@@ -84,12 +84,12 @@ def check_options_languages(options):
         options.language = options.language[0].split('+')
 
     languages = set(options.language)
-    if not languages.issubset(tesseract.languages(options.tesseract_env)):
+    if not languages.issubset(tesseract.get_languages(options.tesseract_env)):
         msg = (
             "The installed version of tesseract does not have language "
             "data for the following requested languages: \n"
         )
-        for lang in languages - tesseract.languages(options.tesseract_env):
+        for lang in languages - tesseract.get_languages(options.tesseract_env):
             msg += lang + '\n'
         raise MissingDependencyError(msg)
 
