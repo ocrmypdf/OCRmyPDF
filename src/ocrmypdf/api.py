@@ -279,5 +279,5 @@ def ocr(  # pylint: disable=unused-argument
     options = create_options(
         **{k: v for k, v in locals().items() if not k.startswith('_')}
     )
-    check_options(options)
+    check_options(options, _plugin_manager)
     return run_pipeline(options=options, plugin_manager=_plugin_manager, api=True)

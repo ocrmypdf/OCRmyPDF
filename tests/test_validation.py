@@ -22,6 +22,7 @@ from unittest.mock import patch
 import pytest
 
 import ocrmypdf._validation as vd
+from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.api import create_options
 from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
@@ -153,8 +154,9 @@ def test_false_action_store_true():
 @pytest.mark.parametrize('progress_bar', [True, False])
 def test_no_progress_bar(progress_bar, resources):
     opts = make_opts(progress_bar=progress_bar, input_file=(resources / 'trivial.pdf'))
+    plugin_manager = get_plugin_manager(opts.plugins)
     with patch('ocrmypdf._concurrent.tqdm', autospec=True) as tqdmpatch:
-        vd.check_options(opts)
+        vd.check_options(opts, plugin_manager)
         pdfinfo = PdfInfo(opts.input_file, progbar=opts.progress_bar)
         assert pdfinfo is not None
         assert tqdmpatch.called
@@ -164,11 +166,12 @@ def test_no_progress_bar(progress_bar, resources):
 
 def test_language_warning(caplog):
     opts = make_opts(language=None)
+    plugin_manager = get_plugin_manager(opts.plugins)
     caplog.set_level(logging.DEBUG)
     with patch(
         'ocrmypdf._validation.locale.getlocale', return_value=('en_US', 'UTF-8')
     ):
-        vd.check_options_languages(opts)
+        vd.check_options_languages(opts, plugin_manager)
         assert opts.language == ['eng']
         assert '' in caplog.text
 
@@ -176,7 +179,7 @@ def test_language_warning(caplog):
     with patch(
         'ocrmypdf._validation.locale.getlocale', return_value=('fr_FR', 'UTF-8')
     ):
-        vd.check_options_languages(opts)
+        vd.check_options_languages(opts, plugin_manager)
         assert opts.language == ['eng']
         assert 'assuming --language' in caplog.text
 

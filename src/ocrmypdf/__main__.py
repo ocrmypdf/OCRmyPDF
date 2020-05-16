@@ -58,7 +58,7 @@ def run(args=None):
     )
     log.debug('ocrmypdf %s', __version__)
     try:
-        check_options(options)
+        check_options(options, plugin_manager)
     except ValueError as e:
         log.error(e)
         return ExitCode.bad_args

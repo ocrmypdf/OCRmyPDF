@@ -30,9 +30,12 @@ class TesseractOcrEngine(OcrEngine):
         tag = '-PDF' if options.pdf_renderer == 'sandwich' else ''
         return f"Tesseract OCR{tag} {TesseractOcrEngine.version()}"
 
+    def __str__(self):
+        return f"Tesseract OCR {TesseractOcrEngine.version()}"
+
     @staticmethod
-    def languages():
-        return tesseract.get_languages()
+    def languages(options):
+        return tesseract.get_languages(options.tesseract_env)
 
     @staticmethod
     def get_orientation(input_file, options):

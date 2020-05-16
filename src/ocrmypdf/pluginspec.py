@@ -100,11 +100,15 @@ class OcrEngine(ABC):
         """Returns the version of the OCR engine."""
 
     @abstractstaticmethod
-    def creator_tag(options) -> str:
+    def creator_tag(options: Namespace) -> str:
         """Returns the creator tag to identify this software's role in creating the PDF."""
 
     @abstractstaticmethod
-    def languages() -> AbstractSet[str]:
+    def __str__(self):
+        """Returns name of OCR engine and version."""
+
+    @abstractstaticmethod
+    def languages(options: Namespace) -> AbstractSet[str]:
         """Returns set of languages that are supported."""
 
     @abstractstaticmethod

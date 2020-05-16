@@ -27,6 +27,7 @@ from shutil import copyfileobj
 
 import PIL
 
+from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._unicodefun import verify_python3_env
 from ocrmypdf.exceptions import (
     BadArgsError,
@@ -72,7 +73,7 @@ def check_platform():
         )
 
 
-def check_options_languages(options):
+def check_options_languages(options, plugin_manager):
     if not options.language:
         options.language = [DEFAULT_LANGUAGE]
         system_lang = locale.getlocale()[0]
@@ -84,12 +85,13 @@ def check_options_languages(options):
         options.language = options.language[0].split('+')
 
     languages = set(options.language)
-    if not languages.issubset(tesseract.get_languages(options.tesseract_env)):
+    ocr_engine = plugin_manager.hook.get_ocr_engine()
+    if not languages.issubset(ocr_engine.languages(options)):
         msg = (
-            "The installed version of tesseract does not have language "
-            "data for the following requested languages: \n"
+            f"{ocr_engine} does not have language data for the following "
+            "requested languages: \n"
         )
-        for lang in languages - tesseract.get_languages(options.tesseract_env):
+        for lang in languages - ocr_engine.languages(options):
             msg += lang + '\n'
         raise MissingDependencyError(msg)
 
@@ -308,9 +310,9 @@ def check_options_pillow(options):
         PIL.Image.MAX_IMAGE_PIXELS = None
 
 
-def check_options(options):
+def check_options(options, plugin_manager):
     check_platform()
-    check_options_languages(options)
+    check_options_languages(options, plugin_manager)
     check_options_metadata(options)
     check_options_output(options)
     check_options_sidecar(options)
