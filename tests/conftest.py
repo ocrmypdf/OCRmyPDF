@@ -25,7 +25,7 @@ from subprocess import PIPE, run
 import pytest
 
 from ocrmypdf import api, cli, pdfinfo
-from ocrmypdf._plugin_manager import get_plugin_manager
+from ocrmypdf._plugin_manager import get_parser_options_plugins
 from ocrmypdf.exec import unpaper
 
 pytest_plugins = ['helpers_namespace']
@@ -213,12 +213,11 @@ def no_outpdf(tmp_path):
 @pytest.helpers.register
 def check_ocrmypdf(input_file, output_file, *args, env=None):
     """Run ocrmypdf and confirmed that a valid file was created"""
+    args = [str(input_file), str(output_file)] + [
+        str(arg) for arg in args if arg is not None
+    ]
 
-    options = cli.get_parser().parse_args(
-        [str(input_file), str(output_file)]
-        + [str(arg) for arg in args if arg is not None]
-    )
-    plugin_manager = get_plugin_manager(options.plugins)
+    _parser, options, plugin_manager = get_parser_options_plugins(args=args)
     api.check_options(options, plugin_manager)
     if env:
         options.tesseract_env = env
@@ -239,10 +238,10 @@ def run_ocrmypdf_api(input_file, output_file, *args, env=None):
     Does not currently have a way to manipulate the PATH except for Tesseract.
     """
 
-    options = cli.get_parser().parse_args(
-        [str(input_file), str(output_file)]
-        + [str(arg) for arg in args if arg is not None]
-    )
+    args = [str(input_file), str(output_file)] + [
+        str(arg) for arg in args if arg is not None
+    ]
+    _parser, options, plugin_manager = get_parser_options_plugins(args=args)
     if env:
         options.tesseract_env = env.copy()
         options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
@@ -253,7 +252,6 @@ def run_ocrmypdf_api(input_file, output_file, *args, env=None):
     if options.tesseract_env:
         assert all(isinstance(v, (str, bytes)) for v in options.tesseract_env.values())
 
-    plugin_manager = get_plugin_manager(options.plugins)
     api.check_options(options, plugin_manager)
     return api.run_pipeline(options, plugin_manager=None, api=False)
 

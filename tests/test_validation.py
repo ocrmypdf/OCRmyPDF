@@ -32,8 +32,11 @@ from ocrmypdf.pdfinfo import PdfInfo
 def make_opts(input_file='a.pdf', output_file='b.pdf', language='eng', **kwargs):
     if language is not None:
         kwargs['language'] = language
+    parser = get_parser()
+    pm = get_plugin_manager(kwargs.get('plugins', []))
+    pm.hook.add_options(parser=parser)
     return create_options(
-        input_file=input_file, output_file=output_file, parser=get_parser(), **kwargs
+        input_file=input_file, output_file=output_file, parser=parser, **kwargs
     )
 
 

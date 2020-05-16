@@ -24,6 +24,7 @@ from typing import List
 import pluggy
 
 from ocrmypdf import pluginspec
+from ocrmypdf.cli import get_parser, plugins_only_parser
 
 
 def get_plugin_manager(plugins: List[str], builtins=True):
@@ -47,3 +48,14 @@ def get_plugin_manager(plugins: List[str], builtins=True):
             module = importlib.import_module(name)
         pm.register(module)
     return pm
+
+
+def get_parser_options_plugins(args):
+    pre_options, _unused = plugins_only_parser.parse_known_args(args=args)
+    plugin_manager = get_plugin_manager(pre_options.plugins)
+
+    parser = get_parser()
+    plugin_manager.hook.add_options(parser=parser)
+
+    options = parser.parse_args(args=args)
+    return parser, options, plugin_manager

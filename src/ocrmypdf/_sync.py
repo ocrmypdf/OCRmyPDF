@@ -305,7 +305,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
     if not options.jobs:
         options.jobs = available_cpu_count()
     if not plugin_manager:
-        plugin_manager = get_plugin_manager([])
+        plugin_manager = get_plugin_manager(options.plugins)
 
     work_folder = Path(mkdtemp(prefix="com.github.ocrmypdf."))
     debug_log_handler = None

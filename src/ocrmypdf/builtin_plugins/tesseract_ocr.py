@@ -16,8 +16,64 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 from ocrmypdf import hookimpl
+from ocrmypdf.cli import numeric
 from ocrmypdf.exec import tesseract
 from ocrmypdf.pluginspec import OcrEngine
+
+
+@hookimpl
+def add_options(parser):
+    tess = parser.add_argument_group("Tesseract", "Advanced control of Tesseract OCR")
+    tess.add_argument(
+        '--tesseract-config',
+        action='append',
+        metavar='CFG',
+        default=[],
+        help="Additional Tesseract configuration files -- see documentation",
+    )
+    tess.add_argument(
+        '--tesseract-pagesegmode',
+        action='store',
+        type=int,
+        metavar='PSM',
+        choices=range(0, 14),
+        help="Set Tesseract page segmentation mode (see tesseract --help)",
+    )
+    tess.add_argument(
+        '--tesseract-oem',
+        action='store',
+        type=int,
+        metavar='MODE',
+        choices=range(0, 4),
+        help=(
+            "Set Tesseract 4.0 OCR engine mode: "
+            "0 - original Tesseract only; "
+            "1 - neural nets LSTM only; "
+            "2 - Tesseract + LSTM; "
+            "3 - default."
+        ),
+    )
+    tess.add_argument(
+        '--tesseract-timeout',
+        default=180.0,
+        type=numeric(float, 0),
+        metavar='SECONDS',
+        help='Give up on OCR after the timeout, but copy the preprocessed page '
+        'into the final output',
+    )
+    tess.add_argument(
+        '--user-words',
+        metavar='FILE',
+        help="Specify the location of the Tesseract user words file. This is a "
+        "list of words Tesseract should consider while performing OCR in "
+        "addition to its standard language dictionaries. This can improve "
+        "OCR quality especially for specialized and technical documents.",
+    )
+    tess.add_argument(
+        '--user-patterns',
+        metavar='FILE',
+        help="Specify the location of the Tesseract user patterns file.",
+    )
 
 
 class TesseractOcrEngine(OcrEngine):

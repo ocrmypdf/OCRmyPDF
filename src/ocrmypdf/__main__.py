@@ -22,7 +22,7 @@ import sys
 from multiprocessing import set_start_method
 
 from ocrmypdf import __version__
-from ocrmypdf._plugin_manager import get_plugin_manager
+from ocrmypdf._plugin_manager import get_parser_options_plugins
 from ocrmypdf._sync import run_pipeline
 from ocrmypdf._validation import check_closed_streams, check_options
 from ocrmypdf.api import Verbosity, configure_logging
@@ -33,13 +33,7 @@ log = logging.getLogger('ocrmypdf')
 
 
 def run(args=None):
-    pre_options, _unused = plugins_only_parser.parse_known_args(args=args)
-    plugin_manager = get_plugin_manager(pre_options.plugins)
-
-    parser = get_parser()
-    plugin_manager.hook.add_options(parser=parser)
-
-    options = parser.parse_args(args=args)
+    parser, options, plugin_manager = get_parser_options_plugins(args=args)
 
     if not check_closed_streams(options):
         return ExitCode.bad_args

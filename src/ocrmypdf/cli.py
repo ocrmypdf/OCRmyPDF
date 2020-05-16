@@ -57,6 +57,7 @@ class ArgumentParser(argparse.ArgumentParser):
 def get_parser():
     parser = ArgumentParser(
         prog=_PROGRAM_NAME,
+        allow_abbrev=True,
         fromfile_prefix_chars='@',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="""\
@@ -382,14 +383,14 @@ Online documentation is located at:
     )
 
     advanced = parser.add_argument_group(
-        "Advanced", "Advanced options to control Tesseract's OCR behavior"
+        "Advanced", "Advanced options to control OCRmyPDF"
     )
     advanced.add_argument(
         '--pages',
         type=str,
         help=(
             "Limit OCR to the specified pages (ranges or comma separated), "
-            "skipping others",
+            "skipping others"
         ),
     )
     advanced.add_argument(
@@ -402,48 +403,11 @@ Online documentation is located at:
         default=128.0,
     )
     advanced.add_argument(
-        '--tesseract-config',
-        action='append',
-        metavar='CFG',
-        default=[],
-        help="Additional Tesseract configuration files -- see documentation",
-    )
-    advanced.add_argument(
-        '--tesseract-pagesegmode',
-        action='store',
-        type=int,
-        metavar='PSM',
-        choices=range(0, 14),
-        help="Set Tesseract page segmentation mode (see tesseract --help)",
-    )
-    advanced.add_argument(
-        '--tesseract-oem',
-        action='store',
-        type=int,
-        metavar='MODE',
-        choices=range(0, 4),
-        help=(
-            "Set Tesseract 4.0 OCR engine mode: "
-            "0 - original Tesseract only; "
-            "1 - neural nets LSTM only; "
-            "2 - Tesseract + LSTM; "
-            "3 - default."
-        ),
-    )
-    advanced.add_argument(
         '--pdf-renderer',
         choices=['auto', 'hocr', 'sandwich'],
         default='auto',
         help="Choose OCR PDF renderer - the default option is to let OCRmyPDF "
         "choose.  See documentation for discussion.",
-    )
-    advanced.add_argument(
-        '--tesseract-timeout',
-        default=180.0,
-        type=numeric(float, 0),
-        metavar='SECONDS',
-        help='Give up on OCR after the timeout, but copy the preprocessed page '
-        'into the final output',
     )
     advanced.add_argument(
         '--rotate-pages-threshold',
@@ -465,19 +429,6 @@ Online documentation is located at:
         "are applied to all pages, including those for which OCR was "
         "skipped.  Not supported for --output-type=pdf ; that setting "
         "preserves the original compression of all images.",
-    )
-    advanced.add_argument(
-        '--user-words',
-        metavar='FILE',
-        help="Specify the location of the Tesseract user words file. This is a "
-        "list of words Tesseract should consider while performing OCR in "
-        "addition to its standard language dictionaries. This can improve "
-        "OCR quality especially for specialized and technical documents.",
-    )
-    advanced.add_argument(
-        '--user-patterns',
-        metavar='FILE',
-        help="Specify the location of the Tesseract user patterns file.",
     )
     advanced.add_argument(
         '--fast-web-view',
