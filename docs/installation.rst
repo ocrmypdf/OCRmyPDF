@@ -327,20 +327,7 @@ standard tooling needed to build packages, such as a compiler and binary tools.
 
    sudo pacman -S base-devel
 
-The OCRmyPDF package depends on `the python-pdfminer.six AUR package
-<https://aur.archlinux.org/packages/python-pdfminer.six/>`__.  Dependencies on
-AUR packages are not automatically resolved, so this package must be manually
-installed first.
-
-.. code-block:: bash
-
-   curl -O https://aur.archlinux.org/cgit/aur.git/snapshot/python-pdfminer.six.tar.gz
-   tar xvzf python-pdfminer.six.tar.gz
-   cd python-pdfminer.six
-   makepkg -sri
-
-With that complete you can then repeat the same series of steps for the
-OCRmyPDF package.
+Now you are ready to install the OCRmyPDF package.
 
 .. code-block:: bash
 
@@ -374,11 +361,10 @@ page.
     fine without it but will produce larger output files. The encoder is
     available from `the jbig2enc-git AUR package
     <https://aur.archlinux.org/packages/jbig2enc-git/>`__ and may be installed
-    using the same series of steps as for the installation of the pdfminer.six
-    and OCRmyPDF AUR packages. Alternatively, it may be built manually from
-    source following the instructions in `Installing the JBIG2 encoder
-    <jbig2>`__.  If JBIG2 is installed, OCRmyPDF 7.0.0 and later will
-    automatically detect it.
+    using the same series of steps as for the installation OCRmyPDF AUR
+    package. Alternatively, it may be built manually from source following the
+    instructions in `Installing the JBIG2 encoder <jbig2>`__.  If JBIG2 is
+    installed, OCRmyPDF 7.0.0 and later will automatically detect it.
 
 Alpine Linux
 ------------
@@ -443,7 +429,10 @@ languages you can optionally install them all:
 Manual installation on macOS
 ----------------------------
 
-These instructions probably work on all macOS supported by Homebrew.
+These instructions probably work on all macOS supported by Homebrew, and are
+for installing a more current version of OCRmyPDF than is available from
+Homebrew. Note that the Homebrew versions usually track the release versions
+fairly closely.
 
 If it's not already present, `install Homebrew <http://brew.sh/>`__.
 
@@ -454,14 +443,8 @@ Update Homebrew:
     brew update
 
 Install or upgrade the required Homebrew packages, if any are missing.
-To do this, download the ``Brewfile`` that lists all of the dependencies
-to the current directory, and run ``brew bundle`` to process them
-(installing or upgrading as needed). ``Brewfile`` is a plain text file.
-
-.. code-block:: bash
-
-    wget https://github.com/jbarlow83/OCRmyPDF/raw/master/.travis/Brewfile
-    brew bundle
+To do this, use ``brew edit ocrmypdf`` to obtain a recent list of Homebrew
+dependencies. You could also check the ``azure-pipelines.yml``.
 
 This will include the English, French, German and Spanish language
 packs. If you need other languages you can optionally install them all:
