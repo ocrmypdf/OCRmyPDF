@@ -27,6 +27,7 @@ image processing and OCR to existing PDFs.
    advanced
    batch
    security
+   performance
    errors
 
 .. toctree::
