@@ -62,7 +62,7 @@ setup(
     long_description_content_type='text/markdown',
     url='https://github.com/jbarlow83/OCRmyPDF',
     author='James R. Barlow',
-    author_email='jim@purplerock.ca',
+    author_email='james@purplerock.ca',
     packages=find_packages('src', exclude=["tests", "tests.*"]),
     package_dir={'': 'src'},
     keywords=['PDF', 'OCR', 'optical character recognition', 'PDF/A', 'scanning'],
