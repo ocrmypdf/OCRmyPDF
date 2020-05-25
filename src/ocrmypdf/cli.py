@@ -54,6 +54,20 @@ class ArgumentParser(argparse.ArgumentParser):
         raise ValueError(message)
 
 
+class LanguageSetAction(argparse.Action):
+    def __init__(self, option_strings, dest, default=None, **kwargs):
+        if default is None:
+            default = set()
+        super().__init__(option_strings, dest, default=default, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        dest = getattr(namespace, self.dest)
+        if '+' in values:
+            dest.add(lang for lang in values.split('+'))
+        else:
+            dest.add(values)
+
+
 def get_parser():
     parser = ArgumentParser(
         prog=_PROGRAM_NAME,
@@ -126,7 +140,8 @@ Online documentation is located at:
     parser.add_argument(
         '-l',
         '--language',
-        action='append',
+        dest='languages',
+        action=LanguageSetAction,
         help="Language(s) of the file to be OCRed (see tesseract --list-langs for "
         "all language packs installed in your system). Use -l eng+deu for "
         "multiple languages.",

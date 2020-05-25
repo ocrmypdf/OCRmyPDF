@@ -74,24 +74,19 @@ def check_platform():
 
 
 def check_options_languages(options, plugin_manager):
-    if not options.language:
-        options.language = [DEFAULT_LANGUAGE]
+    if not options.languages:
+        options.languages = {DEFAULT_LANGUAGE}
         system_lang = locale.getlocale()[0]
         if system_lang and not system_lang.startswith('en'):
             log.debug("No language specified; assuming --language %s", DEFAULT_LANGUAGE)
 
-    # Support v2.x "eng+deu" language syntax
-    if '+' in options.language[0]:
-        options.language = options.language[0].split('+')
-
-    languages = set(options.language)
     ocr_engine = plugin_manager.hook.get_ocr_engine()
-    if not languages.issubset(ocr_engine.languages(options)):
+    if not options.languages.issubset(ocr_engine.languages(options)):
         msg = (
             f"{ocr_engine} does not have language data for the following "
             "requested languages: \n"
         )
-        for lang in languages - ocr_engine.languages(options):
+        for lang in options.languages - ocr_engine.languages(options):
             msg += lang + '\n'
         raise MissingDependencyError(msg)
 
@@ -101,8 +96,7 @@ def check_options_output(options):
     # 1. Ghostscript < 9.20 mangles multibyte Unicode
     # 2. hocr doesn't work on non-Latin languages (so don't select it)
 
-    languages = set(options.language)
-    is_latin = languages.issubset(HOCR_OK_LANGS)
+    is_latin = options.languages.issubset(HOCR_OK_LANGS)
 
     if options.pdf_renderer == 'hocr' and not is_latin:
         msg = (

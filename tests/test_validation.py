@@ -181,7 +181,7 @@ def test_language_warning(caplog):
         'ocrmypdf._validation.locale.getlocale', return_value=('en_US', 'UTF-8')
     ):
         vd.check_options_languages(opts, plugin_manager)
-        assert opts.language == ['eng']
+        assert opts.languages == {'eng'}
         assert '' in caplog.text
 
     opts = make_opts(language=None)
@@ -189,7 +189,7 @@ def test_language_warning(caplog):
         'ocrmypdf._validation.locale.getlocale', return_value=('fr_FR', 'UTF-8')
     ):
         vd.check_options_languages(opts, plugin_manager)
-        assert opts.language == ['eng']
+        assert opts.languages == {'eng'}
         assert 'assuming --language' in caplog.text
 
 

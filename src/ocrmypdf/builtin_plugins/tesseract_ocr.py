@@ -95,7 +95,7 @@ def check_options(options):
         options.pdf_renderer = 'sandwich'
 
     if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf(
-        options.tesseract_env, set(options.language)
+        options.tesseract_env, set(options.languages)
     ):
         raise MissingDependencyError(
             "You are using an alpha version of Tesseract 4.0 that does not support "
@@ -147,7 +147,7 @@ class TesseractOcrEngine(OcrEngine):
             input_file=input_file,
             output_hocr=output_hocr,
             output_text=output_text,
-            languages=options.language,
+            languages=options.languages,
             engine_mode=options.tesseract_oem,
             tessconfig=options.tesseract_config,
             timeout=options.tesseract_timeout,
@@ -163,7 +163,7 @@ class TesseractOcrEngine(OcrEngine):
             input_file=input_file,
             output_pdf=output_pdf,
             output_text=output_text,
-            languages=options.language,
+            languages=options.languages,
             engine_mode=options.tesseract_oem,
             tessconfig=options.tesseract_config,
             timeout=options.tesseract_timeout,
