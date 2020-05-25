@@ -39,7 +39,7 @@ def add_options(parser: ArgumentParser) -> None:
 
 
 @hookspec
-def prepare(options: Namespace) -> None:
+def check_options(options: Namespace) -> None:
     """Called to notify a plugin that a file will be processed.
 
 	The plugin may modify the *options*. All objects that are in options must

@@ -123,18 +123,6 @@ def check_options_output(options):
         msg += f"Found Ghostscript {ghostscript.version()}"
         log.warning(msg)
 
-    # Decide on what renderer to use
-    if options.pdf_renderer == 'auto':
-        options.pdf_renderer = 'sandwich'
-
-    if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf(
-        options.tesseract_env, languages
-    ):
-        raise MissingDependencyError(
-            "You are using an alpha version of Tesseract 4.0 that does not support "
-            "the textonly_pdf parameter. We don't support versions this old."
-        )
-
     if options.output_type == 'pdfa':
         options.output_type = 'pdfa-2'
 
@@ -277,18 +265,6 @@ def check_options_advanced(options):
             "--pdfa-image-compression argument has no effect when "
             "--output-type is not 'pdfa', 'pdfa-1', or 'pdfa-2'"
         )
-    if not tesseract.has_user_words(options.tesseract_env) and (
-        options.user_words or options.user_patterns
-    ):
-        log.warning(
-            "Tesseract 4.0 ignores --user-words and --user-patterns, so these "
-            "arguments have no effect."
-        )
-    if options.tesseract_pagesegmode in (0, 2):
-        log.warning(
-            "The --tesseract-pagesegmode argument you select will disable OCR. "
-            "This may cause processing to fail."
-        )
 
 
 def check_options_metadata(options):
@@ -322,6 +298,7 @@ def check_options(options, plugin_manager):
     check_options_advanced(options)
     check_options_pillow(options)
     check_dependency_versions(options)
+    plugin_manager.hook.check_options(options=options)
 
 
 def check_closed_streams(options):  # pragma: no cover
@@ -464,12 +441,6 @@ def report_output_file_size(options, input_file, output_file):
 
 
 def check_dependency_versions(options):
-    check_external_program(
-        program='tesseract',
-        package={'linux': 'tesseract-ocr'},
-        version_checker=tesseract.version,
-        need_version='4.0.0',  # using backport for Travis CI
-    )
     check_external_program(
         program='gs',
         package='ghostscript',

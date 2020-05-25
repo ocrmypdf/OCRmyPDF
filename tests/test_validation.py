@@ -69,7 +69,8 @@ def test_old_tesseract_error():
     with patch('ocrmypdf.exec.tesseract.has_textonly_pdf', return_value=False):
         with pytest.raises(MissingDependencyError):
             opts = make_opts(pdf_renderer='sandwich', language='eng')
-            vd.check_options_output(opts)
+            plugin_manager = get_plugin_manager(opts.plugins)
+            vd.check_options(opts, plugin_manager)
 
 
 def test_lossless_redo():
@@ -96,12 +97,17 @@ def test_optimizing(caplog):
 
 
 def test_user_words(caplog):
-    with patch('ocrmypdf.exec.tesseract.version', return_value='4.0.0'):
-        vd.check_options_advanced(make_opts(user_words='foo'))
+
+    with patch('ocrmypdf.exec.tesseract.has_user_words', return_value=False):
+        opts = make_opts(user_words='foo')
+        plugin_manager = get_plugin_manager(opts.plugins)
+        vd.check_options(opts, plugin_manager)
         assert '4.0 ignores --user-words' in caplog.text
     caplog.clear()
-    with patch('ocrmypdf.exec.tesseract.version', return_value='4.1.0'):
-        vd.check_options_advanced(make_opts(user_patterns='foo'))
+    with patch('ocrmypdf.exec.tesseract.has_user_words', return_value=True):
+        opts = make_opts(user_patterns='foo')
+        plugin_manager = get_plugin_manager(opts.plugins)
+        vd.check_options(opts, plugin_manager)
         assert '4.0 ignores --user-words' not in caplog.text
 
 
@@ -223,5 +229,6 @@ def test_version_comparison():
 
 def test_pagesegmode_warning(caplog):
     opts = make_opts(tesseract_pagesegmode='0')
-    vd.check_options_advanced(opts)
+    plugin_manager = get_plugin_manager(opts.plugins)
+    vd.check_options(opts, plugin_manager)
     assert 'disable OCR' in caplog.text

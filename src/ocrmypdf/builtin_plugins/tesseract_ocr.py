@@ -15,10 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+
 from ocrmypdf import hookimpl
 from ocrmypdf.cli import numeric
-from ocrmypdf.exec import tesseract
+from ocrmypdf.exceptions import MissingDependencyError
+from ocrmypdf.exec import check_external_program, tesseract
 from ocrmypdf.pluginspec import OcrEngine
+
+log = logging.getLogger(__name__)
 
 
 @hookimpl
@@ -74,6 +79,40 @@ def add_options(parser):
         metavar='FILE',
         help="Specify the location of the Tesseract user patterns file.",
     )
+
+
+@hookimpl
+def check_options(options):
+    check_external_program(
+        program='tesseract',
+        package={'linux': 'tesseract-ocr'},
+        version_checker=tesseract.version,
+        need_version='4.0.0',  # using backport for Travis CI
+    )
+
+    # Decide on what renderer to use
+    if options.pdf_renderer == 'auto':
+        options.pdf_renderer = 'sandwich'
+
+    if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf(
+        options.tesseract_env, set(options.language)
+    ):
+        raise MissingDependencyError(
+            "You are using an alpha version of Tesseract 4.0 that does not support "
+            "the textonly_pdf parameter. We don't support versions this old."
+        )
+    if not tesseract.has_user_words(options.tesseract_env) and (
+        options.user_words or options.user_patterns
+    ):
+        log.warning(
+            "Tesseract 4.0 ignores --user-words and --user-patterns, so these "
+            "arguments have no effect."
+        )
+    if options.tesseract_pagesegmode in (0, 2):
+        log.warning(
+            "The --tesseract-pagesegmode argument you select will disable OCR. "
+            "This may cause processing to fail."
+        )
 
 
 class TesseractOcrEngine(OcrEngine):

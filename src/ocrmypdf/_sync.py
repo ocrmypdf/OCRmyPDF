@@ -323,8 +323,6 @@ def run_pipeline(options, *, plugin_manager, api=False):
             original_filename, start_input_file, work_folder / 'origin.pdf', options
         )
 
-        plugin_manager.hook.prepare(options=options)
-
         # Gather pdfinfo and create context
         pdfinfo = get_pdfinfo(
             origin_pdf,
