@@ -216,25 +216,6 @@ def exec_concurrent(context):
     if max_workers > 1:
         log.info("Start processing %d pages concurrently", max_workers)
 
-    # Tesseract 4.x can be multithreaded, and we also run multiple workers. We want
-    # to manage how many threads it uses to avoid creating total threads than cores.
-    # Performance testing shows we're better off
-    # parallelizing ocrmypdf and forcing Tesseract to be single threaded, which we
-    # get by setting the envvar OMP_THREAD_LIMIT to 1. But if the page count of the
-    # input file is small, then we allow Tesseract to use threads, subject to the
-    # constraint: (ocrmypdf workers) * (tesseract threads) <= max_workers.
-    # As of Tesseract 4.1, 3 threads is the most effective on a 4 core/8 thread system.
-    tess_threads = min(3, context.options.jobs // max_workers)
-    if context.options.tesseract_env is None:
-        context.options.tesseract_env = os.environ.copy()
-    context.options.tesseract_env.setdefault('OMP_THREAD_LIMIT', str(tess_threads))
-    try:
-        tess_threads = int(context.options.tesseract_env['OMP_THREAD_LIMIT'])
-    except ValueError:  # OMP_THREAD_LIMIT initialized to non-numeric
-        context.log.error("Environment variable OMP_THREAD_LIMIT is not numeric")
-    if tess_threads > 1:
-        log.info("Using Tesseract OpenMP thread limit %d", tess_threads)
-
     sidecars = [None] * len(context.pdfinfo)
     ocrgraft = OcrGrafter(context)
 

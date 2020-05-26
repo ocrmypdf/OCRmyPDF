@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import argparse
 import importlib
 import importlib.util
 import sys
@@ -50,7 +51,9 @@ def get_plugin_manager(plugins: List[str], builtins=True):
     return pm
 
 
-def get_parser_options_plugins(args):
+def get_parser_options_plugins(
+    args,
+) -> (argparse.ArgumentParser, argparse.Namespace, pluggy.PluginManager):
     pre_options, _unused = plugins_only_parser.parse_known_args(args=args)
     plugin_manager = get_plugin_manager(pre_options.plugins)
 

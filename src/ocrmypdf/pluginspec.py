@@ -40,7 +40,7 @@ def add_options(parser: ArgumentParser) -> None:
 
 @hookspec
 def check_options(options: Namespace) -> None:
-    """Called to notify a plugin that a file will be processed.
+    """Called to ask the plugin to check all of its options.
 
 	The plugin may modify the *options*. All objects that are in options must
 	be picklable so they can be marshalled to child worker processes.

@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import inspect
 import logging
 import os
 import sys
@@ -178,11 +179,6 @@ def create_options(
     options = parser.parse_args(cmdline)
     for keyword, val in deferred:
         setattr(options, keyword, val)
-
-    # If we are running a Tesseract spoof, ensure it knows what the input file is
-    if os.environ.get('PYTEST_CURRENT_TEST') and options.tesseract_env:
-        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
-
     return options
 
 
@@ -233,7 +229,6 @@ def ocr(  # pylint: disable=unused-argument
     plugins: Iterable[str] = None,
     keep_temporary_files: bool = None,
     progress_bar: bool = None,
-    tesseract_env: Dict[str, str] = None,
     **kwargs,
 ):
     """Run OCRmyPDF on one PDF or image.
@@ -245,7 +240,6 @@ def ocr(  # pylint: disable=unused-argument
         use_threads (bool): Use worker threads instead of processes. This reduces
             performance but may make debugging easier since it is easier to set
             breakpoints.
-        tesseract_env (dict): Override environment variables for Tesseract
     Raises:
         ocrmypdf.PdfMergeFailedError: If the input PDF is malformed, preventing merging
             with the OCR layer.
@@ -274,10 +268,13 @@ def ocr(  # pylint: disable=unused-argument
 
     parser = get_parser()
     _plugin_manager = get_plugin_manager(plugins)
-    _plugin_manager.hook.add_options(parser=parser)
+    _plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
 
-    options = create_options(
-        **{k: v for k, v in locals().items() if not k.startswith('_')}
-    )
+    create_options_kwargs = {
+        k: v for k, v in locals().items() if not k.startswith('_') and k != 'kwargs'
+    }
+    create_options_kwargs.update(kwargs)
+
+    options = create_options(**create_options_kwargs)
     check_options(options, _plugin_manager)
     return run_pipeline(options=options, plugin_manager=_plugin_manager, api=True)

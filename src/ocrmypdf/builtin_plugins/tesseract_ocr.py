@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import argparse
 import logging
+import os
 
 from ocrmypdf import hookimpl
 from ocrmypdf.cli import numeric
@@ -79,6 +81,7 @@ def add_options(parser):
         metavar='FILE',
         help="Specify the location of the Tesseract user patterns file.",
     )
+    tess.add_argument('--tesseract-env', type=str, help=argparse.SUPPRESS)
 
 
 @hookimpl
@@ -113,6 +116,28 @@ def check_options(options):
             "The --tesseract-pagesegmode argument you select will disable OCR. "
             "This may cause processing to fail."
         )
+
+
+@hookimpl
+def validate(pdfinfo, options):
+    # If we are running a Tesseract spoof, ensure it knows what the input file is
+    if os.environ.get('PYTEST_CURRENT_TEST') and options.tesseract_env:
+        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(options.input_file)
+
+    # Tesseract 4.x can be multithreaded, and we also run multiple workers. We want
+    # to manage how many threads it uses to avoid creating total threads than cores.
+    # Performance testing shows we're better off
+    # parallelizing ocrmypdf and forcing Tesseract to be single threaded, which we
+    # get by setting the envvar OMP_THREAD_LIMIT to 1. But if the page count of the
+    # input file is small, then we allow Tesseract to use threads, subject to the
+    # constraint: (ocrmypdf workers) * (tesseract threads) <= max_workers.
+    # As of Tesseract 4.1, 3 threads is the most effective on a 4 core/8 thread system.
+    if not options.tesseract_env.get('OMP_THREAD_LIMIT', '').isnumeric():
+        tess_threads = min(3, options.jobs // len(pdfinfo), len(pdfinfo))
+        options.tesseract_env['OMP_THREAD_LIMIT'] = str(tess_threads)
+
+    if tess_threads > 1:
+        log.info("Using Tesseract OpenMP thread limit %d", tess_threads)
 
 
 class TesseractOcrEngine(OcrEngine):
