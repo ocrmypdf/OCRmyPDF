@@ -13,6 +13,16 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.8.1
+======
+
+-  Fixed an issue where unexpected files in the ``%PROGRAMFILES%\gs`` directory
+   (Windows) caused an exception.
+-  Mark pdfminer.six 20200517 as supported.
+-  If jbig2enc is missing and optimization is requested, a warning is issued
+   instead of an error, which was the intended behavior.
+-  Documentation updates.
+
 v9.8.0
 ======
 
