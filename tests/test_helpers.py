@@ -111,6 +111,6 @@ def test_shim_paths(tmp_path):
     result_str = shim_paths_with_program_files(env=env)
     results = result_str.split(os.pathsep)
     assert results[0].endswith('tesseract-ocr')
-    assert results[1].endswith('gs/9.52/bin')
-    assert results[2].endswith('gs/9.51/bin')
+    assert results[1].endswith(os.path.join('gs', '9.52', 'bin'))
+    assert results[2].endswith(os.path.join('gs', '9.51', 'bin'))
     assert results[3] == str(syspath)
