@@ -17,6 +17,7 @@
 
 import logging
 import multiprocessing
+import os
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -95,3 +96,21 @@ class TestFileIsWritable:
         pathmock.exists.return_value = True
         pathmock.is_file.side_effect = PermissionError
         assert not helpers.is_file_writable(pathmock)
+
+
+def test_shim_paths(tmp_path):
+    progfiles = tmp_path / 'Program Files'
+    progfiles.mkdir()
+    (progfiles / 'tesseract-ocr').mkdir()
+    (progfiles / 'gs' / '9.51' / 'bin').mkdir(parents=True)
+    (progfiles / 'gs' / '9.52' / 'bin').mkdir(parents=True)
+    syspath = tmp_path / 'bin'
+    env = {'PROGRAMFILES': str(progfiles), 'PATH': str(syspath)}
+    from ocrmypdf.exec import shim_paths_with_program_files
+
+    result_str = shim_paths_with_program_files(env=env)
+    results = result_str.split(os.pathsep)
+    assert results[0].endswith('tesseract-ocr')
+    assert results[1].endswith('gs/9.52/bin')
+    assert results[2].endswith('gs/9.51/bin')
+    assert results[3] == str(syspath)

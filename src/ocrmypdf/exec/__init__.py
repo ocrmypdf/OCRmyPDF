@@ -25,6 +25,7 @@ import sys
 from collections.abc import Mapping
 from distutils.version import LooseVersion
 from functools import lru_cache
+from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError
 from subprocess import run as subprocess_run
 
@@ -138,24 +139,25 @@ def shim_paths_with_program_files(env=None):
     program_files = env.get('PROGRAMFILES', '')
     if not program_files:
         return env.get('PATH', '')
-    paths = []
-    try:
-        for dirname in os.listdir(program_files):
-            if dirname.lower() == 'tesseract-ocr':
-                paths.append(os.path.join(program_files, dirname))
-            elif dirname.lower() == 'gs':
-                try:
-                    latest_gs = max(
-                        os.listdir(os.path.join(program_files, dirname)),
-                        key=lambda d: float(d[2:]),
-                    )
-                except (FileNotFoundError, NotADirectoryError):
-                    continue
-                paths.append(os.path.join(program_files, dirname, latest_gs, 'bin'))
-    except EnvironmentError:
-        pass
-    paths.extend(path for path in os.get_exec_path(env) if path not in set(paths))
-    return os.pathsep.join(paths)
+
+    def path_walker():
+        for path in Path(program_files).iterdir():
+            if not path.is_dir():
+                continue
+            if path.name.lower() == 'tesseract-ocr':
+                yield path
+            elif path.name.lower() == 'gs':
+                yield from (p for p in path.glob('**/bin') if p.is_dir())
+
+    paths = sorted(
+        (p for p in path_walker()), key=lambda p: (p.name, p.parent.name), reverse=True
+    )
+    paths.extend(
+        Path(str_path)
+        for str_path in os.get_exec_path(env)
+        if Path(str_path) not in set(paths)
+    )
+    return os.pathsep.join(str(p) for p in paths)
 
 
 missing_program = '''
