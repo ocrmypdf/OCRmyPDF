@@ -1,0 +1,36 @@
+name: Build and Push Dockerhub
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - .github/**
+      - README.md
+  release:
+    types: [published]
+jobs:
+  buildx:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Image Tag to Release or Branch
+        run: echo "::set-env name=DOCKER_IMAGE_TAG::${GITHUB_REF##*/}"
+      - name: If master, set to latest
+        run: echo '::set-env name=DOCKER_IMAGE_TAG::latest'
+        if: env.DOCKER_IMAGE_TAG == 'master'
+      - name: Set Docker Hub Repository to username
+        run: echo "::set-env name=DOCKER_REPOSITORY::${{ secrets.DOCKERHUB_USERNAME }}"
+      - name: Set Image Name 
+        run: echo "::set-env name=DOCKER_IMAGE_NAME::${{ secrets.DOCKERHUB_IMAGE_NAME }}"
+      - uses: actions/checkout@v2
+      - name: Buildx setup
+        uses: crazy-max/ghaction-docker-buildx@v2
+      - name: Dockerhub login
+        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin 2>&1
+      - name: Print Image Tag
+        run: echo "Building Image ${DOCKER_REPOSITORY}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+      - name: Run Buildx
+        run: |
+          docker buildx build \
+            --push \
+            --platform linux/arm64/v8,linux/amd64  \
+            --tag "${DOCKER_REPOSITORY}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}" \
+            --file .docker/Dockerfile .
