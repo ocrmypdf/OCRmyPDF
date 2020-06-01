@@ -38,25 +38,24 @@ def spoof_tess_bad_utf8(tmp_path_factory):
     return spoof(tmp_path_factory, tesseract='tesseract_badutf8.py')
 
 
-def test_stdin(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
+def test_stdin(ocrmypdf_exec, resources, outpdf):
     input_file = str(resources / 'francais.pdf')
     output_file = str(outpdf)
 
     # Runs: ocrmypdf - output.pdf < testfile.pdf
     with open(input_file, 'rb') as input_stream:
-        p_args = ocrmypdf_exec + ['-', output_file]
-        p = run(
-            p_args,
-            stdout=PIPE,
-            stderr=PIPE,
-            stdin=input_stream,
-            env=spoof_tesseract_noop,
-        )
+        p_args = ocrmypdf_exec + [
+            '-',
+            output_file,
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
+        ]
+        p = run(p_args, stdout=PIPE, stderr=PIPE, stdin=input_stream)
         assert p.returncode == ExitCode.ok
 
 
-def test_stdout(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
-    if 'COV_CORE_DATAFILE' in spoof_tesseract_noop:
+def test_stdout(ocrmypdf_exec, resources, outpdf):
+    if 'COV_CORE_DATAFILE' in os.environ:
         pytest.skip(msg="Coverage uses stdout")
 
     input_file = str(resources / 'francais.pdf')
@@ -64,14 +63,13 @@ def test_stdout(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
 
     # Runs: ocrmypdf francais.pdf - > test_stdout.pdf
     with open(output_file, 'wb') as output_stream:
-        p_args = ocrmypdf_exec + [input_file, '-']
-        p = run(
-            p_args,
-            stdout=output_stream,
-            stderr=PIPE,
-            stdin=DEVNULL,
-            env=spoof_tesseract_noop,
-        )
+        p_args = ocrmypdf_exec + [
+            input_file,
+            '-',
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
+        ]
+        p = run(p_args, stdout=output_stream, stderr=PIPE, stdin=DEVNULL)
         assert p.returncode == ExitCode.ok
 
     assert check_pdf(output_file)
@@ -81,7 +79,7 @@ def test_stdout(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
     sys.version_info[0:3] >= (3, 6, 4), reason="issue fixed in Python 3.6.4"
 )
 @pytest.mark.skipif(os.name == 'nt', reason="POSIX problem")
-def test_closed_streams(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
+def test_closed_streams(ocrmypdf_exec, resources, outpdf):
     input_file = str(resources / 'francais.pdf')
     output_file = str(outpdf)
 
@@ -89,14 +87,18 @@ def test_closed_streams(spoof_tesseract_noop, ocrmypdf_exec, resources, outpdf):
         os.close(0)
         os.close(1)
 
-    p_args = ocrmypdf_exec + [input_file, output_file]
+    p_args = ocrmypdf_exec + [
+        input_file,
+        output_file,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+    ]
     p = Popen(  # pylint: disable=subprocess-popen-preexec-fn
         p_args,
         close_fds=True,
         stdout=None,
         stderr=PIPE,
         stdin=None,
-        env=spoof_tesseract_noop,
         preexec_fn=evil_closer,
     )
     out, err = p.communicate()
@@ -123,12 +125,16 @@ def test_bad_locale():
     os.name == 'nt' and sys.version_info < (3, 8),
     reason="Windows does not like this; not sure how to fix",
 )
-def test_dev_null(spoof_tesseract_noop, resources):
-    if 'COV_CORE_DATAFILE' in spoof_tesseract_noop:
+def test_dev_null(resources):
+    if 'COV_CORE_DATAFILE' in os.environ:
         pytest.skip(msg="Coverage uses stdout")
 
     p, out, err = run_ocrmypdf(
-        resources / 'trivial.pdf', os.devnull, '--force-ocr', env=spoof_tesseract_noop
+        resources / 'trivial.pdf',
+        os.devnull,
+        '--force-ocr',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
     assert p.returncode == 0, "could not send output to /dev/null"
     assert len(out) == 0, "wrote to stdout"

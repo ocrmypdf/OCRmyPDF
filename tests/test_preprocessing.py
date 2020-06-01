@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
 from math import isclose
 
 import pytest
@@ -38,16 +37,18 @@ spoof = pytest.helpers.spoof
 RENDERERS = ['hocr', 'sandwich']
 
 
-def test_deskew(spoof_tesseract_noop, resources, outdir):
+def test_deskew(resources, outdir):
     # Run with deskew
     deskewed_pdf = check_ocrmypdf(
-        resources / 'skew.pdf', outdir / 'skew.pdf', '-d', env=spoof_tesseract_noop
+        resources / 'skew.pdf',
+        outdir / 'skew.pdf',
+        '-d',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     # Now render as an image again and use Leptonica to find the skew angle
     # to confirm that it was deskewed
-    log = logging.getLogger()
-
     deskewed_png = outdir / 'deskewed.png'
 
     ghostscript.rasterize_pdf(
@@ -65,7 +66,7 @@ def test_deskew(spoof_tesseract_noop, resources, outdir):
     assert -0.5 < skew_angle < 0.5, "Deskewing failed"
 
 
-def test_remove_background(spoof_tesseract_noop, resources, outdir):
+def test_remove_background(resources, outdir):
     # Ensure the input image does not contain pure white/black
     with Image.open(resources / 'congress.jpg') as im:
         assert im.getextrema() != ((0, 255), (0, 255), (0, 255))
@@ -76,7 +77,8 @@ def test_remove_background(spoof_tesseract_noop, resources, outdir):
         '--remove-background',
         '--image-dpi',
         '150',
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     output_png = outdir / 'remove_bg.png'

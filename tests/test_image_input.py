@@ -33,9 +33,14 @@ def baiona(resources):
     return Image.open(resources / 'baiona_gray.png')
 
 
-def test_image_to_pdf(spoof_tesseract_noop, resources, outpdf):
+def test_image_to_pdf(resources, outpdf):
     check_ocrmypdf(
-        resources / 'crom.png', outpdf, '--image-dpi', '200', env=spoof_tesseract_noop
+        resources / 'crom.png',
+        outpdf,
+        '--image-dpi',
+        '200',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
 
@@ -77,7 +82,7 @@ def test_img2pdf_fails(resources, no_outpdf):
         assert rc == ocrmypdf.ExitCode.input_file
 
 
-def test_jpeg_in_jpeg_out(resources, outpdf, spoof_tesseract_noop):
+def test_jpeg_in_jpeg_out(resources, outpdf):
     check_ocrmypdf(
         resources / 'congress.jpg',
         outpdf,
@@ -86,7 +91,8 @@ def test_jpeg_in_jpeg_out(resources, outpdf, spoof_tesseract_noop):
         '--output-type',
         'pdf',  # specifically check pdf because Ghostscript may convert to JPEG
         '--remove-background',
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
     with pikepdf.open(outpdf) as pdf:
         assert next(pdf.pages[0].images.values()).Filter == pikepdf.Name.DCTDecode

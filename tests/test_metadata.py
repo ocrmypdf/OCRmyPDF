@@ -51,7 +51,7 @@ spoof = pytest.helpers.spoof
 
 
 @pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])
-def test_preserve_metadata(spoof_tesseract_noop, output_type, resources, outpdf):
+def test_preserve_metadata(output_type, resources, outpdf):
     pdf_before = pikepdf.open(resources / 'graph.pdf')
 
     output = check_ocrmypdf(
@@ -59,7 +59,8 @@ def test_preserve_metadata(spoof_tesseract_noop, output_type, resources, outpdf)
         outpdf,
         '--output-type',
         output_type,
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     pdf_after = pikepdf.open(output)
@@ -72,7 +73,7 @@ def test_preserve_metadata(spoof_tesseract_noop, output_type, resources, outpdf)
 
 
 @pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])
-def test_override_metadata(spoof_tesseract_noop, output_type, resources, outpdf):
+def test_override_metadata(output_type, resources, outpdf):
     input_file = resources / 'c02-22.pdf'
     german = 'Du siehst den Wald vor lauter Bäumen nicht.'
     chinese = '孔子'
@@ -86,7 +87,8 @@ def test_override_metadata(spoof_tesseract_noop, output_type, resources, outpdf)
         chinese,
         '--output-type',
         output_type,
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     assert p.returncode == ExitCode.ok, err
@@ -106,7 +108,7 @@ def test_override_metadata(spoof_tesseract_noop, output_type, resources, outpdf)
     assert pdfa_info['output'] == output_type
 
 
-def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
+def test_high_unicode(resources, no_outpdf):
 
     # Ghostscript doesn't support high Unicode, so neither do we, to be
     # safe
@@ -120,7 +122,8 @@ def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
         high_unicode,
         '--output-type',
         'pdfa',
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     assert p.returncode == ExitCode.bad_args, err
@@ -129,9 +132,7 @@ def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
 @pytest.mark.skipif(not fitz, reason="test uses fitz")
 @pytest.mark.parametrize('ocr_option', ['--skip-text', '--force-ocr'])
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
-def test_bookmarks_preserved(
-    spoof_tesseract_noop, output_type, ocr_option, resources, outpdf
-):
+def test_bookmarks_preserved(output_type, ocr_option, resources, outpdf):
     input_file = resources / 'toc.pdf'
     before_toc = fitz.Document(str(input_file)).getToC()
 
@@ -141,7 +142,8 @@ def test_bookmarks_preserved(
         ocr_option,
         '--output-type',
         output_type,
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     after_toc = fitz.Document(str(outpdf)).getToC()
@@ -156,13 +158,16 @@ def seconds_between_dates(date1, date2):
 
 @pytest.mark.parametrize('infile', ['trivial.pdf', 'jbig2.pdf'])
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
-def test_creation_date_preserved(
-    spoof_tesseract_noop, output_type, resources, infile, outpdf
-):
+def test_creation_date_preserved(output_type, resources, infile, outpdf):
     input_file = resources / infile
 
     check_ocrmypdf(
-        input_file, outpdf, '--output-type', output_type, env=spoof_tesseract_noop
+        input_file,
+        outpdf,
+        '--output-type',
+        output_type,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     pdf_before = pikepdf.open(input_file)
@@ -185,7 +190,7 @@ def test_creation_date_preserved(
 
 
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
-def test_xml_metadata_preserved(spoof_tesseract_noop, output_type, resources, outpdf):
+def test_xml_metadata_preserved(output_type, resources, outpdf):
     input_file = resources / 'graph.pdf'
 
     try:
@@ -196,7 +201,12 @@ def test_xml_metadata_preserved(spoof_tesseract_noop, output_type, resources, ou
     before = file_to_dict(str(input_file))
 
     check_ocrmypdf(
-        input_file, outpdf, '--output-type', output_type, env=spoof_tesseract_noop
+        input_file,
+        outpdf,
+        '--output-type',
+        output_type,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     after = file_to_dict(str(outpdf))
@@ -274,9 +284,14 @@ def test_srgb_in_unicode_path(tmp_path):
         generate_pdfa_ps(dstdir / 'out.ps')
 
 
-def test_kodak_toc(resources, outpdf, spoof_tesseract_noop):
+def test_kodak_toc(resources, outpdf):
     _output = check_ocrmypdf(
-        resources / 'kcs.pdf', outpdf, '--output-type', 'pdf', env=spoof_tesseract_noop
+        resources / 'kcs.pdf',
+        outpdf,
+        '--output-type',
+        'pdf',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     p = pikepdf.open(outpdf)

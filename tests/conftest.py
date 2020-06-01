@@ -170,11 +170,6 @@ def spoof(tmp_path_factory, **kwargs):
 
 
 @pytest.fixture
-def spoof_tesseract_noop(tmp_path_factory):
-    return spoof(tmp_path_factory, tesseract='tesseract_noop.py')
-
-
-@pytest.fixture
 def spoof_tesseract_cache(tmp_path_factory):
     if running_in_docker():
         return os.environ.copy()
@@ -222,7 +217,7 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
     if env:
         first = env['_OCRMYPDF_TEST_PATH'].split(os.pathsep)[0]
         if 'tesseract_noop' in first:
-            options.plugins = ['tests/plugins/tesseract_noop.py']
+            raise ValueError('noop')
         else:
             options.tesseract_env = env
             options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
@@ -250,7 +245,7 @@ def run_ocrmypdf_api(input_file, output_file, *args, env=None):
         try:
             first = env['_OCRMYPDF_TEST_PATH'].split(os.pathsep)[0]
             if 'tesseract_noop' in first:
-                options.plugins = ['tests/plugins/tesseract_noop.py']
+                raise ValueError('noop')
             else:
                 options.tesseract_env = env.copy()
                 options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)

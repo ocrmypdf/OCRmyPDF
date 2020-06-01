@@ -60,45 +60,54 @@ def test_old_unpaper(spoof_unpaper_oldversion, resources, no_outpdf):
 
 
 @pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
-def test_clean(spoof_tesseract_noop, resources, outpdf):
-    check_ocrmypdf(resources / "skew.pdf", outpdf, "-c", env=spoof_tesseract_noop)
+def test_clean(resources, outpdf):
+    check_ocrmypdf(
+        resources / "skew.pdf",
+        outpdf,
+        "-c",
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+    )
 
 
 @pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
-def test_unpaper_args_valid(spoof_tesseract_noop, resources, outpdf):
+def test_unpaper_args_valid(resources, outpdf):
     check_ocrmypdf(
         resources / "skew.pdf",
         outpdf,
         "-c",
         "--unpaper-args",
         "--layout double",  # Spaces required here
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
 
 @pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
-def test_unpaper_args_invalid_filename(spoof_tesseract_noop, resources, outpdf):
+def test_unpaper_args_invalid_filename(resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / "skew.pdf",
         outpdf,
         "-c",
         "--unpaper-args",
         "/etc/passwd",
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
     assert "No filenames allowed" in err
     assert p.returncode == ExitCode.bad_args
 
 
 @pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
-def test_unpaper_args_invalid(spoof_tesseract_noop, resources, outpdf):
+def test_unpaper_args_invalid(resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / "skew.pdf",
         outpdf,
         "-c",
         "--unpaper-args",
         "unpaper is not going to like these arguments",
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
     # Can't tell difference between unpaper choking on bad arguments or some
     # other unpaper failure
