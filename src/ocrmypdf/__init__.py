@@ -36,5 +36,6 @@ from ocrmypdf.exceptions import (
     TesseractConfigError,
     UnsupportedImageFormatError,
 )
+from ocrmypdf.pluginspec import OcrEngine, OrientationConfidence
 
 hookimpl = _HookimplMarker('ocrmypdf')

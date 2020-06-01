@@ -120,8 +120,11 @@ def check_options(options):
 
 @hookimpl
 def validate(pdfinfo, options):
+    if not options.tesseract_env:
+        return
+
     # If we are running a Tesseract spoof, ensure it knows what the input file is
-    if os.environ.get('PYTEST_CURRENT_TEST') and options.tesseract_env:
+    if os.environ.get('PYTEST_CURRENT_TEST'):
         options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(options.input_file)
 
     # Tesseract 4.x can be multithreaded, and we also run multiple workers. We want
@@ -135,6 +138,8 @@ def validate(pdfinfo, options):
     if not options.tesseract_env.get('OMP_THREAD_LIMIT', '').isnumeric():
         tess_threads = min(3, options.jobs // len(pdfinfo), len(pdfinfo))
         options.tesseract_env['OMP_THREAD_LIMIT'] = str(tess_threads)
+    else:
+        tess_threads = int(options.tesseract_env['OMP_THREAD_LIMIT'])
 
     if tess_threads > 1:
         log.info("Using Tesseract OpenMP thread limit %d", tess_threads)
