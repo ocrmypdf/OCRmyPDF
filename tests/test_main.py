@@ -182,14 +182,10 @@ def test_maximum_options(
     )
 
 
-def test_tesseract_missing_tessdata(resources, no_outpdf, tmpdir):
-    env = os.environ.copy()
-    env['TESSDATA_PREFIX'] = os.fspath(tmpdir)
-
+def test_tesseract_missing_tessdata(monkeypatch, resources, no_outpdf, tmpdir):
+    monkeypatch.setenv("TESSDATA_PREFIX", os.fspath(tmpdir))
     with pytest.raises(MissingDependencyError):
-        run_ocrmypdf_api(
-            resources / 'graph.pdf', no_outpdf, '-v', '1', '--skip-text', env=env
-        )
+        run_ocrmypdf_api(resources / 'graph.pdf', no_outpdf, '-v', '1', '--skip-text')
 
 
 def test_invalid_input_pdf(resources, no_outpdf):

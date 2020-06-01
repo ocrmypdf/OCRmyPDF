@@ -220,8 +220,12 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
     _parser, options, plugin_manager = get_parser_options_plugins(args=args)
     api.check_options(options, plugin_manager)
     if env:
-        options.tesseract_env = env
-        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
+        first = env['_OCRMYPDF_TEST_PATH'].split(os.pathsep)[0]
+        if 'tesseract_noop' in first:
+            options.plugins = ['tests/plugins/tesseract_noop.py']
+        else:
+            options.tesseract_env = env
+            options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
     result = api.run_pipeline(options, plugin_manager=plugin_manager, api=True)
 
     assert result == 0
@@ -243,12 +247,19 @@ def run_ocrmypdf_api(input_file, output_file, *args, env=None):
     ]
     _parser, options, plugin_manager = get_parser_options_plugins(args=args)
     if env:
-        options.tesseract_env = env.copy()
-        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
-        first_path = env.get('_OCRMYPDF_TEST_PATH', '').split(os.pathsep)[0]
-        if 'spoof' in first_path:
-            assert 'gs' not in first_path, "use run_ocrmypdf() for gs"
-            assert 'tesseract' in first_path
+        try:
+            first = env['_OCRMYPDF_TEST_PATH'].split(os.pathsep)[0]
+            if 'tesseract_noop' in first:
+                options.plugins = ['tests/plugins/tesseract_noop.py']
+            else:
+                options.tesseract_env = env.copy()
+                options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
+            first_path = env.get('_OCRMYPDF_TEST_PATH', '').split(os.pathsep)[0]
+            if 'spoof' in first_path:
+                assert 'gs' not in first_path, "use run_ocrmypdf() for gs"
+                assert 'tesseract' in first_path
+        except KeyError:
+            pass
     if options.tesseract_env:
         assert all(isinstance(v, (str, bytes)) for v in options.tesseract_env.values())
 
