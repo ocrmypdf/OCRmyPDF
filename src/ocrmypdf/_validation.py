@@ -24,6 +24,7 @@ import sys
 from pathlib import Path
 from shutil import copyfileobj
 
+import pikepdf
 import PIL
 
 from ._unicodefun import verify_python3_env
@@ -410,8 +411,15 @@ def report_output_file_size(options, input_file, output_file):
         input_size = Path(input_file).stat().st_size
     except FileNotFoundError:
         return  # Outputting to stream or something
+    with pikepdf.open(output_file) as p:
+        # Overhead constants obtained by estimating amount of data added by OCR
+        # PDF/A conversion, and possible XMP metadata addition, with compression
+        FILE_OVERHEAD = 4000
+        OCR_PER_PAGE_OVERHEAD = 3000
+        reasonable_overhead = FILE_OVERHEAD + OCR_PER_PAGE_OVERHEAD * len(p.pages)
     ratio = output_size / input_size
-    if ratio < 1.35 or input_size < 25000:
+    reasonable_ratio = output_size / (input_size + reasonable_overhead)
+    if reasonable_ratio < 1.35 or input_size < 25000:
         return  # Seems fine
 
     reasons = []
