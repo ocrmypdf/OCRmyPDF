@@ -50,11 +50,6 @@ def spoof_tesseract_crash(tmp_path_factory):
     return spoof(tmp_path_factory, tesseract='tesseract_crash.py')
 
 
-@pytest.fixture
-def spoof_tesseract_big_image_error(tmp_path_factory):
-    return spoof(tmp_path_factory, tesseract='tesseract_big_image_error.py')
-
-
 def test_quick(spoof_tesseract_cache, resources, outpdf):
     check_ocrmypdf(resources / 'ccitt.pdf', outpdf, env=spoof_tesseract_cache)
 
@@ -337,9 +332,7 @@ def test_tesseract_crash_autorotate(spoof_tesseract_crash, resources, no_outpdf)
 
 @pytest.mark.parametrize('renderer', RENDERERS)
 @pytest.mark.slow
-def test_tesseract_image_too_big(
-    renderer, spoof_tesseract_big_image_error, resources, outpdf
-):
+def test_tesseract_image_too_big(renderer, resources, outpdf):
     check_ocrmypdf(
         resources / 'hugemono.pdf',
         outpdf,
@@ -348,7 +341,8 @@ def test_tesseract_image_too_big(
         renderer,
         '--max-image-mpixels',
         '0',
-        env=spoof_tesseract_big_image_error,
+        '--plugin',
+        'tests/plugins/tesseract_big_image_error.py',
     )
 
 
