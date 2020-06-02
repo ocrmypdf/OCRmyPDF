@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# © 2016 James R. Barlow: github.com/jbarlow83
+# © 2020 James R. Barlow: github.com/jbarlow83
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -31,10 +30,6 @@ In 'pdf' mode, convert the image to PDF using another program.
 In orientation check mode, report the orientation is upright.
 """
 
-import sys
-from pathlib import Path
-
-import img2pdf
 import pikepdf
 from PIL import Image
 
