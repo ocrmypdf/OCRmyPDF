@@ -35,11 +35,6 @@ spoof = pytest.helpers.spoof
 have_unpaper = pytest.helpers.have_unpaper
 
 
-@pytest.fixture
-def spoof_unpaper_oldversion(tmp_path_factory):
-    return spoof(tmp_path_factory, unpaper="unpaper_oldversion.py")
-
-
 def test_no_unpaper(resources, no_outpdf):
     input_ = fspath(resources / "c02-22.pdf")
     output = fspath(no_outpdf)
@@ -52,11 +47,16 @@ def test_no_unpaper(resources, no_outpdf):
             check_options(options, pm)
 
 
-def test_old_unpaper(spoof_unpaper_oldversion, resources, no_outpdf):
-    p, out, err = run_ocrmypdf(
-        resources / "c02-22.pdf", no_outpdf, "--clean", env=spoof_unpaper_oldversion
-    )
-    assert p.returncode == ExitCode.missing_dependency
+def test_old_unpaper(resources, no_outpdf):
+    input_ = fspath(resources / "c02-22.pdf")
+    output = fspath(no_outpdf)
+
+    _parser, options, pm = get_parser_options_plugins(["--clean", input_, output])
+    with patch("ocrmypdf.exec.unpaper.version") as mock_unpaper_version:
+        mock_unpaper_version.return_value = '0.5'
+
+        with pytest.raises(MissingDependencyError):
+            check_options(options, pm)
 
 
 @pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
