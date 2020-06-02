@@ -45,11 +45,6 @@ spoof = pytest.helpers.spoof
 RENDERERS = ['hocr', 'sandwich']
 
 
-@pytest.fixture
-def spoof_tesseract_crash(tmp_path_factory):
-    return spoof(tmp_path_factory, tesseract='tesseract_crash.py')
-
-
 def test_quick(spoof_tesseract_cache, resources, outpdf):
     check_ocrmypdf(resources / 'ccitt.pdf', outpdf, env=spoof_tesseract_cache)
 
@@ -192,12 +187,16 @@ def test_blank_input_pdf(resources, outpdf):
     assert result == ExitCode.ok
 
 
-def test_force_ocr_on_pdf_with_no_images(spoof_tesseract_crash, resources, no_outpdf):
+def test_force_ocr_on_pdf_with_no_images(resources, no_outpdf):
     # As a correctness test, make sure that --force-ocr on a PDF with no
     # content still triggers tesseract. If tesseract crashes, then it was
     # called.
     p, _, _ = run_ocrmypdf(
-        resources / 'blank.pdf', no_outpdf, '--force-ocr', env=spoof_tesseract_crash
+        resources / 'blank.pdf',
+        no_outpdf,
+        '--force-ocr',
+        '--plugin',
+        'tests/plugins/tesseract_crash.py',
     )
     assert p.returncode == ExitCode.child_process_error
     assert not no_outpdf.exists()
@@ -304,7 +303,7 @@ def test_pagesegmode(renderer, spoof_tesseract_cache, resources, outpdf):
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_tesseract_crash(renderer, spoof_tesseract_crash, resources, no_outpdf):
+def test_tesseract_crash(renderer, resources, no_outpdf):
     p, _, err = run_ocrmypdf(
         resources / 'ccitt.pdf',
         no_outpdf,
@@ -312,16 +311,21 @@ def test_tesseract_crash(renderer, spoof_tesseract_crash, resources, no_outpdf):
         '1',
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_crash,
+        '--plugin',
+        'tests/plugins/tesseract_crash.py',
     )
     assert p.returncode == ExitCode.child_process_error
     assert not no_outpdf.exists()
     assert "SubprocessOutputError" in err
 
 
-def test_tesseract_crash_autorotate(spoof_tesseract_crash, resources, no_outpdf):
+def test_tesseract_crash_autorotate(resources, no_outpdf):
     p, out, err = run_ocrmypdf(
-        resources / 'ccitt.pdf', no_outpdf, '-r', env=spoof_tesseract_crash
+        resources / 'ccitt.pdf',
+        no_outpdf,
+        '-r',
+        '--plugin',
+        'tests/plugins/tesseract_crash.py',
     )
     assert p.returncode == ExitCode.child_process_error
     assert not no_outpdf.exists()
