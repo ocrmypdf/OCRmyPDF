@@ -19,6 +19,7 @@ import logging
 import os
 from unittest.mock import patch
 
+import pikepdf
 import pytest
 
 import ocrmypdf._validation as vd
@@ -111,15 +112,20 @@ def test_output_tty():
 def test_report_file_size(tmp_path, caplog):
     in_ = tmp_path / 'a.pdf'
     out = tmp_path / 'b.pdf'
-    in_.write_bytes(b'123')
-    out.write_bytes(b'')
+    pdf = pikepdf.new()
+    pdf.save(in_)
+    pdf.save(out)
     opts = make_opts()
     vd.report_output_file_size(opts, in_, out)
     assert caplog.text == ''
     caplog.clear()
 
-    os.truncate(in_, 25001)
-    os.truncate(out, 50000)
+    waste_of_space = b'Dummy' * 5000
+    pdf.root.Dummy = waste_of_space
+    pdf.save(in_)
+    pdf.root.Dummy2 = waste_of_space + waste_of_space
+    pdf.save(out)
+
     with patch('ocrmypdf._validation.jbig2enc.available', return_value=True), patch(
         'ocrmypdf._validation.pngquant.available', return_value=True
     ):
