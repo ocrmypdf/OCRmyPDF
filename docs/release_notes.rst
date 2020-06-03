@@ -13,6 +13,14 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v9.8.2
+======
+
+-  Fixed an issue where OCRmyPDF would ignore text inside Form XObject when
+   making certain decisions about whether a document already had text.
+-  Fixed file size increase warning to take overhead of small files into account.
+-  Added instructions for installing on Cygwin.
+
 v9.8.1
 ======
 
