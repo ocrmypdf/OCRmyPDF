@@ -575,7 +575,6 @@ Docker
 You can also :ref:`Install the Docker <docker-install>` container on Windows. Ensure that
 your command prompt can run the docker "hello world" container.
 
-
 Installing on Cygwin64 under Windows
 ====================================
 
@@ -601,27 +600,27 @@ First install the the following prerequisite Cygwin packages using ``setup-x86_6
     tesseract-ocr
     tesseract-ocr-devel
 
-   Note: The Cygwin package for Ghostscript in versions 9.52 and
-   9.52-1 contained a bug that caused an exception to occur when
-   ocrmypdf invoked gs.  Make sure you have either 9.50 (or earlier)
-   or 9.52-2 (or later).
+.. note::
 
-Then open a Cygwin terminal (i.e. ``mintty``), run the following commands.
-Note that if you are using the version of ``pip`` that was installed with the
-Cygwin Python package, the command name will be ``pip3``.  If you have since
-updated ``pip`` (with, for instance ``pip3 install --upgrade pip``) the the
-command is likely just ``pip`` instead of ``pip3``:
+    The Cygwin package for Ghostscript in versions 9.52 and
+    9.52-1 contained a bug that caused an exception to occur when
+    ocrmypdf invoked gs.  Make sure you have either 9.50 (or earlier)
+    or 9.52-2 (or later).
+
+Then open a Cygwin terminal (i.e. ``mintty``), run the following commands. Note
+that if you are using the version of ``pip`` that was installed with the Cygwin
+Python package, the command name will be ``pip3``.  If you have since updated
+``pip`` (with, for instance ``pip3 install --upgrade pip``) the the command is
+likely just ``pip`` instead of ``pip3``:
 
 .. code-block:: bash
 
     pip3 install wheel
     pip3 install ocrmypdf
 
-There is one optional dependency, "unpaper" that is currently not
-available under Cygwin. Without it, certain options such as --clean
-will produce an error message. However, the OCR-to-text-layer
-functionality is available.
-
+The optional dependency "unpaper" that is currently not available under Cygwin.
+Without it, certain options such as ``--clean`` will produce an error message.
+However, the OCR-to-text-layer functionality is available.
 
 Installing with Python pip
 ==========================
