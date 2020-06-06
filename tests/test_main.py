@@ -52,7 +52,7 @@ def test_quick(resources, outpdf):
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_oversample(spoof_tesseract_cache, renderer, resources, outpdf):
+def test_oversample(renderer, resources, outpdf):
     oversampled_pdf = check_ocrmypdf(
         resources / 'skew.pdf',
         outpdf,
@@ -61,7 +61,8 @@ def test_oversample(spoof_tesseract_cache, renderer, resources, outpdf):
         '-f',
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     pdfinfo = PdfInfo(oversampled_pdf)
@@ -75,17 +76,25 @@ def test_repeat_ocr(resources, no_outpdf):
     assert result == ExitCode.already_done_ocr
 
 
-def test_force_ocr(spoof_tesseract_cache, resources, outpdf):
+def test_force_ocr(resources, outpdf):
     out = check_ocrmypdf(
-        resources / 'graph_ocred.pdf', outpdf, '-f', env=spoof_tesseract_cache
+        resources / 'graph_ocred.pdf',
+        outpdf,
+        '-f',
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
     pdfinfo = PdfInfo(out)
     assert pdfinfo[0].has_text
 
 
-def test_skip_ocr(spoof_tesseract_cache, resources, outpdf):
+def test_skip_ocr(resources, outpdf):
     out = check_ocrmypdf(
-        resources / 'graph_ocred.pdf', outpdf, '-s', env=spoof_tesseract_cache
+        resources / 'graph_ocred.pdf',
+        outpdf,
+        '-s',
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
     pdfinfo = PdfInfo(out)
     assert pdfinfo[0].has_text
@@ -136,9 +145,14 @@ def test_ocr_timeout(renderer, resources, outpdf):
     assert not pdfinfo[0].has_text
 
 
-def test_skip_big(spoof_tesseract_cache, resources, outpdf):
+def test_skip_big(resources, outpdf):
     out = check_ocrmypdf(
-        resources / 'jbig2.pdf', outpdf, '--skip-big', '1', env=spoof_tesseract_cache
+        resources / 'jbig2.pdf',
+        outpdf,
+        '--skip-big',
+        '1',
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
     pdfinfo = PdfInfo(out)
     assert not pdfinfo[0].has_text
@@ -146,9 +160,7 @@ def test_skip_big(spoof_tesseract_cache, resources, outpdf):
 
 @pytest.mark.parametrize('renderer', RENDERERS)
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
-def test_maximum_options(
-    spoof_tesseract_cache, renderer, output_type, resources, outpdf
-):
+def test_maximum_options(renderer, output_type, resources, outpdf):
     check_ocrmypdf(
         resources / 'multipage.pdf',
         outpdf,
@@ -169,7 +181,8 @@ def test_maximum_options(
         renderer,
         '--output-type',
         output_type,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
 
@@ -208,7 +221,7 @@ def test_force_ocr_on_pdf_with_no_images(resources, no_outpdf):
     pytest.helpers.is_macos() and pytest.helpers.running_in_travis(),
     reason="takes too long to install language packs in Travis macOS homebrew",
 )
-def test_german(spoof_tesseract_cache, resources, outdir):
+def test_german(resources, outdir):
     # Produce a sidecar too - implicit test that system locale is set up
     # properly. It is fine that we are testing -l deu on a French file because
     # we are exercising the functionality not going for accuracy.
@@ -221,7 +234,8 @@ def test_german(spoof_tesseract_cache, resources, outdir):
             'deu',  # more commonly installed
             '--sidecar',
             sidecar,
-            env=spoof_tesseract_cache,
+            '--plugin',
+            'tests/plugins/tesseract_cache.py',
         )
     except MissingDependencyError:
         if 'deu' not in tesseract.get_languages():
@@ -290,7 +304,7 @@ def test_encrypted(resources, caplog, no_outpdf):
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_pagesegmode(renderer, spoof_tesseract_cache, resources, outpdf):
+def test_pagesegmode(renderer, resources, outpdf):
     check_ocrmypdf(
         resources / 'skew.pdf',
         outpdf,
@@ -300,7 +314,8 @@ def test_pagesegmode(renderer, spoof_tesseract_cache, resources, outpdf):
         '1',
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
 
@@ -362,7 +377,7 @@ def test_algo4(resources, outpdf):
     assert p.returncode == ExitCode.encrypted_pdf
 
 
-def test_jbig2_passthrough(spoof_tesseract_cache, resources, outpdf):
+def test_jbig2_passthrough(resources, outpdf):
     out = check_ocrmypdf(
         resources / 'jbig2.pdf',
         outpdf,
@@ -370,7 +385,8 @@ def test_jbig2_passthrough(spoof_tesseract_cache, resources, outpdf):
         'pdf',
         '--pdf-renderer',
         'hocr',
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
     out_pageinfo = PdfInfo(out)
     assert out_pageinfo[0].images[0].enc == Encoding.jbig2
@@ -391,9 +407,14 @@ def test_linearized_pdf_and_indirect_object(resources, outpdf):
     )
 
 
-def test_very_high_dpi(spoof_tesseract_cache, resources, outpdf):
+def test_very_high_dpi(resources, outpdf):
     "Checks for a Decimal quantize error with high DPI, etc"
-    check_ocrmypdf(resources / '2400dpi.pdf', outpdf, env=spoof_tesseract_cache)
+    check_ocrmypdf(
+        resources / '2400dpi.pdf',
+        outpdf,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
+    )
     pdfinfo = PdfInfo(outpdf)
 
     image = pdfinfo[0].images[0]
@@ -673,7 +694,7 @@ def test_compression_changed(ocrmypdf_exec, resources, image, compression, outpd
     im.close()
 
 
-def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
+def test_sidecar_pagecount(resources, outpdf):
     sidecar = outpdf.with_suffix('.txt')
     check_ocrmypdf(
         resources / '3small.pdf',
@@ -681,7 +702,8 @@ def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
         '--skip-text',
         '--sidecar',
         sidecar,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     pdfinfo = PdfInfo(resources / '3small.pdf')
@@ -697,10 +719,15 @@ def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
     ), "Sidecar page count does not match PDF page count"
 
 
-def test_sidecar_nonempty(spoof_tesseract_cache, resources, outpdf):
+def test_sidecar_nonempty(resources, outpdf):
     sidecar = outpdf.with_suffix('.txt')
     check_ocrmypdf(
-        resources / 'ccitt.pdf', outpdf, '--sidecar', sidecar, env=spoof_tesseract_cache
+        resources / 'ccitt.pdf',
+        outpdf,
+        '--sidecar',
+        sidecar,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     with open(sidecar, 'r', encoding='utf-8') as f:
@@ -709,7 +736,7 @@ def test_sidecar_nonempty(spoof_tesseract_cache, resources, outpdf):
 
 
 @pytest.mark.parametrize('pdfa_level', ['1', '2', '3'])
-def test_pdfa_n(spoof_tesseract_cache, pdfa_level, resources, outpdf):
+def test_pdfa_n(pdfa_level, resources, outpdf):
     if pdfa_level == '3' and ghostscript.version() < '9.19':
         pytest.xfail(reason='Ghostscript >= 9.19 required')
 
@@ -718,7 +745,8 @@ def test_pdfa_n(spoof_tesseract_cache, pdfa_level, resources, outpdf):
         outpdf,
         '--output-type',
         'pdfa-' + pdfa_level,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     pdfa_info = file_claims_pdfa(outpdf)

@@ -31,7 +31,6 @@ from ocrmypdf.exec import tesseract
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
-spoof = pytest.helpers.spoof
 
 
 @pytest.mark.parametrize('basename', ['graph_ocred.pdf', 'cardinal.pdf'])

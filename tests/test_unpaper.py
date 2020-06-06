@@ -31,7 +31,6 @@ from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
-spoof = pytest.helpers.spoof
 have_unpaper = pytest.helpers.have_unpaper
 
 

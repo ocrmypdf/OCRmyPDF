@@ -167,7 +167,6 @@ def get_orientation(input_file: Path, engine_mode, timeout: float, tesseract_env
     except TimeoutExpired:
         return OrientationConfidence(angle=0, confidence=0.0)
     except CalledProcessError as e:
-        # breakpoint()
         tesseract_log_output(e.stdout)
         tesseract_log_output(e.stderr)
         if (
@@ -191,15 +190,17 @@ def get_orientation(input_file: Path, engine_mode, timeout: float, tesseract_env
         return oc
 
 
-def tesseract_log_output(stdout):
+def tesseract_log_output(stream):
     tlog = TesseractLoggerAdapter(
         log, extra=log.extra if hasattr(log, 'extra') else None
     )
 
+    if not stream:
+        return
     try:
-        text = stdout.decode()
+        text = stream.decode()
     except UnicodeDecodeError:
-        text = stdout.decode('utf-8', 'ignore')
+        text = stream.decode('utf-8', 'ignore')
 
     lines = text.splitlines()
     for line in lines:

@@ -102,9 +102,7 @@ def test_remove_background(resources, outdir):
 )
 @pytest.mark.parametrize("renderer", ['sandwich', 'hocr'])
 @pytest.mark.parametrize("output_type", ['pdf', 'pdfa'])
-def test_exotic_image(
-    spoof_tesseract_cache, pdf, renderer, output_type, resources, outdir
-):
+def test_exotic_image(pdf, renderer, output_type, resources, outdir):
     outfile = outdir / f'test_{pdf}_{renderer}.pdf'
     check_ocrmypdf(
         resources / pdf,
@@ -118,14 +116,15 @@ def test_exotic_image(
         '--skip-text',
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     assert outfile.with_suffix('.pdf.txt').exists()
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_non_square_resolution(renderer, spoof_tesseract_cache, resources, outpdf):
+def test_non_square_resolution(renderer, resources, outpdf):
     # Confirm input image is non-square resolution
     in_pageinfo = PdfInfo(resources / 'aspect.pdf')
     assert in_pageinfo[0].dpi.x != in_pageinfo[0].dpi.y
@@ -135,7 +134,8 @@ def test_non_square_resolution(renderer, spoof_tesseract_cache, resources, outpd
         outpdf,
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     out_pageinfo = PdfInfo(outpdf)
@@ -145,9 +145,7 @@ def test_non_square_resolution(renderer, spoof_tesseract_cache, resources, outpd
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_convert_to_square_resolution(
-    renderer, spoof_tesseract_cache, resources, outpdf
-):
+def test_convert_to_square_resolution(renderer, resources, outpdf):
     # Confirm input image is non-square resolution
     in_pageinfo = PdfInfo(resources / 'aspect.pdf')
     assert in_pageinfo[0].dpi.x != in_pageinfo[0].dpi.y
@@ -159,7 +157,8 @@ def test_convert_to_square_resolution(
         '--force-ocr',
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     out_pageinfo = PdfInfo(outpdf)

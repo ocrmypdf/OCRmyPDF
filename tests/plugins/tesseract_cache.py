@@ -19,6 +19,31 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+"""Cache output of tesseract to speed up test suite
+
+The cache is keyed by by the input test file The input arguments are slugged
+into a hideous filename that more or less represents them literally.  Joined
+together, this becomes the name of the cache folder.  A few name files like
+stdout, stderr, hocr, pdf, describe the output to reproduce.
+
+Changes to tests/resources/ or image processing algorithms don't trigger a
+cache miss.  By design, an input image that varies according to platform
+differences (e.g. JPEG decoders are allowed to produce differing outputs,
+and in practice they do) will still be a cache hit.  By design, an
+invocation of tesseract with the same parameters from a different test case
+will be a hit.  It's fragile.
+
+The tests/cache/manifest.jsonl is a JSON lines file that contains
+information about the system that produced the results used when cache was
+generated.  This mainly a log to answer questions about how the files
+were produced.
+
+Certain operations are not cached and routed to Tesseract OCR directly.
+
+Assumes Tesseract 4.0.0-alpha or higher.
+
+"""
+
 import argparse
 import json
 import logging
@@ -147,6 +172,7 @@ def cached_run(options, run_args, **run_kwargs):
         json.dump(manifest, f)
         f.write('\n')
         f.flush()
+    return p
 
 
 class CacheOcrEngine(TesseractOcrEngine):

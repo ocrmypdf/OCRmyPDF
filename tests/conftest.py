@@ -170,13 +170,6 @@ def spoof(tmp_path_factory, **kwargs):
 
 
 @pytest.fixture
-def spoof_tesseract_cache(tmp_path_factory):
-    if running_in_docker():
-        return os.environ.copy()
-    return spoof(tmp_path_factory, tesseract="tesseract_cache.py")
-
-
-@pytest.fixture
 def resources():
     return Path(TESTS_ROOT) / 'resources'
 

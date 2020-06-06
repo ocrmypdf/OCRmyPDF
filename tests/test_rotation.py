@@ -97,7 +97,7 @@ def test_monochrome_correlation(resources, outdir):
 
 @pytest.mark.slow
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_autorotate(spoof_tesseract_cache, renderer, resources, outdir):
+def test_autorotate(renderer, resources, outdir):
     # cardinal.pdf contains four copies of an image rotated in each cardinal
     # direction - these ones are "burned in" not tagged with /Rotate
     out = check_ocrmypdf(
@@ -108,7 +108,8 @@ def test_autorotate(spoof_tesseract_cache, renderer, resources, outdir):
         '1',
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
     for n in range(1, 4 + 1):
         correlation = check_monochrome_correlation(
@@ -128,9 +129,7 @@ def test_autorotate(spoof_tesseract_cache, renderer, resources, outdir):
         ('99', 'correlation < 0.10'),  # High thres -> never rotate -> low corr
     ],
 )
-def test_autorotate_threshold(
-    spoof_tesseract_cache, threshold, correlation_test, resources, outdir
-):
+def test_autorotate_threshold(threshold, correlation_test, resources, outdir):
     out = check_ocrmypdf(
         resources / 'cardinal.pdf',
         outdir / 'out.pdf',
@@ -139,7 +138,8 @@ def test_autorotate_threshold(
         '-r',
         # '-v',
         # '1',
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     correlation = check_monochrome_correlation(
