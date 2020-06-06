@@ -45,8 +45,10 @@ spoof = pytest.helpers.spoof
 RENDERERS = ['hocr', 'sandwich']
 
 
-def test_quick(spoof_tesseract_cache, resources, outpdf):
-    check_ocrmypdf(resources / 'ccitt.pdf', outpdf, env=spoof_tesseract_cache)
+def test_quick(resources, outpdf):
+    check_ocrmypdf(
+        resources / 'ccitt.pdf', outpdf, '--plugin', 'tests/plugins/tesseract_cache.py'
+    )
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
