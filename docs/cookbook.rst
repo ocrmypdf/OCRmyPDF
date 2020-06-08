@@ -56,7 +56,11 @@ portrait pages.
     ocrmypdf --rotate-pages myfile.pdf myfile.pdf
 
 You can increase (decrease) the parameter ``--rotate-pages-threshold``
-to make page rotation more (less) aggressive.
+to make page rotation more (less) aggressive. The threshold number is the ratio
+of how confidence the OCR engine is that the document image should be changed,
+compared to kept the same. A value of ``15.0`` is the default, and is fairly
+conservative. A value of ``2.0`` will produce more rotations, and more false
+positives.
 
 If the page is "just a little off horizontal", like a crooked picture,
 then you want ``--deskew``. ``--rotate-pages`` is for when the cardinal
