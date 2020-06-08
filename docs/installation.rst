@@ -45,14 +45,8 @@ Debian and Ubuntu 18.04 or newer
 .. |ubu-1804| image:: https://repology.org/badge/version-for-repo/ubuntu_18_04/ocrmypdf.svg
     :alt: Ubuntu 18.04 LTS
 
-.. |ubu-1810| image:: https://repology.org/badge/version-for-repo/ubuntu_18_10/ocrmypdf.svg
-    :alt: Ubuntu 18.10
-
-.. |ubu-1904| image:: https://repology.org/badge/version-for-repo/ubuntu_19_04/ocrmypdf.svg
-    :alt: Ubuntu 19.04
-
-.. |ubu-1910| image:: https://repology.org/badge/version-for-repo/ubuntu_19_10/ocrmypdf.svg
-    :alt: Ubuntu 19.10
+.. |ubu-2004| image:: https://repology.org/badge/version-for-repo/ubuntu_20_04/ocrmypdf.svg
+    :alt: Ubuntu 20.04 LTS
 
 +-----------------------------------------------+
 | **OCRmyPDF versions in Debian & Ubuntu**      |
@@ -61,7 +55,7 @@ Debian and Ubuntu 18.04 or newer
 +-----------------------------------------------+
 | |deb-stable| |deb-testing| |deb-unstable|     |
 +-----------------------------------------------+
-| |ubu-1804| |ubu-1810| |ubu-1904| |ubu-1910|   |
+| |ubu-1804| |ubu-2004|                         |
 +-----------------------------------------------+
 
 Users of Debian 9 ("stretch") or later or Ubuntu 18.04 or later, including users
@@ -133,7 +127,41 @@ from sources <#installing-head-revision-from-sources>`__.
 
 .. _ubuntu-lts-latest:
 
-Installing the latest version on Ubuntu 18.04 LTS
+Installing the latest version on Ubuntu 20.04 LTS
+-------------------------------------------------
+
+Ubuntu 20.04 includes ocrmypdf 9.6.0 - you can install that with ``apt``. To
+install a more recent version, uninstall the system-provided version of
+ocrmypdf, and install the following dependencies:
+
+.. code-block:: bash
+
+    sudo apt-get -y remove ocrmypdf  # remove system ocrmypdf, if installed
+    sudo apt-get -y update
+    sudo apt-get -y install \
+        ghostscript \
+        icc-profiles-free \
+        liblept5 \
+        libxml2 \
+        pngquant \
+        python3-pip \
+        tesseract-ocr \
+        zlib1g
+
+To install ocrmypdf for the system:
+
+.. code-block:: bash
+
+    sudo pip3 install ocrmypdf
+
+To install for the current user only:
+
+.. code-block:: bash
+
+    export PATH=$HOME/.local/bin:$PATH
+    pip3 install --user ocrmypdf
+
+Ubuntu 18.04 LTS
 -------------------------------------------------
 
 Ubuntu 18.04 includes ocrmypdf 6.1.2 - you can install that with ``apt``, but
