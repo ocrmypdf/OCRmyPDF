@@ -38,19 +38,19 @@ def raise_size_exception(*args, **kwargs):
 class BigImageErrorOcrEngine(TesseractOcrEngine):
     @staticmethod
     def get_orientation(input_file, options):
-        with patch('ocrmypdf.exec.tesseract.run', new=raise_size_exception):
+        with patch('ocrmypdf._exec.tesseract.run', new=raise_size_exception):
             return TesseractOcrEngine.get_orientation(input_file, options)
 
     @staticmethod
     def generate_hocr(input_file, output_hocr, output_text, options):
-        with patch('ocrmypdf.exec.tesseract.run', new=raise_size_exception):
+        with patch('ocrmypdf._exec.tesseract.run', new=raise_size_exception):
             TesseractOcrEngine.generate_hocr(
                 input_file, output_hocr, output_text, options
             )
 
     @staticmethod
     def generate_pdf(input_file, output_pdf, output_text, options):
-        with patch('ocrmypdf.exec.tesseract.run', new=raise_size_exception):
+        with patch('ocrmypdf._exec.tesseract.run', new=raise_size_exception):
             TesseractOcrEngine.generate_pdf(
                 input_file, output_pdf, output_text, options
             )

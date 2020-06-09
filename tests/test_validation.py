@@ -56,27 +56,27 @@ def test_hocr_notlatin_warning(caplog):
 
 
 def test_old_ghostscript(caplog):
-    with patch('ocrmypdf.exec.ghostscript.version', return_value='9.19'), patch(
-        'ocrmypdf.exec.tesseract.has_textonly_pdf', return_value=True
+    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.19'), patch(
+        'ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True
     ):
         vd.check_options(*make_opts_pm(language='chi_sim', output_type='pdfa'))
         assert 'Ghostscript does not work correctly' in caplog.text
 
-    with patch('ocrmypdf.exec.ghostscript.version', return_value='9.18'), patch(
-        'ocrmypdf.exec.tesseract.has_textonly_pdf', return_value=True
+    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.18'), patch(
+        'ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True
     ):
         with pytest.raises(MissingDependencyError):
             vd.check_options(*make_opts_pm(output_type='pdfa-3'))
 
-    with patch('ocrmypdf.exec.ghostscript.version', return_value='9.24'), patch(
-        'ocrmypdf.exec.tesseract.has_textonly_pdf', return_value=True
+    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.24'), patch(
+        'ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True
     ):
         with pytest.raises(MissingDependencyError):
             vd.check_options(*make_opts_pm())
 
 
 def test_old_tesseract_error():
-    with patch('ocrmypdf.exec.tesseract.has_textonly_pdf', return_value=False):
+    with patch('ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=False):
         with pytest.raises(MissingDependencyError):
             opts = make_opts(pdf_renderer='sandwich', language='eng')
             plugin_manager = get_plugin_manager(opts.plugins)
@@ -107,13 +107,13 @@ def test_optimizing(caplog):
 
 
 def test_user_words(caplog):
-    with patch('ocrmypdf.exec.tesseract.has_user_words', return_value=False):
+    with patch('ocrmypdf._exec.tesseract.has_user_words', return_value=False):
         opts = make_opts(user_words='foo')
         plugin_manager = get_plugin_manager(opts.plugins)
         vd.check_options(opts, plugin_manager)
         assert '4.0 ignores --user-words' in caplog.text
     caplog.clear()
-    with patch('ocrmypdf.exec.tesseract.has_user_words', return_value=True):
+    with patch('ocrmypdf._exec.tesseract.has_user_words', return_value=True):
         opts = make_opts(user_patterns='foo')
         plugin_manager = get_plugin_manager(opts.plugins)
         vd.check_options(opts, plugin_manager)

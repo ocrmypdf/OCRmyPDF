@@ -21,7 +21,7 @@ import pytest
 from PIL import Image
 
 from ocrmypdf import hocrtransform
-from ocrmypdf.exec.tesseract import HOCR_TEMPLATE
+from ocrmypdf._exec.tesseract import HOCR_TEMPLATE
 from ocrmypdf.helpers import check_pdf
 
 # pylint: disable=redefined-outer-name

@@ -20,7 +20,7 @@ from math import isclose
 import pytest
 from PIL import Image
 
-from ocrmypdf.exec import ghostscript
+from ocrmypdf._exec import ghostscript
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.leptonica import Pix
 from ocrmypdf.pdfinfo import PdfInfo

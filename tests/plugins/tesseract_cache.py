@@ -178,19 +178,19 @@ def cached_run(options, run_args, **run_kwargs):
 class CacheOcrEngine(TesseractOcrEngine):
     @staticmethod
     def get_orientation(input_file, options):
-        with patch('ocrmypdf.exec.tesseract.run', new=partial(cached_run, options)):
+        with patch('ocrmypdf._exec.tesseract.run', new=partial(cached_run, options)):
             return TesseractOcrEngine.get_orientation(input_file, options)
 
     @staticmethod
     def generate_hocr(input_file, output_hocr, output_text, options):
-        with patch('ocrmypdf.exec.tesseract.run', new=partial(cached_run, options)):
+        with patch('ocrmypdf._exec.tesseract.run', new=partial(cached_run, options)):
             TesseractOcrEngine.generate_hocr(
                 input_file, output_hocr, output_text, options
             )
 
     @staticmethod
     def generate_pdf(input_file, output_pdf, output_text, options):
-        with patch('ocrmypdf.exec.tesseract.run', new=partial(cached_run, options)):
+        with patch('ocrmypdf._exec.tesseract.run', new=partial(cached_run, options)):
             TesseractOcrEngine.generate_pdf(
                 input_file, output_pdf, output_text, options
             )

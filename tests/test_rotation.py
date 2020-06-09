@@ -26,7 +26,7 @@ import pytest
 from PIL import Image
 
 from ocrmypdf import leptonica
-from ocrmypdf.exec import ghostscript, tesseract
+from ocrmypdf._exec import ghostscript, tesseract
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo import PdfInfo
 

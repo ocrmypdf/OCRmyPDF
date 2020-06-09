@@ -25,8 +25,8 @@ from subprocess import PIPE, run
 import pytest
 
 from ocrmypdf import api, cli, pdfinfo
+from ocrmypdf._exec import unpaper
 from ocrmypdf._plugin_manager import get_parser_options_plugins
-from ocrmypdf.exec import unpaper
 
 pytest_plugins = ['helpers_namespace']
 

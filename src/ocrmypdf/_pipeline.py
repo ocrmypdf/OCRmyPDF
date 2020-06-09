@@ -28,6 +28,7 @@ from pikepdf.models.metadata import encode_pdf_date
 from PIL import Image, ImageColor, ImageDraw
 
 from ocrmypdf import leptonica
+from ocrmypdf._exec import ghostscript, unpaper
 from ocrmypdf._version import PROGRAM_NAME
 from ocrmypdf._version import __version__ as VERSION
 from ocrmypdf.exceptions import (
@@ -37,7 +38,6 @@ from ocrmypdf.exceptions import (
     PriorOcrFoundError,
     UnsupportedImageFormatError,
 )
-from ocrmypdf.exec import ghostscript, unpaper
 from ocrmypdf.helpers import Resolution, safe_symlink
 from ocrmypdf.hocrtransform import HocrTransform
 from ocrmypdf.optimize import optimize

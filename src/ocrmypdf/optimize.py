@@ -30,9 +30,9 @@ from tqdm import tqdm
 
 from ocrmypdf import leptonica
 from ocrmypdf._concurrent import exec_progress_pool
+from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf.exceptions import OutputFileAccessError
-from ocrmypdf.exec import jbig2enc, pngquant
 from ocrmypdf.helpers import safe_symlink
 
 log = logging.getLogger(__name__)

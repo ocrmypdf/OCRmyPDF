@@ -22,8 +22,8 @@ import pikepdf
 import pytest
 from PIL import Image
 
+from ocrmypdf._exec.ghostscript import rasterize_pdf
 from ocrmypdf.exceptions import ExitCode
-from ocrmypdf.exec.ghostscript import rasterize_pdf
 from ocrmypdf.helpers import Resolution
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf

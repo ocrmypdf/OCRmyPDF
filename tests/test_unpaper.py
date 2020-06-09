@@ -39,7 +39,7 @@ def test_no_unpaper(resources, no_outpdf):
     output = fspath(no_outpdf)
 
     _parser, options, pm = get_parser_options_plugins(["--clean", input_, output])
-    with patch("ocrmypdf.exec.unpaper.version") as mock_unpaper_version:
+    with patch("ocrmypdf._exec.unpaper.version") as mock_unpaper_version:
         mock_unpaper_version.side_effect = FileNotFoundError("unpaper")
 
         with pytest.raises(MissingDependencyError):
@@ -51,7 +51,7 @@ def test_old_unpaper(resources, no_outpdf):
     output = fspath(no_outpdf)
 
     _parser, options, pm = get_parser_options_plugins(["--clean", input_, output])
-    with patch("ocrmypdf.exec.unpaper.version") as mock_unpaper_version:
+    with patch("ocrmypdf._exec.unpaper.version") as mock_unpaper_version:
         mock_unpaper_version.return_value = '0.5'
 
         with pytest.raises(MissingDependencyError):

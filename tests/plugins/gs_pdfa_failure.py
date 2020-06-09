@@ -39,7 +39,7 @@ def run_rig_args(args, **kwargs):
 
 @hookimpl
 def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdfa_part):
-    with patch('ocrmypdf.exec.ghostscript.run', new=run_rig_args):
+    with patch('ocrmypdf._exec.ghostscript.run', new=run_rig_args):
         ghostscript.generate_pdfa(
             pdf_pages=pdf_pages,
             pdfmark=pdfmark,

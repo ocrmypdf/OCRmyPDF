@@ -37,7 +37,7 @@ def run_append_stderr(*args, **kwargs):
 
 @hookimpl
 def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdfa_part):
-    with patch('ocrmypdf.exec.ghostscript.run', new=run_append_stderr):
+    with patch('ocrmypdf._exec.ghostscript.run', new=run_append_stderr):
         ghostscript.generate_pdfa(
             pdf_pages=pdf_pages,
             pdfmark=pdfmark,

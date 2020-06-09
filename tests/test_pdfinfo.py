@@ -26,7 +26,7 @@ from PIL import Image
 from reportlab.pdfgen.canvas import Canvas
 
 from ocrmypdf import pdfinfo
-from ocrmypdf.exec import ghostscript
+from ocrmypdf._exec import ghostscript
 from ocrmypdf.pdfinfo import Colorspace, Encoding
 
 # pylint: disable=protected-access

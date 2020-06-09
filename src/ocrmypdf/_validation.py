@@ -27,6 +27,7 @@ from shutil import copyfileobj
 
 import PIL
 
+from ocrmypdf._exec import jbig2enc, pngquant, unpaper
 from ocrmypdf._unicodefun import verify_python3_env
 from ocrmypdf.exceptions import (
     BadArgsError,
@@ -34,7 +35,6 @@ from ocrmypdf.exceptions import (
     MissingDependencyError,
     OutputFileAccessError,
 )
-from ocrmypdf.exec import jbig2enc, pngquant, unpaper
 from ocrmypdf.helpers import (
     is_file_writable,
     is_iterable_notstr,

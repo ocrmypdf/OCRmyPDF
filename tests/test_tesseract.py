@@ -24,8 +24,8 @@ from pathlib import Path
 import pytest
 
 from ocrmypdf import pdfinfo
+from ocrmypdf._exec import tesseract
 from ocrmypdf.exceptions import MissingDependencyError
-from ocrmypdf.exec import tesseract
 
 # pylint: disable=no-member,redefined-outer-name
 
