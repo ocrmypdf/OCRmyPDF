@@ -47,7 +47,6 @@ pytestmark = pytest.mark.filterwarnings('ignore:.*XMLParser.*:DeprecationWarning
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
-spoof = pytest.helpers.spoof
 
 
 @pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])

@@ -24,6 +24,8 @@ from typing import AbstractSet, Optional
 import pluggy
 from PIL import Image
 
+from ocrmypdf.helpers import Resolution
+
 hookspec = pluggy.HookspecMarker('ocrmypdf')
 
 # pylint: disable=unused-argument
@@ -63,6 +65,35 @@ def validate(pdfinfo: 'PdfInfo', options: Namespace) -> None:
     exceptions of any other type.
 
     The return value is ignored. To abort processing, raise an ``ExitCodeException``.
+    """
+
+
+@hookspec(firstresult=True)
+def rasterize_pdf_page(
+    input_file: Path,
+    output_file: Path,
+    raster_device: str,
+    raster_dpi: Resolution,
+    pageno: int,
+    page_dpi: Resolution = None,
+    rotation: int = None,
+    filter_vector: bool = False,
+) -> None:
+    """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
+
+    The image is sized to match the integer pixels dimensions implied by
+    raster_dpi even if those numbers are noninteger. The image's DPI will
+    be overridden with the values in page_dpi.
+
+    Args:
+        raster_device: type of image to produce at output_file
+        raster_dpi: resolution at which to rasterize page
+        pageno: page number to rasterize (beginning at page 1)
+        page_dpi: resolution, overriding output image DPI
+        rotation: cardinal angle, clockwise, to rotate page
+        filter_vector: if True, remove vector graphics objects
+    Returns:
+        None
     """
 
 

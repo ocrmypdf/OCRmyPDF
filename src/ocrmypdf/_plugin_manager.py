@@ -33,7 +33,10 @@ def get_plugin_manager(plugins: List[str], builtins=True):
     pm.add_hookspecs(pluginspec)
 
     if builtins:
-        all_plugins = ['ocrmypdf.builtin_plugins'] + plugins
+        all_plugins = [
+            'ocrmypdf.builtin_plugins.ghostscript',
+            'ocrmypdf.builtin_plugins.tesseract_ocr',
+        ] + plugins
     else:
         all_plugins = plugins
     for name in all_plugins:

@@ -280,7 +280,10 @@ def check_external_program(
     recommended=False,
 ):
     try:
-        found_version = version_checker()
+        if callable(version_checker):
+            found_version = version_checker()
+        else:
+            found_version = version_checker
     except (CalledProcessError, FileNotFoundError, MissingDependencyError):
         _error_missing_program(program, package, required_for, recommended)
         if not recommended:

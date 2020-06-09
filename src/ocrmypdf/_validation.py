@@ -27,7 +27,6 @@ from shutil import copyfileobj
 
 import PIL
 
-from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._unicodefun import verify_python3_env
 from ocrmypdf.exceptions import (
     BadArgsError,
@@ -35,14 +34,7 @@ from ocrmypdf.exceptions import (
     MissingDependencyError,
     OutputFileAccessError,
 )
-from ocrmypdf.exec import (
-    check_external_program,
-    ghostscript,
-    jbig2enc,
-    pngquant,
-    tesseract,
-    unpaper,
-)
+from ocrmypdf.exec import check_external_program, jbig2enc, pngquant, unpaper
 from ocrmypdf.helpers import (
     is_file_writable,
     is_iterable_notstr,
@@ -92,10 +84,6 @@ def check_options_languages(options, plugin_manager):
 
 
 def check_options_output(options):
-    # We have these constraints to check for.
-    # 1. Ghostscript < 9.20 mangles multibyte Unicode
-    # 2. hocr doesn't work on non-Latin languages (so don't select it)
-
     is_latin = options.languages.issubset(HOCR_OK_LANGS)
 
     if options.pdf_renderer == 'hocr' and not is_latin:
@@ -105,25 +93,6 @@ def check_options_output(options):
             "--pdf-renderer auto (the default) to avoid this issue."
         )
         log.warning(msg)
-
-    if ghostscript.version() < '9.20' and options.output_type != 'pdf' and not is_latin:
-        # https://bugs.ghostscript.com/show_bug.cgi?id=696874
-        # Ghostscript < 9.20 fails to encode multibyte characters properly
-        msg = (
-            "The installed version of Ghostscript does not work correctly "
-            "with the OCR languages you specified. Use --output-type pdf or "
-            "upgrade to Ghostscript 9.20 or later to avoid this issue."
-        )
-        msg += f"Found Ghostscript {ghostscript.version()}"
-        log.warning(msg)
-
-    if options.output_type == 'pdfa':
-        options.output_type = 'pdfa-2'
-
-    if options.output_type == 'pdfa-3' and ghostscript.version() < '9.19':
-        raise MissingDependencyError(
-            "--output-type pdfa-3 requires Ghostscript 9.19 or later"
-        )
 
     lossless_reconstruction = False
     if not any(
@@ -291,7 +260,6 @@ def check_options(options, plugin_manager):
     check_options_optimizing(options)
     check_options_advanced(options)
     check_options_pillow(options)
-    check_dependency_versions(options)
     plugin_manager.hook.check_options(options=options)
 
 
@@ -432,19 +400,3 @@ def report_output_file_size(options, input_file, output_file):
         f"The output file size is {ratio:.2f}× larger than the input file.\n"
         f"{explanation}"
     )
-
-
-def check_dependency_versions(options):
-    check_external_program(
-        program='gs',
-        package='ghostscript',
-        version_checker=ghostscript.version,
-        need_version='9.15',  # limited by Travis CI / Ubuntu 14.04 backports
-    )
-    gs_version = ghostscript.version()
-    if gs_version in ('9.24', '9.51'):
-        raise MissingDependencyError(
-            f"Ghostscript {gs_version} contains serious regressions and is not "
-            "supported. Please upgrade to a newer version, or downgrade to the "
-            "previous version."
-        )

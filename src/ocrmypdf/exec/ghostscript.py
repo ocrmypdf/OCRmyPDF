@@ -20,7 +20,6 @@
 import logging
 import os
 import re
-import warnings
 from io import BytesIO
 from os import fspath
 from pathlib import Path
@@ -92,22 +91,7 @@ def rasterize_pdf(
     rotation: int = None,
     filter_vector: bool = False,
 ):
-    """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
-
-    The image is sized to match the integer pixels dimensions implied by
-    raster_dpi even if those numbers are noninteger. The image's DPI will
-     be overridden with the values in page_dpi.
-
-    :param input_file: pathlike
-    :param output_file: pathlike
-    :param raster_device:
-    :param raster_dpi: resolution at which to rasterize page
-    :param pageno: page number to rasterize (beginning at page 1)
-    :param page_dpi: resolution tuple (x, y) overriding output image DPI
-    :param rotation: 0, 90, 180, 270: clockwise angle to rotate page
-    :param filter_vector: if True, remove vector graphics objects
-    :return:
-    """
+    """Rasterize one page of a PDF at resolution raster_dpi in canvas units."""
     raster_dpi = raster_dpi.round(6)
     if not page_dpi:
         page_dpi = raster_dpi

@@ -29,19 +29,29 @@ from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
 from ocrmypdf.pdfinfo import PdfInfo
 
 
-def make_opts(input_file='a.pdf', output_file='b.pdf', language='eng', **kwargs):
+def make_opts_pm(input_file='a.pdf', output_file='b.pdf', language='eng', **kwargs):
     if language is not None:
         kwargs['language'] = language
     parser = get_parser()
     pm = get_plugin_manager(kwargs.get('plugins', []))
     pm.hook.add_options(parser=parser)
-    return create_options(
-        input_file=input_file, output_file=output_file, parser=parser, **kwargs
+    return (
+        create_options(
+            input_file=input_file, output_file=output_file, parser=parser, **kwargs
+        ),
+        pm,
     )
 
 
+def make_opts(*args, **kwargs):
+    opts, _pm = make_opts_pm(*args, **kwargs)
+    return opts
+
+
 def test_hocr_notlatin_warning(caplog):
-    vd.check_options_output(make_opts(language='chi_sim', pdf_renderer='hocr'))
+    vd.check_options(
+        *make_opts_pm(language='chi_sim', pdf_renderer='hocr', output_type='pdfa')
+    )
     assert 'PDF renderer is known to cause' in caplog.text
 
 
@@ -49,20 +59,20 @@ def test_old_ghostscript(caplog):
     with patch('ocrmypdf.exec.ghostscript.version', return_value='9.19'), patch(
         'ocrmypdf.exec.tesseract.has_textonly_pdf', return_value=True
     ):
-        vd.check_options_output(make_opts(language='chi_sim', output_type='pdfa'))
+        vd.check_options(*make_opts_pm(language='chi_sim', output_type='pdfa'))
         assert 'Ghostscript does not work correctly' in caplog.text
 
     with patch('ocrmypdf.exec.ghostscript.version', return_value='9.18'), patch(
         'ocrmypdf.exec.tesseract.has_textonly_pdf', return_value=True
     ):
         with pytest.raises(MissingDependencyError):
-            vd.check_options_output(make_opts(output_type='pdfa-3'))
+            vd.check_options(*make_opts_pm(output_type='pdfa-3'))
 
     with patch('ocrmypdf.exec.ghostscript.version', return_value='9.24'), patch(
         'ocrmypdf.exec.tesseract.has_textonly_pdf', return_value=True
     ):
         with pytest.raises(MissingDependencyError):
-            vd.check_dependency_versions(make_opts())
+            vd.check_options(*make_opts_pm())
 
 
 def test_old_tesseract_error():
@@ -97,7 +107,6 @@ def test_optimizing(caplog):
 
 
 def test_user_words(caplog):
-
     with patch('ocrmypdf.exec.tesseract.has_user_words', return_value=False):
         opts = make_opts(user_words='foo')
         plugin_manager = get_plugin_manager(opts.plugins)

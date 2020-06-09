@@ -321,9 +321,9 @@ def rasterize_preview(input_file, page_context):
     output_file = page_context.get_path('rasterize_preview.jpg')
     canvas_dpi = get_canvas_square_dpi(page_context.pageinfo, page_context.options)
     page_dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
-    ghostscript.rasterize_pdf(
-        input_file,
-        output_file,
+    page_context.plugin_manager.hook.rasterize_pdf_page(
+        input_file=input_file,
+        output_file=output_file,
         raster_device='jpeggray',
         raster_dpi=canvas_dpi,
         page_dpi=page_dpi,
@@ -430,9 +430,9 @@ def rasterize(
     canvas_dpi = get_canvas_square_dpi(pageinfo, page_context.options)
     page_dpi = get_page_square_dpi(pageinfo, page_context.options)
 
-    ghostscript.rasterize_pdf(
-        input_file,
-        output_file,
+    page_context.plugin_manager.hook.rasterize_pdf_page(
+        input_file=input_file,
+        output_file=output_file,
         raster_device=device,
         raster_dpi=canvas_dpi,
         page_dpi=page_dpi,
