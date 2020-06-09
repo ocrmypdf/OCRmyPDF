@@ -78,7 +78,7 @@ def rasterize_pdf_page(
     page_dpi: Optional[Resolution] = None,
     rotation: Optional[int] = None,
     filter_vector: bool = False,
-) -> None:
+) -> Path:
     """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
 
     The image is sized to match the integer pixels dimensions implied by
@@ -93,7 +93,7 @@ def rasterize_pdf_page(
         rotation: cardinal angle, clockwise, to rotate page
         filter_vector: if True, remove vector graphics objects
     Returns:
-        None
+        output_file
     """
 
 
@@ -172,7 +172,7 @@ def generate_pdfa(
     compression: str,
     pdf_version: str,
     pdfa_part: str,
-):
+) -> Path:
     """Generate a PDF/A.
 
     The pdf_pages, a list of files, will be merged into output_file. One or more
@@ -189,4 +189,7 @@ def generate_pdfa(
     support passthrough JPEG which allows Ghostscript to avoid transcoding
     images entirely. (The feature was added in 9.23 but broken, and the 9.24
     release of Ghostscript had regressions, so we don't support it until 9.25.)
+
+    Returns:
+        output_file
     """

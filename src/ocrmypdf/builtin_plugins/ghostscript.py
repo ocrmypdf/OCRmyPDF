@@ -78,7 +78,7 @@ def rasterize_pdf_page(
     rotation=None,
     filter_vector=False,
 ):
-    return ghostscript.rasterize_pdf(
+    ghostscript.rasterize_pdf(
         input_file,
         output_file,
         raster_device=raster_device,
@@ -88,14 +88,16 @@ def rasterize_pdf_page(
         rotation=rotation,
         filter_vector=filter_vector,
     )
+    return output_file
 
 
 @hookimpl
 def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdfa_part):
-    return ghostscript.generate_pdfa(
+    ghostscript.generate_pdfa(
         pdf_pages=[*pdf_pages, pdfmark],
         output_file=output_file,
         compression=compression,
         pdf_version=pdf_version,
         pdfa_part=pdfa_part,
     )
+    return output_file
