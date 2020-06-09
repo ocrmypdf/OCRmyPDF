@@ -29,8 +29,8 @@ from subprocess import PIPE, CalledProcessError
 from PIL import Image
 
 from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
-from ocrmypdf.exec import get_version, run
 from ocrmypdf.helpers import Resolution
+from ocrmypdf.subprocess import get_version, run
 
 log = logging.getLogger(__name__)
 

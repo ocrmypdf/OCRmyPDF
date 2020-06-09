@@ -22,8 +22,9 @@ import os
 from ocrmypdf import hookimpl
 from ocrmypdf.cli import numeric
 from ocrmypdf.exceptions import MissingDependencyError
-from ocrmypdf.exec import check_external_program, tesseract
+from ocrmypdf.exec import tesseract
 from ocrmypdf.pluginspec import OcrEngine
+from ocrmypdf.subprocess import check_external_program
 
 log = logging.getLogger(__name__)
 

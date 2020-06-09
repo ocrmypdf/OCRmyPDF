@@ -15,11 +15,4 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Wrappers to manage subprocess calls"""
-
-from ocrmypdf.exec._support import (
-    check_external_program,
-    get_version,
-    run,
-    shim_paths_with_program_files,
-)
+"""Manage third party executables"""

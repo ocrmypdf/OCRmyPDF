@@ -23,7 +23,7 @@ from unittest.mock import patch
 
 from ocrmypdf import hookimpl
 from ocrmypdf.builtin_plugins import ghostscript
-from ocrmypdf.exec import run
+from ocrmypdf.subprocess import run
 
 elision_warning = """GPL Ghostscript 9.20: Setting Overprint Mode to 1
 not permitted in PDF/A-2, overprint mode not set"""

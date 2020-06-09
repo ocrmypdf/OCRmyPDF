@@ -17,13 +17,12 @@
 
 """Interface to pngquant executable"""
 
-from subprocess import run
 from tempfile import NamedTemporaryFile
 
 from PIL import Image
 
 from ocrmypdf.exceptions import MissingDependencyError
-from ocrmypdf.exec import get_version
+from ocrmypdf.subprocess import get_version, run
 
 
 def version():

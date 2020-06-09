@@ -57,7 +57,7 @@ from unittest.mock import patch
 
 from ocrmypdf import hookimpl
 from ocrmypdf.builtin_plugins.tesseract_ocr import TesseractOcrEngine
-from ocrmypdf.exec import run
+from ocrmypdf.subprocess import run
 
 log = logging.getLogger(__name__)
 

@@ -34,8 +34,8 @@ from os import fspath
 from tempfile import TemporaryFile
 
 from ocrmypdf.exceptions import MissingDependencyError
-from ocrmypdf.exec import shim_paths_with_program_files
 from ocrmypdf.lib._leptonica import ffi
+from ocrmypdf.subprocess import shim_paths_with_program_files
 
 # pylint: disable=protected-access
 

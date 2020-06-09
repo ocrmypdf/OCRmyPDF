@@ -30,8 +30,8 @@ from tempfile import TemporaryDirectory
 from PIL import Image
 
 from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
-from ocrmypdf.exec import get_version
-from ocrmypdf.exec import run as external_run
+from ocrmypdf.subprocess import get_version
+from ocrmypdf.subprocess import run as external_run
 
 log = logging.getLogger(__name__)
 

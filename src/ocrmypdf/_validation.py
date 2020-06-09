@@ -34,13 +34,14 @@ from ocrmypdf.exceptions import (
     MissingDependencyError,
     OutputFileAccessError,
 )
-from ocrmypdf.exec import check_external_program, jbig2enc, pngquant, unpaper
+from ocrmypdf.exec import jbig2enc, pngquant, unpaper
 from ocrmypdf.helpers import (
     is_file_writable,
     is_iterable_notstr,
     monotonic,
     safe_symlink,
 )
+from ocrmypdf.subprocess import check_external_program
 
 # -------------
 # External dependencies

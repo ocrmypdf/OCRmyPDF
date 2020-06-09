@@ -55,7 +55,7 @@ def run(args, *, env=None, **kwargs):
     program = args[0]
 
     if os.name == 'nt':
-        args = fix_windows_args(program, args, env)
+        args = _fix_windows_args(program, args, env)
 
     log.debug("Running: %s", args)
     process_log = log.getChild('subprocess.' + os.path.basename(program))
@@ -80,7 +80,7 @@ def run(args, *, env=None, **kwargs):
     return proc
 
 
-def fix_windows_args(program, args, env):
+def _fix_windows_args(program, args, env):
     """Adjust our desired program and command line arguments for use on Windows"""
 
     if sys.version_info < (3, 8):

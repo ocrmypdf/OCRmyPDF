@@ -20,7 +20,7 @@
 from subprocess import PIPE
 
 from ocrmypdf.exceptions import MissingDependencyError
-from ocrmypdf.exec import get_version, run
+from ocrmypdf.subprocess import get_version, run
 
 
 def version():
