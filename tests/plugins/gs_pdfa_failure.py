@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# © 2016-18 James R. Barlow: github.com/jbarlow83
+# © 2020 James R. Barlow: github.com/jbarlow83
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,29 +19,33 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-"""Replicate Ghostscript render failure while allowing rasterizing"""
+from unittest.mock import patch
 
-import os
-import sys
-
-from gs import real_ghostscript
-
-
-def main():
-    if '--version' in sys.argv:
-        print('9.20')
-        print('SPOOFED: ' + os.path.basename(__file__))
-        sys.exit(0)
-
-    # For any rasterize calls (device != pdfwrite) call real ghostscript
-    if '-sDEVICE=pdfwrite' not in sys.argv:
-        real_ghostscript(sys.argv)
-        return
-
-    # Fail
-    print("ERROR: Casper is not a friendly ghost", file=sys.stderr)
-    sys.exit(1)
+from ocrmypdf import hookimpl
+from ocrmypdf.builtin_plugins import ghostscript
+from ocrmypdf.exec import run
 
 
-if __name__ == '__main__':
-    main()
+def run_rig_args(args, **kwargs):
+    # Remove the two arguments that tell ghostscript to create a PDF/A
+    # Does not remove the Postscript definition file - not necessary
+    # to cause PDF/A creation failure
+    new_args = [
+        arg for arg in args if not arg.startswith('-dPDFA') and not arg.endswith('.ps')
+    ]
+    proc = run(new_args, **kwargs)
+    return proc
+
+
+@hookimpl
+def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdfa_part):
+    with patch('ocrmypdf.exec.ghostscript.run', new=run_rig_args):
+        ghostscript.generate_pdfa(
+            pdf_pages=pdf_pages,
+            pdfmark=pdfmark,
+            output_file=output_file,
+            compression=compression,
+            pdf_version=pdf_version,
+            pdfa_part=pdfa_part,
+        )
+        return output_file

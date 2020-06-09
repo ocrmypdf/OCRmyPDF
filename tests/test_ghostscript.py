@@ -33,26 +33,6 @@ spoof = pytest.helpers.spoof
 
 
 @pytest.fixture
-def spoof_gs_render_fail(tmp_path_factory):
-    return spoof(tmp_path_factory, gs='gs_render_failure.py')
-
-
-@pytest.fixture
-def spoof_gs_raster_fail(tmp_path_factory):
-    return spoof(tmp_path_factory, gs='gs_raster_failure.py')
-
-
-@pytest.fixture
-def spoof_no_pdfa(tmp_path_factory):
-    return spoof(tmp_path_factory, gs='gs_pdfa_failure.py')
-
-
-@pytest.fixture
-def spoof_pdfa_warning(tmp_path_factory):
-    return spoof(tmp_path_factory, gs='gs_feature_elision.py')
-
-
-@pytest.fixture
 def francais(resources):
     path = resources / 'francais.pdf'
     return path, pikepdf.open(path)
@@ -106,48 +86,52 @@ def test_rasterize_rotated(francais, outdir, caplog):
         assert im.info['dpi'] == (forced_dpi[1], forced_dpi[0])
 
 
-def test_gs_render_failure(spoof_gs_render_fail, resources, outpdf):
+def test_gs_render_failure(resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / 'blank.pdf',
         outpdf,
         '--plugin',
         'tests/plugins/tesseract_noop.py',
-        env=spoof_gs_render_fail,
+        '--plugin',
+        'tests/plugins/gs_render_failure.py',
     )
     assert 'Casper is not a friendly ghost' in err
     assert p.returncode == ExitCode.child_process_error
 
 
-def test_gs_raster_failure(spoof_gs_raster_fail, resources, outpdf):
+def test_gs_raster_failure(resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / 'francais.pdf',
         outpdf,
         '--plugin',
         'tests/plugins/tesseract_noop.py',
-        env=spoof_gs_raster_fail,
+        '--plugin',
+        'tests/plugins/gs_raster_failure.py',
     )
     assert 'Ghost story archive not found' in err
     assert p.returncode == ExitCode.child_process_error
 
 
-def test_ghostscript_pdfa_failure(spoof_no_pdfa, resources, outpdf):
+def test_ghostscript_pdfa_failure(resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / 'francais.pdf',
         outpdf,
         '--plugin',
         'tests/plugins/tesseract_noop.py',
-        env=spoof_no_pdfa,
+        '--plugin',
+        'tests/plugins/gs_pdfa_failure.py',
     )
     assert (
         p.returncode == ExitCode.pdfa_conversion_failed
     ), "Unexpected return when PDF/A fails"
 
 
-def test_ghostscript_feature_elision(spoof_pdfa_warning, resources, outpdf):
+def test_ghostscript_feature_elision(resources, outpdf):
     check_ocrmypdf(
         resources / 'francais.pdf',
         outpdf,
         '--plugin',
         'tests/plugins/tesseract_noop.py',
-        env=spoof_pdfa_warning,
+        '--plugin',
+        'tests/plugins/gs_feature_elision.py',
     )

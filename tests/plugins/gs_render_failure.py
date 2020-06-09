@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# © 2016 James R. Barlow: github.com/jbarlow83
+# © 2020 James R. Barlow: github.com/jbarlow83
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,34 +19,30 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+from pathlib import Path
+from subprocess import CalledProcessError
+from unittest.mock import patch
 
-import os
-import sys
-from subprocess import check_call
-
-from gs import real_ghostscript
-
-"""Replicate one type of Ghostscript feature elision warning during
-PDF/A creation."""
+from ocrmypdf import hookimpl
+from ocrmypdf.builtin_plugins import ghostscript
+from ocrmypdf.exec import run
 
 
-elision_warning = """GPL Ghostscript 9.20: Setting Overprint Mode to 1
-not permitted in PDF/A-2, overprint mode not set"""
+def raise_gs_fail(*args, **kwargs):
+    raise CalledProcessError(
+        1, 'gs', output=b"", stderr=b"ERROR: Casper is not a friendly ghost"
+    )
 
 
-def main():
-    if '--version' in sys.argv:
-        print('9.20')
-        print('SPOOFED: ' + os.path.basename(__file__))
-        sys.exit(0)
-    gs_args = ['gs'] + sys.argv[1:]
-    check_call(gs_args)
-
-    if '-sDEVICE=pdfwrite' in sys.argv[1:]:
-        print(elision_warning)
-
-    sys.exit(0)
-
-
-if __name__ == '__main__':
-    main()
+@hookimpl
+def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdfa_part):
+    with patch('ocrmypdf.exec.ghostscript.run', new=raise_gs_fail):
+        ghostscript.generate_pdfa(
+            pdf_pages=pdf_pages,
+            pdfmark=pdfmark,
+            output_file=output_file,
+            compression=compression,
+            pdf_version=pdf_version,
+            pdfa_part=pdfa_part,
+        )
+        return output_file
