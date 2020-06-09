@@ -34,20 +34,10 @@ from ocrmypdf.exceptions import MissingDependencyError
 log = logging.getLogger(__name__)
 
 
-def _get_program(args, env=None):
-    program = args[0]
-    test_path = env.get('_OCRMYPDF_TEST_PATH', '')
-    if test_path:
-        program = shutil.which(program, path=test_path)
-    return program
-
-
 def run(args, *, env=None, **kwargs):
     """Wrapper around subprocess.run()
 
-    The main purpose of this wrapper is to allow us to substitute the main program
-    for a spoof in the test suite. The hidden variable _OCRMYPDF_TEST_PATH replaces
-    the main PATH as a location to check for programs to run.
+    The main purpose of this wrapper is to log subprocess output.
 
     Secondly we have to account for behavioral differences in Windows in particular.
     Creating symbolic links in Windows requires administrator privileges and
@@ -62,8 +52,7 @@ def run(args, *, env=None, **kwargs):
         env = os.environ
 
     # Search in spoof path if necessary
-    program = _get_program(args, env)
-    args = [program] + args[1:]
+    program = args[0]
 
     if os.name == 'nt':
         args = fix_windows_args(program, args, env)

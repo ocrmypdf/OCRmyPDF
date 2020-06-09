@@ -105,11 +105,9 @@ def test_closed_streams(ocrmypdf_exec, resources, outpdf):
     Path('/etc/alpine-release').exists(), reason="invalid test on alpine"
 )
 @pytest.mark.skipif(os.name == 'nt', reason="invalid test on Windows")
-def test_bad_locale():
-    env = os.environ.copy()
-    env['LC_ALL'] = 'C'
-
-    p, out, err = run_ocrmypdf('a', 'b', env=env)
+def test_bad_locale(monkeypatch):
+    monkeypatch.setenv('LC_ALL', 'C')
+    p, out, err = run_ocrmypdf('a', 'b')
     assert out == '', "stdout not clean"
     assert p.returncode != 0
     assert 'configured to use ASCII as encoding' in err, "should whine"

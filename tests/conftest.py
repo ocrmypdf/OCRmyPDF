@@ -105,7 +105,7 @@ def no_outpdf(tmp_path):
 
 
 @pytest.helpers.register
-def check_ocrmypdf(input_file, output_file, *args, env=None):
+def check_ocrmypdf(input_file, output_file, *args):
     """Run ocrmypdf and confirmed that a valid file was created"""
     args = [str(input_file), str(output_file)] + [
         str(arg) for arg in args if arg is not None
@@ -113,8 +113,6 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
 
     _parser, options, plugin_manager = get_parser_options_plugins(args=args)
     api.check_options(options, plugin_manager)
-    if env:
-        assert False, 'env set'
     result = api.run_pipeline(options, plugin_manager=plugin_manager, api=True)
 
     assert result == 0
@@ -125,7 +123,7 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
 
 
 @pytest.helpers.register
-def run_ocrmypdf_api(input_file, output_file, *args, env=None):
+def run_ocrmypdf_api(input_file, output_file, *args):
     """Run ocrmypdf via API and let caller deal with results
 
     Does not currently have a way to manipulate the PATH except for Tesseract.
@@ -135,8 +133,6 @@ def run_ocrmypdf_api(input_file, output_file, *args, env=None):
         str(arg) for arg in args if arg is not None
     ]
     _parser, options, plugin_manager = get_parser_options_plugins(args=args)
-    if env:
-        assert False, 'env set'
     if options.tesseract_env:
         assert all(isinstance(v, (str, bytes)) for v in options.tesseract_env.values())
 
@@ -145,11 +141,8 @@ def run_ocrmypdf_api(input_file, output_file, *args, env=None):
 
 
 @pytest.helpers.register
-def run_ocrmypdf(input_file, output_file, *args, env=None, universal_newlines=True):
+def run_ocrmypdf(input_file, output_file, *args, universal_newlines=True):
     "Run ocrmypdf and let caller deal with results"
-
-    if env is None:
-        env = os.environ.copy()
 
     p_args = (
         OCRMYPDF
@@ -162,6 +155,7 @@ def run_ocrmypdf(input_file, output_file, *args, env=None, universal_newlines=Tr
     # Details: https://coverage.readthedocs.io/en/coverage-5.0/subprocess.html
     coverage_rc = Path(__file__).parent.parent / '.coveragerc'
     assert coverage_rc.exists()
+    env = os.environ.copy()
     env['COVERAGE_PROCESS_START'] = os.fspath(coverage_rc)
 
     p = run(
