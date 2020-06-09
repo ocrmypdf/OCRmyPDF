@@ -81,7 +81,6 @@ def add_options(parser):
         metavar='FILE',
         help="Specify the location of the Tesseract user patterns file.",
     )
-    tess.add_argument('--tesseract-env', type=str, help=argparse.SUPPRESS)
 
 
 @hookimpl
@@ -98,15 +97,13 @@ def check_options(options):
         options.pdf_renderer = 'sandwich'
 
     if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf(
-        options.tesseract_env, set(options.languages)
+        set(options.languages)
     ):
         raise MissingDependencyError(
             "You are using an alpha version of Tesseract 4.0 that does not support "
             "the textonly_pdf parameter. We don't support versions this old."
         )
-    if not tesseract.has_user_words(options.tesseract_env) and (
-        options.user_words or options.user_patterns
-    ):
+    if not tesseract.has_user_words() and (options.user_words or options.user_patterns):
         log.warning(
             "Tesseract 4.0 ignores --user-words and --user-patterns, so these "
             "arguments have no effect."
@@ -120,13 +117,6 @@ def check_options(options):
 
 @hookimpl
 def validate(pdfinfo, options):
-    if not options.tesseract_env:
-        return
-
-    # If we are running a Tesseract spoof, ensure it knows what the input file is
-    if os.environ.get('PYTEST_CURRENT_TEST'):
-        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(options.input_file)
-
     # Tesseract 4.x can be multithreaded, and we also run multiple workers. We want
     # to manage how many threads it uses to avoid creating total threads than cores.
     # Performance testing shows we're better off
@@ -135,11 +125,11 @@ def validate(pdfinfo, options):
     # input file is small, then we allow Tesseract to use threads, subject to the
     # constraint: (ocrmypdf workers) * (tesseract threads) <= max_workers.
     # As of Tesseract 4.1, 3 threads is the most effective on a 4 core/8 thread system.
-    if not options.tesseract_env.get('OMP_THREAD_LIMIT', '').isnumeric():
+    if not os.environ.get('OMP_THREAD_LIMIT', '').isnumeric():
         tess_threads = min(3, options.jobs // len(pdfinfo), len(pdfinfo))
-        options.tesseract_env['OMP_THREAD_LIMIT'] = str(tess_threads)
+        os.environ['OMP_THREAD_LIMIT'] = str(tess_threads)
     else:
-        tess_threads = int(options.tesseract_env['OMP_THREAD_LIMIT'])
+        tess_threads = int(os.environ['OMP_THREAD_LIMIT'])
 
     if tess_threads > 1:
         log.info("Using Tesseract OpenMP thread limit %d", tess_threads)
@@ -160,7 +150,7 @@ class TesseractOcrEngine(OcrEngine):
 
     @staticmethod
     def languages(options):
-        return tesseract.get_languages(options.tesseract_env)
+        return tesseract.get_languages()
 
     @staticmethod
     def get_orientation(input_file, options):
@@ -168,7 +158,6 @@ class TesseractOcrEngine(OcrEngine):
             input_file,
             engine_mode=options.tesseract_oem,
             timeout=options.tesseract_timeout,
-            tesseract_env=options.tesseract_env,
         )
 
     @staticmethod
@@ -184,7 +173,6 @@ class TesseractOcrEngine(OcrEngine):
             pagesegmode=options.tesseract_pagesegmode,
             user_words=options.user_words,
             user_patterns=options.user_patterns,
-            tesseract_env=options.tesseract_env,
         )
 
     @staticmethod
@@ -200,7 +188,6 @@ class TesseractOcrEngine(OcrEngine):
             pagesegmode=options.tesseract_pagesegmode,
             user_words=options.user_words,
             user_patterns=options.user_patterns,
-            tesseract_env=options.tesseract_env,
         )
 
 

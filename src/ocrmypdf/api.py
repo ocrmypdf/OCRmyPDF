@@ -143,7 +143,7 @@ def create_options(
 
         # These arguments with special handling for which we bypass
         # argparse
-        if arg in {'tesseract_env', 'progress_bar', 'plugins'}:
+        if arg in {'progress_bar', 'plugins'}:
             deferred.append((arg, val))
             continue
 

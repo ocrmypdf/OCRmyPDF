@@ -70,13 +70,11 @@ def test_content_preservation(resources, outpdf):
     assert len(page.images) > 1, "masks were rasterized"
 
 
-def test_no_languages(tmp_path):
-    env = os.environ.copy()
+def test_no_languages(tmp_path, monkeypatch):
     (tmp_path / 'tessdata').mkdir()
-    env['TESSDATA_PREFIX'] = fspath(tmp_path)
-
+    monkeypatch.setenv('TESSDATA_PREFIX', fspath(tmp_path))
     with pytest.raises(MissingDependencyError):
-        tesseract.get_languages(tesseract_env=env)
+        tesseract.get_languages()
 
 
 def test_image_too_large_hocr(monkeypatch, resources, outdir):
@@ -95,7 +93,6 @@ def test_image_too_large_hocr(monkeypatch, resources, outdir):
         pagesegmode=None,
         user_words=None,
         user_patterns=None,
-        tesseract_env=None,
     )
     assert "name='ocr-capabilities'" in Path(outdir / 'out.hocr').read_text()
 
@@ -116,7 +113,6 @@ def test_image_too_large_pdf(monkeypatch, resources, outdir):
         pagesegmode=None,
         user_words=None,
         user_patterns=None,
-        tesseract_env=None,
     )
     assert Path(outdir / 'txt.txt').read_text() == '[skipped page]'
     if os.name != 'nt':  # different semantics

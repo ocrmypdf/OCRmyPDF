@@ -133,8 +133,6 @@ def run_ocrmypdf_api(input_file, output_file, *args):
         str(arg) for arg in args if arg is not None
     ]
     _parser, options, plugin_manager = get_parser_options_plugins(args=args)
-    if options.tesseract_env:
-        assert all(isinstance(v, (str, bytes)) for v in options.tesseract_env.values())
 
     api.check_options(options, plugin_manager)
     return api.run_pipeline(options, plugin_manager=None, api=False)

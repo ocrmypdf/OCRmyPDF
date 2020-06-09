@@ -65,11 +65,11 @@ class TesseractLoggerAdapter(logging.LoggerAdapter):
         return '[tesseract] %s' % (msg), kwargs
 
 
-def version(tesseract_env=None):
-    return get_version('tesseract', regex=r'tesseract\s(.+)', env=tesseract_env)
+def version():
+    return get_version('tesseract', regex=r'tesseract\s(.+)')
 
 
-def has_textonly_pdf(tesseract_env=None, langs=None):
+def has_textonly_pdf(langs=None):
     """Does Tesseract have textonly_pdf capability?
 
     Available in v4.00.00alpha since January 2017. Best to
@@ -79,12 +79,7 @@ def has_textonly_pdf(tesseract_env=None, langs=None):
     params = ''
     try:
         proc = run(
-            args_tess,
-            check=True,
-            universal_newlines=True,
-            stdout=PIPE,
-            stderr=STDOUT,
-            env=tesseract_env,
+            args_tess, check=True, universal_newlines=True, stdout=PIPE, stderr=STDOUT
         )
         params = proc.stdout
     except CalledProcessError as e:
@@ -97,16 +92,16 @@ def has_textonly_pdf(tesseract_env=None, langs=None):
     return False
 
 
-def has_user_words(tesseract_env=None):
+def has_user_words():
     """Does Tesseract have --user-words capability?
 
     Not available in 4.0, but available in 4.1. Also available in 3.x, but
     we no longer support 3.x.
     """
-    return version(tesseract_env) >= '4.1'
+    return version() >= '4.1'
 
 
-def get_languages(tesseract_env=None):
+def get_languages():
     def lang_error(output):
         msg = (
             "Tesseract failed to report available languages.\n"
@@ -119,12 +114,7 @@ def get_languages(tesseract_env=None):
     args_tess = ['tesseract', '--list-langs']
     try:
         proc = run(
-            args_tess,
-            universal_newlines=True,
-            stdout=PIPE,
-            stderr=STDOUT,
-            check=True,
-            env=tesseract_env,
+            args_tess, universal_newlines=True, stdout=PIPE, stderr=STDOUT, check=True
         )
         output = proc.stdout
     except CalledProcessError as e:
@@ -146,7 +136,7 @@ def tess_base_args(langs: List[str], engine_mode) -> List[str]:
     return args
 
 
-def get_orientation(input_file: Path, engine_mode, timeout: float, tesseract_env=None):
+def get_orientation(input_file: Path, engine_mode, timeout: float):
     args_tesseract = tess_base_args(['osd'], engine_mode) + [
         '--psm',
         '0',
@@ -155,14 +145,7 @@ def get_orientation(input_file: Path, engine_mode, timeout: float, tesseract_env
     ]
 
     try:
-        p = run(
-            args_tesseract,
-            stdout=PIPE,
-            stderr=STDOUT,
-            timeout=timeout,
-            check=True,
-            env=tesseract_env,
-        )
+        p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
         stdout = p.stdout
     except TimeoutExpired:
         return OrientationConfidence(angle=0, confidence=0.0)
@@ -257,7 +240,6 @@ def generate_hocr(
     pagesegmode: int,
     user_words,
     user_patterns,
-    tesseract_env,
 ):
     prefix = output_hocr.with_suffix('')
 
@@ -276,14 +258,7 @@ def generate_hocr(
     # to the number of order parameters here
     args_tesseract.extend([input_file, prefix, 'hocr', 'txt'] + tessconfig)
     try:
-        p = run(
-            args_tesseract,
-            stdout=PIPE,
-            stderr=STDOUT,
-            timeout=timeout,
-            check=True,
-            env=tesseract_env,
-        )
+        p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
         stdout = p.stdout
     except TimeoutExpired:
         # Generate a HOCR file with no recognized text if tesseract times out
@@ -325,7 +300,6 @@ def generate_pdf(
     pagesegmode: int,
     user_words,
     user_patterns,
-    tesseract_env,
 ):
     """Use Tesseract to render a PDF.
 
@@ -358,14 +332,7 @@ def generate_pdf(
 
     args_tesseract.extend([input_file, prefix, 'pdf', 'txt'] + tessconfig)
     try:
-        p = run(
-            args_tesseract,
-            stdout=PIPE,
-            stderr=STDOUT,
-            timeout=timeout,
-            check=True,
-            env=tesseract_env,
-        )
+        p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
         stdout = p.stdout
         if os.path.exists(prefix + '.txt'):
             shutil.move(prefix + '.txt', output_text)
