@@ -272,7 +272,7 @@ def generate_hocr(
     if user_patterns:
         args_tesseract.extend(['--user-patterns', user_patterns])
 
-    # Reminder: test suite tesseract spoofers will break after any changes
+    # Reminder: test suite tesseract test plugins will break after any changes
     # to the number of order parameters here
     args_tesseract.extend([input_file, prefix, 'hocr', 'txt'] + tessconfig)
     try:
@@ -353,7 +353,7 @@ def generate_pdf(
 
     prefix = os.path.splitext(output_pdf)[0]  # Tesseract appends suffixes
 
-    # Reminder: test suite tesseract spoofers might break after any changes
+    # Reminder: test suite tesseract test plugins might break after any changes
     # to the number of order parameters here
 
     args_tesseract.extend([input_file, prefix, 'pdf', 'txt'] + tessconfig)

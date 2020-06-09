@@ -71,102 +71,8 @@ def have_unpaper():
 
 
 TESTS_ROOT = Path(__file__).parent.resolve()
-SPOOF_PATH = TESTS_ROOT / 'spoof'
 PROJECT_ROOT = TESTS_ROOT
 OCRMYPDF = [sys.executable, '-m', 'ocrmypdf']
-
-
-WINDOWS_SHIM_TEMPLATE = """
-# This is a shim for Windows that has the same effect as a symlink to the target .py
-# file
-import os
-import subprocess
-import sys
-
-args = [sys.executable, {spoofer}, *sys.argv[1:]]
-p = subprocess.run(args, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-sys.stdout.buffer.write(p.stdout)
-sys.stderr.buffer.write(p.stderr)
-sys.exit(p.returncode)
-"""
-
-assert ast.parse(WINDOWS_SHIM_TEMPLATE.format(spoofer=repr(r"C:\\Temp\\file.py")))
-
-
-@pytest.helpers.register
-def spoof(tmp_path_factory, **kwargs):
-    r"""Modify PATH to override subprocess executables
-
-    spoof(tmp_path_factory, program1='replacement', ...)
-
-    For the test suite we need a way override executables, so that we can
-    substitute desired results such as errors or just speed up OCR.
-
-    On POSIXish platforms we create a temporary folder with overrides that
-    are symlinks to the executables we want to run. We do not actually override
-    PATH. We also set an environment variable _OCRMYPDF_TEST_PATH, which
-    OCRmyPDF's subprocess wrapper will check before they use regular PATH. The
-    output is a folder full of executables we are overriding. We can override
-    multiple executables. The end result is a folder we can use in a PATH-style
-    lookup to override some executables:
-
-        /tmp/abcxyz/tesseract -> ocrmypdf/tests/resources/spoof/tesseract_crash.py
-        /tmp/abcxyz/gs -> ocrmypdf/tests/resources/spoof/gs_backflip.py
-
-    Windows needs extra help from us because usually, only the Administrator
-    can create symlinks. Instead we create small Python scripts that call
-    the programs we want, implementing the effect of a symlink. This is cleaner
-    than creating Windows executables or trying to use non-Python scripts.
-    The temporary folder generated for Windows could like:
-
-        %TEMP%\abcxyz\tesseract.py:
-            (script that runs ocrmypdf/tests/resources/spoof/tesseract_crash.py)
-        %TEMP%\abcxyz\gswin32c.py:
-            (script that runs ocrmypdf/tests/resources/spoof/gs_backflip.py)
-        %TEMP%\abcxyz\gswin64c.py:
-            (script that runs ocrmypdf/tests/resources/spoof/gs_backflip.py)
-
-    We also address one quirk here, that Ghostscript may be known as gswin32c
-    or gswin64c, depending on what the user installed (regardless of Windows
-    itself). On POSIX, Ghostscript is just 'gs'.  We handle the special case here
-    too.
-
-    All of this is intimately dependent on the machinery in ocrmypdf.exec.run().
-    In particular, for Windows, that code has to know that if there is a .py
-    file, it needs to run it with Python, since Windows does not like being
-    asked to execute files.
-
-    We don't overload PATH directly because we have some tests where we call
-    ocrmypdf as a subprocess (to exercise the command line interface) and some
-    tests where we call it as an API.
-    """
-    env = os.environ.copy()
-    slug = '-'.join(v.replace('.py', '') for v in sorted(kwargs.values()))
-    spoofer_base = tmp_path_factory.mktemp('spoofers')
-    tmpdir = Path(spoofer_base / slug)
-    tmpdir.mkdir(parents=True)
-
-    for replace_program, with_spoof in kwargs.items():
-        spoofer = SPOOF_PATH / with_spoof
-        if os.name != 'nt':
-            spoofer.chmod(0o755)
-            (tmpdir / replace_program).symlink_to(spoofer)
-        else:
-            py_file = WINDOWS_SHIM_TEMPLATE.format(
-                spoofer=repr(os.fspath(spoofer.absolute()))
-            )
-            if replace_program == 'gs':
-                programs = ['gswin64c', 'gswin32c']
-            else:
-                programs = [replace_program]
-            for prog in programs:
-                (tmpdir / f'{prog}.py').write_text(py_file, encoding='utf-8')
-
-    env['_OCRMYPDF_TEST_PATH'] = str(tmpdir) + os.pathsep + env['PATH']
-    if os.name == 'nt':
-        if '.py' not in env['PATHEXT'].lower():
-            raise EnvironmentError("PATHEXT is not configured to support .py")
-    return env
 
 
 @pytest.fixture
@@ -208,12 +114,7 @@ def check_ocrmypdf(input_file, output_file, *args, env=None):
     _parser, options, plugin_manager = get_parser_options_plugins(args=args)
     api.check_options(options, plugin_manager)
     if env:
-        first = env['_OCRMYPDF_TEST_PATH'].split(os.pathsep)[0]
-        if 'tesseract_noop' in first:
-            raise ValueError('noop')
-        else:
-            options.tesseract_env = env
-            options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
+        assert False, 'env set'
     result = api.run_pipeline(options, plugin_manager=plugin_manager, api=True)
 
     assert result == 0
@@ -235,19 +136,7 @@ def run_ocrmypdf_api(input_file, output_file, *args, env=None):
     ]
     _parser, options, plugin_manager = get_parser_options_plugins(args=args)
     if env:
-        try:
-            first = env['_OCRMYPDF_TEST_PATH'].split(os.pathsep)[0]
-            if 'tesseract_noop' in first:
-                raise ValueError('noop')
-            else:
-                options.tesseract_env = env.copy()
-                options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
-            first_path = env.get('_OCRMYPDF_TEST_PATH', '').split(os.pathsep)[0]
-            if 'spoof' in first_path:
-                assert 'gs' not in first_path, "use run_ocrmypdf() for gs"
-                assert 'tesseract' in first_path
-        except KeyError:
-            pass
+        assert False, 'env set'
     if options.tesseract_env:
         assert all(isinstance(v, (str, bytes)) for v in options.tesseract_env.values())
 
