@@ -28,10 +28,11 @@ import pytest
 from PIL import Image
 
 import ocrmypdf
+from ocrmypdf._exec import ghostscript, tesseract
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
-from ocrmypdf.exec import ghostscript, qpdf, tesseract
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
+from ocrmypdf.subprocess import get_version
 
 # pytest.helpers is dynamic
 # pylint: disable=no-member,redefined-outer-name
@@ -39,28 +40,19 @@ from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
 run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
-spoof = pytest.helpers.spoof
 
 
 RENDERERS = ['hocr', 'sandwich']
 
 
-@pytest.fixture
-def spoof_tesseract_crash(tmp_path_factory):
-    return spoof(tmp_path_factory, tesseract='tesseract_crash.py')
-
-
-@pytest.fixture
-def spoof_tesseract_big_image_error(tmp_path_factory):
-    return spoof(tmp_path_factory, tesseract='tesseract_big_image_error.py')
-
-
-def test_quick(spoof_tesseract_cache, resources, outpdf):
-    check_ocrmypdf(resources / 'ccitt.pdf', outpdf, env=spoof_tesseract_cache)
+def test_quick(resources, outpdf):
+    check_ocrmypdf(
+        resources / 'ccitt.pdf', outpdf, '--plugin', 'tests/plugins/tesseract_cache.py'
+    )
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_oversample(spoof_tesseract_cache, renderer, resources, outpdf):
+def test_oversample(renderer, resources, outpdf):
     oversampled_pdf = check_ocrmypdf(
         resources / 'skew.pdf',
         outpdf,
@@ -69,13 +61,14 @@ def test_oversample(spoof_tesseract_cache, renderer, resources, outpdf):
         '-f',
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     pdfinfo = PdfInfo(oversampled_pdf)
 
-    print(pdfinfo[0].xres)
-    assert abs(pdfinfo[0].xres - 350) < 1
+    print(pdfinfo[0].dpi.x)
+    assert abs(pdfinfo[0].dpi.x - 350) < 1
 
 
 def test_repeat_ocr(resources, no_outpdf):
@@ -83,17 +76,25 @@ def test_repeat_ocr(resources, no_outpdf):
     assert result == ExitCode.already_done_ocr
 
 
-def test_force_ocr(spoof_tesseract_cache, resources, outpdf):
+def test_force_ocr(resources, outpdf):
     out = check_ocrmypdf(
-        resources / 'graph_ocred.pdf', outpdf, '-f', env=spoof_tesseract_cache
+        resources / 'graph_ocred.pdf',
+        outpdf,
+        '-f',
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
     pdfinfo = PdfInfo(out)
     assert pdfinfo[0].has_text
 
 
-def test_skip_ocr(spoof_tesseract_cache, resources, outpdf):
+def test_skip_ocr(resources, outpdf):
     out = check_ocrmypdf(
-        resources / 'graph_ocred.pdf', outpdf, '-s', env=spoof_tesseract_cache
+        resources / 'graph_ocred.pdf',
+        outpdf,
+        '-s',
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
     pdfinfo = PdfInfo(out)
     assert pdfinfo[0].has_text
@@ -101,17 +102,17 @@ def test_skip_ocr(spoof_tesseract_cache, resources, outpdf):
 
 def test_redo_ocr(resources, outpdf):
     in_ = resources / 'graph_ocred.pdf'
-    before = PdfInfo(in_, detailed_page_analysis=True)
+    before = PdfInfo(in_)
     out = outpdf
     out = check_ocrmypdf(in_, out, '--redo-ocr')
-    after = PdfInfo(out, detailed_page_analysis=True)
+    after = PdfInfo(out)
     assert before[0].has_text and after[0].has_text
     assert (
         before[0].get_textareas() != after[0].get_textareas()
     ), "Expected text to be different after re-OCR"
 
 
-def test_argsfile(spoof_tesseract_noop, resources, outdir):
+def test_argsfile(resources, outdir):
     path_argsfile = outdir / 'test_argsfile.txt'
     with open(str(path_argsfile), 'w') as argsfile:
         print(
@@ -119,15 +120,14 @@ def test_argsfile(spoof_tesseract_noop, resources, outdir):
             'ArgsFile Test',
             '--author',
             'Test Cases',
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
             sep='\n',
             end='\n',
             file=argsfile,
         )
     check_ocrmypdf(
-        resources / 'graph.pdf',
-        path_argsfile,
-        '@' + str(outdir / 'test_argsfile.txt'),
-        env=spoof_tesseract_noop,
+        resources / 'graph.pdf', path_argsfile, '@' + str(outdir / 'test_argsfile.txt')
     )
 
 
@@ -145,9 +145,14 @@ def test_ocr_timeout(renderer, resources, outpdf):
     assert not pdfinfo[0].has_text
 
 
-def test_skip_big(spoof_tesseract_cache, resources, outpdf):
+def test_skip_big(resources, outpdf):
     out = check_ocrmypdf(
-        resources / 'jbig2.pdf', outpdf, '--skip-big', '1', env=spoof_tesseract_cache
+        resources / 'jbig2.pdf',
+        outpdf,
+        '--skip-big',
+        '1',
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
     pdfinfo = PdfInfo(out)
     assert not pdfinfo[0].has_text
@@ -155,9 +160,7 @@ def test_skip_big(spoof_tesseract_cache, resources, outpdf):
 
 @pytest.mark.parametrize('renderer', RENDERERS)
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
-def test_maximum_options(
-    spoof_tesseract_cache, renderer, output_type, resources, outpdf
-):
+def test_maximum_options(renderer, output_type, resources, outpdf):
     check_ocrmypdf(
         resources / 'multipage.pdf',
         outpdf,
@@ -178,18 +181,15 @@ def test_maximum_options(
         renderer,
         '--output-type',
         output_type,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
 
-def test_tesseract_missing_tessdata(resources, no_outpdf, tmpdir):
-    env = os.environ.copy()
-    env['TESSDATA_PREFIX'] = os.fspath(tmpdir)
-
-    returncode = run_ocrmypdf_api(
-        resources / 'graph.pdf', no_outpdf, '-v', '1', '--skip-text', env=env
-    )
-    assert returncode == ExitCode.missing_dependency
+def test_tesseract_missing_tessdata(monkeypatch, resources, no_outpdf, tmpdir):
+    monkeypatch.setenv("TESSDATA_PREFIX", os.fspath(tmpdir))
+    with pytest.raises(MissingDependencyError):
+        run_ocrmypdf_api(resources / 'graph.pdf', no_outpdf, '-v', '1', '--skip-text')
 
 
 def test_invalid_input_pdf(resources, no_outpdf):
@@ -202,22 +202,26 @@ def test_blank_input_pdf(resources, outpdf):
     assert result == ExitCode.ok
 
 
-def test_force_ocr_on_pdf_with_no_images(spoof_tesseract_crash, resources, no_outpdf):
+def test_force_ocr_on_pdf_with_no_images(resources, no_outpdf):
     # As a correctness test, make sure that --force-ocr on a PDF with no
     # content still triggers tesseract. If tesseract crashes, then it was
     # called.
     p, _, _ = run_ocrmypdf(
-        resources / 'blank.pdf', no_outpdf, '--force-ocr', env=spoof_tesseract_crash
+        resources / 'blank.pdf',
+        no_outpdf,
+        '--force-ocr',
+        '--plugin',
+        'tests/plugins/tesseract_crash.py',
     )
     assert p.returncode == ExitCode.child_process_error
-    assert not os.path.exists(no_outpdf)
+    assert not no_outpdf.exists()
 
 
 @pytest.mark.skipif(
     pytest.helpers.is_macos() and pytest.helpers.running_in_travis(),
     reason="takes too long to install language packs in Travis macOS homebrew",
 )
-def test_german(spoof_tesseract_cache, resources, outdir):
+def test_german(resources, outdir):
     # Produce a sidecar too - implicit test that system locale is set up
     # properly. It is fine that we are testing -l deu on a French file because
     # we are exercising the functionality not going for accuracy.
@@ -230,10 +234,11 @@ def test_german(spoof_tesseract_cache, resources, outdir):
             'deu',  # more commonly installed
             '--sidecar',
             sidecar,
-            env=spoof_tesseract_cache,
+            '--plugin',
+            'tests/plugins/tesseract_cache.py',
         )
     except MissingDependencyError:
-        if 'deu' not in tesseract.languages():
+        if 'deu' not in tesseract.get_languages():
             pytest.xfail(reason="tesseract-deu language pack not installed")
         raise
 
@@ -243,23 +248,27 @@ def test_klingon(resources, outpdf):
     assert p.returncode == ExitCode.missing_dependency
 
 
-def test_missing_docinfo(spoof_tesseract_noop, resources, outpdf):
+def test_missing_docinfo(resources, outpdf):
     result = run_ocrmypdf_api(
         resources / 'missing_docinfo.pdf',
         outpdf,
         '-l',
         'eng',
         '--skip-text',
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
     assert result == ExitCode.ok
 
 
-def test_uppercase_extension(spoof_tesseract_noop, resources, outdir):
+def test_uppercase_extension(resources, outdir):
     shutil.copy(str(resources / "skew.pdf"), str(outdir / "UPPERCASE.PDF"))
 
     check_ocrmypdf(
-        outdir / "UPPERCASE.PDF", outdir / "UPPERCASE_OUT.PDF", env=spoof_tesseract_noop
+        outdir / "UPPERCASE.PDF",
+        outdir / "UPPERCASE_OUT.PDF",
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
 
@@ -295,7 +304,7 @@ def test_encrypted(resources, caplog, no_outpdf):
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_pagesegmode(renderer, spoof_tesseract_cache, resources, outpdf):
+def test_pagesegmode(renderer, resources, outpdf):
     check_ocrmypdf(
         resources / 'skew.pdf',
         outpdf,
@@ -305,12 +314,13 @@ def test_pagesegmode(renderer, spoof_tesseract_cache, resources, outpdf):
         '1',
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_tesseract_crash(renderer, spoof_tesseract_crash, resources, no_outpdf, caplog):
+def test_tesseract_crash(renderer, resources, no_outpdf):
     p, _, err = run_ocrmypdf(
         resources / 'ccitt.pdf',
         no_outpdf,
@@ -318,29 +328,32 @@ def test_tesseract_crash(renderer, spoof_tesseract_crash, resources, no_outpdf, 
         '1',
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_crash,
+        '--plugin',
+        'tests/plugins/tesseract_crash.py',
     )
     assert p.returncode == ExitCode.child_process_error
-    assert not os.path.exists(no_outpdf)
+    assert not no_outpdf.exists()
     assert "SubprocessOutputError" in err
 
 
-def test_tesseract_crash_autorotate(spoof_tesseract_crash, resources, no_outpdf):
+def test_tesseract_crash_autorotate(resources, no_outpdf):
     p, out, err = run_ocrmypdf(
-        resources / 'ccitt.pdf', no_outpdf, '-r', env=spoof_tesseract_crash
+        resources / 'ccitt.pdf',
+        no_outpdf,
+        '-r',
+        '--plugin',
+        'tests/plugins/tesseract_crash.py',
     )
     assert p.returncode == ExitCode.child_process_error
-    assert not os.path.exists(no_outpdf)
-    assert "ERROR" in err
+    assert not no_outpdf.exists()
+    assert "uncaught exception" in err
     print(out)
     print(err)
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
 @pytest.mark.slow
-def test_tesseract_image_too_big(
-    renderer, spoof_tesseract_big_image_error, resources, outpdf
-):
+def test_tesseract_image_too_big(renderer, resources, outpdf):
     check_ocrmypdf(
         resources / 'hugemono.pdf',
         outpdf,
@@ -349,18 +362,22 @@ def test_tesseract_image_too_big(
         renderer,
         '--max-image-mpixels',
         '0',
-        env=spoof_tesseract_big_image_error,
+        '--plugin',
+        'tests/plugins/tesseract_big_image_error.py',
     )
 
 
-def test_algo4(resources, spoof_tesseract_noop, outpdf):
+def test_algo4(resources, outpdf):
     p, _, _ = run_ocrmypdf(
-        resources / 'encrypted_algo4.pdf', outpdf, env=spoof_tesseract_noop
+        resources / 'encrypted_algo4.pdf',
+        outpdf,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
     assert p.returncode == ExitCode.encrypted_pdf
 
 
-def test_jbig2_passthrough(spoof_tesseract_cache, resources, outpdf):
+def test_jbig2_passthrough(resources, outpdf):
     out = check_ocrmypdf(
         resources / 'jbig2.pdf',
         outpdf,
@@ -368,49 +385,64 @@ def test_jbig2_passthrough(spoof_tesseract_cache, resources, outpdf):
         'pdf',
         '--pdf-renderer',
         'hocr',
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
     out_pageinfo = PdfInfo(out)
     assert out_pageinfo[0].images[0].enc == Encoding.jbig2
 
 
-def test_masks(spoof_tesseract_noop, resources, outpdf):
+def test_masks(resources, outpdf):
     assert (
         ocrmypdf.ocr(
-            resources / 'masks.pdf', outpdf, tesseract_env=spoof_tesseract_noop
+            resources / 'masks.pdf', outpdf, plugins=['tests/plugins/tesseract_noop.py']
         )
         == ExitCode.ok
     )
 
 
-def test_linearized_pdf_and_indirect_object(spoof_tesseract_noop, resources, outpdf):
-    check_ocrmypdf(resources / 'epson.pdf', outpdf, env=spoof_tesseract_noop)
-
-
-def test_very_high_dpi(spoof_tesseract_cache, resources, outpdf):
-    "Checks for a Decimal quantize error with high DPI, etc"
-    check_ocrmypdf(resources / '2400dpi.pdf', outpdf, env=spoof_tesseract_cache)
-    pdfinfo = PdfInfo(outpdf)
-
-    image = pdfinfo[0].images[0]
-    assert isclose(image.xres, image.yres)
-    assert isclose(image.xres, 2400)
-
-
-def test_overlay(spoof_tesseract_noop, resources, outpdf):
+def test_linearized_pdf_and_indirect_object(resources, outpdf):
     check_ocrmypdf(
-        resources / 'overlay.pdf', outpdf, '--skip-text', env=spoof_tesseract_noop
+        resources / 'epson.pdf', outpdf, '--plugin', 'tests/plugins/tesseract_noop.py'
     )
 
 
-def test_destination_not_writable(spoof_tesseract_noop, resources, outdir):
+def test_very_high_dpi(resources, outpdf):
+    "Checks for a Decimal quantize error with high DPI, etc"
+    check_ocrmypdf(
+        resources / '2400dpi.pdf',
+        outpdf,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
+    )
+    pdfinfo = PdfInfo(outpdf)
+
+    image = pdfinfo[0].images[0]
+    assert isclose(image.dpi.x, image.dpi.y)
+    assert isclose(image.dpi.x, 2400)
+
+
+def test_overlay(resources, outpdf):
+    check_ocrmypdf(
+        resources / 'overlay.pdf',
+        outpdf,
+        '--skip-text',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+    )
+
+
+def test_destination_not_writable(resources, outdir):
     if os.name != 'nt' and (os.getuid() == 0 or os.geteuid() == 0):
         pytest.xfail(reason="root can write to anything")
     protected_file = outdir / 'protected.pdf'
     protected_file.touch()
     protected_file.chmod(0o400)  # Read-only
-    p, out, err = run_ocrmypdf(
-        resources / 'jbig2.pdf', protected_file, env=spoof_tesseract_noop
+    p, _out, _err = run_ocrmypdf(
+        resources / 'jbig2.pdf',
+        protected_file,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
     assert p.returncode == ExitCode.file_access_error, "Expected error"
 
@@ -447,7 +479,7 @@ THIS FILE IS INVALID
 '''
         )
 
-    p, out, err = run_ocrmypdf(
+    p, _out, err = run_ocrmypdf(
         resources / 'ccitt.pdf',
         outdir / 'out.pdf',
         '--pdf-renderer',
@@ -483,9 +515,13 @@ def test_user_words_ocr(resources, outdir):
     )
 
 
-def test_form_xobject(spoof_tesseract_noop, resources, outpdf):
+def test_form_xobject(resources, outpdf):
     check_ocrmypdf(
-        resources / 'formxobject.pdf', outpdf, '--force-ocr', env=spoof_tesseract_noop
+        resources / 'formxobject.pdf',
+        outpdf,
+        '--force-ocr',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
 
@@ -517,33 +553,36 @@ def test_pagesize_consistency(renderer, resources, outpdf):
     assert isclose(before_dims[1], after_dims[1], rel_tol=1e-4)
 
 
-def test_skip_big_with_no_images(spoof_tesseract_noop, resources, outpdf):
+def test_skip_big_with_no_images(resources, outpdf):
     check_ocrmypdf(
         resources / 'blank.pdf',
         outpdf,
         '--skip-big',
         '5',
         '--force-ocr',
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
 
 @pytest.mark.skipif(
-    '8.0.0' <= qpdf.version() <= '8.0.1',
-    reason="qpdf regression on pages with no contents",
+    '8.0.0' <= pikepdf.__libqpdf_version__ <= '8.0.1',
+    reason="libqpdf regression on pages with no contents",
 )
-def test_no_contents(spoof_tesseract_noop, resources, outpdf):
+def test_no_contents(resources, outpdf):
     check_ocrmypdf(
-        resources / 'no_contents.pdf', outpdf, '--force-ocr', env=spoof_tesseract_noop
+        resources / 'no_contents.pdf',
+        outpdf,
+        '--force-ocr',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
 
 @pytest.mark.parametrize(
     'image', ['baiona.png', 'baiona_gray.png', 'baiona_alpha.png', 'congress.jpg']
 )
-def test_compression_preserved(
-    spoof_tesseract_noop, ocrmypdf_exec, resources, image, outpdf
-):
+def test_compression_preserved(ocrmypdf_exec, resources, image, outpdf):
     input_file = str(resources / image)
     output_file = str(outpdf)
 
@@ -557,6 +596,8 @@ def test_compression_preserved(
             '150',
             '--output-type',
             'pdf',
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
             '-',
             output_file,
         ]
@@ -566,7 +607,7 @@ def test_compression_preserved(
             stderr=PIPE,
             stdin=input_stream,
             universal_newlines=True,
-            env=spoof_tesseract_noop,
+            check=False,
         )
 
         if im.mode in ('RGBA', 'LA'):
@@ -599,9 +640,7 @@ def test_compression_preserved(
         ('congress.jpg', 'lossless'),
     ],
 )
-def test_compression_changed(
-    spoof_tesseract_noop, ocrmypdf_exec, resources, image, compression, outpdf
-):
+def test_compression_changed(ocrmypdf_exec, resources, image, compression, outpdf):
     input_file = str(resources / image)
     output_file = str(outpdf)
 
@@ -618,6 +657,8 @@ def test_compression_changed(
             '0',
             '--pdfa-image-compression',
             compression,
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
             '-',
             output_file,
         ]
@@ -627,7 +668,7 @@ def test_compression_changed(
             stderr=PIPE,
             stdin=input_stream,
             universal_newlines=True,
-            env=spoof_tesseract_noop,
+            check=False,
         )
         assert p.returncode == ExitCode.ok, p.stderr
 
@@ -653,7 +694,7 @@ def test_compression_changed(
     im.close()
 
 
-def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
+def test_sidecar_pagecount(resources, outpdf):
     sidecar = outpdf.with_suffix('.txt')
     check_ocrmypdf(
         resources / '3small.pdf',
@@ -661,7 +702,8 @@ def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
         '--skip-text',
         '--sidecar',
         sidecar,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     pdfinfo = PdfInfo(resources / '3small.pdf')
@@ -677,10 +719,15 @@ def test_sidecar_pagecount(spoof_tesseract_cache, resources, outpdf):
     ), "Sidecar page count does not match PDF page count"
 
 
-def test_sidecar_nonempty(spoof_tesseract_cache, resources, outpdf):
+def test_sidecar_nonempty(resources, outpdf):
     sidecar = outpdf.with_suffix('.txt')
     check_ocrmypdf(
-        resources / 'ccitt.pdf', outpdf, '--sidecar', sidecar, env=spoof_tesseract_cache
+        resources / 'ccitt.pdf',
+        outpdf,
+        '--sidecar',
+        sidecar,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     with open(sidecar, 'r', encoding='utf-8') as f:
@@ -689,7 +736,7 @@ def test_sidecar_nonempty(spoof_tesseract_cache, resources, outpdf):
 
 
 @pytest.mark.parametrize('pdfa_level', ['1', '2', '3'])
-def test_pdfa_n(spoof_tesseract_cache, pdfa_level, resources, outpdf):
+def test_pdfa_n(pdfa_level, resources, outpdf):
     if pdfa_level == '3' and ghostscript.version() < '9.19':
         pytest.xfail(reason='Ghostscript >= 9.19 required')
 
@@ -698,7 +745,8 @@ def test_pdfa_n(spoof_tesseract_cache, pdfa_level, resources, outpdf):
         outpdf,
         '--output-type',
         'pdfa-' + pdfa_level,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     pdfa_info = file_claims_pdfa(outpdf)
@@ -710,44 +758,61 @@ def test_pdfa_n(spoof_tesseract_cache, pdfa_level, resources, outpdf):
 )
 @pytest.mark.slow
 def test_decompression_bomb(resources, outpdf):
-    p, out, err = run_ocrmypdf(resources / 'hugemono.pdf', outpdf)
+    p, _out, err = run_ocrmypdf(resources / 'hugemono.pdf', outpdf)
     assert 'decompression bomb' in err
 
-    p, out, err = run_ocrmypdf(
+    p, _out, err = run_ocrmypdf(
         resources / 'hugemono.pdf', outpdf, '--max-image-mpixels', '2000'
     )
     assert p.returncode == 0
 
 
-def test_text_curves(spoof_tesseract_noop, resources, outpdf):
+def test_text_curves(resources, outpdf):
     with patch('ocrmypdf._pipeline.VECTOR_PAGE_DPI', 100):
-        check_ocrmypdf(resources / 'vector.pdf', outpdf, env=spoof_tesseract_noop)
+        check_ocrmypdf(
+            resources / 'vector.pdf',
+            outpdf,
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
+        )
 
         info = PdfInfo(outpdf)
         assert len(info.pages[0].images) == 0, "added images to the vector PDF"
 
         check_ocrmypdf(
-            resources / 'vector.pdf', outpdf, '--force-ocr', env=spoof_tesseract_noop
+            resources / 'vector.pdf',
+            outpdf,
+            '--force-ocr',
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
         )
 
         info = PdfInfo(outpdf)
         assert len(info.pages[0].images) != 0, "force did not rasterize"
 
 
-def test_output_is_dir(spoof_tesseract_noop, resources, outdir):
-    p, out, err = run_ocrmypdf(
-        resources / 'trivial.pdf', outdir, '--force-ocr', env=spoof_tesseract_noop
+def test_output_is_dir(resources, outdir):
+    p, _out, err = run_ocrmypdf(
+        resources / 'trivial.pdf',
+        outdir,
+        '--force-ocr',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
     assert p.returncode == ExitCode.file_access_error
     assert 'is not a writable file' in err
 
 
 @pytest.mark.skipif(os.name == 'nt', reason="symlink needs admin permissions")
-def test_output_is_symlink(spoof_tesseract_noop, resources, outdir):
+def test_output_is_symlink(resources, outdir):
     sym = Path(outdir / 'this_is_a_symlink')
     sym.symlink_to(outdir / 'out.pdf')
-    p, out, err = run_ocrmypdf(
-        resources / 'trivial.pdf', sym, '--force-ocr', env=spoof_tesseract_noop
+    p, _out, err = run_ocrmypdf(
+        resources / 'trivial.pdf',
+        sym,
+        '--force-ocr',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
     assert p.returncode == ExitCode.ok, err
     assert (outdir / 'out.pdf').stat().st_size > 0, 'target file not created'
@@ -760,8 +825,6 @@ def test_livecycle(resources, no_outpdf):
 
 
 def test_version_check():
-    from ocrmypdf.exec import get_version
-
     with pytest.raises(MissingDependencyError):
         get_version('NOT_FOUND_UNLIKELY_ON_PATH')
 
@@ -785,9 +848,7 @@ def test_version_check():
         [0.0, 1, 'pdf', True],
     ],
 )
-def test_fast_web_view(
-    spoof_tesseract_noop, resources, outpdf, threshold, optimize, output_type, expected
-):
+def test_fast_web_view(resources, outpdf, threshold, optimize, output_type, expected):
     check_ocrmypdf(
         resources / 'trivial.pdf',
         outpdf,
@@ -797,18 +858,20 @@ def test_fast_web_view(
         optimize,
         '--output-type',
         output_type,
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
     with pikepdf.open(outpdf) as pdf:
         assert pdf.is_linearized == expected
 
 
-def test_image_dpi_not_image(caplog, spoof_tesseract_noop, resources, outpdf):
+def test_image_dpi_not_image(caplog, resources, outpdf):
     check_ocrmypdf(
         resources / 'trivial.pdf',
         outpdf,
         '--image-dpi',
         '100',
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
     assert '--image-dpi is being ignored' in caplog.text

@@ -33,11 +33,11 @@ import ocrmypdf
 
 INPUT_DIRECTORY = os.getenv('OCR_INPUT_DIRECTORY', '/input')
 OUTPUT_DIRECTORY = os.getenv('OCR_OUTPUT_DIRECTORY', '/output')
-OUTPUT_DIRECTORY_YEAR_MONTH = bool(os.getenv('OCR_OUTPUT_DIRECTORY_YEAR_MONTH', False))
-ON_SUCCESS_DELETE = bool(os.getenv('OCR_ON_SUCCESS_DELETE', False))
-DESKEW = bool(os.getenv('OCR_DESKEW', False))
+OUTPUT_DIRECTORY_YEAR_MONTH = bool(os.getenv('OCR_OUTPUT_DIRECTORY_YEAR_MONTH', ''))
+ON_SUCCESS_DELETE = bool(os.getenv('OCR_ON_SUCCESS_DELETE', ''))
+DESKEW = bool(os.getenv('OCR_DESKEW', ''))
 OCR_JSON_SETTINGS = json.loads(os.getenv('OCR_JSON_SETTINGS', '{}'))
-POLL_NEW_FILE_SECONDS = os.getenv('OCR_POLL_NEW_FILE_SECONDS', 1)
+POLL_NEW_FILE_SECONDS = int(os.getenv('OCR_POLL_NEW_FILE_SECONDS', '1'))
 USE_POLLING = bool(os.getenv('OCR_USE_POLLING', False))
 LOGLEVEL = os.getenv('OCR_LOGLEVEL', 'INFO').upper()
 PATTERNS = ['*.pdf']

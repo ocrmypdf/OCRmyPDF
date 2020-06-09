@@ -25,7 +25,6 @@ from ocrmypdf.pdfinfo import PdfInfo
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
 run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
-spoof = pytest.helpers.spoof
 
 
 @pytest.fixture
@@ -39,15 +38,26 @@ def test_userunit_ghostscript_fails(poster, no_outpdf, caplog):
     assert 'not supported by Ghostscript' in caplog.text
 
 
-def test_userunit_qpdf_passes(spoof_tesseract_cache, poster, outpdf):
+def test_userunit_pdf_passes(poster, outpdf):
     before = PdfInfo(poster)
-    check_ocrmypdf(poster, outpdf, '--output-type=pdf', env=spoof_tesseract_cache)
+    check_ocrmypdf(
+        poster,
+        outpdf,
+        '--output-type=pdf',
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
+    )
 
     after = PdfInfo(outpdf)
     assert isclose(before[0].width_inches, after[0].width_inches)
 
 
-def test_rotate_interaction(spoof_tesseract_cache, poster, outpdf):
+def test_rotate_interaction(poster, outpdf):
     check_ocrmypdf(
-        poster, outpdf, '--output-type=pdf', '--rotate-pages', env=spoof_tesseract_cache
+        poster,
+        outpdf,
+        '--output-type=pdf',
+        '--rotate-pages',
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )

@@ -20,9 +20,6 @@
 import logging
 import os
 import re
-import warnings
-from contextlib import suppress
-from functools import lru_cache
 from io import BytesIO
 from os import fspath
 from pathlib import Path
@@ -31,10 +28,11 @@ from subprocess import PIPE, CalledProcessError
 
 from PIL import Image
 
-from ..exceptions import MissingDependencyError, SubprocessOutputError
-from . import get_version, run
+from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
+from ocrmypdf.helpers import Resolution
+from ocrmypdf.subprocess import get_version, run
 
-gslog = logging.getLogger()
+log = logging.getLogger(__name__)
 
 GS = 'gs'
 if os.name == 'nt':
@@ -57,12 +55,11 @@ if os.name == 'nt':
     GS = Path(GS).stem
 
 
-@lru_cache(maxsize=1)
 def version():
     return get_version(GS)
 
 
-def jpeg_passthrough_available():
+def jpeg_passthrough_available() -> bool:
     """Returns True if the installed version of Ghostscript supports JPEG passthru
 
     Prior to 9.23, Ghostscript decode and re-encoded JPEGs internally. In 9.23
@@ -79,94 +76,25 @@ def jpeg_passthrough_available():
     return version() >= '9.24'
 
 
-def _gs_error_reported(stream):
+def _gs_error_reported(stream) -> bool:
     return re.search(r'error', stream, flags=re.IGNORECASE)
 
 
-def extract_text(input_file, pageno=1):
-    """Use the txtwrite device to get text layout information out
-
-    For details on options of -dTextFormat see
-    https://www.ghostscript.com/doc/current/VectorDevices.htm#TXT
-
-    Format is like
-    <page>
-    <line>
-    <span bbox="left top right bottom" font="..." size="...">
-    <char bbox="...." c="X"/>
-
-    :param pageno: number of page to extract, or all pages if None
-    :return: XML-ish text representation in bytes
-    """
-
-    if pageno is not None:
-        pages = ['-dFirstPage=%i' % pageno, '-dLastPage=%i' % pageno]
-    else:
-        pages = []
-
-    # Note due to bug https://bugs.ghostscript.com/show_bug.cgi?id=701971
-    # Ghostscript <= 9.50 will truncate output unless we write to stdout, so
-    # don't write to a file.
-    args_gs = (
-        [
-            GS,
-            '-dQUIET',
-            '-dSAFER',
-            '-dBATCH',
-            '-dNOPAUSE',
-            '-sDEVICE=txtwrite',
-            '-dTextFormat=0',
-        ]
-        + pages
-        + ['-o', '-', fspath(input_file), "-sstdout=%stderr"]
-    )
-
-    try:
-        p = run(args_gs, stdout=PIPE, stderr=PIPE, check=True)
-    except CalledProcessError as e:
-        raise SubprocessOutputError(
-            'Ghostscript text extraction failed\n%s\n%s'
-            % (input_file, e.stderr.decode(errors='replace'))
-        )
-
-    return p.stdout
-
-
 def rasterize_pdf(
-    input_file,
-    output_file,
-    xres,
-    yres,
-    raster_device,
-    log,
-    pageno=1,
-    page_dpi=None,
-    rotation=None,
-    filter_vector=False,
+    input_file: os.PathLike,
+    output_file: os.PathLike,
+    *,
+    raster_device: str,
+    raster_dpi: Resolution,
+    pageno: int = 1,
+    page_dpi: Resolution = None,
+    rotation: int = None,
+    filter_vector: bool = False,
 ):
-    """Rasterize one page of a PDF at resolution (xres, yres) in canvas units.
-
-    The image is sized to match the integer pixels dimensions implied by
-    (xres, yres) even if those numbers are noninteger. The image's DPI will
-     be overridden with the values in page_dpi.
-
-    :param input_file: pathlike
-    :param output_file: pathlike
-    :param xres: resolution at which to rasterize page
-    :param yres:
-    :param raster_device:
-    :param log:
-    :param pageno: page number to rasterize (beginning at page 1)
-    :param page_dpi: resolution tuple (x, y) overriding output image DPI
-    :param rotation: 0, 90, 180, 270: clockwise angle to rotate page
-    :param filter_vector: if True, remove vector graphics objects
-    :return:
-    """
-    res = round(xres, 6), round(yres, 6)
+    """Rasterize one page of a PDF at resolution raster_dpi in canvas units."""
+    raster_dpi = raster_dpi.round(6)
     if not page_dpi:
-        page_dpi = res
-    if not log:
-        log = gslog
+        page_dpi = raster_dpi
 
     args_gs = (
         [
@@ -178,7 +106,7 @@ def rasterize_pdf(
             f'-sDEVICE={raster_device}',
             f'-dFirstPage={pageno}',
             f'-dLastPage={pageno}',
-            f'-r{res[0]:f}x{res[1]:f}',
+            f'-r{raster_dpi.x:f}x{raster_dpi.y:f}',
         ]
         + (['-dFILTERVECTOR'] if filter_vector else [])
         + [
@@ -191,7 +119,6 @@ def rasterize_pdf(
         ]
     )
 
-    log.debug(args_gs)
     try:
         p = run(args_gs, stdout=PIPE, stderr=PIPE, check=True)
     except CalledProcessError as e:
@@ -216,43 +143,17 @@ def rasterize_pdf(
             elif rotation == 270:
                 im = im.transpose(Image.ROTATE_270)
             if rotation % 180 == 90:
-                page_dpi = page_dpi[1], page_dpi[0]
+                page_dpi = page_dpi.flip_axis()
         im.save(fspath(output_file), dpi=page_dpi)
 
 
 def generate_pdfa(
     pdf_pages,
-    output_file,
-    compression,
-    log,
-    threads=None,  # deprecated parameter
-    pdf_version='1.5',
-    pdfa_part='2',
+    output_file: os.PathLike,
+    compression: str,
+    pdf_version: str = '1.5',
+    pdfa_part: str = '2',
 ):
-    """Generate a PDF/A.
-
-    The pdf_pages, a list files, will be merged into output_file. One or more
-    PDF files may be merged. One of the files in this list must be a pdfmark
-    file that provides Ghostscript with details on how to perform the PDF/A
-    conversion. By default with we pick PDF/A-2b, but this works for 1 or 3.
-
-    compression can be 'jpeg', 'lossless', or an empty string. In 'jpeg',
-    Ghostscript is instructed to convert color and grayscale images to DCT
-    (JPEG encoding). In 'lossless' Ghostscript is told to convert images to
-    Flate (lossless/PNG). If the parameter is omitted Ghostscript is left to
-    make its own decisions about how to encode images; it appears to use a
-    heuristic to decide how to encode images. As of Ghostscript 9.25, we
-    support passthrough JPEG which allows Ghostscript to avoid transcoding
-    images entirely. (The feature was added in 9.23 but broken, and the 9.24
-    release of Ghostscript had regressions, so we don't support it until 9.25.)
-    """
-    if not log:
-        log = gslog
-    if threads is not None:
-        warnings.warn(
-            "use of deprecated parameter 'threads'", category=DeprecationWarning
-        )
-
     compression_args = []
     if compression == 'jpeg':
         compression_args = [

@@ -13,6 +13,33 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v10.0.0 (not yet released)
+==========================
+
+**Breaking changes**
+
+-  Support for pdfminer.six version 20181108 has been dropped, along with a
+   monkeypatch that made this version work.
+-  Ghostscript is no longer used for finding the location of text in PDFs, and
+   APIs related to this feature have been removed.
+-  Output messages are now displayed in color (when supported by the terminal)
+   and prefixes describing the severity of the message are removed. As such
+   programs that parse OCRmyPDF's log message will need to be revised. (Please
+   consider using OCRmyPDF as a library instead.)
+-  Code describing the resolution in DPI of images was refactored into a
+   ``ocrmypdf.helpers.Resolution`` class.
+-  A deprecated parameter in ``ocrmypdf.exec.ghostscript.generate_pdfa`` was
+   removed.
+-  The deprecated module ``ocrmypdf.exec.qpdf`` was removed.
+-  The ``ocrmypdf.hocrtransform`` module has been updated to follow PEP8 naming
+   conventions.
+
+**New features**
+
+-  PDF page scanning is now parallelized across CPUs, speeding up the "Scan"
+   phase for files with a high page count.
+-  Colored log messages.
+
 v9.8.2
 ======
 

@@ -26,8 +26,8 @@ image processing and OCR to existing PDFs.
    docker
    advanced
    batch
-   security
    performance
+   pdfsecurity
    errors
 
 .. toctree::
@@ -35,6 +35,7 @@ image processing and OCR to existing PDFs.
    :maxdepth: 2
 
    api
+   plugins
    contributing
 
 Indices and tables

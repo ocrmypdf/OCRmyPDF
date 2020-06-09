@@ -26,7 +26,7 @@ from PIL import Image
 from reportlab.pdfgen.canvas import Canvas
 
 from ocrmypdf import pdfinfo
-from ocrmypdf.exec import ghostscript
+from ocrmypdf._exec import ghostscript
 from ocrmypdf.pdfinfo import Colorspace, Encoding
 
 # pylint: disable=protected-access
@@ -85,8 +85,8 @@ def test_single_page_image(outdir):
     assert pdfimage.color == Colorspace.gray
 
     # DPI in a 1"x1" is the image width
-    assert isclose(pdfimage.xres, 8)
-    assert isclose(pdfimage.yres, 8)
+    assert isclose(pdfimage.dpi.x, 8)
+    assert isclose(pdfimage.dpi.y, 8)
 
 
 def test_single_page_inline_image(outdir):
@@ -105,7 +105,7 @@ def test_single_page_inline_image(outdir):
     info = pdfinfo.PdfInfo(filename)
     print(info)
     pdfimage = info[0].images[0]
-    assert isclose(pdfimage.xres, 8)
+    assert isclose(pdfimage.dpi.x, 8)
     assert pdfimage.color == Colorspace.gray
     assert pdfimage.width == 8
 
@@ -117,7 +117,7 @@ def test_jpeg(resources, outdir):
 
     pdfimage = pdf[0].images[0]
     assert pdfimage.enc == Encoding.jpeg
-    assert isclose(pdfimage.xres, 150)
+    assert isclose(pdfimage.dpi.x, 150)
 
 
 def test_form_xobject(resources):
@@ -139,7 +139,7 @@ def test_no_contents(resources):
 def test_oversized_page(resources):
     pdf = pdfinfo.PdfInfo(resources / 'poster.pdf')
     image = pdf[0].images[0]
-    assert image.width * image.xres > 200, "this is supposed to be oversized"
+    assert image.width * image.dpi.x > 200, "this is supposed to be oversized"
 
 
 def test_pickle(resources):
@@ -149,22 +149,6 @@ def test_pickle(resources):
     filename = resources / 'graph_ocred.pdf'
     pdf = pdfinfo.PdfInfo(filename)
     pickle.dumps(pdf)
-
-
-def test_regex():
-    rx = pdfinfo.ghosttext.regex_remove_char_tags
-
-    must_match = [
-        b'<char bbox="0 108 0 108" c="/"/>',
-        b'<char bbox="0 108 0 108" c=">"/>',
-        b'<char bbox="0 108 0 108" c="X"/>',
-    ]
-    must_not_match = [b'<span stuff="c">', b'<span>', b'</span>', b'</page>']
-
-    for s in must_match:
-        assert rx.match(s)
-    for s in must_not_match:
-        assert not rx.match(s)
 
 
 def test_vector(resources):
@@ -184,16 +168,9 @@ def test_ocr_detection(resources):
 @pytest.mark.parametrize(
     'testfile', ('truetype_font_nomapping.pdf', 'type3_font_nomapping.pdf')
 )
-@pytest.mark.xfail(
-    ghostscript.version() in ('9.52',), reason="gs 9.52 txtwrite doesn't work"
-)
 def test_corrupt_font_detection(resources, testfile):
     filename = resources / testfile
-    with pytest.raises(NotImplementedError):
-        pdf = pdfinfo.PdfInfo(filename)
-        pdf[0].has_corrupt_text
-
-    pdf = pdfinfo.PdfInfo(filename, detailed_page_analysis=True)
+    pdf = pdfinfo.PdfInfo(filename)
     assert pdf[0].has_corrupt_text
 
 

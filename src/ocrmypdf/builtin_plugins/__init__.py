@@ -1,4 +1,4 @@
-# © 2018 James R. Barlow: github.com/jbarlow83
+# © 2020 James R. Barlow: github.com/jbarlow83
 #
 # This file is part of OCRmyPDF.
 #
@@ -14,12 +14,3 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
-
-import pytest
-
-import ocrmypdf.exec.qpdf as qpdf
-
-
-def test_qpdf_error(resources):
-    assert qpdf.check(resources / 'blank.pdf')
-    assert not qpdf.check(__file__)

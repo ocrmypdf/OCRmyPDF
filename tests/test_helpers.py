@@ -24,6 +24,7 @@ from unittest.mock import MagicMock
 import pytest
 
 import ocrmypdf.helpers as helpers
+from ocrmypdf.subprocess import shim_paths_with_program_files
 
 
 class TestSafeSymlink:
@@ -106,7 +107,6 @@ def test_shim_paths(tmp_path):
     (progfiles / 'gs' / '9.52' / 'bin').mkdir(parents=True)
     syspath = tmp_path / 'bin'
     env = {'PROGRAMFILES': str(progfiles), 'PATH': str(syspath)}
-    from ocrmypdf.exec import shim_paths_with_program_files
 
     result_str = shim_paths_with_program_files(env=env)
     results = result_str.split(os.pathsep)

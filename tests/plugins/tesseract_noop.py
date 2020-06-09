@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# © 2016 James R. Barlow: github.com/jbarlow83
+# © 2020 James R. Barlow: github.com/jbarlow83
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,7 +19,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-"""Tesseract no-op spoof
+"""Tesseract no-op plugin
 
 To quickly run tests where getting OCR output is not necessary.
 
@@ -31,21 +30,10 @@ In 'pdf' mode, convert the image to PDF using another program.
 In orientation check mode, report the orientation is upright.
 """
 
-import sys
-from pathlib import Path
-
-import img2pdf
 import pikepdf
 from PIL import Image
 
-VERSION_STRING = '''tesseract 4.0.0
- leptonica-1.77.0
-  libjpeg 9c : libpng 1.6.35 : libtiff 4.0.10 : zlib 1.2.11 : libopenjp2 2.3.0
- Found AVX2
- Found AVX
- Found SSE
-SPOOFED
-'''
+from ocrmypdf import OcrEngine, OrientationConfidence, hookimpl
 
 HOCR_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -70,65 +58,49 @@ HOCR_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
 </html>'''
 
 
-def main():
-    if sys.argv[1] == '--version':
-        print(VERSION_STRING, file=sys.stderr)
-        sys.exit(0)
-    elif sys.argv[1] == '--list-langs':
-        print('List of available languages (1):\neng', file=sys.stderr)
-        sys.exit(0)
-    elif sys.argv[-2] == '--print-parameters':
-        print("Some parameters", file=sys.stderr)
-        print("textonly_pdf\t1\tSome help text")
-        sys.exit(0)
-    elif sys.argv[-2] == 'hocr':
-        inputf = sys.argv[-4]
-        output = sys.argv[-3]
-        with Image.open(inputf) as im, open(
-            output + '.hocr', 'w', encoding='utf-8'
+class NoopOcrEngine(OcrEngine):
+    @staticmethod
+    def version():
+        return '4.0.0'
+
+    @staticmethod
+    def creator_tag(options):
+        tag = '-PDF' if options.pdf_renderer == 'sandwich' else ''
+        return f"NO-OP {tag} {NoopOcrEngine.version()}"
+
+    def __str__(self):
+        return f"NO-OP {NoopOcrEngine.version()}"
+
+    @staticmethod
+    def languages(options):
+        return {'eng'}
+
+    @staticmethod
+    def get_orientation(input_file, options):
+        return OrientationConfidence(angle=0, confidence=0.0)
+
+    @staticmethod
+    def generate_hocr(input_file, output_hocr, output_text, options):
+        with Image.open(input_file) as im, open(
+            output_hocr, 'w', encoding='utf-8'
         ) as f:
             w, h = im.size
             f.write(HOCR_TEMPLATE.format(str(w), str(h)))
-        with open(output + '.txt', 'w') as f:
+        with open(output_text, 'w') as f:
             f.write('')
-    elif sys.argv[-2] == 'pdf':
-        if 'textonly_pdf=1' in sys.argv:
-            inputf = sys.argv[-4]
-            output = sys.argv[-3]
-            with Image.open(inputf) as im:
-                dpi = im.info['dpi']
-                pagesize = im.size[0] / dpi[0], im.size[1] / dpi[1]
-                ptsize = pagesize[0] * 72, pagesize[1] * 72
 
-            pdf_out = pikepdf.new()
-            pdf_out.add_blank_page(page_size=ptsize)
-            pdf_out.save(Path(output).with_suffix('.pdf'), static_id=True)
-            Path(output).with_suffix('.txt').write_text('')
-        else:
-            inputf = sys.argv[-4]
-            output = sys.argv[-3]
-            pdf_bytes = img2pdf.convert([inputf], dpi=300)
-            with open(output + '.pdf', 'wb') as f:
-                f.write(pdf_bytes)
-            with open(output + '.txt', 'w') as f:
-                f.write('')
-    elif sys.argv[-1] == 'stdout':
-        inputf = sys.argv[-2]
-        print(
-            """Orientation: 0
-Orientation in degrees: 0
-Orientation confidence: 100.00
-Script: 1
-Script confidence: 100.00""",
-            file=sys.stderr,
-        )
-    else:
-        print("Spoof doesn't understand arguments", file=sys.stderr)
-        print(sys.argv, file=sys.stderr)
-        sys.exit(1)
-
-    sys.exit(0)
+    @staticmethod
+    def generate_pdf(input_file, output_pdf, output_text, options):
+        with Image.open(input_file) as im:
+            dpi = im.info['dpi']
+            pagesize = im.size[0] / dpi[0], im.size[1] / dpi[1]
+        ptsize = pagesize[0] * 72, pagesize[1] * 72
+        pdf = pikepdf.new()
+        pdf.add_blank_page(page_size=ptsize)
+        pdf.save(output_pdf, static_id=True)
+        output_text.write_text('')
 
 
-if __name__ == '__main__':
-    main()
+@hookimpl
+def get_ocr_engine():
+    return NoopOcrEngine()

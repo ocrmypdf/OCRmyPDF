@@ -68,7 +68,7 @@ license, OCRmyPDF's GPL license, and any other licenses.
 
 Setting aside these concerns, a side effect of OCRmyPDF is it may
 incidentally sanitize PDFs that contain certain types of malware. It
-runs ``qpdf`` to repair the PDF, which could correct malformed PDF
+repairs the PDF with pikepdf/libqpdf, which could correct malformed PDF
 structures that are part of an attack. When PDF/A output is selected
 (the default), the input PDF is partially reconstructed by Ghostscript.
 When ``--force-ocr`` is used, all pages are rasterized and reconverted
@@ -144,10 +144,9 @@ set, the document cannot be viewed without the password.
 Either way, OCRmyPDF does not remove passwords from PDFs and exits with
 an error on encountering them.
 
-``qpdf``, one of OCRmyPDF's dependencies, can remove passwords. If the
-owner and user password are set, a password is required for ``qpdf``. If
-only the owner password is set, then the password can be stripped, even
-if one does not have the owner password.
+``qpdf`` can remove passwords. If the owner and user password are set, a
+password is required for ``qpdf``. If only the owner password is set, then the
+password can be stripped, even if one does not have the owner password.
 
 After OCR is applied, password protection is not permitted on PDF/A
 documents but the file can be converted to regular PDF.

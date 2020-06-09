@@ -148,7 +148,8 @@ In addition to tesseract, OCRmyPDF uses the following external binaries:
 
 -  ``gs`` (Ghostscript)
 -  ``unpaper``
--  ``qpdf``
+-  ``pngquant``
+-  ``jbig2``
 
 In each case OCRmyPDF will search the ``PATH`` environment variable to
 locate the binaries.

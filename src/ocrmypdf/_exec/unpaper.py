@@ -20,25 +20,27 @@
 
 """Interface to unpaper executable"""
 
+import logging
 import os
 import shlex
-from functools import lru_cache
+from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError
 from tempfile import TemporaryDirectory
 
 from PIL import Image
 
-from ..exceptions import MissingDependencyError, SubprocessOutputError
-from . import get_version
-from . import run as external_run
+from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
+from ocrmypdf.subprocess import get_version
+from ocrmypdf.subprocess import run as external_run
+
+log = logging.getLogger(__name__)
 
 
-@lru_cache(maxsize=1)
 def version():
     return get_version('unpaper')
 
 
-def run(input_file, output_file, dpi, log, mode_args):
+def run(input_file, output_file, dpi, mode_args):
     args_unpaper = ['unpaper', '-v', '--dpi', str(dpi)] + mode_args
 
     SUFFIXES = {'1': '.pbm', 'L': '.pgm', 'RGB': '.ppm'}
@@ -64,8 +66,8 @@ def run(input_file, output_file, dpi, log, mode_args):
                 "Failed to convert image to a supported format."
             ) from e
 
-        input_pnm = os.path.join(tmpdir, f'input{suffix}')
-        output_pnm = os.path.join(tmpdir, f'output{suffix}')
+        input_pnm = Path(tmpdir) / f'input{suffix}'
+        output_pnm = Path(tmpdir) / f'output{suffix}'
         im.save(input_pnm, format='PPM')
 
         # To prevent any shenanigans from accepting arbitrary parameters in
@@ -75,7 +77,7 @@ def run(input_file, output_file, dpi, log, mode_args):
         # 3) append absolute paths for the input and output file
         # This should ensure that a user cannot clobber some other file with
         # their unpaper arguments (whether intentionally or otherwise)
-        args_unpaper.extend([input_pnm, output_pnm])
+        args_unpaper.extend([os.fspath(input_pnm), os.fspath(output_pnm)])
         try:
             proc = external_run(
                 args_unpaper,
@@ -110,7 +112,7 @@ def validate_custom_args(args: str):
     return unpaper_args
 
 
-def clean(input_file, output_file, dpi, log, unpaper_args=None):
+def clean(input_file, output_file, dpi, unpaper_args=None):
     default_args = [
         '--layout',
         'none',
@@ -124,4 +126,4 @@ def clean(input_file, output_file, dpi, log, unpaper_args=None):
     ]
     if not unpaper_args:
         unpaper_args = default_args
-    run(input_file, output_file, dpi, log, unpaper_args)
+    run(input_file, output_file, dpi, unpaper_args)

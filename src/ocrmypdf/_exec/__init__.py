@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# © 2015 James R. Barlow: github.com/jbarlow83
+# © 2020 James R. Barlow: github.com/jbarlow83
 #
 # This file is part of OCRmyPDF.
 #
@@ -16,4 +15,4 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from ocrmypdf.pdfinfo.info import Colorspace, Encoding, PdfInfo
+"""Manage third party executables"""

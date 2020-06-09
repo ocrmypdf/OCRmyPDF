@@ -1,4 +1,4 @@
-# © 2016 James R. Barlow: github.com/jbarlow83
+# © 2020 James R. Barlow: github.com/jbarlow83
 #
 # This file is part of OCRmyPDF.
 #
@@ -23,31 +23,22 @@ import re
 import shutil
 import sys
 from collections.abc import Mapping
+from contextlib import suppress
 from distutils.version import LooseVersion
 from functools import lru_cache
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError
 from subprocess import run as subprocess_run
 
-from ..exceptions import ExitCode, MissingDependencyError
+from ocrmypdf.exceptions import MissingDependencyError
 
 log = logging.getLogger(__name__)
-
-
-def _get_program(args, env=None):
-    program = args[0]
-    test_path = env.get('_OCRMYPDF_TEST_PATH', '')
-    if test_path:
-        program = shutil.which(program, path=test_path)
-    return program
 
 
 def run(args, *, env=None, **kwargs):
     """Wrapper around subprocess.run()
 
-    The main purpose of this wrapper is to allow us to substitute the main program
-    for a spoof in the test suite. The hidden variable _OCRMYPDF_TEST_PATH replaces
-    the main PATH as a location to check for programs to run.
+    The main purpose of this wrapper is to log subprocess output.
 
     Secondly we have to account for behavioral differences in Windows in particular.
     Creating symbolic links in Windows requires administrator privileges and
@@ -62,38 +53,56 @@ def run(args, *, env=None, **kwargs):
         env = os.environ
 
     # Search in spoof path if necessary
-    program = _get_program(args, env)
-
-    # If we are running a .py on Windows, ensure we call it with this Python
-    # (to support test suite shims)
-    if os.name == 'nt' and program.lower().endswith('.py'):
-        args = [sys.executable, program] + args[1:]
-    else:
-        args = [program] + args[1:]
+    program = args[0]
 
     if os.name == 'nt':
-        paths = os.pathsep.join(os.get_exec_path(env))
-        if not shutil.which(args[0], path=paths):
-            shimmed_path = shim_paths_with_program_files(env)
-            new_args0 = shutil.which(args[0], path=shimmed_path)
-            if new_args0:
-                args[0] = new_args0
+        args = _fix_windows_args(program, args, env)
 
-    process_log = log.getChild(os.path.basename(program))
-    process_log.debug("Running: %s", args)
+    log.debug("Running: %s", args)
+    process_log = log.getChild('subprocess.' + os.path.basename(program))
     if sys.version_info < (3, 7) and os.name == 'nt':
         # Can't use close_fds=True on Windows with Python 3.6 or older
         # https://bugs.python.org/issue19575, etc.
         kwargs['close_fds'] = False
-    proc = subprocess_run(args, env=env, **kwargs)
-    if process_log.isEnabledFor(logging.DEBUG):
-        try:
-            stderr = proc.stderr.decode('utf-8', 'replace')
-        except AttributeError:
-            stderr = proc.stderr
-        if stderr:
+
+    stderr = None
+    try:
+        proc = subprocess_run(args, env=env, **kwargs)
+    except CalledProcessError as e:
+        stderr = getattr(e, 'stderr', None)
+        raise
+    else:
+        stderr = getattr(proc, 'stderr', None)
+    finally:
+        if process_log.isEnabledFor(logging.DEBUG) and stderr:
+            with suppress(AttributeError, UnicodeDecodeError):
+                stderr = stderr.decode('utf-8', 'replace')
             process_log.debug("stderr = %s", stderr)
     return proc
+
+
+def _fix_windows_args(program, args, env):
+    """Adjust our desired program and command line arguments for use on Windows"""
+
+    if sys.version_info < (3, 8):
+        # bpo-33617 - Windows needs manual Path -> str conversion
+        args = [os.fspath(arg) for arg in args]
+        program = os.fspath(program)
+
+    # If we are running a .py on Windows, ensure we call it with this Python
+    # (to support test suite shims)
+    if program.lower().endswith('.py'):
+        args = [sys.executable] + args
+
+    paths = os.pathsep.join(os.get_exec_path(env))
+    if not shutil.which(args[0], path=paths):
+        # If the program we want is not on the PATH, add some interesting
+        # locations in %PROGRAMFILES% to the PATH and try again
+        shimmed_path = shim_paths_with_program_files(env)
+        new_args0 = shutil.which(args[0], path=shimmed_path)
+        if new_args0:
+            args[0] = new_args0
+    return args
 
 
 def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)', env=None):
@@ -260,13 +269,12 @@ def check_external_program(
     need_version,
     required_for=None,
     recommended=False,
-    **kwargs,  # To consume log parameter
 ):
-    if kwargs:
-        if not 'log' in kwargs:
-            log.warning('check_external_program(log=...) is deprecated')
     try:
-        found_version = version_checker()
+        if callable(version_checker):
+            found_version = version_checker()
+        else:
+            found_version = version_checker
     except (CalledProcessError, FileNotFoundError, MissingDependencyError):
         _error_missing_program(program, package, required_for, recommended)
         if not recommended:

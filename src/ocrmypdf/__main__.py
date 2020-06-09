@@ -19,18 +19,21 @@
 import logging
 import os
 import sys
+from multiprocessing import set_start_method
 
-from . import __version__
-from ._jobcontext import make_logger
-from ._sync import run_pipeline
-from ._validation import check_closed_streams, check_options
-from .api import Verbosity, configure_logging
-from .cli import parser
-from .exceptions import BadArgsError, ExitCode, MissingDependencyError
+from ocrmypdf import __version__
+from ocrmypdf._plugin_manager import get_parser_options_plugins
+from ocrmypdf._sync import run_pipeline
+from ocrmypdf._validation import check_closed_streams, check_options
+from ocrmypdf.api import Verbosity, configure_logging
+from ocrmypdf.cli import get_parser, plugins_only_parser
+from ocrmypdf.exceptions import BadArgsError, ExitCode, MissingDependencyError
+
+log = logging.getLogger('ocrmypdf')
 
 
 def run(args=None):
-    options = parser.parse_args(args=args)
+    parser, options, plugin_manager = get_parser_options_plugins(args=args)
 
     if not check_closed_streams(options):
         return ExitCode.bad_args
@@ -47,10 +50,9 @@ def run(args=None):
     configure_logging(
         verbosity, progress_bar_friendly=options.progress_bar, manage_root_logger=True
     )
-    log = make_logger('ocrmypdf')
-    log.debug('ocrmypdf ' + __version__)
+    log.debug('ocrmypdf %s', __version__)
     try:
-        check_options(options)
+        check_options(options, plugin_manager)
     except ValueError as e:
         log.error(e)
         return ExitCode.bad_args
@@ -61,9 +63,11 @@ def run(args=None):
         log.error(e)
         return ExitCode.missing_dependency
 
-    result = run_pipeline(options=options)
+    result = run_pipeline(options=options, plugin_manager=plugin_manager)
     return result
 
 
 if __name__ == '__main__':
+    if sys.platform == 'darwin' and sys.version_info < (3, 8):
+        set_start_method('spawn')  # see python bpo-33725
     sys.exit(run())

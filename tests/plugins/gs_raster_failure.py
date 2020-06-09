@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# © 2016 James R. Barlow: github.com/jbarlow83
+# © 2020 James R. Barlow: github.com/jbarlow83
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,30 +19,41 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+from pathlib import Path
+from subprocess import CalledProcessError
+from unittest.mock import patch
 
-import os
-import sys
-
-from gs import real_ghostscript
-
-"""Replicate Ghostscript raster failure while allowing rendering"""
-
-
-def main():
-    if '--version' in sys.argv:
-        print('9.20')
-        print('SPOOFED: ' + os.path.basename(__file__))
-        sys.exit(0)
-
-    # For non-image rastering calls, use real ghostscript
-    if '-sDEVICE=pdfwrite' in sys.argv or '-sDEVICE=txtwrite' in sys.argv:
-        real_ghostscript(sys.argv)
-        return
-
-    # Fail
-    print("ERROR: Ghost story archive not found", file=sys.stderr)
-    sys.exit(1)
+from ocrmypdf import hookimpl
+from ocrmypdf.builtin_plugins import ghostscript
+from ocrmypdf.subprocess import run
 
 
-if __name__ == '__main__':
-    main()
+def raise_gs_fail(*args, **kwargs):
+    raise CalledProcessError(
+        1, 'gs', output=b"", stderr=b"ERROR: Ghost story archive not found"
+    )
+
+
+@hookimpl
+def rasterize_pdf_page(
+    input_file,
+    output_file,
+    raster_device,
+    raster_dpi,
+    pageno,
+    page_dpi=None,
+    rotation=None,
+    filter_vector=False,
+) -> Path:
+    with patch('ocrmypdf._exec.ghostscript.run', new=raise_gs_fail):
+        ghostscript.rasterize_pdf_page(
+            input_file=input_file,
+            output_file=output_file,
+            raster_device=raster_device,
+            raster_dpi=raster_dpi,
+            pageno=pageno,
+            page_dpi=page_dpi,
+            rotation=rotation,
+            filter_vector=filter_vector,
+        )
+        return output_file

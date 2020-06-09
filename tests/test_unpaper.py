@@ -20,92 +20,93 @@ from unittest.mock import patch
 
 import pytest
 
+from ocrmypdf._plugin_manager import get_parser_options_plugins
 from ocrmypdf._validation import check_options
-from ocrmypdf.cli import parser
+from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
-from ocrmypdf.exec import unpaper
 
 # pytest.helpers is dynamic
-# pylint: disable=no-member
+# pylint: disable=no-member,redefined-outer-name
 # pylint: disable=w0612
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
-spoof = pytest.helpers.spoof
-
-
-def have_unpaper():
-    try:
-        unpaper.version()
-    except Exception:
-        return False
-    else:
-        return True
-
-
-@pytest.fixture
-def spoof_unpaper_oldversion(tmp_path_factory):
-    return spoof(tmp_path_factory, unpaper="unpaper_oldversion.py")
+have_unpaper = pytest.helpers.have_unpaper
 
 
 def test_no_unpaper(resources, no_outpdf):
     input_ = fspath(resources / "c02-22.pdf")
     output = fspath(no_outpdf)
-    options = parser.parse_args(args=["--clean", input_, output])
 
-    with patch("ocrmypdf.exec.unpaper.version") as mock_unpaper_version:
+    _parser, options, pm = get_parser_options_plugins(["--clean", input_, output])
+    with patch("ocrmypdf._exec.unpaper.version") as mock_unpaper_version:
         mock_unpaper_version.side_effect = FileNotFoundError("unpaper")
+
         with pytest.raises(MissingDependencyError):
-            check_options(options)
+            check_options(options, pm)
 
 
-def test_old_unpaper(spoof_unpaper_oldversion, resources, no_outpdf):
-    p, out, err = run_ocrmypdf(
-        resources / "c02-22.pdf", no_outpdf, "--clean", env=spoof_unpaper_oldversion
+def test_old_unpaper(resources, no_outpdf):
+    input_ = fspath(resources / "c02-22.pdf")
+    output = fspath(no_outpdf)
+
+    _parser, options, pm = get_parser_options_plugins(["--clean", input_, output])
+    with patch("ocrmypdf._exec.unpaper.version") as mock_unpaper_version:
+        mock_unpaper_version.return_value = '0.5'
+
+        with pytest.raises(MissingDependencyError):
+            check_options(options, pm)
+
+
+@pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
+def test_clean(resources, outpdf):
+    check_ocrmypdf(
+        resources / "skew.pdf",
+        outpdf,
+        "-c",
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
-    assert p.returncode == ExitCode.missing_dependency
 
 
 @pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
-def test_clean(spoof_tesseract_noop, resources, outpdf):
-    check_ocrmypdf(resources / "skew.pdf", outpdf, "-c", env=spoof_tesseract_noop)
-
-
-@pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
-def test_unpaper_args_valid(spoof_tesseract_noop, resources, outpdf):
+def test_unpaper_args_valid(resources, outpdf):
     check_ocrmypdf(
         resources / "skew.pdf",
         outpdf,
         "-c",
         "--unpaper-args",
         "--layout double",  # Spaces required here
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
 
 @pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
-def test_unpaper_args_invalid_filename(spoof_tesseract_noop, resources, outpdf):
+def test_unpaper_args_invalid_filename(resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / "skew.pdf",
         outpdf,
         "-c",
         "--unpaper-args",
         "/etc/passwd",
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
     assert "No filenames allowed" in err
     assert p.returncode == ExitCode.bad_args
 
 
 @pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
-def test_unpaper_args_invalid(spoof_tesseract_noop, resources, outpdf):
+def test_unpaper_args_invalid(resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / "skew.pdf",
         outpdf,
         "-c",
         "--unpaper-args",
         "unpaper is not going to like these arguments",
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
     # Can't tell difference between unpaper choking on bad arguments or some
     # other unpaper failure

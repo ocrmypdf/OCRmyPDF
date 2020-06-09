@@ -21,18 +21,18 @@ import re
 from collections import defaultdict, namedtuple
 from decimal import Decimal
 from enum import Enum
+from functools import partial
 from math import hypot, isclose
-from os import PathLike, fspath
+from os import PathLike
 from pathlib import Path
 from warnings import warn
 
 import pikepdf
 from pikepdf import PdfMatrix
-from tqdm import tqdm
 
+from ocrmypdf._concurrent import exec_progress_pool
 from ocrmypdf.exceptions import EncryptedPdfError
-from ocrmypdf.exec import ghostscript
-from ocrmypdf.pdfinfo import ghosttext
+from ocrmypdf.helpers import Resolution, available_cpu_count
 from ocrmypdf.pdfinfo.layout import get_page_analysis, get_text_boxes
 
 logger = logging.getLogger()
@@ -265,7 +265,7 @@ def _get_dpi(ctm_shorthand, image_size):
     dpi_w = scale_w * 72.0
     dpi_h = scale_h * 72.0
 
-    return dpi_w, dpi_h
+    return Resolution(dpi_w, dpi_h)
 
 
 class ImageInfo:
@@ -356,12 +356,8 @@ class ImageInfo:
         return self._enc
 
     @property
-    def xres(self):
-        return _get_dpi(self._shorthand, (self._width, self._height))[0]
-
-    @property
-    def yres(self):
-        return _get_dpi(self._shorthand, (self._width, self._height))[1]
+    def dpi(self):
+        return _get_dpi(self._shorthand, (self._width, self._height))
 
     def __repr__(self):
         class_locals = {
@@ -371,7 +367,7 @@ class ImageInfo:
         }
         return (
             "<ImageInfo '{name}' {type_} {width}x{height} {color} "
-            "{comp} {bpc} {enc} {xres}x{yres}>"
+            "{comp} {bpc} {enc} {dpi}>"
         ).format(**class_locals)
 
 
@@ -558,7 +554,7 @@ def simplify_textboxes(miner, textbox_getter):
         yield TextboxInfo(box.bbox, visible, corrupt)
 
 
-def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, xmltext: str):
+def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike):
     pageinfo = {}
     pageinfo['pageno'] = pageno
     pageinfo['images'] = []
@@ -568,16 +564,10 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, xmltext: str):
     width_pt = mediabox[2] - mediabox[0]
     height_pt = mediabox[3] - mediabox[1]
 
-    if xmltext is not None:
-        bboxes = ghosttext.page_get_textblocks(
-            fspath(infile), pageno, xmltext=xmltext, height=height_pt
-        )
-        pageinfo['bboxes'] = bboxes
-    else:
-        pscript5_mode = str(pdf.docinfo.get('/Creator')).startswith('PScript5')
-        miner = get_page_analysis(infile, pageno, pscript5_mode)
-        pageinfo['textboxes'] = list(simplify_textboxes(miner, get_text_boxes))
-        bboxes = (box.bbox for box in pageinfo['textboxes'])
+    pscript5_mode = str(pdf.docinfo.get('/Creator')).startswith('PScript5')
+    miner = get_page_analysis(infile, pageno, pscript5_mode)
+    pageinfo['textboxes'] = list(simplify_textboxes(miner, get_text_boxes))
+    bboxes = (box.bbox for box in pageinfo['textboxes'])
 
     pageinfo['has_text'] = _page_has_text(bboxes, width_pt, height_pt)
 
@@ -607,36 +597,69 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, xmltext: str):
 
     pageinfo['images'] = [im for im in contentsinfo if isinstance(im, ImageInfo)]
     if pageinfo['images']:
-        xres = Decimal(max(image.xres for image in pageinfo['images']))
-        yres = Decimal(max(image.yres for image in pageinfo['images']))
-        pageinfo['xres'], pageinfo['yres'] = xres, yres
-        pageinfo['width_pixels'] = int(round(xres * pageinfo['width_inches']))
-        pageinfo['height_pixels'] = int(round(yres * pageinfo['height_inches']))
+        dpi = Resolution(0.0, 0.0).take_max(image.dpi for image in pageinfo['images'])
+        pageinfo['dpi'] = dpi
+        pageinfo['width_pixels'] = int(round(dpi.x * float(pageinfo['width_inches'])))
+        pageinfo['height_pixels'] = int(round(dpi.y * float(pageinfo['height_inches'])))
 
     return pageinfo
 
 
-def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None, progbar=False):
+worker_pdf = None
+
+
+def _pdf_pageinfo_sync_init(infile):
+    global worker_pdf  # pylint: disable=global-statement
+    worker_pdf = pikepdf.open(infile)
+
+
+def _pdf_pageinfo_sync(args):
+    global worker_pdf  # pylint: disable=global-statement
+    pageno, infile = args
+    page = PageInfo(worker_pdf, pageno, infile)
+    return page
+
+
+def _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers):
+    pages = [None] * len(pdf.pages)
+
+    def update_pageinfo(result, pbar):
+        page = result
+        pages[page.pageno] = page
+        pbar.update()
+
+    if max_workers is None:
+        max_workers = available_cpu_count()
+
+    contexts = ((n, infile) for n in range(len(pdf.pages)))
+
+    use_threads = False  # No performance gain if threaded due to GIL
+    n_workers = min(1 + len(pages) // 4, max_workers)
+    if n_workers == 1:
+        # But if we decided on only one worker, there is no point in using
+        # a separate process.
+        use_threads = True
+
+    exec_progress_pool(
+        use_threads=use_threads,
+        max_workers=n_workers,
+        tqdm_kwargs=dict(
+            total=len(pdf.pages), desc="Scan", unit='page', disable=not progbar
+        ),
+        task_initializer=partial(_pdf_pageinfo_sync_init, infile),
+        task=_pdf_pageinfo_sync,
+        task_arguments=contexts,
+        task_finished=update_pageinfo,
+    )
+    return pages
+
+
+def _pdf_get_all_pageinfo(infile, progbar=False, max_workers=None):
     pdf = pikepdf.open(infile)  # Do not close in this function
     try:
         if pdf.is_encrypted:
             raise EncryptedPdfError()  # Triggered by encryption with empty passwd
-        if detailed_analysis:
-            pages_xml = None
-        else:
-            pages_xml = ghosttext.extract_text_xml(infile, pdf, pageno=None, log=log)
-
-        pages = []
-        for n, _ in tqdm(
-            enumerate(pdf.pages),
-            total=len(pdf.pages),
-            desc="Scan",
-            unit='page',
-            disable=not progbar,
-        ):
-            page_xml = pages_xml[n] if pages_xml else None
-            page = PageInfo(pdf, n, infile, page_xml, detailed_analysis)
-            pages.append(page)
+        pages = _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers)
     except Exception:
         pdf.close()
         raise
@@ -645,11 +668,10 @@ def _pdf_get_all_pageinfo(infile, detailed_analysis=False, log=None, progbar=Fal
 
 
 class PageInfo:
-    def __init__(self, pdf, pageno, infile, xmltext, detailed_analysis=False):
+    def __init__(self, pdf, pageno, infile):
         self._pageno = pageno
         self._infile = infile
-        self._pageinfo = _pdf_get_pageinfo(pdf, pageno, infile, xmltext)
-        self._detailed_analysis = detailed_analysis
+        self._pageinfo = _pdf_get_pageinfo(pdf, pageno, infile)
 
     @property
     def pageno(self):
@@ -661,8 +683,6 @@ class PageInfo:
 
     @property
     def has_corrupt_text(self):
-        if not self._detailed_analysis:
-            raise NotImplementedError('Did not do detailed analysis')
         return any(tbox.is_corrupt for tbox in self._pageinfo['textboxes'])
 
     @property
@@ -679,11 +699,11 @@ class PageInfo:
 
     @property
     def width_pixels(self):
-        return int(round(self.width_inches * self.xres))
+        return int(round(float(self.width_inches) * self.dpi.x))
 
     @property
     def height_pixels(self):
-        return int(round(self.height_inches * self.yres))
+        return int(round(float(self.height_inches) * self.dpi.y))
 
     @property
     def rotation(self):
@@ -713,7 +733,7 @@ class PageInfo:
 
         if 'textboxes' not in self._pageinfo:
             if visible is not None and corrupt is not None:
-                raise NotImplementedError('Ghostscript textboxes cannot be classified')
+                raise NotImplementedError('Incomplete information on textboxes')
             return self._pageinfo['bboxes']
 
         return (
@@ -723,12 +743,8 @@ class PageInfo:
         )
 
     @property
-    def xres(self):
-        return self._pageinfo.get('xres', None)
-
-    @property
-    def yres(self):
-        return self._pageinfo.get('yres', None)
+    def dpi(self):
+        return self._pageinfo.get('dpi', Resolution(0.0, 0.0))
 
     @property
     def userunit(self):
@@ -743,27 +759,19 @@ class PageInfo:
 
     def __repr__(self):
         return (
-            '<PageInfo ' 'pageno={} {}"x{}" rotation={} res={}x{} has_text={}>'
-        ).format(
-            self.pageno,
-            self.width_inches,
-            self.height_inches,
-            self.rotation,
-            self.xres,
-            self.yres,
-            self.has_text,
+            f'<PageInfo '
+            f'pageno={self.pageno} {self.width_inches}"x{self.height_inches}" '
+            f'rotation={self.rotation} dpi={self.dpi} has_text={self.has_text}>'
         )
 
 
 class PdfInfo:
     """Get summary information about a PDF"""
 
-    def __init__(self, infile, detailed_page_analysis=False, log=logger, progbar=False):
+    def __init__(self, infile, progbar=False, max_workers=None):
         self._infile = infile
-        if ghostscript.version() in ('9.52',):
-            detailed_page_analysis = True  # txtwrite doesn't work in these versions
         self._pages, pdf = _pdf_get_all_pageinfo(
-            infile, detailed_page_analysis, log=log, progbar=progbar
+            infile, progbar=progbar, max_workers=max_workers
         )
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
         self._has_acroform = False
@@ -812,13 +820,13 @@ class PdfInfo:
 
 
 def main():
-    import argparse
+    import argparse  # pylint: disable=import-outside-toplevel
+    from pprint import pprint  # pylint: disable=import-outside-toplevel
 
     parser = argparse.ArgumentParser()
     parser.add_argument('infile')
     args = parser.parse_args()
     pagesinfo, pdfinfo = _pdf_get_all_pageinfo(args.infile)
-    from pprint import pprint
 
     pprint(pdfinfo)
     for page in pagesinfo:

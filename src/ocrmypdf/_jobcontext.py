@@ -15,40 +15,26 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
 import os
 import shutil
 import sys
+from functools import partial
+from pathlib import Path
+
+from ocrmypdf._plugin_manager import get_plugin_manager
 
 
-class PicklableLoggerMixin:
-    def __init__(self):
-        self._log = None
-
-    @property
-    def log(self):
-        if not self._log:
-            self._log = self.get_logger()
-        return self._log
-
-    def __getstate__(self):
-        # Python 3.6 is incapable of pickling a logger and marshalling it to another
-        # process (threading._RLock error), so we disconnect it before pickling,
-        # and create a new logger in the worker process.
-        state = self.__dict__.copy()
-        state['_log'] = None
-        return state
-
-
-class PDFContext(PicklableLoggerMixin):
+class PdfContext:
     """Holds our context for a particular run of the pipeline"""
 
-    def __init__(self, options, work_folder, origin, pdfinfo):
-        PicklableLoggerMixin.__init__(self)
+    def __init__(
+        self, options, work_folder: Path, origin: Path, pdfinfo, plugin_manager
+    ):
         self.options = options
-        self.work_folder = work_folder
-        self.origin = origin
+        self.work_folder = Path(work_folder)
+        self.origin = Path(origin)
         self.pdfinfo = pdfinfo
+        self.plugin_manager = plugin_manager
         if options:
             self.name = os.path.basename(options.input_file)
         else:
@@ -56,11 +42,8 @@ class PDFContext(PicklableLoggerMixin):
         if self.name == '-':
             self.name = 'stdin'
 
-    def get_logger(self):
-        return make_logger(self.options, filename=self.name)
-
-    def get_path(self, name):
-        return os.path.join(self.work_folder, name)
+    def get_path(self, name: str) -> Path:
+        return self.work_folder / name
 
     def get_page_contexts(self):
         npages = len(self.pdfinfo)
@@ -68,27 +51,40 @@ class PDFContext(PicklableLoggerMixin):
             yield PageContext(self, n)
 
 
-class PageContext(PicklableLoggerMixin):
+class PageContext:
     """Holds our context for a page
 
     Must be pickable, so only store intrinsic/simple data elements
     """
 
-    def __init__(self, pdf_context, pageno):
-        PicklableLoggerMixin.__init__(self)
+    def __init__(self, pdf_context: PdfContext, pageno):
         self.work_folder = pdf_context.work_folder
         self.origin = pdf_context.origin
         self.options = pdf_context.options
         self.name = pdf_context.name
         self.pageno = pageno
         self.pageinfo = pdf_context.pdfinfo[pageno]
-        self._log = None
+        self.plugin_manager = pdf_context.plugin_manager
 
-    def get_logger(self):
-        return make_logger(self.options, filename=self.name, page=self.pageno + 1)
+    def get_path(self, name: str) -> Path:
+        return self.work_folder / ("%06d_%s" % (self.pageno + 1, name))
 
-    def get_path(self, name):
-        return os.path.join(self.work_folder, "%06d_%s" % (self.pageno + 1, name))
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        if state['plugin_manager'] is not None:
+            del state['plugin_manager']
+            state['construct_plugin_manager'] = partial(
+                get_plugin_manager, self.options.plugins
+            )
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        if 'construct_plugin_manager' in state:
+            self.plugin_manager = state['construct_plugin_manager']()
+        else:
+            self.plugin_manager = None
+        del self.__dict__['construct_plugin_manager']
 
 
 def cleanup_working_files(work_folder, options):
@@ -96,29 +92,3 @@ def cleanup_working_files(work_folder, options):
         print(f"Temporary working files retained at:\n{work_folder}", file=sys.stderr)
     else:
         shutil.rmtree(work_folder, ignore_errors=True)
-
-
-class LogNameAdapter(logging.LoggerAdapter):
-    def process(self, msg, kwargs):
-        # return '[%s] %s' % (self.extra['input_filename'], msg), kwargs
-        return '%s' % (msg,), kwargs
-
-
-class LogNamePageAdapter(logging.LoggerAdapter):
-    def process(self, msg, kwargs):
-        return (
-            #'[%s:%05u] %s' % (self.extra['input_filename'], self.extra['page'], msg),
-            '%4u: %s' % (self.extra['page'], msg),
-            kwargs,
-        )
-
-
-def make_logger(options=None, prefix='ocrmypdf', filename=None, page=None):
-    log = logging.getLogger(prefix)
-    if filename and page:
-        adapter = LogNamePageAdapter(log, dict(input_filename=filename, page=page))
-    elif filename:
-        adapter = LogNameAdapter(log, dict(input_filename=filename))
-    else:
-        adapter = log
-    return adapter

@@ -20,23 +20,55 @@ import multiprocessing
 import os
 import shutil
 import warnings
+from collections import namedtuple
 from collections.abc import Iterable
 from contextlib import suppress
 from functools import wraps
+from io import StringIO
+from math import isclose
 from pathlib import Path
+
+import pikepdf
 
 log = logging.getLogger(__name__)
 
 
-def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike, *args, **kwargs):
+class Resolution(namedtuple('Resolution', ('x', 'y'))):
+    __slots__ = ()
+
+    def round(self, ndigits):
+        return Resolution(round(self.x, ndigits), round(self.y, ndigits))
+
+    def to_int(self):
+        return Resolution(int(round(self.x)), int(round(self.y)))
+
+    @property
+    def is_square(self):
+        return isclose(self.x, self.y, rel_tol=1e-3)
+
+    def take_max(self, vals, yvals=None):
+        if yvals is not None:
+            return Resolution(max(self.x, *vals), max(self.y, *yvals))
+        max_x, max_y = self.x, self.y
+        for x, y in vals:
+            max_x = max(x, max_x)
+            max_y = max(y, max_y)
+        return Resolution(max_x, max_y)
+
+    def flip_axis(self):
+        return Resolution(self.y, self.x)
+
+    def __str__(self):
+        return f"{self.x:f}x{self.y:f}"
+
+    def __repr__(self):
+        return f"Resolution({self.x}x{self.y} dpi)"
+
+
+def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike):
     """
     Helper function: relinks soft symbolic link if necessary
     """
-    if len(args) == 1 and isinstance(args[0], logging.Logger):
-        log.warning("Deprecated: safe_symlink(,log)")
-    if 'log' in kwargs:
-        log.warning('Deprecated: safe_symlink(...log=)')
-
     input_file = os.fspath(input_file)
     soft_link_name = os.fspath(soft_link_name)
 
@@ -72,6 +104,13 @@ def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike, *args, **
     os.symlink(os.path.abspath(input_file), soft_link_name)
 
 
+def samefile(f1, f2):
+    if os.name == 'nt':
+        return f1 == f2
+    else:
+        return os.path.samefile(f1, f2)
+
+
 def is_iterable_notstr(thing):
     return isinstance(thing, Iterable) and not isinstance(thing, str)
 
@@ -105,11 +144,7 @@ def is_file_writable(test_file: os.PathLike):
     the location is writable.
     """
     try:
-        if not isinstance(test_file, Path):
-            p = Path(test_file)
-        else:
-            p = test_file
-
+        p = Path(test_file)
         if p.is_symlink():
             p = p.resolve(strict=False)
 
@@ -134,6 +169,40 @@ def is_file_writable(test_file: os.PathLike):
         log.debug(e)
         log.error(str(e))
         return False
+
+
+def check_pdf(input_file):
+    pdf = None
+    try:
+        pdf = pikepdf.open(input_file)
+    except pikepdf.PdfError as e:
+        log.error(e)
+        return False
+    else:
+        messages = pdf.check()
+        for msg in messages:
+            if 'error' in msg.lower():
+                log.error(msg)
+            else:
+                log.warning(msg)
+
+        sio = StringIO()
+        linearize = None
+        try:
+            pdf.check_linearization(sio)
+        except RuntimeError:
+            pass
+        else:
+            linearize = sio.getvalue()
+            if linearize:
+                log.warning(linearize)
+
+        if not messages and not linearize:
+            return True
+        return False
+    finally:
+        if pdf:
+            pdf.close()
 
 
 def deprecated(func):

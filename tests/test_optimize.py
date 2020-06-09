@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
 from os import fspath
 from pathlib import Path
 from unittest.mock import patch
@@ -26,8 +25,9 @@ import pytest
 from PIL import Image, ImageDraw
 
 from ocrmypdf import optimize as opt
-from ocrmypdf.exec import jbig2enc, pngquant
-from ocrmypdf.exec.ghostscript import rasterize_pdf
+from ocrmypdf._exec import jbig2enc, pngquant
+from ocrmypdf._exec.ghostscript import rasterize_pdf
+from ocrmypdf.helpers import Resolution
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf  # pylint: disable=e1101
 
@@ -47,10 +47,8 @@ def test_mono_not_inverted(resources, outdir):
     rasterize_pdf(
         outdir / 'out.pdf',
         outdir / 'im.png',
-        xres=10,
-        yres=10,
         raster_device='pnggray',
-        log=logging.getLogger(name='test_mono_not_inverted'),
+        raster_dpi=Resolution(10, 10),
     )
 
     with Image.open(fspath(outdir / 'im.png')) as im:
@@ -58,7 +56,7 @@ def test_mono_not_inverted(resources, outdir):
 
 
 @pytest.mark.skipif(not pngquant.available(), reason='need pngquant')
-def test_jpg_png_params(resources, outpdf, spoof_tesseract_noop):
+def test_jpg_png_params(resources, outpdf):
     check_ocrmypdf(
         resources / 'crom.png',
         outpdf,
@@ -70,13 +68,14 @@ def test_jpg_png_params(resources, outpdf, spoof_tesseract_noop):
         '50',
         '--png-quality',
         '20',
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
 
 @pytest.mark.skipif(not jbig2enc.available(), reason='need jbig2enc')
 @pytest.mark.parametrize('lossy', [False, True])
-def test_jbig2_lossy(lossy, resources, outpdf, spoof_tesseract_noop):
+def test_jbig2_lossy(lossy, resources, outpdf):
     args = [
         resources / 'ccitt.pdf',
         outpdf,
@@ -88,11 +87,13 @@ def test_jbig2_lossy(lossy, resources, outpdf, spoof_tesseract_noop):
         '50',
         '--png-quality',
         '20',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     ]
     if lossy:
         args.append('--jbig2-lossy')
 
-    check_ocrmypdf(*args, env=spoof_tesseract_noop)
+    check_ocrmypdf(*args)
 
     pdf = pikepdf.open(outpdf)
     pim = pikepdf.PdfImage(next(iter(pdf.pages[0].images.values())))
@@ -108,7 +109,7 @@ def test_jbig2_lossy(lossy, resources, outpdf, spoof_tesseract_noop):
     not jbig2enc.available() or not pngquant.available(),
     reason='need jbig2enc and pngquant',
 )
-def test_flate_to_jbig2(resources, outdir, spoof_tesseract_noop):
+def test_flate_to_jbig2(resources, outdir):
     # This test requires an image that pngquant is capable of converting to
     # to 1bpp - so use an existing 1bpp image, convert up, confirm it can
     # convert down
@@ -126,7 +127,8 @@ def test_flate_to_jbig2(resources, outdir, spoof_tesseract_noop):
         '50',
         '--optimize',
         '3',
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     pdf = pikepdf.open(outdir / 'out.pdf')
@@ -134,7 +136,7 @@ def test_flate_to_jbig2(resources, outdir, spoof_tesseract_noop):
     assert pim.filters[0] == '/JBIG2Decode'
 
 
-def test_multiple_pngs(resources, outdir, spoof_tesseract_noop):
+def test_multiple_pngs(resources, outdir):
     with Path.open(outdir / 'in.pdf', 'wb') as inpdf:
         img2pdf.convert(
             fspath(resources / 'baiona_colormapped.png'),
@@ -160,7 +162,8 @@ def test_multiple_pngs(resources, outdir, spoof_tesseract_noop):
             '--use-threads',
             '--output-type',
             'pdf',
-            env=spoof_tesseract_noop,
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
         )
 
     with pikepdf.open(outdir / 'in.pdf') as inpdf, pikepdf.open(

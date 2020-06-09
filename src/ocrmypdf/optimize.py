@@ -15,10 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import concurrent.futures
+import logging
 import sys
 import tempfile
 from collections import defaultdict
+from functools import partial
 from os import fspath
 from pathlib import Path
 
@@ -27,11 +28,14 @@ from pikepdf import Dictionary, Name
 from PIL import Image
 from tqdm import tqdm
 
-from . import leptonica
-from ._jobcontext import PDFContext
-from .exceptions import OutputFileAccessError
-from .exec import jbig2enc, pngquant
-from .helpers import safe_symlink
+from ocrmypdf import leptonica
+from ocrmypdf._concurrent import exec_progress_pool
+from ocrmypdf._exec import jbig2enc, pngquant
+from ocrmypdf._jobcontext import PdfContext
+from ocrmypdf.exceptions import OutputFileAccessError
+from ocrmypdf.helpers import safe_symlink
+
+log = logging.getLogger(__name__)
 
 DEFAULT_JPEG_QUALITY = 75
 DEFAULT_PNG_QUALITY = 70
@@ -53,7 +57,7 @@ def tif_name(root, xref):
     return img_name(root, xref, '.tif')
 
 
-def extract_image_filter(pike, root, log, image, xref):
+def extract_image_filter(pike, root, image, xref):
     if image.Subtype != Name.Image:
         return None
     if image.Length < 100:
@@ -79,8 +83,8 @@ def extract_image_filter(pike, root, log, image, xref):
     return pim, filtdp
 
 
-def extract_image_jbig2(*, pike, root, log, image, xref, options):
-    result = extract_image_filter(pike, root, log, image, xref)
+def extract_image_jbig2(*, pike, root, image, xref, options):
+    result = extract_image_filter(pike, root, image, xref)
     if result is None:
         return None
     pim, filtdp = result
@@ -101,8 +105,8 @@ def extract_image_jbig2(*, pike, root, log, image, xref, options):
     return None
 
 
-def extract_image_generic(*, pike, root, log, image, xref, options):
-    result = extract_image_filter(pike, root, log, image, xref)
+def extract_image_generic(*, pike, root, image, xref, options):
+    result = extract_image_filter(pike, root, image, xref)
     if result is None:
         return None
     pim, filtdp = result
@@ -170,7 +174,7 @@ def extract_image_generic(*, pike, root, log, image, xref, options):
     return None
 
 
-def extract_images(pike, root, log, options, extract_fn):
+def extract_images(pike, root, options, extract_fn):
     """Extract image using extract_fn
 
     Enumerate images on each page, lookup their xref/ID number in the PDF.
@@ -212,9 +216,9 @@ def extract_images(pike, root, log, options, extract_fn):
         image = pike.get_object((xref, 0))
         try:
             result = extract_fn(
-                pike=pike, root=root, log=log, image=image, xref=xref, options=options
+                pike=pike, root=root, image=image, xref=xref, options=options
             )
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             log.debug("Image xref %s, error %s", xref, repr(e))
             errors += 1
         else:
@@ -223,12 +227,12 @@ def extract_images(pike, root, log, options, extract_fn):
                 yield pageno_for_xref[xref], xref, ext
 
 
-def extract_images_generic(pike, root, log, options):
+def extract_images_generic(pike, root, options):
     """Extract any >=2bpp image we think we can improve"""
 
     jpegs = []
     pngs = []
-    for _, xref, ext in extract_images(pike, root, log, options, extract_image_generic):
+    for _, xref, ext in extract_images(pike, root, options, extract_image_generic):
         log.debug('xref = %s ext = %s', xref, ext)
         if ext == '.png':
             pngs.append(xref)
@@ -238,13 +242,11 @@ def extract_images_generic(pike, root, log, options):
     return jpegs, pngs
 
 
-def extract_images_jbig2(pike, root, log, options):
+def extract_images_jbig2(pike, root, options):
     """Extract any bitonal image that we think we can improve as JBIG2"""
 
     jbig2_groups = defaultdict(list)
-    for pageno, xref, ext in extract_images(
-        pike, root, log, options, extract_image_jbig2
-    ):
+    for pageno, xref, ext in extract_images(pike, root, options, extract_image_jbig2):
         group = pageno // options.jbig2_page_group_size
         jbig2_groups[group].append((xref, ext))
 
@@ -256,55 +258,55 @@ def extract_images_jbig2(pike, root, log, options):
     return jbig2_groups
 
 
-def _produce_jbig2_images(jbig2_groups, root, log, options):
+def _produce_jbig2_images(jbig2_groups, root, options):
     """Produce JBIG2 images from their groups"""
 
-    def jbig2_group_futures(executor, root, groups):
+    def jbig2_group_args(root, groups):
         for group, xref_exts in groups.items():
             prefix = f'group{group:08d}'
-            future = executor.submit(
-                jbig2enc.convert_group,
+            yield dict(
                 cwd=fspath(root),
                 infiles=(img_name(root, xref, ext) for xref, ext in xref_exts),
                 out_prefix=prefix,
             )
-            yield future
 
-    def jbig2_single_futures(executor, root, groups):
+    def jbig2_single_args(root, groups):
         for group, xref_exts in groups.items():
             prefix = f'group{group:08d}'
             # Second loop is to ensure multiple images per page are unpacked
             for n, xref_ext in enumerate(xref_exts):
                 xref, ext = xref_ext
-                future = executor.submit(
-                    jbig2enc.convert_single,
+                yield dict(
                     cwd=fspath(root),
                     infile=img_name(root, xref, ext),
                     outfile=root / f'{prefix}.{n:04d}',
                 )
-                yield future
+
+    def convert_generic(fn, kwargs_dict):
+        return fn(**kwargs_dict)
 
     if options.jbig2_page_group_size > 1:
-        jbig2_futures = jbig2_group_futures
+        jbig2_args = jbig2_group_args
+        jbig2_convert = partial(convert_generic, jbig2enc.convert_group)
     else:
-        jbig2_futures = jbig2_single_futures
+        jbig2_args = jbig2_single_args
+        jbig2_convert = partial(convert_generic, jbig2enc.convert_single)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=options.jobs) as executor:
-        futures = jbig2_futures(executor, root, jbig2_groups)
-        with tqdm(
+    exec_progress_pool(
+        use_threads=True,
+        max_workers=options.jobs,
+        tqdm_kwargs=dict(
             total=len(jbig2_groups),
             desc="JBIG2",
             unit='item',
             disable=not options.progress_bar,
-        ) as pbar:
-            for future in concurrent.futures.as_completed(futures):
-                proc = future.result()
-                if proc.stderr:
-                    log.debug(proc.stderr.decode())
-                pbar.update()
+        ),
+        task=jbig2_convert,
+        task_arguments=jbig2_args(root, jbig2_groups),
+    )
 
 
-def convert_to_jbig2(pike, jbig2_groups, root, log, options):
+def convert_to_jbig2(pike, jbig2_groups, root, options):
     """Convert images to JBIG2 and insert into PDF.
 
     When the JBIG2 page group size is > 1 we do several JBIG2 images at once
@@ -318,7 +320,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
     and needs no dictionary. Currently this must be lossless JBIG2.
     """
 
-    _produce_jbig2_images(jbig2_groups, root, log, options)
+    _produce_jbig2_images(jbig2_groups, root, options)
 
     for group, xref_exts in jbig2_groups.items():
         prefix = f'group{group:08d}'
@@ -342,7 +344,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, log, options):
             )
 
 
-def transcode_jpegs(pike, jpegs, root, log, options):
+def transcode_jpegs(pike, jpegs, root, options):
     for xref in tqdm(
         jpegs, desc="JPEGs", unit='image', disable=not options.progress_bar
     ):
@@ -365,37 +367,40 @@ def transcode_jpegs(pike, jpegs, root, log, options):
         im_obj.write(compdata.read(), filter=Name.DCTDecode)
 
 
-def transcode_pngs(pike, images, image_name_fn, root, log, options):
+def transcode_pngs(pike, images, image_name_fn, root, options):
     modified = set()
     if options.optimize >= 2:
         png_quality = (
             max(10, options.png_quality - 10),
             min(100, options.png_quality + 10),
         )
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=options.jobs
-        ) as executor:
-            futures = []
+
+        def pngquant_args():
             for xref in images:
                 log.debug(image_name_fn(root, xref))
-                futures.append(
-                    executor.submit(
-                        pngquant.quantize,
-                        image_name_fn(root, xref),
-                        png_name(root, xref),
-                        png_quality[0],
-                        png_quality[1],
-                    )
+                yield (
+                    image_name_fn(root, xref),
+                    png_name(root, xref),
+                    png_quality[0],
+                    png_quality[1],
                 )
                 modified.add(xref)
-            with tqdm(
+
+        def pngquant_fn(args):
+            pngquant.quantize(*args)
+
+        exec_progress_pool(
+            use_threads=True,
+            max_workers=options.jobs,
+            tqdm_kwargs=dict(
                 desc="PNGs",
-                total=len(futures),
+                total=len(images),
                 unit='image',
                 disable=not options.progress_bar,
-            ) as pbar:
-                for _future in concurrent.futures.as_completed(futures):
-                    pbar.update()
+            ),
+            task=pngquant_fn,
+            task_arguments=pngquant_args(),
+        )
 
     for xref in modified:
         im_obj = pike.get_object(xref, 0)
@@ -421,12 +426,12 @@ def transcode_pngs(pike, images, image_name_fn, root, log, options):
             )
             continue
         if compdata.type == leptonica.lept.L_FLATE_ENCODE:
-            rewrite_png(pike, im_obj, compdata, log)
+            rewrite_png(pike, im_obj, compdata)
         elif compdata.type == leptonica.lept.L_G4_ENCODE:
-            rewrite_png_as_g4(pike, im_obj, compdata, log)
+            rewrite_png_as_g4(pike, im_obj, compdata)
 
 
-def rewrite_png_as_g4(pike, im_obj, compdata, log):
+def rewrite_png_as_g4(pike, im_obj, compdata):
     im_obj.BitsPerComponent = 1
     im_obj.Width = compdata.w
     im_obj.Height = compdata.h
@@ -446,7 +451,7 @@ def rewrite_png_as_g4(pike, im_obj, compdata, log):
     return
 
 
-def rewrite_png(pike, im_obj, compdata, log):
+def rewrite_png(pike, im_obj, compdata):
     # When a PNG is inserted into a PDF, we more or less copy the IDAT section from
     # the PDF and transfer the rest of the PNG headers to PDF image metadata.
     # One thing we have to do is tell the PDF reader whether a predictor was used
@@ -500,7 +505,6 @@ def rewrite_png(pike, im_obj, compdata, log):
 
 
 def optimize(input_file, output_file, context, save_settings):
-    log = context.log
     options = context.options
     if options.optimize == 0:
         safe_symlink(input_file, output_file)
@@ -517,15 +521,15 @@ def optimize(input_file, output_file, context, save_settings):
         root = Path(output_file).parent / 'images'
         root.mkdir(exist_ok=True)
 
-        jpegs, pngs = extract_images_generic(pike, root, log, options)
-        transcode_jpegs(pike, jpegs, root, log, options)
+        jpegs, pngs = extract_images_generic(pike, root, options)
+        transcode_jpegs(pike, jpegs, root, options)
         # if options.optimize >= 2:
         # Try pngifying the jpegs
-        #    transcode_pngs(pike, jpegs, jpg_name, root, log, options)
-        transcode_pngs(pike, pngs, png_name, root, log, options)
+        #    transcode_pngs(pike, jpegs, jpg_name, root, options)
+        transcode_pngs(pike, pngs, png_name, root, options)
 
-        jbig2_groups = extract_images_jbig2(pike, root, log, options)
-        convert_to_jbig2(pike, jbig2_groups, root, log, options)
+        jbig2_groups = extract_images_jbig2(pike, root, options)
+        convert_to_jbig2(pike, jbig2_groups, root, options)
 
         target_file = Path(output_file).with_suffix('.opt.pdf')
         pike.remove_unreferenced_resources()
@@ -553,8 +557,8 @@ def optimize(input_file, output_file, context, save_settings):
 
 
 def main(infile, outfile, level, jobs=1):
-    from tempfile import TemporaryDirectory
-    from shutil import copy
+    from tempfile import TemporaryDirectory  # pylint: disable=import-outside-toplevel
+    from shutil import copy  # pylint: disable=import-outside-toplevel
 
     class OptimizeOptions:
         """Emulate ocrmypdf's options"""
@@ -582,7 +586,7 @@ def main(infile, outfile, level, jobs=1):
     )
 
     with TemporaryDirectory() as td:
-        context = PDFContext(options, td, infile, None)
+        context = PdfContext(options, td, infile, None, None)
         tmpout = Path(td) / 'out.pdf'
         optimize(
             infile,

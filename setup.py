@@ -27,22 +27,6 @@ if sys.version_info < (3, 6):
     print("Python 3.6 or newer is required", file=sys.stderr)
     sys.exit(1)
 
-
-# pylint: disable=w0613
-
-
-command = next((arg for arg in sys.argv[1:] if not arg.startswith('-')), '')
-if command.startswith('install') or command in [
-    'check',
-    'test',
-    'nosetests',
-    'easy_install',
-]:
-    forced = '--force' in sys.argv
-    if forced:
-        print("The argument --force is deprecated. Please discontinue use.")
-
-
 if 'upload' in sys.argv[1:]:
     print('Use twine to upload the package - setup.py upload is insecure')
     sys.exit(1)
@@ -95,10 +79,10 @@ setup(
     use_scm_version={'version_scheme': 'post-release'},
     cffi_modules=['src/ocrmypdf/lib/compile_leptonica.py:ffibuilder'],
     install_requires=[
-        'chardet >= 3.0.4, < 4',  # unlisted requirement of pdfminer.six 20181108
         'cffi >= 1.9.1',  # must be a setup and install requirement
+        'coloredlogs >= 14.0',  # strictly optional
         'img2pdf >= 0.3.0, < 0.4',  # pure Python, so track HEAD closely
-        'pdfminer.six >= 20181108, <= 20200517',
+        'pdfminer.six >= 20191110, <= 20200517',
         'pikepdf >= 1.8.1, < 2',
         'Pillow >= 6.2.0',
         'reportlab >= 3.3.0',  # oldest released version with sane image handling

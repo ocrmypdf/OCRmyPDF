@@ -35,8 +35,8 @@ def test_acroform_and_redo(acroform, caplog, no_outpdf):
     assert '--redo-ocr is not currently possible' in caplog.text
 
 
-def test_acroform_message(acroform, caplog, spoof_tesseract_noop, outpdf):
+def test_acroform_message(acroform, caplog, outpdf):
     caplog.set_level(logging.INFO)
-    check_ocrmypdf(acroform, outpdf, env=spoof_tesseract_noop)
+    check_ocrmypdf(acroform, outpdf, '--plugin', 'tests/plugins/tesseract_noop.py')
     assert 'fillable form' in caplog.text
     assert '--force-ocr' in caplog.text

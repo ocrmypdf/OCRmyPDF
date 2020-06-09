@@ -21,29 +21,28 @@ import locale
 import logging
 import os
 import sys
+import unicodedata
 from pathlib import Path
 from shutil import copyfileobj
 
 import pikepdf
 import PIL
 
-from ._unicodefun import verify_python3_env
-from .exceptions import (
+from ocrmypdf._exec import jbig2enc, pngquant, unpaper
+from ocrmypdf._unicodefun import verify_python3_env
+from ocrmypdf.exceptions import (
     BadArgsError,
     InputFileError,
     MissingDependencyError,
     OutputFileAccessError,
 )
-from .exec import (
-    check_external_program,
-    ghostscript,
-    jbig2enc,
-    pngquant,
-    qpdf,
-    tesseract,
-    unpaper,
+from ocrmypdf.helpers import (
+    is_file_writable,
+    is_iterable_notstr,
+    monotonic,
+    safe_symlink,
 )
-from .helpers import is_file_writable, is_iterable_notstr, monotonic, safe_symlink
+from ocrmypdf.subprocess import check_external_program
 
 # -------------
 # External dependencies
@@ -68,35 +67,26 @@ def check_platform():
         )
 
 
-def check_options_languages(options):
-    if not options.language:
-        options.language = [DEFAULT_LANGUAGE]
+def check_options_languages(options, plugin_manager):
+    if not options.languages:
+        options.languages = {DEFAULT_LANGUAGE}
         system_lang = locale.getlocale()[0]
         if system_lang and not system_lang.startswith('en'):
             log.debug("No language specified; assuming --language %s", DEFAULT_LANGUAGE)
 
-    # Support v2.x "eng+deu" language syntax
-    if '+' in options.language[0]:
-        options.language = options.language[0].split('+')
-
-    languages = set(options.language)
-    if not languages.issubset(tesseract.languages()):
+    ocr_engine = plugin_manager.hook.get_ocr_engine()
+    if not options.languages.issubset(ocr_engine.languages(options)):
         msg = (
-            "The installed version of tesseract does not have language "
-            "data for the following requested languages: \n"
+            f"{ocr_engine} does not have language data for the following "
+            "requested languages: \n"
         )
-        for lang in languages - tesseract.languages():
+        for lang in options.languages - ocr_engine.languages(options):
             msg += lang + '\n'
         raise MissingDependencyError(msg)
 
 
 def check_options_output(options):
-    # We have these constraints to check for.
-    # 1. Ghostscript < 9.20 mangles multibyte Unicode
-    # 2. hocr doesn't work on non-Latin languages (so don't select it)
-
-    languages = set(options.language)
-    is_latin = languages.issubset(HOCR_OK_LANGS)
+    is_latin = options.languages.issubset(HOCR_OK_LANGS)
 
     if options.pdf_renderer == 'hocr' and not is_latin:
         msg = (
@@ -105,37 +95,6 @@ def check_options_output(options):
             "--pdf-renderer auto (the default) to avoid this issue."
         )
         log.warning(msg)
-
-    if ghostscript.version() < '9.20' and options.output_type != 'pdf' and not is_latin:
-        # https://bugs.ghostscript.com/show_bug.cgi?id=696874
-        # Ghostscript < 9.20 fails to encode multibyte characters properly
-        msg = (
-            "The installed version of Ghostscript does not work correctly "
-            "with the OCR languages you specified. Use --output-type pdf or "
-            "upgrade to Ghostscript 9.20 or later to avoid this issue."
-        )
-        msg += f"Found Ghostscript {ghostscript.version()}"
-        log.warning(msg)
-
-    # Decide on what renderer to use
-    if options.pdf_renderer == 'auto':
-        options.pdf_renderer = 'sandwich'
-
-    if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf(
-        options.tesseract_env, languages
-    ):
-        raise MissingDependencyError(
-            "You are using an alpha version of Tesseract 4.0 that does not support "
-            "the textonly_pdf parameter. We don't support versions this old."
-        )
-
-    if options.output_type == 'pdfa':
-        options.output_type = 'pdfa-2'
-
-    if options.output_type == 'pdfa-3' and ghostscript.version() < '9.19':
-        raise MissingDependencyError(
-            "--output-type pdfa-3 requires Ghostscript 9.19 or later"
-        )
 
     lossless_reconstruction = False
     if not any(
@@ -271,18 +230,9 @@ def check_options_advanced(options):
             "--pdfa-image-compression argument has no effect when "
             "--output-type is not 'pdfa', 'pdfa-1', or 'pdfa-2'"
         )
-    if not tesseract.has_user_words(options.tesseract_env) and (
-        options.user_words or options.user_patterns
-    ):
-        log.warning(
-            "Tesseract 4.0 ignores --user-words and --user-patterns, so these "
-            "arguments have no effect."
-        )
 
 
 def check_options_metadata(options):
-    import unicodedata
-
     docinfo = [options.title, options.author, options.keywords, options.subject]
     for s in (m for m in docinfo if m):
         for c in s:
@@ -301,9 +251,9 @@ def check_options_pillow(options):
         PIL.Image.MAX_IMAGE_PIXELS = None
 
 
-def check_options(options):
+def check_options(options, plugin_manager):
     check_platform()
-    check_options_languages(options)
+    check_options_languages(options, plugin_manager)
     check_options_metadata(options)
     check_options_output(options)
     check_options_sidecar(options)
@@ -312,7 +262,7 @@ def check_options(options):
     check_options_optimizing(options)
     check_options_advanced(options)
     check_options_pillow(options)
-    check_dependency_versions(options)
+    plugin_manager.hook.check_options(options=options)
 
 
 def check_closed_streams(options):  # pragma: no cover
@@ -374,17 +324,17 @@ def log_page_orientations(pdfinfo):
         log.info('Page orientations detected: %s', ' '.join(orientations))
 
 
-def create_input_file(options, work_folder):
+def create_input_file(options, work_folder: Path) -> (Path, str):
     if options.input_file == '-':
         # stdin
         log.info('reading file from standard input')
-        target = os.path.join(work_folder, 'stdin')
+        target = work_folder / 'stdin'
         with open(target, 'wb') as stream_buffer:
             copyfileobj(sys.stdin.buffer, stream_buffer)
         return target, "<stdin>"
     else:
         try:
-            target = os.path.join(work_folder, 'origin')
+            target = work_folder / 'origin'
             safe_symlink(options.input_file, target)
             return target, os.fspath(options.input_file)
         except FileNotFoundError:
@@ -458,32 +408,4 @@ def report_output_file_size(options, input_file, output_file):
     log.warning(
         f"The output file size is {ratio:.2f}× larger than the input file.\n"
         f"{explanation}"
-    )
-
-
-def check_dependency_versions(options):
-    check_external_program(
-        program='tesseract',
-        package={'linux': 'tesseract-ocr'},
-        version_checker=tesseract.version,
-        need_version='4.0.0',  # using backport for Travis CI
-    )
-    check_external_program(
-        program='gs',
-        package='ghostscript',
-        version_checker=ghostscript.version,
-        need_version='9.15',  # limited by Travis CI / Ubuntu 14.04 backports
-    )
-    gs_version = ghostscript.version()
-    if gs_version in ('9.24', '9.51'):
-        raise MissingDependencyError(
-            f"Ghostscript {gs_version} contains serious regressions and is not "
-            "supported. Please upgrade to a newer version, or downgrade to the "
-            "previous version."
-        )
-    check_external_program(
-        program='qpdf',
-        package='qpdf',
-        version_checker=qpdf.version,
-        need_version='8.0.2',
     )

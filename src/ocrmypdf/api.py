@@ -15,47 +15,25 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+import inspect
 import logging
 import os
 import sys
-from contextlib import suppress
+from argparse import ArgumentParser
 from enum import IntEnum
 from pathlib import Path
 from typing import Dict, Iterable
 
-from tqdm import tqdm
+from ocrmypdf._logging import PageNumberFilter, TqdmConsole
+from ocrmypdf._plugin_manager import get_plugin_manager
+from ocrmypdf._sync import run_pipeline
+from ocrmypdf._validation import check_options
+from ocrmypdf.cli import get_parser
 
-from ._sync import run_pipeline
-from ._validation import check_options
-from .cli import parser
-
-
-class TqdmConsole:
-    """Wrapper to log messages in a way that is compatible with tqdm progress bar
-
-    This routes log messages through tqdm so that it can print them above the
-    progress bar, and then refresh the progress bar, rather than overwriting
-    it which looks messy.
-
-    For some reason Python 3.6 prints extra empty messages from time to time,
-    so we suppress those.
-    """
-
-    def __init__(self, file):
-        self.file = file
-        self.py36 = sys.version_info[0:2] == (3, 6)
-
-    def write(self, msg):
-        # When no progress bar is active, tqdm.write() routes to print()
-        if self.py36:
-            if msg.strip() != '':
-                tqdm.write(msg.rstrip(), end='\n', file=self.file)
-        else:
-            tqdm.write(msg.rstrip(), end='\n', file=self.file)
-
-    def flush(self):
-        with suppress(AttributeError):
-            self.file.flush()
+try:
+    import coloredlogs
+except ModuleNotFoundError:
+    coloredlogs = None
 
 
 class Verbosity(IntEnum):
@@ -98,6 +76,7 @@ def configure_logging(
     """
 
     prefix = '' if manage_root_logger else 'ocrmypdf'
+
     log = logging.getLogger(prefix)
     log.setLevel(logging.DEBUG)
 
@@ -113,9 +92,25 @@ def configure_logging(
     else:
         console.setLevel(logging.INFO)
 
-    formatter = logging.Formatter('%(levelname)7s - %(message)s')
+    console.addFilter(PageNumberFilter())
+
     if verbosity >= 2:
-        formatter = logging.Formatter('%(name)s - %(levelname)7s - %(message)s')
+        fmt = '%(levelname)7s %(name)s -%(pageno)s %(message)s'
+    else:
+        fmt = '%(pageno)s%(message)s'
+
+    use_colors = progress_bar_friendly
+    if not coloredlogs:
+        use_colors = False
+    if use_colors:
+        if os.name == 'nt':
+            use_colors = coloredlogs.enable_ansi_support()
+        if use_colors:
+            use_colors = coloredlogs.terminal_supports_colors()
+    if use_colors:
+        formatter = coloredlogs.ColoredFormatter(fmt=fmt)
+    else:
+        formatter = logging.Formatter(fmt=fmt)
 
     console.setFormatter(formatter)
     log.addHandler(console)
@@ -132,7 +127,13 @@ def configure_logging(
     return log
 
 
-def create_options(*, input_file: os.PathLike, output_file: os.PathLike, **kwargs):
+def create_options(
+    *,
+    input_file: os.PathLike,
+    output_file: os.PathLike,
+    parser: ArgumentParser,
+    **kwargs,
+):
     cmdline = []
     deferred = []
 
@@ -142,7 +143,7 @@ def create_options(*, input_file: os.PathLike, output_file: os.PathLike, **kwarg
 
         # These arguments with special handling for which we bypass
         # argparse
-        if arg in {'tesseract_env', 'progress_bar'}:
+        if arg in {'progress_bar', 'plugins'}:
             deferred.append((arg, val))
             continue
 
@@ -174,15 +175,10 @@ def create_options(*, input_file: os.PathLike, output_file: os.PathLike, **kwarg
     cmdline.append(str(input_file))
     cmdline.append(str(output_file))
 
-    parser.api_mode = True
+    parser._api_mode = True
     options = parser.parse_args(cmdline)
     for keyword, val in deferred:
         setattr(options, keyword, val)
-
-    # If we are running a Tesseract spoof, ensure it knows what the input file is
-    if os.environ.get('PYTEST_CURRENT_TEST') and options.tesseract_env:
-        options.tesseract_env['_OCRMYPDF_TEST_INFILE'] = os.fspath(input_file)
-
     return options
 
 
@@ -230,9 +226,10 @@ def ocr(  # pylint: disable=unused-argument
     user_words: os.PathLike = None,
     user_patterns: os.PathLike = None,
     fast_web_view: float = None,
+    plugins: Iterable[str] = None,
     keep_temporary_files: bool = None,
     progress_bar: bool = None,
-    tesseract_env: Dict[str, str] = None,
+    **kwargs,
 ):
     """Run OCRmyPDF on one PDF or image.
 
@@ -243,7 +240,6 @@ def ocr(  # pylint: disable=unused-argument
         use_threads (bool): Use worker threads instead of processes. This reduces
             performance but may make debugging easier since it is easier to set
             breakpoints.
-        tesseract_env (dict): Override environment variables for Tesseract
     Raises:
         ocrmypdf.PdfMergeFailedError: If the input PDF is malformed, preventing merging
             with the OCR layer.
@@ -267,7 +263,18 @@ def ocr(  # pylint: disable=unused-argument
     Returns:
         :class:`ocrmypdf.ExitCode`
     """
+    if not plugins:
+        plugins = []
 
-    options = create_options(**locals())
-    check_options(options)
-    return run_pipeline(options, api=True)
+    parser = get_parser()
+    _plugin_manager = get_plugin_manager(plugins)
+    _plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
+
+    create_options_kwargs = {
+        k: v for k, v in locals().items() if not k.startswith('_') and k != 'kwargs'
+    }
+    create_options_kwargs.update(kwargs)
+
+    options = create_options(**create_options_kwargs)
+    check_options(options, _plugin_manager)
+    return run_pipeline(options=options, plugin_manager=_plugin_manager, api=True)

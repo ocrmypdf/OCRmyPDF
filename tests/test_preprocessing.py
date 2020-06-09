@@ -15,13 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
 from math import isclose
 
 import pytest
 from PIL import Image
 
-from ocrmypdf.exec import ghostscript
+from ocrmypdf._exec import ghostscript
+from ocrmypdf.helpers import Resolution
 from ocrmypdf.leptonica import Pix
 from ocrmypdf.pdfinfo import PdfInfo
 
@@ -31,31 +31,30 @@ from ocrmypdf.pdfinfo import PdfInfo
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
 run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
-spoof = pytest.helpers.spoof
 
 
 RENDERERS = ['hocr', 'sandwich']
 
 
-def test_deskew(spoof_tesseract_noop, resources, outdir):
+def test_deskew(resources, outdir):
     # Run with deskew
     deskewed_pdf = check_ocrmypdf(
-        resources / 'skew.pdf', outdir / 'skew.pdf', '-d', env=spoof_tesseract_noop
+        resources / 'skew.pdf',
+        outdir / 'skew.pdf',
+        '-d',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     # Now render as an image again and use Leptonica to find the skew angle
     # to confirm that it was deskewed
-    log = logging.getLogger()
-
     deskewed_png = outdir / 'deskewed.png'
 
     ghostscript.rasterize_pdf(
         deskewed_pdf,
         deskewed_png,
-        xres=150,
-        yres=150,
         raster_device='pngmono',
-        log=log,
+        raster_dpi=Resolution(150, 150),
         pageno=1,
     )
 
@@ -66,7 +65,7 @@ def test_deskew(spoof_tesseract_noop, resources, outdir):
     assert -0.5 < skew_angle < 0.5, "Deskewing failed"
 
 
-def test_remove_background(spoof_tesseract_noop, resources, outdir):
+def test_remove_background(resources, outdir):
     # Ensure the input image does not contain pure white/black
     with Image.open(resources / 'congress.jpg') as im:
         assert im.getextrema() != ((0, 255), (0, 255), (0, 255))
@@ -77,20 +76,17 @@ def test_remove_background(spoof_tesseract_noop, resources, outdir):
         '--remove-background',
         '--image-dpi',
         '150',
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
-
-    log = logging.getLogger()
 
     output_png = outdir / 'remove_bg.png'
 
     ghostscript.rasterize_pdf(
         output_pdf,
         output_png,
-        xres=100,
-        yres=100,
         raster_device='png16m',
-        log=log,
+        raster_dpi=Resolution(100, 100),
         pageno=1,
     )
 
@@ -105,9 +101,7 @@ def test_remove_background(spoof_tesseract_noop, resources, outdir):
 )
 @pytest.mark.parametrize("renderer", ['sandwich', 'hocr'])
 @pytest.mark.parametrize("output_type", ['pdf', 'pdfa'])
-def test_exotic_image(
-    spoof_tesseract_cache, pdf, renderer, output_type, resources, outdir
-):
+def test_exotic_image(pdf, renderer, output_type, resources, outdir):
     outfile = outdir / f'test_{pdf}_{renderer}.pdf'
     check_ocrmypdf(
         resources / pdf,
@@ -121,40 +115,39 @@ def test_exotic_image(
         '--skip-text',
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     assert outfile.with_suffix('.pdf.txt').exists()
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_non_square_resolution(renderer, spoof_tesseract_cache, resources, outpdf):
+def test_non_square_resolution(renderer, resources, outpdf):
     # Confirm input image is non-square resolution
     in_pageinfo = PdfInfo(resources / 'aspect.pdf')
-    assert in_pageinfo[0].xres != in_pageinfo[0].yres
+    assert in_pageinfo[0].dpi.x != in_pageinfo[0].dpi.y
 
     check_ocrmypdf(
         resources / 'aspect.pdf',
         outpdf,
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     out_pageinfo = PdfInfo(outpdf)
 
     # Confirm resolution was kept the same
-    assert in_pageinfo[0].xres == out_pageinfo[0].xres
-    assert in_pageinfo[0].yres == out_pageinfo[0].yres
+    assert in_pageinfo[0].dpi == out_pageinfo[0].dpi
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_convert_to_square_resolution(
-    renderer, spoof_tesseract_cache, resources, outpdf
-):
+def test_convert_to_square_resolution(renderer, resources, outpdf):
     # Confirm input image is non-square resolution
     in_pageinfo = PdfInfo(resources / 'aspect.pdf')
-    assert in_pageinfo[0].xres != in_pageinfo[0].yres
+    assert in_pageinfo[0].dpi.x != in_pageinfo[0].dpi.y
 
     # --force-ocr requires means forced conversion to square resolution
     check_ocrmypdf(
@@ -163,7 +156,8 @@ def test_convert_to_square_resolution(
         '--force-ocr',
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     out_pageinfo = PdfInfo(outpdf)
@@ -171,7 +165,7 @@ def test_convert_to_square_resolution(
     in_p0, out_p0 = in_pageinfo[0], out_pageinfo[0]
 
     # Resolution show now be equal
-    assert out_p0.xres == out_p0.yres
+    assert out_p0.dpi.x == out_p0.dpi.y
 
     # Page size should match input page size
     assert isclose(in_p0.width_inches, out_p0.width_inches)
@@ -179,7 +173,7 @@ def test_convert_to_square_resolution(
 
     # Because we rasterized the page to produce a new image, it should occupy
     # the entire page
-    out_im_w = out_p0.images[0].width / out_p0.images[0].xres
-    out_im_h = out_p0.images[0].height / out_p0.images[0].yres
+    out_im_w = out_p0.images[0].width / out_p0.images[0].dpi.x
+    out_im_h = out_p0.images[0].height / out_p0.images[0].dpi.y
     assert isclose(out_p0.width_inches, out_im_w)
     assert isclose(out_p0.height_inches, out_im_h)

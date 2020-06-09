@@ -26,7 +26,8 @@ import pytest
 from PIL import Image
 
 from ocrmypdf import leptonica
-from ocrmypdf.exec import ghostscript, tesseract
+from ocrmypdf._exec import ghostscript, tesseract
+from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo import PdfInfo
 
 # pytest.helpers is dynamic
@@ -48,8 +49,6 @@ RENDERERS = ['hocr', 'sandwich']
 def check_monochrome_correlation(
     outdir, reference_pdf, reference_pageno, test_pdf, test_pageno
 ):
-    gslog = logging.getLogger()
-
     reference_png = outdir / f'{reference_pdf.name}.ref{reference_pageno:04d}.png'
     test_png = outdir / f'{test_pdf.name}.test{test_pageno:04d}.png'
 
@@ -60,10 +59,8 @@ def check_monochrome_correlation(
         ghostscript.rasterize_pdf(
             pdf,
             png,
-            xres=100,
-            yres=100,
             raster_device='pngmono',
-            log=gslog,
+            raster_dpi=Resolution(100, 100),
             pageno=pageno,
             rotation=0,
         )
@@ -100,7 +97,7 @@ def test_monochrome_correlation(resources, outdir):
 
 @pytest.mark.slow
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_autorotate(spoof_tesseract_cache, renderer, resources, outdir):
+def test_autorotate(renderer, resources, outdir):
     # cardinal.pdf contains four copies of an image rotated in each cardinal
     # direction - these ones are "burned in" not tagged with /Rotate
     out = check_ocrmypdf(
@@ -111,7 +108,8 @@ def test_autorotate(spoof_tesseract_cache, renderer, resources, outdir):
         '1',
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
     for n in range(1, 4 + 1):
         correlation = check_monochrome_correlation(
@@ -131,9 +129,7 @@ def test_autorotate(spoof_tesseract_cache, renderer, resources, outdir):
         ('99', 'correlation < 0.10'),  # High thres -> never rotate -> low corr
     ],
 )
-def test_autorotate_threshold(
-    spoof_tesseract_cache, threshold, correlation_test, resources, outdir
-):
+def test_autorotate_threshold(threshold, correlation_test, resources, outdir):
     out = check_ocrmypdf(
         resources / 'cardinal.pdf',
         outdir / 'out.pdf',
@@ -142,7 +138,8 @@ def test_autorotate_threshold(
         '-r',
         # '-v',
         # '1',
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
     correlation = check_monochrome_correlation(
@@ -268,7 +265,6 @@ def test_tesseract_orientation(resources, tmp_path):
     pix_rotated = pix.rotate_orth(2)  # 180 degrees clockwise
     pix_rotated.write_implied_format(tmp_path / '000001.png')
 
-    log = logging.getLogger()
     tesseract.get_orientation(  # Test results of this are unreliable
-        tmp_path / '000001.png', engine_mode='3', timeout=10, log=log
+        tmp_path / '000001.png', engine_mode='3', timeout=10
     )

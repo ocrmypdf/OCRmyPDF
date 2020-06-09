@@ -15,10 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import helpers, hocrtransform, leptonica, pdfa, pdfinfo
-from ._version import PROGRAM_NAME, __version__
-from .api import Verbosity, configure_logging, ocr
-from .exceptions import (
+
+from pluggy import HookimplMarker as _HookimplMarker
+
+from ocrmypdf import helpers, hocrtransform, leptonica, pdfa, pdfinfo
+from ocrmypdf._version import PROGRAM_NAME, __version__
+from ocrmypdf.api import Verbosity, configure_logging, ocr
+from ocrmypdf.exceptions import (
     BadArgsError,
     DpiError,
     EncryptedPdfError,
@@ -33,3 +36,6 @@ from .exceptions import (
     TesseractConfigError,
     UnsupportedImageFormatError,
 )
+from ocrmypdf.pluginspec import OcrEngine, OrientationConfidence
+
+hookimpl = _HookimplMarker('ocrmypdf')
