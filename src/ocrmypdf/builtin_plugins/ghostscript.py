@@ -69,14 +69,14 @@ def check_options(options):
 
 @hookimpl
 def rasterize_pdf_page(
-    input_file: Path,
-    output_file: Path,
-    raster_device: str,
-    raster_dpi: Resolution,
-    pageno: int,
-    page_dpi: Resolution = None,
-    rotation: int = None,
-    filter_vector: bool = False,
+    input_file,
+    output_file,
+    raster_device,
+    raster_dpi,
+    pageno,
+    page_dpi=None,
+    rotation=None,
+    filter_vector=False,
 ):
     return ghostscript.rasterize_pdf(
         input_file,
@@ -87,4 +87,15 @@ def rasterize_pdf_page(
         page_dpi=page_dpi,
         rotation=rotation,
         filter_vector=filter_vector,
+    )
+
+
+@hookimpl
+def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdfa_part):
+    return ghostscript.generate_pdfa(
+        pdf_pages=[*pdf_pages, pdfmark],
+        output_file=output_file,
+        compression=compression,
+        pdf_version=pdf_version,
+        pdfa_part=pdfa_part,
     )

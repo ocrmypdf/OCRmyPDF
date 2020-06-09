@@ -31,7 +31,6 @@ from ocrmypdf.pdfinfo import PdfInfo
 check_ocrmypdf = pytest.helpers.check_ocrmypdf
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
 run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
-spoof = pytest.helpers.spoof
 
 
 RENDERERS = ['hocr', 'sandwich']

@@ -30,7 +30,6 @@ from ocrmypdf.helpers import check_pdf
 
 run_ocrmypdf = pytest.helpers.run_ocrmypdf
 run_ocrmypdf_api = pytest.helpers.run_ocrmypdf
-spoof = pytest.helpers.spoof
 
 
 def test_stdin(ocrmypdf_exec, resources, outpdf):

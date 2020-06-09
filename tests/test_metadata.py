@@ -341,7 +341,9 @@ def test_prevent_gs_invalid_xml(resources, outdir):
         args=['-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
     )
     pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
-    context = PdfContext(options, outdir, outdir / 'layers.rendered.pdf', pdfinfo, None)
+    context = PdfContext(
+        options, outdir, outdir / 'layers.rendered.pdf', pdfinfo, get_plugin_manager([])
+    )
 
     convert_to_pdfa(
         str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps'), context
@@ -372,7 +374,9 @@ def test_malformed_docinfo(caplog, resources, outdir):
         args=['-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
     )
     pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
-    context = PdfContext(options, outdir, outdir / 'layers.rendered.pdf', pdfinfo, None)
+    context = PdfContext(
+        options, outdir, outdir / 'layers.rendered.pdf', pdfinfo, get_plugin_manager([])
+    )
 
     convert_to_pdfa(
         str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps'), context

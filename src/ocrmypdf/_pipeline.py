@@ -688,9 +688,10 @@ def convert_to_pdfa(input_pdf, input_ps_stub, context):
         else:
             safe_symlink(input_pdf, fix_docinfo_file)
 
-    ghostscript.generate_pdfa(
+    context.plugin_manager.hook.generate_pdfa(
         pdf_version=input_pdfinfo.min_version,
-        pdf_pages=[fix_docinfo_file, input_ps_stub],
+        pdf_pages=[fix_docinfo_file],
+        pdfmark=input_ps_stub,
         output_file=output_file,
         compression=options.pdfa_image_compression,
         pdfa_part=options.output_type[-1],  # is pdfa-1, pdfa-2, or pdfa-3

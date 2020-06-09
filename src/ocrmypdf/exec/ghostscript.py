@@ -154,24 +154,6 @@ def generate_pdfa(
     pdf_version: str = '1.5',
     pdfa_part: str = '2',
 ):
-    """Generate a PDF/A.
-
-    The pdf_pages, a list files, will be merged into output_file. One or more
-    PDF files may be merged. One of the files in this list must be a pdfmark
-    file that provides Ghostscript with details on how to perform the PDF/A
-    conversion. By default with we pick PDF/A-2b, but this works for 1 or 3.
-
-    compression can be 'jpeg', 'lossless', or an empty string. In 'jpeg',
-    Ghostscript is instructed to convert color and grayscale images to DCT
-    (JPEG encoding). In 'lossless' Ghostscript is told to convert images to
-    Flate (lossless/PNG). If the parameter is omitted Ghostscript is left to
-    make its own decisions about how to encode images; it appears to use a
-    heuristic to decide how to encode images. As of Ghostscript 9.25, we
-    support passthrough JPEG which allows Ghostscript to avoid transcoding
-    images entirely. (The feature was added in 9.23 but broken, and the 9.24
-    release of Ghostscript had regressions, so we don't support it until 9.25.)
-    """
-
     compression_args = []
     if compression == 'jpeg':
         compression_args = [

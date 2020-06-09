@@ -19,7 +19,7 @@ from abc import ABC, abstractstaticmethod
 from argparse import ArgumentParser, Namespace
 from collections import namedtuple
 from pathlib import Path
-from typing import AbstractSet, Optional
+from typing import AbstractSet, List, Optional
 
 import pluggy
 from PIL import Image
@@ -75,8 +75,8 @@ def rasterize_pdf_page(
     raster_device: str,
     raster_dpi: Resolution,
     pageno: int,
-    page_dpi: Resolution = None,
-    rotation: int = None,
+    page_dpi: Optional[Resolution] = None,
+    rotation: Optional[int] = None,
     filter_vector: bool = False,
 ) -> None:
     """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
@@ -162,3 +162,31 @@ class OcrEngine(ABC):
 @hookspec(firstresult=True)
 def get_ocr_engine() -> OcrEngine:
     pass
+
+
+@hookspec(firstresult=True)
+def generate_pdfa(
+    pdf_pages: List[Path],
+    pdfmark: Path,
+    output_file: Path,
+    compression: str,
+    pdf_version: str,
+    pdfa_part: str,
+):
+    """Generate a PDF/A.
+
+    The pdf_pages, a list of files, will be merged into output_file. One or more
+    PDF files may be merged. The pdfmark file is a PostScript.ps file that
+    provides Ghostscript with details on how to perform the PDF/A
+    conversion. By default with we pick PDF/A-2b, but this works for 1 or 3.
+
+    compression can be 'jpeg', 'lossless', or an empty string. In 'jpeg',
+    Ghostscript is instructed to convert color and grayscale images to DCT
+    (JPEG encoding). In 'lossless' Ghostscript is told to convert images to
+    Flate (lossless/PNG). If the parameter is omitted Ghostscript is left to
+    make its own decisions about how to encode images; it appears to use a
+    heuristic to decide how to encode images. As of Ghostscript 9.25, we
+    support passthrough JPEG which allows Ghostscript to avoid transcoding
+    images entirely. (The feature was added in 9.23 but broken, and the 9.24
+    release of Ghostscript had regressions, so we don't support it until 9.25.)
+    """
