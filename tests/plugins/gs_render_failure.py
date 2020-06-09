@@ -19,13 +19,11 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from pathlib import Path
 from subprocess import CalledProcessError
 from unittest.mock import patch
 
 from ocrmypdf import hookimpl
 from ocrmypdf.builtin_plugins import ghostscript
-from ocrmypdf.subprocess import run
 
 
 def raise_gs_fail(*args, **kwargs):

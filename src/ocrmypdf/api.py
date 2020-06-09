@@ -15,14 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import inspect
 import logging
 import os
 import sys
 from argparse import ArgumentParser
 from enum import IntEnum
 from pathlib import Path
-from typing import Dict, Iterable
+from typing import Iterable
 
 from ocrmypdf._logging import PageNumberFilter, TqdmConsole
 from ocrmypdf._plugin_manager import get_plugin_manager

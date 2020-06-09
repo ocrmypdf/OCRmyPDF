@@ -16,13 +16,11 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from pathlib import Path
 
 from ocrmypdf import hookimpl
 from ocrmypdf._exec import ghostscript
 from ocrmypdf._validation import HOCR_OK_LANGS
 from ocrmypdf.exceptions import MissingDependencyError
-from ocrmypdf.helpers import Resolution
 from ocrmypdf.subprocess import check_external_program
 
 log = logging.getLogger(__name__)

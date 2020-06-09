@@ -22,9 +22,11 @@ import pytest
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfinfo import PdfInfo
 
-check_ocrmypdf = pytest.helpers.check_ocrmypdf
-run_ocrmypdf = pytest.helpers.run_ocrmypdf
-run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
+check_ocrmypdf = pytest.helpers.check_ocrmypdf  # pylint: disable=no-member
+run_ocrmypdf = pytest.helpers.run_ocrmypdf  # pylint: disable=no-member
+run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api  # pylint: disable=no-member
+
+# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture

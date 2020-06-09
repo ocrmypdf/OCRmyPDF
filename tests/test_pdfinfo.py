@@ -17,7 +17,6 @@
 
 import pickle
 from math import isclose
-from tempfile import NamedTemporaryFile
 
 import img2pdf
 import pikepdf
@@ -26,7 +25,6 @@ from PIL import Image
 from reportlab.pdfgen.canvas import Canvas
 
 from ocrmypdf import pdfinfo
-from ocrmypdf._exec import ghostscript
 from ocrmypdf.pdfinfo import Colorspace, Encoding
 
 # pylint: disable=protected-access
@@ -110,7 +108,7 @@ def test_single_page_inline_image(outdir):
     assert pdfimage.width == 8
 
 
-def test_jpeg(resources, outdir):
+def test_jpeg(resources):
     filename = resources / 'c02-22.pdf'
 
     pdf = pdfinfo.PdfInfo(filename)
@@ -133,7 +131,7 @@ def test_no_contents(resources):
 
     pdf = pdfinfo.PdfInfo(filename)
     assert len(pdf[0].images) == 0
-    assert pdf[0].has_text == False
+    assert not pdf[0].has_text
 
 
 def test_oversized_page(resources):

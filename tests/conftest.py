@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import ast
 import os
 import platform
 import sys
@@ -24,7 +23,7 @@ from subprocess import PIPE, run
 
 import pytest
 
-from ocrmypdf import api, cli, pdfinfo
+from ocrmypdf import api, pdfinfo
 from ocrmypdf._exec import unpaper
 from ocrmypdf._plugin_manager import get_parser_options_plugins
 

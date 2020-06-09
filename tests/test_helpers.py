@@ -18,7 +18,6 @@
 import logging
 import multiprocessing
 import os
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest

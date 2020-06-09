@@ -26,14 +26,13 @@ from ocrmypdf._plugin_manager import get_parser_options_plugins
 from ocrmypdf._sync import run_pipeline
 from ocrmypdf._validation import check_closed_streams, check_options
 from ocrmypdf.api import Verbosity, configure_logging
-from ocrmypdf.cli import get_parser, plugins_only_parser
 from ocrmypdf.exceptions import BadArgsError, ExitCode, MissingDependencyError
 
 log = logging.getLogger('ocrmypdf')
 
 
 def run(args=None):
-    parser, options, plugin_manager = get_parser_options_plugins(args=args)
+    _parser, options, plugin_manager = get_parser_options_plugins(args=args)
 
     if not check_closed_streams(options):
         return ExitCode.bad_args

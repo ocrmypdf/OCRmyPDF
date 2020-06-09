@@ -38,7 +38,7 @@ ON_SUCCESS_DELETE = bool(os.getenv('OCR_ON_SUCCESS_DELETE', ''))
 DESKEW = bool(os.getenv('OCR_DESKEW', ''))
 OCR_JSON_SETTINGS = json.loads(os.getenv('OCR_JSON_SETTINGS', '{}'))
 POLL_NEW_FILE_SECONDS = int(os.getenv('OCR_POLL_NEW_FILE_SECONDS', '1'))
-USE_POLLING = bool(os.getenv('OCR_USE_POLLING', False))
+USE_POLLING = bool(os.getenv('OCR_USE_POLLING', ''))
 LOGLEVEL = os.getenv('OCR_LOGLEVEL', 'INFO').upper()
 PATTERNS = ['*.pdf']
 

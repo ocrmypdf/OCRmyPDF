@@ -21,11 +21,10 @@ import logging
 import os
 import shutil
 from collections import namedtuple
-from contextlib import suppress
 from os import fspath
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
-from typing import List, Optional
+from typing import List
 
 from PIL import Image
 
@@ -34,7 +33,6 @@ from ocrmypdf.exceptions import (
     SubprocessOutputError,
     TesseractConfigError,
 )
-from ocrmypdf.helpers import safe_symlink
 from ocrmypdf.subprocess import get_version, run
 
 log = logging.getLogger(__name__)

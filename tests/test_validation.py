@@ -16,7 +16,6 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import os
 from unittest.mock import patch
 
 import pikepdf
@@ -35,7 +34,7 @@ def make_opts_pm(input_file='a.pdf', output_file='b.pdf', language='eng', **kwar
         kwargs['language'] = language
     parser = get_parser()
     pm = get_plugin_manager(kwargs.get('plugins', []))
-    pm.hook.add_options(parser=parser)
+    pm.hook.add_options(parser=parser)  # pylint: disable=no-member
     return (
         create_options(
             input_file=input_file, output_file=output_file, parser=parser, **kwargs

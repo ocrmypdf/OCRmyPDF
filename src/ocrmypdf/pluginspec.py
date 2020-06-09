@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-from abc import ABC, abstractstaticmethod
+from abc import ABC, abstractmethod, abstractstaticmethod
 from argparse import ArgumentParser, Namespace
 from collections import namedtuple
 from pathlib import Path
@@ -134,7 +134,7 @@ class OcrEngine(ABC):
     def creator_tag(options: Namespace) -> str:
         """Returns the creator tag to identify this software's role in creating the PDF."""
 
-    @abstractstaticmethod
+    @abstractmethod
     def __str__(self):
         """Returns name of OCR engine and version."""
 

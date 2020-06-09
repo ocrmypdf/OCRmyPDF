@@ -26,9 +26,11 @@ from ocrmypdf._exec.ghostscript import rasterize_pdf
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import Resolution
 
-check_ocrmypdf = pytest.helpers.check_ocrmypdf
-run_ocrmypdf = pytest.helpers.run_ocrmypdf
-run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
+check_ocrmypdf = pytest.helpers.check_ocrmypdf  # pylint: disable=no-member
+run_ocrmypdf = pytest.helpers.run_ocrmypdf  # pylint: disable=no-member
+run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api  # pylint: disable=no-member
+
+# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture
@@ -37,7 +39,7 @@ def francais(resources):
     return path, pikepdf.open(path)
 
 
-def test_rasterize_size(francais, outdir, caplog):
+def test_rasterize_size(francais, outdir):
     path, pdf = francais
     page_size_pts = (pdf.pages[0].MediaBox[2], pdf.pages[0].MediaBox[3])
     assert pdf.pages[0].MediaBox[0] == pdf.pages[0].MediaBox[1] == 0
@@ -86,7 +88,7 @@ def test_rasterize_rotated(francais, outdir, caplog):
 
 
 def test_gs_render_failure(resources, outpdf):
-    p, out, err = run_ocrmypdf(
+    p, _out, err = run_ocrmypdf(
         resources / 'blank.pdf',
         outpdf,
         '--plugin',
@@ -99,7 +101,7 @@ def test_gs_render_failure(resources, outpdf):
 
 
 def test_gs_raster_failure(resources, outpdf):
-    p, out, err = run_ocrmypdf(
+    p, _out, err = run_ocrmypdf(
         resources / 'francais.pdf',
         outpdf,
         '--plugin',
@@ -112,7 +114,7 @@ def test_gs_raster_failure(resources, outpdf):
 
 
 def test_ghostscript_pdfa_failure(resources, outpdf):
-    p, out, err = run_ocrmypdf(
+    p, _out, _err = run_ocrmypdf(
         resources / 'francais.pdf',
         outpdf,
         '--plugin',

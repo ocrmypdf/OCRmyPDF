@@ -28,7 +28,7 @@ from pikepdf.models.metadata import encode_pdf_date
 from PIL import Image, ImageColor, ImageDraw
 
 from ocrmypdf import leptonica
-from ocrmypdf._exec import ghostscript, unpaper
+from ocrmypdf._exec import unpaper
 from ocrmypdf._version import PROGRAM_NAME
 from ocrmypdf._version import __version__ as VERSION
 from ocrmypdf.exceptions import (

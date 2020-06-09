@@ -61,7 +61,7 @@ def get_parser_options_plugins(
     plugin_manager = get_plugin_manager(pre_options.plugins)
 
     parser = get_parser()
-    plugin_manager.hook.add_options(parser=parser)
+    plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
 
     options = parser.parse_args(args=args)
     return parser, options, plugin_manager

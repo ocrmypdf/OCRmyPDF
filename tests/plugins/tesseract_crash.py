@@ -20,7 +20,6 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import signal
-import sys
 from subprocess import CalledProcessError
 from unittest.mock import patch
 

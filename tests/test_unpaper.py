@@ -22,7 +22,6 @@ import pytest
 
 from ocrmypdf._plugin_manager import get_parser_options_plugins
 from ocrmypdf._validation import check_options
-from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 
 # pytest.helpers is dynamic

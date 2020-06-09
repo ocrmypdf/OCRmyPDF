@@ -18,7 +18,7 @@
 import os
 import sys
 from pathlib import Path
-from subprocess import DEVNULL, PIPE, CalledProcessError, Popen, run
+from subprocess import DEVNULL, PIPE, Popen, run
 
 import pytest
 
@@ -95,7 +95,7 @@ def test_closed_streams(ocrmypdf_exec, resources, outpdf):
         stdin=None,
         preexec_fn=evil_closer,
     )
-    out, err = p.communicate()
+    _out, err = p.communicate()
     print(err.decode())
     assert p.returncode == ExitCode.ok
 
@@ -121,7 +121,7 @@ def test_dev_null(resources):
     if 'COV_CORE_DATAFILE' in os.environ:
         pytest.skip(msg="Coverage uses stdout")
 
-    p, out, err = run_ocrmypdf(
+    p, out, _err = run_ocrmypdf(
         resources / 'trivial.pdf',
         os.devnull,
         '--force-ocr',

@@ -15,10 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
 from io import BytesIO
 from os import fspath
-from unittest.mock import Mock
 
 import img2pdf
 import pikepdf
