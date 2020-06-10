@@ -588,7 +588,7 @@ def _pdf_get_pageinfo(
         pageinfo['has_text'] = _page_has_text(bboxes, width_pt, height_pt)
     else:
         pageinfo['textboxes'] = []
-        pageinfo['has_text'] = None
+        pageinfo['has_text'] = None  # i.e. "no information"
 
     userunit = page.get('/UserUnit', Decimal(1.0))
     if not isinstance(userunit, Decimal):
@@ -605,22 +605,25 @@ def _pdf_get_pageinfo(
     userunit_shorthand = (userunit, 0, 0, userunit, 0, 0)
 
     if check_this_page:
-        contentsinfo = [
-            ci
-            for ci in _process_content_streams(
-                pdf=pdf, container=page, shorthand=userunit_shorthand
-            )
-        ]
+        pageinfo['has_vector'] = False
+        pageinfo['has_text'] = False
+        pageinfo['images'] = []
+        for ci in _process_content_streams(
+            pdf=pdf, container=page, shorthand=userunit_shorthand
+        ):
+            if isinstance(ci, VectorMarker):
+                pageinfo['has_vector'] = True
+            elif isinstance(ci, TextMarker):
+                pageinfo['has_text'] = True
+            elif isinstance(ci, ImageInfo):
+                pageinfo['images'].append(ci)
+            else:
+                raise NotImplementedError()
     else:
-        contentsinfo = []
+        pageinfo['has_vector'] = None  # i.e. "no information"
+        pageinfo['has_text'] = None
+        pageinfo['images'] = None
 
-    pageinfo['has_vector'] = False
-    if any(isinstance(ci, VectorMarker) for ci in contentsinfo):
-        pageinfo['has_vector'] = True
-    if any(isinstance(ci, TextMarker) for ci in contentsinfo):
-        pageinfo['has_text'] = True
-
-    pageinfo['images'] = [im for im in contentsinfo if isinstance(im, ImageInfo)]
     if pageinfo['images']:
         dpi = Resolution(0.0, 0.0).take_max(image.dpi for image in pageinfo['images'])
         pageinfo['dpi'] = dpi
