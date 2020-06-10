@@ -654,19 +654,6 @@ def _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers):
     return pages
 
 
-def _pdf_get_all_pageinfo(infile, progbar=False, max_workers=None):
-    pdf = pikepdf.open(infile)  # Do not close in this function
-    try:
-        if pdf.is_encrypted:
-            raise EncryptedPdfError()  # Triggered by encryption with empty passwd
-        pages = _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers)
-    except Exception:
-        pdf.close()
-        raise
-
-    return pages, pdf
-
-
 class PageInfo:
     def __init__(self, pdf, pageno, infile):
         self._pageno = pageno
@@ -770,9 +757,11 @@ class PdfInfo:
 
     def __init__(self, infile, progbar=False, max_workers=None):
         self._infile = infile
-        self._pages, pdf = _pdf_get_all_pageinfo(
-            infile, progbar=progbar, max_workers=max_workers
-        )
+
+        with pikepdf.open(infile) as pdf:
+            if pdf.is_encrypted:
+                raise EncryptedPdfError()  # Triggered by encryption with empty passwd
+            self._pages = _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers)
         self._needs_rendering = pdf.root.get('/NeedsRendering', False)
         self._has_acroform = False
         if '/AcroForm' in pdf.root:
@@ -780,7 +769,6 @@ class PdfInfo:
                 self._has_acroform = True
             elif '/XFA' in pdf.root.AcroForm:
                 self._has_acroform = True
-        pdf.close()
 
     @property
     def pages(self):
@@ -826,10 +814,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('infile')
     args = parser.parse_args()
-    pagesinfo, pdfinfo = _pdf_get_all_pageinfo(args.infile)
+    pdfinfo = PdfInfo(args.infile)
 
     pprint(pdfinfo)
-    for page in pagesinfo:
+    for page in pdfinfo.pages:
         pprint(page)
         for im in page.images:
             pprint(im)
