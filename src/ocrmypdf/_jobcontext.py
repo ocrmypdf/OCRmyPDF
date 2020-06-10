@@ -18,7 +18,6 @@
 import os
 import shutil
 import sys
-from functools import partial
 from pathlib import Path
 
 from ocrmypdf._plugin_manager import get_plugin_manager
@@ -72,19 +71,12 @@ class PageContext:
     def __getstate__(self):
         state = self.__dict__.copy()
         if state['plugin_manager'] is not None:
-            del state['plugin_manager']
-            state['construct_plugin_manager'] = partial(
-                get_plugin_manager, self.options.plugins
-            )
+            state['plugin_manager'] = None
         return state
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        if 'construct_plugin_manager' in state:
-            self.plugin_manager = state['construct_plugin_manager']()
-        else:
-            self.plugin_manager = None
-        del self.__dict__['construct_plugin_manager']
+        self.plugin_manager = get_plugin_manager(self.options.plugins)
 
 
 def cleanup_working_files(work_folder, options):
