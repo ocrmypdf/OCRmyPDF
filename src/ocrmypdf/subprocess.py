@@ -105,6 +105,7 @@ def _fix_windows_args(program, args, env):
     return args
 
 
+@lru_cache(maxsize=None)
 def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)', env=None):
     """Get the version of the specified program"""
     args_prog = [program, version_arg]
