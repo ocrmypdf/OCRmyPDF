@@ -168,7 +168,7 @@ def test_ocr_detection(resources):
 )
 def test_corrupt_font_detection(resources, testfile):
     filename = resources / testfile
-    pdf = pdfinfo.PdfInfo(filename)
+    pdf = pdfinfo.PdfInfo(filename, detailed_analysis=True)
     assert pdf[0].has_corrupt_text
 
 

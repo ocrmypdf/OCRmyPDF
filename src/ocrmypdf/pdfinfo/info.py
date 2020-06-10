@@ -98,15 +98,19 @@ XobjectSettings = namedtuple('XobjectSettings', ['name', 'shorthand', 'stack_dep
 InlineSettings = namedtuple('InlineSettings', ['iimage', 'shorthand', 'stack_depth'])
 
 ContentsInfo = namedtuple(
-    'ContentsInfo', ['xobject_settings', 'inline_images', 'found_vector', 'name_index']
+    'ContentsInfo',
+    ['xobject_settings', 'inline_images', 'found_vector', 'found_text', 'name_index'],
 )
 
 TextboxInfo = namedtuple('TextboxInfo', ['bbox', 'is_visible', 'is_corrupt'])
 
 
-class VectorInfo:
-    def __init__(self):
-        pass
+class VectorMarker:
+    pass
+
+
+class TextMarker:
+    pass
 
 
 def _normalize_stack(graphobjs):
@@ -153,9 +157,11 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     inline_images = []
     name_index = defaultdict(lambda: [])
     found_vector = False
+    found_text = False
     vector_ops = set('S s f F f* B B* b b*'.split())
+    text_showing_ops = set("""TJ Tj " '""".split())
     image_ops = set('BI ID EI q Q Do cm'.split())
-    operator_whitelist = ' '.join(vector_ops | image_ops)
+    operator_whitelist = ' '.join(vector_ops | text_showing_ops | image_ops)
 
     for n, graphobj in enumerate(
         _normalize_stack(
@@ -195,11 +201,14 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
             inline_images.append(inline)
         elif operator in vector_ops:
             found_vector = True
+        elif operator in text_showing_ops:
+            found_text = True
 
     return ContentsInfo(
         xobject_settings=xobject_settings,
         inline_images=inline_images,
         found_vector=found_vector,
+        found_text=found_text,
         name_index=name_index,
     )
 
@@ -505,7 +514,9 @@ def _process_content_streams(*, pdf, container, shorthand=None):
     contentsinfo = _interpret_contents(container, initial_shorthand)
 
     if contentsinfo.found_vector:
-        yield VectorInfo()
+        yield VectorMarker()
+    if contentsinfo.found_text:
+        yield TextMarker()
     yield from _find_inline_images(contentsinfo)
     yield from _find_regular_images(container, contentsinfo)
     yield from _find_form_xobject_images(pdf, container, contentsinfo)
@@ -554,7 +565,9 @@ def simplify_textboxes(miner, textbox_getter):
         yield TextboxInfo(box.bbox, visible, corrupt)
 
 
-def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, check_pages):
+def _pdf_get_pageinfo(
+    pdf, pageno: int, infile: PathLike, check_pages, detailed_analysis
+):
     pageinfo = {}
     pageinfo['pageno'] = pageno
     pageinfo['images'] = []
@@ -564,9 +577,9 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, check_pages):
     width_pt = mediabox[2] - mediabox[0]
     height_pt = mediabox[3] - mediabox[1]
 
-    check_this_page = not check_pages or pageno in check_pages
+    check_this_page = pageno in check_pages
 
-    if check_this_page:
+    if check_this_page and detailed_analysis:
         pscript5_mode = str(pdf.docinfo.get('/Creator')).startswith('PScript5')
         miner = get_page_analysis(infile, pageno, pscript5_mode)
         pageinfo['textboxes'] = list(simplify_textboxes(miner, get_text_boxes))
@@ -602,8 +615,10 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, check_pages):
         contentsinfo = []
 
     pageinfo['has_vector'] = False
-    if any(isinstance(ci, VectorInfo) for ci in contentsinfo):
+    if any(isinstance(ci, VectorMarker) for ci in contentsinfo):
         pageinfo['has_vector'] = True
+    if any(isinstance(ci, TextMarker) for ci in contentsinfo):
+        pageinfo['has_text'] = True
 
     pageinfo['images'] = [im for im in contentsinfo if isinstance(im, ImageInfo)]
     if pageinfo['images']:
@@ -625,12 +640,14 @@ def _pdf_pageinfo_sync_init(infile):
 
 def _pdf_pageinfo_sync(args):
     global worker_pdf  # pylint: disable=global-statement
-    pageno, infile, check_pages = args
-    page = PageInfo(worker_pdf, pageno, infile, check_pages)
+    pageno, infile, check_pages, detailed_analysis = args
+    page = PageInfo(worker_pdf, pageno, infile, check_pages, detailed_analysis)
     return page
 
 
-def _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers, check_pages):
+def _pdf_pageinfo_concurrent(
+    pdf, infile, progbar, max_workers, check_pages, detailed_analysis=False
+):
     pages = [None] * len(pdf.pages)
 
     def update_pageinfo(result, pbar):
@@ -642,7 +659,7 @@ def _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers, check_pages):
         max_workers = available_cpu_count()
 
     total = len(pdf.pages)
-    contexts = ((n, infile, check_pages) for n in range(total))
+    contexts = ((n, infile, check_pages, detailed_analysis) for n in range(total))
 
     use_threads = False  # No performance gain if threaded due to GIL
     n_workers = min(1 + len(pages) // 4, max_workers)
@@ -666,10 +683,13 @@ def _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers, check_pages):
 
 
 class PageInfo:
-    def __init__(self, pdf, pageno, infile, check_pages):
+    def __init__(self, pdf, pageno, infile, check_pages, detailed_analysis=False):
         self._pageno = pageno
         self._infile = infile
-        self._pageinfo = _pdf_get_pageinfo(pdf, pageno, infile, check_pages)
+        self._detailed_analysis = detailed_analysis
+        self._pageinfo = _pdf_get_pageinfo(
+            pdf, pageno, infile, check_pages, detailed_analysis
+        )
 
     @property
     def pageno(self):
@@ -681,6 +701,8 @@ class PageInfo:
 
     @property
     def has_corrupt_text(self):
+        if not self._detailed_analysis:
+            raise NotImplementedError('Did not do detailed analysis')
         return any(tbox.is_corrupt for tbox in self._pageinfo['textboxes'])
 
     @property
@@ -766,14 +788,28 @@ class PageInfo:
 class PdfInfo:
     """Get summary information about a PDF"""
 
-    def __init__(self, infile, progbar=False, max_workers=None, check_pages=None):
+    def __init__(
+        self,
+        infile,
+        detailed_analysis=False,
+        progbar=False,
+        max_workers=None,
+        check_pages=None,
+    ):
         self._infile = infile
+        if check_pages is None:
+            check_pages = range(0, 1_000_000_000)
 
         with pikepdf.open(infile) as pdf:
             if pdf.is_encrypted:
                 raise EncryptedPdfError()  # Triggered by encryption with empty passwd
             self._pages = _pdf_pageinfo_concurrent(
-                pdf, infile, progbar, max_workers, check_pages=check_pages
+                pdf,
+                infile,
+                progbar,
+                max_workers,
+                check_pages=check_pages,
+                detailed_analysis=detailed_analysis,
             )
             self._needs_rendering = pdf.root.get('/NeedsRendering', False)
             self._has_acroform = False

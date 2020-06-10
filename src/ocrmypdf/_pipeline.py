@@ -149,10 +149,17 @@ def triage(original_filename, input_file, output_file, options):
     return output_file
 
 
-def get_pdfinfo(input_file, progbar=False, max_workers=None, check_pages=None):
+def get_pdfinfo(
+    input_file,
+    detailed_analysis=False,
+    progbar=False,
+    max_workers=None,
+    check_pages=None,
+):
     try:
         return PdfInfo(
             input_file,
+            detailed_analysis=detailed_analysis,
             progbar=progbar,
             max_workers=max_workers,
             check_pages=check_pages,

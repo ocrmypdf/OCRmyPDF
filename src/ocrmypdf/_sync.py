@@ -307,6 +307,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
         # Gather pdfinfo and create context
         pdfinfo = get_pdfinfo(
             origin_pdf,
+            detailed_analysis=options.redo_ocr,
             progbar=options.progress_bar,
             max_workers=options.jobs if not options.use_threads else 1,  # To help debug
             check_pages=options.pages,
