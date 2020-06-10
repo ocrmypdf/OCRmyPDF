@@ -554,7 +554,7 @@ def simplify_textboxes(miner, textbox_getter):
         yield TextboxInfo(box.bbox, visible, corrupt)
 
 
-def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike):
+def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike, check_pages):
     pageinfo = {}
     pageinfo['pageno'] = pageno
     pageinfo['images'] = []
@@ -564,12 +564,18 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike):
     width_pt = mediabox[2] - mediabox[0]
     height_pt = mediabox[3] - mediabox[1]
 
-    pscript5_mode = str(pdf.docinfo.get('/Creator')).startswith('PScript5')
-    miner = get_page_analysis(infile, pageno, pscript5_mode)
-    pageinfo['textboxes'] = list(simplify_textboxes(miner, get_text_boxes))
-    bboxes = (box.bbox for box in pageinfo['textboxes'])
+    check_this_page = not check_pages or pageno in check_pages
 
-    pageinfo['has_text'] = _page_has_text(bboxes, width_pt, height_pt)
+    if check_this_page:
+        pscript5_mode = str(pdf.docinfo.get('/Creator')).startswith('PScript5')
+        miner = get_page_analysis(infile, pageno, pscript5_mode)
+        pageinfo['textboxes'] = list(simplify_textboxes(miner, get_text_boxes))
+        bboxes = (box.bbox for box in pageinfo['textboxes'])
+
+        pageinfo['has_text'] = _page_has_text(bboxes, width_pt, height_pt)
+    else:
+        pageinfo['textboxes'] = []
+        pageinfo['has_text'] = None
 
     userunit = page.get('/UserUnit', Decimal(1.0))
     if not isinstance(userunit, Decimal):
@@ -584,12 +590,16 @@ def _pdf_get_pageinfo(pdf, pageno: int, infile: PathLike):
         pageinfo['rotate'] = 0
 
     userunit_shorthand = (userunit, 0, 0, userunit, 0, 0)
-    contentsinfo = [
-        ci
-        for ci in _process_content_streams(
-            pdf=pdf, container=page, shorthand=userunit_shorthand
-        )
-    ]
+
+    if check_this_page:
+        contentsinfo = [
+            ci
+            for ci in _process_content_streams(
+                pdf=pdf, container=page, shorthand=userunit_shorthand
+            )
+        ]
+    else:
+        contentsinfo = []
 
     pageinfo['has_vector'] = False
     if any(isinstance(ci, VectorInfo) for ci in contentsinfo):
@@ -615,12 +625,12 @@ def _pdf_pageinfo_sync_init(infile):
 
 def _pdf_pageinfo_sync(args):
     global worker_pdf  # pylint: disable=global-statement
-    pageno, infile = args
-    page = PageInfo(worker_pdf, pageno, infile)
+    pageno, infile, check_pages = args
+    page = PageInfo(worker_pdf, pageno, infile, check_pages)
     return page
 
 
-def _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers):
+def _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers, check_pages):
     pages = [None] * len(pdf.pages)
 
     def update_pageinfo(result, pbar):
@@ -631,7 +641,8 @@ def _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers):
     if max_workers is None:
         max_workers = available_cpu_count()
 
-    contexts = ((n, infile) for n in range(len(pdf.pages)))
+    total = len(pdf.pages)
+    contexts = ((n, infile, check_pages) for n in range(total))
 
     use_threads = False  # No performance gain if threaded due to GIL
     n_workers = min(1 + len(pages) // 4, max_workers)
@@ -644,7 +655,7 @@ def _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers):
         use_threads=use_threads,
         max_workers=n_workers,
         tqdm_kwargs=dict(
-            total=len(pdf.pages), desc="Scan", unit='page', disable=not progbar
+            total=total, desc="Searching for text", unit='page', disable=not progbar
         ),
         task_initializer=partial(_pdf_pageinfo_sync_init, infile),
         task=_pdf_pageinfo_sync,
@@ -655,10 +666,10 @@ def _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers):
 
 
 class PageInfo:
-    def __init__(self, pdf, pageno, infile):
+    def __init__(self, pdf, pageno, infile, check_pages):
         self._pageno = pageno
         self._infile = infile
-        self._pageinfo = _pdf_get_pageinfo(pdf, pageno, infile)
+        self._pageinfo = _pdf_get_pageinfo(pdf, pageno, infile, check_pages)
 
     @property
     def pageno(self):
@@ -755,20 +766,22 @@ class PageInfo:
 class PdfInfo:
     """Get summary information about a PDF"""
 
-    def __init__(self, infile, progbar=False, max_workers=None):
+    def __init__(self, infile, progbar=False, max_workers=None, check_pages=None):
         self._infile = infile
 
         with pikepdf.open(infile) as pdf:
             if pdf.is_encrypted:
                 raise EncryptedPdfError()  # Triggered by encryption with empty passwd
-            self._pages = _pdf_pageinfo_concurrent(pdf, infile, progbar, max_workers)
-        self._needs_rendering = pdf.root.get('/NeedsRendering', False)
-        self._has_acroform = False
-        if '/AcroForm' in pdf.root:
-            if len(pdf.root.AcroForm.get('/Fields', [])) > 0:
-                self._has_acroform = True
-            elif '/XFA' in pdf.root.AcroForm:
-                self._has_acroform = True
+            self._pages = _pdf_pageinfo_concurrent(
+                pdf, infile, progbar, max_workers, check_pages=check_pages
+            )
+            self._needs_rendering = pdf.root.get('/NeedsRendering', False)
+            self._has_acroform = False
+            if '/AcroForm' in pdf.root:
+                if len(pdf.root.AcroForm.get('/Fields', [])) > 0:
+                    self._has_acroform = True
+                elif '/XFA' in pdf.root.AcroForm:
+                    self._has_acroform = True
 
     @property
     def pages(self):

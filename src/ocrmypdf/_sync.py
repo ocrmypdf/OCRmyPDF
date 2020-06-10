@@ -309,6 +309,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
             origin_pdf,
             progbar=options.progress_bar,
             max_workers=options.jobs if not options.use_threads else 1,  # To help debug
+            check_pages=options.pages,
         )
 
         context = PdfContext(options, work_folder, origin_pdf, pdfinfo, plugin_manager)
