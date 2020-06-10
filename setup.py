@@ -83,8 +83,9 @@ setup(
         'coloredlogs >= 14.0',  # strictly optional
         'img2pdf >= 0.3.0, < 0.4',  # pure Python, so track HEAD closely
         'pdfminer.six >= 20191110, <= 20200517',
-        'pikepdf >= 1.8.1, < 2',
-        'Pillow >= 6.2.0',
+        'pikepdf >= 1.14.0, < 2',
+        'Pillow >= 7.0.0',
+        'pluggy >= 0.13.0',
         'reportlab >= 3.3.0',  # oldest released version with sane image handling
         'tqdm >= 4',
     ],

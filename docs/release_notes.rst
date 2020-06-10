@@ -13,32 +13,46 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
-v10.0.0 (not yet released)
-==========================
+v10.0.0
+=======
 
 **Breaking changes**
 
 -  Support for pdfminer.six version 20181108 has been dropped, along with a
    monkeypatch that made this version work.
--  Ghostscript is no longer used for finding the location of text in PDFs, and
-   APIs related to this feature have been removed.
 -  Output messages are now displayed in color (when supported by the terminal)
    and prefixes describing the severity of the message are removed. As such
    programs that parse OCRmyPDF's log message will need to be revised. (Please
    consider using OCRmyPDF as a library instead.)
+-  The minimum version for certain dependencies has increased.
+-  Many API changes; see developer changes.
+-  The Python libraries pluggy and coloredlogs are now required.
+
+**New features and improvements**
+
+-  PDF page scanning is now parallelized across CPUs, speeding up this phase
+   for files with a high page count.
+-  PDF page scanning is optimized, addressing some performance regressions.
+-  A plugin architecture has been added, currently allowing one to more easily
+   use a different OCR engine or PDF renderer from Tesseract and Ghostscript,
+   respectively. A plugin can also override some decisions, such changing
+   the OCR settings after initial scanning.
+-  Colored log messages.
+
+**Developer changes**
+
+-  The test spoofing mechanism, used to correct handling of failures in
+   Tesseract and Ghostscript, has been removed in favor of using plugins for
+   testing. The spoofing mechanism was fairly complex and required many special
+   hacks for Windows.
 -  Code describing the resolution in DPI of images was refactored into a
    ``ocrmypdf.helpers.Resolution`` class.
--  A deprecated parameter in ``ocrmypdf.exec.ghostscript.generate_pdfa`` was
-   removed.
--  The deprecated module ``ocrmypdf.exec.qpdf`` was removed.
+-  The module ``ocrmypdf._exec`` is now private to OCRmyPDF.
 -  The ``ocrmypdf.hocrtransform`` module has been updated to follow PEP8 naming
    conventions.
-
-**New features**
-
--  PDF page scanning is now parallelized across CPUs, speeding up the "Scan"
-   phase for files with a high page count.
--  Colored log messages.
+-  Ghostscript is no longer used for finding the location of text in PDFs, and
+   APIs related to this feature have been removed.
+-  Lots of internal reorganization to support plugins.
 
 v9.8.2
 ======

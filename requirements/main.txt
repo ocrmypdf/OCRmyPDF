@@ -5,7 +5,8 @@ cffi == 1.14.0
 coloredlogs == 14.0  # technically optional
 img2pdf == 0.3.4
 pdfminer.six == 20200517
-pikepdf == 1.11.1
+pikepdf == 1.14.0
+pluggy == 0.13.1
 Pillow == 7.1.1
 reportlab == 3.5.34
 tqdm == 4.45.0
