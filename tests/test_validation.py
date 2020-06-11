@@ -49,16 +49,19 @@ def make_opts(*args, **kwargs):
 
 
 def test_hocr_notlatin_warning(caplog):
-    vd.check_options(
-        *make_opts_pm(language='chi_sim', pdf_renderer='hocr', output_type='pdfa')
-    )
+    # Bypass the test to see if the language is installed; we just want to pretend
+    # that a non-Latin language is installed
+    with patch('ocrmypdf._validation.check_options_languages', return_value=None):
+        vd.check_options(
+            *make_opts_pm(language='chi_sim', pdf_renderer='hocr', output_type='pdfa')
+        )
     assert 'PDF renderer is known to cause' in caplog.text
 
 
 def test_old_ghostscript(caplog):
     with patch('ocrmypdf._exec.ghostscript.version', return_value='9.19'), patch(
         'ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True
-    ):
+    ), patch('ocrmypdf._validation.check_options_languages', return_value=None):
         vd.check_options(*make_opts_pm(language='chi_sim', output_type='pdfa'))
         assert 'Ghostscript does not work correctly' in caplog.text
 
