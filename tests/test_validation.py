@@ -272,3 +272,10 @@ def test_pagesegmode_warning(caplog):
     plugin_manager = get_plugin_manager(opts.plugins)
     vd._check_options(opts, plugin_manager, set())
     assert 'disable OCR' in caplog.text
+
+
+def test_two_languages():
+    with patch('ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True):
+        vd._check_options(
+            *make_opts_pm(language='fakelang1+fakelang2'), {'fakelang1', 'fakelang2'}
+        )
