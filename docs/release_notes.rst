@@ -13,6 +13,11 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v10.0.1
+=======
+
+-  Fix regression when ``-l lang1+lang2`` is used from command line.
+
 v10.0.0
 =======
 
