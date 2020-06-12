@@ -67,20 +67,20 @@ def check_platform():
         )
 
 
-def check_options_languages(options, plugin_manager):
+def check_options_languages(options, ocr_engine_languages):
     if not options.languages:
         options.languages = {DEFAULT_LANGUAGE}
         system_lang = locale.getlocale()[0]
         if system_lang and not system_lang.startswith('en'):
             log.debug("No language specified; assuming --language %s", DEFAULT_LANGUAGE)
-
-    ocr_engine = plugin_manager.hook.get_ocr_engine()
-    if not options.languages.issubset(ocr_engine.languages(options)):
+    if not ocr_engine_languages:
+        return
+    if not options.languages.issubset(ocr_engine_languages):
         msg = (
-            f"{ocr_engine} does not have language data for the following "
+            f"OCR engine does not have language data for the following "
             "requested languages: \n"
         )
-        for lang in options.languages - ocr_engine.languages(options):
+        for lang in options.languages - ocr_engine_languages:
             msg += lang + '\n'
         raise MissingDependencyError(msg)
 
@@ -251,9 +251,9 @@ def check_options_pillow(options):
         PIL.Image.MAX_IMAGE_PIXELS = None
 
 
-def check_options(options, plugin_manager):
+def _check_options(options, plugin_manager, ocr_engine_languages):
     check_platform()
-    check_options_languages(options, plugin_manager)
+    check_options_languages(options, ocr_engine_languages)
     check_options_metadata(options)
     check_options_output(options)
     check_options_sidecar(options)
@@ -263,6 +263,11 @@ def check_options(options, plugin_manager):
     check_options_advanced(options)
     check_options_pillow(options)
     plugin_manager.hook.check_options(options=options)
+
+
+def check_options(options, plugin_manager):
+    ocr_engine_languages = plugin_manager.hook.get_ocr_engine().languages(options)
+    _check_options(options, plugin_manager, ocr_engine_languages)
 
 
 def check_closed_streams(options):  # pragma: no cover

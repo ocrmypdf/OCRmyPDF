@@ -51,31 +51,33 @@ def make_opts(*args, **kwargs):
 def test_hocr_notlatin_warning(caplog):
     # Bypass the test to see if the language is installed; we just want to pretend
     # that a non-Latin language is installed
-    with patch('ocrmypdf._validation.check_options_languages', return_value=None):
-        vd.check_options(
-            *make_opts_pm(language='chi_sim', pdf_renderer='hocr', output_type='pdfa')
-        )
+    vd._check_options(
+        *make_opts_pm(language='chi_sim', pdf_renderer='hocr', output_type='pdfa'),
+        {'chi_sim'},
+    )
     assert 'PDF renderer is known to cause' in caplog.text
 
 
 def test_old_ghostscript(caplog):
     with patch('ocrmypdf._exec.ghostscript.version', return_value='9.19'), patch(
         'ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True
-    ), patch('ocrmypdf._validation.check_options_languages', return_value=None):
-        vd.check_options(*make_opts_pm(language='chi_sim', output_type='pdfa'))
+    ):
+        vd._check_options(
+            *make_opts_pm(language='chi_sim', output_type='pdfa'), {'chi_sim'}
+        )
         assert 'Ghostscript does not work correctly' in caplog.text
 
     with patch('ocrmypdf._exec.ghostscript.version', return_value='9.18'), patch(
         'ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True
     ):
         with pytest.raises(MissingDependencyError):
-            vd.check_options(*make_opts_pm(output_type='pdfa-3'))
+            vd._check_options(*make_opts_pm(output_type='pdfa-3'), set())
 
     with patch('ocrmypdf._exec.ghostscript.version', return_value='9.24'), patch(
         'ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True
     ):
         with pytest.raises(MissingDependencyError):
-            vd.check_options(*make_opts_pm())
+            vd._check_options(*make_opts_pm(), set())
 
 
 def test_old_tesseract_error():
@@ -83,7 +85,7 @@ def test_old_tesseract_error():
         with pytest.raises(MissingDependencyError):
             opts = make_opts(pdf_renderer='sandwich', language='eng')
             plugin_manager = get_plugin_manager(opts.plugins)
-            vd.check_options(opts, plugin_manager)
+            vd._check_options(opts, plugin_manager, {'eng'})
 
 
 def test_lossless_redo():
@@ -113,13 +115,13 @@ def test_user_words(caplog):
     with patch('ocrmypdf._exec.tesseract.has_user_words', return_value=False):
         opts = make_opts(user_words='foo')
         plugin_manager = get_plugin_manager(opts.plugins)
-        vd.check_options(opts, plugin_manager)
+        vd._check_options(opts, plugin_manager, set())
         assert '4.0 ignores --user-words' in caplog.text
     caplog.clear()
     with patch('ocrmypdf._exec.tesseract.has_user_words', return_value=True):
         opts = make_opts(user_patterns='foo')
         plugin_manager = get_plugin_manager(opts.plugins)
-        vd.check_options(opts, plugin_manager)
+        vd._check_options(opts, plugin_manager, set())
         assert '4.0 ignores --user-words' not in caplog.text
 
 
@@ -182,7 +184,7 @@ def test_no_progress_bar(progress_bar, resources):
     opts = make_opts(progress_bar=progress_bar, input_file=(resources / 'trivial.pdf'))
     plugin_manager = get_plugin_manager(opts.plugins)
     with patch('ocrmypdf._concurrent.tqdm', autospec=True) as tqdmpatch:
-        vd.check_options(opts, plugin_manager)
+        vd._check_options(opts, plugin_manager, set())
         pdfinfo = PdfInfo(opts.input_file, progbar=opts.progress_bar)
         assert pdfinfo is not None
         assert tqdmpatch.called
@@ -197,7 +199,7 @@ def test_language_warning(caplog):
     with patch(
         'ocrmypdf._validation.locale.getlocale', return_value=('en_US', 'UTF-8')
     ):
-        vd.check_options_languages(opts, plugin_manager)
+        vd.check_options_languages(opts, {'eng'})
         assert opts.languages == {'eng'}
         assert '' in caplog.text
 
@@ -205,7 +207,7 @@ def test_language_warning(caplog):
     with patch(
         'ocrmypdf._validation.locale.getlocale', return_value=('fr_FR', 'UTF-8')
     ):
-        vd.check_options_languages(opts, plugin_manager)
+        vd.check_options_languages(opts, {'eng'})
         assert opts.languages == {'eng'}
         assert 'assuming --language' in caplog.text
 
@@ -268,5 +270,5 @@ def test_optional_program_recommended(caplog):
 def test_pagesegmode_warning(caplog):
     opts = make_opts(tesseract_pagesegmode='0')
     plugin_manager = get_plugin_manager(opts.plugins)
-    vd.check_options(opts, plugin_manager)
+    vd._check_options(opts, plugin_manager, set())
     assert 'disable OCR' in caplog.text
