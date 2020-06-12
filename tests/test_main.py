@@ -875,3 +875,8 @@ def test_image_dpi_not_image(caplog, resources, outpdf):
         'tests/plugins/tesseract_noop.py',
     )
     assert '--image-dpi is being ignored' in caplog.text
+
+
+def test_two_languages(resources, no_outpdf):
+    p, _, _ = run_ocrmypdf(resources / 'graph_ocred.pdf', no_outpdf, '-l', 'eng+deu')
+    assert p.returncode == ExitCode.already_done_ocr
