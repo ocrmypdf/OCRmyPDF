@@ -25,9 +25,9 @@ from tqdm import tqdm
 class PageNumberFilter(logging.Filter):
     def filter(self, record):
         pageno = getattr(record, 'pageno', None)
-        if pageno is not None:
+        if isinstance(pageno, int):
             record.pageno = f'{pageno:5d} '
-        else:
+        elif pageno is None:
             record.pageno = ''
         return True
 
