@@ -33,19 +33,37 @@ hookspec = pluggy.HookspecMarker('ocrmypdf')
 
 @hookspec
 def add_options(parser: ArgumentParser) -> None:
-    """Allows the plugin to add its own command line arguments.
+    """Allows the plugin to add its own command line and API arguments.
 
-    Even if you do not intend to use plugins in a command line context, you
-    should use this function to create your options.
+    OCRmyPDF converts command line arguments to API arguments, so adding
+    arguments here will cause new arguments to be processed for API calls
+    to ``ocrmypdf.ocr``, or when invoked on the command line.
+
+    Note:
+        This hook will be called from the main process, and may modify global state
+        before child worker processes are forked.
     """
 
 
 @hookspec
 def check_options(options: Namespace) -> None:
-    """Called to ask the plugin to check all of its options.
+    """Called to ask the plugin to check all of the options.
 
-	The plugin may modify the *options*. All objects that are in options must
-	be picklable so they can be marshalled to child worker processes.
+    The plugin may check if options that it added are valid.
+
+    Warnings or other messages may be passed to the user by creating a logger
+    object using ``log = logging.getLogger(__name__)`` and logging to this.
+
+    The plugin may also modify the *options*. All objects that are in options
+    must be picklable so they can be marshalled to child worker processes.
+
+    Raises:
+        ocrmypdf.exceptions.ExitCodeException: If options are not acceptable
+            and the application should terminate gracefully with an informative
+            message and error code.
+    Note:
+        This hook will be called from the main process, and may modify global state
+        before child worker processes are forked.
 	"""
 
 
@@ -59,12 +77,13 @@ def validate(pdfinfo: 'PdfInfo', options: Namespace) -> None:
     that a certain type of file should be treated with ``options.force_ocr = True``
     based on information in its *pdfinfo*.
 
-    The plugin may raise :class:`ocrmypdf.exceptions.InputFileError` or any
-    :class:`ocrmypdf.exceptions.ExitCodeException` to request
-    normal termination. ocrmypdf will hold the plugin responsible for raising
-    exceptions of any other type.
-
-    The return value is ignored. To abort processing, raise an ``ExitCodeException``.
+    Raises:
+        ocrmypdf.exceptions.ExitCodeException: If options or pdfinfo are not acceptable
+            and the application should terminate gracefully with an informative
+            message and error code.
+    Note:
+        This hook will be called from the main process, and may modify global state
+        before child worker processes are forked.
     """
 
 
@@ -86,14 +105,19 @@ def rasterize_pdf_page(
     be overridden with the values in page_dpi.
 
     Args:
-        raster_device: type of image to produce at output_file
-        raster_dpi: resolution at which to rasterize page
-        pageno: page number to rasterize (beginning at page 1)
-        page_dpi: resolution, overriding output image DPI
-        rotation: cardinal angle, clockwise, to rotate page
-        filter_vector: if True, remove vector graphics objects
+        input_file: The PDF to rasterize.
+        output_file: The desired name of the rasterized image.
+        raster_device: Type of image to produce at output_file
+        raster_dpi: Resolution at which to rasterize page
+        pageno: Page number to rasterize (beginning at page 1)
+        page_dpi: Resolution, overriding output image DPI
+        rotation: Cardinal angle, clockwise, to rotate page
+        filter_vector: If True, remove vector graphics objects
     Returns:
         output_file
+    Note:
+        This hook will be called from child processes. Modifying global state
+        will not affect the main process or other child processes.
     """
 
 
@@ -103,6 +127,10 @@ def filter_ocr_image(page: 'PageContext', image: Image) -> Image:
 
     This is the image that OCR sees, not what the user sees when they view the
     PDF.
+
+    Note:
+        This hook will be called from child processes. Modifying global state
+        will not affect the main process or other child processes.
     """
 
 
@@ -119,6 +147,10 @@ def filter_page_image(page: 'PageContext', image_filename: Path) -> Path:
     convert the image to a JPEG, the output page will be created as a JPEG, etc.
     Note that the ocrmypdf image optimization stage may ultimately chose a
     different format.
+
+    Note:
+        This hook will be called from child processes. Modifying global state
+        will not affect the main process or other child processes.
     """
 
 
@@ -140,7 +172,10 @@ class OcrEngine(ABC):
 
     @abstractstaticmethod
     def languages(options: Namespace) -> AbstractSet[str]:
-        """Returns set of languages that are supported."""
+        """Returns the set of all languages that are supported by the engine.
+
+        Languages are typically given in 3-letter ISO 3166-1 codes, but actually
+        can be any value understood by the OCR engine."""
 
     @abstractstaticmethod
     def get_orientation(input_file: Path, options: Namespace) -> OrientationConfidence:
@@ -150,18 +185,31 @@ class OcrEngine(ABC):
     def generate_hocr(
         input_file: Path, output_hocr: Path, output_text: Path, options: Namespace
     ) -> None:
-        """Called to produce a hOCR file."""
+        """Called to produce a hOCR file and sidecar text file."""
 
     @abstractstaticmethod
     def generate_pdf(
         input_file: Path, output_pdf: Path, output_text: Path, options: Namespace
     ) -> None:
-        """Called to produce a text only PDF (no image, invisible text)."""
+        """Called to produce a text only PDF.
+
+        Args:
+            input_file: A page image on which to perform OCR.
+            output_pdf: The expected name of the output PDF, which must be
+                a single page PDF with no visible content of any kind, sized
+                to the dimensions implied by the input_file's width, height
+                and DPI. The image will be grafted onto the input PDF page.
+        """
 
 
 @hookspec(firstresult=True)
 def get_ocr_engine() -> OcrEngine:
-    pass
+    """Returns an OcrEngine to use for processing this file.
+
+    The OcrEngine may be instantiated multiple times, by both the main process
+    and child process. As such, it must be obtain store any state in ``options``
+    or some common location.
+    """
 
 
 @hookspec(firstresult=True)
@@ -175,21 +223,26 @@ def generate_pdfa(
 ) -> Path:
     """Generate a PDF/A.
 
-    The pdf_pages, a list of files, will be merged into output_file. One or more
-    PDF files may be merged. The pdfmark file is a PostScript.ps file that
-    provides Ghostscript with details on how to perform the PDF/A
-    conversion. By default with we pick PDF/A-2b, but this works for 1 or 3.
+    This API strongly assumes a PDF/A generator with Ghostscript's semantics.
 
-    compression can be 'jpeg', 'lossless', or an empty string. In 'jpeg',
-    Ghostscript is instructed to convert color and grayscale images to DCT
-    (JPEG encoding). In 'lossless' Ghostscript is told to convert images to
-    Flate (lossless/PNG). If the parameter is omitted Ghostscript is left to
-    make its own decisions about how to encode images; it appears to use a
-    heuristic to decide how to encode images. As of Ghostscript 9.25, we
-    support passthrough JPEG which allows Ghostscript to avoid transcoding
-    images entirely. (The feature was added in 9.23 but broken, and the 9.24
-    release of Ghostscript had regressions, so we don't support it until 9.25.)
+    OCRmyPDF will modify the metadata and possibly linearize the PDF/A after it
+    is generated.
+
+    Arguments:
+        pdf_pages: A list of one or more filenames, will be merged into output_file.
+        pdfmark: A PostScript file intended for Ghostscript with details on
+            how to perform the PDF/A conversion.
+        output_file: The name of the desired output file.
+        compression: One of ``'jpeg'``, ``'lossless'``, ``''``. For ``'jpeg'``,
+            the PDF/A generator should convert all images to JPEG encoding where
+            possible. For lossless, all images should be converted to FlateEncode
+            (lossless PNG). If an empty string, the PDF generator should make its
+            own decisions about how to encode images.
+        pdf_version: The minimum PDF version that the output file should be.
+            At its own discretion, the PDF/A generator may raise the version,
+            but should not lower it.
+        pdfa_part: The desired PDF/A compliance level, such as ``'2B'``.
 
     Returns:
-        output_file
+        output_file: If successful, the hook should return ``output_file``.
     """

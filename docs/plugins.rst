@@ -70,7 +70,7 @@ A plugin may provide the following hooks. Hooks should be decorated with
     from ocrmpydf import hookimpl
 
     @hookimpl
-    def prepare(options):
+    def add_options(parser):
         pass
 
 The following is a complete list of hooks that may be installed and when
