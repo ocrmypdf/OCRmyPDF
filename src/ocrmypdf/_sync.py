@@ -102,52 +102,67 @@ def exec_page_sync(page_context):
     options = page_context.options
     tls.pageno = page_context.pageno + 1
 
-    orientation_correction = 0
-    pdf_page_from_image_out = None
-    ocr_out = None
-    text_out = None
-    if is_ocr_required(page_context):
-        if options.rotate_pages:
-            # Rasterize
-            rasterize_preview_out = rasterize_preview(page_context.origin, page_context)
-            orientation_correction = get_orientation_correction(
-                rasterize_preview_out, page_context
-            )
-
-        rasterize_out = rasterize(
-            page_context.origin,
-            page_context,
-            correction=orientation_correction,
-            remove_vectors=False,
+    if not is_ocr_required(page_context):
+        return PageResult(
+            pageno=page_context.pageno,
+            pdf_page_from_image=None,
+            ocr=None,
+            text=None,
+            orientation_correction=0,
         )
 
-        if not any([options.clean, options.clean_final, options.remove_vectors]):
-            ocr_image = preprocess_out = preprocess(
+    orientation_correction = 0
+    if options.rotate_pages:
+        # Rasterize
+        rasterize_preview_out = rasterize_preview(page_context.origin, page_context)
+        orientation_correction = get_orientation_correction(
+            rasterize_preview_out, page_context
+        )
+
+    rasterize_out = rasterize(
+        page_context.origin,
+        page_context,
+        correction=orientation_correction,
+        remove_vectors=False,
+    )
+
+    ocr_image = preprocess_out = None
+    if not any([options.clean, options.clean_final, options.remove_vectors]):
+        ocr_image = preprocess_out = preprocess(
+            page_context,
+            rasterize_out,
+            options.remove_background,
+            options.deskew,
+            clean=False,
+        )
+    else:
+        if not options.lossless_reconstruction:
+            preprocess_out = preprocess(
                 page_context,
                 rasterize_out,
                 options.remove_background,
                 options.deskew,
-                clean=False,
+                clean=options.clean_final,
+            )
+        if options.remove_vectors:
+            rasterize_ocr_out = rasterize(
+                page_context.origin,
+                page_context,
+                correction=orientation_correction,
+                remove_vectors=True,
+                output_tag='_ocr',
             )
         else:
-            if not options.lossless_reconstruction:
-                preprocess_out = preprocess(
-                    page_context,
-                    rasterize_out,
-                    options.remove_background,
-                    options.deskew,
-                    clean=options.clean_final,
-                )
-            if options.remove_vectors:
-                rasterize_ocr_out = rasterize(
-                    page_context.origin,
-                    page_context,
-                    correction=orientation_correction,
-                    remove_vectors=True,
-                    output_tag='_ocr',
-                )
-            else:
-                rasterize_ocr_out = rasterize_out
+            rasterize_ocr_out = rasterize_out
+
+        if (
+            preprocess_out
+            and rasterize_ocr_out == rasterize_out
+            and options.clean == options.clean_final
+        ):
+            # Optimization: image for OCR is identical to presentation image
+            ocr_image = preprocess_out
+        else:
             ocr_image = preprocess(
                 page_context,
                 rasterize_ocr_out,
@@ -156,31 +171,29 @@ def exec_page_sync(page_context):
                 clean=options.clean,
             )
 
-        ocr_image_out = create_ocr_image(ocr_image, page_context)
+    ocr_image_out = create_ocr_image(ocr_image, page_context)
 
-        pdf_page_from_image_out = None
-        if not options.lossless_reconstruction:
-            visible_image_out = preprocess_out
-            if should_visible_page_image_use_jpg(page_context.pageinfo):
-                visible_image_out = create_visible_page_jpg(
-                    visible_image_out, page_context
-                )
-            visible_image_out = (
-                page_context.plugin_manager.hook.filter_page_image(
-                    page=page_context, image_filename=Path(visible_image_out)
-                )
-                or visible_image_out
+    pdf_page_from_image_out = None
+    if not options.lossless_reconstruction:
+        visible_image_out = preprocess_out
+        if should_visible_page_image_use_jpg(page_context.pageinfo):
+            visible_image_out = create_visible_page_jpg(visible_image_out, page_context)
+        visible_image_out = (
+            page_context.plugin_manager.hook.filter_page_image(
+                page=page_context, image_filename=Path(visible_image_out)
             )
-            pdf_page_from_image_out = create_pdf_page_from_image(
-                visible_image_out, page_context
-            )
+            or visible_image_out
+        )
+        pdf_page_from_image_out = create_pdf_page_from_image(
+            visible_image_out, page_context
+        )
 
-        if options.pdf_renderer == 'hocr':
-            (hocr_out, text_out) = ocr_engine_hocr(ocr_image_out, page_context)
-            ocr_out = render_hocr_page(hocr_out, page_context)
+    if options.pdf_renderer == 'hocr':
+        (hocr_out, text_out) = ocr_engine_hocr(ocr_image_out, page_context)
+        ocr_out = render_hocr_page(hocr_out, page_context)
 
-        if options.pdf_renderer == 'sandwich':
-            (ocr_out, text_out) = ocr_engine_textonly_pdf(ocr_image_out, page_context)
+    if options.pdf_renderer == 'sandwich':
+        (ocr_out, text_out) = ocr_engine_textonly_pdf(ocr_image_out, page_context)
 
     return PageResult(
         pageno=page_context.pageno,
