@@ -24,12 +24,13 @@ from collections import namedtuple
 from functools import partial
 from pathlib import Path
 from tempfile import mkdtemp
+from typing import List, NamedTuple, Optional, Tuple
 
 import PIL
 
 from ocrmypdf._concurrent import exec_progress_pool
 from ocrmypdf._graft import OcrGrafter
-from ocrmypdf._jobcontext import PdfContext, cleanup_working_files
+from ocrmypdf._jobcontext import PageContext, PdfContext, cleanup_working_files
 from ocrmypdf._pipeline import (
     convert_to_pdfa,
     copy_final,
@@ -75,16 +76,6 @@ tls = threading.local()
 tls.pageno = None
 
 
-def preprocess(page_context, image, remove_background, deskew, clean):
-    if remove_background:
-        image = preprocess_remove_background(image, page_context)
-    if deskew:
-        image = preprocess_deskew(image, page_context)
-    if clean:
-        image = preprocess_clean(image, page_context)
-    return image
-
-
 old_factory = logging.getLogRecordFactory()
 
 
@@ -98,27 +89,28 @@ def record_factory(*args, **kwargs):
 logging.setLogRecordFactory(record_factory)
 
 
-def exec_page_sync(page_context):
+def preprocess(
+    page_context: PageContext,
+    image: Path,
+    remove_background: bool,
+    deskew: bool,
+    clean: bool,
+) -> Path:
+    if remove_background:
+        image = preprocess_remove_background(image, page_context)
+    if deskew:
+        image = preprocess_deskew(image, page_context)
+    if clean:
+        image = preprocess_clean(image, page_context)
+    return image
+
+
+def make_intermediate_images(
+    page_context: PageContext, orientation_correction: int
+) -> Tuple[Path, Optional[Path]]:
     options = page_context.options
-    tls.pageno = page_context.pageno + 1
 
-    if not is_ocr_required(page_context):
-        return PageResult(
-            pageno=page_context.pageno,
-            pdf_page_from_image=None,
-            ocr=None,
-            text=None,
-            orientation_correction=0,
-        )
-
-    orientation_correction = 0
-    if options.rotate_pages:
-        # Rasterize
-        rasterize_preview_out = rasterize_preview(page_context.origin, page_context)
-        orientation_correction = get_orientation_correction(
-            rasterize_preview_out, page_context
-        )
-
+    ocr_image = preprocess_out = None
     rasterize_out = rasterize(
         page_context.origin,
         page_context,
@@ -126,7 +118,6 @@ def exec_page_sync(page_context):
         remove_vectors=False,
     )
 
-    ocr_image = preprocess_out = None
     if not any([options.clean, options.clean_final, options.remove_vectors]):
         ocr_image = preprocess_out = preprocess(
             page_context,
@@ -170,7 +161,33 @@ def exec_page_sync(page_context):
                 options.deskew,
                 clean=options.clean,
             )
+    return ocr_image, preprocess_out
 
+
+def exec_page_sync(page_context: PageContext):
+    options = page_context.options
+    tls.pageno = page_context.pageno + 1
+
+    if not is_ocr_required(page_context):
+        return PageResult(
+            pageno=page_context.pageno,
+            pdf_page_from_image=None,
+            ocr=None,
+            text=None,
+            orientation_correction=0,
+        )
+
+    orientation_correction = 0
+    if options.rotate_pages:
+        # Rasterize
+        rasterize_preview_out = rasterize_preview(page_context.origin, page_context)
+        orientation_correction = get_orientation_correction(
+            rasterize_preview_out, page_context
+        )
+
+    ocr_image, preprocess_out = make_intermediate_images(
+        page_context, orientation_correction
+    )
     ocr_image_out = create_ocr_image(ocr_image, page_context)
 
     pdf_page_from_image_out = None
