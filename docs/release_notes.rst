@@ -5,9 +5,12 @@ Release notes
 OCRmyPDF uses `semantic versioning <http://semver.org/>`__ for its
 command line interface and its public API.
 
-The ``ocrmypdf`` package may now be imported. The public API may be
-useful in scripts that launch OCRmyPDF processes or that wish to use
-some of its features for working with PDFs.
+OCRmyPDF's output messages are not considered part of the stable interface -
+that is, output messages may be improved at any release level, so parsing them
+may be unreliable. Use the API to depend on precise behavior.
+
+The public API may be useful in scripts that launch OCRmyPDF processes or that
+wish to use some of its features for working with PDFs.
 
 Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
@@ -36,8 +39,12 @@ v10.0.0
 **New features and improvements**
 
 -  PDF page scanning is now parallelized across CPUs, speeding up this phase
-   for files with a high page count.
+   dramatically for files with a high page counts.
 -  PDF page scanning is optimized, addressing some performance regressions.
+-  PDF page scanning is no longer run on pages that are not selected when the
+   ``--pages`` argument is used.
+-  PDF page scanning is now independent of Ghostscript, ending our past reliance
+   on this occasionally unstable feature in Ghostscript.
 -  A plugin architecture has been added, currently allowing one to more easily
    use a different OCR engine or PDF renderer from Tesseract and Ghostscript,
    respectively. A plugin can also override some decisions, such changing
@@ -46,7 +53,7 @@ v10.0.0
 
 **Developer changes**
 
--  The test spoofing mechanism, used to correct handling of failures in
+-  The test spoofing mechanism, used to test correct handling of failures in
    Tesseract and Ghostscript, has been removed in favor of using plugins for
    testing. The spoofing mechanism was fairly complex and required many special
    hacks for Windows.
