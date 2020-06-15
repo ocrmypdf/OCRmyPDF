@@ -19,12 +19,16 @@ from abc import ABC, abstractmethod, abstractstaticmethod
 from argparse import ArgumentParser, Namespace
 from collections import namedtuple
 from pathlib import Path
-from typing import AbstractSet, List, Optional
+from typing import TYPE_CHECKING, AbstractSet, List, Optional
 
 import pluggy
 from PIL import Image
 
 from ocrmypdf.helpers import Resolution
+
+if TYPE_CHECKING:
+    from ocrmypdf._jobcontext import PageContext
+    from ocrmypdf.pdfinfo import PdfInfo
 
 hookspec = pluggy.HookspecMarker('ocrmypdf')
 

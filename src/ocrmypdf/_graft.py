@@ -18,6 +18,7 @@
 import logging
 from contextlib import suppress
 from pathlib import Path
+from typing import Optional
 
 import pikepdf
 
@@ -108,7 +109,12 @@ class OcrGrafter:
         self.interim_count = 0
 
     def graft_page(
-        self, *, pageno: int, image: Path, textpdf: Path, autorotate_correction: int
+        self,
+        *,
+        pageno: int,
+        image: Optional[Path],
+        textpdf: Optional[Path],
+        autorotate_correction: int,
     ):
         if textpdf and not self.font:
             self.font, self.font_key = self._find_font(textpdf)

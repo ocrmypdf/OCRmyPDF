@@ -24,6 +24,7 @@ import sys
 import unicodedata
 from pathlib import Path
 from shutil import copyfileobj
+from typing import Tuple
 
 import pikepdf
 import PIL
@@ -329,7 +330,7 @@ def log_page_orientations(pdfinfo):
         log.info('Page orientations detected: %s', ' '.join(orientations))
 
 
-def create_input_file(options, work_folder: Path) -> (Path, str):
+def create_input_file(options, work_folder: Path) -> Tuple[Path, str]:
     if options.input_file == '-':
         # stdin
         log.info('reading file from standard input')

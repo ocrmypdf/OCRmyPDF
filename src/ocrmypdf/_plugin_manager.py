@@ -20,7 +20,7 @@ import importlib
 import importlib.util
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 import pluggy
 
@@ -56,7 +56,7 @@ def get_plugin_manager(plugins: List[str], builtins=True):
 
 def get_parser_options_plugins(
     args,
-) -> (argparse.ArgumentParser, argparse.Namespace, pluggy.PluginManager):
+) -> Tuple[argparse.ArgumentParser, argparse.Namespace, pluggy.PluginManager]:
     pre_options, _unused = plugins_only_parser.parse_known_args(args=args)
     plugin_manager = get_plugin_manager(pre_options.plugins)
 

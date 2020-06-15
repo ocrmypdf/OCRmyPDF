@@ -27,6 +27,7 @@ from functools import wraps
 from io import StringIO
 from math import isclose
 from pathlib import Path
+from typing import Any, Sequence
 
 import pikepdf
 
@@ -104,28 +105,28 @@ def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike):
     os.symlink(os.path.abspath(input_file), soft_link_name)
 
 
-def samefile(f1, f2):
+def samefile(f1: os.PathLike, f2: os.PathLike):
     if os.name == 'nt':
         return f1 == f2
     else:
         return os.path.samefile(f1, f2)
 
 
-def is_iterable_notstr(thing):
+def is_iterable_notstr(thing: Any) -> bool:
     return isinstance(thing, Iterable) and not isinstance(thing, str)
 
 
-def monotonic(L: Iterable):
+def monotonic(L: Sequence) -> bool:
     """Does list increase monotonically?"""
     return all(b > a for a, b in zip(L, L[1:]))
 
 
-def page_number(input_file: os.PathLike):
+def page_number(input_file: os.PathLike) -> int:
     """Get one-based page number implied by filename (000002.pdf -> 2)"""
     return int(os.path.basename(os.fspath(input_file))[0:6])
 
 
-def available_cpu_count():
+def available_cpu_count() -> int:
     try:
         return multiprocessing.cpu_count()
     except NotImplementedError:
@@ -136,7 +137,7 @@ def available_cpu_count():
     return 1
 
 
-def is_file_writable(test_file: os.PathLike):
+def is_file_writable(test_file: os.PathLike) -> bool:
     """Intentionally racy test if target is writable.
 
     We intend to write to the output file if and only if we succeed and
@@ -171,7 +172,7 @@ def is_file_writable(test_file: os.PathLike):
         return False
 
 
-def check_pdf(input_file):
+def check_pdf(input_file: Path) -> bool:
     pdf = None
     try:
         pdf = pikepdf.open(input_file)

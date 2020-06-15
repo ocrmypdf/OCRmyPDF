@@ -264,6 +264,8 @@ def ocr(  # pylint: disable=unused-argument
     """
     if not plugins:
         plugins = []
+    else:
+        plugins = list(plugins)
 
     parser = get_parser()
     _plugin_manager = get_plugin_manager(plugins)

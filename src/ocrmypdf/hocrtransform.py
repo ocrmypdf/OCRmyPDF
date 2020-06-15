@@ -34,6 +34,7 @@ import re
 from collections import namedtuple
 from math import atan, cos, sin
 from pathlib import Path
+from typing import Union
 from xml.etree import ElementTree
 
 from reportlab.lib.units import inch
@@ -66,9 +67,9 @@ class HocrTransform:
         {'ﬀ': 'ff', 'ﬃ': 'f‌f‌i', 'ﬄ': 'f‌f‌l', 'ﬁ': 'fi', 'ﬂ': 'fl'}
     )
 
-    def __init__(self, hocr_filename: str, dpi: float):
+    def __init__(self, hocr_filename: Union[str, Path], dpi: float):
         self.dpi = dpi
-        self.hocr = ElementTree.parse(hocr_filename)
+        self.hocr = ElementTree.parse(os.fspath(hocr_filename))
 
         # if the hOCR file has a namespace, ElementTree requires its use to
         # find elements

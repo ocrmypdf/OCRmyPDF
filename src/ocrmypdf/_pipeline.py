@@ -20,7 +20,9 @@ import os
 import re
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from shutil import copyfileobj
+from typing import Dict, Iterable, Optional
 
 import img2pdf
 import pikepdf
@@ -29,6 +31,7 @@ from PIL import Image, ImageColor, ImageDraw
 
 from ocrmypdf import leptonica
 from ocrmypdf._exec import unpaper
+from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._version import PROGRAM_NAME
 from ocrmypdf._version import __version__ as VERSION
 from ocrmypdf.exceptions import (
@@ -170,7 +173,7 @@ def get_pdfinfo(
         raise InputFileError()
 
 
-def validate_pdfinfo_options(context):
+def validate_pdfinfo_options(context: PdfContext):
     pdfinfo = context.pdfinfo
     options = context.options
 
@@ -255,7 +258,7 @@ def get_canvas_square_dpi(pageinfo, options) -> Resolution:
     return Resolution(units, units)
 
 
-def is_ocr_required(page_context):
+def is_ocr_required(page_context: PageContext):
     pageinfo = page_context.pageinfo
     options = page_context.options
 
@@ -329,7 +332,7 @@ def is_ocr_required(page_context):
     return ocr_required
 
 
-def rasterize_preview(input_file, page_context):
+def rasterize_preview(input_file: Path, page_context: PageContext):
     output_file = page_context.get_path('rasterize_preview.jpg')
     canvas_dpi = get_canvas_square_dpi(page_context.pageinfo, page_context.options)
     page_dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
@@ -344,7 +347,7 @@ def rasterize_preview(input_file, page_context):
     return output_file
 
 
-def describe_rotation(page_context, orient_conf, correction):
+def describe_rotation(page_context: PageContext, orient_conf, correction: int):
     """
     Describe the page rotation we are going to perform.
     """
@@ -373,7 +376,7 @@ def describe_rotation(page_context, orient_conf, correction):
     return f"{facing}, confidence {orient_conf.confidence:.2f} - {action}"
 
 
-def get_orientation_correction(preview, page_context):
+def get_orientation_correction(preview: Path, page_context: PageContext):
     """Work out orientation correct for each page.
 
     We ask Ghostscript to draw a preview page, which will rasterize with the
@@ -405,7 +408,11 @@ def get_orientation_correction(preview, page_context):
 
 
 def rasterize(
-    input_file, page_context, correction=0, output_tag='', remove_vectors=None
+    input_file: Path,
+    page_context: PageContext,
+    correction: int = 0,
+    output_tag: str = '',
+    remove_vectors=None,
 ):
     colorspaces = ['pngmono', 'pnggray', 'png256', 'png16m']
     device_idx = 0
@@ -455,7 +462,7 @@ def rasterize(
     return output_file
 
 
-def preprocess_remove_background(input_file, page_context):
+def preprocess_remove_background(input_file: Path, page_context: PageContext):
     if any(image.bpc > 1 for image in page_context.pageinfo.images):
         output_file = page_context.get_path('pp_rm_bg.png')
         leptonica.remove_background(input_file, output_file)
@@ -465,21 +472,21 @@ def preprocess_remove_background(input_file, page_context):
         return input_file
 
 
-def preprocess_deskew(input_file, page_context):
+def preprocess_deskew(input_file: Path, page_context: PageContext):
     output_file = page_context.get_path('pp_deskew.png')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
     leptonica.deskew(input_file, output_file, dpi.x)
     return output_file
 
 
-def preprocess_clean(input_file, page_context):
+def preprocess_clean(input_file: Path, page_context: PageContext):
     output_file = page_context.get_path('pp_clean.png')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
     unpaper.clean(input_file, output_file, dpi.x, page_context.options.unpaper_args)
     return output_file
 
 
-def create_ocr_image(image, page_context):
+def create_ocr_image(image: Path, page_context: PageContext):
     """Create the image we send for OCR. May not be the same as the display
     image depending on preprocessing. This image will never be shown to the
     user."""
@@ -538,7 +545,7 @@ def create_ocr_image(image, page_context):
     return output_file
 
 
-def ocr_engine_hocr(input_file, page_context):
+def ocr_engine_hocr(input_file: Path, page_context: PageContext):
     hocr_out = page_context.get_path('ocr_hocr.hocr')
     hocr_text_out = page_context.get_path('ocr_hocr.txt')
     options = page_context.options
@@ -558,7 +565,7 @@ def should_visible_page_image_use_jpg(pageinfo):
     return pageinfo.images and all(im.enc == Encoding.jpeg for im in pageinfo.images)
 
 
-def create_visible_page_jpg(image, page_context):
+def create_visible_page_jpg(image: Path, page_context: PageContext) -> Path:
     output_file = page_context.get_path('visible.jpg')
     with Image.open(image) as im:
         # At this point the image should be a .png, but deskew, unpaper
@@ -577,7 +584,7 @@ def create_visible_page_jpg(image, page_context):
     return output_file
 
 
-def create_pdf_page_from_image(image, page_context):
+def create_pdf_page_from_image(image: Path, page_context: PageContext):
     # We rasterize a square DPI version of each page because most image
     # processing tools don't support rectangular DPI. Use the square DPI as it
     # accurately describes the image. It would be possible to resample the image
@@ -598,7 +605,7 @@ def create_pdf_page_from_image(image, page_context):
     return output_file
 
 
-def render_hocr_page(hocr, page_context):
+def render_hocr_page(hocr: Path, page_context: PageContext):
     output_file = page_context.get_path('ocr_hocr.pdf')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
     hocrtransform = HocrTransform(hocr, dpi.x)  # square
@@ -612,7 +619,7 @@ def render_hocr_page(hocr, page_context):
     return output_file
 
 
-def ocr_engine_textonly_pdf(input_image, page_context):
+def ocr_engine_textonly_pdf(input_image: Path, page_context: PageContext):
     output_pdf = page_context.get_path('ocr_tess.pdf')
     output_text = page_context.get_path('ocr_tess.txt')
     options = page_context.options
@@ -627,7 +634,7 @@ def ocr_engine_textonly_pdf(input_image, page_context):
     return (output_pdf, output_text)
 
 
-def get_docinfo(base_pdf, context):
+def get_docinfo(base_pdf: pikepdf.Pdf, context: PdfContext) -> Dict[str, str]:
     options = context.options
 
     def from_document_info(key):
@@ -664,13 +671,13 @@ def get_docinfo(base_pdf, context):
     return pdfmark
 
 
-def generate_postscript_stub(context):
+def generate_postscript_stub(context: PdfContext):
     output_file = context.get_path('pdfa.ps')
     generate_pdfa_ps(output_file)
     return output_file
 
 
-def convert_to_pdfa(input_pdf, input_ps_stub, context):
+def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext):
     options = context.options
     input_pdfinfo = context.pdfinfo
     fix_docinfo_file = context.get_path('fix_docinfo.pdf')
@@ -712,14 +719,14 @@ def convert_to_pdfa(input_pdf, input_ps_stub, context):
     return output_file
 
 
-def should_linearize(working_file, context):
+def should_linearize(working_file: Path, context: PdfContext):
     filesize = os.stat(working_file).st_size
     if filesize > (context.options.fast_web_view * 1_000_000):
         return True
     return False
 
 
-def metadata_fixup(working_file, context):
+def metadata_fixup(working_file: Path, context: PdfContext):
     output_file = context.get_path('metafix.pdf')
     options = context.options
 
@@ -768,7 +775,7 @@ def metadata_fixup(working_file, context):
     return output_file
 
 
-def optimize_pdf(input_file, context):
+def optimize_pdf(input_file: Path, context: PdfContext):
     output_file = context.get_path('optimize.pdf')
     save_settings = dict(
         compress_streams=True,
@@ -780,7 +787,7 @@ def optimize_pdf(input_file, context):
     return output_file
 
 
-def merge_sidecars(txt_files, context):
+def merge_sidecars(txt_files: Iterable[Optional[Path]], context: PdfContext):
     output_file = context.get_path('sidecar.txt')
     with open(output_file, 'w', encoding="utf-8") as stream:
         for page_num, txt_file in enumerate(txt_files):
@@ -801,7 +808,7 @@ def merge_sidecars(txt_files, context):
     return output_file
 
 
-def copy_final(input_file, output_file, _context):
+def copy_final(input_file: Path, output_file: Path, _context: PdfContext):
     log.debug('%s -> %s', input_file, output_file)
     with open(input_file, 'rb') as input_stream:
         if output_file == '-':

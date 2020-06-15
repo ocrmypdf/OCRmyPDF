@@ -20,7 +20,6 @@ import logging.handlers
 import os
 import sys
 import threading
-from collections import namedtuple
 from functools import partial
 from pathlib import Path
 from tempfile import mkdtemp
@@ -68,9 +67,14 @@ from ocrmypdf.pdfa import file_claims_pdfa
 
 log = logging.getLogger(__name__)
 
-PageResult = namedtuple(
-    'PageResult', 'pageno, pdf_page_from_image, ocr, text, orientation_correction'
-)
+
+class PageResult(NamedTuple):
+    pageno: int
+    pdf_page_from_image: Optional[Path]
+    ocr: Optional[Path]
+    text: Optional[Path]
+    orientation_correction: int
+
 
 tls = threading.local()
 tls.pageno = None
@@ -221,7 +225,7 @@ def exec_page_sync(page_context: PageContext):
     )
 
 
-def post_process(pdf_file, context):
+def post_process(pdf_file, context: PdfContext):
     pdf_out = pdf_file
     if context.options.output_type.startswith('pdfa'):
         ps_stub_out = generate_postscript_stub(context)
@@ -231,14 +235,14 @@ def post_process(pdf_file, context):
     return optimize_pdf(pdf_out, context)
 
 
-def worker_init(max_pixels):
+def worker_init(max_pixels: int):
     # In Windows, child process will not inherit our change to this value in
     # the parent process, so ensure workers get it set. Not needed when running
     # threaded, but harmless to set again.
     PIL.Image.MAX_IMAGE_PIXELS = max_pixels
 
 
-def exec_concurrent(context):
+def exec_concurrent(context: PdfContext):
     """Execute the pipeline concurrently"""
 
     # Run exec_page_sync on every page context
@@ -246,10 +250,10 @@ def exec_concurrent(context):
     if max_workers > 1:
         log.info("Start processing %d pages concurrently", max_workers)
 
-    sidecars = [None] * len(context.pdfinfo)
+    sidecars: List[Optional[Path]] = [None] * len(context.pdfinfo)
     ocrgraft = OcrGrafter(context)
 
-    def update_page(result, pbar):
+    def update_page(result: PageResult, pbar):
         sidecars[result.pageno] = result.text
         pbar.update()
         ocrgraft.graft_page(
