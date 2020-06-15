@@ -196,15 +196,15 @@ def exec_page_sync(page_context: PageContext):
 
     pdf_page_from_image_out = None
     if not options.lossless_reconstruction:
+        assert preprocess_out
         visible_image_out = preprocess_out
         if should_visible_page_image_use_jpg(page_context.pageinfo):
             visible_image_out = create_visible_page_jpg(visible_image_out, page_context)
-        visible_image_out = (
-            page_context.plugin_manager.hook.filter_page_image(
-                page=page_context, image_filename=Path(visible_image_out)
-            )
-            or visible_image_out
+        filtered_image = page_context.plugin_manager.hook.filter_page_image(
+            page=page_context, image_filename=visible_image_out
         )
+        if filtered_image:
+            visible_image_out = filtered_image
         pdf_page_from_image_out = create_pdf_page_from_image(
             visible_image_out, page_context
         )
