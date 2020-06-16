@@ -16,6 +16,17 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v10.1.0
+=======
+
+-  Previously, we ``--clean-final`` would cause an unpaper-cleaned page image to
+   be produced twice, which was necessary in some cases but not in general. We
+   now take this optimization opportunity and reuse the image if possible.
+-  We now provide PNG files as input to unpaper, since it accepts them, instead
+   of generating PPM files which can be very large. This can improve performance
+   and temporary disk usage.
+-  Documentation updated for plugins.
+
 v10.0.1
 =======
 
