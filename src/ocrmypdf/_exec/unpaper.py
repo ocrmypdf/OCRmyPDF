@@ -26,6 +26,7 @@ import shlex
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError
 from tempfile import TemporaryDirectory
+from typing import Tuple
 
 from PIL import Image
 
@@ -40,13 +41,11 @@ def version():
     return get_version('unpaper')
 
 
-def run(input_file, output_file, dpi, mode_args):
-    args_unpaper = ['unpaper', '-v', '--dpi', str(dpi)] + mode_args
-
+def _setup_unpaper_io(tmpdir: Path, input_file: Path) -> Tuple[Path, Path]:
     SUFFIXES = {'1': '.pbm', 'L': '.pgm', 'RGB': '.ppm'}
-
-    with TemporaryDirectory() as tmpdir, Image.open(input_file) as im:
-        if im.mode not in SUFFIXES.keys():
+    with Image.open(input_file) as im:
+        im_modified = False
+        if im.mode not in SUFFIXES:
             log.info("Converting image to other colorspace")
             try:
                 if im.mode == 'P' and len(im.getcolors()) == 2:
@@ -54,11 +53,11 @@ def run(input_file, output_file, dpi, mode_args):
                 else:
                     im = im.convert(mode='RGB')
             except IOError as e:
-                im.close()
                 raise MissingDependencyError(
                     "Could not convert image with type " + im.mode
                 ) from e
-
+            else:
+                im_modified = True
         try:
             suffix = SUFFIXES[im.mode]
         except KeyError:
@@ -66,9 +65,21 @@ def run(input_file, output_file, dpi, mode_args):
                 "Failed to convert image to a supported format."
             ) from e
 
-        input_pnm = Path(tmpdir) / f'input{suffix}'
-        output_pnm = Path(tmpdir) / f'output{suffix}'
-        im.save(input_pnm, format='PPM')
+        if im_modified or input_file.suffix != '.png':
+            input_png = tmpdir / 'input.png'
+            im.save(input_png, format='PNG', compress_level=1)
+        else:
+            # No changes, PNG input, just use the file we already have
+            input_png = input_file
+        output_pnm = tmpdir / f'output{suffix}'
+    return input_png, output_pnm
+
+
+def run(input_file, output_file, dpi, mode_args):
+    args_unpaper = ['unpaper', '-v', '--dpi', str(dpi)] + mode_args
+
+    with TemporaryDirectory() as tmpdir:
+        input_png, output_pnm = _setup_unpaper_io(Path(tmpdir), input_file)
 
         # To prevent any shenanigans from accepting arbitrary parameters in
         # --unpaper-args, we:
@@ -77,23 +88,22 @@ def run(input_file, output_file, dpi, mode_args):
         # 3) append absolute paths for the input and output file
         # This should ensure that a user cannot clobber some other file with
         # their unpaper arguments (whether intentionally or otherwise)
-        args_unpaper.extend([os.fspath(input_pnm), os.fspath(output_pnm)])
+        args_unpaper.extend([os.fspath(input_png), os.fspath(output_pnm)])
         try:
             proc = external_run(
                 args_unpaper,
                 check=True,
                 close_fds=True,
                 universal_newlines=True,
-                stderr=STDOUT,
-                cwd=tmpdir,
+                stderr=STDOUT,  # unpaper writes logging output to stdout and stderr
+                cwd=tmpdir,  # and cannot send file output to stdout
                 stdout=PIPE,
             )
         except CalledProcessError as e:
-            log.debug(e.output)
+            log.debug(e.stderr)
             raise e from e
         else:
-            log.debug(proc.stdout)
-            # unpaper sets dpi to 72; fix this
+            log.debug(proc.stderr)
             try:
                 with Image.open(output_pnm) as imout:
                     imout.save(output_file, dpi=(dpi, dpi))
