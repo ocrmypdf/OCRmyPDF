@@ -27,7 +27,7 @@ from functools import wraps
 from io import StringIO
 from math import isclose
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Sequence, TypeVar
 
 import pikepdf
 
@@ -37,14 +37,14 @@ log = logging.getLogger(__name__)
 class Resolution(namedtuple('Resolution', ('x', 'y'))):
     __slots__ = ()
 
-    def round(self, ndigits):
+    def round(self, ndigits: int):
         return Resolution(round(self.x, ndigits), round(self.y, ndigits))
 
     def to_int(self):
         return Resolution(int(round(self.x)), int(round(self.y)))
 
     @property
-    def is_square(self):
+    def is_square(self) -> bool:
         return isclose(self.x, self.y, rel_tol=1e-3)
 
     def take_max(self, vals, yvals=None):
@@ -204,6 +204,13 @@ def check_pdf(input_file: Path) -> bool:
     finally:
         if pdf:
             pdf.close()
+
+
+T = TypeVar('T')
+
+
+def clamp(n: T, smallest: T, largest: T) -> T:
+    return max(smallest, min(n, largest))
 
 
 def deprecated(func):
