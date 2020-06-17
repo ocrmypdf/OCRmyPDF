@@ -16,6 +16,13 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v10.1.1
+=======
+
+-  Fixed ``OMP_THREAD_LIMIT`` set to invalid value error messages on some input
+   files. (The error was harmless, apart from less than optimal performance in
+   some cases.)
+
 v10.1.0
 =======
 
