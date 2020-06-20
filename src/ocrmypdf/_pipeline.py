@@ -756,6 +756,14 @@ def metadata_fixup(working_file: Path, context: PdfContext):
             if 'xmp:CreateDate' not in meta:
                 meta['xmp:CreateDate'] = meta.get('xmp:ModifyDate', '')
 
+            # Ghostscript likes to set title to Untitled if omitted from input.
+            # Reverse this, because PDF/A TechNote 0003:Metadata in PDF/A-1
+            # and the XMP Spec do not make this recommendation.
+            if meta.get('dc:title') == 'Untitled':
+                with original.open_metadata() as original_meta:
+                    if 'dc:title' not in original_meta:
+                        del meta['dc:title']
+
             meta_original = original.open_metadata()
             missing = set(meta_original.keys()) - set(meta.keys())
             report_on_metadata(missing)

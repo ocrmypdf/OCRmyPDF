@@ -50,7 +50,7 @@ run_ocrmypdf = pytest.helpers.run_ocrmypdf
 
 
 @pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])
-def test_preserve_metadata(output_type, resources, outpdf):
+def test_preserve_docinfo(output_type, resources, outpdf):
     pdf_before = pikepdf.open(resources / 'graph.pdf')
 
     output = check_ocrmypdf(
@@ -188,9 +188,17 @@ def test_creation_date_preserved(output_type, resources, infile, outpdf):
     assert seconds_between_dates(date_after, datetime.datetime.now(timezone.utc)) < 1000
 
 
-@pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
-def test_xml_metadata_preserved(output_type, resources, outpdf):
-    input_file = resources / 'graph.pdf'
+@pytest.mark.parametrize(
+    'test_file,output_type',
+    [
+        ('graph.pdf', 'pdf'),  # PDF with full metadata
+        ('graph.pdf', 'pdfa'),  # PDF/A with full metadata
+        ('overlay.pdf', 'pdfa'),  # /Title()
+        ('3small.pdf', 'pdfa'),
+    ],
+)
+def test_xml_metadata_preserved(test_file, output_type, resources, outpdf):
+    input_file = resources / test_file
 
     try:
         from libxmp.utils import file_to_dict  # pylint: disable=import-outside-toplevel
@@ -204,6 +212,7 @@ def test_xml_metadata_preserved(output_type, resources, outpdf):
         outpdf,
         '--output-type',
         output_type,
+        '--skip-text',
         '--plugin',
         'tests/plugins/tesseract_noop.py',
     )
@@ -227,6 +236,7 @@ def test_xml_metadata_preserved(output_type, resources, outpdf):
         'dc:type',
         'pdf:keywords',
     ]
+    acquired_properties = ['dc:format']
     might_change_properties = [
         'dc:date',
         'pdf:pdfversion',
@@ -260,13 +270,21 @@ def test_xml_metadata_preserved(output_type, resources, outpdf):
             assert prop in after, f'{prop} dropped from xmp'
             assert before[prop] == after[prop]
 
-        # Certain entries like title appear as dc:title[1], with the possibility
-        # of several
+        # libxmp presents multivalued entries (e.g. dc:title) as:
+        # 'dc:title': '' <- there's a title
+        # 'dc:title[1]: 'The Title' <- the actual title
+        # 'dc:title[1]/?xml:lang': 'x-default' <- language info
         propidx = f'{prop}[1]'
         if propidx in before:
             assert (
                 after.get(propidx) == before[propidx]
                 or after.get(prop) == before[propidx]
+            )
+
+        if prop in after and prop not in before:
+            assert prop in acquired_properties, (
+                f"acquired unexpected property {prop} with value "
+                f"{after.get(propidx) or after.get(prop)}"
             )
 
 
