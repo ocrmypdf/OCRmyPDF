@@ -148,12 +148,14 @@ def run_ocrmypdf(input_file, output_file, *args, universal_newlines=True):
     )
 
     # Tell subprocess where to find coverage.py configuration
-    # This has no effect except when coverage is running
+    # This has no unless except when coverage is running
     # Details: https://coverage.readthedocs.io/en/coverage-5.0/subprocess.html
     coverage_rc = Path(__file__).parent.parent / '.coveragerc'
-    assert coverage_rc.exists()
     env = os.environ.copy()
-    env['COVERAGE_PROCESS_START'] = os.fspath(coverage_rc)
+    if coverage_rc.exists():
+        env['COVERAGE_PROCESS_START'] = os.fspath(coverage_rc)
+    elif not running_in_docker():
+        assert False, "could not find .coveragerc"
 
     p = run(
         p_args,

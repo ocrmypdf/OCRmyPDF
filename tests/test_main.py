@@ -279,7 +279,9 @@ def test_input_file_not_found(caplog, no_outpdf):
     assert input_file in caplog.text
 
 
-@pytest.mark.skipif(os.name == 'nt', reason="chmod")
+@pytest.mark.skipif(
+    os.name == 'nt' or pytest.helpers.running_in_docker(), reason="chmod"
+)
 def test_input_file_not_readable(caplog, resources, outdir, no_outpdf):
     input_file = outdir / 'trivial.pdf'
     shutil.copy(resources / 'trivial.pdf', input_file)

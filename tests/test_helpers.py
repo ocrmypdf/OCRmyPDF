@@ -64,6 +64,11 @@ def test_deprecated():
         assert old_function() == 42
 
 
+skipif_docker = pytest.mark.skipif(
+    pytest.helpers.running_in_docker(), reason="fails on Docker"
+)
+
+
 class TestFileIsWritable:
     @pytest.fixture
     def non_existent(self, tmp_path):
@@ -83,6 +88,7 @@ class TestFileIsWritable:
         loop.symlink_to(loop)
         assert not helpers.is_file_writable(loop)
 
+    @skipif_docker
     def test_chmod(self, basic_file):
         assert helpers.is_file_writable(basic_file)
         basic_file.chmod(0o400)
