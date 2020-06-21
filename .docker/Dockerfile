@@ -1,6 +1,6 @@
 # OCRmyPDF
 #
-FROM ubuntu:19.10 as base
+FROM ubuntu:20.04 as base
 
 FROM base as builder
 
@@ -24,7 +24,7 @@ RUN \
 # Needs libleptonica-dev, zlib1g-dev
 RUN \
   mkdir jbig2 \
-  && curl -L https://github.com/agl/jbig2enc/archive/0.29.tar.gz | \
+  && curl -L https://github.com/agl/jbig2enc/archive/ea6a40a.tar.gz | \
   tar xz -C jbig2 --strip-components=1 \
   && cd jbig2 \
   && ./autogen.sh && ./configure && make && make install \
