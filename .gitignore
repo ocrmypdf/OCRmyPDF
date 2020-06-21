@@ -1,21 +1,38 @@
-# Development environment
-.bash_history
-.pylintrc
-.pytest_cache/
-.ruffus_history.sqlite
-.venv*/
-*.pyc
-*.sublime-*
-*.DS_Store
-.mypy_cache/
+# dotfiles
+.*
+!.coveragerc
+!.dockerignore
+!.git_archival.txt
+!.gitattributes
+!.gitignore
+!.pre-commit-config.yaml
+!.readthedocs.yml
+
+# Dev scratch
+*.ipynb
+**/*.pyc
+/*.pdf
+/*.qdf
+/*.png
+/scratch.py
+IDEAS
+log/
+tests/resources/private/
+tmp/
+venv*/
+/debug_tests.py
+*.traineddata
+/private
 
 # Package building
-.eggs/
 *.egg-info/
 build/
 dist/
 wheelhouse/
 pip-wheel-metadata/
+
+# Code coverage
+htmlcov/
 
 # Automatically generated files
 docs/_build/
@@ -23,25 +40,3 @@ docs/_static/
 docs/_templates/
 docs/Makefile
 ocrmypdf/lib/_*.py
-
-# Code coverage
-.coverage*
-htmlcov/
-
-# Testing
-.ipynb_checkpoints/
-.vscode/
-*.ipynb
-*.profile
-/*.pdf
-/*.qdf
-/*.png
-/scratch.py
-IDEAS
-log/
-tests/output/
-tests/resources/private/
-tmp/
-/debug_tests.py
-*.traineddata
-/private

@@ -1,25 +1,44 @@
+# dotfiles
+.*
+!.coveragerc
+!.dockerignore
+!.git_archival.txt
+!.gitattributes
+!.gitignore
+!.pre-commit-config.yaml
+!.readthedocs.yml
+
+# Dev scratch
 *.ipynb
-*.pdf
-*.pyc
-*.rst
-*.sublime*
 **/*.pyc
-.*/
-!.git/
-.ruffus_history.sqlite
-bin/
-build/
-docs/
-dist/
-htmlcov/
-include/
-lib/
-MANIFEST.in
-ocrmypdf.egg-info/
-staging/
-tests/cache/
-tests/output/
+/*.pdf
+/*.qdf
+/*.png
+/scratch.py
+IDEAS
+log/
 tests/resources/private/
 tmp/
 venv*/
+/debug_tests.py
+*.traineddata
+/private
+
+# Package building
+*.egg-info/
+build/
+dist/
 wheelhouse/
+pip-wheel-metadata/
+
+# Code coverage
+htmlcov/
+
+# Docker specific
+bin/
+docs/
+include/
+lib/
+
+# Docker include .git/
+!.git/
