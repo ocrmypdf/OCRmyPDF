@@ -1,7 +1,7 @@
 pytest >= 5.0.0
 pytest-helpers-namespace >= 2019.1.8
 pytest-xdist >= 1.31.0
-pytest-cov >= 2.9.0
+pytest-cov >= 2.10.0
 python-xmp-toolkit == 2.0.1  # requires apt-get install libexempi3
                      # or brew install exempi
 #PyMuPDF == 1.13.4    # optional
