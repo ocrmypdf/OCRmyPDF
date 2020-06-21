@@ -11,8 +11,6 @@ concurrency =
 	multiprocessing
 source =
 	src/ocrmypdf
-omit =
-	tests/spoof/*
 
 [report]
 exclude_lines =
