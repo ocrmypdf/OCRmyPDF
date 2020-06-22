@@ -109,7 +109,7 @@ def cached_run(options, run_args, **run_kwargs):
     cache_folder = get_cache_folder(source_file, run_args, args)
     cache_folder.mkdir(parents=True, exist_ok=True)
 
-    log.debug("Using Tesseract cache {cache_folder}")
+    log.debug(f"Using Tesseract cache {cache_folder}")
 
     if (cache_folder / 'stderr.bin').exists():
         log.debug("Cache HIT")
