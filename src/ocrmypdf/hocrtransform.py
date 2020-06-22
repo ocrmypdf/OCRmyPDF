@@ -219,6 +219,7 @@ class HocrTransform:
             chain(
                 self.hocr.iterfind(self._child_xpath('span', 'ocr_header')),
                 self.hocr.iterfind(self._child_xpath('span', 'ocr_line')),
+                self.hocr.iterfind(self._child_xpath('span', 'ocr_textfloat')),
             ),
             key=self.topdown_position,
         ):
