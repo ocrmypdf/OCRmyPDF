@@ -18,33 +18,38 @@
 import os
 import shutil
 import sys
+from argparse import Namespace
 from pathlib import Path
+from typing import Iterator
 
 from ocrmypdf._plugin_manager import get_plugin_manager
+from ocrmypdf.pdfinfo import PdfInfo
 
 
 class PdfContext:
     """Holds our context for a particular run of the pipeline"""
 
     def __init__(
-        self, options, work_folder: Path, origin: Path, pdfinfo, plugin_manager
+        self,
+        options: Namespace,
+        work_folder: Path,
+        origin: Path,
+        pdfinfo: PdfInfo,
+        plugin_manager,
     ):
         self.options = options
-        self.work_folder = Path(work_folder)
-        self.origin = Path(origin)
+        self.work_folder = work_folder
+        self.origin = origin
         self.pdfinfo = pdfinfo
         self.plugin_manager = plugin_manager
-        if options:
-            self.name = os.path.basename(options.input_file)
-        else:
-            self.name = 'origin.pdf'
+        self.name = os.path.basename(options.input_file)
         if self.name == '-':
             self.name = 'stdin'
 
     def get_path(self, name: str) -> Path:
         return self.work_folder / name
 
-    def get_page_contexts(self):
+    def get_page_contexts(self) -> Iterator[PageContext]:
         npages = len(self.pdfinfo)
         for n in range(npages):
             yield PageContext(self, n)
@@ -53,7 +58,8 @@ class PdfContext:
 class PageContext:
     """Holds our context for a page
 
-    Must be pickable, so only store intrinsic/simple data elements
+    Must be pickable, so stores only intrinsic/simple data elements or those
+    capable of their serializing themselves via __getstate__.
     """
 
     def __init__(self, pdf_context: PdfContext, pageno):
@@ -70,8 +76,7 @@ class PageContext:
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        if state['plugin_manager'] is not None:
-            state['plugin_manager'] = None
+        state['plugin_manager'] = None  # We cannot serialize the plugin manager...
         return state
 
     def __setstate__(self, state):
@@ -79,7 +84,7 @@ class PageContext:
         self.plugin_manager = get_plugin_manager(self.options.plugins)
 
 
-def cleanup_working_files(work_folder, options):
+def cleanup_working_files(work_folder: Path, options: Namespace):
     if options.keep_temporary_files:
         print(f"Temporary working files retained at:\n{work_folder}", file=sys.stderr)
     else:
