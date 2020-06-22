@@ -35,7 +35,7 @@ except ModuleNotFoundError:
     coloredlogs = None
 
 
-PathOrIO = Union[BinaryIO, os.PathLike]
+PathOrIO = Union[BinaryIO, os.PathLike, str, bytes]
 
 
 class Verbosity(IntEnum):
@@ -247,9 +247,24 @@ def ocr(  # pylint: disable=unused-argument
     A few specific arguments are discussed here:
 
     Args:
-        use_threads (bool): Use worker threads instead of processes. This reduces
+        use_threads: Use worker threads instead of processes. This reduces
             performance but may make debugging easier since it is easier to set
             breakpoints.
+        input_file: If a :class:`pathlib.Path`, ``str`` or ``bytes``, this is
+            interpreted as file system path to the input file. If the object
+            appears to be a readable stream (with methods such as ``.read()``
+            and ``.seek()``), the object will be read in its entirety and saved to
+            a temporary file. If ``input_file`` is  ``"-"``, standard input will be
+            read.
+        output_file: If a :class:`pathlib.Path`, ``str`` or ``bytes``, this is
+            interpreted as file system path to the output file. If the object
+            appears to be a writable stream (with methods such as ``.read()`` and
+            ``.seek()``), the output will be written to this stream. If
+            ``output_file`` is ``"-"``, the output will be written to ``sys.stdout``
+            (provided that standard output does not seem to be a terminal device).
+            When a stream is used as output, whether via a writable object or
+            ``"-"``, some final validation steps are not performed (we do not read
+            back the stream after it is written).
     Raises:
         ocrmypdf.PdfMergeFailedError: If the input PDF is malformed, preventing merging
             with the OCR layer.
