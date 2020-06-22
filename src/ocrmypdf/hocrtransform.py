@@ -32,6 +32,7 @@ import argparse
 import os
 import re
 from collections import namedtuple
+from itertools import chain
 from math import atan, cos, sin
 from pathlib import Path
 from typing import Union
@@ -163,6 +164,11 @@ class HocrTransform:
         """
         return s.translate(cls.ligatures)
 
+    def topdown_position(self, element):
+        pxl_line_coords = self.element_coordinates(element)
+        line_box = self.pt_from_pixel(pxl_line_coords)
+        return -line_box.y2
+
     def to_pdf(
         self,
         out_filename: Path,
@@ -194,7 +200,7 @@ class HocrTransform:
         # light blue for bounding box of paragraph
         pdf.setFillColor(cyan)
         pdf.setLineWidth(0)  # no line for bounding box
-        for elem in self.hocr.findall(self._child_xpath('p', 'ocr_par')):
+        for elem in self.hocr.iterfind(self._child_xpath('p', 'ocr_par')):
             elemtxt = self._get_element_text(elem).rstrip()
             if len(elemtxt) == 0:
                 continue
@@ -209,7 +215,13 @@ class HocrTransform:
                 )
 
         found_lines = False
-        for line in self.hocr.findall(self._child_xpath('span', 'ocr_line')):
+        for line in sorted(
+            chain(
+                self.hocr.iterfind(self._child_xpath('span', 'ocr_header')),
+                self.hocr.iterfind(self._child_xpath('span', 'ocr_line')),
+            ),
+            key=self.topdown_position,
+        ):
             found_lines = True
             self._do_line(
                 pdf,
