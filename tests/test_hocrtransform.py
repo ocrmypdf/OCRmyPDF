@@ -71,19 +71,9 @@ def test_mono_image(blank_hocr, outdir):
 
 
 def test_hocrtransform_matches_sandwich(resources, outdir):
+    check_ocrmypdf(resources / 'ccitt.pdf', outdir / 'hocr.pdf', '--pdf-renderer=hocr')
     check_ocrmypdf(
-        resources / 'ccitt.pdf',
-        outdir / 'hocr.pdf',
-        '--pdf-renderer=hocr',
-        # '--plugin',
-        # 'tests/plugins/tesseract_cache.py',
-    )
-    check_ocrmypdf(
-        resources / 'ccitt.pdf',
-        outdir / 'tess.pdf',
-        '--pdf-renderer=sandwich',
-        # '--plugin',
-        # 'tests/plugins/tesseract_cache.py',
+        resources / 'ccitt.pdf', outdir / 'tess.pdf', '--pdf-renderer=sandwich'
     )
 
     def clean(s):
