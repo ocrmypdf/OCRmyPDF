@@ -19,8 +19,9 @@ import argparse
 import importlib
 import importlib.util
 import sys
+from functools import partial
 from pathlib import Path
-from typing import List, Tuple
+from typing import Callable, List, Tuple
 
 import pluggy
 
@@ -28,8 +29,42 @@ from ocrmypdf import pluginspec
 from ocrmypdf.cli import get_parser, plugins_only_parser
 
 
-def get_plugin_manager(plugins: List[str], builtins=True):
-    pm = pluggy.PluginManager('ocrmypdf')
+class OcrmypdfPluginManager(pluggy.PluginManager):
+    """pluggy.PluginManager that can fork.
+
+    Capable of reconstructing itself in child workers.
+
+    Arguments:
+        setup_func: callback that initializes the plugin manager with all
+            standard plugins
+    """
+
+    def __init__(
+        self, *args, setup_func: Callable[[pluggy.PluginManager], None], **kwargs
+    ):
+        self._init_args = args
+        self._setup_func = setup_func
+        self._init_kwargs = kwargs
+        super().__init__(*args, **kwargs)
+        setup_func(self)
+
+    def __getstate__(self):
+        state = dict(
+            _init_args=self._init_args,
+            _setup_func=self._setup_func,
+            _init_kwargs=self._init_kwargs,
+        )
+        return state
+
+    def __setstate__(self, state):
+        self.__init__(
+            *state['_init_args'],
+            setup_func=state['_setup_func'],
+            **state['_init_kwargs'],
+        )
+
+
+def _setup_plugins(pm: pluggy.PluginManager, plugins: List[str], builtins: bool = True):
     pm.add_hookspecs(pluginspec)
 
     if builtins:
@@ -51,6 +86,13 @@ def get_plugin_manager(plugins: List[str], builtins=True):
             # Import by dotted module name
             module = importlib.import_module(name)
         pm.register(module)
+
+
+def get_plugin_manager(plugins: List[str], builtins=True):
+    pm = OcrmypdfPluginManager(
+        project_name='ocrmypdf',
+        setup_func=partial(_setup_plugins, plugins=plugins, builtins=builtins),
+    )
     return pm
 
 

@@ -22,7 +22,6 @@ from argparse import Namespace
 from pathlib import Path
 from typing import Iterator
 
-from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.pdfinfo import PdfInfo
 
 
@@ -49,7 +48,7 @@ class PdfContext:
     def get_path(self, name: str) -> Path:
         return self.work_folder / name
 
-    def get_page_contexts(self) -> Iterator[PageContext]:
+    def get_page_contexts(self) -> Iterator['PageContext']:
         npages = len(self.pdfinfo)
         for n in range(npages):
             yield PageContext(self, n)
@@ -73,15 +72,6 @@ class PageContext:
 
     def get_path(self, name: str) -> Path:
         return self.work_folder / ("%06d_%s" % (self.pageno + 1, name))
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state['plugin_manager'] = None  # We cannot serialize the plugin manager...
-        return state
-
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-        self.plugin_manager = get_plugin_manager(self.options.plugins)
 
 
 def cleanup_working_files(work_folder: Path, options: Namespace):
