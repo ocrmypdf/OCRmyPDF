@@ -37,6 +37,7 @@ from pathlib import Path
 from typing import Union
 from xml.etree import ElementTree
 
+from reportlab.lib.colors import black, cyan, magenta, red
 from reportlab.lib.units import inch
 from reportlab.pdfgen.canvas import Canvas
 
@@ -189,9 +190,9 @@ class HocrTransform:
 
         # draw bounding box for each paragraph
         # light blue for bounding box of paragraph
-        pdf.setStrokeColorRGB(0, 1, 1)
+        pdf.setStrokeColor(cyan)
         # light blue for bounding box of paragraph
-        pdf.setFillColorRGB(0, 1, 1)
+        pdf.setFillColor(cyan)
         pdf.setLineWidth(0)  # no line for bounding box
         for elem in self.hocr.findall(self._child_xpath('p', 'ocr_par')):
             elemtxt = self._get_element_text(elem).rstrip()
@@ -284,7 +285,7 @@ class HocrTransform:
         if show_bounding_boxes:  # pragma: no cover
             # draw the baseline in magenta, dashed
             pdf.setDash()
-            pdf.setStrokeColorRGB(0.95, 0.65, 0.95)
+            pdf.setStrokeColor(magenta)
             pdf.setLineWidth(0.5)
             # negate slope because it is defined as a rise/run in pixel
             # coordinates and page coordinates have the y axis flipped
@@ -296,10 +297,10 @@ class HocrTransform:
             )
             # light green for bounding box of word/line
             pdf.setDash(6, 3)
-            pdf.setStrokeColorRGB(1, 0, 0)
+            pdf.setStrokeColor(red)
 
         text.setTextTransform(cos_a, -sin_a, sin_a, cos_a, line_box.x1, baseline_y2)
-        pdf.setFillColorRGB(0, 0, 0)  # text in black
+        pdf.setFillColor(black)  # text in black
 
         elements = line.findall(self._child_xpath('span', elemclass))
         for elem in elements:
