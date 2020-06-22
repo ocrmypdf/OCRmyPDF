@@ -16,6 +16,21 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v10.2.0
+=======
+
+-  Update Docker image to use Ubuntu 20.04.
+-  Fixed issue PDF/A acquires title "Untitled" after conversion. (#582)
+-  Fixed a problem where, when using ``--pdf-renderer hocr``, some text would
+   be missing from the output when using a more recent version of Tesseract.
+   Tesseract began adding more detailed markup about the semantics of text
+   that our HOCR transform did not recognize, so it ignored them. This option is
+   not the default. If necessary ``--redo-ocr`` also redoing OCR to fix such issues.
+-  Fixed an error in Python 3.9 beta, due to removal of deprecated
+   ``Element.getchildren()``. (#584)
+-  Implemented support using the API with ``BytesIO`` and other file stream objects.
+   (#545)
+
 v10.1.1
 =======
 
@@ -37,7 +52,7 @@ v10.1.0
 v10.0.1
 =======
 
--  Fix regression when ``-l lang1+lang2`` is used from command line.
+-  Fixed regression when ``-l lang1+lang2`` is used from command line.
 
 v10.0.0
 =======
