@@ -110,7 +110,7 @@ class HocrTransform:
         text = ''
         if element.text is not None:
             text += element.text
-        for child in element.getchildren():
+        for child in element:
             text += self._get_element_text(child)
         if element.tail is not None:
             text += element.tail
