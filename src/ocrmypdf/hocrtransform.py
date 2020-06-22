@@ -80,7 +80,7 @@ class HocrTransform:
 
         # get dimension in pt (not pixel!!!!) of the OCRed image
         self.width, self.height = None, None
-        for div in self.hocr.findall(".//%sdiv[@class='ocr_page']" % (self.xmlns)):
+        for div in self.hocr.findall(self._child_xpath('div', 'ocr_page')):
             coords = self.element_coordinates(div)
             pt_coords = self.pt_from_pixel(coords)
             self.width = pt_coords.x2 - pt_coords.x1
@@ -97,7 +97,7 @@ class HocrTransform:
         """
         if self.hocr is None:
             return ''
-        body = self.hocr.find(".//%sbody" % (self.xmlns))
+        body = self.hocr.find(self._child_xpath('body'))
         if body:
             return self._get_element_text(body)
         else:
@@ -147,6 +147,12 @@ class HocrTransform:
         """
         return Rect._make((c / self.dpi * inch) for c in pxl)
 
+    def _child_xpath(self, html_tag, html_class=None):
+        xpath = f".//{self.xmlns}{html_tag}"
+        if html_class:
+            xpath += f"[@class='{html_class}']"
+        return xpath
+
     @classmethod
     def replace_unsupported_chars(cls, s: str):
         """
@@ -187,8 +193,7 @@ class HocrTransform:
         # light blue for bounding box of paragraph
         pdf.setFillColorRGB(0, 1, 1)
         pdf.setLineWidth(0)  # no line for bounding box
-        for elem in self.hocr.findall(".//%sp[@class='%s']" % (self.xmlns, "ocr_par")):
-
+        for elem in self.hocr.findall(self._child_xpath('p', 'ocr_par')):
             elemtxt = self._get_element_text(elem).rstrip()
             if len(elemtxt) == 0:
                 continue
@@ -203,9 +208,7 @@ class HocrTransform:
                 )
 
         found_lines = False
-        for line in self.hocr.findall(
-            ".//%sspan[@class='%s']" % (self.xmlns, "ocr_line")
-        ):
+        for line in self.hocr.findall(self._child_xpath('span', 'ocr_line')):
             found_lines = True
             self._do_line(
                 pdf,
@@ -219,7 +222,7 @@ class HocrTransform:
 
         if not found_lines:
             # Tesseract did not report any lines (just words)
-            root = self.hocr.find(".//%sdiv[@class='%s']" % (self.xmlns, "ocr_page"))
+            root = self.hocr.find(self._child_xpath('div', 'ocr_page'))
             self._do_line(
                 pdf,
                 root,
@@ -298,7 +301,7 @@ class HocrTransform:
         text.setTextTransform(cos_a, -sin_a, sin_a, cos_a, line_box.x1, baseline_y2)
         pdf.setFillColorRGB(0, 0, 0)  # text in black
 
-        elements = line.findall(".//%sspan[@class='%s']" % (self.xmlns, elemclass))
+        elements = line.findall(self._child_xpath('span', elemclass))
         for elem in elements:
             elemtxt = self._get_element_text(elem).strip()
             elemtxt = self.replace_unsupported_chars(elemtxt)
