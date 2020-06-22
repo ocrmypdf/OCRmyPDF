@@ -25,6 +25,7 @@ from functools import partial
 from math import hypot, isclose
 from os import PathLike
 from pathlib import Path
+from typing import Any, Dict, List
 from warnings import warn
 
 import pikepdf
@@ -568,7 +569,7 @@ def simplify_textboxes(miner, textbox_getter):
 def _pdf_get_pageinfo(
     pdf, pageno: int, infile: PathLike, check_pages, detailed_analysis
 ):
-    pageinfo = {}
+    pageinfo: Dict[str, Any] = {}
     pageinfo['pageno'] = pageno
     pageinfo['images'] = []
 

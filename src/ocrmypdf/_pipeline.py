@@ -23,7 +23,7 @@ from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
 from shutil import copyfileobj
-from typing import Dict, Iterable, Optional
+from typing import BinaryIO, Dict, Iterable, Optional, Union, cast
 
 import img2pdf
 import pikepdf
@@ -817,16 +817,17 @@ def merge_sidecars(txt_files: Iterable[Optional[Path]], context: PdfContext):
     return output_file
 
 
-def copy_final(input_file: Path, output_file: Path, _context: PdfContext):
+def copy_final(input_file, output_file, _context: PdfContext):
     log.debug('%s -> %s', input_file, output_file)
     with open(input_file, 'rb') as input_stream:
         if output_file == '-':
             copyfileobj(input_stream, sys.stdout.buffer)
             sys.stdout.flush()
         elif hasattr(output_file, 'writable'):
-            copyfileobj(input_stream, output_file)
+            output_stream = output_file
+            copyfileobj(input_stream, output_stream)
             with suppress(AttributeError):
-                output_file.flush()
+                output_stream.flush()
         else:
             # At this point we overwrite the output_file specified by the user
             # use copyfileobj because then we use open() to create the file and

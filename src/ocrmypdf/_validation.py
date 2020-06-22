@@ -342,7 +342,7 @@ def create_input_file(options, work_folder: Path) -> Tuple[Path, str]:
         if not options.input_file.readable():
             raise InputFileError("Input file stream is not readable")
         log.info('reading file from input stream')
-        target = os.path.join(work_folder, 'stream')
+        target = work_folder / 'stream'
         with open(target, 'wb') as stream_buffer:
             copyfileobj(options.input_file, stream_buffer)
         return target, "stream"
