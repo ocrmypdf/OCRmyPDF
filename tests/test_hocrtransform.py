@@ -70,6 +70,7 @@ def test_mono_image(blank_hocr, outdir):
     check_pdf(str(outdir / 'mono.pdf'))
 
 
+@pytest.runslow
 def test_hocrtransform_matches_sandwich(resources, outdir):
     check_ocrmypdf(resources / 'ccitt.pdf', outdir / 'hocr.pdf', '--pdf-renderer=hocr')
     check_ocrmypdf(
