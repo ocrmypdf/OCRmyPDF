@@ -87,11 +87,11 @@ For full details on version availability for your platform, check the
 Fedora 29 or newer
 ------------------
 
-.. |fedora-29| image:: https://repology.org/badge/version-for-repo/fedora_29/ocrmypdf.svg
-    :alt: Fedora 29
+.. |fedora-31| image:: https://repology.org/badge/version-for-repo/fedora_31/ocrmypdf.svg
+    :alt: Fedora 31
 
-.. |fedora-30| image:: https://repology.org/badge/version-for-repo/fedora_30/ocrmypdf.svg
-    :alt: Fedora 30
+.. |fedora-32| image:: https://repology.org/badge/version-for-repo/fedora_32/ocrmypdf.svg
+    :alt: Fedora 32
 
 .. |fedora-rawhide| image:: https://repology.org/badge/version-for-repo/fedora_rawhide/ocrmypdf.svg
     :alt: Fedore Rawhide
@@ -101,7 +101,7 @@ Fedora 29 or newer
 +-----------------------------------------------+
 | |latest|                                      |
 +-----------------------------------------------+
-| |fedora-29| |fedora-30| |fedora-rawhide|      |
+| |fedora-31| |fedora-32| |fedora-rawhide|      |
 +-----------------------------------------------+
 
 Users of Fedora 29 or later may simply
