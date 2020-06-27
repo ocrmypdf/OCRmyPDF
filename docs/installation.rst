@@ -21,6 +21,8 @@ These platforms have one-liner installs:
 +-----------------------------+-------------------------------+
 | macOS                       | ``brew install ocrmypdf``     |
 +-----------------------------+-------------------------------+
+| LinuxBrew                   | ``brew install ocrmypdf``     |
++-----------------------------+-------------------------------+
 | FreeBSD                     | ``pkg install py37-ocrmypdf`` |
 +-----------------------------+-------------------------------+
 
@@ -62,7 +64,7 @@ Debian and Ubuntu 18.04 or newer
 | |ubu-1804| |ubu-2004|                         |
 +-----------------------------------------------+
 
-Users of Debian 9 ("stretch") or later or Ubuntu 18.04 or later, including users
+Users of Debian 9 ("stretch") or later, or Ubuntu 18.04 or later, including users
 of Windows Subsystem for Linux, may simply
 
 .. code-block:: bash
@@ -348,6 +350,43 @@ To install OCRmyPDF for Alpine Linux:
 .. code-block:: bash
 
     apk add ocrmypdf
+
+Mageia 7
+--------
+
+Install the following dependencies:
+
+.. code-block:: bash
+
+    # As root user
+    urpmi.update -a
+    urpmi \
+        ghostscript \
+        icc-profiles-openicc \
+        jbig2dec \
+        lib64leptonica5 \
+        pngquant \
+        python3-pip \
+        python3-cffi \
+        python3-distutils-extra \
+        python3-pkg-resources \
+        python3-reportlab \
+        qpdf \
+        tesseract \
+        tesseract-osd \
+        tesseract-eng \
+        tesseract-fra
+
+To install ocrmypdf for the system:
+
+    # As root user
+    pip3 install ocrmypdf
+    ldconfig
+
+Or, to install for the current user only:
+
+    export PATH=$HOME/.local/bin:$PATH
+    pip3 install --user ocrmypdf
 
 Other Linux packages
 --------------------
