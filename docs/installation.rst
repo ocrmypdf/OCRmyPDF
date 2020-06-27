@@ -8,20 +8,24 @@ Installing OCRmyPDF
 |latest|
 
 The easiest way to install OCRmyPDF is to follow the steps for your operating
-system/platform, although sometimes this version may be out of date. This
-installation guide provides information allowing you to compare the current
-version to the one provided by your platform.
+system/platform. This version may be out of date, however.
 
-If you want to use the latest version of OCRmyPDF and all of its optional
-dependencies, the easiest way to get that is install the Homebrew package. Homebrew
-is best known as a macOS package manger, but also works for
-`Linux and Windows Subsystem for Linux <https://docs.brew.sh/Homebrew-on-Linux>`__.
-After Homebrew is installed, simply run ``brew install ocrmypdf``.
+These platforms have one-liner installs:
 
-You can also use the more detailed procedures here to manually install OCRmyPDF
-from source or with the ``pip`` package manager for binary wheels. The reason
-for these varied steps is that OCRmyPDF requires third-party executables that are
-not part of Python.
++-----------------------------+-------------------------------+
+| Debian, Ubuntu              | ``apt install ocrmypdf``      |
++-----------------------------+-------------------------------+
+| Windows Subsystem for Linux | ``apt install ocrmypdf``      |
++-----------------------------+-------------------------------+
+| Fedora                      | ``dnf install ocrmypdf``      |
++-----------------------------+-------------------------------+
+| macOS                       | ``brew install ocrmypdf``     |
++-----------------------------+-------------------------------+
+| FreeBSD                     | ``pkg install py37-ocrmypdf`` |
++-----------------------------+-------------------------------+
+
+More detailed procedures are outlined below. If you want to do a manual
+install, or install a more recent version than your platform provides, read on.
 
 .. contents:: Platform-specific steps
     :depth: 2
@@ -162,7 +166,7 @@ To install for the current user only:
     pip3 install --user ocrmypdf
 
 Ubuntu 18.04 LTS
--------------------------------------------------
+----------------
 
 Ubuntu 18.04 includes ocrmypdf 6.1.2 - you can install that with ``apt``, but
 it is quite old now. To install a more recent version, uninstall the old version
@@ -535,12 +539,12 @@ See `OCRmyPDF Docker Image <docker>`__ for more information.
 Installing on Windows
 =====================
 
-.. warning::
+Native Windows
+--------------
 
-    Native Windows support is new. Consider it "beta" software. Some
-    functionality is missing or may be more difficult to enable. If you need a
-    production-ready solution, use Windows Subsystem for Linux or a Docker
-    image.
+.. note::
+
+    It is easier to install OCRmyPDF on Windows Subsystem for Linux.
 
 .. note::
 
@@ -548,7 +552,7 @@ Installing on Windows
 
 You must install the following for Windows:
 
-* Python 3.7 (64-bit)
+* Python 3.7 (64-bit) or later
 * Tesseract 4.0 or later
 * Ghostscript 9.50 or later
 
@@ -577,8 +581,8 @@ You may then use pip to install ocrmypdf:
 
 * ``pip install ocrmypdf``
 
-Installing on Windows Subsystem for Linux
-=========================================
+Windows Subsystem for Linux
+---------------------------
 
 #. Install Ubuntu 18.04 for Windows Subsystem for Linux, if not already installed.
 #. Follow the procedure to install :ref:`OCRmyPDF on Ubuntu 18.04 <ubuntu-lts-latest>`.
@@ -597,14 +601,8 @@ Then confirm that the expected version from PyPI (|latest|) is installed:
 You can then run OCRmyPDF in the Windows command prompt or Powershell, prefixing
 ``wsl``, and call it from Windows programs or batch files.
 
-Docker
-^^^^^^
-
-You can also :ref:`Install the Docker <docker-install>` container on Windows. Ensure that
-your command prompt can run the docker "hello world" container.
-
-Installing on Cygwin64 under Windows
-====================================
+Cygwin64
+--------
 
 First install the the following prerequisite Cygwin packages using ``setup-x86_64.exe``::
 
@@ -649,6 +647,12 @@ likely just ``pip`` instead of ``pip3``:
 The optional dependency "unpaper" that is currently not available under Cygwin.
 Without it, certain options such as ``--clean`` will produce an error message.
 However, the OCR-to-text-layer functionality is available.
+
+Docker
+------
+
+You can also :ref:`Install the Docker <docker-install>` container on Windows. Ensure that
+your command prompt can run the docker "hello world" container.
 
 Installing with Python pip
 ==========================
