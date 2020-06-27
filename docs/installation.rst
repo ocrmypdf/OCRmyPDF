@@ -511,31 +511,6 @@ The command line program should now be available:
 
     ocrmypdf --help
 
-Installing on FreeBSD
-=====================
-
-.. image:: https://repology.org/badge/version-for-repo/freebsd/python:ocrmypdf.svg
-    :alt: FreeBSD
-    :target: https://repology.org/project/python:ocrmypdf/versions
-
-FreeBSD 11.3, 12.0, 12.1-RELEASE and 13.0-CURRENT are supported. Other
-versions likely work but have not been tested.
-
-.. code-block:: bash
-
-    pkg install py37-ocrmypdf
-
-To install a more recent version, you could attempt to first install the system
-version with ``pkg``, then use ``pip install --user ocrmypdf``.
-
-Installing the Docker image
-===========================
-
-For some users, installing the Docker image will be easier than
-installing all of OCRmyPDF's dependencies.
-
-See `OCRmyPDF Docker Image <docker>`__ for more information.
-
 Installing on Windows
 =====================
 
@@ -653,6 +628,31 @@ Docker
 
 You can also :ref:`Install the Docker <docker-install>` container on Windows. Ensure that
 your command prompt can run the docker "hello world" container.
+
+Installing on FreeBSD
+=====================
+
+.. image:: https://repology.org/badge/version-for-repo/freebsd/python:ocrmypdf.svg
+    :alt: FreeBSD
+    :target: https://repology.org/project/python:ocrmypdf/versions
+
+FreeBSD 11.3, 12.0, 12.1-RELEASE and 13.0-CURRENT are supported. Other
+versions likely work but have not been tested.
+
+.. code-block:: bash
+
+    pkg install py37-ocrmypdf
+
+To install a more recent version, you could attempt to first install the system
+version with ``pkg``, then use ``pip install --user ocrmypdf``.
+
+Installing the Docker image
+===========================
+
+For some users, installing the Docker image will be easier than
+installing all of OCRmyPDF's dependencies.
+
+See `OCRmyPDF Docker Image <docker>`__ for more information.
 
 Installing with Python pip
 ==========================
