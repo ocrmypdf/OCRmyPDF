@@ -15,23 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Utilities to measure OCR quality"""
+
+
 import re
 from typing import Iterable
-
-"""Utilities to measure OCR quality"""
 
 
 class OcrQualityDictionary:
     """Manages a dictionary for simple OCR quality checks."""
 
-    def __init__(self, *, wordlist: Iterable[str] = []):
+    def __init__(self, *, wordlist: Iterable[str]):
         """Construct a dictionary from a list of words.
 
         Words for which capitalization is important should be capitalized in the
         dictionary. Words that contain spaces or other punctuation will never match.
         """
-        self.dictionary = set()
-        self.dictionary.update(w for w in wordlist)
+        self.dictionary = set(wordlist)
 
     def measure_words_matched(self, ocr_text: str) -> float:
         """Check how many unique words in the OCR text match a dictionary.
