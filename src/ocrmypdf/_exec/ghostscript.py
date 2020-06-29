@@ -25,6 +25,7 @@ from os import fspath
 from pathlib import Path
 from shutil import which
 from subprocess import PIPE, CalledProcessError
+from typing import Optional, cast
 
 from PIL import Image
 
@@ -34,12 +35,12 @@ from ocrmypdf.subprocess import get_version, run
 
 log = logging.getLogger(__name__)
 
-GS = 'gs'
+_gswin = None
 if os.name == 'nt':
-    GS = which('gswin64c')
-    if not GS:
-        GS = which('gswin32c')
-        if not GS:
+    _gswin = which('gswin64c')
+    if not _gswin:
+        _gswin = which('gswin32c')
+        if not _gswin:
             raise MissingDependencyError(
                 """
                 ---------------------------------------------------------------------
@@ -52,7 +53,10 @@ if os.name == 'nt':
                 ---------------------------------------------------------------------
                 """
             )
-    GS = Path(GS).stem
+    _gswin = Path(_gswin).stem
+
+GS = _gswin if _gswin else 'gs'
+del _gswin
 
 
 def version():
@@ -77,7 +81,7 @@ def jpeg_passthrough_available() -> bool:
 
 
 def _gs_error_reported(stream) -> bool:
-    return re.search(r'error', stream, flags=re.IGNORECASE)
+    return True if re.search(r'error', stream, flags=re.IGNORECASE) else False
 
 
 def rasterize_pdf(

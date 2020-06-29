@@ -18,7 +18,6 @@
 import logging
 import os
 import sys
-from argparse import ArgumentParser
 from enum import IntEnum
 from pathlib import Path
 from typing import BinaryIO, Iterable, Union
@@ -27,7 +26,8 @@ from ocrmypdf._logging import PageNumberFilter, TqdmConsole
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._sync import run_pipeline
 from ocrmypdf._validation import check_options
-from ocrmypdf.cli import get_parser
+from ocrmypdf.cli import ArgumentParser, get_parser
+from ocrmypdf.helpers import is_iterable_notstr
 
 try:
     import coloredlogs
@@ -153,7 +153,7 @@ def create_options(
                 cmdline.append(f"--{cmd_style_arg}")
             continue
 
-        if isinstance(val, Iterable) and not isinstance(val, str):
+        if is_iterable_notstr(val):
             for elem in val:
                 cmdline.append(f"--{cmd_style_arg}")
                 cmdline.append(elem)

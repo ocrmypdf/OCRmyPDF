@@ -123,7 +123,7 @@ def get_languages():
     return set(lang.strip() for lang in rest)
 
 
-def tess_base_args(langs: List[str], engine_mode) -> List[str]:
+def tess_base_args(langs: List[str], engine_mode: int) -> List[str]:
     args = ['tesseract']
     if langs:
         args.extend(['-l', '+'.join(langs)])
@@ -132,7 +132,7 @@ def tess_base_args(langs: List[str], engine_mode) -> List[str]:
     return args
 
 
-def get_orientation(input_file: Path, engine_mode, timeout: float):
+def get_orientation(input_file: Path, engine_mode: int, timeout: float):
     args_tesseract = tess_base_args(['osd'], engine_mode) + [
         '--psm',
         '0',
@@ -229,9 +229,9 @@ def generate_hocr(
     input_file: Path,
     output_hocr: Path,
     output_text: Path,
-    languages: list,
-    engine_mode,
-    tessconfig: list,
+    languages: List[str],
+    engine_mode: int,
+    tessconfig: List[str],
     timeout: float,
     pagesegmode: int,
     user_words,
@@ -290,7 +290,7 @@ def generate_pdf(
     output_pdf: Path,
     output_text: Path,
     languages: List[str],
-    engine_mode,
+    engine_mode: int,
     tessconfig: List[str],
     timeout: float,
     pagesegmode: int,

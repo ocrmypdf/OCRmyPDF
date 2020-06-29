@@ -84,7 +84,7 @@ def exec_progress_pool(
     task_arguments: Optional[Iterable] = None,
     task_finished: Optional[Callable] = None,
 ):
-    log_queue = multiprocessing.Queue(-1)
+    log_queue: multiprocessing.Queue = multiprocessing.Queue(-1)
     listener = threading.Thread(target=log_listener, args=(log_queue,))
 
     if use_threads:

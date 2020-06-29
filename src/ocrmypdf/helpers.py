@@ -113,6 +113,7 @@ def samefile(f1: os.PathLike, f2: os.PathLike):
 
 
 def is_iterable_notstr(thing: Any) -> bool:
+    """Is this is an iterable type, other than a string?"""
     return isinstance(thing, Iterable) and not isinstance(thing, str)
 
 
