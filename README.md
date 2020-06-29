@@ -3,15 +3,10 @@
 [![Build Status][azure]](https://dev.azure.com/jim0585/ocrmypdf/_build/latest?definitionId=2&branchName=master) [![PyPI version][pypi]](https://pypi.org/project/ocrmypdf/) ![Homebrew version][homebrew] ![ReadTheDocs][docs] ![Python versions][pyversions]
 
 [azure]: https://dev.azure.com/jim0585/ocrmypdf/_apis/build/status/jbarlow83.OCRmyPDF?branchName=master
-
 [travis]: https://travis-ci.org/jbarlow83/OCRmyPDF.svg?branch=master "Travis build status"
-
 [pypi]: https://img.shields.io/pypi/v/ocrmypdf.svg "PyPI version"
-
 [homebrew]: https://img.shields.io/homebrew/v/ocrmypdf.svg "Homebrew version"
-
 [docs]: https://readthedocs.org/projects/ocrmypdf/badge/?version=latest "RTD"
-
 [pyversions]: https://img.shields.io/pypi/pyversions/ocrmypdf "Supported Python versions"
 
 OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched or copy-pasted.
@@ -30,8 +25,7 @@ ocrmypdf                      # it's a scriptable command line program
 
 [See the release notes for details on the latest changes](https://ocrmypdf.readthedocs.io/en/latest/release_notes.html).
 
-Main features
--------------
+## Main features
 
 - Generates a searchable [PDF/A](https://en.wikipedia.org/?title=PDF/A) file from a regular PDF
 - Places OCR text accurately below the image to ease copy / paste
@@ -47,8 +41,7 @@ Main features
 
 For details: please consult the [documentation](https://ocrmypdf.readthedocs.io/en/latest/).
 
-Motivation
-----------
+## Motivation
 
 I searched the web for a free command line tool to OCR PDF files: I found many, but none of them were really satisfying:
 
@@ -62,8 +55,7 @@ I searched the web for a free command line tool to OCR PDF files: I found many, 
 
 ...so I decided to develop my own tool.
 
-Installation
-------------
+## Installation
 
 Linux, Windows, macOS and FreeBSD are supported. Docker images are also available.
 
@@ -87,8 +79,7 @@ brew install ocrmypdf
 
 For everyone else, [see our documentation](https://ocrmypdf.readthedocs.io/en/latest/installation.html) for installation steps.
 
-Languages
----------
+## Languages
 
 OCRmyPDF uses Tesseract for OCR, and relies on its language packs. For Linux users, you can often find packages that provide language packs:
 
@@ -105,8 +96,7 @@ pacman -S tesseract-data-eng tesseract-data-deu # Example: Install the English a
 
 You can then pass the `-l LANG` argument to OCRmyPDF to give a hint as to what languages it should search for. Multiple languages can be requested.
 
-Documentation and support
--------------------------
+## Documentation and support
 
 Once OCRmyPDF is installed, the built-in help which explains the command syntax and options can be accessed via:
 
@@ -118,27 +108,24 @@ Our [documentation is served on Read the Docs](https://ocrmypdf.readthedocs.io/e
 
 Please report issues on our [GitHub issues](https://github.com/jbarlow83/OCRmyPDF/issues) page, and follow the issue template for quick response.
 
-Requirements
-------------
+## Requirements
 
 In addition to the required Python version (3.6+), OCRmyPDF requires external program installations of Ghostscript, Tesseract OCR, QPDF, and Leptonica. OCRmyPDF is pure Python, but uses CFFI to portably generate library bindings. OCRmyPDF works on pretty much everything: Linux, macOS, Windows and FreeBSD.
 
-Press & Media
--------------
+## Press & Media
 
 - [Going paperless with OCRmyPDF](https://medium.com/@ikirichenko/going-paperless-with-ocrmypdf-e2f36143f46a)
 - [Converting a scanned document into a compressed searchable PDF with redactions](https://medium.com/@treyharris/converting-a-scanned-document-into-a-compressed-searchable-pdf-with-redactions-63f61c34fe4c)
 - [c't 1-2014, page 59](https://heise.de/-2279695): Detailed presentation of OCRmyPDF v1.0 in the leading German IT magazine c't
 - [heise Open Source, 09/2014: Texterkennung mit OCRmyPDF](https://heise.de/-2356670)
 - [heise Durchsuchbare PDF-Dokumente mit OCRmyPDF erstellen](https://www.heise.de/ratgeber/Durchsuchbare-PDF-Dokumente-mit-OCRmyPDF-erstellen-4607592.html)
+- [Excellent Utilities: OCRmyPDF](https://www.linuxlinks.com/excellent-utilities-ocrmypdf-add-ocr-text-layer-scanned-pdfs/)
 
-Business enquiries
-------------------
+## Business enquiries
 
 OCRmyPDF would not be the software that it is today without companies and users choosing to provide support for feature development and consulting enquiries. We are happy to discuss all enquiries, whether for extending the existing feature set, or integrating OCRmyPDF into a larger system.
 
-License
--------
+## License
 
 The OCRmyPDF software is licensed under the GNU GPLv3. Certain files are covered by other licenses, as noted in their source files.
 
@@ -146,7 +133,6 @@ The license for each test file varies, and is noted in tests/resources/README.rs
 
 OCRmyPDF versions prior to 6.0 were distributed under the MIT License.
 
-Disclaimer
-----------
+## Disclaimer
 
 The software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
