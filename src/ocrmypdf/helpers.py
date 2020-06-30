@@ -35,6 +35,8 @@ log = logging.getLogger(__name__)
 
 
 class Resolution(namedtuple('Resolution', ('x', 'y'))):
+    """The number of pixels per inch in each 2D direction."""
+
     __slots__ = ()
 
     def round(self, ndigits: int):
@@ -128,6 +130,7 @@ def page_number(input_file: os.PathLike) -> int:
 
 
 def available_cpu_count() -> int:
+    """Returns number of CPUs in the system."""
     try:
         return multiprocessing.cpu_count()
     except NotImplementedError:
@@ -174,6 +177,10 @@ def is_file_writable(test_file: os.PathLike) -> bool:
 
 
 def check_pdf(input_file: Path) -> bool:
+    """Check if a PDF complies with the PDF specification.
+
+    Checks for proper formatting and proper linearization.
+    """
     pdf = None
     try:
         pdf = pikepdf.open(input_file)
@@ -211,6 +218,7 @@ T = TypeVar('T')
 
 
 def clamp(n: T, smallest: T, largest: T) -> T:
+    """Clamps the value of n to between smallest and largest."""
     return max(smallest, min(n, largest))
 
 

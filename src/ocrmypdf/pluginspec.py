@@ -22,13 +22,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, AbstractSet, List, Optional
 
 import pluggy
-from PIL import Image
 
 from ocrmypdf.helpers import Resolution
 
 if TYPE_CHECKING:
     from ocrmypdf._jobcontext import PageContext
     from ocrmypdf.pdfinfo import PdfInfo
+    from PIL import Image
 
 hookspec = pluggy.HookspecMarker('ocrmypdf')
 
@@ -118,7 +118,7 @@ def rasterize_pdf_page(
         rotation: Cardinal angle, clockwise, to rotate page
         filter_vector: If True, remove vector graphics objects
     Returns:
-        output_file
+        Path: output_file if successful
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
@@ -126,7 +126,7 @@ def rasterize_pdf_page(
 
 
 @hookspec(firstresult=True)
-def filter_ocr_image(page: 'PageContext', image: Image) -> Image:
+def filter_ocr_image(page: 'PageContext', image: 'Image') -> 'Image':
     """Called to filter the image before it is sent to OCR.
 
     This is the image that OCR sees, not what the user sees when they view the
@@ -159,20 +159,46 @@ def filter_page_image(page: 'PageContext', image_filename: Path) -> Path:
 
 
 OrientationConfidence = namedtuple('OrientationConfidence', ('angle', 'confidence'))
+"""Expresses an OCR engine's confidence in page rotation.
+
+Attributes:
+    angle (int): The clockwise angle (0, 90, 180, 270) that the page should be
+        rotated. 0 means no rotation.
+    confidence (float): How confident the OCR engine is that this the correct
+        rotation. 0 is not confident, 15 is very confident. Arbitrary units.
+"""
 
 
 class OcrEngine(ABC):
+    """A class representing an OCR engine with capabilities similar to Tesseract OCR.
+
+    This could be used to create a plugin for another OCR engine instead of
+    Tesseract OCR.
+    """
+
     @abstractstaticmethod
     def version() -> str:
         """Returns the version of the OCR engine."""
 
     @abstractstaticmethod
     def creator_tag(options: Namespace) -> str:
-        """Returns the creator tag to identify this software's role in creating the PDF."""
+        """Returns the creator tag to identify this software's role in creating the PDF.
+
+        This tag will be inserted in the XMP metadata and DocumentInfo dictionary
+        as appropriate. Ideally you should include the name of the OCR engine and its
+        version. The text should not contain line breaks. This is to help developers
+        like yourself identify the software that produced this file.
+
+        OCRmyPDF will always prepend its name to this value.
+        """
 
     @abstractmethod
     def __str__(self):
-        """Returns name of OCR engine and version."""
+        """Returns name of OCR engine and version.
+
+        This is used when OCRmyPDF wants to mention the name of the OCR engine
+        to the user, usually in an error message.
+        """
 
     @abstractstaticmethod
     def languages(options: Namespace) -> AbstractSet[str]:
@@ -248,5 +274,5 @@ def generate_pdfa(
         pdfa_part: The desired PDF/A compliance level, such as ``'2B'``.
 
     Returns:
-        output_file: If successful, the hook should return ``output_file``.
+        Path: If successful, the hook should return ``output_file``.
     """

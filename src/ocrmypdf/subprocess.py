@@ -36,18 +36,12 @@ log = logging.getLogger(__name__)
 
 
 def run(args, *, env=None, **kwargs):
-    """Wrapper around subprocess.run()
+    """Wrapper around :py:func:`subprocess.run`
 
-    The main purpose of this wrapper is to log subprocess output.
-
-    Secondly we have to account for behavioral differences in Windows in particular.
-    Creating symbolic links in Windows requires administrator privileges and
-    may not work if for some reason we're using a FAT file system or the temporary
-    folder is on a different drive from the working folder. The test suite
-    works around this by creating shim Python scripts that perform the same function
-    as a symbolic link, but those shims require support on this side, to ensure
-    we call them with Python.
-
+    The main purpose of this wrapper is to log subprocess output in an orderly
+    fashion that indentifies the responsible subprocess. An additional
+    task is that this function goes to greater lengths to find possible Windows
+    locations of our dependencies when they are not on the system PATH.
     """
     if not env:
         env = os.environ
@@ -106,8 +100,18 @@ def _fix_windows_args(program, args, env):
 
 
 @lru_cache(maxsize=None)
-def get_version(program, *, version_arg='--version', regex=r'(\d+(\.\d+)*)', env=None):
-    """Get the version of the specified program"""
+def get_version(
+    program: str, *, version_arg: str = '--version', regex=r'(\d+(\.\d+)*)', env=None
+):
+    """Get the version of the specified program
+
+    Arguments:
+        program: The program to version check.
+        version_arg: The argument needed to ask for its version, e.g. ``--version``.
+        regex: A regular expression to parse the program's output and obtain the
+            version.
+        env: Custom ``os.environ`` in which to run program.
+    """
     args_prog = [program, version_arg]
     try:
         proc = run(

@@ -16,19 +16,7 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Generate a PDFMARK file for Ghostscript >= 9.14, for PDF/A conversion
-
-pdfmark is an extension to the Postscript language that describes some PDF
-features like bookmarks and annotations. It was originally specified Adobe
-Distiller, for Postscript to PDF conversion:
-https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/pdfmark_reference.pdf
-
-Ghostscript uses pdfmark for PDF to PDF/A conversion as well. To use Ghostscript
-to create a PDF/A, we need to create a pdfmark file with the necessary metadata.
-
-This takes care of the many version-specific bugs and pecularities in
-Ghostscript's handling of pdfmark.
-
+Utilities for PDF/A production and confirmation with Ghostspcript.
 """
 
 import base64
@@ -68,20 +56,28 @@ def
 """
 
 
-def generate_pdfa_ps(target_filename, icc='sRGB'):
-    """Create a Postscript pdfmark file for Ghostscript PDF/A conversion
+def generate_pdfa_ps(target_filename: Path, icc: str = 'sRGB'):
+    """Create a Postscript PDFMARK file for Ghostscript PDF/A conversion
 
-    A pdfmark file is a small Postscript program that provides some information
-    Ghostscript needs to perform PDF/A conversion. The only information we put
-    in specifies that we want the file to be a PDF/A, and we want to Ghostscript
-    to convert objects to the sRGB colorspace if it runs into any object that
-    it decides must be converted.
+    pdfmark is an extension to the Postscript language that describes some PDF
+    features like bookmarks and annotations. It was originally specified Adobe
+    Distiller, for Postscript to PDF conversion.
 
-    See the Adobe pdfmark Reference for details:
-    https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/pdfmark_reference.pdf
+    Ghostscript uses pdfmark for PDF to PDF/A conversion as well. To use Ghostscript
+    to create a PDF/A, we need to create a pdfmark file with the necessary metadata.
 
-    :param target_filename: filename to save
-    :param icc: ICC identifier such as 'sRGB'
+    This function takes care of the many version-specific bugs and pecularities in
+    Ghostscript's handling of pdfmark.
+
+    The only information we put in specifies that we want the file to be a
+    PDF/A, and we want to Ghostscript to convert objects to the sRGB colorspace
+    if it runs into any object that it decides must be converted.
+
+    Arguments:
+        target_filename: filename to save
+        icc: ICC identifier such as 'sRGB'
+    References:
+        Adobe PDFMARK Reference: https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/pdfmark_reference.pdf
     """
     if icc == 'sRGB':
         icc_profile = SRGB_ICC_PROFILE
@@ -102,7 +98,7 @@ def generate_pdfa_ps(target_filename, icc='sRGB'):
     return target_filename
 
 
-def file_claims_pdfa(filename):
+def file_claims_pdfa(filename: Path):
     """Determines if the file claims to be PDF/A compliant
 
     This only checks if the XMP metadata contains a PDF/A marker. It does not

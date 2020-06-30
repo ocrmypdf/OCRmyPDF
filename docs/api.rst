@@ -106,7 +106,3 @@ Reference
     :undoc-members:
 
 .. autofunction:: ocrmypdf.configure_logging
-
-.. automodule:: ocrmypdf.exceptions
-    :members:
-    :undoc-members:

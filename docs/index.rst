@@ -36,6 +36,7 @@ image processing and OCR to existing PDFs.
 
    api
    plugins
+   apiref
    contributing
 
 Indices and tables

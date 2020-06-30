@@ -76,5 +76,43 @@ A plugin may provide the following hooks. Hooks should be decorated with
 The following is a complete list of hooks that may be installed and when
 they are called.
 
-.. automodule:: ocrmypdf.pluginspec
+Custom command line arguments
+-----------------------------
+
+.. autofunction:: ocrmypdf.pluginspec.add_options
+
+.. autofunction:: ocrmypdf.pluginspec.check_options
+
+Applying special behavior before processing
+-------------------------------------------
+
+.. autofunction:: ocrmypdf.pluginspec.validate
+
+PDF page to image
+-----------------
+
+.. autofunction:: ocrmypdf.pluginspec.rasterize_pdf_page
+
+Modifying intermediate images
+-----------------------------
+
+.. autofunction:: ocrmypdf.pluginspec.filter_ocr_image
+
+.. autofunction:: ocrmypdf.pluginspec.filter_page_image
+
+OCR engine
+----------
+
+.. autofunction:: ocrmypdf.pluginspec.get_ocr_engine
+
+.. autoclass:: ocrmypdf.pluginspec.OcrEngine
     :members:
+
+    .. automethod:: __str__
+
+.. autoclass:: ocrmypdf.pluginspec.OrientationConfidence
+
+PDF/A production
+----------------
+
+.. autofunction:: ocrmypdf.pluginspec.generate_pdfa

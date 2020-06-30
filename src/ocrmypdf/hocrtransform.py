@@ -35,7 +35,7 @@ from collections import namedtuple
 from itertools import chain
 from math import atan, cos, sin
 from pathlib import Path
-from typing import Union
+from typing import Optional, Tuple, Union
 from xml.etree import ElementTree
 
 from reportlab.lib.colors import black, cyan, magenta, red
@@ -133,7 +133,7 @@ class HocrTransform:
         return out
 
     @classmethod
-    def baseline(cls, element):
+    def baseline(cls, element) -> Tuple[float, float]:
         """
         Returns a tuple containing the baseline slope and intercept.
         """
@@ -143,7 +143,7 @@ class HocrTransform:
                 return float(matches.group(1)), int(matches.group(2))
         return (0.0, 0.0)
 
-    def pt_from_pixel(self, pxl):
+    def pt_from_pixel(self, pxl) -> Rect:
         """
         Returns the quantity in PDF units (pt) given quantity in pixels
         """
@@ -156,11 +156,11 @@ class HocrTransform:
         return xpath
 
     @classmethod
-    def replace_unsupported_chars(cls, s: str):
+    def replace_unsupported_chars(cls, s: str) -> str:
         """
         Given an input string, returns the corresponding string that:
-        - is available in the helvetica facetype
-        - does not contain any ligature (to allow easy search in the PDF file)
+        * is available in the Helvetica facetype
+        * does not contain any ligature (to allow easy search in the PDF file)
         """
         return s.translate(cls.ligatures)
 
@@ -172,12 +172,12 @@ class HocrTransform:
     def to_pdf(
         self,
         out_filename: Path,
-        image_filename: Path = None,
+        image_filename: Optional[Path] = None,
         show_bounding_boxes: bool = False,
         fontname: str = "Helvetica",
         invisible_text: bool = False,
         interword_spaces: bool = False,
-    ):
+    ) -> None:
         """
         Creates a PDF file with an image superimposed on top of the text.
         Text is positioned according to the bounding box of the lines in
@@ -185,6 +185,20 @@ class HocrTransform:
         The image need not be identical to the image used to create the hOCR
         file.
         It can have a lower resolution, different color mode, etc.
+
+        Arguments:
+            out_filename: Path of PDF to write.
+            image_filename: Image to use for this file. If omitted, the OCR text
+                is shown.
+            show_bounding_boxes: Show bounding boxes around various text regions,
+                for debugging.
+            fontname: Name of font to use.
+            invisible_text: If True, text is rendered invisible so that is
+                selectable but never drawn. If False, text is visible and may
+                be seen if the image is skipped or deleted in Acrobat.
+            interword_spaces: If True, insert spaces between words rather than
+                drawing each word without spaces. Generally this improves text
+                extraction.
         """
         # create the PDF file
         # page size in points (1/72 in.)
