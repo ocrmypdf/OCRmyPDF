@@ -21,7 +21,7 @@ import importlib.util
 import sys
 from functools import partial
 from pathlib import Path
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, Union
 
 import pluggy
 
@@ -64,7 +64,9 @@ class OcrmypdfPluginManager(pluggy.PluginManager):
         )
 
 
-def _setup_plugins(pm: pluggy.PluginManager, plugins: List[str], builtins: bool = True):
+def _setup_plugins(
+    pm: pluggy.PluginManager, plugins: List[Union[str, Path]], builtins: bool = True
+):
     pm.add_hookspecs(pluginspec)
 
     if builtins:
@@ -75,7 +77,7 @@ def _setup_plugins(pm: pluggy.PluginManager, plugins: List[str], builtins: bool 
     else:
         all_plugins = plugins
     for name in all_plugins:
-        if name.endswith('.py'):
+        if isinstance(name, Path) or name.endswith('.py'):
             # Import by filename
             module_name = Path(name).stem
             spec = importlib.util.spec_from_file_location(module_name, name)

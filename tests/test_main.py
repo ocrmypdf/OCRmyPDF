@@ -256,7 +256,7 @@ def test_missing_docinfo(resources, outpdf):
         'eng',
         '--skip-text',
         '--plugin',
-        'tests/plugins/tesseract_noop.py',
+        Path('tests/plugins/tesseract_noop.py'),
     )
     assert result == ExitCode.ok
 
