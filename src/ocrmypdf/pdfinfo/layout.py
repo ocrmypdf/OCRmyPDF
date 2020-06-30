@@ -221,7 +221,7 @@ class TextPositionTracker(PDFLayoutAnalyzer):
 def get_page_analysis(infile, pageno, pscript5_mode):
     rman = pdfminer.pdfinterp.PDFResourceManager(caching=True)
     dev = TextPositionTracker(
-        rman, laparams=LAParams(all_texts=True, detect_vertical=True)
+        rman, laparams=LAParams(all_texts=True, detect_vertical=True, boxes_flow=None)
     )
     interp = pdfminer.pdfinterp.PDFPageInterpreter(rman, dev)
 
