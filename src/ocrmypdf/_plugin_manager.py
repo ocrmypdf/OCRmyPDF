@@ -69,13 +69,15 @@ def _setup_plugins(
 ):
     pm.add_hookspecs(pluginspec)
 
+    all_plugins: List[Union[str, Path]] = []
     if builtins:
-        all_plugins = [
-            'ocrmypdf.builtin_plugins.ghostscript',
-            'ocrmypdf.builtin_plugins.tesseract_ocr',
-        ] + plugins
-    else:
-        all_plugins = plugins
+        all_plugins.extend(
+            [
+                'ocrmypdf.builtin_plugins.ghostscript',
+                'ocrmypdf.builtin_plugins.tesseract_ocr',
+            ]
+        )
+    all_plugins.extend(plugins)
     for name in all_plugins:
         if isinstance(name, Path) or name.endswith('.py'):
             # Import by filename

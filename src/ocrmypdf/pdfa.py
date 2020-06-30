@@ -22,6 +22,7 @@ Utilities for PDF/A production and confirmation with Ghostspcript.
 import base64
 from pathlib import Path
 from string import Template
+from typing import Dict, Union
 
 import pikepdf
 import pkg_resources
@@ -115,7 +116,7 @@ def file_claims_pdfa(filename: Path):
             }
         valid_part_conforms = {'1A', '1B', '2A', '2B', '2U', '3A', '3B', '3U'}
         conformance = f'PDF/A-{pdfmeta.pdfa_status}'
-        pdfa_dict = {}
+        pdfa_dict: Dict[str, Union[str, bool]] = {}
         if pdfmeta.pdfa_status in valid_part_conforms:
             pdfa_dict['pass'] = True
             pdfa_dict['output'] = 'pdfa'

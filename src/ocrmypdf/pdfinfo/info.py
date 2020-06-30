@@ -25,7 +25,7 @@ from functools import partial
 from math import hypot, isclose
 from os import PathLike
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Union
 from warnings import warn
 
 import pikepdf
@@ -237,7 +237,7 @@ def _get_dpi(ctm_shorthand, image_size):
     width-axis vector v0 (1, 0), height-axis vector vh (0, 1) with the matrix,
     which gives the dimensions of the image in PDF units. From there we can
     compare to actual image dimensions. PDF uses
-    row vector * matrix_tranposed unlike the traditional
+    row vector * matrix_transposed unlike the traditional
     matrix * column vector.
 
     The offset, width and height vectors can be combined in a matrix and
@@ -523,7 +523,7 @@ def _process_content_streams(*, pdf, container, shorthand=None):
     yield from _find_form_xobject_images(pdf, container, contentsinfo)
 
 
-def _page_has_text(text_blocks, page_width, page_height):
+def _page_has_text(text_blocks, page_width, page_height) -> bool:
     """Smarter text detection that ignores text in margins"""
 
     pw, ph = float(page_width), float(page_height)
@@ -567,7 +567,7 @@ def simplify_textboxes(miner, textbox_getter):
 
 
 def _pdf_get_pageinfo(
-    pdf, pageno: int, infile: PathLike, check_pages, detailed_analysis
+    pdf, pageno: int, infile: PathLike, check_pages, detailed_analysis: bool
 ):
     pageinfo: Dict[str, Any] = {}
     pageinfo['pageno'] = pageno
@@ -696,41 +696,41 @@ class PageInfo:
         )
 
     @property
-    def pageno(self):
+    def pageno(self) -> int:
         return self._pageno
 
     @property
-    def has_text(self):
+    def has_text(self) -> bool:
         return self._pageinfo['has_text']
 
     @property
-    def has_corrupt_text(self):
+    def has_corrupt_text(self) -> bool:
         if not self._detailed_analysis:
             raise NotImplementedError('Did not do detailed analysis')
         return any(tbox.is_corrupt for tbox in self._pageinfo['textboxes'])
 
     @property
-    def has_vector(self):
+    def has_vector(self) -> bool:
         return self._pageinfo['has_vector']
 
     @property
-    def width_inches(self):
+    def width_inches(self) -> Decimal:
         return self._pageinfo['width_inches']
 
     @property
-    def height_inches(self):
+    def height_inches(self) -> Decimal:
         return self._pageinfo['height_inches']
 
     @property
-    def width_pixels(self):
+    def width_pixels(self) -> int:
         return int(round(float(self.width_inches) * self.dpi.x))
 
     @property
-    def height_pixels(self):
+    def height_pixels(self) -> int:
         return int(round(float(self.height_inches) * self.dpi.y))
 
     @property
-    def rotation(self):
+    def rotation(self) -> int:
         return self._pageinfo.get('rotate', None)
 
     @rotation.setter
@@ -744,7 +744,9 @@ class PageInfo:
     def images(self):
         return self._pageinfo['images']
 
-    def get_textareas(self, visible=None, corrupt=None):
+    def get_textareas(
+        self, visible: Optional[bool] = None, corrupt: Optional[bool] = None
+    ):
         def predicate(obj, want_visible, want_corrupt):
             result = True
             if want_visible is not None:
@@ -767,15 +769,15 @@ class PageInfo:
         )
 
     @property
-    def dpi(self):
+    def dpi(self) -> Resolution:
         return self._pageinfo.get('dpi', Resolution(0.0, 0.0))
 
     @property
-    def userunit(self):
+    def userunit(self) -> Decimal:
         return self._pageinfo.get('userunit', None)
 
     @property
-    def min_version(self):
+    def min_version(self) -> str:
         if self.userunit is not None:
             return '1.6'
         else:
@@ -795,9 +797,9 @@ class PdfInfo:
     def __init__(
         self,
         infile,
-        detailed_analysis=False,
-        progbar=False,
-        max_workers=None,
+        detailed_analysis: bool = False,
+        progbar: bool = False,
+        max_workers: int = None,
         check_pages=None,
     ):
         self._infile = infile
@@ -828,29 +830,29 @@ class PdfInfo:
         return self._pages
 
     @property
-    def min_version(self):
+    def min_version(self) -> str:
         # The minimum PDF is the maximum version that any particular page needs
         return max(page.min_version for page in self.pages)
 
     @property
-    def has_userunit(self):
+    def has_userunit(self) -> bool:
         return any(page.userunit != 1.0 for page in self.pages)
 
     @property
-    def has_acroform(self):
+    def has_acroform(self) -> bool:
         return self._has_acroform
 
     @property
-    def filename(self):
+    def filename(self) -> Union[str, Path]:
         if not isinstance(self._infile, (str, Path)):
             raise NotImplementedError("can't get filename from stream")
         return self._infile
 
     @property
-    def needs_rendering(self):
+    def needs_rendering(self) -> bool:
         return self._needs_rendering
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> PageInfo:
         return self._pages[item]
 
     def __len__(self):
