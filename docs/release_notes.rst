@@ -16,6 +16,15 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v10.2.1
+=======
+
+-  Disabled calculation of text box order with pdfminer. We never needed this result
+   and it is expensive to calculate on files with complex pre-existing text.
+-  Fixed plugin manager to accept ``Path(plugin)`` as a path to a plugin.
+-  Fixed some typing errors.
+-  Documentation improvements.
+
 v10.2.0
 =======
 
