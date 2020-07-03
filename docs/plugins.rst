@@ -15,7 +15,7 @@ Currently, it is possible to:
 OCRmyPDF plugins are based on the Python ``pluggy`` package and conform to its
 conventions. Note that: plugins installed with as setuptools entrypoints are
 not checked currently, because OCRmyPDF assumes you may not want to enable
-plugins for all files. Also, plugins must be functions, not classes.
+plugins for all files.
 
 How plugins are imported
 ========================
@@ -32,10 +32,12 @@ Script plugins
 ==============
 
 Script plugins may be called from the command line, by specifying the name of a file.
+Script plugins may be convenient for informal or "one-off" plugins, when a certain
+batch of files needs a special processing step for example.
 
 .. code-block:: bash
 
-    ocrmypdf --plugin example_plugin.py input.pdf output.pdf
+    ocrmypdf --plugin ocrmypdf_example_plugin.py input.pdf output.pdf
 
 Multiple plugins may be called by issuing the ``--plugin`` argument multiple times.
 
@@ -44,6 +46,7 @@ Packaged plugins
 
 Installed plugins may be installed into the same virtual environment as OCRmyPDF
 is installed into. They may be invoked using Python standard module naming.
+If you are intending to distribute a plugin, please package it.
 
 .. code-block:: bash
 
@@ -58,6 +61,12 @@ Third parties that wish to distribute packages for ocrmypdf should package them
 as packaged plugins, and these modules should begin with the name ``ocrmypdf_``
 similar to ``pytest`` packages such as ``pytest-cov`` (the package) and
 ``pytest_cov`` (the module).
+
+.. note::
+
+    We strongly recommend plugin authors name their plugins with the prefix
+    ``ocrmypdf-`` (for the package name on PyPI) and ``ocrmypdf_`` (for the
+    module), just like pytest plugins.
 
 Plugin hooks
 ============

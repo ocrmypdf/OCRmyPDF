@@ -83,8 +83,8 @@ image, and then creates a PDF from the OCR information.
 """,
         epilog="""\
 OCRmyPDF attempts to keep the output file at about the same size.  If a file
-contains losslessly compressed images, and output file will be losslessly
-compressed as well.
+contains losslessly compressed images, and images in the output file will be
+losslessly compressed as well.
 
 PDF is a page description file that attempts to preserve a layout exactly.
 A PDF can contain vector objects (such as text or lines) and raster objects
@@ -103,9 +103,8 @@ all objects on the page and produce an image-only PDF as output.
 
 If you are concerned about long-term archiving of PDFs, use the default option
 --output-type pdfa which converts the PDF to a standardized PDF/A-2b.  This
-converts images to sRGB colorspace, removes some features from the PDF such
-as Javascript or forms. If you want to minimize the number of changes made to
-your PDF, use --output-type pdf.
+removes some features from the PDF such as Javascript or forms. If you want to
+minimize the number of changes made to your PDF, use --output-type pdf.
 
 If OCRmyPDF is given an image file as input, it will attempt to convert the
 image to a PDF before processing.  For more control over the conversion of
@@ -113,8 +112,7 @@ images to PDF, use the Python package img2pdf or other image to PDF software.
 
 For example, this command uses img2pdf to convert all .png files beginning
 with the 'page' prefix to a PDF, fitting each image on A4-sized paper, and
-sending the result to OCRmyPDF through a pipe.  img2pdf is a dependency of
-ocrmypdf so it is already installed.
+sending the result to OCRmyPDF through a pipe.
 
     img2pdf --pagesize A4 page*.png | ocrmypdf - myfile.pdf
 
@@ -462,7 +460,12 @@ Online documentation is located at:
         dest='plugins',
         action='append',
         default=[],
-        help="Name of plugin to import.",
+        help="Name of plugin to import. Argument may be issued multiple times to "
+        "import multiple plugins. Plugins may be specified as module names in "
+        "Python syntax, provided they are installed in the same Python (virtual) "
+        "environment as ocrmypdf; or you may give the path to the Python file that "
+        "contains the plugin. Plugins must conform to the specification in the "
+        "OCRmyPDF documentation.",
     )
 
     debugging = parser.add_argument_group(
