@@ -30,6 +30,7 @@ import PIL
 from ocrmypdf._concurrent import exec_progress_pool
 from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PageContext, PdfContext, cleanup_working_files
+from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._pipeline import (
     convert_to_pdfa,
     copy_final,
@@ -309,6 +310,7 @@ def configure_debug_logging(log_filename, prefix=''):
         '[%(asctime)s] - %(name)s - %(levelname)7s -%(pageno)s %(message)s'
     )
     log_file_handler.setFormatter(formatter)
+    log_file_handler.addFilter(PageNumberFilter())
     logging.getLogger(prefix).addHandler(log_file_handler)
     return log_file_handler
 
