@@ -22,9 +22,10 @@ from collections import defaultdict
 from functools import partial
 from os import fspath
 from pathlib import Path
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 import pikepdf
-from pikepdf import Dictionary, Name
+from pikepdf import Dictionary, Name, Object, Pdf, PdfImage
 from PIL import Image
 from tqdm import tqdm
 
@@ -41,30 +42,32 @@ DEFAULT_JPEG_QUALITY = 75
 DEFAULT_PNG_QUALITY = 70
 
 
-def img_name(root, xref, ext):
+def img_name(root: Path, xref: int, ext: str) -> str:
     return fspath(root / f'{xref:08d}{ext}')
 
 
-def png_name(root, xref):
+def png_name(root: Path, xref: int) -> str:
     return img_name(root, xref, '.png')
 
 
-def jpg_name(root, xref):
+def jpg_name(root: Path, xref: int) -> str:
     return img_name(root, xref, '.jpg')
 
 
-def tif_name(root, xref):
+def tif_name(root: Path, xref: int) -> str:
     return img_name(root, xref, '.tif')
 
 
-def extract_image_filter(pike, root, image, xref):
+def extract_image_filter(
+    pike: Pdf, root: Path, image: Object, xref: int
+) -> Optional[Tuple[PdfImage, Tuple[Name, Any]]]:
     if image.Subtype != Name.Image:
         return None
     if image.Length < 100:
         log.debug("Skipping small image, xref %s", xref)
         return None
 
-    pim = pikepdf.PdfImage(image)
+    pim = PdfImage(image)
 
     if len(pim.filter_decodeparms) > 1:
         log.debug("Skipping multiply filtered, xref %s", xref)
@@ -83,7 +86,9 @@ def extract_image_filter(pike, root, image, xref):
     return pim, filtdp
 
 
-def extract_image_jbig2(*, pike, root, image, xref, options):
+def extract_image_jbig2(
+    *, pike: pikepdf.Pdf, root: Path, image: Object, xref: int, options
+) -> Optional[Tuple[int, str]]:
     result = extract_image_filter(pike, root, image, xref)
     if result is None:
         return None
@@ -105,7 +110,9 @@ def extract_image_jbig2(*, pike, root, image, xref, options):
     return None
 
 
-def extract_image_generic(*, pike, root, image, xref, options):
+def extract_image_generic(
+    *, pike: Pdf, root: Path, image: PdfImage, xref: int, options
+) -> Optional[Tuple[int, str]]:
     result = extract_image_filter(pike, root, image, xref)
     if result is None:
         return None
@@ -174,7 +181,12 @@ def extract_image_generic(*, pike, root, image, xref, options):
     return None
 
 
-def extract_images(pike, root, options, extract_fn):
+def extract_images(
+    pike: Pdf,
+    root: Path,
+    options,
+    extract_fn: Callable[..., Optional[Tuple[int, str]]],
+) -> Iterator[Tuple[int, int, str]]:
     """Extract image using extract_fn
 
     Enumerate images on each page, lookup their xref/ID number in the PDF.
@@ -227,7 +239,9 @@ def extract_images(pike, root, options, extract_fn):
                 yield pageno_for_xref[xref], xref, ext
 
 
-def extract_images_generic(pike, root, options):
+def extract_images_generic(
+    pike: Pdf, root: Path, options
+) -> Tuple[List[int], List[int]]:
     """Extract any >=2bpp image we think we can improve"""
 
     jpegs = []
@@ -242,7 +256,9 @@ def extract_images_generic(pike, root, options):
     return jpegs, pngs
 
 
-def extract_images_jbig2(pike, root, options):
+def extract_images_jbig2(
+    pike: Pdf, root: Path, options
+) -> Dict[int, List[Tuple[int, str]]]:
     """Extract any bitonal image that we think we can improve as JBIG2"""
 
     jbig2_groups = defaultdict(list)
@@ -258,10 +274,12 @@ def extract_images_jbig2(pike, root, options):
     return jbig2_groups
 
 
-def _produce_jbig2_images(jbig2_groups, root, options):
+def _produce_jbig2_images(
+    jbig2_groups: Dict[int, List[Tuple[int, str]]], root: Path, options
+) -> None:
     """Produce JBIG2 images from their groups"""
 
-    def jbig2_group_args(root, groups):
+    def jbig2_group_args(root: Path, groups: Dict[int, List[Tuple[int, str]]]):
         for group, xref_exts in groups.items():
             prefix = f'group{group:08d}'
             yield dict(
@@ -270,7 +288,7 @@ def _produce_jbig2_images(jbig2_groups, root, options):
                 out_prefix=prefix,
             )
 
-    def jbig2_single_args(root, groups):
+    def jbig2_single_args(root, groups: Dict[int, List[Tuple[int, str]]]):
         for group, xref_exts in groups.items():
             prefix = f'group{group:08d}'
             # Second loop is to ensure multiple images per page are unpacked
@@ -306,7 +324,9 @@ def _produce_jbig2_images(jbig2_groups, root, options):
     )
 
 
-def convert_to_jbig2(pike, jbig2_groups, root, options):
+def convert_to_jbig2(
+    pike: Pdf, jbig2_groups: Dict[int, List[Tuple[int, str]]], root: Path, options
+) -> None:
     """Convert images to JBIG2 and insert into PDF.
 
     When the JBIG2 page group size is > 1 we do several JBIG2 images at once
@@ -344,7 +364,7 @@ def convert_to_jbig2(pike, jbig2_groups, root, options):
             )
 
 
-def transcode_jpegs(pike, jpegs, root, options):
+def transcode_jpegs(pike: Pdf, jpegs: Sequence[int], root: Path, options) -> None:
     for xref in tqdm(
         jpegs, desc="JPEGs", unit='image', disable=not options.progress_bar
     ):
@@ -367,7 +387,13 @@ def transcode_jpegs(pike, jpegs, root, options):
         im_obj.write(compdata.read(), filter=Name.DCTDecode)
 
 
-def transcode_pngs(pike, images, image_name_fn, root, options):
+def transcode_pngs(
+    pike: Pdf,
+    images: Sequence[int],
+    image_name_fn: Callable[[Path, int], str],
+    root: Path,
+    options,
+) -> None:
     modified = set()
     if options.optimize >= 2:
         png_quality = (
@@ -431,7 +457,7 @@ def transcode_pngs(pike, images, image_name_fn, root, options):
             rewrite_png_as_g4(pike, im_obj, compdata)
 
 
-def rewrite_png_as_g4(pike, im_obj, compdata):
+def rewrite_png_as_g4(pike: Pdf, im_obj: Object, compdata) -> None:
     im_obj.BitsPerComponent = 1
     im_obj.Width = compdata.w
     im_obj.Height = compdata.h
@@ -451,7 +477,7 @@ def rewrite_png_as_g4(pike, im_obj, compdata):
     return
 
 
-def rewrite_png(pike, im_obj, compdata):
+def rewrite_png(pike: Pdf, im_obj: Object, compdata) -> None:
     # When a PNG is inserted into a PDF, we more or less copy the IDAT section from
     # the PDF and transfer the rest of the PNG headers to PDF image metadata.
     # One thing we have to do is tell the PDF reader whether a predictor was used
@@ -504,7 +530,7 @@ def rewrite_png(pike, im_obj, compdata):
     im_obj.write(compdata.read(), filter=Name.FlateDecode, decode_parms=dparms)
 
 
-def optimize(input_file, output_file, context, save_settings):
+def optimize(input_file: Path, output_file: Path, context, save_settings) -> None:
     options = context.options
     if options.optimize == 0:
         safe_symlink(input_file, output_file)
