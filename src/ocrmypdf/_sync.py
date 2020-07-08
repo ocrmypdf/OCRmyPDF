@@ -25,6 +25,7 @@ from pathlib import Path
 from tempfile import mkdtemp
 from typing import List, NamedTuple, Optional, Tuple
 
+import pikepdf
 import PIL
 
 from ocrmypdf._concurrent import exec_progress_pool
@@ -330,6 +331,12 @@ def run_pipeline(options, *, plugin_manager, api=False):
         'PYTEST_CURRENT_TEST', ''
     ):
         debug_log_handler = configure_debug_logging(Path(work_folder) / "debug.log")
+
+    try:
+        if pikepdf._qpdf.set_access_default_mmap(True):
+            log.debug("pikepdf mmap enabled")
+    except AttributeError:
+        log.debug("pikepdf mmap not available")
 
     try:
         check_requested_output_file(options)

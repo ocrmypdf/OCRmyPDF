@@ -28,6 +28,8 @@ from typing import Callable, Iterable, Optional
 
 from tqdm import tqdm
 
+from ocrmypdf.exceptions import InputFileError
+
 
 def log_listener(queue):
     """Listen to the worker processes and forward the messages to logging
@@ -53,11 +55,19 @@ def log_listener(queue):
             traceback.print_exc(file=sys.stderr)
 
 
+def process_sigbus(*args):
+    raise InputFileError("A worker process lost access to an input file")
+
+
 def process_init(queue, user_init):
     """Initialize a process pool worker"""
 
     # Ignore SIGINT (our parent process will kill us gracefully)
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+    # Install SIGBUS handler (so our parent process can abort somewhat gracefully)
+    if hasattr(signal, 'SIGBUS'):
+        signal.signal(signal.SIGBUS, process_sigbus)
 
     # Reconfigure the root logger for this process to send all messages to a queue
     h = logging.handlers.QueueHandler(queue)
@@ -70,6 +80,9 @@ def process_init(queue, user_init):
 
 
 def thread_init(_queue, user_init):
+    # As a thread, block SIGBUS so the main thread deals with it...
+    if hasattr(signal, 'SIGBUS'):
+        signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGBUS})
     if user_init:
         user_init()
 

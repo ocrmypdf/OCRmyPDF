@@ -18,6 +18,7 @@
 
 import logging
 import os
+import signal
 import sys
 from multiprocessing import set_start_method
 
@@ -26,9 +27,18 @@ from ocrmypdf._plugin_manager import get_parser_options_plugins
 from ocrmypdf._sync import run_pipeline
 from ocrmypdf._validation import check_closed_streams, check_options
 from ocrmypdf.api import Verbosity, configure_logging
-from ocrmypdf.exceptions import BadArgsError, ExitCode, MissingDependencyError
+from ocrmypdf.exceptions import (
+    BadArgsError,
+    ExitCode,
+    InputFileError,
+    MissingDependencyError,
+)
 
 log = logging.getLogger('ocrmypdf')
+
+
+def sigbus(*args):
+    raise InputFileError("Lost access to the input file")
 
 
 def run(args=None):
@@ -61,6 +71,9 @@ def run(args=None):
     except MissingDependencyError as e:
         log.error(e)
         return ExitCode.missing_dependency
+
+    if hasattr(signal, 'SIGBUS'):
+        signal.signal(signal.SIGBUS, sigbus)
 
     result = run_pipeline(options=options, plugin_manager=plugin_manager)
     return result
