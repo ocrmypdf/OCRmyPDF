@@ -91,7 +91,7 @@ def extract_image_jbig2(*, pike, root, image, xref, options):
 
     if (
         pim.bits_per_component == 1
-        and filtdp != Name.JBIG2Decode
+        and filtdp[0] != Name.JBIG2Decode
         and jbig2enc.available()
     ):
         try:
