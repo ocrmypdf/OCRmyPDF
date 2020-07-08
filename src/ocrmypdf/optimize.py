@@ -22,7 +22,19 @@ from collections import defaultdict
 from functools import partial
 from os import fspath
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    MutableSet,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import pikepdf
 from pikepdf import Dictionary, Name, Object, Pdf, PdfImage
@@ -40,6 +52,11 @@ log = logging.getLogger(__name__)
 
 DEFAULT_JPEG_QUALITY = 75
 DEFAULT_PNG_QUALITY = 70
+
+
+class XrefExt(NamedTuple):
+    xref: int
+    ext: str
 
 
 def img_name(root: Path, xref: int, ext: str) -> str:
@@ -60,7 +77,7 @@ def tif_name(root: Path, xref: int) -> str:
 
 def extract_image_filter(
     pike: Pdf, root: Path, image: Object, xref: int
-) -> Optional[Tuple[PdfImage, Tuple[Name, Any]]]:
+) -> Optional[Tuple[PdfImage, Tuple[Name, Object]]]:
     if image.Subtype != Name.Image:
         return None
     if image.Length < 100:
@@ -88,7 +105,7 @@ def extract_image_filter(
 
 def extract_image_jbig2(
     *, pike: pikepdf.Pdf, root: Path, image: Object, xref: int, options
-) -> Optional[Tuple[int, str]]:
+) -> Optional[XrefExt]:
     result = extract_image_filter(pike, root, image, xref)
     if result is None:
         return None
@@ -106,13 +123,13 @@ def extract_image_jbig2(
             imgname.rename(imgname.with_suffix(ext))
         except pikepdf.UnsupportedImageTypeError:
             return None
-        return xref, ext
+        return XrefExt(xref, ext)
     return None
 
 
 def extract_image_generic(
     *, pike: Pdf, root: Path, image: PdfImage, xref: int, options
-) -> Optional[Tuple[int, str]]:
+) -> Optional[XrefExt]:
     result = extract_image_filter(pike, root, image, xref)
     if result is None:
         return None
@@ -151,7 +168,7 @@ def extract_image_generic(
             imgname.rename(imgname.with_suffix(ext))
         except pikepdf.UnsupportedImageTypeError:
             return None
-        return xref, ext
+        return XrefExt(xref, ext)
     elif (
         pim.indexed
         and pim.colorspace in pim.SIMPLE_COLORSPACES
@@ -160,12 +177,12 @@ def extract_image_generic(
         # Try to improve on indexed images - these are far from low hanging
         # fruit in most cases
         pim.as_pil_image().save(png_name(root, xref))
-        return xref, '.png'
+        return XrefExt(xref, '.png')
     elif not pim.indexed and pim.colorspace in pim.SIMPLE_COLORSPACES:
         # An optimization opportunity here, not currently taken, is directly
         # generating a PNG from compressed data
         pim.as_pil_image().save(png_name(root, xref))
-        return xref, '.png'
+        return XrefExt(xref, '.png')
     elif (
         not pim.indexed
         and pim.colorspace == Name.ICCBased
@@ -176,17 +193,14 @@ def extract_image_generic(
         # paying any attention to the ICC profile, provided we're not doing
         # lossy JBIG2
         pim.as_pil_image().save(png_name(root, xref))
-        return xref, '.png'
+        return XrefExt(xref, '.png')
 
     return None
 
 
 def extract_images(
-    pike: Pdf,
-    root: Path,
-    options,
-    extract_fn: Callable[..., Optional[Tuple[int, str]]],
-) -> Iterator[Tuple[int, int, str]]:
+    pike: Pdf, root: Path, options, extract_fn: Callable[..., Optional[XrefExt]],
+) -> Iterator[Tuple[int, XrefExt]]:
     """Extract image using extract_fn
 
     Enumerate images on each page, lookup their xref/ID number in the PDF.
@@ -236,7 +250,7 @@ def extract_images(
         else:
             if result:
                 _, ext = result
-                yield pageno_for_xref[xref], xref, ext
+                yield pageno_for_xref[xref], XrefExt(xref, ext)
 
 
 def extract_images_generic(
@@ -246,25 +260,23 @@ def extract_images_generic(
 
     jpegs = []
     pngs = []
-    for _, xref, ext in extract_images(pike, root, options, extract_image_generic):
-        log.debug('xref = %s ext = %s', xref, ext)
-        if ext == '.png':
-            pngs.append(xref)
-        elif ext == '.jpg':
-            jpegs.append(xref)
+    for _, xref_ext in extract_images(pike, root, options, extract_image_generic):
+        log.debug('xref_ext = %s', xref_ext)
+        if xref_ext.ext == '.png':
+            pngs.append(xref_ext.xref)
+        elif xref_ext.ext == '.jpg':
+            jpegs.append(xref_ext.xref)
     log.debug("Optimizable images: JPEGs: %s PNGs: %s", len(jpegs), len(pngs))
     return jpegs, pngs
 
 
-def extract_images_jbig2(
-    pike: Pdf, root: Path, options
-) -> Dict[int, List[Tuple[int, str]]]:
+def extract_images_jbig2(pike: Pdf, root: Path, options) -> Dict[int, List[XrefExt]]:
     """Extract any bitonal image that we think we can improve as JBIG2"""
 
     jbig2_groups = defaultdict(list)
-    for pageno, xref, ext in extract_images(pike, root, options, extract_image_jbig2):
+    for pageno, xref_ext in extract_images(pike, root, options, extract_image_jbig2):
         group = pageno // options.jbig2_page_group_size
-        jbig2_groups[group].append((xref, ext))
+        jbig2_groups[group].append(xref_ext)
 
     # Elide empty groups
     jbig2_groups = {
@@ -275,11 +287,11 @@ def extract_images_jbig2(
 
 
 def _produce_jbig2_images(
-    jbig2_groups: Dict[int, List[Tuple[int, str]]], root: Path, options
+    jbig2_groups: Dict[int, List[XrefExt]], root: Path, options
 ) -> None:
     """Produce JBIG2 images from their groups"""
 
-    def jbig2_group_args(root: Path, groups: Dict[int, List[Tuple[int, str]]]):
+    def jbig2_group_args(root: Path, groups: Dict[int, List[XrefExt]]):
         for group, xref_exts in groups.items():
             prefix = f'group{group:08d}'
             yield dict(
@@ -288,7 +300,7 @@ def _produce_jbig2_images(
                 out_prefix=prefix,
             )
 
-    def jbig2_single_args(root, groups: Dict[int, List[Tuple[int, str]]]):
+    def jbig2_single_args(root, groups: Dict[int, List[XrefExt]]):
         for group, xref_exts in groups.items():
             prefix = f'group{group:08d}'
             # Second loop is to ensure multiple images per page are unpacked
@@ -325,7 +337,7 @@ def _produce_jbig2_images(
 
 
 def convert_to_jbig2(
-    pike: Pdf, jbig2_groups: Dict[int, List[Tuple[int, str]]], root: Path, options
+    pike: Pdf, jbig2_groups: Dict[int, List[XrefExt]], root: Path, options
 ) -> None:
     """Convert images to JBIG2 and insert into PDF.
 
@@ -394,7 +406,7 @@ def transcode_pngs(
     root: Path,
     options,
 ) -> None:
-    modified = set()
+    modified: MutableSet[int] = set()
     if options.optimize >= 2:
         png_quality = (
             max(10, options.png_quality - 10),
