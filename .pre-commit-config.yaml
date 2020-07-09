@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.4.0
+    rev: v3.1.0
     hooks:
       - id: check-case-conflict
       - id: check-merge-conflict
@@ -8,16 +8,16 @@ repos:
       - id: check-yaml
       - id: debug-statements
   - repo: https://github.com/asottile/seed-isort-config
-    rev: v1.9.3
+    rev: v2.2.0
     hooks:
       - id: seed-isort-config
   - repo: https://github.com/pre-commit/mirrors-isort
-    rev: v4.3.21 # pick the isort version you'd like to use from https://github.com/pre-commit/mirrors-isort/releases
+    rev: v5.0.5 # pick the isort version you'd like to use from https://github.com/pre-commit/mirrors-isort/releases
     hooks:
       - id: isort
   - repo: https://github.com/psf/black
-    rev: stable
+    rev: 19.10b0
     hooks:
       - id: black
-        language_version: python3.7
+        language_version: python3.8
         exclude: ^src/ocrmypdf/lib/_leptonica.py
