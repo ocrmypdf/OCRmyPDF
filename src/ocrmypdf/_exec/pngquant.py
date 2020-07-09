@@ -17,6 +17,7 @@
 
 """Interface to pngquant executable"""
 
+from os import fspath
 from tempfile import NamedTemporaryFile
 
 from PIL import Image
@@ -38,6 +39,8 @@ def available():
 
 
 def quantize(input_file, output_file, quality_min, quality_max):
+    input_file = fspath(input_file)
+    output_file = fspath(output_file)
     if input_file.endswith('.jpg'):
         with Image.open(input_file) as im, NamedTemporaryFile(suffix='.png') as tmp:
             im.save(tmp)
