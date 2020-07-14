@@ -665,6 +665,13 @@ instead use this for a system wide installation:
 
     pip3 install ocrmypdf
 
+.. note::
+
+    AArch64 (ARM64) users: this process will be difficult because most
+    Python packages are not available as binary wheels for your platform.
+    You're probably better off using a platform install on Debian, Ubuntu,
+    or Fedora.
+
 Requirements for pip and HEAD install
 -------------------------------------
 
