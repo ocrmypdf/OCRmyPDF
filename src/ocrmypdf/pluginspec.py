@@ -26,9 +26,10 @@ import pluggy
 from ocrmypdf.helpers import Resolution
 
 if TYPE_CHECKING:
+    from PIL import Image
+
     from ocrmypdf._jobcontext import PageContext
     from ocrmypdf.pdfinfo import PdfInfo
-    from PIL import Image
 
 hookspec = pluggy.HookspecMarker('ocrmypdf')
 
@@ -122,6 +123,8 @@ def rasterize_pdf_page(
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
+    Note:
+        This is a :ref:`firstresult hook<firstresult>`.
     """
 
 
@@ -130,11 +133,25 @@ def filter_ocr_image(page: 'PageContext', image: 'Image') -> 'Image':
     """Called to filter the image before it is sent to OCR.
 
     This is the image that OCR sees, not what the user sees when they view the
-    PDF.
+    PDF. If ``redo_ocr`` is enabled, portions of the image will be masked so
+    they are not shown to OCR. The main use of this hook is expected to be hiding
+    content from OCR.
+
+    The input image may be color, grayscale, or monochrome, and the
+    output image may differ. The pixel width and height of the
+    output image must be identical to the input image, or misalignment between
+    the OCR text layer and visual position of the text will occur. Likewise,
+    the output must be a faithful representation of the input, or alignment
+    errors may occurs.
+
+    Tesseract OCR only deals with monochrome images, and internally converts
+    non-monochrome images to OCR.
 
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
+    Note:
+        This is a :ref:`firstresult hook<firstresult>`.
     """
 
 
@@ -155,6 +172,8 @@ def filter_page_image(page: 'PageContext', image_filename: Path) -> Path:
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
+    Note:
+        This is a :ref:`firstresult hook<firstresult>`.
     """
 
 
@@ -239,6 +258,9 @@ def get_ocr_engine() -> OcrEngine:
     The OcrEngine may be instantiated multiple times, by both the main process
     and child process. As such, it must be obtain store any state in ``options``
     or some common location.
+
+    Note:
+        This is a :ref:`firstresult hook<firstresult>`.
     """
 
 
@@ -275,4 +297,7 @@ def generate_pdfa(
 
     Returns:
         Path: If successful, the hook should return ``output_file``.
+
+    Note:
+        This is a :ref:`firstresult hook<firstresult>`.
     """

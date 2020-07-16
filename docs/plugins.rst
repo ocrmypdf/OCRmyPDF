@@ -85,6 +85,19 @@ A plugin may provide the following hooks. Hooks should be decorated with
 The following is a complete list of hooks that may be installed and when
 they are called.
 
+.. _firstresult:
+
+Note on firstresult hooks
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If multiple plugins install implementations for this hook, they will be called in
+the reverse of the order in which they are installed (i.e., last plugin wins).
+When each hook implementation is called in order, the first implementation that
+returns a value other than ``None`` will "win" and prevent execution of all other
+hooks. As such, you cannot "chain" a series of plugin filters together in this
+way. Instead, a single hook implementation should be responsible for any such
+chaining operations.
+
 Custom command line arguments
 -----------------------------
 
