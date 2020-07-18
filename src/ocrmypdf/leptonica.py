@@ -90,19 +90,21 @@ class _LeptonicaErrorTrap:
 
     """
 
+    leptonica_lock = threading.Lock()
+
     def __init__(self):
         self.tmpfile = None
         self.copy_of_stderr = -1
         self.no_stderr = False
 
     def __enter__(self):
-
         self.tmpfile = TemporaryFile()
 
         # Save the old stderr, and redirect stderr to temporary file
-        with suppress(AttributeError):
-            sys.stderr.flush()
+        self.leptonica_lock.acquire()
         try:
+            with suppress(AttributeError):
+                sys.stderr.flush()
             self.copy_of_stderr = os.dup(sys.stderr.fileno())
             os.dup2(self.tmpfile.fileno(), sys.stderr.fileno(), inheritable=False)
         except AttributeError:
@@ -114,7 +116,10 @@ class _LeptonicaErrorTrap:
             os.dup2(self.tmpfile.fileno(), 2, inheritable=False)
         except UnsupportedOperation:
             self.copy_of_stderr = None
-        return
+        except Exception:
+            self.leptonica_lock.release()
+            raise
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         # Restore old stderr
@@ -131,6 +136,8 @@ class _LeptonicaErrorTrap:
         self.tmpfile.seek(0)  # Cursor will be at end, so move back to beginning
         leptonica_output = self.tmpfile.read().decode(errors='replace')
         self.tmpfile.close()
+        self.leptonica_lock.release()
+
         # If there are Python errors, record them
         if exc_type:
             logger.warning(leptonica_output)
