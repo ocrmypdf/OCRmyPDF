@@ -30,6 +30,7 @@ from typing import (
     List,
     MutableSet,
     NamedTuple,
+    NewType,
     Optional,
     Sequence,
     Tuple,
@@ -54,29 +55,32 @@ DEFAULT_JPEG_QUALITY = 75
 DEFAULT_PNG_QUALITY = 70
 
 
+Xref = NewType('Xref', int)
+
+
 class XrefExt(NamedTuple):
-    xref: int
+    xref: Xref
     ext: str
 
 
-def img_name(root: Path, xref: int, ext: str) -> str:
-    return fspath(root / f'{xref:08d}{ext}')
+def img_name(root: Path, xref: Xref, ext: str) -> Path:
+    return root / f'{xref:08d}{ext}'
 
 
-def png_name(root: Path, xref: int) -> str:
+def png_name(root: Path, xref: Xref) -> Path:
     return img_name(root, xref, '.png')
 
 
-def jpg_name(root: Path, xref: int) -> str:
+def jpg_name(root: Path, xref: Xref) -> Path:
     return img_name(root, xref, '.jpg')
 
 
-def tif_name(root: Path, xref: int) -> str:
+def tif_name(root: Path, xref: Xref) -> Path:
     return img_name(root, xref, '.tif')
 
 
 def extract_image_filter(
-    pike: Pdf, root: Path, image: Object, xref: int
+    pike: Pdf, root: Path, image: Object, xref: Xref
 ) -> Optional[Tuple[PdfImage, Tuple[Name, Object]]]:
     if image.Subtype != Name.Image:
         return None
@@ -104,7 +108,7 @@ def extract_image_filter(
 
 
 def extract_image_jbig2(
-    *, pike: pikepdf.Pdf, root: Path, image: Object, xref: int, options
+    *, pike: pikepdf.Pdf, root: Path, image: Object, xref: Xref, options
 ) -> Optional[XrefExt]:
     result = extract_image_filter(pike, root, image, xref)
     if result is None:
@@ -117,7 +121,7 @@ def extract_image_jbig2(
         and jbig2enc.available()
     ):
         try:
-            imgname = Path(root / f'{xref:08d}')
+            imgname = root / f'{xref:08d}'
             with imgname.open('wb') as f:
                 ext = pim.extract_to(stream=f)
             imgname.rename(imgname.with_suffix(ext))
@@ -128,7 +132,7 @@ def extract_image_jbig2(
 
 
 def extract_image_generic(
-    *, pike: Pdf, root: Path, image: PdfImage, xref: int, options
+    *, pike: Pdf, root: Path, image: PdfImage, xref: Xref, options
 ) -> Optional[XrefExt]:
     result = extract_image_filter(pike, root, image, xref)
     if result is None:
@@ -162,7 +166,7 @@ def extract_image_generic(
         #     with Image.open(stream) as im:
         #         im.save(jpg_name(root, xref), icc_profile=iccbytes)
         try:
-            imgname = Path(root / f'{xref:08d}')
+            imgname = root / f'{xref:08d}'
             with imgname.open('wb') as f:
                 ext = pim.extract_to(stream=f)
             imgname.rename(imgname.with_suffix(ext))
@@ -216,8 +220,8 @@ def extract_images(
     extension. extract_fn must also extract the file it finds interesting.
     """
 
-    include_xrefs = set()
-    exclude_xrefs = set()
+    include_xrefs: MutableSet[Xref] = set()
+    exclude_xrefs: MutableSet[Xref] = set()
     pageno_for_xref = {}
     errors = 0
     for pageno, page in enumerate(pike.pages):
@@ -228,10 +232,10 @@ def extract_images(
         for _imname, image in dict(xobjs).items():
             if image.objgen[1] != 0:
                 continue  # Ignore images in an incremental PDF
-            xref = image.objgen[0]
+            xref = Xref(image.objgen[0])
             if hasattr(image, 'SMask'):
                 # Ignore soft masks
-                smask_xref = image.SMask.objgen[0]
+                smask_xref = Xref(image.SMask.objgen[0])
                 exclude_xrefs.add(smask_xref)
             include_xrefs.add(xref)
             if xref not in pageno_for_xref:
@@ -255,13 +259,13 @@ def extract_images(
 
 def extract_images_generic(
     pike: Pdf, root: Path, options
-) -> Tuple[List[int], List[int]]:
+) -> Tuple[List[Xref], List[Xref]]:
     """Extract any >=2bpp image we think we can improve"""
 
     jpegs = []
     pngs = []
     for _, xref_ext in extract_images(pike, root, options, extract_image_generic):
-        log.debug('xref_ext = %s', xref_ext)
+        log.debug('%s', xref_ext)
         if xref_ext.ext == '.png':
             pngs.append(xref_ext.xref)
         elif xref_ext.ext == '.jpg':
@@ -376,19 +380,19 @@ def convert_to_jbig2(
             )
 
 
-def transcode_jpegs(pike: Pdf, jpegs: Sequence[int], root: Path, options) -> None:
+def transcode_jpegs(pike: Pdf, jpegs: Sequence[Xref], root: Path, options) -> None:
     for xref in tqdm(
         jpegs, desc="JPEGs", unit='image', disable=not options.progress_bar
     ):
-        in_jpg = Path(jpg_name(root, xref))
+        in_jpg = jpg_name(root, xref)
         opt_jpg = in_jpg.with_suffix('.opt.jpg')
 
         # This produces a debug warning from PIL
         # DEBUG:PIL.Image:Error closing: 'NoneType' object has no attribute
         # 'close'.  Seems to be mostly harmless
         # https://github.com/python-pillow/Pillow/issues/1144
-        with Image.open(fspath(in_jpg)) as im:
-            im.save(fspath(opt_jpg), optimize=True, quality=options.jpeg_quality)
+        with Image.open(in_jpg) as im:
+            im.save(opt_jpg, optimize=True, quality=options.jpeg_quality)
 
         if opt_jpg.stat().st_size > in_jpg.stat().st_size:
             log.debug("xref %s, jpeg, made larger - skip", xref)
@@ -401,12 +405,12 @@ def transcode_jpegs(pike: Pdf, jpegs: Sequence[int], root: Path, options) -> Non
 
 def transcode_pngs(
     pike: Pdf,
-    images: Sequence[int],
-    image_name_fn: Callable[[Path, int], str],
+    images: Sequence[Xref],
+    image_name_fn: Callable[[Path, Xref], Path],
     root: Path,
     options,
 ) -> None:
-    modified: MutableSet[int] = set()
+    modified: MutableSet[Xref] = set()
     if options.optimize >= 2:
         png_quality = (
             max(10, options.png_quality - 10),
@@ -556,7 +560,7 @@ def optimize(input_file: Path, output_file: Path, context, save_settings) -> Non
         options.jbig2_page_group_size = 10 if options.jbig2_lossy else 1
 
     with pikepdf.Pdf.open(input_file) as pike:
-        root = Path(output_file).parent / 'images'
+        root = output_file.parent / 'images'
         root.mkdir(exist_ok=True)
 
         jpegs, pngs = extract_images_generic(pike, root, options)
@@ -569,12 +573,12 @@ def optimize(input_file: Path, output_file: Path, context, save_settings) -> Non
         jbig2_groups = extract_images_jbig2(pike, root, options)
         convert_to_jbig2(pike, jbig2_groups, root, options)
 
-        target_file = Path(output_file).with_suffix('.opt.pdf')
+        target_file = output_file.with_suffix('.opt.pdf')
         pike.remove_unreferenced_resources()
         pike.save(target_file, **save_settings)
 
-    input_size = Path(input_file).stat().st_size
-    output_size = Path(target_file).stat().st_size
+    input_size = input_file.stat().st_size
+    output_size = target_file.stat().st_size
     if output_size == 0:
         raise OutputFileAccessError(
             f"Output file not created after optimizing. We probably ran "
@@ -595,8 +599,8 @@ def optimize(input_file: Path, output_file: Path, context, save_settings) -> Non
 
 
 def main(infile, outfile, level, jobs=1):
-    from tempfile import TemporaryDirectory  # pylint: disable=import-outside-toplevel
     from shutil import copy  # pylint: disable=import-outside-toplevel
+    from tempfile import TemporaryDirectory  # pylint: disable=import-outside-toplevel
 
     class OptimizeOptions:
         """Emulate ocrmypdf's options"""
@@ -614,6 +618,7 @@ def main(infile, outfile, level, jobs=1):
             self.quiet = True
             self.progress_bar = False
 
+    infile = Path(infile)
     options = OptimizeOptions(
         input_file=infile,
         jobs=jobs,
