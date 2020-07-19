@@ -152,9 +152,9 @@ stages:
         strategy:
           matrix:
             Python37:
-              python.version: "3.7"
-            # Python38:
-            #   python.version: "3.8"
+              python.version: ""
+            Python38:
+              python.version: "python@3.8"
         steps:
           # https://github.com/actions/virtual-environments/issues/664
           # - task: UsePythonVersion@0
@@ -163,6 +163,13 @@ stages:
           - bash: |
               brew update
               brew unlink python@2
+              if [ "$(python.version)" != "" ]; then
+                brew upgrade $(python.version)
+              else
+                echo "Using Python `python3 --version`"
+              fi
+            displayName: "Update brew and Python"
+          - bash: |
               brew install \
                 exempi \
                 ghostscript \
@@ -170,7 +177,6 @@ stages:
                 leptonica \
                 openjpeg \
                 pngquant \
-                python \
                 tesseract \
                 unpaper
             displayName: "Install system packages"
