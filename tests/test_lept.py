@@ -16,27 +16,25 @@
 # along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
 from os import fspath
 from pickle import dumps, loads
-from unittest.mock import patch
 
 import pytest
 from PIL import Image, ImageChops
 
-import ocrmypdf.leptonica as lept
+from ocrmypdf import leptonica as lp
 
 
 def test_colormap_backgroundnorm(resources):
     # Issue #262 - unclear how to reproduce exactly, so just ensure leptonica
     # can handle that case
-    pix = lept.Pix.open(resources / 'baiona_colormapped.png')
+    pix = lp.Pix.open(resources / 'baiona_colormapped.png')
     pix.background_norm()
 
 
 @pytest.fixture
 def crom_pix(resources):
-    pix = lept.Pix.open(resources / 'crom.png')
+    pix = lp.Pix.open(resources / 'crom.png')
     im = Image.open(resources / 'crom.png')
     yield pix, im
     im.close()
@@ -64,17 +62,17 @@ def test_pix_otsu(crom_pix):
 
 
 @pytest.mark.skipif(
-    lept.get_leptonica_version() < 'leptonica-1.76',
+    lp.get_leptonica_version() < 'leptonica-1.76',
     reason="needs new leptonica for API change",
 )
 def test_crop(resources):
-    pix = lept.Pix.open(resources / 'linn.png')
+    pix = lp.Pix.open(resources / 'linn.png')
     foreground = pix.crop_to_foreground()
     assert foreground.width < pix.width
 
 
 def test_clean_bg(resources):
-    pix = lept.Pix.open(resources / 'congress.jpg')
+    pix = lp.Pix.open(resources / 'congress.jpg')
     imbg = pix.clean_background_to_white()
 
 
@@ -96,4 +94,12 @@ def test_leptonica_compile(tmp_path):
 
 def test_file_not_found():
     with pytest.raises(FileNotFoundError):
-        lept.Pix.open("does_not_exist1")
+        lp.Pix.open("does_not_exist1")
+
+
+def test_error_trap():
+    with pytest.raises(lp.LeptonicaError, match=r"Error in pixReadMem"):
+        with lp._LeptonicaErrorTrap():
+            lp.Pix(lp.lept.pixReadMem(lp.ffi.NULL, 0))
+        with lp._LeptonicaErrorTrap_Redirect():
+            lp.Pix(lp.lept.pixReadMem(lp.ffi.NULL, 0))

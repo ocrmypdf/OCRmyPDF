@@ -24,7 +24,9 @@ import argparse
 import logging
 import os
 import sys
+import threading
 import warnings
+from collections import deque
 from collections.abc import Sequence
 from contextlib import suppress
 from ctypes.util import find_library
@@ -75,7 +77,7 @@ except ffi.error as e:
     ) from e
 
 
-class _LeptonicaErrorTrap:
+class _LeptonicaErrorTrap_Redirect:
     """
     Context manager to trap errors reported by Leptonica.
 
@@ -153,6 +155,62 @@ class _LeptonicaErrorTrap:
             raise LeptonicaError(leptonica_output)
 
         return False
+
+
+tls = threading.local()
+tls.trap = None
+
+
+@ffi.callback("void(char *)")
+def _stderr_handler(cstr):
+    msg = ffi.string(cstr).decode(errors='replace')
+    if msg.startswith("Error"):
+        logger.error(msg)
+    elif msg.startswith("Warning"):
+        logger.warning(msg)
+    else:
+        logger.debug(msg)
+    if tls.trap is not None:
+        tls.trap.append(msg)
+    return
+
+
+class _LeptonicaErrorTrap_Queue:
+    def __init__(self):
+        self.queue = deque()
+
+    def __enter__(self):
+        self.queue.clear()
+        tls.trap = self.queue
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        tls.trap = None
+        output = ''.join(self.queue)
+        self.queue.clear()
+
+        # If there are Python errors, record them
+        if exc_type:
+            logger.warning(output)
+
+        if 'Error' in output:
+            if 'image file not found' in output:
+                raise FileNotFoundError()
+            if 'pixWrite: stream not opened' in output:
+                raise LeptonicaIOError()
+            if 'index not valid' in output:
+                raise IndexError()
+            raise LeptonicaError(output)
+        return False
+
+
+try:
+    lept.leptSetStderrHandler(_stderr_handler)
+except ffi.error:
+    # Pre-1.79 Leptonica does not have leptSetStderrHandler
+    _LeptonicaErrorTrap = _LeptonicaErrorTrap_Redirect
+else:
+    # 1.79 have this new symbol
+    _LeptonicaErrorTrap = _LeptonicaErrorTrap_Queue
 
 
 class LeptonicaError(Exception):
