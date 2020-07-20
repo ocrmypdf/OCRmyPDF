@@ -91,7 +91,7 @@ UNIT_SQUARE = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
 def _is_unit_square(shorthand):
     values = map(float, shorthand)
     pairwise = zip(values, UNIT_SQUARE)
-    return all([isclose(a, b, rel_tol=1e-3) for a, b in pairwise])
+    return all(isclose(a, b, rel_tol=1e-3) for a, b in pairwise)
 
 
 XobjectSettings = namedtuple('XobjectSettings', ['name', 'shorthand', 'stack_depth'])
