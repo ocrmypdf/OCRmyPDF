@@ -97,9 +97,11 @@ def test_file_not_found():
         lp.Pix.open("does_not_exist1")
 
 
+@pytest.mark.skipif(
+    lp.get_leptonica_version() < 'leptonica-1.79.0',
+    reason="test not reliable on all platforms for old leptonica",
+)
 def test_error_trap():
     with pytest.raises(lp.LeptonicaError, match=r"Error in pixReadMem"):
         with lp._LeptonicaErrorTrap():
-            lp.Pix(lp.lept.pixReadMem(lp.ffi.NULL, 0))
-        with lp._LeptonicaErrorTrap_Redirect():
             lp.Pix(lp.lept.pixReadMem(lp.ffi.NULL, 0))

@@ -921,6 +921,8 @@ def get_leptonica_version():
     Caveat: Leptonica expects the caller to free this memory.  We don't,
     since that would involve binding to libc to access libc.free(),
     a pointless effort to reclaim 100 bytes of memory.
+
+    Reminder that this returns "leptonica-1.xx" or "leptonica-1.yy.0".
     """
     return ffi.string(lept.getLeptonicaVersion()).decode()
 
