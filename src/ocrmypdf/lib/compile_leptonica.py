@@ -509,6 +509,8 @@ void selDestroy ( SEL **psel );
 l_int32
 setMsgSeverity(l_int32 newsev);
 
+void
+leptSetStderrHandler(void (*handler)(const char *));
 """
 )
 

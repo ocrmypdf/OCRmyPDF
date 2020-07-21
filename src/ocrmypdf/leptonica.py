@@ -24,7 +24,9 @@ import argparse
 import logging
 import os
 import sys
+import threading
 import warnings
+from collections import deque
 from collections.abc import Sequence
 from contextlib import suppress
 from ctypes.util import find_library
@@ -75,7 +77,7 @@ except ffi.error as e:
     ) from e
 
 
-class _LeptonicaErrorTrap:
+class _LeptonicaErrorTrap_Redirect:
     """
     Context manager to trap errors reported by Leptonica.
 
@@ -90,19 +92,21 @@ class _LeptonicaErrorTrap:
 
     """
 
+    leptonica_lock = threading.Lock()
+
     def __init__(self):
         self.tmpfile = None
         self.copy_of_stderr = -1
         self.no_stderr = False
 
     def __enter__(self):
-
         self.tmpfile = TemporaryFile()
 
         # Save the old stderr, and redirect stderr to temporary file
-        with suppress(AttributeError):
-            sys.stderr.flush()
+        self.leptonica_lock.acquire()
         try:
+            with suppress(AttributeError):
+                sys.stderr.flush()
             self.copy_of_stderr = os.dup(sys.stderr.fileno())
             os.dup2(self.tmpfile.fileno(), sys.stderr.fileno(), inheritable=False)
         except AttributeError:
@@ -114,7 +118,10 @@ class _LeptonicaErrorTrap:
             os.dup2(self.tmpfile.fileno(), 2, inheritable=False)
         except UnsupportedOperation:
             self.copy_of_stderr = None
-        return
+        except Exception:
+            self.leptonica_lock.release()
+            raise
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         # Restore old stderr
@@ -131,6 +138,8 @@ class _LeptonicaErrorTrap:
         self.tmpfile.seek(0)  # Cursor will be at end, so move back to beginning
         leptonica_output = self.tmpfile.read().decode(errors='replace')
         self.tmpfile.close()
+        self.leptonica_lock.release()
+
         # If there are Python errors, record them
         if exc_type:
             logger.warning(leptonica_output)
@@ -146,6 +155,62 @@ class _LeptonicaErrorTrap:
             raise LeptonicaError(leptonica_output)
 
         return False
+
+
+tls = threading.local()
+tls.trap = None
+
+
+@ffi.callback("void(char *)")
+def _stderr_handler(cstr):
+    msg = ffi.string(cstr).decode(errors='replace')
+    if msg.startswith("Error"):
+        logger.error(msg)
+    elif msg.startswith("Warning"):
+        logger.warning(msg)
+    else:
+        logger.debug(msg)
+    if tls.trap is not None:
+        tls.trap.append(msg)
+    return
+
+
+class _LeptonicaErrorTrap_Queue:
+    def __init__(self):
+        self.queue = deque()
+
+    def __enter__(self):
+        self.queue.clear()
+        tls.trap = self.queue
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        tls.trap = None
+        output = ''.join(self.queue)
+        self.queue.clear()
+
+        # If there are Python errors, record them
+        if exc_type:
+            logger.warning(output)
+
+        if 'Error' in output:
+            if 'image file not found' in output:
+                raise FileNotFoundError()
+            if 'pixWrite: stream not opened' in output:
+                raise LeptonicaIOError()
+            if 'index not valid' in output:
+                raise IndexError()
+            raise LeptonicaError(output)
+        return False
+
+
+try:
+    lept.leptSetStderrHandler(_stderr_handler)
+except ffi.error:
+    # Pre-1.79 Leptonica does not have leptSetStderrHandler
+    _LeptonicaErrorTrap = _LeptonicaErrorTrap_Redirect
+else:
+    # 1.79 have this new symbol
+    _LeptonicaErrorTrap = _LeptonicaErrorTrap_Queue
 
 
 class LeptonicaError(Exception):
@@ -856,6 +921,8 @@ def get_leptonica_version():
     Caveat: Leptonica expects the caller to free this memory.  We don't,
     since that would involve binding to libc to access libc.free(),
     a pointless effort to reclaim 100 bytes of memory.
+
+    Reminder that this returns "leptonica-1.xx" or "leptonica-1.yy.0".
     """
     return ffi.string(lept.getLeptonicaVersion()).decode()
 
