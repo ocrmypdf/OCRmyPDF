@@ -16,6 +16,21 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v10.3.0
+=======
+
+-  Fixed an issue where we would consider images that were already JBIG2-encoded
+   for optimization, potentially producing a less optimized image than the original.
+   We do not believe this issue would ever cause an image to loss fidelity.
+-  Where available, pikepdf memory mapping is now used. This improves performance.
+-  When Leptonica 1.79+ is installed, use its new error handling API to avoid
+   a "messy" redirection of stderr which was necessary to capture its error
+   messages.
+-  For older versions of Leptonica, added a new thread level lock. This fixes a
+   possible race condition in handling error conditions in Leptonica (although
+   there is no evidence it ever caused issues in practice).
+-  Documentation improvements and more type hinting.
+
 v10.2.1
 =======
 
