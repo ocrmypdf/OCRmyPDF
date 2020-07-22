@@ -2,6 +2,11 @@
 Plugins
 =======
 
+    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+    NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and
+    "OPTIONAL" in this document are to be interpreted as described in
+    RFC 2119.
+
 You can use plugins to customize the behavior of OCRmyPDF at certain points of
 interest.
 
@@ -11,22 +16,14 @@ Currently, it is possible to:
 - override the decision for whether or not to perform OCR on a particular file
 - modify the image is about to be sent for OCR
 - modify the page image before it is converted to PDF
+- replace the Tesseract OCR with another OCR engine that has similar behavior
+- replace Ghostscript with another PDF to image converter (rasterizer) or
+  PDF/A generator
 
 OCRmyPDF plugins are based on the Python ``pluggy`` package and conform to its
 conventions. Note that: plugins installed with as setuptools entrypoints are
 not checked currently, because OCRmyPDF assumes you may not want to enable
 plugins for all files.
-
-How plugins are imported
-========================
-
-Plugins are imported on demand, by the OCRmyPDF worker process that needs to use
-them. As such, plugins cannot share state with other plugins, cannot rely on
-their module's or the interpreter's global state, and should expect asynchronous
-copies of themselves to be running. Plugins can write intermediate files to the
-folder specified in ``options.work_folder``.
-
-Plugins should work whether executed in threads or processes.
 
 Script plugins
 ==============
@@ -39,7 +36,7 @@ batch of files needs a special processing step for example.
 
     ocrmypdf --plugin ocrmypdf_example_plugin.py input.pdf output.pdf
 
-Multiple plugins may be called by issuing the ``--plugin`` argument multiple times.
+Multiple plugins may be installed by issuing the ``--plugin`` argument multiple times.
 
 Packaged plugins
 ================
@@ -68,10 +65,39 @@ similar to ``pytest`` packages such as ``pytest-cov`` (the package) and
     ``ocrmypdf-`` (for the package name on PyPI) and ``ocrmypdf_`` (for the
     module), just like pytest plugins.
 
+Plugin requirements
+===================
+
+OCRmyPDF generally uses multiple worker processes. When a new worker is started,
+Python will import all plugins again, including all plugins that were imported earlier.
+This means that the global state of a plugin in one worker will not be shared with
+other workers. As such, plugin hook implementations should be stateless, relying
+only on their inputs. Hook implementations may use their input parameters to
+to obtain a reference to shared state prepared by another hook implementation.
+Plugins must expect that other instances of the plugin will be running
+simultaneously.
+
+The ``context`` object that is passed to many hooks can be used to share information
+about a file being worked on. Plugins must write private, plugin-specific data to
+a subfolder named ``{options.work_folder}/ocrmypdf-plugin-name``. Plugins MAY
+read and write files in ``options.work_folder``, but should be aware that their
+semantics are subject to change.
+
+OCRmyPDF will delete ``options.work_folder`` when it has finished OCRing
+a file, unless invoked with ``--keep-temporary-files``.
+
+The documentation for some plugin hooks contain a detailed description of the
+execution context in which they will be called.
+
+Plugins should be prepared to work whether executed in worker threads or worker
+processes. Generally, OCRmyPDF uses processes, but has a semi-hidden threaded
+argument that simplifies debugging.
+
+
 Plugin hooks
 ============
 
-A plugin may provide the following hooks. Hooks should be decorated with
+A plugin may provide the following hooks. Hooks must be decorated with
 ``ocrmypdf.hookimpl``, for example:
 
 .. code-block:: python
@@ -82,13 +108,12 @@ A plugin may provide the following hooks. Hooks should be decorated with
     def add_options(parser):
         pass
 
-The following is a complete list of hooks that may be installed and when
+The following is a complete list of hooks that are available, and when
 they are called.
 
 .. _firstresult:
 
-Note on firstresult hooks
-^^^^^^^^^^^^^^^^^^^^^^^^^
+**Note on firstresult hooks**
 
 If multiple plugins install implementations for this hook, they will be called in
 the reverse of the order in which they are installed (i.e., last plugin wins).
