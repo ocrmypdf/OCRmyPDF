@@ -222,6 +222,14 @@ def clamp(n: T, smallest: T, largest: T) -> T:
     return max(smallest, min(n, largest))
 
 
+def pikepdf_enable_mmap():
+    try:
+        if pikepdf._qpdf.set_access_default_mmap(True):
+            log.debug("pikepdf mmap enabled")
+    except AttributeError:
+        log.debug("pikepdf mmap not available")
+
+
 def deprecated(func):
     """Warn that function is deprecated"""
 

@@ -33,7 +33,7 @@ from pikepdf import PdfMatrix
 
 from ocrmypdf._concurrent import exec_progress_pool
 from ocrmypdf.exceptions import EncryptedPdfError
-from ocrmypdf.helpers import Resolution, available_cpu_count
+from ocrmypdf.helpers import Resolution, available_cpu_count, pikepdf_enable_mmap
 from ocrmypdf.pdfinfo.layout import get_page_analysis, get_text_boxes
 
 logger = logging.getLogger()
@@ -639,6 +639,7 @@ worker_pdf = None
 
 def _pdf_pageinfo_sync_init(infile):
     global worker_pdf  # pylint: disable=global-statement
+    pikepdf_enable_mmap()
     worker_pdf = pikepdf.open(infile)
 
 

@@ -64,7 +64,12 @@ from ocrmypdf._validation import (
     report_output_file_size,
 )
 from ocrmypdf.exceptions import ExitCode, ExitCodeException
-from ocrmypdf.helpers import available_cpu_count, check_pdf, samefile
+from ocrmypdf.helpers import (
+    available_cpu_count,
+    check_pdf,
+    pikepdf_enable_mmap,
+    samefile,
+)
 from ocrmypdf.pdfa import file_claims_pdfa
 
 log = logging.getLogger(__name__)
@@ -242,6 +247,7 @@ def worker_init(max_pixels: int):
     # the parent process, so ensure workers get it set. Not needed when running
     # threaded, but harmless to set again.
     PIL.Image.MAX_IMAGE_PIXELS = max_pixels
+    pikepdf_enable_mmap()
 
 
 def exec_concurrent(context: PdfContext):
@@ -332,11 +338,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
     ):
         debug_log_handler = configure_debug_logging(Path(work_folder) / "debug.log")
 
-    try:
-        if pikepdf._qpdf.set_access_default_mmap(True):
-            log.debug("pikepdf mmap enabled")
-    except AttributeError:
-        log.debug("pikepdf mmap not available")
+    pikepdf_enable_mmap()
 
     try:
         check_requested_output_file(options)
