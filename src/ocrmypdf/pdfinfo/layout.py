@@ -26,7 +26,11 @@ import pdfminer.pdfdevice
 import pdfminer.pdfinterp
 from pdfminer.converter import PDFLayoutAnalyzer
 from pdfminer.layout import LAParams, LTChar, LTPage, LTTextBox
-from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
+try:
+    from pdfminer.pdfdocument import PDFTextExtractionNotAllowedError
+except ImportError:
+    # Fallback for pdfminer < 20200720
+    from pdfminer.pdfdocument import PDFTextExtractionNotAllowed as PDFTextExtractionNotAllowedError
 from pdfminer.pdffont import PDFSimpleFont, PDFUnicodeNotDefined
 from pdfminer.pdfpage import PDFPage
 from pdfminer.utils import bbox2str, matrix2str
@@ -239,7 +243,7 @@ def get_page_analysis(infile, pageno, pscript5_mode):
         with Path(infile).open('rb') as f:
             page = PDFPage.get_pages(f, pagenos=[pageno], maxpages=0)
             interp.process_page(next(page))
-    except PDFTextExtractionNotAllowed:
+    except PDFTextExtractionNotAllowedError:
         raise EncryptedPdfError()
     finally:
         if pscript5_mode:
