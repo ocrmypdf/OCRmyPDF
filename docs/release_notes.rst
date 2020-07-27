@@ -16,6 +16,12 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v10.3.1
+=======
+
+-  Fixed a number of test suite failures with pdfminer.six older than veresion 20200420.
+-  Enabled support for pdfminer.six 20200720.
+
 v10.3.0
 =======
 
