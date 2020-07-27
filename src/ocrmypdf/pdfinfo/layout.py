@@ -220,8 +220,16 @@ class TextPositionTracker(PDFLayoutAnalyzer):
 
 def get_page_analysis(infile, pageno, pscript5_mode):
     rman = pdfminer.pdfinterp.PDFResourceManager(caching=True)
+    if pdfminer.__version__ < '20200402':
+        # Workaround for https://github.com/pdfminer/pdfminer.six/issues/395
+        disable_boxes_flow = 2
+    else:
+        disable_boxes_flow = None
     dev = TextPositionTracker(
-        rman, laparams=LAParams(all_texts=True, detect_vertical=True, boxes_flow=None)
+        rman,
+        laparams=LAParams(
+            all_texts=True, detect_vertical=True, boxes_flow=disable_boxes_flow
+        ),
     )
     interp = pdfminer.pdfinterp.PDFPageInterpreter(rman, dev)
 
