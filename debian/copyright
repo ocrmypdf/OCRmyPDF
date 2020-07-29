@@ -43,7 +43,7 @@ Copyright: (C) 2014 Armin Ronacher
  (C) 2017 James R. Barlow
 License: BSD-3-clause
 
-Files: tests/spoof/*
+Files: tests/plugins/*
 Copyright: (C) 2016, 2017, 2016-2018 James R. Barlow
 License: Expat
 
