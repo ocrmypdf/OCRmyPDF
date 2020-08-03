@@ -51,6 +51,10 @@ Forking a child process to call ``ocrmypdf.ocr()`` is suggested. That
 way your application will survive and remain interactive even if
 OCRmyPDF does not.
 
+Programs that call ``ocrmypdf.ocr()`` should also install a SIGBUS signal
+handler (except on Windows), to raise an exception if access to a memory
+mapped file fails. OCRmyPDF may use memory mapping.
+
 .. warning::
 
     On Windows, the script that calls ``ocrmypdf.ocr()`` must be protected
