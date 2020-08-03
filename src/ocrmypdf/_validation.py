@@ -416,6 +416,10 @@ def report_output_file_size(options, input_file, output_file):
                     f"The optional dependency '{name}' was not found, so some image "
                     f"optimizations could not be attempted."
                 )
+    if options.output_type.startswith('pdfa'):
+        reasons.append("PDF/A conversion was enabled. (Try `--output-type pdf`.)")
+    if options.plugins:
+        reasons.append("Plugins were used.")
 
     if reasons:
         explanation = "Possible reasons for this include:\n" + '\n'.join(reasons) + "\n"
