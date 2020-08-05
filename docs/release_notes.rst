@@ -16,6 +16,13 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v10.3.2
+=======
+
+-  Fixed a case where we reported "no reason" for a file size increase, when we
+   could determine the reason.
+-  Enabled support for pdfminer.six 20200726.
+
 v10.3.1
 =======
 
