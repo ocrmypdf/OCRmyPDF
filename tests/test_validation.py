@@ -21,7 +21,7 @@ from unittest.mock import patch
 import pikepdf
 import pytest
 
-import ocrmypdf._validation as vd
+from ocrmypdf import _validation as vd
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.api import create_options
 from ocrmypdf.cli import get_parser
@@ -141,7 +141,7 @@ def test_report_file_size(tmp_path, caplog):
     pdf = pikepdf.new()
     pdf.save(in_)
     pdf.save(out)
-    opts = make_opts()
+    opts = make_opts(output_type='pdf')
     vd.report_output_file_size(opts, in_, out)
     assert caplog.text == ''
     caplog.clear()
@@ -166,7 +166,7 @@ def test_report_file_size(tmp_path, caplog):
         assert 'optional dependency' in caplog.text
     caplog.clear()
 
-    opts = make_opts(in_, out, optimize=0)
+    opts = make_opts(in_, out, optimize=0, output_type='pdf')
     vd.report_output_file_size(opts, in_, out)
     assert 'disabled' in caplog.text
     caplog.clear()
