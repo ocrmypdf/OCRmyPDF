@@ -24,7 +24,7 @@ Files: misc/watcher.py
 Copyright:
  (C) 2019 Ian Alexander: https://github.com/ianalexander
  (C) 2020 James R. Barlow
-License: GPL-3+
+License: Expat
 
 Files: misc/webservice.py
 Copyright: (C) 2019 James R. Barlow
