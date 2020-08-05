@@ -9,6 +9,17 @@ Copyright:
  (C) 2013-2016, 2015-2017 2016, 2017, 2017-2018, 2018 James R. Barlow
 License: GPL-3+
 
+Files: misc/completion/ocrmypdf.bash
+Copyright:
+ (C) 2019 Frank Pille
+ (C) 2020 Alex Willner
+License: Expat
+
+Files: misc/completion/ocrmypdf.fish
+Copyright:
+ (C) 2020 James R. Barlow
+License: Expat
+
 Files: misc/watcher.py
 Copyright:
  (C) 2019 Ian Alexander: https://github.com/ianalexander
