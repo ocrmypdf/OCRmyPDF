@@ -32,7 +32,8 @@ If you are proposing a change that will require a new Python dependency, we
 prefer dependencies that are already packaged by Debian or Red Hat. This makes
 life much easier for our downstream package maintainers.
 
-Python dependencies must also be GPLv3 compatible.
+Python dependencies must also be license-compatible. GPLv3 or AGPLv3 are likely
+incompatible with the project's license, but LGPLv3 is compatible.
 
 New non-Python dependencies
 ===========================
@@ -55,3 +56,12 @@ of that platform.
 
 Packager maintainers, please ensure that the command line completion scripts in
 ``misc/`` are installed.
+
+Copyright and license
+=====================
+
+For contributions over 10 lines of code, please include your name to list of
+copyright holders for that file. The core program is licensed under MPL-2.0,
+test files and documentation under CC-BY-SA 4.0, and miscellaneous files under
+MIT. Please contribute code only that you wrote and you have the permission to
+contribute or license to us.

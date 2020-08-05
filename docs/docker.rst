@@ -163,8 +163,7 @@ complete. This may entail setting a long timeout; this interface is more
 useful for internal HTTP API calls.
 
 Unlike the rest of OCRmyPDF, this web service is licensed under the
-Affero GPLv3 (AGPLv3) since Ghostscript, a dependency of OCRmyPDF, is
-also licensed in this way.
+Affero GPLv3 (AGPLv3) since Ghostscript is also licensed in this way.
 
 In addition to the above, please read our
 :ref:`general remarks on using OCRmyPDF as a service <ocr-service>`.
