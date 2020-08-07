@@ -530,7 +530,9 @@ def create_ocr_image(image: Path, page_context: PageContext):
         if options.threshold:
             pix = leptonica.Pix.frompil(im)
             pix = pix.masked_threshold_on_background_norm()
-            im = pix.topil()
+            im_pix = pix.topil()
+            im_pix.info['dpi'] = im.info['dpi']
+            im = im_pix
 
         del draw
 
