@@ -16,6 +16,12 @@ Note that it is licensed under GPLv3, so scripts that
 ``import ocrmypdf`` and are released publicly should probably also be
 licensed under GPLv3.
 
+v10.3.3
+=======
+
+-  Fixed a "KeyError: 'dpi'" error message when using ``--threshold`` on an image.
+   (#607)
+
 v10.3.2
 =======
 
