@@ -12,9 +12,16 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
-Note that it is licensed under GPLv3, so scripts that
-``import ocrmypdf`` and are released publicly should probably also be
-licensed under GPLv3.
+v11.0.0
+=======
+
+-  Project license changed to Mozilla Public License 2.0. Some miscellaneous
+   code is now under MIT license and non-code content/media remains under
+   CC-BY-SA 4.0. License changed with approval of all people who were found
+   to have contributed to GPLv3 licensed sections of the project. (#600)
+-  Because the license changed, this is being treated as a major version number
+   change; however, there are no known breaking changes in functional behavior
+   or API compared to v10.x.
 
 v10.3.3
 =======
@@ -32,7 +39,7 @@ v10.3.2
 v10.3.1
 =======
 
--  Fixed a number of test suite failures with pdfminer.six older than veresion 20200420.
+-  Fixed a number of test suite failures with pdfminer.six older than veresion 20200402.
 -  Enabled support for pdfminer.six 20200720.
 
 v10.3.0
@@ -375,7 +382,7 @@ v9.0.0
 
 -  Added a high level API for applications that want to integrate OCRmyPDF.
    Special thanks to Martin Wind (@mawi1988) whose made significant contributions
-   to this effort. OCRmyPDF is GPLv3-licensed.
+   to this effort.
 -  Added progress bars for long-running steps. ■■■■■■■□□
 -  We now create linearized ("fast web view") PDFs by default. The new parameter
    ``--fast-web-view`` provides control over when this feature is applied.
@@ -1002,8 +1009,8 @@ v6.1.0
 v6.0.0
 ======
 
--  The software license has been changed to GPLv3. Test resource files
-   and some individual sources may have other licenses.
+-  The software license has been changed to GPLv3 [it has since changed again].
+   Test resource files and some individual sources may have other licenses.
 -  OCRmyPDF now depends on
    `PyMuPDF <https://pymupdf.readthedocs.io/en/latest/installation/>`__.
    Including PyMuPDF is the primary reason for the change to GPLv3.

@@ -64,7 +64,7 @@ malicious user could upload a chosen PDF. In particular, it is not
 necessarily secure against PDF malware or PDFs that cause denial of
 service. OCRmyPDF relies on Ghostscript, and therefore, if deployed
 online one should be prepared to comply with Ghostscript's Affero GPL
-license, OCRmyPDF's GPL license, and any other licenses.
+license, and any other licenses.
 
 Setting aside these concerns, a side effect of OCRmyPDF is it may
 incidentally sanitize PDFs that contain certain types of malware. It

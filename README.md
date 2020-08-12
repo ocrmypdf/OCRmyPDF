@@ -127,11 +127,15 @@ OCRmyPDF would not be the software that it is today without companies and users 
 
 ## License
 
-The OCRmyPDF software is licensed under the GNU GPLv3. Certain files are covered by other licenses, as noted in their source files.
+The OCRmyPDF software is licensed under the Mozilla Public License 2.0
+(MPL-2.0). This license permits integration of OCRmyPDF with other code,
+included commercial and closed source, but asks you to publish source-level
+modifications you make to OCRmyPDF.
 
-The license for each test file varies, and is noted in tests/resources/README.rst. The documentation is licensed under Creative Commons Attribution-ShareAlike 4.0 (CC-BY-SA 4.0).
-
-OCRmyPDF versions prior to 6.0 were distributed under the MIT License.
+Some components of OCRmyPDF have other licenses, as noted in those files and the
+``debian/copyright`` file. Most files in ``misc/`` use the MIT license, and the
+documentation and test files are generally licensed under Creative Commons
+ShareAlike 4.0 (CC-BY-SA 4.0).
 
 ## Disclaimer
 

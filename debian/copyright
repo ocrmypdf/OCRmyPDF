@@ -5,15 +5,42 @@ Source: https://github.com/jbarlow83/OCRmyPDF
 
 Files: *
 Copyright:
- (C) 2013-2017 The OCRmyPDF Authors
- (C) 2013-2016, 2015-2017 2016, 2017, 2017-2018, 2018 James R. Barlow
-License: GPL-3+
+ (C) 2013-2015 Julien Pfefferkorn
+ (C) 2015-2020 James R. Barlow
+ (C) 2019 Martin Wind
+License: MPL-2.0
+
+Files: misc/*
+Copyright:
+ (C) 2020 James R. Barlow
+License: Expat
+
+Files: misc/completion/ocrmypdf.bash
+Copyright:
+ (C) 2019 Frank Pille
+ (C) 2020 Alex Willner
+License: Expat
+
+Files: misc/completion/ocrmypdf.fish
+Copyright:
+ (C) 2020 James R. Barlow
+License: Expat
+
+Files: misc/batch.py
+Copyright:
+ (C) 2016 findingorder: https://github.com/findingorder
+License: Expat
+
+Files: misc/synology.py
+Copyright:
+ (C) github.com/Enantiomerie
+License: Expat
 
 Files: misc/watcher.py
 Copyright:
  (C) 2019 Ian Alexander: https://github.com/ianalexander
  (C) 2020 James R. Barlow
-License: GPL-3+
+License: Expat
 
 Files: misc/webservice.py
 Copyright: (C) 2019 James R. Barlow
@@ -131,6 +158,13 @@ License: Zlib
 Files: debian/*
 Copyright: (C) 2016 Sean Whitton <spwhitton@spwhitton.name>
 License: GPL-3+
+
+License: MPL-2.0
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0.
+ .
+ On Debian systems the full text of the MPL-2.0 can be found in
+ /usr/share/common-licenses/MPL-2.0.
 
 License: GPL-3+
  This program is free software; you can redistribute it and/or modify
