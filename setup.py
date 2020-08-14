@@ -72,7 +72,7 @@ setup(
     install_requires=[
         'cffi >= 1.9.1',  # must be a setup and install requirement
         'coloredlogs >= 14.0',  # strictly optional
-        'img2pdf >= 0.3.0, < 0.4',  # pure Python, so track HEAD closely
+        'img2pdf >= 0.3.0, < 0.5',  # pure Python, so track HEAD closely
         'pdfminer.six >= 20191110, != 20200720, <= 20200726',
         'pikepdf >= 1.14.0, < 2',
         'Pillow >= 7.0.0',
