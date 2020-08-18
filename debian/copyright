@@ -60,11 +60,6 @@ Copyright: (C) 2010 Jonathan Brinley <jonathanbrinley@gmail.com>
  (C) 2015-16 James R. Barlow
 License: Expat
 
-Files: src/ocrmypdf/pdfa.py
-Copyright: (C) 2015 James R. Barlow
- (C) 1986-2017 The authors of GhostScript
-License: GPL-3+
-
 Files: src/ocrmypdf/_unicodefun.py
 Copyright: (C) 2014 Armin Ronacher
  (C) 2017 James R. Barlow
