@@ -12,6 +12,14 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.0.1
+=======
+
+-  Blacklist pdfminer.six 20200720, which has a regression fixed in 20200726.
+-  Approve img2pdf 0.4 as it passes tests.
+-  Clarify that the GPL-3 portion of pdfa.py was removed with the changes in v11.0.0;
+   the debian/copyright file did not properly annotate this change.
+
 v11.0.0
 =======
 
