@@ -813,7 +813,10 @@ def copy_final(input_file, output_file, _context: PdfContext):
     log.debug('%s -> %s', input_file, output_file)
     with open(input_file, 'rb') as input_stream:
         if output_file == '-':
-            copyfileobj(input_stream, sys.stdout.buffer)
+            try:
+                copyfileobj(input_stream, sys.stdout.buffer)
+            except AttributeError:
+                copyfileobj(input_stream, sys.stdout)
             sys.stdout.flush()
         elif hasattr(output_file, 'writable'):
             output_stream = output_file
