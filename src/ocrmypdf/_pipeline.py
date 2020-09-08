@@ -753,7 +753,9 @@ def metadata_fixup(working_file: Path, context: PdfContext):
             # Reverse this, because PDF/A TechNote 0003:Metadata in PDF/A-1
             # and the XMP Spec do not make this recommendation.
             if meta.get('dc:title') == 'Untitled':
-                with original.open_metadata() as original_meta:
+                with original.open_metadata(
+                    set_pikepdf_as_editor=False, update_docinfo=False
+                ) as original_meta:
                     if 'dc:title' not in original_meta:
                         del meta['dc:title']
 
