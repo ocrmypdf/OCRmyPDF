@@ -12,6 +12,12 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.0.2
+=======
+
+-  Fixed issue #612, TypeError exception. Fixed by eliminating unnecessary repair of
+   input PDF metadata in memory.
+
 v11.0.1
 =======
 
