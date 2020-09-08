@@ -288,6 +288,7 @@ def exec_concurrent(context: PdfContext):
     pdf = ocrgraft.finalize()
 
     # PDF/A and metadata
+    log.info("Postprocessing...")
     pdf = post_process(pdf, context)
 
     # Copy PDF file to destination
