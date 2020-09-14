@@ -30,6 +30,7 @@ log = logging.getLogger(__name__)
 @hookimpl
 def add_options(parser):
     parser.add_argument('--grayscale-ocr', action='store_true')
+    parser.add_argument('--mono-page', action='store_true')
 
 
 @hookimpl
@@ -52,7 +53,13 @@ def filter_ocr_image(page, image):
 
 @hookimpl
 def filter_page_image(page, image_filename):
-    output = image_filename.with_suffix('.jpg')
-    with Image.open(image_filename) as im:
-        im.save(output)
-    return output
+    if page.options.mono_page:
+        with Image.open(image_filename) as im:
+            im = im.convert('1')
+            im.save(image_filename)
+        return image_filename
+    else:
+        output = image_filename.with_suffix('.jpg')
+        with Image.open(image_filename) as im:
+            im.save(output)
+        return output
