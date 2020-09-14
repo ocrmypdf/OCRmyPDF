@@ -154,10 +154,28 @@ def filter_page_image(page: 'PageContext', image_filename: Path) -> Path:
     produced for a given page, this function will not be called. This is not
     the image that will be shown to OCR.
 
-    ocrmypdf will create the PDF page based on the image format used. If you
+    If the function does not want to modify the image, it should return
+    ``image_filename``. The hook may overwrite ``image_filename`` with a new file.
+
+    The output image should preserve the same physical unit dimensions, that is
+    (width * dpi_x, height * dpi_y). That is, if the image is resized, the DPI
+    must be adjusted by the reciprocal. If this is not preserved, the PDF page
+    will be resized and the OCR layer misaligned. OCRmyPDF does not nothing
+    to enforce these constraints; it is up to the plugin to do sensible things.
+
+    OCRmyPDF will create the PDF page based on the image format used. If you
     convert the image to a JPEG, the output page will be created as a JPEG, etc.
-    Note that the ocrmypdf image optimization stage may ultimately chose a
+    If you change the colorspace, that change will be kept. Note that the
+    OCRmyPDF image optimization stage, if enabled, may ultimately chose a
     different format.
+
+    If the return value is a file that does not exist, ``FileNotFoundError``
+    will occur. The return value should be a path to a file in the same folder
+    as ``image_filename``.
+
+    Implementation detail: If the value returned is falsy, OCRmyPDF will ignore
+    the return value and assume the input file was unmodified. This is deprecated.
+    To leave the image unmodified, ``image_filename`` should be returned.
 
     Note:
         This hook will be called from child processes. Modifying global state
