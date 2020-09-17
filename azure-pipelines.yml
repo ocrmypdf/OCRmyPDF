@@ -168,8 +168,7 @@ stages:
                 leptonica \
                 openjpeg \
                 pngquant \
-                tesseract \
-                unpaper
+                tesseract
             displayName: "Install system packages"
           - bash: |
               pip3 install --upgrade pip
