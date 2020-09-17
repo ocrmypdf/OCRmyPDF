@@ -12,6 +12,21 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.1.0
+=======
+
+-  Fixed page rotation issues: #634, #589.
+-  Fixed some cases where optimization created an invalid image such as a
+   1-bit "RGB" iamge: #629, #620.
+-  Page numbers are now displayed in debug logs when pages are being grafted.
+-  ocrmypdf.optimize.rewrite_png and ocrmypdf.optimize.rewrite_png_as_g4 were
+   marked deprecated. Strictly speaking these should have been internal APIs,
+   but they were never hidden.
+-  As a precaution, pikepdf mmap-based file access has been disabled due to a
+   rare race condition that causes a crash when certain objects are deallocated.
+   The problem is likely in pikepdf's dependency pybind11.
+-  Extended the example plugin to demonstrate conversion to mono.
+
 v11.0.2
 =======
 
