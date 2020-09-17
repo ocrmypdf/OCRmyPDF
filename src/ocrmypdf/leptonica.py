@@ -58,6 +58,24 @@ if not _libpath:
         ---------------------------------------------------------------------
         """
     )
+if os.name == 'nt':  
+    # On Windows, recent versions of libpng require zlib. We have to make sure 
+    # the zlib version being loaded is the same one that libpng was built with. 
+    # This tries to import zlib from Tesseract's installation folder, falling back
+    # to find_library() if liblept is being loaded from somewhere else.
+    # Loading zlib from other places could cause a version mismatch
+    _zlib_path = os.path.join(os.path.dirname(_libpath), 'zlib1.dll')
+    if not os.path.exists(_zlib_path):
+        _zlib_path = find_library('zlib')
+    try:
+        zlib = ffi.dlopen(_zlib_path)
+    except ffi.error as e:
+        raise MissingDependencyError(
+            """
+            Could not load the zlib library. It could be that Tesseract is not installed properly,
+            we can't find the installation on your system PATH environment variable.
+            """
+        ) from e
 try:
     lept = ffi.dlopen(_libpath)
     lept.setMsgSeverity(lept.L_SEVERITY_WARNING)
