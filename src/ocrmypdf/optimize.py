@@ -10,6 +10,7 @@ import sys
 import tempfile
 from collections import defaultdict
 from functools import partial
+from io import BytesIO
 from os import fspath
 from pathlib import Path
 from typing import (
@@ -27,6 +28,7 @@ from typing import (
     Union,
 )
 
+import img2pdf
 import pikepdf
 from pikepdf import Dictionary, Name, Object, Pdf, PdfImage
 from PIL import Image
@@ -37,7 +39,7 @@ from ocrmypdf._concurrent import exec_progress_pool
 from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf.exceptions import OutputFileAccessError
-from ocrmypdf.helpers import safe_symlink
+from ocrmypdf.helpers import deprecated, safe_symlink
 
 log = logging.getLogger(__name__)
 
@@ -393,6 +395,30 @@ def transcode_jpegs(pike: Pdf, jpegs: Sequence[Xref], root: Path, options) -> No
         im_obj.write(compdata.read(), filter=Name.DCTDecode)
 
 
+def _transcode_png(pike: Pdf, filename: Path, xref: Xref) -> bool:
+    output = filename.with_suffix('.png.pdf')
+    with output.open('wb') as f:
+        img2pdf.convert(fspath(filename), outputstream=f)
+
+    with pikepdf.open(output) as pdf_image:
+        foreign_image = next(pdf_image.pages[0].images.values())
+        local_image = pike.copy_foreign(foreign_image)
+
+        im_obj = pike.get_object(xref, 0)
+        im_obj.write(
+            local_image.read_raw_bytes(),
+            filter=local_image.Filter,
+            decode_parms=local_image.DecodeParms,
+        )
+
+        del_keys = set(im_obj.keys()) - set(local_image.keys())
+        for key in local_image.keys():
+            if key != Name.Length:
+                im_obj[key] = local_image[key]
+        for key in del_keys:
+            del im_obj[key]
+
+
 def transcode_pngs(
     pike: Pdf,
     images: Sequence[Xref],
@@ -435,34 +461,11 @@ def transcode_pngs(
         )
 
     for xref in modified:
-        im_obj = pike.get_object(xref, 0)
-        try:
-            pix = leptonica.Pix.open(png_name(root, xref))
-            if pix.mode == '1':
-                compdata = pix.generate_pdf_ci_data(leptonica.lept.L_G4_ENCODE, 0)
-            else:
-                compdata = leptonica.CompressedData.open(png_name(root, xref))
-        except leptonica.LeptonicaError as e:
-            # Most likely this means file not found, i.e. quantize did not
-            # produce an improved version
-            log.error(e)
-            continue
-
-        # If re-coded image is larger don't use it - we test here because
-        # pngquant knows the size of the temporary output file but not the actual
-        # object in the PDF
-        if len(compdata) > int(im_obj.stream_dict.Length):
-            log.debug(
-                f"pngquant: pngquant did not improve over original image "
-                f"{len(compdata)} > {int(im_obj.stream_dict.Length)}"
-            )
-            continue
-        if compdata.type == leptonica.lept.L_FLATE_ENCODE:
-            rewrite_png(pike, im_obj, compdata)
-        elif compdata.type == leptonica.lept.L_G4_ENCODE:
-            rewrite_png_as_g4(pike, im_obj, compdata)
+        filename = png_name(root, xref)
+        _transcode_png(pike, filename, xref)
 
 
+@deprecated
 def rewrite_png_as_g4(pike: Pdf, im_obj: Object, compdata) -> None:
     im_obj.BitsPerComponent = 1
     im_obj.Width = compdata.w
@@ -483,6 +486,7 @@ def rewrite_png_as_g4(pike: Pdf, im_obj: Object, compdata) -> None:
     return
 
 
+@deprecated
 def rewrite_png(pike: Pdf, im_obj: Object, compdata) -> None:
     # When a PNG is inserted into a PDF, we more or less copy the IDAT section from
     # the PDF and transfer the rest of the PNG headers to PDF image metadata.
