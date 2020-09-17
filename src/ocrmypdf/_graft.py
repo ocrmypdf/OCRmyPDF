@@ -109,7 +109,6 @@ class OcrGrafter:
         if textpdf and not self.font:
             self.font, self.font_key = self._find_font(textpdf)
 
-        emplaced_page = False
         content_rotation = self.pdfinfo[pageno].rotation
         path_image = Path(image).resolve() if image else None
         if path_image is not None and path_image != self.path_base:
@@ -123,17 +122,21 @@ class OcrGrafter:
                 local_image_page = self.pdf_base.pages[-1]
                 self.pdf_base.pages[pageno].emplace(local_image_page)
                 del self.pdf_base.pages[-1]
-            emplaced_page = True
+            # The pdf_image_page will always be created with any /Rotate applied
+            # applied already
+            content_rotation = 0
 
-        if emplaced_page:
-            content_rotation = autorotate_correction
-        text_rotation = autorotate_correction
-        text_misaligned = (text_rotation - content_rotation) % 360
-        log.debug(
-            f"Rotations for page: [text, auto, misalign, content] = "
-            f"{text_rotation}, {autorotate_correction}, "
-            f"{text_misaligned}, {content_rotation}"
-        )
+        if content_rotation != 0:
+            # Text can be misaligned on a /Rotate'd page.
+            # That is because we rasterize pages with /Rotate applied,
+            # so that the OCR image text is upright and comes back upright.
+            text_misaligned = (autorotate_correction - content_rotation) % 360
+            log.debug(
+                f"Text rotation: (autorotate, content) -> text misalignment = "
+                f"({autorotate_correction}, {content_rotation}) -> {text_misaligned}"
+            )
+        else:
+            text_misaligned = 0
 
         if textpdf and self.font:
             # Graft the text layer onto this page, whether new or old
@@ -143,15 +146,18 @@ class OcrGrafter:
                 textpdf=textpdf,
                 font=self.font,
                 font_key=self.font_key,
-                rotation=text_misaligned,
+                text_rotation=text_misaligned,
                 procset=self.procset,
                 strip_old_text=strip_old,
             )
 
-        # Correct the rotation if applicable
-        self.pdf_base.pages[pageno].Rotate = (
-            content_rotation - autorotate_correction
-        ) % 360
+        # Correct the page rotation
+        page_rotation = (content_rotation - autorotate_correction) % 360
+        self.pdf_base.pages[pageno].Rotate = page_rotation
+        log.debug(
+            f"Page rotation: (content, auto) -> page = "
+            f"({content_rotation}, {autorotate_correction}) -> {page_rotation}"
+        )
 
         if self.emplacements % MAX_REPLACE_PAGES == 0:
             self.save_and_reload()
@@ -226,7 +232,7 @@ class OcrGrafter:
         font: pikepdf.Object,
         font_key: pikepdf.Object,
         procset: pikepdf.Object,
-        rotation: int,
+        text_rotation: int,
         strip_old_text: bool,
     ):
         """Insert the text layer from text page 0 on to pdf_base at page_num"""
@@ -256,13 +262,13 @@ class OcrGrafter:
             corner = pikepdf.PdfMatrix().translated(mediabox[0], mediabox[1])
             # -rotation because the input is a clockwise angle and this formula
             # uses CCW
-            rotation = -rotation % 360
-            rotate = pikepdf.PdfMatrix().rotated(rotation)
+            text_rotation = -text_rotation % 360
+            rotate = pikepdf.PdfMatrix().rotated(text_rotation)
 
             # Because of rounding of DPI, we might get a text layer that is not
             # identically sized to the target page. Scale to adjust. Normally this
             # is within 0.998.
-            if rotation in (90, 270):
+            if text_rotation in (90, 270):
                 wt, ht = ht, wt
             scale_x = wp / wt
             scale_y = hp / ht
