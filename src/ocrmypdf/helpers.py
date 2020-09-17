@@ -213,11 +213,15 @@ def clamp(n: T, smallest: T, largest: T) -> T:
 
 
 def pikepdf_enable_mmap():
-    try:
-        if pikepdf._qpdf.set_access_default_mmap(True):
-            log.debug("pikepdf mmap enabled")
-    except AttributeError:
-        log.debug("pikepdf mmap not available")
+    # try:
+    #     if pikepdf._qpdf.set_access_default_mmap(True):
+    #         log.debug("pikepdf mmap enabled")
+    # except AttributeError:
+    #     log.debug("pikepdf mmap not available")
+    # We found a race condition probably related to pybind issue #2252 that can
+    # cause a crash. For now, disable pikepdf mmap to be on the safe side.
+    log.debug("pikepdf mmap disabled")
+    return
 
 
 def deprecated(func):
