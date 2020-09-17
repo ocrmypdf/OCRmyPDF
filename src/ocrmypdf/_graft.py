@@ -130,7 +130,7 @@ class OcrGrafter:
         text_rotation = autorotate_correction
         text_misaligned = (text_rotation - content_rotation) % 360
         log.debug(
-            f"Rotations for page {pageno}: [text, auto, misalign, content] = "
+            f"Rotations for page: [text, auto, misalign, content] = "
             f"{text_rotation}, {autorotate_correction}, "
             f"{text_misaligned}, {content_rotation}"
         )

@@ -252,15 +252,19 @@ def exec_concurrent(context: PdfContext):
     ocrgraft = OcrGrafter(context)
 
     def update_page(result: PageResult, pbar):
-        sidecars[result.pageno] = result.text
-        pbar.update()
-        ocrgraft.graft_page(
-            pageno=result.pageno,
-            image=result.pdf_page_from_image,
-            textpdf=result.ocr,
-            autorotate_correction=result.orientation_correction,
-        )
-        pbar.update()
+        try:
+            tls.pageno = result.pageno + 1
+            sidecars[result.pageno] = result.text
+            pbar.update()
+            ocrgraft.graft_page(
+                pageno=result.pageno,
+                image=result.pdf_page_from_image,
+                textpdf=result.ocr,
+                autorotate_correction=result.orientation_correction,
+            )
+            pbar.update()
+        finally:
+            tls.pageno = None
 
     exec_progress_pool(
         use_threads=context.options.use_threads,
