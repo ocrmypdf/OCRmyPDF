@@ -308,17 +308,6 @@ def check_closed_streams(options):  # pragma: no cover
     return True
 
 
-def log_page_orientations(pdfinfo):
-    direction = {0: 'n', 90: 'e', 180: 's', 270: 'w'}
-    orientations = []
-    for n, page in enumerate(pdfinfo):
-        angle = page.rotation or 0
-        if angle != 0:
-            orientations.append('{0}{1}'.format(n + 1, direction.get(angle, '')))
-    if orientations:
-        log.info('Page orientations detected: %s', ' '.join(orientations))
-
-
 def create_input_file(options, work_folder: Path) -> Tuple[Path, str]:
     if options.input_file == '-':
         # stdin
