@@ -17,7 +17,7 @@ v11.1.0
 
 -  Fixed page rotation issues: #634, #589.
 -  Fixed some cases where optimization created an invalid image such as a
-   1-bit "RGB" iamge: #629, #620.
+   1-bit "RGB" image: #629, #620.
 -  Page numbers are now displayed in debug logs when pages are being grafted.
 -  ocrmypdf.optimize.rewrite_png and ocrmypdf.optimize.rewrite_png_as_g4 were
    marked deprecated. Strictly speaking these should have been internal APIs,
