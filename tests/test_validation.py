@@ -55,7 +55,7 @@ def test_old_ghostscript(caplog):
         vd._check_options(
             *make_opts_pm(language='chi_sim', output_type='pdfa'), {'chi_sim'}
         )
-        assert 'Ghostscript does not work correctly' in caplog.text
+        assert 'does not work correctly' in caplog.text
 
     with patch('ocrmypdf._exec.ghostscript.version', return_value='9.18'), patch(
         'ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True

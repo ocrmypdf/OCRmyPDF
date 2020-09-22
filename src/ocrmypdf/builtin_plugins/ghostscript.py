@@ -39,13 +39,11 @@ def check_options(options):
     if gs_version < '9.20' and options.output_type != 'pdf' and not is_latin:
         # https://bugs.ghostscript.com/show_bug.cgi?id=696874
         # Ghostscript < 9.20 fails to encode multibyte characters properly
-        msg = (
-            "The installed version of Ghostscript does not work correctly "
-            "with the OCR languages you specified. Use --output-type pdf or "
+        log.warning(
+            f"The installed version of Ghostscript ({gs_version}) does not work "
+            "correctly with the OCR languages you specified. Use --output-type pdf or "
             "upgrade to Ghostscript 9.20 or later to avoid this issue."
         )
-        msg += f"Found Ghostscript {gs_version}"
-        log.warning(msg)
 
     if options.output_type == 'pdfa':
         options.output_type = 'pdfa-2'
