@@ -107,7 +107,7 @@ def run(input_file, output_file, dpi, mode_args):
 
 def validate_custom_args(args: str):
     unpaper_args = shlex.split(args)
-    if any('/' in arg for arg in unpaper_args):
+    if any(('/' in arg or arg == '.' or arg == '..') for arg in unpaper_args):
         raise ValueError('No filenames allowed in --unpaper-args')
     return unpaper_args
 
