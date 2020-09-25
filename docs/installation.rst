@@ -190,7 +190,8 @@ of ocrmypdf, and install the following dependencies:
         python3-reportlab \
         qpdf \
         tesseract-ocr \
-        zlib1g
+        zlib1g \
+        unpaper
 
 We will need a newer version of ``pip`` then was available for Ubuntu 18.04:
 
