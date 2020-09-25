@@ -417,6 +417,7 @@ def _transcode_png(pike: Pdf, filename: Path, xref: Xref) -> bool:
                 im_obj[key] = local_image[key]
         for key in del_keys:
             del im_obj[key]
+    return True
 
 
 def transcode_pngs(

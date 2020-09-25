@@ -7,7 +7,11 @@
 
 """Interface to pngquant executable"""
 
+from contextlib import contextmanager
+from io import BytesIO
 from os import fspath
+from pathlib import Path
+from subprocess import PIPE
 from tempfile import NamedTemporaryFile
 
 from PIL import Image
@@ -28,34 +32,32 @@ def available():
     return True
 
 
-def quantize(input_file, output_file, quality_min, quality_max):
-    input_file = fspath(input_file)
-    output_file = fspath(output_file)
-    if input_file.endswith('.jpg'):
-        with Image.open(input_file) as im, NamedTemporaryFile(suffix='.png') as tmp:
-            im.save(tmp)
-            args = [
-                'pngquant',
-                '--force',
-                '--skip-if-larger',
-                '--output',
-                output_file,
-                '--quality',
-                f'{quality_min}-{quality_max}',
-                '--',
-                tmp.name,
-            ]
-            run(args)
+@contextmanager
+def input_as_png(input_file: Path):
+    if not input_file.name.endswith('.png'):
+        with Image.open(input_file) as im:
+            bio = BytesIO()
+            im.save(bio, format='png')
+            bio.seek(0)
+            yield bio
     else:
+        with open(input_file, 'rb') as f:
+            yield f
+
+
+def quantize(input_file: Path, output_file: Path, quality_min: int, quality_max: int):
+    with input_as_png(input_file) as input_stream:
         args = [
             'pngquant',
             '--force',
             '--skip-if-larger',
-            '--output',
-            output_file,
             '--quality',
             f'{quality_min}-{quality_max}',
-            '--',
-            input_file,
+            '--',  # pngquant: stop processing arguments
+            '-',  # pngquant: stream input and output
         ]
-        run(args)
+        result = run(args, stdin=input_stream, stdout=PIPE, stderr=PIPE, check=False)
+
+    if result.returncode == 0:
+        # input_file could be the same as output_file, so we defer the write
+        output_file.write_bytes(result.stdout)
