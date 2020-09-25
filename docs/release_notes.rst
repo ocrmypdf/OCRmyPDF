@@ -12,6 +12,14 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.1.1
+=======
+
+-  We now avoid using named temporary files when using pngquant allowing containerized
+   pngquant installs to be used.
+-  Clarified an error message.
+-  Highest number of 1's in a release ever!
+
 v11.1.0
 =======
 
