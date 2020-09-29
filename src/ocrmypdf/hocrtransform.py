@@ -167,7 +167,10 @@ class HocrTransform:
     def topdown_position(self, element):
         pxl_line_coords = self.element_coordinates(element)
         line_box = self.pt_from_pixel(pxl_line_coords)
-        return -line_box.y2
+        # Coordinates here are still in the hocr coordinate system, so 0 on the y axis
+        # is the top of the page and increasing values of y will move towards the
+        # bottom of the page.
+        return line_box.y2
 
     def to_pdf(
         self,
