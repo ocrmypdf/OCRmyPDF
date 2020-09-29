@@ -12,6 +12,14 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.1.2
+=======
+
+-  Fix hOCR renderer writing the text in roughly reverse order. This should not
+   affect reasonably smart PDF readers that properly locate the position of all
+   text, but may confuse those that rely on the order of objects in the content
+   stream. (#642)
+
 v11.1.1
 =======
 
