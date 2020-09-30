@@ -581,7 +581,7 @@ def optimize(input_file: Path, output_file: Path, context, save_settings) -> Non
         )
     ratio = input_size / output_size
     savings = 1 - output_size / input_size
-    log.info(f"Optimize ratio: {ratio:.2f} savings: {(100 * savings):.1f}%")
+    log.info(f"Optimize ratio: {ratio:.2f} savings: {(savings):.1%}")
 
     if savings < 0:
         log.info("Image optimization did not improve the file - discarded")
