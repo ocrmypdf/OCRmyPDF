@@ -226,7 +226,7 @@ def ocr(  # pylint: disable=unused-argument
     user_words: os.PathLike = None,
     user_patterns: os.PathLike = None,
     fast_web_view: float = None,
-    plugins: Iterable[str] = None,
+    plugins: Iterable[Union[str, Path]] = None,
     keep_temporary_files: bool = None,
     progress_bar: bool = None,
     **kwargs,
@@ -280,6 +280,8 @@ def ocr(  # pylint: disable=unused-argument
     """
     if not plugins:
         plugins = []
+    elif isinstance(plugins, (str, Path)):
+        plugins = [plugins]
     else:
         plugins = list(plugins)
 
