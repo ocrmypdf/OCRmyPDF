@@ -18,6 +18,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+"""
+An example of an OCRmyPDF plugin.
+
+This plugin adds two new command line arguments
+    --grayscale-ocr: converts the image to grayscale before performing OCR on it
+        (This is occasionally useful for images whose color confounds OCR. It only
+        affects the image shown to OCR. The image is not saved.)
+    --mono-page: converts pages all pages in the output file to black and white
+
+To use this from the command line:
+    ocrmypdf --plugin path/to/example_plugin.py --mono-page input.pdf output.pdf
+
+To use this as an API:
+    import ocrmypdf
+    ocrmypdf.ocr('input.pdf', 'output.pdf',
+        plugins=['path/to/example_plugin.py'], mono_page=True
+    )
+"""
+
 import logging
 
 from PIL import Image
