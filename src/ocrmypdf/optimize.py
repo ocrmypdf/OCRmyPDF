@@ -77,23 +77,26 @@ def extract_image_filter(
     if image.Subtype != Name.Image:
         return None
     if image.Length < 100:
-        log.debug("Skipping small image, xref %s", xref)
+        log.debug(f"Skipping small image, xref {xref}")
         return None
 
     pim = PdfImage(image)
 
     if len(pim.filter_decodeparms) > 1:
-        log.debug("Skipping multiply filtered, xref %s", xref)
+        log.debug(f"Skipping multiply filtered image, xref {xref}")
         return None
     filtdp = pim.filter_decodeparms[0]
 
     if pim.bits_per_component > 8:
+        log.debug(f"Skipping wide gamut image, xref {xref}")
         return None  # Don't mess with wide gamut images
 
     if filtdp[0] == Name.JPXDecode:
+        log.debug(f"Skipping JPEG2000 iamge, xref {xref}")
         return None  # Don't do JPEG2000
 
     if Name.Decode in image:
+        log.debug(f"Skipping image with Decode table, xref {xref}")
         return None  # Don't mess with custom Decode tables
 
     return pim, filtdp
@@ -229,7 +232,9 @@ def extract_images(
                 # Ignore soft masks
                 smask_xref = Xref(image.SMask.objgen[0])
                 exclude_xrefs.add(smask_xref)
+                log.debug(f"Skipping image {smask_xref} because it is an SMask")
             include_xrefs.add(xref)
+            log.debug(f"Treating {xref} as an optimization candidate")
             if xref not in pageno_for_xref:
                 pageno_for_xref[xref] = pageno
 
@@ -411,9 +416,25 @@ def _transcode_png(pike: Pdf, filename: Path, xref: Xref) -> bool:
             decode_parms=local_image.DecodeParms,
         )
 
+        # Don't copy keys from the new image...
         del_keys = set(im_obj.keys()) - set(local_image.keys())
+        # ...except for the keep_fields, which are essential to displaying
+        # the image correctly and preserving its metadata. (/Decode arrays
+        # and /SMaskInData are implicitly discarded prior to this point.)
+        keep_fields = {
+            '/ID',
+            '/Intent',
+            '/Interpolate',
+            '/Mask',
+            '/Metadata',
+            '/OC',
+            '/OPI',
+            '/SMask',
+            '/StructParent',
+        }
+        del_keys -= keep_fields
         for key in local_image.keys():
-            if key != Name.Length:
+            if key != Name.Length and str(key) not in keep_fields:
                 im_obj[key] = local_image[key]
         for key in del_keys:
             del im_obj[key]
