@@ -12,11 +12,13 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
-v11.1.3
+v11.2.0
 =======
 
 -  Fixed an issue with optimizing PNG-type images that had soft masks or image masks.
-   This is a regression introduced in (or about) issue v11.1.0.
+   This is a regression introduced in (or about) v11.1.0.
+-  Improved type checking of the ``plugins`` parameter for the ``ocrmypdf.ocr``
+   API call.
 
 v11.1.2
 =======
