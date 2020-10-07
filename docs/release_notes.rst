@@ -12,6 +12,12 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.2.1
+=======
+
+-  Fixed an issue where optimization of a 1-bit image with a color palette or
+   associated ICC that was optimized to JBIG2 could have its colors inverted.
+
 v11.2.0
 =======
 
