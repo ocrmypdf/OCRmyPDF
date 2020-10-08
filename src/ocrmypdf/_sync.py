@@ -209,9 +209,10 @@ def exec_page_sync(page_context: PageContext):
     if options.pdf_renderer == 'hocr':
         (hocr_out, text_out) = ocr_engine_hocr(ocr_image_out, page_context)
         ocr_out = render_hocr_page(hocr_out, page_context)
-
-    if options.pdf_renderer == 'sandwich':
+    elif options.pdf_renderer == 'sandwich':
         (ocr_out, text_out) = ocr_engine_textonly_pdf(ocr_image_out, page_context)
+    else:
+        raise NotImplementedError(f"pdf_renderer {options.pdf_renderer}")
 
     return PageResult(
         pageno=page_context.pageno,
@@ -244,7 +245,8 @@ def exec_concurrent(context: PdfContext):
     """Execute the pipeline concurrently"""
 
     # Run exec_page_sync on every page context
-    max_workers = min(len(context.pdfinfo), context.options.jobs)
+    options = context.options
+    max_workers = min(len(context.pdfinfo), options.jobs)
     if max_workers > 1:
         log.info("Start processing %d pages concurrently", max_workers)
 
@@ -267,14 +269,14 @@ def exec_concurrent(context: PdfContext):
             tls.pageno = None
 
     exec_progress_pool(
-        use_threads=context.options.use_threads,
+        use_threads=options.use_threads,
         max_workers=max_workers,
         tqdm_kwargs=dict(
             total=(2 * len(context.pdfinfo)),
-            desc='OCR',
+            desc='OCR' if options.tesseract_timeout > 0 else 'Image processing',
             unit='page',
             unit_scale=0.5,
-            disable=not context.options.progress_bar,
+            disable=not options.progress_bar,
         ),
         task_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
         task=exec_page_sync,
@@ -283,10 +285,10 @@ def exec_concurrent(context: PdfContext):
     )
 
     # Output sidecar text
-    if context.options.sidecar:
+    if options.sidecar:
         text = merge_sidecars(sidecars, context)
         # Copy text file to destination
-        copy_final(text, context.options.sidecar, context)
+        copy_final(text, options.sidecar, context)
 
     # Merge layers to one single pdf
     pdf = ocrgraft.finalize()
@@ -296,7 +298,7 @@ def exec_concurrent(context: PdfContext):
     pdf = post_process(pdf, context)
 
     # Copy PDF file to destination
-    copy_final(pdf, context.options.output_file, context)
+    copy_final(pdf, options.output_file, context)
 
 
 class NeverRaise(Exception):

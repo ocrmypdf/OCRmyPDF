@@ -121,9 +121,7 @@ def validate(pdfinfo, options):
         os.environ['OMP_THREAD_LIMIT'] = str(tess_threads)
     else:
         tess_threads = int(os.environ['OMP_THREAD_LIMIT'])
-
-    if tess_threads > 1:
-        log.info("Using Tesseract OpenMP thread limit %d", tess_threads)
+    log.debug("Using Tesseract OpenMP thread limit %d", tess_threads)
 
 
 class TesseractOcrEngine(OcrEngine):
