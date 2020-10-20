@@ -11,6 +11,7 @@ import sys
 from enum import IntEnum
 from pathlib import Path
 from typing import BinaryIO, Iterable, Union
+from warnings import warn
 
 from ocrmypdf._logging import PageNumberFilter, TqdmConsole
 from ocrmypdf._plugin_manager import get_plugin_manager
@@ -44,16 +45,28 @@ def configure_logging(
 ):
     """Set up logging.
 
-    Library users may wish to use this function if they want their log output to be
-    similar to ocrmypdf command line interface. If not used, the external application
-    should configure logging on its own.
+    Before calling :func:`ocrmypdf.ocr()`, you can use this function to
+    configure logging, if you want ocrmypdf's output to look like the ocrmypdf
+    command line interface. It will register log handlers, log filters, and
+    formatters, configure color logging to standard error, and adjust the log
+    levels of third party libraries. Details of this are fine-tuned and subject
+    to change. The ``verbosity`` argument is equivalent to the argument
+    ``--verbose`` and applies those settings.
 
-    ocrmypdf will perform all of its logging under the ``"ocrmypdf"`` logging namespace.
-    In addition, ocrmypdf imports pdfminer, which logs under ``"pdfminer"``. A library
-    user may wish to configure both; note that pdfminer is extremely chatty at the log
-    level ``logging.INFO``.
+    If this function is not called, ocrmypdf will not configure logging, and it
+    is up to the caller of ``ocrmypdf.ocr()`` to set up logging as it wishes using
+    the Python standard library's logging module. If this function is called,
+    the caller may of course make further adjustments to logging.
 
-    Library users may perform additional configuration afterwards.
+    Regardless of whether this function is called, ocrmypdf will perform all of
+    its logging under the ``"ocrmypdf"`` logging namespace. In addition,
+    ocrmypdf imports pdfminer, which logs under ``"pdfminer"``. A library user
+    may wish to configure both; note that pdfminer is extremely chatty at the
+    log level ``logging.INFO``.
+
+    This function does not set up the ``debug.log`` log file that the command
+    line interface does at certain verbosity levels. Applications should configure
+    their own debug logging.
 
     Args:
         verbosity (Verbosity): Verbosity level.
@@ -293,6 +306,9 @@ def ocr(  # pylint: disable=unused-argument
         k: v for k, v in locals().items() if not k.startswith('_') and k != 'kwargs'
     }
     create_options_kwargs.update(kwargs)
+
+    if 'verbose' in kwargs:
+        warn("ocrmypdf.ocr(verbose=) is ignored. Use ocrmypdf.configure_logging().")
 
     options = create_options(**create_options_kwargs)
     check_options(options, _plugin_manager)

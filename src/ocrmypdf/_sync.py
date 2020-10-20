@@ -330,9 +330,12 @@ def run_pipeline(options, *, plugin_manager, api=False):
 
     work_folder = Path(mkdtemp(prefix="com.github.ocrmypdf."))
     debug_log_handler = None
-    if (options.keep_temporary_files or options.verbose >= 1) and not os.environ.get(
-        'PYTEST_CURRENT_TEST', ''
+    if (
+        (options.keep_temporary_files or options.verbose >= 1)
+        and not os.environ.get('PYTEST_CURRENT_TEST', '')
+        and not api
     ):
+        # Debug log for command line interface only with verbose output
         debug_log_handler = configure_debug_logging(Path(work_folder) / "debug.log")
 
     pikepdf_enable_mmap()
