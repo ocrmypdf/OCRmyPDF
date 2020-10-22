@@ -49,7 +49,7 @@ def process_sigbus(*args):
     raise InputFileError("A worker process lost access to an input file")
 
 
-def process_init(queue, user_init):
+def process_init(queue, user_init, loglevel):
     """Initialize a process pool worker"""
 
     # Ignore SIGINT (our parent process will kill us gracefully)
@@ -62,6 +62,7 @@ def process_init(queue, user_init):
     # Reconfigure the root logger for this process to send all messages to a queue
     h = logging.handlers.QueueHandler(queue)
     root = logging.getLogger()
+    root.setLevel(loglevel)
     root.handlers = []
     root.addHandler(h)
 
@@ -69,7 +70,7 @@ def process_init(queue, user_init):
         user_init()
 
 
-def thread_init(_queue, user_init):
+def thread_init(_queue, user_init, _loglevel):
     # As a thread, block SIGBUS so the main thread deals with it...
     if hasattr(signal, 'SIGBUS'):
         signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGBUS})
@@ -102,7 +103,7 @@ def exec_progress_pool(
         pool = pool_class(
             processes=max_workers,
             initializer=initializer,
-            initargs=(log_queue, task_initializer),
+            initargs=(log_queue, task_initializer, logging.getLogger("").level),
         )
         try:
             results = pool.imap_unordered(task, task_arguments)
