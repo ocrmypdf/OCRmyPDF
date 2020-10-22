@@ -630,6 +630,9 @@ worker_pdf = None
 def _pdf_pageinfo_sync_init(infile):
     global worker_pdf  # pylint: disable=global-statement
     pikepdf_enable_mmap()
+    # If this function is called as a thread initializer, we need a messy hack
+    # to close worker_pdf. If called as a process, it will be released when the
+    # process is terminated.
     worker_pdf = pikepdf.open(infile)
 
 
@@ -643,6 +646,7 @@ def _pdf_pageinfo_sync(args):
 def _pdf_pageinfo_concurrent(
     pdf, infile, progbar, max_workers, check_pages, detailed_analysis=False
 ):
+    global worker_pdf  # pylint: disable=global-statement
     pages = [None] * len(pdf.pages)
 
     def update_pageinfo(result, pbar):
@@ -663,17 +667,23 @@ def _pdf_pageinfo_concurrent(
         # a separate process.
         use_threads = True
 
-    exec_progress_pool(
-        use_threads=use_threads,
-        max_workers=n_workers,
-        tqdm_kwargs=dict(
-            total=total, desc="Scanning contents", unit='page', disable=not progbar
-        ),
-        task_initializer=partial(_pdf_pageinfo_sync_init, infile),
-        task=_pdf_pageinfo_sync,
-        task_arguments=contexts,
-        task_finished=update_pageinfo,
-    )
+    try:
+        exec_progress_pool(
+            use_threads=use_threads,
+            max_workers=n_workers,
+            tqdm_kwargs=dict(
+                total=total, desc="Scanning contents", unit='page', disable=not progbar
+            ),
+            task_initializer=partial(_pdf_pageinfo_sync_init, infile),
+            task=_pdf_pageinfo_sync,
+            task_arguments=contexts,
+            task_finished=update_pageinfo,
+        )
+    finally:
+        if worker_pdf and use_threads:
+            assert n_workers == 1, "Should have only one worker when threaded"
+            # This is messy, but if we ran in thread, close worker_pdf
+            worker_pdf.close()
     return pages
 
 
