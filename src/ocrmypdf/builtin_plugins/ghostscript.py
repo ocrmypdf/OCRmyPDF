@@ -61,9 +61,9 @@ def rasterize_pdf_page(
     raster_device,
     raster_dpi,
     pageno,
-    page_dpi=None,
-    rotation=None,
-    filter_vector=False,
+    page_dpi,
+    rotation,
+    filter_vector,
 ):
     ghostscript.rasterize_pdf(
         input_file,

@@ -332,8 +332,10 @@ def rasterize_preview(input_file: Path, page_context: PageContext):
         output_file=output_file,
         raster_device='jpeggray',
         raster_dpi=canvas_dpi,
-        page_dpi=page_dpi,
         pageno=page_context.pageinfo.pageno + 1,
+        page_dpi=page_dpi,
+        rotation=0,
+        filter_vector=False,
     )
     return output_file
 
@@ -433,7 +435,7 @@ def rasterize(
 
     device = colorspaces[device_idx]
 
-    log.debug(f"Rasterize with {device}")
+    log.debug(f"Rasterize with {device}, rotation {correction}")
 
     # Produce the page image with square resolution or else deskew and OCR
     # will not work properly.
@@ -534,6 +536,9 @@ def create_ocr_image(image: Path, page_context: PageContext):
 
         # Pillow requires integer DPI
         dpi = tuple(round(coord) for coord in im.info['dpi'])
+        if page_context.pageinfo.rotation != 0:
+            log.info(f"Rotating {page_context.pageinfo.rotation}")
+            im = im.rotate(page_context.pageinfo.rotation)
         im.save(output_file, dpi=dpi)
     return output_file
 

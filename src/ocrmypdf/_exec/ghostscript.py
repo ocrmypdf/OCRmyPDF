@@ -81,8 +81,8 @@ def rasterize_pdf(
     raster_device: str,
     raster_dpi: Resolution,
     pageno: int = 1,
-    page_dpi: Resolution = None,
-    rotation: int = None,
+    page_dpi: Optional[Resolution] = None,
+    rotation: Optional[int] = None,
     filter_vector: bool = False,
 ):
     """Rasterize one page of a PDF at resolution raster_dpi in canvas units."""
