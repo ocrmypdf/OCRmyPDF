@@ -260,7 +260,7 @@ def test_tesseract_orientation(resources, tmp_path):
 
 
 def test_rasterize_rotates(resources, tmp_path):
-    pm = get_plugin_manager(['tests/plugins/tesseract_rotate90.py'])
+    pm = get_plugin_manager([])
 
     img = tmp_path / 'img90.png'
     pm.hook.rasterize_pdf_page(

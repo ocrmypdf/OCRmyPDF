@@ -12,6 +12,25 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.3.0
+=======
+
+-  The "OCR" step is describing as "Image processing" in the output messages when
+   OCR is disabled, to better explain the application's behavior.
+-  Debug logs are now only created when run as a command line, and not when OCR
+   is performed for an API call. It is the calling application's responsibility
+   to set up logging.
+-  For PDFs with a low number of pages, we gathered information about the input PDF
+   in a thread rather than process (when there are more pages). When run as a
+   thread, we did not close the file handle to the working PDF, leaking one file
+   handle per call of ``ocrmypdf.ocr``.
+-  Fixed an issue where debug messages send by child worker processes did not match
+   the log settings of parent process, causing messages to be dropped. This affected
+   macOS and Windows only where the parent process is not forked.
+-  Fixed the hookspec of rasterize_pdf_page to remove default parameters that
+   were not handled in an expected way by pluggy.
+-  Fixed another issue with automatic page rotation (#658) due to the issue above.
+
 v11.2.1
 =======
 
