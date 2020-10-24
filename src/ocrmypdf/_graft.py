@@ -109,6 +109,7 @@ class OcrGrafter:
         if textpdf and not self.font:
             self.font, self.font_key = self._find_font(textpdf)
 
+        emplaced_page = False
         content_rotation = self.pdfinfo[pageno].rotation
         path_image = Path(image).resolve() if image else None
         if path_image is not None and path_image != self.path_base:
@@ -122,24 +123,21 @@ class OcrGrafter:
                 local_image_page = self.pdf_base.pages[-1]
                 self.pdf_base.pages[pageno].emplace(local_image_page)
                 del self.pdf_base.pages[-1]
-            # The pdf_image_page will always be created with any /Rotate applied
-            # applied already
-            content_rotation = 0
+            emplaced_page = True
 
-        if content_rotation != 0:
-            # Text can be misaligned on a /Rotate'd page.
-            # That is because we rasterize pages with /Rotate applied,
-            # so that the OCR image text is upright and comes back upright.
-            text_misaligned = (autorotate_correction - content_rotation) % 360
-            log.debug(
-                f"Text rotation: (autorotate, content) -> text misalignment = "
-                f"({autorotate_correction}, {content_rotation}) -> {text_misaligned}"
-            )
-        else:
-            text_misaligned = 0
+        # Calculate if the text is misaligned compared to the content
+        if emplaced_page:
+            content_rotation = autorotate_correction
+        text_rotation = autorotate_correction
+        text_misaligned = (text_rotation - content_rotation) % 360
+        log.debug(
+            f"Text rotation: (text, autorotate, content) -> text misalignment = "
+            f"({text_rotation}, {autorotate_correction}, {content_rotation}) -> {text_misaligned}"
+        )
 
         if textpdf and self.font:
-            # Graft the text layer onto this page, whether new or old
+            # Graft the text layer onto this page, whether new or old, possibly
+            # rotating the text layer by the amount is misaligned.
             strip_old = self.context.options.redo_ocr
             self._graft_text_layer(
                 page_num=pageno + 1,
@@ -151,14 +149,14 @@ class OcrGrafter:
                 strip_old_text=strip_old,
             )
 
-        # Correct the page rotation
+        # Correct the overall page rotation if needed, now that the text and content
+        # are aligned
         page_rotation = (content_rotation - autorotate_correction) % 360
         self.pdf_base.pages[pageno].Rotate = page_rotation
         log.debug(
             f"Page rotation: (content, auto) -> page = "
             f"({content_rotation}, {autorotate_correction}) -> {page_rotation}"
         )
-
         if self.emplacements % MAX_REPLACE_PAGES == 0:
             self.save_and_reload()
 
