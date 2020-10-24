@@ -76,7 +76,7 @@ setup(
         'pdfminer.six >= 20191110, != 20200720, <= 20200726',
         'pikepdf >= 1.14.0, < 2',
         'Pillow >= 7.0.0',
-        'pluggy >= 0.13.0',
+        'pluggy >= 0.13.0, < 1.0',
         'reportlab >= 3.3.0',  # oldest released version with sane image handling
         'tqdm >= 4',
     ],
