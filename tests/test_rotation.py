@@ -15,6 +15,7 @@ from PIL import Image
 
 from ocrmypdf import leptonica
 from ocrmypdf._exec import ghostscript, tesseract
+from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo import PdfInfo
 
@@ -256,3 +257,33 @@ def test_tesseract_orientation(resources, tmp_path):
     tesseract.get_orientation(  # Test results of this are unreliable
         tmp_path / '000001.png', engine_mode='3', timeout=10
     )
+
+
+def test_rasterize_rotates(resources, tmp_path):
+    pm = get_plugin_manager(['tests/plugins/tesseract_rotate90.py'])
+
+    img = tmp_path / 'img90.png'
+    pm.hook.rasterize_pdf_page(
+        input_file=resources / 'graph.pdf',
+        output_file=img,
+        raster_device='pngmono',
+        raster_dpi=Resolution(20, 20),
+        page_dpi=Resolution(20, 20),
+        pageno=1,
+        rotation=90,
+        filter_vector=False,
+    )
+    assert Image.open(img).size == (123, 151), "Image not rotated"
+
+    img = tmp_path / 'img180.png'
+    pm.hook.rasterize_pdf_page(
+        input_file=resources / 'graph.pdf',
+        output_file=img,
+        raster_device='pngmono',
+        raster_dpi=Resolution(20, 20),
+        page_dpi=Resolution(20, 20),
+        pageno=1,
+        rotation=180,
+        filter_vector=False,
+    )
+    assert Image.open(img).size == (151, 123), "Image not rotated"
