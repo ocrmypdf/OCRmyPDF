@@ -63,7 +63,6 @@ setup(
     python_requires=' >= 3.6',
     setup_requires=[  # can be removed whenever we can drop pip 9 support
         'cffi >= 1.9.1',  # to build the leptonica module
-        'pytest-runner',  # to enable python setup.py test
         'setuptools_scm',  # so that version will work
         'setuptools_scm_git_archive',  # enable version from github tarballs
     ],
@@ -74,7 +73,7 @@ setup(
         'coloredlogs >= 14.0',  # strictly optional
         'img2pdf >= 0.3.0, < 0.5',  # pure Python, so track HEAD closely
         'pdfminer.six >= 20191110, != 20200720, <= 20200726',
-        'pikepdf >= 1.14.0, < 2',
+        'pikepdf >= 1.14.0, < 3',
         'Pillow >= 7.0.0',
         'pluggy >= 0.13.0, < 1.0',
         'reportlab >= 3.3.0',  # oldest released version with sane image handling
