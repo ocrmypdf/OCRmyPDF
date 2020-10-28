@@ -12,6 +12,13 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.3.1
+=======
+
+-  Declare support for new versions: pdfminer.six 20201018 and pikepdf 2.x
+-  Fix warning related to ``--pdfa-image-compression`` that appears at the wrong
+   time.
+
 v11.3.0
 =======
 
