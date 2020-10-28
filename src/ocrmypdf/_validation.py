@@ -213,12 +213,12 @@ def check_options_optimizing(options):
 
 
 def check_options_advanced(options):
-    if options.pdfa_image_compression != 'auto' and options.output_type.startswith(
+    if options.pdfa_image_compression != 'auto' and not options.output_type.startswith(
         'pdfa'
     ):
         log.warning(
-            "--pdfa-image-compression argument has no effect when "
-            "--output-type is not 'pdfa', 'pdfa-1', or 'pdfa-2'"
+            "--pdfa-image-compression argument only applies when "
+            "--output-type is one of 'pdfa', 'pdfa-1', or 'pdfa-2'"
         )
 
 
