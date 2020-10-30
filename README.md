@@ -92,6 +92,9 @@ apt-get install tesseract-ocr-chi-sim  # Example: Install Chinese Simplified lan
 
 # Arch Linux users
 pacman -S tesseract-data-eng tesseract-data-deu # Example: Install the English and German language packs
+
+# brew macOS users
+brew install tesseract-lang
 ```
 
 You can then pass the `-l LANG` argument to OCRmyPDF to give a hint as to what languages it should search for. Multiple languages can be requested.
