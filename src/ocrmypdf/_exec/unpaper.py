@@ -79,30 +79,25 @@ def run(input_file, output_file, dpi, mode_args):
         # This should ensure that a user cannot clobber some other file with
         # their unpaper arguments (whether intentionally or otherwise)
         args_unpaper.extend([os.fspath(input_pnm), os.fspath(output_pnm)])
+        external_run(
+            args_unpaper,
+            close_fds=True,
+            check=True,
+            universal_newlines=True,
+            stderr=STDOUT,  # unpaper writes logging output to stdout and stderr
+            stdout=PIPE,  # and cannot send file output to stdout
+            cwd=tmpdir,
+            logs_errors_to_stdout=True,
+        )
         try:
-            proc = external_run(
-                args_unpaper,
-                check=True,
-                close_fds=True,
-                universal_newlines=True,
-                stderr=STDOUT,  # unpaper writes logging output to stdout and stderr
-                cwd=tmpdir,  # and cannot send file output to stdout
-                stdout=PIPE,
-            )
-        except CalledProcessError as e:
-            log.debug(e.stderr)
-            raise e from e
-        else:
-            log.debug(proc.stderr)
-            try:
-                with Image.open(output_pnm) as imout:
-                    imout.save(output_file, dpi=(dpi, dpi))
-            except (FileNotFoundError, OSError):
-                raise SubprocessOutputError(
-                    "unpaper: failed to produce the expected output file. "
-                    + " Called with: "
-                    + str(args_unpaper)
-                ) from None
+            with Image.open(output_pnm) as imout:
+                imout.save(output_file, dpi=(dpi, dpi))
+        except (FileNotFoundError, OSError):
+            raise SubprocessOutputError(
+                "unpaper: failed to produce the expected output file. "
+                + " Called with: "
+                + str(args_unpaper)
+            ) from None
 
 
 def validate_custom_args(args: str):
