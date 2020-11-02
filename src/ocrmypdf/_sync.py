@@ -307,7 +307,14 @@ class NeverRaise(Exception):
     pass  # pylint: disable=unnecessary-pass
 
 
-def configure_debug_logging(log_filename, prefix=''):
+def configure_debug_logging(log_filename, prefix: str = ''):
+    """
+    Create a debug log file at a specified location.
+
+    Arguments:
+        log_filename: Where to the put the log file.
+        prefix: The logging domain prefix that should be sent to the log.
+    """
     log_file_handler = logging.FileHandler(log_filename, delay=True)
     log_file_handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
