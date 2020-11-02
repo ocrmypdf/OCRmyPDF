@@ -261,7 +261,7 @@ def ocr(  # pylint: disable=unused-argument
             read.
         output_file: If a :class:`pathlib.Path`, ``str`` or ``bytes``, this is
             interpreted as file system path to the output file. If the object
-            appears to be a writable stream (with methods such as ``.read()`` and
+            appears to be a writable stream (with methods such as ``.write()`` and
             ``.seek()``), the output will be written to this stream. If
             ``output_file`` is ``"-"``, the output will be written to ``sys.stdout``
             (provided that standard output does not seem to be a terminal device).
