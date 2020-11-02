@@ -55,21 +55,21 @@ def _setup_unpaper_io(tmpdir: Path, input_file: Path) -> Tuple[Path, Path]:
                 "Failed to convert image to a supported format."
             ) from e
 
-        if im_modified or input_file.suffix != '.png':
-            input_png = tmpdir / 'input.png'
-            im.save(input_png, format='PNG', compress_level=1)
+        if im_modified or input_file.suffix != '.pnm':
+            input_pnm = tmpdir / 'input.pnm'
+            im.save(input_pnm, format='PPM')
         else:
             # No changes, PNG input, just use the file we already have
-            input_png = input_file
+            input_pnm = input_file
         output_pnm = tmpdir / f'output{suffix}'
-    return input_png, output_pnm
+    return input_pnm, output_pnm
 
 
 def run(input_file, output_file, dpi, mode_args):
     args_unpaper = ['unpaper', '-v', '--dpi', str(dpi)] + mode_args
 
     with TemporaryDirectory() as tmpdir:
-        input_png, output_pnm = _setup_unpaper_io(Path(tmpdir), input_file)
+        input_pnm, output_pnm = _setup_unpaper_io(Path(tmpdir), input_file)
 
         # To prevent any shenanigans from accepting arbitrary parameters in
         # --unpaper-args, we:
@@ -78,7 +78,7 @@ def run(input_file, output_file, dpi, mode_args):
         # 3) append absolute paths for the input and output file
         # This should ensure that a user cannot clobber some other file with
         # their unpaper arguments (whether intentionally or otherwise)
-        args_unpaper.extend([os.fspath(input_png), os.fspath(output_pnm)])
+        args_unpaper.extend([os.fspath(input_pnm), os.fspath(output_pnm)])
         try:
             proc = external_run(
                 args_unpaper,
