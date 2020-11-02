@@ -25,13 +25,21 @@ from ocrmypdf.exceptions import MissingDependencyError
 log = logging.getLogger(__name__)
 
 
-def run(args, *, env=None, **kwargs):
+def run(args, *, env=None, logs_errors_to_stdout=False, **kwargs):
     """Wrapper around :py:func:`subprocess.run`
 
     The main purpose of this wrapper is to log subprocess output in an orderly
     fashion that indentifies the responsible subprocess. An additional
     task is that this function goes to greater lengths to find possible Windows
     locations of our dependencies when they are not on the system PATH.
+
+    Arguments should be identical to ``subprocess.run``, except for following:
+
+    Arguments:
+        logs_errors_to_stdout: If True, indicates that the process writes its error
+            messages to stdout rather than stderr, so stdout should be logged
+            if there is an error. If False, stderr is logged. Could be used with
+            stderr=STDOUT, stdout=PIPE for example.
     """
     if not env:
         env = os.environ
@@ -50,18 +58,22 @@ def run(args, *, env=None, **kwargs):
         kwargs['close_fds'] = False
 
     stderr = None
+    stderr_name = 'stderr' if not logs_errors_to_stdout else 'stdout'
     try:
         proc = subprocess_run(args, env=env, **kwargs)
     except CalledProcessError as e:
-        stderr = getattr(e, 'stderr', None)
+        stderr = getattr(e, stderr_name, None)
         raise
     else:
-        stderr = getattr(proc, 'stderr', None)
+        stderr = getattr(proc, stderr_name, None)
     finally:
         if process_log.isEnabledFor(logging.DEBUG) and stderr:
             with suppress(AttributeError, UnicodeDecodeError):
                 stderr = stderr.decode('utf-8', 'replace')
-            process_log.debug("stderr = %s", stderr)
+            if logs_errors_to_stdout:
+                process_log.debug("stdout/stderr = %s", stderr)
+            else:
+                process_log.debug("stderr = %s", stderr)
     return proc
 
 
