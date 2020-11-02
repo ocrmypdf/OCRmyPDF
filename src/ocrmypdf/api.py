@@ -10,7 +10,7 @@ import os
 import sys
 from enum import IntEnum
 from pathlib import Path
-from typing import BinaryIO, Iterable, Union
+from typing import AnyStr, BinaryIO, Iterable, Optional, Union
 from warnings import warn
 
 from ocrmypdf._logging import PageNumberFilter, TqdmConsole
@@ -26,7 +26,8 @@ except ModuleNotFoundError:
     coloredlogs = None
 
 
-PathOrIO = Union[BinaryIO, os.PathLike, str, bytes]
+StrPath = Union[os.PathLike, AnyStr]
+PathOrIO = Union[BinaryIO, StrPath]
 
 
 class Verbosity(IntEnum):
@@ -202,7 +203,7 @@ def ocr(  # pylint: disable=unused-argument
     language: Iterable[str] = None,
     image_dpi: int = None,
     output_type=None,
-    sidecar: os.PathLike = None,
+    sidecar: Optional[StrPath] = None,
     jobs: int = None,
     use_threads: bool = None,
     title: str = None,
@@ -239,7 +240,7 @@ def ocr(  # pylint: disable=unused-argument
     user_words: os.PathLike = None,
     user_patterns: os.PathLike = None,
     fast_web_view: float = None,
-    plugins: Iterable[Union[str, Path]] = None,
+    plugins: Iterable[StrPath] = None,
     keep_temporary_files: bool = None,
     progress_bar: bool = None,
     **kwargs,
