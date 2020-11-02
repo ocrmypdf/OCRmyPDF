@@ -12,6 +12,15 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.3.2
+=======
+
+-  On some systems, unpaper seems to be unable to process the PNGs we offer it
+   as input. We now convert the input to PNM format, which unpaper always accepts.
+   Fixes #665 and #667.
+-  Debug and error messages from unpaper were being suppressed.
+-  Some documentation tweaks.
+
 v11.3.1
 =======
 
