@@ -122,8 +122,6 @@ def rasterize_pdf(
         stderr = p.stderr.decode(errors='replace')
         if _gs_error_reported(stderr):
             log.error(stderr)
-        elif stderr:
-            log.debug(stderr)
 
     with Image.open(BytesIO(p.stdout)) as im:
         if rotation is not None:
