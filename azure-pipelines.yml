@@ -156,9 +156,8 @@ stages:
           #     versionSpec: "$(python.version)"
           - bash: |
               brew update
-              brew unlink python@2
               brew upgrade python
-              echo "Using Python `python3 --version`"
+              echo "Using `python3 --version`"
             displayName: "Update brew and Python"
           - bash: |
               brew install \

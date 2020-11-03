@@ -1,12 +1,12 @@
 # requirements.txt can be used to replicate the developer's build environment
 # setup.py lists a separate set of requirements that are looser to simplify
 # installation
-cffi == 1.14.0
+cffi == 1.14.3
 coloredlogs == 14.0  # technically optional
-img2pdf == 0.3.6
-pdfminer.six == 20200517
-pikepdf == 1.16.1
+img2pdf == 0.4.0
+pdfminer.six == 20201018
+pikepdf == 2.0.0
 pluggy == 0.13.1
-Pillow == 7.1.2
-reportlab == 3.5.42
-tqdm == 4.46.1
+Pillow == 8.0.1
+reportlab == 3.5.55
+tqdm == 4.51.0
