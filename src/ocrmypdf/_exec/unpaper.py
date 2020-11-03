@@ -66,7 +66,7 @@ def _setup_unpaper_io(tmpdir: Path, input_file: Path) -> Tuple[Path, Path]:
 
 
 def run(input_file, output_file, dpi, mode_args):
-    args_unpaper = ['unpaper', '-v', '--dpi', str(dpi)] + mode_args
+    args_unpaper = ['unpaper', '-v', '--dpi', str(round(dpi, 6))] + mode_args
 
     with TemporaryDirectory() as tmpdir:
         input_pnm, output_pnm = _setup_unpaper_io(Path(tmpdir), input_file)
