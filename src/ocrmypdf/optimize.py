@@ -115,25 +115,29 @@ def extract_image_jbig2(
         and filtdp[0] != Name.JBIG2Decode
         and jbig2enc.available()
     ):
-        try:
-            # Save any colorspace associated with the image, so that we
-            # will export a pure 1-bit PNG with no palette or ICC profile.
-            # Showing the palette or ICC to jbig2enc will cause it to perform
-            # colorspace transform to 1bpp, which will conflict the palette or
-            # ICC if it exists.
-            colorspace = pim.obj.ColorSpace
-            # Set to DeviceGray temporarily; we already in 1 bpc.
-            pim.obj.ColorSpace = pikepdf.Name.DeviceGray
-            imgname = root / f'{xref:08d}'
-            with imgname.open('wb') as f:
-                ext = pim.extract_to(stream=f)
-            imgname.rename(imgname.with_suffix(ext))
-        except pikepdf.UnsupportedImageTypeError:
-            return None
-        finally:
-            # Restore image colorspace after temporarily setting it to DeviceGray
-            pim.obj.ColorSpace = colorspace
-        return XrefExt(xref, ext)
+        # Save any colorspace associated with the image, so that we
+        # will export a pure 1-bit PNG with no palette or ICC profile.
+        # Showing the palette or ICC to jbig2enc will cause it to perform
+        # colorspace transform to 1bpp, which will conflict the palette or
+        # ICC if it exists.
+        colorspace = pim.obj.get(pikepdf.Name.ColorSpace, None)
+        if colorspace is not None or pim.image_mask:
+            try:
+                # Set to DeviceGray temporarily; we already in 1 bpc.
+                pim.obj.ColorSpace = pikepdf.Name.DeviceGray
+                imgname = root / f'{xref:08d}'
+                with imgname.open('wb') as f:
+                    ext = pim.extract_to(stream=f)
+                imgname.rename(imgname.with_suffix(ext))
+            except pikepdf.UnsupportedImageTypeError:
+                return None
+            finally:
+                # Restore image colorspace after temporarily setting it to DeviceGray
+                if colorspace is not None:
+                    pim.obj.ColorSpace = colorspace
+                else:
+                    del pim.obj.ColorSpace
+            return XrefExt(xref, ext)
     return None
 
 
