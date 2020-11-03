@@ -18,9 +18,13 @@ v11.3.2
 -  Explicitly require pikepdf 2.0.0 or newer when running on Python 3.9. (There are
    concerns about the stability of pybind11 2.5.x with Python 3.9, which is used in
    pikepdf 1.x.)
+-  Fixed another issue related to page rotation.
+-  Fixed an issue where image marked as image masks were not properly considered
+   as optimization candidates.
 -  On some systems, unpaper seems to be unable to process the PNGs we offer it
    as input. We now convert the input to PNM format, which unpaper always accepts.
    Fixes #665 and #667.
+-  DPI sent to unpaper is now rounded to a more reasonable number of decimal digits.
 -  Debug and error messages from unpaper were being suppressed.
 -  Some documentation tweaks.
 
