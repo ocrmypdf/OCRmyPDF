@@ -20,7 +20,8 @@ and largely have the same functions.
 
     import ocrmypdf
 
-    ocrmypdf.ocr('input.pdf', 'output.pdf', deskew=True)
+    if __name__ == '__main__':  # To ensure correct behavior on Windows
+        ocrmypdf.ocr('input.pdf', 'output.pdf', deskew=True)
 
 With a few exceptions, all of the command line arguments are available
 and may be passed as equivalent keywords.
