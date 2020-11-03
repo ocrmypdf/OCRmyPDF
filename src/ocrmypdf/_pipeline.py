@@ -536,9 +536,6 @@ def create_ocr_image(image: Path, page_context: PageContext):
 
         # Pillow requires integer DPI
         dpi = tuple(round(coord) for coord in im.info['dpi'])
-        if page_context.pageinfo.rotation != 0:
-            log.info(f"Rotating {page_context.pageinfo.rotation}")
-            im = im.rotate(page_context.pageinfo.rotation)
         im.save(output_file, dpi=dpi)
     return output_file
 
