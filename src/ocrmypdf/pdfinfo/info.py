@@ -818,12 +818,12 @@ class PdfInfo:
                 check_pages=check_pages,
                 detailed_analysis=detailed_analysis,
             )
-            self._needs_rendering = pdf.root.get('/NeedsRendering', False)
+            self._needs_rendering = pdf.Root.get('/NeedsRendering', False)
             self._has_acroform = False
-            if '/AcroForm' in pdf.root:
-                if len(pdf.root.AcroForm.get('/Fields', [])) > 0:
+            if '/AcroForm' in pdf.Root:
+                if len(pdf.Root.AcroForm.get('/Fields', [])) > 0:
                     self._has_acroform = True
-                elif '/XFA' in pdf.root.AcroForm:
+                elif '/XFA' in pdf.Root.AcroForm:
                     self._has_acroform = True
 
     @property

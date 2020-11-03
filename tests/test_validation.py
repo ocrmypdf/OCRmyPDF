@@ -137,9 +137,9 @@ def test_report_file_size(tmp_path, caplog):
     caplog.clear()
 
     waste_of_space = b'Dummy' * 5000
-    pdf.root.Dummy = waste_of_space
+    pdf.Root.Dummy = waste_of_space
     pdf.save(in_)
-    pdf.root.Dummy2 = waste_of_space + waste_of_space
+    pdf.Root.Dummy2 = waste_of_space + waste_of_space
     pdf.save(out)
 
     with patch('ocrmypdf._validation.jbig2enc.available', return_value=True), patch(

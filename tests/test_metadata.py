@@ -302,8 +302,8 @@ def test_kodak_toc(resources, outpdf):
 
     p = pikepdf.open(outpdf)
 
-    if pikepdf.Name.First in p.root.Outlines:
-        assert isinstance(p.root.Outlines.First, pikepdf.Dictionary)
+    if pikepdf.Name.First in p.Root.Outlines:
+        assert isinstance(p.Root.Outlines.First, pikepdf.Dictionary)
 
 
 def test_metadata_fixup_warning(resources, outdir, caplog):
