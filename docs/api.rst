@@ -36,8 +36,9 @@ The :func:`ocrmypdf.ocr` function runs OCRmyPDF similar to command line
 execution. To do this, it will:
 
 - create a monitoring thread
-- create worker processes (forking itself)
-- manage the signal flags of worker processes
+- create worker processes (on Linux, forking itself; on Windows and macOS, by
+  spawning)
+- manage the signal flags of its worker processes
 - execute other subprocesses (forking and executing other programs)
 
 The Python process that calls ``ocrmypdf.ocr()`` must be sufficiently
@@ -48,9 +49,9 @@ There is no currently no option to manage how jobs are scheduled other
 than the argument ``jobs=`` which will limit the number of worker
 processes.
 
-Forking a child process to call ``ocrmypdf.ocr()`` is suggested. That
+Creating a child process to call ``ocrmypdf.ocr()`` is suggested. That
 way your application will survive and remain interactive even if
-OCRmyPDF does not.
+OCRmyPDF fails for any reason.
 
 Programs that call ``ocrmypdf.ocr()`` should also install a SIGBUS signal
 handler (except on Windows), to raise an exception if access to a memory
@@ -58,11 +59,10 @@ mapped file fails. OCRmyPDF may use memory mapping.
 
 .. warning::
 
-    On Windows, the script that calls ``ocrmypdf.ocr()`` must be protected
-    by an "ifmain" guard (``if __name__ == '__main__'``) or you must use
-    ``ocrmypdf.ocr(...use_threads=True)``. If you do not take at least one
-    of these steps, Windows process semantics will prevent OCRmyPDF from working
-    correctly.
+    On Windows and macOS, the script that calls ``ocrmypdf.ocr()`` must be
+    protected by an "ifmain" guard (``if __name__ == '__main__'``). If you do
+    not take at least one of these steps, process semantics will prevent
+    OCRmyPDF from working correctly.
 
 Logging
 -------
