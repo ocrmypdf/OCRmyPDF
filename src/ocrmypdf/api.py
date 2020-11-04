@@ -299,18 +299,18 @@ def ocr(  # pylint: disable=unused-argument
     else:
         plugins = list(plugins)
 
-    parser = get_parser()
-    _plugin_manager = get_plugin_manager(plugins)
-    _plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
-
-    create_options_kwargs = {
-        k: v for k, v in locals().items() if not k.startswith('_') and k != 'kwargs'
-    }
+    # No new variable names should be assigned until these two steps are run
+    create_options_kwargs = {k: v for k, v in locals().items() if k != 'kwargs'}
     create_options_kwargs.update(kwargs)
+
+    parser = get_parser()
+    create_options_kwargs['parser'] = parser
+    plugin_manager = get_plugin_manager(plugins)
+    plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
 
     if 'verbose' in kwargs:
         warn("ocrmypdf.ocr(verbose=) is ignored. Use ocrmypdf.configure_logging().")
 
     options = create_options(**create_options_kwargs)
-    check_options(options, _plugin_manager)
-    return run_pipeline(options=options, plugin_manager=_plugin_manager, api=True)
+    check_options(options, plugin_manager)
+    return run_pipeline(options=options, plugin_manager=plugin_manager, api=True)
