@@ -63,45 +63,45 @@ stages:
               python.version: "3.8"
             Python39:
               python.version: "3.9"
-          steps:
-            - task: UsePythonVersion@0
-              inputs:
-                versionSpec: "$(python.version)"
-            - bash: |
-                sudo apt-get update
-                sudo apt-get install -y --no-install-recommends \
-                  python3-software-properties \
-                  curl \
-                  ghostscript \
-                  img2pdf \
-                  libexempi3 \
-                  libffi-dev \
-                  liblept5 \
-                  libsm6 libxext6 libxrender-dev \
-                  pngquant \
-                  poppler-utils \
-                  tesseract-ocr \
-                  tesseract-ocr-deu \
-                  tesseract-ocr-eng \
-                  unpaper \
-                  zlib1g
-              displayName: "Install system packages"
-            - bash: |
-                curl https://bootstrap.pypa.io/get-pip.py | python3
-                pip3 install -r requirements/main.txt -r requirements/test.txt .
-              displayName: "Install Python packages"
-            - bash: |
-                tesseract --version
-              displayName: "Record versions"
-            - bash: |
-                # -n auto is slower on Linux and breaks on Python 3.8
-                pytest -n0 --junitxml=test.xml --cov=ocrmypdf --cov-report=xml
-              displayName: "Test"
-            - task: PublishTestResults@2
-              inputs:
-                testResultsFiles: "test.xml"
-                testRunTitle: "$(Agent.OS) - $(Build.DefinitionName) - Python $(python.version)"
-              condition: succeededOrFailed()
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: "$(python.version)"
+          - bash: |
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends \
+                python3-software-properties \
+                curl \
+                ghostscript \
+                img2pdf \
+                libexempi3 \
+                libffi-dev \
+                liblept5 \
+                libsm6 libxext6 libxrender-dev \
+                pngquant \
+                poppler-utils \
+                tesseract-ocr \
+                tesseract-ocr-deu \
+                tesseract-ocr-eng \
+                unpaper \
+                zlib1g
+            displayName: "Install system packages"
+          - bash: |
+              curl https://bootstrap.pypa.io/get-pip.py | python3
+              pip3 install -r requirements/main.txt -r requirements/test.txt .
+            displayName: "Install Python packages"
+          - bash: |
+              tesseract --version
+            displayName: "Record versions"
+          - bash: |
+              # -n auto is slower on Linux and breaks on Python 3.8
+              pytest -n0 --junitxml=test.xml --cov=ocrmypdf --cov-report=xml
+            displayName: "Test"
+          - task: PublishTestResults@2
+            inputs:
+              testResultsFiles: "test.xml"
+              testRunTitle: "$(Agent.OS) - $(Build.DefinitionName) - Python $(python.version)"
+            condition: succeededOrFailed()
       - job: "Ubuntu_1604"
         pool:
           vmImage: "ubuntu-16.04"
