@@ -12,6 +12,12 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.3.3
+=======
+
+-  If unpaper outputs non-UTF-8 data, quietly fix this rather than choke on the
+   conversion. (Possibly addresses #671.)
+
 v11.3.2
 =======
 
