@@ -241,7 +241,7 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir):
         '--rotate-pages',
         '--rotate-pages-threshold',
         '0.001',
-        universal_newlines=False,
+        text=False,
     )
     err = err.decode('utf-8', errors='replace')
     assert p.returncode == 0, err

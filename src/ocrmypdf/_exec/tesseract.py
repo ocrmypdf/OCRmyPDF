@@ -99,9 +99,7 @@ def get_languages():
 
     args_tess = ['tesseract', '--list-langs']
     try:
-        proc = run(
-            args_tess, universal_newlines=True, stdout=PIPE, stderr=STDOUT, check=True
-        )
+        proc = run(args_tess, text=True, stdout=PIPE, stderr=STDOUT, check=True)
         output = proc.stdout
     except CalledProcessError as e:
         raise MissingDependencyError(lang_error(e.output)) from e

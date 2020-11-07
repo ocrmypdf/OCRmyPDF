@@ -128,7 +128,7 @@ def run_ocrmypdf_api(input_file, output_file, *args):
 
 
 @pytest.helpers.register
-def run_ocrmypdf(input_file, output_file, *args, universal_newlines=True):
+def run_ocrmypdf(input_file, output_file, *args, text=True):
     "Run ocrmypdf and let caller deal with results"
 
     p_args = (
@@ -151,7 +151,7 @@ def run_ocrmypdf(input_file, output_file, *args, universal_newlines=True):
         p_args,
         stdout=PIPE,
         stderr=PIPE,
-        universal_newlines=universal_newlines,
+        universal_newlines=text,  # When dropping support for Python 3.6 change to text=
         env=env,
         check=False,
     )
