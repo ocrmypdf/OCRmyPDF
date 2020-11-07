@@ -83,7 +83,6 @@ def run(input_file, output_file, dpi, mode_args):
             args_unpaper,
             close_fds=True,
             check=True,
-            universal_newlines=True,
             stderr=STDOUT,  # unpaper writes logging output to stdout and stderr
             stdout=PIPE,  # and cannot send file output to stdout
             cwd=tmpdir,
