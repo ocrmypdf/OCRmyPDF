@@ -604,7 +604,7 @@ However, the OCR-to-text-layer functionality is available.
 Docker
 ------
 
-You can also :ref:`Install the Docker <docker-install>` container on Windows. Ensure that
+You can also :ref:`Install the Docker <docker>` container on Windows. Ensure that
 your command prompt can run the docker "hello world" container.
 
 Installing on FreeBSD
@@ -630,7 +630,7 @@ Installing the Docker image
 For some users, installing the Docker image will be easier than
 installing all of OCRmyPDF's dependencies.
 
-See `OCRmyPDF Docker Image <docker>`__ for more information.
+See :ref:`docker` for more information.
 
 Installing with Python pip
 ==========================
