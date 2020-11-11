@@ -13,10 +13,11 @@
 import logging
 import os
 import shlex
+from decimal import Decimal
 from pathlib import Path
-from subprocess import PIPE, STDOUT, CalledProcessError
+from subprocess import PIPE, STDOUT
 from tempfile import TemporaryDirectory
-from typing import Tuple
+from typing import List, Optional, Tuple, Union
 
 from PIL import Image
 
@@ -24,10 +25,12 @@ from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
 from ocrmypdf.subprocess import get_version
 from ocrmypdf.subprocess import run as external_run
 
+DecFloat = Union[Decimal, float]
+
 log = logging.getLogger(__name__)
 
 
-def version():
+def version() -> str:
     return get_version('unpaper')
 
 
@@ -53,7 +56,7 @@ def _setup_unpaper_io(tmpdir: Path, input_file: Path) -> Tuple[Path, Path]:
         except KeyError:
             raise MissingDependencyError(
                 "Failed to convert image to a supported format."
-            ) from e
+            ) from None
 
         if im_modified or input_file.suffix != '.pnm':
             input_pnm = tmpdir / 'input.pnm'
@@ -65,7 +68,9 @@ def _setup_unpaper_io(tmpdir: Path, input_file: Path) -> Tuple[Path, Path]:
     return input_pnm, output_pnm
 
 
-def run(input_file, output_file, dpi, mode_args):
+def run(
+    input_file: Path, output_file: Path, dpi: DecFloat, mode_args: List[str]
+) -> None:
     args_unpaper = ['unpaper', '-v', '--dpi', str(round(dpi, 6))] + mode_args
 
     with TemporaryDirectory() as tmpdir:
@@ -99,14 +104,19 @@ def run(input_file, output_file, dpi, mode_args):
             ) from None
 
 
-def validate_custom_args(args: str):
+def validate_custom_args(args: str) -> List[str]:
     unpaper_args = shlex.split(args)
     if any(('/' in arg or arg == '.' or arg == '..') for arg in unpaper_args):
         raise ValueError('No filenames allowed in --unpaper-args')
     return unpaper_args
 
 
-def clean(input_file, output_file, dpi, unpaper_args=None):
+def clean(
+    input_file: Path,
+    output_file: Path,
+    dpi: DecFloat,
+    unpaper_args: Optional[List[str]] = None,
+):
     default_args = [
         '--layout',
         'none',

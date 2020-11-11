@@ -82,7 +82,7 @@ def _setup_plugins(
         pm.register(module)
 
 
-def get_plugin_manager(plugins: List[str], builtins=True):
+def get_plugin_manager(plugins: List[Union[str, Path]], builtins=True):
     pm = OcrmypdfPluginManager(
         project_name='ocrmypdf',
         setup_func=partial(_setup_plugins, plugins=plugins, builtins=builtins),
