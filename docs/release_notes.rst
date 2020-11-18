@@ -18,6 +18,9 @@ v11.3.4
 -  Fixed an error message 'called readLinearizationData for file that is not
    linearized' that may occur when pikepdf 2.1.0 is used. (Upgrading to pikepdf
    2.1.1 also fixes the issue.)
+-  File watcher now automatically includes ``.PDF`` in addition to ``.pdf`` to
+   better support case sensitive file systems.
+-  Some documentation and comment improvements.
 
 v11.3.3
 =======
