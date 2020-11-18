@@ -12,6 +12,13 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.3.4
+=======
+
+-  Fixed an error message 'called readLinearizationData for file that is not
+   linearized' that may occur when pikepdf 2.1.0 is used. (Upgrading to pikepdf
+   2.1.1 also fixes the issue.)
+
 v11.3.3
 =======
 
