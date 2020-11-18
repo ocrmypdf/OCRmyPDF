@@ -191,6 +191,8 @@ def check_pdf(input_file: Path) -> bool:
             pdf.check_linearization(sio)
         except RuntimeError:
             pass
+        except pikepdf._qpdf.ForeignObjectError:
+            pass
         else:
             linearize = sio.getvalue()
             if linearize:
