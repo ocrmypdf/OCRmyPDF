@@ -169,7 +169,7 @@ def is_file_writable(test_file: os.PathLike) -> bool:
 def check_pdf(input_file: Path) -> bool:
     """Check if a PDF complies with the PDF specification.
 
-    Checks for proper formatting and proper linearization.
+    Checks for proper formatting.
     """
     pdf = None
     try:
@@ -185,18 +185,7 @@ def check_pdf(input_file: Path) -> bool:
             else:
                 log.warning(msg)
 
-        sio = StringIO()
-        linearize = None
-        try:
-            pdf.check_linearization(sio)
-        except RuntimeError:
-            pass
-        else:
-            linearize = sio.getvalue()
-            if linearize:
-                log.warning(linearize)
-
-        if not messages and not linearize:
+        if not messages:
             return True
         return False
     finally:
