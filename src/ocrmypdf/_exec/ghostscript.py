@@ -25,24 +25,24 @@ from ocrmypdf.subprocess import get_version, run
 
 log = logging.getLogger(__name__)
 
+missing_gs_error = """
+---------------------------------------------------------------------
+This error normally occurs when ocrmypdf find can't Ghostscript.
+Please ensure Ghostscript is installed and its location is added to
+the system PATH environment variable.
+
+For details see:
+    https://ocrmypdf.readthedocs.io/en/latest/installation.html
+---------------------------------------------------------------------
+"""
+
 _gswin = None
 if os.name == 'nt':
     _gswin = which('gswin64c')
     if not _gswin:
         _gswin = which('gswin32c')
         if not _gswin:
-            raise MissingDependencyError(
-                """
-                ---------------------------------------------------------------------
-                This error normally occurs when ocrmypdf can't Ghostscript.  Please
-                ensure Ghostscript is installed and its location is added to the
-                system PATH environment variable.
-
-                For details see:
-                    https://ocrmypdf.readthedocs.io/en/latest/installation.html
-                ---------------------------------------------------------------------
-                """
-            )
+            raise MissingDependencyError(missing_gs_error)
     _gswin = Path(_gswin).stem
 
 GS = _gswin if _gswin else 'gs'
@@ -146,6 +146,9 @@ def generate_pdfa(
     pdf_version: str = '1.5',
     pdfa_part: str = '2',
 ):
+    # Ghostscript's compression is all or nothing. We can either force all images
+    # to JPEG, force all to Flate/PNG, or let it decide how to encode the images.
+    # In most case it's best to let it decide.
     compression_args = []
     if compression == 'jpeg':
         compression_args = [
@@ -173,8 +176,9 @@ def generate_pdfa(
     strategy = 'RGB' if version() >= '9.19' else '/RGB'
 
     if version() == '9.23':
-        # 9.23: new feature JPEG passthrough is broken in some cases, best to
-        # disable it always
+        # 9.23: added JPEG passthrough as a new feature, but with a bug that
+        # incorrectly formats some images. Fixed as of 9.24. So we disable this
+        # feature for 9.23.
         # https://bugs.ghostscript.com/show_bug.cgi?id=699216
         compression_args.append('-dPassThroughJPEGImages=false')
 
