@@ -55,6 +55,7 @@ from ocrmypdf._validation import (
 )
 from ocrmypdf.exceptions import ExitCode, ExitCodeException
 from ocrmypdf.helpers import (
+    NeverRaise,
     available_cpu_count,
     check_pdf,
     pikepdf_enable_mmap,
@@ -299,12 +300,6 @@ def exec_concurrent(context: PdfContext):
 
     # Copy PDF file to destination
     copy_final(pdf, options.output_file, context)
-
-
-class NeverRaise(Exception):
-    """An exception that is never raised"""
-
-    pass  # pylint: disable=unnecessary-pass
 
 
 def configure_debug_logging(log_filename, prefix: str = ''):

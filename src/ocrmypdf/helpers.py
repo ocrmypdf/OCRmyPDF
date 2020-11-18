@@ -58,6 +58,10 @@ class Resolution(namedtuple('Resolution', ('x', 'y'))):
         return f"Resolution({self.x}x{self.y} dpi)"
 
 
+class NeverRaise(Exception):
+    """An exception that is never raised"""
+
+
 def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike):
     """
     Helper function: relinks soft symbolic link if necessary
@@ -190,6 +194,12 @@ def check_pdf(input_file: Path) -> bool:
         try:
             pdf.check_linearization(sio)
         except RuntimeError:
+            pass
+        except (
+            getattr(pikepdf, 'ForeignObjectError')
+            if pikepdf.__version__ == '2.1.0'  # This version may throw wrong exception
+            else NeverRaise
+        ):
             pass
         else:
             linearize = sio.getvalue()
