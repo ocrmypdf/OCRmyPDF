@@ -190,8 +190,10 @@ def check_pdf(input_file: Path) -> bool:
                 log.warning(msg)
 
         sio = StringIO()
-        linearize = None
+        linearize_msgs = ''
         try:
+            # If linearization is missing entirely, we do not complain. We do
+            # complain if linearization is present but incorrect.
             pdf.check_linearization(sio)
         except RuntimeError:
             pass
@@ -202,11 +204,11 @@ def check_pdf(input_file: Path) -> bool:
         ):
             pass
         else:
-            linearize = sio.getvalue()
-            if linearize:
-                log.warning(linearize)
+            linearize_msgs = sio.getvalue()
+            if linearize_msgs:
+                log.warning(linearize_msgs)
 
-        if not messages and not linearize:
+        if not messages and not linearize_msgs:
             return True
         return False
     finally:
