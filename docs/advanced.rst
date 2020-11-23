@@ -125,8 +125,7 @@ include:
 .. envvar:: OMP_THREAD_LIMIT
 
    Controls the number of threads Tesseract will use. OCRmyPDF will
-   manage this environment if it is not already set. (Currently, it will
-   set it to 1 because this gives the best results in testing.)
+   manage this environment variable if it is not already set.
 
 For example, if you have a development build of Tesseract don't wish to
 use the system installation, you can launch OCRmyPDF as follows:
