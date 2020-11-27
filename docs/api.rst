@@ -20,7 +20,7 @@ and largely have the same functions.
 
     import ocrmypdf
 
-    if __name__ == '__main__':  # To ensure correct behavior on Windows
+    if __name__ == '__main__':  # To ensure correct behavior on Windows and macOS
         ocrmypdf.ocr('input.pdf', 'output.pdf', deskew=True)
 
 With a few exceptions, all of the command line arguments are available
@@ -42,8 +42,7 @@ execution. To do this, it will:
 - execute other subprocesses (forking and executing other programs)
 
 The Python process that calls ``ocrmypdf.ocr()`` must be sufficiently
-privileged to perform these actions. If it is not, ``ocrmypdf()`` will
-fail.
+privileged to perform these actions.
 
 There is no currently no option to manage how jobs are scheduled other
 than the argument ``jobs=`` which will limit the number of worker
