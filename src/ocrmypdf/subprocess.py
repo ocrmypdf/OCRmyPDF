@@ -17,7 +17,7 @@ from contextlib import suppress
 from distutils.version import LooseVersion
 from functools import lru_cache
 from pathlib import Path
-from subprocess import PIPE, STDOUT, CalledProcessError
+from subprocess import PIPE, STDOUT, CalledProcessError, CompletedProcess, Popen
 from subprocess import run as subprocess_run
 
 from ocrmypdf.exceptions import MissingDependencyError
@@ -41,26 +41,7 @@ def run(args, *, env=None, logs_errors_to_stdout=False, **kwargs):
             if there is an error. If False, stderr is logged. Could be used with
             stderr=STDOUT, stdout=PIPE for example.
     """
-    if not env:
-        env = os.environ
-
-    # Search in spoof path if necessary
-    program = args[0]
-
-    if os.name == 'nt':
-        args = _fix_windows_args(program, args, env)
-
-    log.debug("Running: %s", args)
-    process_log = log.getChild(os.path.basename(program))
-    if sys.version_info < (3, 7):
-        if os.name == 'nt':
-            # Can't use close_fds=True on Windows with Python 3.6 or older
-            # https://bugs.python.org/issue19575, etc.
-            kwargs['close_fds'] = False
-        if 'text' in kwargs:
-            # Convert run(...text=) to run(...universal_newlines=) for Python 3.6
-            kwargs['universal_newlines'] = kwargs['text']
-            del kwargs['text']
+    args, env, process_log, _text = _fix_process_args(args, env, kwargs)
 
     stderr = None
     stderr_name = 'stderr' if not logs_errors_to_stdout else 'stdout'
@@ -80,6 +61,64 @@ def run(args, *, env=None, logs_errors_to_stdout=False, **kwargs):
             else:
                 process_log.debug("stderr = %s", stderr)
     return proc
+
+
+def run_polling_stderr(args, *, callback, check=False, env=None, **kwargs):
+    """Run a process like ``ocrmypdf.subprocess.run``, and poll stderr.
+
+    Every line of produced by stderr will be forwarded to the callback function.
+    The intended use is monitoring progress of subprocesses that output their
+    own progress indicators. In addition, each line will be logged if debug
+    logging is enabled.
+
+    Requires stderr to be opened in text mode for ease of handling errors. In
+    addition the expected encoding= and errors= arguments should be set. Note
+    that if stdout is already set up, it need not be binary.
+    """
+    args, env, process_log, text = _fix_process_args(args, env, kwargs)
+    assert text, "Must use text=True"
+
+    proc = Popen(args, env=env, **kwargs)
+
+    lines = []
+    while proc.poll() is None:
+        for msg in iter(proc.stderr.readline, ''):
+            if process_log.isEnabledFor(logging.DEBUG):
+                process_log.debug(msg.strip())
+            callback(msg)
+            lines.append(msg)
+    stderr = ''.join(lines)
+
+    if check and proc.returncode != 0:
+        raise CalledProcessError(proc.returncode, args, output=None, stderr=stderr)
+    return CompletedProcess(args, proc.returncode, None, stderr=stderr)
+
+
+def _fix_process_args(args, env, kwargs):
+    assert 'universal_newlines' not in kwargs, "Use text= instead of universal_newlines"
+
+    if not env:
+        env = os.environ
+
+    # Search in spoof path if necessary
+    program = args[0]
+
+    if os.name == 'nt':
+        args = _fix_windows_args(program, args, env)
+
+    log.debug("Running: %s", args)
+    process_log = log.getChild(os.path.basename(program))
+    text = kwargs.get('text', False)
+    if sys.version_info < (3, 7):
+        if os.name == 'nt':
+            # Can't use close_fds=True on Windows with Python 3.6 or older
+            # https://bugs.python.org/issue19575, etc.
+            kwargs['close_fds'] = False
+        if 'text' in kwargs:
+            # Convert run(...text=) to run(...universal_newlines=) for Python 3.6
+            kwargs['universal_newlines'] = kwargs['text']
+            del kwargs['text']
+    return args, env, process_log, text
 
 
 def _fix_windows_args(program, args, env):
