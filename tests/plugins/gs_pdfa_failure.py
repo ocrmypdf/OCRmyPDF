@@ -23,7 +23,7 @@ from unittest.mock import patch
 
 from ocrmypdf import hookimpl
 from ocrmypdf.builtin_plugins import ghostscript
-from ocrmypdf.subprocess import run
+from ocrmypdf.subprocess import run_polling_stderr
 
 
 def run_rig_args(args, **kwargs):
@@ -33,13 +33,13 @@ def run_rig_args(args, **kwargs):
     new_args = [
         arg for arg in args if not arg.startswith('-dPDFA') and not arg.endswith('.ps')
     ]
-    proc = run(new_args, **kwargs)
+    proc = run_polling_stderr(new_args, **kwargs)
     return proc
 
 
 @hookimpl
 def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdfa_part):
-    with patch('ocrmypdf._exec.ghostscript.run', new=run_rig_args):
+    with patch('ocrmypdf._exec.ghostscript.run_polling_stderr', new=run_rig_args):
         ghostscript.generate_pdfa(
             pdf_pages=pdf_pages,
             pdfmark=pdfmark,

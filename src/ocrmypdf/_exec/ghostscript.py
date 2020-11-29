@@ -18,10 +18,11 @@ from subprocess import PIPE, CalledProcessError
 from typing import Optional, cast
 
 from PIL import Image
+from tqdm import tqdm
 
 from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
 from ocrmypdf.helpers import Resolution
-from ocrmypdf.subprocess import get_version, run
+from ocrmypdf.subprocess import get_version, run, run_polling_stderr
 
 log = logging.getLogger(__name__)
 
@@ -139,6 +140,27 @@ def rasterize_pdf(
         im.save(fspath(output_file), dpi=page_dpi)
 
 
+class GhostscriptFollower:
+    re_process = re.compile(r"Processing pages \d+ through (\d+).")
+    re_page = re.compile(r"Page (\d+)")
+
+    def __init__(self):
+        self.count = 0
+        self.tqdm = None
+
+    def __call__(self, line):
+        if not self.tqdm:
+            m = self.re_process.match(line.strip())
+            if m:
+                self.count = int(m.group(1))
+                self.tqdm = tqdm(total=self.count, desc="Ghostscript", unit='page')
+                return
+        else:
+            m = self.re_page.match(line.strip())
+            if m:
+                self.tqdm.update()
+
+
 def generate_pdfa(
     pdf_pages,
     output_file: os.PathLike,
@@ -188,7 +210,6 @@ def generate_pdfa(
     args_gs = (
         [
             GS,
-            "-dQUIET",
             "-dBATCH",
             "-dNOPAUSE",
             "-dSAFER",
@@ -208,16 +229,26 @@ def generate_pdfa(
         ]
     )
     args_gs.extend(fspath(s) for s in pdf_pages)  # Stringify Path objs
+
     try:
         with Path(output_file).open('wb') as output:
-            p = run(args_gs, stdout=output, stderr=PIPE, check=True)
+            p = run_polling_stderr(
+                args_gs,
+                stdout=output,
+                stderr=PIPE,
+                check=True,
+                text=True,
+                encoding='utf-8',
+                errors='replace',
+                callback=GhostscriptFollower(),
+            )
     except CalledProcessError as e:
         # Ghostscript does not change return code when it fails to create
         # PDF/A - check PDF/A status elsewhere
-        log.error(e.stderr.decode(errors='replace'))
-        raise SubprocessOutputError('Ghostscript PDF/A rendering failed')
+        log.error(e.stderr)
+        raise SubprocessOutputError('Ghostscript PDF/A rendering failed') from e
     else:
-        stderr = p.stderr.decode('utf-8', errors='replace')
+        stderr = p.stderr
         if _gs_error_reported(stderr):
             last_part = None
             repcount = 0

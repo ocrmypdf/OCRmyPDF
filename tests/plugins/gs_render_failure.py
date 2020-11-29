@@ -34,7 +34,7 @@ def raise_gs_fail(*args, **kwargs):
 
 @hookimpl
 def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdfa_part):
-    with patch('ocrmypdf._exec.ghostscript.run', new=raise_gs_fail):
+    with patch('ocrmypdf._exec.ghostscript.run_polling_stderr', new=raise_gs_fail):
         ghostscript.generate_pdfa(
             pdf_pages=pdf_pages,
             pdfmark=pdfmark,
