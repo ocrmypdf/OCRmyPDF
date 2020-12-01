@@ -18,7 +18,6 @@ from subprocess import PIPE, CalledProcessError
 from typing import Optional, cast
 
 from PIL import Image
-from tqdm import tqdm
 
 from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
 from ocrmypdf.helpers import Resolution
@@ -144,21 +143,26 @@ class GhostscriptFollower:
     re_process = re.compile(r"Processing pages \d+ through (\d+).")
     re_page = re.compile(r"Page (\d+)")
 
-    def __init__(self):
+    def __init__(self, progressbar_class):
         self.count = 0
-        self.tqdm = None
+        self.progressbar_class = progressbar_class
+        self.progressbar = None
 
     def __call__(self, line):
-        if not self.tqdm:
+        if not self.progressbar_class:
+            return
+        if not self.progressbar:
             m = self.re_process.match(line.strip())
             if m:
                 self.count = int(m.group(1))
-                self.tqdm = tqdm(total=self.count, desc="Ghostscript", unit='page')
+                self.progressbar = self.progressbar_class(
+                    total=self.count, desc="PDF/A conversion", unit='page'
+                )
                 return
         else:
             m = self.re_page.match(line.strip())
             if m:
-                self.tqdm.update()
+                self.progressbar.update()
 
 
 def generate_pdfa(
@@ -167,6 +171,7 @@ def generate_pdfa(
     compression: str,
     pdf_version: str = '1.5',
     pdfa_part: str = '2',
+    progressbar_class=None,
 ):
     # Ghostscript's compression is all or nothing. We can either force all images
     # to JPEG, force all to Flate/PNG, or let it decide how to encode the images.
@@ -240,7 +245,7 @@ def generate_pdfa(
                 text=True,
                 encoding='utf-8',
                 errors='replace',
-                callback=GhostscriptFollower(),
+                callback=GhostscriptFollower(progressbar_class),
             )
     except CalledProcessError as e:
         # Ghostscript does not change return code when it fails to create

@@ -79,12 +79,21 @@ def rasterize_pdf_page(
 
 
 @hookimpl
-def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdfa_part):
+def generate_pdfa(
+    pdf_pages,
+    pdfmark,
+    output_file,
+    compression,
+    pdf_version,
+    pdfa_part,
+    progressbar_class,
+):
     ghostscript.generate_pdfa(
         pdf_pages=[*pdf_pages, pdfmark],
         output_file=output_file,
         compression=compression,
         pdf_version=pdf_version,
         pdfa_part=pdfa_part,
+        progressbar_class=progressbar_class,
     )
     return output_file

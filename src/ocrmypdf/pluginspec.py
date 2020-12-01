@@ -59,7 +59,7 @@ def check_options(options: Namespace) -> None:
     Note:
         This hook will be called from the main process, and may modify global state
         before child worker processes are forked.
-	"""
+    """
 
 
 @hookspec
@@ -280,6 +280,7 @@ def generate_pdfa(
     compression: str,
     pdf_version: str,
     pdfa_part: str,
+    progressbar_class,
 ) -> Path:
     """Generate a PDF/A.
 
@@ -302,10 +303,21 @@ def generate_pdfa(
             At its own discretion, the PDF/A generator may raise the version,
             but should not lower it.
         pdfa_part: The desired PDF/A compliance level, such as ``'2B'``.
+        progressbar_class: The class of a progress bar with a tqdm-like API. An
+            instance of this class will be initialized when PDF/A conversion
+            begins, using
+            ``instance = progressbar_class(total: int, desc: str, unit:str)``,
+            defining the number of work units, a user-visible description,
+            and the name of the work units ("page"). Then ``instance.update()``
+            will be called when a work unit is completed. If ``None``, no
+            progress information is reported.
 
     Returns:
         Path: If successful, the hook should return ``output_file``.
 
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
+
+    See also:
+        https://github.com/tqdm/tqdm
     """

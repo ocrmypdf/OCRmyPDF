@@ -45,5 +45,6 @@ def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdf
             compression=compression,
             pdf_version=pdf_version,
             pdfa_part=pdfa_part,
+            progressbar_class=None,
         )
         return output_file

@@ -19,6 +19,7 @@ import img2pdf
 import pikepdf
 from pikepdf.models.metadata import encode_pdf_date
 from PIL import Image, ImageColor, ImageDraw
+from tqdm import tqdm
 
 from ocrmypdf import leptonica
 from ocrmypdf._exec import unpaper
@@ -709,6 +710,7 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext):
         output_file=output_file,
         compression=options.pdfa_image_compression,
         pdfa_part=options.output_type[-1],  # is pdfa-1, pdfa-2, or pdfa-3
+        progressbar_class=tqdm if options.progress_bar else None,
     )
 
     return output_file
