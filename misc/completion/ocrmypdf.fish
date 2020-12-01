@@ -135,4 +135,4 @@ complete -c ocrmypdf -r -l user-words -d "specify location of user words file"
 complete -c ocrmypdf -r -l user-patterns -d "specify location of user patterns file"
 complete -c ocrmypdf -x -l fast-web-view -d "if file size if above this amount in MB, linearize PDF"
 
-complete -c ocrmypdf -x -a "(__fish_complete_suffix .pdf)"
+complete -c ocrmypdf -x -a "(__fish_complete_suffix .pdf; __fish_complete_suffix .PDF; __fish_complete_suffix .jpg; __fish_complete_suffix .png)"
