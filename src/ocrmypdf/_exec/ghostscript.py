@@ -195,10 +195,11 @@ def generate_pdfa(
             "-dAutoFilterGrayImages=true",
         ]
 
+    strategy = 'LeaveColorUnchanged'
     # Older versions of Ghostscript expect a leading slash in
     # sColorConversionStrategy, newer ones should not have it. See Ghostscript
     # git commit fe1c025d.
-    strategy = 'RGB' if version() >= '9.19' else '/RGB'
+    strategy = ('/' + strategy) if version() < '9.19' else strategy
 
     if version() == '9.23':
         # 9.23: added JPEG passthrough as a new feature, but with a bug that
