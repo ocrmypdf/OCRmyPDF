@@ -10,7 +10,6 @@
 import logging
 import os
 import re
-import shutil
 import sys
 from collections.abc import Mapping
 from contextlib import suppress
@@ -104,7 +103,9 @@ def _fix_process_args(args, env, kwargs):
     program = args[0]
 
     if os.name == 'nt':
-        args = _fix_windows_args(program, args, env)
+        from ocrmypdf.subprocess._windows import fix_windows_args
+
+        args = fix_windows_args(program, args, env)
 
     log.debug("Running: %s", args)
     process_log = log.getChild(os.path.basename(program))
@@ -119,30 +120,6 @@ def _fix_process_args(args, env, kwargs):
             kwargs['universal_newlines'] = kwargs['text']
             del kwargs['text']
     return args, env, process_log, text
-
-
-def _fix_windows_args(program, args, env):
-    """Adjust our desired program and command line arguments for use on Windows"""
-
-    if sys.version_info < (3, 8):
-        # bpo-33617 - Windows needs manual Path -> str conversion
-        args = [os.fspath(arg) for arg in args]
-        program = os.fspath(program)
-
-    # If we are running a .py on Windows, ensure we call it with this Python
-    # (to support test suite shims)
-    if program.lower().endswith('.py'):
-        args = [sys.executable] + args
-
-    paths = os.pathsep.join(os.get_exec_path(env))
-    if not shutil.which(args[0], path=paths):
-        # If the program we want is not on the PATH, add some interesting
-        # locations in %PROGRAMFILES% to the PATH and try again
-        shimmed_path = shim_paths_with_program_files(env)
-        new_args0 = shutil.which(args[0], path=shimmed_path)
-        if new_args0:
-            args[0] = new_args0
-    return args
 
 
 @lru_cache(maxsize=None)
@@ -191,33 +168,6 @@ def get_version(
         )
 
     return version
-
-
-def shim_paths_with_program_files(env=None):
-    if not env:
-        env = os.environ
-    program_files = env.get('PROGRAMFILES', '')
-    if not program_files:
-        return env.get('PATH', '')
-
-    def path_walker():
-        for path in Path(program_files).iterdir():
-            if not path.is_dir():
-                continue
-            if path.name.lower() == 'tesseract-ocr':
-                yield path
-            elif path.name.lower() == 'gs':
-                yield from (p for p in path.glob('**/bin') if p.is_dir())
-
-    paths = sorted(
-        (p for p in path_walker()), key=lambda p: (p.name, p.parent.name), reverse=True
-    )
-    paths.extend(
-        Path(str_path)
-        for str_path in os.get_exec_path(env)
-        if Path(str_path) not in set(paths)
-    )
-    return os.pathsep.join(str(p) for p in paths)
 
 
 missing_program = '''

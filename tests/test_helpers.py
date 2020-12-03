@@ -13,7 +13,6 @@ from unittest.mock import MagicMock
 import pytest
 
 from ocrmypdf import helpers as helpers
-from ocrmypdf.subprocess import shim_paths_with_program_files
 
 
 class TestSafeSymlink:
@@ -94,7 +93,10 @@ class TestFileIsWritable:
         assert not helpers.is_file_writable(pathmock)
 
 
+@pytest.mark.skipif(os.name != 'nt', reason="Windows test")
 def test_shim_paths(tmp_path):
+    from ocrmypdf.subprocess._windows import shim_env_path
+
     progfiles = tmp_path / 'Program Files'
     progfiles.mkdir()
     (progfiles / 'tesseract-ocr').mkdir()
@@ -103,9 +105,9 @@ def test_shim_paths(tmp_path):
     syspath = tmp_path / 'bin'
     env = {'PROGRAMFILES': str(progfiles), 'PATH': str(syspath)}
 
-    result_str = shim_paths_with_program_files(env=env)
+    result_str = shim_env_path(env=env)
     results = result_str.split(os.pathsep)
-    assert results[0].endswith('tesseract-ocr')
-    assert results[1].endswith(os.path.join('gs', '9.52', 'bin'))
-    assert results[2].endswith(os.path.join('gs', '9.51', 'bin'))
-    assert results[3] == str(syspath)
+    assert results[0] == str(syspath), results
+    assert results[-3].endswith('tesseract-ocr'), results
+    assert results[-2].endswith(os.path.join('gs', '9.52', 'bin')), results
+    assert results[-1].endswith(os.path.join('gs', '9.51', 'bin')), results

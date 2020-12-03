@@ -27,15 +27,16 @@ from tempfile import TemporaryFile
 
 from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.lib._leptonica import ffi
-from ocrmypdf.subprocess import shim_paths_with_program_files
 
 # pylint: disable=protected-access
 
 logger = logging.getLogger(__name__)
 
 if os.name == 'nt':
+    from ocrmypdf.subprocess._windows import shim_env_path
+
     libname = 'liblept-5'
-    os.environ['PATH'] = shim_paths_with_program_files()
+    os.environ['PATH'] = shim_env_path()
 else:
     libname = 'lept'
 _libpath = find_library(libname)
@@ -58,9 +59,9 @@ if not _libpath:
         ---------------------------------------------------------------------
         """
     )
-if os.name == 'nt':  
-    # On Windows, recent versions of libpng require zlib. We have to make sure 
-    # the zlib version being loaded is the same one that libpng was built with. 
+if os.name == 'nt':
+    # On Windows, recent versions of libpng require zlib. We have to make sure
+    # the zlib version being loaded is the same one that libpng was built with.
     # This tries to import zlib from Tesseract's installation folder, falling back
     # to find_library() if liblept is being loaded from somewhere else.
     # Loading zlib from other places could cause a version mismatch
