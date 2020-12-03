@@ -497,10 +497,6 @@ Native Windows
 
 .. note::
 
-    It is easier to install OCRmyPDF on Windows Subsystem for Linux.
-
-.. note::
-
     Administrator privileges will be required for some of these steps.
 
 You must install the following for Windows:
@@ -509,30 +505,33 @@ You must install the following for Windows:
 * Tesseract 4.0 or later
 * Ghostscript 9.50 or later
 
-You can install these with the Chocolatey package manager:
+Using the `Chocolatey <https://chocolatey.org/>`_ package manager, install the
+following when running in an Administrator command prompt:
 
 * ``choco install python3``
 * ``choco install --pre tesseract``
 * ``choco install ghostscript``
+* ``choco install pngquant`` (optional)
 
-Also consider adding:
+The commands above will install Python 3.x (latest version), Tesseract, Ghostscript
+and pngquant. Chocolatey may also need to install the Windows Visual C++ Runtime
+DLLs or other Windows patches, and may require a reboot.
 
-* ``choco install pngquant``
+You may then use ``pip`` to install ocrmypdf. (This can performed by a user or
+Administrator.):
 
-Windows 10 64-bit and 64-bit versions of applications are recommended. Earlier
-versions of Windows and 32-bit versions of these programs are not tested, and not
-supported at this time.
+* ``pip install ocrmypdf
 
-OCRmyPDF will check for Tesseract-OCR and Ghostscript in your Program Files folder.
-If they are in some other location, you may need to modify the ``PATH``
-environment variable so Tesseract, Ghostscript, and other any optional executables can
-be found. You can enter it in the command line or
-`follow these directions <https://www.computerhope.com/issues/ch000549.htm#dospath>`_
-to make the change persistent and system-wide.
+Chocolatey automatically selects appropriate versions of these applications. If you
+are installing them manually, please install 64-bit versions of all applications for
+64-bit Windows, or 32-bit versions of all applications for 32-bit Windows. Mixing
+the "bitness" of these programs will lead to errors.
 
-You may then use pip to install ocrmypdf:
-
-* ``pip install ocrmypdf``
+OCRmyPDF will check the Windows Registry and standard locations in your Program Files
+for third party software it needs (specifically, Tesseract and Ghostscript). To
+override the versions OCRmyPDF selects, you can modify the ``PATH`` environment
+variable. `Follow these directions <https://www.computerhope.com/issues/ch000549.htm#dospath>`_
+to change the PATH.
 
 Windows Subsystem for Linux
 ---------------------------
