@@ -12,6 +12,16 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.4.0
+=======
+
+-  When looking for Tesseract and Ghostscript, we now check the Windows Registry.
+   This should help Windows users who have installed these programs to non-standard
+   locations.
+-  We now report on the progress of PDF/A conversion, since this operation is
+   sometimes slow.
+-  Improved command line completions.
+
 v11.3.4
 =======
 
