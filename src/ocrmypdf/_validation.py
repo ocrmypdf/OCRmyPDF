@@ -78,7 +78,7 @@ def check_options_languages(options, ocr_engine_languages):
 def check_options_output(options):
     is_latin = options.languages.issubset(HOCR_OK_LANGS)
 
-    if options.pdf_renderer == 'hocr' and not is_latin:
+    if options.pdf_renderer.startswith('hocr') and not is_latin:
         msg = (
             "The 'hocr' PDF renderer is known to cause problems with one "
             "or more of the languages in your document.  Use "

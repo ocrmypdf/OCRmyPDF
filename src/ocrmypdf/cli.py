@@ -407,7 +407,7 @@ Online documentation is located at:
     )
     advanced.add_argument(
         '--pdf-renderer',
-        choices=['auto', 'hocr', 'sandwich'],
+        choices=['auto', 'hocr', 'sandwich', 'hocrdebug'],
         default='auto',
         help="Choose OCR PDF renderer - the default option is to let OCRmyPDF "
         "choose.  See documentation for discussion.",

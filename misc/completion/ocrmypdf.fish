@@ -59,7 +59,8 @@ complete -c ocrmypdf -x -l output-type -a '(__fish_ocrmypdf_output_type)' -d "se
 
 function __fish_ocrmypdf_pdf_renderer
     echo -e "auto\t"(_ "auto select PDF renderer")
-    echo -e "hocr\t"(_ "use hocr renderer")
+    echo -e "hocr\t"(_ "use hOCR renderer")
+    echo -e "hocrdebug\t"(_ "uses hOCR renderer in debug mode, showing recognized text")
     echo -e "sandwich\t"(_ "use sandwich renderer")
 end
 complete -c ocrmypdf -x -l pdf-renderer -a '(__fish_ocrmypdf_pdf_renderer)' -d "select PDF renderer options"

@@ -602,14 +602,17 @@ def create_pdf_page_from_image(image: Path, page_context: PageContext):
 
 
 def render_hocr_page(hocr: Path, page_context: PageContext):
+    options = page_context.options
     output_file = page_context.get_path('ocr_hocr.pdf')
-    dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
+    dpi = get_page_square_dpi(page_context.pageinfo, options)
+    debug_mode = options.pdf_renderer == 'hocrdebug'
+
     hocrtransform = HocrTransform(hocr, dpi.x)  # square
     hocrtransform.to_pdf(
         output_file,
         image_filename=None,
-        show_bounding_boxes=False,
-        invisible_text=True,
+        show_bounding_boxes=False if not debug_mode else True,
+        invisible_text=True if not debug_mode else False,
         interword_spaces=True,
     )
     return output_file
