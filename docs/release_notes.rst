@@ -21,6 +21,10 @@ v11.4.0
 -  We now report on the progress of PDF/A conversion, since this operation is
    sometimes slow.
 -  Improved command line completions.
+-  The prefix of the temporary folder OCRmyPDF creates has been changed from
+   ``com.github.ocrmypdf`` to ``ocrmypdf.io``. Scripts that chose to depend on this
+   prefix may need to be adjusted. (This has always been an implementation detail so is
+   not considered part of the semantic versioning "contract".)
 
 v11.3.4
 =======

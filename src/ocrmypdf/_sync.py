@@ -330,7 +330,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
     if not plugin_manager:
         plugin_manager = get_plugin_manager(options.plugins)
 
-    work_folder = Path(mkdtemp(prefix="com.github.ocrmypdf."))
+    work_folder = Path(mkdtemp(prefix="ocrmypdf.io."))
     debug_log_handler = None
     if (
         (options.keep_temporary_files or options.verbose >= 1)

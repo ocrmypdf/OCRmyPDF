@@ -165,7 +165,7 @@ def cached_run(options, run_args, **run_kwargs):
 
     def clean_sys_argv():
         for arg in run_args[1:]:
-            yield re.sub(r'.*/com.github.ocrmypdf[^/]+[/](.*)', r'$TMPDIR/\1', arg)
+            yield re.sub(r'.*/ocrmypdf[.]io[.][^/]+[/](.*)', r'$TMPDIR/\1', arg)
 
     manifest['args'] = list(clean_sys_argv())
     with (Path(CACHE_ROOT) / 'manifest.jsonl').open('a') as f:
