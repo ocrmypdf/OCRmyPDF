@@ -282,13 +282,15 @@ class HocrTransform:
     def _do_line(
         self,
         pdf: Canvas,
-        line,
+        line: Optional[Element],
         elemclass: str,
         fontname: str,
         invisible_text: bool,
         interword_spaces: bool,
         show_bounding_boxes: bool,
     ):
+        if not line:
+            return
         pxl_line_coords = self.element_coordinates(line)
         line_box = self.pt_from_pixel(pxl_line_coords)
         line_height = line_box.y2 - line_box.y1
