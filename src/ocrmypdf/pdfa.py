@@ -33,6 +33,7 @@ def _postscript_objdef(
     objtype = '/stream' if stream_name else '/dict'
 
     if stream_name:
+        assert stream_data is not None
         a85_data = base64.a85encode(stream_data, adobe=True).decode('ascii')
         yield f'{stream_name} ' + a85_data
         yield 'def'
