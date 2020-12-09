@@ -25,7 +25,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    Union,
 )
 
 import img2pdf
@@ -294,10 +293,6 @@ def extract_images_jbig2(pike: Pdf, root: Path, options) -> Dict[int, List[XrefE
         group = pageno // options.jbig2_page_group_size
         jbig2_groups[group].append(xref_ext)
 
-    # Elide empty groups
-    jbig2_groups = {
-        group: xrefs for group, xrefs in jbig2_groups.items() if len(xrefs) > 0
-    }
     log.debug("Optimizable images: JBIG2 groups: %s", (len(jbig2_groups),))
     return jbig2_groups
 

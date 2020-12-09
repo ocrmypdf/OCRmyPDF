@@ -216,10 +216,7 @@ def check_pdf(input_file: Path) -> bool:
             pdf.close()
 
 
-T = TypeVar('T')
-
-
-def clamp(n: T, smallest: T, largest: T) -> T:
+def clamp(n, smallest, largest):  # mypy doesn't understand types for this
     """Clamps the value of n to between smallest and largest."""
     return max(smallest, min(n, largest))
 
@@ -232,6 +229,7 @@ def pikepdf_enable_mmap():
     #     log.debug("pikepdf mmap not available")
     # We found a race condition probably related to pybind issue #2252 that can
     # cause a crash. For now, disable pikepdf mmap to be on the safe side.
+    # Fix is not in pybind11 2.6.0
     log.debug("pikepdf mmap disabled")
     return
 
