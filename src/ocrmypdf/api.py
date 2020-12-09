@@ -174,14 +174,14 @@ def create_options(
         else:
             raise TypeError(f"{arg}: {val} ({type(val)})")
 
-    try:
-        cmdline.append(os.fspath(input_file))
-    except TypeError:
+    if isinstance(input_file, BinaryIO):
         cmdline.append('stream://input_file')
-    try:
-        cmdline.append(os.fspath(output_file))
-    except TypeError:
+    else:
+        cmdline.append(os.fspath(input_file))
+    if isinstance(output_file, BinaryIO):
         cmdline.append('stream://output_file')
+    else:
+        cmdline.append(os.fspath(output_file))
 
     parser._api_mode = True
     options = parser.parse_args(cmdline)
