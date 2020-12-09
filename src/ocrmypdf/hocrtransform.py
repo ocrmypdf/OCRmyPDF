@@ -42,6 +42,8 @@ from reportlab.lib.colors import black, cyan, magenta, red
 from reportlab.lib.units import inch
 from reportlab.pdfgen.canvas import Canvas
 
+Element = ElementTree.Element
+
 Rect = namedtuple('Rect', ['x1', 'y1', 'x2', 'y2'])
 
 
@@ -105,7 +107,7 @@ class HocrTransform:
         else:
             return ''
 
-    def _get_element_text(self, element):
+    def _get_element_text(self, element: Element):
         """
         Return the textual content of the element and its children
         """
@@ -119,7 +121,7 @@ class HocrTransform:
         return text
 
     @classmethod
-    def element_coordinates(cls, element) -> Rect:
+    def element_coordinates(cls, element: Element) -> Rect:
         """
         Returns a tuple containing the coordinates of the bounding box around
         an element
@@ -133,7 +135,7 @@ class HocrTransform:
         return out
 
     @classmethod
-    def baseline(cls, element) -> Tuple[float, float]:
+    def baseline(cls, element: Element) -> Tuple[float, float]:
         """
         Returns a tuple containing the baseline slope and intercept.
         """
@@ -149,7 +151,7 @@ class HocrTransform:
         """
         return Rect._make((c / self.dpi * inch) for c in pxl)
 
-    def _child_xpath(self, html_tag, html_class=None):
+    def _child_xpath(self, html_tag: str, html_class: Optional[str] = None) -> str:
         xpath = f".//{self.xmlns}{html_tag}"
         if html_class:
             xpath += f"[@class='{html_class}']"
