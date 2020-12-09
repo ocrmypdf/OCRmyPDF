@@ -159,13 +159,14 @@ def get_version(
         raise MissingDependencyError(
             f"Could not find program '{program}' on the PATH"
         ) from e
-    try:
-        version = re.match(regex, output.strip()).group(1)
-    except AttributeError as e:
+
+    match = re.match(regex, output.strip())
+    if not match:
         raise MissingDependencyError(
             f"The program '{program}' did not report its version. "
             f"Message was:\n{output}"
         )
+    version = match.group(1)
 
     return version
 
