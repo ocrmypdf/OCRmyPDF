@@ -166,6 +166,7 @@ class GhostscriptFollower:
 def generate_pdfa(
     pdf_pages,
     output_file: os.PathLike,
+    *,
     compression: str,
     pdf_version: str = '1.5',
     pdfa_part: str = '2',

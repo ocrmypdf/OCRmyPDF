@@ -45,6 +45,7 @@ class Verbosity(IntEnum):
 
 def configure_logging(
     verbosity: Verbosity,
+    *,
     progress_bar_friendly: bool = True,
     manage_root_logger: bool = False,
 ):
