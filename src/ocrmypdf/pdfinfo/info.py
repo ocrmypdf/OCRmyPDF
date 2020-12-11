@@ -627,9 +627,12 @@ def _pdf_get_pageinfo(
 worker_pdf = None
 
 
-def _pdf_pageinfo_sync_init(infile):
+def _pdf_pageinfo_sync_init(infile: Path, pdfminer_loglevel):
     global worker_pdf  # pylint: disable=global-statement
     pikepdf_enable_mmap()
+
+    logging.getLogger('pdfminer').setLevel(pdfminer_loglevel)
+
     # If this function is called as a thread initializer, we need a messy hack
     # to close worker_pdf. If called as a process, it will be released when the
     # process is terminated.
@@ -674,7 +677,9 @@ def _pdf_pageinfo_concurrent(
             tqdm_kwargs=dict(
                 total=total, desc="Scanning contents", unit='page', disable=not progbar
             ),
-            task_initializer=partial(_pdf_pageinfo_sync_init, infile),
+            task_initializer=partial(
+                _pdf_pageinfo_sync_init, infile, logging.getLogger('pdfminer').level
+            ),
             task=_pdf_pageinfo_sync,
             task_arguments=contexts,
             task_finished=update_pageinfo,
