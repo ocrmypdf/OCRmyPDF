@@ -15,8 +15,9 @@ wish to use some of its features for working with PDFs.
 v11.4.0
 =======
 
--  When looking for Tesseract and Ghostscript, we now check the Windows Registry.
-   This should help Windows users who have installed these programs to non-standard
+-  When looking for Tesseract and Ghostscript, we now check the Windows Registry to
+   see if their installers registered the location of their executables. This should
+   help Windows users who have installed these programs to non-standard
    locations.
 -  We now report on the progress of PDF/A conversion, since this operation is
    sometimes slow.
@@ -25,6 +26,10 @@ v11.4.0
    ``com.github.ocrmypdf`` to ``ocrmypdf.io``. Scripts that chose to depend on this
    prefix may need to be adjusted. (This has always been an implementation detail so is
    not considered part of the semantic versioning "contract".)
+-  Fixed issue #692, where a particular file with malformed fonts would flood an
+   internal message cue by generating so many debug messages.
+-  Fixed an exception on processing hOCR files with no page record. Tesseract
+   is not known to generate such files.
 
 v11.3.4
 =======
