@@ -9,6 +9,7 @@ import logging
 import os
 import sys
 from enum import IntEnum
+from io import IOBase
 from pathlib import Path
 from typing import AnyStr, BinaryIO, Iterable, Optional, Union
 from warnings import warn
@@ -174,11 +175,11 @@ def create_options(
         else:
             raise TypeError(f"{arg}: {val} ({type(val)})")
 
-    if isinstance(input_file, BinaryIO):
+    if isinstance(input_file, (BinaryIO, IOBase)):
         cmdline.append('stream://input_file')
     else:
         cmdline.append(os.fspath(input_file))
-    if isinstance(output_file, BinaryIO):
+    if isinstance(output_file, (BinaryIO, IOBase)):
         cmdline.append('stream://output_file')
     else:
         cmdline.append(os.fspath(output_file))
