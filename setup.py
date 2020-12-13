@@ -82,7 +82,7 @@ setup(
     ],
     tests_require=tests_require,
     entry_points={'console_scripts': ['ocrmypdf = ocrmypdf.__main__:run']},
-    package_data={'ocrmypdf': ['data/sRGB.icc']},
+    package_data={'ocrmypdf': ['data/sRGB.icc', 'py.typed']},
     include_package_data=True,
     zip_safe=False,
     project_urls={
