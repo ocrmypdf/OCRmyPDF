@@ -9,20 +9,23 @@ import logging
 import logging.handlers
 import multiprocessing
 import os
+import queue
 import signal
 import sys
 import threading
 from contextlib import suppress
 from multiprocessing import Pool as ProcessPool
 from multiprocessing.dummy import Pool as ThreadPool
-from typing import Callable, Iterable, Optional
+from typing import Callable, Iterable, Optional, Union
 
 from tqdm import tqdm
 
 from ocrmypdf.exceptions import InputFileError
 
+Queue = Union[multiprocessing.Queue, queue.Queue]
 
-def log_listener(queue):
+
+def log_listener(q: Queue):
     """Listen to the worker processes and forward the messages to logging
 
     For simplicity this is a thread rather than a process. Only one process
@@ -34,7 +37,7 @@ def log_listener(queue):
 
     while True:
         try:
-            record = queue.get()
+            record = q.get()
             if record is None:
                 break
             logger = logging.getLogger(record.name)
@@ -50,7 +53,7 @@ def process_sigbus(*args):
     raise InputFileError("A worker process lost access to an input file")
 
 
-def process_init(queue, user_init, loglevel):
+def process_init(q: Queue, user_init: Callable[[], None], loglevel):
     """Initialize a process pool worker"""
 
     # Ignore SIGINT (our parent process will kill us gracefully)
@@ -61,23 +64,24 @@ def process_init(queue, user_init, loglevel):
         signal.signal(signal.SIGBUS, process_sigbus)
 
     # Reconfigure the root logger for this process to send all messages to a queue
-    h = logging.handlers.QueueHandler(queue)
+    h = logging.handlers.QueueHandler(q)
     root = logging.getLogger()
     root.setLevel(loglevel)
     root.handlers = []
     root.addHandler(h)
 
-    if user_init:
-        user_init()
+    user_init()
+    return
 
 
-def thread_init(_queue, user_init, _loglevel):
+def thread_init(_queue: Queue, user_init: Callable[[], None], _loglevel):
     # As a thread, block SIGBUS so the main thread deals with it...
     with suppress(AttributeError):
         # Windows and Cygwin do not have pthread_sigmask or SIGBUS
         signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGBUS})
-    if user_init:
-        user_init()
+
+    user_init()
+    return
 
 
 def exec_progress_pool(
@@ -90,15 +94,26 @@ def exec_progress_pool(
     task_arguments: Optional[Iterable] = None,
     task_finished: Optional[Callable] = None,
 ):
-    log_queue: multiprocessing.Queue = multiprocessing.Queue(-1)
-    listener = threading.Thread(target=log_listener, args=(log_queue,))
 
     if use_threads:
+        log_queue = queue.Queue(-1)
         pool_class = ThreadPool
         initializer = thread_init
     else:
+        log_queue = multiprocessing.Queue(-1)
         pool_class = ProcessPool
         initializer = process_init
+
+    if not task_initializer:
+
+        def _noop():
+            return
+
+        task_initializer = _noop
+
+    # Regardless of whether we use_threads for worker processes, the log_listener
+    # must be a thread
+    listener = threading.Thread(target=log_listener, args=(log_queue,))
     listener.start()
 
     with tqdm(**tqdm_kwargs) as pbar:
