@@ -12,6 +12,16 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.4.1
+=======
+
+-  Fixed an issue where invalid pages ranges passed using the ``pages`` argument,
+   such as "1-0" would cause unhandled exceptions.
+-  Accepted a user-contributed to the Synology demo script in misc/synology.py.
+-  Clarified documentation about change of temporary file location ``ocrmypdf.io``.
+-  Fixed Python wheel tag which was incorrectly set to py35 even though we long
+   since dropped support for Python 3.5.
+
 v11.4.0
 =======
 
