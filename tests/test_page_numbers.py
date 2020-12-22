@@ -28,6 +28,12 @@ from ocrmypdf.pdfinfo import PdfInfo
         ['1,3,-11', BadArgsError],
         ['1-,', BadArgsError],
         ['start-end', BadArgsError],
+        ['1-0', BadArgsError],
+        ['99-98', BadArgsError],
+        ['0-0', BadArgsError],
+        ['1-0,3-4', BadArgsError],
+        [',', BadArgsError],
+        ['', BadArgsError],
     ],
 )
 def test_pages(pages, result):

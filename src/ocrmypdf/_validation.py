@@ -13,7 +13,7 @@ import sys
 import unicodedata
 from pathlib import Path
 from shutil import copyfileobj
-from typing import Tuple
+from typing import List, Set, Tuple, Union
 
 import pikepdf
 import PIL
@@ -136,10 +136,10 @@ def check_options_preprocessing(options):
             raise BadArgsError(str(e))
 
 
-def _pages_from_ranges(ranges):
+def _pages_from_ranges(ranges: str) -> Set[int]:
     if is_iterable_notstr(ranges):
         return set(ranges)
-    pages = []
+    pages: List[int] = []
     page_groups = ranges.replace(' ', '').split(',')
     for g in page_groups:
         if not g:
@@ -150,9 +150,18 @@ def _pages_from_ranges(ranges):
             pages.append(int(g) - 1)
         else:
             try:
-                pages.extend(range(int(start) - 1, int(end)))
+                new_pages = list(range(int(start) - 1, int(end)))
+                if not new_pages:
+                    raise BadArgsError(f"invalid page subrange '{start}-{end}'")
+                pages.extend(new_pages)
             except ValueError:
-                raise BadArgsError("invalid page range")
+                raise BadArgsError("invalid page range") from None
+
+    if not pages:
+        raise BadArgsError(
+            f"The string of page ranges '{ranges}' did not contain any recognizable "
+            f"page ranges."
+        )
 
     if not monotonic(pages):
         log.warning(
