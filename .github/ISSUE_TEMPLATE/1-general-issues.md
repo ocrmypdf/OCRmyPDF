@@ -21,8 +21,12 @@ If applicable, add screenshots to help explain your problem.
 
 **System (please complete the following information):**
  - OS:
- - Python version: 
+ - Python version:
  - OCRmyPDF version:
+
+**Installation**
+How did you install OCRmyPDF? Did you install it from your operating system's
+package manager, or using pip?
 
 **Additional context**
 Add any other context about the problem here.
