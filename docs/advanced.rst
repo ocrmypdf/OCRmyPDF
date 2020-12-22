@@ -314,7 +314,7 @@ message is:
 .. code-block:: none
 
     Temporary working files retained at:
-    /tmp/com.github.ocrmypdf.u20wpz07
+    /tmp/ocrmypdf.io.u20wpz07
 
 The organization of this folder is an implementation detail and subject
 to change between releases. However the general organization is that
