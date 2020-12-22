@@ -623,7 +623,7 @@ def _pdf_pageinfo_concurrent(
             tqdm_kwargs=dict(
                 total=total, desc="Scanning contents", unit='page', disable=not progbar
             ),
-            task_initializer=partial(
+            worker_initializer=partial(
                 _pdf_pageinfo_sync_init, infile, logging.getLogger('pdfminer').level
             ),
             task=_pdf_pageinfo_sync,

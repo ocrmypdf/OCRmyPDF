@@ -18,7 +18,7 @@ from typing import List, NamedTuple, Optional, Tuple
 import pikepdf
 import PIL
 
-from ocrmypdf._concurrent import exec_progress_pool
+from ocrmypdf._concurrent import exec_progress_pool, set_execution_model
 from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PageContext, PdfContext, cleanup_working_files
 from ocrmypdf._logging import PageNumberFilter
@@ -279,7 +279,7 @@ def exec_concurrent(context: PdfContext):
             unit_scale=0.5,
             disable=not options.progress_bar,
         ),
-        task_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
+        worker_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
         task=exec_page_sync,
         task_arguments=context.get_page_contexts(),
         task_finished=update_page,
@@ -345,6 +345,8 @@ def run_pipeline(options, *, plugin_manager, api=False):
         )  # pragma: no cover
 
     pikepdf_enable_mmap()
+
+    set_execution_model(plugin_manager.hook.get_parallel_executor())
 
     try:
         check_requested_output_file(options)
