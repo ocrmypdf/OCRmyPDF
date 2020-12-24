@@ -556,89 +556,6 @@ def simplify_textboxes(miner, textbox_getter):
         yield TextboxInfo(box.bbox, visible, corrupt)
 
 
-class RawPageInfo:
-    def __init__(self, pageno):
-        self.pageno: int = pageno
-        self.images: List = []
-        self.textboxes: List = []
-        self.has_text: Optional[bool] = False
-        self.userunit: Decimal = Decimal(1.0)
-        self.width_inches: Optional[Decimal] = None
-        self.height_inches: Optional[Decimal] = None
-        self.rotate: int = 0
-        self.has_vector = False
-        self.has_text = False
-        self.dpi: Optional[Decimal] = None
-        self.width_pixels: Optional[int] = None
-        self.height_pixels: Optional[int] = None
-
-
-def _pdf_get_pageinfo(
-    pdf, pageno: int, infile: PathLike, check_pages, detailed_analysis: bool
-):
-    pageinfo = RawPageInfo(pageno)
-
-    page = pdf.pages[pageno]
-    mediabox = [Decimal(d) for d in page.MediaBox.as_list()]
-    width_pt = mediabox[2] - mediabox[0]
-    height_pt = mediabox[3] - mediabox[1]
-
-    check_this_page = pageno in check_pages
-
-    if check_this_page and detailed_analysis:
-        pscript5_mode = str(pdf.docinfo.get('/Creator')).startswith('PScript5')
-        miner = get_page_analysis(infile, pageno, pscript5_mode)
-        pageinfo.textboxes = list(simplify_textboxes(miner, get_text_boxes))
-        bboxes = (box.bbox for box in pageinfo.textboxes)
-
-        pageinfo.has_text = _page_has_text(bboxes, width_pt, height_pt)
-    else:
-        pageinfo.textboxes = []
-        pageinfo.has_text = None  # i.e. "no information"
-
-    userunit = page.get('/UserUnit', Decimal(1.0))
-    if not isinstance(userunit, Decimal):
-        userunit = Decimal(userunit)
-    pageinfo.userunit = userunit
-    pageinfo.width_inches = width_pt * userunit / Decimal(72.0)
-    pageinfo.height_inches = height_pt * userunit / Decimal(72.0)
-
-    try:
-        pageinfo.rotate = int(page['/Rotate'])
-    except KeyError:
-        pageinfo.rotate = 0
-
-    userunit_shorthand = (userunit, 0, 0, userunit, 0, 0)
-
-    if check_this_page:
-        pageinfo.has_vector = False
-        pageinfo.has_text = False
-        pageinfo.images = []
-        for ci in _process_content_streams(
-            pdf=pdf, container=page, shorthand=userunit_shorthand
-        ):
-            if isinstance(ci, VectorMarker):
-                pageinfo.has_vector = True
-            elif isinstance(ci, TextMarker):
-                pageinfo.has_text = True
-            elif isinstance(ci, ImageInfo):
-                pageinfo.images.append(ci)
-            else:
-                raise NotImplementedError()
-    else:
-        pageinfo.has_vector = None  # i.e. "no information"
-        pageinfo.has_text = None
-        pageinfo.images = None
-
-    if pageinfo.images:
-        dpi = Resolution(0.0, 0.0).take_max(image.dpi for image in pageinfo.images)
-        pageinfo.dpi = dpi
-        pageinfo.width_pixels = int(round(dpi.x * float(pageinfo.width_inches)))
-        pageinfo.height_pixels = int(round(dpi.y * float(pageinfo.height_inches)))
-
-    return pageinfo
-
-
 worker_pdf = None
 
 
@@ -712,9 +629,69 @@ class PageInfo:
         self._pageno = pageno
         self._infile = infile
         self._detailed_analysis = detailed_analysis
-        self._pageinfo = _pdf_get_pageinfo(
-            pdf, pageno, infile, check_pages, detailed_analysis
-        )
+        self._gather_pageinfo(pdf, pageno, infile, check_pages, detailed_analysis)
+
+    def _gather_pageinfo(
+        self, pdf, pageno: int, infile: PathLike, check_pages, detailed_analysis: bool
+    ):
+        page = pdf.pages[pageno]
+        mediabox = [Decimal(d) for d in page.MediaBox.as_list()]
+        width_pt = mediabox[2] - mediabox[0]
+        height_pt = mediabox[3] - mediabox[1]
+
+        check_this_page = pageno in check_pages
+
+        if check_this_page and detailed_analysis:
+            pscript5_mode = str(pdf.docinfo.get('/Creator')).startswith('PScript5')
+            miner = get_page_analysis(infile, pageno, pscript5_mode)
+            self._textboxes = list(simplify_textboxes(miner, get_text_boxes))
+            bboxes = (box.bbox for box in self._textboxes)
+
+            self._has_text = _page_has_text(bboxes, width_pt, height_pt)
+        else:
+            self._textboxes = []
+            self._has_text = None  # i.e. "no information"
+
+        userunit = page.get('/UserUnit', Decimal(1.0))
+        if not isinstance(userunit, Decimal):
+            userunit = Decimal(userunit)
+        self._userunit = userunit
+        self._width_inches = width_pt * userunit / Decimal(72.0)
+        self._height_inches = height_pt * userunit / Decimal(72.0)
+
+        try:
+            self._rotate = int(page['/Rotate'])
+        except KeyError:
+            self._rotate = 0
+
+        userunit_shorthand = (userunit, 0, 0, userunit, 0, 0)
+
+        if check_this_page:
+            self._has_vector = False
+            self._has_text = False
+            self._images = []
+            for ci in _process_content_streams(
+                pdf=pdf, container=page, shorthand=userunit_shorthand
+            ):
+                if isinstance(ci, VectorMarker):
+                    self._has_vector = True
+                elif isinstance(ci, TextMarker):
+                    self._has_text = True
+                elif isinstance(ci, ImageInfo):
+                    self._images.append(ci)
+                else:
+                    raise NotImplementedError()
+        else:
+            self._has_vector = None  # i.e. "no information"
+            self._has_text = None
+            self._images = None
+
+        self._dpi = None
+        if self._images:
+            dpi = Resolution(0.0, 0.0).take_max(image.dpi for image in self._images)
+            self._dpi = dpi
+            self._width_pixels = int(round(dpi.x * float(self._width_inches)))
+            self._height_pixels = int(round(dpi.y * float(self._height_inches)))
 
     @property
     def pageno(self) -> int:
@@ -722,25 +699,25 @@ class PageInfo:
 
     @property
     def has_text(self) -> bool:
-        return self._pageinfo.has_text
+        return self._has_text
 
     @property
     def has_corrupt_text(self) -> bool:
         if not self._detailed_analysis:
             raise NotImplementedError('Did not do detailed analysis')
-        return any(tbox.is_corrupt for tbox in self._pageinfo.textboxes)
+        return any(tbox.is_corrupt for tbox in self._textboxes)
 
     @property
     def has_vector(self) -> bool:
-        return self._pageinfo.has_vector
+        return self._has_vector
 
     @property
     def width_inches(self) -> Decimal:
-        return self._pageinfo.width_inches
+        return self._width_inches
 
     @property
     def height_inches(self) -> Decimal:
-        return self._pageinfo.height_inches
+        return self._height_inches
 
     @property
     def width_pixels(self) -> int:
@@ -752,18 +729,18 @@ class PageInfo:
 
     @property
     def rotation(self) -> int:
-        return self._pageinfo.rotate
+        return self._rotate
 
     @rotation.setter
     def rotation(self, value):
         if value in (0, 90, 180, 270, 360, -90, -180, -270):
-            self._pageinfo.rotate = value
+            self._rotate = value
         else:
             raise ValueError("rotation must be a cardinal angle")
 
     @property
     def images(self):
-        return self._pageinfo.images
+        return self._images
 
     def get_textareas(
         self, visible: Optional[bool] = None, corrupt: Optional[bool] = None
@@ -778,26 +755,22 @@ class PageInfo:
                     result = False
             return result
 
-        if not self._pageinfo.textboxes:
+        if not self._textboxes:
             if visible is not None and corrupt is not None:
                 raise NotImplementedError('Incomplete information on textboxes')
-            return self._pageinfo.textboxes
+            return self._textboxes
 
-        return (
-            obj.bbox
-            for obj in self._pageinfo.textboxes
-            if predicate(obj, visible, corrupt)
-        )
+        return (obj.bbox for obj in self._textboxes if predicate(obj, visible, corrupt))
 
     @property
     def dpi(self) -> Resolution:
-        if self._pageinfo.dpi is None:
+        if self._dpi is None:
             return Resolution(0.0, 0.0)
-        return self._pageinfo.dpi
+        return self._dpi
 
     @property
     def userunit(self) -> Decimal:
-        return self._pageinfo.userunit
+        return self._userunit
 
     @property
     def min_version(self) -> str:
