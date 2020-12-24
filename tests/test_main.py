@@ -92,10 +92,10 @@ def test_skip_ocr(resources, outpdf):
 
 def test_redo_ocr(resources, outpdf):
     in_ = resources / 'graph_ocred.pdf'
-    before = PdfInfo(in_)
+    before = PdfInfo(in_, detailed_analysis=True)
     out = outpdf
     out = check_ocrmypdf(in_, out, '--redo-ocr')
-    after = PdfInfo(out)
+    after = PdfInfo(out, detailed_analysis=True)
     assert before[0].has_text and after[0].has_text
     assert (
         before[0].get_textareas() != after[0].get_textareas()

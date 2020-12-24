@@ -150,7 +150,7 @@ def get_pdfinfo(
     progbar=False,
     max_workers=None,
     check_pages=None,
-):
+) -> PdfInfo:
     try:
         return PdfInfo(
             input_file,
