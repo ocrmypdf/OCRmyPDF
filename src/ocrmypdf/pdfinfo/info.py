@@ -15,11 +15,11 @@ from functools import partial
 from math import hypot, isclose
 from os import PathLike
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Container, Dict, Iterator, List, Optional, Tuple, Union
 from warnings import warn
 
 import pikepdf
-from pikepdf import PdfMatrix
+from pikepdf import Object, Pdf, PdfMatrix
 
 from ocrmypdf._concurrent import exec_progress_pool
 from ocrmypdf.exceptions import EncryptedPdfError
@@ -115,7 +115,7 @@ def _normalize_stack(graphobjs):
             yield (operands, operator)
 
 
-def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
+def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
     """Interpret the PDF content stream.
 
     The stack represents the state of the PDF graphics stack.  We are only
@@ -204,7 +204,7 @@ def _interpret_contents(contentstream, initial_shorthand=UNIT_SQUARE):
     )
 
 
-def _get_dpi(ctm_shorthand, image_size):
+def _get_dpi(ctm_shorthand, image_size) -> Resolution:
     """Given the transformation matrix and image size, find the image DPI.
 
     PDFs do not include image resolution information within image data.
@@ -271,8 +271,14 @@ def _get_dpi(ctm_shorthand, image_size):
 class ImageInfo:
     DPI_PREC = Decimal('1.000')
 
-    def __init__(self, *, name='', pdfimage=None, inline=None, shorthand=None):
-
+    def __init__(
+        self,
+        *,
+        name='',
+        pdfimage: Optional[Object] = None,
+        inline: Optional[Object] = None,
+        shorthand=None,
+    ):
         self._name = str(name)
         self._shorthand = shorthand
 
@@ -282,6 +288,8 @@ class ImageInfo:
         elif pdfimage is not None:
             self._origin = 'xobject'
             pim = pikepdf.PdfImage(pdfimage)
+        else:
+            raise ValueError("Either pdfimage or inline must be set")
         self._width = pim.width
         self._height = pim.height
 
@@ -371,7 +379,7 @@ class ImageInfo:
         ).format(**class_locals)
 
 
-def _find_inline_images(contentsinfo):
+def _find_inline_images(contentsinfo: ContentsInfo) -> Iterator[ImageInfo]:
     "Find inline images in the contentstream"
 
     for n, inline in enumerate(contentsinfo.inline_images):
@@ -380,7 +388,7 @@ def _find_inline_images(contentsinfo):
         )
 
 
-def _image_xobjects(container):
+def _image_xobjects(container) -> Iterator[Tuple[Object, str]]:
     """Search for all XObject-based images in the container
 
     Usually the container is a page, but it could also be a Form XObject
@@ -400,7 +408,7 @@ def _image_xobjects(container):
         return
     xobjs = resources['/XObject'].as_dict()
     for xobj in xobjs:
-        candidate = xobjs[xobj]
+        candidate: Object = xobjs[xobj]
         if not '/Subtype' in candidate:
             continue
         if candidate['/Subtype'] == '/Image':
@@ -408,7 +416,9 @@ def _image_xobjects(container):
             yield (pdfimage, xobj)
 
 
-def _find_regular_images(container, contentsinfo):
+def _find_regular_images(
+    container: Object, contentsinfo: ContentsInfo
+) -> Iterator[ImageInfo]:
     """Find images stored in the container's /Resources /XObject
 
     Usually the container is a page, but it could also be a Form XObject
@@ -432,7 +442,7 @@ def _find_regular_images(container, contentsinfo):
             yield ImageInfo(name=draw.name, pdfimage=pdfimage, shorthand=draw.shorthand)
 
 
-def _find_form_xobject_images(pdf, container, contentsinfo):
+def _find_form_xobject_images(pdf: Pdf, container: Object, contentsinfo: ContentsInfo):
     """Find any images that are in Form XObjects in the container
 
     The container may be a page, or a parent Form XObject.
@@ -464,7 +474,9 @@ def _find_form_xobject_images(pdf, container, contentsinfo):
             )
 
 
-def _process_content_streams(*, pdf, container, shorthand=None):
+def _process_content_streams(
+    *, pdf: Pdf, container: Object, shorthand=None
+) -> Iterator[Union[VectorMarker, TextMarker, ImageInfo]]:
     """Find all individual instances of images drawn in the container
 
     Usually the container is a page, but it may also be a Form XObject.
@@ -526,7 +538,7 @@ def _page_has_text(text_blocks, page_width, page_height) -> bool:
         margin_ratio * ph,  # bottom  (first quadrant: bottom < top)
     )
 
-    def rects_intersect(a, b):
+    def rects_intersect(a, b) -> bool:
         """
         Where (a,b) are 4-tuple rects (left-0, top-1, right-2, bottom-3)
         https://stackoverflow.com/questions/306316/determine-if-two-rectangles-overlap-each-other
@@ -542,7 +554,7 @@ def _page_has_text(text_blocks, page_width, page_height) -> bool:
     return has_text
 
 
-def simplify_textboxes(miner, textbox_getter):
+def simplify_textboxes(miner, textbox_getter) -> Iterator[TextboxInfo]:
     """Extract only limited content from text boxes
 
     We do this to save memory and ensure that our objects are pickleable.
@@ -625,14 +637,26 @@ def _pdf_pageinfo_concurrent(
 
 
 class PageInfo:
-    def __init__(self, pdf, pageno, infile, check_pages, detailed_analysis=False):
+    def __init__(
+        self,
+        pdf: Pdf,
+        pageno: int,
+        infile: PathLike,
+        check_pages: Container[int],
+        detailed_analysis: bool = False,
+    ):
         self._pageno = pageno
         self._infile = infile
         self._detailed_analysis = detailed_analysis
         self._gather_pageinfo(pdf, pageno, infile, check_pages, detailed_analysis)
 
     def _gather_pageinfo(
-        self, pdf, pageno: int, infile: PathLike, check_pages, detailed_analysis: bool
+        self,
+        pdf: Pdf,
+        pageno: int,
+        infile: PathLike,
+        check_pages: Container[int],
+        detailed_analysis: bool,
     ):
         page = pdf.pages[pageno]
         mediabox = [Decimal(d) for d in page.MediaBox.as_list()]

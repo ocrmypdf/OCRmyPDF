@@ -223,6 +223,7 @@ def get_page_analysis(infile, pageno, pscript5_mode):
     )
     interp = pdfminer.pdfinterp.PDFPageInterpreter(rman, dev)
 
+    patcher = None
     if pscript5_mode:
         patcher = patch.multiple(
             'pdfminer.pdffont.PDFType3Font',
@@ -237,10 +238,10 @@ def get_page_analysis(infile, pageno, pscript5_mode):
         with Path(infile).open('rb') as f:
             page = PDFPage.get_pages(f, pagenos=[pageno], maxpages=0)
             interp.process_page(next(page))
-    except PDFTextExtractionNotAllowed:
-        raise EncryptedPdfError()
+    except PDFTextExtractionNotAllowed as e:
+        raise EncryptedPdfError() from e
     finally:
-        if pscript5_mode:
+        if patcher is not None:
             patcher.stop()
 
     return dev.get_result()
