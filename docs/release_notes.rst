@@ -12,6 +12,12 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.4.2
+=======
+
+-  Fixed support for Cygwin, hopefully.
+-  watcher.py: Fixed an issue with the OCR_LOGLEVEL not being interpreted.
+
 v11.4.1
 =======
 
