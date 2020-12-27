@@ -44,7 +44,7 @@ DESKEW = bool(os.getenv('OCR_DESKEW', ''))
 OCR_JSON_SETTINGS = json.loads(os.getenv('OCR_JSON_SETTINGS', '{}'))
 POLL_NEW_FILE_SECONDS = int(os.getenv('OCR_POLL_NEW_FILE_SECONDS', '1'))
 USE_POLLING = bool(os.getenv('OCR_USE_POLLING', ''))
-LOGLEVEL = os.getenv('OCR_LOGLEVEL', 'INFO').upper()
+LOGLEVEL = os.getenv('OCR_LOGLEVEL', 'INFO')
 PATTERNS = ['*.pdf', '*.PDF']
 
 log = logging.getLogger('ocrmypdf-watcher')
@@ -117,7 +117,12 @@ class HandleObserverEvent(PatternMatchingEventHandler):
 
 def main():
     ocrmypdf.configure_logging(
-        verbosity=ocrmypdf.Verbosity.default, manage_root_logger=True
+        verbosity=(
+            ocrmypdf.Verbosity.default
+            if LOGLEVEL != 'DEBUG'
+            else ocrmypdf.Verbosity.debug
+        ),
+        manage_root_logger=True,
     )
     log.setLevel(LOGLEVEL)
     log.info(
@@ -135,7 +140,7 @@ def main():
         f"ARGS: {OCR_JSON_SETTINGS}\n"
         f"POLL_NEW_FILE_SECONDS: {POLL_NEW_FILE_SECONDS}\n"
         f"USE_POLLING: {USE_POLLING}\n"
-        f"LOGLEVEL: {LOGLEVEL}\n"
+        f"LOGLEVEL: {LOGLEVEL}"
     )
 
     if 'input_file' in OCR_JSON_SETTINGS or 'output_file' in OCR_JSON_SETTINGS:
