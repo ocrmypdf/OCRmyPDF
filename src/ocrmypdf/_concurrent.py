@@ -12,6 +12,7 @@ import os
 import signal
 import sys
 import threading
+from contextlib import suppress
 from multiprocessing import Pool as ProcessPool
 from multiprocessing.dummy import Pool as ThreadPool
 from typing import Callable, Iterable, Optional
@@ -56,7 +57,7 @@ def process_init(queue, user_init, loglevel):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     # Install SIGBUS handler (so our parent process can abort somewhat gracefully)
-    if hasattr(signal, 'SIGBUS'):
+    with suppress(AttributeError):  # Windows and Cygwin do not have SIGBUS
         signal.signal(signal.SIGBUS, process_sigbus)
 
     # Reconfigure the root logger for this process to send all messages to a queue
@@ -72,7 +73,8 @@ def process_init(queue, user_init, loglevel):
 
 def thread_init(_queue, user_init, _loglevel):
     # As a thread, block SIGBUS so the main thread deals with it...
-    if hasattr(signal, 'SIGBUS'):
+    with suppress(AttributeError):
+        # Windows and Cygwin do not have pthread_sigmask or SIGBUS
         signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGBUS})
     if user_init:
         user_init()
