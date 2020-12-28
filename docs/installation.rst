@@ -637,7 +637,7 @@ Installing with Python pip
 OCRmyPDF is delivered by PyPI because it is a convenient way to install
 the latest version. However, PyPI and ``pip`` cannot address the fact
 that ``ocrmypdf`` depends on certain non-Python system libraries and
-programs being instsalled.
+programs being installed.
 
 For best results, first install `your platform's
 version <https://repology.org/metapackage/ocrmypdf/versions>`__ of
