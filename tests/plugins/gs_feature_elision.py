@@ -19,25 +19,28 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from ocrmypdf import hookimpl
 from ocrmypdf.builtin_plugins import ghostscript
-from ocrmypdf.subprocess import run
+from ocrmypdf.subprocess import run_polling_stderr
 
 elision_warning = """GPL Ghostscript 9.20: Setting Overprint Mode to 1
 not permitted in PDF/A-2, overprint mode not set"""
 
 
 def run_append_stderr(*args, **kwargs):
-    proc = run(*args, **kwargs)
-    proc.stderr = b'\n'.join([proc.stderr, elision_warning.encode('utf-8')])
+    proc = run_polling_stderr(*args, **kwargs)
+    proc.stderr += '\n' + elision_warning + '\n'
     return proc
 
 
 @hookimpl
 def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdfa_part):
-    with patch('ocrmypdf._exec.ghostscript.run', new=run_append_stderr):
+    m = Mock()
+    m.side_effect = run_append_stderr
+
+    with patch('ocrmypdf._exec.ghostscript.run_polling_stderr', m):
         ghostscript.generate_pdfa(
             pdf_pages=pdf_pages,
             pdfmark=pdfmark,
@@ -47,4 +50,5 @@ def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdf
             pdfa_part=pdfa_part,
             progressbar_class=None,
         )
-        return output_file
+    m.assert_called_once()
+    return output_file
