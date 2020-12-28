@@ -254,6 +254,8 @@ def generate_pdfa(
         raise SubprocessOutputError('Ghostscript PDF/A rendering failed') from e
     else:
         stderr = p.stderr
+        # If there is an error we log the whole stderr, except for filtering
+        # duplicates.
         if _gs_error_reported(stderr):
             last_part = None
             repcount = 0
@@ -266,11 +268,3 @@ def generate_pdfa(
                 else:
                     repcount += 1
                 last_part = part
-        elif 'overprint mode not set' in stderr:
-            # Unless someone is going to print PDF/A documents on a
-            # magical sRGB printer I can't see the removal of overprinting
-            # being a problem....
-            log.debug(
-                "Ghostscript had to remove PDF 'overprinting' from the "
-                "input file to complete PDF/A conversion. "
-            )
