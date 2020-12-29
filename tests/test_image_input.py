@@ -65,11 +65,12 @@ def test_cmyk_no_icc(caplog, resources, no_outpdf):
 def test_img2pdf_fails(resources, no_outpdf):
     with patch(
         'ocrmypdf._pipeline.img2pdf.convert', side_effect=img2pdf.ImageOpenError()
-    ):
+    ) as mock:
         rc = run_ocrmypdf_api(
             resources / 'baiona_gray.png', no_outpdf, '--image-dpi', '200'
         )
         assert rc == ocrmypdf.ExitCode.input_file
+        mock.assert_called()
 
 
 def test_jpeg_in_jpeg_out(resources, outpdf):

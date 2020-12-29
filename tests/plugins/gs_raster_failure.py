@@ -44,7 +44,8 @@ def rasterize_pdf_page(
     rotation=None,
     filter_vector=False,
 ) -> Path:
-    with patch('ocrmypdf._exec.ghostscript.run', new=raise_gs_fail):
+    with patch('ocrmypdf._exec.ghostscript.run') as mock:
+        mock.side_effect = raise_gs_fail
         ghostscript.rasterize_pdf_page(
             input_file=input_file,
             output_file=output_file,
@@ -55,4 +56,5 @@ def rasterize_pdf_page(
             rotation=rotation,
             filter_vector=filter_vector,
         )
+        mock.assert_called()
         return output_file

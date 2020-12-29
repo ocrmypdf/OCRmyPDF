@@ -141,7 +141,8 @@ def test_multiple_pngs(resources, outdir):
             draw.rectangle((0, 0, im.width, im.height), fill=128)
             im.save(output_file)
 
-    with patch('ocrmypdf.optimize.pngquant.quantize', new=mockquant):
+    with patch('ocrmypdf.optimize.pngquant.quantize') as mock:
+        mock.side_effect = mockquant
         check_ocrmypdf(
             outdir / 'in.pdf',
             outdir / 'out.pdf',
@@ -155,6 +156,7 @@ def test_multiple_pngs(resources, outdir):
             '--plugin',
             'tests/plugins/tesseract_noop.py',
         )
+        mock.assert_called()
 
     with pikepdf.open(outdir / 'in.pdf') as inpdf, pikepdf.open(
         outdir / 'out.pdf'

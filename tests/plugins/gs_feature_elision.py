@@ -19,7 +19,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from ocrmypdf import hookimpl
 from ocrmypdf.builtin_plugins import ghostscript
@@ -37,10 +37,8 @@ def run_append_stderr(*args, **kwargs):
 
 @hookimpl
 def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdfa_part):
-    m = Mock()
-    m.side_effect = run_append_stderr
-
-    with patch('ocrmypdf._exec.ghostscript.run_polling_stderr', m):
+    with patch('ocrmypdf._exec.ghostscript.run_polling_stderr') as mock:
+        mock.side_effect = run_append_stderr
         ghostscript.generate_pdfa(
             pdf_pages=pdf_pages,
             pdfmark=pdfmark,
@@ -50,5 +48,5 @@ def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdf
             pdfa_part=pdfa_part,
             progressbar_class=None,
         )
-    m.assert_called_once()
+        mock.assert_called_once()
     return output_file

@@ -36,12 +36,17 @@ class TestSafeSymlink:
 
 
 def test_no_cpu_count(monkeypatch):
+    invoked = False
+
     def cpu_count_raises():
+        nonlocal invoked
+        invoked = True
         raise NotImplementedError()
 
     monkeypatch.setattr(multiprocessing, 'cpu_count', cpu_count_raises)
     with pytest.warns(expected_warning=UserWarning):
         assert helpers.available_cpu_count() == 1
+    assert invoked, "Patched function called during test"
 
 
 def test_deprecated():

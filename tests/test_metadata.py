@@ -318,7 +318,7 @@ def test_metadata_fixup_warning(resources, outdir, caplog):
     )
     metadata_fixup(working_file=outdir / 'graph.pdf', context=context)
     for record in caplog.records:
-        assert record.levelname != 'WARNING'
+        assert record.levelname != 'WARNING', "Unexpected warning"
 
     # Now add some metadata that will not be copyable
     graph = pikepdf.open(outdir / 'graph.pdf')

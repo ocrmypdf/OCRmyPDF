@@ -188,18 +188,20 @@ def test_language_warning(caplog):
     caplog.set_level(logging.DEBUG)
     with patch(
         'ocrmypdf._validation.locale.getlocale', return_value=('en_US', 'UTF-8')
-    ):
+    ) as mock:
         vd.check_options_languages(opts, {'eng'})
         assert opts.languages == {'eng'}
         assert '' in caplog.text
+        mock.assert_called_once()
 
     opts = make_opts(language=None)
     with patch(
         'ocrmypdf._validation.locale.getlocale', return_value=('fr_FR', 'UTF-8')
-    ):
+    ) as mock:
         vd.check_options_languages(opts, {'eng'})
         assert opts.languages == {'eng'}
         assert 'assuming --language' in caplog.text
+        mock.assert_called_once()
 
 
 def test_version_comparison():
@@ -265,7 +267,8 @@ def test_pagesegmode_warning(caplog):
 
 
 def test_two_languages():
-    with patch('ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True):
+    with patch('ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True) as mock:
         vd._check_options(
             *make_opts_pm(language='fakelang1+fakelang2'), {'fakelang1', 'fakelang2'}
         )
+        mock.assert_called()

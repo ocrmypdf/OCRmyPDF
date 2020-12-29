@@ -26,6 +26,7 @@ that is not UTF-8 compatible, so we are forced to check that we can convert it
 and present it to the user.
 """
 
+from contextlib import contextmanager
 from subprocess import CalledProcessError
 from unittest.mock import patch
 
@@ -42,17 +43,25 @@ def bad_utf8(*args, **kwargs):
     )
 
 
+@contextmanager
+def patch_tesseract_run():
+    with patch('ocrmypdf._exec.tesseract.run') as mock:
+        mock.side_effect = bad_utf8
+        yield
+        mock.assert_called()
+
+
 class BadUtf8OcrEngine(TesseractOcrEngine):
     @staticmethod
     def generate_hocr(input_file, output_hocr, output_text, options):
-        with patch('ocrmypdf._exec.tesseract.run', new=bad_utf8):
+        with patch_tesseract_run():
             TesseractOcrEngine.generate_hocr(
                 input_file, output_hocr, output_text, options
             )
 
     @staticmethod
     def generate_pdf(input_file, output_pdf, output_text, options):
-        with patch('ocrmypdf._exec.tesseract.run', new=bad_utf8):
+        with patch_tesseract_run():
             TesseractOcrEngine.generate_pdf(
                 input_file, output_pdf, output_text, options
             )
