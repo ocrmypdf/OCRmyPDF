@@ -12,6 +12,13 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.4.3
+=======
+
+-  Removed a redundant debug message.
+-  Test suite now asserts that most patched functions are called when they should be.
+-  Test suite now skips a test that fails on two particular versions of piekpdf.
+
 v11.4.2
 =======
 
