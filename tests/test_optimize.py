@@ -21,7 +21,15 @@ from ocrmypdf.helpers import Resolution
 
 check_ocrmypdf = pytest.helpers.check_ocrmypdf  # pylint: disable=e1101
 
+needs_pngquant = pytest.mark.skipif(
+    not pngquant.available(), reason="pngquant not installed"
+)
+needs_jbig2enc = pytest.mark.skipif(
+    not jbig2enc.available(), reason="jbig2enc not installed"
+)
 
+
+@needs_pngquant
 @pytest.mark.parametrize('pdf', ['multipage.pdf', 'palette.pdf'])
 def test_basic(resources, pdf, outpdf):
     infile = resources / pdf
@@ -30,6 +38,7 @@ def test_basic(resources, pdf, outpdf):
     assert 0.98 * Path(outpdf).stat().st_size <= Path(infile).stat().st_size
 
 
+@needs_pngquant
 def test_mono_not_inverted(resources, outdir):
     infile = resources / '2400dpi.pdf'
     opt.main(infile, outdir / 'out.pdf', level=3)
@@ -45,7 +54,7 @@ def test_mono_not_inverted(resources, outdir):
         assert im.getpixel((0, 0)) == 255, "Expected white background"
 
 
-@pytest.mark.skipif(not pngquant.available(), reason='need pngquant')
+@needs_pngquant
 def test_jpg_png_params(resources, outpdf):
     check_ocrmypdf(
         resources / 'crom.png',
@@ -63,7 +72,7 @@ def test_jpg_png_params(resources, outpdf):
     )
 
 
-@pytest.mark.skipif(not jbig2enc.available(), reason='need jbig2enc')
+@needs_jbig2enc
 @pytest.mark.parametrize('lossy', [False, True])
 def test_jbig2_lossy(lossy, resources, outpdf):
     args = [
@@ -95,10 +104,8 @@ def test_jbig2_lossy(lossy, resources, outpdf):
         assert len(pim.decode_parms) == 0
 
 
-@pytest.mark.skipif(
-    not jbig2enc.available() or not pngquant.available(),
-    reason='need jbig2enc and pngquant',
-)
+@needs_pngquant
+@needs_jbig2enc
 def test_flate_to_jbig2(resources, outdir):
     # This test requires an image that pngquant is capable of converting to
     # to 1bpp - so use an existing 1bpp image, convert up, confirm it can
@@ -126,6 +133,7 @@ def test_flate_to_jbig2(resources, outdir):
     assert pim.filters[0] == '/JBIG2Decode'
 
 
+@needs_pngquant
 def test_multiple_pngs(resources, outdir):
     with Path.open(outdir / 'in.pdf', 'wb') as inpdf:
         img2pdf.convert(
