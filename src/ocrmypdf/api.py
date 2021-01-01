@@ -8,6 +8,7 @@
 import logging
 import os
 import sys
+import threading
 from enum import IntEnum
 from io import IOBase
 from pathlib import Path
@@ -29,6 +30,8 @@ except ModuleNotFoundError:
 
 StrPath = Union[os.PathLike, AnyStr]
 PathOrIO = Union[BinaryIO, StrPath]
+
+_api_lock = threading.Lock()
 
 
 class Verbosity(IntEnum):
@@ -306,12 +309,18 @@ def ocr(  # pylint: disable=unused-argument
 
     parser = get_parser()
     create_options_kwargs['parser'] = parser
-    plugin_manager = get_plugin_manager(plugins)
-    plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
 
-    if 'verbose' in kwargs:
-        warn("ocrmypdf.ocr(verbose=) is ignored. Use ocrmypdf.configure_logging().")
+    with _api_lock:
+        # We can't allow multiple ocrmypdf.ocr() threads to run in parallel, because
+        # they might install different plugins, and generally speaking we have areas
+        # of code that use global state.
 
-    options = create_options(**create_options_kwargs)
-    check_options(options, plugin_manager)
-    return run_pipeline(options=options, plugin_manager=plugin_manager, api=True)
+        plugin_manager = get_plugin_manager(plugins)
+        plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
+
+        if 'verbose' in kwargs:
+            warn("ocrmypdf.ocr(verbose=) is ignored. Use ocrmypdf.configure_logging().")
+
+        options = create_options(**create_options_kwargs)
+        check_options(options, plugin_manager)
+        return run_pipeline(options=options, plugin_manager=plugin_manager, api=True)

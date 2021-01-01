@@ -56,6 +56,11 @@ Programs that call ``ocrmypdf.ocr()`` should also install a SIGBUS signal
 handler (except on Windows), to raise an exception if access to a memory
 mapped file fails. OCRmyPDF may use memory mapping.
 
+``ocrmypdf.ocr()`` will take a threading lock to prevent multiple runs of itself
+in the same Python interpreter process. This is not thread-safe, because of how
+OCRmyPDF's plugins and Python's library import system work. If you need to parallelize
+OCRmyPDF, use processes.
+
 .. warning::
 
     On Windows and macOS, the script that calls ``ocrmypdf.ocr()`` must be
