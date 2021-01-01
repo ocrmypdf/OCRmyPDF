@@ -15,7 +15,11 @@ from PIL import Image
 from reportlab.pdfgen.canvas import Canvas
 
 from ocrmypdf import pdfinfo
+from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.pdfinfo import Colorspace, Encoding
+from ocrmypdf.pdfinfo.layout import PDFPage
+
+run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
 
 # pylint: disable=protected-access
 
@@ -179,3 +183,18 @@ def test_stack_abuse():
     with pytest.warns(None):
         with pytest.raises(RuntimeError):
             pdfinfo.info._interpret_contents(stream)
+
+
+def test_pages_issue700(monkeypatch, resources):
+    def get_no_pages(*args, **kwargs):
+        return iter([])
+
+    monkeypatch.setattr(PDFPage, 'get_pages', get_no_pages)
+
+    with pytest.raises(InputFileError, match="pdfminer"):
+        pdfinfo.PdfInfo(
+            resources / 'cardinal.pdf',
+            detailed_analysis=True,
+            progbar=False,
+            max_workers=1,
+        )

@@ -21,7 +21,7 @@ from pdfminer.pdffont import PDFSimpleFont, PDFUnicodeNotDefined
 from pdfminer.pdfpage import PDFPage
 from pdfminer.utils import bbox2str, matrix2str
 
-from ocrmypdf.exceptions import EncryptedPdfError
+from ocrmypdf.exceptions import EncryptedPdfError, InputFileError
 
 STRIP_NAME = re.compile(r'[0-9]+')
 
@@ -236,8 +236,13 @@ def get_page_analysis(infile, pageno, pscript5_mode):
 
     try:
         with Path(infile).open('rb') as f:
-            page = PDFPage.get_pages(f, pagenos=[pageno], maxpages=0)
-            interp.process_page(next(page))
+            page_iter = PDFPage.get_pages(f, pagenos=[pageno], maxpages=0)
+            page = next(page_iter, None)
+            if page is None:
+                raise InputFileError(
+                    f"pdfminer could not process page {pageno} (counting from 0)."
+                )
+            interp.process_page(page)
     except PDFTextExtractionNotAllowed as e:
         raise EncryptedPdfError() from e
     finally:

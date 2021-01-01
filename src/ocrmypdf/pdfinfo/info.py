@@ -22,7 +22,7 @@ import pikepdf
 from pikepdf import Object, Pdf, PdfMatrix
 
 from ocrmypdf._concurrent import exec_progress_pool
-from ocrmypdf.exceptions import EncryptedPdfError
+from ocrmypdf.exceptions import EncryptedPdfError, InputFileError
 from ocrmypdf.helpers import Resolution, available_cpu_count, pikepdf_enable_mmap
 from ocrmypdf.pdfinfo.layout import get_page_analysis, get_text_boxes
 
@@ -598,6 +598,8 @@ def _pdf_pageinfo_concurrent(
 
     def update_pageinfo(result, pbar):
         page = result
+        if not page:
+            raise InputFileError("Could read a page in the PDF")
         pages[page.pageno] = page
         pbar.update()
 
