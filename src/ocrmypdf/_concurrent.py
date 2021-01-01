@@ -109,15 +109,11 @@ def exec_progress_pool(
         )
         try:
             results = pool.imap_unordered(task, task_arguments)
-            while True:
-                try:
-                    result = results.next()
-                    if task_finished:
-                        task_finished(result, pbar)
-                    else:
-                        pbar.update()
-                except StopIteration:
-                    break
+            for result in results:
+                if task_finished:
+                    task_finished(result, pbar)
+                else:
+                    pbar.update()
         except KeyboardInterrupt:
             # Terminate pool so we exit instantly
             pool.terminate()
