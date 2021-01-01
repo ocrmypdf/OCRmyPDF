@@ -12,6 +12,15 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.4.4
+=======
+
+-  Fixed ``AttributeError: 'NoneType' object has no attribute 'userunit'``, issue #700,
+   related to OCRmyPDF not properly forwarded an error message from pdfminer.six.
+-  Adjusted typing of some arguments.
+-  ``ocrmypdf.ocr`` now takes a ``threading.Lock`` for reasons outlined in the
+   documentation.
+
 v11.4.3
 =======
 
