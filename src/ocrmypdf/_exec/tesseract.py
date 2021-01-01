@@ -14,7 +14,7 @@ from collections import namedtuple
 from os import fspath
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
-from typing import List
+from typing import List, Optional
 
 from PIL import Image
 
@@ -118,7 +118,7 @@ def get_languages():
     return set(lang.strip() for lang in rest)
 
 
-def tess_base_args(langs: List[str], engine_mode: int) -> List[str]:
+def tess_base_args(langs: List[str], engine_mode: Optional[int]) -> List[str]:
     args = ['tesseract']
     if langs:
         args.extend(['-l', '+'.join(langs)])
@@ -127,7 +127,7 @@ def tess_base_args(langs: List[str], engine_mode: int) -> List[str]:
     return args
 
 
-def get_orientation(input_file: Path, engine_mode: int, timeout: float):
+def get_orientation(input_file: Path, engine_mode: Optional[int], timeout: float):
     args_tesseract = tess_base_args(['osd'], engine_mode) + [
         '--psm',
         '0',
