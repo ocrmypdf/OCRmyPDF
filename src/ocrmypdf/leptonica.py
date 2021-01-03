@@ -13,6 +13,7 @@
 import argparse
 import logging
 import os
+import platform
 import sys
 import threading
 import warnings
@@ -170,20 +171,6 @@ tls = threading.local()
 tls.trap = None
 
 
-@ffi.callback("void(char *)")
-def _stderr_handler(cstr):
-    msg = ffi.string(cstr).decode(errors='replace')
-    if msg.startswith("Error"):
-        logger.error(msg)
-    elif msg.startswith("Warning"):
-        logger.warning(msg)
-    else:
-        logger.debug(msg)
-    if tls.trap is not None:
-        tls.trap.append(msg)
-    return
-
-
 class _LeptonicaErrorTrap_Queue:
     def __init__(self):
         self.queue = deque()
@@ -213,9 +200,25 @@ class _LeptonicaErrorTrap_Queue:
 
 
 try:
+
+    @ffi.callback("void(char *)")
+    def _stderr_handler(cstr):
+        msg = ffi.string(cstr).decode(errors='replace')
+        if msg.startswith("Error"):
+            logger.error(msg)
+        elif msg.startswith("Warning"):
+            logger.warning(msg)
+        else:
+            logger.debug(msg)
+        if tls.trap is not None:
+            tls.trap.append(msg)
+        return
+
     lept.leptSetStderrHandler(_stderr_handler)
-except ffi.error:
+except (ffi.error, MemoryError):
     # Pre-1.79 Leptonica does not have leptSetStderrHandler
+    # And some platforms, notably Apple ARM 64, do not allow the write+execute
+    # memory needed to set up the callback function.
     _LeptonicaErrorTrap = _LeptonicaErrorTrap_Redirect
 else:
     # 1.79 have this new symbol
