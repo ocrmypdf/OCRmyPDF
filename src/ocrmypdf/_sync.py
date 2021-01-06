@@ -338,6 +338,8 @@ def run_pipeline(options, *, plugin_manager, api=False):
         and not api
     ):
         # Debug log for command line interface only with verbose output
+        # See https://github.com/pytest-dev/pytest/issues/5502 for why we skip this
+        # when pytest is running
         debug_log_handler = configure_debug_logging(Path(work_folder) / "debug.log")
 
     pikepdf_enable_mmap()

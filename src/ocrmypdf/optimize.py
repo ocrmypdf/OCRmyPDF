@@ -498,7 +498,7 @@ def transcode_pngs(
 
 
 @deprecated
-def rewrite_png_as_g4(pike: Pdf, im_obj: Object, compdata) -> None:
+def rewrite_png_as_g4(pike: Pdf, im_obj: Object, compdata) -> None:  # pragma: no cover
     im_obj.BitsPerComponent = 1
     im_obj.Width = compdata.w
     im_obj.Height = compdata.h
@@ -519,7 +519,7 @@ def rewrite_png_as_g4(pike: Pdf, im_obj: Object, compdata) -> None:
 
 
 @deprecated
-def rewrite_png(pike: Pdf, im_obj: Object, compdata) -> None:
+def rewrite_png(pike: Pdf, im_obj: Object, compdata) -> None:  # pragma: no cover
     # When a PNG is inserted into a PDF, we more or less copy the IDAT section from
     # the PDF and transfer the rest of the PNG headers to PDF image metadata.
     # One thing we have to do is tell the PDF reader whether a predictor was used
