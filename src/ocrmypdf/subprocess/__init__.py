@@ -77,20 +77,19 @@ def run_polling_stderr(args, *, callback, check=False, env=None, **kwargs):
     args, env, process_log, text = _fix_process_args(args, env, kwargs)
     assert text, "Must use text=True"
 
-    proc = Popen(args, env=env, **kwargs)
+    with Popen(args, env=env, **kwargs) as proc:
+        lines = []
+        while proc.poll() is None:
+            for msg in iter(proc.stderr.readline, ''):
+                if process_log.isEnabledFor(logging.DEBUG):
+                    process_log.debug(msg.strip())
+                callback(msg)
+                lines.append(msg)
+        stderr = ''.join(lines)
 
-    lines = []
-    while proc.poll() is None:
-        for msg in iter(proc.stderr.readline, ''):
-            if process_log.isEnabledFor(logging.DEBUG):
-                process_log.debug(msg.strip())
-            callback(msg)
-            lines.append(msg)
-    stderr = ''.join(lines)
-
-    if check and proc.returncode != 0:
-        raise CalledProcessError(proc.returncode, args, output=None, stderr=stderr)
-    return CompletedProcess(args, proc.returncode, None, stderr=stderr)
+        if check and proc.returncode != 0:
+            raise CalledProcessError(proc.returncode, args, output=None, stderr=stderr)
+        return CompletedProcess(args, proc.returncode, None, stderr=stderr)
 
 
 def _fix_process_args(args, env, kwargs):
