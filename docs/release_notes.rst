@@ -12,6 +12,12 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.4.5
+=======
+
+-  Fixed an issue where files may not be closed when the API is used.
+-  Improved ``setup.cfg`` with better settings for test coverage.
+
 v11.4.4
 =======
 
