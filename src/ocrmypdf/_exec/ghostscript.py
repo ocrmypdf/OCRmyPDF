@@ -15,7 +15,7 @@ from os import fspath
 from pathlib import Path
 from shutil import which
 from subprocess import PIPE, CalledProcessError
-from typing import Optional, cast
+from typing import Optional
 
 from PIL import Image
 
@@ -56,16 +56,14 @@ def version():
 def jpeg_passthrough_available() -> bool:
     """Returns True if the installed version of Ghostscript supports JPEG passthru
 
-    Prior to 9.23, Ghostscript decode and re-encoded JPEGs internally. In 9.23
+    Prior to 9.23, Ghostscript decoded and re-encoded JPEGs internally. In 9.23
     it gained the ability to keep JPEGs unmodified. However, the 9.23
     implementation was buggy and would deletes the last two bytes of images in
     some cases, as reported here.
     https://bugs.ghostscript.com/show_bug.cgi?id=699216
 
     The issue was fixed for 9.24, hence that is the first version we consider
-    the feature available. (However, we don't use 9.24 at all, so the first
-    version that allows JPEG passthrough is 9.25.
-
+    the feature available. (Ghostscript 9.24 has its own problems is blacklisted.)
     """
     return version() >= '9.24'
 
