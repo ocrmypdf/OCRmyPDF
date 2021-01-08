@@ -588,12 +588,17 @@ def create_pdf_page_from_image(image: Path, page_context: PageContext):
     # except that the hocr renderer does not understand non-square DPI. The
     # sandwich renderer would be fine.
     output_file = page_context.get_path('visible.pdf')
-    dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
-    layout_fun = img2pdf.get_fixed_dpi_layout_fun(dpi)
+
+    pageinfo = page_context.pageinfo
+    pagesize = 72.0 * float(pageinfo.width_inches), 72.0 * float(pageinfo.height_inches)
+    if pageinfo.rotation % 180 == 90:
+        pagesize = pagesize[1], pagesize[0]
 
     # This create a single page PDF
     with open(image, 'rb') as imfile, open(output_file, 'wb') as pdf:
         log.debug('convert')
+
+        layout_fun = img2pdf.get_layout_fun(pagesize)
         img2pdf.convert(
             imfile, with_pdfrw=False, layout_fun=layout_fun, outputstream=pdf
         )

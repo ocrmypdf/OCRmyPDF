@@ -45,7 +45,8 @@ def test_skip_pages_does_not_replicate(resources, basename, outdir):
         assert len(page.images) == 1, "skipped page was replicated"
 
     for n, info_out_n in enumerate(info):
-        assert info_out_n.width_inches == info_in[n].width_inches
+        assert info_out_n.width_inches == info_in[n].width_inches, "output resized"
+        assert info_out_n.height_inches == info_in[n].height_inches, "output resized"
 
 
 def test_content_preservation(resources, outpdf):
