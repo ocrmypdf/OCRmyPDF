@@ -4,14 +4,15 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-
 import pickle
+from io import BytesIO
 from math import isclose
 
 import img2pdf
 import pikepdf
 import pytest
 from PIL import Image
+from reportlab.lib.units import inch
 from reportlab.pdfgen.canvas import Canvas
 
 from ocrmypdf import pdfinfo
@@ -19,17 +20,15 @@ from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.pdfinfo import Colorspace, Encoding
 from ocrmypdf.pdfinfo.layout import PDFPage
 
-run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
-
 # pylint: disable=protected-access
 
 
 def test_single_page_text(outdir):
     filename = outdir / 'text.pdf'
-    pdf = Canvas(str(filename), pagesize=(8 * 72, 6 * 72))
+    pdf = Canvas(str(filename), pagesize=(8 * inch, 6 * inch))
     text = pdf.beginText()
     text.setFont('Helvetica', 12)
-    text.setTextOrigin(1 * 72, 3 * 72)
+    text.setTextOrigin(1 * inch, 3 * inch)
     text.textLine(
         "Methink'st thou art a general offence and every" " man should beat thee."
     )
@@ -46,25 +45,32 @@ def test_single_page_text(outdir):
     assert len(page.images) == 0
 
 
-def test_single_page_image(outdir):
-    filename = outdir / 'image-mono.pdf'
-
-    im_tmp = outdir / 'tmp.png'
+@pytest.fixture(scope='session')
+def eight_by_eight():
     im = Image.new('1', (8, 8), 0)
     for n in range(8):
         im.putpixel((n, n), 1)
-    im.save(str(im_tmp), format='PNG')
+    return im
+
+
+def test_single_page_image(eight_by_eight, outpdf):
+    im = eight_by_eight
+    bio = BytesIO()
+    im.save(bio, format='PNG')
+    bio.seek(0)
 
     imgsize = ((img2pdf.ImgSize.dpi, 8), (img2pdf.ImgSize.dpi, 8))
     layout_fun = img2pdf.get_layout_fun(None, imgsize, None, None, None)
 
-    im_bytes = im_tmp.read_bytes()
-    pdf_bytes = img2pdf.convert(
-        im_bytes, producer="img2pdf", with_pdfrw=False, layout_fun=layout_fun
-    )
-    filename.write_bytes(pdf_bytes)
-
-    info = pdfinfo.PdfInfo(filename)
+    with outpdf.open('wb') as f:
+        img2pdf.convert(
+            bio,
+            producer="img2pdf",
+            with_pdfrw=False,
+            layout_fun=layout_fun,
+            outputstream=f,
+        )
+    info = pdfinfo.PdfInfo(outpdf)
 
     assert len(info) == 1
     page = info[0]
@@ -81,16 +87,12 @@ def test_single_page_image(outdir):
     assert isclose(pdfimage.dpi.y, 8)
 
 
-def test_single_page_inline_image(outdir):
+def test_single_page_inline_image(eight_by_eight, outdir):
     filename = outdir / 'image-mono-inline.pdf'
     pdf = Canvas(str(filename), pagesize=(8 * 72, 6 * 72))
 
-    im = Image.new('1', (8, 8), 0)
-    for n in range(8):
-        im.putpixel((n, n), 1)
-
     # Draw image in a 72x72 pt or 1"x1" area
-    pdf.drawInlineImage(im, 0, 0, width=72, height=72)
+    pdf.drawInlineImage(eight_by_eight, 0, 0, width=72, height=72)
     pdf.showPage()
     pdf.save()
 
