@@ -302,7 +302,7 @@ def exec_concurrent(context: PdfContext):
     copy_final(pdf, options.output_file, context)
 
 
-def configure_debug_logging(log_filename, prefix: str = ''):
+def configure_debug_logging(log_filename: Path, prefix: str = ''):
     """
     Create a debug log file at a specified location.
 
@@ -340,7 +340,9 @@ def run_pipeline(options, *, plugin_manager, api=False):
         # Debug log for command line interface only with verbose output
         # See https://github.com/pytest-dev/pytest/issues/5502 for why we skip this
         # when pytest is running
-        debug_log_handler = configure_debug_logging(Path(work_folder) / "debug.log")
+        debug_log_handler = configure_debug_logging(
+            Path(work_folder) / "debug.log"
+        )  # pragma: no cover
 
     pikepdf_enable_mmap()
 
