@@ -21,7 +21,7 @@ import sys
 import threading
 from contextlib import suppress
 from multiprocessing import Pool as ProcessPool
-from multiprocessing.dummy import Pool as ThreadPool
+from multiprocessing.pool import ThreadPool
 from typing import Callable, Iterable, Optional, Union
 
 from tqdm import tqdm
@@ -30,6 +30,8 @@ from ocrmypdf import hookimpl
 from ocrmypdf.exceptions import InputFileError
 
 Queue = Union[multiprocessing.Queue, queue.Queue]
+
+pool_lock = threading.Lock()
 
 
 def log_listener(q: Queue):
@@ -96,7 +98,7 @@ def exec_progress_pool(
     use_threads: bool,
     max_workers: int,
     tqdm_kwargs: dict,
-    worker_initializer: Callable,
+    worker_initializer: Optional[Callable],
     task: Callable,
     task_arguments: Optional[Iterable] = None,
     task_finished: Callable,
@@ -118,6 +120,32 @@ def exec_progress_pool(
 
         worker_initializer = _noop
 
+    with pool_lock:
+        _exec_progress_pool(
+            max_workers=max_workers,
+            tqdm_kwargs=tqdm_kwargs,
+            worker_initializer=worker_initializer,
+            task=task,
+            task_arguments=task_arguments,
+            task_finished=task_finished,
+            log_queue=log_queue,
+            pool_class=pool_class,
+            initializer=initializer,
+        )
+
+
+def _exec_progress_pool(
+    *,
+    max_workers: int,
+    tqdm_kwargs: dict,
+    worker_initializer: Callable,
+    task: Callable,
+    task_arguments: Optional[Iterable] = None,
+    task_finished: Callable,
+    log_queue: Queue,
+    pool_class: Callable,
+    initializer: Callable,
+):
     # Regardless of whether we use_threads for worker processes, the log_listener
     # must be a thread
     listener = threading.Thread(target=log_listener, args=(log_queue,))
