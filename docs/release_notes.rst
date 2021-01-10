@@ -12,6 +12,21 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.5.0
+=======
+
+-  Fixed an issue where the output page size might differ by a fractional amount
+   due to rounding, when ``--force-ocr`` was used and the page contained objects
+   with multiple resolutions.
+-  When determining the resolution at which to rasterize a page, we now consider
+   printed text on the page as requiring a higher resolution. This fixes issues
+   with certain pages being rendered with unacceptably low resolution text, but
+   may increase output file sizes in some workflows where low resolution text
+   is acceptable.
+-  Added a workaround to fix an exception that occurs when trying to
+   ``import ocrmypdf.leptonica`` on Apple ARM silicon (or potentially, other
+   platforms that do not permit write+executable memory).
+
 v11.4.5
 =======
 
