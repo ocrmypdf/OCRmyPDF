@@ -206,17 +206,21 @@ def validate_pdfinfo_options(context: PdfContext):
     context.plugin_manager.hook.validate(pdfinfo=pdfinfo, options=options)
 
 
+def _vector_page_dpi(pageinfo):
+    return VECTOR_PAGE_DPI if pageinfo.has_vector or pageinfo.has_text else 0.0
+
+
 def get_page_dpi(pageinfo, options):
     "Get the DPI when nonsquare DPI is tolerable"
     xres = max(
         pageinfo.dpi.x or VECTOR_PAGE_DPI,
         options.oversample or 0.0,
-        VECTOR_PAGE_DPI if pageinfo.has_vector else 0.0,
+        _vector_page_dpi(pageinfo),
     )
     yres = max(
         pageinfo.dpi.y or VECTOR_PAGE_DPI,
         options.oversample or 0,
-        VECTOR_PAGE_DPI if pageinfo.has_vector else 0.0,
+        _vector_page_dpi(pageinfo),
     )
     return Resolution(float(xres), float(yres))
 
@@ -230,7 +234,7 @@ def get_page_square_dpi(pageinfo, options) -> Resolution:
         max(
             (xres * userunit) or VECTOR_PAGE_DPI,
             (yres * userunit) or VECTOR_PAGE_DPI,
-            VECTOR_PAGE_DPI if pageinfo.has_vector else 0.0,
+            _vector_page_dpi(pageinfo),
             options.oversample or 0.0,
         )
     )
@@ -243,7 +247,7 @@ def get_canvas_square_dpi(pageinfo, options) -> Resolution:
         max(
             (pageinfo.dpi.x) or VECTOR_PAGE_DPI,
             (pageinfo.dpi.y) or VECTOR_PAGE_DPI,
-            VECTOR_PAGE_DPI if pageinfo.has_vector else 0.0,
+            _vector_page_dpi(pageinfo),
             options.oversample or 0.0,
         )
     )
