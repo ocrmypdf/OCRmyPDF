@@ -11,7 +11,7 @@ def _task_noop(*_args, **_kwargs):
     return
 
 
-def _model(**_kwargs):
+def _model(**_kwargs) -> None:
     raise RuntimeError("Parallel executor not set up")
 
 

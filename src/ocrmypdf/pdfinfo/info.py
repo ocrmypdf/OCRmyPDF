@@ -6,6 +6,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+import atexit
 import logging
 import re
 from collections import defaultdict, namedtuple
@@ -571,29 +572,33 @@ def simplify_textboxes(miner, textbox_getter) -> Iterator[TextboxInfo]:
 worker_pdf = None
 
 
-def _pdf_pageinfo_sync_init(infile: Path, pdfminer_loglevel):
+def _pdf_pageinfo_sync_init(pdf: Pdf, infile: Path, pdfminer_loglevel):
     global worker_pdf  # pylint: disable=global-statement
     pikepdf_enable_mmap()
 
     logging.getLogger('pdfminer').setLevel(pdfminer_loglevel)
 
-    # If this function is called as a thread initializer, we need a messy hack
-    # to close worker_pdf. If called as a process, it will be released when the
-    # process is terminated.
-    worker_pdf = pikepdf.open(infile)
+    # If the pdf is not opened, open a copy for our worker process to use
+    if pdf is None:
+        worker_pdf = pikepdf.open(infile)
+
+        def on_process_close():
+            worker_pdf.close()
+
+        # Close when this process exits
+        atexit.register(on_process_close)
 
 
 def _pdf_pageinfo_sync(args):
-    global worker_pdf  # pylint: disable=global-statement
-    pageno, infile, check_pages, detailed_analysis = args
-    page = PageInfo(worker_pdf, pageno, infile, check_pages, detailed_analysis)
+    pageno, thread_pdf, infile, check_pages, detailed_analysis = args
+    pdf = thread_pdf if thread_pdf is not None else worker_pdf
+    page = PageInfo(pdf, pageno, infile, check_pages, detailed_analysis)
     return page
 
 
 def _pdf_pageinfo_concurrent(
     pdf, infile, progbar, max_workers, check_pages, detailed_analysis=False
 ):
-    global worker_pdf  # pylint: disable=global-statement
     pages = [None] * len(pdf.pages)
 
     def update_pageinfo(result, pbar):
@@ -607,7 +612,6 @@ def _pdf_pageinfo_concurrent(
         max_workers = available_cpu_count()
 
     total = len(pdf.pages)
-    contexts = ((n, infile, check_pages, detailed_analysis) for n in range(total))
 
     use_threads = False  # No performance gain if threaded due to GIL
     n_workers = min(1 + len(pages) // 4, max_workers)
@@ -616,25 +620,31 @@ def _pdf_pageinfo_concurrent(
         # a separate process.
         use_threads = True
 
-    try:
-        exec_progress_pool(
-            use_threads=use_threads,
-            max_workers=n_workers,
-            tqdm_kwargs=dict(
-                total=total, desc="Scanning contents", unit='page', disable=not progbar
-            ),
-            worker_initializer=partial(
-                _pdf_pageinfo_sync_init, infile, logging.getLogger('pdfminer').level
-            ),
-            task=_pdf_pageinfo_sync,
-            task_arguments=contexts,
-            task_finished=update_pageinfo,
-        )
-    finally:
-        if worker_pdf and use_threads:
-            assert n_workers == 1, "Should have only one worker when threaded"
-            # This is messy, but if we ran in thread, close worker_pdf
-            worker_pdf.close()
+    # If we use a thread, we can pass the already-open Pdf for them to use
+    # If we use processes, we pass a None which tells the init function to open its
+    # own
+    initial_pdf = pdf if use_threads else None
+
+    contexts = (
+        (n, initial_pdf, infile, check_pages, detailed_analysis) for n in range(total)
+    )
+    assert n_workers == 1 if use_threads else n_workers >= 1, "Not multithreadable"
+    exec_progress_pool(
+        use_threads=use_threads,
+        max_workers=n_workers,
+        tqdm_kwargs=dict(
+            total=total, desc="Scanning contents", unit='page', disable=not progbar
+        ),
+        worker_initializer=partial(
+            _pdf_pageinfo_sync_init,
+            initial_pdf,
+            infile,
+            logging.getLogger('pdfminer').level,
+        ),
+        task=_pdf_pageinfo_sync,
+        task_arguments=contexts,
+        task_finished=update_pageinfo,
+    )
     return pages
 
 
