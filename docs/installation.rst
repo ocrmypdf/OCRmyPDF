@@ -533,6 +533,12 @@ override the versions OCRmyPDF selects, you can modify the ``PATH`` environment
 variable. `Follow these directions <https://www.computerhope.com/issues/ch000549.htm#dospath>`_
 to change the PATH.
 
+.. warning::
+
+    As of early 2021, users have reported problems with the Microsoft Store version of
+    Python affected most third party Python packages including OCRmyPDF. Please use
+    Python downloaded from Python.org or Chocolatey as recommended here.
+
 Windows Subsystem for Linux
 ---------------------------
 
