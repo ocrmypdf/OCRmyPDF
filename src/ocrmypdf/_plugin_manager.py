@@ -32,64 +32,63 @@ class OcrmypdfPluginManager(pluggy.PluginManager):
     """
 
     def __init__(
-        self, *args, setup_func: Callable[[pluggy.PluginManager], None], **kwargs
+        self, *args, plugins: List[Union[str, Path]], builtins: bool = True, **kwargs,
     ):
-        self._init_args = args
-        self._setup_func = setup_func
-        self._init_kwargs = kwargs
+        self.__init_args = args
+        self.__init_kwargs = kwargs
+        self.__plugins = plugins
+        self.__builtins = builtins
         super().__init__(*args, **kwargs)
-        setup_func(self)
+        self.setup_plugins()
 
     def __getstate__(self):
         state = dict(
-            _init_args=self._init_args,
-            _setup_func=self._setup_func,
-            _init_kwargs=self._init_kwargs,
+            init_args=self.__init_args,
+            plugins=self.__plugins,
+            builtins=self.__builtins,
+            init_kwargs=self.__init_kwargs,
         )
         return state
 
     def __setstate__(self, state):
         self.__init__(
-            *state['_init_args'],
-            setup_func=state['_setup_func'],
-            **state['_init_kwargs'],
+            *state['init_args'],
+            plugins=state['plugins'],
+            builtins=state['builtins'],
+            **state['init_kwargs'],
         )
 
+    def setup_plugins(self):
+        self.add_hookspecs(pluginspec)
 
-def _setup_plugins(
-    pm: pluggy.PluginManager, plugins: List[Union[str, Path]], builtins: bool = True
-):
-    pm.add_hookspecs(pluginspec)
+        # 1. Register builtins
+        if self.__builtins:
+            for module in pkgutil.iter_modules(ocrmypdf.builtin_plugins.__path__):
+                name = f'ocrmypdf.builtin_plugins.{module.name}'
+                module = importlib.import_module(name)
+                self.register(module)
 
-    # 1. Register builtins
-    if builtins:
-        for module in pkgutil.iter_modules(ocrmypdf.builtin_plugins.__path__):
-            name = f'ocrmypdf.builtin_plugins.{module.name}'
-            module = importlib.import_module(name)
-            pm.register(module)
+        # 2. Register setuptools plugins
+        self.load_setuptools_entrypoints('ocrmypdf')
 
-    # 2. Register setuptools plugins
-    pm.load_setuptools_entrypoints('ocrmypdf')
-
-    # 3. Register plugins specified on command line
-    for name in plugins:
-        if isinstance(name, Path) or name.endswith('.py'):
-            # Import by filename
-            module_name = Path(name).stem
-            spec = importlib.util.spec_from_file_location(module_name, name)
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[module_name] = module
-            spec.loader.exec_module(module)
-        else:
-            # Import by dotted module name
-            module = importlib.import_module(name)
-        pm.register(module)
+        # 3. Register plugins specified on command line
+        for name in self.__plugins:
+            if isinstance(name, Path) or name.endswith('.py'):
+                # Import by filename
+                module_name = Path(name).stem
+                spec = importlib.util.spec_from_file_location(module_name, name)
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[module_name] = module
+                spec.loader.exec_module(module)
+            else:
+                # Import by dotted module name
+                module = importlib.import_module(name)
+            self.register(module)
 
 
 def get_plugin_manager(plugins: List[Union[str, Path]], builtins=True):
     pm = OcrmypdfPluginManager(
-        project_name='ocrmypdf',
-        setup_func=partial(_setup_plugins, plugins=plugins, builtins=builtins),
+        project_name='ocrmypdf', plugins=plugins, builtins=builtins,
     )
     return pm
 
