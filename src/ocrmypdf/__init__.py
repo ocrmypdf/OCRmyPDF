@@ -8,6 +8,7 @@
 from pluggy import HookimplMarker as _HookimplMarker
 
 from ocrmypdf import helpers, hocrtransform, leptonica, pdfa, pdfinfo
+from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._version import PROGRAM_NAME, __version__
 from ocrmypdf.api import Verbosity, configure_logging, ocr
 from ocrmypdf.exceptions import (
