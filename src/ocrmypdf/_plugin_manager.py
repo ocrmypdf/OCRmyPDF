@@ -82,6 +82,8 @@ def _setup_plugins(
             module = importlib.import_module(name)
         pm.register(module)
 
+    pm.load_setuptools_entrypoints('ocrmypdf')
+
 
 def get_plugin_manager(plugins: List[Union[str, Path]], builtins=True):
     pm = OcrmypdfPluginManager(
