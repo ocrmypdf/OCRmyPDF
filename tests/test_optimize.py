@@ -173,3 +173,15 @@ def test_multiple_pngs(resources, outdir):
             inim = next(iter(inpdf.pages[n].images.values()))
             outim = next(iter(outpdf.pages[n].images.values()))
             assert len(outim.read_raw_bytes()) < len(inim.read_raw_bytes()), n
+
+
+def test_optimize_off(resources, outpdf):
+    check_ocrmypdf(
+        resources / 'trivial.pdf',
+        outpdf,
+        '--optimize=0',
+        '--output-type',
+        'pdf',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+    )
