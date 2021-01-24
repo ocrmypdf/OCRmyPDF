@@ -8,6 +8,7 @@
 import argparse
 import importlib
 import importlib.util
+import pkgutil
 import sys
 from functools import partial
 from pathlib import Path
@@ -15,6 +16,7 @@ from typing import Callable, List, Tuple, Union
 
 import pluggy
 
+import ocrmypdf.builtin_plugins
 from ocrmypdf import pluginspec
 from ocrmypdf.cli import get_parser, plugins_only_parser
 
@@ -62,12 +64,11 @@ def _setup_plugins(
     all_plugins: List[Union[str, Path]] = []
     if builtins:
         all_plugins.extend(
-            [
-                'ocrmypdf.builtin_plugins.ghostscript',
-                'ocrmypdf.builtin_plugins.tesseract_ocr',
-            ]
+            f'ocrmypdf.builtin_plugins.{module.name}'
+            for module in pkgutil.iter_modules(ocrmypdf.builtin_plugins.__path__)
         )
     all_plugins.extend(plugins)
+
     for name in all_plugins:
         if isinstance(name, Path) or name.endswith('.py'):
             # Import by filename
