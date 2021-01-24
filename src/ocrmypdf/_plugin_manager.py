@@ -61,15 +61,18 @@ def _setup_plugins(
 ):
     pm.add_hookspecs(pluginspec)
 
-    all_plugins: List[Union[str, Path]] = []
+    # 1. Register builtins
     if builtins:
-        all_plugins.extend(
-            f'ocrmypdf.builtin_plugins.{module.name}'
-            for module in pkgutil.iter_modules(ocrmypdf.builtin_plugins.__path__)
-        )
-    all_plugins.extend(plugins)
+        for module in pkgutil.iter_modules(ocrmypdf.builtin_plugins.__path__):
+            name = f'ocrmypdf.builtin_plugins.{module.name}'
+            module = importlib.import_module(name)
+            pm.register(module)
 
-    for name in all_plugins:
+    # 2. Register setuptools plugins
+    pm.load_setuptools_entrypoints('ocrmypdf')
+
+    # 3. Register plugins specified on command line
+    for name in plugins:
         if isinstance(name, Path) or name.endswith('.py'):
             # Import by filename
             module_name = Path(name).stem
@@ -81,8 +84,6 @@ def _setup_plugins(
             # Import by dotted module name
             module = importlib.import_module(name)
         pm.register(module)
-
-    pm.load_setuptools_entrypoints('ocrmypdf')
 
 
 def get_plugin_manager(plugins: List[Union[str, Path]], builtins=True):
