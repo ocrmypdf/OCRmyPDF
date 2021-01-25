@@ -23,23 +23,26 @@
 
 import logging
 import logging.handlers
-import multiprocessing
-import os
-import queue
 import signal
-import sys
 import threading
 from contextlib import suppress
+from enum import Enum, auto
 from itertools import islice, repeat, takewhile, zip_longest
 from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection, wait
-from typing import Callable, Iterable, Optional, Union
+from typing import Callable, Iterable, Optional
 from unittest.mock import Mock
 
 from ocrmypdf import hookimpl
 from ocrmypdf.exceptions import InputFileError
 
 pool_lock = threading.Lock()
+
+
+class MessageType(Enum):
+    exception = auto()
+    result = auto()
+    complete = auto()
 
 
 def split_every(n: int, iterable: Iterable):
@@ -83,47 +86,21 @@ def process_loop(
         try:
             result = task(args)
         except Exception as e:
-            conn.send(('exception', str(e)))
+            conn.send((MessageType.exception, str(e)))
             break
         else:
-            conn.send(('result', result))
+            conn.send((MessageType.result, result))
 
-    conn.send(('complete', None))
+    conn.send((MessageType.complete, None))
     conn.close()
     return
 
 
-def exec_progress_pool(
+def lambda_pool_impl(
     *,
     use_threads: bool,
     max_workers: int,
     tqdm_kwargs: dict,
-    worker_initializer: Optional[Callable],
-    task: Callable,
-    task_arguments: Optional[Iterable] = None,
-    task_finished: Callable,
-):
-
-    if not worker_initializer:
-
-        def _noop():
-            return
-
-        worker_initializer = _noop
-
-    with pool_lock:
-        _exec_progress_pool(
-            max_workers=max_workers,
-            worker_initializer=worker_initializer,
-            task=task,
-            task_arguments=task_arguments,
-            task_finished=task_finished,
-        )
-
-
-def _exec_progress_pool(
-    *,
-    max_workers: int,
     worker_initializer: Callable,
     task: Callable,
     task_arguments: Optional[Iterable] = None,
@@ -131,6 +108,32 @@ def _exec_progress_pool(
 ):
     pbar = Mock()
 
+    if use_threads and max_workers == 1:
+        for args in task_arguments:
+            result = task(args)
+            task_finished(result, pbar)
+        return
+
+    with pool_lock:
+        _lambda_pool_impl(
+            max_workers=max_workers,
+            worker_initializer=worker_initializer,
+            task=task,
+            task_arguments=task_arguments,
+            task_finished=task_finished,
+            pbar=pbar,
+        )
+
+
+def _lambda_pool_impl(
+    *,
+    max_workers: int,
+    worker_initializer: Callable,
+    task: Callable,
+    task_arguments: Optional[Iterable] = None,
+    task_finished: Callable,
+    pbar,
+):
     task_arguments = list(task_arguments)
     grouped_args = list(zip_longest(*list(split_every(max_workers, task_arguments))))
     if not grouped_args:
@@ -165,18 +168,23 @@ def _exec_progress_pool(
                 msg_type, msg = r.recv()
             except EOFError:
                 connections.remove(r)
-            else:
-                if msg_type == 'result':
-                    if task_finished:
-                        task_finished(msg, pbar)
-                elif msg_type == 'log':
-                    record = msg
-                    logger = logging.getLogger(record.name)
-                    logger.handle(record)
-                elif msg_type == 'exception':
-                    print(msg)
-                elif msg_type == 'complete':
-                    connections.remove(r)
+                continue
+
+            if msg_type == MessageType.result:
+                if task_finished:
+                    task_finished(msg, pbar)
+            elif msg_type == 'log':
+                record = msg
+                logger = logging.getLogger(record.name)
+                logger.handle(record)
+            elif msg_type == MessageType.complete:
+                connections.remove(r)
+            elif msg_type == MessageType.exception:
+                logger = logging.getLogger(__name__)
+                logger.error(msg)
+                for process in processes:
+                    process.terminate()
+                raise RuntimeError("Failed")
 
     for process in processes:
         process.join()
@@ -184,4 +192,4 @@ def _exec_progress_pool(
 
 @hookimpl
 def get_parallel_executor():
-    return exec_progress_pool
+    return lambda_pool_impl
