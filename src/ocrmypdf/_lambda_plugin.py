@@ -141,10 +141,10 @@ def _lambda_pool_impl(
 
     processes = []
     connections = []
-    for n in range(max_workers):
+    for chunk in grouped_args:
         parent_conn, child_conn = Pipe()
 
-        worker_args = [args for args in grouped_args[n] if args is not None]
+        worker_args = [args for args in chunk if args is not None]
         process = Process(
             target=process_loop,
             args=(
