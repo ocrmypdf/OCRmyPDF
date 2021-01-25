@@ -86,7 +86,7 @@ def process_loop(
         try:
             result = task(args)
         except Exception as e:
-            conn.send((MessageType.exception, str(e)))
+            conn.send((MessageType.exception, e))
             break
         else:
             conn.send((MessageType.result, result))
@@ -180,11 +180,9 @@ def _lambda_pool_impl(
             elif msg_type == MessageType.complete:
                 connections.remove(r)
             elif msg_type == MessageType.exception:
-                logger = logging.getLogger(__name__)
-                logger.error(msg)
                 for process in processes:
                     process.terminate()
-                raise RuntimeError("Failed")
+                raise msg
 
     for process in processes:
         process.join()
