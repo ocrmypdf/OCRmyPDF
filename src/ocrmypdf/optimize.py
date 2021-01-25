@@ -212,7 +212,10 @@ def extract_image_generic(
 
 
 def extract_images(
-    pike: Pdf, root: Path, options, extract_fn: Callable[..., Optional[XrefExt]],
+    pike: Pdf,
+    root: Path,
+    options,
+    extract_fn: Callable[..., Optional[XrefExt]],
 ) -> Iterator[Tuple[int, XrefExt]]:
     """Extract image using extract_fn
 
@@ -305,10 +308,10 @@ def _produce_jbig2_images(
     def jbig2_group_args(root: Path, groups: Dict[int, List[XrefExt]]):
         for group, xref_exts in groups.items():
             prefix = f'group{group:08d}'
-            yield dict(
-                cwd=fspath(root),
-                infiles=(img_name(root, xref, ext) for xref, ext in xref_exts),
-                out_prefix=prefix,
+            yield (
+                fspath(root),  # =cwd
+                (img_name(root, xref, ext) for xref, ext in xref_exts),  # =infiles
+                prefix,  # =out_prefix
             )
 
     def jbig2_single_args(root, groups: Dict[int, List[XrefExt]]):
@@ -317,21 +320,18 @@ def _produce_jbig2_images(
             # Second loop is to ensure multiple images per page are unpacked
             for n, xref_ext in enumerate(xref_exts):
                 xref, ext = xref_ext
-                yield dict(
-                    cwd=fspath(root),
-                    infile=img_name(root, xref, ext),
-                    outfile=root / f'{prefix}.{n:04d}',
+                yield (
+                    fspath(root),
+                    img_name(root, xref, ext),
+                    root / f'{prefix}.{n:04d}',
                 )
-
-    def convert_generic(fn, kwargs_dict):
-        return fn(**kwargs_dict)
 
     if options.jbig2_page_group_size > 1:
         jbig2_args = jbig2_group_args
-        jbig2_convert = partial(convert_generic, jbig2enc.convert_group)
+        jbig2_convert = jbig2enc.convert_group_mp
     else:
         jbig2_args = jbig2_single_args
-        jbig2_convert = partial(convert_generic, jbig2enc.convert_single)
+        jbig2_convert = jbig2enc.convert_single_mp
 
     exec_progress_pool(
         use_threads=True,
@@ -476,9 +476,6 @@ def transcode_pngs(
                 )
                 modified.add(xref)
 
-        def pngquant_fn(args):
-            pngquant.quantize(*args)
-
         exec_progress_pool(
             use_threads=True,
             max_workers=options.jobs,
@@ -488,7 +485,7 @@ def transcode_pngs(
                 unit='image',
                 disable=not options.progress_bar,
             ),
-            task=pngquant_fn,
+            task=pngquant.quantize_mp,
             task_arguments=pngquant_args(),
         )
 
