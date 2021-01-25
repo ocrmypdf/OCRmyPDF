@@ -31,7 +31,7 @@ import sys
 import threading
 from contextlib import suppress
 from itertools import islice, repeat, takewhile, zip_longest
-from multiprocessing import Pipe, Process, process
+from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection, wait
 from typing import Callable, Iterable, Optional, Union
 from unittest.mock import Mock
@@ -47,32 +47,17 @@ def split_every(n: int, iterable: Iterable):
     return takewhile(bool, (list(islice(iterator, n)) for _ in repeat(None)))
 
 
-def log_listener(q):
-    """Listen to the worker processes and forward the messages to logging
-
-    For simplicity this is a thread rather than a process. Only one process
-    should actually write to sys.stderr or whatever we're using, so if this is
-    made into a process the main application needs to be directed to it.
-
-    See https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
-    """
-
-    while True:
-        try:
-            record = q.get()
-            if record is None:
-                break
-            logger = logging.getLogger(record.name)
-            logger.handle(record)
-        except Exception:  # pylint: disable=broad-except
-            import traceback  # pylint: disable=import-outside-toplevel
-
-            print("Logging problem", file=sys.stderr)
-            traceback.print_exc(file=sys.stderr)
-
-
 def process_sigbus(*args):
     raise InputFileError("A worker process lost access to an input file")
+
+
+class ConnectionLogHandler(logging.handlers.QueueHandler):
+    def __init__(self, conn: Connection) -> None:
+        super().__init__(None)
+        self.conn = conn
+
+    def enqueue(self, record):
+        self.conn.send(('log', record))
 
 
 def process_loop(
@@ -80,31 +65,30 @@ def process_loop(
 ):
     """Initialize a process pool worker"""
 
-    # Ignore SIGINT (our parent process will kill us gracefully)
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-
     # Install SIGBUS handler (so our parent process can abort somewhat gracefully)
     with suppress(AttributeError):  # Windows and Cygwin do not have SIGBUS
         # Windows and Cygwin do not have pthread_sigmask or SIGBUS
         signal.signal(signal.SIGBUS, process_sigbus)
 
     # Reconfigure the root logger for this process to send all messages to a queue
-    # h = logging.handlers.QueueHandler(q)
-    # root = logging.getLogger()
-    # root.setLevel(loglevel)
-    # root.handlers = []
-    # root.addHandler(h)
+    h = ConnectionLogHandler(conn)
+    root = logging.getLogger()
+    root.setLevel(loglevel)
+    root.handlers = []
+    root.addHandler(h)
 
     user_init()
 
     for args in task_args:
         try:
-            result = task(*args)
+            result = task(args)
         except Exception as e:
-            return  # for now
+            conn.send(('exception', str(e)))
+            break
         else:
-            conn.send(result)
+            conn.send(('result', result))
 
+    conn.send(('complete', None))
     conn.close()
     return
 
@@ -149,6 +133,8 @@ def _exec_progress_pool(
 
     task_arguments = list(task_arguments)
     grouped_args = list(zip_longest(*list(split_every(max_workers, task_arguments))))
+    if not grouped_args:
+        return
 
     processes = []
     connections = []
@@ -176,12 +162,21 @@ def _exec_progress_pool(
     while connections:
         for r in wait(connections):
             try:
-                msg = r.recv()
+                msg_type, msg = r.recv()
             except EOFError:
                 connections.remove(r)
             else:
-                if task_finished:
-                    task_finished(msg, pbar)
+                if msg_type == 'result':
+                    if task_finished:
+                        task_finished(msg, pbar)
+                elif msg_type == 'log':
+                    record = msg
+                    logger = logging.getLogger(record.name)
+                    logger.handle(record)
+                elif msg_type == 'exception':
+                    print(msg)
+                elif msg_type == 'complete':
+                    connections.remove(r)
 
     for process in processes:
         process.join()
