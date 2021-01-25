@@ -31,8 +31,6 @@ from ocrmypdf.exceptions import InputFileError
 
 Queue = Union[multiprocessing.Queue, queue.Queue]
 
-pool_lock = threading.Lock()
-
 
 def log_listener(q: Queue):
     """Listen to the worker processes and forward the messages to logging
@@ -120,18 +118,17 @@ def exec_progress_pool(
 
         worker_initializer = _noop
 
-    with pool_lock:
-        _exec_progress_pool(
-            max_workers=max_workers,
-            tqdm_kwargs=tqdm_kwargs,
-            worker_initializer=worker_initializer,
-            task=task,
-            task_arguments=task_arguments,
-            task_finished=task_finished,
-            log_queue=log_queue,
-            pool_class=pool_class,
-            initializer=initializer,
-        )
+    _exec_progress_pool(
+        max_workers=max_workers,
+        tqdm_kwargs=tqdm_kwargs,
+        worker_initializer=worker_initializer,
+        task=task,
+        task_arguments=task_arguments,
+        task_finished=task_finished,
+        log_queue=log_queue,
+        pool_class=pool_class,
+        initializer=initializer,
+    )
 
 
 def _exec_progress_pool(

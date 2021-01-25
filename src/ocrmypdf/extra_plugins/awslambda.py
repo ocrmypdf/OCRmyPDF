@@ -11,7 +11,6 @@
 import logging
 import logging.handlers
 import signal
-import threading
 from contextlib import suppress
 from enum import Enum, auto
 from itertools import islice, repeat, takewhile, zip_longest
@@ -22,8 +21,6 @@ from unittest.mock import Mock
 
 from ocrmypdf import hookimpl
 from ocrmypdf.exceptions import InputFileError
-
-pool_lock = threading.Lock()
 
 
 class MessageType(Enum):
@@ -101,15 +98,14 @@ def lambda_pool_impl(
             task_finished(result, pbar)
         return
 
-    with pool_lock:
-        _lambda_pool_impl(
-            max_workers=max_workers,
-            worker_initializer=worker_initializer,
-            task=task,
-            task_arguments=task_arguments,
-            task_finished=task_finished,
-            pbar=pbar,
-        )
+    _lambda_pool_impl(
+        max_workers=max_workers,
+        worker_initializer=worker_initializer,
+        task=task,
+        task_arguments=task_arguments,
+        task_finished=task_finished,
+        pbar=pbar,
+    )
 
 
 def _lambda_pool_impl(
