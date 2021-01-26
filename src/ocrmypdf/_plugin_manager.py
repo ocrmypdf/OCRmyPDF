@@ -10,9 +10,8 @@ import importlib
 import importlib.util
 import pkgutil
 import sys
-from functools import partial
 from pathlib import Path
-from typing import Callable, List, Tuple, Union
+from typing import List, Tuple, Union
 
 import pluggy
 
@@ -32,7 +31,11 @@ class OcrmypdfPluginManager(pluggy.PluginManager):
     """
 
     def __init__(
-        self, *args, plugins: List[Union[str, Path]], builtins: bool = True, **kwargs,
+        self,
+        *args,
+        plugins: List[Union[str, Path]],
+        builtins: bool = True,
+        **kwargs,
     ):
         self.__init_args = args
         self.__init_kwargs = kwargs
@@ -88,7 +91,9 @@ class OcrmypdfPluginManager(pluggy.PluginManager):
 
 def get_plugin_manager(plugins: List[Union[str, Path]], builtins=True):
     pm = OcrmypdfPluginManager(
-        project_name='ocrmypdf', plugins=plugins, builtins=builtins,
+        project_name='ocrmypdf',
+        plugins=plugins,
+        builtins=builtins,
     )
     return pm
 

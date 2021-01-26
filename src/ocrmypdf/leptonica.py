@@ -13,7 +13,6 @@
 import argparse
 import logging
 import os
-import platform
 import sys
 import threading
 import warnings

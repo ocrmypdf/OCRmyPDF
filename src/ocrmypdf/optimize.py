@@ -10,11 +10,9 @@ import sys
 import tempfile
 from collections import defaultdict
 from functools import partial
-from io import BytesIO
 from os import fspath
 from pathlib import Path
 from typing import (
-    Any,
     Callable,
     Dict,
     Iterator,
@@ -49,7 +47,7 @@ DEFAULT_PNG_QUALITY = 70
 Xref = NewType('Xref', int)
 
 
-class XrefExt(NamedTuple):
+class XrefExt(NamedTuple):  # pylint: disable=inherit-non-class
     xref: Xref
     ext: str
 
@@ -212,7 +210,10 @@ def extract_image_generic(
 
 
 def extract_images(
-    pike: Pdf, root: Path, options, extract_fn: Callable[..., Optional[XrefExt]],
+    pike: Pdf,
+    root: Path,
+    options,
+    extract_fn: Callable[..., Optional[XrefExt]],
 ) -> Iterator[Tuple[int, XrefExt]]:
     """Extract image using extract_fn
 
@@ -564,10 +565,10 @@ def rewrite_png(pike: Pdf, im_obj: Object, compdata) -> None:  # pragma: no cove
         # ncolors == 0 means we are using a colorspace without a palette
         if compdata.spp == 1:
             cs = Name.DeviceGray
-        elif compdata.spp == 3:
-            cs = Name.DeviceRGB
         elif compdata.spp == 4:
             cs = Name.DeviceCMYK
+        else:  # spp == 3
+            cs = Name.DeviceRGB
     im_obj.ColorSpace = cs
     im_obj.write(compdata.read(), filter=Name.FlateDecode, decode_parms=dparms)
 

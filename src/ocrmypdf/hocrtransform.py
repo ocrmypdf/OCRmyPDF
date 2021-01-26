@@ -31,7 +31,6 @@
 import argparse
 import os
 import re
-from collections import namedtuple
 from itertools import chain
 from math import atan, cos, sin
 from pathlib import Path
@@ -45,7 +44,7 @@ from reportlab.pdfgen.canvas import Canvas
 Element = ElementTree.Element
 
 
-class Rect(NamedTuple):
+class Rect(NamedTuple):  # pylint: disable=inherit-non-class
     """A rectangle for managing PDF coordinates."""
 
     x1: Any

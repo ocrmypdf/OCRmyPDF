@@ -9,10 +9,8 @@
 
 from contextlib import contextmanager
 from io import BytesIO
-from os import fspath
 from pathlib import Path
 from subprocess import PIPE
-from tempfile import NamedTemporaryFile
 
 from PIL import Image
 

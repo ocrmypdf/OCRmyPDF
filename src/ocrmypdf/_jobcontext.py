@@ -10,7 +10,6 @@ import shutil
 import sys
 from argparse import Namespace
 from copy import copy
-from io import IOBase
 from pathlib import Path
 from typing import Iterator
 

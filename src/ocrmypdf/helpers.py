@@ -17,7 +17,7 @@ from functools import wraps
 from io import StringIO
 from math import isclose
 from pathlib import Path
-from typing import Any, Sequence, TypeVar
+from typing import Any, Sequence
 
 import pikepdf
 

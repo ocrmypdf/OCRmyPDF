@@ -15,7 +15,7 @@ from functools import partial
 from math import hypot, isclose
 from os import PathLike
 from pathlib import Path
-from typing import Any, Container, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Container, Iterator, Optional, Tuple, Union
 from warnings import warn
 
 import pikepdf
