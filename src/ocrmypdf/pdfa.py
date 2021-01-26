@@ -112,7 +112,7 @@ def generate_pdfa_ps(target_filename: Path, icc: str = 'sRGB'):
 
 
 def file_claims_pdfa(filename: Path):
-    """Determines if the file claims to be PDF/A compliant
+    """Determines if the file claims to be PDF/A compliant.
 
     This only checks if the XMP metadata contains a PDF/A marker. It does not
     do full PDF/A validation.

@@ -35,7 +35,7 @@ from collections import namedtuple
 from itertools import chain
 from math import atan, cos, sin
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Any, NamedTuple, Optional, Tuple, Union
 from xml.etree import ElementTree
 
 from reportlab.lib.colors import black, cyan, magenta, red
@@ -44,7 +44,14 @@ from reportlab.pdfgen.canvas import Canvas
 
 Element = ElementTree.Element
 
-Rect = namedtuple('Rect', ['x1', 'y1', 'x2', 'y2'])
+
+class Rect(NamedTuple):
+    """A rectangle for managing PDF coordinates."""
+
+    x1: Any
+    y1: Any
+    x2: Any
+    y2: Any
 
 
 class HocrTransformError(Exception):

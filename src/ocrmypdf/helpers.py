@@ -63,8 +63,13 @@ class NeverRaise(Exception):
 
 
 def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike):
-    """
-    Helper function: relinks soft symbolic link if necessary
+    """Create a symbolic link at ``soft_link_name``, which references ``input_file``.
+
+    Think of this as copying ``input_file`` to ``soft_link_name`` with less overhead.
+
+    Use symlinks safely. Self-linking loops are prevented. On Windows, file copy is
+    used since symlinks may require administrator privileges. An existing link at the
+    destination is removed.
     """
     input_file = os.fspath(input_file)
     soft_link_name = os.fspath(soft_link_name)
@@ -72,8 +77,8 @@ def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike):
     # Guard against soft linking to oneself
     if input_file == soft_link_name:
         log.warning(
-            "No symbolic link made. You are using "
-            "the original data directory as the working directory."
+            "No symbolic link created. You are using  the original data directory "
+            "as the working directory."
         )
         return
 
@@ -114,7 +119,7 @@ def is_iterable_notstr(thing: Any) -> bool:
 
 
 def monotonic(L: Sequence) -> bool:
-    """Does list increase monotonically?"""
+    """Does this sequence increase monotonically?"""
     return all(b > a for a, b in zip(L, L[1:]))
 
 
@@ -173,7 +178,8 @@ def is_file_writable(test_file: os.PathLike) -> bool:
 def check_pdf(input_file: Path) -> bool:
     """Check if a PDF complies with the PDF specification.
 
-    Checks for proper formatting and proper linearization.
+    Checks for proper formatting and proper linearization. Uses pikepdf (which in
+    turn, uses QPDF) to perform the checks.
     """
     pdf = None
     try:
@@ -217,7 +223,7 @@ def check_pdf(input_file: Path) -> bool:
 
 
 def clamp(n, smallest, largest):  # mypy doesn't understand types for this
-    """Clamps the value of n to between smallest and largest."""
+    """Clamps the value of ``n`` to between ``smallest`` and ``largest``."""
     return max(smallest, min(n, largest))
 
 
@@ -235,7 +241,7 @@ def pikepdf_enable_mmap():
 
 
 def deprecated(func):
-    """Warn that function is deprecated"""
+    """Warn that function is deprecated."""
 
     @wraps(func)
     def new_func(*args, **kwargs):

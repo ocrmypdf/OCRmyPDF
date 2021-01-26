@@ -5,6 +5,15 @@ API Reference
 This page summarizes the rest of the public API. Generally speaking this
 should mainly of interest to plugin developers.
 
+ocrmypdf
+========
+
+.. autoclass:: ocrmypdf.PageContext
+    :members:
+
+.. autoclass:: ocrmypdf.PdfContext
+    :members:
+
 ocrmypdf.exceptions
 ===================
 
@@ -17,6 +26,9 @@ ocrmypdf.helpers
 
 .. automodule:: ocrmypdf.helpers
     :members:
+    :noindex: deprecated
+
+    .. autodecorator:: deprecated
 
 ocrmypdf.hocrtransform
 ======================

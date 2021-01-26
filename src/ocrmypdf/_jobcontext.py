@@ -14,11 +14,19 @@ from io import IOBase
 from pathlib import Path
 from typing import Iterator
 
+from pluggy import PluginManager
+
 from ocrmypdf.pdfinfo import PdfInfo
+from ocrmypdf.pdfinfo.info import PageInfo
 
 
 class PdfContext:
-    """Holds our context for a particular run of the pipeline"""
+    """Holds the context for a particular run of the pipeline."""
+
+    options: Namespace  #: The specified options for processing this PDF.
+    origin: Path  #: The filename of the original input file.
+    pdfinfo: PdfInfo  #: Detailed data for this PDF.
+    plugin_manager: PluginManager  #: PluginManager for processing the current PDF.
 
     def __init__(
         self,
@@ -35,20 +43,32 @@ class PdfContext:
         self.plugin_manager = plugin_manager
 
     def get_path(self, name: str) -> Path:
+        """Generate a ``Path`` for an intermediate file involved in processing.
+
+        The path will be in a temporary folder that is common for all processing
+        of this particular PDF.
+        """
         return self.work_folder / name
 
     def get_page_contexts(self) -> Iterator['PageContext']:
+        """Get all ``PageContext`` for this PDF."""
         npages = len(self.pdfinfo)
         for n in range(npages):
             yield PageContext(self, n)
 
 
 class PageContext:
-    """Holds our context for a page
+    """Holds our context for a page.
 
     Must be pickable, so stores only intrinsic/simple data elements or those
-    capable of their serializing themselves via __getstate__.
+    capable of their serializing themselves via ``__getstate__``.
     """
+
+    options: Namespace  #: The specified options for processing this PDF.
+    origin: Path  #: The filename of the original input file.
+    pageno: int  #: This page number (zero-based).
+    pageinfo: PageInfo  #: Information on this page.
+    plugin_manager: PluginManager  #: PluginManager for processing the current PDF.
 
     def __init__(self, pdf_context: PdfContext, pageno):
         self.work_folder = pdf_context.work_folder
@@ -59,6 +79,11 @@ class PageContext:
         self.plugin_manager = pdf_context.plugin_manager
 
     def get_path(self, name: str) -> Path:
+        """Generate a ``Path`` for a file that is part of processing this page.
+
+        The path will be based in a common temporary folder and have a prefix based
+        on the page number.
+        """
         return self.work_folder / ("%06d_%s" % (self.pageno + 1, name))
 
     def __getstate__(self):

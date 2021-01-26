@@ -65,6 +65,27 @@ similar to ``pytest`` packages such as ``pytest-cov`` (the package) and
     ``ocrmypdf-`` (for the package name on PyPI) and ``ocrmypdf_`` (for the
     module), just like pytest plugins.
 
+Setuptools plugins
+==================
+
+You can also create a plugin that OCRmyPDF will always automatically load if both are
+installed in the same virtual environment, using a setuptools entrypoint.
+
+Your package's ``setup.py`` would need to contain the following, for a plugin
+named ``ocrmypdf-exampleplugin``:
+
+.. code-block:: python
+
+    # sample ./setup.py file
+    from setuptools import setup
+
+    setup(
+        name="ocrmypdf-exampleplugin",
+        packages=["exampleplugin"],
+        # the following makes a plugin available to pytest
+        entry_points={"ocrmypdf": ["exampleplugin = exampleplugin.pluginmodule"]},
+    )
+
 Plugin requirements
 ===================
 
