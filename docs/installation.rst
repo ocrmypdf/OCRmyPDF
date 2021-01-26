@@ -520,7 +520,7 @@ DLLs or other Windows patches, and may require a reboot.
 You may then use ``pip`` to install ocrmypdf. (This can performed by a user or
 Administrator.):
 
-* ``pip install ocrmypdf
+* ``pip install ocrmypdf``
 
 Chocolatey automatically selects appropriate versions of these applications. If you
 are installing them manually, please install 64-bit versions of all applications for
