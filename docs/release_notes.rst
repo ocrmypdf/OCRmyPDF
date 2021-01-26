@@ -12,6 +12,16 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.6.0
+=======
+
+-  OCRmyPDF will now automatically register plugins from the same virtual environment
+   with an appropriate setuptools entrypoint.
+-  Refactor the plugin manager to remove unnecessary complications and make plugin
+   registration more automatic.
+-  ``PageContext`` and ``PdfContext`` are now formally part of the API, as they
+   should have been, since they were part of ``ocrmypdf.pluginspec``.
+
 v11.5.0
 =======
 
