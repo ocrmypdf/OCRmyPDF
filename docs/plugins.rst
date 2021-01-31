@@ -130,6 +130,16 @@ Custom command line arguments
 
 .. autofunction:: ocrmypdf.pluginspec.check_options
 
+Execution and progress reporting
+--------------------------------
+
+.. autoclass: ocrmypdf.pluginspec.Executor
+    :members:
+
+.. autofunction:: ocrmypdf.pluginspec.get_executor
+
+.. autofunction:: ocrmypdf.pluginspec.get_progress_bar
+
 Applying special behavior before processing
 -------------------------------------------
 

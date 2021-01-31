@@ -117,7 +117,7 @@ class StandardExecutor(Executor):
         listener = threading.Thread(target=log_listener, args=(log_queue,))
         listener.start()
 
-        with tqdm(**tqdm_kwargs) as pbar:
+        with self.pbar_class(**tqdm_kwargs) as pbar:
             pool = pool_class(
                 processes=max_workers,
                 initializer=initializer,
@@ -156,3 +156,8 @@ class StandardExecutor(Executor):
 @hookimpl
 def get_executor():
     return StandardExecutor()
+
+
+@hookimpl
+def get_progress_bar():
+    return tqdm

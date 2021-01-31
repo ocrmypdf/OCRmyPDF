@@ -10,15 +10,32 @@ from abc import ABC, abstractmethod
 from functools import partial
 from typing import Callable, Iterable, Optional
 
-from tqdm import tqdm
-
 
 def _task_noop(*_args, **_kwargs):
     return
 
 
+class NullProgressBar:
+    def __init__(self, **kwargs):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
+
+    def update(self, _arg=None):
+        return
+
+
 class Executor(ABC):
     pool_lock = threading.Lock()
+    pbar_class = NullProgressBar
+
+    def __init__(self, *, pbar_class=None):
+        if pbar_class:
+            self.pbar_class = pbar_class
 
     def __call__(
         self,
@@ -32,17 +49,21 @@ class Executor(ABC):
         task_finished: Optional[Callable] = None,
     ) -> None:
         """
+        Set up parallel execution and progress reporting.
+
         Args:
-            use_threads: If False, the workload is the sort that will benefit from
+            use_threads: If ``False``, the workload is the sort that will benefit from
                 running in a multiprocessing context (for example, it uses Python
                 heavily, and parallelizing it with threads is not expected to be
                 performant).
             max_workers: The maximum number of workers that should be run.
             tdqm_kwargs: Arguments to set up the progress bar.
-            worker_initializer: Called when the worker is initialized, in the worker's
-                execution context. Must be possible to marshall to the worker.
+            worker_initializer: Called when a worker is initialized, in the worker's
+                execution context. If the child workers are processes, it must be
+                possible to marshall/pickle the worker initializer.
+                ``functools.partial`` can be used to bind parameters.
             task: Called when the worker starts a new task, in the worker's execution
-                context. Must be possible to marshallable to the worker.
+                context. Must be possible to marshall to the worker.
             task_finished: Called when a worker finishes a task, in the parent's
                 context.
             task_arguments: An iterable that generates a group of parameters for each
@@ -86,7 +107,8 @@ class Executor(ABC):
 
 
 def setup_executor(plugin_manager) -> Executor:
-    return plugin_manager.hook.get_executor()
+    pbar_class = plugin_manager.hook.get_progress_bar()
+    return plugin_manager.hook.get_executor(pbar_class=pbar_class)
 
 
 class SerialExecutor(Executor):
@@ -107,7 +129,7 @@ class SerialExecutor(Executor):
         task_arguments: Iterable,
         task_finished: Callable,
     ):
-        with tqdm(**tqdm_kwargs) as pbar:
+        with self.pbar_class(**tqdm_kwargs) as pbar:
             for args in task_arguments:
                 result = task(args)
                 task_finished(result, pbar)

@@ -65,14 +65,47 @@ def check_options(options: Namespace) -> None:
 
 @hookspec(firstresult=True)
 def get_executor() -> Executor:
-    """Called to perform parallel execution
+    """Called to obtain an object that manages parallel execution.
 
     This may be used to replace OCRmyPDF's default parallel execution system
     with a third party alternative. For example, you could make OCRmyPDF run in a
     distributed environment.
 
     OCRmyPDF's executors are analogous to the standard Python executors in
-    conconcurrent.futures, but they do not work the same way.
+    ``conconcurrent.futures``, but they do not work the same way.
+
+    Should be of type :class:`Executor` or otherwise conforming to the protocol
+    of that call.
+
+    Note:
+        This hook will be called from the main process, and may modify global state
+        before child worker processes are forked.
+    Note:
+        This is a :ref:`firstresult hook<firstresult>`.
+    """
+
+
+@hookspec(firstresult=True)
+def get_progress_bar():
+    """Called to obtain a class that can be used to create progress bars.
+
+    The class should follow a tqdm-like protocol. Calling the class should return
+    a new progress bar object, which is activated with ``__enter__`` and terminated
+    ``__exit__``. An update method is called whenever the progress bar is updated.
+
+    The progress bar is held in the main process/thread and not updated by child
+    process/threads. When a child notifies the parent of completed work, the
+    parent updates the progress bar.
+
+    The arguments are the same as `tqdm <https://github.com/tqdm/tqdm>`_ accepts.
+
+    Here is how OCRmyPDF will use the progress bar:
+
+    Example:
+        pbar_class = pm.hook.get_progress_bar()
+        with pbar_class(**tqdm_kwargs) as pbar:
+            ...
+            pbar.update(1)
     """
 
 

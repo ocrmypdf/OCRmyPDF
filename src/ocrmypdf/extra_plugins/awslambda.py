@@ -92,12 +92,10 @@ class LambdaExecutor(Executor):
         task_arguments: Iterable,
         task_finished: Callable,
     ):
-        pbar = Mock()
-
         if use_threads and max_workers == 1:
             for args in task_arguments:
                 result = task(args)
-                task_finished(result, pbar)
+                task_finished(result, self.pbar_class)
             return
 
         self._lambda_pool_impl(
@@ -106,7 +104,6 @@ class LambdaExecutor(Executor):
             task=task,
             task_arguments=task_arguments,
             task_finished=task_finished,
-            pbar=pbar,
         )
 
     def _lambda_pool_impl(
