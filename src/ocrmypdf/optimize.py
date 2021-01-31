@@ -9,8 +9,6 @@ import logging
 import sys
 import tempfile
 from collections import defaultdict
-from functools import partial
-from io import BytesIO
 from os import fspath
 from pathlib import Path
 from typing import (
@@ -31,7 +29,6 @@ import img2pdf
 import pikepdf
 from pikepdf import Dictionary, Name, Object, Pdf, PdfImage
 from PIL import Image
-from tqdm import tqdm
 
 from ocrmypdf import leptonica
 from ocrmypdf._concurrent import Executor, SerialExecutor
@@ -391,27 +388,53 @@ def convert_to_jbig2(
             )
 
 
-def transcode_jpegs(pike: Pdf, jpegs: Sequence[Xref], root: Path, options) -> None:
-    for xref in tqdm(
-        jpegs, desc="JPEGs", unit='image', disable=not options.progress_bar
-    ):
-        in_jpg = jpg_name(root, xref)
-        opt_jpg = in_jpg.with_suffix('.opt.jpg')
+def _optimize_jpeg(args):
+    xref, in_jpg, opt_jpg, jpeg_quality = args
 
-        # This produces a debug warning from PIL
-        # DEBUG:PIL.Image:Error closing: 'NoneType' object has no attribute
-        # 'close'.  Seems to be mostly harmless
-        # https://github.com/python-pillow/Pillow/issues/1144
-        with Image.open(in_jpg) as im:
-            im.save(opt_jpg, optimize=True, quality=options.jpeg_quality)
+    # This may produce a debug warning from PIL
+    # DEBUG:PIL.Image:Error closing: 'NoneType' object has no attribute
+    # 'close'.  Seems to be mostly harmless
+    # https://github.com/python-pillow/Pillow/issues/1144
+    with Image.open(in_jpg) as im:
+        im.save(opt_jpg, optimize=True, quality=jpeg_quality)
 
-        if opt_jpg.stat().st_size > in_jpg.stat().st_size:
-            log.debug("xref %s, jpeg, made larger - skip", xref)
-            continue
+    if opt_jpg.stat().st_size > in_jpg.stat().st_size:
+        log.debug("xref %s, jpeg, made larger - skip", xref)
+        opt_jpg.unlink()
+        opt_jpg = None
+    return xref, opt_jpg
 
-        compdata = leptonica.CompressedData.open(opt_jpg)
-        im_obj = pike.get_object(xref, 0)
-        im_obj.write(compdata.read(), filter=Name.DCTDecode)
+
+def transcode_jpegs(
+    pike: Pdf, jpegs: Sequence[Xref], root: Path, options, executor
+) -> None:
+    def jpeg_args():
+        for xref in jpegs:
+            in_jpg = jpg_name(root, xref)
+            opt_jpg = in_jpg.with_suffix('.opt.jpg')
+            yield xref, in_jpg, opt_jpg, options.jpeg_quality
+
+    def finish_jpeg(result, pbar):
+        xref, opt_jpg = result
+        if opt_jpg:
+            compdata = leptonica.CompressedData.open(opt_jpg)
+            im_obj = pike.get_object(xref, 0)
+            im_obj.write(compdata.read(), filter=Name.DCTDecode)
+        pbar.update()
+
+    executor(
+        use_threads=True,
+        max_workers=options.jobs,
+        tqdm_kwargs=dict(
+            desc="JPEGs",
+            total=len(jpegs),
+            unit='image',
+            disable=not options.progress_bar,
+        ),
+        task=_optimize_jpeg,
+        task_arguments=jpeg_args(),
+        task_finished=finish_jpeg,
+    )
 
 
 def _transcode_png(pike: Pdf, filename: Path, xref: Xref) -> bool:
@@ -598,7 +621,7 @@ def optimize(
         root.mkdir(exist_ok=True)
 
         jpegs, pngs = extract_images_generic(pike, root, options)
-        transcode_jpegs(pike, jpegs, root, options)
+        transcode_jpegs(pike, jpegs, root, options, executor)
         # if options.optimize >= 2:
         # Try pngifying the jpegs
         #    transcode_pngs(pike, jpegs, jpg_name, root, options)
