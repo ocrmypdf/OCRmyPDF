@@ -10,6 +10,7 @@ import atexit
 import logging
 import re
 from collections import defaultdict, namedtuple
+from contextlib import ExitStack
 from decimal import Decimal
 from enum import Enum
 from functools import partial
@@ -22,7 +23,7 @@ from warnings import warn
 import pikepdf
 from pikepdf import Object, Pdf, PdfMatrix
 
-from ocrmypdf._concurrent import exec_progress_pool
+from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf.exceptions import EncryptedPdfError, InputFileError
 from ocrmypdf.helpers import Resolution, available_cpu_count, pikepdf_enable_mmap
 from ocrmypdf.pdfinfo.layout import get_page_analysis, get_text_boxes
@@ -592,12 +593,21 @@ def _pdf_pageinfo_sync_init(pdf: Pdf, infile: Path, pdfminer_loglevel):
 def _pdf_pageinfo_sync(args):
     pageno, thread_pdf, infile, check_pages, detailed_analysis = args
     pdf = thread_pdf if thread_pdf is not None else worker_pdf
-    page = PageInfo(pdf, pageno, infile, check_pages, detailed_analysis)
-    return page
+    with ExitStack() as stack:
+        if not pdf:  # When called with SerialExecutor
+            pdf = stack.enter_context(pikepdf.open(infile))
+        page = PageInfo(pdf, pageno, infile, check_pages, detailed_analysis)
+        return page
 
 
 def _pdf_pageinfo_concurrent(
-    pdf, infile, progbar, max_workers, check_pages, detailed_analysis=False
+    pdf,
+    executor: Executor,
+    infile,
+    progbar,
+    max_workers,
+    check_pages,
+    detailed_analysis=False,
 ):
     pages = [None] * len(pdf.pages)
 
@@ -629,7 +639,7 @@ def _pdf_pageinfo_concurrent(
         (n, initial_pdf, infile, check_pages, detailed_analysis) for n in range(total)
     )
     assert n_workers == 1 if use_threads else n_workers >= 1, "Not multithreadable"
-    exec_progress_pool(
+    executor(
         use_threads=use_threads,
         max_workers=n_workers,
         tqdm_kwargs=dict(
@@ -829,10 +839,12 @@ class PdfInfo:
     def __init__(
         self,
         infile,
+        *,
         detailed_analysis: bool = False,
         progbar: bool = False,
         max_workers: int = None,
         check_pages=None,
+        executor: Executor = SerialExecutor(),
     ):
         self._infile = infile
         if check_pages is None:
@@ -843,6 +855,7 @@ class PdfInfo:
                 raise EncryptedPdfError()  # Triggered by encryption with empty passwd
             self._pages = _pdf_pageinfo_concurrent(
                 pdf,
+                executor,
                 infile,
                 progbar,
                 max_workers,

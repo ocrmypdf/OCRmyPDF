@@ -34,7 +34,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from ocrmypdf import leptonica
-from ocrmypdf._concurrent import exec_progress_pool
+from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf.exceptions import OutputFileAccessError
@@ -301,7 +301,7 @@ def extract_images_jbig2(pike: Pdf, root: Path, options) -> Dict[int, List[XrefE
 
 
 def _produce_jbig2_images(
-    jbig2_groups: Dict[int, List[XrefExt]], root: Path, options
+    jbig2_groups: Dict[int, List[XrefExt]], root: Path, options, executor: Executor
 ) -> None:
     """Produce JBIG2 images from their groups"""
 
@@ -333,7 +333,7 @@ def _produce_jbig2_images(
         jbig2_args = jbig2_single_args
         jbig2_convert = jbig2enc.convert_single_mp
 
-    exec_progress_pool(
+    executor(
         use_threads=True,
         max_workers=options.jobs,
         tqdm_kwargs=dict(
@@ -348,7 +348,11 @@ def _produce_jbig2_images(
 
 
 def convert_to_jbig2(
-    pike: Pdf, jbig2_groups: Dict[int, List[XrefExt]], root: Path, options
+    pike: Pdf,
+    jbig2_groups: Dict[int, List[XrefExt]],
+    root: Path,
+    options,
+    executor: Executor,
 ) -> None:
     """Convert images to JBIG2 and insert into PDF.
 
@@ -363,7 +367,7 @@ def convert_to_jbig2(
     and needs no dictionary. Currently this must be lossless JBIG2.
     """
 
-    _produce_jbig2_images(jbig2_groups, root, options)
+    _produce_jbig2_images(jbig2_groups, root, options, executor)
 
     for group, xref_exts in jbig2_groups.items():
         prefix = f'group{group:08d}'
@@ -457,6 +461,7 @@ def transcode_pngs(
     image_name_fn: Callable[[Path, Xref], Path],
     root: Path,
     options,
+    executor,
 ) -> None:
     modified: MutableSet[Xref] = set()
     if options.optimize >= 2:
@@ -476,7 +481,7 @@ def transcode_pngs(
                 )
                 modified.add(xref)
 
-        exec_progress_pool(
+        executor(
             use_threads=True,
             max_workers=options.jobs,
             tqdm_kwargs=dict(
@@ -569,7 +574,13 @@ def rewrite_png(pike: Pdf, im_obj: Object, compdata) -> None:  # pragma: no cove
     im_obj.write(compdata.read(), filter=Name.FlateDecode, decode_parms=dparms)
 
 
-def optimize(input_file: Path, output_file: Path, context, save_settings) -> None:
+def optimize(
+    input_file: Path,
+    output_file: Path,
+    context,
+    save_settings,
+    executor: Executor = SerialExecutor(),
+) -> None:
     options = context.options
     if options.optimize == 0:
         safe_symlink(input_file, output_file)
@@ -591,10 +602,10 @@ def optimize(input_file: Path, output_file: Path, context, save_settings) -> Non
         # if options.optimize >= 2:
         # Try pngifying the jpegs
         #    transcode_pngs(pike, jpegs, jpg_name, root, options)
-        transcode_pngs(pike, pngs, png_name, root, options)
+        transcode_pngs(pike, pngs, png_name, root, options, executor)
 
         jbig2_groups = extract_images_jbig2(pike, root, options)
-        convert_to_jbig2(pike, jbig2_groups, root, options)
+        convert_to_jbig2(pike, jbig2_groups, root, options, executor)
 
         target_file = output_file.with_suffix('.opt.pdf')
         pike.remove_unreferenced_resources()

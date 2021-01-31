@@ -26,7 +26,7 @@ from typing import Callable, Iterable, Optional, Union
 
 from tqdm import tqdm
 
-from ocrmypdf import hookimpl
+from ocrmypdf import Executor, hookimpl
 from ocrmypdf.exceptions import InputFileError
 
 Queue = Union[multiprocessing.Queue, queue.Queue]
@@ -91,99 +91,68 @@ def thread_init(_queue: Queue, user_init: Callable[[], None], _loglevel):
     return
 
 
-def exec_progress_pool(
-    *,
-    use_threads: bool,
-    max_workers: int,
-    tqdm_kwargs: dict,
-    worker_initializer: Optional[Callable],
-    task: Callable,
-    task_arguments: Optional[Iterable] = None,
-    task_finished: Callable,
-):
+class StandardExecutor(Executor):
+    def _execute(
+        self,
+        *,
+        use_threads: bool,
+        max_workers: int,
+        tqdm_kwargs: dict,
+        worker_initializer: Callable,
+        task: Callable,
+        task_arguments: Iterable,
+        task_finished: Callable,
+    ):
+        if use_threads:
+            log_queue = queue.Queue(-1)
+            pool_class = ThreadPool
+            initializer = thread_init
+        else:
+            log_queue = multiprocessing.Queue(-1)
+            pool_class = ProcessPool
+            initializer = process_init
 
-    if use_threads:
-        log_queue = queue.Queue(-1)
-        pool_class = ThreadPool
-        initializer = thread_init
-    else:
-        log_queue = multiprocessing.Queue(-1)
-        pool_class = ProcessPool
-        initializer = process_init
+        # Regardless of whether we use_threads for worker processes, the log_listener
+        # must be a thread
+        listener = threading.Thread(target=log_listener, args=(log_queue,))
+        listener.start()
 
-    if not worker_initializer:
-
-        def _noop():
-            return
-
-        worker_initializer = _noop
-
-    _exec_progress_pool(
-        max_workers=max_workers,
-        tqdm_kwargs=tqdm_kwargs,
-        worker_initializer=worker_initializer,
-        task=task,
-        task_arguments=task_arguments,
-        task_finished=task_finished,
-        log_queue=log_queue,
-        pool_class=pool_class,
-        initializer=initializer,
-    )
-
-
-def _exec_progress_pool(
-    *,
-    max_workers: int,
-    tqdm_kwargs: dict,
-    worker_initializer: Callable,
-    task: Callable,
-    task_arguments: Optional[Iterable] = None,
-    task_finished: Callable,
-    log_queue: Queue,
-    pool_class: Callable,
-    initializer: Callable,
-):
-    # Regardless of whether we use_threads for worker processes, the log_listener
-    # must be a thread
-    listener = threading.Thread(target=log_listener, args=(log_queue,))
-    listener.start()
-
-    with tqdm(**tqdm_kwargs) as pbar:
-        pool = pool_class(
-            processes=max_workers,
-            initializer=initializer,
-            initargs=(log_queue, worker_initializer, logging.getLogger("").level),
-        )
-        try:
-            results = pool.imap_unordered(task, task_arguments)
-            for result in results:
-                if task_finished:
-                    task_finished(result, pbar)
-                else:
-                    pbar.update()
-        except KeyboardInterrupt:
-            # Terminate pool so we exit instantly
-            pool.terminate()
-            # Don't try listener.join() here, will deadlock
-            raise
-        except Exception:
-            if not os.environ.get("PYTEST_CURRENT_TEST", ""):
-                # Unless inside pytest, exit immediately because no one wants
-                # to wait for child processes to finalize results that will be
-                # thrown away. Inside pytest, we want child processes to exit
-                # cleanly so that they output an error messages or coverage data
-                # we need from them.
+        with tqdm(**tqdm_kwargs) as pbar:
+            pool = pool_class(
+                processes=max_workers,
+                initializer=initializer,
+                initargs=(log_queue, worker_initializer, logging.getLogger("").level),
+            )
+            try:
+                results = pool.imap_unordered(task, task_arguments)
+                for result in results:
+                    if task_finished:
+                        task_finished(result, pbar)
+                    else:
+                        pbar.update()
+            except KeyboardInterrupt:
+                # Terminate pool so we exit instantly
                 pool.terminate()
-            raise
-        finally:
-            # Terminate log listener
-            log_queue.put_nowait(None)
-            pool.close()
-            pool.join()
+                # Don't try listener.join() here, will deadlock
+                raise
+            except Exception:
+                if not os.environ.get("PYTEST_CURRENT_TEST", ""):
+                    # Unless inside pytest, exit immediately because no one wants
+                    # to wait for child processes to finalize results that will be
+                    # thrown away. Inside pytest, we want child processes to exit
+                    # cleanly so that they output an error messages or coverage data
+                    # we need from them.
+                    pool.terminate()
+                raise
+            finally:
+                # Terminate log listener
+                log_queue.put_nowait(None)
+                pool.close()
+                pool.join()
 
-    listener.join()
+        listener.join()
 
 
 @hookimpl
-def get_parallel_executor():
-    return exec_progress_pool
+def get_executor():
+    return StandardExecutor()

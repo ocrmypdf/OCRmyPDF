@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, AbstractSet, Callable, Iterable, List, Optiona
 
 import pluggy
 
+from ocrmypdf._concurrent import Executor
 from ocrmypdf.helpers import Resolution
 
 if TYPE_CHECKING:
@@ -62,44 +63,16 @@ def check_options(options: Namespace) -> None:
     """
 
 
-class ParallelExecutor(ABC):
-    @abstractstaticmethod
-    def __call__(
-        use_threads: bool,
-        max_workers: int,
-        tqdm_kwargs: dict,
-        worker_initializer: Callable,
-        task: Callable,
-        task_finished: Callable,
-        task_arguments: Optional[Iterable] = None,
-    ):
-        """
-        Args:
-            use_threads: If False, the workload is the sort that will benefit from
-                running in a multiprocessing context (for example, it uses Python
-                heavily, and parallelizing it with threads is not expected to be
-                performant).
-            max_workers: The maximum number of workers that should be run.
-            tdqm_kwargs: Arguments to set up the progress bar.
-            worker_initializer: Called when the worker is initialized, in the worker's
-                execution context. Must be possible to marshall to the worker.
-            task: Called when the worker starts a new task, in the worker's execution
-                context. Must be possible to marshallable to the worker.
-            task_finished: Called when a worker finishes a task, in the parent's
-                context.
-            task_arguments: An iterable that generates a group of parameters for each
-                task. This runs in the parent's context, but the parameters must be
-                marshallable to the worker.
-        """
-
-
 @hookspec(firstresult=True)
-def get_parallel_executor() -> Callable:
+def get_executor() -> Executor:
     """Called to perform parallel execution
 
     This may be used to replace OCRmyPDF's default parallel execution system
     with a third party alternative. For example, you could make OCRmyPDF run in a
     distributed environment.
+
+    OCRmyPDF's executors are analogous to the standard Python executors in
+    conconcurrent.futures, but they do not work the same way.
     """
 
 

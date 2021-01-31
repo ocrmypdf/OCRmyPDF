@@ -22,6 +22,7 @@ from PIL import Image, ImageColor, ImageDraw
 from tqdm import tqdm
 
 from ocrmypdf import leptonica
+from ocrmypdf._concurrent import Executor
 from ocrmypdf._exec import unpaper
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._version import PROGRAM_NAME
@@ -146,6 +147,8 @@ def triage(original_filename, input_file, output_file, options):
 
 def get_pdfinfo(
     input_file,
+    *,
+    executor: Executor,
     detailed_analysis=False,
     progbar=False,
     max_workers=None,
@@ -158,6 +161,7 @@ def get_pdfinfo(
             progbar=progbar,
             max_workers=max_workers,
             check_pages=check_pages,
+            executor=executor,
         )
     except pikepdf.PasswordError:
         raise EncryptedPdfError()
@@ -792,7 +796,7 @@ def metadata_fixup(working_file: Path, context: PdfContext):
     return output_file
 
 
-def optimize_pdf(input_file: Path, context: PdfContext):
+def optimize_pdf(input_file: Path, context: PdfContext, executor: Executor):
     output_file = context.get_path('optimize.pdf')
     save_settings = dict(
         compress_streams=True,
@@ -800,7 +804,7 @@ def optimize_pdf(input_file: Path, context: PdfContext):
         object_stream_mode=pikepdf.ObjectStreamMode.generate,
         linearize=should_linearize(input_file, context),
     )
-    optimize(input_file, output_file, context, save_settings)
+    optimize(input_file, output_file, context, save_settings, executor)
     return output_file
 
 
