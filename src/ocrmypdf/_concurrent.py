@@ -107,8 +107,8 @@ class Executor(ABC):
 
 
 def setup_executor(plugin_manager) -> Executor:
-    pbar_class = plugin_manager.hook.get_progress_bar()
-    return plugin_manager.hook.get_executor(pbar_class=pbar_class)
+    pbar_class = plugin_manager.hook.get_progressbar_class()
+    return plugin_manager.hook.get_executor(progressbar_class=pbar_class)
 
 
 class SerialExecutor(Executor):

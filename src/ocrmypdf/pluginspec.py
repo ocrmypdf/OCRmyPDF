@@ -28,7 +28,7 @@ hookspec = pluggy.HookspecMarker('ocrmypdf')
 # pylint: disable=unused-argument
 
 
-@hookspec
+@hookspec(firstresult=True)
 def get_logging_console() -> Handler:
     """Returns a logging handler. Should be configured to handle progress bars."""
 
@@ -70,7 +70,7 @@ def check_options(options: Namespace) -> None:
 
 
 @hookspec(firstresult=True)
-def get_executor() -> Executor:
+def get_executor(progressbar_class) -> Executor:
     """Called to obtain an object that manages parallel execution.
 
     This may be used to replace OCRmyPDF's default parallel execution system
@@ -92,7 +92,7 @@ def get_executor() -> Executor:
 
 
 @hookspec(firstresult=True)
-def get_progress_bar():
+def get_progressbar_class():
     """Called to obtain a class that can be used to create progress bars.
 
     The class should follow a tqdm-like protocol. Calling the class should return
@@ -108,7 +108,7 @@ def get_progress_bar():
     Here is how OCRmyPDF will use the progress bar:
 
     Example:
-        pbar_class = pm.hook.get_progress_bar()
+        pbar_class = pm.hook.get_progressbar_class()
         with pbar_class(**tqdm_kwargs) as pbar:
             ...
             pbar.update(1)

@@ -140,7 +140,7 @@ Execution and progress reporting
 
 .. autofunction:: ocrmypdf.pluginspec.get_executor
 
-.. autofunction:: ocrmypdf.pluginspec.get_progress_bar
+.. autofunction:: ocrmypdf.pluginspec.get_progressbar_class
 
 Applying special behavior before processing
 -------------------------------------------

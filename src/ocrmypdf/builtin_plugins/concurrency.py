@@ -155,12 +155,12 @@ class StandardExecutor(Executor):
 
 
 @hookimpl
-def get_executor():
-    return StandardExecutor()
+def get_executor(progressbar_class):
+    return StandardExecutor(pbar_class=progressbar_class)
 
 
 @hookimpl
-def get_progress_bar():
+def get_progressbar_class():
     return tqdm
 
 
