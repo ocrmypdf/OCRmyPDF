@@ -150,11 +150,6 @@ def extract_image_generic(
     if pim.bits_per_component == 1:
         return None
 
-    try:
-        pim.indexed  # pikepdf 1.6.3 can't handle [/Indexed [/Array...]]
-    except NotImplementedError:
-        return None
-
     if filtdp[0] == Name.DCTDecode and options.optimize >= 2:
         # This is a simple heuristic derived from some training data, that has
         # about a 70% chance of guessing whether the JPEG is high quality,
