@@ -13,10 +13,8 @@
 import argparse
 import logging
 import os
-import platform
 import sys
 import threading
-import warnings
 from collections import deque
 from collections.abc import Sequence
 from contextlib import suppress
@@ -25,6 +23,7 @@ from functools import lru_cache
 from io import BytesIO, UnsupportedOperation
 from os import fspath
 from tempfile import TemporaryFile
+from warnings import warn
 
 from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.lib._leptonica import ffi
@@ -390,7 +389,7 @@ class Pix(LeptonicaObject):
 
     @classmethod
     def read(cls, path):
-        warnings.warn('Use Pix.open() instead', DeprecationWarning)
+        warn('Use Pix.open() instead', DeprecationWarning)
         return cls.open(path)
 
     @classmethod
