@@ -95,9 +95,11 @@ def configure_logging(
     log = logging.getLogger(prefix)
     log.setLevel(logging.DEBUG)
 
+    console = None
     if plugin_manager and progress_bar_friendly:
         console = plugin_manager.hook.get_logging_console()
-    else:
+
+    if not console:
         console = logging.StreamHandler(stream=sys.stderr)
 
     if verbosity < 0:

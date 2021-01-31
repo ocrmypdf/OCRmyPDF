@@ -20,6 +20,7 @@ from typing import Callable, Iterable, Optional
 from unittest.mock import Mock
 
 from ocrmypdf import Executor, hookimpl
+from ocrmypdf._concurrent import NullProgressBar
 from ocrmypdf.exceptions import InputFileError
 
 
@@ -98,24 +99,6 @@ class LambdaExecutor(Executor):
                 task_finished(result, self.pbar_class)
             return
 
-        self._lambda_pool_impl(
-            max_workers=max_workers,
-            worker_initializer=worker_initializer,
-            task=task,
-            task_arguments=task_arguments,
-            task_finished=task_finished,
-        )
-
-    def _lambda_pool_impl(
-        self,
-        *,
-        max_workers: int,
-        worker_initializer: Callable,
-        task: Callable,
-        task_arguments: Iterable,
-        task_finished: Callable,
-        pbar,
-    ):
         task_arguments = list(task_arguments)
         grouped_args = list(
             zip_longest(*list(split_every(max_workers, task_arguments)))
@@ -146,32 +129,43 @@ class LambdaExecutor(Executor):
         for process in processes:
             process.start()
 
-        while connections:
-            for r in wait(connections):
-                try:
-                    msg_type, msg = r.recv()
-                except EOFError:
-                    connections.remove(r)
-                    continue
+        with self.pbar_class(**tqdm_kwargs) as pbar:
+            while connections:
+                for r in wait(connections):
+                    try:
+                        msg_type, msg = r.recv()
+                    except EOFError:
+                        connections.remove(r)
+                        continue
 
-                if msg_type == MessageType.result:
-                    if task_finished:
-                        task_finished(msg, pbar)
-                elif msg_type == 'log':
-                    record = msg
-                    logger = logging.getLogger(record.name)
-                    logger.handle(record)
-                elif msg_type == MessageType.complete:
-                    connections.remove(r)
-                elif msg_type == MessageType.exception:
-                    for process in processes:
-                        process.terminate()
-                    raise msg
+                    if msg_type == MessageType.result:
+                        if task_finished:
+                            task_finished(msg, pbar)
+                    elif msg_type == 'log':
+                        record = msg
+                        logger = logging.getLogger(record.name)
+                        logger.handle(record)
+                    elif msg_type == MessageType.complete:
+                        connections.remove(r)
+                    elif msg_type == MessageType.exception:
+                        for process in processes:
+                            process.terminate()
+                        raise msg
 
         for process in processes:
             process.join()
 
 
 @hookimpl
-def get_executor():
-    return LambdaExecutor()
+def get_executor(progressbar_class):
+    return LambdaExecutor(pbar_class=progressbar_class)
+
+
+@hookimpl
+def get_logging_console():
+    return logging.StreamHandler()
+
+
+@hookimpl
+def get_progressbar_class():
+    return NullProgressBar
