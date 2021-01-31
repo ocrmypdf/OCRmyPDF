@@ -15,7 +15,10 @@ from pathlib import Path
 from typing import AnyStr, BinaryIO, Iterable, Optional, Union
 from warnings import warn
 
-from ocrmypdf._logging import PageNumberFilter, TqdmConsole
+from ocrmypdf._logging import (  # pylint: disable=unused-import
+    PageNumberFilter,
+    TqdmConsole,
+)
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._sync import run_pipeline
 from ocrmypdf._validation import check_options
@@ -47,6 +50,7 @@ def configure_logging(
     verbosity: Verbosity,
     progress_bar_friendly: bool = True,
     manage_root_logger: bool = False,
+    plugin_manager=None,
 ):
     """Set up logging.
 
@@ -74,12 +78,13 @@ def configure_logging(
     their own debug logging.
 
     Args:
-        verbosity (Verbosity): Verbosity level.
-        progress_bar_friendly (bool): Install the TqdmConsole log handler, which is
+        verbosity: Verbosity level.
+        progress_bar_friendly: Install the TqdmConsole log handler, which is
             compatible with the tqdm progress bar; without this log messages will
-            overwrite the progress bar
-        manage_root_logger (bool): Configure the process's root logger, to ensure
+            overwrite the progress bar.
+        manage_root_logger: Configure the process's root logger, to ensure
             all log output is sent through
+        plugin_manager: The plugin manager.
 
     Returns:
         The toplevel logger for ocrmypdf (or the root logger, if we are managing it).
@@ -90,8 +95,8 @@ def configure_logging(
     log = logging.getLogger(prefix)
     log.setLevel(logging.DEBUG)
 
-    if progress_bar_friendly:
-        console = logging.StreamHandler(stream=TqdmConsole(sys.stderr))
+    if plugin_manager and progress_bar_friendly:
+        console = plugin_manager.hook.get_logging_console()
     else:
         console = logging.StreamHandler(stream=sys.stderr)
 
@@ -245,6 +250,7 @@ def ocr(  # pylint: disable=unused-argument
     user_patterns: os.PathLike = None,
     fast_web_view: float = None,
     plugins: Iterable[StrPath] = None,
+    plugin_manager=None,
     keep_temporary_files: bool = None,
     progress_bar: bool = None,
     **kwargs,
@@ -296,6 +302,9 @@ def ocr(  # pylint: disable=unused-argument
     Returns:
         :class:`ocrmypdf.ExitCode`
     """
+    if plugins and plugin_manager:
+        raise ValueError("plugins= and plugin_manager are mutually exclusive")
+
     if not plugins:
         plugins = []
     elif isinstance(plugins, (str, Path)):
@@ -315,7 +324,8 @@ def ocr(  # pylint: disable=unused-argument
         # they might install different plugins, and generally speaking we have areas
         # of code that use global state.
 
-        plugin_manager = get_plugin_manager(plugins)
+        if not plugin_manager:
+            plugin_manager = get_plugin_manager(plugins)
         plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
 
         if 'verbose' in kwargs:

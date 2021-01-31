@@ -27,6 +27,7 @@ from typing import Callable, Iterable, Optional, Union
 from tqdm import tqdm
 
 from ocrmypdf import Executor, hookimpl
+from ocrmypdf._logging import TqdmConsole
 from ocrmypdf.exceptions import InputFileError
 
 Queue = Union[multiprocessing.Queue, queue.Queue]
@@ -161,3 +162,8 @@ def get_executor():
 @hookimpl
 def get_progress_bar():
     return tqdm
+
+
+@hookimpl
+def get_logging_console():
+    return logging.StreamHandler(stream=TqdmConsole(sys.stderr))

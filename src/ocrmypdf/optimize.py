@@ -423,7 +423,7 @@ def transcode_jpegs(
         pbar.update()
 
     executor(
-        use_threads=True,
+        use_threads=True,  # Processes are significantly slower at this task
         max_workers=options.jobs,
         tqdm_kwargs=dict(
             desc="JPEGs",

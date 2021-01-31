@@ -8,6 +8,7 @@
 from abc import ABC, abstractmethod, abstractstaticmethod
 from argparse import ArgumentParser, Namespace
 from collections import namedtuple
+from logging import Handler
 from pathlib import Path
 from typing import TYPE_CHECKING, AbstractSet, Callable, Iterable, List, Optional
 
@@ -25,6 +26,11 @@ if TYPE_CHECKING:
 hookspec = pluggy.HookspecMarker('ocrmypdf')
 
 # pylint: disable=unused-argument
+
+
+@hookspec
+def get_logging_console() -> Handler:
+    """Returns a logging handler. Should be configured to handle progress bars."""
 
 
 @hookspec
