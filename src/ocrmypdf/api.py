@@ -55,12 +55,15 @@ def configure_logging(
     """Set up logging.
 
     Before calling :func:`ocrmypdf.ocr()`, you can use this function to
-    configure logging, if you want ocrmypdf's output to look like the ocrmypdf
+    configure logging if you want ocrmypdf's output to look like the ocrmypdf
     command line interface. It will register log handlers, log filters, and
     formatters, configure color logging to standard error, and adjust the log
     levels of third party libraries. Details of this are fine-tuned and subject
     to change. The ``verbosity`` argument is equivalent to the argument
-    ``--verbose`` and applies those settings.
+    ``--verbose`` and applies those settings. If you have a wrapper
+    script for ocrmypdf and you want it to be very similar to ocrmypdf, use this
+    function; if you are using ocrmypdf as part of an application that manages
+    its own logging, you probably do not want this function.
 
     If this function is not called, ocrmypdf will not configure logging, and it
     is up to the caller of ``ocrmypdf.ocr()`` to set up logging as it wishes using
@@ -79,12 +82,10 @@ def configure_logging(
 
     Args:
         verbosity: Verbosity level.
-        progress_bar_friendly: Install the TqdmConsole log handler, which is
-            compatible with the tqdm progress bar; without this log messages will
-            overwrite the progress bar.
-        manage_root_logger: Configure the process's root logger, to ensure
-            all log output is sent through
-        plugin_manager: The plugin manager.
+        progress_bar_friendly: If True (the default), install a custom log handler
+            that is compatible with progress bars and colored output.
+        manage_root_logger: Configure the process's root logger.
+        plugin_manager: The plugin manager, used for obtaining the custom log handler.
 
     Returns:
         The toplevel logger for ocrmypdf (or the root logger, if we are managing it).

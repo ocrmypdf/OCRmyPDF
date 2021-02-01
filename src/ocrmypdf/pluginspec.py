@@ -30,7 +30,14 @@ hookspec = pluggy.HookspecMarker('ocrmypdf')
 
 @hookspec(firstresult=True)
 def get_logging_console() -> Handler:
-    """Returns a logging handler. Should be configured to handle progress bars."""
+    """Returns a custom logging handler.
+
+    Generally this is necessary when both logging output and a progress bar are both
+    outputting to ``sys.stderr``.
+
+    Note:
+        This is a :ref:`firstresult hook<firstresult>`.
+    """
 
 
 @hookspec
@@ -78,10 +85,15 @@ def get_executor(progressbar_class) -> Executor:
     distributed environment.
 
     OCRmyPDF's executors are analogous to the standard Python executors in
-    ``conconcurrent.futures``, but they do not work the same way.
+    ``conconcurrent.futures``, but they do not work the same way. Executors may
+    be reused for different, unrelated batch operations, since all of the context
+    for a given job are passed to :meth:`Executor.__call__`.
 
     Should be of type :class:`Executor` or otherwise conforming to the protocol
     of that call.
+
+    Arguments:
+        progressbar_class: A progress bar class, which will be created when
 
     Note:
         This hook will be called from the main process, and may modify global state
@@ -93,17 +105,27 @@ def get_executor(progressbar_class) -> Executor:
 
 @hookspec(firstresult=True)
 def get_progressbar_class():
-    """Called to obtain a class that can be used to create progress bars.
+    """Called to obtain a class that can be used to monitor progress.
+
+    A progress bar is assumed, but this could be used for any type of monitoring.
 
     The class should follow a tqdm-like protocol. Calling the class should return
     a new progress bar object, which is activated with ``__enter__`` and terminated
     ``__exit__``. An update method is called whenever the progress bar is updated.
+    Progress bar objects will not be reused; a new one will be created for each
+    group of tasks.
 
     The progress bar is held in the main process/thread and not updated by child
     process/threads. When a child notifies the parent of completed work, the
     parent updates the progress bar.
 
     The arguments are the same as `tqdm <https://github.com/tqdm/tqdm>`_ accepts.
+
+    Progress bars should never write to ``sys.stdout``, or they will corrupt the
+    output if OCRmyPDF writes a PDF to standard output.
+
+    The type of events that OCRmyPDF reports to a progress bar may change in
+    minor releases.
 
     Here is how OCRmyPDF will use the progress bar:
 
