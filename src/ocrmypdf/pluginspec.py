@@ -238,11 +238,11 @@ def filter_page_image(page: 'PageContext', image_filename: Path) -> Path:
     will be resized and the OCR layer misaligned. OCRmyPDF does not nothing
     to enforce these constraints; it is up to the plugin to do sensible things.
 
-    OCRmyPDF will create the PDF page based on the image format used. If you
-    convert the image to a JPEG, the output page will be created as a JPEG, etc.
-    If you change the colorspace, that change will be kept. Note that the
-    OCRmyPDF image optimization stage, if enabled, may ultimately chose a
-    different format.
+    OCRmyPDF will create the PDF page based on the image format used (unless the
+    hook is overriden). If you convert the image to a JPEG, the output page will
+    be created as a JPEG, etc. If you change the colorspace, that change will be
+    kept. Note that the OCRmyPDF image optimization stage, if enabled, may
+    ultimately chose a different format.
 
     If the return value is a file that does not exist, ``FileNotFoundError``
     will occur. The return value should be a path to a file in the same folder
@@ -251,6 +251,50 @@ def filter_page_image(page: 'PageContext', image_filename: Path) -> Path:
     Implementation detail: If the value returned is falsy, OCRmyPDF will ignore
     the return value and assume the input file was unmodified. This is deprecated.
     To leave the image unmodified, ``image_filename`` should be returned.
+
+    Note:
+        This hook will be called from child processes. Modifying global state
+        will not affect the main process or other child processes.
+    Note:
+        This is a :ref:`firstresult hook<firstresult>`.
+    """
+
+
+@hookspec(firstresult=True)
+def filter_pdf_page(
+    page: 'PageContext', image_filename: Path, output_pdf: Path
+) -> Path:
+    """Called to convert a filtered whole page image into a PDF.
+
+    A whole page image is only produced when preprocessing command line arguments
+    are issued or when ``--force-ocr`` is issued. If no whole page is image is
+    produced for a given page, this function will not be called. This is not
+    the image that will be shown to OCR. The whole page image is filtered in
+    the hook above, ``filter_page_image``, then this function is called for
+    PDF conversion.
+
+    This function will only be called when OCRmyPDF runs in a mode such as
+    "force OCR" mode where rasterizing of all content is performed.
+
+    Clever things could be done at this stage such as segmenting the page image into
+    color regions or vector equivalents.
+
+    The provider of the hook implementation is responsible for ensuring that the
+    OCR text layer is aligned with the PDF produced here, or text misalignment
+    will result.
+
+    Currently this function must produce a single page PDF or the pipeline will
+    fail.  If the intent is to remove the PDF, then create a single page empty
+    PDF.
+
+    Args:
+        page: Context for this page.
+        image_filename: Filename of the input image used to create output_pdf,
+            for "reference" if recreating the output_pdf entirely.
+        output_pdf: The previous created output_pdf.
+
+    Returns:
+        output_pdf
 
     Note:
         This hook will be called from child processes. Modifying global state

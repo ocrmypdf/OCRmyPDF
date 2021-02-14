@@ -610,6 +610,11 @@ def create_pdf_page_from_image(image: Path, page_context: PageContext):
             imfile, with_pdfrw=False, layout_fun=layout_fun, outputstream=pdf
         )
         log.debug('convert done')
+
+    output_file = page_context.plugin_manager.hook.filter_pdf_page(
+        page=page_context, image_filename=image, output_pdf=output_file
+    )
+
     return output_file
 
 
