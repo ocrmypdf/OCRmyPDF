@@ -12,6 +12,14 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.6.1
+=======
+
+-  Fixed an issue with attempting optimize unusually narrow-width images by excluding
+   these images from optimization (#732).
+-  Remove an obsolete compatibility shim for a version of pikepdf that is no longer
+   supported.
+
 v11.6.0
 =======
 
