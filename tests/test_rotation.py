@@ -6,15 +6,17 @@
 
 
 from io import BytesIO
+from math import cos, pi, sin
 from os import fspath
 
 import img2pdf
 import pikepdf
 import pytest
 from PIL import Image
+from reportlab.pdfgen.canvas import Canvas
 
 from ocrmypdf import leptonica
-from ocrmypdf._exec import ghostscript, tesseract
+from ocrmypdf._exec import ghostscript
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo import PdfInfo
@@ -277,3 +279,50 @@ def test_rasterize_rotates(resources, tmp_path):
         filter_vector=False,
     )
     assert Image.open(img).size == (151, 123), "Image not rotated"
+
+
+def test_simulated_scan(outdir):
+    canvas = Canvas(
+        fspath(outdir / 'fakescan.pdf'),
+        pagesize=(209.8, 297.6),
+    )
+
+    page_vars = [(2, 36, 250), (91, 170, 240), (179, 190, 36), (271, 36, 36)]
+
+    for n, page_var in enumerate(page_vars):
+        text = canvas.beginText()
+        text.setFont('Helvetica', 20)
+
+        angle, x, y = page_var
+        cos_a, sin_a = cos(angle / 180.0 * pi), sin(angle / 180.0 * pi)
+
+        text.setTextTransform(cos_a, -sin_a, sin_a, cos_a, x, y)
+        text.textOut(f'Page {n + 1}')
+        canvas.drawText(text)
+        canvas.showPage()
+    canvas.save()
+
+    check_ocrmypdf(
+        outdir / 'fakescan.pdf',
+        outdir / 'out.pdf',
+        '--force-ocr',
+        '--deskew',
+        '--rotate-pages',
+        '--plugin',
+        'tests/plugins/tesseract_debug_rotate.py',
+    )
+
+    with pikepdf.open(outdir / 'out.pdf') as pdf:
+        assert (
+            pdf.pages[1].MediaBox[2] > pdf.pages[1].MediaBox[3]
+        ), "Wrong orientation: not landscape"
+        assert (
+            pdf.pages[3].MediaBox[2] > pdf.pages[3].MediaBox[3]
+        ), "Wrong orientation: Not landscape"
+
+        assert (
+            pdf.pages[0].MediaBox[2] < pdf.pages[0].MediaBox[3]
+        ), "Wrong orientation: Not portrait"
+        assert (
+            pdf.pages[2].MediaBox[2] < pdf.pages[2].MediaBox[3]
+        ), "Wrong orientation: Not portrait"

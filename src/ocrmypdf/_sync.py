@@ -204,7 +204,7 @@ def exec_page_sync(page_context: PageContext):
         if filtered_image:
             visible_image_out = filtered_image
         pdf_page_from_image_out = create_pdf_page_from_image(
-            visible_image_out, page_context
+            visible_image_out, page_context, orientation_correction
         )
 
     if options.pdf_renderer.startswith('hocr'):
