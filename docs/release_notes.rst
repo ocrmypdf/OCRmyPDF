@@ -12,6 +12,12 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.6.2
+=======
+
+-  Fixed a regression where the wrong page orientation would be produced when using
+   arguments such as ``--deskew --rotate-pages`` (#730).
+
 v11.6.1
 =======
 
