@@ -249,16 +249,6 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir):
     assert check_monochrome_correlation(outdir, reference, 1, out, 1) > 0.2
 
 
-def test_tesseract_orientation(resources, tmp_path):
-    pix = leptonica.Pix.open(resources / 'crom.png')
-    pix_rotated = pix.rotate_orth(2)  # 180 degrees clockwise
-    pix_rotated.write_implied_format(tmp_path / '000001.png')
-
-    tesseract.get_orientation(  # Test results of this are unreliable
-        tmp_path / '000001.png', engine_mode='3', timeout=10
-    )
-
-
 def test_rasterize_rotates(resources, tmp_path):
     pm = get_plugin_manager([])
 
