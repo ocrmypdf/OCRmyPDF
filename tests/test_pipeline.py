@@ -61,3 +61,90 @@ def test_dpi_needed(image, text, vector, result, rgb_image, outdir):
 
     assert _pipeline.get_canvas_square_dpi(pi[0], mock) == result
     assert _pipeline.get_page_square_dpi(pi[0], mock) == result
+
+
+@pytest.mark.parametrize(
+    # Name for nicer -v output
+    'name,input,output',
+    (
+        (
+            'empty_input',
+            # Input:
+            (),
+            # Output:
+            (),
+        ),
+        (
+            'no_values',
+            # Input:
+            ('', '', '', '', ''),
+            # Output:
+            (
+                ((1, 5), None),
+            ),
+        ),
+        (
+            'no_empty_values',
+            # Input:
+            ('v', 'w', 'x', 'y', 'z'),
+            # Output:
+            (
+                ((1, 1), 'v'),
+                ((2, 2), 'w'),
+                ((3, 3), 'x'),
+                ((4, 4), 'y'),
+                ((5, 5), 'z'),
+            ),
+        ),
+        (
+            'skip_head',
+            # Input:
+            ('', '', 'x', 'y', 'z'),
+            # Output:
+            (
+                ((1, 2), None),
+                ((3, 3), 'x'),
+                ((4, 4), 'y'),
+                ((5, 5), 'z'),
+            ),
+        ),
+        (
+            'skip_tail',
+            # Input:
+            ('x', 'y', 'z', '', ''),
+            # Output:
+            (
+                ((1, 1), 'x'),
+                ((2, 2), 'y'),
+                ((3, 3), 'z'),
+                ((4, 5), None),
+            ),
+        ),
+        (
+            'range_in_middle',
+            # Input:
+            ('x', '', '', '', 'y'),
+            # Output:
+            (
+                ((1, 1), 'x'),
+                ((2, 4), None),
+                ((5, 5), 'y'),
+            ),
+        ),
+        (
+            'range_in_middle_2',
+            # Input:
+            ('x', '', '', 'y', '', '', '', 'z'),
+            # Output:
+            (
+                ((1, 1), 'x'),
+                ((2, 3), None),
+                ((4, 4), 'y'),
+                ((5, 7), None),
+                ((8, 8), 'z'),
+            ),
+        ),
+    ),
+)
+def test_enumerate_compress_ranges(name, input, output):
+    assert output == tuple(_pipeline.enumerate_compress_ranges(input))

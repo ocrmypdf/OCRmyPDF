@@ -90,8 +90,6 @@ def test_mutex_options():
         vd.check_options_ocr_behavior(make_opts(redo_ocr=True, skip_text=True))
     with pytest.raises(BadArgsError):
         vd.check_options_ocr_behavior(make_opts(redo_ocr=True, force_ocr=True))
-    with pytest.raises(BadArgsError):
-        vd.check_options_ocr_behavior(make_opts(pages='1-3', sidecar='file.txt'))
 
 
 def test_optimizing(caplog):

@@ -184,8 +184,6 @@ def check_options_ocr_behavior(options):
     )
     if exclusive_options >= 2:
         raise BadArgsError("Choose only one of --force-ocr, --skip-text, --redo-ocr.")
-    if options.pages and options.sidecar:
-        raise BadArgsError("--pages and --sidecar are mutually exclusive")
     if options.pages:
         options.pages = _pages_from_ranges(options.pages)
 
