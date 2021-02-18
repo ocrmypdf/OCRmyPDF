@@ -584,7 +584,9 @@ def create_visible_page_jpg(image: Path, page_context: PageContext) -> Path:
     return output_file
 
 
-def create_pdf_page_from_image(image: Path, page_context: PageContext):
+def create_pdf_page_from_image(
+    image: Path, page_context: PageContext, orientation_correction
+):
     # We rasterize a square DPI version of each page because most image
     # processing tools don't support rectangular DPI. Use the square DPI as it
     # accurately describes the image. It would be possible to resample the image
@@ -595,7 +597,8 @@ def create_pdf_page_from_image(image: Path, page_context: PageContext):
 
     pageinfo = page_context.pageinfo
     pagesize = 72.0 * float(pageinfo.width_inches), 72.0 * float(pageinfo.height_inches)
-    if pageinfo.rotation % 180 == 90:
+    effective_rotation = (pageinfo.rotation - orientation_correction) % 360
+    if effective_rotation % 180 == 90:
         pagesize = pagesize[1], pagesize[0]
 
     # This create a single page PDF
@@ -607,6 +610,7 @@ def create_pdf_page_from_image(image: Path, page_context: PageContext):
             imfile, with_pdfrw=False, layout_fun=layout_fun, outputstream=pdf
         )
         log.debug('convert done')
+
     return output_file
 
 

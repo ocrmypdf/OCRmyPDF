@@ -9,7 +9,7 @@ services:
       - "/media/scan:/input"
       - "/mnt/scan:/output"
     environment:
-      - OCR_OUTPUT_DIRECTORY_YEAR_MONT=0
+      - OCR_OUTPUT_DIRECTORY_YEAR_MONTH=0
     user: "<SET TO YOUR USER ID>:<SET TO YOUR GROUP ID>"
     entrypoint: python3
     command: watcher.py

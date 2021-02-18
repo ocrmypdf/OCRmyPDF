@@ -76,6 +76,9 @@ def extract_image_filter(
     if image.Length < 100:
         log.debug(f"Skipping small image, xref {xref}")
         return None
+    if image.Width < 8 or image.Height < 8:  # Issue 732
+        log.debug(f"Skipping oddly sized image, xref {xref}")
+        return None
 
     pim = PdfImage(image)
 
@@ -148,11 +151,6 @@ def extract_image_generic(
 
     # Don't try to PNG-optimize 1bpp images, since JBIG2 does it better.
     if pim.bits_per_component == 1:
-        return None
-
-    try:
-        pim.indexed  # pikepdf 1.6.3 can't handle [/Indexed [/Array...]]
-    except NotImplementedError:
         return None
 
     if filtdp[0] == Name.DCTDecode and options.optimize >= 2:
