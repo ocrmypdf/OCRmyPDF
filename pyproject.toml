@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.black]
 line-length = 88
-target-version = ["py36", "py37", "py38"]
+target-version = ["py36", "py37", "py38", "py39"]
 skip-string-normalization = true
 include = '\.pyi?$'
 exclude = '''
