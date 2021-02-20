@@ -808,11 +808,27 @@ def optimize_pdf(input_file: Path, context: PdfContext):
     return output_file
 
 
+def enumerate_compress_ranges(iterable):
+    skipped_from = None
+    for index, txt_file in enumerate(iterable):
+        index += 1
+        if txt_file:
+            if skipped_from is not None:
+                yield (skipped_from, index - 1), None
+                skipped_from = None
+            yield (index, index), txt_file
+        else:
+            if skipped_from is None:
+                skipped_from = index
+    if skipped_from is not None:
+        yield (skipped_from, index), None
+
+
 def merge_sidecars(txt_files: Iterable[Optional[Path]], context: PdfContext):
     output_file = context.get_path('sidecar.txt')
     with open(output_file, 'w', encoding="utf-8") as stream:
-        for page_num, txt_file in enumerate(txt_files):
-            if page_num != 0:
+        for (frm, to), txt_file in enumerate_compress_ranges(txt_files):
+            if frm != 1:
                 stream.write('\f')  # Form feed between pages
             if txt_file:
                 with open(txt_file, 'r', encoding="utf-8") as in_:
@@ -825,7 +841,11 @@ def merge_sidecars(txt_files: Iterable[Optional[Path]], context: PdfContext):
                     else:
                         stream.write(txt)
             else:
-                stream.write(f'[OCR skipped on page {(page_num + 1)}]')
+                if frm != to:
+                    pages = f'{frm}-{to}'
+                else:
+                    pages = f'{frm}'
+                stream.write(f'[OCR skipped on page(s) {pages}]')
     return output_file
 
 
