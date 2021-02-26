@@ -181,45 +181,42 @@ def check_pdf(input_file: Path) -> bool:
     Checks for proper formatting and proper linearization. Uses pikepdf (which in
     turn, uses QPDF) to perform the checks.
     """
-    pdf = None
     try:
         pdf = pikepdf.open(input_file)
     except pikepdf.PdfError as e:
         log.error(e)
         return False
     else:
-        messages = pdf.check()
-        for msg in messages:
-            if 'error' in msg.lower():
-                log.error(msg)
+        with pdf:
+            messages = pdf.check()
+            for msg in messages:
+                if 'error' in msg.lower():
+                    log.error(msg)
+                else:
+                    log.warning(msg)
+
+            sio = StringIO()
+            linearize_msgs = ''
+            try:
+                # If linearization is missing entirely, we do not complain. We do
+                # complain if linearization is present but incorrect.
+                pdf.check_linearization(sio)
+            except RuntimeError:
+                pass
+            except (  # Workaround for a problematic pikepdf version
+                getattr(pikepdf, 'ForeignObjectError')
+                if pikepdf.__version__ == '2.1.0'
+                else NeverRaise
+            ):
+                pass
             else:
-                log.warning(msg)
+                linearize_msgs = sio.getvalue()
+                if linearize_msgs:
+                    log.warning(linearize_msgs)
 
-        sio = StringIO()
-        linearize_msgs = ''
-        try:
-            # If linearization is missing entirely, we do not complain. We do
-            # complain if linearization is present but incorrect.
-            pdf.check_linearization(sio)
-        except RuntimeError:
-            pass
-        except (
-            getattr(pikepdf, 'ForeignObjectError')
-            if pikepdf.__version__ == '2.1.0'  # This version may throw wrong exception
-            else NeverRaise
-        ):
-            pass
-        else:
-            linearize_msgs = sio.getvalue()
-            if linearize_msgs:
-                log.warning(linearize_msgs)
-
-        if not messages and not linearize_msgs:
-            return True
-        return False
-    finally:
-        if pdf:
-            pdf.close()
+            if not messages and not linearize_msgs:
+                return True
+            return False
 
 
 def clamp(n, smallest, largest):  # mypy doesn't understand types for this
