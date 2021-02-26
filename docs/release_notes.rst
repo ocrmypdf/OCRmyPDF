@@ -12,6 +12,16 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.7.0
+=======
+
+-  We now support using ``--sidecar`` in conjunction with ``--pages``; these arguments
+   used to be mutually exclusive. (#735)
+-  Fixed a possible issue with PDF/A-1b generation. Acrobat complained that our PDFs use
+   object streams. More robust PDF/A validators like veraPDF don't consider this a
+   problem, but we'll honor Acrobat's objection from here on. This may increase file
+   size of PDF/A-1b files. PDF/A-2b files will not be affected.
+
 v11.6.2
 =======
 
