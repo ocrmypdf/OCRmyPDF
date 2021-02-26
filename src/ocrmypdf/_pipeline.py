@@ -739,6 +739,24 @@ def should_linearize(working_file: Path, context: PdfContext):
     return False
 
 
+def get_pdf_save_settings(output_type: str):
+    if output_type == 'pdfa-1':
+        # Trigger recompression to ensure object streams are removed, because
+        # Acrobat complains about them in PDF/A-1b validation.
+        return dict(
+            preserve_pdfa=True,
+            compress_streams=True,
+            stream_decode_level=pikepdf.StreamDecodeLevel.generalized,
+            object_stream_mode=pikepdf.ObjectStreamMode.disable,
+        )
+    else:
+        return dict(
+            preserve_pdfa=True,
+            compress_streams=True,
+            object_stream_mode=(pikepdf.ObjectStreamMode.generate),
+        )
+
+
 def metadata_fixup(working_file: Path, context: PdfContext):
     output_file = context.get_path('metafix.pdf')
     options = context.options
@@ -783,9 +801,7 @@ def metadata_fixup(working_file: Path, context: PdfContext):
 
         pdf.save(
             output_file,
-            compress_streams=True,
-            preserve_pdfa=True,
-            object_stream_mode=pikepdf.ObjectStreamMode.generate,
+            **get_pdf_save_settings(options.output_type),
             linearize=(  # Don't linearize if optimize() will be linearizing too
                 should_linearize(working_file, context)
                 if options.optimize == 0
@@ -799,10 +815,8 @@ def metadata_fixup(working_file: Path, context: PdfContext):
 def optimize_pdf(input_file: Path, context: PdfContext):
     output_file = context.get_path('optimize.pdf')
     save_settings = dict(
-        compress_streams=True,
-        preserve_pdfa=True,
-        object_stream_mode=pikepdf.ObjectStreamMode.generate,
         linearize=should_linearize(input_file, context),
+        **get_pdf_save_settings(context.options.output_type),
     )
     optimize(input_file, output_file, context, save_settings)
     return output_file
