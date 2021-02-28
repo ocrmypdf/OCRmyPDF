@@ -77,6 +77,11 @@ and Homebrew users (macOS, Linux, Windows Subsystem for Linux) may simply
 brew install ocrmypdf
 ```
 
+and conda users (macOS, Linux, Windows Subsystem for Linux) may simply
+```bash
+conda install ocrmypdf
+```
+ 
 For everyone else, [see our documentation](https://ocrmypdf.readthedocs.io/en/latest/installation.html) for installation steps.
 
 ## Languages
