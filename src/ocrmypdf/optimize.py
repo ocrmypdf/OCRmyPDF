@@ -258,8 +258,8 @@ def extract_images(
             result = extract_fn(
                 pike=pike, root=root, image=image, xref=xref, options=options
             )
-        except Exception as e:  # pylint: disable=broad-except
-            log.debug("Image xref %s, error %s", xref, repr(e))
+        except Exception:  # pylint: disable=broad-except
+            log.exception(f"While extracting image xref {xref}, an error occurred")
             errors += 1
         else:
             if result:
