@@ -12,19 +12,21 @@ system/platform. This version may be out of date, however.
 
 These platforms have one-liner installs:
 
-+-----------------------------+-------------------------------+
-| Debian, Ubuntu              | ``apt install ocrmypdf``      |
-+-----------------------------+-------------------------------+
-| Windows Subsystem for Linux | ``apt install ocrmypdf``      |
-+-----------------------------+-------------------------------+
-| Fedora                      | ``dnf install ocrmypdf``      |
-+-----------------------------+-------------------------------+
-| macOS                       | ``brew install ocrmypdf``     |
-+-----------------------------+-------------------------------+
-| LinuxBrew                   | ``brew install ocrmypdf``     |
-+-----------------------------+-------------------------------+
-| FreeBSD                     | ``pkg install py37-ocrmypdf`` |
-+-----------------------------+-------------------------------+
++-------------------------------+-------------------------------+
+| Debian, Ubuntu                | ``apt install ocrmypdf``      |
++-------------------------------+-------------------------------+
+| Windows Subsystem for Linux   | ``apt install ocrmypdf``      |
++-------------------------------+-------------------------------+
+| Fedora                        | ``dnf install ocrmypdf``      |
++-------------------------------+-------------------------------+
+| macOS                         | ``brew install ocrmypdf``     |
++-------------------------------+-------------------------------+
+| LinuxBrew                     | ``brew install ocrmypdf``     |
++-------------------------------+-------------------------------+
+| FreeBSD                       | ``pkg install py37-ocrmypdf`` |
++-------------------------------+-------------------------------+
+| Conda (WSL, macOS, Linux)     | ``conda install ocrmypdf``    |
++-------------------------------+-------------------------------+
 
 More detailed procedures are outlined below. If you want to do a manual
 install, or install a more recent version than your platform provides, read on.
@@ -54,6 +56,9 @@ Debian and Ubuntu 18.04 or newer
 .. |ubu-2004| image:: https://repology.org/badge/version-for-repo/ubuntu_20_04/ocrmypdf.svg
     :alt: Ubuntu 20.04 LTS
 
+.. |ubu-2010| image:: https://repology.org/badge/version-for-repo/ubuntu_20_10/ocrmypdf.svg
+    :alt: Ubuntu 20.10
+
 +-----------------------------------------------+
 | **OCRmyPDF versions in Debian & Ubuntu**      |
 +-----------------------------------------------+
@@ -61,7 +66,7 @@ Debian and Ubuntu 18.04 or newer
 +-----------------------------------------------+
 | |deb-stable| |deb-testing| |deb-unstable|     |
 +-----------------------------------------------+
-| |ubu-1804| |ubu-2004|                         |
+| |ubu-1804| |ubu-2004| |ubu-2010|              |
 +-----------------------------------------------+
 
 Users of Debian 9 ("stretch") or later, or Ubuntu 18.04 or later, including users
@@ -90,14 +95,14 @@ For full details on version availability for your platform, check the
    automatically detect it (specifically the ``jbig2`` binary) on the
    ``PATH``. To add JBIG2 encoding, see :ref:`jbig2`.
 
-Fedora 29 or newer
-------------------
-
-.. |fedora-31| image:: https://repology.org/badge/version-for-repo/fedora_31/ocrmypdf.svg
-    :alt: Fedora 31
+Fedora
+------
 
 .. |fedora-32| image:: https://repology.org/badge/version-for-repo/fedora_32/ocrmypdf.svg
     :alt: Fedora 32
+
+.. |fedora-33| image:: https://repology.org/badge/version-for-repo/fedora_33/ocrmypdf.svg
+    :alt: Fedora 33
 
 .. |fedora-rawhide| image:: https://repology.org/badge/version-for-repo/fedora_rawhide/ocrmypdf.svg
     :alt: Fedore Rawhide
@@ -107,7 +112,7 @@ Fedora 29 or newer
 +-----------------------------------------------+
 | |latest|                                      |
 +-----------------------------------------------+
-| |fedora-31| |fedora-32| |fedora-rawhide|      |
+| |fedora-32| |fedora-33| |fedora-rawhide|      |
 +-----------------------------------------------+
 
 Users of Fedora 29 or later may simply
@@ -355,7 +360,8 @@ To install OCRmyPDF for Alpine Linux:
 Mageia 7
 --------
 
-Install the following dependencies:
+There is no OS-level packaging available for Mageia, so you must install the
+dependencies:
 
 .. code-block:: bash
 

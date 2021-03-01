@@ -59,23 +59,15 @@ I searched the web for a free command line tool to OCR PDF files: I found many, 
 
 Linux, Windows, macOS and FreeBSD are supported. Docker images are also available.
 
-Users of Debian 9 or later or Ubuntu 16.10 or later may simply
-
-```bash
-apt-get install ocrmypdf
-```
-
-and users of Fedora 29 or later may simply
-
-```bash
-dnf install ocrmypdf
-```
-
-and Homebrew users (macOS, Linux, Windows Subsystem for Linux) may simply
-
-```bash
-brew install ocrmypdf
-```
+| Operating system              | Install command               |
+| ----------------------------- | ------------------------------|
+| Debian, Ubuntu                | ``apt install ocrmypdf``      |
+| Windows Subsystem for Linux   | ``apt install ocrmypdf``      |
+| Fedora                        | ``dnf install ocrmypdf``      |
+| macOS                         | ``brew install ocrmypdf``     |
+| LinuxBrew                     | ``brew install ocrmypdf``     |
+| FreeBSD                       | ``pkg install py37-ocrmypdf`` |
+| Conda                         | ``conda install ocrmypdf``    |
 
 For everyone else, [see our documentation](https://ocrmypdf.readthedocs.io/en/latest/installation.html) for installation steps.
 
