@@ -133,7 +133,7 @@ def check_options_preprocessing(options):
                     options.unpaper_args
                 )
         except Exception as e:
-            raise BadArgsError(str(e))
+            raise BadArgsError("--unpaper-args") from e
 
 
 def _pages_from_ranges(ranges: str) -> Set[int]:
