@@ -12,6 +12,14 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.7.1
+=======
+
+-  Some exceptions while attempting image optimization were only logged at the debug
+   level, causing them to be suppressed. These errors are now logged appropriately.
+-  Improved the error message related to ``--unpaper-args``.
+-  Updated documentation to mention the new conda distribution.
+
 v11.7.0
 =======
 
