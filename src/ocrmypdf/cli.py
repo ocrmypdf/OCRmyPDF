@@ -167,7 +167,8 @@ Online documentation is located at:
         metavar='FILE',
         help="Generate sidecar text files that contain the same text recognized "
         "by Tesseract. This may be useful for building a OCR text database. "
-        "If FILE is omitted, the sidecar file be named {output_file}.txt "
+        "If FILE is omitted, the sidecar file be named {output_file}.txt; the next "
+        "argument must NOT be the name of the input PDF. "
         "If FILE is set to '-', the sidecar is written to stdout (a "
         "convenient way to preview OCR quality). The output file and sidecar "
         "may not both use stdout at the same time.",

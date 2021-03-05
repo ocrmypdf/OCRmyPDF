@@ -18,6 +18,8 @@ from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
 from ocrmypdf.pdfinfo import PdfInfo
 
+run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
+
 
 def make_opts_pm(input_file='a.pdf', output_file='b.pdf', language='eng', **kwargs):
     if language is not None:
@@ -270,3 +272,9 @@ def test_two_languages():
             *make_opts_pm(language='fakelang1+fakelang2'), {'fakelang1', 'fakelang2'}
         )
         mock.assert_called()
+
+
+def test_sidecar_equals_output(resources, no_outpdf):
+    op = no_outpdf
+    with pytest.raises(BadArgsError, match=r'--sidecar'):
+        run_ocrmypdf_api(resources / 'trivial.pdf', op, '--sidecar', op)

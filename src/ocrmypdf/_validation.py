@@ -112,6 +112,10 @@ def check_options_sidecar(options):
                 "--sidecar filename must be specified when output file is stdout."
             )
         options.sidecar = options.output_file + '.txt'
+    if options.sidecar == options.input_file or options.sidecar == options.output_file:
+        raise BadArgsError(
+            "--sidecar file must be different from the input and output files"
+        )
 
 
 def check_options_preprocessing(options):
