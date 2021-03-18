@@ -7,6 +7,6 @@ img2pdf == 0.4.0
 pdfminer.six == 20201018
 pikepdf == 2.0.0
 pluggy == 0.13.1
-Pillow == 8.0.1
+Pillow == 8.1.1
 reportlab == 3.5.55
 tqdm == 4.51.0
