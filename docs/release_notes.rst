@@ -12,6 +12,14 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.7.2
+=======
+
+-  Updated pinned versions in main.txt, primarily to upgrade Pillow to 8.1.2, due
+   to recently disclosed security vulnerabilities in that software.
+-  The ``--sidecar`` parameter now causes an exception if set to the same file as
+   the input or output PDF.
+
 v11.7.1
 =======
 
