@@ -12,6 +12,13 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v11.7.3
+=======
+
+-  Exclude CCITT Group 3 images from being optimized. Some libraries
+   OCRmyPDF uses do not seem to handle this obscure compression format properly.
+   You may get errors or possible corrupted output images without this fix.
+
 v11.7.2
 =======
 
