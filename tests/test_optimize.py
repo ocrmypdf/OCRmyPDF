@@ -185,3 +185,16 @@ def test_optimize_off(resources, outpdf):
         '--plugin',
         'tests/plugins/tesseract_noop.py',
     )
+
+
+def test_group3(resources, outdir):
+    with pikepdf.open(resources / 'ccitt.pdf') as pdf:
+        im = pdf.pages[0].Resources.XObject['/Im1']
+        assert (
+            opt.extract_image_filter(pdf, outdir, im, im.objgen[0]) is not None
+        ), "Group 4 should be allowed"
+
+        im.DecodeParms['/K'] = 0
+        assert (
+            opt.extract_image_filter(pdf, outdir, im, im.objgen[0]) is None
+        ), "Group 3 should be disallowed"

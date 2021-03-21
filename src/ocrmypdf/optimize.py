@@ -95,6 +95,10 @@ def extract_image_filter(
         log.debug(f"Skipping JPEG2000 iamge, xref {xref}")
         return None  # Don't do JPEG2000
 
+    if filtdp[0] == Name.CCITTFaxDecode and filtdp[1].get('/K', 0) >= 0:
+        log.debug(f"Skipping CCITT Group 3 image, xref {xref}")
+        return None  # pikepdf doesn't support Group 3 yet
+
     if Name.Decode in image:
         log.debug(f"Skipping image with Decode table, xref {xref}")
         return None  # Don't mess with custom Decode tables
