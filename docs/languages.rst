@@ -70,4 +70,7 @@ derived Docker image as
 Windows users
 =============
 
-The Tesseract installer provided by Chocolatey already includes 100 languages.
+The Tesseract installer provided by Chocolatey currently includes only English language. 
+To install other languages, download the respective language pack (``.traineddata`` file) 
+from https://github.com/tesseract-ocr/tessdata/ and place it in 
+``C:\\Program Files\\Tesseract-OCR\\tessdata`` (or wherever Tesseract OCR is installed).
