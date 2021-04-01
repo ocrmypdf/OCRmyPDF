@@ -67,7 +67,9 @@ class OcrmypdfPluginManager(pluggy.PluginManager):
 
         # 1. Register builtins
         if self.__builtins:
-            for module in pkgutil.iter_modules(ocrmypdf.builtin_plugins.__path__):
+            for module in sorted(
+                pkgutil.iter_modules(ocrmypdf.builtin_plugins.__path__)
+            ):
                 name = f'ocrmypdf.builtin_plugins.{module.name}'
                 module = importlib.import_module(name)
                 self.register(module)
