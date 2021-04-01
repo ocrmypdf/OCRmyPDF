@@ -30,14 +30,10 @@ def _update_resources(*, obj, font, font_key, procset):
     obj can be a page or Form XObject.
     """
 
-    resources = _ensure_dictionary(obj, '/Resources')
-    try:
-        fonts = resources['/Font']
-    except KeyError:
-        fonts = pikepdf.Dictionary({})
+    resources = _ensure_dictionary(obj, Name.Resources)
+    fonts = _ensure_dictionary(resources, Name.Font)
     if font_key is not None and font_key not in fonts:
         fonts[font_key] = font
-    resources['/Font'] = fonts
 
     # Reassign /ProcSet to one that just lists everything - ProcSet is
     # obsolete and doesn't matter but recommended for old viewer support
@@ -290,8 +286,8 @@ class OcrGrafter:
             # finally move the lower left corner to match the mediabox
             ctm = translate @ rotate @ scale @ untranslate @ corner
 
-            base_resources = _ensure_dictionary(base_page, '/Resources')
-            base_xobjs = _ensure_dictionary(base_resources, '/XObject')
+            base_resources = _ensure_dictionary(base_page, Name.Resources)
+            base_xobjs = _ensure_dictionary(base_resources, Name.XObject)
             text_xobj_name = Name('/' + str(uuid.uuid4()))
             xobj = self.pdf_base.make_stream(pdf_text_contents)
             base_xobjs[text_xobj_name] = xobj
