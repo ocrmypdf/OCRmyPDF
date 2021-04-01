@@ -69,7 +69,7 @@ def _setup_unpaper_io(tmpdir: Path, input_file: Path) -> Tuple[Path, Path]:
 
 
 def run(
-    input_file: Path, output_file: Path, dpi: DecFloat, mode_args: List[str]
+    input_file: Path, output_file: Path, *, dpi: DecFloat, mode_args: List[str]
 ) -> None:
     args_unpaper = ['unpaper', '-v', '--dpi', str(round(dpi, 6))] + mode_args
 
@@ -114,6 +114,7 @@ def validate_custom_args(args: str) -> List[str]:
 def clean(
     input_file: Path,
     output_file: Path,
+    *,
     dpi: DecFloat,
     unpaper_args: Optional[List[str]] = None,
 ):
@@ -130,4 +131,4 @@ def clean(
     ]
     if not unpaper_args:
         unpaper_args = default_args
-    run(input_file, output_file, dpi, unpaper_args)
+    run(input_file, output_file, dpi=dpi, mode_args=unpaper_args)

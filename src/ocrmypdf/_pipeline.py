@@ -483,7 +483,12 @@ def preprocess_deskew(input_file: Path, page_context: PageContext):
 def preprocess_clean(input_file: Path, page_context: PageContext):
     output_file = page_context.get_path('pp_clean.png')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
-    unpaper.clean(input_file, output_file, dpi.x, page_context.options.unpaper_args)
+    unpaper.clean(
+        input_file,
+        output_file,
+        dpi=dpi.x,
+        unpaper_args=page_context.options.unpaper_args,
+    )
     return output_file
 
 
@@ -627,9 +632,9 @@ def render_hocr_page(hocr: Path, page_context: PageContext):
     dpi = get_page_square_dpi(page_context.pageinfo, options)
     debug_mode = options.pdf_renderer == 'hocrdebug'
 
-    hocrtransform = HocrTransform(hocr, dpi.x)  # square
+    hocrtransform = HocrTransform(hocr_filename=hocr, dpi=dpi.x)  # square
     hocrtransform.to_pdf(
-        output_file,
+        out_filename=output_file,
         image_filename=None,
         show_bounding_boxes=False if not debug_mode else True,
         invisible_text=True if not debug_mode else False,

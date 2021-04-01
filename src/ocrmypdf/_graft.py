@@ -6,22 +6,31 @@
 
 
 import logging
+import uuid
 from contextlib import suppress
 from pathlib import Path
 from typing import Optional
 
 import pikepdf
+from pikepdf.objects import Dictionary, Name
 
 log = logging.getLogger(__name__)
 MAX_REPLACE_PAGES = 100
 
 
-def _update_page_resources(*, page, font, font_key, procset):
-    """Update this page's fonts with a reference to the Glyphless font"""
+def _ensure_dictionary(obj, name):
+    if name not in obj:
+        obj[name] = pikepdf.Dictionary({})
+    return obj[name]
 
-    if '/Resources' not in page:
-        page['/Resources'] = pikepdf.Dictionary({})
-    resources = page['/Resources']
+
+def _update_resources(*, obj, font, font_key, procset):
+    """Update this obj's fonts with a reference to the Glyphless font.
+
+    obj can be a page or Form XObject.
+    """
+
+    resources = _ensure_dictionary(obj, '/Resources')
     try:
         fonts = resources['/Font']
     except KeyError:
@@ -32,7 +41,8 @@ def _update_page_resources(*, page, font, font_key, procset):
 
     # Reassign /ProcSet to one that just lists everything - ProcSet is
     # obsolete and doesn't matter but recommended for old viewer support
-    resources['/ProcSet'] = procset
+    if procset:
+        resources['/ProcSet'] = procset
 
 
 def strip_invisible_text(pdf, page):
@@ -169,13 +179,13 @@ class OcrGrafter:
         """
 
         page0 = self.pdf_base.pages[0]
-        _update_page_resources(
-            page=page0, font=self.font, font_key=self.font_key, procset=self.procset
+        _update_resources(
+            obj=page0, font=self.font, font_key=self.font_key, procset=self.procset
         )
 
         # We cannot read and write the same file, that will corrupt it
         # but we don't to keep more copies than we need to. Delete intermediates.
-        # {interim_count} is the opened file we were updateing
+        # {interim_count} is the opened file we were updating
         # {interim_count - 1} can be deleted
         # {interim_count + 1} is the new file will produce and open
         old_file = self.output_file.with_suffix(f'.working{self.interim_count - 1}.pdf')
@@ -210,6 +220,7 @@ class OcrGrafter:
                     pdf_text_fonts = pdf_text.pages[0].Resources.get('/Font', {})
                 except (AttributeError, IndexError, KeyError):
                     return None, None
+                pdf_text_font = None
                 for f in possible_font_names:
                     pdf_text_font = pdf_text_fonts.get(f, None)
                     if pdf_text_font is not None:
@@ -279,17 +290,29 @@ class OcrGrafter:
             # finally move the lower left corner to match the mediabox
             ctm = translate @ rotate @ scale @ untranslate @ corner
 
-            pdf_text_contents = (
-                b'q %s cm\n' % ctm.encode() + pdf_text_contents + b'\nQ\n'
+            base_resources = _ensure_dictionary(base_page, '/Resources')
+            base_xobjs = _ensure_dictionary(base_resources, '/XObject')
+            text_xobj_name = Name('/' + str(uuid.uuid4()))
+            xobj = self.pdf_base.make_stream(pdf_text_contents)
+            base_xobjs[text_xobj_name] = xobj
+            xobj.Type = Name.XObject
+            xobj.Subtype = Name.Form
+            xobj.FormType = 1
+            xobj.BBox = mediabox
+            _update_resources(
+                obj=xobj, font=font, font_key=font_key, procset=[Name.PDF]
             )
 
-            new_text_layer = pikepdf.Stream(self.pdf_base, pdf_text_contents)
+            pdf_draw_xobj = (
+                (b'q %s cm\n' % ctm.encode()) + (b'%s Do\n' % text_xobj_name) + b'\nQ\n'
+            )
+            new_text_layer = pikepdf.Stream(self.pdf_base, pdf_draw_xobj)
 
             if strip_old_text:
                 strip_invisible_text(self.pdf_base, base_page)
 
             base_page.page_contents_add(new_text_layer, prepend=True)
 
-            _update_page_resources(
-                page=base_page, font=font, font_key=font_key, procset=procset
+            _update_resources(
+                obj=base_page, font=font, font_key=font_key, procset=procset
             )

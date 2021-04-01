@@ -34,7 +34,7 @@ from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf.exceptions import OutputFileAccessError
-from ocrmypdf.helpers import deprecated, safe_symlink
+from ocrmypdf.helpers import safe_symlink
 
 log = logging.getLogger(__name__)
 
@@ -60,10 +60,6 @@ def png_name(root: Path, xref: Xref) -> Path:
 
 def jpg_name(root: Path, xref: Xref) -> Path:
     return img_name(root, xref, '.jpg')
-
-
-def tif_name(root: Path, xref: Xref) -> Path:
-    return img_name(root, xref, '.tif')
 
 
 def extract_image_filter(
@@ -521,81 +517,6 @@ def transcode_pngs(
     for xref in modified:
         filename = png_name(root, xref)
         _transcode_png(pike, filename, xref)
-
-
-@deprecated
-def rewrite_png_as_g4(pike: Pdf, im_obj: Object, compdata) -> None:  # pragma: no cover
-    im_obj.BitsPerComponent = 1
-    im_obj.Width = compdata.w
-    im_obj.Height = compdata.h
-
-    im_obj.write(compdata.read())
-
-    log.debug(f"PNG to G4 {im_obj.objgen}")
-    if Name.Predictor in im_obj:
-        del im_obj.Predictor
-    if Name.DecodeParms in im_obj:
-        del im_obj.DecodeParms
-    im_obj.DecodeParms = Dictionary(
-        K=-1, BlackIs1=bool(compdata.minisblack), Columns=compdata.w
-    )
-
-    im_obj.Filter = Name.CCITTFaxDecode
-    return
-
-
-@deprecated
-def rewrite_png(pike: Pdf, im_obj: Object, compdata) -> None:  # pragma: no cover
-    # When a PNG is inserted into a PDF, we more or less copy the IDAT section from
-    # the PDF and transfer the rest of the PNG headers to PDF image metadata.
-    # One thing we have to do is tell the PDF reader whether a predictor was used
-    # on the image before Flate encoding. (Typically one is.)
-    # According to Leptonica source, PDF readers don't actually need us
-    # to specify the correct predictor, they just need a value of either:
-    #   1 - no predictor
-    #   10-14 - there is a predictor
-    # Leptonica's compdata->predictor only tells TRUE or FALSE
-    # 10-14 means the actual predictor is specified in the data, so for any
-    # number >= 10 the PDF reader will use whatever the PNG data specifies.
-    # In practice Leptonica should use Paeth, 14, but 15 seems to be the
-    # designated value for "optimal". So we will use 15.
-    # See:
-    #   - PDF RM 7.4.4.4 Table 10
-    #   - https://github.com/DanBloomberg/leptonica/blob/master/src/pdfio2.c#L757
-    predictor = 15 if compdata.predictor > 0 else 1
-    dparms = Dictionary(Predictor=predictor)
-    if predictor > 1:
-        dparms.BitsPerComponent = compdata.bps  # Yes, this is redundant
-        dparms.Colors = compdata.spp
-        dparms.Columns = compdata.w
-
-    im_obj.BitsPerComponent = compdata.bps
-    im_obj.Width = compdata.w
-    im_obj.Height = compdata.h
-
-    log.debug(
-        f"PNG {im_obj.objgen}: palette={compdata.ncolors} spp={compdata.spp} bps={compdata.bps}"
-    )
-    if compdata.ncolors > 0:
-        # .ncolors is the number of colors in the palette, not the number of
-        # colors used in a true color image. The palette string is always
-        # given as RGB tuples even when the image is grayscale; see
-        # https://github.com/DanBloomberg/leptonica/blob/master/src/colormap.c#L2067
-        palette_pdf_string = compdata.get_palette_pdf_string()
-        palette_data = pikepdf.Object.parse(palette_pdf_string)
-        palette_stream = pikepdf.Stream(pike, bytes(palette_data))
-        palette = [Name.Indexed, Name.DeviceRGB, compdata.ncolors - 1, palette_stream]
-        cs = palette
-    else:
-        # ncolors == 0 means we are using a colorspace without a palette
-        if compdata.spp == 1:
-            cs = Name.DeviceGray
-        elif compdata.spp == 4:
-            cs = Name.DeviceCMYK
-        else:  # spp == 3
-            cs = Name.DeviceRGB
-    im_obj.ColorSpace = cs
-    im_obj.write(compdata.read(), filter=Name.FlateDecode, decode_parms=dparms)
 
 
 def optimize(

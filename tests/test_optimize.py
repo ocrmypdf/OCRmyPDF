@@ -143,7 +143,7 @@ def test_multiple_pngs(resources, outdir):
             outputstream=inpdf,
         )
 
-    def mockquant(input_file, output_file, _quality_min, _quality_max):
+    def mockquant(input_file, output_file, *args):
         with Image.open(input_file) as im:
             draw = ImageDraw.Draw(im)
             draw.rectangle((0, 0, im.width, im.height), fill=128)
