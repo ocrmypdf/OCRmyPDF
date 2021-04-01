@@ -4,134 +4,132 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-
-import logging
-import logging.handlers
-import multiprocessing
-import os
-import signal
 import sys
 import threading
-from contextlib import suppress
-from multiprocessing import Pool as ProcessPool
-from multiprocessing.dummy import Pool as ThreadPool
+from abc import ABC, abstractmethod
+from functools import partial
 from typing import Callable, Iterable, Optional
 
-from tqdm import tqdm
 
-from ocrmypdf.exceptions import InputFileError
+def _task_noop(*_args, **_kwargs):
+    return
 
 
-def log_listener(queue):
-    """Listen to the worker processes and forward the messages to logging
+class NullProgressBar:
+    def __init__(self, **kwargs):
+        pass
 
-    For simplicity this is a thread rather than a process. Only one process
-    should actually write to sys.stderr or whatever we're using, so if this is
-    made into a process the main application needs to be directed to it.
+    def __enter__(self):
+        return self
 
-    See https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
+
+    def update(self, _arg=None):
+        return
+
+
+class Executor(ABC):
+    pool_lock = threading.Lock()
+    pbar_class = NullProgressBar
+
+    def __init__(self, *, pbar_class=None):
+        if pbar_class:
+            self.pbar_class = pbar_class
+
+    def __call__(
+        self,
+        *,
+        use_threads: bool,
+        max_workers: int,
+        tqdm_kwargs: dict,
+        worker_initializer: Optional[Callable] = None,
+        task: Optional[Callable] = None,
+        task_arguments: Optional[Iterable] = None,
+        task_finished: Optional[Callable] = None,
+    ) -> None:
+        """
+        Set up parallel execution and progress reporting.
+
+        Args:
+            use_threads: If ``False``, the workload is the sort that will benefit from
+                running in a multiprocessing context (for example, it uses Python
+                heavily, and parallelizing it with threads is not expected to be
+                performant).
+            max_workers: The maximum number of workers that should be run.
+            tdqm_kwargs: Arguments to set up the progress bar.
+            worker_initializer: Called when a worker is initialized, in the worker's
+                execution context. If the child workers are processes, it must be
+                possible to marshall/pickle the worker initializer.
+                ``functools.partial`` can be used to bind parameters.
+            task: Called when the worker starts a new task, in the worker's execution
+                context. Must be possible to marshall to the worker.
+            task_finished: Called when a worker finishes a task, in the parent's
+                context.
+            task_arguments: An iterable that generates a group of parameters for each
+                task. This runs in the parent's context, but the parameters must be
+                marshallable to the worker.
+        """
+
+        if not task_arguments:
+            return  # Nothing to do!
+        if not worker_initializer:
+            worker_initializer = _task_noop
+        if not task_finished:
+            task_finished = _task_noop
+        if not task:
+            task = _task_noop
+
+        with self.pool_lock:
+            self._execute(
+                use_threads=use_threads,
+                max_workers=max_workers,
+                tqdm_kwargs=tqdm_kwargs,
+                worker_initializer=worker_initializer,
+                task=task,
+                task_arguments=task_arguments,
+                task_finished=task_finished,
+            )
+
+    @abstractmethod
+    def _execute(
+        self,
+        *,
+        use_threads: bool,
+        max_workers: int,
+        tqdm_kwargs: dict,
+        worker_initializer: Callable,
+        task: Callable,
+        task_arguments: Iterable,
+        task_finished: Callable,
+    ):
+        """Custom executors should override this method."""
+
+
+def setup_executor(plugin_manager) -> Executor:
+    pbar_class = plugin_manager.hook.get_progressbar_class()
+    return plugin_manager.hook.get_executor(progressbar_class=pbar_class)
+
+
+class SerialExecutor(Executor):
+    """Implements a purely sequential executor using the parallel protocol.
+
+    The current process/thread will be the worker that executes all tasks
+    in order. As such, ``worker_initializer`` will never be called.
     """
 
-    while True:
-        try:
-            record = queue.get()
-            if record is None:
-                break
-            logger = logging.getLogger(record.name)
-            logger.handle(record)
-        except Exception:  # pylint: disable=broad-except
-            import traceback  # pylint: disable=import-outside-toplevel
-
-            print("Logging problem", file=sys.stderr)
-            traceback.print_exc(file=sys.stderr)
-
-
-def process_sigbus(*args):
-    raise InputFileError("A worker process lost access to an input file")
-
-
-def process_init(queue, user_init, loglevel):
-    """Initialize a process pool worker"""
-
-    # Ignore SIGINT (our parent process will kill us gracefully)
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-    # Install SIGBUS handler (so our parent process can abort somewhat gracefully)
-    with suppress(AttributeError):  # Windows and Cygwin do not have SIGBUS
-        signal.signal(signal.SIGBUS, process_sigbus)
-
-    # Reconfigure the root logger for this process to send all messages to a queue
-    h = logging.handlers.QueueHandler(queue)
-    root = logging.getLogger()
-    root.setLevel(loglevel)
-    root.handlers = []
-    root.addHandler(h)
-
-    if user_init:
-        user_init()
-
-
-def thread_init(_queue, user_init, _loglevel):
-    # As a thread, block SIGBUS so the main thread deals with it...
-    with suppress(AttributeError):
-        # Windows and Cygwin do not have pthread_sigmask or SIGBUS
-        signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGBUS})
-    if user_init:
-        user_init()
-
-
-def exec_progress_pool(
-    *,
-    use_threads: bool,
-    max_workers: int,
-    tqdm_kwargs: dict,
-    task_initializer: Optional[Callable] = None,
-    task: Optional[Callable] = None,
-    task_arguments: Optional[Iterable] = None,
-    task_finished: Optional[Callable] = None,
-):
-    log_queue: multiprocessing.Queue = multiprocessing.Queue(-1)
-    listener = threading.Thread(target=log_listener, args=(log_queue,))
-
-    if use_threads:
-        pool_class = ThreadPool
-        initializer = thread_init
-    else:
-        pool_class = ProcessPool
-        initializer = process_init
-    listener.start()
-
-    with tqdm(**tqdm_kwargs) as pbar:
-        pool = pool_class(
-            processes=max_workers,
-            initializer=initializer,
-            initargs=(log_queue, task_initializer, logging.getLogger("").level),
-        )
-        try:
-            results = pool.imap_unordered(task, task_arguments)
-            for result in results:
-                if task_finished:
-                    task_finished(result, pbar)
-                else:
-                    pbar.update()
-        except KeyboardInterrupt:
-            # Terminate pool so we exit instantly
-            pool.terminate()
-            # Don't try listener.join() here, will deadlock
-            raise
-        except Exception:
-            if not os.environ.get("PYTEST_CURRENT_TEST", ""):
-                # Unless inside pytest, exit immediately because no one wants
-                # to wait for child processes to finalize results that will be
-                # thrown away. Inside pytest, we want child processes to exit
-                # cleanly so that they output an error messages or coverage data
-                # we need from them.
-                pool.terminate()
-            raise
-        finally:
-            # Terminate log listener
-            log_queue.put_nowait(None)
-            pool.close()
-            pool.join()
-
-    listener.join()
+    def _execute(
+        self,
+        *,
+        use_threads: bool,
+        max_workers: int,
+        tqdm_kwargs: dict,
+        worker_initializer: Callable,
+        task: Callable,
+        task_arguments: Iterable,
+        task_finished: Callable,
+    ):
+        with self.pbar_class(**tqdm_kwargs) as pbar:
+            for args in task_arguments:
+                result = task(args)
+                task_finished(result, pbar)

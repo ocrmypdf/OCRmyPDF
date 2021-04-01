@@ -15,7 +15,10 @@ from pathlib import Path
 from typing import AnyStr, BinaryIO, Iterable, Optional, Union
 from warnings import warn
 
-from ocrmypdf._logging import PageNumberFilter, TqdmConsole
+from ocrmypdf._logging import (  # pylint: disable=unused-import
+    PageNumberFilter,
+    TqdmConsole,
+)
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._sync import run_pipeline
 from ocrmypdf._validation import check_options
@@ -47,16 +50,20 @@ def configure_logging(
     verbosity: Verbosity,
     progress_bar_friendly: bool = True,
     manage_root_logger: bool = False,
+    plugin_manager=None,
 ):
     """Set up logging.
 
     Before calling :func:`ocrmypdf.ocr()`, you can use this function to
-    configure logging, if you want ocrmypdf's output to look like the ocrmypdf
+    configure logging if you want ocrmypdf's output to look like the ocrmypdf
     command line interface. It will register log handlers, log filters, and
     formatters, configure color logging to standard error, and adjust the log
     levels of third party libraries. Details of this are fine-tuned and subject
     to change. The ``verbosity`` argument is equivalent to the argument
-    ``--verbose`` and applies those settings.
+    ``--verbose`` and applies those settings. If you have a wrapper
+    script for ocrmypdf and you want it to be very similar to ocrmypdf, use this
+    function; if you are using ocrmypdf as part of an application that manages
+    its own logging, you probably do not want this function.
 
     If this function is not called, ocrmypdf will not configure logging, and it
     is up to the caller of ``ocrmypdf.ocr()`` to set up logging as it wishes using
@@ -74,12 +81,11 @@ def configure_logging(
     their own debug logging.
 
     Args:
-        verbosity (Verbosity): Verbosity level.
-        progress_bar_friendly (bool): Install the TqdmConsole log handler, which is
-            compatible with the tqdm progress bar; without this log messages will
-            overwrite the progress bar
-        manage_root_logger (bool): Configure the process's root logger, to ensure
-            all log output is sent through
+        verbosity: Verbosity level.
+        progress_bar_friendly: If True (the default), install a custom log handler
+            that is compatible with progress bars and colored output.
+        manage_root_logger: Configure the process's root logger.
+        plugin_manager: The plugin manager, used for obtaining the custom log handler.
 
     Returns:
         The toplevel logger for ocrmypdf (or the root logger, if we are managing it).
@@ -90,9 +96,11 @@ def configure_logging(
     log = logging.getLogger(prefix)
     log.setLevel(logging.DEBUG)
 
-    if progress_bar_friendly:
-        console = logging.StreamHandler(stream=TqdmConsole(sys.stderr))
-    else:
+    console = None
+    if plugin_manager and progress_bar_friendly:
+        console = plugin_manager.hook.get_logging_console()
+
+    if not console:
         console = logging.StreamHandler(stream=sys.stderr)
 
     if verbosity < 0:
@@ -245,6 +253,7 @@ def ocr(  # pylint: disable=unused-argument
     user_patterns: os.PathLike = None,
     fast_web_view: float = None,
     plugins: Iterable[StrPath] = None,
+    plugin_manager=None,
     keep_temporary_files: bool = None,
     progress_bar: bool = None,
     **kwargs,
@@ -296,6 +305,9 @@ def ocr(  # pylint: disable=unused-argument
     Returns:
         :class:`ocrmypdf.ExitCode`
     """
+    if plugins and plugin_manager:
+        raise ValueError("plugins= and plugin_manager are mutually exclusive")
+
     if not plugins:
         plugins = []
     elif isinstance(plugins, (str, Path)):
@@ -315,7 +327,8 @@ def ocr(  # pylint: disable=unused-argument
         # they might install different plugins, and generally speaking we have areas
         # of code that use global state.
 
-        plugin_manager = get_plugin_manager(plugins)
+        if not plugin_manager:
+            plugin_manager = get_plugin_manager(plugins)
         plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
 
         if 'verbose' in kwargs:

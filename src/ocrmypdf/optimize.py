@@ -9,7 +9,6 @@ import logging
 import sys
 import tempfile
 from collections import defaultdict
-from functools import partial
 from os import fspath
 from pathlib import Path
 from typing import (
@@ -29,10 +28,9 @@ import img2pdf
 import pikepdf
 from pikepdf import Dictionary, Name, Object, Pdf, PdfImage
 from PIL import Image
-from tqdm import tqdm
 
 from ocrmypdf import leptonica
-from ocrmypdf._concurrent import exec_progress_pool
+from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf.exceptions import OutputFileAccessError
@@ -301,17 +299,17 @@ def extract_images_jbig2(pike: Pdf, root: Path, options) -> Dict[int, List[XrefE
 
 
 def _produce_jbig2_images(
-    jbig2_groups: Dict[int, List[XrefExt]], root: Path, options
+    jbig2_groups: Dict[int, List[XrefExt]], root: Path, options, executor: Executor
 ) -> None:
     """Produce JBIG2 images from their groups"""
 
     def jbig2_group_args(root: Path, groups: Dict[int, List[XrefExt]]):
         for group, xref_exts in groups.items():
             prefix = f'group{group:08d}'
-            yield dict(
-                cwd=fspath(root),
-                infiles=(img_name(root, xref, ext) for xref, ext in xref_exts),
-                out_prefix=prefix,
+            yield (
+                fspath(root),  # =cwd
+                (img_name(root, xref, ext) for xref, ext in xref_exts),  # =infiles
+                prefix,  # =out_prefix
             )
 
     def jbig2_single_args(root, groups: Dict[int, List[XrefExt]]):
@@ -320,23 +318,20 @@ def _produce_jbig2_images(
             # Second loop is to ensure multiple images per page are unpacked
             for n, xref_ext in enumerate(xref_exts):
                 xref, ext = xref_ext
-                yield dict(
-                    cwd=fspath(root),
-                    infile=img_name(root, xref, ext),
-                    outfile=root / f'{prefix}.{n:04d}',
+                yield (
+                    fspath(root),
+                    img_name(root, xref, ext),
+                    root / f'{prefix}.{n:04d}',
                 )
-
-    def convert_generic(fn, kwargs_dict):
-        return fn(**kwargs_dict)
 
     if options.jbig2_page_group_size > 1:
         jbig2_args = jbig2_group_args
-        jbig2_convert = partial(convert_generic, jbig2enc.convert_group)
+        jbig2_convert = jbig2enc.convert_group_mp
     else:
         jbig2_args = jbig2_single_args
-        jbig2_convert = partial(convert_generic, jbig2enc.convert_single)
+        jbig2_convert = jbig2enc.convert_single_mp
 
-    exec_progress_pool(
+    executor(
         use_threads=True,
         max_workers=options.jobs,
         tqdm_kwargs=dict(
@@ -351,7 +346,11 @@ def _produce_jbig2_images(
 
 
 def convert_to_jbig2(
-    pike: Pdf, jbig2_groups: Dict[int, List[XrefExt]], root: Path, options
+    pike: Pdf,
+    jbig2_groups: Dict[int, List[XrefExt]],
+    root: Path,
+    options,
+    executor: Executor,
 ) -> None:
     """Convert images to JBIG2 and insert into PDF.
 
@@ -366,7 +365,7 @@ def convert_to_jbig2(
     and needs no dictionary. Currently this must be lossless JBIG2.
     """
 
-    _produce_jbig2_images(jbig2_groups, root, options)
+    _produce_jbig2_images(jbig2_groups, root, options, executor)
 
     for group, xref_exts in jbig2_groups.items():
         prefix = f'group{group:08d}'
@@ -390,27 +389,53 @@ def convert_to_jbig2(
             )
 
 
-def transcode_jpegs(pike: Pdf, jpegs: Sequence[Xref], root: Path, options) -> None:
-    for xref in tqdm(
-        jpegs, desc="JPEGs", unit='image', disable=not options.progress_bar
-    ):
-        in_jpg = jpg_name(root, xref)
-        opt_jpg = in_jpg.with_suffix('.opt.jpg')
+def _optimize_jpeg(args):
+    xref, in_jpg, opt_jpg, jpeg_quality = args
 
-        # This produces a debug warning from PIL
-        # DEBUG:PIL.Image:Error closing: 'NoneType' object has no attribute
-        # 'close'.  Seems to be mostly harmless
-        # https://github.com/python-pillow/Pillow/issues/1144
-        with Image.open(in_jpg) as im:
-            im.save(opt_jpg, optimize=True, quality=options.jpeg_quality)
+    # This may produce a debug warning from PIL
+    # DEBUG:PIL.Image:Error closing: 'NoneType' object has no attribute
+    # 'close'.  Seems to be mostly harmless
+    # https://github.com/python-pillow/Pillow/issues/1144
+    with Image.open(in_jpg) as im:
+        im.save(opt_jpg, optimize=True, quality=jpeg_quality)
 
-        if opt_jpg.stat().st_size > in_jpg.stat().st_size:
-            log.debug("xref %s, jpeg, made larger - skip", xref)
-            continue
+    if opt_jpg.stat().st_size > in_jpg.stat().st_size:
+        log.debug("xref %s, jpeg, made larger - skip", xref)
+        opt_jpg.unlink()
+        opt_jpg = None
+    return xref, opt_jpg
 
-        compdata = leptonica.CompressedData.open(opt_jpg)
-        im_obj = pike.get_object(xref, 0)
-        im_obj.write(compdata.read(), filter=Name.DCTDecode)
+
+def transcode_jpegs(
+    pike: Pdf, jpegs: Sequence[Xref], root: Path, options, executor
+) -> None:
+    def jpeg_args():
+        for xref in jpegs:
+            in_jpg = jpg_name(root, xref)
+            opt_jpg = in_jpg.with_suffix('.opt.jpg')
+            yield xref, in_jpg, opt_jpg, options.jpeg_quality
+
+    def finish_jpeg(result, pbar):
+        xref, opt_jpg = result
+        if opt_jpg:
+            compdata = leptonica.CompressedData.open(opt_jpg)
+            im_obj = pike.get_object(xref, 0)
+            im_obj.write(compdata.read(), filter=Name.DCTDecode)
+        pbar.update()
+
+    executor(
+        use_threads=True,  # Processes are significantly slower at this task
+        max_workers=options.jobs,
+        tqdm_kwargs=dict(
+            desc="JPEGs",
+            total=len(jpegs),
+            unit='image',
+            disable=not options.progress_bar,
+        ),
+        task=_optimize_jpeg,
+        task_arguments=jpeg_args(),
+        task_finished=finish_jpeg,
+    )
 
 
 def _transcode_png(pike: Pdf, filename: Path, xref: Xref) -> bool:
@@ -460,6 +485,7 @@ def transcode_pngs(
     image_name_fn: Callable[[Path, Xref], Path],
     root: Path,
     options,
+    executor,
 ) -> None:
     modified: MutableSet[Xref] = set()
     if options.optimize >= 2:
@@ -479,10 +505,7 @@ def transcode_pngs(
                 )
                 modified.add(xref)
 
-        def pngquant_fn(args):
-            pngquant.quantize(*args)
-
-        exec_progress_pool(
+        executor(
             use_threads=True,
             max_workers=options.jobs,
             tqdm_kwargs=dict(
@@ -491,7 +514,7 @@ def transcode_pngs(
                 unit='image',
                 disable=not options.progress_bar,
             ),
-            task=pngquant_fn,
+            task=pngquant.quantize_mp,
             task_arguments=pngquant_args(),
         )
 
@@ -575,7 +598,13 @@ def rewrite_png(pike: Pdf, im_obj: Object, compdata) -> None:  # pragma: no cove
     im_obj.write(compdata.read(), filter=Name.FlateDecode, decode_parms=dparms)
 
 
-def optimize(input_file: Path, output_file: Path, context, save_settings) -> None:
+def optimize(
+    input_file: Path,
+    output_file: Path,
+    context,
+    save_settings,
+    executor: Executor = SerialExecutor(),
+) -> None:
     options = context.options
     if options.optimize == 0:
         safe_symlink(input_file, output_file)
@@ -593,14 +622,14 @@ def optimize(input_file: Path, output_file: Path, context, save_settings) -> Non
         root.mkdir(exist_ok=True)
 
         jpegs, pngs = extract_images_generic(pike, root, options)
-        transcode_jpegs(pike, jpegs, root, options)
+        transcode_jpegs(pike, jpegs, root, options, executor)
         # if options.optimize >= 2:
         # Try pngifying the jpegs
         #    transcode_pngs(pike, jpegs, jpg_name, root, options)
-        transcode_pngs(pike, pngs, png_name, root, options)
+        transcode_pngs(pike, pngs, png_name, root, options, executor)
 
         jbig2_groups = extract_images_jbig2(pike, root, options)
-        convert_to_jbig2(pike, jbig2_groups, root, options)
+        convert_to_jbig2(pike, jbig2_groups, root, options, executor)
 
         target_file = output_file.with_suffix('.opt.pdf')
         pike.remove_unreferenced_resources()

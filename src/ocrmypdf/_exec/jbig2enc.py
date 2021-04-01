@@ -41,9 +41,17 @@ def convert_group(*, cwd, infiles, out_prefix):
     return proc
 
 
+def convert_group_mp(args):
+    return convert_group(cwd=args[0], infiles=args[1], out_prefix=args[2])
+
+
 def convert_single(*, cwd, infile, outfile):
     args = ['jbig2', '-p', infile]
     with open(outfile, 'wb') as fstdout:
         proc = run(args, cwd=cwd, stdout=fstdout, stderr=PIPE)
     proc.check_returncode()
     return proc
+
+
+def convert_single_mp(args):
+    return convert_single(cwd=args[0], infile=args[1], outfile=args[2])

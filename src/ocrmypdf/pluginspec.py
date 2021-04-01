@@ -8,11 +8,13 @@
 from abc import ABC, abstractmethod, abstractstaticmethod
 from argparse import ArgumentParser, Namespace
 from collections import namedtuple
+from logging import Handler
 from pathlib import Path
-from typing import TYPE_CHECKING, AbstractSet, List, Optional
+from typing import TYPE_CHECKING, AbstractSet, Callable, Iterable, List, Optional
 
 import pluggy
 
+from ocrmypdf._concurrent import Executor
 from ocrmypdf.helpers import Resolution
 
 if TYPE_CHECKING:
@@ -24,6 +26,18 @@ if TYPE_CHECKING:
 hookspec = pluggy.HookspecMarker('ocrmypdf')
 
 # pylint: disable=unused-argument
+
+
+@hookspec(firstresult=True)
+def get_logging_console() -> Handler:
+    """Returns a custom logging handler.
+
+    Generally this is necessary when both logging output and a progress bar are both
+    outputting to ``sys.stderr``.
+
+    Note:
+        This is a :ref:`firstresult hook<firstresult>`.
+    """
 
 
 @hookspec
@@ -59,6 +73,67 @@ def check_options(options: Namespace) -> None:
     Note:
         This hook will be called from the main process, and may modify global state
         before child worker processes are forked.
+    """
+
+
+@hookspec(firstresult=True)
+def get_executor(progressbar_class) -> Executor:
+    """Called to obtain an object that manages parallel execution.
+
+    This may be used to replace OCRmyPDF's default parallel execution system
+    with a third party alternative. For example, you could make OCRmyPDF run in a
+    distributed environment.
+
+    OCRmyPDF's executors are analogous to the standard Python executors in
+    ``conconcurrent.futures``, but they do not work the same way. Executors may
+    be reused for different, unrelated batch operations, since all of the context
+    for a given job are passed to :meth:`Executor.__call__`.
+
+    Should be of type :class:`Executor` or otherwise conforming to the protocol
+    of that call.
+
+    Arguments:
+        progressbar_class: A progress bar class, which will be created when
+
+    Note:
+        This hook will be called from the main process, and may modify global state
+        before child worker processes are forked.
+    Note:
+        This is a :ref:`firstresult hook<firstresult>`.
+    """
+
+
+@hookspec(firstresult=True)
+def get_progressbar_class():
+    """Called to obtain a class that can be used to monitor progress.
+
+    A progress bar is assumed, but this could be used for any type of monitoring.
+
+    The class should follow a tqdm-like protocol. Calling the class should return
+    a new progress bar object, which is activated with ``__enter__`` and terminated
+    ``__exit__``. An update method is called whenever the progress bar is updated.
+    Progress bar objects will not be reused; a new one will be created for each
+    group of tasks.
+
+    The progress bar is held in the main process/thread and not updated by child
+    process/threads. When a child notifies the parent of completed work, the
+    parent updates the progress bar.
+
+    The arguments are the same as `tqdm <https://github.com/tqdm/tqdm>`_ accepts.
+
+    Progress bars should never write to ``sys.stdout``, or they will corrupt the
+    output if OCRmyPDF writes a PDF to standard output.
+
+    The type of events that OCRmyPDF reports to a progress bar may change in
+    minor releases.
+
+    Here is how OCRmyPDF will use the progress bar:
+
+    Example:
+        pbar_class = pm.hook.get_progressbar_class()
+        with pbar_class(**tqdm_kwargs) as pbar:
+            ...
+            pbar.update(1)
     """
 
 
@@ -163,11 +238,11 @@ def filter_page_image(page: 'PageContext', image_filename: Path) -> Path:
     will be resized and the OCR layer misaligned. OCRmyPDF does not nothing
     to enforce these constraints; it is up to the plugin to do sensible things.
 
-    OCRmyPDF will create the PDF page based on the image format used. If you
-    convert the image to a JPEG, the output page will be created as a JPEG, etc.
-    If you change the colorspace, that change will be kept. Note that the
-    OCRmyPDF image optimization stage, if enabled, may ultimately chose a
-    different format.
+    OCRmyPDF will create the PDF page based on the image format used (unless the
+    hook is overriden). If you convert the image to a JPEG, the output page will
+    be created as a JPEG, etc. If you change the colorspace, that change will be
+    kept. Note that the OCRmyPDF image optimization stage, if enabled, may
+    ultimately chose a different format.
 
     If the return value is a file that does not exist, ``FileNotFoundError``
     will occur. The return value should be a path to a file in the same folder
@@ -176,6 +251,50 @@ def filter_page_image(page: 'PageContext', image_filename: Path) -> Path:
     Implementation detail: If the value returned is falsy, OCRmyPDF will ignore
     the return value and assume the input file was unmodified. This is deprecated.
     To leave the image unmodified, ``image_filename`` should be returned.
+
+    Note:
+        This hook will be called from child processes. Modifying global state
+        will not affect the main process or other child processes.
+    Note:
+        This is a :ref:`firstresult hook<firstresult>`.
+    """
+
+
+@hookspec(firstresult=True)
+def filter_pdf_page(
+    page: 'PageContext', image_filename: Path, output_pdf: Path
+) -> Path:
+    """Called to convert a filtered whole page image into a PDF.
+
+    A whole page image is only produced when preprocessing command line arguments
+    are issued or when ``--force-ocr`` is issued. If no whole page is image is
+    produced for a given page, this function will not be called. This is not
+    the image that will be shown to OCR. The whole page image is filtered in
+    the hook above, ``filter_page_image``, then this function is called for
+    PDF conversion.
+
+    This function will only be called when OCRmyPDF runs in a mode such as
+    "force OCR" mode where rasterizing of all content is performed.
+
+    Clever things could be done at this stage such as segmenting the page image into
+    color regions or vector equivalents.
+
+    The provider of the hook implementation is responsible for ensuring that the
+    OCR text layer is aligned with the PDF produced here, or text misalignment
+    will result.
+
+    Currently this function must produce a single page PDF or the pipeline will
+    fail.  If the intent is to remove the PDF, then create a single page empty
+    PDF.
+
+    Args:
+        page: Context for this page.
+        image_filename: Filename of the input image used to create output_pdf,
+            for "reference" if recreating the output_pdf entirely.
+        output_pdf: The previous created output_pdf.
+
+    Returns:
+        output_pdf
 
     Note:
         This hook will be called from child processes. Modifying global state

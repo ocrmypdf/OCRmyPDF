@@ -6,12 +6,13 @@
 
 
 import logging
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pikepdf
 import pytest
 
 from ocrmypdf import _validation as vd
+from ocrmypdf._concurrent import NullProgressBar, SerialExecutor
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.api import create_options
 from ocrmypdf.cli import get_parser
@@ -173,13 +174,22 @@ def test_false_action_store_true():
 def test_no_progress_bar(progress_bar, resources):
     opts = make_opts(progress_bar=progress_bar, input_file=(resources / 'trivial.pdf'))
     plugin_manager = get_plugin_manager(opts.plugins)
-    with patch('ocrmypdf._concurrent.tqdm', autospec=True) as tqdmpatch:
-        vd._check_options(opts, plugin_manager, set())
-        pdfinfo = PdfInfo(opts.input_file, progbar=opts.progress_bar)
-        assert pdfinfo is not None
-        assert tqdmpatch.called
-        _args, kwargs = tqdmpatch.call_args
-        assert kwargs['disable'] != progress_bar
+
+    vd._check_options(opts, plugin_manager, set())
+
+    pbar_disabled = None
+
+    class CheckProgressBar(NullProgressBar):
+        def __init__(self, disable, **kwargs):
+            nonlocal pbar_disabled
+            pbar_disabled = disable
+            super().__init__(disable=disable, **kwargs)
+
+    executor = SerialExecutor(pbar_class=CheckProgressBar)
+    pdfinfo = PdfInfo(opts.input_file, progbar=opts.progress_bar, executor=executor)
+
+    assert pdfinfo is not None
+    assert pbar_disabled is not None and pbar_disabled != progress_bar
 
 
 def test_language_warning(caplog):

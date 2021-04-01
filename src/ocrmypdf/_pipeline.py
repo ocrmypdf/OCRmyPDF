@@ -19,9 +19,9 @@ import img2pdf
 import pikepdf
 from pikepdf.models.metadata import encode_pdf_date
 from PIL import Image, ImageColor, ImageDraw
-from tqdm import tqdm
 
 from ocrmypdf import leptonica
+from ocrmypdf._concurrent import Executor
 from ocrmypdf._exec import unpaper
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._version import PROGRAM_NAME
@@ -146,6 +146,8 @@ def triage(original_filename, input_file, output_file, options):
 
 def get_pdfinfo(
     input_file,
+    *,
+    executor: Executor,
     detailed_analysis=False,
     progbar=False,
     max_workers=None,
@@ -158,6 +160,7 @@ def get_pdfinfo(
             progbar=progbar,
             max_workers=max_workers,
             check_pages=check_pages,
+            executor=executor,
         )
     except pikepdf.PasswordError:
         raise EncryptedPdfError()
@@ -611,6 +614,10 @@ def create_pdf_page_from_image(
         )
         log.debug('convert done')
 
+    output_file = page_context.plugin_manager.hook.filter_pdf_page(
+        page=page_context, image_filename=image, output_pdf=output_file
+    )
+
     return output_file
 
 
@@ -726,7 +733,11 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext):
         output_file=output_file,
         compression=options.pdfa_image_compression,
         pdfa_part=options.output_type[-1],  # is pdfa-1, pdfa-2, or pdfa-3
-        progressbar_class=tqdm if options.progress_bar else None,
+        progressbar_class=(
+            context.plugin_manager.hook.get_progressbar_class()
+            if options.progress_bar
+            else None
+        ),
     )
 
     return output_file
@@ -812,13 +823,13 @@ def metadata_fixup(working_file: Path, context: PdfContext):
     return output_file
 
 
-def optimize_pdf(input_file: Path, context: PdfContext):
+def optimize_pdf(input_file: Path, context: PdfContext, executor: Executor):
     output_file = context.get_path('optimize.pdf')
     save_settings = dict(
         linearize=should_linearize(input_file, context),
         **get_pdf_save_settings(context.options.output_type),
     )
-    optimize(input_file, output_file, context, save_settings)
+    optimize(input_file, output_file, context, save_settings, executor)
     return output_file
 
 
