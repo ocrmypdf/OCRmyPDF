@@ -78,6 +78,7 @@ setup(
         'Pillow >= 7.0.0',
         'pluggy >= 0.13.0, < 1.0',
         'reportlab >= 3.3.0',  # oldest released version with sane image handling
+        'setuptools',
         'tqdm >= 4',
     ],
     tests_require=tests_require,
