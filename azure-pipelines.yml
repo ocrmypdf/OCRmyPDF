@@ -7,6 +7,7 @@ trigger:
       - "*"
     exclude:
       - "travis"
+      - "ci"
 
 stages:
   - stage: "Test"

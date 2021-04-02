@@ -24,6 +24,7 @@ venv*/
 /debug_tests.py
 *.traineddata
 /private
+/coverage.xml
 
 # Package building
 *.egg-info/
