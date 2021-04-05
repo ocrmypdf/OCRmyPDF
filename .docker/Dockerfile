@@ -10,8 +10,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential autoconf automake libtool \
   libleptonica-dev \
   zlib1g-dev \
-  python3 \
+  python3-dev \
   python3-distutils \
+  libffi-dev \
+  libqpdf-dev \
   ca-certificates \
   curl \
   git
@@ -62,7 +64,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   tesseract-ocr-fra \
   tesseract-ocr-por \
   tesseract-ocr-spa \
-  unpaper
+  unpaper \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
