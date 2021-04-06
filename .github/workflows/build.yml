@@ -79,11 +79,11 @@ jobs:
         run: |
           python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/test_main.py::test_quick
 
-      # - name: Upload coverage to Codecov
-      #   uses: codecov/codecov-action@v1
-      #   with:
-      #     files: ./coverage.xml
-      #     env_vars: OS,PYTHON
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          files: ./coverage.xml
+          env_vars: OS,PYTHON
 
   test_macos:
     name: Test macOS
@@ -135,11 +135,11 @@ jobs:
         run: |
           python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/test_main.py::test_quick
 
-      # - name: Upload coverage to Codecov
-      #   uses: codecov/codecov-action@v1
-      #   with:
-      #     files: ./coverage.xml
-      #     env_vars: OS,PYTHON
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          files: ./coverage.xml
+          env_vars: OS,PYTHON
 
   test_windows:
     name: Test Windows
@@ -178,11 +178,11 @@ jobs:
         run: |
           python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/test_main.py::test_quick
 
-      # - name: Upload coverage to Codecov
-      #   uses: codecov/codecov-action@v1
-      #   with:
-      #     files: ./coverage.xml
-      #     env_vars: OS,PYTHON
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          files: ./coverage.xml
+          env_vars: OS,PYTHON
 
   wheel_sdist_linux:
     name: Build sdist and wheels
