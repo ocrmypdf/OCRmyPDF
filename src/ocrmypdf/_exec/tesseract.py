@@ -221,6 +221,7 @@ def _generate_null_hocr(output_hocr, output_text, image):
 
 
 def generate_hocr(
+    *,
     input_file: Path,
     output_hocr: Path,
     output_text: Path,

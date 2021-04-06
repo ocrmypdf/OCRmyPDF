@@ -47,7 +47,10 @@ def run(args=None):
         verbosity = Verbosity.quiet
         options.progress_bar = False
     configure_logging(
-        verbosity, progress_bar_friendly=options.progress_bar, manage_root_logger=True
+        verbosity,
+        progress_bar_friendly=options.progress_bar,
+        manage_root_logger=True,
+        plugin_manager=plugin_manager,
     )
     log.debug('ocrmypdf %s', __version__)
     try:

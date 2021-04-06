@@ -77,7 +77,7 @@ class HocrTransform:
         {'ﬀ': 'ff', 'ﬃ': 'f‌f‌i', 'ﬄ': 'f‌f‌l', 'ﬁ': 'fi', 'ﬂ': 'fl'}
     )
 
-    def __init__(self, hocr_filename: Union[str, Path], dpi: float):
+    def __init__(self, *, hocr_filename: Union[str, Path], dpi: float):
         self.dpi = dpi
         self.hocr = ElementTree.parse(os.fspath(hocr_filename))
 
@@ -182,6 +182,7 @@ class HocrTransform:
 
     def to_pdf(
         self,
+        *,
         out_filename: Path,
         image_filename: Optional[Path] = None,
         show_bounding_boxes: bool = False,
@@ -433,10 +434,10 @@ if __name__ == "__main__":
     parser.add_argument('outputfile', help='Path to the PDF file to be generated')
     args = parser.parse_args()
 
-    hocr = HocrTransform(args.hocrfile, args.resolution)
+    hocr = HocrTransform(hocr_filename=args.hocrfile, dpi=args.resolution)
     hocr.to_pdf(
-        args.outputfile,
-        args.image,
-        args.boundingboxes,
+        out_filename=args.outputfile,
+        image_filename=args.image,
+        show_bounding_boxes=args.boundingboxes,
         interword_spaces=args.interword_spaces,
     )

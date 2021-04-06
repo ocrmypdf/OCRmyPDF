@@ -9,7 +9,6 @@ import logging
 import sys
 import tempfile
 from collections import defaultdict
-from functools import partial
 from os import fspath
 from pathlib import Path
 from typing import (
@@ -29,14 +28,13 @@ import img2pdf
 import pikepdf
 from pikepdf import Dictionary, Name, Object, Pdf, PdfImage
 from PIL import Image
-from tqdm import tqdm
 
 from ocrmypdf import leptonica
-from ocrmypdf._concurrent import exec_progress_pool
+from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf.exceptions import OutputFileAccessError
-from ocrmypdf.helpers import deprecated, safe_symlink
+from ocrmypdf.helpers import safe_symlink
 
 log = logging.getLogger(__name__)
 
@@ -62,10 +60,6 @@ def png_name(root: Path, xref: Xref) -> Path:
 
 def jpg_name(root: Path, xref: Xref) -> Path:
     return img_name(root, xref, '.jpg')
-
-
-def tif_name(root: Path, xref: Xref) -> Path:
-    return img_name(root, xref, '.tif')
 
 
 def extract_image_filter(
@@ -301,17 +295,17 @@ def extract_images_jbig2(pike: Pdf, root: Path, options) -> Dict[int, List[XrefE
 
 
 def _produce_jbig2_images(
-    jbig2_groups: Dict[int, List[XrefExt]], root: Path, options
+    jbig2_groups: Dict[int, List[XrefExt]], root: Path, options, executor: Executor
 ) -> None:
     """Produce JBIG2 images from their groups"""
 
     def jbig2_group_args(root: Path, groups: Dict[int, List[XrefExt]]):
         for group, xref_exts in groups.items():
             prefix = f'group{group:08d}'
-            yield dict(
-                cwd=fspath(root),
-                infiles=(img_name(root, xref, ext) for xref, ext in xref_exts),
-                out_prefix=prefix,
+            yield (
+                fspath(root),  # =cwd
+                (img_name(root, xref, ext) for xref, ext in xref_exts),  # =infiles
+                prefix,  # =out_prefix
             )
 
     def jbig2_single_args(root, groups: Dict[int, List[XrefExt]]):
@@ -320,23 +314,20 @@ def _produce_jbig2_images(
             # Second loop is to ensure multiple images per page are unpacked
             for n, xref_ext in enumerate(xref_exts):
                 xref, ext = xref_ext
-                yield dict(
-                    cwd=fspath(root),
-                    infile=img_name(root, xref, ext),
-                    outfile=root / f'{prefix}.{n:04d}',
+                yield (
+                    fspath(root),
+                    img_name(root, xref, ext),
+                    root / f'{prefix}.{n:04d}',
                 )
-
-    def convert_generic(fn, kwargs_dict):
-        return fn(**kwargs_dict)
 
     if options.jbig2_page_group_size > 1:
         jbig2_args = jbig2_group_args
-        jbig2_convert = partial(convert_generic, jbig2enc.convert_group)
+        jbig2_convert = jbig2enc.convert_group_mp
     else:
         jbig2_args = jbig2_single_args
-        jbig2_convert = partial(convert_generic, jbig2enc.convert_single)
+        jbig2_convert = jbig2enc.convert_single_mp
 
-    exec_progress_pool(
+    executor(
         use_threads=True,
         max_workers=options.jobs,
         tqdm_kwargs=dict(
@@ -351,7 +342,11 @@ def _produce_jbig2_images(
 
 
 def convert_to_jbig2(
-    pike: Pdf, jbig2_groups: Dict[int, List[XrefExt]], root: Path, options
+    pike: Pdf,
+    jbig2_groups: Dict[int, List[XrefExt]],
+    root: Path,
+    options,
+    executor: Executor,
 ) -> None:
     """Convert images to JBIG2 and insert into PDF.
 
@@ -366,7 +361,7 @@ def convert_to_jbig2(
     and needs no dictionary. Currently this must be lossless JBIG2.
     """
 
-    _produce_jbig2_images(jbig2_groups, root, options)
+    _produce_jbig2_images(jbig2_groups, root, options, executor)
 
     for group, xref_exts in jbig2_groups.items():
         prefix = f'group{group:08d}'
@@ -390,27 +385,53 @@ def convert_to_jbig2(
             )
 
 
-def transcode_jpegs(pike: Pdf, jpegs: Sequence[Xref], root: Path, options) -> None:
-    for xref in tqdm(
-        jpegs, desc="JPEGs", unit='image', disable=not options.progress_bar
-    ):
-        in_jpg = jpg_name(root, xref)
-        opt_jpg = in_jpg.with_suffix('.opt.jpg')
+def _optimize_jpeg(args):
+    xref, in_jpg, opt_jpg, jpeg_quality = args
 
-        # This produces a debug warning from PIL
-        # DEBUG:PIL.Image:Error closing: 'NoneType' object has no attribute
-        # 'close'.  Seems to be mostly harmless
-        # https://github.com/python-pillow/Pillow/issues/1144
-        with Image.open(in_jpg) as im:
-            im.save(opt_jpg, optimize=True, quality=options.jpeg_quality)
+    # This may produce a debug warning from PIL
+    # DEBUG:PIL.Image:Error closing: 'NoneType' object has no attribute
+    # 'close'.  Seems to be mostly harmless
+    # https://github.com/python-pillow/Pillow/issues/1144
+    with Image.open(in_jpg) as im:
+        im.save(opt_jpg, optimize=True, quality=jpeg_quality)
 
-        if opt_jpg.stat().st_size > in_jpg.stat().st_size:
-            log.debug("xref %s, jpeg, made larger - skip", xref)
-            continue
+    if opt_jpg.stat().st_size > in_jpg.stat().st_size:
+        log.debug("xref %s, jpeg, made larger - skip", xref)
+        opt_jpg.unlink()
+        opt_jpg = None
+    return xref, opt_jpg
 
-        compdata = leptonica.CompressedData.open(opt_jpg)
-        im_obj = pike.get_object(xref, 0)
-        im_obj.write(compdata.read(), filter=Name.DCTDecode)
+
+def transcode_jpegs(
+    pike: Pdf, jpegs: Sequence[Xref], root: Path, options, executor
+) -> None:
+    def jpeg_args():
+        for xref in jpegs:
+            in_jpg = jpg_name(root, xref)
+            opt_jpg = in_jpg.with_suffix('.opt.jpg')
+            yield xref, in_jpg, opt_jpg, options.jpeg_quality
+
+    def finish_jpeg(result, pbar):
+        xref, opt_jpg = result
+        if opt_jpg:
+            compdata = leptonica.CompressedData.open(opt_jpg)
+            im_obj = pike.get_object(xref, 0)
+            im_obj.write(compdata.read(), filter=Name.DCTDecode)
+        pbar.update()
+
+    executor(
+        use_threads=True,  # Processes are significantly slower at this task
+        max_workers=options.jobs,
+        tqdm_kwargs=dict(
+            desc="JPEGs",
+            total=len(jpegs),
+            unit='image',
+            disable=not options.progress_bar,
+        ),
+        task=_optimize_jpeg,
+        task_arguments=jpeg_args(),
+        task_finished=finish_jpeg,
+    )
 
 
 def _transcode_png(pike: Pdf, filename: Path, xref: Xref) -> bool:
@@ -460,6 +481,7 @@ def transcode_pngs(
     image_name_fn: Callable[[Path, Xref], Path],
     root: Path,
     options,
+    executor,
 ) -> None:
     modified: MutableSet[Xref] = set()
     if options.optimize >= 2:
@@ -479,10 +501,7 @@ def transcode_pngs(
                 )
                 modified.add(xref)
 
-        def pngquant_fn(args):
-            pngquant.quantize(*args)
-
-        exec_progress_pool(
+        executor(
             use_threads=True,
             max_workers=options.jobs,
             tqdm_kwargs=dict(
@@ -491,7 +510,7 @@ def transcode_pngs(
                 unit='image',
                 disable=not options.progress_bar,
             ),
-            task=pngquant_fn,
+            task=pngquant.quantize_mp,
             task_arguments=pngquant_args(),
         )
 
@@ -500,82 +519,13 @@ def transcode_pngs(
         _transcode_png(pike, filename, xref)
 
 
-@deprecated
-def rewrite_png_as_g4(pike: Pdf, im_obj: Object, compdata) -> None:  # pragma: no cover
-    im_obj.BitsPerComponent = 1
-    im_obj.Width = compdata.w
-    im_obj.Height = compdata.h
-
-    im_obj.write(compdata.read())
-
-    log.debug(f"PNG to G4 {im_obj.objgen}")
-    if Name.Predictor in im_obj:
-        del im_obj.Predictor
-    if Name.DecodeParms in im_obj:
-        del im_obj.DecodeParms
-    im_obj.DecodeParms = Dictionary(
-        K=-1, BlackIs1=bool(compdata.minisblack), Columns=compdata.w
-    )
-
-    im_obj.Filter = Name.CCITTFaxDecode
-    return
-
-
-@deprecated
-def rewrite_png(pike: Pdf, im_obj: Object, compdata) -> None:  # pragma: no cover
-    # When a PNG is inserted into a PDF, we more or less copy the IDAT section from
-    # the PDF and transfer the rest of the PNG headers to PDF image metadata.
-    # One thing we have to do is tell the PDF reader whether a predictor was used
-    # on the image before Flate encoding. (Typically one is.)
-    # According to Leptonica source, PDF readers don't actually need us
-    # to specify the correct predictor, they just need a value of either:
-    #   1 - no predictor
-    #   10-14 - there is a predictor
-    # Leptonica's compdata->predictor only tells TRUE or FALSE
-    # 10-14 means the actual predictor is specified in the data, so for any
-    # number >= 10 the PDF reader will use whatever the PNG data specifies.
-    # In practice Leptonica should use Paeth, 14, but 15 seems to be the
-    # designated value for "optimal". So we will use 15.
-    # See:
-    #   - PDF RM 7.4.4.4 Table 10
-    #   - https://github.com/DanBloomberg/leptonica/blob/master/src/pdfio2.c#L757
-    predictor = 15 if compdata.predictor > 0 else 1
-    dparms = Dictionary(Predictor=predictor)
-    if predictor > 1:
-        dparms.BitsPerComponent = compdata.bps  # Yes, this is redundant
-        dparms.Colors = compdata.spp
-        dparms.Columns = compdata.w
-
-    im_obj.BitsPerComponent = compdata.bps
-    im_obj.Width = compdata.w
-    im_obj.Height = compdata.h
-
-    log.debug(
-        f"PNG {im_obj.objgen}: palette={compdata.ncolors} spp={compdata.spp} bps={compdata.bps}"
-    )
-    if compdata.ncolors > 0:
-        # .ncolors is the number of colors in the palette, not the number of
-        # colors used in a true color image. The palette string is always
-        # given as RGB tuples even when the image is grayscale; see
-        # https://github.com/DanBloomberg/leptonica/blob/master/src/colormap.c#L2067
-        palette_pdf_string = compdata.get_palette_pdf_string()
-        palette_data = pikepdf.Object.parse(palette_pdf_string)
-        palette_stream = pikepdf.Stream(pike, bytes(palette_data))
-        palette = [Name.Indexed, Name.DeviceRGB, compdata.ncolors - 1, palette_stream]
-        cs = palette
-    else:
-        # ncolors == 0 means we are using a colorspace without a palette
-        if compdata.spp == 1:
-            cs = Name.DeviceGray
-        elif compdata.spp == 4:
-            cs = Name.DeviceCMYK
-        else:  # spp == 3
-            cs = Name.DeviceRGB
-    im_obj.ColorSpace = cs
-    im_obj.write(compdata.read(), filter=Name.FlateDecode, decode_parms=dparms)
-
-
-def optimize(input_file: Path, output_file: Path, context, save_settings) -> None:
+def optimize(
+    input_file: Path,
+    output_file: Path,
+    context,
+    save_settings,
+    executor: Executor = SerialExecutor(),
+) -> None:
     options = context.options
     if options.optimize == 0:
         safe_symlink(input_file, output_file)
@@ -593,14 +543,14 @@ def optimize(input_file: Path, output_file: Path, context, save_settings) -> Non
         root.mkdir(exist_ok=True)
 
         jpegs, pngs = extract_images_generic(pike, root, options)
-        transcode_jpegs(pike, jpegs, root, options)
+        transcode_jpegs(pike, jpegs, root, options, executor)
         # if options.optimize >= 2:
         # Try pngifying the jpegs
         #    transcode_pngs(pike, jpegs, jpg_name, root, options)
-        transcode_pngs(pike, pngs, png_name, root, options)
+        transcode_pngs(pike, pngs, png_name, root, options, executor)
 
         jbig2_groups = extract_images_jbig2(pike, root, options)
-        convert_to_jbig2(pike, jbig2_groups, root, options)
+        convert_to_jbig2(pike, jbig2_groups, root, options, executor)
 
         target_file = output_file.with_suffix('.opt.pdf')
         pike.remove_unreferenced_resources()

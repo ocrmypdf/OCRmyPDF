@@ -5,6 +5,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+import os
 from subprocess import PIPE, run
 
 import pytest
@@ -29,6 +30,9 @@ def test_fish():
         pytest.xfail('fish is not installed')
 
 
+@pytest.mark.skipif(
+    os.name == 'nt', reason="Windows CI workers have bash but are best left alone"
+)
 def test_bash():
     try:
         proc = run(

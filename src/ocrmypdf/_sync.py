@@ -15,10 +15,9 @@ from pathlib import Path
 from tempfile import mkdtemp
 from typing import List, NamedTuple, Optional, Tuple
 
-import pikepdf
 import PIL
 
-from ocrmypdf._concurrent import exec_progress_pool
+from ocrmypdf._concurrent import Executor, setup_executor
 from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PageContext, PdfContext, cleanup_working_files
 from ocrmypdf._logging import PageNumberFilter
@@ -224,14 +223,14 @@ def exec_page_sync(page_context: PageContext):
     )
 
 
-def post_process(pdf_file, context: PdfContext):
+def post_process(pdf_file, context: PdfContext, executor: Executor):
     pdf_out = pdf_file
     if context.options.output_type.startswith('pdfa'):
         ps_stub_out = generate_postscript_stub(context)
         pdf_out = convert_to_pdfa(pdf_out, ps_stub_out, context)
 
     pdf_out = metadata_fixup(pdf_out, context)
-    return optimize_pdf(pdf_out, context)
+    return optimize_pdf(pdf_out, context, executor)
 
 
 def worker_init(max_pixels: int):
@@ -242,7 +241,7 @@ def worker_init(max_pixels: int):
     pikepdf_enable_mmap()
 
 
-def exec_concurrent(context: PdfContext):
+def exec_concurrent(context: PdfContext, executor: Executor):
     """Execute the pipeline concurrently"""
 
     # Run exec_page_sync on every page context
@@ -269,7 +268,7 @@ def exec_concurrent(context: PdfContext):
         finally:
             tls.pageno = None
 
-    exec_progress_pool(
+    executor(
         use_threads=options.use_threads,
         max_workers=max_workers,
         tqdm_kwargs=dict(
@@ -279,7 +278,7 @@ def exec_concurrent(context: PdfContext):
             unit_scale=0.5,
             disable=not options.progress_bar,
         ),
-        task_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
+        worker_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
         task=exec_page_sync,
         task_arguments=context.get_page_contexts(),
         task_finished=update_page,
@@ -296,7 +295,7 @@ def exec_concurrent(context: PdfContext):
 
     # PDF/A and metadata
     log.info("Postprocessing...")
-    pdf = post_process(pdf, context)
+    pdf = post_process(pdf, context, executor)
 
     # Copy PDF file to destination
     copy_final(pdf, options.output_file, context)
@@ -346,6 +345,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
 
     pikepdf_enable_mmap()
 
+    executor = setup_executor(plugin_manager)
     try:
         check_requested_output_file(options)
         start_input_file, original_filename = create_input_file(options, work_folder)
@@ -358,6 +358,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
         # Gather pdfinfo and create context
         pdfinfo = get_pdfinfo(
             origin_pdf,
+            executor=executor,
             detailed_analysis=options.redo_ocr,
             progbar=options.progress_bar,
             max_workers=options.jobs if not options.use_threads else 1,  # To help debug
@@ -370,7 +371,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
         validate_pdfinfo_options(context)
 
         # Execute the pipeline
-        exec_concurrent(context)
+        exec_concurrent(context, executor)
 
         if options.output_file == '-':
             log.info("Output sent to stdout")

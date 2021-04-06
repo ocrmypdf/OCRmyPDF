@@ -163,7 +163,7 @@ To install ocrmypdf for the system:
 
 .. code-block:: bash
 
-    sudo pip3 install ocrmypdf
+    pip3 install ocrmypdf
 
 To install for the current user only:
 
@@ -386,11 +386,15 @@ dependencies:
 
 To install ocrmypdf for the system:
 
+.. code-block:: bash
+
     # As root user
     pip3 install ocrmypdf
     ldconfig
 
 Or, to install for the current user only:
+
+.. code-block:: bash
 
     export PATH=$HOME/.local/bin:$PATH
     pip3 install --user ocrmypdf
@@ -460,7 +464,7 @@ Update Homebrew:
 
 Install or upgrade the required Homebrew packages, if any are missing.
 To do this, use ``brew edit ocrmypdf`` to obtain a recent list of Homebrew
-dependencies. You could also check the ``azure-pipelines.yml``.
+dependencies. You could also check the ``.workflows/build.yml``.
 
 This will include the English, French, German and Spanish language
 packs. If you need other languages you can optionally install them all:
@@ -542,8 +546,9 @@ to change the PATH.
 .. warning::
 
     As of early 2021, users have reported problems with the Microsoft Store version of
-    Python affected most third party Python packages including OCRmyPDF. Please use
-    Python downloaded from Python.org or Chocolatey as recommended here.
+    Python and OCRmyPDF. These issues affect many other third party Python packages.
+    Please download Python from Python.org or Chocolatey instead, and do not use the
+    Microsoft Store version.
 
 Windows Subsystem for Linux
 ---------------------------
@@ -650,6 +655,21 @@ OCRmyPDF is delivered by PyPI because it is a convenient way to install
 the latest version. However, PyPI and ``pip`` cannot address the fact
 that ``ocrmypdf`` depends on certain non-Python system libraries and
 programs being installed.
+
+.. warning::
+
+    Debian and Ubuntu users: unfortunately, Debian and Ubuntu customize
+    Python in non-standard ways, and the nature of these customizations
+    varies from release to release. This can make for a frustrating
+    user experience. The instructions below work on almost all platforms that
+    have Python installed, except for Debian and Ubuntu, where you may need
+    to take additional steps. For best results on Debian and Ubuntu, use the
+    ``apt`` packages; or if these are too old, run
+    ``apt install python3-pip python3-venv``, create a virtual environment,
+    and install OCRmyPDF in that environment.
+
+    `See here for more inforation on Debian-Python issues
+    <https://gist.github.com/tiran/2dec9e03c6f901814f6d1e8dad09528e>`__.
 
 For best results, first install `your platform's
 version <https://repology.org/metapackage/ocrmypdf/versions>`__ of

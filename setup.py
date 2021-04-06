@@ -17,10 +17,6 @@ if sys.version_info < (3, 6):
     print("Python 3.6 or newer is required", file=sys.stderr)
     sys.exit(1)
 
-if 'upload' in sys.argv[1:]:
-    print('Use twine to upload the package - setup.py upload is insecure')
-    sys.exit(1)
-
 tests_require = open('requirements/test.txt', encoding='utf-8').read().splitlines()
 
 
@@ -73,11 +69,10 @@ setup(
         'coloredlogs >= 14.0',  # strictly optional
         'img2pdf >= 0.3.0, < 0.5',  # pure Python, so track HEAD closely
         'pdfminer.six >= 20191110, != 20200720, <= 20201018',
-        "pikepdf >= 1.14.0, < 3 ; python_version < '3.9'",
-        "pikepdf >= 2.0.0 ; python_version >= '3.9'",
-        'Pillow >= 7.0.0',
+        "pikepdf >= 2.10.0",
+        'Pillow >= 8.1.2',
         'pluggy >= 0.13.0, < 1.0',
-        'reportlab >= 3.3.0',  # oldest released version with sane image handling
+        'reportlab >= 3.5.66',
         'setuptools',
         'tqdm >= 4',
     ],

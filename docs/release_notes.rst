@@ -12,6 +12,42 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v12.0.0
+=======
+
+**Breaking changes**
+
+-  Due to recent security issues in pikepdf, Pillow and reportlab, we now require
+   newer versions of these libraries and some of their dependencies. (If necessary,
+   package maintainers may override these versions at their discretion; lower
+   versions will often work.)
+-  We now use the "LeaveColorUnchanged" color conversion strategy when directing
+   Ghostscript to create a PDF/A. Generally this is faster than performing a
+   color conversion, which is not always necessary.
+-  OCR text is now packaged in a Form XObject. This makes it easier to isolate
+   OCR from other document content. However, some poor implemented PDF text
+   extraction algorithms may fail to find the text.
+-  Many API functions have stricter parameter checking or expect keyword arguments
+   were they previously did not.
+-  Some deprecated functions in ``ocrmypdf.optimize`` were removed.
+-  The ``ocrmypdf.leptonica`` module is now deprecated.
+-  Continuous integration moved to GitHub Actions.
+
+**New features**
+
+-  New plugin hook: ``get_progressbar_class``, for progress reporting,
+   allowing developers to replace the standard console progress bar with some
+   other mechanism, such as updating a GUI progress bar.
+-  New plugin hook: ``get_executor``, for replacing the concurrency model.
+   This is primarily to support execution on AWS Lambda, which does not support
+   standard Python ``multiprocessing`` due to its lack of shared memory.
+-  New plugin hook: ``get_logging_console``, for replacing the standard
+   way OCRmyPDF outputs its messages.
+-  New plugin hook: ``filter_pdf_page``, for modifying individual PDF
+   pages produced by OCRmyPDF.
+-  We now generate an ARM64-compatible Docker image alongside the x64 image.
+   Thanks to @andkrause for contributing the change and @0x326 for review comments.
+
 v11.7.3
 =======
 
