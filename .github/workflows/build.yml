@@ -77,7 +77,7 @@ jobs:
 
       - name: Test
         run: |
-          python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/test_main.py::test_quick
+          python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
@@ -133,7 +133,7 @@ jobs:
 
       - name: Test
         run: |
-          python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/test_main.py::test_quick
+          python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
@@ -176,7 +176,7 @@ jobs:
 
       - name: Test
         run: |
-          python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/test_main.py::test_quick
+          python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
