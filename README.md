@@ -1,6 +1,6 @@
 <img src="docs/images/logo.svg" width="240" alt="OCRmyPDF">
 
-[![Build Status][azure]](https://dev.azure.com/jim0585/ocrmypdf/_build/latest?definitionId=2&branchName=master) [![PyPI version][pypi]](https://pypi.org/project/ocrmypdf/) ![Homebrew version][homebrew] ![ReadTheDocs][docs] ![Python versions][pyversions]
+[![Build Status](https://github.com/jbarlow83/OCRmyPDF/actions/workflows/build.yml/badge.svg)](https://github.com/jbarlow83/OCRmyPDF/actions/workflows/build.yml) [![PyPI version][pypi]](https://pypi.org/project/ocrmypdf/) ![Homebrew version][homebrew] ![ReadTheDocs][docs] ![Python versions][pyversions]
 
 [azure]: https://dev.azure.com/jim0585/ocrmypdf/_apis/build/status/jbarlow83.OCRmyPDF?branchName=master
 [travis]: https://travis-ci.org/jbarlow83/OCRmyPDF.svg?branch=master "Travis build status"

@@ -1,4 +1,4 @@
-name: Build and upload to PyPI
+name: Test and deploy
 
 on:
   push:

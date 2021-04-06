@@ -464,7 +464,7 @@ Update Homebrew:
 
 Install or upgrade the required Homebrew packages, if any are missing.
 To do this, use ``brew edit ocrmypdf`` to obtain a recent list of Homebrew
-dependencies. You could also check the ``azure-pipelines.yml``.
+dependencies. You could also check the ``.workflows/build.yml``.
 
 This will include the English, French, German and Spanish language
 packs. If you need other languages you can optionally install them all:
