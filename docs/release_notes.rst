@@ -19,8 +19,8 @@ v12.0.0
 
 -  Due to recent security issues in pikepdf, Pillow and reportlab, we now require
    newer versions of these libraries and some of their dependencies. (If necessary,
-   package maintainers may override these versions, and lower versions will often
-   work.)
+   package maintainers may override these versions at their discretion; lower
+   versions will often work.)
 -  We now use the "LeaveColorUnchanged" color conversion strategy when directing
    Ghostscript to create a PDF/A. Generally this is faster than performing a
    color conversion, which is not always necessary.
@@ -31,6 +31,7 @@ v12.0.0
    were they previously did not.
 -  Some deprecated functions in ``ocrmypdf.optimize`` were removed.
 -  The ``ocrmypdf.leptonica`` module is now deprecated.
+-  Continuous integration moved to GitHub Actions.
 
 **New features**
 
@@ -44,6 +45,8 @@ v12.0.0
    way OCRmyPDF outputs its messages.
 -  New plugin hook: ``filter_pdf_page``, for modifying individual PDF
    pages produced by OCRmyPDF.
+-  We now generate an ARM64-compatible Docker image alongside the x64 image.
+   Thanks to @andkrause for contributing the change and @0x326 for review comments.
 
 v11.7.3
 =======
