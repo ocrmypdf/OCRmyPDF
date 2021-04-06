@@ -73,6 +73,7 @@ setup(
         'Pillow >= 8.1.2',
         'pluggy >= 0.13.0, < 1.0',
         'reportlab >= 3.5.66',
+        'setuptools',
         'tqdm >= 4',
     ],
     tests_require=tests_require,
