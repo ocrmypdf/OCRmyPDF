@@ -4,10 +4,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import sys
 import threading
 from abc import ABC, abstractmethod
-from functools import partial
 from typing import Callable, Iterable, Optional
 
 
@@ -128,7 +126,7 @@ class SerialExecutor(Executor):
         task: Callable,
         task_arguments: Iterable,
         task_finished: Callable,
-    ):
+    ):  # pylint: disable=unused-argument
         with self.pbar_class(**tqdm_kwargs) as pbar:
             for args in task_arguments:
                 result = task(args)

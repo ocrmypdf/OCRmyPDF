@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from ocrmypdf import helpers as helpers
+from ocrmypdf import helpers
 
 from .conftest import running_in_docker
 
@@ -100,6 +100,7 @@ class TestFileIsWritable:
 
 @pytest.mark.skipif(os.name != 'nt', reason="Windows test")
 def test_shim_paths(tmp_path):
+    # pylint: disable=import-outside-toplevel
     from ocrmypdf.subprocess._windows import shim_env_path
 
     progfiles = tmp_path / 'Program Files'

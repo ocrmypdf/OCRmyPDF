@@ -10,7 +10,7 @@ from argparse import ArgumentParser, Namespace
 from collections import namedtuple
 from logging import Handler
 from pathlib import Path
-from typing import TYPE_CHECKING, AbstractSet, Callable, Iterable, List, Optional
+from typing import TYPE_CHECKING, AbstractSet, List, Optional
 
 import pluggy
 
@@ -20,8 +20,11 @@ from ocrmypdf.helpers import Resolution
 if TYPE_CHECKING:
     from PIL import Image
 
+    # pylint: disable=ungrouped-imports
     from ocrmypdf._jobcontext import PageContext
     from ocrmypdf.pdfinfo import PdfInfo
+
+    # pylint: enable=ungrouped-imports
 
 hookspec = pluggy.HookspecMarker('ocrmypdf')
 

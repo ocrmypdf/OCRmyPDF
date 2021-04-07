@@ -6,7 +6,7 @@
 
 
 import logging
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pikepdf
 import pytest
@@ -194,7 +194,7 @@ def test_no_progress_bar(progress_bar, resources):
 
 def test_language_warning(caplog):
     opts = make_opts(language=None)
-    plugin_manager = get_plugin_manager(opts.plugins)
+    _plugin_manager = get_plugin_manager(opts.plugins)
     caplog.set_level(logging.DEBUG)
     with patch(
         'ocrmypdf._validation.locale.getlocale', return_value=('en_US', 'UTF-8')

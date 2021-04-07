@@ -16,7 +16,7 @@ from ocrmypdf._exec.ghostscript import rasterize_pdf
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import Resolution
 
-from .conftest import check_ocrmypdf, run_ocrmypdf, run_ocrmypdf_api
+from .conftest import check_ocrmypdf, run_ocrmypdf
 
 # pylint: disable=redefined-outer-name
 

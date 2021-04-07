@@ -22,7 +22,7 @@ import threading
 from contextlib import suppress
 from multiprocessing import Pool as ProcessPool
 from multiprocessing.pool import ThreadPool
-from typing import Callable, Iterable, Optional, Union
+from typing import Callable, Iterable, Union
 
 from tqdm import tqdm
 

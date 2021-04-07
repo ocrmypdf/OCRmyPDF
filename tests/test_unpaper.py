@@ -71,7 +71,7 @@ def test_unpaper_args_valid(resources, outpdf):
 
 @pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
 def test_unpaper_args_invalid_filename(resources, outpdf):
-    p, out, err = run_ocrmypdf(
+    p, _out, err = run_ocrmypdf(
         resources / "skew.pdf",
         outpdf,
         "-c",
@@ -86,7 +86,7 @@ def test_unpaper_args_invalid_filename(resources, outpdf):
 
 @pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
 def test_unpaper_args_invalid(resources, outpdf):
-    p, out, err = run_ocrmypdf(
+    p, _out, _err = run_ocrmypdf(
         resources / "skew.pdf",
         outpdf,
         "-c",

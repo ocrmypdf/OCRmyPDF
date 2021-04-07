@@ -16,6 +16,8 @@ import ocrmypdf
 
 from .conftest import check_ocrmypdf, run_ocrmypdf_api
 
+# pylint: disable=redefined-outer-name
+
 
 @pytest.fixture
 def baiona(resources):

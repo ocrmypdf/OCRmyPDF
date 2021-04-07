@@ -65,7 +65,7 @@ from ocrmypdf.pdfa import file_claims_pdfa
 log = logging.getLogger(__name__)
 
 
-class PageResult(NamedTuple):
+class PageResult(NamedTuple):  # pylint: disable=inherit-non-class
     pageno: int
     pdf_page_from_image: Optional[Path]
     ocr: Optional[Path]

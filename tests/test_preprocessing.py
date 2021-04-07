@@ -15,7 +15,7 @@ from ocrmypdf.helpers import Resolution
 from ocrmypdf.leptonica import Pix
 from ocrmypdf.pdfinfo import PdfInfo
 
-from .conftest import check_ocrmypdf, have_unpaper, run_ocrmypdf, run_ocrmypdf_api
+from .conftest import check_ocrmypdf, have_unpaper
 
 RENDERERS = ['hocr', 'sandwich']
 

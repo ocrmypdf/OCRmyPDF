@@ -89,7 +89,7 @@ def test_monochrome_correlation(resources, outdir):
 def test_autorotate(renderer, resources, outdir):
     # cardinal.pdf contains four copies of an image rotated in each cardinal
     # direction - these ones are "burned in" not tagged with /Rotate
-    out = check_ocrmypdf(
+    check_ocrmypdf(
         resources / 'cardinal.pdf',
         outdir / 'out.pdf',
         '-r',
@@ -119,7 +119,7 @@ def test_autorotate(renderer, resources, outdir):
     ],
 )
 def test_autorotate_threshold(threshold, correlation_test, resources, outdir):
-    out = check_ocrmypdf(
+    check_ocrmypdf(
         resources / 'cardinal.pdf',
         outdir / 'out.pdf',
         '--rotate-pages-threshold',
@@ -131,14 +131,14 @@ def test_autorotate_threshold(threshold, correlation_test, resources, outdir):
         'tests/plugins/tesseract_cache.py',
     )
 
-    correlation = check_monochrome_correlation(
+    correlation = check_monochrome_correlation(  # pylint: disable=unused-variable
         outdir,
         reference_pdf=resources / 'cardinal.pdf',
         reference_pageno=1,
         test_pdf=outdir / 'out.pdf',
         test_pageno=3,
     )
-    assert eval(correlation_test)  # pylint: disable=w0123
+    assert eval(correlation_test)  # pylint: disable=eval-used
 
 
 def test_rotated_skew_timeout(resources, outpdf):

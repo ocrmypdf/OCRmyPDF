@@ -17,7 +17,7 @@ from ocrmypdf import pdfinfo
 from ocrmypdf._exec import tesseract
 from ocrmypdf.exceptions import MissingDependencyError
 
-from .conftest import check_ocrmypdf, run_ocrmypdf
+from .conftest import check_ocrmypdf
 
 # pylint: disable=redefined-outer-name
 

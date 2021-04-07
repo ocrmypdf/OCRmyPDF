@@ -13,6 +13,8 @@ import ocrmypdf
 
 from .conftest import check_ocrmypdf
 
+# pylint: disable=redefined-outer-name
+
 
 @pytest.fixture
 def acroform(resources):

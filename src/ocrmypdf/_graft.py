@@ -20,7 +20,7 @@ MAX_REPLACE_PAGES = 100
 
 def _ensure_dictionary(obj, name):
     if name not in obj:
-        obj[name] = pikepdf.Dictionary({})
+        obj[name] = Dictionary({})
     return obj[name]
 
 

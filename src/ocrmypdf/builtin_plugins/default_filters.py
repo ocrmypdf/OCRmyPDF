@@ -8,5 +8,7 @@ from ocrmypdf import hookimpl
 
 
 @hookimpl
-def filter_pdf_page(page, image_filename, output_pdf):
+def filter_pdf_page(
+    page, image_filename, output_pdf
+):  # pylint: disable=unused-argument
     return output_pdf
