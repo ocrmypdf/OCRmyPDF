@@ -36,10 +36,6 @@ def running_in_docker():
     return Path('/.dockerenv').exists() or Path('/.dockerinit').exists()
 
 
-def running_in_travis():
-    return os.environ.get('TRAVIS') == 'true'
-
-
 def have_unpaper():
     try:
         unpaper.version()

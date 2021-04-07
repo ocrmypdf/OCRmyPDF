@@ -32,7 +32,6 @@ from .conftest import (
     run_ocrmypdf,
     run_ocrmypdf_api,
     running_in_docker,
-    running_in_travis,
 )
 
 # pylint: disable=redefined-outer-name
@@ -214,8 +213,8 @@ def test_force_ocr_on_pdf_with_no_images(resources, no_outpdf):
 
 
 @pytest.mark.skipif(
-    is_macos() and running_in_travis(),
-    reason="takes too long to install language packs in Travis macOS homebrew",
+    is_macos(),
+    reason="takes too long to install language packs in macOS homebrew",
 )
 def test_german(resources, outdir):
     # Produce a sidecar too - implicit test that system locale is set up
