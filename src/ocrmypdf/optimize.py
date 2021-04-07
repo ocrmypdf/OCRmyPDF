@@ -65,6 +65,9 @@ def jpg_name(root: Path, xref: Xref) -> Path:
 def extract_image_filter(
     pike: Pdf, root: Path, image: Object, xref: Xref
 ) -> Optional[Tuple[PdfImage, Tuple[Name, Object]]]:
+    del pike  # unused args
+    del root
+
     if image.Subtype != Name.Image:
         return None
     if image.Length < 100:
@@ -103,6 +106,8 @@ def extract_image_filter(
 def extract_image_jbig2(
     *, pike: pikepdf.Pdf, root: Path, image: Object, xref: Xref, options
 ) -> Optional[XrefExt]:
+    del options  # unused arg
+
     result = extract_image_filter(pike, root, image, xref)
     if result is None:
         return None
