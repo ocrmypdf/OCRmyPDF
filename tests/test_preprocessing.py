@@ -15,13 +15,7 @@ from ocrmypdf.helpers import Resolution
 from ocrmypdf.leptonica import Pix
 from ocrmypdf.pdfinfo import PdfInfo
 
-# pytest.helpers is dynamic
-# pylint: disable=no-member,redefined-outer-name
-
-check_ocrmypdf = pytest.helpers.check_ocrmypdf
-run_ocrmypdf = pytest.helpers.run_ocrmypdf
-run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
-
+from .conftest import check_ocrmypdf, have_unpaper, run_ocrmypdf, run_ocrmypdf_api
 
 RENDERERS = ['hocr', 'sandwich']
 
@@ -96,7 +90,7 @@ def test_exotic_image(pdf, renderer, output_type, resources, outdir):
     check_ocrmypdf(
         resources / pdf,
         outfile,
-        '-dc' if pytest.helpers.have_unpaper() else '-d',
+        '-dc' if have_unpaper() else '-d',
         '-v',
         '1',
         '--output-type',

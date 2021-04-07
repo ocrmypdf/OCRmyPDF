@@ -24,12 +24,18 @@ from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 from ocrmypdf.subprocess import get_version
 
-# pytest.helpers is dynamic
-# pylint: disable=no-member,redefined-outer-name
+from .conftest import (
+    check_ocrmypdf,
+    first_page_dimensions,
+    have_unpaper,
+    is_macos,
+    run_ocrmypdf,
+    run_ocrmypdf_api,
+    running_in_docker,
+    running_in_travis,
+)
 
-check_ocrmypdf = pytest.helpers.check_ocrmypdf
-run_ocrmypdf = pytest.helpers.run_ocrmypdf
-run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
+# pylint: disable=redefined-outer-name
 
 
 RENDERERS = ['hocr', 'sandwich']
@@ -155,7 +161,7 @@ def test_maximum_options(renderer, output_type, resources, outpdf):
         resources / 'multipage.pdf',
         outpdf,
         '-d',
-        '-ci' if pytest.helpers.have_unpaper() else None,
+        '-ci' if have_unpaper() else None,
         '-f',
         '-k',
         '--oversample',
@@ -208,7 +214,7 @@ def test_force_ocr_on_pdf_with_no_images(resources, no_outpdf):
 
 
 @pytest.mark.skipif(
-    pytest.helpers.is_macos() and pytest.helpers.running_in_travis(),
+    is_macos() and running_in_travis(),
     reason="takes too long to install language packs in Travis macOS homebrew",
 )
 def test_german(resources, outdir):
@@ -269,9 +275,7 @@ def test_input_file_not_found(caplog, no_outpdf):
     assert input_file in caplog.text
 
 
-@pytest.mark.skipif(
-    os.name == 'nt' or pytest.helpers.running_in_docker(), reason="chmod"
-)
+@pytest.mark.skipif(os.name == 'nt' or running_in_docker(), reason="chmod")
 def test_input_file_not_readable(caplog, resources, outdir, no_outpdf):
     input_file = outdir / 'trivial.pdf'
     shutil.copy(resources / 'trivial.pdf', input_file)
@@ -519,9 +523,6 @@ def test_form_xobject(resources, outpdf):
 
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_pagesize_consistency(renderer, resources, outpdf):
-
-    first_page_dimensions = pytest.helpers.first_page_dimensions
-
     infile = resources / '3small.pdf'
 
     before_dims = first_page_dimensions(infile)
@@ -531,10 +532,10 @@ def test_pagesize_consistency(renderer, resources, outpdf):
         outpdf,
         '--pdf-renderer',
         renderer,
-        '--clean' if pytest.helpers.have_unpaper() else None,
+        '--clean' if have_unpaper() else None,
         '--deskew',
         '--remove-background',
-        '--clean-final' if pytest.helpers.have_unpaper() else None,
+        '--clean-final' if have_unpaper() else None,
         '--pages',
         '1',
     )

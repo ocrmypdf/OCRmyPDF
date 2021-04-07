@@ -32,6 +32,7 @@ v12.0.0
 -  Some deprecated functions in ``ocrmypdf.optimize`` were removed.
 -  The ``ocrmypdf.leptonica`` module is now deprecated.
 -  Continuous integration moved to GitHub Actions.
+-  We no longer depend on ``pytest_helpers_namespace`` for testing.
 
 **New features**
 

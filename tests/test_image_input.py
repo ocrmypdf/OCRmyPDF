@@ -14,8 +14,7 @@ from PIL import Image
 
 import ocrmypdf
 
-check_ocrmypdf = pytest.helpers.check_ocrmypdf
-run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
+from .conftest import check_ocrmypdf, run_ocrmypdf_api
 
 
 @pytest.fixture

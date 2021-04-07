@@ -16,9 +16,7 @@ from ocrmypdf._exec.ghostscript import rasterize_pdf
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import Resolution
 
-check_ocrmypdf = pytest.helpers.check_ocrmypdf  # pylint: disable=no-member
-run_ocrmypdf = pytest.helpers.run_ocrmypdf  # pylint: disable=no-member
-run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api  # pylint: disable=no-member
+from .conftest import check_ocrmypdf, run_ocrmypdf, run_ocrmypdf_api
 
 # pylint: disable=redefined-outer-name
 

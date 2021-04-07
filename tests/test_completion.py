@@ -10,8 +10,10 @@ from subprocess import PIPE, run
 
 import pytest
 
+from .conftest import running_in_docker
+
 pytestmark = pytest.mark.skipif(
-    pytest.helpers.running_in_docker(),  # pylint: disable=no-member
+    running_in_docker(),
     reason="docker can't complete",
 )
 

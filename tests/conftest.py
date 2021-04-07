@@ -20,37 +20,29 @@ from ocrmypdf._plugin_manager import get_parser_options_plugins
 pytest_plugins = ['helpers_namespace']
 
 
-# pylint: disable=E1101
-# pytest.helpers is dynamic so it confuses pylint
-
 if sys.version_info < (3, 5):
     print("Requires Python 3.5+")
     sys.exit(1)
 
 
-@pytest.helpers.register
 def is_linux():
     return platform.system() == 'Linux'
 
 
-@pytest.helpers.register
 def is_macos():
     return platform.system() == 'Darwin'
 
 
-@pytest.helpers.register
 def running_in_docker():
     # Docker creates a file named /.dockerenv (newer versions) or
     # /.dockerinit (older) -- this is undocumented, not an offical test
     return Path('/.dockerenv').exists() or Path('/.dockerinit').exists()
 
 
-@pytest.helpers.register
 def running_in_travis():
     return os.environ.get('TRAVIS') == 'true'
 
 
-@pytest.helpers.register
 def have_unpaper():
     try:
         unpaper.version()
@@ -93,7 +85,6 @@ def no_outpdf(tmp_path):
     return tmp_path / 'no_output.pdf'
 
 
-@pytest.helpers.register
 def check_ocrmypdf(input_file, output_file, *args):
     """Run ocrmypdf and confirmed that a valid file was created"""
     args = [str(input_file), str(output_file)] + [
@@ -111,7 +102,6 @@ def check_ocrmypdf(input_file, output_file, *args):
     return output_file
 
 
-@pytest.helpers.register
 def run_ocrmypdf_api(input_file, output_file, *args):
     """Run ocrmypdf via API and let caller deal with results
 
@@ -127,7 +117,6 @@ def run_ocrmypdf_api(input_file, output_file, *args):
     return api.run_pipeline(options, plugin_manager=None, api=False)
 
 
-@pytest.helpers.register
 def run_ocrmypdf(input_file, output_file, *args, text=True):
     "Run ocrmypdf and let caller deal with results"
 
@@ -150,7 +139,6 @@ def run_ocrmypdf(input_file, output_file, *args, text=True):
     return p, p.stdout, p.stderr
 
 
-@pytest.helpers.register
 def first_page_dimensions(pdf):
     info = pdfinfo.PdfInfo(pdf)
     page0 = info[0]

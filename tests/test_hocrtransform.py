@@ -21,6 +21,8 @@ from ocrmypdf import hocrtransform
 from ocrmypdf._exec.tesseract import HOCR_TEMPLATE
 from ocrmypdf.helpers import check_pdf
 
+from .conftest import check_ocrmypdf
+
 
 def text_from_pdf(filename):
     output_string = StringIO()
@@ -36,8 +38,6 @@ def text_from_pdf(filename):
 
 
 # pylint: disable=redefined-outer-name
-
-check_ocrmypdf = pytest.helpers.check_ocrmypdf  # pylint: disable=no-member
 
 
 @pytest.fixture

@@ -24,18 +24,15 @@ from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import SRGB_ICC_PROFILE, file_claims_pdfa, generate_pdfa_ps
 from ocrmypdf.pdfinfo import PdfInfo
 
+from .conftest import check_ocrmypdf, run_ocrmypdf
+
 try:
     import fitz
 except ImportError:
     fitz = None
 
-# pytest.helpers is dynamic
-# pylint: disable=no-member
 
 pytestmark = pytest.mark.filterwarnings('ignore:.*XMLParser.*:DeprecationWarning')
-
-check_ocrmypdf = pytest.helpers.check_ocrmypdf
-run_ocrmypdf = pytest.helpers.run_ocrmypdf
 
 
 @pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])

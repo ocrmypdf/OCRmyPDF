@@ -19,7 +19,7 @@ from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
 from ocrmypdf.pdfinfo import PdfInfo
 
-run_ocrmypdf_api = pytest.helpers.run_ocrmypdf_api
+from .conftest import run_ocrmypdf_api
 
 
 def make_opts_pm(input_file='a.pdf', output_file='b.pdf', language='eng', **kwargs):

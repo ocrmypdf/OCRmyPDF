@@ -11,7 +11,7 @@ import pytest
 
 import ocrmypdf
 
-check_ocrmypdf = pytest.helpers.check_ocrmypdf
+from .conftest import check_ocrmypdf
 
 
 @pytest.fixture

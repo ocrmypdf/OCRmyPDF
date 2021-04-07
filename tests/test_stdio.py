@@ -15,11 +15,7 @@ import pytest
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import check_pdf
 
-# pytest.helpers is dynamic
-# pylint: disable=no-member,redefined-outer-name
-
-run_ocrmypdf = pytest.helpers.run_ocrmypdf
-run_ocrmypdf_api = pytest.helpers.run_ocrmypdf
+from .conftest import run_ocrmypdf
 
 
 def test_stdin(ocrmypdf_exec, resources, outpdf):

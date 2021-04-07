@@ -19,7 +19,7 @@ from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._exec.ghostscript import rasterize_pdf
 from ocrmypdf.helpers import Resolution
 
-check_ocrmypdf = pytest.helpers.check_ocrmypdf  # pylint: disable=e1101
+from .conftest import check_ocrmypdf
 
 needs_pngquant = pytest.mark.skipif(
     not pngquant.available(), reason="pngquant not installed"

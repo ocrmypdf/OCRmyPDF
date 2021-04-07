@@ -7,7 +7,7 @@
 import pikepdf
 import pytest
 
-check_ocrmypdf = pytest.helpers.check_ocrmypdf
+from .conftest import check_ocrmypdf
 
 
 @pytest.mark.parametrize('optimize', (0, 3))

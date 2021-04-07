@@ -14,6 +14,8 @@ import pytest
 
 from ocrmypdf import helpers as helpers
 
+from .conftest import running_in_docker
+
 
 class TestSafeSymlink:
     def test_safe_symlink_link_self(self, tmp_path, caplog):
@@ -58,9 +60,7 @@ def test_deprecated():
         assert old_function() == 42
 
 
-skipif_docker = pytest.mark.skipif(
-    pytest.helpers.running_in_docker(), reason="fails on Docker"
-)
+skipif_docker = pytest.mark.skipif(running_in_docker(), reason="fails on Docker")
 
 
 class TestFileIsWritable:

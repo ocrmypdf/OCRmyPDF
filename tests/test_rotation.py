@@ -21,17 +21,15 @@ from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo import PdfInfo
 
-# pytest.helpers is dynamic
-# pylint: disable=no-member
-# pylint: disable=w0612
+from .conftest import check_ocrmypdf, run_ocrmypdf
+
+# pylintx: disable=unused-variable
+
 
 pytestmark = pytest.mark.skipif(
     leptonica.get_leptonica_version() < 'leptonica-1.72',
     reason="Leptonica is too old, correlation doesn't work",
 )
-
-check_ocrmypdf = pytest.helpers.check_ocrmypdf
-run_ocrmypdf = pytest.helpers.run_ocrmypdf
 
 
 RENDERERS = ['hocr', 'sandwich']
