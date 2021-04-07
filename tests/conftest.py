@@ -17,9 +17,6 @@ from ocrmypdf import api, pdfinfo
 from ocrmypdf._exec import unpaper
 from ocrmypdf._plugin_manager import get_parser_options_plugins
 
-pytest_plugins = ['helpers_namespace']
-
-
 if sys.version_info < (3, 5):
     print("Requires Python 3.5+")
     sys.exit(1)
