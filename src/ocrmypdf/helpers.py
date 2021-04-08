@@ -54,7 +54,7 @@ class Resolution(namedtuple('Resolution', ('x', 'y'))):
     def __str__(self):
         return f"{self.x:f}x{self.y:f}"
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return f"Resolution({self.x}x{self.y} dpi)"
 
 
@@ -200,7 +200,9 @@ def check_pdf(input_file: Path) -> bool:
                 pdf.check_linearization(sio)
             except RuntimeError:
                 pass
-            except (  # Workaround for a problematic pikepdf version
+            except (
+                # Workaround for a problematic pikepdf version
+                # pragma: no cover
                 getattr(pikepdf, 'ForeignObjectError')
                 if pikepdf.__version__ == '2.1.0'
                 else NeverRaise

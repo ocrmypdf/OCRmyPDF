@@ -117,3 +117,14 @@ def test_shim_paths(tmp_path):
     assert results[-3].endswith('tesseract-ocr'), results
     assert results[-2].endswith(os.path.join('gs', '9.52', 'bin')), results
     assert results[-1].endswith(os.path.join('gs', '9.51', 'bin')), results
+
+
+def test_resolution():
+    Resolution = helpers.Resolution
+    dpi_100 = Resolution(100, 100)
+    dpi_200 = Resolution(200, 200)
+    assert dpi_100.is_square
+    assert not Resolution(100, 200).is_square
+    assert dpi_100 == Resolution(100, 100)
+    assert str(dpi_100) != str(dpi_200)
+    assert dpi_100.take_max([200, 300], [400]) == Resolution(300, 400)
