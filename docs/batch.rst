@@ -202,13 +202,6 @@ Alternatives
 -  `Watchman <https://facebook.github.io/watchman/>`__ is a more
    powerful alternative to ``watchmedo``.
 
-AWS Lambda is not viable
-------------------------
-
-AWS Lambda and its equivalents have low limits on execution time and payload
-size, relative to OCRmyPDF's needs. As of this writing, the request/response
-payload for AWS Lambda was 6 MB, which means many PDFs will not fit.
-
 macOS Automator
 ===============
 

@@ -180,6 +180,8 @@ Modifying intermediate images
 
 .. autofunction:: ocrmypdf.pluginspec.filter_page_image
 
+.. autofunction:: ocrmypdf.pluginspec.filter_pdf_page
+
 OCR engine
 ----------
 
