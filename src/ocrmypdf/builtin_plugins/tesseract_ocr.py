@@ -80,7 +80,7 @@ def check_options(options):
         program='tesseract',
         package={'linux': 'tesseract-ocr'},
         version_checker=tesseract.version,
-        need_version='4.0.0',  # using backport for Travis CI
+        need_version='4.0.0-beta.1',  # using backport for Travis CI
         version_parser=tesseract.TesseractVersion,
     )
 
