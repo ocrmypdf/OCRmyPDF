@@ -6,6 +6,8 @@ on:
       - master
       - ci
       - release/*
+    tags:
+      - v*
     paths-ignore:
       - README*
   pull_request:
