@@ -81,19 +81,13 @@ def check_options(options):
         package={'linux': 'tesseract-ocr'},
         version_checker=tesseract.version,
         need_version='4.0.0',  # using backport for Travis CI
+        version_parser=tesseract.TesseractVersion,
     )
 
     # Decide on what renderer to use
     if options.pdf_renderer == 'auto':
         options.pdf_renderer = 'sandwich'
 
-    if options.pdf_renderer == 'sandwich' and not tesseract.has_textonly_pdf(
-        set(options.languages)
-    ):
-        raise MissingDependencyError(
-            "You are using an alpha version of Tesseract 4.0 that does not support "
-            "the textonly_pdf parameter. We don't support versions this old."
-        )
     if not tesseract.has_user_words() and (options.user_words or options.user_patterns):
         log.warning(
             "Tesseract 4.0 ignores --user-words and --user-patterns, so these "

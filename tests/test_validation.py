@@ -13,6 +13,7 @@ import pytest
 
 from ocrmypdf import _validation as vd
 from ocrmypdf._concurrent import NullProgressBar, SerialExecutor
+from ocrmypdf._exec.tesseract import TesseractVersion
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.api import create_options
 from ocrmypdf.cli import get_parser
@@ -52,29 +53,23 @@ def test_hocr_notlatin_warning(caplog):
 
 
 def test_old_ghostscript(caplog):
-    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.19'), patch(
-        'ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True
-    ):
+    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.19'):
         vd._check_options(
             *make_opts_pm(language='chi_sim', output_type='pdfa'), {'chi_sim'}
         )
         assert 'does not work correctly' in caplog.text
 
-    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.18'), patch(
-        'ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True
-    ):
+    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.18'):
         with pytest.raises(MissingDependencyError):
             vd._check_options(*make_opts_pm(output_type='pdfa-3'), set())
 
-    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.24'), patch(
-        'ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True
-    ):
+    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.24'):
         with pytest.raises(MissingDependencyError):
             vd._check_options(*make_opts_pm(), set())
 
 
 def test_old_tesseract_error():
-    with patch('ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=False):
+    with patch('ocrmypdf._exec.tesseract.version', return_value='4.00.00alpha'):
         with pytest.raises(MissingDependencyError):
             opts = make_opts(pdf_renderer='sandwich', language='eng')
             plugin_manager = get_plugin_manager(opts.plugins)
@@ -227,17 +222,20 @@ def test_version_comparison():
         version_checker=lambda: '10.0',
         need_version='8.0.2',
     )
-    vd.check_external_program(
-        program="tesseract",
-        package="tesseract",
-        version_checker=lambda: '4.0.0-beta.1',
-        need_version='4.0.0',
-    )
+    with pytest.raises(MissingDependencyError):
+        vd.check_external_program(
+            program="tesseract",
+            package="tesseract",
+            version_checker=lambda: '4.0.0-beta.1',
+            need_version='4.0.0',
+            version_parser=TesseractVersion,
+        )
     vd.check_external_program(
         program="tesseract",
         package="tesseract",
         version_checker=lambda: 'v5.0.0-alpha.20200201',
         need_version='4.0.0',
+        version_parser=TesseractVersion,
     )
     with pytest.raises(MissingDependencyError):
         vd.check_external_program(
@@ -277,11 +275,9 @@ def test_pagesegmode_warning(caplog):
 
 
 def test_two_languages():
-    with patch('ocrmypdf._exec.tesseract.has_textonly_pdf', return_value=True) as mock:
-        vd._check_options(
-            *make_opts_pm(language='fakelang1+fakelang2'), {'fakelang1', 'fakelang2'}
-        )
-        mock.assert_called()
+    vd._check_options(
+        *make_opts_pm(language='fakelang1+fakelang2'), {'fakelang1', 'fakelang2'}
+    )
 
 
 def test_sidecar_equals_output(resources, no_outpdf):

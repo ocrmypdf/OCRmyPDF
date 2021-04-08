@@ -13,13 +13,16 @@ import re
 import sys
 from collections.abc import Mapping
 from contextlib import suppress
-from distutils.version import LooseVersion
+from distutils.version import LooseVersion, Version
 from functools import lru_cache
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, CompletedProcess, Popen
 from subprocess import run as subprocess_run
+from typing import Callable, Optional, Type, Union
 
 from ocrmypdf.exceptions import MissingDependencyError
+
+# pylint: disable=logging-format-interpolation
 
 log = logging.getLogger(__name__)
 
@@ -264,13 +267,30 @@ def _error_old_version(program, package, need_version, found_version, required_f
 
 def check_external_program(
     *,
-    program,
-    package,
-    version_checker,
-    need_version,
-    required_for=None,
+    program: str,
+    package: str,
+    version_checker: Union[str, Callable],
+    need_version: str,
+    required_for: Optional[str] = None,
     recommended=False,
+    version_parser: Type[Version] = LooseVersion,
 ):
+    """Check for required version of external program and raise exception if not.
+
+    Args:
+        program: The name of the program to test.
+        package: The name of a software package that typically supplies this program.
+            Usually the same as program.
+        version_check: A callable without arguments that retrieves the installed
+            version of program.
+        need_version: The minimum required version.
+        required_for: The name of an argument of feature that requires this program.
+        recommended: If this external program is recommended, instead of raising
+            an exception, log a warning and allow execution to continue.
+        version_parser: A class that should be used to parse and compare version
+            numbers. Used when version numbers do not follow standard conventions.
+    """
+
     try:
         if callable(version_checker):
             found_version = version_checker()
@@ -279,7 +299,7 @@ def check_external_program(
     except (CalledProcessError, FileNotFoundError, MissingDependencyError):
         _error_missing_program(program, package, required_for, recommended)
         if not recommended:
-            raise MissingDependencyError()
+            raise MissingDependencyError(program)
         return
 
     def remove_leading_v(s):
@@ -290,9 +310,9 @@ def check_external_program(
     found_version = remove_leading_v(found_version)
     need_version = remove_leading_v(need_version)
 
-    if found_version and LooseVersion(found_version) < LooseVersion(need_version):
+    if found_version and version_parser(found_version) < version_parser(need_version):
         _error_old_version(program, package, need_version, found_version, required_for)
         if not recommended:
-            raise MissingDependencyError()
+            raise MissingDependencyError(program)
 
     log.debug('Found %s %s', program, found_version)

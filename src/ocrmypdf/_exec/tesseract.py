@@ -9,8 +9,10 @@
 
 import logging
 import os
+import re
 import shutil
 from collections import namedtuple
+from distutils.version import StrictVersion
 from os import fspath
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
@@ -53,29 +55,27 @@ class TesseractLoggerAdapter(logging.LoggerAdapter):
         return '[tesseract] %s' % (msg), kwargs
 
 
+class TesseractVersion(StrictVersion):
+    version_re = re.compile(
+        r'''
+        ^(\d+) \. (\d+) (\. (\d+))?  # groups: 1/major, 2/minor, 3/[skip], 4/patch
+        [-]?  # optional hyphen separator
+        (?:(alpha|beta|rc|dev)[.\-\ ]?(\d+)?)?  # 5/prerelease, 6/prerelease_num
+        $
+        ''',
+        re.VERBOSE | re.ASCII,
+    )
+
+    def parse(self, vstring):
+        try:
+            super().parse(vstring)
+        except TypeError as e:
+            if 'int() argument must be a string' in str(e):
+                super().parse(vstring + '0')
+
+
 def version():
     return get_version('tesseract', regex=r'tesseract\s(.+)')
-
-
-def has_textonly_pdf(langs=None):
-    """Does Tesseract have textonly_pdf capability?
-
-    Available in v4.00.00alpha since January 2017. Best to
-    parse the parameter list.
-    """
-    args_tess = tess_base_args(langs, engine_mode=None) + ['--print-parameters', 'pdf']
-    params = ''
-    try:
-        proc = run(args_tess, check=True, stdout=PIPE, stderr=STDOUT)
-        params = proc.stdout
-    except CalledProcessError as e:
-        raise MissingDependencyError(
-            "Could not --print-parameters from tesseract. This can happen if the "
-            "TESSDATA_PREFIX environment is not set to a valid tessdata folder. "
-        ) from e
-    if b'textonly_pdf' in params:
-        return True
-    return False
 
 
 def has_user_words():
