@@ -87,10 +87,7 @@ def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike):
         # do not delete or overwrite real (non-soft link) file
         if not os.path.islink(soft_link_name):
             raise FileExistsError(f"{soft_link_name} exists and is not a link")
-        try:
-            os.unlink(soft_link_name)
-        except OSError:
-            log.debug("Can't unlink %s", soft_link_name)
+        os.unlink(soft_link_name)
 
     if not os.path.exists(input_file):
         raise FileNotFoundError(f"trying to create a broken symlink to {input_file}")
