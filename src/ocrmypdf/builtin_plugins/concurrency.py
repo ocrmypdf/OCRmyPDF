@@ -72,12 +72,15 @@ def process_init(q: Queue, user_init: Callable[[], None], loglevel):
         # Windows and Cygwin do not have pthread_sigmask or SIGBUS
         signal.signal(signal.SIGBUS, process_sigbus)
 
-    # Reconfigure the root logger for this process to send all messages to a queue
-    h = logging.handlers.QueueHandler(q)
+    # Remove any log handlers that belong to the parent process
     root = logging.getLogger()
+    for handler in root.handlers[:]:
+        root.removeHandler(handler)
+        handler.close()  # To ensure handlers with opened resources are released
+
+    # Set up our single log handler to forward messages to the parent
     root.setLevel(loglevel)
-    root.handlers = []
-    root.addHandler(h)
+    root.addHandler(logging.handlers.QueueHandler(q))
 
     user_init()
     return
