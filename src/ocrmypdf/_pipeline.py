@@ -686,11 +686,6 @@ def get_docinfo(base_pdf: pikepdf.Pdf, context: PdfContext) -> Dict[str, str]:
 
     pdfmark['/Creator'] = f'{PROGRAM_NAME} {VERSION} / {creator_tag}'
     pdfmark['/Producer'] = f'pikepdf {pikepdf.__version__}'
-    if 'OCRMYPDF_CREATOR' in os.environ:
-        pdfmark['/Creator'] = os.environ['OCRMYPDF_CREATOR']
-    if 'OCRMYPDF_PRODUCER' in os.environ:
-        pdfmark['/Producer'] = os.environ['OCRMYPDF_PRODUCER']
-
     pdfmark['/ModDate'] = encode_pdf_date(datetime.now(timezone.utc))
     return pdfmark
 
