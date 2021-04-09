@@ -232,7 +232,7 @@ def pikepdf_enable_mmap():
     # We found a race condition probably related to pybind issue #2252 that can
     # cause a crash. For now, disable pikepdf mmap to be on the safe side.
     # Fix is not in pybind11 2.6.0
-    log.debug("pikepdf mmap disabled")
+    # log.debug("pikepdf mmap disabled")
     return
 
 
