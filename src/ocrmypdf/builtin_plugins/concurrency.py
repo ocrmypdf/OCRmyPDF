@@ -117,7 +117,8 @@ class StandardExecutor(Executor):
             initializer = process_init
 
         # Regardless of whether we use_threads for worker processes, the log_listener
-        # must be a thread
+        # must be a thread. Make sure we create the listener after the worker pool,
+        # so that it does not get forked into the workers.
         listener = threading.Thread(target=log_listener, args=(log_queue,))
         listener.start()
 
