@@ -88,9 +88,9 @@ except ffi.error as e:
 
 class _LeptonicaErrorTrap_Redirect:
     """
-    Context manager to trap errors reported by Leptonica.
+    Context manager to trap errors reported by Leptonica < 1.79 or on Apple Silicon.
 
-    Leptonica's error return codes don't provide much informatino about what
+    Leptonica's error return codes don't provide much information about what
     went wrong. Leptonica does, however, write more detailed errors to stderr
     (provided this is not disabled at compile time). The Leptonica source
     code is very consistent in its use of macros to generate errors.
@@ -114,8 +114,10 @@ class _LeptonicaErrorTrap_Redirect:
         # Save the old stderr, and redirect stderr to temporary file
         self.leptonica_lock.acquire()
         try:
-            with suppress(AttributeError):
-                sys.stderr.flush()
+            # It would make sense to do sys.stderr.flush() here, but that can deadlock
+            # due to https://bugs.python.org/issue6721. So don't flush. Pretend
+            # there's nothing important sys.stderr. If the user cared they would
+            # be use Leptonica 1.79 or later anyway and avoid this mess.
             self.copy_of_stderr = os.dup(sys.stderr.fileno())
             os.dup2(self.tmpfile.fileno(), sys.stderr.fileno(), inheritable=False)
         except AttributeError:
