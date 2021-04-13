@@ -5,7 +5,20 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-"""Alternate executor to support OCRmyPDF in AWS Lambda"""
+"""Alternate executor to support OCRmyPDF in AWS Lambda.
+
+AWS Lambda does not support the standard multiprocessing module because it
+environment.
+
+This alternate executor avoids that. However, it has drawbacks. Most notably,
+it divvies up work among worker processes at the beginning, to avoid coordinating
+effort in ways that require shared queues and semaphores. In this implementation,
+there is no shared queue, so no possible lock contention between workers. The
+main process has a shared pipe with each worker.
+
+If some tasks are larger than others, some workers will may fall far behind
+while others have deep queues. The last worker may end up with fewer tasks.
+"""
 
 
 import logging
@@ -16,7 +29,7 @@ from enum import Enum, auto
 from itertools import islice, repeat, takewhile, zip_longest
 from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection, wait
-from typing import Callable, Iterable, Optional
+from typing import Callable, Iterable, Iterator
 from unittest.mock import Mock
 
 from ocrmypdf import Executor, hookimpl
@@ -31,7 +44,14 @@ class MessageType(Enum):
     complete = auto()
 
 
-def split_every(n: int, iterable: Iterable):
+def split_every(n: int, iterable: Iterable) -> Iterator:
+    """Split iterable into groups of n.
+
+    >>> list(split_every(4, range(10)))
+    [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]
+
+    https://stackoverflow.com/a/22919323
+    """
     iterator = iter(iterable)
     return takewhile(bool, (list(islice(iterator, n)) for _ in repeat(None)))
 
