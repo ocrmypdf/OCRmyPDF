@@ -115,9 +115,10 @@ class LambdaExecutor(Executor):
         task_finished: Callable,
     ):
         if use_threads and max_workers == 1:
-            for args in task_arguments:
-                result = task(args)
-                task_finished(result, self.pbar_class)
+            with self.pbar_class(**tqdm_kwargs) as pbar:
+                for args in task_arguments:
+                    result = task(args)
+                    task_finished(result, pbar)
             return
 
         task_arguments = list(task_arguments)
