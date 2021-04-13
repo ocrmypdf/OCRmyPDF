@@ -223,6 +223,13 @@ def clamp(n, smallest, largest):  # mypy doesn't understand types for this
     return max(smallest, min(n, largest))
 
 
+def remove_all_log_handlers(logger):
+    "Remove all log handlers, usually used in a child process."
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+        handler.close()  # To ensure handlers with opened resources are released
+
+
 def pikepdf_enable_mmap():
     # try:
     #     if pikepdf._qpdf.set_access_default_mmap(True):

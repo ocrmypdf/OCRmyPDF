@@ -29,6 +29,7 @@ from tqdm import tqdm
 from ocrmypdf import Executor, hookimpl
 from ocrmypdf._logging import TqdmConsole
 from ocrmypdf.exceptions import InputFileError
+from ocrmypdf.helpers import remove_all_log_handlers
 
 Queue = Union[multiprocessing.Queue, queue.Queue]
 
@@ -74,9 +75,7 @@ def process_init(q: Queue, user_init: Callable[[], None], loglevel):
 
     # Remove any log handlers that belong to the parent process
     root = logging.getLogger()
-    for handler in root.handlers[:]:
-        root.removeHandler(handler)
-        handler.close()  # To ensure handlers with opened resources are released
+    remove_all_log_handlers(root)
 
     # Set up our single log handler to forward messages to the parent
     root.setLevel(loglevel)

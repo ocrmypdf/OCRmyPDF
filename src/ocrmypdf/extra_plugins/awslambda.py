@@ -22,6 +22,7 @@ from unittest.mock import Mock
 from ocrmypdf import Executor, hookimpl
 from ocrmypdf._concurrent import NullProgressBar
 from ocrmypdf.exceptions import InputFileError
+from ocrmypdf.helpers import remove_all_log_handlers
 
 
 class MessageType(Enum):
@@ -61,8 +62,8 @@ def process_loop(
     # Reconfigure the root logger for this process to send all messages to a queue
     h = ConnectionLogHandler(conn)
     root = logging.getLogger()
+    remove_all_log_handlers(root)
     root.setLevel(loglevel)
-    root.handlers = []
     root.addHandler(h)
 
     user_init()
