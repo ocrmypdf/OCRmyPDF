@@ -116,8 +116,8 @@ class _LeptonicaErrorTrap_Redirect:
         try:
             # It would make sense to do sys.stderr.flush() here, but that can deadlock
             # due to https://bugs.python.org/issue6721. So don't flush. Pretend
-            # there's nothing important sys.stderr. If the user cared they would
-            # be use Leptonica 1.79 or later anyway and avoid this mess.
+            # there's nothing important in sys.stderr. If the user cared they would
+            # be using Leptonica 1.79 or later anyway to avoid this mess.
             self.copy_of_stderr = os.dup(sys.stderr.fileno())
             os.dup2(self.tmpfile.fileno(), sys.stderr.fileno(), inheritable=False)
         except AttributeError:
