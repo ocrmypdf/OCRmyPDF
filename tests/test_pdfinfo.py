@@ -88,8 +88,14 @@ def test_single_page_image(eight_by_eight, outpdf):
     assert isclose(pdfimage.dpi.y, 8)
 
 
-def test_single_page_inline_image(outdir):
+def test_single_page_inline_image(eight_by_eight, outdir):
     filename = outdir / 'image-mono-inline.pdf'
+    pdf = Canvas(str(filename), pagesize=(8 * 72, 6 * 72))
+
+    # Draw image in a 72x72 pt or 1"x1" area
+    pdf.drawInlineImage(eight_by_eight, 0, 0, width=72, height=72)
+    pdf.showPage()
+    pdf.save()
 
     info = pdfinfo.PdfInfo(filename)
     print(info)
