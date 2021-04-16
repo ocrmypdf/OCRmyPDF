@@ -14,7 +14,7 @@ from contextlib import ExitStack
 from decimal import Decimal
 from enum import Enum
 from functools import partial
-from math import hypot, isclose, ulp
+from math import hypot, inf, isclose
 from os import PathLike
 from pathlib import Path
 from typing import Container, Iterator, Optional, Tuple, Union
@@ -256,18 +256,15 @@ def _get_dpi(ctm_shorthand, image_size) -> Resolution:
     a, b, c, d, _, _ = ctm_shorthand
 
     # Calculate the width and height of the image in PDF units
-    image_drawn_width = hypot(a, b)
-    image_drawn_height = hypot(c, d)
+    image_drawn = hypot(a, b), hypot(c, d)
 
-    # The scale of the image is pixels per unit of default user space (1/72")
-    # use ulp to turn divide by zero into infinity
-    scale_w = image_size[0] / (image_drawn_width + ulp(0))
-    scale_h = image_size[1] / (image_drawn_height + ulp(0))
+    def calc(drawn, pixels, inches_per_pt=72.0):
+        # The scale of the image is pixels per unit of default user space (1/72")
+        scale = pixels / drawn if drawn != 0 else inf
+        dpi = scale * inches_per_pt
+        return dpi
 
-    # DPI = scale * 72
-    dpi_w = scale_w * 72.0
-    dpi_h = scale_h * 72.0
-
+    dpi_w, dpi_h = (calc(image_drawn[n], image_size[n]) for n in range(2))
     return Resolution(dpi_w, dpi_h)
 
 
