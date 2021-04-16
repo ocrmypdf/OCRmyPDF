@@ -46,8 +46,25 @@ v12.0.0
    way OCRmyPDF outputs its messages.
 -  New plugin hook: ``filter_pdf_page``, for modifying individual PDF
    pages produced by OCRmyPDF.
+-  Using the new plugin hooks, it is now possible to run OCRmyPDF on alternative
+   execution environments that do not have interprocess semaphores, such as
+   AWS Lambda and Android Termux.
+-  Continuous integration moved to GitHub Actions.
 -  We now generate an ARM64-compatible Docker image alongside the x64 image.
    Thanks to @andkrause for contributing the change and @0x326 for review comments.
+
+**Fixes**
+
+-  Fixed a possible deadlock on attempting to flush ``sys.stderr`` when older
+   versions of Leptonica are in use.
+-  Some worker processes inherited resources from their parents such as log
+   handlers that may have also lead to deadlocks. These resources are now released.
+-  Improvements to test coverage.
+-  Removed vestiges of support for Tesseract versions older than 4.0.0-beta1 (
+   which ships with Ubuntu 18.04).
+-  OCRmyPDF can now parse all of Tesseract version numbers, since several
+   schemes have been in use.
+-  Fixed an issue with parsing PDFs that contain images drawn at a scale of 0. (#761)
 
 v11.7.3
 =======
