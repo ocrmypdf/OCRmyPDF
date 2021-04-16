@@ -17,6 +17,7 @@ from reportlab.pdfgen.canvas import Canvas
 
 from ocrmypdf import pdfinfo
 from ocrmypdf.exceptions import InputFileError
+from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo import Colorspace, Encoding
 from ocrmypdf.pdfinfo.layout import PDFPage
 
@@ -194,3 +195,23 @@ def test_pages_issue700(monkeypatch, resources):
             progbar=False,
             max_workers=1,
         )
+
+
+def test_image_scale0(resources, outpdf):
+    with pikepdf.open(resources / 'cmyk.pdf') as cmyk:
+        xobj = pikepdf.Page(cmyk.pages[0]).as_form_xobject()
+
+        p = pikepdf.Pdf.new()
+        p.add_blank_page(page_size=(72, 72))
+        objname = pikepdf.Page(p.pages[0]).add_resource(
+            p.copy_foreign(xobj), pikepdf.Name.XObject, pikepdf.Name.Im0
+        )
+        print(objname)
+        p.pages[0].Contents = pikepdf.Stream(
+            p, b"q 0 0 0 0 0 0 cm %s Do Q" % bytes(objname)
+        )
+        p.save(outpdf)
+
+    pi = pdfinfo.PdfInfo(outpdf, detailed_analysis=True, progbar=False, max_workers=1)
+    assert not pi.pages[0]._images[0].dpi.is_finite
+    assert pi.pages[0].dpi == Resolution(0, 0)

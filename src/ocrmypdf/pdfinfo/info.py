@@ -14,7 +14,7 @@ from contextlib import ExitStack
 from decimal import Decimal
 from enum import Enum
 from functools import partial
-from math import hypot, isclose
+from math import hypot, isclose, ulp
 from os import PathLike
 from pathlib import Path
 from typing import Container, Iterator, Optional, Tuple, Union
@@ -260,8 +260,9 @@ def _get_dpi(ctm_shorthand, image_size) -> Resolution:
     image_drawn_height = hypot(c, d)
 
     # The scale of the image is pixels per unit of default user space (1/72")
-    scale_w = image_size[0] / image_drawn_width
-    scale_h = image_size[1] / image_drawn_height
+    # use ulp to turn divide by zero into infinity
+    scale_w = image_size[0] / (image_drawn_width + ulp(0))
+    scale_h = image_size[1] / (image_drawn_height + ulp(0))
 
     # DPI = scale * 72
     dpi_w = scale_w * 72.0
@@ -364,6 +365,10 @@ class ImageInfo:
     @property
     def enc(self):
         return self._enc
+
+    @property
+    def renderable(self):
+        return self.dpi.is_finite and self.width >= 0 and self.height >= 0
 
     @property
     def dpi(self):
@@ -734,7 +739,9 @@ class PageInfo:
 
         self._dpi = None
         if self._images:
-            dpi = Resolution(0.0, 0.0).take_max(image.dpi for image in self._images)
+            dpi = Resolution(0.0, 0.0).take_max(
+                image.dpi for image in self._images if image.renderable
+            )
             self._dpi = dpi
             self._width_pixels = int(round(dpi.x * float(self._width_inches)))
             self._height_pixels = int(round(dpi.y * float(self._height_inches)))

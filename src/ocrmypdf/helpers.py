@@ -15,7 +15,7 @@ from collections.abc import Iterable
 from contextlib import suppress
 from functools import wraps
 from io import StringIO
-from math import isclose
+from math import isclose, isfinite
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -38,6 +38,10 @@ class Resolution(namedtuple('Resolution', ('x', 'y'))):
     @property
     def is_square(self) -> bool:
         return isclose(self.x, self.y, rel_tol=1e-3)
+
+    @property
+    def is_finite(self) -> bool:
+        return isfinite(self.x) and isfinite(self.y)
 
     def take_max(self, vals, yvals=None):
         if yvals is not None:
