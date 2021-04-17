@@ -58,7 +58,7 @@ portrait pages.
 You can increase (decrease) the parameter ``--rotate-pages-threshold``
 to make page rotation more (less) aggressive. The threshold number is the ratio
 of how confidence the OCR engine is that the document image should be changed,
-compared to kept the same. A value of ``15.0`` is the default, and is fairly
+compared to kept the same. A value of ``14.0`` is the default, and is fairly
 conservative. A value of ``2.0`` will produce more rotations, and more false
 positives.
 
