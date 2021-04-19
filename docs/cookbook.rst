@@ -58,9 +58,11 @@ portrait pages.
 You can increase (decrease) the parameter ``--rotate-pages-threshold``
 to make page rotation more (less) aggressive. The threshold number is the ratio
 of how confidence the OCR engine is that the document image should be changed,
-compared to kept the same. A value of ``15.0`` is the default, and is fairly
-conservative. A value of ``2.0`` will produce more rotations, and more false
-positives.
+compared to kept the same. The default value is quite conservative; on some files
+it may not attempt rotations at all unless it is very confident that the current
+rotation is wrong. A lower value of ``2.0`` will produce more rotations, and
+more false positives. Run with ``-v1`` to see the confidence level for each
+page to see if there may be a better value for your files.
 
 If the page is "just a little off horizontal", like a crooked picture,
 then you want ``--deskew``. ``--rotate-pages`` is for when the cardinal
