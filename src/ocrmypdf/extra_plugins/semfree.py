@@ -5,21 +5,20 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-"""Alternate executor to support OCRmyPDF in AWS Lambda.
+"""Semaphore-free alternate executor.
 
-AWS Lambda does not support the standard multiprocessing module because it
-environment.
+There are two popular environments that do not fully support the standard Python
+multiprocessing module: AWS Lambda, and Termux (a terminal emulator for Android).
 
-This alternate executor avoids that. However, it has drawbacks. Most notably,
-it divvies up work among worker processes at the beginning, to avoid coordinating
-effort in ways that require shared queues and semaphores. In this implementation,
-there is no shared queue, so no possible lock contention between workers. The
-main process has a shared pipe with each worker.
+This alternate executor divvies up work among worker processes before processing,
+rather than having each worker consume work from a shared queue when they finish
+their task. This means workers have no need to coordinate with each other. Each
+worker communicates only with the main process.
 
-If some tasks are larger than others, some workers will may fall far behind
-while others have deep queues. The last worker may end up with fewer tasks.
+This is not without drawbacks. If the tasks are not "even" in size, which cannot
+be guaranteed, some workers may end up with too much work while others are idle.
+It is less efficient than the standard implementation, so not th edefault.
 """
-
 
 import logging
 import logging.handlers
@@ -30,7 +29,6 @@ from itertools import islice, repeat, takewhile, zip_longest
 from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection, wait
 from typing import Callable, Iterable, Iterator
-from unittest.mock import Mock
 
 from ocrmypdf import Executor, hookimpl
 from ocrmypdf._concurrent import NullProgressBar
