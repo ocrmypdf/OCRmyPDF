@@ -73,10 +73,19 @@ class OcrmypdfPluginManager(pluggy.PluginManager):
                 module = importlib.import_module(name)
                 self.register(module)
 
-        # 2. Register setuptools plugins
+        # 2. Install semfree if needed
+        try:
+            # pylint: disable=import-outside-toplevel
+            from multiprocessing.synchronize import SemLock
+
+            del SemLock
+        except ImportError:
+            self.register(importlib.import_module('ocrmypdf.extra_plugins.semfree'))
+
+        # 3. Register setuptools plugins
         self.load_setuptools_entrypoints('ocrmypdf')
 
-        # 3. Register plugins specified on command line
+        # 4. Register plugins specified on command line
         for name in self.__plugins:
             if isinstance(name, Path) or name.endswith('.py'):
                 # Import by filename
