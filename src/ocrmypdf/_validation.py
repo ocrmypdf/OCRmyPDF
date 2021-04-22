@@ -341,7 +341,17 @@ def create_input_file(options, work_folder: Path) -> Tuple[Path, str]:
             safe_symlink(options.input_file, target)
             return target, os.fspath(options.input_file)
         except FileNotFoundError:
-            raise InputFileError(f"File not found - {options.input_file}")
+            msg = f"File not found - {options.input_file}"
+            if Path('/.dockerenv').exists():  # pragma: no cover
+                msg += (
+                    "\nDocker cannot your working directory unless you "
+                    "explicitly share it with the Docker container and set up"
+                    "permissions correctly.\n"
+                    "You may find it easier to use stdin/stdout:"
+                    "\n"
+                    "\tdocker run -i --rm jbarlow83/ocrmypdf - - <input.pdf >output.pdf\n"
+                )
+            raise InputFileError(msg)
 
 
 def check_requested_output_file(options):
