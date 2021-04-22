@@ -79,6 +79,5 @@ COPY --from=builder /app/misc/watcher.py /app/
 COPY --from=builder /app/setup.cfg /app/setup.py /app/README.md /app/
 COPY --from=builder /app/requirements /app/requirements
 COPY --from=builder /app/tests /app/tests
-COPY --from=builder /app/src /app/src
 
 ENTRYPOINT ["/usr/local/bin/ocrmypdf"]
