@@ -25,12 +25,15 @@ v12.0.0
    Ghostscript to create a PDF/A. Generally this is faster than performing a
    color conversion, which is not always necessary.
 -  OCR text is now packaged in a Form XObject. This makes it easier to isolate
-   OCR from other document content. However, some poor implemented PDF text
-   extraction algorithms may fail to find the text.
+   OCR from other document content. However, some poorly implemented PDF text
+   extraction algorithms may fail to detect the text.
 -  Many API functions have stricter parameter checking or expect keyword arguments
    were they previously did not.
 -  Some deprecated functions in ``ocrmypdf.optimize`` were removed.
--  The ``ocrmypdf.leptonica`` module is now deprecated.
+-  The ``ocrmypdf.leptonica`` module is now deprecated, due to difficulties with
+   the current strategy of ABI binding on newer platforms like Apple Silicon.
+   It will be removed and replaced, either by repackaging Leptonica as an
+   independent library using or using a different image processing library.
 -  Continuous integration moved to GitHub Actions.
 -  We no longer depend on ``pytest_helpers_namespace`` for testing.
 
@@ -46,12 +49,15 @@ v12.0.0
    way OCRmyPDF outputs its messages.
 -  New plugin hook: ``filter_pdf_page``, for modifying individual PDF
    pages produced by OCRmyPDF.
--  Using the new plugin hooks, it is now possible to run OCRmyPDF on alternative
-   execution environments that do not have interprocess semaphores, such as
-   AWS Lambda and Android Termux.
+-  OCRmyPDF now runs on nonstandard execution environments that do not have
+   interprocess semaphores, such as AWS Lambda and Android Termux. If the environment
+   does not have semaphores, OCRmyPDF will automatically select an alternate
+   process executor that does not use semaphores.
 -  Continuous integration moved to GitHub Actions.
 -  We now generate an ARM64-compatible Docker image alongside the x64 image.
-   Thanks to @andkrause for contributing the change and @0x326 for review comments.
+   Thanks to @andkrause for doing most of the work in a pull request several months
+   ago, which we were finally able to integrate now. Also thanks to @0x326 for
+   review comments.
 
 **Fixes**
 
@@ -65,6 +71,7 @@ v12.0.0
 -  OCRmyPDF can now parse all of Tesseract version numbers, since several
    schemes have been in use.
 -  Fixed an issue with parsing PDFs that contain images drawn at a scale of 0. (#761)
+-  Removed a frequently repeated message about disabling mmap.
 
 v11.7.3
 =======
