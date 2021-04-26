@@ -12,6 +12,11 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v12.0.1
+=======
+
+-  Fix "invalid version number" for untagged tesseract versions (#770).
+
 v12.0.0
 =======
 
