@@ -61,6 +61,7 @@ class TesseractVersion(StrictVersion):
         ^(\d+) \. (\d+) (\. (\d+))?  # groups: 1/major, 2/minor, 3/[skip], 4/patch
         [-]?  # optional hyphen separator
         (?:(alpha|beta|rc|dev)[.\-\ ]?(\d+)?)?  # 5/prerelease, 6/prerelease_num
+        (?:-(\d+)-g[0-9a-f]+)?  # untagged git version
         $
         ''',
         re.VERBOSE | re.ASCII,
