@@ -17,7 +17,7 @@ are not, e.g. German is ``deu`` and French is ``fra``.
 After you have installed a language pack, you can use it with ``ocrmypdf -l <language>``,
 for example ``ocrmypdf -l spa``. For multilingual documents, you can specify
 all languages to be expected, e.g. ``ocrmypdf -l eng+fra`` for English and French.
-English is assumed by default unless other languages are specified.
+English is assumed by default unless other language(s) are specified.
 
 For Linux users, you can often find packages that provide language
 packs:
