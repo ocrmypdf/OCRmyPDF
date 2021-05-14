@@ -12,9 +12,9 @@ languages <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.
 Languages are identified by standardized three-letter codes (called ISO 639-2 Alpha-3).
 Tesseract's documentation also lists the three-letter code for your language.
 Some are anglicized, e.g. Spanish is ``spa`` rather than ``esp``, while others
-are not, e.g. German is ``deu``.
+are not, e.g. German is ``deu`` and French is ``fra``.
 
-After you have installed a language pack, you can use it ``ocrmypdf -l <language>``,
+After you have installed a language pack, you can use it with ``ocrmypdf -l <language>``,
 for example ``ocrmypdf -l spa``. For multilingual documents, you can specify
 all languages to be expected, e.g. ``ocrmypdf -l eng+fra`` for English and French.
 English is assumed by default unless other language(s) are specified.
@@ -35,8 +35,8 @@ Debian and Ubuntu users
 
 You can then pass the ``-l LANG`` argument to OCRmyPDF to give a hint as
 to what languages it should search for. Multiple languages can be
-requested using either ``-l eng+fre`` (English and French) or
-``-l eng -l fre``.
+requested using either ``-l eng+fra`` (English and French) or
+``-l eng -l fra``.
 
 Fedora users
 ============
@@ -51,8 +51,8 @@ Fedora users
 
 You can then pass the ``-l LANG`` argument to OCRmyPDF to give a hint as
 to what languages it should search for. Multiple languages can be
-requested using either ``-l eng+fre`` (English and French) or
-``-l eng -l fre``.
+requested using either ``-l eng+fra`` (English and French) or
+``-l eng -l fra``.
 
 macOS users
 ===========
