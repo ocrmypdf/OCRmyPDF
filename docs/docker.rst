@@ -103,16 +103,41 @@ Adding languages to the Docker image
 By default the Docker image includes English, German, Simplified Chinese,
 French, Portuguese and Spanish, the most popular languages for OCRmyPDF
 users based on feedback. You may add other languages by creating a new
-Dockerfile based on the public one:
+Dockerfile based on the public one.
 
 .. code-block:: dockerfile
 
    FROM jbarlow83/ocrmypdf
 
-   # Add French
-   RUN apt install tesseract-ocr-fra
+   # Example: add Italian
+   RUN apt install tesseract-ocr-ita
 
-You can also copy training data to ``/usr/share/tesseract-ocr/<tesseract version>/tessdata``.
+To install language packs (training data) such as the 
+`tessdata_best <https://github.com/tesseract-ocr/tessdata_best>`_ suite or
+custom data, you first need to determine the version of Tesseract data files, which
+may differ from the Tesseract program version. Use this command to determine the data
+file version:
+
+.. code-block:: bash
+
+   docker run -i --rm --entrypoint /bin/ls jbarlow83/ocrmypdf /usr/share/tesseract-ocr
+
+As of 2021, the data file version is probably ``4.00``.
+
+You can then add new data with either a Dockerfile:
+
+.. code-block:: dockerfile
+
+   FROM jbarlow83/ocrmypdf
+
+   # Example: add a tessdata_best file
+   COPY chi_tra_vert.traineddata /usr/share/tesseract-ocr/<data version>/tessdata/
+
+Alternately, you can copy training data into a Docker container as follows:
+
+.. code-block:: bash
+
+   docker cp mycustomtraining.traineddata name_of_container:/usr/share/tesseract-ocr/<tesseract version>/tessdata/
 
 Executing the test suite
 ========================
