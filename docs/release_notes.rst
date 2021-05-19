@@ -12,6 +12,15 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+
+v12.0.2
+=======
+
+-  Fix exception thrown when using ``--remove-background`` on files containing small
+   images (#769).
+-  Improve documentation for description of adding language packs to the Docker image
+   and corrected name of French language pack.  
+
 v12.0.1
 =======
 
