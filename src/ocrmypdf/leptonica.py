@@ -192,11 +192,17 @@ class _LeptonicaErrorTrap_Queue:
         if 'Error' in output:
             if 'image file not found' in output:
                 raise FileNotFoundError()
-            if 'pixWrite: stream not opened' in output:
+            elif 'pixWrite: stream not opened' in output:
                 raise LeptonicaIOError()
-            if 'index not valid' in output:
+            elif 'index not valid' in output:
                 raise IndexError()
-            raise LeptonicaError(output)
+            elif 'pixGetInvBackgroundMap: w and h must be >= 5' in output:
+                logger.warning(
+                    "Leptonica attempted to remove background from a low resolution - "
+                    "you may want to review in a PDF viewer"
+                )
+            else:
+                raise LeptonicaError(output)
         return False
 
 
@@ -656,6 +662,9 @@ class Pix(LeptonicaObject):
         bg_val=200,
         smooth_kernel=(2, 1),
     ):
+        if self.width < tile_size[0] or self.height < tile_size[1]:
+            logger.info("Skipped pixMaskedThreshOnBackgroundNorm on small image")
+            return self
         # Background norm doesn't work on color mapped Pix, so remove colormap
         target_pix = self.remove_colormap(lept.REMOVE_CMAP_BASED_ON_SRC)
         with _LeptonicaErrorTrap():
