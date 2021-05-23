@@ -41,6 +41,62 @@ from reportlab.lib.colors import black, cyan, magenta, red
 from reportlab.lib.units import inch
 from reportlab.pdfgen.canvas import Canvas
 
+# According to Wikipedia these languages are supported in the ISO-8859-1 character
+# set, meaning reportlab can generate them and they are compatible with hocr,
+# assuming Tesseract has the necessary languages installed. Note that there may
+# not be language packs for them.
+HOCR_OK_LANGS = frozenset(
+    [
+        # Languages fully covered by Latin-1:
+        'afr',  # Afrikaans
+        'alb',  # Albanian
+        'ast',  # Leonese
+        'baq',  # Basque
+        'bre',  # Breton
+        'cos',  # Corsican
+        'eng',  # English
+        'eus',  # Basque
+        'fao',  # Faoese
+        'gla',  # Scottish Gaelic
+        'glg',  # Galician
+        'glv',  # Manx
+        'ice',  # Icelandic
+        'ind',  # Indonesian
+        'isl',  # Icelandic
+        'ita',  # Italian
+        'ltz',  # Luxembourgish
+        'mal',  # Malay Rumi
+        'mga',  # Irish
+        'nor',  # Norwegian
+        'oci',  # Occitan
+        'por',  # Portugeuse
+        'roh',  # Romansh
+        'sco',  # Scots
+        'sma',  # Sami
+        'spa',  # Spanish
+        'sqi',  # Albanian
+        'swa',  # Swahili
+        'swe',  # Swedish
+        'tgl',  # Tagalog
+        'wln',  # Walloon
+        # Languages supported by Latin-1 except for a few rare characters that OCR
+        # is probably not trained to recognize anyway:
+        'cat',  # Catalan
+        'cym',  # Welsh
+        'dan',  # Danish
+        'deu',  # German
+        'dut',  # Dutch
+        'est',  # Estonian
+        'fin',  # Finnish
+        'fra',  # French
+        'hun',  # Hungarian
+        'kur',  # Kurdish
+        'nld',  # Dutch
+        'wel',  # Welsh
+    ]
+)
+
+
 Element = ElementTree.Element
 
 
