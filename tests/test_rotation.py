@@ -1,45 +1,35 @@
 # © 2018 James R. Barlow: github.com/jbarlow83
 #
-# This file is part of OCRmyPDF.
-#
-# OCRmyPDF is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# OCRmyPDF is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import logging
+
 from io import BytesIO
+from math import cos, pi, sin
 from os import fspath
-from unittest.mock import Mock
 
 import img2pdf
+import pikepdf
 import pytest
 from PIL import Image
+from reportlab.pdfgen.canvas import Canvas
 
-import pikepdf
 from ocrmypdf import leptonica
-from ocrmypdf.exec import ghostscript, tesseract
+from ocrmypdf._exec import ghostscript
+from ocrmypdf._plugin_manager import get_plugin_manager
+from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo import PdfInfo
 
-# pytest.helpers is dynamic
-# pylint: disable=no-member
-# pylint: disable=w0612
+from .conftest import check_ocrmypdf, run_ocrmypdf
+
+# pylintx: disable=unused-variable
+
 
 pytestmark = pytest.mark.skipif(
     leptonica.get_leptonica_version() < 'leptonica-1.72',
     reason="Leptonica is too old, correlation doesn't work",
 )
-
-check_ocrmypdf = pytest.helpers.check_ocrmypdf
-run_ocrmypdf = pytest.helpers.run_ocrmypdf
 
 
 RENDERERS = ['hocr', 'sandwich']
@@ -48,8 +38,6 @@ RENDERERS = ['hocr', 'sandwich']
 def check_monochrome_correlation(
     outdir, reference_pdf, reference_pageno, test_pdf, test_pageno
 ):
-    gslog = logging.getLogger()
-
     reference_png = outdir / f'{reference_pdf.name}.ref{reference_pageno:04d}.png'
     test_png = outdir / f'{test_pdf.name}.test{test_pageno:04d}.png'
 
@@ -60,10 +48,8 @@ def check_monochrome_correlation(
         ghostscript.rasterize_pdf(
             pdf,
             png,
-            xres=100,
-            yres=100,
             raster_device='pngmono',
-            log=gslog,
+            raster_dpi=Resolution(100, 100),
             pageno=pageno,
             rotation=0,
         )
@@ -100,10 +86,10 @@ def test_monochrome_correlation(resources, outdir):
 
 @pytest.mark.slow
 @pytest.mark.parametrize('renderer', RENDERERS)
-def test_autorotate(spoof_tesseract_cache, renderer, resources, outdir):
+def test_autorotate(renderer, resources, outdir):
     # cardinal.pdf contains four copies of an image rotated in each cardinal
     # direction - these ones are "burned in" not tagged with /Rotate
-    out = check_ocrmypdf(
+    check_ocrmypdf(
         resources / 'cardinal.pdf',
         outdir / 'out.pdf',
         '-r',
@@ -111,7 +97,8 @@ def test_autorotate(spoof_tesseract_cache, renderer, resources, outdir):
         '1',
         '--pdf-renderer',
         renderer,
-        env=spoof_tesseract_cache,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
     for n in range(1, 4 + 1):
         correlation = check_monochrome_correlation(
@@ -131,28 +118,27 @@ def test_autorotate(spoof_tesseract_cache, renderer, resources, outdir):
         ('99', 'correlation < 0.10'),  # High thres -> never rotate -> low corr
     ],
 )
-def test_autorotate_threshold(
-    spoof_tesseract_cache, threshold, correlation_test, resources, outdir
-):
-    out = check_ocrmypdf(
+def test_autorotate_threshold(threshold, correlation_test, resources, outdir):
+    check_ocrmypdf(
         resources / 'cardinal.pdf',
         outdir / 'out.pdf',
         '--rotate-pages-threshold',
         threshold,
         '-r',
-        '-v',
-        '1',
-        env=spoof_tesseract_cache,
+        # '-v',
+        # '1',
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
     )
 
-    correlation = check_monochrome_correlation(
+    correlation = check_monochrome_correlation(  # pylint: disable=unused-variable
         outdir,
         reference_pdf=resources / 'cardinal.pdf',
         reference_pageno=1,
         test_pdf=outdir / 'out.pdf',
         test_pageno=3,
     )
-    assert eval(correlation_test)  # pylint: disable=w0123
+    assert eval(correlation_test)  # pylint: disable=eval-used
 
 
 def test_rotated_skew_timeout(resources, outpdf):
@@ -224,12 +210,12 @@ def test_rotate_deskew_timeout(resources, outdir):
 @pytest.mark.parametrize('image_angle', (0, 90, 180, 270))
 def test_rotate_page_level(image_angle, page_angle, resources, outdir):
     def make_rotate_test(prefix, image_angle, page_angle):
-        im = Image.open(fspath(resources / 'typewriter.png'))
-        if image_angle != 0:
-            ccw_angle = -image_angle % 360
-            im = im.transpose(getattr(Image, f'ROTATE_{ccw_angle}'))
         memimg = BytesIO()
-        im.save(memimg, format='PNG')
+        with Image.open(fspath(resources / 'typewriter.png')) as im:
+            if image_angle != 0:
+                ccw_angle = -image_angle % 360
+                im = im.transpose(getattr(Image, f'ROTATE_{ccw_angle}'))
+            im.save(memimg, format='PNG')
         memimg.seek(0)
         mempdf = BytesIO()
         img2pdf.convert(
@@ -255,7 +241,7 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir):
         '--rotate-pages',
         '--rotate-pages-threshold',
         '0.001',
-        universal_newlines=False,
+        text=False,
     )
     err = err.decode('utf-8', errors='replace')
     assert p.returncode == 0, err
@@ -263,12 +249,78 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir):
     assert check_monochrome_correlation(outdir, reference, 1, out, 1) > 0.2
 
 
-def test_tesseract_orientation(resources, tmpdir):
-    pix = leptonica.Pix.open(resources / 'crom.png')
-    pix_rotated = pix.rotate_orth(2)  # 180 degrees clockwise
-    pix_rotated.write_implied_format(tmpdir / '000001.png')
+def test_rasterize_rotates(resources, tmp_path):
+    pm = get_plugin_manager([])
 
-    log = Mock()
-    tesseract.get_orientation(  # Test results of this are unreliable
-        tmpdir / '000001.png', engine_mode='3', timeout=10, log=log
+    img = tmp_path / 'img90.png'
+    pm.hook.rasterize_pdf_page(
+        input_file=resources / 'graph.pdf',
+        output_file=img,
+        raster_device='pngmono',
+        raster_dpi=Resolution(20, 20),
+        page_dpi=Resolution(20, 20),
+        pageno=1,
+        rotation=90,
+        filter_vector=False,
     )
+    assert Image.open(img).size == (123, 151), "Image not rotated"
+
+    img = tmp_path / 'img180.png'
+    pm.hook.rasterize_pdf_page(
+        input_file=resources / 'graph.pdf',
+        output_file=img,
+        raster_device='pngmono',
+        raster_dpi=Resolution(20, 20),
+        page_dpi=Resolution(20, 20),
+        pageno=1,
+        rotation=180,
+        filter_vector=False,
+    )
+    assert Image.open(img).size == (151, 123), "Image not rotated"
+
+
+def test_simulated_scan(outdir):
+    canvas = Canvas(
+        fspath(outdir / 'fakescan.pdf'),
+        pagesize=(209.8, 297.6),
+    )
+
+    page_vars = [(2, 36, 250), (91, 170, 240), (179, 190, 36), (271, 36, 36)]
+
+    for n, page_var in enumerate(page_vars):
+        text = canvas.beginText()
+        text.setFont('Helvetica', 20)
+
+        angle, x, y = page_var
+        cos_a, sin_a = cos(angle / 180.0 * pi), sin(angle / 180.0 * pi)
+
+        text.setTextTransform(cos_a, -sin_a, sin_a, cos_a, x, y)
+        text.textOut(f'Page {n + 1}')
+        canvas.drawText(text)
+        canvas.showPage()
+    canvas.save()
+
+    check_ocrmypdf(
+        outdir / 'fakescan.pdf',
+        outdir / 'out.pdf',
+        '--force-ocr',
+        '--deskew',
+        '--rotate-pages',
+        '--plugin',
+        'tests/plugins/tesseract_debug_rotate.py',
+    )
+
+    with pikepdf.open(outdir / 'out.pdf') as pdf:
+        assert (
+            pdf.pages[1].MediaBox[2] > pdf.pages[1].MediaBox[3]
+        ), "Wrong orientation: not landscape"
+        assert (
+            pdf.pages[3].MediaBox[2] > pdf.pages[3].MediaBox[3]
+        ), "Wrong orientation: Not landscape"
+
+        assert (
+            pdf.pages[0].MediaBox[2] < pdf.pages[0].MediaBox[3]
+        ), "Wrong orientation: Not portrait"
+        assert (
+            pdf.pages[2].MediaBox[2] < pdf.pages[2].MediaBox[3]
+        ), "Wrong orientation: Not portrait"

@@ -1,20 +1,12 @@
 #!/usr/bin/env python3
 # © 2017 James R. Barlow: github.com/jbarlow83
 #
-# This file is part of OCRmyPDF.
-#
-# OCRmyPDF is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# OCRmyPDF is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+
+from pathlib import Path
 
 from cffi import FFI
 
@@ -73,6 +65,17 @@ struct Pixa
     struct Boxa        *boxa;       /*!< array of boxes                    */
 };
 typedef struct Pixa PIXA;
+
+/*! Array of compressed pix */
+struct PixaComp
+{
+    l_int32              n;         /*!< number of PixComp in ptr array    */
+    l_int32              nalloc;    /*!< number of PixComp ptrs allocated  */
+    l_int32              offset;    /*!< indexing offset into ptr array    */
+    struct PixComp     **pixc;      /*!< the array of ptrs to PixComp      */
+    struct Boxa         *boxa;      /*!< array of boxes                    */
+};
+typedef struct PixaComp PIXAC;
 
 struct Box
 {
@@ -210,9 +213,15 @@ ffibuilder.cdef(
     """
 PIX * pixRead ( const char *filename );
 PIX * pixReadMem ( const l_uint8 *data, size_t size );
+PIX * pixReadStream ( FILE *fp, l_int32 hint );
 PIX * pixScale ( PIX *pixs, l_float32 scalex, l_float32 scaley );
 l_int32 pixFindSkew ( PIX *pixs, l_float32 *pangle, l_float32 *pconf );
 l_int32 pixWriteImpliedFormat ( const char *filename, PIX *pix, l_int32 quality, l_int32 progressive );
+l_int32 getImpliedFileFormat ( const char *filename );
+l_ok pixWriteStream ( FILE *fp, PIX *pix, l_int32 format );
+l_ok pixWriteStreamJpeg ( FILE *fp, PIX *pixs, l_int32 quality, l_int32 progressive );
+l_ok pixWriteMem ( l_uint8 **pdata, size_t *psize, PIX *pix, l_int32 format );
+l_ok pixWriteMemJpeg ( l_uint8 **pdata, size_t *psize, PIX *pix, l_int32 quality, l_int32 progressive );
 l_int32
 pixWriteMemPng(l_uint8  **pdata,
                size_t    *psize,
@@ -294,14 +303,12 @@ pixCleanBackgroundToWhite(PIX       *pixs,
                           l_int32    whiteval);
 
 BOX *
-pixFindPageForeground(PIX         *pixs,
-                      l_int32      threshold,
-                      l_int32      mindist,
-                      l_int32      erasedist,
-                      l_int32      pagenum,
-                      l_int32      showmorph,
-                      l_int32      display,
-                      const char  *pdfdir);
+pixFindPageForeground ( PIX *pixs,
+                        l_int32 threshold,
+                        l_int32 mindist,
+                        l_int32 erasedist,
+                        l_int32 showmorph,
+                        PIXAC *pixac );
 
 PIX *
 pixClipRectangle(PIX   *pixs,
@@ -414,7 +421,10 @@ pixExtractBarcodes(PIX     *pixs,
                    l_int32 debugflag);
 
 BOXA *
-pixLocateBarcodes ( PIX *pixs, l_int32 thresh, PIX **ppixb, PIX **ppixm );
+pixLocateBarcodes ( PIX *pixs,
+ l_int32 thresh,
+ PIX **ppixb,
+ PIX **ppixm );
 
 SARRAY *
 pixReadBarcodes(PIXA     *pixa,
@@ -422,6 +432,12 @@ pixReadBarcodes(PIXA     *pixa,
                 l_int32   method,
                 SARRAY  **psaw,
                 l_int32 debugflag);
+
+PIX *
+pixGenHalftoneMask(PIX      *pixs,
+                        PIX     **ppixtext,
+                        l_int32  *phtfound,
+                        PIXA     *pixadb);
 
 l_int32
 l_generateCIDataForPdf(const char *fname,
@@ -483,6 +499,8 @@ void selDestroy ( SEL **psel );
 l_int32
 setMsgSeverity(l_int32 newsev);
 
+void
+leptSetStderrHandler(void (*handler)(const char *));
 """
 )
 
@@ -491,3 +509,8 @@ ffibuilder.set_source("ocrmypdf.lib._leptonica", None)
 
 if __name__ == '__main__':
     ffibuilder.compile(verbose=True)
+    if Path('ocrmypdf/lib/_leptonica.py').exists() and Path('src/ocrmypdf').exists():
+        output = Path('ocrmypdf/lib/_leptonica.py')
+        output.rename('src/ocrmypdf/lib/_leptonica.py')
+        Path('ocrmypdf/lib').rmdir()
+        Path('ocrmypdf').rmdir()

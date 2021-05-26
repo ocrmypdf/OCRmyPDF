@@ -1,8 +1,6 @@
-pytest >= 4.4.1, < 5
-pytest-helpers-namespace >= 2019.1.8
-pytest-xdist == 1.28.0
-pytest-cov >= 2.6.1
-python-xmp-toolkit   # requires apt-get install libexempi3
+pytest >= 6.0.0
+pytest-xdist >= 2.2.0
+pytest-cov >= 2.11.1
+python-xmp-toolkit == 2.0.1  # requires apt-get install libexempi3
                      # or brew install exempi
-PyPDF2 >= 1.26.0
 #PyMuPDF == 1.13.4    # optional

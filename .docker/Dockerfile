@@ -1,16 +1,62 @@
 # OCRmyPDF
 #
-FROM      ubuntu:18.04
+FROM ubuntu:20.04 as base
+
+FROM base as builder
+
+ENV LANG=C.UTF-8
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential autoconf automake libtool \
   libleptonica-dev \
   zlib1g-dev \
-  libexempi3 \
-  ocrmypdf \
+  python3-dev \
+  python3-distutils \
+  libffi-dev \
+  libqpdf-dev \
+  ca-certificates \
+  curl \
+  git
+
+# Get the latest pip (Ubuntu version doesn't support manylinux2010)
+RUN \
+  curl https://bootstrap.pypa.io/get-pip.py | python3
+
+# Compile and install jbig2
+# Needs libleptonica-dev, zlib1g-dev
+RUN \
+  mkdir jbig2 \
+  && curl -L https://github.com/agl/jbig2enc/archive/ea6a40a.tar.gz | \
+  tar xz -C jbig2 --strip-components=1 \
+  && cd jbig2 \
+  && ./autogen.sh && ./configure && make && make install \
+  && cd .. \
+  && rm -rf jbig2
+
+COPY . /app
+
+WORKDIR /app
+
+RUN pip3 install --no-cache-dir \
+  -r requirements/main.txt \
+  -r requirements/webservice.txt \
+  -r requirements/test.txt \
+  -r requirements/watcher.txt \
+  .
+
+FROM base
+
+ENV LANG=C.UTF-8
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  ghostscript \
+  img2pdf \
+  liblept5 \
+  libsm6 libxext6 libxrender-dev \
+  zlib1g \
   pngquant \
-  python3-pip \
-  python3-venv \
+  python3 \
+  qpdf \
   tesseract-ocr \
   tesseract-ocr-chi-sim \
   tesseract-ocr-deu \
@@ -19,54 +65,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   tesseract-ocr-por \
   tesseract-ocr-spa \
   unpaper \
-  wget
+  && rm -rf /var/lib/apt/lists/*
 
+WORKDIR /app
 
-ENV LANG=C.UTF-8
+COPY --from=builder /usr/local/lib/ /usr/local/lib/
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
-# Compile and install jbig2
-# Needs libleptonica-dev, zlib1g-dev
-RUN \
-  mkdir jbig2 \
-  && wget -q https://github.com/agl/jbig2enc/archive/0.29.tar.gz -O - | \
-      tar xz -C jbig2 --strip-components=1 \
-  && cd jbig2 \
-  && ./autogen.sh && ./configure && make && make install \
-  && cd .. \
-  && rm -rf jbig2
+COPY --from=builder /app/misc/webservice.py /app/
+COPY --from=builder /app/misc/watcher.py /app/
 
-RUN apt-get remove -y autoconf automake libtool
+# Copy minimal project files to get the test suite.
+COPY --from=builder /app/setup.cfg /app/setup.py /app/README.md /app/
+COPY --from=builder /app/requirements /app/requirements
+COPY --from=builder /app/tests /app/tests
 
-RUN python3 -m venv --system-site-packages /appenv
-
-# This installs the latest binary wheel instead of the code in the current
-# folder. Installing from source will fail, apparently because cffi needs
-# build-essentials (gcc) to do a source installation
-# (i.e. "pip install ."). It's unclear to me why this is the case.
-RUN . /appenv/bin/activate; \
-  pip install --upgrade pip \
-  && pip install --upgrade ocrmypdf
-
-# Now copy the application in, mainly to get the test suite.
-# Do this now to make the best use of Docker cache.
-COPY . /application
-RUN . /appenv/bin/activate; \
-  pip install -r /application/requirements/test.txt
-
-# Remove the junk, including the source version of application since it was
-# already installed
-RUN rm -rf /tmp/* /var/tmp/* /root/* /application/ocrmypdf \
-  && apt-get remove -y build-essential \
-  && apt-get autoremove -y \
-  && apt-get autoclean -y
-
-RUN useradd docker \
-  && mkdir /home/docker \
-  && chown docker:docker /home/docker
-
-USER docker
-WORKDIR /home/docker
-
-# Must use array form of ENTRYPOINT
-# Non-array form does not append other arguments, because that is "intuitive"
-ENTRYPOINT ["/application/.docker/docker-wrapper.sh"]
+ENTRYPOINT ["/usr/local/bin/ocrmypdf"]

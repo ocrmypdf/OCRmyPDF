@@ -1,85 +1,30 @@
 # © 2018 James R. Barlow: github.com/jbarlow83
 #
-# This file is part of OCRmyPDF.
-#
-# OCRmyPDF is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# OCRmyPDF is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 
 import re
 from math import copysign
 from pathlib import Path
 from unittest.mock import patch
 
+import pdfminer
 import pdfminer.encodingdb
 import pdfminer.pdfdevice
 import pdfminer.pdfinterp
 from pdfminer.converter import PDFLayoutAnalyzer
-from pdfminer.glyphlist import glyphname2unicode
 from pdfminer.layout import LAParams, LTChar, LTPage, LTTextBox
 from pdfminer.pdfdocument import PDFTextExtractionNotAllowed
-from pdfminer.pdffont import PDFFont, PDFSimpleFont, PDFUnicodeNotDefined
+from pdfminer.pdffont import PDFSimpleFont, PDFUnicodeNotDefined
 from pdfminer.pdfpage import PDFPage
 from pdfminer.utils import bbox2str, matrix2str
 
-from ..exceptions import EncryptedPdfError
+from ocrmypdf.exceptions import EncryptedPdfError, InputFileError
 
 STRIP_NAME = re.compile(r'[0-9]+')
 
-#
-# Unconditional pdfminer patches
-#
-
-
-def name2unicode(name):
-    """Fix pdfminer's name2unicode function
-
-    Font cids that are mapped to names of the form /g123 seem to be, by convention
-    characters with no corresponding Unicode entry. These can be subsetted fonts
-    or symbolic fonts. There seems to be no way to map /g123 fonts to Unicode,
-    barring a ToUnicode data structure.
-    """
-    if name in glyphname2unicode:
-        return glyphname2unicode[name]
-    if name.startswith('g') or name.startswith('a'):
-        raise KeyError(name)
-    if name.startswith('uni'):
-        try:
-            return chr(int(name[3:], 16))
-        except ValueError:  # Not hexadecimal
-            raise KeyError(name)
-    m = STRIP_NAME.search(name)
-    if not m:
-        raise KeyError(name)
-    return chr(int(m.group(0)))
-
-
-pdfminer.encodingdb.name2unicode = name2unicode
-
-original_PDFFont_init = PDFFont.__init__
-
-
-def PDFFont__init__(self, descriptor, widths, default_width=None):
-    original_PDFFont_init(self, descriptor, widths, default_width)
-    # PDF spec says descent should be negative
-    # A font with a positive descent implies it floats entirely above the
-    # baseline, i.e. it's not really a baseline anymore. I have fonts that
-    # claim a positive descent, but treating descent as positive always seems
-    # to misposition text.
-    if self.descent > 0:
-        self.descent = -self.descent
-
-
-PDFFont.__init__ = PDFFont__init__
 
 original_PDFSimpleFont_init = PDFSimpleFont.__init__
 
@@ -97,6 +42,7 @@ def PDFSimpleFont__init__(self, descriptor, widths, spec):
 
 
 PDFSimpleFont.__init__ = PDFSimpleFont__init__
+
 #
 # pdfminer patches when creator is PScript5.dll
 #
@@ -172,6 +118,7 @@ class LTStateAwareChar(LTChar):
             - the Unicode mapping is known, and both have the same render mode
             - the Unicode mapping is unknown but both are part of the same font
         """
+        # pylint: disable=protected-access
         both_unicode_mapped = isinstance(self._text, str) and isinstance(obj._text, str)
         try:
             if both_unicode_mapped:
@@ -184,7 +131,7 @@ class LTStateAwareChar(LTChar):
 
     def get_text(self):
         if isinstance(self._text, tuple):
-            return '�'
+            return '\ufffd'  # standard 'Unknown symbol'
         return self._text
 
     def __repr__(self):
@@ -206,6 +153,7 @@ class TextPositionTracker(PDFLayoutAnalyzer):
         super().__init__(rsrcmgr, pageno, laparams)
         self.textstate = None
         self.result = None
+        self.cur_item = None  # not defined in pdfminer code as it should be
 
     def begin_page(self, page, ctm):
         super().begin_page(page, ctm)
@@ -262,9 +210,20 @@ class TextPositionTracker(PDFLayoutAnalyzer):
 
 def get_page_analysis(infile, pageno, pscript5_mode):
     rman = pdfminer.pdfinterp.PDFResourceManager(caching=True)
-    dev = TextPositionTracker(rman, laparams=LAParams())
+    if pdfminer.__version__ < '20200402':
+        # Workaround for https://github.com/pdfminer/pdfminer.six/issues/395
+        disable_boxes_flow = 2
+    else:
+        disable_boxes_flow = None
+    dev = TextPositionTracker(
+        rman,
+        laparams=LAParams(
+            all_texts=True, detect_vertical=True, boxes_flow=disable_boxes_flow
+        ),
+    )
     interp = pdfminer.pdfinterp.PDFPageInterpreter(rman, dev)
 
+    patcher = None
     if pscript5_mode:
         patcher = patch.multiple(
             'pdfminer.pdffont.PDFType3Font',
@@ -277,12 +236,17 @@ def get_page_analysis(infile, pageno, pscript5_mode):
 
     try:
         with Path(infile).open('rb') as f:
-            page = PDFPage.get_pages(f, pagenos=[pageno], maxpages=0)
-            interp.process_page(next(page))
-    except PDFTextExtractionNotAllowed:
-        raise EncryptedPdfError()
+            page_iter = PDFPage.get_pages(f, pagenos=[pageno], maxpages=0)
+            page = next(page_iter, None)
+            if page is None:
+                raise InputFileError(
+                    f"pdfminer could not process page {pageno} (counting from 0)."
+                )
+            interp.process_page(page)
+    except PDFTextExtractionNotAllowed as e:
+        raise EncryptedPdfError() from e
     finally:
-        if pscript5_mode:
+        if patcher is not None:
             patcher.stop()
 
     return dev.get_result()

@@ -1,56 +1,41 @@
 # © 2018 James R. Barlow: github.com/jbarlow83
 #
-# This file is part of OCRmyPDF.
-#
-# OCRmyPDF is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# OCRmyPDF is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
 import datetime
 from datetime import timezone
-import logging
-import mmap
 from os import fspath
-from pathlib import Path
 from shutil import copyfile
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 import pikepdf
-from ocrmypdf._jobcontext import JobContext
+import pytest
+from pikepdf.models.metadata import decode_pdf_date
+
+from ocrmypdf._jobcontext import PdfContext
+from ocrmypdf._pipeline import convert_to_pdfa, metadata_fixup
+from ocrmypdf._plugin_manager import get_plugin_manager
+from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import SRGB_ICC_PROFILE, file_claims_pdfa, generate_pdfa_ps
-from pikepdf.models.metadata import decode_pdf_date
+from ocrmypdf.pdfinfo import PdfInfo
+
+from .conftest import check_ocrmypdf, run_ocrmypdf
 
 try:
     import fitz
 except ImportError:
     fitz = None
 
-# pytest.helpers is dynamic
-# pylint: disable=no-member
-# pylint: disable=w0612
 
 pytestmark = pytest.mark.filterwarnings('ignore:.*XMLParser.*:DeprecationWarning')
 
-check_ocrmypdf = pytest.helpers.check_ocrmypdf
-run_ocrmypdf = pytest.helpers.run_ocrmypdf
-spoof = pytest.helpers.spoof
-
 
 @pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])
-def test_preserve_metadata(spoof_tesseract_noop, output_type, resources, outpdf):
+def test_preserve_docinfo(output_type, resources, outpdf):
     pdf_before = pikepdf.open(resources / 'graph.pdf')
 
     output = check_ocrmypdf(
@@ -58,7 +43,8 @@ def test_preserve_metadata(spoof_tesseract_noop, output_type, resources, outpdf)
         outpdf,
         '--output-type',
         output_type,
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     pdf_after = pikepdf.open(output)
@@ -71,12 +57,12 @@ def test_preserve_metadata(spoof_tesseract_noop, output_type, resources, outpdf)
 
 
 @pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])
-def test_override_metadata(spoof_tesseract_noop, output_type, resources, outpdf):
+def test_override_metadata(output_type, resources, outpdf):
     input_file = resources / 'c02-22.pdf'
     german = 'Du siehst den Wald vor lauter Bäumen nicht.'
     chinese = '孔子'
 
-    p, out, err = run_ocrmypdf(
+    p, _out, err = run_ocrmypdf(
         input_file,
         outpdf,
         '--title',
@@ -85,7 +71,8 @@ def test_override_metadata(spoof_tesseract_noop, output_type, resources, outpdf)
         chinese,
         '--output-type',
         output_type,
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     assert p.returncode == ExitCode.ok, err
@@ -105,21 +92,22 @@ def test_override_metadata(spoof_tesseract_noop, output_type, resources, outpdf)
     assert pdfa_info['output'] == output_type
 
 
-def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
+def test_high_unicode(resources, no_outpdf):
 
     # Ghostscript doesn't support high Unicode, so neither do we, to be
     # safe
     input_file = resources / 'c02-22.pdf'
     high_unicode = 'U+1030C is: 𐌌'
 
-    p, out, err = run_ocrmypdf(
+    p, _out, err = run_ocrmypdf(
         input_file,
         no_outpdf,
         '--subject',
         high_unicode,
         '--output-type',
         'pdfa',
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     assert p.returncode == ExitCode.bad_args, err
@@ -128,9 +116,7 @@ def test_high_unicode(spoof_tesseract_noop, resources, no_outpdf):
 @pytest.mark.skipif(not fitz, reason="test uses fitz")
 @pytest.mark.parametrize('ocr_option', ['--skip-text', '--force-ocr'])
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
-def test_bookmarks_preserved(
-    spoof_tesseract_noop, output_type, ocr_option, resources, outpdf
-):
+def test_bookmarks_preserved(output_type, ocr_option, resources, outpdf):
     input_file = resources / 'toc.pdf'
     before_toc = fitz.Document(str(input_file)).getToC()
 
@@ -140,7 +126,8 @@ def test_bookmarks_preserved(
         ocr_option,
         '--output-type',
         output_type,
-        env=spoof_tesseract_noop,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     after_toc = fitz.Document(str(outpdf)).getToC()
@@ -155,13 +142,16 @@ def seconds_between_dates(date1, date2):
 
 @pytest.mark.parametrize('infile', ['trivial.pdf', 'jbig2.pdf'])
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
-def test_creation_date_preserved(
-    spoof_tesseract_noop, output_type, resources, infile, outpdf
-):
+def test_creation_date_preserved(output_type, resources, infile, outpdf):
     input_file = resources / infile
 
     check_ocrmypdf(
-        input_file, outpdf, '--output-type', output_type, env=spoof_tesseract_noop
+        input_file,
+        outpdf,
+        '--output-type',
+        output_type,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     pdf_before = pikepdf.open(input_file)
@@ -183,20 +173,33 @@ def test_creation_date_preserved(
     assert seconds_between_dates(date_after, datetime.datetime.now(timezone.utc)) < 1000
 
 
-@pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
-def test_xml_metadata_preserved(spoof_tesseract_noop, output_type, resources, outpdf):
-    input_file = resources / 'graph.pdf'
+@pytest.mark.parametrize(
+    'test_file,output_type',
+    [
+        ('graph.pdf', 'pdf'),  # PDF with full metadata
+        ('graph.pdf', 'pdfa'),  # PDF/A with full metadata
+        ('overlay.pdf', 'pdfa'),  # /Title()
+        ('3small.pdf', 'pdfa'),
+    ],
+)
+def test_xml_metadata_preserved(test_file, output_type, resources, outpdf):
+    input_file = resources / test_file
 
     try:
-        from libxmp import consts
-        from libxmp.utils import file_to_dict
-    except Exception:
+        from libxmp.utils import file_to_dict  # pylint: disable=import-outside-toplevel
+    except Exception:  # pylint: disable=broad-except
         pytest.skip("libxmp not available or libexempi3 not installed")
 
     before = file_to_dict(str(input_file))
 
     check_ocrmypdf(
-        input_file, outpdf, '--output-type', output_type, env=spoof_tesseract_noop
+        input_file,
+        outpdf,
+        '--output-type',
+        output_type,
+        '--skip-text',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     after = file_to_dict(str(outpdf))
@@ -218,6 +221,7 @@ def test_xml_metadata_preserved(spoof_tesseract_noop, output_type, resources, ou
         'dc:type',
         'pdf:keywords',
     ]
+    acquired_properties = ['dc:format']
     might_change_properties = [
         'dc:date',
         'pdf:pdfversion',
@@ -251,8 +255,10 @@ def test_xml_metadata_preserved(spoof_tesseract_noop, output_type, resources, ou
             assert prop in after, f'{prop} dropped from xmp'
             assert before[prop] == after[prop]
 
-        # Certain entries like title appear as dc:title[1], with the possibility
-        # of several
+        # libxmp presents multivalued entries (e.g. dc:title) as:
+        # 'dc:title': '' <- there's a title
+        # 'dc:title[1]: 'The Title' <- the actual title
+        # 'dc:title[1]/?xml:lang': 'x-default' <- language info
         propidx = f'{prop}[1]'
         if propidx in before:
             assert (
@@ -260,11 +266,17 @@ def test_xml_metadata_preserved(spoof_tesseract_noop, output_type, resources, ou
                 or after.get(prop) == before[propidx]
             )
 
+        if prop in after and prop not in before:
+            assert prop in acquired_properties, (
+                f"acquired unexpected property {prop} with value "
+                f"{after.get(propidx) or after.get(prop)}"
+            )
 
-def test_srgb_in_unicode_path(tmpdir):
+
+def test_srgb_in_unicode_path(tmp_path):
     """Test that we can produce pdfmark when install path is not ASCII"""
 
-    dstdir = Path(fspath(tmpdir)) / b'\xe4\x80\x80'.decode('utf-8')
+    dstdir = tmp_path / b'\xe4\x80\x80'.decode('utf-8')
     dstdir.mkdir()
     dst = dstdir / 'sRGB.icc'
 
@@ -274,90 +286,108 @@ def test_srgb_in_unicode_path(tmpdir):
         generate_pdfa_ps(dstdir / 'out.ps')
 
 
-def test_kodak_toc(resources, outpdf, spoof_tesseract_noop):
-    output = check_ocrmypdf(
-        resources / 'kcs.pdf', outpdf, '--output-type', 'pdf', env=spoof_tesseract_noop
+def test_kodak_toc(resources, outpdf):
+    _output = check_ocrmypdf(
+        resources / 'kcs.pdf',
+        outpdf,
+        '--output-type',
+        'pdf',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
     )
 
     p = pikepdf.open(outpdf)
 
-    if pikepdf.Name.First in p.root.Outlines:
-        assert isinstance(p.root.Outlines.First, pikepdf.Dictionary)
+    if pikepdf.Name.First in p.Root.Outlines:
+        assert isinstance(p.Root.Outlines.First, pikepdf.Dictionary)
 
 
+@pytest.mark.skipif(
+    pikepdf.__version__ in ('2.2.2', '2.2.3'), reason="Raises wrong warning"
+)
 def test_metadata_fixup_warning(resources, outdir, caplog):
-    from ocrmypdf._pipeline import metadata_fixup
-
-    input_files = [
-        str(outdir / 'graph.repaired.pdf'),
-        str(outdir / 'layers.rendered.pdf'),
-        str(outdir / 'pdfa.pdf'),  # It is okay that this is not a PDF/A
-    ]
-    for f in input_files:
-        copyfile(resources / 'graph.pdf', f)
-
-    log = logging.getLogger()
-    context = MagicMock()
-    metadata_fixup(
-        input_files_groups=input_files,
-        output_file=outdir / 'out.pdf',
-        log=log,
-        context=context,
+    options = get_parser().parse_args(
+        args=['--output-type', 'pdfa-2', 'graph.pdf', 'out.pdf']
     )
+
+    copyfile(resources / 'graph.pdf', outdir / 'graph.pdf')
+
+    context = PdfContext(
+        options, outdir, outdir / 'graph.pdf', None, get_plugin_manager([])
+    )
+    metadata_fixup(working_file=outdir / 'graph.pdf', context=context)
     for record in caplog.records:
-        assert record.levelname != 'WARNING'
+        assert record.levelname != 'WARNING', "Unexpected warning"
 
     # Now add some metadata that will not be copyable
-    graph = pikepdf.open(outdir / 'graph.repaired.pdf')
+    graph = pikepdf.open(outdir / 'graph.pdf')
     with graph.open_metadata() as meta:
         meta['prism2:publicationName'] = 'OCRmyPDF Test'
-    graph.save(outdir / 'graph.repaired.pdf')
+    graph.save(outdir / 'graph_mod.pdf')
 
-    log = logging.getLogger()
-    context = MagicMock()
-    metadata_fixup(
-        input_files_groups=input_files,
-        output_file=outdir / 'out.pdf',
-        log=log,
-        context=context,
+    context = PdfContext(
+        options, outdir, outdir / 'graph_mod.pdf', None, get_plugin_manager([])
     )
+    metadata_fixup(working_file=outdir / 'graph.pdf', context=context)
     assert any(record.levelname == 'WARNING' for record in caplog.records)
 
 
 def test_prevent_gs_invalid_xml(resources, outdir):
-    from ocrmypdf.__main__ import parser
-    from ocrmypdf._pipeline import convert_to_pdfa
-    from ocrmypdf.pdfa import generate_pdfa_ps
-    from ocrmypdf.pdfinfo import PdfInfo
-
     generate_pdfa_ps(outdir / 'pdfa.ps')
-    input_files = [str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps')]
-    copyfile(resources / 'enron1.pdf', outdir / 'layers.rendered.pdf')
-    log = logging.getLogger()
-    context = JobContext()
+    copyfile(resources / 'trivial.pdf', outdir / 'layers.rendered.pdf')
 
-    options = parser.parse_args(
+    # Inject a string with a trailing nul character into the DocumentInfo
+    # dictionary of this PDF, as often occurs in practice.
+    with pikepdf.open(outdir / 'layers.rendered.pdf') as pike:
+        pike.Root.DocumentInfo = pikepdf.Dictionary(
+            Title=b'String with trailing nul\x00'
+        )
+
+    options = get_parser().parse_args(
         args=['-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
     )
-    context.options = options
-    context.pdfinfo = PdfInfo(resources / 'enron1.pdf')
-
-    convert_to_pdfa(
-        input_files_groups=input_files,
-        output_file=outdir / 'pdfa.pdf',
-        log=log,
-        context=context,
+    pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
+    context = PdfContext(
+        options, outdir, outdir / 'layers.rendered.pdf', pdfinfo, get_plugin_manager([])
     )
 
-    with open(outdir / 'pdfa.pdf', 'rb') as f:
-        with mmap.mmap(
-            f.fileno(), 0, flags=mmap.MAP_PRIVATE, prot=mmap.PROT_READ
-        ) as mm:
-            # Since the XML may be invalid, we scan instead of actually feeding it
-            # to a parser.
-            XMP_MAGIC = b'W5M0MpCehiHzreSzNTczkc9d'
-            xmp_start = mm.find(XMP_MAGIC)
-            xmp_end = mm.rfind(b'<?xpacket end', xmp_start)
-            assert 0 < xmp_start < xmp_end
-            assert mm.find(b'&#0;', xmp_start, xmp_end) == -1, "found escaped nul"
-            assert mm.find(b'\x00', xmp_start, xmp_end) == -1
+    convert_to_pdfa(
+        str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps'), context
+    )
+
+    contents = (outdir / 'pdfa.pdf').read_bytes()
+    # Since the XML may be invalid, we scan instead of actually feeding it
+    # to a parser.
+    XMP_MAGIC = b'W5M0MpCehiHzreSzNTczkc9d'
+    xmp_start = contents.find(XMP_MAGIC)
+    xmp_end = contents.rfind(b'<?xpacket end', xmp_start)
+    assert 0 < xmp_start < xmp_end
+    # Ensure we did not carry the nul forward.
+    assert contents.find(b'&#0;', xmp_start, xmp_end) == -1, "found escaped nul"
+    assert contents.find(b'\x00', xmp_start, xmp_end) == -1
+
+
+def test_malformed_docinfo(caplog, resources, outdir):
+    generate_pdfa_ps(outdir / 'pdfa.ps')
+    # copyfile(resources / 'trivial.pdf', outdir / 'layers.rendered.pdf')
+
+    with pikepdf.open(resources / 'trivial.pdf') as pike:
+        pike.trailer.Info = pikepdf.Stream(pike, b"<xml></xml>")
+        pike.save(outdir / 'layers.rendered.pdf', fix_metadata_version=False)
+
+    options = get_parser().parse_args(
+        args=['-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
+    )
+    pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
+    context = PdfContext(
+        options, outdir, outdir / 'layers.rendered.pdf', pdfinfo, get_plugin_manager([])
+    )
+
+    convert_to_pdfa(
+        str(outdir / 'layers.rendered.pdf'), str(outdir / 'pdfa.ps'), context
+    )
+
+    print(caplog.records)
+    assert any(
+        'malformed DocumentInfo block' in record.message for record in caplog.records
+    )

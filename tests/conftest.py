@@ -1,19 +1,9 @@
 # © 2017 James R. Barlow: github.com/jbarlow83
 #
-# This file is part of OCRmyPDF.
-#
-# OCRmyPDF is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# OCRmyPDF is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with OCRmyPDF.  If not, see <http://www.gnu.org/licenses/>.
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 
 import os
 import platform
@@ -23,108 +13,40 @@ from subprocess import PIPE, run
 
 import pytest
 
-pytest_plugins = ['helpers_namespace']
+from ocrmypdf import api, pdfinfo
+from ocrmypdf._exec import unpaper
+from ocrmypdf._plugin_manager import get_parser_options_plugins
 
-try:
-    from pytest_cov.embed import cleanup_on_sigterm
-except ImportError:
-    pass
-else:
-    cleanup_on_sigterm()
-
-# pylint: disable=E1101
-# pytest.helpers is dynamic so it confuses pylint
-
-if sys.version_info.major < 3:
-    print("Requires Python 3.4+")
+if sys.version_info < (3, 5):
+    print("Requires Python 3.5+")
     sys.exit(1)
 
 
-@pytest.helpers.register
 def is_linux():
     return platform.system() == 'Linux'
 
 
-@pytest.helpers.register
 def is_macos():
     return platform.system() == 'Darwin'
 
 
-@pytest.helpers.register
 def running_in_docker():
     # Docker creates a file named /.dockerenv (newer versions) or
     # /.dockerinit (older) -- this is undocumented, not an offical test
-    return os.path.exists('/.dockerenv') or os.path.exists('/.dockerinit')
+    return Path('/.dockerenv').exists() or Path('/.dockerinit').exists()
 
 
-@pytest.helpers.register
-def running_in_travis():
-    return os.environ.get('TRAVIS') == 'true'
-
-
-@pytest.helpers.register
-def needs_pdfminer(fn):
-    try:
-        import pdfminer
-    except ImportError:
-        skip = pytest.mark.skipif(True, reason="pdfminer not available")
-        return skip(fn)
-    return fn
-
-
-@pytest.helpers.register
 def have_unpaper():
     try:
-        from ocrmypdf.exec import unpaper
-
         unpaper.version()
-    except Exception:
+    except Exception:  # pylint: disable=broad-except
         return False
     return True
 
 
-TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
-SPOOF_PATH = os.path.join(TESTS_ROOT, 'spoof')
-PROJECT_ROOT = os.path.dirname(TESTS_ROOT)
+TESTS_ROOT = Path(__file__).parent.resolve()
+PROJECT_ROOT = TESTS_ROOT
 OCRMYPDF = [sys.executable, '-m', 'ocrmypdf']
-
-
-@pytest.helpers.register
-def spoof(tmpdir_factory, **kwargs):
-    """Modify PATH to override subprocess executables
-
-    spoof(program1='replacement', ...)
-
-    Creates temporary directory with symlinks to targets.
-
-    """
-    env = os.environ.copy()
-    slug = '-'.join(v.replace('.py', '') for v in sorted(kwargs.values()))
-    spoofer_base = Path(str(tmpdir_factory.mktemp('spoofers')))
-    tmpdir = spoofer_base / slug
-    tmpdir.mkdir(parents=True)
-
-    for replace_program, with_spoof in kwargs.items():
-        spoofer = Path(SPOOF_PATH) / with_spoof
-        spoofer.chmod(0o755)
-        (tmpdir / replace_program).symlink_to(spoofer)
-
-    env['_OCRMYPDF_SAVE_PATH'] = env['PATH']
-    env['PATH'] = str(tmpdir) + ":" + env['PATH']
-
-    return env
-
-
-@pytest.fixture(scope='session')
-def spoof_tesseract_noop(tmpdir_factory):
-    return spoof(tmpdir_factory, tesseract='tesseract_noop.py')
-
-
-@pytest.fixture(scope='session')
-def spoof_tesseract_cache(tmpdir_factory):
-    if running_in_docker():
-        return os.environ.copy()
-    return spoof(tmpdir_factory, tesseract="tesseract_cache.py")
 
 
 @pytest.fixture
@@ -138,66 +60,79 @@ def ocrmypdf_exec():
 
 
 @pytest.fixture(scope="function")
-def outdir(tmpdir):
-    return Path(str(tmpdir))
+def outdir(tmp_path):
+    return tmp_path
 
 
 @pytest.fixture(scope="function")
-def outpdf(tmpdir):
-    return str(Path(str(tmpdir)) / 'out.pdf')
+def outpdf(tmp_path):
+    return tmp_path / 'out.pdf'
 
 
 @pytest.fixture(scope="function")
-def no_outpdf(tmpdir):
+def no_outpdf(tmp_path):
     """This just documents the fact that a test is not expected to produce
     output. Unfortunately an assertion failure inside a test fixture produces
     an error rather than a test failure, so no testing is done. It's up to
     the test to confirm that no output file was created."""
-    return str(Path(str(tmpdir)) / 'no_output.pdf')
+    return tmp_path / 'no_output.pdf'
 
 
-@pytest.helpers.register
-def check_ocrmypdf(input_file, output_file, *args, env=None):
+def check_ocrmypdf(input_file, output_file, *args):
     """Run ocrmypdf and confirmed that a valid file was created"""
+    args = [str(input_file), str(output_file)] + [
+        str(arg) for arg in args if arg is not None
+    ]
 
-    p, out, err = run_ocrmypdf(input_file, output_file, *args, env=env)
-    # ensure py.test collects the output, use -s to view
-    print(err, file=sys.stderr)
-    assert p.returncode == 0
-    assert os.path.exists(str(output_file)), "Output file not created"
-    assert os.stat(str(output_file)).st_size > 100, "PDF too small or empty"
-    assert out == "", (
-        "The following was written to stdout and should not have been: \n"
-        + "<stdout>\n"
-        + out
-        + "\n</stdout>"
-    )
+    _parser, options, plugin_manager = get_parser_options_plugins(args=args)
+    api.check_options(options, plugin_manager)
+    result = api.run_pipeline(options, plugin_manager=plugin_manager, api=True)
+
+    assert result == 0
+    assert output_file.exists(), "Output file not created"
+    assert output_file.stat().st_size > 100, "PDF too small or empty"
+
     return output_file
 
 
-@pytest.helpers.register
-def run_ocrmypdf(input_file, output_file, *args, env=None, universal_newlines=True):
-    "Run ocrmypdf and let caller deal with results"
+def run_ocrmypdf_api(input_file, output_file, *args):
+    """Run ocrmypdf via API and let caller deal with results
 
-    if env is None:
-        env = os.environ
+    Does not currently have a way to manipulate the PATH except for Tesseract.
+    """
+
+    args = [str(input_file), str(output_file)] + [
+        str(arg) for arg in args if arg is not None
+    ]
+    _parser, options, plugin_manager = get_parser_options_plugins(args=args)
+
+    api.check_options(options, plugin_manager)
+    return api.run_pipeline(options, plugin_manager=None, api=False)
+
+
+def run_ocrmypdf(input_file, output_file, *args, text=True):
+    "Run ocrmypdf and let caller deal with results"
 
     p_args = (
         OCRMYPDF
         + [str(arg) for arg in args if arg is not None]
         + [str(input_file), str(output_file)]
     )
+
+    env = os.environ.copy()
     p = run(
-        p_args, stdout=PIPE, stderr=PIPE, universal_newlines=universal_newlines, env=env
+        p_args,
+        stdout=PIPE,
+        stderr=PIPE,
+        universal_newlines=text,  # When dropping support for Python 3.6 change to text=
+        env=env,
+        check=False,
     )
     # print(p.stderr)
     return p, p.stdout, p.stderr
 
 
-@pytest.helpers.register
 def first_page_dimensions(pdf):
-    from ocrmypdf import pdfinfo
-
     info = pdfinfo.PdfInfo(pdf)
     page0 = info[0]
     return (page0.width_inches, page0.height_inches)

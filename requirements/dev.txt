@@ -1,4 +1,0 @@
-check-manifest >= 0.35
-twine >= 1.8.1
-coverage >= 4.5
-GitPython == 2.1.3

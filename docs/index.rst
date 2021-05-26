@@ -1,15 +1,12 @@
-.. ocrmypdf documentation master file, created by
-   sphinx-quickstart on Sun Sep  4 14:29:43 2016.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 OCRmyPDF documentation
 ======================
 
-OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to
-be searched.
+OCRmyPDF adds an optical character recognition (OCR) text layer to scanned PDF
+files, allowing them to be searched.
 
-PDF is the best format for storing and exchanging scanned documents.  Unfortunately, PDFs can be difficult to modify. OCRmyPDF makes it easy to apply image processing and OCR to existing PDFs.
+PDF is the best format for storing and exchanging scanned documents.
+Unfortunately, PDFs can be difficult to modify. OCRmyPDF makes it easy to apply
+image processing and OCR to existing PDFs.
 
 .. toctree::
    :maxdepth: 1
@@ -17,6 +14,7 @@ PDF is the best format for storing and exchanging scanned documents.  Unfortunat
    introduction
    release_notes
    installation
+   optimizer
    languages
    jbig2
 
@@ -28,9 +26,18 @@ PDF is the best format for storing and exchanging scanned documents.  Unfortunat
    docker
    advanced
    batch
-   security
+   performance
+   pdfsecurity
    errors
 
+.. toctree::
+   :caption: Developers
+   :maxdepth: 2
+
+   api
+   plugins
+   apiref
+   contributing
 
 Indices and tables
 ==================

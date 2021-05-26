@@ -1,13 +1,12 @@
 # requirements.txt can be used to replicate the developer's build environment
 # setup.py lists a separate set of requirements that are looser to simplify
 # installation
-chardet == 3.0.4
-cffi == 1.12.2
-img2pdf == 0.3.3
-pdfminer.six == 20181108
-pikepdf == 1.3.0
-Pillow >= 5.0.0, != 5.1.0 ; sys_platform == "darwin"
-pycparser == 2.19
-python-xmp-toolkit == 2.0.1
-reportlab == 3.5.13
-ruffus == 2.8.1
+cffi == 1.14.5
+coloredlogs == 15.0  # technically optional
+img2pdf == 0.4.0
+pdfminer.six == 20201018
+pikepdf == 2.10.0
+pluggy == 0.13.1
+Pillow == 8.1.2
+reportlab == 3.5.66
+tqdm == 4.59.0

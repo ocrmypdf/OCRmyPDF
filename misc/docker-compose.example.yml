@@ -1,0 +1,15 @@
+---
+version: "3.3"
+services:
+  ocrmypdf:
+    restart: always
+    container_name: ocrmypdf
+    image: jbarlow83/ocrmypdf
+    volumes:
+      - "/media/scan:/input"
+      - "/mnt/scan:/output"
+    environment:
+      - OCR_OUTPUT_DIRECTORY_YEAR_MONTH=0
+    user: "<SET TO YOUR USER ID>:<SET TO YOUR GROUP ID>"
+    entrypoint: python3
+    command: watcher.py
