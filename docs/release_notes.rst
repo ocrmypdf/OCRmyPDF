@@ -12,6 +12,14 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v12.0.3
+=======
+
+-  Expand the list of languages supported by the hocr PDF renderer.
+   Several languages were previously considered not supported, particularly those
+   non-European languages that use the Latin alphabet.
+-  Fixed a case where the exception stack trace was suppressed in verbose mode.
+-  Improved documentation around commercial OCR.
 
 v12.0.2
 =======
