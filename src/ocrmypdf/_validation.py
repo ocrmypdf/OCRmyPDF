@@ -279,7 +279,7 @@ def check_closed_streams(options):  # pragma: no cover
     Attempting to a fork/exec a new Python process when any of std{in,out,err}
     are closed or not flushable for some reason may raise an exception.
     Fix this by opening devnull if the handle seems to be closed.  Do this
-    globally to avoid tracking places all places that fork.
+    globally to avoid tracking all places that fork.
 
     Seems to be specific to multiprocessing.Process not all Python process
     forkers.
