@@ -128,8 +128,9 @@ Commercial alternatives
 The author also provides professional services that include OCR and
 building databases around PDFs, and is happy to provide consultation.
 
-Abbyy Cloud OCR is a viable commercial alternative with a web services
-API.
+Abbyy Cloud OCR is viable commercial alternative with a web services
+API. Amazon Textract, Google Cloud Vision, and Microsoft Azure 
+Computer Vision provide advanced OCR but have less PDF rendering capability.
 
 Password protection, digital signatures and certification
 =========================================================
