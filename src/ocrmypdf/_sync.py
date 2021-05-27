@@ -406,7 +406,9 @@ def run_pipeline(options, *, plugin_manager, api=False):
             log.error("KeyboardInterrupt")
         return ExitCode.ctrl_c
     except (ExitCodeException if not api else NeverRaise) as e:
-        if str(e):
+        if options.verbose >= 1:
+            log.exception("ExitCodeException")
+        elif str(e):
             log.error("%s: %s", type(e).__name__, str(e))
         else:
             log.error(type(e).__name__)
