@@ -1,6 +1,4 @@
-# requirements.txt can be used to replicate the developer's build environment
-# setup.py lists a separate set of requirements that are looser to simplify
-# installation
+# Deprecated and not maintained; use "pip install ocrmypdf" instead
 cffi == 1.14.5
 coloredlogs == 15.0  # technically optional
 img2pdf == 0.4.0
