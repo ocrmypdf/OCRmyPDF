@@ -111,7 +111,7 @@ Users may need to customize the script to meet their requirements.
 
 .. code-block:: bash
 
-    pip3 install -r requirements/watcher.txt
+    pip3 install ocrmypdf[watcher]
 
     env OCR_INPUT_DIRECTORY=/mnt/input-pdfs \
         OCR_OUTPUT_DIRECTORY=/mnt/output-pdfs \

@@ -1,3 +1,4 @@
+# Deprecated and not maintained; use "pip install ocrmypdf[test]" instead
 pytest >= 6.0.0
 pytest-xdist >= 2.2.0
 pytest-cov >= 2.11.1

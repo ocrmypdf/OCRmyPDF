@@ -37,12 +37,7 @@ COPY . /app
 
 WORKDIR /app
 
-RUN pip3 install --no-cache-dir \
-  -r requirements/main.txt \
-  -r requirements/webservice.txt \
-  -r requirements/test.txt \
-  -r requirements/watcher.txt \
-  .
+RUN pip3 install --no-cache-dir .[test,webservice,watcher]
 
 FROM base
 

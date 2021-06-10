@@ -812,8 +812,7 @@ To install all of the development and test requirements:
     python3 -m venv
     source venv/bin/activate
     cd OCRmyPDF
-    pip install -e .
-    pip install -r requirements/dev.txt -r requirements/test.txt
+    pip install -e .[test]
 
 To add JBIG2 encoding, see :ref:`jbig2`.
 

@@ -3,10 +3,13 @@ requires = [
   "setuptools >= 30.3.0",
   "wheel",
   "cffi",
-  "setuptools_scm",
+  "setuptools_scm[toml] >= 3.4",
   "setuptools_scm_git_archive"
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
 
 [tool.black]
 line-length = 88
