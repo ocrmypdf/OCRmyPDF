@@ -12,6 +12,17 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v12.1.0
+=======
+
+-  For security reasons we now require Pillow >= 8.2.x. (Older versions will continue
+   to work if upgrading is not an option.)
+-  The build system was reorganized to rely on ``setup.cfg`` instead of ``setup.py``.
+   All changes should work with previously supported versions of setuptools.
+-  The files in ``requirements/*`` are now considered deprecated but will be retained for v12.
+   Instead use ``pip install ocrmypdf[test]`` instead of ``requirements/test.txt``, etc.
+   These files will be removed in v13.
+
 v12.0.3
 =======
 
@@ -27,7 +38,7 @@ v12.0.2
 -  Fix exception thrown when using ``--remove-background`` on files containing small
    images (#769).
 -  Improve documentation for description of adding language packs to the Docker image
-   and corrected name of French language pack.  
+   and corrected name of French language pack.
 
 v12.0.1
 =======
