@@ -57,7 +57,7 @@ I searched the web for a free command line tool to OCR PDF files: I found many, 
 
 ## Installation
 
-Linux, Windows, macOS and FreeBSD are supported. Docker images are also available.
+Linux, Windows, macOS and FreeBSD are supported. Docker images are also available, for both x64 and ARM.
 
 | Operating system              | Install command               |
 | ----------------------------- | ------------------------------|
