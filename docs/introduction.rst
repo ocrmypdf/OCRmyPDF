@@ -207,8 +207,9 @@ consider one of these similar open source programs:
 
 -  pdf2pdfocr
 -  pdfsandwich
--  pypdfocr
--  pdfbeads
+
+Ghostscript recently added three "pdfocr" output devices. They work by
+rasterizing all content and converting all pages to a single colour space.
 
 Web front-ends
 ==============
