@@ -56,11 +56,12 @@ class TesseractLoggerAdapter(logging.LoggerAdapter):
 
 
 class TesseractVersion(StrictVersion):
+
     version_re = re.compile(
         r'''
         ^(\d+) \. (\d+) (\. (\d+))?  # groups: 1/major, 2/minor, 3/[skip], 4/patch
         [-]?  # optional hyphen separator
-        (?:(alpha|beta|rc|dev)[.\-\ ]?(\d+)?)?  # 5/prerelease, 6/prerelease_num
+        (?:(alpha|beta|rc|dev)?[.\-\ ]?(\d+)?)?  # 5/prerelease, 6/prerelease_num
         (?:-(\d+)-g[0-9a-f]+)?  # untagged git version
         $
         ''',
