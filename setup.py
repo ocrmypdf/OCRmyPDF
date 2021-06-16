@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # © 2021 James R. Barlow: github.com/jbarlow83
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
