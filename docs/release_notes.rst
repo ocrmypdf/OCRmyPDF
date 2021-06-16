@@ -12,6 +12,13 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+
+v12.1.1
+=======
+
+-  Fixed invalid Tesseract version number on Windows (:issue:`795`).
+-  Documentation tweaks.
+
 v12.1.0
 =======
 
@@ -35,15 +42,15 @@ v12.0.3
 v12.0.2
 =======
 
--  Fix exception thrown when using ``--remove-background`` on files containing small
-   images (#769).
+-  Fixed exception thrown when using ``--remove-background`` on files containing small
+   images (:issue:`769`).
 -  Improve documentation for description of adding language packs to the Docker image
    and corrected name of French language pack.
 
 v12.0.1
 =======
 
--  Fix "invalid version number" for untagged tesseract versions (#770).
+-  Fixed "invalid version number" for untagged tesseract versions (:issue:`770`).
 
 v12.0.0
 =======
@@ -103,7 +110,7 @@ v12.0.0
    which ships with Ubuntu 18.04).
 -  OCRmyPDF can now parse all of Tesseract version numbers, since several
    schemes have been in use.
--  Fixed an issue with parsing PDFs that contain images drawn at a scale of 0. (#761)
+-  Fixed an issue with parsing PDFs that contain images drawn at a scale of 0. (:issue:`761`)
 -  Removed a frequently repeated message about disabling mmap.
 
 v11.7.3
@@ -133,7 +140,7 @@ v11.7.0
 =======
 
 -  We now support using ``--sidecar`` in conjunction with ``--pages``; these arguments
-   used to be mutually exclusive. (#735)
+   used to be mutually exclusive. (:issue:`735`)
 -  Fixed a possible issue with PDF/A-1b generation. Acrobat complained that our PDFs use
    object streams. More robust PDF/A validators like veraPDF don't consider this a
    problem, but we'll honor Acrobat's objection from here on. This may increase file
@@ -143,13 +150,13 @@ v11.6.2
 =======
 
 -  Fixed a regression where the wrong page orientation would be produced when using
-   arguments such as ``--deskew --rotate-pages`` (#730).
+   arguments such as ``--deskew --rotate-pages`` (:issue:`730`).
 
 v11.6.1
 =======
 
 -  Fixed an issue with attempting optimize unusually narrow-width images by excluding
-   these images from optimization (#732).
+   these images from optimization (:issue:`732`).
 -  Remove an obsolete compatibility shim for a version of pikepdf that is no longer
    supported.
 
@@ -187,7 +194,7 @@ v11.4.5
 v11.4.4
 =======
 
--  Fixed ``AttributeError: 'NoneType' object has no attribute 'userunit'``, issue #700,
+-  Fixed ``AttributeError: 'NoneType' object has no attribute 'userunit'`` (:issue:`700`),
    related to OCRmyPDF not properly forwarded an error message from pdfminer.six.
 -  Adjusted typing of some arguments.
 -  ``ocrmypdf.ocr`` now takes a ``threading.Lock`` for reasons outlined in the
@@ -230,7 +237,7 @@ v11.4.0
    ``com.github.ocrmypdf`` to ``ocrmypdf.io``. Scripts that chose to depend on this
    prefix may need to be adjusted. (This has always been an implementation detail so is
    not considered part of the semantic versioning "contract".)
--  Fixed issue #692, where a particular file with malformed fonts would flood an
+-  Fixed :issue:`692`, where a particular file with malformed fonts would flood an
    internal message cue by generating so many debug messages.
 -  Fixed an exception on processing hOCR files with no page record. Tesseract
    is not known to generate such files.
@@ -249,7 +256,7 @@ v11.3.3
 =======
 
 -  If unpaper outputs non-UTF-8 data, quietly fix this rather than choke on the
-   conversion. (Possibly addresses #671.)
+   conversion. (Possibly addresses :issue:`671`.)
 
 v11.3.2
 =======
@@ -262,7 +269,7 @@ v11.3.2
    as optimization candidates.
 -  On some systems, unpaper seems to be unable to process the PNGs we offer it
    as input. We now convert the input to PNM format, which unpaper always accepts.
-   Fixes #665 and #667.
+   Fixes :issue:`665` and :issue:`667`.
 -  DPI sent to unpaper is now rounded to a more reasonable number of decimal digits.
 -  Debug and error messages from unpaper were being suppressed.
 -  Some documentation tweaks.
@@ -271,7 +278,7 @@ v11.3.1
 =======
 
 -  Declare support for new versions: pdfminer.six 20201018 and pikepdf 2.x
--  Fix warning related to ``--pdfa-image-compression`` that appears at the wrong
+-  Fixed warning related to ``--pdfa-image-compression`` that appears at the wrong
    time.
 
 v11.3.0
@@ -291,7 +298,7 @@ v11.3.0
    macOS and Windows only where the parent process is not forked.
 -  Fixed the hookspec of rasterize_pdf_page to remove default parameters that
    were not handled in an expected way by pluggy.
--  Fixed another issue with automatic page rotation (#658) due to the issue above.
+-  Fixed another issue with automatic page rotation (:issue:`658`) due to the issue above.
 
 v11.2.1
 =======
@@ -313,7 +320,7 @@ v11.1.2
 -  Fixed hOCR renderer writing the text in roughly reverse order. This should not
    affect reasonably smart PDF readers that properly locate the position of all
    text, but may confuse those that rely on the order of objects in the content
-   stream. (#642)
+   stream. (:issue:`642`)
 
 v11.1.1
 =======
@@ -326,9 +333,9 @@ v11.1.1
 v11.1.0
 =======
 
--  Fixed page rotation issues: #634, #589.
+-  Fixed page rotation issues: :issue:`634,589`.
 -  Fixed some cases where optimization created an invalid image such as a
-   1-bit "RGB" image: #629, #620.
+   1-bit "RGB" image: :issue:`629,620`.
 -  Page numbers are now displayed in debug logs when pages are being grafted.
 -  ocrmypdf.optimize.rewrite_png and ocrmypdf.optimize.rewrite_png_as_g4 were
    marked deprecated. Strictly speaking these should have been internal APIs,
@@ -341,7 +348,7 @@ v11.1.0
 v11.0.2
 =======
 
--  Fixed issue #612, TypeError exception. Fixed by eliminating unnecessary repair of
+-  Fixed :issue:`612`, TypeError exception. Fixed by eliminating unnecessary repair of
    input PDF metadata in memory.
 
 v11.0.1
@@ -358,7 +365,7 @@ v11.0.0
 -  Project license changed to Mozilla Public License 2.0. Some miscellaneous
    code is now under MIT license and non-code content/media remains under
    CC-BY-SA 4.0. License changed with approval of all people who were found
-   to have contributed to GPLv3 licensed sections of the project. (#600)
+   to have contributed to GPLv3 licensed sections of the project. (:issue:`600`)
 -  Because the license changed, this is being treated as a major version number
    change; however, there are no known breaking changes in functional behavior
    or API compared to v10.x.
@@ -367,7 +374,7 @@ v10.3.3
 =======
 
 -  Fixed a "KeyError: 'dpi'" error message when using ``--threshold`` on an image.
-   (#607)
+   (:issue:`607`)
 
 v10.3.2
 =======
@@ -410,16 +417,16 @@ v10.2.0
 =======
 
 -  Update Docker image to use Ubuntu 20.04.
--  Fixed issue PDF/A acquires title "Untitled" after conversion. (#582)
+-  Fixed issue PDF/A acquires title "Untitled" after conversion. (:issue:`582`)
 -  Fixed a problem where, when using ``--pdf-renderer hocr``, some text would
    be missing from the output when using a more recent version of Tesseract.
    Tesseract began adding more detailed markup about the semantics of text
    that our HOCR transform did not recognize, so it ignored them. This option is
    not the default. If necessary ``--redo-ocr`` also redoing OCR to fix such issues.
 -  Fixed an error in Python 3.9 beta, due to removal of deprecated
-   ``Element.getchildren()``. (#584)
+   ``Element.getchildren()``. (:issue:`584`)
 -  Implemented support using the API with ``BytesIO`` and other file stream objects.
-   (#545)
+   (:issue:`545`)
 
 v10.1.1
 =======
@@ -512,7 +519,7 @@ v9.8.0
 
 -  Fixed issue where only the first PNG (FlateDecode) image in a file would be
    considered for optimization. File sizes should be improved from here on.
--  Fixed a startup crash when the chosen language was Japanese (#543).
+-  Fixed a startup crash when the chosen language was Japanese (:issue:`543`).
 -  Added options to configure polling and log level to watcher.py.
 
 v9.7.2
@@ -559,11 +566,11 @@ v9.6.1
         they can be copied out as whole files, and to ensure syntax checking
         is maintained.
 
--  Fixed an error that caused bash completions to fail on macOS. (#502, #504;
+-  Fixed an error that caused bash completions to fail on macOS. (:issue:`502,504`;
    @AlexanderWillner)
 -  Fixed a rare case where OCRmyPDF threw an exception while processing a PDF
    with the wrong object type in its ``/Trailer /Info``. The error is now logged
-   and incorrect object is ignored. (#497)
+   and incorrect object is ignored. (:issue:`497`)
 -  Removed potentially non-free file ``enron1.pdf`` and simplified the test that
    used it.
 -  Removed potentially non-free file ``misc/media/logo.afdesign``.
@@ -765,7 +772,7 @@ v8.3.1
 ======
 
 -  Fixed an issue where PDFs with malformed metadata would be rendered as
-   blank pages. `#398 <https://github.com/jbarlow83/OCRmyPDF/issues/398>`_.
+   blank pages. :issue:`398`.
 
 v8.3.0
 ======
@@ -848,7 +855,7 @@ v8.2.0
    designed. However, quality would not be impacted. Lossless JBIG2 was
    entirely unaffected.
 -  Updated dependencies, including pikepdf to 1.1.0. This fixes
-   `#358 <https://github.com/jbarlow83/OCRmyPDF/issues/358>`__.
+   :issue:`358`.
 -  The install-time version checks for certain external programs have
    been removed from setup.py. These tests are now performed at
    run-time.
@@ -869,7 +876,7 @@ v8.1.0
    (specifically, those with invalid destination objects)
 -  Fixed an issue when using ``--tesseract-timeout`` and image
    processing features on a file with more than 100 pages.
-   `#347 <https://github.com/jbarlow83/OCRmyPDF/issues/347>`__
+   :issue:`347`
 -  OCRmyPDF now always calls ``os.nice(5)`` to signal to operating
    systems that it is a background process.
 
@@ -877,7 +884,7 @@ v8.0.1
 ======
 
 -  Fixed an exception when parsing PDFs that are missing a required
-   field. `#325 <https://github.com/jbarlow83/OCRmyPDF/issues/325>`__
+   field. :issue:`325`
 -  pikepdf 1.0.5 is now required, to address some other PDF parsing
    issues.
 
@@ -898,7 +905,7 @@ older versions of certain dependencies.
 **Other changes**
 
 -  Fixed an unhandled exception when attempting to mask barcodes.
-   `#322 <https://github.com/jbarlow83/OCRmyPDF/issues/322>`__
+   :issue:`322`
 -  It is now possible to use ocrmypdf without pdfminer.six, to support
    distributions that do not have it or cannot currently use it (e.g.
    Homebrew). Downstream maintainers should include pdfminer.six if
@@ -925,13 +932,13 @@ v7.4.0
 -  chardet >= 3.0.4 is temporarily listed as required. pdfminer.six
    depends on it, but the most recent release does not specify this
    requirement.
-   (`#326 <https://github.com/jbarlow83/OCRmyPDF/issues/326>`__)
+   (:issue:`326`)
 -  python-xmp-toolkit and libexempi are no longer required.
 -  A new Docker image is now being provided for users who wish to access
    OCRmyPDF over a simple HTTP interface, instead of the command line.
 -  Increase tolerance of PDFs that overflow or underflow the PDF
    graphics stack.
-   (`#325 <https://github.com/jbarlow83/OCRmyPDF/issues/325>`__)
+   (:issue:`325`)
 
 v7.3.1
 ======
@@ -1005,7 +1012,7 @@ v7.3.0
 v7.2.1
 ======
 
--  Fix compatibility with an API change in pikepdf 0.3.5.
+-  Fixed compatibility with an API change in pikepdf 0.3.5.
 -  A kludge to support Leptonica versions older than 1.72 in the test
    suite was dropped. Older versions of Leptonica are likely still
    compatible. The only impact is that a portion of the test suite will
@@ -1042,7 +1049,7 @@ Users who did not install an optional JBIG2 encoder are unaffected.
    will now attempt to further optimize that image as CCITT or JBIG2,
    instead of keeping it in the "flate" encoding which is not efficient
    for 1 bpp images.
-   (`#297 <https://github.com/jbarlow83/OCRmyPDF/issues/297>`__)
+   (:issue:`297`)
 -  Images in PDFs that are used as soft masks (i.e. transparency masks
    or alpha channels) are now excluded from optimization.
 -  Fixed handling of Tesseract 4.0-rc1 which now accepts invalid
@@ -1054,15 +1061,14 @@ v7.1.0
 -  Improve the performance of initial text extraction, which is done to
    determine if a file contains existing text of some kind or not. On
    large files, this initial processing is now about 20x times faster.
-   (`#299 <https://github.com/jbarlow83/OCRmyPDF/issues/299>`__)
+   (:issue:`299`)
 -  pikepdf 0.3.3 is now required.
--  Fixed issue
-   `#231 <https://github.com/jbarlow83/OCRmyPDF/issues/231>`__, a
+-  Fixed :issue:`231`, a
    problem with JPEG2000 images where image metadata was only available
    inside the JPEG2000 file.
 -  Fixed some additional Ghostscript 9.25 compatibility issues.
 -  Improved handling of KeyboardInterrupt error messages.
-   (`#301 <https://github.com/jbarlow83/OCRmyPDF/issues/301>`__)
+   (:issue:`301`)
 -  README.md is now served in GitHub markdown instead of
    reStructuredText.
 
@@ -1094,35 +1100,34 @@ v7.0.5
 v7.0.4
 ======
 
--  Fix exception thrown when trying to optimize a certain type of PNG
+-  Fixed exception thrown when trying to optimize a certain type of PNG
    embedded in a PDF with the ``-O2``
 -  Update to pikepdf 0.3.2, to gain support for optimizing some
    additional image types that were previously excluded from
    optimization (CMYK and grayscale). Fixes
-   `#285 <https://github.com/jbarlow83/OCRmyPDF/issues/285>`__.
+   :issue:`285`.
 
 v7.0.3
 ======
 
--  Fix issue
-   `#284 <https://github.com/jbarlow83/OCRmyPDF/issues/284>`__, an error
+-  Fixed :issue:`284`, an error
    when parsing inline images that have are also image masks, by
    upgrading pikepdf to 0.3.1
 
 v7.0.2
 ======
 
--  Fix a regression with ``--rotate-pages`` on pages that already had
+-  Fixed a regression with ``--rotate-pages`` on pages that already had
    rotations applied.
-   (`#279 <https://github.com/jbarlow83/OCRmyPDF/issues/279>`__)
+   (:issue:`279`)
 -  Improve quality of page rotation in some cases by rasterizing a
    higher quality preview image.
-   (`#281 <https://github.com/jbarlow83/OCRmyPDF/issues/281>`__)
+   (:issue:`281`)
 
 v7.0.1
 ======
 
--  Fix compatibility with img2pdf >= 0.3.0 by rejecting input images
+-  Fixed compatibility with img2pdf >= 0.3.0 by rejecting input images
    that have an alpha channel
 -  Add forward compatibility for pikepdf 0.3.0 (unrelated to img2pdf)
 -  Various documentation updates for v7.0.0 changes
@@ -1225,7 +1230,7 @@ v6.2.4
 v6.2.3
 ======
 
--  Fix compatibility with img2pdf >= 0.3.0 by rejecting input images
+-  Fixed compatibility with img2pdf >= 0.3.0 by rejecting input images
    that have an alpha channel
 -  This version will be included in Ubuntu 18.10
 
@@ -1242,9 +1247,8 @@ v6.2.2
 v6.2.1
 ======
 
--  Fix recent versions of Tesseract (after 4.0.0-beta1) not being
-   detected as supporting the ``sandwich`` renderer
-   (`#271 <https://github.com/ppjbarlow83/OCRmyPDF/issues/271>`__).
+-  Fixed recent versions of Tesseract (after 4.0.0-beta1) not being
+   detected as supporting the ``sandwich`` renderer (:issue:`271`).
 
 v6.2.0
 ======
@@ -1257,21 +1261,19 @@ v6.2.0
 -  Creation of PDF/A-3 is now supported. However, there is no ability to
    attach files to PDF/A-3.
 -  Lists more reasons why the file size might grow.
--  Fix issue
-   `#262 <https://github.com/ppjbarlow83/OCRmyPDF/issues/262>`__,
+-  Fixed :issue:`262`,
    ``--remove-background`` error on PDFs contained colormapped
    (paletted) images.
--  Fix another XMP metadata validation issue, in cases where the input
+-  Fixed another XMP metadata validation issue, in cases where the input
    file's creation date has no timezone and the creation date is not
    overridden.
 
 v6.1.5
 ======
 
--  Fix issue
-   `#253 <https://github.com/jbarlow83/OCRmyPDF/issues/253>`__, a
+-  Fixed :issue:`253`, a
    possible division by zero when using the ``hocr`` renderer.
--  Fix incorrectly formatted ``<xmp:ModifyDate>`` field inside XMP
+-  Fixed incorrectly formatted ``<xmp:ModifyDate>`` field inside XMP
    metadata for PDF/As. veraPDF flags this as a PDF/A validation
    failure. The error is caused the timezone and final digit of the
    seconds of modified time to be omitted, so at worst the modification
@@ -1280,7 +1282,7 @@ v6.1.5
 v6.1.4
 ======
 
--  Fix issue `#248 <https://github.com/jbarlow83/OCRmyPDF/issues/248>`__
+-  Fixed :issue:`248`
    ``--clean`` argument may remove OCR from left column of text on
    certain documents. We now set ``--layout none`` to suppress this.
 -  The test cache was updated to reflect the change above.
@@ -1305,8 +1307,7 @@ Notes
 v6.1.3
 ======
 
--  Fix issue
-   `#247 <https://github.com/jbarlow83/OCRmyPDF/issues/247>`__,
+-  Fixed :issue:`247`,
    ``/CreationDate`` metadata not copied from input to output.
 -  A warning is now issued when Python 3.5 is used on files with a large
    page count, as this case is known to regress to single core
@@ -1316,13 +1317,13 @@ v6.1.2
 ======
 
 -  Upgrade to PyMuPDF v1.12.5 which includes a more complete fix to
-   `#239 <https://github.com/jbarlow83/OCRmyPDF/issues/239>`__.
+   :issue:`239`.
 -  Add ``defusedxml`` dependency.
 
 v6.1.1
 ======
 
--  Fix text being reported as found on all pages if PyMuPDF is not
+-  Fixed text being reported as found on all pages if PyMuPDF is not
    installed.
 
 v6.1.0
@@ -1333,15 +1334,15 @@ v6.1.0
    PyMuPDF than the author anticipated. (For version 6.x only) install
    OCRmyPDF with ``pip install ocrmypdf[fitz]`` to use it to its full
    potential.
--  Fix ``FileExistsError`` that could occur if OCR timed out while it
+-  Fixed ``FileExistsError`` that could occur if OCR timed out while it
    was generating the output file.
-   (`#218 <https://github.com/jbarlow83/OCRmyPDF/issues/218>`__)
--  Fix table of contents/bookmarks all being redirected to page 1 when
+   (:issue:`218`)
+-  Fixed table of contents/bookmarks all being redirected to page 1 when
    generating a PDF/A (with PyMuPDF). (Without PyMuPDF the table of
    contents is removed in PDF/A mode.)
--  Fix "RuntimeError: invalid key in dict" when table of
+-  Fixed "RuntimeError: invalid key in dict" when table of
    contents/bookmarks titles contained the character ``)``.
-   (`#239 <https://github.com/jbarlow83/OCRmyPDF/issues/239>`__)
+   (:issue:`239`)
 -  Added a new argument ``--skip-repair`` to skip the initial PDF repair
    step if the PDF is already well-formed (because another program
    repaired it).
@@ -1368,35 +1369,29 @@ v6.0.0
 
 -  Fixed an issue where OCRmyPDF failed to detect existing text on
    pages, depending on how the text and fonts were encoded within the
-   PDF. (`#233 <https://github.com/jbarlow83/OCRmyPDF/issues/233>`__,
-   `#232 <https://github.com/jbarlow83/OCRmyPDF/issues/232>`__)
+   PDF. (:issue:`233,232`)
 -  Fixed an issue that caused dramatic inflation of file sizes when
    ``--skip-text --output-type pdf`` was used. OCRmyPDF now removes
    duplicate resources such as fonts, images and other objects that it
-   generates.
-   (`#237 <https://github.com/jbarlow83/OCRmyPDF/issues/237>`__)
+   generates. (:issue:`237`)
 -  Improved performance of the initial page splitting step. Originally
    this step was not believed to be expensive and ran in a process.
    Large file testing revealed it to be a bottleneck, so it is now
    parallelized. On a 700 page file with quad core machine, this change
-   saves about 2 minutes.
-   (`#234 <https://github.com/jbarlow83/OCRmyPDF/issues/234>`__)
+   saves about 2 minutes. (:issue:`234`)
 -  The test suite now includes a cache that can be used to speed up test
    runs across platforms. This also does not require computing
-   checksums, so it's faster.
-   (`#217 <https://github.com/jbarlow83/OCRmyPDF/issues/217>`__)
+   checksums, so it's faster. (:issue:`217`)
 
 v5.7.0
 ======
 
 -  Fixed an issue that caused poor CPU utilization on machines with more
-   than 4 cores when running Tesseract 4. (Related to issue
-   `#217 <https://github.com/jbarlow83/OCRmyPDF/issues/217>`__.)
+   than 4 cores when running Tesseract 4. (Related to :issue:`217`.)
 -  The 'hocr' renderer has been improved. The 'sandwich' and 'tesseract'
    renderers are still better for most use cases, but 'hocr' may be
    useful for people who work with the PDF.js renderer in English/ASCII
-   languages.
-   (`#225 <https://github.com/jbarlow83/OCRmyPDF/issues/225>`__)
+   languages. (:issue:`225`)
 
    -  It now formats text in a matter that is easier for certain PDF
       viewers to select and extract copy and paste text. This should
@@ -1424,11 +1419,10 @@ v5.6.2
 v5.6.1
 ======
 
--  Fix issue
-   `#219 <https://github.com/jbarlow83/OCRmyPDF/issues/219>`__: change
+-  Fixed :issue:`219`: change
    how the final output file is created to avoid triggering permission
    errors when the output is a special file such as ``/dev/null``
--  Fix test suite failures due to a qpdf 8.0.0 regression and Python
+-  Fixed test suite failures due to a qpdf 8.0.0 regression and Python
    3.5's handling of symlink
 -  The "encrypted PDF" error message was different depending on the type
    of PDF encryption. Now a single clear message appears for all types
@@ -1441,8 +1435,7 @@ v5.6.1
 v5.6.0
 ======
 
--  Fix issue
-   `#216 <https://github.com/jbarlow83/OCRmyPDF/issues/216>`__: preserve
+-  Fixed :issue:`216`: preserve
    "text as curves" PDFs without rasterizing file
 -  Related to the above, messages about rasterizing are more consistent
 -  For consistency versions minor releases will now get the trailing .0
@@ -1454,34 +1447,32 @@ v5.5
 -  Add new argument ``--max-image-mpixels``. Pillow 5.0 now raises an
    exception when images may be decompression bombs. This argument can
    be used to override the limit Pillow sets.
--  Fix output page cropped when using the sandwich renderer and OCR is
+-  Fixed output page cropped when using the sandwich renderer and OCR is
    skipped on a rotated and image-processed page
 -  A warning is now issued when old versions of Ghostscript are used in
    cases known to cause issues with non-Latin characters
--  Fix a few parameter validation checks for ``-output-type pdfa-1`` and
+-  Fixed a few parameter validation checks for ``-output-type pdfa-1`` and
    ``pdfa-2``
 
 v5.4.4
 ======
 
--  Fix issue
-   `#181 <https://github.com/jbarlow83/OCRmyPDF/issues/181>`__: fix
+-  Fixed :issue:`181`: fix
    final merge failure for PDFs with more pages than the system file
    handle limit (``ulimit -n``)
--  Fix issue
-   `#200 <https://github.com/jbarlow83/OCRmyPDF/issues/200>`__: an
+-  Fixed :issue:`200`: an
    uncommon syntax for formatting decimal numbers in a PDF would cause
    qpdf to issue a warning, which ocrmypdf treated as an error. Now this
    the warning is relayed.
--  Fix an issue where intermediate PDFs would be created at version 1.3
+-  Fixed an issue where intermediate PDFs would be created at version 1.3
    instead of the version of the original file. It's possible but
    unlikely this had side effects.
 -  A warning is now issued when older versions of qpdf are used since
    issues like
-   `#200 <https://github.com/jbarlow83/OCRmyPDF/issues/200>`__ cause
+   :issue:`200` cause
    qpdf to infinite-loop
 -  Address issue
-   `#140 <https://github.com/jbarlow83/OCRmyPDF/issues/140>`__: if
+   :issue:`140`: if
    Tesseract outputs invalid UTF-8, escape it and print its message
    instead of aborting with a Unicode error
 -  Adding previously unlisted setup requirement, pytest-runner
@@ -1547,13 +1538,13 @@ v5.3
    forwarded to Tesseract OCR as words and regular expressions
    respective to use to guide OCR. Supplying a list of subject-domain
    words should assist Tesseract with resolving words.
-   (`#165 <https://github.com/jbarlow83/OCRmyPDF/issues/165>`__)
+   (:issue:`165`)
 -  Using a non Latin-1 language with the "hocr" renderer now warns about
    possible OCR quality and recommends workarounds
-   (`#176 <https://github.com/jbarlow83/OCRmyPDF/issues/176>`__)
+   (:issue:`176`)
 -  Output file path added to error message when that location is not
    writable
-   (`#175 <https://github.com/jbarlow83/OCRmyPDF/issues/175>`__)
+   (:issue:`175`)
 -  Otherwise valid PDFs with leading whitespace at the beginning of the
    file are now accepted
 
@@ -1581,8 +1572,7 @@ v5.1
 v5.0.1
 ======
 
--  Fixed issue
-   `#169 <https://github.com/jbarlow83/OCRmyPDF/issues/169>`__,
+-  Fixed :issue:`169`,
    exception due to failure to create sidecar text files on some
    versions of Tesseract 3.04, including the jbarlow83/ocrmypdf Docker
    image
@@ -1600,19 +1590,17 @@ v5.0
 -  Add a new feature, ``--sidecar``, which allows creating "sidecar"
    text files which contain the OCR results in plain text. These OCR
    text is more reliable than extracting text from PDFs. Closes
-   `#126 <https://github.com/jbarlow83/OCRmyPDF/issues/126>`__.
+   :issue:`126`.
 
 -  New feature: ``--pdfa-image-compression``, which allows overriding
    Ghostscript's lossy-or-lossless image encoding heuristic and making
    all images JPEG encoded or lossless encoded as desired. Fixes
-   `#163 <https://github.com/jbarlow83/OCRmyPDF/issues/163>`__.
+   :issue:`163`.
 
--  Fixed issue
-   `#143 <https://github.com/jbarlow83/OCRmyPDF/issues/143>`__, added
+-  Fixed :issue:`143`, added
    ``--quiet`` to suppress "INFO" messages
 
--  Fixed issue
-   `#164 <https://github.com/jbarlow83/OCRmyPDF/issues/164>`__, a typo
+-  Fixed :issue:`164`, a typo
 
 -  Removed the command line parameters ``-n`` and ``--just-print`` since
    they have not worked for some time (reported as Ubuntu bug
@@ -1621,17 +1609,14 @@ v5.0
 v4.5.6
 ======
 
--  Fixed issue
-   `#156 <https://github.com/jbarlow83/OCRmyPDF/issues/156>`__,
+-  Fixed :issue:`156`,
    'NoneType' object has no attribute 'getObject' on pages with no
    optional /Contents record. This should resolve all issues related to
    pages with no /Contents record.
--  Fixed issue
-   `#158 <https://github.com/jbarlow83/OCRmyPDF/issues/158>`__, ocrmypdf
+-  Fixed :issue:`158`, ocrmypdf
    now stops and terminates if Ghostscript fails on an intermediate
    step, as it is not possible to proceed.
--  Fixed issue
-   `#160 <https://github.com/jbarlow83/OCRmyPDF/issues/160>`__,
+-  Fixed :issue:`160`,
    exception thrown on certain invalid arguments instead of error
    message
 
@@ -1639,20 +1624,19 @@ v4.5.5
 ======
 
 -  Automated update of macOS homebrew tap
--  Fixed issue
-   `#154 <https://github.com/jbarlow83/OCRmyPDF/issues/154>`__, KeyError
+-  Fixed :issue:`154`, KeyError
    '/Contents' when searching for text on blank pages that have no
    /Contents record. Note: incomplete fix for this issue.
 
 v4.5.4
 ======
 
--  Fix ``--skip-big`` raising an exception if a page contains no images
-   (`#152 <https://github.com/jbarlow83/OCRmyPDF/issues/152>`__) (thanks
+-  Fixed ``--skip-big`` raising an exception if a page contains no images
+   (:issue:`152`) (thanks
    to @TomRaz)
--  Fix an issue where pages with no images might trigger "cannot write
+-  Fixed an issue where pages with no images might trigger "cannot write
    mode P as JPEG"
-   (`#151 <https://github.com/jbarlow83/OCRmyPDF/issues/151>`__)
+   (:issue:`151`)
 
 v4.5.3
 ======
@@ -1671,8 +1655,7 @@ v4.5.3
 v4.5.2
 ======
 
--  Fix issue
-   `#147 <https://github.com/jbarlow83/OCRmyPDF/issues/147>`__.
+-  Fixed :issue:`147`,
    ``--pdf-renderer tess4 --clean`` will produce an oversized page
    containing the original image in the bottom left corner, due to loss
    DPI information.
@@ -1682,8 +1665,7 @@ v4.5.2
 v4.5.1
 ======
 
--  Fix issue
-   `#137 <https://github.com/jbarlow83/OCRmyPDF/issues/137>`__,
+-  Fixed :issue:`137`,
    proportions of images with a non-square pixel aspect ratio would be
    distorted in output for ``--force-ocr`` and some other combinations
    of flags
@@ -1692,7 +1674,7 @@ v4.5
 ====
 
 -  PDFs containing "Form XObjects" are now supported (issue
-   `#134 <https://github.com/jbarlow83/OCRmyPDF/issues/134>`__; PDF
+   :issue:`134`; PDF
    reference manual 8.10), and images they contain are taken into
    account when determining the resolution for rasterizing
 -  The Tesseract 4 Docker image no longer includes all languages,
@@ -1821,7 +1803,7 @@ v4.2.5
 ======
 
 -  Fixed an issue
-   (`#100 <https://github.com/jbarlow83/OCRmyPDF/issues/100>`__) with
+   (:issue:`100`) with
    PDFs that omit the optional /BitsPerComponent parameter on images
 -  Removed non-free file milk.pdf
 
@@ -1829,7 +1811,7 @@ v4.2.4
 ======
 
 -  Fixed an error
-   (`#90 <https://github.com/jbarlow83/OCRmyPDF/issues/90>`__) caused by
+   (:issue:`90`) caused by
    PDFs that use stencil masks properly
 -  Fixed handling of PDFs that try to draw images or stencil masks
    without properly setting up the graphics state (such images are now
@@ -1867,7 +1849,7 @@ v4.2
 
 -  ocrmypdf will now try to convert single image files to PDFs if they
    are provided as input
-   (`#15 <https://github.com/jbarlow83/OCRmyPDF/issues/15>`__)
+   (:issue:`15`)
 
    -  This is a basic convenience feature. It only supports a single
       image and always makes the image fill the whole page.
@@ -1895,11 +1877,11 @@ v4.2
    -  supports reinterpreting PDFs where text was rendered as curves for
       printing, and text needs to be recovered
    -  fixes issue
-      `#82 <https://github.com/jbarlow83/OCRmyPDF/issues/82>`__
+      :issue:`82`
 
 -  Fixes an issue where, with certain settings, monochrome images in
    PDFs would be converted to 8-bit grayscale, increasing file size
-   (`#79 <https://github.com/jbarlow83/OCRmyPDF/issues/79>`__)
+   (:issue:`79`)
 -  Support for Ubuntu 12.04 LTS "precise" has been dropped in favor of
    (roughly) Ubuntu 14.04 LTS "trusty"
 
@@ -1927,7 +1909,7 @@ v4.1.3
 
 -  More helpful error message for PDFs with version 4 security handler
 -  Update usage instructions for Windows/Docker users
--  Fix order of operations for matrix multiplication (no effect on most
+-  Fixed order of operations for matrix multiplication (no effect on most
    users)
 -  Add a few leptonica wrapper functions (no effect on most users)
 
@@ -2020,7 +2002,7 @@ New features
    dominant orientation of detectable text. This feature is fairly
    reliable but some false positives occur especially if there is not
    much text to work with.
-   (`#4 <https://github.com/jbarlow83/OCRmyPDF/issues/4>`__)
+   (:issue:`4`)
 -  Deskewing is now performed using Leptonica instead of unpaper.
    Leptonica is faster and more reliable at image deskewing than
    unpaper.
@@ -2033,13 +2015,13 @@ Fixes
 -  Fixed an issue where lossless reconstruction could misalign the
    graphics layer with respect to text layer if the page had been
    cropped such that its origin is not (0, 0)
-   (`#49 <https://github.com/jbarlow83/OCRmyPDF/issues/49>`__)
+   (:issue:`49`)
 
 Changes
 
 -  Logging output is now much easier to read
 -  ``--deskew`` is now performed by Leptonica instead of unpaper
-   (`#25 <https://github.com/jbarlow83/OCRmyPDF/issues/25>`__)
+   (:issue:`25`)
 -  libffi is now required
 -  Some changes were made to the Docker and Travis build environments to
    support libffi
@@ -2054,7 +2036,7 @@ v3.2.1
 
 Changes
 
--  Fixed issue `#47 <https://github.com/jbarlow83/OCRmyPDF/issues/47>`__
+-  Fixed :issue:`47`
    "convert() got and unexpected keyword argument 'dpi'" by upgrading to
    img2pdf 0.2
 -  Tweaked the Dockerfiles
@@ -2099,8 +2081,7 @@ Changes
 -  Python 3.5 and macOS El Capitan are now supported platforms - no
    changes were needed to implement support
 -  Improved some error messages related to missing input files
--  Fixed issue `#20 <https://github.com/jbarlow83/OCRmyPDF/issues/20>`__
-   - uppercase .PDF extension not accepted
+-  Fixed :issue:`20`: uppercase .PDF extension not accepted
 -  Fixed an issue where OCRmyPDF failed to text that certain pages
    contained previously OCR'ed text, such as OCR text produced by
    Tesseract 3.04
@@ -2177,19 +2158,19 @@ Release candidates^
 
 -  rc9:
 
-   -  fix issue
-      `#118 <https://github.com/jbarlow83/OCRmyPDF/issues/118>`__:
+   -  Fix
+      :issue:`118`:
       report error if ghostscript iccprofiles are missing
    -  fixed another issue related to
-      `#111 <https://github.com/jbarlow83/OCRmyPDF/issues/111>`__: PDF
+      :issue:`111`: PDF
       rasterized to palette file
    -  add support image files with a palette
    -  don't try to validate PDF file after an exception occurs
 
 -  rc8:
 
-   -  fix issue
-      `#111 <https://github.com/jbarlow83/OCRmyPDF/issues/111>`__:
+   -  Fix
+      :issue:`111`:
       exception thrown if PDF is missing DocumentInfo dictionary
 
 -  rc7:
