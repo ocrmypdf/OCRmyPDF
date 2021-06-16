@@ -13,11 +13,11 @@ The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
 
-v12.1.1
+v12.2.0
 =======
 
 -  Fixed invalid Tesseract version number on Windows (:issue:`795`).
--  Documentation tweaks.
+-  Documentation tweaks. Documentation build now depends on sphinx-issues package.
 
 v12.1.0
 =======
