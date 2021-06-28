@@ -65,13 +65,14 @@ def check_options_languages(options, ocr_engine_languages):
             log.debug("No language specified; assuming --language %s", DEFAULT_LANGUAGE)
     if not ocr_engine_languages:
         return
-    if not options.languages.issubset(ocr_engine_languages):
+    missing_languages = options.languages - ocr_engine_languages
+    if missing_languages:
         msg = (
             f"OCR engine does not have language data for the following "
             "requested languages: \n"
         )
-        for lang in options.languages - ocr_engine_languages:
-            msg += lang + '\n'
+        msg += '\n'.join(lang for lang in missing_languages)
+        msg += '\nNote: most languages are identified by a 3-digit ISO 639-2 Code'
         raise MissingDependencyError(msg)
 
 
