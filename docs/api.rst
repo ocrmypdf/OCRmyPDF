@@ -44,7 +44,7 @@ execution. To do this, it will:
 The Python process that calls ``ocrmypdf.ocr()`` must be sufficiently
 privileged to perform these actions.
 
-There is no currently no option to manage how jobs are scheduled other
+There currently is no option to manage how jobs are scheduled other
 than the argument ``jobs=`` which will limit the number of worker
 processes.
 
