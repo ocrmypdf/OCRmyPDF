@@ -83,7 +83,7 @@ Limiting CPU usage
 OCRmyPDF will attempt to use all available CPUs and storage, so
 executing ``nice ocrmypdf`` or limiting the number of jobs with the
 ``-j`` argument may ensure the server remains available. Another option
-would be run OCRmyPDF jobs inside a Docker container, a virtual machine,
+would be to run OCRmyPDF jobs inside a Docker container, a virtual machine,
 or a cloud instance, which can impose its own limits on CPU usage and be
 terminated "from orbit" if it fails to complete.
 
