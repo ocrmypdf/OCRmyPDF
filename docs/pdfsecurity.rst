@@ -19,7 +19,7 @@ PDF is a rich, complex file format. The official PDF 1.7 specification,
 ISO 32000:2008, is hundreds of pages long and references several annexes
 each of which are similar in length. PDFs can contain video, audio, XML,
 JavaScript and other programming, and forms. In some cases, they can
-open internet connections to pre-selected URLs. All of these possible
+open internet connections to pre-selected URLs. All of these are possible
 attack vectors.
 
 In short, PDFs `may contain
@@ -31,7 +31,7 @@ describes a high-paranoia method which allows potentially hostile PDFs
 to be viewed and rasterized safely in a disposable virtual machine. A
 trusted PDF created in this manner is converted to images and loses all
 information making it searchable and losing all compression. OCRmyPDF
-could be used restore searchability.
+could be used to restore searchability.
 
 How OCRmyPDF processes PDFs
 ===========================
