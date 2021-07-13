@@ -66,8 +66,8 @@ service. OCRmyPDF relies on Ghostscript, and therefore, if deployed
 online one should be prepared to comply with Ghostscript's Affero GPL
 license, and any other licenses.
 
-Setting aside these concerns, a side effect of OCRmyPDF is it may
-incidentally sanitize PDFs that contain certain types of malware. It
+Setting aside these concerns, a side effect of OCRmyPDF is that it may
+incidentally sanitize PDFs containing certain types of malware. It
 repairs the PDF with pikepdf/libqpdf, which could correct malformed PDF
 structures that are part of an attack. When PDF/A output is selected
 (the default), the input PDF is partially reconstructed by Ghostscript.
