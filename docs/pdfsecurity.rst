@@ -19,7 +19,7 @@ PDF is a rich, complex file format. The official PDF 1.7 specification,
 ISO 32000:2008, is hundreds of pages long and references several annexes
 each of which are similar in length. PDFs can contain video, audio, XML,
 JavaScript and other programming, and forms. In some cases, they can
-open internet connections to pre-selected URLs. All of these possible
+open internet connections to pre-selected URLs. All of these are possible
 attack vectors.
 
 In short, PDFs `may contain
@@ -31,7 +31,7 @@ describes a high-paranoia method which allows potentially hostile PDFs
 to be viewed and rasterized safely in a disposable virtual machine. A
 trusted PDF created in this manner is converted to images and loses all
 information making it searchable and losing all compression. OCRmyPDF
-could be used restore searchability.
+could be used to restore searchability.
 
 How OCRmyPDF processes PDFs
 ===========================
@@ -66,8 +66,8 @@ service. OCRmyPDF relies on Ghostscript, and therefore, if deployed
 online one should be prepared to comply with Ghostscript's Affero GPL
 license, and any other licenses.
 
-Setting aside these concerns, a side effect of OCRmyPDF is it may
-incidentally sanitize PDFs that contain certain types of malware. It
+Setting aside these concerns, a side effect of OCRmyPDF is that it may
+incidentally sanitize PDFs containing certain types of malware. It
 repairs the PDF with pikepdf/libqpdf, which could correct malformed PDF
 structures that are part of an attack. When PDF/A output is selected
 (the default), the input PDF is partially reconstructed by Ghostscript.
@@ -83,7 +83,7 @@ Limiting CPU usage
 OCRmyPDF will attempt to use all available CPUs and storage, so
 executing ``nice ocrmypdf`` or limiting the number of jobs with the
 ``-j`` argument may ensure the server remains available. Another option
-would be run OCRmyPDF jobs inside a Docker container, a virtual machine,
+would be to run OCRmyPDF jobs inside a Docker container, a virtual machine,
 or a cloud instance, which can impose its own limits on CPU usage and be
 terminated "from orbit" if it fails to complete.
 
