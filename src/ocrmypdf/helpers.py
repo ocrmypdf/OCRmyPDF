@@ -25,9 +25,17 @@ log = logging.getLogger(__name__)
 
 
 class Resolution(namedtuple('Resolution', ('x', 'y'))):
-    """The number of pixels per inch in each 2D direction."""
+    """The number of pixels per inch in each 2D direction.
+
+    Resolution objects are considered "equal" for == purposes if they are
+    equal to a reasonable tolerance.
+    """
 
     __slots__ = ()
+
+    # rel_tol after converting from dpi to pixels per meter and saving
+    # as integer with rounding, as many file formats
+    CONVERSION_ERROR = 0.002
 
     def round(self, ndigits: int):
         return Resolution(round(self.x, ndigits), round(self.y, ndigits))
@@ -35,9 +43,13 @@ class Resolution(namedtuple('Resolution', ('x', 'y'))):
     def to_int(self):
         return Resolution(int(round(self.x)), int(round(self.y)))
 
+    @classmethod
+    def _isclose(cls, a, b):
+        return isclose(a, b, rel_tol=cls.CONVERSION_ERROR)
+
     @property
     def is_square(self) -> bool:
-        return isclose(self.x, self.y, rel_tol=1e-3)
+        return self._isclose(self.x, self.y)
 
     @property
     def is_finite(self) -> bool:
@@ -60,6 +72,13 @@ class Resolution(namedtuple('Resolution', ('x', 'y'))):
 
     def __repr__(self):  # pragma: no cover
         return f"Resolution({self.x}x{self.y} dpi)"
+
+    def __eq__(self, other):
+        if isinstance(other, tuple) and len(other) == 2:
+            other = Resolution(*other)
+        if not isinstance(other, Resolution):
+            return NotImplemented
+        return self._isclose(self.x, other.x) and self._isclose(self.y, other.y)
 
 
 class NeverRaise(Exception):
