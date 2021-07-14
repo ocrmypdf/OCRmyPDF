@@ -13,6 +13,19 @@ The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
 
+v12.3.0
+=======
+
+-  Fixed a regression introduced in Pillow 8.3.0. Pillow no longer rounds DPI
+   for image resolutions. We now account for this. (:issue:`802`)
+-  We no longer use some API calls that are deprecated in the latest versions of
+   pikepdf.
+-  Improved error message when a language is requested that doesn't look like a
+   typical ISO 639-2 code.
+-  Fixed some tests that attempted to symlink on Windows, breaking tests on a
+   Windows desktop but not usually on CI.
+-  Documentation fixes (thanks to @mara004)
+
 v12.2.0
 =======
 
