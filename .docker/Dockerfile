@@ -1,6 +1,6 @@
 # OCRmyPDF
 #
-FROM ubuntu:20.04 as base
+FROM ubuntu:21.04 as base
 
 FROM base as builder
 
