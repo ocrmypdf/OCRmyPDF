@@ -7,6 +7,12 @@ ENV LANG=C.UTF-8
 ENV TZ=UTC
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  python3 \
+  libqpdf-dev \
+  zlib1g \
+  liblept5
+
 FROM base as builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -16,7 +22,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   python3-dev \
   python3-distutils \
   libffi-dev \
-  libqpdf-dev \
   ca-certificates \
   curl \
   git
@@ -47,12 +52,8 @@ FROM base
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
   img2pdf \
-  liblept5 \
   libsm6 libxext6 libxrender-dev \
-  zlib1g \
   pngquant \
-  python3 \
-  qpdf \
   tesseract-ocr \
   tesseract-ocr-chi-sim \
   tesseract-ocr-deu \
