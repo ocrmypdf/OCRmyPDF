@@ -1,10 +1,13 @@
 # OCRmyPDF
 #
+
 FROM ubuntu:21.04 as base
 
-FROM base as builder
-
 ENV LANG=C.UTF-8
+ENV TZ=UTC
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+
+FROM base as builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential autoconf automake libtool \
@@ -40,8 +43,6 @@ WORKDIR /app
 RUN pip3 install --no-cache-dir .[test,webservice,watcher]
 
 FROM base
-
-ENV LANG=C.UTF-8
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
