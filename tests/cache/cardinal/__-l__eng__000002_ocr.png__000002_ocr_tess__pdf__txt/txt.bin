@@ -103,7 +103,7 @@ ERASE, REPEAT, PLAY/STOP, or LOCATE.
 
 © Will sync to standard LinnDrum or Linn 9000 sync tone.
 
-® Utilizes ultra high-speed, 8 MHz 80186 16 bit computer internally for FAST operation.
+© Utilizes ultra high-speed, 8 MHz 80186 16 bit computer internally for FAST operation.
 * TEMPO may be specified in BEATS-PER-MINUTE or FRAMES-PER-BEAT at 24, 25, or 30 frames per second,
 
 (even drop frame!)
@@ -115,9 +115,9 @@ on the TAP TEMPO button.
 ¢ TEMPO CHANGES may be programmed into a sequence, with smooth transitions if desired.
 ¢ Any TIME SIGNATURE may be used, and may be changed within a song.
 
-nn
-
+linn
 Linn Electronics, Inc.
+
 18720 Oxnard Street, Tarzana, CA 91356
 (818) 708-8131 TELEX #298949 LINN UR
 

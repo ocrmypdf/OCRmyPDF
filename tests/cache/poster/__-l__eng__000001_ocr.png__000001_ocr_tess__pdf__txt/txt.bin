@@ -97,7 +97,7 @@ ERASE, REPEAT, PLAY/STOP, or LOCATE.
 
 ¢ Two TRIGGER OUTPUTS may be programmed to output pulses at any selected note value.
 
-e Will sync to standard LinnDrum or Linn 9000 sync tone.
+@ Will sync to standard LinnDrum or Linn 9000 sync tone.
 
 © Utilizes ultra high-speed, 8 MHz 80186 16 bit computer internally for FAST operation.
 ¢ TEMPO may be specified in BEATS-PER-MINUTE or FRAMES-PER-BEAT at 24, 25, or 30 frames per second,
