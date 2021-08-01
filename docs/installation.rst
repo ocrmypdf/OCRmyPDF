@@ -23,7 +23,7 @@ These platforms have one-liner installs:
 +-------------------------------+-------------------------------+
 | LinuxBrew                     | ``brew install ocrmypdf``     |
 +-------------------------------+-------------------------------+
-| FreeBSD                       | ``pkg install py37-ocrmypdf`` |
+| FreeBSD                       | ``pkg install py38-ocrmypdf`` |
 +-------------------------------+-------------------------------+
 | Conda (WSL, macOS, Linux)     | ``conda install ocrmypdf``    |
 +-------------------------------+-------------------------------+
@@ -635,7 +635,7 @@ versions likely work but have not been tested.
 
 .. code-block:: bash
 
-    pkg install py37-ocrmypdf
+    pkg install py38-ocrmypdf
 
 To install a more recent version, you could attempt to first install the system
 version with ``pkg``, then use ``pip install --user ocrmypdf``.
