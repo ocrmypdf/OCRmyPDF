@@ -13,6 +13,13 @@ The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
 
+v12.3.1
+=======
+
+-  Fixed issue with selection of text when using the hOCR renderer. (:issue:`813`)
+-  Fixed build errors with the Docker image by upgrading to a newer Ubuntu.
+   Also set the timezone of this image to UTC.
+
 v12.3.0
 =======
 
