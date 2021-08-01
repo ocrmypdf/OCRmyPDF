@@ -31,7 +31,6 @@
 import argparse
 import os
 import re
-from itertools import chain
 from math import atan, cos, sin
 from pathlib import Path
 from typing import Any, NamedTuple, Optional, Tuple, Union
@@ -297,13 +296,11 @@ class HocrTransform:
                 )
 
         found_lines = False
-        for line in sorted(
-            chain(
-                self.hocr.iterfind(self._child_xpath('span', 'ocr_header')),
-                self.hocr.iterfind(self._child_xpath('span', 'ocr_line')),
-                self.hocr.iterfind(self._child_xpath('span', 'ocr_textfloat')),
-            ),
-            key=self.topdown_position,
+        for line in (
+            element
+            for element in self.hocr.iterfind(self._child_xpath('span'))
+            if 'class' in element.attrib
+            and element.attrib['class'] in {'ocr_header', 'ocr_line', 'ocr_textfloat'}
         ):
             found_lines = True
             self._do_line(
