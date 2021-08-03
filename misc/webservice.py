@@ -36,7 +36,6 @@ from flask import (
     redirect,
     request,
     send_from_directory,
-    url_for,
 )
 from werkzeug.utils import secure_filename
 
