@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # webservice.py wrapper for OCRmyPDF
 # Copyright (C) 2019 James R. Barlow: github.com/jbarlow83
 #
