@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # webservice.py wrapper for OCRmyPDF
 # Copyright (C) 2019 James R. Barlow: github.com/jbarlow83
 #
@@ -36,7 +37,6 @@ from flask import (
     redirect,
     request,
     send_from_directory,
-    url_for,
 )
 from werkzeug.utils import secure_filename
 

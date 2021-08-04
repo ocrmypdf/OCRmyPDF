@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright (C) 2019 Ian Alexander: https://github.com/ianalexander
 # Copyright (C) 2020 James R Barlow: https://github.com/jbarlow83
 #
