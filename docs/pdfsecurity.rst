@@ -41,8 +41,8 @@ layer. First, it runs all PDFs through
 `pikepdf <https://github.com/pikepdf/pikepdf>`__, a library based on
 `qpdf <https://github.com/qpdf/qpdf>`__, a program that repairs PDFs
 with syntax errors. This is done because, in the author's experience, a
-significant number of PDFs in the wild especially those created by
-scanners are not well-formed files. qpdf makes it more likely that
+significant number of PDFs in the wild, especially those created by
+scanners, are not well-formed files. qpdf makes it more likely that
 OCRmyPDF will succeed, but offers no security guarantees. qpdf is also
 used to split the PDF into single page PDFs.
 
