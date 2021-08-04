@@ -232,7 +232,7 @@ jobs:
     name: Build Docker images
     needs: [wheel_sdist_linux, test_linux, test_macos, test_windows]
     runs-on: ubuntu-latest
-    if: secrets.DOCKERHUB_TOKEN
+    if: github.event_name != 'pull_request'
     steps:
       - name: Set image tag to release or branch
         run: echo "DOCKER_IMAGE_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
