@@ -12,11 +12,15 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v12.3.2
+=======
+
+-  Indicate support for flask 2.x, watcher 2.x (:issue:`815, 816`).
 
 v12.3.1
 =======
 
--  Fixed issue with selection of text when using the hOCR renderer. (:issue:`813`)
+-  Fixed issue with selection of text when using the hOCR renderer (:issue:`813`).
 -  Fixed build errors with the Docker image by upgrading to a newer Ubuntu.
    Also set the timezone of this image to UTC.
 
@@ -24,7 +28,7 @@ v12.3.0
 =======
 
 -  Fixed a regression introduced in Pillow 8.3.0. Pillow no longer rounds DPI
-   for image resolutions. We now account for this. (:issue:`802`)
+   for image resolutions. We now account for this (:issue:`802`).
 -  We no longer use some API calls that are deprecated in the latest versions of
    pikepdf.
 -  Improved error message when a language is requested that doesn't look like a
