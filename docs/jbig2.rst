@@ -9,7 +9,7 @@ encoding was patented for a long time. All known JBIG2 US patents have
 expired as of 2017, but it is possible that unknown patents exist.
 
 JBIG2 encoding is recommended for OCRmyPDF and is used to losslessly
-create smaller PDFs. If JBIG2 encoding not available, lower quality
+create smaller PDFs. If JBIG2 encoding is not available, lower quality
 encodings will be used.
 
 JBIG2 decoding is not patented and is performed automatically by most
