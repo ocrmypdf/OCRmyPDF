@@ -13,7 +13,7 @@ create smaller PDFs. If JBIG2 encoding is not available, lower quality
 encodings will be used.
 
 JBIG2 decoding is not patented and is performed automatically by most
-PDF viewers. It is widely supported has been part of the PDF
+PDF viewers. It is widely supported and has been part of the PDF
 specification since 2001.
 
 On macOS, Homebrew packages jbig2enc and OCRmyPDF includes it by
