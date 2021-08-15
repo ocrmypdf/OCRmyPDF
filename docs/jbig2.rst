@@ -9,11 +9,11 @@ encoding was patented for a long time. All known JBIG2 US patents have
 expired as of 2017, but it is possible that unknown patents exist.
 
 JBIG2 encoding is recommended for OCRmyPDF and is used to losslessly
-create smaller PDFs. If JBIG2 encoding not available, lower quality
+create smaller PDFs. If JBIG2 encoding is not available, lower quality
 encodings will be used.
 
 JBIG2 decoding is not patented and is performed automatically by most
-PDF viewers. It is widely supported has been part of the PDF
+PDF viewers. It is widely supported and has been part of the PDF
 specification since 2001.
 
 On macOS, Homebrew packages jbig2enc and OCRmyPDF includes it by
@@ -37,7 +37,7 @@ Lossy mode JBIG2
 
 OCRmyPDF provides lossy mode JBIG2 as an advanced feature. Users should
 `review the technical concerns with JBIG2 in lossy
-mode <https://abbyy.technology/en:kb:tip:jbig2_compression_and_ocr>`__
+mode <https://en.wikipedia.org/wiki/JBIG2#Disadvantages>`__
 and decide if this feature is acceptable for their use case.
 
 JBIG2 lossy mode does achieve higher compression ratios than any other
