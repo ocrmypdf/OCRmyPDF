@@ -37,7 +37,7 @@ Lossy mode JBIG2
 
 OCRmyPDF provides lossy mode JBIG2 as an advanced feature. Users should
 `review the technical concerns with JBIG2 in lossy
-mode <https://abbyy.technology/en:kb:tip:jbig2_compression_and_ocr>`__
+mode <https://en.wikipedia.org/wiki/JBIG2#Disadvantages>`__
 and decide if this feature is acceptable for their use case.
 
 JBIG2 lossy mode does achieve higher compression ratios than any other
