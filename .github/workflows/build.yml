@@ -18,8 +18,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04] #, ubuntu-20.04]
-        python: ["3.6"] #, "3.7", "3.8", "3.9"]
+        include:
+          - os: ubuntu-18.04
+            python: 3.6
+          - os: ubuntu-18.04
+            python: 3.7
+          - os: ubuntu-20.04
+            python: 3.8
+          - os: ubuntu-20.04
+            python: 3.9
+          - os: ubuntu-latest
+            python: 3.9
+          - os: ubuntu-latest
+            python: 3.9
+            tesseract5: true
 
     env:
       OS: ${{ matrix.os }}
@@ -34,6 +46,11 @@ jobs:
         name: Install Python
         with:
           python-version: ${{ matrix.python }}
+
+      - name: Install Tesseract 5
+        if: matrix.tesseract5
+        run: |
+          sudo add-apt-repository ppa:alex-p/tesseract-ocr-devel
 
       - name: Install common packages
         run: |
