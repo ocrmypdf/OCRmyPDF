@@ -12,6 +12,13 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v12.3.3
+=======
+
+-  watcher.py: fixed interpretation of boolean env vars (:issue:`821`).
+-  Adjust CI scripts to test Tesseract 5 betas.
+-  Document our support for the Tesseract 5 betas.
+
 v12.3.2
 =======
 
