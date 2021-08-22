@@ -37,14 +37,19 @@ import ocrmypdf
 
 # pylint: disable=logging-format-interpolation
 
+
+def getenv_bool(name: str, default: str = 'False'):
+    return os.getenv(name, default).lower() in ('true', 'yes', 'y', '1')
+
+
 INPUT_DIRECTORY = os.getenv('OCR_INPUT_DIRECTORY', '/input')
 OUTPUT_DIRECTORY = os.getenv('OCR_OUTPUT_DIRECTORY', '/output')
-OUTPUT_DIRECTORY_YEAR_MONTH = bool(os.getenv('OCR_OUTPUT_DIRECTORY_YEAR_MONTH', ''))
-ON_SUCCESS_DELETE = bool(os.getenv('OCR_ON_SUCCESS_DELETE', ''))
-DESKEW = bool(os.getenv('OCR_DESKEW', ''))
+OUTPUT_DIRECTORY_YEAR_MONTH = getenv_bool('OCR_OUTPUT_DIRECTORY_YEAR_MONTH')
+ON_SUCCESS_DELETE = getenv_bool('OCR_ON_SUCCESS_DELETE')
+DESKEW = getenv_bool('OCR_DESKEW')
 OCR_JSON_SETTINGS = json.loads(os.getenv('OCR_JSON_SETTINGS', '{}'))
 POLL_NEW_FILE_SECONDS = int(os.getenv('OCR_POLL_NEW_FILE_SECONDS', '1'))
-USE_POLLING = bool(os.getenv('OCR_USE_POLLING', ''))
+USE_POLLING = getenv_bool('OCR_USE_POLLING')
 LOGLEVEL = os.getenv('OCR_LOGLEVEL', 'INFO')
 PATTERNS = ['*.pdf', '*.PDF']
 
