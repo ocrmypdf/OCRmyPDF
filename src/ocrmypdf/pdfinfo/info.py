@@ -17,7 +17,7 @@ from functools import partial
 from math import hypot, inf, isclose
 from os import PathLike
 from pathlib import Path
-from typing import Container, Iterator, Optional, Tuple, Union
+from typing import Container, Dict, Iterator, List, Mapping, Optional, Tuple, Union
 from warnings import warn
 
 import pikepdf
@@ -36,7 +36,7 @@ Encoding = Enum(
     'Encoding', 'ccitt jpeg jpeg2000 jbig2 asciihex ascii85 lzw flate runlength'
 )
 
-FRIENDLY_COLORSPACE = {
+FRIENDLY_COLORSPACE: Dict[str, Colorspace] = {
     '/DeviceGray': Colorspace.gray,
     '/CalGray': Colorspace.gray,
     '/DeviceRGB': Colorspace.rgb,
@@ -54,7 +54,7 @@ FRIENDLY_COLORSPACE = {
     '/I': Colorspace.index,
 }
 
-FRIENDLY_ENCODING = {
+FRIENDLY_ENCODING: Dict[str, Encoding] = {
     '/CCITTFaxDecode': Encoding.ccitt,
     '/DCTDecode': Encoding.jpeg,
     '/JPXDecode': Encoding.jpeg2000,
@@ -68,7 +68,7 @@ FRIENDLY_ENCODING = {
     '/RL': Encoding.runlength,
 }
 
-FRIENDLY_COMP = {
+FRIENDLY_COMP: Dict[Colorspace, int] = {
     Colorspace.gray: 1,
     Colorspace.rgb: 3,
     Colorspace.cmyk: 4,
@@ -271,6 +271,9 @@ def _get_dpi(ctm_shorthand, image_size) -> Resolution:
 class ImageInfo:
     DPI_PREC = Decimal('1.000')
 
+    _comp: Optional[int]
+    _name: str
+
     def __init__(
         self,
         *,
@@ -303,14 +306,14 @@ class ImageInfo:
 
         self._bpc = int(pim.bits_per_component)
         try:
-            self._enc = FRIENDLY_ENCODING.get(pim.filters[0], 'image')
+            self._enc = FRIENDLY_ENCODING.get(pim.filters[0])
         except IndexError:
-            self._enc = '?'
+            self._enc = None
 
         try:
-            self._color = FRIENDLY_COLORSPACE.get(pim.colorspace, '?')
+            self._color = FRIENDLY_COLORSPACE.get(pim.colorspace)
         except NotImplementedError:
-            self._color = '?'
+            self._color = None
         if self._enc == Encoding.jpeg2000:
             self._color = Colorspace.jpeg2000
 
@@ -324,11 +327,14 @@ class ImageInfo:
             else:
                 self._comp = 3
         else:
-            self._comp = FRIENDLY_COMP.get(self._color, '?')
+            if isinstance(self._color, Colorspace):
+                self._comp = FRIENDLY_COMP.get(self._color)
+            else:
+                self._comp = None
 
             # Bit of a hack... infer grayscale if component count is uncertain
             # but encoding only supports monochrome.
-            if self._comp == '?' and self._enc in (Encoding.ccitt, Encoding.jbig2):
+            if self._comp is None and self._enc in (Encoding.ccitt, Encoding.jbig2):
                 self._comp = FRIENDLY_COMP[Colorspace.gray]
 
     @property
@@ -353,15 +359,15 @@ class ImageInfo:
 
     @property
     def color(self):
-        return self._color
+        return self._color if self._color is not None else '?'
 
     @property
     def comp(self):
-        return self._comp
+        return self._comp if self._comp is not None else '?'
 
     @property
     def enc(self):
-        return self._enc
+        return self._enc if self._enc is not None else 'image'
 
     @property
     def renderable(self):
@@ -661,6 +667,10 @@ def _pdf_pageinfo_concurrent(
 
 
 class PageInfo:
+    _has_text: Optional[bool]
+    _has_vector: Optional[bool]
+    _images: List[ImageInfo]
+
     def __init__(
         self,
         pdf: Pdf,
@@ -732,7 +742,7 @@ class PageInfo:
         else:
             self._has_vector = None  # i.e. "no information"
             self._has_text = None
-            self._images = None
+            self._images = []
 
         self._dpi = None
         if self._images:
@@ -749,7 +759,7 @@ class PageInfo:
 
     @property
     def has_text(self) -> bool:
-        return self._has_text
+        return bool(self._has_text)
 
     @property
     def has_corrupt_text(self) -> bool:
@@ -759,7 +769,7 @@ class PageInfo:
 
     @property
     def has_vector(self) -> bool:
-        return self._has_vector
+        return bool(self._has_vector)
 
     @property
     def width_inches(self) -> Decimal:
