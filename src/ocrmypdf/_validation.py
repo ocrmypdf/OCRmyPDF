@@ -142,8 +142,6 @@ def check_options_preprocessing(options):
 
 
 def _pages_from_ranges(ranges: str) -> Set[int]:
-    if is_iterable_notstr(ranges):
-        return set(ranges)
     pages: List[int] = []
     page_groups = ranges.replace(' ', '').split(',')
     for g in page_groups:
