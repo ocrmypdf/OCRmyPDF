@@ -5,7 +5,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-from abc import ABC, abstractmethod, abstractstaticmethod
+from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
 from collections import namedtuple
 from logging import Handler
@@ -325,11 +325,13 @@ class OcrEngine(ABC):
     Tesseract OCR.
     """
 
-    @abstractstaticmethod
+    @staticmethod
+    @abstractmethod
     def version() -> str:
         """Returns the version of the OCR engine."""
 
-    @abstractstaticmethod
+    @staticmethod
+    @abstractmethod
     def creator_tag(options: Namespace) -> str:
         """Returns the creator tag to identify this software's role in creating the PDF.
 
@@ -349,24 +351,28 @@ class OcrEngine(ABC):
         to the user, usually in an error message.
         """
 
-    @abstractstaticmethod
+    @staticmethod
+    @abstractmethod
     def languages(options: Namespace) -> AbstractSet[str]:
         """Returns the set of all languages that are supported by the engine.
 
         Languages are typically given in 3-letter ISO 3166-1 codes, but actually
         can be any value understood by the OCR engine."""
 
-    @abstractstaticmethod
+    @staticmethod
+    @abstractmethod
     def get_orientation(input_file: Path, options: Namespace) -> OrientationConfidence:
         """Returns the orientation of the image."""
 
-    @abstractstaticmethod
+    @staticmethod
+    @abstractmethod
     def generate_hocr(
         input_file: Path, output_hocr: Path, output_text: Path, options: Namespace
     ) -> None:
         """Called to produce a hOCR file and sidecar text file."""
 
-    @abstractstaticmethod
+    @staticmethod
+    @abstractmethod
     def generate_pdf(
         input_file: Path, output_pdf: Path, output_text: Path, options: Namespace
     ) -> None:
