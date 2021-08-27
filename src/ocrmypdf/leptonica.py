@@ -22,6 +22,7 @@ from functools import lru_cache
 from io import BytesIO, UnsupportedOperation
 from os import fspath
 from tempfile import TemporaryFile
+from typing import ContextManager, Type
 from warnings import warn
 
 from ocrmypdf.exceptions import MissingDependencyError
@@ -85,7 +86,7 @@ except ffi.error as e:
     ) from e
 
 
-class _LeptonicaErrorTrap_Redirect:
+class _LeptonicaErrorTrap_Redirect(ContextManager):
     """
     Context manager to trap errors reported by Leptonica < 1.79 or on Apple Silicon.
 
@@ -131,7 +132,7 @@ class _LeptonicaErrorTrap_Redirect:
         except Exception:
             self.leptonica_lock.release()
             raise
-        return self
+        return
 
     def __exit__(self, exc_type, exc_value, traceback):
         # Restore old stderr
@@ -171,7 +172,7 @@ tls = threading.local()
 tls.trap = None
 
 
-class _LeptonicaErrorTrap_Queue:
+class _LeptonicaErrorTrap_Queue(ContextManager):
     def __init__(self):
         self.queue = deque()
 
@@ -225,7 +226,7 @@ except (ffi.error, MemoryError):
     # Pre-1.79 Leptonica does not have leptSetStderrHandler
     # And some platforms, notably Apple ARM 64, do not allow the write+execute
     # memory needed to set up the callback function.
-    _LeptonicaErrorTrap = _LeptonicaErrorTrap_Redirect
+    _LeptonicaErrorTrap: Type[ContextManager] = _LeptonicaErrorTrap_Redirect
 else:
     # 1.79 have this new symbol
     _LeptonicaErrorTrap = _LeptonicaErrorTrap_Queue

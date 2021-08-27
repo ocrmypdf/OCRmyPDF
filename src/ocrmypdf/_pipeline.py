@@ -521,13 +521,12 @@ def create_ocr_image(image: Path, page_context: PageContext):
                 # be None)
                 bbox = [float(v) for v in textarea]
                 xyscale = tuple(float(coord) / 72.0 for coord in im.info['dpi'])
-                pixcoords = [
+                pixcoords = (
                     bbox[0] * xyscale[0],
                     im.height - bbox[3] * xyscale[1],
                     bbox[2] * xyscale[0],
                     im.height - bbox[1] * xyscale[1],
-                ]
-                pixcoords = [int(round(c)) for c in pixcoords]
+                )
                 log.debug('blanking %r', pixcoords)
                 draw.rectangle(pixcoords, fill=white)
                 # draw.rectangle(pixcoords, outline=pink)
