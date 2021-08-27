@@ -189,7 +189,7 @@ def is_file_writable(test_file: os.PathLike) -> bool:
                 with suppress(OSError):
                     p.unlink()
             return True
-    except (EnvironmentError, RuntimeError) as e:
+    except (OSError, RuntimeError) as e:
         log.debug(e)
         log.error(str(e))
         return False
@@ -273,7 +273,7 @@ def deprecated(func):
     def new_func(*args, **kwargs):
         warnings.simplefilter('always', DeprecationWarning)  # turn off filter
         warnings.warn(
-            "Call to deprecated function {}.".format(func.__name__),
+            f"Call to deprecated function {func.__name__}.",
             category=DeprecationWarning,
             stacklevel=2,
         )

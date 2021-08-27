@@ -37,7 +37,7 @@ app.secret_key = "secret"
 app.config['MAX_CONTENT_LENGTH'] = 50_000_000
 app.config.from_envvar("OCRMYPDF_WEBSERVICE_SETTINGS", silent=True)
 
-ALLOWED_EXTENSIONS = set(["pdf"])
+ALLOWED_EXTENSIONS = {"pdf"}
 
 
 def allowed_file(filename):

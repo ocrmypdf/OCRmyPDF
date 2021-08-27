@@ -421,7 +421,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
             try:
                 debug_log_handler.close()
                 log.removeHandler(debug_log_handler)
-            except EnvironmentError as e:
+            except OSError as e:
                 print(e, file=sys.stderr)
         cleanup_working_files(work_folder, options)
 

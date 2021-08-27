@@ -182,10 +182,10 @@ def _pages_from_ranges(ranges: str) -> Set[int]:
 
 def check_options_ocr_behavior(options):
     exclusive_options = sum(
-        [
+        
             (1 if opt else 0)
             for opt in (options.force_ocr, options.skip_text, options.redo_ocr)
-        ]
+        
     )
     if exclusive_options >= 2:
         raise BadArgsError("Choose only one of --force-ocr, --skip-text, --redo-ocr.")
@@ -302,7 +302,7 @@ def check_closed_streams(options):  # pragma: no cover
         if options.input_file == '-':
             log.error("Trying to read from stdin but stdin seems closed")
             return False
-        sys.stdin = open(os.devnull, 'r')
+        sys.stdin = open(os.devnull)
 
     if sys.stdout is None:
         if options.output_file == '-':

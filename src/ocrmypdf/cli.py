@@ -22,7 +22,7 @@ def numeric(basetype: Type[T], min_: Optional[T] = None, max_: Optional[T] = Non
     def _numeric(string):
         value = basetype(string)
         if (min_ is not None and value < min_) or (max_ is not None and value > max_):
-            msg = "%r not in valid range %r" % (string, (min_, max_))
+            msg = f"{string!r} not in valid range {(min_, max_)!r}"
             raise argparse.ArgumentTypeError(msg)
         return value
 

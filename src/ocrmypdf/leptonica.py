@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # © 2013-16: jbarlow83 from Github (https://github.com/jbarlow83)
 #
@@ -272,7 +271,7 @@ class LeptonicaObject:
         # Leptonica API uses double-pointers for its destroy APIs to prevent
         # dangling pointers. This means we need to put our single pointer,
         # cdata, in a temporary CDATA**.
-        pp = ffi.new('{} **'.format(cls.LEPTONICA_TYPENAME), cdata)
+        pp = ffi.new(f'{cls.LEPTONICA_TYPENAME} **', cdata)
         cls.cdata_destroy(pp)
 
 
@@ -844,7 +843,7 @@ class Box(LeptonicaObject):
 
     def __repr__(self):
         if self._cdata:
-            return '<leptonica.Box x={0} y={1} w={2} h={3}>'.format(
+            return '<leptonica.Box x={} y={} w={} h={}>'.format(
                 self.x, self.y, self.w, self.h
             )
         return '<leptonica.Box NULL>'
@@ -916,7 +915,7 @@ class Sel(LeptonicaObject):
         lines = [line.strip() for line in selstr.split('\n') if line.strip()]
         h = len(lines)
         w = len(lines[0])
-        lengths = set(len(line) for line in lines)
+        lengths = {len(line) for line in lines}
         if len(lengths) != 1:
             raise ValueError("All lines in selstr must be same length")
 

@@ -45,7 +45,7 @@ def _setup_unpaper_io(tmpdir: Path, input_file: Path) -> Tuple[Path, Path]:
                     im = im.convert(mode='1')
                 else:
                     im = im.convert(mode='RGB')
-            except IOError as e:
+            except OSError as e:
                 raise MissingDependencyError(
                     "Could not convert image with type " + im.mode
                 ) from e

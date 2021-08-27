@@ -135,7 +135,7 @@ class LTStateAwareChar(LTChar):
         return self._text
 
     def __repr__(self):
-        return '<%s %s matrix=%s rendermode=%r font=%r adv=%s text=%r>' % (
+        return '<{} {} matrix={} rendermode={!r} font={!r} adv={} text={!r}>'.format(
             self.__class__.__name__,
             bbox2str(self.bbox),
             matrix2str(self.matrix),

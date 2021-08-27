@@ -701,7 +701,7 @@ def test_sidecar_pagecount(resources, outpdf):
     pdfinfo = PdfInfo(resources / '3small.pdf')
     num_pages = len(pdfinfo)
 
-    with open(sidecar, 'r', encoding='utf-8') as f:
+    with open(sidecar, encoding='utf-8') as f:
         ocr_text = f.read()
 
     # There should a formfeed between each pair of pages, so the count of
@@ -722,7 +722,7 @@ def test_sidecar_nonempty(resources, outpdf):
         'tests/plugins/tesseract_cache.py',
     )
 
-    with open(sidecar, 'r', encoding='utf-8') as f:
+    with open(sidecar, encoding='utf-8') as f:
         ocr_text = f.read()
     assert 'the' in ocr_text
 

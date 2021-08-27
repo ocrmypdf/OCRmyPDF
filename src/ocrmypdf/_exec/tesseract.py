@@ -117,7 +117,7 @@ def get_languages():
         if line.startswith('Error'):
             raise MissingDependencyError(lang_error(output))
     _header, *rest = output.splitlines()
-    return set(lang.strip() for lang in rest)
+    return {lang.strip() for lang in rest}
 
 
 def tess_base_args(langs: List[str], engine_mode: Optional[int]) -> List[str]:
