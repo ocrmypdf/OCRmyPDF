@@ -20,6 +20,7 @@ from typing import List, Optional
 
 from PIL import Image
 
+from ocrmypdf.api import StrPath
 from ocrmypdf.exceptions import (
     MissingDependencyError,
     SubprocessOutputError,
@@ -250,7 +251,8 @@ def generate_hocr(
 
     # Reminder: test suite tesseract test plugins will break after any changes
     # to the number of order parameters here
-    args_tesseract.extend([input_file, prefix, 'hocr', 'txt'] + tessconfig)
+    args_tesseract.extend([os.fspath(input_file), os.fspath(prefix), 'hocr', 'txt'])
+    args_tesseract.extend(tessconfig)
     try:
         p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
         stdout = p.stdout
@@ -324,7 +326,8 @@ def generate_pdf(
     # Reminder: test suite tesseract test plugins might break after any changes
     # to the number of order parameters here
 
-    args_tesseract.extend([input_file, prefix, 'pdf', 'txt'] + tessconfig)
+    args_tesseract.extend([os.fspath(input_file), os.fspath(prefix), 'pdf', 'txt'])
+    args_tesseract.extend(tessconfig)
     try:
         p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
         stdout = p.stdout

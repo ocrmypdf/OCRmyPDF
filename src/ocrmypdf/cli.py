@@ -6,7 +6,7 @@
 
 
 import argparse
-from typing import Optional, Type, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 from ocrmypdf._version import PROGRAM_NAME as _PROGRAM_NAME
 from ocrmypdf._version import __version__ as _VERSION
@@ -14,7 +14,9 @@ from ocrmypdf._version import __version__ as _VERSION
 T = TypeVar('T')
 
 
-def numeric(basetype: Type[T], min_: Optional[T] = None, max_: Optional[T] = None):
+def numeric(
+    basetype: Callable[[Any], T], min_: Optional[T] = None, max_: Optional[T] = None
+):
     """Validator for numeric params"""
     min_ = basetype(min_) if min_ is not None else None
     max_ = basetype(max_) if max_ is not None else None

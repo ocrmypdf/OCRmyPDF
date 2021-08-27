@@ -31,7 +31,7 @@ except ModuleNotFoundError:
     coloredlogs = None
 
 
-StrPath = Union[os.PathLike, AnyStr]
+StrPath = Union[Path, AnyStr]
 PathOrIO = Union[BinaryIO, StrPath]
 
 _api_lock = threading.Lock()
