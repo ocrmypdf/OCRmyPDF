@@ -63,7 +63,7 @@ exclude_lines = [
 [tool.isort]
 profile = "black"
 known_first_party = "ocrmypdf"
-known_third_party = ["PIL","_cffi_backend","cffi","flask","img2pdf","pdfminer","pikepdf","pkg_resources","pluggy","pytest","reportlab","setuptools","sphinx_rtd_theme","tqdm","watchdog","werkzeug"]
+known_third_party = ["PIL", "_cffi_backend", "cffi", "flask", "img2pdf", "ocrmypdf", "pdfminer", "pikepdf", "pkg_resources", "pluggy", "pytest", "reportlab", "setuptools", "sphinx_rtd_theme", "tqdm", "watchdog", "werkzeug"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"

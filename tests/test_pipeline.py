@@ -79,9 +79,7 @@ def test_dpi_needed(image, text, vector, result, rgb_image, outdir):
             # Input:
             ('', '', '', '', ''),
             # Output:
-            (
-                ((1, 5), None),
-            ),
+            (((1, 5), None),),
         ),
         (
             'no_empty_values',
