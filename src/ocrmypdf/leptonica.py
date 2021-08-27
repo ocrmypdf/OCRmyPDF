@@ -66,7 +66,7 @@ if os.name == 'nt':
     # Loading zlib from other places could cause a version mismatch
     _zlib_path = os.path.join(os.path.dirname(_libpath), 'zlib1.dll')
     if not os.path.exists(_zlib_path):
-        _zlib_path = find_library('zlib')
+        _zlib_path = find_library('zlib') or ''
     try:
         zlib = ffi.dlopen(_zlib_path)
     except ffi.error as e:

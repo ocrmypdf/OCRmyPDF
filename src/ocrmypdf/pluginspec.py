@@ -197,7 +197,7 @@ def rasterize_pdf_page(
 
 
 @hookspec(firstresult=True)
-def filter_ocr_image(page: 'PageContext', image: 'Image') -> 'Image':
+def filter_ocr_image(page: 'PageContext', image: Image.Image) -> Image.Image:
     """Called to filter the image before it is sent to OCR.
 
     This is the image that OCR sees, not what the user sees when they view the

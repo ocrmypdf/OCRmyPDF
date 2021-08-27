@@ -365,6 +365,7 @@ def convert_to_jbig2(
     When the JBIG2 symbolic coder is not used, each JBIG2 stands on its own
     and needs no dictionary. Currently this must be lossless JBIG2.
     """
+    jbig2_globals_dict: Optional[Dictionary]
 
     _produce_jbig2_images(jbig2_groups, root, options, executor)
 

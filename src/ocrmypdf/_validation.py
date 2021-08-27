@@ -13,7 +13,7 @@ import sys
 import unicodedata
 from pathlib import Path
 from shutil import copyfileobj
-from typing import List, Set, Tuple, Union
+from typing import List, Set, Tuple
 
 import pikepdf
 import PIL
@@ -182,10 +182,8 @@ def _pages_from_ranges(ranges: str) -> Set[int]:
 
 def check_options_ocr_behavior(options):
     exclusive_options = sum(
-        
-            (1 if opt else 0)
-            for opt in (options.force_ocr, options.skip_text, options.redo_ocr)
-        
+        (1 if opt else 0)
+        for opt in (options.force_ocr, options.skip_text, options.redo_ocr)
     )
     if exclusive_options >= 2:
         raise BadArgsError("Choose only one of --force-ocr, --skip-text, --redo-ocr.")
