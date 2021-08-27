@@ -17,11 +17,21 @@ from functools import partial
 from math import hypot, inf, isclose
 from os import PathLike
 from pathlib import Path
-from typing import Container, Dict, Iterator, List, Mapping, Optional, Tuple, Union
+from typing import (
+    Container,
+    Dict,
+    Iterator,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Union,
+)
 from warnings import warn
 
 import pikepdf
-from pikepdf import Object, Pdf, PdfMatrix
+from pikepdf import Name, Object, Pdf, PdfInlineImage, PdfMatrix
 
 from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf.exceptions import EncryptedPdfError, InputFileError
@@ -86,16 +96,30 @@ def _is_unit_square(shorthand):
     return all(isclose(a, b, rel_tol=1e-3) for a, b in pairwise)
 
 
-XobjectSettings = namedtuple('XobjectSettings', ['name', 'shorthand', 'stack_depth'])
+class XobjectSettings(NamedTuple):
+    name: str
+    shorthand: Tuple[float, float, float, float, float, float]
+    stack_depth: int
 
-InlineSettings = namedtuple('InlineSettings', ['iimage', 'shorthand', 'stack_depth'])
 
-ContentsInfo = namedtuple(
-    'ContentsInfo',
-    ['xobject_settings', 'inline_images', 'found_vector', 'found_text', 'name_index'],
-)
+class InlineSettings(NamedTuple):
+    iimage: PdfInlineImage
+    shorthand: Tuple[float, float, float, float, float, float]
+    stack_depth: int
 
-TextboxInfo = namedtuple('TextboxInfo', ['bbox', 'is_visible', 'is_corrupt'])
+
+class ContentsInfo(NamedTuple):
+    xobject_settings: List[XobjectSettings]
+    inline_images: List[InlineSettings]
+    found_vector: bool
+    found_text: bool
+    name_index: Mapping[Object, List[XobjectSettings]]
+
+
+class TextboxInfo(NamedTuple):
+    bbox: Tuple[float, float, float, float]
+    is_visible: bool
+    is_corrupt: bool
 
 
 class VectorMarker:
@@ -146,8 +170,8 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
 
     stack = []
     ctm = PdfMatrix(initial_shorthand)
-    xobject_settings = []
-    inline_images = []
+    xobject_settings: List[XobjectSettings] = []
+    inline_images: List[InlineSettings] = []
     name_index = defaultdict(lambda: [])
     found_vector = False
     found_text = False
