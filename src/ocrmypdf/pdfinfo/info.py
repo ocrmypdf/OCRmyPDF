@@ -113,7 +113,7 @@ class ContentsInfo(NamedTuple):
     inline_images: List[InlineSettings]
     found_vector: bool
     found_text: bool
-    name_index: Mapping[Object, List[XobjectSettings]]
+    name_index: Mapping[str, List[XobjectSettings]]
 
 
 class TextboxInfo(NamedTuple):
@@ -209,7 +209,7 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
                 name=image_name, shorthand=ctm.shorthand, stack_depth=len(stack)
             )
             xobject_settings.append(settings)
-            name_index[image_name].append(settings)
+            name_index[str(image_name)].append(settings)
         elif operator == 'INLINE IMAGE':  # BI/ID/EI are grouped into this
             iimage = operands[0]
             inline = InlineSettings(
