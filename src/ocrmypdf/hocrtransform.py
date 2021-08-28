@@ -349,7 +349,7 @@ class HocrTransform:
         interword_spaces: bool,
         show_bounding_boxes: bool,
     ):
-        if not line:
+        if line is not None:
             return
         pxl_line_coords = self.element_coordinates(line)
         line_box = self.pt_from_pixel(pxl_line_coords)
