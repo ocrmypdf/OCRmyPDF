@@ -86,6 +86,14 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             libexempi8
 
+      - name: Install Ubuntu packages for PyPy
+        if: startsWith(matrix.python, 'pypy')
+        run: |
+          sudo apt-get install -y --no-install-recommends \
+            libxml2-dev \
+            libxslt1-dev \
+            pypy3-dev
+
       - name: Install Python packages
         run: |
           python -m pip install .[test]
