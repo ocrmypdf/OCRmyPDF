@@ -73,17 +73,24 @@ def strip_invisible_text(pdf, page):
         except AttributeError:
             return str(op).encode('ascii')
 
-    lines = []
+    if hasattr(pikepdf, 'unparse_content_stream'):
+        content_stream = pikepdf.unparse_content_stream(stream)
+    else:
+        lines = []
 
-    for operands, operator in stream:
-        if operator == pikepdf.Operator('INLINE IMAGE'):
-            iim = operands[0]
-            line = iim.unparse()
-        else:
-            line = b' '.join(convert(op) for op in operands) + b' ' + operator.unparse()
-        lines.append(line)
+        for operands, operator in stream:
+            if operator == pikepdf.Operator('INLINE IMAGE'):
+                iim = operands[0]
+                line = iim.unparse()
+            else:
+                line = (
+                    b' '.join(convert(op) for op in operands)
+                    + b' '
+                    + operator.unparse()
+                )
+            lines.append(line)
 
-    content_stream = b'\n'.join(lines)
+        content_stream = b'\n'.join(lines)
     page.Contents = pikepdf.Stream(pdf, content_stream)
 
 
