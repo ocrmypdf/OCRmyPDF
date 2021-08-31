@@ -29,6 +29,10 @@ jobs:
             python: 3.9
           - os: ubuntu-latest
             python: 3.9
+          - os: ubuntu-20.04
+            python: "pypy-3.6"
+          - os: ubuntu-latest
+            python: "pypy-3.7"
           - os: ubuntu-latest
             python: 3.9
             tesseract5: true
