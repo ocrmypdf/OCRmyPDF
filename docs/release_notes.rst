@@ -12,6 +12,18 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+v12.4.0
+=======
+
+-  When grafting text layers, use pikepdf's ``unparse_content_stream`` if available.
+-  Confirmed support for pluggy 1.0. (Thanks @QuLogic.)
+-  Fixed some typing issues, improved pre-commit settings, and fixed issues
+   flagged by linters.
+-  PyPy 7.3.3 (=Python 3.6) is now supported. Note that PyPy does not necessarily
+   run faster, because the vast majority of OCRmyPDF's execution time is spent
+   running OCR or generally executing native code. However, PyPy may bring speed
+   improvements in some areas.
+
 v12.3.3
 =======
 
