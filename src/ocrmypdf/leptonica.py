@@ -12,6 +12,7 @@
 import argparse
 import logging
 import os
+import platform
 import sys
 import threading
 from collections import deque
@@ -439,6 +440,9 @@ class Pix(LeptonicaObject):
         bio = BytesIO()
         pillow_image.save(bio, format='png', compress_level=1)
         py_buffer = bio.getbuffer()
+        if platform.python_implementation() == 'PyPy':
+            # PyPy complains that it cannot do from_buffer(memoryview)
+            py_buffer = bytes(py_buffer)
         c_buffer = ffi.from_buffer(py_buffer)
         with _LeptonicaErrorTrap():
             pix = Pix(lept.pixReadMem(c_buffer, len(c_buffer)))
