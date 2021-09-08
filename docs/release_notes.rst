@@ -12,6 +12,12 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs.
 
+.. note::
+
+   Python 3.6 reaches end of life on December 23, 2021. We will end support
+   for Python 3.6 around that time. The change will be marked with a major
+   release.
+
 v12.4.0
 =======
 
