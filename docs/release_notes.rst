@@ -18,6 +18,13 @@ wish to use some of its features for working with PDFs.
    for Python 3.6 around that time. The change will be marked with a major
    release.
 
+next
+====
+
+-  Fixed build failure for the combination of PyPy 3.6 and pikepdf 3.0. This
+   combination can work in a source build but does not work with wheels.
+-  Accepted bot that wanted to upgrade our deprecated requirements.txt.
+
 v12.4.0
 =======
 
