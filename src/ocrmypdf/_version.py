@@ -5,9 +5,9 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-import pkg_resources
+from importlib.metadata import version as _package_version
 
 PROGRAM_NAME = 'ocrmypdf'
 
 # Official PEP 396
-__version__ = pkg_resources.get_distribution('ocrmypdf').version
+__version__ = _package_version('ocrmypdf')

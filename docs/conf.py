@@ -88,11 +88,10 @@ if on_rtd:
     ]
     sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
-
-from pkg_resources import get_distribution, DistributionNotFound
+from importlib.metadata import version as package_version
 
 # The full version, including alpha/beta/rc tags.
-release = get_distribution('ocrmypdf').version
+release = package_version('ocrmypdf').version
 version = '.'.join(release.split('.')[:2])
 
 
