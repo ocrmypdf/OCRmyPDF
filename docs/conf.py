@@ -88,7 +88,7 @@ if on_rtd:
     ]
     sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
-from importlib.metadata import version as package_version
+from importlib_metadata import version as package_version
 
 # The full version, including alpha/beta/rc tags.
 release = package_version('ocrmypdf').version

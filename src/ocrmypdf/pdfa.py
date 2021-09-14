@@ -10,10 +10,10 @@ Utilities for PDF/A production and confirmation with Ghostspcript.
 """
 
 import base64
-import importlib.resources
 from pathlib import Path
 from typing import Dict, Iterator, Union
 
+import importlib_resources
 import pikepdf
 import pkg_resources  # deprecated
 
@@ -104,7 +104,7 @@ def generate_pdfa_ps(target_filename: Path, icc: str = 'sRGB'):
     if icc != 'sRGB':
         raise NotImplementedError("Only supporting sRGB")
 
-    bytes_icc_profile = importlib.resources.read_binary(
+    bytes_icc_profile = importlib_resources.read_binary(
         'ocrmypdf.data', SRGB_ICC_PROFILE_NAME
     )
     ps = '\n'.join(_make_postscript(icc, bytes_icc_profile, 3))

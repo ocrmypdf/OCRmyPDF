@@ -5,7 +5,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-from importlib.metadata import version as _package_version
+from importlib_metadata import version as _package_version
 
 PROGRAM_NAME = 'ocrmypdf'
 
