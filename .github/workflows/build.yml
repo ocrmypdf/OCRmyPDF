@@ -6,6 +6,7 @@ on:
       - master
       - ci
       - release/*
+      - feature/*
     tags:
       - v*
     paths-ignore:

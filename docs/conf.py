@@ -56,7 +56,7 @@ master_doc = 'index'
 # General information about the project.
 project = 'ocrmypdf'
 copyright = (
-    '2020, James R. Barlow. Licensed under Creative Commons Attribution-ShareAlike 4.0.'
+    '2021, James R. Barlow. Licensed under Creative Commons Attribution-ShareAlike 4.0.'
 )
 author = 'James R. Barlow'
 
@@ -88,11 +88,10 @@ if on_rtd:
     ]
     sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
-
-from pkg_resources import get_distribution, DistributionNotFound
+from importlib_metadata import version as package_version
 
 # The full version, including alpha/beta/rc tags.
-release = get_distribution('ocrmypdf').version
+release = package_version('ocrmypdf').version
 version = '.'.join(release.split('.')[:2])
 
 
