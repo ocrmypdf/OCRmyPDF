@@ -7,14 +7,11 @@ repos:
       - id: check-toml
       - id: check-yaml
       - id: debug-statements
-  - repo: https://github.com/asottile/seed-isort-config
-    rev: v2.2.0
-    hooks:
-      - id: seed-isort-config
-  - repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.9.3 # pick the isort version you'd like to use from https://github.com/pre-commit/mirrors-isort/releases
+  - repo: https://github.com/pycqa/isort
+    rev: 5.9.3
     hooks:
       - id: isort
+        args: ["--profile", "black"]
   - repo: https://github.com/psf/black
     rev: 21.7b0
     hooks:
