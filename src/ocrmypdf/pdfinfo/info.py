@@ -30,8 +30,14 @@ from typing import (
 )
 from warnings import warn
 
-import pikepdf
-from pikepdf import Name, Object, Pdf, PdfInlineImage, PdfMatrix
+from pikepdf import (
+    Object,
+    Pdf,
+    PdfImage,
+    PdfInlineImage,
+    PdfMatrix,
+    parse_content_stream,
+)
 
 from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf.exceptions import EncryptedPdfError, InputFileError
@@ -181,9 +187,7 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
     operator_whitelist = ' '.join(vector_ops | text_showing_ops | image_ops)
 
     for n, graphobj in enumerate(
-        _normalize_stack(
-            pikepdf.parse_content_stream(contentstream, operator_whitelist)
-        )
+        _normalize_stack(parse_content_stream(contentstream, operator_whitelist))
     ):
         operands, operator = graphobj
         if operator == 'q':
@@ -303,18 +307,20 @@ class ImageInfo:
         *,
         name='',
         pdfimage: Optional[Object] = None,
-        inline: Optional[Object] = None,
+        inline: Optional[PdfInlineImage] = None,
         shorthand=None,
     ):
         self._name = str(name)
         self._shorthand = shorthand
 
+        pim: Union[PdfInlineImage, PdfImage]
+
         if inline is not None:
             self._origin = 'inline'
-            pim = inline.iimage
+            pim = inline
         elif pdfimage is not None:
             self._origin = 'xobject'
-            pim = pikepdf.PdfImage(pdfimage)
+            pim = PdfImage(pdfimage)
         else:
             raise ValueError("Either pdfimage or inline must be set")
         self._width = pim.width
@@ -335,7 +341,7 @@ class ImageInfo:
             self._enc = None
 
         try:
-            self._color = FRIENDLY_COLORSPACE.get(pim.colorspace)
+            self._color = FRIENDLY_COLORSPACE.get(pim.colorspace or '')
         except NotImplementedError:
             self._color = None
         if self._enc == Encoding.jpeg2000:
@@ -418,7 +424,7 @@ def _find_inline_images(contentsinfo: ContentsInfo) -> Iterator[ImageInfo]:
 
     for n, inline in enumerate(contentsinfo.inline_images):
         yield ImageInfo(
-            name='inline-%02d' % n, shorthand=inline.shorthand, inline=inline
+            name='inline-%02d' % n, shorthand=inline.shorthand, inline=inline.iimage
         )
 
 
@@ -613,7 +619,7 @@ def _pdf_pageinfo_sync_init(pdf: Pdf, infile: Path, pdfminer_loglevel):
 
     # If the pdf is not opened, open a copy for our worker process to use
     if pdf is None:
-        worker_pdf = pikepdf.open(infile)
+        worker_pdf = Pdf.open(infile)
 
         def on_process_close():
             worker_pdf.close()
@@ -627,7 +633,7 @@ def _pdf_pageinfo_sync(args):
     pdf = thread_pdf if thread_pdf is not None else worker_pdf
     with ExitStack() as stack:
         if not pdf:  # When called with SerialExecutor
-            pdf = stack.enter_context(pikepdf.open(infile))
+            pdf = stack.enter_context(Pdf.open(infile))
         page = PageInfo(pdf, pageno, infile, check_pages, detailed_analysis)
         return page
 
@@ -888,7 +894,7 @@ class PdfInfo:
         if check_pages is None:
             check_pages = range(0, 1_000_000_000)
 
-        with pikepdf.open(infile) as pdf:
+        with Pdf.open(infile) as pdf:
             if pdf.is_encrypted:
                 raise EncryptedPdfError()  # Triggered by encryption with empty passwd
             self._pages = _pdf_pageinfo_concurrent(
