@@ -29,6 +29,7 @@ v12.5.0
    importlib-metadata and importlib-resources.
 -  Fixed regression in hocrtransform causing text to be omitted when this
    renderer was used.
+-  Fixed some typing errors.
 
 v12.4.0
 =======
