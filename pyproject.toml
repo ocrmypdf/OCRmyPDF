@@ -72,3 +72,11 @@ testpaths = ["tests"]
 addopts = "-n auto"
 markers = ["slow"]
 filterwarnings = ["ignore:.*XMLParser.*:DeprecationWarning"]
+
+[tool.mypy]
+
+[[tool.mypy.overrides]]
+module = [
+  'pluggy', 'tqdm', 'coloredlogs', 'img2pdf', 'cffi', '_cffi_backend', 'pdfminer.*', 'reportlab.*'
+]
+ignore_missing_imports = true
