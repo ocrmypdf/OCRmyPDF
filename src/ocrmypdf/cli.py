@@ -340,8 +340,9 @@ Online documentation is located at:
             "Control how PDF is optimized after processing:"
             "0 - do not optimize; "
             "1 - do safe, lossless optimizations (default); "
-            "2 - do some lossy optimizations; "
-            "3 - do aggressive lossy optimizations (including lossy JBIG2)"
+            "2 - do lossy JPEG and JPEG2000 optimizations; "
+            "3 - do more aggressive lossy JPEG and JPEG2000 optimizations. "
+            "To enable lossy JBIG2, see --jbig2-lossy."
         ),
     )
     optimizing.add_argument(
@@ -379,7 +380,8 @@ Online documentation is located at:
         action='store_true',
         help=(
             "Enable JBIG2 lossy mode (better compression, not suitable for some "
-            "use cases - see documentation)."
+            "use cases - see documentation). Only takes effect if --optimize 1 or "
+            "higher is also enabled."
         ),
     )
     optimizing.add_argument(
