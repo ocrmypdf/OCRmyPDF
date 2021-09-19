@@ -97,7 +97,7 @@ def extract_image_filter(
         return None  # Don't mess with wide gamut images
 
     if filtdp[0] == Name.JPXDecode:
-        log.debug(f"Skipping JPEG2000 iamge, xref {xref}")
+        log.debug(f"Skipping JPEG2000 image, xref {xref}")
         return None  # Don't do JPEG2000
 
     if filtdp[0] == Name.CCITTFaxDecode and filtdp[1].get('/K', 0) >= 0:
