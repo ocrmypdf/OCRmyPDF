@@ -15,7 +15,6 @@ from collections.abc import Mapping
 from contextlib import suppress
 from distutils.version import LooseVersion, Version
 from functools import lru_cache
-from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, CompletedProcess, Popen
 from subprocess import run as subprocess_run
 from typing import Callable, Optional, Type, Union

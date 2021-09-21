@@ -287,7 +287,7 @@ def test_srgb_in_unicode_path(tmp_path):
 
 
 def test_kodak_toc(resources, outpdf):
-    _output = check_ocrmypdf(
+    check_ocrmypdf(
         resources / 'kcs.pdf',
         outpdf,
         '--output-type',

@@ -533,12 +533,15 @@ def transcode_pngs(
         _transcode_png(pike, filename, xref)
 
 
+DEFAULT_EXECUTOR = SerialExecutor()
+
+
 def optimize(
     input_file: Path,
     output_file: Path,
     context,
     save_settings,
-    executor: Executor = SerialExecutor(),
+    executor: Executor = DEFAULT_EXECUTOR,
 ) -> None:
     options = context.options
     if options.optimize == 0:

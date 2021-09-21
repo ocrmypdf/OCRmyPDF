@@ -226,7 +226,7 @@ def check_pdf(input_file: Path) -> bool:
             except (
                 # Workaround for a problematic pikepdf version
                 # pragma: no cover
-                getattr(pikepdf, 'ForeignObjectError')
+                pikepdf.ForeignObjectError
                 if pikepdf.__version__ == '2.1.0'
                 else NeverRaise
             ):

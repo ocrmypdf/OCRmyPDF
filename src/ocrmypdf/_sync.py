@@ -399,7 +399,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
                 return ExitCode.invalid_output_pdf
             report_output_file_size(options, start_input_file, options.output_file)
 
-    except (KeyboardInterrupt if not api else NeverRaise) as e:
+    except (KeyboardInterrupt if not api else NeverRaise):
         if options.verbose >= 1:
             log.exception("KeyboardInterrupt")
         else:
@@ -413,7 +413,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
         else:
             log.error(type(e).__name__)
         return e.exit_code
-    except (Exception if not api else NeverRaise) as e:  # pylint: disable=broad-except
+    except (Exception if not api else NeverRaise):  # pylint: disable=broad-except
         log.exception("An exception occurred while executing the pipeline")
         return ExitCode.other_error
     finally:

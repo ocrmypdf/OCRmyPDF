@@ -9,7 +9,7 @@
 import atexit
 import logging
 import re
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from contextlib import ExitStack
 from decimal import Decimal
 from enum import Enum
@@ -449,7 +449,7 @@ def _image_xobjects(container) -> Iterator[Tuple[Object, str]]:
     xobjs = resources['/XObject'].as_dict()
     for xobj in xobjs:
         candidate: Object = xobjs[xobj]
-        if not '/Subtype' in candidate:
+        if '/Subtype' not in candidate:
             continue
         if candidate['/Subtype'] == '/Image':
             pdfimage = candidate
@@ -877,6 +877,9 @@ class PageInfo:
         )
 
 
+DEFAULT_EXECUTOR = SerialExecutor()
+
+
 class PdfInfo:
     """Get summary information about a PDF"""
 
@@ -888,7 +891,7 @@ class PdfInfo:
         progbar: bool = False,
         max_workers: int = None,
         check_pages=None,
-        executor: Executor = SerialExecutor(),
+        executor: Executor = DEFAULT_EXECUTOR,
     ):
         self._infile = infile
         if check_pages is None:

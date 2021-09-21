@@ -20,7 +20,6 @@ from typing import List, Optional
 
 from PIL import Image
 
-from ocrmypdf.api import StrPath
 from ocrmypdf.exceptions import (
     MissingDependencyError,
     SubprocessOutputError,

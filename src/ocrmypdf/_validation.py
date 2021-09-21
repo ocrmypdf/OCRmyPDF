@@ -26,12 +26,7 @@ from ocrmypdf.exceptions import (
     MissingDependencyError,
     OutputFileAccessError,
 )
-from ocrmypdf.helpers import (
-    is_file_writable,
-    is_iterable_notstr,
-    monotonic,
-    safe_symlink,
-)
+from ocrmypdf.helpers import is_file_writable, monotonic, safe_symlink
 from ocrmypdf.hocrtransform import HOCR_OK_LANGS
 from ocrmypdf.subprocess import check_external_program
 
@@ -68,7 +63,7 @@ def check_options_languages(options, ocr_engine_languages):
     missing_languages = options.languages - ocr_engine_languages
     if missing_languages:
         msg = (
-            f"OCR engine does not have language data for the following "
+            "OCR engine does not have language data for the following "
             "requested languages: \n"
         )
         msg += '\n'.join(lang for lang in missing_languages)

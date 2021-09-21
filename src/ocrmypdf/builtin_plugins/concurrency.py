@@ -21,7 +21,7 @@ import sys
 import threading
 from contextlib import suppress
 from multiprocessing.pool import Pool, ThreadPool
-from typing import Callable, Iterable, Optional, Tuple, Type, Union
+from typing import Callable, Iterable, Type, Union
 
 from tqdm import tqdm
 

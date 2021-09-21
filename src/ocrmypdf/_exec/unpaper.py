@@ -96,12 +96,12 @@ def run(
         try:
             with Image.open(output_pnm) as imout:
                 imout.save(output_file, dpi=(dpi, dpi))
-        except (FileNotFoundError, OSError):
+        except OSError as e:
             raise SubprocessOutputError(
                 "unpaper: failed to produce the expected output file. "
                 + " Called with: "
                 + str(args_unpaper)
-            ) from None
+            ) from e
 
 
 def validate_custom_args(args: str) -> List[str]:
