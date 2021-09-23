@@ -113,7 +113,7 @@ SHIMS = [
 ]
 
 
-def fix_windows_args(program, args, env):
+def fix_windows_args(program: str, args, env):
     """Adjust our desired program and command line arguments for use on Windows"""
 
     if sys.version_info < (3, 8):
