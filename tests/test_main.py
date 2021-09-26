@@ -881,3 +881,29 @@ def test_image_dpi_threshold(resources, outpdf):
         'tests/plugins/tesseract_noop.py',
     )
     assert outpdf.exists()
+
+
+def test_outputtype_none_bad_setup(resources, outpdf):
+    p, _out, err = run_ocrmypdf(
+        resources / 'trivial.pdf',
+        outpdf,
+        '--output-type=none',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+    )
+    assert p.returncode == ExitCode.bad_args
+    assert 'Set the output file to' in err
+
+
+def test_outputtype_none(resources, outtxt):
+    p, _out, err = run_ocrmypdf(
+        resources / 'trivial.pdf',
+        os.devnull,
+        '--output-type=none',
+        '--sidecar',
+        outtxt,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+    )
+    assert p.returncode == ExitCode.ok
+    assert outtxt.exists()

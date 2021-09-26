@@ -26,7 +26,7 @@ from ocrmypdf.exceptions import (
     MissingDependencyError,
     OutputFileAccessError,
 )
-from ocrmypdf.helpers import is_file_writable, monotonic, safe_symlink
+from ocrmypdf.helpers import is_file_writable, monotonic, safe_symlink, samefile
 from ocrmypdf.hocrtransform import HOCR_OK_LANGS
 from ocrmypdf.subprocess import check_external_program
 
@@ -75,12 +75,18 @@ def check_options_output(options):
     is_latin = options.languages.issubset(HOCR_OK_LANGS)
 
     if options.pdf_renderer.startswith('hocr') and not is_latin:
-        msg = (
+        log.warning(
             "The 'hocr' PDF renderer is known to cause problems with one "
             "or more of the languages in your document.  Use "
-            "--pdf-renderer auto (the default) to avoid this issue."
+            "`--pdf-renderer auto` (the default) to avoid this issue."
         )
-        log.warning(msg)
+
+    if options.output_type == 'none' and options.output_file != os.devnull:
+        raise BadArgsError(
+            "Since you specified `--pdf-renderer none`, the output file "
+            f"{options.output_file} cannot be produced. Set the output file to "
+            f"{os.devnull} to suppress this message."
+        )
 
     lossless_reconstruction = False
     if not any(
@@ -106,6 +112,10 @@ def check_options_sidecar(options):
         if options.output_file == '-':
             raise BadArgsError(
                 "--sidecar filename must be specified when output file is stdout."
+            )
+        elif options.output_file == os.devnull:
+            raise BadArgsError(
+                "--sidecar filename must be specified when output file is /dev/null or NUL."
             )
         options.sidecar = options.output_file + '.txt'
     if options.sidecar == options.input_file or options.sidecar == options.output_file:

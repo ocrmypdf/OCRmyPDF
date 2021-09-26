@@ -6,6 +6,7 @@
 
 
 import logging
+import os
 from unittest.mock import patch
 
 import pikepdf
@@ -298,3 +299,8 @@ def test_sidecar_equals_output(resources, no_outpdf):
     op = no_outpdf
     with pytest.raises(BadArgsError, match=r'--sidecar'):
         run_ocrmypdf_api(resources / 'trivial.pdf', op, '--sidecar', op)
+
+
+def test_devnull_sidecar(resources):
+    with pytest.raises(BadArgsError, match=r'--sidecar.*NUL'):
+        run_ocrmypdf_api(resources / 'trivial.pdf', os.devnull, '--sidecar')

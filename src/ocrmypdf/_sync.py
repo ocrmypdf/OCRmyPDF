@@ -290,15 +290,16 @@ def exec_concurrent(context: PdfContext, executor: Executor):
         # Copy text file to destination
         copy_final(text, options.sidecar, context)
 
-    # Merge layers to one single pdf
-    pdf = ocrgraft.finalize()
+    if options.output_type != 'none':
+        # Merge layers to one single pdf
+        pdf = ocrgraft.finalize()
 
-    # PDF/A and metadata
-    log.info("Postprocessing...")
-    pdf = post_process(pdf, context, executor)
+        # PDF/A and metadata
+        log.info("Postprocessing...")
+        pdf = post_process(pdf, context, executor)
 
-    # Copy PDF file to destination
-    copy_final(pdf, options.output_file, context)
+        # Copy PDF file to destination
+        copy_final(pdf, options.output_file, context)
 
 
 def configure_debug_logging(log_filename: Path, prefix: str = ''):

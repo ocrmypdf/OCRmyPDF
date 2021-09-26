@@ -147,7 +147,7 @@ Online documentation is located at:
     )
     parser.add_argument(
         '--output-type',
-        choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'],
+        choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3', 'none'],
         default='pdfa',
         help="Choose output type. 'pdfa' creates a PDF/A-2b compliant file for "
         "long term archiving (default, recommended) but may not suitable "
@@ -155,7 +155,8 @@ Online documentation is located at:
         "also has problems with full Unicode text. 'pdf' attempts to "
         "preserve file contents as much as possible. 'pdf-a1' creates a "
         "PDF/A1-b file. 'pdf-a2' is equivalent to 'pdfa'. 'pdf-a3' creates a "
-        "PDF/A3-b file.",
+        "PDF/A3-b file. 'none' will produce no output, which may be helpful if "
+        "only the --sidecar is desired.",
     )
 
     # Use null string '\0' as sentinel to indicate the user supplied no argument,
