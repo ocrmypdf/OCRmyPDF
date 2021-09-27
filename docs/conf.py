@@ -91,7 +91,7 @@ if on_rtd:
 from importlib_metadata import version as package_version
 
 # The full version, including alpha/beta/rc tags.
-release = package_version('ocrmypdf').version
+release = package_version('ocrmypdf')
 version = '.'.join(release.split('.')[:2])
 
 
