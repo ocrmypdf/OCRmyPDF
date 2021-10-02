@@ -18,6 +18,14 @@ wish to use some of its features for working with PDFs.
    for Python 3.6 around that time. The change will be marked with a major
    release.
 
+v12.6.0
+=======
+
+-  Implemented ``--output-type=none`` to skip producing PDFs for applications that
+   only want sidecar files (:issue:`787`).
+-  Fixed ambiguities in descriptions of behavior of ``--jbig2-lossy``.
+-  Various improvements to documentation.
+
 v12.5.0
 =======
 
