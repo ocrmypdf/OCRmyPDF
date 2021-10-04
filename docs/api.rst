@@ -12,7 +12,7 @@ subprocess call anyway, as this provides isolation of its activities.
 Example
 =======
 
-OCRmyPDF one high-level function to run its main engine from an
+OCRmyPDF provides one high-level function to run its main engine from an
 application. The parameters are symmetric to the command line arguments
 and largely have the same functions.
 
@@ -23,7 +23,7 @@ and largely have the same functions.
     if __name__ == '__main__':  # To ensure correct behavior on Windows and macOS
         ocrmypdf.ocr('input.pdf', 'output.pdf', deskew=True)
 
-With a few exceptions, all of the command line arguments are available
+With some exceptions, all of the command line arguments are available
 and may be passed as equivalent keywords.
 
 A few differences are that ``verbose`` and ``quiet`` are not available.
@@ -41,29 +41,29 @@ execution. To do this, it will:
 - manage the signal flags of its worker processes
 - execute other subprocesses (forking and executing other programs)
 
-The Python process that calls ``ocrmypdf.ocr()`` must be sufficiently
+The Python process that calls :func:`ocrmypdf.ocr()` must be sufficiently
 privileged to perform these actions.
 
 There currently is no option to manage how jobs are scheduled other
 than the argument ``jobs=`` which will limit the number of worker
 processes.
 
-Creating a child process to call ``ocrmypdf.ocr()`` is suggested. That
+Creating a child process to call :func:`ocrmypdf.ocr()` is suggested. That
 way your application will survive and remain interactive even if
 OCRmyPDF fails for any reason.
 
-Programs that call ``ocrmypdf.ocr()`` should also install a SIGBUS signal
+Programs that call :func:`ocrmypdf.ocr()` should also install a SIGBUS signal
 handler (except on Windows), to raise an exception if access to a memory
 mapped file fails. OCRmyPDF may use memory mapping.
 
-``ocrmypdf.ocr()`` will take a threading lock to prevent multiple runs of itself
+:func:`ocrmypdf.ocr()` will take a threading lock to prevent multiple runs of itself
 in the same Python interpreter process. This is not thread-safe, because of how
 OCRmyPDF's plugins and Python's library import system work. If you need to parallelize
 OCRmyPDF, use processes.
 
 .. warning::
 
-    On Windows and macOS, the script that calls ``ocrmypdf.ocr()`` must be
+    On Windows and macOS, the script that calls :func:`ocrmypdf.ocr()` must be
     protected by an "ifmain" guard (``if __name__ == '__main__'``). If you do
     not take at least one of these steps, process semantics will prevent
     OCRmyPDF from working correctly.
@@ -96,7 +96,7 @@ Exceptions
 
 OCRmyPDF may throw standard Python exceptions, ``ocrmypdf.exceptions.*``
 exceptions, some exceptions related to multiprocessing, and
-``KeyboardInterrupt``. The parent process should provide an exception
+:exc:`KeyboardInterrupt`. The parent process should provide an exception
 handler. OCRmyPDF will clean up its temporary files and worker processes
 automatically when an exception occurs.
 
