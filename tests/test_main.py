@@ -745,14 +745,13 @@ def test_pdfa_n(pdfa_level, resources, outpdf):
     assert pdfa_info['conformance'] == f'PDF/A-{pdfa_level}B'
 
 
-@pytest.mark.skipif(
-    PIL.__version__ < '5.0.0', reason="Pillow < 5.0.0 doesn't raise the exception"
-)
-@pytest.mark.slow
-def test_decompression_bomb(resources, outpdf):
+def test_decompression_bomb_error(resources, outpdf):
     p, _out, err = run_ocrmypdf(resources / 'hugemono.pdf', outpdf)
-    assert 'decompression bomb' in err
+    assert 'decompression bomb' in err and '--max-image-mpixels' in err
 
+
+@pytest.mark.slow
+def test_decompression_bomb_succeeds(resources, outpdf):
     p, _out, err = run_ocrmypdf(
         resources / 'hugemono.pdf', outpdf, '--max-image-mpixels', '2000'
     )

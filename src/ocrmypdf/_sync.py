@@ -414,6 +414,13 @@ def run_pipeline(options, *, plugin_manager, api=False):
         else:
             log.error(type(e).__name__)
         return e.exit_code
+    except (PIL.Image.DecompressionBombError if not api else NeverRaise) as e:
+        log.exception(
+            "A decompression bomb error was encountered while executing the "
+            "pipeline. Use the argument --max-image-mpixels to raise the maximum "
+            "image pixel limit."
+        )
+        return ExitCode.other_error
     except (Exception if not api else NeverRaise):  # pylint: disable=broad-except
         log.exception("An exception occurred while executing the pipeline")
         return ExitCode.other_error
