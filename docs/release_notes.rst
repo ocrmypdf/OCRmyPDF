@@ -18,6 +18,18 @@ wish to use some of its features for working with PDFs.
    for Python 3.6 around that time. The change will be marked with a major
    release.
 
+v12.7.0
+=======
+
+-  Fixed test suite failure when using pikepdf 3.2.0 that was compiled with pybind11
+   2.8.0. :issue:`843`
+-  Improve advice to user about using ``--max-image-mpixels`` if OCR fails for this
+   reason.
+-  Minor documentation fixes. (Thanks to @mara004.)
+-  Don't require importlib-metadata and importlib-resources backports on versions of
+   Python where the standard library implementation is sufficient.
+   (Thanks to Marco Genasci.)
+
 v12.6.0
 =======
 
