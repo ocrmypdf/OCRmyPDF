@@ -454,7 +454,7 @@ def _transcode_png(pike: Pdf, filename: Path, xref: Xref) -> bool:
         img2pdf.convert(fspath(filename), outputstream=f)
 
     with Pdf.open(output) as pdf_image:
-        foreign_image = next(pdf_image.pages[0].images.values())
+        foreign_image = next(iter(pdf_image.pages[0].images.values()))
         local_image = pike.copy_foreign(foreign_image)
 
         im_obj = pike.get_object(xref, 0)
