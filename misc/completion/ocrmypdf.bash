@@ -28,7 +28,7 @@ _ocrmypdf()
     local cur prev cword words split
 
     # Homebrew on Macs have version 1.3 of bash-completion which doesn't include - see #502
-    if declare -F _init_completions >/dev/null 2>&1; then
+    if declare -F _init_completion >/dev/null 2>&1; then
         _init_completion -s || return
     else
         COMPREPLY=()
