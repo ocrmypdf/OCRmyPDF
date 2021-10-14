@@ -13,7 +13,7 @@ import sys
 import unicodedata
 from pathlib import Path
 from shutil import copyfileobj
-from typing import List, Set, Tuple, Union
+from typing import List, Set, Tuple
 
 import pikepdf
 import PIL
@@ -26,18 +26,13 @@ from ocrmypdf.exceptions import (
     MissingDependencyError,
     OutputFileAccessError,
 )
-from ocrmypdf.helpers import (
-    is_file_writable,
-    is_iterable_notstr,
-    monotonic,
-    safe_symlink,
-)
+from ocrmypdf.helpers import is_file_writable, monotonic, safe_symlink, samefile
+from ocrmypdf.hocrtransform import HOCR_OK_LANGS
 from ocrmypdf.subprocess import check_external_program
 
 # -------------
 # External dependencies
 
-HOCR_OK_LANGS = frozenset(['eng', 'deu', 'spa', 'ita', 'por'])
 DEFAULT_LANGUAGE = 'eng'  # Enforce English hegemony
 
 log = logging.getLogger(__name__)
@@ -65,13 +60,14 @@ def check_options_languages(options, ocr_engine_languages):
             log.debug("No language specified; assuming --language %s", DEFAULT_LANGUAGE)
     if not ocr_engine_languages:
         return
-    if not options.languages.issubset(ocr_engine_languages):
+    missing_languages = options.languages - ocr_engine_languages
+    if missing_languages:
         msg = (
-            f"OCR engine does not have language data for the following "
+            "OCR engine does not have language data for the following "
             "requested languages: \n"
         )
-        for lang in options.languages - ocr_engine_languages:
-            msg += lang + '\n'
+        msg += '\n'.join(lang for lang in missing_languages)
+        msg += '\nNote: most languages are identified by a 3-digit ISO 639-2 Code'
         raise MissingDependencyError(msg)
 
 
@@ -79,12 +75,18 @@ def check_options_output(options):
     is_latin = options.languages.issubset(HOCR_OK_LANGS)
 
     if options.pdf_renderer.startswith('hocr') and not is_latin:
-        msg = (
+        log.warning(
             "The 'hocr' PDF renderer is known to cause problems with one "
             "or more of the languages in your document.  Use "
-            "--pdf-renderer auto (the default) to avoid this issue."
+            "`--pdf-renderer auto` (the default) to avoid this issue."
         )
-        log.warning(msg)
+
+    if options.output_type == 'none' and options.output_file != os.devnull:
+        raise BadArgsError(
+            "Since you specified `--pdf-renderer none`, the output file "
+            f"{options.output_file} cannot be produced. Set the output file to "
+            f"{os.devnull} to suppress this message."
+        )
 
     lossless_reconstruction = False
     if not any(
@@ -110,6 +112,10 @@ def check_options_sidecar(options):
         if options.output_file == '-':
             raise BadArgsError(
                 "--sidecar filename must be specified when output file is stdout."
+            )
+        elif options.output_file == os.devnull:
+            raise BadArgsError(
+                "--sidecar filename must be specified when output file is /dev/null or NUL."
             )
         options.sidecar = options.output_file + '.txt'
     if options.sidecar == options.input_file or options.sidecar == options.output_file:
@@ -141,8 +147,6 @@ def check_options_preprocessing(options):
 
 
 def _pages_from_ranges(ranges: str) -> Set[int]:
-    if is_iterable_notstr(ranges):
-        return set(ranges)
     pages: List[int] = []
     page_groups = ranges.replace(' ', '').split(',')
     for g in page_groups:
@@ -181,10 +185,8 @@ def _pages_from_ranges(ranges: str) -> Set[int]:
 
 def check_options_ocr_behavior(options):
     exclusive_options = sum(
-        [
-            (1 if opt else 0)
-            for opt in (options.force_ocr, options.skip_text, options.redo_ocr)
-        ]
+        (1 if opt else 0)
+        for opt in (options.force_ocr, options.skip_text, options.redo_ocr)
     )
     if exclusive_options >= 2:
         raise BadArgsError("Choose only one of --force-ocr, --skip-text, --redo-ocr.")
@@ -279,7 +281,7 @@ def check_closed_streams(options):  # pragma: no cover
     Attempting to a fork/exec a new Python process when any of std{in,out,err}
     are closed or not flushable for some reason may raise an exception.
     Fix this by opening devnull if the handle seems to be closed.  Do this
-    globally to avoid tracking places all places that fork.
+    globally to avoid tracking all places that fork.
 
     Seems to be specific to multiprocessing.Process not all Python process
     forkers.
@@ -301,7 +303,7 @@ def check_closed_streams(options):  # pragma: no cover
         if options.input_file == '-':
             log.error("Trying to read from stdin but stdin seems closed")
             return False
-        sys.stdin = open(os.devnull, 'r')
+        sys.stdin = open(os.devnull)
 
     if sys.stdout is None:
         if options.output_file == '-':

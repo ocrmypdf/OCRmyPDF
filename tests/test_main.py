@@ -701,7 +701,7 @@ def test_sidecar_pagecount(resources, outpdf):
     pdfinfo = PdfInfo(resources / '3small.pdf')
     num_pages = len(pdfinfo)
 
-    with open(sidecar, 'r', encoding='utf-8') as f:
+    with open(sidecar, encoding='utf-8') as f:
         ocr_text = f.read()
 
     # There should a formfeed between each pair of pages, so the count of
@@ -722,7 +722,7 @@ def test_sidecar_nonempty(resources, outpdf):
         'tests/plugins/tesseract_cache.py',
     )
 
-    with open(sidecar, 'r', encoding='utf-8') as f:
+    with open(sidecar, encoding='utf-8') as f:
         ocr_text = f.read()
     assert 'the' in ocr_text
 
@@ -745,14 +745,13 @@ def test_pdfa_n(pdfa_level, resources, outpdf):
     assert pdfa_info['conformance'] == f'PDF/A-{pdfa_level}B'
 
 
-@pytest.mark.skipif(
-    PIL.__version__ < '5.0.0', reason="Pillow < 5.0.0 doesn't raise the exception"
-)
-@pytest.mark.slow
-def test_decompression_bomb(resources, outpdf):
+def test_decompression_bomb_error(resources, outpdf):
     p, _out, err = run_ocrmypdf(resources / 'hugemono.pdf', outpdf)
-    assert 'decompression bomb' in err
+    assert 'decompression bomb' in err and '--max-image-mpixels' in err
 
+
+@pytest.mark.slow
+def test_decompression_bomb_succeeds(resources, outpdf):
     p, _out, err = run_ocrmypdf(
         resources / 'hugemono.pdf', outpdf, '--max-image-mpixels', '2000'
     )
@@ -881,3 +880,29 @@ def test_image_dpi_threshold(resources, outpdf):
         'tests/plugins/tesseract_noop.py',
     )
     assert outpdf.exists()
+
+
+def test_outputtype_none_bad_setup(resources, outpdf):
+    p, _out, err = run_ocrmypdf(
+        resources / 'trivial.pdf',
+        outpdf,
+        '--output-type=none',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+    )
+    assert p.returncode == ExitCode.bad_args
+    assert 'Set the output file to' in err
+
+
+def test_outputtype_none(resources, outtxt):
+    p, _out, err = run_ocrmypdf(
+        resources / 'trivial.pdf',
+        os.devnull,
+        '--output-type=none',
+        '--sidecar',
+        outtxt,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+    )
+    assert p.returncode == ExitCode.ok
+    assert outtxt.exists()

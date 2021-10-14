@@ -290,15 +290,16 @@ def exec_concurrent(context: PdfContext, executor: Executor):
         # Copy text file to destination
         copy_final(text, options.sidecar, context)
 
-    # Merge layers to one single pdf
-    pdf = ocrgraft.finalize()
+    if options.output_type != 'none':
+        # Merge layers to one single pdf
+        pdf = ocrgraft.finalize()
 
-    # PDF/A and metadata
-    log.info("Postprocessing...")
-    pdf = post_process(pdf, context, executor)
+        # PDF/A and metadata
+        log.info("Postprocessing...")
+        pdf = post_process(pdf, context, executor)
 
-    # Copy PDF file to destination
-    copy_final(pdf, options.output_file, context)
+        # Copy PDF file to destination
+        copy_final(pdf, options.output_file, context)
 
 
 def configure_debug_logging(log_filename: Path, prefix: str = ''):
@@ -399,19 +400,28 @@ def run_pipeline(options, *, plugin_manager, api=False):
                 return ExitCode.invalid_output_pdf
             report_output_file_size(options, start_input_file, options.output_file)
 
-    except (KeyboardInterrupt if not api else NeverRaise) as e:
+    except (KeyboardInterrupt if not api else NeverRaise):
         if options.verbose >= 1:
             log.exception("KeyboardInterrupt")
         else:
             log.error("KeyboardInterrupt")
         return ExitCode.ctrl_c
     except (ExitCodeException if not api else NeverRaise) as e:
-        if str(e):
+        if options.verbose >= 1:
+            log.exception("ExitCodeException")
+        elif str(e):
             log.error("%s: %s", type(e).__name__, str(e))
         else:
             log.error(type(e).__name__)
         return e.exit_code
-    except (Exception if not api else NeverRaise) as e:  # pylint: disable=broad-except
+    except (PIL.Image.DecompressionBombError if not api else NeverRaise) as e:
+        log.exception(
+            "A decompression bomb error was encountered while executing the "
+            "pipeline. Use the argument --max-image-mpixels to raise the maximum "
+            "image pixel limit."
+        )
+        return ExitCode.other_error
+    except (Exception if not api else NeverRaise):  # pylint: disable=broad-except
         log.exception("An exception occurred while executing the pipeline")
         return ExitCode.other_error
     finally:
@@ -419,7 +429,7 @@ def run_pipeline(options, *, plugin_manager, api=False):
             try:
                 debug_log_handler.close()
                 log.removeHandler(debug_log_handler)
-            except EnvironmentError as e:
+            except OSError as e:
                 print(e, file=sys.stderr)
         cleanup_working_files(work_folder, options)
 

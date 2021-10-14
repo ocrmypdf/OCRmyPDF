@@ -31,9 +31,18 @@
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.napoleon']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.napoleon',
+    'sphinx_issues',
+]
 
+# Extension settings
+intersphinx_mapping = {'https://docs.python.org/': None}
 napoleon_use_rtype = False
+issues_github_path = "jbarlow83/OCRmyPDF"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -54,7 +63,7 @@ master_doc = 'index'
 # General information about the project.
 project = 'ocrmypdf'
 copyright = (
-    '2020, James R. Barlow. Licensed under Creative Commons Attribution-ShareAlike 4.0.'
+    '2021, James R. Barlow. Licensed under Creative Commons Attribution-ShareAlike 4.0.'
 )
 author = 'James R. Barlow'
 
@@ -86,11 +95,10 @@ if on_rtd:
     ]
     sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
-
-from pkg_resources import get_distribution, DistributionNotFound
+from importlib_metadata import version as package_version
 
 # The full version, including alpha/beta/rc tags.
-release = get_distribution('ocrmypdf').version
+release = package_version('ocrmypdf')
 version = '.'.join(release.split('.')[:2])
 
 
@@ -273,7 +281,7 @@ htmlhelp_basename = 'ocrmypdfdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
-latex_elements = {
+latex_elements = {  # type: ignore
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',

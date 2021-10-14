@@ -72,7 +72,7 @@ def test_rasterize_rotated(francais, outdir, caplog):
 
     with Image.open(outdir / 'out.png') as im:
         assert im.size == (target_size[1], target_size[0])
-        assert im.info['dpi'] == (forced_dpi[1], forced_dpi[0])
+        assert im.info['dpi'] == forced_dpi.flip_axis()
 
 
 def test_gs_render_failure(resources, outpdf):

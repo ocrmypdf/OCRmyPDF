@@ -28,7 +28,7 @@
 
 - Search for deprecation: search all files for deprec*, etc.
 
-- Check requirements/*
+- Check requirements in setup.cfg
 
 - Delete `tests/cache`, do `pytest --runslow`, and update cache.
 

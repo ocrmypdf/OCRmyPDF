@@ -6,8 +6,9 @@
 !.gitattributes
 !.gitignore
 !.pre-commit-config.yaml
-!.readthedocs.yml
+!.readthedocs.yaml
 !.github/
+!.docker/
 
 # Dev scratch
 *.ipynb

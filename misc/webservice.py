@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # webservice.py wrapper for OCRmyPDF
 # Copyright (C) 2019 James R. Barlow: github.com/jbarlow83
 #
@@ -28,16 +29,7 @@ import shlex
 from subprocess import PIPE, run
 from tempfile import TemporaryDirectory
 
-from flask import (
-    Flask,
-    Response,
-    abort,
-    flash,
-    redirect,
-    request,
-    send_from_directory,
-    url_for,
-)
+from flask import Flask, Response, request, send_from_directory
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -45,7 +37,7 @@ app.secret_key = "secret"
 app.config['MAX_CONTENT_LENGTH'] = 50_000_000
 app.config.from_envvar("OCRMYPDF_WEBSERVICE_SETTINGS", silent=True)
 
-ALLOWED_EXTENSIONS = set(["pdf"])
+ALLOWED_EXTENSIONS = {"pdf"}
 
 
 def allowed_file(filename):

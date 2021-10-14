@@ -50,10 +50,6 @@ def test_nonmonotonic_warning(caplog):
     assert 'out of order' in caplog.text
 
 
-def test_list_range():
-    assert _pages_from_ranges([0, 1, 2]) == {0, 1, 2}
-
-
 def test_limited_pages(resources, outpdf):
     multi = resources / 'multipage.pdf'
     ocrmypdf.ocr(

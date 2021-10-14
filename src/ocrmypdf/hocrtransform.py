@@ -31,7 +31,6 @@
 import argparse
 import os
 import re
-from itertools import chain
 from math import atan, cos, sin
 from pathlib import Path
 from typing import Any, NamedTuple, Optional, Tuple, Union
@@ -40,6 +39,62 @@ from xml.etree import ElementTree
 from reportlab.lib.colors import black, cyan, magenta, red
 from reportlab.lib.units import inch
 from reportlab.pdfgen.canvas import Canvas
+
+# According to Wikipedia these languages are supported in the ISO-8859-1 character
+# set, meaning reportlab can generate them and they are compatible with hocr,
+# assuming Tesseract has the necessary languages installed. Note that there may
+# not be language packs for them.
+HOCR_OK_LANGS = frozenset(
+    [
+        # Languages fully covered by Latin-1:
+        'afr',  # Afrikaans
+        'alb',  # Albanian
+        'ast',  # Leonese
+        'baq',  # Basque
+        'bre',  # Breton
+        'cos',  # Corsican
+        'eng',  # English
+        'eus',  # Basque
+        'fao',  # Faoese
+        'gla',  # Scottish Gaelic
+        'glg',  # Galician
+        'glv',  # Manx
+        'ice',  # Icelandic
+        'ind',  # Indonesian
+        'isl',  # Icelandic
+        'ita',  # Italian
+        'ltz',  # Luxembourgish
+        'mal',  # Malay Rumi
+        'mga',  # Irish
+        'nor',  # Norwegian
+        'oci',  # Occitan
+        'por',  # Portugeuse
+        'roh',  # Romansh
+        'sco',  # Scots
+        'sma',  # Sami
+        'spa',  # Spanish
+        'sqi',  # Albanian
+        'swa',  # Swahili
+        'swe',  # Swedish
+        'tgl',  # Tagalog
+        'wln',  # Walloon
+        # Languages supported by Latin-1 except for a few rare characters that OCR
+        # is probably not trained to recognize anyway:
+        'cat',  # Catalan
+        'cym',  # Welsh
+        'dan',  # Danish
+        'deu',  # German
+        'dut',  # Dutch
+        'est',  # Estonian
+        'fin',  # Finnish
+        'fra',  # French
+        'hun',  # Hungarian
+        'kur',  # Kurdish
+        'nld',  # Dutch
+        'wel',  # Welsh
+    ]
+)
+
 
 Element = ElementTree.Element
 
@@ -241,13 +296,11 @@ class HocrTransform:
                 )
 
         found_lines = False
-        for line in sorted(
-            chain(
-                self.hocr.iterfind(self._child_xpath('span', 'ocr_header')),
-                self.hocr.iterfind(self._child_xpath('span', 'ocr_line')),
-                self.hocr.iterfind(self._child_xpath('span', 'ocr_textfloat')),
-            ),
-            key=self.topdown_position,
+        for line in (
+            element
+            for element in self.hocr.iterfind(self._child_xpath('span'))
+            if 'class' in element.attrib
+            and element.attrib['class'] in {'ocr_header', 'ocr_line', 'ocr_textfloat'}
         ):
             found_lines = True
             self._do_line(
@@ -296,7 +349,7 @@ class HocrTransform:
         interword_spaces: bool,
         show_bounding_boxes: bool,
     ):
-        if not line:
+        if line is None:
             return
         pxl_line_coords = self.element_coordinates(line)
         line_box = self.pt_from_pixel(pxl_line_coords)

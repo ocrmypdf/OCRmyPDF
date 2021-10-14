@@ -28,7 +28,7 @@ from enum import Enum, auto
 from itertools import islice, repeat, takewhile, zip_longest
 from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection, wait
-from typing import Callable, Iterable, Iterator
+from typing import Callable, Iterable, Iterator, List
 
 from ocrmypdf import Executor, hookimpl
 from ocrmypdf._concurrent import NullProgressBar
@@ -60,7 +60,9 @@ def process_sigbus(*args):
 
 class ConnectionLogHandler(logging.handlers.QueueHandler):
     def __init__(self, conn: Connection) -> None:
-        super().__init__(None)
+        # sets the parent's queue to None - parent only touches queue
+        # in enqueue() which we override
+        super().__init__(None)  # type: ignore
         self.conn = conn
 
     def enqueue(self, record):
@@ -126,8 +128,8 @@ class LambdaExecutor(Executor):
         if not grouped_args:
             return
 
-        processes = []
-        connections = []
+        processes: List[Process] = []
+        connections: List[Connection] = []
         for chunk in grouped_args:
             parent_conn, child_conn = Pipe()
 
@@ -152,6 +154,8 @@ class LambdaExecutor(Executor):
         with self.pbar_class(**tqdm_kwargs) as pbar:
             while connections:
                 for r in wait(connections):
+                    if not isinstance(r, Connection):
+                        raise NotImplementedError("We only support Connection()")
                     try:
                         msg_type, msg = r.recv()
                     except EOFError:

@@ -11,7 +11,6 @@ import os
 from ocrmypdf import hookimpl
 from ocrmypdf._exec import tesseract
 from ocrmypdf.cli import numeric
-from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.helpers import clamp
 from ocrmypdf.pluginspec import OcrEngine
 from ocrmypdf.subprocess import check_external_program

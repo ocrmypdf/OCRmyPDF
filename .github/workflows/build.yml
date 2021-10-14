@@ -6,6 +6,7 @@ on:
       - master
       - ci
       - release/*
+      - feature/*
     tags:
       - v*
     paths-ignore:
@@ -18,8 +19,24 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04] #, ubuntu-20.04]
-        python: ["3.6"] #, "3.7", "3.8", "3.9"]
+        include:
+          - os: ubuntu-18.04
+            python: 3.6
+          - os: ubuntu-18.04
+            python: 3.7
+          - os: ubuntu-20.04
+            python: 3.8
+          - os: ubuntu-20.04
+            python: 3.9
+          - os: ubuntu-latest
+            python: 3.9
+          - os: ubuntu-20.04
+            python: "pypy-3.6"
+          - os: ubuntu-latest
+            python: "pypy-3.7"
+          - os: ubuntu-latest
+            python: 3.9
+            tesseract5: true
 
     env:
       OS: ${{ matrix.os }}
@@ -34,6 +51,11 @@ jobs:
         name: Install Python
         with:
           python-version: ${{ matrix.python }}
+
+      - name: Install Tesseract 5
+        if: matrix.tesseract5
+        run: |
+          sudo add-apt-repository ppa:alex-p/tesseract-ocr-devel
 
       - name: Install common packages
         run: |
@@ -65,9 +87,17 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             libexempi8
 
+      - name: Install Ubuntu packages for PyPy
+        if: startsWith(matrix.python, 'pypy')
+        run: |
+          sudo apt-get install -y --no-install-recommends \
+            libxml2-dev \
+            libxslt1-dev \
+            pypy3-dev
+
       - name: Install Python packages
         run: |
-          python -m pip install -r requirements/main.txt -r requirements/test.txt .
+          python -m pip install .[test]
 
       - name: Report versions
         run: |
@@ -124,7 +154,7 @@ jobs:
       - name: Install Python packages
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements/main.txt -r requirements/test.txt .
+          python -m pip install .[test]
 
       - name: Report versions
         run: |
@@ -174,7 +204,7 @@ jobs:
       - name: Install Python packages
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements/main.txt -r requirements/test.txt .
+          python -m pip install .[test]
 
       - name: Test
         run: |
@@ -232,6 +262,7 @@ jobs:
     name: Build Docker images
     needs: [wheel_sdist_linux, test_linux, test_macos, test_windows]
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
     steps:
       - name: Set image tag to release or branch
         run: echo "DOCKER_IMAGE_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV

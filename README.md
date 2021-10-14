@@ -57,7 +57,7 @@ I searched the web for a free command line tool to OCR PDF files: I found many, 
 
 ## Installation
 
-Linux, Windows, macOS and FreeBSD are supported. Docker images are also available.
+Linux, Windows, macOS and FreeBSD are supported. Docker images are also available, for both x64 and ARM.
 
 | Operating system              | Install command               |
 | ----------------------------- | ------------------------------|
@@ -91,6 +91,11 @@ brew install tesseract-lang
 
 You can then pass the `-l LANG` argument to OCRmyPDF to give a hint as to what languages it should search for. Multiple languages can be requested.
 
+OCRmyPDF supports Tesseract 4.0 and the beta versions of Tesseract 5.0. It will
+automatically use whichever version it finds first on the `PATH` environment
+variable. On Windows, if `PATH` does not provide a Tesseract binary, we use
+the highest version number that is installed according to the Windows Registry.
+
 ## Documentation and support
 
 Once OCRmyPDF is installed, the built-in help which explains the command syntax and options can be accessed via:
@@ -115,6 +120,7 @@ In addition to the required Python version (3.6+), OCRmyPDF requires external pr
 - [heise Open Source, 09/2014: Texterkennung mit OCRmyPDF](https://heise.de/-2356670)
 - [heise Durchsuchbare PDF-Dokumente mit OCRmyPDF erstellen](https://www.heise.de/ratgeber/Durchsuchbare-PDF-Dokumente-mit-OCRmyPDF-erstellen-4607592.html)
 - [Excellent Utilities: OCRmyPDF](https://www.linuxlinks.com/excellent-utilities-ocrmypdf-add-ocr-text-layer-scanned-pdfs/)
+- [LinuxUser Texterkennung mit OCRmyPDF und Scanbd automatisieren](https://www.linux-community.de/ausgaben/linuxuser/2021/06/texterkennung-mit-ocrmypdf-und-scanbd-automatisieren/)
 
 ## Business enquiries
 

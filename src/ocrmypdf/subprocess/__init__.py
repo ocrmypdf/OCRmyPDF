@@ -15,7 +15,6 @@ from collections.abc import Mapping
 from contextlib import suppress
 from distutils.version import LooseVersion, Version
 from functools import lru_cache
-from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, CompletedProcess, Popen
 from subprocess import run as subprocess_run
 from typing import Callable, Optional, Type, Union
@@ -27,7 +26,9 @@ from ocrmypdf.exceptions import MissingDependencyError
 log = logging.getLogger(__name__)
 
 
-def run(args, *, env=None, logs_errors_to_stdout=False, **kwargs):
+def run(
+    args, *, env=None, logs_errors_to_stdout: bool = False, **kwargs
+) -> CompletedProcess:
     """Wrapper around :py:func:`subprocess.run`
 
     The main purpose of this wrapper is to log subprocess output in an orderly
@@ -65,7 +66,9 @@ def run(args, *, env=None, logs_errors_to_stdout=False, **kwargs):
     return proc
 
 
-def run_polling_stderr(args, *, callback, check=False, env=None, **kwargs):
+def run_polling_stderr(
+    args, *, callback: Callable[[str], None], check: bool = False, env=None, **kwargs
+) -> CompletedProcess:
     """Run a process like ``ocrmypdf.subprocess.run``, and poll stderr.
 
     Every line of produced by stderr will be forwarded to the callback function.
@@ -83,6 +86,8 @@ def run_polling_stderr(args, *, callback, check=False, env=None, **kwargs):
     with Popen(args, env=env, **kwargs) as proc:
         lines = []
         while proc.poll() is None:
+            if proc.stderr is None:
+                continue
             for msg in iter(proc.stderr.readline, ''):
                 if process_log.isEnabledFor(logging.DEBUG):
                     process_log.debug(msg.strip())
@@ -102,7 +107,7 @@ def _fix_process_args(args, env, kwargs):
         env = os.environ
 
     # Search in spoof path if necessary
-    program = args[0]
+    program = str(args[0])
 
     if os.name == 'nt':
         from ocrmypdf.subprocess._windows import fix_windows_args

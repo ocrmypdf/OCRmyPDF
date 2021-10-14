@@ -54,6 +54,7 @@ function __fish_ocrmypdf_output_type
     echo -e "pdfa-1\t"(_ "output a PDF/A-1b")
     echo -e "pdfa-2\t"(_ "output a PDF/A-2b")
     echo -e "pdfa-3\t"(_ "output a PDF/A-3b")
+    echo -e "none\t"(_ "do not produce an output PDF (for example, if you only care about --sidecar)")
 end
 complete -c ocrmypdf -x -l output-type -a '(__fish_ocrmypdf_output_type)' -d "select PDF output options"
 

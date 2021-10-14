@@ -52,7 +52,7 @@ logging.basicConfig(
 
 ocrmypdf.configure_logging(ocrmypdf.Verbosity.default)
 
-for dir_name, subdirs, file_list in os.walk(start_dir):
+for dir_name, _subdirs, file_list in os.walk(start_dir):
     logging.info(dir_name + '\n')
     os.chdir(dir_name)
     for filename in file_list:

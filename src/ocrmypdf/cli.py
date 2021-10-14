@@ -6,7 +6,7 @@
 
 
 import argparse
-from typing import Optional, Type, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 from ocrmypdf._version import PROGRAM_NAME as _PROGRAM_NAME
 from ocrmypdf._version import __version__ as _VERSION
@@ -14,7 +14,9 @@ from ocrmypdf._version import __version__ as _VERSION
 T = TypeVar('T')
 
 
-def numeric(basetype: Type[T], min_: Optional[T] = None, max_: Optional[T] = None):
+def numeric(
+    basetype: Callable[[Any], T], min_: Optional[T] = None, max_: Optional[T] = None
+):
     """Validator for numeric params"""
     min_ = basetype(min_) if min_ is not None else None
     max_ = basetype(max_) if max_ is not None else None
@@ -22,7 +24,7 @@ def numeric(basetype: Type[T], min_: Optional[T] = None, max_: Optional[T] = Non
     def _numeric(string):
         value = basetype(string)
         if (min_ is not None and value < min_) or (max_ is not None and value > max_):
-            msg = "%r not in valid range %r" % (string, (min_, max_))
+            msg = f"{string!r} not in valid range {(min_, max_)!r}"
             raise argparse.ArgumentTypeError(msg)
         return value
 
@@ -145,7 +147,7 @@ Online documentation is located at:
     )
     parser.add_argument(
         '--output-type',
-        choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'],
+        choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3', 'none'],
         default='pdfa',
         help="Choose output type. 'pdfa' creates a PDF/A-2b compliant file for "
         "long term archiving (default, recommended) but may not suitable "
@@ -153,7 +155,8 @@ Online documentation is located at:
         "also has problems with full Unicode text. 'pdf' attempts to "
         "preserve file contents as much as possible. 'pdf-a1' creates a "
         "PDF/A1-b file. 'pdf-a2' is equivalent to 'pdfa'. 'pdf-a3' creates a "
-        "PDF/A3-b file.",
+        "PDF/A3-b file. 'none' will produce no output, which may be helpful if "
+        "only the --sidecar is desired.",
     )
 
     # Use null string '\0' as sentinel to indicate the user supplied no argument,
@@ -338,8 +341,9 @@ Online documentation is located at:
             "Control how PDF is optimized after processing:"
             "0 - do not optimize; "
             "1 - do safe, lossless optimizations (default); "
-            "2 - do some lossy optimizations; "
-            "3 - do aggressive lossy optimizations (including lossy JBIG2)"
+            "2 - do lossy JPEG and JPEG2000 optimizations; "
+            "3 - do more aggressive lossy JPEG and JPEG2000 optimizations. "
+            "To enable lossy JBIG2, see --jbig2-lossy."
         ),
     )
     optimizing.add_argument(
@@ -377,7 +381,8 @@ Online documentation is located at:
         action='store_true',
         help=(
             "Enable JBIG2 lossy mode (better compression, not suitable for some "
-            "use cases - see documentation)."
+            "use cases - see documentation). Only takes effect if --optimize 1 or "
+            "higher is also enabled."
         ),
     )
     optimizing.add_argument(

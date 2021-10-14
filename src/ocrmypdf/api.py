@@ -15,10 +15,7 @@ from pathlib import Path
 from typing import AnyStr, BinaryIO, Iterable, Optional, Union
 from warnings import warn
 
-from ocrmypdf._logging import (  # pylint: disable=unused-import
-    PageNumberFilter,
-    TqdmConsole,
-)
+from ocrmypdf._logging import PageNumberFilter, TqdmConsole
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._sync import run_pipeline
 from ocrmypdf._validation import check_options
@@ -31,7 +28,7 @@ except ModuleNotFoundError:
     coloredlogs = None
 
 
-StrPath = Union[os.PathLike, AnyStr]
+StrPath = Union[Path, AnyStr]
 PathOrIO = Union[BinaryIO, StrPath]
 
 _api_lock = threading.Lock()
@@ -338,3 +335,17 @@ def ocr(  # pylint: disable=unused-argument
         options = create_options(**create_options_kwargs)
         check_options(options, plugin_manager)
         return run_pipeline(options=options, plugin_manager=plugin_manager, api=True)
+
+
+__all__ = [
+    'PageNumberFilter',
+    'TqdmConsole',
+    'Verbosity',
+    'check_options',
+    'configure_logging',
+    'create_options',
+    'get_parser',
+    'get_plugin_manager',
+    'ocr',
+    'run_pipeline',
+]

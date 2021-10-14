@@ -9,7 +9,7 @@
 import atexit
 import logging
 import re
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from contextlib import ExitStack
 from decimal import Decimal
 from enum import Enum
@@ -17,11 +17,27 @@ from functools import partial
 from math import hypot, inf, isclose
 from os import PathLike
 from pathlib import Path
-from typing import Container, Iterator, Optional, Tuple, Union
+from typing import (
+    Container,
+    Dict,
+    Iterator,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Union,
+)
 from warnings import warn
 
-import pikepdf
-from pikepdf import Object, Pdf, PdfMatrix
+from pikepdf import (
+    Object,
+    Pdf,
+    PdfImage,
+    PdfInlineImage,
+    PdfMatrix,
+    parse_content_stream,
+)
 
 from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf.exceptions import EncryptedPdfError, InputFileError
@@ -36,7 +52,7 @@ Encoding = Enum(
     'Encoding', 'ccitt jpeg jpeg2000 jbig2 asciihex ascii85 lzw flate runlength'
 )
 
-FRIENDLY_COLORSPACE = {
+FRIENDLY_COLORSPACE: Dict[str, Colorspace] = {
     '/DeviceGray': Colorspace.gray,
     '/CalGray': Colorspace.gray,
     '/DeviceRGB': Colorspace.rgb,
@@ -54,7 +70,7 @@ FRIENDLY_COLORSPACE = {
     '/I': Colorspace.index,
 }
 
-FRIENDLY_ENCODING = {
+FRIENDLY_ENCODING: Dict[str, Encoding] = {
     '/CCITTFaxDecode': Encoding.ccitt,
     '/DCTDecode': Encoding.jpeg,
     '/JPXDecode': Encoding.jpeg2000,
@@ -68,7 +84,7 @@ FRIENDLY_ENCODING = {
     '/RL': Encoding.runlength,
 }
 
-FRIENDLY_COMP = {
+FRIENDLY_COMP: Dict[Colorspace, int] = {
     Colorspace.gray: 1,
     Colorspace.rgb: 3,
     Colorspace.cmyk: 4,
@@ -86,16 +102,30 @@ def _is_unit_square(shorthand):
     return all(isclose(a, b, rel_tol=1e-3) for a, b in pairwise)
 
 
-XobjectSettings = namedtuple('XobjectSettings', ['name', 'shorthand', 'stack_depth'])
+class XobjectSettings(NamedTuple):
+    name: str
+    shorthand: Tuple[float, float, float, float, float, float]
+    stack_depth: int
 
-InlineSettings = namedtuple('InlineSettings', ['iimage', 'shorthand', 'stack_depth'])
 
-ContentsInfo = namedtuple(
-    'ContentsInfo',
-    ['xobject_settings', 'inline_images', 'found_vector', 'found_text', 'name_index'],
-)
+class InlineSettings(NamedTuple):
+    iimage: PdfInlineImage
+    shorthand: Tuple[float, float, float, float, float, float]
+    stack_depth: int
 
-TextboxInfo = namedtuple('TextboxInfo', ['bbox', 'is_visible', 'is_corrupt'])
+
+class ContentsInfo(NamedTuple):
+    xobject_settings: List[XobjectSettings]
+    inline_images: List[InlineSettings]
+    found_vector: bool
+    found_text: bool
+    name_index: Mapping[str, List[XobjectSettings]]
+
+
+class TextboxInfo(NamedTuple):
+    bbox: Tuple[float, float, float, float]
+    is_visible: bool
+    is_corrupt: bool
 
 
 class VectorMarker:
@@ -146,8 +176,8 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
 
     stack = []
     ctm = PdfMatrix(initial_shorthand)
-    xobject_settings = []
-    inline_images = []
+    xobject_settings: List[XobjectSettings] = []
+    inline_images: List[InlineSettings] = []
     name_index = defaultdict(lambda: [])
     found_vector = False
     found_text = False
@@ -157,9 +187,7 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
     operator_whitelist = ' '.join(vector_ops | text_showing_ops | image_ops)
 
     for n, graphobj in enumerate(
-        _normalize_stack(
-            pikepdf.parse_content_stream(contentstream, operator_whitelist)
-        )
+        _normalize_stack(parse_content_stream(contentstream, operator_whitelist))
     ):
         operands, operator = graphobj
         if operator == 'q':
@@ -185,7 +213,7 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
                 name=image_name, shorthand=ctm.shorthand, stack_depth=len(stack)
             )
             xobject_settings.append(settings)
-            name_index[image_name].append(settings)
+            name_index[str(image_name)].append(settings)
         elif operator == 'INLINE IMAGE':  # BI/ID/EI are grouped into this
             iimage = operands[0]
             inline = InlineSettings(
@@ -271,23 +299,28 @@ def _get_dpi(ctm_shorthand, image_size) -> Resolution:
 class ImageInfo:
     DPI_PREC = Decimal('1.000')
 
+    _comp: Optional[int]
+    _name: str
+
     def __init__(
         self,
         *,
         name='',
         pdfimage: Optional[Object] = None,
-        inline: Optional[Object] = None,
+        inline: Optional[PdfInlineImage] = None,
         shorthand=None,
     ):
         self._name = str(name)
         self._shorthand = shorthand
 
+        pim: Union[PdfInlineImage, PdfImage]
+
         if inline is not None:
             self._origin = 'inline'
-            pim = inline.iimage
+            pim = inline
         elif pdfimage is not None:
             self._origin = 'xobject'
-            pim = pikepdf.PdfImage(pdfimage)
+            pim = PdfImage(pdfimage)
         else:
             raise ValueError("Either pdfimage or inline must be set")
         self._width = pim.width
@@ -303,14 +336,14 @@ class ImageInfo:
 
         self._bpc = int(pim.bits_per_component)
         try:
-            self._enc = FRIENDLY_ENCODING.get(pim.filters[0], 'image')
+            self._enc = FRIENDLY_ENCODING.get(pim.filters[0])
         except IndexError:
-            self._enc = '?'
+            self._enc = None
 
         try:
-            self._color = FRIENDLY_COLORSPACE.get(pim.colorspace, '?')
+            self._color = FRIENDLY_COLORSPACE.get(pim.colorspace or '')
         except NotImplementedError:
-            self._color = '?'
+            self._color = None
         if self._enc == Encoding.jpeg2000:
             self._color = Colorspace.jpeg2000
 
@@ -324,11 +357,14 @@ class ImageInfo:
             else:
                 self._comp = 3
         else:
-            self._comp = FRIENDLY_COMP.get(self._color, '?')
+            if isinstance(self._color, Colorspace):
+                self._comp = FRIENDLY_COMP.get(self._color)
+            else:
+                self._comp = None
 
             # Bit of a hack... infer grayscale if component count is uncertain
             # but encoding only supports monochrome.
-            if self._comp == '?' and self._enc in (Encoding.ccitt, Encoding.jbig2):
+            if self._comp is None and self._enc in (Encoding.ccitt, Encoding.jbig2):
                 self._comp = FRIENDLY_COMP[Colorspace.gray]
 
     @property
@@ -353,15 +389,15 @@ class ImageInfo:
 
     @property
     def color(self):
-        return self._color
+        return self._color if self._color is not None else '?'
 
     @property
     def comp(self):
-        return self._comp
+        return self._comp if self._comp is not None else '?'
 
     @property
     def enc(self):
-        return self._enc
+        return self._enc if self._enc is not None else 'image'
 
     @property
     def renderable(self):
@@ -388,7 +424,7 @@ def _find_inline_images(contentsinfo: ContentsInfo) -> Iterator[ImageInfo]:
 
     for n, inline in enumerate(contentsinfo.inline_images):
         yield ImageInfo(
-            name='inline-%02d' % n, shorthand=inline.shorthand, inline=inline
+            name='inline-%02d' % n, shorthand=inline.shorthand, inline=inline.iimage
         )
 
 
@@ -413,7 +449,7 @@ def _image_xobjects(container) -> Iterator[Tuple[Object, str]]:
     xobjs = resources['/XObject'].as_dict()
     for xobj in xobjs:
         candidate: Object = xobjs[xobj]
-        if not '/Subtype' in candidate:
+        if '/Subtype' not in candidate:
             continue
         if candidate['/Subtype'] == '/Image':
             pdfimage = candidate
@@ -583,7 +619,7 @@ def _pdf_pageinfo_sync_init(pdf: Pdf, infile: Path, pdfminer_loglevel):
 
     # If the pdf is not opened, open a copy for our worker process to use
     if pdf is None:
-        worker_pdf = pikepdf.open(infile)
+        worker_pdf = Pdf.open(infile)
 
         def on_process_close():
             worker_pdf.close()
@@ -597,7 +633,7 @@ def _pdf_pageinfo_sync(args):
     pdf = thread_pdf if thread_pdf is not None else worker_pdf
     with ExitStack() as stack:
         if not pdf:  # When called with SerialExecutor
-            pdf = stack.enter_context(pikepdf.open(infile))
+            pdf = stack.enter_context(Pdf.open(infile))
         page = PageInfo(pdf, pageno, infile, check_pages, detailed_analysis)
         return page
 
@@ -661,6 +697,10 @@ def _pdf_pageinfo_concurrent(
 
 
 class PageInfo:
+    _has_text: Optional[bool]
+    _has_vector: Optional[bool]
+    _images: List[ImageInfo]
+
     def __init__(
         self,
         pdf: Pdf,
@@ -732,7 +772,7 @@ class PageInfo:
         else:
             self._has_vector = None  # i.e. "no information"
             self._has_text = None
-            self._images = None
+            self._images = []
 
         self._dpi = None
         if self._images:
@@ -749,7 +789,7 @@ class PageInfo:
 
     @property
     def has_text(self) -> bool:
-        return self._has_text
+        return bool(self._has_text)
 
     @property
     def has_corrupt_text(self) -> bool:
@@ -759,7 +799,7 @@ class PageInfo:
 
     @property
     def has_vector(self) -> bool:
-        return self._has_vector
+        return bool(self._has_vector)
 
     @property
     def width_inches(self) -> Decimal:
@@ -837,6 +877,9 @@ class PageInfo:
         )
 
 
+DEFAULT_EXECUTOR = SerialExecutor()
+
+
 class PdfInfo:
     """Get summary information about a PDF"""
 
@@ -848,13 +891,13 @@ class PdfInfo:
         progbar: bool = False,
         max_workers: int = None,
         check_pages=None,
-        executor: Executor = SerialExecutor(),
+        executor: Executor = DEFAULT_EXECUTOR,
     ):
         self._infile = infile
         if check_pages is None:
             check_pages = range(0, 1_000_000_000)
 
-        with pikepdf.open(infile) as pdf:
+        with Pdf.open(infile) as pdf:
             if pdf.is_encrypted:
                 raise EncryptedPdfError()  # Triggered by encryption with empty passwd
             self._pages = _pdf_pageinfo_concurrent(

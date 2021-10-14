@@ -1,6 +1,8 @@
 OCRmyPDF documentation
 ======================
 
+.. figure:: images/logo.svg
+
 OCRmyPDF adds an optical character recognition (OCR) text layer to scanned PDF
 files, allowing them to be searched.
 

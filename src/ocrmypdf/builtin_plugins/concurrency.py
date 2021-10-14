@@ -20,9 +20,8 @@ import signal
 import sys
 import threading
 from contextlib import suppress
-from multiprocessing import Pool as ProcessPool
-from multiprocessing.pool import ThreadPool
-from typing import Callable, Iterable, Union
+from multiprocessing.pool import Pool, ThreadPool
+from typing import Callable, Iterable, Type, Union
 
 from tqdm import tqdm
 
@@ -31,7 +30,10 @@ from ocrmypdf._logging import TqdmConsole
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import remove_all_log_handlers
 
+ProcessPool = Pool
 Queue = Union[multiprocessing.Queue, queue.Queue]
+UserInit = Callable[[], None]
+WorkerInit = Callable[[Queue, UserInit, int], None]
 
 
 def log_listener(q: Queue):
@@ -62,7 +64,7 @@ def process_sigbus(*args):
     raise InputFileError("A worker process lost access to an input file")
 
 
-def process_init(q: Queue, user_init: Callable[[], None], loglevel):
+def process_init(q: Queue, user_init: UserInit, loglevel) -> None:
     """Initialize a process pool worker"""
 
     # Ignore SIGINT (our parent process will kill us gracefully)
@@ -85,7 +87,7 @@ def process_init(q: Queue, user_init: Callable[[], None], loglevel):
     return
 
 
-def thread_init(_queue: Queue, user_init: Callable[[], None], _loglevel):
+def thread_init(q: Queue, user_init: UserInit, loglevel) -> None:
     # As a thread, block SIGBUS so the main thread deals with it...
     with suppress(AttributeError):
         signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGBUS})
@@ -107,9 +109,9 @@ class StandardExecutor(Executor):
         task_finished: Callable,
     ):
         if use_threads:
-            log_queue = queue.Queue(-1)
-            pool_class = ThreadPool
-            initializer = thread_init
+            log_queue: Queue = queue.Queue(-1)
+            pool_class: Type[Pool] = ThreadPool
+            initializer: WorkerInit = thread_init
         else:
             log_queue = multiprocessing.Queue(-1)
             pool_class = ProcessPool

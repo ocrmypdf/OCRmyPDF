@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # © 2013-16: jbarlow83 from Github (https://github.com/jbarlow83)
 #
@@ -13,6 +12,7 @@
 import argparse
 import logging
 import os
+import platform
 import sys
 import threading
 from collections import deque
@@ -23,6 +23,7 @@ from functools import lru_cache
 from io import BytesIO, UnsupportedOperation
 from os import fspath
 from tempfile import TemporaryFile
+from typing import ContextManager, Type
 from warnings import warn
 
 from ocrmypdf.exceptions import MissingDependencyError
@@ -67,7 +68,7 @@ if os.name == 'nt':
     # Loading zlib from other places could cause a version mismatch
     _zlib_path = os.path.join(os.path.dirname(_libpath), 'zlib1.dll')
     if not os.path.exists(_zlib_path):
-        _zlib_path = find_library('zlib')
+        _zlib_path = find_library('zlib') or ''
     try:
         zlib = ffi.dlopen(_zlib_path)
     except ffi.error as e:
@@ -86,7 +87,7 @@ except ffi.error as e:
     ) from e
 
 
-class _LeptonicaErrorTrap_Redirect:
+class _LeptonicaErrorTrap_Redirect(ContextManager):
     """
     Context manager to trap errors reported by Leptonica < 1.79 or on Apple Silicon.
 
@@ -132,7 +133,7 @@ class _LeptonicaErrorTrap_Redirect:
         except Exception:
             self.leptonica_lock.release()
             raise
-        return self
+        return
 
     def __exit__(self, exc_type, exc_value, traceback):
         # Restore old stderr
@@ -172,7 +173,7 @@ tls = threading.local()
 tls.trap = None
 
 
-class _LeptonicaErrorTrap_Queue:
+class _LeptonicaErrorTrap_Queue(ContextManager):
     def __init__(self):
         self.queue = deque()
 
@@ -226,7 +227,7 @@ except (ffi.error, MemoryError):
     # Pre-1.79 Leptonica does not have leptSetStderrHandler
     # And some platforms, notably Apple ARM 64, do not allow the write+execute
     # memory needed to set up the callback function.
-    _LeptonicaErrorTrap = _LeptonicaErrorTrap_Redirect
+    _LeptonicaErrorTrap: Type[ContextManager] = _LeptonicaErrorTrap_Redirect
 else:
     # 1.79 have this new symbol
     _LeptonicaErrorTrap = _LeptonicaErrorTrap_Queue
@@ -272,7 +273,7 @@ class LeptonicaObject:
         # Leptonica API uses double-pointers for its destroy APIs to prevent
         # dangling pointers. This means we need to put our single pointer,
         # cdata, in a temporary CDATA**.
-        pp = ffi.new('{} **'.format(cls.LEPTONICA_TYPENAME), cdata)
+        pp = ffi.new(f'{cls.LEPTONICA_TYPENAME} **', cdata)
         cls.cdata_destroy(pp)
 
 
@@ -439,6 +440,9 @@ class Pix(LeptonicaObject):
         bio = BytesIO()
         pillow_image.save(bio, format='png', compress_level=1)
         py_buffer = bio.getbuffer()
+        if platform.python_implementation() == 'PyPy':
+            # PyPy complains that it cannot do from_buffer(memoryview)
+            py_buffer = bytes(py_buffer)
         c_buffer = ffi.from_buffer(py_buffer)
         with _LeptonicaErrorTrap():
             pix = Pix(lept.pixReadMem(c_buffer, len(c_buffer)))
@@ -844,7 +848,7 @@ class Box(LeptonicaObject):
 
     def __repr__(self):
         if self._cdata:
-            return '<leptonica.Box x={0} y={1} w={2} h={3}>'.format(
+            return '<leptonica.Box x={} y={} w={} h={}>'.format(
                 self.x, self.y, self.w, self.h
             )
         return '<leptonica.Box NULL>'
@@ -916,7 +920,7 @@ class Sel(LeptonicaObject):
         lines = [line.strip() for line in selstr.split('\n') if line.strip()]
         h = len(lines)
         w = len(lines[0])
-        lengths = set(len(line) for line in lines)
+        lengths = {len(line) for line in lines}
         if len(lengths) != 1:
             raise ValueError("All lines in selstr must be same length")
 

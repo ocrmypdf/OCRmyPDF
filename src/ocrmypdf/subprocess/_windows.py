@@ -9,9 +9,9 @@ import os
 import shutil
 import sys
 from distutils.version import LooseVersion
-from itertools import chain, filterfalse
+from itertools import chain
 from pathlib import Path
-from typing import Any, Callable, Iterator, Optional, Tuple, TypeVar, cast
+from typing import Any, Callable, Iterable, Iterator, Set, Tuple, TypeVar
 
 try:
     import winreg
@@ -113,7 +113,7 @@ SHIMS = [
 ]
 
 
-def fix_windows_args(program, args, env):
+def fix_windows_args(program: str, args, env):
     """Adjust our desired program and command line arguments for use on Windows"""
 
     if sys.version_info < (3, 8):
@@ -137,14 +137,12 @@ def fix_windows_args(program, args, env):
     return args
 
 
-def unique_everseen(iterable, key=None):
-    "List unique elements, preserving order. Remember all elements ever seen."
+def unique_everseen(iterable: Iterable[T], key: Callable[[T], T]) -> Iterator[T]:
+    "List unique elements, preserving order."
     # unique_everseen('AAAABBBCCDAABBB') --> A B C D
     # unique_everseen('ABBCcAD', str.lower) --> A B C D
-    seen = set()
+    seen: Set[T] = set()
     seen_add = seen.add
-    if key is None:
-        key = lambda x: x
     for element in iterable:
         k = key(element)
         if k not in seen:

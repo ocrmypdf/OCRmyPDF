@@ -1,10 +1,19 @@
 # OCRmyPDF
 #
-FROM ubuntu:20.04 as base
 
-FROM base as builder
+FROM ubuntu:21.04 as base
 
 ENV LANG=C.UTF-8
+ENV TZ=UTC
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  python3 \
+  libqpdf-dev \
+  zlib1g \
+  liblept5
+
+FROM base as builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential autoconf automake libtool \
@@ -13,7 +22,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   python3-dev \
   python3-distutils \
   libffi-dev \
-  libqpdf-dev \
   ca-certificates \
   curl \
   git
@@ -37,26 +45,15 @@ COPY . /app
 
 WORKDIR /app
 
-RUN pip3 install --no-cache-dir \
-  -r requirements/main.txt \
-  -r requirements/webservice.txt \
-  -r requirements/test.txt \
-  -r requirements/watcher.txt \
-  .
+RUN pip3 install --no-cache-dir .[test,webservice,watcher]
 
 FROM base
-
-ENV LANG=C.UTF-8
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
   img2pdf \
-  liblept5 \
   libsm6 libxext6 libxrender-dev \
-  zlib1g \
   pngquant \
-  python3 \
-  qpdf \
   tesseract-ocr \
   tesseract-ocr-chi-sim \
   tesseract-ocr-deu \

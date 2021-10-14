@@ -56,11 +56,12 @@ class TesseractLoggerAdapter(logging.LoggerAdapter):
 
 
 class TesseractVersion(StrictVersion):
+
     version_re = re.compile(
         r'''
         ^(\d+) \. (\d+) (\. (\d+))?  # groups: 1/major, 2/minor, 3/[skip], 4/patch
         [-]?  # optional hyphen separator
-        (?:(alpha|beta|rc|dev)[.\-\ ]?(\d+)?)?  # 5/prerelease, 6/prerelease_num
+        (?:(alpha|beta|rc|dev)?[.\-\ ]?(\d+)?)?  # 5/prerelease, 6/prerelease_num
         (?:-(\d+)-g[0-9a-f]+)?  # untagged git version
         $
         ''',
@@ -116,7 +117,7 @@ def get_languages():
         if line.startswith('Error'):
             raise MissingDependencyError(lang_error(output))
     _header, *rest = output.splitlines()
-    return set(lang.strip() for lang in rest)
+    return {lang.strip() for lang in rest}
 
 
 def tess_base_args(langs: List[str], engine_mode: Optional[int]) -> List[str]:
@@ -249,7 +250,8 @@ def generate_hocr(
 
     # Reminder: test suite tesseract test plugins will break after any changes
     # to the number of order parameters here
-    args_tesseract.extend([input_file, prefix, 'hocr', 'txt'] + tessconfig)
+    args_tesseract.extend([os.fspath(input_file), os.fspath(prefix), 'hocr', 'txt'])
+    args_tesseract.extend(tessconfig)
     try:
         p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
         stdout = p.stdout
@@ -323,7 +325,8 @@ def generate_pdf(
     # Reminder: test suite tesseract test plugins might break after any changes
     # to the number of order parameters here
 
-    args_tesseract.extend([input_file, prefix, 'pdf', 'txt'] + tessconfig)
+    args_tesseract.extend([os.fspath(input_file), os.fspath(prefix), 'pdf', 'txt'])
+    args_tesseract.extend(tessconfig)
     try:
         p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
         stdout = p.stdout

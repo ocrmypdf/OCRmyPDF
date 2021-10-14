@@ -13,12 +13,19 @@ import base64
 from pathlib import Path
 from typing import Dict, Iterator, Union
 
+try:
+    from importlib_resources import read_binary
+except ImportError:
+    from importlib.resources import read_binary
 import pikepdf
-import pkg_resources
+import pkg_resources  # deprecated
 
+# Deprecated
 ICC_PROFILE_RELPATH = 'data/sRGB.icc'
-
+# Deprecated
 SRGB_ICC_PROFILE = pkg_resources.resource_filename('ocrmypdf', ICC_PROFILE_RELPATH)
+
+SRGB_ICC_PROFILE_NAME = 'sRGB.icc'
 
 
 def _postscript_objdef(
@@ -97,12 +104,12 @@ def generate_pdfa_ps(target_filename: Path, icc: str = 'sRGB'):
     References:
         Adobe PDFMARK Reference: https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/pdfmark_reference.pdf
     """
-    if icc == 'sRGB':
-        icc_profile = SRGB_ICC_PROFILE
-    else:
+    if icc != 'sRGB':
         raise NotImplementedError("Only supporting sRGB")
 
-    bytes_icc_profile = Path(icc_profile).read_bytes()
+    bytes_icc_profile = read_binary(
+        'ocrmypdf.data', SRGB_ICC_PROFILE_NAME
+    )
     ps = '\n'.join(_make_postscript(icc, bytes_icc_profile, 3))
 
     # We should have encoded everything to pure ASCII by this point, and

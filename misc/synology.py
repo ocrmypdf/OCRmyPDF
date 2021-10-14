@@ -46,7 +46,7 @@ if len(sys.argv) > 1:
 else:
     start_dir = '.'
 
-for dir_name, subdirs, file_list in os.walk(start_dir):
+for dir_name, _subdirs, file_list in os.walk(start_dir):
     logging.info(dir_name)
     os.chdir(dir_name)
     for filename in file_list:

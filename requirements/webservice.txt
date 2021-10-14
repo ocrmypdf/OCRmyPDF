@@ -1,1 +1,2 @@
+# Deprecated and not maintained; use "pip install ocrmypdf[webservice]" instead
 Flask >= 1, < 2

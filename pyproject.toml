@@ -3,10 +3,13 @@ requires = [
   "setuptools >= 30.3.0",
   "wheel",
   "cffi",
-  "setuptools_scm",
+  "setuptools_scm[toml] >= 3.4",
   "setuptools_scm_git_archive"
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
 
 [tool.black]
 line-length = 88
@@ -31,3 +34,49 @@ exclude = '''
   | src/ocrmypdf/lib/_leptonica.py
 )/
 '''
+
+[tool.coverage.run]
+branch = true
+parallel = true
+concurrency = ["multiprocessing"]
+
+[tool.coverage.paths]
+source = ["src/ocrmypdf"]
+
+[tool.coverage.report]
+# Regexes for lines to exclude from consideration
+exclude_lines = [
+    # Have to re-enable the standard pragma
+    "pragma: no cover",
+
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+	  "if False:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:"
+]
+
+[tool.isort]
+profile = "black"
+known_first_party = "ocrmypdf"
+known_third_party = ["PIL", "_cffi_backend", "cffi", "flask", "img2pdf", "ocrmypdf", "pdfminer", "pikepdf", "pkg_resources", "pluggy", "pytest", "reportlab", "setuptools", "sphinx_rtd_theme", "tqdm", "watchdog", "werkzeug"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+norecursedirs = ["lib", ".pc", ".git", "venv", "output", "cache", "resources"]
+testpaths = ["tests"]
+addopts = "-n auto"
+markers = ["slow"]
+filterwarnings = ["ignore:.*XMLParser.*:DeprecationWarning"]
+
+[tool.mypy]
+
+[[tool.mypy.overrides]]
+module = [
+  'pluggy', 'tqdm', 'coloredlogs', 'img2pdf', 'cffi', '_cffi_backend', 'pdfminer.*', 'reportlab.*'
+]
+ignore_missing_imports = true

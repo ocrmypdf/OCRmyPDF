@@ -16,6 +16,8 @@ from ocrmypdf import helpers
 
 from .conftest import running_in_docker
 
+needs_symlink = pytest.mark.skipif(os.name == 'nt', reason='needs posix symlink')
+
 
 class TestSafeSymlink:
     def test_safe_symlink_link_self(self, tmp_path, caplog):
@@ -27,6 +29,7 @@ class TestSafeSymlink:
         with pytest.raises(FileExistsError):
             helpers.safe_symlink(tmp_path / 'input', tmp_path / 'regular_file')
 
+    @needs_symlink
     def test_safe_symlink_relink(self, tmp_path):
         (tmp_path / 'regular_file_a').touch()
         (tmp_path / 'regular_file_b').write_bytes(b'ABC')
@@ -77,6 +80,7 @@ class TestFileIsWritable:
     def test_plain(self, non_existent):
         assert helpers.is_file_writable(non_existent)
 
+    @needs_symlink
     def test_symlink_loop(self, tmp_path):
         loop = tmp_path / 'loop'
         loop.symlink_to(loop)

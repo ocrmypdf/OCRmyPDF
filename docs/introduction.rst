@@ -2,7 +2,12 @@
 Introduction
 ============
 
-OCRmyPDF is a Python 3 application and library that adds OCR layers to PDFs.
+OCRmyPDF is an application and library that adds text "layers" to images
+in PDFs, making scanned image PDFs searchable. It uses OCR to guess what text
+is contained in images. It is written in Python. OCRmyPDF supports plugins
+that allow customization of its processing steps, and is very tolerant of
+PDFs that contain scanned images and "born digital" content that needs no
+text recognition.
 
 About OCR
 =========
@@ -26,7 +31,7 @@ exactly. They contain `vector
 graphics <http://vector-conversions.com/vectorizing/raster_vs_vector.html>`__
 that can contain raster objects such as scanned images. Because PDFs can
 contain multiple pages (unlike many image formats) and can contain fonts
-and text, it is a good formats for exchanging scanned documents.
+and text, it is a good format for exchanging scanned documents.
 
 |image|
 
@@ -35,9 +40,9 @@ have one image. Some scanners or scanning software will segment pages
 into monochromatic text and color regions for example, to improve the
 compression ratio and appearance of the page.
 
-Rasterizing a PDF is the process of generating an image suitable for
-display or analyzing with an OCR engine. OCR engines like Tesseract work
-with images, not vector objects.
+Rasterizing a PDF is the process of generating corresponding raster images.
+OCR engines like Tesseract work with images, not scalable vector graphics
+or mixed raster-vector-text graphics such as PDF.
 
 About PDF/A
 ===========
@@ -76,7 +81,7 @@ OCRmyPDF analyzes each page of a PDF to determine the colorspace and
 resolution (DPI) needed to capture all of the information on that page
 without losing content. It uses
 `Ghostscript <http://ghostscript.com/>`__ to rasterize the page, and
-then performs on OCR on the rasterized image to create an OCR "layer".
+then performs on OCR the rasterized image to create an OCR "layer".
 The layer is then grafted back onto the original PDF.
 
 While one can use a program like Ghostscript or ImageMagick to get an
@@ -84,9 +89,9 @@ image and put the image through Tesseract, that actually creates a new
 PDF and many details may be lost. OCRmyPDF can produce a minimally
 changed PDF as output.
 
-OCRmyPDF also some image processing options like deskew which improve
-the appearance of files and quality of OCR. When these are used, the OCR
-layer is grafted onto the processed image instead.
+OCRmyPDF also provides some image processing options, like deskew, which
+improves the appearance of files and quality of OCR. When these are used,
+the OCR layer is grafted onto the processed image instead.
 
 By default, OCRmyPDF produces archival PDFs – PDF/A, which are a
 stricter subset of PDF features designed for long term archives. If
@@ -139,7 +144,7 @@ Limitations
 OCRmyPDF is limited by the Tesseract OCR engine. As such it experiences
 these limitations, as do any other programs that rely on Tesseract:
 
--  The OCR is not as accurate as commercial solutions such as Abbyy.
+-  The OCR is not as accurate as commercial OCR solutions.
 -  It is not capable of recognizing handwriting.
 -  It may find gibberish and report this as OCR output.
 -  If a document contains languages outside of those given in the
@@ -207,8 +212,9 @@ consider one of these similar open source programs:
 
 -  pdf2pdfocr
 -  pdfsandwich
--  pypdfocr
--  pdfbeads
+
+Ghostscript recently added three "pdfocr" output devices. They work by
+rasterizing all content and converting all pages to a single colour space.
 
 Web front-ends
 ==============

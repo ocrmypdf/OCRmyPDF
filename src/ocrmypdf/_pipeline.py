@@ -48,7 +48,7 @@ def triage_image_file(input_file, output_file, options):
     log.info("Input file is not a PDF, checking if it is an image...")
     try:
         im = Image.open(input_file)
-    except EnvironmentError as e:
+    except OSError as e:
         # Recover the original filename
         log.error(str(e).replace(str(input_file), str(options.input_file)))
         raise UnsupportedImageFormatError() from e
@@ -135,7 +135,7 @@ def triage(original_filename, input_file, output_file, options):
             # Origin file is a pdf create a symlink with pdf extension
             safe_symlink(input_file, output_file)
             return output_file
-    except EnvironmentError as e:
+    except OSError as e:
         log.debug(f"Temporary file was at: {input_file}")
         msg = str(e).replace(str(input_file), original_filename)
         raise InputFileError(msg) from e
@@ -521,13 +521,12 @@ def create_ocr_image(image: Path, page_context: PageContext):
                 # be None)
                 bbox = [float(v) for v in textarea]
                 xyscale = tuple(float(coord) / 72.0 for coord in im.info['dpi'])
-                pixcoords = [
+                pixcoords = (
                     bbox[0] * xyscale[0],
                     im.height - bbox[3] * xyscale[1],
                     bbox[2] * xyscale[0],
                     im.height - bbox[1] * xyscale[1],
-                ]
-                pixcoords = [int(round(c)) for c in pixcoords]
+                )
                 log.debug('blanking %r', pixcoords)
                 draw.rectangle(pixcoords, fill=white)
                 # draw.rectangle(pixcoords, outline=pink)
@@ -856,7 +855,7 @@ def merge_sidecars(txt_files: Iterable[Optional[Path]], context: PdfContext):
             if frm != 1:
                 stream.write('\f')  # Form feed between pages
             if txt_file:
-                with open(txt_file, 'r', encoding="utf-8") as in_:
+                with open(txt_file, encoding="utf-8") as in_:
                     txt = in_.read()
                     # Some OCR engines (e.g. Tesseract v4 alpha) add form feeds
                     # between pages, and some do not. For consistency, we ignore

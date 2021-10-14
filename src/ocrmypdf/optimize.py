@@ -25,8 +25,16 @@ from typing import (
 )
 
 import img2pdf
-import pikepdf
-from pikepdf import Dictionary, Name, Object, Pdf, PdfImage
+from pikepdf import (
+    Dictionary,
+    Name,
+    Object,
+    ObjectStreamMode,
+    Pdf,
+    PdfImage,
+    Stream,
+    UnsupportedImageTypeError,
+)
 from PIL import Image
 
 from ocrmypdf import leptonica
@@ -63,7 +71,7 @@ def jpg_name(root: Path, xref: Xref) -> Path:
 
 
 def extract_image_filter(
-    pike: Pdf, root: Path, image: Object, xref: Xref
+    pike: Pdf, root: Path, image: Stream, xref: Xref
 ) -> Optional[Tuple[PdfImage, Tuple[Name, Object]]]:
     del pike  # unused args
     del root
@@ -89,7 +97,7 @@ def extract_image_filter(
         return None  # Don't mess with wide gamut images
 
     if filtdp[0] == Name.JPXDecode:
-        log.debug(f"Skipping JPEG2000 iamge, xref {xref}")
+        log.debug(f"Skipping JPEG2000 image, xref {xref}")
         return None  # Don't do JPEG2000
 
     if filtdp[0] == Name.CCITTFaxDecode and filtdp[1].get('/K', 0) >= 0:
@@ -104,7 +112,7 @@ def extract_image_filter(
 
 
 def extract_image_jbig2(
-    *, pike: pikepdf.Pdf, root: Path, image: Object, xref: Xref, options
+    *, pike: Pdf, root: Path, image: Stream, xref: Xref, options
 ) -> Optional[XrefExt]:
     del options  # unused arg
 
@@ -123,16 +131,16 @@ def extract_image_jbig2(
         # Showing the palette or ICC to jbig2enc will cause it to perform
         # colorspace transform to 1bpp, which will conflict the palette or
         # ICC if it exists.
-        colorspace = pim.obj.get(pikepdf.Name.ColorSpace, None)
+        colorspace = pim.obj.get(Name.ColorSpace, None)
         if colorspace is not None or pim.image_mask:
             try:
                 # Set to DeviceGray temporarily; we already in 1 bpc.
-                pim.obj.ColorSpace = pikepdf.Name.DeviceGray
+                pim.obj.ColorSpace = Name.DeviceGray
                 imgname = root / f'{xref:08d}'
                 with imgname.open('wb') as f:
                     ext = pim.extract_to(stream=f)
                 imgname.rename(imgname.with_suffix(ext))
-            except pikepdf.UnsupportedImageTypeError:
+            except UnsupportedImageTypeError:
                 return None
             finally:
                 # Restore image colorspace after temporarily setting it to DeviceGray
@@ -145,7 +153,7 @@ def extract_image_jbig2(
 
 
 def extract_image_generic(
-    *, pike: Pdf, root: Path, image: PdfImage, xref: Xref, options
+    *, pike: Pdf, root: Path, image: Stream, xref: Xref, options
 ) -> Optional[XrefExt]:
     result = extract_image_filter(pike, root, image, xref)
     if result is None:
@@ -178,7 +186,7 @@ def extract_image_generic(
             with imgname.open('wb') as f:
                 ext = pim.extract_to(stream=f)
             imgname.rename(imgname.with_suffix(ext))
-        except pikepdf.UnsupportedImageTypeError:
+        except UnsupportedImageTypeError:
             return None
         return XrefExt(xref, ext)
     elif (
@@ -365,6 +373,7 @@ def convert_to_jbig2(
     When the JBIG2 symbolic coder is not used, each JBIG2 stands on its own
     and needs no dictionary. Currently this must be lossless JBIG2.
     """
+    jbig2_globals_dict: Optional[Dictionary]
 
     _produce_jbig2_images(jbig2_groups, root, options, executor)
 
@@ -373,7 +382,7 @@ def convert_to_jbig2(
         jbig2_symfile = root / (prefix + '.sym')
         if jbig2_symfile.exists():
             jbig2_globals_data = jbig2_symfile.read_bytes()
-            jbig2_globals = pikepdf.Stream(pike, jbig2_globals_data)
+            jbig2_globals = Stream(pike, jbig2_globals_data)
             jbig2_globals_dict = Dictionary(JBIG2Globals=jbig2_globals)
         elif options.jbig2_page_group_size == 1:
             jbig2_globals_dict = None
@@ -444,8 +453,8 @@ def _transcode_png(pike: Pdf, filename: Path, xref: Xref) -> bool:
     with output.open('wb') as f:
         img2pdf.convert(fspath(filename), outputstream=f)
 
-    with pikepdf.open(output) as pdf_image:
-        foreign_image = next(pdf_image.pages[0].images.values())
+    with Pdf.open(output) as pdf_image:
+        foreign_image = next(iter(pdf_image.pages[0].images.values()))
         local_image = pike.copy_foreign(foreign_image)
 
         im_obj = pike.get_object(xref, 0)
@@ -524,12 +533,15 @@ def transcode_pngs(
         _transcode_png(pike, filename, xref)
 
 
+DEFAULT_EXECUTOR = SerialExecutor()
+
+
 def optimize(
     input_file: Path,
     output_file: Path,
     context,
     save_settings,
-    executor: Executor = SerialExecutor(),
+    executor: Executor = DEFAULT_EXECUTOR,
 ) -> None:
     options = context.options
     if options.optimize == 0:
@@ -543,7 +555,7 @@ def optimize(
     if options.jbig2_page_group_size == 0:
         options.jbig2_page_group_size = 10 if options.jbig2_lossy else 1
 
-    with pikepdf.Pdf.open(input_file) as pike:
+    with Pdf.open(input_file) as pike:
         root = output_file.parent / 'images'
         root.mkdir(exist_ok=True)
 
@@ -575,7 +587,7 @@ def optimize(
     if savings < 0:
         log.info("Image optimization did not improve the file - discarded")
         # We still need to save the file
-        with pikepdf.open(input_file) as pike:
+        with Pdf.open(input_file) as pike:
             pike.remove_unreferenced_resources()
             pike.save(output_file, **save_settings)
     else:
@@ -622,7 +634,7 @@ def main(infile, outfile, level, jobs=1):
             dict(
                 compress_streams=True,
                 preserve_pdfa=True,
-                object_stream_mode=pikepdf.ObjectStreamMode.generate,
+                object_stream_mode=ObjectStreamMode.generate,
             ),
         )
         copy(fspath(tmpout), fspath(outfile))

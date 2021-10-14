@@ -228,8 +228,8 @@ preprocessing is specified, then the image layer is a new PDF.
 Unlike ``sandwich`` this renderer is implemented within OCRmyPDF; anyone
 looking to customize how OCR is presented should look here. A major
 disadvantage of this renderer is it not capable of correctly handling
-text outside the Latin alphabet. Pull requests to improve the situation
-are welcome.
+text outside the Latin alphabet (specifically, it supports the ISO 8859-1
+character). Pull requests to improve the situation are welcome.
 
 Currently, this renderer has the best compatibility with Mozilla's
 PDF.js viewer.

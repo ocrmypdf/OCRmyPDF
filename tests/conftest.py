@@ -70,6 +70,11 @@ def outpdf(tmp_path):
 
 
 @pytest.fixture(scope="function")
+def outtxt(tmp_path):
+    return tmp_path / 'out.txt'
+
+
+@pytest.fixture(scope="function")
 def no_outpdf(tmp_path):
     """This just documents the fact that a test is not expected to produce
     output. Unfortunately an assertion failure inside a test fixture produces
