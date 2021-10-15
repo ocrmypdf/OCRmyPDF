@@ -24,45 +24,39 @@
 import logging
 import os
 import sys
+from pathlib import Path
 
 import ocrmypdf
 
 # pylint: disable=logging-format-interpolation
 # pylint: disable=logging-not-lazy
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
-print(script_dir + '/batch.py: Start')
+script_dir = Path(__file__).parent
 
 if len(sys.argv) > 1:
-    start_dir = sys.argv[1]
+    start_dir = Path(sys.argv[1])
 else:
-    start_dir = '.'
+    start_dir = Path('.')
 
 if len(sys.argv) > 2:
-    log_file = sys.argv[2]
+    log_file = Path(sys.argv[2])
 else:
-    log_file = script_dir + '/ocr-tree.log'
+    log_file = script_dir.with_name('ocr-tree.log')
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(message)s',
     filename=log_file,
-    filemode='w',
+    filemode='a',
 )
 
 ocrmypdf.configure_logging(ocrmypdf.Verbosity.default)
 
-for dir_name, _subdirs, file_list in os.walk(start_dir):
-    logging.info(dir_name + '\n')
-    os.chdir(dir_name)
-    for filename in file_list:
-        file_ext = os.path.splitext(filename)[1]
-        if file_ext == '.pdf':
-            full_path = dir_name + '/' + filename
-            print(full_path)
-            result = ocrmypdf.ocr(filename, filename, deskew=True)
-            if result == ocrmypdf.ExitCode.already_done_ocr:
-                print("Skipped document because it already contained text")
-            elif result == ocrmypdf.ExitCode.ok:
-                print("OCR complete")
-            logging.info(result)
+for filename in start_dir.glob("**/*.py"):
+    logging.info(f"Processing {filename}")
+    result = ocrmypdf.ocr(filename, filename, deskew=True)
+    if result == ocrmypdf.ExitCode.already_done_ocr:
+        logging.error("Skipped document because it already contained text")
+    elif result == ocrmypdf.ExitCode.ok:
+        logging.info("OCR complete")
+    logging.info(result)
