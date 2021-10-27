@@ -18,6 +18,11 @@ wish to use some of its features for working with PDFs.
    for Python 3.6 around that time. The change will be marked with a major
    release.
 
+v12.7.1
+=======
+
+-  Declare support for pdfminer.six v20211012.
+
 v12.7.0
 =======
 
