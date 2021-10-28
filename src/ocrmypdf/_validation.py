@@ -160,10 +160,12 @@ def _pages_from_ranges(ranges: str) -> Set[int]:
             try:
                 new_pages = list(range(int(start) - 1, int(end)))
                 if not new_pages:
-                    raise BadArgsError(f"invalid page subrange '{start}-{end}'")
+                    raise BadArgsError(
+                        f"invalid page subrange '{start}-{end}'"
+                    ) from None
                 pages.extend(new_pages)
             except ValueError:
-                raise BadArgsError("invalid page range") from None
+                raise BadArgsError(f"invalid page subrange '{g}'") from None
 
     if not pages:
         raise BadArgsError(

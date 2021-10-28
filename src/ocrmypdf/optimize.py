@@ -585,7 +585,10 @@ def optimize(
     log.info(f"Optimize ratio: {ratio:.2f} savings: {(savings):.1%}")
 
     if savings < 0:
-        log.info("Image optimization did not improve the file - discarded")
+        log.info(
+            "Image optimization did not improve the file - "
+            "optimizations will not be used"
+        )
         # We still need to save the file
         with Pdf.open(input_file) as pike:
             pike.remove_unreferenced_resources()
