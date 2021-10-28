@@ -221,15 +221,7 @@ def check_pdf(input_file: Path) -> bool:
                 # If linearization is missing entirely, we do not complain. We do
                 # complain if linearization is present but incorrect.
                 pdf.check_linearization(sio)
-            except RuntimeError:
-                pass
-            except (
-                # Workaround for a problematic pikepdf version
-                # pragma: no cover
-                pikepdf.ForeignObjectError
-                if pikepdf.__version__ == '2.1.0'
-                else NeverRaise
-            ):
+            except (RuntimeError, pikepdf.ForeignObjectError):
                 pass
             else:
                 linearize_msgs = sio.getvalue()
