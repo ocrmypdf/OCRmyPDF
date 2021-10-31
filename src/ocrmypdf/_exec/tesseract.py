@@ -8,9 +8,7 @@
 """Interface to Tesseract executable"""
 
 import logging
-import os
 import re
-import shutil
 from collections import namedtuple
 from distutils.version import StrictVersion
 from os import fspath
@@ -250,7 +248,7 @@ def generate_hocr(
 
     # Reminder: test suite tesseract test plugins will break after any changes
     # to the number of order parameters here
-    args_tesseract.extend([os.fspath(input_file), os.fspath(prefix), 'hocr', 'txt'])
+    args_tesseract.extend([fspath(input_file), fspath(prefix), 'hocr', 'txt'])
     args_tesseract.extend(tessconfig)
     try:
         p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
@@ -273,7 +271,7 @@ def generate_hocr(
         # The sidecar text file will get the suffix .txt; rename it to
         # whatever caller wants it named
         if prefix.with_suffix('.txt').exists():
-            shutil.move(prefix.with_suffix('.txt'), output_text)
+            prefix.with_suffix('.txt').replace(output_text)
 
 
 def use_skip_page(output_pdf, output_text):
@@ -320,18 +318,18 @@ def generate_pdf(
     if user_patterns:
         args_tesseract.extend(['--user-patterns', user_patterns])
 
-    prefix = os.path.splitext(output_pdf)[0]  # Tesseract appends suffixes
+    prefix = output_pdf.parent / Path(output_pdf.stem)
 
     # Reminder: test suite tesseract test plugins might break after any changes
     # to the number of order parameters here
 
-    args_tesseract.extend([os.fspath(input_file), os.fspath(prefix), 'pdf', 'txt'])
+    args_tesseract.extend([fspath(input_file), fspath(prefix), 'pdf', 'txt'])
     args_tesseract.extend(tessconfig)
     try:
         p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
         stdout = p.stdout
-        if os.path.exists(prefix + '.txt'):
-            shutil.move(prefix + '.txt', output_text)
+        if prefix.with_suffix('.txt').exists():
+            prefix.with_suffix('.txt').replace(output_text)
     except TimeoutExpired:
         page_timedout(timeout)
         use_skip_page(output_pdf, output_text)
