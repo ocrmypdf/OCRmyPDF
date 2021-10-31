@@ -107,9 +107,7 @@ def generate_pdfa_ps(target_filename: Path, icc: str = 'sRGB'):
     if icc != 'sRGB':
         raise NotImplementedError("Only supporting sRGB")
 
-    bytes_icc_profile = read_binary(
-        'ocrmypdf.data', SRGB_ICC_PROFILE_NAME
-    )
+    bytes_icc_profile = read_binary('ocrmypdf.data', SRGB_ICC_PROFILE_NAME)
     ps = '\n'.join(_make_postscript(icc, bytes_icc_profile, 3))
 
     # We should have encoded everything to pure ASCII by this point, and
