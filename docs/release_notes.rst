@@ -18,6 +18,16 @@ wish to use some of its features for working with PDFs.
    for Python 3.6 around that time. The change will be marked with a major
    release.
 
+v12.7.2
+=======
+
+-  Fixed "invalid version number" error for Tesseract packaging with nonstandard 
+   version "5.0.0-rc1.20211030".
+-  Fixed use of deprecated ``importlib.resources.read_binary``.
+-  Replace some uses of string paths with ``pathlib.Path``.
+-  Fixed a leaked file handle when using ``--output-type none``.
+-  Removed shims to support versions of pikepdf that are no longer supported.
+
 v12.7.1
 =======
 
