@@ -59,8 +59,8 @@ class TesseractVersion(StrictVersion):
         r'''
         ^(\d+) \. (\d+) (\. (\d+))?  # groups: 1/major, 2/minor, 3/[skip], 4/patch
         [-]?  # optional hyphen separator
-        (?:(alpha|beta|rc|dev)?[.\-\ ]?(\d+)?)?  # 5/prerelease, 6/prerelease_num
-        (?:-(\d+)-g[0-9a-f]+)?  # untagged git version
+        (?: ((?:alpha|beta|rc|dev)\d*)? [.\-\ ]? (\d+)? )?  # 5/prerelease, 6/prerelease_num
+        (?:(?:-\d+)?-g[0-9a-f]+)?  # untagged git version
         $
         ''',
         re.VERBOSE | re.ASCII,
@@ -71,7 +71,7 @@ class TesseractVersion(StrictVersion):
             super().parse(vstring)
         except TypeError as e:
             if 'int() argument must be a string' in str(e):
-                super().parse(vstring + '0')
+                super().parse(vstring + '-0')
 
 
 def version():
