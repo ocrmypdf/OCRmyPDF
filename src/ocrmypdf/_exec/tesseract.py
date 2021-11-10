@@ -9,7 +9,6 @@
 
 import logging
 import re
-from collections import namedtuple
 from distutils.version import StrictVersion
 from os import fspath
 from pathlib import Path
@@ -23,11 +22,11 @@ from ocrmypdf.exceptions import (
     SubprocessOutputError,
     TesseractConfigError,
 )
+from ocrmypdf.pluginspec import OrientationConfidence
 from ocrmypdf.subprocess import get_version, run
 
 log = logging.getLogger(__name__)
 
-OrientationConfidence = namedtuple('OrientationConfidence', ('angle', 'confidence'))
 
 HOCR_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -127,7 +126,9 @@ def tess_base_args(langs: List[str], engine_mode: Optional[int]) -> List[str]:
     return args
 
 
-def get_orientation(input_file: Path, engine_mode: Optional[int], timeout: float):
+def get_orientation(
+    input_file: Path, engine_mode: Optional[int], timeout: float
+) -> OrientationConfidence:
     args_tesseract = tess_base_args(['osd'], engine_mode) + [
         '--psm',
         '0',
