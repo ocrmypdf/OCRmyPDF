@@ -56,8 +56,8 @@ Debian and Ubuntu 18.04 or newer
 .. |ubu-2004| image:: https://repology.org/badge/version-for-repo/ubuntu_20_04/ocrmypdf.svg
     :alt: Ubuntu 20.04 LTS
 
-.. |ubu-2010| image:: https://repology.org/badge/version-for-repo/ubuntu_20_10/ocrmypdf.svg
-    :alt: Ubuntu 20.10
+.. |ubu-2110| image:: https://repology.org/badge/version-for-repo/ubuntu_21_10/ocrmypdf.svg
+    :alt: Ubuntu 21.10
 
 +-----------------------------------------------+
 | **OCRmyPDF versions in Debian & Ubuntu**      |
@@ -66,7 +66,7 @@ Debian and Ubuntu 18.04 or newer
 +-----------------------------------------------+
 | |deb-stable| |deb-testing| |deb-unstable|     |
 +-----------------------------------------------+
-| |ubu-1804| |ubu-2004| |ubu-2010|              |
+| |ubu-1804| |ubu-2004| |ubu-2110|              |
 +-----------------------------------------------+
 
 Users of Debian 9 ("stretch") or later, or Ubuntu 18.04 or later, including users
@@ -98,11 +98,11 @@ For full details on version availability for your platform, check the
 Fedora
 ------
 
-.. |fedora-32| image:: https://repology.org/badge/version-for-repo/fedora_32/ocrmypdf.svg
-    :alt: Fedora 32
+.. |fedora-34| image:: https://repology.org/badge/version-for-repo/fedora_34/ocrmypdf.svg
+    :alt: Fedora 34
 
-.. |fedora-33| image:: https://repology.org/badge/version-for-repo/fedora_33/ocrmypdf.svg
-    :alt: Fedora 33
+.. |fedora-35| image:: https://repology.org/badge/version-for-repo/fedora_35/ocrmypdf.svg
+    :alt: Fedora 35
 
 .. |fedora-rawhide| image:: https://repology.org/badge/version-for-repo/fedora_rawhide/ocrmypdf.svg
     :alt: Fedore Rawhide
@@ -112,7 +112,7 @@ Fedora
 +-----------------------------------------------+
 | |latest|                                      |
 +-----------------------------------------------+
-| |fedora-32| |fedora-33| |fedora-rawhide|      |
+| |fedora-34| |fedora-35| |fedora-rawhide|      |
 +-----------------------------------------------+
 
 Users of Fedora 29 or later may simply
@@ -553,8 +553,8 @@ to change the PATH.
 Windows Subsystem for Linux
 ---------------------------
 
-#. Install Ubuntu 18.04 for Windows Subsystem for Linux, if not already installed.
-#. Follow the procedure to install :ref:`OCRmyPDF on Ubuntu 18.04 <ubuntu-lts-latest>`.
+#. Install Ubuntu 20.04 for Windows Subsystem for Linux, if not already installed.
+#. Follow the procedure to install :ref:`OCRmyPDF on Ubuntu 20.04 <ubuntu-lts-latest>`.
 #. Open the Windows command prompt and create a symlink:
 
 .. code-block:: powershell
