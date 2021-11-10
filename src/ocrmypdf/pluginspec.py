@@ -7,10 +7,9 @@
 
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
-from collections import namedtuple
 from logging import Handler
 from pathlib import Path
-from typing import TYPE_CHECKING, AbstractSet, List, Optional
+from typing import TYPE_CHECKING, AbstractSet, List, NamedTuple, Optional
 
 import pluggy
 
@@ -307,15 +306,18 @@ def filter_pdf_page(
     """
 
 
-OrientationConfidence = namedtuple('OrientationConfidence', ('angle', 'confidence'))
-"""Expresses an OCR engine's confidence in page rotation.
+class OrientationConfidence(NamedTuple):
+    """Expresses an OCR engine's confidence in page rotation.
 
-Attributes:
-    angle (int): The clockwise angle (0, 90, 180, 270) that the page should be
-        rotated. 0 means no rotation.
-    confidence (float): How confident the OCR engine is that this the correct
-        rotation. 0 is not confident, 15 is very confident. Arbitrary units.
-"""
+    Attributes:
+        angle: The clockwise angle (0, 90, 180, 270) that the page should be
+            rotated. 0 means no rotation.
+        confidence: How confident the OCR engine is that this the correct
+            rotation. 0 is not confident, 15 is very confident. Arbitrary units.
+    """
+
+    angle: int
+    confidence: float
 
 
 class OcrEngine(ABC):
