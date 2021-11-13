@@ -368,7 +368,7 @@ class OcrEngine(ABC):
 
     @staticmethod
     def get_deskew(input_file: Path, options: Namespace) -> float:
-        """Returns the deskew angle of the image, in radians."""
+        """Returns the deskew angle of the image, in degrees."""
         return 0.0
 
     @staticmethod

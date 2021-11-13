@@ -6,7 +6,6 @@
 
 
 import logging
-import math
 import os
 import re
 import sys
@@ -479,9 +478,7 @@ def preprocess_deskew(input_file: Path, page_context: PageContext):
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
 
     ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
-    deskew_angle = ocr_engine.get_deskew(input_file, page_context.options)
-
-    deskew_angle_degrees = deskew_angle * 180.0 / math.pi
+    deskew_angle_degrees = ocr_engine.get_deskew(input_file, page_context.options)
 
     with Image.open(input_file) as im:
         # According to Pillow docs, .rotate() will automatically use Image.NEAREST

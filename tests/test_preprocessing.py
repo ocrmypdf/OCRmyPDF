@@ -5,7 +5,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-from math import isclose, pi
+from math import isclose
 
 import pytest
 from PIL import Image
@@ -36,7 +36,7 @@ def test_deskew(resources, outdir):
         pageno=1,
     )
 
-    skew_angle = tesseract.get_deskew(deskewed_png, [], None, 5.0) * 180 / pi
+    skew_angle = tesseract.get_deskew(deskewed_png, [], None, 5.0)
     print(skew_angle)
     assert -0.5 < skew_angle < 0.5, "Deskewing failed"
 

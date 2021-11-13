@@ -10,6 +10,7 @@
 import logging
 import re
 from distutils.version import StrictVersion
+from math import pi
 from os import fspath
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
@@ -172,7 +173,7 @@ def get_orientation(
 def get_deskew(
     input_file: Path, languages: List[str], engine_mode: Optional[int], timeout: float
 ) -> float:
-    """Gets angle to deskew this page, in radians."""
+    """Gets angle to deskew this page, in degrees."""
     args_tesseract = tess_base_args(languages, engine_mode) + [
         '--psm',
         '2',
@@ -193,8 +194,9 @@ def get_deskew(
         raise SubprocessOutputError() from e
 
     parsed = _parse_tesseract_output(p.stdout)
-    deskew = float(parsed.get('Deskew angle', 0))
-    return deskew
+    deskew_radians = float(parsed.get('Deskew angle', 0))
+    deskew_degrees = 180 / pi * deskew_radians
+    return deskew_degrees
 
 
 def tesseract_log_output(stream):
