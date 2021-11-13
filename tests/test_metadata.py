@@ -20,7 +20,7 @@ from ocrmypdf._pipeline import convert_to_pdfa, metadata_fixup
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import ExitCode
-from ocrmypdf.pdfa import SRGB_ICC_PROFILE, file_claims_pdfa, generate_pdfa_ps
+from ocrmypdf.pdfa import file_claims_pdfa, generate_pdfa_ps
 from ocrmypdf.pdfinfo import PdfInfo
 
 from .conftest import check_ocrmypdf, run_ocrmypdf
@@ -271,19 +271,6 @@ def test_xml_metadata_preserved(test_file, output_type, resources, outpdf):
                 f"acquired unexpected property {prop} with value "
                 f"{after.get(propidx) or after.get(prop)}"
             )
-
-
-def test_srgb_in_unicode_path(tmp_path):
-    """Test that we can produce pdfmark when install path is not ASCII"""
-
-    dstdir = tmp_path / b'\xe4\x80\x80'.decode('utf-8')
-    dstdir.mkdir()
-    dst = dstdir / 'sRGB.icc'
-
-    copyfile(SRGB_ICC_PROFILE, fspath(dst))
-
-    with patch('ocrmypdf.pdfa.SRGB_ICC_PROFILE', new=str(dst)):
-        generate_pdfa_ps(dstdir / 'out.ps')
 
 
 def test_kodak_toc(resources, outpdf):

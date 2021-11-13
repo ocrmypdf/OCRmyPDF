@@ -19,12 +19,6 @@ except ImportError:
     from importlib.resources import files as package_files
 
 import pikepdf
-import pkg_resources  # deprecated
-
-# Deprecated
-ICC_PROFILE_RELPATH = 'data/sRGB.icc'
-# Deprecated
-SRGB_ICC_PROFILE = pkg_resources.resource_filename('ocrmypdf', ICC_PROFILE_RELPATH)
 
 SRGB_ICC_PROFILE_NAME = 'sRGB.icc'
 
@@ -108,7 +102,9 @@ def generate_pdfa_ps(target_filename: Path, icc: str = 'sRGB'):
     if icc != 'sRGB':
         raise NotImplementedError("Only supporting sRGB")
 
-    bytes_icc_profile = (package_files('ocrmypdf.data') / SRGB_ICC_PROFILE).read_bytes()
+    bytes_icc_profile = (
+        package_files('ocrmypdf.data') / SRGB_ICC_PROFILE_NAME
+    ).read_bytes()
     ps = '\n'.join(_make_postscript(icc, bytes_icc_profile, 3))
 
     # We should have encoded everything to pure ASCII by this point, and
