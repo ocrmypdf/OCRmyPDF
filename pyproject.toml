@@ -2,7 +2,6 @@
 requires = [
   "setuptools >= 30.3.0",
   "wheel",
-  "cffi",
   "setuptools_scm[toml] >= 3.4",
   "setuptools_scm_git_archive"
 ]
@@ -31,7 +30,6 @@ exclude = '''
   | docs
   | misc
   | \.egg-info
-  | src/ocrmypdf/lib/_leptonica.py
 )/
 '''
 
@@ -63,7 +61,7 @@ exclude_lines = [
 [tool.isort]
 profile = "black"
 known_first_party = "ocrmypdf"
-known_third_party = ["PIL", "_cffi_backend", "cffi", "flask", "img2pdf", "ocrmypdf", "pdfminer", "pikepdf", "pkg_resources", "pluggy", "pytest", "reportlab", "setuptools", "sphinx_rtd_theme", "tqdm", "watchdog", "werkzeug"]
+known_third_party = ["PIL", "flask", "img2pdf", "ocrmypdf", "pdfminer", "pikepdf", "pkg_resources", "pluggy", "pytest", "reportlab", "setuptools", "sphinx_rtd_theme", "tqdm", "watchdog", "werkzeug"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -77,6 +75,6 @@ filterwarnings = ["ignore:.*XMLParser.*:DeprecationWarning"]
 
 [[tool.mypy.overrides]]
 module = [
-  'pluggy', 'tqdm', 'coloredlogs', 'img2pdf', 'cffi', '_cffi_backend', 'pdfminer.*', 'reportlab.*'
+  'pluggy', 'tqdm', 'coloredlogs', 'img2pdf', 'pdfminer.*', 'reportlab.*'
 ]
 ignore_missing_imports = true

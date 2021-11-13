@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 FROM base as builder
 
+# Note we need leptonica here to build jbig2
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential autoconf automake libtool \
   libleptonica-dev \

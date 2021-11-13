@@ -1,5 +1,4 @@
 # Deprecated and not maintained; use "pip install ocrmypdf" instead
-cffi == 1.14.5
 coloredlogs == 15.0  # technically optional
 img2pdf == 0.4.0
 pdfminer.six == 20201018

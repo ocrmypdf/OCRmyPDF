@@ -10,10 +10,8 @@ from setuptools import setup
 # Minimal setup to support older setuptools/setuptools_scm
 setup(
     setup_requires=[  # can be removed whenever we can drop pip 9 support
-        'cffi >= 1.9.1',  # to build the leptonica module
         'setuptools_scm',  # so that version will work
         'setuptools_scm_git_archive',  # enable version from github tarballs
     ],
     use_scm_version={'version_scheme': 'post-release'},
-    cffi_modules=['src/ocrmypdf/lib/compile_leptonica.py:ffibuilder'],
 )

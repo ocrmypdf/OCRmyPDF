@@ -91,11 +91,13 @@ if on_rtd:
         'pikepdf',
         'pikepdf.models',
         'pikepdf.models.metadata',
-        'ocrmypdf.leptonica',
     ]
     sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
-from importlib_metadata import version as package_version
+try:
+    from importlib_metadata import version as package_version
+except ModuleNotFoundError:
+    from importlib.metadata import version as package_version
 
 # The full version, including alpha/beta/rc tags.
 release = package_version('ocrmypdf')

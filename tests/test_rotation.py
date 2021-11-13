@@ -70,7 +70,7 @@ def compare_images_monochrome(
 
 
 def test_monochrome_comparison(resources, outdir):
-    # Verify leptonica: check that an incorrect rotated image has poor
+    # Self test: check that an incorrect rotated image has poor
     # comparison with reference
     cmp = compare_images_monochrome(
         outdir,

@@ -7,7 +7,7 @@
 
 from pluggy import HookimplMarker as _HookimplMarker
 
-from ocrmypdf import helpers, hocrtransform, leptonica, pdfa, pdfinfo
+from ocrmypdf import helpers, hocrtransform, pdfa, pdfinfo
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._version import PROGRAM_NAME, __version__

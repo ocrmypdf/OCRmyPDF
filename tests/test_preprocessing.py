@@ -12,7 +12,6 @@ from PIL import Image
 
 from ocrmypdf._exec import ghostscript, tesseract
 from ocrmypdf.helpers import Resolution
-from ocrmypdf.leptonica import Pix
 from ocrmypdf.pdfinfo import PdfInfo
 
 from .conftest import check_ocrmypdf, have_unpaper
@@ -24,8 +23,7 @@ def test_deskew(resources, outdir):
     # Run with deskew
     deskewed_pdf = check_ocrmypdf(resources / 'skew.pdf', outdir / 'skew.pdf', '-d')
 
-    # Now render as an image again and use Leptonica to find the skew angle
-    # to confirm that it was deskewed
+    # Now render as an image again...
     deskewed_png = outdir / 'deskewed.png'
 
     ghostscript.rasterize_pdf(
@@ -36,6 +34,7 @@ def test_deskew(resources, outdir):
         pageno=1,
     )
 
+    # ...and use Tessera to find the skew angle to confirm that it was deskewed
     skew_angle = tesseract.get_deskew(deskewed_png, [], None, 5.0)
     print(skew_angle)
     assert -0.5 < skew_angle < 0.5, "Deskewing failed"

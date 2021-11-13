@@ -189,7 +189,6 @@ of ocrmypdf, and install the following dependencies:
         liblept5 \
         libxml2 \
         pngquant \
-        python3-cffi \
         python3-distutils \
         python3-pkg-resources \
         python3-reportlab \
@@ -371,10 +370,8 @@ dependencies:
         ghostscript \
         icc-profiles-openicc \
         jbig2dec \
-        lib64leptonica5 \
         pngquant \
         python3-pip \
-        python3-cffi \
         python3-distutils-extra \
         python3-pkg-resources \
         python3-reportlab \
