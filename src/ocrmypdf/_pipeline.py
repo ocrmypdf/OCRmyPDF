@@ -511,10 +511,6 @@ def create_ocr_image(image: Path, page_context: PageContext):
     output_file = page_context.get_path('ocr.png')
     options = page_context.options
     with Image.open(image) as im:
-        white = ImageColor.getcolor('#ffffff', im.mode)
-        # pink = ImageColor.getcolor('#ff0080', im.mode)
-        draw = ImageDraw.ImageDraw(im)
-
         log.debug('resolution %r', im.info['dpi'])
 
         if not options.force_ocr:
@@ -524,6 +520,7 @@ def create_ocr_image(image: Path, page_context: PageContext):
             if options.redo_ocr:
                 mask = True  # Mask visible text, but not invisible text
 
+            draw = ImageDraw.ImageDraw(im)
             for textarea in page_context.pageinfo.get_textareas(
                 visible=mask, corrupt=None
             ):
@@ -539,9 +536,8 @@ def create_ocr_image(image: Path, page_context: PageContext):
                     im.height - bbox[1] * xyscale[1],
                 )
                 log.debug('blanking %r', pixcoords)
-                draw.rectangle(pixcoords, fill=white)
-                # draw.rectangle(pixcoords, outline=pink)
-        del draw
+                draw.rectangle(pixcoords, fill='white')
+                # draw.rectangle(pixcoords, outline='pink')
 
         filter_im = page_context.plugin_manager.hook.filter_ocr_image(
             page=page_context, image=im
