@@ -46,17 +46,6 @@ Style guide: Is it OCRmyPDF or ocrmypdf?
 
 The program/project is OCRmyPDF and the name of the executable or library is ocrmypdf.
 
-Known ports/packagers
-=====================
-
-OCRmyPDF has been ported to many platforms already. If you are interesting in
-porting to a new platform, check with
-`Repology <https://repology.org/projects/?search=ocrmypdf>`__ to see the status
-of that platform.
-
-Packager maintainers, please ensure that the command line completion scripts in
-``misc/`` are installed.
-
 Copyright and license
 =====================
 
