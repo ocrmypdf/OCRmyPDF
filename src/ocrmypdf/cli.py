@@ -287,14 +287,6 @@ Online documentation is located at:
         help="EXPERIMENTAL. Mask out any vector objects in the PDF so that they "
         "will not be included in OCR. This can eliminate false characters.",
     )
-    preprocessing.add_argument(
-        '--threshold',
-        action='store_true',
-        help=(
-            "EXPERIMENTAL. Threshold image to 1bpp before sending it to Tesseract "
-            "for OCR. Can improve OCR quality compared to Tesseract's thresholder."
-        ),
-    )
 
     ocrsettings = parser.add_argument_group("OCR options", "Control how OCR is applied")
     ocrsettings.add_argument(

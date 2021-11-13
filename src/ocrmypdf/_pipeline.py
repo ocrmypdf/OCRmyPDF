@@ -541,14 +541,6 @@ def create_ocr_image(image: Path, page_context: PageContext):
                 log.debug('blanking %r', pixcoords)
                 draw.rectangle(pixcoords, fill=white)
                 # draw.rectangle(pixcoords, outline=pink)
-
-        if options.threshold:
-            pix = leptonica.Pix.frompil(im)
-            pix = pix.masked_threshold_on_background_norm()
-            im_pix = pix.topil()
-            im_pix.info['dpi'] = im.info['dpi']
-            im = im_pix
-
         del draw
 
         filter_im = page_context.plugin_manager.hook.filter_ocr_image(

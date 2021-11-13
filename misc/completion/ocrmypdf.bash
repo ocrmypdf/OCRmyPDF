@@ -40,7 +40,7 @@ _ocrmypdf()
             --sidecar --version --jobs --quiet --verbose --title --author
             --subject --keywords --rotate-pages --remove-background --deskew
             --clean --clean-final --unpaper-args --oversample --remove-vectors
-            --threshold --force-ocr --skip-text --redo-ocr
+            --force-ocr --skip-text --redo-ocr
             --skip-big --jpeg-quality --png-quality --jbig2-lossy
             --max-image-mpixels --tesseract-config --tesseract-pagesegmode
             --help --tesseract-oem --pdf-renderer --tesseract-timeout

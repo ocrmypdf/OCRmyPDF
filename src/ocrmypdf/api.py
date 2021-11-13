@@ -228,7 +228,6 @@ def ocr(  # pylint: disable=unused-argument
     unpaper_args: str = None,
     oversample: int = None,
     remove_vectors: bool = None,
-    threshold: bool = None,
     force_ocr: bool = None,
     skip_text: bool = None,
     redo_ocr: bool = None,

@@ -869,20 +869,6 @@ def test_image_dpi_not_image(caplog, resources, outpdf):
     assert '--image-dpi is being ignored' in caplog.text
 
 
-def test_image_dpi_threshold(resources, outpdf):
-    check_ocrmypdf(
-        resources / 'typewriter.png',
-        outpdf,
-        '--threshold',
-        '--image-dpi=170',
-        '--output-type=pdf',
-        '--optimize=0',
-        '--plugin',
-        'tests/plugins/tesseract_noop.py',
-    )
-    assert outpdf.exists()
-
-
 def test_outputtype_none_bad_setup(resources, outpdf):
     p, _out, err = run_ocrmypdf(
         resources / 'trivial.pdf',

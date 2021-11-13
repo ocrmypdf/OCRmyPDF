@@ -29,7 +29,6 @@ complete -c ocrmypdf -s d -l deskew -d "fix small horizontal alignment skew"
 complete -c ocrmypdf -s c -l clean -d "clean document images before OCR"
 complete -c ocrmypdf -s i -l clean-final -d "clean document images and keep result"
 complete -c ocrmypdf -l remove-vectors -d "don't send vector objects to OCR"
-complete -c ocrmypdf -l threshold -d "threshold images before OCR"
 
 complete -c ocrmypdf -s f -l force-ocr -d "OCR documents that already have printable text"
 complete -c ocrmypdf -s s -l skip-ocr -d "skip OCR on pages that text, otherwise try OCR"
