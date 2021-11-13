@@ -411,7 +411,7 @@ def _optimize_jpeg(args: Tuple[Xref, Path, Path, int]) -> Tuple[Xref, Optional[P
     if opt_jpg.stat().st_size > in_jpg.stat().st_size:
         log.debug("xref %s, jpeg, made larger - skip", xref)
         opt_jpg.unlink()
-        opt_jpg = None
+        return xref, None
     return xref, opt_jpg
 
 
