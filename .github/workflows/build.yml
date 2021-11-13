@@ -93,6 +93,7 @@ jobs:
 
       - name: Install Python packages
         run: |
+          python -m pip install --upgrade pip wheel
           python -m pip install .[test]
 
       - name: Report versions
@@ -148,7 +149,7 @@ jobs:
 
       - name: Install Python packages
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip wheel
           python -m pip install .[test]
 
       - name: Report versions
@@ -198,7 +199,7 @@ jobs:
 
       - name: Install Python packages
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip wheel
           python -m pip install .[test]
 
       - name: Test
