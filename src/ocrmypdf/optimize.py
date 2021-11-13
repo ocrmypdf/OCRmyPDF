@@ -37,7 +37,6 @@ from pikepdf import (
 )
 from PIL import Image
 
-from ocrmypdf import leptonica
 from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._jobcontext import PdfContext
@@ -399,7 +398,7 @@ def convert_to_jbig2(
             )
 
 
-def _optimize_jpeg(args):
+def _optimize_jpeg(args: Tuple[Xref, Path, Path, int]) -> Tuple[Xref, Optional[Path]]:
     xref, in_jpg, opt_jpg, jpeg_quality = args
 
     # This may produce a debug warning from PIL
@@ -417,20 +416,20 @@ def _optimize_jpeg(args):
 
 
 def transcode_jpegs(
-    pike: Pdf, jpegs: Sequence[Xref], root: Path, options, executor
+    pike: Pdf, jpegs: Sequence[Xref], root: Path, options, executor: Executor
 ) -> None:
-    def jpeg_args():
+    def jpeg_args() -> Iterator[Tuple[Xref, Path, Path, int]]:
         for xref in jpegs:
             in_jpg = jpg_name(root, xref)
             opt_jpg = in_jpg.with_suffix('.opt.jpg')
             yield xref, in_jpg, opt_jpg, options.jpeg_quality
 
-    def finish_jpeg(result, pbar):
+    def finish_jpeg(result: Tuple[Xref, Optional[Path]], pbar):
         xref, opt_jpg = result
         if opt_jpg:
-            compdata = leptonica.CompressedData.open(opt_jpg)
+            compdata = opt_jpg.read_bytes()  # JPEG can inserted into PDF as is
             im_obj = pike.get_object(xref, 0)
-            im_obj.write(compdata.read(), filter=Name.DCTDecode)
+            im_obj.write(compdata, filter=Name.DCTDecode)
         pbar.update()
 
     executor(
