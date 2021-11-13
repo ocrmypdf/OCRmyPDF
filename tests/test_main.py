@@ -180,6 +180,9 @@ def test_maximum_options(renderer, output_type, resources, outpdf):
     )
 
 
+@pytest.mark.skipif(
+    tesseract.version() >= '5', reason="tess 5 tries harder to find its files"
+)
 def test_tesseract_missing_tessdata(monkeypatch, resources, no_outpdf, tmpdir):
     monkeypatch.setenv("TESSDATA_PREFIX", os.fspath(tmpdir))
     with pytest.raises(MissingDependencyError):

@@ -74,7 +74,7 @@ class TesseractVersion(StrictVersion):
                 super().parse(vstring + '-0')
 
 
-def version():
+def version() -> str:
     return get_version('tesseract', regex=r'tesseract\s(.+)')
 
 

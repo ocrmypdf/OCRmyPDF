@@ -124,7 +124,7 @@ def _fix_process_args(args, env, kwargs):
 @lru_cache(maxsize=None)
 def get_version(
     program: str, *, version_arg: str = '--version', regex=r'(\d+(\.\d+)*)', env=None
-):
+) -> str:
     """Get the version of the specified program
 
     Arguments:
@@ -145,7 +145,7 @@ def get_version(
             check=True,
             env=env,
         )
-        output = proc.stdout
+        output: str = proc.stdout
     except FileNotFoundError as e:
         raise MissingDependencyError(
             f"Could not find program '{program}' on the PATH"
