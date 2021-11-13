@@ -14,9 +14,8 @@ wish to use some of its features for working with PDFs.
 
 .. note::
 
-   Python 3.6 reaches end of life on December 23, 2021. We will end support
-   for Python 3.6 around that time. The change will be marked with a major
-   release.
+   Python 3.6 reaches end of life on December 23, 2021. We will continue to support
+   OCRmyPDF v12.x if major issues are identified until that date.
 
 v12.7.2
 =======

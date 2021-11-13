@@ -129,7 +129,7 @@ def run_ocrmypdf(input_file, output_file, *args, text=True):
         p_args,
         stdout=PIPE,
         stderr=PIPE,
-        universal_newlines=text,  # When dropping support for Python 3.6 change to text=
+        text=text,
         env=env,
         check=False,
     )

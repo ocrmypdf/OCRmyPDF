@@ -53,37 +53,6 @@ def test_stdout(ocrmypdf_exec, resources, outpdf):
     assert check_pdf(output_file)
 
 
-@pytest.mark.skipif(
-    sys.version_info[0:3] >= (3, 6, 4), reason="issue fixed in Python 3.6.4"
-)
-@pytest.mark.skipif(os.name == 'nt', reason="POSIX problem")
-def test_closed_streams(ocrmypdf_exec, resources, outpdf):
-    input_file = str(resources / 'francais.pdf')
-    output_file = str(outpdf)
-
-    def evil_closer():
-        os.close(0)
-        os.close(1)
-
-    p_args = ocrmypdf_exec + [
-        input_file,
-        output_file,
-        '--plugin',
-        'tests/plugins/tesseract_noop.py',
-    ]
-    p = Popen(  # pylint: disable=subprocess-popen-preexec-fn
-        p_args,
-        close_fds=True,
-        stdout=None,
-        stderr=PIPE,
-        stdin=None,
-        preexec_fn=evil_closer,
-    )
-    _out, err = p.communicate()
-    print(err.decode())
-    assert p.returncode == ExitCode.ok
-
-
 @pytest.mark.skipif(sys.version_info >= (3, 7, 0), reason='better utf-8')
 @pytest.mark.skipif(
     Path('/etc/alpine-release').exists(), reason="invalid test on alpine"

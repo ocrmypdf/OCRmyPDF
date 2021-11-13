@@ -217,8 +217,8 @@ Ubuntu 16.04 LTS
 ----------------
 
 No package is available for Ubuntu 16.04. OCRmyPDF 8.0 and newer require
-Python 3.6. Ubuntu 16.04 ships Python 3.5, but you can install Python
-3.6 on it. Or, you can skip Python 3.6 and install OCRmyPDF 7.x or older
+Python 3.7. Ubuntu 16.04 ships Python 3.5, but you can install Python
+3.7 on it. Or, you can skip Python 3.7 and install OCRmyPDF 7.x or older
 - for that procedure, please see the installation documentation for the
 version of OCRmyPDF you plan to use.
 
@@ -229,7 +229,7 @@ version of OCRmyPDF you plan to use.
     sudo apt-get update
     sudo apt-get install -y software-properties-common python-software-properties
     sudo add-apt-repository -y \
-        ppa:jonathonf/python-3.6 \
+        ppa:jonathonf/python-3.7 \
         ppa:alex-p/tesseract-ocr
     sudo apt-get update
     sudo apt-get install -y \
@@ -237,22 +237,22 @@ version of OCRmyPDF you plan to use.
         libexempi3 \
         libffi6 \
         pngquant \
-        python3.6 \
+        python3.7 \
         qpdf \
         tesseract-ocr \
         unpaper
 
-This will install a Python 3.6 binary at ``/usr/bin/python3.6``
+This will install a Python 3.7 binary at ``/usr/bin/python3.7``
 alongside the system's Python 3.5. Do not remove the system Python. This
 will also install Tesseract 4.0 from a PPA, since the version available
 in Ubuntu 16.04 is too old for OCRmyPDF.
 
-Now install pip for Python 3.6. This will install the Python 3.6 version
+Now install pip for Python 3.7. This will install the Python 3.7 version
 of ``pip`` at ``/usr/local/bin/pip``.
 
 .. code-block:: bash
 
-    curl https://bootstrap.pypa.io/get-pip.py | sudo python3.6
+    curl https://bootstrap.pypa.io/get-pip.py | sudo python3.7
 
 **Install OCRmyPDF**
 
@@ -272,7 +272,7 @@ environment variable contains ``$HOME/.local/bin``.
 .. code-block:: bash
 
     export PATH=$HOME/.local/bin:$PATH
-    pip3.6 install --user ocrmypdf
+    pip3.7 install --user ocrmypdf
 
 To add JBIG2 encoding, see :ref:`jbig2`.
 
@@ -572,7 +572,7 @@ Cygwin64
 
 First install the the following prerequisite Cygwin packages using ``setup-x86_64.exe``::
 
-    python36 (or later)
+    python37 (or later)
     python3?-devel
     python3?-pip
     python3?-lxml
@@ -708,16 +708,14 @@ OCRmyPDF currently requires these external programs and libraries to be
 installed, and must be satisfied using the operating system package
 manager. ``pip`` cannot provide them.
 
--  Python 3.6 or newer
+-  Python 3.7 or newer
 -  Ghostscript 9.15 or newer
--  qpdf 8.1.0 or newer
 -  Tesseract 4.0.0-beta or newer
 
 As of ocrmypdf 7.2.1, the following versions are recommended:
 
--  Python 3.7 or 3.8
+-  Python 3.9 or newer
 -  Ghostscript 9.23 or newer
--  qpdf 8.2.1
 -  Tesseract 4.0.0 or newer
 -  jbig2enc 0.29 or newer
 -  pngquant 2.5 or newer
@@ -749,7 +747,7 @@ unfortunately, the ``pip install`` command cannot satisfy all of them.
 Installing HEAD revision from sources
 =====================================
 
-If you have ``git`` and Python 3.6 or newer installed, you can install
+If you have ``git`` and Python 3.7 or newer installed, you can install
 from source. When the ``pip`` installer runs, it will alert you if
 dependencies are missing.
 

@@ -275,54 +275,6 @@ def check_options(options, plugin_manager):
     _check_options(options, plugin_manager, ocr_engine_languages)
 
 
-def check_closed_streams(options):  # pragma: no cover
-    """Work around Python issue with multiprocessing forking on closed streams
-
-    https://bugs.python.org/issue28326
-
-    Attempting to a fork/exec a new Python process when any of std{in,out,err}
-    are closed or not flushable for some reason may raise an exception.
-    Fix this by opening devnull if the handle seems to be closed.  Do this
-    globally to avoid tracking all places that fork.
-
-    Seems to be specific to multiprocessing.Process not all Python process
-    forkers.
-
-    The error actually occurs when the stream object is not flushable,
-    but replacing an open stream object that is not flushable with
-    /dev/null is a bad idea since it will create a silent failure.  Replacing
-    a closed handle with /dev/null seems safe.
-
-    """
-
-    if sys.version_info[0:3] >= (3, 6, 4):
-        return True  # Issued fixed in Python 3.6.4+
-
-    if sys.stderr is None:
-        sys.stderr = open(os.devnull, 'w')
-
-    if sys.stdin is None:
-        if options.input_file == '-':
-            log.error("Trying to read from stdin but stdin seems closed")
-            return False
-        sys.stdin = open(os.devnull)
-
-    if sys.stdout is None:
-        if options.output_file == '-':
-            # Can't replace stdout if the user is piping
-            # If this case can even happen, it must be some kind of weird
-            # stream.
-            log.error(
-                "Output was set to stdout '-' but the stream attached to "
-                "stdout does not support the flush() system call.  This "
-                "will fail."
-            )
-            return False
-        sys.stdout = open(os.devnull, 'w')
-
-    return True
-
-
 def create_input_file(options, work_folder: Path) -> Tuple[Path, str]:
     if options.input_file == '-':
         # stdin

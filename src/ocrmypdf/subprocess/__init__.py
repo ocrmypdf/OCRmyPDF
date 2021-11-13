@@ -117,15 +117,7 @@ def _fix_process_args(args, env, kwargs):
     log.debug("Running: %s", args)
     process_log = log.getChild(os.path.basename(program))
     text = kwargs.get('text', False)
-    if sys.version_info < (3, 7):
-        if os.name == 'nt':
-            # Can't use close_fds=True on Windows with Python 3.6 or older
-            # https://bugs.python.org/issue19575, etc.
-            kwargs['close_fds'] = False
-        if 'text' in kwargs:
-            # Convert run(...text=) to run(...universal_newlines=) for Python 3.6
-            kwargs['universal_newlines'] = kwargs['text']
-            del kwargs['text']
+
     return args, env, process_log, text
 
 

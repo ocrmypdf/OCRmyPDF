@@ -110,7 +110,7 @@ Please report issues on our [GitHub issues](https://github.com/jbarlow83/OCRmyPD
 
 ## Requirements
 
-In addition to the required Python version (3.6+), OCRmyPDF requires external program installations of Ghostscript and Tesseract OCR. OCRmyPDF is pure Python, and runs on pretty much everything: Linux, macOS, Windows and FreeBSD.
+In addition to the required Python version (3.7+), OCRmyPDF requires external program installations of Ghostscript and Tesseract OCR. OCRmyPDF is pure Python, and runs on pretty much everything: Linux, macOS, Windows and FreeBSD.
 
 ## Press & Media
 

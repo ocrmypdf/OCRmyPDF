@@ -598,7 +598,7 @@ def test_compression_preserved(ocrmypdf_exec, resources, image, outpdf):
             stdout=PIPE,
             stderr=PIPE,
             stdin=input_stream,
-            universal_newlines=True,  # When dropping support for Python 3.6 change to text=
+            text=True,
             check=False,
         )
 
@@ -659,7 +659,7 @@ def test_compression_changed(ocrmypdf_exec, resources, image, compression, outpd
             stdout=PIPE,
             stderr=PIPE,
             stdin=input_stream,
-            universal_newlines=True,  # When dropping support for Python 3.6 change to text=
+            text=True,
             check=False,
         )
         assert p.returncode == ExitCode.ok, p.stderr

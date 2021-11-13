@@ -28,22 +28,14 @@ class TqdmConsole:
     This routes log messages through tqdm so that it can print them above the
     progress bar, and then refresh the progress bar, rather than overwriting
     it which looks messy.
-
-    For some reason Python 3.6 prints extra empty messages from time to time,
-    so we suppress those.
     """
 
     def __init__(self, file):
         self.file = file
-        self.py36 = sys.version_info[0:2] == (3, 6)
 
     def write(self, msg):
         # When no progress bar is active, tqdm.write() routes to print()
-        if self.py36:
-            if msg.strip() != '':
-                tqdm.write(msg.rstrip(), end='\n', file=self.file)
-        else:
-            tqdm.write(msg.rstrip(), end='\n', file=self.file)
+        tqdm.write(msg.rstrip(), end='\n', file=self.file)
 
     def flush(self):
         with suppress(AttributeError):

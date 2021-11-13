@@ -21,8 +21,6 @@ jobs:
       matrix:
         include:
           - os: ubuntu-18.04
-            python: 3.6
-          - os: ubuntu-18.04
             python: 3.7
           - os: ubuntu-20.04
             python: 3.8
@@ -30,8 +28,6 @@ jobs:
             python: 3.9
           - os: ubuntu-latest
             python: 3.9
-          - os: ubuntu-20.04
-            python: "pypy-3.6"
           - os: ubuntu-latest
             python: "pypy-3.7"
           - os: ubuntu-latest
@@ -146,7 +142,6 @@ jobs:
             exempi \
             ghostscript \
             jbig2enc \
-            leptonica \
             openjpeg \
             pngquant \
             tesseract
@@ -227,7 +222,7 @@ jobs:
       - uses: actions/setup-python@v2
         name: Install Python
         with:
-          python-version: "3.6"
+          python-version: "3.7"
 
       - name: Make wheels and sdist
         run: |
