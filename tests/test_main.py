@@ -557,10 +557,6 @@ def test_skip_big_with_no_images(resources, outpdf):
     )
 
 
-@pytest.mark.skipif(
-    '8.0.0' <= pikepdf.__libqpdf_version__ <= '8.0.1',
-    reason="libqpdf regression on pages with no contents",
-)
 def test_no_contents(resources, outpdf):
     check_ocrmypdf(
         resources / 'no_contents.pdf',

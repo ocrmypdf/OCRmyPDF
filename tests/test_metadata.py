@@ -302,9 +302,6 @@ def test_kodak_toc(resources, outpdf):
         assert isinstance(p.Root.Outlines.First, pikepdf.Dictionary)
 
 
-@pytest.mark.skipif(
-    pikepdf.__version__ in ('2.2.2', '2.2.3'), reason="Raises wrong warning"
-)
 def test_metadata_fixup_warning(resources, outdir, caplog):
     options = get_parser().parse_args(
         args=['--output-type', 'pdfa-2', 'graph.pdf', 'out.pdf']

@@ -58,8 +58,6 @@ def strip_invisible_text(pdf, page):
     render_mode = 0
     text_objects = []
 
-    rich_page = Page(page)
-    rich_page.contents_coalesce()
     for operands, operator in parse_content_stream(page, ''):
         if not in_text_obj:
             if operator == Operator('BT'):
@@ -303,14 +301,7 @@ class OcrGrafter:
             if strip_old_text:
                 strip_invisible_text(self.pdf_base, base_page)
 
-            if hasattr(Page, 'contents_add'):
-                # pikepdf >= 2.14 adds this method and deprecates the one below
-                Page(base_page).contents_add(new_text_layer, prepend=True)
-            else:
-                # pikepdf < 2.14
-                base_page.page_contents_add(
-                    new_text_layer, prepend=True
-                )  # pragma: no cover
+            base_page.contents_add(new_text_layer, prepend=True)
 
             _update_resources(
                 obj=base_page, font=font, font_key=font_key, procset=procset

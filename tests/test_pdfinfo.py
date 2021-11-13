@@ -205,11 +205,11 @@ def test_pages_issue700(monkeypatch, resources):
 
 def test_image_scale0(resources, outpdf):
     with pikepdf.open(resources / 'cmyk.pdf') as cmyk:
-        xobj = pikepdf.Page(cmyk.pages[0]).as_form_xobject()
+        xobj = cmyk.pages[0].as_form_xobject()
 
         p = pikepdf.Pdf.new()
         p.add_blank_page(page_size=(72, 72))
-        objname = pikepdf.Page(p.pages[0]).add_resource(
+        objname = p.pages[0].add_resource(
             p.copy_foreign(xobj), pikepdf.Name.XObject, pikepdf.Name.Im0
         )
         print(objname)
