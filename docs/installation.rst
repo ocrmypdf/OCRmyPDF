@@ -152,7 +152,6 @@ ocrmypdf, and install the following dependencies:
     sudo apt-get -y install \
         ghostscript \
         icc-profiles-free \
-        liblept5 \
         libxml2 \
         pngquant \
         python3-pip \
@@ -186,7 +185,6 @@ of ocrmypdf, and install the following dependencies:
     sudo apt-get -y install \
         ghostscript \
         icc-profiles-free \
-        liblept5 \
         libxml2 \
         pngquant \
         python3-distutils \

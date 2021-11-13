@@ -61,7 +61,6 @@ jobs:
             ghostscript \
             img2pdf \
             libffi-dev \
-            liblept5 \
             libsm6 libxext6 libxrender-dev \
             pngquant \
             poppler-utils \
