@@ -1,2 +1,0 @@
-# Deprecated and not maintained; use "pip install ocrmypdf[watcher]" instead
-watchdog == 1.0.2

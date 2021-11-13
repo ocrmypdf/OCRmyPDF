@@ -1,9 +1,0 @@
-# Deprecated and not maintained; use "pip install ocrmypdf" instead
-coloredlogs == 15.0  # technically optional
-img2pdf == 0.4.0
-pdfminer.six == 20201018
-pikepdf == 2.10.0
-pluggy == 0.13.1
-Pillow == 8.3.2
-reportlab == 3.5.66
-tqdm == 4.59.0
