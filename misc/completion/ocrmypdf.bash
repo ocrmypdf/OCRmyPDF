@@ -38,7 +38,7 @@ _ocrmypdf()
     if [[ $cur == -* ]]; then
         COMPREPLY=( $( compgen -W '--language --image-dpi --output-type
             --sidecar --version --jobs --quiet --verbose --title --author
-            --subject --keywords --rotate-pages --remove-background --deskew
+            --subject --keywords --rotate-pages --deskew
             --clean --clean-final --unpaper-args --oversample --remove-vectors
             --force-ocr --skip-text --redo-ocr
             --skip-big --jpeg-quality --png-quality --jbig2-lossy

@@ -74,6 +74,7 @@ def test_img2pdf_fails(resources, no_outpdf):
         mock.assert_called()
 
 
+@pytest.mark.xfail(reason="remove background disabled")
 def test_jpeg_in_jpeg_out(resources, outpdf):
     check_ocrmypdf(
         resources / 'congress.jpg',

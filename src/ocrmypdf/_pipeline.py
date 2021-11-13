@@ -20,7 +20,6 @@ import pikepdf
 from pikepdf.models.metadata import encode_pdf_date
 from PIL import Image, ImageColor, ImageDraw
 
-from ocrmypdf import leptonica
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._exec import unpaper
 from ocrmypdf._jobcontext import PageContext, PdfContext
@@ -466,7 +465,8 @@ def rasterize(
 def preprocess_remove_background(input_file: Path, page_context: PageContext):
     if any(image.bpc > 1 for image in page_context.pageinfo.images):
         output_file = page_context.get_path('pp_rm_bg.png')
-        leptonica.remove_background(input_file, output_file)
+        # leptonica.remove_background(input_file, output_file)
+        raise NotImplementedError("--remove-background is temporarily not implemented")
         return output_file
     else:
         log.info("background removal skipped on mono page")

@@ -41,6 +41,7 @@ def test_deskew(resources, outdir):
     assert -0.5 < skew_angle < 0.5, "Deskewing failed"
 
 
+@pytest.mark.xfail(reason="remove background disabled")
 def test_remove_background(resources, outdir):
     # Ensure the input image does not contain pure white/black
     with Image.open(resources / 'congress.jpg') as im:
