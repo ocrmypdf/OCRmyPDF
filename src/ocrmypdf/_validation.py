@@ -19,7 +19,6 @@ import pikepdf
 import PIL
 
 from ocrmypdf._exec import jbig2enc, pngquant, unpaper
-from ocrmypdf._unicodefun import verify_python3_env
 from ocrmypdf.exceptions import (
     BadArgsError,
     InputFileError,
@@ -39,8 +38,6 @@ log = logging.getLogger(__name__)
 
 
 # --------
-# Critical environment tests
-verify_python3_env()
 
 
 def check_platform():

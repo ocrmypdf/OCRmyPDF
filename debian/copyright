@@ -60,11 +60,6 @@ Copyright: (C) 2010 Jonathan Brinley <jonathanbrinley@gmail.com>
  (C) 2015-16 James R. Barlow
 License: Expat
 
-Files: src/ocrmypdf/_unicodefun.py
-Copyright: (C) 2014 Armin Ronacher
- (C) 2017 James R. Barlow
-License: BSD-3-clause
-
 Files: tests/plugins/*
 Copyright: (C) 2016, 2017, 2016-2018 James R. Barlow
 License: Expat
