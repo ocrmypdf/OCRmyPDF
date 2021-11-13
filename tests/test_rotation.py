@@ -5,6 +5,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+import operator
 from io import BytesIO
 from math import cos, pi, sin
 from os import fspath
@@ -12,10 +13,9 @@ from os import fspath
 import img2pdf
 import pikepdf
 import pytest
-from PIL import Image
+from PIL import Image, ImageChops
 from reportlab.pdfgen.canvas import Canvas
 
-from ocrmypdf import leptonica
 from ocrmypdf._exec import ghostscript
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.helpers import Resolution
@@ -26,16 +26,10 @@ from .conftest import check_ocrmypdf, run_ocrmypdf
 # pylintx: disable=unused-variable
 
 
-pytestmark = pytest.mark.skipif(
-    leptonica.get_leptonica_version() < 'leptonica-1.72',
-    reason="Leptonica is too old, correlation doesn't work",
-)
-
-
 RENDERERS = ['hocr', 'sandwich']
 
 
-def check_monochrome_correlation(
+def compare_images_monochrome(
     outdir, reference_pdf, reference_pageno, test_pdf, test_pageno
 ):
     reference_png = outdir / f'{reference_pdf.name}.ref{reference_pageno:04d}.png'
@@ -57,31 +51,43 @@ def check_monochrome_correlation(
     rasterize(reference_pdf, reference_pageno, reference_png)
     rasterize(test_pdf, test_pageno, test_png)
 
-    pix_ref = leptonica.Pix.open(reference_png)
-    pix_test = leptonica.Pix.open(test_png)
+    with Image.open(reference_png) as reference_im, Image.open(test_png) as test_im:
+        assert reference_im.mode == test_im.mode == '1'
+        difference = ImageChops.logical_xor(reference_im, test_im)
+        assert difference.mode == '1'
 
-    return leptonica.Pix.correlation_binary(pix_ref, pix_test)
+        histogram = difference.histogram()
+        assert (
+            len(histogram) == 256
+        ), "Expected Pillow to convert to grayscale for histogram"
+
+        # All entries other than first and last will be 0
+        count_same = histogram[0]
+        count_different = histogram[-1]
+        total = count_same + count_different
+
+        return count_same / (total)
 
 
-def test_monochrome_correlation(resources, outdir):
+def test_monochrome_comparison(resources, outdir):
     # Verify leptonica: check that an incorrect rotated image has poor
-    # correlation with reference
-    corr = check_monochrome_correlation(
+    # comparison with reference
+    cmp = compare_images_monochrome(
         outdir,
         reference_pdf=resources / 'cardinal.pdf',
         reference_pageno=1,  # north facing page
         test_pdf=resources / 'cardinal.pdf',
         test_pageno=3,  # south facing page
     )
-    assert corr < 0.10
-    corr = check_monochrome_correlation(
+    assert cmp < 0.90
+    cmp = compare_images_monochrome(
         outdir,
         reference_pdf=resources / 'cardinal.pdf',
         reference_pageno=2,
         test_pdf=resources / 'cardinal.pdf',
         test_pageno=2,
     )
-    assert corr > 0.90
+    assert cmp > 0.95
 
 
 @pytest.mark.slow
@@ -101,24 +107,24 @@ def test_autorotate(renderer, resources, outdir):
         'tests/plugins/tesseract_cache.py',
     )
     for n in range(1, 4 + 1):
-        correlation = check_monochrome_correlation(
+        cmp = compare_images_monochrome(
             outdir,
             reference_pdf=resources / 'cardinal.pdf',
             reference_pageno=1,
             test_pdf=outdir / 'out.pdf',
             test_pageno=n,
         )
-        assert correlation > 0.80
+        assert cmp > 0.95
 
 
 @pytest.mark.parametrize(
-    'threshold, correlation_test',
+    'threshold, op, comparison_threshold',
     [
-        ('1', 'correlation > 0.80'),  # Low thresh -> always rotate -> high corr
-        ('99', 'correlation < 0.10'),  # High thres -> never rotate -> low corr
+        ('1', operator.ge, 0.95),  # Low thresh -> always rotate -> high score
+        ('99', operator.le, 0.90),  # High thres -> never rotate -> low score
     ],
 )
-def test_autorotate_threshold(threshold, correlation_test, resources, outdir):
+def test_autorotate_threshold(threshold, op, comparison_threshold, resources, outdir):
     check_ocrmypdf(
         resources / 'cardinal.pdf',
         outdir / 'out.pdf',
@@ -131,14 +137,15 @@ def test_autorotate_threshold(threshold, correlation_test, resources, outdir):
         'tests/plugins/tesseract_cache.py',
     )
 
-    correlation = check_monochrome_correlation(  # pylint: disable=unused-variable
+    cmp = compare_images_monochrome(  # pylint: disable=unused-variable
         outdir,
         reference_pdf=resources / 'cardinal.pdf',
         reference_pageno=1,
         test_pdf=outdir / 'out.pdf',
         test_pageno=3,
     )
-    assert eval(correlation_test)  # pylint: disable=eval-used
+
+    assert op(cmp, comparison_threshold)
 
 
 def test_rotated_skew_timeout(resources, outpdf):
@@ -194,7 +201,7 @@ def test_rotate_deskew_timeout(resources, outdir):
         'sandwich',
     )
 
-    correlation = check_monochrome_correlation(
+    cmp = compare_images_monochrome(
         outdir,
         reference_pdf=resources / 'ccitt.pdf',
         reference_pageno=1,
@@ -203,7 +210,7 @@ def test_rotate_deskew_timeout(resources, outdir):
     )
 
     # Confirm that the page still got deskewed
-    assert correlation > 0.50
+    assert cmp > 0.95
 
 
 @pytest.mark.slow
@@ -247,7 +254,7 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir):
     err = err.decode('utf-8', errors='replace')
     assert p.returncode == 0, err
 
-    assert check_monochrome_correlation(outdir, reference, 1, out, 1) > 0.2
+    assert compare_images_monochrome(outdir, reference, 1, out, 1) > 0.2
 
 
 def test_rasterize_rotates(resources, tmp_path):
