@@ -14,8 +14,9 @@ wish to use some of its features for working with PDFs.
 
 .. note::
 
-   Python 3.6 reaches end of life on December 23, 2021. We will continue to support
-   OCRmyPDF v12.x if major issues are identified until that date.
+   Python 3.6 reaches end of life on December 23, 2021. We have already ended support 
+   for Python 3.6 but might release fixes for critical issues if necessary before that
+   date.
 
 v13.0.0
 =======
@@ -23,7 +24,9 @@ v13.0.0
 **Breaking changes**
 
 -  The deprecated module ``ocrmypdf.leptonica`` has been removed.
--  We no longer depend on Leptonica (``liblept``) or CFFI.
+-  We no longer depend on Leptonica (``liblept``) or CFFI (``libffi``, 
+   ``python3-cffi``). (Note that Tesseract still requires Leptonica; OCRmyPDF no longer
+   directly uses this library.)
 -  The argument ``--remove-background`` is temporarily disabled while we search for an
    alternative to the Leptonica implementation of this feature.
 -  The ``--threshold`` argument has been removed, since this also depended on Leptonica.
@@ -35,10 +38,13 @@ v13.0.0
    Tesseract's deskew angle is informed by a more complex analysis than Leptonica,
    so this should improve results in general. We also use Pillow to perform the
    deskewing, which may affect the appearance of the image compared to Leptonica.
--  Support for Python 3.6 was dropped along with shims needed to support.
+-  Support for Python 3.6 was dropped, since this release is approaching end of life.
 -  We now require pikepdf 4.0 or newer. This, in turn, means that OCRmyPDF requires
    a system compatible with the manylinux2014 specification. This change was "forced"
    by Pillow not releasing manylinux2010 wheels anymore.
+-  We no longer provide requirements.txt-style files. Use ``pip install ocrmypdf[...]``
+   instead.
+-  Bumped required versions of several libraries.
 
 **Fixes**
 
