@@ -143,6 +143,15 @@ class TesseractOcrEngine(OcrEngine):
         )
 
     @staticmethod
+    def get_deskew(input_file, options) -> float:
+        return tesseract.get_deskew(
+            input_file,
+            languages=options.languages,
+            engine_mode=options.tesseract_oem,
+            timeout=options.tesseract_timeout,
+        )
+
+    @staticmethod
     def generate_hocr(input_file, output_hocr, output_text, options):
         tesseract.generate_hocr(
             input_file=input_file,

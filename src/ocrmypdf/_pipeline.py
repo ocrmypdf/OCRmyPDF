@@ -6,6 +6,7 @@
 
 
 import logging
+import math
 import os
 import re
 import sys
@@ -476,7 +477,20 @@ def preprocess_remove_background(input_file: Path, page_context: PageContext):
 def preprocess_deskew(input_file: Path, page_context: PageContext):
     output_file = page_context.get_path('pp_deskew.png')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
-    leptonica.deskew(input_file, output_file, dpi.x)
+
+    ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
+    deskew_angle = ocr_engine.get_deskew(input_file, page_context.options)
+
+    deskew_angle_degrees = deskew_angle * 180.0 / math.pi
+
+    with Image.open(input_file) as im:
+        # According to Pillow docs, .rotate() will automatically use Image.NEAREST
+        # resampling if image is mode '1' or 'P'
+        deskewed = im.rotate(
+            deskew_angle_degrees, resample=Image.BICUBIC, fillcolor='white'
+        )
+        deskewed.save(output_file, dpi=dpi)
+
     return output_file
 
 

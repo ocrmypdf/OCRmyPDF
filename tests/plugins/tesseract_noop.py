@@ -80,6 +80,10 @@ class NoopOcrEngine(OcrEngine):
         return OrientationConfidence(angle=0, confidence=0.0)
 
     @staticmethod
+    def get_deskew(input_file, options):
+        return 0.0
+
+    @staticmethod
     def generate_hocr(input_file, output_hocr, output_text, options):
         with Image.open(input_file) as im, open(
             output_hocr, 'w', encoding='utf-8'

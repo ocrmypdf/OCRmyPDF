@@ -13,7 +13,7 @@ from distutils.version import StrictVersion
 from os import fspath
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
-from typing import List, Optional
+from typing import Dict, Iterator, List, Optional
 
 from PIL import Image
 
@@ -126,6 +126,17 @@ def tess_base_args(langs: List[str], engine_mode: Optional[int]) -> List[str]:
     return args
 
 
+def _parse_tesseract_output(binary_output: bytes) -> Dict[str, str]:
+    def g():
+        for line in binary_output.decode().splitlines():
+            line = line.strip()
+            parts = line.split(':', maxsplit=2)
+            if len(parts) == 2:
+                yield parts[0].strip(), parts[1].strip()
+
+    return {k: v for k, v in g()}
+
+
 def get_orientation(
     input_file: Path, engine_mode: Optional[int], timeout: float
 ) -> OrientationConfidence:
@@ -138,7 +149,6 @@ def get_orientation(
 
     try:
         p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
-        stdout = p.stdout
     except TimeoutExpired:
         return OrientationConfidence(angle=0, confidence=0.0)
     except CalledProcessError as e:
@@ -150,19 +160,41 @@ def get_orientation(
         ):
             return OrientationConfidence(0, 0)
         raise SubprocessOutputError() from e
-    else:
-        osd = {}
-        for line in stdout.decode().splitlines():
-            line = line.strip()
-            parts = line.split(':', maxsplit=2)
-            if len(parts) == 2:
-                osd[parts[0].strip()] = parts[1].strip()
 
-        angle = int(osd.get('Orientation in degrees', 0))
-        oc = OrientationConfidence(
-            angle=angle, confidence=float(osd.get('Orientation confidence', 0))
-        )
-        return oc
+    osd = _parse_tesseract_output(p.stdout)
+    angle = int(osd.get('Orientation in degrees', 0))
+    oc = OrientationConfidence(
+        angle=angle, confidence=float(osd.get('Orientation confidence', 0))
+    )
+    return oc
+
+
+def get_deskew(
+    input_file: Path, languages: List[str], engine_mode: Optional[int], timeout: float
+) -> float:
+    """Gets angle to deskew this page, in radians."""
+    args_tesseract = tess_base_args(languages, engine_mode) + [
+        '--psm',
+        '2',
+        fspath(input_file),
+        'stdout',
+    ]
+
+    try:
+        p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
+    except TimeoutExpired:
+        return 0.0
+    except CalledProcessError as e:
+        tesseract_log_output(e.stdout)
+        tesseract_log_output(e.stderr)
+        if b'Empty page!!' in e.output:  # Not enough info for a skew angle
+            return 0.0
+
+        raise SubprocessOutputError() from e
+
+    parsed = _parse_tesseract_output(p.stdout)
+    deskew = float(parsed.get('Deskew angle', 0))
+    return deskew
 
 
 def tesseract_log_output(stream):

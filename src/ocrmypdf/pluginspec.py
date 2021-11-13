@@ -367,6 +367,11 @@ class OcrEngine(ABC):
         """Returns the orientation of the image."""
 
     @staticmethod
+    def get_deskew(input_file: Path, options: Namespace) -> float:
+        """Returns the deskew angle of the image, in radians."""
+        return 0.0
+
+    @staticmethod
     @abstractmethod
     def generate_hocr(
         input_file: Path, output_hocr: Path, output_text: Path, options: Namespace

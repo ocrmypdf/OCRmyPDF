@@ -179,6 +179,7 @@ def test_rotated_skew_timeout(resources, outpdf):
     ), "Expected page rotation to be baked in"
 
 
+@pytest.mark.xfail(reason="tesseract timeout blocks tesseract based deskew")
 def test_rotate_deskew_timeout(resources, outdir):
     check_ocrmypdf(
         resources / 'rotated_skew.pdf',

@@ -68,14 +68,17 @@ def test_hocrtransform_matches_sandwich(resources, outdir):
         resources / 'ccitt.pdf', outdir / 'tess.pdf', '--pdf-renderer=sandwich'
     )
 
+    # Slight differences in spacing and word order can appear, so at least ensure
+    # that we get all of the same words...
     def clean(s):
-        s = re.sub(r'[ ]+', ' ', s)
-        s = re.sub(r'[ ]?[\n]+', r'\n', s)
-        return s
+        s = re.sub(r'\s+', ' ', s)
+        words = s.split(' ')
+        return '\n'.join(sorted(words))
 
     hocr_txt = clean(text_from_pdf(outdir / 'hocr.pdf'))
     tess_txt = clean(text_from_pdf(outdir / 'tess.pdf'))
 
+    # from pathlib import Path
     # Path('hocr.txt').write_text(hocr_txt)
     # Path('tess.txt').write_text(tess_txt)
 

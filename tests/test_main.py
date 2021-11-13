@@ -535,6 +535,7 @@ def test_pagesize_consistency(renderer, resources, outpdf):
         '--deskew',
         '--remove-background',
         '--clean-final' if have_unpaper() else None,
+        '-k',
         '--pages',
         '1',
     )

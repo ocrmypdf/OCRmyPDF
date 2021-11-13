@@ -5,12 +5,12 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-from math import isclose
+from math import isclose, pi
 
 import pytest
 from PIL import Image
 
-from ocrmypdf._exec import ghostscript
+from ocrmypdf._exec import ghostscript, tesseract
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.leptonica import Pix
 from ocrmypdf.pdfinfo import PdfInfo
@@ -22,13 +22,7 @@ RENDERERS = ['hocr', 'sandwich']
 
 def test_deskew(resources, outdir):
     # Run with deskew
-    deskewed_pdf = check_ocrmypdf(
-        resources / 'skew.pdf',
-        outdir / 'skew.pdf',
-        '-d',
-        '--plugin',
-        'tests/plugins/tesseract_noop.py',
-    )
+    deskewed_pdf = check_ocrmypdf(resources / 'skew.pdf', outdir / 'skew.pdf', '-d')
 
     # Now render as an image again and use Leptonica to find the skew angle
     # to confirm that it was deskewed
@@ -42,9 +36,7 @@ def test_deskew(resources, outdir):
         pageno=1,
     )
 
-    pix = Pix.open(deskewed_png)
-    skew_angle, _skew_confidence = pix.find_skew()
-
+    skew_angle = tesseract.get_deskew(deskewed_png, [], None, 5.0) * 180 / pi
     print(skew_angle)
     assert -0.5 < skew_angle < 0.5, "Deskewing failed"
 

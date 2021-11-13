@@ -182,6 +182,11 @@ class CacheOcrEngine(TesseractOcrEngine):
             return TesseractOcrEngine.get_orientation(input_file, options)
 
     @staticmethod
+    def get_deskew(input_file, options) -> float:
+        with patch('ocrmypdf._exec.tesseract.run', new=partial(cached_run, options)):
+            return TesseractOcrEngine.get_deskew(input_file, options)
+
+    @staticmethod
     def generate_hocr(input_file, output_hocr, output_text, options):
         with patch('ocrmypdf._exec.tesseract.run', new=partial(cached_run, options)):
             TesseractOcrEngine.generate_hocr(
