@@ -118,7 +118,7 @@ def test_high_unicode(resources, no_outpdf):
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
 def test_bookmarks_preserved(output_type, ocr_option, resources, outpdf):
     input_file = resources / 'toc.pdf'
-    before_toc = fitz.Document(str(input_file)).getToC()
+    before_toc = fitz.Document(str(input_file)).get_toc()
 
     check_ocrmypdf(
         input_file,
@@ -130,7 +130,7 @@ def test_bookmarks_preserved(output_type, ocr_option, resources, outpdf):
         'tests/plugins/tesseract_noop.py',
     )
 
-    after_toc = fitz.Document(str(outpdf)).getToC()
+    after_toc = fitz.Document(str(outpdf)).get_toc()
     print(before_toc)
     print(after_toc)
     assert before_toc == after_toc
