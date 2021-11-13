@@ -60,6 +60,7 @@ def test_content_preservation(resources, outpdf):
     assert len(page.images) > 1, "masks were rasterized"
 
 
+@pytest.mark.skipif(tesseract.version() > '5', reason="doesn't fool Tess 5")
 def test_no_languages(tmp_path, monkeypatch):
     (tmp_path / 'tessdata').mkdir()
     monkeypatch.setenv('TESSDATA_PREFIX', fspath(tmp_path))
