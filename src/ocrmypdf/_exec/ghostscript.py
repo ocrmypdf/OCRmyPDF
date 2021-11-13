@@ -10,6 +10,7 @@
 import logging
 import os
 import re
+import sys
 from io import BytesIO
 from os import fspath
 from pathlib import Path
@@ -36,14 +37,15 @@ For details see:
 ---------------------------------------------------------------------
 """
 
+# Most reliable what to get the bitness of Python interpreter, according to Python docs
+_is_64bit = sys.maxsize > 2 ** 32
+
 _gswin = None
 if os.name == 'nt':
-    _gswin = which('gswin64c')
-    if not _gswin:
-        _gswin = which('gswin32c')
-        if not _gswin:
-            raise MissingDependencyError(missing_gs_error)
-    _gswin = Path(_gswin).stem
+    if _is_64bit:
+        _gswin = 'gswin64c'
+    else:
+        _gswin = 'gswin32c'
 
 GS = _gswin if _gswin else 'gs'
 del _gswin
