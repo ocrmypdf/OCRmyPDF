@@ -404,7 +404,7 @@ Online documentation is located at:
         metavar='MPixels',
         help="Set maximum number of pixels to unpack before treating an image as a "
         "decompression bomb",
-        default=128.0,
+        default=250.0,
     )
     advanced.add_argument(
         '--pdf-renderer',
