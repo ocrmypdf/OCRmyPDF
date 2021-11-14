@@ -12,7 +12,7 @@ version_scheme = "post-release"
 
 [tool.black]
 line-length = 88
-target-version = ["py36", "py37", "py38"]
+target-version = ["py37", "py38"]
 skip-string-normalization = true
 include = '\.pyi?$'
 exclude = '''
