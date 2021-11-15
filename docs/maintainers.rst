@@ -18,7 +18,7 @@ Make sure you can package pikepdf
 
 pikepdf, created by the same author, is a mixed Python and C++14 package with
 much stiffer build requirements. If you want to use OCRmyPDF on some novel platform
-or distribution, first make sure you can pikepdf.
+or distribution, first make sure you can package pikepdf.
 
 Non-Python dependencies
 -----------------------
@@ -34,7 +34,7 @@ on ARM and x86_64. Performance may be poor on other processor architectures.
 Versioning scheme
 -----------------
 
-OCRmyPDF uses setuptools-scm for versioning, which requires derives the version from
+OCRmyPDF uses setuptools-scm for versioning, which derives the version from
 Git as a single source of truth. This may be unsuitable for some distributions, e.g.
 to indicate that your distribution modifies OCRmyPDF in some way.
 
