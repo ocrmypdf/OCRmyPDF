@@ -95,6 +95,7 @@ def rasterize_pdf(
             '-dSAFER',
             '-dBATCH',
             '-dNOPAUSE',
+            '-dInterpolateControl=-1',
             f'-sDEVICE={raster_device}',
             f'-dFirstPage={pageno}',
             f'-dLastPage={pageno}',
