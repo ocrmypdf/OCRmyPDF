@@ -51,7 +51,7 @@ def registry_path_ghostscript(env=None) -> Iterator[Path]:
         with winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Artifex\GPL Ghostscript"
         ) as k:
-            latest_gs = max(registry_subkeys(k), key=LooseVersion)
+            latest_gs = max(registry_subkeys(k), key=LooseVersion, default='0')
         with winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE, fr"SOFTWARE\Artifex\GPL Ghostscript\{latest_gs}"
         ) as k:
