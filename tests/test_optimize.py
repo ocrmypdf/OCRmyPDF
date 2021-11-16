@@ -51,7 +51,7 @@ def test_mono_not_inverted(resources, outdir):
     )
 
     with Image.open(fspath(outdir / 'im.png')) as im:
-        assert im.getpixel((0, 0)) == 255, "Expected white background"
+        assert im.getpixel((0, 0)) > 240, "Expected white background"
 
 
 @needs_pngquant
