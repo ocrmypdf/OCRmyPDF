@@ -194,7 +194,7 @@ jobs:
       - name: Install system packages
         run: |
           choco install --yes --no-progress --pre tesseract
-          choco install --yes --no-progress --ignore-checksums ghostscript pngquantt
+          choco install --yes --no-progress --ignore-checksums ghostscript pngquant
 
       - name: Install Python packages
         run: |
