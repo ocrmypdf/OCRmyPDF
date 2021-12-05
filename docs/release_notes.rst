@@ -14,7 +14,7 @@ wish to use some of its features for working with PDFs.
 
 .. note::
 
-   Python 3.6 reaches end of life on December 23, 2021. We have already ended support 
+   Python 3.6 reaches end of life on December 23, 2021. We have already ended support
    for Python 3.6 but might release fixes for critical issues if necessary before that
    date.
 
@@ -24,7 +24,7 @@ v13.0.0
 **Breaking changes**
 
 -  The deprecated module ``ocrmypdf.leptonica`` has been removed.
--  We no longer depend on Leptonica (``liblept``) or CFFI (``libffi``, 
+-  We no longer depend on Leptonica (``liblept``) or CFFI (``libffi``,
    ``python3-cffi``). (Note that Tesseract still requires Leptonica; OCRmyPDF no longer
    directly uses this library.)
 -  The argument ``--remove-background`` is temporarily disabled while we search for an
@@ -48,7 +48,7 @@ v13.0.0
 
 **Fixes**
 
--  Fixed an issue where OCRmyPDF failed to find Ghostscript on Windows even when 
+-  Fixed an issue where OCRmyPDF failed to find Ghostscript on Windows even when
    installed, and would exit with an error.
 -  By removing Leptonica, we fixed all issues related to Leptonica on Apple
    Silicon or Leptonica failing to import on Windows.
@@ -56,7 +56,7 @@ v13.0.0
 v12.7.2
 =======
 
--  Fixed "invalid version number" error for Tesseract packaging with nonstandard 
+-  Fixed "invalid version number" error for Tesseract packaging with nonstandard
    version "5.0.0-rc1.20211030".
 -  Fixed use of deprecated ``importlib.resources.read_binary``.
 -  Replace some uses of string paths with ``pathlib.Path``.
