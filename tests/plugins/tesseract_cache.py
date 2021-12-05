@@ -158,7 +158,7 @@ def cached_run(options, run_args, **run_kwargs):
 
     manifest = {}
     manifest['tesseract_version'] = TesseractOcrEngine.version().replace('\n', ' ')
-    manifest['platform'] = platform.platform()
+    manifest['system'] = platform.system()
     manifest['python'] = platform.python_version()
     manifest['argv_slug'] = cache_folder.name
     manifest['sourcefile'] = str(Path(source_file).relative_to(TESTS_ROOT))
