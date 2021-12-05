@@ -10,7 +10,7 @@ import os
 
 from ocrmypdf import hookimpl
 from ocrmypdf._exec import tesseract
-from ocrmypdf.cli import numeric
+from ocrmypdf.cli import numeric, str_to_int
 from ocrmypdf.helpers import clamp
 from ocrmypdf.pluginspec import OcrEngine
 from ocrmypdf.subprocess import check_external_program
@@ -43,11 +43,25 @@ def add_options(parser):
         metavar='MODE',
         choices=range(0, 4),
         help=(
-            "Set Tesseract 4.0 OCR engine mode: "
+            "Set Tesseract 4.0+ OCR engine mode: "
             "0 - original Tesseract only; "
             "1 - neural nets LSTM only; "
             "2 - Tesseract + LSTM; "
             "3 - default."
+        ),
+    )
+    tess.add_argument(
+        '--tesseract-thresholding',
+        action='store',
+        type=str_to_int(tesseract.TESSERACT_THRESHOLDING_METHODS),
+        default='auto',
+        metavar='METHOD',
+        help=(
+            "Set Tesseract 5.0+ input image thresholding mode. This may improve OCR "
+            "results on low quality images or those that contain high constrast color. "
+            "legacy-otsu is the Tesseract default; adaptive-otsu is an improved Otsu "
+            "algorithm with improved sort for background color changes; sauvola is "
+            "based on local standard deviation."
         ),
     )
     tess.add_argument(
@@ -89,8 +103,14 @@ def check_options(options):
 
     if not tesseract.has_user_words() and (options.user_words or options.user_patterns):
         log.warning(
-            "Tesseract 4.0 ignores --user-words and --user-patterns, so these "
-            "arguments have no effect."
+            "Tesseract 4.0 (which you have installed) ignores --user-words and "
+            "--user-patterns, so these arguments have no effect."
+        )
+    if not tesseract.has_thresholding() and options.tesseract_thresholding != 0:
+        log.warning(
+            "The installed version of Tesseract does not support changes to its "
+            "thresholding method. The --tesseract-threshold argument will be "
+            "ignored."
         )
     if options.tesseract_pagesegmode in (0, 2):
         log.warning(
@@ -162,6 +182,7 @@ class TesseractOcrEngine(OcrEngine):
             tessconfig=options.tesseract_config,
             timeout=options.tesseract_timeout,
             pagesegmode=options.tesseract_pagesegmode,
+            thresholding=options.tesseract_thresholding,
             user_words=options.user_words,
             user_patterns=options.user_patterns,
         )
@@ -177,6 +198,7 @@ class TesseractOcrEngine(OcrEngine):
             tessconfig=options.tesseract_config,
             timeout=options.tesseract_timeout,
             pagesegmode=options.tesseract_pagesegmode,
+            thresholding=options.tesseract_thresholding,
             user_words=options.user_words,
             user_patterns=options.user_patterns,
         )

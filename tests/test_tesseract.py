@@ -82,6 +82,7 @@ def test_image_too_large_hocr(monkeypatch, resources, outdir):
         tessconfig=[],
         timeout=180.0,
         pagesegmode=None,
+        thresholding=0,
         user_words=None,
         user_patterns=None,
     )
@@ -102,6 +103,7 @@ def test_image_too_large_pdf(monkeypatch, resources, outdir):
         tessconfig=[],
         timeout=180.0,
         pagesegmode=None,
+        thresholding=0,
         user_words=None,
         user_patterns=None,
     )

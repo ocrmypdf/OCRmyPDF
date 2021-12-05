@@ -103,13 +103,19 @@ def test_user_words(caplog):
         opts = make_opts(user_words='foo')
         plugin_manager = get_plugin_manager(opts.plugins)
         vd._check_options(opts, plugin_manager, set())
-        assert '4.0 ignores --user-words' in caplog.text
+        assert (
+            'Tesseract 4.0 (which you have installed) ignores --user-words'
+            in caplog.text
+        )
     caplog.clear()
     with patch('ocrmypdf._exec.tesseract.has_user_words', return_value=True):
         opts = make_opts(user_patterns='foo')
         plugin_manager = get_plugin_manager(opts.plugins)
         vd._check_options(opts, plugin_manager, set())
-        assert '4.0 ignores --user-words' not in caplog.text
+        assert (
+            'Tesseract 4.0 (which you have installed) ignores --user-words'
+            not in caplog.text
+        )
 
 
 def test_pillow_options():

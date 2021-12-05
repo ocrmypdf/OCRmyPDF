@@ -6,12 +6,12 @@
 
 
 import argparse
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, Callable, Mapping, Optional, TypeVar
 
 from ocrmypdf._version import PROGRAM_NAME as _PROGRAM_NAME
 from ocrmypdf._version import __version__ as _VERSION
 
-T = TypeVar('T')
+T = TypeVar('T', int, float)
 
 
 def numeric(
@@ -21,15 +21,30 @@ def numeric(
     min_ = basetype(min_) if min_ is not None else None
     max_ = basetype(max_) if max_ is not None else None
 
-    def _numeric(string):
-        value = basetype(string)
+    def _numeric(s: str) -> T:
+        value = basetype(s)
         if (min_ is not None and value < min_) or (max_ is not None and value > max_):
-            msg = f"{string!r} not in valid range {(min_, max_)!r}"
-            raise argparse.ArgumentTypeError(msg)
+            raise argparse.ArgumentTypeError(
+                f"{s!r} not in valid range {(min_, max_)!r}"
+            )
         return value
 
     _numeric.__name__ = basetype.__name__
     return _numeric
+
+
+def str_to_int(mapping: Mapping[str, int]):
+    """Accept text on command line and convert to integer."""
+
+    def _str_to_int(s: str) -> int:
+        try:
+            return mapping[s]
+        except KeyError:
+            raise argparse.ArgumentTypeError(
+                f"{s!r} must be one of: {', '.join(mapping.keys())}"
+            )
+
+    return _str_to_int
 
 
 class ArgumentParser(argparse.ArgumentParser):

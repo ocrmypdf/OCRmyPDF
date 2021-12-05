@@ -129,6 +129,15 @@ function __fish_ocrmypdf_tesseract_oem
     echo -e "3\t"(_ "default, based on what is available")
 end
 complete -c ocrmypdf -x -l tesseract-oem -a '(__fish_ocrmypdf_tesseract_oem)' -d "set tesseract --oem"
+
+function __fish_ocrmypdf_tesseract_thresholding
+    echo -e "auto\t"(_ "let OCRmyPDF pick thresholding (current always uses otsu)")
+    echo -e "otsu\t"(_ "legacy Otsu thresholding")
+    echo -e "adaptive-otsu\t"(_ "use adaptive Otsu thresholding")
+    echo -e "sauvola\t"(_ "use Sauvola thresholding")
+end
+complete -c ocrmypdf -x -l tesseract-thresholding -a '(__fish_ocrmypdf_tesseract_thresholding)' -d "set tesseract thresholding method (needs Tesseract 5.x)"
+
 complete -c ocrmypdf -x -l tesseract-timeout -d "maximum number of seconds to wait for OCR"
 complete -c ocrmypdf -x -l rotate-pages-threshold -d "page rotation confidence"
 

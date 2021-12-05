@@ -44,6 +44,7 @@ _ocrmypdf()
             --skip-big --jpeg-quality --png-quality --jbig2-lossy
             --max-image-mpixels --tesseract-config --tesseract-pagesegmode
             --help --tesseract-oem --pdf-renderer --tesseract-timeout
+            --tesseract-thresholding
             --rotate-pages-threshold --pdfa-image-compression --user-words
             --user-patterns --keep-temporary-files --output-type
             --no-progress-bar --pages --fast-web-view' \
@@ -103,6 +104,10 @@ _ocrmypdf()
             ;;
         --tesseract-pagesegmode)
             COMPREPLY=( $( compgen -W '{1..13}' -- "$cur" ) )
+            return
+            ;;
+        --tesseract-thresholding)
+            COMPREPLY=( $( compgen -W 'auto otsu adaptive-otsu sauvola' -- "$cur" ) )
             return
             ;;
         --sidecar|--title|--author|--subject|--keywords|--unpaper-args|--pages|--fast-web-view)

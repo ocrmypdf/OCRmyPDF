@@ -46,6 +46,13 @@ HOCR_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
 </html>
 """
 
+TESSERACT_THRESHOLDING_METHODS: Dict[str, int] = {
+    'auto': 0,
+    'otsu': 0,
+    'adaptive-otsu': 1,
+    'sauvola': 2,
+}
+
 
 class TesseractLoggerAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
@@ -85,6 +92,11 @@ def has_user_words():
     we no longer support 3.x.
     """
     return version() >= '4.1'
+
+
+def has_thresholding():
+    """Does Tesseract have -c thresholding method capability?"""
+    return version() >= '5.0'
 
 
 def get_languages():
@@ -265,15 +277,20 @@ def generate_hocr(
     tessconfig: List[str],
     timeout: float,
     pagesegmode: int,
+    thresholding: int,
     user_words,
     user_patterns,
 ):
+    """Generate a hOCR file, which must be converted to PDF."""
     prefix = output_hocr.with_suffix('')
 
     args_tesseract = tess_base_args(languages, engine_mode)
 
     if pagesegmode is not None:
         args_tesseract.extend(['--psm', str(pagesegmode)])
+
+    if thresholding != 0 and has_thresholding():
+        args_tesseract.extend(['-c', f'thresholding_method={thresholding}'])
 
     if user_words:
         args_tesseract.extend(['--user-words', user_words])
@@ -326,26 +343,24 @@ def generate_pdf(
     tessconfig: List[str],
     timeout: float,
     pagesegmode: int,
+    thresholding: int,
     user_words,
     user_patterns,
 ):
-    """Use Tesseract to render a PDF.
+    """Generate a PDF using Tesseract's internal PDF generator.
 
-    input_file -- image to analyze
-    output_pdf -- file to generate
-    output_text -- OCR text file
-    languages -- list of languages to consider
-    engine_mode -- engine mode argument for tess v4
-    tessconfig -- tesseract configuration
-    timeout -- timeout (seconds)
+    We specifically a text-only PDF which is more suitable for combining with
+    the input page.
     """
-
     args_tesseract = tess_base_args(languages, engine_mode)
 
     if pagesegmode is not None:
         args_tesseract.extend(['--psm', str(pagesegmode)])
 
     args_tesseract.extend(['-c', 'textonly_pdf=1'])
+
+    if thresholding != 0 and has_thresholding():
+        args_tesseract.extend(['-c', f'thresholding_method={thresholding}'])
 
     if user_words:
         args_tesseract.extend(['--user-words', user_words])

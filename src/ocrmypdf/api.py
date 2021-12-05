@@ -242,6 +242,7 @@ def ocr(  # pylint: disable=unused-argument
     tesseract_config: Iterable[str] = None,
     tesseract_pagesegmode: int = None,
     tesseract_oem: int = None,
+    tesseract_thresholding: int = None,
     pdf_renderer=None,
     tesseract_timeout: float = None,
     rotate_pages_threshold: float = None,

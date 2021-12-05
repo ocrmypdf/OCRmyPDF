@@ -316,6 +316,42 @@ def test_pagesegmode(renderer, resources, outpdf):
     )
 
 
+def test_tesseract_oem(resources, outpdf):
+    check_ocrmypdf(
+        resources / 'trivial.pdf',
+        outpdf,
+        '--tesseract-oem',
+        '1',
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
+    )
+
+
+@pytest.mark.parametrize('value', ['auto', 'otsu', 'adaptive-otsu', 'sauvola'])
+def test_tesseract_thresholding(value, resources, outpdf):
+    check_ocrmypdf(
+        resources / 'trivial.pdf',
+        outpdf,
+        '--tesseract-thresholding',
+        value,
+        '--plugin',
+        'tests/plugins/tesseract_cache.py',
+    )
+
+
+@pytest.mark.parametrize('value', ['abcxyz'])
+def test_tesseract_thresholding_invalid(value, resources, no_outpdf):
+    with pytest.raises(SystemExit, match='2'):
+        run_ocrmypdf_api(
+            resources / 'trivial.pdf',
+            no_outpdf,
+            '--tesseract-thresholding',
+            value,
+            '--plugin',
+            'tests/plugins/tesseract_cache.py',
+        )
+
+
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_tesseract_crash(renderer, resources, no_outpdf):
     p, _, err = run_ocrmypdf(
