@@ -105,20 +105,20 @@ complete -c ocrmypdf -x -l pages -d "apply OCR to only the specified pages"
 complete -c ocrmypdf -x -l tesseract-config -d "set custom tesseract config file"
 
 function __fish_ocrmypdf_tesseract_pagesegmode
-  echo -e "0\t"(_ "orientation and script detection (OSD) only")
-  echo -e "1\t"(_ "automatic page segmentation with OSD")
-  echo -e "2\t"(_ "automatic page segmentation, but no OSD, or OCR")
-  echo -e "3\t"(_ "fully automatic page segmentation, but no OSD (default)")
-  echo -e "4\t"(_ "assume a single column of text of variable sizes")
-  echo -e "5\t"(_ "assume a single uniform block of vertically aligned text")
-  echo -e "6\t"(_ "assume a single uniform block of text")
-  echo -e "7\t"(_ "treat the image as a single text line")
-  echo -e "8\t"(_ "treat the image as a single word")
-  echo -e "9\t"(_ "treat the image as a single word in a circle")
-  echo -e "10\t"(_ "treat the image as a single character")
-  echo -e "11\t"(_ "sparse text - find as much text as possible in no particular order")
-  echo -e "12\t"(_ "sparse text with OSD")
-  echo -e "13\t"(_ "raw line - treat the image as a single text line")
+    echo -e "0\t"(_ "orientation and script detection (OSD) only")
+    echo -e "1\t"(_ "automatic page segmentation with OSD")
+    echo -e "2\t"(_ "automatic page segmentation, but no OSD, or OCR")
+    echo -e "3\t"(_ "fully automatic page segmentation, but no OSD (default)")
+    echo -e "4\t"(_ "assume a single column of text of variable sizes")
+    echo -e "5\t"(_ "assume a single uniform block of vertically aligned text")
+    echo -e "6\t"(_ "assume a single uniform block of text")
+    echo -e "7\t"(_ "treat the image as a single text line")
+    echo -e "8\t"(_ "treat the image as a single word")
+    echo -e "9\t"(_ "treat the image as a single word in a circle")
+    echo -e "10\t"(_ "treat the image as a single character")
+    echo -e "11\t"(_ "sparse text - find as much text as possible in no particular order")
+    echo -e "12\t"(_ "sparse text with OSD")
+    echo -e "13\t"(_ "raw line - treat the image as a single text line")
 end
 complete -c ocrmypdf -x -l tesseract-pagesegmode -a '(__fish_ocrmypdf_tesseract_pagesegmode)' -d "set tesseract --psm"
 
