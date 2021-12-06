@@ -44,24 +44,38 @@ source = ["src/ocrmypdf"]
 [tool.coverage.report]
 # Regexes for lines to exclude from consideration
 exclude_lines = [
-    # Have to re-enable the standard pragma
-    "pragma: no cover",
-
-    # Don't complain if tests don't hit defensive assertion code:
-    "raise AssertionError",
-    "raise NotImplementedError",
-
-    # Don't complain if non-runnable code isn't run:
-    "if 0:",
-	  "if False:",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:"
+  # Have to re-enable the standard pragma
+  "pragma: no cover",
+  # Don't complain if tests don't hit defensive assertion code:
+  "raise AssertionError",
+  "raise NotImplementedError",
+  # Don't complain if non-runnable code isn't run:
+  "if 0:",
+  "if False:",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:"
 ]
 
 [tool.isort]
 profile = "black"
 known_first_party = "ocrmypdf"
-known_third_party = ["PIL", "flask", "img2pdf", "ocrmypdf", "pdfminer", "pikepdf", "pkg_resources", "pluggy", "pytest", "reportlab", "setuptools", "sphinx_rtd_theme", "tqdm", "watchdog", "werkzeug"]
+known_third_party = [
+  "PIL",
+  "flask",
+  "img2pdf",
+  "ocrmypdf",
+  "pdfminer",
+  "pikepdf",
+  "pkg_resources",
+  "pluggy",
+  "pytest",
+  "reportlab",
+  "setuptools",
+  "sphinx_rtd_theme",
+  "tqdm",
+  "watchdog",
+  "werkzeug"
+]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -75,6 +89,13 @@ filterwarnings = ["ignore:.*XMLParser.*:DeprecationWarning"]
 
 [[tool.mypy.overrides]]
 module = [
-  'pluggy', 'tqdm', 'coloredlogs', 'img2pdf', 'pdfminer.*', 'reportlab.*', 'fitz', 'libxmp.utils'
+  'pluggy',
+  'tqdm',
+  'coloredlogs',
+  'img2pdf',
+  'pdfminer.*',
+  'reportlab.*',
+  'fitz',
+  'libxmp.utils'
 ]
 ignore_missing_imports = true
