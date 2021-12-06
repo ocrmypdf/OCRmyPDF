@@ -5,6 +5,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+import argparse
 import logging
 import logging.handlers
 import os
@@ -46,7 +47,7 @@ from ocrmypdf._pipeline import (
     triage,
     validate_pdfinfo_options,
 )
-from ocrmypdf._plugin_manager import get_plugin_manager
+from ocrmypdf._plugin_manager import OcrmypdfPluginManager, get_plugin_manager
 from ocrmypdf._validation import (
     check_requested_output_file,
     create_input_file,
@@ -165,7 +166,7 @@ def make_intermediate_images(
     return ocr_image, preprocess_out
 
 
-def exec_page_sync(page_context: PageContext):
+def exec_page_sync(page_context: PageContext) -> PageResult:
     options = page_context.options
     tls.pageno = page_context.pageno + 1
 
@@ -223,7 +224,7 @@ def exec_page_sync(page_context: PageContext):
     )
 
 
-def post_process(pdf_file, context: PdfContext, executor: Executor):
+def post_process(pdf_file: Path, context: PdfContext, executor: Executor) -> Path:
     pdf_out = pdf_file
     if context.options.output_type.startswith('pdfa'):
         ps_stub_out = generate_postscript_stub(context)
@@ -233,7 +234,7 @@ def post_process(pdf_file, context: PdfContext, executor: Executor):
     return optimize_pdf(pdf_out, context, executor)
 
 
-def worker_init(max_pixels: int):
+def worker_init(max_pixels: int) -> None:
     # In Windows, child process will not inherit our change to this value in
     # the parent process, so ensure workers get it set. Not needed when running
     # threaded, but harmless to set again.
@@ -241,7 +242,7 @@ def worker_init(max_pixels: int):
     pikepdf_enable_mmap()
 
 
-def exec_concurrent(context: PdfContext, executor: Executor):
+def exec_concurrent(context: PdfContext, executor: Executor) -> None:
     """Execute the pipeline concurrently"""
 
     # Run exec_page_sync on every page context
@@ -302,7 +303,9 @@ def exec_concurrent(context: PdfContext, executor: Executor):
         copy_final(pdf, options.output_file, context)
 
 
-def configure_debug_logging(log_filename: Path, prefix: str = ''):
+def configure_debug_logging(
+    log_filename: Path, prefix: str = ''
+) -> logging.FileHandler:
     """
     Create a debug log file at a specified location.
 
@@ -321,7 +324,12 @@ def configure_debug_logging(log_filename: Path, prefix: str = ''):
     return log_file_handler
 
 
-def run_pipeline(options, *, plugin_manager, api=False):
+def run_pipeline(
+    options: argparse.Namespace,
+    *,
+    plugin_manager: OcrmypdfPluginManager,
+    api: bool = False,
+) -> ExitCode:
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
     # options.input_file, options.pdf_renderer are already bound.)
