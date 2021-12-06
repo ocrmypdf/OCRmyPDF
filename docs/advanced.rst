@@ -236,12 +236,6 @@ PDF.js viewer.
 
 This works in all versions of Tesseract.
 
-The ``tesseract`` renderer
---------------------------
-
-The ``tesseract`` renderer was removed. OCRmyPDF's new approach to text
-layer grafting makes it functionally equivalent to ``sandwich``.
-
 Return code policy
 ==================
 
