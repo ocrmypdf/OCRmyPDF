@@ -78,11 +78,11 @@ def check_options_output(options):
             "`--pdf-renderer auto` (the default) to avoid this issue."
         )
 
-    if options.output_type == 'none' and options.output_file != os.devnull:
+    if options.output_type == 'none' and options.output_file not in (os.devnull, '-'):
         raise BadArgsError(
-            "Since you specified `--pdf-renderer none`, the output file "
+            "Since you specified `--output-type none`, the output file "
             f"{options.output_file} cannot be produced. Set the output file to "
-            f"{os.devnull} to suppress this message."
+            f"`-` to suppress this message."
         )
 
     lossless_reconstruction = False

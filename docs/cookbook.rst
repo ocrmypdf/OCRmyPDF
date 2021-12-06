@@ -104,6 +104,9 @@ This produces a file named "output.pdf" and a companion text file named
     because of options like ``--skip-big`` or ``--tesseract-timeout``, those pages
     will not be in the sidecar.
 
+    If you don't want to generate the output PDF, use ``--output-type=none`` to
+    avoid generating one. Set the output filename to ``-`` (i.e. redirect to stdout).
+
     To extract all text from a PDF, whether generated from OCR or otherwise,
     use a program like Poppler's ``pdftotext`` or ``pdfgrep``.
 

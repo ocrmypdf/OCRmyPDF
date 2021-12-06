@@ -916,9 +916,9 @@ def test_outputtype_none_bad_setup(resources, outpdf):
 
 
 def test_outputtype_none(resources, outtxt):
-    p, _out, err = run_ocrmypdf(
+    p, out, err = run_ocrmypdf(
         resources / 'trivial.pdf',
-        os.devnull,
+        '-',
         '--output-type=none',
         '--sidecar',
         outtxt,
@@ -926,4 +926,3 @@ def test_outputtype_none(resources, outtxt):
         'tests/plugins/tesseract_noop.py',
     )
     assert p.returncode == ExitCode.ok
-    assert outtxt.exists()
