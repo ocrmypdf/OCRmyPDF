@@ -14,7 +14,7 @@ import threading
 from functools import partial
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import List, NamedTuple, Optional, Tuple
+from typing import List, NamedTuple, Optional, Tuple, cast
 
 import PIL
 
@@ -327,7 +327,7 @@ def configure_debug_logging(
 def run_pipeline(
     options: argparse.Namespace,
     *,
-    plugin_manager: OcrmypdfPluginManager,
+    plugin_manager: Optional[OcrmypdfPluginManager],
     api: bool = False,
 ) -> ExitCode:
     # Any changes to options will not take effect for options that are already
@@ -388,7 +388,7 @@ def run_pipeline(
             hasattr(options.output_file, 'writable') and options.output_file.writable()
         ):
             log.info("Output written to stream")
-        elif samefile(options.output_file, os.devnull):
+        elif samefile(options.output_file, Path(os.devnull)):
             pass  # Say nothing when sending to dev null
         else:
             if options.output_type.startswith('pdfa'):
@@ -415,6 +415,7 @@ def run_pipeline(
             log.error("KeyboardInterrupt")
         return ExitCode.ctrl_c
     except (ExitCodeException if not api else NeverRaise) as e:
+        e = cast(ExitCodeException, e)
         if options.verbose >= 1:
             log.exception("ExitCodeException")
         elif str(e):

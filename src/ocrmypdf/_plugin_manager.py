@@ -11,7 +11,7 @@ import importlib.util
 import pkgutil
 import sys
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Sequence, Tuple, Union
 
 import pluggy
 
@@ -110,7 +110,7 @@ def get_plugin_manager(plugins: List[Union[str, Path]], builtins=True):
 
 
 def get_parser_options_plugins(
-    args,
+    args: Sequence[str],
 ) -> Tuple[argparse.ArgumentParser, argparse.Namespace, pluggy.PluginManager]:
     pre_options, _unused = plugins_only_parser.parse_known_args(args=args)
     plugin_manager = get_plugin_manager(pre_options.plugins)
