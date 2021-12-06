@@ -19,6 +19,7 @@ import queue
 import signal
 import sys
 import threading
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from contextlib import suppress
 from multiprocessing.pool import Pool, ThreadPool
 from typing import Callable, Iterable, Type, Union
@@ -30,7 +31,7 @@ from ocrmypdf._logging import TqdmConsole
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import remove_all_log_handlers
 
-ProcessPool = Pool
+FuturesExecutorClass = Union[Type[ThreadPoolExecutor], Type[ProcessPoolExecutor]]
 Queue = Union[multiprocessing.Queue, queue.Queue]
 UserInit = Callable[[], None]
 WorkerInit = Callable[[Queue, UserInit, int], None]
@@ -110,11 +111,11 @@ class StandardExecutor(Executor):
     ):
         if use_threads:
             log_queue: Queue = queue.Queue(-1)
-            pool_class: Type[Pool] = ThreadPool
+            executor_class: FuturesExecutorClass = ThreadPoolExecutor
             initializer: WorkerInit = thread_init
         else:
             log_queue = multiprocessing.Queue(-1)
-            pool_class = ProcessPool
+            executor_class = ProcessPoolExecutor
             initializer = process_init
 
         # Regardless of whether we use_threads for worker processes, the log_listener
@@ -123,39 +124,36 @@ class StandardExecutor(Executor):
         listener = threading.Thread(target=log_listener, args=(log_queue,))
         listener.start()
 
-        with self.pbar_class(**tqdm_kwargs) as pbar:
-            pool = pool_class(
-                processes=max_workers,
-                initializer=initializer,
-                initargs=(log_queue, worker_initializer, logging.getLogger("").level),
-            )
+        with self.pbar_class(**tqdm_kwargs) as pbar, executor_class(
+            max_workers=max_workers,
+            initializer=initializer,
+            initargs=(log_queue, worker_initializer, logging.getLogger("").level),
+        ) as executor:
+            futures = [executor.submit(task, args) for args in task_arguments]
             try:
-                results = pool.imap_unordered(task, task_arguments)
-                for result in results:
-                    if task_finished:
-                        task_finished(result, pbar)
-                    else:
-                        pbar.update()
+                for future in as_completed(futures):
+                    result = future.result()
+                    task_finished(result, pbar)
+                    pbar.update()
             except KeyboardInterrupt:
                 # Terminate pool so we exit instantly
-                pool.terminate()
-                # Don't try listener.join() here, will deadlock
+                executor.shutdown(wait=False, cancel_futures=True)
                 raise
             except Exception:
                 if not os.environ.get("PYTEST_CURRENT_TEST", ""):
-                    # Unless inside pytest, exit immediately because no one wants
-                    # to wait for child processes to finalize results that will be
-                    # thrown away. Inside pytest, we want child processes to exit
-                    # cleanly so that they output an error messages or coverage data
-                    # we need from them.
-                    pool.terminate()
+                    # Normally we shutdown without waiting for other child workers
+                    # on error, because there is no point in waiting for them. Their
+                    # results will be discard. But if the condition above is True,
+                    # then we are running in pytest, and we want everything to exit
+                    # as cleanly as possible so that we get good error messages.
+                    executor.shutdown(wait=False, cancel_futures=True)
                 raise
             finally:
                 # Terminate log listener
                 log_queue.put_nowait(None)
-                pool.close()
-                pool.join()
 
+        # When the above succeeds, wait for the listener thread to exit. (If
+        # an exception occurs, we don't try to join, in case it deadlocks.)
         listener.join()
 
 

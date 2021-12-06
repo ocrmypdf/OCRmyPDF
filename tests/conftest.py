@@ -10,7 +10,7 @@ import platform
 import sys
 from pathlib import Path
 from subprocess import PIPE, CompletedProcess, run
-from typing import AnyStr, List, Literal, Tuple, overload
+from typing import AnyStr, List, Tuple, overload
 
 import pytest
 
@@ -18,6 +18,11 @@ from ocrmypdf import api, pdfinfo
 from ocrmypdf._exec import unpaper
 from ocrmypdf._plugin_manager import get_parser_options_plugins
 from ocrmypdf.exceptions import ExitCode
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 
 def is_linux():

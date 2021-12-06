@@ -11,6 +11,8 @@ import logging.handlers
 import os
 import sys
 import threading
+from concurrent.futures.process import BrokenProcessPool
+from concurrent.futures.thread import BrokenThreadPool
 from functools import partial
 from pathlib import Path
 from tempfile import mkdtemp
@@ -430,6 +432,17 @@ def run_pipeline(
             "image pixel limit."
         )
         return ExitCode.other_error
+    except (
+        BrokenProcessPool if not api else NeverRaise,
+        BrokenThreadPool if not api else NeverRaise,
+    ) as e:
+        log.exception(
+            "A worker process was terminated unexpectedly. This is known to occur if "
+            "processing your file takes all available swap space and RAM. It may "
+            "help to try again with a smaller number of jobs, using the --jobs "
+            "argument."
+        )
+        return ExitCode.child_process_error
     except (Exception if not api else NeverRaise):  # pylint: disable=broad-except
         log.exception("An exception occurred while executing the pipeline")
         return ExitCode.other_error
