@@ -75,6 +75,6 @@ filterwarnings = ["ignore:.*XMLParser.*:DeprecationWarning"]
 
 [[tool.mypy.overrides]]
 module = [
-  'pluggy', 'tqdm', 'coloredlogs', 'img2pdf', 'pdfminer.*', 'reportlab.*'
+  'pluggy', 'tqdm', 'coloredlogs', 'img2pdf', 'pdfminer.*', 'reportlab.*', 'fitz', 'libxmp.utils'
 ]
 ignore_missing_imports = true

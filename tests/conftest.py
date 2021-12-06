@@ -9,17 +9,15 @@ import os
 import platform
 import sys
 from pathlib import Path
-from subprocess import PIPE, run
+from subprocess import PIPE, CompletedProcess, run
+from typing import AnyStr, List, Literal, Tuple, overload
 
 import pytest
 
 from ocrmypdf import api, pdfinfo
 from ocrmypdf._exec import unpaper
 from ocrmypdf._plugin_manager import get_parser_options_plugins
-
-if sys.version_info < (3, 5):
-    print("Requires Python 3.5+")
-    sys.exit(1)
+from ocrmypdf.exceptions import ExitCode
 
 
 def is_linux():
@@ -46,36 +44,35 @@ def have_unpaper():
 
 TESTS_ROOT = Path(__file__).parent.resolve()
 PROJECT_ROOT = TESTS_ROOT
-OCRMYPDF = [sys.executable, '-m', 'ocrmypdf']
 
 
 @pytest.fixture
-def resources():
+def resources() -> Path:
     return Path(TESTS_ROOT) / 'resources'
 
 
 @pytest.fixture
-def ocrmypdf_exec():
-    return OCRMYPDF
+def ocrmypdf_exec() -> List[str]:
+    return [sys.executable, '-m', 'ocrmypdf']
 
 
 @pytest.fixture(scope="function")
-def outdir(tmp_path):
+def outdir(tmp_path) -> Path:
     return tmp_path
 
 
 @pytest.fixture(scope="function")
-def outpdf(tmp_path):
+def outpdf(tmp_path) -> Path:
     return tmp_path / 'out.pdf'
 
 
 @pytest.fixture(scope="function")
-def outtxt(tmp_path):
+def outtxt(tmp_path) -> Path:
     return tmp_path / 'out.txt'
 
 
 @pytest.fixture(scope="function")
-def no_outpdf(tmp_path):
+def no_outpdf(tmp_path) -> Path:
     """This just documents the fact that a test is not expected to produce
     output. Unfortunately an assertion failure inside a test fixture produces
     an error rather than a test failure, so no testing is done. It's up to
@@ -83,13 +80,13 @@ def no_outpdf(tmp_path):
     return tmp_path / 'no_output.pdf'
 
 
-def check_ocrmypdf(input_file, output_file, *args):
-    """Run ocrmypdf and confirmed that a valid file was created"""
-    args = [str(input_file), str(output_file)] + [
+def check_ocrmypdf(input_file: Path, output_file: Path, *args) -> Path:
+    """Run ocrmypdf and confirm that a valid plausible PDF was created."""
+    api_args = [str(input_file), str(output_file)] + [
         str(arg) for arg in args if arg is not None
     ]
 
-    _parser, options, plugin_manager = get_parser_options_plugins(args=args)
+    _parser, options, plugin_manager = get_parser_options_plugins(args=api_args)
     api.check_options(options, plugin_manager)
     result = api.run_pipeline(options, plugin_manager=plugin_manager, api=True)
 
@@ -100,44 +97,65 @@ def check_ocrmypdf(input_file, output_file, *args):
     return output_file
 
 
-def run_ocrmypdf_api(input_file, output_file, *args):
-    """Run ocrmypdf via API and let caller deal with results
+def run_ocrmypdf_api(input_file: Path, output_file: Path, *args) -> ExitCode:
+    """Run ocrmypdf via its API in-process, and let test deal with results.
 
-    Does not currently have a way to manipulate the PATH except for Tesseract.
+    This simulates calling the command line interface in a subprocess, but
+    is easier for debuggers and code coverage to follow.
+
+    Any exception raised will be trapped and converted to an exit code.
+    The return code must always be checked or the test may declare a failure
+    to be pass.
     """
 
-    args = [str(input_file), str(output_file)] + [
+    api_args = [str(input_file), str(output_file)] + [
         str(arg) for arg in args if arg is not None
     ]
-    _parser, options, plugin_manager = get_parser_options_plugins(args=args)
+    _parser, options, plugin_manager = get_parser_options_plugins(args=api_args)
 
     api.check_options(options, plugin_manager)
     return api.run_pipeline(options, plugin_manager=None, api=False)
 
 
-def run_ocrmypdf(input_file, output_file, *args, text=True):
-    "Run ocrmypdf and let caller deal with results"
+@overload
+def run_ocrmypdf(
+    input_file: Path, output_file: Path, *args, text: Literal[True] = True
+) -> Tuple[CompletedProcess, str, str]:
+    ...
+
+
+@overload
+def run_ocrmypdf(
+    input_file: Path, output_file: Path, *args, text: Literal[False]
+) -> Tuple[CompletedProcess, bytes, bytes]:
+    ...
+
+
+def run_ocrmypdf(input_file: Path, output_file: Path, *args, text: bool = True):
+    """Run ocrmypdf in a subprocess and let test deal with results.
+
+    If an exception is thrown this fact will be returned as part of the result
+    text and return code rather than exception objects.
+    """
 
     p_args = (
-        OCRMYPDF
+        [sys.executable, '-m', 'ocrmypdf']
         + [str(arg) for arg in args if arg is not None]
         + [str(input_file), str(output_file)]
     )
 
-    env = os.environ.copy()
     p = run(
         p_args,
         stdout=PIPE,
         stderr=PIPE,
         text=text,
-        env=env,
         check=False,
     )
     # print(p.stderr)
     return p, p.stdout, p.stderr
 
 
-def first_page_dimensions(pdf):
+def first_page_dimensions(pdf: Path):
     info = pdfinfo.PdfInfo(pdf)
     page0 = info[0]
     return (page0.width_inches, page0.height_inches)
