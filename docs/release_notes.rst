@@ -18,6 +18,21 @@ wish to use some of its features for working with PDFs.
    for Python 3.6 but might release fixes for critical issues if necessary before that
    date.
 
+v13.1.0
+=======
+
+-  Changed to using Python concurrent.futures-based parallel execution instead of
+   pools, since futures have now exceed pools in features.
+-  If a child worker is terminated (perhaps by the operating system or the user
+   killing it in a task manager), the parallel task will fail an error message.
+   Previously, the main ocrmypdf process would "hang" indefinitely, waiting for the
+   child to report.
+-  Added new argument ``--tesseract-thresholding`` to provide control over Tesseract 5's
+   threshold parameter.
+-  Documentation updates and changes. Better documentation for ``--output-type none``,
+   added a few releases ago. Removed some obsolete documentation.
+-  Improved bash completions - thanks to @FPille.
+
 v13.0.0
 =======
 
