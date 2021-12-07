@@ -242,7 +242,7 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir):
     test = make_rotate_test('test', image_angle, page_angle)
     out = test.with_suffix('.out.pdf')
 
-    p, _, err = run_ocrmypdf(
+    p = run_ocrmypdf(
         test,
         out,
         '-O0',
@@ -251,7 +251,7 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir):
         '0.001',
         text=False,
     )
-    err = err.decode('utf-8', errors='replace')
+    err = p.stderr.decode('utf-8', errors='replace')
     assert p.returncode == 0, err
 
     assert compare_images_monochrome(outdir, reference, 1, out, 1) > 0.2

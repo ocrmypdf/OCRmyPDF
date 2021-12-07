@@ -71,7 +71,7 @@ def test_unpaper_args_valid(resources, outpdf):
 
 @pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
 def test_unpaper_args_invalid_filename(resources, outpdf):
-    p, _out, err = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / "skew.pdf",
         outpdf,
         "-c",
@@ -80,13 +80,13 @@ def test_unpaper_args_invalid_filename(resources, outpdf):
         '--plugin',
         'tests/plugins/tesseract_noop.py',
     )
-    assert "No filenames allowed" in err
+    assert "No filenames allowed" in p.stderr
     assert p.returncode == ExitCode.bad_args
 
 
 @pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
 def test_unpaper_args_invalid(resources, outpdf):
-    p, _out, _err = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / "skew.pdf",
         outpdf,
         "-c",

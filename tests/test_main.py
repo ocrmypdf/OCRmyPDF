@@ -203,7 +203,7 @@ def test_force_ocr_on_pdf_with_no_images(resources, no_outpdf):
     # As a correctness test, make sure that --force-ocr on a PDF with no
     # content still triggers tesseract. If tesseract crashes, then it was
     # called.
-    p, _, _ = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / 'blank.pdf',
         no_outpdf,
         '--force-ocr',
@@ -241,7 +241,7 @@ def test_german(resources, outdir):
 
 
 def test_klingon(resources, outpdf):
-    p, _, _ = run_ocrmypdf(resources / 'francais.pdf', outpdf, '-l', 'klz')
+    p = run_ocrmypdf(resources / 'francais.pdf', outpdf, '-l', 'klz')
     assert p.returncode == ExitCode.missing_dependency
 
 
@@ -354,7 +354,7 @@ def test_tesseract_thresholding_invalid(value, resources, no_outpdf):
 
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_tesseract_crash(renderer, resources, no_outpdf):
-    p, _, err = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / 'ccitt.pdf',
         no_outpdf,
         '-v',
@@ -366,11 +366,11 @@ def test_tesseract_crash(renderer, resources, no_outpdf):
     )
     assert p.returncode == ExitCode.child_process_error
     assert not no_outpdf.exists()
-    assert "SubprocessOutputError" in err
+    assert "SubprocessOutputError" in p.stderr
 
 
 def test_tesseract_crash_autorotate(resources, no_outpdf):
-    p, out, err = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / 'ccitt.pdf',
         no_outpdf,
         '-r',
@@ -379,9 +379,9 @@ def test_tesseract_crash_autorotate(resources, no_outpdf):
     )
     assert p.returncode == ExitCode.child_process_error
     assert not no_outpdf.exists()
-    assert "uncaught exception" in err
-    print(out)
-    print(err)
+    assert "uncaught exception" in p.stderr
+    print(p.stdout)
+    print(p.stderr)
 
 
 @pytest.mark.parametrize('renderer', RENDERERS)
@@ -401,7 +401,7 @@ def test_tesseract_image_too_big(renderer, resources, outpdf):
 
 
 def test_algo4(resources, outpdf):
-    p, _, _ = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / 'encrypted_algo4.pdf',
         outpdf,
         '--plugin',
@@ -471,7 +471,7 @@ def test_destination_not_writable(resources, outdir):
     protected_file = outdir / 'protected.pdf'
     protected_file.touch()
     protected_file.chmod(0o400)  # Read-only
-    p, _out, _err = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / 'jbig2.pdf',
         protected_file,
         '--plugin',
@@ -512,7 +512,7 @@ THIS FILE IS INVALID
 '''
         )
 
-    p, _out, err = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / 'ccitt.pdf',
         outdir / 'out.pdf',
         '--pdf-renderer',
@@ -521,8 +521,8 @@ THIS FILE IS INVALID
         cfg_file,
     )
     assert (
-        "parameter not found" in err.lower()
-        or "error occurred while parsing" in err.lower()
+        "parameter not found" in p.stderr.lower()
+        or "error occurred while parsing" in p.stderr.lower()
     ), "No error message"
     assert p.returncode == ExitCode.invalid_config
 
@@ -781,15 +781,13 @@ def test_pdfa_n(pdfa_level, resources, outpdf):
 
 
 def test_decompression_bomb_error(resources, outpdf):
-    p, _out, err = run_ocrmypdf(resources / 'hugemono.pdf', outpdf)
-    assert 'decompression bomb' in err and '--max-image-mpixels' in err
+    p = run_ocrmypdf(resources / 'hugemono.pdf', outpdf)
+    assert 'decompression bomb' in p.stderr and '--max-image-mpixels' in p.stderr
 
 
 @pytest.mark.slow
 def test_decompression_bomb_succeeds(resources, outpdf):
-    p, _out, err = run_ocrmypdf(
-        resources / 'hugemono.pdf', outpdf, '--max-image-mpixels', '2000'
-    )
+    p = run_ocrmypdf(resources / 'hugemono.pdf', outpdf, '--max-image-mpixels', '2000')
     assert p.returncode == 0
 
 
@@ -818,7 +816,7 @@ def test_text_curves(resources, outpdf):
 
 
 def test_output_is_dir(resources, outdir):
-    p, _out, err = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / 'trivial.pdf',
         outdir,
         '--force-ocr',
@@ -826,28 +824,28 @@ def test_output_is_dir(resources, outdir):
         'tests/plugins/tesseract_noop.py',
     )
     assert p.returncode == ExitCode.file_access_error
-    assert 'is not a writable file' in err
+    assert 'is not a writable file' in p.stderr
 
 
 @pytest.mark.skipif(os.name == 'nt', reason="symlink needs admin permissions")
 def test_output_is_symlink(resources, outdir):
     sym = Path(outdir / 'this_is_a_symlink')
     sym.symlink_to(outdir / 'out.pdf')
-    p, _out, err = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / 'trivial.pdf',
         sym,
         '--force-ocr',
         '--plugin',
         'tests/plugins/tesseract_noop.py',
     )
-    assert p.returncode == ExitCode.ok, err
+    assert p.returncode == ExitCode.ok, p.stderr
     assert (outdir / 'out.pdf').stat().st_size > 0, 'target file not created'
 
 
 def test_livecycle(resources, no_outpdf):
-    p, _, err = run_ocrmypdf(resources / 'livecycle.pdf', no_outpdf)
+    p = run_ocrmypdf(resources / 'livecycle.pdf', no_outpdf)
 
-    assert p.returncode == ExitCode.input_file, err
+    assert p.returncode == ExitCode.input_file, p.stderr
 
 
 def test_version_check():
@@ -904,7 +902,7 @@ def test_image_dpi_not_image(caplog, resources, outpdf):
 
 
 def test_outputtype_none_bad_setup(resources, outpdf):
-    p, _out, err = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / 'trivial.pdf',
         outpdf,
         '--output-type=none',
@@ -912,11 +910,11 @@ def test_outputtype_none_bad_setup(resources, outpdf):
         'tests/plugins/tesseract_noop.py',
     )
     assert p.returncode == ExitCode.bad_args
-    assert 'Set the output file to' in err
+    assert 'Set the output file to' in p.stderr
 
 
 def test_outputtype_none(resources, outtxt):
-    p, out, err = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / 'trivial.pdf',
         '-',
         '--output-type=none',

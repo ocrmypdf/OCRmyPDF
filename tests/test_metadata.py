@@ -62,7 +62,7 @@ def test_override_metadata(output_type, resources, outpdf):
     german = 'Du siehst den Wald vor lauter Bäumen nicht.'
     chinese = '孔子'
 
-    p, _out, err = run_ocrmypdf(
+    p = run_ocrmypdf(
         input_file,
         outpdf,
         '--title',
@@ -75,7 +75,7 @@ def test_override_metadata(output_type, resources, outpdf):
         'tests/plugins/tesseract_noop.py',
     )
 
-    assert p.returncode == ExitCode.ok, err
+    assert p.returncode == ExitCode.ok, p.stderr
 
     before = pikepdf.open(input_file)
     after = pikepdf.open(outpdf)
@@ -99,7 +99,7 @@ def test_high_unicode(resources, no_outpdf):
     input_file = resources / 'c02-22.pdf'
     high_unicode = 'U+1030C is: 𐌌'
 
-    p, _out, err = run_ocrmypdf(
+    p = run_ocrmypdf(
         input_file,
         no_outpdf,
         '--subject',
@@ -110,7 +110,7 @@ def test_high_unicode(resources, no_outpdf):
         'tests/plugins/tesseract_noop.py',
     )
 
-    assert p.returncode == ExitCode.bad_args, err
+    assert p.returncode == ExitCode.bad_args, p.stderr
 
 
 @pytest.mark.skipif(not fitz, reason="test uses fitz")

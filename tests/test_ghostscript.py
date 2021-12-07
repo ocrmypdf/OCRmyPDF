@@ -76,7 +76,7 @@ def test_rasterize_rotated(francais, outdir, caplog):
 
 
 def test_gs_render_failure(resources, outpdf):
-    p, _out, err = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / 'blank.pdf',
         outpdf,
         '--plugin',
@@ -84,12 +84,12 @@ def test_gs_render_failure(resources, outpdf):
         '--plugin',
         'tests/plugins/gs_render_failure.py',
     )
-    assert 'Casper is not a friendly ghost' in err
+    assert 'Casper is not a friendly ghost' in p.stderr
     assert p.returncode == ExitCode.child_process_error
 
 
 def test_gs_raster_failure(resources, outpdf):
-    p, _out, err = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / 'francais.pdf',
         outpdf,
         '--plugin',
@@ -97,12 +97,12 @@ def test_gs_raster_failure(resources, outpdf):
         '--plugin',
         'tests/plugins/gs_raster_failure.py',
     )
-    assert 'Ghost story archive not found' in err
+    assert 'Ghost story archive not found' in p.stderr
     assert p.returncode == ExitCode.child_process_error
 
 
 def test_ghostscript_pdfa_failure(resources, outpdf):
-    p, _out, _err = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / 'francais.pdf',
         outpdf,
         '--plugin',

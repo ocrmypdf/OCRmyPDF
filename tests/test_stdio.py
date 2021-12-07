@@ -60,10 +60,10 @@ def test_stdout(ocrmypdf_exec, resources, outpdf):
 @pytest.mark.skipif(os.name == 'nt', reason="invalid test on Windows")
 def test_bad_locale(monkeypatch):
     monkeypatch.setenv('LC_ALL', 'C')
-    p, out, err = run_ocrmypdf('a', 'b')
-    assert out == '', "stdout not clean"
+    p = run_ocrmypdf('a', 'b')
+    assert p.stdout == '', "stdout not clean"
     assert p.returncode != 0
-    assert 'configured to use ASCII as encoding' in err, "should whine"
+    assert 'configured to use ASCII as encoding' in p.stderr, "should whine"
 
 
 @pytest.mark.xfail(
@@ -74,7 +74,7 @@ def test_dev_null(resources):
     if 'COV_CORE_DATAFILE' in os.environ:
         pytest.skip(msg="Coverage uses stdout")
 
-    p, out, _err = run_ocrmypdf(
+    p = run_ocrmypdf(
         resources / 'trivial.pdf',
         os.devnull,
         '--force-ocr',
@@ -82,4 +82,4 @@ def test_dev_null(resources):
         'tests/plugins/tesseract_noop.py',
     )
     assert p.returncode == 0, "could not send output to /dev/null"
-    assert len(out) == 0, "wrote to stdout"
+    assert len(p.stdout) == 0, "wrote to stdout"

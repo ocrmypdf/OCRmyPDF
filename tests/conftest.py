@@ -10,7 +10,7 @@ import platform
 import sys
 from pathlib import Path
 from subprocess import PIPE, CompletedProcess, run
-from typing import AnyStr, List, Tuple, overload
+from typing import List
 
 import pytest
 
@@ -18,11 +18,6 @@ from ocrmypdf import api, pdfinfo
 from ocrmypdf._exec import unpaper
 from ocrmypdf._plugin_manager import get_parser_options_plugins
 from ocrmypdf.exceptions import ExitCode
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
 
 def is_linux():
@@ -122,21 +117,9 @@ def run_ocrmypdf_api(input_file: Path, output_file: Path, *args) -> ExitCode:
     return api.run_pipeline(options, plugin_manager=None, api=False)
 
 
-@overload
 def run_ocrmypdf(
-    input_file: Path, output_file: Path, *args, text: Literal[True] = True
-) -> Tuple[CompletedProcess, str, str]:
-    ...
-
-
-@overload
-def run_ocrmypdf(
-    input_file: Path, output_file: Path, *args, text: Literal[False]
-) -> Tuple[CompletedProcess, bytes, bytes]:
-    ...
-
-
-def run_ocrmypdf(input_file: Path, output_file: Path, *args, text: bool = True):
+    input_file: Path, output_file: Path, *args, text: bool = True
+) -> CompletedProcess:
     """Run ocrmypdf in a subprocess and let test deal with results.
 
     If an exception is thrown this fact will be returned as part of the result
@@ -157,7 +140,7 @@ def run_ocrmypdf(input_file: Path, output_file: Path, *args, text: bool = True):
         check=False,
     )
     # print(p.stderr)
-    return p, p.stdout, p.stderr
+    return p
 
 
 def first_page_dimensions(pdf: Path):
