@@ -200,7 +200,9 @@ def get_deskew(
     except CalledProcessError as e:
         tesseract_log_output(e.stdout)
         tesseract_log_output(e.stderr)
-        if b'Empty page!!' in e.output:  # Not enough info for a skew angle
+        if b'Empty page!!' in e.output or (
+            e.output == b'' and e.returncode == 1
+        ):  # Not enough info for a skew angle - Tess 4 and 5 return different errors
             return 0.0
 
         raise SubprocessOutputError() from e

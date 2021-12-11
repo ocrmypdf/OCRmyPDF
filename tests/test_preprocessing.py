@@ -40,6 +40,11 @@ def test_deskew(resources, outdir):
     assert -0.5 < skew_angle < 0.5, "Deskewing failed"
 
 
+def test_deskew_blank_page(resources, outpdf):
+    # Tesseract doesn't like blank pages - make sure we can get through
+    check_ocrmypdf(resources / 'blank.pdf', outpdf, '--deskew')
+
+
 @pytest.mark.xfail(reason="remove background disabled")
 def test_remove_background(resources, outdir):
     # Ensure the input image does not contain pure white/black
