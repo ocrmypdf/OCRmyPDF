@@ -18,6 +18,11 @@ wish to use some of its features for working with PDFs.
    for Python 3.6 but might release fixes for critical issues if necessary before that
    date.
 
+v13.1.1
+=======
+
+-  Fixed issue with attempting to deskew a blank page on Tesseract 5. :issue:`868`.
+
 v13.1.0
 =======
 
