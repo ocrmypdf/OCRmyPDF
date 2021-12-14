@@ -8,7 +8,6 @@ import logging
 import os
 import shutil
 import sys
-from distutils.version import LooseVersion
 from itertools import chain
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Set, Tuple, TypeVar
@@ -21,6 +20,17 @@ except ModuleNotFoundError as e:
 log = logging.getLogger(__name__)
 
 T = TypeVar('T')
+
+
+def ghostscript_version_key(s: str) -> Tuple[int, int, int]:
+    """Compare Ghostscript version numbers."""
+    try:
+        release = [int(elem) for elem in s.split('.', maxsplit=3)]
+        while len(release) < 3:
+            release.append(0)
+        return (release[0], release[1], release[2])
+    except ValueError:
+        return (0, 0, 0)
 
 
 def registry_enum(
@@ -51,7 +61,9 @@ def registry_path_ghostscript(env=None) -> Iterator[Path]:
         with winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Artifex\GPL Ghostscript"
         ) as k:
-            latest_gs = max(registry_subkeys(k), key=LooseVersion, default='0')
+            latest_gs = max(
+                registry_subkeys(k), key=ghostscript_version_key, default='0'
+            )
         with winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE, fr"SOFTWARE\Artifex\GPL Ghostscript\{latest_gs}"
         ) as k:
