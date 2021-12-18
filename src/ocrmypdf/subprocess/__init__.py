@@ -266,7 +266,7 @@ def check_external_program(
     *,
     program: str,
     package: str,
-    version_checker: Union[str, Callable],
+    version_checker: Callable,
     need_version: str,
     required_for: Optional[str] = None,
     recommended=False,
@@ -291,7 +291,7 @@ def check_external_program(
     try:
         if callable(version_checker):
             found_version = version_checker()
-        else:
+        else:  # deprecated
             found_version = version_checker
     except (CalledProcessError, FileNotFoundError, MissingDependencyError):
         _error_missing_program(program, package, required_for, recommended)

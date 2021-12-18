@@ -18,13 +18,13 @@ log = logging.getLogger(__name__)
 
 @hookimpl
 def check_options(options):
-    gs_version = ghostscript.version()
     check_external_program(
         program='gs',
         package='ghostscript',
-        version_checker=gs_version,
+        version_checker=ghostscript.version,
         need_version='9.15',  # limited by Travis CI / Ubuntu 14.04 backports
     )
+    gs_version = ghostscript.version()
     if gs_version in ('9.24', '9.51'):
         raise MissingDependencyError(
             f"Ghostscript {gs_version} contains serious regressions and is not "
