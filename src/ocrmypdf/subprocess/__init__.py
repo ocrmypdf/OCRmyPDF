@@ -13,11 +13,12 @@ import re
 import sys
 from collections.abc import Mapping
 from contextlib import suppress
-from distutils.version import LooseVersion, Version
 from functools import lru_cache
 from subprocess import PIPE, STDOUT, CalledProcessError, CompletedProcess, Popen
 from subprocess import run as subprocess_run
 from typing import Callable, Optional, Type, Union
+
+from packaging.version import Version
 
 from ocrmypdf.exceptions import MissingDependencyError
 
@@ -270,7 +271,7 @@ def check_external_program(
     need_version: str,
     required_for: Optional[str] = None,
     recommended=False,
-    version_parser: Type[Version] = LooseVersion,
+    version_parser: Type[Version] = Version,
 ):
     """Check for required version of external program and raise exception if not.
 

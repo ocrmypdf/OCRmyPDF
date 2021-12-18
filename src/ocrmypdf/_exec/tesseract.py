@@ -9,13 +9,13 @@
 
 import logging
 import re
-from distutils.version import StrictVersion
 from math import pi
 from os import fspath
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
 from typing import Dict, Iterator, List, Optional
 
+from packaging.version import Version
 from PIL import Image
 
 from ocrmypdf.exceptions import (
@@ -60,25 +60,54 @@ class TesseractLoggerAdapter(logging.LoggerAdapter):
         return '[tesseract] %s' % (msg), kwargs
 
 
-class TesseractVersion(StrictVersion):
-
-    version_re = re.compile(
-        r'''
-        ^(\d+) \. (\d+) (\. (\d+))?  # groups: 1/major, 2/minor, 3/[skip], 4/patch
-        [-]?  # optional hyphen separator
-        (?: ((?:alpha|beta|rc|dev)\d*)? [.\-\ ]? (\d+)? )?  # 5/prerelease, 6/prerelease_num
-        (?:(?:-\d+)?-g[0-9a-f]+)?  # untagged git version
-        $
-        ''',
-        re.VERBOSE | re.ASCII,
+TESSERACT_VERSION_PATTERN = r"""
+    v?
+    (?:
+        (?:(?P<epoch>[0-9]+)!)?                           # epoch
+        (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
+        (?P<pre>                                          # pre-release
+            [-_\.]?
+            (?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))
+            [-_\.]?
+            (?P<pre_n>[0-9]+)?
+        )?
+        (?P<post>                                         # post release
+            (?:-(?P<post_n1>[0-9]+))
+            |
+            (?:
+                [-_\.]?
+                (?P<post_l>post|rev|r)
+                [-_\.]?
+                (?P<post_n2>[0-9]+)?
+            )
+        )?
+        (?P<dev>                                          # dev release
+            [-_\.]?
+            (?P<dev_l>dev)
+            [-_\.]?
+            (?P<dev_n>[0-9]+)?
+        )?
+        (?P<date>
+            [-_\.]
+            (?:20[0-9][0-9] [0-1][0-9] [0-3][0-9])       # yyyy mm dd
+        )?
+        (?P<gitcount>
+            [-_\.]?
+            [0-9]+
+        )?
+        (?P<gitcommit>
+            [-_\.]?
+            g[0-9a-f]{2,10}
+        )?
     )
+    (?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?       # local version
+"""
 
-    def parse(self, vstring):
-        try:
-            super().parse(vstring)
-        except TypeError as e:
-            if 'int() argument must be a string' in str(e):
-                super().parse(vstring + '-0')
+
+class TesseractVersion(Version):
+    _regex = re.compile(
+        r"^\s*" + TESSERACT_VERSION_PATTERN + r"\s*$", re.VERBOSE | re.IGNORECASE
+    )
 
 
 def version() -> str:
