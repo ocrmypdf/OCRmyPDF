@@ -134,7 +134,6 @@ class StandardExecutor(Executor):
                 for future in as_completed(futures):
                     result = future.result()
                     task_finished(result, pbar)
-                    pbar.update()
             except KeyboardInterrupt:
                 # Terminate pool so we exit instantly
                 executor.shutdown(wait=False, cancel_futures=True)
