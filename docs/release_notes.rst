@@ -18,6 +18,18 @@ wish to use some of its features for working with PDFs.
    for Python 3.6 but might release fixes for critical issues if necessary before that
    date.
 
+v13.2.0
+=======
+
+-  Removed all runtime uses of distutils since it is deprecated in standard library. We
+   previous used ``distutils.version`` to examine version numbers of dependencies
+   at run time, and now use ``packaging.version`` for this. This is a new
+   dependency.
+-  Fixed an error message advising the user that Ghostscript was not installed being
+   suppressed when this condition actually happens.
+-  Fixed an issue with incorrect page number and totals being displayed in the progress
+   bar. This was purely a display/presentation issue. :issue:`876`.
+
 v13.1.1
 =======
 
