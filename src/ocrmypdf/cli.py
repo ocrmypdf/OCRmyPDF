@@ -142,7 +142,7 @@ Online documentation is located at:
         'output_file',
         metavar="output_pdf",
         help="Output searchable PDF file (or '-' to write to standard output). "
-        "Existing files will be ovewritten. If same as input file, the "
+        "Existing files will be overwritten. If same as input file, the "
         "input file will be updated only if processing is successful.",
     )
     parser.add_argument(
