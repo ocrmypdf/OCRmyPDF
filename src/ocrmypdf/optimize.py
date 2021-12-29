@@ -200,7 +200,10 @@ def extract_image_generic(
     elif not pim.indexed and pim.colorspace in pim.SIMPLE_COLORSPACES:
         # An optimization opportunity here, not currently taken, is directly
         # generating a PNG from compressed data
-        pim.as_pil_image().save(png_name(root, xref))
+        try:
+            pim.as_pil_image().save(png_name(root, xref))
+        except NotImplementedError:
+            log.warning(f"PDF contains some images specifying non-CMYK inks. Ignoring it.")
         return XrefExt(xref, '.png')
     elif (
         not pim.indexed
