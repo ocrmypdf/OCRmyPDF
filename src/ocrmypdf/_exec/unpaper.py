@@ -13,6 +13,7 @@
 import logging
 import os
 import shlex
+from contextlib import contextmanager
 from decimal import Decimal
 from pathlib import Path
 from subprocess import PIPE, STDOUT
@@ -48,40 +49,50 @@ def version() -> str:
     return get_version('unpaper')
 
 
-def _setup_unpaper_io(tmpdir: Path, input_file: Path) -> Tuple[Path, Path]:
+def _convert_image(im: Image.Image) -> Tuple[Image.Image, bool, str]:
     SUFFIXES = {'1': '.pbm', 'L': '.pgm', 'RGB': '.ppm'}
+    im_modified = False
+
+    if im.mode not in SUFFIXES:
+        log.info("Converting image to other colorspace")
+        try:
+            if im.mode == 'P' and len(im.getcolors()) == 2:
+                im = im.convert(mode='1')
+            else:
+                im = im.convert(mode='RGB')
+        except OSError as e:
+            raise MissingDependencyError(
+                "Could not convert image with type " + im.mode
+            ) from e
+        else:
+            im_modified = True
+    try:
+        suffix = SUFFIXES[im.mode]
+    except KeyError:
+        raise MissingDependencyError(
+            "Failed to convert image to a supported format."
+        ) from None
+    return im, im_modified, suffix
+
+
+@contextmanager
+def _setup_unpaper_io(input_file: Path) -> Tuple[Path, Path, Path]:
     with Image.open(input_file) as im:
-        im_modified = False
         if im.width * im.height >= UNPAPER_IMAGE_PIXEL_LIMIT:
             raise UnpaperImageTooLargeError(w=im.width, h=im.height)
-        if im.mode not in SUFFIXES:
-            log.info("Converting image to other colorspace")
-            try:
-                if im.mode == 'P' and len(im.getcolors()) == 2:
-                    im = im.convert(mode='1')
-                else:
-                    im = im.convert(mode='RGB')
-            except OSError as e:
-                raise MissingDependencyError(
-                    "Could not convert image with type " + im.mode
-                ) from e
-            else:
-                im_modified = True
-        try:
-            suffix = SUFFIXES[im.mode]
-        except KeyError:
-            raise MissingDependencyError(
-                "Failed to convert image to a supported format."
-            ) from None
+        im, im_modified, suffix = _convert_image(im)
 
-        if im_modified or input_file.suffix != '.pnm':
-            input_pnm = tmpdir / 'input.pnm'
-            im.save(input_pnm, format='PPM')
-        else:
-            # No changes, PNG input, just use the file we already have
-            input_pnm = input_file
-        output_pnm = tmpdir / f'output{suffix}'
-    return input_pnm, output_pnm
+        with TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+            if im_modified or input_file.suffix != '.pnm':
+                input_pnm = tmppath / 'input.pnm'
+                im.save(input_pnm, format='PPM')
+            else:
+                # No changes, PNG input, just use the file we already have
+                input_pnm = input_file
+
+            output_pnm = tmppath / f'output{suffix}'
+            yield input_pnm, output_pnm, tmppath
 
 
 def run_unpaper(
@@ -89,9 +100,7 @@ def run_unpaper(
 ) -> None:
     args_unpaper = ['unpaper', '-v', '--dpi', str(round(dpi, 6))] + mode_args
 
-    with TemporaryDirectory() as tmpdir:
-        input_pnm, output_pnm = _setup_unpaper_io(Path(tmpdir), input_file)
-
+    with _setup_unpaper_io(input_file) as (input_pnm, output_pnm, tmpdir):
         # To prevent any shenanigans from accepting arbitrary parameters in
         # --unpaper-args, we:
         # 1) run with cwd set to a tmpdir with only unpaper's files
