@@ -494,13 +494,12 @@ def preprocess_deskew(input_file: Path, page_context: PageContext):
 def preprocess_clean(input_file: Path, page_context: PageContext):
     output_file = page_context.get_path('pp_clean.png')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
-    unpaper.clean(
+    return unpaper.clean(
         input_file,
         output_file,
         dpi=dpi.x,
         unpaper_args=page_context.options.unpaper_args,
     )
-    return output_file
 
 
 def create_ocr_image(image: Path, page_context: PageContext):

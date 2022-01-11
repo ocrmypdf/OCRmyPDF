@@ -5,18 +5,23 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+import logging
 from os import fspath
 from unittest.mock import patch
 
 import pytest
+from PIL import Image
 
+from ocrmypdf._exec import unpaper
 from ocrmypdf._plugin_manager import get_parser_options_plugins
 from ocrmypdf._validation import check_options
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 
-from .conftest import check_ocrmypdf, have_unpaper, run_ocrmypdf
+from .conftest import check_ocrmypdf, have_unpaper, ocrmypdf_exec, run_ocrmypdf
 
 # pylint: disable=redefined-outer-name
+
+needs_unpaper = pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
 
 
 def test_no_unpaper(resources, no_outpdf):
@@ -45,7 +50,7 @@ def test_old_unpaper(resources, no_outpdf):
         mock.assert_called()
 
 
-@pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
+@needs_unpaper
 def test_clean(resources, outpdf):
     check_ocrmypdf(
         resources / "skew.pdf",
@@ -56,7 +61,7 @@ def test_clean(resources, outpdf):
     )
 
 
-@pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
+@needs_unpaper
 def test_unpaper_args_valid(resources, outpdf):
     check_ocrmypdf(
         resources / "skew.pdf",
@@ -69,7 +74,7 @@ def test_unpaper_args_valid(resources, outpdf):
     )
 
 
-@pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
+@needs_unpaper
 def test_unpaper_args_invalid_filename(resources, outpdf):
     p = run_ocrmypdf(
         resources / "skew.pdf",
@@ -84,7 +89,7 @@ def test_unpaper_args_invalid_filename(resources, outpdf):
     assert p.returncode == ExitCode.bad_args
 
 
-@pytest.mark.skipif(not have_unpaper(), reason="requires unpaper")
+@needs_unpaper
 def test_unpaper_args_invalid(resources, outpdf):
     p = run_ocrmypdf(
         resources / "skew.pdf",
@@ -98,3 +103,16 @@ def test_unpaper_args_invalid(resources, outpdf):
     # Can't tell difference between unpaper choking on bad arguments or some
     # other unpaper failure
     assert p.returncode == ExitCode.child_process_error
+
+
+@needs_unpaper
+def test_unpaper_image_too_big(resources, outdir, caplog):
+    with patch('ocrmypdf._exec.unpaper.UNPAPER_IMAGE_PIXEL_LIMIT', 42):
+        infile = resources / 'crom.png'
+        unpaper.clean(infile, outdir / 'out.png', dpi=300) == infile
+
+        assert any(
+            'too large for cleaning' in rec.message
+            for rec in caplog.get_records('call')
+            if rec.levelno == logging.WARNING
+        )

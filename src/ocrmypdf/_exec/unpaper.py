@@ -22,12 +22,26 @@ from typing import List, Optional, Tuple, Union
 from PIL import Image
 
 from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
-from ocrmypdf.subprocess import get_version
-from ocrmypdf.subprocess import run as external_run
+from ocrmypdf.subprocess import get_version, run
+
+UNPAPER_IMAGE_PIXEL_LIMIT = 256 * 1024 * 1024
 
 DecFloat = Union[Decimal, float]
 
 log = logging.getLogger(__name__)
+
+
+class UnpaperImageTooLargeError(Exception):
+    def __init__(
+        self,
+        w,
+        h,
+        message="Image with size {}x{} is too large for cleaning with 'unpaper'.",
+    ):
+        self.w = w
+        self.h = h
+        self.message = message.format(w, h)
+        super().__init__(self.message)
 
 
 def version() -> str:
@@ -38,6 +52,8 @@ def _setup_unpaper_io(tmpdir: Path, input_file: Path) -> Tuple[Path, Path]:
     SUFFIXES = {'1': '.pbm', 'L': '.pgm', 'RGB': '.ppm'}
     with Image.open(input_file) as im:
         im_modified = False
+        if im.width * im.height >= UNPAPER_IMAGE_PIXEL_LIMIT:
+            raise UnpaperImageTooLargeError(w=im.width, h=im.height)
         if im.mode not in SUFFIXES:
             log.info("Converting image to other colorspace")
             try:
@@ -68,7 +84,7 @@ def _setup_unpaper_io(tmpdir: Path, input_file: Path) -> Tuple[Path, Path]:
     return input_pnm, output_pnm
 
 
-def run(
+def run_unpaper(
     input_file: Path, output_file: Path, *, dpi: DecFloat, mode_args: List[str]
 ) -> None:
     args_unpaper = ['unpaper', '-v', '--dpi', str(round(dpi, 6))] + mode_args
@@ -84,7 +100,7 @@ def run(
         # This should ensure that a user cannot clobber some other file with
         # their unpaper arguments (whether intentionally or otherwise)
         args_unpaper.extend([os.fspath(input_pnm), os.fspath(output_pnm)])
-        external_run(
+        run(
             args_unpaper,
             close_fds=True,
             check=True,
@@ -117,7 +133,7 @@ def clean(
     *,
     dpi: DecFloat,
     unpaper_args: Optional[List[str]] = None,
-):
+) -> Path:
     default_args = [
         '--layout',
         'none',
@@ -131,4 +147,9 @@ def clean(
     ]
     if not unpaper_args:
         unpaper_args = default_args
-    run(input_file, output_file, dpi=dpi, mode_args=unpaper_args)
+    try:
+        run_unpaper(input_file, output_file, dpi=dpi, mode_args=unpaper_args)
+        return output_file
+    except UnpaperImageTooLargeError as e:
+        log.warning(str(e))
+        return input_file
