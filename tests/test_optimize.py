@@ -17,7 +17,7 @@ from PIL import Image, ImageDraw
 from ocrmypdf import optimize as opt
 from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._exec.ghostscript import rasterize_pdf
-from ocrmypdf.helpers import Resolution
+from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 
 from .conftest import check_ocrmypdf
 
@@ -139,8 +139,8 @@ def test_multiple_pngs(resources, outdir):
         img2pdf.convert(
             fspath(resources / 'baiona_colormapped.png'),
             fspath(resources / 'baiona_gray.png'),
-            with_pdfrw=False,
             outputstream=inpdf,
+            **IMG2PDF_KWARGS,
         )
 
     def mockquant(input_file, output_file, *_args):

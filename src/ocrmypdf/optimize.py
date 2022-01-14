@@ -41,7 +41,7 @@ from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf.exceptions import OutputFileAccessError
-from ocrmypdf.helpers import safe_symlink
+from ocrmypdf.helpers import IMG2PDF_KWARGS, safe_symlink
 
 log = logging.getLogger(__name__)
 
@@ -453,7 +453,7 @@ def transcode_jpegs(
 def _transcode_png(pike: Pdf, filename: Path, xref: Xref) -> bool:
     output = filename.with_suffix('.png.pdf')
     with output.open('wb') as f:
-        img2pdf.convert(fspath(filename), outputstream=f)
+        img2pdf.convert(fspath(filename), outputstream=f, **IMG2PDF_KWARGS)
 
     with Pdf.open(output) as pdf_image:
         foreign_image = next(iter(pdf_image.pages[0].images.values()))

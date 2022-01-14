@@ -18,7 +18,7 @@ from reportlab.pdfgen.canvas import Canvas
 
 from ocrmypdf._exec import ghostscript
 from ocrmypdf._plugin_manager import get_plugin_manager
-from ocrmypdf.helpers import Resolution
+from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.pdfinfo import PdfInfo
 
 from .conftest import check_ocrmypdf, run_ocrmypdf
@@ -230,6 +230,7 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir):
             memimg.read(),
             layout_fun=img2pdf.get_fixed_dpi_layout_fun((200, 200)),
             outputstream=mempdf,
+            **IMG2PDF_KWARGS,
         )
         mempdf.seek(0)
         pike = pikepdf.open(mempdf)

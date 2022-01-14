@@ -17,7 +17,7 @@ from reportlab.pdfgen.canvas import Canvas
 
 from ocrmypdf import pdfinfo
 from ocrmypdf.exceptions import InputFileError
-from ocrmypdf.helpers import Resolution
+from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.pdfinfo import Colorspace, Encoding
 from ocrmypdf.pdfinfo.layout import PDFPage
 
@@ -67,9 +67,9 @@ def test_single_page_image(eight_by_eight, outpdf):
         img2pdf.convert(
             bio,
             producer="img2pdf",
-            with_pdfrw=False,
             layout_fun=layout_fun,
             outputstream=f,
+            **IMG2PDF_KWARGS,
         )
     info = pdfinfo.PdfInfo(outpdf)
 

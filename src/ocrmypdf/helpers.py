@@ -19,9 +19,20 @@ from math import isclose, isfinite
 from pathlib import Path
 from typing import Any, Sequence
 
+import img2pdf
 import pikepdf
+from packaging.version import Version
 
 log = logging.getLogger(__name__)
+
+if Version(img2pdf.__version__) < Version('0.4.0'):
+    IMG2PDF_KWARGS = dict(without_pdfw=True)
+elif Version(img2pdf.__version__) < Version('0.4.3'):
+    IMG2PDF_KWARGS = dict(engine=img2pdf.Engine.pikepdf)
+else:
+    IMG2PDF_KWARGS = dict(
+        engine=img2pdf.Engine.pikepdf, rotation=img2pdf.Rotation.ifvalid
+    )
 
 
 class Resolution(namedtuple('Resolution', ('x', 'y'))):

@@ -18,7 +18,7 @@ from typing import Dict, Iterable, Optional
 import img2pdf
 import pikepdf
 from pikepdf.models.metadata import encode_pdf_date
-from PIL import Image, ImageColor, ImageDraw
+from PIL import Image, ImageDraw
 
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._exec import unpaper
@@ -32,7 +32,7 @@ from ocrmypdf.exceptions import (
     PriorOcrFoundError,
     UnsupportedImageFormatError,
 )
-from ocrmypdf.helpers import Resolution, safe_symlink
+from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution, safe_symlink
 from ocrmypdf.hocrtransform import HocrTransform
 from ocrmypdf.optimize import optimize
 from ocrmypdf.pdfa import generate_pdfa_ps
@@ -98,8 +98,8 @@ def triage_image_file(input_file, output_file, options):
             img2pdf.convert(
                 os.fspath(input_file),
                 layout_fun=layout_fun,
-                with_pdfrw=False,
                 outputstream=outf,
+                **IMG2PDF_KWARGS,
             )
         log.info("Successfully converted to PDF, processing...")
     except img2pdf.ImageOpenError as e:
@@ -612,7 +612,7 @@ def create_pdf_page_from_image(
 
         layout_fun = img2pdf.get_layout_fun(pagesize)
         img2pdf.convert(
-            imfile, with_pdfrw=False, layout_fun=layout_fun, outputstream=pdf
+            imfile, layout_fun=layout_fun, outputstream=pdf, **IMG2PDF_KWARGS
         )
         log.debug('convert done')
 
