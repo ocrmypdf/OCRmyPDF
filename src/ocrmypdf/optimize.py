@@ -203,7 +203,8 @@ def extract_image_generic(
         try:
             pim.as_pil_image().save(png_name(root, xref))
         except NotImplementedError:
-            log.warning(f"PDF contains some images specifying non-CMYK inks. Ignoring it.")
+            log.warning("PDF contains an atypical image that cannot be optimized.")
+            return None
         return XrefExt(xref, '.png')
     elif (
         not pim.indexed
