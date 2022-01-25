@@ -344,7 +344,7 @@ def generate_hocr(
         _generate_null_hocr(output_hocr, output_text, input_file)
     except CalledProcessError as e:
         tesseract_log_output(e.output)
-        if b'Image too large' in e.output:
+        if b'Image too large' in e.output or b'Empty page!!' in e.output:
             _generate_null_hocr(output_hocr, output_text, input_file)
             return
 
@@ -416,7 +416,7 @@ def generate_pdf(
         use_skip_page(output_pdf, output_text)
     except CalledProcessError as e:
         tesseract_log_output(e.output)
-        if b'Image too large' in e.output:
+        if b'Image too large' in e.output or b'Empty page!!' in e.output:
             use_skip_page(output_pdf, output_text)
             return
         raise SubprocessOutputError() from e
