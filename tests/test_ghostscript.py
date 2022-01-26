@@ -6,11 +6,13 @@
 
 
 import logging
+import subprocess
 from decimal import Decimal
+from unittest.mock import patch
 
 import pikepdf
 import pytest
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 from ocrmypdf._exec.ghostscript import rasterize_pdf
 from ocrmypdf.exceptions import ExitCode
@@ -124,3 +126,20 @@ def test_ghostscript_feature_elision(resources, outpdf):
         '--plugin',
         'tests/plugins/gs_feature_elision.py',
     )
+
+
+def test_rasterize_pdf_errors(resources, no_outpdf, caplog):
+    with patch('ocrmypdf._exec.ghostscript.run') as mock:
+        # ghostscript can produce
+        mock.return_value = subprocess.CompletedProcess(
+            ['fakegs'], returncode=0, stdout=b'', stderr=b'error this is an error'
+        )
+        with pytest.raises(UnidentifiedImageError):
+            rasterize_pdf(
+                resources / 'francais.pdf',
+                no_outpdf,
+                raster_device='pngmono',
+                raster_dpi=Resolution(100, 100),
+            )
+        assert "this is an error" in caplog.text
+        assert "invalid page image file" in caplog.text

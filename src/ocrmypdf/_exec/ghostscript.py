@@ -71,7 +71,8 @@ def jpeg_passthrough_available() -> bool:
 
 
 def _gs_error_reported(stream) -> bool:
-    return True if re.search(r'error', stream, flags=re.IGNORECASE) else False
+    match = re.search(r'error', stream, flags=re.IGNORECASE)
+    return bool(match)
 
 
 def rasterize_pdf(
@@ -160,16 +161,14 @@ class GhostscriptFollower:
         if not self.progressbar_class:
             return
         if not self.progressbar:
-            m = self.re_process.match(line.strip())
-            if m:
+            if m := self.re_process.match(line.strip()):
                 self.count = int(m.group(1))
                 self.progressbar = self.progressbar_class(
                     total=self.count, desc="PDF/A conversion", unit='page'
                 )
                 return
         else:
-            m = self.re_page.match(line.strip())
-            if m:
+            if self.re_page.match(line.strip()):
                 self.progressbar.update()
 
 
