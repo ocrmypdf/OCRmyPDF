@@ -18,7 +18,7 @@ from shutil import which
 from subprocess import PIPE, CalledProcessError
 from typing import Optional
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
 from ocrmypdf.helpers import Resolution
@@ -124,20 +124,27 @@ def rasterize_pdf(
         if _gs_error_reported(stderr):
             log.error(stderr)
 
-    with Image.open(BytesIO(p.stdout)) as im:
-        if rotation is not None:
-            log.debug("Rotating output by %i", rotation)
-            # rotation is a clockwise angle and Image.ROTATE_* is
-            # counterclockwise so this cancels out the rotation
-            if rotation == 90:
-                im = im.transpose(Image.ROTATE_90)
-            elif rotation == 180:
-                im = im.transpose(Image.ROTATE_180)
-            elif rotation == 270:
-                im = im.transpose(Image.ROTATE_270)
-            if rotation % 180 == 90:
-                page_dpi = page_dpi.flip_axis()
-        im.save(fspath(output_file), dpi=page_dpi)
+    try:
+        with Image.open(BytesIO(p.stdout)) as im:
+            if rotation is not None:
+                log.debug("Rotating output by %i", rotation)
+                # rotation is a clockwise angle and Image.ROTATE_* is
+                # counterclockwise so this cancels out the rotation
+                if rotation == 90:
+                    im = im.transpose(Image.ROTATE_90)
+                elif rotation == 180:
+                    im = im.transpose(Image.ROTATE_180)
+                elif rotation == 270:
+                    im = im.transpose(Image.ROTATE_270)
+                if rotation % 180 == 90:
+                    page_dpi = page_dpi.flip_axis()
+            im.save(fspath(output_file), dpi=page_dpi)
+    except UnidentifiedImageError:
+        log.error(
+            f"Ghostscript (using {raster_device} at {raster_dpi} dpi) produced "
+            "an invalid page image file."
+        )
+        raise
 
 
 class GhostscriptFollower:
