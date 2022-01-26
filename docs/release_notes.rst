@@ -10,13 +10,21 @@ that is, output messages may be improved at any release level, so parsing them
 may be unreliable. Use the API to depend on precise behavior.
 
 The public API may be useful in scripts that launch OCRmyPDF processes or that
-wish to use some of its features for working with PDFs.
+wish to use some of its features for working with PDFs..
 
-.. note::
+v13.3.0
+=======
 
-   Python 3.6 reaches end of life on December 23, 2021. We have already ended support
-   for Python 3.6 but might release fixes for critical issues if necessary before that
-   date.
+-  Made a harmless but "scary" exception after failing to optimize an image less scary.
+-  Added a warning if a page image is too large for unpaper to clean. The image is
+   passed through without cleaning. This is due to a hard-coded limitation in a
+   C library used by unpaper so it cannot be rectified easily.
+-  We now use better default settings when calling img2pdf.
+-  We no longer try to optimize images that we failed to save in certain situations.
+-  We now account for some differences in text output from Tesseract 5 that differs
+   from Tesseract 4.
+-  Better handling of Ghostscript producing empty images when attempting to rasterize
+   page images.
 
 v13.2.0
 =======
