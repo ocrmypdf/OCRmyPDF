@@ -161,7 +161,8 @@ class GhostscriptFollower:
         if not self.progressbar_class:
             return
         if not self.progressbar:
-            if m := self.re_process.match(line.strip()):
+            m = self.re_process.match(line.strip())
+            if m:
                 self.count = int(m.group(1))
                 self.progressbar = self.progressbar_class(
                     total=self.count, desc="PDF/A conversion", unit='page'
