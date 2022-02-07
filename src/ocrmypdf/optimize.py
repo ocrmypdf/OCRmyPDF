@@ -87,7 +87,7 @@ def extract_image_filter(
     pim = PdfImage(image)
 
     if len(pim.filter_decodeparms) > 1:
-        log.debug(f"Skipping multiply filtered image, xref {xref}")
+        log.debug(f"Skipping image with multiple compression filters, xref {xref}")
         return None
     filtdp = pim.filter_decodeparms[0]
 
