@@ -73,7 +73,7 @@ v13.0.0
    Tesseract 5.x has implemented improvements to thresholding, so this feature will be
    redundant anyway.
 -  ``--deskew`` was previous calculated by a Leptonica algorithm. We now use a feature
-   of Tesseract to term the appropriate the angle to deskew a page. The deskew angle
+   of Tesseract to find the appropriate the angle to deskew a page. The deskew angle
    according to Tesseract may differ from Leptonica's algorithm. At least in theory,
    Tesseract's deskew angle is informed by a more complex analysis than Leptonica,
    so this should improve results in general. We also use Pillow to perform the
