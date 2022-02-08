@@ -397,10 +397,6 @@ def convert_to_jbig2(
 def _optimize_jpeg(args: Tuple[Xref, Path, Path, int]) -> Tuple[Xref, Optional[Path]]:
     xref, in_jpg, opt_jpg, jpeg_quality = args
 
-    # This may produce a debug warning from PIL
-    # DEBUG:PIL.Image:Error closing: 'NoneType' object has no attribute
-    # 'close'.  Seems to be mostly harmless
-    # https://github.com/python-pillow/Pillow/issues/1144
     with Image.open(in_jpg) as im:
         im.save(opt_jpg, optimize=True, quality=jpeg_quality)
 
