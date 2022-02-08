@@ -59,7 +59,7 @@ Using the Docker image on the command line
 ==========================================
 
 **Unlike typical Docker containers**, in this section the OCRmyPDF Docker
-container is emphemeral – it runs for one OCR job and terminates, just like a
+container is ephemeral – it runs for one OCR job and terminates, just like a
 command line program. We are using Docker to deliver an application (as opposed
 to the more conventional case, where a Docker container runs as a server).
 
