@@ -172,14 +172,6 @@ def extract_image_generic(
         # jpeg_quality_estimate = 117.0 * (bytes_per_pixel ** 0.213)
         # if jpeg_quality_estimate < 65:
         #     return None
-
-        # We could get the ICC profile here, but there's no need to look at it
-        # for quality transcoding
-        # if icc:
-        #     stream = BytesIO(raw_jpeg.read_raw_bytes())
-        #     iccbytes = icc.read_bytes()
-        #     with Image.open(stream) as im:
-        #         im.save(jpg_name(root, xref), icc_profile=iccbytes)
         try:
             imgname = root / f'{xref:08d}'
             with imgname.open('wb') as f:
