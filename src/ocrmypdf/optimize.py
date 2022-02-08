@@ -8,6 +8,7 @@
 import logging
 import sys
 import tempfile
+import threading
 from collections import defaultdict
 from os import fspath
 from pathlib import Path
@@ -23,6 +24,7 @@ from typing import (
     Sequence,
     Tuple,
 )
+from zlib import compress
 
 import img2pdf
 from pikepdf import (
@@ -31,6 +33,7 @@ from pikepdf import (
     Object,
     ObjectStreamMode,
     Pdf,
+    PdfError,
     PdfImage,
     Stream,
     UnsupportedImageTypeError,
@@ -78,33 +81,47 @@ def extract_image_filter(
     if image.Subtype != Name.Image:
         return None
     if image.Length < 100:
-        log.debug(f"Skipping small image, xref {xref}")
+        log.debug(f"xref {xref}: skipping image with small stream size")
         return None
     if image.Width < 8 or image.Height < 8:  # Issue 732
-        log.debug(f"Skipping oddly sized image, xref {xref}")
+        log.debug(f"xref {xref}: skipping image with unusually small dimensions")
         return None
 
     pim = PdfImage(image)
 
     if len(pim.filter_decodeparms) > 1:
-        log.debug(f"Skipping image with multiple compression filters, xref {xref}")
-        return None
-    filtdp = pim.filter_decodeparms[0]
+        first_filtdp = pim.filter_decodeparms[0]
+        second_filtdp = pim.filter_decodeparms[1]
+        if (
+            first_filtdp[0] == Name.FlateDecode
+            and first_filtdp[1].get(Name.Predictor, 1) == 1
+            and second_filtdp[0] == Name.DCTDecode
+        ):
+            log.debug(
+                f"xref {xref}: found image compressed as /FlateDecode /DCTDecode, "
+                "marked for JPEG optimization"
+            )
+            filtdp = pim.filter_decodeparms[1]
+        else:
+            log.debug(f"xref {xref}: skipping image with multiple compression filters")
+            return None
+    else:
+        filtdp = pim.filter_decodeparms[0]
 
     if pim.bits_per_component > 8:
-        log.debug(f"Skipping wide gamut image, xref {xref}")
+        log.debug(f"xref {xref}: skipping wide gamut image")
         return None  # Don't mess with wide gamut images
 
     if filtdp[0] == Name.JPXDecode:
-        log.debug(f"Skipping JPEG2000 image, xref {xref}")
+        log.debug(f"xref {xref}: skipping JPEG2000 image")
         return None  # Don't do JPEG2000
 
     if filtdp[0] == Name.CCITTFaxDecode and filtdp[1].get('/K', 0) >= 0:
-        log.debug(f"Skipping CCITT Group 3 image, xref {xref}")
+        log.debug(f"xref {xref}: skipping CCITT Group 3 image")
         return None  # pikepdf doesn't support Group 3 yet
 
     if Name.Decode in image:
-        log.debug(f"Skipping image with Decode table, xref {xref}")
+        log.debug(f"xref {xref}: skipping image with Decode table")
         return None  # Don't mess with custom Decode tables
 
     return pim, filtdp
@@ -251,9 +268,9 @@ def extract_images(
                 # Ignore soft masks
                 smask_xref = Xref(image.SMask.objgen[0])
                 exclude_xrefs.add(smask_xref)
-                log.debug(f"Skipping image {smask_xref} because it is an SMask")
+                log.debug(f"xref {smask_xref}: skipping image because it is an SMask")
             include_xrefs.add(xref)
-            log.debug(f"Treating {xref} as an optimization candidate")
+            log.debug(f"xref {xref}: treating as an optimization candidate")
             if xref not in pageno_for_xref:
                 pageno_for_xref[xref] = pageno
 
@@ -265,7 +282,9 @@ def extract_images(
                 pike=pike, root=root, image=image, xref=xref, options=options
             )
         except Exception:  # pylint: disable=broad-except
-            log.exception(f"While extracting image xref {xref}, an error occurred")
+            log.exception(
+                f"xref {xref}: While extracting this image, an error occurred"
+            )
             errors += 1
         else:
             if result:
@@ -286,7 +305,7 @@ def extract_images_generic(
             pngs.append(xref_ext.xref)
         elif xref_ext.ext == '.jpg':
             jpegs.append(xref_ext.xref)
-    log.debug("Optimizable images: JPEGs: %s PNGs: %s", len(jpegs), len(pngs))
+    log.debug(f"Optimizable images: JPEGs: {len(jpegs)} PNGs: {len(pngs)}")
     return jpegs, pngs
 
 
@@ -298,7 +317,7 @@ def extract_images_jbig2(pike: Pdf, root: Path, options) -> Dict[int, List[XrefE
         group = pageno // options.jbig2_page_group_size
         jbig2_groups[group].append(xref_ext)
 
-    log.debug("Optimizable images: JBIG2 groups: %s", (len(jbig2_groups),))
+    log.debug(f"Optimizable images: JBIG2 groups: {len(jbig2_groups)}")
     return jbig2_groups
 
 
@@ -401,7 +420,7 @@ def _optimize_jpeg(args: Tuple[Xref, Path, Path, int]) -> Tuple[Xref, Optional[P
         im.save(opt_jpg, optimize=True, quality=jpeg_quality)
 
     if opt_jpg.stat().st_size > in_jpg.stat().st_size:
-        log.debug("xref %s, jpeg, made larger - skip", xref)
+        log.debug(f"xref {xref}, jpeg, made larger - skip")
         opt_jpg.unlink()
         return xref, None
     return xref, opt_jpg
@@ -428,7 +447,7 @@ def transcode_jpegs(
         use_threads=True,  # Processes are significantly slower at this task
         max_workers=options.jobs,
         tqdm_kwargs=dict(
-            desc="JPEGs",
+            desc="Recompressing JPEGs",
             total=len(jpegs),
             unit='image',
             disable=not options.progress_bar,
@@ -436,6 +455,73 @@ def transcode_jpegs(
         task=_optimize_jpeg,
         task_arguments=jpeg_args(),
         task_finished=finish_jpeg,
+    )
+
+
+def _find_deflatable_jpeg(
+    *, pike: Pdf, root: Path, image: Stream, xref: Xref, options
+) -> Optional[XrefExt]:
+    result = extract_image_filter(pike, root, image, xref)
+    if result is None:
+        return None
+    pim, filtdp = result
+
+    if filtdp[0] == Name.DCTDecode and options.optimize >= 1:
+        return XrefExt(xref, '.memory')
+
+    return None
+
+
+def _deflate_jpeg(args: Tuple[Pdf, threading.Lock, Xref, int]) -> Tuple[Xref, bytes]:
+    pike, lock, xref, complevel = args
+    with lock:
+        xobj = pike.get_object(xref, 0)
+        try:
+            data = xobj.read_raw_bytes()
+        except PdfError:
+            return xref, b''
+    compdata = compress(data, complevel)
+    if len(compdata) >= len(data):
+        return xref, b''
+    return xref, compdata
+
+
+def deflate_jpegs(pike: Pdf, root: Path, options, executor: Executor) -> None:
+    jpegs = []
+    for _pageno, xref_ext in extract_images(pike, root, options, _find_deflatable_jpeg):
+        xref = xref_ext.xref
+        log.debug(f'xref {xref}: marking this JPEG as deflatable')
+        jpegs.append(xref)
+
+    complevel = 9 if options.optimize == 3 else 6
+
+    # Our calls to xobj.write() in finish() need coordination
+    lock = threading.Lock()
+
+    def deflate_args() -> Iterator:
+        for xref in jpegs:
+            yield pike, lock, xref, complevel
+
+    def finish(result, pbar):
+        xref, compdata = result
+        if len(compdata) > 0:
+            with lock:
+                xobj = pike.get_object(xref, 0)
+                xobj.write(compdata, filter=[Name.FlateDecode, Name.DCTDecode])
+        pbar.update()
+
+    executor(
+        use_threads=True,  # We're sharing the pdf directly, must use threads
+        max_workers=options.jobs,
+        tqdm_kwargs=dict(
+            desc="Deflating JPEGs",
+            total=len(jpegs),
+            unit='image',
+            disable=not options.progress_bar,
+        ),
+        task=_deflate_jpeg,
+        task_arguments=deflate_args(),
+        task_finished=finish,
     )
 
 
@@ -552,6 +638,7 @@ def optimize(
 
         jpegs, pngs = extract_images_generic(pike, root, options)
         transcode_jpegs(pike, jpegs, root, options, executor)
+        deflate_jpegs(pike, root, options, executor)
         # if options.optimize >= 2:
         # Try pngifying the jpegs
         #    transcode_pngs(pike, jpegs, jpg_name, root, options)

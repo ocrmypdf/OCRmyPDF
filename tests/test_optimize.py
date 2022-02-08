@@ -81,7 +81,7 @@ def test_jbig2_lossy(lossy, resources, outpdf):
         '--image-dpi',
         '200',
         '--optimize',
-        3,
+        '3',
         '--jpg-quality',
         '50',
         '--png-quality',
