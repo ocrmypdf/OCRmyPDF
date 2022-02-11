@@ -30,7 +30,8 @@
 
 import argparse
 import os
-import re
+import regex as re
+import json
 from math import atan, cos, sin
 from pathlib import Path
 from typing import Any, NamedTuple, Optional, Tuple, Union
@@ -39,6 +40,13 @@ from xml.etree import ElementTree
 from reportlab.lib.colors import black, cyan, magenta, red
 from reportlab.lib.units import inch
 from reportlab.pdfgen.canvas import Canvas
+
+try:
+    with open("typofixes.json") as f:
+        my_typofixes = json.load(f)
+except:
+    print('No typos were corrected.')
+    my_typofixes = {}
 
 # According to Wikipedia these languages are supported in the ISO-8859-1 character
 # set, meaning reportlab can generate them and they are compatible with hocr,
@@ -129,7 +137,7 @@ class HocrTransform:
         re.VERBOSE,
     )
     ligatures = str.maketrans(
-        {'ﬀ': 'ff', 'ﬃ': 'f‌f‌i', 'ﬄ': 'f‌f‌l', 'ﬁ': 'fi', 'ﬂ': 'fl'}
+        {'ﬀ': 'ff', 'ﬃ': 'f‌f‌i', 'ﬄ': 'f‌f‌l', 'ﬁ': 'fi', 'ﬂ': 'fl', 'ſ': 's', '⸗': '-', '—': '-', '·': '-'}
     )
 
     def __init__(self, *, hocr_filename: Union[str, Path], dpi: float):
@@ -400,6 +408,14 @@ class HocrTransform:
         for elem in elements:
             elemtxt = self._get_element_text(elem).strip()
             elemtxt = self.replace_unsupported_chars(elemtxt)
+            
+            try:
+                pre, elemtxt, post = re.match("([^\p{Letter}^\p{Mark}]*-{0,1})([\w-]*\w+)(-{0,1}[^\p{Letter}^\p{Mark}]*)", elemtxt).groups()
+                elemtxt = my_typofixes.get(elemtxt, elemtxt)
+                elemtxt = pre + elemtxt + post
+            except:
+                pass
+
             if elemtxt == '':
                 continue
 
