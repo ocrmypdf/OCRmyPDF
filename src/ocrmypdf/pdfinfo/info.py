@@ -25,6 +25,7 @@ from typing import (
     Mapping,
     NamedTuple,
     Optional,
+    Sequence,
     Tuple,
     Union,
 )
@@ -646,7 +647,7 @@ def _pdf_pageinfo_concurrent(
     max_workers,
     check_pages,
     detailed_analysis=False,
-):
+) -> List[Optional['PageInfo']]:
     pages = [None] * len(pdf.pages)
 
     def update_pageinfo(result, pbar):
@@ -918,7 +919,7 @@ class PdfInfo:
                     self._has_acroform = True
 
     @property
-    def pages(self):
+    def pages(self) -> Sequence[Optional[PageInfo]]:
         return self._pages
 
     @property
