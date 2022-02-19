@@ -15,6 +15,7 @@ wish to use some of its features for working with PDFs..
 v13.4.0
 =======
 
+-  Fixed test failures when using pikepdf 5.0.0.
 -  Various improvements to the optimizer. In particular, we now recognize PDF images
    that are encoded with both flate and DCT (JPEG), and also produce PDF with images
    compressed with flate and DCT, since this often yields file size improvements
