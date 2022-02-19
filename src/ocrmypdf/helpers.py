@@ -220,11 +220,19 @@ def check_pdf(input_file: Path) -> bool:
     else:
         with pdf:
             messages = pdf.check()
+            success = True
             for msg in messages:
                 if 'error' in msg.lower():
                     log.error(msg)
+                    success = False
+                elif (
+                    "/DecodeParms: operation for dictionary attempted on object "
+                    "of type null" in msg
+                ):
+                    pass  # Ignore/spurious warning
                 else:
                     log.warning(msg)
+                    success = False
 
             sio = StringIO()
             linearize_msgs = ''
@@ -239,7 +247,7 @@ def check_pdf(input_file: Path) -> bool:
                 if linearize_msgs:
                     log.warning(linearize_msgs)
 
-            if not messages and not linearize_msgs:
+            if success and not linearize_msgs:
                 return True
             return False
 
