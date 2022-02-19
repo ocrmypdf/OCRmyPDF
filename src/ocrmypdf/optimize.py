@@ -93,9 +93,11 @@ def extract_image_filter(
         first_filtdp = pim.filter_decodeparms[0]
         second_filtdp = pim.filter_decodeparms[1]
         if (
-            first_filtdp[0] == Name.FlateDecode
+            len(pim.filter_decodeparms) == 2
+            and first_filtdp[0] == Name.FlateDecode
             and first_filtdp[1].get(Name.Predictor, 1) == 1
             and second_filtdp[0] == Name.DCTDecode
+            and not second_filtdp[1]
         ):
             log.debug(
                 f"xref {xref}: found image compressed as /FlateDecode /DCTDecode, "
@@ -466,7 +468,7 @@ def _find_deflatable_jpeg(
         return None
     pim, filtdp = result
 
-    if filtdp[0] == Name.DCTDecode and options.optimize >= 1:
+    if filtdp[0] == Name.DCTDecode and not filtdp[1] and options.optimize >= 1:
         return XrefExt(xref, '.memory')
 
     return None
