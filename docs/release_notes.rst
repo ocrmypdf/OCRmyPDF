@@ -12,6 +12,14 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs..
 
+v13.4.0
+=======
+
+-  Various improvements to the optimizer. In particular, we now recognize PDF images
+   that are encoded with both flate and DCT (JPEG), and also produce PDF with images
+   compressed with flate and DCT, since this often yields file size improvements
+   compared to plain DCT.
+
 v13.3.0
 =======
 
@@ -21,8 +29,8 @@ v13.3.0
    C library used by unpaper so it cannot be rectified easily.
 -  We now use better default settings when calling img2pdf.
 -  We no longer try to optimize images that we failed to save in certain situations.
--  We now account for some differences in text output from Tesseract 5 that differs
-   from Tesseract 4.
+-  We now account for some differences in text output from Tesseract 5 compared to
+   Tesseract 4.
 -  Better handling of Ghostscript producing empty images when attempting to rasterize
    page images.
 
