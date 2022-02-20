@@ -152,6 +152,16 @@ hooks. As such, you cannot "chain" a series of plugin filters together in this
 way. Instead, a single hook implementation should be responsible for any such
 chaining operations.
 
+Examples
+========
+
+* OCRmyPDF's test suite contains several plugins that are used to simulate certain
+  test conditions.
+* `ocrmypdf-papermerge <https://github.com/papermerge/OCRmyPDF_papermerge>`_ is
+  a production plugin that integrates OCRmyPDF and the Papermerge document
+  management system.
+
+
 Custom command line arguments
 -----------------------------
 

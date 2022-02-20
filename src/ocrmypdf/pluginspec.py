@@ -132,6 +132,7 @@ def get_progressbar_class():
     Here is how OCRmyPDF will use the progress bar:
 
     Example:
+
         pbar_class = pm.hook.get_progressbar_class()
         with pbar_class(**tqdm_kwargs) as pbar:
             ...
@@ -235,9 +236,9 @@ def filter_page_image(page: 'PageContext', image_filename: Path) -> Path:
     ``image_filename``. The hook may overwrite ``image_filename`` with a new file.
 
     The output image should preserve the same physical unit dimensions, that is
-    (width * dpi_x, height * dpi_y). That is, if the image is resized, the DPI
+    ``(width * dpi_x, height * dpi_y)``. That is, if the image is resized, the DPI
     must be adjusted by the reciprocal. If this is not preserved, the PDF page
-    will be resized and the OCR layer misaligned. OCRmyPDF does not nothing
+    will be resized and the OCR layer misaligned. OCRmyPDF does nothing
     to enforce these constraints; it is up to the plugin to do sensible things.
 
     OCRmyPDF will create the PDF page based on the image format used (unless the
@@ -399,8 +400,7 @@ def get_ocr_engine() -> OcrEngine:
     """Returns an OcrEngine to use for processing this file.
 
     The OcrEngine may be instantiated multiple times, by both the main process
-    and child process. As such, it must be obtain store any state in ``options``
-    or some common location.
+    and child process.
 
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
