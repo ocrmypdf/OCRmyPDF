@@ -13,6 +13,7 @@ from ocrmypdf import ExitCode
 from .conftest import run_ocrmypdf_api
 
 
+@pytest.mark.skipif(True, reason="--use-threads is currently default")
 @pytest.mark.skipif(os.name == 'nt', reason="Windows doesn't have SIGKILL")
 def test_simulate_oom_killer(resources, no_outpdf):
     exitcode = run_ocrmypdf_api(
