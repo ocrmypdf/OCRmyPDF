@@ -228,7 +228,13 @@ Online documentation is located at:
         help=argparse.SUPPRESS,
     )
     jobcontrol.add_argument(
-        '--use-threads', action='store_true', help=argparse.SUPPRESS
+        '--use-threads', action='store_true', default=True, help=argparse.SUPPRESS
+    )
+    jobcontrol.add_argument(
+        '--no-use-threads',
+        action='store_false',
+        dest='use_threads',
+        help=argparse.SUPPRESS,
     )
 
     metadata = parser.add_argument_group(

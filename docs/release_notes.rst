@@ -12,6 +12,13 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs..
 
+v13.4.1
+=======
+
+-  Temporarily make threads rather than processes the default executor worker, due
+   to a persistent deadlock issue when processes are used. Add a new command line
+   argument ``--no-use-threads`` to disable this.
+
 v13.4.0
 =======
 
