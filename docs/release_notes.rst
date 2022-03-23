@@ -12,6 +12,11 @@ may be unreliable. Use the API to depend on precise behavior.
 The public API may be useful in scripts that launch OCRmyPDF processes or that
 wish to use some of its features for working with PDFs..
 
+v13.4.2
+=======
+
+-  Marked pdfminer 20220319 as supported.
+
 v13.4.1
 =======
 
