@@ -54,6 +54,31 @@ to what languages it should search for. Multiple languages can be
 requested using either ``-l eng+fra`` (English and French) or
 ``-l eng -l fra``.
 
+Gentoo users
+============
+
+On Gentoo the package ``app-text/tessdata_fast``, which ``app-text/tesseract`` depends on, installs Tesseract languages.
+``app-text/tessdata_fast`` accepts USE flags to select what languages should be installed, these can be set in ``/etc/portage/package.use``.
+Alternatively one can globally set the `L10N use extension<https://wiki.gentoo.org/wiki/Localization/Guide#L10N>`__ in ``/etc/portage/make.conf`` for all packages.
+
+.. code-block:: bash
+   # Display a list of all Tesseract language packs
+   equery uses app-text/tessdata_fast
+   
+   # Add English and German language support for Tesseract only
+   echo 'app-text/tessdata_fast l10n_de l10n_en' >> /etc/portage/package.use
+   
+   # Add global English and German language support (the `l10n_` from equery has to be ommited)
+   echo L10N="de en" >> /etc/portage/make.conf
+   
+   # (Re-)emerge Tesseract
+   emerge --ask app-text/tesseract
+
+You can then pass the ``-l LANG`` argument to OCRmyPDF to give a hint as
+to what languages it should search for. Multiple languages can be
+requested using either ``-l eng+fra`` (English and French) or
+``-l eng -l fra``.
+
 macOS users
 ===========
 
