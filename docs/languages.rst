@@ -70,7 +70,7 @@ This enables these languages for all packages (e.g. including aspell).
    # Add English and German language support for Tesseract only
    echo 'app-text/tessdata_fast l10n_de l10n_en' >> /etc/portage/package.use
    
-   # Add global English and German language support (the `l10n_` from equery has to be ommited)
+   # Add global English and German language support (the `l10n_` from equery has to be omited)
    echo L10N="de en" >> /etc/portage/make.conf
    
    # update system to reflect changed USE flags
