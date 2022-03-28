@@ -59,7 +59,8 @@ Gentoo users
 
 On Gentoo the package ``app-text/tessdata_fast``, which ``app-text/tesseract`` depends on, handles Tesseract languages.
 It accepts USE flags to select what languages should be installed, these can be set in ``/etc/portage/package.use``.
-Alternatively one can globally set the `L10N use extension <https://wiki.gentoo.org/wiki/Localization/Guide#L10N>`__ in ``/etc/portage/make.conf`` for all packages (e.g. including aspell).
+Alternatively one can globally set the `L10N use extension <https://wiki.gentoo.org/wiki/Localization/Guide#L10N>`__ in ``/etc/portage/make.conf``.
+This enables these languages for all packages (e.g. including aspell).
 
 .. code-block:: bash
 
