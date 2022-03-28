@@ -73,8 +73,8 @@ This enables these languages for all packages (e.g. including aspell).
    # Add global English and German language support (the `l10n_` from equery has to be ommited)
    echo L10N="de en" >> /etc/portage/make.conf
    
-   # (Re-)emerge Tesseract
-   emerge --ask app-text/tesseract
+   # update system to reflect changed USE flags
+   emerge --update --deep --newuse @world
 
 You can then pass the ``-l LANG`` argument to OCRmyPDF to give a hint as
 to what languages it should search for. Multiple languages can be
