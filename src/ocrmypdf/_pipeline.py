@@ -38,6 +38,11 @@ from ocrmypdf.optimize import optimize
 from ocrmypdf.pdfa import generate_pdfa_ps
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 
+try:
+    BICUBIC = Image.Resampling.BICUBIC
+except AttributeError:
+    BICUBIC = Image.BICUBIC
+
 log = logging.getLogger(__name__)
 
 VECTOR_PAGE_DPI = 400
@@ -484,7 +489,7 @@ def preprocess_deskew(input_file: Path, page_context: PageContext):
         # According to Pillow docs, .rotate() will automatically use Image.NEAREST
         # resampling if image is mode '1' or 'P'
         deskewed = im.rotate(
-            deskew_angle_degrees, resample=Image.BICUBIC, fillcolor='white'
+            deskew_angle_degrees, resample=BICUBIC, fillcolor='white'
         )
         deskewed.save(output_file, dpi=dpi)
 

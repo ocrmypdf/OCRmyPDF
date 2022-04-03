@@ -24,6 +24,15 @@ from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.subprocess import get_version, run, run_polling_stderr
 
+try:
+    ROTATE_90 = Image.Transpose.ROTATE_90
+    ROTATE_180 = Image.Transpose.ROTATE_180
+    ROTATE_270 = Image.Transpose.ROTATE_270
+except AttributeError:
+    ROTATE_90 = Image.ROTATE_90
+    ROTATE_180 = Image.ROTATE_180
+    ROTATE_270 = Image.ROTATE_270
+
 log = logging.getLogger(__name__)
 
 missing_gs_error = """
@@ -132,11 +141,11 @@ def rasterize_pdf(
                 # rotation is a clockwise angle and Image.ROTATE_* is
                 # counterclockwise so this cancels out the rotation
                 if rotation == 90:
-                    im = im.transpose(Image.ROTATE_90)
+                    im = im.transpose(ROTATE_90)
                 elif rotation == 180:
-                    im = im.transpose(Image.ROTATE_180)
+                    im = im.transpose(ROTATE_180)
                 elif rotation == 270:
-                    im = im.transpose(Image.ROTATE_270)
+                    im = im.transpose(ROTATE_270)
                 if rotation % 180 == 90:
                     page_dpi = page_dpi.flip_axis()
             im.save(fspath(output_file), dpi=page_dpi)

@@ -35,7 +35,7 @@ def test_stdin(ocrmypdf_exec, resources, outpdf):
 
 def test_stdout(ocrmypdf_exec, resources, outpdf):
     if 'COV_CORE_DATAFILE' in os.environ:
-        pytest.skip(msg="Coverage uses stdout")
+        pytest.skip(reason="Coverage uses stdout")
 
     input_file = str(resources / 'francais.pdf')
     output_file = str(outpdf)
@@ -72,7 +72,7 @@ def test_bad_locale(monkeypatch):
 )
 def test_dev_null(resources):
     if 'COV_CORE_DATAFILE' in os.environ:
-        pytest.skip(msg="Coverage uses stdout")
+        pytest.skip(reason="Coverage uses stdout")
 
     p = run_ocrmypdf(
         resources / 'trivial.pdf',
