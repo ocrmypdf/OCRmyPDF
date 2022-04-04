@@ -217,15 +217,19 @@ def generate_pdfa(
     # Older versions of Ghostscript expect a leading slash in
     # sColorConversionStrategy, newer ones should not have it. See Ghostscript
     # git commit fe1c025d.
-    strategy = ('/' + strategy) if version() < '9.19' else strategy
+    gs_version = version()
+    strategy = ('/' + strategy) if gs_version < '9.19' else strategy
 
-    if version() == '9.23':
+    if gs_version == '9.23':
         # 9.23: added JPEG passthrough as a new feature, but with a bug that
         # incorrectly formats some images. Fixed as of 9.24. So we disable this
         # feature for 9.23.
         # https://bugs.ghostscript.com/show_bug.cgi?id=699216
         compression_args.append('-dPassThroughJPEGImages=false')
-
+    elif gs_version == '9.56':
+        # 9.56 breaks our OCR...?
+        compression_args.append('-dNEWPDF=false')
+    
     # nb no need to specify ProcessColorModel when ColorConversionStrategy
     # is set; see:
     # https://bugs.ghostscript.com/show_bug.cgi?id=699392
