@@ -33,6 +33,8 @@ v13.4.2
 -  Fixed some deprecation warnings from recent versions of Pillow and pytest.
 -  Test suite now covers Python 3.10 (Python 3.10 worked fine before, but was not
    being tested).
+-  Docker image now uses debian:bookworm-slim as the base image to fix the Docker
+   image build.
 
 v13.4.1
 =======

@@ -1,7 +1,7 @@
 # OCRmyPDF
 #
 
-FROM ubuntu:21.04 as base
+FROM debian:bookworm-slim as base
 
 ENV LANG=C.UTF-8
 ENV TZ=UTC
