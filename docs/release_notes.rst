@@ -10,10 +10,16 @@ that is, output messages may be improved at any release level, so parsing them
 may be unreliable. Use the API to depend on precise behavior.
 
 The public API may be useful in scripts that launch OCRmyPDF processes or that
-wish to use some of its features for working with PDFs..
+wish to use some of its features for working with PDFs.
 
-v13.4.2
-=======
+The most recent release of OCRmyPDF is |OCRmyPDF PyPI|. Any newer versions
+referred to in these notes may exist the main branch but have not been
+tagged yet.
+
+.. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
+
+v13.4.2 (pending)
+=================
 
 -  Marked pdfminer 20220319 as supported.
 
