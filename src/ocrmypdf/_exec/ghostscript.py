@@ -45,7 +45,7 @@ For details see:
 """
 
 # Most reliable what to get the bitness of Python interpreter, according to Python docs
-_is_64bit = sys.maxsize > 2**32
+_is_64bit = sys.maxsize > 2 ** 32
 
 _gswin = None
 if os.name == 'nt':
@@ -226,10 +226,10 @@ def generate_pdfa(
         # feature for 9.23.
         # https://bugs.ghostscript.com/show_bug.cgi?id=699216
         compression_args.append('-dPassThroughJPEGImages=false')
-    elif gs_version == '9.56':
-        # 9.56 breaks our OCR...?
+    elif gs_version == '9.56.0':
+        # 9.56.0 breaks our OCR...?
         compression_args.append('-dNEWPDF=false')
-    
+
     # nb no need to specify ProcessColorModel when ColorConversionStrategy
     # is set; see:
     # https://bugs.ghostscript.com/show_bug.cgi?id=699392
