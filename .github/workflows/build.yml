@@ -21,19 +21,19 @@ jobs:
       matrix:
         include:
           - os: ubuntu-18.04
-            python: 3.7
+            python: "3.7"
           - os: ubuntu-20.04
-            python: 3.8
+            python: "3.8"
           - os: ubuntu-20.04
-            python: 3.9
+            python: "3.9"
           - os: ubuntu-20.04
-            python: 3.10
+            python: "3.10"
           - os: ubuntu-latest
-            python: 3.9
+            python: "3.9"
           - os: ubuntu-latest
             python: "pypy-3.7"
           - os: ubuntu-latest
-            python: 3.9
+            python: "3.9"
             tesseract5: true
 
     env:
