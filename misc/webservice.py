@@ -59,7 +59,7 @@ def do_ocrmypdf(file):
         return Response("--sidecar not supported", 501, mimetype='text/plain')
 
     ocrmypdf_args = ["ocrmypdf", *cmd_args, up_file, down_file]
-    proc = run(ocrmypdf_args, stdout=PIPE, stderr=PIPE, encoding="utf-8")
+    proc = run(ocrmypdf_args, capture_output=True, encoding="utf-8")
     if proc.returncode != 0:
         stderr = proc.stderr
         return Response(stderr, 400, mimetype='text/plain')

@@ -25,6 +25,12 @@ from .conftest import check_ocrmypdf, run_ocrmypdf
 
 # pylintx: disable=unused-variable
 
+# Remove this workaround when we require Pillow >= 10
+try:
+    Transpose = Image.Transpose  # type: ignore
+except AttributeError:
+    # Pillow 9 shim
+    Transpose = Image  # type: ignore
 
 RENDERERS = ['hocr', 'sandwich']
 
@@ -222,7 +228,7 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir):
         with Image.open(fspath(resources / 'typewriter.png')) as im:
             if image_angle != 0:
                 ccw_angle = -image_angle % 360
-                im = im.transpose(getattr(Image, f'ROTATE_{ccw_angle}'))
+                im = im.transpose(getattr(Transpose, f'ROTATE_{ccw_angle}'))
             im.save(memimg, format='PNG')
         memimg.seek(0)
         mempdf = BytesIO()

@@ -41,7 +41,7 @@ log = logging.getLogger(__name__)
 
 
 def check_platform():
-    if os.name == 'nt' and sys.maxsize <= 2 ** 32:  # pragma: no cover
+    if os.name == 'nt' and sys.maxsize <= 2**32:  # pragma: no cover
         # 32-bit interpreter on Windows
         log.error(
             "You are running OCRmyPDF in a 32-bit (x86) Python interpreter."

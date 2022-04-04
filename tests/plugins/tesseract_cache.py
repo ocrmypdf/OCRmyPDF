@@ -101,11 +101,7 @@ def get_cache_folder(source_pdf, run_args, parsed_args):
 
 def cached_run(options, run_args, **run_kwargs):
     run_args = [str(arg) for arg in run_args]  # flatten PosixPaths
-    try:
-        args = parser.parse_args(run_args[1:])
-    except SystemExit:
-        breakpoint()
-        return
+    args = parser.parse_args(run_args[1:])
 
     if args.imagename in ('stdin', '-'):
         return run(run_args, **run_kwargs)

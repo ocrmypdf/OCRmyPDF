@@ -30,7 +30,7 @@ def test_stdin(ocrmypdf_exec, resources, outpdf):
             '--plugin',
             'tests/plugins/tesseract_noop.py',
         ]
-        run(p_args, stdout=PIPE, stderr=PIPE, stdin=input_stream, check=True)
+        run(p_args, capture_output=True, stdin=input_stream, check=True)
 
 
 def test_stdout(ocrmypdf_exec, resources, outpdf):

@@ -4,6 +4,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+# type: ignore
+# Non-Windows mypy now breaks when trying to typecheck winreg
+
 import logging
 import os
 import shutil
@@ -16,6 +19,7 @@ try:
     import winreg
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError("This module is for Windows only") from e
+
 
 log = logging.getLogger(__name__)
 

@@ -630,8 +630,7 @@ def test_compression_preserved(ocrmypdf_exec, resources, image, outpdf):
         ]
         p = run(
             p_args,
-            stdout=PIPE,
-            stderr=PIPE,
+            capture_output=True,
             stdin=input_stream,
             text=True,
             check=False,
@@ -691,8 +690,7 @@ def test_compression_changed(ocrmypdf_exec, resources, image, compression, outpd
         ]
         p = run(
             p_args,
-            stdout=PIPE,
-            stderr=PIPE,
+            capture_output=True,
             stdin=input_stream,
             text=True,
             check=False,

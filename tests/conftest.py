@@ -134,8 +134,7 @@ def run_ocrmypdf(
 
     p = run(
         p_args,
-        stdout=PIPE,
-        stderr=PIPE,
+        capture_output=True,
         text=text,
         check=False,
     )

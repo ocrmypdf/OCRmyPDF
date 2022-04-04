@@ -647,8 +647,8 @@ def _pdf_pageinfo_concurrent(
     max_workers,
     check_pages,
     detailed_analysis=False,
-) -> List[Optional['PageInfo']]:
-    pages = [None] * len(pdf.pages)
+) -> Sequence[Optional['PageInfo']]:
+    pages: Sequence[Optional['PageInfo']] = [None] * len(pdf.pages)
 
     def update_pageinfo(result, pbar):
         page = result
@@ -925,11 +925,11 @@ class PdfInfo:
     @property
     def min_version(self) -> str:
         # The minimum PDF is the maximum version that any particular page needs
-        return max(page.min_version for page in self.pages)
+        return max(page.min_version for page in self.pages if page)
 
     @property
     def has_userunit(self) -> bool:
-        return any(page.userunit != 1.0 for page in self.pages)
+        return any(page.userunit != 1.0 for page in self.pages if page)
 
     @property
     def has_acroform(self) -> bool:

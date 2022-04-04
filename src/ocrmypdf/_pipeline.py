@@ -18,7 +18,7 @@ from typing import Dict, Iterable, Optional
 import img2pdf
 import pikepdf
 from pikepdf.models.metadata import encode_pdf_date
-from PIL import Image, ImageDraw
+from PIL import Image, ImageColor, ImageDraw
 
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._exec import unpaper
@@ -38,10 +38,12 @@ from ocrmypdf.optimize import optimize
 from ocrmypdf.pdfa import generate_pdfa_ps
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 
+# Remove this workaround when we require Pillow >= 10
 try:
-    BICUBIC = Image.Resampling.BICUBIC
+    BICUBIC = Image.Resampling.BICUBIC  # type: ignore
 except AttributeError:
-    BICUBIC = Image.BICUBIC
+    # Pillow 9 shim
+    BICUBIC = Image.BICUBIC  # type: ignore
 
 log = logging.getLogger(__name__)
 
@@ -489,7 +491,9 @@ def preprocess_deskew(input_file: Path, page_context: PageContext):
         # According to Pillow docs, .rotate() will automatically use Image.NEAREST
         # resampling if image is mode '1' or 'P'
         deskewed = im.rotate(
-            deskew_angle_degrees, resample=BICUBIC, fillcolor='white'
+            deskew_angle_degrees,
+            resample=BICUBIC,
+            fillcolor=ImageColor.getcolor('white', mode=im.mode),
         )
         deskewed.save(output_file, dpi=dpi)
 

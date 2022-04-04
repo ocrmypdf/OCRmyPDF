@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.0.1
+    rev: v4.1.0
     hooks:
       - id: check-case-conflict
       - id: check-merge-conflict
@@ -8,26 +8,26 @@ repos:
       - id: check-yaml
       - id: debug-statements
   - repo: https://github.com/pycqa/isort
-    rev: 5.9.3
+    rev: 5.10.1
     hooks:
       - id: isort
         args: ["--profile", "black"]
   - repo: https://github.com/psf/black
-    rev: 21.9b0
+    rev: 22.3.0
     hooks:
       - id: black
         language_version: python
   - repo: https://github.com/asottile/setup-cfg-fmt
-    rev: v1.19.0
+    rev: v1.20.1
     hooks:
       - id: setup-cfg-fmt
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.29.0
+    rev: v2.31.1
     hooks:
       - id: pyupgrade
         args: ["--py37-plus"]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.910-1
+    rev: v0.942
     hooks:
       - id: mypy
         additional_dependencies:

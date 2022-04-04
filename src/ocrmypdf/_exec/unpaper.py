@@ -18,7 +18,7 @@ from decimal import Decimal
 from pathlib import Path
 from subprocess import PIPE, STDOUT
 from tempfile import TemporaryDirectory
-from typing import List, Optional, Tuple, Union
+from typing import Iterator, List, Optional, Tuple, Union
 
 from PIL import Image
 
@@ -76,7 +76,7 @@ def _convert_image(im: Image.Image) -> Tuple[Image.Image, bool, str]:
 
 
 @contextmanager
-def _setup_unpaper_io(input_file: Path) -> Tuple[Path, Path, Path]:
+def _setup_unpaper_io(input_file: Path) -> Iterator[Tuple[Path, Path, Path]]:
     with Image.open(input_file) as im:
         if im.width * im.height >= UNPAPER_IMAGE_PIXEL_LIMIT:
             raise UnpaperImageTooLargeError(w=im.width, h=im.height)

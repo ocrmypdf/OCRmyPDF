@@ -24,8 +24,7 @@ def test_fish():
             ['fish', '-n', 'misc/completion/ocrmypdf.fish'],
             check=True,
             encoding='utf-8',
-            stdout=PIPE,
-            stderr=PIPE,
+            capture_output=True,
         )
         assert proc.stderr == '', proc.stderr
     except FileNotFoundError:
@@ -41,8 +40,7 @@ def test_bash():
             ['bash', '-n', 'misc/completion/ocrmypdf.bash'],
             check=True,
             encoding='utf-8',
-            stdout=PIPE,
-            stderr=PIPE,
+            capture_output=True,
         )
         assert proc.stderr == '', proc.stderr
     except FileNotFoundError:
