@@ -181,7 +181,7 @@ def test_stack_abuse():
         pdfinfo.info._interpret_contents(stream)
 
     stream = pikepdf.Stream(p, b'q ' * 135)
-    with pytest.warns():
+    with pytest.warns(UserWarning):
         with pytest.raises(RuntimeError):
             pdfinfo.info._interpret_contents(stream)
 
