@@ -50,11 +50,11 @@ import logging
 import platform
 import re
 import shutil
+import threading
 from functools import partial
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, CompletedProcess
 from unittest.mock import patch
-import threading
 
 from ocrmypdf import hookimpl
 from ocrmypdf.builtin_plugins.tesseract_ocr import TesseractOcrEngine
@@ -177,28 +177,40 @@ def cached_run(options, run_args, **run_kwargs):
 
 
 class CacheOcrEngine(TesseractOcrEngine):
+    # Concurrent threads (with --use-threads) might try to use different parts
+    # of the OcrEngine, so we need a lock to protect the state of patched
+    # module whenever it's patched. Should refactor ocrmypdf._exec.tesseract so that
+    # it does not to be patched at all for testing.
     lock = threading.Lock()
 
     @staticmethod
     def get_orientation(input_file, options):
-        with CacheOcrEngine.lock, patch('ocrmypdf._exec.tesseract.run', new=partial(cached_run, options)):
-                return TesseractOcrEngine.get_orientation(input_file, options)
+        with CacheOcrEngine.lock, patch(
+            'ocrmypdf._exec.tesseract.run', new=partial(cached_run, options)
+        ):
+            return TesseractOcrEngine.get_orientation(input_file, options)
 
     @staticmethod
     def get_deskew(input_file, options) -> float:
-        with CacheOcrEngine.lock, patch('ocrmypdf._exec.tesseract.run', new=partial(cached_run, options)):
+        with CacheOcrEngine.lock, patch(
+            'ocrmypdf._exec.tesseract.run', new=partial(cached_run, options)
+        ):
             return TesseractOcrEngine.get_deskew(input_file, options)
 
     @staticmethod
     def generate_hocr(input_file, output_hocr, output_text, options):
-        with CacheOcrEngine.lock, patch('ocrmypdf._exec.tesseract.run', new=partial(cached_run, options)):
+        with CacheOcrEngine.lock, patch(
+            'ocrmypdf._exec.tesseract.run', new=partial(cached_run, options)
+        ):
             TesseractOcrEngine.generate_hocr(
                 input_file, output_hocr, output_text, options
             )
 
     @staticmethod
     def generate_pdf(input_file, output_pdf, output_text, options):
-        with CacheOcrEngine.lock, patch('ocrmypdf._exec.tesseract.run', new=partial(cached_run, options)):
+        with CacheOcrEngine.lock, patch(
+            'ocrmypdf._exec.tesseract.run', new=partial(cached_run, options)
+        ):
             TesseractOcrEngine.generate_pdf(
                 input_file, output_pdf, output_text, options
             )
