@@ -188,7 +188,7 @@ def test_xml_metadata_preserved(test_file, output_type, resources, outpdf):
     try:
         from libxmp.utils import file_to_dict  # pylint: disable=import-outside-toplevel
     except Exception:  # pylint: disable=broad-except
-        pytest.skip(reason="libxmp not available or libexempi3 not installed")
+        pytest.skip("libxmp not available or libexempi3 not installed")
 
     before = file_to_dict(str(input_file))
 
