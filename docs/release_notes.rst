@@ -18,6 +18,12 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v13.4.3
+=======
+
+-  Fix error on pytest.skip() with older versions of pytest.
+-  Documentation updates.
+
 v13.4.2
 =======
 
