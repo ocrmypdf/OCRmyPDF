@@ -166,10 +166,10 @@ original to ``/archive``. The parameters to this image are:
     "``-v <path to files to convert>:/input``", "Files placed in this location will be OCRed"
     "``-v <path to store results>:/output``", "This is where OCRed files will be stored"
     "``-v <path to store processed originals>:/archive``", "Archive processed originals here"
-    "``-e OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1``", "Define environment variable OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1"
+    "``-e OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1``", "Define environment variable ``OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1`` to place files in the output in ``{output}/{year}/{month}/{filename}``"
     "``-e OCR_ON_SUCCESS_ARCHIVE=1``", "Define environment variable ``OCR_ON_SUCCESS_ARCHIVE`` to move processed originals"
-    "``-e OCR_DESKEW=1``", "Define environment variable"
-    "``-e PYTHONBUFFERED=1``", "This will force STDOUT to be unbuffered and allow you to see messages in docker logs"
+    "``-e OCR_DESKEW=1``", "Define environment variable ``OCR_DESKEW``  to apply deskew to crooked input PDFs"
+    "``-e PYTHONBUFFERED=1``", "This will force ``STDOUT`` to be unbuffered and allow you to see messages in docker logs"
 
 This service relies on polling to check for changes to the filesystem. It
 may not be suitable for some environments, such as filesystems shared on a
