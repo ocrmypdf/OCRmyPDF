@@ -23,6 +23,7 @@
 import json
 import logging
 import os
+import shutil
 import sys
 import time
 from datetime import datetime
@@ -44,8 +45,10 @@ def getenv_bool(name: str, default: str = 'False'):
 
 INPUT_DIRECTORY = os.getenv('OCR_INPUT_DIRECTORY', '/input')
 OUTPUT_DIRECTORY = os.getenv('OCR_OUTPUT_DIRECTORY', '/output')
+ARCHIVE_DIRECTORY = os.getenv('OCR_ARCHIVE_DIRECTORY', '/processed')
 OUTPUT_DIRECTORY_YEAR_MONTH = getenv_bool('OCR_OUTPUT_DIRECTORY_YEAR_MONTH')
 ON_SUCCESS_DELETE = getenv_bool('OCR_ON_SUCCESS_DELETE')
+ON_SUCCESS_ARCHIVE = getenv_bool('OCR_ON_SUCCESS_ARCHIVE')
 DESKEW = getenv_bool('OCR_DESKEW')
 OCR_JSON_SETTINGS = json.loads(os.getenv('OCR_JSON_SETTINGS', '{}'))
 POLL_NEW_FILE_SECONDS = int(os.getenv('OCR_POLL_NEW_FILE_SECONDS', '1'))
@@ -108,9 +111,13 @@ def execute_ocrmypdf(file_path):
         deskew=DESKEW,
         **OCR_JSON_SETTINGS,
     )
-    if exit_code == 0 and ON_SUCCESS_DELETE:
-        log.info(f'OCR is done. Deleting: {file_path}')
-        file_path.unlink()
+    if exit_code == 0:
+        if ON_SUCCESS_DELETE:
+            log.info(f'OCR is done. Deleting: {file_path}')
+            file_path.unlink()
+        elif ON_SUCCESS_ARCHIVE:
+            log.info(f'OCR is done. Archiving {file_path.name} to {ARCHIVE_DIRECTORY}')
+            shutil.move(file_path, f'{ARCHIVE_DIRECTORY}/{file_path.name}')
     else:
         log.info('OCR is done')
 
@@ -135,13 +142,16 @@ def main():
         f"Starting OCRmyPDF watcher with config:\n"
         f"Input Directory: {INPUT_DIRECTORY}\n"
         f"Output Directory: {OUTPUT_DIRECTORY}\n"
-        f"Output Directory Year & Month: {OUTPUT_DIRECTORY_YEAR_MONTH}"
+        f"Output Directory Year & Month: {OUTPUT_DIRECTORY_YEAR_MONTH}\n"
+        f"Archive Directory: {ARCHIVE_DIRECTORY}"
     )
     log.debug(
         f"INPUT_DIRECTORY: {INPUT_DIRECTORY}\n"
         f"OUTPUT_DIRECTORY: {OUTPUT_DIRECTORY}\n"
         f"OUTPUT_DIRECTORY_YEAR_MONTH: {OUTPUT_DIRECTORY_YEAR_MONTH}\n"
+        f"ARCHIVE_DIRECTORY: {ARCHIVE_DIRECTORY}\n"
         f"ON_SUCCESS_DELETE: {ON_SUCCESS_DELETE}\n"
+        f"ON_SUCCESS_ARCHIVE: {ON_SUCCESS_ARCHIVE}\n"
         f"DESKEW: {DESKEW}\n"
         f"ARGS: {OCR_JSON_SETTINGS}\n"
         f"POLL_NEW_FILE_SECONDS: {POLL_NEW_FILE_SECONDS}\n"
