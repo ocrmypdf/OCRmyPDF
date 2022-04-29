@@ -36,7 +36,7 @@ from pathlib import Path
 from typing import Any, NamedTuple, Optional, Tuple, Union
 from xml.etree import ElementTree
 
-from reportlab.lib.colors import black, cyan, magenta, red
+from reportlab.lib.colors import black, cyan, magenta, red, white
 from reportlab.lib.units import inch
 from reportlab.pdfgen.canvas import Canvas
 
@@ -244,6 +244,7 @@ class HocrTransform:
         fontname: str = "Helvetica",
         invisible_text: bool = False,
         interword_spaces: bool = False,
+        redact: bool = True,
     ) -> None:
         """
         Creates a PDF file with an image superimposed on top of the text.
@@ -266,7 +267,10 @@ class HocrTransform:
             interword_spaces: If True, insert spaces between words rather than
                 drawing each word without spaces. Generally this improves text
                 extraction.
-        """
+            redact: If True, draws redaction boxes on any 'ocrx_word', which contains
+                the meta field 'redact_class'. This draws boxes of black fill color,
+                with the 'redact_class' string overlayed in white.
+            """
         # create the PDF file
         # page size in points (1/72 in.)
         pdf = Canvas(
@@ -311,6 +315,7 @@ class HocrTransform:
                 invisible_text,
                 interword_spaces,
                 show_bounding_boxes,
+                redact,
             )
 
         if not found_lines:
@@ -324,12 +329,29 @@ class HocrTransform:
                 invisible_text,
                 interword_spaces,
                 show_bounding_boxes,
+                redact,
             )
+
         # put the image on the page, scaled to fill the page
         if image_filename is not None:
             pdf.drawImage(
                 os.fspath(image_filename), 0, 0, width=self.width, height=self.height
             )
+
+        # Redact any bounding boxes which have the meta tag "redact" set to true. And
+        # overlay text from "redact-text" field.
+        if redact:
+            if found_lines:
+                for line in (
+                    element
+                    for element in self.hocr.iterfind(self._child_xpath('span'))
+                    if 'class' in element.attrib
+                    and element.attrib['class'] in {'ocr_header', 'ocr_line', 'ocr_textfloat'}
+                ):
+                    self._redact_line(pdf, line, "ocrx_word", fontname, interword_spaces)
+            else:
+                root = self.hocr.find(self._child_xpath('div', 'ocr_page'))
+                self._redact_line(pdf, root, "ocrx_word", fontname, interword_spaces)
 
         # finish up the page and save it
         pdf.showPage()
@@ -348,6 +370,7 @@ class HocrTransform:
         invisible_text: bool,
         interword_spaces: bool,
         show_bounding_boxes: bool,
+        ignore_redact: bool
     ):
         if line is None:
             return
@@ -398,6 +421,8 @@ class HocrTransform:
 
         elements = line.findall(self._child_xpath('span', elemclass))
         for elem in elements:
+            if ignore_redact and elem.get("redact_class"):
+                continue
             elemtxt = self._get_element_text(elem).strip()
             elemtxt = self.replace_unsupported_chars(elemtxt)
             if elemtxt == '':
@@ -454,8 +479,102 @@ class HocrTransform:
                 text.textOut(elemtxt)
         pdf.drawText(text)
 
+    def _redact_line(self,
+        pdf: Canvas,
+        line: Optional[Element],
+        elemclass: str,
+        fontname: str,
+        interword_spaces: bool,
+        ):
+        if line is None:
+            return
+        pxl_line_coords = self.element_coordinates(line)
+        line_box = self.pt_from_pixel(pxl_line_coords)
+        line_height = line_box.y2 - line_box.y1
 
-if __name__ == "__main__":
+        slope, pxl_intercept = self.baseline(line)
+        if abs(slope) < 0.005:
+            slope = 0.0
+        angle = atan(slope)
+        cos_a, sin_a = cos(angle), sin(angle)
+
+        text = pdf.beginText()
+        intercept = pxl_intercept / self.dpi * inch
+
+        # Don't allow the font to break out of the bounding box. Division by
+        # cos_a accounts for extra clearance between the glyph's vertical axis
+        # on a sloped baseline and the edge of the bounding box.
+        fontsize = (line_height - abs(intercept)) / cos_a
+        text.setFont(fontname, fontsize)
+
+        # Intercept is normally negative, so this places it above the bottom
+        # of the line box
+        baseline_y2 = self.height - (line_box.y2 + intercept)
+
+        text.setTextTransform(cos_a, -sin_a, sin_a, cos_a, line_box.x1, baseline_y2)
+
+        elements = line.findall(self._child_xpath('span', elemclass))
+
+        # Redacted boxes should be black
+        pdf.setFillColor(black)
+        prev = None
+        for elem in elements:
+            if not elem.get("redact_class"):
+                prev = elem
+                continue
+            elemtxt = elem.get("redact_class")
+            elemtxt = self.replace_unsupported_chars(elemtxt)
+            if elemtxt == '':
+                prev = elem
+                continue
+
+            pxl_coords = self.element_coordinates(elem)
+            box = self.pt_from_pixel(pxl_coords)
+            if interword_spaces:
+                # if  `--interword-spaces` is true, append a space
+                # to the end of each text element to allow simpler PDF viewers
+                # such as PDF.js to better recognize words in search and copy
+                # and paste. Do not remove space from last word in line, even
+                # though it would look better, because it will interfere with
+                # naive text extraction. \n does not work either.
+                elemtxt += ' '
+                box = Rect._make(
+                    (
+                        box.x1,
+                        line_box.y1,
+                        box.x2 + pdf.stringWidth(' ', fontname, line_height),
+                        line_box.y2,
+                    )
+                )
+            box_width = box.x2 - box.x1
+            font_width = pdf.stringWidth(elemtxt, fontname, fontsize)
+
+            # Join similar entities if they are neighbouring
+            if prev is not None and prev.get("redact_class") == elem.get("redact_class"):
+                elemtxt = None
+                prev_box = self.pt_from_pixel(self.element_coordinates(prev))
+                x1 = prev_box.x2 + pdf.stringWidth(' ', fontname, line_height)
+            else:
+                x1 = box.x1
+            pdf.rect(
+                x1, self.height - line_box.y2, box_width, line_height, stroke=0, fill=1
+            )
+
+            cursor = text.getStartOfLine()
+            dx = box.x1 - cursor[0]
+            dy = baseline_y2 - cursor[1]
+            text.moveCursor(dx, dy)
+
+            # If reportlab tells us this word is 0 units wide, our best seems
+            # to be to suppress this text
+            if font_width > 0 and elemtxt:
+                text.textOut(elemtxt)
+            prev = elem
+        pdf.setFillColor(white)
+        pdf.drawText(text)
+
+
+def run():
     parser = argparse.ArgumentParser(description='Convert hocr file to PDF')
     parser.add_argument(
         '-b',
@@ -483,6 +602,12 @@ if __name__ == "__main__":
         default=False,
         help='Add spaces between words',
     )
+    parser.add_argument(
+        '--redact',
+        action='store_true',
+        default=False,
+        help='Redacts any ocrx_word from the hocr file, which contains the meta field "redact_class"',
+    )
     parser.add_argument('hocrfile', help='Path to the hocr file to be parsed')
     parser.add_argument('outputfile', help='Path to the PDF file to be generated')
     args = parser.parse_args()
@@ -493,4 +618,8 @@ if __name__ == "__main__":
         image_filename=args.image,
         show_bounding_boxes=args.boundingboxes,
         interword_spaces=args.interword_spaces,
+        redact=args.redact,
     )
+
+if __name__ == "__main__":
+    run()
