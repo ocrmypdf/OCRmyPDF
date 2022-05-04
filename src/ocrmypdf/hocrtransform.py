@@ -245,6 +245,7 @@ class HocrTransform:
         invisible_text: bool = False,
         interword_spaces: bool = False,
         redact: bool = True,
+        debug: bool = False,
     ) -> None:
         """
         Creates a PDF file with an image superimposed on top of the text.
@@ -348,10 +349,10 @@ class HocrTransform:
                     if 'class' in element.attrib
                     and element.attrib['class'] in {'ocr_header', 'ocr_line', 'ocr_textfloat'}
                 ):
-                    self._redact_line(pdf, line, "ocrx_word", fontname, interword_spaces)
+                    self._redact_line(pdf, line, "ocrx_word", fontname, interword_spaces, debug)
             else:
                 root = self.hocr.find(self._child_xpath('div', 'ocr_page'))
-                self._redact_line(pdf, root, "ocrx_word", fontname, interword_spaces)
+                self._redact_line(pdf, root, "ocrx_word", fontname, interword_spaces, debug)
 
         # finish up the page and save it
         pdf.showPage()
@@ -485,6 +486,7 @@ class HocrTransform:
         elemclass: str,
         fontname: str,
         interword_spaces: bool,
+        debug: bool = False,
         ):
         if line is None:
             return
@@ -506,6 +508,8 @@ class HocrTransform:
         # on a sloped baseline and the edge of the bounding box.
         fontsize = (line_height - abs(intercept)) / cos_a
         text.setFont(fontname, fontsize)
+        if debug:
+            text.setTextRenderMode(3)  # Invisible (indicates OCR text)
 
         # Intercept is normally negative, so this places it above the bottom
         # of the line box
@@ -515,14 +519,28 @@ class HocrTransform:
 
         elements = line.findall(self._child_xpath('span', elemclass))
 
+        # maybe read from json file
+        classColors = {
+            "T-NAME": "red",
+            "T-CPR": "red",
+            "T-ADDRESS": "red",
+            "W-NAME": "green",
+            "M-NAME": "blue",
+            "M-ADDRESS": "blue",
+            "M-CPR": "blue",
+            "VH-NAME": "cyan",
+            "VH-CPR": "cyan",
+            "VH-ADDRESS": "cyan",
+        }
         # Redacted boxes should be black
         pdf.setFillColor(black)
         prev = None
         for elem in elements:
-            if not elem.get("redact_class"):
+            redact_class = elem.get("redact_class")
+            if not redact_class:
                 prev = elem
                 continue
-            elemtxt = elem.get("redact_class")
+            elemtxt = self._get_element_text(elem).strip() if debug else redact_class
             elemtxt = self.replace_unsupported_chars(elemtxt)
             if elemtxt == '':
                 prev = elem
@@ -551,13 +569,20 @@ class HocrTransform:
 
             # Join similar entities if they are neighbouring
             if prev is not None and prev.get("redact_class") == elem.get("redact_class"):
-                elemtxt = None
+                elemtxt = elemtxt if debug else None
                 prev_box = self.pt_from_pixel(self.element_coordinates(prev))
                 x1 = prev_box.x2 + pdf.stringWidth(' ', fontname, line_height)
             else:
                 x1 = box.x1
+
+            pdf.setStrokeColor(classColors.get(redact_class, "black"))
             pdf.rect(
-                x1, self.height - line_box.y2, box_width, line_height, stroke=0, fill=1
+                x1,
+                self.height - line_box.y2,
+                box_width,
+                line_height,
+                stroke=1 if debug else 0,
+                fill=0 if debug else 1,
             )
 
             cursor = text.getStartOfLine()
@@ -570,7 +595,8 @@ class HocrTransform:
             if font_width > 0 and elemtxt:
                 text.textOut(elemtxt)
             prev = elem
-        pdf.setFillColor(white)
+        if not debug:
+            pdf.setFillColor(white)
         pdf.drawText(text)
 
 
@@ -608,6 +634,12 @@ def run():
         default=False,
         help='Redacts any ocrx_word from the hocr file, which contains the meta field "redact_class"',
     )
+    parser.add_argument(
+        '--debug',
+        action='store_true',
+        default=False,
+        help='embed redaction debug information in pdf. Does not redact!',
+    )
     parser.add_argument('hocrfile', help='Path to the hocr file to be parsed')
     parser.add_argument('outputfile', help='Path to the PDF file to be generated')
     args = parser.parse_args()
@@ -619,6 +651,7 @@ def run():
         show_bounding_boxes=args.boundingboxes,
         interword_spaces=args.interword_spaces,
         redact=args.redact,
+        debug=args.debug,
     )
 
 if __name__ == "__main__":
