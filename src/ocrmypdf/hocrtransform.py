@@ -269,8 +269,8 @@ class HocrTransform:
                 drawing each word without spaces. Generally this improves text
                 extraction.
             redact: If True, draws redaction boxes on any 'ocrx_word', which contains
-                the meta field 'redact_class'. This draws boxes of black fill color,
-                with the 'redact_class' string overlayed in white.
+                the meta field 'redact_label'. This draws boxes of black fill color,
+                with the string content of 'redact_alias' meta field overlayed in white.
             """
         # create the PDF file
         # page size in points (1/72 in.)
@@ -422,7 +422,7 @@ class HocrTransform:
 
         elements = line.findall(self._child_xpath('span', elemclass))
         for elem in elements:
-            if ignore_redact and elem.get("redact_class"):
+            if ignore_redact and elem.get("redact_label"):
                 continue
             elemtxt = self._get_element_text(elem).strip()
             elemtxt = self.replace_unsupported_chars(elemtxt)
@@ -536,11 +536,12 @@ class HocrTransform:
         pdf.setFillColor(black)
         prev = None
         for elem in elements:
-            redact_class = elem.get("redact_class")
-            if not redact_class:
+            redact_label = elem.get("redact_label")
+            redact_alias = elem.get("redact_alias")
+            if not redact_label:
                 prev = elem
                 continue
-            elemtxt = self._get_element_text(elem).strip() if debug else redact_class
+            elemtxt = self._get_element_text(elem).strip() if debug else redact_alias
             elemtxt = self.replace_unsupported_chars(elemtxt)
             if elemtxt == '':
                 prev = elem
@@ -568,14 +569,18 @@ class HocrTransform:
             font_width = pdf.stringWidth(elemtxt, fontname, fontsize)
 
             # Join similar entities if they are neighbouring
-            if prev is not None and prev.get("redact_class") == elem.get("redact_class"):
+            if (
+                prev is not None
+                and prev.get("redact_label") == elem.get("redact_label")
+                and prev.get("redact_alias") == elem.get("redact_alias")
+                ):
                 elemtxt = elemtxt if debug else None
                 prev_box = self.pt_from_pixel(self.element_coordinates(prev))
                 x1 = prev_box.x2 + pdf.stringWidth(' ', fontname, line_height)
             else:
                 x1 = box.x1
 
-            pdf.setStrokeColor(classColors.get(redact_class, "black"))
+            pdf.setStrokeColor(classColors.get(redact_label, "black"))
             pdf.rect(
                 x1,
                 self.height - line_box.y2,
@@ -632,7 +637,7 @@ def run():
         '--redact',
         action='store_true',
         default=False,
-        help='Redacts any ocrx_word from the hocr file, which contains the meta field "redact_class"',
+        help='Redacts any ocrx_word from the hocr file, which contains the meta field "redact_label"',
     )
     parser.add_argument(
         '--debug',
