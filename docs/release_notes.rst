@@ -18,9 +18,10 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
-next
-====
+v13.4.4
+=======
 
+-  Updated pdfminer.six version.
 -  Docker image changed to Ubuntu 22.04 now that it is released and provides the
    dependencies we need. This seems more consistent than our recent change to
    Debian.
