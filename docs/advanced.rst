@@ -67,11 +67,11 @@ without modifying the PDF. This is to ensure that PDFs that were
 previously OCRed or were "born digital" rather than scanned are not
 processed.
 
-If ``--skip-text`` is issued, then no OCR will be performed on pages
-that already have text. The page will be copied to the output. This may
-be useful for documents that contain both "born digital" and scanned
-content, or to use OCRmyPDF to normalize and convert to PDF/A regardless
-of their contents.
+If ``--skip-text`` is issued, then no image processing or OCR will be
+performed on pages that already have text. The page will be copied to
+the output. This may be useful for documents that contain both "born
+digital" and scanned content, or to use OCRmyPDF to normalize and
+convert to PDF/A regardless of their contents.
 
 If ``--redo-ocr`` is issued, then a detailed text analysis is performed.
 Text is categorized as either visible or invisible. Invisible text (OCR)
