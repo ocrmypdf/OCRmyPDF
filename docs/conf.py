@@ -42,7 +42,7 @@ extensions = [
 # Extension settings
 intersphinx_mapping = {'https://docs.python.org/': None}
 napoleon_use_rtype = False
-issues_github_path = "jbarlow83/OCRmyPDF"
+issues_github_path = "ocrmypdf/OCRmyPDF"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

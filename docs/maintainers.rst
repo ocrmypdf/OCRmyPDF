@@ -2,7 +2,7 @@
 Maintainer notes
 ================
 
-This is for those who package OCRmyPDF for downstream use.  (Thank you 
+This is for those who package OCRmyPDF for downstream use.  (Thank you
 for your hard work.)
 
 Known ports/packagers
@@ -25,7 +25,7 @@ Non-Python dependencies
 
 Note that we have non-Python dependencies. In particular, OCRmyPDF requires
 Ghostscript and Tesseract OCR to be installed and needs to be able to locate their
-binaries on the system PATH. On Windows, OCRmyPDF will also check the registry 
+binaries on the system PATH. On Windows, OCRmyPDF will also check the registry
 for their locations.
 
 Tesseract OCR relies on SIMD for performance and only has proper support for this
@@ -38,13 +38,13 @@ OCRmyPDF uses setuptools-scm for versioning, which derives the version from
 Git as a single source of truth. This may be unsuitable for some distributions, e.g.
 to indicate that your distribution modifies OCRmyPDF in some way.
 
-You can patch the ``__version__`` variable in ``src/ocrmypdf/_version.py`` if 
+You can patch the ``__version__`` variable in ``src/ocrmypdf/_version.py`` if
 necessary.
 
 OCRmyPDF uses setuptools-scm-git-archive to ensure that tarballs downloaded from
 GitHub contain version information. Unfortunately, these tarballs are not always
-deterministic. See this 
-`issue <https://github.com/jbarlow83/OCRmyPDF/issues/841#issuecomment-936562696>`_.
+deterministic. See this
+`issue <https://github.com/ocrmypdf/OCRmyPDF/issues/841#issuecomment-936562696>`_.
 
 jbig2enc
 --------

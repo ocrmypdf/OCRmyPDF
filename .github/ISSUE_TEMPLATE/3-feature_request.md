@@ -19,7 +19,7 @@ A clear and concise description of any alternative solutions or features you've 
 **Example file**
 If your issue concerns how OCRmyPDF processes certain files, and please provide an example file that helps illustrate how OCRmyPDF's output could be improve.
 
-Please provide an input file with no personal or confidential information. At your option you may [GPG-encrypt the file](https://github.com/jbarlow83/OCRmyPDF/wiki) for OCRmyPDF's author only.
+Please provide an input file with no personal or confidential information. At your option you may [GPG-encrypt the file](https://github.com/ocrmypdf/OCRmyPDF/wiki) for OCRmyPDF's author only.
 
 Links to files hosted elsewhere are perfectly acceptable. You could also look in ``tests/resources`` and see if any of those files reproduce your issue.
 

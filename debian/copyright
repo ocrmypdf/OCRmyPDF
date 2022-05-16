@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: OCRmyPDF
 Upstream-Contact: James R. Barlow <barlow.jim@gmail.com>
-Source: https://github.com/jbarlow83/OCRmyPDF
+Source: https://github.com/ocrmypdf/OCRmyPDF
 
 Files: *
 Copyright:

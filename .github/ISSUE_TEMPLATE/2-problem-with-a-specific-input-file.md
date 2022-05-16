@@ -22,7 +22,7 @@ Run with verbosity or higher `-v1` to see more detailed logging. This informatio
 **Example file**
 If your issue is a problem that affects only certain files, and we will require an input file (PDF or image) that demonstrates your issue.
 
-Please provide an input file with no personal or confidential information. At your option you may [GPG-encrypt the file](https://github.com/jbarlow83/OCRmyPDF/wiki) for OCRmyPDF's author only.
+Please provide an input file with no personal or confidential information. At your option you may [GPG-encrypt the file](https://github.com/ocrmypdf/OCRmyPDF/wiki) for OCRmyPDF's author only.
 
 Links to files hosted elsewhere are perfectly acceptable. You could also look in ``tests/resources`` and see if any of those files reproduce your issue.
 

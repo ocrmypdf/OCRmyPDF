@@ -1,9 +1,7 @@
 <img src="docs/images/logo.svg" width="240" alt="OCRmyPDF">
 
-[![Build Status](https://github.com/jbarlow83/OCRmyPDF/actions/workflows/build.yml/badge.svg)](https://github.com/jbarlow83/OCRmyPDF/actions/workflows/build.yml) [![PyPI version][pypi]](https://pypi.org/project/ocrmypdf/) ![Homebrew version][homebrew] ![ReadTheDocs][docs] ![Python versions][pyversions]
+[![Build Status](https://github.com/ocrmypdf/OCRmyPDF/actions/workflows/build.yml/badge.svg)](https://github.com/ocrmypdf/OCRmyPDF/actions/workflows/build.yml) [![PyPI version][pypi]](https://pypi.org/project/ocrmypdf/) ![Homebrew version][homebrew] ![ReadTheDocs][docs] ![Python versions][pyversions]
 
-[azure]: https://dev.azure.com/jim0585/ocrmypdf/_apis/build/status/jbarlow83.OCRmyPDF?branchName=master
-[travis]: https://travis-ci.org/jbarlow83/OCRmyPDF.svg?branch=master "Travis build status"
 [pypi]: https://img.shields.io/pypi/v/ocrmypdf.svg "PyPI version"
 [homebrew]: https://img.shields.io/homebrew/v/ocrmypdf.svg "Homebrew version"
 [docs]: https://readthedocs.org/projects/ocrmypdf/badge/?version=latest "RTD"
@@ -106,7 +104,7 @@ ocrmypdf --help
 
 Our [documentation is served on Read the Docs](https://ocrmypdf.readthedocs.io/en/latest/index.html).
 
-Please report issues on our [GitHub issues](https://github.com/jbarlow83/OCRmyPDF/issues) page, and follow the issue template for quick response.
+Please report issues on our [GitHub issues](https://github.com/ocrmypdf/OCRmyPDF/issues) page, and follow the issue template for quick response.
 
 ## Requirements
 
