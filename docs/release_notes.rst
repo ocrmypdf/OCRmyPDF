@@ -18,6 +18,12 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v13.4.5
+=======
+
+-  Remove upper bound on pdfminer.six version.
+-  Documentation.
+
 v13.4.4
 =======
 
