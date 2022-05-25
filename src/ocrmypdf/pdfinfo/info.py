@@ -409,15 +409,10 @@ class ImageInfo:
         return _get_dpi(self._shorthand, (self._width, self._height))
 
     def __repr__(self):
-        class_locals = {
-            attr: getattr(self, attr, None)
-            for attr in dir(self)
-            if not attr.startswith('_')
-        }
         return (
-            "<ImageInfo '{name}' {type_} {width}x{height} {color} "
-            "{comp} {bpc} {enc} {dpi}>"
-        ).format(**class_locals)
+            f"<ImageInfo '{self.name}' {self.type_} {self.width}x{self.height} "
+            f"{self.color} {self.comp} {self.bpc} {self.enc} {self.dpi}>"
+        )
 
 
 def _find_inline_images(contentsinfo: ContentsInfo) -> Iterator[ImageInfo]:
