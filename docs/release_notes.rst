@@ -18,6 +18,11 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v13.4.6
+=======
+
+-  Convert error on corrupt ICC profiles into a warning. Thanks to @oscherler.
+
 v13.4.5
 =======
 
