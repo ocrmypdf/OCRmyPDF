@@ -922,3 +922,25 @@ def test_outputtype_none(resources, outtxt):
         'tests/plugins/tesseract_noop.py',
     )
     assert p.returncode == ExitCode.ok
+
+
+@pytest.fixture
+def graph_bad_icc(resources, outdir):
+    synth_input_file = outdir / 'graph-bad-icc.pdf'
+    with pikepdf.open(resources / 'graph.pdf') as pdf:
+        icc = pdf.make_stream(
+            b'invalid icc profile', N=3, Alternate=pikepdf.Name.DeviceRGB
+        )
+        pdf.pages[0].Resources.XObject['/Im0'].ColorSpace = pikepdf.Array(
+            [pikepdf.Name.ICCBased, icc]
+        )
+        pdf.save(synth_input_file)
+        yield synth_input_file
+
+
+def test_corrupt_icc(graph_bad_icc, outpdf, caplog):
+    result = run_ocrmypdf_api(graph_bad_icc, outpdf)
+    assert result == ExitCode.ok
+    assert any(
+        'corrupt or unreadable ICC profile' in rec.message for rec in caplog.records
+    )

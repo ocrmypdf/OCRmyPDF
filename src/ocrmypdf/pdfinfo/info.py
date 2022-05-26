@@ -361,7 +361,7 @@ class ImageInfo:
                     self._comp = 3
             except UnsupportedImageTypeError as ex:
                 self._comp = None
-                logger.warn(
+                logger.warning(
                     f"An image with a corrupt or unreadable ICC profile was found. "
                     f"The output PDF may not match the input PDF visually: {ex}. {self}"
                 )
