@@ -38,6 +38,7 @@ from pikepdf import (
     PdfInlineImage,
     PdfMatrix,
     parse_content_stream,
+    UnsupportedImageTypeError,
 )
 
 from ocrmypdf._concurrent import Executor, SerialExecutor
@@ -350,13 +351,18 @@ class ImageInfo:
 
         if self._color == Colorspace.icc:
             # Check the ICC profile to determine actual colorspace
-            pim_icc = pim.icc
-            if pim_icc.profile.xcolor_space == 'GRAY':
-                self._comp = 1
-            elif pim_icc.profile.xcolor_space == 'CMYK':
-                self._comp = 4
-            else:
-                self._comp = 3
+            try:
+                pim_icc = pim.icc
+                if pim_icc.profile.xcolor_space == 'GRAY':
+                    self._comp = 1
+                elif pim_icc.profile.xcolor_space == 'CMYK':
+                    self._comp = 4
+                else:
+                    self._comp = 3
+            except UnsupportedImageTypeError as ex:
+                logger.warn('Unreadable image: {}. {}'.format(ex, self))
+                self._comp = None
+                
         else:
             if isinstance(self._color, Colorspace):
                 self._comp = FRIENDLY_COMP.get(self._color)
