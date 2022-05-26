@@ -465,12 +465,18 @@ def test_overlay(resources, outpdf):
     )
 
 
-def test_destination_not_writable(resources, outdir):
-    if os.name != 'nt' and (os.getuid() == 0 or os.geteuid() == 0):
-        pytest.xfail(reason="root can write to anything")
+@pytest.fixture
+def protected_file(outdir):
     protected_file = outdir / 'protected.pdf'
     protected_file.touch()
     protected_file.chmod(0o400)  # Read-only
+    yield protected_file
+
+
+@pytest.mark.skipif(
+    os.name == 'nt' or os.geteuid() == 0, reason="root can write to anything"
+)
+def test_destination_not_writable(resources, protected_file):
     p = run_ocrmypdf(
         resources / 'jbig2.pdf',
         protected_file,
@@ -480,7 +486,8 @@ def test_destination_not_writable(resources, outdir):
     assert p.returncode == ExitCode.file_access_error, "Expected error"
 
 
-def test_tesseract_config_valid(resources, outdir):
+@pytest.fixture
+def valid_tess_config(outdir):
     cfg_file = outdir / 'test.cfg'
     with cfg_file.open('w') as f:
         f.write(
@@ -490,20 +497,22 @@ language_model_penalty_non_dict_word 0
 language_model_penalty_non_freq_dict_word 0
 '''
         )
+    yield cfg_file
 
+
+def test_tesseract_config_valid(resources, valid_tess_config, outpdf):
     check_ocrmypdf(
         resources / '3small.pdf',
-        outdir / 'out.pdf',
+        outpdf,
         '--tesseract-config',
-        cfg_file,
+        valid_tess_config,
         '--pages',
         '1',
     )
 
 
-@pytest.mark.slow  # This test sometimes times out in CI
-@pytest.mark.parametrize('renderer', RENDERERS)
-def test_tesseract_config_invalid(renderer, resources, outdir):
+@pytest.fixture
+def invalid_tess_config(outdir):
     cfg_file = outdir / 'test.cfg'
     with cfg_file.open('w') as f:
         f.write(
@@ -511,14 +520,19 @@ def test_tesseract_config_invalid(renderer, resources, outdir):
 THIS FILE IS INVALID
 '''
         )
+    yield cfg_file
 
+
+@pytest.mark.slow  # This test sometimes times out in CI
+@pytest.mark.parametrize('renderer', RENDERERS)
+def test_tesseract_config_invalid(renderer, resources, invalid_tess_config, outpdf):
     p = run_ocrmypdf(
         resources / 'ccitt.pdf',
-        outdir / 'out.pdf',
+        outpdf,
         '--pdf-renderer',
         renderer,
         '--tesseract-config',
-        cfg_file,
+        invalid_tess_config,
     )
     assert (
         "parameter not found" in p.stderr.lower()
@@ -801,6 +815,9 @@ def test_text_curves(resources, outpdf):
         info = PdfInfo(outpdf)
         assert len(info.pages[0].images) == 0, "added images to the vector PDF"
 
+
+def test_text_curves_force(resources, outpdf):
+    with patch('ocrmypdf._pipeline.VECTOR_PAGE_DPI', 100):
         check_ocrmypdf(
             resources / 'vector.pdf',
             outpdf,
