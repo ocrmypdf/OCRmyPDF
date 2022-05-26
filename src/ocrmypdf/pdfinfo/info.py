@@ -37,8 +37,8 @@ from pikepdf import (
     PdfImage,
     PdfInlineImage,
     PdfMatrix,
-    parse_content_stream,
     UnsupportedImageTypeError,
+    parse_content_stream,
 )
 
 from ocrmypdf._concurrent import Executor, SerialExecutor
@@ -360,9 +360,11 @@ class ImageInfo:
                 else:
                     self._comp = 3
             except UnsupportedImageTypeError as ex:
-                logger.warn('Unreadable image: {}. {}'.format(ex, self))
                 self._comp = None
-                
+                logger.warn(
+                    f"An image with a corrupt or unreadable ICC profile was found. "
+                    f"The output PDF may not match the input PDF visually: {ex}. {self}"
+                )
         else:
             if isinstance(self._color, Colorspace):
                 self._comp = FRIENDLY_COMP.get(self._color)
