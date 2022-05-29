@@ -10,6 +10,7 @@ import logging
 import os
 import signal
 import sys
+from contextlib import suppress
 from multiprocessing import set_start_method
 
 from ocrmypdf import __version__
@@ -34,7 +35,7 @@ def sigbus(*args):
 def run(args=None):
     _parser, options, plugin_manager = get_parser_options_plugins(args=args)
 
-    if hasattr(os, 'nice'):
+    with suppress(AttributeError, PermissionError):
         os.nice(5)
 
     verbosity = options.verbose
