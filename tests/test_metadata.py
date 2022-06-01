@@ -6,10 +6,10 @@
 
 
 import datetime
+import warnings
 from datetime import timezone
 from os import fspath
 from shutil import copyfile
-from unittest.mock import patch
 
 import pikepdf
 import pytest
@@ -173,6 +173,19 @@ def test_creation_date_preserved(output_type, resources, infile, outpdf):
     assert seconds_between_dates(date_after, datetime.datetime.now(timezone.utc)) < 1000
 
 
+@pytest.fixture
+def libxmp_file_to_dict():
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            from libxmp.utils import (
+                file_to_dict,  # pylint: disable=import-outside-toplevel
+            )
+    except Exception:  # pylint: disable=broad-except
+        pytest.skip("libxmp not available or libexempi3 not installed")
+    return file_to_dict
+
+
 @pytest.mark.parametrize(
     'test_file,output_type',
     [
@@ -182,15 +195,12 @@ def test_creation_date_preserved(output_type, resources, infile, outpdf):
         ('3small.pdf', 'pdfa'),
     ],
 )
-def test_xml_metadata_preserved(test_file, output_type, resources, outpdf):
+def test_xml_metadata_preserved(
+    libxmp_file_to_dict, test_file, output_type, resources, outpdf
+):
     input_file = resources / test_file
 
-    try:
-        from libxmp.utils import file_to_dict  # pylint: disable=import-outside-toplevel
-    except Exception:  # pylint: disable=broad-except
-        pytest.skip("libxmp not available or libexempi3 not installed")
-
-    before = file_to_dict(str(input_file))
+    before = libxmp_file_to_dict(str(input_file))
 
     check_ocrmypdf(
         input_file,
@@ -202,7 +212,7 @@ def test_xml_metadata_preserved(test_file, output_type, resources, outpdf):
         'tests/plugins/tesseract_noop.py',
     )
 
-    after = file_to_dict(str(outpdf))
+    after = libxmp_file_to_dict(str(outpdf))
 
     equal_properties = [
         'dc:contributor',
