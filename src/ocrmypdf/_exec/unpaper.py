@@ -23,7 +23,6 @@ from typing import Iterator, List, Optional, Tuple, Union
 from PIL import Image
 
 from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
-from ocrmypdf.helpers import TemporaryDirectory
 from ocrmypdf.subprocess import get_version, run
 
 if sys.version_info >= (3, 10):
