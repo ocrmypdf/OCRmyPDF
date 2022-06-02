@@ -13,17 +13,35 @@
 import logging
 import os
 import shlex
+import sys
 from contextlib import contextmanager
 from decimal import Decimal
 from pathlib import Path
 from subprocess import PIPE, STDOUT
-from tempfile import TemporaryDirectory
 from typing import Iterator, List, Optional, Tuple, Union
 
 from PIL import Image
 
 from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
+from ocrmypdf.helpers import TemporaryDirectory
 from ocrmypdf.subprocess import get_version, run
+
+if sys.version_info >= (3, 10):
+    from tempfile import TemporaryDirectory
+else:
+    from tempfile import TemporaryDirectory as _TemporaryDirectory
+
+    # Consume the ignore_cleanup_errors kwarg in Python 3.9 and older, without acting
+    # on this keyword. Users who need this issue full resolved should upgrade to Python
+    # 3.10.
+    # See: https://github.com/python/cpython/pull/24793
+
+    class TemporaryDirectory(_TemporaryDirectory):
+        def __init__(self, ignore_cleanup_errors=False, **kwargs):
+            super.__init__(**kwargs)
+
+    del _TemporaryDirectory
+
 
 UNPAPER_IMAGE_PIXEL_LIMIT = 256 * 1024 * 1024
 
@@ -82,7 +100,7 @@ def _setup_unpaper_io(input_file: Path) -> Iterator[Tuple[Path, Path, Path]]:
             raise UnpaperImageTooLargeError(w=im.width, h=im.height)
         im, im_modified, suffix = _convert_image(im)
 
-        with TemporaryDirectory() as tmpdir:
+        with TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
             tmppath = Path(tmpdir)
             if im_modified or input_file.suffix != '.pnm':
                 input_pnm = tmppath / 'input.pnm'
