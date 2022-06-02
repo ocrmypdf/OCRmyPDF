@@ -18,6 +18,13 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v13.4.7
+=======
+
+-  Fixed PermissionError when cleaning up temporary files in rare cases. :issue:`974`
+-  Fixed PermissionError when calling ``os.nice`` on platforms that lack it. :issue:`973`
+-  Suppressed some warnings from libxmp during tests.
+
 v13.4.6
 =======
 
