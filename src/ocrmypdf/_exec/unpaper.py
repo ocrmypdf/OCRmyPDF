@@ -37,7 +37,7 @@ else:
 
     class TemporaryDirectory(_TemporaryDirectory):
         def __init__(self, ignore_cleanup_errors=False, **kwargs):
-            super.__init__(**kwargs)
+            super().__init__(**kwargs)
 
     del _TemporaryDirectory
 
