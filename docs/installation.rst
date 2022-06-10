@@ -12,21 +12,23 @@ system/platform. This version may be out of date, however.
 
 These platforms have one-liner installs:
 
-+-------------------------------+-------------------------------+
-| Debian, Ubuntu                | ``apt install ocrmypdf``      |
-+-------------------------------+-------------------------------+
-| Windows Subsystem for Linux   | ``apt install ocrmypdf``      |
-+-------------------------------+-------------------------------+
-| Fedora                        | ``dnf install ocrmypdf``      |
-+-------------------------------+-------------------------------+
-| macOS                         | ``brew install ocrmypdf``     |
-+-------------------------------+-------------------------------+
-| LinuxBrew                     | ``brew install ocrmypdf``     |
-+-------------------------------+-------------------------------+
-| FreeBSD                       | ``pkg install py38-ocrmypdf`` |
-+-------------------------------+-------------------------------+
-| Conda (WSL, macOS, Linux)     | ``conda install ocrmypdf``    |
-+-------------------------------+-------------------------------+
++-------------------------------+-----------------------------------------+
+| Debian, Ubuntu                | ``apt install ocrmypdf``                |
++-------------------------------+-----------------------------------------+
+| Windows Subsystem for Linux   | ``apt install ocrmypdf``                |
++-------------------------------+-----------------------------------------+
+| Fedora                        | ``dnf install ocrmypdf``                |
++-------------------------------+-----------------------------------------+
+| macOS                         | ``brew install ocrmypdf``               |
++-------------------------------+-----------------------------------------+
+| LinuxBrew                     | ``brew install ocrmypdf``               |
++-------------------------------+-----------------------------------------+
+| FreeBSD                       | ``pkg install textproc/py-ocrmypdf``    |
++-------------------------------+-----------------------------------------+
+| Conda (WSL, macOS, Linux)     | ``conda install ocrmypdf``              |
++-------------------------------+-----------------------------------------+
+| Snap (snapcraft packaging)    | ``snap install ocrmypdf``               |
++-------------------------------+-----------------------------------------+
 
 More detailed procedures are outlined below. If you want to do a manual
 install, or install a more recent version than your platform provides, read on.
@@ -42,10 +44,10 @@ Debian and Ubuntu 18.04 or newer
 --------------------------------
 
 .. |deb-stable| image:: https://repology.org/badge/version-for-repo/debian_stable/ocrmypdf.svg
-    :alt: Debian 9 stable ("stretch")
+    :alt: Debian stable
 
 .. |deb-testing| image:: https://repology.org/badge/version-for-repo/debian_testing/ocrmypdf.svg
-    :alt: Debian 10 testing ("buster")
+    :alt: Debian testing
 
 .. |deb-unstable| image:: https://repology.org/badge/version-for-repo/debian_unstable/ocrmypdf.svg
     :alt: Debian unstable
@@ -56,8 +58,8 @@ Debian and Ubuntu 18.04 or newer
 .. |ubu-2004| image:: https://repology.org/badge/version-for-repo/ubuntu_20_04/ocrmypdf.svg
     :alt: Ubuntu 20.04 LTS
 
-.. |ubu-2110| image:: https://repology.org/badge/version-for-repo/ubuntu_21_10/ocrmypdf.svg
-    :alt: Ubuntu 21.10
+.. |ubu-2204| image:: https://repology.org/badge/version-for-repo/ubuntu_22_04/ocrmypdf.svg
+    :alt: Ubuntu 22.04 LTS
 
 +-----------------------------------------------+
 | **OCRmyPDF versions in Debian & Ubuntu**      |
@@ -66,7 +68,7 @@ Debian and Ubuntu 18.04 or newer
 +-----------------------------------------------+
 | |deb-stable| |deb-testing| |deb-unstable|     |
 +-----------------------------------------------+
-| |ubu-1804| |ubu-2004| |ubu-2110|              |
+| |ubu-1804| |ubu-2004| |ubu-2204|              |
 +-----------------------------------------------+
 
 Users of Debian 9 ("stretch") or later, or Ubuntu 18.04 or later, including users
@@ -80,8 +82,7 @@ As indicated in the table above, Debian and Ubuntu releases may lag
 behind the latest version. If the version available for your platform is
 out of date, you could opt to install the latest version from source.
 See `Installing HEAD revision from
-sources <#installing-head-revision-from-sources>`__. Ubuntu 16.10 to 17.10
-inclusive also had ocrmypdf, but these versions are end of life.
+sources <#installing-head-revision-from-sources>`__.
 
 For full details on version availability for your platform, check the
 `Debian Package Tracker <https://tracker.debian.org/pkg/ocrmypdf>`__ or
@@ -91,18 +92,18 @@ For full details on version availability for your platform, check the
 
    OCRmyPDF for Debian and Ubuntu currently omit the JBIG2 encoder.
    OCRmyPDF works fine without it but will produce larger output files.
-   If you build jbig2enc from source, ocrmypdf 7.0.0 and later will
+   If you build jbig2enc from source, ocrmypdf will
    automatically detect it (specifically the ``jbig2`` binary) on the
    ``PATH``. To add JBIG2 encoding, see :ref:`jbig2`.
 
 Fedora
 ------
 
-.. |fedora-34| image:: https://repology.org/badge/version-for-repo/fedora_34/ocrmypdf.svg
-    :alt: Fedora 34
-
 .. |fedora-35| image:: https://repology.org/badge/version-for-repo/fedora_35/ocrmypdf.svg
     :alt: Fedora 35
+
+.. |fedora-36| image:: https://repology.org/badge/version-for-repo/fedora_36/ocrmypdf.svg
+    :alt: Fedora 36
 
 .. |fedora-rawhide| image:: https://repology.org/badge/version-for-repo/fedora_rawhide/ocrmypdf.svg
     :alt: Fedore Rawhide
@@ -112,7 +113,7 @@ Fedora
 +-----------------------------------------------+
 | |latest|                                      |
 +-----------------------------------------------+
-| |fedora-34| |fedora-35| |fedora-rawhide|      |
+| |fedora-35| |fedora-36| |fedora-rawhide|      |
 +-----------------------------------------------+
 
 Users of Fedora 29 or later may simply
@@ -138,8 +139,28 @@ from sources <#installing-head-revision-from-sources>`__.
 
 .. _ubuntu-lts-latest:
 
-Installing the latest version on Ubuntu 20.04 LTS
+Installing the latest version on Ubuntu 22.04 LTS
 -------------------------------------------------
+
+Ubuntu 22.04 includes ocrmypdf 13.4.0 - you can install that with 
+``apt install ocrmypdf``. To install a more recent version for the current
+user, follow these steps:
+
+.. code-block:: bash
+
+    sudo apt-get update
+    sudo apt-get -y install ocrmypdf python3-pip
+
+    pip install --user --upgrade ocrmypdf
+
+If you get the message ``WARNING: The script ocrmypdf is installed in 
+'/home/$USER/.local/bin' which is not on PATH.``, you may need to re-login
+or open a new shell, or manually add this to your user's PATH.
+
+To add JBIG2 encoding, see :ref:`jbig2`.
+
+Ubuntu 20.04 LTS
+----------------
 
 Ubuntu 20.04 includes ocrmypdf 9.6.0 - you can install that with ``apt``. To
 install a more recent version, uninstall the system-provided version of
@@ -170,6 +191,8 @@ To install for the current user only:
 
     export PATH=$HOME/.local/bin:$PATH
     pip3 install --user ocrmypdf
+
+To add JBIG2 encoding, see :ref:`jbig2`.
 
 Ubuntu 18.04 LTS
 ----------------
@@ -291,46 +314,6 @@ To install OCRmyPDF for Alpine Linux:
 
     apk add ocrmypdf
 
-Mageia 7
---------
-
-There is no OS-level packaging available for Mageia, so you must install the
-dependencies:
-
-.. code-block:: bash
-
-    # As root user
-    urpmi.update -a
-    urpmi \
-        ghostscript \
-        icc-profiles-openicc \
-        jbig2dec \
-        pngquant \
-        python3-pip \
-        python3-distutils-extra \
-        python3-pkg-resources \
-        python3-reportlab \
-        qpdf \
-        tesseract \
-        tesseract-osd \
-        tesseract-eng \
-        tesseract-fra
-
-To install ocrmypdf for the system:
-
-.. code-block:: bash
-
-    # As root user
-    pip3 install ocrmypdf
-    ldconfig
-
-Or, to install for the current user only:
-
-.. code-block:: bash
-
-    export PATH=$HOME/.local/bin:$PATH
-    pip3 install --user ocrmypdf
-
 Other Linux packages
 --------------------
 
@@ -365,19 +348,6 @@ languages you can optionally install them all:
 
     brew install tesseract-lang  # Optional: Install all language packs
 
-.. note::
-
-   Users who previously installed OCRmyPDF on macOS using
-   ``pip install ocrmypdf`` should remove the pip version
-   (``pip3 uninstall ocrmypdf``) before switching to the Homebrew
-   version.
-
-.. note::
-
-   Users who previously installed OCRmyPDF from the private tap should
-   switch to the mainline version (``brew untap ocrmypdf/OCRmyPDF``)
-   and install from there.
-
 Manual installation on macOS
 ----------------------------
 
@@ -411,19 +381,19 @@ Update the homebrew pip:
 
 .. code-block:: bash
 
-    pip3 install --upgrade pip
+    pip install --upgrade pip
 
 You can then install OCRmyPDF from PyPI, for the current user:
 
 .. code-block:: bash
 
-    pip3 install --user ocrmypdf
+    pip install --user ocrmypdf
 
 or system-wide:
 
 .. code-block:: bash
 
-    pip3 install ocrmypdf
+    pip install ocrmypdf
 
 The command line program should now be available:
 
@@ -485,8 +455,8 @@ to change the PATH.
 Windows Subsystem for Linux
 ---------------------------
 
-#. Install Ubuntu 20.04 for Windows Subsystem for Linux, if not already installed.
-#. Follow the procedure to install :ref:`OCRmyPDF on Ubuntu 20.04 <ubuntu-lts-latest>`.
+#. Install Ubuntu 22.04 for Windows Subsystem for Linux, if not already installed.
+#. Follow the procedure to install :ref:`OCRmyPDF on Ubuntu 22.04 <ubuntu-lts-latest>`.
 #. Open the Windows command prompt and create a symlink:
 
 .. code-block:: powershell
@@ -558,16 +528,13 @@ your command prompt can run the docker "hello world" container.
 Installing on FreeBSD
 =====================
 
-.. image:: https://repology.org/badge/version-for-repo/freebsd/python:ocrmypdf.svg
+.. image:: https://repology.org/badge/version-for-repo/freebsd/ocrmypdf.svg
     :alt: FreeBSD
-    :target: https://repology.org/project/python:ocrmypdf/versions
-
-FreeBSD 11.3, 12.0, 12.1-RELEASE and 13.0-CURRENT are supported. Other
-versions likely work but have not been tested.
+    :target: https://repology.org/project/ocrmypdf/versions
 
 .. code-block:: bash
 
-    pkg install py38-ocrmypdf
+    pkg install textproc/py-ocrmypdf
 
 To install a more recent version, you could attempt to first install the system
 version with ``pkg``, then use ``pip install --user ocrmypdf``.
@@ -616,18 +583,18 @@ try:
 
 .. code-block:: bash
 
-    pip3 install --user ocrmypdf
+    pip install --user ocrmypdf
 
 You should then be able to run ``ocrmypdf --version`` and see that the
 latest version was located.
 
-Since ``pip3 install --user`` does not work correctly on some platforms,
+Since ``pip install --user`` does not work correctly on some platforms,
 notably Ubuntu 16.04 and older, and the Homebrew version of Python,
 instead use this for a system wide installation:
 
 .. code-block:: bash
 
-    pip3 install ocrmypdf
+    pip install ocrmypdf
 
 .. note::
 
@@ -643,13 +610,9 @@ OCRmyPDF currently requires these external programs and libraries to be
 installed, and must be satisfied using the operating system package
 manager. ``pip`` cannot provide them.
 
+The following versions are required:
+
 -  Python 3.7 or newer
--  Ghostscript 9.15 or newer
--  Tesseract 4.0.0-beta or newer
-
-As of ocrmypdf 7.2.1, the following versions are recommended:
-
--  Python 3.9 or newer
 -  Ghostscript 9.23 or newer
 -  Tesseract 4.0.0 or newer
 -  jbig2enc 0.29 or newer
@@ -696,7 +659,7 @@ environment:
 
 .. code-block:: bash
 
-    pip3 install git+https://github.com/ocrmypdf/OCRmyPDF.git
+    pip install git+https://github.com/ocrmypdf/OCRmyPDF.git
 
 Or, to install in `development
 mode <https://pythonhosted.org/setuptools/setuptools.html#development-mode>`__,
@@ -704,7 +667,7 @@ allowing customization of OCRmyPDF, use the ``-e`` flag:
 
 .. code-block:: bash
 
-    pip3 install -e git+https://github.com/ocrmypdf/OCRmyPDF.git
+    pip install -e git+https://github.com/ocrmypdf/OCRmyPDF.git
 
 You may find it easiest to install in a virtual environment, rather than
 system-wide:
@@ -715,7 +678,7 @@ system-wide:
     python3 -m venv
     source venv/bin/activate
     cd OCRmyPDF
-    pip3 install .
+    pip install .
 
 However, ``ocrmypdf`` will only be accessible on the system PATH when
 you activate the virtual environment.
@@ -739,7 +702,7 @@ To install all of the development and test requirements:
 .. code-block:: bash
 
     git clone -b master https://github.com/ocrmypdf/OCRmyPDF.git
-    python3 -m venv
+    python -m venv
     source venv/bin/activate
     cd OCRmyPDF
     pip install -e .[test]
