@@ -272,6 +272,15 @@ def _error_old_version(program, package, need_version, found_version, required_f
     _error_trailer(**locals())
 
 
+def _remove_leading_v(s):
+    if sys.version_info >= (3, 9):
+        return s.removeprefix('v')
+
+    if s.startswith('v'):
+        return s[1:]
+    return s
+
+
 def check_external_program(
     *,
     program: str,
@@ -314,13 +323,8 @@ def check_external_program(
             raise
         return
 
-    def remove_leading_v(s):
-        if s.startswith('v'):
-            return s[1:]
-        return s
-
-    found_version = remove_leading_v(found_version)
-    need_version = remove_leading_v(need_version)
+    found_version = _remove_leading_v(found_version)
+    need_version = _remove_leading_v(need_version)
 
     if found_version and version_parser(found_version) < version_parser(need_version):
         _error_old_version(program, package, need_version, found_version, required_for)
