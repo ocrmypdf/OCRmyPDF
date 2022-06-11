@@ -53,19 +53,6 @@ def test_stdout(ocrmypdf_exec, resources, outpdf):
     assert check_pdf(output_file)
 
 
-@pytest.mark.skipif(sys.version_info >= (3, 7, 0), reason='better utf-8')
-@pytest.mark.skipif(
-    Path('/etc/alpine-release').exists(), reason="invalid test on alpine"
-)
-@pytest.mark.skipif(os.name == 'nt', reason="invalid test on Windows")
-def test_bad_locale(monkeypatch):
-    monkeypatch.setenv('LC_ALL', 'C')
-    p = run_ocrmypdf('a', 'b')
-    assert p.stdout == '', "stdout not clean"
-    assert p.returncode != 0
-    assert 'configured to use ASCII as encoding' in p.stderr, "should whine"
-
-
 @pytest.mark.xfail(
     os.name == 'nt' and sys.version_info < (3, 8),
     reason="Windows does not like this; not sure how to fix",
