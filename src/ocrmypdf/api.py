@@ -4,6 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""Functions for using ocrmypdf as an API."""
 
 import logging
 import os
@@ -25,7 +26,10 @@ from ocrmypdf.helpers import is_iterable_notstr
 try:
     import coloredlogs
 except ModuleNotFoundError:
-    coloredlogs = None
+    coloredlogs = None  # pylint: disable=invalid-name
+
+if coloredlogs:
+    from humanfriendly.terminal import enable_ansi_support
 
 
 StrPath = Union[Path, AnyStr]
@@ -37,6 +41,7 @@ _api_lock = threading.Lock()
 class Verbosity(IntEnum):
     """Verbosity level for configure_logging."""
 
+    # pylint: disable=invalid-name
     quiet = -1  #: Suppress most messages
     default = 0  #: Default level of logging
     debug = 1  #: Output ocrmypdf debug messages
@@ -116,16 +121,15 @@ def configure_logging(
         fmt = '%(pageno)s%(message)s'
 
     use_colors = progress_bar_friendly
-    if not coloredlogs:
-        use_colors = False
-    if use_colors:
-        if os.name == 'nt':
-            use_colors = coloredlogs.enable_ansi_support()
+    formatter = None
+    if coloredlogs and use_colors:
+        use_colors = enable_ansi_support()
         if use_colors:
             use_colors = coloredlogs.terminal_supports_colors()
-    if use_colors:
-        formatter = coloredlogs.ColoredFormatter(fmt=fmt)
-    else:
+        if use_colors:
+            formatter = coloredlogs.ColoredFormatter(fmt=fmt)
+
+    if not formatter:
         formatter = logging.Formatter(fmt=fmt)
 
     console.setFormatter(formatter)
