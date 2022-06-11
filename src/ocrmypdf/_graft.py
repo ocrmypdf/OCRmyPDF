@@ -7,7 +7,6 @@
 """For grafting text-only PDF pages onto freeform PDF pages."""
 
 import logging
-import uuid
 from contextlib import suppress
 from pathlib import Path
 from typing import Optional
@@ -286,7 +285,7 @@ class OcrGrafter:
 
             base_resources = _ensure_dictionary(base_page, Name.Resources)
             base_xobjs = _ensure_dictionary(base_resources, Name.XObject)
-            text_xobj_name = Name('/' + str(uuid.uuid4()))
+            text_xobj_name = Name.random(prefix="OCR-")
             xobj = self.pdf_base.make_stream(pdf_text_contents)
             base_xobjs[text_xobj_name] = xobj
             xobj.Type = Name.XObject
