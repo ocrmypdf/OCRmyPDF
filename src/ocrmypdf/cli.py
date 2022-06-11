@@ -63,6 +63,9 @@ class ArgumentParser(argparse.ArgumentParser):
         super().__init__(*args, **kwargs)
         self._api_mode = False
 
+    def enable_api_mode(self):
+        self._api_mode = True
+
     def error(self, message):
         if not self._api_mode:
             super().error(message)
