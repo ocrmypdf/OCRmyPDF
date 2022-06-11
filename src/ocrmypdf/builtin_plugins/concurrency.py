@@ -11,6 +11,8 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+"""OCRmyPDF's multiprocessing/multithreading abstraction layer."""
+
 import logging
 import logging.handlers
 import multiprocessing
@@ -21,7 +23,6 @@ import sys
 import threading
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from contextlib import suppress
-from multiprocessing.pool import Pool, ThreadPool
 from typing import Callable, Iterable, Type, Union
 
 from tqdm import tqdm
@@ -44,7 +45,8 @@ def log_listener(q: Queue):
     should actually write to sys.stderr or whatever we're using, so if this is
     made into a process the main application needs to be directed to it.
 
-    See https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
+    See:
+    https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
     """
 
     while True:
@@ -89,6 +91,8 @@ def process_init(q: Queue, user_init: UserInit, loglevel) -> None:
 
 
 def thread_init(q: Queue, user_init: UserInit, loglevel) -> None:
+    del q  # unused but required argument
+    del loglevel  # unused but required argument
     # As a thread, block SIGBUS so the main thread deals with it...
     with suppress(AttributeError):
         signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGBUS})
@@ -98,6 +102,8 @@ def thread_init(q: Queue, user_init: UserInit, loglevel) -> None:
 
 
 class StandardExecutor(Executor):
+    """Standard OCRmyPDF concurrent task executor."""
+
     def _execute(
         self,
         *,

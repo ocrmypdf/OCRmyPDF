@@ -30,12 +30,16 @@ if sys.version_info >= (3, 10):
 else:
     from tempfile import TemporaryDirectory as _TemporaryDirectory
 
-    # Consume the ignore_cleanup_errors kwarg in Python 3.9 and older, without acting
-    # on this keyword. Users who need this issue full resolved should upgrade to Python
-    # 3.10.
-    # See: https://github.com/python/cpython/pull/24793
-
     class TemporaryDirectory(_TemporaryDirectory):
+        """Shim to consume ignore_cleanup_errors kwarg on Python 3.9 and older.
+
+        The argument is consumed without action. If users are getting errors related
+        to temporary file cleanup, they should upgrade to Python 3.10 which properly
+        cleans up temporary directories on Windows.
+
+        See: https://github.com/python/cpython/pull/24793
+        """
+
         def __init__(self, ignore_cleanup_errors=False, **kwargs):
             super().__init__(**kwargs)
 
@@ -50,6 +54,8 @@ log = logging.getLogger(__name__)
 
 
 class UnpaperImageTooLargeError(Exception):
+    """To capture details when an image is too large for unpaper."""
+
     def __init__(
         self,
         w,
@@ -66,8 +72,10 @@ def version() -> str:
     return get_version('unpaper')
 
 
+SUFFIXES = {'1': '.pbm', 'L': '.pgm', 'RGB': '.ppm'}
+
+
 def _convert_image(im: Image.Image) -> Tuple[Image.Image, bool, str]:
-    SUFFIXES = {'1': '.pbm', 'L': '.pgm', 'RGB': '.ppm'}
     im_modified = False
 
     if im.mode not in SUFFIXES:

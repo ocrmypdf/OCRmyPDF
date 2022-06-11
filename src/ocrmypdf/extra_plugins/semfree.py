@@ -37,9 +37,11 @@ from ocrmypdf.helpers import remove_all_log_handlers
 
 
 class MessageType(Enum):
-    exception = auto()
-    result = auto()
-    complete = auto()
+    """Implement basic IPC messaging."""
+
+    exception = auto()  # pylint: disable=invalid-name
+    result = auto()  # pylint: disable=invalid-name
+    complete = auto()  # pylint: disable=invalid-name
 
 
 def split_every(n: int, iterable: Iterable) -> Iterator:
@@ -59,6 +61,8 @@ def process_sigbus(*args):
 
 
 class ConnectionLogHandler(logging.handlers.QueueHandler):
+    """Handler used by child processes to forward log messages to parent."""
+
     def __init__(self, conn: Connection) -> None:
         # sets the parent's queue to None - parent only touches queue
         # in enqueue() which we override
@@ -91,7 +95,7 @@ def process_loop(
     for args in task_args:
         try:
             result = task(args)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             conn.send((MessageType.exception, e))
             break
         else:
@@ -103,6 +107,8 @@ def process_loop(
 
 
 class LambdaExecutor(Executor):
+    """Executor for AWS Lambda or similar environments that lack semaphores."""
+
     def _execute(
         self,
         *,
@@ -153,13 +159,13 @@ class LambdaExecutor(Executor):
 
         with self.pbar_class(**tqdm_kwargs) as pbar:
             while connections:
-                for r in wait(connections):
-                    if not isinstance(r, Connection):
+                for result in wait(connections):
+                    if not isinstance(result, Connection):
                         raise NotImplementedError("We only support Connection()")
                     try:
-                        msg_type, msg = r.recv()
+                        msg_type, msg = result.recv()
                     except EOFError:
-                        connections.remove(r)
+                        connections.remove(result)
                         continue
 
                     if msg_type == MessageType.result:
@@ -170,7 +176,7 @@ class LambdaExecutor(Executor):
                         logger = logging.getLogger(record.name)
                         logger.handle(record)
                     elif msg_type == MessageType.complete:
-                        connections.remove(r)
+                        connections.remove(result)
                     elif msg_type == MessageType.exception:
                         for process in processes:
                             process.terminate()

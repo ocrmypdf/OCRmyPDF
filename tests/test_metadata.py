@@ -8,7 +8,6 @@
 import datetime
 import warnings
 from datetime import timezone
-from os import fspath
 from shutil import copyfile
 
 import pikepdf
@@ -326,6 +325,9 @@ def test_metadata_fixup_warning(resources, outdir, caplog):
     assert any(record.levelname == 'WARNING' for record in caplog.records)
 
 
+XMP_MAGIC = b'W5M0MpCehiHzreSzNTczkc9d'
+
+
 def test_prevent_gs_invalid_xml(resources, outdir):
     generate_pdfa_ps(outdir / 'pdfa.ps')
     copyfile(resources / 'trivial.pdf', outdir / 'layers.rendered.pdf')
@@ -352,7 +354,7 @@ def test_prevent_gs_invalid_xml(resources, outdir):
     contents = (outdir / 'pdfa.pdf').read_bytes()
     # Since the XML may be invalid, we scan instead of actually feeding it
     # to a parser.
-    XMP_MAGIC = b'W5M0MpCehiHzreSzNTczkc9d'
+
     xmp_start = contents.find(XMP_MAGIC)
     xmp_end = contents.rfind(b'<?xpacket end', xmp_start)
     assert 0 < xmp_start < xmp_end

@@ -6,13 +6,15 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+"""Extract information about the content of a PDF."""
+
 import atexit
 import logging
 import re
 from collections import defaultdict
 from contextlib import ExitStack
 from decimal import Decimal
-from enum import Enum
+from enum import Enum, auto
 from functools import partial
 from math import hypot, inf, isclose
 from os import PathLike
@@ -20,6 +22,7 @@ from pathlib import Path
 from typing import (
     Container,
     Dict,
+    Iterable,
     Iterator,
     List,
     Mapping,
@@ -48,11 +51,39 @@ from ocrmypdf.pdfinfo.layout import get_page_analysis, get_text_boxes
 
 logger = logging.getLogger()
 
-Colorspace = Enum('Colorspace', 'gray rgb cmyk lab icc index sep devn pattern jpeg2000')
 
-Encoding = Enum(
-    'Encoding', 'ccitt jpeg jpeg2000 jbig2 asciihex ascii85 lzw flate runlength'
-)
+class Colorspace(Enum):
+    """Description of common image colorspaces in a PDF."""
+
+    # pylint: disable=invalid-name
+    gray = auto()
+    rgb = auto()
+    cmyk = auto()
+    lab = auto()
+    icc = auto()
+    index = auto()
+    sep = auto()
+    devn = auto()
+    pattern = auto()
+    jpeg2000 = auto()
+
+
+class Encoding(Enum):
+    """Description of common image encodings in a PDF."""
+
+    # pylint: disable=invalid-name
+    ccitt = auto()
+    jpeg = auto()
+    jpeg2000 = auto()
+    jbig2 = auto()
+    asciihex = auto()
+    ascii85 = auto()
+    lzw = auto()
+    flate = auto()
+    runlength = auto()
+
+
+FloatRect = Tuple[float, float, float, float]
 
 FRIENDLY_COLORSPACE: Dict[str, Colorspace] = {
     '/DeviceGray': Colorspace.gray,
@@ -105,18 +136,24 @@ def _is_unit_square(shorthand):
 
 
 class XobjectSettings(NamedTuple):
+    """Info about an XObject found in a PDF."""
+
     name: str
     shorthand: Tuple[float, float, float, float, float, float]
     stack_depth: int
 
 
 class InlineSettings(NamedTuple):
+    """Info about an inline image found in a PDF."""
+
     iimage: PdfInlineImage
     shorthand: Tuple[float, float, float, float, float, float]
     stack_depth: int
 
 
 class ContentsInfo(NamedTuple):
+    """Info about various objects found in a PDF."""
+
     xobject_settings: List[XobjectSettings]
     inline_images: List[InlineSettings]
     found_vector: bool
@@ -125,17 +162,19 @@ class ContentsInfo(NamedTuple):
 
 
 class TextboxInfo(NamedTuple):
+    """Info about a text box found in a PDF."""
+
     bbox: Tuple[float, float, float, float]
     is_visible: bool
     is_corrupt: bool
 
 
 class VectorMarker:
-    pass
+    """Sentinel indicating vector drawing operations were found on a page."""
 
 
 class TextMarker:
-    pass
+    """Sentinel indicating text drawing operations were found on a page."""
 
 
 def _normalize_stack(graphobjs):
@@ -197,7 +236,7 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
             if len(stack) > 32:  # See docstring
                 if len(stack) > 128:
                     raise RuntimeError(
-                        "PDF graphics stack overflowed hard limit, operator %i" % n
+                        f"PDF graphics stack overflowed hard limit at operator {n}"
                     )
                 warn("PDF graphics stack overflowed spec limit")
         elif operator == 'Q':
@@ -283,7 +322,7 @@ def _get_dpi(ctm_shorthand, image_size) -> Resolution:
 
     """
 
-    a, b, c, d, _, _ = ctm_shorthand
+    a, b, c, d, _, _ = ctm_shorthand  # pylint: disable=invalid-name
 
     # Calculate the width and height of the image in PDF units
     image_drawn = hypot(a, b), hypot(c, d)
@@ -299,6 +338,8 @@ def _get_dpi(ctm_shorthand, image_size) -> Resolution:
 
 
 class ImageInfo:
+    """Information about an image found in a PDF."""
+
     DPI_PREC = Decimal('1.000')
 
     _comp: Optional[int]
@@ -428,7 +469,7 @@ def _find_inline_images(contentsinfo: ContentsInfo) -> Iterator[ImageInfo]:
 
     for n, inline in enumerate(contentsinfo.inline_images):
         yield ImageInfo(
-            name='inline-%02d' % n, shorthand=inline.shorthand, inline=inline.iimage
+            name=f'inline-{n:02d}', shorthand=inline.shorthand, inline=inline.iimage
         )
 
 
@@ -569,10 +610,10 @@ def _process_content_streams(
     yield from _find_form_xobject_images(pdf, container, contentsinfo)
 
 
-def _page_has_text(text_blocks, page_width, page_height) -> bool:
+def _page_has_text(text_blocks: Iterable[FloatRect], page_width, page_height) -> bool:
     """Smarter text detection that ignores text in margins"""
 
-    pw, ph = float(page_width), float(page_height)
+    pw, ph = float(page_width), float(page_height)  # pylint: disable=invalid-name
 
     margin_ratio = 0.125
     interior_bbox = (
@@ -582,7 +623,7 @@ def _page_has_text(text_blocks, page_width, page_height) -> bool:
         margin_ratio * ph,  # bottom  (first quadrant: bottom < top)
     )
 
-    def rects_intersect(a, b) -> bool:
+    def rects_intersect(a: FloatRect, b: FloatRect) -> bool:
         """
         Where (a,b) are 4-tuple rects (left-0, top-1, right-2, bottom-3)
         https://stackoverflow.com/questions/306316/determine-if-two-rectangles-overlap-each-other
@@ -604,19 +645,19 @@ def simplify_textboxes(miner, textbox_getter) -> Iterator[TextboxInfo]:
     We do this to save memory and ensure that our objects are pickleable.
     """
     for box in textbox_getter(miner):
-        first_line = box._objs[0]
-        first_char = first_line._objs[0]
+        first_line = box._objs[0]  # pylint: disable=protected-access
+        first_char = first_line._objs[0]  # pylint: disable=protected-access
 
         visible = first_char.rendermode != 3
         corrupt = first_char.get_text() == '\ufffd'
         yield TextboxInfo(box.bbox, visible, corrupt)
 
 
-worker_pdf = None
+worker_pdf = None  # pylint: disable=invalid-name
 
 
 def _pdf_pageinfo_sync_init(pdf: Pdf, infile: Path, pdfminer_loglevel):
-    global worker_pdf  # pylint: disable=global-statement
+    global worker_pdf  # pylint: disable=global-statement,invalid-name
     pikepdf_enable_mmap()
 
     logging.getLogger('pdfminer').setLevel(pdfminer_loglevel)
@@ -701,6 +742,8 @@ def _pdf_pageinfo_concurrent(
 
 
 class PageInfo:
+    """Information about type of contents on each page in a PDF."""
+
     _has_text: Optional[bool]
     _has_vector: Optional[bool]
     _images: List[ImageInfo]
@@ -762,15 +805,15 @@ class PageInfo:
             self._has_vector = False
             self._has_text = False
             self._images = []
-            for ci in _process_content_streams(
+            for info in _process_content_streams(
                 pdf=pdf, container=page, shorthand=userunit_shorthand
             ):
-                if isinstance(ci, VectorMarker):
+                if isinstance(info, VectorMarker):
                     self._has_vector = True
-                elif isinstance(ci, TextMarker):
+                elif isinstance(info, TextMarker):
                     self._has_text = True
-                elif isinstance(ci, ImageInfo):
-                    self._images.append(ci)
+                elif isinstance(info, ImageInfo):
+                    self._images.append(info)
                 else:
                     raise NotImplementedError()
         else:

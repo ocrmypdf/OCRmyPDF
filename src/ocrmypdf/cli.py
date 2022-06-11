@@ -4,6 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""Command line interface customization and validation."""
 
 import argparse
 from typing import Any, Callable, Mapping, Optional, TypeVar
@@ -42,7 +43,7 @@ def str_to_int(mapping: Mapping[str, int]):
         except KeyError:
             raise argparse.ArgumentTypeError(
                 f"{s!r} must be one of: {', '.join(mapping.keys())}"
-            )
+            ) from None
 
     return _str_to_int
 
@@ -51,6 +52,11 @@ class ArgumentParser(argparse.ArgumentParser):
     """Override parser's default behavior of calling sys.exit()
 
     https://stackoverflow.com/questions/5943249/python-argparse-and-controlling-overriding-the-exit-status-code
+
+    OCRmyPDF began as a CLI but eventually acquired an API. The API works inside out,
+    by synthesizing a command line argument. So we subclass the standard parser with
+    one that doesn't call sys.exit(). Obviously this is not the ideal way to do things
+    but it works for us.
     """
 
     def __init__(self, *args, **kwargs):
@@ -65,6 +71,8 @@ class ArgumentParser(argparse.ArgumentParser):
 
 
 class LanguageSetAction(argparse.Action):
+    """Manages a list of languages."""
+
     def __init__(self, option_strings, dest, default=None, **kwargs):
         if default is None:
             default = set()

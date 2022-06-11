@@ -7,6 +7,8 @@
 # type: ignore
 # Non-Windows mypy now breaks when trying to typecheck winreg
 
+"""Find Tesseract and Ghostscript binaries on Windows using the registry."""
+
 import logging
 import os
 import shutil
@@ -17,9 +19,9 @@ from typing import Any, Callable, Iterable, Iterator, Set, Tuple, TypeVar
 
 try:
     import winreg
-except ModuleNotFoundError as e:
-    raise ModuleNotFoundError("This module is for Windows only") from e
-
+except ModuleNotFoundError as _notfound_ex:
+    raise ModuleNotFoundError("This module is for Windows only") from _notfound_ex
+del _notfound_ex
 
 log = logging.getLogger(__name__)
 
@@ -40,15 +42,15 @@ def ghostscript_version_key(s: str) -> Tuple[int, int, int]:
 def registry_enum(
     key: winreg.HKEYType, enum_fn: Callable[[winreg.HKEYType, int], T]
 ) -> Iterator[T]:
-    LIMIT = 999
+    limit = 999
     n = 0
-    while n < LIMIT:
+    while n < limit:
         try:
             yield enum_fn(key, n)
             n += 1
         except OSError:
             break
-    if n == LIMIT:
+    if n == limit:
         raise ValueError(f"Too many registry keys under {key}")
 
 
@@ -61,6 +63,7 @@ def registry_values(key: winreg.HKEYType) -> Iterator[Tuple[str, Any, int]]:
 
 
 def registry_path_ghostscript(env=None) -> Iterator[Path]:
+    del env  # unused (but needed for protocol)
     try:
         with winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Artifex\GPL Ghostscript"
@@ -78,6 +81,7 @@ def registry_path_ghostscript(env=None) -> Iterator[Path]:
 
 
 def registry_path_tesseract(env=None) -> Iterator[Path]:
+    del env  # unused (but needed for protocol)
     try:
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Tesseract-OCR") as k:
             for subkey, val, _valtype in registry_values(k):

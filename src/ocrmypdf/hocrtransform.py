@@ -28,6 +28,8 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+"""Transform .hocr and page image to text PDF."""
+
 import argparse
 import os
 import re
@@ -99,7 +101,7 @@ HOCR_OK_LANGS = frozenset(
 Element = ElementTree.Element
 
 
-class Rect(NamedTuple):  # pylint: disable=inherit-non-class
+class Rect(NamedTuple):
     """A rectangle for managing PDF coordinates."""
 
     x1: Any
@@ -109,7 +111,7 @@ class Rect(NamedTuple):  # pylint: disable=inherit-non-class
 
 
 class HocrTransformError(Exception):
-    pass
+    """Error while applying hOCR transform."""
 
 
 class HocrTransform:
@@ -287,7 +289,7 @@ class HocrTransform:
                 continue
 
             pxl_coords = self.element_coordinates(elem)
-            pt = self.pt_from_pixel(pxl_coords)
+            pt = self.pt_from_pixel(pxl_coords)  # pylint: disable=invalid-name
 
             # draw the bbox border
             if show_bounding_boxes:  # pragma: no cover

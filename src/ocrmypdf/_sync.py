@@ -4,6 +4,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""Implements the concurrent and page synchronous parts of the pipeline."""
+
 
 import argparse
 import logging
@@ -68,7 +70,9 @@ from ocrmypdf.pdfa import file_claims_pdfa
 log = logging.getLogger(__name__)
 
 
-class PageResult(NamedTuple):  # pylint: disable=inherit-non-class
+class PageResult(NamedTuple):
+    """Result when a page is finished processing."""
+
     pageno: int
     pdf_page_from_image: Optional[Path]
     ocr: Optional[Path]
@@ -425,7 +429,7 @@ def run_pipeline(
         else:
             log.error(type(e).__name__)
         return e.exit_code
-    except (PIL.Image.DecompressionBombError if not api else NeverRaise) as e:
+    except (PIL.Image.DecompressionBombError if not api else NeverRaise):
         log.exception(
             "A decompression bomb error was encountered while executing the "
             "pipeline. Use the argument --max-image-mpixels to raise the maximum "
@@ -435,7 +439,7 @@ def run_pipeline(
     except (
         BrokenProcessPool if not api else NeverRaise,
         BrokenThreadPool if not api else NeverRaise,
-    ) as e:
+    ):
         log.exception(
             "A worker process was terminated unexpectedly. This is known to occur if "
             "processing your file takes all available swap space and RAM. It may "

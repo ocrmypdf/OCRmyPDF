@@ -4,6 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""Support functions."""
 
 import logging
 import multiprocessing
@@ -137,11 +138,11 @@ def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike):
     os.symlink(os.path.abspath(input_file), soft_link_name)
 
 
-def samefile(f1: os.PathLike, f2: os.PathLike):
+def samefile(file1: os.PathLike, file2: os.PathLike):
     if os.name == 'nt':
-        return f1 == f2
+        return file1 == file2
     else:
-        return os.path.samefile(f1, f2)
+        return os.path.samefile(file1, file2)
 
 
 def is_iterable_notstr(thing: Any) -> bool:
@@ -149,9 +150,9 @@ def is_iterable_notstr(thing: Any) -> bool:
     return isinstance(thing, Iterable) and not isinstance(thing, str)
 
 
-def monotonic(L: Sequence) -> bool:
+def monotonic(seq: Sequence) -> bool:
     """Does this sequence increase monotonically?"""
-    return all(b > a for a, b in zip(L, L[1:]))
+    return all(b > a for a, b in zip(seq, seq[1:]))
 
 
 def page_number(input_file: os.PathLike) -> int:
@@ -166,7 +167,7 @@ def available_cpu_count() -> int:
     except NotImplementedError:
         pass
     warnings.warn(
-        "Could not get CPU count.  Assuming one (1) CPU." "Use -j N to set manually."
+        "Could not get CPU count. Assuming one (1) CPU. Use -j N to set manually."
     )
     return 1
 
@@ -190,16 +191,16 @@ def is_file_writable(test_file: os.PathLike) -> bool:
                 os.W_OK,
                 effective_ids=(os.access in os.supports_effective_ids),
             )
+
+        try:
+            fp = p.open('wb')
+        except OSError:
+            return False
         else:
-            try:
-                fp = p.open('wb')
-            except OSError:
-                return False
-            else:
-                fp.close()
-                with suppress(OSError):
-                    p.unlink()
-            return True
+            fp.close()
+            with suppress(OSError):
+                p.unlink()
+        return True
     except (OSError, RuntimeError) as e:
         log.debug(e)
         log.error(str(e))

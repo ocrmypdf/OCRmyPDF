@@ -97,7 +97,8 @@ def generate_pdfa_ps(target_filename: Path, icc: str = 'sRGB'):
         target_filename: filename to save
         icc: ICC identifier such as 'sRGB'
     References:
-        Adobe PDFMARK Reference: https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/pdfmark_reference.pdf
+        Adobe PDFMARK Reference:
+        https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/pdfmark_reference.pdf
     """
     if icc != 'sRGB':
         raise NotImplementedError("Only supporting sRGB")
@@ -105,11 +106,11 @@ def generate_pdfa_ps(target_filename: Path, icc: str = 'sRGB'):
     bytes_icc_profile = (
         package_files('ocrmypdf.data') / SRGB_ICC_PROFILE_NAME
     ).read_bytes()
-    ps = '\n'.join(_make_postscript(icc, bytes_icc_profile, 3))
+    postscript = '\n'.join(_make_postscript(icc, bytes_icc_profile, 3))
 
     # We should have encoded everything to pure ASCII by this point, and
     # to be safe, only allow ASCII in PostScript
-    Path(target_filename).write_text(ps, encoding='ascii')
+    Path(target_filename).write_text(postscript, encoding='ascii')
     return target_filename
 
 

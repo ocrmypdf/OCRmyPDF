@@ -5,6 +5,8 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+"""Built-in plugin to implement PDF page rasterization and PDF/A production."""
+
 import logging
 
 from ocrmypdf import hookimpl

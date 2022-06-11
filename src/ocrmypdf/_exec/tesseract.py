@@ -13,7 +13,7 @@ from math import pi
 from os import fspath
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
-from typing import Dict, Iterator, List, Optional
+from typing import Dict, List, Optional
 
 from packaging.version import Version
 from PIL import Image
@@ -55,6 +55,8 @@ TESSERACT_THRESHOLDING_METHODS: Dict[str, int] = {
 
 
 class TesseractLoggerAdapter(logging.LoggerAdapter):
+    "Prepend [tesseract] to messages emitted from tesseract"
+
     def process(self, msg, kwargs):
         kwargs['extra'] = self.extra
         return f'[tesseract] {msg}', kwargs
@@ -105,6 +107,7 @@ TESSERACT_VERSION_PATTERN = r"""
 
 
 class TesseractVersion(Version):
+    "Modify standard packaging.Version regex to support Tesseract idiosyncracies."
     _regex = re.compile(
         r"^\s*" + TESSERACT_VERSION_PATTERN + r"\s*$", re.VERBOSE | re.IGNORECASE
     )
@@ -169,14 +172,14 @@ def tess_base_args(langs: List[str], engine_mode: Optional[int]) -> List[str]:
 
 
 def _parse_tesseract_output(binary_output: bytes) -> Dict[str, str]:
-    def g():
+    def gen():
         for line in binary_output.decode().splitlines():
             line = line.strip()
             parts = line.split(':', maxsplit=2)
             if len(parts) == 2:
                 yield parts[0].strip(), parts[1].strip()
 
-    return {k: v for k, v in g()}
+    return dict(gen())
 
 
 def get_orientation(
@@ -205,10 +208,10 @@ def get_orientation(
 
     osd = _parse_tesseract_output(p.stdout)
     angle = int(osd.get('Orientation in degrees', 0))
-    oc = OrientationConfidence(
+    orient_conf = OrientationConfidence(
         angle=angle, confidence=float(osd.get('Orientation confidence', 0))
     )
-    return oc
+    return orient_conf
 
 
 def get_deskew(

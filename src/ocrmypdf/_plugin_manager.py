@@ -4,6 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""Plugin manager using pluggy."""
 
 import argparse
 import importlib
@@ -101,12 +102,11 @@ class OcrmypdfPluginManager(pluggy.PluginManager):
 
 
 def get_plugin_manager(plugins: List[Union[str, Path]], builtins=True):
-    pm = OcrmypdfPluginManager(
+    return OcrmypdfPluginManager(
         project_name='ocrmypdf',
         plugins=plugins,
         builtins=builtins,
     )
-    return pm
 
 
 def get_parser_options_plugins(

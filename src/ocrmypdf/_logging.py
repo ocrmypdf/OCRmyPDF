@@ -4,15 +4,17 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""Logging support classes."""
 
 import logging
-import sys
 from contextlib import suppress
 
 from tqdm import tqdm
 
 
 class PageNumberFilter(logging.Filter):
+    """Insert PDF page number that emitted log message to log record."""
+
     def filter(self, record):
         pageno = getattr(record, 'pageno', None)
         if isinstance(pageno, int):

@@ -4,6 +4,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""OCRmyPDF concurrency abstractions."""
+
 import threading
 from abc import ABC, abstractmethod
 from typing import Callable, Iterable, Optional
@@ -14,6 +16,8 @@ def _task_noop(*_args, **_kwargs):
 
 
 class NullProgressBar:
+    """Progress bar API that takes no actions."""
+
     def __init__(self, **kwargs):
         pass
 
@@ -28,6 +32,8 @@ class NullProgressBar:
 
 
 class Executor(ABC):
+    """Abstract concurrent executor."""
+
     pool_lock = threading.Lock()
     pbar_class = NullProgressBar
 

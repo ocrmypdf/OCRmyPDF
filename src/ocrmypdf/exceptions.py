@@ -4,12 +4,16 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""OCRmyPDF's exceptions."""
 
 from enum import IntEnum
 from textwrap import dedent
 
 
 class ExitCode(IntEnum):
+    """OCRmyPDF's exit codes."""
+
+    # pylint: disable=invalid-name
     ok = 0
     bad_args = 1
     input_file = 2
@@ -26,6 +30,8 @@ class ExitCode(IntEnum):
 
 
 class ExitCodeException(Exception):
+    """An exception which should return an exit code with sys.exit()."""
+
     exit_code = ExitCode.other_error
     message = ""
 
@@ -37,17 +43,24 @@ class ExitCodeException(Exception):
 
 
 class BadArgsError(ExitCodeException):
+    """Invalid arguments on the command line or API."""
+
     exit_code = ExitCode.bad_args
 
 
-class PdfMergeFailedError(ExitCodeException):
+class PdfMergeFailedError(ExitCodeException):  # deprecated
+    """An intermediate PDF can't be merged.
+
+    No longer in use.
+    """
+
     exit_code = ExitCode.input_file
     message = dedent(
         '''\
         Failed to merge PDF image layer with OCR layer
 
         Usually this happens because the input PDF file is malformed and
-        ocrmypdf cannot automatically correct the problem on its own.
+        ocrmypdf cannot correct the problem on its own.
 
         Try using
             ocrmypdf --pdf-renderer sandwich  [..other args..]
@@ -56,34 +69,50 @@ class PdfMergeFailedError(ExitCodeException):
 
 
 class MissingDependencyError(ExitCodeException):
+    """A third-party dependency is missing."""
+
     exit_code = ExitCode.missing_dependency
 
 
 class UnsupportedImageFormatError(ExitCodeException):
+    """The image format is not supported."""
+
     exit_code = ExitCode.input_file
 
 
 class DpiError(ExitCodeException):
+    """Missing information about input image DPI."""
+
     exit_code = ExitCode.input_file
 
 
 class OutputFileAccessError(ExitCodeException):
+    """Cannot access the intended output file path."""
+
     exit_code = ExitCode.file_access_error
 
 
 class PriorOcrFoundError(ExitCodeException):
+    """This file already has OCR."""
+
     exit_code = ExitCode.already_done_ocr
 
 
 class InputFileError(ExitCodeException):
+    """Something is wrong with the input file."""
+
     exit_code = ExitCode.input_file
 
 
 class SubprocessOutputError(ExitCodeException):
+    """A subprocess returned an unexpected error."""
+
     exit_code = ExitCode.child_process_error
 
 
 class EncryptedPdfError(ExitCodeException):
+    """Input PDF is encrypted."""
+
     exit_code = ExitCode.encrypted_pdf
     message = dedent(
         '''\
@@ -100,5 +129,7 @@ class EncryptedPdfError(ExitCodeException):
 
 
 class TesseractConfigError(ExitCodeException):
+    """Tesseract config can't be parsed."""
+
     exit_code = ExitCode.invalid_config
     message = "Error occurred while parsing a Tesseract configuration file"

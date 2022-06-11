@@ -4,6 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""OCRmyPDF page processing pipeline functions."""
 
 import logging
 import os
@@ -332,7 +333,8 @@ def is_ocr_required(page_context: PageContext):
             ocr_required = False
             log.warning(
                 "page too big, skipping OCR "
-                f"({(pixel_count / 1_000_000):.1f} MPixels > {options.skip_big:.1f} MPixels --skip-big)"
+                f"({(pixel_count / 1_000_000):.1f} MPixels > "
+                f"{options.skip_big:.1f} MPixels --skip-big)"
             )
     return ocr_required
 
@@ -430,8 +432,8 @@ def rasterize(
     output_file = page_context.get_path(f'rasterize{output_tag}.png')
     pageinfo = page_context.pageinfo
 
-    def at_least(cs):
-        return max(device_idx, colorspaces.index(cs))
+    def at_least(colorspace):
+        return max(device_idx, colorspaces.index(colorspace))
 
     for image in pageinfo.images:
         if image.type_ != 'image':
@@ -471,10 +473,10 @@ def rasterize(
 
 def preprocess_remove_background(input_file: Path, page_context: PageContext):
     if any(image.bpc > 1 for image in page_context.pageinfo.images):
-        output_file = page_context.get_path('pp_rm_bg.png')
-        # leptonica.remove_background(input_file, output_file)
         raise NotImplementedError("--remove-background is temporarily not implemented")
-        return output_file
+        # output_file = page_context.get_path('pp_rm_bg.png')
+        # leptonica.remove_background(input_file, output_file)
+        # return output_file
     else:
         log.info("background removal skipped on mono page")
         return input_file
@@ -858,8 +860,8 @@ def enumerate_compress_ranges(iterable):
 def merge_sidecars(txt_files: Iterable[Optional[Path]], context: PdfContext):
     output_file = context.get_path('sidecar.txt')
     with open(output_file, 'w', encoding="utf-8") as stream:
-        for (frm, to), txt_file in enumerate_compress_ranges(txt_files):
-            if frm != 1:
+        for (from_, to_), txt_file in enumerate_compress_ranges(txt_files):
+            if from_ != 1:
                 stream.write('\f')  # Form feed between pages
             if txt_file:
                 with open(txt_file, encoding="utf-8") as in_:
@@ -872,10 +874,10 @@ def merge_sidecars(txt_files: Iterable[Optional[Path]], context: PdfContext):
                     else:
                         stream.write(txt)
             else:
-                if frm != to:
-                    pages = f'{frm}-{to}'
+                if from_ != to_:
+                    pages = f'{from_}-{to_}'
                 else:
-                    pages = f'{frm}'
+                    pages = f'{from_}'
                 stream.write(f'[OCR skipped on page(s) {pages}]')
     return output_file
 

@@ -4,6 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""For grafting text-only PDF pages onto freeform PDF pages."""
 
 import logging
 import uuid
@@ -16,7 +17,6 @@ from pikepdf import (
     Name,
     Object,
     Operator,
-    Page,
     Pdf,
     PdfError,
     PdfMatrix,
@@ -81,6 +81,8 @@ def strip_invisible_text(pdf, page):
 
 
 class OcrGrafter:
+    """Manages grafting text-only PDFs onto regular PDFs."""
+
     def __init__(self, context):
         self.context = context
         self.path_base = context.origin
@@ -235,6 +237,8 @@ class OcrGrafter:
         strip_old_text: bool,
     ):
         """Insert the text layer from text page 0 on to pdf_base at page_num"""
+
+        # pylint: disable=invalid-name
 
         log.debug("Grafting")
         if Path(textpdf).stat().st_size == 0:

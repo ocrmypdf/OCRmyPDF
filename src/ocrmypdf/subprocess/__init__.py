@@ -28,7 +28,12 @@ log = logging.getLogger(__name__)
 
 
 def run(
-    args, *, env=None, logs_errors_to_stdout: bool = False, **kwargs
+    args,
+    *,
+    env=None,
+    logs_errors_to_stdout: bool = False,
+    check: bool = False,
+    **kwargs,
 ) -> CompletedProcess:
     """Wrapper around :py:func:`subprocess.run`
 
@@ -50,7 +55,7 @@ def run(
     stderr = None
     stderr_name = 'stderr' if not logs_errors_to_stdout else 'stdout'
     try:
-        proc = subprocess_run(args, env=env, **kwargs)
+        proc = subprocess_run(args, env=env, check=check, **kwargs)
     except CalledProcessError as e:
         stderr = getattr(e, stderr_name, None)
         raise
@@ -111,6 +116,7 @@ def _fix_process_args(args, env, kwargs):
     program = str(args[0])
 
     if os.name == 'nt':
+        # pylint: disable=import-outside-toplevel
         from ocrmypdf.subprocess._windows import fix_windows_args
 
         args = fix_windows_args(program, args, env)
@@ -171,42 +177,42 @@ def get_version(
     return version
 
 
-missing_program = '''
+MISSING_PROGRAM = '''
 The program '{program}' could not be executed or was not found on your
 system PATH.
 '''
 
-missing_optional_program = '''
+MISSING_OPTIONAL_PROGRAM = '''
 The program '{program}' could not be executed or was not found on your
 system PATH.  This program is required when you use the
 {required_for} arguments.  You could try omitting these arguments, or install
 the package.
 '''
 
-missing_recommend_program = '''
+MISSING_RECOMMEND_PROGRAM = '''
 The program '{program}' could not be executed or was not found on your
 system PATH.  This program is recommended when using the {required_for} arguments,
 but not required, so we will proceed.  For best results, install the program.
 '''
 
-old_version = '''
+OLD_VERSION = '''
 OCRmyPDF requires '{program}' {need_version} or higher.  Your system appears
 to have {found_version}.  Please update this program.
 '''
 
-old_version_required_for = '''
+OLD_VERSION_REQUIRED_FOR = '''
 OCRmyPDF requires '{program}' {need_version} or higher when run with the
 {required_for} arguments.  If you omit these arguments, OCRmyPDF may be able to
 proceed.  For best results, install the program.
 '''
 
-osx_install_advice = '''
+OSX_INSTALL_ADVICE = '''
 If you have homebrew installed, try these command to install the missing
 package:
     brew install {package}
 '''
 
-linux_install_advice = '''
+LINUX_INSTALL_ADVICE = '''
 On systems with the aptitude package manager (Debian, Ubuntu), try these
 commands:
     sudo apt-get update
@@ -216,7 +222,7 @@ On RPM-based systems (Red Hat, Fedora), search for instructions on
 installing the RPM for {program}.
 '''
 
-windows_install_advice = '''
+WINDOWS_INSTALL_ADVICE = '''
 If not already installed, install the Chocolatey package manager. Then use
 a command prompt to install the missing package:
     choco install {package}
@@ -234,32 +240,35 @@ def _get_platform():
 
 
 def _error_trailer(program, package, **kwargs):
+    del kwargs
     if isinstance(package, Mapping):
         package = package.get(_get_platform(), program)
 
     if _get_platform() == 'darwin':
-        log.info(osx_install_advice.format(**locals()))
+        log.info(OSX_INSTALL_ADVICE.format(**locals()))
     elif _get_platform() == 'linux':
-        log.info(linux_install_advice.format(**locals()))
+        log.info(LINUX_INSTALL_ADVICE.format(**locals()))
     elif _get_platform() == 'windows':
-        log.info(windows_install_advice.format(**locals()))
+        log.info(WINDOWS_INSTALL_ADVICE.format(**locals()))
 
 
 def _error_missing_program(program, package, required_for, recommended):
+    # pylint: disable=unused-argument
     if recommended:
-        log.warning(missing_recommend_program.format(**locals()))
+        log.warning(MISSING_RECOMMEND_PROGRAM.format(**locals()))
     elif required_for:
-        log.error(missing_optional_program.format(**locals()))
+        log.error(MISSING_OPTIONAL_PROGRAM.format(**locals()))
     else:
-        log.error(missing_program.format(**locals()))
+        log.error(MISSING_PROGRAM.format(**locals()))
     _error_trailer(**locals())
 
 
 def _error_old_version(program, package, need_version, found_version, required_for):
+    # pylint: disable=unused-argument
     if required_for:
-        log.error(old_version_required_for.format(**locals()))
+        log.error(OLD_VERSION_REQUIRED_FOR.format(**locals()))
     else:
-        log.error(old_version.format(**locals()))
+        log.error(OLD_VERSION.format(**locals()))
     _error_trailer(**locals())
 
 
@@ -294,10 +303,15 @@ def check_external_program(
             found_version = version_checker()
         else:  # deprecated
             found_version = version_checker
-    except (CalledProcessError, FileNotFoundError, MissingDependencyError):
+    except (CalledProcessError, FileNotFoundError) as e:
         _error_missing_program(program, package, required_for, recommended)
         if not recommended:
-            raise MissingDependencyError(program)
+            raise MissingDependencyError(program) from e
+        return
+    except MissingDependencyError:
+        _error_missing_program(program, package, required_for, recommended)
+        if not recommended:
+            raise
         return
 
     def remove_leading_v(s):

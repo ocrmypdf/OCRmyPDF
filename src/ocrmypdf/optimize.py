@@ -4,6 +4,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""Post-processing image optimization of OCR PDFs."""
+
 
 import logging
 import sys
@@ -55,7 +57,9 @@ DEFAULT_PNG_QUALITY = 70
 Xref = NewType('Xref', int)
 
 
-class XrefExt(NamedTuple):  # pylint: disable=inherit-non-class
+class XrefExt(NamedTuple):
+    """A PDF xref and image extension pair."""
+
     xref: Xref
     ext: str
 
@@ -466,7 +470,7 @@ def _find_deflatable_jpeg(
     result = extract_image_filter(pike, root, image, xref)
     if result is None:
         return None
-    pim, filtdp = result
+    _pim, filtdp = result
 
     if filtdp[0] == Name.DCTDecode and not filtdp[1] and options.optimize >= 1:
         return XrefExt(xref, '.memory')
@@ -707,9 +711,9 @@ def main(infile, outfile, level, jobs=1):
         jb2lossy=False,
     )
 
-    with TemporaryDirectory() as td:
-        context = PdfContext(options, td, infile, None, None)
-        tmpout = Path(td) / 'out.pdf'
+    with TemporaryDirectory() as tmpdir:
+        context = PdfContext(options, tmpdir, infile, None, None)
+        tmpout = Path(tmpdir) / 'out.pdf'
         optimize(
             infile,
             tmpout,

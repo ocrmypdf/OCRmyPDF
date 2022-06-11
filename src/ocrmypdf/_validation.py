@@ -5,6 +5,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""Validate a work order from API or command line."""
 
 import locale
 import logging
@@ -25,7 +26,7 @@ from ocrmypdf.exceptions import (
     MissingDependencyError,
     OutputFileAccessError,
 )
-from ocrmypdf.helpers import is_file_writable, monotonic, safe_symlink, samefile
+from ocrmypdf.helpers import is_file_writable, monotonic, safe_symlink
 from ocrmypdf.hocrtransform import HOCR_OK_LANGS
 from ocrmypdf.subprocess import check_external_program
 
@@ -146,13 +147,13 @@ def check_options_preprocessing(options):
 def _pages_from_ranges(ranges: str) -> Set[int]:
     pages: List[int] = []
     page_groups = ranges.replace(' ', '').split(',')
-    for g in page_groups:
-        if not g:
+    for group in page_groups:
+        if not group:
             continue
         try:
-            start, end = g.split('-')
+            start, end = group.split('-')
         except ValueError:
-            pages.append(int(g) - 1)
+            pages.append(int(group) - 1)
         else:
             try:
                 new_pages = list(range(int(start) - 1, int(end)))
@@ -162,7 +163,7 @@ def _pages_from_ranges(ranges: str) -> Set[int]:
                     ) from None
                 pages.extend(new_pages)
             except ValueError:
-                raise BadArgsError(f"invalid page subrange '{g}'") from None
+                raise BadArgsError(f"invalid page subrange '{group}'") from None
 
     if not pages:
         raise BadArgsError(
@@ -237,13 +238,13 @@ def check_options_advanced(options):
 def check_options_metadata(options):
     docinfo = [options.title, options.author, options.keywords, options.subject]
     for s in (m for m in docinfo if m):
-        for c in s:
-            if unicodedata.category(c) == 'Co' or ord(c) >= 0x10000:
+        for char in s:
+            if unicodedata.category(char) == 'Co' or ord(char) >= 0x10000:
+                hexchar = hex(ord(char))[2:].upper()
                 raise ValueError(
                     "One of the metadata strings contains "
-                    "an unsupported Unicode character: '{}' (U+{})".format(
-                        c, hex(ord(c))[2:].upper()
-                    )
+                    "an unsupported Unicode character: "
+                    f"{char} (U+{hexchar})"
                 )
 
 
@@ -293,7 +294,7 @@ def create_input_file(options, work_folder: Path) -> Tuple[Path, str]:
             target = work_folder / 'origin'
             safe_symlink(options.input_file, target)
             return target, os.fspath(options.input_file)
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             msg = f"File not found - {options.input_file}"
             if Path('/.dockerenv').exists():  # pragma: no cover
                 msg += (
@@ -304,7 +305,7 @@ def create_input_file(options, work_folder: Path) -> Tuple[Path, str]:
                     "\n"
                     "\tdocker run -i --rm jbarlow83/ocrmypdf - - <input.pdf >output.pdf\n"
                 )
-            raise InputFileError(msg)
+            raise InputFileError(msg) from e
 
 
 def check_requested_output_file(options):
@@ -324,7 +325,9 @@ def check_requested_output_file(options):
         )
 
 
-def report_output_file_size(options, input_file, output_file):
+def report_output_file_size(
+    options, input_file, output_file, file_overhead=4000, page_overhead=3000
+):
     try:
         output_size = Path(output_file).stat().st_size
         input_size = Path(input_file).stat().st_size
@@ -333,9 +336,7 @@ def report_output_file_size(options, input_file, output_file):
     with pikepdf.open(output_file) as p:
         # Overhead constants obtained by estimating amount of data added by OCR
         # PDF/A conversion, and possible XMP metadata addition, with compression
-        FILE_OVERHEAD = 4000
-        OCR_PER_PAGE_OVERHEAD = 3000
-        reasonable_overhead = FILE_OVERHEAD + OCR_PER_PAGE_OVERHEAD * len(p.pages)
+        reasonable_overhead = file_overhead + page_overhead * len(p.pages)
     ratio = output_size / input_size
     reasonable_ratio = output_size / (input_size + reasonable_overhead)
     if reasonable_ratio < 1.35 or input_size < 25000:

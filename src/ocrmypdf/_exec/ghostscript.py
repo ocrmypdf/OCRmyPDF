@@ -14,13 +14,12 @@ import sys
 from io import BytesIO
 from os import fspath
 from pathlib import Path
-from shutil import which
 from subprocess import PIPE, CalledProcessError
 from typing import Optional
 
 from PIL import Image, UnidentifiedImageError
 
-from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
+from ocrmypdf.exceptions import SubprocessOutputError
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.subprocess import get_version, run, run_polling_stderr
 
@@ -33,29 +32,18 @@ except AttributeError:
 
 log = logging.getLogger(__name__)
 
-missing_gs_error = """
----------------------------------------------------------------------
-This error normally occurs when ocrmypdf find can't Ghostscript.
-Please ensure Ghostscript is installed and its location is added to
-the system PATH environment variable.
-
-For details see:
-    https://ocrmypdf.readthedocs.io/en/latest/installation.html
----------------------------------------------------------------------
-"""
-
 # Most reliable what to get the bitness of Python interpreter, according to Python docs
-_is_64bit = sys.maxsize > 2**32
+_IS_64BIT = sys.maxsize > 2**32
 
-_gswin = None
+_GSWIN = None
 if os.name == 'nt':
-    if _is_64bit:
-        _gswin = 'gswin64c'
+    if _IS_64BIT:
+        _GSWIN = 'gswin64c'
     else:
-        _gswin = 'gswin32c'
+        _GSWIN = 'gswin32c'
 
-GS = _gswin if _gswin else 'gs'
-del _gswin
+GS = _GSWIN if _GSWIN else 'gs'
+del _GSWIN
 
 
 def version():
@@ -126,7 +114,7 @@ def rasterize_pdf(
         p = run(args_gs, stdout=PIPE, stderr=PIPE, check=True)
     except CalledProcessError as e:
         log.error(e.stderr.decode(errors='replace'))
-        raise SubprocessOutputError('Ghostscript rasterizing failed')
+        raise SubprocessOutputError('Ghostscript rasterizing failed') from e
     else:
         stderr = p.stderr.decode(errors='replace')
         if _gs_error_reported(stderr):
@@ -156,6 +144,8 @@ def rasterize_pdf(
 
 
 class GhostscriptFollower:
+    """Parses the output of Ghostscript and uses it to update the progress bar."""
+
     re_process = re.compile(r"Processing pages \d+ through (\d+).")
     re_page = re.compile(r"Page (\d+)")
 
