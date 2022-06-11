@@ -266,7 +266,7 @@ def extract_images(
             if image.objgen[1] != 0:
                 continue  # Ignore images in an incremental PDF
             xref = Xref(image.objgen[0])
-            if hasattr(image, 'SMask'):
+            if Name.SMask in image:
                 # Ignore soft masks
                 smask_xref = Xref(image.SMask.objgen[0])
                 exclude_xrefs.add(smask_xref)
