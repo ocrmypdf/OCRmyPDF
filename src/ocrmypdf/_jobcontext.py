@@ -83,7 +83,7 @@ class PageContext:
         The path will be based in a common temporary folder and have a prefix based
         on the page number.
         """
-        return self.work_folder / ("%06d_%s" % (self.pageno + 1, name))
+        return self.work_folder / f"{(self.pageno + 1):06d}_{name}"
 
     def __getstate__(self):
         state = self.__dict__.copy()

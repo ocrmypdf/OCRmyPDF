@@ -57,7 +57,7 @@ TESSERACT_THRESHOLDING_METHODS: Dict[str, int] = {
 class TesseractLoggerAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
         kwargs['extra'] = self.extra
-        return '[tesseract] %s' % (msg), kwargs
+        return f'[tesseract] {msg}', kwargs
 
 
 TESSERACT_VERSION_PATTERN = r"""

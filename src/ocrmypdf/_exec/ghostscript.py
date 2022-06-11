@@ -45,7 +45,7 @@ For details see:
 """
 
 # Most reliable what to get the bitness of Python interpreter, according to Python docs
-_is_64bit = sys.maxsize > 2 ** 32
+_is_64bit = sys.maxsize > 2**32
 
 _gswin = None
 if os.name == 'nt':
@@ -115,7 +115,7 @@ def rasterize_pdf(
         + [
             '-o',
             '-',
-            '-sstdout=%stderr',
+            '-sstdout=%stderr',  # Literal %s, not string interpolation
             '-dAutoRotatePages=/None',  # Probably has no effect on raster
             '-f',
             fspath(input_file),
@@ -251,7 +251,7 @@ def generate_pdfa(
             "-dPDFACompatibilityPolicy=1",
             "-o",
             "-",
-            "-sstdout=%stderr",
+            "-sstdout=%stderr",  # Literal %s, not string interpolation
         ]
     )
     args_gs.extend(fspath(s) for s in pdf_pages)  # Stringify Path objs
