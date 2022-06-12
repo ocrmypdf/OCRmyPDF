@@ -194,37 +194,6 @@ def check_options_ocr_behavior(options):
         options.pages = _pages_from_ranges(options.pages)
 
 
-def check_options_optimizing(options):
-    if options.optimize >= 2:
-        check_external_program(
-            program='pngquant',
-            package='pngquant',
-            version_checker=pngquant.version,
-            need_version='2.0.1',
-            required_for='--optimize {2,3}',
-        )
-
-    if options.optimize >= 2:
-        # Although we use JBIG2 for optimize=1, don't nag about it unless the
-        # user is asking for more optimization
-        check_external_program(
-            program='jbig2',
-            package='jbig2enc',
-            version_checker=jbig2enc.version,
-            need_version='0.28',
-            required_for='--optimize {2,3} | --jbig2-lossy',
-            recommended=True if not options.jbig2_lossy else False,
-        )
-
-    if options.optimize == 0 and any(
-        [options.jbig2_lossy, options.png_quality, options.jpeg_quality]
-    ):
-        log.warning(
-            "The arguments --jbig2-lossy, --png-quality, and --jpeg-quality "
-            "will be ignored because --optimize=0."
-        )
-
-
 def check_options_advanced(options):
     if options.pdfa_image_compression != 'auto' and not options.output_type.startswith(
         'pdfa'
@@ -262,7 +231,6 @@ def _check_options(options, plugin_manager, ocr_engine_languages):
     check_options_sidecar(options)
     check_options_preprocessing(options)
     check_options_ocr_behavior(options)
-    check_options_optimizing(options)
     check_options_advanced(options)
     check_options_pillow(options)
     plugin_manager.hook.check_options(options=options)
@@ -356,7 +324,7 @@ def report_output_file_size(
                 f"The argument --{arg.replace('_', '-')} was issued, causing transcoding."
             )
 
-    if options.optimize == 0:
+    if hasattr(options, 'optimize') and options.optimize == 0:
         reasons.append("Optimization was disabled.")
     else:
         image_optimizers = {

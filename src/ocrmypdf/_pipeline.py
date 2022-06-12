@@ -822,7 +822,7 @@ def metadata_fixup(working_file: Path, context: PdfContext):
             **get_pdf_save_settings(options.output_type),
             linearize=(  # Don't linearize if optimize() will be linearizing too
                 should_linearize(working_file, context)
-                if options.optimize == 0
+                if hasattr(options, 'optimize') and options.optimize == 0
                 else False
             ),
         )

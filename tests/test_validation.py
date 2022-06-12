@@ -92,9 +92,9 @@ def test_mutex_options():
 
 
 def test_optimizing(caplog):
-    vd.check_options_optimizing(
-        make_opts(optimize=0, jbig2_lossy=True, png_quality=18, jpeg_quality=10)
-    )
+    opts = make_opts(optimize=0, jbig2_lossy=True, png_quality=18, jpeg_quality=10)
+    plugin_manager = get_plugin_manager(opts.plugins)
+    vd._check_options(opts, plugin_manager, set())
     assert 'will be ignored because' in caplog.text
 
 
