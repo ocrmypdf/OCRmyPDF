@@ -35,7 +35,6 @@ from ocrmypdf.exceptions import (
 )
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution, safe_symlink
 from ocrmypdf.hocrtransform import HocrTransform
-from ocrmypdf.optimize import optimize
 from ocrmypdf.pdfa import generate_pdfa_ps
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 
@@ -833,12 +832,18 @@ def metadata_fixup(working_file: Path, context: PdfContext):
 
 def optimize_pdf(input_file: Path, context: PdfContext, executor: Executor):
     output_file = context.get_path('optimize.pdf')
-    save_settings = dict(
-        linearize=should_linearize(input_file, context),
-        **get_pdf_save_settings(context.options.output_type),
+    output_pdf = context.plugin_manager.hook.optimize_pdf(
+        input_pdf=input_file, output_pdf=output_file, context=context, executor=executor
     )
-    optimize(input_file, output_file, context, save_settings, executor)
-    return output_file
+
+    input_size = input_file.stat().st_size
+    output_size = output_file.stat().st_size
+    if output_size > 0:
+        ratio = input_size / output_size
+        savings = 1 - output_size / input_size
+        log.info(f"Optimize ratio: {ratio:.2f} savings: {(savings):.1%}")
+
+    return output_pdf
 
 
 def enumerate_compress_ranges(iterable):

@@ -625,7 +625,7 @@ def optimize(
     context,
     save_settings,
     executor: Executor = DEFAULT_EXECUTOR,
-) -> None:
+) -> Path:
     options = context.options
     if options.optimize == 0:
         safe_symlink(input_file, output_file)
@@ -664,9 +664,7 @@ def optimize(
             f"Output file not created after optimizing. We probably ran "
             f"out of disk space in the temporary folder: {tempfile.gettempdir()}."
         )
-    ratio = input_size / output_size
     savings = 1 - output_size / input_size
-    log.info(f"Optimize ratio: {ratio:.2f} savings: {(savings):.1%}")
 
     if savings < 0:
         log.info(
@@ -679,6 +677,8 @@ def optimize(
             pike.save(output_file, **save_settings)
     else:
         safe_symlink(target_file, output_file)
+
+    return output_file
 
 
 def main(infile, outfile, level, jobs=1):

@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, AbstractSet, List, NamedTuple, Optional
 
 import pluggy
 
+from ocrmypdf import PdfContext
 from ocrmypdf._concurrent import Executor
 from ocrmypdf.helpers import Resolution
 
@@ -456,4 +457,34 @@ def generate_pdfa(
 
     See also:
         https://github.com/tqdm/tqdm
+    """
+
+
+@hookspec(firstresult=True)
+def optimize_pdf(
+    input_pdf: Path, output_pdf: Path, context: PdfContext, executor: Executor
+) -> Path:
+    """Optimize a PDF after image, OCR and metadata processing.
+
+    If the input_pdf is a PDF/A, the plugin must only modify input_pdf in a way
+    that preserves the PDF/A status.
+
+    If the implementation fails to produce a smaller file than the input file, it
+    should return input_pdf instead.
+
+    Arguments:
+        input_pdf: The input PDF, which has OCR added.
+        output_pdf: The requested filename of the output PDF which should be created
+            by this optimization hook.
+        context: The current context.
+        executor: An initialized executor which may be used during optimization,
+            to distribute optimization tasks.
+
+    Returns:
+        Path: If optimization is successful, the hook should return ``output_file``.
+            If optimization does not produce a smaller file, the hook should return
+            ``input_file``.
+
+    Note:
+        This is a :ref:`firstresult hook<firstresult>`.
     """
