@@ -63,7 +63,7 @@ master_doc = 'index'
 # General information about the project.
 project = 'ocrmypdf'
 copyright = (
-    '2021, James R. Barlow. Licensed under Creative Commons Attribution-ShareAlike 4.0.'
+    '2022, James R. Barlow. Licensed under Creative Commons Attribution-ShareAlike 4.0.'
 )
 author = 'James R. Barlow'
 
