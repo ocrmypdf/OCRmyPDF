@@ -16,7 +16,25 @@ The most recent release of OCRmyPDF is |OCRmyPDF PyPI|. Any newer versions
 referred to in these notes may exist the main branch but have not been
 tagged yet.
 
+.. note::
+
+   Attention maintainers: that these release notes may be updated with information
+   about a forthcoming release that has not been tagged yet. A release is only
+   official when it's tagged and posted to PyPI.
+
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
+
+v13.5.0
+=======
+
+-  Added a new ``optimize_pdf`` pluginhook, making it possible to create plugins that
+   replace or enhance OCRmyPDF's PDF optimizer.
+-  Removed all max version restrictions. Our new policy is to blacklist known-bad releases
+   and only block known-bad versions of dependencies.
+-  The naming schema for object that holds all OCR text that OCRmyPDF inserts has
+   changed. This has always been an implementation detail (and remains so), but possibly,
+   someone was relying on it and would appreciate the heads-up.
+-  Cleanup.
 
 v13.4.7
 =======
