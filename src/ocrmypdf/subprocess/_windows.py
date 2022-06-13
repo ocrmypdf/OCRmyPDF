@@ -21,7 +21,6 @@ try:
     import winreg
 except ModuleNotFoundError as _notfound_ex:
     raise ModuleNotFoundError("This module is for Windows only") from _notfound_ex
-del _notfound_ex
 
 log = logging.getLogger(__name__)
 
