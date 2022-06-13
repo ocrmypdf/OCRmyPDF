@@ -120,3 +120,6 @@ def get_parser_options_plugins(
 
     options = parser.parse_args(args=args)
     return parser, options, plugin_manager
+
+
+__all__ = ['OcrmypdfPluginManager', 'get_plugin_manager', 'get_parser_options_plugins']

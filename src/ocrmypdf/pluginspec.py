@@ -462,12 +462,16 @@ def generate_pdfa(
 
 @hookspec(firstresult=True)
 def optimize_pdf(
-    input_pdf: Path, output_pdf: Path, context: PdfContext, executor: Executor
+    input_pdf: Path,
+    output_pdf: Path,
+    context: PdfContext,
+    executor: Executor,
+    linearize: bool,
 ) -> Path:
     """Optimize a PDF after image, OCR and metadata processing.
 
-    If the input_pdf is a PDF/A, the plugin must only modify input_pdf in a way
-    that preserves the PDF/A status.
+    If the input_pdf is a PDF/A, the plugin should modify input_pdf in a way
+    that preserves the PDF/A status, or report to the user when this is not possible.
 
     If the implementation fails to produce a smaller file than the input file, it
     should return input_pdf instead.
@@ -479,11 +483,30 @@ def optimize_pdf(
         context: The current context.
         executor: An initialized executor which may be used during optimization,
             to distribute optimization tasks.
+        linearize: If True, OCRmyPDF requires ``optimize_pdf`` to return a linearized,
+            also known as fast web view PDF.
 
     Returns:
         Path: If optimization is successful, the hook should return ``output_file``.
             If optimization does not produce a smaller file, the hook should return
             ``input_file``.
+
+    Note:
+        This is a :ref:`firstresult hook<firstresult>`.
+    """
+
+
+@hookspec(firstresult=True)
+def is_optimization_enabled(context: PdfContext) -> bool:
+    """For a given PdfContext, OCRmyPDF asks the plugin if optimization is enabled.
+
+    It is assumed that an optimization plugin might be installed but could be
+    disabled by user settings.
+
+    If this returns False, OCRmyPDF will take certain actions to finalize the PDF.
+
+    Returns:
+        True if the plugin's optimization is enabled.
 
     Note:
         This is a :ref:`firstresult hook<firstresult>`.

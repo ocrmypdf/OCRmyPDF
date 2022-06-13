@@ -817,13 +817,14 @@ def metadata_fixup(working_file: Path, context: PdfContext):
                 missing = set(meta_original.keys()) - set(meta.keys())
                 report_on_metadata(missing)
 
+        optimizing = context.plugin_manager.hook.is_optimization_enabled(
+            context=context
+        )
         pdf.save(
             output_file,
             **get_pdf_save_settings(options.output_type),
             linearize=(  # Don't linearize if optimize() will be linearizing too
-                should_linearize(working_file, context)
-                if hasattr(options, 'optimize') and options.optimize == 0
-                else False
+                not optimizing and should_linearize(working_file, context)
             ),
         )
 
@@ -833,7 +834,11 @@ def metadata_fixup(working_file: Path, context: PdfContext):
 def optimize_pdf(input_file: Path, context: PdfContext, executor: Executor):
     output_file = context.get_path('optimize.pdf')
     output_pdf = context.plugin_manager.hook.optimize_pdf(
-        input_pdf=input_file, output_pdf=output_file, context=context, executor=executor
+        input_pdf=input_file,
+        output_pdf=output_file,
+        context=context,
+        executor=executor,
+        linearize=should_linearize(input_file, context),
     )
 
     input_size = input_file.stat().st_size

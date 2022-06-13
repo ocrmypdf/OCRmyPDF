@@ -14,7 +14,7 @@ from pathlib import Path
 from ocrmypdf import PdfContext, hookimpl
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._exec import jbig2enc, pngquant
-from ocrmypdf._pipeline import get_pdf_save_settings, should_linearize
+from ocrmypdf._pipeline import get_pdf_save_settings
 from ocrmypdf.cli import numeric
 from ocrmypdf.optimize import optimize
 from ocrmypdf.subprocess import check_external_program
@@ -125,11 +125,20 @@ def check_options(options):
 
 @hookimpl
 def optimize_pdf(
-    input_pdf: Path, output_pdf: Path, context: PdfContext, executor: Executor
+    input_pdf: Path,
+    output_pdf: Path,
+    context: PdfContext,
+    executor: Executor,
+    linearize: bool,
 ) -> Path:
     save_settings = dict(
-        linearize=should_linearize(input_pdf, context),
+        linearize=linearize,
         **get_pdf_save_settings(context.options.output_type),
     )
     optimize(input_pdf, output_pdf, context, save_settings, executor)
     return output_pdf
+
+
+@hookimpl
+def is_optimization_enabled(context: PdfContext) -> bool:
+    return context.options.optimize != 0
