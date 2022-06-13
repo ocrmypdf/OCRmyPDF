@@ -18,7 +18,7 @@ from concurrent.futures.thread import BrokenThreadPool
 from functools import partial
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import List, NamedTuple, Optional, Tuple, cast
+from typing import List, NamedTuple, Optional, Sequence, Tuple, cast
 
 import PIL
 
@@ -230,7 +230,9 @@ def exec_page_sync(page_context: PageContext) -> PageResult:
     )
 
 
-def post_process(pdf_file: Path, context: PdfContext, executor: Executor) -> Path:
+def post_process(
+    pdf_file: Path, context: PdfContext, executor: Executor
+) -> Tuple[Path, Sequence[str]]:
     pdf_out = pdf_file
     if context.options.output_type.startswith('pdfa'):
         ps_stub_out = generate_postscript_stub(context)
@@ -248,7 +250,7 @@ def worker_init(max_pixels: int) -> None:
     pikepdf_enable_mmap()
 
 
-def exec_concurrent(context: PdfContext, executor: Executor) -> None:
+def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     """Execute the pipeline concurrently"""
 
     # Run exec_page_sync on every page context
@@ -300,13 +302,15 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> None:
     # Merge layers to one single pdf
     pdf = ocrgraft.finalize()
 
+    messages: List[str] = []
     if options.output_type != 'none':
         # PDF/A and metadata
         log.info("Postprocessing...")
-        pdf = post_process(pdf, context, executor)
+        pdf, messages = post_process(pdf, context, executor)
 
         # Copy PDF file to destination
         copy_final(pdf, options.output_file, context)
+    return messages
 
 
 def configure_debug_logging(
@@ -386,7 +390,7 @@ def run_pipeline(
         validate_pdfinfo_options(context)
 
         # Execute the pipeline
-        exec_concurrent(context, executor)
+        optimize_messages = exec_concurrent(context, executor)
 
         if options.output_file == '-':
             log.info("Output sent to stdout")
@@ -412,7 +416,9 @@ def run_pipeline(
             if not check_pdf(options.output_file):
                 log.warning('Output file: The generated PDF is INVALID')
                 return ExitCode.invalid_output_pdf
-            report_output_file_size(options, start_input_file, options.output_file)
+            report_output_file_size(
+                options, start_input_file, options.output_file, optimize_messages
+            )
 
     except (KeyboardInterrupt if not api else NeverRaise):
         if options.verbose >= 1:

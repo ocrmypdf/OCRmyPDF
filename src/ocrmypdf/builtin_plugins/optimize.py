@@ -10,6 +10,7 @@
 import argparse
 import logging
 from pathlib import Path
+from typing import Sequence, Tuple
 
 from ocrmypdf import PdfContext, hookimpl
 from ocrmypdf._concurrent import Executor
@@ -130,13 +131,27 @@ def optimize_pdf(
     context: PdfContext,
     executor: Executor,
     linearize: bool,
-) -> Path:
+) -> Tuple[Path, Sequence[str]]:
     save_settings = dict(
         linearize=linearize,
         **get_pdf_save_settings(context.options.output_type),
     )
-    optimize(input_pdf, output_pdf, context, save_settings, executor)
-    return output_pdf
+    result_path = optimize(input_pdf, output_pdf, context, save_settings, executor)
+    messages = []
+    if context.options.optimize == 0:
+        messages.append("Optimization was disabled.")
+    else:
+        image_optimizers = {
+            'jbig2': jbig2enc.available(),
+            'pngquant': pngquant.available(),
+        }
+        for name, available in image_optimizers.items():
+            if not available:
+                messages.append(
+                    f"The optional dependency '{name}' was not found, so some image "
+                    f"optimizations could not be attempted."
+                )
+    return result_path, messages
 
 
 @hookimpl

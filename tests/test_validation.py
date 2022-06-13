@@ -145,22 +145,16 @@ def test_report_file_size(tmp_path, caplog):
     pdf.Root.Dummy2 = waste_of_space + waste_of_space
     pdf.save(out)
 
-    with patch('ocrmypdf._validation.jbig2enc.available', return_value=True), patch(
-        'ocrmypdf._validation.pngquant.available', return_value=True
-    ):
-        vd.report_output_file_size(opts, in_, out)
-        assert 'No reason' in caplog.text
+    vd.report_output_file_size(opts, in_, out, ['The optional dependency...'])
+    assert 'optional dependency' in caplog.text
     caplog.clear()
 
-    with patch('ocrmypdf._validation.jbig2enc.available', return_value=False), patch(
-        'ocrmypdf._validation.pngquant.available', return_value=True
-    ):
-        vd.report_output_file_size(opts, in_, out)
-        assert 'optional dependency' in caplog.text
+    vd.report_output_file_size(opts, in_, out, [])
+    assert 'No reason' in caplog.text
     caplog.clear()
 
     opts = make_opts(in_, out, optimize=0, output_type='pdf')
-    vd.report_output_file_size(opts, in_, out)
+    vd.report_output_file_size(opts, in_, out, ["Optimization was disabled."])
     assert 'disabled' in caplog.text
     caplog.clear()
 

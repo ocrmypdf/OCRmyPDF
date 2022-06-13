@@ -833,7 +833,7 @@ def metadata_fixup(working_file: Path, context: PdfContext):
 
 def optimize_pdf(input_file: Path, context: PdfContext, executor: Executor):
     output_file = context.get_path('optimize.pdf')
-    output_pdf = context.plugin_manager.hook.optimize_pdf(
+    output_pdf, messages = context.plugin_manager.hook.optimize_pdf(
         input_pdf=input_file,
         output_pdf=output_file,
         context=context,
@@ -848,7 +848,7 @@ def optimize_pdf(input_file: Path, context: PdfContext, executor: Executor):
         savings = 1 - output_size / input_size
         log.info(f"Optimize ratio: {ratio:.2f} savings: {(savings):.1%}")
 
-    return output_pdf
+    return output_pdf, messages
 
 
 def enumerate_compress_ranges(iterable):

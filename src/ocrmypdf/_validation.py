@@ -14,12 +14,12 @@ import sys
 import unicodedata
 from pathlib import Path
 from shutil import copyfileobj
-from typing import List, Set, Tuple
+from typing import List, Optional, Sequence, Set, Tuple
 
 import pikepdf
 import PIL
 
-from ocrmypdf._exec import jbig2enc, pngquant, unpaper
+from ocrmypdf._exec import unpaper
 from ocrmypdf.exceptions import (
     BadArgsError,
     InputFileError,
@@ -294,8 +294,15 @@ def check_requested_output_file(options):
 
 
 def report_output_file_size(
-    options, input_file, output_file, file_overhead=4000, page_overhead=3000
+    options,
+    input_file: Path,
+    output_file: Path,
+    optimize_messages: Optional[Sequence[str]] = None,
+    file_overhead: int = 4000,
+    page_overhead: int = 3000,
 ):
+    if optimize_messages is None:
+        optimize_messages = []
     try:
         output_size = Path(output_file).stat().st_size
         input_size = Path(input_file).stat().st_size
@@ -324,19 +331,8 @@ def report_output_file_size(
                 f"The argument --{arg.replace('_', '-')} was issued, causing transcoding."
             )
 
-    if hasattr(options, 'optimize') and options.optimize == 0:
-        reasons.append("Optimization was disabled.")
-    else:
-        image_optimizers = {
-            'jbig2': jbig2enc.available(),
-            'pngquant': pngquant.available(),
-        }
-        for name, available in image_optimizers.items():
-            if not available:
-                reasons.append(
-                    f"The optional dependency '{name}' was not found, so some image "
-                    f"optimizations could not be attempted."
-                )
+    reasons.extend(optimize_messages)
+
     if options.output_type.startswith('pdfa'):
         reasons.append("PDF/A conversion was enabled. (Try `--output-type pdf`.)")
     if options.plugins:

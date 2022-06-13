@@ -10,7 +10,15 @@ from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
 from logging import Handler
 from pathlib import Path
-from typing import TYPE_CHECKING, AbstractSet, List, NamedTuple, Optional
+from typing import (
+    TYPE_CHECKING,
+    AbstractSet,
+    List,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 import pluggy
 
@@ -467,7 +475,7 @@ def optimize_pdf(
     context: PdfContext,
     executor: Executor,
     linearize: bool,
-) -> Path:
+) -> Tuple[Path, Sequence[str]]:
     """Optimize a PDF after image, OCR and metadata processing.
 
     If the input_pdf is a PDF/A, the plugin should modify input_pdf in a way
@@ -490,6 +498,10 @@ def optimize_pdf(
         Path: If optimization is successful, the hook should return ``output_file``.
             If optimization does not produce a smaller file, the hook should return
             ``input_file``.
+        Sequence[str]: Any comments that the plugin wishes to report to the user,
+            especially reasons it was not able to further optimize the file. For
+            example, the plugin could report that a required third party was not
+            installed, so a specific optimization was not attempted.
 
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
