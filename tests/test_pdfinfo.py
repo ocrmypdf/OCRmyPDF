@@ -24,20 +24,24 @@ from ocrmypdf.pdfinfo.layout import PDFPage
 # pylint: disable=protected-access
 
 
-def test_single_page_text(outdir):
+@pytest.fixture
+def single_page_text(outdir):
     filename = outdir / 'text.pdf'
     pdf = Canvas(str(filename), pagesize=(8 * inch, 6 * inch))
     text = pdf.beginText()
     text.setFont('Helvetica', 12)
     text.setTextOrigin(1 * inch, 3 * inch)
     text.textLine(
-        "Methink'st thou art a general offence and every" " man should beat thee."
+        "Methink'st thou art a general offence and every man should beat thee."
     )
     pdf.drawText(text)
     pdf.showPage()
     pdf.save()
+    return filename
 
-    info = pdfinfo.PdfInfo(filename)
+
+def test_single_page_text(single_page_text):
+    info = pdfinfo.PdfInfo(single_page_text)
 
     assert len(info) == 1
     page = info[0]
@@ -54,7 +58,8 @@ def eight_by_eight():
     return im
 
 
-def test_single_page_image(eight_by_eight, outpdf):
+@pytest.fixture
+def eight_by_eight_regular_image(eight_by_eight, outpdf):
     im = eight_by_eight
     bio = BytesIO()
     im.save(bio, format='PNG')
@@ -71,7 +76,11 @@ def test_single_page_image(eight_by_eight, outpdf):
             outputstream=f,
             **IMG2PDF_KWARGS,
         )
-    info = pdfinfo.PdfInfo(outpdf)
+    return outpdf
+
+
+def test_single_page_image(eight_by_eight_regular_image):
+    info = pdfinfo.PdfInfo(eight_by_eight_regular_image)
 
     assert len(info) == 1
     page = info[0]
@@ -88,16 +97,18 @@ def test_single_page_image(eight_by_eight, outpdf):
     assert isclose(pdfimage.dpi.y, 8)
 
 
-def test_single_page_inline_image(eight_by_eight, outdir):
-    filename = outdir / 'image-mono-inline.pdf'
-    pdf = Canvas(str(filename), pagesize=(8 * 72, 6 * 72))
-
+@pytest.fixture
+def eight_by_eight_inline_image(eight_by_eight, outpdf):
+    pdf = Canvas(str(outpdf), pagesize=(8 * 72, 6 * 72))
     # Draw image in a 72x72 pt or 1"x1" area
     pdf.drawInlineImage(eight_by_eight, 0, 0, width=72, height=72)
     pdf.showPage()
     pdf.save()
+    return outpdf
 
-    info = pdfinfo.PdfInfo(filename)
+
+def test_single_page_inline_image(eight_by_eight_inline_image):
+    info = pdfinfo.PdfInfo(eight_by_eight_inline_image)
     print(info)
     pdfimage = info[0].images[0]
     assert isclose(pdfimage.dpi.x, 8)
@@ -177,7 +188,7 @@ def test_stack_abuse():
         pdfinfo.info._interpret_contents(stream)
 
     stream = pikepdf.Stream(p, b'q Q Q Q Q')
-    with pytest.warns(UserWarning, match="underflowed") as record:
+    with pytest.warns(UserWarning, match="underflowed"):
         pdfinfo.info._interpret_contents(stream)
 
     stream = pikepdf.Stream(p, b'q ' * 135)
@@ -201,7 +212,8 @@ def test_pages_issue700(monkeypatch, resources):
         )
 
 
-def test_image_scale0(resources, outpdf):
+@pytest.fixture
+def image_scale0(resources, outpdf):
     with pikepdf.open(resources / 'cmyk.pdf') as cmyk:
         xobj = cmyk.pages[0].as_form_xobject()
 
@@ -215,7 +227,12 @@ def test_image_scale0(resources, outpdf):
             p, b"q 0 0 0 0 0 0 cm %s Do Q" % bytes(objname)
         )
         p.save(outpdf)
+    return outpdf
 
-    pi = pdfinfo.PdfInfo(outpdf, detailed_analysis=True, progbar=False, max_workers=1)
+
+def test_image_scale0(image_scale0):
+    pi = pdfinfo.PdfInfo(
+        image_scale0, detailed_analysis=True, progbar=False, max_workers=1
+    )
     assert not pi.pages[0]._images[0].dpi.is_finite
     assert pi.pages[0].dpi == Resolution(0, 0)
