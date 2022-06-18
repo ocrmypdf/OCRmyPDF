@@ -22,8 +22,7 @@ from typing import (
 
 import pluggy
 
-from ocrmypdf import PdfContext
-from ocrmypdf._concurrent import Executor
+from ocrmypdf import Executor, PdfContext
 from ocrmypdf.helpers import Resolution
 
 if TYPE_CHECKING:

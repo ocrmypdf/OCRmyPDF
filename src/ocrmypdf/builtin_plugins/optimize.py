@@ -12,8 +12,7 @@ import logging
 from pathlib import Path
 from typing import Sequence, Tuple
 
-from ocrmypdf import PdfContext, hookimpl
-from ocrmypdf._concurrent import Executor
+from ocrmypdf import Executor, PdfContext, hookimpl
 from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._pipeline import get_pdf_save_settings
 from ocrmypdf.cli import numeric
