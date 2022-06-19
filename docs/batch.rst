@@ -42,12 +42,15 @@ place, and printing each filename in between runs:
 
    find . -printf '%p\n' -name '*.pdf' -exec ocrmypdf '{}' '{}' \;
 
-Alternatively, with a docker container (mounts a volume to the container
-where the PDFs are stored):
+Alternatively, with a Docker container and streaming the file through
+standard input and output:
 
 .. code-block:: bash
 
-   find . -printf '%p\n' -name '*.pdf' -exec docker run --rm -v <host dir>:<container dir> jbarlow83/ocrmypdf '<container dir>/{}' '<container dir>/{}' \;
+   find . -name '*.pdf' -print0 | xargs -0 | while read pdf; do
+       pdfout=$(mktemp)
+       docker run --rm -i jbarlow83/ocrmypdf - - <$pdf >$pdfout && cp $pdfout $pdf
+   done
 
 This only runs one ``ocrmypdf`` process at a time. This variation uses
 ``find`` to create a directory list and ``parallel`` to parallelize runs
