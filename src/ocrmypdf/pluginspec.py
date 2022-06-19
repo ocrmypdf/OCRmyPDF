@@ -52,6 +52,33 @@ def get_logging_console() -> Handler:
 
 
 @hookspec
+def initialize(plugin_manager: pluggy.PluginManager):
+    """Called when this plugin is first loaded into OCRmyPDF.
+
+    The primary intended use of this is for plugins to check compatibility with other
+    plugins and possibly block other blocks, a plugin that wishes to block ocrmypdf's
+    built-in optimize plugin could do:
+
+    .. code-block::
+
+        plugin_manager.set_blocked('ocrmypdf.builtin_plugins.optimize')
+
+    It would also be reasonable for an plugin implementation to check if it is unable
+    to proceed, for example, because a required dependency is missing. (If the plugin's
+    ability to proceed depends on options and arguments, use ``validate`` instead.)
+
+    Raises:
+        ocrmypdf.exceptions.ExitCodeException: If options are not acceptable
+            and the application should terminate gracefully with an informative
+            message and error code.
+
+    Note:
+        This hook will be called from the main process, and may modify global state
+        before child worker processes are forked.
+    """
+
+
+@hookspec
 def add_options(parser: ArgumentParser) -> None:
     """Allows the plugin to add its own command line and API arguments.
 
