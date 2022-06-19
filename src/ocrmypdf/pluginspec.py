@@ -510,6 +510,9 @@ def optimize_pdf(
     If the implementation fails to produce a smaller file than the input file, it
     should return input_pdf instead.
 
+    A plugin that implements a new optimizer may need to suppress the built-in
+    optimizer by implementing an ``initialize`` hook.
+
     Arguments:
         input_pdf: The input PDF, which has OCR added.
         output_pdf: The requested filename of the output PDF which should be created
@@ -538,8 +541,8 @@ def optimize_pdf(
 def is_optimization_enabled(context: PdfContext) -> bool:
     """For a given PdfContext, OCRmyPDF asks the plugin if optimization is enabled.
 
-    It is assumed that an optimization plugin might be installed but could be
-    disabled by user settings.
+    An optimization plugin might be installed and active but could be disabled by
+    user settings.
 
     If this returns False, OCRmyPDF will take certain actions to finalize the PDF.
 
