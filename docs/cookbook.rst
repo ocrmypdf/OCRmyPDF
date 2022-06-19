@@ -200,7 +200,7 @@ might remove desirable content, especially from poor quality scans.
 
 .. warning::
 
-   ``--clean-final`` and ``-remove-background`` may leave undesirable
+   ``--clean-final`` and ``--remove-background`` may leave undesirable
    visual artifacts in some images where their algorithms have
    shortcomings. Files should be visually reviewed after using these
    options.
