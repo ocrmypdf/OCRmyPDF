@@ -36,18 +36,18 @@ Directory trees
 ===============
 
 This will walk through a directory tree and run OCR on all files in
-place, printing the output in a way that makes
+place, and printing each filename in between runs:
 
 .. code-block:: bash
 
-   find . -printf '%p' -name '*.pdf' -exec ocrmypdf '{}' '{}' \;
+   find . -printf '%p\n' -name '*.pdf' -exec ocrmypdf '{}' '{}' \;
 
 Alternatively, with a docker container (mounts a volume to the container
 where the PDFs are stored):
 
 .. code-block:: bash
 
-   find . -printf '%p' -name '*.pdf' -exec docker run --rm -v <host dir>:<container dir> jbarlow83/ocrmypdf '<container dir>/{}' '<container dir>/{}' \;
+   find . -printf '%p\n' -name '*.pdf' -exec docker run --rm -v <host dir>:<container dir> jbarlow83/ocrmypdf '<container dir>/{}' '<container dir>/{}' \;
 
 This only runs one ``ocrmypdf`` process at a time. This variation uses
 ``find`` to create a directory list and ``parallel`` to parallelize runs
