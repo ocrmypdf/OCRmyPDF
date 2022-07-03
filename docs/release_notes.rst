@@ -24,10 +24,18 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v13.6.0
+=======
+
+-  Added a new ``initialize`` plugin hook, making it possible to suppress built-in
+   plugins more easily, among other possibilities.
+-  Fixed an issue where unpaper would exit with a "wrong stream" error, probably
+   related to images with an odd integer width. :issue:`887, 665`
+
 v13.5.0
 =======
 
--  Added a new ``optimize_pdf`` pluginhook, making it possible to create plugins that
+-  Added a new ``optimize_pdf`` plugin hook, making it possible to create plugins that
    replace or enhance OCRmyPDF's PDF optimizer.
 -  Removed all max version restrictions. Our new policy is to blacklist known-bad releases
    and only block known-bad versions of dependencies.
