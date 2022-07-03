@@ -72,13 +72,13 @@ def version() -> str:
     return get_version('unpaper')
 
 
-SUFFIXES = {'1': '.pbm', 'L': '.pgm', 'RGB': '.ppm'}
+SUPPORTED_MODES = {'1', 'L', 'RGB'}
 
 
-def _convert_image(im: Image.Image) -> Tuple[Image.Image, bool, str]:
+def _convert_image(im: Image.Image) -> Tuple[Image.Image, bool]:
     im_modified = False
 
-    if im.mode not in SUFFIXES:
+    if im.mode not in SUPPORTED_MODES:
         log.info("Converting image to other colorspace")
         try:
             if im.mode == 'P' and len(im.getcolors()) == 2:
@@ -91,13 +91,11 @@ def _convert_image(im: Image.Image) -> Tuple[Image.Image, bool, str]:
             ) from e
         else:
             im_modified = True
-    try:
-        suffix = SUFFIXES[im.mode]
-    except KeyError:
-        raise MissingDependencyError(
-            "Failed to convert image to a supported format."
-        ) from None
-    return im, im_modified, suffix
+        if im.mode not in SUPPORTED_MODES:
+            raise MissingDependencyError(
+                "Failed to convert image to a supported format."
+            ) from None
+    return im, im_modified
 
 
 @contextmanager
@@ -105,19 +103,21 @@ def _setup_unpaper_io(input_file: Path) -> Iterator[Tuple[Path, Path, Path]]:
     with Image.open(input_file) as im:
         if im.width * im.height >= UNPAPER_IMAGE_PIXEL_LIMIT:
             raise UnpaperImageTooLargeError(w=im.width, h=im.height)
-        im, im_modified, suffix = _convert_image(im)
+        im, im_modified = _convert_image(im)
 
         with TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
             tmppath = Path(tmpdir)
-            if im_modified or input_file.suffix != '.pnm':
-                input_pnm = tmppath / 'input.pnm'
-                im.save(input_pnm, format='PPM')
+            if im_modified or input_file.suffix != '.png':
+                input_png = tmppath / 'input.png'
+                im.save(input_png, format='PNG')
             else:
                 # No changes, PNG input, just use the file we already have
-                input_pnm = input_file
+                input_png = input_file
 
-            output_pnm = tmppath / f'output{suffix}'
-            yield input_pnm, output_pnm, tmppath
+            # unpaper can write .png too, but it seems to write them slowly
+            # adds a few seconds to test suite - so just use pnm
+            output_pnm = tmppath / 'output.pnm'
+            yield input_png, output_pnm, tmppath
 
 
 def run_unpaper(
@@ -125,7 +125,7 @@ def run_unpaper(
 ) -> None:
     args_unpaper = ['unpaper', '-v', '--dpi', str(round(dpi, 6))] + mode_args
 
-    with _setup_unpaper_io(input_file) as (input_pnm, output_pnm, tmpdir):
+    with _setup_unpaper_io(input_file) as (input_png, output_pnm, tmpdir):
         # To prevent any shenanigans from accepting arbitrary parameters in
         # --unpaper-args, we:
         # 1) run with cwd set to a tmpdir with only unpaper's files
@@ -133,7 +133,7 @@ def run_unpaper(
         # 3) append absolute paths for the input and output file
         # This should ensure that a user cannot clobber some other file with
         # their unpaper arguments (whether intentionally or otherwise)
-        args_unpaper.extend([os.fspath(input_pnm), os.fspath(output_pnm)])
+        args_unpaper.extend([os.fspath(input_png), os.fspath(output_pnm)])
         run(
             args_unpaper,
             close_fds=True,
