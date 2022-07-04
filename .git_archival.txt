@@ -1,1 +1,4 @@
+node: $Format:%H$
+node-date: $Format:%cI$
+describe-name: $Format:%(describe:tags=true)$
 ref-names: $Format:%D$

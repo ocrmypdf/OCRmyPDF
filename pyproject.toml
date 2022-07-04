@@ -1,14 +1,12 @@
 [build-system]
 requires = [
-  "setuptools >= 30.3.0",
-  "wheel",
-  "setuptools_scm[toml] >= 3.4",
-  "setuptools_scm_git_archive"
+  "setuptools >= 52",
+  "setuptools_scm[toml] >= 7.0.3",
+  "wheel"
 ]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-version_scheme = "post-release"
 
 [tool.black]
 line-length = 88
