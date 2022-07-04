@@ -162,6 +162,11 @@ Examples
   management system.
 
 
+Suppressing or overriding other plugins
+---------------------------------------
+
+.. autofunction:: ocrmypdf.pluginspec.initialize
+
 Custom command line arguments
 -----------------------------
 
@@ -172,7 +177,7 @@ Custom command line arguments
 Execution and progress reporting
 --------------------------------
 
-.. autoclass: ocrmypdf.pluginspec.Executor
+.. autoclass:: ocrmypdf.pluginspec.Executor
     :members:
 
 .. autofunction:: ocrmypdf.pluginspec.get_logging_console
@@ -216,3 +221,10 @@ PDF/A production
 ----------------
 
 .. autofunction:: ocrmypdf.pluginspec.generate_pdfa
+
+PDF optimization
+----------------
+
+.. autofunction:: ocrmypdf.pluginspec.optimize_pdf
+
+.. autofunction:: ocrmypdf.pluginspec.is_optimization_enabled
