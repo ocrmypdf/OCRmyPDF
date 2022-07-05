@@ -340,6 +340,9 @@ levels in the GCC compiler.
         - Enables lossless optimizations, such as transcoding images to more
           efficient formats. Also compress other uncompressed objects in the
           PDF and enables the more efficient "object streams" within the PDF.
+          (If ``--jbig2-lossy`` is issued, then lossy JBIG2 optimization is used.
+          The decision to use lossy JBIG2 is separate from standard optimization
+          settings.)
     *   - ``--optimize 2``
         - All of the above, and enables lossy optimizations and color quantization.
     *   - ``--optimize 3``
@@ -360,3 +363,8 @@ fo a PDF.
     ocrmypdf --optimize 3 in.pdf out.pdf  # Make it small
 
 Some users may consider enabling lossy JBIG2. See: :ref:`jbig2-lossy`.
+
+.. note::
+
+    Image processing and PDF/A conversion can also introduce lossy transformations
+    to your PDF images, even when ``--optimize 1`` is in use.

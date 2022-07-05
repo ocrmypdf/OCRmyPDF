@@ -223,7 +223,9 @@ The ``hocr`` renderer
 The ``hocr`` renderer works with older versions of Tesseract. The image
 layer is copied from the original PDF page if possible, avoiding
 potentially lossy transcoding or loss of other PDF information. If
-preprocessing is specified, then the image layer is a new PDF.
+preprocessing is specified, then the image layer is a new PDF. (You may
+need to disable PDF/A conversion nad optimization to eliminate all
+lossy transformations.)
 
 Unlike ``sandwich`` this renderer is implemented within OCRmyPDF; anyone
 looking to customize how OCR is presented should look here. A major
