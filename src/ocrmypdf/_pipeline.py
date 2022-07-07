@@ -41,7 +41,7 @@ from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 # Remove this workaround when we require Pillow >= 10
 try:
     BICUBIC = Image.Resampling.BICUBIC  # type: ignore
-except AttributeError:
+except AttributeError:  # pragma: no cover
     # Pillow 9 shim
     BICUBIC = Image.BICUBIC  # type: ignore
 
@@ -679,15 +679,14 @@ def get_docinfo(base_pdf: pikepdf.Pdf, context: PdfContext) -> Dict[str, str]:
         k: from_document_info(k)
         for k in ('/Title', '/Author', '/Keywords', '/Subject', '/CreationDate')
     }
-    if options is not None:
-        if options.title:
-            pdfmark['/Title'] = options.title
-        if options.author:
-            pdfmark['/Author'] = options.author
-        if options.keywords:
-            pdfmark['/Keywords'] = options.keywords
-        if options.subject:
-            pdfmark['/Subject'] = options.subject
+    if options.title:
+        pdfmark['/Title'] = options.title
+    if options.author:
+        pdfmark['/Author'] = options.author
+    if options.keywords:
+        pdfmark['/Keywords'] = options.keywords
+    if options.subject:
+        pdfmark['/Subject'] = options.subject
 
     creator_tag = context.plugin_manager.hook.get_ocr_engine().creator_tag(options)
 
