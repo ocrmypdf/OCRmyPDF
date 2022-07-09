@@ -400,7 +400,7 @@ class ImageInfo:
                     self._comp = 4
                 else:
                     self._comp = 3
-            except UnsupportedImageTypeError as ex:
+            except (AttributeError, UnsupportedImageTypeError) as ex:
                 self._comp = None
                 logger.warning(
                     f"An image with a corrupt or unreadable ICC profile was found. "

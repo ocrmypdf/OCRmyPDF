@@ -14,9 +14,10 @@ import sys
 from collections.abc import Mapping
 from contextlib import suppress
 from functools import lru_cache
+from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, CompletedProcess, Popen
 from subprocess import run as subprocess_run
-from typing import Callable, Optional, Type, Union
+from typing import Callable, Optional, Sequence, Tuple, Type, Union
 
 from packaging.version import Version
 
@@ -26,11 +27,14 @@ from ocrmypdf.exceptions import MissingDependencyError
 
 log = logging.getLogger(__name__)
 
+Args = Sequence[Union[Path, str]]
+OsEnviron = os._Environ  # pylint: disable=protected-access
+
 
 def run(
-    args,
+    args: Args,
     *,
-    env=None,
+    env: Optional[OsEnviron] = None,
     logs_errors_to_stdout: bool = False,
     check: bool = False,
     **kwargs,
@@ -73,7 +77,12 @@ def run(
 
 
 def run_polling_stderr(
-    args, *, callback: Callable[[str], None], check: bool = False, env=None, **kwargs
+    args: Args,
+    *,
+    callback: Callable[[str], None],
+    check: bool = False,
+    env: Optional[OsEnviron] = None,
+    **kwargs,
 ) -> CompletedProcess:
     """Run a process like ``ocrmypdf.subprocess.run``, and poll stderr.
 
@@ -106,7 +115,9 @@ def run_polling_stderr(
         return CompletedProcess(args, proc.returncode, None, stderr=stderr)
 
 
-def _fix_process_args(args, env, kwargs):
+def _fix_process_args(
+    args: Args, env: Optional[OsEnviron], kwargs
+) -> Tuple[Args, OsEnviron, logging.Logger, bool]:
     assert 'universal_newlines' not in kwargs, "Use text= instead of universal_newlines"
 
     if not env:
@@ -123,14 +134,18 @@ def _fix_process_args(args, env, kwargs):
 
     log.debug("Running: %s", args)
     process_log = log.getChild(os.path.basename(program))
-    text = kwargs.get('text', False)
+    text = bool(kwargs.get('text', False))
 
     return args, env, process_log, text
 
 
 @lru_cache(maxsize=None)
 def get_version(
-    program: str, *, version_arg: str = '--version', regex=r'(\d+(\.\d+)*)', env=None
+    program: str,
+    *,
+    version_arg: str = '--version',
+    regex=r'(\d+(\.\d+)*)',
+    env: Optional[OsEnviron] = None,
 ) -> str:
     """Get the version of the specified program
 
@@ -229,7 +244,7 @@ a command prompt to install the missing package:
 '''
 
 
-def _get_platform():
+def _get_platform() -> str:
     if sys.platform.startswith('freebsd'):
         return 'freebsd'
     elif sys.platform.startswith('linux'):
@@ -239,7 +254,9 @@ def _get_platform():
     return sys.platform
 
 
-def _error_trailer(program, package, **kwargs):
+def _error_trailer(
+    program: str, package: Union[str, Mapping[str, str]], **kwargs
+) -> None:
     del kwargs
     if isinstance(package, Mapping):
         package = package.get(_get_platform(), program)
@@ -252,7 +269,9 @@ def _error_trailer(program, package, **kwargs):
         log.info(WINDOWS_INSTALL_ADVICE.format(**locals()))
 
 
-def _error_missing_program(program, package, required_for, recommended):
+def _error_missing_program(
+    program: str, package: str, required_for: Optional[str], recommended: bool
+) -> None:
     # pylint: disable=unused-argument
     if recommended:
         log.warning(MISSING_RECOMMEND_PROGRAM.format(**locals()))
@@ -263,7 +282,13 @@ def _error_missing_program(program, package, required_for, recommended):
     _error_trailer(**locals())
 
 
-def _error_old_version(program, package, need_version, found_version, required_for):
+def _error_old_version(
+    program: str,
+    package: str,
+    need_version: str,
+    found_version: str,
+    required_for: Optional[str],
+) -> None:
     # pylint: disable=unused-argument
     if required_for:
         log.error(OLD_VERSION_REQUIRED_FOR.format(**locals()))
@@ -272,7 +297,7 @@ def _error_old_version(program, package, need_version, found_version, required_f
     _error_trailer(**locals())
 
 
-def _remove_leading_v(s):
+def _remove_leading_v(s: str) -> str:
     if sys.version_info >= (3, 9):
         return s.removeprefix('v')
 
@@ -285,12 +310,12 @@ def check_external_program(
     *,
     program: str,
     package: str,
-    version_checker: Callable,
+    version_checker: Callable[[], str],
     need_version: str,
     required_for: Optional[str] = None,
-    recommended=False,
+    recommended: bool = False,
     version_parser: Type[Version] = Version,
-):
+) -> None:
     """Check for required version of external program and raise exception if not.
 
     Args:

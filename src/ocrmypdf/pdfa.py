@@ -14,9 +14,9 @@ from pathlib import Path
 from typing import Dict, Iterator, Union
 
 try:
-    from importlib_resources import files as package_files
-except ImportError:
     from importlib.resources import files as package_files
+except ImportError:
+    from importlib_resources import files as package_files  # type: ignore
 
 import pikepdf
 

@@ -302,7 +302,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     # Merge layers to one single pdf
     pdf = ocrgraft.finalize()
 
-    messages: List[str] = []
+    messages: Sequence[str] = []
     if options.output_type != 'none':
         # PDF/A and metadata
         log.info("Postprocessing...")

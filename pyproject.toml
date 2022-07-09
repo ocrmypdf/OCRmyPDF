@@ -94,7 +94,8 @@ module = [
   'pdfminer.*',
   'reportlab.*',
   'fitz',
-  'libxmp.utils'
+  'libxmp.utils',
+  'importlib_metadata'
 ]
 ignore_missing_imports = true
 
