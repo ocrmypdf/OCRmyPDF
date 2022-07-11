@@ -55,7 +55,8 @@ I searched the web for a free command line tool to OCR PDF files: I found many, 
 
 ## Installation
 
-Linux, Windows, macOS and FreeBSD are supported. Docker images are also available, for both x64 and ARM.
+Linux, Windows, macOS and FreeBSD are supported. A GitHub Action is available for this project. Docker images are also available, for both x64 and ARM. 
+
 
 | Operating system              | Install command               |
 | ----------------------------- | ------------------------------|
@@ -67,6 +68,8 @@ Linux, Windows, macOS and FreeBSD are supported. Docker images are also availabl
 | LinuxBrew                     | ``brew install ocrmypdf``     |
 | FreeBSD                       | ``pkg install py37-ocrmypdf`` |
 | Conda                         | ``conda install ocrmypdf``    |
+
+To use this project in your GitHub Workflows visit this repo [here](https://github.com/MarketingPipeline/OCR-PDF-Action)
 
 For everyone else, [see our documentation](https://ocrmypdf.readthedocs.io/en/latest/installation.html) for installation steps.
 
