@@ -41,7 +41,7 @@ jobs:
       PYTHON: ${{ matrix.python }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
@@ -129,7 +129,7 @@ jobs:
       PYTHON: ${{ matrix.python }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
@@ -184,7 +184,7 @@ jobs:
       PYTHON: ${{ matrix.python }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
@@ -217,7 +217,7 @@ jobs:
     name: Build sdist and wheels
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
@@ -274,7 +274,7 @@ jobs:
       - name: Set image name
         run: echo "DOCKER_IMAGE_NAME=ocrmypdf" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
