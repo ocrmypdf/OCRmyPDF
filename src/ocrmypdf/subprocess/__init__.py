@@ -11,13 +11,12 @@ import logging
 import os
 import re
 import sys
-from collections.abc import Mapping
 from contextlib import suppress
 from functools import lru_cache
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, CompletedProcess, Popen
 from subprocess import run as subprocess_run
-from typing import Callable, Optional, Sequence, Tuple, Type, Union
+from typing import Callable, Mapping, Optional, Sequence, Tuple, Type, Union
 
 from packaging.version import Version
 

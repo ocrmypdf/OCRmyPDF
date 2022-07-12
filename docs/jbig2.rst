@@ -32,7 +32,7 @@ For all other Linux, you must build a JBIG2 encoder from source:
 
 .. _jbig2-lossy:
 
-Dependencies include libtoolize and libleptonica, which on Ubuntu systems 
+Dependencies include libtoolize and libleptonica, which on Ubuntu systems
 are packaged as libtool and libleptonica-dev.
 
 Lossy mode JBIG2
