@@ -41,7 +41,7 @@ jobs:
       PYTHON: ${{ matrix.python }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
@@ -111,7 +111,7 @@ jobs:
           python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           files: ./coverage.xml
           env_vars: OS,PYTHON
@@ -129,7 +129,7 @@ jobs:
       PYTHON: ${{ matrix.python }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
@@ -166,7 +166,7 @@ jobs:
           python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           files: ./coverage.xml
           env_vars: OS,PYTHON
@@ -184,7 +184,7 @@ jobs:
       PYTHON: ${{ matrix.python }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
@@ -208,7 +208,7 @@ jobs:
           python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           files: ./coverage.xml
           env_vars: OS,PYTHON
@@ -217,7 +217,7 @@ jobs:
     name: Build sdist and wheels
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
@@ -232,7 +232,7 @@ jobs:
           python setup.py sdist
           python setup.py bdist_wheel
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           path: |
             ./dist/*.whl
@@ -274,18 +274,18 @@ jobs:
       - name: Set image name
         run: echo "DOCKER_IMAGE_NAME=ocrmypdf" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: jbarlow83
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
         id: buildx
