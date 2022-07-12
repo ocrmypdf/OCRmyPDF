@@ -24,6 +24,13 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v13.6.1
+=======
+
+-  Require setuptools-scm 7.0.5 to avoid possible issues with source distributions in
+   earlier versions of setuptools-scm.
+-  Suppress a spurious warning, improve tests, improve typing and other miscellany.
+
 v13.6.0
 =======
 
