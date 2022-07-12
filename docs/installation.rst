@@ -43,11 +43,11 @@ Installing on Linux
 Debian and Ubuntu 18.04 or newer
 --------------------------------
 
-.. |deb-stable| image:: https://repology.org/badge/version-for-repo/debian_stable/ocrmypdf.svg
-    :alt: Debian stable
+.. |deb-11| image:: https://repology.org/badge/version-for-repo/debian_11/ocrmypdf.svg
+    :alt: Debian 11
 
-.. |deb-testing| image:: https://repology.org/badge/version-for-repo/debian_testing/ocrmypdf.svg
-    :alt: Debian testing
+.. |deb-12| image:: https://repology.org/badge/version-for-repo/debian_12/ocrmypdf.svg
+    :alt: Debian 12
 
 .. |deb-unstable| image:: https://repology.org/badge/version-for-repo/debian_unstable/ocrmypdf.svg
     :alt: Debian unstable
@@ -66,7 +66,7 @@ Debian and Ubuntu 18.04 or newer
 +-----------------------------------------------+
 | |latest|                                      |
 +-----------------------------------------------+
-| |deb-stable| |deb-testing| |deb-unstable|     |
+| |deb-11| |deb-12| |deb-unstable|              |
 +-----------------------------------------------+
 | |ubu-1804| |ubu-2004| |ubu-2204|              |
 +-----------------------------------------------+
@@ -142,7 +142,7 @@ from sources <#installing-head-revision-from-sources>`__.
 Installing the latest version on Ubuntu 22.04 LTS
 -------------------------------------------------
 
-Ubuntu 22.04 includes ocrmypdf 13.4.0 - you can install that with 
+Ubuntu 22.04 includes ocrmypdf 13.4.0 - you can install that with
 ``apt install ocrmypdf``. To install a more recent version for the current
 user, follow these steps:
 
@@ -153,7 +153,7 @@ user, follow these steps:
 
     pip install --user --upgrade ocrmypdf
 
-If you get the message ``WARNING: The script ocrmypdf is installed in 
+If you get the message ``WARNING: The script ocrmypdf is installed in
 '/home/$USER/.local/bin' which is not on PATH.``, you may need to re-login
 or open a new shell, or manually add this to your user's PATH.
 
