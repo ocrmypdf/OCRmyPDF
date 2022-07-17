@@ -148,10 +148,13 @@ class StandardExecutor(Executor):
                 if not os.environ.get("PYTEST_CURRENT_TEST", ""):
                     # Normally we shutdown without waiting for other child workers
                     # on error, because there is no point in waiting for them. Their
-                    # results will be discard. But if the condition above is True,
+                    # results will be discarded. But if the condition above is True,
                     # then we are running in pytest, and we want everything to exit
                     # as cleanly as possible so that we get good error messages.
-                    executor.shutdown(wait=False, cancel_futures=True)
+                    if sys.version_info[0] < 3.9:
+                        executor.shutdown(wait=False, cancel_futures=True)
+                    elif sys.version_info[0] > 3.8:
+                        executor.shutdown(wait=False, cancel_futures=True)
                 raise
             finally:
                 # Terminate log listener
