@@ -45,7 +45,7 @@ jobs:
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         name: Install Python
         with:
           python-version: ${{ matrix.python }}
@@ -133,7 +133,7 @@ jobs:
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         name: Install Python
         with:
           python-version: ${{ matrix.python }}
@@ -188,7 +188,7 @@ jobs:
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         name: Install Python
         with:
           python-version: ${{ matrix.python }}
@@ -221,7 +221,7 @@ jobs:
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         name: Install Python
         with:
           python-version: "3.7"
