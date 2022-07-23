@@ -494,7 +494,7 @@ def preprocess_deskew(input_file: Path, page_context: PageContext):
         deskewed = im.rotate(
             deskew_angle_degrees,
             resample=BICUBIC,
-            fillcolor=ImageColor.getcolor('white', mode=im.mode),
+            fillcolor=ImageColor.getcolor('white', mode=im.mode),  # type: ignore
         )
         deskewed.save(output_file, dpi=dpi)
 

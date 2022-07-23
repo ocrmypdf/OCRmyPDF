@@ -20,7 +20,9 @@ from typing import Any, Callable, Iterable, Iterator, Set, Tuple, TypeVar
 try:
     import winreg
 except ModuleNotFoundError as _notfound_ex:
-    raise ModuleNotFoundError("This module is for Windows only") from _notfound_ex
+    from unittest import mock
+
+    winreg = mock.MagicMock()
 
 log = logging.getLogger(__name__)
 
