@@ -6,6 +6,8 @@
 
 """OCRmyPDF automatically installs these filters as plugins."""
 
+from __future__ import annotations
+
 from ocrmypdf import hookimpl
 
 

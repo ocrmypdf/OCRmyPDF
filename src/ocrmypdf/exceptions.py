@@ -6,6 +6,8 @@
 
 """OCRmyPDF's exceptions."""
 
+from __future__ import annotations
+
 from enum import IntEnum
 from textwrap import dedent
 

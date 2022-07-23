@@ -6,8 +6,10 @@
 
 """Command line interface customization and validation."""
 
+from __future__ import annotations
+
 import argparse
-from typing import Any, Callable, Mapping, Optional, TypeVar
+from typing import Any, Callable, Mapping, TypeVar
 
 from ocrmypdf._version import PROGRAM_NAME as _PROGRAM_NAME
 from ocrmypdf._version import __version__ as _VERSION
@@ -15,9 +17,7 @@ from ocrmypdf._version import __version__ as _VERSION
 T = TypeVar('T', int, float)
 
 
-def numeric(
-    basetype: Callable[[Any], T], min_: Optional[T] = None, max_: Optional[T] = None
-):
+def numeric(basetype: Callable[[Any], T], min_: T | None = None, max_: T | None = None):
     """Validator for numeric params"""
     min_ = basetype(min_) if min_ is not None else None
     max_ = basetype(max_) if max_ is not None else None

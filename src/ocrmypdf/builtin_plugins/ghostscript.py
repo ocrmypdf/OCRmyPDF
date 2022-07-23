@@ -7,6 +7,8 @@
 
 """Built-in plugin to implement PDF page rasterization and PDF/A production."""
 
+from __future__ import annotations
+
 import logging
 
 from ocrmypdf import hookimpl

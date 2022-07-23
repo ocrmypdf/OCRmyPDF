@@ -5,9 +5,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+from __future__ import annotations
+
 # unpaper documentation:
 # https://github.com/Flameeyes/unpaper/blob/master/doc/basic-concepts.md
-
 """Interface to unpaper executable"""
 
 import logging
@@ -18,7 +19,7 @@ from contextlib import contextmanager
 from decimal import Decimal
 from pathlib import Path
 from subprocess import PIPE, STDOUT
-from typing import Iterator, List, Optional, Tuple, Union
+from typing import Iterator, Union
 
 from PIL import Image
 
@@ -75,7 +76,7 @@ def version() -> str:
 SUPPORTED_MODES = {'1', 'L', 'RGB'}
 
 
-def _convert_image(im: Image.Image) -> Tuple[Image.Image, bool]:
+def _convert_image(im: Image.Image) -> tuple[Image.Image, bool]:
     im_modified = False
 
     if im.mode not in SUPPORTED_MODES:
@@ -99,7 +100,7 @@ def _convert_image(im: Image.Image) -> Tuple[Image.Image, bool]:
 
 
 @contextmanager
-def _setup_unpaper_io(input_file: Path) -> Iterator[Tuple[Path, Path, Path]]:
+def _setup_unpaper_io(input_file: Path) -> Iterator[tuple[Path, Path, Path]]:
     with Image.open(input_file) as im:
         if im.width * im.height >= UNPAPER_IMAGE_PIXEL_LIMIT:
             raise UnpaperImageTooLargeError(w=im.width, h=im.height)
@@ -121,7 +122,7 @@ def _setup_unpaper_io(input_file: Path) -> Iterator[Tuple[Path, Path, Path]]:
 
 
 def run_unpaper(
-    input_file: Path, output_file: Path, *, dpi: DecFloat, mode_args: List[str]
+    input_file: Path, output_file: Path, *, dpi: DecFloat, mode_args: list[str]
 ) -> None:
     args_unpaper = ['unpaper', '-v', '--dpi', str(round(dpi, 6))] + mode_args
 
@@ -154,7 +155,7 @@ def run_unpaper(
             ) from e
 
 
-def validate_custom_args(args: str) -> List[str]:
+def validate_custom_args(args: str) -> list[str]:
     unpaper_args = shlex.split(args)
     if any(('/' in arg or arg == '.' or arg == '..') for arg in unpaper_args):
         raise ValueError('No filenames allowed in --unpaper-args')
@@ -166,7 +167,7 @@ def clean(
     output_file: Path,
     *,
     dpi: DecFloat,
-    unpaper_args: Optional[List[str]] = None,
+    unpaper_args: list[str] | None = None,
 ) -> Path:
     default_args = [
         '--layout',

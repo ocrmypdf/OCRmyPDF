@@ -7,6 +7,8 @@
 
 """Interface to jbig2 executable"""
 
+from __future__ import annotations
+
 from subprocess import PIPE
 
 from ocrmypdf.exceptions import MissingDependencyError

@@ -6,6 +6,8 @@
 
 """setup.py to support older setuptools and pip."""
 
+from __future__ import annotations
+
 from setuptools import setup
 
 setup()

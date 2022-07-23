@@ -7,13 +7,14 @@
 
 """Interface to Tesseract executable"""
 
+from __future__ import annotations
+
 import logging
 import re
 from math import pi
 from os import fspath
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
-from typing import Dict, List, Optional
 
 from packaging.version import Version
 from PIL import Image
@@ -46,7 +47,7 @@ HOCR_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
 </html>
 """
 
-TESSERACT_THRESHOLDING_METHODS: Dict[str, int] = {
+TESSERACT_THRESHOLDING_METHODS: dict[str, int] = {
     'auto': 0,
     'otsu': 0,
     'adaptive-otsu': 1,
@@ -162,7 +163,7 @@ def get_languages():
     return {lang.strip() for lang in rest}
 
 
-def tess_base_args(langs: List[str], engine_mode: Optional[int]) -> List[str]:
+def tess_base_args(langs: list[str], engine_mode: int | None) -> list[str]:
     args = ['tesseract']
     if langs:
         args.extend(['-l', '+'.join(langs)])
@@ -171,7 +172,7 @@ def tess_base_args(langs: List[str], engine_mode: Optional[int]) -> List[str]:
     return args
 
 
-def _parse_tesseract_output(binary_output: bytes) -> Dict[str, str]:
+def _parse_tesseract_output(binary_output: bytes) -> dict[str, str]:
     def gen():
         for line in binary_output.decode().splitlines():
             line = line.strip()
@@ -183,7 +184,7 @@ def _parse_tesseract_output(binary_output: bytes) -> Dict[str, str]:
 
 
 def get_orientation(
-    input_file: Path, engine_mode: Optional[int], timeout: float
+    input_file: Path, engine_mode: int | None, timeout: float
 ) -> OrientationConfidence:
     args_tesseract = tess_base_args(['osd'], engine_mode) + [
         '--psm',
@@ -215,7 +216,7 @@ def get_orientation(
 
 
 def get_deskew(
-    input_file: Path, languages: List[str], engine_mode: Optional[int], timeout: float
+    input_file: Path, languages: list[str], engine_mode: int | None, timeout: float
 ) -> float:
     """Gets angle to deskew this page, in degrees."""
     args_tesseract = tess_base_args(languages, engine_mode) + [
@@ -306,9 +307,9 @@ def generate_hocr(
     input_file: Path,
     output_hocr: Path,
     output_text: Path,
-    languages: List[str],
+    languages: list[str],
     engine_mode: int,
-    tessconfig: List[str],
+    tessconfig: list[str],
     timeout: float,
     pagesegmode: int,
     thresholding: int,
@@ -372,9 +373,9 @@ def generate_pdf(
     input_file: Path,
     output_pdf: Path,
     output_text: Path,
-    languages: List[str],
+    languages: list[str],
     engine_mode: int,
-    tessconfig: List[str],
+    tessconfig: list[str],
     timeout: float,
     pagesegmode: int,
     thresholding: int,

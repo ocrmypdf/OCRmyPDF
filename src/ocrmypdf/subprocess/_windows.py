@@ -3,33 +3,23 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
-# type: ignore
-# Non-Windows mypy now breaks when trying to typecheck winreg
-
 """Find Tesseract and Ghostscript binaries on Windows using the registry."""
 
-import logging
+from __future__ import annotations
+
 import os
 import shutil
 import sys
 from itertools import chain
 from pathlib import Path
-from typing import Any, Callable, Iterable, Iterator, Set, Tuple, TypeVar
+from typing import Any, Callable, Iterable, Iterator
 
-try:
-    import winreg
-except ModuleNotFoundError as _notfound_ex:
-    from unittest import mock
+assert sys.platform == 'win32', "Suppress type checking when not on Windows"
 
-    winreg = mock.MagicMock()
-
-log = logging.getLogger(__name__)
-
-T = TypeVar('T')
+import winreg
 
 
-def ghostscript_version_key(s: str) -> Tuple[int, int, int]:
+def ghostscript_version_key(s: str) -> tuple[int, int, int]:
     """Compare Ghostscript version numbers."""
     try:
         release = [int(elem) for elem in s.split('.', maxsplit=3)]
@@ -59,7 +49,7 @@ def registry_subkeys(key: winreg.HKEYType) -> Iterator[str]:
     return registry_enum(key, winreg.EnumKey)
 
 
-def registry_values(key: winreg.HKEYType) -> Iterator[Tuple[str, Any, int]]:
+def registry_values(key: winreg.HKEYType) -> Iterator[tuple[str, Any, int]]:
     return registry_enum(key, winreg.EnumValue)
 
 
@@ -162,7 +152,7 @@ def unique_everseen(iterable: Iterable[T], key: Callable[[T], T]) -> Iterator[T]
     "List unique elements, preserving order."
     # unique_everseen('AAAABBBCCDAABBB') --> A B C D
     # unique_everseen('ABBCcAD', str.lower) --> A B C D
-    seen: Set[T] = set()
+    seen: set[T] = set()
     seen_add = seen.add
     for element in iterable:
         k = key(element)

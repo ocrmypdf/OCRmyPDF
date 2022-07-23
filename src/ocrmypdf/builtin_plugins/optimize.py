@@ -7,10 +7,12 @@
 
 """Built-in plugin to implement PDF page optimization."""
 
+from __future__ import annotations
+
 import argparse
 import logging
 from pathlib import Path
-from typing import Sequence, Tuple
+from typing import Sequence
 
 from ocrmypdf import Executor, PdfContext, hookimpl
 from ocrmypdf._exec import jbig2enc, pngquant
@@ -130,7 +132,7 @@ def optimize_pdf(
     context: PdfContext,
     executor: Executor,
     linearize: bool,
-) -> Tuple[Path, Sequence[str]]:
+) -> tuple[Path, Sequence[str]]:
     save_settings = dict(
         linearize=linearize,
         **get_pdf_save_settings(context.options.output_type),

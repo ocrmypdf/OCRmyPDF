@@ -7,6 +7,8 @@
 """Post-processing image optimization of OCR PDFs."""
 
 
+from __future__ import annotations
+
 import logging
 import sys
 import tempfile
@@ -14,18 +16,7 @@ import threading
 from collections import defaultdict
 from os import fspath
 from pathlib import Path
-from typing import (
-    Callable,
-    Dict,
-    Iterator,
-    List,
-    MutableSet,
-    NamedTuple,
-    NewType,
-    Optional,
-    Sequence,
-    Tuple,
-)
+from typing import Callable, Iterator, MutableSet, NamedTuple, NewType, Sequence
 from zlib import compress
 
 import img2pdf
@@ -78,7 +69,7 @@ def jpg_name(root: Path, xref: Xref) -> Path:
 
 def extract_image_filter(
     pike: Pdf, root: Path, image: Stream, xref: Xref
-) -> Optional[Tuple[PdfImage, Tuple[Name, Object]]]:
+) -> tuple[PdfImage, tuple[Name, Object]] | None:
     del pike  # unused args
     del root
 
@@ -135,7 +126,7 @@ def extract_image_filter(
 
 def extract_image_jbig2(
     *, pike: Pdf, root: Path, image: Stream, xref: Xref, options
-) -> Optional[XrefExt]:
+) -> XrefExt | None:
     del options  # unused arg
 
     result = extract_image_filter(pike, root, image, xref)
@@ -176,7 +167,7 @@ def extract_image_jbig2(
 
 def extract_image_generic(
     *, pike: Pdf, root: Path, image: Stream, xref: Xref, options
-) -> Optional[XrefExt]:
+) -> XrefExt | None:
     result = extract_image_filter(pike, root, image, xref)
     if result is None:
         return None
@@ -240,8 +231,8 @@ def extract_images(
     pike: Pdf,
     root: Path,
     options,
-    extract_fn: Callable[..., Optional[XrefExt]],
-) -> Iterator[Tuple[int, XrefExt]]:
+    extract_fn: Callable[..., XrefExt | None],
+) -> Iterator[tuple[int, XrefExt]]:
     """Extract image using extract_fn
 
     Enumerate images on each page, lookup their xref/ID number in the PDF.
@@ -300,7 +291,7 @@ def extract_images(
 
 def extract_images_generic(
     pike: Pdf, root: Path, options
-) -> Tuple[List[Xref], List[Xref]]:
+) -> tuple[list[Xref], list[Xref]]:
     """Extract any >=2bpp image we think we can improve"""
 
     jpegs = []
@@ -315,7 +306,7 @@ def extract_images_generic(
     return jpegs, pngs
 
 
-def extract_images_jbig2(pike: Pdf, root: Path, options) -> Dict[int, List[XrefExt]]:
+def extract_images_jbig2(pike: Pdf, root: Path, options) -> dict[int, list[XrefExt]]:
     """Extract any bitonal image that we think we can improve as JBIG2"""
 
     jbig2_groups = defaultdict(list)
@@ -328,11 +319,11 @@ def extract_images_jbig2(pike: Pdf, root: Path, options) -> Dict[int, List[XrefE
 
 
 def _produce_jbig2_images(
-    jbig2_groups: Dict[int, List[XrefExt]], root: Path, options, executor: Executor
+    jbig2_groups: dict[int, list[XrefExt]], root: Path, options, executor: Executor
 ) -> None:
     """Produce JBIG2 images from their groups"""
 
-    def jbig2_group_args(root: Path, groups: Dict[int, List[XrefExt]]):
+    def jbig2_group_args(root: Path, groups: dict[int, list[XrefExt]]):
         for group, xref_exts in groups.items():
             prefix = f'group{group:08d}'
             yield (
@@ -341,7 +332,7 @@ def _produce_jbig2_images(
                 prefix,  # =out_prefix
             )
 
-    def jbig2_single_args(root, groups: Dict[int, List[XrefExt]]):
+    def jbig2_single_args(root, groups: dict[int, list[XrefExt]]):
         for group, xref_exts in groups.items():
             prefix = f'group{group:08d}'
             # Second loop is to ensure multiple images per page are unpacked
@@ -376,7 +367,7 @@ def _produce_jbig2_images(
 
 def convert_to_jbig2(
     pike: Pdf,
-    jbig2_groups: Dict[int, List[XrefExt]],
+    jbig2_groups: dict[int, list[XrefExt]],
     root: Path,
     options,
     executor: Executor,
@@ -393,7 +384,7 @@ def convert_to_jbig2(
     When the JBIG2 symbolic coder is not used, each JBIG2 stands on its own
     and needs no dictionary. Currently this must be lossless JBIG2.
     """
-    jbig2_globals_dict: Optional[Dictionary]
+    jbig2_globals_dict: Dictionary | None
 
     _produce_jbig2_images(jbig2_groups, root, options, executor)
 
@@ -419,7 +410,7 @@ def convert_to_jbig2(
             )
 
 
-def _optimize_jpeg(args: Tuple[Xref, Path, Path, int]) -> Tuple[Xref, Optional[Path]]:
+def _optimize_jpeg(args: tuple[Xref, Path, Path, int]) -> tuple[Xref, Path | None]:
     xref, in_jpg, opt_jpg, jpeg_quality = args
 
     with Image.open(in_jpg) as im:
@@ -435,13 +426,13 @@ def _optimize_jpeg(args: Tuple[Xref, Path, Path, int]) -> Tuple[Xref, Optional[P
 def transcode_jpegs(
     pike: Pdf, jpegs: Sequence[Xref], root: Path, options, executor: Executor
 ) -> None:
-    def jpeg_args() -> Iterator[Tuple[Xref, Path, Path, int]]:
+    def jpeg_args() -> Iterator[tuple[Xref, Path, Path, int]]:
         for xref in jpegs:
             in_jpg = jpg_name(root, xref)
             opt_jpg = in_jpg.with_suffix('.opt.jpg')
             yield xref, in_jpg, opt_jpg, options.jpeg_quality
 
-    def finish_jpeg(result: Tuple[Xref, Optional[Path]], pbar):
+    def finish_jpeg(result: tuple[Xref, Path | None], pbar):
         xref, opt_jpg = result
         if opt_jpg:
             compdata = opt_jpg.read_bytes()  # JPEG can inserted into PDF as is
@@ -466,7 +457,7 @@ def transcode_jpegs(
 
 def _find_deflatable_jpeg(
     *, pike: Pdf, root: Path, image: Stream, xref: Xref, options
-) -> Optional[XrefExt]:
+) -> XrefExt | None:
     result = extract_image_filter(pike, root, image, xref)
     if result is None:
         return None
@@ -478,7 +469,7 @@ def _find_deflatable_jpeg(
     return None
 
 
-def _deflate_jpeg(args: Tuple[Pdf, threading.Lock, Xref, int]) -> Tuple[Xref, bytes]:
+def _deflate_jpeg(args: tuple[Pdf, threading.Lock, Xref, int]) -> tuple[Xref, bytes]:
     pike, lock, xref, complevel = args
     with lock:
         xobj = pike.get_object(xref, 0)

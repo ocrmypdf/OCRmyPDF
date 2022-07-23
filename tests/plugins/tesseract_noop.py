@@ -30,6 +30,8 @@ In 'pdf' mode, convert the image to PDF using another program.
 In orientation check mode, report the orientation is upright.
 """
 
+from __future__ import annotations
+
 import pikepdf
 from PIL import Image
 

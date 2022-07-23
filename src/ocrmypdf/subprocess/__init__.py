@@ -7,6 +7,8 @@
 
 """Wrappers to manage subprocess calls"""
 
+from __future__ import annotations
+
 import logging
 import os
 import re
@@ -16,7 +18,7 @@ from functools import lru_cache
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, CompletedProcess, Popen
 from subprocess import run as subprocess_run
-from typing import Callable, Mapping, Optional, Sequence, Tuple, Type, Union
+from typing import Callable, Mapping, Sequence, Union
 
 from packaging.version import Version
 
@@ -33,7 +35,7 @@ OsEnviron = os._Environ  # pylint: disable=protected-access
 def run(
     args: Args,
     *,
-    env: Optional[OsEnviron] = None,
+    env: OsEnviron | None = None,
     logs_errors_to_stdout: bool = False,
     check: bool = False,
     **kwargs,
@@ -80,7 +82,7 @@ def run_polling_stderr(
     *,
     callback: Callable[[str], None],
     check: bool = False,
-    env: Optional[OsEnviron] = None,
+    env: OsEnviron | None = None,
     **kwargs,
 ) -> CompletedProcess:
     """Run a process like ``ocrmypdf.subprocess.run``, and poll stderr.
@@ -115,8 +117,8 @@ def run_polling_stderr(
 
 
 def _fix_process_args(
-    args: Args, env: Optional[OsEnviron], kwargs
-) -> Tuple[Args, OsEnviron, logging.Logger, bool]:
+    args: Args, env: OsEnviron | None, kwargs
+) -> tuple[Args, OsEnviron, logging.Logger, bool]:
     assert 'universal_newlines' not in kwargs, "Use text= instead of universal_newlines"
 
     if not env:
@@ -125,7 +127,7 @@ def _fix_process_args(
     # Search in spoof path if necessary
     program = str(args[0])
 
-    if os.name == 'nt':
+    if sys.platform == 'win32':
         # pylint: disable=import-outside-toplevel
         from ocrmypdf.subprocess._windows import fix_windows_args
 
@@ -144,7 +146,7 @@ def get_version(
     *,
     version_arg: str = '--version',
     regex=r'(\d+(\.\d+)*)',
-    env: Optional[OsEnviron] = None,
+    env: OsEnviron | None = None,
 ) -> str:
     """Get the version of the specified program
 
@@ -253,9 +255,7 @@ def _get_platform() -> str:
     return sys.platform
 
 
-def _error_trailer(
-    program: str, package: Union[str, Mapping[str, str]], **kwargs
-) -> None:
+def _error_trailer(program: str, package: str | Mapping[str, str], **kwargs) -> None:
     del kwargs
     if isinstance(package, Mapping):
         package = package.get(_get_platform(), program)
@@ -269,7 +269,7 @@ def _error_trailer(
 
 
 def _error_missing_program(
-    program: str, package: str, required_for: Optional[str], recommended: bool
+    program: str, package: str, required_for: str | None, recommended: bool
 ) -> None:
     # pylint: disable=unused-argument
     if recommended:
@@ -286,7 +286,7 @@ def _error_old_version(
     package: str,
     need_version: str,
     found_version: str,
-    required_for: Optional[str],
+    required_for: str | None,
 ) -> None:
     # pylint: disable=unused-argument
     if required_for:
@@ -311,9 +311,9 @@ def check_external_program(
     package: str,
     version_checker: Callable[[], str],
     need_version: str,
-    required_for: Optional[str] = None,
+    required_for: str | None = None,
     recommended: bool = False,
-    version_parser: Type[Version] = Version,
+    version_parser: type[Version] = Version,
 ) -> None:
     """Check for required version of external program and raise exception if not.
 

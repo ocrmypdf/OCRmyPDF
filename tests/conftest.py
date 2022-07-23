@@ -5,6 +5,8 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+from __future__ import annotations
+
 import os
 import platform
 import sys
@@ -52,7 +54,7 @@ def resources() -> Path:
 
 
 @pytest.fixture
-def ocrmypdf_exec() -> List[str]:
+def ocrmypdf_exec() -> list[str]:
     return [sys.executable, '-m', 'ocrmypdf']
 
 

@@ -26,6 +26,8 @@ that is not UTF-8 compatible, so we are forced to check that we can convert it
 and present it to the user.
 """
 
+from __future__ import annotations
+
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 from unittest.mock import patch

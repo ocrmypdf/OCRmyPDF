@@ -44,6 +44,8 @@ Assumes Tesseract 4.0.0-alpha or higher.
 
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import logging

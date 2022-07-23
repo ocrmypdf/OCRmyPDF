@@ -6,9 +6,11 @@
 
 """OCRmyPDF concurrency abstractions."""
 
+from __future__ import annotations
+
 import threading
 from abc import ABC, abstractmethod
-from typing import Callable, Iterable, Optional
+from typing import Callable, Iterable
 
 
 def _task_noop(*_args, **_kwargs):
@@ -47,10 +49,10 @@ class Executor(ABC):
         use_threads: bool,
         max_workers: int,
         tqdm_kwargs: dict,
-        worker_initializer: Optional[Callable] = None,
-        task: Optional[Callable] = None,
-        task_arguments: Optional[Iterable] = None,
-        task_finished: Optional[Callable] = None,
+        worker_initializer: Callable | None = None,
+        task: Callable | None = None,
+        task_arguments: Iterable | None = None,
+        task_finished: Callable | None = None,
     ) -> None:
         """
         Set up parallel execution and progress reporting.

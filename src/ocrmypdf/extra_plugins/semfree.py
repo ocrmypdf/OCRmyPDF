@@ -20,6 +20,8 @@ be guaranteed, some workers may end up with too much work while others are idle.
 It is less efficient than the standard implementation, so not th edefault.
 """
 
+from __future__ import annotations
+
 import logging
 import logging.handlers
 import signal
@@ -28,7 +30,7 @@ from enum import Enum, auto
 from itertools import islice, repeat, takewhile, zip_longest
 from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection, wait
-from typing import Callable, Iterable, Iterator, List
+from typing import Callable, Iterable, Iterator
 
 from ocrmypdf import Executor, hookimpl
 from ocrmypdf._concurrent import NullProgressBar
@@ -134,8 +136,8 @@ class LambdaExecutor(Executor):
         if not grouped_args:
             return
 
-        processes: List[Process] = []
-        connections: List[Connection] = []
+        processes: list[Process] = []
+        connections: list[Connection] = []
         for chunk in grouped_args:
             parent_conn, child_conn = Pipe()
 

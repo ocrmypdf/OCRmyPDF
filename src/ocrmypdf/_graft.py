@@ -6,10 +6,11 @@
 
 """For grafting text-only PDF pages onto freeform PDF pages."""
 
+from __future__ import annotations
+
 import logging
 from contextlib import suppress
 from pathlib import Path
-from typing import Optional
 
 from pikepdf import (
     Dictionary,
@@ -103,8 +104,8 @@ class OcrGrafter:
         self,
         *,
         pageno: int,
-        image: Optional[Path],
-        textpdf: Optional[Path],
+        image: Path | None,
+        textpdf: Path | None,
         autorotate_correction: int,
     ):
         if textpdf and not self.font:

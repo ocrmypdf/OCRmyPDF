@@ -30,6 +30,8 @@
 
 """Transform .hocr and page image to text PDF."""
 
+from __future__ import annotations
+
 import argparse
 import os
 import re
@@ -139,7 +141,7 @@ class HocrTransform:
         {'ﬀ': 'ff', 'ﬃ': 'f‌f‌i', 'ﬄ': 'f‌f‌l', 'ﬁ': 'fi', 'ﬂ': 'fl'}
     )
 
-    def __init__(self, *, hocr_filename: Union[str, Path], dpi: float):
+    def __init__(self, *, hocr_filename: str | Path, dpi: float):
         self.dpi = dpi
         self.hocr = ElementTree.parse(os.fspath(hocr_filename))
 
@@ -203,7 +205,7 @@ class HocrTransform:
         return out
 
     @classmethod
-    def baseline(cls, element: Element) -> Tuple[float, float]:
+    def baseline(cls, element: Element) -> tuple[float, float]:
         """
         Returns a tuple containing the baseline slope and intercept.
         """
@@ -219,7 +221,7 @@ class HocrTransform:
         """
         return Rect._make((c / self.dpi * inch) for c in pxl)
 
-    def _child_xpath(self, html_tag: str, html_class: Optional[str] = None) -> str:
+    def _child_xpath(self, html_tag: str, html_class: str | None = None) -> str:
         xpath = f".//{self.xmlns}{html_tag}"
         if html_class:
             xpath += f"[@class='{html_class}']"
@@ -246,7 +248,7 @@ class HocrTransform:
         self,
         *,
         out_filename: Path,
-        image_filename: Optional[Path] = None,
+        image_filename: Path | None = None,
         show_bounding_boxes: bool = False,
         fontname: str = "Helvetica",
         invisible_text: bool = False,
@@ -349,7 +351,7 @@ class HocrTransform:
     def _do_line(
         self,
         pdf: Canvas,
-        line: Optional[Element],
+        line: Element | None,
         elemclass: str,
         fontname: str,
         invisible_text: bool,

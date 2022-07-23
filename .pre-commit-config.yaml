@@ -11,7 +11,7 @@ repos:
     rev: 5.10.1
     hooks:
       - id: isort
-        args: ["--profile", "black"]
+        args: ["--profile", "black", "-a", "from __future__ import annotations"]
   - repo: https://github.com/psf/black
     rev: 22.6.0
     hooks:

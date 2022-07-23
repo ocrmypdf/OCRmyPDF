@@ -6,6 +6,8 @@
 
 """Adds OCR layer to PDFs."""
 
+from __future__ import annotations
+
 from pluggy import HookimplMarker as _HookimplMarker
 
 from ocrmypdf import helpers, hocrtransform, pdfa, pdfinfo

@@ -7,6 +7,8 @@
 """Built-in plugin to implement OCR using Tesseract."""
 
 
+from __future__ import annotations
+
 import logging
 import os
 

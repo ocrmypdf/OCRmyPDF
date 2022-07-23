@@ -19,8 +19,6 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# type: ignore
-
 """Tesseract no-op plugin that simulates the OOM killer on page 4.
 
 OCRmyPDF can use a lot of memory, even that it might trigger the
@@ -30,13 +28,17 @@ ensure we fail with an error rather than deadlock in such cases.
 Page 4 was chosen because of this number's association with bad luck
 in many East Asian cultures.
 """
+# type: ignore
+from __future__ import annotations
 
 import os
 import signal
-import sys
 from pathlib import Path
 
 from ocrmypdf import hookimpl
+
+# type: ignore
+
 
 # Ugly hack that let us use the NoopOcrEngine without setting up packaging for our
 # tests.
@@ -47,7 +49,7 @@ exec(parent)
 NoopOcrEngine = locals()['NoopOcrEngine']
 
 
-class Page4Engine(NoopOcrEngine):
+class Page4Engine(NoopOcrEngine):  # type: ignore
     def __str__(self):
         return f"NO-OP Page 4 {NoopOcrEngine.version()}"
 

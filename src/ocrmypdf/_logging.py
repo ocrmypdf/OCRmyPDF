@@ -6,6 +6,8 @@
 
 """Logging support classes."""
 
+from __future__ import annotations
+
 import logging
 from contextlib import suppress
 

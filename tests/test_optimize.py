@@ -5,6 +5,8 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+from __future__ import annotations
+
 from os import fspath
 from pathlib import Path
 from unittest.mock import patch

@@ -6,19 +6,13 @@
 
 """OCRmyPDF pluggy plugin specification."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
 from logging import Handler
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    AbstractSet,
-    List,
-    NamedTuple,
-    Optional,
-    Sequence,
-    Tuple,
-)
+from typing import TYPE_CHECKING, AbstractSet, NamedTuple, Sequence
 
 import pluggy
 
@@ -177,7 +171,7 @@ def get_progressbar_class():
 
 
 @hookspec
-def validate(pdfinfo: 'PdfInfo', options: Namespace) -> None:
+def validate(pdfinfo: PdfInfo, options: Namespace) -> None:
     """Called to give a plugin an opportunity to review *options* and *pdfinfo*.
 
     *options* contains the "work order" to process a particular file. *pdfinfo*
@@ -203,8 +197,8 @@ def rasterize_pdf_page(
     raster_device: str,
     raster_dpi: Resolution,
     pageno: int,
-    page_dpi: Optional[Resolution],
-    rotation: Optional[int],
+    page_dpi: Resolution | None,
+    rotation: int | None,
     filter_vector: bool,
 ) -> Path:
     """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
@@ -233,7 +227,7 @@ def rasterize_pdf_page(
 
 
 @hookspec(firstresult=True)
-def filter_ocr_image(page: 'PageContext', image: 'Image.Image') -> 'Image.Image':
+def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
     """Called to filter the image before it is sent to OCR.
 
     This is the image that OCR sees, not what the user sees when they view the
@@ -260,7 +254,7 @@ def filter_ocr_image(page: 'PageContext', image: 'Image.Image') -> 'Image.Image'
 
 
 @hookspec(firstresult=True)
-def filter_page_image(page: 'PageContext', image_filename: Path) -> Path:
+def filter_page_image(page: PageContext, image_filename: Path) -> Path:
     """Called to filter the whole page before it is inserted into the PDF.
 
     A whole page image is only produced when preprocessing command line arguments
@@ -300,9 +294,7 @@ def filter_page_image(page: 'PageContext', image_filename: Path) -> Path:
 
 
 @hookspec(firstresult=True)
-def filter_pdf_page(
-    page: 'PageContext', image_filename: Path, output_pdf: Path
-) -> Path:
+def filter_pdf_page(page: PageContext, image_filename: Path, output_pdf: Path) -> Path:
     """Called to convert a filtered whole page image into a PDF.
 
     A whole page image is only produced when preprocessing command line arguments
@@ -445,7 +437,7 @@ def get_ocr_engine() -> OcrEngine:
 
 @hookspec(firstresult=True)
 def generate_pdfa(
-    pdf_pages: List[Path],
+    pdf_pages: list[Path],
     pdfmark: Path,
     output_file: Path,
     compression: str,
@@ -501,7 +493,7 @@ def optimize_pdf(
     context: PdfContext,
     executor: Executor,
     linearize: bool,
-) -> Tuple[Path, Sequence[str]]:
+) -> tuple[Path, Sequence[str]]:
     """Optimize a PDF after image, OCR and metadata processing.
 
     If the input_pdf is a PDF/A, the plugin should modify input_pdf in a way

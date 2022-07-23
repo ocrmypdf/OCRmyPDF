@@ -37,6 +37,8 @@ To use this as an API:
     )
 """
 
+from __future__ import annotations
+
 import logging
 
 from PIL import Image

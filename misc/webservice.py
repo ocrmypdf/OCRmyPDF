@@ -24,6 +24,8 @@ to emphasize that SaaS deployments should make sure they comply with
 Ghostscript's license as well as OCRmyPDF's.
 """
 
+from __future__ import annotations
+
 import os
 import shlex
 from subprocess import PIPE, run

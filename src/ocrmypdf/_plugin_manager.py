@@ -6,13 +6,15 @@
 
 """Plugin manager using pluggy."""
 
+from __future__ import annotations
+
 import argparse
 import importlib
 import importlib.util
 import pkgutil
 import sys
 from pathlib import Path
-from typing import List, Sequence, Tuple, Union
+from typing import Sequence
 
 import pluggy
 
@@ -34,7 +36,7 @@ class OcrmypdfPluginManager(pluggy.PluginManager):
     def __init__(
         self,
         *args,
-        plugins: List[Union[str, Path]],
+        plugins: list[str | Path],
         builtins: bool = True,
         **kwargs,
     ):
@@ -101,7 +103,7 @@ class OcrmypdfPluginManager(pluggy.PluginManager):
             self.register(module)
 
 
-def get_plugin_manager(plugins: List[Union[str, Path]], builtins=True):
+def get_plugin_manager(plugins: list[str | Path], builtins=True):
     return OcrmypdfPluginManager(
         project_name='ocrmypdf',
         plugins=plugins,
@@ -111,7 +113,7 @@ def get_plugin_manager(plugins: List[Union[str, Path]], builtins=True):
 
 def get_parser_options_plugins(
     args: Sequence[str],
-) -> Tuple[argparse.ArgumentParser, argparse.Namespace, pluggy.PluginManager]:
+) -> tuple[argparse.ArgumentParser, argparse.Namespace, pluggy.PluginManager]:
     pre_options, _unused = plugins_only_parser.parse_known_args(args=args)
     plugin_manager = get_plugin_manager(pre_options.plugins)
 

@@ -31,6 +31,8 @@ In 'pdf' mode, convert the image to PDF using another program.
 In orientation check mode, report 0, 90, 180, 270... based on page number.
 """
 
+from __future__ import annotations
+
 import pikepdf
 from PIL import Image
 

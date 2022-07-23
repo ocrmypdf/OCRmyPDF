@@ -6,6 +6,8 @@
 
 """Functions for using ocrmypdf as an API."""
 
+from __future__ import annotations
+
 import logging
 import os
 import sys
@@ -13,7 +15,7 @@ import threading
 from enum import IntEnum
 from io import IOBase
 from pathlib import Path
-from typing import AnyStr, BinaryIO, Iterable, Optional, Union
+from typing import AnyStr, BinaryIO, Iterable, Union
 from warnings import warn
 
 from ocrmypdf._logging import PageNumberFilter, TqdmConsole
@@ -217,7 +219,7 @@ def ocr(  # pylint: disable=unused-argument
     language: Iterable[str] = None,
     image_dpi: int = None,
     output_type=None,
-    sidecar: Optional[StrPath] = None,
+    sidecar: StrPath | None = None,
     jobs: int = None,
     use_threads: bool = None,
     title: str = None,

@@ -7,6 +7,8 @@
 
 """Validate a work order from API or command line."""
 
+from __future__ import annotations
+
 import locale
 import logging
 import os
@@ -14,7 +16,7 @@ import sys
 import unicodedata
 from pathlib import Path
 from shutil import copyfileobj
-from typing import List, Optional, Sequence, Set, Tuple
+from typing import Sequence
 
 import pikepdf
 import PIL
@@ -144,8 +146,8 @@ def check_options_preprocessing(options):
             raise BadArgsError("--unpaper-args: " + str(e)) from e
 
 
-def _pages_from_ranges(ranges: str) -> Set[int]:
-    pages: List[int] = []
+def _pages_from_ranges(ranges: str) -> set[int]:
+    pages: list[int] = []
     page_groups = ranges.replace(' ', '').split(',')
     for group in page_groups:
         if not group:
@@ -241,7 +243,7 @@ def check_options(options, plugin_manager):
     _check_options(options, plugin_manager, ocr_engine_languages)
 
 
-def create_input_file(options, work_folder: Path) -> Tuple[Path, str]:
+def create_input_file(options, work_folder: Path) -> tuple[Path, str]:
     if options.input_file == '-':
         # stdin
         log.info('reading file from standard input')
@@ -297,7 +299,7 @@ def report_output_file_size(
     options,
     input_file: Path,
     output_file: Path,
-    optimize_messages: Optional[Sequence[str]] = None,
+    optimize_messages: Sequence[str] | None = None,
     file_overhead: int = 4000,
     page_overhead: int = 3000,
 ):

@@ -7,6 +7,8 @@
 
 """Interface to pngquant executable"""
 
+from __future__ import annotations
+
 from contextlib import contextmanager
 from io import BytesIO
 from pathlib import Path

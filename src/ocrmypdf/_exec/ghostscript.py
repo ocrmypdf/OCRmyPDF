@@ -7,6 +7,8 @@
 
 """Interface to Ghostscript executable"""
 
+from __future__ import annotations
+
 import logging
 import os
 import re
@@ -15,7 +17,6 @@ from io import BytesIO
 from os import fspath
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError
-from typing import Optional
 
 from PIL import Image, UnidentifiedImageError
 
@@ -77,8 +78,8 @@ def rasterize_pdf(
     raster_device: str,
     raster_dpi: Resolution,
     pageno: int = 1,
-    page_dpi: Optional[Resolution] = None,
-    rotation: Optional[int] = None,
+    page_dpi: Resolution | None = None,
+    rotation: int | None = None,
     filter_vector: bool = False,
 ):
     """Rasterize one page of a PDF at resolution raster_dpi in canvas units."""

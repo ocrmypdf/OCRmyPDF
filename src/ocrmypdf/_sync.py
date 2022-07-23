@@ -7,6 +7,8 @@
 """Implements the concurrent and page synchronous parts of the pipeline."""
 
 
+from __future__ import annotations
+
 import argparse
 import logging
 import logging.handlers
@@ -18,7 +20,7 @@ from concurrent.futures.thread import BrokenThreadPool
 from functools import partial
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import List, NamedTuple, Optional, Sequence, Tuple, cast
+from typing import NamedTuple, Sequence, cast
 
 import PIL
 
@@ -74,9 +76,9 @@ class PageResult(NamedTuple):
     """Result when a page is finished processing."""
 
     pageno: int
-    pdf_page_from_image: Optional[Path]
-    ocr: Optional[Path]
-    text: Optional[Path]
+    pdf_page_from_image: Path | None
+    ocr: Path | None
+    text: Path | None
     orientation_correction: int
 
 
@@ -115,7 +117,7 @@ def preprocess(
 
 def make_intermediate_images(
     page_context: PageContext, orientation_correction: int
-) -> Tuple[Path, Optional[Path]]:
+) -> tuple[Path, Path | None]:
     options = page_context.options
 
     ocr_image = preprocess_out = None
@@ -232,7 +234,7 @@ def exec_page_sync(page_context: PageContext) -> PageResult:
 
 def post_process(
     pdf_file: Path, context: PdfContext, executor: Executor
-) -> Tuple[Path, Sequence[str]]:
+) -> tuple[Path, Sequence[str]]:
     pdf_out = pdf_file
     if context.options.output_type.startswith('pdfa'):
         ps_stub_out = generate_postscript_stub(context)
@@ -259,7 +261,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     if max_workers > 1:
         log.info("Start processing %d pages concurrently", max_workers)
 
-    sidecars: List[Optional[Path]] = [None] * len(context.pdfinfo)
+    sidecars: list[Path | None] = [None] * len(context.pdfinfo)
     ocrgraft = OcrGrafter(context)
 
     def update_page(result: PageResult, pbar):
@@ -337,7 +339,7 @@ def configure_debug_logging(
 def run_pipeline(
     options: argparse.Namespace,
     *,
-    plugin_manager: Optional[OcrmypdfPluginManager],
+    plugin_manager: OcrmypdfPluginManager | None,
     api: bool = False,
 ) -> ExitCode:
     # Any changes to options will not take effect for options that are already

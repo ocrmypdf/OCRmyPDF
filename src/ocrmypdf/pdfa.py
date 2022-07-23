@@ -9,9 +9,11 @@
 Utilities for PDF/A production and confirmation with Ghostspcript.
 """
 
+from __future__ import annotations
+
 import base64
 from pathlib import Path
-from typing import Dict, Iterator, Union
+from typing import Iterator
 
 try:
     from importlib.resources import files as package_files
@@ -25,7 +27,7 @@ SRGB_ICC_PROFILE_NAME = 'sRGB.icc'
 
 def _postscript_objdef(
     alias: str,
-    dictionary: Dict[str, str],
+    dictionary: dict[str, str],
     *,
     stream_name: str = None,
     stream_data: bytes = None,
@@ -131,7 +133,7 @@ def file_claims_pdfa(filename: Path):
             }
         valid_part_conforms = {'1A', '1B', '2A', '2B', '2U', '3A', '3B', '3U'}
         conformance = f'PDF/A-{pdfmeta.pdfa_status}'
-        pdfa_dict: Dict[str, Union[str, bool]] = {}
+        pdfa_dict: dict[str, str | bool] = {}
         if pdfmeta.pdfa_status in valid_part_conforms:
             pdfa_dict['pass'] = True
             pdfa_dict['output'] = 'pdfa'

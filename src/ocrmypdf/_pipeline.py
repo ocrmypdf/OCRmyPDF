@@ -6,6 +6,8 @@
 
 """OCRmyPDF page processing pipeline functions."""
 
+from __future__ import annotations
+
 import logging
 import os
 import re
@@ -14,7 +16,7 @@ from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
 from shutil import copyfileobj
-from typing import Dict, Iterable, Optional
+from typing import Iterable
 
 import img2pdf
 import pikepdf
@@ -665,7 +667,7 @@ def ocr_engine_textonly_pdf(input_image: Path, page_context: PageContext):
     return (output_pdf, output_text)
 
 
-def get_docinfo(base_pdf: pikepdf.Pdf, context: PdfContext) -> Dict[str, str]:
+def get_docinfo(base_pdf: pikepdf.Pdf, context: PdfContext) -> dict[str, str]:
     options = context.options
 
     def from_document_info(key):
@@ -866,7 +868,7 @@ def enumerate_compress_ranges(iterable):
         yield (skipped_from, index), None
 
 
-def merge_sidecars(txt_files: Iterable[Optional[Path]], context: PdfContext):
+def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext):
     output_file = context.get_path('sidecar.txt')
     with open(output_file, 'w', encoding="utf-8") as stream:
         for (from_, to_), txt_file in enumerate_compress_ranges(txt_files):

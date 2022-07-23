@@ -6,6 +6,8 @@
 
 """Defines context objects that are passed to child processes/threads."""
 
+from __future__ import annotations
+
 import os
 import shutil
 import sys
@@ -50,7 +52,7 @@ class PdfContext:
         """
         return self.work_folder / name
 
-    def get_page_contexts(self) -> Iterator['PageContext']:
+    def get_page_contexts(self) -> Iterator[PageContext]:
         """Get all ``PageContext`` for this PDF."""
         npages = len(self.pdfinfo)
         for n in range(npages):

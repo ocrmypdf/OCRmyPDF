@@ -8,6 +8,8 @@
 
 """Extract information about the content of a PDF."""
 
+from __future__ import annotations
+
 import atexit
 import logging
 import re
@@ -21,16 +23,13 @@ from os import PathLike
 from pathlib import Path
 from typing import (
     Container,
-    Dict,
     Iterable,
     Iterator,
-    List,
     Mapping,
     NamedTuple,
     Optional,
     Sequence,
     Tuple,
-    Union,
 )
 from warnings import warn
 
@@ -85,7 +84,7 @@ class Encoding(Enum):
 
 FloatRect = Tuple[float, float, float, float]
 
-FRIENDLY_COLORSPACE: Dict[str, Colorspace] = {
+FRIENDLY_COLORSPACE: dict[str, Colorspace] = {
     '/DeviceGray': Colorspace.gray,
     '/CalGray': Colorspace.gray,
     '/DeviceRGB': Colorspace.rgb,
@@ -103,7 +102,7 @@ FRIENDLY_COLORSPACE: Dict[str, Colorspace] = {
     '/I': Colorspace.index,
 }
 
-FRIENDLY_ENCODING: Dict[str, Encoding] = {
+FRIENDLY_ENCODING: dict[str, Encoding] = {
     '/CCITTFaxDecode': Encoding.ccitt,
     '/DCTDecode': Encoding.jpeg,
     '/JPXDecode': Encoding.jpeg2000,
@@ -117,7 +116,7 @@ FRIENDLY_ENCODING: Dict[str, Encoding] = {
     '/RL': Encoding.runlength,
 }
 
-FRIENDLY_COMP: Dict[Colorspace, int] = {
+FRIENDLY_COMP: dict[Colorspace, int] = {
     Colorspace.gray: 1,
     Colorspace.rgb: 3,
     Colorspace.cmyk: 4,
@@ -139,7 +138,7 @@ class XobjectSettings(NamedTuple):
     """Info about an XObject found in a PDF."""
 
     name: str
-    shorthand: Tuple[float, float, float, float, float, float]
+    shorthand: tuple[float, float, float, float, float, float]
     stack_depth: int
 
 
@@ -147,24 +146,24 @@ class InlineSettings(NamedTuple):
     """Info about an inline image found in a PDF."""
 
     iimage: PdfInlineImage
-    shorthand: Tuple[float, float, float, float, float, float]
+    shorthand: tuple[float, float, float, float, float, float]
     stack_depth: int
 
 
 class ContentsInfo(NamedTuple):
     """Info about various objects found in a PDF."""
 
-    xobject_settings: List[XobjectSettings]
-    inline_images: List[InlineSettings]
+    xobject_settings: list[XobjectSettings]
+    inline_images: list[InlineSettings]
     found_vector: bool
     found_text: bool
-    name_index: Mapping[str, List[XobjectSettings]]
+    name_index: Mapping[str, list[XobjectSettings]]
 
 
 class TextboxInfo(NamedTuple):
     """Info about a text box found in a PDF."""
 
-    bbox: Tuple[float, float, float, float]
+    bbox: tuple[float, float, float, float]
     is_visible: bool
     is_corrupt: bool
 
@@ -217,8 +216,8 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
 
     stack = []
     ctm = PdfMatrix(initial_shorthand)
-    xobject_settings: List[XobjectSettings] = []
-    inline_images: List[InlineSettings] = []
+    xobject_settings: list[XobjectSettings] = []
+    inline_images: list[InlineSettings] = []
     name_index = defaultdict(lambda: [])
     found_vector = False
     found_text = False
@@ -342,21 +341,21 @@ class ImageInfo:
 
     DPI_PREC = Decimal('1.000')
 
-    _comp: Optional[int]
+    _comp: int | None
     _name: str
 
     def __init__(
         self,
         *,
         name='',
-        pdfimage: Optional[Object] = None,
-        inline: Optional[PdfInlineImage] = None,
+        pdfimage: Object | None = None,
+        inline: PdfInlineImage | None = None,
         shorthand=None,
     ):
         self._name = str(name)
         self._shorthand = shorthand
 
-        pim: Union[PdfInlineImage, PdfImage]
+        pim: PdfInlineImage | PdfImage
 
         if inline is not None:
             self._origin = 'inline'
@@ -473,7 +472,7 @@ def _find_inline_images(contentsinfo: ContentsInfo) -> Iterator[ImageInfo]:
         )
 
 
-def _image_xobjects(container) -> Iterator[Tuple[Object, str]]:
+def _image_xobjects(container) -> Iterator[tuple[Object, str]]:
     """Search for all XObject-based images in the container
 
     Usually the container is a page, but it could also be a Form XObject
@@ -561,7 +560,7 @@ def _find_form_xobject_images(pdf: Pdf, container: Object, contentsinfo: Content
 
 def _process_content_streams(
     *, pdf: Pdf, container: Object, shorthand=None
-) -> Iterator[Union[VectorMarker, TextMarker, ImageInfo]]:
+) -> Iterator[VectorMarker | TextMarker | ImageInfo]:
     """Find all individual instances of images drawn in the container
 
     Usually the container is a page, but it may also be a Form XObject.
@@ -691,8 +690,8 @@ def _pdf_pageinfo_concurrent(
     max_workers,
     check_pages,
     detailed_analysis=False,
-) -> Sequence[Optional['PageInfo']]:
-    pages: Sequence[Optional['PageInfo']] = [None] * len(pdf.pages)
+) -> Sequence[PageInfo | None]:
+    pages: Sequence[PageInfo | None] = [None] * len(pdf.pages)
 
     def update_pageinfo(result, pbar):
         page = result
@@ -744,9 +743,9 @@ def _pdf_pageinfo_concurrent(
 class PageInfo:
     """Information about type of contents on each page in a PDF."""
 
-    _has_text: Optional[bool]
-    _has_vector: Optional[bool]
-    _images: List[ImageInfo]
+    _has_text: bool | None
+    _has_vector: bool | None
+    _images: list[ImageInfo]
 
     def __init__(
         self,
@@ -879,9 +878,7 @@ class PageInfo:
     def images(self):
         return self._images
 
-    def get_textareas(
-        self, visible: Optional[bool] = None, corrupt: Optional[bool] = None
-    ):
+    def get_textareas(self, visible: bool | None = None, corrupt: bool | None = None):
         def predicate(obj, want_visible, want_corrupt):
             result = True
             if want_visible is not None:
@@ -965,7 +962,7 @@ class PdfInfo:
                     self._has_acroform = True
 
     @property
-    def pages(self) -> Sequence[Optional[PageInfo]]:
+    def pages(self) -> Sequence[PageInfo | None]:
         return self._pages
 
     @property
@@ -982,7 +979,7 @@ class PdfInfo:
         return self._has_acroform
 
     @property
-    def filename(self) -> Union[str, Path]:
+    def filename(self) -> str | Path:
         if not isinstance(self._infile, (str, Path)):
             raise NotImplementedError("can't get filename from stream")
         return self._infile

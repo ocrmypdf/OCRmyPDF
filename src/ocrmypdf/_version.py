@@ -9,6 +9,8 @@
 OCRmyPDF uses setuptools_scm to derive version from git tags.
 """
 
+from __future__ import annotations
+
 try:
     from importlib.metadata import version as _package_version
 except ImportError:
