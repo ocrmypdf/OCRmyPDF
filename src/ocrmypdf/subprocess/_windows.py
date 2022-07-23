@@ -7,16 +7,37 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 import sys
 from itertools import chain
 from pathlib import Path
-from typing import Any, Callable, Iterable, Iterator
+from typing import Any, Callable, Iterable, Iterator, TypeVar
 
-assert sys.platform == 'win32', "Suppress type checking when not on Windows"
+if sys.version_info >= (3, 9):
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias  # pragma: no cover
 
-import winreg
+if sys.platform == 'win32':
+    # mypy understands 'if sys.platform' better than try/except ModuleNotFoundError
+    import winreg  # pylint: disable=import-error
+
+    HKEYType: TypeAlias = winreg.HKEYType
+else:
+    from unittest.mock import Mock
+
+    winreg = Mock(
+        spec=['HKEYType', 'EnumKey', 'EnumValue', 'HKEY_LOCAL_MACHINE', 'OpenKey']
+    )
+    # mypy does not understand winreg.HKeyType where winreg is a Mock (fair enough!)
+    HKEYType: TypeAlias = Any
+
+
+log = logging.getLogger(__name__)
+
+T = TypeVar('T')
 
 
 def ghostscript_version_key(s: str) -> tuple[int, int, int]:
@@ -30,9 +51,7 @@ def ghostscript_version_key(s: str) -> tuple[int, int, int]:
         return (0, 0, 0)
 
 
-def registry_enum(
-    key: winreg.HKEYType, enum_fn: Callable[[winreg.HKEYType, int], T]
-) -> Iterator[T]:
+def registry_enum(key: HKEYType, enum_fn: Callable[[HKEYType, int], T]) -> Iterator[T]:
     limit = 999
     n = 0
     while n < limit:
@@ -45,11 +64,11 @@ def registry_enum(
         raise ValueError(f"Too many registry keys under {key}")
 
 
-def registry_subkeys(key: winreg.HKEYType) -> Iterator[str]:
+def registry_subkeys(key: HKEYType) -> Iterator[str]:
     return registry_enum(key, winreg.EnumKey)
 
 
-def registry_values(key: winreg.HKEYType) -> Iterator[tuple[str, Any, int]]:
+def registry_values(key: HKEYType) -> Iterator[tuple[str, Any, int]]:
     return registry_enum(key, winreg.EnumValue)
 
 
