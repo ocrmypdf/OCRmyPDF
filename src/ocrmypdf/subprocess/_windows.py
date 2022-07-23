@@ -84,8 +84,8 @@ def registry_path_ghostscript(env=None) -> Iterator[Path]:
         with winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE, fr"SOFTWARE\Artifex\GPL Ghostscript\{latest_gs}"
         ) as k:
-            _, gs_path, _ = next(registry_values(k))
-            yield Path(gs_path) / 'bin'
+            for _, gs_path, _ in registry_values(k):
+                yield Path(gs_path) / 'bin'
     except OSError as e:
         log.warning(e)
 
