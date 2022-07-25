@@ -15,7 +15,7 @@ from itertools import chain
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, TypeVar
 
-if sys.version_info >= (3, 9):
+if sys.version_info >= (3, 10):
     from typing import TypeAlias
 else:
     from typing_extensions import TypeAlias  # pragma: no cover
