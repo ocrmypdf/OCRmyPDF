@@ -18,7 +18,7 @@ tagged yet.
 
 .. note::
 
-   Attention maintainers: that these release notes may be updated with information
+   Attention maintainers: these release notes may be updated with information
    about a forthcoming release that has not been tagged yet. A release is only
    official when it's tagged and posted to PyPI.
 
