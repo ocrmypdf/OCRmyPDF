@@ -24,6 +24,14 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v13.6.2
+=======
+
+-  Added a shim to prevent an "error during error handling" for Python 3.7 and 3.8.
+-  Modernized some type annotations.
+-  Improved annotations on our _windows module to help IDEs and mypy figure out what
+   we're doing.
+
 v13.6.1
 =======
 
