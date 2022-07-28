@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-#
+# SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-License-Identifier: CC-BY-SA-4.0
+
 # ocrmypdf documentation build configuration file, created by
 # sphinx-quickstart on Sun Sep  4 14:29:43 2016.
 #
