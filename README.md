@@ -34,6 +34,7 @@ ocrmypdf                      # it's a scriptable command line program
 - Validates input and output files
 - Distributes work across all available CPU cores
 - Uses [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) engine to recognize more than [100 languages](https://github.com/tesseract-ocr/tessdata)
+- Keeps your private data private.
 - Scales properly to handle files with thousands of pages
 - Battle-tested on millions of PDFs
 
@@ -67,6 +68,7 @@ Linux, Windows, macOS and FreeBSD are supported. Docker images are also availabl
 | LinuxBrew                     | ``brew install ocrmypdf``     |
 | FreeBSD                       | ``pkg install py37-ocrmypdf`` |
 | Conda                         | ``conda install ocrmypdf``    |
+| Ubuntu Snap                   | ``snap install ocrmypdf``     |
 
 For everyone else, [see our documentation](https://ocrmypdf.readthedocs.io/en/latest/installation.html) for installation steps.
 
@@ -127,15 +129,9 @@ OCRmyPDF would not be the software that it is today without companies and users 
 
 ## License
 
-The OCRmyPDF software is licensed under the Mozilla Public License 2.0
-(MPL-2.0). This license permits integration of OCRmyPDF with other code,
-included commercial and closed source, but asks you to publish source-level
-modifications you make to OCRmyPDF.
+The OCRmyPDF software is licensed under the Mozilla Public License 2.0 (MPL-2.0). This license permits integration of OCRmyPDF with other code, included commercial and closed source, but asks you to publish source-level modifications you make to OCRmyPDF.
 
-Some components of OCRmyPDF have other licenses, as noted in those files and the
-``debian/copyright`` file. Most files in ``misc/`` use the MIT license, and the
-documentation and test files are generally licensed under Creative Commons
-ShareAlike 4.0 (CC-BY-SA 4.0).
+Some components of OCRmyPDF have other licenses, as indicated by standard SPDX license identifiers or the DEP5 copyright and licensing information file. Generally speaking, non-core code is licensed under MIT, and the documentation and test files are licensed under Creative Commons ShareAlike 4.0 (CC-BY-SA 4.0).
 
 ## Disclaimer
 
