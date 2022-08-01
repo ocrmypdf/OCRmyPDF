@@ -9,7 +9,6 @@ import os
 import re
 import sys
 from contextlib import suppress
-from functools import lru_cache
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, CompletedProcess, Popen
 from subprocess import run as subprocess_run
@@ -135,7 +134,6 @@ def _fix_process_args(
     return args, env, process_log, text
 
 
-@lru_cache(maxsize=None)
 def get_version(
     program: str,
     *,
