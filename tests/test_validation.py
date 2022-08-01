@@ -67,9 +67,8 @@ def test_old_ghostscript(caplog):
 def test_old_tesseract_error():
     with patch('ocrmypdf._exec.tesseract.version', return_value='4.00.00alpha'):
         with pytest.raises(MissingDependencyError):
-            opts = make_opts(pdf_renderer='sandwich', language='eng')
-            plugin_manager = get_plugin_manager(opts.plugins)
-            vd.check_options(opts, plugin_manager)
+            vd.check_options(*make_opts_pm(pdf_renderer='sandwich', language='eng'))
+
 
 
 def test_lossless_redo():
@@ -87,26 +86,22 @@ def test_mutex_options():
 
 
 def test_optimizing(caplog):
-    opts = make_opts(optimize=0, jbig2_lossy=True, png_quality=18, jpeg_quality=10)
-    plugin_manager = get_plugin_manager(opts.plugins)
-    vd.check_options(opts, plugin_manager)
+    vd.check_options(
+        *make_opts_pm(optimize=0, jbig2_lossy=True, png_quality=18, jpeg_quality=10)
+    )
     assert 'will be ignored because' in caplog.text
 
 
 def test_user_words(caplog):
     with patch('ocrmypdf._exec.tesseract.has_user_words', return_value=False):
-        opts = make_opts(user_words='foo')
-        plugin_manager = get_plugin_manager(opts.plugins)
-        vd.check_options(opts, plugin_manager)
+        vd.check_options(*make_opts_pm(user_words='foo'))
         assert (
             'Tesseract 4.0 (which you have installed) ignores --user-words'
             in caplog.text
         )
     caplog.clear()
     with patch('ocrmypdf._exec.tesseract.has_user_words', return_value=True):
-        opts = make_opts(user_patterns='foo')
-        plugin_manager = get_plugin_manager(opts.plugins)
-        vd.check_options(opts, plugin_manager)
+        vd.check_options(*make_opts_pm(user_patterns='foo'))
         assert (
             'Tesseract 4.0 (which you have installed) ignores --user-words'
             not in caplog.text
@@ -163,10 +158,10 @@ def test_false_action_store_true():
 
 @pytest.mark.parametrize('progress_bar', [True, False])
 def test_no_progress_bar(progress_bar, resources):
-    opts = make_opts(progress_bar=progress_bar, input_file=(resources / 'trivial.pdf'))
-    plugin_manager = get_plugin_manager(opts.plugins)
-
-    vd.check_options(opts, plugin_manager)
+    opts, pm = make_opts_pm(
+        progress_bar=progress_bar, input_file=(resources / 'trivial.pdf')
+    )
+    vd.check_options(opts, pm)
 
     pbar_disabled = None
 
