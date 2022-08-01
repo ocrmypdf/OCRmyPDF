@@ -35,6 +35,7 @@ else:
 log = logging.getLogger(__name__)
 
 T = TypeVar('T')
+Tkey = TypeVar('Tkey')
 
 
 def ghostscript_version_key(s: str) -> tuple[int, int, int]:
@@ -164,11 +165,11 @@ def fix_windows_args(program: str, args, env):
     return args
 
 
-def unique_everseen(iterable: Iterable[T], key: Callable[[T], T]) -> Iterator[T]:
+def unique_everseen(iterable: Iterable[T], key: Callable[[T], Tkey]) -> Iterator[T]:
     "List unique elements, preserving order."
     # unique_everseen('AAAABBBCCDAABBB') --> A B C D
     # unique_everseen('ABBCcAD', str.lower) --> A B C D
-    seen: set[T] = set()
+    seen: set[Tkey] = set()
     seen_add = seen.add
     for element in iterable:
         k = key(element)
@@ -177,11 +178,15 @@ def unique_everseen(iterable: Iterable[T], key: Callable[[T], T]) -> Iterator[T]
             yield element
 
 
+def _casefold_path(path: Path) -> str:
+    return str.casefold(str(path))
+
+
 def shim_env_path(env=None):
     if env is None:
         env = os.environ
 
     shim_paths = chain.from_iterable(shim(env) for shim in SHIMS)
     return os.pathsep.join(
-        str(p) for p in unique_everseen(shim_paths, key=lambda p: str.casefold(str(p)))
+        str(p) for p in unique_everseen(shim_paths, key=_casefold_path)
     )
