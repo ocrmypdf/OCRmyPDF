@@ -114,7 +114,7 @@ def version() -> str:
     return get_version('tesseract', regex=r'tesseract\s(.+)')
 
 
-def has_user_words():
+def has_user_words() -> bool:
     """Does Tesseract have --user-words capability?
 
     Not available in 4.0, but available in 4.1. Also available in 3.x, but
@@ -123,12 +123,12 @@ def has_user_words():
     return version() >= '4.1'
 
 
-def has_thresholding():
+def has_thresholding() -> bool:
     """Does Tesseract have -c thresholding method capability?"""
     return version() >= '5.0'
 
 
-def get_languages():
+def get_languages() -> set[str]:
     def lang_error(output):
         msg = (
             "Tesseract failed to report available languages.\n"
@@ -242,7 +242,7 @@ def get_deskew(
     return deskew_degrees
 
 
-def tesseract_log_output(stream):
+def tesseract_log_output(stream: bytes) -> None:
     tlog = TesseractLoggerAdapter(
         log, extra=log.extra if hasattr(log, 'extra') else None
     )
@@ -282,13 +282,13 @@ def tesseract_log_output(stream):
             tlog.info(line.strip())
 
 
-def page_timedout(timeout):
+def page_timedout(timeout: float) -> None:
     if timeout == 0:
         return
     log.warning("[tesseract] took too long to OCR - skipping")
 
 
-def _generate_null_hocr(output_hocr, output_text, image):
+def _generate_null_hocr(output_hocr: Path, output_text: Path, image: Path) -> None:
     """Produce a .hocr file that reports no text detected on a page that is
     the same size as the input image."""
     with Image.open(image) as im:
@@ -311,7 +311,7 @@ def generate_hocr(
     thresholding: int,
     user_words,
     user_patterns,
-):
+) -> None:
     """Generate a hOCR file, which must be converted to PDF."""
     prefix = output_hocr.with_suffix('')
 
@@ -357,7 +357,7 @@ def generate_hocr(
             prefix.with_suffix('.txt').replace(output_text)
 
 
-def use_skip_page(output_pdf, output_text):
+def use_skip_page(output_pdf: Path, output_text: Path) -> None:
     output_text.write_text('[skipped page]', encoding='utf-8')
 
     # A 0 byte file to the output to indicate a skip
@@ -377,7 +377,7 @@ def generate_pdf(
     thresholding: int,
     user_words,
     user_patterns,
-):
+) -> None:
     """Generate a PDF using Tesseract's internal PDF generator.
 
     We specifically a text-only PDF which is more suitable for combining with
