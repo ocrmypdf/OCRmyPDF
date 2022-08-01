@@ -11,12 +11,14 @@ import logging
 import os
 import sys
 import unicodedata
+from argparse import Namespace
 from pathlib import Path
 from shutil import copyfileobj
 from typing import Sequence
 
 import pikepdf
 import PIL
+from pluggy import PluginManager
 
 from ocrmypdf._exec import unpaper
 from ocrmypdf.exceptions import (
@@ -40,7 +42,7 @@ log = logging.getLogger(__name__)
 # --------
 
 
-def check_platform():
+def check_platform() -> None:
     if os.name == 'nt' and sys.maxsize <= 2**32:  # pragma: no cover
         # 32-bit interpreter on Windows
         log.error(
@@ -49,7 +51,7 @@ def check_platform():
         )
 
 
-def check_options_languages(options, ocr_engine_languages):
+def check_options_languages(options: Namespace, ocr_engine_languages: set[str]) -> None:
     if not options.languages:
         options.languages = {DEFAULT_LANGUAGE}
         system_lang = locale.getlocale()[0]
@@ -68,7 +70,7 @@ def check_options_languages(options, ocr_engine_languages):
         raise MissingDependencyError(msg)
 
 
-def check_options_output(options):
+def check_options_output(options: Namespace) -> None:
     is_latin = options.languages.issubset(HOCR_OK_LANGS)
 
     if options.pdf_renderer.startswith('hocr') and not is_latin:
@@ -104,7 +106,7 @@ def check_options_output(options):
         )
 
 
-def check_options_sidecar(options):
+def check_options_sidecar(options: Namespace) -> None:
     if options.sidecar == '\0':
         if options.output_file == '-':
             raise BadArgsError(
@@ -121,7 +123,7 @@ def check_options_sidecar(options):
         )
 
 
-def check_options_preprocessing(options):
+def check_options_preprocessing(options: Namespace) -> None:
     if options.clean_final:
         options.clean = True
     if options.unpaper_args and not options.clean:
@@ -182,7 +184,7 @@ def _pages_from_ranges(ranges: str) -> set[int]:
     return set(pages)
 
 
-def check_options_ocr_behavior(options):
+def check_options_ocr_behavior(options: Namespace) -> None:
     exclusive_options = sum(
         (1 if opt else 0)
         for opt in (options.force_ocr, options.skip_text, options.redo_ocr)
@@ -193,7 +195,7 @@ def check_options_ocr_behavior(options):
         options.pages = _pages_from_ranges(options.pages)
 
 
-def check_options_advanced(options):
+def check_options_advanced(options: Namespace) -> None:
     if options.pdfa_image_compression != 'auto' and not options.output_type.startswith(
         'pdfa'
     ):
@@ -203,7 +205,7 @@ def check_options_advanced(options):
         )
 
 
-def check_options_metadata(options):
+def check_options_metadata(options: Namespace) -> None:
     docinfo = [options.title, options.author, options.keywords, options.subject]
     for s in (m for m in docinfo if m):
         for char in s:
@@ -216,15 +218,14 @@ def check_options_metadata(options):
                 )
 
 
-def check_options_pillow(options):
+def check_options_pillow(options: Namespace) -> None:
     PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1_000_000)
     if PIL.Image.MAX_IMAGE_PIXELS == 0:
         PIL.Image.MAX_IMAGE_PIXELS = None
 
 
-def _check_options(options, plugin_manager, ocr_engine_languages):
+def _check_plugin_invariant_options(options: Namespace) -> None:
     check_platform()
-    check_options_languages(options, ocr_engine_languages)
     check_options_metadata(options)
     check_options_output(options)
     check_options_sidecar(options)
@@ -232,15 +233,20 @@ def _check_options(options, plugin_manager, ocr_engine_languages):
     check_options_ocr_behavior(options)
     check_options_advanced(options)
     check_options_pillow(options)
+
+
+def _check_plugin_options(options: Namespace, plugin_manager: PluginManager) -> None:
     plugin_manager.hook.check_options(options=options)
-
-
-def check_options(options, plugin_manager):
     ocr_engine_languages = plugin_manager.hook.get_ocr_engine().languages(options)
-    _check_options(options, plugin_manager, ocr_engine_languages)
+    check_options_languages(options, ocr_engine_languages)
 
 
-def create_input_file(options, work_folder: Path) -> tuple[Path, str]:
+def check_options(options: Namespace, plugin_manager: PluginManager) -> None:
+    _check_plugin_invariant_options(options)
+    _check_plugin_options(options, plugin_manager)
+
+
+def create_input_file(options: Namespace, work_folder: Path) -> tuple[Path, str]:
     if options.input_file == '-':
         # stdin
         log.info('reading file from standard input')
@@ -275,7 +281,7 @@ def create_input_file(options, work_folder: Path) -> tuple[Path, str]:
             raise InputFileError(msg) from e
 
 
-def check_requested_output_file(options):
+def check_requested_output_file(options: Namespace) -> None:
     if options.output_file == '-':
         if sys.stdout.isatty():
             raise BadArgsError(
@@ -293,13 +299,13 @@ def check_requested_output_file(options):
 
 
 def report_output_file_size(
-    options,
+    options: Namespace,
     input_file: Path,
     output_file: Path,
     optimize_messages: Sequence[str] | None = None,
     file_overhead: int = 4000,
     page_overhead: int = 3000,
-):
+) -> None:
     if optimize_messages is None:
         optimize_messages = []
     try:

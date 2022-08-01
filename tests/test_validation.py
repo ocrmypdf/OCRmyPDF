@@ -44,27 +44,24 @@ def make_opts(*args, **kwargs):
 def test_hocr_notlatin_warning(caplog):
     # Bypass the test to see if the language is installed; we just want to pretend
     # that a non-Latin language is installed
-    vd._check_options(
+    vd.check_options(
         *make_opts_pm(language='chi_sim', pdf_renderer='hocr', output_type='pdfa'),
-        {'chi_sim'},
     )
     assert 'PDF renderer is known to cause' in caplog.text
 
 
 def test_old_ghostscript(caplog):
     with patch('ocrmypdf._exec.ghostscript.version', return_value='9.19'):
-        vd._check_options(
-            *make_opts_pm(language='chi_sim', output_type='pdfa'), {'chi_sim'}
-        )
+        vd.check_options(*make_opts_pm(language='chi_sim', output_type='pdfa'))
         assert 'does not work correctly' in caplog.text
 
     with patch('ocrmypdf._exec.ghostscript.version', return_value='9.18'):
         with pytest.raises(MissingDependencyError):
-            vd._check_options(*make_opts_pm(output_type='pdfa-3'), set())
+            vd.check_options(*make_opts_pm(output_type='pdfa-3'))
 
     with patch('ocrmypdf._exec.ghostscript.version', return_value='9.24'):
         with pytest.raises(MissingDependencyError):
-            vd._check_options(*make_opts_pm(), set())
+            vd.check_options(*make_opts_pm())
 
 
 def test_old_tesseract_error():
@@ -72,7 +69,7 @@ def test_old_tesseract_error():
         with pytest.raises(MissingDependencyError):
             opts = make_opts(pdf_renderer='sandwich', language='eng')
             plugin_manager = get_plugin_manager(opts.plugins)
-            vd._check_options(opts, plugin_manager, {'eng'})
+            vd.check_options(opts, plugin_manager)
 
 
 def test_lossless_redo():
@@ -92,7 +89,7 @@ def test_mutex_options():
 def test_optimizing(caplog):
     opts = make_opts(optimize=0, jbig2_lossy=True, png_quality=18, jpeg_quality=10)
     plugin_manager = get_plugin_manager(opts.plugins)
-    vd._check_options(opts, plugin_manager, set())
+    vd.check_options(opts, plugin_manager)
     assert 'will be ignored because' in caplog.text
 
 
@@ -100,7 +97,7 @@ def test_user_words(caplog):
     with patch('ocrmypdf._exec.tesseract.has_user_words', return_value=False):
         opts = make_opts(user_words='foo')
         plugin_manager = get_plugin_manager(opts.plugins)
-        vd._check_options(opts, plugin_manager, set())
+        vd.check_options(opts, plugin_manager)
         assert (
             'Tesseract 4.0 (which you have installed) ignores --user-words'
             in caplog.text
@@ -109,7 +106,7 @@ def test_user_words(caplog):
     with patch('ocrmypdf._exec.tesseract.has_user_words', return_value=True):
         opts = make_opts(user_patterns='foo')
         plugin_manager = get_plugin_manager(opts.plugins)
-        vd._check_options(opts, plugin_manager, set())
+        vd.check_options(opts, plugin_manager)
         assert (
             'Tesseract 4.0 (which you have installed) ignores --user-words'
             not in caplog.text
@@ -169,7 +166,7 @@ def test_no_progress_bar(progress_bar, resources):
     opts = make_opts(progress_bar=progress_bar, input_file=(resources / 'trivial.pdf'))
     plugin_manager = get_plugin_manager(opts.plugins)
 
-    vd._check_options(opts, plugin_manager, set())
+    vd.check_options(opts, plugin_manager)
 
     pbar_disabled = None
 
@@ -290,13 +287,19 @@ def test_optional_program_recommended(caplog):
 def test_pagesegmode_warning(caplog):
     opts = make_opts(tesseract_pagesegmode='0')
     plugin_manager = get_plugin_manager(opts.plugins)
-    vd._check_options(opts, plugin_manager, set())
+    vd.check_options(opts, plugin_manager)
     assert 'disable OCR' in caplog.text
 
 
 def test_two_languages():
-    vd._check_options(
-        *make_opts_pm(language='fakelang1+fakelang2'), {'fakelang1', 'fakelang2'}
+    vd.check_options_languages(
+        create_options(
+            input_file='a.pdf',
+            output_file='b.pdf',
+            parser=get_parser(),
+            language='fakelang1+fakelang2',
+        ),
+        {'fakelang1', 'fakelang2'},
     )
 
 
