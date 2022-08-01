@@ -28,6 +28,12 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v13.7.0
+=======
+
+-  Fixed an exception when attempting to run and Tesseract is not installed.
+-  Changed to SPDX license tracking and information files.
+
 v13.6.2
 =======
 
