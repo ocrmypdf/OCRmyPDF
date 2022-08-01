@@ -226,11 +226,11 @@ package:
 LINUX_INSTALL_ADVICE = '''
 On systems with the aptitude package manager (Debian, Ubuntu), try these
 commands:
-    sudo apt-get update
-    sudo apt-get install {package}
+    sudo apt update
+    sudo apt install {package}
 
-On RPM-based systems (Red Hat, Fedora), search for instructions on
-installing the RPM for {program}.
+On RPM-based systems (Red Hat, Fedora), try this command:
+    sudo dnf install {package}
 '''
 
 WINDOWS_INSTALL_ADVICE = '''
