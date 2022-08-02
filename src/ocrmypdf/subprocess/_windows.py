@@ -103,12 +103,12 @@ def registry_path_tesseract(env=None) -> Iterator[Path]:
         log.warning(e)
 
 
-def _program_version_in_path_key(path: Path) -> tuple[str, Version | None]:
+def _gs_version_in_path_key(path: Path) -> tuple[str, Version | None]:
     """Key function for comparing Ghostscript and Tesseract paths.
 
     Ghostscript installs on Windows:
-        %PROGRAMFILES%/gs/gs9.56.1 -> ('gs', Version('9.56.1'))
-        %PROGRAMFILES%/gs/gs9.24 -> ('gs', Version('9.24'))
+        %PROGRAMFILES%/gs/gs9.56.1/bin -> ('gs', Version('9.56.1'))
+        %PROGRAMFILES%/gs/9.24/bin -> ('gs', Version('9.24'))
 
     Tesseract looks like:
         %PROGRAMFILES%/Tesseract-OCR -> ('Tesseract-OCR', None)
@@ -116,13 +116,12 @@ def _program_version_in_path_key(path: Path) -> tuple[str, Version | None]:
     Thus ensuring the resulting tuple will order the alternatives correctly,
     e.g. gs10.0 > gs9.99.
     """
-    match = re.match(r'([^0-9]+)(.*)', str(path.name))
+    match = re.search(r'gs[/\\]?([0-9.]+)[/\\]bin', str(path))
     if match:
         try:
-            program = match.group(1)
-            version_str = match.group(2)
+            version_str = match.group(1)
             version = Version(version_str)
-            return program, version
+            return 'gs', version
         except InvalidVersion:
             pass
     return path.name, None
@@ -145,7 +144,7 @@ def program_files_paths(env=None) -> Iterator[Path]:
     return iter(
         sorted(
             (p for p in path_walker()),
-            key=_program_version_in_path_key,
+            key=_gs_version_in_path_key,
             reverse=True,
         )
     )

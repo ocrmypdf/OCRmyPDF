@@ -6,9 +6,11 @@ from __future__ import annotations
 import logging
 import multiprocessing
 import os
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+from packaging.version import Version
 
 from ocrmypdf import helpers
 
@@ -101,6 +103,17 @@ class TestFileIsWritable:
 
 
 @pytest.mark.skipif(os.name != 'nt', reason="Windows test")
+def test_gs_install_locations():
+    # pylint: disable=import-outside-toplevel
+    from ocrmypdf.subprocess._windows import _gs_version_in_path_key
+
+    assert _gs_version_in_path_key(Path("C:\\Program Files\\gs\\gs9.52\\bin")) == (
+        'gs',
+        Version('9.52'),
+    )
+
+
+@pytest.mark.skipif(os.name != 'nt', reason="Windows test")
 def test_shim_paths(tmp_path):
     # pylint: disable=import-outside-toplevel
     from ocrmypdf.subprocess._windows import shim_env_path
@@ -109,7 +122,7 @@ def test_shim_paths(tmp_path):
     progfiles.mkdir()
     (progfiles / 'tesseract-ocr').mkdir()
     (progfiles / 'gs' / '9.51' / 'bin').mkdir(parents=True)
-    (progfiles / 'gs' / '9.52' / 'bin').mkdir(parents=True)
+    (progfiles / 'gs' / 'gs9.52.3' / 'bin').mkdir(parents=True)
     syspath = tmp_path / 'bin'
     env = {'PROGRAMFILES': str(progfiles), 'PATH': str(syspath)}
 
@@ -117,7 +130,7 @@ def test_shim_paths(tmp_path):
     results = result_str.split(os.pathsep)
     assert results[0] == str(syspath), results
     assert results[-3].endswith('tesseract-ocr'), results
-    assert results[-2].endswith(os.path.join('gs', '9.52', 'bin')), results
+    assert results[-2].endswith(os.path.join('gs9.52.3', 'bin')), results
     assert results[-1].endswith(os.path.join('gs', '9.51', 'bin')), results
 
 
