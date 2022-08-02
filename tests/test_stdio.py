@@ -51,10 +51,6 @@ def test_stdout(ocrmypdf_exec, resources, outpdf):
     assert check_pdf(output_file)
 
 
-@pytest.mark.xfail(
-    os.name == 'nt' and sys.version_info < (3, 8),
-    reason="Windows does not like this; not sure how to fix",
-)
 def test_dev_null(resources):
     if 'COV_CORE_DATAFILE' in os.environ:
         pytest.skip("Coverage uses stdout")

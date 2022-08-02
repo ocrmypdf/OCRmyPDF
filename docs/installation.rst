@@ -417,7 +417,7 @@ Native Windows
 
 You must install the following for Windows:
 
-* Python 3.7 (64-bit) or later
+* Python 3.8 (64-bit) or later
 * Tesseract 4.0 or later
 * Ghostscript 9.50 or later
 
@@ -649,7 +649,7 @@ unfortunately, the ``pip install`` command cannot satisfy all of them.
 Installing HEAD revision from sources
 =====================================
 
-If you have ``git`` and Python 3.7 or newer installed, you can install
+If you have ``git`` and Python 3.8 or newer installed, you can install
 from source. When the ``pip`` installer runs, it will alert you if
 dependencies are missing.
 
