@@ -244,7 +244,7 @@ def get_deskew(
 
 def tesseract_log_output(stream: bytes) -> None:
     tlog = TesseractLoggerAdapter(
-        log, extra=log.extra if hasattr(log, 'extra') else None
+        log, extra=log.extra if hasattr(log, 'extra') else None  # type: ignore
     )
 
     if not stream:
