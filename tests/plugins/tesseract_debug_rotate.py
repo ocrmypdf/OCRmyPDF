@@ -27,7 +27,7 @@ HOCR_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
  <head>
   <title></title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-  <meta name='ocr-system' content='tesseract 4.0.0' />
+  <meta name='ocr-system' content='tesseract 4.1.1' />
   <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word'/>
  </head>
  <body>
@@ -46,7 +46,7 @@ HOCR_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
 class FixedRotateNoopOcrEngine(OcrEngine):
     @staticmethod
     def version():
-        return '4.0.0'
+        return '4.1.1'
 
     @staticmethod
     def creator_tag(options):

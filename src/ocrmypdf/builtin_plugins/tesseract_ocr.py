@@ -43,7 +43,7 @@ def add_options(parser):
         metavar='MODE',
         choices=range(0, 4),
         help=(
-            "Set Tesseract 4.0+ OCR engine mode: "
+            "Set Tesseract 4+ OCR engine mode: "
             "0 - original Tesseract only; "
             "1 - neural nets LSTM only; "
             "2 - Tesseract + LSTM; "
@@ -93,7 +93,7 @@ def check_options(options):
         program='tesseract',
         package={'linux': 'tesseract-ocr'},
         version_checker=tesseract.version,
-        need_version='4.0.0-beta.1',  # using backport for Travis CI
+        need_version='4.1.1',  # Ubuntu 20.04 version
         version_parser=tesseract.TesseractVersion,
     )
 
@@ -101,11 +101,6 @@ def check_options(options):
     if options.pdf_renderer == 'auto':
         options.pdf_renderer = 'sandwich'
 
-    if not tesseract.has_user_words() and (options.user_words or options.user_patterns):
-        log.warning(
-            "Tesseract 4.0 (which you have installed) ignores --user-words and "
-            "--user-patterns, so these arguments have no effect."
-        )
     if not tesseract.has_thresholding() and options.tesseract_thresholding != 0:
         log.warning(
             "The installed version of Tesseract does not support changes to its "

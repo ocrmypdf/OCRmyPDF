@@ -418,7 +418,7 @@ Native Windows
 You must install the following for Windows:
 
 * Python 3.8 (64-bit) or later
-* Tesseract 4.0 or later
+* Tesseract 4.1.1 or later
 * Ghostscript 9.50 or later
 
 Using the `Chocolatey <https://chocolatey.org/>`_ package manager, install the
@@ -481,7 +481,7 @@ Cygwin64
 
 First install the the following prerequisite Cygwin packages using ``setup-x86_64.exe``::
 
-    python37 (or later)
+    python38 (or later)
     python3?-devel
     python3?-pip
     python3?-lxml
@@ -618,7 +618,7 @@ The following versions are required:
 
 -  Python 3.8 or newer
 -  Ghostscript 9.50 or newer
--  Tesseract 4.0.0 or newer
+-  Tesseract 4.1.1 or newer
 -  jbig2enc 0.29 or newer
 -  pngquant 2.5 or newer
 -  unpaper 6.1

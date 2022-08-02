@@ -87,22 +87,6 @@ def test_optimizing(caplog):
     assert 'will be ignored because' in caplog.text
 
 
-def test_user_words(caplog):
-    with patch('ocrmypdf._exec.tesseract.has_user_words', return_value=False):
-        vd.check_options(*make_opts_pm(user_words='foo'))
-        assert (
-            'Tesseract 4.0 (which you have installed) ignores --user-words'
-            in caplog.text
-        )
-    caplog.clear()
-    with patch('ocrmypdf._exec.tesseract.has_user_words', return_value=True):
-        vd.check_options(*make_opts_pm(user_patterns='foo'))
-        assert (
-            'Tesseract 4.0 (which you have installed) ignores --user-words'
-            not in caplog.text
-        )
-
-
 def test_pillow_options():
     vd.check_options_pillow(make_opts(max_image_mpixels=0))
 
@@ -213,37 +197,38 @@ def test_version_comparison():
             program="tesseract",
             package="tesseract",
             version_checker=lambda: '4.0.0-beta.1',
-            need_version='4.0.0',
+            need_version='4.1.1',
             version_parser=TesseractVersion,
         )
     vd.check_external_program(
         program="tesseract",
         package="tesseract",
         version_checker=lambda: 'v5.0.0-alpha.20200201',
-        need_version='4.0.0',
+        need_version='4.1.1',
         version_parser=TesseractVersion,
     )
     vd.check_external_program(
         program="tesseract",
         package="tesseract",
         version_checker=lambda: '5.0.0-rc1.20211030',
-        need_version='4.0.0',
+        need_version='4.1.1',
         version_parser=TesseractVersion,
     )
     vd.check_external_program(
         program="tesseract",
         package="tesseract",
-        version_checker=lambda: 'v4.0.0.20181030',  # Some Windows builds use this format
-        need_version='4.0.0',
+        version_checker=lambda: 'v4.1.1.20181030',  # Some Windows builds use this format
+        need_version='4.1.1',
         version_parser=TesseractVersion,
     )
-    vd.check_external_program(
-        program="tesseract",
-        package="tesseract",
-        version_checker=lambda: '4.1.1-rc2-25-g9707',
-        need_version='4.0.0',
-        version_parser=TesseractVersion,
-    )
+    with pytest.raises(MissingDependencyError):
+        vd.check_external_program(
+            program="tesseract",
+            package="tesseract",
+            version_checker=lambda: '4.1.1-rc2-25-g9707',
+            need_version='4.1.1',
+            version_parser=TesseractVersion,
+        )
     with pytest.raises(MissingDependencyError):
         vd.check_external_program(
             program="dummy_fails",

@@ -539,7 +539,6 @@ def test_tesseract_config_invalid(renderer, resources, invalid_tess_config, outp
     assert p.returncode == ExitCode.invalid_config
 
 
-@pytest.mark.skipif(not tesseract.has_user_words(), reason='not functional until 4.1.0')
 def test_user_words_ocr(resources, outdir):
     # Does not actually test if --user-words causes output to differ
     word_list = outdir / 'wordlist.txt'
