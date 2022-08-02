@@ -41,6 +41,13 @@ parts:
     stage-packages:
       - lib32stdc++6
 
+  jbig2enc:
+    plugin: autotools
+    source: https://github.com/agl/jbig2enc.git
+    source-tag: '0.29'
+    build-packages:
+      - libleptonica-dev
+
   ocrmypdf:
     plugin: python
     source: https://github.com/ocrmypdf/OCRmyPDF.git
