@@ -21,36 +21,18 @@ def check_options(options):
         program='gs',
         package='ghostscript',
         version_checker=ghostscript.version,
-        need_version='9.15',  # limited by Travis CI / Ubuntu 14.04 backports
+        need_version='9.50',  # Ubuntu 20.04's version
     )
     gs_version = ghostscript.version()
-    if gs_version in ('9.24', '9.51'):
+    if gs_version in ('9.51',):
         raise MissingDependencyError(
             f"Ghostscript {gs_version} contains serious regressions and is not "
             "supported. Please upgrade to a newer version, or downgrade to the "
             "previous version."
         )
 
-    # We have these constraints to check for.
-    # 1. Ghostscript < 9.20 mangles multibyte Unicode
-    # 2. hocr doesn't work on non-Latin languages (so don't select it)
-    is_latin = options.languages.issubset(HOCR_OK_LANGS)
-    if gs_version < '9.20' and options.output_type != 'pdf' and not is_latin:
-        # https://bugs.ghostscript.com/show_bug.cgi?id=696874
-        # Ghostscript < 9.20 fails to encode multibyte characters properly
-        log.warning(
-            f"The installed version of Ghostscript ({gs_version}) does not work "
-            "correctly with the OCR languages you specified. Use --output-type pdf or "
-            "upgrade to Ghostscript 9.20 or later to avoid this issue."
-        )
-
     if options.output_type == 'pdfa':
         options.output_type = 'pdfa-2'
-
-    if options.output_type == 'pdfa-3' and ghostscript.version() < '9.19':
-        raise MissingDependencyError(
-            "--output-type pdfa-3 requires Ghostscript 9.19 or later"
-        )
 
 
 @hookimpl

@@ -190,8 +190,7 @@ Ghostscript also imposes some limitations:
    behavior can be suppressed by setting ``--pdfa-image-compression`` to
    ``jpeg`` or ``lossless`` to set all images to one type or the other.
    Ghostscript has no option to maintain the input image's format.
-   (Ghostscript 9.25+ can copy JPEG images without transcoding them;
-   earlier versions will transcode.)
+   (Modern Ghostscript can copy JPEG images without transcoding them.)
 -  Ghostscript's PDF/A conversion removes any XMP metadata that is not
    one of the standard XMP metadata namespaces for PDFs. In particular,
    PRISM Metdata is removed.

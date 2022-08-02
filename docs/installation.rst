@@ -616,8 +616,8 @@ manager. ``pip`` cannot provide them.
 
 The following versions are required:
 
--  Python 3.7 or newer
--  Ghostscript 9.23 or newer
+-  Python 3.8 or newer
+-  Ghostscript 9.50 or newer
 -  Tesseract 4.0.0 or newer
 -  jbig2enc 0.29 or newer
 -  pngquant 2.5 or newer

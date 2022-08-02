@@ -47,21 +47,6 @@ def version():
     return get_version(GS)
 
 
-def jpeg_passthrough_available() -> bool:
-    """Returns True if the installed version of Ghostscript supports JPEG passthru
-
-    Prior to 9.23, Ghostscript decoded and re-encoded JPEGs internally. In 9.23
-    it gained the ability to keep JPEGs unmodified. However, the 9.23
-    implementation was buggy and would deletes the last two bytes of images in
-    some cases, as reported here.
-    https://bugs.ghostscript.com/show_bug.cgi?id=699216
-
-    The issue was fixed for 9.24, hence that is the first version we consider
-    the feature available. (Ghostscript 9.24 has its own problems is blacklisted.)
-    """
-    return version() >= '9.24'
-
-
 def _gs_error_reported(stream) -> bool:
     match = re.search(r'error', stream, flags=re.IGNORECASE)
     return bool(match)
@@ -201,20 +186,9 @@ def generate_pdfa(
         ]
 
     strategy = 'LeaveColorUnchanged'
-    # Older versions of Ghostscript expect a leading slash in
-    # sColorConversionStrategy, newer ones should not have it. See Ghostscript
-    # git commit fe1c025d.
     gs_version = version()
-    strategy = ('/' + strategy) if gs_version < '9.19' else strategy
-
-    if gs_version == '9.23':
-        # 9.23: added JPEG passthrough as a new feature, but with a bug that
-        # incorrectly formats some images. Fixed as of 9.24. So we disable this
-        # feature for 9.23.
-        # https://bugs.ghostscript.com/show_bug.cgi?id=699216
-        compression_args.append('-dPassThroughJPEGImages=false')
-    elif gs_version == '9.56.0':
-        # 9.56.0 breaks our OCR...?
+    if gs_version == '9.56.0':
+        # 9.56.0 introduced a new rendering mode that breaks our OCR
         compression_args.append('-dNEWPDF=false')
 
     # nb no need to specify ProcessColorModel when ColorConversionStrategy

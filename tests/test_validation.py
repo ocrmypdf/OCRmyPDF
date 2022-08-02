@@ -48,22 +48,6 @@ def test_hocr_notlatin_warning(caplog):
     assert 'PDF renderer is known to cause' in caplog.text
 
 
-def test_old_ghostscript(caplog):
-    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.19'), patch(
-        'ocrmypdf._exec.tesseract.get_languages', return_value={'eng', 'chi_sim'}
-    ):
-        vd.check_options(*make_opts_pm(language='chi_sim', output_type='pdfa'))
-        assert 'does not work correctly' in caplog.text
-
-    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.18'):
-        with pytest.raises(MissingDependencyError):
-            vd.check_options(*make_opts_pm(output_type='pdfa-3'))
-
-    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.24'):
-        with pytest.raises(MissingDependencyError):
-            vd.check_options(*make_opts_pm())
-
-
 def test_old_tesseract_error():
     with patch('ocrmypdf._exec.tesseract.version', return_value='4.00.00alpha'):
         with pytest.raises(MissingDependencyError):
