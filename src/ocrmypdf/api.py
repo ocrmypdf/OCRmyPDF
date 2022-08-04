@@ -284,8 +284,6 @@ def ocr(  # pylint: disable=unused-argument
             ``"-"``, some final validation steps are not performed (we do not read
             back the stream after it is written).
     Raises:
-        ocrmypdf.PdfMergeFailedError: If the input PDF is malformed, preventing merging
-            with the OCR layer.
         ocrmypdf.MissingDependencyError: If a required dependency program is missing or
             was not found on PATH.
         ocrmypdf.UnsupportedImageFormatError: If the input file type was an image that

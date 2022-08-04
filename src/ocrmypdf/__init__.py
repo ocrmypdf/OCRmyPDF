@@ -21,7 +21,6 @@ from ocrmypdf.exceptions import (
     InputFileError,
     MissingDependencyError,
     OutputFileAccessError,
-    PdfMergeFailedError,
     PriorOcrFoundError,
     SubprocessOutputError,
     TesseractConfigError,

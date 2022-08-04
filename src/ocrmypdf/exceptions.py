@@ -47,26 +47,6 @@ class BadArgsError(ExitCodeException):
     exit_code = ExitCode.bad_args
 
 
-class PdfMergeFailedError(ExitCodeException):  # deprecated
-    """An intermediate PDF can't be merged.
-
-    No longer in use.
-    """
-
-    exit_code = ExitCode.input_file
-    message = dedent(
-        '''\
-        Failed to merge PDF image layer with OCR layer
-
-        Usually this happens because the input PDF file is malformed and
-        ocrmypdf cannot correct the problem on its own.
-
-        Try using
-            ocrmypdf --pdf-renderer sandwich  [..other args..]
-        '''
-    )
-
-
 class MissingDependencyError(ExitCodeException):
     """A third-party dependency is missing."""
 
