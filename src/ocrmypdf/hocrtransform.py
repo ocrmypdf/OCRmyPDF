@@ -18,6 +18,7 @@ from typing import Any, NamedTuple
 from xml.etree import ElementTree
 
 with warnings.catch_warnings():
+    # reportlab uses deprecated load_module
     warnings.filterwarnings(
         'ignore', category=DeprecationWarning, message=r".*load_module.*"
     )

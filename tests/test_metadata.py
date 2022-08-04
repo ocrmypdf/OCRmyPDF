@@ -28,9 +28,6 @@ except ImportError:
     fitz = None
 
 
-pytestmark = pytest.mark.filterwarnings('ignore:.*XMLParser.*:DeprecationWarning')
-
-
 @pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])
 def test_preserve_docinfo(output_type, resources, outpdf):
     pdf_before = pikepdf.open(resources / 'graph.pdf')
@@ -174,7 +171,12 @@ def test_creation_date_preserved(output_type, resources, infile, outpdf):
 def libxmp_file_to_dict():
     try:
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
+            # libxmp imports distutils.Version, which is deprecated
+            warnings.filterwarnings(
+                "ignore",
+                category=DeprecationWarning,
+                message=r".*distutils Version classes are deprecated.*",
+            )
             from libxmp.utils import (
                 file_to_dict,  # pylint: disable=import-outside-toplevel
             )
