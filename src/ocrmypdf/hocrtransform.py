@@ -14,7 +14,7 @@ import re
 import warnings
 from math import atan, cos, sin
 from pathlib import Path
-from typing import Any, NamedTuple, Optional, Tuple, Union
+from typing import Any, NamedTuple
 from xml.etree import ElementTree
 
 with warnings.catch_warnings():
