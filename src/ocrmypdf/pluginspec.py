@@ -276,17 +276,19 @@ def filter_page_image(page: PageContext, image_filename: Path) -> Path:
 
     If the return value is a file that does not exist, ``FileNotFoundError``
     will occur. The return value should be a path to a file in the same folder
-    as ``image_filename``.
-
-    Implementation detail: If the value returned is falsy, OCRmyPDF will ignore
-    the return value and assume the input file was unmodified. This is deprecated.
-    To leave the image unmodified, ``image_filename`` should be returned.
+    as ``image_filename``. To leave the image unmodified, ``image_filename``
+    should be returned.
 
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
+
+    .. versionchanged:: 14.0
+        Previously, OCRmyPDF would treat as a falsy value as a request to leave
+        the image unmodified. This is no longer supported and will trigger an
+        exception.
     """
 
 

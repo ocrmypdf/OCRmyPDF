@@ -206,8 +206,8 @@ def exec_page_sync(page_context: PageContext) -> PageResult:
         filtered_image = page_context.plugin_manager.hook.filter_page_image(
             page=page_context, image_filename=visible_image_out
         )
-        if filtered_image:
-            visible_image_out = filtered_image
+
+        visible_image_out = filtered_image
         pdf_page_from_image_out = create_pdf_page_from_image(
             visible_image_out, page_context, orientation_correction
         )
