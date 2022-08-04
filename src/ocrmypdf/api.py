@@ -15,21 +15,15 @@ from pathlib import Path
 from typing import AnyStr, BinaryIO, Iterable, Union
 from warnings import warn
 
+import coloredlogs
+from humanfriendly.terminal import enable_ansi_support
+
 from ocrmypdf._logging import PageNumberFilter, TqdmConsole
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._sync import run_pipeline
 from ocrmypdf._validation import check_options
 from ocrmypdf.cli import ArgumentParser, get_parser
 from ocrmypdf.helpers import is_iterable_notstr
-
-try:
-    import coloredlogs
-except ModuleNotFoundError:
-    coloredlogs = None  # pylint: disable=invalid-name
-
-if coloredlogs:
-    from humanfriendly.terminal import enable_ansi_support
-
 
 StrPath = Union[Path, AnyStr]
 PathOrIO = Union[BinaryIO, StrPath]
@@ -121,7 +115,7 @@ def configure_logging(
 
     use_colors = progress_bar_friendly
     formatter = None
-    if coloredlogs and use_colors:
+    if use_colors:
         use_colors = enable_ansi_support()
         if use_colors:
             use_colors = coloredlogs.terminal_supports_colors()
