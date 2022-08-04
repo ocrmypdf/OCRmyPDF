@@ -13,7 +13,6 @@ import warnings
 from collections import namedtuple
 from collections.abc import Iterable
 from contextlib import suppress
-from functools import wraps
 from io import StringIO
 from math import isclose, isfinite
 from pathlib import Path
@@ -275,20 +274,3 @@ def pikepdf_enable_mmap():
     # Fix is not in pybind11 2.6.0
     # log.debug("pikepdf mmap disabled")
     return
-
-
-def deprecated(func):
-    """Warn that function is deprecated."""
-
-    @wraps(func)
-    def new_func(*args, **kwargs):
-        warnings.simplefilter('always', DeprecationWarning)  # turn off filter
-        warnings.warn(
-            f"Call to deprecated function {func.__name__}.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        warnings.simplefilter('default', DeprecationWarning)  # reset filter
-        return func(*args, **kwargs)
-
-    return new_func
