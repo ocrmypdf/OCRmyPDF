@@ -1,4 +1,5 @@
-<!-- SPDX-FileCopyrightText: 2022 James R. Barlow -->
+<!-- SPDX-FileCopyrightText: 2014 Julien Pfefferkorn -->
+<!-- SPDX-FileCopyrightText: 2015 James R. Barlow -->
 <!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
 
 <img src="docs/images/logo.svg" width="240" alt="OCRmyPDF">
