@@ -1,5 +1,5 @@
-# OCRmyPDF
-#
+# SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-License-Identifier: MPL-2.0
 
 FROM ubuntu:22.04 as base
 

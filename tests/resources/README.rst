@@ -1,3 +1,7 @@
+.. SPDX-FileCopyrightText: 2022 James R. Barlow
+.. SPDX-License-Identifier: CC-BY-SA-4.0
+
+
 These test files are used in OCRmyPDF's test suite. They do not necessarily produce OCR results
 at all and are not meant as examples of OCR output. Some are even invalid PDFs that might
 crash certain PDF viewers.
