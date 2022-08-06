@@ -29,8 +29,6 @@ Files:
  tests/resources/enormous.pdf
  tests/resources/formxobject.pdf
  tests/resources/francais.pdf
- tests/resources/graph.pdf
- tests/resources/graph_ocred.pdf
  tests/resources/hugemono.pdf
  tests/resources/invalid.pdf
  tests/resources/kcs.pdf
@@ -48,7 +46,8 @@ License: CC-BY-SA-4.0
 Files: tests/resources/c02-22.pdf
  tests/resources/congress.jpg
  tests/resources/multipage.pdf
- tests/resources/palette.pdf
+ tests/resources/graph.pdf
+ tests/resources/graph_ocred.pdf
 Copyright: Public domain
 License: public-domain
  Copyright on these files has expired.
