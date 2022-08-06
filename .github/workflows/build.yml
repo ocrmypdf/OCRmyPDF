@@ -71,12 +71,6 @@ jobs:
             unpaper \
             zlib1g
 
-      - name: Install Ubuntu 18.04 packages
-        if: matrix.os == 'ubuntu-18.04'
-        run: |
-          sudo apt-get install -y --no-install-recommends \
-            libexempi3
-
       - name: Install Ubuntu 20.04 packages
         if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-latest'
         run: |
