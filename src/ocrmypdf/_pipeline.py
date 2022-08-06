@@ -1,4 +1,5 @@
-# SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-FileCopyrightText: 2018-2022 James R. Barlow
+# SPDX-FileCopyrightText: 2019 Martin Wind
 # SPDX-License-Identifier: MPL-2.0
 
 """OCRmyPDF page processing pipeline functions."""
