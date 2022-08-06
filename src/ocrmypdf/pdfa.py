@@ -6,13 +6,9 @@
 from __future__ import annotations
 
 import base64
+from importlib.resources import files as package_files
 from pathlib import Path
 from typing import Iterator
-
-try:
-    from importlib.resources import files as package_files
-except ImportError:
-    from importlib_resources import files as package_files  # type: ignore
 
 import pikepdf
 

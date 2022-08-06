@@ -1,11 +1,7 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 [build-system]
-requires = [
-  "setuptools >= 61",
-  "setuptools_scm[toml] >= 7.0.5",
-  "wheel"
-]
+requires = ["setuptools >= 61", "setuptools_scm[toml] >= 7.0.5", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -13,12 +9,12 @@ name = "ocrmypdf"
 dynamic = ["version"]
 description = "OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched"
 readme = "README.md"
-license = {text = "MPL-2.0"}
-requires-python = ">=3.8"
+license = { text = "MPL-2.0" }
+requires-python = ">=3.9"
 dependencies = [
   "Pillow>=8.2.0",
   "deprecation>=2.1.0",
-  "img2pdf>=0.3.0", # pure Python
+  "img2pdf>=0.3.0",                             # pure Python
   "packaging>=20",
   "pdfminer.six>=20201018",
   "pikepdf>=5.0.1",
@@ -26,10 +22,9 @@ dependencies = [
   "reportlab>=3.5.66",
   "rich>=13",
   "tqdm>=4",
-  "importlib-resources>=5;python_version<'3.9'",  # until Python 3.9
   "typing-extensions>=4;python_version<'3.10'",
 ]
-authors = [{name = "James R. Barlow", email="james@purplerock.ca"}]
+authors = [{ name = "James R. Barlow", email = "james@purplerock.ca" }]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
@@ -47,13 +42,7 @@ classifiers = [
   "Topic :: Text Processing :: Indexing",
   "Topic :: Text Processing :: Linguistic",
 ]
-keywords = [
-  "PDF",
-  "OCR",
-  "optical character recognition",
-  "PDF/A",
-  "scanning",
-]
+keywords = ["PDF", "OCR", "optical character recognition", "PDF/A", "scanning"]
 
 [project.urls]
 Documentation = "https://ocrmypdf.readthedocs.io/"
@@ -69,7 +58,7 @@ test = [
   "pytest>=6.0.0",
   "pytest-cov>=2.11.1",
   "pytest-xdist>=2.2.0",
-  "python-xmp-toolkit==2.0.1",  # also requires apt-get install libexempi3
+  "python-xmp-toolkit==2.0.1", # also requires apt-get install libexempi3
   "types-Pillow",
   "types-humanfriendly",
 ]
@@ -134,7 +123,7 @@ exclude_lines = [
   "if 0:",
   "if False:",
   "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:"
+  "if TYPE_CHECKING:",
 ]
 
 [tool.pytest.ini_options]
@@ -156,18 +145,18 @@ module = [
   'pdfminer.*',
   'reportlab.*',
   'fitz',
-  'libxmp.utils'
+  'libxmp.utils',
 ]
 ignore_missing_imports = true
 
 [tool.ruff]
 select = [
-  "D", # pydocstyle
-  "E", # pycodestyle
-  "W", # pycodestyle
-  "F", # pyflakes
+  "D",    # pydocstyle
+  "E",    # pycodestyle
+  "W",    # pycodestyle
+  "F",    # pyflakes
   "I001", # isort
-  "UP", # pyupgrade
+  "UP",   # pyupgrade
 ]
 target-version = "py38"
 

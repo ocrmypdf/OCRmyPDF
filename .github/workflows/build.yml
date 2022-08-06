@@ -23,8 +23,6 @@ jobs:
       matrix:
         include:
           - os: ubuntu-20.04
-            python: "3.8"
-          - os: ubuntu-20.04
             python: "3.9"
           - os: ubuntu-20.04
             python: "3.10"
@@ -34,8 +32,6 @@ jobs:
             python: "3.10"
           - os: ubuntu-latest
             python: "3.11"
-          # - os: ubuntu-latest
-          #   python: "pypy3.8"
           #- os: ubuntu-latest
           #  python: "pypy3.9"
           - os: ubuntu-latest

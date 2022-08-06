@@ -95,15 +95,6 @@ def thread_init(q: Queue, user_init: UserInit, loglevel) -> None:
 class StandardExecutor(Executor):
     """Standard OCRmyPDF concurrent task executor."""
 
-    def _cancel_futures_kwargs(self):
-        """Shim older Pythons that do not have Executor.shutdown(...cancel_futures=).
-
-        Remove this code when support for Python 3.8 is dropped.
-        """
-        if sys.version_info[:2] < (3, 9):
-            return {}
-        return dict(cancel_futures=True)
-
     def _execute(
         self,
         *,
@@ -142,7 +133,7 @@ class StandardExecutor(Executor):
                     task_finished(result, pbar)
             except KeyboardInterrupt:
                 # Terminate pool so we exit instantly
-                executor.shutdown(wait=False, **self._cancel_futures_kwargs())
+                executor.shutdown(wait=False, cancel_futures=True)
                 raise
             except Exception:
                 if not os.environ.get("PYTEST_CURRENT_TEST", ""):
@@ -151,7 +142,7 @@ class StandardExecutor(Executor):
                     # results will be discard. But if the condition above is True,
                     # then we are running in pytest, and we want everything to exit
                     # as cleanly as possible so that we get good error messages.
-                    executor.shutdown(wait=False, **self._cancel_futures_kwargs())
+                    executor.shutdown(wait=False, cancel_futures=True)
                 raise
             finally:
                 # Terminate log listener
