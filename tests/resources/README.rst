@@ -112,7 +112,7 @@ These test resources are assemblies or derivatives from other previously mention
 - cardinal.pdf (four cardinal directions, baked-in rotated copies of linn.png)
 - ccitt.pdf (linn.png, converted to CCITT encoding)
 - graph_ocred.pdf (from graph.pdf)
-- jbig2.pdf (congress.jpg, converted to JBIG2 encoding)
+- jbig2.pdf (from linn.png)
 - multipage.pdf (from several other files)
 - palette.pdf (from baiona_colormapped.png)
 - poster.pdf (from linn.png)
