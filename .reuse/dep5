@@ -103,6 +103,7 @@ Files:
  tests/resources/baiona*.png
  tests/resources/baiona*.jpg
  tests/resources/link.pdf
+ tests/resources/palette.pdf
 Copyright: (C) 2014 Euskaldunaa
 License: CC-BY-SA-4.0
 

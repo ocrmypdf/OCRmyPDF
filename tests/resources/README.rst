@@ -114,7 +114,7 @@ These test resources are assemblies or derivatives from other previously mention
 - graph_ocred.pdf (from graph.pdf)
 - jbig2.pdf (congress.jpg, converted to JBIG2 encoding)
 - multipage.pdf (from several other files)
-- palette.pdf (congress.jpg, converted to a 256-color palette)
+- palette.pdf (from baiona_colormapped.png)
 - poster.pdf (from linn.png)
 - rotated_skew.pdf (a /Rotate'd and skewed document from linn.png)
 - skew.pdf (from linn.png, skew simulated by adjusting the transformation matrix)
