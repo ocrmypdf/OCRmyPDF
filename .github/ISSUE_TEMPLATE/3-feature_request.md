@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-License-Identifier: CC-BY-SA-4.0
 ---
 name: Feature request
 about: Suggest an idea for this project

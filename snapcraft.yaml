@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022 Alexander Langanke
+# SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-License-Identifier: MPL-2.0
+
 name: ocrmypdf
 title: OCRmyPDF
 base: core20
@@ -40,6 +44,13 @@ parts:
           - g++-multilib
     stage-packages:
       - lib32stdc++6
+
+  jbig2enc:
+    plugin: autotools
+    source: https://github.com/agl/jbig2enc.git
+    source-tag: '0.29'
+    build-packages:
+      - libleptonica-dev
 
   ocrmypdf:
     plugin: python
