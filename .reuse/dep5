@@ -3,6 +3,7 @@ Upstream-Name: OCRmyPDF
 Upstream-Contact: James R. Barlow <james@purplerock.ca>
 Source: https://github.com/ocrmypdf/OCRmyPDF
 
+
 Files:
  .git_archival.txt
  docs/images/logo-social.png
@@ -48,8 +49,6 @@ Files: tests/resources/c02-22.pdf
  tests/resources/congress.jpg
  tests/resources/multipage.pdf
  tests/resources/palette.pdf
- tests/resources/jbig2.pdf
- tests/resources/encrypted_algo4.pdf
 Copyright: Public domain
 License: public-domain
  Copyright on these files has expired.
@@ -67,9 +66,9 @@ Files: tests/resources/linn.png
  tests/resources/linn.txt
  tests/resources/ccitt.pdf
  tests/resources/cardinal.pdf
+ tests/resources/jbig2.pdf
  tests/resources/skew.pdf
  tests/resources/rotated_skew.pdf
- tests/resources/skew-encrypted.pdf
  tests/resources/poster.pdf
 Copyright: (C) 1985 Forat Electronics
 License: GFDL-1.2-or-later or CC-BY-SA-3.0
