@@ -23,7 +23,7 @@ the copyright holder(s) and license(s) applicable to these resources.
         - `US Congressional Records`_
         - difficult OCR image (color background)
     *   - graph.pdf
-        - `Wikimedia: Pandas text analysis.png`_
+        - `Wikimedia:Simple_line_graph_of_ACE_2012_results_by_candidate_sj01.png`_
         - image with slanted text
     *   - lichtenstein.pdf
         - `Wikimedia: JPEG2000 Lichtenstein`_
@@ -127,7 +127,7 @@ These test resources are assemblies or derivatives from other previously mention
 
 .. _`US Congressional Records`: http://www.baxleystamps.com/litho/meiji/courts_1871.jpg
 
-.. _`Wikimedia: Pandas text analysis.png`: https://en.wikipedia.org/wiki/File:Pandas_text_analysis.png
+.. _`Wikimedia: Simple_line_graph_of_ACE_2012_results_by_candidate_sj01.png`: https://en.wikipedia.org/wiki/File:Simple_line_graph_of_ACE_2012_results_by_candidate_sj01.png
 
 .. _`Wikimedia: JPEG2000 Lichtenstein`: https://en.wikipedia.org/wiki/JPEG_2000#/media/File:Jpeg2000_2-level_wavelet_transform-lichtenstein.png
 

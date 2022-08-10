@@ -43,11 +43,15 @@ Files:
 Copyright: (C) 2022 James R. Barlow
 License: CC-BY-SA-4.0
 
+Files:
+ tests/resources/graph.pdf
+ tests/resources/graph_ocred.pdf
+Copyright: (C) 2012 SmokeyJoe
+License: GFDL-1.2-or-later or CC-BY-SA-3.0
+
 Files: tests/resources/c02-22.pdf
  tests/resources/congress.jpg
  tests/resources/multipage.pdf
- tests/resources/graph.pdf
- tests/resources/graph_ocred.pdf
 Copyright: Public domain
 License: public-domain
  Copyright on these files has expired.

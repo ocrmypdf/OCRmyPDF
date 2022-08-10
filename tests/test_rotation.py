@@ -276,7 +276,8 @@ def test_rasterize_rotates(resources, tmp_path):
         rotation=90,
         filter_vector=False,
     )
-    assert Image.open(img).size == (123, 151), "Image not rotated"
+    with Image.open(img) as im:
+        assert im.size == (83, 200), "Image not rotated"
 
     img = tmp_path / 'img180.png'
     pm.hook.rasterize_pdf_page(
@@ -289,7 +290,7 @@ def test_rasterize_rotates(resources, tmp_path):
         rotation=180,
         filter_vector=False,
     )
-    assert Image.open(img).size == (151, 123), "Image not rotated"
+    assert Image.open(img).size == (200, 83), "Image not rotated"
 
 
 def test_simulated_scan(outdir):
