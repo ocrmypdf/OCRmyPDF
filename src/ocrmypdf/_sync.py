@@ -258,7 +258,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     if max_workers > 1:
         log.info("Start processing %d pages concurrently", max_workers)
 
-    sidecars: list[Path | None] = [None] * len(context.pdfinfo)
+    sidecars: list[Path | None] = [] * len(context.pdfinfo)
     ocrgraft = OcrGrafter(context)
 
     def update_page(result: PageResult, pbar):
