@@ -48,10 +48,9 @@ def test_nonmonotonic_warning(caplog):
     assert 'out of order' in caplog.text
 
 
-def test_limited_pages(resources, outpdf):
-    multi = resources / 'multipage.pdf'
+def test_limited_pages(multipage, outpdf):
     ocrmypdf.ocr(
-        multi,
+        multipage,
         outpdf,
         pages='5-6',
         optimize=0,

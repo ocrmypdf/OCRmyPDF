@@ -14,9 +14,9 @@ from .conftest import run_ocrmypdf_api
 
 @pytest.mark.skipif(True, reason="--use-threads is currently default")
 @pytest.mark.skipif(os.name == 'nt', reason="Windows doesn't have SIGKILL")
-def test_simulate_oom_killer(resources, no_outpdf):
+def test_simulate_oom_killer(multipage, no_outpdf):
     exitcode = run_ocrmypdf_api(
-        resources / 'multipage.pdf',
+        multipage,
         no_outpdf,
         '--force-ocr',
         '--plugin',

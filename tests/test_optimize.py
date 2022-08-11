@@ -27,10 +27,15 @@ needs_jbig2enc = pytest.mark.skipif(
 )
 
 
+@pytest.fixture(scope="session")
+def palette(resources):
+    return resources / 'palette.pdf'
+
+
 @needs_pngquant
-@pytest.mark.parametrize('pdf', ['multipage.pdf', 'palette.pdf'])
-def test_basic(resources, pdf, outpdf):
-    infile = resources / pdf
+@pytest.mark.parametrize('pdf', ['multipage', 'palette'])
+def test_basic(multipage, palette, pdf, outpdf):
+    infile = multipage if pdf == 'multipage' else palette
     opt.main(infile, outpdf, level=3)
 
     assert 0.98 * Path(outpdf).stat().st_size <= Path(infile).stat().st_size

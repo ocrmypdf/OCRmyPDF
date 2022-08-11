@@ -7,11 +7,10 @@ import os
 import shutil
 from math import isclose
 from pathlib import Path
-from subprocess import PIPE, run
+from subprocess import run
 from unittest.mock import patch
 
 import pikepdf
-import PIL
 import pytest
 from PIL import Image
 
@@ -153,9 +152,9 @@ def test_skip_big(resources, outpdf):
 
 @pytest.mark.parametrize('renderer', RENDERERS)
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
-def test_maximum_options(renderer, output_type, resources, outpdf):
+def test_maximum_options(renderer, output_type, multipage, outpdf):
     check_ocrmypdf(
-        resources / 'multipage.pdf',
+        multipage,
         outpdf,
         '-d',
         '-ci' if have_unpaper() else None,
