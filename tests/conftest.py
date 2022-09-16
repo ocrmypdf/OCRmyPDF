@@ -44,7 +44,7 @@ TESTS_ROOT = Path(__file__).parent.resolve()
 PROJECT_ROOT = TESTS_ROOT
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def resources() -> Path:
     return Path(TESTS_ROOT) / 'resources'
 
@@ -76,6 +76,11 @@ def no_outpdf(tmp_path) -> Path:
     an error rather than a test failure, so no testing is done. It's up to
     the test to confirm that no output file was created."""
     return tmp_path / 'no_output.pdf'
+
+
+@pytest.fixture(scope="session")
+def multipage(resources):
+    return resources / 'multipage.pdf'
 
 
 def check_ocrmypdf(input_file: Path, output_file: Path, *args) -> Path:

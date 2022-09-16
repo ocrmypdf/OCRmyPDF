@@ -188,7 +188,8 @@ def generate_pdfa(
     strategy = 'LeaveColorUnchanged'
     gs_version = version()
     if gs_version == '9.56.0':
-        # 9.56.0 introduced a new rendering mode that breaks our OCR
+        # 9.56.0 breaks our OCR, should be fixed in 9.56.1
+        # https://bugs.ghostscript.com/show_bug.cgi?id=705187
         compression_args.append('-dNEWPDF=false')
 
     # nb no need to specify ProcessColorModel when ColorConversionStrategy

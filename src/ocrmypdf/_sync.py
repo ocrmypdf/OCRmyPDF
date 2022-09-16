@@ -1,4 +1,5 @@
-# SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-FileCopyrightText: 2019-2022 James R. Barlow
+# SPDX-FileCopyrightText: 2019 Martin Wind
 # SPDX-License-Identifier: MPL-2.0
 
 """Implements the concurrent and page synchronous parts of the pipeline."""

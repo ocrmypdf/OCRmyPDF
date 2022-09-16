@@ -7,11 +7,10 @@ import os
 import shutil
 from math import isclose
 from pathlib import Path
-from subprocess import PIPE, run
+from subprocess import run
 from unittest.mock import patch
 
 import pikepdf
-import PIL
 import pytest
 from PIL import Image
 
@@ -153,9 +152,9 @@ def test_skip_big(resources, outpdf):
 
 @pytest.mark.parametrize('renderer', RENDERERS)
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
-def test_maximum_options(renderer, output_type, resources, outpdf):
+def test_maximum_options(renderer, output_type, multipage, outpdf):
     check_ocrmypdf(
-        resources / 'multipage.pdf',
+        multipage,
         outpdf,
         '-d',
         '-ci' if have_unpaper() else None,
@@ -292,12 +291,6 @@ def test_input_file_not_a_pdf(caplog, no_outpdf):
         assert input_file in caplog.text
 
 
-def test_encrypted(resources, caplog, no_outpdf):
-    result = run_ocrmypdf_api(resources / 'skew-encrypted.pdf', no_outpdf)
-    assert result == ExitCode.encrypted_pdf
-    assert 'encryption must be removed' in caplog.text
-
-
 @pytest.mark.parametrize('renderer', RENDERERS)
 def test_pagesegmode(renderer, resources, outpdf):
     check_ocrmypdf(
@@ -398,14 +391,27 @@ def test_tesseract_image_too_big(renderer, resources, outpdf):
     )
 
 
-def test_algo4(resources, outpdf):
-    p = run_ocrmypdf(
-        resources / 'encrypted_algo4.pdf',
+@pytest.mark.parametrize('encryption_level', [2, 3, 4, 6])
+def test_encrypted(resources, outpdf, encryption_level, caplog):
+    encryption = pikepdf.models.encryption.Encryption(
+        owner='ocrmypdf',
+        user='ocrmypdf',
+        R=encryption_level,
+        aes=(encryption_level >= 4),
+        metadata=(encryption_level == 6),
+    )
+
+    with pikepdf.open(resources / 'jbig2.pdf') as pdf:
+        pdf.save(outpdf, encryption=encryption)
+
+    exitcode = run_ocrmypdf_api(
+        outpdf,
         outpdf,
         '--plugin',
         'tests/plugins/tesseract_noop.py',
     )
-    assert p.returncode == ExitCode.encrypted_pdf
+    assert exitcode == ExitCode.encrypted_pdf
+    assert 'encryption must be removed' in caplog.text
 
 
 def test_jbig2_passthrough(resources, outpdf):

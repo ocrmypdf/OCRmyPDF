@@ -140,18 +140,19 @@ def cached_run(options, run_args, **run_kwargs):
             tessfile = args.outputbase + '.' + configfile
             shutil.copy(tessfile, str(cache_folder / configfile) + '.bin')
 
-    manifest = {}
-    manifest['tesseract_version'] = TesseractOcrEngine.version().replace('\n', ' ')
-    manifest['system'] = platform.system()
-    manifest['python'] = platform.python_version()
-    manifest['argv_slug'] = cache_folder.name
-    manifest['sourcefile'] = str(Path(source_file).relative_to(TESTS_ROOT))
-
     def clean_sys_argv():
         for arg in run_args[1:]:
             yield re.sub(r'.*/ocrmypdf[.]io[.][^/]+[/](.*)', r'$TMPDIR/\1', arg)
 
-    manifest['args'] = list(clean_sys_argv())
+    manifest = {
+        'tesseract_version': TesseractOcrEngine.version().replace('\n', ' '),
+        'system': platform.system(),
+        'python': platform.python_version(),
+        'argv_slug': cache_folder.name,
+        'sourcefile': str(Path(source_file).relative_to(TESTS_ROOT)),
+        'args': list(clean_sys_argv()),
+    }
+
     with (Path(CACHE_ROOT) / 'manifest.jsonl').open('a') as f:
         json.dump(manifest, f)
         f.write('\n')

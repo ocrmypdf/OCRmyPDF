@@ -2,16 +2,13 @@
 # SPDX-License-Identifier: CC-BY-SA-4.0
 
 # dotfiles
-.*
-!.coveragerc
-!.dockerignore
-!.git_archival.txt
-!.gitattributes
-!.gitignore
-!.pre-commit-config.yaml
-!.readthedocs.yaml
-!.github/
-!.docker/
+.coverage
+.venv*/
+.tox/
+.vscode/
+.ipynb_checkpoints/
+.mypy_cache/
+.pytest_cache/
 
 # Dev scratch
 *.ipynb
@@ -45,4 +42,3 @@ docs/_build/
 docs/_static/
 docs/_templates/
 docs/Makefile
-ocrmypdf/lib/_*.py

@@ -1,0 +1,131 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: OCRmyPDF
+Upstream-Contact: James R. Barlow <james@purplerock.ca>
+Source: https://github.com/ocrmypdf/OCRmyPDF
+
+
+Files:
+ .git_archival.txt
+ docs/images/logo-social.png
+ docs/images/logo-square-256.svg
+ docs/images/logo-square.png
+ docs/images/logo-square.svg
+ docs/images/logo.svg
+ setup.cfg
+Copyright: (C) 2022 James R. Barlow
+License: MPL-2.0
+
+Files:
+ docs/images/macos-workflow.png
+Copyright: (C) 2022 James R. Barlow
+License: CC-BY-SA-4.0
+
+Files:
+ tests/resources/acroform.pdf
+ tests/resources/aspect.pdf
+ tests/resources/blank.pdf
+ tests/resources/cmyk.pdf
+ tests/resources/crom.png
+ tests/resources/enormous.pdf
+ tests/resources/formxobject.pdf
+ tests/resources/francais.pdf
+ tests/resources/hugemono.pdf
+ tests/resources/invalid.pdf
+ tests/resources/kcs.pdf
+ tests/resources/livecycle.pdf
+ tests/resources/missing_docinfo.pdf
+ tests/resources/negzero.pdf
+ tests/resources/no_contents.pdf
+ tests/resources/toc.pdf
+ tests/resources/trivial.pdf
+ tests/resources/truetype_font_nomapping.pdf
+ tests/resources/type3_font_nomapping.pdf
+Copyright: (C) 2022 James R. Barlow
+License: CC-BY-SA-4.0
+
+Files:
+ tests/resources/graph.pdf
+ tests/resources/graph_ocred.pdf
+Copyright: (C) 2012 SmokeyJoe
+License: GFDL-1.2-or-later or CC-BY-SA-3.0
+
+Files: tests/resources/c02-22.pdf
+ tests/resources/congress.jpg
+ tests/resources/multipage.pdf
+Copyright: Public domain
+License: public-domain
+ Copyright on these files has expired.
+
+Files: docs/images/bitmap_vs_svg.svg
+Copyright: (C) 2006 Yug
+License: CC-BY-SA-2.5
+
+Files: tests/cache/*
+Copyright: (C) 2022 James R. Barlow
+License: CC-BY-SA-4.0
+
+Files: tests/resources/linn.png
+ tests/resources/linn.pdf
+ tests/resources/linn.txt
+ tests/resources/ccitt.pdf
+ tests/resources/cardinal.pdf
+ tests/resources/jbig2.pdf
+ tests/resources/skew.pdf
+ tests/resources/rotated_skew.pdf
+ tests/resources/poster.pdf
+Copyright: (C) 1985 Forat Electronics
+License: GFDL-1.2-or-later or CC-BY-SA-3.0
+
+Files: tests/resources/lichtenstein.pdf
+Copyright: (C) 2001 Andreas Tille
+ (C) 2007 Alessio Damato
+License: GFDL-1.2-or-later or CC-BY-SA-3.0
+
+Files: tests/resources/masks.pdf
+Copyright: held by the contributors to the German Wikipedia article "Linux"
+ see: https://de.wikipedia.org/w/index.php?title=Linux&action=history
+ (masks.pdf generated from Wikipedia article as of 2016-08-24)
+License: CC-BY-SA-3.0
+
+Files: tests/resources/epson.pdf
+Copyright: held by the contributors to the Wikipedia article "Optical character recognition"
+ see: https://en.wikipedia.org/w/index.php?title=Optical_character_recognition&action=history
+ (epson.pdf generated from Wikipedia article as of 2016-09-14)
+License: CC-BY-SA-3.0
+
+Files: tests/resources/typewriter.png tests/resources/2400dpi.pdf
+Copyright: (C) 2005 Ellywa
+License: GFDL-1.2-or-later or CC-BY-SA-1.0 or CC-BY-SA-2.0 or CC-BY-SA-2.5 or CC-BY-SA-3.0
+Comment:
+ Obtained from: https://commons.wikimedia.org/wiki/File:Triumph.typewriter_text_Linzensoep.gif
+
+Files: tests/resources/overlay.pdf
+Copyright: (C) 2017 Max Anderson
+License: MIT
+
+Files:
+ tests/resources/baiona*.png
+ tests/resources/baiona*.jpg
+ tests/resources/link.pdf
+ tests/resources/palette.pdf
+Copyright: (C) 2014 Euskaldunaa
+License: CC-BY-SA-4.0
+
+Files: tests/resources/vector.pdf
+Copyright: (C) 2018 Catscratch
+License: MIT
+
+Files: src/ocrmypdf/data/sRGB.icc
+Copyright:  Kai-Uwe Behrmann <www.behrmann.name>
+            Marti Maria <www.littlecms.com>
+            Photogamut <www.photogamut.org>
+            Graeme Gill <www.argyllcms.com>
+            ColorSolutions <www.basICColor.com>
+License: Zlib
+
+Files: tests/resources/3small.pdf
+Copyright: (C) 2014 Euskaldunaa
+ (C) 2017 James R. Barlow
+ (C) 2005 Ellywa
+License: CC-BY-SA-4.0 and (GFDL-1.2-or-later or CC-BY-SA-1.0 or CC-BY-SA-2.0 or CC-BY-SA-2.5 or CC-BY-SA-3.0)
+Comment: concatenation of baiona_gray.png, crom.png and typewriter.png/2400dpi.pdf
