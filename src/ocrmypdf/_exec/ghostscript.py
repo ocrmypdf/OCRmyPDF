@@ -214,7 +214,8 @@ def generate_pdfa(
         # https://bugs.ghostscript.com/show_bug.cgi?id=699216
         compression_args.append('-dPassThroughJPEGImages=false')
     elif gs_version == '9.56.0':
-        # 9.56.0 breaks our OCR...?
+        # 9.56.0 breaks our OCR, should be fixed in 9.56.1
+        # https://bugs.ghostscript.com/show_bug.cgi?id=705187
         compression_args.append('-dNEWPDF=false')
 
     # nb no need to specify ProcessColorModel when ColorConversionStrategy
