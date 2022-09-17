@@ -10,14 +10,13 @@ import multiprocessing
 import os
 import shutil
 import warnings
-from collections import namedtuple
 from collections.abc import Iterable
 from contextlib import suppress
 from functools import wraps
 from io import StringIO
 from math import isclose, isfinite
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Generic, Sequence, SupportsFloat, SupportsRound, TypeVar
 
 import img2pdf
 import pikepdf
@@ -35,23 +34,33 @@ else:
     )
 
 
-class Resolution(namedtuple('Resolution', ('x', 'y'))):
+T = TypeVar('T', bound=SupportsRound[Any])
+
+
+class Resolution(Generic[T]):
     """The number of pixels per inch in each 2D direction.
 
     Resolution objects are considered "equal" for == purposes if they are
     equal to a reasonable tolerance.
     """
 
-    __slots__ = ()
+    x: T
+    y: T
+
+    __slots__ = ('x', 'y')
+
+    def __init__(self, x: T, y: T):
+        self.x = x
+        self.y = y
 
     # rel_tol after converting from dpi to pixels per meter and saving
     # as integer with rounding, as many file formats
     CONVERSION_ERROR = 0.002
 
-    def round(self, ndigits: int):
+    def round(self, ndigits: int) -> Resolution:
         return Resolution(round(self.x, ndigits), round(self.y, ndigits))
 
-    def to_int(self):
+    def to_int(self) -> Resolution[int]:
         return Resolution(int(round(self.x)), int(round(self.y)))
 
     @classmethod
@@ -64,9 +73,13 @@ class Resolution(namedtuple('Resolution', ('x', 'y'))):
 
     @property
     def is_finite(self) -> bool:
-        return isfinite(self.x) and isfinite(self.y)
+        if isinstance(self.x, SupportsFloat) and isinstance(self.y, SupportsFloat):
+            return isfinite(self.x) and isfinite(self.y)
+        return True
 
-    def take_max(self, vals, yvals=None):
+    def take_max(
+        self, vals: Iterable[Any], yvals: Iterable[Any] | None = None
+    ) -> Resolution:
         if yvals is not None:
             return Resolution(max(self.x, *vals), max(self.y, *yvals))
         max_x, max_y = self.x, self.y
@@ -75,8 +88,11 @@ class Resolution(namedtuple('Resolution', ('x', 'y'))):
             max_y = max(y, max_y)
         return Resolution(max_x, max_y)
 
-    def flip_axis(self):
+    def flip_axis(self) -> Resolution[T]:
         return Resolution(self.y, self.x)
+
+    def __getitem__(self, idx: int | slice) -> T:
+        return (self.x, self.y)[idx]
 
     def __str__(self):
         return f"{self.x:f}x{self.y:f}"
