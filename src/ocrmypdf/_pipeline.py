@@ -14,7 +14,7 @@ from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
 from shutil import copyfileobj
-from typing import Iterable
+from typing import Any, Iterable, Sequence
 
 import img2pdf
 import pikepdf
@@ -36,7 +36,7 @@ from ocrmypdf.exceptions import (
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution, safe_symlink
 from ocrmypdf.hocrtransform import HocrTransform
 from ocrmypdf.pdfa import generate_pdfa_ps
-from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
+from ocrmypdf.pdfinfo import Colorspace, Encoding, PageInfo, PdfInfo
 
 # Remove this workaround when we require Pillow >= 10
 try:
@@ -50,7 +50,7 @@ log = logging.getLogger(__name__)
 VECTOR_PAGE_DPI = 400
 
 
-def triage_image_file(input_file, output_file, options):
+def triage_image_file(input_file: Path, output_file: Path, options) -> None:
     log.info("Input file is not a PDF, checking if it is an image...")
     try:
         im = Image.open(input_file)
@@ -114,7 +114,7 @@ def triage_image_file(input_file, output_file, options):
         raise UnsupportedImageFormatError() from e
 
 
-def _pdf_guess_version(input_file, search_window=1024):
+def _pdf_guess_version(input_file: Path, search_window=1024) -> str:
     """Try to find version signature at start of file.
 
     Not robust enough to deal with appended files.
@@ -126,11 +126,13 @@ def _pdf_guess_version(input_file, search_window=1024):
         signature = f.read(search_window)
     m = re.search(br'%PDF-(\d\.\d)', signature)
     if m:
-        return m.group(1)
+        return m.group(1).decode('ascii')
     return ''
 
 
-def triage(original_filename, input_file, output_file, options):
+def triage(
+    original_filename: str, input_file: Path, output_file: Path, options
+) -> Path:
     try:
         if _pdf_guess_version(input_file):
             if options.image_dpi:
@@ -154,9 +156,9 @@ def get_pdfinfo(
     input_file,
     *,
     executor: Executor,
-    detailed_analysis=False,
-    progbar=False,
-    max_workers=None,
+    detailed_analysis: bool = False,
+    progbar: bool = False,
+    max_workers: int | None = None,
     check_pages=None,
 ) -> PdfInfo:
     try:
@@ -174,7 +176,7 @@ def get_pdfinfo(
         raise InputFileError() from e
 
 
-def validate_pdfinfo_options(context: PdfContext):
+def validate_pdfinfo_options(context: PdfContext) -> None:
     pdfinfo = context.pdfinfo
     options = context.options
 
@@ -215,11 +217,11 @@ def validate_pdfinfo_options(context: PdfContext):
     context.plugin_manager.hook.validate(pdfinfo=pdfinfo, options=options)
 
 
-def _vector_page_dpi(pageinfo):
-    return VECTOR_PAGE_DPI if pageinfo.has_vector or pageinfo.has_text else 0.0
+def _vector_page_dpi(pageinfo: PageInfo) -> int:
+    return VECTOR_PAGE_DPI if pageinfo.has_vector or pageinfo.has_text else 0
 
 
-def get_page_dpi(pageinfo, options):
+def get_page_dpi(pageinfo: PageInfo, options) -> Resolution:
     "Get the DPI when nonsquare DPI is tolerable"
     xres = max(
         pageinfo.dpi.x or VECTOR_PAGE_DPI,
@@ -234,7 +236,7 @@ def get_page_dpi(pageinfo, options):
     return Resolution(float(xres), float(yres))
 
 
-def get_page_square_dpi(pageinfo, options) -> Resolution:
+def get_page_square_dpi(pageinfo: PageInfo, options) -> Resolution:
     "Get the DPI when we require xres == yres, scaled to physical units"
     xres = pageinfo.dpi.x or 0.0
     yres = pageinfo.dpi.y or 0.0
@@ -250,7 +252,7 @@ def get_page_square_dpi(pageinfo, options) -> Resolution:
     return Resolution(units, units)
 
 
-def get_canvas_square_dpi(pageinfo, options) -> Resolution:
+def get_canvas_square_dpi(pageinfo: PageInfo, options) -> Resolution:
     """Get the DPI when we require xres == yres, in Postscript units"""
     units = float(
         max(
@@ -263,7 +265,7 @@ def get_canvas_square_dpi(pageinfo, options) -> Resolution:
     return Resolution(units, units)
 
 
-def is_ocr_required(page_context: PageContext):
+def is_ocr_required(page_context: PageContext) -> bool:
     pageinfo = page_context.pageinfo
     options = page_context.options
 
@@ -338,7 +340,7 @@ def is_ocr_required(page_context: PageContext):
     return ocr_required
 
 
-def rasterize_preview(input_file: Path, page_context: PageContext):
+def rasterize_preview(input_file: Path, page_context: PageContext) -> Path:
     output_file = page_context.get_path('rasterize_preview.jpg')
     canvas_dpi = get_canvas_square_dpi(page_context.pageinfo, page_context.options)
     page_dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
@@ -355,7 +357,7 @@ def rasterize_preview(input_file: Path, page_context: PageContext):
     return output_file
 
 
-def describe_rotation(page_context: PageContext, orient_conf, correction: int):
+def describe_rotation(page_context: PageContext, orient_conf, correction: int) -> str:
     """
     Describe the page rotation we are going to perform.
     """
@@ -384,7 +386,7 @@ def describe_rotation(page_context: PageContext, orient_conf, correction: int):
     return f"{facing}, confidence {orient_conf.confidence:.2f} - {action}"
 
 
-def get_orientation_correction(preview: Path, page_context: PageContext):
+def get_orientation_correction(preview: Path, page_context: PageContext) -> int:
     """Work out orientation correct for each page.
 
     We ask Ghostscript to draw a preview page, which will rasterize with the
@@ -470,18 +472,17 @@ def rasterize(
     return output_file
 
 
-def preprocess_remove_background(input_file: Path, page_context: PageContext):
+def preprocess_remove_background(input_file: Path, page_context: PageContext) -> Path:
     if any(image.bpc > 1 for image in page_context.pageinfo.images):
         raise NotImplementedError("--remove-background is temporarily not implemented")
         # output_file = page_context.get_path('pp_rm_bg.png')
         # leptonica.remove_background(input_file, output_file)
         # return output_file
-    else:
-        log.info("background removal skipped on mono page")
-        return input_file
+    log.info("background removal skipped on mono page")
+    return input_file
 
 
-def preprocess_deskew(input_file: Path, page_context: PageContext):
+def preprocess_deskew(input_file: Path, page_context: PageContext) -> Path:
     output_file = page_context.get_path('pp_deskew.png')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
 
@@ -501,7 +502,7 @@ def preprocess_deskew(input_file: Path, page_context: PageContext):
     return output_file
 
 
-def preprocess_clean(input_file: Path, page_context: PageContext):
+def preprocess_clean(input_file: Path, page_context: PageContext) -> Path:
     output_file = page_context.get_path('pp_clean.png')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
     return unpaper.clean(
@@ -512,7 +513,7 @@ def preprocess_clean(input_file: Path, page_context: PageContext):
     )
 
 
-def create_ocr_image(image: Path, page_context: PageContext):
+def create_ocr_image(image: Path, page_context: PageContext) -> Path:
     """Create the image we send for OCR. May not be the same as the display
     image depending on preprocessing. This image will never be shown to the
     user."""
@@ -560,7 +561,7 @@ def create_ocr_image(image: Path, page_context: PageContext):
     return output_file
 
 
-def ocr_engine_hocr(input_file: Path, page_context: PageContext):
+def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, Path]:
     hocr_out = page_context.get_path('ocr_hocr.hocr')
     hocr_text_out = page_context.get_path('ocr_hocr.txt')
     options = page_context.options
@@ -575,7 +576,7 @@ def ocr_engine_hocr(input_file: Path, page_context: PageContext):
     return (hocr_out, hocr_text_out)
 
 
-def should_visible_page_image_use_jpg(pageinfo):
+def should_visible_page_image_use_jpg(pageinfo: PageInfo) -> bool:
     # If all images were JPEGs originally, produce a JPEG as output
     return pageinfo.images and all(im.enc == Encoding.jpeg for im in pageinfo.images)
 
@@ -600,8 +601,8 @@ def create_visible_page_jpg(image: Path, page_context: PageContext) -> Path:
 
 
 def create_pdf_page_from_image(
-    image: Path, page_context: PageContext, orientation_correction
-):
+    image: Path, page_context: PageContext, orientation_correction: int
+) -> Path:
     # We rasterize a square DPI version of each page because most image
     # processing tools don't support rectangular DPI. Use the square DPI as it
     # accurately describes the image. It would be possible to resample the image
@@ -629,11 +630,10 @@ def create_pdf_page_from_image(
     output_file = page_context.plugin_manager.hook.filter_pdf_page(
         page=page_context, image_filename=image, output_pdf=output_file
     )
-
     return output_file
 
 
-def render_hocr_page(hocr: Path, page_context: PageContext):
+def render_hocr_page(hocr: Path, page_context: PageContext) -> Path:
     options = page_context.options
     output_file = page_context.get_path('ocr_hocr.pdf')
     dpi = get_page_square_dpi(page_context.pageinfo, options)
@@ -650,7 +650,9 @@ def render_hocr_page(hocr: Path, page_context: PageContext):
     return output_file
 
 
-def ocr_engine_textonly_pdf(input_image: Path, page_context: PageContext):
+def ocr_engine_textonly_pdf(
+    input_image: Path, page_context: PageContext
+) -> tuple[Path, Path]:
     output_pdf = page_context.get_path('ocr_tess.pdf')
     output_text = page_context.get_path('ocr_tess.txt')
     options = page_context.options
@@ -696,13 +698,13 @@ def get_docinfo(base_pdf: pikepdf.Pdf, context: PdfContext) -> dict[str, str]:
     return pdfmark
 
 
-def generate_postscript_stub(context: PdfContext):
+def generate_postscript_stub(context: PdfContext) -> Path:
     output_file = context.get_path('pdfa.ps')
     generate_pdfa_ps(output_file)
     return output_file
 
 
-def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext):
+def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -> Path:
     options = context.options
     input_pdfinfo = context.pdfinfo
     fix_docinfo_file = context.get_path('fix_docinfo.pdf')
@@ -749,14 +751,14 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext):
     return output_file
 
 
-def should_linearize(working_file: Path, context: PdfContext):
+def should_linearize(working_file: Path, context: PdfContext) -> bool:
     filesize = os.stat(working_file).st_size
     if filesize > (context.options.fast_web_view * 1_000_000):
         return True
     return False
 
 
-def get_pdf_save_settings(output_type: str):
+def get_pdf_save_settings(output_type: str) -> dict[str, Any]:
     if output_type == 'pdfa-1':
         # Trigger recompression to ensure object streams are removed, because
         # Acrobat complains about them in PDF/A-1b validation.
@@ -774,7 +776,7 @@ def get_pdf_save_settings(output_type: str):
         )
 
 
-def metadata_fixup(working_file: Path, context: PdfContext):
+def metadata_fixup(working_file: Path, context: PdfContext) -> Path:
     output_file = context.get_path('metafix.pdf')
     options = context.options
 
@@ -830,7 +832,9 @@ def metadata_fixup(working_file: Path, context: PdfContext):
     return output_file
 
 
-def optimize_pdf(input_file: Path, context: PdfContext, executor: Executor):
+def optimize_pdf(
+    input_file: Path, context: PdfContext, executor: Executor
+) -> tuple[Path, Sequence[str]]:
     output_file = context.get_path('optimize.pdf')
     output_pdf, messages = context.plugin_manager.hook.optimize_pdf(
         input_pdf=input_file,
@@ -866,7 +870,7 @@ def enumerate_compress_ranges(iterable):
         yield (skipped_from, index), None
 
 
-def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext):
+def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext) -> Path:
     output_file = context.get_path('sidecar.txt')
     with open(output_file, 'w', encoding="utf-8") as stream:
         for (from_, to_), txt_file in enumerate_compress_ranges(txt_files):
@@ -891,7 +895,7 @@ def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext):
     return output_file
 
 
-def copy_final(input_file, output_file, _context: PdfContext):
+def copy_final(input_file, output_file, _context: PdfContext) -> None:
     log.debug('%s -> %s', input_file, output_file)
     with open(input_file, 'rb') as input_stream:
         if output_file == '-':

@@ -6,4 +6,4 @@
 
 from __future__ import annotations
 
-from ocrmypdf.pdfinfo.info import Colorspace, Encoding, PdfInfo
+from ocrmypdf.pdfinfo.info import Colorspace, Encoding, PageInfo, PdfInfo
