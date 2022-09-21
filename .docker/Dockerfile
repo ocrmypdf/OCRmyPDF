@@ -79,7 +79,7 @@ COPY --from=builder /app/misc/webservice.py /app/
 COPY --from=builder /app/misc/watcher.py /app/
 
 # Copy minimal project files to get the test suite.
-COPY --from=builder /app/setup.cfg /app/setup.py /app/README.md /app/
+COPY --from=builder /app/pyproject.toml /app/README.md /app/
 COPY --from=builder /app/tests /app/tests
 
 ENTRYPOINT ["/usr/local/bin/ocrmypdf"]

@@ -76,20 +76,16 @@ Setuptools plugins
 You can also create a plugin that OCRmyPDF will always automatically load if both are
 installed in the same virtual environment, using a setuptools entrypoint.
 
-Your package's ``setup.py`` would need to contain the following, for a plugin
+Your package's ``pyproject.toml`` would need to contain the following, for a plugin
 named ``ocrmypdf-exampleplugin``:
 
-.. code-block:: python
+.. code-block:: toml
 
-    # sample ./setup.py file
-    from setuptools import setup
+    [project]
+    name = "ocrmypdf-exampleplugin"
 
-    setup(
-        name="ocrmypdf-exampleplugin",
-        packages=["exampleplugin"],
-        # the following makes a plugin available to pytest
-        entry_points={"ocrmypdf": ["exampleplugin = exampleplugin.pluginmodule"]},
-    )
+    [project.entry-points."ocrmypdf"]
+    exampleplugin = "exampleplugin.pluginmodule"
 
 .. code-block:: ini
 

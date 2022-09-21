@@ -224,9 +224,8 @@ jobs:
 
       - name: Make wheels and sdist
         run: |
-          python -m pip install --upgrade pip wheel
-          python setup.py sdist
-          python setup.py bdist_wheel
+          python -m pip install --upgrade pip wheel build
+          python -m build --sdist --wheel
 
       - uses: actions/upload-artifact@v3
         with:
