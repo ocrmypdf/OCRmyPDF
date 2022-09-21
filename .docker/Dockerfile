@@ -52,7 +52,7 @@ FROM base
 
 # For Tesseract 5
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  software-properties-common
+  software-properties-common gpg-agent
 RUN add-apt-repository -y ppa:alex-p/tesseract-ocr-devel
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
