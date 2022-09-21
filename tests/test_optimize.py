@@ -27,6 +27,9 @@ needs_jbig2enc = pytest.mark.skipif(
 )
 
 
+# pylint:disable=redefined-outer-name
+
+
 @pytest.fixture(scope="session")
 def palette(resources):
     return resources / 'palette.pdf'

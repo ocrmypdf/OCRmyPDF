@@ -17,16 +17,7 @@ from functools import partial
 from math import hypot, inf, isclose
 from os import PathLike
 from pathlib import Path
-from typing import (
-    Container,
-    Iterable,
-    Iterator,
-    Mapping,
-    NamedTuple,
-    Optional,
-    Sequence,
-    Tuple,
-)
+from typing import Container, Iterable, Iterator, Mapping, NamedTuple, Sequence, Tuple
 from warnings import warn
 
 from pikepdf import (

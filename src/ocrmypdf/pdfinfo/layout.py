@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
+"""Detailed text position and layout analysis, building on pdfminer.six."""
+
 from __future__ import annotations
 
 import re
@@ -23,14 +25,14 @@ from ocrmypdf.exceptions import EncryptedPdfError, InputFileError
 STRIP_NAME = re.compile(r'[0-9]+')
 
 
-original_PDFSimpleFont_init = PDFSimpleFont.__init__
+original_pdfsimplefont_init = PDFSimpleFont.__init__
 
 
-def PDFSimpleFont__init__(self, descriptor, widths, spec):
+def pdfsimplefont__init__(self, descriptor, widths, spec):
     # Font encoding is specified either by a name of
     # built-in encoding or a dictionary that describes
     # the differences.
-    original_PDFSimpleFont_init(self, descriptor, widths, spec)
+    original_pdfsimplefont_init(self, descriptor, widths, spec)
     # pdfminer is incorrect. If there is no ToUnicode and no Encoding, do not
     # assume Unicode conversion is possible. RM 9.10.2
     if not self.unicode_map and 'Encoding' not in spec:
@@ -38,25 +40,25 @@ def PDFSimpleFont__init__(self, descriptor, widths, spec):
     return
 
 
-PDFSimpleFont.__init__ = PDFSimpleFont__init__
+PDFSimpleFont.__init__ = pdfsimplefont__init__
 
 #
 # pdfminer patches when creator is PScript5.dll
 #
 
 
-def PDFType3Font__PScript5_get_height(self):
+def pdftype3font__pscript5_get_height(self):
     h = self.bbox[3] - self.bbox[1]
     if h == 0:
         h = self.ascent - self.descent
     return h * copysign(1.0, self.vscale)
 
 
-def PDFType3Font__PScript5_get_descent(self):
+def pdftype3font__pscript5_get_descent(self):
     return self.descent * copysign(1.0, self.vscale)
 
 
-def PDFType3Font__PScript5_get_ascent(self):
+def pdftype3font__pscript5_get_ascent(self):
     return self.ascent * copysign(1.0, self.vscale)
 
 
@@ -132,14 +134,14 @@ class LTStateAwareChar(LTChar):
         return self._text
 
     def __repr__(self):
-        return '<{} {} matrix={} rendermode={!r} font={!r} adv={} text={!r}>'.format(
-            self.__class__.__name__,
-            bbox2str(self.bbox),
-            matrix2str(self.matrix),
-            self.rendermode,
-            self.fontname,
-            self.adv,
-            self.get_text(),
+        return (
+            f"<{self.__class__.__name__} "
+            f"{bbox2str(self.bbox)} "
+            f"matrix={matrix2str(self.matrix)} "
+            f"rendermode={self.rendermode!r} "
+            f"font={self.fontname!r} "
+            f"adv={self.adv} "
+            f"text={self.get_text()!r}>"
         )
 
 
@@ -221,9 +223,9 @@ def get_page_analysis(infile, pageno, pscript5_mode):
         patcher = patch.multiple(
             'pdfminer.pdffont.PDFType3Font',
             spec=True,
-            get_ascent=PDFType3Font__PScript5_get_ascent,
-            get_descent=PDFType3Font__PScript5_get_descent,
-            get_height=PDFType3Font__PScript5_get_height,
+            get_ascent=pdftype3font__pscript5_get_ascent,
+            get_descent=pdftype3font__pscript5_get_descent,
+            get_height=pdftype3font__pscript5_get_height,
         )
         patcher.start()
 

@@ -2,6 +2,8 @@
 # SPDX-FileCopyrightText: 2017 Enantiomerie
 # SPDX-License-Identifier: MIT
 
+"""Example OCRmyPDF for Synology NAS"""
+
 from __future__ import annotations
 
 # This script must be edited to meet your needs.
@@ -25,10 +27,7 @@ logging.basicConfig(
     filemode='w',
 )
 
-if len(sys.argv) > 1:
-    start_dir = sys.argv[1]
-else:
-    start_dir = '.'
+start_dir = sys.argv[1] if len(sys.argv) > 1 else '.'
 
 for dir_name, _subdirs, file_list in os.walk(start_dir):
     logging.info(dir_name)

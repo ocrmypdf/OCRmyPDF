@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
-from __future__ import annotations
-
 """OCRmyPDF's multiprocessing/multithreading abstraction layer."""
+
+from __future__ import annotations
 
 import logging
 import logging.handlers
