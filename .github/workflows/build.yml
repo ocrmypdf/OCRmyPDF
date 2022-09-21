@@ -31,9 +31,13 @@ jobs:
           - os: ubuntu-latest
             python: "3.9"
           - os: ubuntu-latest
-            python: "pypy3.8"
+            python: "3.10"
           - os: ubuntu-latest
-            python: "pypy3.9"
+            python: "3.11.0-rc.2 - 3.11.0"
+          # - os: ubuntu-latest
+          #   python: "pypy3.8"
+          #- os: ubuntu-latest
+          #  python: "pypy3.9"
           - os: ubuntu-latest
             python: "3.9"
             tesseract5: true
@@ -92,7 +96,7 @@ jobs:
       - name: Install Python packages
         run: |
           python -m pip install --upgrade pip wheel
-          python -m pip install .[test]
+          python -m pip install --prefer-binary .[test]
 
       - name: Report versions
         run: |
@@ -118,7 +122,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python: ["3.9", "3.10"]
+        python: ["3.9", "3.10"] # 2022-09-20: pikepdf/lxml not available for cp311
 
     env:
       OS: ${{ matrix.os }}
@@ -148,7 +152,7 @@ jobs:
       - name: Install Python packages
         run: |
           python -m pip install --upgrade pip wheel
-          python -m pip install .[test]
+          python -m pip install --prefer-binary .[test]
 
       - name: Report versions
         run: |
@@ -173,7 +177,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python: ["3.9", "3.10"]
+        python: ["3.9", "3.10"] # 2022-09-20: pikepdf/lxml not available for cp311
 
     env:
       OS: ${{ matrix.os }}
@@ -197,7 +201,7 @@ jobs:
       - name: Install Python packages
         run: |
           python -m pip install --upgrade pip wheel
-          python -m pip install .[test]
+          python -m pip install --prefer-binary .[test]
 
       - name: Test
         run: |

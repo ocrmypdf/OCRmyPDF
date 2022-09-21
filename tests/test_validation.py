@@ -98,6 +98,8 @@ def test_output_tty():
 
 
 def test_report_file_size(tmp_path, caplog):
+    logging.getLogger('pikepdf._qpdf').setLevel(logging.CRITICAL)  # Suppress logging
+
     in_ = tmp_path / 'a.pdf'
     out = tmp_path / 'b.pdf'
     pdf = pikepdf.new()
