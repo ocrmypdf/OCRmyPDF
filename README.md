@@ -70,7 +70,7 @@ Linux, Windows, macOS and FreeBSD are supported. Docker images are also availabl
 | macOS (Homebrew)              | ``brew install ocrmypdf``     |
 | macOS (nix)                   | ``nix-env -i  ocrmypdf``      |
 | LinuxBrew                     | ``brew install ocrmypdf``     |
-| FreeBSD                       | ``pkg install py37-ocrmypdf`` |
+| FreeBSD                       | ``pkg install py-ocrmypdf`` |
 | Conda                         | ``conda install ocrmypdf``    |
 | Ubuntu Snap                   | ``snap install ocrmypdf``     |
 
@@ -96,10 +96,7 @@ brew install tesseract-lang
 
 You can then pass the `-l LANG` argument to OCRmyPDF to give a hint as to what languages it should search for. Multiple languages can be requested.
 
-OCRmyPDF supports Tesseract 4.0 and the beta versions of Tesseract 5.0. It will
-automatically use whichever version it finds first on the `PATH` environment
-variable. On Windows, if `PATH` does not provide a Tesseract binary, we use
-the highest version number that is installed according to the Windows Registry.
+OCRmyPDF supports Tesseract 4.1.1+. It will automatically use whichever version it finds first on the `PATH` environment variable. On Windows, if `PATH` does not provide a Tesseract binary, we use the highest version number that is installed according to the Windows Registry.
 
 ## Documentation and support
 

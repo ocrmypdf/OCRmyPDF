@@ -44,7 +44,7 @@ install, or install a more recent version than your platform provides, read on.
 Installing on Linux
 ===================
 
-Debian and Ubuntu 18.04 or newer
+Debian and Ubuntu 20.04 or newer
 --------------------------------
 
 .. |deb-11| image:: https://repology.org/badge/version-for-repo/debian_11/ocrmypdf.svg
@@ -55,9 +55,6 @@ Debian and Ubuntu 18.04 or newer
 
 .. |deb-unstable| image:: https://repology.org/badge/version-for-repo/debian_unstable/ocrmypdf.svg
     :alt: Debian unstable
-
-.. |ubu-1804| image:: https://repology.org/badge/version-for-repo/ubuntu_18_04/ocrmypdf.svg
-    :alt: Ubuntu 18.04 LTS
 
 .. |ubu-2004| image:: https://repology.org/badge/version-for-repo/ubuntu_20_04/ocrmypdf.svg
     :alt: Ubuntu 20.04 LTS
@@ -72,7 +69,7 @@ Debian and Ubuntu 18.04 or newer
 +-----------------------------------------------+
 | |deb-11| |deb-12| |deb-unstable|              |
 +-----------------------------------------------+
-| |ubu-1804| |ubu-2004| |ubu-2204|              |
+| |ubu-2004| |ubu-2204|                         |
 +-----------------------------------------------+
 
 Users of Debian 9 ("stretch") or later, or Ubuntu 18.04 or later, including users
@@ -80,7 +77,7 @@ of Windows Subsystem for Linux, may simply
 
 .. code-block:: bash
 
-    apt-get install ocrmypdf
+    apt install ocrmypdf
 
 As indicated in the table above, Debian and Ubuntu releases may lag
 behind the latest version. If the version available for your platform is
@@ -195,46 +192,6 @@ To install for the current user only:
 
     export PATH=$HOME/.local/bin:$PATH
     pip3 install --user ocrmypdf
-
-To add JBIG2 encoding, see :ref:`jbig2`.
-
-Ubuntu 18.04 LTS
-----------------
-
-Ubuntu 18.04 includes ocrmypdf 6.1.2 - you can install that with ``apt``, but
-it is quite old now. To install a more recent version, uninstall the old version
-of ocrmypdf, and install the following dependencies:
-
-.. code-block:: bash
-
-    sudo apt-get -y remove ocrmypdf
-    sudo apt-get -y update
-    sudo apt-get -y install \
-        ghostscript \
-        icc-profiles-free \
-        libxml2 \
-        pngquant \
-        python3-distutils \
-        python3-pkg-resources \
-        python3-reportlab \
-        qpdf \
-        tesseract-ocr \
-        zlib1g \
-        unpaper
-
-We will need a newer version of ``pip`` then was available for Ubuntu 18.04:
-
-.. code-block:: bash
-
-    wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py
-
-Then install the most recent ocrmypdf for the local user and set the
-user's ``PATH`` to check for the user's Python packages.
-
-.. code-block:: bash
-
-    export PATH=$HOME/.local/bin:$PATH
-    python3 -m pip install --user ocrmypdf
 
 To add JBIG2 encoding, see :ref:`jbig2`.
 
@@ -417,8 +374,8 @@ Native Windows
 
 You must install the following for Windows:
 
-* Python 3.7 (64-bit) or later
-* Tesseract 4.0 or later
+* Python 3.8 (64-bit) or later
+* Tesseract 4.1.1 or later
 * Ghostscript 9.50 or later
 
 Using the `Chocolatey <https://chocolatey.org/>`_ package manager, install the
@@ -481,7 +438,7 @@ Cygwin64
 
 First install the the following prerequisite Cygwin packages using ``setup-x86_64.exe``::
 
-    python37 (or later)
+    python38 (or later)
     python3?-devel
     python3?-pip
     python3?-lxml
@@ -616,9 +573,9 @@ manager. ``pip`` cannot provide them.
 
 The following versions are required:
 
--  Python 3.7 or newer
--  Ghostscript 9.23 or newer
--  Tesseract 4.0.0 or newer
+-  Python 3.8 or newer
+-  Ghostscript 9.50 or newer
+-  Tesseract 4.1.1 or newer
 -  jbig2enc 0.29 or newer
 -  pngquant 2.5 or newer
 -  unpaper 6.1
@@ -649,7 +606,7 @@ unfortunately, the ``pip install`` command cannot satisfy all of them.
 Installing HEAD revision from sources
 =====================================
 
-If you have ``git`` and Python 3.7 or newer installed, you can install
+If you have ``git`` and Python 3.8 or newer installed, you can install
 from source. When the ``pip`` installer runs, it will alert you if
 dependencies are missing.
 

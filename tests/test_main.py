@@ -545,7 +545,6 @@ def test_tesseract_config_invalid(renderer, resources, invalid_tess_config, outp
     assert p.returncode == ExitCode.invalid_config
 
 
-@pytest.mark.skipif(not tesseract.has_user_words(), reason='not functional until 4.1.0')
 def test_user_words_ocr(resources, outdir):
     # Does not actually test if --user-words causes output to differ
     word_list = outdir / 'wordlist.txt'
@@ -722,11 +721,9 @@ def test_compression_changed(ocrmypdf_exec, resources, image, compression, outpd
     if compression == "jpeg":
         assert pdfimage.enc == Encoding.jpeg
     else:
-        if ghostscript.jpeg_passthrough_available():
-            # Ghostscript 9.23 adds JPEG passthrough, which allows a JPEG to be
-            # copied without transcoding - so report
-            if image.endswith('jpg'):
-                assert pdfimage.enc == Encoding.jpeg
+        if image.endswith('jpg'):
+            # Ghostscript JPEG passthrough - no issue
+            assert pdfimage.enc == Encoding.jpeg
         else:
             assert pdfimage.enc not in (Encoding.jpeg, Encoding.jpeg2000)
 

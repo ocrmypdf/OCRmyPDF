@@ -314,7 +314,7 @@ def check_external_program(
         program: The name of the program to test.
         package: The name of a software package that typically supplies this program.
             Usually the same as program.
-        version_check: A callable without arguments that retrieves the installed
+        version_checker: A callable without arguments that retrieves the installed
             version of program.
         need_version: The minimum required version.
         required_for: The name of an argument of feature that requires this program.
@@ -325,10 +325,7 @@ def check_external_program(
     """
 
     try:
-        if callable(version_checker):
-            found_version = version_checker()
-        else:  # deprecated
-            found_version = version_checker
+        found_version = version_checker()
     except (CalledProcessError, FileNotFoundError) as e:
         _error_missing_program(program, package, required_for, recommended)
         if not recommended:

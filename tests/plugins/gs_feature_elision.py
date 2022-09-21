@@ -9,13 +9,13 @@ from ocrmypdf import hookimpl
 from ocrmypdf.builtin_plugins import ghostscript
 from ocrmypdf.subprocess import run_polling_stderr
 
-elision_warning = """GPL Ghostscript 9.20: Setting Overprint Mode to 1
+ELISION_WARNING = """GPL Ghostscript 9.50: Setting Overprint Mode to 1
 not permitted in PDF/A-2, overprint mode not set"""
 
 
 def run_append_stderr(*args, **kwargs):
     proc = run_polling_stderr(*args, **kwargs)
-    proc.stderr += '\n' + elision_warning + '\n'
+    proc.stderr += '\n' + ELISION_WARNING + '\n'
     return proc
 
 

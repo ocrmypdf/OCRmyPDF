@@ -76,6 +76,8 @@ author = 'James R. Barlow'
 # The short X.Y version.
 
 import os
+from importlib.metadata import version as package_version
+
 
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
@@ -96,10 +98,6 @@ if on_rtd:
     ]
     sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
-try:
-    from importlib_metadata import version as package_version
-except ModuleNotFoundError:
-    from importlib.metadata import version as package_version
 
 # The full version, including alpha/beta/rc tags.
 release = package_version('ocrmypdf')

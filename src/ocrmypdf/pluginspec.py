@@ -278,10 +278,6 @@ def filter_page_image(page: PageContext, image_filename: Path) -> Path:
     will occur. The return value should be a path to a file in the same folder
     as ``image_filename``.
 
-    Implementation detail: If the value returned is falsy, OCRmyPDF will ignore
-    the return value and assume the input file was unmodified. This is deprecated.
-    To leave the image unmodified, ``image_filename`` should be returned.
-
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.

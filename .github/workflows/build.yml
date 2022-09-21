@@ -22,8 +22,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-18.04
-            python: "3.7"
           - os: ubuntu-20.04
             python: "3.8"
           - os: ubuntu-20.04
@@ -33,7 +31,9 @@ jobs:
           - os: ubuntu-latest
             python: "3.9"
           - os: ubuntu-latest
-            python: "pypy-3.8"
+            python: "pypy3.8"
+          - os: ubuntu-latest
+            python: "pypy3.9"
           - os: ubuntu-latest
             python: "3.9"
             tesseract5: true
@@ -74,12 +74,6 @@ jobs:
             tesseract-ocr-osd \
             unpaper \
             zlib1g
-
-      - name: Install Ubuntu 18.04 packages
-        if: matrix.os == 'ubuntu-18.04'
-        run: |
-          sudo apt-get install -y --no-install-recommends \
-            libexempi3
 
       - name: Install Ubuntu 20.04 packages
         if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-latest'

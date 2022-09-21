@@ -17,11 +17,11 @@
 
 - Check README.md
 
-- Check setup.py
+- Check pyproject.toml
 
     - Are classifiers up to date?
     - Is `python_requires` correct?
-    - Python 3.6 is EOL on December 2021-12. Could drop support then.
+    - Is it to drop support for older Pythons?
     - Can we tighten any `install_requires` dependencies?
 
 - Search for old version shims we can remove

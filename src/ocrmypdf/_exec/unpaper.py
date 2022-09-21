@@ -1,11 +1,9 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-from __future__ import annotations
-
-# unpaper documentation:
-# https://github.com/Flameeyes/unpaper/blob/master/doc/basic-concepts.md
 """Interface to unpaper executable"""
+
+from __future__ import annotations
 
 import logging
 import os
@@ -21,6 +19,10 @@ from PIL import Image
 
 from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
 from ocrmypdf.subprocess import get_version, run
+
+# unpaper documentation:
+# https://github.com/Flameeyes/unpaper/blob/master/doc/basic-concepts.md
+
 
 if sys.version_info >= (3, 10):
     from tempfile import TemporaryDirectory

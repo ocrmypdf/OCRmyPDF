@@ -134,7 +134,7 @@ def check_options_preprocessing(options: Namespace) -> None:
             package='unpaper',
             version_checker=unpaper.version,
             need_version='6.1',
-            required_for=['--clean, --clean-final'],
+            required_for="--clean, --clean-final",  # Problem arguments
         )
         try:
             if options.unpaper_args:
@@ -221,7 +221,7 @@ def check_options_metadata(options: Namespace) -> None:
 def check_options_pillow(options: Namespace) -> None:
     PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1_000_000)
     if PIL.Image.MAX_IMAGE_PIXELS == 0:
-        PIL.Image.MAX_IMAGE_PIXELS = None
+        PIL.Image.MAX_IMAGE_PIXELS = None  # type: ignore
 
 
 def _check_plugin_invariant_options(options: Namespace) -> None:

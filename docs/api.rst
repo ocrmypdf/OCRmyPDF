@@ -72,14 +72,6 @@ OCRmyPDF, use processes.
     not take at least one of these steps, process semantics will prevent
     OCRmyPDF from working correctly.
 
-.. warning::
-
-    On macOS with Python 3.7, you must call
-    :func:`multiprocessing.set_start_method("spawn")`. Without this, multiprocessing
-    will be unstable. From the command line, OCRmyPDF does this automatically,
-    but as an API user you must do this. See Python bpo-33725 for details.
-    Python 3.8+ also resolve this automatically.
-
 Logging
 -------
 

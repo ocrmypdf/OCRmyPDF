@@ -71,6 +71,4 @@ def run(args=None):
 
 
 if __name__ == '__main__':
-    if sys.platform == 'darwin' and sys.version_info < (3, 8):
-        set_start_method('spawn')  # see python bpo-33725
     sys.exit(run())

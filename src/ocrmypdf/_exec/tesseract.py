@@ -33,7 +33,7 @@ HOCR_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
  <head>
   <title></title>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-  <meta name='ocr-system' content='tesseract 4.0.0' />
+  <meta name='ocr-system' content='tesseract 4.1.1' />
   <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word ocrp_wconf'/>
 </head>
 <body>
@@ -112,15 +112,6 @@ class TesseractVersion(Version):
 
 def version() -> str:
     return get_version('tesseract', regex=r'tesseract\s(.+)')
-
-
-def has_user_words() -> bool:
-    """Does Tesseract have --user-words capability?
-
-    Not available in 4.0, but available in 4.1. Also available in 3.x, but
-    we no longer support 3.x.
-    """
-    return version() >= '4.1'
 
 
 def has_thresholding() -> bool:
@@ -244,7 +235,7 @@ def get_deskew(
 
 def tesseract_log_output(stream: bytes) -> None:
     tlog = TesseractLoggerAdapter(
-        log, extra=log.extra if hasattr(log, 'extra') else None
+        log, extra=log.extra if hasattr(log, 'extra') else None  # type: ignore
     )
 
     if not stream:

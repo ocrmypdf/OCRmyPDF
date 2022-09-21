@@ -48,22 +48,6 @@ def test_hocr_notlatin_warning(caplog):
     assert 'PDF renderer is known to cause' in caplog.text
 
 
-def test_old_ghostscript(caplog):
-    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.19'), patch(
-        'ocrmypdf._exec.tesseract.get_languages', return_value={'eng', 'chi_sim'}
-    ):
-        vd.check_options(*make_opts_pm(language='chi_sim', output_type='pdfa'))
-        assert 'does not work correctly' in caplog.text
-
-    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.18'):
-        with pytest.raises(MissingDependencyError):
-            vd.check_options(*make_opts_pm(output_type='pdfa-3'))
-
-    with patch('ocrmypdf._exec.ghostscript.version', return_value='9.24'):
-        with pytest.raises(MissingDependencyError):
-            vd.check_options(*make_opts_pm())
-
-
 def test_old_tesseract_error():
     with patch('ocrmypdf._exec.tesseract.version', return_value='4.00.00alpha'):
         with pytest.raises(MissingDependencyError):
@@ -101,22 +85,6 @@ def test_optimizing(caplog):
         *make_opts_pm(optimize=0, jbig2_lossy=True, png_quality=18, jpeg_quality=10)
     )
     assert 'will be ignored because' in caplog.text
-
-
-def test_user_words(caplog):
-    with patch('ocrmypdf._exec.tesseract.has_user_words', return_value=False):
-        vd.check_options(*make_opts_pm(user_words='foo'))
-        assert (
-            'Tesseract 4.0 (which you have installed) ignores --user-words'
-            in caplog.text
-        )
-    caplog.clear()
-    with patch('ocrmypdf._exec.tesseract.has_user_words', return_value=True):
-        vd.check_options(*make_opts_pm(user_patterns='foo'))
-        assert (
-            'Tesseract 4.0 (which you have installed) ignores --user-words'
-            not in caplog.text
-        )
 
 
 def test_pillow_options():
@@ -229,37 +197,38 @@ def test_version_comparison():
             program="tesseract",
             package="tesseract",
             version_checker=lambda: '4.0.0-beta.1',
-            need_version='4.0.0',
+            need_version='4.1.1',
             version_parser=TesseractVersion,
         )
     vd.check_external_program(
         program="tesseract",
         package="tesseract",
         version_checker=lambda: 'v5.0.0-alpha.20200201',
-        need_version='4.0.0',
+        need_version='4.1.1',
         version_parser=TesseractVersion,
     )
     vd.check_external_program(
         program="tesseract",
         package="tesseract",
         version_checker=lambda: '5.0.0-rc1.20211030',
-        need_version='4.0.0',
+        need_version='4.1.1',
         version_parser=TesseractVersion,
     )
     vd.check_external_program(
         program="tesseract",
         package="tesseract",
-        version_checker=lambda: 'v4.0.0.20181030',  # Some Windows builds use this format
-        need_version='4.0.0',
+        version_checker=lambda: 'v4.1.1.20181030',  # Some Windows builds use this format
+        need_version='4.1.1',
         version_parser=TesseractVersion,
     )
-    vd.check_external_program(
-        program="tesseract",
-        package="tesseract",
-        version_checker=lambda: '4.1.1-rc2-25-g9707',
-        need_version='4.0.0',
-        version_parser=TesseractVersion,
-    )
+    with pytest.raises(MissingDependencyError):
+        vd.check_external_program(
+            program="tesseract",
+            package="tesseract",
+            version_checker=lambda: '4.1.1-rc2-25-g9707',
+            need_version='4.1.1',
+            version_parser=TesseractVersion,
+        )
     with pytest.raises(MissingDependencyError):
         vd.check_external_program(
             program="dummy_fails",

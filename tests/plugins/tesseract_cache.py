@@ -21,7 +21,7 @@ were produced.
 
 Certain operations are not cached and routed to Tesseract OCR directly.
 
-Assumes Tesseract 4.0.0-alpha or higher.
+Assumes Tesseract 4+.
 
 """
 

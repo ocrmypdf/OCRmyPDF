@@ -54,15 +54,6 @@ def test_no_cpu_count(monkeypatch):
     assert invoked, "Patched function called during test"
 
 
-def test_deprecated():
-    @helpers.deprecated
-    def old_function():
-        return 42
-
-    with pytest.deprecated_call():
-        assert old_function() == 42
-
-
 skipif_docker = pytest.mark.skipif(running_in_docker(), reason="fails on Docker")
 
 

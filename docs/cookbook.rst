@@ -283,7 +283,7 @@ argument. (Normally, OCRmyPDF will exit with an error if asked to modify
 a file with OCR.)
 
 This may be helpful for users who want to take advantage of accuracy
-improvements in Tesseract 4.0 for files they previously OCRed with an
+improvements in Tesseract for files they previously OCRed with an
 earlier version of Tesseract and OCRmyPDF.
 
 .. code-block:: bash
