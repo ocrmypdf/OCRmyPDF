@@ -28,6 +28,22 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v14.0.0
+=======
+
+-  Dropped support for Python 3.7.
+-  Dropped support generally speaking, all dependencies older than what Ubuntu 20.04
+   provides.
+-  Ghostscript 9.50 or newer is now required. Shims to support old versions were
+   removed.
+-  Tesseract 4.1.1 or newer is now required. Shims to support old versions were
+   removed.
+-  Docker image now uses Tesseract 5.
+-  Dropped setup.cfg configuration for pyproject.toml.
+-  Removed deprecation exception PdfMergeFailedError.
+-  A few more public domain test files were removed or replaced. We are aiming for
+   100% compliance with SPDX and generally towards simplifying copyright.
+
 v13.7.0
 =======
 
