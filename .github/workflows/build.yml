@@ -34,10 +34,10 @@ jobs:
             python: "3.10"
           - os: ubuntu-latest
             python: "3.11.0-rc.2 - 3.11.0"
-          - os: ubuntu-latest
-            python: "pypy3.8"
-          - os: ubuntu-latest
-            python: "pypy3.9"
+          # - os: ubuntu-latest
+          #   python: "pypy3.8"
+          #- os: ubuntu-latest
+          #  python: "pypy3.9"
           - os: ubuntu-latest
             python: "3.9"
             tesseract5: true
