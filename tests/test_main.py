@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 import shutil
 from math import isclose
+from packaging import version
 from pathlib import Path
 from subprocess import run
 from unittest.mock import patch
@@ -178,7 +179,7 @@ def test_maximum_options(renderer, output_type, multipage, outpdf):
 
 
 @pytest.mark.skipif(
-    tesseract.version() >= '5', reason="tess 5 tries harder to find its files"
+    version.parse(tesseract.version()) >= version.parse('5'), reason="tess 5 tries harder to find its files"
 )
 def test_tesseract_missing_tessdata(monkeypatch, resources, no_outpdf, tmpdir):
     monkeypatch.setenv("TESSDATA_PREFIX", os.fspath(tmpdir))
@@ -777,7 +778,7 @@ def test_sidecar_nonempty(resources, outpdf):
 
 @pytest.mark.parametrize('pdfa_level', ['1', '2', '3'])
 def test_pdfa_n(pdfa_level, resources, outpdf):
-    if pdfa_level == '3' and ghostscript.version() < '9.19':
+    if pdfa_level == '3' and version.parse(ghostscript.version()) < version.parse('9.19'):
         pytest.xfail(reason='Ghostscript >= 9.19 required')
 
     check_ocrmypdf(
