@@ -57,6 +57,7 @@ RUN add-apt-repository -y ppa:alex-p/tesseract-ocr-devel
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
+  jbig2dec \
   img2pdf \
   libsm6 libxext6 libxrender-dev \
   pngquant \
