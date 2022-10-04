@@ -28,6 +28,12 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v14.0.1
+=======
+
+-  Fixed some version checks done with smart version comparison.
+-  Added missing jbig2dec to Docker image.
+
 v14.0.0
 =======
 
