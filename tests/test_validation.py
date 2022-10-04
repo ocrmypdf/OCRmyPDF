@@ -223,6 +223,12 @@ def test_version_comparison():
         need_version='4.1.1',
         version_parser=TesseractVersion,
     )
+    vd.check_external_program(
+        program="gs",
+        package="ghostscript",
+        version_checker=lambda: '10.0',
+        need_version='9.50',
+    )
     with pytest.raises(MissingDependencyError):
         vd.check_external_program(
             program="tesseract",

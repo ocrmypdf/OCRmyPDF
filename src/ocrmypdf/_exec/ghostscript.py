@@ -14,6 +14,7 @@ from os import fspath
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError
 
+from packaging.version import Version
 from PIL import Image, UnidentifiedImageError
 
 from ocrmypdf.exceptions import SubprocessOutputError
@@ -186,8 +187,8 @@ def generate_pdfa(
         ]
 
     strategy = 'LeaveColorUnchanged'
-    gs_version = version()
-    if gs_version == '9.56.0':
+    gs_version = Version(version())
+    if gs_version == Version('9.56.0'):
         # 9.56.0 breaks our OCR, should be fixed in 9.56.1
         # https://bugs.ghostscript.com/show_bug.cgi?id=705187
         compression_args.append('-dNEWPDF=false')
