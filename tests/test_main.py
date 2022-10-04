@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 import pikepdf
 import pytest
-from packaging.version import Version
+from packaging import version
 from PIL import Image
 
 import ocrmypdf
@@ -179,7 +179,7 @@ def test_maximum_options(renderer, output_type, multipage, outpdf):
 
 
 @pytest.mark.skipif(
-    Version(tesseract.version()) >= Version('5'),
+    version.parse(tesseract.version()) >= version.parse('5'),
     reason="tess 5 tries harder to find its files",
 )
 def test_tesseract_missing_tessdata(monkeypatch, resources, no_outpdf, tmpdir):
