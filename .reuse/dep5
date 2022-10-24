@@ -16,6 +16,7 @@ Copyright: (C) 2022 James R. Barlow
 License: MPL-2.0
 
 Files:
+ .github/ISSUE_TEMPLATE/*.md
  docs/images/macos-workflow.png
 Copyright: (C) 2022 James R. Barlow
 License: CC-BY-SA-4.0
