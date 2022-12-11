@@ -103,6 +103,8 @@ def execute_ocrmypdf(file_path):
         elif ON_SUCCESS_ARCHIVE:
             log.info(f'OCR is done. Archiving {file_path.name} to {ARCHIVE_DIRECTORY}')
             shutil.move(file_path, f'{ARCHIVE_DIRECTORY}/{file_path.name}')
+        else:
+            log.info('OCR is done')
     else:
         log.info('OCR is done')
 
