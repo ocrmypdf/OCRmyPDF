@@ -160,7 +160,7 @@ Changing tesseract configuration variables
 ------------------------------------------
 
 You can override tesseract's default `control
-parameters <https://github.com/tesseract-ocr/tesseract/wiki/ControlParams>`__
+parameters <https://tesseract-ocr.github.io/tessdoc/tess3/ControlParams.html>`__
 with a configuration file.
 
 As an example, this configuration will disable Tesseract's dictionary
