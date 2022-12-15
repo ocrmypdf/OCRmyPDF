@@ -85,7 +85,7 @@ OCRmyPDF analyzes each page of a PDF to determine the colorspace and
 resolution (DPI) needed to capture all of the information on that page
 without losing content. It uses
 `Ghostscript <http://ghostscript.com/>`__ to rasterize the page, and
-then performs on OCR the rasterized image to create an OCR "layer".
+then performs OCR on the rasterized image to create an OCR "layer".
 The layer is then grafted back onto the original PDF.
 
 While one can use a program like Ghostscript or ImageMagick to get an
