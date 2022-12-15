@@ -21,8 +21,8 @@ processors. To maximize parallelism without overloading your system with
 processes, consider using ``parallel -j 2`` to limit parallel to running
 two jobs at once.
 
-This command will run all ocrmypdf all files named ``*.pdf`` in the
-current directory and write them to the previous created ``output/``
+This command will run ``ocrmypdf`` on all files named ``*.pdf`` in the
+current directory and write them to the previously created ``output/``
 folder. It will not search subdirectories.
 
 The ``--tag`` argument tells parallel to print the filename as a prefix
