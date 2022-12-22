@@ -636,7 +636,7 @@ system-wide:
 .. code-block:: bash
 
     git clone -b master https://github.com/ocrmypdf/OCRmyPDF.git
-    python3 -m venv
+    python3 -m venv venv
     source venv/bin/activate
     cd OCRmyPDF
     pip install .
