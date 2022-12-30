@@ -375,8 +375,8 @@ Native Windows
 You must install the following for Windows:
 
 * Python 3.8 (64-bit) or later
-* Tesseract 4.1.1 or later
-* Ghostscript 9.50 or later
+* Tesseract 4.1.1 (64-bit) or later
+* Ghostscript 9.50 (64-bit) or later
 
 Using the `Chocolatey <https://chocolatey.org/>`_ package manager, install the
 following when running in an Administrator command prompt:
@@ -395,10 +395,8 @@ Administrator.):
 
 * ``pip install ocrmypdf``
 
-Chocolatey automatically selects appropriate versions of these applications. If you
-are installing them manually, please install 64-bit versions of all applications for
-64-bit Windows, or 32-bit versions of all applications for 32-bit Windows. Mixing
-the "bitness" of these programs will lead to errors.
+Chocolatey automatically selects appropriate versions of these applications. Please make sure
+you are installing the 64-bit versions.
 
 OCRmyPDF will check the Windows Registry and standard locations in your Program Files
 for third party software it needs (specifically, Tesseract and Ghostscript). To
@@ -412,6 +410,10 @@ to change the PATH.
     Python and OCRmyPDF. These issues affect many other third party Python packages.
     Please download Python from Python.org or Chocolatey instead, and do not use the
     Microsoft Store version.
+
+.. warning::
+
+    32-bit Windows might work, but is not supported.
 
 Windows Subsystem for Linux
 ---------------------------
