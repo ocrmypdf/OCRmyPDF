@@ -33,7 +33,7 @@ jobs:
           - os: ubuntu-latest
             python: "3.10"
           - os: ubuntu-latest
-            python: "3.11.0-rc.2 - 3.11.0"
+            python: "3.11"
           # - os: ubuntu-latest
           #   python: "pypy3.8"
           #- os: ubuntu-latest
@@ -122,7 +122,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python: ["3.9", "3.10"] # 2022-09-20: pikepdf/lxml not available for cp311
+        python: ["3.10", "3.11"]
 
     env:
       OS: ${{ matrix.os }}
@@ -177,7 +177,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python: ["3.9", "3.10"] # 2022-09-20: pikepdf/lxml not available for cp311
+        python: ["3.10", "3.11"]
 
     env:
       OS: ${{ matrix.os }}
