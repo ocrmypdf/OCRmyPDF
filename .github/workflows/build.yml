@@ -133,11 +133,6 @@ jobs:
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
-      - uses: actions/setup-python@v4
-        name: Install Python
-        with:
-          python-version: ${{ matrix.python }}
-
       - name: Install Homebrew deps
         run: |
           brew update
@@ -148,6 +143,11 @@ jobs:
             openjpeg \
             pngquant \
             tesseract
+
+      - uses: actions/setup-python@v4
+        name: Install Python
+        with:
+          python-version: ${{ matrix.python }}
 
       - name: Install Python packages
         run: |
