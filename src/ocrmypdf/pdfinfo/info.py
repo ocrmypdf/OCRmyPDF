@@ -477,14 +477,12 @@ def _image_xobjects(container) -> Iterator[tuple[Object, str]]:
     resources = container['/Resources']
     if '/XObject' not in resources:
         return
-    xobjs = resources['/XObject'].as_dict()
-    for xobj in xobjs:
-        candidate: Object = xobjs[xobj]
-        if '/Subtype' not in candidate:
+    for key, candidate in resources['/XObject'].items():
+        if candidate is None or '/Subtype' not in candidate:
             continue
         if candidate['/Subtype'] == '/Image':
             pdfimage = candidate
-            yield (pdfimage, xobj)
+            yield (pdfimage, key)
 
 
 def _find_regular_images(
