@@ -122,7 +122,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python: ["3.10", "3.11"]
+        python: ["3.11"]
 
     env:
       OS: ${{ matrix.os }}
