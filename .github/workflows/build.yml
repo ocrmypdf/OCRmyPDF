@@ -141,7 +141,7 @@ jobs:
       - name: Install Homebrew deps
         run: |
           brew update
-          brew install \
+          brew install --overwrite \
             exempi \
             ghostscript \
             jbig2enc \
