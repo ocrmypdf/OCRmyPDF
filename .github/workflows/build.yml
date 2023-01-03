@@ -134,8 +134,9 @@ jobs:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
       - name: Install Homebrew deps
+        continue-on-error: true
         run: |
-          brew update || echo "Ignoring errors in brew update"
+          brew update
           brew install \
             exempi \
             ghostscript \
