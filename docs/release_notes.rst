@@ -28,6 +28,14 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v14.0.2
+=======
+
+-  Fixed :issue:`1052`, an exception on attempting to process certain nonconforming PDFs.
+-  Explicitly documented that Windows 32-bit is no longer supported.
+-  Fixed source installation instructions.
+-  Other documentation fixes.
+
 v14.0.1
 =======
 
