@@ -293,7 +293,7 @@ Homebrew
 
 .. image:: https://img.shields.io/homebrew/v/ocrmypdf.svg
     :alt: homebrew
-    :target: http://brewformulas.org/Ocrmypdf
+    :target: https://formulae.brew.sh/formula/ocrmypdf
 
 OCRmyPDF is now a standard `Homebrew <https://brew.sh>`__ formula. To
 install on macOS:
