@@ -817,6 +817,16 @@ def metadata_fixup(working_file: Path, context: PdfContext) -> Path:
                         del meta['dc:title']
                 missing = set(meta_original.keys()) - set(meta.keys())
                 report_on_metadata(missing)
+                # If the user explicitly specified an empty string for any 
+                # of the following, they should be unset.
+                if options.title == '' and 'dc:title' in meta:
+                    del meta['dc:title']
+                if options.author == '' and 'dc:creator' in meta:
+                    del meta['dc:creator']
+                if options.subject == '' and 'dc:description' in meta:
+                    del meta['dc:description']
+                if options.keywords == '' and 'pdf:Keywords' in meta:
+                    del meta['pdf:Keywords']
 
         optimizing = context.plugin_manager.hook.is_optimization_enabled(
             context=context
