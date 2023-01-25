@@ -21,7 +21,7 @@ These platforms have one-liner installs:
 +-------------------------------+-----------------------------------------+
 | Windows Subsystem for Linux   | ``apt install ocrmypdf``                |
 +-------------------------------+-----------------------------------------+
-| Fedora                        | ``dnf install ocrmypdf``                |
+| Fedora                        | ``dnf install ocrmypdf tesseract-osd``  |
 +-------------------------------+-----------------------------------------+
 | macOS                         | ``brew install ocrmypdf``               |
 +-------------------------------+-----------------------------------------+
@@ -121,7 +121,7 @@ Users of Fedora 29 or later may simply
 
 .. code-block:: bash
 
-    dnf install ocrmypdf
+    dnf install ocrmypdf tesseract-osd
 
 For full details on version availability, check the `Fedora Package
 Tracker <https://apps.fedoraproject.org/packages/ocrmypdf>`__.
