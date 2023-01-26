@@ -38,6 +38,7 @@ DESKEW = getenv_bool('OCR_DESKEW')
 OCR_JSON_SETTINGS = json.loads(os.getenv('OCR_JSON_SETTINGS', '{}'))
 POLL_NEW_FILE_SECONDS = int(os.getenv('OCR_POLL_NEW_FILE_SECONDS', '1'))
 USE_POLLING = getenv_bool('OCR_USE_POLLING')
+RETRIES_LOADING_FILE = int(os.getenv('OCR_RETRIES_LOADING_FILE', '5'))
 LOGLEVEL = os.getenv('OCR_LOGLEVEL', 'INFO')
 PATTERNS = ['*.pdf', '*.PDF']
 
@@ -64,7 +65,7 @@ def wait_for_file_ready(file_path):
     # watchdog event before the file is actually fully on disk, causing
     # pikepdf to fail.
 
-    retries = 5
+    retries = RETRIES_LOADING_FILE
     while retries:
         try:
             pdf = pikepdf.open(file_path)
@@ -142,6 +143,7 @@ def main():
         f"DESKEW: {DESKEW}\n"
         f"ARGS: {OCR_JSON_SETTINGS}\n"
         f"POLL_NEW_FILE_SECONDS: {POLL_NEW_FILE_SECONDS}\n"
+        f"RETRIES_LOADING_FILE: {RETRIES_LOADING_FILE}\n"
         f"USE_POLLING: {USE_POLLING}\n"
         f"LOGLEVEL: {LOGLEVEL}"
     )
