@@ -199,7 +199,7 @@ def is_file_writable(test_file: os.PathLike) -> bool:
             p = p.resolve(strict=False)
 
         # p.is_file() throws an exception in some cases
-        if p.exists() and p.is_file():
+        if p.exists() and (p.is_file() or p.samefile(os.devnull)):
             return os.access(
                 os.fspath(p),
                 os.W_OK,
