@@ -28,6 +28,12 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v14.0.3
+=======
+
+-  Fixed :issue:`1068`, avoid deleting /dev/null when running as root.
+-  Other documentation fixes.
+
 v14.0.2
 =======
 
