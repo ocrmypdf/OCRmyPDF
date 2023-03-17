@@ -28,6 +28,11 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v14.0.4
+=======
+
+-  Fixed :issue:`1066, 1075`, an exception when processing certain malformed PDFs.
+
 v14.0.3
 =======
 
