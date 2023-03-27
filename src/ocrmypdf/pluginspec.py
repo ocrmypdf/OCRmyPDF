@@ -269,7 +269,7 @@ def filter_page_image(page: PageContext, image_filename: Path) -> Path:
     to enforce these constraints; it is up to the plugin to do sensible things.
 
     OCRmyPDF will create the PDF page based on the image format used (unless the
-    hook is overriden). If you convert the image to a JPEG, the output page will
+    hook is overridden). If you convert the image to a JPEG, the output page will
     be created as a JPEG, etc. If you change the colorspace, that change will be
     kept. Note that the OCRmyPDF image optimization stage, if enabled, may
     ultimately chose a different format.

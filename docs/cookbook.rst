@@ -360,7 +360,7 @@ The types of optimization available may expand over time. By default,
 OCRmyPDF compresses data streams inside PDFs, and will change
 inefficient compression modes to more modern versions. A program like
 ``qpdf`` can be used to change encodings, e.g. to inspect the internals
-fo a PDF.
+for a PDF.
 
 .. code-block:: bash
 

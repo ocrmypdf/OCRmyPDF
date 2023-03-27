@@ -193,7 +193,7 @@ Ghostscript also imposes some limitations:
    (Modern Ghostscript can copy JPEG images without transcoding them.)
 -  Ghostscript's PDF/A conversion removes any XMP metadata that is not
    one of the standard XMP metadata namespaces for PDFs. In particular,
-   PRISM Metdata is removed.
+   PRISM Metadata is removed.
 -  Ghostscript's PDF/A conversion seems to remove or deactivate
    hyperlinks and other active content.
 

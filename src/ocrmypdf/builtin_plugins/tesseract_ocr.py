@@ -58,7 +58,7 @@ def add_options(parser):
         metavar='METHOD',
         help=(
             "Set Tesseract 5.0+ input image thresholding mode. This may improve OCR "
-            "results on low quality images or those that contain high constrast color. "
+            "results on low quality images or those that contain high contrast color. "
             "legacy-otsu is the Tesseract default; adaptive-otsu is an improved Otsu "
             "algorithm with improved sort for background color changes; sauvola is "
             "based on local standard deviation."
