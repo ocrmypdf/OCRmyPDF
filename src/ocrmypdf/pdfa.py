@@ -84,7 +84,7 @@ def generate_pdfa_ps(target_filename: Path, icc: str = 'sRGB'):
     Ghostscript uses pdfmark for PDF to PDF/A conversion as well. To use Ghostscript
     to create a PDF/A, we need to create a pdfmark file with the necessary metadata.
 
-    This function takes care of the many version-specific bugs and pecularities in
+    This function takes care of the many version-specific bugs and peculiarities in
     Ghostscript's handling of pdfmark.
 
     The only information we put in specifies that we want the file to be a

@@ -530,7 +530,7 @@ programs being installed.
     ``apt install python3-pip python3-venv``, create a virtual environment,
     and install OCRmyPDF in that environment.
 
-    `See here for more inforation on Debian-Python issues
+    `See here for more information on Debian-Python issues
     <https://gist.github.com/tiran/2dec9e03c6f901814f6d1e8dad09528e>`__.
 
 For best results, first install `your platform's

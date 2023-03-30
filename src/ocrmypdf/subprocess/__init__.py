@@ -37,7 +37,7 @@ def run(
     """Wrapper around :py:func:`subprocess.run`
 
     The main purpose of this wrapper is to log subprocess output in an orderly
-    fashion that indentifies the responsible subprocess. An additional
+    fashion that identifies the responsible subprocess. An additional
     task is that this function goes to greater lengths to find possible Windows
     locations of our dependencies when they are not on the system PATH.
 

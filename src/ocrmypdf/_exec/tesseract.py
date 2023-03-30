@@ -104,7 +104,7 @@ TESSERACT_VERSION_PATTERN = r"""
 
 
 class TesseractVersion(Version):
-    "Modify standard packaging.Version regex to support Tesseract idiosyncracies."
+    "Modify standard packaging.Version regex to support Tesseract idiosyncrasies."
     _regex = re.compile(
         r"^\s*" + TESSERACT_VERSION_PATTERN + r"\s*$", re.VERBOSE | re.IGNORECASE
     )

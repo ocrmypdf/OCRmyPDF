@@ -722,7 +722,7 @@ v10.3.2
 v10.3.1
 =======
 
--  Fixed a number of test suite failures with pdfminer.six older than veresion 20200402.
+-  Fixed a number of test suite failures with pdfminer.six older than version 20200402.
 -  Enabled support for pdfminer.six 20200720.
 
 v10.3.0
