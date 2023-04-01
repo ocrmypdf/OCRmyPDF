@@ -55,7 +55,7 @@ parts:
 
   ocrmypdf:
     plugin: python
-    source: https://github.com/ocrmypdf/OCRmyPDF.git
+    source: .
 
     build-packages:
       - python3-pip
