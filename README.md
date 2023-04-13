@@ -70,7 +70,7 @@ Linux, Windows, macOS and FreeBSD are supported. Docker images are also availabl
 | macOS (Homebrew)              | ``brew install ocrmypdf``     |
 | macOS (nix)                   | ``nix-env -i  ocrmypdf``      |
 | LinuxBrew                     | ``brew install ocrmypdf``     |
-| FreeBSD                       | ``pkg install py-ocrmypdf`` |
+| FreeBSD                       | ``pkg install py-ocrmypdf``   |
 | Conda                         | ``conda install ocrmypdf``    |
 | Ubuntu Snap                   | ``snap install ocrmypdf``     |
 
@@ -112,7 +112,7 @@ Please report issues on our [GitHub issues](https://github.com/ocrmypdf/OCRmyPDF
 
 ## Requirements
 
-In addition to the required Python version (3.7+), OCRmyPDF requires external program installations of Ghostscript and Tesseract OCR. OCRmyPDF is pure Python, and runs on pretty much everything: Linux, macOS, Windows and FreeBSD.
+In addition to the required Python version (3.8+), OCRmyPDF requires external program installations of Ghostscript and Tesseract OCR. OCRmyPDF is pure Python, and runs on pretty much everything: Linux, macOS, Windows and FreeBSD.
 
 ## Press & Media
 
@@ -123,6 +123,7 @@ In addition to the required Python version (3.7+), OCRmyPDF requires external pr
 - [heise Durchsuchbare PDF-Dokumente mit OCRmyPDF erstellen](https://www.heise.de/ratgeber/Durchsuchbare-PDF-Dokumente-mit-OCRmyPDF-erstellen-4607592.html)
 - [Excellent Utilities: OCRmyPDF](https://www.linuxlinks.com/excellent-utilities-ocrmypdf-add-ocr-text-layer-scanned-pdfs/)
 - [LinuxUser Texterkennung mit OCRmyPDF und Scanbd automatisieren](https://www.linux-community.de/ausgaben/linuxuser/2021/06/texterkennung-mit-ocrmypdf-und-scanbd-automatisieren/)
+- [Y Combinator discussion](https://news.ycombinator.com/item?id=32028752)
 
 ## Business enquiries
 
