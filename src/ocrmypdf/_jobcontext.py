@@ -59,7 +59,7 @@ class PdfContext:
 class PageContext:
     """Holds our context for a page.
 
-    Must be pickable, so stores only intrinsic/simple data elements or those
+    Must be pickle-able, so stores only intrinsic/simple data elements or those
     capable of their serializing themselves via ``__getstate__``.
     """
 
