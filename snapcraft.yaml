@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2022 Alexander Langanke
 # SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-FileCopyrightText: 2023 林博仁(Buo-ren, Lin) <Buo.Ren.Lin@gmail.com>
 # SPDX-License-Identifier: MPL-2.0
 
 name: ocrmypdf
@@ -54,7 +55,10 @@ parts:
 
   ocrmypdf:
     plugin: python
-    source: https://github.com/ocrmypdf/OCRmyPDF.git
+    source: .
+
+    build-packages:
+      - python3-pip
 
     stage-packages:
       - ghostscript
@@ -77,7 +81,14 @@ parts:
       - setuptools
       - tqdm
       - pipe
+      - wheel
 
     override-build: |
+      pip3 install --user dephell[full]
+      $HOME/.local/bin/dephell deps convert \
+          --from-path pyproject.toml \
+          --from-format pyproject \
+          --to-path setup.py \
+          --to-format setuppy
       snapcraftctl build
       ln -sf ../usr/lib/libsnapcraft-preload.so $SNAPCRAFT_PART_INSTALL/lib/libsnapcraft-preload.so
