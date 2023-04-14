@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-"""Interface to jbig2 executable"""
+"""Interface to jbig2 executable."""
 
 from __future__ import annotations
 

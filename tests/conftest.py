@@ -3,12 +3,10 @@
 
 from __future__ import annotations
 
-import os
 import platform
 import sys
 from pathlib import Path
-from subprocess import PIPE, CompletedProcess, run
-from typing import List
+from subprocess import CompletedProcess, run
 
 import pytest
 
@@ -71,10 +69,13 @@ def outtxt(tmp_path) -> Path:
 
 @pytest.fixture(scope="function")
 def no_outpdf(tmp_path) -> Path:
-    """This just documents the fact that a test is not expected to produce
+    """Document fact that a test is not expected to produce output.
+
+    This just documents the fact that a test is not expected to produce
     output. Unfortunately an assertion failure inside a test fixture produces
     an error rather than a test failure, so no testing is done. It's up to
-    the test to confirm that no output file was created."""
+    the test to confirm that no output file was created.
+    """
     return tmp_path / 'no_output.pdf'
 
 
@@ -110,7 +111,6 @@ def run_ocrmypdf_api(input_file: Path, output_file: Path, *args) -> ExitCode:
     The return code must always be checked or the test may declare a failure
     to be pass.
     """
-
     api_args = [str(input_file), str(output_file)] + [
         str(arg) for arg in args if arg is not None
     ]
@@ -128,7 +128,6 @@ def run_ocrmypdf(
     If an exception is thrown this fact will be returned as part of the result
     text and return code rather than exception objects.
     """
-
     p_args = (
         [sys.executable, '-m', 'ocrmypdf']
         + [str(arg) for arg in args if arg is not None]

@@ -11,7 +11,6 @@ import os
 import signal
 import sys
 from contextlib import suppress
-from multiprocessing import set_start_method
 
 from ocrmypdf import __version__
 from ocrmypdf._plugin_manager import get_parser_options_plugins

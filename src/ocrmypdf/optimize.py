@@ -230,7 +230,7 @@ def extract_images(
     options,
     extract_fn: Callable[..., XrefExt | None],
 ) -> Iterator[tuple[int, XrefExt]]:
-    """Extract image using extract_fn
+    """Extract image using extract_fn.
 
     Enumerate images on each page, lookup their xref/ID number in the PDF.
     Exclude images that are soft masks (i.e. alpha transparency related).
@@ -244,7 +244,6 @@ def extract_images(
     it does a tuple should be returned: (xref, ext) where .ext is the file
     extension. extract_fn must also extract the file it finds interesting.
     """
-
     include_xrefs: MutableSet[Xref] = set()
     exclude_xrefs: MutableSet[Xref] = set()
     pageno_for_xref = {}
@@ -289,8 +288,7 @@ def extract_images(
 def extract_images_generic(
     pike: Pdf, root: Path, options
 ) -> tuple[list[Xref], list[Xref]]:
-    """Extract any >=2bpp image we think we can improve"""
-
+    """Extract any >=2bpp image we think we can improve."""
     jpegs = []
     pngs = []
     for _, xref_ext in extract_images(pike, root, options, extract_image_generic):
@@ -304,8 +302,7 @@ def extract_images_generic(
 
 
 def extract_images_jbig2(pike: Pdf, root: Path, options) -> dict[int, list[XrefExt]]:
-    """Extract any bitonal image that we think we can improve as JBIG2"""
-
+    """Extract any bitonal image that we think we can improve as JBIG2."""
     jbig2_groups = defaultdict(list)
     for pageno, xref_ext in extract_images(pike, root, options, extract_image_jbig2):
         group = pageno // options.jbig2_page_group_size
@@ -318,7 +315,7 @@ def extract_images_jbig2(pike: Pdf, root: Path, options) -> dict[int, list[XrefE
 def _produce_jbig2_images(
     jbig2_groups: dict[int, list[XrefExt]], root: Path, options, executor: Executor
 ) -> None:
-    """Produce JBIG2 images from their groups"""
+    """Produce JBIG2 images from their groups."""
 
     def jbig2_group_args(root: Path, groups: dict[int, list[XrefExt]]):
         for group, xref_exts in groups.items():
@@ -674,7 +671,7 @@ def main(infile, outfile, level, jobs=1):
     from tempfile import TemporaryDirectory  # pylint: disable=import-outside-toplevel
 
     class OptimizeOptions:
-        """Emulate ocrmypdf's options"""
+        """Emulate ocrmypdf's options."""
 
         def __init__(
             self, input_file, jobs, optimize_, jpeg_quality, png_quality, jb2lossy

@@ -184,14 +184,19 @@ module = [
 ]
 ignore_missing_imports = true
 
-[tool.pylint.basic]
-good-names = ["i", "j", "k", "ex", "Run", "_", "e", "p", "im", "w", "h", "m", "x", "y", "a", "b", "fp", "n", "f", "s", "v", "q", "dx", "dy"]
-logging-format-style = "old"
-disable = ["raw-checker-failed", "bad-inline-option", "locally-disabled", "file-ignored", "suppressed-message", "useless-suppression", "deprecated-pragma", "use-symbolic-message-instead", "logging-fstring-interpolation", "missing-function-docstring", "too-few-public-methods"]
-
 [tool.ruff]
-src = ["src"]
-select = ["E"]
+select = [
+  "D", # pydocstyle
+  "E", # pycodestyle
+  "W", # pycodestyle
+  "F", # pyflakes
+  "I001", # isort
+  "UP", # pyupgrade
+]
+target-version = "py38"
+
+[tool.ruff.isort]
+known-first-party = ["ocrmypdf"]
 
 [tool.ruff.pydocstyle]
 convention = "google"

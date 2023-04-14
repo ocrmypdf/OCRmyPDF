@@ -99,6 +99,8 @@ def check_options(options: Namespace) -> None:
         ocrmypdf.exceptions.ExitCodeException: If options are not acceptable
             and the application should terminate gracefully with an informative
             message and error code.
+
+
     Note:
         This hook will be called from the main process, and may modify global state
         before child worker processes are forked.
@@ -127,6 +129,8 @@ def get_executor(progressbar_class) -> Executor:
     Note:
         This hook will be called from the main process, and may modify global state
         before child worker processes are forked.
+
+
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
     """
@@ -159,7 +163,6 @@ def get_progressbar_class():
     Here is how OCRmyPDF will use the progress bar:
 
     Example:
-
         pbar_class = pm.hook.get_progressbar_class()
         with pbar_class(**tqdm_kwargs) as pbar:
             ...
@@ -181,6 +184,8 @@ def validate(pdfinfo: PdfInfo, options: Namespace) -> None:
         ocrmypdf.exceptions.ExitCodeException: If options or pdfinfo are not acceptable
             and the application should terminate gracefully with an informative
             message and error code.
+
+
     Note:
         This hook will be called from the main process, and may modify global state
         before child worker processes are forked.
@@ -218,6 +223,8 @@ def rasterize_pdf_page(
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
+
+
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
     """
@@ -245,6 +252,8 @@ def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
+
+
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
     """
@@ -281,6 +290,8 @@ def filter_page_image(page: PageContext, image_filename: Path) -> Path:
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
+
+
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
     """
@@ -323,6 +334,8 @@ def filter_pdf_page(page: PageContext, image_filename: Path, output_pdf: Path) -
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
+
+
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
     """
@@ -381,7 +394,8 @@ class OcrEngine(ABC):
         """Returns the set of all languages that are supported by the engine.
 
         Languages are typically given in 3-letter ISO 3166-1 codes, but actually
-        can be any value understood by the OCR engine."""
+        can be any value understood by the OCR engine.
+        """
 
     @staticmethod
     @abstractmethod
@@ -474,7 +488,7 @@ def generate_pdfa(
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
 
-    See also:
+    See Also:
         https://github.com/tqdm/tqdm
     """
 

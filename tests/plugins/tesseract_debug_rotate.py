@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MIT
-"""Tesseract no-op/fixed rotate plugin
+"""Tesseract no-op/fixed rotate plugin.
 
 To quickly run tests where getting OCR output is not necessary and we want to test
 the rotation pipeline.

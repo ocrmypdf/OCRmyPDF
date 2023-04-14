@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-"""Utilities to measure OCR quality"""
+"""Utilities to measure OCR quality."""
 
 
 from __future__ import annotations

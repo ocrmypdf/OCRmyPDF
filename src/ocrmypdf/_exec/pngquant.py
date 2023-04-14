@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-"""Interface to pngquant executable"""
+"""Interface to pngquant executable."""
 
 from __future__ import annotations
 

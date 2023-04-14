@@ -6,7 +6,6 @@ from __future__ import annotations
 
 # This script must be edited to meet your needs.
 import logging
-import os
 import sys
 from pathlib import Path
 

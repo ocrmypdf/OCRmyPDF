@@ -63,7 +63,7 @@ def pdftype3font__pscript5_get_ascent(self):
 
 
 class LTStateAwareChar(LTChar):
-    """A subclass of LTChar that tracks text render mode at time of drawing"""
+    """A subclass of LTChar that tracks text render mode at time of drawing."""
 
     __slots__ = (
         'rendermode',
@@ -111,7 +111,7 @@ class LTStateAwareChar(LTChar):
         self.rendermode = textstate.render
 
     def is_compatible(self, obj):
-        """Check if characters can be combined into a textline
+        """Check if characters can be combined into a textline.
 
         We consider characters compatible if:
             - the Unicode mapping is known, and both have the same render mode
@@ -146,7 +146,7 @@ class LTStateAwareChar(LTChar):
 
 
 class TextPositionTracker(PDFLayoutAnalyzer):
-    """A page layout analyzer that pays attention to text visibility"""
+    """A page layout analyzer that pays attention to text visibility."""
 
     def __init__(self, rsrcmgr, pageno=1, laparams=None):
         super().__init__(rsrcmgr, pageno, laparams)

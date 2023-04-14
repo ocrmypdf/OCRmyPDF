@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2019 James R. Barlow
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-"""This is a simple web service/HTTP wrapper for OCRmyPDF
+"""This is a simple web service/HTTP wrapper for OCRmyPDF.
 
 This may be more convenient than the command line tool for some Docker users.
 Note that OCRmyPDF uses Ghostscript, which is licensed under AGPLv3+. While
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import os
 import shlex
-from subprocess import PIPE, run
+from subprocess import run
 from tempfile import TemporaryDirectory
 
 from flask import Flask, Response, request, send_from_directory

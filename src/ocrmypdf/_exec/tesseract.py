@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-"""Interface to Tesseract executable"""
+"""Interface to Tesseract executable."""
 
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ TESSERACT_THRESHOLDING_METHODS: dict[str, int] = {
 
 
 class TesseractLoggerAdapter(logging.LoggerAdapter):
-    "Prepend [tesseract] to messages emitted from tesseract"
+    "Prepend [tesseract] to messages emitted from tesseract."
 
     def process(self, msg, kwargs):
         kwargs['extra'] = self.extra
@@ -283,7 +283,8 @@ def page_timedout(timeout: float) -> None:
 
 def _generate_null_hocr(output_hocr: Path, output_text: Path, image: Path) -> None:
     """Produce a .hocr file that reports no text detected on a page that is
-    the same size as the input image."""
+    the same size as the input image.
+    """
     with Image.open(image) as im:
         w, h = im.size
 

@@ -1,8 +1,7 @@
 # SPDX-FileCopyrightText: 2022 James R Barlow: https://github.com/jbarlow83
 # SPDX-License-Identifier: MIT
 
-"""
-An example of an OCRmyPDF plugin.
+"""An example of an OCRmyPDF plugin.
 
 This plugin adds two new command line arguments
     --grayscale-ocr: converts the image to grayscale before performing OCR on it

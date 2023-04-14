@@ -37,7 +37,6 @@ def _update_resources(*, obj, font, font_key, procset):
 
     obj can be a page or Form XObject.
     """
-
     resources = _ensure_dictionary(obj, Name.Resources)
     fonts = _ensure_dictionary(resources, Name.Font)
     if font_key is not None and font_key not in fonts:
@@ -167,7 +166,6 @@ class OcrGrafter:
         the font to page 1 even if page 1 doesn't use it, so we have a way to get it
         back.
         """
-
         page0 = self.pdf_base.pages[0]
         _update_resources(
             obj=page0, font=self.font, font_key=self.font_key, procset=self.procset
@@ -200,8 +198,7 @@ class OcrGrafter:
         return self.output_file
 
     def _find_font(self, text):
-        """Copy a font from the filename text into pdf_base"""
-
+        """Copy a font from the filename text into pdf_base."""
         font, font_key = None, None
         possible_font_names = ('/f-0-0', '/F1')
         try:
@@ -234,8 +231,7 @@ class OcrGrafter:
         text_rotation: int,
         strip_old_text: bool,
     ):
-        """Insert the text layer from text page 0 on to pdf_base at page_num"""
-
+        """Insert the text layer from text page 0 on to pdf_base at page_num."""
         # pylint: disable=invalid-name
 
         log.debug("Grafting")

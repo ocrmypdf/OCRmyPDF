@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MIT
-"""Cache output of tesseract to speed up test suite
+"""Cache output of tesseract to speed up test suite.
 
 The cache is keyed by by the input test file The input arguments are slugged
 into a hideous filename that more or less represents them literally.  Joined

@@ -73,8 +73,7 @@ class ConnectionLogHandler(logging.handlers.QueueHandler):
 def process_loop(
     conn: Connection, user_init: Callable[[], None], loglevel, task, task_args
 ):
-    """Initialize a process pool worker"""
-
+    """Initialize a process pool worker."""
     # Install SIGBUS handler (so our parent process can abort somewhat gracefully)
     with suppress(AttributeError):  # Windows and Cygwin do not have SIGBUS
         # Windows and Cygwin do not have pthread_sigmask or SIGBUS

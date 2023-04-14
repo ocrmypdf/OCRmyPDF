@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2017 Enantiomerie
 # SPDX-License-Identifier: MIT
 
-"""Example OCRmyPDF for Synology NAS"""
+"""Example OCRmyPDF for Synology NAS."""
 
 from __future__ import annotations
 

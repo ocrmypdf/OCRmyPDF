@@ -108,7 +108,7 @@ class Resolution(Generic[T]):
 
 
 class NeverRaise(Exception):
-    """An exception that is never raised"""
+    """An exception that is never raised."""
 
 
 def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike):
@@ -170,7 +170,7 @@ def monotonic(seq: Sequence) -> bool:
 
 
 def page_number(input_file: os.PathLike) -> int:
-    """Get one-based page number implied by filename (000002.pdf -> 2)"""
+    """Get one-based page number implied by filename (000002.pdf -> 2)."""
     return int(os.path.basename(os.fspath(input_file))[0:6])
 
 

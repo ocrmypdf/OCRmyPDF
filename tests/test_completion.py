@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import os
-from subprocess import PIPE, run
+from subprocess import run
 
 import pytest
 

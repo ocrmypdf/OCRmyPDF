@@ -8,14 +8,13 @@ from os import fspath
 from unittest.mock import patch
 
 import pytest
-from PIL import Image
 
 from ocrmypdf._exec import unpaper
 from ocrmypdf._plugin_manager import get_parser_options_plugins
 from ocrmypdf._validation import check_options
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 
-from .conftest import check_ocrmypdf, have_unpaper, ocrmypdf_exec, run_ocrmypdf
+from .conftest import check_ocrmypdf, have_unpaper, run_ocrmypdf
 
 # pylint: disable=redefined-outer-name
 

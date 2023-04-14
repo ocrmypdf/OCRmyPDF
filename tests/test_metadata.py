@@ -231,17 +231,6 @@ def test_xml_metadata_preserved(
         'pdf:keywords',
     ]
     acquired_properties = ['dc:format']
-    might_change_properties = [
-        'dc:date',
-        'pdf:pdfversion',
-        'pdf:Producer',
-        'xmp:CreateDate',
-        'xmp:ModifyDate',
-        'xmp:MetadataDate',
-        'xmp:CreatorTool',
-        'xmpMM:DocumentId',
-        'xmpMM:DnstanceId',
-    ]
 
     # Cleanup messy data structure
     # Top level is key-value mapping of namespaces to keys under namespace,

@@ -251,8 +251,7 @@ def worker_init(max_pixels: int) -> None:
 
 
 def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
-    """Execute the pipeline concurrently"""
-
+    """Execute the pipeline concurrently."""
     # Run exec_page_sync on every page context
     options = context.options
     max_workers = min(len(context.pdfinfo), options.jobs)
@@ -316,8 +315,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
 def configure_debug_logging(
     log_filename: Path, prefix: str = ''
 ) -> logging.FileHandler:
-    """
-    Create a debug log file at a specified location.
+    """Create a debug log file at a specified location.
 
     Arguments:
         log_filename: Where to the put the log file.

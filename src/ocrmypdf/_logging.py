@@ -24,7 +24,7 @@ class PageNumberFilter(logging.Filter):
 
 
 class TqdmConsole:
-    """Wrapper to log messages in a way that is compatible with tqdm progress bar
+    """Wrapper to log messages in a way that is compatible with tqdm progress bar.
 
     This routes log messages through tqdm so that it can print them above the
     progress bar, and then refresh the progress bar, rather than overwriting

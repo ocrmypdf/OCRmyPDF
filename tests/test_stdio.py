@@ -4,13 +4,10 @@
 from __future__ import annotations
 
 import os
-import sys
-from pathlib import Path
-from subprocess import DEVNULL, PIPE, Popen, run
+from subprocess import DEVNULL, PIPE, run
 
 import pytest
 
-from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import check_pdf
 
 from .conftest import run_ocrmypdf

@@ -169,8 +169,7 @@ SHIMS = [
 
 
 def fix_windows_args(program: str, args, env):
-    """Adjust our desired program and command line arguments for use on Windows"""
-
+    """Adjust our desired program and command line arguments for use on Windows."""
     # If we are running a .py on Windows, ensure we call it with this Python
     # (to support test suite shims)
     if program.lower().endswith('.py'):

@@ -6,7 +6,6 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pikepdf
-import pytest
 
 import ocrmypdf
 

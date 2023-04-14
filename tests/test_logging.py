@@ -5,8 +5,6 @@ from __future__ import annotations
 
 import logging
 
-import pytest
-
 from ocrmypdf._sync import configure_debug_logging
 
 

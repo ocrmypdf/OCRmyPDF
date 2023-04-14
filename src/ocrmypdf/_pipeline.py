@@ -121,7 +121,6 @@ def _pdf_guess_version(input_file: Path, search_window=1024) -> str:
 
     Returns empty string if not found, indicating file is probably not PDF.
     """
-
     with open(input_file, 'rb') as f:
         signature = f.read(search_window)
     m = re.search(br'%PDF-(\d\.\d)', signature)
@@ -222,7 +221,7 @@ def _vector_page_dpi(pageinfo: PageInfo) -> int:
 
 
 def get_page_dpi(pageinfo: PageInfo, options) -> Resolution:
-    "Get the DPI when nonsquare DPI is tolerable"
+    "Get the DPI when nonsquare DPI is tolerable."
     xres = max(
         pageinfo.dpi.x or VECTOR_PAGE_DPI,
         options.oversample or 0.0,
@@ -237,7 +236,7 @@ def get_page_dpi(pageinfo: PageInfo, options) -> Resolution:
 
 
 def get_page_square_dpi(pageinfo: PageInfo, options) -> Resolution:
-    "Get the DPI when we require xres == yres, scaled to physical units"
+    "Get the DPI when we require xres == yres, scaled to physical units."
     xres = pageinfo.dpi.x or 0.0
     yres = pageinfo.dpi.y or 0.0
     userunit = float(pageinfo.userunit) or 1.0
@@ -253,7 +252,7 @@ def get_page_square_dpi(pageinfo: PageInfo, options) -> Resolution:
 
 
 def get_canvas_square_dpi(pageinfo: PageInfo, options) -> Resolution:
-    """Get the DPI when we require xres == yres, in Postscript units"""
+    """Get the DPI when we require xres == yres, in Postscript units."""
     units = float(
         max(
             (pageinfo.dpi.x) or VECTOR_PAGE_DPI,
@@ -358,9 +357,7 @@ def rasterize_preview(input_file: Path, page_context: PageContext) -> Path:
 
 
 def describe_rotation(page_context: PageContext, orient_conf, correction: int) -> str:
-    """
-    Describe the page rotation we are going to perform.
-    """
+    """Describe the page rotation we are going to perform."""
     direction = {0: '⇧', 90: '⇨', 180: '⇩', 270: '⇦'}
     turns = {0: ' ', 90: '⬏', 180: '↻', 270: '⬑'}
 
@@ -401,7 +398,6 @@ def get_orientation_correction(preview: Path, page_context: PageContext) -> int:
     which points it (hopefully) upright. _graft.py takes care of the orienting
     the image and text layers.
     """
-
     orient_conf = page_context.plugin_manager.hook.get_ocr_engine().get_orientation(
         preview, page_context.options
     )
@@ -514,10 +510,11 @@ def preprocess_clean(input_file: Path, page_context: PageContext) -> Path:
 
 
 def create_ocr_image(image: Path, page_context: PageContext) -> Path:
-    """Create the image we send for OCR. May not be the same as the display
-    image depending on preprocessing. This image will never be shown to the
-    user."""
+    """Create the image we send for OCR.
 
+    Might not be the same as the display image depending on preprocessing.
+    This image will never be shown to the user.
+    """
     output_file = page_context.get_path('ocr.png')
     options = page_context.options
     with Image.open(image) as im:

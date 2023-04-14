@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MIT
 
-"""Tesseract bad utf8
+"""Tesseract bad utf8.
 
 In some cases, some versions of Tesseract can output binary gibberish or data
 that is not UTF-8 compatible, so we are forced to check that we can convert it

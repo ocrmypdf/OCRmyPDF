@@ -86,7 +86,6 @@ def configure_logging(
     Returns:
         The toplevel logger for ocrmypdf (or the root logger, if we are managing it).
     """
-
     prefix = '' if manage_root_logger else 'ocrmypdf'
 
     log = logging.getLogger(prefix)
@@ -277,6 +276,8 @@ def ocr(  # pylint: disable=unused-argument
             When a stream is used as output, whether via a writable object or
             ``"-"``, some final validation steps are not performed (we do not read
             back the stream after it is written).
+
+
     Raises:
         ocrmypdf.MissingDependencyError: If a required dependency program is missing or
             was not found on PATH.

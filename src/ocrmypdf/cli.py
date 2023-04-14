@@ -15,7 +15,7 @@ T = TypeVar('T', int, float)
 
 
 def numeric(basetype: Callable[[Any], T], min_: T | None = None, max_: T | None = None):
-    """Validator for numeric params"""
+    """Validator for numeric params."""
     min_ = basetype(min_) if min_ is not None else None
     max_ = basetype(max_) if max_ is not None else None
 
@@ -46,7 +46,7 @@ def str_to_int(mapping: Mapping[str, int]):
 
 
 class ArgumentParser(argparse.ArgumentParser):
-    """Override parser's default behavior of calling sys.exit()
+    """Override parser's default behavior of calling sys.exit().
 
     https://stackoverflow.com/questions/5943249/python-argparse-and-controlling-overriding-the-exit-status-code
 

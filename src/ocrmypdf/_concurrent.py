@@ -51,8 +51,7 @@ class Executor(ABC):
         task_arguments: Iterable | None = None,
         task_finished: Callable | None = None,
     ) -> None:
-        """
-        Set up parallel execution and progress reporting.
+        """Set up parallel execution and progress reporting.
 
         Args:
             use_threads: If ``False``, the workload is the sort that will benefit from
@@ -73,7 +72,6 @@ class Executor(ABC):
                 task. This runs in the parent's context, but the parameters must be
                 marshallable to the worker.
         """
-
         if not task_arguments:
             return  # Nothing to do!
         if not worker_initializer:

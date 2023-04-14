@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
-"""Wrappers to manage subprocess calls"""
+"""Wrappers to manage subprocess calls."""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ def run(
     check: bool = False,
     **kwargs,
 ) -> CompletedProcess:
-    """Wrapper around :py:func:`subprocess.run`
+    """Wrapper around :py:func:`subprocess.run`.
 
     The main purpose of this wrapper is to log subprocess output in an orderly
     fashion that identifies the responsible subprocess. An additional
@@ -141,7 +141,7 @@ def get_version(
     regex=r'(\d+(\.\d+)*)',
     env: OsEnviron | None = None,
 ) -> str:
-    """Get the version of the specified program
+    """Get the version of the specified program.
 
     Arguments:
         program: The program to version check.
@@ -323,7 +323,6 @@ def check_external_program(
         version_parser: A class that should be used to parse and compare version
             numbers. Used when version numbers do not follow standard conventions.
     """
-
     try:
         found_version = version_checker()
     except (CalledProcessError, FileNotFoundError) as e:

@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MIT
-"""Tesseract no-op plugin
+"""Tesseract no-op plugin.
 
 To quickly run tests where getting OCR output is not necessary.
 

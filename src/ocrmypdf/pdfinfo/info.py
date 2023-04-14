@@ -164,7 +164,7 @@ class TextMarker:
 
 
 def _normalize_stack(graphobjs):
-    """Convert runs of qQ's in the stack into single graphobjs"""
+    """Convert runs of qQ's in the stack into single graphobjs."""
     for operands, operator in graphobjs:
         operator = str(operator)
         if re.match(r'Q*q+$', operator):  # Zero or more Q, one or more q
@@ -200,7 +200,6 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
     undefined in the spec, but we just pretend nothing happened and leave the
     CTM unchanged.
     """
-
     stack = []
     ctm = PdfMatrix(initial_shorthand)
     xobject_settings: list[XobjectSettings] = []
@@ -307,7 +306,6 @@ def _get_dpi(ctm_shorthand, image_size) -> Resolution:
     /MediaBox.
 
     """
-
     a, b, c, d, _, _ = ctm_shorthand  # pylint: disable=invalid-name
 
     # Calculate the width and height of the image in PDF units
@@ -451,8 +449,7 @@ class ImageInfo:
 
 
 def _find_inline_images(contentsinfo: ContentsInfo) -> Iterator[ImageInfo]:
-    "Find inline images in the contentstream"
-
+    "Find inline images in the contentstream."
     for n, inline in enumerate(contentsinfo.inline_images):
         yield ImageInfo(
             name=f'inline-{n:02d}', shorthand=inline.shorthand, inline=inline.iimage
@@ -460,7 +457,7 @@ def _find_inline_images(contentsinfo: ContentsInfo) -> Iterator[ImageInfo]:
 
 
 def _image_xobjects(container) -> Iterator[tuple[Object, str]]:
-    """Search for all XObject-based images in the container
+    """Search for all XObject-based images in the container.
 
     Usually the container is a page, but it could also be a Form XObject
     that contains images. Filter out the Form XObjects which are dealt with
@@ -471,7 +468,6 @@ def _image_xobjects(container) -> Iterator[tuple[Object, str]]:
     since the object does not know its own name.
 
     """
-
     if '/Resources' not in container:
         return
     resources = container['/Resources']
@@ -488,14 +484,13 @@ def _image_xobjects(container) -> Iterator[tuple[Object, str]]:
 def _find_regular_images(
     container: Object, contentsinfo: ContentsInfo
 ) -> Iterator[ImageInfo]:
-    """Find images stored in the container's /Resources /XObject
+    """Find images stored in the container's /Resources /XObject.
 
     Usually the container is a page, but it could also be a Form XObject
     that contains images.
 
     Generates images with their DPI at time of drawing.
     """
-
     for pdfimage, xobj in _image_xobjects(container):
         if xobj not in contentsinfo.name_index:
             continue
@@ -512,7 +507,7 @@ def _find_regular_images(
 
 
 def _find_form_xobject_images(pdf: Pdf, container: Object, contentsinfo: ContentsInfo):
-    """Find any images that are in Form XObjects in the container
+    """Find any images that are in Form XObjects in the container.
 
     The container may be a page, or a parent Form XObject.
 
@@ -546,7 +541,7 @@ def _find_form_xobject_images(pdf: Pdf, container: Object, contentsinfo: Content
 def _process_content_streams(
     *, pdf: Pdf, container: Object, shorthand=None
 ) -> Iterator[VectorMarker | TextMarker | ImageInfo]:
-    """Find all individual instances of images drawn in the container
+    """Find all individual instances of images drawn in the container.
 
     Usually the container is a page, but it may also be a Form XObject.
 
@@ -563,7 +558,6 @@ def _process_content_streams(
     downsampling.
 
     """
-
     if container.get('/Type') == '/Page' and '/Contents' in container:
         initial_shorthand = shorthand or UNIT_SQUARE
     elif container.get('/Type') == '/XObject' and container['/Subtype'] == '/Form':
@@ -595,8 +589,7 @@ def _process_content_streams(
 
 
 def _page_has_text(text_blocks: Iterable[FloatRect], page_width, page_height) -> bool:
-    """Smarter text detection that ignores text in margins"""
-
+    """Smarter text detection that ignores text in margins."""
     pw, ph = float(page_width), float(page_height)  # pylint: disable=invalid-name
 
     margin_ratio = 0.125
@@ -608,10 +601,9 @@ def _page_has_text(text_blocks: Iterable[FloatRect], page_width, page_height) ->
     )
 
     def rects_intersect(a: FloatRect, b: FloatRect) -> bool:
-        """
-        Where (a,b) are 4-tuple rects (left-0, top-1, right-2, bottom-3)
+        """Where (a,b) are 4-tuple rects (left-0, top-1, right-2, bottom-3)
         https://stackoverflow.com/questions/306316/determine-if-two-rectangles-overlap-each-other
-        Formula assumes all boxes are in first quadrant
+        Formula assumes all boxes are in first quadrant.
         """
         return a[0] < b[2] and a[2] > b[0] and a[1] > b[3] and a[3] < b[1]
 
@@ -624,7 +616,7 @@ def _page_has_text(text_blocks: Iterable[FloatRect], page_width, page_height) ->
 
 
 def simplify_textboxes(miner, textbox_getter) -> Iterator[TextboxInfo]:
-    """Extract only limited content from text boxes
+    """Extract only limited content from text boxes.
 
     We do this to save memory and ensure that our objects are pickleable.
     """
@@ -910,7 +902,7 @@ DEFAULT_EXECUTOR = SerialExecutor()
 
 
 class PdfInfo:
-    """Get summary information about a PDF"""
+    """Get summary information about a PDF."""
 
     def __init__(
         self,

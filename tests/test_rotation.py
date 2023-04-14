@@ -11,12 +11,13 @@ from os import fspath
 import img2pdf
 import pikepdf
 import pytest
+from PIL import Image, ImageChops
+from reportlab.pdfgen.canvas import Canvas
+
 from ocrmypdf._exec import ghostscript
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.pdfinfo import PdfInfo
-from PIL import Image, ImageChops
-from reportlab.pdfgen.canvas import Canvas
 
 from .conftest import check_ocrmypdf, run_ocrmypdf
 
@@ -152,13 +153,14 @@ def test_autorotate_threshold(threshold, op, comparison_threshold, resources, ou
 
 
 def test_rotated_skew_timeout(resources, outpdf):
-    """This document contains an image that is rotated 90 into place with a
+    """Check rotated skew timeout.
+
+    This document contains an image that is rotated 90 into place with a
     /Rotate tag and intentionally skewed by altering the transformation matrix.
 
     This tests for a bug where the combination of preprocessing and a tesseract
     timeout produced a page whose dimensions did not match the original's.
     """
-
     input_file = resources / 'rotated_skew.pdf'
     in_pageinfo = PdfInfo(input_file)[0]
 

@@ -30,7 +30,7 @@ WorkerInit = Callable[[Queue, UserInit, int], None]
 
 
 def log_listener(q: Queue):
-    """Listen to the worker processes and forward the messages to logging
+    """Listen to the worker processes and forward the messages to logging.
 
     For simplicity this is a thread rather than a process. Only one process
     should actually write to sys.stderr or whatever we're using, so if this is
@@ -39,7 +39,6 @@ def log_listener(q: Queue):
     See:
     https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
     """
-
     while True:
         try:
             record = q.get()
@@ -59,8 +58,7 @@ def process_sigbus(*args):
 
 
 def process_init(q: Queue, user_init: UserInit, loglevel) -> None:
-    """Initialize a process pool worker"""
-
+    """Initialize a process pool worker."""
     # Ignore SIGINT (our parent process will kill us gracefully)
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
