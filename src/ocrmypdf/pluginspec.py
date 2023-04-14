@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 hookspec = pluggy.HookspecMarker('ocrmypdf')
 
 # pylint: disable=unused-argument
-# mypy:
+# mypy: disable-error-code=empty-body
 
 
 @hookspec(firstresult=True)

@@ -900,11 +900,11 @@ def copy_final(
     log.debug('%s -> %s', input_file, output_file)
     with input_file.open('rb') as input_stream:
         if output_file == '-':
-            copyfileobj(input_stream, sys.stdout.buffer)
+            copyfileobj(input_stream, sys.stdout.buffer)  # type: ignore[misc]
             sys.stdout.flush()
         elif hasattr(output_file, 'writable'):
             output_stream = cast(BinaryIO, output_file)
-            copyfileobj(input_stream, output_stream)
+            copyfileobj(input_stream, output_stream)  # type: ignore[misc]
             with suppress(AttributeError):
                 output_stream.flush()
         else:
