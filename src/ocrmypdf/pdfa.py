@@ -23,8 +23,8 @@ def _postscript_objdef(
     alias: str,
     dictionary: dict[str, str],
     *,
-    stream_name: str = None,
-    stream_data: bytes = None,
+    stream_name: str | None = None,
+    stream_data: bytes | None = None,
 ) -> Iterator[str]:
     assert (stream_name is None) == (stream_data is None)
 

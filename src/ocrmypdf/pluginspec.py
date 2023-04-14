@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 hookspec = pluggy.HookspecMarker('ocrmypdf')
 
 # pylint: disable=unused-argument
+# mypy:
 
 
 @hookspec(firstresult=True)
@@ -43,7 +44,7 @@ def get_logging_console() -> Handler:
 
 
 @hookspec
-def initialize(plugin_manager: pluggy.PluginManager):
+def initialize(plugin_manager: pluggy.PluginManager) -> None:
     """Called when this plugin is first loaded into OCRmyPDF.
 
     The primary intended use of this is for plugins to check compatibility with other

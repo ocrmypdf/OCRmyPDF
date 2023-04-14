@@ -959,7 +959,7 @@ class PdfInfo:
         *,
         detailed_analysis: bool = False,
         progbar: bool = False,
-        max_workers: int = None,
+        max_workers: int | None = None,
         check_pages=None,
         executor: Executor = DEFAULT_EXECUTOR,
     ):

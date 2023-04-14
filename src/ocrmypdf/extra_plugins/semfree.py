@@ -168,8 +168,7 @@ class LambdaExecutor(Executor):
                         continue
 
                     if msg_type == MessageType.result:
-                        if task_finished:
-                            task_finished(msg, pbar)
+                        task_finished(msg, pbar)
                     elif msg_type == 'log':
                         record = msg
                         logger = logging.getLogger(record.name)

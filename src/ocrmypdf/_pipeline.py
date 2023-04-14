@@ -14,7 +14,7 @@ from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
 from shutil import copyfileobj
-from typing import Any, Iterable, Sequence
+from typing import Any, BinaryIO, Iterable, Sequence, cast
 
 import img2pdf
 import pikepdf
@@ -575,7 +575,9 @@ def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, 
 
 def should_visible_page_image_use_jpg(pageinfo: PageInfo) -> bool:
     # If all images were JPEGs originally, produce a JPEG as output
-    return pageinfo.images and all(im.enc == Encoding.jpeg for im in pageinfo.images)
+    return bool(pageinfo.images) and all(
+        im.enc == Encoding.jpeg for im in pageinfo.images
+    )
 
 
 def create_visible_page_jpg(image: Path, page_context: PageContext) -> Path:
@@ -892,14 +894,16 @@ def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext) -> Pat
     return output_file
 
 
-def copy_final(input_file, output_file, _context: PdfContext) -> None:
+def copy_final(
+    input_file: Path, output_file: str | Path | BinaryIO, _context: PdfContext
+) -> None:
     log.debug('%s -> %s', input_file, output_file)
-    with open(input_file, 'rb') as input_stream:
+    with input_file.open('rb') as input_stream:
         if output_file == '-':
             copyfileobj(input_stream, sys.stdout.buffer)
             sys.stdout.flush()
         elif hasattr(output_file, 'writable'):
-            output_stream = output_file
+            output_stream = cast(BinaryIO, output_file)
             copyfileobj(input_stream, output_stream)
             with suppress(AttributeError):
                 output_stream.flush()
