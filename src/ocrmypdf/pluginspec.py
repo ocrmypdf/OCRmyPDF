@@ -228,19 +228,26 @@ def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
     """Called to filter the image before it is sent to OCR.
 
     This is the image that OCR sees, not what the user sees when they view the
-    PDF. If ``redo_ocr`` is enabled, portions of the image will be masked so
-    they are not shown to OCR. The main use of this hook is expected to be hiding
-    content from OCR.
+    PDF. In certain modes such as ``--redo-ocr``, portions of the image may be
+    masked out to hide them from OCR.
+
+    The main uses of this hook are expected to be hiding content from OCR,
+    conditioning images to OCR better with filters, and adjusting images to
+    match any constraints imposed by the OCR engine.
 
     The input image may be color, grayscale, or monochrome, and the
-    output image may differ. The pixel width and height of the
-    output image must be identical to the input image, or misalignment between
-    the OCR text layer and visual position of the text will occur. Likewise,
-    the output must be a faithful representation of the input, or alignment
-    errors may occurs.
+    output image may differ. For example, if you know that a custom OCR engine
+    does not care about the color of the text, you could convert the image to
+    it to grayscale or monochrome.
 
-    Tesseract OCR only deals with monochrome images, and internally converts
-    non-monochrome images to OCR.
+    Generally speaking, the output image should be a faithful representation of
+    of the input image. You *may* change the pixel width and height of the
+    the input image, but you must not change the aspect ratio, and you must
+    calculate the DPI of the output image based on the new pixel width and
+    height or the OCR text layer will be misaligned with the visual position.
+
+    The built-in Tesseract OCR engine uses this hook itself to downsample
+    very large images to fit its constraints.
 
     Note:
         This hook will be called from child processes. Modifying global state

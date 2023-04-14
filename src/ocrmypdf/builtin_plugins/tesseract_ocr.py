@@ -8,10 +8,14 @@ from __future__ import annotations
 import logging
 import os
 
+from PIL import Image
+
 from ocrmypdf import hookimpl
 from ocrmypdf._exec import tesseract
+from ocrmypdf._jobcontext import PageContext
 from ocrmypdf.cli import numeric, str_to_int
 from ocrmypdf.helpers import clamp
+from ocrmypdf.imageops import calculate_downsample, downsample_image
 from ocrmypdf.pluginspec import OcrEngine
 from ocrmypdf.subprocess import check_external_program
 
@@ -86,6 +90,19 @@ def add_options(parser):
         ),
     )
     tess.add_argument(
+        '--tesseract-downsample-large-images',
+        action='store_true',
+        help=(
+            "Downsample large images before OCR. Tesseract has an upper limit on the "
+            "size images it will support. If this argument is given, OCRmyPDF will "
+            "downsample large images to fit Tesseract. This may reduce OCR quality, "
+            "on large images the most desirable text is usually larger. If this "
+            "parameter is not supplied, Tesseract will error out and produce no OCR "
+            "on the page in question. This argument should be used with a high value "
+            "of --tesseract-timeout to ensure Tesseract has enough to time."
+        ),
+    )
+    tess.add_argument(
         '--user-words',
         metavar='FILE',
         help="Specify the location of the Tesseract user words file. This is a "
@@ -143,6 +160,23 @@ def validate(pdfinfo, options):
     else:
         tess_threads = int(os.environ['OMP_THREAD_LIMIT'])
     log.debug("Using Tesseract OpenMP thread limit %d", tess_threads)
+
+
+@hookimpl
+def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
+    """Filter the image before OCR.
+
+    Tesseract cannot handle images with more than 32767 pixels in either axis,
+    or more than 2**31 bytes. This function resizes the image to fit within
+    those limits.
+    """
+    options = page.options
+    if options.tesseract_downsample_large_images:
+        factor = calculate_downsample(
+            image, max_size=(32767, 32767), max_bytes=(2**31) - 1
+        )
+        image = downsample_image(image, factor)
+    return image
 
 
 class TesseractOcrEngine(OcrEngine):
