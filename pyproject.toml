@@ -197,6 +197,7 @@ target-version = "py38"
 
 [tool.ruff.isort]
 known-first-party = ["ocrmypdf"]
+required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.pydocstyle]
 convention = "google"
