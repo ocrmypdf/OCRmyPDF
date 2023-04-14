@@ -35,6 +35,7 @@ class ExitCodeException(Exception):
     message = ""
 
     def __str__(self):
+        """Return a string representation of the exception."""
         super_msg = super().__str__()  # Don't do str(super())
         if self.message:
             return self.message.format(super_msg)
@@ -94,7 +95,7 @@ class EncryptedPdfError(ExitCodeException):
 
     exit_code = ExitCode.encrypted_pdf
     message = dedent(
-        '''\
+        """\
         Input PDF is encrypted. The encryption must be removed to
         perform OCR.
 
@@ -103,7 +104,7 @@ class EncryptedPdfError(ExitCodeException):
 
         You can remove the encryption using
             qpdf --decrypt [--password=[password]] infilename
-        '''
+        """
     )
 
 
