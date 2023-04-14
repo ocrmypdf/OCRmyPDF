@@ -69,8 +69,21 @@ def add_options(parser):
         default=180.0,
         type=numeric(float, 0),
         metavar='SECONDS',
-        help='Give up on OCR after the timeout, but copy the preprocessed page '
-        'into the final output',
+        help=(
+            "Give up on OCR after the timeout, but copy the preprocessed page "
+            "into the final output."
+        ),
+    )
+    tess.add_argument(
+        '--tesseract-non-ocr-timeout',
+        default=180.0,
+        type=numeric(float, 0),
+        metavar='SECONDS',
+        help=(
+            "Give up on non-OCR operations such as deskewing and orientation "
+            "after timeout. This is a separate timeout from --tesseract-timeout "
+            "because these operations are not as expensive as OCR."
+        ),
     )
     tess.add_argument(
         '--user-words',
@@ -156,7 +169,7 @@ class TesseractOcrEngine(OcrEngine):
         return tesseract.get_orientation(
             input_file,
             engine_mode=options.tesseract_oem,
-            timeout=options.tesseract_timeout,
+            timeout=options.tesseract_non_ocr_timeout,
         )
 
     @staticmethod
@@ -165,7 +178,7 @@ class TesseractOcrEngine(OcrEngine):
             input_file,
             languages=options.languages,
             engine_mode=options.tesseract_oem,
-            timeout=options.tesseract_timeout,
+            timeout=options.tesseract_non_ocr_timeout,
         )
 
     @staticmethod

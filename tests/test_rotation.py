@@ -11,13 +11,12 @@ from os import fspath
 import img2pdf
 import pikepdf
 import pytest
-from PIL import Image, ImageChops
-from reportlab.pdfgen.canvas import Canvas
-
 from ocrmypdf._exec import ghostscript
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.pdfinfo import PdfInfo
+from PIL import Image, ImageChops
+from reportlab.pdfgen.canvas import Canvas
 
 from .conftest import check_ocrmypdf, run_ocrmypdf
 
@@ -190,8 +189,7 @@ def test_rotated_skew_timeout(resources, outpdf):
     ), "Expected page rotation to be baked in"
 
 
-@pytest.mark.xfail(reason="tesseract timeout blocks tesseract based deskew")
-def test_rotate_deskew_timeout(resources, outdir):
+def test_rotate_deskew_ocr_timeout(resources, outdir):
     check_ocrmypdf(
         resources / 'rotated_skew.pdf',
         outdir / 'deskewed.pdf',
