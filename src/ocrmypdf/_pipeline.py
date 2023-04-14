@@ -221,7 +221,7 @@ def _vector_page_dpi(pageinfo: PageInfo) -> int:
 
 
 def get_page_dpi(pageinfo: PageInfo, options) -> Resolution:
-    "Get the DPI when nonsquare DPI is tolerable."
+    """Get the DPI when nonsquare DPI is tolerable."""
     xres = max(
         pageinfo.dpi.x or VECTOR_PAGE_DPI,
         options.oversample or 0.0,
@@ -236,7 +236,7 @@ def get_page_dpi(pageinfo: PageInfo, options) -> Resolution:
 
 
 def get_page_square_dpi(pageinfo: PageInfo, options) -> Resolution:
-    "Get the DPI when we require xres == yres, scaled to physical units."
+    """Get the DPI when we require xres == yres, scaled to physical units."""
     xres = pageinfo.dpi.x or 0.0
     yres = pageinfo.dpi.y or 0.0
     userunit = float(pageinfo.userunit) or 1.0

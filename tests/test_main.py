@@ -446,7 +446,7 @@ def test_linearized_pdf_and_indirect_object(resources, outpdf):
 
 
 def test_very_high_dpi(resources, outpdf):
-    "Checks for a Decimal quantize error with high DPI, etc."
+    """Checks for a Decimal quantize error with high DPI, etc."""
     check_ocrmypdf(
         resources / '2400dpi.pdf',
         outpdf,

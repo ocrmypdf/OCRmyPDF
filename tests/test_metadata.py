@@ -87,7 +87,6 @@ def test_override_metadata(output_type, resources, outpdf):
 
 
 def test_high_unicode(resources, no_outpdf):
-
     # Ghostscript doesn't support high Unicode, so neither do we, to be
     # safe
     input_file = resources / 'c02-22.pdf'

@@ -42,7 +42,6 @@ VECTOR_RESOLUTION = Resolution(_pipeline.VECTOR_PAGE_DPI, _pipeline.VECTOR_PAGE_
     ],
 )
 def test_dpi_needed(image, text, vector, result, rgb_image, outdir):
-
     c = Canvas(str(outdir / 'dpi.pdf'), pagesize=(5 * inch, 5 * inch))
     if image:
         c.drawImage(rgb_image, 1 * inch, 1 * inch, width=1 * inch, height=1 * inch)

@@ -54,7 +54,7 @@ TESSERACT_THRESHOLDING_METHODS: dict[str, int] = {
 
 
 class TesseractLoggerAdapter(logging.LoggerAdapter):
-    "Prepend [tesseract] to messages emitted from tesseract."
+    """Prepend [tesseract] to messages emitted from tesseract."""
 
     def process(self, msg, kwargs):
         kwargs['extra'] = self.extra
@@ -106,7 +106,8 @@ TESSERACT_VERSION_PATTERN = r"""
 
 
 class TesseractVersion(Version):
-    "Modify standard packaging.Version regex to support Tesseract idiosyncrasies."
+    """Modify standard packaging.Version regex to support Tesseract idiosyncrasies."""
+
     _regex = re.compile(
         r"^\s*" + TESSERACT_VERSION_PATTERN + r"\s*$", re.VERBOSE | re.IGNORECASE
     )
@@ -282,8 +283,9 @@ def page_timedout(timeout: float) -> None:
 
 
 def _generate_null_hocr(output_hocr: Path, output_text: Path, image: Path) -> None:
-    """Produce a .hocr file that reports no text detected on a page that is
-    the same size as the input image.
+    """Produce a .hocr file that reports no text detected.
+
+    Ensures page is the same size as the input image.
     """
     with Image.open(image) as im:
         w, h = im.size

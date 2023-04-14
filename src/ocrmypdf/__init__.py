@@ -29,3 +29,33 @@ from ocrmypdf.exceptions import (
 from ocrmypdf.pluginspec import OcrEngine, OrientationConfidence
 
 hookimpl = _HookimplMarker('ocrmypdf')
+
+__all__ = [
+    '__version__',
+    'BadArgsError',
+    'configure_logging',
+    'DpiError',
+    'EncryptedPdfError',
+    'Executor',
+    'ExitCode',
+    'ExitCodeException',
+    'helpers',
+    'hocrtransform',
+    'hookimpl',
+    'InputFileError',
+    'MissingDependencyError',
+    'ocr',
+    'OcrEngine',
+    'OrientationConfidence',
+    'OutputFileAccessError',
+    'PageContext',
+    'pdfa',
+    'PdfContext',
+    'pdfinfo',
+    'PriorOcrFoundError',
+    'PROGRAM_NAME',
+    'SubprocessOutputError',
+    'TesseractConfigError',
+    'UnsupportedImageFormatError',
+    'Verbosity',
+]

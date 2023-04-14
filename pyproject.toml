@@ -201,3 +201,8 @@ required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.pydocstyle]
 convention = "google"
+
+[tool.ruff.per-file-ignores]
+"docs/conf.py" = ["D100", "D101", "D105"]
+"tests/*.py" = ["D100", "D101", "D102", "D103", "D105"]
+"misc/*.py" = ["D103", "D101", "D102"]

@@ -100,6 +100,7 @@ class HocrTransformError(Exception):
 
 class HocrTransform:
     """A class for converting documents from the hOCR format.
+
     For details of the hOCR format, see:
     http://kba.cloud/hocr-spec/.
     """
@@ -117,6 +118,7 @@ class HocrTransform:
     )
 
     def __init__(self, *, hocr_filename: str | Path, dpi: float):
+        """Initialize the HocrTransform object."""
         self.dpi = dpi
         self.hocr = ElementTree.parse(os.fspath(hocr_filename))
 
@@ -195,14 +197,6 @@ class HocrTransform:
     def replace_unsupported_chars(cls, s: str) -> str:
         """Replaces characters with those available in the Helvetica typeface."""
         return s.translate(cls.ligatures)
-
-    def topdown_position(self, element):
-        pxl_line_coords = self.element_coordinates(element)
-        line_box = self.pt_from_pixel(pxl_line_coords)
-        # Coordinates here are still in the hocr coordinate system, so 0 on the y axis
-        # is the top of the page and increasing values of y will move towards the
-        # bottom of the page.
-        return line_box.y2
 
     def to_pdf(
         self,
@@ -306,6 +300,7 @@ class HocrTransform:
 
     @classmethod
     def polyval(cls, poly, x):  # pragma: no cover
+        """Calculate the value of a polynomial at a point."""
         return x * poly[0] + poly[1]
 
     def _do_line(

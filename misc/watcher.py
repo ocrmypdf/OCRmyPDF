@@ -3,6 +3,8 @@
 # SPDX-FileCopyrightText: 2020 James R Barlow <https://github.com/jbarlow83>
 # SPDX-License-Identifier: MIT
 
+"""Watch a directory for new PDFs and OCR them."""
+
 from __future__ import annotations
 
 import json

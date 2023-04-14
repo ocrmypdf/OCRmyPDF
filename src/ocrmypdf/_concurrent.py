@@ -59,7 +59,7 @@ class Executor(ABC):
                 heavily, and parallelizing it with threads is not expected to be
                 performant).
             max_workers: The maximum number of workers that should be run.
-            tdqm_kwargs: Arguments to set up the progress bar.
+            tqdm_kwargs: Arguments to set up the progress bar.
             worker_initializer: Called when a worker is initialized, in the worker's
                 execution context. If the child workers are processes, it must be
                 possible to marshall/pickle the worker initializer.

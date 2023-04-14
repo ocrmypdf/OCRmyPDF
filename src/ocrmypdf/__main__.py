@@ -28,10 +28,16 @@ log = logging.getLogger('ocrmypdf')
 
 
 def sigbus(*args):
+    """Handle SIGBUS signals.
+
+    pikepdf, depending on configuration, may use mmap so SIGBUS is a
+    possibility.
+    """
     raise InputFileError("Lost access to the input file")
 
 
 def run(args=None):
+    """Run the ocrmypdf command line interface."""
     _parser, options, plugin_manager = get_parser_options_plugins(args=args)
 
     with suppress(AttributeError, PermissionError):

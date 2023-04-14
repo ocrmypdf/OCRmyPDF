@@ -187,7 +187,7 @@ def fix_windows_args(program: str, args, env):
 
 
 def unique_everseen(iterable: Iterable[T], key: Callable[[T], Tkey]) -> Iterator[T]:
-    "List unique elements, preserving order."
+    """List unique elements, preserving order."""
     # unique_everseen('AAAABBBCCDAABBB') --> A B C D
     # unique_everseen('ABBCcAD', str.lower) --> A B C D
     seen: set[Tkey] = set()

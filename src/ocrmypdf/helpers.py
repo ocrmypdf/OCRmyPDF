@@ -49,6 +49,7 @@ class Resolution(Generic[T]):
     __slots__ = ('x', 'y')
 
     def __init__(self, x: T, y: T):
+        """Construct a Resolution object."""
         self.x = x
         self.y = y
 
@@ -57,9 +58,11 @@ class Resolution(Generic[T]):
     CONVERSION_ERROR = 0.002
 
     def round(self, ndigits: int) -> Resolution:
+        """Round to ndigits after the decimal point."""
         return Resolution(round(self.x, ndigits), round(self.y, ndigits))
 
     def to_int(self) -> Resolution[int]:
+        """Round to nearest integer."""
         return Resolution(int(round(self.x)), int(round(self.y)))
 
     @classmethod
@@ -68,10 +71,12 @@ class Resolution(Generic[T]):
 
     @property
     def is_square(self) -> bool:
+        """True if the resolution is square (x == y)."""
         return self._isclose(self.x, self.y)
 
     @property
     def is_finite(self) -> bool:
+        """True if both x and y are finite numbers."""
         if isinstance(self.x, SupportsFloat) and isinstance(self.y, SupportsFloat):
             return isfinite(self.x) and isfinite(self.y)
         return True
@@ -79,6 +84,7 @@ class Resolution(Generic[T]):
     def take_max(
         self, vals: Iterable[Any], yvals: Iterable[Any] | None = None
     ) -> Resolution:
+        """Return a new Resolution object with the maximum resolution of inputs."""
         if yvals is not None:
             return Resolution(max(self.x, *vals), max(self.y, *yvals))
         max_x, max_y = self.x, self.y
@@ -88,18 +94,23 @@ class Resolution(Generic[T]):
         return Resolution(max_x, max_y)
 
     def flip_axis(self) -> Resolution[T]:
+        """Return a new Resolution object with x and y swapped."""
         return Resolution(self.y, self.x)
 
     def __getitem__(self, idx: int | slice) -> T:
+        """Support [0] and [1] indexing."""
         return (self.x, self.y)[idx]
 
     def __str__(self):
+        """Return a string representation of the resolution."""
         return f"{self.x:f}x{self.y:f}"
 
     def __repr__(self):  # pragma: no cover
+        """Return a repr() of the resolution."""
         return f"Resolution({self.x}x{self.y} dpi)"
 
     def __eq__(self, other):
+        """Return True if the resolution is equal to another resolution."""
         if isinstance(other, tuple) and len(other) == 2:
             other = Resolution(*other)
         if not isinstance(other, Resolution):
@@ -153,6 +164,10 @@ def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike):
 
 
 def samefile(file1: os.PathLike, file2: os.PathLike):
+    """Return True if two files are the same file.
+
+    Attempts to account for different relative paths to the same file.
+    """
     if os.name == 'nt':
         return file1 == file2
     else:
@@ -273,13 +288,20 @@ def clamp(n, smallest, largest):  # mypy doesn't understand types for this
 
 
 def remove_all_log_handlers(logger):
-    "Remove all log handlers, usually used in a child process."
+    """Remove all log handlers, usually used in a child process.
+
+    The child process inherits the log handlers from the parent process when
+    a fork occurs. Typically we want to remove all log handlers in the child
+    process so that the child process can set up a single queue handler to
+    forward log messages to the parent process.
+    """
     for handler in logger.handlers[:]:
         logger.removeHandler(handler)
         handler.close()  # To ensure handlers with opened resources are released
 
 
 def pikepdf_enable_mmap():
+    """Enable pikepdf mmap."""
     # try:
     #     if pikepdf._qpdf.set_access_default_mmap(True):
     #         log.debug("pikepdf mmap enabled")

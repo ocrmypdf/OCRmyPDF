@@ -427,6 +427,9 @@ class OcrEngine(ABC):
                 a single page PDF with no visible content of any kind, sized
                 to the dimensions implied by the input_file's width, height
                 and DPI. The image will be grafted onto the input PDF page.
+            output_text: The expected name of a text file containing the
+                recognized text.
+            options: The command line options.
         """
 
 

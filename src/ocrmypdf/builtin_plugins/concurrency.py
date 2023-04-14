@@ -54,6 +54,7 @@ def log_listener(q: Queue):
 
 
 def process_sigbus(*args):
+    """Handle SIGBUS signal at the worker level."""
     raise InputFileError("A worker process lost access to an input file")
 
 
@@ -80,6 +81,7 @@ def process_init(q: Queue, user_init: UserInit, loglevel) -> None:
 
 
 def thread_init(q: Queue, user_init: UserInit, loglevel) -> None:
+    """Begin a thread pool worker."""
     del q  # unused but required argument
     del loglevel  # unused but required argument
     # As a thread, block SIGBUS so the main thread deals with it...
@@ -162,14 +164,17 @@ class StandardExecutor(Executor):
 
 @hookimpl
 def get_executor(progressbar_class):
+    """Return the default executor."""
     return StandardExecutor(pbar_class=progressbar_class)
 
 
 @hookimpl
 def get_progressbar_class():
+    """Return the default progress bar class."""
     return tqdm
 
 
 @hookimpl
 def get_logging_console():
+    """Return the default logging console handler."""
     return logging.StreamHandler(stream=TqdmConsole(sys.stderr))

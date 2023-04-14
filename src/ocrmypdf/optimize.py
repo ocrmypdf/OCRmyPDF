@@ -53,20 +53,24 @@ class XrefExt(NamedTuple):
 
 
 def img_name(root: Path, xref: Xref, ext: str) -> Path:
+    """Return the name of an image file for a given xref and extension."""
     return root / f'{xref:08d}{ext}'
 
 
 def png_name(root: Path, xref: Xref) -> Path:
+    """Return the name of a PNG file for a given xref."""
     return img_name(root, xref, '.png')
 
 
 def jpg_name(root: Path, xref: Xref) -> Path:
+    """Return the name of a JPEG file for a given xref."""
     return img_name(root, xref, '.jpg')
 
 
 def extract_image_filter(
     pike: Pdf, root: Path, image: Stream, xref: Xref
 ) -> tuple[PdfImage, tuple[Name, Object]] | None:
+    """Determine if an image is extractable."""
     del pike  # unused args
     del root
 
@@ -124,6 +128,7 @@ def extract_image_filter(
 def extract_image_jbig2(
     *, pike: Pdf, root: Path, image: Stream, xref: Xref, options
 ) -> XrefExt | None:
+    """Extract an image, saving it as a JBIG2 file."""
     del options  # unused arg
 
     result = extract_image_filter(pike, root, image, xref)
@@ -165,6 +170,7 @@ def extract_image_jbig2(
 def extract_image_generic(
     *, pike: Pdf, root: Path, image: Stream, xref: Xref, options
 ) -> XrefExt | None:
+    """Generic image extraction."""
     result = extract_image_filter(pike, root, image, xref)
     if result is None:
         return None
@@ -420,6 +426,8 @@ def _optimize_jpeg(args: tuple[Xref, Path, Path, int]) -> tuple[Xref, Path | Non
 def transcode_jpegs(
     pike: Pdf, jpegs: Sequence[Xref], root: Path, options, executor: Executor
 ) -> None:
+    """Optimize JPEGs according to optimization settings."""
+
     def jpeg_args() -> Iterator[tuple[Xref, Path, Path, int]]:
         for xref in jpegs:
             in_jpg = jpg_name(root, xref)

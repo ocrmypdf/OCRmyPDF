@@ -142,6 +142,7 @@ def configure_logging(
 def create_options(
     *, input_file: PathOrIO, output_file: PathOrIO, parser: ArgumentParser, **kwargs
 ):
+    """Construct an options object from the input/output files and keyword arguments."""
     cmdline = []
     deferred = []
 
