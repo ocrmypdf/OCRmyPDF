@@ -20,15 +20,6 @@ repos:
     hooks:
       - id: black
         language_version: python
-  - repo: https://github.com/asottile/setup-cfg-fmt
-    rev: v1.20.2
-    hooks:
-      - id: setup-cfg-fmt
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v2.37.2
-    hooks:
-      - id: pyupgrade
-        args: ["--py38-plus"]
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.971
     hooks:
