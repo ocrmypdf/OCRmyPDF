@@ -257,6 +257,18 @@ def ocr(  # noqa: ruff: disable=D417
     """Run OCRmyPDF on one PDF or image.
 
     For most arguments, see documentation for the equivalent command line parameter.
+
+    This API takes a threading lock, because OCRmyPDF uses global state in particular
+    for the plugin system. The jobs parameter will be used to create a pool of
+    worker threads or processes at different times, subject to change. A Python
+    process can only run one OCRmyPDF task at a time.
+
+    To run parallelize instances OCRmyPDF, use separate Python processes to scale
+    horizontally. Generally speaking you should set jobs=sqrt(cpu_count) and run
+    sqrt(cpu_count) processes as a starting point. If you have files with a high page
+    count, run fewer processes and more jobs per process. If you have a lot of short
+    files, run more processes and fewer jobs per process.
+
     A few specific arguments are discussed here:
 
     Args:
@@ -278,7 +290,6 @@ def ocr(  # noqa: ruff: disable=D417
             When a stream is used as output, whether via a writable object or
             ``"-"``, some final validation steps are not performed (we do not read
             back the stream after it is written).
-
 
     Raises:
         ocrmypdf.MissingDependencyError: If a required dependency program is missing or
