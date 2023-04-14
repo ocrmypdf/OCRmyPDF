@@ -3,8 +3,9 @@
 
 from __future__ import annotations
 
-from ocrmypdf.imageops import bytes_per_pixel, calculate_downsample, downsample_image
 from PIL import Image
+
+from ocrmypdf.imageops import bytes_per_pixel, calculate_downsample, downsample_image
 
 
 def test_bytes_per_pixel():

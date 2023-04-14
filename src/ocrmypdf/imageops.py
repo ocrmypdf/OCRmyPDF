@@ -3,6 +3,8 @@
 
 """OCR-related image manipulation."""
 
+from __future__ import annotations
+
 import logging
 from math import ceil, floor, sqrt
 
@@ -12,8 +14,7 @@ log = logging.getLogger(__name__)
 
 
 def bytes_per_pixel(mode: str) -> int:
-    """
-    Return the number of padded bytes per pixel for a given PIL image mode.
+    """Return the number of padded bytes per pixel for a given PIL image mode.
 
     In RGB mode we assume 4 bytes per pixel, which is the case for most
     consumers.
@@ -32,9 +33,7 @@ def calculate_downsample(
     max_pixels: int | None = None,
     max_bytes: int | None = None,
 ) -> tuple[int, int]:
-    """
-    Calculate the new image size required to downsample an image to fit within
-    the given limits.
+    """Calculate image size required to downsample an image to fit lmiits.
 
     If no limit is exceeded, the input image's size is returned.
 
@@ -84,16 +83,14 @@ def downsample_image(
     resample_mode: Image.Resampling = Image.Resampling.BICUBIC,
     reducing_gap: int = 3,
 ) -> Image.Image:
-    """
-    Downsample an image to fit within the given limits.
+    """Downsample an image to fit within the given limits.
 
     The DPI is adjusted to match the new size, which is how we can ensure the
     OCR is positioned correctly.
 
     Args:
         image: The image to downsample
-        scaling_factor: The scaling factor to apply to the image, calculated using
-            calculate_downsample().
+        new_size: The new size of the image.
         resample_mode: The resampling mode to use when downsampling.
         reducing_gap: The reducing gap to use when downsampling (for larger
             reductions).
