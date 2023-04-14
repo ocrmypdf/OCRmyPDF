@@ -315,8 +315,8 @@ def is_ocr_required(page_context: PageContext) -> bool:
             log.warning(
                 "page has no images - "
                 "all vector content will be "
-                f"rasterized at {VECTOR_PAGE_DPI} DPI, losing some resolution and likely "
-                "increasing file size. Use --oversample to adjust the "
+                f"rasterized at {VECTOR_PAGE_DPI} DPI, losing some resolution and "
+                "likely increasing file size. Use --oversample to adjust the "
                 "DPI."
             )
         else:

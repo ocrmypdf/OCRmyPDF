@@ -109,12 +109,10 @@ def check_options_output(options: Namespace) -> None:
 def check_options_sidecar(options: Namespace) -> None:
     if options.sidecar == '\0':
         if options.output_file == '-':
-            raise BadArgsError(
-                "--sidecar filename must be specified when output file is stdout."
-            )
+            raise BadArgsError("--sidecar filename needed when output file is stdout.")
         elif options.output_file == os.devnull:
             raise BadArgsError(
-                "--sidecar filename must be specified when output file is /dev/null or NUL."
+                "--sidecar filename needed when output file is /dev/null or NUL."
             )
         options.sidecar = options.output_file + '.txt'
     if options.sidecar == options.input_file or options.sidecar == options.output_file:
@@ -276,7 +274,8 @@ def create_input_file(options: Namespace, work_folder: Path) -> tuple[Path, str]
                     "permissions correctly.\n"
                     "You may find it easier to use stdin/stdout:"
                     "\n"
-                    "\tdocker run -i --rm jbarlow83/ocrmypdf - - <input.pdf >output.pdf\n"
+                    "\tdocker run -i --rm jbarlow83/ocrmypdf - - <input.pdf >output.pdf"
+                    "\n"
                 )
             raise InputFileError(msg) from e
 
@@ -333,7 +332,7 @@ def report_output_file_size(
     for arg in image_preproc:
         if getattr(options, arg, False):
             reasons.append(
-                f"The argument --{arg.replace('_', '-')} was issued, causing transcoding."
+                f"--{arg.replace('_', '-')} was issued, causing transcoding."
             )
 
     reasons.extend(optimize_messages)

@@ -219,7 +219,7 @@ def test_version_comparison():
     vd.check_external_program(
         program="tesseract",
         package="tesseract",
-        version_checker=lambda: 'v4.1.1.20181030',  # Some Windows builds use this format
+        version_checker=lambda: 'v4.1.1.20181030',  # Used in some Windows builds
         need_version='4.1.1',
         version_parser=TesseractVersion,
     )

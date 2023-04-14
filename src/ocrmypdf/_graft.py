@@ -131,7 +131,8 @@ class OcrGrafter:
         text_misaligned = (text_rotation - content_rotation) % 360
         log.debug(
             f"Text rotation: (text, autorotate, content) -> text misalignment = "
-            f"({text_rotation}, {autorotate_correction}, {content_rotation}) -> {text_misaligned}"
+            f"({text_rotation}, {autorotate_correction}, {content_rotation}) -> "
+            f"{text_misaligned}"
         )
 
         if textpdf and self.font:

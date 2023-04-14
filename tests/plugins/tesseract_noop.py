@@ -26,13 +26,15 @@ HOCR_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
   <title></title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta name='ocr-system' content='tesseract 4.1.1' />
-  <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word'/>
+  <meta name='ocr-capabilities'
+    content='ocr_page ocr_carea ocr_par ocr_line ocrx_word'/>
  </head>
  <body>
   <div class='ocr_page' id='page_1' title='image "x.tif"; bbox 0 0 {0} {1}; ppageno 0'>
    <div class='ocr_carea' id='block_1_1' title="bbox 0 1 {0} {1}">
     <p class='ocr_par' dir='ltr' id='par_1' title="bbox 0 1 {0} {1}">
-     <span class='ocr_line' id='line_1' title="bbox 0 1 {0} {1}"><span class='ocrx_word' id='word_1' title="bbox 0 1 {0} {1}"> </span>
+     <span class='ocr_line' id='line_1' title="bbox 0 1 {0} {1}">
+       <span class='ocrx_word' id='word_1' title="bbox 0 1 {0} {1}"> </span>
      </span>
     </p>
    </div>

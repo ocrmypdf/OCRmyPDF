@@ -2,6 +2,8 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: CC-BY-SA-4.0
 
+# ruff: noqa: E402
+
 # ocrmypdf documentation build configuration file, created by
 # sphinx-quickstart on Sun Sep  4 14:29:43 2016.
 #
@@ -77,7 +79,6 @@ author = 'James R. Barlow'
 
 import os
 from importlib.metadata import version as package_version
-
 
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 

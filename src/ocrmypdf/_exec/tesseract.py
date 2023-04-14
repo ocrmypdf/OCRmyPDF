@@ -34,10 +34,12 @@ HOCR_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
   <title></title>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
   <meta name='ocr-system' content='tesseract 4.1.1' />
-  <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word ocrp_wconf'/>
+  <meta name='ocr-capabilities'
+    content='ocr_page ocr_carea ocr_par ocr_line ocrx_word ocrp_wconf'/>
 </head>
 <body>
-  <div class='ocr_page' id='page_1' title='image "_blank.png"; bbox 0 0 {0} {1}; ppageno 0'>
+  <div class='ocr_page' id='page_1'
+    title='image "_blank.png"; bbox 0 0 {0} {1}; ppageno 0'>
   </div>
  </body>
 </html>
