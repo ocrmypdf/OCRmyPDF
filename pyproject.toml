@@ -206,3 +206,4 @@ convention = "google"
 "docs/conf.py" = ["D100", "D101", "D105"]
 "tests/*.py" = ["D100", "D101", "D102", "D103", "D105"]
 "misc/*.py" = ["D103", "D101", "D102"]
+"src/ocrmypdf/builtin_plugins/*.py" = ["D103", "D102", "D105"]

@@ -43,11 +43,16 @@ def run(
 
     Arguments should be identical to ``subprocess.run``, except for following:
 
-    Arguments:
+    Args:
+        args: Positional arguments to pass to ``subprocess.run``.
+        env: A set of environment variables. If None, the OS environment is used.
         logs_errors_to_stdout: If True, indicates that the process writes its error
             messages to stdout rather than stderr, so stdout should be logged
             if there is an error. If False, stderr is logged. Could be used with
             stderr=STDOUT, stdout=PIPE for example.
+        check: If True, raise an exception if the process exits with a non-zero
+            status code. If False, the return value will indicate success or failure.
+        kwargs: Additional arguments to pass to ``subprocess.run``.
     """
     args, env, process_log, _text = _fix_process_args(args, env, kwargs)
 

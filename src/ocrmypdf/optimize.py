@@ -486,6 +486,12 @@ def _deflate_jpeg(args: tuple[Pdf, threading.Lock, Xref, int]) -> tuple[Xref, by
 
 
 def deflate_jpegs(pike: Pdf, root: Path, options, executor: Executor) -> None:
+    """Apply FlateDecode to JPEGs.
+
+    This is a lossless compression method that is supported by all PDF viewers,
+    and generally results in a smaller file size compared to straight DCTDecode
+    images.
+    """
     jpegs = []
     for _pageno, xref_ext in extract_images(pike, root, options, _find_deflatable_jpeg):
         xref = xref_ext.xref
@@ -573,6 +579,7 @@ def transcode_pngs(
     options,
     executor,
 ) -> None:
+    """Apply lossy transcoding to PNGs."""
     modified: MutableSet[Xref] = set()
     if options.optimize >= 2:
         png_quality = (
@@ -619,6 +626,7 @@ def optimize(
     save_settings,
     executor: Executor = DEFAULT_EXECUTOR,
 ) -> Path:
+    """Optimize images in a PDF file."""
     options = context.options
     if options.optimize == 0:
         safe_symlink(input_file, output_file)
@@ -675,6 +683,7 @@ def optimize(
 
 
 def main(infile, outfile, level, jobs=1):
+    """Entry point for direct optimization of a file."""
     from shutil import copy  # pylint: disable=import-outside-toplevel
     from tempfile import TemporaryDirectory  # pylint: disable=import-outside-toplevel
 

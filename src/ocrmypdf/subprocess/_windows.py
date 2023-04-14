@@ -32,7 +32,7 @@ else:
         spec=['HKEYType', 'EnumKey', 'EnumValue', 'HKEY_LOCAL_MACHINE', 'OpenKey']
     )
     # mypy does not understand winreg.HKeyType where winreg is a Mock (fair enough!)
-    HKEYType: TypeAlias = Any
+    HKEYType: TypeAlias = Any  # type: ignore
 
 
 log = logging.getLogger(__name__)

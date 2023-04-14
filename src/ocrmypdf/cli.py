@@ -57,13 +57,21 @@ class ArgumentParser(argparse.ArgumentParser):
     """
 
     def __init__(self, *args, **kwargs):
+        """Initialize the parser."""
         super().__init__(*args, **kwargs)
         self._api_mode = False
 
     def enable_api_mode(self):
+        """Enable API mode.
+
+        When set, the parser will not call sys.exit() on error. OCRmyPDF was originally
+        a command line program, but now it has an API. The API works by synthesizing
+        command line arguments.
+        """
         self._api_mode = True
 
     def error(self, message):
+        """Override the default argparse error behavior."""
         if not self._api_mode:
             super().error(message)
             return
@@ -74,11 +82,13 @@ class LanguageSetAction(argparse.Action):
     """Manages a list of languages."""
 
     def __init__(self, option_strings, dest, default=None, **kwargs):
+        """Initialize the action."""
         if default is None:
             default = set()
         super().__init__(option_strings, dest, default=default, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
+        """Add a language to the set."""
         dest = getattr(namespace, self.dest)
         if '+' in values:
             dest.update(lang for lang in values.split('+'))
@@ -87,6 +97,7 @@ class LanguageSetAction(argparse.Action):
 
 
 def get_parser():
+    """Get the main CLI parser."""
     parser = ArgumentParser(
         prog=_PROGRAM_NAME,
         allow_abbrev=True,

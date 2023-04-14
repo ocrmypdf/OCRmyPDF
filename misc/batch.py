@@ -2,9 +2,17 @@
 # SPDX-FileCopyrightText: 2016 findingorder <https://github.com/findingorder>
 # SPDX-License-Identifier: MIT
 
+"""Example of using ocrmypdf as a library in a script.
+
+This script will recursively search a directory for PDF files and run OCR on
+them. It will log the results. It runs OCR on every file, even if it already
+has text. OCRmyPDF will detect files that already have text.
+
+You should edit this script to meet your needs.
+"""
+
 from __future__ import annotations
 
-# This script must be edited to meet your needs.
 import logging
 import sys
 from pathlib import Path

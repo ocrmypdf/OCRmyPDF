@@ -203,7 +203,7 @@ def create_options(
     return options
 
 
-def ocr(  # pylint: disable=unused-argument
+def ocr(  # noqa: ruff: disable=D417
     input_file: PathOrIO,
     output_file: PathOrIO,
     *,
@@ -242,6 +242,7 @@ def ocr(  # pylint: disable=unused-argument
     tesseract_thresholding: int = None,
     pdf_renderer=None,
     tesseract_timeout: float = None,
+    tesseract_non_ocr_timeout: float = None,
     rotate_pages_threshold: float = None,
     pdfa_image_compression=None,
     user_words: os.PathLike = None,
