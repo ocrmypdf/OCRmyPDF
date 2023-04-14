@@ -172,10 +172,10 @@ def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
     """
     options = page.options
     if options.tesseract_downsample_large_images:
-        factor = calculate_downsample(
+        size = calculate_downsample(
             image, max_size=(32767, 32767), max_bytes=(2**31) - 1
         )
-        image = downsample_image(image, factor)
+        image = downsample_image(image, size)
     return image
 
 

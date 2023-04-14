@@ -4,7 +4,7 @@
 """OCR-related image manipulation."""
 
 import logging
-from math import ceil, sqrt
+from math import ceil, floor, sqrt
 
 from PIL import Image
 
@@ -31,12 +31,12 @@ def calculate_downsample(
     max_size: tuple[int, int] | None = None,
     max_pixels: int | None = None,
     max_bytes: int | None = None,
-) -> float:
+) -> tuple[int, int]:
     """
-    Calculate the scaling factor required to downsample an image to fit within
+    Calculate the new image size required to downsample an image to fit within
     the given limits.
 
-    If no limit is exceeded, 1.0 is returned.
+    If no limit is exceeded, the input image's size is returned.
 
     Args:
         image: The image to downsample.
@@ -46,41 +46,40 @@ def calculate_downsample(
         max_bytes: The maximum number of bytes in the image. RGB is counted as 4
             bytes; all other modes are counted as 1 byte.
     """
-    scaling_factor = 1.0
+    size = image.size
 
     if max_size is not None:
         major_axis = max(image.size)
-        if major_axis > max(max_size):
+        size_factor = max(max_size) / major_axis
+        if size_factor < 1.0:
             log.debug("Resizing image to fit Tesseract image size limit")
-            scaling_factor = max(max_size) / major_axis
+            size = floor(size[0] * size_factor), floor(size[1] * size_factor)
 
     if max_pixels is not None:
-        if image.size[0] * image.size[1] * scaling_factor * scaling_factor > max_pixels:
+        if size[0] * size[1] > max_pixels:
             log.debug("Resizing image to fit image pixel limit")
-            scaling_factor *= sqrt(
-                max_pixels / (image.size[0] * image.size[1] * scaling_factor)
-            )
+            pixels_factor = sqrt(max_pixels / (image.size[0] * image.size[1]))
+            size = floor(size[0] * pixels_factor), floor(size[1] * pixels_factor)
 
     if max_bytes is not None:
         bpp = bytes_per_pixel(image.mode)
         # stride = bytes per line
-        stride = ceil(image.size[0] * scaling_factor) * bpp
-        height = ceil(image.size[1] * scaling_factor)
-        size = stride * height
-        if size > max_bytes:
+        stride = size[0] * bpp
+        height = size[1]
+        if stride * height > max_bytes:
             log.debug("Resizing image to fit image byte size limit")
-            scaling_factor *= sqrt((max_bytes - 1) / size)
-            scaled_bytes_per_line = ceil(image.size[0] * scaling_factor) * bpp
-            height = ceil(image.size[1] * scaling_factor)
-            size = scaled_bytes_per_line * height
-            assert size <= max_bytes, f"{size} > {max_bytes}"
+            bytes_factor = sqrt((max_bytes) / (stride * height))
+            scaled_stride = floor(stride * bytes_factor)
+            scaled_height = floor(height * bytes_factor)
+            size = ceil(scaled_stride / bpp), scaled_height
+            assert (size[0] * bpp * size[1]) <= max_bytes
 
-    return scaling_factor
+    return size
 
 
 def downsample_image(
     image: Image.Image,
-    scaling_factor: float,
+    new_size: tuple[int, int],
     *,
     resample_mode: Image.Resampling = Image.Resampling.BICUBIC,
     reducing_gap: int = 3,
@@ -99,23 +98,19 @@ def downsample_image(
         reducing_gap: The reducing gap to use when downsampling (for larger
             reductions).
     """
-    if scaling_factor == 1.0:
+    if new_size == image.size:
         return image
-    if scaling_factor > 1.0 or scaling_factor <= 0:
-        raise ValueError("scaling_factor must be <= 1.0 and > 0")
 
+    original_size = image.size
     original_dpi = image.info['dpi']
     image = image.resize(
-        (
-            ceil(image.size[0] * scaling_factor),
-            ceil(image.size[1] * scaling_factor),
-        ),
+        new_size,
         resample=resample_mode,
         reducing_gap=reducing_gap,
     )
     image.info['dpi'] = (
-        original_dpi[0] * scaling_factor,
-        original_dpi[1] * scaling_factor,
+        round(original_dpi[0] * new_size[0] / original_size[0]),
+        round(original_dpi[1] * new_size[1] / original_size[1]),
     )
     log.debug(f"Rescaled image to {image.size} pixels and {image.info['dpi']} dpi")
     return image

@@ -16,13 +16,15 @@ def test_bytes_per_pixel():
 
 def test_calculate_downsample():
     im = Image.new('RGB', (100, 100))
-    assert calculate_downsample(im, max_size=(50, 50)) == 0.5
-    assert calculate_downsample(im, max_pixels=2500) == 0.5
-    assert calculate_downsample(im, max_bytes=10000) == 0.25
+    assert calculate_downsample(im, max_size=(50, 50)) == (50, 50)
+    assert calculate_downsample(im, max_pixels=2500) == (50, 50)
+    assert calculate_downsample(im, max_bytes=10000) == (50, 50)
+    assert calculate_downsample(im, max_bytes=100000) == (100, 100)
 
 
 def test_downsample_image():
     im = Image.new('RGB', (100, 100))
     im.info['dpi'] = (300, 300)
-    assert downsample_image(im, 0.5).size == (50, 50)
-    assert im.info['dpi'] == (150, 150)
+    ds = downsample_image(im, (50, 50))
+    assert ds.size == (50, 50)
+    assert ds.info['dpi'] == (150, 150)
