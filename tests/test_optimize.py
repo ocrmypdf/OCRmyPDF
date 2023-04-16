@@ -100,14 +100,14 @@ def test_jbig2_lossy(lossy, resources, outpdf):
 
     check_ocrmypdf(*args)
 
-    pdf = pikepdf.open(outpdf)
-    pim = pikepdf.PdfImage(next(iter(pdf.pages[0].images.values())))
-    assert pim.filters[0] == '/JBIG2Decode'
+    with pikepdf.open(outpdf) as pdf:
+        pim = pikepdf.PdfImage(next(iter(pdf.pages[0].images.values())))
+        assert pim.filters[0] == '/JBIG2Decode'
 
-    if lossy:
-        assert '/JBIG2Globals' in pim.decode_parms[0]
-    else:
-        assert len(pim.decode_parms) == 0
+        if lossy:
+            assert '/JBIG2Globals' in pim.decode_parms[0]
+        else:
+            assert len(pim.decode_parms) == 0
 
 
 @needs_pngquant
@@ -134,9 +134,9 @@ def test_flate_to_jbig2(resources, outdir):
         'tests/plugins/tesseract_noop.py',
     )
 
-    pdf = pikepdf.open(outdir / 'out.pdf')
-    pim = pikepdf.PdfImage(next(iter(pdf.pages[0].images.values())))
-    assert pim.filters[0] == '/JBIG2Decode'
+    with pikepdf.open(outdir / 'out.pdf') as pdf:
+        pim = pikepdf.PdfImage(next(iter(pdf.pages[0].images.values())))
+        assert pim.filters[0] == '/JBIG2Decode'
 
 
 @needs_pngquant

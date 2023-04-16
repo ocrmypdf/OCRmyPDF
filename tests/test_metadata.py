@@ -25,8 +25,6 @@ from .conftest import check_ocrmypdf, run_ocrmypdf
 
 @pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])
 def test_preserve_docinfo(output_type, resources, outpdf):
-    pdf_before = pikepdf.open(resources / 'graph.pdf')
-
     output = check_ocrmypdf(
         resources / 'graph.pdf',
         outpdf,
@@ -35,14 +33,13 @@ def test_preserve_docinfo(output_type, resources, outpdf):
         '--plugin',
         'tests/plugins/tesseract_noop.py',
     )
-
-    pdf_after = pikepdf.open(output)
-
-    for key in ('/Title', '/Author'):
-        assert pdf_before.docinfo[key] == pdf_after.docinfo[key]
-
-    pdfa_info = file_claims_pdfa(str(output))
-    assert pdfa_info['output'] == output_type
+    with pikepdf.open(resources / 'graph.pdf') as pdf_before, pikepdf.open(
+        output
+    ) as pdf_after:
+        for key in ('/Title', '/Author'):
+            assert pdf_before.docinfo[key] == pdf_after.docinfo[key]
+        pdfa_info = file_claims_pdfa(str(output))
+        assert pdfa_info['output'] == output_type
 
 
 @pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])
@@ -140,23 +137,24 @@ def test_creation_date_preserved(output_type, resources, infile, outpdf):
         'tests/plugins/tesseract_noop.py',
     )
 
-    pdf_before = pikepdf.open(input_file)
-    pdf_after = pikepdf.open(outpdf)
+    with pikepdf.open(input_file) as pdf_before, pikepdf.open(outpdf) as pdf_after:
+        before = pdf_before.trailer.get('/Info', {})
+        after = pdf_after.trailer.get('/Info', {})
 
-    before = pdf_before.trailer.get('/Info', {})
-    after = pdf_after.trailer.get('/Info', {})
+        if not before:
+            assert after.get('/CreationDate', '') != ''
+        else:
+            # We expect that the creation date stayed the same
+            date_before = decode_pdf_date(str(before['/CreationDate']))
+            date_after = decode_pdf_date(str(after['/CreationDate']))
+            assert seconds_between_dates(date_before, date_after) < 1000
 
-    if not before:
-        assert after.get('/CreationDate', '') != ''
-    else:
-        # We expect that the creation date stayed the same
-        date_before = decode_pdf_date(str(before['/CreationDate']))
-        date_after = decode_pdf_date(str(after['/CreationDate']))
-        assert seconds_between_dates(date_before, date_after) < 1000
-
-    # We expect that the modified date is quite recent
-    date_after = decode_pdf_date(str(after['/ModDate']))
-    assert seconds_between_dates(date_after, datetime.datetime.now(timezone.utc)) < 1000
+        # We expect that the modified date is quite recent
+        date_after = decode_pdf_date(str(after['/ModDate']))
+        assert (
+            seconds_between_dates(date_after, datetime.datetime.now(timezone.utc))
+            < 1000
+        )
 
 
 @pytest.fixture
@@ -273,10 +271,9 @@ def test_kodak_toc(resources, outpdf):
         'tests/plugins/tesseract_noop.py',
     )
 
-    p = pikepdf.open(outpdf)
-
-    if pikepdf.Name.First in p.Root.Outlines:
-        assert isinstance(p.Root.Outlines.First, pikepdf.Dictionary)
+    with pikepdf.open(outpdf) as p:
+        if pikepdf.Name.First in p.Root.Outlines:
+            assert isinstance(p.Root.Outlines.First, pikepdf.Dictionary)
 
 
 def test_metadata_fixup_warning(resources, outdir, caplog):
@@ -294,10 +291,10 @@ def test_metadata_fixup_warning(resources, outdir, caplog):
         assert record.levelname != 'WARNING', "Unexpected warning"
 
     # Now add some metadata that will not be copyable
-    graph = pikepdf.open(outdir / 'graph.pdf')
-    with graph.open_metadata() as meta:
-        meta['prism2:publicationName'] = 'OCRmyPDF Test'
-    graph.save(outdir / 'graph_mod.pdf')
+    with pikepdf.open(outdir / 'graph.pdf') as graph:
+        with graph.open_metadata() as meta:
+            meta['prism2:publicationName'] = 'OCRmyPDF Test'
+        graph.save(outdir / 'graph_mod.pdf')
 
     context = PdfContext(
         options, outdir, outdir / 'graph_mod.pdf', None, get_plugin_manager([])
