@@ -69,6 +69,7 @@ docs = ["sphinx", "sphinx-issues", "sphinx-rtd-theme"]
 extended_test = ["PyMuPDF==1.19.1"]
 test = [
   "coverage[toml]>=5",
+  "hypothesis>=6.0.0",
   "pytest>=6.0.0",
   "pytest-cov>=2.11.1",
   "pytest-xdist>=2.2.0",

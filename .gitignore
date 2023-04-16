@@ -6,6 +6,7 @@
 .venv*/
 .tox/
 .vscode/
+.hypothesis/
 .ipynb_checkpoints/
 .mypy_cache/
 .pytest_cache/

@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import hypothesis.strategies as st
+from hypothesis import given
 from PIL import Image
 
 from ocrmypdf.imageops import bytes_per_pixel, calculate_downsample, downsample_image
@@ -21,6 +23,26 @@ def test_calculate_downsample():
     assert calculate_downsample(im, max_pixels=2500) == (50, 50)
     assert calculate_downsample(im, max_bytes=10000) == (50, 50)
     assert calculate_downsample(im, max_bytes=100000) == (100, 100)
+
+
+@given(
+    st.one_of(st.just("RGB"), st.just('L')),
+    st.integers(min_value=1, max_value=100000),
+    st.integers(min_value=1, max_value=100000),
+    st.integers(min_value=64, max_value=100000),
+    st.integers(min_value=64, max_value=100000),
+    st.integers(min_value=64 * 64, max_value=1000000),
+)
+def test_calculate_downsample_hypothesis(mode, im_w, im_h, max_x, max_y, max_bytes):
+    result = calculate_downsample(
+        (im_w, im_h),
+        bytes_per_pixel(mode),
+        max_size=(max_x, max_y),
+        max_bytes=max_bytes,
+    )
+    assert result[0] <= max_x
+    assert result[1] <= max_y
+    assert result[0] * result[1] * bytes_per_pixel(mode) <= max_bytes
 
 
 def test_downsample_image():

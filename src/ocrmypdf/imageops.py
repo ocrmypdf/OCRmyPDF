@@ -6,7 +6,8 @@
 from __future__ import annotations
 
 import logging
-from math import ceil, floor, sqrt
+from functools import singledispatch
+from math import floor, sqrt
 
 from PIL import Image
 
@@ -26,14 +27,71 @@ def bytes_per_pixel(mode: str) -> int:
     return 4
 
 
+@singledispatch
 def calculate_downsample(
-    image: Image.Image,
+    image_size: tuple[int, int],
+    bytes_per_pixel: int,
     *,
     max_size: tuple[int, int] | None = None,
     max_pixels: int | None = None,
     max_bytes: int | None = None,
 ) -> tuple[int, int]:
-    """Calculate image size required to downsample an image to fit lmiits.
+    """Calculate image size required to downsample an image to fit limits.
+
+    If no limit is exceeded, the input image's size is returned.
+
+    Args:
+        image_size: Dimensions of image.
+        bytes_per_pixel: Number of bytes per pixel.
+        max_size: The maximum width and height of the image.
+        max_pixels: The maximum number of pixels in the image. Some image consumers
+            limit the total number of pixels as some value other than width*height.
+        max_bytes: The maximum number of bytes in the image. RGB is counted as 4
+            bytes; all other modes are counted as 1 byte.
+    """
+    size = image_size
+
+    if max_size is not None:
+        overage = max_size[0] / size[0], max_size[1] / size[1]
+        size_factor = min(overage)
+        if size_factor < 1.0:
+            log.debug("Resizing image to fit Tesseract image size limit")
+            size = (
+                max(floor(size[0] * size_factor), 1),
+                max(floor(size[1] * size_factor), 1),
+            )
+
+    if max_pixels is not None:
+        if size[0] * size[1] > max_pixels:
+            log.debug("Resizing image to fit image pixel limit")
+            pixels_factor = sqrt(max_pixels / (size[0] * size[1]))
+            size = floor(size[0] * pixels_factor), floor(size[1] * pixels_factor)
+
+    if max_bytes is not None:
+        bpp = bytes_per_pixel
+        # stride = bytes per line
+        stride = size[0] * bpp
+        height = size[1]
+        if stride * height > max_bytes:
+            log.debug("Resizing image to fit image byte size limit")
+            bytes_factor = sqrt(max_bytes / (stride * height))
+            scaled_stride = max(floor(stride * bytes_factor), 1)
+            scaled_height = max(floor(height * bytes_factor), 1)
+            size = floor(scaled_stride / bpp), scaled_height
+
+    return size
+
+
+@calculate_downsample.register
+def _(
+    image: Image.Image,
+    arg: None = None,
+    *,
+    max_size: tuple[int, int] | None = None,
+    max_pixels: int | None = None,
+    max_bytes: int | None = None,
+) -> tuple[int, int]:
+    """Calculate image size required to downsample an image to fit limits.
 
     If no limit is exceeded, the input image's size is returned.
 
@@ -45,35 +103,13 @@ def calculate_downsample(
         max_bytes: The maximum number of bytes in the image. RGB is counted as 4
             bytes; all other modes are counted as 1 byte.
     """
-    size = image.size
-
-    if max_size is not None:
-        major_axis = max(image.size)
-        size_factor = max(max_size) / major_axis
-        if size_factor < 1.0:
-            log.debug("Resizing image to fit Tesseract image size limit")
-            size = floor(size[0] * size_factor), floor(size[1] * size_factor)
-
-    if max_pixels is not None:
-        if size[0] * size[1] > max_pixels:
-            log.debug("Resizing image to fit image pixel limit")
-            pixels_factor = sqrt(max_pixels / (image.size[0] * image.size[1]))
-            size = floor(size[0] * pixels_factor), floor(size[1] * pixels_factor)
-
-    if max_bytes is not None:
-        bpp = bytes_per_pixel(image.mode)
-        # stride = bytes per line
-        stride = size[0] * bpp
-        height = size[1]
-        if stride * height > max_bytes:
-            log.debug("Resizing image to fit image byte size limit")
-            bytes_factor = sqrt((max_bytes) / (stride * height))
-            scaled_stride = floor(stride * bytes_factor)
-            scaled_height = floor(height * bytes_factor)
-            size = ceil(scaled_stride / bpp), scaled_height
-            assert (size[0] * bpp * size[1]) <= max_bytes
-
-    return size
+    return calculate_downsample(
+        image.size,
+        bytes_per_pixel(image.mode),
+        max_size=max_size,
+        max_pixels=max_pixels,
+        max_bytes=max_bytes,
+    )
 
 
 def downsample_image(
