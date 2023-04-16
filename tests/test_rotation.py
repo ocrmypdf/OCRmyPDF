@@ -237,11 +237,11 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir):
             **IMG2PDF_KWARGS,
         )
         mempdf.seek(0)
-        pike = pikepdf.open(mempdf)
-        pike.pages[0].Rotate = page_angle
-        target = outdir / f'{prefix}_{image_angle}_{page_angle}.pdf'
-        pike.save(target)
-        return target
+        with pikepdf.open(mempdf) as pdf:
+            pdf.pages[0].Rotate = page_angle
+            target = outdir / f'{prefix}_{image_angle}_{page_angle}.pdf'
+            pdf.save(target)
+            return target
 
     reference = make_rotate_test('ref', 0, 0)
     test = make_rotate_test('test', image_angle, page_angle)
