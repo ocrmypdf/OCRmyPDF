@@ -103,6 +103,20 @@ def add_options(parser):
         ),
     )
     tess.add_argument(
+        '--tesseract-downsample-above',
+        action='store',
+        type=numeric(int, 100, 32767),
+        default=32767,
+        help=(
+            "Downsample images larger than this size pixel size in either dimension "
+            "before OCR. --tesseract-downsample-large-images downsamples only when "
+            "an image exceeds Tesseract's internal limits. This argument causes "
+            "downsampling to occur when an image exceeds the given size. This may "
+            "reduce OCR quality, but on large images the most desirable text is "
+            "usually larger."
+        ),
+    )
+    tess.add_argument(
         '--user-words',
         metavar='FILE',
         help="Specify the location of the Tesseract user words file. This is a "
@@ -170,10 +184,12 @@ def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
     or more than 2**31 bytes. This function resizes the image to fit within
     those limits.
     """
+    threshold = min(page.options.tesseract_downsample_above, 32767)
+
     options = page.options
     if options.tesseract_downsample_large_images:
         size = calculate_downsample(
-            image, max_size=(32767, 32767), max_bytes=(2**31) - 1
+            image, max_size=(threshold, threshold), max_bytes=(2**31) - 1
         )
         image = downsample_image(image, size)
     return image
