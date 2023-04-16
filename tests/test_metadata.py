@@ -22,11 +22,6 @@ from ocrmypdf.pdfinfo import PdfInfo
 
 from .conftest import check_ocrmypdf, run_ocrmypdf
 
-try:
-    import fitz
-except ImportError:
-    fitz = None
-
 
 @pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])
 def test_preserve_docinfo(output_type, resources, outpdf):
@@ -71,19 +66,17 @@ def test_override_metadata(output_type, resources, outpdf):
 
     assert p.returncode == ExitCode.ok, p.stderr
 
-    before = pikepdf.open(input_file)
-    after = pikepdf.open(outpdf)
+    with pikepdf.open(input_file) as before, pikepdf.open(outpdf) as after:
+        assert after.docinfo.Title == german, after.docinfo
+        assert after.docinfo.Author == chinese, after.docinfo
+        assert after.docinfo.get('/Keywords', '') == ''
 
-    assert after.docinfo.Title == german, after.docinfo
-    assert after.docinfo.Author == chinese, after.docinfo
-    assert after.docinfo.get('/Keywords', '') == ''
+        before_date = decode_pdf_date(str(before.docinfo.CreationDate))
+        after_date = decode_pdf_date(str(after.docinfo.CreationDate))
+        assert before_date == after_date
 
-    before_date = decode_pdf_date(str(before.docinfo.CreationDate))
-    after_date = decode_pdf_date(str(after.docinfo.CreationDate))
-    assert before_date == after_date
-
-    pdfa_info = file_claims_pdfa(outpdf)
-    assert pdfa_info['output'] == output_type
+        pdfa_info = file_claims_pdfa(outpdf)
+        assert pdfa_info['output'] == output_type
 
 
 def test_high_unicode(resources, no_outpdf):
@@ -106,10 +99,10 @@ def test_high_unicode(resources, no_outpdf):
     assert p.returncode == ExitCode.bad_args, p.stderr
 
 
-@pytest.mark.skipif(not fitz, reason="test uses fitz")
 @pytest.mark.parametrize('ocr_option', ['--skip-text', '--force-ocr'])
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
 def test_bookmarks_preserved(output_type, ocr_option, resources, outpdf):
+    fitz = pytest.importorskip('fitz')
     input_file = resources / 'toc.pdf'
     before_toc = fitz.Document(str(input_file)).get_toc()
 
