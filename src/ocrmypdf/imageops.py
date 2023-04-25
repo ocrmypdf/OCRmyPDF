@@ -11,6 +11,14 @@ from math import floor, sqrt
 
 from PIL import Image
 
+# Remove this workaround when we require Pillow >= 9.1.0
+try:
+    Resampling = Image.Resampling  # type: ignore
+except AttributeError:
+    # Pillow 9 shim
+    Resampling = Image  # type: ignore
+
+
 log = logging.getLogger(__name__)
 
 
@@ -116,7 +124,7 @@ def downsample_image(
     image: Image.Image,
     new_size: tuple[int, int],
     *,
-    resample_mode: Image.Resampling = Image.Resampling.BICUBIC,
+    resample_mode: Image.Resampling = Resampling.BICUBIC,
     reducing_gap: int = 3,
 ) -> Image.Image:
     """Downsample an image to fit within the given limits.
