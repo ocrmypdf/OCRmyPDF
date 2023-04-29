@@ -185,15 +185,6 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
             "Designer and can only be read by Adobe Acrobat or Adobe Reader."
         )
         raise InputFileError()
-    if pdfinfo.has_userunit and options.output_type.startswith('pdfa'):
-        log.error(
-            "This input file uses a PDF feature that is not supported "
-            "by Ghostscript, so you cannot use --output-type=pdfa for this "
-            "file. (Specifically, it uses the PDF-1.6 /UserUnit feature to "
-            "support very large or small page sizes, and Ghostscript cannot "
-            "output these files.)  Use --output-type=pdf instead."
-        )
-        raise InputFileError()
     if pdfinfo.has_acroform:
         if options.redo_ocr:
             log.error(

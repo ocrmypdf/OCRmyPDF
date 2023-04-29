@@ -20,18 +20,13 @@ def poster(resources):
     return resources / 'poster.pdf'
 
 
-def test_userunit_ghostscript_fails(poster, no_outpdf, caplog):
-    result = run_ocrmypdf_api(poster, no_outpdf, '--output-type=pdfa')
-    assert result == ExitCode.input_file
-    assert 'not supported by Ghostscript' in caplog.text
-
-
-def test_userunit_pdf_passes(poster, outpdf):
+@pytest.mark.parametrize("mode", ['pdf', 'pdfa'])
+def test_userunit_pdf_passes(mode, poster, outpdf):
     before = PdfInfo(poster)
     check_ocrmypdf(
         poster,
         outpdf,
-        '--output-type=pdf',
+        f'--output-type={mode}',
         '--plugin',
         'tests/plugins/tesseract_cache.py',
     )
