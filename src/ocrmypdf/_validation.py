@@ -61,12 +61,20 @@ def check_options_languages(options: Namespace, ocr_engine_languages: set[str]) 
         return
     missing_languages = options.languages - ocr_engine_languages
     if missing_languages:
+        lang_text = '\n'.join(lang for lang in missing_languages)
         msg = (
             "OCR engine does not have language data for the following "
             "requested languages: \n"
+            f"{lang_text}\n"
+            "Please install the appropriate language data for your OCR engine.\n"
+            "\n"
+            "See the online documentation for instructions:\n"
+            "    https://ocrmypdf.readthedocs.io/en/latest/languages.html\n"
+            "\n"
+            "Note: most languages are identified by a 3-digit ISO 639-2 Code.\n"
+            "For example, English is 'eng', German is 'deu', and Spanish is 'spa'."
+            "\n"
         )
-        msg += '\n'.join(lang for lang in missing_languages)
-        msg += '\nNote: most languages are identified by a 3-digit ISO 639-2 Code'
         raise MissingDependencyError(msg)
 
 
