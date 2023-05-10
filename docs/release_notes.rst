@@ -28,6 +28,19 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v14.2.0
+=======
+
+-  Added `--tesseract-downsample-above` to downsample larger images even when
+   they do not exceed Tesseract's internal limits. This can be used to speed
+   up OCR, possibly sacrificing accuracy.
+-  Fixed resampling AttributeError on older Pillow. :issue:`1096`
+-  Removed an error about using Ghostscript on PDFs with that have the /UserUnit
+   feature in use. Previously, Ghostscript would fail to process these PDFs,
+   but in all supported versions it is now supported, so the error is no longer
+   needed.
+-  Improved documentation around installing other language packs for Tesseract.
+
 v14.1.0
 =======
 
