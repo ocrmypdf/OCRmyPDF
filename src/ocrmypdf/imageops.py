@@ -63,11 +63,12 @@ def calculate_downsample(
         overage = max_size[0] / size[0], max_size[1] / size[1]
         size_factor = min(overage)
         if size_factor < 1.0:
-            log.debug("Resizing image to fit Tesseract image size limit")
-            size = (
-                max(floor(size[0] * size_factor), 1),
-                max(floor(size[1] * size_factor), 1),
-            )
+            log.debug("Resizing image to fit image dimensions limit")
+            size = floor(size[0] * size_factor), floor(size[1] * size_factor)
+            if size[0] == 0:
+                size = 1, min(size[1], max_size[1])
+            elif size[1] == 0:
+                size = min(size[0], max_size[0]), 1
 
     if max_pixels is not None:
         if size[0] * size[1] > max_pixels:
@@ -83,8 +84,14 @@ def calculate_downsample(
         if stride * height > max_bytes:
             log.debug("Resizing image to fit image byte size limit")
             bytes_factor = sqrt(max_bytes / (stride * height))
-            scaled_stride = max(floor(stride * bytes_factor), 1)
-            scaled_height = max(floor(height * bytes_factor), 1)
+            scaled_stride = floor(stride * bytes_factor)
+            scaled_height = floor(height * bytes_factor)
+            if scaled_stride == 0:
+                scaled_stride = bpp
+                scaled_height = min(max_bytes // bpp, scaled_height)
+            if scaled_height == 0:
+                scaled_height = 1
+                scaled_stride = min(max_bytes // scaled_height, scaled_stride)
             size = floor(scaled_stride / bpp), scaled_height
 
     return size
