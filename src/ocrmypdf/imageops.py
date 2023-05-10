@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from functools import singledispatch
 from math import floor, sqrt
+from typing import Optional, Tuple
 
 from PIL import Image
 
@@ -17,6 +18,13 @@ try:
 except AttributeError:
     # Pillow 9 shim
     Resampling = Image  # type: ignore
+
+
+# While from __future__ import annotations, we use singledispatch here, which
+# does not support annotations. Disable check about using old-style typing
+# until Python 3.10, OR when drop singledispatch in ocrmypdf 15.
+# ruff: noqa: UP006
+# ruff: noqa: UP007
 
 
 log = logging.getLogger(__name__)
@@ -37,13 +45,13 @@ def bytes_per_pixel(mode: str) -> int:
 
 @singledispatch
 def calculate_downsample(
-    image_size: tuple[int, int],
+    image_size: Tuple[int, int],
     bytes_per_pixel: int,
     *,
-    max_size: tuple[int, int] | None = None,
-    max_pixels: int | None = None,
-    max_bytes: int | None = None,
-) -> tuple[int, int]:
+    max_size: Optional[Tuple[int, int]] = None,
+    max_pixels: Optional[int] = None,
+    max_bytes: Optional[int] = None,
+) -> Tuple[int, int]:
     """Calculate image size required to downsample an image to fit limits.
 
     If no limit is exceeded, the input image's size is returned.
@@ -102,10 +110,10 @@ def _(
     image: Image.Image,
     arg: None = None,
     *,
-    max_size: tuple[int, int] | None = None,
-    max_pixels: int | None = None,
-    max_bytes: int | None = None,
-) -> tuple[int, int]:
+    max_size: Optional[Tuple[int, int]] = None,
+    max_pixels: Optional[int] = None,
+    max_bytes: Optional[int] = None,
+) -> Tuple[int, int]:
     """Calculate image size required to downsample an image to fit limits.
 
     If no limit is exceeded, the input image's size is returned.
