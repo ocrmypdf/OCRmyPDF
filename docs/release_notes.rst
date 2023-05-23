@@ -28,6 +28,12 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v14.2.1
+=======
+
+-  Fixed :issue:`977`, where images inside Form XObjects were always excluded
+   from image optimization.
+
 v14.2.0
 =======
 
