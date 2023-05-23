@@ -230,29 +230,60 @@ def extract_image_generic(
     return None
 
 
+def _find_image_xrefs_container(
+    pdf: Pdf,
+    container: Object,
+    pageno: int,
+    include_xrefs: MutableSet[Xref],
+    exclude_xrefs: MutableSet[Xref],
+    pageno_for_xref: dict[Xref, int],
+    depth: int = 0,
+):
+    """Find all image XRefs in a page or Form XObject and add to the include/exclude sets."""
+    if depth > 10:
+        log.warning("Recursion depth exceeded in _find_image_xrefs_page")
+        return
+    try:
+        xobjs = container.Resources.XObject
+    except AttributeError:
+        return
+    for _imname, image in dict(xobjs).items():
+        if image.objgen[1] != 0:
+            continue  # Ignore images in an incremental PDF
+        if Name.Subtype in image and image.Subtype == Name.Form:
+            # Recurse into Form XObjects
+            log.debug(f"Recursing into Form XObject {_imname} in page {pageno}")
+            _find_image_xrefs_container(
+                pdf,
+                image,
+                pageno,
+                include_xrefs,
+                exclude_xrefs,
+                pageno_for_xref,
+                depth + 1,
+            )
+            continue
+        xref = Xref(image.objgen[0])
+        if Name.SMask in image:
+            # Ignore soft masks
+            smask_xref = Xref(image.SMask.objgen[0])
+            exclude_xrefs.add(smask_xref)
+            log.debug(f"xref {smask_xref}: skipping image because it is an SMask")
+        include_xrefs.add(xref)
+        log.debug(f"xref {xref}: treating as an optimization candidate")
+        if xref not in pageno_for_xref:
+            pageno_for_xref[xref] = pageno
+
+
 def _find_image_xrefs(pdf: Pdf):
     include_xrefs: MutableSet[Xref] = set()
     exclude_xrefs: MutableSet[Xref] = set()
-    pageno_for_xref = {}
+    pageno_for_xref: dict[Xref, int] = {}
 
     for pageno, page in enumerate(pdf.pages):
-        try:
-            xobjs = page.Resources.XObject
-        except AttributeError:
-            continue
-        for _imname, image in dict(xobjs).items():
-            if image.objgen[1] != 0:
-                continue  # Ignore images in an incremental PDF
-            xref = Xref(image.objgen[0])
-            if Name.SMask in image:
-                # Ignore soft masks
-                smask_xref = Xref(image.SMask.objgen[0])
-                exclude_xrefs.add(smask_xref)
-                log.debug(f"xref {smask_xref}: skipping image because it is an SMask")
-            include_xrefs.add(xref)
-            log.debug(f"xref {xref}: treating as an optimization candidate")
-            if xref not in pageno_for_xref:
-                pageno_for_xref[xref] = pageno
+        _find_image_xrefs_container(
+            pdf, page, pageno, include_xrefs, exclude_xrefs, pageno_for_xref
+        )
 
     working_xrefs = include_xrefs - exclude_xrefs
     return working_xrefs, pageno_for_xref
@@ -278,7 +309,6 @@ def extract_images(
     it does a tuple should be returned: (xref, ext) where .ext is the file
     extension. extract_fn must also extract the file it finds interesting.
     """
-    pageno_for_xref = {}
     errors = 0
     working_xrefs, pageno_for_xref = _find_image_xrefs(pike)
     for xref in working_xrefs:
