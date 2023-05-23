@@ -204,3 +204,11 @@ def test_group3(resources, outdir):
         assert (
             opt.extract_image_filter(pdf, outdir, im, im.objgen[0]) is None
         ), "Group 3 should be disallowed"
+
+
+def test_find_formx(resources, outdir):
+    with pikepdf.open(resources / 'formxobject.pdf') as pdf:
+        working, pagenos = opt._find_image_xrefs(pdf)
+        assert len(working) == 1
+        xref = next(iter(working))
+        assert pagenos[xref] == 0
