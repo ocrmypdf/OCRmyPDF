@@ -230,6 +230,34 @@ def extract_image_generic(
     return None
 
 
+def _find_image_xrefs(pdf: Pdf):
+    include_xrefs: MutableSet[Xref] = set()
+    exclude_xrefs: MutableSet[Xref] = set()
+    pageno_for_xref = {}
+
+    for pageno, page in enumerate(pdf.pages):
+        try:
+            xobjs = page.Resources.XObject
+        except AttributeError:
+            continue
+        for _imname, image in dict(xobjs).items():
+            if image.objgen[1] != 0:
+                continue  # Ignore images in an incremental PDF
+            xref = Xref(image.objgen[0])
+            if Name.SMask in image:
+                # Ignore soft masks
+                smask_xref = Xref(image.SMask.objgen[0])
+                exclude_xrefs.add(smask_xref)
+                log.debug(f"xref {smask_xref}: skipping image because it is an SMask")
+            include_xrefs.add(xref)
+            log.debug(f"xref {xref}: treating as an optimization candidate")
+            if xref not in pageno_for_xref:
+                pageno_for_xref[xref] = pageno
+
+    working_xrefs = include_xrefs - exclude_xrefs
+    return working_xrefs, pageno_for_xref
+
+
 def extract_images(
     pike: Pdf,
     root: Path,
@@ -250,30 +278,9 @@ def extract_images(
     it does a tuple should be returned: (xref, ext) where .ext is the file
     extension. extract_fn must also extract the file it finds interesting.
     """
-    include_xrefs: MutableSet[Xref] = set()
-    exclude_xrefs: MutableSet[Xref] = set()
     pageno_for_xref = {}
     errors = 0
-    for pageno, page in enumerate(pike.pages):
-        try:
-            xobjs = page.Resources.XObject
-        except AttributeError:
-            continue
-        for _imname, image in dict(xobjs).items():
-            if image.objgen[1] != 0:
-                continue  # Ignore images in an incremental PDF
-            xref = Xref(image.objgen[0])
-            if Name.SMask in image:
-                # Ignore soft masks
-                smask_xref = Xref(image.SMask.objgen[0])
-                exclude_xrefs.add(smask_xref)
-                log.debug(f"xref {smask_xref}: skipping image because it is an SMask")
-            include_xrefs.add(xref)
-            log.debug(f"xref {xref}: treating as an optimization candidate")
-            if xref not in pageno_for_xref:
-                pageno_for_xref[xref] = pageno
-
-    working_xrefs = include_xrefs - exclude_xrefs
+    working_xrefs, pageno_for_xref = _find_image_xrefs(pike)
     for xref in working_xrefs:
         image = pike.get_object((xref, 0))
         try:
