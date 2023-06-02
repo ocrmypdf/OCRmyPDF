@@ -1,0 +1,61 @@
+name: Problem with specific file
+description: Something went wrong while trying to OCR a specific file
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees:
+  - jbarlow83
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to describe this issue with a particular file.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Please include steps to reproduce
+      value: |
+        1. Run ocrmypdf -v1 ...arguments... input.pdf output.pdf
+        2. Open output.pdf
+        3. ...
+      render: plain text
+  - type: textarea
+    id: files
+    attributes:
+      label: Files
+      description: Please attach the input and output files, or any screenshots that may be helpful.
+      placeholder: Drag and drop files here
+  - type: dropdown
+    id: packaging-system
+    attributes:
+      label: How did you download and install the software?
+      multiple: true
+      options:
+        - PyPI (pip, poetry, pipx, etc.)
+        - Linux package manager (apt, dnf, etc.)
+        - Homebrew
+        - Docker container
+        - Ubuntu snap
+        - Conda
+        - source build
+  - type: input
+    id: version
+    attributes:
+      label: OCRmyPDF version
+      description: Paste "ocrmypdf --version" here
+      placeholder: ocrmypdf --version
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      placeholder: Run OCRmyPDF with verbosity `-v1` to get more detailed logging output.
+      render: plain text

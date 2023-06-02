@@ -15,7 +15,6 @@ body:
       label: What were you trying to do?
       description: Also tell us, what did you expect to happen?
       placeholder: Tell us what you see!
-      value: "A bug happened!"
     validations:
       required: true
   - type: dropdown
@@ -30,6 +29,9 @@ body:
         - Docker container
         - Ubuntu snap
         - Conda
+        - source build
+    validations:
+      required: true
   - type: dropdown
     id: operating-system
     attributes:
@@ -45,6 +47,4 @@ body:
     attributes:
       label: Relevant log output
       description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
-      render: shell
-  
-  
+      render: plain text
