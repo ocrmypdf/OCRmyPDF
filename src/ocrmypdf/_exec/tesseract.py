@@ -233,6 +233,7 @@ def get_deskew(
     parsed = _parse_tesseract_output(p.stdout)
     deskew_radians = float(parsed.get('Deskew angle', 0))
     deskew_degrees = 180 / pi * deskew_radians
+    log.debug(f"Deskew angle: {deskew_degrees:.3f}")
     return deskew_degrees
 
 
