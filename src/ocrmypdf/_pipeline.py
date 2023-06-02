@@ -822,6 +822,16 @@ def metadata_fixup(working_file: Path, context: PdfContext) -> Path:
     return output_file
 
 
+def _file_size_ratio(input_file: Path, output_file: Path) -> tuple[float | None, float | None]:
+    input_size = input_file.stat().st_size
+    output_size = output_file.stat().st_size
+    if output_size == 0:
+        return None, None
+    ratio = input_size / output_size
+    savings = 1 - output_size / input_size
+    return ratio, savings
+
+
 def optimize_pdf(
     input_file: Path, context: PdfContext, executor: Executor
 ) -> tuple[Path, Sequence[str]]:
@@ -834,13 +844,12 @@ def optimize_pdf(
         linearize=should_linearize(input_file, context),
     )
 
-    input_size = input_file.stat().st_size
-    output_size = output_file.stat().st_size
-    if output_size > 0:
-        ratio = input_size / output_size
-        savings = 1 - output_size / input_size
-        log.info(f"Optimize ratio: {ratio:.2f} savings: {(savings):.1%}")
-
+    ratio, savings = _file_size_ratio(input_file, output_file)
+    if ratio:
+        log.info(f"Image optimization ratio: {ratio:.2f} savings: {(savings):.1%}")
+    ratio, savings = _file_size_ratio(context.origin, output_file)
+    if ratio:
+        log.info(f"Total file size ratio: {ratio:.2f} savings: {(savings):.1%}")
     return output_pdf, messages
 
 
