@@ -248,6 +248,7 @@ def ocr(  # noqa: ruff: disable=D417
     user_words: os.PathLike | None = None,
     user_patterns: os.PathLike | None = None,
     fast_web_view: float | None = None,
+    continue_on_soft_render_error: bool | None = None,
     plugins: Iterable[StrPath] | None = None,
     plugin_manager=None,
     keep_temporary_files: bool | None = None,

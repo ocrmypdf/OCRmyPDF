@@ -104,7 +104,7 @@ was requested, the preprocessed image layer will be inserted.
 If you want to adjust the amount of time spent on OCR, change
 ``--tesseract-timeout``. You can also automatically skip images that
 exceed a certain number of megapixels with ``--skip-big``. (A 300 DPI,
-8.5×11" page is 8.4 megapixels.)
+8.5×11" page image is 8.4 megapixels.)
 
 .. code-block:: bash
 
@@ -240,6 +240,17 @@ Currently, this renderer has the best compatibility with Mozilla's
 PDF.js viewer.
 
 This works in all versions of Tesseract.
+
+Rendering and rasterizing options
+=================================
+
+.. versionadded:: 14.3.0
+
+The ``--continue-on-soft-render-error`` option allows OCRmyPDF to
+proceed if a page cannot be rasterized rendered. This is useful if you are
+trying to get the best possible OCR from a PDF that is not well-formed,
+and you are willing to accept some pages that may not visually match the
+input, and that may not OCR well.
 
 Return code policy
 ==================

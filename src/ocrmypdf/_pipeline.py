@@ -343,6 +343,7 @@ def rasterize_preview(input_file: Path, page_context: PageContext) -> Path:
         page_dpi=page_dpi,
         rotation=0,
         filter_vector=False,
+        stop_on_soft_error=not page_context.options.continue_on_soft_render_error,
     )
     return output_file
 
@@ -455,6 +456,7 @@ def rasterize(
         pageno=pageinfo.pageno + 1,
         rotation=correction,
         filter_vector=remove_vectors,
+        stop_on_soft_error=not page_context.options.continue_on_soft_render_error,
     )
     return output_file
 
@@ -736,6 +738,7 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
             if options.progress_bar
             else None
         ),
+        stop_on_soft_error=not options.continue_on_soft_render_error,
     )
 
     return output_file

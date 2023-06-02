@@ -39,6 +39,7 @@ def rasterize_pdf_page(
             page_dpi=page_dpi,
             rotation=rotation,
             filter_vector=filter_vector,
+            stop_on_soft_error=True,
         )
         mock.assert_called()
         return output_file
