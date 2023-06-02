@@ -3,6 +3,10 @@
 
 from __future__ import annotations
 
+import os
+
+import pytest
+
 from ocrmypdf.exceptions import ExitCode
 
 from .conftest import run_ocrmypdf
@@ -46,6 +50,7 @@ def test_render_continue_on_soft_error(resources, outpdf):
     assert p.returncode == ExitCode.ok
 
 
+@pytest.mark.skipif(os.name == 'nt', reason='Ghostscript on Windows errors out')
 def test_render_stop_on_soft_error(resources, outpdf):
     p = run_ocrmypdf(
         resources / 'francais.pdf',

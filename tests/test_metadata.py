@@ -353,7 +353,7 @@ def test_malformed_docinfo(caplog, resources, outdir):
         args=[
             '-j',
             '1',
-            '--continue-on-soft-error',
+            '--continue-on-soft-render-error',
             '--output-type',
             'pdfa-2',
             'a.pdf',

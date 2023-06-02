@@ -196,6 +196,10 @@ def generate_pdfa(
         # https://bugs.ghostscript.com/show_bug.cgi?id=705187
         compression_args.append('-dNEWPDF=false')
 
+    if os.name == 'nt':
+        # Windows has lots of fatal "permission denied" errors
+        stop_on_error = False
+
     # nb no need to specify ProcessColorModel when ColorConversionStrategy
     # is set; see:
     # https://bugs.ghostscript.com/show_bug.cgi?id=699392
