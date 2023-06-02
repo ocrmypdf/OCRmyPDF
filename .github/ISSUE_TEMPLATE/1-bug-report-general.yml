@@ -25,6 +25,7 @@ body:
       options:
         - PyPI (pip, poetry, pipx, etc.)
         - Linux package manager (apt, dnf, etc.)
+        - Wndows package manager (chocolatey, etc.)
         - Homebrew
         - Docker container
         - Ubuntu snap
