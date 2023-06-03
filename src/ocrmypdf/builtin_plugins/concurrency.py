@@ -16,10 +16,10 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_compl
 from contextlib import suppress
 from typing import Callable, Iterable, Type, Union
 
-from tqdm import tqdm
+from rich.console import Console as RichConsole
 
 from ocrmypdf import Executor, hookimpl
-from ocrmypdf._logging import TqdmConsole
+from ocrmypdf._logging import RichLoggingHandler, RichTqdmProgressAdapter
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import remove_all_log_handlers
 
@@ -168,13 +168,20 @@ def get_executor(progressbar_class):
     return StandardExecutor(pbar_class=progressbar_class)
 
 
+RICH_CONSOLE = RichConsole(stderr=True)
+
+
 @hookimpl
 def get_progressbar_class():
     """Return the default progress bar class."""
-    return tqdm
+
+    def partial_RichTqdmProgressAdapter(*args, **kwargs):
+        return RichTqdmProgressAdapter(*args, **kwargs, console=RICH_CONSOLE)
+
+    return partial_RichTqdmProgressAdapter
 
 
 @hookimpl
 def get_logging_console():
     """Return the default logging console handler."""
-    return logging.StreamHandler(stream=TqdmConsole(sys.stderr))
+    return RichLoggingHandler(console=RICH_CONSOLE)

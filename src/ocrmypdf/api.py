@@ -15,9 +15,6 @@ from pathlib import Path
 from typing import AnyStr, BinaryIO, Iterable, Union
 from warnings import warn
 
-import coloredlogs
-from humanfriendly.terminal import enable_ansi_support
-
 from ocrmypdf._logging import PageNumberFilter, TqdmConsole
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._sync import run_pipeline
@@ -112,14 +109,7 @@ def configure_logging(
     else:
         fmt = '%(pageno)s%(message)s'
 
-    use_colors = progress_bar_friendly
     formatter = None
-    if use_colors:
-        use_colors = enable_ansi_support()
-        if use_colors:
-            use_colors = coloredlogs.terminal_supports_colors()
-        if use_colors:
-            formatter = coloredlogs.ColoredFormatter(fmt=fmt)
 
     if not formatter:
         formatter = logging.Formatter(fmt=fmt)
