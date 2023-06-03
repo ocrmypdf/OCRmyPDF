@@ -12,7 +12,7 @@ worker communicates only with the main process.
 
 This is not without drawbacks. If the tasks are not "even" in size, which cannot
 be guaranteed, some workers may end up with too much work while others are idle.
-It is less efficient than the standard implementation, so not th edefault.
+It is less efficient than the standard implementation, so not the default.
 """
 
 from __future__ import annotations
