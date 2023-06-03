@@ -28,6 +28,17 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+next
+====
+
+-  Improve PDF rasterization accuracy by using the `-dPDFSTOPONERROR` option
+   to Ghostscript. Use `--continue-on-soft-render-error` if you want to render
+   the PDF anyway. The plugin specification was adjusted to support this feature;
+   plugin authors may want to adapt PDF rasterizing and rendering
+   plugins. :issue:`1083`
+-  Renamed master branch to main.
+-  The calculated deskew angle is now logged. :issue:`1101`
+
 v14.2.1
 =======
 
