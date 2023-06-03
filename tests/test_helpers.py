@@ -17,6 +17,7 @@ from ocrmypdf import helpers
 from .conftest import running_in_docker
 
 needs_symlink = pytest.mark.skipif(os.name == 'nt', reason='needs posix symlink')
+windows_only = pytest.mark.skipif(os.name != 'nt', reason="Windows test")
 
 
 class TestSafeSymlink:
@@ -93,7 +94,7 @@ class TestFileIsWritable:
         assert not helpers.is_file_writable(pathmock)
 
 
-@pytest.mark.skipif(os.name != 'nt', reason="Windows test")
+@windows_only
 def test_gs_install_locations():
     # pylint: disable=import-outside-toplevel
     from ocrmypdf.subprocess._windows import _gs_version_in_path_key
@@ -104,7 +105,7 @@ def test_gs_install_locations():
     )
 
 
-@pytest.mark.skipif(os.name != 'nt', reason="Windows test")
+@windows_only
 def test_shim_paths(tmp_path):
     # pylint: disable=import-outside-toplevel
     from ocrmypdf.subprocess._windows import shim_env_path

@@ -275,6 +275,7 @@ def test_rasterize_rotates(resources, tmp_path):
         pageno=1,
         rotation=90,
         filter_vector=False,
+        stop_on_soft_error=True,
     )
     with Image.open(img) as im:
         assert im.size == (83, 200), "Image not rotated"
@@ -289,6 +290,7 @@ def test_rasterize_rotates(resources, tmp_path):
         pageno=1,
         rotation=180,
         filter_vector=False,
+        stop_on_soft_error=True,
     )
     assert Image.open(img).size == (200, 83), "Image not rotated"
 

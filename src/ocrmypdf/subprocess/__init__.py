@@ -118,8 +118,6 @@ def run_polling_stderr(
 def _fix_process_args(
     args: Args, env: OsEnviron | None, kwargs
 ) -> tuple[Args, OsEnviron, logging.Logger, bool]:
-    assert 'universal_newlines' not in kwargs, "Use text= instead of universal_newlines"
-
     if not env:
         env = os.environ
 

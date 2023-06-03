@@ -45,6 +45,7 @@ def rasterize_pdf_page(
     page_dpi,
     rotation,
     filter_vector,
+    stop_on_soft_error,
 ):
     """Rasterize a single page of a PDF file using Ghostscript."""
     ghostscript.rasterize_pdf(
@@ -56,6 +57,7 @@ def rasterize_pdf_page(
         page_dpi=page_dpi,
         rotation=rotation,
         filter_vector=filter_vector,
+        stop_on_error=stop_on_soft_error,
     )
     return output_file
 
@@ -69,6 +71,7 @@ def generate_pdfa(
     pdf_version,
     pdfa_part,
     progressbar_class,
+    stop_on_soft_error,
 ):
     """Generate a PDF/A from the list of PDF pages and PDF/A metadata."""
     ghostscript.generate_pdfa(
@@ -78,5 +81,6 @@ def generate_pdfa(
         pdf_version=pdf_version,
         pdfa_part=pdfa_part,
         progressbar_class=progressbar_class,
+        stop_on_error=stop_on_soft_error,
     )
     return output_file

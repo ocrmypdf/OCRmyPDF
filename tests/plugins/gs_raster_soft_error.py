@@ -9,12 +9,13 @@ from unittest.mock import patch
 
 from ocrmypdf import hookimpl
 from ocrmypdf.builtin_plugins import ghostscript
+from ocrmypdf.subprocess import run
 
 
-def raise_gs_fail(*args, **kwargs):
-    raise CalledProcessError(
-        1, 'gs', output=b"", stderr=b"ERROR: Ghost story archive not found"
-    )
+def fail_if_stoponerror(args, **kwargs):
+    if '-dPDFSTOPONERROR' in args:
+        raise CalledProcessError(1, 'gs', output=b"", stderr=b"PDF STOP ON ERROR")
+    return run(args, **kwargs)
 
 
 @hookimpl
@@ -24,12 +25,13 @@ def rasterize_pdf_page(
     raster_device,
     raster_dpi,
     pageno,
-    page_dpi=None,
-    rotation=None,
-    filter_vector=False,
+    page_dpi,
+    rotation,
+    filter_vector,
+    stop_on_soft_error,
 ) -> Path:
     with patch('ocrmypdf._exec.ghostscript.run') as mock:
-        mock.side_effect = raise_gs_fail
+        mock.side_effect = fail_if_stoponerror
         ghostscript.rasterize_pdf_page(
             input_file=input_file,
             output_file=output_file,
@@ -39,7 +41,7 @@ def rasterize_pdf_page(
             page_dpi=page_dpi,
             rotation=rotation,
             filter_vector=filter_vector,
-            stop_on_soft_error=True,
+            stop_on_soft_error=stop_on_soft_error,
         )
         mock.assert_called()
         return output_file

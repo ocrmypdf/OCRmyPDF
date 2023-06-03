@@ -30,7 +30,7 @@ except AttributeError:
 
 log = logging.getLogger(__name__)
 
-# Most reliable what to get the bitness of Python interpreter, according to Python docs
+# Most reliable way to get the bitness of Python interpreter, according to Python docs
 _IS_64BIT = sys.maxsize > 2**32
 
 _GSWIN = None
@@ -63,6 +63,7 @@ def rasterize_pdf(
     page_dpi: Resolution | None = None,
     rotation: int | None = None,
     filter_vector: bool = False,
+    stop_on_error: bool = False,
 ):
     """Rasterize one page of a PDF at resolution raster_dpi in canvas units."""
     raster_dpi = raster_dpi.round(6)
@@ -83,6 +84,7 @@ def rasterize_pdf(
             f'-r{raster_dpi.x:f}x{raster_dpi.y:f}',
         ]
         + (['-dFILTERVECTOR'] if filter_vector else [])
+        + (['-dPDFSTOPONERROR'] if stop_on_error else [])
         + [
             '-o',
             '-',
@@ -161,6 +163,7 @@ def generate_pdfa(
     pdf_version: str = '1.5',
     pdfa_part: str = '2',
     progressbar_class=None,
+    stop_on_error: bool = False,
 ):
     # Ghostscript's compression is all or nothing. We can either force all images
     # to JPEG, force all to Flate/PNG, or let it decide how to encode the images.
@@ -193,6 +196,10 @@ def generate_pdfa(
         # https://bugs.ghostscript.com/show_bug.cgi?id=705187
         compression_args.append('-dNEWPDF=false')
 
+    if os.name == 'nt':
+        # Windows has lots of fatal "permission denied" errors
+        stop_on_error = False
+
     # nb no need to specify ProcessColorModel when ColorConversionStrategy
     # is set; see:
     # https://bugs.ghostscript.com/show_bug.cgi?id=699392
@@ -207,6 +214,7 @@ def generate_pdfa(
             "-dAutoRotatePages=/None",
             "-sColorConversionStrategy=" + strategy,
         ]
+        + (['-dPDFSTOPONERROR'] if stop_on_error else [])
         + compression_args
         + [
             "-dJPEGQ=95",

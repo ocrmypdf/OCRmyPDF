@@ -421,6 +421,14 @@ Online documentation is located at:
         "Set the threshold very high to disable.",
     )
     advanced.add_argument(
+        '--continue-on-soft-render-error',
+        action='store_true',
+        help="Continue processing pages after a recoverable PDF rendering error. "
+        "A recoverable error is one that does not prevent the page from being "
+        "rendered, but may result in visual differences compared to the input "
+        "file. Missing fonts are a typical source of these errors.",
+    )
+    advanced.add_argument(
         '--plugin',
         dest='plugins',
         action='append',

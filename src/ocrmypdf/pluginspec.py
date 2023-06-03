@@ -203,6 +203,7 @@ def rasterize_pdf_page(
     page_dpi: Resolution | None,
     rotation: int | None,
     filter_vector: bool,
+    stop_on_soft_error: bool,
 ) -> Path:
     """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
 
@@ -213,18 +214,25 @@ def rasterize_pdf_page(
     Args:
         input_file: The PDF to rasterize.
         output_file: The desired name of the rasterized image.
-        raster_device: Type of image to produce at output_file
-        raster_dpi: Resolution at which to rasterize page
-        pageno: Page number to rasterize (beginning at page 1)
-        page_dpi: Resolution, overriding output image DPI
-        rotation: Cardinal angle, clockwise, to rotate page
-        filter_vector: If True, remove vector graphics objects
+        raster_device: Type of image to produce at output_file.
+        raster_dpi: Resolution in dots per inch at which to rasterize page.
+        pageno: Page number to rasterize (beginning at page 1).
+        page_dpi: Resolution, overriding output image DPI.
+        rotation: Cardinal angle, clockwise, to rotate page.
+        filter_vector: If True, remove vector graphics objects.
+        stop_on_soft_error: If there is an "soft error" such that PDF page image
+            generation can proceed, but may visually differ from the original,
+            the implementer of this hook should raise a detailed exception. If
+            ``False``, continue processing and report by logging it. If the hook
+            cannot proceed, it should always raise an exception, regardless of
+            this setting. One "soft error" would be a missing font that is
+            required to properly rasterize the PDF.
+
     Returns:
         Path: output_file if successful
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
-
 
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
@@ -462,6 +470,7 @@ def generate_pdfa(
     pdf_version: str,
     pdfa_part: str,
     progressbar_class,
+    stop_on_soft_error: bool,
 ) -> Path:
     """Generate a PDF/A.
 
@@ -492,6 +501,12 @@ def generate_pdfa(
             and the name of the work units ("page"). Then ``instance.update()``
             will be called when a work unit is completed. If ``None``, no
             progress information is reported.
+        stop_on_soft_error: If there is an "soft error" such that PDF/A generation
+            can proceed and produce a valid PDF/A, but output may be invalid or
+            may not visually resemble the original, the implementer of this hook
+            should raise a detailed exception. If ``False``, continue processing
+            and report by logging it. If the hook cannot proceed, it should always
+            raise an exception, regardless of this setting.
 
     Returns:
         Path: If successful, the hook should return ``output_file``.

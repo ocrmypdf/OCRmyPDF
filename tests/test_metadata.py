@@ -350,7 +350,15 @@ def test_malformed_docinfo(caplog, resources, outdir):
         pike.save(outdir / 'layers.rendered.pdf', fix_metadata_version=False)
 
     options = get_parser().parse_args(
-        args=['-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
+        args=[
+            '-j',
+            '1',
+            '--continue-on-soft-render-error',
+            '--output-type',
+            'pdfa-2',
+            'a.pdf',
+            'b.pdf',
+        ]
     )
     pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
     context = PdfContext(

@@ -29,13 +29,9 @@ attack vectors.
 In short, PDFs `may contain
 viruses <https://security.stackexchange.com/questions/64052/can-a-pdf-file-contain-a-virus>`__.
 
-This
-`article <https://theinvisiblethings.blogspot.ca/2013/02/converting-untrusted-pdfs-into-trusted.html>`__
-describes a high-paranoia method which allows potentially hostile PDFs
-to be viewed and rasterized safely in a disposable virtual machine. A
-trusted PDF created in this manner is converted to images and loses all
-information making it searchable and losing all compression. OCRmyPDF
-could be used to restore searchability.
+If you do not trust a PDF or its source, do not open it or use OCRmyPDF
+on it. Consider using a Docker container or virtual machine to isolate
+an untrusted PDF from your system.
 
 How OCRmyPDF processes PDFs
 ===========================
@@ -43,11 +39,11 @@ How OCRmyPDF processes PDFs
 OCRmyPDF must open and interpret your PDF in order to insert an OCR
 layer. First, it runs all PDFs through
 `pikepdf <https://github.com/pikepdf/pikepdf>`__, a library based on
-`qpdf <https://github.com/qpdf/qpdf>`__, a program that repairs PDFs
+`QPDF <https://github.com/qpdf/qpdf>`__, a program that repairs PDFs
 with syntax errors. This is done because, in the author's experience, a
 significant number of PDFs in the wild, especially those created by
-scanners, are not well-formed files. qpdf makes it more likely that
-OCRmyPDF will succeed, but offers no security guarantees. qpdf is also
+scanners, are not well-formed files. QPDF makes it more likely that
+OCRmyPDF will succeed, but offers no security guarantees. QPDF is also
 used to split the PDF into single page PDFs.
 
 Finally, OCRmyPDF rasterizes each page of the PDF using
@@ -133,7 +129,7 @@ The author also provides professional services that include OCR and
 building databases around PDFs, and is happy to provide consultation.
 
 Abbyy Cloud OCR is viable commercial alternative with a web services
-API. Amazon Textract, Google Cloud Vision, and Microsoft Azure 
+API. Amazon Textract, Google Cloud Vision, and Microsoft Azure
 Computer Vision provide advanced OCR but have less PDF rendering capability.
 
 Password protection, digital signatures and certification
