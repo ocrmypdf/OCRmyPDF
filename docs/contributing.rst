@@ -18,7 +18,7 @@ work you're contemplating is already half-done in a development branch.
 Code style
 ==========
 
-We use PEP8, ``black`` for code formatting and ``isort`` for import sorting. The
+We use PEP8, ``black`` for code formatting and ``ruff`` for everything else. The
 settings for these programs are in ``pyproject.toml`` and ``setup.cfg``. Pull
 requests should follow the style guide. One difference we use from "black" style
 is that strings shown to the user are always in double quotes (``"``) and strings
