@@ -227,7 +227,10 @@ def get_page_dpi(pageinfo: PageInfo, options) -> Resolution:
 
 
 def get_page_square_dpi(pageinfo: PageInfo, options) -> Resolution:
-    """Get the DPI when we require xres == yres, scaled to physical units."""
+    """Get the DPI when we require xres == yres, scaled to physical units.
+
+    Page DPI includes UserUnit scaling.
+    """
     xres = pageinfo.dpi.x or 0.0
     yres = pageinfo.dpi.y or 0.0
     userunit = float(pageinfo.userunit) or 1.0
@@ -243,7 +246,12 @@ def get_page_square_dpi(pageinfo: PageInfo, options) -> Resolution:
 
 
 def get_canvas_square_dpi(pageinfo: PageInfo, options) -> Resolution:
-    """Get the DPI when we require xres == yres, in Postscript units."""
+    """Get the DPI when we require xres == yres, in Postscript units.
+
+    Canvas DPI is independent of PDF UserUnit scaling, which is
+    used to describe situations where the PDF user space is not 1:1 with
+    the physical units of the page.
+    """
     units = float(
         max(
             (pageinfo.dpi.x) or VECTOR_PAGE_DPI,
@@ -825,7 +833,9 @@ def metadata_fixup(working_file: Path, context: PdfContext) -> Path:
     return output_file
 
 
-def _file_size_ratio(input_file: Path, output_file: Path) -> tuple[float | None, float | None]:
+def _file_size_ratio(
+    input_file: Path, output_file: Path
+) -> tuple[float | None, float | None]:
     input_size = input_file.stat().st_size
     output_size = output_file.stat().st_size
     if output_size == 0:
