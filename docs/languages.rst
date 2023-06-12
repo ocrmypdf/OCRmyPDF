@@ -70,13 +70,13 @@ This enables these languages for all packages (e.g. including aspell).
 
    # Display a list of all Tesseract language packs
    equery uses app-text/tessdata_fast
-   
+
    # Add English and German language support for Tesseract only
    echo 'app-text/tessdata_fast l10n_de l10n_en' >> /etc/portage/package.use
-   
+
    # Add global English and German language support (the `l10n_` from equery has to be omitted)
    echo L10N="de en" >> /etc/portage/make.conf
-   
+
    # update system to reflect changed USE flags
    emerge --update --deep --newuse @world
 
@@ -101,7 +101,7 @@ derived Docker image as
 Windows users
 =============
 
-The Tesseract installer provided by Chocolatey currently includes only English language. 
-To install other languages, download the respective language pack (``.traineddata`` file) 
-from https://github.com/tesseract-ocr/tessdata/ and place it in 
+The Tesseract installer provided by Chocolatey currently includes only English language.
+To install other languages, download the respective language pack (``.traineddata`` file)
+from https://github.com/tesseract-ocr/tessdata/ and place it in
 ``C:\\Program Files\\Tesseract-OCR\\tessdata`` (or wherever Tesseract OCR is installed).
