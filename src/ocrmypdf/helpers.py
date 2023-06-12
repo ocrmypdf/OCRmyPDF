@@ -15,6 +15,7 @@ from contextlib import suppress
 from io import StringIO
 from math import isclose, isfinite
 from pathlib import Path
+from statistics import harmonic_mean
 from typing import Any, Generic, Sequence, SupportsFloat, SupportsRound, TypeVar
 
 import img2pdf
@@ -81,6 +82,17 @@ class Resolution(Generic[T]):
             return isfinite(self.x) and isfinite(self.y)
         return True
 
+    @property
+    def mean(self) -> float:
+        """Return the harmonic mean of x and y.
+
+        The harmonic mean is used because it is the correct mean to use for
+        averaging rates, such as pixels per inch. If a calculation requires a single
+        value instead of a pair of values, the harmonic mean is the correct value to
+        use.
+        """
+        return harmonic_mean([self.x, self.y])
+
     def take_max(
         self, vals: Iterable[Any], yvals: Iterable[Any] | None = None
     ) -> Resolution:
@@ -103,11 +115,11 @@ class Resolution(Generic[T]):
 
     def __str__(self):
         """Return a string representation of the resolution."""
-        return f"{self.x:f}x{self.y:f}"
+        return f"{self.x:f}×{self.y:f}"
 
     def __repr__(self):  # pragma: no cover
         """Return a repr() of the resolution."""
-        return f"Resolution({self.x}x{self.y} dpi)"
+        return f"Resolution({self.x}×{self.y} dpi)"
 
     def __eq__(self, other):
         """Return True if the resolution is equal to another resolution."""
