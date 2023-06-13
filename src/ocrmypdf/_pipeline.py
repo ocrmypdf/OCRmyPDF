@@ -37,6 +37,7 @@ from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution, safe_symlink
 from ocrmypdf.hocrtransform import HocrTransform
 from ocrmypdf.pdfa import generate_pdfa_ps
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PageInfo, PdfInfo
+from ocrmypdf.pluginspec import OrientationConfidence
 
 # Remove this workaround when we require Pillow >= 10
 try:
@@ -51,6 +52,20 @@ VECTOR_PAGE_DPI = 400
 
 
 def triage_image_file(input_file: Path, output_file: Path, options) -> None:
+    """Triage the input image file.
+
+    If the input file is an image, check its resolution and convert it to PDF.
+
+    Args:
+        input_file: The path to the input file.
+        output_file: The path to the output file.
+        options: An object containing the options passed to the OCRmyPDF command.
+
+    Raises:
+        UnsupportedImageFormatError: If the input file is not a supported image format.
+        DpiError: If the input image has no resolution (DPI) in its metadata or if the
+            resolution is not credible.
+    """
     log.info("Input file is not a PDF, checking if it is an image...")
     try:
         im = Image.open(input_file)
@@ -208,6 +223,7 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
 
 
 def _vector_page_dpi(pageinfo: PageInfo) -> int:
+    """Get a DPI to use for vector pages, if the page has vector content."""
     return VECTOR_PAGE_DPI if pageinfo.has_vector or pageinfo.has_text else 0
 
 
@@ -264,6 +280,7 @@ def get_canvas_square_dpi(pageinfo: PageInfo, options) -> Resolution:
 
 
 def is_ocr_required(page_context: PageContext) -> bool:
+    """Check if the page needs to be OCR'd."""
     pageinfo = page_context.pageinfo
     options = page_context.options
 
@@ -339,6 +356,7 @@ def is_ocr_required(page_context: PageContext) -> bool:
 
 
 def rasterize_preview(input_file: Path, page_context: PageContext) -> Path:
+    """Generate a lower quality preview image."""
     output_file = page_context.get_path('rasterize_preview.jpg')
     canvas_dpi = get_canvas_square_dpi(page_context.pageinfo, page_context.options)
     page_dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
@@ -356,8 +374,10 @@ def rasterize_preview(input_file: Path, page_context: PageContext) -> Path:
     return output_file
 
 
-def describe_rotation(page_context: PageContext, orient_conf, correction: int) -> str:
-    """Describe the page rotation we are going to perform."""
+def describe_rotation(
+    page_context: PageContext, orient_conf: OrientationConfidence, correction: int
+) -> str:
+    """Describe the page rotation we are going to perform (or not perform)."""
     direction = {0: '⇧', 90: '⇨', 180: '⇩', 270: '⇦'}
     turns = {0: ' ', 90: '⬏', 180: '↻', 270: '⬑'}
 
@@ -384,7 +404,7 @@ def describe_rotation(page_context: PageContext, orient_conf, correction: int) -
 
 
 def get_orientation_correction(preview: Path, page_context: PageContext) -> int:
-    """Work out orientation correct for each page.
+    """Work out orientation correction for each page.
 
     We ask Ghostscript to draw a preview page, which will rasterize with the
     current /Rotate applied, and then ask OCR which way the page is
@@ -418,8 +438,22 @@ def rasterize(
     page_context: PageContext,
     correction: int = 0,
     output_tag: str = '',
-    remove_vectors=None,
-):
+    remove_vectors: bool | None = None,
+) -> Path:
+    """Rasterize a PDF page to a PNG image.
+
+    Args:
+        input_file: The input PDF file path.
+        page_context: The page context object.
+        correction: The orientation correction angle. Defaults to 0.
+        output_tag: The output tag. Defaults to ''.
+        remove_vectors: Whether to remove vectors. Defaults to None, which means
+            the value from the page context options will be used. If the value
+            is True or False, it will override the page context options.
+
+    Returns:
+        Path: The output PNG file path.
+    """
     colorspaces = ['pngmono', 'pnggray', 'png256', 'png16m']
     device_idx = 0
 
@@ -480,6 +514,15 @@ def preprocess_remove_background(input_file: Path, page_context: PageContext) ->
 
 
 def preprocess_deskew(input_file: Path, page_context: PageContext) -> Path:
+    """Deskews the input image using the OCR engine and saves the output to a file.
+
+    Args:
+        input_file: The input image file to deskew.
+        page_context: The context of the page being processed.
+
+    Returns:
+        Path: The path to the deskewed image file.
+    """
     output_file = page_context.get_path('pp_deskew.png')
     dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
 
@@ -575,7 +618,16 @@ def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, 
 
 
 def should_visible_page_image_use_jpg(pageinfo: PageInfo) -> bool:
-    # If all images were JPEGs originally, produce a JPEG as output
+    """Determines whether the visible page image should be saved as a JPEG.
+
+    If all images were JPEGs originally, permit a JPEG as output.
+
+    Args:
+        pageinfo: The PageInfo object containing information about the page.
+
+    Returns:
+        A boolean indicating whether the visible page image should be saved as a JPEG.
+    """
     return bool(pageinfo.images) and all(
         im.enc == Encoding.jpeg for im in pageinfo.images
     )
