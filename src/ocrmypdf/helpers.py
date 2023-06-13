@@ -82,14 +82,12 @@ class Resolution(Generic[T]):
             return isfinite(self.x) and isfinite(self.y)
         return True
 
-    @property
-    def mean(self) -> float:
-        """Return the harmonic mean of x and y.
+    def to_scalar(self) -> float:
+        """Return the harmonic mean of x and y as a 1D approximation.
 
-        The harmonic mean is used because it is the correct mean to use for
-        averaging rates, such as pixels per inch. If a calculation requires a single
-        value instead of a pair of values, the harmonic mean is the correct value to
-        use.
+        In most cases, Resolution is 2D, but typically it is "square" (x == y) and
+        can be approximated as a single number. When not square, the harmonic mean
+        is used to approximate the 2D resolution as a single number.
         """
         return harmonic_mean([self.x, self.y])
 
@@ -119,7 +117,7 @@ class Resolution(Generic[T]):
 
     def __repr__(self):  # pragma: no cover
         """Return a repr() of the resolution."""
-        return f"Resolution({self.x}×{self.y} dpi)"
+        return f"Resolution({self.x!r}, {self.y!r})"
 
     def __eq__(self, other):
         """Return True if the resolution is equal to another resolution."""

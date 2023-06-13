@@ -758,10 +758,20 @@ class PageResolutionInfo(NamedTuple):
     """Information about the resolution of a page."""
 
     average_to_max_dpi_ratio: float
-    """The average DPI of the page divided by the maximum DPI of the page."""
+    """The average DPI of the page divided by the maximum DPI of the page.
+
+    This indicates the intensity of the resolution variation on the page.
+
+    If the average is 1.0 or close to 1.0, has all of its content at a uniform
+    resolution. If the average is much lower than 1.0, some content is at a
+    higher resolution than the rest of the page.
+    """
 
     area_ratio: float
-    """The maximum DPI area of the page divided by the total drawn area."""
+    """The maximum-DPI area of the page divided by the total drawn area.
+
+    This indicates the prevalence of high-resolution content on the page.
+    """
 
 
 class PageInfo:
@@ -966,13 +976,11 @@ class PageInfo:
 
         Vector graphics and text are ignored.
 
-        A ratio of 1.0 means that all images are the same DPI.
-        A large ratio indicates high DPI content.
-        A ratio of less than 1.0 is not possible.
-
         Returns None if there is no meaningful DPI for the page.
         """
-        image_dpis = [image.dpi.hypot for image in self._images if image.renderable]
+        image_dpis = [
+            image.dpi.to_scalar() for image in self._images if image.renderable
+        ]
         image_areas = [image.printed_area for image in self._images if image.renderable]
         total_drawn_area = sum(image_areas)
         if total_drawn_area == 0:
