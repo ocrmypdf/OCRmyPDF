@@ -177,7 +177,9 @@ Online documentation is located at:
         '--image-dpi',
         metavar='DPI',
         type=int,
-        help="For input image instead of PDF, use this DPI instead of file's.",
+        help="When the input file is an image, not a PDF, use this DPI instead "
+        "of the DPI claimed by the input file. If the input does not claim a "
+        "sensible DPI, this option will be required.",
     )
     parser.add_argument(
         '--output-type',

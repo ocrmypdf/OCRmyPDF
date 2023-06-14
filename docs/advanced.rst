@@ -114,6 +114,41 @@ exceed a certain number of megapixels with ``--skip-big``. (A 300 DPI,
     # Allow 300 seconds for OCR; skip any page larger than 50 megapixels
     ocrmypdf --tesseract-timeout 300 --skip-big 50 bigfile.pdf output.pdf
 
+OCR for huge images
+-------------------
+
+Separate from these settings, Tesseract has internal limits on the size
+of images it will process. If you issue
+``--tesseract-downsample-large-images``, OCRmyPDF will downsample images
+to fit Tesseract limits. (The limits are usually entered only for scanned
+images of oversized media, such as large maps or blueprints exceeding
+110 cm or 43 inches in either dimension, and at high DPI.)
+
+``--tesseract-downsample-above`` adjusts the threshold at which images
+will be downsampled. By default, only images that exceed any of Tesseract's
+internal limits are downsampled.
+
+You will also need to set ``--tesseract-timeout`` high enough to allow
+for processing.
+
+Only the image sent for OCR is downsampled. The original image is
+preserved.
+
+.. code-block:: bash
+
+    # Allow 600 seconds for OCR on huge images
+    ocrmypdf --tesseract-timeout 600 \
+        --tesseract-downsample-large-images \
+        bigfile.pdf output.pdf
+
+    # Downsample images above 5000 pixels on the longest dimension to
+    # 5000 pixels
+    ocrmypdf --tesseract-timeout 120 \
+        --tesseract-downsample-large-images \
+        --tesseract-downsample-above 5000 \
+        bigfile.pdf output_downsampled_ocr.pdf
+
+
 Overriding default tesseract
 ----------------------------
 
