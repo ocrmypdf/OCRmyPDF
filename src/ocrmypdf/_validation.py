@@ -53,13 +53,13 @@ def check_platform() -> None:
 
 def check_options_languages(options: Namespace, ocr_engine_languages: set[str]) -> None:
     if not options.languages:
-        options.languages = {DEFAULT_LANGUAGE}
+        options.languages = [DEFAULT_LANGUAGE]
         system_lang = locale.getlocale()[0]
         if system_lang and not system_lang.startswith('en'):
             log.debug("No language specified; assuming --language %s", DEFAULT_LANGUAGE)
     if not ocr_engine_languages:
         return
-    missing_languages = options.languages - ocr_engine_languages
+    missing_languages = set(options.languages) - ocr_engine_languages
     if missing_languages:
         lang_text = '\n'.join(lang for lang in missing_languages)
         msg = (
@@ -79,7 +79,7 @@ def check_options_languages(options: Namespace, ocr_engine_languages: set[str]) 
 
 
 def check_options_output(options: Namespace) -> None:
-    is_latin = options.languages.issubset(HOCR_OK_LANGS)
+    is_latin = set(options.languages).issubset(HOCR_OK_LANGS)
 
     if options.pdf_renderer.startswith('hocr') and not is_latin:
         log.warning(
