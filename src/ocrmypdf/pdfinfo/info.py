@@ -754,8 +754,14 @@ def _pdf_pageinfo_concurrent(
     return pages
 
 
-class PageResolutionInfo(NamedTuple):
-    """Information about the resolution of a page."""
+class PageResolutionProfile(NamedTuple):
+    """Information about the resolutions of a page."""
+
+    weighted_dpi: float
+    """The weighted average DPI of the page, weighted by the area of each image."""
+
+    max_dpi: float
+    """The maximum DPI of an image on the page."""
 
     average_to_max_dpi_ratio: float
     """The average DPI of the page divided by the maximum DPI of the page.
@@ -966,8 +972,8 @@ class PageInfo:
         else:
             return '1.5'
 
-    def image_dpi_ratios(self) -> PageResolutionInfo | None:
-        """Return ratios useful for detecting high DPI images.
+    def page_dpi_profile(self) -> PageResolutionProfile | None:
+        """Return information about the DPIs of the page.
 
         This is useful to detect pages with a small proportion of high-resolution
         content that is forcing us to use a high DPI for the whole page. The ratio
@@ -1000,7 +1006,9 @@ class PageInfo:
         arg_max_dpi = image_dpis.index(max_dpi)
         max_area_ratio = image_areas[arg_max_dpi] / total_drawn_area
 
-        return PageResolutionInfo(dpi_average_max_ratio, max_area_ratio)
+        return PageResolutionProfile(
+            weighted_dpi, max_dpi, dpi_average_max_ratio, max_area_ratio
+        )
 
     def __repr__(self):
         """Return string representation."""
