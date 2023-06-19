@@ -248,8 +248,11 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
             inline_images.append(inline)
         elif operator in vector_ops:
             found_vector = True
+        text_boxes=0
         elif operator in text_showing_ops:
-            found_text = True
+            text_boxes +=1
+            if text_boxes>15:
+                found_text = True
 
     return ContentsInfo(
         xobject_settings=xobject_settings,
