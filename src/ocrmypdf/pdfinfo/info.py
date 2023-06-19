@@ -211,6 +211,7 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
     text_showing_ops = set("""TJ Tj " '""".split())
     image_ops = set('BI ID EI q Q Do cm'.split())
     operator_whitelist = ' '.join(vector_ops | text_showing_ops | image_ops)
+    text_boxes=0
 
     for n, graphobj in enumerate(
         _normalize_stack(parse_content_stream(contentstream, operator_whitelist))
@@ -248,7 +249,6 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
             inline_images.append(inline)
         elif operator in vector_ops:
             found_vector = True
-        text_boxes=0
         elif operator in text_showing_ops:
             text_boxes +=1
             if text_boxes>15:
