@@ -42,6 +42,8 @@ ocrmypdf                      # it's a scriptable command line program
 - Scales properly to handle files with thousands of pages
 - Battle-tested on millions of PDFs
 
+<img src="misc/screencast/demo.svg" alt="Demo of OCRmyPDF in a terminal session">
+
 For details: please consult the [documentation](https://ocrmypdf.readthedocs.io/en/latest/).
 
 ## Motivation

@@ -41,6 +41,7 @@ Files:
  tests/resources/trivial.pdf
  tests/resources/truetype_font_nomapping.pdf
  tests/resources/type3_font_nomapping.pdf
+ misc/screencast/*
 Copyright: (C) 2022 James R. Barlow
 License: CC-BY-SA-4.0
 
