@@ -76,6 +76,50 @@ def test_override_metadata(output_type, resources, outpdf):
         assert pdfa_info['output'] == output_type
 
 
+@pytest.mark.parametrize('output_type', ['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'])
+@pytest.mark.parametrize('field', ['title', 'author', 'subject', 'keywords'])
+def test_unset_metadata(output_type, field, resources, outpdf):
+    input_file = resources / 'meta.pdf'
+
+    # magic strings contained in the input pdf metadata
+    meta = {
+        'title': b'NFY5f7Ft2DWMkxLhXwxvFf7eWR2KeK3vEDcd',
+        'author': b'yXaryipxyRk9dVjWjSSaVaNCKeLRgEVzPRMp',
+        'subject': b't49vimctvnuH7ZeAjAkv52ACvWFjcnm5MPJr',
+        'keywords': b's9EeALwUg7urA7fnnhm5EtUyC54sW2WPUzqh'}
+
+    p = run_ocrmypdf(
+        input_file,
+        outpdf,
+        f'--{field}',
+        '',
+        '--output-type',
+        output_type,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+    )
+
+    assert p.returncode == ExitCode.ok, p.stderr
+
+    # We mainly want to ensure that when '' is passed, the corresponding
+    # metadata is unset in the output pdf. Since metedata is not compressed,
+    # the best way to gaurentee the metadata of interest didn't carry
+    # forward is to just check to ensure the corresponding magic string
+    # isn't contained anywhere in the output pdf. We'll also check to ensure
+    # it's in the input pdf and that any values not unset are still in the
+    # output pdf.
+    with open(input_file, 'rb') as before, open(outpdf, 'rb') as after:
+        before_data = before.read()
+        after_data = after.read()
+
+    for k, v in meta.items():
+        assert v in before_data
+        if k == field:
+            assert v not in after_data
+        else:
+            assert v in after_data
+
+
 def test_high_unicode(resources, no_outpdf):
     # Ghostscript doesn't support high Unicode, so neither do we, to be
     # safe

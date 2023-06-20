@@ -852,24 +852,43 @@ def metadata_fixup(working_file: Path, context: PdfContext) -> Path:
 
     with pikepdf.open(context.origin) as original, pikepdf.open(working_file) as pdf:
         docinfo = get_docinfo(original, context)
-        with pdf.open_metadata() as meta:
-            meta.load_from_docinfo(docinfo, delete_missing=False, raise_failure=False)
+        with pdf.open_metadata() as meta_pdf:
+            meta_pdf.load_from_docinfo(docinfo, delete_missing=False, raise_failure=False)
             # If xmp:CreateDate is missing, set it to the modify date to
-            # match Ghostscript, for consistency
-            if 'xmp:CreateDate' not in meta:
-                meta['xmp:CreateDate'] = meta.get('xmp:ModifyDate', '')
+            # ensure consistency with Ghostscript.
+            if 'xmp:CreateDate' not in meta_pdf:
+                meta_pdf['xmp:CreateDate'] = meta_pdf.get('xmp:ModifyDate', '')
 
             with original.open_metadata(
                 set_pikepdf_as_editor=False, update_docinfo=False, strict=False
             ) as meta_original:
-                if meta.get('dc:title') == 'Untitled':
+                if meta_pdf.get('dc:title') == 'Untitled':
                     # Ghostscript likes to set title to Untitled if omitted from input.
                     # Reverse this, because PDF/A TechNote 0003:Metadata in PDF/A-1
                     # and the XMP Spec do not make this recommendation.
                     if 'dc:title' not in meta_original:
-                        del meta['dc:title']
-                missing = set(meta_original.keys()) - set(meta.keys())
-                report_on_metadata(missing)
+                        del meta_pdf['dc:title']
+                # If the user explicitly specified an empty string for any of the
+                # following, they should be unset and not reported as missing in
+                # the output pdf. Note that some metadata fields use differing names
+                # between PDF-A and PDF.
+                for meta in [meta_pdf, meta_original]:
+                    if options.title == '' and 'dc:title' in meta:
+                        del meta['dc:title']  # PDF-A and PDF
+                    if options.author == '':
+                        if 'dc:creator' in meta:
+                            del meta['dc:creator']  # PDF-A (Not xmp:CreatorTool)
+                        if 'pdf:Author' in meta:
+                            del meta['pdf:Author']  # PDF
+                    if options.subject == '':
+                        if 'dc:description' in meta:
+                            del meta['dc:description']  # PDF-A
+                        if 'dc:subject' in meta:
+                            del meta['dc:subject']  # PDF
+                    if options.keywords == '' and 'pdf:Keywords' in meta:
+                        del meta['pdf:Keywords']  # PDF-A and PDF
+                meta_missing = set(meta_original.keys()) - set(meta_pdf.keys())
+                report_on_metadata(meta_missing)
 
         optimizing = context.plugin_manager.hook.is_optimization_enabled(
             context=context
