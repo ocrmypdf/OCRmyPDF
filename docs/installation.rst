@@ -637,7 +637,7 @@ system-wide:
 
 .. code-block:: bash
 
-    git clone -b master https://github.com/ocrmypdf/OCRmyPDF.git
+    git clone -b main https://github.com/ocrmypdf/OCRmyPDF.git
     python3 -m venv venv
     source venv/bin/activate
     cd OCRmyPDF
@@ -664,7 +664,7 @@ To install all of the development and test requirements:
 
 .. code-block:: bash
 
-    git clone -b master https://github.com/ocrmypdf/OCRmyPDF.git
+    git clone -b main https://github.com/ocrmypdf/OCRmyPDF.git
     python -m venv
     source venv/bin/activate
     cd OCRmyPDF

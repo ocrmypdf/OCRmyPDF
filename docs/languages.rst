@@ -12,7 +12,7 @@ OCRmyPDF uses Tesseract for OCR, and relies on its language packs for all langua
 On most platforms, English is installed with Tesseract by default, but not always.
 
 Tesseract supports `most
-languages <https://github.com/tesseract-ocr/tesseract/blob/master/doc/tesseract.1.asc#languages>`__.
+languages <https://github.com/tesseract-ocr/tesseract/blob/main/doc/tesseract.1.asc#languages>`__.
 Languages are identified by standardized three-letter codes (called ISO 639-2 Alpha-3).
 Tesseract's documentation also lists the three-letter code for your language.
 Some are anglicized, e.g. Spanish is ``spa`` rather than ``esp``, while others

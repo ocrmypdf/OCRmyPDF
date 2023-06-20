@@ -10,7 +10,7 @@ Control of unpaper
 
 OCRmyPDF uses ``unpaper`` to provide the implementation of the
 ``--clean`` and ``--clean-final`` arguments.
-`unpaper <https://github.com/Flameeyes/unpaper/blob/master/doc/basic-concepts.md>`__
+`unpaper <https://github.com/Flameeyes/unpaper/blob/main/doc/basic-concepts.md>`__
 provides a variety of image processing filters to improve images.
 
 By default, OCRmyPDF uses only ``unpaper`` arguments that were found to

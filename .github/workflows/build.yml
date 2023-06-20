@@ -5,7 +5,7 @@ name: Test and deploy
 on:
   push:
     branches:
-      - master
+      - main
       - ci
       - release/*
       - feature/*
@@ -249,7 +249,7 @@ jobs:
           name: artifact
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@master
+      - uses: pypa/gh-action-pypi-publish@main
         with:
           user: __token__
           password: ${{ secrets.TOKEN_PYPI }}
@@ -264,9 +264,9 @@ jobs:
       - name: Set image tag to release or branch
         run: echo "DOCKER_IMAGE_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
-      - name: If master, set to latest
+      - name: If main, set to latest
         run: echo 'DOCKER_IMAGE_TAG=latest' >> $GITHUB_ENV
-        if: env.DOCKER_IMAGE_TAG == 'master'
+        if: env.DOCKER_IMAGE_TAG == 'main'
 
       - name: Set Docker Hub repository to username
         run: echo "DOCKER_REPOSITORY=jbarlow83" >> $GITHUB_ENV
