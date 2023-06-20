@@ -28,16 +28,22 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
-next
-====
+v14.3.0
+=======
 
--  Improve PDF rasterization accuracy by using the `-dPDFSTOPONERROR` option
-   to Ghostscript. Use `--continue-on-soft-render-error` if you want to render
+-  Renamed master branch to main.
+-  Improve PDF rasterization accuracy by using the ``-dPDFSTOPONERROR`` option
+   to Ghostscript. Use ``--continue-on-soft-render-error`` if you want to render
    the PDF anyway. The plugin specification was adjusted to support this feature;
    plugin authors may want to adapt PDF rasterizing and rendering
    plugins. :issue:`1083`
--  Renamed master branch to main.
--  The calculated deskew angle is now logged. :issue:`1101`
+-  The calculated deskew angle is now recorded in the logged output. :issue:`1101`
+-  Metadata can now be unset by setting a metadata type such as ``--title`` to an
+   empty string. :issue:`1117,1059`
+-  Fixed random order of languages due to use of a set. This may have caused output
+   to vary when multiple languages were set for OCR. :issue:`1113`
+-  Clarified the optimization ratio reported in the log output.
+-  Documentation improvements.
 
 v14.2.1
 =======
