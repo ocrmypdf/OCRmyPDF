@@ -84,16 +84,16 @@ class LanguageSetAction(argparse.Action):
     def __init__(self, option_strings, dest, default=None, **kwargs):
         """Initialize the action."""
         if default is None:
-            default = set()
+            default = list()
         super().__init__(option_strings, dest, default=default, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         """Add a language to the set."""
         dest = getattr(namespace, self.dest)
         if '+' in values:
-            dest.update(lang for lang in values.split('+'))
+            [dest.append(lang) for lang in values.split('+')]
         else:
-            dest.add(values)
+            dest.append(values)
 
 
 def get_parser():

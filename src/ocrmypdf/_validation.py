@@ -51,15 +51,17 @@ def check_platform() -> None:
         )
 
 
-def check_options_languages(options: Namespace, ocr_engine_languages: set[str]) -> None:
+def check_options_languages(
+    options: Namespace, ocr_engine_languages: list[str]
+) -> None:
     if not options.languages:
-        options.languages = {DEFAULT_LANGUAGE}
+        options.languages = [DEFAULT_LANGUAGE]
         system_lang = locale.getlocale()[0]
         if system_lang and not system_lang.startswith('en'):
             log.debug("No language specified; assuming --language %s", DEFAULT_LANGUAGE)
     if not ocr_engine_languages:
         return
-    missing_languages = options.languages - ocr_engine_languages
+    missing_languages = set(options.languages) - set(ocr_engine_languages)
     if missing_languages:
         lang_text = '\n'.join(lang for lang in missing_languages)
         msg = (
@@ -71,15 +73,16 @@ def check_options_languages(options: Namespace, ocr_engine_languages: set[str]) 
             "See the online documentation for instructions:\n"
             "    https://ocrmypdf.readthedocs.io/en/latest/languages.html\n"
             "\n"
-            "Note: most languages are identified by a 3-digit ISO 639-2 Code.\n"
-            "For example, English is 'eng', German is 'deu', and Spanish is 'spa'."
+            "Note: most languages are identified by a 3-letter ISO 639-2 Code.\n"
+            "For example, English is 'eng', German is 'deu', and Spanish is 'spa'.\n"
+            "Simplified Chinese is 'chi_sim' and Traditional Chinese is 'chi_tra'."
             "\n"
         )
         raise MissingDependencyError(msg)
 
 
 def check_options_output(options: Namespace) -> None:
-    is_latin = options.languages.issubset(HOCR_OK_LANGS)
+    is_latin = set(options.languages).issubset(HOCR_OK_LANGS)
 
     if options.pdf_renderer.startswith('hocr') and not is_latin:
         log.warning(
