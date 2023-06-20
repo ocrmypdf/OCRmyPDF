@@ -51,7 +51,9 @@ def check_platform() -> None:
         )
 
 
-def check_options_languages(options: Namespace, ocr_engine_languages: set[str]) -> None:
+def check_options_languages(
+    options: Namespace, ocr_engine_languages: list[str]
+) -> None:
     if not options.languages:
         options.languages = [DEFAULT_LANGUAGE]
         system_lang = locale.getlocale()[0]
@@ -59,7 +61,7 @@ def check_options_languages(options: Namespace, ocr_engine_languages: set[str]) 
             log.debug("No language specified; assuming --language %s", DEFAULT_LANGUAGE)
     if not ocr_engine_languages:
         return
-    missing_languages = set(options.languages) - ocr_engine_languages
+    missing_languages = set(options.languages) - set(ocr_engine_languages)
     if missing_languages:
         lang_text = '\n'.join(lang for lang in missing_languages)
         msg = (
@@ -71,8 +73,9 @@ def check_options_languages(options: Namespace, ocr_engine_languages: set[str]) 
             "See the online documentation for instructions:\n"
             "    https://ocrmypdf.readthedocs.io/en/latest/languages.html\n"
             "\n"
-            "Note: most languages are identified by a 3-digit ISO 639-2 Code.\n"
-            "For example, English is 'eng', German is 'deu', and Spanish is 'spa'."
+            "Note: most languages are identified by a 3-letter ISO 639-2 Code.\n"
+            "For example, English is 'eng', German is 'deu', and Spanish is 'spa'.\n"
+            "Simplified Chinese is 'chi_sim' and Traditional Chinese is 'chi_tra'."
             "\n"
         )
         raise MissingDependencyError(msg)

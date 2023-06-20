@@ -166,8 +166,8 @@ def test_language_warning(caplog):
     with patch(
         'ocrmypdf._validation.locale.getlocale', return_value=('en_US', 'UTF-8')
     ) as mock:
-        vd.check_options_languages(opts, {'eng'})
-        assert opts.languages == {'eng'}
+        vd.check_options_languages(opts, ['eng'])
+        assert opts.languages == ['eng']
         assert '' in caplog.text
         mock.assert_called_once()
 
@@ -175,8 +175,8 @@ def test_language_warning(caplog):
     with patch(
         'ocrmypdf._validation.locale.getlocale', return_value=('fr_FR', 'UTF-8')
     ) as mock:
-        vd.check_options_languages(opts, {'eng'})
-        assert opts.languages == {'eng'}
+        vd.check_options_languages(opts, ['eng'])
+        assert opts.languages == ['eng']
         assert 'assuming --language' in caplog.text
         mock.assert_called_once()
 
@@ -282,7 +282,7 @@ def test_two_languages():
             parser=get_parser(),
             language='fakelang1+fakelang2',
         ),
-        {'fakelang1', 'fakelang2'},
+        ['fakelang1', 'fakelang2'],
     )
 
 
