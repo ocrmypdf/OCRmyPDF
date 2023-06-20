@@ -151,14 +151,14 @@ The watcher service is included in the OCRmyPDF Docker image. To run it:
 .. code-block:: bash
 
     docker run \
-        -v <path to files to convert>:/input \
-        -v <path to store results>:/output \
-        -v <path to store processed originals>:/archive \
-        -e OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1 \
-        -e OCR_ON_SUCCESS_ARCHIVE=1 \
-        -e OCR_DESKEW=1 \
-        -e PYTHONUNBUFFERED=1 \
-        -it --entrypoint python3 \
+        --volume <path to files to convert>:/input \
+        --volume <path to store results>:/output \
+        --volume <path to store processed originals>:/archive \
+        --env OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1 \
+        --env OCR_ON_SUCCESS_ARCHIVE=1 \
+        --env OCR_DESKEW=1 \
+        --env PYTHONUNBUFFERED=1 \
+        --interactive --tty --entrypoint python3 \
         jbarlow83/ocrmypdf \
         watcher.py
 
@@ -170,13 +170,13 @@ original to ``/archive``. The parameters to this image are:
     :header: "Parameter", "Description"
     :widths: 50, 50
 
-    "``-v <path to files to convert>:/input``", "Files placed in this location will be OCRed"
-    "``-v <path to store results>:/output``", "This is where OCRed files will be stored"
-    "``-v <path to store processed originals>:/archive``", "Archive processed originals here"
-    "``-e OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1``", "Define environment variable ``OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1`` to place files in the output in ``{output}/{year}/{month}/{filename}``"
-    "``-e OCR_ON_SUCCESS_ARCHIVE=1``", "Define environment variable ``OCR_ON_SUCCESS_ARCHIVE`` to move processed originals"
-    "``-e OCR_DESKEW=1``", "Define environment variable ``OCR_DESKEW``  to apply deskew to crooked input PDFs"
-    "``-e PYTHONBUFFERED=1``", "This will force ``STDOUT`` to be unbuffered and allow you to see messages in docker logs"
+    "``--volume <path to files to convert>:/input``", "Files placed in this location will be OCRed"
+    "``--volume <path to store results>:/output``", "This is where OCRed files will be stored"
+    "``--volume <path to store processed originals>:/archive``", "Archive processed originals here"
+    "``--env OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1``", "Define environment variable ``OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1`` to place files in the output in ``{output}/{year}/{month}/{filename}``"
+    "``--env OCR_ON_SUCCESS_ARCHIVE=1``", "Define environment variable ``OCR_ON_SUCCESS_ARCHIVE`` to move processed originals"
+    "``--env OCR_DESKEW=1``", "Define environment variable ``OCR_DESKEW``  to apply deskew to crooked input PDFs"
+    "``--env PYTHONBUFFERED=1``", "This will force ``STDOUT`` to be unbuffered and allow you to see messages in docker logs"
 
 This service relies on polling to check for changes to the filesystem. It
 may not be suitable for some environments, such as filesystems shared on a

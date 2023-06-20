@@ -13,14 +13,33 @@ tuned. Optimization occurs after OCR, and only if OCR succeeded.  It does not
 perform other possible optimizations such as deduplicating resources,
 consolidating fonts, simplifying vector drawings, or anything of that nature.
 
-Optimization ranges from ``-O0`` through ``-O3``, where ``0`` disables
-optimization and ``3`` implements all options. ``1``, the default, performs only
-safe and lossless optimizations. (This is similar to GCC's optimization
-parameter.) The exact type of optimizations performed will vary over time.
+.. list-table:: Title
+   :widths: 33 6 60
+   :header-rows: 1
 
-PDF optimization requires third-party, optional tools for certain optimizations.
-If these are not installed or cannot be found by OCRmyPDF, optimization will not
-be as good.
+    * - Optimization level
+      - Shorthand
+      - Description
+    * - ``--optimize 0``
+      - ``-O0``
+      - Disable most optimizations.
+    * - ``--optimize 1`` (default)
+      - ``-O1``
+      - Safe and lossless optimizations.
+    * - ``--optimize 2``
+      - ``-O2``
+      - Safe and lossy optimizations.
+    * - ``--optimize 3``
+      - ``-O3``
+      - Aggressive lossy optimizations.
+
+The exact type of optimizations performed will vary over time, and depend on
+the availability of third-party tools.
+
+Despite optimizations, OCRmyPDF might still increase the overall file size,
+since it must embed information about the recognized text, and depending on the
+settings chosen, may not be able to represent the output file as compactly as
+the input file.
 
 Optimizations that always occurs
 ================================
@@ -37,11 +56,13 @@ Fast web view
 OCRmyPDF automatically optimizes PDFs for "fast web view" in Adobe Acrobat's
 parlance, or equivalently, linearizes PDFs so that the resources they reference
 are presented in the order a viewer needs them for sequential display. This
-reduces the latency of viewing a PDF both online and from local storage. This
-actually slightly increases the file size.
+reduces the latency of viewing a PDF both online and from local storage, in
+exchange for a slight increase in file size.
 
 To disable this optimization and all others, use ``ocrmypdf --optimize 0 ...``
 or the shorthand ``-O0``.
+
+Adobe Acrobat might not report the file as being "fast web view".
 
 Lossless optimizations
 ======================

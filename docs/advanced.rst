@@ -310,16 +310,31 @@ stable user interface. They may be imported from
         - The program was interrupted by pressing Ctrl+C.
 
 
+.. _tmpdir:
+
+Changing temporary storage location
+===================================
+
+OCRmyPDF generates many temporary files during processing.
+
+To change where temporary files are stored, change the ``TMPDIR``
+environment variable for ocrmypdf's environment. (Python's
+``tempfile.gettempdir()`` returns the root directory in which temporary
+files will be stored.) For example, one could redirect ``TMPDIR`` to a
+large RAM disk to avoid wear on HDD/SSD and potentially improve
+performance.
+
+On Windows, the ``TEMP`` environment variable is used instead.
+
 Debugging the intermediate files
 ================================
 
 OCRmyPDF normally saves its intermediate results to a temporary folder
 and deletes this folder when it exits, whether it succeeded or failed.
 
-If the ``-k`` argument is issued on the command line, OCRmyPDF will keep
-the temporary folder and print the location, whether it succeeded or
-failed (provided the Python interpreter did not crash). An example
-message is:
+If the ``--keep-temporary-files`` (``-k```) argument is issued on the
+command line, OCRmyPDF will keep the temporary folder and print the location,
+whether it succeeded or failed. An example message is:
 
 .. code-block:: none
 

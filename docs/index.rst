@@ -20,7 +20,6 @@ image processing and OCR to existing PDFs.
    introduction
    release_notes
    installation
-   optimizer
    languages
    jbig2
 
@@ -29,9 +28,11 @@ image processing and OCR to existing PDFs.
    :maxdepth: 2
 
    cookbook
+   optimizer
    docker
    advanced
    batch
+   cloud
    performance
    pdfsecurity
    errors
