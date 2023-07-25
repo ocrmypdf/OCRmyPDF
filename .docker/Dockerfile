@@ -13,29 +13,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   zlib1g \
   liblept5
 
-# FROM base as builder
+FROM base as builder
 
-# # Note we need leptonica here to build jbig2
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#   build-essential autoconf automake libtool \
-#   python3-dev \
-#   python3-distutils \
-#   libffi-dev \
-#   ca-certificates \
-#   curl \
-#   git \
-#   libcairo2-dev \
-#   pkg-config
+# Note we need leptonica here to build jbig2
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  python3-dev \
+  python3-distutils \
+  ca-certificates \
+  curl \
+  git \
+  libcairo2-dev \
+  pkg-config
 
-# # Get the latest pip
-# RUN \
-#   curl https://bootstrap.pypa.io/get-pip.py | python3
+# Get the latest pip
+RUN curl https://bootstrap.pypa.io/get-pip.py | python3
 
-# COPY . /app
+COPY . /app
 
-# WORKDIR /app
+WORKDIR /app
 
-# RUN pip3 install --no-cache-dir .[test,webservice,watcher]
+RUN pip3 install --no-cache-dir .[test,webservice,watcher]
 
 FROM base
 
