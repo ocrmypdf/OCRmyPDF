@@ -13,42 +13,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   zlib1g \
   liblept5
 
-FROM base as builder
+# FROM base as builder
 
-# Note we need leptonica here to build jbig2
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  build-essential autoconf automake libtool \
-  libleptonica-dev \
-  zlib1g-dev \
-  python3-dev \
-  python3-distutils \
-  libffi-dev \
-  ca-certificates \
-  curl \
-  git \
-  libcairo2-dev \
-  pkg-config
+# # Note we need leptonica here to build jbig2
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#   build-essential autoconf automake libtool \
+#   python3-dev \
+#   python3-distutils \
+#   libffi-dev \
+#   ca-certificates \
+#   curl \
+#   git \
+#   libcairo2-dev \
+#   pkg-config
 
-# Get the latest pip (Ubuntu version doesn't support manylinux2010)
-RUN \
-  curl https://bootstrap.pypa.io/get-pip.py | python3
+# # Get the latest pip
+# RUN \
+#   curl https://bootstrap.pypa.io/get-pip.py | python3
 
-# Compile and install jbig2
-# Needs libleptonica-dev, zlib1g-dev
-RUN \
-  mkdir jbig2 \
-  && curl -L https://github.com/agl/jbig2enc/archive/ea6a40a.tar.gz | \
-  tar xz -C jbig2 --strip-components=1 \
-  && cd jbig2 \
-  && ./autogen.sh && ./configure && make && make install \
-  && cd .. \
-  && rm -rf jbig2
+# COPY . /app
 
-COPY . /app
+# WORKDIR /app
 
-WORKDIR /app
-
-RUN pip3 install --no-cache-dir .[test,webservice,watcher]
+# RUN pip3 install --no-cache-dir .[test,webservice,watcher]
 
 FROM base
 
@@ -56,11 +43,13 @@ FROM base
 RUN apt-get update && apt-get install -y --no-install-recommends \
   software-properties-common gpg-agent
 RUN add-apt-repository -y ppa:alex-p/tesseract-ocr-devel
+RUN add-apt-repository -y ppa:alex-p/jbig2enc
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
   fonts-droid-fallback \
   jbig2dec \
+  jbig2enc \
   img2pdf \
   libsm6 libxext6 libxrender-dev \
   pngquant \

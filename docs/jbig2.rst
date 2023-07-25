@@ -24,6 +24,14 @@ On macOS, Homebrew packages jbig2enc and OCRmyPDF includes it by
 default. The Docker image for OCRmyPDF also builds its own JBIG2 encoder
 from source.
 
+On Ubuntu, you can install the JBIG2 encoder using the following PPA:
+
+.. code-block:: bash
+
+   sudo add-apt-repository ppa:alex-p/jbig2enc
+   sudo apt update
+   sudo apt install jbig2enc
+
 For all other Linux, you must build a JBIG2 encoder from source:
 
 .. code-block:: bash
