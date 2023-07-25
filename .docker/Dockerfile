@@ -46,7 +46,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
   fonts-droid-fallback \
   jbig2dec \
-  jbig2enc \
+  jbig2 \
   img2pdf \
   libsm6 libxext6 libxrender-dev \
   pngquant \
