@@ -34,6 +34,8 @@ jobs:
             python: "3.10"
           - os: ubuntu-latest
             python: "3.11"
+          - os: ubuntu-latest
+            python: "3.12.0-alpha - 3.12.0"
           # - os: ubuntu-latest
           #   python: "pypy3.8"
           #- os: ubuntu-latest
