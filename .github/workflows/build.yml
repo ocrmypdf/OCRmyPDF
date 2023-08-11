@@ -255,6 +255,32 @@ jobs:
           password: ${{ secrets.TOKEN_PYPI }}
           # repository_url: https://test.pypi.org/legacy/
 
+  create_release:
+    name: Create GitHub release
+    needs: [wheel_sdist_linux, test_linux, test_macos, test_windows]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
+    permissions:
+      # Required to create a release
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: artifact
+          path: dist
+
+      - name: Create Release
+        id: create-release
+        uses: shogo82148/actions-create-release@v1
+
+      - name: Upload Assets
+        uses: shogo82148/actions-upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: |
+            ./dist/*.whl
+            ./dist/*.tar.gz
+
   docker:
     name: Build Docker images
     needs: [wheel_sdist_linux, test_linux, test_macos, test_windows]
