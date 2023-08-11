@@ -18,6 +18,7 @@ from rich.progress import (
     TextColumn,
     TimeRemainingColumn,
 )
+from rich.table import Column
 from tqdm import tqdm
 
 
@@ -75,7 +76,10 @@ class RichTqdmProgressAdapter:
         **kwargs,
     ):
         self.progress = Progress(
-            TextColumn("[progress.description]{task.description}"),
+            TextColumn(
+                "[progress.description]{task.description}",
+                table_column=Column(min_width=20),
+            ),
             BarColumn(),
             TaskProgressColumn(),
             MofNCompleteColumn(),
