@@ -988,6 +988,7 @@ class PdfInfo:
                     self._has_acroform = True
                 elif Name.XFA in pdf.Root.AcroForm:
                     self._has_acroform = True
+                self._has_signature = bool(pdf.Root.AcroForm.get(Name.SigFlags, 0) & 1)
 
     @property
     def pages(self) -> Sequence[PageInfo | None]:
