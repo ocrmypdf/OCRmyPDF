@@ -372,3 +372,17 @@ Some users may consider enabling lossy JBIG2. See: :ref:`jbig2-lossy`.
 
     Image processing and PDF/A conversion can also introduce lossy transformations
     to your PDF images, even when ``--optimize 1`` is in use.
+
+
+Digitally signed PDFs
+=====================
+
+OCRmyPDF cannot preserve digital signatures in PDFs and also add to OCR to them.
+By default, it will refuse to modify a signed PDF regardless of other settings. You can
+override this behavior with ``--invalidate-digital-signatures``; as the name suggests,
+any digital signatures will be invalidated.
+
+OCRmyPDF cannot open documents that are encrypted with a digital certificate.
+
+Versions of OCRmyPDF prior to 14.4.0 would invalidate existing digital signatures
+without warning.

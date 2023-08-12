@@ -28,6 +28,19 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v14.4.0
+=======
+
+-  Digitally signed PDFs are now detected. If the PDF is signed, OCRmyPDF will
+   refuse to modify it. Previously, only encrypted PDFs were detected, not
+   those that were signed but not encrypted. :issue:`1040`
+-  In addition, `--invalidate-digital-signatures` can be used to override the
+   above behavior and modify the PDF anyway. :issue:`1040`
+-  tqdm progress bars replaced with "rich" progress bars. The rich library is
+   a new dependency. Certain APIs that used tqdm are now deprecated and will
+   be removed in the next major release.
+-  Improved integration with GitHub Releases. Thanks to @stumpylog.
+
 v14.3.0
 =======
 
