@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 
+import pikepdf
 import pytest
 
 import ocrmypdf
@@ -31,3 +32,17 @@ def test_acroform_message(acroform, caplog, outpdf):
     check_ocrmypdf(acroform, outpdf, '--plugin', 'tests/plugins/tesseract_noop.py')
     assert 'fillable form' in caplog.text
     assert '--force-ocr' in caplog.text
+
+
+@pytest.fixture
+def digitally_signed(acroform, outdir):
+    out = outdir / 'acroform_signed.pdf'
+    with pikepdf.open(acroform) as pdf:
+        pdf.Root.AcroForm.SigFlags = 3
+        pdf.save(out)
+    yield out
+
+
+def test_digital_signature(digitally_signed, no_outpdf):
+    with pytest.raises(ocrmypdf.exceptions.DigitalSignatureError):
+        check_ocrmypdf(digitally_signed, no_outpdf)

@@ -27,6 +27,7 @@ from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._version import PROGRAM_NAME
 from ocrmypdf._version import __version__ as VERSION
 from ocrmypdf.exceptions import (
+    DigitalSignatureError,
     DpiError,
     EncryptedPdfError,
     InputFileError,
@@ -197,6 +198,8 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
             "Designer and can only be read by Adobe Acrobat or Adobe Reader."
         )
     if pdfinfo.has_acroform:
+        if pdfinfo.has_signature:
+            raise DigitalSignatureError()
         if options.redo_ocr:
             raise InputFileError(
                 "This PDF has a user fillable form. --redo-ocr is not "

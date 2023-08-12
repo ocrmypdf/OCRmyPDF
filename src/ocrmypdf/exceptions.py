@@ -108,6 +108,18 @@ class EncryptedPdfError(ExitCodeException):
     )
 
 
+class DigitalSignatureError(ExitCodeException):
+    """PDF has a digital signature."""
+
+    exit_code = ExitCode.input_file
+    message = dedent(
+        """\
+        Input PDF has a digital signature. OCR would alter the document,
+        invalidating the signature.
+        """
+    )
+
+
 class TesseractConfigError(ExitCodeException):
     """Tesseract config can't be parsed."""
 
