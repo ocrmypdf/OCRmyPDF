@@ -954,6 +954,10 @@ DEFAULT_EXECUTOR = SerialExecutor()
 class PdfInfo:
     """Get summary information about a PDF."""
 
+    _has_acroform: bool = False
+    _has_signature: bool = False
+    _needs_rendering: bool = False
+
     def __init__(
         self,
         infile,
@@ -982,7 +986,6 @@ class PdfInfo:
                 detailed_analysis=detailed_analysis,
             )
             self._needs_rendering = pdf.Root.get(Name.NeedsRendering, False)
-            self._has_acroform = False
             if Name.AcroForm in pdf.Root:
                 if len(pdf.Root.AcroForm.get(Name.Fields, [])) > 0:
                     self._has_acroform = True

@@ -197,9 +197,12 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
             "This PDF contains dynamic XFA forms created by Adobe LiveCycle "
             "Designer and can only be read by Adobe Acrobat or Adobe Reader."
         )
-    if pdfinfo.has_acroform:
-        if pdfinfo.has_signature:
+    if pdfinfo.has_signature:
+        if options.invalidate_digital_signatures:
+            log.warning("All digital signatures will be invalidated")
+        else:
             raise DigitalSignatureError()
+    if pdfinfo.has_acroform:
         if options.redo_ocr:
             raise InputFileError(
                 "This PDF has a user fillable form. --redo-ocr is not "

@@ -16,6 +16,7 @@ complete -c ocrmypdf -l remove-vectors -d "don't send vector objects to OCR"
 complete -c ocrmypdf -s f -l force-ocr -d "OCR documents that already have printable text"
 complete -c ocrmypdf -s s -l skip-ocr -d "skip OCR on pages that text, otherwise try OCR"
 complete -c ocrmypdf -l redo-ocr -d "redo OCR on any pages that seem to have OCR already"
+complete -c ocrmypdf -l invalidate-digital-signatures -d "invalidate digital signatures and allow OCR to proceed"
 
 complete -c ocrmypdf -s k -l keep-temporary-files -d "keep temporary files (debug)"
 

@@ -46,3 +46,9 @@ def digitally_signed(acroform, outdir):
 def test_digital_signature(digitally_signed, no_outpdf):
     with pytest.raises(ocrmypdf.exceptions.DigitalSignatureError):
         check_ocrmypdf(digitally_signed, no_outpdf)
+
+
+def test_digital_signature_invalidate(digitally_signed, no_outpdf):
+    check_ocrmypdf(
+        digitally_signed, no_outpdf, '--force-ocr', '--invalidate-digital-signatures'
+    )

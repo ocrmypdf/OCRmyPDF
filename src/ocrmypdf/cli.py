@@ -359,6 +359,13 @@ Online documentation is located at:
         help="Skip OCR on pages larger than the specified amount of megapixels, "
         "but include skipped pages in final output",
     )
+    ocrsettings.add_argument(
+        '--invalidate-digital-signatures',
+        action='store_true',
+        help="Normally, OCRmyPDF will refuse to OCR a PDF that has a digital "
+        "signature. This option allows OCR to proceed, but the digital signature "
+        "will be invalidated.",
+    )
 
     advanced = parser.add_argument_group(
         "Advanced", "Advanced options to control OCRmyPDF"
