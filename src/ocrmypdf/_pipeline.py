@@ -80,34 +80,32 @@ def triage_image_file(input_file: Path, output_file: Path, options) -> None:
             if im.info['dpi'] <= (96, 96) and not options.image_dpi:
                 log.info("Image size: (%d, %d)", *im.size)
                 log.info("Image resolution: (%d, %d)", *im.info['dpi'])
-                log.error(
+                raise DpiError(
                     "Input file is an image, but the resolution (DPI) is "
                     "not credible.  Estimate the resolution at which the "
                     "image was scanned and specify it using --image-dpi."
                 )
-                raise DpiError()
         elif not options.image_dpi:
             log.info("Image size: (%d, %d)", *im.size)
-            log.error(
+            raise DpiError(
                 "Input file is an image, but has no resolution (DPI) "
                 "in its metadata.  Estimate the resolution at which "
                 "image was scanned and specify it using --image-dpi."
             )
-            raise DpiError()
 
         if im.mode in ('RGBA', 'LA'):
-            log.error(
+            raise UnsupportedImageFormatError(
                 "The input image has an alpha channel. Remove the alpha "
                 "channel first."
             )
-            raise UnsupportedImageFormatError()
 
         if 'iccprofile' not in im.info:
             if im.mode == 'RGB':
                 log.info("Input image has no ICC profile, assuming sRGB")
             elif im.mode == 'CMYK':
-                log.error("Input CMYK image has no ICC profile, not usable")
-                raise UnsupportedImageFormatError()
+                raise UnsupportedImageFormatError(
+                    "Input CMYK image has no ICC profile, not usable"
+                )
 
     try:
         log.info("Image seems valid. Try converting to PDF...")
@@ -125,7 +123,6 @@ def triage_image_file(input_file: Path, output_file: Path, options) -> None:
             )
         log.info("Successfully converted to PDF, processing...")
     except img2pdf.ImageOpenError as e:
-        log.error(e)
         raise UnsupportedImageFormatError() from e
 
 
@@ -195,18 +192,16 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
     options = context.options
 
     if pdfinfo.needs_rendering:
-        log.error(
+        raise InputFileError(
             "This PDF contains dynamic XFA forms created by Adobe LiveCycle "
             "Designer and can only be read by Adobe Acrobat or Adobe Reader."
         )
-        raise InputFileError()
     if pdfinfo.has_acroform:
         if options.redo_ocr:
-            log.error(
+            raise InputFileError(
                 "This PDF has a user fillable form. --redo-ocr is not "
                 "currently possible on such files."
             )
-            raise InputFileError()
         else:
             log.warning(
                 "This PDF has a fillable form. "
@@ -853,7 +848,9 @@ def metadata_fixup(working_file: Path, context: PdfContext) -> Path:
     with pikepdf.open(context.origin) as original, pikepdf.open(working_file) as pdf:
         docinfo = get_docinfo(original, context)
         with pdf.open_metadata() as meta_pdf:
-            meta_pdf.load_from_docinfo(docinfo, delete_missing=False, raise_failure=False)
+            meta_pdf.load_from_docinfo(
+                docinfo, delete_missing=False, raise_failure=False
+            )
             # If xmp:CreateDate is missing, set it to the modify date to
             # ensure consistency with Ghostscript.
             if 'xmp:CreateDate' not in meta_pdf:

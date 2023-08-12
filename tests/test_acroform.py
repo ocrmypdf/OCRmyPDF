@@ -19,10 +19,11 @@ def acroform(resources):
     return resources / 'acroform.pdf'
 
 
-def test_acroform_and_redo(acroform, caplog, no_outpdf):
-    with pytest.raises(ocrmypdf.exceptions.InputFileError):
+def test_acroform_and_redo(acroform, no_outpdf):
+    with pytest.raises(
+        ocrmypdf.exceptions.InputFileError, match='--redo-ocr is not currently possible'
+    ):
         check_ocrmypdf(acroform, no_outpdf, '--redo-ocr')
-    assert '--redo-ocr is not currently possible' in caplog.text
 
 
 def test_acroform_message(acroform, caplog, outpdf):
