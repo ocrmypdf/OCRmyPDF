@@ -21,7 +21,9 @@ from typing import Container, Iterable, Iterator, Mapping, NamedTuple, Sequence,
 from warnings import warn
 
 from pikepdf import (
+    Name,
     Object,
+    Page,
     Pdf,
     PdfImage,
     PdfInlineImage,
@@ -491,15 +493,15 @@ def _image_xobjects(container) -> Iterator[tuple[Object, str]]:
     since the object does not know its own name.
 
     """
-    if '/Resources' not in container:
+    if Name.Resources not in container:
         return
-    resources = container['/Resources']
-    if '/XObject' not in resources:
+    resources = container[Name.Resources]
+    if Name.XObject not in resources:
         return
-    for key, candidate in resources['/XObject'].items():
-        if candidate is None or '/Subtype' not in candidate:
+    for key, candidate in resources[Name.XObject].items():
+        if candidate is None or Name.Subtype not in candidate:
             continue
-        if candidate['/Subtype'] == '/Image':
+        if candidate[Name.Subtype] == Name.Image:
             pdfimage = candidate
             yield (pdfimage, key)
 
@@ -535,15 +537,15 @@ def _find_form_xobject_images(pdf: Pdf, container: Object, contentsinfo: Content
     The container may be a page, or a parent Form XObject.
 
     """
-    if '/Resources' not in container:
+    if Name.Resources not in container:
         return
-    resources = container['/Resources']
-    if '/XObject' not in resources:
+    resources = container[Name.Resources]
+    if Name.XObject not in resources:
         return
-    xobjs = resources['/XObject'].as_dict()
+    xobjs = resources[Name.XObject].as_dict()
     for xobj in xobjs:
         candidate = xobjs[xobj]
-        if candidate is None or candidate['/Subtype'] != '/Form':
+        if candidate is None or candidate[Name.Subtype] != Name.Form:
             continue
 
         form_xobject = candidate
@@ -581,16 +583,19 @@ def _process_content_streams(
     downsampling.
 
     """
-    if container.get('/Type') == '/Page' and '/Contents' in container:
+    if container.get(Name.Type) == Name.Page and Name.Contents in container:
         initial_shorthand = shorthand or UNIT_SQUARE
-    elif container.get('/Type') == '/XObject' and container['/Subtype'] == '/Form':
+    elif (
+        container.get(Name.Type) == Name.XObject
+        and container[Name.Subtype] == Name.Form
+    ):
         # Set the CTM to the state it was when the "Do" operator was
         # encountered that is drawing this instance of the Form XObject
         ctm = PdfMatrix(shorthand) if shorthand else PdfMatrix.identity()
 
         # A Form XObject may provide its own matrix to map form space into
         # user space. Get this if one exists
-        form_shorthand = container.get('/Matrix', PdfMatrix.identity())
+        form_shorthand = container.get(Name.Matrix, PdfMatrix.identity())
         form_matrix = PdfMatrix(form_shorthand)
 
         # Concatenate form matrix with CTM to ensure CTM is correct for
@@ -771,7 +776,7 @@ class PageInfo:
         check_pages: Container[int],
         detailed_analysis: bool,
     ):
-        page = pdf.pages[pageno]
+        page: Page = pdf.pages[pageno]
         mediabox = [Decimal(d) for d in page.MediaBox.as_list()]
         width_pt = mediabox[2] - mediabox[0]
         height_pt = mediabox[3] - mediabox[1]
@@ -779,7 +784,7 @@ class PageInfo:
         check_this_page = pageno in check_pages
 
         if check_this_page and detailed_analysis:
-            pscript5_mode = str(pdf.docinfo.get('/Creator')).startswith('PScript5')
+            pscript5_mode = str(pdf.docinfo.get(Name.Creator)).startswith('PScript5')
             miner = get_page_analysis(infile, pageno, pscript5_mode)
             self._textboxes = list(simplify_textboxes(miner, get_text_boxes))
             bboxes = (box.bbox for box in self._textboxes)
@@ -789,17 +794,13 @@ class PageInfo:
             self._textboxes = []
             self._has_text = None  # i.e. "no information"
 
-        userunit = page.get('/UserUnit', Decimal(1.0))
+        userunit = page.get(Name.UserUnit, Decimal(1.0))
         if not isinstance(userunit, Decimal):
             userunit = Decimal(userunit)
         self._userunit = userunit
         self._width_inches = width_pt * userunit / Decimal(72.0)
         self._height_inches = height_pt * userunit / Decimal(72.0)
-
-        try:
-            self._rotate = int(page['/Rotate'])
-        except KeyError:
-            self._rotate = 0
+        self._rotate = int(getattr(page.obj, 'Rotate', 0))
 
         userunit_shorthand = (userunit, 0, 0, userunit, 0, 0)
 
@@ -980,12 +981,12 @@ class PdfInfo:
                 check_pages=check_pages,
                 detailed_analysis=detailed_analysis,
             )
-            self._needs_rendering = pdf.Root.get('/NeedsRendering', False)
+            self._needs_rendering = pdf.Root.get(Name.NeedsRendering, False)
             self._has_acroform = False
-            if '/AcroForm' in pdf.Root:
-                if len(pdf.Root.AcroForm.get('/Fields', [])) > 0:
+            if Name.AcroForm in pdf.Root:
+                if len(pdf.Root.AcroForm.get(Name.Fields, [])) > 0:
                     self._has_acroform = True
-                elif '/XFA' in pdf.Root.AcroForm:
+                elif Name.XFA in pdf.Root.AcroForm:
                     self._has_acroform = True
 
     @property
@@ -1006,8 +1007,13 @@ class PdfInfo:
 
     @property
     def has_acroform(self) -> bool:
-        """Return True if any page has an AcroForm."""
+        """Return True if the document catalog has an AcroForm."""
         return self._has_acroform
+
+    @property
+    def has_signature(self) -> bool:
+        """Return True if the document annotations has a digital signature."""
+        return self._has_signature
 
     @property
     def filename(self) -> str | Path:
