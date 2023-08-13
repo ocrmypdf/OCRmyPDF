@@ -70,7 +70,7 @@ Linux, Windows, macOS and FreeBSD are supported. Docker images are also availabl
 | Windows Subsystem for Linux   | ``apt install ocrmypdf``      |
 | Fedora                        | ``dnf install ocrmypdf``      |
 | macOS (Homebrew)              | ``brew install ocrmypdf``     |
-| macOS (nix)                   | ``nix-env -i  ocrmypdf``      |
+| macOS (nix)                   | ``nix-env -i ocrmypdf``       |
 | LinuxBrew                     | ``brew install ocrmypdf``     |
 | FreeBSD                       | ``pkg install py-ocrmypdf``   |
 | Conda                         | ``conda install ocrmypdf``    |
