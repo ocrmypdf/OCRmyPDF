@@ -275,6 +275,21 @@ To install OCRmyPDF for Alpine Linux:
 
     apk add ocrmypdf
 
+Gentoo Linux
+------------
+
+.. image:: https://repology.org/badge/version-for-repo/gentoo_ovl_guru/ocrmypdf.svg
+    :alt: Gentoo Linux
+    :target: https://repology.org/metapackage/ocrmypdf
+
+To install OCRmyPDF on Gentoo Linux, use the following commands:
+
+.. code-block:: bash
+
+    eselect repository enable guru
+    emaint sync --repo guru
+    emerge --ask app-text/OCRmyPDF
+
 Other Linux packages
 --------------------
 
