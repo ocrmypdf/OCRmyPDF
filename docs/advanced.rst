@@ -47,8 +47,8 @@ and clean up the margins of both.
 
    Some ``unpaper`` features cause multiple input or output files to be
    consumed or produced. OCRmyPDF requires ``unpaper`` to consume one
-   file and produce one file. An deviation from that condition will
-   result in errors.
+   file and produce one file; errors will result if this assumption is not
+   met.
 
 .. note::
 
@@ -82,14 +82,17 @@ is stripped out. Then an image of each page is created with visible text
 masked out. The page image is sent for OCR, and any additional text is
 inserted as OCR. If a file contains a mix of text and bitmap images that
 contain text, OCRmyPDF will locate the additional text in images without
-disrupting the existing text.
+disrupting the existing text. Some PDF OCR solutions render text as
+technically printable or visible in some way, perhaps by drawing it and
+then painting over it. OCRmyPDF cannot distinguish this type of OCR
+text from real text, so it will not be "redone".
 
 If ``--force-ocr`` is issued, then all pages will be rasterized to
-images, discarding any hidden OCR text, and rasterizing any printable
-text. This is useful for redoing OCR, for fixing OCR text with a damaged
-character map (text is selectable but not searchable), and destroying
-redacted information. Any forms and vector graphics will be rasterized
-as well.
+images, discarding any hidden OCR text, rasterizing any printable
+text, and flattening form fields or interactive objects into their visual
+representation. This is useful for redoing OCR, for fixing OCR text
+with a damaged character map (text is selectable but not searchable),
+and destroying redacted information.
 
 Time and image size limits
 --------------------------
@@ -154,7 +157,8 @@ In addition to tesseract, OCRmyPDF uses the following external binaries:
 -  ``jbig2``
 
 In each case OCRmyPDF will search the ``PATH`` environment variable to
-locate the binaries.
+locate the binaries. By modifying the ``PATH`` environment variable, you
+can override the binaries that OCRmyPDF uses.
 
 Changing tesseract configuration variables
 ------------------------------------------

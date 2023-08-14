@@ -54,31 +54,72 @@ into the existing PDF or it may essentially reconstruct ("re-fry") a
 visually identical PDF that may be quite different at the binary level.
 That said, OCRmyPDF is not a tool designed for sanitizing PDFs.
 
-Password protection, digital signatures and certification
-=========================================================
+Password protected PDFs
+=======================
 
 Password protected PDFs usually have two passwords, and owner and user
 password. When the user password is set to empty, PDF readers will open
-the file automatically and marked it as "(SECURED)". While not as
-reliable as a digital signature, this indicates that whoever set the
-password approved of the file at that time. When the user password is
-set, the document cannot be viewed without the password.
+the file automatically and mark it as "(SECURED)". Password security can
+also request certain restrictions on the PDF, but anyone can remove these
+restrictions if they have either the owner *or* user password. Passwords
+mainly present a barrier for casual users.
 
-Either way, OCRmyPDF does not remove passwords from PDFs and exits with
-an error on encountering them.
+OCRmyPDF cannot remove passwords from PDFs. If you want to remove a
+password from a PDF, you must use other software, such as ``qpdf``.
 
-``qpdf`` can remove passwords. If the owner and user password are set, a
+If the owner and user password are set, a
 password is required for ``qpdf``. If only the owner password is set, then the
-password can be stripped, even if one does not have the owner password.
+password can be stripped, even if one does not have the owner password. To
+remove the password from a using QPDF, use:
 
-After OCR is applied, password protection is not permitted on PDF/A
-documents but the file can be converted to regular PDF.
+.. code-block:: bash
+
+   qpdf --decrypt --password='abc123' input.pdf no_password.pdf
+
+Then you can run OCRmyPDF on the file.
+
+In its default mode, OCRmyPDF generates PDF/A. Passwords may not be set on PDF/A
+documents. If you want to set a password on the output PDF, you must
+specify ``--output-type pdf``.
+
+Signature images
+================
 
 Many programs exist which are capable of inserting an image of someone's
 signature. On its own, this offers no security guarantees. It is trivial
 to remove the signature image and apply it to other files. This practice
 offers no real security.
 
+Digital signatures
+==================
+
 Important documents can be digitally signed and certified to attest to
-their authorship. OCRmyPDF cannot do this. Open source tools such as
-pdfbox (Java) have this capability as does Adobe Acrobat.
+their authorship, approval or execution of a legal agreement. OCRmyPDF
+will detect signed PDFs and will not modify them, unless the
+``--invalidate-digital-signatures`` option is used, which will
+invalidate any signatures. (The signature may still be present in the PDF
+if opened, but PDF readers will not validate it.)
+
+A digital signature adds a cryptographic hash of the document to the
+document, so tamper protection is provided. That also precludes OCRmyPDF
+from modifying the document and preserving the signature.
+
+Digital signatures are not the same as a signature image. A digital
+signature is a cryptographic hash of the document that is encrypted with
+the author's private key. The signature is decrypted with the author's
+public key. The public key is usually distributed by a certificate
+authority. The signature is then verified by the PDF reader. If the
+document is modified, the signature will be invalidated.
+
+Certificate-encrypted PDFs
+==========================
+
+PDFs can be encrypted with a certificate. This is a more secure form of
+encryption than a password. The certificate is usually issued by a
+certificate authority. A certificate is used to encrypt the document using
+the public key for the benefit of a specific recipient who possesses
+the private key.
+
+OCRmyPDF cannot open certificate-encrypted PDFs. If you have the
+certificate, you can use other PDF software, such as Acrobat, to
+decrypt the PDF.

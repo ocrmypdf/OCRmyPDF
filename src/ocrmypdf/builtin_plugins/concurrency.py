@@ -68,7 +68,7 @@ def process_init(q: Queue, user_init: UserInit, loglevel) -> None:
         # Windows and Cygwin do not have pthread_sigmask or SIGBUS
         signal.signal(signal.SIGBUS, process_sigbus)
 
-    # Remove any log handlers that belong to the parent process
+    # Remove any log handlers inherited from the parent process
     root = logging.getLogger()
     remove_all_log_handlers(root)
 

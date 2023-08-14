@@ -34,7 +34,7 @@ v14.4.0
 -  Digitally signed PDFs are now detected. If the PDF is signed, OCRmyPDF will
    refuse to modify it. Previously, only encrypted PDFs were detected, not
    those that were signed but not encrypted. :issue:`1040`
--  In addition, `--invalidate-digital-signatures` can be used to override the
+-  In addition, ``--invalidate-digital-signatures`` can be used to override the
    above behavior and modify the PDF anyway. :issue:`1040`
 -  tqdm progress bars replaced with "rich" progress bars. The rich library is
    a new dependency. Certain APIs that used tqdm are now deprecated and will
@@ -67,7 +67,7 @@ v14.2.1
 v14.2.0
 =======
 
--  Added `--tesseract-downsample-above` to downsample larger images even when
+-  Added ``--tesseract-downsample-above`` to downsample larger images even when
    they do not exceed Tesseract's internal limits. This can be used to speed
    up OCR, possibly sacrificing accuracy.
 -  Fixed resampling AttributeError on older Pillow. :issue:`1096`

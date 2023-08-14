@@ -231,12 +231,19 @@ Don't actually OCR my PDF
 =========================
 
 If you set ``--tesseract-timeout 0`` OCRmyPDF will apply its image
-processing without performing OCR, if all you want to is to apply image
-processing or PDF/A conversion.
+processing without performing OCR (by causing OCR to time out). This works
+if all you want to is to apply image processing or PDF/A conversion.
 
 .. code-block:: bash
 
     ocrmypdf --tesseract-timeout=0 --remove-background input.pdf output.pdf
+
+.. versionchanged:: v14.1.0
+
+    Prior to this version, ``--tesseract-timeout 0`` would prevent other
+    uses of Tesseract, such as deskewing, from working. This is no longer
+    the case. Use ``--tesseract-non-ocr-timeout`` to control the timeout
+    for non-OCR operations, if needed.
 
 Optimize images without performing OCR
 --------------------------------------
@@ -261,9 +268,10 @@ Hyphens denote a range of pages and commas separate page numbers. If you prefer
 to use spaces, quote all of the page numbers: ``--pages '2, 3, 5, 7'``.
 
 OCRmyPDF will warn if your list of page numbers contains duplicates or
-overlap pages. OCRmyPDF does not currently account for document page numbers,
+overlapping pages. OCRmyPDF does not currently account for document page numbers,
 such as an introduction section of a book that uses Roman numerals. It simply
-counts the number of virtual pieces of paper since the start.
+counts the number of virtual pieces of paper since the start. If your list of
+pages is out of numerical order, OCRmyPDF will sort it for you.
 
 Regardless of the argument to ``--pages``, OCRmyPDF will optimize all pages/images
 in the file and convert it to PDF/A, unless you disable those options. Both of these

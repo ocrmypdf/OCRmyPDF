@@ -46,16 +46,6 @@ place, and printing each filename in between runs:
 
    find . -printf '%p\n' -name '*.pdf' -exec ocrmypdf '{}' '{}' \;
 
-Alternatively, with a Docker container and streaming the file through
-standard input and output:
-
-.. code-block:: bash
-
-   find . -name '*.pdf' -print0 | xargs -0 | while read pdf; do
-       pdfout=$(mktemp)
-       docker run --rm -i jbarlow83/ocrmypdf - - <$pdf >$pdfout && cp $pdfout $pdf
-   done
-
 This only runs one ``ocrmypdf`` process at a time. This variation uses
 ``find`` to create a directory list and ``parallel`` to parallelize runs
 of ``ocrmypdf``, again updating files in place.
@@ -69,6 +59,15 @@ In a Windows batch file, use
 .. code-block:: bat
 
    for /r %%f in (*.pdf) do ocrmypdf %%f %%f
+
+With a Docker container, you will need to stream through standard input and output:
+
+.. code-block:: bash
+
+   find . -name '*.pdf' -print0 | xargs -0 | while read pdf; do
+       pdfout=$(mktemp)
+       docker run --rm -i jbarlow83/ocrmypdf - - <$pdf >$pdfout && cp $pdfout $pdf
+   done
 
 Sample script
 -------------
@@ -88,9 +87,9 @@ package <https://www.synology.com/en-global/dsm/packages/Docker>`__ is
 installed. Attached is a script to address particular quirks of using
 OCRmyPDF on one of these devices.
 
-This is only possible for x86-based Synology products. Some Synology
-products use ARM or Power processors and do not support Docker. Further
-adjustments might be needed to deal with the Synology's relatively
+At the time this script was written, it only worked for x86-based Synology
+products. It is not known if it will work on ARM-based Synology products.
+Further adjustments might be needed to deal with the Synology's relatively
 limited CPU and RAM.
 
 .. literalinclude:: ../misc/synology.py

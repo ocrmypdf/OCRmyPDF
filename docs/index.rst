@@ -44,6 +44,7 @@ image processing and OCR to existing PDFs.
    api
    plugins
    apiref
+   design_notes
    contributing
    maintainers
 
