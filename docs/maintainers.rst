@@ -45,11 +45,6 @@ to indicate that your distribution modifies OCRmyPDF in some way.
 You can patch the ``__version__`` variable in ``src/ocrmypdf/_version.py`` if
 necessary.
 
-OCRmyPDF uses setuptools-scm-git-archive to ensure that tarballs downloaded from
-GitHub contain version information. Unfortunately, these tarballs are not always
-deterministic. See this
-`issue <https://github.com/ocrmypdf/OCRmyPDF/issues/841#issuecomment-936562696>`_.
-
 jbig2enc
 --------
 
