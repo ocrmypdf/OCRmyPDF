@@ -72,8 +72,7 @@ Debian and Ubuntu 20.04 or newer
 | |ubu-2004| |ubu-2204|                         |
 +-----------------------------------------------+
 
-Users of Debian 9 ("stretch") or later, or Ubuntu 18.04 or later, including users
-of Windows Subsystem for Linux, may simply
+Users of Debian 11, or Ubuntu 20.04 LTS, or newer may simply
 
 .. code-block:: bash
 
@@ -359,17 +358,11 @@ Update the homebrew pip:
 
     pip install --upgrade pip
 
-You can then install OCRmyPDF from PyPI, for the current user:
+You can then install OCRmyPDF from PyPI for the current user:
 
 .. code-block:: bash
 
     pip install --user ocrmypdf
-
-or system-wide:
-
-.. code-block:: bash
-
-    pip install ocrmypdf
 
 The command line program should now be available:
 
@@ -533,21 +526,6 @@ the latest version. However, PyPI and ``pip`` cannot address the fact
 that ``ocrmypdf`` depends on certain non-Python system libraries and
 programs being installed.
 
-.. warning::
-
-    Debian and Ubuntu users: unfortunately, Debian and Ubuntu customize
-    Python in non-standard ways, and the nature of these customizations
-    varies from release to release. This can make for a frustrating
-    user experience. The instructions below work on almost all platforms that
-    have Python installed, except for Debian and Ubuntu, where you may need
-    to take additional steps. For best results on Debian and Ubuntu, use the
-    ``apt`` packages; or if these are too old, run
-    ``apt install python3-pip python3-venv``, create a virtual environment,
-    and install OCRmyPDF in that environment.
-
-    `See here for more information on Debian-Python issues
-    <https://gist.github.com/tiran/2dec9e03c6f901814f6d1e8dad09528e>`__.
-
 For best results, first install `your platform's
 version <https://repology.org/metapackage/ocrmypdf/versions>`__ of
 ``ocrmypdf``, using the instructions elsewhere in this document. Then
@@ -565,21 +543,6 @@ try:
 
 You should then be able to run ``ocrmypdf --version`` and see that the
 latest version was located.
-
-Since ``pip install --user`` does not work correctly on some platforms,
-notably Ubuntu 16.04 and older, and the Homebrew version of Python,
-instead use this for a system wide installation:
-
-.. code-block:: bash
-
-    pip install ocrmypdf
-
-.. note::
-
-    AArch64 (ARM64) users: this process will be difficult because most
-    Python packages are not available as binary wheels for your platform.
-    You're probably better off using a platform install on Debian, Ubuntu,
-    or Fedora.
 
 Requirements for pip and HEAD install
 -------------------------------------
@@ -653,8 +616,8 @@ system-wide:
 .. code-block:: bash
 
     git clone -b main https://github.com/ocrmypdf/OCRmyPDF.git
-    python3 -m venv venv
-    source venv/bin/activate
+    python3 -m venv .venv
+    source .venv/bin/activate
     cd OCRmyPDF
     pip install .
 
@@ -680,8 +643,8 @@ To install all of the development and test requirements:
 .. code-block:: bash
 
     git clone -b main https://github.com/ocrmypdf/OCRmyPDF.git
-    python -m venv
-    source venv/bin/activate
+    python -m .venv
+    source .venv/bin/activate
     cd OCRmyPDF
     pip install -e .[test]
 
