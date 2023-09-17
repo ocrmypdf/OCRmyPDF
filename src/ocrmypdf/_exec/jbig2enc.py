@@ -23,15 +23,17 @@ def available():
     return True
 
 
-def convert_group(*, cwd, infiles, out_prefix):
+def convert_group(*, cwd, infiles, out_prefix, threshold):
     args = [
         'jbig2',
         '-b',
         out_prefix,
-        '-s',  # symbol mode (lossy)
+        '--symbol-mode',  # symbol mode (lossy)
+        '-t',
+        str(threshold),  # threshold
         # '-r', # refinement mode (lossless symbol mode, currently disabled in
         # jbig2)
-        '-p',
+        '--pdf',
     ]
     args.extend(infiles)
     proc = run(args, cwd=cwd, stdout=PIPE, stderr=PIPE)
@@ -40,11 +42,13 @@ def convert_group(*, cwd, infiles, out_prefix):
 
 
 def convert_group_mp(args):
-    return convert_group(cwd=args[0], infiles=args[1], out_prefix=args[2])
+    return convert_group(
+        cwd=args[0], infiles=args[1], out_prefix=args[2], threshold=args[3]
+    )
 
 
-def convert_single(*, cwd, infile, outfile):
-    args = ['jbig2', '-p', infile]
+def convert_single(*, cwd, infile, outfile, threshold):
+    args = ['jbig2', '--pdf', '-t', str(threshold), infile]
     with open(outfile, 'wb') as fstdout:
         proc = run(args, cwd=cwd, stdout=fstdout, stderr=PIPE)
     proc.check_returncode()
@@ -52,4 +56,6 @@ def convert_single(*, cwd, infile, outfile):
 
 
 def convert_single_mp(args):
-    return convert_single(cwd=args[0], infile=args[1], outfile=args[2])
+    return convert_single(
+        cwd=args[0], infile=args[1], outfile=args[2], threshold=args[3]
+    )
