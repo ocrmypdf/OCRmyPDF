@@ -21,7 +21,6 @@ dependencies = [
   "pluggy>=0.13.0",
   "reportlab>=3.5.66",
   "rich>=13",
-  "tqdm>=4",
   "typing-extensions>=4;python_version<'3.10'",
 ]
 authors = [{ name = "James R. Barlow", email = "james@purplerock.ca" }]

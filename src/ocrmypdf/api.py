@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import AnyStr, BinaryIO, Iterable, Union
 from warnings import warn
 
-from ocrmypdf._logging import PageNumberFilter, TqdmConsole
+from ocrmypdf._logging import PageNumberFilter, RichTqdmProgressAdapter
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._sync import run_pipeline
 from ocrmypdf._validation import check_options
@@ -339,7 +339,6 @@ def ocr(  # noqa: ruff: disable=D417
 
 __all__ = [
     'PageNumberFilter',
-    'TqdmConsole',
     'Verbosity',
     'check_options',
     'configure_logging',

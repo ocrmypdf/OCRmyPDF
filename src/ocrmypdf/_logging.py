@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import logging
-from contextlib import suppress
 
 from rich.console import Console
 from rich.logging import RichHandler
@@ -19,7 +18,6 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 from rich.table import Column
-from tqdm import tqdm
 
 
 class PageNumberFilter(logging.Filter):
@@ -32,26 +30,6 @@ class PageNumberFilter(logging.Filter):
         elif pageno is None:
             record.pageno = ''
         return True
-
-
-class TqdmConsole:
-    """Wrapper to log messages in a way that is compatible with tqdm progress bar.
-
-    This routes log messages through tqdm so that it can print them above the
-    progress bar, and then refresh the progress bar, rather than overwriting
-    it which looks messy.
-    """
-
-    def __init__(self, file):
-        self.file = file
-
-    def write(self, msg):
-        # When no progress bar is active, tqdm.write() routes to print()
-        tqdm.write(msg.rstrip(), end='\n', file=self.file)
-
-    def flush(self):
-        with suppress(AttributeError):
-            self.file.flush()
 
 
 class RichLoggingHandler(RichHandler):
