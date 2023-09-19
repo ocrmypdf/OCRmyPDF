@@ -30,18 +30,9 @@ except AttributeError:
 
 log = logging.getLogger(__name__)
 
-# Most reliable way to get the bitness of Python interpreter, according to Python docs
-_IS_64BIT = sys.maxsize > 2**32
 
-_GSWIN = None
-if os.name == 'nt':
-    if _IS_64BIT:
-        _GSWIN = 'gswin64c'
-    else:
-        _GSWIN = 'gswin32c'
-
-GS = _GSWIN if _GSWIN else 'gs'
-del _GSWIN
+# Ghostscript executable - gswin32c is not supported
+GS = 'gswin64c' if os.name == 'nt' else 'gs'
 
 
 def version():
