@@ -13,6 +13,10 @@ from ocrmypdf.subprocess import check_external_program
 
 log = logging.getLogger(__name__)
 
+# Currently all blacklisted versions are lower than 9.55, so none need to
+# be added here. If a future version is blacklisted, add it here.
+BLACKLISTED_GS_VERSIONS = frozenset()
+
 
 @hookimpl
 def check_options(options):
@@ -21,10 +25,10 @@ def check_options(options):
         program='gs',
         package='ghostscript',
         version_checker=ghostscript.version,
-        need_version='9.50',  # Ubuntu 20.04's version
+        need_version='9.55',  # Ubuntu 22.04's version
     )
     gs_version = ghostscript.version()
-    if gs_version in ('9.51',):
+    if gs_version in BLACKLISTED_GS_VERSIONS:
         raise MissingDependencyError(
             f"Ghostscript {gs_version} contains serious regressions and is not "
             "supported. Please upgrade to a newer version, or downgrade to the "
