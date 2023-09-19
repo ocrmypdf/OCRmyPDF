@@ -95,7 +95,7 @@ def check_options(options):
             program='pngquant',
             package='pngquant',
             version_checker=pngquant.version,
-            need_version='2.0.1',
+            need_version='2.13.1',
             required_for='--optimize {2,3}',
         )
 
