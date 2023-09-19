@@ -238,6 +238,9 @@ jobs:
     name: Deploy artifacts to PyPI
     needs: [wheel_sdist_linux, test_linux, test_macos, test_windows]
     runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write  # mandatory for PyPI publishing
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
     steps:
       - uses: actions/download-artifact@v3
@@ -245,11 +248,8 @@ jobs:
           name: artifact
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.TOKEN_PYPI }}
-          # repository_url: https://test.pypi.org/legacy/
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
 
   create_release:
     name: Create GitHub release
