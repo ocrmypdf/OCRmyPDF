@@ -12,14 +12,14 @@ readme = "README.md"
 license = { text = "MPL-2.0" }
 requires-python = ">=3.9"
 dependencies = [
-  "Pillow>=8.2.0",
+  "Pillow>=9.0.1",
   "deprecation>=2.1.0",
   "img2pdf>=0.4.4",
   "packaging>=20",
-  "pdfminer.six>=20201018",
+  "pdfminer.six>=20220319",
   "pikepdf>=5.0.1",
   "pluggy>=0.13.0",
-  "reportlab>=3.5.66",
+  "reportlab>=3.6.8",
   "rich>=13",
   "typing-extensions>=4;python_version<'3.10'",
 ]
@@ -52,17 +52,17 @@ Tracker = "https://github.com/ocrmypdf/OCRmyPDF/issues"
 docs = ["sphinx", "sphinx-issues", "sphinx-rtd-theme"]
 extended_test = ["PyMuPDF==1.19.1"]
 test = [
-  "coverage[toml]>=5",
-  "hypothesis>=6.0.0",
-  "pytest>=6.0.0",
-  "pytest-cov>=2.11.1",
-  "pytest-xdist>=2.2.0",
+  "coverage[toml]>=6.2",
+  "hypothesis>=6.36.0",
+  "pytest>=6.2.5",
+  "pytest-cov>=3.0.0",
+  "pytest-xdist>=2.5.0",
   "python-xmp-toolkit==2.0.1", # also requires apt-get install libexempi3
   "types-Pillow",
   "types-humanfriendly",
 ]
 watcher = ["watchdog>=1.0.2"]
-webservice = ["Flask>=1"]
+webservice = ["Flask>=2.0.1"]
 
 [project.scripts]
 ocrmypdf = "ocrmypdf.__main__:run"
