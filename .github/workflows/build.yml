@@ -221,7 +221,7 @@ jobs:
       - uses: actions/setup-python@v4
         name: Install Python
         with:
-          python-version: "3.7"
+          python-version: "3.9"
 
       - name: Make wheels and sdist
         run: |
