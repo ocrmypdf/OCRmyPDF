@@ -14,7 +14,7 @@ requires-python = ">=3.9"
 dependencies = [
   "Pillow>=8.2.0",
   "deprecation>=2.1.0",
-  "img2pdf>=0.3.0",                             # pure Python
+  "img2pdf>=0.4.4",
   "packaging>=20",
   "pdfminer.six>=20201018",
   "pikepdf>=5.0.1",
