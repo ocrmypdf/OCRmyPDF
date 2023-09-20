@@ -86,7 +86,8 @@ def test_unset_metadata(output_type, field, resources, outpdf):
         'title': b'NFY5f7Ft2DWMkxLhXwxvFf7eWR2KeK3vEDcd',
         'author': b'yXaryipxyRk9dVjWjSSaVaNCKeLRgEVzPRMp',
         'subject': b't49vimctvnuH7ZeAjAkv52ACvWFjcnm5MPJr',
-        'keywords': b's9EeALwUg7urA7fnnhm5EtUyC54sW2WPUzqh'}
+        'keywords': b's9EeALwUg7urA7fnnhm5EtUyC54sW2WPUzqh',
+    }
 
     p = run_ocrmypdf(
         input_file,
@@ -364,6 +365,7 @@ def test_prevent_gs_invalid_xml(resources, outdir):
     options = get_parser().parse_args(
         args=['-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
     )
+    options.color_conversion_strategy = 'LeaveColorUnchanged'
     pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
     context = PdfContext(
         options, outdir, outdir / 'layers.rendered.pdf', pdfinfo, get_plugin_manager([])
@@ -404,6 +406,7 @@ def test_malformed_docinfo(caplog, resources, outdir):
             'b.pdf',
         ]
     )
+    options.color_conversion_strategy = 'LeaveColorUnchanged'
     pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
     context = PdfContext(
         options, outdir, outdir / 'layers.rendered.pdf', pdfinfo, get_plugin_manager([])

@@ -129,4 +129,14 @@ complete -c ocrmypdf -r -l user-words -d "specify location of user words file"
 complete -c ocrmypdf -r -l user-patterns -d "specify location of user patterns file"
 complete -c ocrmypdf -x -l fast-web-view -d "if file size if above this amount in MB, linearize PDF"
 
+function __fish_ocrmypdf_color_conversion_strategy
+    echo -e "LeaveColorUnchanged\t"(_ "do not convert color spaces (default)")
+    echo -e "CMYK\t"(_ "convert all color spaces to CMYK")
+    echo -e "Gray\t"(_ "convert all color spaces to grayscale")
+    echo -e "RGB\t"(_ "convert all color spaces to RGB")
+    echo -e "UseDeviceIndependentColor\t"(_ "convert all color spaces to ICC-based color spaces")
+end
+
+complete -c ocrmypdf -x -l color-conversion-strategy -a '(__fish_ocrmypdf_color_conversion_strategy)' -d "set color conversion strategy"
+
 complete -c ocrmypdf -x -a "(__fish_complete_suffix .pdf; __fish_complete_suffix .PDF; __fish_complete_suffix .jpg; __fish_complete_suffix .png)"

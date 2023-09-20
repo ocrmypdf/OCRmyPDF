@@ -15,6 +15,20 @@ log = logging.getLogger(__name__)
 
 
 @hookimpl
+def add_options(parser):
+    gs = parser.add_argument_group("Ghostscript", "Advanced control of Ghostscript")
+    gs.add_argument(
+        '--color-conversion-strategy',
+        action='store',
+        type=str,
+        metavar='STRATEGY',
+        choices=ghostscript.COLOR_CONVERSION_STRATEGIES,
+        default='LeaveColorUnchanged',
+        help="Set Ghostscript color conversion strategy",
+    )
+
+
+@hookimpl
 def check_options(options):
     """Check that the options are valid for this plugin."""
     check_external_program(
@@ -33,6 +47,10 @@ def check_options(options):
 
     if options.output_type == 'pdfa':
         options.output_type = 'pdfa-2'
+    if options.color_conversion_strategy not in ghostscript.COLOR_CONVERSION_STRATEGIES:
+        raise ValueError(
+            f"Invalid color conversion strategy: {options.color_conversion_strategy}"
+        )
 
 
 @hookimpl
@@ -68,6 +86,7 @@ def generate_pdfa(
     pdfmark,
     output_file,
     compression,
+    color_conversion_strategy,
     pdf_version,
     pdfa_part,
     progressbar_class,
@@ -78,6 +97,7 @@ def generate_pdfa(
         pdf_pages=[*pdf_pages, pdfmark],
         output_file=output_file,
         compression=compression,
+        color_conversion_strategy=color_conversion_strategy,
         pdf_version=pdf_version,
         pdfa_part=pdfa_part,
         progressbar_class=progressbar_class,

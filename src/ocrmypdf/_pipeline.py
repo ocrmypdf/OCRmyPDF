@@ -793,6 +793,7 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
         pdfmark=input_ps_stub,
         output_file=output_file,
         compression=options.pdfa_image_compression,
+        color_conversion_strategy=options.color_conversion_strategy,
         pdfa_part=options.output_type[-1],  # is pdfa-1, pdfa-2, or pdfa-3
         progressbar_class=(
             context.plugin_manager.hook.get_progressbar_class()

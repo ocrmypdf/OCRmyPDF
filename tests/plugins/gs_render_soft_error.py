@@ -35,6 +35,7 @@ def generate_pdfa(
             pdfmark=pdfmark,
             output_file=output_file,
             compression=compression,
+            color_conversion_strategy='LeaveColorUnchanged',
             pdf_version=pdf_version,
             pdfa_part=pdfa_part,
             progressbar_class=None,

@@ -6,53 +6,55 @@ set -o errexit
 
 __ocrmypdf_arguments()
 {
-    local arguments="--help                   (show help message)
---language               (language(s) of the file to be OCRed)
---image-dpi              (assume this DPI if input image DPI is unknown)
---output-type            (select PDF output options)
---sidecar                (write OCR to text file)
---version                (print program version and exit)
---jobs                   (how many worker processes to use)
---quiet                  (suppress INFO messages)
---verbose                (set verbosity level)
---title                  (set metadata)
---author                 (set metadata)
---subject                (set metadata)
---keywords               (set metadata)
---rotate-pages           (rotate pages to correct orientation)
---remove-background      (attempt to remove background from pages)
---deskew                 (fix small horizontal alignment skew)
---clean                  (clean document images before OCR)
---clean-final            (clean document images and keep result)
---unpaper-args           (a quoted string of arguments to pass to unpaper)
---oversample             (oversample images to this DPI)
---remove-vectors         (don\'t send vector objects to OCR)
---threshold              (threshold images before OCR)
---force-ocr              (OCR documents that already have printable text)
---skip-text              (skip OCR on any pages that already contain text)
---redo-ocr               (redo OCR on any pages that seem to have OCR already)
+    local arguments="\
+--help                          (show help message)
+--language                      (language(s) of the file to be OCRed)
+--image-dpi                     (assume this DPI if input image DPI is unknown)
+--output-type                   (select PDF output options)
+--sidecar                       (write OCR to text file)
+--version                       (print program version and exit)
+--jobs                          (how many worker processes to use)
+--quiet                         (suppress INFO messages)
+--verbose                       (set verbosity level)
+--title                         (set metadata)
+--author                        (set metadata)
+--subject                       (set metadata)
+--keywords                      (set metadata)
+--rotate-pages                  (rotate pages to correct orientation)
+--remove-background             (attempt to remove background from pages)
+--deskew                        (fix small horizontal alignment skew)
+--clean                         (clean document images before OCR)
+--clean-final                   (clean document images and keep result)
+--unpaper-args                  (a quoted string of arguments to pass to unpaper)
+--oversample                    (oversample images to this DPI)
+--remove-vectors                (don\'t send vector objects to OCR)
+--threshold                     (threshold images before OCR)
+--force-ocr                     (OCR documents that already have printable text)
+--skip-text                     (skip OCR on any pages that already contain text)
+--redo-ocr                      (redo OCR on any pages that seem to have OCR already)
 --invalidate-digital-signatures (remove digital signatures from PDF)
---skip-big               (skip OCR on pages larger than this many MPixels)
---optimize               (select optimization level)
---jpeg-quality           (JPEG quality [0..100])
---png-quality            (PNG quality [0..100])
---jbig2-lossy            (enable lossy JBIG2 (see docs))
---pages                  (apply OCR to only the specified pages)
---max-image-mpixels      (image decompression bomb threshold)
---pdf-renderer           (select PDF renderer options)
---rotate-pages-threshold (page rotation confidence)
---pdfa-image-compression (set PDF/A image compression options)
---fast-web-view          (if file size if above this amount in MB linearize PDF)
---plugin                 (name of plugin to import)
---keep-temporary-files   (keep temporary files (debug)
---tesseract-config       (set custom tesseract config file)
---tesseract-pagesegmode  (set tesseract --psm)
---tesseract-oem          (set tesseract --oem)
---tesseract-thresholding (set tesseract image thresholding)
---tesseract-timeout      (maximum number of seconds to wait for OCR)
---user-words             (specify location of user words file)
---user-patterns          (specify location of user patterns file)
---no-progress-bar        (disable the progress bar)
+--skip-big                      (skip OCR on pages larger than this many MPixels)
+--optimize                      (select optimization level)
+--jpeg-quality                  (JPEG quality [0..100])
+--png-quality                   (PNG quality [0..100])
+--jbig2-lossy                   (enable lossy JBIG2 (see docs))
+--pages                         (apply OCR to only the specified pages)
+--max-image-mpixels             (image decompression bomb threshold)
+--pdf-renderer                  (select PDF renderer options)
+--rotate-pages-threshold        (page rotation confidence)
+--pdfa-image-compression        (set PDF/A image compression options)
+--fast-web-view                 (if file size if above this amount in MB linearize PDF)
+--plugin                        (name of plugin to import)
+--keep-temporary-files          (keep temporary files (debug)
+--tesseract-config              (set custom tesseract config file)
+--tesseract-pagesegmode         (set tesseract --psm)
+--tesseract-oem                 (set tesseract --oem)
+--tesseract-thresholding        (set tesseract image thresholding)
+--tesseract-timeout             (maximum number of seconds to wait for OCR)
+--user-words                    (specify location of user words file)
+--user-patterns                 (specify location of user patterns file)
+--no-progress-bar               (disable the progress bar)
+--color-conversion-strategy     (select color conversion strategy)
 "
 
     COMPREPLY=( $( compgen -W "$arguments" -- "$cur") )
@@ -192,6 +194,20 @@ sauvola       (use Sauvola thresholding)"
     fi
 }
 
+__ocrmypdf_color-conversion-strategy()
+{
+    local choices="LeaveColorUnchanged (default)
+CMYK (convert to CMYK)
+Gray (convert to grayscale)
+RGB (convert to RGB)
+UseDeviceIndependentColor (convert with device independent color)"
+
+    COMPREPLY=( $( compgen -W "$choices" -- "$cur") )
+    # Remove description if only one completion exists
+    if [[ ${#COMPREPLY[*]} -eq 1 ]]; then
+        COMPREPLY=( ${COMPREPLY[0]%% *} )
+    fi
+}
 
 __ocrmypdf_check_previous()
 {
@@ -249,6 +265,10 @@ __ocrmypdf_check_previous()
             ;;
         --tesseract-config|--user-words|--user-patterns|--sidecar)
             _filedir
+            return 0
+            ;;
+        --color-conversion-strategy)
+            __ocrmypdf_color-conversion-strategy
             return 0
             ;;
     esac

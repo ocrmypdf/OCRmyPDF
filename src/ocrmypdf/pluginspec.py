@@ -467,6 +467,7 @@ def generate_pdfa(
     pdfmark: Path,
     output_file: Path,
     compression: str,
+    color_conversion_strategy: str,
     pdf_version: str,
     pdfa_part: str,
     progressbar_class,
@@ -489,6 +490,8 @@ def generate_pdfa(
             possible. For lossless, all images should be converted to FlateEncode
             (lossless PNG). If an empty string, the PDF generator should make its
             own decisions about how to encode images.
+        color_conversion_strategy: A valid Ghostscript color conversion strategy
+            name.
         pdf_version: The minimum PDF version that the output file should be.
             At its own discretion, the PDF/A generator may raise the version,
             but should not lower it.
