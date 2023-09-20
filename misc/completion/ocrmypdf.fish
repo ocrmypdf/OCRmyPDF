@@ -139,4 +139,17 @@ end
 
 complete -c ocrmypdf -x -l color-conversion-strategy -a '(__fish_ocrmypdf_color_conversion_strategy)' -d "set color conversion strategy"
 
-complete -c ocrmypdf -x -a "(__fish_complete_suffix .pdf; __fish_complete_suffix .PDF; __fish_complete_suffix .jpg; __fish_complete_suffix .png)"
+function __fish_ocrmypdf_input_file_given
+    set -l tokens (commandline -opc)
+    for token in $tokens
+        if string match -q -r '^-' -- $token
+            continue
+        end
+        if test -f "$token"
+            return 0
+        end
+    end
+    return 1
+end
+
+complete -c ocrmypdf -x -n 'not __fish_ocrmypdf_input_file_given' -a "(__fish_complete_suffix .pdf)" -d "input file"
