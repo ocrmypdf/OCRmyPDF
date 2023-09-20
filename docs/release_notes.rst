@@ -28,6 +28,17 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v15.0.0
+=======
+
+-  Dropped support for Python 3.8.
+-  Dropped support many older dependencies - see ``pyproject.toml`` for details.
+   Generally speaking, Ubuntu 22.04 is our baseline system.
+-  Dropped support 32-bit Windows and Linux. You must use a 64-bit operating system,
+   and 64-bit applications to use OCRmyPDF. Many of our dependencies are dropping
+   32-bit support (e.g. Pillow), and we are following suit.
+-  Changed to trusted release for PyPI publishing.
+
 v14.4.0
 =======
 
