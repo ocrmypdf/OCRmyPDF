@@ -204,16 +204,6 @@ def check_options_ocr_behavior(options: Namespace) -> None:
         options.pages = _pages_from_ranges(options.pages)
 
 
-def check_options_advanced(options: Namespace) -> None:
-    if options.pdfa_image_compression != 'auto' and not options.output_type.startswith(
-        'pdfa'
-    ):
-        log.warning(
-            "--pdfa-image-compression argument only applies when "
-            "--output-type is one of 'pdfa', 'pdfa-1', or 'pdfa-2'"
-        )
-
-
 def check_options_metadata(options: Namespace) -> None:
     docinfo = [options.title, options.author, options.keywords, options.subject]
     for s in (m for m in docinfo if m):
@@ -240,7 +230,6 @@ def _check_plugin_invariant_options(options: Namespace) -> None:
     check_options_sidecar(options)
     check_options_preprocessing(options)
     check_options_ocr_behavior(options)
-    check_options_advanced(options)
     check_options_pillow(options)
 
 

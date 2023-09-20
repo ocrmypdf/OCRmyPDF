@@ -362,10 +362,16 @@ def test_prevent_gs_invalid_xml(resources, outdir):
         )
         pike.save(outdir / 'layers.rendered.pdf', fix_metadata_version=False)
 
-    options = get_parser().parse_args(
-        args=['-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
+    _, options, _ = get_parser_options_plugins(
+        args=[
+            '-j',
+            '1',
+            '--output-type',
+            'pdfa-2',
+            'a.pdf',
+            'b.pdf',
+        ]
     )
-    options.color_conversion_strategy = 'LeaveColorUnchanged'
     pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
     context = PdfContext(
         options, outdir, outdir / 'layers.rendered.pdf', pdfinfo, get_plugin_manager([])
@@ -394,18 +400,16 @@ def test_malformed_docinfo(caplog, resources, outdir):
         pike.trailer.Info = pikepdf.Stream(pike, b"<xml></xml>")
         pike.save(outdir / 'layers.rendered.pdf', fix_metadata_version=False)
 
-    options = get_parser().parse_args(
+    _, options, _ = get_parser_options_plugins(
         args=[
             '-j',
             '1',
-            '--continue-on-soft-render-error',
             '--output-type',
             'pdfa-2',
             'a.pdf',
             'b.pdf',
         ]
     )
-    options.color_conversion_strategy = 'LeaveColorUnchanged'
     pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
     context = PdfContext(
         options, outdir, outdir / 'layers.rendered.pdf', pdfinfo, get_plugin_manager([])

@@ -403,19 +403,6 @@ Online documentation is located at:
         "units reported by tesseract)",
     )
     advanced.add_argument(
-        '--pdfa-image-compression',
-        choices=['auto', 'jpeg', 'lossless'],
-        default='auto',
-        help="Specify how to compress images in the output PDF/A. 'auto' lets "
-        "OCRmyPDF decide.  'jpeg' changes all grayscale and color images to "
-        "JPEG compression.  'lossless' uses PNG-style lossless compression "
-        "for all images.  Monochrome images are always compressed using a "
-        "lossless codec.  Compression settings "
-        "are applied to all pages, including those for which OCR was "
-        "skipped.  Not supported for --output-type=pdf ; that setting "
-        "preserves the original compression of all images.",
-    )
-    advanced.add_argument(
         '--fast-web-view',
         type=numeric(float, 0),
         default=1.0,

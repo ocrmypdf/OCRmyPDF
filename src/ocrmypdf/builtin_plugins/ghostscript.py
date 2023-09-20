@@ -26,6 +26,19 @@ def add_options(parser):
         default='LeaveColorUnchanged',
         help="Set Ghostscript color conversion strategy",
     )
+    gs.add_argument(
+        '--pdfa-image-compression',
+        choices=['auto', 'jpeg', 'lossless'],
+        default='auto',
+        help="Specify how to compress images in the output PDF/A. 'auto' lets "
+        "OCRmyPDF decide.  'jpeg' changes all grayscale and color images to "
+        "JPEG compression.  'lossless' uses PNG-style lossless compression "
+        "for all images.  Monochrome images are always compressed using a "
+        "lossless codec.  Compression settings "
+        "are applied to all pages, including those for which OCR was "
+        "skipped.  Not supported for --output-type=pdf ; that setting "
+        "preserves the original compression of all images.",
+    )
 
 
 @hookimpl
@@ -50,6 +63,13 @@ def check_options(options):
     if options.color_conversion_strategy not in ghostscript.COLOR_CONVERSION_STRATEGIES:
         raise ValueError(
             f"Invalid color conversion strategy: {options.color_conversion_strategy}"
+        )
+    if options.pdfa_image_compression != 'auto' and not options.output_type.startswith(
+        'pdfa'
+    ):
+        log.warning(
+            "--pdfa-image-compression argument only applies when "
+            "--output-type is one of 'pdfa', 'pdfa-1', or 'pdfa-2'"
         )
 
 
