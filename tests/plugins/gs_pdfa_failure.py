@@ -22,15 +22,14 @@ def run_rig_args(args, **kwargs):
 
 
 @hookimpl
-def generate_pdfa(pdf_pages, pdfmark, output_file, compression, pdf_version, pdfa_part):
+def generate_pdfa(pdf_pages, pdfmark, output_file, context, pdf_version, pdfa_part):
     with patch('ocrmypdf._exec.ghostscript.run_polling_stderr') as mock:
         mock.side_effect = run_rig_args
         ghostscript.generate_pdfa(
             pdf_pages=pdf_pages,
             pdfmark=pdfmark,
             output_file=output_file,
-            compression=compression,
-            color_conversion_strategy='LeaveColorUnchanged',
+            context=context,
             pdf_version=pdf_version,
             pdfa_part=pdfa_part,
             progressbar_class=None,
