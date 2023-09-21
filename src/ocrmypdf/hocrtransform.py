@@ -19,6 +19,7 @@ from xml.etree import ElementTree
 
 with warnings.catch_warnings():
     # reportlab uses deprecated load_module
+    # shim can be removed when we require reportlab >= 3.7
     warnings.filterwarnings(
         'ignore', category=DeprecationWarning, message=r".*load_module.*"
     )
