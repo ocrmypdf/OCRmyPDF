@@ -15,7 +15,16 @@ from contextlib import suppress
 from io import StringIO
 from math import isclose, isfinite
 from pathlib import Path
-from typing import Any, Generic, Sequence, SupportsFloat, SupportsRound, TypeVar
+from statistics import harmonic_mean
+from typing import (
+    Any,
+    Callable,
+    Generic,
+    Sequence,
+    SupportsFloat,
+    SupportsRound,
+    TypeVar,
+)
 
 import img2pdf
 import pikepdf
@@ -73,17 +82,38 @@ class Resolution(Generic[T]):
             return isfinite(self.x) and isfinite(self.y)
         return True
 
+    def to_scalar(self) -> float:
+        """Return the harmonic mean of x and y as a 1D approximation.
+
+        In most cases, Resolution is 2D, but typically it is "square" (x == y) and
+        can be approximated as a single number. When not square, the harmonic mean
+        is used to approximate the 2D resolution as a single number.
+        """
+        return harmonic_mean([self.x, self.y])
+
+    def _take_minmax(
+        self, vals: Iterable[Any], yvals: Iterable[Any], cmp: Callable
+    ) -> Resolution:
+        """Return a new Resolution object with the maximum resolution of inputs."""
+        if yvals is not None:
+            return Resolution(cmp(self.x, *vals), cmp(self.y, *yvals))
+        cmp_x, cmp_y = self.x, self.y
+        for x, y in vals:
+            cmp_x = cmp(x, cmp_x)
+            cmp_y = cmp(y, cmp_y)
+        return Resolution(cmp_x, cmp_y)
+
     def take_max(
         self, vals: Iterable[Any], yvals: Iterable[Any] | None = None
     ) -> Resolution:
         """Return a new Resolution object with the maximum resolution of inputs."""
-        if yvals is not None:
-            return Resolution(max(self.x, *vals), max(self.y, *yvals))
-        max_x, max_y = self.x, self.y
-        for x, y in vals:
-            max_x = max(x, max_x)
-            max_y = max(y, max_y)
-        return Resolution(max_x, max_y)
+        return self._take_minmax(vals, yvals, max)
+
+    def take_min(
+        self, vals: Iterable[Any], yvals: Iterable[Any] | None = None
+    ) -> Resolution:
+        """Return a new Resolution object with the minimum resolution of inputs."""
+        return self._take_minmax(vals, yvals, min)
 
     def flip_axis(self) -> Resolution[T]:
         """Return a new Resolution object with x and y swapped."""
@@ -95,11 +125,11 @@ class Resolution(Generic[T]):
 
     def __str__(self):
         """Return a string representation of the resolution."""
-        return f"{self.x:f}x{self.y:f}"
+        return f"{self.x:f}×{self.y:f}"
 
     def __repr__(self):  # pragma: no cover
         """Return a repr() of the resolution."""
-        return f"Resolution({self.x}x{self.y} dpi)"
+        return f"Resolution({self.x!r}, {self.y!r})"
 
     def __eq__(self, other):
         """Return True if the resolution is equal to another resolution."""

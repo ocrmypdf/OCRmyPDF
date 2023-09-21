@@ -177,7 +177,9 @@ Online documentation is located at:
         '--image-dpi',
         metavar='DPI',
         type=int,
-        help="For input image instead of PDF, use this DPI instead of file's.",
+        help="When the input file is an image, not a PDF, use this DPI instead "
+        "of the DPI claimed by the input file. If the input does not claim a "
+        "sensible DPI, this option will be required.",
     )
     parser.add_argument(
         '--output-type',
@@ -401,19 +403,6 @@ Online documentation is located at:
         metavar='CONFIDENCE',
         help="Only rotate pages when confidence is above this value (arbitrary "
         "units reported by tesseract)",
-    )
-    advanced.add_argument(
-        '--pdfa-image-compression',
-        choices=['auto', 'jpeg', 'lossless'],
-        default='auto',
-        help="Specify how to compress images in the output PDF/A. 'auto' lets "
-        "OCRmyPDF decide.  'jpeg' changes all grayscale and color images to "
-        "JPEG compression.  'lossless' uses PNG-style lossless compression "
-        "for all images.  Monochrome images are always compressed using a "
-        "lossless codec.  Compression settings "
-        "are applied to all pages, including those for which OCR was "
-        "skipped.  Not supported for --output-type=pdf ; that setting "
-        "preserves the original compression of all images.",
     )
     advanced.add_argument(
         '--fast-web-view',

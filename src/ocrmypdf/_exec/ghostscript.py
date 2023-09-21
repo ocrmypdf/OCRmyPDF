@@ -28,6 +28,17 @@ except AttributeError:
     # Pillow 9 shim
     Transpose = Image  # type: ignore
 
+
+COLOR_CONVERSION_STRATEGIES = frozenset(
+    [
+        'CMYK',
+        'Gray',
+        'LeaveColorUnchanged',
+        'RGB',
+        'UseDeviceIndependentColor',
+    ]
+)
+
 log = logging.getLogger(__name__)
 
 
@@ -151,6 +162,7 @@ def generate_pdfa(
     output_file: os.PathLike,
     *,
     compression: str,
+    color_conversion_strategy: str,
     pdf_version: str = '1.5',
     pdfa_part: str = '2',
     progressbar_class=None,
@@ -200,16 +212,16 @@ def generate_pdfa(
             "-dBATCH",
             "-dNOPAUSE",
             "-dSAFER",
-            "-dCompatibilityLevel=" + str(pdf_version),
+            f"-dCompatibilityLevel={str(pdf_version)}",
             "-sDEVICE=pdfwrite",
             "-dAutoRotatePages=/None",
-            "-sColorConversionStrategy=" + strategy,
+            f"-sColorConversionStrategy={color_conversion_strategy}",
         ]
         + (['-dPDFSTOPONERROR'] if stop_on_error else [])
         + compression_args
         + [
             "-dJPEGQ=95",
-            "-dPDFA=" + pdfa_part,
+            f"-dPDFA={pdfa_part}",
             "-dPDFACompatibilityPolicy=1",
             "-o",
             "-",

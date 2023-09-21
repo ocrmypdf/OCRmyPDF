@@ -19,6 +19,33 @@ BLACKLISTED_GS_VERSIONS = frozenset()
 
 
 @hookimpl
+def add_options(parser):
+    gs = parser.add_argument_group("Ghostscript", "Advanced control of Ghostscript")
+    gs.add_argument(
+        '--color-conversion-strategy',
+        action='store',
+        type=str,
+        metavar='STRATEGY',
+        choices=ghostscript.COLOR_CONVERSION_STRATEGIES,
+        default='LeaveColorUnchanged',
+        help="Set Ghostscript color conversion strategy",
+    )
+    gs.add_argument(
+        '--pdfa-image-compression',
+        choices=['auto', 'jpeg', 'lossless'],
+        default='auto',
+        help="Specify how to compress images in the output PDF/A. 'auto' lets "
+        "OCRmyPDF decide.  'jpeg' changes all grayscale and color images to "
+        "JPEG compression.  'lossless' uses PNG-style lossless compression "
+        "for all images.  Monochrome images are always compressed using a "
+        "lossless codec.  Compression settings "
+        "are applied to all pages, including those for which OCR was "
+        "skipped.  Not supported for --output-type=pdf ; that setting "
+        "preserves the original compression of all images.",
+    )
+
+
+@hookimpl
 def check_options(options):
     """Check that the options are valid for this plugin."""
     check_external_program(
@@ -37,6 +64,17 @@ def check_options(options):
 
     if options.output_type == 'pdfa':
         options.output_type = 'pdfa-2'
+    if options.color_conversion_strategy not in ghostscript.COLOR_CONVERSION_STRATEGIES:
+        raise ValueError(
+            f"Invalid color conversion strategy: {options.color_conversion_strategy}"
+        )
+    if options.pdfa_image_compression != 'auto' and not options.output_type.startswith(
+        'pdfa'
+    ):
+        log.warning(
+            "--pdfa-image-compression argument only applies when "
+            "--output-type is one of 'pdfa', 'pdfa-1', or 'pdfa-2'"
+        )
 
 
 @hookimpl
@@ -71,7 +109,7 @@ def generate_pdfa(
     pdf_pages,
     pdfmark,
     output_file,
-    compression,
+    context,
     pdf_version,
     pdfa_part,
     progressbar_class,
@@ -81,7 +119,8 @@ def generate_pdfa(
     ghostscript.generate_pdfa(
         pdf_pages=[*pdf_pages, pdfmark],
         output_file=output_file,
-        compression=compression,
+        compression=context.options.pdfa_image_compression,
+        color_conversion_strategy=context.options.color_conversion_strategy,
         pdf_version=pdf_version,
         pdfa_part=pdfa_part,
         progressbar_class=progressbar_class,

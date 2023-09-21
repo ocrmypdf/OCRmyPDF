@@ -351,7 +351,6 @@ def filter_pdf_page(page: PageContext, image_filename: Path, output_pdf: Path) -
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
 
-
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
     """
@@ -466,7 +465,7 @@ def generate_pdfa(
     pdf_pages: list[Path],
     pdfmark: Path,
     output_file: Path,
-    compression: str,
+    context: PdfContext,
     pdf_version: str,
     pdfa_part: str,
     progressbar_class,
@@ -484,11 +483,7 @@ def generate_pdfa(
         pdfmark: A PostScript file intended for Ghostscript with details on
             how to perform the PDF/A conversion.
         output_file: The name of the desired output file.
-        compression: One of ``'jpeg'``, ``'lossless'``, ``''``. For ``'jpeg'``,
-            the PDF/A generator should convert all images to JPEG encoding where
-            possible. For lossless, all images should be converted to FlateEncode
-            (lossless PNG). If an empty string, the PDF generator should make its
-            own decisions about how to encode images.
+        context: The current context.
         pdf_version: The minimum PDF version that the output file should be.
             At its own discretion, the PDF/A generator may raise the version,
             but should not lower it.
@@ -513,6 +508,11 @@ def generate_pdfa(
 
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
+
+    Note:
+        Before version 15.0.0, the ``context`` was not provided and ``compression``
+        was provided instead. Plugins should now read the context object to determine
+        if compression is requested.
 
     See Also:
         https://github.com/tqdm/tqdm

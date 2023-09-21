@@ -86,7 +86,8 @@ def test_unset_metadata(output_type, field, resources, outpdf):
         'title': b'NFY5f7Ft2DWMkxLhXwxvFf7eWR2KeK3vEDcd',
         'author': b'yXaryipxyRk9dVjWjSSaVaNCKeLRgEVzPRMp',
         'subject': b't49vimctvnuH7ZeAjAkv52ACvWFjcnm5MPJr',
-        'keywords': b's9EeALwUg7urA7fnnhm5EtUyC54sW2WPUzqh'}
+        'keywords': b's9EeALwUg7urA7fnnhm5EtUyC54sW2WPUzqh',
+    }
 
     p = run_ocrmypdf(
         input_file,
@@ -352,17 +353,24 @@ XMP_MAGIC = b'W5M0MpCehiHzreSzNTczkc9d'
 
 def test_prevent_gs_invalid_xml(resources, outdir):
     generate_pdfa_ps(outdir / 'pdfa.ps')
-    copyfile(resources / 'trivial.pdf', outdir / 'layers.rendered.pdf')
 
     # Inject a string with a trailing nul character into the DocumentInfo
     # dictionary of this PDF, as often occurs in practice.
-    with pikepdf.open(outdir / 'layers.rendered.pdf') as pike:
+    with pikepdf.open(resources / 'trivial.pdf') as pike:
         pike.Root.DocumentInfo = pikepdf.Dictionary(
             Title=b'String with trailing nul\x00'
         )
+        pike.save(outdir / 'layers.rendered.pdf', fix_metadata_version=False)
 
-    options = get_parser().parse_args(
-        args=['-j', '1', '--output-type', 'pdfa-2', 'a.pdf', 'b.pdf']
+    _, options, _ = get_parser_options_plugins(
+        args=[
+            '-j',
+            '1',
+            '--output-type',
+            'pdfa-2',
+            'a.pdf',
+            'b.pdf',
+        ]
     )
     pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
     context = PdfContext(
@@ -387,17 +395,15 @@ def test_prevent_gs_invalid_xml(resources, outdir):
 
 def test_malformed_docinfo(caplog, resources, outdir):
     generate_pdfa_ps(outdir / 'pdfa.ps')
-    # copyfile(resources / 'trivial.pdf', outdir / 'layers.rendered.pdf')
 
     with pikepdf.open(resources / 'trivial.pdf') as pike:
         pike.trailer.Info = pikepdf.Stream(pike, b"<xml></xml>")
         pike.save(outdir / 'layers.rendered.pdf', fix_metadata_version=False)
 
-    options = get_parser().parse_args(
+    _, options, _ = get_parser_options_plugins(
         args=[
             '-j',
             '1',
-            '--continue-on-soft-render-error',
             '--output-type',
             'pdfa-2',
             'a.pdf',

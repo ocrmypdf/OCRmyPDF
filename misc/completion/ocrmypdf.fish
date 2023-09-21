@@ -129,4 +129,27 @@ complete -c ocrmypdf -r -l user-words -d "specify location of user words file"
 complete -c ocrmypdf -r -l user-patterns -d "specify location of user patterns file"
 complete -c ocrmypdf -x -l fast-web-view -d "if file size if above this amount in MB, linearize PDF"
 
-complete -c ocrmypdf -x -a "(__fish_complete_suffix .pdf; __fish_complete_suffix .PDF; __fish_complete_suffix .jpg; __fish_complete_suffix .png)"
+function __fish_ocrmypdf_color_conversion_strategy
+    echo -e "LeaveColorUnchanged\t"(_ "do not convert color spaces (default)")
+    echo -e "CMYK\t"(_ "convert all color spaces to CMYK")
+    echo -e "Gray\t"(_ "convert all color spaces to grayscale")
+    echo -e "RGB\t"(_ "convert all color spaces to RGB")
+    echo -e "UseDeviceIndependentColor\t"(_ "convert all color spaces to ICC-based color spaces")
+end
+
+complete -c ocrmypdf -x -l color-conversion-strategy -a '(__fish_ocrmypdf_color_conversion_strategy)' -d "set color conversion strategy"
+
+function __fish_ocrmypdf_input_file_given
+    set -l tokens (commandline -opc)
+    for token in $tokens
+        if string match -q -r '^-' -- $token
+            continue
+        end
+        if test -f "$token"
+            return 0
+        end
+    end
+    return 1
+end
+
+complete -c ocrmypdf -x -n 'not __fish_ocrmypdf_input_file_given' -a "(__fish_complete_suffix .pdf)" -d "input file"

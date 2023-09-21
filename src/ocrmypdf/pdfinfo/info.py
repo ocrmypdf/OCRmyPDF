@@ -420,12 +420,12 @@ class ImageInfo:
         return self._type
 
     @property
-    def width(self):
+    def width(self) -> int:
         """Width of the image in pixels."""
         return self._width
 
     @property
-    def height(self):
+    def height(self) -> int:
         """Height of the image in pixels."""
         return self._height
 
@@ -458,17 +458,24 @@ class ImageInfo:
         return self.dpi.is_finite and self.width >= 0 and self.height >= 0
 
     @property
-    def dpi(self):
+    def dpi(self) -> Resolution:
         """Dots per inch of the image.
 
         Calculated based on where and how the image is drawn in the PDF.
         """
         return _get_dpi(self._shorthand, (self._width, self._height))
 
+    @property
+    def printed_area(self) -> float:
+        """Physical area of the image in square inches."""
+        if not self.renderable:
+            return 0.0
+        return float(self.width * self.dpi.x * self.height * self.dpi.y)
+
     def __repr__(self):
         """Return a string representation of the image."""
         return (
-            f"<ImageInfo '{self.name}' {self.type_} {self.width}x{self.height} "
+            f"<ImageInfo '{self.name}' {self.type_} {self.width}×{self.height} "
             f"{self.color} {self.comp} {self.bpc} {self.enc} {self.dpi}>"
         )
 
@@ -747,12 +754,38 @@ def _pdf_pageinfo_concurrent(
     return pages
 
 
+class PageResolutionProfile(NamedTuple):
+    """Information about the resolutions of a page."""
+
+    weighted_dpi: float
+    """The weighted average DPI of the page, weighted by the area of each image."""
+
+    max_dpi: float
+    """The maximum DPI of an image on the page."""
+
+    average_to_max_dpi_ratio: float
+    """The average DPI of the page divided by the maximum DPI of the page.
+
+    This indicates the intensity of the resolution variation on the page.
+
+    If the average is 1.0 or close to 1.0, has all of its content at a uniform
+    resolution. If the average is much lower than 1.0, some content is at a
+    higher resolution than the rest of the page.
+    """
+
+    area_ratio: float
+    """The maximum-DPI area of the page divided by the total drawn area.
+
+    This indicates the prevalence of high-resolution content on the page.
+    """
+
+
 class PageInfo:
     """Information about type of contents on each page in a PDF."""
 
     _has_text: bool | None
     _has_vector: bool | None
-    _images: list[ImageInfo]
+    _images: list[ImageInfo] = []
 
     def __init__(
         self,
@@ -938,6 +971,44 @@ class PageInfo:
             return '1.6'
         else:
             return '1.5'
+
+    def page_dpi_profile(self) -> PageResolutionProfile | None:
+        """Return information about the DPIs of the page.
+
+        This is useful to detect pages with a small proportion of high-resolution
+        content that is forcing us to use a high DPI for the whole page. The ratio
+        is weighted by the area of each image. If images overlap, the overlapped
+        area counts.
+
+        Vector graphics and text are ignored.
+
+        Returns None if there is no meaningful DPI for the page.
+        """
+        image_dpis = [
+            image.dpi.to_scalar() for image in self._images if image.renderable
+        ]
+        image_areas = [image.printed_area for image in self._images if image.renderable]
+        total_drawn_area = sum(image_areas)
+        if total_drawn_area == 0:
+            return None
+
+        weights = [area / total_drawn_area for area in image_areas]
+        # Calculate harmonic mean of DPIs weighted by area
+        # When the minimum version is Python 3.10, change this to
+        # statistics.harmonic_mean with the weights parameter
+        # rather than doing it manually.
+        weighted_dpi = sum(weights) / sum(
+            weight / dpi for weight, dpi in zip(weights, image_dpis)
+        )
+        max_dpi = max(image_dpis)
+        dpi_average_max_ratio = weighted_dpi / max_dpi
+
+        arg_max_dpi = image_dpis.index(max_dpi)
+        max_area_ratio = image_areas[arg_max_dpi] / total_drawn_area
+
+        return PageResolutionProfile(
+            weighted_dpi, max_dpi, dpi_average_max_ratio, max_area_ratio
+        )
 
     def __repr__(self):
         """Return string representation."""

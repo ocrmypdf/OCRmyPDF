@@ -359,8 +359,12 @@ def is_ocr_required(page_context: PageContext) -> bool:
 def rasterize_preview(input_file: Path, page_context: PageContext) -> Path:
     """Generate a lower quality preview image."""
     output_file = page_context.get_path('rasterize_preview.jpg')
-    canvas_dpi = get_canvas_square_dpi(page_context.pageinfo, page_context.options)
-    page_dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
+    canvas_dpi = Resolution(300.0, 300.0).take_min(
+        [get_canvas_square_dpi(page_context.pageinfo, page_context.options)]
+    )
+    page_dpi = Resolution(300.0, 300.0).take_min(
+        [get_page_square_dpi(page_context.pageinfo, page_context.options)]
+    )
     page_context.plugin_manager.hook.rasterize_pdf_page(
         input_file=input_file,
         output_file=output_file,
@@ -489,6 +493,21 @@ def rasterize(
     # will not work properly.
     canvas_dpi = get_canvas_square_dpi(pageinfo, page_context.options)
     page_dpi = get_page_square_dpi(pageinfo, page_context.options)
+
+    dpi_profile = pageinfo.page_dpi_profile()
+    if dpi_profile and dpi_profile.average_to_max_dpi_ratio < 0.8:
+        log.warning(
+            "Weight average DPI is %0.1f, max DPI is %0.1f. "
+            "The discrepancy may indicate a high detail region on this page, "
+            "but could also indicate a problem with the input PDF file. "
+            "An image will be rendered at %0.1f DPI.",
+            dpi_profile.weighted_dpi,
+            dpi_profile.max_dpi,
+            dpi_profile.weighted_dpi,
+        )
+        canvas_dpi = page_dpi = Resolution(
+            dpi_profile.weighted_dpi, dpi_profile.weighted_dpi
+        )
 
     page_context.plugin_manager.hook.rasterize_pdf_page(
         input_file=input_file,
@@ -792,7 +811,7 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
         pdf_pages=[fix_docinfo_file],
         pdfmark=input_ps_stub,
         output_file=output_file,
-        compression=options.pdfa_image_compression,
+        context=context,
         pdfa_part=options.output_type[-1],  # is pdfa-1, pdfa-2, or pdfa-3
         progressbar_class=(
             context.plugin_manager.hook.get_progressbar_class()
