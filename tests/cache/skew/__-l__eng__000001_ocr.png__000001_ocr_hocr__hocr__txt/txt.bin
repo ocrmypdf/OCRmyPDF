@@ -25,7 +25,7 @@ rhythmic value.
 * Optional remote control.
 
 Recording a Sequence simply use LOCATE, FAST FORWARD, or REWIND to
-To record a sequence, simply press RECORD and PL. AY, _ find the desired bar number, then Start recording.
+To record a sequence, simply press RECORD and PL AY, _ find the desired bar number, then Start recording.
 then play your MIDI keyboard in time to the Sequencer’s The INSERT/COPY function allows you to move bars
 
 click track, When the sequence loops back around to bar 1, from one location to another—in the same sequence or a
@@ -38,7 +38,7 @@ FAST FORWARD, REWIND, and LOCATE controls .
 may be used at any time to quickly access any location in Creating a Song
 
 your sequence for spot-recording. To overdub a new part, One way to create a song is to record each track all the
-select a different track and start recording—while you way through (up to 999 bars). Another way is to record
+select a different track and start recording—while you way through (up to 999 bars), Another way is to record
 record, the first track will play in perfect sync (unless you each basic section (verse, chorus, etc.) in individual
 
 MUTE it, or SOLO another track). In this way, up to 32 sequences, then use the CREATE SONG function to “chain”
@@ -83,4 +83,3 @@ linn
 Linn Electronics, Inc.
 18720 Oxnard Street, Tarzana, CA 91356
 (818) 708-8131 TELEX #298949 LINN UR
-

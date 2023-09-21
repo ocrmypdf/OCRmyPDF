@@ -5,18 +5,12 @@
  <head>
   <title></title>
   <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
-  <meta name='ocr-system' content='tesseract 5.0.0-beta-20210916-12-g19cc9' />
+  <meta name='ocr-system' content='tesseract 5.3.2' />
   <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word ocrp_wconf'/>
  </head>
  <body>
-  <div class='ocr_page' id='page_1' title='image "/tmp/ocrmypdf.io._n9426dt/000001_ocr.png"; bbox 0 0 512 512; ppageno 0'>
-   <div class='ocr_carea' id='block_1_1' title="bbox 0 0 477 512">
-    <p class='ocr_par' id='par_1_1' lang='eng' title="bbox 0 0 477 512">
-     <span class='ocr_line' id='line_1_1' title="bbox 0 0 477 512; baseline 0 0; x_size 684; x_descenders 171; x_ascenders 171">
-      <span class='ocrx_word' id='word_1_1' title='bbox 0 0 477 512; x_wconf 95'> </span>
-     </span>
-    </p>
-   </div>
+  <div class='ocr_page' id='page_1' title='image "/tmp/ocrmypdf.io.bkzvxcfc/000001_ocr.png"; bbox 0 0 512 512; ppageno 0; scan_res 96 96'>
+   <div class='ocr_photo' id='block_1_1' title="bbox 0 0 477 512"></div>
   </div>
  </body>
 </html>
