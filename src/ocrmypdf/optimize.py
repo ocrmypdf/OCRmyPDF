@@ -367,6 +367,7 @@ def _produce_jbig2_images(
                 fspath(root),  # =cwd
                 (img_name(root, xref, ext) for xref, ext in xref_exts),  # =infiles
                 prefix,  # =out_prefix
+                options.jbig2_threshold,
             )
 
     def jbig2_single_args(root, groups: dict[int, list[XrefExt]]):
@@ -379,6 +380,7 @@ def _produce_jbig2_images(
                     fspath(root),
                     img_name(root, xref, ext),
                     root / f'{prefix}.{n:04d}',
+                    options.jbig2_threshold,
                 )
 
     if options.jbig2_page_group_size > 1:
@@ -737,6 +739,7 @@ def main(infile, outfile, level, jobs=1):
             self.png_quality = png_quality
             self.jbig2_page_group_size = 0
             self.jbig2_lossy = jb2lossy
+            self.jbig2_threshold = 0.85
             self.quiet = True
             self.progress_bar = False
 

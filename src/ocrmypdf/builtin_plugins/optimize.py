@@ -86,6 +86,16 @@ def add_options(parser):
         # Adjust number of pages to consider at once for JBIG2 compression
         help=argparse.SUPPRESS,
     )
+    optimizing.add_argument(
+        '--jbig2-threshold',
+        type=numeric(float, 0.4, 0.9),
+        default=0.85,
+        metavar='T',
+        help=(
+            "Adjust JBIG2 symbol code classification threshold "
+            "(default 0.85), range 0.4 to 0.9."
+        ),
+    )
 
 
 @hookimpl

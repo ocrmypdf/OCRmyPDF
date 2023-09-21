@@ -94,6 +94,8 @@ def test_jbig2_lossy(lossy, resources, outpdf):
         '20',
         '--plugin',
         'tests/plugins/tesseract_noop.py',
+        '--jbig2-threshold',
+        '0.7',
     ]
     if lossy:
         args.append('--jbig2-lossy')
