@@ -27,6 +27,7 @@ venv*/
 *.traineddata
 /private
 /coverage.xml
+/issuepdf
 
 # Package building
 *.egg-info/
