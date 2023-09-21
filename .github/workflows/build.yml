@@ -22,19 +22,15 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             python: "3.9"
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             python: "3.10"
-          - os: ubuntu-latest
-            python: "3.9"
-          - os: ubuntu-latest
-            python: "3.10"
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             python: "3.11"
           #- os: ubuntu-latest
           #  python: "pypy3.9"
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             python: "3.9"
             tesseract5: true
 
@@ -64,6 +60,7 @@ jobs:
             curl \
             ghostscript \
             img2pdf \
+            libexempi8 \
             libffi-dev \
             libsm6 libxext6 libxrender-dev \
             pngquant \
@@ -74,12 +71,6 @@ jobs:
             tesseract-ocr-osd \
             unpaper \
             zlib1g
-
-      - name: Install Ubuntu 20.04 packages
-        if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get install -y --no-install-recommends \
-            libexempi8
 
       - name: Install Ubuntu packages for PyPy
         if: startsWith(matrix.python, 'pypy')
