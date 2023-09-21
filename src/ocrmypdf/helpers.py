@@ -16,7 +16,15 @@ from io import StringIO
 from math import isclose, isfinite
 from pathlib import Path
 from statistics import harmonic_mean
-from typing import Any, Generic, Sequence, SupportsFloat, SupportsRound, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Generic,
+    Sequence,
+    SupportsFloat,
+    SupportsRound,
+    TypeVar,
+)
 
 import img2pdf
 import pikepdf
@@ -91,17 +99,29 @@ class Resolution(Generic[T]):
         """
         return harmonic_mean([self.x, self.y])
 
+    def _take_minmax(
+        self, vals: Iterable[Any], yvals: Iterable[Any], cmp: Callable
+    ) -> Resolution:
+        """Return a new Resolution object with the maximum resolution of inputs."""
+        if yvals is not None:
+            return Resolution(cmp(self.x, *vals), cmp(self.y, *yvals))
+        cmp_x, cmp_y = self.x, self.y
+        for x, y in vals:
+            cmp_x = cmp(x, cmp_x)
+            cmp_y = cmp(y, cmp_y)
+        return Resolution(cmp_x, cmp_y)
+
     def take_max(
         self, vals: Iterable[Any], yvals: Iterable[Any] | None = None
     ) -> Resolution:
         """Return a new Resolution object with the maximum resolution of inputs."""
-        if yvals is not None:
-            return Resolution(max(self.x, *vals), max(self.y, *yvals))
-        max_x, max_y = self.x, self.y
-        for x, y in vals:
-            max_x = max(x, max_x)
-            max_y = max(y, max_y)
-        return Resolution(max_x, max_y)
+        return self._take_minmax(vals, yvals, max)
+
+    def take_min(
+        self, vals: Iterable[Any], yvals: Iterable[Any] | None = None
+    ) -> Resolution:
+        """Return a new Resolution object with the minimum resolution of inputs."""
+        return self._take_minmax(vals, yvals, min)
 
     def flip_axis(self) -> Resolution[T]:
         """Return a new Resolution object with x and y swapped."""
