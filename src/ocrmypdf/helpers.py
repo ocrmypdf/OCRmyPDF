@@ -322,15 +322,11 @@ def remove_all_log_handlers(logger):
         handler.close()  # To ensure handlers with opened resources are released
 
 
-def pikepdf_enable_mmap():
+def pikepdf_enable_mmap() -> None:
     """Enable pikepdf mmap."""
-    # try:
-    #     if pikepdf._qpdf.set_access_default_mmap(True):
-    #         log.debug("pikepdf mmap enabled")
-    # except AttributeError:
-    #     log.debug("pikepdf mmap not available")
-    # We found a race condition probably related to pybind issue #2252 that can
-    # cause a crash. For now, disable pikepdf mmap to be on the safe side.
-    # Fix is not in pybind11 2.6.0
-    # log.debug("pikepdf mmap disabled")
-    return
+    try:
+        if pikepdf._core.set_access_default_mmap(True):
+            log.debug("pikepdf mmap enabled")
+    except AttributeError:
+        log.debug("pikepdf mmap not available")
+    log.debug("pikepdf mmap disabled")
