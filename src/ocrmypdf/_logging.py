@@ -71,7 +71,11 @@ class RichTqdmProgressAdapter:
         )
         self.unit_scale = unit_scale
         self.progress_bar = self.progress.add_task(
-            desc, total=total * self.unit_scale, unit=unit
+            desc,
+            total=total * self.unit_scale
+            if total is not None and self.unit_scale is not None
+            else None,
+            unit=unit,
         )
 
     def __enter__(self):
