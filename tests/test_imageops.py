@@ -7,7 +7,12 @@ import hypothesis.strategies as st
 from hypothesis import given
 from PIL import Image
 
-from ocrmypdf.imageops import bytes_per_pixel, calculate_downsample, downsample_image
+from ocrmypdf.imageops import (
+    _calculate_downsample,
+    bytes_per_pixel,
+    calculate_downsample,
+    downsample_image,
+)
 
 
 def test_bytes_per_pixel():
@@ -34,7 +39,7 @@ def test_calculate_downsample():
     st.integers(min_value=64 * 64, max_value=1000000),
 )
 def test_calculate_downsample_hypothesis(mode, im_w, im_h, max_x, max_y, max_bytes):
-    result = calculate_downsample(
+    result = _calculate_downsample(
         (im_w, im_h),
         bytes_per_pixel(mode),
         max_size=(max_x, max_y),

@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import logging
-from functools import singledispatch
 from math import floor, sqrt
 from typing import Optional, Tuple
 
@@ -43,8 +42,7 @@ def bytes_per_pixel(mode: str) -> int:
     return 4
 
 
-@singledispatch
-def calculate_downsample(
+def _calculate_downsample(
     image_size: Tuple[int, int],
     bytes_per_pixel: int,
     *,
@@ -105,10 +103,8 @@ def calculate_downsample(
     return size
 
 
-@calculate_downsample.register
-def _(
+def calculate_downsample(
     image: Image.Image,
-    arg: None = None,
     *,
     max_size: Optional[Tuple[int, int]] = None,
     max_pixels: Optional[int] = None,
@@ -126,7 +122,7 @@ def _(
         max_bytes: The maximum number of bytes in the image. RGB is counted as 4
             bytes; all other modes are counted as 1 byte.
     """
-    return calculate_downsample(
+    return _calculate_downsample(
         image.size,
         bytes_per_pixel(image.mode),
         max_size=max_size,
