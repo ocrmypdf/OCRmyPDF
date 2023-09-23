@@ -12,6 +12,7 @@ import shutil
 import warnings
 from collections.abc import Iterable
 from contextlib import suppress
+from decimal import Decimal
 from io import StringIO
 from math import isclose, isfinite
 from pathlib import Path
@@ -34,7 +35,7 @@ log = logging.getLogger(__name__)
 IMG2PDF_KWARGS = dict(engine=img2pdf.Engine.pikepdf, rotation=img2pdf.Rotation.ifvalid)
 
 
-T = TypeVar('T', bound=SupportsRound[Any])
+T = TypeVar('T', float, int, Decimal)
 
 
 class Resolution(Generic[T]):
@@ -78,9 +79,7 @@ class Resolution(Generic[T]):
     @property
     def is_finite(self) -> bool:
         """True if both x and y are finite numbers."""
-        if isinstance(self.x, SupportsFloat) and isinstance(self.y, SupportsFloat):
-            return isfinite(self.x) and isfinite(self.y)
-        return True
+        return isfinite(self.x) and isfinite(self.y)
 
     def to_scalar(self) -> float:
         """Return the harmonic mean of x and y as a 1D approximation.
@@ -89,10 +88,10 @@ class Resolution(Generic[T]):
         can be approximated as a single number. When not square, the harmonic mean
         is used to approximate the 2D resolution as a single number.
         """
-        return harmonic_mean([self.x, self.y])
+        return harmonic_mean([float(self.x), float(self.y)])
 
     def _take_minmax(
-        self, vals: Iterable[Any], yvals: Iterable[Any], cmp: Callable
+        self, vals: Iterable[Any], yvals: Iterable[Any] | None, cmp: Callable
     ) -> Resolution:
         """Return a new Resolution object with the maximum resolution of inputs."""
         if yvals is not None:
@@ -144,7 +143,7 @@ class NeverRaise(Exception):
     """An exception that is never raised."""
 
 
-def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike):
+def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike) -> None:
     """Create a symbolic link at ``soft_link_name``, which references ``input_file``.
 
     Think of this as copying ``input_file`` to ``soft_link_name`` with less overhead.
@@ -185,7 +184,7 @@ def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike):
     os.symlink(os.path.abspath(input_file), soft_link_name)
 
 
-def samefile(file1: os.PathLike, file2: os.PathLike):
+def samefile(file1: os.PathLike, file2: os.PathLike) -> bool:
     """Return True if two files are the same file.
 
     Attempts to account for different relative paths to the same file.
@@ -309,7 +308,7 @@ def clamp(n, smallest, largest):  # mypy doesn't understand types for this
     return max(smallest, min(n, largest))
 
 
-def remove_all_log_handlers(logger):
+def remove_all_log_handlers(logger: logging.Logger) -> None:
     """Remove all log handlers, usually used in a child process.
 
     The child process inherits the log handlers from the parent process when
