@@ -42,6 +42,14 @@ v15.0.0
 -  ``ocrmypdf.helpers.calculate_downsample`` previously had two variants, one
    that took a ``PIL.Image`` and one that took a ``tuple[int, int]``. The latter
    was removed.
+-  The snap version of ocrmypdf is now based on Ubuntu core22.
+-  We now account situations where a small portion of an image on a page reports a
+   high DPI (resolution). Previously, the entire page would be rasterized at the
+   highest resolution, which caused performance problems. Now, the page is rasterized
+   at a resolution based on the average DPI of the page, weighted by the area that
+   each feature occupies. Typically, small areas of high resolution in PDFs are
+   errors or quirks from the repeated use of assets and high resolution is not
+   beneficial. That said, there may be unusual cases where information is lost.
 
 v14.4.0
 =======
