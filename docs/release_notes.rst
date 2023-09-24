@@ -38,6 +38,10 @@ v15.0.0
    and 64-bit applications to use OCRmyPDF. Many of our dependencies are dropping
    32-bit support (e.g. Pillow), and we are following suit.
 -  Changed to trusted release for PyPI publishing.
+-  pikepdf memory mapping is enabled again for improved performance.
+-  ``ocrmypdf.helpers.calculate_downsample`` previously had two variants, one
+   that took a ``PIL.Image`` and one that took a ``tuple[int, int]``. The latter
+   was removed.
 
 v14.4.0
 =======
