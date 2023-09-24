@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 # Currently all blacklisted versions are lower than 9.55, so none need to
 # be added here. If a future version is blacklisted, add it here.
-BLACKLISTED_GS_VERSIONS = frozenset()
+BLACKLISTED_GS_VERSIONS: frozenset[str] = frozenset()
 
 
 @hookimpl
