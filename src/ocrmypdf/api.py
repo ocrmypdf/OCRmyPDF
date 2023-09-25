@@ -9,11 +9,14 @@ import logging
 import os
 import sys
 import threading
+from argparse import Namespace
 from enum import IntEnum
 from io import IOBase
 from pathlib import Path
 from typing import AnyStr, BinaryIO, Iterable, Union
 from warnings import warn
+
+import pluggy
 
 from ocrmypdf._logging import PageNumberFilter, RichTqdmProgressAdapter
 from ocrmypdf._plugin_manager import get_plugin_manager
@@ -43,7 +46,7 @@ def configure_logging(
     *,
     progress_bar_friendly: bool = True,
     manage_root_logger: bool = False,
-    plugin_manager=None,
+    plugin_manager: pluggy.PluginManager | None = None,
 ):
     """Set up logging.
 
@@ -131,8 +134,21 @@ def configure_logging(
 
 def create_options(
     *, input_file: PathOrIO, output_file: PathOrIO, parser: ArgumentParser, **kwargs
-):
-    """Construct an options object from the input/output files and keyword arguments."""
+) -> Namespace:
+    """Construct an options object from the input/output files and keyword arguments.
+
+    Args:
+        input_file: Input file path or file object.
+        output_file: Output file path or file object.
+        parser: ArgumentParser object.
+        **kwargs: Keyword arguments.
+
+    Returns:
+        argparse.Namespace: An argparse Namespace object containing the parsed arguments.
+
+    Raises:
+        TypeError: If the type of a keyword argument is not supported.
+    """
     cmdline = []
     deferred = []
 

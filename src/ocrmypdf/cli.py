@@ -15,7 +15,11 @@ T = TypeVar('T', int, float)
 
 
 def numeric(basetype: Callable[[Any], T], min_: T | None = None, max_: T | None = None):
-    """Validator for numeric params."""
+    """Validator for numeric command line parameters.
+
+    Stipulates that the value must be of type basetype (typically int or float), and
+    optionally, within the range [min_, max_].
+    """
     min_ = basetype(min_) if min_ is not None else None
     max_ = basetype(max_) if max_ is not None else None
 

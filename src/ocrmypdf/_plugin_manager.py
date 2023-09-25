@@ -100,7 +100,9 @@ class OcrmypdfPluginManager(pluggy.PluginManager):
             self.register(module)
 
 
-def get_plugin_manager(plugins: list[str | Path], builtins=True):
+def get_plugin_manager(
+    plugins: list[str | Path], builtins=True
+) -> pluggy.PluginManager:
     return OcrmypdfPluginManager(
         project_name='ocrmypdf',
         plugins=plugins,

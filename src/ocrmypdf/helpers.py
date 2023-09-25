@@ -158,7 +158,7 @@ def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike) -> None:
     # Guard against soft linking to oneself
     if input_file == soft_link_name:
         log.warning(
-            "No symbolic link created. You are using  the original data directory "
+            "No symbolic link created. You are using the original data directory "
             "as the working directory."
         )
         return
@@ -303,7 +303,7 @@ def check_pdf(input_file: Path) -> bool:
             return False
 
 
-def clamp(n, smallest, largest):  # mypy doesn't understand types for this
+def clamp(n: T, smallest: T, largest: T) -> T:
     """Clamps the value of ``n`` to between ``smallest`` and ``largest``."""
     return max(smallest, min(n, largest))
 

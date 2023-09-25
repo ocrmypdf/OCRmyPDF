@@ -14,7 +14,7 @@ from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
 from shutil import copyfileobj
-from typing import Any, BinaryIO, Iterable, Sequence, cast
+from typing import Any, BinaryIO, Iterable, Iterator, Sequence, cast
 
 import img2pdf
 import pikepdf
@@ -771,6 +771,14 @@ def get_docinfo(base_pdf: pikepdf.Pdf, context: PdfContext) -> dict[str, str]:
 
 
 def generate_postscript_stub(context: PdfContext) -> Path:
+    """Generates a PostScript file stub for the given PDF context.
+
+    Args:
+        context: The PDF context to generate the PostScript file stub for.
+
+    Returns:
+        Path: The path to the generated PostScript file stub.
+    """
     output_file = context.get_path('pdfa.ps')
     generate_pdfa_ps(output_file)
     return output_file
@@ -788,7 +796,7 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
     # pikepdf can deal with this, but we make the world a better place by
     # stamping them out as soon as possible.
     with pikepdf.open(input_pdf) as pdf_file:
-        if _repair_docinfo_nulls(pdf_file):
+        if _repair_docinfo_nuls(pdf_file):
             pdf_file.save(fix_docinfo_file)
         else:
             safe_symlink(input_pdf, fix_docinfo_file)
@@ -811,7 +819,7 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
     return output_file
 
 
-def _repair_docinfo_nulls(pdf):
+def _repair_docinfo_nuls(pdf):
     """If the DocumentInfo block contains NUL characters, remove them.
 
     If the DocumentInfo block is malformed, log an error and continue.
@@ -935,6 +943,17 @@ def metadata_fixup(working_file: Path, context: PdfContext) -> Path:
 def _file_size_ratio(
     input_file: Path, output_file: Path
 ) -> tuple[float | None, float | None]:
+    """Calculate ratio of input to output file sizes and percentage savings.
+
+    Args:
+        input_file (Path): The path to the input file.
+        output_file (Path): The path to the output file.
+
+    Returns:
+        tuple[float | None, float | None]: A tuple containing the file size
+        ratio and the percentage savings achieved by the output file size
+        compared to the input file size.
+    """
     input_size = input_file.stat().st_size
     output_size = output_file.stat().st_size
     if output_size == 0:
@@ -965,7 +984,20 @@ def optimize_pdf(
     return output_pdf, messages
 
 
-def enumerate_compress_ranges(iterable):
+def enumerate_compress_ranges(
+    iterable: Iterable,
+) -> Iterator[tuple[tuple[int, int], Any]]:
+    """Enumerate the ranges of non-empty elements in an iterable.
+
+    Compresses consecutive ranges of length 1 into single elements.
+
+    Args:
+        iterable: An iterable of elements to enumerate.
+
+    Yields:
+        A tuple containing a range of indices and the corresponding element.
+        If the element is None, the range represents a skipped range of indices.
+    """
     skipped_from, index = None, None
     for index, txt_file in enumerate(iterable):
         index += 1
@@ -1009,6 +1041,16 @@ def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext) -> Pat
 def copy_final(
     input_file: Path, output_file: str | Path | BinaryIO, _context: PdfContext
 ) -> None:
+    """Copy the final temporary file to the output destination.
+
+    Args:
+        input_file (Path): The input file to copy.
+        output_file (str | Path | BinaryIO): The output file to copy to.
+        _context (PdfContext): The PDF context.
+
+    Returns:
+        None
+    """
     log.debug('%s -> %s', input_file, output_file)
     with input_file.open('rb') as input_stream:
         if output_file == '-':
