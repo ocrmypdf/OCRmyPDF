@@ -787,21 +787,8 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
     # NULs in DocumentInfo seem to be common since older Acrobats included them.
     # pikepdf can deal with this, but we make the world a better place by
     # stamping them out as soon as possible.
-    modified = False
     with pikepdf.open(input_pdf) as pdf_file:
-        try:
-            len(pdf_file.docinfo)
-        except TypeError:
-            log.error(
-                "File contains a malformed DocumentInfo block - continuing anyway"
-            )
-        else:
-            if pdf_file.docinfo:
-                for k, v in pdf_file.docinfo.items():
-                    if b'\x00' in bytes(v):
-                        pdf_file.docinfo[k] = bytes(v).replace(b'\x00', b'')
-                        modified = True
-        if modified:
+        if _repair_docinfo_nulls(pdf_file):
             pdf_file.save(fix_docinfo_file)
         else:
             safe_symlink(input_pdf, fix_docinfo_file)
@@ -822,6 +809,25 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
     )
 
     return output_file
+
+
+def _repair_docinfo_nulls(pdf):
+    """If the DocumentInfo block contains NUL characters, remove them.
+
+    If the DocumentInfo block is malformed, log an error and continue.
+    """
+    modified = False
+    try:
+        if not isinstance(pdf.docinfo, pikepdf.Dictionary):
+            raise TypeError("DocumentInfo is not a dictionary")
+        for k, v in pdf.docinfo.items():
+            if isinstance(v, str) and b'\x00' in bytes(v):
+                pdf.docinfo[k] = bytes(v).replace(b'\x00', b'')
+                modified = True
+    except TypeError:
+        # TypeError can also be raised if dictionary items are unexpected types
+        log.error("File contains a malformed DocumentInfo block - continuing anyway.")
+    return modified
 
 
 def should_linearize(working_file: Path, context: PdfContext) -> bool:
