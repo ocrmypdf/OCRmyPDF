@@ -356,11 +356,11 @@ def test_prevent_gs_invalid_xml(resources, outdir):
 
     # Inject a string with a trailing nul character into the DocumentInfo
     # dictionary of this PDF, as often occurs in practice.
-    with pikepdf.open(resources / 'trivial.pdf') as pike:
-        pike.Root.DocumentInfo = pikepdf.Dictionary(
+    with pikepdf.open(resources / 'trivial.pdf') as pdf:
+        pdf.Root.DocumentInfo = pikepdf.Dictionary(
             Title=b'String with trailing nul\x00'
         )
-        pike.save(outdir / 'layers.rendered.pdf', fix_metadata_version=False)
+        pdf.save(outdir / 'layers.rendered.pdf', fix_metadata_version=False)
 
     _, options, _ = get_parser_options_plugins(
         args=[
@@ -396,9 +396,9 @@ def test_prevent_gs_invalid_xml(resources, outdir):
 def test_malformed_docinfo(caplog, resources, outdir):
     generate_pdfa_ps(outdir / 'pdfa.ps')
 
-    with pikepdf.open(resources / 'trivial.pdf') as pike:
-        pike.trailer.Info = pikepdf.Stream(pike, b"<xml></xml>")
-        pike.save(outdir / 'layers.rendered.pdf', fix_metadata_version=False)
+    with pikepdf.open(resources / 'trivial.pdf') as pdf:
+        pdf.trailer.Info = pikepdf.Stream(pdf, b"<xml></xml>")
+        pdf.save(outdir / 'layers.rendered.pdf', fix_metadata_version=False)
 
     _, options, _ = get_parser_options_plugins(
         args=[
