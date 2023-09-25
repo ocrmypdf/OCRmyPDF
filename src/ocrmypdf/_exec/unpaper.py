@@ -15,6 +15,7 @@ from pathlib import Path
 from subprocess import PIPE, STDOUT
 from typing import Iterator, Union
 
+from packaging.version import Version
 from PIL import Image
 
 from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
@@ -67,8 +68,8 @@ class UnpaperImageTooLargeError(Exception):
         super().__init__(self.message)
 
 
-def version() -> str:
-    return get_version('unpaper')
+def version() -> Version:
+    return Version(get_version('unpaper'))
 
 
 SUPPORTED_MODES = {'1', 'L', 'RGB'}

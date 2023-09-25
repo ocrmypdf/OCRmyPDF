@@ -10,14 +10,15 @@ from io import BytesIO
 from pathlib import Path
 from subprocess import PIPE
 
+from packaging.version import Version
 from PIL import Image
 
 from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.subprocess import get_version, run
 
 
-def version():
-    return get_version('pngquant', regex=r'(\d+(\.\d+)*).*')
+def version() -> Version:
+    return Version(get_version('pngquant', regex=r'(\d+(\.\d+)*).*'))
 
 
 def available():

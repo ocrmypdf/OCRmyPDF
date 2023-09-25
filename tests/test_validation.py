@@ -49,7 +49,10 @@ def test_hocr_notlatin_warning(caplog):
 
 
 def test_old_tesseract_error():
-    with patch('ocrmypdf._exec.tesseract.version', return_value='4.00.00alpha'):
+    with patch(
+        'ocrmypdf._exec.tesseract.version',
+        return_value=TesseractVersion('4.00.00alpha'),
+    ):
         with pytest.raises(MissingDependencyError):
             vd.check_options(*make_opts_pm(pdf_renderer='sandwich', language='eng'))
 
@@ -181,59 +184,66 @@ def test_language_warning(caplog):
         mock.assert_called_once()
 
 
+def make_version(version):
+    def _make_version():
+        return TesseractVersion(version)
+
+    return _make_version
+
+
 def test_version_comparison():
     vd.check_external_program(
         program="dummy_basic",
         package="dummy",
-        version_checker=lambda: '9.0',
+        version_checker=make_version('9.0'),
         need_version='8.0.2',
     )
     vd.check_external_program(
         program="dummy_doubledigit",
         package="dummy",
-        version_checker=lambda: '10.0',
+        version_checker=make_version('10.0'),
         need_version='8.0.2',
     )
     with pytest.raises(MissingDependencyError):
         vd.check_external_program(
             program="tesseract",
             package="tesseract",
-            version_checker=lambda: '4.0.0-beta.1',
+            version_checker=make_version('4.0.0-beta.1'),
             need_version='4.1.1',
             version_parser=TesseractVersion,
         )
     vd.check_external_program(
         program="tesseract",
         package="tesseract",
-        version_checker=lambda: 'v5.0.0-alpha.20200201',
+        version_checker=make_version('v5.0.0-alpha.20200201'),
         need_version='4.1.1',
         version_parser=TesseractVersion,
     )
     vd.check_external_program(
         program="tesseract",
         package="tesseract",
-        version_checker=lambda: '5.0.0-rc1.20211030',
+        version_checker=make_version('5.0.0-rc1.20211030'),
         need_version='4.1.1',
         version_parser=TesseractVersion,
     )
     vd.check_external_program(
         program="tesseract",
         package="tesseract",
-        version_checker=lambda: 'v4.1.1.20181030',  # Used in some Windows builds
+        version_checker=make_version('v4.1.1.20181030'),  # Used in some Windows builds
         need_version='4.1.1',
         version_parser=TesseractVersion,
     )
     vd.check_external_program(
         program="gs",
         package="ghostscript",
-        version_checker=lambda: '10.0',
+        version_checker=make_version('10.0'),
         need_version='9.50',
     )
     with pytest.raises(MissingDependencyError):
         vd.check_external_program(
             program="tesseract",
             package="tesseract",
-            version_checker=lambda: '4.1.1-rc2-25-g9707',
+            version_checker=make_version('4.1.1-rc2-25-g9707'),
             need_version='4.1.1',
             version_parser=TesseractVersion,
         )
@@ -241,7 +251,7 @@ def test_version_comparison():
         vd.check_external_program(
             program="dummy_fails",
             package="dummy",
-            version_checker=lambda: '1.0',
+            version_checker=make_version('1.0'),
             need_version='2.0',
         )
 

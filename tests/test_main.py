@@ -178,7 +178,7 @@ def test_maximum_options(renderer, output_type, multipage, outpdf):
 
 
 @pytest.mark.skipif(
-    tesseract.TesseractVersion(tesseract.version()) >= tesseract.TesseractVersion('5'),
+    tesseract.version() >= tesseract.TesseractVersion('5'),
     reason="tess 5 tries harder to find its files",
 )
 def test_tesseract_missing_tessdata(monkeypatch, resources, no_outpdf, tmpdir):

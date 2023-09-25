@@ -212,7 +212,7 @@ class TesseractOcrEngine(OcrEngine):
 
     @staticmethod
     def version():
-        return tesseract.version()
+        return str(tesseract.version())
 
     @staticmethod
     def creator_tag(options):

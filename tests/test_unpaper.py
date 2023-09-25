@@ -8,6 +8,7 @@ from os import fspath
 from unittest.mock import patch
 
 import pytest
+from packaging.version import Version
 
 from ocrmypdf._exec import unpaper
 from ocrmypdf._plugin_manager import get_parser_options_plugins
@@ -40,7 +41,7 @@ def test_old_unpaper(resources, no_outpdf):
 
     _parser, options, pm = get_parser_options_plugins(["--clean", input_, output])
     with patch("ocrmypdf._exec.unpaper.version") as mock:
-        mock.return_value = '0.5'
+        mock.return_value = Version('0.5')
 
         with pytest.raises(MissingDependencyError):
             check_options(options, pm)

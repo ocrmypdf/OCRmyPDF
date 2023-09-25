@@ -70,8 +70,8 @@ log.addFilter(DuplicateFilter(log))
 GS = 'gswin64c' if os.name == 'nt' else 'gs'
 
 
-def version():
-    return get_version(GS)
+def version() -> Version:
+    return Version(get_version(GS))
 
 
 def _gs_error_reported(stream) -> bool:
@@ -216,8 +216,7 @@ def generate_pdfa(
             "-dAutoFilterGrayImages=true",
         ]
 
-    strategy = 'LeaveColorUnchanged'
-    gs_version = Version(version())
+    gs_version = version()
     if gs_version == Version('9.56.0'):
         # 9.56.0 breaks our OCR, should be fixed in 9.56.1
         # https://bugs.ghostscript.com/show_bug.cgi?id=705187

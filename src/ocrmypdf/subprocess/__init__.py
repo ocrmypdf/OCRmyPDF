@@ -292,16 +292,12 @@ def _error_old_version(
     _error_trailer(**locals())
 
 
-def _remove_leading_v(s: str) -> str:
-    return s.removeprefix('v')
-
-
 def check_external_program(
     *,
     program: str,
     package: str,
-    version_checker: Callable[[], str],
-    need_version: str,
+    version_checker: Callable[[], Version],
+    need_version: str | Version,
     required_for: str | None = None,
     recommended: bool = False,
     version_parser: type[Version] = Version,
@@ -321,6 +317,8 @@ def check_external_program(
         version_parser: A class that should be used to parse and compare version
             numbers. Used when version numbers do not follow standard conventions.
     """
+    if not isinstance(need_version, Version):
+        need_version = version_parser(need_version)
     try:
         found_version = version_checker()
     except (CalledProcessError, FileNotFoundError) as e:
@@ -334,11 +332,10 @@ def check_external_program(
             raise
         return
 
-    found_version = _remove_leading_v(found_version)
-    need_version = _remove_leading_v(need_version)
-
-    if found_version and version_parser(found_version) < version_parser(need_version):
-        _error_old_version(program, package, need_version, found_version, required_for)
+    if found_version and found_version < need_version:
+        _error_old_version(
+            program, package, str(need_version), str(found_version), required_for
+        )
         if not recommended:
             raise MissingDependencyError(program)
 

@@ -113,13 +113,13 @@ class TesseractVersion(Version):
     )
 
 
-def version() -> str:
-    return get_version('tesseract', regex=r'tesseract\s(.+)')
+def version() -> Version:
+    return TesseractVersion(get_version('tesseract', regex=r'tesseract\s(.+)'))
 
 
 def has_thresholding() -> bool:
     """Does Tesseract have -c thresholding method capability?"""
-    return version() >= '5.0'
+    return version() >= Version('5.0')
 
 
 def get_languages() -> set[str]:

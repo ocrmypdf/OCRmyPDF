@@ -7,12 +7,14 @@ from __future__ import annotations
 
 from subprocess import PIPE
 
+from packaging.version import Version
+
 from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.subprocess import get_version, run
 
 
-def version():
-    return get_version('jbig2', regex=r'jbig2enc (\d+(\.\d+)*).*')
+def version() -> Version:
+    return Version(get_version('jbig2', regex=r'jbig2enc (\d+(\.\d+)*).*'))
 
 
 def available():

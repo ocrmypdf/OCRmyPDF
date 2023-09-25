@@ -10,12 +10,13 @@ from shutil import copyfile
 
 import pikepdf
 import pytest
+from packaging.version import Version
 from pikepdf.models.metadata import decode_pdf_date
 
+from ocrmypdf._exec import ghostscript
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._pipeline import convert_to_pdfa, metadata_fixup
 from ocrmypdf._plugin_manager import get_parser_options_plugins, get_plugin_manager
-from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import file_claims_pdfa, generate_pdfa_ps
 from ocrmypdf.pdfinfo import PdfInfo
@@ -393,6 +394,10 @@ def test_prevent_gs_invalid_xml(resources, outdir):
     assert contents.find(b'\x00', xmp_start, xmp_end) == -1
 
 
+@pytest.mark.skipif(
+    ghostscript.version() >= Version('10.2.0'),
+    reason="Ghostscript 10.2.0+ exit with an error on invalid DocumentInfo",
+)
 def test_malformed_docinfo(caplog, resources, outdir):
     generate_pdfa_ps(outdir / 'pdfa.ps')
 
