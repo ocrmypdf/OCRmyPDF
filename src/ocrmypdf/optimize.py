@@ -239,7 +239,7 @@ def _find_image_xrefs_container(
     pageno_for_xref: dict[Xref, int],
     depth: int = 0,
 ):
-    """Find all image XRefs in a page or Form XObject and add to the include/exclude sets."""
+    """Find all image XRefs or Form XObject and add to the include/exclude sets."""
     if depth > 10:
         log.warning("Recursion depth exceeded in _find_image_xrefs_page")
         return

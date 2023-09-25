@@ -18,7 +18,7 @@ from warnings import warn
 
 import pluggy
 
-from ocrmypdf._logging import PageNumberFilter, RichTqdmProgressAdapter
+from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._sync import run_pipeline
 from ocrmypdf._validation import check_options
@@ -144,7 +144,7 @@ def create_options(
         **kwargs: Keyword arguments.
 
     Returns:
-        argparse.Namespace: An argparse Namespace object containing the parsed arguments.
+        argparse.Namespace: A Namespace object containing the parsed arguments.
 
     Raises:
         TypeError: If the type of a keyword argument is not supported.
