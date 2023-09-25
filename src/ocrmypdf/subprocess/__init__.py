@@ -293,12 +293,7 @@ def _error_old_version(
 
 
 def _remove_leading_v(s: str) -> str:
-    if sys.version_info >= (3, 9):
-        return s.removeprefix('v')
-
-    if s.startswith('v'):
-        return s[1:]
-    return s
+    return s.removeprefix('v')
 
 
 def check_external_program(
