@@ -102,7 +102,7 @@ class OcrmypdfPluginManager(pluggy.PluginManager):
 
 def get_plugin_manager(
     plugins: list[str | Path], builtins=True
-) -> pluggy.PluginManager:
+) -> OcrmypdfPluginManager:
     return OcrmypdfPluginManager(
         project_name='ocrmypdf',
         plugins=plugins,
