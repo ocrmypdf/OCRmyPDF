@@ -42,6 +42,30 @@ COLOR_CONVERSION_STRATEGIES = frozenset(
 log = logging.getLogger(__name__)
 
 
+class DuplicateFilter(logging.Filter):
+    """Filter out duplicate log messages."""
+
+    def __init__(self, logger: logging.Logger):
+        self.last: logging.LogRecord | None = None
+        self.count = 0
+        self.logger = logger
+
+    def filter(self, record):
+        if self.last and record.msg == self.last.msg:
+            self.count += 1
+            return False
+        else:
+            if self.count >= 1:
+                rep_msg = f"(previous message repeated {self.count} times)"
+                self.count = 0  # Avoid infinite recursion
+                self.logger.log(self.last.levelno, rep_msg)
+            self.last = record
+            return True
+
+
+log.addFilter(DuplicateFilter(log))
+
+
 # Ghostscript executable - gswin32c is not supported
 GS = 'gswin64c' if os.name == 'nt' else 'gs'
 
@@ -252,14 +276,9 @@ def generate_pdfa(
         # If there is an error we log the whole stderr, except for filtering
         # duplicates.
         if _gs_error_reported(stderr):
-            last_part = None
-            repcount = 0
+            # Ghostscript outputs the pattern **** Error: ....  frequently.
+            # Occasionally the error message is spammed many times. We filter
+            # out duplicates of this message using the filter above. We use
+            # the **** pattern to split the stderr into parts.
             for part in stderr.split('****'):
-                if part != last_part:
-                    if repcount > 1:
-                        log.error(f"(previous error message repeated {repcount} times)")
-                        repcount = 0
-                    log.error(part)
-                else:
-                    repcount += 1
-                last_part = part
+                log.error(part)

@@ -12,7 +12,7 @@ import pikepdf
 import pytest
 from PIL import Image, UnidentifiedImageError
 
-from ocrmypdf._exec.ghostscript import rasterize_pdf
+from ocrmypdf._exec.ghostscript import DuplicateFilter, rasterize_pdf
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import Resolution
 
@@ -141,3 +141,41 @@ def test_rasterize_pdf_errors(resources, no_outpdf, caplog):
             )
         assert "this is an error" in caplog.text
         assert "invalid page image file" in caplog.text
+
+
+class TestDuplicateFilter:
+    @pytest.fixture(scope='class', autouse=True)
+    def duplicate_filter_logger(self):
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+        logger.addFilter(DuplicateFilter(logger))
+        return logger
+
+    def test_filter_duplicate_messages(self, duplicate_filter_logger, caplog):
+        log = duplicate_filter_logger
+        log.error("test error message")
+        log.error("test error message")
+        log.error("test error message")
+        log.error("another error message")
+        log.error("another error message")
+        log.error("yet another error message")
+
+        assert len(caplog.records) == 5
+        assert caplog.records[0].msg == "test error message"
+        assert caplog.records[1].msg == "(previous message repeated 2 times)"
+        assert caplog.records[2].msg == "another error message"
+        assert caplog.records[3].msg == "(previous message repeated 1 times)"
+        assert caplog.records[4].msg == "yet another error message"
+
+    def test_filter_does_not_affect_unique_messages(
+        self, duplicate_filter_logger, caplog
+    ):
+        log = duplicate_filter_logger
+        log.error("test error message")
+        log.error("another error message")
+        log.error("yet another error message")
+
+        assert len(caplog.records) == 3
+        assert caplog.records[0].msg == "test error message"
+        assert caplog.records[1].msg == "another error message"
+        assert caplog.records[2].msg == "yet another error message"
