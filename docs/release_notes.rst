@@ -28,6 +28,11 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v15.0.1
+=======
+
+-  Wheels Python tag changed to py39.
+
 v15.0.0
 =======
 
