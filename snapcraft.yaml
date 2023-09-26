@@ -7,7 +7,7 @@ name: ocrmypdf
 title: OCRmyPDF
 base: core22
 version: git
-summary: OCRmyPDF adds optical character recognition (OCR) to PDFs
+summary: OCRmyPDF adds a searchable text layer to scanned PDF files
 description: OCRmyPDF packaged for snap
 grade: stable
 confinement: strict

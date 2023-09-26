@@ -35,10 +35,12 @@ v15.0.0
 -  Dropped support many older dependencies - see ``pyproject.toml`` for details.
    Generally speaking, Ubuntu 22.04 is our baseline system.
 -  Dropped support 32-bit Windows and Linux. You must use a 64-bit operating system,
-   and 64-bit applications to use OCRmyPDF. Many of our dependencies are dropping
-   32-bit support (e.g. Pillow), and we are following suit.
+   and 64-bit versions of Python, Tesseract and Ghostscript to use OCRmyPDF. Many of
+   our dependencies are dropping 32-bit support (e.g. Pillow), and we are following
+   suit.
 -  Changed to trusted release for PyPI publishing.
--  pikepdf memory mapping is enabled again for improved performance.
+-  pikepdf memory mapping is enabled again for improved performance, now an issue
+   with pikepdf has been fixed.
 -  ``ocrmypdf.helpers.calculate_downsample`` previously had two variants, one
    that took a ``PIL.Image`` and one that took a ``tuple[int, int]``. The latter
    was removed.
@@ -49,7 +51,8 @@ v15.0.0
    at a resolution based on the average DPI of the page, weighted by the area that
    each feature occupies. Typically, small areas of high resolution in PDFs are
    errors or quirks from the repeated use of assets and high resolution is not
-   beneficial. That said, there may be unusual cases where information is lost.
+   beneficial. :issue:`1010,1104,1004,1079,1010`
+-  Ghostscript color conversion strategy is now configurable. :issue:`1143`
 
 v14.4.0
 =======
