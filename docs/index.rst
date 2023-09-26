@@ -12,7 +12,7 @@ files, allowing them to be searched.
 
 PDF is the best format for storing and exchanging scanned documents.
 Unfortunately, PDFs can be difficult to modify. OCRmyPDF makes it easy to apply
-image processing and OCR to existing PDFs.
+image processing and OCR (recognized, searchable text) to existing PDFs.
 
 .. toctree::
    :maxdepth: 1
