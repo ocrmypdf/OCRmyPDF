@@ -9,6 +9,8 @@ from __future__ import annotations
 import atexit
 import logging
 import re
+import statistics
+import sys
 from collections import defaultdict
 from contextlib import ExitStack
 from decimal import Decimal
@@ -994,12 +996,12 @@ class PageInfo:
 
         weights = [area / total_drawn_area for area in image_areas]
         # Calculate harmonic mean of DPIs weighted by area
-        # When the minimum version is Python 3.10, change this to
-        # statistics.harmonic_mean with the weights parameter
-        # rather than doing it manually.
-        weighted_dpi = sum(weights) / sum(
-            weight / dpi for weight, dpi in zip(weights, image_dpis)
-        )
+        if sys.version_info >= (3, 10):
+            weighted_dpi = statistics.harmonic_mean(image_dpis, weights)
+        else:
+            weighted_dpi = sum(weights) / sum(
+                weight / dpi for weight, dpi in zip(weights, image_dpis)
+            )
         max_dpi = max(image_dpis)
         dpi_average_max_ratio = weighted_dpi / max_dpi
 
@@ -1007,7 +1009,10 @@ class PageInfo:
         max_area_ratio = image_areas[arg_max_dpi] / total_drawn_area
 
         return PageResolutionProfile(
-            weighted_dpi, max_dpi, dpi_average_max_ratio, max_area_ratio
+            weighted_dpi,
+            max_dpi,
+            dpi_average_max_ratio,
+            max_area_ratio,
         )
 
     def __repr__(self):

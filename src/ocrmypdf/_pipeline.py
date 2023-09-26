@@ -228,28 +228,19 @@ def _vector_page_dpi(pageinfo: PageInfo) -> int:
     return VECTOR_PAGE_DPI if pageinfo.has_vector or pageinfo.has_text else 0
 
 
-def get_page_dpi(pageinfo: PageInfo, options) -> Resolution:
-    """Get the DPI when nonsquare DPI is tolerable."""
-    xres = max(
-        pageinfo.dpi.x or VECTOR_PAGE_DPI,
-        options.oversample or 0.0,
-        _vector_page_dpi(pageinfo),
-    )
-    yres = max(
-        pageinfo.dpi.y or VECTOR_PAGE_DPI,
-        options.oversample or 0,
-        _vector_page_dpi(pageinfo),
-    )
-    return Resolution(float(xres), float(yres))
-
-
-def get_page_square_dpi(pageinfo: PageInfo, options) -> Resolution:
+def get_page_square_dpi(
+    page_context: PageContext, image_dpi: Resolution | None = None
+) -> Resolution:
     """Get the DPI when we require xres == yres, scaled to physical units.
 
     Page DPI includes UserUnit scaling.
     """
-    xres = pageinfo.dpi.x or 0.0
-    yres = pageinfo.dpi.y or 0.0
+    pageinfo = page_context.pageinfo
+    options = page_context.options
+    if not image_dpi:
+        image_dpi = pageinfo.dpi
+    xres = image_dpi.x or 0.0
+    yres = image_dpi.y or 0.0
     userunit = float(pageinfo.userunit) or 1.0
     units = float(
         max(
@@ -262,17 +253,23 @@ def get_page_square_dpi(pageinfo: PageInfo, options) -> Resolution:
     return Resolution(units, units)
 
 
-def get_canvas_square_dpi(pageinfo: PageInfo, options) -> Resolution:
+def get_canvas_square_dpi(
+    page_context: PageContext, image_dpi: Resolution | None = None
+) -> Resolution:
     """Get the DPI when we require xres == yres, in Postscript units.
 
     Canvas DPI is independent of PDF UserUnit scaling, which is
     used to describe situations where the PDF user space is not 1:1 with
     the physical units of the page.
     """
+    pageinfo = page_context.pageinfo
+    options = page_context.options
+    if not image_dpi:
+        image_dpi = pageinfo.dpi
     units = float(
         max(
-            (pageinfo.dpi.x) or VECTOR_PAGE_DPI,
-            (pageinfo.dpi.y) or VECTOR_PAGE_DPI,
+            image_dpi.x or VECTOR_PAGE_DPI,
+            image_dpi.y or VECTOR_PAGE_DPI,
             _vector_page_dpi(pageinfo),
             options.oversample or 0.0,
         )
@@ -360,11 +357,9 @@ def rasterize_preview(input_file: Path, page_context: PageContext) -> Path:
     """Generate a lower quality preview image."""
     output_file = page_context.get_path('rasterize_preview.jpg')
     canvas_dpi = Resolution(300.0, 300.0).take_min(
-        [get_canvas_square_dpi(page_context.pageinfo, page_context.options)]
+        [get_canvas_square_dpi(page_context)]
     )
-    page_dpi = Resolution(300.0, 300.0).take_min(
-        [get_page_square_dpi(page_context.pageinfo, page_context.options)]
-    )
+    page_dpi = Resolution(300.0, 300.0).take_min([get_page_square_dpi(page_context)])
     page_context.plugin_manager.hook.rasterize_pdf_page(
         input_file=input_file,
         output_file=output_file,
@@ -438,6 +433,37 @@ def get_orientation_correction(preview: Path, page_context: PageContext) -> int:
     return 0
 
 
+def calculate_image_dpi(page_context: PageContext) -> Resolution:
+    pageinfo = page_context.pageinfo
+    dpi_profile = pageinfo.page_dpi_profile()
+    if dpi_profile and dpi_profile.average_to_max_dpi_ratio < 0.8:
+        image_dpi = Resolution(dpi_profile.weighted_dpi, dpi_profile.weighted_dpi)
+    else:
+        image_dpi = pageinfo.dpi
+    return image_dpi
+
+
+def calculate_raster_dpi(page_context: PageContext):
+    """Calculate the DPI for rasterization."""
+    # Produce the page image with square resolution or else deskew and OCR
+    # will not work properly.
+    image_dpi = calculate_image_dpi(page_context)
+    dpi_profile = page_context.pageinfo.page_dpi_profile()
+    canvas_dpi = get_canvas_square_dpi(page_context, image_dpi)
+    page_dpi = get_page_square_dpi(page_context, image_dpi)
+    if dpi_profile and dpi_profile.average_to_max_dpi_ratio < 0.8:
+        log.warning(
+            "Weight average image DPI is %0.1f, max DPI is %0.1f. "
+            "The discrepancy may indicate a high detail region on this page, "
+            "but could also indicate a problem with the input PDF file. "
+            "Page image will be rendered at %0.1f DPI.",
+            dpi_profile.weighted_dpi,
+            dpi_profile.max_dpi,
+            canvas_dpi.to_scalar(),
+        )
+    return canvas_dpi, page_dpi
+
+
 def rasterize(
     input_file: Path,
     page_context: PageContext,
@@ -489,25 +515,7 @@ def rasterize(
 
     log.debug(f"Rasterize with {device}, rotation {correction}")
 
-    # Produce the page image with square resolution or else deskew and OCR
-    # will not work properly.
-    canvas_dpi = get_canvas_square_dpi(pageinfo, page_context.options)
-    page_dpi = get_page_square_dpi(pageinfo, page_context.options)
-
-    dpi_profile = pageinfo.page_dpi_profile()
-    if dpi_profile and dpi_profile.average_to_max_dpi_ratio < 0.8:
-        log.warning(
-            "Weight average DPI is %0.1f, max DPI is %0.1f. "
-            "The discrepancy may indicate a high detail region on this page, "
-            "but could also indicate a problem with the input PDF file. "
-            "An image will be rendered at %0.1f DPI.",
-            dpi_profile.weighted_dpi,
-            dpi_profile.max_dpi,
-            dpi_profile.weighted_dpi,
-        )
-        canvas_dpi = page_dpi = Resolution(
-            dpi_profile.weighted_dpi, dpi_profile.weighted_dpi
-        )
+    canvas_dpi, page_dpi = calculate_raster_dpi(page_context)
 
     page_context.plugin_manager.hook.rasterize_pdf_page(
         input_file=input_file,
@@ -544,7 +552,7 @@ def preprocess_deskew(input_file: Path, page_context: PageContext) -> Path:
         Path: The path to the deskewed image file.
     """
     output_file = page_context.get_path('pp_deskew.png')
-    dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
+    dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
 
     ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
     deskew_angle_degrees = ocr_engine.get_deskew(input_file, page_context.options)
@@ -564,11 +572,11 @@ def preprocess_deskew(input_file: Path, page_context: PageContext) -> Path:
 
 def preprocess_clean(input_file: Path, page_context: PageContext) -> Path:
     output_file = page_context.get_path('pp_clean.png')
-    dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
+    dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
     return unpaper.clean(
         input_file,
         output_file,
-        dpi=dpi.x,
+        dpi=dpi.to_scalar(),
         unpaper_args=page_context.options.unpaper_args,
     )
 
@@ -665,7 +673,7 @@ def create_visible_page_jpg(image: Path, page_context: PageContext) -> Path:
             dpi = Resolution(*im.info['dpi'])
         else:
             # Fallback to page-implied DPI
-            dpi = get_page_square_dpi(page_context.pageinfo, page_context.options)
+            dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
 
         # Pillow requires integer DPI
         im.save(output_file, format='JPEG', dpi=dpi.to_int())
@@ -708,7 +716,7 @@ def create_pdf_page_from_image(
 def render_hocr_page(hocr: Path, page_context: PageContext) -> Path:
     options = page_context.options
     output_file = page_context.get_path('ocr_hocr.pdf')
-    dpi = get_page_square_dpi(page_context.pageinfo, options)
+    dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
     debug_mode = options.pdf_renderer == 'hocrdebug'
 
     hocrtransform = HocrTransform(hocr_filename=hocr, dpi=dpi.x)  # square
