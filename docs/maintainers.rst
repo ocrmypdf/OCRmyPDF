@@ -56,4 +56,12 @@ improve OCRmyPDF's compression.
 Command line completions
 ------------------------
 
-Please ensure that command line completions are installed.
+Please ensure that command line completions are installed, as described in the
+installation documentation.
+
+32-bit Linux support
+--------------------
+
+If you maintain a Linux distribution that supports 32-bit x86 or ARM, OCRmyPDF
+should continue to work as long as all of its dependencies continue to be
+available in 32-bit form. Please note we do not test on 32-bit platforms.

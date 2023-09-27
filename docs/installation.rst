@@ -382,29 +382,33 @@ Native Windows
 
 You must install the following for Windows:
 
-* Python 3.9 (64-bit) or later
-* Tesseract 4.1.1 (64-bit) or later
-* Ghostscript 9.50 (64-bit) or later
+* Python 64-bit
+* Tesseract 64-bit
+* Ghostscript 64-bit
 
-Using the `Chocolatey <https://chocolatey.org/>`_ package manager, install the
-following when running in an Administrator command prompt:
+Using the `winget <https://docs.microsoft.com/en-us/windows/package-manager/winget/>`_
+package manager:
+
+* ``winget install -e --id Python.Python.3.11``
+* ``winget install -e --id UB-Mannheim.TesseractOCR``
+* ``winget install -e --id ArtifexSoftware.GhostScript``
+
+
+(Or alternately, using the `Chocolatey <https://chocolatey.org/>`_ package manager, install
+the following when running in an Administrator command prompt):
 
 * ``choco install python3``
 * ``choco install --pre tesseract``
 * ``choco install ghostscript``
 * ``choco install pngquant`` (optional)
 
-The commands above will install Python 3.x (latest version), Tesseract, Ghostscript
-and pngquant. Chocolatey may also need to install the Windows Visual C++ Runtime
-DLLs or other Windows patches, and may require a reboot.
+Either set of commands will install the required software. At the mmoment there is no
+single command to install Windows.
 
 You may then use ``pip`` to install ocrmypdf. (This can performed by a user or
 Administrator.):
 
-* ``pip install ocrmypdf``
-
-Chocolatey automatically selects appropriate versions of these applications. Please make sure
-you are installing the 64-bit versions.
+* ``python3 -m pip install ocrmypdf``
 
 OCRmyPDF will check the Windows Registry and standard locations in your Program Files
 for third party software it needs (specifically, Tesseract and Ghostscript). To
@@ -553,6 +557,9 @@ The following versions are required:
 -  pngquant 2.5 or newer
 -  unpaper 6.1
 
+We recommend 64-bit versions of all software. (32-bit versions are not
+supported, although they may still work.)
+
 jbig2enc, pngquant, and unpaper are optional. If missing certain
 features are disabled. OCRmyPDF will discover them as soon as they are
 available.
@@ -658,3 +665,18 @@ To manually install the ``bash`` completion, copy
 To manually install the ``fish`` completion, copy
 ``misc/completion/ocrmypdf.fish`` to
 ``~/.config/fish/completions/ocrmypdf.fish``.
+
+Note on 32-bit support
+======================
+
+Many Python libraries no longer 32-bit binary wheels for Linux. This
+includes many of the libraries that OCRmyPDF depends on, such as
+Pillow. The easiest way to express this to end users is to say we don't
+support 32-bit Linux.
+
+However, if your Linux distribution still supports 32-bit binaries, you
+can still install and use OCRmyPDF. A warning message will appear.
+In practice, OCRmyPDF may need more than 32-bit memory space to run when
+large documents are processed, so there are practical limitations to what
+users can accomplish with it. Still, for the common use case of an 32-bit
+ARM NAS or Raspberry Pi processing small documents, it should work.

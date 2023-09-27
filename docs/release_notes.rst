@@ -39,10 +39,10 @@ v15.0.0
 -  Dropped support for Python 3.8.
 -  Dropped support many older dependencies - see ``pyproject.toml`` for details.
    Generally speaking, Ubuntu 22.04 is our baseline system.
--  Dropped support 32-bit Windows and Linux. You must use a 64-bit operating system,
+-  Dropped support for 32-bit Linux wheels. You must use a 64-bit operating system,
    and 64-bit versions of Python, Tesseract and Ghostscript to use OCRmyPDF. Many of
-   our dependencies are dropping 32-bit support (e.g. Pillow), and we are following
-   suit.
+   our dependencies are dropping 32-bit builds (e.g. Pillow), and we are following
+   suit. (Maintainers may still build 32-bit versions from source.)
 -  Changed to trusted release for PyPI publishing.
 -  pikepdf memory mapping is enabled again for improved performance, now an issue
    with pikepdf has been fixed.
