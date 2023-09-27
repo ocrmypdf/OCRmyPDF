@@ -117,14 +117,14 @@ exceed a certain number of megapixels with ``--skip-big``. (A 300 DPI,
 OCR for huge images
 -------------------
 
-Separate from these settings, Tesseract has internal limits on the size
+Tesseract has internal limits on the size
 of images it will process. If you issue
 ``--tesseract-downsample-large-images``, OCRmyPDF will downsample images
 to fit Tesseract limits. (The limits are usually entered only for scanned
 images of oversized media, such as large maps or blueprints exceeding
 110 cm or 43 inches in either dimension, and at high DPI.)
 
-``--tesseract-downsample-above`` adjusts the threshold at which images
+``--tesseract-downsample-above Npixels`` adjusts the threshold at which images
 will be downsampled. By default, only images that exceed any of Tesseract's
 internal limits are downsampled.
 
@@ -195,10 +195,10 @@ In each case OCRmyPDF will search the ``PATH`` environment variable to
 locate the binaries. By modifying the ``PATH`` environment variable, you
 can override the binaries that OCRmyPDF uses.
 
-Changing tesseract configuration variables
+Changing Tesseract configuration variables
 ------------------------------------------
 
-You can override tesseract's default `control
+You can override Tesseract's default `control
 parameters <https://tesseract-ocr.github.io/tessdoc/tess3/ControlParams.html>`__
 with a configuration file.
 
@@ -273,7 +273,7 @@ Unlike ``sandwich`` this renderer is implemented within OCRmyPDF; anyone
 looking to customize how OCR is presented should look here. A major
 disadvantage of this renderer is it not capable of correctly handling
 text outside the Latin alphabet (specifically, it supports the ISO 8859-1
-character). Pull requests to improve the situation are welcome.
+character set). Pull requests to improve the situation are welcome.
 
 Currently, this renderer has the best compatibility with Mozilla's
 PDF.js viewer.
@@ -286,10 +286,30 @@ Rendering and rasterizing options
 .. versionadded:: 14.3.0
 
 The ``--continue-on-soft-render-error`` option allows OCRmyPDF to
-proceed if a page cannot be rasterized rendered. This is useful if you are
+proceed if a page cannot be rasterized/rendered. This is useful if you are
 trying to get the best possible OCR from a PDF that is not well-formed,
 and you are willing to accept some pages that may not visually match the
 input, and that may not OCR well.
+
+Color conversion strategy
+=========================
+
+.. versionadded:: 15.0.0
+
+OCRmyPDF uses Ghostscript to convert PDF to PDF/A. In some cases, this
+conversion requires color conversion. The default strategy is to convert
+using the ``LeaveColorUnchanged`` strategy, which preserves the original
+color space wherever possible (some rare color spaces might still be
+converted).
+
+Usually document scanners produce PDFs in the sRGB color space, and do
+not need to be converted, so the default strategy is appropriate.
+
+Suppose that you have a document that was prepared for professional
+printing in a Separation or CMYK color space, and text was converted to
+curves. In this case, you may want to use a different color conversion
+strategy. The ``--color-conversion-strategy`` option allows you to select a
+different strategy, such as ``RGB``.
 
 Return code policy
 ==================

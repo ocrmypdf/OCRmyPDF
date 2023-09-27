@@ -59,5 +59,9 @@ To turn on JBIG2 lossy mode, add the argument ``--jbig2-lossy``.
 also required. Also, a JBIG2 encoder must be installed as described in
 the previous section.
 
+You can adjust the threshold for JBIG2 compression with the
+``--jbig2-threshold``. The default is 0.85, meaning that if two symbols
+are 85% similar, they will be compressed together.
+
 *Due to an oversight, ocrmypdf v7.0 and v7.1 used lossy mode by
 default.*

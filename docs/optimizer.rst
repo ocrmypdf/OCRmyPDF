@@ -45,8 +45,8 @@ Optimizations that always occurs
 ================================
 
 OCRmyPDF will automatically replace obsolete or inferior compression schemes
-such as RLE or LZW with superior schemes such as Deflate and converting
-monochrome images to CCITT G4. Since this is harmless it always occurs and there
+such as RLE or LZW with superior schemes such as Deflate, and convert
+monochrome images to CCITT G4. Since this is lossless, it always occurs and there
 is no way to disable it. Other non-image compressed objects are compressed as
 well.
 

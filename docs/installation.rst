@@ -420,12 +420,12 @@ to change the PATH.
 
     As of early 2021, users have reported problems with the Microsoft Store version of
     Python and OCRmyPDF. These issues affect many other third party Python packages.
-    Please download Python from Python.org or Chocolatey instead, and do not use the
+    Please download Python from Python.org or a package manager instead of the
     Microsoft Store version.
 
 .. warning::
 
-    32-bit Windows might work, but is not supported.
+    32-bit Windows is not supported.
 
 Windows Subsystem for Linux
 ---------------------------
@@ -558,7 +558,7 @@ The following versions are required:
 -  unpaper 6.1
 
 We recommend 64-bit versions of all software. (32-bit versions are not
-supported, although they may still work.)
+supported, although on Linux, they may still work.)
 
 jbig2enc, pngquant, and unpaper are optional. If missing certain
 features are disabled. OCRmyPDF will discover them as soon as they are
