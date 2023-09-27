@@ -394,9 +394,12 @@ def test_prevent_gs_invalid_xml(resources, outdir):
     assert contents.find(b'\x00', xmp_start, xmp_end) == -1
 
 
-@pytest.mark.skipif(
-    ghostscript.version() >= Version('10.2.0'),
-    reason="Ghostscript 10.2.0+ exit with an error on invalid DocumentInfo",
+@pytest.mark.xfail(
+    ghostscript.version() >= Version('10.01.2'),
+    reason=(
+        "Ghostscript now exits with an error on invalid DocumentInfo, defeating "
+        "this test.",
+    ),
 )
 def test_malformed_docinfo(caplog, resources, outdir):
     generate_pdfa_ps(outdir / 'pdfa.ps')
