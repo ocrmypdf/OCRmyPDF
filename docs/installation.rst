@@ -72,7 +72,7 @@ Debian and Ubuntu 20.04 or newer
 | |ubu-2004| |ubu-2204|                         |
 +-----------------------------------------------+
 
-Users of Debian 11, or Ubuntu 20.04 LTS, or newer may simply
+Users of Debian or Ubuntu may simply
 
 .. code-block:: bash
 
@@ -99,11 +99,11 @@ For full details on version availability for your platform, check the
 Fedora
 ------
 
-.. |fedora-35| image:: https://repology.org/badge/version-for-repo/fedora_35/ocrmypdf.svg
-    :alt: Fedora 35
+.. |fedora-37| image:: https://repology.org/badge/version-for-repo/fedora_37/ocrmypdf.svg
+    :alt: Fedora 37
 
-.. |fedora-36| image:: https://repology.org/badge/version-for-repo/fedora_36/ocrmypdf.svg
-    :alt: Fedora 36
+.. |fedora-38| image:: https://repology.org/badge/version-for-repo/fedora_38/ocrmypdf.svg
+    :alt: Fedora 38
 
 .. |fedora-rawhide| image:: https://repology.org/badge/version-for-repo/fedora_rawhide/ocrmypdf.svg
     :alt: Fedore Rawhide
@@ -113,10 +113,10 @@ Fedora
 +-----------------------------------------------+
 | |latest|                                      |
 +-----------------------------------------------+
-| |fedora-35| |fedora-36| |fedora-rawhide|      |
+| |fedora-37| |fedora-38| |fedora-rawhide|      |
 +-----------------------------------------------+
 
-Users of Fedora 29 or later may simply
+Users of Fedora may simply
 
 .. code-block:: bash
 
@@ -155,7 +155,7 @@ user, follow these steps:
 
 If you get the message ``WARNING: The script ocrmypdf is installed in
 '/home/$USER/.local/bin' which is not on PATH.``, you may need to re-login
-or open a new shell, or manually add this to your user's PATH.
+or open a new shell, or manually adjust your PATH.
 
 To add JBIG2 encoding, see :ref:`jbig2`.
 
@@ -448,7 +448,7 @@ Cygwin64
 
 First install the the following prerequisite Cygwin packages using ``setup-x86_64.exe``::
 
-    python38 (or later)
+    python39 (or later)
     python3?-devel
     python3?-pip
     python3?-lxml
@@ -457,7 +457,7 @@ First install the the following prerequisite Cygwin packages using ``setup-x86_6
        (where 3? means match the version of python3 you installed)
 
     gcc-g++
-    ghostscript (<=9.50 or >=9.52-2 see note below)
+    ghostscript
     libexempi3
     libexempi-devel
     libffi6
@@ -467,13 +467,6 @@ First install the the following prerequisite Cygwin packages using ``setup-x86_6
     libqpdf-devel
     tesseract-ocr
     tesseract-ocr-devel
-
-.. note::
-
-    The Cygwin package for Ghostscript in versions 9.52 and
-    9.52-1 contained a bug that caused an exception to occur when
-    ocrmypdf invoked gs.  Make sure you have either 9.50 (or earlier)
-    or 9.52-2 (or later).
 
 Then open a Cygwin terminal (i.e. ``mintty``), run the following commands. Note
 that if you are using the version of ``pip`` that was installed with the Cygwin
@@ -554,7 +547,7 @@ manager. ``pip`` cannot provide them.
 The following versions are required:
 
 -  Python 3.9 or newer
--  Ghostscript 9.50 or newer
+-  Ghostscript 9.55 or newer
 -  Tesseract 4.1.1 or newer
 -  jbig2enc 0.29 or newer
 -  pngquant 2.5 or newer
