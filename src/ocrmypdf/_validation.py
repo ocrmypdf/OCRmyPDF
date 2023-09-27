@@ -44,7 +44,7 @@ log = logging.getLogger(__name__)
 
 def check_platform() -> None:
     if sys.maxsize <= 2**32:  # pragma: no cover
-        log.error(
+        log.warning(
             "You are running OCRmyPDF in a 32-bit (x86) Python interpreter. "
             "This is not supported. 32-bit does not have enough address space "
             "to process large files. "
