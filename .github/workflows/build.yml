@@ -28,11 +28,14 @@ jobs:
             python: "3.10"
           - os: ubuntu-22.04
             python: "3.11"
-          #- os: ubuntu-latest
-          #  python: "pypy3.9"
           - os: ubuntu-22.04
             python: "3.9"
             tesseract5: true
+          - os: ubuntu-latest
+            python: "3.12-dev"
+            tesseract5: true
+            #- os: ubuntu-latest
+            #  python: "pypy3.9"
 
     env:
       OS: ${{ matrix.os }}
@@ -44,9 +47,10 @@ jobs:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
       - uses: actions/setup-python@v4
-        name: Install Python
+        name: Setup Python
         with:
           python-version: ${{ matrix.python }}
+          cache: "pip"
 
       - name: Install Tesseract 5
         if: matrix.tesseract5
@@ -109,7 +113,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python: ["3.10", "3.11"]
+        python: ["3.10", "3.11", "3.12-dev"]
 
     env:
       OS: ${{ matrix.os }}
@@ -133,9 +137,10 @@ jobs:
             tesseract
 
       - uses: actions/setup-python@v4
-        name: Install Python
+        name: Setup Python
         with:
           python-version: ${{ matrix.python }}
+          cache: "pip"
 
       - name: Install Python packages
         run: |
@@ -165,7 +170,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python: ["3.10", "3.11"]
+        python: ["3.10", "3.11", "3.12-dev"]
 
     env:
       OS: ${{ matrix.os }}
@@ -177,9 +182,10 @@ jobs:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
       - uses: actions/setup-python@v4
-        name: Install Python
+        name: Setup Python
         with:
           python-version: ${{ matrix.python }}
+          cache: "pip"
 
       - name: Install system packages
         run: |
@@ -210,9 +216,10 @@ jobs:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
       - uses: actions/setup-python@v4
-        name: Install Python
+        name: Setup Python
         with:
           python-version: "3.9"
+          cache: "pip"
 
       - name: Make wheels and sdist
         run: |
