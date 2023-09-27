@@ -32,6 +32,9 @@ v15.0.1
 =======
 
 -  Wheels Python tag changed to py39.
+-  Marked as a expected fail a test that fails on recent Ghostscript versions.
+-  Clarified documentation and release notes around the extent of 32-bit support.
+-  Updated installation documentation to changes in v15.
 
 v15.0.0
 =======
