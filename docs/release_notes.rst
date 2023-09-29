@@ -28,6 +28,13 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v15.0.2
+=======
+
+-  Added Python 3.12 to test matrix.
+-  Updated documentation for notes on Python 3.12, 32-bit support and some new
+   features in v15.
+
 v15.0.1
 =======
 
