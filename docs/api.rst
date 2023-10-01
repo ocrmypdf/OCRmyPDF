@@ -39,9 +39,7 @@ Parent process requirements
 The :func:`ocrmypdf.ocr` function runs OCRmyPDF similar to command line
 execution. To do this, it will:
 
-- create a monitoring thread
-- create worker processes (on Linux, forking itself; on Windows and macOS, by
-  spawning)
+- create worker processes or threads
 - manage the signal flags of its worker processes
 - execute other subprocesses (forking and executing other programs)
 
@@ -54,7 +52,19 @@ processes.
 
 Creating a child process to call :func:`ocrmypdf.ocr()` is suggested. That
 way your application will survive and remain interactive even if
-OCRmyPDF fails for any reason.
+OCRmyPDF fails for any reason. For example:
+
+.. code-block:: python
+
+    from multiprocessing import Process
+
+    def ocrmypdf_process():
+        ocrmypdf.ocr('input.pdf', 'output.pdf')
+
+    def call_ocrmypdf_from_my_app():
+        p = Process(target=ocrmypdf_process)
+        p.start()
+        p.join()
 
 Programs that call :func:`ocrmypdf.ocr()` should also install a SIGBUS signal
 handler (except on Windows), to raise an exception if access to a memory
@@ -89,11 +99,20 @@ your use case.
 Progress monitoring
 -------------------
 
-OCRmyPDF uses the ``tqdm`` package to implement its progress bars.
+OCRmyPDF uses the ``rich`` package to implement its progress bars.
 :func:`ocrmypdf.configure_logging` will set up logging output to
 ``sys.stderr`` in a way that is compatible with the display of the
 progress bar. Use ``ocrmypdf.ocr(...progress_bar=False)`` to disable
 the progress bar.
+
+Standard output
+---------------
+
+OCRmyPDF is strict about not writing to standard output so that
+users can safely use it in a pipeline and produce a valid output
+file. A caller application will have to ensure it does not write to
+standard output either, if it wants to be compatible with this
+behavior and support piping to a file.
 
 Exceptions
 ----------
@@ -103,9 +122,6 @@ exceptions, some exceptions related to multiprocessing, and
 :exc:`KeyboardInterrupt`. The parent process should provide an exception
 handler. OCRmyPDF will clean up its temporary files and worker processes
 automatically when an exception occurs.
-
-Programs that call OCRmyPDF should consider trapping KeyboardInterrupt
-so that they allow OCR to terminate with the whole program terminating.
 
 When OCRmyPDF succeeds conditionally, it returns an integer exit code.
 

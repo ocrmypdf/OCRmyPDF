@@ -118,6 +118,11 @@ class StandardExecutor(Executor):
         # Regardless of whether we use_threads for worker processes, the log_listener
         # must be a thread. Make sure we create the listener after the worker pool,
         # so that it does not get forked into the workers.
+        # If use_threads is False, we are currently guilty of creating a thread before
+        # forking on Linux, which is not recommended. However, we take a big
+        # performance hit in pdfinfo if we can't fork. Long term solution is to
+        # replace most of this with an asyncio implementation, and probably to
+        # migrate some of pdfinfo into C++ or Rust.
         listener = threading.Thread(target=log_listener, args=(log_queue,))
         listener.start()
 
