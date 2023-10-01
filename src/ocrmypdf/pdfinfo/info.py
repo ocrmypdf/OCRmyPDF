@@ -20,9 +20,10 @@ from functools import partial
 from math import hypot, inf, isclose
 from os import PathLike
 from pathlib import Path
-from typing import NamedTuple
+from typing import Callable, NamedTuple
 from warnings import warn
 
+from pdfminer.layout import LTPage, LTTextBox
 from pikepdf import (
     Name,
     Object,
@@ -38,7 +39,7 @@ from pikepdf import (
 from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf.exceptions import EncryptedPdfError, InputFileError
 from ocrmypdf.helpers import Resolution, available_cpu_count, pikepdf_enable_mmap
-from ocrmypdf.pdfinfo.layout import get_page_analysis, get_text_boxes
+from ocrmypdf.pdfinfo.layout import LTStateAwareChar, get_page_analysis, get_text_boxes
 
 logger = logging.getLogger()
 
@@ -655,7 +656,9 @@ def _page_has_text(text_blocks: Iterable[FloatRect], page_width, page_height) ->
     return has_text
 
 
-def simplify_textboxes(miner, textbox_getter) -> Iterator[TextboxInfo]:
+def simplify_textboxes(
+    miner: LTPage, textbox_getter: Callable[[LTPage], Iterator[LTTextBox]]
+) -> Iterator[TextboxInfo]:
     """Extract only limited content from text boxes.
 
     We do this to save memory and ensure that our objects are pickleable.
@@ -663,7 +666,8 @@ def simplify_textboxes(miner, textbox_getter) -> Iterator[TextboxInfo]:
     for box in textbox_getter(miner):
         first_line = box._objs[0]  # pylint: disable=protected-access
         first_char = first_line._objs[0]  # pylint: disable=protected-access
-
+        if not isinstance(first_char, LTStateAwareChar):
+            continue
         visible = first_char.rendermode != 3
         corrupt = first_char.get_text() == '\ufffd'
         yield TextboxInfo(box.bbox, visible, corrupt)
@@ -822,7 +826,10 @@ class PageInfo:
         if check_this_page and detailed_analysis:
             pscript5_mode = str(pdf.docinfo.get(Name.Creator)).startswith('PScript5')
             miner = get_page_analysis(infile, pageno, pscript5_mode)
-            self._textboxes = list(simplify_textboxes(miner, get_text_boxes))
+            if miner is not None:
+                self._textboxes = list(simplify_textboxes(miner, get_text_boxes))
+            else:
+                self._textboxes = []
             bboxes = (box.bbox for box in self._textboxes)
 
             self._has_text = _page_has_text(bboxes, width_pt, height_pt)
@@ -938,7 +945,9 @@ class PageInfo:
     def get_textareas(self, visible: bool | None = None, corrupt: bool | None = None):
         """Return textareas bounding boxes in PDF coordinates on the page."""
 
-        def predicate(obj, want_visible, want_corrupt):
+        def predicate(
+            obj: TextboxInfo, want_visible: bool | None, want_corrupt: bool | None
+        ) -> bool:
             result = True
             if want_visible is not None:
                 if obj.is_visible != want_visible:
