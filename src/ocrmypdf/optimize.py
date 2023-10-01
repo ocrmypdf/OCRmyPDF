@@ -11,9 +11,10 @@ import sys
 import tempfile
 import threading
 from collections import defaultdict
+from collections.abc import Iterator, MutableSet, Sequence
 from os import fspath
 from pathlib import Path
-from typing import Callable, Iterator, MutableSet, NamedTuple, NewType, Sequence
+from typing import Callable, NamedTuple, NewType
 from zlib import compress
 
 import img2pdf

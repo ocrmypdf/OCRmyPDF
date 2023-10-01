@@ -7,9 +7,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
+from collections.abc import Sequence
 from logging import Handler
 from pathlib import Path
-from typing import TYPE_CHECKING, AbstractSet, NamedTuple, Sequence
+from typing import TYPE_CHECKING, AbstractSet, NamedTuple
 
 import pluggy
 

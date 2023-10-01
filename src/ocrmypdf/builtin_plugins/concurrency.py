@@ -12,9 +12,10 @@ import queue
 import signal
 import sys
 import threading
+from collections.abc import Iterable
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from contextlib import suppress
-from typing import Callable, Iterable, Type, Union
+from typing import Callable, Union
 
 from rich.console import Console as RichConsole
 
@@ -23,7 +24,7 @@ from ocrmypdf._logging import RichLoggingHandler, RichTqdmProgressAdapter
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import remove_all_log_handlers
 
-FuturesExecutorClass = Union[Type[ThreadPoolExecutor], Type[ProcessPoolExecutor]]
+FuturesExecutorClass = Union[type[ThreadPoolExecutor], type[ProcessPoolExecutor]]
 Queue = Union[multiprocessing.Queue, queue.Queue]
 UserInit = Callable[[], None]
 WorkerInit = Callable[[Queue, UserInit, int], None]

@@ -10,11 +10,12 @@ import logging
 import os
 import re
 import sys
+from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
 from shutil import copyfileobj
-from typing import Any, BinaryIO, Iterable, Iterator, Sequence, cast
+from typing import Any, BinaryIO, cast
 
 import img2pdf
 import pikepdf

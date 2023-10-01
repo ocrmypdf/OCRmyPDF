@@ -9,11 +9,12 @@ import logging
 import os
 import shlex
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager
 from decimal import Decimal
 from pathlib import Path
 from subprocess import PIPE, STDOUT
-from typing import Iterator, Union
+from typing import Union
 
 from packaging.version import Version
 from PIL import Image

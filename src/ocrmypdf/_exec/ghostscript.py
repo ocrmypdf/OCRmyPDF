@@ -8,7 +8,6 @@ from __future__ import annotations
 import logging
 import os
 import re
-import sys
 from io import BytesIO
 from os import fspath
 from pathlib import Path

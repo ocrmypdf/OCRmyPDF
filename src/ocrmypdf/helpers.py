@@ -10,7 +10,7 @@ import multiprocessing
 import os
 import shutil
 import warnings
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from contextlib import suppress
 from decimal import Decimal
 from io import StringIO
@@ -21,9 +21,6 @@ from typing import (
     Any,
     Callable,
     Generic,
-    Sequence,
-    SupportsFloat,
-    SupportsRound,
     TypeVar,
 )
 

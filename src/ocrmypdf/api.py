@@ -10,10 +10,11 @@ import os
 import sys
 import threading
 from argparse import Namespace
+from collections.abc import Iterable
 from enum import IntEnum
 from io import IOBase
 from pathlib import Path
-from typing import AnyStr, BinaryIO, Iterable, Union
+from typing import AnyStr, BinaryIO, Union
 from warnings import warn
 
 import pluggy

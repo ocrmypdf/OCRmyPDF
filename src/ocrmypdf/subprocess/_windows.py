@@ -9,9 +9,10 @@ import os
 import re
 import shutil
 import sys
+from collections.abc import Iterable, Iterator
 from itertools import chain
 from pathlib import Path
-from typing import Any, Callable, Iterable, Iterator, TypeVar
+from typing import Any, Callable, TypeVar
 
 from packaging.version import InvalidVersion, Version
 

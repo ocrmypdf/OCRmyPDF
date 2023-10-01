@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import threading
 from abc import ABC, abstractmethod
-from typing import Callable, Iterable
+from collections.abc import Iterable
+from typing import Callable
 
 
 def _task_noop(*_args, **_kwargs):

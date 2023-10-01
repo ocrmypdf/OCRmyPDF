@@ -9,9 +9,9 @@ import os
 import shutil
 import sys
 from argparse import Namespace
+from collections.abc import Iterator
 from copy import copy
 from pathlib import Path
-from typing import Iterator
 
 from pluggy import PluginManager
 

@@ -6,9 +6,9 @@
 from __future__ import annotations
 
 import base64
+from collections.abc import Iterator
 from importlib.resources import files as package_files
 from pathlib import Path
-from typing import Iterator
 
 import pikepdf
 

@@ -12,9 +12,9 @@ import os
 import sys
 import unicodedata
 from argparse import Namespace
+from collections.abc import Sequence
 from pathlib import Path
 from shutil import copyfileobj
-from typing import Sequence
 
 import pikepdf
 import PIL

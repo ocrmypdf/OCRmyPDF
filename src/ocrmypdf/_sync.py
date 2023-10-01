@@ -13,12 +13,13 @@ import logging.handlers
 import os
 import sys
 import threading
+from collections.abc import Sequence
 from concurrent.futures.process import BrokenProcessPool
 from concurrent.futures.thread import BrokenThreadPool
 from functools import partial
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import NamedTuple, Sequence, cast
+from typing import NamedTuple, cast
 
 import PIL
 

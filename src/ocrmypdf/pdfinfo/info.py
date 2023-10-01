@@ -12,6 +12,7 @@ import re
 import statistics
 import sys
 from collections import defaultdict
+from collections.abc import Container, Iterable, Iterator, Mapping, Sequence
 from contextlib import ExitStack
 from decimal import Decimal
 from enum import Enum, auto
@@ -19,7 +20,7 @@ from functools import partial
 from math import hypot, inf, isclose
 from os import PathLike
 from pathlib import Path
-from typing import Container, Iterable, Iterator, Mapping, NamedTuple, Sequence, Tuple
+from typing import NamedTuple
 from warnings import warn
 
 from pikepdf import (
@@ -73,7 +74,7 @@ class Encoding(Enum):
     runlength = auto()
 
 
-FloatRect = Tuple[float, float, float, float]
+FloatRect = tuple[float, float, float, float]
 
 FRIENDLY_COLORSPACE: dict[str, Colorspace] = {
     '/DeviceGray': Colorspace.gray,

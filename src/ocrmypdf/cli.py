@@ -6,7 +6,8 @@
 from __future__ import annotations
 
 import argparse
-from typing import Any, Callable, Mapping, TypeVar
+from collections.abc import Mapping
+from typing import Any, Callable, TypeVar
 
 from ocrmypdf._version import PROGRAM_NAME as _PROGRAM_NAME
 from ocrmypdf._version import __version__ as _VERSION

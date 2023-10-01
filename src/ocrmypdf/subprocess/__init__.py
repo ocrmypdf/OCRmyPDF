@@ -8,11 +8,12 @@ import logging
 import os
 import re
 import sys
+from collections.abc import Mapping, Sequence
 from contextlib import suppress
 from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, CompletedProcess, Popen
 from subprocess import run as subprocess_run
-from typing import Callable, Mapping, Sequence, Union
+from typing import Callable, Union
 
 from packaging.version import Version
 
