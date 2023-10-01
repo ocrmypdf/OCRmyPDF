@@ -210,7 +210,7 @@ def create_options(
     return options
 
 
-def ocr(  # noqa: ruff: disable=D417
+def ocr(  # noqa: D417
     input_file: PathOrIO,
     output_file: PathOrIO,
     *,

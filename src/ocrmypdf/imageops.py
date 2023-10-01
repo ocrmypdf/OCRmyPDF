@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from math import floor, sqrt
-from typing import Optional, Tuple
+from typing import Optional
 
 from PIL import Image
 
@@ -43,13 +43,13 @@ def bytes_per_pixel(mode: str) -> int:
 
 
 def _calculate_downsample(
-    image_size: Tuple[int, int],
+    image_size: tuple[int, int],
     bytes_per_pixel: int,
     *,
-    max_size: Optional[Tuple[int, int]] = None,
+    max_size: Optional[tuple[int, int]] = None,
     max_pixels: Optional[int] = None,
     max_bytes: Optional[int] = None,
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
     """Calculate image size required to downsample an image to fit limits.
 
     If no limit is exceeded, the input image's size is returned.
@@ -106,10 +106,10 @@ def _calculate_downsample(
 def calculate_downsample(
     image: Image.Image,
     *,
-    max_size: Optional[Tuple[int, int]] = None,
+    max_size: Optional[tuple[int, int]] = None,
     max_pixels: Optional[int] = None,
     max_bytes: Optional[int] = None,
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
     """Calculate image size required to downsample an image to fit limits.
 
     If no limit is exceeded, the input image's size is returned.

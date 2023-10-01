@@ -7,10 +7,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
-from collections.abc import Sequence
+from collections.abc import Sequence, Set
 from logging import Handler
 from pathlib import Path
-from typing import TYPE_CHECKING, AbstractSet, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 import pluggy
 
@@ -406,7 +406,7 @@ class OcrEngine(ABC):
 
     @staticmethod
     @abstractmethod
-    def languages(options: Namespace) -> AbstractSet[str]:
+    def languages(options: Namespace) -> Set[str]:
         """Returns the set of all languages that are supported by the engine.
 
         Languages are typically given in 3-letter ISO 3166-1 codes, but actually
