@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
-from contextlib import ExitStack
+from contextlib import contextmanager
 from math import copysign
 from os import PathLike
 from pathlib import Path
@@ -271,6 +271,22 @@ class TextPositionTracker(PDFLayoutAnalyzer):
         return self.result
 
 
+@contextmanager
+def patch_pdfminer(pscript5_mode: bool):
+    """Patch pdfminer.six to work around bugs in PDFs created by PScript5."""
+    if pscript5_mode:
+        with patch.multiple(
+            'pdfminer.pdffont.PDFType3Font',
+            spec=True,
+            get_ascent=pdftype3font__pscript5_get_ascent,
+            get_descent=pdftype3font__pscript5_get_descent,
+            get_height=pdftype3font__pscript5_get_height,
+        ):
+            yield
+    else:
+        yield
+
+
 def get_page_analysis(
     infile: PathLike, pageno: int, pscript5_mode: bool
 ) -> LTPage | None:
@@ -285,26 +301,16 @@ def get_page_analysis(
     )
     interp = pdfminer.pdfinterp.PDFPageInterpreter(rman, dev)
 
-    with ExitStack() as stack:
-        if pscript5_mode:
-            stack.enter_context(
-                patch.multiple(
-                    'pdfminer.pdffont.PDFType3Font',
-                    spec=True,
-                    get_ascent=pdftype3font__pscript5_get_ascent,
-                    get_descent=pdftype3font__pscript5_get_descent,
-                    get_height=pdftype3font__pscript5_get_height,
-                )
-            )
+    with patch_pdfminer(pscript5_mode):
         try:
-            f = stack.enter_context(Path(infile).open('rb'))
-            page_iter = PDFPage.get_pages(f, pagenos=[pageno], maxpages=0)
-            page = next(page_iter, None)
-            if page is None:
-                raise InputFileError(
-                    f"pdfminer could not process page {pageno} (counting from 0)."
-                )
-            interp.process_page(page)
+            with Path(infile).open('rb') as f:
+                page_iter = PDFPage.get_pages(f, pagenos=[pageno], maxpages=0)
+                page = next(page_iter, None)
+                if page is None:
+                    raise InputFileError(
+                        f"pdfminer could not process page {pageno} (counting from 0)."
+                    )
+                interp.process_page(page)
         except PDFTextExtractionNotAllowed as e:
             raise EncryptedPdfError() from e
 
