@@ -47,22 +47,25 @@ v15.0.0
 =======
 
 -  Dropped support for Python 3.8.
--  Dropped support many older dependencies - see ``pyproject.toml`` for details.
-   Generally speaking, Ubuntu 22.04 is our baseline system.
+-  Dropped support some older dependencies, specifically ``coloredlogs`` and
+   ``tqdm`` in favor of rich - see ``pyproject.toml`` for details.
+   Generally speaking, Ubuntu 22.04 is our new baseline system.
+-  Tightened version requirements for some dependencies.
 -  Dropped support for 32-bit Linux wheels. We strongly recommend a 64-bit operating
    system, and 64-bit versions of Python, Tesseract and Ghostscript to use OCRmyPDF.
    Many of our dependencies are dropping 32-bit builds (e.g. Pillow), and we are
    following suit. (Maintainers may still build 32-bit versions from source.)
 -  Changed to trusted release for PyPI publishing.
--  pikepdf memory mapping is enabled again for improved performance, now an issue
-   with pikepdf has been fixed.
+-  pikepdf memory mapping is enabled again for improved performance, now that an
+   issue with feature in pikepdf is fixed.
 -  ``ocrmypdf.helpers.calculate_downsample`` previously had two variants, one
    that took a ``PIL.Image`` and one that took a ``tuple[int, int]``. The latter
    was removed.
 -  The snap version of ocrmypdf is now based on Ubuntu core22.
--  We now account situations where a small portion of an image on a page reports a
-   high DPI (resolution). Previously, the entire page would be rasterized at the
-   highest resolution, which caused performance problems. Now, the page is rasterized
+-  We now account for situations where a small portion of an image on a page is drawn
+   at high DPI (resolution). Previously, the entire page would be rasterized at the
+   highest resolution of any feature, which caused performance problems. Now,
+   the page is rasterized
    at a resolution based on the average DPI of the page, weighted by the area that
    each feature occupies. Typically, small areas of high resolution in PDFs are
    errors or quirks from the repeated use of assets and high resolution is not
