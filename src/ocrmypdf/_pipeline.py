@@ -15,7 +15,7 @@ from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
 from shutil import copyfileobj
-from typing import Any, BinaryIO, cast
+from typing import Any, BinaryIO, TypeVar, cast
 
 import img2pdf
 import pikepdf
@@ -41,6 +41,7 @@ from ocrmypdf.pdfa import generate_pdfa_ps
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PageInfo, PdfInfo
 from ocrmypdf.pluginspec import OrientationConfidence
 
+T = TypeVar("T")
 log = logging.getLogger(__name__)
 
 VECTOR_PAGE_DPI = 400
@@ -139,6 +140,7 @@ def _pdf_guess_version(input_file: Path, search_window=1024) -> str:
 def triage(
     original_filename: str, input_file: Path, output_file: Path, options
 ) -> Path:
+    """Triage the input file. We can handle PDFs and images."""
     try:
         if _pdf_guess_version(input_file):
             if options.image_dpi:
@@ -167,6 +169,7 @@ def get_pdfinfo(
     max_workers: int | None = None,
     check_pages=None,
 ) -> PdfInfo:
+    """Get the PDF info."""
     try:
         return PdfInfo(
             input_file,
@@ -183,6 +186,7 @@ def get_pdfinfo(
 
 
 def validate_pdfinfo_options(context: PdfContext) -> None:
+    """Validate the PDF info options."""
     pdfinfo = context.pdfinfo
     options = context.options
 
@@ -428,6 +432,7 @@ def get_orientation_correction(preview: Path, page_context: PageContext) -> int:
 
 
 def calculate_image_dpi(page_context: PageContext) -> Resolution:
+    """Calculate the DPI for the page image."""
     pageinfo = page_context.pageinfo
     dpi_profile = pageinfo.page_dpi_profile()
     if dpi_profile and dpi_profile.average_to_max_dpi_ratio < 0.8:
@@ -526,6 +531,7 @@ def rasterize(
 
 
 def preprocess_remove_background(input_file: Path, page_context: PageContext) -> Path:
+    """Remove the background from the input image (temporarily disabled)."""
     if any(image.bpc > 1 for image in page_context.pageinfo.images):
         raise NotImplementedError("--remove-background is temporarily not implemented")
         # output_file = page_context.get_path('pp_rm_bg.png')
@@ -565,6 +571,7 @@ def preprocess_deskew(input_file: Path, page_context: PageContext) -> Path:
 
 
 def preprocess_clean(input_file: Path, page_context: PageContext) -> Path:
+    """Clean the input image using unpaper."""
     output_file = page_context.get_path('pp_clean.png')
     dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
     return unpaper.clean(
@@ -625,6 +632,7 @@ def create_ocr_image(image: Path, page_context: PageContext) -> Path:
 
 
 def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, Path]:
+    """Run the OCR engine and generate hOCR output."""
     hocr_out = page_context.get_path('ocr_hocr.hocr')
     hocr_text_out = page_context.get_path('ocr_hocr.txt')
     options = page_context.options
@@ -656,6 +664,10 @@ def should_visible_page_image_use_jpg(pageinfo: PageInfo) -> bool:
 
 
 def create_visible_page_jpg(image: Path, page_context: PageContext) -> Path:
+    """Create a visible page image in JPEG format.
+
+    This is intended to be used when all images on the page were originally JPEGs.
+    """
     output_file = page_context.get_path('visible.jpg')
     with Image.open(image) as im:
         # At this point the image should be a .png, but deskew, unpaper
@@ -677,6 +689,7 @@ def create_visible_page_jpg(image: Path, page_context: PageContext) -> Path:
 def create_pdf_page_from_image(
     image: Path, page_context: PageContext, orientation_correction: int
 ) -> Path:
+    """Create a PDF page from a page image."""
     # We rasterize a square DPI version of each page because most image
     # processing tools don't support rectangular DPI. Use the square DPI as it
     # accurately describes the image. It would be possible to resample the image
@@ -708,6 +721,7 @@ def create_pdf_page_from_image(
 
 
 def render_hocr_page(hocr: Path, page_context: PageContext) -> Path:
+    """Render the hOCR page to a PDF."""
     options = page_context.options
     output_file = page_context.get_path('ocr_hocr.pdf')
     dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
@@ -727,6 +741,7 @@ def render_hocr_page(hocr: Path, page_context: PageContext) -> Path:
 def ocr_engine_textonly_pdf(
     input_image: Path, page_context: PageContext
 ) -> tuple[Path, Path]:
+    """Run the OCR engine and generate a text-only PDF (will look blank)."""
     output_pdf = page_context.get_path('ocr_tess.pdf')
     output_text = page_context.get_path('ocr_tess.txt')
     options = page_context.options
@@ -742,6 +757,7 @@ def ocr_engine_textonly_pdf(
 
 
 def get_docinfo(base_pdf: pikepdf.Pdf, context: PdfContext) -> dict[str, str]:
+    """Read the document info and store it in a dictionary."""
     options = context.options
 
     def from_document_info(key):
@@ -787,6 +803,14 @@ def generate_postscript_stub(context: PdfContext) -> Path:
 
 
 def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -> Path:
+    """Converts the given PDF to PDF/A.
+
+    Args:
+        input_pdf: The input PDF file path (presumably not PDF/A).
+        input_ps_stub: The input PostScript file path, containing instructions
+            for the PDF/A generator to use.
+        context: The PDF context.
+    """
     options = context.options
     input_pdfinfo = context.pdfinfo
     fix_docinfo_file = context.get_path('fix_docinfo.pdf')
@@ -841,6 +865,10 @@ def _repair_docinfo_nuls(pdf):
 
 
 def should_linearize(working_file: Path, context: PdfContext) -> bool:
+    """Determine whether the PDF should be linearized.
+
+    For smaller files, linearization is not worth the effort.
+    """
     filesize = os.stat(working_file).st_size
     if filesize > (context.options.fast_web_view * 1_000_000):
         return True
@@ -848,6 +876,11 @@ def should_linearize(working_file: Path, context: PdfContext) -> bool:
 
 
 def get_pdf_save_settings(output_type: str) -> dict[str, Any]:
+    """Get pikepdf.Pdf.save settings for the given output type.
+
+    Essentially, don't use features that are incompatible with a given
+    PDF/A specification.
+    """
     if output_type == 'pdfa-1':
         # Trigger recompression to ensure object streams are removed, because
         # Acrobat complains about them in PDF/A-1b validation.
@@ -866,6 +899,11 @@ def get_pdf_save_settings(output_type: str) -> dict[str, Any]:
 
 
 def metadata_fixup(working_file: Path, context: PdfContext) -> Path:
+    """Fix certain metadata fields after Ghostscript PDF/A conversion.
+
+    Also report on metadata in the input file that was not retained during
+    PDF/A conversion.
+    """
     output_file = context.get_path('metafix.pdf')
     options = context.options
 
@@ -968,6 +1006,7 @@ def _file_size_ratio(
 def optimize_pdf(
     input_file: Path, context: PdfContext, executor: Executor
 ) -> tuple[Path, Sequence[str]]:
+    """Optimize the given PDF file."""
     output_file = context.get_path('optimize.pdf')
     output_pdf, messages = context.plugin_manager.hook.optimize_pdf(
         input_pdf=input_file,
@@ -987,8 +1026,8 @@ def optimize_pdf(
 
 
 def enumerate_compress_ranges(
-    iterable: Iterable,
-) -> Iterator[tuple[tuple[int, int], Any]]:
+    iterable: Iterable[T],
+) -> Iterator[tuple[tuple[int, int], T]]:
     """Enumerate the ranges of non-empty elements in an iterable.
 
     Compresses consecutive ranges of length 1 into single elements.
@@ -1016,21 +1055,22 @@ def enumerate_compress_ranges(
 
 
 def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext) -> Path:
+    """Merge the page sidecar files into a single file.
+
+    Sidecar files are created by the OCR engine and contain the text for each
+    page in the PDF. This function merges the sidecar files into a single file
+    and returns the path to the merged file.
+    """
     output_file = context.get_path('sidecar.txt')
     with open(output_file, 'w', encoding="utf-8") as stream:
         for (from_, to_), txt_file in enumerate_compress_ranges(txt_files):
             if from_ != 1:
-                stream.write('\f')  # Form feed between pages
+                stream.write('\f')  # Form feed between pages for all pages after first
             if txt_file:
-                with open(txt_file, encoding="utf-8") as in_:
-                    txt = in_.read()
-                    # Some OCR engines (e.g. Tesseract v4 alpha) add form feeds
-                    # between pages, and some do not. For consistency, we ignore
-                    # any added by the OCR engine and them on our own.
-                    if txt.endswith('\f'):
-                        stream.write(txt[:-1])
-                    else:
-                        stream.write(txt)
+                txt = txt_file.read_text(encoding="utf-8")
+                # Some versions of Tesseract add a form feed at the end and
+                # others don't. Remove it if it exists, since we add one manually.
+                stream.write(txt.removesuffix('\f'))
             else:
                 if from_ != to_:
                     pages = f'{from_}-{to_}'
