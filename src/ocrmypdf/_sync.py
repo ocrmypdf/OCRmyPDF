@@ -105,6 +105,7 @@ def preprocess(
     deskew: bool,
     clean: bool,
 ) -> Path:
+    """Preprocess an image."""
     if remove_background:
         image = preprocess_remove_background(image, page_context)
     if deskew:
@@ -117,6 +118,7 @@ def preprocess(
 def make_intermediate_images(
     page_context: PageContext, orientation_correction: int
 ) -> tuple[Path, Path | None]:
+    """Create intermediate and preprocessed images for OCR."""
     options = page_context.options
 
     ocr_image = preprocess_out = None
@@ -174,6 +176,7 @@ def make_intermediate_images(
 
 
 def exec_page_sync(page_context: PageContext) -> PageResult:
+    """Execute a pipeline for a single page synchronously."""
     options = page_context.options
     tls.pageno = page_context.pageno + 1
 
@@ -234,6 +237,7 @@ def exec_page_sync(page_context: PageContext) -> PageResult:
 def post_process(
     pdf_file: Path, context: PdfContext, executor: Executor
 ) -> tuple[Path, Sequence[str]]:
+    """Postprocess the PDF file."""
     pdf_out = pdf_file
     if context.options.output_type.startswith('pdfa'):
         ps_stub_out = generate_postscript_stub(context)
@@ -244,6 +248,7 @@ def post_process(
 
 
 def worker_init(max_pixels: int) -> None:
+    """Initialize a worker thread or process."""
     # In Windows, child process will not inherit our change to this value in
     # the parent process, so ensure workers get it set. Not needed when running
     # threaded, but harmless to set again.
@@ -252,8 +257,8 @@ def worker_init(max_pixels: int) -> None:
 
 
 def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
-    """Execute the pipeline concurrently."""
-    # Run exec_page_sync on every page context
+    """Execute the OCR pipeline concurrently."""
+    # Run exec_page_sync on every page
     options = context.options
     max_workers = min(len(context.pdfinfo), options.jobs)
     if max_workers > 1:
@@ -263,6 +268,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     ocrgraft = OcrGrafter(context)
 
     def update_page(result: PageResult, pbar):
+        """After OCR is complete for a page, update the PDF."""
         try:
             tls.pageno = result.pageno + 1
             sidecars[result.pageno] = result.text
@@ -318,7 +324,7 @@ def configure_debug_logging(
 ) -> logging.FileHandler:
     """Create a debug log file at a specified location.
 
-    Arguments:
+    Args:
         log_filename: Where to the put the log file.
         prefix: The logging domain prefix that should be sent to the log.
     """
@@ -339,6 +345,17 @@ def run_pipeline(
     plugin_manager: OcrmypdfPluginManager | None,
     api: bool = False,
 ) -> ExitCode:
+    """Run the OCR pipeline.
+
+    Args:
+        options: The parsed command line options.
+        plugin_manager: The plugin manager to use. If not provided, one will be
+            created.
+        api: If ``True``, the pipeline is being run from the API. This is used
+            to manage exceptions in a way appropriate for API or CLI usage.
+            For CLI (``api=False``), exceptions are printed and described;
+            for API use, they are propagated to the caller.
+    """
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
     # options.input_file, options.pdf_renderer are already bound.)
