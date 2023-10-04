@@ -34,6 +34,9 @@ v15.1.0
 -  We now require Pillow 10.0.1, due a serious security vulnerability in all earlier
    versions of that dependency. The vulnerability concerns WebP images and could
    be triggered in OCRmyPDF when creating a PDF from a malicious WebP image.
+-  Added some keyword arguments to ``ocrmypdf.ocr`` that were previously accepted
+   but undocumented.
+-  Documentation updates and typing improvements.
 
 v15.0.2
 =======
