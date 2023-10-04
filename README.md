@@ -39,8 +39,8 @@ ocrmypdf                      # it's a scriptable command line program
 - Distributes work across all available CPU cores
 - Uses [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) engine to recognize more than [100 languages](https://github.com/tesseract-ocr/tessdata)
 - Keeps your private data private.
-- Scales properly to handle files with thousands of pages
-- Battle-tested on millions of PDFs
+- Scales properly to handle files with thousands of pages.
+- Battle-tested on millions of PDFs.
 
 <img src="misc/screencast/demo.svg" alt="Demo of OCRmyPDF in a terminal session">
 
