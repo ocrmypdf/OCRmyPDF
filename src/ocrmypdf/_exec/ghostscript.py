@@ -20,14 +20,6 @@ from ocrmypdf.exceptions import SubprocessOutputError
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.subprocess import get_version, run, run_polling_stderr
 
-# Remove this workaround when we require Pillow >= 10
-try:
-    Transpose = Image.Transpose  # type: ignore
-except AttributeError:
-    # Pillow 9 shim
-    Transpose = Image  # type: ignore
-
-
 COLOR_CONVERSION_STRATEGIES = frozenset(
     [
         'CMYK',
@@ -137,11 +129,11 @@ def rasterize_pdf(
                 # rotation is a clockwise angle and Image.ROTATE_* is
                 # counterclockwise so this cancels out the rotation
                 if rotation == 90:
-                    im = im.transpose(Transpose.ROTATE_90)
+                    im = im.transpose(Image.Transpose.ROTATE_90)
                 elif rotation == 180:
-                    im = im.transpose(Transpose.ROTATE_180)
+                    im = im.transpose(Image.Transpose.ROTATE_180)
                 elif rotation == 270:
-                    im = im.transpose(Transpose.ROTATE_270)
+                    im = im.transpose(Image.Transpose.ROTATE_270)
                 if rotation % 180 == 90:
                     page_dpi = page_dpi.flip_axis()
             im.save(fspath(output_file), dpi=page_dpi)

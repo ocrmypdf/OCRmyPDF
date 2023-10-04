@@ -12,7 +12,7 @@ readme = "README.md"
 license = { text = "MPL-2.0" }
 requires-python = ">=3.9"
 dependencies = [
-  "Pillow>=9.0.1",
+  "Pillow>=10.0.1",
   "deprecation>=2.1.0",
   "img2pdf>=0.4.4",
   "packaging>=20",

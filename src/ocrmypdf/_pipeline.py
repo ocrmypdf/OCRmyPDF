@@ -41,13 +41,6 @@ from ocrmypdf.pdfa import generate_pdfa_ps
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PageInfo, PdfInfo
 from ocrmypdf.pluginspec import OrientationConfidence
 
-# Remove this workaround when we require Pillow >= 10
-try:
-    BICUBIC = Image.Resampling.BICUBIC  # type: ignore
-except AttributeError:  # pragma: no cover
-    # Pillow 9 shim
-    BICUBIC = Image.BICUBIC  # type: ignore
-
 log = logging.getLogger(__name__)
 
 VECTOR_PAGE_DPI = 400
@@ -563,7 +556,7 @@ def preprocess_deskew(input_file: Path, page_context: PageContext) -> Path:
         # resampling if image is mode '1' or 'P'
         deskewed = im.rotate(
             deskew_angle_degrees,
-            resample=BICUBIC,
+            resample=Image.Resampling.BICUBIC,
             fillcolor=ImageColor.getcolor('white', mode=im.mode),  # type: ignore
         )
         deskewed.save(output_file, dpi=dpi)
