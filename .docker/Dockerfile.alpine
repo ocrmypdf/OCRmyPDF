@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2023 James R. Barlow
+# SPDX-License-Identifier: MPL-2.0
+
+FROM alpine:3.18 as base
+
+ENV LANG=C.UTF-8
+ENV TZ=UTC
+
+RUN apk add --no-cache \
+    python3 \
+    zlib
+
+FROM base as builder
+
+RUN apk add --no-cache \
+    ca-certificates \
+    git \
+    python3-dev \
+    py3-pip
+
+COPY . /app
+
+WORKDIR /app
+
+RUN python3 -m venv .venv
+
+RUN source .venv/bin/activate \
+    && python3 -m pip install --no-cache-dir --upgrade pip \
+    && python3 -m pip install --no-cache-dir wheel \
+    && python3 -m pip install --no-cache-dir .[test,webservice,watcher]
+
+FROM base
+
+RUN apk add --no-cache \
+    ghostscript \
+    jbig2dec \
+    jbig2enc \
+    pngquant \
+    tesseract-ocr \
+    tesseract-ocr-data-chi_sim \
+    tesseract-ocr-data-deu \
+    tesseract-ocr-data-eng \
+    tesseract-ocr-data-fra \
+    tesseract-ocr-data-por \
+    tesseract-ocr-data-spa \
+    ttf-droid \
+    unpaper \
+    && rm -rf /var/cache/apk/*
+
+WORKDIR /app
+
+COPY --from=builder /usr/local/lib/ /usr/local/lib/
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
+
+COPY --from=builder /app/.venv/ /app/.venv/
+
+COPY --from=builder /app/misc/webservice.py /app/
+COPY --from=builder /app/misc/watcher.py /app/
+
+# Copy minimal project files to get the test suite.
+COPY --from=builder /app/pyproject.toml /app/README.md /app/
+COPY --from=builder /app/tests /app/tests
+
+ENTRYPOINT ["/app/.venv/bin/ocrmypdf"]
