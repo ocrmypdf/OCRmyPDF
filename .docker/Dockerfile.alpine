@@ -41,6 +41,7 @@ RUN apk add --no-cache \
     tesseract-ocr-data-deu \
     tesseract-ocr-data-eng \
     tesseract-ocr-data-fra \
+    tesseract-ocr-data-osd \
     tesseract-ocr-data-por \
     tesseract-ocr-data-spa \
     ttf-droid \
@@ -60,5 +61,7 @@ COPY --from=builder /app/misc/watcher.py /app/
 # Copy minimal project files to get the test suite.
 COPY --from=builder /app/pyproject.toml /app/README.md /app/
 COPY --from=builder /app/tests /app/tests
+
+ENV PATH="/app/.venv/bin:${PATH}"
 
 ENTRYPOINT ["/app/.venv/bin/ocrmypdf"]
