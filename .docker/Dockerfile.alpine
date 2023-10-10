@@ -18,6 +18,22 @@ RUN apk add --no-cache \
     python3-dev \
     py3-pip
 
+# On arm64, we need to build cffi from source.
+ARG TARGETPLATFORM
+
+RUN if [ "${TARGETPLATFORM}" == "linux/arm64" ]; then \
+    apk add --no-cache \
+    build-base \
+    autoconf \
+    automake \
+    libtool \
+    zlib-dev \
+    libffi-dev \
+    cairo-dev \
+    pkgconfig \
+    ;  \
+    fi
+
 COPY . /app
 
 WORKDIR /app
