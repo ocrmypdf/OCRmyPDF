@@ -8,14 +8,13 @@
 OCRmyPDF Docker image
 =====================
 
-OCRmyPDF is also available in a Docker image that packages recent
+OCRmyPDF is also available in Docker images that packages recent
 versions of all dependencies.
 
 For users who already have Docker installed this may be an easy and
 convenient option. However, it is less performant than a system
-installation and may require Docker engine configuration.
-
-OCRmyPDF needs a generous amount of RAM, CPU cores, temporary storage
+installation and may require Docker engine configuration. OCRmyPDF
+needs a generous amount of RAM, CPU cores, temporary storage
 space, whether running in a Docker container or on its own. It may be
 necessary to ensure the container is provisioned with additional
 resources.
@@ -35,11 +34,35 @@ execute the image:
 
    docker run hello-world
 
-The recommended OCRmyPDF Docker image is currently named ``ocrmypdf``:
+.. list-table:: Docker images
+   :width: 30 20 50
+   :header-rows: 1
+
+   * - Image
+     - Architecture
+     - Description
+   * - ``jbarlow83/ocrmypdf-alpine``
+     - x86_64 only
+     - Recommended image, based on Alpine Linux.
+   * - ``jbarlow83/ocrmypdf-ubuntu``
+     - x86_64 and arm64
+     - Alternate image, based on Ubuntu. When the Alpine image is considered
+       stable and available for arm64, this image will be deprecated.
+   * - ``jbarlow83/ocrmypdf``
+     - x86_64 and arm64
+     - Currently an alias for ocrmypdf-ubuntu. When the Alpine image is
+       considered stable and available for arm64, this name point to the
+       Alpine image. If you don't about the difference between Alpine and
+       Ubuntu, use this image.
+
+To install:
 
 .. code-block:: bash
 
-   docker pull jbarlow83/ocrmypdf
+   docker pull jbarlow83/ocrmypdf-alpine
+
+The ``ocrmypdf`` image is also available, but is deprecated and will be removed
+in the future.
 
 OCRmyPDF will use all available CPU cores. See the Docker documentation for
 `adjusting memory and CPU on other platforms <https://docs.docker.com/config/containers/resource_constraints/>`__.
@@ -155,16 +178,16 @@ The OCRmyPDF test suite is installed with image. To run it:
 
 .. code-block:: bash
 
-   docker run --rm --entrypoint python3  jbarlow83/ocrmypdf -m pytest
+   docker run --rm --entrypoint python  jbarlow83/ocrmypdf -m pytest
 
 Accessing the shell
 ===================
 
-To use the bash shell in the Docker image:
+To use the shell in the Docker image:
 
 .. code-block:: bash
 
-   docker run -it --entrypoint bash  jbarlow83/ocrmypdf
+   docker run -it --entrypoint sh  jbarlow83/ocrmypdf
 
 Using the OCRmyPDF web service wrapper
 ======================================
@@ -174,7 +197,7 @@ service. The webservice may be launched as follows:
 
 .. code-block:: bash
 
-   docker run --entrypoint python3 -p 5000:5000  jbarlow83/ocrmypdf webservice.py
+   docker run --entrypoint python -p 5000:5000  jbarlow83/ocrmypdf webservice.py
 
 We omit the ``--rm`` parameter so that the container will not be
 automatically deleted when it exits.

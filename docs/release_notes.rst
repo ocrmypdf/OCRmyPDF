@@ -28,6 +28,15 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v15.2.0
+=======
+
+-  Added a Docker image based on Alpine Linux. This image is smaller than the
+   Ubuntu-based image and may be useful in some situations. Currently hosted at
+   jbarlow83/ocrmypdf-alpine. Currently not available in ARM flavor.
+-  The Ubuntu Docker is now aliased to jbarlow83/ocrmypdf-ubuntu.
+-  Updated Docker documentation.
+
 v15.1.0
 =======
 
