@@ -321,8 +321,10 @@ def remove_all_log_handlers(logger: logging.Logger) -> None:
 def pikepdf_enable_mmap() -> None:
     """Enable pikepdf mmap."""
     try:
-        if pikepdf._core.set_access_default_mmap(True):
-            log.debug("pikepdf mmap enabled")
+        pikepdf._core.set_access_default_mmap(True)
+        log.debug(
+            "pikepdf mmap "
+            + ('enabled' if pikepdf._core.get_access_default_mmap() else 'disabled')
+        )
     except AttributeError:
         log.debug("pikepdf mmap not available")
-    log.debug("pikepdf mmap disabled")
