@@ -179,81 +179,79 @@ def run_pipeline(
             For CLI (``api=False``), exceptions are printed and described;
             for API use, they are propagated to the caller.
     """
-    work_folder, debug_log_handler, executor, plugin_manager = setup_pipeline(
+    with setup_pipeline(
         options=options, plugin_manager=plugin_manager, api=api, work_folder=None
-    )
-    try:
-        check_requested_output_file(options)
-        start_input_file, original_filename = create_input_file(options, work_folder)
+    ) as (work_folder, executor, plugin_manager):
+        try:
+            check_requested_output_file(options)
+            start_input_file, original_filename = create_input_file(
+                options, work_folder
+            )
 
-        # Triage image or pdf
-        origin_pdf = triage(
-            original_filename, start_input_file, work_folder / 'origin.pdf', options
-        )
+            # Triage image or pdf
+            origin_pdf = triage(
+                original_filename, start_input_file, work_folder / 'origin.pdf', options
+            )
 
-        # Gather pdfinfo and create context
-        pdfinfo = get_pdfinfo(
-            origin_pdf,
-            executor=executor,
-            detailed_analysis=options.redo_ocr,
-            progbar=options.progress_bar,
-            max_workers=options.jobs if not options.use_threads else 1,  # To help debug
-            check_pages=options.pages,
-        )
+            # Gather pdfinfo and create context
+            pdfinfo = get_pdfinfo(
+                origin_pdf,
+                executor=executor,
+                detailed_analysis=options.redo_ocr,
+                progbar=options.progress_bar,
+                max_workers=options.jobs
+                if not options.use_threads
+                else 1,  # To help debug
+                check_pages=options.pages,
+            )
 
-        context = PdfContext(options, work_folder, origin_pdf, pdfinfo, plugin_manager)
+            context = PdfContext(
+                options, work_folder, origin_pdf, pdfinfo, plugin_manager
+            )
 
-        # Validate options are okay for this pdf
-        validate_pdfinfo_options(context)
+            # Validate options are okay for this pdf
+            validate_pdfinfo_options(context)
 
-        # Execute the pipeline
-        optimize_messages = exec_concurrent(context, executor)
+            # Execute the pipeline
+            optimize_messages = exec_concurrent(context, executor)
 
-        report_output_pdf(options, start_input_file, optimize_messages)
+            report_output_pdf(options, start_input_file, optimize_messages)
 
-    except KeyboardInterrupt if not api else NeverRaise:
-        if options.verbose >= 1:
-            log.exception("KeyboardInterrupt")
-        else:
-            log.error("KeyboardInterrupt")
-        return ExitCode.ctrl_c
-    except ExitCodeException if not api else NeverRaise as e:
-        e = cast(ExitCodeException, e)
-        if options.verbose >= 1:
-            log.exception("ExitCodeException")
-        elif str(e):
-            log.error("%s: %s", type(e).__name__, str(e))
-        else:
-            log.error(type(e).__name__)
-        return e.exit_code
-    except PIL.Image.DecompressionBombError if not api else NeverRaise:
-        log.exception(
-            "A decompression bomb error was encountered while executing the "
-            "pipeline. Use the argument --max-image-mpixels to raise the maximum "
-            "image pixel limit."
-        )
-        return ExitCode.other_error
-    except (
-        BrokenProcessPool if not api else NeverRaise,
-        BrokenThreadPool if not api else NeverRaise,
-    ):
-        log.exception(
-            "A worker process was terminated unexpectedly. This is known to occur if "
-            "processing your file takes all available swap space and RAM. It may "
-            "help to try again with a smaller number of jobs, using the --jobs "
-            "argument."
-        )
-        return ExitCode.child_process_error
-    except Exception if not api else NeverRaise:  # pylint: disable=broad-except
-        log.exception("An exception occurred while executing the pipeline")
-        return ExitCode.other_error
-    finally:
-        if debug_log_handler:
-            try:
-                debug_log_handler.close()
-                log.removeHandler(debug_log_handler)
-            except OSError as e:
-                print(e, file=sys.stderr)
-        cleanup_working_files(work_folder, options)
+        except KeyboardInterrupt if not api else NeverRaise:
+            if options.verbose >= 1:
+                log.exception("KeyboardInterrupt")
+            else:
+                log.error("KeyboardInterrupt")
+            return ExitCode.ctrl_c
+        except ExitCodeException if not api else NeverRaise as e:
+            e = cast(ExitCodeException, e)
+            if options.verbose >= 1:
+                log.exception("ExitCodeException")
+            elif str(e):
+                log.error("%s: %s", type(e).__name__, str(e))
+            else:
+                log.error(type(e).__name__)
+            return e.exit_code
+        except PIL.Image.DecompressionBombError if not api else NeverRaise:
+            log.exception(
+                "A decompression bomb error was encountered while executing the "
+                "pipeline. Use the argument --max-image-mpixels to raise the maximum "
+                "image pixel limit."
+            )
+            return ExitCode.other_error
+        except (
+            BrokenProcessPool if not api else NeverRaise,
+            BrokenThreadPool if not api else NeverRaise,
+        ):
+            log.exception(
+                "A worker process was terminated unexpectedly. This is known to occur if "
+                "processing your file takes all available swap space and RAM. It may "
+                "help to try again with a smaller number of jobs, using the --jobs "
+                "argument."
+            )
+            return ExitCode.child_process_error
+        except Exception if not api else NeverRaise:  # pylint: disable=broad-except
+            log.exception("An exception occurred while executing the pipeline")
+            return ExitCode.other_error
 
     return ExitCode.ok

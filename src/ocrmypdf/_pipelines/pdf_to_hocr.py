@@ -95,28 +95,28 @@ def run_hocr_pipeline(
     *,
     plugin_manager: OcrmypdfPluginManager | None,
 ) -> None:
-    work_folder, debug_log_handler, executor, plugin_manager = setup_pipeline(
+    options.keep_temporary_files = True
+    with setup_pipeline(
         options=options,
         plugin_manager=plugin_manager,
         api=True,
         work_folder=options.output_folder,
-    )
+    ) as (work_folder, executor, plugin_manager):
+        shutil.copy2(options.input_file, work_folder / 'origin.pdf')
 
-    shutil.copy2(options.input_file, work_folder / 'origin.pdf')
-
-    # Gather pdfinfo and create context
-    pdfinfo = get_pdfinfo(
-        options.input_file,
-        executor=executor,
-        detailed_analysis=options.redo_ocr,
-        progbar=options.progress_bar,
-        max_workers=options.jobs if not options.use_threads else 1,  # To help debug
-        check_pages=options.pages,
-    )
-    context = PdfContext(
-        options, work_folder, options.input_file, pdfinfo, plugin_manager
-    )
-    # Validate options are okay for this pdf
-    set_lossless_reconstruction(options)
-    validate_pdfinfo_options(context)
-    exec_pdf_to_hocr(context, executor)
+        # Gather pdfinfo and create context
+        pdfinfo = get_pdfinfo(
+            options.input_file,
+            executor=executor,
+            detailed_analysis=options.redo_ocr,
+            progbar=options.progress_bar,
+            max_workers=options.jobs if not options.use_threads else 1,  # To help debug
+            check_pages=options.pages,
+        )
+        context = PdfContext(
+            options, work_folder, options.input_file, pdfinfo, plugin_manager
+        )
+        # Validate options are okay for this pdf
+        set_lossless_reconstruction(options)
+        validate_pdfinfo_options(context)
+        exec_pdf_to_hocr(context, executor)

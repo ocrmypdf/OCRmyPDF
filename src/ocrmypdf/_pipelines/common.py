@@ -5,7 +5,9 @@ import json
 import logging
 import logging.handlers
 import os
-from collections.abc import Sequence
+import sys
+from collections.abc import Generator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import mkdtemp
@@ -14,7 +16,7 @@ from typing import NamedTuple
 import PIL
 
 from ocrmypdf._concurrent import Executor, setup_executor
-from ocrmypdf._jobcontext import PageContext, PdfContext
+from ocrmypdf._jobcontext import PageContext, PdfContext, cleanup_working_files
 from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._pipeline import (
     convert_to_pdfa,
@@ -153,13 +155,14 @@ def worker_init(max_pixels: int) -> None:
     pikepdf_enable_mmap()
 
 
+@contextmanager
 def setup_pipeline(
     *,
     options: argparse.Namespace,
     plugin_manager: OcrmypdfPluginManager | None,
     api: bool = False,
     work_folder: Path | None,
-) -> tuple[Path, logging.FileHandler | None, Executor, OcrmypdfPluginManager]:
+) -> Generator[tuple[Path, Executor, OcrmypdfPluginManager], None, None]:
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
     # options.input_file, options.pdf_renderer are already bound.)
@@ -179,12 +182,21 @@ def setup_pipeline(
         # See https://github.com/pytest-dev/pytest/issues/5502 for why we skip this
         # when pytest is running
         debug_log_handler = configure_debug_logging(
-            Path(work_folder) / "debug.log"
+            work_folder / "debug.log"
         )  # pragma: no cover
 
     pikepdf_enable_mmap()
     executor = setup_executor(plugin_manager)
-    return work_folder, debug_log_handler, executor, plugin_manager
+    try:
+        yield work_folder, executor, plugin_manager
+    finally:
+        if debug_log_handler:
+            try:
+                debug_log_handler.close()
+                log.removeHandler(debug_log_handler)
+            except OSError as e:
+                print(e, file=sys.stderr)
+        cleanup_working_files(work_folder, options)
 
 
 def preprocess(

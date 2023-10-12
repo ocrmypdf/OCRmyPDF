@@ -111,30 +111,26 @@ def run_hocr_to_ocr_pdf_pipeline(
     *,
     plugin_manager: OcrmypdfPluginManager | None,
 ) -> None:
-    work_folder, debug_log_handler, executor, plugin_manager = setup_pipeline(
-        options=options,
-        plugin_manager=plugin_manager,
-        api=True,
-        work_folder=options.output_folder,
-    )
+    with setup_pipeline(
+        options=options, plugin_manager=plugin_manager, api=True, work_folder=None
+    ) as (work_folder, executor, plugin_manager):
+        origin_pdf = work_folder / 'origin.pdf'
+        shutil.copy2(options.input_file, origin_pdf)
 
-    origin_pdf = work_folder / 'origin.pdf'
-    shutil.copy2(options.input_file, origin_pdf)
+        # Gather pdfinfo and create context
+        pdfinfo = get_pdfinfo(
+            options.input_file,
+            executor=executor,
+            detailed_analysis=options.redo_ocr,
+            progbar=options.progress_bar,
+            max_workers=options.jobs if not options.use_threads else 1,  # To help debug
+            check_pages=options.pages,
+        )
+        context = PdfContext(
+            options, work_folder, options.input_file, pdfinfo, plugin_manager
+        )
+        # Validate options are okay for this pdf
+        validate_pdfinfo_options(context)
+        optimize_messages = exec_hocr_to_ocr_pdf(context, executor)
 
-    # Gather pdfinfo and create context
-    pdfinfo = get_pdfinfo(
-        options.input_file,
-        executor=executor,
-        detailed_analysis=options.redo_ocr,
-        progbar=options.progress_bar,
-        max_workers=options.jobs if not options.use_threads else 1,  # To help debug
-        check_pages=options.pages,
-    )
-    context = PdfContext(
-        options, work_folder, options.input_file, pdfinfo, plugin_manager
-    )
-    # Validate options are okay for this pdf
-    validate_pdfinfo_options(context)
-    optimize_messages = exec_hocr_to_ocr_pdf(context, executor)
-
-    report_output_pdf(options, origin_pdf, optimize_messages)
+        report_output_pdf(options, origin_pdf, optimize_messages)
