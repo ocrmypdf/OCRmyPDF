@@ -11,13 +11,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from pikepdf import Dictionary, Pdf
+from pikepdf import Dictionary, Name, Pdf
 from pikepdf import __version__ as PIKEPDF_VERSION
 from pikepdf.models.metadata import PdfMetadata, encode_pdf_date
 
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._version import PROGRAM_NAME
 from ocrmypdf._version import __version__ as OCRMYPF_VERSION
+from ocrmypdf.languages import iso_639_2_from_3
 
 log = logging.getLogger(__name__)
 
@@ -139,6 +140,19 @@ def _unset_empty_metadata(meta: PdfMetadata, options):
         del meta['pdf:Keywords']  # PDF/A and PDF
 
 
+def _set_language(pdf: Pdf, languages: list[str]):
+    """Set the language of the PDF."""
+    if Name.Lang in pdf.Root:
+        return  # Already set
+    primary_language_iso639_3 = languages[0]
+    if not primary_language_iso639_3:
+        return
+    iso639_2 = iso_639_2_from_3(primary_language_iso639_3)
+    if not iso639_2:
+        return
+    pdf.Root.Lang = iso639_2
+
+
 def metadata_fixup(
     working_file: Path, context: PdfContext, pdf_save_settings: dict[str, Any]
 ) -> Path:
@@ -164,6 +178,7 @@ def metadata_fixup(
             meta_missing = set(meta_original.keys()) - set(meta_pdf.keys())
             report_on_metadata(options, meta_missing)
 
+        _set_language(pdf, options.languages)
         pdf.save(output_file, **pdf_save_settings)
 
     return output_file
