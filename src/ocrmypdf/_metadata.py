@@ -11,17 +11,18 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import pikepdf
-from pikepdf.models.metadata import encode_pdf_date
+from pikepdf import Dictionary, Pdf
+from pikepdf import __version__ as PIKEPDF_VERSION
+from pikepdf.models.metadata import PdfMetadata, encode_pdf_date
 
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._version import PROGRAM_NAME
-from ocrmypdf._version import __version__ as VERSION
+from ocrmypdf._version import __version__ as OCRMYPF_VERSION
 
 log = logging.getLogger(__name__)
 
 
-def get_docinfo(base_pdf: pikepdf.Pdf, context: PdfContext) -> dict[str, str]:
+def get_docinfo(base_pdf: Pdf, context: PdfContext) -> dict[str, str]:
     """Read the document info and store it in a dictionary."""
     options = context.options
 
@@ -47,8 +48,8 @@ def get_docinfo(base_pdf: pikepdf.Pdf, context: PdfContext) -> dict[str, str]:
 
     creator_tag = context.plugin_manager.hook.get_ocr_engine().creator_tag(options)
 
-    pdfmark['/Creator'] = f'{PROGRAM_NAME} {VERSION} / {creator_tag}'
-    pdfmark['/Producer'] = f'pikepdf {pikepdf.__version__}'
+    pdfmark['/Creator'] = f'{PROGRAM_NAME} {OCRMYPF_VERSION} / {creator_tag}'
+    pdfmark['/Producer'] = f'pikepdf {PIKEPDF_VERSION}'
     pdfmark['/ModDate'] = encode_pdf_date(datetime.now(timezone.utc))
     return pdfmark
 
@@ -78,7 +79,7 @@ def repair_docinfo_nuls(pdf):
     """
     modified = False
     try:
-        if not isinstance(pdf.docinfo, pikepdf.Dictionary):
+        if not isinstance(pdf.docinfo, Dictionary):
             raise TypeError("DocumentInfo is not a dictionary")
         for k, v in pdf.docinfo.items():
             if isinstance(v, str) and b'\x00' in bytes(v):
@@ -101,6 +102,43 @@ def should_linearize(working_file: Path, context: PdfContext) -> bool:
     return False
 
 
+def _fix_metadata(meta_original: PdfMetadata, meta_pdf: PdfMetadata):
+    # If xmp:CreateDate is missing, set it to the modify date to
+    # ensure consistency with Ghostscript.
+    if 'xmp:CreateDate' not in meta_pdf:
+        meta_pdf['xmp:CreateDate'] = meta_pdf.get('xmp:ModifyDate', '')
+    if meta_pdf.get('dc:title') == 'Untitled':
+        # Ghostscript likes to set title to Untitled if omitted from input.
+        # Reverse this, because PDF/A TechNote 0003:Metadata in PDF/A-1
+        # and the XMP Spec do not make this recommendation.
+        if 'dc:title' not in meta_original:
+            del meta_pdf['dc:title']
+
+
+def _unset_empty_metadata(meta: PdfMetadata, options):
+    """Unset metadata fields that were explicitly set to empty strings.
+
+    If the user explicitly specified an empty string for any of the
+    following, they should be unset and not reported as missing in
+    the output pdf. Note that some metadata fields use differing names
+    between PDF/A and PDF.
+    """
+    if options.title == '' and 'dc:title' in meta:
+        del meta['dc:title']  # PDF/A and PDF
+    if options.author == '':
+        if 'dc:creator' in meta:
+            del meta['dc:creator']  # PDF/A (Not xmp:CreatorTool)
+        if 'pdf:Author' in meta:
+            del meta['pdf:Author']  # PDF
+    if options.subject == '':
+        if 'dc:description' in meta:
+            del meta['dc:description']  # PDF/A
+        if 'dc:subject' in meta:
+            del meta['dc:subject']  # PDF
+    if options.keywords == '' and 'pdf:Keywords' in meta:
+        del meta['pdf:Keywords']  # PDF/A and PDF
+
+
 def metadata_fixup(
     working_file: Path, context: PdfContext, pdf_save_settings: dict[str, Any]
 ) -> Path:
@@ -112,7 +150,7 @@ def metadata_fixup(
     output_file = context.get_path('metafix.pdf')
     options = context.options
 
-    with pikepdf.open(context.origin) as original, pikepdf.open(working_file) as pdf:
+    with Pdf.open(context.origin) as original, Pdf.open(working_file) as pdf:
         docinfo = get_docinfo(original, context)
         with original.open_metadata(
             set_pikepdf_as_editor=False, update_docinfo=False, strict=False
@@ -120,35 +158,9 @@ def metadata_fixup(
             meta_pdf.load_from_docinfo(
                 docinfo, delete_missing=False, raise_failure=False
             )
-            # If xmp:CreateDate is missing, set it to the modify date to
-            # ensure consistency with Ghostscript.
-            if 'xmp:CreateDate' not in meta_pdf:
-                meta_pdf['xmp:CreateDate'] = meta_pdf.get('xmp:ModifyDate', '')
-            if meta_pdf.get('dc:title') == 'Untitled':
-                # Ghostscript likes to set title to Untitled if omitted from input.
-                # Reverse this, because PDF/A TechNote 0003:Metadata in PDF/A-1
-                # and the XMP Spec do not make this recommendation.
-                if 'dc:title' not in meta_original:
-                    del meta_pdf['dc:title']
-            # If the user explicitly specified an empty string for any of the
-            # following, they should be unset and not reported as missing in
-            # the output pdf. Note that some metadata fields use differing names
-            # between PDF-A and PDF.
-            for meta in [meta_pdf, meta_original]:
-                if options.title == '' and 'dc:title' in meta:
-                    del meta['dc:title']  # PDF-A and PDF
-                if options.author == '':
-                    if 'dc:creator' in meta:
-                        del meta['dc:creator']  # PDF-A (Not xmp:CreatorTool)
-                    if 'pdf:Author' in meta:
-                        del meta['pdf:Author']  # PDF
-                if options.subject == '':
-                    if 'dc:description' in meta:
-                        del meta['dc:description']  # PDF-A
-                    if 'dc:subject' in meta:
-                        del meta['dc:subject']  # PDF
-                if options.keywords == '' and 'pdf:Keywords' in meta:
-                    del meta['pdf:Keywords']  # PDF-A and PDF
+            _fix_metadata(meta_original, meta_pdf)
+            _unset_empty_metadata(meta_original, options)
+            _unset_empty_metadata(meta_pdf, options)
             meta_missing = set(meta_original.keys()) - set(meta_pdf.keys())
             report_on_metadata(options, meta_missing)
 
