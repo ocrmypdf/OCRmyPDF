@@ -33,6 +33,7 @@ from ocrmypdf.exceptions import (
     EncryptedPdfError,
     InputFileError,
     PriorOcrFoundError,
+    TaggedPDFError,
     UnsupportedImageFormatError,
 )
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution, safe_symlink
@@ -218,6 +219,16 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
                     "form and all filled form fields. The output PDF will be "
                     "'flattened' and will no longer be fillable."
                 )
+    if pdfinfo.is_tagged:
+        if options.force_ocr or options.skip_text or options.redo_ocr:
+            log.warning(
+                "This PDF is marked as a Tagged PDF. This often indicates "
+                "that the PDF was generated from an office document and does "
+                "not need OCR. PDF pages processed by OCRmyPDF may not be "
+                "tagged correctly."
+            )
+        else:
+            raise TaggedPDFError()
     context.plugin_manager.hook.validate(pdfinfo=pdfinfo, options=options)
 
 

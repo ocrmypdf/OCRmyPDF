@@ -1038,7 +1038,11 @@ DEFAULT_EXECUTOR = SerialExecutor()
 
 
 class PdfInfo:
-    """Get summary information about a PDF."""
+    """Extract summary information about a PDF without retaining the PDF itself.
+
+    Crucially this lets us get the information in a pure Python format so that
+    it can be pickled and passed to a worker process.
+    """
 
     _has_acroform: bool = False
     _has_signature: bool = False
@@ -1078,6 +1082,9 @@ class PdfInfo:
                 elif Name.XFA in pdf.Root.AcroForm:
                     self._has_acroform = True
                 self._has_signature = bool(pdf.Root.AcroForm.get(Name.SigFlags, 0) & 1)
+            self._is_tagged = bool(
+                pdf.Root.get(Name.MarkInfo, {}).get(Name.Marked, False)
+            )
 
     @property
     def pages(self) -> Sequence[PageInfo | None]:
@@ -1104,6 +1111,11 @@ class PdfInfo:
     def has_signature(self) -> bool:
         """Return True if the document annotations has a digital signature."""
         return self._has_signature
+
+    @property
+    def is_tagged(self) -> bool:
+        """Return True if the document catalog indicates this is a Tagged PDF."""
+        return self._is_tagged
 
     @property
     def filename(self) -> str | Path:
