@@ -75,10 +75,15 @@ class PageResult(NamedTuple):
     """Result when a page is finished processing."""
 
     pageno: int
-    pdf_page_from_image: Path | None
-    ocr: Path | None
-    text: Path | None
-    orientation_correction: int
+    pdf_page_from_image: Path | None = None
+    ocr: Path | None = None
+    """Single page OCR PDF."""
+
+    text: Path | None = None
+    """Single page text file."""
+
+    orientation_correction: int = 0
+    """Orientation correction in degrees."""
 
 
 tls = threading.local()
@@ -176,6 +181,7 @@ def make_intermediate_images(
 
 
 def _process_page(page_context: PageContext) -> tuple[Path, Path | None, int]:
+    """Process page to create OCR image, visible page image and orientation."""
     options = page_context.options
     orientation_correction = 0
     if options.rotate_pages:
@@ -207,24 +213,11 @@ def _process_page(page_context: PageContext) -> tuple[Path, Path | None, int]:
     return ocr_image_out, pdf_page_from_image_out, orientation_correction
 
 
-def exec_page_sync(page_context: PageContext) -> PageResult:
-    """Execute a pipeline for a single page synchronously."""
+def _image_to_ocr_text(
+    page_context: PageContext, ocr_image_out: Path
+) -> tuple[Path, Path]:
+    """Run OCR engine on image to create OCR PDF and text file."""
     options = page_context.options
-    tls.pageno = page_context.pageno + 1
-
-    if not is_ocr_required(page_context):
-        return PageResult(
-            pageno=page_context.pageno,
-            pdf_page_from_image=None,
-            ocr=None,
-            text=None,
-            orientation_correction=0,
-        )
-
-    ocr_image_out, pdf_page_from_image_out, orientation_correction = _process_page(
-        page_context
-    )
-
     if options.pdf_renderer.startswith('hocr'):
         (hocr_out, text_out) = ocr_engine_hocr(ocr_image_out, page_context)
         ocr_out = render_hocr_page(hocr_out, page_context)
@@ -232,6 +225,20 @@ def exec_page_sync(page_context: PageContext) -> PageResult:
         (ocr_out, text_out) = ocr_engine_textonly_pdf(ocr_image_out, page_context)
     else:
         raise NotImplementedError(f"pdf_renderer {options.pdf_renderer}")
+    return ocr_out, text_out
+
+
+def exec_page_sync(page_context: PageContext) -> PageResult:
+    """Execute a pipeline for a single page synchronously."""
+    tls.pageno = page_context.pageno + 1
+
+    if not is_ocr_required(page_context):
+        return PageResult(pageno=page_context.pageno)
+
+    ocr_image_out, pdf_page_from_image_out, orientation_correction = _process_page(
+        page_context
+    )
+    ocr_out, text_out = _image_to_ocr_text(page_context, ocr_image_out)
 
     return PageResult(
         pageno=page_context.pageno,
