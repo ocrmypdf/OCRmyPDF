@@ -374,6 +374,84 @@ def ocr(  # noqa: D417
         return run_pipeline(options=options, plugin_manager=plugin_manager, api=True)
 
 
+def pdf_to_hocr(
+    input_pdf: Path,
+    output_folder: Path,
+    *,
+    language: Iterable[str] | None = None,
+    image_dpi: int | None = None,
+    jobs: int | None = None,
+    use_threads: bool | None = None,
+    title: str | None = None,
+    author: str | None = None,
+    subject: str | None = None,
+    keywords: str | None = None,
+    rotate_pages: bool | None = None,
+    remove_background: bool | None = None,
+    deskew: bool | None = None,
+    clean: bool | None = None,
+    clean_final: bool | None = None,
+    unpaper_args: str | None = None,
+    oversample: int | None = None,
+    remove_vectors: bool | None = None,
+    force_ocr: bool | None = None,
+    skip_text: bool | None = None,
+    redo_ocr: bool | None = None,
+    skip_big: float | None = None,
+    pages: str | None = None,
+    max_image_mpixels: float | None = None,
+    tesseract_config: Iterable[str] | None = None,
+    tesseract_pagesegmode: int | None = None,
+    tesseract_oem: int | None = None,
+    tesseract_thresholding: int | None = None,
+    tesseract_timeout: float | None = None,
+    tesseract_non_ocr_timeout: float | None = None,
+    tesseract_downsample_above: int | None = None,
+    tesseract_downsample_large_images: bool | None = None,
+    rotate_pages_threshold: float | None = None,
+    user_words: os.PathLike | None = None,
+    user_patterns: os.PathLike | None = None,
+    continue_on_soft_render_error: bool | None = None,
+    invalidate_digital_signatures: bool | None = None,
+    plugin_manager=None,
+    keep_temporary_files: bool | None = None,
+    **kwargs,
+):
+    """Run OCRmyPDF and produces an output folder containing hOCR files."""
+    # No new variable names should be assigned until these two steps are run
+    create_options_kwargs = {
+        k: v
+        for k, v in locals().items()
+        if k not in {'input_pdf', 'output_folder', 'kwargs'}
+    }
+    create_options_kwargs.update(kwargs)
+
+    parser = get_parser()
+
+    with _api_lock:
+        # We can't allow multiple ocrmypdf.ocr() threads to run in parallel, because
+        # they might install different plugins, and generally speaking we have areas
+        # of code that use global state.
+
+        if not plugin_manager:
+            plugin_manager = get_plugin_manager()
+        plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
+
+        cmdline, deferred = _kwargs_to_cmdline(
+            defer_kwargs={'input_pdf', 'output_folder'}, **create_options_kwargs
+        )
+        cmdline.append(str(input_pdf))
+        cmdline.append(str(output_folder))
+        parser.enable_api_mode()
+        options = parser.parse_args(cmdline)
+        for keyword, val in deferred:
+            setattr(options, keyword, val)
+        delattr(options, 'output_file')
+        setattr(options, 'output_folder', output_folder)
+
+        return run_hocr_pipeline(options=options, plugin_manager=plugin_manager)
+
+
 __all__ = [
     'PageNumberFilter',
     'Verbosity',
@@ -383,5 +461,6 @@ __all__ = [
     'get_parser',
     'get_plugin_manager',
     'ocr',
+    'pdf_to_hocr',
     'run_pipeline',
 ]

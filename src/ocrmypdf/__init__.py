@@ -11,7 +11,7 @@ from ocrmypdf import helpers, hocrtransform, pdfa, pdfinfo
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._version import PROGRAM_NAME, __version__
-from ocrmypdf.api import Verbosity, configure_logging, ocr
+from ocrmypdf.api import Verbosity, configure_logging, ocr, pdf_to_hocr
 from ocrmypdf.exceptions import (
     BadArgsError,
     DpiError,

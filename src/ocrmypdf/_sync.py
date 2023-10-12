@@ -57,6 +57,7 @@ from ocrmypdf._validation import (
     check_requested_output_file,
     create_input_file,
     report_output_file_size,
+    set_lossless_reconstruction,
 )
 from ocrmypdf.exceptions import ExitCode, ExitCodeException
 from ocrmypdf.helpers import (
@@ -580,7 +581,7 @@ def run_hocr_pipeline(
         options=options,
         plugin_manager=plugin_manager,
         api=True,
-        work_folder=options.output_file,
+        work_folder=options.output_folder,
     )
     # Gather pdfinfo and create context
     pdfinfo = get_pdfinfo(
@@ -595,5 +596,6 @@ def run_hocr_pipeline(
         options, work_folder, options.input_file, pdfinfo, plugin_manager
     )
     # Validate options are okay for this pdf
+    set_lossless_reconstruction(options)
     validate_pdfinfo_options(context)
     exec_hocr(context, executor)
