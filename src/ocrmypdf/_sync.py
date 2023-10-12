@@ -175,20 +175,8 @@ def make_intermediate_images(
     return ocr_image, preprocess_out
 
 
-def exec_page_sync(page_context: PageContext) -> PageResult:
-    """Execute a pipeline for a single page synchronously."""
+def _process_page(page_context: PageContext) -> tuple[Path, Path | None, int]:
     options = page_context.options
-    tls.pageno = page_context.pageno + 1
-
-    if not is_ocr_required(page_context):
-        return PageResult(
-            pageno=page_context.pageno,
-            pdf_page_from_image=None,
-            ocr=None,
-            text=None,
-            orientation_correction=0,
-        )
-
     orientation_correction = 0
     if options.rotate_pages:
         # Rasterize
@@ -216,6 +204,26 @@ def exec_page_sync(page_context: PageContext) -> PageResult:
         pdf_page_from_image_out = create_pdf_page_from_image(
             visible_image_out, page_context, orientation_correction
         )
+    return ocr_image_out, pdf_page_from_image_out, orientation_correction
+
+
+def exec_page_sync(page_context: PageContext) -> PageResult:
+    """Execute a pipeline for a single page synchronously."""
+    options = page_context.options
+    tls.pageno = page_context.pageno + 1
+
+    if not is_ocr_required(page_context):
+        return PageResult(
+            pageno=page_context.pageno,
+            pdf_page_from_image=None,
+            ocr=None,
+            text=None,
+            orientation_correction=0,
+        )
+
+    ocr_image_out, pdf_page_from_image_out, orientation_correction = _process_page(
+        page_context
+    )
 
     if options.pdf_renderer.startswith('hocr'):
         (hocr_out, text_out) = ocr_engine_hocr(ocr_image_out, page_context)
