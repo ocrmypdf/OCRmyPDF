@@ -21,7 +21,7 @@ import pluggy
 
 from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._plugin_manager import get_plugin_manager
-from ocrmypdf._sync import run_pipeline
+from ocrmypdf._sync import run_hocr_pipeline, run_pipeline
 from ocrmypdf._validation import check_options
 from ocrmypdf.cli import ArgumentParser, get_parser
 from ocrmypdf.helpers import is_iterable_notstr
@@ -133,34 +133,19 @@ def configure_logging(
     return log
 
 
-def create_options(
-    *, input_file: PathOrIO, output_file: PathOrIO, parser: ArgumentParser, **kwargs
-) -> Namespace:
-    """Construct an options object from the input/output files and keyword arguments.
-
-    Args:
-        input_file: Input file path or file object.
-        output_file: Output file path or file object.
-        parser: ArgumentParser object.
-        **kwargs: Keyword arguments.
-
-    Returns:
-        argparse.Namespace: A Namespace object containing the parsed arguments.
-
-    Raises:
-        TypeError: If the type of a keyword argument is not supported.
-    """
+def _kwargs_to_cmdline(
+    *, defer_kwargs: set[str], **kwargs
+) -> tuple[list[str], dict[str, AnyStr]]:
+    """Convert kwargs to command line arguments."""
     cmdline = []
-    deferred = []
-
+    deferred = {}
     for arg, val in kwargs.items():
         if val is None:
             continue
 
-        # These arguments with special handling for which we bypass
-        # argparse
-        if arg in {'progress_bar', 'plugins'}:
-            deferred.append((arg, val))
+        # Skip arguments that are handled elsewhere
+        if arg in defer_kwargs:
+            deferred[arg] = val
             continue
 
         cmd_style_arg = arg.replace('_', '-')
@@ -187,7 +172,30 @@ def create_options(
             cmdline.append(str(val))
         else:
             raise TypeError(f"{arg}: {val} ({type(val)})")
+    return cmdline, deferred
 
+
+def create_options(
+    *, input_file: PathOrIO, output_file: PathOrIO, parser: ArgumentParser, **kwargs
+) -> Namespace:
+    """Construct an options object from the input/output files and keyword arguments.
+
+    Args:
+        input_file: Input file path or file object.
+        output_file: Output file path or file object.
+        parser: ArgumentParser object.
+        **kwargs: Keyword arguments.
+
+    Returns:
+        argparse.Namespace: A Namespace object containing the parsed arguments.
+
+    Raises:
+        TypeError: If the type of a keyword argument is not supported.
+    """
+    cmdline, deferred = _kwargs_to_cmdline(
+        defer_kwargs={'progress_bar', 'plugins', 'parser', 'input_file', 'output_file'},
+        **kwargs,
+    )
     if isinstance(input_file, (BinaryIO, IOBase)):
         cmdline.append('stream://input_file')
     else:
@@ -199,7 +207,7 @@ def create_options(
 
     parser.enable_api_mode()
     options = parser.parse_args(cmdline)
-    for keyword, val in deferred:
+    for keyword, val in deferred.items():
         setattr(options, keyword, val)
 
     if options.input_file == 'stream://input_file':
@@ -336,12 +344,14 @@ def ocr(  # noqa: D417
         plugins = list(plugins)
 
     # No new variable names should be assigned until these two steps are run
-    create_options_kwargs = {k: v for k, v in locals().items() if k != 'kwargs'}
+    create_options_kwargs = {
+        k: v
+        for k, v in locals().items()
+        if k not in {'input_file', 'output_file', 'kwargs'}
+    }
     create_options_kwargs.update(kwargs)
 
     parser = get_parser()
-    create_options_kwargs['parser'] = parser
-
     with _api_lock:
         # We can't allow multiple ocrmypdf.ocr() threads to run in parallel, because
         # they might install different plugins, and generally speaking we have areas
@@ -354,7 +364,12 @@ def ocr(  # noqa: D417
         if 'verbose' in kwargs:
             warn("ocrmypdf.ocr(verbose=) is ignored. Use ocrmypdf.configure_logging().")
 
-        options = create_options(**create_options_kwargs)
+        options = create_options(
+            input_file=input_file,
+            output_file=output_file,
+            parser=parser,
+            **create_options_kwargs,
+        )
         check_options(options, plugin_manager)
         return run_pipeline(options=options, plugin_manager=plugin_manager, api=True)
 
