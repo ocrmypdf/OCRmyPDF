@@ -414,6 +414,7 @@ def pdf_to_hocr(
     continue_on_soft_render_error: bool | None = None,
     invalidate_digital_signatures: bool | None = None,
     plugin_manager=None,
+    plugins: Iterable[StrPath] | None = None,
     keep_temporary_files: bool | None = None,
     **kwargs,
 ):
@@ -434,17 +435,18 @@ def pdf_to_hocr(
         # of code that use global state.
 
         if not plugin_manager:
-            plugin_manager = get_plugin_manager()
+            plugin_manager = get_plugin_manager(plugins)
         plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
 
         cmdline, deferred = _kwargs_to_cmdline(
-            defer_kwargs={'input_pdf', 'output_folder'}, **create_options_kwargs
+            defer_kwargs={'input_pdf', 'output_folder', 'plugins'},
+            **create_options_kwargs,
         )
         cmdline.append(str(input_pdf))
         cmdline.append(str(output_folder))
         parser.enable_api_mode()
         options = parser.parse_args(cmdline)
-        for keyword, val in deferred:
+        for keyword, val in deferred.items():
             setattr(options, keyword, val)
         delattr(options, 'output_file')
         setattr(options, 'output_folder', output_folder)

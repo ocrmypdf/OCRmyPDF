@@ -27,9 +27,13 @@ def test_stream_api(resources: Path):
     assert b'%PDF' in out.read(1024)
 
 
-def test_hocr_api(outdir):
+def test_hocr_api(resources: Path, outdir: Path):
     ocrmypdf.pdf_to_hocr(
-        'tests/resources/multipage.pdf', outdir, language='eng', skip_text=True
+        resources / 'multipage.pdf',
+        outdir,
+        language='eng',
+        skip_text=True,
+        plugins=['tests/plugins/tesseract_cache.py'],
     )
     assert (outdir / '000001_ocr_hocr.hocr').exists()
     assert (outdir / '000006_ocr_hocr.hocr').exists()
