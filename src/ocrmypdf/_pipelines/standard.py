@@ -40,6 +40,7 @@ from ocrmypdf._pipelines.common import (
     post_process,
     process_page,
     report_output_pdf,
+    set_logging_tls,
     setup_pipeline,
     worker_init,
 )
@@ -59,18 +60,7 @@ log = logging.getLogger(__name__)
 tls = threading.local()
 tls.pageno = None
 
-
-old_factory = logging.getLogRecordFactory()
-
-
-def record_factory(*args, **kwargs):
-    record = old_factory(*args, **kwargs)
-    if hasattr(tls, 'pageno'):
-        record.pageno = tls.pageno
-    return record
-
-
-logging.setLogRecordFactory(record_factory)
+set_logging_tls(tls)
 
 
 def _image_to_ocr_text(

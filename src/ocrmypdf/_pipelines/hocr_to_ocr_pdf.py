@@ -30,6 +30,7 @@ from ocrmypdf._pipelines.common import (
     HOCRResult,
     post_process,
     report_output_pdf,
+    set_logging_tls,
     setup_pipeline,
     worker_init,
 )
@@ -37,21 +38,11 @@ from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 
 log = logging.getLogger(__name__)
 
+
 tls = threading.local()
 tls.pageno = None
 
-
-old_factory = logging.getLogRecordFactory()
-
-
-def record_factory(*args, **kwargs):
-    record = old_factory(*args, **kwargs)
-    if hasattr(tls, 'pageno'):
-        record.pageno = tls.pageno
-    return record
-
-
-logging.setLogRecordFactory(record_factory)
+set_logging_tls(tls)
 
 
 def exec_hocrtransform_sync(page_context: PageContext) -> HOCRResult:

@@ -5,7 +5,6 @@ import json
 import logging
 import logging.handlers
 import os
-import threading
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -48,21 +47,17 @@ from ocrmypdf.pdfa import file_claims_pdfa
 
 log = logging.getLogger(__name__)
 
-tls = threading.local()
-tls.pageno = None
 
+def set_logging_tls(tls):
+    old_factory = logging.getLogRecordFactory()
 
-old_factory = logging.getLogRecordFactory()
+    def wrapper(*args, **kwargs):
+        record = old_factory(*args, **kwargs)
+        if hasattr(tls, 'pageno'):
+            record.pageno = tls.pageno
+        return record
 
-
-def record_factory(*args, **kwargs):
-    record = old_factory(*args, **kwargs)
-    if hasattr(tls, 'pageno'):
-        record.pageno = tls.pageno
-    return record
-
-
-logging.setLogRecordFactory(record_factory)
+    logging.setLogRecordFactory(wrapper)
 
 
 class PageResult(NamedTuple):
