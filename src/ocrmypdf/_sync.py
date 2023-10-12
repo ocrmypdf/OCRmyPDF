@@ -8,14 +8,17 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import logging.handlers
 import os
+import shutil
 import sys
 import threading
 from collections.abc import Sequence
 from concurrent.futures.process import BrokenProcessPool
 from concurrent.futures.thread import BrokenThreadPool
+from dataclasses import asdict, dataclass
 from functools import partial
 from pathlib import Path
 from tempfile import mkdtemp
@@ -91,17 +94,49 @@ class PageResult(NamedTuple):
     """Orientation correction in degrees."""
 
 
-class HOCRResult(NamedTuple):
+@dataclass
+class HOCRResult:
     """Result when hOCR is finished processing."""
 
     pageno: int
     """Page number, 0-based."""
 
+    pdf_page_from_image: Path | None = None
+    """Single page PDF from image."""
+
     hocr: Path | None = None
-    """Single page OCR PDF."""
+    """Single page hOCR file."""
+
+    textpdf: Path | None = None
+    """hOCR file after conversion to PDF."""
 
     orientation_correction: int = 0
     """Orientation correction in degrees."""
+
+    def __getstate__(self):
+        """Return state values to be pickled."""
+        return {
+            k: (str(v) if k in ('pdf_page_from_image', 'hocr', 'textpdf') else v)
+            for k, v in self.__dict__.items()
+        }
+
+    def __setstate__(self, state):
+        """Restore state from the unpickled state values."""
+        self.__dict__.update(
+            {
+                k: (Path(v) if k in ('pdf_page_from_image', 'hocr', 'textpdf') else v)
+                for k, v in state.items()
+            }
+        )
+
+    @classmethod
+    def from_json(cls, json_str: str) -> HOCRResult:
+        """Create an instance from a dict."""
+        return cls(**json.loads(json_str))
+
+    def to_json(self) -> str:
+        """Serialize to a JSON string."""
+        return json.dumps(self.__getstate__())
 
 
 tls = threading.local()
@@ -267,23 +302,34 @@ def exec_page_sync(page_context: PageContext) -> PageResult:
     )
 
 
-def exec_page_hocr_sync(page_context: PageContext) -> PageResult:
+def exec_page_hocr_sync(page_context: PageContext) -> HOCRResult:
     """Execute a pipeline for a single page hOCR."""
     tls.pageno = page_context.pageno + 1
 
     if not is_ocr_required(page_context):
-        return PageResult(pageno=page_context.pageno)
+        return HOCRResult(pageno=page_context.pageno)
 
-    ocr_image_out, _pdf_page_from_image_out, orientation_correction = _process_page(
+    ocr_image_out, pdf_page_from_image_out, orientation_correction = _process_page(
         page_context
     )
     hocr_out, _ = ocr_engine_hocr(ocr_image_out, page_context)
 
-    return HOCRResult(
+    result = HOCRResult(
         pageno=page_context.pageno,
+        pdf_page_from_image=pdf_page_from_image_out,
         hocr=hocr_out,
         orientation_correction=orientation_correction,
     )
+    page_context.get_path('hocr.json').write_text(result.to_json())
+    return result
+
+
+def exec_hocrtransform_sync(page_context: PageContext) -> HOCRResult:
+    hocr_result = HOCRResult.from_json(page_context.get_path('hocr.json').read_text())
+    hocr_result.textpdf = render_hocr_page(
+        page_context.get_path('ocr_hocr.hocr'), page_context
+    )
+    return hocr_result
 
 
 def post_process(
@@ -371,8 +417,8 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     return messages
 
 
-def exec_hocr(context: PdfContext, executor: Executor) -> None:
-    """Execute the OCR pipeline concurrently."""
+def exec_pdf_to_hocr(context: PdfContext, executor: Executor) -> None:
+    """Execute the OCR pipeline concurrently and output hOCR."""
     # Run exec_page_sync on every page
     options = context.options
     max_workers = min(len(context.pdfinfo), options.jobs)
@@ -393,6 +439,59 @@ def exec_hocr(context: PdfContext, executor: Executor) -> None:
         task=exec_page_hocr_sync,
         task_arguments=context.get_page_contexts(),
     )
+
+
+def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> None:
+    """Execute the OCR pipeline concurrently and output hOCR."""
+    # Run exec_page_sync on every page
+    options = context.options
+    max_workers = min(len(context.pdfinfo), options.jobs)
+    if max_workers > 1:
+        log.info("Continue processing %d pages concurrently", max_workers)
+
+    ocrgraft = OcrGrafter(context)
+
+    def graft_page(result: HOCRResult, pbar):
+        """After OCR is complete for a page, update the PDF."""
+        try:
+            tls.pageno = result.pageno + 1
+            pbar.update()
+            ocrgraft.graft_page(
+                pageno=result.pageno,
+                image=result.pdf_page_from_image,
+                textpdf=result.textpdf,
+                autorotate_correction=result.orientation_correction,
+            )
+            pbar.update()
+        finally:
+            tls.pageno = None
+
+    executor(
+        use_threads=options.use_threads,
+        max_workers=max_workers,
+        tqdm_kwargs=dict(
+            total=(2 * len(context.pdfinfo)),
+            desc='Grafting hOCR to PDF',
+            unit='page',
+            unit_scale=0.5,
+            disable=not options.progress_bar,
+        ),
+        worker_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
+        task=exec_hocrtransform_sync,
+        task_arguments=context.get_page_contexts(),
+        task_finished=graft_page,
+    )
+
+    pdf = ocrgraft.finalize()
+    messages: Sequence[str] = []
+    if options.output_type != 'none':
+        # PDF/A and metadata
+        log.info("Postprocessing...")
+        pdf, messages = post_process(pdf, context, executor)
+
+        # Copy PDF file to destination
+        copy_final(pdf, options.output_file, context)
+    return messages
 
 
 def configure_debug_logging(
@@ -449,6 +548,32 @@ def _setup_pipeline(
     return work_folder, debug_log_handler, executor, plugin_manager
 
 
+def _report_output_pdf(options, start_input_file, optimize_messages):
+    if options.output_file == '-':
+        log.info("Output sent to stdout")
+    elif hasattr(options.output_file, 'writable') and options.output_file.writable():
+        log.info("Output written to stream")
+    elif samefile(options.output_file, Path(os.devnull)):
+        pass  # Say nothing when sending to dev null
+    else:
+        if options.output_type.startswith('pdfa'):
+            pdfa_info = file_claims_pdfa(options.output_file)
+            if pdfa_info['pass']:
+                log.info("Output file is a %s (as expected)", pdfa_info['conformance'])
+            else:
+                log.warning(
+                    "Output file is okay but is not PDF/A (seems to be %s)",
+                    pdfa_info['conformance'],
+                )
+                return ExitCode.pdfa_conversion_failed
+        if not check_pdf(options.output_file):
+            log.warning('Output file: The generated PDF is INVALID')
+            return ExitCode.invalid_output_pdf
+        report_output_file_size(
+            options, start_input_file, options.output_file, optimize_messages
+        )
+
+
 def run_pipeline(
     options: argparse.Namespace,
     *,
@@ -496,33 +621,7 @@ def run_pipeline(
         # Execute the pipeline
         optimize_messages = exec_concurrent(context, executor)
 
-        if options.output_file == '-':
-            log.info("Output sent to stdout")
-        elif (
-            hasattr(options.output_file, 'writable') and options.output_file.writable()
-        ):
-            log.info("Output written to stream")
-        elif samefile(options.output_file, Path(os.devnull)):
-            pass  # Say nothing when sending to dev null
-        else:
-            if options.output_type.startswith('pdfa'):
-                pdfa_info = file_claims_pdfa(options.output_file)
-                if pdfa_info['pass']:
-                    log.info(
-                        "Output file is a %s (as expected)", pdfa_info['conformance']
-                    )
-                else:
-                    log.warning(
-                        "Output file is okay but is not PDF/A (seems to be %s)",
-                        pdfa_info['conformance'],
-                    )
-                    return ExitCode.pdfa_conversion_failed
-            if not check_pdf(options.output_file):
-                log.warning('Output file: The generated PDF is INVALID')
-                return ExitCode.invalid_output_pdf
-            report_output_file_size(
-                options, start_input_file, options.output_file, optimize_messages
-            )
+        _report_output_pdf(options, start_input_file, optimize_messages)
 
     except KeyboardInterrupt if not api else NeverRaise:
         if options.verbose >= 1:
@@ -583,6 +682,9 @@ def run_hocr_pipeline(
         api=True,
         work_folder=options.output_folder,
     )
+
+    shutil.copy2(options.input_file, work_folder / 'origin.pdf')
+
     # Gather pdfinfo and create context
     pdfinfo = get_pdfinfo(
         options.input_file,
@@ -598,4 +700,37 @@ def run_hocr_pipeline(
     # Validate options are okay for this pdf
     set_lossless_reconstruction(options)
     validate_pdfinfo_options(context)
-    exec_hocr(context, executor)
+    exec_pdf_to_hocr(context, executor)
+
+
+def run_hocr_to_ocr_pdf_pipeline(
+    options: argparse.Namespace,
+    *,
+    plugin_manager: OcrmypdfPluginManager | None,
+) -> None:
+    work_folder, debug_log_handler, executor, plugin_manager = _setup_pipeline(
+        options=options,
+        plugin_manager=plugin_manager,
+        api=True,
+        work_folder=options.output_folder,
+    )
+
+    shutil.copy2(options.input_file, work_folder / 'origin.pdf')
+
+    # Gather pdfinfo and create context
+    pdfinfo = get_pdfinfo(
+        options.input_file,
+        executor=executor,
+        detailed_analysis=options.redo_ocr,
+        progbar=options.progress_bar,
+        max_workers=options.jobs if not options.use_threads else 1,  # To help debug
+        check_pages=options.pages,
+    )
+    context = PdfContext(
+        options, work_folder, options.input_file, pdfinfo, plugin_manager
+    )
+    # Validate options are okay for this pdf
+    validate_pdfinfo_options(context)
+    optimize_messages = exec_hocr_to_ocr_pdf(context, executor)
+
+    _report_output_pdf(options, start_input_file, optimize_messages)
