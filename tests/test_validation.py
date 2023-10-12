@@ -71,7 +71,9 @@ def test_tesseract_not_installed(caplog):
 
 def test_lossless_redo():
     with pytest.raises(BadArgsError):
-        vd.check_options_output(make_opts(redo_ocr=True, deskew=True))
+        options = make_opts(redo_ocr=True, deskew=True)
+        vd.check_options_output(options)
+        vd.set_lossless_reconstruction(options)
 
 
 def test_mutex_options():

@@ -99,6 +99,8 @@ def check_options_output(options: Namespace) -> None:
             f"`-` to suppress this message."
         )
 
+
+def set_lossless_reconstruction(options: Namespace) -> None:
     lossless_reconstruction = False
     if not any(
         (
@@ -228,6 +230,7 @@ def _check_plugin_invariant_options(options: Namespace) -> None:
     check_platform()
     check_options_metadata(options)
     check_options_output(options)
+    set_lossless_reconstruction(options)
     check_options_sidecar(options)
     check_options_preprocessing(options)
     check_options_ocr_behavior(options)
@@ -282,7 +285,7 @@ def create_input_file(options: Namespace, work_folder: Path) -> tuple[Path, str]
             msg = f"File not found - {options.input_file}"
             if _in_docker():  # pragma: no cover
                 msg += (
-                    "\nDocker cannot your working directory unless you "
+                    "\nDocker cannot access your working directory unless you "
                     "explicitly share it with the Docker container and set up"
                     "permissions correctly.\n"
                     "You may find it easier to use stdin/stdout:"
