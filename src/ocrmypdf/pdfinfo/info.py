@@ -1050,7 +1050,7 @@ class PdfInfo:
 
     def __init__(
         self,
-        infile,
+        infile: Path,
         *,
         detailed_analysis: bool = False,
         progbar: bool = False,

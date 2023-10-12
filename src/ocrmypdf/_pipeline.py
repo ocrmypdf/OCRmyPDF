@@ -655,7 +655,7 @@ def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, 
         output_text=hocr_text_out,
         options=options,
     )
-    return (hocr_out, hocr_text_out)
+    return hocr_out, hocr_text_out
 
 
 def should_visible_page_image_use_jpg(pageinfo: PageInfo) -> bool:
@@ -1036,7 +1036,7 @@ def optimize_pdf(
 
 def enumerate_compress_ranges(
     iterable: Iterable[T],
-) -> Iterator[tuple[tuple[int, int], T]]:
+) -> Iterator[tuple[tuple[int, int], T | None]]:
     """Enumerate the ranges of non-empty elements in an iterable.
 
     Compresses consecutive ranges of length 1 into single elements.

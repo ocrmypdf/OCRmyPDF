@@ -75,12 +75,29 @@ class PageResult(NamedTuple):
     """Result when a page is finished processing."""
 
     pageno: int
+    """Page number, 0-based."""
+
     pdf_page_from_image: Path | None = None
+    """Single page PDF from image."""
+
     ocr: Path | None = None
     """Single page OCR PDF."""
 
     text: Path | None = None
     """Single page text file."""
+
+    orientation_correction: int = 0
+    """Orientation correction in degrees."""
+
+
+class HOCRResult(NamedTuple):
+    """Result when hOCR is finished processing."""
+
+    pageno: int
+    """Page number, 0-based."""
+
+    hocr: Path | None = None
+    """Single page OCR PDF."""
 
     orientation_correction: int = 0
     """Orientation correction in degrees."""
@@ -219,10 +236,10 @@ def _image_to_ocr_text(
     """Run OCR engine on image to create OCR PDF and text file."""
     options = page_context.options
     if options.pdf_renderer.startswith('hocr'):
-        (hocr_out, text_out) = ocr_engine_hocr(ocr_image_out, page_context)
+        hocr_out, text_out = ocr_engine_hocr(ocr_image_out, page_context)
         ocr_out = render_hocr_page(hocr_out, page_context)
     elif options.pdf_renderer == 'sandwich':
-        (ocr_out, text_out) = ocr_engine_textonly_pdf(ocr_image_out, page_context)
+        ocr_out, text_out = ocr_engine_textonly_pdf(ocr_image_out, page_context)
     else:
         raise NotImplementedError(f"pdf_renderer {options.pdf_renderer}")
     return ocr_out, text_out
@@ -245,6 +262,25 @@ def exec_page_sync(page_context: PageContext) -> PageResult:
         pdf_page_from_image=pdf_page_from_image_out,
         ocr=ocr_out,
         text=text_out,
+        orientation_correction=orientation_correction,
+    )
+
+
+def exec_page_hocr_sync(page_context: PageContext) -> PageResult:
+    """Execute a pipeline for a single page hOCR."""
+    tls.pageno = page_context.pageno + 1
+
+    if not is_ocr_required(page_context):
+        return PageResult(pageno=page_context.pageno)
+
+    ocr_image_out, _pdf_page_from_image_out, orientation_correction = _process_page(
+        page_context
+    )
+    hocr_out, _ = ocr_engine_hocr(ocr_image_out, page_context)
+
+    return HOCRResult(
+        pageno=page_context.pageno,
+        hocr=hocr_out,
         orientation_correction=orientation_correction,
     )
 
@@ -334,6 +370,30 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     return messages
 
 
+def exec_hocr(context: PdfContext, executor: Executor) -> None:
+    """Execute the OCR pipeline concurrently."""
+    # Run exec_page_sync on every page
+    options = context.options
+    max_workers = min(len(context.pdfinfo), options.jobs)
+    if max_workers > 1:
+        log.info("Start processing %d pages concurrently", max_workers)
+
+    executor(
+        use_threads=options.use_threads,
+        max_workers=max_workers,
+        tqdm_kwargs=dict(
+            total=(2 * len(context.pdfinfo)),
+            desc='hOCR',
+            unit='page',
+            unit_scale=0.5,
+            disable=not options.progress_bar,
+        ),
+        worker_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
+        task=exec_page_hocr_sync,
+        task_arguments=context.get_page_contexts(),
+    )
+
+
 def configure_debug_logging(
     log_filename: Path, prefix: str = ''
 ) -> logging.FileHandler:
@@ -354,6 +414,40 @@ def configure_debug_logging(
     return log_file_handler
 
 
+def _setup_pipeline(
+    *,
+    options: argparse.Namespace,
+    plugin_manager: OcrmypdfPluginManager | None,
+    api: bool = False,
+    work_folder: Path | None,
+) -> tuple[Path, logging.FileHandler | None, Executor, OcrmypdfPluginManager]:
+    # Any changes to options will not take effect for options that are already
+    # bound to function parameters in the pipeline. (For example
+    # options.input_file, options.pdf_renderer are already bound.)
+    if not options.jobs:
+        options.jobs = available_cpu_count()
+    if not plugin_manager:
+        plugin_manager = get_plugin_manager(options.plugins)
+    if not work_folder:
+        work_folder = Path(mkdtemp(prefix="ocrmypdf.io."))
+    debug_log_handler = None
+    if (
+        (options.keep_temporary_files or options.verbose >= 1)
+        and not os.environ.get('PYTEST_CURRENT_TEST', '')
+        and not api
+    ):
+        # Debug log for command line interface only with verbose output
+        # See https://github.com/pytest-dev/pytest/issues/5502 for why we skip this
+        # when pytest is running
+        debug_log_handler = configure_debug_logging(
+            Path(work_folder) / "debug.log"
+        )  # pragma: no cover
+
+    pikepdf_enable_mmap()
+    executor = setup_executor(plugin_manager)
+    return work_folder, debug_log_handler, executor, plugin_manager
+
+
 def run_pipeline(
     options: argparse.Namespace,
     *,
@@ -371,31 +465,9 @@ def run_pipeline(
             For CLI (``api=False``), exceptions are printed and described;
             for API use, they are propagated to the caller.
     """
-    # Any changes to options will not take effect for options that are already
-    # bound to function parameters in the pipeline. (For example
-    # options.input_file, options.pdf_renderer are already bound.)
-    if not options.jobs:
-        options.jobs = available_cpu_count()
-    if not plugin_manager:
-        plugin_manager = get_plugin_manager(options.plugins)
-
-    work_folder = Path(mkdtemp(prefix="ocrmypdf.io."))
-    debug_log_handler = None
-    if (
-        (options.keep_temporary_files or options.verbose >= 1)
-        and not os.environ.get('PYTEST_CURRENT_TEST', '')
-        and not api
-    ):
-        # Debug log for command line interface only with verbose output
-        # See https://github.com/pytest-dev/pytest/issues/5502 for why we skip this
-        # when pytest is running
-        debug_log_handler = configure_debug_logging(
-            Path(work_folder) / "debug.log"
-        )  # pragma: no cover
-
-    pikepdf_enable_mmap()
-
-    executor = setup_executor(plugin_manager)
+    work_folder, debug_log_handler, executor, plugin_manager = _setup_pipeline(
+        options=options, plugin_manager=plugin_manager, api=api, work_folder=None
+    )
     try:
         check_requested_output_file(options)
         start_input_file, original_filename = create_input_file(options, work_folder)
@@ -497,3 +569,31 @@ def run_pipeline(
         cleanup_working_files(work_folder, options)
 
     return ExitCode.ok
+
+
+def run_hocr_pipeline(
+    options: argparse.Namespace,
+    *,
+    plugin_manager: OcrmypdfPluginManager | None,
+) -> None:
+    work_folder, debug_log_handler, executor, plugin_manager = _setup_pipeline(
+        options=options,
+        plugin_manager=plugin_manager,
+        api=True,
+        work_folder=options.output_file,
+    )
+    # Gather pdfinfo and create context
+    pdfinfo = get_pdfinfo(
+        options.input_file,
+        executor=executor,
+        detailed_analysis=options.redo_ocr,
+        progbar=options.progress_bar,
+        max_workers=options.jobs if not options.use_threads else 1,  # To help debug
+        check_pages=options.pages,
+    )
+    context = PdfContext(
+        options, work_folder, options.input_file, pdfinfo, plugin_manager
+    )
+    # Validate options are okay for this pdf
+    validate_pdfinfo_options(context)
+    exec_hocr(context, executor)
