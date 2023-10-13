@@ -322,7 +322,7 @@ def post_process(
     return optimize_pdf(pdf_out, context, executor)
 
 
-def report_output_pdf(options, start_input_file, optimize_messages):
+def report_output_pdf(options, start_input_file, optimize_messages) -> ExitCode:
     if options.output_file == '-':
         log.info("Output sent to stdout")
     elif hasattr(options.output_file, 'writable') and options.output_file.writable():
@@ -346,3 +346,4 @@ def report_output_pdf(options, start_input_file, optimize_messages):
         report_output_file_size(
             options, start_input_file, options.output_file, optimize_messages
         )
+    return ExitCode.ok

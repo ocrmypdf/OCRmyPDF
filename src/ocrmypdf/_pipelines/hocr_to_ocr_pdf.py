@@ -35,6 +35,7 @@ from ocrmypdf._pipelines.common import (
     worker_init,
 )
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
+from ocrmypdf.exceptions import ExitCode
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ def exec_hocrtransform_sync(page_context: PageContext) -> HOCRResult:
     return hocr_result
 
 
-def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> None:
+def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[str]:
     """Execute the OCR pipeline concurrently and output hOCR."""
     # Run exec_page_sync on every page
     options = context.options
@@ -110,7 +111,7 @@ def run_hocr_to_ocr_pdf_pipeline(
     options: argparse.Namespace,
     *,
     plugin_manager: OcrmypdfPluginManager | None,
-) -> None:
+) -> ExitCode:
     with setup_pipeline(
         options=options, plugin_manager=plugin_manager, api=True, work_folder=None
     ) as (work_folder, executor, plugin_manager):
@@ -133,4 +134,4 @@ def run_hocr_to_ocr_pdf_pipeline(
         validate_pdfinfo_options(context)
         optimize_messages = exec_hocr_to_ocr_pdf(context, executor)
 
-        report_output_pdf(options, origin_pdf, optimize_messages)
+        return report_output_pdf(options, origin_pdf, optimize_messages)

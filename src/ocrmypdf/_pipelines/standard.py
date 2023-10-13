@@ -215,7 +215,7 @@ def run_pipeline(
             # Execute the pipeline
             optimize_messages = exec_concurrent(context, executor)
 
-            report_output_pdf(options, start_input_file, optimize_messages)
+            exitcode = report_output_pdf(options, start_input_file, optimize_messages)
 
         except KeyboardInterrupt if not api else NeverRaise:
             if options.verbose >= 1:
@@ -254,4 +254,4 @@ def run_pipeline(
             log.exception("An exception occurred while executing the pipeline")
             return ExitCode.other_error
 
-    return ExitCode.ok
+    return exitcode
