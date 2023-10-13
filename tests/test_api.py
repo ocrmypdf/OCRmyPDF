@@ -39,3 +39,19 @@ def test_hocr_api(resources: Path, outdir: Path):
     assert (outdir / '000006_ocr_hocr.hocr').exists()
 
     assert not (outdir / '000004_ocr_hocr.hocr').exists()
+
+
+def test_hocr_to_pdf_api(resources: Path, outdir: Path, outpdf: Path):
+    ocrmypdf.pdf_to_hocr(
+        resources / 'ccitt.pdf',
+        outdir,
+        language='eng',
+        skip_text=True,
+        plugins=['tests/plugins/tesseract_cache.py'],
+    )
+    assert (outdir / '000001_ocr_hocr.hocr').exists()
+    hocr = (outdir / '000001_ocr_hocr.hocr').read_text(encoding='utf-8')
+    mangled = hocr.replace('the', 'hocr')
+    (outdir / '000001_ocr_hocr.hocr').write_text(mangled, encoding='utf-8')
+
+    ocrmypdf.hocr_to_ocr_pdf(outdir, outpdf)

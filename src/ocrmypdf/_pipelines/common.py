@@ -108,7 +108,11 @@ class HOCRResult:
     def __getstate__(self):
         """Return state values to be pickled."""
         return {
-            k: (str(v) if k in ('pdf_page_from_image', 'hocr', 'textpdf') else v)
+            k: (
+                ('Path://' + str(v))
+                if k in ('pdf_page_from_image', 'hocr', 'textpdf') and v is not None
+                else v
+            )
             for k, v in self.__dict__.items()
         }
 
@@ -116,7 +120,11 @@ class HOCRResult:
         """Restore state from the unpickled state values."""
         self.__dict__.update(
             {
-                k: (Path(v) if k in ('pdf_page_from_image', 'hocr', 'textpdf') else v)
+                k: (
+                    Path(v.removeprefix('Path://'))
+                    if k in ('pdf_page_from_image', 'hocr', 'textpdf') and v is not None
+                    else v
+                )
                 for k, v in state.items()
             }
         )

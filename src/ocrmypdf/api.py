@@ -20,6 +20,7 @@ from warnings import warn
 import pluggy
 
 from ocrmypdf._logging import PageNumberFilter
+from ocrmypdf._pipelines.hocr_to_ocr_pdf import run_hocr_to_ocr_pdf_pipeline
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._sync import run_hocr_pipeline, run_pipeline, run_pipeline_cli
 from ocrmypdf._validation import check_options
@@ -454,6 +455,63 @@ def pdf_to_hocr(
         return run_hocr_pipeline(options=options, plugin_manager=plugin_manager)
 
 
+def hocr_to_ocr_pdf(
+    work_folder: Path,
+    output_file: Path,
+    *,
+    jobs: int | None = None,
+    use_threads: bool | None = None,
+    optimize: int | None = None,
+    jpg_quality: int | None = None,
+    png_quality: int | None = None,
+    jbig2_lossy: bool | None = None,
+    jbig2_page_group_size: int | None = None,
+    jbig2_threshold: float | None = None,
+    pdfa_image_compression: str | None = None,
+    color_conversion_strategy: str | None = None,
+    fast_web_view: float | None = None,
+    plugin_manager=None,
+    plugins: Iterable[StrPath] | None = None,
+    **kwargs,
+):
+    """Run OCRmyPDF and produces an output folder containing hOCR files."""
+    # No new variable names should be assigned until these two steps are run
+    create_options_kwargs = {
+        k: v
+        for k, v in locals().items()
+        if k not in {'work_folder', 'output_pdf', 'kwargs'}
+    }
+    create_options_kwargs.update(kwargs)
+
+    parser = get_parser()
+
+    with _api_lock:
+        # We can't allow multiple ocrmypdf.ocr() threads to run in parallel, because
+        # they might install different plugins, and generally speaking we have areas
+        # of code that use global state.
+
+        if not plugin_manager:
+            plugin_manager = get_plugin_manager(plugins)
+        plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
+
+        cmdline, deferred = _kwargs_to_cmdline(
+            defer_kwargs={'work_folder', 'output_file', 'plugins'},
+            **create_options_kwargs,
+        )
+        cmdline.append(str(work_folder))
+        cmdline.append(str(output_file))
+        parser.enable_api_mode()
+        options = parser.parse_args(cmdline)
+        for keyword, val in deferred.items():
+            setattr(options, keyword, val)
+        delattr(options, 'input_file')
+        setattr(options, 'work_folder', work_folder)
+
+        return run_hocr_to_ocr_pdf_pipeline(
+            options=options, plugin_manager=plugin_manager
+        )
+
+
 __all__ = [
     'PageNumberFilter',
     'Verbosity',
@@ -466,4 +524,5 @@ __all__ = [
     'pdf_to_hocr',
     'run_pipeline',
     'run_pipeline_cli',
+    'hocr_to_ocr_pdf',
 ]

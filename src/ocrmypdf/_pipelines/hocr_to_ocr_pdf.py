@@ -114,26 +114,22 @@ def run_hocr_to_ocr_pdf_pipeline(
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
     with manage_work_folder(
-        work_folder=options.input_folder, retain=True, print_location=False
+        work_folder=options.work_folder, retain=True, print_location=False
     ) as work_folder:
         executor = setup_pipeline(options, plugin_manager)
         origin_pdf = work_folder / 'origin.pdf'
-        shutil.copy2(options.input_file, origin_pdf)
 
         # Gather pdfinfo and create context
         pdfinfo = get_pdfinfo(
-            options.input_file,
+            origin_pdf,
             executor=executor,
             detailed_analysis=options.redo_ocr,
             progbar=options.progress_bar,
             max_workers=options.jobs if not options.use_threads else 1,  # To help debug
             check_pages=options.pages,
         )
-        context = PdfContext(
-            options, work_folder, options.input_file, pdfinfo, plugin_manager
-        )
-        # Validate options are okay for this pdf
-        validate_pdfinfo_options(context)
+        context = PdfContext(options, work_folder, origin_pdf, pdfinfo, plugin_manager)
+        plugin_manager.hook.check_options(options=options)
         optimize_messages = exec_hocr_to_ocr_pdf(context, executor)
 
         return report_output_pdf(options, origin_pdf, optimize_messages)
