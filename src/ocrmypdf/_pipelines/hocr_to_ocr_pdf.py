@@ -111,12 +111,12 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
 def run_hocr_to_ocr_pdf_pipeline(
     options: argparse.Namespace,
     *,
-    plugin_manager: OcrmypdfPluginManager | None,
+    plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
     with manage_work_folder(
         work_folder=options.input_folder, retain=True, print_location=False
     ) as work_folder:
-        executor, plugin_manager = setup_pipeline(options, plugin_manager)
+        executor = setup_pipeline(options, plugin_manager)
         origin_pdf = work_folder / 'origin.pdf'
         shutil.copy2(options.input_file, origin_pdf)
 

@@ -94,12 +94,12 @@ def exec_pdf_to_hocr(context: PdfContext, executor: Executor) -> None:
 def run_hocr_pipeline(
     options: argparse.Namespace,
     *,
-    plugin_manager: OcrmypdfPluginManager | None,
+    plugin_manager: OcrmypdfPluginManager,
 ) -> None:
     with manage_work_folder(
         work_folder=options.output_folder, retain=True, print_location=False
     ) as work_folder:
-        executor, plugin_manager = setup_pipeline(options, plugin_manager)
+        executor = setup_pipeline(options, plugin_manager)
         shutil.copy2(options.input_file, work_folder / 'origin.pdf')
 
         # Gather pdfinfo and create context

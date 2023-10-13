@@ -161,7 +161,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
 
 def _run_pipeline(
     options: argparse.Namespace,
-    plugin_manager: OcrmypdfPluginManager | None,
+    plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
     with manage_work_folder(
         work_folder=Path(mkdtemp(prefix="ocrmypdf.io.")),
@@ -170,7 +170,7 @@ def _run_pipeline(
     ) as work_folder, manage_debug_log_handler(
         options=options, work_folder=work_folder
     ):
-        executor, plugin_manager = setup_pipeline(options, plugin_manager)
+        executor = setup_pipeline(options, plugin_manager)
         check_requested_output_file(options)
         start_input_file, original_filename = create_input_file(options, work_folder)
 
@@ -201,26 +201,31 @@ def _run_pipeline(
         return exitcode
 
 
-def run_pipeline(
+def run_pipeline_cli(
     options: argparse.Namespace,
     *,
-    plugin_manager: OcrmypdfPluginManager | None,
-    api: bool = False,
+    plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
-    """Run the OCR pipeline.
+    """Run the OCR pipeline with command line exception handling.
 
     Args:
         options: The parsed command line options.
         plugin_manager: The plugin manager to use. If not provided, one will be
             created.
-        api: If ``True``, the pipeline is being run from the API. This is used
-            to manage exceptions in a way appropriate for API or CLI usage.
-            For CLI (``api=False``), exceptions are printed and described;
-            for API use, they are propagated to the caller.
     """
-    if api:
-        return _run_pipeline(options, plugin_manager)
-    else:
-        return cli_exception_handler(
-            _run_pipeline, options, plugin_manager, options=options
-        )
+    return cli_exception_handler(_run_pipeline, options, plugin_manager)
+
+
+def run_pipeline(
+    options: argparse.Namespace,
+    *,
+    plugin_manager: OcrmypdfPluginManager,
+) -> ExitCode:
+    """Run the OCR pipeline without command line exception handling.
+
+    Args:
+        options: The parsed command line options.
+        plugin_manager: The plugin manager to use. If not provided, one will be
+            created.
+    """
+    return _run_pipeline(options, plugin_manager)

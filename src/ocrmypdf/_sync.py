@@ -14,9 +14,14 @@ from ocrmypdf._pipelines.common import (
     configure_debug_logging,
 )
 from ocrmypdf._pipelines.pdf_to_hocr import run_hocr_pipeline
-from ocrmypdf._pipelines.standard import run_pipeline
+from ocrmypdf._pipelines.standard import run_pipeline, run_pipeline_cli
 
 log = logging.getLogger(__name__)
 
 
-__all__ = ['run_pipeline', 'run_hocr_pipeline', 'configure_debug_logging']
+__all__ = [
+    'run_pipeline',
+    'run_pipeline_cli',
+    'run_hocr_pipeline',
+    'configure_debug_logging',
+]

@@ -14,7 +14,7 @@ from contextlib import suppress
 
 from ocrmypdf import __version__
 from ocrmypdf._plugin_manager import get_parser_options_plugins
-from ocrmypdf._sync import run_pipeline
+from ocrmypdf._sync import run_pipeline_cli
 from ocrmypdf._validation import check_options
 from ocrmypdf.api import Verbosity, configure_logging
 from ocrmypdf.exceptions import (
@@ -71,7 +71,7 @@ def run(args=None):
     with suppress(AttributeError, OSError):
         signal.signal(signal.SIGBUS, sigbus)
 
-    result = run_pipeline(options=options, plugin_manager=plugin_manager)
+    result = run_pipeline_cli(options=options, plugin_manager=plugin_manager)
     return result
 
 

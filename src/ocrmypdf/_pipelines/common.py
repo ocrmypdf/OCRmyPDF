@@ -203,10 +203,12 @@ def manage_work_folder(*, work_folder: Path, retain: bool, print_location: bool)
 
 
 def cli_exception_handler(
-    fn: Callable[[Any], ExitCode], *args, options: argparse.Namespace
+    fn: Callable[[argparse.Namespace, OcrmypdfPluginManager], ExitCode],
+    options: argparse.Namespace,
+    plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
     try:
-        return fn(*args)
+        return fn(options, plugin_manager)
     except KeyboardInterrupt:
         if options.verbose >= 1:
             log.exception("KeyboardInterrupt")
@@ -247,19 +249,17 @@ def cli_exception_handler(
 
 def setup_pipeline(
     options: argparse.Namespace,
-    plugin_manager: OcrmypdfPluginManager | None,
-) -> tuple[Executor, OcrmypdfPluginManager]:
+    plugin_manager: OcrmypdfPluginManager,
+) -> Executor:
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
     # options.input_file, options.pdf_renderer are already bound.)
     if not options.jobs:
         options.jobs = available_cpu_count()
-    if not plugin_manager:
-        plugin_manager = get_plugin_manager(options.plugins)
 
     pikepdf_enable_mmap()
     executor = setup_executor(plugin_manager)
-    return executor, plugin_manager
+    return executor
 
 
 def preprocess(

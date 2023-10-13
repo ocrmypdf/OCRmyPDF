@@ -21,7 +21,7 @@ import pluggy
 
 from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._plugin_manager import get_plugin_manager
-from ocrmypdf._sync import run_hocr_pipeline, run_pipeline
+from ocrmypdf._sync import run_hocr_pipeline, run_pipeline, run_pipeline_cli
 from ocrmypdf._validation import check_options
 from ocrmypdf.cli import ArgumentParser, get_parser
 from ocrmypdf.helpers import is_iterable_notstr
@@ -371,7 +371,7 @@ def ocr(  # noqa: D417
             **create_options_kwargs,
         )
         check_options(options, plugin_manager)
-        return run_pipeline(options=options, plugin_manager=plugin_manager, api=True)
+        return run_pipeline(options=options, plugin_manager=plugin_manager)
 
 
 def pdf_to_hocr(
@@ -465,4 +465,5 @@ __all__ = [
     'ocr',
     'pdf_to_hocr',
     'run_pipeline',
+    'run_pipeline_cli',
 ]
