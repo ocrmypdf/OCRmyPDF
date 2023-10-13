@@ -94,10 +94,3 @@ class PageContext:
         if not isinstance(state['options'].output_file, (str, bytes, os.PathLike)):
             state['options'].output_file = 'stream'
         return state
-
-
-def cleanup_working_files(work_folder: Path, options: Namespace):
-    if options.keep_temporary_files:
-        print(f"Temporary working files retained at:\n{work_folder}", file=sys.stderr)
-    else:
-        shutil.rmtree(work_folder, ignore_errors=True)

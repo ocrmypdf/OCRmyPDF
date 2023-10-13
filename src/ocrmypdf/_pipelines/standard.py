@@ -23,7 +23,7 @@ import PIL
 
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._graft import OcrGrafter
-from ocrmypdf._jobcontext import PageContext, PdfContext, cleanup_working_files
+from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._pipeline import (
     copy_final,
     get_pdfinfo,

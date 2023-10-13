@@ -5,6 +5,7 @@ import json
 import logging
 import logging.handlers
 import os
+import shutil
 import sys
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager
@@ -16,7 +17,7 @@ from typing import NamedTuple
 import PIL
 
 from ocrmypdf._concurrent import Executor, setup_executor
-from ocrmypdf._jobcontext import PageContext, PdfContext, cleanup_working_files
+from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._pipeline import (
     convert_to_pdfa,
@@ -156,22 +157,12 @@ def worker_init(max_pixels: int) -> None:
 
 
 @contextmanager
-def setup_pipeline(
+def manage_debug_log_handler(
     *,
     options: argparse.Namespace,
-    plugin_manager: OcrmypdfPluginManager | None,
     api: bool = False,
     work_folder: Path | None,
-) -> Generator[tuple[Path, Executor, OcrmypdfPluginManager], None, None]:
-    # Any changes to options will not take effect for options that are already
-    # bound to function parameters in the pipeline. (For example
-    # options.input_file, options.pdf_renderer are already bound.)
-    if not options.jobs:
-        options.jobs = available_cpu_count()
-    if not plugin_manager:
-        plugin_manager = get_plugin_manager(options.plugins)
-    if not work_folder:
-        work_folder = Path(mkdtemp(prefix="ocrmypdf.io."))
+):
     debug_log_handler = None
     if (
         (options.keep_temporary_files or options.verbose >= 1)
@@ -184,11 +175,8 @@ def setup_pipeline(
         debug_log_handler = configure_debug_logging(
             work_folder / "debug.log"
         )  # pragma: no cover
-
-    pikepdf_enable_mmap()
-    executor = setup_executor(plugin_manager)
     try:
-        yield work_folder, executor, plugin_manager
+        yield
     finally:
         if debug_log_handler:
             try:
@@ -196,7 +184,51 @@ def setup_pipeline(
                 log.removeHandler(debug_log_handler)
             except OSError as e:
                 print(e, file=sys.stderr)
-        cleanup_working_files(work_folder, options)
+
+
+@contextmanager
+def manage_work_folder(*, work_folder: Path | None, retain: bool, print_location: bool):
+    if not work_folder:
+        work_folder = Path(mkdtemp(prefix="ocrmypdf.io."))
+    try:
+        yield work_folder
+    finally:
+        if retain:
+            if print_location:
+                print(
+                    f"Temporary working files retained at:\n{work_folder}",
+                    file=sys.stderr,
+                )
+        else:
+            shutil.rmtree(work_folder, ignore_errors=True)
+
+
+@contextmanager
+def setup_pipeline(
+    *,
+    options: argparse.Namespace,
+    plugin_manager: OcrmypdfPluginManager | None,
+    api: bool = False,
+    work_folder: Path,
+) -> Generator[tuple[Path, Executor, OcrmypdfPluginManager], None, None]:
+    # Any changes to options will not take effect for options that are already
+    # bound to function parameters in the pipeline. (For example
+    # options.input_file, options.pdf_renderer are already bound.)
+    if not options.jobs:
+        options.jobs = available_cpu_count()
+    if not plugin_manager:
+        plugin_manager = get_plugin_manager(options.plugins)
+
+    with manage_work_folder(
+        work_folder=work_folder,
+        retain=options.keep_temporary_files,
+        print_location=True,
+    ) as work_folder, manage_debug_log_handler(
+        options=options, api=api, work_folder=work_folder
+    ):
+        pikepdf_enable_mmap()
+        executor = setup_executor(plugin_manager)
+        yield work_folder, executor, plugin_manager
 
 
 def preprocess(
