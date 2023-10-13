@@ -142,8 +142,8 @@ def _unset_empty_metadata(meta: PdfMetadata, options):
 
 def _set_language(pdf: Pdf, languages: list[str]):
     """Set the language of the PDF."""
-    if Name.Lang in pdf.Root:
-        return  # Already set
+    if Name.Lang in pdf.Root or not languages:
+        return  # Already set or can't change
     primary_language_iso639_3 = languages[0]
     if not primary_language_iso639_3:
         return
