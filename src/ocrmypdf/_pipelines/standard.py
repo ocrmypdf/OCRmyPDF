@@ -17,6 +17,7 @@ from concurrent.futures.process import BrokenProcessPool
 from concurrent.futures.thread import BrokenThreadPool
 from functools import partial
 from pathlib import Path
+from tempfile import mkdtemp
 from typing import cast
 
 import PIL
@@ -37,6 +38,7 @@ from ocrmypdf._pipeline import (
 )
 from ocrmypdf._pipelines.common import (
     PageResult,
+    manage_work_folder,
     post_process,
     process_page,
     report_output_pdf,
@@ -179,9 +181,16 @@ def run_pipeline(
             For CLI (``api=False``), exceptions are printed and described;
             for API use, they are propagated to the caller.
     """
-    with setup_pipeline(
-        options=options, plugin_manager=plugin_manager, api=api, work_folder=None
-    ) as (work_folder, executor, plugin_manager):
+    with manage_work_folder(
+        work_folder=Path(mkdtemp(prefix="ocrmypdf.io.")),
+        retain=options.keep_temporary_files,
+        print_location=options.keep_temporary_files,
+    ) as work_folder, setup_pipeline(
+        options=options, plugin_manager=plugin_manager, api=api, work_folder=work_folder
+    ) as (
+        executor,
+        plugin_manager,
+    ):
         try:
             check_requested_output_file(options)
             start_input_file, original_filename = create_input_file(

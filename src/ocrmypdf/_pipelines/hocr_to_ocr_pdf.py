@@ -28,6 +28,7 @@ from ocrmypdf._pipeline import (
 )
 from ocrmypdf._pipelines.common import (
     HOCRResult,
+    manage_work_folder,
     post_process,
     report_output_pdf,
     set_logging_tls,
@@ -112,9 +113,17 @@ def run_hocr_to_ocr_pdf_pipeline(
     *,
     plugin_manager: OcrmypdfPluginManager | None,
 ) -> ExitCode:
-    with setup_pipeline(
-        options=options, plugin_manager=plugin_manager, api=True, work_folder=None
-    ) as (work_folder, executor, plugin_manager):
+    with manage_work_folder(
+        work_folder=options.input_folder, retain=True, print_location=False
+    ) as work_folder, setup_pipeline(
+        options=options,
+        plugin_manager=plugin_manager,
+        api=True,
+        work_folder=work_folder,
+    ) as (
+        executor,
+        plugin_manager,
+    ):
         origin_pdf = work_folder / 'origin.pdf'
         shutil.copy2(options.input_file, origin_pdf)
 
