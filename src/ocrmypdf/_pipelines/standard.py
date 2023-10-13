@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2019-2022 James R. Barlow
+# SPDX-FileCopyrightText: 2019-2023 James R. Barlow
 # SPDX-FileCopyrightText: 2019 Martin Wind
 # SPDX-License-Identifier: MPL-2.0
 
@@ -10,15 +10,11 @@ from __future__ import annotations
 import argparse
 import logging
 import logging.handlers
-import sys
 import threading
 from collections.abc import Sequence
-from concurrent.futures.process import BrokenProcessPool
-from concurrent.futures.thread import BrokenThreadPool
 from functools import partial
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import cast
 
 import PIL
 
@@ -38,6 +34,8 @@ from ocrmypdf._pipeline import (
 )
 from ocrmypdf._pipelines.common import (
     PageResult,
+    cli_exception_handler,
+    manage_debug_log_handler,
     manage_work_folder,
     post_process,
     process_page,
@@ -51,10 +49,7 @@ from ocrmypdf._validation import (
     check_requested_output_file,
     create_input_file,
 )
-from ocrmypdf.exceptions import ExitCode, ExitCodeException
-from ocrmypdf.helpers import (
-    NeverRaise,
-)
+from ocrmypdf.exceptions import ExitCode
 
 log = logging.getLogger(__name__)
 
@@ -164,6 +159,48 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     return messages
 
 
+def _run_pipeline(
+    options: argparse.Namespace,
+    plugin_manager: OcrmypdfPluginManager | None,
+) -> ExitCode:
+    with manage_work_folder(
+        work_folder=Path(mkdtemp(prefix="ocrmypdf.io.")),
+        retain=options.keep_temporary_files,
+        print_location=options.keep_temporary_files,
+    ) as work_folder, manage_debug_log_handler(
+        options=options, work_folder=work_folder
+    ):
+        executor, plugin_manager = setup_pipeline(options, plugin_manager)
+        check_requested_output_file(options)
+        start_input_file, original_filename = create_input_file(options, work_folder)
+
+        # Triage image or pdf
+        origin_pdf = triage(
+            original_filename, start_input_file, work_folder / 'origin.pdf', options
+        )
+
+        # Gather pdfinfo and create context
+        pdfinfo = get_pdfinfo(
+            origin_pdf,
+            executor=executor,
+            detailed_analysis=options.redo_ocr,
+            progbar=options.progress_bar,
+            max_workers=options.jobs if not options.use_threads else 1,  # To help debug
+            check_pages=options.pages,
+        )
+
+        context = PdfContext(options, work_folder, origin_pdf, pdfinfo, plugin_manager)
+
+        # Validate options are okay for this pdf
+        validate_pdfinfo_options(context)
+
+        # Execute the pipeline
+        optimize_messages = exec_concurrent(context, executor)
+
+        exitcode = report_output_pdf(options, start_input_file, optimize_messages)
+        return exitcode
+
+
 def run_pipeline(
     options: argparse.Namespace,
     *,
@@ -181,86 +218,9 @@ def run_pipeline(
             For CLI (``api=False``), exceptions are printed and described;
             for API use, they are propagated to the caller.
     """
-    with manage_work_folder(
-        work_folder=Path(mkdtemp(prefix="ocrmypdf.io.")),
-        retain=options.keep_temporary_files,
-        print_location=options.keep_temporary_files,
-    ) as work_folder, setup_pipeline(
-        options=options, plugin_manager=plugin_manager, api=api, work_folder=work_folder
-    ) as (
-        executor,
-        plugin_manager,
-    ):
-        try:
-            check_requested_output_file(options)
-            start_input_file, original_filename = create_input_file(
-                options, work_folder
-            )
-
-            # Triage image or pdf
-            origin_pdf = triage(
-                original_filename, start_input_file, work_folder / 'origin.pdf', options
-            )
-
-            # Gather pdfinfo and create context
-            pdfinfo = get_pdfinfo(
-                origin_pdf,
-                executor=executor,
-                detailed_analysis=options.redo_ocr,
-                progbar=options.progress_bar,
-                max_workers=options.jobs
-                if not options.use_threads
-                else 1,  # To help debug
-                check_pages=options.pages,
-            )
-
-            context = PdfContext(
-                options, work_folder, origin_pdf, pdfinfo, plugin_manager
-            )
-
-            # Validate options are okay for this pdf
-            validate_pdfinfo_options(context)
-
-            # Execute the pipeline
-            optimize_messages = exec_concurrent(context, executor)
-
-            exitcode = report_output_pdf(options, start_input_file, optimize_messages)
-
-        except KeyboardInterrupt if not api else NeverRaise:
-            if options.verbose >= 1:
-                log.exception("KeyboardInterrupt")
-            else:
-                log.error("KeyboardInterrupt")
-            return ExitCode.ctrl_c
-        except ExitCodeException if not api else NeverRaise as e:
-            e = cast(ExitCodeException, e)
-            if options.verbose >= 1:
-                log.exception("ExitCodeException")
-            elif str(e):
-                log.error("%s: %s", type(e).__name__, str(e))
-            else:
-                log.error(type(e).__name__)
-            return e.exit_code
-        except PIL.Image.DecompressionBombError if not api else NeverRaise:
-            log.exception(
-                "A decompression bomb error was encountered while executing the "
-                "pipeline. Use the argument --max-image-mpixels to raise the maximum "
-                "image pixel limit."
-            )
-            return ExitCode.other_error
-        except (
-            BrokenProcessPool if not api else NeverRaise,
-            BrokenThreadPool if not api else NeverRaise,
-        ):
-            log.exception(
-                "A worker process was terminated unexpectedly. This is known to occur if "
-                "processing your file takes all available swap space and RAM. It may "
-                "help to try again with a smaller number of jobs, using the --jobs "
-                "argument."
-            )
-            return ExitCode.child_process_error
-        except Exception if not api else NeverRaise:  # pylint: disable=broad-except
-            log.exception("An exception occurred while executing the pipeline")
-            return ExitCode.other_error
-
-    return exitcode
+    if api:
+        return _run_pipeline(options, plugin_manager)
+    else:
+        return cli_exception_handler(
+            _run_pipeline, options, plugin_manager, options=options
+        )

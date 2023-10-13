@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023 James R. Barlow
+# SPDX-License-Identifier: MPL-2.0
+
 from __future__ import annotations
 
 import argparse
@@ -7,12 +10,13 @@ import logging.handlers
 import os
 import shutil
 import sys
-from collections.abc import Generator, Sequence
+from collections.abc import Sequence
+from concurrent.futures.process import BrokenProcessPool
+from concurrent.futures.thread import BrokenThreadPool
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from tempfile import mkdtemp
-from typing import NamedTuple
+from typing import Any, Callable, NamedTuple, cast
 
 import PIL
 
@@ -39,7 +43,7 @@ from ocrmypdf._plugin_manager import OcrmypdfPluginManager, get_plugin_manager
 from ocrmypdf._validation import (
     report_output_file_size,
 )
-from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.exceptions import ExitCode, ExitCodeException
 from ocrmypdf.helpers import (
     available_cpu_count,
     check_pdf,
@@ -160,14 +164,11 @@ def worker_init(max_pixels: int) -> None:
 def manage_debug_log_handler(
     *,
     options: argparse.Namespace,
-    api: bool = False,
-    work_folder: Path | None,
+    work_folder: Path,
 ):
     debug_log_handler = None
-    if (
-        (options.keep_temporary_files or options.verbose >= 1)
-        and not os.environ.get('PYTEST_CURRENT_TEST', '')
-        and not api
+    if (options.keep_temporary_files or options.verbose >= 1) and not os.environ.get(
+        'PYTEST_CURRENT_TEST', ''
     ):
         # Debug log for command line interface only with verbose output
         # See https://github.com/pytest-dev/pytest/issues/5502 for why we skip this
@@ -201,14 +202,53 @@ def manage_work_folder(*, work_folder: Path, retain: bool, print_location: bool)
             shutil.rmtree(work_folder, ignore_errors=True)
 
 
-@contextmanager
+def cli_exception_handler(
+    fn: Callable[[Any], ExitCode], *args, options: argparse.Namespace
+) -> ExitCode:
+    try:
+        return fn(*args)
+    except KeyboardInterrupt:
+        if options.verbose >= 1:
+            log.exception("KeyboardInterrupt")
+        else:
+            log.error("KeyboardInterrupt")
+        return ExitCode.ctrl_c
+    except ExitCodeException as e:
+        e = cast(ExitCodeException, e)
+        if options.verbose >= 1:
+            log.exception("ExitCodeException")
+        elif str(e):
+            log.error("%s: %s", type(e).__name__, str(e))
+        else:
+            log.error(type(e).__name__)
+        return e.exit_code
+    except PIL.Image.DecompressionBombError:
+        log.exception(
+            "A decompression bomb error was encountered while executing the "
+            "pipeline. Use the argument --max-image-mpixels to raise the maximum "
+            "image pixel limit."
+        )
+        return ExitCode.other_error
+    except (
+        BrokenProcessPool,
+        BrokenThreadPool,
+    ):
+        log.exception(
+            "A worker process was terminated unexpectedly. This is known to occur if "
+            "processing your file takes all available swap space and RAM. It may "
+            "help to try again with a smaller number of jobs, using the --jobs "
+            "argument."
+        )
+        return ExitCode.child_process_error
+    except Exception:  # pylint: disable=broad-except
+        log.exception("An exception occurred while executing the pipeline")
+        return ExitCode.other_error
+
+
 def setup_pipeline(
-    *,
     options: argparse.Namespace,
     plugin_manager: OcrmypdfPluginManager | None,
-    api: bool = False,
-    work_folder: Path,
-) -> Generator[tuple[Executor, OcrmypdfPluginManager], None, None]:
+) -> tuple[Executor, OcrmypdfPluginManager]:
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
     # options.input_file, options.pdf_renderer are already bound.)
@@ -217,10 +257,9 @@ def setup_pipeline(
     if not plugin_manager:
         plugin_manager = get_plugin_manager(options.plugins)
 
-    with manage_debug_log_handler(options=options, api=api, work_folder=work_folder):
-        pikepdf_enable_mmap()
-        executor = setup_executor(plugin_manager)
-        yield executor, plugin_manager
+    pikepdf_enable_mmap()
+    executor = setup_executor(plugin_manager)
+    return executor, plugin_manager
 
 
 def preprocess(

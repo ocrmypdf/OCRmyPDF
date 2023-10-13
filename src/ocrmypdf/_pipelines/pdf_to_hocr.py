@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2019-2022 James R. Barlow
+# SPDX-FileCopyrightText: 2019-2023 James R. Barlow
 # SPDX-FileCopyrightText: 2019 Martin Wind
 # SPDX-License-Identifier: MPL-2.0
 
@@ -98,15 +98,8 @@ def run_hocr_pipeline(
 ) -> None:
     with manage_work_folder(
         work_folder=options.output_folder, retain=True, print_location=False
-    ) as work_folder, setup_pipeline(
-        options=options,
-        plugin_manager=plugin_manager,
-        api=True,
-        work_folder=work_folder,
-    ) as (
-        executor,
-        plugin_manager,
-    ):
+    ) as work_folder:
+        executor, plugin_manager = setup_pipeline(options, plugin_manager)
         shutil.copy2(options.input_file, work_folder / 'origin.pdf')
 
         # Gather pdfinfo and create context
