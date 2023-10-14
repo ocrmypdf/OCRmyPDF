@@ -37,7 +37,7 @@ from ocrmypdf._pipelines.common import (
     cli_exception_handler,
     manage_debug_log_handler,
     manage_work_folder,
-    post_process,
+    postprocess,
     process_page,
     report_output_pdf,
     set_logging_tls,
@@ -152,7 +152,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     if options.output_type != 'none':
         # PDF/A and metadata
         log.info("Postprocessing...")
-        pdf, messages = post_process(pdf, context, executor)
+        pdf, messages = postprocess(pdf, context, executor)
 
         # Copy PDF file to destination
         copy_final(pdf, options.output_file, context)

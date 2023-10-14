@@ -29,7 +29,7 @@ from ocrmypdf._pipeline import (
 from ocrmypdf._pipelines.common import (
     HOCRResult,
     manage_work_folder,
-    post_process,
+    postprocess,
     report_output_pdf,
     set_logging_tls,
     setup_pipeline,
@@ -101,7 +101,7 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
     if options.output_type != 'none':
         # PDF/A and metadata
         log.info("Postprocessing...")
-        pdf, messages = post_process(pdf, context, executor)
+        pdf, messages = postprocess(pdf, context, executor)
 
         # Copy PDF file to destination
         copy_final(pdf, options.output_file, context)

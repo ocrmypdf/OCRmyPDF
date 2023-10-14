@@ -380,7 +380,7 @@ def process_page(page_context: PageContext) -> tuple[Path, Path | None, int]:
     return ocr_image_out, pdf_page_from_image_out, orientation_correction
 
 
-def post_process(
+def postprocess(
     pdf_file: Path, context: PdfContext, executor: Executor
 ) -> tuple[Path, Sequence[str]]:
     """Postprocess the PDF file."""
