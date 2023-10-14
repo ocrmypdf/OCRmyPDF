@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import logging
+import multiprocessing
 import os
 import signal
 import sys
@@ -76,4 +77,7 @@ def run(args=None):
 
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
+    if os.name == 'posix':
+        multiprocessing.set_start_method('forkserver')
     sys.exit(run())
