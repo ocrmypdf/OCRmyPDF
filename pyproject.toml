@@ -50,7 +50,7 @@ Tracker = "https://github.com/ocrmypdf/OCRmyPDF/issues"
 
 [project.optional-dependencies]
 docs = ["sphinx", "sphinx-issues", "sphinx-rtd-theme"]
-extended_test = ["PyMuPDF==1.19.1"]
+extended_test = ["PyMuPDF>=1.19.1"]
 test = [
   "coverage[toml]>=6.2",
   "hypothesis>=6.36.0",
