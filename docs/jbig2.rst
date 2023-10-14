@@ -14,17 +14,20 @@ expired as of 2017, but it is possible that unknown patents exist.
 
 JBIG2 encoding is recommended for OCRmyPDF and is used to losslessly
 create smaller PDFs. If JBIG2 encoding is not available, lower quality
-encodings will be used.
+CCITT encoding will be used for monochrome images.
 
 JBIG2 decoding is not patented and is performed automatically by most
 PDF viewers. It is widely supported and has been part of the PDF
 specification since 2001.
 
-On macOS, Homebrew packages jbig2enc and OCRmyPDF includes it by
-default. The Docker image for OCRmyPDF also builds its own JBIG2 encoder
-from source.
+JBIG encoding is automatically provided by these OCRmyPDF packages:
+- Docker image (both Ubuntu and Alpine)
+- Snap package
+- ArchLinux AUR package
+- Alpine Linux package
+- Homebrew on macOS
 
-For all other Linux, you must build a JBIG2 encoder from source:
+For all other platforms, you would need to build the JBIG2 encoder from source:
 
 .. code-block:: bash
 
@@ -43,16 +46,21 @@ as libtool and leptonica-devel.
 Lossy mode JBIG2
 ================
 
-OCRmyPDF provides lossy mode JBIG2 as an advanced feature. Users should
+OCRmyPDF provides lossy mode JBIG2 as an advanced and potentially dangerous
+feature. Users should
 `review the technical concerns with JBIG2 in lossy
 mode <https://en.wikipedia.org/wiki/JBIG2#Disadvantages>`__
-and decide if this feature is acceptable for their use case.
+and decide if this feature is acceptable for their use case. In general,
+this mode should not be used for archival purposes, should not be used when
+the original document is not available or will be destroyed, and should
+not be used when numbers present in the document are important, because
+there is a risk of 6/8 and 8/6 substitution errors.
 
 JBIG2 lossy mode does achieve higher compression ratios than any other
 monochrome (bitonal) compression technology; for large text documents
 the savings are considerable. JBIG2 lossless still gives great
 compression ratios and is a major improvement over the older CCITT G4
-standard. As explained above, there is some risk of substitution errors.
+standard.
 
 To turn on JBIG2 lossy mode, add the argument ``--jbig2-lossy``.
 ``--optimize {1,2,3}`` are necessary for the argument to take effect
