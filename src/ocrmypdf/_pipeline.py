@@ -165,6 +165,7 @@ def get_pdfinfo(
     detailed_analysis: bool = False,
     progbar: bool = False,
     max_workers: int | None = None,
+    use_threads: bool = True,
     check_pages=None,
 ) -> PdfInfo:
     """Get the PDF info."""
@@ -174,6 +175,7 @@ def get_pdfinfo(
             detailed_analysis=detailed_analysis,
             progbar=progbar,
             max_workers=max_workers,
+            use_threads=use_threads,
             check_pages=check_pages,
             executor=executor,
         )

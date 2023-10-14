@@ -706,11 +706,12 @@ def _pdf_pageinfo_sync(args):
 def _pdf_pageinfo_concurrent(
     pdf,
     executor: Executor,
+    max_workers: int,
+    use_threads: bool,
     infile,
     progbar,
-    max_workers,
     check_pages,
-    detailed_analysis=False,
+    detailed_analysis: bool = False,
 ) -> Sequence[PageInfo | None]:
     pages: Sequence[PageInfo | None] = [None] * len(pdf.pages)
 
@@ -726,12 +727,16 @@ def _pdf_pageinfo_concurrent(
 
     total = len(pdf.pages)
 
-    use_threads = False  # No performance gain if threaded due to GIL
     n_workers = min(1 + len(pages) // 4, max_workers)
     if n_workers == 1:
-        # But if we decided on only one worker, there is no point in using
+        # If we decided on only one worker, there is no point in using
         # a separate process.
         use_threads = True
+
+    if use_threads and n_workers > 1:
+        # If we are using threads, there is no point in using more than one
+        # worker thread - they will just fight over the GIL.
+        n_workers = 1
 
     # If we use a thread, we can pass the already-open Pdf for them to use
     # If we use processes, we pass a None which tells the init function to open its
@@ -742,6 +747,11 @@ def _pdf_pageinfo_concurrent(
         (n, initial_pdf, infile, check_pages, detailed_analysis) for n in range(total)
     )
     assert n_workers == 1 if use_threads else n_workers >= 1, "Not multithreadable"
+    logger.debug(
+        f"Gathering info with {n_workers} "
+        + ('thread' if use_threads else 'process')
+        + " workers"
+    )
     executor(
         use_threads=use_threads,
         max_workers=n_workers,
@@ -1055,6 +1065,7 @@ class PdfInfo:
         detailed_analysis: bool = False,
         progbar: bool = False,
         max_workers: int | None = None,
+        use_threads: bool = True,
         check_pages=None,
         executor: Executor = DEFAULT_EXECUTOR,
     ):
@@ -1069,9 +1080,10 @@ class PdfInfo:
             self._pages = _pdf_pageinfo_concurrent(
                 pdf,
                 executor,
+                max_workers,
+                use_threads,
                 infile,
                 progbar,
-                max_workers,
                 check_pages=check_pages,
                 detailed_analysis=detailed_analysis,
             )

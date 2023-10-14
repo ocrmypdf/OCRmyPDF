@@ -185,7 +185,8 @@ def _run_pipeline(
             executor=executor,
             detailed_analysis=options.redo_ocr,
             progbar=options.progress_bar,
-            max_workers=options.jobs if not options.use_threads else 1,  # To help debug
+            max_workers=options.jobs,
+            use_threads=options.use_threads,
             check_pages=options.pages,
         )
 
