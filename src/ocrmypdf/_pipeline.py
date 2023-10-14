@@ -734,6 +734,11 @@ def render_hocr_page(hocr: Path, page_context: PageContext) -> Path:
     """Render the hOCR page to a PDF."""
     options = page_context.options
     output_file = page_context.get_path('ocr_hocr.pdf')
+    if hocr.stat().st_size == 0:
+        # If hOCR file is empty (skipped page marker), create an empty PDF file
+        output_file.touch()
+        return output_file
+
     dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
     debug_mode = options.pdf_renderer == 'hocrdebug'
 

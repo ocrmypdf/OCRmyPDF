@@ -26,25 +26,6 @@ from ocrmypdf.subprocess import get_version, run
 log = logging.getLogger(__name__)
 
 
-HOCR_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
- <head>
-  <title></title>
-<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-  <meta name='ocr-system' content='tesseract 4.1.1' />
-  <meta name='ocr-capabilities'
-    content='ocr_page ocr_carea ocr_par ocr_line ocrx_word ocrp_wconf'/>
-</head>
-<body>
-  <div class='ocr_page' id='page_1'
-    title='image "_blank.png"; bbox 0 0 {0} {1}; ppageno 0'>
-  </div>
- </body>
-</html>
-"""
-
 TESSERACT_THRESHOLDING_METHODS: dict[str, int] = {
     'auto': 0,
     'otsu': 0,
@@ -284,14 +265,11 @@ def page_timedout(timeout: float) -> None:
 
 
 def _generate_null_hocr(output_hocr: Path, output_text: Path, image: Path) -> None:
-    """Produce a .hocr file that reports no text detected.
+    """Produce an empty .hocr file.
 
     Ensures page is the same size as the input image.
     """
-    with Image.open(image) as im:
-        w, h = im.size
-
-    output_hocr.write_text(HOCR_TEMPLATE.format(w, h), encoding='utf-8')
+    output_hocr.write_text('', encoding='utf-8')
     output_text.write_text('[skipped page]', encoding='utf-8')
 
 
