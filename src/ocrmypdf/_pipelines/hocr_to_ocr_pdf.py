@@ -26,7 +26,7 @@ from ocrmypdf._pipeline import (
     render_hocr_page,
     validate_pdfinfo_options,
 )
-from ocrmypdf._pipelines.common import (
+from ocrmypdf._pipelines._common import (
     HOCRResult,
     manage_work_folder,
     postprocess,

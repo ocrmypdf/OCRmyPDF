@@ -32,7 +32,7 @@ from ocrmypdf._pipeline import (
     triage,
     validate_pdfinfo_options,
 )
-from ocrmypdf._pipelines.common import (
+from ocrmypdf._pipelines._common import (
     PageResult,
     cli_exception_handler,
     manage_debug_log_handler,
