@@ -39,7 +39,11 @@ log = logging.getLogger(__name__)
 
 
 def exec_hocrtransform_sync(page_context: PageContext) -> HOCRResult:
-    hocr_result = HOCRResult.from_json(page_context.get_path('hocr.json').read_text())
+    hocr_json = page_context.get_path('hocr.json')
+    if not hocr_json.exists():
+        # No hOCR file, so no OCR was performed on this page.
+        return HOCRResult(pageno=page_context.pageno)
+    hocr_result = HOCRResult.from_json(hocr_json.read_text())
     hocr_result.textpdf = render_hocr_page(
         page_context.get_path('ocr_hocr.hocr'), page_context
     )
