@@ -11,7 +11,6 @@ import argparse
 import logging
 import logging.handlers
 import shutil
-import threading
 from functools import partial
 
 import PIL

@@ -13,7 +13,6 @@ from pathlib import Path
 from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
 
 from packaging.version import Version
-from PIL import Image
 
 from ocrmypdf.exceptions import (
     MissingDependencyError,

@@ -12,6 +12,7 @@ from typing import NamedTuple
 
 
 class ISOCodeData(NamedTuple):
+    """Data for a single ISO 639 code."""
     alt: str
     alpha_2: str
     english: str
@@ -167,7 +168,8 @@ ISO_639_3 = {
     'chu': ISOCodeData(
         '',
         'cu',
-        'Church Slavic; Old Slavonic; Church Slavonic; Old Bulgarian; Old Church Slavonic',
+        ('Church Slavic; Old Slavonic; Church Slavonic;'
+         ' Old Bulgarian; Old Church Slavonic'),
         "slavon d'église; vieux slave; slavon liturgique; vieux bulgare",
     ),
     'chv': ISOCodeData('', 'cv', 'Chuvash', 'tchouvache'),

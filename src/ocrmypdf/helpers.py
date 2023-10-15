@@ -319,7 +319,7 @@ def remove_all_log_handlers(logger: logging.Logger) -> None:
 
 
 def pikepdf_enable_mmap() -> None:
-    """Enable pikepdf mmap."""
+    """Enable pikepdf memory mapping."""
     try:
         pikepdf._core.set_access_default_mmap(True)
         log.debug(

@@ -6,8 +6,6 @@
 from __future__ import annotations
 
 import os
-import shutil
-import sys
 from argparse import Namespace
 from collections.abc import Iterator
 from copy import copy

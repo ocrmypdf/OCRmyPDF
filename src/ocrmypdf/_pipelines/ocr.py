@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import logging
 import logging.handlers
-import threading
 from collections.abc import Sequence
 from functools import partial
 from pathlib import Path
