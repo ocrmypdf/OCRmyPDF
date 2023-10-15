@@ -124,14 +124,3 @@ handler. OCRmyPDF will clean up its temporary files and worker processes
 automatically when an exception occurs.
 
 When OCRmyPDF succeeds conditionally, it returns an integer exit code.
-
-Reference
----------
-
-.. autofunction:: ocrmypdf.ocr
-
-.. autoclass:: ocrmypdf.Verbosity
-    :members:
-    :undoc-members:
-
-.. autofunction:: ocrmypdf.configure_logging

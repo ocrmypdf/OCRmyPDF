@@ -18,6 +18,18 @@ ocrmypdf
 .. autoclass:: ocrmypdf.PdfContext
     :members:
 
+.. autoclass:: ocrmypdf.Verbosity
+    :members:
+    :undoc-members:
+
+.. autofunction:: ocrmypdf.configure_logging
+
+.. autofunction:: ocrmypdf.ocr
+
+.. autofunction:: ocrmypdf.pdf_to_hocr
+
+.. autofunction:: ocrmypdf.hocr_to_ocr_pdf
+
 ocrmypdf.exceptions
 ===================
 
