@@ -73,7 +73,7 @@ def exec_pdf_to_hocr(context: PdfContext, executor: Executor) -> None:
     executor(
         use_threads=options.use_threads,
         max_workers=max_workers,
-        tqdm_kwargs=dict(
+        progress_kwargs=dict(
             total=(2 * len(context.pdfinfo)),
             desc='hOCR',
             unit='page',

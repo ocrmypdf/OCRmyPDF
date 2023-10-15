@@ -119,7 +119,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     executor(
         use_threads=options.use_threads,
         max_workers=max_workers,
-        tqdm_kwargs=dict(
+        progress_kwargs=dict(
             total=(2 * len(context.pdfinfo)),
             desc='OCR' if options.tesseract_timeout > 0 else 'Image processing',
             unit='page',

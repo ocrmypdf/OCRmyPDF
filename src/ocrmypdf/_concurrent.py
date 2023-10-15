@@ -46,7 +46,7 @@ class Executor(ABC):
         *,
         use_threads: bool,
         max_workers: int,
-        tqdm_kwargs: dict,
+        progress_kwargs: dict,
         worker_initializer: Callable | None = None,
         task: Callable | None = None,
         task_arguments: Iterable | None = None,
@@ -60,7 +60,7 @@ class Executor(ABC):
                 heavily, and parallelizing it with threads is not expected to be
                 performant).
             max_workers: The maximum number of workers that should be run.
-            tqdm_kwargs: Arguments to set up the progress bar.
+            progress_kwargs: Arguments to set up the progress bar.
             worker_initializer: Called when a worker is initialized, in the worker's
                 execution context. If the child workers are processes, it must be
                 possible to marshall/pickle the worker initializer.
@@ -86,7 +86,7 @@ class Executor(ABC):
             self._execute(
                 use_threads=use_threads,
                 max_workers=max_workers,
-                tqdm_kwargs=tqdm_kwargs,
+                progress_kwargs=progress_kwargs,
                 worker_initializer=worker_initializer,
                 task=task,
                 task_arguments=task_arguments,
@@ -99,7 +99,7 @@ class Executor(ABC):
         *,
         use_threads: bool,
         max_workers: int,
-        tqdm_kwargs: dict,
+        progress_kwargs: dict,
         worker_initializer: Callable,
         task: Callable,
         task_arguments: Iterable,
@@ -125,13 +125,13 @@ class SerialExecutor(Executor):
         *,
         use_threads: bool,
         max_workers: int,
-        tqdm_kwargs: dict,
+        progress_kwargs: dict,
         worker_initializer: Callable,
         task: Callable,
         task_arguments: Iterable,
         task_finished: Callable,
     ):  # pylint: disable=unused-argument
-        with self.pbar_class(**tqdm_kwargs) as pbar:
+        with self.pbar_class(**progress_kwargs) as pbar:
             for args in task_arguments:
                 result = task(args)
                 task_finished(result, pbar)

@@ -394,7 +394,7 @@ def _produce_jbig2_images(
     executor(
         use_threads=True,
         max_workers=options.jobs,
-        tqdm_kwargs=dict(
+        progress_kwargs=dict(
             total=len(jbig2_groups),
             desc="JBIG2",
             unit='item',
@@ -485,7 +485,7 @@ def transcode_jpegs(
     executor(
         use_threads=True,  # Processes are significantly slower at this task
         max_workers=options.jobs,
-        tqdm_kwargs=dict(
+        progress_kwargs=dict(
             desc="Recompressing JPEGs",
             total=len(jpegs),
             unit='image',
@@ -558,7 +558,7 @@ def deflate_jpegs(pdf: Pdf, root: Path, options, executor: Executor) -> None:
     executor(
         use_threads=True,  # We're sharing the pdf directly, must use threads
         max_workers=options.jobs,
-        tqdm_kwargs=dict(
+        progress_kwargs=dict(
             desc="Deflating JPEGs",
             total=len(jpegs),
             unit='image',
@@ -641,7 +641,7 @@ def transcode_pngs(
         executor(
             use_threads=True,
             max_workers=options.jobs,
-            tqdm_kwargs=dict(
+            progress_kwargs=dict(
                 desc="PNGs",
                 total=len(images),
                 unit='image',

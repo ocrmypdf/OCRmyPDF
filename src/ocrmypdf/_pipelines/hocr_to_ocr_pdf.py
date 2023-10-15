@@ -78,7 +78,7 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
     executor(
         use_threads=options.use_threads,
         max_workers=max_workers,
-        tqdm_kwargs=dict(
+        progress_kwargs=dict(
             total=(2 * len(context.pdfinfo)),
             desc='Grafting hOCR to PDF',
             unit='page',

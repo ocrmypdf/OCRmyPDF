@@ -101,7 +101,7 @@ class StandardExecutor(Executor):
         *,
         use_threads: bool,
         max_workers: int,
-        tqdm_kwargs: dict,
+        progress_kwargs: dict,
         worker_initializer: Callable,
         task: Callable,
         task_arguments: Iterable,
@@ -127,7 +127,7 @@ class StandardExecutor(Executor):
         listener = threading.Thread(target=log_listener, args=(log_queue,))
         listener.start()
 
-        with self.pbar_class(**tqdm_kwargs) as pbar, executor_class(
+        with self.pbar_class(**progress_kwargs) as pbar, executor_class(
             max_workers=max_workers,
             initializer=initializer,
             initargs=(log_queue, worker_initializer, logging.getLogger("").level),

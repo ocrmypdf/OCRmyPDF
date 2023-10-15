@@ -755,7 +755,7 @@ def _pdf_pageinfo_concurrent(
     executor(
         use_threads=use_threads,
         max_workers=n_workers,
-        tqdm_kwargs=dict(
+        progress_kwargs=dict(
             total=total, desc="Scanning contents", unit='page', disable=not progbar
         ),
         worker_initializer=partial(
