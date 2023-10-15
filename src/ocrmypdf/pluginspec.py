@@ -102,7 +102,6 @@ def check_options(options: Namespace) -> None:
             and the application should terminate gracefully with an informative
             message and error code.
 
-
     Note:
         This hook will be called from the main process, and may modify global state
         before child worker processes are forked.
@@ -131,7 +130,6 @@ def get_executor(progressbar_class) -> Executor:
     Note:
         This hook will be called from the main process, and may modify global state
         before child worker processes are forked.
-
 
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
@@ -187,7 +185,6 @@ def validate(pdfinfo: PdfInfo, options: Namespace) -> None:
             and the application should terminate gracefully with an informative
             message and error code.
 
-
     Note:
         This hook will be called from the main process, and may modify global state
         before child worker processes are forked.
@@ -231,6 +228,7 @@ def rasterize_pdf_page(
 
     Returns:
         Path: output_file if successful
+
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
@@ -270,7 +268,6 @@ def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
 
-
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
     """
@@ -307,7 +304,6 @@ def filter_page_image(page: PageContext, image_filename: Path) -> Path:
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
-
 
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
