@@ -10,8 +10,6 @@ from __future__ import annotations
 import argparse
 import logging
 import logging.handlers
-import shutil
-import threading
 from collections.abc import Sequence
 from functools import partial
 
@@ -24,14 +22,13 @@ from ocrmypdf._pipeline import (
     copy_final,
     get_pdfinfo,
     render_hocr_page,
-    validate_pdfinfo_options,
 )
 from ocrmypdf._pipelines._common import (
     HOCRResult,
     manage_work_folder,
     postprocess,
     report_output_pdf,
-    set_logging_tls,
+    set_thread_pageno,
     setup_pipeline,
     worker_init,
 )
@@ -39,12 +36,6 @@ from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf.exceptions import ExitCode
 
 log = logging.getLogger(__name__)
-
-
-tls = threading.local()
-tls.pageno = None
-
-set_logging_tls(tls)
 
 
 def exec_hocrtransform_sync(page_context: PageContext) -> HOCRResult:
@@ -68,7 +59,7 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
     def graft_page(result: HOCRResult, pbar):
         """After OCR is complete for a page, update the PDF."""
         try:
-            tls.pageno = result.pageno + 1
+            set_thread_pageno(result.pageno + 1)
             pbar.update()
             ocrgraft.graft_page(
                 pageno=result.pageno,
@@ -78,7 +69,7 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
             )
             pbar.update()
         finally:
-            tls.pageno = None
+            set_thread_pageno(None)
 
     executor(
         use_threads=options.use_threads,

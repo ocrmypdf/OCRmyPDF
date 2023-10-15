@@ -40,7 +40,7 @@ from ocrmypdf._pipelines._common import (
     postprocess,
     process_page,
     report_output_pdf,
-    set_logging_tls,
+    set_thread_pageno,
     setup_pipeline,
     worker_init,
 )
@@ -52,12 +52,6 @@ from ocrmypdf._validation import (
 from ocrmypdf.exceptions import ExitCode
 
 log = logging.getLogger(__name__)
-
-
-tls = threading.local()
-tls.pageno = None
-
-set_logging_tls(tls)
 
 
 def _image_to_ocr_text(
@@ -77,7 +71,7 @@ def _image_to_ocr_text(
 
 def exec_page_sync(page_context: PageContext) -> PageResult:
     """Execute a pipeline for a single page synchronously."""
-    tls.pageno = page_context.pageno + 1
+    set_thread_pageno(page_context.pageno + 1)
 
     if not is_ocr_required(page_context):
         return PageResult(pageno=page_context.pageno)
@@ -110,7 +104,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     def update_page(result: PageResult, pbar):
         """After OCR is complete for a page, update the PDF."""
         try:
-            tls.pageno = result.pageno + 1
+            set_thread_pageno(result.pageno + 1)
             sidecars[result.pageno] = result.text
             pbar.update()
             ocrgraft.graft_page(
@@ -121,7 +115,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
             )
             pbar.update()
         finally:
-            tls.pageno = None
+            set_thread_pageno(None)
 
     executor(
         use_threads=options.use_threads,

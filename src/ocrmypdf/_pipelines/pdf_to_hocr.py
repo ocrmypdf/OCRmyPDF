@@ -28,7 +28,7 @@ from ocrmypdf._pipelines._common import (
     HOCRResult,
     manage_work_folder,
     process_page,
-    set_logging_tls,
+    set_thread_pageno,
     setup_pipeline,
     worker_init,
 )
@@ -39,15 +39,11 @@ from ocrmypdf._validation import (
 
 log = logging.getLogger(__name__)
 
-tls = threading.local()
-tls.pageno = None
-
-set_logging_tls(tls)
 
 
 def exec_page_hocr_sync(page_context: PageContext) -> HOCRResult:
     """Execute a pipeline for a single page hOCR."""
-    tls.pageno = page_context.pageno + 1
+    set_thread_pageno(page_context.pageno + 1)
 
     if not is_ocr_required(page_context):
         return HOCRResult(pageno=page_context.pageno)

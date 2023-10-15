@@ -10,13 +10,14 @@ import logging.handlers
 import os
 import shutil
 import sys
+import threading
 from collections.abc import Sequence
 from concurrent.futures.process import BrokenProcessPool
 from concurrent.futures.thread import BrokenThreadPool
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, NamedTuple, cast
+from typing import Callable, NamedTuple, cast
 
 import PIL
 
@@ -39,7 +40,7 @@ from ocrmypdf._pipeline import (
     rasterize_preview,
     should_visible_page_image_use_jpg,
 )
-from ocrmypdf._plugin_manager import OcrmypdfPluginManager, get_plugin_manager
+from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._validation import (
     report_output_file_size,
 )
@@ -53,11 +54,12 @@ from ocrmypdf.helpers import (
 from ocrmypdf.pdfa import file_claims_pdfa
 
 log = logging.getLogger(__name__)
+tls = threading.local()
+tls.pageno = None
 
-
-def set_logging_tls(tls):
+def _set_logging_tls(tls):
+    """Inject current page number (when available) into log records."""
     old_factory = logging.getLogRecordFactory()
-
     def wrapper(*args, **kwargs):
         record = old_factory(*args, **kwargs)
         if hasattr(tls, 'pageno'):
@@ -65,6 +67,14 @@ def set_logging_tls(tls):
         return record
 
     logging.setLogRecordFactory(wrapper)
+
+
+_set_logging_tls(tls)
+
+
+def set_thread_pageno(pageno:int):
+    """Set page number (1-based) that the current thread is processing."""
+    tls.pageno = pageno
 
 
 class PageResult(NamedTuple):
