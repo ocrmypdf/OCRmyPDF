@@ -248,10 +248,10 @@ class OcrGrafter:
             # content may have a rotation applied. Wrap the text stream with a rotation
             # so it will be oriented the same way as the rest of the page content.
             # (Previous versions OCRmyPDF rotated the content layer to match the text.)
-            mediabox = [float(pdf_text.pages[0].MediaBox[v]) for v in range(4)]
+            mediabox = pdf_text.pages[0].mediabox
             wt, ht = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
 
-            mediabox = [float(base_page.MediaBox[v]) for v in range(4)]
+            mediabox = base_page.mediabox
             wp, hp = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
 
             translate = PdfMatrix().translated(-wt / 2, -ht / 2)

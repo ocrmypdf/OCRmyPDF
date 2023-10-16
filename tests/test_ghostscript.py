@@ -29,8 +29,8 @@ def francais(resources):
 
 def test_rasterize_size(francais, outdir):
     path, pdf = francais
-    page_size_pts = (pdf.pages[0].MediaBox[2], pdf.pages[0].MediaBox[3])
-    assert pdf.pages[0].MediaBox[0] == pdf.pages[0].MediaBox[1] == 0
+    page_size_pts = (pdf.pages[0].mediabox[2], pdf.pages[0].mediabox[3])
+    assert pdf.pages[0].mediabox[0] == pdf.pages[0].mediabox[1] == 0
     page_size = (page_size_pts[0] / Decimal(72), page_size_pts[1] / Decimal(72))
     target_size = Decimal('50.0'), Decimal('30.0')
     forced_dpi = Resolution(42.0, 4242.0)
@@ -52,8 +52,8 @@ def test_rasterize_size(francais, outdir):
 
 def test_rasterize_rotated(francais, outdir, caplog):
     path, pdf = francais
-    page_size_pts = (pdf.pages[0].MediaBox[2], pdf.pages[0].MediaBox[3])
-    assert pdf.pages[0].MediaBox[0] == pdf.pages[0].MediaBox[1] == 0
+    page_size_pts = (pdf.pages[0].mediabox[2], pdf.pages[0].mediabox[3])
+    assert pdf.pages[0].mediabox[0] == pdf.pages[0].mediabox[1] == 0
     page_size = (page_size_pts[0] / Decimal(72), page_size_pts[1] / Decimal(72))
     target_size = Decimal('50.0'), Decimal('30.0')
     forced_dpi = Resolution(42.0, 4242.0)

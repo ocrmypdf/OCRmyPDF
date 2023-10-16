@@ -828,7 +828,7 @@ class PageInfo:
         detailed_analysis: bool,
     ):
         page: Page = pdf.pages[pageno]
-        mediabox = [Decimal(d) for d in page.MediaBox.as_list()]
+        mediabox = [Decimal(d) for d in page.mediabox.as_list()]
         width_pt = mediabox[2] - mediabox[0]
         height_pt = mediabox[3] - mediabox[1]
 

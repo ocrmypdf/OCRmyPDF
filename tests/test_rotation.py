@@ -321,15 +321,15 @@ def test_simulated_scan(outdir):
 
     with pikepdf.open(outdir / 'out.pdf') as pdf:
         assert (
-            pdf.pages[1].MediaBox[2] > pdf.pages[1].MediaBox[3]
+            pdf.pages[1].mediabox[2] > pdf.pages[1].mediabox[3]
         ), "Wrong orientation: not landscape"
         assert (
-            pdf.pages[3].MediaBox[2] > pdf.pages[3].MediaBox[3]
+            pdf.pages[3].mediabox[2] > pdf.pages[3].mediabox[3]
         ), "Wrong orientation: Not landscape"
 
         assert (
-            pdf.pages[0].MediaBox[2] < pdf.pages[0].MediaBox[3]
+            pdf.pages[0].mediabox[2] < pdf.pages[0].mediabox[3]
         ), "Wrong orientation: Not portrait"
         assert (
-            pdf.pages[2].MediaBox[2] < pdf.pages[2].MediaBox[3]
+            pdf.pages[2].mediabox[2] < pdf.pages[2].mediabox[3]
         ), "Wrong orientation: Not portrait"
