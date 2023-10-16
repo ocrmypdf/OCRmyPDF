@@ -22,7 +22,7 @@ from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import file_claims_pdfa, generate_pdfa_ps
 from ocrmypdf.pdfinfo import PdfInfo
 
-from .conftest import check_ocrmypdf, run_ocrmypdf
+from .conftest import check_ocrmypdf, run_ocrmypdf, run_ocrmypdf_api
 
 
 @pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])
@@ -45,12 +45,12 @@ def test_preserve_docinfo(output_type, resources, outpdf):
 
 
 @pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])
-def test_override_metadata(output_type, resources, outpdf):
+def test_override_metadata(output_type, resources, outpdf, caplog):
     input_file = resources / 'c02-22.pdf'
     german = 'Du siehst den Wald vor lauter Bäumen nicht.'
     chinese = '孔子'
 
-    p = run_ocrmypdf(
+    exitcode = run_ocrmypdf_api(
         input_file,
         outpdf,
         '--title',
@@ -63,7 +63,7 @@ def test_override_metadata(output_type, resources, outpdf):
         'tests/plugins/tesseract_noop.py',
     )
 
-    assert p.returncode == ExitCode.ok, p.stderr
+    assert exitcode == ExitCode.ok, caplog.text
 
     with pikepdf.open(input_file) as before, pikepdf.open(outpdf) as after:
         assert after.docinfo.Title == german, after.docinfo
@@ -80,7 +80,7 @@ def test_override_metadata(output_type, resources, outpdf):
 
 @pytest.mark.parametrize('output_type', ['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3'])
 @pytest.mark.parametrize('field', ['title', 'author', 'subject', 'keywords'])
-def test_unset_metadata(output_type, field, resources, outpdf):
+def test_unset_metadata(output_type, field, resources, outpdf, caplog):
     input_file = resources / 'meta.pdf'
 
     # magic strings contained in the input pdf metadata
@@ -91,7 +91,7 @@ def test_unset_metadata(output_type, field, resources, outpdf):
         'keywords': b's9EeALwUg7urA7fnnhm5EtUyC54sW2WPUzqh',
     }
 
-    p = run_ocrmypdf(
+    exitcode = run_ocrmypdf_api(
         input_file,
         outpdf,
         f'--{field}',
@@ -102,7 +102,7 @@ def test_unset_metadata(output_type, field, resources, outpdf):
         'tests/plugins/tesseract_noop.py',
     )
 
-    assert p.returncode == ExitCode.ok, p.stderr
+    assert exitcode == ExitCode.ok, caplog.text
 
     # We mainly want to ensure that when '' is passed, the corresponding
     # metadata is unset in the output pdf. Since metedata is not compressed,
