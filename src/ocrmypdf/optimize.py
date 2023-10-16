@@ -283,7 +283,7 @@ def _find_image_xrefs(pdf: Pdf):
 
     for pageno, page in enumerate(pdf.pages):
         _find_image_xrefs_container(
-            pdf, page, pageno, include_xrefs, exclude_xrefs, pageno_for_xref
+            pdf, page.obj, pageno, include_xrefs, exclude_xrefs, pageno_for_xref
         )
 
     working_xrefs = include_xrefs - exclude_xrefs
