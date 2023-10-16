@@ -59,7 +59,7 @@ def test_content_preservation(resources, outpdf):
 
 
 @pytest.mark.skipif(
-    tesseract.version() > tesseract.TesseractVersion('5'), reason="doesn't fool Tess 5"
+    tesseract.version() >= tesseract.TesseractVersion('5'), reason="doesn't fool Tess 5"
 )
 def test_no_languages(tmp_path, monkeypatch):
     (tmp_path / 'tessdata').mkdir()
