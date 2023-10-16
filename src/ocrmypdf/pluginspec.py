@@ -10,7 +10,7 @@ from argparse import ArgumentParser, Namespace
 from collections.abc import Sequence, Set
 from logging import Handler
 from pathlib import Path
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple, Protocol
 
 import pluggy
 
@@ -108,8 +108,62 @@ def check_options(options: Namespace) -> None:
     """
 
 
+class ProgressBar(Protocol):
+    """The protocol that OCRmyPDF expects progress bar classes to be compatible with.
+
+    In practice this could be used for any time of monitoring, not just a progress bar.
+
+    Calling the class should return a new progress bar object, which is activated
+    with ``__enter__`` and terminated with ``__exit__``. An update method is called
+    whenever the progress bar is updated. Progress bar objects will not be reused;
+    a new one will be created for each group of tasks.
+
+    The progress bar is held in the main process/thread and not updated by child
+    process/threads. When a child notifies the parent of completed work, the
+    parent updates the progress bar.
+
+    Progress bars should never write to ``sys.stdout``, or they will corrupt the
+    output if OCRmyPDF writes a PDF to standard output.
+
+    The type of events that OCRmyPDF reports to a progress bar may change in
+    minor releases.
+    """
+
+    def __init__(
+        self,
+        *,
+        total: int | float | None,
+        desc: str | None,
+        unit: str | None,
+        disable: bool = False,
+        **kwargs,
+    ):
+        """Initialize a progress bar.
+
+        *total* indicates the total number of work units. If None, the total
+        number of work units is unknown. If *disable* is True, the progress bar
+        should be disabled. *unit* is a description of the work unit.
+        *desc* is a description of the overall task to be performed.
+
+        Unrecognized keyword arguments must be ignored, as the list of keyword
+        arguments may grow with time.
+        """
+
+    def __enter__(self):
+        """Enter a progress bar context."""
+
+    def __exit__(self, *args):
+        """Exit a progress bar context."""
+
+    def update(self, n=1):
+        """Update the progress bar by an increment.
+
+        For use within a progress bar context.
+        """
+
+
 @hookspec(firstresult=True)
-def get_executor(progressbar_class) -> Executor:
+def get_executor(progressbar_class: type[ProgressBar]) -> Executor:
     """Called to obtain an object that manages parallel execution.
 
     This may be used to replace OCRmyPDF's default parallel execution system
@@ -137,34 +191,18 @@ def get_executor(progressbar_class) -> Executor:
 
 
 @hookspec(firstresult=True)
-def get_progressbar_class():
+def get_progressbar_class() -> type[ProgressBar]:
     """Called to obtain a class that can be used to monitor progress.
 
-    A progress bar is assumed, but this could be used for any type of monitoring.
-
-    The class should follow a tqdm-like protocol. Calling the class should return
-    a new progress bar object, which is activated with ``__enter__`` and terminated
-    ``__exit__``. An update method is called whenever the progress bar is updated.
-    Progress bar objects will not be reused; a new one will be created for each
-    group of tasks.
-
-    The progress bar is held in the main process/thread and not updated by child
-    process/threads. When a child notifies the parent of completed work, the
-    parent updates the progress bar.
-
-    The arguments are the same as `tqdm <https://github.com/tqdm/tqdm>`_ accepts.
-
-    Progress bars should never write to ``sys.stdout``, or they will corrupt the
-    output if OCRmyPDF writes a PDF to standard output.
-
-    The type of events that OCRmyPDF reports to a progress bar may change in
-    minor releases.
+    OCRmyPDF will call this function when it wants to display a progress bar.
+    The class returned by this function must be compatible with the
+    :class:`ProgressBar` protocol.
 
     Here is how OCRmyPDF will use the progress bar:
 
     Example:
         pbar_class = pm.hook.get_progressbar_class()
-        with pbar_class(**tqdm_kwargs) as pbar:
+        with pbar_class(**progress_kwargs) as pbar:
             ...
             pbar.update(1)
     """
@@ -465,7 +503,7 @@ def generate_pdfa(
     context: PdfContext,
     pdf_version: str,
     pdfa_part: str,
-    progressbar_class,
+    progressbar_class: type[ProgressBar] | None,
     stop_on_soft_error: bool,
 ) -> Path:
     """Generate a PDF/A.
@@ -485,14 +523,8 @@ def generate_pdfa(
             At its own discretion, the PDF/A generator may raise the version,
             but should not lower it.
         pdfa_part: The desired PDF/A compliance level, such as ``'2B'``.
-        progressbar_class: The class of a progress bar with a tqdm-like API. An
-            instance of this class will be initialized when PDF/A conversion
-            begins, using
-            ``instance = progressbar_class(total: int, desc: str, unit:str)``,
-            defining the number of work units, a user-visible description,
-            and the name of the work units ("page"). Then ``instance.update()``
-            will be called when a work unit is completed. If ``None``, no
-            progress information is reported.
+        progressbar_class: The class of a progress bar, which must implement
+            the ProgressBar protocol. If None, no progress is reported.
         stop_on_soft_error: If there is an "soft error" such that PDF/A generation
             can proceed and produce a valid PDF/A, but output may be invalid or
             may not visually resemble the original, the implementer of this hook
@@ -510,9 +542,6 @@ def generate_pdfa(
         Before version 15.0.0, the ``context`` was not provided and ``compression``
         was provided instead. Plugins should now read the context object to determine
         if compression is requested.
-
-    See Also:
-        https://github.com/tqdm/tqdm
     """
 
 

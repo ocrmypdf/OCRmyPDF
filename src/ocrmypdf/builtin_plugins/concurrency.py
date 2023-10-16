@@ -20,7 +20,7 @@ from typing import Callable, Union
 from rich.console import Console as RichConsole
 
 from ocrmypdf import Executor, hookimpl
-from ocrmypdf._logging import RichLoggingHandler, RichTqdmProgressAdapter
+from ocrmypdf._logging import RichLoggingHandler, RichProgressBar
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import remove_all_log_handlers
 
@@ -28,6 +28,8 @@ FuturesExecutorClass = Union[type[ThreadPoolExecutor], type[ProcessPoolExecutor]
 Queue = Union[multiprocessing.Queue, queue.Queue]
 UserInit = Callable[[], None]
 WorkerInit = Callable[[Queue, UserInit, int], None]
+
+RichTqdmProgressAdapter = RichProgressBar  # Deprecated shim; remove in OCRmyPDF 16
 
 
 def log_listener(q: Queue):
@@ -172,10 +174,10 @@ RICH_CONSOLE = RichConsole(stderr=True)
 def get_progressbar_class():
     """Return the default progress bar class."""
 
-    def partial_RichTqdmProgressAdapter(*args, **kwargs):
-        return RichTqdmProgressAdapter(*args, **kwargs, console=RICH_CONSOLE)
+    def partial_RichProgressBar(*args, **kwargs):
+        return RichProgressBar(*args, **kwargs, console=RICH_CONSOLE)
 
-    return partial_RichTqdmProgressAdapter
+    return partial_RichProgressBar
 
 
 @hookimpl

@@ -39,8 +39,8 @@ class RichLoggingHandler(RichHandler):
         )
 
 
-class RichTqdmProgressAdapter:
-    """Adapt tqdm API to rich progress bar."""
+class RichProgressBar:
+    """Display progress bar using rich."""
 
     def __init__(
         self,
