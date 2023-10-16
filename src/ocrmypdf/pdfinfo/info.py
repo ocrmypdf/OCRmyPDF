@@ -32,6 +32,7 @@ from pikepdf import (
     PdfImage,
     PdfInlineImage,
     PdfMatrix,
+    Stream,
     UnsupportedImageTypeError,
     parse_content_stream,
 )
@@ -357,7 +358,7 @@ class ImageInfo:
         if inline is not None:
             self._origin = 'inline'
             pim = inline
-        elif pdfimage is not None:
+        elif pdfimage is not None and isinstance(pdfimage, Stream):
             self._origin = 'xobject'
             pim = PdfImage(pdfimage)
         else:

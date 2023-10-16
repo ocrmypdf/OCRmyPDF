@@ -33,7 +33,7 @@ class OcrmypdfPluginManager(pluggy.PluginManager):
     def __init__(
         self,
         *args,
-        plugins: list[str | Path],
+        plugins: Sequence[str | Path],
         builtins: bool = True,
         **kwargs,
     ):
@@ -101,7 +101,7 @@ class OcrmypdfPluginManager(pluggy.PluginManager):
 
 
 def get_plugin_manager(
-    plugins: list[str | Path] | None = None, builtins=True
+    plugins: Sequence[str | Path] | None = None, builtins=True
 ) -> OcrmypdfPluginManager:
     return OcrmypdfPluginManager(
         project_name='ocrmypdf',

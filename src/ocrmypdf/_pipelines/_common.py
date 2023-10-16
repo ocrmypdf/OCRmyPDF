@@ -57,9 +57,11 @@ log = logging.getLogger(__name__)
 tls = threading.local()
 tls.pageno = None
 
+
 def _set_logging_tls(tls):
     """Inject current page number (when available) into log records."""
     old_factory = logging.getLogRecordFactory()
+
     def wrapper(*args, **kwargs):
         record = old_factory(*args, **kwargs)
         if hasattr(tls, 'pageno'):
@@ -72,7 +74,7 @@ def _set_logging_tls(tls):
 _set_logging_tls(tls)
 
 
-def set_thread_pageno(pageno:int):
+def set_thread_pageno(pageno: int | None):
     """Set page number (1-based) that the current thread is processing."""
     tls.pageno = pageno
 

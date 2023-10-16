@@ -324,7 +324,11 @@ def pikepdf_enable_mmap() -> None:
         pikepdf._core.set_access_default_mmap(True)
         log.debug(
             "pikepdf mmap "
-            + ('enabled' if pikepdf._core.get_access_default_mmap() else 'disabled')
+            + (
+                'enabled'
+                if pikepdf._core.get_access_default_mmap()  # type: ignore[attr-defined]
+                else 'disabled'
+            )
         )
     except AttributeError:
         log.debug("pikepdf mmap not available")

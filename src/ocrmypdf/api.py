@@ -10,7 +10,7 @@ import os
 import sys
 import threading
 from argparse import Namespace
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from enum import IntEnum
 from io import IOBase
 from pathlib import Path
@@ -414,7 +414,7 @@ def pdf_to_hocr(  # noqa: D417
     continue_on_soft_render_error: bool | None = None,
     invalidate_digital_signatures: bool | None = None,
     plugin_manager=None,
-    plugins: Iterable[StrPath] | None = None,
+    plugins: Sequence[StrPath] | None = None,
     keep_temporary_files: bool | None = None,
     **kwargs,
 ):
@@ -483,7 +483,7 @@ def hocr_to_ocr_pdf(  # noqa: D417
     color_conversion_strategy: str | None = None,
     fast_web_view: float | None = None,
     plugin_manager=None,
-    plugins: Iterable[StrPath] | None = None,
+    plugins: Sequence[StrPath] | None = None,
     **kwargs,
 ):
     """Run OCRmyPDF on a work folder and produce an output PDF.
