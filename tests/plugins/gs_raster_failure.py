@@ -13,7 +13,7 @@ from ocrmypdf.builtin_plugins import ghostscript
 
 def raise_gs_fail(*args, **kwargs):
     raise CalledProcessError(
-        1, 'gs', output=b"", stderr=b"ERROR: Ghost story archive not found"
+        1, 'gs', output=b"", stderr=b"TEST ERROR: gs_raster_failure.py"
     )
 
 

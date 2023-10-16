@@ -84,7 +84,7 @@ def test_gs_render_failure(resources, outpdf):
         '--plugin',
         'tests/plugins/gs_render_failure.py',
     )
-    assert 'Casper is not a friendly ghost' in p.stderr
+    assert 'TEST ERROR: gs_render_failure.py' in p.stderr
     assert p.returncode == ExitCode.child_process_error
 
 
@@ -97,7 +97,7 @@ def test_gs_raster_failure(resources, outpdf):
         '--plugin',
         'tests/plugins/gs_raster_failure.py',
     )
-    assert 'Ghost story archive not found' in p.stderr
+    assert 'TEST ERROR: gs_raster_failure.py' in p.stderr
     assert p.returncode == ExitCode.child_process_error
 
 
