@@ -19,7 +19,7 @@ from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.pdfinfo import PdfInfo
 
-from .conftest import check_ocrmypdf, run_ocrmypdf
+from .conftest import check_ocrmypdf, run_ocrmypdf_api
 
 # pylintx: disable=unused-variable
 
@@ -213,7 +213,7 @@ def test_rotate_deskew_ocr_timeout(resources, outdir):
 @pytest.mark.slow
 @pytest.mark.parametrize('page_angle', (0, 90, 180, 270))
 @pytest.mark.parametrize('image_angle', (0, 90, 180, 270))
-def test_rotate_page_level(image_angle, page_angle, resources, outdir):
+def test_rotate_page_level(image_angle, page_angle, resources, outdir, caplog):
     def make_rotate_test(prefix, image_angle, page_angle):
         memimg = BytesIO()
         with Image.open(fspath(resources / 'typewriter.png')) as im:
@@ -240,17 +240,15 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir):
     test = make_rotate_test('test', image_angle, page_angle)
     out = test.with_suffix('.out.pdf')
 
-    p = run_ocrmypdf(
+    exitcode = run_ocrmypdf_api(
         test,
         out,
         '-O0',
         '--rotate-pages',
         '--rotate-pages-threshold',
         '0.001',
-        text=False,
     )
-    err = p.stderr.decode('utf-8', errors='replace')
-    assert p.returncode == 0, err
+    assert exitcode == 0, caplog.text
 
     assert compare_images_monochrome(outdir, reference, 1, out, 1) > 0.2
 

@@ -16,7 +16,7 @@ from ocrmypdf._exec.ghostscript import DuplicateFilter, rasterize_pdf
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import Resolution
 
-from .conftest import check_ocrmypdf, run_ocrmypdf
+from .conftest import check_ocrmypdf, run_ocrmypdf_api
 
 # pylint: disable=redefined-outer-name
 
@@ -75,8 +75,8 @@ def test_rasterize_rotated(francais, outdir, caplog):
         assert im.info['dpi'] == forced_dpi.flip_axis()
 
 
-def test_gs_render_failure(resources, outpdf):
-    p = run_ocrmypdf(
+def test_gs_render_failure(resources, outpdf, caplog):
+    exitcode = run_ocrmypdf_api(
         resources / 'blank.pdf',
         outpdf,
         '--plugin',
@@ -84,12 +84,12 @@ def test_gs_render_failure(resources, outpdf):
         '--plugin',
         'tests/plugins/gs_render_failure.py',
     )
-    assert 'TEST ERROR: gs_render_failure.py' in p.stderr
-    assert p.returncode == ExitCode.child_process_error
+    assert 'TEST ERROR: gs_render_failure.py' in caplog.text
+    assert exitcode == ExitCode.child_process_error
 
 
-def test_gs_raster_failure(resources, outpdf):
-    p = run_ocrmypdf(
+def test_gs_raster_failure(resources, outpdf, caplog):
+    exitcode = run_ocrmypdf_api(
         resources / 'francais.pdf',
         outpdf,
         '--plugin',
@@ -97,12 +97,12 @@ def test_gs_raster_failure(resources, outpdf):
         '--plugin',
         'tests/plugins/gs_raster_failure.py',
     )
-    assert 'TEST ERROR: gs_raster_failure.py' in p.stderr
-    assert p.returncode == ExitCode.child_process_error
+    assert 'TEST ERROR: gs_raster_failure.py' in caplog.text
+    assert exitcode == ExitCode.child_process_error
 
 
-def test_ghostscript_pdfa_failure(resources, outpdf):
-    p = run_ocrmypdf(
+def test_ghostscript_pdfa_failure(resources, outpdf, caplog):
+    exitcode = run_ocrmypdf_api(
         resources / 'francais.pdf',
         outpdf,
         '--plugin',
@@ -111,7 +111,7 @@ def test_ghostscript_pdfa_failure(resources, outpdf):
         'tests/plugins/gs_pdfa_failure.py',
     )
     assert (
-        p.returncode == ExitCode.pdfa_conversion_failed
+        exitcode == ExitCode.pdfa_conversion_failed
     ), "Unexpected return when PDF/A fails"
 
 

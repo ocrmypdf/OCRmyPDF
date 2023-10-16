@@ -201,14 +201,14 @@ def test_force_ocr_on_pdf_with_no_images(resources, no_outpdf):
     # As a correctness test, make sure that --force-ocr on a PDF with no
     # content still triggers tesseract. If tesseract crashes, then it was
     # called.
-    p = run_ocrmypdf(
+    exitcode = run_ocrmypdf_api(
         resources / 'blank.pdf',
         no_outpdf,
         '--force-ocr',
         '--plugin',
         'tests/plugins/tesseract_crash.py',
     )
-    assert p.returncode == ExitCode.child_process_error
+    assert exitcode == ExitCode.child_process_error
     assert not no_outpdf.exists()
 
 
