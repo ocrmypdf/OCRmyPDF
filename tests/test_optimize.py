@@ -3,21 +3,23 @@
 
 from __future__ import annotations
 
+from io import BytesIO
 from os import fspath
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import img2pdf
 import pikepdf
 import pytest
+from pikepdf import Array, Dictionary, Name
 from PIL import Image, ImageDraw
 
 from ocrmypdf import optimize as opt
 from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._exec.ghostscript import rasterize_pdf
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
-
-from .conftest import check_ocrmypdf
+from ocrmypdf.optimize import PdfImage, extract_image_filter
+from tests.conftest import check_ocrmypdf
 
 needs_pngquant = pytest.mark.skipif(
     not pngquant.available(), reason="pngquant not installed"
@@ -214,3 +216,105 @@ def test_find_formx(resources, outdir):
         assert len(working) == 1
         xref = next(iter(working))
         assert pagenos[xref] == 0
+
+
+def test_extract_image_filter_with_pdf_image():
+    image = MagicMock()
+    image.Subtype = Name.Image
+    image.Length = 200
+    image.Width = 10
+    image.Height = 10
+    image.Filter = [Name.FlateDecode, Name.DCTDecode]
+    pdf_image = PdfImage(image)
+    image.BitsPerComponent = 8
+    assert extract_image_filter(None, None, image, None) == (
+        pdf_image,
+        pdf_image.filter_decodeparms[1],
+    )
+
+
+def test_extract_image_filter_with_non_image():
+    image = MagicMock()
+    image.Subtype = Name.Form
+    assert extract_image_filter(None, None, image, None) is None
+
+
+def test_extract_image_filter_with_small_stream_size():
+    image = MagicMock()
+    image.Subtype = Name.Image
+    image.Length = 50
+    assert extract_image_filter(None, None, image, None) is None
+
+
+def test_extract_image_filter_with_small_dimensions():
+    image = MagicMock()
+    image.Subtype = Name.Image
+    image.Length = 200
+    image.Width = 5
+    image.Height = 5
+    assert extract_image_filter(None, None, image, None) is None
+
+
+def test_extract_image_filter_with_multiple_compression_filters():
+    image = MagicMock()
+    image.Subtype = Name.Image
+    image.Length = 200
+    image.Width = 10
+    image.Height = 10
+    image.BitsPerComponent = 8
+    image.Filter = [Name.ASCII85Decode, Name.FlateDecode, Name.DCTDecode]
+    assert extract_image_filter(None, None, image, None) is None
+
+
+def test_extract_image_filter_with_wide_gamut_image():
+    image = MagicMock()
+    image.Subtype = Name.Image
+    image.Length = 200
+    image.Width = 10
+    image.Height = 10
+    image.BitsPerComponent = 16
+    image.Filter = Name.FlateDecode
+    assert extract_image_filter(None, None, image, None) is None
+
+
+def test_extract_image_filter_with_jpeg2000_image():
+    im = Image.new('RGB', (10, 10))
+    bio = BytesIO()
+    im.save(bio, format='JPEG2000')
+    pdf = pikepdf.new()
+    stream = pdf.make_stream(
+        data=bio.getvalue(),
+        Subtype=Name.Image,
+        Length=200,
+        Width=10,
+        Height=10,
+        BitsPerComponent=8,
+        Filter=Name.JPXDecode,
+    )
+    assert extract_image_filter(None, None, stream, None) is None
+
+
+def test_extract_image_filter_with_ccitt_group_3_image():
+    image = MagicMock()
+    image.Subtype = Name.Image
+    image.Length = 200
+    image.Width = 10
+    image.Height = 10
+    image.BitsPerComponent = 1
+    image.Filter = Name.CCITTFaxDecode
+    image.DecodeParms = Array([Dictionary(K=1)])
+    assert extract_image_filter(None, None, image, None) is None
+
+
+# Triggers pikepdf bug
+# def test_extract_image_filter_with_decode_table():
+#     image = MagicMock()
+#     image.Subtype = Name.Image
+#     image.Length = 200
+#     image.Width = 10
+#     image.Height = 10
+#     image.Filter = Name.FlateDecode
+#     image.BitsPerComponent = 8
+#     image.ColorSpace = Name.DeviceGray
+#     image.Decode = [42, 0]
+#     assert extract_image_filter(None, None, image, None) is None
