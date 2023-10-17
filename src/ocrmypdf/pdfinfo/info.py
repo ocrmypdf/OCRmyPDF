@@ -1159,7 +1159,7 @@ class PdfInfo:
         return f"<PdfInfo('...'), page count={len(self)}>"
 
 
-def main():
+def main():  # pragma: no cover
     """Run as a script."""
     import argparse  # pylint: disable=import-outside-toplevel
     from pprint import pprint  # pylint: disable=import-outside-toplevel

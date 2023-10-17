@@ -105,7 +105,8 @@ exclude = '''
 [tool.coverage.run]
 branch = true
 parallel = true
-concurrency = ["multiprocessing"]
+concurrency = ["multiprocessing", "thread"]
+sigterm = true
 
 [tool.coverage.paths]
 source = ["src/ocrmypdf"]
