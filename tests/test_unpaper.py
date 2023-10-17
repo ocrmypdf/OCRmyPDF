@@ -113,3 +113,14 @@ def test_unpaper_image_too_big(resources, outdir, caplog):
             for rec in caplog.get_records('call')
             if rec.levelno == logging.WARNING
         )
+
+
+@needs_unpaper
+def test_palette_image(resources, outpdf):
+    check_ocrmypdf(
+        resources / "palette.pdf",
+        outpdf,
+        "-c",
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+    )
