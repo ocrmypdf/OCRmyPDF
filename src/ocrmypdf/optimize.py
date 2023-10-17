@@ -15,6 +15,7 @@ from collections.abc import Iterator, MutableSet, Sequence
 from os import fspath
 from pathlib import Path
 from typing import Callable, NamedTuple, NewType
+from warnings import warn
 from zlib import compress
 
 import img2pdf
@@ -69,11 +70,14 @@ def jpg_name(root: Path, xref: Xref) -> Path:
 
 
 def extract_image_filter(
-    pdf: Pdf, root: Path, image: Stream, xref: Xref
+    image: Stream, xref: Xref, *args
 ) -> tuple[PdfImage, tuple[Name, Object]] | None:
     """Determine if an image is extractable."""
-    del pdf  # unused args
-    del root
+    if isinstance(image, Pdf):
+        # Support deprecated old function signature
+        # TODO Remove for v16 and drop *args from current function signature
+        image, xref = args[0], args[1]
+        warn("extract_image_filter: pdf, root parameters ignored", DeprecationWarning)
 
     if image.Subtype != Name.Image:
         return None
@@ -132,7 +136,7 @@ def extract_image_jbig2(
     """Extract an image, saving it as a JBIG2 file."""
     del options  # unused arg
 
-    result = extract_image_filter(pdf, root, image, xref)
+    result = extract_image_filter(image, xref)
     if result is None:
         return None
     pim, filtdp = result
@@ -172,7 +176,7 @@ def extract_image_generic(
     *, pdf: Pdf, root: Path, image: Stream, xref: Xref, options
 ) -> XrefExt | None:
     """Generic image extraction."""
-    result = extract_image_filter(pdf, root, image, xref)
+    result = extract_image_filter(image, xref)
     if result is None:
         return None
     pim, filtdp = result
@@ -500,7 +504,7 @@ def transcode_jpegs(
 def _find_deflatable_jpeg(
     *, pdf: Pdf, root: Path, image: Stream, xref: Xref, options
 ) -> XrefExt | None:
-    result = extract_image_filter(pdf, root, image, xref)
+    result = extract_image_filter(image, xref)
     if result is None:
         return None
     _pim, filtdp = result

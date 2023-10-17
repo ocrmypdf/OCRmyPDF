@@ -197,20 +197,20 @@ def test_optimize_off(resources, outpdf):
     )
 
 
-def test_group3(resources, outdir):
+def test_group3(resources):
     with pikepdf.open(resources / 'ccitt.pdf') as pdf:
         im = pdf.pages[0].Resources.XObject['/Im1']
         assert (
-            opt.extract_image_filter(pdf, outdir, im, im.objgen[0]) is not None
+            opt.extract_image_filter(im, im.objgen[0]) is not None
         ), "Group 4 should be allowed"
 
         im.DecodeParms['/K'] = 0
         assert (
-            opt.extract_image_filter(pdf, outdir, im, im.objgen[0]) is None
+            opt.extract_image_filter(im, im.objgen[0]) is None
         ), "Group 3 should be disallowed"
 
 
-def test_find_formx(resources, outdir):
+def test_find_formx(resources):
     with pikepdf.open(resources / 'formxobject.pdf') as pdf:
         working, pagenos = opt._find_image_xrefs(pdf)
         assert len(working) == 1
@@ -227,7 +227,7 @@ def test_extract_image_filter_with_pdf_image():
     image.Filter = [Name.FlateDecode, Name.DCTDecode]
     pdf_image = PdfImage(image)
     image.BitsPerComponent = 8
-    assert extract_image_filter(None, None, image, None) == (
+    assert extract_image_filter(image, None) == (
         pdf_image,
         pdf_image.filter_decodeparms[1],
     )
@@ -236,14 +236,14 @@ def test_extract_image_filter_with_pdf_image():
 def test_extract_image_filter_with_non_image():
     image = MagicMock()
     image.Subtype = Name.Form
-    assert extract_image_filter(None, None, image, None) is None
+    assert extract_image_filter(image, None) is None
 
 
 def test_extract_image_filter_with_small_stream_size():
     image = MagicMock()
     image.Subtype = Name.Image
     image.Length = 50
-    assert extract_image_filter(None, None, image, None) is None
+    assert extract_image_filter(image, None) is None
 
 
 def test_extract_image_filter_with_small_dimensions():
@@ -252,7 +252,7 @@ def test_extract_image_filter_with_small_dimensions():
     image.Length = 200
     image.Width = 5
     image.Height = 5
-    assert extract_image_filter(None, None, image, None) is None
+    assert extract_image_filter(image, None) is None
 
 
 def test_extract_image_filter_with_multiple_compression_filters():
@@ -263,7 +263,7 @@ def test_extract_image_filter_with_multiple_compression_filters():
     image.Height = 10
     image.BitsPerComponent = 8
     image.Filter = [Name.ASCII85Decode, Name.FlateDecode, Name.DCTDecode]
-    assert extract_image_filter(None, None, image, None) is None
+    assert extract_image_filter(image, None) is None
 
 
 def test_extract_image_filter_with_wide_gamut_image():
@@ -274,7 +274,7 @@ def test_extract_image_filter_with_wide_gamut_image():
     image.Height = 10
     image.BitsPerComponent = 16
     image.Filter = Name.FlateDecode
-    assert extract_image_filter(None, None, image, None) is None
+    assert extract_image_filter(image, None) is None
 
 
 def test_extract_image_filter_with_jpeg2000_image():
@@ -291,7 +291,7 @@ def test_extract_image_filter_with_jpeg2000_image():
         BitsPerComponent=8,
         Filter=Name.JPXDecode,
     )
-    assert extract_image_filter(None, None, stream, None) is None
+    assert extract_image_filter(stream, None) is None
 
 
 def test_extract_image_filter_with_ccitt_group_3_image():
@@ -303,7 +303,7 @@ def test_extract_image_filter_with_ccitt_group_3_image():
     image.BitsPerComponent = 1
     image.Filter = Name.CCITTFaxDecode
     image.DecodeParms = Array([Dictionary(K=1)])
-    assert extract_image_filter(None, None, image, None) is None
+    assert extract_image_filter(image, None) is None
 
 
 # Triggers pikepdf bug
@@ -317,4 +317,4 @@ def test_extract_image_filter_with_ccitt_group_3_image():
 #     image.BitsPerComponent = 8
 #     image.ColorSpace = Name.DeviceGray
 #     image.Decode = [42, 0]
-#     assert extract_image_filter(None, None, image, None) is None
+#     assert extract_image_filter(image, None) is None
