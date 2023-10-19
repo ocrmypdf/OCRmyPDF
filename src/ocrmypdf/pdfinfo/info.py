@@ -13,7 +13,7 @@ import statistics
 import sys
 from collections import defaultdict
 from collections.abc import Container, Iterable, Iterator, Mapping, Sequence
-from contextlib import ExitStack
+from contextlib import contextmanager
 from decimal import Decimal
 from enum import Enum, auto
 from functools import partial
@@ -695,13 +695,25 @@ def _pdf_pageinfo_sync_init(pdf: Pdf, infile: Path, pdfminer_loglevel):
         atexit.register(on_process_close)
 
 
+@contextmanager
+def _pdf_pageinfo_sync_pdf(thread_pdf: Pdf | None, infile: Path):
+    if thread_pdf is not None:
+        yield thread_pdf
+    elif worker_pdf is not None:
+        yield worker_pdf
+    else:
+        with Pdf.open(infile) as pdf:
+            yield pdf
+
+
 def _pdf_pageinfo_sync(
-    pageno, thread_pdf, infile, check_pages, detailed_analysis
+    pageno: int,
+    thread_pdf: Pdf | None,
+    infile: Path,
+    check_pages: Container[int],
+    detailed_analysis: bool,
 ) -> PageInfo:
-    pdf = thread_pdf if thread_pdf is not None else worker_pdf
-    with ExitStack() as stack:
-        if not pdf:  # When called with SerialExecutor
-            pdf = stack.enter_context(Pdf.open(infile))
+    with _pdf_pageinfo_sync_pdf(thread_pdf, infile) as pdf:
         return PageInfo(pdf, pageno, infile, check_pages, detailed_analysis)
 
 
@@ -715,7 +727,7 @@ def _pdf_pageinfo_concurrent(
     check_pages,
     detailed_analysis: bool = False,
 ) -> Sequence[PageInfo | None]:
-    pages: Sequence[PageInfo | None] = [None] * len(pdf.pages)
+    pages: list[PageInfo | None] = [None] * len(pdf.pages)
 
     def update_pageinfo(page: PageInfo, pbar: ProgressBar):
         if not page:
