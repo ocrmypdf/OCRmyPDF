@@ -409,21 +409,42 @@ class OcrEngine(ABC):
     def generate_hocr(
         input_file: Path, output_hocr: Path, output_text: Path, options: Namespace
     ) -> None:
-        """Called to produce a hOCR file and sidecar text file."""
+        """Called to produce a hOCR file from a page image and sidecar text file.
+
+        A hOCR file is an HTML-like file that describes the position of text on a
+        page. OCRmyPDF can create a text only PDF from the hOCR file and graft it
+        onto the output PDF.
+
+        This function executes in a worker thread or worker process. OCRmyPDF
+        automatically parallelizes OCR over pages. The OCR engine should not
+        introduce more parallelism.
+
+        Args:
+            input_file: A page image on which to perform OCR.
+            output_hocr: The expected name of the output hOCR file.
+            output_text: The expected name of a text file containing the
+                recognized text.
+            options: The command line options.
+        """
 
     @staticmethod
     @abstractmethod
     def generate_pdf(
         input_file: Path, output_pdf: Path, output_text: Path, options: Namespace
     ) -> None:
-        """Called to produce a text only PDF.
+        """Called to produce a text only PDF from a page image.
+
+        A text only PDF should contain no visible material of any kind, as it
+        will be grafted onto the input PDF page. It must be sized to the
+        exact dimensions of the input image.
+
+        This function executes in a worker thread or worker process. OCRmyPDF
+        automatically parallelizes OCR over pages. The OCR engine should not
+        introduce more parallelism.
 
         Args:
             input_file: A page image on which to perform OCR.
-            output_pdf: The expected name of the output PDF, which must be
-                a single page PDF with no visible content of any kind, sized
-                to the dimensions implied by the input_file's width, height
-                and DPI. The image will be grafted onto the input PDF page.
+            output_pdf: The expected name of the output PDF.
             output_text: The expected name of a text file containing the
                 recognized text.
             options: The command line options.
