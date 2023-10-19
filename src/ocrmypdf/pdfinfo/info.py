@@ -388,32 +388,42 @@ class ImageInfo:
         if self._enc == Encoding.jpeg2000:
             self._color = Colorspace.jpeg2000
 
-        if self._color == Colorspace.icc:
-            # Check the ICC profile to determine actual colorspace
-            try:
-                pim_icc = pim.icc
-                if pim_icc.profile.xcolor_space == 'GRAY':
-                    self._comp = 1
-                elif pim_icc.profile.xcolor_space == 'CMYK':
-                    self._comp = 4
-                else:
-                    self._comp = 3
-            except (AttributeError, UnsupportedImageTypeError) as ex:
-                self._comp = None
-                logger.warning(
-                    f"An image with a corrupt or unreadable ICC profile was found. "
-                    f"The output PDF may not match the input PDF visually: {ex}. {self}"
-                )
+        self._comp = None
+        if self._color == Colorspace.icc and isinstance(pim, PdfImage):
+            self._comp = self._init_icc(pim)
         else:
             if isinstance(self._color, Colorspace):
                 self._comp = FRIENDLY_COMP.get(self._color)
-            else:
-                self._comp = None
-
             # Bit of a hack... infer grayscale if component count is uncertain
             # but encoding only supports monochrome.
             if self._comp is None and self._enc in (Encoding.ccitt, Encoding.jbig2):
                 self._comp = FRIENDLY_COMP[Colorspace.gray]
+
+    def _init_icc(self, pim: PdfImage):
+        try:
+            icc = pim.icc
+        except UnsupportedImageTypeError as e:
+            logger.warning(
+                f"An image with a corrupt or unreadable ICC profile was found. "
+                f"Output PDF may not match the input PDF visually: {e}. {self}"
+            )
+            return None
+        # Check the ICC profile to determine actual colorspace
+        if icc is None or not hasattr(icc, 'profile'):
+            logger.warning(
+                f"An image with an ICC profile but no ICC profile data was found. "
+                f"The output PDF may not match the input PDF visually. {self}"
+            )
+            return None
+        try:
+            if icc.profile.xcolor_space == 'GRAY':
+                return 1
+            elif icc.profile.xcolor_space == 'CMYK':
+                return 4
+            else:
+                return 3
+        except AttributeError:
+            return None
 
     @property
     def name(self):
