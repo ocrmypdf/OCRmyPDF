@@ -128,7 +128,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
         ),
         worker_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
         task=exec_page_sync,
-        task_arguments=context.get_page_contexts(),
+        task_arguments=context.get_page_context_args(),
         task_finished=update_page,
     )
 

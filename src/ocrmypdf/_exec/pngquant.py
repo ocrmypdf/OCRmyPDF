@@ -50,7 +50,3 @@ def quantize(input_file: Path, output_file: Path, quality_min: int, quality_max:
     if result.returncode == 0:
         # input_file could be the same as output_file, so we defer the write
         output_file.write_bytes(result.stdout)
-
-
-def quantize_mp(args):
-    return quantize(*args)

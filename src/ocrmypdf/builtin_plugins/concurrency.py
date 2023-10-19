@@ -134,7 +134,7 @@ class StandardExecutor(Executor):
             initializer=initializer,
             initargs=(log_queue, worker_initializer, logging.getLogger("").level),
         ) as executor:
-            futures = [executor.submit(task, args) for args in task_arguments]
+            futures = [executor.submit(task, *args) for args in task_arguments]
             try:
                 for future in as_completed(futures):
                     result = future.result()

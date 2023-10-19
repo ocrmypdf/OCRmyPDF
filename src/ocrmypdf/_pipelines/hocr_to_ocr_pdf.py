@@ -87,7 +87,7 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
         ),
         worker_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
         task=exec_hocrtransform_sync,
-        task_arguments=context.get_page_contexts(),
+        task_arguments=context.get_page_context_args(),
         task_finished=graft_page,
     )
 

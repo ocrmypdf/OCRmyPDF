@@ -25,7 +25,7 @@ def available():
     return True
 
 
-def convert_group(*, cwd, infiles, out_prefix, threshold):
+def convert_group(cwd, infiles, out_prefix, threshold):
     args = [
         'jbig2',
         '-b',
@@ -43,21 +43,9 @@ def convert_group(*, cwd, infiles, out_prefix, threshold):
     return proc
 
 
-def convert_group_mp(args):
-    return convert_group(
-        cwd=args[0], infiles=args[1], out_prefix=args[2], threshold=args[3]
-    )
-
-
-def convert_single(*, cwd, infile, outfile, threshold):
+def convert_single(cwd, infile, outfile, threshold):
     args = ['jbig2', '--pdf', '-t', str(threshold), infile]
     with open(outfile, 'wb') as fstdout:
         proc = run(args, cwd=cwd, stdout=fstdout, stderr=PIPE)
     proc.check_returncode()
     return proc
-
-
-def convert_single_mp(args):
-    return convert_single(
-        cwd=args[0], infile=args[1], outfile=args[2], threshold=args[3]
-    )

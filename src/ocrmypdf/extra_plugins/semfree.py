@@ -94,7 +94,7 @@ def process_loop(
 
     for args in task_args:
         try:
-            result = task(args)
+            result = task(*args)
         except Exception as e:  # pylint: disable=broad-except
             conn.send((MessageType.exception, e))
             break
@@ -123,7 +123,7 @@ class LambdaExecutor(Executor):
         if use_threads and max_workers == 1:
             with self.pbar_class(**progress_kwargs) as pbar:
                 for args in task_arguments:
-                    result = task(args)
+                    result = task(*args)
                     task_finished(result, pbar)
             return
 

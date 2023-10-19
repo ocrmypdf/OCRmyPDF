@@ -390,10 +390,10 @@ def _produce_jbig2_images(
 
     if options.jbig2_page_group_size > 1:
         jbig2_args = jbig2_group_args
-        jbig2_convert = jbig2enc.convert_group_mp
+        jbig2_convert = jbig2enc.convert_group
     else:
         jbig2_args = jbig2_single_args
-        jbig2_convert = jbig2enc.convert_single_mp
+        jbig2_convert = jbig2enc.convert_single
 
     executor(
         use_threads=True,
@@ -454,9 +454,9 @@ def convert_to_jbig2(
             )
 
 
-def _optimize_jpeg(args: tuple[Xref, Path, Path, int]) -> tuple[Xref, Path | None]:
-    xref, in_jpg, opt_jpg, jpeg_quality = args
-
+def _optimize_jpeg(
+    xref: Xref, in_jpg: Path, opt_jpg: Path, jpeg_quality: int
+) -> tuple[Xref, Path | None]:
     with Image.open(in_jpg) as im:
         im.save(opt_jpg, optimize=True, quality=jpeg_quality)
 
@@ -515,8 +515,9 @@ def _find_deflatable_jpeg(
     return None
 
 
-def _deflate_jpeg(args: tuple[Pdf, threading.Lock, Xref, int]) -> tuple[Xref, bytes]:
-    pdf, lock, xref, complevel = args
+def _deflate_jpeg(
+    pdf: Pdf, lock: threading.Lock, xref: Xref, complevel: int
+) -> tuple[Xref, bytes]:
     with lock:
         xobj = pdf.get_object(xref, 0)
         try:
@@ -651,7 +652,7 @@ def transcode_pngs(
                 unit='image',
                 disable=not options.progress_bar,
             ),
-            task=pngquant.quantize_mp,
+            task=pngquant.quantize,
             task_arguments=pngquant_args(),
         )
 

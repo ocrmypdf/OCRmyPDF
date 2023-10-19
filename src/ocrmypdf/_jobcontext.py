@@ -53,6 +53,12 @@ class PdfContext:
         for n in range(npages):
             yield PageContext(self, n)
 
+    def get_page_context_args(self) -> Iterator[tuple[PageContext]]:
+        """Get all ``PageContext`` for this PDF packaged in tuple for args-splatting."""
+        npages = len(self.pdfinfo)
+        for n in range(npages):
+            yield (PageContext(self, n),)
+
 
 class PageContext:
     """Holds our context for a page.

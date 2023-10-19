@@ -133,5 +133,5 @@ class SerialExecutor(Executor):
     ):  # pylint: disable=unused-argument
         with self.pbar_class(**progress_kwargs) as pbar:
             for args in task_arguments:
-                result = task(args)
+                result = task(*args)
                 task_finished(result, pbar)

@@ -694,8 +694,7 @@ def _pdf_pageinfo_sync_init(pdf: Pdf, infile: Path, pdfminer_loglevel):
         atexit.register(on_process_close)
 
 
-def _pdf_pageinfo_sync(args):
-    pageno, thread_pdf, infile, check_pages, detailed_analysis = args
+def _pdf_pageinfo_sync(pageno, thread_pdf, infile, check_pages, detailed_analysis):
     pdf = thread_pdf if thread_pdf is not None else worker_pdf
     with ExitStack() as stack:
         if not pdf:  # When called with SerialExecutor

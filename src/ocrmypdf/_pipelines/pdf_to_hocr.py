@@ -39,7 +39,6 @@ from ocrmypdf._validation import (
 log = logging.getLogger(__name__)
 
 
-
 def exec_page_hocr_sync(page_context: PageContext) -> HOCRResult:
     """Execute a pipeline for a single page hOCR."""
     set_thread_pageno(page_context.pageno + 1)
@@ -82,7 +81,7 @@ def exec_pdf_to_hocr(context: PdfContext, executor: Executor) -> None:
         ),
         worker_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
         task=exec_page_hocr_sync,
-        task_arguments=context.get_page_contexts(),
+        task_arguments=context.get_page_context_args(),
     )
 
 
