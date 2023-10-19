@@ -10,6 +10,9 @@ from pluggy import HookimplMarker as _HookimplMarker
 from ocrmypdf import helpers, hocrtransform, pdfa, pdfinfo
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._jobcontext import PageContext, PdfContext
+from ocrmypdf._pipelines._common import (
+    configure_debug_logging,
+)
 from ocrmypdf._version import PROGRAM_NAME, __version__
 from ocrmypdf.api import Verbosity, configure_logging, hocr_to_ocr_pdf, ocr, pdf_to_hocr
 from ocrmypdf.exceptions import (
@@ -30,9 +33,11 @@ from ocrmypdf.pluginspec import OcrEngine, OrientationConfidence
 
 hookimpl = _HookimplMarker('ocrmypdf')
 
+
 __all__ = [
     '__version__',
     'BadArgsError',
+    'configure_debug_logging',
     'configure_logging',
     'DpiError',
     'EncryptedPdfError',

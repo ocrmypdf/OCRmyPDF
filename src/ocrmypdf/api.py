@@ -21,8 +21,9 @@ import pluggy
 
 from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._pipelines.hocr_to_ocr_pdf import run_hocr_to_ocr_pdf_pipeline
+from ocrmypdf._pipelines.ocr import run_pipeline, run_pipeline_cli
+from ocrmypdf._pipelines.pdf_to_hocr import run_hocr_pipeline
 from ocrmypdf._plugin_manager import get_plugin_manager
-from ocrmypdf._sync import run_hocr_pipeline, run_pipeline, run_pipeline_cli
 from ocrmypdf._validation import check_options
 from ocrmypdf.cli import ArgumentParser, get_parser
 from ocrmypdf.helpers import is_iterable_notstr

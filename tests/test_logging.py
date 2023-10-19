@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 
-from ocrmypdf._sync import configure_debug_logging
+from ocrmypdf._pipelines._common import configure_debug_logging
 
 
 def test_debug_logging(tmp_path):
