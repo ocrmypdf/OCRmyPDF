@@ -28,6 +28,21 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+next
+====
+
+-  Added new APIs to support offline editing of the final text. Specifically,
+   one can now generate hOCR files with OCRmyPDF, edit them with some other tool,
+   and then finalize the PDF.
+-  Code reorganization: executors, progress bars, initialization and setup.
+-  Fixed test coverage in cases where the coverage tool did not properly trace
+   into threads or subprocesses. This code was still being tested but appeared
+   as not covered.
+-  Reduced use of subprocesses and other techniques that interfere with coverage
+   measurement.
+-  Improved error check for when we appear to be running inside a snap container
+   and files are not available.
+
 v15.3.0
 =======
 
