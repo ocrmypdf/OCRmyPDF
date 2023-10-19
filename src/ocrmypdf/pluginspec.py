@@ -10,11 +10,12 @@ from argparse import ArgumentParser, Namespace
 from collections.abc import Sequence, Set
 from logging import Handler
 from pathlib import Path
-from typing import TYPE_CHECKING, NamedTuple, Protocol
+from typing import TYPE_CHECKING, NamedTuple
 
 import pluggy
 
 from ocrmypdf import Executor, PdfContext
+from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.helpers import Resolution
 
 if TYPE_CHECKING:
@@ -106,60 +107,6 @@ def check_options(options: Namespace) -> None:
         This hook will be called from the main process, and may modify global state
         before child worker processes are forked.
     """
-
-
-class ProgressBar(Protocol):
-    """The protocol that OCRmyPDF expects progress bar classes to be compatible with.
-
-    In practice this could be used for any time of monitoring, not just a progress bar.
-
-    Calling the class should return a new progress bar object, which is activated
-    with ``__enter__`` and terminated with ``__exit__``. An update method is called
-    whenever the progress bar is updated. Progress bar objects will not be reused;
-    a new one will be created for each group of tasks.
-
-    The progress bar is held in the main process/thread and not updated by child
-    process/threads. When a child notifies the parent of completed work, the
-    parent updates the progress bar.
-
-    Progress bars should never write to ``sys.stdout``, or they will corrupt the
-    output if OCRmyPDF writes a PDF to standard output.
-
-    The type of events that OCRmyPDF reports to a progress bar may change in
-    minor releases.
-    """
-
-    def __init__(
-        self,
-        *,
-        total: int | float | None,
-        desc: str | None,
-        unit: str | None,
-        disable: bool = False,
-        **kwargs,
-    ):
-        """Initialize a progress bar.
-
-        *total* indicates the total number of work units. If None, the total
-        number of work units is unknown. If *disable* is True, the progress bar
-        should be disabled. *unit* is a description of the work unit.
-        *desc* is a description of the overall task to be performed.
-
-        Unrecognized keyword arguments must be ignored, as the list of keyword
-        arguments may grow with time.
-        """
-
-    def __enter__(self):
-        """Enter a progress bar context."""
-
-    def __exit__(self, *args):
-        """Exit a progress bar context."""
-
-    def update(self, n=1):
-        """Update the progress bar by an increment.
-
-        For use within a progress bar context.
-        """
 
 
 @hookspec(firstresult=True)

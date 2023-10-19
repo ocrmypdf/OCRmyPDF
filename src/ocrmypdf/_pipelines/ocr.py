@@ -44,6 +44,7 @@ from ocrmypdf._pipelines._common import (
     worker_init,
 )
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
+from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf._validation import (
     check_requested_output_file,
     create_input_file,
@@ -100,7 +101,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     sidecars: list[Path | None] = [None] * len(context.pdfinfo)
     ocrgraft = OcrGrafter(context)
 
-    def update_page(result: PageResult, pbar):
+    def update_page(result: PageResult, pbar: ProgressBar):
         """After OCR is complete for a page, update the PDF."""
         try:
             set_thread_pageno(result.pageno + 1)

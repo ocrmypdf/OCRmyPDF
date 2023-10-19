@@ -8,27 +8,15 @@ from __future__ import annotations
 import threading
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import Callable
+from typing import Callable, TypeVar
+
+from ocrmypdf._progressbar import NullProgressBar, ProgressBar
+
+T = TypeVar('T')
 
 
 def _task_noop(*_args, **_kwargs):
     return
-
-
-class NullProgressBar:
-    """Progress bar API that takes no actions."""
-
-    def __init__(self, **kwargs):
-        pass
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        return False
-
-    def update(self, _arg=None):
-        return
 
 
 class Executor(ABC):
@@ -48,9 +36,9 @@ class Executor(ABC):
         max_workers: int,
         progress_kwargs: dict,
         worker_initializer: Callable | None = None,
-        task: Callable | None = None,
+        task: Callable[..., T] | None = None,
         task_arguments: Iterable | None = None,
-        task_finished: Callable | None = None,
+        task_finished: Callable[[T, ProgressBar], None] | None = None,
     ) -> None:
         """Set up parallel execution and progress reporting.
 

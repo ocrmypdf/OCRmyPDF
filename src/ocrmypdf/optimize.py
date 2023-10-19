@@ -35,6 +35,7 @@ from PIL import Image
 from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._jobcontext import PdfContext
+from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.exceptions import OutputFileAccessError
 from ocrmypdf.helpers import IMG2PDF_KWARGS, safe_symlink
 
@@ -478,7 +479,7 @@ def transcode_jpegs(
             opt_jpg = in_jpg.with_suffix('.opt.jpg')
             yield xref, in_jpg, opt_jpg, options.jpeg_quality
 
-    def finish_jpeg(result: tuple[Xref, Path | None], pbar):
+    def finish_jpeg(result: tuple[Xref, Path | None], pbar: ProgressBar):
         xref, opt_jpg = result
         if opt_jpg:
             compdata = opt_jpg.read_bytes()  # JPEG can inserted into PDF as is
@@ -552,7 +553,7 @@ def deflate_jpegs(pdf: Pdf, root: Path, options, executor: Executor) -> None:
         for xref in jpegs:
             yield pdf, lock, xref, complevel
 
-    def finish(result, pbar):
+    def finish(result: tuple[Xref, bytes], pbar: ProgressBar):
         xref, compdata = result
         if len(compdata) > 0:
             with lock:

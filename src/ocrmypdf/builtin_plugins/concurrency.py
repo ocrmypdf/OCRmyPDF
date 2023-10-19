@@ -20,7 +20,8 @@ from typing import Callable, Union
 from rich.console import Console as RichConsole
 
 from ocrmypdf import Executor, hookimpl
-from ocrmypdf._logging import RichLoggingHandler, RichProgressBar
+from ocrmypdf._logging import RichLoggingHandler
+from ocrmypdf._progressbar import RichProgressBar
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import remove_all_log_handlers
 

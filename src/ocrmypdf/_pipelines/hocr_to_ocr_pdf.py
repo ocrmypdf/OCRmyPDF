@@ -33,6 +33,7 @@ from ocrmypdf._pipelines._common import (
     worker_init,
 )
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
+from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.exceptions import ExitCode
 
 log = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
 
     ocrgraft = OcrGrafter(context)
 
-    def graft_page(result: HOCRResult, pbar):
+    def graft_page(result: HOCRResult, pbar: ProgressBar):
         """After OCR is complete for a page, update the PDF."""
         try:
             set_thread_pageno(result.pageno + 1)

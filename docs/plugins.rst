@@ -177,6 +177,9 @@ Custom command line arguments
 Execution and progress reporting
 --------------------------------
 
+.. autoclass:: ocrmypdf.pluginspec.ProgressBar
+    :members:
+
 .. autoclass:: ocrmypdf.pluginspec.Executor
     :members:
 

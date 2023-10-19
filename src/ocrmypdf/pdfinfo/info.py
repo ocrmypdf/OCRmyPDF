@@ -38,6 +38,7 @@ from pikepdf import (
 )
 
 from ocrmypdf._concurrent import Executor, SerialExecutor
+from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.exceptions import EncryptedPdfError, InputFileError
 from ocrmypdf.helpers import Resolution, available_cpu_count, pikepdf_enable_mmap
 from ocrmypdf.pdfinfo.layout import LTStateAwareChar, get_page_analysis, get_text_boxes
@@ -694,13 +695,14 @@ def _pdf_pageinfo_sync_init(pdf: Pdf, infile: Path, pdfminer_loglevel):
         atexit.register(on_process_close)
 
 
-def _pdf_pageinfo_sync(pageno, thread_pdf, infile, check_pages, detailed_analysis):
+def _pdf_pageinfo_sync(
+    pageno, thread_pdf, infile, check_pages, detailed_analysis
+) -> PageInfo:
     pdf = thread_pdf if thread_pdf is not None else worker_pdf
     with ExitStack() as stack:
         if not pdf:  # When called with SerialExecutor
             pdf = stack.enter_context(Pdf.open(infile))
-        page = PageInfo(pdf, pageno, infile, check_pages, detailed_analysis)
-        return page
+        return PageInfo(pdf, pageno, infile, check_pages, detailed_analysis)
 
 
 def _pdf_pageinfo_concurrent(
@@ -715,8 +717,7 @@ def _pdf_pageinfo_concurrent(
 ) -> Sequence[PageInfo | None]:
     pages: Sequence[PageInfo | None] = [None] * len(pdf.pages)
 
-    def update_pageinfo(result, pbar):
-        page = result
+    def update_pageinfo(page: PageInfo, pbar: ProgressBar):
         if not page:
             raise InputFileError("Could read a page in the PDF")
         pages[page.pageno] = page
