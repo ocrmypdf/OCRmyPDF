@@ -1,3 +1,8 @@
+.. SPDX-FileCopyrightText: 2023 James R. Barlow
+..
+.. SPDX-License-Identifier: CC-BY-SA-4.0
+
+
 .. _ocr-service:
 
 ==================
