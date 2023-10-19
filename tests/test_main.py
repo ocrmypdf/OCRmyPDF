@@ -623,7 +623,7 @@ def test_no_contents(resources, outpdf):
 
 
 @pytest.mark.parametrize(
-    'image', ['baiona.png', 'baiona_gray.png', 'baiona_alpha.png', 'congress.jpg']
+    'image', ['baiona.png', 'baiona_gray.png', 'baiona_alpha.png', 'baiona_color.jpg']
 )
 def test_compression_preserved(ocrmypdf_exec, resources, image, outpdf):
     input_file = str(resources / image)
@@ -679,7 +679,7 @@ def test_compression_preserved(ocrmypdf_exec, resources, image, outpdf):
     [
         ('baiona.png', 'jpeg'),
         ('baiona_gray.png', 'lossless'),
-        ('congress.jpg', 'lossless'),
+        ('baiona_color.jpg', 'lossless'),
     ],
 )
 def test_compression_changed(ocrmypdf_exec, resources, image, compression, outpdf):

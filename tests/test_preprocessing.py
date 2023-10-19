@@ -46,11 +46,11 @@ def test_deskew_blank_page(resources, outpdf):
 @pytest.mark.xfail(reason="remove background disabled")
 def test_remove_background(resources, outdir):
     # Ensure the input image does not contain pure white/black
-    with Image.open(resources / 'congress.jpg') as im:
+    with Image.open(resources / 'baiona_color.jpg') as im:
         assert im.getextrema() != ((0, 255), (0, 255), (0, 255))
 
     output_pdf = check_ocrmypdf(
-        resources / 'congress.jpg',
+        resources / 'baiona_color.jpg',
         outdir / 'test_remove_bg.pdf',
         '--remove-background',
         '--image-dpi',

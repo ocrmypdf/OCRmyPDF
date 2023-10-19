@@ -19,9 +19,6 @@ the copyright holder(s) and license(s) applicable to these resources.
     *   - c02-22.pdf
         - `Project Gutenberg`_, Adventures of Huckleberry Finn, page 22
         - difficult OCR image (obscure fonts and illustrations)
-    *   - congress.jpg
-        - `US Congressional Records`_
-        - difficult OCR image (color background)
     *   - graph.pdf
         - `Wikimedia:Simple_line_graph_of_ACE_2012_results_by_candidate_sj01.png`_
         - image with slanted text
@@ -124,8 +121,6 @@ These test resources are assemblies or derivatives from other previously mention
 .. _`Wikimedia: LinnSequencer`: https://upload.wikimedia.org/wikipedia/en/b/b7/LinnSequencer_hardware_MIDI_sequencer_brochure_page_2_300dpi.jpg
 
 .. _`Project Gutenberg`: https://www.gutenberg.org/files/76/76-h/76-h.htm#c2
-
-.. _`US Congressional Records`: http://www.baxleystamps.com/litho/meiji/courts_1871.jpg
 
 .. _`Wikimedia: Simple_line_graph_of_ACE_2012_results_by_candidate_sj01.png`: https://en.wikipedia.org/wiki/File:Simple_line_graph_of_ACE_2012_results_by_candidate_sj01.png
 
