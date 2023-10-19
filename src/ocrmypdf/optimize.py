@@ -14,7 +14,7 @@ from collections import defaultdict
 from collections.abc import Iterator, MutableSet, Sequence
 from os import fspath
 from pathlib import Path
-from typing import Callable, NamedTuple, NewType
+from typing import Any, Callable, NamedTuple, NewType
 from warnings import warn
 from zlib import compress
 
@@ -623,7 +623,7 @@ def transcode_pngs(
     image_name_fn: Callable[[Path, Xref], Path],
     root: Path,
     options,
-    executor,
+    executor: Executor,
 ) -> None:
     """Apply lossy transcoding to PNGs."""
     modified: MutableSet[Xref] = set()
@@ -668,8 +668,8 @@ DEFAULT_EXECUTOR = SerialExecutor()
 def optimize(
     input_file: Path,
     output_file: Path,
-    context,
-    save_settings,
+    context: PdfContext,
+    save_settings: dict[str, Any],
     executor: Executor = DEFAULT_EXECUTOR,
 ) -> Path:
     """Optimize images in a PDF file."""
