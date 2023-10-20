@@ -26,7 +26,7 @@ import ocrmypdf
 # pylint: disable=logging-format-interpolation
 
 
-def getenv_bool(name: str, default: str = 'False'):
+def getenv_bool(name: str, default: str = 'False') -> str:
     return os.getenv(name, default).lower() in ('true', 'yes', 'y', '1')
 
 
@@ -47,7 +47,7 @@ PATTERNS = ['*.pdf', '*.PDF']
 log = logging.getLogger('ocrmypdf-watcher')
 
 
-def get_output_dir(root, basename):
+def get_output_dir(root: str, basename: str) -> Path:
     if OUTPUT_DIRECTORY_YEAR_MONTH:
         today = datetime.today()
         output_directory_year_month = (
@@ -61,7 +61,7 @@ def get_output_dir(root, basename):
     return output_path
 
 
-def wait_for_file_ready(file_path):
+def wait_for_file_ready(file_path: Path):
     # This loop waits to make sure that the file is completely loaded on
     # disk before attempting to read. Docker sometimes will publish the
     # watchdog event before the file is actually fully on disk, causing
@@ -70,25 +70,28 @@ def wait_for_file_ready(file_path):
     retries = RETRIES_LOADING_FILE
     while retries:
         try:
-            pdf = pikepdf.open(file_path)
-        except (FileNotFoundError, pikepdf.PdfError) as e:
+            with pikepdf.Pdf.open(file_path) as pdf:
+                log.debug(f"{file_path} ready with {pdf.pages} pages")
+                return True
+        except (FileNotFoundError, OSError) as e:
             log.info(f"File {file_path} is not ready yet")
             log.debug("Exception was", exc_info=e)
             time.sleep(POLL_NEW_FILE_SECONDS)
             retries -= 1
-        else:
-            pdf.close()
-            return True
+        except pikepdf.PdfError as e:
+            log.info(f"File {file_path} is not full written yet")
+            log.debug("Exception was", exc_info=e)
+            time.sleep(POLL_NEW_FILE_SECONDS)
+            retries -= 1
 
     return False
 
 
-def execute_ocrmypdf(file_path):
-    file_path = Path(file_path)
+def execute_ocrmypdf(file_path: Path):
     output_path = get_output_dir(OUTPUT_DIRECTORY, file_path.name)
 
     log.info("-" * 20)
-    log.info(f'New file: {file_path}. Waiting until fully loaded...')
+    log.info(f'New file: {file_path}. Waiting until fully written...')
     if not wait_for_file_ready(file_path):
         log.info(f"Gave up waiting for {file_path} to become ready")
         return
