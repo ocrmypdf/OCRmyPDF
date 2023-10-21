@@ -38,10 +38,17 @@ next
 -  Fixed test coverage in cases where the coverage tool did not properly trace
    into threads or subprocesses. This code was still being tested but appeared
    as not covered.
--  Reduced use of subprocesses and other techniques that interfere with coverage
-   measurement.
+-  In the test suite, reduced use of subprocesses and other techniques that
+   interfere with coverage measurement.
 -  Improved error check for when we appear to be running inside a snap container
    and files are not available.
+-  Plugin specification now properly defines progress bars as a protocol rather
+   than defining them as "tqdm-like".
+-  We now default to using "forkserver" process creation on POSIX platforms
+   rather than fork, since this is method is more robust and avoids some
+   issues when threads are present.
+-  Fixed an instance where the user's request to ``--no-use-threads`` was ignored.
+-  Replace some cryptic test error messages with more helpful ones.
 
 v15.3.0
 =======
