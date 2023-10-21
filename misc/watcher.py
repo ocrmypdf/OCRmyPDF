@@ -15,6 +15,7 @@ import shutil
 import sys
 import time
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -31,9 +32,19 @@ load_dotenv()
 
 
 # pylint: disable=logging-format-interpolation
-
+app = typer.Typer(name="ocrmypdf-watcher")
 
 log = logging.getLogger('ocrmypdf-watcher')
+
+
+class LoggingLevelEnum(str, Enum):
+    """Enum for logging levels."""
+
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
 
 
 def get_output_dir(root: Path, basename: str, output_dir_year_month: bool) -> Path:
@@ -56,8 +67,8 @@ def wait_for_file_ready(
     # watchdog event before the file is actually fully on disk, causing
     # pikepdf to fail.
 
-    retries = retries_loading_file
-    while retries:
+    tries = retries_loading_file + 1
+    while tries:
         try:
             with pikepdf.Pdf.open(file_path) as pdf:
                 log.debug(f"{file_path} ready with {pdf.pages} pages")
@@ -66,12 +77,12 @@ def wait_for_file_ready(
             log.info(f"File {file_path} is not ready yet")
             log.debug("Exception was", exc_info=e)
             time.sleep(poll_new_file_seconds)
-            retries -= 1
+            tries -= 1
         except pikepdf.PdfError as e:
             log.info(f"File {file_path} is not full written yet")
             log.debug("Exception was", exc_info=e)
             time.sleep(poll_new_file_seconds)
-            retries -= 1
+            tries -= 1
 
     return False
 
@@ -138,6 +149,7 @@ class HandleObserverEvent(PatternMatchingEventHandler):
             execute_ocrmypdf(event.src_path, **self._settings)
 
 
+@app.command()
 def main(
     input_dir: Annotated[
         Path,
@@ -212,6 +224,7 @@ def main(
         typer.Option(
             envvar='OCR_POLL_NEW_FILE_SECONDS',
             help='Seconds to wait before polling a new file',
+            min=0,
         ),
     ] = 1,
     use_polling: Annotated[
@@ -226,15 +239,16 @@ def main(
         typer.Option(
             envvar='OCR_RETRIES_LOADING_FILE',
             help='Number of times to retry loading a file before giving up',
+            min=0,
         ),
     ] = 5,
     loglevel: Annotated[
-        str,
+        LoggingLevelEnum,
         typer.Option(
             envvar='OCR_LOGLEVEL',
             help='Logging level',
         ),
-    ] = 'INFO',
+    ] = LoggingLevelEnum.INFO,
     patterns: Annotated[
         str,
         typer.Option(
@@ -312,4 +326,4 @@ def main(
 
 
 if __name__ == "__main__":
-    typer.run(main)
+    app()
