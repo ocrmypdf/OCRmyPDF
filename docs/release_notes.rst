@@ -28,6 +28,15 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v15.3.0
+=======
+
+-  Update misc/watcher.py to improve command line interface using Typer, and
+   support ``.env`` specification of environment variables. Improved error
+   messages. Thanks to @mflagg2814 for the PR that prompted this improvement.
+-  Improved error message when a file cannot be read because we are running in
+   a snap container.
+
 v15.2.0
 =======
 
