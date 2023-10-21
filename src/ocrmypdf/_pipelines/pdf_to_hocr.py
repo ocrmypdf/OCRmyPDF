@@ -39,7 +39,7 @@ from ocrmypdf._validation import (
 log = logging.getLogger(__name__)
 
 
-def exec_page_hocr_sync(page_context: PageContext) -> HOCRResult:
+def _exec_page_hocr_sync(page_context: PageContext) -> HOCRResult:
     """Execute a pipeline for a single page hOCR."""
     set_thread_pageno(page_context.pageno + 1)
 
@@ -80,7 +80,7 @@ def exec_pdf_to_hocr(context: PdfContext, executor: Executor) -> None:
             disable=not options.progress_bar,
         ),
         worker_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
-        task=exec_page_hocr_sync,
+        task=_exec_page_hocr_sync,
         task_arguments=context.get_page_context_args(),
     )
 
@@ -90,6 +90,7 @@ def run_hocr_pipeline(
     *,
     plugin_manager: OcrmypdfPluginManager,
 ) -> None:
+    """Run pipeline to output hOCR."""
     with manage_work_folder(
         work_folder=options.output_folder, retain=True, print_location=False
     ) as work_folder:

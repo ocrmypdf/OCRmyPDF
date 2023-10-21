@@ -39,7 +39,8 @@ from ocrmypdf.exceptions import ExitCode
 log = logging.getLogger(__name__)
 
 
-def exec_hocrtransform_sync(page_context: PageContext) -> HOCRResult:
+def _exec_hocrtransform_sync(page_context: PageContext) -> HOCRResult:
+    """Process each page."""
     hocr_json = page_context.get_path('hocr.json')
     if not hocr_json.exists():
         # No hOCR file, so no OCR was performed on this page.
@@ -52,7 +53,7 @@ def exec_hocrtransform_sync(page_context: PageContext) -> HOCRResult:
 
 
 def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[str]:
-    """Execute the OCR pipeline concurrently and output hOCR."""
+    """Convert hOCR files to OCR PDF."""
     # Run exec_page_sync on every page
     options = context.options
     max_workers = min(len(context.pdfinfo), options.jobs)
@@ -62,7 +63,7 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
     ocrgraft = OcrGrafter(context)
 
     def graft_page(result: HOCRResult, pbar: ProgressBar):
-        """After OCR is complete for a page, update the PDF."""
+        """Graft text only PDF on to main PDF's page."""
         try:
             set_thread_pageno(result.pageno + 1)
             pbar.update()
@@ -87,7 +88,7 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
             disable=not options.progress_bar,
         ),
         worker_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
-        task=exec_hocrtransform_sync,
+        task=_exec_hocrtransform_sync,
         task_arguments=context.get_page_context_args(),
         task_finished=graft_page,
     )
@@ -109,6 +110,7 @@ def run_hocr_to_ocr_pdf_pipeline(
     *,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
+    """Run pipeline to convert hOCR to final output PDF."""
     with manage_work_folder(
         work_folder=options.work_folder, retain=True, print_location=False
     ) as work_folder:

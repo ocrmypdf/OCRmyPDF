@@ -69,7 +69,7 @@ def _image_to_ocr_text(
     return ocr_out, text_out
 
 
-def exec_page_sync(page_context: PageContext) -> PageResult:
+def _exec_page_sync(page_context: PageContext) -> PageResult:
     """Execute a pipeline for a single page synchronously."""
     set_thread_pageno(page_context.pageno + 1)
 
@@ -92,7 +92,6 @@ def exec_page_sync(page_context: PageContext) -> PageResult:
 
 def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     """Execute the OCR pipeline concurrently."""
-    # Run exec_page_sync on every page
     options = context.options
     max_workers = min(len(context.pdfinfo), options.jobs)
     if max_workers > 1:
@@ -128,7 +127,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
             disable=not options.progress_bar,
         ),
         worker_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
-        task=exec_page_sync,
+        task=_exec_page_sync,
         task_arguments=context.get_page_context_args(),
         task_finished=update_page,
     )
