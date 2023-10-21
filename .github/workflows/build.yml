@@ -32,7 +32,7 @@ jobs:
             python: "3.9"
             tesseract5: true
           - os: ubuntu-latest
-            python: "3.12-dev"
+            python: "3.12"
             tesseract5: true
             #- os: ubuntu-latest
             #  python: "pypy3.9"
@@ -113,7 +113,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python: ["3.10", "3.11", "3.12-dev"]
+        python: ["3.10", "3.11", "3.12"]
 
     env:
       OS: ${{ matrix.os }}
@@ -170,7 +170,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python: ["3.10", "3.11", "3.12-dev"]
+        python: ["3.10", "3.11", "3.12"]
 
     env:
       OS: ${{ matrix.os }}
