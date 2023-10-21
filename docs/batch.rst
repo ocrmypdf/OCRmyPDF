@@ -152,7 +152,7 @@ The watcher service is included in the OCRmyPDF Docker image. To run it:
     docker run \
         --volume <path to files to convert>:/input \
         --volume <path to store results>:/output \
-        --volume <path to store processed originals>:/archive \
+        --volume <path to store processed originals>:/processed \
         --env OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1 \
         --env OCR_ON_SUCCESS_ARCHIVE=1 \
         --env OCR_DESKEW=1 \
@@ -163,7 +163,7 @@ The watcher service is included in the OCRmyPDF Docker image. To run it:
 
 This service will watch for a file that matches ``/input/\*.pdf``,
 convert it to a OCRed PDF in ``/output/``, and move the processed
-original to ``/archive``. The parameters to this image are:
+original to ``/processed``. The parameters to this image are:
 
 .. csv-table:: watcher.py parameters for Docker
     :header: "Parameter", "Description"
@@ -171,7 +171,7 @@ original to ``/archive``. The parameters to this image are:
 
     "``--volume <path to files to convert>:/input``", "Files placed in this location will be OCRed"
     "``--volume <path to store results>:/output``", "This is where OCRed files will be stored"
-    "``--volume <path to store processed originals>:/archive``", "Archive processed originals here"
+    "``--volume <path to store processed originals>:/processed``", "Archive processed originals here"
     "``--env OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1``", "Define environment variable ``OCR_OUTPUT_DIRECTORY_YEAR_MONTH=1`` to place files in the output in ``{output}/{year}/{month}/{filename}``"
     "``--env OCR_ON_SUCCESS_ARCHIVE=1``", "Define environment variable ``OCR_ON_SUCCESS_ARCHIVE`` to move processed originals"
     "``--env OCR_DESKEW=1``", "Define environment variable ``OCR_DESKEW``  to apply deskew to crooked input PDFs"
