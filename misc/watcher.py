@@ -5,69 +5,58 @@
 
 """Watch a directory for new PDFs and OCR them."""
 
-from __future__ import annotations
+# Do not enable annotations!
+# https://github.com/tiangolo/typer/discussions/598
+# from __future__ import annotations
 
 import json
 import logging
-import os
 import shutil
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Annotated, Any
 
 import pikepdf
+import typer
+from dotenv import load_dotenv
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer
 from watchdog.observers.polling import PollingObserver
 
 import ocrmypdf
 
+load_dotenv()
+
+
 # pylint: disable=logging-format-interpolation
 
-
-def getenv_bool(name: str, default: str = 'False') -> str:
-    return os.getenv(name, default).lower() in ('true', 'yes', 'y', '1')
-
-
-INPUT_DIRECTORY = os.getenv('OCR_INPUT_DIRECTORY', '/input')
-OUTPUT_DIRECTORY = os.getenv('OCR_OUTPUT_DIRECTORY', '/output')
-ARCHIVE_DIRECTORY = os.getenv('OCR_ARCHIVE_DIRECTORY', '/processed')
-OUTPUT_DIRECTORY_YEAR_MONTH = getenv_bool('OCR_OUTPUT_DIRECTORY_YEAR_MONTH')
-ON_SUCCESS_DELETE = getenv_bool('OCR_ON_SUCCESS_DELETE')
-ON_SUCCESS_ARCHIVE = getenv_bool('OCR_ON_SUCCESS_ARCHIVE')
-DESKEW = getenv_bool('OCR_DESKEW')
-OCR_JSON_SETTINGS = json.loads(os.getenv('OCR_JSON_SETTINGS', '{}'))
-POLL_NEW_FILE_SECONDS = int(os.getenv('OCR_POLL_NEW_FILE_SECONDS', '1'))
-USE_POLLING = getenv_bool('OCR_USE_POLLING')
-RETRIES_LOADING_FILE = int(os.getenv('OCR_RETRIES_LOADING_FILE', '5'))
-LOGLEVEL = os.getenv('OCR_LOGLEVEL', 'INFO')
-PATTERNS = ['*.pdf', '*.PDF']
 
 log = logging.getLogger('ocrmypdf-watcher')
 
 
-def get_output_dir(root: str, basename: str) -> Path:
-    if OUTPUT_DIRECTORY_YEAR_MONTH:
+def get_output_dir(root: Path, basename: str, output_dir_year_month: bool) -> Path:
+    if output_dir_year_month:
         today = datetime.today()
-        output_directory_year_month = (
-            Path(root) / str(today.year) / f'{today.month:02d}'
-        )
+        output_directory_year_month = root / str(today.year) / f'{today.month:02d}'
         if not output_directory_year_month.exists():
             output_directory_year_month.mkdir(parents=True, exist_ok=True)
         output_path = Path(output_directory_year_month) / basename
     else:
-        output_path = Path(OUTPUT_DIRECTORY) / basename
+        output_path = root / basename
     return output_path
 
 
-def wait_for_file_ready(file_path: Path):
+def wait_for_file_ready(
+    file_path: Path, poll_new_file_seconds: int, retries_loading_file: int
+):
     # This loop waits to make sure that the file is completely loaded on
     # disk before attempting to read. Docker sometimes will publish the
     # watchdog event before the file is actually fully on disk, causing
     # pikepdf to fail.
 
-    retries = RETRIES_LOADING_FILE
+    retries = retries_loading_file
     while retries:
         try:
             with pikepdf.Pdf.open(file_path) as pdf:
@@ -76,39 +65,51 @@ def wait_for_file_ready(file_path: Path):
         except (FileNotFoundError, OSError) as e:
             log.info(f"File {file_path} is not ready yet")
             log.debug("Exception was", exc_info=e)
-            time.sleep(POLL_NEW_FILE_SECONDS)
+            time.sleep(poll_new_file_seconds)
             retries -= 1
         except pikepdf.PdfError as e:
             log.info(f"File {file_path} is not full written yet")
             log.debug("Exception was", exc_info=e)
-            time.sleep(POLL_NEW_FILE_SECONDS)
+            time.sleep(poll_new_file_seconds)
             retries -= 1
 
     return False
 
 
-def execute_ocrmypdf(file_path: Path):
-    output_path = get_output_dir(OUTPUT_DIRECTORY, file_path.name)
+def execute_ocrmypdf(
+    *,
+    file_path: Path,
+    archive_dir: Path,
+    output_dir: Path,
+    deskew: bool,
+    ocrmypdf_kwargs: dict[str, Any],
+    on_success_delete: bool,
+    on_success_archive: bool,
+    poll_new_file_seconds: int,
+    retries_loading_file: int,
+    output_dir_year_month: bool,
+):
+    output_path = get_output_dir(output_dir, file_path.name, output_dir_year_month)
 
     log.info("-" * 20)
     log.info(f'New file: {file_path}. Waiting until fully written...')
-    if not wait_for_file_ready(file_path):
+    if not wait_for_file_ready(file_path, poll_new_file_seconds, retries_loading_file):
         log.info(f"Gave up waiting for {file_path} to become ready")
         return
     log.info(f'Attempting to OCRmyPDF to: {output_path}')
     exit_code = ocrmypdf.ocr(
         input_file=file_path,
         output_file=output_path,
-        deskew=DESKEW,
-        **OCR_JSON_SETTINGS,
+        deskew=deskew,
+        **ocrmypdf_kwargs,
     )
     if exit_code == 0:
-        if ON_SUCCESS_DELETE:
+        if on_success_delete:
             log.info(f'OCR is done. Deleting: {file_path}')
             file_path.unlink()
-        elif ON_SUCCESS_ARCHIVE:
-            log.info(f'OCR is done. Archiving {file_path.name} to {ARCHIVE_DIRECTORY}')
-            shutil.move(file_path, f'{ARCHIVE_DIRECTORY}/{file_path.name}')
+        elif on_success_archive:
+            log.info(f'OCR is done. Archiving {file_path.name} to {archive_dir}')
+            shutil.move(file_path, f'{archive_dir}/{file_path.name}')
         else:
             log.info('OCR is done')
     else:
@@ -116,61 +117,199 @@ def execute_ocrmypdf(file_path: Path):
 
 
 class HandleObserverEvent(PatternMatchingEventHandler):
+    def __init__(
+        self,
+        patterns=None,
+        ignore_patterns=None,
+        ignore_directories=False,
+        case_sensitive=False,
+        settings={},
+    ):
+        super().__init__(
+            patterns=patterns,
+            ignore_patterns=ignore_patterns,
+            ignore_directories=ignore_directories,
+            case_sensitive=case_sensitive,
+        )
+        self._settings = settings
+
     def on_any_event(self, event):
         if event.event_type in ['created']:
-            execute_ocrmypdf(event.src_path)
+            execute_ocrmypdf(event.src_path, **self._settings)
 
 
-def main():
+def main(
+    input_dir: Annotated[
+        Path,
+        typer.Argument(
+            envvar='OCR_INPUT_DIRECTORY',
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+            readable=True,
+            resolve_path=True,
+        ),
+    ] = '/input',
+    output_dir: Annotated[
+        Path,
+        typer.Argument(
+            envvar='OCR_OUTPUT_DIRECTORY',
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+            writable=True,
+            resolve_path=True,
+        ),
+    ] = '/output',
+    archive_dir: Annotated[
+        Path,
+        typer.Argument(
+            envvar='OCR_ARCHIVE_DIRECTORY',
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+            writable=True,
+            resolve_path=True,
+        ),
+    ] = '/processed',
+    output_dir_year_month: Annotated[
+        bool,
+        typer.Option(
+            envvar='OCR_OUTPUT_DIRECTORY_YEAR_MONTH',
+            help='Create a subdirectory in the output directory for each year and month',
+        ),
+    ] = False,
+    on_success_delete: Annotated[
+        bool,
+        typer.Option(
+            envvar='OCR_ON_SUCCESS_DELETE',
+            help='Delete the input file after successful OCR',
+        ),
+    ] = False,
+    on_success_archive: Annotated[
+        bool,
+        typer.Option(
+            envvar='OCR_ON_SUCCESS_ARCHIVE',
+            help='Archive the input file after successful OCR',
+        ),
+    ] = False,
+    deskew: Annotated[
+        bool,
+        typer.Option(
+            envvar='OCR_DESKEW',
+            help='Deskew the input file before OCR',
+        ),
+    ] = False,
+    ocr_json_settings: Annotated[
+        typer.FileText,
+        typer.Option(
+            envvar='OCR_JSON_SETTINGS',
+            help='JSON settings to pass to OCRmyPDF',
+        ),
+    ] = None,
+    poll_new_file_seconds: Annotated[
+        int,
+        typer.Option(
+            envvar='OCR_POLL_NEW_FILE_SECONDS',
+            help='Seconds to wait before polling a new file',
+        ),
+    ] = 1,
+    use_polling: Annotated[
+        bool,
+        typer.Option(
+            envvar='OCR_USE_POLLING',
+            help='Use polling instead of filesystem events',
+        ),
+    ] = False,
+    retries_loading_file: Annotated[
+        int,
+        typer.Option(
+            envvar='OCR_RETRIES_LOADING_FILE',
+            help='Number of times to retry loading a file before giving up',
+        ),
+    ] = 5,
+    loglevel: Annotated[
+        str,
+        typer.Option(
+            envvar='OCR_LOGLEVEL',
+            help='Logging level',
+        ),
+    ] = 'INFO',
+    patterns: Annotated[
+        str,
+        typer.Option(
+            envvar='OCR_PATTERNS',
+            help='File patterns to watch',
+        ),
+    ] = '*.pdf,*.PDF',
+):
     ocrmypdf.configure_logging(
         verbosity=(
             ocrmypdf.Verbosity.default
-            if LOGLEVEL != 'DEBUG'
+            if loglevel != 'DEBUG'
             else ocrmypdf.Verbosity.debug
         ),
         manage_root_logger=True,
     )
-    log.setLevel(LOGLEVEL)
+    log.setLevel(loglevel)
     log.info(
         f"Starting OCRmyPDF watcher with config:\n"
-        f"Input Directory: {INPUT_DIRECTORY}\n"
-        f"Output Directory: {OUTPUT_DIRECTORY}\n"
-        f"Output Directory Year & Month: {OUTPUT_DIRECTORY_YEAR_MONTH}\n"
-        f"Archive Directory: {ARCHIVE_DIRECTORY}"
+        f"Input Directory: {input_dir}\n"
+        f"Output Directory: {output_dir}\n"
+        f"Output Directory Year & Month: {output_dir_year_month}\n"
+        f"Archive Directory: {archive_dir}"
     )
     log.debug(
-        f"INPUT_DIRECTORY: {INPUT_DIRECTORY}\n"
-        f"OUTPUT_DIRECTORY: {OUTPUT_DIRECTORY}\n"
-        f"OUTPUT_DIRECTORY_YEAR_MONTH: {OUTPUT_DIRECTORY_YEAR_MONTH}\n"
-        f"ARCHIVE_DIRECTORY: {ARCHIVE_DIRECTORY}\n"
-        f"ON_SUCCESS_DELETE: {ON_SUCCESS_DELETE}\n"
-        f"ON_SUCCESS_ARCHIVE: {ON_SUCCESS_ARCHIVE}\n"
-        f"DESKEW: {DESKEW}\n"
-        f"ARGS: {OCR_JSON_SETTINGS}\n"
-        f"POLL_NEW_FILE_SECONDS: {POLL_NEW_FILE_SECONDS}\n"
-        f"RETRIES_LOADING_FILE: {RETRIES_LOADING_FILE}\n"
-        f"USE_POLLING: {USE_POLLING}\n"
-        f"LOGLEVEL: {LOGLEVEL}"
+        f"INPUT_DIRECTORY: {input_dir}\n"
+        f"OUTPUT_DIRECTORY: {output_dir}\n"
+        f"OUTPUT_DIRECTORY_YEAR_MONTH: {output_dir_year_month}\n"
+        f"ARCHIVE_DIRECTORY: {archive_dir}\n"
+        f"ON_SUCCESS_DELETE: {on_success_delete}\n"
+        f"ON_SUCCESS_ARCHIVE: {on_success_archive}\n"
+        f"DESKEW: {deskew}\n"
+        f"ARGS: {ocr_json_settings}\n"
+        f"POLL_NEW_FILE_SECONDS: {poll_new_file_seconds}\n"
+        f"RETRIES_LOADING_FILE: {retries_loading_file}\n"
+        f"USE_POLLING: {use_polling}\n"
+        f"LOGLEVEL: {loglevel}"
     )
 
-    if 'input_file' in OCR_JSON_SETTINGS or 'output_file' in OCR_JSON_SETTINGS:
-        log.error('OCR_JSON_SETTINGS should not specify input file or output file')
+    json_settings = json.loads(ocr_json_settings.read() if ocr_json_settings else '{}')
+
+    if 'input_file' in json_settings or 'output_file' in json_settings:
+        log.error(
+            'OCR_JSON_SETTINGS (--ocr-json-settings) may not specify input/output file'
+        )
         sys.exit(1)
 
-    handler = HandleObserverEvent(patterns=PATTERNS)
-    if USE_POLLING:
+    handler = HandleObserverEvent(
+        patterns=patterns.split(','),
+        settings={
+            'archive_dir': archive_dir,
+            'output_dir': output_dir,
+            'deskew': deskew,
+            'ocrmypdf_kwargs': json_settings,
+            'on_success_delete': on_success_delete,
+            'on_success_archive': on_success_archive,
+            'poll_new_file_seconds': poll_new_file_seconds,
+            'retries_loading_file': retries_loading_file,
+            'output_dir_year_month': output_dir_year_month,
+        },
+    )
+    if use_polling:
         observer = PollingObserver()
     else:
         observer = Observer()
-    observer.schedule(handler, INPUT_DIRECTORY, recursive=True)
+    observer.schedule(handler, input_dir, recursive=True)
     observer.start()
+    typer.echo(f"Watching {input_dir} for new PDFs. Press Ctrl+C to exit.")
     try:
         while True:
-            time.sleep(1)
+            time.sleep(30)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
 
 
 if __name__ == "__main__":
-    main()
+    typer.run(main)
