@@ -12,12 +12,12 @@ OCRmyPDF is also available in Docker images that packages recent
 versions of all dependencies.
 
 For users who already have Docker installed this may be an easy and
-convenient option. However, it is less performant than a system
-installation and may require Docker engine configuration. OCRmyPDF
-needs a generous amount of RAM, CPU cores, temporary storage
-space, whether running in a Docker container or on its own. It may be
-necessary to ensure the container is provisioned with additional
-resources.
+convenient option.
+
+On platforms other than Linux, Docker runs in a virtual machine, and so may
+be less performant. You may also want to adjust the Docker virtual machine's
+memory and CPU allocation. On Linux, the Docker image runs natively and
+performance is comparable to a system installation.
 
 .. _docker-install:
 
