@@ -25,9 +25,8 @@ def is_macos():
 
 
 def running_in_docker():
-    # Docker creates a file named /.dockerenv (newer versions) or
-    # /.dockerinit (older) -- this is undocumented, not an offical test
-    return Path('/.dockerenv').exists() or Path('/.dockerinit').exists()
+    # Docker creates a file named /.dockerenv in all supported versions
+    return Path('/.dockerenv').exists()
 
 
 def have_unpaper():
