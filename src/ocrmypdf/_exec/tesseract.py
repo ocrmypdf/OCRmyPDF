@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 import re
+from contextlib import suppress
 from math import pi
 from os import fspath
 from pathlib import Path
@@ -350,7 +351,7 @@ def generate_hocr(
         tesseract_log_output(stdout)
         # The sidecar text file will get the suffix .txt; rename it to
         # whatever caller wants it named
-        if prefix.with_suffix('.txt').exists():
+        with suppress(FileNotFoundError):
             prefix.with_suffix('.txt').replace(output_text)
 
 
@@ -406,7 +407,7 @@ def generate_pdf(
     try:
         p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
         stdout = p.stdout
-        if prefix.with_suffix('.txt').exists():
+        with suppress(FileNotFoundError):
             prefix.with_suffix('.txt').replace(output_text)
     except TimeoutExpired:
         page_timedout(timeout)
