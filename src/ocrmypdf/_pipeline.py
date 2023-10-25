@@ -518,6 +518,7 @@ def rasterize(
                 device_idx = at_least('png16m')
 
     if pageinfo.has_vector:
+        log.debug("Page has vector content, using png16m")
         device_idx = at_least('png16m')
 
     device = colorspaces[device_idx]
