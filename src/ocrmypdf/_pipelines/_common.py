@@ -24,6 +24,7 @@ import PIL
 from ocrmypdf._concurrent import Executor, setup_executor
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._logging import PageNumberFilter
+from ocrmypdf._metadata import metadata_fixup
 from ocrmypdf._pipeline import (
     convert_to_pdfa,
     create_ocr_image,
@@ -31,7 +32,6 @@ from ocrmypdf._pipeline import (
     create_visible_page_jpg,
     generate_postscript_stub,
     get_orientation_correction,
-    metadata_fixup,
     optimize_pdf,
     preprocess_clean,
     preprocess_deskew,
