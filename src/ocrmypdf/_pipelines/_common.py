@@ -32,12 +32,14 @@ from ocrmypdf._pipeline import (
     create_visible_page_jpg,
     generate_postscript_stub,
     get_orientation_correction,
+    get_pdf_save_settings,
     optimize_pdf,
     preprocess_clean,
     preprocess_deskew,
     preprocess_remove_background,
     rasterize,
     rasterize_preview,
+    should_linearize,
     should_visible_page_image_use_jpg,
 )
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
@@ -401,7 +403,11 @@ def postprocess(
         ps_stub_out = generate_postscript_stub(context)
         pdf_out = convert_to_pdfa(pdf_out, ps_stub_out, context)
 
-    pdf_out = metadata_fixup(pdf_out, context)
+    optimizing = context.plugin_manager.hook.is_optimization_enabled(context=context)
+    save_settings = get_pdf_save_settings(context.options.output_type)
+    save_settings['linearize'] = not optimizing and should_linearize(pdf_out, context)
+
+    pdf_out = metadata_fixup(pdf_out, context, pdf_save_settings=save_settings)
     return optimize_pdf(pdf_out, context, executor)
 
 
