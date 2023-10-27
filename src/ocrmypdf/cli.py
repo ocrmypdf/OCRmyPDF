@@ -193,8 +193,8 @@ Online documentation is located at:
         help="Choose output type. 'pdfa' creates a PDF/A-2b compliant file for "
         "long term archiving (default, recommended) but may not suitable "
         "for users who want their file altered as little as possible. 'pdfa' "
-        "also has problems with full Unicode text. 'pdf' attempts to "
-        "preserve file contents as much as possible. 'pdf-a1' creates a "
+        "also has problems with full Unicode text. 'pdf' minimizes changes "
+        "to the input file. 'pdf-a1' creates a "
         "PDF/A1-b file. 'pdf-a2' is equivalent to 'pdfa'. 'pdf-a3' creates a "
         "PDF/A3-b file. 'none' will produce no output, which may be helpful if "
         "only the --sidecar is desired.",
