@@ -133,6 +133,7 @@ jobs:
             ghostscript \
             jbig2enc \
             openjpeg \
+            openssl \
             pngquant \
             tesseract
 
