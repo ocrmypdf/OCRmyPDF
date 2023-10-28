@@ -28,6 +28,13 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v15.3.1
+=======
+
+-  Fixed an issue with logging settings for misc/watcher.py introduced in the
+   previous release. :issue:`1180`
+-  Updated documentation on Docker performance concerns.
+
 v15.3.0
 =======
 
