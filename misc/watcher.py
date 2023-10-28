@@ -260,12 +260,12 @@ def main(
     ocrmypdf.configure_logging(
         verbosity=(
             ocrmypdf.Verbosity.default
-            if loglevel != 'DEBUG'
+            if loglevel != LoggingLevelEnum.DEBUG
             else ocrmypdf.Verbosity.debug
         ),
         manage_root_logger=True,
     )
-    log.setLevel(loglevel)
+    log.setLevel(loglevel.value)
     log.info(
         f"Starting OCRmyPDF watcher with config:\n"
         f"Input Directory: {input_dir}\n"
@@ -285,7 +285,7 @@ def main(
         f"POLL_NEW_FILE_SECONDS: {poll_new_file_seconds}\n"
         f"RETRIES_LOADING_FILE: {retries_loading_file}\n"
         f"USE_POLLING: {use_polling}\n"
-        f"LOGLEVEL: {loglevel}"
+        f"LOGLEVEL: {loglevel.value}"
     )
 
     json_settings = json.loads(ocr_json_settings.read() if ocr_json_settings else '{}')
