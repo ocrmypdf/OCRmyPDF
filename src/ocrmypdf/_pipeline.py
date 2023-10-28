@@ -14,7 +14,7 @@ from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
-from shutil import copyfileobj
+from shutil import copyfileobj, copystat
 from typing import Any, BinaryIO, TypeVar, cast
 
 import img2pdf
@@ -1090,14 +1090,14 @@ def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext) -> Pat
 
 
 def copy_final(
-    input_file: Path, output_file: str | Path | BinaryIO, _context: PdfContext
+    input_file: Path, output_file: str | Path | BinaryIO, context: PdfContext
 ) -> None:
     """Copy the final temporary file to the output destination.
 
     Args:
-        input_file (Path): The input file to copy.
+        input_file (Path): The intermediate input file to copy.
         output_file (str | Path | BinaryIO): The output file to copy to.
-        _context (PdfContext): The PDF context.
+        context (PdfContext): The PDF context.
 
     Returns:
         None
@@ -1116,5 +1116,11 @@ def copy_final(
             # At this point we overwrite the output_file specified by the user
             # use copyfileobj because then we use open() to create the file and
             # get the appropriate umask, ownership, etc.
-            with open(output_file, 'wb') as output_stream:
+            with open(output_file, 'w+b') as output_stream:
                 copyfileobj(input_stream, output_stream)
+            # Attempt to copy file attributes from input to output
+            with suppress(OSError):
+                # Copy original file's permissions, ownership, etc. if possible
+                copystat(context.options.input_file, output_file)
+                # Set output file's modification time to now
+                Path(output_file).touch(exist_ok=True)
