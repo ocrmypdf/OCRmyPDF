@@ -10,6 +10,7 @@ import pytest
 from pdfminer.high_level import extract_text
 
 import ocrmypdf
+import ocrmypdf.api
 
 
 def test_language_list():
@@ -29,7 +30,7 @@ def test_stream_api(resources: Path):
 
 
 def test_hocr_api_multipage(resources: Path, outdir: Path, outpdf: Path):
-    ocrmypdf.pdf_to_hocr(
+    ocrmypdf.api._pdf_to_hocr(
         resources / 'multipage.pdf',
         outdir,
         language='eng',
@@ -40,12 +41,12 @@ def test_hocr_api_multipage(resources: Path, outdir: Path, outpdf: Path):
     assert (outdir / '000006_ocr_hocr.hocr').exists()
     assert not (outdir / '000004_ocr_hocr.hocr').exists()
 
-    ocrmypdf.hocr_to_ocr_pdf(outdir, outpdf)
+    ocrmypdf.api._hocr_to_ocr_pdf(outdir, outpdf)
     assert outpdf.exists()
 
 
 def test_hocr_to_pdf_api(resources: Path, outdir: Path, outpdf: Path):
-    ocrmypdf.pdf_to_hocr(
+    ocrmypdf.api._pdf_to_hocr(
         resources / 'ccitt.pdf',
         outdir,
         language='eng',
@@ -57,7 +58,7 @@ def test_hocr_to_pdf_api(resources: Path, outdir: Path, outpdf: Path):
     mangled = hocr.replace('the', 'hocr')
     (outdir / '000001_ocr_hocr.hocr').write_text(mangled, encoding='utf-8')
 
-    ocrmypdf.hocr_to_ocr_pdf(outdir, outpdf, optimize=0)
+    ocrmypdf.api._hocr_to_ocr_pdf(outdir, outpdf, optimize=0)
 
     text = extract_text(outpdf)
     assert 'hocr' in text and 'the' not in text

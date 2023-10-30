@@ -31,9 +31,11 @@ tagged yet.
 v15.4.0
 =======
 
--  Added new APIs to support offline editing of the final text. Specifically,
-   one can now generate hOCR files with OCRmyPDF, edit them with some other tool,
-   and then finalize the PDF.
+-  Added new experimental APIs to support offline editing of the final text.
+   Specifically, one can now generate hOCR files with OCRmyPDF, edit them with
+   some other tool, and then finalize the PDF. They are experimental and
+   subject to change, including details of how the working folder is used.
+   There is no command line interface.
 -  Code reorganization: executors, progress bars, initialization and setup.
 -  Fixed test coverage in cases where the coverage tool did not properly trace
    into threads or subprocesses. This code was still being tested but appeared

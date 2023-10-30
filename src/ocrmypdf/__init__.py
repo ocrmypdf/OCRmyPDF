@@ -14,7 +14,11 @@ from ocrmypdf._pipelines._common import (
     configure_debug_logging,
 )
 from ocrmypdf._version import PROGRAM_NAME, __version__
-from ocrmypdf.api import Verbosity, configure_logging, hocr_to_ocr_pdf, ocr, pdf_to_hocr
+from ocrmypdf.api import (
+    Verbosity,
+    configure_logging,
+    ocr,
+)
 from ocrmypdf.exceptions import (
     BadArgsError,
     DpiError,
@@ -45,7 +49,6 @@ __all__ = [
     'ExitCode',
     'ExitCodeException',
     'helpers',
-    'hocr_to_ocr_pdf',
     'hocrtransform',
     'hookimpl',
     'InputFileError',
@@ -55,7 +58,6 @@ __all__ = [
     'OrientationConfidence',
     'OutputFileAccessError',
     'PageContext',
-    'pdf_to_hocr',
     'pdfa',
     'PdfContext',
     'pdfinfo',
