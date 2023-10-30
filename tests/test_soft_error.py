@@ -9,11 +9,11 @@ import pytest
 
 from ocrmypdf.exceptions import ExitCode
 
-from .conftest import run_ocrmypdf
+from .conftest import run_ocrmypdf_api
 
 
 def test_raster_continue_on_soft_error(resources, outpdf):
-    p = run_ocrmypdf(
+    exitcode = run_ocrmypdf_api(
         resources / 'francais.pdf',
         outpdf,
         '--continue-on-soft-render-error',
@@ -22,11 +22,11 @@ def test_raster_continue_on_soft_error(resources, outpdf):
         '--plugin',
         'tests/plugins/gs_raster_soft_error.py',
     )
-    assert p.returncode == ExitCode.ok
+    assert exitcode == ExitCode.ok
 
 
 def test_raster_stop_on_soft_error(resources, outpdf):
-    p = run_ocrmypdf(
+    exitcode = run_ocrmypdf_api(
         resources / 'francais.pdf',
         outpdf,
         '--plugin',
@@ -34,11 +34,11 @@ def test_raster_stop_on_soft_error(resources, outpdf):
         '--plugin',
         'tests/plugins/gs_raster_soft_error.py',
     )
-    assert p.returncode == ExitCode.child_process_error
+    assert exitcode == ExitCode.child_process_error
 
 
 def test_render_continue_on_soft_error(resources, outpdf):
-    p = run_ocrmypdf(
+    exitcode = run_ocrmypdf_api(
         resources / 'francais.pdf',
         outpdf,
         '--continue-on-soft-render-error',
@@ -47,12 +47,12 @@ def test_render_continue_on_soft_error(resources, outpdf):
         '--plugin',
         'tests/plugins/gs_render_soft_error.py',
     )
-    assert p.returncode == ExitCode.ok
+    assert exitcode == ExitCode.ok
 
 
 @pytest.mark.skipif(os.name == 'nt', reason='Ghostscript on Windows errors out')
 def test_render_stop_on_soft_error(resources, outpdf):
-    p = run_ocrmypdf(
+    exitcode = run_ocrmypdf_api(
         resources / 'francais.pdf',
         outpdf,
         '--plugin',
@@ -60,4 +60,4 @@ def test_render_stop_on_soft_error(resources, outpdf):
         '--plugin',
         'tests/plugins/gs_render_soft_error.py',
     )
-    assert p.returncode == ExitCode.child_process_error
+    assert exitcode == ExitCode.child_process_error

@@ -3,7 +3,6 @@ Upstream-Name: OCRmyPDF
 Upstream-Contact: James R. Barlow <james@purplerock.ca>
 Source: https://github.com/ocrmypdf/OCRmyPDF
 
-
 Files:
  .git_archival.txt
  docs/images/logo-social.png
@@ -11,14 +10,13 @@ Files:
  docs/images/logo-square.png
  docs/images/logo-square.svg
  docs/images/logo.svg
- setup.cfg
 Copyright: (C) 2022 James R. Barlow
 License: MPL-2.0
 
 Files:
- .github/ISSUE_TEMPLATE/*.md
+ .github/ISSUE_TEMPLATE/*.yml
  docs/images/macos-workflow.png
-Copyright: (C) 2022 James R. Barlow
+Copyright: (C) 2023 James R. Barlow
 License: CC-BY-SA-4.0
 
 Files:
@@ -34,15 +32,16 @@ Files:
  tests/resources/invalid.pdf
  tests/resources/kcs.pdf
  tests/resources/livecycle.pdf
+ tests/resources/meta.pdf
  tests/resources/missing_docinfo.pdf
  tests/resources/negzero.pdf
  tests/resources/no_contents.pdf
+ tests/resources/tagged*
  tests/resources/toc.pdf
  tests/resources/trivial.pdf
  tests/resources/truetype_font_nomapping.pdf
  tests/resources/type3_font_nomapping.pdf
- misc/screencast/*
-Copyright: (C) 2022 James R. Barlow
+Copyright: (C) 2023 James R. Barlow
 License: CC-BY-SA-4.0
 
 Files:
@@ -52,7 +51,6 @@ Copyright: (C) 2012 SmokeyJoe
 License: GFDL-1.2-or-later or CC-BY-SA-3.0
 
 Files: tests/resources/c02-22.pdf
- tests/resources/congress.jpg
  tests/resources/multipage.pdf
 Copyright: Public domain
 License: public-domain

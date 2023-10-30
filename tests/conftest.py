@@ -91,7 +91,7 @@ def check_ocrmypdf(input_file: Path, output_file: Path, *args) -> Path:
 
     _parser, options, plugin_manager = get_parser_options_plugins(args=api_args)
     api.check_options(options, plugin_manager)
-    result = api.run_pipeline(options, plugin_manager=plugin_manager, api=True)
+    result = api.run_pipeline(options, plugin_manager=plugin_manager)
 
     assert result == 0
     assert output_file.exists(), "Output file not created"
@@ -101,14 +101,14 @@ def check_ocrmypdf(input_file: Path, output_file: Path, *args) -> Path:
 
 
 def run_ocrmypdf_api(input_file: Path, output_file: Path, *args) -> ExitCode:
-    """Run ocrmypdf via its API in-process, and let test deal with results.
+    """Run ocrmypdf via its API in-process, but return CLI-style ExitCode.
 
-    This simulates calling the command line interface in a subprocess, but
-    is easier for debuggers and code coverage to follow.
+    This simulates calling the command line interface in a subprocess and allows us
+    to check that the command line interface is working correctly, but since it is
+    in-process it is easier to trace with a debugger or coverage tool.
 
     Any exception raised will be trapped and converted to an exit code.
-    The return code must always be checked or the test may declare a failure
-    to be pass.
+    The return code must be checked by the caller to determine if the test passed.
     """
     api_args = [str(input_file), str(output_file)] + [
         str(arg) for arg in args if arg is not None
@@ -116,7 +116,7 @@ def run_ocrmypdf_api(input_file: Path, output_file: Path, *args) -> ExitCode:
     _parser, options, plugin_manager = get_parser_options_plugins(args=api_args)
 
     api.check_options(options, plugin_manager)
-    return api.run_pipeline(options, plugin_manager=None, api=False)
+    return api.run_pipeline_cli(options, plugin_manager=plugin_manager)
 
 
 def run_ocrmypdf(

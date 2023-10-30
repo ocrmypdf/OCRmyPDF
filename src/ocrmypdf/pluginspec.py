@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, NamedTuple
 import pluggy
 
 from ocrmypdf import Executor, PdfContext
+from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.helpers import Resolution
 
 if TYPE_CHECKING:
@@ -102,7 +103,6 @@ def check_options(options: Namespace) -> None:
             and the application should terminate gracefully with an informative
             message and error code.
 
-
     Note:
         This hook will be called from the main process, and may modify global state
         before child worker processes are forked.
@@ -110,7 +110,7 @@ def check_options(options: Namespace) -> None:
 
 
 @hookspec(firstresult=True)
-def get_executor(progressbar_class) -> Executor:
+def get_executor(progressbar_class: type[ProgressBar]) -> Executor:
     """Called to obtain an object that manages parallel execution.
 
     This may be used to replace OCRmyPDF's default parallel execution system
@@ -132,41 +132,24 @@ def get_executor(progressbar_class) -> Executor:
         This hook will be called from the main process, and may modify global state
         before child worker processes are forked.
 
-
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
     """
 
 
 @hookspec(firstresult=True)
-def get_progressbar_class():
+def get_progressbar_class() -> type[ProgressBar]:
     """Called to obtain a class that can be used to monitor progress.
 
-    A progress bar is assumed, but this could be used for any type of monitoring.
-
-    The class should follow a tqdm-like protocol. Calling the class should return
-    a new progress bar object, which is activated with ``__enter__`` and terminated
-    ``__exit__``. An update method is called whenever the progress bar is updated.
-    Progress bar objects will not be reused; a new one will be created for each
-    group of tasks.
-
-    The progress bar is held in the main process/thread and not updated by child
-    process/threads. When a child notifies the parent of completed work, the
-    parent updates the progress bar.
-
-    The arguments are the same as `tqdm <https://github.com/tqdm/tqdm>`_ accepts.
-
-    Progress bars should never write to ``sys.stdout``, or they will corrupt the
-    output if OCRmyPDF writes a PDF to standard output.
-
-    The type of events that OCRmyPDF reports to a progress bar may change in
-    minor releases.
+    OCRmyPDF will call this function when it wants to display a progress bar.
+    The class returned by this function must be compatible with the
+    :class:`ProgressBar` protocol.
 
     Here is how OCRmyPDF will use the progress bar:
 
     Example:
         pbar_class = pm.hook.get_progressbar_class()
-        with pbar_class(**tqdm_kwargs) as pbar:
+        with pbar_class(**progress_kwargs) as pbar:
             ...
             pbar.update(1)
     """
@@ -186,7 +169,6 @@ def validate(pdfinfo: PdfInfo, options: Namespace) -> None:
         ocrmypdf.exceptions.ExitCodeException: If options or pdfinfo are not acceptable
             and the application should terminate gracefully with an informative
             message and error code.
-
 
     Note:
         This hook will be called from the main process, and may modify global state
@@ -231,6 +213,7 @@ def rasterize_pdf_page(
 
     Returns:
         Path: output_file if successful
+
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
@@ -270,7 +253,6 @@ def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
 
-
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
     """
@@ -307,7 +289,6 @@ def filter_page_image(page: PageContext, image_filename: Path) -> Path:
     Note:
         This hook will be called from child processes. Modifying global state
         will not affect the main process or other child processes.
-
 
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
@@ -428,21 +409,42 @@ class OcrEngine(ABC):
     def generate_hocr(
         input_file: Path, output_hocr: Path, output_text: Path, options: Namespace
     ) -> None:
-        """Called to produce a hOCR file and sidecar text file."""
+        """Called to produce a hOCR file from a page image and sidecar text file.
+
+        A hOCR file is an HTML-like file that describes the position of text on a
+        page. OCRmyPDF can create a text only PDF from the hOCR file and graft it
+        onto the output PDF.
+
+        This function executes in a worker thread or worker process. OCRmyPDF
+        automatically parallelizes OCR over pages. The OCR engine should not
+        introduce more parallelism.
+
+        Args:
+            input_file: A page image on which to perform OCR.
+            output_hocr: The expected name of the output hOCR file.
+            output_text: The expected name of a text file containing the
+                recognized text.
+            options: The command line options.
+        """
 
     @staticmethod
     @abstractmethod
     def generate_pdf(
         input_file: Path, output_pdf: Path, output_text: Path, options: Namespace
     ) -> None:
-        """Called to produce a text only PDF.
+        """Called to produce a text only PDF from a page image.
+
+        A text only PDF should contain no visible material of any kind, as it
+        will be grafted onto the input PDF page. It must be sized to the
+        exact dimensions of the input image.
+
+        This function executes in a worker thread or worker process. OCRmyPDF
+        automatically parallelizes OCR over pages. The OCR engine should not
+        introduce more parallelism.
 
         Args:
             input_file: A page image on which to perform OCR.
-            output_pdf: The expected name of the output PDF, which must be
-                a single page PDF with no visible content of any kind, sized
-                to the dimensions implied by the input_file's width, height
-                and DPI. The image will be grafted onto the input PDF page.
+            output_pdf: The expected name of the output PDF.
             output_text: The expected name of a text file containing the
                 recognized text.
             options: The command line options.
@@ -469,7 +471,7 @@ def generate_pdfa(
     context: PdfContext,
     pdf_version: str,
     pdfa_part: str,
-    progressbar_class,
+    progressbar_class: type[ProgressBar] | None,
     stop_on_soft_error: bool,
 ) -> Path:
     """Generate a PDF/A.
@@ -489,14 +491,8 @@ def generate_pdfa(
             At its own discretion, the PDF/A generator may raise the version,
             but should not lower it.
         pdfa_part: The desired PDF/A compliance level, such as ``'2B'``.
-        progressbar_class: The class of a progress bar with a tqdm-like API. An
-            instance of this class will be initialized when PDF/A conversion
-            begins, using
-            ``instance = progressbar_class(total: int, desc: str, unit:str)``,
-            defining the number of work units, a user-visible description,
-            and the name of the work units ("page"). Then ``instance.update()``
-            will be called when a work unit is completed. If ``None``, no
-            progress information is reported.
+        progressbar_class: The class of a progress bar, which must implement
+            the ProgressBar protocol. If None, no progress is reported.
         stop_on_soft_error: If there is an "soft error" such that PDF/A generation
             can proceed and produce a valid PDF/A, but output may be invalid or
             may not visually resemble the original, the implementer of this hook
@@ -514,9 +510,6 @@ def generate_pdfa(
         Before version 15.0.0, the ``context`` was not provided and ``compression``
         was provided instead. Plugins should now read the context object to determine
         if compression is requested.
-
-    See Also:
-        https://github.com/tqdm/tqdm
     """
 
 

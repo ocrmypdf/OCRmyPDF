@@ -7,14 +7,15 @@
 from __future__ import annotations
 
 import logging
+import multiprocessing
 import os
 import signal
 import sys
 from contextlib import suppress
 
 from ocrmypdf import __version__
+from ocrmypdf._pipelines.ocr import run_pipeline_cli
 from ocrmypdf._plugin_manager import get_parser_options_plugins
-from ocrmypdf._sync import run_pipeline
 from ocrmypdf._validation import check_options
 from ocrmypdf.api import Verbosity, configure_logging
 from ocrmypdf.exceptions import (
@@ -71,9 +72,12 @@ def run(args=None):
     with suppress(AttributeError, OSError):
         signal.signal(signal.SIGBUS, sigbus)
 
-    result = run_pipeline(options=options, plugin_manager=plugin_manager)
+    result = run_pipeline_cli(options=options, plugin_manager=plugin_manager)
     return result
 
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
+    if os.name == 'posix':
+        multiprocessing.set_start_method('forkserver')
     sys.exit(run())

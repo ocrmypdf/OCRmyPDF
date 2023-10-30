@@ -28,11 +28,38 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v15.4.0
+=======
+
+-  Added new APIs to support offline editing of the final text. Specifically,
+   one can now generate hOCR files with OCRmyPDF, edit them with some other tool,
+   and then finalize the PDF.
+-  Code reorganization: executors, progress bars, initialization and setup.
+-  Fixed test coverage in cases where the coverage tool did not properly trace
+   into threads or subprocesses. This code was still being tested but appeared
+   as not covered.
+-  In the test suite, reduced use of subprocesses and other techniques that
+   interfere with coverage measurement.
+-  Improved error check for when we appear to be running inside a snap container
+   and files are not available.
+-  Plugin specification now properly defines progress bars as a protocol rather
+   than defining them as "tqdm-like".
+-  We now default to using "forkserver" process creation on POSIX platforms
+   rather than fork, since this is method is more robust and avoids some
+   issues when threads are present.
+-  Fixed an instance where the user's request to ``--no-use-threads`` was ignored.
+-  Replace some cryptic test error messages with more helpful ones.
+-  Debug messages for how OCRmyPDF picks the colorspace for a page are now
+   more descriptive.
+
 v15.3.1
 =======
 
 -  Fixed an issue with logging settings for misc/watcher.py introduced in the
    previous release. :issue:`1180`
+-  We now attempt to preserve the input's extended attributes when creating
+   the output file.
+-  For some reason, the macOS build now needs OpenSSL explicitly installed.
 -  Updated documentation on Docker performance concerns.
 
 v15.3.0

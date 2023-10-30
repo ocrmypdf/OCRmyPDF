@@ -59,7 +59,7 @@ def test_content_preservation(resources, outpdf):
 
 
 @pytest.mark.skipif(
-    tesseract.version() > tesseract.TesseractVersion('5'), reason="doesn't fool Tess 5"
+    tesseract.version() >= tesseract.TesseractVersion('5'), reason="doesn't fool Tess 5"
 )
 def test_no_languages(tmp_path, monkeypatch):
     (tmp_path / 'tessdata').mkdir()
@@ -86,7 +86,7 @@ def test_image_too_large_hocr(monkeypatch, resources, outdir):
         user_words=None,
         user_patterns=None,
     )
-    assert "name='ocr-capabilities'" in Path(outdir / 'out.hocr').read_text()
+    assert Path(outdir / 'out.hocr').read_text() == ''
 
 
 def test_image_too_large_pdf(monkeypatch, resources, outdir):

@@ -55,7 +55,7 @@ jobs:
       - name: Install Tesseract 5
         if: matrix.tesseract5
         run: |
-          sudo add-apt-repository ppa:alex-p/tesseract-ocr-devel
+          sudo add-apt-repository -y ppa:alex-p/tesseract-ocr-devel
 
       - name: Install common packages
         run: |

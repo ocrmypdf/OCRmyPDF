@@ -19,7 +19,7 @@ Code style
 ==========
 
 We use PEP8, ``black`` for code formatting and ``ruff`` for everything else. The
-settings for these programs are in ``pyproject.toml`` and ``setup.cfg``. Pull
+settings for these programs are in ``pyproject.toml``. Pull
 requests should follow the style guide. One difference we use from "black" style
 is that strings shown to the user are always in double quotes (``"``) and strings
 for internal uses are in single quotes (``'``).

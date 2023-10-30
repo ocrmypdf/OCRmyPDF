@@ -20,7 +20,8 @@ from typing import Callable, Union
 from rich.console import Console as RichConsole
 
 from ocrmypdf import Executor, hookimpl
-from ocrmypdf._logging import RichLoggingHandler, RichTqdmProgressAdapter
+from ocrmypdf._logging import RichLoggingHandler
+from ocrmypdf._progressbar import RichProgressBar
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import remove_all_log_handlers
 
@@ -28,6 +29,8 @@ FuturesExecutorClass = Union[type[ThreadPoolExecutor], type[ProcessPoolExecutor]
 Queue = Union[multiprocessing.Queue, queue.Queue]
 UserInit = Callable[[], None]
 WorkerInit = Callable[[Queue, UserInit, int], None]
+
+RichTqdmProgressAdapter = RichProgressBar  # Deprecated shim; remove in OCRmyPDF 16
 
 
 def log_listener(q: Queue):
@@ -101,7 +104,7 @@ class StandardExecutor(Executor):
         *,
         use_threads: bool,
         max_workers: int,
-        tqdm_kwargs: dict,
+        progress_kwargs: dict,
         worker_initializer: Callable,
         task: Callable,
         task_arguments: Iterable,
@@ -127,12 +130,12 @@ class StandardExecutor(Executor):
         listener = threading.Thread(target=log_listener, args=(log_queue,))
         listener.start()
 
-        with self.pbar_class(**tqdm_kwargs) as pbar, executor_class(
+        with self.pbar_class(**progress_kwargs) as pbar, executor_class(
             max_workers=max_workers,
             initializer=initializer,
             initargs=(log_queue, worker_initializer, logging.getLogger("").level),
         ) as executor:
-            futures = [executor.submit(task, args) for args in task_arguments]
+            futures = [executor.submit(task, *args) for args in task_arguments]
             try:
                 for future in as_completed(futures):
                     result = future.result()
@@ -172,10 +175,10 @@ RICH_CONSOLE = RichConsole(stderr=True)
 def get_progressbar_class():
     """Return the default progress bar class."""
 
-    def partial_RichTqdmProgressAdapter(*args, **kwargs):
-        return RichTqdmProgressAdapter(*args, **kwargs, console=RICH_CONSOLE)
+    def partial_RichProgressBar(*args, **kwargs):
+        return RichProgressBar(*args, **kwargs, console=RICH_CONSOLE)
 
-    return partial_RichTqdmProgressAdapter
+    return partial_RichProgressBar
 
 
 @hookimpl

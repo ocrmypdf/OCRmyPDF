@@ -16,7 +16,7 @@ from pdfminer.pdfparser import PDFParser
 from PIL import Image
 
 from ocrmypdf import hocrtransform
-from ocrmypdf._exec.tesseract import HOCR_TEMPLATE
+from ocrmypdf._exec.tesseract import generate_hocr
 from ocrmypdf.helpers import check_pdf
 
 from .conftest import check_ocrmypdf
@@ -40,9 +40,22 @@ def text_from_pdf(filename):
 
 @pytest.fixture
 def blank_hocr(tmp_path):
-    filename = tmp_path / "blank.hocr"
-    filename.write_text(HOCR_TEMPLATE)
-    return filename
+    im = Image.new('1', (8, 8), 0)
+    im.save(tmp_path / 'blank.tif', format='TIFF')
+    generate_hocr(
+        input_file=tmp_path / 'blank.tif',
+        output_hocr=tmp_path / 'blank.hocr',
+        output_text=tmp_path / 'blank.txt',
+        languages=['eng'],
+        engine_mode=1,
+        tessconfig=[],
+        pagesegmode=3,
+        thresholding=0,
+        user_words=None,
+        user_patterns=None,
+        timeout=None,
+    )
+    return tmp_path / 'blank.hocr'
 
 
 def test_mono_image(blank_hocr, outdir):

@@ -12,7 +12,7 @@ from ocrmypdf.builtin_plugins import ghostscript
 
 def raise_gs_fail(*args, **kwargs):
     raise CalledProcessError(
-        1, 'gs', output=b"", stderr=b"ERROR: Casper is not a friendly ghost"
+        1, 'gs', output=b"", stderr=b"TEST ERROR: gs_render_failure.py"
     )
 
 

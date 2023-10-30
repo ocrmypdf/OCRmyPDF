@@ -3,11 +3,11 @@
 .. SPDX-License-Identifier: CC-BY-SA-4.0
 
 =============
-API Reference
+API reference
 =============
 
 This page summarizes the rest of the public API. Generally speaking this
-should mainly of interest to plugin developers.
+should be mainly of interest to plugin developers.
 
 ocrmypdf
 ========
@@ -17,6 +17,18 @@ ocrmypdf
 
 .. autoclass:: ocrmypdf.PdfContext
     :members:
+
+.. autoclass:: ocrmypdf.Verbosity
+    :members:
+    :undoc-members:
+
+.. autofunction:: ocrmypdf.configure_logging
+
+.. autofunction:: ocrmypdf.ocr
+
+.. autofunction:: ocrmypdf.pdf_to_hocr
+
+.. autofunction:: ocrmypdf.hocr_to_ocr_pdf
 
 ocrmypdf.exceptions
 ===================

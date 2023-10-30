@@ -13,9 +13,9 @@ from packaging.version import Version
 from ocrmypdf._exec import unpaper
 from ocrmypdf._plugin_manager import get_parser_options_plugins
 from ocrmypdf._validation import check_options
-from ocrmypdf.exceptions import ExitCode, MissingDependencyError
+from ocrmypdf.exceptions import BadArgsError, ExitCode, MissingDependencyError
 
-from .conftest import check_ocrmypdf, have_unpaper, run_ocrmypdf
+from .conftest import check_ocrmypdf, have_unpaper, run_ocrmypdf_api
 
 # pylint: disable=redefined-outer-name
 
@@ -73,23 +73,22 @@ def test_unpaper_args_valid(resources, outpdf):
 
 
 @needs_unpaper
-def test_unpaper_args_invalid_filename(resources, outpdf):
-    p = run_ocrmypdf(
-        resources / "skew.pdf",
-        outpdf,
-        "-c",
-        "--unpaper-args",
-        "/etc/passwd",
-        '--plugin',
-        'tests/plugins/tesseract_noop.py',
-    )
-    assert "No filenames allowed" in p.stderr
-    assert p.returncode == ExitCode.bad_args
+def test_unpaper_args_invalid_filename(resources, outpdf, caplog):
+    with pytest.raises(BadArgsError):
+        run_ocrmypdf_api(
+            resources / "skew.pdf",
+            outpdf,
+            "-c",
+            "--unpaper-args",
+            "/etc/passwd",
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
+        )
 
 
 @needs_unpaper
 def test_unpaper_args_invalid(resources, outpdf):
-    p = run_ocrmypdf(
+    exitcode = run_ocrmypdf_api(
         resources / "skew.pdf",
         outpdf,
         "-c",
@@ -100,7 +99,7 @@ def test_unpaper_args_invalid(resources, outpdf):
     )
     # Can't tell difference between unpaper choking on bad arguments or some
     # other unpaper failure
-    assert p.returncode == ExitCode.child_process_error
+    assert exitcode == ExitCode.child_process_error
 
 
 @needs_unpaper
@@ -114,3 +113,14 @@ def test_unpaper_image_too_big(resources, outdir, caplog):
             for rec in caplog.get_records('call')
             if rec.levelno == logging.WARNING
         )
+
+
+@needs_unpaper
+def test_palette_image(resources, outpdf):
+    check_ocrmypdf(
+        resources / "palette.pdf",
+        outpdf,
+        "-c",
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+    )

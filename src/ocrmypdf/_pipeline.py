@@ -12,21 +12,18 @@ import re
 import sys
 from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
-from datetime import datetime, timezone
 from pathlib import Path
 from shutil import copyfileobj, copystat
 from typing import Any, BinaryIO, TypeVar, cast
 
 import img2pdf
 import pikepdf
-from pikepdf.models.metadata import encode_pdf_date
 from PIL import Image, ImageColor, ImageDraw
 
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._exec import unpaper
 from ocrmypdf._jobcontext import PageContext, PdfContext
-from ocrmypdf._version import PROGRAM_NAME
-from ocrmypdf._version import __version__ as VERSION
+from ocrmypdf._metadata import repair_docinfo_nuls
 from ocrmypdf.exceptions import (
     DigitalSignatureError,
     DpiError,
@@ -168,6 +165,7 @@ def get_pdfinfo(
     detailed_analysis: bool = False,
     progbar: bool = False,
     max_workers: int | None = None,
+    use_threads: bool = True,
     check_pages=None,
 ) -> PdfInfo:
     """Get the PDF info."""
@@ -177,6 +175,7 @@ def get_pdfinfo(
             detailed_analysis=detailed_analysis,
             progbar=progbar,
             max_workers=max_workers,
+            use_threads=use_threads,
             check_pages=check_pages,
             executor=executor,
         )
@@ -519,6 +518,7 @@ def rasterize(
                 device_idx = at_least('png16m')
 
     if pageinfo.has_vector:
+        log.debug("Page has vector content, using png16m")
         device_idx = at_least('png16m')
 
     device = colorspaces[device_idx]
@@ -655,7 +655,7 @@ def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, 
         output_text=hocr_text_out,
         options=options,
     )
-    return (hocr_out, hocr_text_out)
+    return hocr_out, hocr_text_out
 
 
 def should_visible_page_image_use_jpg(pageinfo: PageInfo) -> bool:
@@ -735,10 +735,15 @@ def render_hocr_page(hocr: Path, page_context: PageContext) -> Path:
     """Render the hOCR page to a PDF."""
     options = page_context.options
     output_file = page_context.get_path('ocr_hocr.pdf')
+    if hocr.stat().st_size == 0:
+        # If hOCR file is empty (skipped page marker), create an empty PDF file
+        output_file.touch()
+        return output_file
+
     dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
     debug_mode = options.pdf_renderer == 'hocrdebug'
 
-    hocrtransform = HocrTransform(hocr_filename=hocr, dpi=dpi.x)  # square
+    hocrtransform = HocrTransform(hocr_filename=hocr, dpi=dpi.to_scalar())  # square
     hocrtransform.to_pdf(
         out_filename=output_file,
         image_filename=None,
@@ -765,38 +770,6 @@ def ocr_engine_textonly_pdf(
         options=options,
     )
     return (output_pdf, output_text)
-
-
-def get_docinfo(base_pdf: pikepdf.Pdf, context: PdfContext) -> dict[str, str]:
-    """Read the document info and store it in a dictionary."""
-    options = context.options
-
-    def from_document_info(key):
-        try:
-            s = base_pdf.docinfo[key]
-            return str(s)
-        except (KeyError, TypeError):
-            return ''
-
-    pdfmark = {
-        k: from_document_info(k)
-        for k in ('/Title', '/Author', '/Keywords', '/Subject', '/CreationDate')
-    }
-    if options.title:
-        pdfmark['/Title'] = options.title
-    if options.author:
-        pdfmark['/Author'] = options.author
-    if options.keywords:
-        pdfmark['/Keywords'] = options.keywords
-    if options.subject:
-        pdfmark['/Subject'] = options.subject
-
-    creator_tag = context.plugin_manager.hook.get_ocr_engine().creator_tag(options)
-
-    pdfmark['/Creator'] = f'{PROGRAM_NAME} {VERSION} / {creator_tag}'
-    pdfmark['/Producer'] = f'pikepdf {pikepdf.__version__}'
-    pdfmark['/ModDate'] = encode_pdf_date(datetime.now(timezone.utc))
-    return pdfmark
 
 
 def generate_postscript_stub(context: PdfContext) -> Path:
@@ -833,7 +806,7 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
     # pikepdf can deal with this, but we make the world a better place by
     # stamping them out as soon as possible.
     with pikepdf.open(input_pdf) as pdf_file:
-        if _repair_docinfo_nuls(pdf_file):
+        if repair_docinfo_nuls(pdf_file):
             pdf_file.save(fix_docinfo_file)
         else:
             safe_symlink(input_pdf, fix_docinfo_file)
@@ -854,25 +827,6 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
     )
 
     return output_file
-
-
-def _repair_docinfo_nuls(pdf):
-    """If the DocumentInfo block contains NUL characters, remove them.
-
-    If the DocumentInfo block is malformed, log an error and continue.
-    """
-    modified = False
-    try:
-        if not isinstance(pdf.docinfo, pikepdf.Dictionary):
-            raise TypeError("DocumentInfo is not a dictionary")
-        for k, v in pdf.docinfo.items():
-            if isinstance(v, str) and b'\x00' in bytes(v):
-                pdf.docinfo[k] = bytes(v).replace(b'\x00', b'')
-                modified = True
-    except TypeError:
-        # TypeError can also be raised if dictionary items are unexpected types
-        log.error("File contains a malformed DocumentInfo block - continuing anyway.")
-    return modified
 
 
 def should_linearize(working_file: Path, context: PdfContext) -> bool:
@@ -907,86 +861,6 @@ def get_pdf_save_settings(output_type: str) -> dict[str, Any]:
             compress_streams=True,
             object_stream_mode=(pikepdf.ObjectStreamMode.generate),
         )
-
-
-def metadata_fixup(working_file: Path, context: PdfContext) -> Path:
-    """Fix certain metadata fields after Ghostscript PDF/A conversion.
-
-    Also report on metadata in the input file that was not retained during
-    PDF/A conversion.
-    """
-    output_file = context.get_path('metafix.pdf')
-    options = context.options
-
-    def report_on_metadata(missing):
-        if not missing:
-            return
-        if options.output_type.startswith('pdfa'):
-            log.warning(
-                "Some input metadata could not be copied because it is not "
-                "permitted in PDF/A. You may wish to examine the output "
-                "PDF's XMP metadata."
-            )
-            log.debug("The following metadata fields were not copied: %r", missing)
-        else:
-            log.error(
-                "Some input metadata could not be copied."
-                "You may wish to examine the output PDF's XMP metadata."
-            )
-            log.info("The following metadata fields were not copied: %r", missing)
-
-    with pikepdf.open(context.origin) as original, pikepdf.open(working_file) as pdf:
-        docinfo = get_docinfo(original, context)
-        with original.open_metadata(
-            set_pikepdf_as_editor=False, update_docinfo=False, strict=False
-        ) as meta_original, pdf.open_metadata() as meta_pdf:
-            meta_pdf.load_from_docinfo(
-                docinfo, delete_missing=False, raise_failure=False
-            )
-            # If xmp:CreateDate is missing, set it to the modify date to
-            # ensure consistency with Ghostscript.
-            if 'xmp:CreateDate' not in meta_pdf:
-                meta_pdf['xmp:CreateDate'] = meta_pdf.get('xmp:ModifyDate', '')
-            if meta_pdf.get('dc:title') == 'Untitled':
-                # Ghostscript likes to set title to Untitled if omitted from input.
-                # Reverse this, because PDF/A TechNote 0003:Metadata in PDF/A-1
-                # and the XMP Spec do not make this recommendation.
-                if 'dc:title' not in meta_original:
-                    del meta_pdf['dc:title']
-            # If the user explicitly specified an empty string for any of the
-            # following, they should be unset and not reported as missing in
-            # the output pdf. Note that some metadata fields use differing names
-            # between PDF-A and PDF.
-            for meta in [meta_pdf, meta_original]:
-                if options.title == '' and 'dc:title' in meta:
-                    del meta['dc:title']  # PDF-A and PDF
-                if options.author == '':
-                    if 'dc:creator' in meta:
-                        del meta['dc:creator']  # PDF-A (Not xmp:CreatorTool)
-                    if 'pdf:Author' in meta:
-                        del meta['pdf:Author']  # PDF
-                if options.subject == '':
-                    if 'dc:description' in meta:
-                        del meta['dc:description']  # PDF-A
-                    if 'dc:subject' in meta:
-                        del meta['dc:subject']  # PDF
-                if options.keywords == '' and 'pdf:Keywords' in meta:
-                    del meta['pdf:Keywords']  # PDF-A and PDF
-            meta_missing = set(meta_original.keys()) - set(meta_pdf.keys())
-            report_on_metadata(meta_missing)
-
-        optimizing = context.plugin_manager.hook.is_optimization_enabled(
-            context=context
-        )
-        pdf.save(
-            output_file,
-            **get_pdf_save_settings(options.output_type),
-            linearize=(  # Don't linearize if optimize() will be linearizing too
-                not optimizing and should_linearize(working_file, context)
-            ),
-        )
-
-    return output_file
 
 
 def _file_size_ratio(
@@ -1036,7 +910,7 @@ def optimize_pdf(
 
 def enumerate_compress_ranges(
     iterable: Iterable[T],
-) -> Iterator[tuple[tuple[int, int], T]]:
+) -> Iterator[tuple[tuple[int, int], T | None]]:
     """Enumerate the ranges of non-empty elements in an iterable.
 
     Compresses consecutive ranges of length 1 into single elements.
@@ -1090,14 +964,14 @@ def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext) -> Pat
 
 
 def copy_final(
-    input_file: Path, output_file: str | Path | BinaryIO, context: PdfContext
+    input_file: Path, output_file: str | Path | BinaryIO, original_file: Path | None
 ) -> None:
     """Copy the final temporary file to the output destination.
 
     Args:
         input_file (Path): The intermediate input file to copy.
         output_file (str | Path | BinaryIO): The output file to copy to.
-        context (PdfContext): The PDF context.
+        original_file: The original file to copy attributes from.
 
     Returns:
         None
@@ -1119,8 +993,9 @@ def copy_final(
             with open(output_file, 'w+b') as output_stream:
                 copyfileobj(input_stream, output_stream)
             # Attempt to copy file attributes from input to output
-            with suppress(OSError):
-                # Copy original file's permissions, ownership, etc. if possible
-                copystat(context.options.input_file, output_file)
-                # Set output file's modification time to now
-                Path(output_file).touch(exist_ok=True)
+            if original_file:
+                with suppress(OSError):
+                    # Copy original file's permissions, ownership, etc. if possible
+                    copystat(original_file, output_file)
+                    # Set output file's modification time to now
+                    Path(output_file).touch(exist_ok=True)

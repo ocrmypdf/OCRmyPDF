@@ -13,7 +13,7 @@ import statistics
 import sys
 from collections import defaultdict
 from collections.abc import Container, Iterable, Iterator, Mapping, Sequence
-from contextlib import ExitStack
+from contextlib import contextmanager
 from decimal import Decimal
 from enum import Enum, auto
 from functools import partial
@@ -32,11 +32,13 @@ from pikepdf import (
     PdfImage,
     PdfInlineImage,
     PdfMatrix,
+    Stream,
     UnsupportedImageTypeError,
     parse_content_stream,
 )
 
 from ocrmypdf._concurrent import Executor, SerialExecutor
+from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.exceptions import EncryptedPdfError, InputFileError
 from ocrmypdf.helpers import Resolution, available_cpu_count, pikepdf_enable_mmap
 from ocrmypdf.pdfinfo.layout import LTStateAwareChar, get_page_analysis, get_text_boxes
@@ -357,7 +359,7 @@ class ImageInfo:
         if inline is not None:
             self._origin = 'inline'
             pim = inline
-        elif pdfimage is not None:
+        elif pdfimage is not None and isinstance(pdfimage, Stream):
             self._origin = 'xobject'
             pim = PdfImage(pdfimage)
         else:
@@ -386,32 +388,42 @@ class ImageInfo:
         if self._enc == Encoding.jpeg2000:
             self._color = Colorspace.jpeg2000
 
-        if self._color == Colorspace.icc:
-            # Check the ICC profile to determine actual colorspace
-            try:
-                pim_icc = pim.icc
-                if pim_icc.profile.xcolor_space == 'GRAY':
-                    self._comp = 1
-                elif pim_icc.profile.xcolor_space == 'CMYK':
-                    self._comp = 4
-                else:
-                    self._comp = 3
-            except (AttributeError, UnsupportedImageTypeError) as ex:
-                self._comp = None
-                logger.warning(
-                    f"An image with a corrupt or unreadable ICC profile was found. "
-                    f"The output PDF may not match the input PDF visually: {ex}. {self}"
-                )
+        self._comp = None
+        if self._color == Colorspace.icc and isinstance(pim, PdfImage):
+            self._comp = self._init_icc(pim)
         else:
             if isinstance(self._color, Colorspace):
                 self._comp = FRIENDLY_COMP.get(self._color)
-            else:
-                self._comp = None
-
             # Bit of a hack... infer grayscale if component count is uncertain
             # but encoding only supports monochrome.
             if self._comp is None and self._enc in (Encoding.ccitt, Encoding.jbig2):
                 self._comp = FRIENDLY_COMP[Colorspace.gray]
+
+    def _init_icc(self, pim: PdfImage):
+        try:
+            icc = pim.icc
+        except UnsupportedImageTypeError as e:
+            logger.warning(
+                f"An image with a corrupt or unreadable ICC profile was found. "
+                f"Output PDF may not match the input PDF visually: {e}. {self}"
+            )
+            return None
+        # Check the ICC profile to determine actual colorspace
+        if icc is None or not hasattr(icc, 'profile'):
+            logger.warning(
+                f"An image with an ICC profile but no ICC profile data was found. "
+                f"The output PDF may not match the input PDF visually. {self}"
+            )
+            return None
+        try:
+            if icc.profile.xcolor_space == 'GRAY':
+                return 1
+            elif icc.profile.xcolor_space == 'CMYK':
+                return 4
+            else:
+                return 3
+        except AttributeError:
+            return None
 
     @property
     def name(self):
@@ -693,29 +705,41 @@ def _pdf_pageinfo_sync_init(pdf: Pdf, infile: Path, pdfminer_loglevel):
         atexit.register(on_process_close)
 
 
-def _pdf_pageinfo_sync(args):
-    pageno, thread_pdf, infile, check_pages, detailed_analysis = args
-    pdf = thread_pdf if thread_pdf is not None else worker_pdf
-    with ExitStack() as stack:
-        if not pdf:  # When called with SerialExecutor
-            pdf = stack.enter_context(Pdf.open(infile))
-        page = PageInfo(pdf, pageno, infile, check_pages, detailed_analysis)
-        return page
+@contextmanager
+def _pdf_pageinfo_sync_pdf(thread_pdf: Pdf | None, infile: Path):
+    if thread_pdf is not None:
+        yield thread_pdf
+    elif worker_pdf is not None:
+        yield worker_pdf
+    else:
+        with Pdf.open(infile) as pdf:
+            yield pdf
+
+
+def _pdf_pageinfo_sync(
+    pageno: int,
+    thread_pdf: Pdf | None,
+    infile: Path,
+    check_pages: Container[int],
+    detailed_analysis: bool,
+) -> PageInfo:
+    with _pdf_pageinfo_sync_pdf(thread_pdf, infile) as pdf:
+        return PageInfo(pdf, pageno, infile, check_pages, detailed_analysis)
 
 
 def _pdf_pageinfo_concurrent(
     pdf,
     executor: Executor,
+    max_workers: int,
+    use_threads: bool,
     infile,
     progbar,
-    max_workers,
     check_pages,
-    detailed_analysis=False,
+    detailed_analysis: bool = False,
 ) -> Sequence[PageInfo | None]:
-    pages: Sequence[PageInfo | None] = [None] * len(pdf.pages)
+    pages: list[PageInfo | None] = [None] * len(pdf.pages)
 
-    def update_pageinfo(result, pbar):
-        page = result
+    def update_pageinfo(page: PageInfo, pbar: ProgressBar):
         if not page:
             raise InputFileError("Could read a page in the PDF")
         pages[page.pageno] = page
@@ -726,12 +750,16 @@ def _pdf_pageinfo_concurrent(
 
     total = len(pdf.pages)
 
-    use_threads = False  # No performance gain if threaded due to GIL
     n_workers = min(1 + len(pages) // 4, max_workers)
     if n_workers == 1:
-        # But if we decided on only one worker, there is no point in using
+        # If we decided on only one worker, there is no point in using
         # a separate process.
         use_threads = True
+
+    if use_threads and n_workers > 1:
+        # If we are using threads, there is no point in using more than one
+        # worker thread - they will just fight over the GIL.
+        n_workers = 1
 
     # If we use a thread, we can pass the already-open Pdf for them to use
     # If we use processes, we pass a None which tells the init function to open its
@@ -742,10 +770,15 @@ def _pdf_pageinfo_concurrent(
         (n, initial_pdf, infile, check_pages, detailed_analysis) for n in range(total)
     )
     assert n_workers == 1 if use_threads else n_workers >= 1, "Not multithreadable"
+    logger.debug(
+        f"Gathering info with {n_workers} "
+        + ('thread' if use_threads else 'process')
+        + " workers"
+    )
     executor(
         use_threads=use_threads,
         max_workers=n_workers,
-        tqdm_kwargs=dict(
+        progress_kwargs=dict(
             total=total, desc="Scanning contents", unit='page', disable=not progbar
         ),
         worker_initializer=partial(
@@ -817,7 +850,7 @@ class PageInfo:
         detailed_analysis: bool,
     ):
         page: Page = pdf.pages[pageno]
-        mediabox = [Decimal(d) for d in page.MediaBox.as_list()]
+        mediabox = [Decimal(d) for d in page.mediabox.as_list()]
         width_pt = mediabox[2] - mediabox[0]
         height_pt = mediabox[3] - mediabox[1]
 
@@ -1050,11 +1083,12 @@ class PdfInfo:
 
     def __init__(
         self,
-        infile,
+        infile: Path,
         *,
         detailed_analysis: bool = False,
         progbar: bool = False,
         max_workers: int | None = None,
+        use_threads: bool = True,
         check_pages=None,
         executor: Executor = DEFAULT_EXECUTOR,
     ):
@@ -1069,9 +1103,10 @@ class PdfInfo:
             self._pages = _pdf_pageinfo_concurrent(
                 pdf,
                 executor,
+                max_workers,
+                use_threads,
                 infile,
                 progbar,
-                max_workers,
                 check_pages=check_pages,
                 detailed_analysis=detailed_analysis,
             )
@@ -1146,7 +1181,7 @@ class PdfInfo:
         return f"<PdfInfo('...'), page count={len(self)}>"
 
 
-def main():
+def main():  # pragma: no cover
     """Run as a script."""
     import argparse  # pylint: disable=import-outside-toplevel
     from pprint import pprint  # pylint: disable=import-outside-toplevel
