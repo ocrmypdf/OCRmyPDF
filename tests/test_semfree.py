@@ -3,11 +3,14 @@
 
 from __future__ import annotations
 
+import pytest
+
 from ocrmypdf.exceptions import ExitCode
 
-from .conftest import run_ocrmypdf_api
+from .conftest import is_linux, run_ocrmypdf_api
 
 
+@pytest.mark.skipif(not is_linux(), reason='semfree plugin only works on Linux')
 def test_semfree(resources, outpdf):
     exitcode = run_ocrmypdf_api(
         resources / 'multipage.pdf',
