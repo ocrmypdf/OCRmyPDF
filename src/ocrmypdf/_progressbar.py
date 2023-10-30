@@ -1,3 +1,10 @@
+# SPDX-FileCopyrightText: 2023 James R. Barlow
+# SPDX-License-Identifier: MPL-2.0
+
+"""Defines progress bar API."""
+
+from __future__ import annotations
+
 from typing import Protocol
 
 from rich.console import Console
