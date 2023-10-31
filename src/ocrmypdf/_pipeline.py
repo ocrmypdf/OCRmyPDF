@@ -12,6 +12,7 @@ import re
 import sys
 from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
+from io import BytesIO
 from pathlib import Path
 from shutil import copyfileobj, copystat
 from typing import Any, BinaryIO, TypeVar, cast
@@ -713,18 +714,29 @@ def create_pdf_page_from_image(
     pageinfo = page_context.pageinfo
     pagesize = 72.0 * float(pageinfo.width_inches), 72.0 * float(pageinfo.height_inches)
     effective_rotation = (pageinfo.rotation - orientation_correction) % 360
-    if effective_rotation % 180 == 90:
+    swap_axis = effective_rotation % 180 == 90
+    if swap_axis:
         pagesize = pagesize[1], pagesize[0]
 
+    bio = BytesIO()
+
     # This create a single page PDF
-    with open(image, 'rb') as imfile, open(output_file, 'wb') as pdf:
+    with open(image, 'rb') as imfile:
         log.debug('convert')
 
         layout_fun = img2pdf.get_layout_fun(pagesize)
         img2pdf.convert(
-            imfile, layout_fun=layout_fun, outputstream=pdf, **IMG2PDF_KWARGS
+            imfile,
+            layout_fun=layout_fun,
+            outputstream=bio,
+            engine=img2pdf.Engine.pikepdf,
+            rotation=img2pdf.Rotation.ifvalid,
         )
         log.debug('convert done')
+
+    # img2pdf does not generate boxes correctly, so we fix them
+    bio.seek(0)
+    fix_pagepdf_boxes(bio, output_file, page_context, swap_axis=swap_axis)
 
     output_file = page_context.plugin_manager.hook.filter_pdf_page(
         page=page_context, image_filename=image, output_pdf=output_file
@@ -780,7 +792,29 @@ def ocr_engine_textonly_pdf(
         output_text=output_text,
         options=options,
     )
-    return (output_pdf, output_text)
+    return output_pdf, output_text
+
+
+def fix_pagepdf_boxes(
+    infile: Path | BinaryIO,
+    out_file: Path,
+    page_context: PageContext,
+    swap_axis: bool = False,
+) -> Path:
+    """Fix the bounding boxes in a single page PDF."""
+    with pikepdf.open(infile) as pdf:
+        for page in pdf.pages:
+            # page.BleedBox = page_context.pageinfo.bleedbox
+            # page.ArtBox = page_context.pageinfo.artbox
+            cropbox = page_context.pageinfo.cropbox
+            trimbox = page_context.pageinfo.trimbox
+            if swap_axis:
+                cropbox = cropbox[1], cropbox[0], cropbox[3], cropbox[2]
+                trimbox = trimbox[1], trimbox[0], trimbox[3], trimbox[2]
+            page.CropBox = cropbox
+            page.TrimBox = trimbox
+        pdf.save(out_file)
+    return pdf
 
 
 def generate_postscript_stub(context: PdfContext) -> Path:
