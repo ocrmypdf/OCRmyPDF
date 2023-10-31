@@ -26,6 +26,7 @@ from typing import (
 
 import img2pdf
 import pikepdf
+from deprecation import deprecated
 
 log = logging.getLogger(__name__)
 
@@ -136,6 +137,7 @@ class Resolution(Generic[T]):
         return self._isclose(self.x, other.x) and self._isclose(self.y, other.y)
 
 
+@deprecated(deprecated_in='15.4.0')
 class NeverRaise(Exception):
     """An exception that is never raised."""
 

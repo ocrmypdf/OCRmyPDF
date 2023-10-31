@@ -22,7 +22,6 @@ from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._pipeline import (
     copy_final,
-    fix_pagepdf_boxes,
     get_pdfinfo,
     is_ocr_required,
     merge_sidecars,
@@ -81,9 +80,6 @@ def _exec_page_sync(page_context: PageContext) -> PageResult:
         page_context
     )
     ocr_out, text_out = _image_to_ocr_text(page_context, ocr_image_out)
-
-    # fix_pagepdf_boxes(ocr_out, page_context)
-
     return PageResult(
         pageno=page_context.pageno,
         pdf_page_from_image=pdf_page_from_image_out,
