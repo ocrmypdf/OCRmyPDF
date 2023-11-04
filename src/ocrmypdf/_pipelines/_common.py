@@ -229,7 +229,17 @@ def cli_exception_handler(
     options: argparse.Namespace,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
+    """Convert exceptions into command line error messages and exit codes.
+
+    When known exceptions are raised, the exception message is printed to stderr
+    and the program exits with a non-zero exit code. When unknown exceptions are
+    raised, the exception traceback is printed to stderr and the program exits
+    with a non-zero exit code.
+    """
     try:
+        # We cannot use a generator and yield here, as would be the usual pattern
+        # for exception handling context managers, because we need to return an exit
+        # code.
         return fn(options, plugin_manager)
     except KeyboardInterrupt:
         if options.verbose >= 1:

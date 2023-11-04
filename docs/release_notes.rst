@@ -50,6 +50,8 @@ v15.4.0
    rather than fork, since this is method is more robust and avoids some
    issues when threads are present.
 -  Fixed an instance where the user's request to ``--no-use-threads`` was ignored.
+-  If a PDF does not have language metadata on its top level object, we add
+   the OCR language.
 -  Replace some cryptic test error messages with more helpful ones.
 -  Debug messages for how OCRmyPDF picks the colorspace for a page are now
    more descriptive.
