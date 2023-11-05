@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import suppress
+from enum import Enum
 from pathlib import Path
 
 from pikepdf import (
@@ -23,6 +24,12 @@ from pikepdf import (
 )
 
 from ocrmypdf._jobcontext import PdfContext
+
+
+class RenderMode(Enum):
+    ON_TOP = 0
+    UNDERNEATH = 1
+
 
 log = logging.getLogger(__name__)
 MAX_REPLACE_PAGES = 100
@@ -94,6 +101,7 @@ class OcrGrafter:
 
         self.emplacements = 1
         self.interim_count = 0
+        self.render_mode = RenderMode.UNDERNEATH
 
     def graft_page(
         self,
@@ -303,6 +311,8 @@ class OcrGrafter:
             if strip_old_text:
                 strip_invisible_text(self.pdf_base, base_page)
 
-            base_page.contents_add(new_text_layer, prepend=True)
+            base_page.contents_add(
+                new_text_layer, prepend=self.render_mode == RenderMode.UNDERNEATH
+            )
 
             _update_resources(obj=base_page.obj, font=font, font_key=font_key)
