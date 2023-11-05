@@ -146,7 +146,7 @@ class HandleObserverEvent(PatternMatchingEventHandler):
 
     def on_any_event(self, event):
         if event.event_type in ['created']:
-            execute_ocrmypdf(event.src_path, **self._settings)
+            execute_ocrmypdf(file_path=event.src_path, **self._settings)
 
 
 @app.command()
