@@ -92,7 +92,6 @@ def execute_ocrmypdf(
     file_path: Path,
     archive_dir: Path,
     output_dir: Path,
-    deskew: bool,
     ocrmypdf_kwargs: dict[str, Any],
     on_success_delete: bool,
     on_success_archive: bool,
@@ -108,10 +107,14 @@ def execute_ocrmypdf(
         log.info(f"Gave up waiting for {file_path} to become ready")
         return
     log.info(f'Attempting to OCRmyPDF to: {output_path}')
+
+    log.debug(
+        f'OCRmyPDF input_file={file_path} output_file={output_path} '
+        f'kwargs: {ocrmypdf_kwargs}'
+    )
     exit_code = ocrmypdf.ocr(
         input_file=file_path,
         output_file=output_path,
-        deskew=deskew,
         **ocrmypdf_kwargs,
     )
     if exit_code == 0:
@@ -146,7 +149,7 @@ class HandleObserverEvent(PatternMatchingEventHandler):
 
     def on_any_event(self, event):
         if event.event_type in ['created']:
-            execute_ocrmypdf(file_path=event.src_path, **self._settings)
+            execute_ocrmypdf(file_path=Path(event.src_path), **self._settings)
 
 
 @app.command()
@@ -213,10 +216,10 @@ def main(
         ),
     ] = False,
     ocr_json_settings: Annotated[
-        typer.FileText,
+        str,
         typer.Option(
             envvar='OCR_JSON_SETTINGS',
-            help='JSON settings to pass to OCRmyPDF',
+            help='JSON settings to pass to OCRmyPDF (JSON string or file path)',
         ),
     ] = None,
     poll_new_file_seconds: Annotated[
@@ -288,7 +291,10 @@ def main(
         f"LOGLEVEL: {loglevel.value}"
     )
 
-    json_settings = json.loads(ocr_json_settings.read() if ocr_json_settings else '{}')
+    if ocr_json_settings and Path(ocr_json_settings).exists():
+        json_settings = json.loads(Path(ocr_json_settings).read_text())
+    else:
+        json_settings = json.loads(ocr_json_settings or '{}')
 
     if 'input_file' in json_settings or 'output_file' in json_settings:
         log.error(
@@ -301,8 +307,7 @@ def main(
         settings={
             'archive_dir': archive_dir,
             'output_dir': output_dir,
-            'deskew': deskew,
-            'ocrmypdf_kwargs': json_settings,
+            'ocrmypdf_kwargs': json_settings | {'deskew': deskew},
             'on_success_delete': on_success_delete,
             'on_success_archive': on_success_archive,
             'poll_new_file_seconds': poll_new_file_seconds,
