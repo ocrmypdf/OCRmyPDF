@@ -28,6 +28,16 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v15.4.1
+=======
+
+-  Fixed misc/watcher.py regressions: accept ``--ocr-json-settings`` as either
+   filename or JSON string, as previously; and argument count mismatch.
+   :issue:`1183,1185`
+-  We no longer attempt to set /ProcSet in the PDF output, since this is an
+   obsolete PDF feature.
+-  Documentation improvements.
+
 v15.4.0
 =======
 
