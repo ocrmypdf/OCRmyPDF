@@ -162,9 +162,9 @@ class TestDuplicateFilter:
 
         assert len(caplog.records) == 5
         assert caplog.records[0].msg == "test error message"
-        assert caplog.records[1].msg == "(previous message repeated 2 times)"
+        assert caplog.records[1].msg == "(suppressed 2 repeated lines)"
         assert caplog.records[2].msg == "another error message"
-        assert caplog.records[3].msg == "(previous message repeated 1 times)"
+        assert caplog.records[3].msg == "(suppressed 1 repeated lines)"
         assert caplog.records[4].msg == "yet another error message"
 
     def test_filter_does_not_affect_unique_messages(
@@ -179,3 +179,20 @@ class TestDuplicateFilter:
         assert caplog.records[0].msg == "test error message"
         assert caplog.records[1].msg == "another error message"
         assert caplog.records[2].msg == "yet another error message"
+
+    def test_filter_alt_messages(self, duplicate_filter_logger, caplog):
+        log = duplicate_filter_logger
+        log.error("test error message")
+        log.error("another error message")
+        log.error("test error message")
+        log.error("another error message")
+        log.error("test error message")
+        log.error("test error message")
+        log.error("another error message")
+        log.error("yet another error message")
+
+        assert len(caplog.records) == 4
+        assert caplog.records[0].msg == "test error message"
+        assert caplog.records[1].msg == "another error message"
+        assert caplog.records[2].msg == "(suppressed 5 repeated lines)"
+        assert caplog.records[3].msg == "yet another error message"

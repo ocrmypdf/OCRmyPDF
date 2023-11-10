@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+from collections import deque
 from io import BytesIO
 from os import fspath
 from pathlib import Path
@@ -29,6 +30,9 @@ COLOR_CONVERSION_STRATEGIES = frozenset(
         'UseDeviceIndependentColor',
     ]
 )
+# Ghostscript executable - gswin32c is not supported
+GS = 'gswin64c' if os.name == 'nt' else 'gs'
+
 
 log = logging.getLogger(__name__)
 
@@ -37,20 +41,23 @@ class DuplicateFilter(logging.Filter):
     """Filter out duplicate log messages."""
 
     def __init__(self, logger: logging.Logger):
-        self.last: logging.LogRecord | None = None
-        self.count = 0
+        self.window: deque[str] = deque([], maxlen=5)
         self.logger = logger
+        self.levelno = logging.DEBUG
+        self.count = 0
 
     def filter(self, record):
-        if self.last and record.msg == self.last.msg:
+        if record.msg in self.window:
             self.count += 1
+            self.levelno = record.levelno
             return False
         else:
             if self.count >= 1:
-                rep_msg = f"(previous message repeated {self.count} times)"
+                rep_msg = f"(suppressed {self.count} repeated lines)"
                 self.count = 0  # Avoid infinite recursion
-                self.logger.log(self.last.levelno, rep_msg)
-            self.last = record
+                self.logger.log(self.levelno, rep_msg)
+                self.window.clear()
+            self.window.append(record.msg)
             return True
 
 
