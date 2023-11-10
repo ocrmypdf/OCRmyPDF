@@ -38,10 +38,14 @@ log = logging.getLogger(__name__)
 
 
 class DuplicateFilter(logging.Filter):
-    """Filter out duplicate log messages."""
+    """Filter out duplicate log messages.
 
-    def __init__(self, logger: logging.Logger):
-        self.window: deque[str] = deque([], maxlen=5)
+    A context window of default 5 messages is used to determine if a message is a
+    duplicate. This is because some Ghostscript messages are word wrapped.
+    """
+
+    def __init__(self, logger: logging.Logger, context_window=5):
+        self.window: deque[str] = deque([], maxlen=context_window)
         self.logger = logger
         self.levelno = logging.DEBUG
         self.count = 0
@@ -74,6 +78,11 @@ def _gs_error_reported(stream) -> bool:
 
 
 def _gs_devicen_reported(stream) -> bool:
+    """Did Ghostscript warn about a DeviceN with inappropriate alternate?
+
+    If so, we need the user to select a color conversion, or the resulting PDF will
+    not present correctly in some PDF viewers.
+    """
     match = re.search(
         r'DeviceN.*inappropriate alternate',
         stream,
