@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import secrets
 import subprocess
 from decimal import Decimal
 from unittest.mock import patch
@@ -154,9 +155,10 @@ def test_rasterize_pdf_errors(resources, no_outpdf, caplog):
 
 
 class TestDuplicateFilter:
-    @pytest.fixture(scope='class', autouse=True)
+    @pytest.fixture(scope='function')
     def duplicate_filter_logger(self):
-        logger = logging.getLogger(__name__)
+        # token_urlsafe: ensure the logger has a unique name so tests are isolated
+        logger = logging.getLogger(__name__ + secrets.token_urlsafe(8))
         logger.setLevel(logging.DEBUG)
         logger.addFilter(DuplicateFilter(logger))
         return logger
