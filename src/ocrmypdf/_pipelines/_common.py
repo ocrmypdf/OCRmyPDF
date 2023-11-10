@@ -155,8 +155,10 @@ class HOCRResult:
 
 def configure_debug_logging(
     log_filename: Path, prefix: str = ''
-) -> logging.FileHandler:
+) -> tuple[logging.FileHandler, Callable[[], None]]:
     """Create a debug log file at a specified location.
+
+    Returns the log handler, and a function to remove the handler.
 
     Args:
         log_filename: Where to the put the log file.
@@ -170,7 +172,15 @@ def configure_debug_logging(
     log_file_handler.setFormatter(formatter)
     log_file_handler.addFilter(PageNumberFilter())
     logging.getLogger(prefix).addHandler(log_file_handler)
-    return log_file_handler
+
+    def remover():
+        try:
+            logging.getLogger(prefix).removeHandler(log_file_handler)
+            log_file_handler.close()
+        except OSError as e:
+            print(e, file=sys.stderr)
+
+    return log_file_handler, remover
 
 
 def worker_init(max_pixels: int) -> None:
@@ -188,25 +198,21 @@ def manage_debug_log_handler(
     options: argparse.Namespace,
     work_folder: Path,
 ):
-    debug_log_handler = None
+    remover = None
     if (options.keep_temporary_files or options.verbose >= 1) and not os.environ.get(
         'PYTEST_CURRENT_TEST', ''
     ):
         # Debug log for command line interface only with verbose output
         # See https://github.com/pytest-dev/pytest/issues/5502 for why we skip this
         # when pytest is running
-        debug_log_handler = configure_debug_logging(
-            work_folder / "debug.log"
+        _debug_log_handler, remover = configure_debug_logging(
+            work_folder / "debug.log", prefix=""
         )  # pragma: no cover
     try:
         yield
     finally:
-        if debug_log_handler:
-            try:
-                debug_log_handler.close()
-                log.removeHandler(debug_log_handler)
-            except OSError as e:
-                print(e, file=sys.stderr)
+        if remover:
+            remover()
 
 
 @contextmanager

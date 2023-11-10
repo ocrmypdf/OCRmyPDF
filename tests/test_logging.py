@@ -13,6 +13,6 @@ def test_debug_logging(tmp_path):
     # See https://github.com/pytest-dev/pytest/issues/5502 for pytest logging quirks
     prefix = 'test_debug_logging'
     log = logging.getLogger(prefix)
-    handler = configure_debug_logging(tmp_path / 'test.log', prefix)
+    _handler, remover = configure_debug_logging(tmp_path / 'test.log', prefix)
     log.info("test message")
-    log.removeHandler(handler)
+    remover()
