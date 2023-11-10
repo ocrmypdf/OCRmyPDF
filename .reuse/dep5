@@ -70,6 +70,7 @@ Files: tests/resources/linn.png
  tests/resources/ccitt.pdf
  tests/resources/cardinal.pdf
  tests/resources/jbig2.pdf
+ tests/resources/jbig2_baddevicen.pdf
  tests/resources/skew.pdf
  tests/resources/rotated_skew.pdf
  tests/resources/poster.pdf

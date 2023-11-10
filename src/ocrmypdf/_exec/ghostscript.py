@@ -17,7 +17,7 @@ from subprocess import PIPE, CalledProcessError
 from packaging.version import Version
 from PIL import Image, UnidentifiedImageError
 
-from ocrmypdf.exceptions import SubprocessOutputError
+from ocrmypdf.exceptions import ColorConversionNeededError, SubprocessOutputError
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.subprocess import get_version, run, run_polling_stderr
 
@@ -64,16 +64,21 @@ class DuplicateFilter(logging.Filter):
 log.addFilter(DuplicateFilter(log))
 
 
-# Ghostscript executable - gswin32c is not supported
-GS = 'gswin64c' if os.name == 'nt' else 'gs'
-
-
 def version() -> Version:
     return Version(get_version(GS))
 
 
 def _gs_error_reported(stream) -> bool:
     match = re.search(r'error', stream, flags=re.IGNORECASE)
+    return bool(match)
+
+
+def _gs_devicen_reported(stream) -> bool:
+    match = re.search(
+        r'DeviceN.*inappropriate alternate',
+        stream,
+        flags=re.IGNORECASE | re.MULTILINE,
+    )
     return bool(match)
 
 
@@ -250,7 +255,6 @@ def generate_pdfa(
         ]
     )
     args_gs.extend(fspath(s) for s in pdf_pages)  # Stringify Path objs
-
     try:
         with Path(output_file).open('wb') as output:
             p = run_polling_stderr(
@@ -279,3 +283,5 @@ def generate_pdfa(
             # the **** pattern to split the stderr into parts.
             for part in stderr.split('****'):
                 log.error(part)
+        if _gs_devicen_reported(stderr):
+            raise ColorConversionNeededError()

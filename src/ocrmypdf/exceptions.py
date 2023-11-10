@@ -137,3 +137,16 @@ class TaggedPDFError(InputFileError):
         override this error.
         """
     )
+
+
+class ColorConversionNeededError(BadArgsError):
+    """PDF needs color conversion."""
+
+    message = dedent(
+        """\
+        The input PDF has an unusual color space. Use
+        --color-conversion-strategy to convert to a common color space
+        such as RGB, or use --output-type pdf to skip PDF/A conversion
+        and retain the original color space.
+        """
+    )

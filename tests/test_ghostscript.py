@@ -13,7 +13,7 @@ import pytest
 from PIL import Image, UnidentifiedImageError
 
 from ocrmypdf._exec.ghostscript import DuplicateFilter, rasterize_pdf
-from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.exceptions import ColorConversionNeededError, ExitCode
 from ocrmypdf.helpers import Resolution
 
 from .conftest import check_ocrmypdf, run_ocrmypdf_api
@@ -124,6 +124,16 @@ def test_ghostscript_feature_elision(resources, outpdf):
         '--plugin',
         'tests/plugins/gs_feature_elision.py',
     )
+
+
+def test_ghostscript_mandatory_color_conversion(resources, outpdf):
+    with pytest.raises(ColorConversionNeededError):
+        check_ocrmypdf(
+            resources / 'jbig2_baddevicen.pdf',
+            outpdf,
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
+        )
 
 
 def test_rasterize_pdf_errors(resources, no_outpdf, caplog):
