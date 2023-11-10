@@ -28,6 +28,15 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v15.4.2
+=======
+
+-  We now raise an exception on a certain class of PDFs that likely need an
+   explicit color conversion strategy selected to display correctly
+   for PDF/A conversion.
+-  Fixed an error that occurred while trying to write a log message after the
+   debug log handler was removed.
+
 v15.4.1
 =======
 
