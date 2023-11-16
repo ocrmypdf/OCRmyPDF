@@ -12,12 +12,12 @@ from pathlib import Path
 
 from pikepdf import (
     Dictionary,
+    Matrix,
     Name,
     Operator,
     Page,
     Pdf,
     PdfError,
-    PdfMatrix,
     Stream,
     parse_content_stream,
     unparse_content_stream,
@@ -268,13 +268,13 @@ class OcrGrafter:
             mediabox = base_page.mediabox
             wp, hp = mediabox[2] - mediabox[0], mediabox[3] - mediabox[1]
 
-            translate = PdfMatrix().translated(-wt / 2, -ht / 2)
-            untranslate = PdfMatrix().translated(wp / 2, hp / 2)
-            corner = PdfMatrix().translated(mediabox[0], mediabox[1])
+            translate = Matrix().translated(-wt / 2, -ht / 2)
+            untranslate = Matrix().translated(wp / 2, hp / 2)
+            corner = Matrix().translated(mediabox[0], mediabox[1])
             # -rotation because the input is a clockwise angle and this formula
             # uses CCW
             text_rotation = -text_rotation % 360
-            rotate = PdfMatrix().rotated(text_rotation)
+            rotate = Matrix().rotated(text_rotation)
 
             # Because of rounding of DPI, we might get a text layer that is not
             # identically sized to the target page. Scale to adjust. Normally this
@@ -285,12 +285,13 @@ class OcrGrafter:
             scale_y = hp / ht
 
             # log.debug('%r', scale_x, scale_y)
-            scale = PdfMatrix().scaled(scale_x, scale_y)
+            scale = Matrix().scaled(scale_x, scale_y)
 
             # Translate the text so it is centered at (0, 0), rotate it there, adjust
             # for a size different between initial and text PDF, then untranslate, and
-            # finally move the lower left corner to match the mediabox
-            ctm = translate @ rotate @ scale @ untranslate @ corner
+            # finally move the lower left corner to match the mediabox. All transforms
+            # must be premultiplied so they are applied in reverse order here.
+            ctm = corner @ untranslate @ scale @ rotate @ translate
 
             base_resources = _ensure_dictionary(base_page.obj, Name.Resources)
             base_xobjs = _ensure_dictionary(base_resources, Name.XObject)

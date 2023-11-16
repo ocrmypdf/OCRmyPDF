@@ -28,6 +28,12 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v15.4.3
+=======
+
+-  Fixed deprecation warning in pikepdf older than 8.7.1; pikepdf >= 8.7.1 is
+   now required.
+
 v15.4.2
 =======
 

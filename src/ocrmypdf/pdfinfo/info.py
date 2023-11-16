@@ -25,13 +25,13 @@ from warnings import warn
 
 from pdfminer.layout import LTPage, LTTextBox
 from pikepdf import (
+    Matrix,
     Name,
     Object,
     Page,
     Pdf,
     PdfImage,
     PdfInlineImage,
-    PdfMatrix,
     Stream,
     UnsupportedImageTypeError,
     parse_content_stream,
@@ -209,7 +209,7 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
     CTM unchanged.
     """
     stack = []
-    ctm = PdfMatrix(initial_shorthand)
+    ctm = Matrix(initial_shorthand)
     xobject_settings: list[XobjectSettings] = []
     inline_images: list[InlineSettings] = []
     name_index = defaultdict(lambda: [])
@@ -240,7 +240,7 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
                 # to do. Just pretend nothing happened, keep calm and carry on.
                 warn("PDF graphics stack underflowed - PDF may be malformed")
         elif operator == 'cm':
-            ctm = PdfMatrix(operands) @ ctm
+            ctm = Matrix(operands) @ ctm
         elif operator == 'Do':
             image_name = operands[0]
             settings = XobjectSettings(
@@ -614,12 +614,12 @@ def _process_content_streams(
     ):
         # Set the CTM to the state it was when the "Do" operator was
         # encountered that is drawing this instance of the Form XObject
-        ctm = PdfMatrix(shorthand) if shorthand else PdfMatrix.identity()
+        ctm = Matrix(shorthand) if shorthand else Matrix()
 
         # A Form XObject may provide its own matrix to map form space into
         # user space. Get this if one exists
-        form_shorthand = container.get(Name.Matrix, PdfMatrix.identity())
-        form_matrix = PdfMatrix(form_shorthand)
+        form_shorthand = container.get(Name.Matrix, Matrix())
+        form_matrix = Matrix(form_shorthand)
 
         # Concatenate form matrix with CTM to ensure CTM is correct for
         # drawing this instance of the XObject
