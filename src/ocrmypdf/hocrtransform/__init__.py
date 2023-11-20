@@ -126,6 +126,7 @@ class DebugRenderOptions:
     render_triangle: bool
     render_line_bbox: bool
     render_word_bbox: bool
+    render_space_bbox: bool
 
 
 class HocrTransformError(Exception):
@@ -181,6 +182,7 @@ class HocrTransform:
             render_line_bbox=False,
             render_word_bbox=True,
             render_paragraph_bbox=False,
+            render_space_bbox=True,
         )
 
     def __str__(self):  # pragma: no cover
@@ -465,7 +467,7 @@ class HocrTransform:
             )
             next_cm_box = next_box.transform(line_matrix, inverse=True)
             space_box = Rect(cm_box.x2, cm_line_box.y1, next_cm_box.x1, cm_line_box.y2)
-            # self._do_debug_word_bbox(canvas, line_height, cm_line_box, space_box, 0)
+            self._do_debug_space_bbox(canvas, space_box)
             text.set_text_transform(1, 0, 0, 1, space_box.x1, cm_line_box.y1)
             space_width = canvas.string_width(' ', fontname, fontsize)
             box_width = space_box.x2 - space_box.x1
@@ -513,6 +515,16 @@ class HocrTransform:
         canvas.set_stroke_color(green)
         canvas.set_line_width(0.1)
         canvas.rect(cm_box.x1, cm_line_box.y1, box_width, line_height, fill=0)
+        canvas.pop()
+
+    def _do_debug_space_bbox(self, canvas, box):
+        if not self.render_options.render_space_bbox:  # pragma: no cover
+            return
+        canvas.push()
+        canvas.set_dashes()
+        canvas.set_fill_color(green)
+        canvas.set_line_width(0.1)
+        canvas.rect(box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1, fill=1)
         canvas.pop()
 
     def _do_debug_baseline(self, canvas, slope, line_box, baseline_y1):
