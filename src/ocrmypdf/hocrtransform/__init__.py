@@ -96,9 +96,9 @@ class HocrTransform:
         self.render_options = DebugRenderOptions(
             render_baseline=True,
             render_triangle=False,
-            render_line_bbox=False,
-            render_word_bbox=True,
-            render_paragraph_bbox=False,
+            render_line_bbox=True,
+            render_word_bbox=False,
+            render_paragraph_bbox=True,
             render_space_bbox=True,
         )
 
@@ -282,6 +282,8 @@ class HocrTransform:
         line_box = self.element_coordinates(line)
         assert line_box.ury > line_box.lly  # lly is top, ury is bottom
 
+        self._do_debug_line_bbox(canvas, line_box)
+
         # Baseline is a polynomial (usually straight line) in the coordinate system
         # of the line
         slope, intercept = self.baseline(line)
@@ -292,14 +294,7 @@ class HocrTransform:
         # Setup a new coordinate system on the line box's intercept and rotated by
         # its slope
         canvas.push()
-        line_matrix = (
-            Matrix()
-            # .translated(-line_box.llx, -line_box.lly)
-            # .translated(0, -intercept)
-            # .rotated(angle / pi * 180)
-            # .translated(0, intercept)
-            # .translated(line_box.llx, line_box.lly)
-        )
+        line_matrix = Matrix().translated(0, intercept).rotated(angle / pi * 180)
         canvas.cm(line_matrix)
         print(line_matrix)
         text = canvas.begin_text()
@@ -313,10 +308,7 @@ class HocrTransform:
         if invisible_text or True:
             text.set_render_mode(3)  # Invisible (indicates OCR text)
 
-        self._do_debug_line_bbox(canvas, line_box)
-        self._do_debug_baseline(
-            canvas, line_box.ury + intercept, line_box, line_box.ury + intercept
-        )
+        self._do_debug_baseline(canvas, line_box, line_box.ury)
         canvas.set_fill_color(BLACK)  # text in black
 
         elements = line.findall(self._child_xpath('span', elemclass))
@@ -386,8 +378,8 @@ class HocrTransform:
         canvas.rect(
             line_box.llx,
             line_box.lly,
-            line_box.urx - line_box.llx,
-            line_box.ury - line_box.lly,
+            line_box.width,
+            line_box.height,
             fill=0,
         )
         canvas.pop()
@@ -429,7 +421,7 @@ class HocrTransform:
         canvas.rect(box.llx, box.lly, box.urx - box.llx, box.ury - box.lly, fill=1)
         canvas.pop()
 
-    def _do_debug_baseline(self, canvas, slope, line_box, baseline_lly):
+    def _do_debug_baseline(self, canvas, line_box, baseline_lly):
         if not self.render_options.render_baseline:
             return
         # draw the baseline in magenta, dashed
@@ -443,7 +435,6 @@ class HocrTransform:
             baseline_lly,
             line_box.urx,
             baseline_lly,
-            # self.polyval((-slope, baseline_lly), line_box.urx - line_box.llx),
         )
 
 
