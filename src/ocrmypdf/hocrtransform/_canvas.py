@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import logging
 import unicodedata
+from contextlib import contextmanager
 from importlib.resources import files as package_files
 from pathlib import Path
 
@@ -13,6 +15,8 @@ from pikepdf import (
     Pdf,
     unparse_content_stream,
 )
+
+log = logging.getLogger(__name__)
 
 GLYPHLESS_FONT_NAME = 'pdf.ttf'
 
@@ -250,23 +254,28 @@ class PikepdfCanvas:
         self._pdf = Pdf.new()
         self._page = self._pdf.add_blank_page(page_size=page_size)
         self._cs = ContentStreamBuilder()
-        self._cs.push()
+        self._stack_depth = 0
+        self.push()
         self._font_name = Name("/f-0-0")
 
     def set_stroke_color(self, color):
         r, g, b = color.red, color.green, color.blue
         self._cs.set_stroke_color(r, g, b)
+        return self
 
     def set_fill_color(self, color):
         r, g, b = color.red, color.green, color.blue
         self._cs.set_fill_color(r, g, b)
+        return self
 
     def set_line_width(self, width):
         self._cs.set_line_width(width)
+        return self
 
     def line(self, x1, y1, x2, y2):
         self._cs.line(x1, y1, x2, y2)
         self._cs.stroke_and_close()
+        return self
 
     def rect(self, x, y, w, h, fill):
         self._cs.append_rectangle(x, y, w, h)
@@ -274,12 +283,13 @@ class PikepdfCanvas:
             self._cs.fill()
         else:
             self._cs.stroke_and_close()
+        return self
 
     def begin_text(self, x=0, y=0, direction=None):
         return PikepdfText(x, y, direction)
 
     def draw_text(self, text: PikepdfText):
-        self._cs._instructions.extend(text._cs._instructions)
+        self._cs._instructions.extend(text._cs.build())
         self._end_text()
 
     def _end_text(self):
@@ -294,18 +304,36 @@ class PikepdfCanvas:
 
     def set_dashes(self, *args):
         self._cs.set_dashes(*args)
+        return self
 
     def push(self):
         self._cs.push()
+        self._stack_depth += 1
+        return self
 
     def pop(self):
         self._cs.pop()
+        self._stack_depth -= 1
+        return self
+
+    @contextmanager
+    def enter_context(self):
+        """Save the graphics state and restore it on exit."""
+        self.push()
+        yield self
+        self.pop()
 
     def cm(self, matrix):
         self._cs.cm(matrix)
+        return self
 
     def save(self):
         self._cs.pop()
+        if self._stack_depth != 0:
+            log.warning(
+                "Graphics state stack is not empty when page saved - "
+                "rendering may be incorrect"
+            )
         self._page.Contents = self._pdf.make_stream(
             unparse_content_stream(self._cs.build())
         )
@@ -322,22 +350,28 @@ class PikepdfText:
 
     def set_font(self, font, size):
         self._cs.set_text_font(Name("/f-0-0"), size)
+        return self
 
     def set_render_mode(self, mode):
         self._cs.set_text_rendering(mode)
+        return self
 
     def set_text_transform(self, matrix: Matrix):
         self._cs.set_text_matrix(matrix)
         self._p0 = (matrix.e, matrix.f)
+        return self
 
     def show(self, text):
         self._cs.show_text(text)
+        return self
 
     def set_horiz_scale(self, scale):
         self._cs.set_text_horizontal_scaling(scale)
+        return self
 
     def get_start_of_line(self):
         return self._p0
 
     def move_cursor(self, x, y):
         self._cs.move_cursor(x, y)
+        return self

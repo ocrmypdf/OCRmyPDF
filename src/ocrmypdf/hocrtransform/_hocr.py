@@ -351,83 +351,78 @@ class HocrTransform:
         """Draw boxes around paragraphs in the document."""
         if not self.render_options.render_paragraph_bbox:  # pragma: no cover
             return
-        for elem in self.hocr.iterfind(self._child_xpath('p', 'ocr_par')):
-            elemtxt = self._get_element_text(elem).rstrip()
-            if len(elemtxt) == 0:
-                continue
-            ocr_par = self.element_coordinates(elem)
+        with canvas.enter_context():
             # draw box around paragraph
             canvas.set_stroke_color(color)
             canvas.set_line_width(0.1)  # no line for bounding box
-            canvas.rect(ocr_par.llx, ocr_par.lly, ocr_par.width, ocr_par.height, fill=0)
+            for elem in self.hocr.iterfind(self._child_xpath('p', 'ocr_par')):
+                elemtxt = self._get_element_text(elem).strip()
+                if len(elemtxt) == 0:
+                    continue
+                ocr_par = self.element_coordinates(elem)
+                canvas.rect(
+                    ocr_par.llx, ocr_par.lly, ocr_par.width, ocr_par.height, fill=0
+                )
 
-    def _debug_draw_line_bbox(self, canvas: Canvas, line_box, color=BLUE):
+    def _debug_draw_line_bbox(self, canvas: Canvas, line_box: Rectangle, color=BLUE):
         """Render the bounding box of a text line."""
         if not self.render_options.render_line_bbox:  # pragma: no cover
             return
-        canvas.push()
-        canvas.set_stroke_color(color)
-        canvas.set_line_width(0.15)
-        canvas.rect(
-            line_box.llx,
-            line_box.lly,
-            line_box.width,
-            line_box.height,
-            fill=0,
-        )
-        canvas.pop()
+        with canvas.enter_context():
+            canvas.set_stroke_color(color).set_line_width(0.15).rect(
+                line_box.llx, line_box.lly, line_box.width, line_box.height, fill=0
+            )
 
-    def _debug_draw_word_triangle(self, canvas: Canvas, box, color=RED, line_width=0.1):
+    def _debug_draw_word_triangle(
+        self, canvas: Canvas, box: Rectangle, color=RED, line_width=0.1
+    ):
         """Render a triangle that conveys word height and drawing direction."""
         if not self.render_options.render_triangle:  # pragma: no cover
             return
-        canvas.push()
-        canvas.set_stroke_color(color)
-        canvas.set_line_width(line_width)
-        # Draw a triangle that conveys word height and drawing direction
-        canvas.line(box.llx, box.lly, box.urx, box.lly)  # across bottom
-        canvas.line(box.urx, box.lly, box.llx, box.ury)  # diagonal
-        canvas.line(box.llx, box.lly, box.llx, box.ury)  # rise
-        canvas.pop()
+        with canvas.enter_context():
+            canvas.set_stroke_color(color).set_line_width(line_width).line(
+                box.llx, box.lly, box.urx, box.lly
+            ).line(box.urx, box.lly, box.llx, box.ury).line(
+                box.llx, box.lly, box.llx, box.ury
+            )
 
-    def _debug_draw_word_bbox(self, canvas: Canvas, box, color=GREEN, line_width=0.1):
+    def _debug_draw_word_bbox(
+        self, canvas: Canvas, box: Rectangle, color=GREEN, line_width=0.1
+    ):
         """Render a box depicting the word."""
         if not self.render_options.render_word_bbox:  # pragma: no cover
             return
-        canvas.push()
-        canvas.set_dashes()
-        canvas.set_stroke_color(color)
-        canvas.set_line_width(line_width)
-        canvas.rect(box.llx, box.lly, box.width, box.height, fill=0)
-        canvas.pop()
+        with canvas.enter_context():
+            canvas.set_stroke_color(color).set_line_width(line_width).rect(
+                box.llx, box.lly, box.width, box.height, fill=0
+            )
 
     def _debug_draw_space_bbox(
-        self, canvas: Canvas, box, color=DARKGREEN, line_width=0.1
+        self, canvas: Canvas, box: Rectangle, color=DARKGREEN, line_width=0.1
     ):
         """Render a box depicting the space between two words."""
         if not self.render_options.render_space_bbox:  # pragma: no cover
             return
-        canvas.push()
-        canvas.set_dashes()
-        canvas.set_fill_color(color)
-        canvas.set_line_width(line_width)
-        canvas.rect(box.llx, box.lly, box.width, box.height, fill=1)
-        canvas.pop()
+        with canvas.enter_context():
+            canvas.set_fill_color(color).set_line_width(line_width).rect(
+                box.llx, box.lly, box.width, box.height, fill=1
+            )
 
     def _debug_draw_baseline(
-        self, canvas, line_box, baseline_lly, color=MAGENTA, line_width=0.25
+        self,
+        canvas: Canvas,
+        line_box: Rectangle,
+        baseline_lly,
+        color=MAGENTA,
+        line_width=0.25,
     ):
         """Render the text baseline."""
         if not self.render_options.render_baseline:
             return
-        canvas.push()
-        canvas.set_dashes()
-        canvas.set_stroke_color(color)
-        canvas.set_line_width(line_width)
-        canvas.line(
-            line_box.llx,
-            baseline_lly,
-            line_box.urx,
-            baseline_lly,
-        )
-        canvas.pop()
+        with canvas.enter_context():
+            canvas.set_stroke_color(color).set_line_width(line_width).line(
+                line_box.llx,
+                baseline_lly,
+                line_box.urx,
+                baseline_lly,
+            )
