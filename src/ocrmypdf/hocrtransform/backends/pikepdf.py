@@ -192,6 +192,12 @@ class ContentStreamBuilder:
         self._instructions.append(inst)
         return self
 
+    def fill(self):
+        """Stroke and close path."""
+        inst = ContentStreamInstruction([], Operator("f"))
+        self._instructions.append(inst)
+        return self
+
     def append_rectangle(self, x: float, y: float, w: float, h: float):
         """Append rectangle to path."""
         inst = ContentStreamInstruction([x, y, w, h], Operator("re"))
@@ -262,10 +268,14 @@ class PikepdfCanvas(BaseCanvas):
 
     def line(self, x1, y1, x2, y2):
         self._cs.line(x1, y1, x2, y2)
+        self._cs.stroke_and_close()
 
     def rect(self, x, y, w, h, fill):
         self._cs.append_rectangle(x, y, w, h)
-        self._cs.stroke_and_close()
+        if fill:
+            self._cs.fill()
+        else:
+            self._cs.stroke_and_close()
 
     def begin_text(self, x=0, y=0, direction=None):
         return PikepdfText(x, y, direction)
