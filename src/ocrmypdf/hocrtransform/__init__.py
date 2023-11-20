@@ -353,23 +353,22 @@ class HocrTransform:
         if box is None:
             return
         box = line_matrix.inverse().transform(box)
-        box_width = box.urx - box.llx
         font_width = canvas.string_width(elemtxt, fontname, fontsize)
 
         # Debug sketches
         self._do_debug_word_triangle(canvas, box)
         self._do_debug_word_bbox(
             canvas,
-            line_height,
+            box.height,
             line_matrix.inverse().transform(line_box),
             box,
-            box_width,
+            box.width,
         )
 
         # If this word is 0 units wide, our best bet seems to be to suppress this text
         if font_width > 0:
             text.set_text_transform(Matrix(1, 0, 0, 1, box.llx, 0))
-            text.set_horiz_scale(100 * box_width / font_width)
+            text.set_horiz_scale(100 * box.width / font_width)
             text.show(elemtxt)
 
         if next_elem is not None:
@@ -378,8 +377,8 @@ class HocrTransform:
             self._do_debug_space_bbox(canvas, space_box)
             text.set_text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
             space_width = canvas.string_width(' ', fontname, fontsize)
-            box_width = space_box.urx - space_box.llx
-            text.set_horiz_scale(100 * box_width / space_width)
+            space_box_width = space_box.urx - space_box.llx
+            text.set_horiz_scale(100 * space_box_width / space_width)
             text.show(' ')
 
     def _do_debug_line_bbox(self, canvas, line_box):
@@ -424,7 +423,7 @@ class HocrTransform:
         canvas.set_dashes()
         canvas.set_stroke_color(GREEN)
         canvas.set_line_width(0.1)
-        canvas.rect(box.llx, line_box.lly, box_width, line_height, fill=0)
+        canvas.rect(box.llx, box.lly, box_width, line_height, fill=0)
         canvas.pop()
 
     def _do_debug_space_bbox(self, canvas: PikepdfCanvas, box):
