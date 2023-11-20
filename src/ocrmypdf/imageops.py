@@ -7,16 +7,8 @@ from __future__ import annotations
 
 import logging
 from math import floor, sqrt
-from typing import Optional
 
 from PIL import Image
-
-# While from __future__ import annotations, we use singledispatch here, which
-# does not support annotations. Disable check about using old-style typing
-# until Python 3.10, OR when drop singledispatch in ocrmypdf 15.
-# ruff: noqa: UP006
-# ruff: noqa: UP007
-
 
 log = logging.getLogger(__name__)
 
@@ -38,9 +30,9 @@ def _calculate_downsample(
     image_size: tuple[int, int],
     bytes_per_pixel: int,
     *,
-    max_size: Optional[tuple[int, int]] = None,
-    max_pixels: Optional[int] = None,
-    max_bytes: Optional[int] = None,
+    max_size: tuple[int, int] | None = None,
+    max_pixels: int | None = None,
+    max_bytes: int | None = None,
 ) -> tuple[int, int]:
     """Calculate image size required to downsample an image to fit limits.
 
@@ -98,9 +90,9 @@ def _calculate_downsample(
 def calculate_downsample(
     image: Image.Image,
     *,
-    max_size: Optional[tuple[int, int]] = None,
-    max_pixels: Optional[int] = None,
-    max_bytes: Optional[int] = None,
+    max_size: tuple[int, int] | None = None,
+    max_pixels: int | None = None,
+    max_bytes: int | None = None,
 ) -> tuple[int, int]:
     """Calculate image size required to downsample an image to fit limits.
 
