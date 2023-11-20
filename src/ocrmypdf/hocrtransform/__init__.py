@@ -36,28 +36,6 @@ INCH = 72.0
 Element = ElementTree.Element
 
 
-class Rect(NamedTuple):
-    """A rectangle for managing PDF coordinates."""
-
-    x1: Any
-    y1: Any
-    x2: Any
-    y2: Any
-
-    def transform(self, matrix, inverse=True):
-        """Transform the rectangle by the given matrix."""
-        if inverse:
-            matrix = matrix.inverse()
-        return Rect._make(
-            [
-                matrix.a * self.x1 + matrix.c * self.y1 + matrix.e,
-                matrix.b * self.x1 + matrix.d * self.y1 + matrix.f,
-                matrix.a * self.x2 + matrix.c * self.y2 + matrix.e,
-                matrix.b * self.x2 + matrix.d * self.y2 + matrix.f,
-            ]
-        )
-
-
 @dataclass
 class DebugRenderOptions:
     """A class for managing rendering options."""
@@ -81,7 +59,7 @@ class HocrTransform:
     http://kba.cloud/hocr-spec/.
     """
 
-    box_pattern = re.compile(r'bbox((\s+\d+){4})')
+    box_pattern = re.compile(r'bbox (\d+) (\d+) (\d+) (\d+)')
     baseline_pattern = re.compile(
         r'''
         baseline \s+
@@ -105,13 +83,11 @@ class HocrTransform:
         if matches:
             self.xmlns = matches.group(1)
 
-        # get dimension in pt (not pixel!!!!) of the OCRed image
         self.width, self.height = None, None
         for div in self.hocr.findall(self._child_xpath('div', 'ocr_page')):
             coords = self.element_coordinates(div)
-            pt_coords = self.pt_from_pixel(coords)
-            self.width = pt_coords.x2 - pt_coords.x1
-            self.height = pt_coords.y2 - pt_coords.y1
+            self.width = (coords.urx - coords.llx) / (self.dpi / INCH)
+            self.height = (coords.ury - coords.lly) / (self.dpi / INCH)
             # there shouldn't be more than one, and if there is, we don't want
             # it
             break
@@ -148,15 +124,18 @@ class HocrTransform:
         return text
 
     @classmethod
-    def element_coordinates(cls, element: Element) -> Rect:
+    def element_coordinates(cls, element: Element) -> Rectangle | None:
         """Get coordinates of the bounding box around an element."""
-        out = Rect._make(0 for _ in range(4))
         if 'title' in element.attrib:
             matches = cls.box_pattern.search(element.attrib['title'])
             if matches:
-                coords = matches.group(1).split()
-                out = Rect._make(int(coords[n]) for n in range(4))
-        return out
+                return Rectangle(
+                    float(matches.group(1)),  # llx = left
+                    float(matches.group(2)),  # lly = top
+                    float(matches.group(3)),  # urx = right
+                    float(matches.group(4)),  # ury = bottom
+                )
+        return None
 
     @classmethod
     def baseline(cls, element: Element) -> tuple[float, float]:
@@ -166,22 +145,6 @@ class HocrTransform:
             if matches:
                 return float(matches.group(1)), int(matches.group(2))
         return (0.0, 0.0)
-
-    def pt_from_pixel(self, pxl: Rect, bottomup=False) -> Rect:
-        """Returns the quantity in PDF units (pt) given quantity in pixels."""
-        if bottomup:
-            return Rect._make(
-                [
-                    (pxl.x1 / self.dpi * INCH),
-                    self.height - (pxl.y2 / self.dpi * INCH),  # swap y1/y2
-                    (pxl.x2 / self.dpi * INCH),
-                    self.height - (pxl.y1 / self.dpi * INCH),
-                ]
-            )
-        else:
-            return Rect._make(
-                (c / self.dpi * INCH) for c in (pxl.x1, pxl.y1, pxl.x2, pxl.y2)
-            )
 
     def _child_xpath(self, html_tag: str, html_class: str | None = None) -> str:
         xpath = f".//{self.xmlns}{html_tag}"
@@ -237,20 +200,30 @@ class HocrTransform:
             out_filename,
             page_size=(self.width, self.height),
         )
+        canvas.push()
+        page_matrix = (
+            Matrix()
+            .translated(0, self.height)
+            .scaled(1, -1)
+            .scaled(INCH / self.dpi, INCH / self.dpi)
+        )
+        canvas.cm(page_matrix)
+        print(page_matrix)
 
         for elem in self.hocr.iterfind(self._child_xpath('p', 'ocr_par')):
             elemtxt = self._get_element_text(elem).rstrip()
             if len(elemtxt) == 0:
                 continue
 
-            pxl_coords = self.element_coordinates(elem)
-            pt = self.pt_from_pixel(pxl_coords, bottomup=True)
+            ocr_par = self.element_coordinates(elem)
             # draw cyan box around paragraph
             if self.render_options.render_paragraph_bbox:
                 # pragma: no cover
                 canvas.set_stroke_color(CYAN)
                 canvas.set_line_width(0.1)  # no line for bounding box
-                canvas.rect(pt.x1, pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1, fill=0)
+                canvas.rect(
+                    ocr_par.llx, ocr_par.lly, ocr_par.width, ocr_par.height, fill=0
+                )
 
         found_lines = False
         for line in (
@@ -280,6 +253,7 @@ class HocrTransform:
                 invisible_text,
                 interword_spaces,
             )
+        canvas.pop()
         # put the image on the page, scaled to fill the page
         if image_filename is not None:
             canvas.draw_image(
@@ -306,7 +280,7 @@ class HocrTransform:
         if line is None:
             return
         line_box = self.element_coordinates(line)
-        assert line_box.y2 > line_box.y1
+        assert line_box.ury > line_box.lly  # lly is top, ury is bottom
 
         # Baseline is a polynomial (usually straight line) in the coordinate system
         # of the line
@@ -320,23 +294,20 @@ class HocrTransform:
         canvas.push()
         line_matrix = (
             Matrix()
-            .translated(0, self.height)
-            .scaled(1, -1)
-            .scaled(INCH / self.dpi, INCH / self.dpi)
-            .translated(-line_box.x1, -line_box.y1)
-            .translated(0, -intercept)
-            .rotated(angle / pi * 180)
-            .translated(0, intercept)
-            .translated(line_box.x1, line_box.y1)
+            # .translated(-line_box.llx, -line_box.lly)
+            # .translated(0, -intercept)
+            # .rotated(angle / pi * 180)
+            # .translated(0, intercept)
+            # .translated(line_box.llx, line_box.lly)
         )
-        canvas.cm(*line_matrix.shorthand)
+        canvas.cm(line_matrix)
         print(line_matrix)
         text = canvas.begin_text()
 
         # Don't allow the font to break out of the bounding box. Division by
         # cos_a accounts for extra clearance between the glyph's vertical axis
         # on a sloped baseline and the edge of the bounding box.
-        line_box_height = abs(line_box.y2 - line_box.y1)
+        line_box_height = abs(line_box.lly - line_box.ury)
         fontsize = line_box_height + intercept
         text.set_font(fontname, fontsize)
         if invisible_text or True:
@@ -344,7 +315,7 @@ class HocrTransform:
 
         self._do_debug_line_bbox(canvas, line_box)
         self._do_debug_baseline(
-            canvas, line_box.y2 + intercept, line_box, line_box.y2 + intercept
+            canvas, line_box.ury + intercept, line_box, line_box.ury + intercept
         )
         canvas.set_fill_color(BLACK)  # text in black
 
@@ -354,7 +325,7 @@ class HocrTransform:
                 canvas,
                 fontname,
                 interword_spaces,
-                line_box.y2 - line_box.y1,
+                line_box.ury - line_box.lly,
                 line_box,
                 text,
                 fontsize,
@@ -382,7 +353,7 @@ class HocrTransform:
             return
 
         box = self.element_coordinates(elem)
-        box_width = box.x2 - box.x1
+        box_width = box.urx - box.llx
         font_width = canvas.string_width(elemtxt, fontname, fontsize)
 
         # Debug sketches
@@ -391,17 +362,17 @@ class HocrTransform:
 
         # If this word is 0 units wide, our best bet seems to be to suppress this text
         if font_width > 0:
-            text.set_text_transform(1, 0, 0, 1, box.x1, line_box.y2)
+            text.set_text_transform(Matrix(1, 0, 0, 1, box.llx, line_box.ury))
             text.set_horiz_scale(100 * box_width / font_width)
             text.show(elemtxt)
 
         if interword_spaces and next_elem is not None:
             next_box = self.element_coordinates(next_elem)
-            space_box = Rect(box.x2, line_box.y1, next_box.x1, line_box.y2)
+            space_box = Rectangle(box.urx, line_box.lly, next_box.llx, line_box.ury)
             self._do_debug_space_bbox(canvas, space_box)
-            text.set_text_transform(1, 0, 0, 1, space_box.x1, line_box.y2)
+            text.set_text_transform(Matrix(1, 0, 0, 1, space_box.llx, line_box.ury))
             space_width = canvas.string_width(' ', fontname, fontsize)
-            box_width = space_box.x2 - space_box.x1
+            box_width = space_box.urx - space_box.llx
             text.set_horiz_scale(100 * box_width / space_width)
             text.show(' ')
 
@@ -413,10 +384,10 @@ class HocrTransform:
         canvas.set_stroke_color(BLUE)
         canvas.set_line_width(0.15)
         canvas.rect(
-            line_box.x1,
-            line_box.y1,
-            line_box.x2 - line_box.x1,
-            line_box.y2 - line_box.y1,
+            line_box.llx,
+            line_box.lly,
+            line_box.urx - line_box.llx,
+            line_box.ury - line_box.lly,
             fill=0,
         )
         canvas.pop()
@@ -433,9 +404,9 @@ class HocrTransform:
         canvas.set_stroke_color(RED)
         canvas.set_line_width(0.1)
         # Draw a triangle that conveys word height and drawing direction
-        canvas.line(box.x1, box.y1, box.x2, box.y1)  # across bottom
-        canvas.line(box.x2, box.y1, box.x1, box.y2)  # diagonal
-        canvas.line(box.x1, box.y1, box.x1, box.y2)  # rise
+        canvas.line(box.llx, box.lly, box.urx, box.lly)  # across bottom
+        canvas.line(box.urx, box.lly, box.llx, box.ury)  # diagonal
+        canvas.line(box.llx, box.lly, box.llx, box.ury)  # rise
         canvas.pop()
 
     def _do_debug_word_bbox(self, canvas, line_height, line_box, box, box_width):
@@ -445,7 +416,7 @@ class HocrTransform:
         canvas.set_dashes()
         canvas.set_stroke_color(GREEN)
         canvas.set_line_width(0.1)
-        canvas.rect(box.x1, line_box.y1, box_width, line_height, fill=0)
+        canvas.rect(box.llx, line_box.lly, box_width, line_height, fill=0)
         canvas.pop()
 
     def _do_debug_space_bbox(self, canvas, box):
@@ -455,10 +426,10 @@ class HocrTransform:
         canvas.set_dashes()
         canvas.set_fill_color(GREEN)
         canvas.set_line_width(0.1)
-        canvas.rect(box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1, fill=1)
+        canvas.rect(box.llx, box.lly, box.urx - box.llx, box.ury - box.lly, fill=1)
         canvas.pop()
 
-    def _do_debug_baseline(self, canvas, slope, line_box, baseline_y1):
+    def _do_debug_baseline(self, canvas, slope, line_box, baseline_lly):
         if not self.render_options.render_baseline:
             return
         # draw the baseline in magenta, dashed
@@ -468,11 +439,11 @@ class HocrTransform:
         # negate slope because it is defined as a rise/run in pixel
         # coordinates and page coordinates have the y axis flipped
         canvas.line(
-            line_box.x1,
-            baseline_y1,
-            line_box.x2,
-            baseline_y1,
-            # self.polyval((-slope, baseline_y1), line_box.x2 - line_box.x1),
+            line_box.llx,
+            baseline_lly,
+            line_box.urx,
+            baseline_lly,
+            # self.polyval((-slope, baseline_lly), line_box.urx - line_box.llx),
         )
 
 

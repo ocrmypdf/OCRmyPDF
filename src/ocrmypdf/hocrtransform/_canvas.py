@@ -7,6 +7,7 @@ from pathlib import Path
 from pikepdf import (
     ContentStreamInstruction,
     Dictionary,
+    Matrix,
     Name,
     Operator,
     Pdf,
@@ -113,9 +114,9 @@ class ContentStreamBuilder:
         self._instructions.append(inst)
         return self
 
-    def cm(self, a: float, b: float, c: float, d: float, e: float, f: float):
+    def cm(self, matrix: Matrix):
         """Concatenate matrix."""
-        inst = ContentStreamInstruction([a, b, c, d, e, f], Operator("cm"))
+        inst = ContentStreamInstruction(matrix.shorthand, Operator("cm"))
         self._instructions.append(inst)
         return self
 
@@ -151,11 +152,9 @@ class ContentStreamBuilder:
         self._instructions.append(inst)
         return self
 
-    def set_text_matrix(
-        self, a: float, b: float, c: float, d: float, e: float, f: float
-    ):
+    def set_text_matrix(self, matrix: Matrix):
         """Set text matrix."""
-        inst = ContentStreamInstruction([a, b, c, d, e, f], Operator("Tm"))
+        inst = ContentStreamInstruction(matrix.shorthand, Operator("Tm"))
         self._instructions.append(inst)
         return self
 
@@ -302,8 +301,8 @@ class PikepdfCanvas:
     def pop(self):
         self._cs.pop()
 
-    def cm(self, a, b, c, d, e, f):
-        self._cs.cm(a, b, c, d, e, f)
+    def cm(self, matrix):
+        self._cs.cm(matrix)
 
     def save(self):
         self._cs.pop()
@@ -327,9 +326,9 @@ class PikepdfText:
     def set_render_mode(self, mode):
         self._cs.set_text_rendering(mode)
 
-    def set_text_transform(self, a, b, c, d, e, f):
-        self._cs.set_text_matrix(a, b, c, d, e, f)
-        self._p0 = (e, f)
+    def set_text_transform(self, matrix: Matrix):
+        self._cs.set_text_matrix(matrix)
+        self._p0 = (matrix.e, matrix.f)
 
     def show(self, text):
         self._cs.show_text(text)
