@@ -372,102 +372,156 @@ class HocrTransform:
         # origin bottom left, y2 > y1.
         baseline_y1 = -intercept
 
-        if show_bounding_boxes and True:  # pragma: no cover
-            # draw the baseline in magenta, dashed
-            pdf.set_dashes()
-            pdf.set_stroke_color(magenta)
-            pdf.set_line_width(0.25)
-            # negate slope because it is defined as a rise/run in pixel
-            # coordinates and page coordinates have the y axis flipped
-            pdf.line(
-                cm_line_box.x1,
-                baseline_y1,
-                cm_line_box.x2,
-                self.polyval((-slope, baseline_y1), cm_line_box.x2 - cm_line_box.x1),
-            )
+        self._do_debug_baseline(
+            pdf, show_bounding_boxes, slope, cm_line_box, baseline_y1
+        )
         text.set_text_transform(1, 0, 0, 1, line_box.x1, baseline_y1)
         pdf.set_fill_color(black)  # text in black
 
         elements = line.findall(self._child_xpath('span', elemclass))
         for elem in elements:
-            elemtxt = self._get_element_text(elem).strip()
-            elemtxt = self.replace_unsupported_chars(elemtxt)
-            if elemtxt == '':
-                continue
-
-            pxl_coords = self.element_coordinates(elem)
-            box = self.pt_from_pixel(pxl_coords, bottomup=True)
-            cm_box = box.transform(line_matrix, inverse=True)
-            if interword_spaces:
-                # if  `--interword-spaces` is true, append a space
-                # to the end of each text element to allow simpler PDF viewers
-                # such as PDF.js to better recognize words in search and copy
-                # and paste. Do not remove space from last word in line, even
-                # though it would look better, because it will interfere with
-                # naive text extraction. \n does not work either.
-                elemtxt += ' '
-                cm_box = Rect._make(
-                    (
-                        cm_box.x1,
-                        cm_line_box.y1,
-                        cm_box.x2,  # + pdf.string_width(' ', fontname, line_height),
-                        cm_line_box.y2,
-                    )
-                )
-            box_width = cm_box.x2 - cm_box.x1
-            font_width = pdf.string_width(elemtxt, fontname, fontsize)
-
-            # draw the bbox border
-            if show_bounding_boxes:  # pragma: no cover
-                pdf.set_dashes()
-                pdf.set_stroke_color(red)
-                pdf.set_line_width(0.1)
-                # Draw a triangle that conveys word height and drawing direction
-                if True:
-                    pdf.line(
-                        cm_box.x1, cm_box.y1, cm_box.x2, cm_box.y1
-                    )  # across bottom
-                    pdf.line(cm_box.x2, cm_box.y1, cm_box.x1, cm_box.y2)  # diagonal
-                    pdf.line(cm_box.x1, cm_box.y1, cm_box.x1, cm_box.y2)  # rise
-
-                pdf.set_dashes()
-                pdf.set_stroke_color(green)
-                pdf.set_line_width(0.1)
-                pdf.rect(cm_box.x1, cm_line_box.y1, box_width, line_height, fill=0)
-
-            # Adjust relative position of cursor
-            # This is equivalent to:
-            #   text.setTextOrigin(pt.x1, self.height - line_box.y2)
-            # but the former generates a full text reposition matrix (Tm) in the
-            # content stream while this issues a "offset" (Td) command.
-            # .move_cursor() is relative to start of the text line, where the
-            # "text line" means whatever reportlab defines it as. Do not use
-            # use .getCursor(), since move_cursor() rather unintuitively plans
-            # its moves relative to .getStartOfLine().
-            # For skewed lines, in the text transform we set up a rotated
-            # coordinate system, so we don't have to account for the
-            # incremental offset. Surprisingly most PDF viewers can handle this.
-            if 0:
-                cursor = text.get_start_of_line()
-                dx = box.x1 - cursor[0]
-                dy = baseline_y1 - cursor[1]
-                text.move_cursor(dx, dy)
-            text.set_text_transform(
-                1,
-                0,
-                0,
-                1,
-                cm_box.x1,
-                cm_line_box.y1,
+            self._do_line_word(
+                pdf,
+                fontname,
+                interword_spaces,
+                show_bounding_boxes,
+                line_height,
+                line_matrix,
+                cm_line_box,
+                text,
+                fontsize,
+                baseline_y1,
+                elem,
             )
-
-            # If reportlab tells us this word is 0 units wide, our best seems
-            # to be to suppress this text
-            if font_width > 0:
-                text.set_horiz_scale(100 * box_width / font_width)
-                text.show(elemtxt)
         pdf.draw_text(text)
         pdf._cs.pop()
+
+    def _do_line_word(
+        self,
+        pdf,
+        fontname,
+        interword_spaces,
+        show_bounding_boxes,
+        line_height,
+        line_matrix,
+        cm_line_box,
+        text,
+        fontsize,
+        baseline_y1,
+        elem,
+    ):
+        elemtxt = self._get_element_text(elem).strip()
+        elemtxt = self.replace_unsupported_chars(elemtxt)
+        if elemtxt == '':
+            return
+
+        pxl_coords = self.element_coordinates(elem)
+        box = self.pt_from_pixel(pxl_coords, bottomup=True)
+        cm_box = box.transform(line_matrix, inverse=True)
+        if interword_spaces:
+            # if  `--interword-spaces` is true, append a space
+            # to the end of each text element to allow simpler PDF viewers
+            # such as PDF.js to better recognize words in search and copy
+            # and paste. Do not remove space from last word in line, even
+            # though it would look better, because it will interfere with
+            # naive text extraction. \n does not work either.
+            elemtxt += ' '
+            cm_box = Rect._make(
+                (
+                    cm_box.x1,
+                    cm_line_box.y1,
+                    cm_box.x2,  # + pdf.string_width(' ', fontname, line_height),
+                    cm_line_box.y2,
+                )
+            )
+        box_width = cm_box.x2 - cm_box.x1
+        font_width = pdf.string_width(elemtxt, fontname, fontsize)
+
+        # draw the bbox border
+        self._do_debug_word_triangle(pdf, show_bounding_boxes, cm_box)
+        self._do_debug_bbox(
+            pdf, show_bounding_boxes, line_height, cm_line_box, cm_box, box_width
+        )
+
+        # Adjust relative position of cursor
+        # This is equivalent to:
+        #   text.setTextOrigin(pt.x1, self.height - line_box.y2)
+        # but the former generates a full text reposition matrix (Tm) in the
+        # content stream while this issues a "offset" (Td) command.
+        # .move_cursor() is relative to start of the text line, where the
+        # "text line" means whatever reportlab defines it as. Do not use
+        # use .getCursor(), since move_cursor() rather unintuitively plans
+        # its moves relative to .getStartOfLine().
+        # For skewed lines, in the text transform we set up a rotated
+        # coordinate system, so we don't have to account for the
+        # incremental offset. Surprisingly most PDF viewers can handle this.
+        if 0:
+            cursor = text.get_start_of_line()
+            dx = box.x1 - cursor[0]
+            dy = baseline_y1 - cursor[1]
+            text.move_cursor(dx, dy)
+        text.set_text_transform(
+            1,
+            0,
+            0,
+            1,
+            cm_box.x1,
+            cm_line_box.y1,
+        )
+
+        # If reportlab tells us this word is 0 units wide, our best seems
+        # to be to suppress this text
+        if font_width > 0:
+            text.set_horiz_scale(100 * box_width / font_width)
+            text.show(elemtxt)
+
+    def _do_debug_word_triangle(
+        self,
+        pdf,
+        show_bounding_boxes,
+        cm_box,
+    ):
+        if not show_bounding_boxes:  # pragma: no cover
+            return
+        pdf._cs.push()
+        pdf.set_dashes()
+        pdf.set_stroke_color(red)
+        pdf.set_line_width(0.1)
+        # Draw a triangle that conveys word height and drawing direction
+        pdf.line(cm_box.x1, cm_box.y1, cm_box.x2, cm_box.y1)  # across bottom
+        pdf.line(cm_box.x2, cm_box.y1, cm_box.x1, cm_box.y2)  # diagonal
+        pdf.line(cm_box.x1, cm_box.y1, cm_box.x1, cm_box.y2)  # rise
+        pdf._cs.pop()
+
+    def _do_debug_bbox(
+        self, pdf, show_bounding_boxes, line_height, cm_line_box, cm_box, box_width
+    ):
+        if not show_bounding_boxes:  # pragma: no cover
+            return
+        pdf._cs.push()
+        pdf.set_dashes()
+        pdf.set_stroke_color(green)
+        pdf.set_line_width(0.1)
+        pdf.rect(cm_box.x1, cm_line_box.y1, box_width, line_height, fill=0)
+        pdf._cs.pop()
+
+    def _do_debug_baseline(
+        self, pdf, show_bounding_boxes, slope, line_box, baseline_y1
+    ):
+        if not show_bounding_boxes:
+            return
+        # draw the baseline in magenta, dashed
+        pdf.set_dashes()
+        pdf.set_stroke_color(magenta)
+        pdf.set_line_width(0.25)
+        # negate slope because it is defined as a rise/run in pixel
+        # coordinates and page coordinates have the y axis flipped
+        pdf.line(
+            line_box.x1,
+            baseline_y1,
+            line_box.x2,
+            self.polyval((-slope, baseline_y1), line_box.x2 - line_box.x1),
+        )
 
 
 if __name__ == "__main__":
