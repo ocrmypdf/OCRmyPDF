@@ -28,6 +28,7 @@ from ocrmypdf.hocrtransform.color import (
     BLACK,
     BLUE,
     CYAN,
+    DARKGREEN,
     GREEN,
     MAGENTA,
     RED,
@@ -95,12 +96,12 @@ class HocrTransform:
         if self.width is None or self.height is None:
             raise HocrTransformError("hocr file is missing page dimensions")
         self.render_options = DebugRenderOptions(
-            render_baseline=True,
-            render_triangle=True,
-            render_line_bbox=True,
+            render_baseline=False,
+            render_triangle=False,
+            render_line_bbox=False,
             render_word_bbox=True,
-            render_paragraph_bbox=True,
-            render_space_bbox=False,
+            render_paragraph_bbox=False,
+            render_space_bbox=True,
         )
 
     def _get_element_text(self, element: Element):
@@ -316,20 +317,15 @@ class HocrTransform:
         if elemtxt == '':
             return
 
-        box = self.element_coordinates(elem)
-        if box is None:
+        hocr_box = self.element_coordinates(elem)
+        if hocr_box is None:
             return
-        box = line_matrix.inverse().transform(box)
+        box = line_matrix.inverse().transform(hocr_box)
         font_width = canvas.string_width(elemtxt, fontname, fontsize)
 
         # Debug sketches
         self._debug_draw_word_triangle(canvas, box)
-        self._debug_draw_word_bbox(
-            canvas,
-            box.height,
-            box,
-            box.width,
-        )
+        self._debug_draw_word_bbox(canvas, box)
 
         # If this word is 0 units wide, our best bet seems to be to suppress this text
         if font_width > 0:
@@ -337,9 +333,12 @@ class HocrTransform:
             text.set_horiz_scale(100 * box.width / font_width)
             text.show(elemtxt)
 
-        if next_elem is not None:
-            next_box = self.element_coordinates(next_elem)
-            space_box = Rectangle(box.urx, line_box.lly, next_box.llx, line_box.ury)
+        hocr_next_box = (
+            self.element_coordinates(next_elem) if next_elem is not None else None
+        )
+        if hocr_next_box is not None:
+            next_box = line_matrix.inverse().transform(hocr_next_box)
+            space_box = Rectangle(box.urx, box.lly, next_box.llx, next_box.ury)
             self._debug_draw_space_bbox(canvas, space_box)
             text.set_text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
             space_width = canvas.string_width(' ', fontname, fontsize)
@@ -361,7 +360,7 @@ class HocrTransform:
             canvas.set_line_width(0.1)  # no line for bounding box
             canvas.rect(ocr_par.llx, ocr_par.lly, ocr_par.width, ocr_par.height, fill=0)
 
-    def _debug_draw_line_bbox(self, canvas, line_box, color=BLUE):
+    def _debug_draw_line_bbox(self, canvas: Canvas, line_box, color=BLUE):
         """Render the bounding box of a text line."""
         if not self.render_options.render_line_bbox:  # pragma: no cover
             return
@@ -390,9 +389,7 @@ class HocrTransform:
         canvas.line(box.llx, box.lly, box.llx, box.ury)  # rise
         canvas.pop()
 
-    def _debug_draw_word_bbox(
-        self, canvas: Canvas, line_height, box, box_width, color=GREEN
-    ):
+    def _debug_draw_word_bbox(self, canvas: Canvas, box, color=GREEN):
         """Render a box depicting the word."""
         if not self.render_options.render_word_bbox:  # pragma: no cover
             return
@@ -400,10 +397,10 @@ class HocrTransform:
         canvas.set_dashes()
         canvas.set_stroke_color(color)
         canvas.set_line_width(0.1)
-        canvas.rect(box.llx, box.lly, box_width, line_height, fill=0)
+        canvas.rect(box.llx, box.lly, box.width, box.height, fill=0)
         canvas.pop()
 
-    def _debug_draw_space_bbox(self, canvas: Canvas, box, color=GREEN):
+    def _debug_draw_space_bbox(self, canvas: Canvas, box, color=DARKGREEN):
         """Render a box depicting the space between two words."""
         if not self.render_options.render_space_bbox:  # pragma: no cover
             return
@@ -418,6 +415,7 @@ class HocrTransform:
         """Render the text baseline."""
         if not self.render_options.render_baseline:
             return
+        canvas.push()
         canvas.set_dashes()
         canvas.set_stroke_color(color)
         canvas.set_line_width(0.25)
@@ -427,6 +425,7 @@ class HocrTransform:
             line_box.urx,
             baseline_lly,
         )
+        canvas.pop()
 
 
 if __name__ == "__main__":
