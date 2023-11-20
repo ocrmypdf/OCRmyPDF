@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
+from dataclasses import dataclass
 from math import atan, cos, sin
 from pathlib import Path
 from typing import Any, NamedTuple
@@ -113,6 +114,16 @@ class Rect(NamedTuple):
         )
 
 
+@dataclass
+class DebugRenderOptions:
+    """A class for managing rendering options."""
+
+    render_paragraph_bbox: bool
+    render_baseline: bool
+    render_triangle: bool
+    render_word_bbox: bool
+
+
 class HocrTransformError(Exception):
     """Error while applying hOCR transform."""
 
@@ -160,6 +171,12 @@ class HocrTransform:
             break
         if self.width is None or self.height is None:
             raise HocrTransformError("hocr file is missing page dimensions")
+        self.render_options = DebugRenderOptions(
+            render_baseline=True,
+            render_triangle=True,
+            render_word_bbox=False,
+            render_paragraph_bbox=False,
+        )
 
     def __str__(self):  # pragma: no cover
         """Return the textual content of the HTML body."""
@@ -276,7 +293,8 @@ class HocrTransform:
             pxl_coords = self.element_coordinates(elem)
             pt = self.pt_from_pixel(pxl_coords, bottomup=True)
             # draw cyan box around paragraph
-            if show_bounding_boxes and False:  # pragma: no cover
+            if self.render_options.render_paragraph_bbox:
+                # pragma: no cover
                 pdf.set_stroke_color(cyan)
                 pdf.set_line_width(0.1)  # no line for bounding box
                 pdf.rect(pt.x1, pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1, fill=0)
@@ -296,7 +314,6 @@ class HocrTransform:
                 fontname,
                 invisible_text,
                 interword_spaces,
-                show_bounding_boxes,
             )
 
         if not found_lines:
@@ -309,7 +326,6 @@ class HocrTransform:
                 fontname,
                 invisible_text,
                 interword_spaces,
-                show_bounding_boxes,
             )
         # put the image on the page, scaled to fill the page
         if image_filename is not None:
@@ -331,7 +347,6 @@ class HocrTransform:
         fontname: str,
         invisible_text: bool,
         interword_spaces: bool,
-        show_bounding_boxes: bool,
     ):
         if line is None:
             return
@@ -372,9 +387,7 @@ class HocrTransform:
         # origin bottom left, y2 > y1.
         baseline_y1 = -intercept
 
-        self._do_debug_baseline(
-            pdf, show_bounding_boxes, slope, cm_line_box, baseline_y1
-        )
+        self._do_debug_baseline(pdf, slope, cm_line_box, baseline_y1)
         text.set_text_transform(1, 0, 0, 1, line_box.x1, baseline_y1)
         pdf.set_fill_color(black)  # text in black
 
@@ -384,7 +397,6 @@ class HocrTransform:
                 pdf,
                 fontname,
                 interword_spaces,
-                show_bounding_boxes,
                 line_height,
                 line_matrix,
                 cm_line_box,
@@ -401,7 +413,6 @@ class HocrTransform:
         pdf,
         fontname,
         interword_spaces,
-        show_bounding_boxes,
         line_height,
         line_matrix,
         cm_line_box,
@@ -438,10 +449,8 @@ class HocrTransform:
         font_width = pdf.string_width(elemtxt, fontname, fontsize)
 
         # draw the bbox border
-        self._do_debug_word_triangle(pdf, show_bounding_boxes, cm_box)
-        self._do_debug_bbox(
-            pdf, show_bounding_boxes, line_height, cm_line_box, cm_box, box_width
-        )
+        self._do_debug_word_triangle(pdf, cm_box)
+        self._do_debug_bbox(pdf, line_height, cm_line_box, cm_box, box_width)
 
         # Adjust relative position of cursor
         # This is equivalent to:
@@ -478,10 +487,9 @@ class HocrTransform:
     def _do_debug_word_triangle(
         self,
         pdf,
-        show_bounding_boxes,
         cm_box,
     ):
-        if not show_bounding_boxes:  # pragma: no cover
+        if not self.render_options.render_triangle:  # pragma: no cover
             return
         pdf._cs.push()
         pdf.set_dashes()
@@ -493,10 +501,8 @@ class HocrTransform:
         pdf.line(cm_box.x1, cm_box.y1, cm_box.x1, cm_box.y2)  # rise
         pdf._cs.pop()
 
-    def _do_debug_bbox(
-        self, pdf, show_bounding_boxes, line_height, cm_line_box, cm_box, box_width
-    ):
-        if not show_bounding_boxes:  # pragma: no cover
+    def _do_debug_bbox(self, pdf, line_height, cm_line_box, cm_box, box_width):
+        if not self.render_options.render_word_bbox:  # pragma: no cover
             return
         pdf._cs.push()
         pdf.set_dashes()
@@ -505,10 +511,8 @@ class HocrTransform:
         pdf.rect(cm_box.x1, cm_line_box.y1, box_width, line_height, fill=0)
         pdf._cs.pop()
 
-    def _do_debug_baseline(
-        self, pdf, show_bounding_boxes, slope, line_box, baseline_y1
-    ):
-        if not show_bounding_boxes:
+    def _do_debug_baseline(self, pdf, slope, line_box, baseline_y1):
+        if not self.render_options.render_baseline:
             return
         # draw the baseline in magenta, dashed
         pdf.set_dashes()
