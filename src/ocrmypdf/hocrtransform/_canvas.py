@@ -13,9 +13,6 @@ from pikepdf import (
     unparse_content_stream,
 )
 
-from ocrmypdf.hocrtransform.backends._base import Canvas as BaseCanvas
-from ocrmypdf.hocrtransform.backends._base import Text as BaseText
-
 GLYPHLESS_FONT_NAME = 'pdf.ttf'
 
 GLYPHLESS_FONT = (package_files('ocrmypdf.data') / GLYPHLESS_FONT_NAME).read_bytes()
@@ -247,9 +244,10 @@ class ContentStreamBuilder:
         return self._instructions
 
 
-class PikepdfCanvas(BaseCanvas):
+class PikepdfCanvas:
     def __init__(self, path, *, page_size):
-        super().__init__(path, page_size=page_size)
+        self.path = path
+        self.page_size = page_size
         self._pdf = Pdf.new()
         self._page = self._pdf.add_blank_page(page_size=page_size)
         self._cs = ContentStreamBuilder()
@@ -317,7 +315,7 @@ class PikepdfCanvas(BaseCanvas):
         self._pdf.save(self.path)
 
 
-class PikepdfText(BaseText):
+class PikepdfText:
     def __init__(self, x=0, y=0, direction=None):
         self._cs = ContentStreamBuilder()
         self._cs.begin_text()

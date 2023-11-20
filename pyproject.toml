@@ -19,7 +19,6 @@ dependencies = [
   "pdfminer.six>=20220319",
   "pikepdf>=8.7.1",
   "pluggy>=0.13.0",
-  "reportlab>=3.6.8",
   "rich>=13",
   "typing-extensions>=4;python_version<'3.10'",
 ]
@@ -58,6 +57,7 @@ test = [
   "pytest-cov>=3.0.0",
   "pytest-xdist>=2.5.0",
   "python-xmp-toolkit==2.0.1", # also requires apt-get install libexempi3
+  "reportlab>=3.6.8",
   "types-Pillow",
   "types-humanfriendly",
 ]

@@ -21,20 +21,17 @@ from xml.etree import ElementTree
 
 from pikepdf import PdfMatrix
 
-from ocrmypdf.hocrtransform.backends import (
-    Canvas,
+from ocrmypdf.hocrtransform._canvas import PikepdfCanvas
+from ocrmypdf.hocrtransform.color import (
+    BLACK,
+    BLUE,
+    CYAN,
+    GREEN,
+    MAGENTA,
+    RED,
 )
-from ocrmypdf.hocrtransform.backends.pikepdf import PikepdfCanvas
-from ocrmypdf.hocrtransform.backends.reportlab import (
-    ReportlabCanvas,
-    black,
-    blue,
-    cyan,
-    green,
-    inch,
-    magenta,
-    red,
-)
+
+INCH = 72.0
 
 # According to Wikipedia these languages are supported in the ISO-8859-1 character
 # set, meaning reportlab can generate them and they are compatible with hocr,
@@ -231,15 +228,15 @@ class HocrTransform:
         if bottomup:
             return Rect._make(
                 [
-                    (pxl.x1 / self.dpi * inch),
-                    self.height - (pxl.y2 / self.dpi * inch),  # swap y1/y2
-                    (pxl.x2 / self.dpi * inch),
-                    self.height - (pxl.y1 / self.dpi * inch),
+                    (pxl.x1 / self.dpi * INCH),
+                    self.height - (pxl.y2 / self.dpi * INCH),  # swap y1/y2
+                    (pxl.x2 / self.dpi * INCH),
+                    self.height - (pxl.y1 / self.dpi * INCH),
                 ]
             )
         else:
             return Rect._make(
-                (c / self.dpi * inch) for c in (pxl.x1, pxl.y1, pxl.x2, pxl.y2)
+                (c / self.dpi * INCH) for c in (pxl.x1, pxl.y1, pxl.x2, pxl.y2)
             )
 
     def _child_xpath(self, html_tag: str, html_class: str | None = None) -> str:
@@ -292,7 +289,7 @@ class HocrTransform:
         """
         # create the PDF file
         # page size in points (1/72 in.)
-        canvas = PikepdfCanvas(  # ReportlabCanvas(
+        canvas = PikepdfCanvas(
             out_filename,
             page_size=(self.width, self.height),
         )
@@ -307,7 +304,7 @@ class HocrTransform:
             # draw cyan box around paragraph
             if self.render_options.render_paragraph_bbox:
                 # pragma: no cover
-                canvas.set_stroke_color(cyan)
+                canvas.set_stroke_color(CYAN)
                 canvas.set_line_width(0.1)  # no line for bounding box
                 canvas.rect(pt.x1, pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1, fill=0)
 
@@ -355,7 +352,7 @@ class HocrTransform:
 
     def _do_line(
         self,
-        canvas: Canvas,
+        canvas: PikepdfCanvas,
         line: Element | None,
         elemclass: str,
         fontname: str,
@@ -375,7 +372,7 @@ class HocrTransform:
         if abs(slope) < 0.005:
             slope = 0.0
         angle = atan(slope)
-        intercept = pxl_intercept / self.dpi * inch
+        intercept = pxl_intercept / self.dpi * INCH
 
         # Setup a new coordinate system on the line box's intercept and rotated by
         # its slope
@@ -402,7 +399,7 @@ class HocrTransform:
 
         self._do_debug_line_bbox(canvas, cm_line_box)
         self._do_debug_baseline(canvas, 0, cm_line_box, 0)
-        canvas.set_fill_color(black)  # text in black
+        canvas.set_fill_color(BLACK)  # text in black
 
         elements = line.findall(self._child_xpath('span', elemclass))
         for elem, next_elem in pairwise(elements + [None]):
@@ -474,7 +471,7 @@ class HocrTransform:
             return
         canvas.push()
         canvas.set_dashes()
-        canvas.set_stroke_color(blue)
+        canvas.set_stroke_color(BLUE)
         canvas.set_line_width(0.15)
         canvas.rect(
             line_box.x1,
@@ -494,7 +491,7 @@ class HocrTransform:
             return
         canvas.push()
         canvas.set_dashes()
-        canvas.set_stroke_color(red)
+        canvas.set_stroke_color(RED)
         canvas.set_line_width(0.1)
         # Draw a triangle that conveys word height and drawing direction
         canvas.line(cm_box.x1, cm_box.y1, cm_box.x2, cm_box.y1)  # across bottom
@@ -507,7 +504,7 @@ class HocrTransform:
             return
         canvas.push()
         canvas.set_dashes()
-        canvas.set_stroke_color(green)
+        canvas.set_stroke_color(GREEN)
         canvas.set_line_width(0.1)
         canvas.rect(cm_box.x1, cm_line_box.y1, box_width, line_height, fill=0)
         canvas.pop()
@@ -517,7 +514,7 @@ class HocrTransform:
             return
         canvas.push()
         canvas.set_dashes()
-        canvas.set_fill_color(green)
+        canvas.set_fill_color(GREEN)
         canvas.set_line_width(0.1)
         canvas.rect(box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1, fill=1)
         canvas.pop()
@@ -527,7 +524,7 @@ class HocrTransform:
             return
         # draw the baseline in magenta, dashed
         canvas.set_dashes()
-        canvas.set_stroke_color(magenta)
+        canvas.set_stroke_color(MAGENTA)
         canvas.set_line_width(0.25)
         # negate slope because it is defined as a rise/run in pixel
         # coordinates and page coordinates have the y axis flipped
