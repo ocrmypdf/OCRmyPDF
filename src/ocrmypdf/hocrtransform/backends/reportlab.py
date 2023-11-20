@@ -10,7 +10,7 @@ with warnings.catch_warnings():
     warnings.filterwarnings(
         'ignore', category=DeprecationWarning, message=r".*load_module.*"
     )
-    from reportlab.lib.colors import black, cyan, magenta, red
+    from reportlab.lib.colors import black, cyan, green, magenta, red
     from reportlab.lib.units import inch
     from reportlab.pdfgen.canvas import Canvas
     from reportlab.pdfgen.textobject import PDFTextObject
