@@ -11,7 +11,9 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import unicodedata
 from dataclasses import dataclass
+from itertools import pairwise
 from math import atan, cos, pi, sin
 from pathlib import Path
 from typing import Any, NamedTuple
@@ -249,6 +251,11 @@ class HocrTransform:
         """Replaces characters with those available in the Helvetica typeface."""
         return s.translate(cls.ligatures)
 
+    @classmethod
+    def normalize_text(cls, s: str) -> str:
+        """Normalize the given text using the NFKC normalization form."""
+        return unicodedata.normalize("NFKC", s)
+
     def to_pdf(
         self,
         *,
@@ -398,7 +405,7 @@ class HocrTransform:
         canvas.set_fill_color(black)  # text in black
 
         elements = line.findall(self._child_xpath('span', elemclass))
-        for elem in elements:
+        for elem, next_elem in pairwise(elements + [None]):
             self._do_line_word(
                 canvas,
                 fontname,
@@ -409,6 +416,7 @@ class HocrTransform:
                 text,
                 fontsize,
                 elem,
+                next_elem,
             )
         canvas.draw_text(text)
         canvas.pop()
@@ -424,35 +432,20 @@ class HocrTransform:
         text,
         fontsize,
         elem,
+        next_elem,
     ):
         elemtxt = self._get_element_text(elem).strip()
-        elemtxt = self.replace_unsupported_chars(elemtxt)
+        elemtxt = self.normalize_text(elemtxt)
         if elemtxt == '':
             return
 
         pxl_coords = self.element_coordinates(elem)
         box = self.pt_from_pixel(pxl_coords, bottomup=True)
         cm_box = box.transform(line_matrix, inverse=True)
-        if interword_spaces:
-            # if  `--interword-spaces` is true, append a space
-            # to the end of each text element to allow simpler PDF viewers
-            # such as PDF.js to better recognize words in search and copy
-            # and paste. Do not remove space from last word in line, even
-            # though it would look better, because it will interfere with
-            # naive text extraction. \n does not work either.
-            space_width = canvas.string_width(' ', fontname, fontsize)
-            cm_box = Rect._make(
-                (
-                    cm_box.x1,
-                    cm_line_box.y1,
-                    cm_box.x2,
-                    cm_line_box.y2,
-                )
-            )
-        else:
-            space_width = 0
+        # space_width = canvas.string_width(' ', fontname, fontsize)
+
         box_width = cm_box.x2 - cm_box.x1
-        font_width = canvas.string_width(elemtxt, fontname, fontsize) + space_width
+        font_width = canvas.string_width(elemtxt, fontname, fontsize)
 
         # draw the bbox border
         self._do_debug_word_triangle(canvas, cm_box)
@@ -464,7 +457,20 @@ class HocrTransform:
         # to be to suppress this text
         if font_width > 0:
             text.set_horiz_scale(100 * box_width / font_width)
-            text.show((elemtxt + ' ') if interword_spaces else elemtxt)
+            text.show(elemtxt)
+
+        if interword_spaces and next_elem is not None:
+            next_box = self.pt_from_pixel(
+                self.element_coordinates(next_elem), bottomup=True
+            )
+            next_cm_box = next_box.transform(line_matrix, inverse=True)
+            space_box = Rect(cm_box.x2, cm_line_box.y1, next_cm_box.x1, cm_line_box.y2)
+            # self._do_debug_word_bbox(canvas, line_height, cm_line_box, space_box, 0)
+            text.set_text_transform(1, 0, 0, 1, space_box.x1, cm_line_box.y1)
+            space_width = canvas.string_width(' ', fontname, fontsize)
+            box_width = space_box.x2 - space_box.x1
+            text.set_horiz_scale(100 * box_width / space_width)
+            text.show(' ')
 
     def _do_debug_line_bbox(self, canvas, line_box):
         if not self.render_options.render_line_bbox:  # pragma: no cover
