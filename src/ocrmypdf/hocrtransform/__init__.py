@@ -11,21 +11,19 @@ from __future__ import annotations
 import argparse
 import os
 import re
-import warnings
 from math import atan, cos, sin
 from pathlib import Path
 from typing import Any, NamedTuple
 from xml.etree import ElementTree
 
-with warnings.catch_warnings():
-    # reportlab uses deprecated load_module
-    # shim can be removed when we require reportlab >= 3.7
-    warnings.filterwarnings(
-        'ignore', category=DeprecationWarning, message=r".*load_module.*"
-    )
-    from reportlab.lib.colors import black, cyan, magenta, red
-    from reportlab.lib.units import inch
-    from reportlab.pdfgen.canvas import Canvas
+from ocrmypdf.hocrtransform.backends.reportlab import (
+    Canvas,
+    black,
+    cyan,
+    inch,
+    magenta,
+    red,
+)
 
 # According to Wikipedia these languages are supported in the ISO-8859-1 character
 # set, meaning reportlab can generate them and they are compatible with hocr,
