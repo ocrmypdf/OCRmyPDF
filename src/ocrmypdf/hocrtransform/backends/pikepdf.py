@@ -246,9 +246,7 @@ class PikepdfCanvas(BaseCanvas):
         self._pdf = Pdf.new()
         self._page = self._pdf.add_blank_page(page_size=page_size)
         self._cs = ContentStreamBuilder()
-        page_height = page_size[1]
         self._cs.push()
-        self._cs.cm(1, 0, 0, -1, 0, page_height)
         self._font_name = Name("/f-0-0")
 
     def set_stroke_color(self, color):
@@ -265,10 +263,18 @@ class PikepdfCanvas(BaseCanvas):
     def line(self, x1, y1, x2, y2):
         self._cs.line(x1, y1, x2, y2)
 
+    def rect(self, x, y, w, h, fill):
+        self._cs.append_rectangle(x, y, w, h)
+        self._cs.stroke_and_close()
+
     def begin_text(self, x=0, y=0, direction=None):
-        return PikepdfText(self._cs, x, y, direction)
+        return PikepdfText(x, y, direction)
 
     def draw_text(self, text: PikepdfText):
+        self._cs._instructions.extend(text._cs._instructions)
+        self._end_text()
+
+    def _end_text(self):
         self._cs.end_text()
 
     def draw_image(self, image: Path, x, y, width, height):
@@ -276,10 +282,10 @@ class PikepdfCanvas(BaseCanvas):
 
     def string_width(self, text, fontname, fontsize):
         # NFKC: split ligatures, combine diacritics
-        return len(unicodedata.normalize("NFKC", text)) / fontsize * CHAR_ASPECT
+        return len(unicodedata.normalize("NFKC", text)) * (fontsize / CHAR_ASPECT)
 
-    def set_dashes(self, dashes):
-        self._cs.set_dashes(*dashes)
+    def set_dashes(self, *args):
+        self._cs.set_dashes(*args)
 
     def save(self):
         self._cs.pop()
@@ -292,19 +298,20 @@ class PikepdfCanvas(BaseCanvas):
 
 
 class PikepdfText(BaseText):
-    def __init__(self, cs: ContentStreamBuilder, x=0, y=0, direction=None):
-        self._cs = cs
+    def __init__(self, x=0, y=0, direction=None):
+        self._cs = ContentStreamBuilder()
         self._cs.begin_text()
         self._p0 = (x, y)
 
     def set_font(self, font, size):
-        self._cs.set_text_font(font, size)
+        self._cs.set_text_font(Name("/f-0-0"), size)
 
     def set_render_mode(self, mode):
         self._cs.set_text_rendering(mode)
 
     def set_text_transform(self, a, b, c, d, e, f):
         self._cs.set_text_matrix(a, b, c, d, e, f)
+        self._p0 = (e, f)
 
     def show(self, text):
         self._cs.show_text(text)
@@ -316,5 +323,4 @@ class PikepdfText(BaseText):
         return self._p0
 
     def move_cursor(self, x, y):
-        # ???
-        self._cs.move_cursor(x - self._p0[0], y - self._p0[1])
+        self._cs.move_cursor(x, y)
