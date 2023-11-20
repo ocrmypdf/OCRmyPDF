@@ -377,10 +377,13 @@ class HocrTransform:
         angle = atan(slope)
         intercept = pxl_intercept / self.dpi * inch
 
-        # Enter a new coordinate system with the linebox at the origin
+        # Setup a new coordinate system on the line box's intercept and rotated by
+        # its slope
         canvas.push()
         line_matrix = (
-            PdfMatrix().translated(line_box.x1, line_box.y1).rotated(-angle / pi * 180)
+            PdfMatrix()
+            .translated(line_box.x1, line_box.y1 - intercept)
+            .rotated(-angle / pi * 180)
         )
         canvas.cm(*line_matrix.shorthand)
 
@@ -392,18 +395,13 @@ class HocrTransform:
         # Don't allow the font to break out of the bounding box. Division by
         # cos_a accounts for extra clearance between the glyph's vertical axis
         # on a sloped baseline and the edge of the bounding box.
-        fontsize = cm_line_height - abs(intercept)
+        fontsize = cm_line_height
         text.set_font(fontname, fontsize)
         if invisible_text or True:
             text.set_render_mode(3)  # Invisible (indicates OCR text)
 
-        # Intercept is normally negative. Subtracting it will raise the baseline
-        # above the bottom of the bounding box (y1).
-        baseline_y1 = cm_line_box.y1 - intercept
-
         self._do_debug_line_bbox(canvas, cm_line_box)
-        self._do_debug_baseline(canvas, 0, cm_line_box, baseline_y1)
-        text.set_text_transform(1, 0, 0, 1, line_box.x1, baseline_y1)
+        self._do_debug_baseline(canvas, 0, cm_line_box, 0)
         canvas.set_fill_color(black)  # text in black
 
         elements = line.findall(self._child_xpath('span', elemclass))
