@@ -12,7 +12,7 @@ import argparse
 import os
 import re
 from dataclasses import dataclass
-from math import atan, cos, sin
+from math import atan, cos, pi, sin
 from pathlib import Path
 from typing import Any, NamedTuple
 from xml.etree import ElementTree
@@ -26,6 +26,7 @@ from ocrmypdf.hocrtransform.backends.pikepdf import PikepdfCanvas
 from ocrmypdf.hocrtransform.backends.reportlab import (
     ReportlabCanvas,
     black,
+    blue,
     cyan,
     green,
     inch,
@@ -121,6 +122,7 @@ class DebugRenderOptions:
     render_paragraph_bbox: bool
     render_baseline: bool
     render_triangle: bool
+    render_line_bbox: bool
     render_word_bbox: bool
 
 
@@ -173,8 +175,9 @@ class HocrTransform:
             raise HocrTransformError("hocr file is missing page dimensions")
         self.render_options = DebugRenderOptions(
             render_baseline=True,
-            render_triangle=True,
-            render_word_bbox=False,
+            render_triangle=False,
+            render_line_bbox=False,
+            render_word_bbox=True,
             render_paragraph_bbox=False,
         )
 
@@ -354,42 +357,43 @@ class HocrTransform:
             return
         pxl_line_coords = self.element_coordinates(line)
         line_box = self.pt_from_pixel(pxl_line_coords, bottomup=True)
-        line_height = line_box.y2 - line_box.y1
+
         assert line_box.y2 > line_box.y1
 
+        # Baseline is a polynomial (usually straight line) in the coordinate system
+        # of the line
         slope, pxl_intercept = self.baseline(line)
         if abs(slope) < 0.005:
             slope = 0.0
         angle = atan(slope)
-        cos_a, sin_a = cos(angle), sin(angle)
         intercept = pxl_intercept / self.dpi * inch
 
         # Enter a new coordinate system with the linebox at the origin
         canvas.push()
-        line_matrix = PdfMatrix().translated(line_box.x1, line_box.y1).rotated(-angle)
+        line_matrix = (
+            PdfMatrix().translated(line_box.x1, line_box.y1).rotated(-angle / pi * 180)
+        )
         canvas.cm(*line_matrix.shorthand)
-        cos_a, sin_a = 1, 0
-        slope = 0
-        intercept = 0
 
         cm_line_box = line_box.transform(line_matrix, inverse=True)
+        cm_line_height = cm_line_box.y2 - cm_line_box.y1
 
         text = canvas.begin_text()
 
         # Don't allow the font to break out of the bounding box. Division by
         # cos_a accounts for extra clearance between the glyph's vertical axis
         # on a sloped baseline and the edge of the bounding box.
-        fontsize = (line_height - abs(intercept)) / cos_a
+        fontsize = cm_line_height - abs(intercept)
         text.set_font(fontname, fontsize)
         if invisible_text or True:
             text.set_render_mode(3)  # Invisible (indicates OCR text)
 
         # Intercept is normally negative. Subtracting it will raise the baseline
-        # above the bottom of the bounding box (y1). We're in page coordinates,
-        # origin bottom left, y2 > y1.
-        baseline_y1 = -intercept
+        # above the bottom of the bounding box (y1).
+        baseline_y1 = cm_line_box.y1 - intercept
 
-        self._do_debug_baseline(canvas, slope, cm_line_box, baseline_y1)
+        self._do_debug_line_bbox(canvas, cm_line_box)
+        self._do_debug_baseline(canvas, 0, cm_line_box, baseline_y1)
         text.set_text_transform(1, 0, 0, 1, line_box.x1, baseline_y1)
         canvas.set_fill_color(black)  # text in black
 
@@ -399,12 +403,11 @@ class HocrTransform:
                 canvas,
                 fontname,
                 interword_spaces,
-                line_height,
+                cm_line_height,
                 line_matrix,
                 cm_line_box,
                 text,
                 fontsize,
-                baseline_y1,
                 elem,
             )
         canvas.draw_text(text)
@@ -420,7 +423,6 @@ class HocrTransform:
         cm_line_box,
         text,
         fontsize,
-        baseline_y1,
         elem,
     ):
         elemtxt = self._get_element_text(elem).strip()
@@ -438,53 +440,47 @@ class HocrTransform:
             # and paste. Do not remove space from last word in line, even
             # though it would look better, because it will interfere with
             # naive text extraction. \n does not work either.
-            elemtxt += ' '
+            space_width = canvas.string_width(' ', fontname, fontsize)
             cm_box = Rect._make(
                 (
                     cm_box.x1,
                     cm_line_box.y1,
-                    cm_box.x2,  # + pdf.string_width(' ', fontname, line_height),
+                    cm_box.x2,
                     cm_line_box.y2,
                 )
             )
+        else:
+            space_width = 0
         box_width = cm_box.x2 - cm_box.x1
-        font_width = canvas.string_width(elemtxt, fontname, fontsize)
+        font_width = canvas.string_width(elemtxt, fontname, fontsize) + space_width
 
         # draw the bbox border
         self._do_debug_word_triangle(canvas, cm_box)
-        self._do_debug_bbox(canvas, line_height, cm_line_box, cm_box, box_width)
+        self._do_debug_word_bbox(canvas, line_height, cm_line_box, cm_box, box_width)
 
-        # Adjust relative position of cursor
-        # This is equivalent to:
-        #   text.setTextOrigin(pt.x1, self.height - line_box.y2)
-        # but the former generates a full text reposition matrix (Tm) in the
-        # content stream while this issues a "offset" (Td) command.
-        # .move_cursor() is relative to start of the text line, where the
-        # "text line" means whatever reportlab defines it as. Do not use
-        # use .getCursor(), since move_cursor() rather unintuitively plans
-        # its moves relative to .getStartOfLine().
-        # For skewed lines, in the text transform we set up a rotated
-        # coordinate system, so we don't have to account for the
-        # incremental offset. Surprisingly most PDF viewers can handle this.
-        if 0:
-            cursor = text.get_start_of_line()
-            dx = box.x1 - cursor[0]
-            dy = baseline_y1 - cursor[1]
-            text.move_cursor(dx, dy)
-        text.set_text_transform(
-            1,
-            0,
-            0,
-            1,
-            cm_box.x1,
-            cm_line_box.y1,
-        )
+        text.set_text_transform(1, 0, 0, 1, cm_box.x1, cm_line_box.y1)
 
         # If reportlab tells us this word is 0 units wide, our best seems
         # to be to suppress this text
         if font_width > 0:
             text.set_horiz_scale(100 * box_width / font_width)
-            text.show(elemtxt)
+            text.show((elemtxt + ' ') if interword_spaces else elemtxt)
+
+    def _do_debug_line_bbox(self, canvas, line_box):
+        if not self.render_options.render_line_bbox:  # pragma: no cover
+            return
+        canvas.push()
+        canvas.set_dashes()
+        canvas.set_stroke_color(blue)
+        canvas.set_line_width(0.15)
+        canvas.rect(
+            line_box.x1,
+            line_box.y1,
+            line_box.x2 - line_box.x1,
+            line_box.y2 - line_box.y1,
+            fill=0,
+        )
+        canvas.pop()
 
     def _do_debug_word_triangle(
         self,
@@ -503,7 +499,7 @@ class HocrTransform:
         canvas.line(cm_box.x1, cm_box.y1, cm_box.x1, cm_box.y2)  # rise
         canvas.pop()
 
-    def _do_debug_bbox(self, canvas, line_height, cm_line_box, cm_box, box_width):
+    def _do_debug_word_bbox(self, canvas, line_height, cm_line_box, cm_box, box_width):
         if not self.render_options.render_word_bbox:  # pragma: no cover
             return
         canvas.push()
@@ -526,7 +522,8 @@ class HocrTransform:
             line_box.x1,
             baseline_y1,
             line_box.x2,
-            self.polyval((-slope, baseline_y1), line_box.x2 - line_box.x1),
+            baseline_y1,
+            # self.polyval((-slope, baseline_y1), line_box.x2 - line_box.x1),
         )
 
 

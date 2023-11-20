@@ -176,7 +176,8 @@ class ContentStreamBuilder:
 
     def show_text(self, text: str):
         """Show text."""
-        inst = ContentStreamInstruction([[text.encode("utf-16be")]], Operator("TJ"))
+        encoded = text.encode("utf-16be")
+        inst = ContentStreamInstruction([[encoded]], Operator("TJ"))
         self._instructions.append(inst)
         return self
 
