@@ -28,7 +28,6 @@ from ocrmypdf.exceptions import (
     OutputFileAccessError,
 )
 from ocrmypdf.helpers import is_file_writable, monotonic, safe_symlink
-from ocrmypdf.hocrtransform import HOCR_OK_LANGS
 from ocrmypdf.subprocess import check_external_program
 
 # -------------
@@ -83,15 +82,6 @@ def check_options_languages(
 
 
 def check_options_output(options: Namespace) -> None:
-    is_latin = set(options.languages).issubset(HOCR_OK_LANGS)
-
-    if options.pdf_renderer.startswith('hocr') and not is_latin:
-        log.warning(
-            "The 'hocr' PDF renderer is known to cause problems with one "
-            "or more of the languages in your document.  Use "
-            "`--pdf-renderer auto` (the default) to avoid this issue."
-        )
-
     if options.output_type == 'none' and options.output_file not in (os.devnull, '-'):
         raise BadArgsError(
             "Since you specified `--output-type none`, the output file "
