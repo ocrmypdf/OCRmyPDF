@@ -747,9 +747,7 @@ def render_hocr_page(hocr: Path, page_context: PageContext) -> Path:
     hocrtransform.to_pdf(
         out_filename=output_file,
         image_filename=None,
-        show_bounding_boxes=False if not debug_mode else True,
         invisible_text=True if not debug_mode else False,
-        interword_spaces=True,
     )
     return output_file
 

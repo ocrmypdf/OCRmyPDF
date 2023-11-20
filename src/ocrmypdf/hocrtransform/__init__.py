@@ -153,10 +153,8 @@ class HocrTransform:
         *,
         out_filename: Path,
         image_filename: Path | None = None,
-        show_bounding_boxes: bool = False,
         fontname: str = "Helvetica",
         invisible_text: bool = False,
-        interword_spaces: bool = False,
     ) -> None:
         """Creates a PDF file with an image superimposed on top of the text.
 
@@ -242,6 +240,11 @@ class HocrTransform:
         fontname: str,
         invisible_text: bool,
     ):
+        """Render the text for a given line.
+
+        The canvas's coordinate system must be configured so that hOCR pixel
+        coordinates are mapped to PDF coordinates.
+        """
         if line is None:
             return
         line_box = self.element_coordinates(line)
@@ -249,19 +252,21 @@ class HocrTransform:
 
         self._debug_draw_line_bbox(canvas, line_box)
 
-        # Baseline is a polynomial (usually straight line) in the coordinate system
-        # of the line
+        # Baseline is a polynomial (usually straight line) that describes the
+        # text baseline relative to the bottom left corner of the line bounding
+        # box.
+        bottom_left_corner = line_box.llx, line_box.ury
         slope, intercept = self.baseline(line)
         if abs(slope) < 0.005:
             slope = 0.0
         angle = atan(slope)
 
         # Setup a new coordinate system on the line box's intercept and rotated by
-        # its slope
+        # its slope.
         canvas.push()
         line_matrix = (
             Matrix()
-            .translated(line_box.llx, line_box.ury)
+            .translated(*bottom_left_corner)
             .translated(0, intercept)
             .rotated(angle / pi * 180)
         )
@@ -279,15 +284,14 @@ class HocrTransform:
             text.set_render_mode(3)  # Invisible (indicates OCR text)
 
         self._debug_draw_baseline(canvas, line_matrix.inverse().transform(line_box), 0)
-        canvas.set_fill_color(BLACK)  # text in black
 
+        canvas.set_fill_color(BLACK)  # text in black
         elements = line.findall(self._child_xpath('span', elemclass))
         for elem, next_elem in pairwise(elements + [None]):
             self._do_line_word(
                 canvas,
                 fontname,
                 line_matrix,
-                line_box_height,
                 line_box,
                 text,
                 fontsize,
@@ -302,15 +306,13 @@ class HocrTransform:
         canvas: Canvas,
         fontname,
         line_matrix: Matrix,
-        line_height: float,
         line_box: Rectangle,
         text: PikepdfText,
         fontsize: float,
         elem: Element,
         next_elem: Element | None,
     ):
-        elemtxt = self._get_element_text(elem).strip()
-        elemtxt = self.normalize_text(elemtxt)
+        elemtxt = self.normalize_text(self._get_element_text(elem).strip())
         if elemtxt == '':
             return
 

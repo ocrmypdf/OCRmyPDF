@@ -64,7 +64,7 @@ def test_mono_image(blank_hocr, outdir):
         im.putpixel((n, n), 1)
     im.save(outdir / 'mono.tif', format='TIFF')
 
-    hocr = hocrtransform.HocrTransform(hocr_filename=str(blank_hocr), dpi=300)
+    hocr = hocrtransform.HocrTransform(hocr_filename=str(blank_hocr), dpi=8)
     hocr.to_pdf(
         out_filename=str(outdir / 'mono.pdf'), image_filename=str(outdir / 'mono.tif')
     )
