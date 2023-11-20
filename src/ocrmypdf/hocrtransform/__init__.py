@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, NamedTuple
 from xml.etree import ElementTree
 
-from pikepdf import PdfMatrix
+from pikepdf import Matrix, Rectangle
 
 from ocrmypdf.hocrtransform._canvas import PikepdfCanvas
 from ocrmypdf.hocrtransform.color import (
@@ -305,44 +305,47 @@ class HocrTransform:
     ):
         if line is None:
             return
-        pxl_line_coords = self.element_coordinates(line)
-        line_box = self.pt_from_pixel(pxl_line_coords, bottomup=True)
-
+        line_box = self.element_coordinates(line)
         assert line_box.y2 > line_box.y1
 
         # Baseline is a polynomial (usually straight line) in the coordinate system
         # of the line
-        slope, pxl_intercept = self.baseline(line)
+        slope, intercept = self.baseline(line)
         if abs(slope) < 0.005:
             slope = 0.0
         angle = atan(slope)
-        intercept = pxl_intercept / self.dpi * INCH
 
         # Setup a new coordinate system on the line box's intercept and rotated by
         # its slope
         canvas.push()
         line_matrix = (
-            PdfMatrix()
-            .translated(line_box.x1, line_box.y1 - intercept)
-            .rotated(-angle / pi * 180)
+            Matrix()
+            .translated(0, self.height)
+            .scaled(1, -1)
+            .scaled(INCH / self.dpi, INCH / self.dpi)
+            .translated(-line_box.x1, -line_box.y1)
+            .translated(0, -intercept)
+            .rotated(angle / pi * 180)
+            .translated(0, intercept)
+            .translated(line_box.x1, line_box.y1)
         )
         canvas.cm(*line_matrix.shorthand)
-
-        cm_line_box = line_box.transform(line_matrix, inverse=True)
-        cm_line_height = cm_line_box.y2 - cm_line_box.y1
-
+        print(line_matrix)
         text = canvas.begin_text()
 
         # Don't allow the font to break out of the bounding box. Division by
         # cos_a accounts for extra clearance between the glyph's vertical axis
         # on a sloped baseline and the edge of the bounding box.
-        fontsize = cm_line_height
+        line_box_height = abs(line_box.y2 - line_box.y1)
+        fontsize = line_box_height + intercept
         text.set_font(fontname, fontsize)
         if invisible_text or True:
             text.set_render_mode(3)  # Invisible (indicates OCR text)
 
-        self._do_debug_line_bbox(canvas, cm_line_box)
-        self._do_debug_baseline(canvas, 0, cm_line_box, 0)
+        self._do_debug_line_bbox(canvas, line_box)
+        self._do_debug_baseline(
+            canvas, line_box.y2 + intercept, line_box, line_box.y2 + intercept
+        )
         canvas.set_fill_color(BLACK)  # text in black
 
         elements = line.findall(self._child_xpath('span', elemclass))
@@ -351,9 +354,8 @@ class HocrTransform:
                 canvas,
                 fontname,
                 interword_spaces,
-                cm_line_height,
-                line_matrix,
-                cm_line_box,
+                line_box.y2 - line_box.y1,
+                line_box,
                 text,
                 fontsize,
                 elem,
@@ -368,8 +370,7 @@ class HocrTransform:
         fontname,
         interword_spaces,
         line_height,
-        line_matrix,
-        cm_line_box,
+        line_box,
         text,
         fontsize,
         elem,
@@ -380,31 +381,25 @@ class HocrTransform:
         if elemtxt == '':
             return
 
-        pxl_coords = self.element_coordinates(elem)
-        box = self.pt_from_pixel(pxl_coords, bottomup=True)
-        cm_box = box.transform(line_matrix, inverse=True)
-
-        box_width = cm_box.x2 - cm_box.x1
+        box = self.element_coordinates(elem)
+        box_width = box.x2 - box.x1
         font_width = canvas.string_width(elemtxt, fontname, fontsize)
 
         # Debug sketches
-        self._do_debug_word_triangle(canvas, cm_box)
-        self._do_debug_word_bbox(canvas, line_height, cm_line_box, cm_box, box_width)
+        self._do_debug_word_triangle(canvas, box)
+        self._do_debug_word_bbox(canvas, line_height, line_box, box, box_width)
 
         # If this word is 0 units wide, our best bet seems to be to suppress this text
         if font_width > 0:
-            text.set_text_transform(1, 0, 0, 1, cm_box.x1, cm_line_box.y1)
+            text.set_text_transform(1, 0, 0, 1, box.x1, line_box.y2)
             text.set_horiz_scale(100 * box_width / font_width)
             text.show(elemtxt)
 
         if interword_spaces and next_elem is not None:
-            next_box = self.pt_from_pixel(
-                self.element_coordinates(next_elem), bottomup=True
-            )
-            next_cm_box = next_box.transform(line_matrix, inverse=True)
-            space_box = Rect(cm_box.x2, cm_line_box.y1, next_cm_box.x1, cm_line_box.y2)
+            next_box = self.element_coordinates(next_elem)
+            space_box = Rect(box.x2, line_box.y1, next_box.x1, line_box.y2)
             self._do_debug_space_bbox(canvas, space_box)
-            text.set_text_transform(1, 0, 0, 1, space_box.x1, cm_line_box.y1)
+            text.set_text_transform(1, 0, 0, 1, space_box.x1, line_box.y2)
             space_width = canvas.string_width(' ', fontname, fontsize)
             box_width = space_box.x2 - space_box.x1
             text.set_horiz_scale(100 * box_width / space_width)
@@ -429,7 +424,7 @@ class HocrTransform:
     def _do_debug_word_triangle(
         self,
         canvas,
-        cm_box,
+        box,
     ):
         if not self.render_options.render_triangle:  # pragma: no cover
             return
@@ -438,19 +433,19 @@ class HocrTransform:
         canvas.set_stroke_color(RED)
         canvas.set_line_width(0.1)
         # Draw a triangle that conveys word height and drawing direction
-        canvas.line(cm_box.x1, cm_box.y1, cm_box.x2, cm_box.y1)  # across bottom
-        canvas.line(cm_box.x2, cm_box.y1, cm_box.x1, cm_box.y2)  # diagonal
-        canvas.line(cm_box.x1, cm_box.y1, cm_box.x1, cm_box.y2)  # rise
+        canvas.line(box.x1, box.y1, box.x2, box.y1)  # across bottom
+        canvas.line(box.x2, box.y1, box.x1, box.y2)  # diagonal
+        canvas.line(box.x1, box.y1, box.x1, box.y2)  # rise
         canvas.pop()
 
-    def _do_debug_word_bbox(self, canvas, line_height, cm_line_box, cm_box, box_width):
+    def _do_debug_word_bbox(self, canvas, line_height, line_box, box, box_width):
         if not self.render_options.render_word_bbox:  # pragma: no cover
             return
         canvas.push()
         canvas.set_dashes()
         canvas.set_stroke_color(GREEN)
         canvas.set_line_width(0.1)
-        canvas.rect(cm_box.x1, cm_line_box.y1, box_width, line_height, fill=0)
+        canvas.rect(box.x1, line_box.y1, box_width, line_height, fill=0)
         canvas.pop()
 
     def _do_debug_space_bbox(self, canvas, box):
