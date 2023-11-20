@@ -187,12 +187,21 @@ class HocrTransform:
                 return float(matches.group(1)), int(matches.group(2))
         return (0.0, 0.0)
 
-    def pt_from_pixel(self, pxl, topdown=False) -> Rect:
+    def pt_from_pixel(self, pxl: Rect, bottomup=False) -> Rect:
         """Returns the quantity in PDF units (pt) given quantity in pixels."""
-        if topdown:
-            pxl.y1 = self.height - pxl.y1
-            pxl.y2 = self.height - pxl.y2
-        return Rect._make((c / self.dpi * inch) for c in pxl)
+        if bottomup:
+            return Rect._make(
+                [
+                    (pxl.x1 / self.dpi * inch),
+                    self.height - (pxl.y2 / self.dpi * inch),  # swap y1/y2
+                    (pxl.x2 / self.dpi * inch),
+                    self.height - (pxl.y1 / self.dpi * inch),
+                ]
+            )
+        else:
+            return Rect._make(
+                (c / self.dpi * inch) for c in (pxl.x1, pxl.y1, pxl.x2, pxl.y2)
+            )
 
     def _child_xpath(self, html_tag: str, html_class: str | None = None) -> str:
         xpath = f".//{self.xmlns}{html_tag}"
@@ -250,14 +259,12 @@ class HocrTransform:
                 continue
 
             pxl_coords = self.element_coordinates(elem)
-            pt = self.pt_from_pixel(pxl_coords)  # pylint: disable=invalid-name
+            pt = self.pt_from_pixel(pxl_coords, bottomup=True)
             # draw cyan box around paragraph
             if show_bounding_boxes and False:  # pragma: no cover
                 pdf.set_stroke_color(cyan)
                 pdf.set_line_width(0.1)  # no line for bounding box
-                pdf.rect(
-                    pt.x1, self.height - pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1, fill=0
-                )
+                pdf.rect(pt.x1, pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1, fill=0)
 
         found_lines = False
         for line in (
@@ -314,8 +321,9 @@ class HocrTransform:
         if line is None:
             return
         pxl_line_coords = self.element_coordinates(line)
-        line_box = self.pt_from_pixel(pxl_line_coords)
+        line_box = self.pt_from_pixel(pxl_line_coords, bottomup=True)
         line_height = line_box.y2 - line_box.y1
+        assert line_box.y2 > line_box.y1
 
         slope, pxl_intercept = self.baseline(line)
         if abs(slope) < 0.005:
@@ -341,9 +349,10 @@ class HocrTransform:
         if invisible_text or True:
             text.set_render_mode(3)  # Invisible (indicates OCR text)
 
-        # Intercept is normally negative, so this places it above the bottom
-        # of the line box
-        baseline_y2 = self.height - (line_box.y2 + intercept)
+        # Intercept is normally negative. Subtracting it will raise the baseline
+        # above the bottom of the bounding box (y1). We're in page coordinates,
+        # origin bottom left, y2 > y1.
+        baseline_y1 = line_box.y1 - intercept
 
         if show_bounding_boxes and True:  # pragma: no cover
             # draw the baseline in magenta, dashed
@@ -354,11 +363,11 @@ class HocrTransform:
             # coordinates and page coordinates have the y axis flipped
             pdf.line(
                 line_box.x1,
-                baseline_y2,
+                baseline_y1,
                 line_box.x2,
-                self.polyval((-slope, baseline_y2), line_box.x2 - line_box.x1),
+                self.polyval((-slope, baseline_y1), line_box.x2 - line_box.x1),
             )
-        text.set_text_transform(cos_a, -sin_a, sin_a, cos_a, line_box.x1, baseline_y2)
+        text.set_text_transform(cos_a, -sin_a, sin_a, cos_a, line_box.x1, baseline_y1)
         pdf.set_fill_color(black)  # text in black
 
         elements = line.findall(self._child_xpath('span', elemclass))
@@ -369,7 +378,7 @@ class HocrTransform:
                 continue
 
             pxl_coords = self.element_coordinates(elem)
-            box = self.pt_from_pixel(pxl_coords)
+            box = self.pt_from_pixel(pxl_coords, bottomup=True)
             if interword_spaces:
                 # if  `--interword-spaces` is true, append a space
                 # to the end of each text element to allow simpler PDF viewers
@@ -403,9 +412,7 @@ class HocrTransform:
                 pdf.set_dashes()
                 pdf.set_stroke_color(green)
                 pdf.set_line_width(0.1)
-                pdf.rect(
-                    box.x1, self.height - line_box.y2, box_width, line_height, fill=0
-                )
+                pdf.rect(box.x1, line_box.y1, box_width, line_height, fill=0)
 
             # Adjust relative position of cursor
             # This is equivalent to:
@@ -422,7 +429,7 @@ class HocrTransform:
             if 0:
                 cursor = text.get_start_of_line()
                 dx = box.x1 - cursor[0]
-                dy = baseline_y2 - cursor[1]
+                dy = baseline_y1 - cursor[1]
                 text.move_cursor(dx, dy)
             text.set_text_transform(
                 cos_a,
@@ -430,7 +437,7 @@ class HocrTransform:
                 sin_a,
                 cos_a,
                 box.x1,
-                self.height - line_box.y2,
+                line_box.y1,
             )
 
             # If reportlab tells us this word is 0 units wide, our best seems
