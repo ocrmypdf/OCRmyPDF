@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import re
+import shutil
 from io import StringIO
 
 import pytest
@@ -68,7 +69,7 @@ def test_mono_image(blank_hocr, outdir):
     hocr.to_pdf(
         out_filename=str(outdir / 'mono.pdf'), image_filename=str(outdir / 'mono.tif')
     )
-
+    # shutil.copy(outdir / 'mono.pdf', 'mono.pdf')
     check_pdf(str(outdir / 'mono.pdf'))
 
 

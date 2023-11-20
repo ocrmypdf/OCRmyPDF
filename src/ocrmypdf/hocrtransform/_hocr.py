@@ -173,57 +173,54 @@ class HocrTransform:
         """
         # create the PDF file
         # page size in points (1/72 in.)
-        canvas = Canvas(
-            out_filename,
-            page_size=(self.width, self.height),
-        )
-        canvas.push()
-        page_matrix = (
-            Matrix()
-            .translated(0, self.height)
-            .scaled(1, -1)
-            .scaled(INCH / self.dpi, INCH / self.dpi)
-        )
-        canvas.cm(page_matrix)
-        log.debug(page_matrix)
-
-        self._debug_draw_paragraph_boxes(canvas)
-
-        found_lines = False
-        for line in (
-            element
-            for element in self.hocr.iterfind(self._child_xpath('span'))
-            if 'class' in element.attrib
-            and element.attrib['class'] in {'ocr_header', 'ocr_line', 'ocr_textfloat'}
-        ):
-            found_lines = True
-            self._do_line(
-                canvas,
-                line,
-                "ocrx_word",
-                fontname,
-                invisible_text,
+        canvas = Canvas(page_size=(self.width, self.height))
+        with canvas.do.enter_context():
+            page_matrix = (
+                Matrix()
+                .translated(0, self.height)
+                .scaled(1, -1)
+                .scaled(INCH / self.dpi, INCH / self.dpi)
             )
+            canvas.do.cm(page_matrix)
+            log.debug(page_matrix)
 
-        if not found_lines:
-            # Tesseract did not report any lines (just words)
-            root = self.hocr.find(self._child_xpath('div', 'ocr_page'))
-            self._do_line(
-                canvas,
-                root,
-                "ocrx_word",
-                fontname,
-                invisible_text,
-            )
-        canvas.pop()
+            self._debug_draw_paragraph_boxes(canvas)
+
+            found_lines = False
+            for line in (
+                element
+                for element in self.hocr.iterfind(self._child_xpath('span'))
+                if 'class' in element.attrib
+                and element.attrib['class']
+                in {'ocr_header', 'ocr_line', 'ocr_textfloat'}
+            ):
+                found_lines = True
+                self._do_line(
+                    canvas,
+                    line,
+                    "ocrx_word",
+                    fontname,
+                    invisible_text,
+                )
+
+            if not found_lines:
+                # Tesseract did not report any lines (just words)
+                root = self.hocr.find(self._child_xpath('div', 'ocr_page'))
+                self._do_line(
+                    canvas,
+                    root,
+                    "ocrx_word",
+                    fontname,
+                    invisible_text,
+                )
         # put the image on the page, scaled to fill the page
         if image_filename is not None:
-            canvas.draw_image(
+            canvas.do.draw_image(
                 image_filename, 0, 0, width=self.width, height=self.height
             )
 
         # finish up the page and save it
-        canvas.save()
+        canvas.save(out_filename)
 
     @classmethod
     def polyval(cls, poly, x):  # pragma: no cover
@@ -261,42 +258,43 @@ class HocrTransform:
 
         # Setup a new coordinate system on the line box's intercept and rotated by
         # its slope.
-        canvas.push()
-        line_matrix = (
-            Matrix()
-            .translated(*bottom_left_corner)
-            .translated(0, intercept)
-            .rotated(angle / pi * 180)
-        )
-        canvas.cm(line_matrix)
-        log.debug(line_matrix)
-        text = canvas.begin_text()
-
-        # Don't allow the font to break out of the bounding box. Division by
-        # cos_a accounts for extra clearance between the glyph's vertical axis
-        # on a sloped baseline and the edge of the bounding box.
-        line_box_height = abs(line_box.height) / cos(angle)
-        fontsize = line_box_height + intercept
-        text.set_font(fontname, fontsize)
-        if invisible_text or True:
-            text.set_render_mode(3)  # Invisible (indicates OCR text)
-
-        self._debug_draw_baseline(canvas, line_matrix.inverse().transform(line_box), 0)
-
-        canvas.set_fill_color(BLACK)  # text in black
-        elements = line.findall(self._child_xpath('span', elemclass))
-        for elem, next_elem in pairwise(elements + [None]):
-            self._do_line_word(
-                canvas,
-                fontname,
-                line_matrix,
-                text,
-                fontsize,
-                elem,
-                next_elem,
+        with canvas.do.enter_context():
+            line_matrix = (
+                Matrix()
+                .translated(*bottom_left_corner)
+                .translated(0, intercept)
+                .rotated(angle / pi * 180)
             )
-        canvas.draw_text(text)
-        canvas.pop()
+            canvas.do.cm(line_matrix)
+            log.debug(line_matrix)
+            text = PikepdfText()
+
+            # Don't allow the font to break out of the bounding box. Division by
+            # cos_a accounts for extra clearance between the glyph's vertical axis
+            # on a sloped baseline and the edge of the bounding box.
+            line_box_height = abs(line_box.height) / cos(angle)
+            fontsize = line_box_height + intercept
+            text.set_font(fontname, fontsize)
+            if invisible_text or True:
+                text.set_render_mode(3)  # Invisible (indicates OCR text)
+
+            self._debug_draw_baseline(
+                canvas, line_matrix.inverse().transform(line_box), 0
+            )
+
+            canvas.do.fill_color(BLACK)  # text in black
+            elements = line.findall(self._child_xpath('span', elemclass))
+            for elem, next_elem in pairwise(elements + [None]):
+                self._do_line_word(
+                    canvas,
+                    fontname,
+                    line_matrix,
+                    text,
+                    fontsize,
+                    elem,
+                    next_elem,
+                )
+            canvas.do.draw_text(text)
 
     def _do_line_word(
         self,
@@ -351,16 +349,15 @@ class HocrTransform:
         """Draw boxes around paragraphs in the document."""
         if not self.render_options.render_paragraph_bbox:  # pragma: no cover
             return
-        with canvas.enter_context():
+        with canvas.do.enter_context():
             # draw box around paragraph
-            canvas.set_stroke_color(color)
-            canvas.set_line_width(0.1)  # no line for bounding box
+            canvas.do.stroke_color(color).line_width(0.1)
             for elem in self.hocr.iterfind(self._child_xpath('p', 'ocr_par')):
                 elemtxt = self._get_element_text(elem).strip()
                 if len(elemtxt) == 0:
                     continue
                 ocr_par = self.element_coordinates(elem)
-                canvas.rect(
+                canvas.do.rect(
                     ocr_par.llx, ocr_par.lly, ocr_par.width, ocr_par.height, fill=0
                 )
 
@@ -368,8 +365,8 @@ class HocrTransform:
         """Render the bounding box of a text line."""
         if not self.render_options.render_line_bbox:  # pragma: no cover
             return
-        with canvas.enter_context():
-            canvas.set_stroke_color(color).set_line_width(0.15).rect(
+        with canvas.do.enter_context():
+            canvas.do.stroke_color(color).line_width(0.15).rect(
                 line_box.llx, line_box.lly, line_box.width, line_box.height, fill=0
             )
 
@@ -379,8 +376,8 @@ class HocrTransform:
         """Render a triangle that conveys word height and drawing direction."""
         if not self.render_options.render_triangle:  # pragma: no cover
             return
-        with canvas.enter_context():
-            canvas.set_stroke_color(color).set_line_width(line_width).line(
+        with canvas.do.enter_context():
+            canvas.do.stroke_color(color).line_width(line_width).line(
                 box.llx, box.lly, box.urx, box.lly
             ).line(box.urx, box.lly, box.llx, box.ury).line(
                 box.llx, box.lly, box.llx, box.ury
@@ -392,8 +389,8 @@ class HocrTransform:
         """Render a box depicting the word."""
         if not self.render_options.render_word_bbox:  # pragma: no cover
             return
-        with canvas.enter_context():
-            canvas.set_stroke_color(color).set_line_width(line_width).rect(
+        with canvas.do.enter_context():
+            canvas.do.stroke_color(color).line_width(line_width).rect(
                 box.llx, box.lly, box.width, box.height, fill=0
             )
 
@@ -403,8 +400,8 @@ class HocrTransform:
         """Render a box depicting the space between two words."""
         if not self.render_options.render_space_bbox:  # pragma: no cover
             return
-        with canvas.enter_context():
-            canvas.set_fill_color(color).set_line_width(line_width).rect(
+        with canvas.do.enter_context():
+            canvas.do.fill_color(color).line_width(line_width).rect(
                 box.llx, box.lly, box.width, box.height, fill=1
             )
 
@@ -419,8 +416,8 @@ class HocrTransform:
         """Render the text baseline."""
         if not self.render_options.render_baseline:
             return
-        with canvas.enter_context():
-            canvas.set_stroke_color(color).set_line_width(line_width).line(
+        with canvas.do.enter_context():
+            canvas.do.stroke_color(color).line_width(line_width).line(
                 line_box.llx,
                 baseline_lly,
                 line_box.urx,

@@ -1,8 +1,12 @@
+# SPDX-FileCopyrightText: 2023 James R. Barlow
+# SPDX-License-Identifier: MPL-2.0
+
 from __future__ import annotations
 
 import logging
 import unicodedata
 from contextlib import contextmanager
+from dataclasses import dataclass
 from importlib.resources import files as package_files
 from pathlib import Path
 
@@ -15,6 +19,7 @@ from pikepdf import (
     Pdf,
     unparse_content_stream,
 )
+from PIL import Image
 
 log = logging.getLogger(__name__)
 
@@ -243,32 +248,38 @@ class ContentStreamBuilder:
         self._instructions.append(inst)
         return self
 
+    def draw_form_xobject(self, name: Name):
+        inst = ContentStreamInstruction([name], Operator("Do"))
+        self._instructions.append(inst)
+        return self
+
     def build(self):
         return self._instructions
 
 
-class PikepdfCanvas:
-    def __init__(self, path, *, page_size):
-        self.path = path
-        self.page_size = page_size
-        self._pdf = Pdf.new()
-        self._page = self._pdf.add_blank_page(page_size=page_size)
-        self._cs = ContentStreamBuilder()
-        self._stack_depth = 0
-        self.push()
-        self._font_name = Name("/f-0-0")
+@dataclass
+class LoadedImage:
+    name: Name
+    image: Image.Image
 
-    def set_stroke_color(self, color):
+
+class PikepdfCanvasAccessor:
+    def __init__(self, cs: ContentStreamBuilder, images=None):
+        self._cs = cs
+        self._images = images if images is not None else []
+        self._stack_depth = 0
+
+    def stroke_color(self, color):
         r, g, b = color.red, color.green, color.blue
         self._cs.set_stroke_color(r, g, b)
         return self
 
-    def set_fill_color(self, color):
+    def fill_color(self, color):
         r, g, b = color.red, color.green, color.blue
         self._cs.set_fill_color(r, g, b)
         return self
 
-    def set_line_width(self, width):
+    def line_width(self, width):
         self._cs.set_line_width(width)
         return self
 
@@ -285,8 +296,20 @@ class PikepdfCanvas:
             self._cs.stroke_and_close()
         return self
 
-    def begin_text(self, x=0, y=0, direction=None):
-        return PikepdfText(x, y, direction)
+    def draw_image(self, image: Path | str | Image.Image, x, y, width, height):
+        with self.enter_context():
+            self.cm(Matrix(width, 0, 0, height, x, y))
+            if isinstance(image, (Path, str)):
+                image = Image.open(image)
+            image.load()
+            if image.mode == "P":
+                image = image.convert("RGB")
+            if image.mode not in ("1", "L", "RGB"):
+                raise ValueError(f"Unsupported image mode: {image.mode}")
+            name = Name.random(prefix="Im")
+            li = LoadedImage(name, image)
+            self._images.append(li)
+            self._cs.draw_form_xobject(name)
 
     def draw_text(self, text: PikepdfText):
         self._cs._instructions.extend(text._cs.build())
@@ -295,14 +318,7 @@ class PikepdfCanvas:
     def _end_text(self):
         self._cs.end_text()
 
-    def draw_image(self, image: Path, x, y, width, height):
-        raise NotImplementedError()
-
-    def string_width(self, text, fontname, fontsize):
-        # NFKC: split ligatures, combine diacritics
-        return len(unicodedata.normalize("NFKC", text)) * (fontsize / CHAR_ASPECT)
-
-    def set_dashes(self, *args):
+    def dashes(self, *args):
         self._cs.set_dashes(*args)
         return self
 
@@ -327,8 +343,42 @@ class PikepdfCanvas:
         self._cs.cm(matrix)
         return self
 
-    def save(self):
-        self._cs.pop()
+
+class PikepdfCanvas:
+    def __init__(self, *, page_size: tuple[int, int]):
+        self.page_size = page_size
+        self._pdf = Pdf.new()
+        self._page = self._pdf.add_blank_page(page_size=page_size)
+        self._cs = ContentStreamBuilder()
+        self._images: list[LoadedImage] = []
+        self._accessor = PikepdfCanvasAccessor(self._cs, self._images)
+        self._stack_depth = 0
+        self._font_name = Name("/f-0-0")
+        self.do.push()
+
+    @property
+    def do(self) -> PikepdfCanvasAccessor:
+        return self._accessor
+
+    def string_width(self, text, fontname, fontsize):
+        # NFKC: split ligatures, combine diacritics
+        return len(unicodedata.normalize("NFKC", text)) * (fontsize / CHAR_ASPECT)
+
+    def _save_image(self, li: LoadedImage):
+        return self._pdf.make_stream(
+            li.image.tobytes(),
+            Width=li.image.width,
+            Height=li.image.height,
+            ColorSpace=Name.DeviceGray
+            if li.image.mode in ("1", "L")
+            else Name.DeviceRGB,
+            Type=Name.XObject,
+            Subtype=Name.Image,
+            BitsPerComponent=1 if li.image.mode == '1' else 8,
+        )
+
+    def save(self, output_file: Path):
+        self.do.pop()
         if self._stack_depth != 0:
             log.warning(
                 "Graphics state stack is not empty when page saved - "
@@ -337,9 +387,12 @@ class PikepdfCanvas:
         self._page.Contents = self._pdf.make_stream(
             unparse_content_stream(self._cs.build())
         )
-        self._page.Resources = Dictionary(Font=Dictionary())
+        self._page.MediaBox = [0, 0, *self.page_size]
+        self._page.Resources = Dictionary(Font=Dictionary(), XObject=Dictionary())
         self._page.Resources.Font[self._font_name] = register_glyphlessfont(self._pdf)
-        self._pdf.save(self.path)
+        for li in self._images:
+            self._page.Resources.XObject[li.name] = self._save_image(li)
+        self._pdf.save(output_file)
 
 
 class PikepdfText:
