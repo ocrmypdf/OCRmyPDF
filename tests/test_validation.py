@@ -41,13 +41,6 @@ def make_opts(*args, **kwargs):
     return opts
 
 
-def test_hocr_notlatin_warning(caplog):
-    vd.check_options_output(
-        make_opts_pm(language='chi_sim', pdf_renderer='hocr', output_type='pdfa')[0]
-    )
-    assert 'PDF renderer is known to cause' in caplog.text
-
-
 def test_old_tesseract_error():
     with patch(
         'ocrmypdf._exec.tesseract.version',
