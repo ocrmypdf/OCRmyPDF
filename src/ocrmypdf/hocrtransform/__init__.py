@@ -293,7 +293,6 @@ class HocrTransform:
                 canvas,
                 fontname,
                 line_matrix,
-                line_box,
                 text,
                 fontsize,
                 elem,
@@ -307,12 +306,12 @@ class HocrTransform:
         canvas: Canvas,
         fontname,
         line_matrix: Matrix,
-        line_box: Rectangle,
         text: PikepdfText,
         fontsize: float,
         elem: Element,
         next_elem: Element | None,
     ):
+        """Render the text for a single word."""
         elemtxt = self.normalize_text(self._get_element_text(elem).strip())
         if elemtxt == '':
             return
@@ -333,10 +332,15 @@ class HocrTransform:
             text.set_horiz_scale(100 * box.width / font_width)
             text.show(elemtxt)
 
+        # Get coordinates of the next word (if there is one)
         hocr_next_box = (
             self.element_coordinates(next_elem) if next_elem is not None else None
         )
         if hocr_next_box is not None:
+            # Render a space this word and the next word. The explicit space helps
+            # PDF viewers identify the word break, and horizontally scaling it to
+            # occupy the space the between the words helps the PDF viewer
+            # avoid combiningthewordstogether.
             next_box = line_matrix.inverse().transform(hocr_next_box)
             space_box = Rectangle(box.urx, box.lly, next_box.llx, next_box.ury)
             self._debug_draw_space_bbox(canvas, space_box)
@@ -376,49 +380,53 @@ class HocrTransform:
         )
         canvas.pop()
 
-    def _debug_draw_word_triangle(self, canvas: Canvas, box, color=RED):
+    def _debug_draw_word_triangle(self, canvas: Canvas, box, color=RED, line_width=0.1):
         """Render a triangle that conveys word height and drawing direction."""
         if not self.render_options.render_triangle:  # pragma: no cover
             return
         canvas.push()
         canvas.set_stroke_color(color)
-        canvas.set_line_width(0.1)
+        canvas.set_line_width(line_width)
         # Draw a triangle that conveys word height and drawing direction
         canvas.line(box.llx, box.lly, box.urx, box.lly)  # across bottom
         canvas.line(box.urx, box.lly, box.llx, box.ury)  # diagonal
         canvas.line(box.llx, box.lly, box.llx, box.ury)  # rise
         canvas.pop()
 
-    def _debug_draw_word_bbox(self, canvas: Canvas, box, color=GREEN):
+    def _debug_draw_word_bbox(self, canvas: Canvas, box, color=GREEN, line_width=0.1):
         """Render a box depicting the word."""
         if not self.render_options.render_word_bbox:  # pragma: no cover
             return
         canvas.push()
         canvas.set_dashes()
         canvas.set_stroke_color(color)
-        canvas.set_line_width(0.1)
+        canvas.set_line_width(line_width)
         canvas.rect(box.llx, box.lly, box.width, box.height, fill=0)
         canvas.pop()
 
-    def _debug_draw_space_bbox(self, canvas: Canvas, box, color=DARKGREEN):
+    def _debug_draw_space_bbox(
+        self, canvas: Canvas, box, color=DARKGREEN, line_width=0.1
+    ):
         """Render a box depicting the space between two words."""
         if not self.render_options.render_space_bbox:  # pragma: no cover
             return
         canvas.push()
         canvas.set_dashes()
         canvas.set_fill_color(color)
-        canvas.set_line_width(0.1)
+        canvas.set_line_width(line_width)
         canvas.rect(box.llx, box.lly, box.width, box.height, fill=1)
         canvas.pop()
 
-    def _debug_draw_baseline(self, canvas, line_box, baseline_lly, color=MAGENTA):
+    def _debug_draw_baseline(
+        self, canvas, line_box, baseline_lly, color=MAGENTA, line_width=0.25
+    ):
         """Render the text baseline."""
         if not self.render_options.render_baseline:
             return
         canvas.push()
         canvas.set_dashes()
         canvas.set_stroke_color(color)
-        canvas.set_line_width(0.25)
+        canvas.set_line_width(line_width)
         canvas.line(
             line_box.llx,
             baseline_lly,
