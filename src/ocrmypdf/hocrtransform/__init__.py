@@ -16,8 +16,11 @@ from pathlib import Path
 from typing import Any, NamedTuple
 from xml.etree import ElementTree
 
-from ocrmypdf.hocrtransform.backends.reportlab import (
+from ocrmypdf.hocrtransform.backends import (
     Canvas,
+)
+from ocrmypdf.hocrtransform.backends.reportlab import (
+    ReportlabCanvas,
     black,
     cyan,
     inch,
@@ -231,18 +234,17 @@ class HocrTransform:
         """
         # create the PDF file
         # page size in points (1/72 in.)
-        pdf = Canvas(
-            os.fspath(out_filename),
-            pagesize=(self.width, self.height),
-            pageCompression=1,
+        pdf = ReportlabCanvas(
+            out_filename,
+            page_size=(self.width, self.height),
         )
 
         # draw bounding box for each paragraph
         # light blue for bounding box of paragraph
-        pdf.setStrokeColor(cyan)
+        pdf.set_stroke_color(cyan)
         # light blue for bounding box of paragraph
-        pdf.setFillColor(cyan)
-        pdf.setLineWidth(0)  # no line for bounding box
+        pdf.set_fill_color(cyan)
+        pdf.set_line_width(0)  # no line for bounding box
         for elem in self.hocr.iterfind(self._child_xpath('p', 'ocr_par')):
             elemtxt = self._get_element_text(elem).rstrip()
             if len(elemtxt) == 0:
@@ -289,12 +291,9 @@ class HocrTransform:
             )
         # put the image on the page, scaled to fill the page
         if image_filename is not None:
-            pdf.drawImage(
-                os.fspath(image_filename), 0, 0, width=self.width, height=self.height
-            )
+            pdf.draw_image(image_filename, 0, 0, width=self.width, height=self.height)
 
         # finish up the page and save it
-        pdf.showPage()
         pdf.save()
 
     @classmethod
@@ -324,16 +323,16 @@ class HocrTransform:
         angle = atan(slope)
         cos_a, sin_a = cos(angle), sin(angle)
 
-        text = pdf.beginText()
+        text = pdf.begin_text()
         intercept = pxl_intercept / self.dpi * inch
 
         # Don't allow the font to break out of the bounding box. Division by
         # cos_a accounts for extra clearance between the glyph's vertical axis
         # on a sloped baseline and the edge of the bounding box.
         fontsize = (line_height - abs(intercept)) / cos_a
-        text.setFont(fontname, fontsize)
+        text.set_font(fontname, fontsize)
         if invisible_text:
-            text.setTextRenderMode(3)  # Invisible (indicates OCR text)
+            text.set_render_mode(3)  # Invisible (indicates OCR text)
 
         # Intercept is normally negative, so this places it above the bottom
         # of the line box
@@ -341,9 +340,9 @@ class HocrTransform:
 
         if show_bounding_boxes:  # pragma: no cover
             # draw the baseline in magenta, dashed
-            pdf.setDash()
-            pdf.setStrokeColor(magenta)
-            pdf.setLineWidth(0.5)
+            pdf.set_dash()
+            pdf.set_stroke_color(magenta)
+            pdf.set_line_width(0.5)
             # negate slope because it is defined as a rise/run in pixel
             # coordinates and page coordinates have the y axis flipped
             pdf.line(
@@ -353,11 +352,11 @@ class HocrTransform:
                 self.polyval((-slope, baseline_y2), line_box.x2 - line_box.x1),
             )
             # light green for bounding box of word/line
-            pdf.setDash(6, 3)
-            pdf.setStrokeColor(red)
+            pdf.set_dash(6, 3)
+            pdf.set_stroke_color(red)
 
-        text.setTextTransform(cos_a, -sin_a, sin_a, cos_a, line_box.x1, baseline_y2)
-        pdf.setFillColor(black)  # text in black
+        text.set_text_transform(cos_a, -sin_a, sin_a, cos_a, line_box.x1, baseline_y2)
+        pdf.set_fill_color(black)  # text in black
 
         elements = line.findall(self._child_xpath('span', elemclass))
         for elem in elements:
@@ -380,12 +379,12 @@ class HocrTransform:
                     (
                         box.x1,
                         line_box.y1,
-                        box.x2 + pdf.stringWidth(' ', fontname, line_height),
+                        box.x2 + pdf.string_width(' ', fontname, line_height),
                         line_box.y2,
                     )
                 )
             box_width = box.x2 - box.x1
-            font_width = pdf.stringWidth(elemtxt, fontname, fontsize)
+            font_width = pdf.string_width(elemtxt, fontname, fontsize)
 
             # draw the bbox border
             if show_bounding_boxes:  # pragma: no cover
@@ -398,24 +397,24 @@ class HocrTransform:
             #   text.setTextOrigin(pt.x1, self.height - line_box.y2)
             # but the former generates a full text reposition matrix (Tm) in the
             # content stream while this issues a "offset" (Td) command.
-            # .moveCursor() is relative to start of the text line, where the
+            # .move_cursor() is relative to start of the text line, where the
             # "text line" means whatever reportlab defines it as. Do not use
-            # use .getCursor(), since moveCursor() rather unintuitively plans
+            # use .getCursor(), since move_cursor() rather unintuitively plans
             # its moves relative to .getStartOfLine().
             # For skewed lines, in the text transform we set up a rotated
             # coordinate system, so we don't have to account for the
             # incremental offset. Surprisingly most PDF viewers can handle this.
-            cursor = text.getStartOfLine()
+            cursor = text.get_start_of_line()
             dx = box.x1 - cursor[0]
             dy = baseline_y2 - cursor[1]
-            text.moveCursor(dx, dy)
+            text.move_cursor(dx, dy)
 
             # If reportlab tells us this word is 0 units wide, our best seems
             # to be to suppress this text
             if font_width > 0:
-                text.setHorizScale(100 * box_width / font_width)
-                text.textOut(elemtxt)
-        pdf.drawText(text)
+                text.set_horiz_scale(100 * box_width / font_width)
+                text.show(elemtxt)
+        pdf.draw_text(text)
 
 
 if __name__ == "__main__":
