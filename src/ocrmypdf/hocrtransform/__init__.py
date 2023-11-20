@@ -19,6 +19,7 @@ from xml.etree import ElementTree
 from ocrmypdf.hocrtransform.backends import (
     Canvas,
 )
+from ocrmypdf.hocrtransform.backends.pikepdf import PikepdfCanvas
 from ocrmypdf.hocrtransform.backends.reportlab import (
     ReportlabCanvas,
     black,
@@ -234,7 +235,7 @@ class HocrTransform:
         """
         # create the PDF file
         # page size in points (1/72 in.)
-        pdf = ReportlabCanvas(
+        pdf = PikepdfCanvas(  # ReportlabCanvas(
             out_filename,
             page_size=(self.width, self.height),
         )

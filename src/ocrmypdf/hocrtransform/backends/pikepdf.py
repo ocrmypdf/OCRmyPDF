@@ -252,11 +252,11 @@ class PikepdfCanvas(BaseCanvas):
         self._font_name = Name("/f-0-0")
 
     def set_stroke_color(self, color):
-        r, g, b = color
+        r, g, b = color.red, color.green, color.blue
         self._cs.set_stroke_color(r, g, b)
 
     def set_fill_color(self, color):
-        r, g, b = color
+        r, g, b = color.red, color.green, color.blue
         self._cs.set_fill_color(r, g, b)
 
     def set_line_width(self, width):
@@ -268,8 +268,8 @@ class PikepdfCanvas(BaseCanvas):
     def begin_text(self, x=0, y=0, direction=None):
         return PikepdfText(self._cs, x, y, direction)
 
-    def draw_text(self, text):
-        self._canvas.drawText(text._text)
+    def draw_text(self, text: PikepdfText):
+        self._cs.end_text()
 
     def draw_image(self, image: Path, x, y, width, height):
         raise NotImplementedError()
@@ -286,9 +286,8 @@ class PikepdfCanvas(BaseCanvas):
         self._page.Contents = self._pdf.make_stream(
             unparse_content_stream(self._cs.build())
         )
-        self._page.Resources = Dictionary(
-            Font=Dictionary({self._font_name: register_glyphlessfont(self._pdf)})
-        )
+        self._page.Resources = Dictionary(Font=Dictionary())
+        self._page.Resources.Font[self._font_name] = register_glyphlessfont(self._pdf)
         self._pdf.save(self.path)
 
 
