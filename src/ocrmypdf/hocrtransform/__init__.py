@@ -444,20 +444,17 @@ class HocrTransform:
         pxl_coords = self.element_coordinates(elem)
         box = self.pt_from_pixel(pxl_coords, bottomup=True)
         cm_box = box.transform(line_matrix, inverse=True)
-        # space_width = canvas.string_width(' ', fontname, fontsize)
 
         box_width = cm_box.x2 - cm_box.x1
         font_width = canvas.string_width(elemtxt, fontname, fontsize)
 
-        # draw the bbox border
+        # Debug sketches
         self._do_debug_word_triangle(canvas, cm_box)
         self._do_debug_word_bbox(canvas, line_height, cm_line_box, cm_box, box_width)
 
-        text.set_text_transform(1, 0, 0, 1, cm_box.x1, cm_line_box.y1)
-
-        # If reportlab tells us this word is 0 units wide, our best seems
-        # to be to suppress this text
+        # If this word is 0 units wide, our best bet seems to be to suppress this text
         if font_width > 0:
+            text.set_text_transform(1, 0, 0, 1, cm_box.x1, cm_line_box.y1)
             text.set_horiz_scale(100 * box_width / font_width)
             text.show(elemtxt)
 
