@@ -42,7 +42,7 @@ class Canvas(ABC):
         pass
 
     @abstractmethod
-    def set_dashes(self, dashes):
+    def set_dashes(self, array, phase):
         pass
 
     @abstractmethod

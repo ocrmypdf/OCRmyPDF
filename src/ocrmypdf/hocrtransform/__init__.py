@@ -341,7 +341,7 @@ class HocrTransform:
 
         if show_bounding_boxes:  # pragma: no cover
             # draw the baseline in magenta, dashed
-            pdf.set_dash()
+            pdf.set_dashes()
             pdf.set_stroke_color(magenta)
             pdf.set_line_width(0.5)
             # negate slope because it is defined as a rise/run in pixel
@@ -353,7 +353,7 @@ class HocrTransform:
                 self.polyval((-slope, baseline_y2), line_box.x2 - line_box.x1),
             )
             # light green for bounding box of word/line
-            pdf.set_dash(6, 3)
+            pdf.set_dashes(6, 3)
             pdf.set_stroke_color(red)
 
         text.set_text_transform(cos_a, -sin_a, sin_a, cos_a, line_box.x1, baseline_y2)
