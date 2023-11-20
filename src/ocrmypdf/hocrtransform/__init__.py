@@ -24,6 +24,7 @@ from ocrmypdf.hocrtransform.backends.reportlab import (
     ReportlabCanvas,
     black,
     cyan,
+    green,
     inch,
     magenta,
     red,
@@ -186,8 +187,11 @@ class HocrTransform:
                 return float(matches.group(1)), int(matches.group(2))
         return (0.0, 0.0)
 
-    def pt_from_pixel(self, pxl) -> Rect:
+    def pt_from_pixel(self, pxl, topdown=False) -> Rect:
         """Returns the quantity in PDF units (pt) given quantity in pixels."""
+        if topdown:
+            pxl.y1 = self.height - pxl.y1
+            pxl.y2 = self.height - pxl.y2
         return Rect._make((c / self.dpi * inch) for c in pxl)
 
     def _child_xpath(self, html_tag: str, html_class: str | None = None) -> str:
@@ -240,12 +244,6 @@ class HocrTransform:
             page_size=(self.width, self.height),
         )
 
-        # draw bounding box for each paragraph
-        # light blue for bounding box of paragraph
-        pdf.set_stroke_color(cyan)
-        # light blue for bounding box of paragraph
-        pdf.set_fill_color(cyan)
-        pdf.set_line_width(0)  # no line for bounding box
         for elem in self.hocr.iterfind(self._child_xpath('p', 'ocr_par')):
             elemtxt = self._get_element_text(elem).rstrip()
             if len(elemtxt) == 0:
@@ -253,11 +251,12 @@ class HocrTransform:
 
             pxl_coords = self.element_coordinates(elem)
             pt = self.pt_from_pixel(pxl_coords)  # pylint: disable=invalid-name
-
-            # draw the bbox border
-            if show_bounding_boxes:  # pragma: no cover
+            # draw cyan box around paragraph
+            if show_bounding_boxes and False:  # pragma: no cover
+                pdf.set_stroke_color(cyan)
+                pdf.set_line_width(0.1)  # no line for bounding box
                 pdf.rect(
-                    pt.x1, self.height - pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1, fill=1
+                    pt.x1, self.height - pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1, fill=0
                 )
 
         found_lines = False
@@ -323,27 +322,34 @@ class HocrTransform:
             slope = 0.0
         angle = atan(slope)
         cos_a, sin_a = cos(angle), sin(angle)
+        intercept = pxl_intercept / self.dpi * inch
+
+        # Matrix it!
+        # pdf._cs.push()
+        # pdf._cs.cm(cos_a, -sin_a, sin_a, cos_a, 0, 0)
+        # cos_a, sin_a = 1, 0
+        # slope = 0
+        # intercept = 0
 
         text = pdf.begin_text()
-        intercept = pxl_intercept / self.dpi * inch
 
         # Don't allow the font to break out of the bounding box. Division by
         # cos_a accounts for extra clearance between the glyph's vertical axis
         # on a sloped baseline and the edge of the bounding box.
         fontsize = (line_height - abs(intercept)) / cos_a
         text.set_font(fontname, fontsize)
-        if invisible_text:
+        if invisible_text or True:
             text.set_render_mode(3)  # Invisible (indicates OCR text)
 
         # Intercept is normally negative, so this places it above the bottom
         # of the line box
         baseline_y2 = self.height - (line_box.y2 + intercept)
 
-        if show_bounding_boxes:  # pragma: no cover
+        if show_bounding_boxes and True:  # pragma: no cover
             # draw the baseline in magenta, dashed
             pdf.set_dashes()
             pdf.set_stroke_color(magenta)
-            pdf.set_line_width(0.5)
+            pdf.set_line_width(0.25)
             # negate slope because it is defined as a rise/run in pixel
             # coordinates and page coordinates have the y axis flipped
             pdf.line(
@@ -352,10 +358,6 @@ class HocrTransform:
                 line_box.x2,
                 self.polyval((-slope, baseline_y2), line_box.x2 - line_box.x1),
             )
-            # light green for bounding box of word/line
-            pdf.set_dashes(6, 3)
-            pdf.set_stroke_color(red)
-
         text.set_text_transform(cos_a, -sin_a, sin_a, cos_a, line_box.x1, baseline_y2)
         pdf.set_fill_color(black)  # text in black
 
@@ -389,6 +391,18 @@ class HocrTransform:
 
             # draw the bbox border
             if show_bounding_boxes:  # pragma: no cover
+                pdf.set_dashes()
+                pdf.set_stroke_color(red)
+                pdf.set_line_width(0.1)
+                # Draw a triangle that conveys word height and drawing direction
+                if True:
+                    pdf.line(box.x1, box.y1, box.x2, box.y1)  # across bottom
+                    pdf.line(box.x2, box.y1, box.x1, box.y2)  # diagonal
+                    pdf.line(box.x1, box.y1, box.x1, box.y2)  # rise
+
+                pdf.set_dashes()
+                pdf.set_stroke_color(green)
+                pdf.set_line_width(0.1)
                 pdf.rect(
                     box.x1, self.height - line_box.y2, box_width, line_height, fill=0
                 )
@@ -405,10 +419,19 @@ class HocrTransform:
             # For skewed lines, in the text transform we set up a rotated
             # coordinate system, so we don't have to account for the
             # incremental offset. Surprisingly most PDF viewers can handle this.
-            cursor = text.get_start_of_line()
-            dx = box.x1 - cursor[0]
-            dy = baseline_y2 - cursor[1]
-            text.move_cursor(dx, dy)
+            if 0:
+                cursor = text.get_start_of_line()
+                dx = box.x1 - cursor[0]
+                dy = baseline_y2 - cursor[1]
+                text.move_cursor(dx, dy)
+            text.set_text_transform(
+                cos_a,
+                -sin_a,
+                sin_a,
+                cos_a,
+                box.x1,
+                self.height - line_box.y2,
+            )
 
             # If reportlab tells us this word is 0 units wide, our best seems
             # to be to suppress this text
@@ -416,6 +439,7 @@ class HocrTransform:
                 text.set_horiz_scale(100 * box_width / font_width)
                 text.show(elemtxt)
         pdf.draw_text(text)
+        # pdf._cs.pop()
 
 
 if __name__ == "__main__":
