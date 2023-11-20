@@ -124,6 +124,14 @@ Copyright:  Kai-Uwe Behrmann <www.behrmann.name>
             ColorSolutions <www.basICColor.com>
 License: Zlib
 
+Files: src/ocrmypdf/data/pdf.ttf
+Copyright: (C) 2014 Ray Smith
+ (C) 2015 Ken Sharp
+ (C) 2016 James R. Barlow
+ (C) 2016 Jeff Breidenbach
+ (C) 2017 Zdenko Podobný
+License: Apache-2.0
+
 Files: tests/resources/3small.pdf
 Copyright: (C) 2014 Euskaldunaa
  (C) 2017 James R. Barlow
