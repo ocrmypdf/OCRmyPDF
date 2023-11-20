@@ -16,6 +16,8 @@ from pathlib import Path
 from typing import Any, NamedTuple
 from xml.etree import ElementTree
 
+from pikepdf import PdfMatrix
+
 from ocrmypdf.hocrtransform.backends import (
     Canvas,
 )
@@ -96,6 +98,19 @@ class Rect(NamedTuple):
     y1: Any
     x2: Any
     y2: Any
+
+    def transform(self, matrix, inverse=True):
+        """Transform the rectangle by the given matrix."""
+        if inverse:
+            matrix = matrix.inverse()
+        return Rect._make(
+            [
+                matrix.a * self.x1 + matrix.c * self.y1 + matrix.e,
+                matrix.b * self.x1 + matrix.d * self.y1 + matrix.f,
+                matrix.a * self.x2 + matrix.c * self.y2 + matrix.e,
+                matrix.b * self.x2 + matrix.d * self.y2 + matrix.f,
+            ]
+        )
 
 
 class HocrTransformError(Exception):
@@ -332,12 +347,15 @@ class HocrTransform:
         cos_a, sin_a = cos(angle), sin(angle)
         intercept = pxl_intercept / self.dpi * inch
 
-        # Matrix it!
-        # pdf._cs.push()
-        # pdf._cs.cm(cos_a, -sin_a, sin_a, cos_a, 0, 0)
-        # cos_a, sin_a = 1, 0
-        # slope = 0
-        # intercept = 0
+        # Enter a new coordinate system with the linebox at the origin
+        pdf._cs.push()
+        line_matrix = PdfMatrix().translated(line_box.x1, line_box.y1).rotated(-angle)
+        pdf._cs.cm(*line_matrix.shorthand)
+        cos_a, sin_a = 1, 0
+        slope = 0
+        intercept = 0
+
+        cm_line_box = line_box.transform(line_matrix, inverse=True)
 
         text = pdf.begin_text()
 
@@ -352,7 +370,7 @@ class HocrTransform:
         # Intercept is normally negative. Subtracting it will raise the baseline
         # above the bottom of the bounding box (y1). We're in page coordinates,
         # origin bottom left, y2 > y1.
-        baseline_y1 = line_box.y1 - intercept
+        baseline_y1 = -intercept
 
         if show_bounding_boxes and True:  # pragma: no cover
             # draw the baseline in magenta, dashed
@@ -362,12 +380,12 @@ class HocrTransform:
             # negate slope because it is defined as a rise/run in pixel
             # coordinates and page coordinates have the y axis flipped
             pdf.line(
-                line_box.x1,
+                cm_line_box.x1,
                 baseline_y1,
-                line_box.x2,
-                self.polyval((-slope, baseline_y1), line_box.x2 - line_box.x1),
+                cm_line_box.x2,
+                self.polyval((-slope, baseline_y1), cm_line_box.x2 - cm_line_box.x1),
             )
-        text.set_text_transform(cos_a, -sin_a, sin_a, cos_a, line_box.x1, baseline_y1)
+        text.set_text_transform(1, 0, 0, 1, line_box.x1, baseline_y1)
         pdf.set_fill_color(black)  # text in black
 
         elements = line.findall(self._child_xpath('span', elemclass))
@@ -379,6 +397,7 @@ class HocrTransform:
 
             pxl_coords = self.element_coordinates(elem)
             box = self.pt_from_pixel(pxl_coords, bottomup=True)
+            cm_box = box.transform(line_matrix, inverse=True)
             if interword_spaces:
                 # if  `--interword-spaces` is true, append a space
                 # to the end of each text element to allow simpler PDF viewers
@@ -387,15 +406,15 @@ class HocrTransform:
                 # though it would look better, because it will interfere with
                 # naive text extraction. \n does not work either.
                 elemtxt += ' '
-                box = Rect._make(
+                cm_box = Rect._make(
                     (
-                        box.x1,
-                        line_box.y1,
-                        box.x2 + pdf.string_width(' ', fontname, line_height),
-                        line_box.y2,
+                        cm_box.x1,
+                        cm_line_box.y1,
+                        cm_box.x2,  # + pdf.string_width(' ', fontname, line_height),
+                        cm_line_box.y2,
                     )
                 )
-            box_width = box.x2 - box.x1
+            box_width = cm_box.x2 - cm_box.x1
             font_width = pdf.string_width(elemtxt, fontname, fontsize)
 
             # draw the bbox border
@@ -405,14 +424,16 @@ class HocrTransform:
                 pdf.set_line_width(0.1)
                 # Draw a triangle that conveys word height and drawing direction
                 if True:
-                    pdf.line(box.x1, box.y1, box.x2, box.y1)  # across bottom
-                    pdf.line(box.x2, box.y1, box.x1, box.y2)  # diagonal
-                    pdf.line(box.x1, box.y1, box.x1, box.y2)  # rise
+                    pdf.line(
+                        cm_box.x1, cm_box.y1, cm_box.x2, cm_box.y1
+                    )  # across bottom
+                    pdf.line(cm_box.x2, cm_box.y1, cm_box.x1, cm_box.y2)  # diagonal
+                    pdf.line(cm_box.x1, cm_box.y1, cm_box.x1, cm_box.y2)  # rise
 
                 pdf.set_dashes()
                 pdf.set_stroke_color(green)
                 pdf.set_line_width(0.1)
-                pdf.rect(box.x1, line_box.y1, box_width, line_height, fill=0)
+                pdf.rect(cm_box.x1, cm_line_box.y1, box_width, line_height, fill=0)
 
             # Adjust relative position of cursor
             # This is equivalent to:
@@ -432,12 +453,12 @@ class HocrTransform:
                 dy = baseline_y1 - cursor[1]
                 text.move_cursor(dx, dy)
             text.set_text_transform(
-                cos_a,
-                -sin_a,
-                sin_a,
-                cos_a,
-                box.x1,
-                line_box.y1,
+                1,
+                0,
+                0,
+                1,
+                cm_box.x1,
+                cm_line_box.y1,
             )
 
             # If reportlab tells us this word is 0 units wide, our best seems
@@ -446,7 +467,7 @@ class HocrTransform:
                 text.set_horiz_scale(100 * box_width / font_width)
                 text.show(elemtxt)
         pdf.draw_text(text)
-        # pdf._cs.pop()
+        pdf._cs.pop()
 
 
 if __name__ == "__main__":
