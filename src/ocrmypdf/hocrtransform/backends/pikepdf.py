@@ -1,15 +1,9 @@
 from __future__ import annotations
 
-import importlib
-import os
-import re
 import unicodedata
-import warnings
-from io import BufferedReader, BufferedWriter, BytesIO
+from importlib.resources import files as package_files
 from pathlib import Path
 
-import pikepdf
-from bs4 import BeautifulSoup
 from pikepdf import (
     ContentStreamInstruction,
     Dictionary,
@@ -22,7 +16,9 @@ from pikepdf import (
 from ocrmypdf.hocrtransform.backends._base import Canvas as BaseCanvas
 from ocrmypdf.hocrtransform.backends._base import Text as BaseText
 
-GLYPHLESS_FONT = importlib.resources.read_binary("ocrmypdf", "pdf.ttf")
+GLYPHLESS_FONT_NAME = 'pdf.ttf'
+
+GLYPHLESS_FONT = (package_files('ocrmypdf.data') / GLYPHLESS_FONT_NAME).read_bytes()
 CHAR_ASPECT = 2
 
 
