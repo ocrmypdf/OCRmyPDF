@@ -280,7 +280,7 @@ class HocrTransform:
         """
         # create the PDF file
         # page size in points (1/72 in.)
-        pdf = PikepdfCanvas(  # ReportlabCanvas(
+        canvas = PikepdfCanvas(  # ReportlabCanvas(
             out_filename,
             page_size=(self.width, self.height),
         )
@@ -295,9 +295,9 @@ class HocrTransform:
             # draw cyan box around paragraph
             if self.render_options.render_paragraph_bbox:
                 # pragma: no cover
-                pdf.set_stroke_color(cyan)
-                pdf.set_line_width(0.1)  # no line for bounding box
-                pdf.rect(pt.x1, pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1, fill=0)
+                canvas.set_stroke_color(cyan)
+                canvas.set_line_width(0.1)  # no line for bounding box
+                canvas.rect(pt.x1, pt.y2, pt.x2 - pt.x1, pt.y2 - pt.y1, fill=0)
 
         found_lines = False
         for line in (
@@ -308,7 +308,7 @@ class HocrTransform:
         ):
             found_lines = True
             self._do_line(
-                pdf,
+                canvas,
                 line,
                 "ocrx_word",
                 fontname,
@@ -320,7 +320,7 @@ class HocrTransform:
             # Tesseract did not report any lines (just words)
             root = self.hocr.find(self._child_xpath('div', 'ocr_page'))
             self._do_line(
-                pdf,
+                canvas,
                 root,
                 "ocrx_word",
                 fontname,
@@ -329,10 +329,12 @@ class HocrTransform:
             )
         # put the image on the page, scaled to fill the page
         if image_filename is not None:
-            pdf.draw_image(image_filename, 0, 0, width=self.width, height=self.height)
+            canvas.draw_image(
+                image_filename, 0, 0, width=self.width, height=self.height
+            )
 
         # finish up the page and save it
-        pdf.save()
+        canvas.save()
 
     @classmethod
     def polyval(cls, poly, x):  # pragma: no cover
@@ -341,7 +343,7 @@ class HocrTransform:
 
     def _do_line(
         self,
-        pdf: Canvas,
+        canvas: Canvas,
         line: Element | None,
         elemclass: str,
         fontname: str,
@@ -363,16 +365,16 @@ class HocrTransform:
         intercept = pxl_intercept / self.dpi * inch
 
         # Enter a new coordinate system with the linebox at the origin
-        pdf._cs.push()
+        canvas.push()
         line_matrix = PdfMatrix().translated(line_box.x1, line_box.y1).rotated(-angle)
-        pdf._cs.cm(*line_matrix.shorthand)
+        canvas.cm(*line_matrix.shorthand)
         cos_a, sin_a = 1, 0
         slope = 0
         intercept = 0
 
         cm_line_box = line_box.transform(line_matrix, inverse=True)
 
-        text = pdf.begin_text()
+        text = canvas.begin_text()
 
         # Don't allow the font to break out of the bounding box. Division by
         # cos_a accounts for extra clearance between the glyph's vertical axis
@@ -387,14 +389,14 @@ class HocrTransform:
         # origin bottom left, y2 > y1.
         baseline_y1 = -intercept
 
-        self._do_debug_baseline(pdf, slope, cm_line_box, baseline_y1)
+        self._do_debug_baseline(canvas, slope, cm_line_box, baseline_y1)
         text.set_text_transform(1, 0, 0, 1, line_box.x1, baseline_y1)
-        pdf.set_fill_color(black)  # text in black
+        canvas.set_fill_color(black)  # text in black
 
         elements = line.findall(self._child_xpath('span', elemclass))
         for elem in elements:
             self._do_line_word(
-                pdf,
+                canvas,
                 fontname,
                 interword_spaces,
                 line_height,
@@ -405,12 +407,12 @@ class HocrTransform:
                 baseline_y1,
                 elem,
             )
-        pdf.draw_text(text)
-        pdf._cs.pop()
+        canvas.draw_text(text)
+        canvas.pop()
 
     def _do_line_word(
         self,
-        pdf,
+        canvas,
         fontname,
         interword_spaces,
         line_height,
@@ -446,11 +448,11 @@ class HocrTransform:
                 )
             )
         box_width = cm_box.x2 - cm_box.x1
-        font_width = pdf.string_width(elemtxt, fontname, fontsize)
+        font_width = canvas.string_width(elemtxt, fontname, fontsize)
 
         # draw the bbox border
-        self._do_debug_word_triangle(pdf, cm_box)
-        self._do_debug_bbox(pdf, line_height, cm_line_box, cm_box, box_width)
+        self._do_debug_word_triangle(canvas, cm_box)
+        self._do_debug_bbox(canvas, line_height, cm_line_box, cm_box, box_width)
 
         # Adjust relative position of cursor
         # This is equivalent to:
@@ -486,41 +488,41 @@ class HocrTransform:
 
     def _do_debug_word_triangle(
         self,
-        pdf,
+        canvas,
         cm_box,
     ):
         if not self.render_options.render_triangle:  # pragma: no cover
             return
-        pdf._cs.push()
-        pdf.set_dashes()
-        pdf.set_stroke_color(red)
-        pdf.set_line_width(0.1)
+        canvas.push()
+        canvas.set_dashes()
+        canvas.set_stroke_color(red)
+        canvas.set_line_width(0.1)
         # Draw a triangle that conveys word height and drawing direction
-        pdf.line(cm_box.x1, cm_box.y1, cm_box.x2, cm_box.y1)  # across bottom
-        pdf.line(cm_box.x2, cm_box.y1, cm_box.x1, cm_box.y2)  # diagonal
-        pdf.line(cm_box.x1, cm_box.y1, cm_box.x1, cm_box.y2)  # rise
-        pdf._cs.pop()
+        canvas.line(cm_box.x1, cm_box.y1, cm_box.x2, cm_box.y1)  # across bottom
+        canvas.line(cm_box.x2, cm_box.y1, cm_box.x1, cm_box.y2)  # diagonal
+        canvas.line(cm_box.x1, cm_box.y1, cm_box.x1, cm_box.y2)  # rise
+        canvas.pop()
 
-    def _do_debug_bbox(self, pdf, line_height, cm_line_box, cm_box, box_width):
+    def _do_debug_bbox(self, canvas, line_height, cm_line_box, cm_box, box_width):
         if not self.render_options.render_word_bbox:  # pragma: no cover
             return
-        pdf._cs.push()
-        pdf.set_dashes()
-        pdf.set_stroke_color(green)
-        pdf.set_line_width(0.1)
-        pdf.rect(cm_box.x1, cm_line_box.y1, box_width, line_height, fill=0)
-        pdf._cs.pop()
+        canvas.push()
+        canvas.set_dashes()
+        canvas.set_stroke_color(green)
+        canvas.set_line_width(0.1)
+        canvas.rect(cm_box.x1, cm_line_box.y1, box_width, line_height, fill=0)
+        canvas.pop()
 
-    def _do_debug_baseline(self, pdf, slope, line_box, baseline_y1):
+    def _do_debug_baseline(self, canvas, slope, line_box, baseline_y1):
         if not self.render_options.render_baseline:
             return
         # draw the baseline in magenta, dashed
-        pdf.set_dashes()
-        pdf.set_stroke_color(magenta)
-        pdf.set_line_width(0.25)
+        canvas.set_dashes()
+        canvas.set_stroke_color(magenta)
+        canvas.set_line_width(0.25)
         # negate slope because it is defined as a rise/run in pixel
         # coordinates and page coordinates have the y axis flipped
-        pdf.line(
+        canvas.line(
             line_box.x1,
             baseline_y1,
             line_box.x2,

@@ -297,6 +297,15 @@ class PikepdfCanvas(BaseCanvas):
     def set_dashes(self, *args):
         self._cs.set_dashes(*args)
 
+    def push(self):
+        self._cs.push()
+
+    def pop(self):
+        self._cs.pop()
+
+    def cm(self, a, b, c, d, e, f):
+        self._cs.cm(a, b, c, d, e, f)
+
     def save(self):
         self._cs.pop()
         self._page.Contents = self._pdf.make_stream(
