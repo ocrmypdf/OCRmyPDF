@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 import re
 import unicodedata
@@ -21,7 +22,8 @@ from xml.etree import ElementTree
 
 from pikepdf import Matrix, Rectangle
 
-from ocrmypdf.hocrtransform._canvas import PikepdfCanvas, PikepdfText
+from ocrmypdf.hocrtransform._canvas import PikepdfCanvas as Canvas
+from ocrmypdf.hocrtransform._canvas import PikepdfText
 from ocrmypdf.hocrtransform.color import (
     BLACK,
     BLUE,
@@ -30,6 +32,8 @@ from ocrmypdf.hocrtransform.color import (
     MAGENTA,
     RED,
 )
+
+log = logging.getLogger(__name__)
 
 INCH = 72.0
 
@@ -67,9 +71,6 @@ class HocrTransform:
         ([\-\+]?\d+)            # +/- int''',
         re.VERBOSE,
     )
-    ligatures = str.maketrans(
-        {'ﬀ': 'ff', 'ﬃ': 'f‌f‌i', 'ﬄ': 'f‌f‌l', 'ﬁ': 'fi', 'ﬂ': 'fl'}
-    )
 
     def __init__(self, *, hocr_filename: str | Path, dpi: float):
         """Initialize the HocrTransform object."""
@@ -95,22 +96,12 @@ class HocrTransform:
             raise HocrTransformError("hocr file is missing page dimensions")
         self.render_options = DebugRenderOptions(
             render_baseline=True,
-            render_triangle=False,
-            render_line_bbox=False,
+            render_triangle=True,
+            render_line_bbox=True,
             render_word_bbox=True,
-            render_paragraph_bbox=False,
+            render_paragraph_bbox=True,
             render_space_bbox=False,
         )
-
-    def __str__(self):  # pragma: no cover
-        """Return the textual content of the HTML body."""
-        if self.hocr is None:
-            return ''
-        body = self.hocr.find(self._child_xpath('body'))
-        if body:
-            return self._get_element_text(body)
-        else:
-            return ''
 
     def _get_element_text(self, element: Element):
         """Return the textual content of the element and its children."""
@@ -153,11 +144,6 @@ class HocrTransform:
         return xpath
 
     @classmethod
-    def replace_unsupported_chars(cls, s: str) -> str:
-        """Replaces characters with those available in the Helvetica typeface."""
-        return s.translate(cls.ligatures)
-
-    @classmethod
     def normalize_text(cls, s: str) -> str:
         """Normalize the given text using the NFKC normalization form."""
         return unicodedata.normalize("NFKC", s)
@@ -184,19 +170,14 @@ class HocrTransform:
             out_filename: Path of PDF to write.
             image_filename: Image to use for this file. If omitted, the OCR text
                 is shown.
-            show_bounding_boxes: Show bounding boxes around various text regions,
-                for debugging.
             fontname: Name of font to use.
             invisible_text: If True, text is rendered invisible so that is
                 selectable but never drawn. If False, text is visible and may
                 be seen if the image is skipped or deleted in Acrobat.
-            interword_spaces: If True, insert spaces between words rather than
-                drawing each word without spaces. Generally this improves text
-                extraction.
         """
         # create the PDF file
         # page size in points (1/72 in.)
-        canvas = PikepdfCanvas(
+        canvas = Canvas(
             out_filename,
             page_size=(self.width, self.height),
         )
@@ -208,22 +189,9 @@ class HocrTransform:
             .scaled(INCH / self.dpi, INCH / self.dpi)
         )
         canvas.cm(page_matrix)
-        print(page_matrix)
+        log.debug(page_matrix)
 
-        for elem in self.hocr.iterfind(self._child_xpath('p', 'ocr_par')):
-            elemtxt = self._get_element_text(elem).rstrip()
-            if len(elemtxt) == 0:
-                continue
-
-            ocr_par = self.element_coordinates(elem)
-            # draw cyan box around paragraph
-            if self.render_options.render_paragraph_bbox:
-                # pragma: no cover
-                canvas.set_stroke_color(CYAN)
-                canvas.set_line_width(0.1)  # no line for bounding box
-                canvas.rect(
-                    ocr_par.llx, ocr_par.lly, ocr_par.width, ocr_par.height, fill=0
-                )
+        self._debug_draw_paragraph_boxes(canvas)
 
         found_lines = False
         for line in (
@@ -239,7 +207,6 @@ class HocrTransform:
                 "ocrx_word",
                 fontname,
                 invisible_text,
-                interword_spaces,
             )
 
         if not found_lines:
@@ -251,7 +218,6 @@ class HocrTransform:
                 "ocrx_word",
                 fontname,
                 invisible_text,
-                interword_spaces,
             )
         canvas.pop()
         # put the image on the page, scaled to fill the page
@@ -270,19 +236,18 @@ class HocrTransform:
 
     def _do_line(
         self,
-        canvas: PikepdfCanvas,
+        canvas: Canvas,
         line: Element | None,
         elemclass: str,
         fontname: str,
         invisible_text: bool,
-        interword_spaces: bool,
     ):
         if line is None:
             return
         line_box = self.element_coordinates(line)
         assert line_box.ury > line_box.lly  # lly is top, ury is bottom
 
-        self._do_debug_line_bbox(canvas, line_box)
+        self._debug_draw_line_bbox(canvas, line_box)
 
         # Baseline is a polynomial (usually straight line) in the coordinate system
         # of the line
@@ -301,7 +266,7 @@ class HocrTransform:
             .rotated(angle / pi * 180)
         )
         canvas.cm(line_matrix)
-        print(line_matrix)
+        log.debug(line_matrix)
         text = canvas.begin_text()
 
         # Don't allow the font to break out of the bounding box. Division by
@@ -313,7 +278,7 @@ class HocrTransform:
         if invisible_text or True:
             text.set_render_mode(3)  # Invisible (indicates OCR text)
 
-        self._do_debug_baseline(canvas, line_matrix.inverse().transform(line_box), 0)
+        self._debug_draw_baseline(canvas, line_matrix.inverse().transform(line_box), 0)
         canvas.set_fill_color(BLACK)  # text in black
 
         elements = line.findall(self._child_xpath('span', elemclass))
@@ -334,7 +299,7 @@ class HocrTransform:
 
     def _do_line_word(
         self,
-        canvas: PikepdfCanvas,
+        canvas: Canvas,
         fontname,
         line_matrix: Matrix,
         line_height: float,
@@ -356,11 +321,10 @@ class HocrTransform:
         font_width = canvas.string_width(elemtxt, fontname, fontsize)
 
         # Debug sketches
-        self._do_debug_word_triangle(canvas, box)
-        self._do_debug_word_bbox(
+        self._debug_draw_word_triangle(canvas, box)
+        self._debug_draw_word_bbox(
             canvas,
             box.height,
-            line_matrix.inverse().transform(line_box),
             box,
             box.width,
         )
@@ -374,19 +338,33 @@ class HocrTransform:
         if next_elem is not None:
             next_box = self.element_coordinates(next_elem)
             space_box = Rectangle(box.urx, line_box.lly, next_box.llx, line_box.ury)
-            self._do_debug_space_bbox(canvas, space_box)
+            self._debug_draw_space_bbox(canvas, space_box)
             text.set_text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
             space_width = canvas.string_width(' ', fontname, fontsize)
             space_box_width = space_box.urx - space_box.llx
             text.set_horiz_scale(100 * space_box_width / space_width)
             text.show(' ')
 
-    def _do_debug_line_bbox(self, canvas, line_box):
+    def _debug_draw_paragraph_boxes(self, canvas: Canvas, color=CYAN):
+        """Draw boxes around paragraphs in the document."""
+        if not self.render_options.render_paragraph_bbox:  # pragma: no cover
+            return
+        for elem in self.hocr.iterfind(self._child_xpath('p', 'ocr_par')):
+            elemtxt = self._get_element_text(elem).rstrip()
+            if len(elemtxt) == 0:
+                continue
+            ocr_par = self.element_coordinates(elem)
+            # draw box around paragraph
+            canvas.set_stroke_color(color)
+            canvas.set_line_width(0.1)  # no line for bounding box
+            canvas.rect(ocr_par.llx, ocr_par.lly, ocr_par.width, ocr_par.height, fill=0)
+
+    def _debug_draw_line_bbox(self, canvas, line_box, color=BLUE):
+        """Render the bounding box of a text line."""
         if not self.render_options.render_line_bbox:  # pragma: no cover
             return
         canvas.push()
-        canvas.set_dashes()
-        canvas.set_stroke_color(BLUE)
+        canvas.set_stroke_color(color)
         canvas.set_line_width(0.15)
         canvas.rect(
             line_box.llx,
@@ -397,16 +375,12 @@ class HocrTransform:
         )
         canvas.pop()
 
-    def _do_debug_word_triangle(
-        self,
-        canvas: PikepdfCanvas,
-        box,
-    ):
+    def _debug_draw_word_triangle(self, canvas: Canvas, box, color=RED):
+        """Render a triangle that conveys word height and drawing direction."""
         if not self.render_options.render_triangle:  # pragma: no cover
             return
         canvas.push()
-        canvas.set_dashes()
-        canvas.set_stroke_color(RED)
+        canvas.set_stroke_color(color)
         canvas.set_line_width(0.1)
         # Draw a triangle that conveys word height and drawing direction
         canvas.line(box.llx, box.lly, box.urx, box.lly)  # across bottom
@@ -414,37 +388,37 @@ class HocrTransform:
         canvas.line(box.llx, box.lly, box.llx, box.ury)  # rise
         canvas.pop()
 
-    def _do_debug_word_bbox(
-        self, canvas: PikepdfCanvas, line_height, line_box, box, box_width
+    def _debug_draw_word_bbox(
+        self, canvas: Canvas, line_height, box, box_width, color=GREEN
     ):
+        """Render a box depicting the word."""
         if not self.render_options.render_word_bbox:  # pragma: no cover
             return
         canvas.push()
         canvas.set_dashes()
-        canvas.set_stroke_color(GREEN)
+        canvas.set_stroke_color(color)
         canvas.set_line_width(0.1)
         canvas.rect(box.llx, box.lly, box_width, line_height, fill=0)
         canvas.pop()
 
-    def _do_debug_space_bbox(self, canvas: PikepdfCanvas, box):
+    def _debug_draw_space_bbox(self, canvas: Canvas, box, color=GREEN):
+        """Render a box depicting the space between two words."""
         if not self.render_options.render_space_bbox:  # pragma: no cover
             return
         canvas.push()
         canvas.set_dashes()
-        canvas.set_fill_color(GREEN)
+        canvas.set_fill_color(color)
         canvas.set_line_width(0.1)
         canvas.rect(box.llx, box.lly, box.width, box.height, fill=1)
         canvas.pop()
 
-    def _do_debug_baseline(self, canvas, line_box, baseline_lly):
+    def _debug_draw_baseline(self, canvas, line_box, baseline_lly, color=MAGENTA):
+        """Render the text baseline."""
         if not self.render_options.render_baseline:
             return
-        # draw the baseline in magenta, dashed
         canvas.set_dashes()
-        canvas.set_stroke_color(MAGENTA)
+        canvas.set_stroke_color(color)
         canvas.set_line_width(0.25)
-        # negate slope because it is defined as a rise/run in pixel
-        # coordinates and page coordinates have the y axis flipped
         canvas.line(
             line_box.llx,
             baseline_lly,
