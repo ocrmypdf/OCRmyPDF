@@ -20,7 +20,7 @@ from xml.etree import ElementTree
 from pikepdf import Matrix, Rectangle
 
 from ocrmypdf.hocrtransform._canvas import PikepdfCanvas as Canvas
-from ocrmypdf.hocrtransform._canvas import PikepdfText
+from ocrmypdf.hocrtransform._canvas import PikepdfText, TextDirection
 from ocrmypdf.hocrtransform.color import (
     BLACK,
     BLUE,
@@ -94,9 +94,9 @@ class HocrTransform:
             render_baseline=False,
             render_triangle=False,
             render_line_bbox=False,
-            render_word_bbox=True,
+            render_word_bbox=False,
             render_paragraph_bbox=False,
-            render_space_bbox=True,
+            render_space_bbox=False,
         )
 
     def _get_element_text(self, element: Element):
@@ -183,21 +183,23 @@ class HocrTransform:
             self._debug_draw_paragraph_boxes(canvas)
 
             found_lines = False
-            for line in (
-                element
-                for element in self.hocr.iterfind(self._child_xpath('span'))
-                if 'class' in element.attrib
-                and element.attrib['class']
-                in {'ocr_header', 'ocr_line', 'ocr_textfloat'}
-            ):
-                found_lines = True
-                self._do_line(
-                    canvas,
-                    line,
-                    "ocrx_word",
-                    fontname,
-                    invisible_text,
-                )
+            for par in self.hocr.iterfind(self._child_xpath('p', 'ocr_par')):
+                for line in (
+                    element
+                    for element in par.iterfind(self._child_xpath('span'))
+                    if 'class' in element.attrib
+                    and element.attrib['class']
+                    in {'ocr_header', 'ocr_line', 'ocr_textfloat'}
+                ):
+                    found_lines = True
+                    direction = (
+                        TextDirection.RTL
+                        if par.attrib.get('dir', 'ltr') == 'rtl'
+                        else TextDirection.LTR
+                    )
+                    self._do_line(
+                        canvas, line, "ocrx_word", fontname, invisible_text, direction
+                    )
 
             if not found_lines:
                 # Tesseract did not report any lines (just words)
@@ -208,6 +210,7 @@ class HocrTransform:
                     "ocrx_word",
                     fontname,
                     invisible_text,
+                    TextDirection.LTR,
                 )
         # put the image on the page, scaled to fill the page
         if image_filename is not None:
@@ -230,6 +233,7 @@ class HocrTransform:
         elemclass: str,
         fontname: str,
         invisible_text: bool,
+        text_direction: TextDirection,
     ):
         """Render the text for a given line.
 
@@ -265,7 +269,7 @@ class HocrTransform:
             )
             canvas.do.cm(line_matrix)
             log.debug(line_matrix)
-            text = PikepdfText()
+            text = PikepdfText(direction=text_direction)
 
             # Don't allow the font to break out of the bounding box. Division by
             # cos_a accounts for extra clearance between the glyph's vertical axis
@@ -291,6 +295,7 @@ class HocrTransform:
                     fontsize,
                     elem,
                     next_elem,
+                    text_direction,
                 )
             canvas.do.draw_text(text)
 
@@ -303,6 +308,7 @@ class HocrTransform:
         fontsize: float,
         elem: Element,
         next_elem: Element | None,
+        text_direction: TextDirection,
     ):
         """Render the text for a single word."""
         if elem is None:
@@ -337,11 +343,18 @@ class HocrTransform:
             # occupy the space the between the words helps the PDF viewer
             # avoid combiningthewordstogether.
             next_box = line_matrix.inverse().transform(hocr_next_box)
-            space_box = Rectangle(box.urx, box.lly, next_box.llx, next_box.ury)
-            self._debug_draw_space_bbox(canvas, space_box)
-            text.set_text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
-            space_width = canvas.string_width(' ', fontname, fontsize)
-            space_box_width = space_box.urx - space_box.llx
+            if text_direction == TextDirection.LTR:
+                space_box = Rectangle(box.urx, box.lly, next_box.llx, next_box.ury)
+                self._debug_draw_space_bbox(canvas, space_box)
+                text.set_text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
+                space_width = canvas.string_width(' ', fontname, fontsize)
+                space_box_width = space_box.urx - space_box.llx
+            elif text_direction == TextDirection.RTL:
+                space_box = Rectangle(next_box.urx, box.lly, box.llx, next_box.ury)
+                self._debug_draw_space_bbox(canvas, space_box)
+                text.set_text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
+                space_width = canvas.string_width(' ', fontname, fontsize)
+                space_box_width = space_box.ury - space_box.lly
             text.set_horiz_scale(100 * space_box_width / space_width)
             text.show(' ')
 

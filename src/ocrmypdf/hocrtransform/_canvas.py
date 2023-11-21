@@ -7,6 +7,7 @@ import logging
 import unicodedata
 from contextlib import contextmanager
 from dataclasses import dataclass
+from enum import Enum
 from importlib.resources import files as package_files
 from pathlib import Path
 
@@ -27,6 +28,11 @@ GLYPHLESS_FONT_NAME = 'pdf.ttf'
 
 GLYPHLESS_FONT = (package_files('ocrmypdf.data') / GLYPHLESS_FONT_NAME).read_bytes()
 CHAR_ASPECT = 2
+
+
+class TextDirection(Enum):
+    LTR = ...
+    RTL = ...
 
 
 def register_glyphlessfont(pdf: Pdf):
@@ -141,11 +147,17 @@ class ContentStreamBuilder:
         self._instructions.append(inst)
         return self
 
-    def begin_marked_content(self, mctype: Name, mcid: int):
+    def begin_marked_content_proplist(self, mctype: Name, mcid: int):
         """Begin marked content sequence."""
         inst = ContentStreamInstruction(
             [mctype, Dictionary(MCID=mcid)], Operator("BDC")
         )
+        self._instructions.append(inst)
+        return self
+
+    def begin_marked_content(self, mctype: Name):
+        """Begin marked content sequence."""
+        inst = ContentStreamInstruction([mctype], Operator("BMC"))
         self._instructions.append(inst)
         return self
 
@@ -396,10 +408,11 @@ class PikepdfCanvas:
 
 
 class PikepdfText:
-    def __init__(self, x=0, y=0, direction=None):
+    def __init__(self, x=0, y=0, direction=TextDirection.LTR):
         self._cs = ContentStreamBuilder()
         self._cs.begin_text()
         self._p0 = (x, y)
+        self._direction = direction
 
     def set_font(self, font, size):
         self._cs.set_text_font(Name("/f-0-0"), size)
@@ -414,8 +427,13 @@ class PikepdfText:
         self._p0 = (matrix.e, matrix.f)
         return self
 
-    def show(self, text):
-        self._cs.show_text(text)
+    def show(self, text: str):
+        if self._direction == TextDirection.LTR:
+            self._cs.show_text(text)
+        else:
+            self._cs.begin_marked_content(Name.ReversedChars)
+            self._cs.show_text(text)
+            self._cs.end_marked_content()
         return self
 
     def set_horiz_scale(self, scale):
