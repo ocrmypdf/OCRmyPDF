@@ -49,5 +49,4 @@ if __name__ == "__main__":
     hocr.to_pdf(
         out_filename=args.outputfile,
         image_filename=args.image,
-        show_bounding_boxes=args.boundingboxes,
     )

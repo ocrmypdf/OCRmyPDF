@@ -345,7 +345,7 @@ class PikepdfCanvasAccessor:
 
 
 class PikepdfCanvas:
-    def __init__(self, *, page_size: tuple[int, int]):
+    def __init__(self, *, page_size: tuple[int | float, int | float]):
         self.page_size = page_size
         self._pdf = Pdf.new()
         self._page = self._pdf.add_blank_page(page_size=page_size)
