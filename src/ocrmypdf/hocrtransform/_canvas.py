@@ -33,8 +33,8 @@ CHAR_ASPECT = 2
 
 
 class TextDirection(Enum):
-    LTR = ...
-    RTL = ...
+    LTR = 1
+    RTL = 2
 
 
 def register_glyphlessfont(pdf: Pdf):

@@ -333,26 +333,24 @@ class HocrTransform:
         hocr_next_box = (
             self.element_coordinates(next_elem) if next_elem is not None else None
         )
-        if hocr_next_box is not None:
-            # Render a space this word and the next word. The explicit space helps
-            # PDF viewers identify the word break, and horizontally scaling it to
-            # occupy the space the between the words helps the PDF viewer
-            # avoid combiningthewordstogether.
-            next_box = line_matrix.inverse().transform(hocr_next_box)
-            if text_direction == TextDirection.LTR:
-                space_box = Rectangle(box.urx, box.lly, next_box.llx, next_box.ury)
-                self._debug_draw_space_bbox(canvas, space_box)
-                text.set_text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
-                space_width = canvas.string_width(' ', fontname, fontsize)
-                space_box_width = space_box.urx - space_box.llx
-            elif text_direction == TextDirection.RTL:
-                space_box = Rectangle(next_box.urx, box.lly, box.llx, next_box.ury)
-                self._debug_draw_space_bbox(canvas, space_box)
-                text.set_text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
-                space_width = canvas.string_width(' ', fontname, fontsize)
-                space_box_width = space_box.ury - space_box.lly
-            text.set_horiz_scale(100 * space_box_width / space_width)
-            text.show(' ')
+        if hocr_next_box is None:
+            return
+        # Render a space this word and the next word. The explicit space helps
+        # PDF viewers identify the word break, and horizontally scaling it to
+        # occupy the space the between the words helps the PDF viewer
+        # avoid combiningthewordstogether.
+        next_box = line_matrix.inverse().transform(hocr_next_box)
+        if text_direction == TextDirection.LTR:
+            space_box = Rectangle(box.urx, box.lly, next_box.llx, next_box.ury)
+            self._debug_draw_space_bbox(canvas, space_box)
+            text.set_text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
+        elif text_direction == TextDirection.RTL:
+            space_box = Rectangle(next_box.urx, box.lly, box.llx, next_box.ury)
+            self._debug_draw_space_bbox(canvas, space_box)
+            text.set_text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
+        space_width = canvas.string_width(' ', fontname, fontsize)
+        text.set_horiz_scale(100 * space_box.width / space_width)
+        text.show(' ')
 
     def _debug_draw_paragraph_boxes(self, canvas: Canvas, color=CYAN):
         """Draw boxes around paragraphs in the document."""
