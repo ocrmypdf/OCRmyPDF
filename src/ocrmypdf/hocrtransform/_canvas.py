@@ -445,23 +445,21 @@ class PikepdfCanvas:
 class PikepdfText:
     """Text object for rendering text on a pikepdf canvas."""
 
-    def __init__(self, x=0, y=0, direction=TextDirection.LTR):
+    def __init__(self, direction=TextDirection.LTR):
         self._cs = ContentStreamBuilder()
         self._cs.begin_text()
-        self._p0 = (x, y)
         self._direction = direction
 
-    def set_font(self, font, size):
+    def font(self, font, size):
         self._cs.set_text_font(Name("/f-0-0"), size)
         return self
 
-    def set_render_mode(self, mode):
+    def render_mode(self, mode):
         self._cs.set_text_rendering(mode)
         return self
 
-    def set_text_transform(self, matrix: Matrix):
+    def text_transform(self, matrix: Matrix):
         self._cs.set_text_matrix(matrix)
-        self._p0 = (matrix.e, matrix.f)
         return self
 
     def show(self, text: str):
@@ -473,12 +471,9 @@ class PikepdfText:
             self._cs.end_marked_content()
         return self
 
-    def set_horiz_scale(self, scale):
+    def horiz_scale(self, scale):
         self._cs.set_text_horizontal_scaling(scale)
         return self
-
-    def get_start_of_line(self):
-        return self._p0
 
     def move_cursor(self, x, y):
         self._cs.move_cursor(x, y)

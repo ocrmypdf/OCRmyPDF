@@ -272,9 +272,9 @@ class HocrTransform:
             # on a sloped baseline and the edge of the bounding box.
             line_box_height = abs(line_box.height) / cos(angle)
             fontsize = line_box_height + intercept
-            text.set_font(fontname, fontsize)
+            text.font(fontname, fontsize)
             if invisible_text or True:
-                text.set_render_mode(3)  # Invisible (indicates OCR text)
+                text.render_mode(3)  # Invisible (indicates OCR text)
 
             self._debug_draw_baseline(
                 canvas, line_matrix.inverse().transform(line_box), 0
@@ -325,8 +325,8 @@ class HocrTransform:
 
         # If this word is 0 units wide, our best bet seems to be to suppress this text
         if font_width > 0:
-            text.set_text_transform(Matrix(1, 0, 0, 1, box.llx, 0))
-            text.set_horiz_scale(100 * box.width / font_width)
+            text.text_transform(Matrix(1, 0, 0, 1, box.llx, 0))
+            text.horiz_scale(100 * box.width / font_width)
             text.show(elemtxt)
 
         # Get coordinates of the next word (if there is one)
@@ -342,14 +342,12 @@ class HocrTransform:
         next_box = line_matrix.inverse().transform(hocr_next_box)
         if text_direction == TextDirection.LTR:
             space_box = Rectangle(box.urx, box.lly, next_box.llx, next_box.ury)
-            self._debug_draw_space_bbox(canvas, space_box)
-            text.set_text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
         elif text_direction == TextDirection.RTL:
             space_box = Rectangle(next_box.urx, box.lly, box.llx, next_box.ury)
-            self._debug_draw_space_bbox(canvas, space_box)
-            text.set_text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
+        self._debug_draw_space_bbox(canvas, space_box)
+        text.text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
         space_width = canvas.string_width(' ', fontname, fontsize)
-        text.set_horiz_scale(100 * space_box.width / space_width)
+        text.horiz_scale(100 * space_box.width / space_width)
         text.show(' ')
 
     def _debug_draw_paragraph_boxes(self, canvas: Canvas, color=CYAN):
