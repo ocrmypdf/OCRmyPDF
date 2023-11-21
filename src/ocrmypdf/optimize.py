@@ -376,7 +376,7 @@ def _produce_jbig2_images(
                 options.jbig2_threshold,
             )
 
-    def jbig2_single_args(root, groups: dict[int, list[XrefExt]]):
+    def jbig2_single_args(root: Path, groups: dict[int, list[XrefExt]]):
         for group, xref_exts in groups.items():
             prefix = f'group{group:08d}'
             # Second loop is to ensure multiple images per page are unpacked
