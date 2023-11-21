@@ -347,8 +347,9 @@ class HocrTransform:
         self._debug_draw_space_bbox(canvas, space_box)
         text.text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
         space_width = canvas.string_width(' ', fontname, fontsize)
-        text.horiz_scale(100 * space_box.width / space_width)
-        text.show(' ')
+        if space_width > 0:
+            text.horiz_scale(100 * space_box.width / space_width)
+            text.show(' ')
 
     def _debug_draw_paragraph_boxes(self, canvas: Canvas, color=CYAN):
         """Draw boxes around paragraphs in the document."""
