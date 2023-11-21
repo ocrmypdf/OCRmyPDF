@@ -30,8 +30,6 @@ Queue = Union[multiprocessing.Queue, queue.Queue]
 UserInit = Callable[[], None]
 WorkerInit = Callable[[Queue, UserInit, int], None]
 
-RichTqdmProgressAdapter = RichProgressBar  # Deprecated shim; remove in OCRmyPDF 16
-
 
 def log_listener(q: Queue):
     """Listen to the worker processes and forward the messages to logging.

@@ -71,15 +71,9 @@ def jpg_name(root: Path, xref: Xref) -> Path:
 
 
 def extract_image_filter(
-    image: Stream, xref: Xref, *args
+    image: Stream, xref: Xref
 ) -> tuple[PdfImage, tuple[Name, Object]] | None:
     """Determine if an image is extractable."""
-    if isinstance(image, Pdf):
-        # Support deprecated old function signature
-        # TODO Remove for v16 and drop *args from current function signature
-        image, xref = args[0], args[1]
-        warn("extract_image_filter: pdf, root parameters ignored", DeprecationWarning)
-
     if image.Subtype != Name.Image:
         return None
     if image.Length < 100:
