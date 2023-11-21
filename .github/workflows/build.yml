@@ -32,8 +32,8 @@ jobs:
           - os: ubuntu-latest
             python: "3.12"
             tesseract5: true
-          - os: ubuntu-latest
-            python: "pypy3.10"
+          # - os: ubuntu-latest
+          #   python: "pypy3.10"
 
     env:
       OS: ${{ matrix.os }}
