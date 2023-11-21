@@ -82,16 +82,14 @@ class HocrTransform:
         if matches:
             self.xmlns = matches.group(1)
 
-        self.width, self.height = None, None
         for div in self.hocr.findall(self._child_xpath('div', 'ocr_page')):
             coords = self.element_coordinates(div)
+            if not coords:
+                raise HocrTransformError("hocr file is missing page dimensions")
             self.width = (coords.urx - coords.llx) / (self.dpi / INCH)
             self.height = (coords.ury - coords.lly) / (self.dpi / INCH)
-            # there shouldn't be more than one, and if there is, we don't want
-            # it
+            # Stop after first div that has page coordinates
             break
-        if self.width is None or self.height is None:
-            raise HocrTransformError("hocr file is missing page dimensions")
         self.render_options = DebugRenderOptions(
             render_baseline=False,
             render_triangle=False,
@@ -115,25 +113,23 @@ class HocrTransform:
     @classmethod
     def element_coordinates(cls, element: Element) -> Rectangle | None:
         """Get coordinates of the bounding box around an element."""
-        if 'title' in element.attrib:
-            matches = cls.box_pattern.search(element.attrib['title'])
-            if matches:
-                return Rectangle(
-                    float(matches.group(1)),  # llx = left
-                    float(matches.group(2)),  # lly = top
-                    float(matches.group(3)),  # urx = right
-                    float(matches.group(4)),  # ury = bottom
-                )
-        return None
+        matches = cls.box_pattern.search(element.attrib.get('title', ''))
+        if not matches:
+            return None
+        return Rectangle(
+            float(matches.group(1)),  # llx = left
+            float(matches.group(2)),  # lly = top
+            float(matches.group(3)),  # urx = right
+            float(matches.group(4)),  # ury = bottom
+        )
 
     @classmethod
     def baseline(cls, element: Element) -> tuple[float, float]:
         """Get baseline's slope and intercept."""
-        if 'title' in element.attrib:
-            matches = cls.baseline_pattern.search(element.attrib['title'])
-            if matches:
-                return float(matches.group(1)), int(matches.group(2))
-        return (0.0, 0.0)
+        matches = cls.baseline_pattern.search(element.attrib.get('title', ''))
+        if not matches:
+            return (0.0, 0.0)
+        return float(matches.group(1)), int(matches.group(2))
 
     def _child_xpath(self, html_tag: str, html_class: str | None = None) -> str:
         xpath = f".//{self.xmlns}{html_tag}"
@@ -243,6 +239,8 @@ class HocrTransform:
         if line is None:
             return
         line_box = self.element_coordinates(line)
+        if not line_box:
+            return
         assert line_box.ury > line_box.lly  # lly is top, ury is bottom
 
         self._debug_draw_line_bbox(canvas, line_box)
@@ -307,6 +305,8 @@ class HocrTransform:
         next_elem: Element | None,
     ):
         """Render the text for a single word."""
+        if elem is None:
+            return
         elemtxt = self.normalize_text(self._get_element_text(elem).strip())
         if elemtxt == '':
             return
@@ -357,6 +357,8 @@ class HocrTransform:
                 if len(elemtxt) == 0:
                     continue
                 ocr_par = self.element_coordinates(elem)
+                if ocr_par is None:
+                    continue
                 canvas.do.rect(
                     ocr_par.llx, ocr_par.lly, ocr_par.width, ocr_par.height, fill=0
                 )
