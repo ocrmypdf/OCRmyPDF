@@ -14,6 +14,7 @@ from contextlib import contextmanager
 from decimal import Decimal
 from pathlib import Path
 from subprocess import PIPE, STDOUT
+from tempfile import TemporaryDirectory
 from typing import Union
 
 from packaging.version import Version
@@ -24,27 +25,6 @@ from ocrmypdf.subprocess import get_version, run
 
 # unpaper documentation:
 # https://github.com/Flameeyes/unpaper/blob/main/doc/basic-concepts.md
-
-
-if sys.version_info >= (3, 10):
-    from tempfile import TemporaryDirectory
-else:
-    from tempfile import TemporaryDirectory as _TemporaryDirectory
-
-    class TemporaryDirectory(_TemporaryDirectory):
-        """Shim to consume ignore_cleanup_errors kwarg on Python 3.9 and older.
-
-        The argument is consumed without action. If users are getting errors related
-        to temporary file cleanup, they should upgrade to Python 3.10 which properly
-        cleans up temporary directories on Windows.
-
-        See: https://github.com/python/cpython/pull/24793
-        """
-
-        def __init__(self, ignore_cleanup_errors=False, **kwargs):
-            super().__init__(**kwargs)
-
-    del _TemporaryDirectory
 
 
 UNPAPER_IMAGE_PIXEL_LIMIT = 256 * 1024 * 1024

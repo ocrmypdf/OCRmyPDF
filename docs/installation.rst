@@ -452,7 +452,7 @@ Cygwin64
 
 First install the the following prerequisite Cygwin packages using ``setup-x86_64.exe``::
 
-    python39 (or later)
+    python310 (or later)
     python3?-devel
     python3?-pip
     python3?-lxml
@@ -550,7 +550,7 @@ manager. ``pip`` cannot provide them.
 
 The following versions are required:
 
--  Python 3.9 or newer
+-  Python 3.10 or newer
 -  Ghostscript 9.55 or newer
 -  Tesseract 4.1.1 or newer
 -  jbig2enc 0.29 or newer
@@ -586,7 +586,7 @@ unfortunately, the ``pip install`` command cannot satisfy all of them.
 Installing HEAD revision from sources
 =====================================
 
-If you have ``git`` and Python 3.9 or newer installed, you can install
+If you have ``git`` and Python 3.10 or newer installed, you can install
 from source. When the ``pip`` installer runs, it will alert you if
 dependencies are missing.
 
