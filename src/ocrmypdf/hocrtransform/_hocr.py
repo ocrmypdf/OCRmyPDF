@@ -70,7 +70,7 @@ class HocrTransform:
         re.VERBOSE,
     )
 
-    def __init__(self, *, hocr_filename: str | Path, dpi: float):
+    def __init__(self, *, hocr_filename: str | Path, dpi: float, debug: bool = False):
         """Initialize the HocrTransform object."""
         self.dpi = dpi
         self.hocr = ElementTree.parse(os.fspath(hocr_filename))
@@ -91,12 +91,12 @@ class HocrTransform:
             # Stop after first div that has page coordinates
             break
         self.render_options = DebugRenderOptions(
-            render_baseline=False,
-            render_triangle=False,
-            render_line_bbox=False,
-            render_word_bbox=False,
-            render_paragraph_bbox=False,
-            render_space_bbox=False,
+            render_baseline=debug,
+            render_triangle=debug,
+            render_line_bbox=debug,
+            render_word_bbox=debug,
+            render_paragraph_bbox=debug,
+            render_space_bbox=debug,
         )
 
     def _get_element_text(self, element: Element):
@@ -148,7 +148,7 @@ class HocrTransform:
         out_filename: Path,
         image_filename: Path | None = None,
         fontname: str = "Helvetica",
-        invisible_text: bool = False,
+        invisible_text: bool = True,
     ) -> None:
         """Creates a PDF file with an image superimposed on top of the text.
 
@@ -189,13 +189,16 @@ class HocrTransform:
                     in {'ocr_header', 'ocr_line', 'ocr_textfloat'}
                 ):
                     found_lines = True
-                    direction = (
-                        TextDirection.RTL
-                        if par.attrib.get('dir', 'ltr') == 'rtl'
-                        else TextDirection.LTR
-                    )
+                    direction = self._get_text_direction(par)
+                    inject_word_breaks = self._get_inject_word_breaks(par)
                     self._do_line(
-                        canvas, line, "ocrx_word", fontname, invisible_text, direction
+                        canvas,
+                        line,
+                        "ocrx_word",
+                        fontname,
+                        invisible_text,
+                        direction,
+                        inject_word_breaks,
                     )
 
             if not found_lines:
@@ -208,6 +211,7 @@ class HocrTransform:
                     fontname,
                     invisible_text,
                     TextDirection.LTR,
+                    True,
                 )
         # put the image on the page, scaled to fill the page
         if image_filename is not None:
@@ -217,6 +221,30 @@ class HocrTransform:
 
         # finish up the page and save it
         canvas.save(out_filename)
+
+    def _get_text_direction(self, par):
+        """Get the text direction of the paragraph.
+
+        Arabic, Hebrew, Persian, are right-to-left languages.
+        """
+        return (
+            TextDirection.RTL
+            if par.attrib.get('dir', 'ltr') == 'rtl'
+            else TextDirection.LTR
+        )
+
+    def _get_inject_word_breaks(self, par):
+        """Determine whether word breaks should be injected.
+
+        In Chinese, Japanese, and Korean, word breaks are not injected, because
+        words are usually one or two characters and separators are usually explicit.
+        In all other languages, we inject word breaks to help word segmentation.
+        """
+        lang = par.attrib.get('lang', '')
+        log.debug(lang)
+        if lang in {'chi_sim', 'chi_tra', 'jpn', 'kor'}:
+            return False
+        return True
 
     @classmethod
     def polyval(cls, poly, x):  # pragma: no cover
@@ -231,6 +259,7 @@ class HocrTransform:
         fontname: str,
         invisible_text: bool,
         text_direction: TextDirection,
+        inject_word_breaks: bool,
     ):
         """Render the text for a given line.
 
@@ -292,6 +321,7 @@ class HocrTransform:
                     elem,
                     next_elem,
                     text_direction,
+                    inject_word_breaks,
                 )
             canvas.do.draw_text(text)
 
@@ -305,6 +335,7 @@ class HocrTransform:
         elem: Element,
         next_elem: Element | None,
         text_direction: TextDirection,
+        inject_word_breaks: bool,
     ):
         """Render the text for a single word."""
         if elem is None:
@@ -339,6 +370,8 @@ class HocrTransform:
         # PDF viewers identify the word break, and horizontally scaling it to
         # occupy the space the between the words helps the PDF viewer
         # avoid combiningthewordstogether.
+        if not inject_word_breaks:
+            return
         next_box = line_matrix.inverse().transform(hocr_next_box)
         if text_direction == TextDirection.LTR:
             space_box = Rectangle(box.urx, box.lly, next_box.llx, next_box.ury)

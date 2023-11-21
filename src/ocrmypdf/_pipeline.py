@@ -743,11 +743,13 @@ def render_hocr_page(hocr: Path, page_context: PageContext) -> Path:
     dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
     debug_mode = options.pdf_renderer == 'hocrdebug'
 
-    hocrtransform = HocrTransform(hocr_filename=hocr, dpi=dpi.to_scalar())  # square
-    hocrtransform.to_pdf(
+    HocrTransform(
+        hocr_filename=hocr,
+        dpi=dpi.to_scalar(),  # square
+        debug=debug_mode,
+    ).to_pdf(
         out_filename=output_file,
         image_filename=None,
-        invisible_text=True if not debug_mode else False,
     )
     return output_file
 
