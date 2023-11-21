@@ -170,18 +170,15 @@ class HocrTransform:
         # create the PDF file
         # page size in points (1/72 in.)
         canvas = Canvas(page_size=(self.width, self.height))
-        with canvas.do.save_state():
-            page_matrix = (
-                Matrix()
-                .translated(0, self.height)
-                .scaled(1, -1)
-                .scaled(INCH / self.dpi, INCH / self.dpi)
-            )
-            canvas.do.cm(page_matrix)
-            log.debug(page_matrix)
-
+        page_matrix = (
+            Matrix()
+            .translated(0, self.height)
+            .scaled(1, -1)
+            .scaled(INCH / self.dpi, INCH / self.dpi)
+        )
+        log.debug(page_matrix)
+        with canvas.do.save_state(cm=page_matrix):
             self._debug_draw_paragraph_boxes(canvas)
-
             found_lines = False
             for par in self.hocr.iterfind(self._child_xpath('p', 'ocr_par')):
                 for line in (
@@ -260,15 +257,14 @@ class HocrTransform:
 
         # Setup a new coordinate system on the line box's intercept and rotated by
         # its slope.
-        with canvas.do.save_state():
-            line_matrix = (
-                Matrix()
-                .translated(*bottom_left_corner)
-                .translated(0, intercept)
-                .rotated(angle / pi * 180)
-            )
-            canvas.do.cm(line_matrix)
-            log.debug(line_matrix)
+        line_matrix = (
+            Matrix()
+            .translated(*bottom_left_corner)
+            .translated(0, intercept)
+            .rotated(angle / pi * 180)
+        )
+        log.debug(line_matrix)
+        with canvas.do.save_state(cm=line_matrix):
             text = PikepdfText(direction=text_direction)
 
             # Don't allow the font to break out of the bounding box. Division by

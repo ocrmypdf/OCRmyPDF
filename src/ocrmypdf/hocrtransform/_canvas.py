@@ -365,9 +365,16 @@ class _PikepdfCanvasAccessor:
         return self
 
     @contextmanager
-    def save_state(self):
-        """Save the graphics state and restore it on exit."""
+    def save_state(self, *, cm: Matrix | None = None):
+        """Save the graphics state and restore it on exit.
+
+        Optionally, concatenate a transformation matrix. Implements
+        the commonly used pattern of:
+            q cm ... Q
+        """
         self.push()
+        if cm is not None:
+            self.cm(cm)
         yield self
         self.pop()
 
