@@ -170,7 +170,7 @@ class HocrTransform:
         # create the PDF file
         # page size in points (1/72 in.)
         canvas = Canvas(page_size=(self.width, self.height))
-        with canvas.do.enter_context():
+        with canvas.do.save_state():
             page_matrix = (
                 Matrix()
                 .translated(0, self.height)
@@ -260,7 +260,7 @@ class HocrTransform:
 
         # Setup a new coordinate system on the line box's intercept and rotated by
         # its slope.
-        with canvas.do.enter_context():
+        with canvas.do.save_state():
             line_matrix = (
                 Matrix()
                 .translated(*bottom_left_corner)
@@ -362,7 +362,7 @@ class HocrTransform:
         """Draw boxes around paragraphs in the document."""
         if not self.render_options.render_paragraph_bbox:  # pragma: no cover
             return
-        with canvas.do.enter_context():
+        with canvas.do.save_state():
             # draw box around paragraph
             canvas.do.stroke_color(color).line_width(0.1)
             for elem in self.hocr.iterfind(self._child_xpath('p', 'ocr_par')):
@@ -380,7 +380,7 @@ class HocrTransform:
         """Render the bounding box of a text line."""
         if not self.render_options.render_line_bbox:  # pragma: no cover
             return
-        with canvas.do.enter_context():
+        with canvas.do.save_state():
             canvas.do.stroke_color(color).line_width(0.15).rect(
                 line_box.llx, line_box.lly, line_box.width, line_box.height, fill=0
             )
@@ -391,7 +391,7 @@ class HocrTransform:
         """Render a triangle that conveys word height and drawing direction."""
         if not self.render_options.render_triangle:  # pragma: no cover
             return
-        with canvas.do.enter_context():
+        with canvas.do.save_state():
             canvas.do.stroke_color(color).line_width(line_width).line(
                 box.llx, box.lly, box.urx, box.lly
             ).line(box.urx, box.lly, box.llx, box.ury).line(
@@ -404,7 +404,7 @@ class HocrTransform:
         """Render a box depicting the word."""
         if not self.render_options.render_word_bbox:  # pragma: no cover
             return
-        with canvas.do.enter_context():
+        with canvas.do.save_state():
             canvas.do.stroke_color(color).line_width(line_width).rect(
                 box.llx, box.lly, box.width, box.height, fill=0
             )
@@ -415,7 +415,7 @@ class HocrTransform:
         """Render a box depicting the space between two words."""
         if not self.render_options.render_space_bbox:  # pragma: no cover
             return
-        with canvas.do.enter_context():
+        with canvas.do.save_state():
             canvas.do.fill_color(color).line_width(line_width).rect(
                 box.llx, box.lly, box.width, box.height, fill=1
             )
@@ -431,7 +431,7 @@ class HocrTransform:
         """Render the text baseline."""
         if not self.render_options.render_baseline:
             return
-        with canvas.do.enter_context():
+        with canvas.do.save_state():
             canvas.do.stroke_color(color).line_width(line_width).line(
                 line_box.llx,
                 baseline_lly,

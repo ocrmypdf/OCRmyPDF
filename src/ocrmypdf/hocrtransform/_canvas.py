@@ -22,6 +22,8 @@ from pikepdf import (
 )
 from PIL import Image
 
+from .color import Color
+
 log = logging.getLogger(__name__)
 
 GLYPHLESS_FONT_NAME = 'pdf.ttf'
@@ -114,37 +116,43 @@ def register_glyphlessfont(pdf: Pdf):
 
 
 class ContentStreamBuilder:
-    def __init__(self, instructions=None):
-        self._instructions: list[ContentStreamInstruction] = instructions or []
+    def __init__(self):
+        self._stream = b""
+
+    def _append(self, inst: ContentStreamInstruction):
+        self._stream += unparse_content_stream([inst]) + b"\n"
+
+    def extend(self, other: ContentStreamBuilder):
+        self._stream += other._stream
 
     def push(self):
         """Save the graphics state."""
         inst = ContentStreamInstruction([], Operator("q"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def pop(self):
         """Restore the graphics state."""
         inst = ContentStreamInstruction([], Operator("Q"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def cm(self, matrix: Matrix):
         """Concatenate matrix."""
         inst = ContentStreamInstruction(matrix.shorthand, Operator("cm"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def begin_text(self):
         """Begin text object."""
         inst = ContentStreamInstruction([], Operator("BT"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def end_text(self):
         """End text object."""
         inst = ContentStreamInstruction([], Operator("ET"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def begin_marked_content_proplist(self, mctype: Name, mcid: int):
@@ -152,92 +160,92 @@ class ContentStreamBuilder:
         inst = ContentStreamInstruction(
             [mctype, Dictionary(MCID=mcid)], Operator("BDC")
         )
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def begin_marked_content(self, mctype: Name):
         """Begin marked content sequence."""
         inst = ContentStreamInstruction([mctype], Operator("BMC"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def end_marked_content(self):
         """End marked content sequence."""
         inst = ContentStreamInstruction([], Operator("EMC"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def set_text_font(self, font: Name, size: int):
         """Set text font and size."""
         inst = ContentStreamInstruction([font, size], Operator("Tf"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def set_text_matrix(self, matrix: Matrix):
         """Set text matrix."""
         inst = ContentStreamInstruction(matrix.shorthand, Operator("Tm"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def set_text_rendering(self, mode: int):
         """Set text rendering mode."""
         inst = ContentStreamInstruction([mode], Operator("Tr"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def set_text_horizontal_scaling(self, scale: float):
         """Set text horizontal scaling."""
         inst = ContentStreamInstruction([scale], Operator("Tz"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def show_text(self, text: str):
         """Show text."""
         encoded = text.encode("utf-16be")
         inst = ContentStreamInstruction([[encoded]], Operator("TJ"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def move_cursor(self, dx, dy):
         """Move cursor."""
         inst = ContentStreamInstruction([dx, dy], Operator("Td"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def stroke_and_close(self):
         """Stroke and close path."""
         inst = ContentStreamInstruction([], Operator("s"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def fill(self):
         """Stroke and close path."""
         inst = ContentStreamInstruction([], Operator("f"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def append_rectangle(self, x: float, y: float, w: float, h: float):
         """Append rectangle to path."""
         inst = ContentStreamInstruction([x, y, w, h], Operator("re"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def set_stroke_color(self, r: float, g: float, b: float):
         """Set RGB stroke color."""
         inst = ContentStreamInstruction([r, g, b], Operator("RG"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def set_fill_color(self, r: float, g: float, b: float):
         """Set RGB fill color."""
         inst = ContentStreamInstruction([r, g, b], Operator("rg"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def set_line_width(self, width):
         """Set line width."""
         inst = ContentStreamInstruction([width], Operator("w"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def line(self, x1: float, y1: float, x2: float, y2: float):
@@ -246,7 +254,8 @@ class ContentStreamBuilder:
             ContentStreamInstruction([x1, y1], Operator("m")),
             ContentStreamInstruction([x2, y2], Operator("l")),
         ]
-        self._instructions.extend(insts)
+        self._append(insts[0])
+        self._append(insts[1])
         return self
 
     def set_dashes(self, array=None, phase=0):
@@ -257,16 +266,16 @@ class ContentStreamBuilder:
             array = (array, phase)
             phase = 0
         inst = ContentStreamInstruction([array, phase], Operator("d"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def draw_form_xobject(self, name: Name):
         inst = ContentStreamInstruction([name], Operator("Do"))
-        self._instructions.append(inst)
+        self._append(inst)
         return self
 
     def build(self):
-        return self._instructions
+        return self._stream
 
 
 @dataclass
@@ -275,32 +284,39 @@ class LoadedImage:
     image: Image.Image
 
 
-class PikepdfCanvasAccessor:
+class _PikepdfCanvasAccessor:
+    """Support class for drawing on a pikepdf canvas."""
+
     def __init__(self, cs: ContentStreamBuilder, images=None):
         self._cs = cs
         self._images = images if images is not None else []
         self._stack_depth = 0
 
-    def stroke_color(self, color):
+    def stroke_color(self, color: Color):
+        """Set stroke color."""
         r, g, b = color.red, color.green, color.blue
         self._cs.set_stroke_color(r, g, b)
         return self
 
-    def fill_color(self, color):
+    def fill_color(self, color: Color):
+        """Set fill color."""
         r, g, b = color.red, color.green, color.blue
         self._cs.set_fill_color(r, g, b)
         return self
 
     def line_width(self, width):
+        """Set line width."""
         self._cs.set_line_width(width)
         return self
 
     def line(self, x1, y1, x2, y2):
+        """Draw line from (x1,y1) to (x2,y2)."""
         self._cs.line(x1, y1, x2, y2)
         self._cs.stroke_and_close()
         return self
 
     def rect(self, x, y, w, h, fill):
+        """Draw optionally filled rectangle at (x,y) with width w and height h."""
         self._cs.append_rectangle(x, y, w, h)
         if fill:
             self._cs.fill()
@@ -309,7 +325,8 @@ class PikepdfCanvasAccessor:
         return self
 
     def draw_image(self, image: Path | str | Image.Image, x, y, width, height):
-        with self.enter_context():
+        """Draw image at (x,y) with width w and height h."""
+        with self.save_state():
             self.cm(Matrix(width, 0, 0, height, x, y))
             if isinstance(image, (Path, str)):
                 image = Image.open(image)
@@ -322,59 +339,71 @@ class PikepdfCanvasAccessor:
             li = LoadedImage(name, image)
             self._images.append(li)
             self._cs.draw_form_xobject(name)
+        return self
 
     def draw_text(self, text: PikepdfText):
-        self._cs._instructions.extend(text._cs.build())
-        self._end_text()
-
-    def _end_text(self):
+        """Draw text object."""
+        self._cs.extend(text._cs)
         self._cs.end_text()
+        return self
 
     def dashes(self, *args):
+        """Set dashes."""
         self._cs.set_dashes(*args)
         return self
 
     def push(self):
+        """Save the graphics state."""
         self._cs.push()
         self._stack_depth += 1
         return self
 
     def pop(self):
+        """Restore the graphics state."""
         self._cs.pop()
         self._stack_depth -= 1
         return self
 
     @contextmanager
-    def enter_context(self):
+    def save_state(self):
         """Save the graphics state and restore it on exit."""
         self.push()
         yield self
         self.pop()
 
-    def cm(self, matrix):
+    def cm(self, matrix: Matrix):
+        """Concatenate a new transformation matrix to the current matrix."""
         self._cs.cm(matrix)
         return self
 
 
 class PikepdfCanvas:
+    """Canvas for rendering PDFs with pikepdf.
+
+    All drawing is done on a pikepdf canvas using the .do property.
+    This interface manages the graphics state of the canvas and saves it.
+    """
+
     def __init__(self, *, page_size: tuple[int | float, int | float]):
         self.page_size = page_size
         self._pdf = Pdf.new()
         self._page = self._pdf.add_blank_page(page_size=page_size)
         self._cs = ContentStreamBuilder()
         self._images: list[LoadedImage] = []
-        self._accessor = PikepdfCanvasAccessor(self._cs, self._images)
+        self._accessor = _PikepdfCanvasAccessor(self._cs, self._images)
         self._stack_depth = 0
         self._font_name = Name("/f-0-0")
         self.do.push()
 
     @property
-    def do(self) -> PikepdfCanvasAccessor:
+    def do(self) -> _PikepdfCanvasAccessor:
+        """Do operations on the current graphics state."""
         return self._accessor
 
-    def string_width(self, text, fontname, fontsize):
+    def string_width(self, s: str, fontname, fontsize):
+        """Estimate the width of a text string when rendered with the given font."""
         # NFKC: split ligatures, combine diacritics
-        return len(unicodedata.normalize("NFKC", text)) * (fontsize / CHAR_ASPECT)
+        return len(unicodedata.normalize("NFKC", s)) * (fontsize / CHAR_ASPECT)
 
     def _save_image(self, li: LoadedImage):
         return self._pdf.make_stream(
@@ -390,15 +419,14 @@ class PikepdfCanvas:
         )
 
     def save(self, output_file: Path):
+        """Save the page to the output file."""
         self.do.pop()
         if self._stack_depth != 0:
             log.warning(
                 "Graphics state stack is not empty when page saved - "
                 "rendering may be incorrect"
             )
-        self._page.Contents = self._pdf.make_stream(
-            unparse_content_stream(self._cs.build())
-        )
+        self._page.Contents = self._pdf.make_stream(self._cs.build())
         self._page.MediaBox = [0, 0, *self.page_size]
         self._page.Resources = Dictionary(Font=Dictionary(), XObject=Dictionary())
         self._page.Resources.Font[self._font_name] = register_glyphlessfont(self._pdf)
@@ -408,6 +436,8 @@ class PikepdfCanvas:
 
 
 class PikepdfText:
+    """Text object for rendering text on a pikepdf canvas."""
+
     def __init__(self, x=0, y=0, direction=TextDirection.LTR):
         self._cs = ContentStreamBuilder()
         self._cs.begin_text()
