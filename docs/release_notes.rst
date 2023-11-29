@@ -28,6 +28,12 @@ tagged yet.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v15.4.4
+=======
+
+-  Fixed documentation for installing Ghostscript on Windows. :issue:`1198`
+-  Added warning message about security issue in older versions of Ghostscript.
+
 v15.4.3
 =======
 

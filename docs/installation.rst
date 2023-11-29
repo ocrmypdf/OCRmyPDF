@@ -391,15 +391,17 @@ package manager:
 
 * ``winget install -e --id Python.Python.3.11``
 * ``winget install -e --id UB-Mannheim.TesseractOCR``
-* ``winget install -e --id ArtifexSoftware.GhostScript``
 
+You will need to install Ghostscript manually, `since it does not support automated
+installs anymore <https://artifex.com/news/ghostscript-10.01.0-disabling-silent-install-option>`_.
+
+* `Ghostscript download page <https://ghostscript.com/releases/gsdnld.html>`_.`
 
 (Or alternately, using the `Chocolatey <https://chocolatey.org/>`_ package manager, install
 the following when running in an Administrator command prompt):
 
 * ``choco install python3``
 * ``choco install --pre tesseract``
-* ``choco install ghostscript``
 * ``choco install pngquant`` (optional)
 
 Either set of commands will install the required software. At the mmoment there is no

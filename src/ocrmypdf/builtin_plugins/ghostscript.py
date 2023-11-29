@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import logging
 
+from packaging.version import Version
+
 from ocrmypdf import hookimpl
 from ocrmypdf._exec import ghostscript
 from ocrmypdf.exceptions import MissingDependencyError
@@ -58,8 +60,15 @@ def check_options(options):
     if gs_version in BLACKLISTED_GS_VERSIONS:
         raise MissingDependencyError(
             f"Ghostscript {gs_version} contains serious regressions and is not "
-            "supported. Please upgrade to a newer version, or downgrade to the "
-            "previous version."
+            "supported. Please upgrade to a newer version."
+        )
+    if gs_version < Version('10.02.0'):
+        log.warning(
+            f"The installed version of Ghostscript {gs_version}, contains a remote "
+            "code execution security vulnerability. Please upgrade to a newer "
+            "version. For details see CVE-2023-43115. The issue is not known to "
+            "affect OCRmyPDF or processing PDFs with Ghostscript, but upgrading "
+            "Ghostscript is recommended."
         )
 
     if options.output_type == 'pdfa':
