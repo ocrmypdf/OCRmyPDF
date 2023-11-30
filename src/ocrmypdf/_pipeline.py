@@ -992,10 +992,3 @@ def copy_final(
             # get the appropriate umask, ownership, etc.
             with open(output_file, 'w+b') as output_stream:
                 copyfileobj(input_stream, output_stream)
-            # Attempt to copy file attributes from input to output
-            if original_file:
-                with suppress(OSError):
-                    # Copy original file's permissions, ownership, etc. if possible
-                    copystat(original_file, output_file)
-                    # Set output file's modification time to now
-                    Path(output_file).touch(exist_ok=True)
