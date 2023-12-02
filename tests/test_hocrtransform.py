@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import re
-import shutil
 from io import StringIO
 
 import pytest
