@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 import unicodedata
+import zlib
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
@@ -26,93 +27,119 @@ from .color import Color
 
 log = logging.getLogger(__name__)
 
-GLYPHLESS_FONT_NAME = 'pdf.ttf'
-
-GLYPHLESS_FONT = (package_files('ocrmypdf.data') / GLYPHLESS_FONT_NAME).read_bytes()
-CHAR_ASPECT = 2
-
 
 class TextDirection(Enum):
-    LTR = 1
-    RTL = 2
+    LTR = 1  # Left to right: the default
+    RTL = 2  # Right to left: Arabic, Hebrew, Persian
 
 
-def register_glyphlessfont(pdf: Pdf):
-    """Register the glyphless font.
+class Font:
+    def text_width(self, text: str, fontsize: float) -> int:
+        """Estimate the width of a text string when rendered with the given font."""
+        raise NotImplementedError
 
-    Create several data structures in the Pdf to describe the font. While it create
-    the data, a reference should be set in at least one page's /Resources dictionary
-    to retain the font in the output PDF and ensure it is usable on that page.
-    """
-    PLACEHOLDER = Name.Placeholder
+    def register(self, pdf: Pdf):
+        """Register the font.
 
-    basefont = pdf.make_indirect(
-        Dictionary(
-            BaseFont=Name.GlyphLessFont,
-            DescendantFonts=[PLACEHOLDER],
-            Encoding=Name("/Identity-H"),
-            Subtype=Name.Type0,
-            ToUnicode=PLACEHOLDER,
-            Type=Name.Font,
+        Create several data structures in the Pdf to describe the font. While it create
+        the data, a reference should be set in at least one page's /Resources dictionary
+        to retain the font in the output PDF and ensure it is usable on that page.
+        """
+        raise NotImplementedError
+
+
+class GlyphlessFont(Font):
+    CID_TO_GID_DATA = zlib.compress(b"\x00\x01" * 65536)
+    GLYPHLESS_FONT_NAME = 'pdf.ttf'
+    GLYPHLESS_FONT = (package_files('ocrmypdf.data') / GLYPHLESS_FONT_NAME).read_bytes()
+    CHAR_ASPECT = 2
+
+    def __init__(self):
+        pass
+
+    def text_width(self, text: str, fontsize: float) -> int:
+        """Estimate the width of a text string when rendered with the given font."""
+        # NFKC: split ligatures, combine diacritics
+        return len(unicodedata.normalize("NFKC", text)) * (fontsize / self.CHAR_ASPECT)
+
+    def register(self, pdf: Pdf):
+        """Register the glyphless font.
+
+        Create several data structures in the Pdf to describe the font. While it create
+        the data, a reference should be set in at least one page's /Resources dictionary
+        to retain the font in the output PDF and ensure it is usable on that page.
+        """
+        PLACEHOLDER = Name.Placeholder
+
+        basefont = pdf.make_indirect(
+            Dictionary(
+                BaseFont=Name.GlyphLessFont,
+                DescendantFonts=[PLACEHOLDER],
+                Encoding=Name("/Identity-H"),
+                Subtype=Name.Type0,
+                ToUnicode=PLACEHOLDER,
+                Type=Name.Font,
+            )
         )
-    )
-    cid_font_type2 = pdf.make_indirect(
-        Dictionary(
-            BaseFont=Name.GlyphLessFont,
-            CIDToGIDMap=PLACEHOLDER,
-            CIDSystemInfo=Dictionary(
-                Ordering="Identity",
-                Registry="Adobe",
-                Supplement=0,
-            ),
-            FontDescriptor=PLACEHOLDER,
-            Subtype=Name.CIDFontType2,
-            Type=Name.Font,
-            DW=1000 // CHAR_ASPECT,
+        cid_font_type2 = pdf.make_indirect(
+            Dictionary(
+                BaseFont=Name.GlyphLessFont,
+                CIDToGIDMap=PLACEHOLDER,
+                CIDSystemInfo=Dictionary(
+                    Ordering="Identity",
+                    Registry="Adobe",
+                    Supplement=0,
+                ),
+                FontDescriptor=PLACEHOLDER,
+                Subtype=Name.CIDFontType2,
+                Type=Name.Font,
+                DW=1000 // self.CHAR_ASPECT,
+            )
         )
-    )
-    basefont.DescendantFonts = [cid_font_type2]
-    cid_font_type2.CIDToGIDMap = pdf.make_stream(b"\x00\x01" * 65536)
-    basefont.ToUnicode = pdf.make_stream(
-        b"/CIDInit /ProcSet findresource begin\n"
-        b"12 dict begin\n"
-        b"begincmap\n"
-        b"/CIDSystemInfo\n"
-        b"<<\n"
-        b"  /Registry (Adobe)\n"
-        b"  /Ordering (UCS)\n"
-        b"  /Supplement 0\n"
-        b">> def\n"
-        b"/CMapName /Adobe-Identify-UCS def\n"
-        b"/CMapType 2 def\n"
-        b"1 begincodespacerange\n"
-        b"<0000> <FFFF>\n"
-        b"endcodespacerange\n"
-        b"1 beginbfrange\n"
-        b"<0000> <FFFF> <0000>\n"
-        b"endbfrange\n"
-        b"endcmap\n"
-        b"CMapName currentdict /CMap defineresource pop\n"
-        b"end\n"
-        b"end\n"
-    )
-    font_descriptor = pdf.make_indirect(
-        Dictionary(
-            Ascent=1000,
-            CapHeight=1000,
-            Descent=-1,
-            Flags=5,  # Fixed pitch and symbolic
-            FontBBox=[0, 0, 1000 // CHAR_ASPECT, 1000],
-            FontFile2=PLACEHOLDER,
-            FontName=Name.GlyphLessFont,
-            ItalicAngle=0,
-            StemV=80,
-            Type=Name.FontDescriptor,
+        basefont.DescendantFonts = [cid_font_type2]
+        cid_font_type2.CIDToGIDMap = pdf.make_stream(
+            self.CID_TO_GID_DATA, Filter=Name.FlateDecode
         )
-    )
-    font_descriptor.FontFile2 = pdf.make_stream(GLYPHLESS_FONT)
-    cid_font_type2.FontDescriptor = font_descriptor
-    return basefont
+        basefont.ToUnicode = pdf.make_stream(
+            b"/CIDInit /ProcSet findresource begin\n"
+            b"12 dict begin\n"
+            b"begincmap\n"
+            b"/CIDSystemInfo\n"
+            b"<<\n"
+            b"  /Registry (Adobe)\n"
+            b"  /Ordering (UCS)\n"
+            b"  /Supplement 0\n"
+            b">> def\n"
+            b"/CMapName /Adobe-Identify-UCS def\n"
+            b"/CMapType 2 def\n"
+            b"1 begincodespacerange\n"
+            b"<0000> <FFFF>\n"
+            b"endcodespacerange\n"
+            b"1 beginbfrange\n"
+            b"<0000> <FFFF> <0000>\n"
+            b"endbfrange\n"
+            b"endcmap\n"
+            b"CMapName currentdict /CMap defineresource pop\n"
+            b"end\n"
+            b"end\n"
+        )
+        font_descriptor = pdf.make_indirect(
+            Dictionary(
+                Ascent=1000,
+                CapHeight=1000,
+                Descent=-1,
+                Flags=5,  # Fixed pitch and symbolic
+                FontBBox=[0, 0, 1000 // self.CHAR_ASPECT, 1000],
+                FontFile2=PLACEHOLDER,
+                FontName=Name.GlyphLessFont,
+                ItalicAngle=0,
+                StemV=80,
+                Type=Name.FontDescriptor,
+            )
+        )
+        font_descriptor.FontFile2 = pdf.make_stream(self.GLYPHLESS_FONT)
+        cid_font_type2.FontDescriptor = font_descriptor
+        return basefont
 
 
 class ContentStreamBuilder:
@@ -326,8 +353,7 @@ class _PikepdfCanvasAccessor:
 
     def draw_image(self, image: Path | str | Image.Image, x, y, width, height):
         """Draw image at (x,y) with width w and height h."""
-        with self.save_state():
-            self.cm(Matrix(width, 0, 0, height, x, y))
+        with self.save_state(cm=Matrix(width, 0, 0, height, x, y)):
             if isinstance(image, (Path, str)):
                 image = Image.open(image)
             image.load()
@@ -395,22 +421,21 @@ class PikepdfCanvas:
         self.page_size = page_size
         self._pdf = Pdf.new()
         self._page = self._pdf.add_blank_page(page_size=page_size)
+        self._page.Resources = Dictionary(Font=Dictionary(), XObject=Dictionary())
         self._cs = ContentStreamBuilder()
         self._images: list[LoadedImage] = []
         self._accessor = _PikepdfCanvasAccessor(self._cs, self._images)
         self._stack_depth = 0
-        self._font_name = Name("/f-0-0")
         self.do.push()
+
+    def add_font(self, resource_name: Name, font: Font):
+        """Add a font to the page."""
+        self._page.Resources.Font[resource_name] = font.register(self._pdf)
 
     @property
     def do(self) -> _PikepdfCanvasAccessor:
         """Do operations on the current graphics state."""
         return self._accessor
-
-    def string_width(self, s: str, fontname, fontsize):
-        """Estimate the width of a text string when rendered with the given font."""
-        # NFKC: split ligatures, combine diacritics
-        return len(unicodedata.normalize("NFKC", s)) * (fontsize / CHAR_ASPECT)
 
     def _save_image(self, li: LoadedImage):
         return self._pdf.make_stream(
@@ -434,9 +459,6 @@ class PikepdfCanvas:
                 "rendering may be incorrect"
             )
         self._page.Contents = self._pdf.make_stream(self._cs.build())
-        self._page.MediaBox = [0, 0, *self.page_size]
-        self._page.Resources = Dictionary(Font=Dictionary(), XObject=Dictionary())
-        self._page.Resources.Font[self._font_name] = register_glyphlessfont(self._pdf)
         for li in self._images:
             self._page.Resources.XObject[li.name] = self._save_image(li)
         self._pdf.save(output_file)
@@ -450,8 +472,8 @@ class PikepdfText:
         self._cs.begin_text()
         self._direction = direction
 
-    def font(self, font, size):
-        self._cs.set_text_font(Name("/f-0-0"), size)
+    def font(self, font: Name, size: float):
+        self._cs.set_text_font(font, size)
         return self
 
     def render_mode(self, mode):

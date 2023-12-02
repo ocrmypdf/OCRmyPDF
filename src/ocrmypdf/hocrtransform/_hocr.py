@@ -17,10 +17,15 @@ from math import atan, cos, pi
 from pathlib import Path
 from xml.etree import ElementTree
 
-from pikepdf import Matrix, Rectangle
+from pikepdf import Matrix, Name, Rectangle
 
+from ocrmypdf.hocrtransform._canvas import (
+    Font,
+    GlyphlessFont,
+    PikepdfText,
+    TextDirection,
+)
 from ocrmypdf.hocrtransform._canvas import PikepdfCanvas as Canvas
-from ocrmypdf.hocrtransform._canvas import PikepdfText, TextDirection
 from ocrmypdf.hocrtransform.color import (
     BLACK,
     BLUE,
@@ -70,10 +75,20 @@ class HocrTransform:
         re.VERBOSE,
     )
 
-    def __init__(self, *, hocr_filename: str | Path, dpi: float, debug: bool = False):
+    def __init__(
+        self,
+        *,
+        hocr_filename: str | Path,
+        dpi: float,
+        debug: bool = False,
+        fontname: Name = Name("/f-0-0"),
+        font: Font = GlyphlessFont(),
+    ):
         """Initialize the HocrTransform object."""
         self.dpi = dpi
         self.hocr = ElementTree.parse(os.fspath(hocr_filename))
+        self._fontname = fontname
+        self._font = font
 
         # if the hOCR file has a namespace, ElementTree requires its use to
         # find elements
@@ -147,7 +162,6 @@ class HocrTransform:
         *,
         out_filename: Path,
         image_filename: Path | None = None,
-        fontname: str = "Helvetica",
         invisible_text: bool = True,
     ) -> None:
         """Creates a PDF file with an image superimposed on top of the text.
@@ -162,7 +176,6 @@ class HocrTransform:
             out_filename: Path of PDF to write.
             image_filename: Image to use for this file. If omitted, the OCR text
                 is shown.
-            fontname: Name of font to use.
             invisible_text: If True, text is rendered invisible so that is
                 selectable but never drawn. If False, text is visible and may
                 be seen if the image is skipped or deleted in Acrobat.
@@ -170,6 +183,7 @@ class HocrTransform:
         # create the PDF file
         # page size in points (1/72 in.)
         canvas = Canvas(page_size=(self.width, self.height))
+        canvas.add_font(self._fontname, self._font)
         page_matrix = (
             Matrix()
             .translated(0, self.height)
@@ -195,7 +209,6 @@ class HocrTransform:
                         canvas,
                         line,
                         "ocrx_word",
-                        fontname,
                         invisible_text,
                         direction,
                         inject_word_breaks,
@@ -208,7 +221,6 @@ class HocrTransform:
                     canvas,
                     root,
                     "ocrx_word",
-                    fontname,
                     invisible_text,
                     TextDirection.LTR,
                     True,
@@ -256,7 +268,6 @@ class HocrTransform:
         canvas: Canvas,
         line: Element | None,
         elemclass: str,
-        fontname: str,
         invisible_text: bool,
         text_direction: TextDirection,
         inject_word_breaks: bool,
@@ -301,7 +312,7 @@ class HocrTransform:
             # on a sloped baseline and the edge of the bounding box.
             line_box_height = abs(line_box.height) / cos(angle)
             fontsize = line_box_height + intercept
-            text.font(fontname, fontsize)
+            text.font(self._fontname, fontsize)
             if invisible_text or True:
                 text.render_mode(3)  # Invisible (indicates OCR text)
 
@@ -314,7 +325,6 @@ class HocrTransform:
             for elem, next_elem in pairwise(elements + [None]):
                 self._do_line_word(
                     canvas,
-                    fontname,
                     line_matrix,
                     text,
                     fontsize,
@@ -328,7 +338,6 @@ class HocrTransform:
     def _do_line_word(
         self,
         canvas: Canvas,
-        fontname,
         line_matrix: Matrix,
         text: PikepdfText,
         fontsize: float,
@@ -348,7 +357,7 @@ class HocrTransform:
         if hocr_box is None:
             return
         box = line_matrix.inverse().transform(hocr_box)
-        font_width = canvas.string_width(elemtxt, fontname, fontsize)
+        font_width = self._font.text_width(elemtxt, fontsize)
 
         # Debug sketches
         self._debug_draw_word_triangle(canvas, box)
@@ -379,7 +388,7 @@ class HocrTransform:
             space_box = Rectangle(next_box.urx, box.lly, box.llx, next_box.ury)
         self._debug_draw_space_bbox(canvas, space_box)
         text.text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
-        space_width = canvas.string_width(' ', fontname, fontsize)
+        space_width = self._font.text_width(' ', fontsize)
         if space_width > 0:
             text.horiz_scale(100 * space_box.width / space_width)
             text.show(' ')
