@@ -20,6 +20,8 @@ The most recent release of OCRmyPDF is |OCRmyPDF PyPI|. Any newer versions
 referred to in these notes may exist the main branch but have not been
 tagged yet.
 
+OCRmyPDF typically supports the three most recent Python versions.
+
 .. note::
 
    Attention maintainers: these release notes may be updated with information
@@ -27,6 +29,23 @@ tagged yet.
    official when it's tagged and posted to PyPI.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
+
+v16.0.0rc1
+==========
+
+-  Added OCR text renderer, combined the best ideas of Tesseract's PDF
+   generator and the older hOCR transformer renderer. The result is a hopefully
+   permanent fix for wordssmushedtogetherwithoutspaces issues in extracted text,
+   better registration/position of text on skewed baselines :issue:`1009`,
+   fixes to character output when the German Fraktur script is used :issue:`1191`,
+   proper rendering of right to left languages (Arabic, Hebrew, Persian) :issue:`1157`.
+   Asian languages may still have excessive word breaks compared to expectations.
+   The new renderer is the default; the old sandwich renderer is still available
+   using ``--pdf-renderer sandwich``; the old hOCR renderer is no more.
+-  The ``ocrmypdf.hocrtransform`` API has changed substantially.
+-  Support for Python 3.9 has been dropped. Python 3.10+ is now required.
+-  pikepdf >= 8.8.0 is now required.
+
 
 v15.4.4
 =======
