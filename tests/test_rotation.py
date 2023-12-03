@@ -195,7 +195,7 @@ def test_rotate_deskew_ocr_timeout(resources, outdir):
         '--tesseract-timeout',
         '0',
         '--pdf-renderer',
-        'sandwich',
+        'hocr',
     )
 
     cmp = compare_images_monochrome(
