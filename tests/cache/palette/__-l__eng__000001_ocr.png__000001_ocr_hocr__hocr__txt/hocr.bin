@@ -9,7 +9,7 @@
   <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word ocrp_wconf'/>
  </head>
  <body>
-  <div class='ocr_page' id='page_1' title='image "/tmp/ocrmypdf.io.lkx66mdg/000001_ocr.png"; bbox 0 0 640 682; ppageno 0; scan_res 96 96'>
+  <div class='ocr_page' id='page_1' title='image "/tmp/ocrmypdf.io.y_usu_d1/000001_ocr.png"; bbox 0 0 640 682; ppageno 0; scan_res 96 96'>
    <div class='ocr_carea' id='block_1_1' title="bbox 365 15 429 29">
     <p class='ocr_par' id='par_1_1' lang='eng' title="bbox 365 15 429 29">
      <span class='ocr_caption' id='line_1_1' title="bbox 365 15 429 29; baseline 0 0; x_size 19.238094; x_descenders 5.2380953; x_ascenders 4">
@@ -28,8 +28,8 @@
    <div class='ocr_carea' id='block_1_4' title="bbox 24 451 108 473">
     <p class='ocr_par' id='par_1_3' lang='eng' title="bbox 24 451 108 473">
      <span class='ocr_line' id='line_1_3' title="bbox 24 451 108 473; baseline 0.012 -7; x_size 21; x_descenders 6; x_ascenders 5">
-      <span class='ocrx_word' id='word_1_3' title='bbox 24 451 84 470; x_wconf 91'>Angelu</span>
-      <span class='ocrx_word' id='word_1_4' title='bbox 105 470 108 473; x_wconf 44'>|</span>
+      <span class='ocrx_word' id='word_1_3' title='bbox 24 451 84 470; x_wconf 90'>Angelu</span>
+      <span class='ocrx_word' id='word_1_4' title='bbox 105 470 108 473; x_wconf 47'>|</span>
      </span>
     </p>
    </div>

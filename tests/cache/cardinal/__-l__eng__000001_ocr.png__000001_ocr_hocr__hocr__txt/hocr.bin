@@ -9,7 +9,7 @@
   <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word ocrp_wconf'/>
  </head>
  <body>
-  <div class='ocr_page' id='page_1' title='image "/tmp/ocrmypdf.io.q0nk4qy2/000001_ocr.png"; bbox 0 0 2550 3300; ppageno 0; scan_res 300 300'>
+  <div class='ocr_page' id='page_1' title='image "/tmp/ocrmypdf.io.g296cpyi/000001_ocr.png"; bbox 0 0 2550 3300; ppageno 0; scan_res 300 300'>
    <div class='ocr_carea' id='block_1_1' title="bbox 582 131 1968 303">
     <p class='ocr_par' id='par_1_1' lang='eng' title="bbox 582 131 1968 303">
      <span class='ocr_header' id='line_1_1' title="bbox 882 131 1657 217; baseline 0.001 -17; x_size 85; x_descenders 16; x_ascenders 19">

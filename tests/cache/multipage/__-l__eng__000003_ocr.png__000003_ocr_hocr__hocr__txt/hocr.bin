@@ -9,51 +9,59 @@
   <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word ocrp_wconf'/>
  </head>
  <body>
-  <div class='ocr_page' id='page_1' title='image "/tmp/ocrmypdf.io.ok2cpo6d/000003_ocr.png"; bbox 0 0 2994 1250; ppageno 0; scan_res 300 300'>
-   <div class='ocr_separator' id='block_1_1' title="bbox 138 37 2459 41"></div>
-   <div class='ocr_separator' id='block_1_2' title="bbox 138 187 2459 191"></div>
-   <div class='ocr_separator' id='block_1_3' title="bbox 138 334 2459 338"></div>
-   <div class='ocr_separator' id='block_1_4' title="bbox 138 481 635 485"></div>
-   <div class='ocr_separator' id='block_1_5' title="bbox 884 481 1841 485"></div>
-   <div class='ocr_separator' id='block_1_6' title="bbox 1991 481 2459 485"></div>
-   <div class='ocr_separator' id='block_1_7' title="bbox 138 631 2459 635"></div>
-   <div class='ocr_separator' id='block_1_8' title="bbox 337 778 2178 781"></div>
-   <div class='ocr_separator' id='block_1_9' title="bbox 153 37 156 943"></div>
-   <div class='ocr_separator' id='block_1_10' title="bbox 220 921 2460 932"></div>
-   <div class='ocr_photo' id='block_1_11' title="bbox 30 23 2424 1210"></div>
-   <div class='ocr_carea' id='block_1_12' title="bbox 2515 458 2939 795">
-    <p class='ocr_par' id='par_1_1' lang='eng' title="bbox 2516 458 2746 491">
-     <span class='ocr_line' id='line_1_1' title="bbox 2516 458 2746 491; baseline -0.009 -4; x_size 34; x_descenders 6; x_ascenders 7">
-      <span class='ocrx_word' id='word_1_1' title='bbox 2516 458 2746 491; x_wconf 69'>—¢—Support</span>
+  <div class='ocr_page' id='page_1' title='image "/tmp/pytest-of-jb/pytest-42/popen-gw1/test_hocr_api_multipage0/000003_ocr.png"; bbox 0 0 958 400; ppageno 0; scan_res 96 96'>
+   <div class='ocr_separator' id='block_1_1' title="bbox 44 12 787 13"></div>
+   <div class='ocr_separator' id='block_1_2' title="bbox 44 60 787 61"></div>
+   <div class='ocr_separator' id='block_1_3' title="bbox 44 107 413 108"></div>
+   <div class='ocr_carea' id='block_1_4' title="bbox 16 108 879 165">
+    <p class='ocr_par' id='par_1_1' lang='eng' title="bbox 16 108 879 165">
+     <span class='ocr_line' id='line_1_1' title="bbox 86 108 879 165; baseline 0.001 -11; x_size 24.571428; x_descenders 5.5714288; x_ascenders 6">
+      <span class='ocrx_word' id='word_1_1' title='bbox 86 108 146 154; x_wconf 23'>—</span>
+      <span class='ocrx_word' id='word_1_2' title='bbox 801 133 879 165; x_wconf 5'>—esupport</span>
      </span>
-    </p>
-
-    <p class='ocr_par' id='par_1_2' lang='eng' title="bbox 2516 533 2873 720">
-     <span class='ocr_line' id='line_1_2' title="bbox 2516 533 2873 570; baseline 0 -7; x_size 37; x_descenders 7; x_ascenders 10">
-      <span class='ocrx_word' id='word_1_2' title='bbox 2516 534 2657 563; x_wconf 0'>==</span>
-      <span class='ocrx_word' id='word_1_3' title='bbox 2609 529 2644 574; x_wconf 47'>No</span>
-      <span class='ocrx_word' id='word_1_4' title='bbox 2665 534 2830 570; x_wconf 92'>vote[note</span>
-      <span class='ocrx_word' id='word_1_5' title='bbox 2842 533 2873 570; x_wconf 96'>1]</span>
-     </span>
-     <span class='ocr_line' id='line_1_3' title="bbox 2516 610 2739 644; baseline 0 0; x_size 45.969162; x_descenders 11.969163; x_ascenders 8">
-      <span class='ocrx_word' id='word_1_6' title='bbox 2516 606 2589 660; x_wconf 25'>ie</span>
-      <span class='ocrx_word' id='word_1_7' title='bbox 2615 606 2742 660; x_wconf 95'>Oppose</span>
-     </span>
-     <span class='ocr_line' id='line_1_4' title="bbox 2516 683 2802 720; baseline 0.003 -8; x_size 37; x_descenders 7; x_ascenders 10">
-      <span class='ocrx_word' id='word_1_8' title='bbox 2516 684 2758 720; x_wconf 63'>——Net[note</span>
-      <span class='ocrx_word' id='word_1_9' title='bbox 2770 683 2802 720; x_wconf 96'>2]</span>
-     </span>
-    </p>
-
-    <p class='ocr_par' id='par_1_3' lang='eng' title="bbox 2515 758 2939 795">
-     <span class='ocr_line' id='line_1_5' title="bbox 2515 758 2939 795; baseline 0 -7; x_size 37; x_descenders 7; x_ascenders 10">
-      <span class='ocrx_word' id='word_1_10' title='bbox 2511 754 2594 799; x_wconf 38'>=e</span>
-      <span class='ocrx_word' id='word_1_11' title='bbox 2612 754 2793 799; x_wconf 38'>Percentage</span>
-      <span class='ocrx_word' id='word_1_12' title='bbox 2812 759 2898 795; x_wconf 96'>[note</span>
-      <span class='ocrx_word' id='word_1_13' title='bbox 2906 758 2939 795; x_wconf 96'>3]</span>
+     <span class='ocr_line' id='line_1_2' title="bbox 16 151 37 159; baseline 0 0; x_size 27; x_descenders 6; x_ascenders 7">
+      <span class='ocrx_word' id='word_1_3' title='bbox 16 151 37 159; x_wconf 88'>300</span>
      </span>
     </p>
    </div>
+   <div class='ocr_carea' id='block_1_5' title="bbox 805 171 919 182">
+    <p class='ocr_par' id='par_1_2' lang='eng' title="bbox 805 171 919 182">
+     <span class='ocr_line' id='line_1_3' title="bbox 805 171 919 182; baseline 0.018 -2; x_size 20; x_descenders 5; x_ascenders 5">
+      <span class='ocrx_word' id='word_1_4' title='bbox 805 162 829 190; x_wconf 17'>BE</span>
+      <span class='ocrx_word' id='word_1_5' title='bbox 833 162 848 190; x_wconf 17'>No</span>
+      <span class='ocrx_word' id='word_1_6' title='bbox 852 171 905 182; x_wconf 18'>votefnote</span>
+      <span class='ocrx_word' id='word_1_7' title='bbox 910 171 919 182; x_wconf 83'>1]</span>
+     </span>
+    </p>
+   </div>
+   <div class='ocr_separator' id='block_1_6' title="bbox 44 154 787 155"></div>
+   <div class='ocr_carea' id='block_1_7' title="bbox 16 195 896 230">
+    <p class='ocr_par' id='par_1_3' lang='eng' title="bbox 16 195 896 230">
+     <span class='ocr_line' id='line_1_4' title="bbox 805 195 876 206; baseline 0 -2; x_size 35.333332; x_descenders 8.833333; x_ascenders 8.833333">
+      <span class='ocrx_word' id='word_1_8' title='bbox 805 195 876 206; x_wconf 66'>—</span>
+     </span>
+     <span class='ocr_line' id='line_1_5' title="bbox 16 199 896 230; baseline 0.002 -2; x_size 13.333334; x_descenders 3.3333335; x_ascenders 3.333333">
+      <span class='ocrx_word' id='word_1_9' title='bbox 16 199 49 207; x_wconf 29'>ay</span>
+      <span class='ocrx_word' id='word_1_10' title='bbox 805 219 823 228; x_wconf 0'>&gt;</span>
+      <span class='ocrx_word' id='word_1_11' title='bbox 832 219 882 230; x_wconf 0'>Net[note</span>
+      <span class='ocrx_word' id='word_1_12' title='bbox 886 219 896 230; x_wconf 86'>2]</span>
+     </span>
+    </p>
+   </div>
+   <div class='ocr_separator' id='block_1_8' title="bbox 457 202 787 203"></div>
+   <div class='ocr_separator' id='block_1_9' title="bbox 44 247 834 249"></div>
+   <div class='ocr_carea' id='block_1_10' title="bbox 836 243 940 254">
+    <p class='ocr_par' id='par_1_4' lang='eng' title="bbox 836 243 940 254">
+     <span class='ocr_line' id='line_1_6' title="bbox 836 243 940 254; baseline 0.019 -2; x_size 20; x_descenders 5; x_ascenders 5">
+      <span class='ocrx_word' id='word_1_13' title='bbox 836 244 896 254; x_wconf 93'>Percentage</span>
+      <span class='ocrx_word' id='word_1_14' title='bbox 900 243 940 254; x_wconf 95'>[note</span>
+      <span class='ocrx_word' id='word_1_15' title='bbox 932 235 944 263; x_wconf 89'>3]</span>
+     </span>
+    </p>
+   </div>
+   <div class='ocr_separator' id='block_1_11' title="bbox 49 12 50 302"></div>
+   <div class='ocr_separator' id='block_1_12' title="bbox 44 295 787 298"></div>
+   <div class='ocr_photo' id='block_1_13' title="bbox 7 242 770 392"></div>
   </div>
  </body>
 </html>

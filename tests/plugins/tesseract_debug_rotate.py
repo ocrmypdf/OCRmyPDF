@@ -52,7 +52,7 @@ class FixedRotateNoopOcrEngine(OcrEngine):
 
     @staticmethod
     def creator_tag(options):
-        tag = '-PDF' if options.pdf_renderer == 'sandwich' else ''
+        tag = '-PDF' if options.pdf_renderer == 'sandwich' else '-hOCR'
         return f"NO-OP {tag} {FixedRotateNoopOcrEngine.version()}"
 
     def __str__(self):

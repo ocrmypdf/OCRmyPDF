@@ -9,7 +9,7 @@
   <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word ocrp_wconf'/>
  </head>
  <body>
-  <div class='ocr_page' id='page_1' title='image "/tmp/pytest-of-jb/pytest-25/popen-gw2/test_hocr_api0/000002_ocr.png"; bbox 0 0 9000 9000; ppageno 0; scan_res 300 300'>
+  <div class='ocr_page' id='page_1' title='image "/tmp/pytest-of-jb/pytest-42/popen-gw1/test_hocr_api_multipage0/000002_ocr.png"; bbox 0 0 9000 9000; ppageno 0; scan_res 300 300'>
    <div class='ocr_carea' id='block_1_1' title="bbox 791 740 4415 1463">
     <p class='ocr_par' id='par_1_1' lang='eng' title="bbox 791 740 4415 1463">
      <span class='ocr_line' id='line_1_1' title="bbox 793 740 4415 1009; baseline -0.001 -51; x_size 274.5; x_descenders 57.5; x_ascenders 55.5">

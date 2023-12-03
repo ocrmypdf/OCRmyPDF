@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+  <title></title>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+  <meta name='ocr-system' content='tesseract 5.3.2' />
+  <meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word ocrp_wconf'/>
+ </head>
+ <body>
+  <div class='ocr_page' id='page_1' title='image "/tmp/ocrmypdf.io.vh2to5iv/000001_ocr.png"; bbox 0 0 640 682; ppageno 0; scan_res 230 230'>
+   <div class='ocr_carea' id='block_1_1' title="bbox 365 15 429 29">
+    <p class='ocr_par' id='par_1_1' lang='eng' title="bbox 365 15 429 29">
+     <span class='ocr_line' id='line_1_1' title="bbox 365 15 429 29; baseline 0 0; x_size 19.238094; x_descenders 5.2380953; x_ascenders 4">
+      <span class='ocrx_word' id='word_1_1' title='bbox 365 15 429 29; x_wconf 92'>Tarnose</span>
+     </span>
+    </p>
+   </div>
+   <div class='ocr_photo' id='block_1_2' title="bbox 255 38 616 72"></div>
+   <div class='ocr_photo' id='block_1_3' title="bbox 273 38 349 57"></div>
+   <div class='ocr_carea' id='block_1_4' title="bbox 186 20 244 49">
+    <p class='ocr_par' id='par_1_2' lang='eng' title="bbox 186 20 345 49">
+     <span class='ocr_line' id='line_1_2' title="bbox 186 20 244 49; baseline -0.006 -10; x_size 20.454546; x_descenders 5.4545455; x_ascenders 5">
+      <span class='ocrx_word' id='word_1_2' title='bbox 186 20 244 49; x_wconf 92'>Bokale</span>
+      <span class='ocrx_word' id='word_1_3' title='bbox 299 28 345 46; x_wconf 42'>oa</span>
+     </span>
+    </p>
+   </div>
+   <div class='ocr_photo' id='block_1_5' title="bbox 64 38 186 72"></div>
+   <div class='ocr_carea' id='block_1_6' title="bbox 537 276 612 291">
+    <p class='ocr_par' id='par_1_3' lang='eng' title="bbox 537 276 612 291">
+     <span class='ocr_line' id='line_1_3' title="bbox 537 276 612 291; baseline 0 0; x_size 20.238094; x_descenders 5.2380953; x_ascenders 5">
+      <span class='ocrx_word' id='word_1_4' title='bbox 537 276 612 291; x_wconf 92'>Lehuntze</span>
+     </span>
+    </p>
+   </div>
+   <div class='ocr_photo' id='block_1_7' title="bbox 20 269 616 314"></div>
+   <div class='ocr_carea' id='block_1_8' title="bbox 480 323 550 341">
+    <p class='ocr_par' id='par_1_4' lang='eng' title="bbox 480 323 550 341">
+     <span class='ocr_line' id='line_1_4' title="bbox 480 323 550 341; baseline 0 -4; x_size 18; x_descenders 4; x_ascenders 4">
+      <span class='ocrx_word' id='word_1_5' title='bbox 480 323 550 341; x_wconf 91'>Mugerre</span>
+     </span>
+    </p>
+   </div>
+   <div class='ocr_photo' id='block_1_9' title="bbox 44 574 197 623"></div>
+   <div class='ocr_carea' id='block_1_10' title="bbox 204 542 603 574">
+    <p class='ocr_par' id='par_1_5' lang='eng' title="bbox 204 542 603 574">
+     <span class='ocr_line' id='line_1_5' title="bbox 204 542 603 574; baseline 0.018 -11; x_size 23.26087; x_descenders 5.2608695; x_ascenders 7">
+      <span class='ocrx_word' id='word_1_6' title='bbox 204 542 295 574; x_wconf 91'>Milafranga</span>
+      <span class='ocrx_word' id='word_1_7' title='bbox 439 552 603 569; x_wconf 90'>Komunikabideak</span>
+     </span>
+    </p>
+   </div>
+   <div class='ocr_carea' id='block_1_11' title="bbox 220 584 616 619">
+    <p class='ocr_par' id='par_1_6' lang='eng' title="bbox 220 584 616 625">
+     <span class='ocr_line' id='line_1_6' title="bbox 220 584 616 619; baseline -0.005 -1; x_size 43.666668; x_descenders 10.916667; x_ascenders 10.916667">
+      <span class='ocrx_word' id='word_1_8' title='bbox 220 585 404 619; x_wconf 2'>BAIONA</span>
+      <span class='ocrx_word' id='word_1_9' title='bbox 468 584 576 625; x_wconf 0'> zeiteninsiie</span>
+      <span class='ocrx_word' id='word_1_10' title='bbox 585 588 616 610; x_wconf 86'>—</span>
+     </span>
+    </p>
+   </div>
+   <div class='ocr_carea' id='block_1_12' title="bbox 393 623 598 634">
+    <p class='ocr_par' id='par_1_7' lang='eng' title="bbox 393 623 598 634">
+     <span class='ocr_line' id='line_1_7' title="bbox 393 623 598 634; baseline 0 0; x_size 22.75; x_descenders 5.5; x_ascenders 5.75">
+      <span class='ocrx_word' id='word_1_11' title='bbox 393 629 396 631; x_wconf 54'>7</span>
+      <span class='ocrx_word' id='word_1_12' title='bbox 470 623 539 634; x_wconf 24'>Trenbideak</span>
+      <span class='ocrx_word' id='word_1_13' title='bbox 550 628 598 630; x_wconf 24'>-----</span>
+     </span>
+    </p>
+   </div>
+   <div class='ocr_carea' id='block_1_13' title="bbox 81 633 613 667">
+    <p class='ocr_par' id='par_1_8' lang='eng' title="bbox 81 633 613 667">
+     <span class='ocr_line' id='line_1_8' title="bbox 81 633 613 667; baseline -0.002 -13; x_size 21; x_descenders 4; x_ascenders 7">
+      <span class='ocrx_word' id='word_1_14' title='bbox 81 637 111 653; x_wconf 0'>t\</span>
+      <span class='ocrx_word' id='word_1_15' title='bbox 123 633 201 663; x_wconf 22'>Basusarri</span>
+      <span class='ocrx_word' id='word_1_16' title='bbox 214 633 222 663; x_wconf 0'>—</span>
+      <span class='ocrx_word' id='word_1_17' title='bbox 230 647 325 656; x_wconf 0'>spmeans:20141004</span>
+      <span class='ocrx_word' id='word_1_18' title='bbox 373 633 415 667; x_wconf 42'>ae:</span>
+      <span class='ocrx_word' id='word_1_19' title='bbox 441 650 444 653; x_wconf 25'>.</span>
+      <span class='ocrx_word' id='word_1_20' title='bbox 521 649 544 657; x_wconf 17'>_</span>
+      <span class='ocrx_word' id='word_1_21' title='bbox 595 650 613 659; x_wconf 7'>~</span>
+     </span>
+    </p>
+   </div>
+  </div>
+ </body>
+</html>

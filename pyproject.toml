@@ -10,18 +10,16 @@ dynamic = ["version"]
 description = "OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched"
 readme = "README.md"
 license = { text = "MPL-2.0" }
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
   "Pillow>=10.0.1",
   "deprecation>=2.1.0",
   "img2pdf>=0.4.4",
   "packaging>=20",
   "pdfminer.six>=20220319",
-  "pikepdf>=8.7.1",
+  "pikepdf>=8.8.0",
   "pluggy>=0.13.0",
-  "reportlab>=3.6.8",
   "rich>=13",
-  "typing-extensions>=4;python_version<'3.10'",
 ]
 authors = [{ name = "James R. Barlow", email = "james@purplerock.ca" }]
 classifiers = [
@@ -58,6 +56,7 @@ test = [
   "pytest-cov>=3.0.0",
   "pytest-xdist>=2.5.0",
   "python-xmp-toolkit==2.0.1", # also requires apt-get install libexempi3
+  "reportlab>=3.6.8",
   "types-Pillow",
   "types-humanfriendly",
 ]

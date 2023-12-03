@@ -8,7 +8,7 @@ from __future__ import annotations
 import threading
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import Callable, TypeVar
+from typing import Any, Callable, TypeVar
 
 from ocrmypdf._progressbar import NullProgressBar, ProgressBar
 
@@ -17,6 +17,10 @@ T = TypeVar('T')
 
 def _task_noop(*_args, **_kwargs):
     return
+
+
+def _task_finished_noop(_result: Any, pbar: ProgressBar):
+    pbar.update()
 
 
 class Executor(ABC):
@@ -66,7 +70,7 @@ class Executor(ABC):
         if not worker_initializer:
             worker_initializer = _task_noop
         if not task_finished:
-            task_finished = _task_noop
+            task_finished = _task_finished_noop
         if not task:
             task = _task_noop
 

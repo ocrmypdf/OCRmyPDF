@@ -239,46 +239,46 @@ rendering
 OCRmyPDF has these PDF renderers: ``sandwich`` and ``hocr``. The
 renderer may be selected using ``--pdf-renderer``. The default is
 ``auto`` which lets OCRmyPDF select the renderer to use. Currently,
-``auto`` always selects ``sandwich``.
-
-The ``sandwich`` renderer
--------------------------
-
-The ``sandwich`` renderer uses Tesseract's new text-only PDF feature,
-which produces a PDF page that lays out the OCR in invisible text. This
-page is then "sandwiched" onto the original PDF page, allowing lossless
-application of OCR even to PDF pages that contain other vector objects.
-
-Currently this is the best renderer for most uses, however it is
-implemented in Tesseract so OCRmyPDF cannot influence it. Currently some
-problematic PDF viewers like Mozilla PDF.js and macOS Preview have
-problems with segmenting its text output, and
-mightrunseveralwordstogether.
-
-When image preprocessing features like ``--deskew`` are used, the
-original PDF will be rendered as a full page and the OCR layer will be
-placed on top.
+``auto`` always selects ``hocr``.
 
 The ``hocr`` renderer
 ---------------------
 
-The ``hocr`` renderer works with older versions of Tesseract. The image
-layer is copied from the original PDF page if possible, avoiding
-potentially lossy transcoding or loss of other PDF information. If
-preprocessing is specified, then the image layer is a new PDF. (You may
-need to disable PDF/A conversion nad optimization to eliminate all
-lossy transformations.)
+.. versionchanged:: 16.0.0
 
-Unlike ``sandwich`` this renderer is implemented within OCRmyPDF; anyone
-looking to customize how OCR is presented should look here. A major
-disadvantage of this renderer is it not capable of correctly handling
-text outside the Latin alphabet (specifically, it supports the ISO 8859-1
-character set). Pull requests to improve the situation are welcome.
+In both renderers, a text-only layer is rendered and sandwiched (overlaid)
+on to either the original PDF page, or newly rasterized version of the
+original PDF page (when ``--force-ocr`` is used). In this way, loss
+of PDF information is generally avoided. (You may need to disable PDF/A
+conversion and optimization to eliminate all lossy transformations.)
 
-Currently, this renderer has the best compatibility with Mozilla's
-PDF.js viewer.
+The current approach used by the new hOCR renderer is a re-implementation
+of Tesseract's PDF renderer, using the same Glyphless font and general
+ideas, but fixing many technical issues that impeded it. The new hocr
+provides better text placement accuracy, avoids issues with word
+segmentation, and provides better positioning of skewed text.
 
-This works in all versions of Tesseract.
+Using the experimental API, it is also possible to edit the OCR output
+from Tesseract, using any tool that is capable of editing hOCR files.
+
+Older versions of this renderer did not support non-Latin languages, but
+it is now universal.
+
+The ``sandwich`` renderer
+-------------------------
+
+The ``sandwich`` renderer uses Tesseract's text-only PDF feature,
+which produces a PDF page that lays out the OCR in invisible text.
+
+Currently some problematic PDF viewers like Mozilla PDF.js and macOS
+Preview have problems with segmenting its text output, and
+mightrunseveralwordstogether. It also does not implement right to left
+fonts (Arabic, Hebrew, Persian). The output of this renderer cannot
+be edited. The sandwich renderer is retained for testing.
+
+When image preprocessing features like ``--deskew`` are used, the
+original PDF will be rendered as a full page and the OCR layer will be
+placed on top.
 
 Rendering and rasterizing options
 =================================
