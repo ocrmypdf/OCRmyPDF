@@ -18,15 +18,7 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 from pikepdf import Matrix, Name, Rectangle
-
-from ocrmypdf.hocrtransform._canvas import (
-    Font,
-    GlyphlessFont,
-    PikepdfText,
-    TextDirection,
-)
-from ocrmypdf.hocrtransform._canvas import PikepdfCanvas as Canvas
-from ocrmypdf.hocrtransform.color import (
+from pikepdf.canvas import (
     BLACK,
     BLUE,
     CYAN,
@@ -34,7 +26,13 @@ from ocrmypdf.hocrtransform.color import (
     GREEN,
     MAGENTA,
     RED,
+    Canvas,
+    Font,
+    Text,
+    TextDirection,
 )
+
+from ocrmypdf.hocrtransform._font import GlyphlessFont
 
 log = logging.getLogger(__name__)
 
@@ -232,7 +230,7 @@ class HocrTransform:
             )
 
         # finish up the page and save it
-        canvas.save(out_filename)
+        canvas.to_pdf().save(out_filename)
 
     def _get_text_direction(self, par):
         """Get the text direction of the paragraph.
@@ -305,7 +303,7 @@ class HocrTransform:
         )
         log.debug(line_matrix)
         with canvas.do.save_state(cm=line_matrix):
-            text = PikepdfText(direction=text_direction)
+            text = Text(direction=text_direction)
 
             # Don't allow the font to break out of the bounding box. Division by
             # cos_a accounts for extra clearance between the glyph's vertical axis
@@ -339,7 +337,7 @@ class HocrTransform:
         self,
         canvas: Canvas,
         line_matrix: Matrix,
-        text: PikepdfText,
+        text: Text,
         fontsize: float,
         elem: Element,
         next_elem: Element | None,

@@ -17,7 +17,7 @@ dependencies = [
   "img2pdf>=0.4.4",
   "packaging>=20",
   "pdfminer.six>=20220319",
-  "pikepdf>=8.7.1",
+  "pikepdf>=8.8.0",
   "pluggy>=0.13.0",
   "rich>=13",
 ]
