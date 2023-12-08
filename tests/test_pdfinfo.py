@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import pickle
+import warnings
 from io import BytesIO
 from math import isclose
 
@@ -19,6 +20,10 @@ from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.pdfinfo import Colorspace, Encoding
 from ocrmypdf.pdfinfo.layout import PDFPage
+
+warnings.filterwarnings(
+    "ignore", category=DeprecationWarning, module="reportlab.lib.rl_safe_eval"
+)
 
 # pylint: disable=protected-access
 

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import warnings
 from unittest.mock import Mock
 
 import pytest
@@ -13,6 +14,10 @@ from reportlab.pdfgen.canvas import Canvas
 
 from ocrmypdf import _pipeline, pdfinfo
 from ocrmypdf.helpers import Resolution
+
+warnings.filterwarnings(
+    "ignore", category=DeprecationWarning, module="reportlab.lib.rl_safe_eval"
+)
 
 
 @pytest.fixture(scope='session')
