@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 from math import isclose
 from pathlib import Path
 from subprocess import run
@@ -392,6 +393,20 @@ def test_tesseract_image_too_big(renderer, resources, outpdf):
 
 @pytest.mark.parametrize('encryption_level', [2, 3, 4, 6])
 def test_encrypted(resources, outpdf, encryption_level, caplog):
+    if os.name == 'darwin' and sys.version_info >= (3, 12) and encryption_level <= 4:
+        # Error is: RuntimeError: unable to load openssl legacy provider
+        # pikepdf obtains encryption from qpdf, which gets it from openssl among other
+        # providers.
+        # Error message itself comes from here:
+        # https://github.com/qpdf/qpdf/blob/da3eae39c8e5261196bbc1b460e5b556c6836dbf/libqpdf/QPDFCrypto_openssl.cc#L56
+        # Somehow pikepdf + Python 3.12 + macOS does not have this problem, despite
+        # using Homebrew's qpdf. Possibly the difference is that pikepdf's Python 3.12
+        # comes from cibuildwheel, and our macOS Python 3.12 comes from GitHub Actions
+        # setup-python. It may be necessary to build a custom qpdf for macOS.
+        # In any case, OCRmyPDF doesn't support loading encrypted files at all, it
+        # just complains about encryption, and it's using pikepdf to generate encrypted
+        # files for testing.
+        pytest.skip("GitHub Python 3.12 on macOS does not have openssl legacy support")
     encryption = pikepdf.models.encryption.Encryption(
         owner='ocrmypdf',
         user='ocrmypdf',
