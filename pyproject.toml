@@ -76,11 +76,11 @@ namespaces = false
 [tool.setuptools_scm]
 
 [tool.distutils.bdist_wheel]
-python-tag = "py39"
+python-tag = "py310"
 
 [tool.black]
 line-length = 88
-target-version = ["py39", "py310", "py311"]
+target-version = ["py310", "py311", "py312"]
 skip-string-normalization = true
 include = '\.pyi?$'
 exclude = '''
@@ -157,7 +157,7 @@ select = [
   "I001", # isort
   "UP",   # pyupgrade
 ]
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.isort]
 known-first-party = ["ocrmypdf"]
