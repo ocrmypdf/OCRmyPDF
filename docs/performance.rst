@@ -17,7 +17,7 @@ If running OCRmyPDF quickly is your main goal, you can use settings such as:
 
 * ``--optimize 0`` to disable file size optimization
 * ``--output-type pdf`` to disable PDF/A generation
-* ``--fast-web-view 0`` to disable fast web view optimization
+* ``--fast-web-view 999999`` to disable fast web view optimization
 * ``--skip-big`` to skip large images, if some pages have large images
 
 You can also avoid:
