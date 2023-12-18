@@ -225,7 +225,7 @@ jobs:
           python -m pip install --upgrade pip wheel build
           python -m build --sdist --wheel
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: |
             ./dist/*.whl
