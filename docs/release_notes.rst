@@ -30,8 +30,8 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
-v16.0.0rc1
-==========
+v16.0.0
+=======
 
 -  Added OCR text renderer, combined the best ideas of Tesseract's PDF
    generator and the older hOCR transformer renderer. The result is a hopefully
