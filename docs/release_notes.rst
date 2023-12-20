@@ -30,6 +30,13 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.0.1
+=======
+
+-  Fixed text rendering issue with new hOCR text renderer - extraneous byte order
+   marks.
+-  Tightened dependencies.
+
 v16.0.0
 =======
 
