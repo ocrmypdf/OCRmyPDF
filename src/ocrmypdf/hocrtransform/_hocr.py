@@ -106,10 +106,10 @@ class HocrTransform:
         self.render_options = DebugRenderOptions(
             render_baseline=debug,
             render_triangle=debug,
-            render_line_bbox=debug,
+            render_line_bbox=False,
             render_word_bbox=debug,
-            render_paragraph_bbox=debug,
-            render_space_bbox=debug,
+            render_paragraph_bbox=False,
+            render_space_bbox=False,
         )
 
     def _get_element_text(self, element: Element):
@@ -365,7 +365,7 @@ class HocrTransform:
         if font_width > 0:
             text.text_transform(Matrix(1, 0, 0, 1, box.llx, 0))
             text.horiz_scale(100 * box.width / font_width)
-            text.show(elemtxt)
+            text.show(elemtxt.encode('utf-16be'))
 
         # Get coordinates of the next word (if there is one)
         hocr_next_box = (
@@ -389,7 +389,7 @@ class HocrTransform:
         space_width = self._font.text_width(' ', fontsize)
         if space_width > 0:
             text.horiz_scale(100 * space_box.width / space_width)
-            text.show(' ')
+            text.show(' '.encode('utf-16be'))
 
     def _debug_draw_paragraph_boxes(self, canvas: Canvas, color=CYAN):
         """Draw boxes around paragraphs in the document."""
