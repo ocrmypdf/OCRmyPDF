@@ -225,8 +225,9 @@ jobs:
           python -m pip install --upgrade pip wheel build
           python -m build --sdist --wheel
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
+          name: artifact
           path: |
             ./dist/*.whl
             ./dist/*.tar.gz
@@ -240,9 +241,8 @@ jobs:
       id-token: write  # mandatory for PyPI publishing
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: artifact
           path: dist
 
       - name: Publish to PyPI
@@ -257,9 +257,8 @@ jobs:
       # Required to create a release
       contents: write
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: artifact
           path: dist
 
       - name: Create Release
