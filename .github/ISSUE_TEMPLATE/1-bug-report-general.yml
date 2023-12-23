@@ -1,4 +1,4 @@
-name: General issues
+name: Installation, packaging, dependencies
 description: Installation, packages, dependencies, "nothing works", test suite failures...
 title: "[Bug]: "
 labels: ["bug", "triage"]
@@ -9,6 +9,10 @@ body:
     attributes:
       value: |
         Thanks for taking the time to fill out this bug report!
+
+        If your issue involves using OCRmyPDF on specific file(s) and not getting
+        good results, this is the *wrong* issue template. Please use the recommended
+        template to ensure we have enough information to help.
   - type: textarea
     id: what-happened
     attributes:
