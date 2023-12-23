@@ -143,8 +143,8 @@ def triage(
         if _pdf_guess_version(input_file):
             if options.image_dpi:
                 log.warning(
-                    "Argument --image-dpi is being ignored because the "
-                    "input file is a PDF, not an image."
+                    "Argument --image-dpi %d is applied to all PDF pages before text recognition.",
+                    options.image_dpi
                 )
             # Origin file is a pdf create a symlink with pdf extension
             safe_symlink(input_file, output_file)
@@ -458,7 +458,11 @@ def calculate_raster_dpi(page_context: PageContext):
     # will not work properly.
     image_dpi = calculate_image_dpi(page_context)
     dpi_profile = page_context.pageinfo.page_dpi_profile()
-    canvas_dpi = get_canvas_square_dpi(page_context, image_dpi)
+    res = page_context.options.image_dpi
+    if res is None:
+        canvas_dpi = get_canvas_square_dpi(page_context, image_dpi)
+    else:
+        canvas_dpi = Resolution(res,res)
     page_dpi = get_page_square_dpi(page_context, image_dpi)
     if dpi_profile and dpi_profile.average_to_max_dpi_ratio < 0.8:
         log.warning(
