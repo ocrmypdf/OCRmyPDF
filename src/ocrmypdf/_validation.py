@@ -119,7 +119,10 @@ def check_options_sidecar(options: Namespace) -> None:
                 "--sidecar filename needed when output file is /dev/null or NUL."
             )
         options.sidecar = options.output_file + '.txt'
-    if options.sidecar == options.input_file or options.sidecar == options.output_file:
+    if options.sidecar == '-':
+        options.output_type = "none"
+        log.warning("DRY RUN. Printing text only. No files saved")
+    elif options.sidecar == options.input_file or options.sidecar == options.output_file:
         raise BadArgsError(
             "--sidecar file must be different from the input and output files"
         )
@@ -296,7 +299,7 @@ def create_input_file(options: Namespace, work_folder: Path) -> tuple[Path, str]
 
 
 def check_requested_output_file(options: Namespace) -> None:
-    if options.output_file == '-':
+    if options.output_file == '-' and options.sidecar == None:
         if sys.stdout.isatty():
             raise BadArgsError(
                 "Output was set to stdout '-' but it looks like stdout "
