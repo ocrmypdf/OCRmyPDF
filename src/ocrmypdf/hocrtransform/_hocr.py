@@ -363,7 +363,7 @@ class HocrTransform:
 
         # If this word is 0 units wide, our best bet seems to be to suppress this text
         if font_width > 0:
-            text.text_transform(Matrix(1, 0, 0, 1, box.llx, 0))
+            text.text_transform(Matrix(1, 0, 0, -1, box.llx, 0))
             text.horiz_scale(100 * box.width / font_width)
             text.show(elemtxt.encode('utf-16be'))
 
