@@ -370,12 +370,12 @@ class HocrTransform:
         if text_direction == TextDirection.RTL:
             log.info("RTL: %s", elemtxt)
         if font_width > 0:
-            text.text_transform(Matrix(1, 0, 0, -1, box.llx, 0))
-            text.horiz_scale(100 * box.width / font_width)
             if text_direction == TextDirection.LTR:
-                text.show(self._font.text_encode(elemtxt))
+                text.text_transform(Matrix(1, 0, 0, -1, box.llx, 0))
             elif text_direction == TextDirection.RTL:
-                text.show(self._font.text_encode(elemtxt[::-1]))
+                text.text_transform(Matrix(-1, 0, 0, -1, box.llx + box.width, 0))
+            text.horiz_scale(100 * box.width / font_width)
+            text.show(self._font.text_encode(elemtxt))
 
         # Get coordinates of the next word (if there is one)
         hocr_next_box = (
@@ -395,9 +395,14 @@ class HocrTransform:
         elif text_direction == TextDirection.RTL:
             space_box = Rectangle(next_box.urx, box.lly, box.llx, next_box.ury)
         self._debug_draw_space_bbox(canvas, space_box)
-        text.text_transform(Matrix(1, 0, 0, -1, space_box.llx, 0))
         space_width = self._font.text_width(' ', fontsize)
         if space_width > 0:
+            if text_direction == TextDirection.LTR:
+                text.text_transform(Matrix(1, 0, 0, -1, space_box.llx, 0))
+            elif text_direction == TextDirection.RTL:
+                text.text_transform(
+                    Matrix(-1, 0, 0, -1, space_box.llx + space_box.width, 0)
+                )
             text.horiz_scale(100 * space_box.width / space_width)
             text.show(self._font.text_encode(' '))
 
