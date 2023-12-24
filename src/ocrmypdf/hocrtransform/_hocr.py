@@ -367,10 +367,15 @@ class HocrTransform:
         self._debug_draw_word_bbox(canvas, box)
 
         # If this word is 0 units wide, our best bet seems to be to suppress this text
+        if text_direction == TextDirection.RTL:
+            log.info("RTL: %s", elemtxt)
         if font_width > 0:
             text.text_transform(Matrix(1, 0, 0, -1, box.llx, 0))
             text.horiz_scale(100 * box.width / font_width)
-            text.show(self._font.text_encode(elemtxt))
+            if text_direction == TextDirection.LTR:
+                text.show(self._font.text_encode(elemtxt))
+            elif text_direction == TextDirection.RTL:
+                text.show(self._font.text_encode(elemtxt[::-1]))
 
         # Get coordinates of the next word (if there is one)
         hocr_next_box = (
