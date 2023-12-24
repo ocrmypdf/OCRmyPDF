@@ -32,7 +32,20 @@ body:
     attributes:
       label: Files
       description: Please attach the input and output files, or any screenshots that may be helpful.
-      placeholder: Drag and drop files here
+      placeholder: |
+        Drag and drop files here.
+
+        If you cannot provide a test file, we probably won't be able to help with the issue.
+        PDF is a complex file format, and there may be technical details in the PDF that are
+        causing the issue. There's really no substitute for a test file.
+
+        We understand files may contain personal or sensitive information. Here are some options:
+        - Try reproducing the issue with a file from the test suite. (See tests/resources)
+        - Try to create another file in the same way as your private file.
+        - Encrypt the file to OCRmyPDF's private GPG key.
+        - Use ``qpdf --json yourfile.pdf`` to produce a JSON representation of your file that
+          omits personal information.
+
   - type: dropdown
     id: packaging-system
     attributes:
