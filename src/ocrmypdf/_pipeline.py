@@ -34,7 +34,7 @@ from ocrmypdf.exceptions import (
     UnsupportedImageFormatError,
 )
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution, safe_symlink
-from ocrmypdf.hocrtransform import HocrTransform
+from ocrmypdf.hocrtransform import DebugRenderOptions, HocrTransform
 from ocrmypdf.pdfa import generate_pdfa_ps
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PageInfo, PdfInfo
 from ocrmypdf.pluginspec import OrientationConfidence
@@ -741,12 +741,21 @@ def render_hocr_page(hocr: Path, page_context: PageContext) -> Path:
         return output_file
 
     dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
-    debug_mode = options.pdf_renderer == 'hocrdebug'
-
+    debug = options.pdf_renderer == 'hocrdebug'
+    debug_render_options = None
+    if debug:
+        debug_render_options = DebugRenderOptions(
+            render_baseline=True,
+            render_triangle=True,
+            render_line_bbox=False,
+            render_word_bbox=True,
+            render_paragraph_bbox=False,
+            render_space_bbox=False,
+        )
     HocrTransform(
         hocr_filename=hocr,
         dpi=dpi.to_scalar(),  # square
-        debug=debug_mode,
+        debug_render_options=debug_render_options,
     ).to_pdf(
         out_filename=output_file,
         image_filename=None,

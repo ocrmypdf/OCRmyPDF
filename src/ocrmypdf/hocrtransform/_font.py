@@ -18,7 +18,12 @@ from pikepdf.canvas import Font
 log = logging.getLogger(__name__)
 
 
-class GlyphlessFont(Font):
+class EncodableFont(Font):
+    def text_encode(self, text: str) -> bytes:
+        raise NotImplementedError()
+
+
+class GlyphlessFont(EncodableFont):
     CID_TO_GID_DATA = zlib.compress(b"\x00\x01" * 65536)
     GLYPHLESS_FONT_NAME = 'pdf.ttf'
     GLYPHLESS_FONT = (package_files('ocrmypdf.data') / GLYPHLESS_FONT_NAME).read_bytes()
@@ -27,10 +32,13 @@ class GlyphlessFont(Font):
     def __init__(self):
         pass
 
-    def text_width(self, text: str, fontsize: float) -> int:
+    def text_width(self, text: str, fontsize: float) -> float:
         """Estimate the width of a text string when rendered with the given font."""
         # NFKC: split ligatures, combine diacritics
         return len(unicodedata.normalize("NFKC", text)) * (fontsize / self.CHAR_ASPECT)
+
+    def text_encode(self, text: str) -> bytes:
+        return text.encode('utf-16be')
 
     def register(self, pdf: Pdf):
         """Register the glyphless font.
@@ -110,3 +118,24 @@ class GlyphlessFont(Font):
         font_descriptor.FontFile2 = pdf.make_stream(self.GLYPHLESS_FONT)
         cid_font_type2.FontDescriptor = font_descriptor
         return basefont
+
+
+class Helvetica(EncodableFont):
+    """Helvetica font."""
+
+    def text_width(self, text: str, fontsize: float) -> float:
+        """Estimate the width of a text string when rendered with the given font."""
+        return len(text) * fontsize / 2.0
+
+    def text_encode(self, text: str) -> bytes:
+        return text.encode('pdfdoc', errors='ignore')
+
+    def register(self, pdf: Pdf) -> Dictionary:
+        """Register the font."""
+        return pdf.make_indirect(
+            Dictionary(
+                BaseFont=Name.Helvetica,
+                Type=Name.Font,
+                Subtype=Name.Type1,
+            )
+        )
