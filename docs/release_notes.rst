@@ -30,6 +30,13 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+
+v16.0.2
+=======
+
+-  Temporarily changed PDF text renderer back to sandwich by default to address
+   regressions in macOS Preview.
+
 v16.0.1
 =======
 

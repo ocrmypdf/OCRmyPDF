@@ -146,7 +146,7 @@ def check_options(options):
 
     # Decide on what renderer to use
     if options.pdf_renderer == 'auto':
-        options.pdf_renderer = 'hocr'
+        options.pdf_renderer = 'sandwich'
 
     if not tesseract.has_thresholding() and options.tesseract_thresholding != 0:
         log.warning(
