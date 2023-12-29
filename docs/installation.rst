@@ -404,7 +404,7 @@ the following when running in an Administrator command prompt):
 * ``choco install --pre tesseract``
 * ``choco install pngquant`` (optional)
 
-Either set of commands will install the required software. At the mmoment there is no
+Either set of commands will install the required software. At the moment there is no
 single command to install Windows.
 
 You may then use ``pip`` to install ocrmypdf. (This can performed by a user or
