@@ -54,21 +54,13 @@ def check_options(options):
         program='gs',
         package='ghostscript',
         version_checker=ghostscript.version,
-        need_version='9.55',  # Ubuntu 22.04's version
+        need_version='9.54',  # RHEL 9's version; Ubuntu 22.04 has 9.55
     )
     gs_version = ghostscript.version()
     if gs_version in BLACKLISTED_GS_VERSIONS:
         raise MissingDependencyError(
             f"Ghostscript {gs_version} contains serious regressions and is not "
             "supported. Please upgrade to a newer version."
-        )
-    if gs_version < Version('10.02.0'):
-        log.warning(
-            f"The installed version of Ghostscript {gs_version}, contains a remote "
-            "code execution security vulnerability. Please upgrade to a newer "
-            "version. For details see CVE-2023-43115. The issue is not known to "
-            "affect OCRmyPDF or processing PDFs with Ghostscript, but upgrading "
-            "Ghostscript is recommended."
         )
 
     if options.output_type == 'pdfa':
