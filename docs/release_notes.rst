@@ -31,6 +31,14 @@ OCRmyPDF typically supports the three most recent Python versions.
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
 
+v16.0.3
+=======
+
+-  Changed minimum required Ghostscript to 9.54, to support users of RHEL 9 and its
+   derivatives, since that is the latest version available there.
+-  Removed warning message about CVE-2023-43115, on the assumption that most
+   distributions have backported the patch by now.
+
 v16.0.2
 =======
 
