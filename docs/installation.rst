@@ -553,7 +553,7 @@ manager. ``pip`` cannot provide them.
 The following versions are required:
 
 -  Python 3.10 or newer
--  Ghostscript 9.55 or newer
+-  Ghostscript 9.54 or newer
 -  Tesseract 4.1.1 or newer
 -  jbig2enc 0.29 or newer
 -  pngquant 2.5 or newer
