@@ -154,7 +154,13 @@ Then, follow `Requirements for pip and HEAD install <#requirements-for-pip-and-h
 
     dnf install ghostscript tesseract
 
-and build ocrmypdf in virtual environment. To add JBIG2 encoding, see `Installing the JBIG2 encoder <jbig2>`__.
+and build ocrmypdf in virtual environment:
+
+.. code-block:: bash
+
+    python3.11 -m venv .venv
+
+To add JBIG2 encoding, see `Installing the JBIG2 encoder <jbig2>`__.
 
 Note Fedora packages for language data haven't been branched for RHEL/EPEL, but you can get traineddata files directly from `tesseract
 <https://github.com/tesseract-ocr/tessdata/>`__ and place them in ``/usr/share/tesseract/tessdata``.
