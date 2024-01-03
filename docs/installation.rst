@@ -139,6 +139,26 @@ from sources <#installing-head-revision-from-sources>`__.
 
 .. _ubuntu-lts-latest:
 
+RHEL 9
+------
+
+Prepare the environment by getting Python 3.11:
+
+.. code-block:: bash
+
+    dnf install python3.11 python3.11-pip
+
+Then, follow `Requirements for pip and HEAD install <#requirements-for-pip-and-head-install>`__ to instal dependencies:
+
+.. code-block:: bash
+
+    dnf install ghostscript tesseract
+
+and build ocrmypdf in virtual environment. To add JBIG2 encoding, see `Installing the JBIG2 encoder <jbig2>`__.
+
+Note Fedora packages for language data haven't been branched for RHEL/EPEL, but you can get traineddata files directly from `tesseract
+<https://github.com/tesseract-ocr/tessdata/>`__ and place them in ``/usr/share/tesseract/tessdata``.
+
 Installing the latest version on Ubuntu 22.04 LTS
 -------------------------------------------------
 
