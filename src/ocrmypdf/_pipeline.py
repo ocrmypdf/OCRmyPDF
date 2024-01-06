@@ -35,7 +35,7 @@ from ocrmypdf.exceptions import (
 )
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution, safe_symlink
 from ocrmypdf.hocrtransform import DebugRenderOptions, HocrTransform
-from ocrmypdf.hocrtransform._font import Helvetica
+from ocrmypdf.hocrtransform._font import Courier
 from ocrmypdf.pdfa import generate_pdfa_ps
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PageInfo, PdfInfo
 from ocrmypdf.pluginspec import OrientationConfidence
@@ -753,7 +753,7 @@ def render_hocr_page(hocr: Path, page_context: PageContext) -> Path:
                 render_paragraph_bbox=False,
                 render_space_bbox=False,
             ),
-            font=Helvetica(),
+            font=Courier(),
         )
     HocrTransform(
         hocr_filename=hocr, dpi=dpi.to_scalar(), **debug_kwargs  # square

@@ -120,12 +120,12 @@ class GlyphlessFont(EncodableFont):
         return basefont
 
 
-class Helvetica(EncodableFont):
-    """Helvetica font."""
+class Courier(EncodableFont):
+    """Courier font."""
 
     def text_width(self, text: str, fontsize: float) -> float:
         """Estimate the width of a text string when rendered with the given font."""
-        return len(text) * fontsize / 2.0
+        return len(text) * fontsize
 
     def text_encode(self, text: str) -> bytes:
         return text.encode('pdfdoc', errors='ignore')
@@ -134,7 +134,7 @@ class Helvetica(EncodableFont):
         """Register the font."""
         return pdf.make_indirect(
             Dictionary(
-                BaseFont=Name.Helvetica,
+                BaseFont=Name.Courier,
                 Type=Name.Font,
                 Subtype=Name.Type1,
             )
