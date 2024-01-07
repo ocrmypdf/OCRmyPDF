@@ -189,7 +189,7 @@ jobs:
       - name: Install system packages
         run: |
           choco install --yes --no-progress --pre tesseract
-          choco install --yes --no-progress --ignore-checksums ghostscript
+          choco install --yes --no-progress --ignore-checksums ghostscript --version 9.56.1
 
       - name: Install Python packages
         run: |
