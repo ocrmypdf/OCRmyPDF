@@ -30,6 +30,15 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.0.4
+=======
+
+-  Fixed some issues for left-to-right text with the new hOCR renderer. It is still
+   not default yet but will be made so soon. Right-to-left text is still in progress.
+-  Added an error to prevent use of several versions of Ghostscript that seem
+   corrupt existing text in input PDFs. Newly generated OCR is not affected.
+   For best results, use Ghostscript 10.02.1 or newer, which contains the fix
+   for the issue.
 
 v16.0.3
 =======
