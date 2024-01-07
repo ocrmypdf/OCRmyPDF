@@ -313,7 +313,7 @@ class OcrGrafter:
                 strip_invisible_text(self.pdf_base, base_page)
 
             base_page.contents_add(
-                new_text_layer, prepend=self.render_mode == RenderMode.ON_TOP
+                new_text_layer, prepend=self.render_mode == RenderMode.UNDERNEATH
             )
 
             _update_resources(obj=base_page.obj, font=font, font_key=font_key)
