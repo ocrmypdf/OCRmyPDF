@@ -292,6 +292,7 @@ class OcrGrafter:
             # finally move the lower left corner to match the mediabox. All transforms
             # must be premultiplied so they are applied in reverse order here.
             ctm = corner @ untranslate @ scale @ rotate @ translate
+            log.debug("Grafting with ctm %r", ctm)
 
             base_resources = _ensure_dictionary(base_page.obj, Name.Resources)
             base_xobjs = _ensure_dictionary(base_resources, Name.XObject)
@@ -311,9 +312,16 @@ class OcrGrafter:
 
             if strip_old_text:
                 strip_invisible_text(self.pdf_base, base_page)
-
+            base_page.contents_coalesce()
+            if self.render_mode == RenderMode.ON_TOP:
+                # Add q/Q to ensure content we append is drawn correctly
+                # Strictly speaking this needs to trace the whole q/Q stack in case
+                # stack is not balanced.
+                original = base_page.Contents.read_bytes()
+                base_page.Contents.write(b'q\n' + original + b'\nQ\n')
             base_page.contents_add(
-                new_text_layer, prepend=self.render_mode == RenderMode.ON_TOP
+                new_text_layer, prepend=self.render_mode == RenderMode.UNDERNEATH
             )
+            base_page.contents_coalesce()
 
             _update_resources(obj=base_page.obj, font=font, font_key=font_key)

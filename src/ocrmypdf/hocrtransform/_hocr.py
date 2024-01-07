@@ -27,11 +27,11 @@ from pikepdf.canvas import (
     MAGENTA,
     RED,
     Canvas,
-    Font,
     Text,
     TextDirection,
 )
 
+from ocrmypdf.hocrtransform._font import EncodableFont as Font
 from ocrmypdf.hocrtransform._font import GlyphlessFont
 
 log = logging.getLogger(__name__)
@@ -45,12 +45,12 @@ Element = ElementTree.Element
 class DebugRenderOptions:
     """A class for managing rendering options."""
 
-    render_paragraph_bbox: bool
-    render_baseline: bool
-    render_triangle: bool
-    render_line_bbox: bool
-    render_word_bbox: bool
-    render_space_bbox: bool
+    render_paragraph_bbox: bool = False
+    render_baseline: bool = False
+    render_triangle: bool = False
+    render_line_bbox: bool = False
+    render_word_bbox: bool = False
+    render_space_bbox: bool = False
 
 
 class HocrTransformError(Exception):
@@ -81,8 +81,22 @@ class HocrTransform:
         debug: bool = False,
         fontname: Name = Name("/f-0-0"),
         font: Font = GlyphlessFont(),
+        debug_render_options: DebugRenderOptions | None = None,
     ):
         """Initialize the HocrTransform object."""
+
+        if debug:
+            log.warning("Use debug_render_options instead", DeprecationWarning)
+            self.render_options = DebugRenderOptions(
+                render_baseline=debug,
+                render_triangle=debug,
+                render_line_bbox=False,
+                render_word_bbox=debug,
+                render_paragraph_bbox=False,
+                render_space_bbox=False,
+            )
+        else:
+            self.render_options = debug_render_options or DebugRenderOptions()
         self.dpi = dpi
         self.hocr = ElementTree.parse(os.fspath(hocr_filename))
         self._fontname = fontname
@@ -103,14 +117,6 @@ class HocrTransform:
             self.height = (coords.ury - coords.lly) / (self.dpi / INCH)
             # Stop after first div that has page coordinates
             break
-        self.render_options = DebugRenderOptions(
-            render_baseline=debug,
-            render_triangle=debug,
-            render_line_bbox=False,
-            render_word_bbox=debug,
-            render_paragraph_bbox=False,
-            render_space_bbox=False,
-        )
 
     def _get_element_text(self, element: Element):
         """Return the textual content of the element and its children."""
@@ -220,7 +226,7 @@ class HocrTransform:
                     root,
                     "ocrx_word",
                     invisible_text,
-                    TextDirection.LTR,
+                    direction,
                     True,
                 )
         # put the image on the page, scaled to fill the page
@@ -311,8 +317,7 @@ class HocrTransform:
             line_box_height = abs(line_box.height) / cos(angle)
             fontsize = line_box_height + intercept
             text.font(self._fontname, fontsize)
-            if invisible_text or True:
-                text.render_mode(3)  # Invisible (indicates OCR text)
+            text.render_mode(3 if invisible_text else 0)
 
             self._debug_draw_baseline(
                 canvas, line_matrix.inverse().transform(line_box), 0
@@ -362,10 +367,17 @@ class HocrTransform:
         self._debug_draw_word_bbox(canvas, box)
 
         # If this word is 0 units wide, our best bet seems to be to suppress this text
+        if text_direction == TextDirection.RTL:
+            log.info("RTL: %s", elemtxt)
         if font_width > 0:
-            text.text_transform(Matrix(1, 0, 0, 1, box.llx, 0))
+            if text_direction == TextDirection.LTR:
+                text.text_transform(Matrix(1, 0, 0, -1, box.llx, 0))
+            elif text_direction == TextDirection.RTL:
+                text.text_transform(Matrix(-1, 0, 0, -1, box.llx + box.width, 0))
             text.horiz_scale(100 * box.width / font_width)
-            text.show(elemtxt.encode('utf-16be'))
+            text.show(self._font.text_encode(elemtxt))
+            # elif text_direction == TextDirection.RTL:
+            #     text.show(self._font.text_encode(elemtxt[::-1]))
 
         # Get coordinates of the next word (if there is one)
         hocr_next_box = (
@@ -385,11 +397,16 @@ class HocrTransform:
         elif text_direction == TextDirection.RTL:
             space_box = Rectangle(next_box.urx, box.lly, box.llx, next_box.ury)
         self._debug_draw_space_bbox(canvas, space_box)
-        text.text_transform(Matrix(1, 0, 0, 1, space_box.llx, 0))
         space_width = self._font.text_width(' ', fontsize)
         if space_width > 0:
+            if text_direction == TextDirection.LTR:
+                text.text_transform(Matrix(1, 0, 0, -1, space_box.llx, 0))
+            elif text_direction == TextDirection.RTL:
+                text.text_transform(
+                    Matrix(-1, 0, 0, -1, space_box.llx + space_box.width, 0)
+                )
             text.horiz_scale(100 * space_box.width / space_width)
-            text.show(' '.encode('utf-16be'))
+            text.show(self._font.text_encode(' '))
 
     def _debug_draw_paragraph_boxes(self, canvas: Canvas, color=CYAN):
         """Draw boxes around paragraphs in the document."""
