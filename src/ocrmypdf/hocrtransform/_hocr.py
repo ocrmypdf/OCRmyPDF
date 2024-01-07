@@ -226,7 +226,7 @@ class HocrTransform:
                     root,
                     "ocrx_word",
                     invisible_text,
-                    TextDirection.LTR,
+                    direction,
                     True,
                 )
         # put the image on the page, scaled to fill the page
@@ -376,6 +376,8 @@ class HocrTransform:
                 text.text_transform(Matrix(-1, 0, 0, -1, box.llx + box.width, 0))
             text.horiz_scale(100 * box.width / font_width)
             text.show(self._font.text_encode(elemtxt))
+            # elif text_direction == TextDirection.RTL:
+            #     text.show(self._font.text_encode(elemtxt[::-1]))
 
         # Get coordinates of the next word (if there is one)
         hocr_next_box = (
