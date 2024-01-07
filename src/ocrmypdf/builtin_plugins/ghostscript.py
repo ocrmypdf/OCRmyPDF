@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 # Currently all blacklisted versions are lower than 9.55, so none need to
 # be added here. If a future version is blacklisted, add it here.
-BLACKLISTED_GS_VERSIONS: frozenset[str] = frozenset()
+BLACKLISTED_GS_VERSIONS: frozenset[Version] = frozenset()
 
 
 @hookimpl
@@ -61,6 +61,17 @@ def check_options(options):
         raise MissingDependencyError(
             f"Ghostscript {gs_version} contains serious regressions and is not "
             "supported. Please upgrade to a newer version."
+        )
+    if Version('10.0.0') <= gs_version < Version('10.02.1') and (
+        options.skip_text or options.redo_ocr
+    ):
+        raise MissingDependencyError(
+            f"Ghostscript 10.0.0 through 10.02.0 (your version: {gs_version}) "
+            "contain serious regressions that corrupt PDFs with existing text, "
+            "such as those processed using --skip-text or --redo-ocr. "
+            "Please upgrade to a "
+            "newer version, or use --output-type pdf to avoid Ghostscript, or "
+            "use --force-ocr to discard existing text."
         )
 
     if options.output_type == 'pdfa':
