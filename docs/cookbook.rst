@@ -187,7 +187,7 @@ might remove desirable content, especially from poor quality scans.
    background from grayscale or color images. Monochrome images are
    ignored. This should not be used on documents that contain color
    photos as it may remove them.
--  ``--deskew`` will correct pages were scanned at a skewed angle by
+-  ``--deskew`` will correct pages that were scanned at a skewed angle by
    rotating them back into place.
 -  ``--clean`` uses
    `unpaper <https://www.flameeyes.eu/projects/unpaper>`__ to clean up
