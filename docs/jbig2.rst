@@ -41,7 +41,15 @@ For all other platforms, you would need to build the JBIG2 encoder from source:
 
 Dependencies include libtoolize and libleptonica, which on Ubuntu systems
 are packaged as libtool and libleptonica-dev. On Fedora (35) they are packaged
-as libtool and leptonica-devel.
+as libtool and leptonica-devel. For this to work, please make sure to install
+``autotools``, ``automake``, ``libtool`` and ``leptonica`` first if not already
+installed.
+
+.. code-block:: bash
+
+    [sudo] apt install autotools-dev automake libtool libleptonica-dev
+..
+
 
 Lossy mode JBIG2
 ================
