@@ -155,6 +155,13 @@ def extract_image_jbig2(
                 with imgname.open('wb') as f:
                     ext = pim.extract_to(stream=f)
                 imgname.rename(imgname.with_suffix(ext))
+            except NotImplementedError as e:
+                if '/Decode' in str(e):
+                    log.debug(
+                        f"xref {xref}: skipping image with unsupported Decode table"
+                    )
+                    return None
+                raise
             except UnsupportedImageTypeError:
                 return None
             finally:
