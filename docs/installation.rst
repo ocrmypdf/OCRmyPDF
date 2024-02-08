@@ -188,37 +188,13 @@ To add JBIG2 encoding, see :ref:`jbig2`.
 Ubuntu 20.04 LTS
 ----------------
 
-Ubuntu 20.04 includes ocrmypdf 9.6.0 - you can install that with ``apt``. To
-install a more recent version, uninstall the system-provided version of
-ocrmypdf, and install the following dependencies:
+Ubuntu 20.04 includes ocrmypdf 9.6.0 - you can install that with ``apt``. The
+most convenient way to install recent OCRmyPDF on older Ubuntu is to use
+Homebrew on Linux (Linuxbrew).
 
 .. code-block:: bash
 
-    sudo apt-get -y remove ocrmypdf  # remove system ocrmypdf, if installed
-    sudo apt-get -y update
-    sudo apt-get -y install \
-        ghostscript \
-        icc-profiles-free \
-        libxml2 \
-        pngquant \
-        python3-pip \
-        tesseract-ocr \
-        zlib1g
-
-To install ocrmypdf for the system:
-
-.. code-block:: bash
-
-    pip3 install ocrmypdf
-
-To install for the current user only:
-
-.. code-block:: bash
-
-    export PATH=$HOME/.local/bin:$PATH
-    pip3 install --user ocrmypdf
-
-To add JBIG2 encoding, see :ref:`jbig2`.
+    brew install ocrmypdf
 
 Arch Linux (AUR)
 ----------------
@@ -697,7 +673,7 @@ To manually install the ``fish`` completion, copy
 Note on 32-bit support
 ======================
 
-Many Python libraries no longer 32-bit binary wheels for Linux. This
+Many Python libraries no longer provide 32-bit binary wheels for Linux. This
 includes many of the libraries that OCRmyPDF depends on, such as
 Pillow. The easiest way to express this to end users is to say we don't
 support 32-bit Linux.
