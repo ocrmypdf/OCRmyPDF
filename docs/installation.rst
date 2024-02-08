@@ -542,8 +542,24 @@ try:
 
     pip install --user ocrmypdf
 
+(If the message appears ``Requirement already satisfied: ocrmypdf in...``,
+you will need to use ``pip install --user --upgrade ocrmypdf``.)
+
 You should then be able to run ``ocrmypdf --version`` and see that the
 latest version was located.
+
+Installing with pipx
+====================
+
+Some users may prefer pipx. As with the method above, you will need to
+satisfy all non-Python dependencies. Then if pipx is installed, you
+can use
+
+.. code-block:: bash
+
+    pipx run ocrmypdf
+
+(If not installed, pipx will install first.)
 
 Requirements for pip and HEAD install
 -------------------------------------
