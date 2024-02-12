@@ -211,34 +211,35 @@ def test_rotate_deskew_ocr_timeout(resources, outdir):
     assert cmp > 0.95
 
 
+def make_rotate_test(imagefile, outdir, prefix, image_angle, page_angle):
+    memimg = BytesIO()
+    with Image.open(fspath(imagefile)) as im:
+        if image_angle != 0:
+            ccw_angle = -image_angle % 360
+            im = im.transpose(getattr(Image.Transpose, f'ROTATE_{ccw_angle}'))
+        im.save(memimg, format='PNG')
+    memimg.seek(0)
+    mempdf = BytesIO()
+    img2pdf.convert(
+        memimg.read(),
+        layout_fun=img2pdf.get_fixed_dpi_layout_fun((200, 200)),
+        outputstream=mempdf,
+        **IMG2PDF_KWARGS,
+    )
+    mempdf.seek(0)
+    with pikepdf.open(mempdf) as pdf:
+        pdf.pages[0].Rotate = page_angle
+        target = outdir / f'{prefix}_{image_angle}_{page_angle}.pdf'
+        pdf.save(target)
+        return target
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize('page_angle', (0, 90, 180, 270))
 @pytest.mark.parametrize('image_angle', (0, 90, 180, 270))
 def test_rotate_page_level(image_angle, page_angle, resources, outdir, caplog):
-    def make_rotate_test(prefix, image_angle, page_angle):
-        memimg = BytesIO()
-        with Image.open(fspath(resources / 'typewriter.png')) as im:
-            if image_angle != 0:
-                ccw_angle = -image_angle % 360
-                im = im.transpose(getattr(Image.Transpose, f'ROTATE_{ccw_angle}'))
-            im.save(memimg, format='PNG')
-        memimg.seek(0)
-        mempdf = BytesIO()
-        img2pdf.convert(
-            memimg.read(),
-            layout_fun=img2pdf.get_fixed_dpi_layout_fun((200, 200)),
-            outputstream=mempdf,
-            **IMG2PDF_KWARGS,
-        )
-        mempdf.seek(0)
-        with pikepdf.open(mempdf) as pdf:
-            pdf.pages[0].Rotate = page_angle
-            target = outdir / f'{prefix}_{image_angle}_{page_angle}.pdf'
-            pdf.save(target)
-            return target
-
-    reference = make_rotate_test('ref', 0, 0)
-    test = make_rotate_test('test', image_angle, page_angle)
+    reference = make_rotate_test(resources / 'typewriter.png', outdir, 'ref', 0, 0)
+    test = make_rotate_test(resources, outdir, 'test', image_angle, page_angle)
     out = test.with_suffix('.out.pdf')
 
     exitcode = run_ocrmypdf_api(
@@ -252,6 +253,33 @@ def test_rotate_page_level(image_angle, page_angle, resources, outdir, caplog):
     assert exitcode == 0, caplog.text
 
     assert compare_images_monochrome(outdir, reference, 1, out, 1) > 0.2
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('page_rotate_angle', (0, 90, 180, 270))
+def test_page_rotate_tag(page_rotate_angle, resources, outdir, caplog):
+    # Check that pages that have an image that is misrotated but restored to
+    # correct rotation with a /Rotate will be processed correct and yield text.
+    test = make_rotate_test(
+        resources / 'crom.png', outdir, 'test', -page_rotate_angle, page_rotate_angle
+    )
+    out = test.with_suffix('.out.pdf')
+    exitcode = run_ocrmypdf_api(
+        test,
+        out,
+        '-O0',
+    )
+    assert exitcode == 0, caplog.text
+
+    def pdftotext(filename):
+        return (
+            run(['pdftotext', '-enc', 'UTF-8', filename, '-'], capture_output=True)
+            .stdout.strip()
+            .decode('utf-8')
+        )
+
+    test_text = pdftotext(out)
+    assert 'is a' in test_text, test_text
 
 
 def test_rasterize_rotates(resources, tmp_path):
