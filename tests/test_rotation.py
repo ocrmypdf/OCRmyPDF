@@ -4,10 +4,10 @@
 from __future__ import annotations
 
 import operator
-import warnings
 from io import BytesIO
 from math import cos, pi, sin
 from os import fspath
+from subprocess import run
 
 import img2pdf
 import pikepdf
@@ -21,10 +21,6 @@ from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.pdfinfo import PdfInfo
 
 from .conftest import check_ocrmypdf, run_ocrmypdf_api
-
-warnings.filterwarnings(
-    "ignore", category=DeprecationWarning, module="reportlab.lib.rl_safe_eval"
-)
 
 # pylintx: disable=unused-variable
 
