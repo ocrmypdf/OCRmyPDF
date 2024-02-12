@@ -133,7 +133,8 @@ addopts = "-n auto"
 markers = ["slow"]
 filterwarnings = [
   "ignore:.*XMLParser.*:DeprecationWarning",
-  'ignore:.*ast.NameConstant.*:DeprecationWarning',
+  "ignore:.*ast.NameConstant.*:DeprecationWarning:reportlab",
+  "ignore:.*distutils.*:DeprecationWarning:libxmp",
 ]
 
 [tool.mypy]
