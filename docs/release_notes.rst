@@ -30,6 +30,18 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.1.0
+=======
+
+-  Improved hOCR renderer is now default for left to right languages.
+-  Improved handling of rotated pages. Previously, OCR text might be missing for
+   pages that were rotated with a /Rotate tag on the page entry.
+-  Improved handling of cropped pages. Previously, in some cases a page with a
+   crop box would not have its OCR applied correctly and misalignment between
+   OCR text and visible text coudl occur.
+-  Documentation improvements, especially installation instructions for less
+   common platforms.
+
 v16.0.4
 =======
 
