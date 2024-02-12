@@ -146,7 +146,11 @@ def check_options(options):
 
     # Decide on what renderer to use
     if options.pdf_renderer == 'auto':
-        options.pdf_renderer = 'sandwich'
+        if {'ara', 'heb', 'fas', 'per'} & set(options.languages):
+            log.info("Using sandwich renderer since there is an RTL language")
+            options.pdf_renderer = 'sandwich'
+        else:
+            options.pdf_renderer = 'hocr'
 
     if not tesseract.has_thresholding() and options.tesseract_thresholding != 0:
         log.warning(
