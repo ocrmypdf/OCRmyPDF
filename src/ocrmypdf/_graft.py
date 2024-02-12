@@ -289,9 +289,8 @@ class OcrGrafter:
 
             # Translate the text so it is centered at (0, 0), rotate it there, adjust
             # for a size different between initial and text PDF, then untranslate, and
-            # finally move the lower left corner to match the mediabox. All transforms
-            # must be premultiplied so they are applied in reverse order here.
-            ctm = corner @ untranslate @ scale @ rotate @ translate
+            # finally move the lower left corner to match the mediabox.
+            ctm = translate @ rotate @ scale @ untranslate @ corner
             log.debug("Grafting with ctm %r", ctm)
 
             base_resources = _ensure_dictionary(base_page.obj, Name.Resources)

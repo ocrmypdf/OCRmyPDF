@@ -80,7 +80,6 @@ def _exec_page_sync(page_context: PageContext) -> PageResult:
         page_context
     )
     ocr_out, text_out = _image_to_ocr_text(page_context, ocr_image_out)
-
     return PageResult(
         pageno=page_context.pageno,
         pdf_page_from_image=pdf_page_from_image_out,

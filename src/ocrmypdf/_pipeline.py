@@ -12,6 +12,7 @@ import re
 import sys
 from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
+from io import BytesIO
 from pathlib import Path
 from shutil import copyfileobj, copystat
 from typing import Any, BinaryIO, TypeVar, cast
@@ -713,18 +714,28 @@ def create_pdf_page_from_image(
     pageinfo = page_context.pageinfo
     pagesize = 72.0 * float(pageinfo.width_inches), 72.0 * float(pageinfo.height_inches)
     effective_rotation = (pageinfo.rotation - orientation_correction) % 360
-    if effective_rotation % 180 == 90:
+    swap_axis = effective_rotation % 180 == 90
+    if swap_axis:
         pagesize = pagesize[1], pagesize[0]
 
-    # This create a single page PDF
-    with open(image, 'rb') as imfile, open(output_file, 'wb') as pdf:
+    # Create a new single page PDF to hold
+    bio = BytesIO()
+    with open(image, 'rb') as imfile:
         log.debug('convert')
 
         layout_fun = img2pdf.get_layout_fun(pagesize)
         img2pdf.convert(
-            imfile, layout_fun=layout_fun, outputstream=pdf, **IMG2PDF_KWARGS
+            imfile,
+            layout_fun=layout_fun,
+            outputstream=bio,
+            engine=img2pdf.Engine.pikepdf,
+            rotation=img2pdf.Rotation.ifvalid,
         )
         log.debug('convert done')
+
+    # img2pdf does not generate boxes correctly, so we fix them
+    bio.seek(0)
+    fix_pagepdf_boxes(bio, output_file, page_context, swap_axis=swap_axis)
 
     output_file = page_context.plugin_manager.hook.filter_pdf_page(
         page=page_context, image_filename=image, output_pdf=output_file
@@ -780,7 +791,57 @@ def ocr_engine_textonly_pdf(
         output_text=output_text,
         options=options,
     )
-    return (output_pdf, output_text)
+    return output_pdf, output_text
+
+
+def _offset_rect(rect: tuple[float, float, float, float], offset: tuple[float, float]):
+    """Offset a rectangle by a given amount."""
+    return (
+        rect[0] + offset[0],
+        rect[1] + offset[1],
+        rect[2] + offset[0],
+        rect[3] + offset[1],
+    )
+
+
+def fix_pagepdf_boxes(
+    infile: Path | BinaryIO,
+    out_file: Path,
+    page_context: PageContext,
+    swap_axis: bool = False,
+) -> Path:
+    """Fix the bounding boxes in a single page PDF.
+
+    The single page PDF is created with a normal MediaBox with its lower left corner
+    at (0, 0). infile is the single page PDF. page_context.mediabox has the original
+    file's mediabox, which may have a different origin. We needto adjust the other
+    boxes in the single page PDF to match the effect they had on the original page.
+
+    When correcting page rotation, we create a single page PDF that is correctly
+    rotated instead of an incorrectly rotated and then setting page.Rotate on it.
+    If rotation is either 90 or 270 degrees, then this function can be called
+    with swap_axis to swap the X and Y coordinates of all the boxes.
+
+    We are not concerned with solving degenerate cases where the boxes overlap or
+    or express invalid rectangles. We merely pass the boxes, producing a
+    transformation equivalent to the change made by constructing a new page image.
+    """
+    with pikepdf.open(infile) as pdf:
+        for page in pdf.pages:
+            # page.BleedBox = page_context.pageinfo.bleedbox
+            # page.ArtBox = page_context.pageinfo.artbox
+            mediabox = page_context.pageinfo.mediabox
+            offset = mediabox[0], mediabox[1]
+            cropbox = _offset_rect(page_context.pageinfo.cropbox, offset)
+            trimbox = _offset_rect(page_context.pageinfo.trimbox, offset)
+
+            if swap_axis:
+                cropbox = cropbox[1], cropbox[0], cropbox[3], cropbox[2]
+                trimbox = trimbox[1], trimbox[0], trimbox[3], trimbox[2]
+            page.CropBox = cropbox
+            page.TrimBox = trimbox
+        pdf.save(out_file)
+    return pdf
 
 
 def generate_postscript_stub(context: PdfContext) -> Path:

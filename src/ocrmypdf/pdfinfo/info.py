@@ -854,6 +854,12 @@ class PageInfo:
         width_pt = mediabox[2] - mediabox[0]
         height_pt = mediabox[3] - mediabox[1]
 
+        # self._artbox = [float(d) for d in page.artbox.as_list()]
+        # self._bleedbox = [float(d) for d in page.bleedbox.as_list()]
+        self._cropbox = [float(d) for d in page.cropbox.as_list()]
+        self._mediabox = [float(d) for d in page.mediabox.as_list()]
+        self._trimbox = [float(d) for d in page.trimbox.as_list()]
+
         check_this_page = pageno in check_pages
 
         if check_this_page and detailed_analysis:
@@ -969,6 +975,21 @@ class PageInfo:
             self._rotate = value
         else:
             raise ValueError("rotation must be a cardinal angle")
+
+    @property
+    def cropbox(self) -> FloatRect:
+        """Return cropbox of page in PDF coordinates."""
+        return self._cropbox
+
+    @property
+    def mediabox(self) -> FloatRect:
+        """Return mediabox of page in PDF coordinates."""
+        return self._mediabox
+
+    @property
+    def trimbox(self) -> FloatRect:
+        """Return trimbox of page in PDF coordinates."""
+        return self._trimbox
 
     @property
     def images(self) -> list[ImageInfo]:

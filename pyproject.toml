@@ -131,7 +131,10 @@ norecursedirs = ["lib", ".pc", ".git", "venv", "output", "cache", "resources"]
 testpaths = ["tests"]
 addopts = "-n auto"
 markers = ["slow"]
-filterwarnings = ["ignore:.*XMLParser.*:DeprecationWarning"]
+filterwarnings = [
+  "ignore:.*XMLParser.*:DeprecationWarning",
+  'ignore:.*ast.NameConstant.*:DeprecationWarning',
+]
 
 [tool.mypy]
 

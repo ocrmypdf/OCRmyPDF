@@ -112,7 +112,9 @@ OCRmyPDF is strict about not writing to standard output so that
 users can safely use it in a pipeline and produce a valid output
 file. A caller application will have to ensure it does not write to
 standard output either, if it wants to be compatible with this
-behavior and support piping to a file.
+behavior and support piping to a file. Another benefit of running
+OCRmyPDF in a child process, as recommended above, is that it will
+not interfere with the parent process's standard output.
 
 Exceptions
 ----------

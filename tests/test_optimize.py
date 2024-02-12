@@ -176,9 +176,10 @@ def test_multiple_pngs(resources, outdir):
         )
         mock.assert_called()
 
-    with pikepdf.open(outdir / 'in.pdf') as inpdf, pikepdf.open(
-        outdir / 'out.pdf'
-    ) as outpdf:
+    with (
+        pikepdf.open(outdir / 'in.pdf') as inpdf,
+        pikepdf.open(outdir / 'out.pdf') as outpdf,
+    ):
         for n in range(len(inpdf.pages)):
             inim = next(iter(inpdf.pages[n].images.values()))
             outim = next(iter(outpdf.pages[n].images.values()))
