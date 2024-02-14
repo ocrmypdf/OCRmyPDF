@@ -14,7 +14,7 @@ from collections.abc import Iterable, Sequence
 from enum import IntEnum
 from io import IOBase
 from pathlib import Path
-from typing import AnyStr, BinaryIO, Union
+from typing import AnyStr, BinaryIO
 from warnings import warn
 
 import pluggy
@@ -28,8 +28,8 @@ from ocrmypdf._validation import check_options
 from ocrmypdf.cli import ArgumentParser, get_parser
 from ocrmypdf.helpers import is_iterable_notstr
 
-StrPath = Union[Path, AnyStr]
-PathOrIO = Union[BinaryIO, StrPath]
+StrPath = Path | AnyStr
+PathOrIO = BinaryIO | StrPath
 
 # Installing plugins affects the global state of the Python interpreter,
 # so we need to use a lock to prevent multiple threads from installing
@@ -169,7 +169,7 @@ def _kwargs_to_cmdline(
 
         # We have a parameter
         cmdline.append(f"--{cmd_style_arg}")
-        if isinstance(val, (int, float)):
+        if isinstance(val, int | float):
             cmdline.append(str(val))
         elif isinstance(val, str):
             cmdline.append(val)
@@ -201,11 +201,11 @@ def create_options(
         defer_kwargs={'progress_bar', 'plugins', 'parser', 'input_file', 'output_file'},
         **kwargs,
     )
-    if isinstance(input_file, (BinaryIO, IOBase)):
+    if isinstance(input_file, BinaryIO | IOBase):
         cmdline.append('stream://input_file')
     else:
         cmdline.append(os.fspath(input_file))
-    if isinstance(output_file, (BinaryIO, IOBase)):
+    if isinstance(output_file, BinaryIO | IOBase):
         cmdline.append('stream://output_file')
     else:
         cmdline.append(os.fspath(output_file))
@@ -343,7 +343,7 @@ def ocr(  # noqa: D417
 
     if not plugins:
         plugins = []
-    elif isinstance(plugins, (str, Path)):
+    elif isinstance(plugins, str | Path):
         plugins = [plugins]
     else:
         plugins = list(plugins)

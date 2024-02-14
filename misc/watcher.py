@@ -8,6 +8,7 @@
 # Do not enable annotations!
 # https://github.com/tiangolo/typer/discussions/598
 # from __future__ import annotations
+from __future__ import annotations
 
 import json
 import logging
@@ -131,7 +132,7 @@ def execute_ocrmypdf(
 
 
 class HandleObserverEvent(PatternMatchingEventHandler):
-    def __init__(
+    def __init__(  # noqa: D107
         self,
         patterns=None,
         ignore_patterns=None,
@@ -191,7 +192,7 @@ def main(
         bool,
         typer.Option(
             envvar='OCR_OUTPUT_DIRECTORY_YEAR_MONTH',
-            help='Create a subdirectory in the output directory for each year and month',
+            help='Create a subdirectory in the output directory for each year/month',
         ),
     ] = False,
     on_success_delete: Annotated[

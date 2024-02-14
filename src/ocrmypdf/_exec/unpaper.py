@@ -14,7 +14,6 @@ from decimal import Decimal
 from pathlib import Path
 from subprocess import PIPE, STDOUT
 from tempfile import TemporaryDirectory
-from typing import Union
 
 from packaging.version import Version
 from PIL import Image
@@ -28,7 +27,7 @@ from ocrmypdf.subprocess import get_version, run
 
 UNPAPER_IMAGE_PIXEL_LIMIT = 256 * 1024 * 1024
 
-DecFloat = Union[Decimal, float]
+DecFloat = Decimal | float
 
 log = logging.getLogger(__name__)
 

@@ -10,7 +10,6 @@ import atexit
 import logging
 import re
 import statistics
-import sys
 from collections import defaultdict
 from collections.abc import Callable, Container, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
@@ -1060,12 +1059,7 @@ class PageInfo:
 
         weights = [area / total_drawn_area for area in image_areas]
         # Calculate harmonic mean of DPIs weighted by area
-        if sys.version_info >= (3, 10):
-            weighted_dpi = statistics.harmonic_mean(image_dpis, weights)
-        else:
-            weighted_dpi = sum(weights) / sum(
-                weight / dpi for weight, dpi in zip(weights, image_dpis)
-            )
+        weighted_dpi = statistics.harmonic_mean(image_dpis, weights)
         max_dpi = max(image_dpis)
         dpi_average_max_ratio = weighted_dpi / max_dpi
 
@@ -1176,7 +1170,7 @@ class PdfInfo:
     @property
     def filename(self) -> str | Path:
         """Return filename of PDF."""
-        if not isinstance(self._infile, (str, Path)):
+        if not isinstance(self._infile, str | Path):
             raise NotImplementedError("can't get filename from stream")
         return self._infile
 
