@@ -8,7 +8,6 @@ from __future__ import annotations
 import logging
 import os
 import shlex
-import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
 from decimal import Decimal
@@ -20,7 +19,7 @@ from typing import Union
 from packaging.version import Version
 from PIL import Image
 
-from ocrmypdf.exceptions import MissingDependencyError, SubprocessOutputError
+from ocrmypdf.exceptions import SubprocessOutputError
 from ocrmypdf.subprocess import get_version, run
 
 # unpaper documentation:

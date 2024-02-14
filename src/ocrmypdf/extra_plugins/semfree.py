@@ -20,13 +20,12 @@ from __future__ import annotations
 import logging
 import logging.handlers
 import signal
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from contextlib import suppress
 from enum import Enum, auto
 from itertools import islice, repeat, takewhile, zip_longest
 from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection, wait
-from typing import Callable
 
 from ocrmypdf import Executor, hookimpl
 from ocrmypdf._concurrent import NullProgressBar

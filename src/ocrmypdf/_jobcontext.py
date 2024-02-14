@@ -93,8 +93,8 @@ class PageContext:
         state = self.__dict__.copy()
 
         state['options'] = copy(self.options)
-        if not isinstance(state['options'].input_file, (str, bytes, os.PathLike)):
+        if not isinstance(state['options'].input_file, str | bytes | os.PathLike):
             state['options'].input_file = 'stream'
-        if not isinstance(state['options'].output_file, (str, bytes, os.PathLike)):
+        if not isinstance(state['options'].output_file, str | bytes | os.PathLike):
             state['options'].output_file = 'stream'
         return state

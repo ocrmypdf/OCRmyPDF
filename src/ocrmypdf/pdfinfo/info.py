@@ -12,7 +12,7 @@ import re
 import statistics
 import sys
 from collections import defaultdict
-from collections.abc import Container, Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Container, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from decimal import Decimal
 from enum import Enum, auto
@@ -20,7 +20,7 @@ from functools import partial
 from math import hypot, inf, isclose
 from os import PathLike
 from pathlib import Path
-from typing import Callable, NamedTuple
+from typing import NamedTuple
 from warnings import warn
 
 from pdfminer.layout import LTPage, LTTextBox

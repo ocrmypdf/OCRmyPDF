@@ -12,10 +12,10 @@ import queue
 import signal
 import sys
 import threading
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from contextlib import suppress
-from typing import Callable, Union
+from typing import Union
 
 from rich.console import Console as RichConsole
 
@@ -25,8 +25,10 @@ from ocrmypdf._progressbar import RichProgressBar
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import remove_all_log_handlers
 
-FuturesExecutorClass = Union[type[ThreadPoolExecutor], type[ProcessPoolExecutor]]
-Queue = Union[multiprocessing.Queue, queue.Queue]
+FuturesExecutorClass = Union[  # noqa: UP007
+    type[ThreadPoolExecutor], type[ProcessPoolExecutor]
+]
+Queue = Union[multiprocessing.Queue, queue.Queue]  # noqa: UP007
 UserInit = Callable[[], None]
 WorkerInit = Callable[[Queue, UserInit, int], None]
 
@@ -128,11 +130,14 @@ class StandardExecutor(Executor):
         listener = threading.Thread(target=log_listener, args=(log_queue,))
         listener.start()
 
-        with self.pbar_class(**progress_kwargs) as pbar, executor_class(
-            max_workers=max_workers,
-            initializer=initializer,
-            initargs=(log_queue, worker_initializer, logging.getLogger("").level),
-        ) as executor:
+        with (
+            self.pbar_class(**progress_kwargs) as pbar,
+            executor_class(
+                max_workers=max_workers,
+                initializer=initializer,
+                initargs=(log_queue, worker_initializer, logging.getLogger("").level),
+            ) as executor,
+        ):
             futures = [executor.submit(task, *args) for args in task_arguments]
             try:
                 for future in as_completed(futures):

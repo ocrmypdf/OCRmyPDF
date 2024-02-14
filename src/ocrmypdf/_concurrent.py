@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import threading
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable, Iterable
+from typing import Any, TypeVar
 
 from ocrmypdf._progressbar import NullProgressBar, ProgressBar
 

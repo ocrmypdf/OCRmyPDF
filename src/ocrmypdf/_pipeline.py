@@ -14,7 +14,7 @@ from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
 from io import BytesIO
 from pathlib import Path
-from shutil import copyfileobj, copystat
+from shutil import copyfileobj
 from typing import Any, BinaryIO, TypeVar, cast
 
 import img2pdf

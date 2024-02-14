@@ -7,10 +7,9 @@ from math import isclose
 
 import pytest
 
-from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfinfo import PdfInfo
 
-from .conftest import check_ocrmypdf, run_ocrmypdf_api
+from .conftest import check_ocrmypdf
 
 # pylint: disable=redefined-outer-name
 

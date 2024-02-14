@@ -84,7 +84,6 @@ class HocrTransform:
         debug_render_options: DebugRenderOptions | None = None,
     ):
         """Initialize the HocrTransform object."""
-
         if debug:
             log.warning("Use debug_render_options instead", DeprecationWarning)
             self.render_options = DebugRenderOptions(

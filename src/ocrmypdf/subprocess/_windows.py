@@ -9,17 +9,12 @@ import os
 import re
 import shutil
 import sys
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from itertools import chain
 from pathlib import Path
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeAlias, TypeVar
 
 from packaging.version import InvalidVersion, Version
-
-if sys.version_info >= (3, 10):
-    from typing import TypeAlias
-else:
-    from typing_extensions import TypeAlias  # pragma: no cover
 
 if sys.platform == 'win32':
     # mypy understands 'if sys.platform' better than try/except ModuleNotFoundError

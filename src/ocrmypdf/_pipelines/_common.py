@@ -11,13 +11,13 @@ import os
 import shutil
 import sys
 import threading
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from concurrent.futures.process import BrokenProcessPool
 from concurrent.futures.thread import BrokenThreadPool
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, NamedTuple, cast
+from typing import NamedTuple, cast
 
 import PIL
 

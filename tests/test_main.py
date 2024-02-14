@@ -17,7 +17,7 @@ from PIL import Image
 
 import ocrmypdf
 from ocrmypdf._exec import tesseract
-from ocrmypdf.exceptions import ExitCode, MissingDependencyError, OutputFileAccessError
+from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 from ocrmypdf.subprocess import get_version

@@ -5,12 +5,12 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from math import copysign
 from os import PathLike
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 from unittest.mock import patch
 
 import pdfminer

@@ -10,7 +10,7 @@ import multiprocessing
 import os
 import shutil
 import warnings
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from contextlib import suppress
 from decimal import Decimal
 from io import StringIO
@@ -19,7 +19,6 @@ from pathlib import Path
 from statistics import harmonic_mean
 from typing import (
     Any,
-    Callable,
     Generic,
     TypeVar,
 )
