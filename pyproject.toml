@@ -153,7 +153,10 @@ module = [
 ignore_missing_imports = true
 
 [tool.ruff]
-select = [
+target-version = "py310"
+
+[tool.ruff.lint]
+"select" = [
   "D",    # pydocstyle
   "E",    # pycodestyle
   "W",    # pycodestyle
@@ -161,16 +164,15 @@ select = [
   "I001", # isort
   "UP",   # pyupgrade
 ]
-target-version = "py310"
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["ocrmypdf"]
 required-imports = ["from __future__ import annotations"]
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "docs/conf.py" = ["D100", "D101", "D105"]
 "tests/*.py" = ["D100", "D101", "D102", "D103", "D105"]
 "misc/*.py" = ["D103", "D101", "D102"]
