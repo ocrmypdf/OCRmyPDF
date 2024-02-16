@@ -30,6 +30,11 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.1.1
+=======
+
+-  Fixed PyPy 3.10 support.
+
 v16.1.0
 =======
 
