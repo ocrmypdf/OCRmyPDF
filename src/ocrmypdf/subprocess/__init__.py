@@ -165,7 +165,7 @@ def get_version(
             env=env,
         )
         output: str = proc.stdout
-    except FileNotFoundError as e:
+    except (FileNotFoundError, PermissionError) as e:
         raise MissingDependencyError(
             f"Could not find program '{program}' on the PATH"
         ) from e
