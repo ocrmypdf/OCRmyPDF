@@ -167,7 +167,6 @@ target-version = "py310"
 
 [tool.ruff.lint.isort]
 known-first-party = ["ocrmypdf"]
-required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

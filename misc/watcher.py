@@ -7,8 +7,6 @@
 
 # Do not enable annotations!
 # https://github.com/tiangolo/typer/discussions/598
-# from __future__ import annotations
-from __future__ import annotations
 
 import json
 import logging
