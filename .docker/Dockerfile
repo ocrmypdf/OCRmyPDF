@@ -64,6 +64,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   img2pdf \
   libsm6 libxext6 libxrender-dev \
   pngquant \
+  python-is-python3 \
   tesseract-ocr \
   tesseract-ocr-chi-sim \
   tesseract-ocr-deu \
