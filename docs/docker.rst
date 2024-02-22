@@ -178,7 +178,7 @@ The OCRmyPDF test suite is installed with image. To run it:
 
 .. code-block:: bash
 
-   docker run --rm --entrypoint python  jbarlow83/ocrmypdf -m pytest
+   docker run --rm --entrypoint python3  jbarlow83/ocrmypdf -m pytest
 
 Accessing the shell
 ===================
@@ -197,7 +197,7 @@ service. The webservice may be launched as follows:
 
 .. code-block:: bash
 
-   docker run --entrypoint python -p 5000:5000  jbarlow83/ocrmypdf webservice.py
+   docker run --entrypoint python3 -p 5000:5000  jbarlow83/ocrmypdf webservice.py
 
 We omit the ``--rm`` parameter so that the container will not be
 automatically deleted when it exits.
