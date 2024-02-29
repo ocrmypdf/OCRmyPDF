@@ -390,7 +390,7 @@ Online documentation is located at:
         action='store',
         type=numeric(float, 0),
         metavar='MPixels',
-        help="Set maximum number of pixels to unpack before treating an image as a "
+        help="Set maximum number of megapixels to unpack before treating an image as a "
         "decompression bomb",
         default=250.0,
     )
