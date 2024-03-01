@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2023 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-FROM alpine:3.18 as base
+FROM alpine:3.19 as base
 
 ENV LANG=C.UTF-8
 ENV TZ=UTC
