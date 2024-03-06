@@ -135,7 +135,7 @@ from sources <#installing-head-revision-from-sources>`__.
    issues. OCRmyPDF works fine without it but will produce larger output
    files. If you build jbig2enc from source, ocrmypdf 7.0.0 and later
    will automatically detect it on the ``PATH``. To add JBIG2 encoding,
-   see `Installing the JBIG2 encoder <jbig2>`__.
+   see :ref:`Installing the JBIG2 encoder <jbig2>`.
 
 .. _ubuntu-lts-latest:
 
@@ -160,7 +160,7 @@ and build ocrmypdf in virtual environment:
 
     python3.11 -m venv .venv
 
-To add JBIG2 encoding, see `Installing the JBIG2 encoder <jbig2>`__.
+To add JBIG2 encoding, see :ref:`Installing the JBIG2 encoder <jbig2>`.
 
 Note Fedora packages for language data haven't been branched for RHEL/EPEL, but you can get traineddata files directly from `tesseract
 <https://github.com/tesseract-ocr/tessdata/>`__ and place them in ``/usr/share/tesseract/tessdata``.
@@ -260,7 +260,7 @@ page.
     <https://aur.archlinux.org/packages/jbig2enc-git/>`__ and may be installed
     using the same series of steps as for the installation OCRmyPDF AUR
     package. Alternatively, it may be built manually from source following the
-    instructions in `Installing the JBIG2 encoder <jbig2>`__.  If JBIG2 is
+    instructions in :ref:`Installing the JBIG2 encoder <jbig2>`.  If JBIG2 is
     installed, OCRmyPDF 7.0.0 and later will automatically detect it.
 
 Alpine Linux
