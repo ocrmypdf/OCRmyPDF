@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2016 findingorder <https://github.com/findingorder>
+# SPDX-FileCopyrightText: 2024 nilsro <https://github.com/nilsro>
 # SPDX-License-Identifier: MIT
 
 """Example of using ocrmypdf as a library in a script.
