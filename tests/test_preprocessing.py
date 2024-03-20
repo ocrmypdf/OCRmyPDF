@@ -9,10 +9,11 @@ import pytest
 from PIL import Image
 
 from ocrmypdf._exec import ghostscript, tesseract
+from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo import PdfInfo
 
-from .conftest import check_ocrmypdf, have_unpaper
+from .conftest import check_ocrmypdf, have_unpaper, run_ocrmypdf
 
 RENDERERS = ['hocr', 'sandwich']
 
@@ -107,7 +108,7 @@ def test_non_square_resolution(renderer, resources, outpdf):
     in_pageinfo = PdfInfo(resources / 'aspect.pdf')
     assert in_pageinfo[0].dpi.x != in_pageinfo[0].dpi.y
 
-    check_ocrmypdf(
+    proc = run_ocrmypdf(
         resources / 'aspect.pdf',
         outpdf,
         '--pdf-renderer',
@@ -115,6 +116,10 @@ def test_non_square_resolution(renderer, resources, outpdf):
         '--plugin',
         'tests/plugins/tesseract_cache.py',
     )
+    # PDF/A conversion can fail for this file if Ghostscript >= 10.3, so don't test
+    # exit code in that case
+    if proc.returncode != ExitCode.pdfa_conversion_failed:
+        proc.check_returncode()
 
     out_pageinfo = PdfInfo(outpdf)
 
