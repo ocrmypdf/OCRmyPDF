@@ -30,6 +30,12 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.1.2
+=======
+
+-  Fixed test suite failure when using Ghostscript 10.3.
+-  Other minor corrections.
+
 v16.1.1
 =======
 
