@@ -90,7 +90,7 @@ def generate_pdfa_ps(target_filename: Path, icc: str = 'sRGB'):
         icc: ICC identifier such as 'sRGB'
     References:
         Adobe PDFMARK Reference:
-        https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/pdfmark_reference.pdf
+        https://opensource.adobe.com/dc-acrobat-sdk-docs/library/pdfmark/
     """
     if icc != 'sRGB':
         raise NotImplementedError("Only supporting sRGB")
