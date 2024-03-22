@@ -220,7 +220,7 @@ class TesseractOcrEngine(OcrEngine):
 
     @staticmethod
     def creator_tag(options):
-        tag = '-PDF' if options.pdf_renderer == 'sandwich' else 'hOCR'
+        tag = '-PDF' if options.pdf_renderer == 'sandwich' else '-hOCR'
         return f"Tesseract OCR{tag} {TesseractOcrEngine.version()}"
 
     def __str__(self):
