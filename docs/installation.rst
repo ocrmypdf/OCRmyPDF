@@ -99,11 +99,11 @@ For full details on version availability for your platform, check the
 Fedora
 ------
 
-.. |fedora-37| image:: https://repology.org/badge/version-for-repo/fedora_37/ocrmypdf.svg
-    :alt: Fedora 37
-
 .. |fedora-38| image:: https://repology.org/badge/version-for-repo/fedora_38/ocrmypdf.svg
     :alt: Fedora 38
+
+.. |fedora-39| image:: https://repology.org/badge/version-for-repo/fedora_39/ocrmypdf.svg
+    :alt: Fedora 39
 
 .. |fedora-rawhide| image:: https://repology.org/badge/version-for-repo/fedora_rawhide/ocrmypdf.svg
     :alt: Fedore Rawhide
@@ -113,7 +113,7 @@ Fedora
 +-----------------------------------------------+
 | |latest|                                      |
 +-----------------------------------------------+
-| |fedora-37| |fedora-38| |fedora-rawhide|      |
+| |fedora-38| |fedora-39| |fedora-rawhide|      |
 +-----------------------------------------------+
 
 Users of Fedora may simply
@@ -123,7 +123,7 @@ Users of Fedora may simply
     dnf install ocrmypdf tesseract-osd
 
 For full details on version availability, check the `Fedora Package
-Tracker <https://apps.fedoraproject.org/packages/ocrmypdf>`__.
+Tracker <https://packages.fedoraproject.org/pkgs/ocrmypdf/ocrmypdf/>`__.
 
 If the version available for your platform is out of date, you could opt
 to install the latest version from source. See `Installing HEAD revision
@@ -135,7 +135,7 @@ from sources <#installing-head-revision-from-sources>`__.
    issues. OCRmyPDF works fine without it but will produce larger output
    files. If you build jbig2enc from source, ocrmypdf 7.0.0 and later
    will automatically detect it on the ``PATH``. To add JBIG2 encoding,
-   see `Installing the JBIG2 encoder <jbig2>`__.
+   see :ref:`Installing the JBIG2 encoder <jbig2>`.
 
 .. _ubuntu-lts-latest:
 
@@ -160,7 +160,7 @@ and build ocrmypdf in virtual environment:
 
     python3.11 -m venv .venv
 
-To add JBIG2 encoding, see `Installing the JBIG2 encoder <jbig2>`__.
+To add JBIG2 encoding, see :ref:`Installing the JBIG2 encoder <jbig2>`.
 
 Note Fedora packages for language data haven't been branched for RHEL/EPEL, but you can get traineddata files directly from `tesseract
 <https://github.com/tesseract-ocr/tessdata/>`__ and place them in ``/usr/share/tesseract/tessdata``.
@@ -217,7 +217,7 @@ you are using a VM image, such as `the official Vagrant image
 be completed for you.
 
 Next you should install the `base-devel package group
-<https://www.archlinux.org/groups/x86_64/base-devel/>`__. This includes the
+<https://archlinux.org/packages/core/any/base-devel/>`__. This includes the
 standard tooling needed to build packages, such as a compiler and binary tools.
 
 .. code-block:: bash
@@ -260,7 +260,7 @@ page.
     <https://aur.archlinux.org/packages/jbig2enc-git/>`__ and may be installed
     using the same series of steps as for the installation OCRmyPDF AUR
     package. Alternatively, it may be built manually from source following the
-    instructions in `Installing the JBIG2 encoder <jbig2>`__.  If JBIG2 is
+    instructions in :ref:`Installing the JBIG2 encoder <jbig2>`.  If JBIG2 is
     installed, OCRmyPDF 7.0.0 and later will automatically detect it.
 
 Alpine Linux
@@ -623,7 +623,7 @@ environment:
     pip install git+https://github.com/ocrmypdf/OCRmyPDF.git
 
 Or, to install in `development
-mode <https://pythonhosted.org/setuptools/setuptools.html#development-mode>`__,
+mode <https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#working-in-development-mode>`__,
 allowing customization of OCRmyPDF, use the ``-e`` flag:
 
 .. code-block:: bash
