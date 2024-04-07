@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import argparse
 import logging
 import os
 
@@ -93,7 +94,8 @@ def add_options(parser):
     )
     tess.add_argument(
         '--tesseract-downsample-large-images',
-        action='store_true',
+        action=argparse.BooleanOptionalAction,
+        default=True,
         help=(
             "Downsample large images before OCR. Tesseract has an upper limit on the "
             "size images it will support. If this argument is given, OCRmyPDF will "
