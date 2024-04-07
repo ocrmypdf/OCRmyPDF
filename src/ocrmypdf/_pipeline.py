@@ -41,10 +41,21 @@ from ocrmypdf.pdfa import generate_pdfa_ps
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PageInfo, PdfInfo
 from ocrmypdf.pluginspec import OrientationConfidence
 
+try:
+    from pi_heif import register_heif_opener
+except ImportError:
+
+    def register_heif_opener():
+        pass
+
+
 T = TypeVar("T")
 log = logging.getLogger(__name__)
 
 VECTOR_PAGE_DPI = 400
+
+
+register_heif_opener()
 
 
 def triage_image_file(input_file: Path, output_file: Path, options) -> None:

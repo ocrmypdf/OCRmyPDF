@@ -65,3 +65,12 @@ installation documentation.
 If you maintain a Linux distribution that supports 32-bit x86 or ARM, OCRmyPDF
 should continue to work as long as all of its dependencies continue to be
 available in 32-bit form. Please note we do not test on 32-bit platforms.
+
+HEIF/HEIC
+---------
+
+OCRmyPDF defaults to installing the pi-heif PyPI package, which supports converting
+HEIF (High Efficiency Image File Format) images to PDF from the command line.
+If your distribution does not have this library available, you can exclude it and
+OCRmyPDF will gracefully degrade automatically, losing only support for this
+feature.
