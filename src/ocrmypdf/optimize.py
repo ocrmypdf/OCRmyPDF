@@ -89,6 +89,7 @@ def extract_image_filter(
         if (
             len(pim.filter_decodeparms) == 2
             and first_filtdp[0] == Name.FlateDecode
+            and first_filtdp[1] is not None
             and first_filtdp[1].get(Name.Predictor, 1) == 1
             and second_filtdp[0] == Name.DCTDecode
             and not second_filtdp[1]
