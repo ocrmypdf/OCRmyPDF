@@ -171,6 +171,7 @@ def get_version(
         ) from e
     except CalledProcessError as e:
         if e.returncode != 0:
+            log.exception(e)
             raise MissingDependencyError(
                 f"Ran program '{program}' but it exited with an error:\n{e.output}"
             ) from e
