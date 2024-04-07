@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: MPL-2.0
 """Built-in plugin to implement OCR using Tesseract."""
 
-
 from __future__ import annotations
 
 import logging

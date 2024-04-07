@@ -4,7 +4,6 @@
 
 """Implements the concurrent and page synchronous parts of the pipeline."""
 
-
 from __future__ import annotations
 
 import argparse

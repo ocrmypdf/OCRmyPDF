@@ -166,9 +166,12 @@ def metadata_fixup(
 
     with Pdf.open(context.origin) as original, Pdf.open(working_file) as pdf:
         docinfo = get_docinfo(original, context)
-        with original.open_metadata(
-            set_pikepdf_as_editor=False, update_docinfo=False, strict=False
-        ) as meta_original, pdf.open_metadata() as meta_pdf:
+        with (
+            original.open_metadata(
+                set_pikepdf_as_editor=False, update_docinfo=False, strict=False
+            ) as meta_original,
+            pdf.open_metadata() as meta_pdf,
+        ):
             meta_pdf.load_from_docinfo(
                 docinfo, delete_missing=False, raise_failure=False
             )

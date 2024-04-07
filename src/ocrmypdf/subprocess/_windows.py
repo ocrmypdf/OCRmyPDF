@@ -79,7 +79,7 @@ def registry_path_ghostscript(env=None) -> Iterator[Path]:
                 registry_subkeys(k), key=ghostscript_version_key, default=(0, 0, 0)
             )
         with winreg.OpenKey(
-            winreg.HKEY_LOCAL_MACHINE, fr"SOFTWARE\Artifex\GPL Ghostscript\{latest_gs}"
+            winreg.HKEY_LOCAL_MACHINE, rf"SOFTWARE\Artifex\GPL Ghostscript\{latest_gs}"
         ) as k:
             for _, gs_path, _ in registry_values(k):
                 yield Path(gs_path) / 'bin'

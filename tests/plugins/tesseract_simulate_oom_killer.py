@@ -9,6 +9,7 @@ ensure we fail with an error rather than deadlock in such cases.
 Page 4 was chosen because of this number's association with bad luck
 in many East Asian cultures.
 """
+
 # type: ignore
 from __future__ import annotations
 

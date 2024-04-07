@@ -35,9 +35,10 @@ def test_preserve_docinfo(output_type, resources, outpdf):
         '--plugin',
         'tests/plugins/tesseract_noop.py',
     )
-    with pikepdf.open(resources / 'graph.pdf') as pdf_before, pikepdf.open(
-        output
-    ) as pdf_after:
+    with (
+        pikepdf.open(resources / 'graph.pdf') as pdf_before,
+        pikepdf.open(output) as pdf_after,
+    ):
         for key in ('/Title', '/Author'):
             assert pdf_before.docinfo[key] == pdf_after.docinfo[key]
         pdfa_info = file_claims_pdfa(str(output))

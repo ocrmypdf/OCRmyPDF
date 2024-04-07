@@ -11,9 +11,11 @@ import ocrmypdf
 
 
 def test_no_glyphless_graft(resources, outdir):
-    with pikepdf.open(resources / 'francais.pdf') as pdf, pikepdf.open(
-        resources / 'aspect.pdf'
-    ) as pdf_aspect, pikepdf.open(resources / 'cmyk.pdf') as pdf_cmyk:
+    with (
+        pikepdf.open(resources / 'francais.pdf') as pdf,
+        pikepdf.open(resources / 'aspect.pdf') as pdf_aspect,
+        pikepdf.open(resources / 'cmyk.pdf') as pdf_cmyk,
+    ):
         pdf.pages.extend(pdf_aspect.pages)
         pdf.pages.extend(pdf_cmyk.pages)
         pdf.save(outdir / 'test.pdf')

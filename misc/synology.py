@@ -53,9 +53,10 @@ for dir_name, _subdirs, file_list in os.walk(start_dir):
         ]
         logging.info(cmd)
         full_path_ocr = os.path.join(dir_name, filename_ocr)
-        with open(filename, 'rb') as input_file, open(
-            full_path_ocr, 'wb'
-        ) as output_file:
+        with (
+            open(filename, 'rb') as input_file,
+            open(full_path_ocr, 'wb') as output_file,
+        ):
             proc = subprocess.run(
                 cmd,
                 stdin=input_file,

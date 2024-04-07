@@ -131,7 +131,7 @@ def _pdf_guess_version(input_file: Path, search_window=1024) -> str:
     """
     with open(input_file, 'rb') as f:
         signature = f.read(search_window)
-    m = re.search(br'%PDF-(\d\.\d)', signature)
+    m = re.search(rb'%PDF-(\d\.\d)', signature)
     if m:
         return m.group(1).decode('ascii')
     return ''
@@ -767,7 +767,9 @@ def render_hocr_page(hocr: Path, page_context: PageContext) -> Path:
             font=Courier(),
         )
     HocrTransform(
-        hocr_filename=hocr, dpi=dpi.to_scalar(), **debug_kwargs  # square
+        hocr_filename=hocr,
+        dpi=dpi.to_scalar(),
+        **debug_kwargs,  # square
     ).to_pdf(
         out_filename=output_file,
         image_filename=None,

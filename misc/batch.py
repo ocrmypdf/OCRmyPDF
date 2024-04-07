@@ -27,7 +27,8 @@ import ocrmypdf
 # pylint: disable=logging-format-interpolation
 # pylint: disable=logging-not-lazy
 
-def filecompare(a,b):
+
+def filecompare(a, b):
     try:
         return filecmp.cmp(a, b, shallow=True)
     except FileNotFoundError:
@@ -82,7 +83,9 @@ for filename in start_dir.glob("**/*.pdf"):
         except ocrmypdf.exceptions.DigitalSignatureError:
             logging.info("Skipped document because it has a digital signature")
         except ocrmypdf.exceptions.TaggedPDFError:
-            logging.info("Skipped document because it does not need ocr as it is tagged")
+            logging.info(
+                "Skipped document because it does not need ocr as it is tagged"
+            )
         except:
             logging.error("Unhandled error occured")
         logging.info("OCR complete")

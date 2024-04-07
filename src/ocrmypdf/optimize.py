@@ -3,7 +3,6 @@
 
 """Post-processing image optimization of OCR PDFs."""
 
-
 from __future__ import annotations
 
 import logging

@@ -4,7 +4,6 @@
 
 """Implements the concurrent and page synchronous parts of the pipeline."""
 
-
 from __future__ import annotations
 
 import argparse
@@ -155,12 +154,13 @@ def _run_pipeline(
     options: argparse.Namespace,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
-    with manage_work_folder(
-        work_folder=Path(mkdtemp(prefix="ocrmypdf.io.")),
-        retain=options.keep_temporary_files,
-        print_location=options.keep_temporary_files,
-    ) as work_folder, manage_debug_log_handler(
-        options=options, work_folder=work_folder
+    with (
+        manage_work_folder(
+            work_folder=Path(mkdtemp(prefix="ocrmypdf.io.")),
+            retain=options.keep_temporary_files,
+            print_location=options.keep_temporary_files,
+        ) as work_folder,
+        manage_debug_log_handler(options=options, work_folder=work_folder),
     ):
         executor = setup_pipeline(options, plugin_manager)
         check_requested_output_file(options)
