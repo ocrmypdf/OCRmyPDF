@@ -61,7 +61,7 @@ test = [
   "types-Pillow",
   "types-humanfriendly",
 ]
-watcher = ["watchdog>=1.0.2", "typer[all]", "python-dotenv"]
+watcher = ["watchdog>=1.0.2", "typer-slim[standard]", "python-dotenv"]
 webservice = ["Flask>=2.0.1"]
 
 [project.scripts]
