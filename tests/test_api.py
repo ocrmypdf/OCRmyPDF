@@ -29,6 +29,18 @@ def test_stream_api(resources: Path):
     assert b'%PDF' in out.read(1024)
 
 
+def test_sidecar_stringio(resources: Path, outdir: Path, outpdf: Path):
+    s = BytesIO()
+    ocrmypdf.ocr(
+        resources / 'ccitt.pdf',
+        outpdf,
+        plugins=['tests/plugins/tesseract_cache.py'],
+        sidecar=s
+    )
+    s.seek(0)
+    assert b'the' in s.getvalue()
+
+
 def test_hocr_api_multipage(resources: Path, outdir: Path, outpdf: Path):
     ocrmypdf.api._pdf_to_hocr(
         resources / 'multipage.pdf',
@@ -62,3 +74,4 @@ def test_hocr_to_pdf_api(resources: Path, outdir: Path, outpdf: Path):
 
     text = extract_text(outpdf)
     assert 'hocr' in text and 'the' not in text
+

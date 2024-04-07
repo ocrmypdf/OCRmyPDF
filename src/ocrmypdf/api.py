@@ -209,6 +209,9 @@ def create_options(
         cmdline.append('stream://output_file')
     else:
         cmdline.append(os.fspath(output_file))
+    if 'sidecar' in kwargs and isinstance(kwargs['sidecar'], BinaryIO | IOBase):
+        cmdline.append('--sidecar')
+        cmdline.append('stream://sidecar')
 
     parser.enable_api_mode()
     options = parser.parse_args(cmdline)
@@ -219,6 +222,8 @@ def create_options(
         options.input_file = input_file
     if options.output_file == 'stream://output_file':
         options.output_file = output_file
+    if options.sidecar == 'stream://sidecar':
+        options.sidecar = kwargs['sidecar']
 
     return options
 
@@ -230,7 +235,7 @@ def ocr(  # noqa: D417
     language: Iterable[str] | None = None,
     image_dpi: int | None = None,
     output_type: str | None = None,
-    sidecar: StrPath | None = None,
+    sidecar: PathOrIO | None = None,
     jobs: int | None = None,
     use_threads: bool | None = None,
     title: str | None = None,
