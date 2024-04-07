@@ -79,29 +79,6 @@ namespaces = false
 [tool.distutils.bdist_wheel]
 python-tag = "py310"
 
-[tool.black]
-line-length = 88
-target-version = ["py310", "py311", "py312"]
-skip-string-normalization = true
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-  | docs
-  | misc
-  | \.egg-info
-)/
-'''
-
 [tool.coverage.run]
 branch = true
 parallel = true
