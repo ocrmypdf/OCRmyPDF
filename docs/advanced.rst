@@ -118,15 +118,16 @@ OCR for huge images
 -------------------
 
 Tesseract has internal limits on the size
-of images it will process. If you issue
-``--tesseract-downsample-large-images``, OCRmyPDF will downsample images
-to fit Tesseract limits. (The limits are usually entered only for scanned
-images of oversized media, such as large maps or blueprints exceeding
-110 cm or 43 inches in either dimension, and at high DPI.)
+of images it will process. By default,
+``--tesseract-downsample-large-images`` is enabled, and OCRmyPDF will
+downsample images to fit Tesseract limits. (The limits are usually encountered
+only for scanned images of oversized media, such as large maps or blueprints exceeding
+110 cm or 43 inches in either dimension, and at high DPI.) This feature can disabled
+using ``--no-tesseract-downsample-large-images``.
 
 ``--tesseract-downsample-above Npixels`` adjusts the threshold at which images
 will be downsampled. By default, only images that exceed any of Tesseract's
-internal limits are downsampled.
+internal limits are downsampled (32767 pixels on either dimension).
 
 You will also need to set ``--tesseract-timeout`` high enough to allow
 for processing.

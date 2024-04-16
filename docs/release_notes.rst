@@ -30,6 +30,25 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+
+v16.2.0
+=======
+
+-  Fixed issue 'NoneType' object has no attribute 'get' when optimizing certain PDFs.
+   :issue:`1293,1271`
+-  Switched formatting from black to ruff.
+-  Added support for sending sidecar output to io.BytesIO.
+-  Added support for converting HEIF/HEIC images (the native image of iPhones and
+   some other devices) to PDFs, when the appropriate pi-hief library is installed.
+   This library is marked as a dependency, but maintainers may opt out if needed.
+-  We now default to downsampling large images that would exceed Tesseract's internal
+   limits, but only if it cause processing to fail. Previously, this behavior only
+   occurred if specifically requested on command line. It can still be configured
+   and disabled. See the --tesseract command line options.
+-  Added Macports install instructions. Thanks @akierig.
+-  Improved logging output when an unexpected error occurs while trying to obtain
+   the version of a third party program.
+
 v16.1.2
 =======
 
