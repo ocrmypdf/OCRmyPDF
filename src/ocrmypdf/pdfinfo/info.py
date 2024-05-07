@@ -239,7 +239,13 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
                 # to do. Just pretend nothing happened, keep calm and carry on.
                 warn("PDF graphics stack underflowed - PDF may be malformed")
         elif operator == 'cm':
-            ctm = Matrix(operands) @ ctm
+            try:
+                ctm = Matrix(operands) @ ctm
+            except ValueError:
+                raise InputFileError(
+                    "PDF content stream is corrupt - this PDF is malformed. "
+                    "Use a PDF editor that is capable of visually inspecting the PDF."
+                )
         elif operator == 'Do':
             image_name = operands[0]
             settings = XobjectSettings(
