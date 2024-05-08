@@ -68,6 +68,22 @@ to what languages it should search for. Multiple languages can be
 requested using either ``-l eng+fra`` (English and French) or
 ``-l eng -l fra``.
 
+Archlinux
+------
+
+.. code-block:: bash
+
+   # Display a list of all Tesseract language packs
+   pacman -Ss tesseract-data
+
+   # Install German language pack
+   pacman -S tesseract-data-deu
+
+You can then pass the ``-l LANG`` argument to OCRmyPDF to give a hint as
+to what languages it should search for. Multiple languages can be
+requested using either ``-l eng+fra`` (English and French) or
+``-l eng -l fra``.
+
 Gentoo
 ------
 
