@@ -101,9 +101,12 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           files: ./coverage.xml
           env_vars: OS,PYTHON
+
 
   test_macos:
     name: Test macOS
