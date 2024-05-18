@@ -24,7 +24,7 @@ body:
   - type: dropdown
     id: packaging-system
     attributes:
-      label: Where are you installing from?
+      label: Where are you installing/running from?
       multiple: true
       options:
         - PyPI (pip, poetry, pipx, etc.)
@@ -37,6 +37,11 @@ body:
         - source build
     validations:
       required: true
+  - type: input
+    id: version
+    attributes:
+      label: OCRmyPDF version
+      description: Paste "ocrmypdf --version" here
   - type: dropdown
     id: operating-system
     attributes:
@@ -47,6 +52,17 @@ body:
         - Windows
         - macOS
         - BSD
+  - type: input
+    id: os_version
+    attributes:
+      label: Operating system details and version
+  - type: checkboxes
+    attributes:
+      label: Simple sanity checks
+      description: Select all that apply
+      options:
+        - label: Operating system is currently supported by its vendor (not end of life)
+        - label: Python version is compatible with OCRmyPDF
   - type: textarea
     id: logs
     attributes:
