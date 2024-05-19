@@ -153,18 +153,45 @@ def _set_language(pdf: Pdf, languages: list[str]):
     pdf.Root.Lang = iso639_2
 
 
+class MetadataProgress:
+    def __init__(self, progressbar_class):
+        self.progressbar_class = progressbar_class
+        self.progressbar = self.progressbar_class(
+            total=100, desc="Linearizing", unit='%'
+        )
+
+    def __enter__(self):
+        self.progressbar.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return self.progressbar.__exit__(exc_type, exc_value, traceback)
+
+    def __call__(self, percent: int):
+        if not self.progressbar_class:
+            return
+        self.progressbar.update(completed=percent)
+
+
 def metadata_fixup(
     working_file: Path, context: PdfContext, pdf_save_settings: dict[str, Any]
 ) -> Path:
-    """Fix certain metadata fields after Ghostscript PDF/A conversion.
+    """Fix certain metadata fields whether PDF or PDF/A.
+
+    Override some of Ghostscript's metadata choices.
 
     Also report on metadata in the input file that was not retained during
-    PDF/A conversion.
+    conversion.
     """
     output_file = context.get_path('metafix.pdf')
     options = context.options
 
-    with Pdf.open(context.origin) as original, Pdf.open(working_file) as pdf:
+    pbar_class = context.plugin_manager.hook.get_progressbar_class()
+    with (
+        Pdf.open(context.origin) as original,
+        Pdf.open(working_file) as pdf,
+        MetadataProgress(pbar_class) as pbar,
+    ):
         docinfo = get_docinfo(original, context)
         with (
             original.open_metadata(
@@ -182,6 +209,6 @@ def metadata_fixup(
             report_on_metadata(options, meta_missing)
 
         _set_language(pdf, options.languages)
-        pdf.save(output_file, **pdf_save_settings)
+        pdf.save(output_file, progress=pbar, **pdf_save_settings)
 
     return output_file

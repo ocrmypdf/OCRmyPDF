@@ -66,7 +66,7 @@ class ProgressBar(Protocol):
     def __exit__(self, *args):
         """Exit a progress bar context."""
 
-    def update(self, n=1):
+    def update(self, n=1, *, completed=None):
         """Update the progress bar by an increment.
 
         For use within a progress bar context.
@@ -85,7 +85,7 @@ class NullProgressBar:
     def __exit__(self, exc_type, exc_value, traceback):
         return False
 
-    def update(self, _arg=None):
+    def update(self, _arg=None, *, completed=None):
         return
 
 
@@ -103,6 +103,7 @@ class RichProgressBar:
         disable: bool = False,
         **kwargs,
     ):
+        self._entered = False
         self.progress = Progress(
             TextColumn(
                 "[progress.description]{task.description}",
@@ -130,6 +131,7 @@ class RichProgressBar:
 
     def __enter__(self):
         self.progress.start()
+        self._entered = True
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -137,6 +139,10 @@ class RichProgressBar:
         self.progress.stop()
         return False
 
-    def update(self, value=None):
-        advance = self.unit_scale if value is None else value
-        self.progress.update(self.progress_bar, advance=advance)
+    def update(self, n=1, *, completed=None):
+        assert self._entered, "Progress bar must be entered before updating"
+        if completed is None:
+            advance = self.unit_scale if n is None else n
+            self.progress.update(self.progress_bar, advance=advance)
+        else:
+            self.progress.update(self.progress_bar, completed=completed)
