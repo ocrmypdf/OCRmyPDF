@@ -117,15 +117,12 @@ class HocrTransform:
             # Stop after first div that has page coordinates
             break
 
-    def _get_element_text(self, element: Element):
+    def _get_element_text(self, element: Element) -> str:
         """Return the textual content of the element and its children."""
-        text = ''
-        if element.text is not None:
-            text += element.text
+        text = element.text if element.text is not None else ''
         for child in element:
             text += self._get_element_text(child)
-        if element.tail is not None:
-            text += element.tail
+        text += element.tail if element.tail is not None else ''
         return text
 
     @classmethod
@@ -286,7 +283,10 @@ class HocrTransform:
         line_box = self.element_coordinates(line)
         if not line_box:
             return
-        assert line_box.ury > line_box.lly  # lly is top, ury is bottom
+        if line_box.ury <= line_box.lly:
+            log.error("line box is invalid so we cannot render it: box=%s text=%s",
+                      line_box, self._get_element_text(line))
+            return
 
         self._debug_draw_line_bbox(canvas, line_box)
 
