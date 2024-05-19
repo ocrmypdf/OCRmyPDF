@@ -30,6 +30,15 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.3.0
+=======
+
+-  Fixed progress bar not displaying for Ghostscript PDF/A conversion. :issue:`1313`
+-  Added progress bar for linearization. :issue:`1313`
+-  If `--rotate-pages-threshold` issued without `--rotate-pages` we now exit with
+   an error since the user likely intended to use `--rotate-pages`. :issue:`1309`
+-  If Tesseract hOCR gives an invalid line box, print an error message instead of
+   exiting with an error. :issue:`1312`
 
 v16.2.0
 =======
