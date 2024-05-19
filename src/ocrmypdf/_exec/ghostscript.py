@@ -177,6 +177,17 @@ class GhostscriptFollower:
         self.progressbar_class = progressbar_class
         self.progressbar = None
 
+    def __enter__(self):
+        # We can't actually set up the progressbar here, because we don't know
+        # how many pages there are until the first __call__() happens. So we
+        # do it in __call__().
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.progressbar:
+            return self.progressbar.__exit__(exc_type, exc_value, traceback)
+        return False
+
     def __call__(self, line):
         if not self.progressbar_class:
             return
@@ -187,7 +198,8 @@ class GhostscriptFollower:
                 self.progressbar = self.progressbar_class(
                     total=self.count, desc="PDF/A conversion", unit='page'
                 )
-                return
+                # Now that we know the count, we can set up the progressbar.
+                self.progressbar.__enter__()
         else:
             if self.re_page.match(line.strip()):
                 self.progressbar.update()
@@ -265,7 +277,10 @@ def generate_pdfa(
     )
     args_gs.extend(fspath(s) for s in pdf_pages)  # Stringify Path objs
     try:
-        with Path(output_file).open('wb') as output:
+        with (
+            Path(output_file).open('wb') as output,
+            GhostscriptFollower(progressbar_class) as pbar,
+        ):
             p = run_polling_stderr(
                 args_gs,
                 stdout=output,
@@ -274,7 +289,7 @@ def generate_pdfa(
                 text=True,
                 encoding='utf-8',
                 errors='replace',
-                callback=GhostscriptFollower(progressbar_class),
+                callback=pbar,
             )
     except CalledProcessError as e:
         # Ghostscript does not change return code when it fails to create
