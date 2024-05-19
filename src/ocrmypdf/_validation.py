@@ -20,6 +20,7 @@ import pikepdf
 import PIL
 from pluggy import PluginManager
 
+from ocrmypdf._defaults import DEFAULT_LANGUAGE, DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._exec import unpaper
 from ocrmypdf.exceptions import (
     BadArgsError,
@@ -30,15 +31,7 @@ from ocrmypdf.exceptions import (
 from ocrmypdf.helpers import is_file_writable, monotonic, safe_symlink
 from ocrmypdf.subprocess import check_external_program
 
-# -------------
-# External dependencies
-
-DEFAULT_LANGUAGE = 'eng'  # Enforce English hegemony
-
 log = logging.getLogger(__name__)
-
-
-# --------
 
 
 def check_platform() -> None:
@@ -130,6 +123,11 @@ def check_options_preprocessing(options: Namespace) -> None:
         options.clean = True
     if options.unpaper_args and not options.clean:
         raise BadArgsError("--clean is required for --unpaper-args")
+    if (
+        options.rotate_pages_threshold != DEFAULT_ROTATE_PAGES_THRESHOLD
+        and not options.rotate_pages
+    ):
+        raise BadArgsError("--rotate-pages is required for --rotate-pages-threshold")
     if options.clean:
         check_external_program(
             program='unpaper',
