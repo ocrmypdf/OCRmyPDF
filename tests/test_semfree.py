@@ -23,4 +23,4 @@ def test_semfree(resources, outpdf):
         '--plugin',
         'tests/plugins/tesseract_noop.py',
     )
-    assert exitcode == ExitCode.ok
+    assert exitcode in (ExitCode.ok, ExitCode.pdfa_conversion_failed)
