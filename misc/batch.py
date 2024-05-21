@@ -14,12 +14,12 @@ You should edit this script to meet your needs.
 
 from __future__ import annotations
 
+import filecmp
 import logging
-import sys
 import os
 import posixpath
 import shutil
-import filecmp
+import sys
 from pathlib import Path
 
 import ocrmypdf
@@ -70,7 +70,7 @@ for filename in start_dir.glob("**/*.pdf"):
             logging.info(f"Archiving document to {archive_filename}")
             try:
                 shutil.copy2(filename, posixpath.dirname(archive_filename))
-            except IOError as io_err:
+            except OSError:
                 os.makedirs(posixpath.dirname(archive_filename))
                 shutil.copy2(filename, posixpath.dirname(archive_filename))
         try:
@@ -86,6 +86,6 @@ for filename in start_dir.glob("**/*.pdf"):
             logging.info(
                 "Skipped document because it does not need ocr as it is tagged"
             )
-        except:
+        except Exception:
             logging.error("Unhandled error occured")
         logging.info("OCR complete")
