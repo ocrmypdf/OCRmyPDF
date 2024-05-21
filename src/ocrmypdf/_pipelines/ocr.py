@@ -103,14 +103,14 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
         try:
             set_thread_pageno(result.pageno + 1)
             sidecars[result.pageno] = result.text
-            pbar.update()
+            pbar.update(0.5)
             ocrgraft.graft_page(
                 pageno=result.pageno,
                 image=result.pdf_page_from_image,
                 textpdf=result.ocr,
                 autorotate_correction=result.orientation_correction,
             )
-            pbar.update()
+            pbar.update(0.5)
         finally:
             set_thread_pageno(None)
 
@@ -118,10 +118,9 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
         use_threads=options.use_threads,
         max_workers=max_workers,
         progress_kwargs=dict(
-            total=(2 * len(context.pdfinfo)),
+            total=len(context.pdfinfo),
             desc='OCR' if options.tesseract_timeout > 0 else 'Image processing',
             unit='page',
-            unit_scale=0.5,
             disable=not options.progress_bar,
         ),
         worker_initializer=partial(worker_init, PIL.Image.MAX_IMAGE_PIXELS),
