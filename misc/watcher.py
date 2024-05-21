@@ -46,15 +46,18 @@ class LoggingLevelEnum(str, Enum):
     CRITICAL = "CRITICAL"
 
 
-def get_output_dir(root: Path, basename: str, output_dir_year_month: bool) -> Path:
+def get_output_path(root: Path, basename: str, output_dir_year_month: bool) -> Path:
+    assert '/' not in basename, "basename must not contain '/'"
     if output_dir_year_month:
         today = datetime.today()
         output_directory_year_month = root / str(today.year) / f'{today.month:02d}'
         if not output_directory_year_month.exists():
             output_directory_year_month.mkdir(parents=True, exist_ok=True)
-        output_path = Path(output_directory_year_month) / basename
+        output_path = Path(output_directory_year_month) / Path(basename).with_suffix(
+            '.pdf'
+        )
     else:
-        output_path = root / basename
+        output_path = root / Path(basename).with_suffix('.pdf')
     return output_path
 
 
@@ -98,7 +101,7 @@ def execute_ocrmypdf(
     retries_loading_file: int,
     output_dir_year_month: bool,
 ):
-    output_path = get_output_dir(output_dir, file_path.name, output_dir_year_month)
+    output_path = get_output_path(output_dir, file_path.name, output_dir_year_month)
 
     log.info("-" * 20)
     log.info(f'New file: {file_path}. Waiting until fully written...')
