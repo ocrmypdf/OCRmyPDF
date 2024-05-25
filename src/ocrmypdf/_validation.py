@@ -52,8 +52,20 @@ def check_options_languages(
         system_lang = locale.getlocale()[0]
         if system_lang and not system_lang.startswith('en'):
             log.debug("No language specified; assuming --language %s", DEFAULT_LANGUAGE)
+    DENIED_LANGUAGES = {'equ', 'osd'}
+    if DENIED_LANGUAGES & set(options.languages):
+        log.warning(
+            "The following languages for Tesseract's internal use and should not "
+            "be issued explicitly: "
+            f"{', '.join(DENIED_LANGUAGES)}\n"
+            "OCRmyPDF will ignore them."
+        )
+        options.languages = [
+            lang for lang in options.languages if lang not in DENIED_LANGUAGES
+        ]
     if not ocr_engine_languages:
         return
+
     missing_languages = set(options.languages) - set(ocr_engine_languages)
     if missing_languages:
         lang_text = '\n'.join(lang for lang in missing_languages)
