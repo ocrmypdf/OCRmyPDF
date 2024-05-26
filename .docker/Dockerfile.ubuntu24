@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2024 James R. Barlow
+# SPDX-License-Identifier: MPL-2.0
+
+FROM ubuntu:24.04 as base
+
+ENV LANG=C.UTF-8
+ENV TZ=UTC
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  python3 \
+  python-is-python3
+
+FROM base as builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  python3-pip \
+  python3-venv \
+  git
+
+COPY . /app
+
+WORKDIR /app
+
+RUN python -m venv .venv
+
+RUN . .venv/bin/activate \
+    && python -m pip install --no-cache-dir .[test,webservice,watcher]
+
+FROM base
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  ghostscript \
+  fonts-droid-fallback \
+  jbig2dec \
+  pngquant \
+  tesseract-ocr \
+  tesseract-ocr-chi-sim \
+  tesseract-ocr-deu \
+  tesseract-ocr-eng \
+  tesseract-ocr-fra \
+  tesseract-ocr-por \
+  tesseract-ocr-spa \
+  unpaper \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY --from=builder /usr/local/lib/ /usr/local/lib/
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
+
+COPY --from=builder /app/.venv/ /app/.venv/
+
+COPY --from=builder /app/misc/webservice.py /app/
+COPY --from=builder /app/misc/watcher.py /app/
+
+# Copy minimal project files to get the test suite.
+COPY --from=builder /app/pyproject.toml /app/README.md /app/
+COPY --from=builder /app/tests /app/tests
+
+ENV PATH="/app/.venv/bin:${PATH}"
+
+ENTRYPOINT ["/app/.venv/bin/ocrmypdf"]
+
