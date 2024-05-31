@@ -61,15 +61,25 @@ class HocrTransform:
     """A class for converting documents from the hOCR format.
 
     For details of the hOCR format, see:
-    http://kba.cloud/hocr-spec/.
+    http://kba.github.io/hocr-spec/1.2/.
     """
 
-    box_pattern = re.compile(r'bbox (\d+) (\d+) (\d+) (\d+)')
+    box_pattern = re.compile(
+        r'''
+        bbox \s+
+        (\d+) \s+   # left: uint
+        (\d+) \s+   # top: uint
+        (\d+) \s+   # right: uint
+        (\d+)       # bottom: uint
+        ''',
+        re.VERBOSE,
+    )
     baseline_pattern = re.compile(
         r'''
         baseline \s+
         ([\-\+]?\d*\.?\d*) \s+  # +/- decimal float
-        ([\-\+]?\d+)            # +/- int''',
+        ([\-\+]?\d+)            # +/- int
+        ''',
         re.VERBOSE,
     )
 
@@ -284,8 +294,11 @@ class HocrTransform:
         if not line_box:
             return
         if line_box.ury <= line_box.lly:
-            log.error("line box is invalid so we cannot render it: box=%s text=%s",
-                      line_box, self._get_element_text(line))
+            log.error(
+                "line box is invalid so we cannot render it: box=%s text=%s",
+                line_box,
+                self._get_element_text(line),
+            )
             return
 
         self._debug_draw_line_bbox(canvas, line_box)
