@@ -13,9 +13,9 @@ import pytest
 
 from ocrmypdf import pdfinfo
 from ocrmypdf._exec import tesseract
-from ocrmypdf.exceptions import MissingDependencyError
+from ocrmypdf.exceptions import BadArgsError, ExitCode, MissingDependencyError
 
-from .conftest import check_ocrmypdf
+from .conftest import check_ocrmypdf, run_ocrmypdf_api
 
 # pylint: disable=redefined-outer-name
 
@@ -144,3 +144,10 @@ def test_tesseract_log_output_raises(caplog):
     with pytest.raises(tesseract.TesseractConfigError):
         tesseract.tesseract_log_output(b'parameter not found: moo')
     assert 'not found' in caplog.text
+
+
+def test_blocked_language(resources, no_outpdf):
+    infile = resources / 'masks.pdf'
+    for bad_lang in ['osd', 'equ']:
+        with pytest.raises(BadArgsError):
+            run_ocrmypdf_api(infile, no_outpdf, '-l', bad_lang)

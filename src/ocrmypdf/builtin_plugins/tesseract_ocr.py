@@ -14,6 +14,7 @@ from ocrmypdf import hookimpl
 from ocrmypdf._exec import tesseract
 from ocrmypdf._jobcontext import PageContext
 from ocrmypdf.cli import numeric, str_to_int
+from ocrmypdf.exceptions import BadArgsError
 from ocrmypdf.helpers import clamp
 from ocrmypdf.imageops import calculate_downsample, downsample_image
 from ocrmypdf.pluginspec import OcrEngine
@@ -163,6 +164,14 @@ def check_options(options):
         log.warning(
             "The --tesseract-pagesegmode argument you select will disable OCR. "
             "This may cause processing to fail."
+        )
+    DENIED_LANGUAGES = {'equ', 'osd'}
+    if DENIED_LANGUAGES & set(options.languages):
+        raise BadArgsError(
+            "The following languages for Tesseract's internal use and should not "
+            "be issued explicitly: "
+            f"{', '.join(DENIED_LANGUAGES & set(options.languages))}\n"
+            "Remove them from the -l/--language argument."
         )
 
 
