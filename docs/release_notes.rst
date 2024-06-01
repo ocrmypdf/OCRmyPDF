@@ -40,6 +40,10 @@ v16.4.0
 -  The hOCR renderer is more tolerant of extra whitespace in input files.
 -  watcher.py now changes the output file extension to .pdf when the input is not
    .pdf.
+-  Improved handling of PDFs that contain circularly referenced Form XObjects.
+   :issue:`1321`
+-  Fixed Alpine Docker image for ARM64, which was not building correctly.
+-  Docker images now use pikepdf 9.0.0.
 
 v16.3.1
 =======
