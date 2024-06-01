@@ -30,6 +30,17 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.4.0
+=======
+
+-  Selecting the ``osd`` and ``equ`` pseudo-languages with ``-l/--language`` now
+   exits with an error when using Tesseract OCR, because these are not
+   regular Tesseract languages but implementation details implemented.
+   Using them can cause Tesseract to crash.
+-  The hOCR renderer is more tolerant of extra whitespace in input files.
+-  watcher.py now changes the output file extension to .pdf when the input is not
+   .pdf.
+
 v16.3.1
 =======
 
