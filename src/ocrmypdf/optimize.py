@@ -256,6 +256,9 @@ def _find_image_xrefs_container(
     for _imname, image in dict(xobjs).items():
         if image.objgen[1] != 0:
             continue  # Ignore images in an incremental PDF
+        xref = Xref(image.objgen[0])
+        if xref in include_xrefs or xref in exclude_xrefs:
+            continue  # Already processed
         if Name.Subtype in image and image.Subtype == Name.Form:
             # Recurse into Form XObjects
             log.debug(f"Recursing into Form XObject {_imname} in page {pageno}")
@@ -269,7 +272,6 @@ def _find_image_xrefs_container(
                 depth + 1,
             )
             continue
-        xref = Xref(image.objgen[0])
         if Name.SMask in image:
             # Ignore soft masks
             smask_xref = Xref(image.SMask.objgen[0])
