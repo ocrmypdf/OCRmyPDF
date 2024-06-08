@@ -75,7 +75,6 @@ Linux, Windows, macOS and FreeBSD are supported. Docker images are also availabl
 | LinuxBrew                     | ``brew install ocrmypdf``     |
 | FreeBSD                       | ``pkg install py-ocrmypdf``   |
 | Conda                         | ``conda install ocrmypdf``    |
-| Ubuntu Snap                   | ``snap install ocrmypdf``     |
 
 For everyone else, [see our documentation](https://ocrmypdf.readthedocs.io/en/latest/installation.html) for installation steps.
 

@@ -33,8 +33,6 @@ These platforms have one-liner installs:
 +-------------------------------+-----------------------------------------+
 | Conda (WSL, macOS, Linux)     | ``conda install ocrmypdf``              |
 +-------------------------------+-----------------------------------------+
-| Snap (snapcraft packaging)    | ``snap install ocrmypdf``               |
-+-------------------------------+-----------------------------------------+
 
 More detailed procedures are outlined below. If you want to do a manual
 install, or install a more recent version than your platform provides, read on.
@@ -341,7 +339,7 @@ OCRmyPDF is includes in MacPorts:
     sudo port install ocrmypdf
 
 Note that while this will install tesseract you will need to install
-the appropriate tesseract `language ports <https://ports.macports.org/search/?selected_facets=categories_exact%3Atextproc&installed_file=&q=tesseract&name=on>`__. 
+the appropriate tesseract `language ports <https://ports.macports.org/search/?selected_facets=categories_exact%3Atextproc&installed_file=&q=tesseract&name=on>`__.
 
 Manual installation on macOS
 ----------------------------
