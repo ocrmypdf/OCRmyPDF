@@ -81,7 +81,7 @@ To start a Docker container (instance of the image):
 
 .. code-block:: bash
 
-   docker tag jbarlow83/ocrmypdf ocrmypdf
+   docker tag jbarlow83/ocrmypdf-alpine ocrmypdf
    docker run --rm -i ocrmypdf (... all other arguments here...) - -
 
 For convenience, create a shell alias to hide the Docker command. It is
