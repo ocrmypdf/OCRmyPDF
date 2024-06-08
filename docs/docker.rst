@@ -42,7 +42,7 @@ execute the image:
      - Architecture
      - Description
    * - ``jbarlow83/ocrmypdf-alpine``
-     - x86_64 only
+     - x86_64 and arm64
      - Recommended image, based on Alpine Linux.
    * - ``jbarlow83/ocrmypdf-ubuntu``
      - x86_64 and arm64
