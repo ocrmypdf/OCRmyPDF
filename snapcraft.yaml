@@ -18,8 +18,8 @@ architectures: [amd64]
 
 environment:
   TESSDATA_PREFIX: $SNAP/usr/share/tesseract-ocr/4.00/tessdata
-  GS_LIB: $SNAP/usr/share/ghostscript/9.55/Resource/Init
-  GS_FONTPATH: $SNAP/usr/share/ghostscript/9.55/Resource/Font
+  GS_LIB: $SNAP/usr/share/ghostscript/9.55.0/Resource/Init
+  GS_FONTPATH: $SNAP/usr/share/ghostscript/9.55.0/Resource/Font
   LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu
 
 apps:
