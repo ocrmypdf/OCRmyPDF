@@ -1,0 +1,94 @@
+# SPDX-FileCopyrightText: 2022 Alexander Langanke
+# SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-FileCopyrightText: 2023 林博仁(Buo-ren, Lin) <Buo.Ren.Lin@gmail.com>
+# SPDX-License-Identifier: MPL-2.0
+
+name: ocrmypdf
+title: OCRmyPDF
+base: core22
+version: git
+summary: OCRmyPDF adds a searchable text layer to scanned PDF files
+description: OCRmyPDF packaged for snap
+grade: stable
+confinement: strict
+icon: docs/images/logo-square-256.svg
+license: MPL-2.0
+
+architectures: [amd64]
+
+environment:
+  TESSDATA_PREFIX: $SNAP/usr/share/tesseract-ocr/4.00/tessdata
+  GS_LIB: $SNAP/usr/share/ghostscript/9.55/Resource/Init
+  GS_FONTPATH: $SNAP/usr/share/ghostscript/9.55/Resource/Font
+  LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu
+
+apps:
+  ocrmypdf:
+    command: usr/bin/snapcraft-preload python3 -m ocrmypdf
+    plugs:
+      - desktop
+      - desktop-legacy
+      - wayland
+      - x11
+      - home
+      - removable-media
+
+parts:
+  snapcraft-preload:
+    source: https://github.com/sergiusens/snapcraft-preload.git
+    plugin: cmake
+    cmake-parameters:
+      - -DCMAKE_INSTALL_PREFIX=/usr -DLIBPATH=/usr/lib
+    build-packages:
+      - on amd64:
+          - gcc-multilib
+          - g++-multilib
+    stage-packages:
+      - lib32stdc++6
+
+  jbig2enc:
+    plugin: autotools
+    source: https://github.com/agl/jbig2enc.git
+    source-tag: "0.29"
+    build-packages:
+      - libleptonica-dev
+
+  ocrmypdf:
+    plugin: python
+    source: .
+
+    build-packages:
+      - python3-pip
+
+    stage-packages:
+      - ghostscript
+      - icc-profiles-free
+      - liblept5
+      - libxml2
+      - pngquant
+      - tesseract-ocr-all
+      - unpaper
+      - qpdf
+      - zlib1g
+
+    python-packages:
+      - cffi
+      - pdfminer.six
+      - pikepdf
+      - Pillow
+      - pluggy
+      - reportlab
+      - setuptools
+      - tqdm
+      - pipe
+      - wheel
+
+    override-build: |
+      pip3 install --user dephell[full]
+      $HOME/.local/bin/dephell deps convert \
+          --from-path pyproject.toml \
+          --from-format pyproject \
+          --to-path setup.py \
+          --to-format setuppy
+      snapcraftctl build
+      ln -sf ../usr/lib/libsnapcraft-preload.so $SNAPCRAFT_PART_INSTALL/lib/libsnapcraft-preload.so
