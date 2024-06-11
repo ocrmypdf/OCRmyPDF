@@ -14,7 +14,7 @@ from ocrmypdf import hookimpl
 from ocrmypdf._exec import tesseract
 from ocrmypdf._jobcontext import PageContext
 from ocrmypdf.cli import numeric, str_to_int
-from ocrmypdf.exceptions import BadArgsError
+from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
 from ocrmypdf.helpers import clamp
 from ocrmypdf.imageops import calculate_downsample, downsample_image
 from ocrmypdf.pluginspec import OcrEngine
@@ -145,6 +145,12 @@ def check_options(options):
         need_version='4.1.1',  # Ubuntu 22.04 version (also 20.04)
         version_parser=tesseract.TesseractVersion,
     )
+    tess_version = tesseract.version()
+    if tess_version == tesseract.TesseractVersion('5.4.0'):
+        raise MissingDependencyError(
+            "Tesseract 5.4.0 is not supported due to regressions in this version. "
+            "Please upgrade to a newer or supported older version."
+        )
 
     # Decide on what renderer to use
     if options.pdf_renderer == 'auto':
