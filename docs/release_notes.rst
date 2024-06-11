@@ -44,6 +44,7 @@ v16.4.0
    :issue:`1321`
 -  Fixed Alpine Docker image for ARM64, which was not building correctly.
 -  Docker images now use pikepdf 9.0.0.
+-  Prevent use of Tesseract OCR 5.4.0, a version with known regressions.
 
 v16.3.1
 =======
