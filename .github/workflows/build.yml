@@ -193,8 +193,8 @@ jobs:
 
       - name: Install system packages
         run: |
-          winget install --disable-interactivity --id=UB-Mannheim.TesseractOCR -e
-          winget install --disable-interactivity -e --id ArtifexSoftware.GhostScript -v 9.56.1
+          choco install --yes --no-progress --pre tesseract
+          choco install --yes --no-progress --ignore-checksums ghostscript --version 9.56.1
 
       - name: Install Python packages
         run: |
