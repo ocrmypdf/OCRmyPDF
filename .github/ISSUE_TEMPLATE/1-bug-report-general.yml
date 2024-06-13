@@ -1,7 +1,7 @@
 name: Installation, packaging, dependencies
 description: Installation, packages, dependencies, "nothing works", test suite failures...
 title: "[Bug]: "
-labels: ["bug", "triage"]
+labels: ["triage"]
 assignees:
   - jbarlow83
 body:
@@ -63,6 +63,7 @@ body:
       options:
         - label: Operating system is currently supported by its vendor (not end of life)
         - label: Python version is compatible with OCRmyPDF
+        - label: This issue is not about a specific input file
   - type: textarea
     id: logs
     attributes:

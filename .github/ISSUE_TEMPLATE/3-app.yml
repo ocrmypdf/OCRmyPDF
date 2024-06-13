@@ -1,6 +1,8 @@
-name: Problem with specific file
-description: Something went wrong while trying to OCR a specific file
-title: "[Bug]: "
+name: Problem with third party app that uses OCRmyPDF
+description: |
+  For PDF generation issues with third party software such as Paperless-ngx that
+  uses OCRmyPDF to perform OCR or generate PDFs.
+title: "[3rdparty]: "
 labels: ["triage"]
 assignees:
   - jbarlow83
@@ -8,7 +10,26 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to describe this issue with a particular file.
+        Thanks for taking the time to describe this issue with a particular file
+        and third party app.
+
+        If you are comfortable using OCRmyPDF, please trying to install OCRmyPDF,
+        run it on your file, and see if it works. It's easier for everyone
+        if you can confirm that the issue occurs with OCRmyPDF and not with
+        the third party app.
+  - type: checkboxes
+    attributes:
+      label: Simple sanity checks
+      description: Select all that apply
+      options:
+        - label: This is an issue with an app that uses OCRmyPDF for OCR
+        - label: I am using a recent version of the third party app
+        - label: I will include a file that reproduces the issuse
+  - type: input
+    id: thirdparty-app-name-version
+    attributes:
+      label: Third party app name and version
+      description: e.g. Paperless-ngx 2.9.0
   - type: textarea
     id: what-happened
     attributes:
@@ -23,9 +44,10 @@ body:
       label: Steps to reproduce
       description: Please include steps to reproduce.
       value: |
-        1. Run ocrmypdf -v1 ...arguments... input.pdf output.pdf
-        2. Open output.pdf
-        3. ...
+        1. Import attached file into Paperless-ngx
+        2. Trigger OCR
+        3. Check log file
+        4. ...
       render: plain text
   - type: textarea
     id: files
@@ -39,27 +61,13 @@ body:
         causing the issue. There's really no substitute for a test file.
 
         We understand files may contain personal or sensitive information. Here are some options:
-        - Try reproducing the issue with a file from the OCRmyPDF test suite. (See tests/resources)
+        - Try reproducing the issue with a file from the test suite. (See tests/resources)
         - Try to create another file in the same way as your private file.
         - Encrypt the file to OCRmyPDF's private GPG key, and then zip the GPG file.
         - Use ``qpdf --json yourfile.pdf`` to produce a JSON representation of your file that
           omits personal information.
       placeholder: |
         Drag and drop files here.
-  - type: dropdown
-    id: packaging-system
-    attributes:
-      label: How did you download and install the software?
-      multiple: true
-      options:
-        - PyPI (pip, poetry, pipx, etc.)
-        - Linux package manager (apt, dnf, etc.)
-        - Windows package manager (chocolatey, etc.)
-        - Homebrew
-        - Docker container
-        - Ubuntu snap
-        - Conda
-        - source build
   - type: input
     id: version
     attributes:
