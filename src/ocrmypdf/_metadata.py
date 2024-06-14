@@ -154,10 +154,10 @@ def _set_language(pdf: Pdf, languages: list[str]):
 
 
 class MetadataProgress:
-    def __init__(self, progressbar_class):
+    def __init__(self, progressbar_class, enable: bool = True):
         self.progressbar_class = progressbar_class
         self.progressbar = self.progressbar_class(
-            total=100, desc="Linearizing", unit='%'
+            total=100, desc="Linearizing", unit='%', disable=not enable
         )
 
     def __enter__(self):
@@ -190,7 +190,7 @@ def metadata_fixup(
     with (
         Pdf.open(context.origin) as original,
         Pdf.open(working_file) as pdf,
-        MetadataProgress(pbar_class) as pbar,
+        MetadataProgress(pbar_class, options.progress_bar) as pbar,
     ):
         docinfo = get_docinfo(original, context)
         with (
