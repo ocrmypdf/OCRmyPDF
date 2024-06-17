@@ -45,6 +45,9 @@ v16.4.0
 -  Fixed Alpine Docker image for ARM64, which was not building correctly.
 -  Docker images now use pikepdf 9.0.0.
 -  Prevent use of Tesseract OCR 5.4.0, a version with known regressions.
+-  Disabled progressbar for "Linearizing" when ``--no-progress-bar`` set.
+-  Fixed some tests that warn about missing JBIG2 decoding via pikepdf, by
+   installing the necessary libraries during tests.
 
 v16.3.1
 =======
