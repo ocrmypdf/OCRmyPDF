@@ -30,6 +30,15 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.4.1
+=======
+
+-  Fixed calculation of image printed area (used in finding weighted DPI for OCR).
+   :issue:`1334`
+-  Fixed "NotImplementedError: not sure how to get colorspace" error
+   messages in logs which simply records a failure to optimize images with
+   print production colorspaces. :issue:`1315`
+
 v16.4.0
 =======
 
