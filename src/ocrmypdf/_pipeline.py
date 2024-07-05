@@ -475,7 +475,7 @@ def calculate_raster_dpi(page_context: PageContext):
     page_dpi = get_page_square_dpi(page_context, image_dpi)
     if dpi_profile and dpi_profile.average_to_max_dpi_ratio < 0.8:
         log.warning(
-            "Weight average image DPI is %0.1f, max DPI is %0.1f. "
+            "Weighted average image DPI is %0.1f, max DPI is %0.1f. "
             "The discrepancy may indicate a high detail region on this page, "
             "but could also indicate a problem with the input PDF file. "
             "Page image will be rendered at %0.1f DPI.",

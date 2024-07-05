@@ -28,6 +28,7 @@ from pikepdf import (
     Stream,
     UnsupportedImageTypeError,
 )
+from pikepdf.models.image import HifiPrintImageNotTranscodableError
 from PIL import Image
 
 from ocrmypdf._concurrent import Executor, SerialExecutor
@@ -200,7 +201,7 @@ def extract_image_generic(
             with imgname.open('wb') as f:
                 ext = pim.extract_to(stream=f)
             imgname.rename(imgname.with_suffix(ext))
-        except UnsupportedImageTypeError:
+        except (UnsupportedImageTypeError, HifiPrintImageNotTranscodableError):
             return None
         return XrefExt(xref, ext)
     elif (
