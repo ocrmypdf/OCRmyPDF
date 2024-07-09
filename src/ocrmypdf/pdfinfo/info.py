@@ -573,7 +573,7 @@ def _find_form_xobject_images(pdf: Pdf, container: Object, contentsinfo: Content
     xobjs = resources[Name.XObject].as_dict()
     for xobj in xobjs:
         candidate = xobjs[xobj]
-        if candidate is None or candidate[Name.Subtype] != Name.Form:
+        if candidate is None or candidate.get(Name.Type) != Name.Form:
             continue
 
         form_xobject = candidate
