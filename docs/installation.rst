@@ -224,7 +224,7 @@ standard tooling needed to build packages, such as a compiler and binary tools.
 
 .. code-block:: bash
 
-   sudo pacman -S base-devel
+   sudo pacman -S --needed base-devel
 
 Now you are ready to install the OCRmyPDF package.
 
