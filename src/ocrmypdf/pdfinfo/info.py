@@ -369,8 +369,18 @@ class ImageInfo:
             pim = PdfImage(pdfimage)
         else:
             raise ValueError("Either pdfimage or inline must be set")
-        self._width = pim.width
-        self._height = pim.height
+        if pim.obj.get(Name.SMask, None) is not None:
+            # SMask is pretty much an alpha channel, but in PDF it's possible
+            # for channel to have different dimensions than the image
+            # itself. Some PDF writers use this to create a grayscale stencil
+            # mask. For our purposes, the effective size is the size of the
+            # larger component (image or smask).
+            smask = pim.obj[Name.SMask]
+            self._width = max(smask.get(Name.Width, 0), pim.width)
+            self._height = max(smask.get(Name.Height, 0), pim.height)
+        else:
+            self._width = pim.width
+            self._height = pim.height
 
         # If /ImageMask is true, then this image is a stencil mask
         # (Images that draw with this stencil mask will have a reference to
@@ -1071,7 +1081,6 @@ class PageInfo:
 
         arg_max_dpi = image_dpis.index(max_dpi)
         max_area_ratio = image_areas[arg_max_dpi] / total_drawn_area
-
         return PageResolutionProfile(
             weighted_dpi,
             max_dpi,
