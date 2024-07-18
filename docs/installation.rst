@@ -681,7 +681,7 @@ To install all of the development and test requirements:
 .. code-block:: bash
 
     git clone -b main https://github.com/ocrmypdf/OCRmyPDF.git
-    python -m .venv
+    python -m venv .venv
     source .venv/bin/activate
     cd OCRmyPDF
     pip install -e .[test]
