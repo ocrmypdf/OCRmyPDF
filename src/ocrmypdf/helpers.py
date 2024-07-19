@@ -268,7 +268,9 @@ def check_pdf(input_file: Path) -> bool:
         return False
     else:
         with pdf:
-            messages = pdf.check()
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', message=r'pikepdf.*JBIG2.*')
+                messages = pdf.check()
             success = True
             for msg in messages:
                 if 'error' in msg.lower():
