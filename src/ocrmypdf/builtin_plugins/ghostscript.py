@@ -129,7 +129,7 @@ def generate_pdfa(
 ):
     """Generate a PDF/A from the list of PDF pages and PDF/A metadata."""
     ghostscript.generate_pdfa(
-        pdf_pages=[*pdf_pages, pdfmark],
+        pdf_pages=[pdfmark, *pdf_pages],
         output_file=output_file,
         compression=context.options.pdfa_image_compression,
         color_conversion_strategy=context.options.color_conversion_strategy,
