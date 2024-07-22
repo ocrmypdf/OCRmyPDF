@@ -30,6 +30,17 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.4.2
+=======
+
+-  Fixed order of filenames passed to Ghostscript for PDF/A generation. :issue:`1359`
+-  Suppressed missing jbig2dec warning message. :issue:`1358`
+-  Fixed calculation of image size when soft mask dimensions don't match image
+   dimension. :issue:`1351`
+-  Several fixes to documentation. Thanks to users Iris and JoKalliauer
+   who contributed these changes.
+-  Fixed error on processing PDFs that are missing certain image metadata. :issue:`1315`
+
 v16.4.1
 =======
 
