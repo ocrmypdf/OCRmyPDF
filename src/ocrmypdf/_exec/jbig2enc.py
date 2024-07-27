@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from subprocess import PIPE
+from subprocess import PIPE, CalledProcessError
 
 from packaging.version import Version
 
@@ -14,7 +14,13 @@ from ocrmypdf.subprocess import get_version, run
 
 
 def version() -> Version:
-    return Version(get_version('jbig2', regex=r'jbig2enc (\d+(\.\d+)*).*'))
+    try:
+        version = get_version('jbig2', regex=r'jbig2enc (\d+(\.\d+)*).*')
+    except CalledProcessError as e:
+        # TeX Live for Windows provides an incompatible jbig2.EXE which may
+        # be on the PATH.
+        raise MissingDependencyError('jbig2enc') from e
+    return Version(version)
 
 
 def available():
