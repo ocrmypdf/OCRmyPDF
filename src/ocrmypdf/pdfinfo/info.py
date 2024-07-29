@@ -369,18 +369,21 @@ class ImageInfo:
             pim = PdfImage(pdfimage)
         else:
             raise ValueError("Either pdfimage or inline must be set")
-        if pim.obj.get(Name.SMask, None) is not None:
+
+        self._width = pim.width
+        self._height = pim.height
+        if (smask := pim.obj.get(Name.SMask, None)) is not None:
             # SMask is pretty much an alpha channel, but in PDF it's possible
             # for channel to have different dimensions than the image
             # itself. Some PDF writers use this to create a grayscale stencil
             # mask. For our purposes, the effective size is the size of the
             # larger component (image or smask).
-            smask = pim.obj[Name.SMask]
-            self._width = max(smask.get(Name.Width, 0), pim.width)
-            self._height = max(smask.get(Name.Height, 0), pim.height)
-        else:
-            self._width = pim.width
-            self._height = pim.height
+            self._width = max(smask.get(Name.Width, 0), self._width)
+            self._height = max(smask.get(Name.Height, 0), self._height)
+        if (mask := pim.obj.get(Name.Mask, None)) is not None:
+            # If the image has a /Mask entry, it has an explicit mask.
+            self._width = max(mask.get(Name.Width, 0), self._width)
+            self._height = max(mask.get(Name.Height, 0), self._height)
 
         # If /ImageMask is true, then this image is a stencil mask
         # (Images that draw with this stencil mask will have a reference to
@@ -484,9 +487,18 @@ class ImageInfo:
     def renderable(self) -> bool:
         """Whether the image is renderable.
 
-        Some PDFs in the wild have invalid images that are not renderable.
+        Some PDFs in the wild have invalid images that are not renderable,
+        due to unusual dimensions.
+
+        Stencil masks are not also not renderable, since they are not
+        drawn, but rather they control how rendering happens.
         """
-        return self.dpi.is_finite and self.width >= 0 and self.height >= 0
+        return (
+            self.dpi.is_finite
+            and self.width >= 0
+            and self.height >= 0
+            and self.type_ != 'stencil'
+        )
 
     @property
     def dpi(self) -> Resolution:
@@ -1065,10 +1077,14 @@ class PageInfo:
 
         Returns None if there is no meaningful DPI for the page.
         """
-        image_dpis = [
-            image.dpi.to_scalar() for image in self._images if image.renderable
-        ]
-        image_areas = [image.printed_area for image in self._images if image.renderable]
+        image_dpis = []
+        image_areas = []
+        for image in self._images:
+            if not image.renderable:
+                continue
+            image_dpis.append(image.dpi.to_scalar())
+            image_areas.append(image.printed_area)
+
         total_drawn_area = sum(image_areas)
         if total_drawn_area == 0:
             return None
