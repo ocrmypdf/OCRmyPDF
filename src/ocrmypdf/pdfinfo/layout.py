@@ -17,6 +17,7 @@ import pdfminer
 import pdfminer.encodingdb
 import pdfminer.pdfdevice
 import pdfminer.pdfinterp
+import pdfminer.psparser
 from pdfminer.converter import PDFLayoutAnalyzer
 from pdfminer.layout import LAParams, LTChar, LTPage, LTTextBox
 from pdfminer.pdfcolor import PDFColorSpace
@@ -58,9 +59,10 @@ def pdfsimplefont__init__(
 
 setattr(PDFSimpleFont, '__init__', pdfsimplefont__init__)
 
-#
-# pdfminer patches when creator is PScript5.dll
-#
+# Patch pdfminer.six buffer size
+# The parser doesn't properly handle keyword tokens are split across the end of the
+# buffer, so increase the buffer size something far larger than will ever be seen.
+pdfminer.psparser.PSBaseParser.BUFSIZ = 256 * 1024 * 1024
 
 
 def pdftype3font__pscript5_get_height(self):
