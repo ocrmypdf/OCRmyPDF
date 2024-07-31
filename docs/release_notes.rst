@@ -30,6 +30,15 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.4.3
+=======
+
+-  Work around pdfminer.six issue where a token on the buffer boundary is incorrectly
+   parsed as two tokens. :issue:`1361`
+-  New rules are applied to stencil masks and explicit masks when calculating the
+   optimal page DPI for rendering. :issue:`1362`
+-  Fixed attempts to use an incompatible jbig2.EXE provided by TeX Live. :issue:`1363`
+
 v16.4.2
 =======
 
