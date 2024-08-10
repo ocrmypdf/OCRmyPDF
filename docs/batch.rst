@@ -135,7 +135,7 @@ Users may need to customize the script to meet their requirements.
     "OCR_ON_SUCCESS_ARCHIVE", "This will move the processed original file to ``OCR_ARCHIVE_DIRECTORY`` if the exit code is 0 (OK). Note that ``OCR_ON_SUCCESS_DELETE`` takes precedence over this option, i.e. if both options are set, the input file will be deleted."
     "OCR_OUTPUT_DIRECTORY_YEAR_MONTH", "This will place files in the output in ``{output}/{year}/{month}/{filename}``"
     "OCR_DESKEW", "Apply deskew to crooked input PDFs"
-    "OCR_JSON_SETTINGS", "A JSON string specifying any other arguments for ``ocrmypdf.ocr``, e.g. ``'OCR_JSON_SETTINGS={""rotate_pages"": true}'``."
+    "OCR_JSON_SETTINGS", "A JSON string specifying any other arguments for ``ocrmypdf.ocr``, e.g. ``'OCR_JSON_SETTINGS={""rotate_pages"": true, ""optimize"": "3"}'``."
     "OCR_POLL_NEW_FILE_SECONDS", "Polling interval"
     "OCR_LOGLEVEL", "Level of log messages to report"
 
