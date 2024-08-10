@@ -441,7 +441,8 @@ def report_output_pdf(options, start_input_file, optimize_messages) -> ExitCode:
                 log.info("Output file is a %s (as expected)", pdfa_info['conformance'])
             else:
                 log.warning(
-                    "Output file is okay but is not PDF/A (seems to be %s)",
+                    "Output file is a valid PDF, but conversion to PDF/A did not "
+                    "succeed (issue: %s)",
                     pdfa_info['conformance'],
                 )
                 return ExitCode.pdfa_conversion_failed
