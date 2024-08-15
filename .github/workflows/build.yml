@@ -19,8 +19,10 @@ jobs:
   test_linux:
     name: Test ${{ matrix.os }} with Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
+        experimental: [false]
         include:
           - os: ubuntu-22.04
             python: "3.10"
@@ -34,6 +36,9 @@ jobs:
             tesseract5: true
           - os: ubuntu-latest
             python: "pypy3.10"
+          - os: ubuntu-22.04
+            python: "3.13"
+            experimental: true
 
     env:
       OS: ${{ matrix.os }}
@@ -49,6 +54,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: "pip"
+          allow-prereleases: ${{ matrix.experimental }}
 
       - name: Install Tesseract 5
         if: matrix.tesseract5
