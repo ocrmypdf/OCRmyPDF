@@ -239,7 +239,9 @@ def make_rotate_test(imagefile, outdir, prefix, image_angle, page_angle):
 @pytest.mark.parametrize('image_angle', (0, 90, 180, 270))
 def test_rotate_page_level(image_angle, page_angle, resources, outdir, caplog):
     reference = make_rotate_test(resources / 'typewriter.png', outdir, 'ref', 0, 0)
-    test = make_rotate_test(resources, outdir, 'test', image_angle, page_angle)
+    test = make_rotate_test(
+        resources / 'typewriter.png', outdir, 'test', image_angle, page_angle
+    )
     out = test.with_suffix('.out.pdf')
 
     exitcode = run_ocrmypdf_api(
