@@ -222,7 +222,21 @@ of Automator, the ``PATH`` may be set differently your Terminal's
 ``PATH``; you may need to explicitly set the PATH to include
 ``ocrmypdf``. The following example may serve as a starting point:
 
+
 .. figure:: images/macos-workflow.png
     :alt: Example macOS Automator workflow
 
 You may customize the command sent to ocrmypdf.
+
+-  If you want to maintain the modification time use the following code.
+
+.. code-block:: bash
+
+    for f in "$@"
+    do
+        m_date=`date -r "$f"  +"%Y%m%d%H%M.%S"`
+        ocrmypdf "$f" "$f"
+        touch -mt $m_date "$f"
+    done
+
+test
