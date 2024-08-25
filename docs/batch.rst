@@ -238,5 +238,3 @@ You may customize the command sent to ocrmypdf.
         ocrmypdf "$f" "$f"
         touch -mt $m_date "$f"
     done
-
-test
