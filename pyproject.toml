@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 [build-system]
-requires = ["setuptools >= 61", "setuptools_scm[toml] >= 7.0.5", "wheel"]
+requires = ["setuptools >= 61", "setuptools_scm[toml] >= 7.0.5"]
 build-backend = "setuptools.build_meta"
 
 [project]
