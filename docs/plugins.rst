@@ -29,6 +29,9 @@ conventions. Note that: plugins installed with as setuptools entrypoints are
 not checked currently, because OCRmyPDF assumes you may not want to enable
 plugins for all files.
 
+See [OCRmyPDF-EasyOCR](https://github.com/ocrmypdf/OCRmyPDF-EasyOCR) for an
+example of a straightforward, fully working plugin.
+
 Script plugins
 ==============
 
@@ -70,14 +73,15 @@ similar to ``pytest`` packages such as ``pytest-cov`` (the package) and
     module), just like pytest plugins. At the same time, please make it clear
     that your package is not official.
 
-Setuptools plugins
-==================
+Plugins
+=======
 
 You can also create a plugin that OCRmyPDF will always automatically load if both are
-installed in the same virtual environment, using a setuptools entrypoint.
+installed in the same virtual environment, using a project entrypoint.
+OCRmyPDF uses the entrypoint namespace "ocrmypdf".
 
-Your package's ``pyproject.toml`` would need to contain the following, for a plugin
-named ``ocrmypdf-exampleplugin``:
+For example, ``pyproject.toml`` would need to contain the following, for a plugin named
+``ocrmypdf-exampleplugin``:
 
 .. code-block:: toml
 
@@ -86,13 +90,6 @@ named ``ocrmypdf-exampleplugin``:
 
     [project.entry-points."ocrmypdf"]
     exampleplugin = "exampleplugin.pluginmodule"
-
-.. code-block:: ini
-
-    # equivalent setup.cfg
-    [options.entry_points]
-    ocrmypdf =
-        exampleplugin = exampleplugin.pluginmodule
 
 Plugin requirements
 ===================

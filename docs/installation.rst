@@ -341,7 +341,7 @@ OCRmyPDF is includes in MacPorts:
     sudo port install ocrmypdf
 
 Note that while this will install tesseract you will need to install
-the appropriate tesseract `language ports <https://ports.macports.org/search/?selected_facets=categories_exact%3Atextproc&installed_file=&q=tesseract&name=on>`__. 
+the appropriate tesseract `language ports <https://ports.macports.org/search/?selected_facets=categories_exact%3Atextproc&installed_file=&q=tesseract&name=on>`__.
 
 Manual installation on macOS
 ----------------------------
@@ -640,8 +640,7 @@ environment:
 
     pip install git+https://github.com/ocrmypdf/OCRmyPDF.git
 
-Or, to install in `development
-mode <https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#working-in-development-mode>`__,
+Or, to install in editable mode
 allowing customization of OCRmyPDF, use the ``-e`` flag:
 
 .. code-block:: bash
