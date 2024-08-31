@@ -382,8 +382,12 @@ class ImageInfo:
             self._height = max(smask.get(Name.Height, 0), self._height)
         if (mask := pim.obj.get(Name.Mask, None)) is not None:
             # If the image has a /Mask entry, it has an explicit mask.
-            self._width = max(mask.get(Name.Width, 0), self._width)
-            self._height = max(mask.get(Name.Height, 0), self._height)
+            # /Mask can be a Stream or an Array. If it's a Stream,
+            # use its /Width and /Height if they are larger than the main
+            # image's.
+            if isinstance(mask, Stream):
+                self._width = max(mask.get(Name.Width, 0), self._width)
+                self._height = max(mask.get(Name.Height, 0), self._height)
 
         # If /ImageMask is true, then this image is a stencil mask
         # (Images that draw with this stencil mask will have a reference to
