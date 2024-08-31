@@ -6,3 +6,5 @@ DEFAULT_LANGUAGE = 'eng'
 
 # Default rotation threshold
 DEFAULT_ROTATE_PAGES_THRESHOLD = 14.0
+
+PROGRAM_NAME = 'OCRmyPDF'

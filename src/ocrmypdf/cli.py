@@ -10,7 +10,7 @@ from collections.abc import Callable, Mapping
 from typing import Any, TypeVar
 
 from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
-from ocrmypdf._version import PROGRAM_NAME as _PROGRAM_NAME
+from ocrmypdf._defaults import PROGRAM_NAME as _PROGRAM_NAME
 from ocrmypdf._version import __version__ as _VERSION
 
 T = TypeVar('T', int, float)
