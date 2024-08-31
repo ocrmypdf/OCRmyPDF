@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 [build-system]
-requires = ["setuptools >= 61", "setuptools_scm[toml] >= 7.0.5"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
 [project]
 name = "ocrmypdf"
@@ -68,14 +68,11 @@ webservice = ["Flask>=2.0.1"]
 [project.scripts]
 ocrmypdf = "ocrmypdf.__main__:run"
 
-[tool.setuptools.package-data]
-ocrmypdf = ["data/sRGB.icc", "py.typed"]
+[tool.hatch.version]
+source = "vcs"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-namespaces = false
-
-[tool.setuptools_scm]
+[tool.hatch.build.hooks.vcs]
+version-file = "src/ocrmypdf/_version.py"
 
 [tool.distutils.bdist_wheel]
 python-tag = "py310"
