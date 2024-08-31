@@ -264,29 +264,45 @@ jobs:
 
   create_release:
     name: Create GitHub release
-    needs: [wheel_sdist_linux, test_linux, test_macos, test_windows]
+    needs: [upload_pypi]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
     permissions:
       # Required to create a release
       contents: write
+      id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: artifact
           path: dist
 
-      - name: Create Release
-        id: create-release
-        uses: shogo82148/actions-create-release@v1
-
-      - name: Upload Assets
-        uses: shogo82148/actions-upload-release-asset@v1
+      - name: Sign the dists with Sigstore
+        uses: sigstore/gh-action-sigstore-python@v2.1.1
         with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: |
-            ./dist/*.whl
+          inputs: >-
             ./dist/*.tar.gz
+            ./dist/*.whl
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create
+          '${{ github.ref_name }}'
+          --repo '${{ github.repository }}'
+          --notes ""
+
+      - name: Upload artifact signatures to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        # Upload to GitHub Release using the `gh` CLI.
+        # `dist/` contains the built packages, and the
+        # sigstore-produced signatures and certificates.
+        run: >-
+          gh release upload
+          '${{ github.ref_name }}' dist/**
+          --repo '${{ github.repository }}'
 
   docker_ubuntu:
     name: Build Ubuntu-based Docker image
