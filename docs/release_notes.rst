@@ -33,12 +33,13 @@ OCRmyPDF typically supports the three most recent Python versions.
 v16.5.0
 =======
 
--  Presumably fixed issue with interpreting PDFs that have images with array masks.
+-  Fixed issue with interpreting PDFs that have images with array masks.
    :issue:`1377`
 -  Enabled testing on Python 3.13.
 -  Fixed a test that did not work correctly but still passed. :issue:`1382`
 -  Improved "PDF/A conversion failed" warning message to better describe implications.
 -  Updated documentation to better explain OCR_JSON_SETTINGS in batch processing.
+-  Build backend changed from setuptools to hatchling.
 
 v16.4.3
 =======
