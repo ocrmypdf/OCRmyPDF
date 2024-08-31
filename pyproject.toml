@@ -46,6 +46,7 @@ keywords = ["PDF", "OCR", "optical character recognition", "PDF/A", "scanning"]
 Documentation = "https://ocrmypdf.readthedocs.io/"
 Source = "https://github.com/ocrmypdf/OCRmyPDF"
 Tracker = "https://github.com/ocrmypdf/OCRmyPDF/issues"
+Changelog = "https://github.com/ocrmypdf/OCRmyPDF/docs/release_notes.rst"
 
 [project.optional-dependencies]
 docs = ["sphinx", "sphinx-issues", "sphinx-rtd-theme"]
