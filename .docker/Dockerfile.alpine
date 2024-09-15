@@ -1,7 +1,14 @@
 # SPDX-FileCopyrightText: 2023 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-FROM alpine:3.19.1 as base
+# Note: Alpine 3.20 builds tesseract with --enable-opencl, which is not
+# supported by anyone. OCRmyPDF is not compatible with Alpine 3.20.0
+# through 3.20.3. The Alpine issue should be fixed in 3.21.0. It is
+# not clear if 3.20.4+ will have the fix.
+# Details
+#  https://gitlab.alpinelinux.org/alpine/aports/-/issues/16143
+#  https://github.com/ocrmypdf/OCRmyPDF/issues/1395
+FROM alpine:3.19 as base
 
 ENV LANG=C.UTF-8
 ENV TZ=UTC
