@@ -454,6 +454,10 @@ whether it succeeded or failed. An example message is:
     Temporary working files retained at:
     /tmp/ocrmypdf.io.u20wpz07
 
+When OCRmyPDF is launched as a snap, this corresponds to the snap filesystem, for instance:
+
+    /tmp/snap-private-tmp/snap.ocrmypdf/tmp/ocrmypdf.io.u20wpz07
+
 The organization of this folder is an implementation detail and subject
 to change between releases. However the general organization is that
 working files on a per page basis have the page number as a prefix
@@ -465,9 +469,9 @@ suffix indicates the file type. Some important files include:
    on arguments this may differ from the presentation image
 -  ``_pp_deskew.png`` - the image, after deskewing
 -  ``_pp_clean.png`` - the image, after cleaning with unpaper
--  ``_ocr_tess.pdf`` - the OCR file; appears as a blank page with invisible
+-  ``_ocr_hocr.pdf`` - the OCR file; appears as a blank page with invisible
    text embedded
--  ``_ocr_tess.txt`` - the OCR text (not necessarily all text on the page,
+-  ``_ocr_hocr.txt`` - the OCR text (not necessarily all text on the page,
    if the page is mixed format)
 -  ``fix_docinfo.pdf`` - a temporary file created to fix the PDF DocumentInfo
    data structure
