@@ -24,11 +24,6 @@ def is_macos():
     return platform.system() == 'Darwin'
 
 
-def running_in_docker():
-    # Docker creates a file named /.dockerenv in all supported versions
-    return Path('/.dockerenv').exists()
-
-
 def have_unpaper():
     try:
         unpaper.version()

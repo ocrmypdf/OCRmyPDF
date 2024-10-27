@@ -18,6 +18,7 @@ from PIL import Image
 import ocrmypdf
 from ocrmypdf._exec import tesseract
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
+from ocrmypdf.helpers import running_in_docker
 from ocrmypdf.pdfa import file_claims_pdfa
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PdfInfo
 from ocrmypdf.subprocess import get_version
@@ -29,7 +30,6 @@ from .conftest import (
     is_macos,
     run_ocrmypdf,
     run_ocrmypdf_api,
-    running_in_docker,
 )
 
 # pylint: disable=redefined-outer-name

@@ -28,7 +28,13 @@ from ocrmypdf.exceptions import (
     MissingDependencyError,
     OutputFileAccessError,
 )
-from ocrmypdf.helpers import is_file_writable, monotonic, safe_symlink
+from ocrmypdf.helpers import (
+    is_file_writable,
+    monotonic,
+    running_in_docker,
+    running_in_snap,
+    safe_symlink,
+)
 from ocrmypdf.subprocess import check_external_program
 
 log = logging.getLogger(__name__)
@@ -237,18 +243,6 @@ def check_options(options: Namespace, plugin_manager: PluginManager) -> None:
     _check_plugin_options(options, plugin_manager)
 
 
-def _in_docker():
-    return Path('/.dockerenv').exists()
-
-
-def _in_snap():
-    try:
-        cgroup_text = Path('/proc/self/cgroup').read_text()
-        return 'snap.ocrmypdf' in cgroup_text
-    except FileNotFoundError:
-        return False
-
-
 def create_input_file(options: Namespace, work_folder: Path) -> tuple[Path, str]:
     if options.input_file == '-':
         # stdin
@@ -272,7 +266,7 @@ def create_input_file(options: Namespace, work_folder: Path) -> tuple[Path, str]
             return target, os.fspath(options.input_file)
         except FileNotFoundError as e:
             msg = f"File not found - {options.input_file}"
-            if _in_docker():  # pragma: no cover
+            if running_in_docker():  # pragma: no cover
                 msg += (
                     "\nDocker cannot access your working directory unless you "
                     "explicitly share it with the Docker container and set up"
@@ -282,7 +276,7 @@ def create_input_file(options: Namespace, work_folder: Path) -> tuple[Path, str]
                     "\tdocker run -i --rm jbarlow83/ocrmypdf - - <input.pdf >output.pdf"
                     "\n"
                 )
-            elif _in_snap():  # pragma: no cover
+            elif running_in_snap():  # pragma: no cover
                 msg += (
                     "\nSnap applications cannot access files outside of "
                     "your home directory unless you explicitly allow it. "

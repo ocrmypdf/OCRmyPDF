@@ -8,7 +8,7 @@ from subprocess import run
 
 import pytest
 
-from .conftest import running_in_docker
+from ocrmypdf.helpers import running_in_docker
 
 pytestmark = pytest.mark.skipif(
     running_in_docker(),

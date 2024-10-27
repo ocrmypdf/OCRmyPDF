@@ -335,3 +335,17 @@ def pikepdf_enable_mmap() -> None:
         )
     except AttributeError:
         log.debug("pikepdf mmap not available")
+
+
+def running_in_docker() -> bool:
+    """Returns True if we seem to be running in a Docker container."""
+    return Path('/.dockerenv').exists()
+
+
+def running_in_snap() -> bool:
+    """Returns True if we seem to be running in a Snap container."""
+    try:
+        cgroup_text = Path('/proc/self/cgroup').read_text()
+        return 'snap.ocrmypdf' in cgroup_text
+    except FileNotFoundError:
+        return False

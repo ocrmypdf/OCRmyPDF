@@ -13,8 +13,7 @@ import pytest
 from packaging.version import Version
 
 from ocrmypdf import helpers
-
-from .conftest import running_in_docker
+from ocrmypdf.helpers import running_in_docker
 
 needs_symlink = pytest.mark.skipif(os.name == 'nt', reason='needs posix symlink')
 windows_only = pytest.mark.skipif(os.name != 'nt', reason="Windows test")
