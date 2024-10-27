@@ -215,8 +215,10 @@ to have {found_version}.  Please update this program.
 
 OLD_VERSION_REQUIRED_FOR = '''
 OCRmyPDF requires '{program}' {need_version} or higher when run with the
-{required_for} arguments.  If you omit these arguments, OCRmyPDF may be able to
-proceed.  For best results, install the program.
+{required_for} arguments.  {program} {found_version} is installed.
+
+If you omit these arguments, OCRmyPDF may be able to
+proceed.  For best results, update the program.
 '''
 
 OSX_INSTALL_ADVICE = '''
