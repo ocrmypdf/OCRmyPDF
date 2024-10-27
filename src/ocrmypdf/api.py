@@ -14,7 +14,7 @@ from collections.abc import Iterable, Sequence
 from enum import IntEnum
 from io import IOBase
 from pathlib import Path
-from typing import AnyStr, BinaryIO
+from typing import BinaryIO
 from warnings import warn
 
 import pluggy
@@ -28,7 +28,7 @@ from ocrmypdf._validation import check_options
 from ocrmypdf.cli import ArgumentParser, get_parser
 from ocrmypdf.helpers import is_iterable_notstr
 
-StrPath = Path | AnyStr
+StrPath = Path | str | bytes
 PathOrIO = BinaryIO | StrPath
 
 # Installing plugins affects the global state of the Python interpreter,
@@ -140,9 +140,9 @@ def configure_logging(
 
 def _kwargs_to_cmdline(
     *, defer_kwargs: set[str], **kwargs
-) -> tuple[list[str], dict[str, AnyStr]]:
+) -> tuple[list[str | bytes], dict[str, str | bytes]]:
     """Convert kwargs to command line arguments."""
-    cmdline = []
+    cmdline: list[str | bytes] = []
     deferred = {}
     for arg, val in kwargs.items():
         if val is None:
@@ -279,7 +279,7 @@ def ocr(  # noqa: D417
     fast_web_view: float | None = None,
     continue_on_soft_render_error: bool | None = None,
     invalidate_digital_signatures: bool | None = None,
-    plugins: Iterable[StrPath] | None = None,
+    plugins: Iterable[Path | str] | None = None,
     plugin_manager=None,
     keep_temporary_files: bool | None = None,
     progress_bar: bool | None = None,
@@ -420,7 +420,7 @@ def _pdf_to_hocr(  # noqa: D417
     continue_on_soft_render_error: bool | None = None,
     invalidate_digital_signatures: bool | None = None,
     plugin_manager=None,
-    plugins: Sequence[StrPath] | None = None,
+    plugins: Sequence[Path | str] | None = None,
     keep_temporary_files: bool | None = None,
     **kwargs,
 ):
@@ -491,7 +491,7 @@ def _hocr_to_ocr_pdf(  # noqa: D417
     color_conversion_strategy: str | None = None,
     fast_web_view: float | None = None,
     plugin_manager=None,
-    plugins: Sequence[StrPath] | None = None,
+    plugins: Sequence[Path | str] | None = None,
     **kwargs,
 ):
     """Run OCRmyPDF on a work folder and produce an output PDF.

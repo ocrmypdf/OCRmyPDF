@@ -357,7 +357,7 @@ class HocrTransform:
         line_matrix: Matrix,
         text: Text,
         fontsize: float,
-        elem: Element,
+        elem: Element | None,
         next_elem: Element | None,
         text_direction: TextDirection,
         inject_word_breaks: bool,
@@ -434,7 +434,7 @@ class HocrTransform:
                 if ocr_par is None:
                     continue
                 canvas.do.rect(
-                    ocr_par.llx, ocr_par.lly, ocr_par.width, ocr_par.height, fill=0
+                    ocr_par.llx, ocr_par.lly, ocr_par.width, ocr_par.height, fill=False
                 )
 
     def _debug_draw_line_bbox(self, canvas: Canvas, line_box: Rectangle, color=BLUE):
@@ -443,7 +443,7 @@ class HocrTransform:
             return
         with canvas.do.save_state():
             canvas.do.stroke_color(color).line_width(0.15).rect(
-                line_box.llx, line_box.lly, line_box.width, line_box.height, fill=0
+                line_box.llx, line_box.lly, line_box.width, line_box.height, fill=False
             )
 
     def _debug_draw_word_triangle(
@@ -467,7 +467,7 @@ class HocrTransform:
             return
         with canvas.do.save_state():
             canvas.do.stroke_color(color).line_width(line_width).rect(
-                box.llx, box.lly, box.width, box.height, fill=0
+                box.llx, box.lly, box.width, box.height, fill=False
             )
 
     def _debug_draw_space_bbox(
@@ -478,7 +478,7 @@ class HocrTransform:
             return
         with canvas.do.save_state():
             canvas.do.fill_color(color).line_width(line_width).rect(
-                box.llx, box.lly, box.width, box.height, fill=1
+                box.llx, box.lly, box.width, box.height, fill=True
             )
 
     def _debug_draw_baseline(

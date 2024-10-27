@@ -186,7 +186,7 @@ def configure_debug_logging(
     return log_file_handler, remover
 
 
-def worker_init(max_pixels: int) -> None:
+def worker_init(max_pixels: int | None) -> None:
     """Initialize a worker thread or process."""
     # In Windows, child process will not inherit our change to this value in
     # the parent process, so ensure workers get it set. Not needed when running

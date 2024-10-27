@@ -75,10 +75,15 @@ def extract_image_filter(
     """Determine if an image is extractable."""
     if image.Subtype != Name.Image:
         return None
-    if image.Length < 100:
+    if not isinstance(image.Length, int) or image.Length < 100:
         log.debug(f"xref {xref}: skipping image with small stream size")
         return None
-    if image.Width < 8 or image.Height < 8:  # Issue 732
+    if (
+        not isinstance(image.Width, int)
+        or not isinstance(image.Height, int)
+        or image.Width < 8
+        or image.Height < 8
+    ):  # Issue 732
         log.debug(f"xref {xref}: skipping image with unusually small dimensions")
         return None
 
