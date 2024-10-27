@@ -30,6 +30,18 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.6.0
+=======
+
+-  Fixed Alpine Docker image by enforcing Alpine 3.19. Alpine 3.20 includes a
+   defective version of Tesseract OCR and so is not usable.
+-  Upgraded Ubuntu Docker image to use Ubuntu 24.04.
+-  Build and test scripts/actions switched to uv.
+-  When running in a container, we now remind the user that temporary folders
+   are inside the container and may not be accessible.
+-  Fixed an error detecting the version of unpaper 7.0.0.
+-  Fixed Linux test coverage matrix, which was missing some key versions.
+
 v16.5.0
 =======
 
