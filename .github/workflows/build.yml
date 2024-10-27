@@ -19,25 +19,16 @@ jobs:
   test_linux:
     name: Test ${{ matrix.os }} with Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        experimental: [false]
+        os: [ubuntu-22.04, ubuntu-24.04]
+        python: ["3.10", "3.11", "3.12", "3.13"]
         include:
           - os: ubuntu-22.04
+            tesseract_ppa: true
             python: "3.10"
-          - os: ubuntu-22.04
-            python: "3.11"
-          - os: ubuntu-22.04
-            python: "3.10"
-            tesseract5: true
-          - os: ubuntu-latest
-            python: "3.12"
-            tesseract5: true
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             python: "pypy3.10"
-          - os: ubuntu-22.04
-            python: "3.13"
 
     env:
       OS: ${{ matrix.os }}
@@ -58,8 +49,8 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Install Tesseract 5
-        if: matrix.tesseract5
+      - name: Install Tesseract from PPA
+        if: matrix.tesseract_ppa
         run: |
           sudo add-apt-repository -y ppa:alex-p/tesseract-ocr-devel
 
