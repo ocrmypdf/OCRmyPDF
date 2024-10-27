@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from os import fspath
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from packaging.version import Version
@@ -42,6 +42,19 @@ def test_old_unpaper(resources, no_outpdf):
     _parser, options, pm = get_parser_options_plugins(["--clean", input_, output])
     with patch("ocrmypdf._exec.unpaper.version") as mock:
         mock.return_value = Version('0.5')
+
+        with pytest.raises(MissingDependencyError):
+            check_options(options, pm)
+        mock.assert_called()
+
+
+def test_unpaper_version_chatter(resources, no_outpdf):
+    input_ = fspath(resources / "c02-22.pdf")
+    output = fspath(no_outpdf)
+
+    _parser, options, pm = get_parser_options_plugins(["--clean", input_, output])
+    with patch("ocrmypdf.subprocess.run") as mock:
+        mock.return_value = Mock(stdout='Warning: using insecure memory!\n7.0.0\n')
 
         with pytest.raises(MissingDependencyError):
             check_options(options, pm)

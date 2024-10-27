@@ -48,7 +48,7 @@ class UnpaperImageTooLargeError(Exception):
 
 
 def version() -> Version:
-    return Version(get_version('unpaper'))
+    return Version(get_version('unpaper', regex=r'(?m).*(\d+(\.\d+)(\.\d+)?)'))
 
 
 @contextmanager
