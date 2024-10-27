@@ -17,13 +17,13 @@ import PIL
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._pipeline import (
-    get_pdfinfo,
     is_ocr_required,
     ocr_engine_hocr,
     validate_pdfinfo_options,
 )
 from ocrmypdf._pipelines._common import (
     HOCRResult,
+    do_get_pdfinfo,
     manage_work_folder,
     process_page,
     set_thread_pageno,
@@ -94,18 +94,11 @@ def run_hocr_pipeline(
         work_folder=options.output_folder, retain=True, print_location=False
     ) as work_folder:
         executor = setup_pipeline(options, plugin_manager)
-        shutil.copy2(options.input_file, work_folder / 'origin.pdf')
+        origin_pdf = work_folder / 'origin.pdf'
+        shutil.copy2(options.input_file, origin_pdf)
 
         # Gather pdfinfo and create context
-        pdfinfo = get_pdfinfo(
-            options.input_file,
-            executor=executor,
-            detailed_analysis=options.redo_ocr,
-            progbar=options.progress_bar,
-            max_workers=options.jobs,
-            use_threads=options.use_threads,
-            check_pages=options.pages,
-        )
+        pdfinfo = do_get_pdfinfo(origin_pdf, executor, options)
         context = PdfContext(
             options, work_folder, options.input_file, pdfinfo, plugin_manager
         )

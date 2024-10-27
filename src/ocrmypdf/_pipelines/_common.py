@@ -33,6 +33,7 @@ from ocrmypdf._pipeline import (
     generate_postscript_stub,
     get_orientation_correction,
     get_pdf_save_settings,
+    get_pdfinfo,
     optimize_pdf,
     preprocess_clean,
     preprocess_deskew,
@@ -313,6 +314,18 @@ def setup_pipeline(
     pikepdf_enable_mmap()
     executor = setup_executor(plugin_manager)
     return executor
+
+
+def do_get_pdfinfo(pdf, executor, options):
+    return get_pdfinfo(
+        pdf,
+        executor=executor,
+        detailed_analysis=options.redo_ocr,
+        progbar=options.progress_bar,
+        max_workers=options.jobs,
+        use_threads=options.use_threads,
+        check_pages=options.pages,
+    )
 
 
 def preprocess(

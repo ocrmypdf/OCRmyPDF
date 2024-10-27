@@ -21,7 +21,6 @@ from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._pipeline import (
     copy_final,
-    get_pdfinfo,
     is_ocr_required,
     merge_sidecars,
     ocr_engine_hocr,
@@ -33,6 +32,7 @@ from ocrmypdf._pipeline import (
 from ocrmypdf._pipelines._common import (
     PageResult,
     cli_exception_handler,
+    do_get_pdfinfo,
     manage_debug_log_handler,
     manage_work_folder,
     postprocess,
@@ -171,16 +171,7 @@ def _run_pipeline(
         )
 
         # Gather pdfinfo and create context
-        pdfinfo = get_pdfinfo(
-            origin_pdf,
-            executor=executor,
-            detailed_analysis=options.redo_ocr,
-            progbar=options.progress_bar,
-            max_workers=options.jobs,
-            use_threads=options.use_threads,
-            check_pages=options.pages,
-        )
-
+        pdfinfo = do_get_pdfinfo(origin_pdf, executor, options)
         context = PdfContext(options, work_folder, origin_pdf, pdfinfo, plugin_manager)
 
         # Validate options are okay for this pdf

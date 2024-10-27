@@ -19,11 +19,11 @@ from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._pipeline import (
     copy_final,
-    get_pdfinfo,
     render_hocr_page,
 )
 from ocrmypdf._pipelines._common import (
     HOCRResult,
+    do_get_pdfinfo,
     manage_work_folder,
     postprocess,
     report_output_pdf,
@@ -117,15 +117,7 @@ def run_hocr_to_ocr_pdf_pipeline(
         origin_pdf = work_folder / 'origin.pdf'
 
         # Gather pdfinfo and create context
-        pdfinfo = get_pdfinfo(
-            origin_pdf,
-            executor=executor,
-            detailed_analysis=options.redo_ocr,
-            progbar=options.progress_bar,
-            max_workers=options.jobs,
-            use_threads=options.use_threads,
-            check_pages=options.pages,
-        )
+        pdfinfo = do_get_pdfinfo(origin_pdf, executor, options)
         context = PdfContext(options, work_folder, origin_pdf, pdfinfo, plugin_manager)
         plugin_manager.hook.check_options(options=options)
         optimize_messages = exec_hocr_to_ocr_pdf(context, executor)
