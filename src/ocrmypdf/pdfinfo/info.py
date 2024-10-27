@@ -24,6 +24,7 @@ from warnings import warn
 
 from pdfminer.layout import LTPage, LTTextBox
 from pikepdf import (
+    Dictionary,
     Matrix,
     Name,
     Object,
@@ -378,14 +379,15 @@ class ImageInfo:
             # itself. Some PDF writers use this to create a grayscale stencil
             # mask. For our purposes, the effective size is the size of the
             # larger component (image or smask).
-            self._width = max(smask.get(Name.Width, 0), self._width)
-            self._height = max(smask.get(Name.Height, 0), self._height)
+            if isinstance(smask, Stream | Dictionary):
+                self._width = max(smask.get(Name.Width, 0), self._width)
+                self._height = max(smask.get(Name.Height, 0), self._height)
         if (mask := pim.obj.get(Name.Mask, None)) is not None:
             # If the image has a /Mask entry, it has an explicit mask.
             # /Mask can be a Stream or an Array. If it's a Stream,
             # use its /Width and /Height if they are larger than the main
             # image's.
-            if isinstance(mask, Stream):
+            if isinstance(mask, Stream | Dictionary):
                 self._width = max(mask.get(Name.Width, 0), self._width)
                 self._height = max(mask.get(Name.Height, 0), self._height)
 
