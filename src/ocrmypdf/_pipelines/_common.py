@@ -51,6 +51,8 @@ from ocrmypdf.helpers import (
     available_cpu_count,
     check_pdf,
     pikepdf_enable_mmap,
+    running_in_docker,
+    running_in_snap,
     samefile,
 )
 from ocrmypdf.pdfa import file_claims_pdfa
@@ -215,6 +217,22 @@ def manage_debug_log_handler(
             remover()
 
 
+def _print_temp_folder_location(work_folder: Path):
+    """Print the location of the temporary work folder."""
+    msgs = [f"Temporary working files retained at:\n{work_folder}"]
+    if running_in_docker():  # pragma: no cover
+        msgs.append(
+            "OCRmyPDF is running in a Docker container, "
+            "so the files will be inside the container."
+        )
+    elif running_in_snap():  # pragma: no cover
+        msgs.append(
+            "OCRmyPDF is running in a Snap container, "
+            "so the files will be inside the container."
+        )
+    print('\n'.join(msgs), file=sys.stderr)
+
+
 @contextmanager
 def manage_work_folder(*, work_folder: Path, retain: bool, print_location: bool):
     try:
@@ -222,10 +240,7 @@ def manage_work_folder(*, work_folder: Path, retain: bool, print_location: bool)
     finally:
         if retain:
             if print_location:
-                print(
-                    f"Temporary working files retained at:\n{work_folder}",
-                    file=sys.stderr,
-                )
+                _print_temp_folder_location(work_folder)
         else:
             shutil.rmtree(work_folder, ignore_errors=True)
 
