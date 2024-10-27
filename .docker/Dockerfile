@@ -13,11 +13,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 FROM base AS builder
 
+# Note we need leptonica here to build jbig2
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  python3-pip \
-  python3-venv \
+  build-essential autoconf automake libtool \
+  libleptonica-dev \
+  zlib1g-dev \
+  libffi-dev \
+  ca-certificates \
+  curl \
   git \
-  curl
+  libcairo2-dev \
+  pkg-config
+
+# Compile and install jbig2
+# Needs libleptonica-dev, zlib1g-dev
+RUN \
+  mkdir jbig2 \
+  && curl -L https://github.com/agl/jbig2enc/archive/c0141bf.tar.gz | \
+  tar xz -C jbig2 --strip-components=1 \
+  && cd jbig2 \
+  && ./autogen.sh && ./configure && make && make install \
+  && cd .. \
+  && rm -rf jbig2
 
 COPY . /app
 
@@ -31,6 +48,10 @@ ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 RUN /root/.cargo/bin/uv sync --extra test --extra webservice --extra watcher
 
 FROM base
+
+RUN apt-get update && apt-get install -y software-properties-common
+
+RUN add-apt-repository -y ppa:alex-p/tesseract-ocr-devel
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
@@ -48,6 +69,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+COPY --from=builder /usr/local/lib/ /usr/local/lib/
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 COPY --from=builder --chown=app:app /app /app
 
