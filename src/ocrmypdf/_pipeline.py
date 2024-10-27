@@ -854,7 +854,7 @@ def fix_pagepdf_boxes(
             page.CropBox = cropbox
             page.TrimBox = trimbox
         pdf.save(out_file)
-    return pdf
+    return out_file
 
 
 def generate_postscript_stub(context: PdfContext) -> Path:
