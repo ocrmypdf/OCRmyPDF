@@ -208,12 +208,13 @@ def test_pages_issue700(monkeypatch, resources):
     monkeypatch.setattr(PDFPage, 'get_pages', get_no_pages)
 
     with pytest.raises(InputFileError, match="pdfminer"):
-        pdfinfo.PdfInfo(
+        pi = pdfinfo.PdfInfo(
             resources / 'cardinal.pdf',
             detailed_analysis=True,
             progbar=False,
             max_workers=1,
         )
+        pi._miner_state.get_page_analysis(0)
 
 
 @pytest.fixture

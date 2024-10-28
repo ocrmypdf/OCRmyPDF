@@ -18,6 +18,7 @@ import pdfminer.encodingdb
 import pdfminer.pdfdevice
 import pdfminer.pdfinterp
 import pdfminer.psparser
+from deprecation import deprecated
 from pdfminer.converter import PDFLayoutAnalyzer
 from pdfminer.layout import LAParams, LTChar, LTPage, LTTextBox
 from pdfminer.pdfcolor import PDFColorSpace
@@ -289,6 +290,7 @@ def patch_pdfminer(pscript5_mode: bool):
         yield
 
 
+@deprecated(deprecated_in='16.6.0', details='Use PdfMinerState instead.')
 def get_page_analysis(
     infile: PathLike, pageno: int, pscript5_mode: bool
 ) -> LTPage | None:
@@ -317,6 +319,57 @@ def get_page_analysis(
             raise EncryptedPdfError() from e
 
     return dev.get_result()
+
+
+class PdfMinerState:
+    def __init__(self, infile: Path, pscript5_mode: bool):
+        self.infile = infile
+        self.rman = pdfminer.pdfinterp.PDFResourceManager(caching=True)
+        self.disable_boxes_flow = None
+        self.page_cache: list[PDFPage] = []
+        self.pscript5_mode = pscript5_mode
+        self.file = None
+
+    def __enter__(self):
+        self.file = Path(self.infile).open('rb')
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.file:
+            self.file.close()
+        return True
+
+    def _load_page_cache(self):
+        try:
+            self.page_cache = list(PDFPage.get_pages(self.file))
+            if not self.page_cache:
+                raise InputFileError(
+                    "pdfminer did not find any pages in the input file."
+                )
+            for n, page in enumerate(self.page_cache):
+                if page is None:
+                    raise InputFileError(
+                        f"pdfminer could not process page {n} (counting from 0)."
+                    )
+        except PDFTextExtractionNotAllowed as e:
+            raise EncryptedPdfError() from e
+
+    def get_page_analysis(self, pageno: int):
+        if not self.page_cache:
+            self._load_page_cache()
+        page = self.page_cache[pageno]
+        dev = TextPositionTracker(
+            self.rman,
+            laparams=LAParams(
+                all_texts=True, detect_vertical=True, boxes_flow=self.disable_boxes_flow
+            ),
+        )
+        interp = pdfminer.pdfinterp.PDFPageInterpreter(self.rman, dev)
+
+        with patch_pdfminer(self.pscript5_mode):
+            interp.process_page(page)
+
+        return dev.get_result()
 
 
 def get_text_boxes(obj) -> Iterator[LTTextBox]:

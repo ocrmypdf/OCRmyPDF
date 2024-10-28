@@ -12,7 +12,7 @@ import re
 import statistics
 from collections import defaultdict
 from collections.abc import Callable, Container, Iterable, Iterator, Mapping, Sequence
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from decimal import Decimal
 from enum import Enum, auto
 from functools import partial
@@ -41,7 +41,12 @@ from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.exceptions import EncryptedPdfError, InputFileError
 from ocrmypdf.helpers import Resolution, available_cpu_count, pikepdf_enable_mmap
-from ocrmypdf.pdfinfo.layout import LTStateAwareChar, get_page_analysis, get_text_boxes
+from ocrmypdf.pdfinfo.layout import (
+    LTStateAwareChar,
+    PdfMinerState,
+    get_page_analysis,
+    get_text_boxes,
+)
 
 logger = logging.getLogger()
 
@@ -702,13 +707,13 @@ def _page_has_text(text_blocks: Iterable[FloatRect], page_width, page_height) ->
 
 
 def simplify_textboxes(
-    miner: LTPage, textbox_getter: Callable[[LTPage], Iterator[LTTextBox]]
+    miner_page: LTPage, textbox_getter: Callable[[LTPage], Iterator[LTTextBox]]
 ) -> Iterator[TextboxInfo]:
     """Extract only limited content from text boxes.
 
     We do this to save memory and ensure that our objects are pickleable.
     """
-    for box in textbox_getter(miner):
+    for box in textbox_getter(miner_page):
         first_line = box._objs[0]  # pylint: disable=protected-access
         first_char = first_line._objs[0]  # pylint: disable=protected-access
         if not isinstance(first_char, LTStateAwareChar):
@@ -755,9 +760,12 @@ def _pdf_pageinfo_sync(
     infile: Path,
     check_pages: Container[int],
     detailed_analysis: bool,
+    miner_state: PdfMinerState | None,
 ) -> PageInfo:
     with _pdf_pageinfo_sync_pdf(thread_pdf, infile) as pdf:
-        return PageInfo(pdf, pageno, infile, check_pages, detailed_analysis)
+        return PageInfo(
+            pdf, pageno, infile, check_pages, detailed_analysis, miner_state
+        )
 
 
 def _pdf_pageinfo_concurrent(
@@ -769,6 +777,7 @@ def _pdf_pageinfo_concurrent(
     progbar,
     check_pages,
     detailed_analysis: bool = False,
+    miner_state: PdfMinerState | None = None,
 ) -> Sequence[PageInfo | None]:
     pages: list[PageInfo | None] = [None] * len(pdf.pages)
 
@@ -800,7 +809,8 @@ def _pdf_pageinfo_concurrent(
     initial_pdf = pdf if use_threads else None
 
     contexts = (
-        (n, initial_pdf, infile, check_pages, detailed_analysis) for n in range(total)
+        (n, initial_pdf, infile, check_pages, detailed_analysis, miner_state)
+        for n in range(total)
     )
     assert n_workers == 1 if use_threads else n_workers >= 1, "Not multithreadable"
     logger.debug(
@@ -867,12 +877,15 @@ class PageInfo:
         infile: PathLike,
         check_pages: Container[int],
         detailed_analysis: bool = False,
+        miner_state: PdfMinerState | None = None,
     ):
         """Initialize a PageInfo object."""
         self._pageno = pageno
         self._infile = infile
         self._detailed_analysis = detailed_analysis
-        self._gather_pageinfo(pdf, pageno, infile, check_pages, detailed_analysis)
+        self._gather_pageinfo(
+            pdf, pageno, infile, check_pages, detailed_analysis, miner_state
+        )
 
     def _gather_pageinfo(
         self,
@@ -881,6 +894,7 @@ class PageInfo:
         infile: PathLike,
         check_pages: Container[int],
         detailed_analysis: bool,
+        miner_state: PdfMinerState | None,
     ):
         page: Page = pdf.pages[pageno]
         mediabox = [Decimal(d) for d in page.mediabox.as_list()]
@@ -896,10 +910,11 @@ class PageInfo:
         check_this_page = pageno in check_pages
 
         if check_this_page and detailed_analysis:
-            pscript5_mode = str(pdf.docinfo.get(Name.Creator)).startswith('PScript5')
-            miner = get_page_analysis(infile, pageno, pscript5_mode)
-            if miner is not None:
-                self._textboxes = list(simplify_textboxes(miner, get_text_boxes))
+            page_analysis = miner_state.get_page_analysis(pageno)
+            if page_analysis is not None:
+                self._textboxes = list(
+                    simplify_textboxes(page_analysis, get_text_boxes)
+                )
             else:
                 self._textboxes = []
             bboxes = (box.bbox for box in self._textboxes)
@@ -1152,16 +1167,26 @@ class PdfInfo:
         with Pdf.open(infile) as pdf:
             if pdf.is_encrypted:
                 raise EncryptedPdfError()  # Triggered by encryption with empty passwd
-            self._pages = _pdf_pageinfo_concurrent(
-                pdf,
-                executor,
-                max_workers,
-                use_threads,
-                infile,
-                progbar,
-                check_pages=check_pages,
-                detailed_analysis=detailed_analysis,
+            pscript5_mode = str(pdf.docinfo.get(Name.Creator, "")).startswith(
+                'PScript5'
             )
+            self._miner_state = (
+                PdfMinerState(infile, pscript5_mode)
+                if detailed_analysis
+                else nullcontext()
+            )
+            with self._miner_state as miner_state:
+                self._pages = _pdf_pageinfo_concurrent(
+                    pdf,
+                    executor,
+                    max_workers,
+                    use_threads,
+                    infile,
+                    progbar,
+                    check_pages=check_pages,
+                    detailed_analysis=detailed_analysis,
+                    miner_state=miner_state,
+                )
             self._needs_rendering = pdf.Root.get(Name.NeedsRendering, False)
             if Name.AcroForm in pdf.Root:
                 if len(pdf.Root.AcroForm.get(Name.Fields, [])) > 0:

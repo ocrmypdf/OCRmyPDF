@@ -35,8 +35,9 @@ v16.6.0
 
 -  Fixed an issue where damaged PDFs would fail with ``--redo-ocr``. :issue:`1403`
 -  Fixed an error that prevented JBIG2 optimization on Windows if the image
-   was optimized in an earlier step. :issue:`1398`
+   was optimized in an earlier step. :issue:`1396`
 -  Fixed an error detecting the version of unpaper 7.0.0. :issue:`1409`
+-  Fixed a performance regression when scanning pages. :issue:`1378`. Thanks @aliemjay.
 -  Fixed Alpine Docker image by enforcing Alpine 3.19. Alpine 3.20 includes a
    defective version of Tesseract OCR and so is not usable.
 -  Upgraded Ubuntu Docker image to use Ubuntu 24.04.
