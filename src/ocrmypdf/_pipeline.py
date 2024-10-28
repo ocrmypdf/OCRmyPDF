@@ -159,8 +159,13 @@ def triage(
                     "Argument --image-dpi is being ignored because the "
                     "input file is a PDF, not an image."
                 )
-            # Origin file is a pdf create a symlink with pdf extension
-            safe_symlink(input_file, output_file)
+            try:
+                with pikepdf.open(input_file) as pdf:
+                    pdf.save(output_file)
+            except pikepdf.PdfError as e:
+                raise InputFileError() from e
+            except pikepdf.PasswordError as e:
+                raise EncryptedPdfError() from e
             return output_file
     except OSError as e:
         log.debug(f"Temporary file was at: {input_file}")
