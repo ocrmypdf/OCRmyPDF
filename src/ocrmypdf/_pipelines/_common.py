@@ -57,6 +57,7 @@ from ocrmypdf.helpers import (
     samefile,
 )
 from ocrmypdf.pdfa import file_claims_pdfa
+from ocrmypdf.pdfinfo import PdfInfo
 
 log = logging.getLogger(__name__)
 tls = threading.local()
@@ -316,9 +317,11 @@ def setup_pipeline(
     return executor
 
 
-def do_get_pdfinfo(pdf, executor, options):
+def do_get_pdfinfo(
+    pdf_path: Path, executor: Executor, options: argparse.Namespace
+) -> PdfInfo:
     return get_pdfinfo(
-        pdf,
+        pdf_path,
         executor=executor,
         detailed_analysis=options.redo_ocr,
         progbar=options.progress_bar,
