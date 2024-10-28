@@ -19,26 +19,16 @@ jobs:
   test_linux:
     name: Test ${{ matrix.os }} with Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        experimental: [false]
+        os: [ubuntu-22.04, ubuntu-24.04]
+        python: ["3.10", "3.11", "3.12", "3.13"]
         include:
           - os: ubuntu-22.04
+            tesseract_ppa: "ppa"
             python: "3.10"
-          - os: ubuntu-22.04
-            python: "3.11"
-          - os: ubuntu-22.04
-            python: "3.10"
-            tesseract5: true
-          - os: ubuntu-latest
-            python: "3.12"
-            tesseract5: true
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             python: "pypy3.10"
-          - os: ubuntu-22.04
-            python: "3.13"
-            experimental: true
 
     env:
       OS: ${{ matrix.os }}
@@ -49,15 +39,18 @@ jobs:
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
-      - uses: actions/setup-python@v5
-        name: Setup Python
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.27"
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-          cache: "pip"
-          allow-prereleases: ${{ matrix.experimental }}
 
-      - name: Install Tesseract 5
-        if: matrix.tesseract5
+      - name: Install Tesseract from PPA
+        if: matrix.tesseract_ppa
         run: |
           sudo add-apt-repository -y ppa:alex-p/tesseract-ocr-devel
 
@@ -91,8 +84,7 @@ jobs:
 
       - name: Install Python packages
         run: |
-          python -m pip install --upgrade pip wheel
-          python -m pip install --prefer-binary .[test]
+          uv sync --extra test
 
       - name: Report versions
         run: |
@@ -100,11 +92,11 @@ jobs:
           gs --version
           pngquant --version
           unpaper --version
-          img2pdf --version
+          uv run img2pdf --version
 
       - name: Test
         run: |
-          python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
+          uv run pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -121,7 +113,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, macos-13]  # macos-latest is arm64, macos-13 is x86_64
-        python: ["3.10", "3.11", "3.12"]
+        python: ["3.10", "3.11", "3.12", "3.13"]
 
     env:
       OS: ${{ matrix.os }}
@@ -144,27 +136,30 @@ jobs:
             pngquant \
             tesseract
 
-      - uses: actions/setup-python@v5
-        name: Setup Python
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.27"
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-          cache: "pip"
 
       - name: Install Python packages
         run: |
-          python -m pip install --upgrade pip wheel
-          python -m pip install --prefer-binary .[test]
+          uv sync --extra test
 
       - name: Report versions
         run: |
           tesseract --version
           gs --version
           pngquant --version
-          img2pdf --version
+          uv run img2pdf --version
 
       - name: Test
         run: |
-          python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
+          uv run pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -180,7 +175,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python: ["3.10", "3.11", "3.12"]
+        python: ["3.10", "3.11", "3.12", "3.13"]
 
     env:
       OS: ${{ matrix.os }}
@@ -191,11 +186,15 @@ jobs:
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
-      - uses: actions/setup-python@v5
-        name: Setup Python
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.27"
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-          cache: "pip"
 
       - name: Install system packages
         run: |
@@ -204,12 +203,11 @@ jobs:
 
       - name: Install Python packages
         run: |
-          python -m pip install --upgrade pip wheel
-          python -m pip install --prefer-binary .[test]
+          uv sync --extra test
 
       - name: Test
         run: |
-          python -m pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
+          uv run pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -227,16 +225,14 @@ jobs:
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
-      - uses: actions/setup-python@v5
-        name: Setup Python
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
         with:
-          python-version: "3.10"
-          cache: "pip"
+          version: "0.4.27"
 
       - name: Make wheels and sdist
         run: |
-          python -m pip install --upgrade pip wheel build
-          python -m build --sdist --wheel
+          uv build --sdist --wheel
 
       - uses: actions/upload-artifact@v4
         with:

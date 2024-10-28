@@ -8,7 +8,7 @@
 # Details
 #  https://gitlab.alpinelinux.org/alpine/aports/-/issues/16143
 #  https://github.com/ocrmypdf/OCRmyPDF/issues/1395
-FROM alpine:3.19 as base
+FROM alpine:3.19 AS base
 
 ENV LANG=C.UTF-8
 ENV TZ=UTC
@@ -17,40 +17,24 @@ RUN apk add --no-cache \
     python3 \
     zlib
 
-FROM base as builder
+FROM base AS builder
 
 RUN apk add --no-cache \
     ca-certificates \
     git \
     python3-dev \
-    py3-pip
-
-# On arm64, we need to build cffi from source.
-ARG TARGETPLATFORM
-
-RUN if [ "${TARGETPLATFORM}" == "linux/arm64" ]; then \
-    apk add --no-cache \
-    build-base \
-    autoconf \
-    automake \
-    libtool \
-    zlib-dev \
-    libffi-dev \
-    cairo-dev \
-    pkgconfig \
-    ;  \
-    fi
+    curl
 
 COPY . /app
 
 WORKDIR /app
 
-RUN python3 -m venv .venv
+RUN curl -LsSf https://astral.sh/uv/0.4.27/install.sh | sh
 
-RUN source .venv/bin/activate \
-    && python3 -m pip install --no-cache-dir --upgrade pip \
-    && python3 -m pip install --no-cache-dir wheel \
-    && python3 -m pip install --no-cache-dir .[test,webservice,watcher]
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
+
+# Instead of restarting the shell, use uv directly from its installed location.
+RUN /root/.cargo/bin/uv sync --extra test --extra webservice --extra watcher
 
 FROM base
 
@@ -73,17 +57,7 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-COPY --from=builder /usr/local/lib/ /usr/local/lib/
-COPY --from=builder /usr/local/bin/ /usr/local/bin/
-
-COPY --from=builder /app/.venv/ /app/.venv/
-
-COPY --from=builder /app/misc/webservice.py /app/
-COPY --from=builder /app/misc/watcher.py /app/
-
-# Copy minimal project files to get the test suite.
-COPY --from=builder /app/pyproject.toml /app/README.md /app/
-COPY --from=builder /app/tests /app/tests
+COPY --from=builder --chown=app:app /app /app
 
 ENV PATH="/app/.venv/bin:${PATH}"
 
