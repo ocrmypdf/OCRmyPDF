@@ -33,13 +33,16 @@ OCRmyPDF typically supports the three most recent Python versions.
 v16.6.0
 =======
 
+-  Fixed an issue where damaged PDFs would fail with ``--redo-ocr``. :issue:`1403`
+-  Fixed an error that prevented JBIG2 optimization on Windows if the image
+   was optimized in an earlier step. :issue:`1398`
+-  Fixed an error detecting the version of unpaper 7.0.0. :issue:`1409`
 -  Fixed Alpine Docker image by enforcing Alpine 3.19. Alpine 3.20 includes a
    defective version of Tesseract OCR and so is not usable.
 -  Upgraded Ubuntu Docker image to use Ubuntu 24.04.
 -  Build and test scripts/actions switched to uv.
 -  When running in a container, we now remind the user that temporary folders
    are inside the container and may not be accessible.
--  Fixed an error detecting the version of unpaper 7.0.0.
 -  Fixed Linux test coverage matrix, which was missing some key versions.
 
 v16.5.0
