@@ -159,7 +159,10 @@ def extract_image_jbig2(
                 imgname = root / f'{xref:08d}'
                 with imgname.open('wb') as f:
                     ext = pim.extract_to(stream=f)
-                imgname.rename(imgname.with_suffix(ext))
+                # Rename the file so it has .prejbig2.ext extension
+                # Making it unique avoids problems with Windows if the
+                # same image is extracted multiple times
+                imgname.rename(imgname.with_suffix(".prejbig2" + ext))
             except NotImplementedError as e:
                 if '/Decode' in str(e):
                     log.debug(
@@ -175,7 +178,7 @@ def extract_image_jbig2(
                     pim.obj.ColorSpace = colorspace
                 else:
                     del pim.obj.ColorSpace
-            return XrefExt(xref, ext)
+            return XrefExt(xref, ".prejbig2" + ext)
     return None
 
 
