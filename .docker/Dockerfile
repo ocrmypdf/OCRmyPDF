@@ -51,7 +51,7 @@ FROM base
 
 RUN apt-get update && apt-get install -y software-properties-common
 
-RUN add-apt-repository -y ppa:alex-p/tesseract-ocr-devel
+RUN add-apt-repository -y ppa:alex-p/tesseract-ocr5.3
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
