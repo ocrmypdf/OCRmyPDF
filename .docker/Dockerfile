@@ -75,6 +75,10 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 COPY --from=builder --chown=app:app /app /app
 
+RUN rm -rf /app/.git && \
+ln -s /app/misc/webservice.py /app/webservice.py && \
+ln -s /app/misc/watcher.py /app/watcher.py
+
 ENV PATH="/app/.venv/bin:${PATH}"
 
 ENTRYPOINT ["/app/.venv/bin/ocrmypdf"]
