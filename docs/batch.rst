@@ -44,7 +44,7 @@ place, and printing each filename in between runs:
 
 .. code-block:: bash
 
-   find . -printf '%p\n' -name '*.pdf' -exec ocrmypdf '{}' '{}' \;
+   find . -name '*.pdf' -printf '%p\n' -exec ocrmypdf '{}' '{}' \;
 
 This only runs one ``ocrmypdf`` process at a time. This variation uses
 ``find`` to create a directory list and ``parallel`` to parallelize runs
