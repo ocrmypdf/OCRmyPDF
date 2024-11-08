@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2024 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-FROM ubuntu:24.04 AS base
+FROM ubuntu:22.04 AS base
 
 ENV LANG=C.UTF-8
 ENV TZ=UTC
@@ -51,7 +51,7 @@ FROM base
 
 RUN apt-get update && apt-get install -y software-properties-common
 
-RUN add-apt-repository -y ppa:alex-p/tesseract-ocr5.3
+RUN add-apt-repository -y ppa:alex-p/tesseract-ocr5
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
