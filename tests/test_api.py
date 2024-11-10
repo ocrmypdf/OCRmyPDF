@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import pickle
 from io import BytesIO
 from pathlib import Path
 
@@ -10,6 +11,7 @@ import pytest
 from pdfminer.high_level import extract_text
 
 import ocrmypdf
+import ocrmypdf._pipelines
 import ocrmypdf.api
 
 
@@ -35,7 +37,7 @@ def test_sidecar_stringio(resources: Path, outdir: Path, outpdf: Path):
         resources / 'ccitt.pdf',
         outpdf,
         plugins=['tests/plugins/tesseract_cache.py'],
-        sidecar=s
+        sidecar=s,
     )
     s.seek(0)
     assert b'the' in s.getvalue()
@@ -75,3 +77,29 @@ def test_hocr_to_pdf_api(resources: Path, outdir: Path, outpdf: Path):
     text = extract_text(outpdf)
     assert 'hocr' in text and 'the' not in text
 
+
+def test_hocr_result_json():
+    result = ocrmypdf._pipelines._common.HOCRResult(
+        pageno=1,
+        pdf_page_from_image=Path('a'),
+        hocr=Path('b'),
+        textpdf=Path('c'),
+        orientation_correction=180,
+    )
+    assert (
+        result.to_json()
+        == '{"pageno": 1, "pdf_page_from_image": {"Path": "a"}, "hocr": {"Path": "b"}, '
+        '"textpdf": {"Path": "c"}, "orientation_correction": 180}'
+    )
+    assert ocrmypdf._pipelines._common.HOCRResult.from_json(result.to_json()) == result
+
+
+def test_hocr_result_pickle():
+    result = ocrmypdf._pipelines._common.HOCRResult(
+        pageno=1,
+        pdf_page_from_image=Path('a'),
+        hocr=Path('b'),
+        textpdf=Path('c'),
+        orientation_correction=180,
+    )
+    assert result == pickle.loads(pickle.dumps(result))

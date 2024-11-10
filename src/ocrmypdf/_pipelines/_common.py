@@ -104,6 +104,23 @@ class PageResult(NamedTuple):
     """Orientation correction in degrees."""
 
 
+class HOCRResultEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Path):
+            return {'Path': str(obj)}
+        return super().default(obj)
+
+
+class HOCRResultDecoder(json.JSONDecoder):
+    def __init__(self, *args, **kwargs):
+        super().__init__(object_hook=self.dict_to_object, *args, **kwargs)
+
+    def dict_to_object(self, d):
+        if 'Path' in d:
+            return Path(d['Path'])
+        return d
+
+
 @dataclass
 class HOCRResult:
     """Result when hOCR is finished processing."""
@@ -123,38 +140,14 @@ class HOCRResult:
     orientation_correction: int = 0
     """Orientation correction in degrees."""
 
-    def __getstate__(self):
-        """Return state values to be pickled."""
-        return {
-            k: (
-                ('Path://' + str(v))
-                if k in ('pdf_page_from_image', 'hocr', 'textpdf') and v is not None
-                else v
-            )
-            for k, v in self.__dict__.items()
-        }
-
-    def __setstate__(self, state):
-        """Restore state from the unpickled state values."""
-        self.__dict__.update(
-            {
-                k: (
-                    Path(v.removeprefix('Path://'))
-                    if k in ('pdf_page_from_image', 'hocr', 'textpdf') and v is not None
-                    else v
-                )
-                for k, v in state.items()
-            }
-        )
-
     @classmethod
     def from_json(cls, json_str: str) -> HOCRResult:
         """Create an instance from a dict."""
-        return cls(**json.loads(json_str))
+        return cls(**json.loads(json_str, cls=HOCRResultDecoder))
 
     def to_json(self) -> str:
         """Serialize to a JSON string."""
-        return json.dumps(self.__getstate__())
+        return json.dumps(self.__dict__, cls=HOCRResultEncoder)
 
 
 def configure_debug_logging(
