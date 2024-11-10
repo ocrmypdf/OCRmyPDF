@@ -30,6 +30,16 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.6.1
+=======
+
+-  Fixed some issues with Docker build, such as removing unnecessary content and using
+   a stable Tesseract version.
+-  Reverted Docker image to Ubuntu 22.04 to access older/more stable Ghostscript
+   for now.
+-  Clarified batch commands in documentation.
+-  Fixed an issue with JSON serialization and pickling of HOCRResult. :issue:`1427`
+
 v16.6.0
 =======
 
