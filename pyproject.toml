@@ -155,3 +155,6 @@ convention = "google"
 
 [tool.ruff.format]
 quote-style = "preserve"
+
+[dependency-groups]
+dev = ["mypy>=1.13.0"]

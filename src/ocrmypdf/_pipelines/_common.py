@@ -20,7 +20,9 @@ from pathlib import Path
 from typing import NamedTuple, cast
 
 import PIL
+from pikepdf import Pdf
 
+from ocrmypdf._annots import remove_broken_goto_annotations
 from ocrmypdf._concurrent import Executor, setup_executor
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._logging import PageNumberFilter
@@ -438,7 +440,14 @@ def postprocess(
     pdf_file: Path, context: PdfContext, executor: Executor
 ) -> tuple[Path, Sequence[str]]:
     """Postprocess the PDF file."""
-    pdf_out = pdf_file
+    # pdf_out = pdf_file
+    with Pdf.open(pdf_file) as pdf:
+        fix_annots = context.get_path('fix_annots.pdf')
+        if remove_broken_goto_annotations(pdf):
+            pdf.save(fix_annots)
+            pdf_out = fix_annots
+        else:
+            pdf_out = pdf_file
     if context.options.output_type.startswith('pdfa'):
         ps_stub_out = generate_postscript_stub(context)
         pdf_out = convert_to_pdfa(pdf_out, ps_stub_out, context)
