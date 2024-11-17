@@ -235,7 +235,7 @@ The directive ``--tesseract-pagesegmode Nmode`` forwards the desired page segmen
 mode to Tesseract OCR. The default is 3.
 
 Page segmentation can improve OCR results when you know that a PDF ought to be
-analyzed a particular way, such as PDFs whose pages contain only a single line of 
+analyzed a particular way, such as PDFs whose pages contain only a single line of
 text. For the vast majority of users, changing the page segmentation mode will only
 make things worse.
 
@@ -274,7 +274,7 @@ As of June 2024, the Tesseract page segmentation modes are:
 |     | Tesseract-specific.                                                               |
 +-----+----------------------------------------------------------------------------------+
 
-Modes 0, 1, 2, and 12 (all of those that enable orientation and script detection) 
+Modes 0, 1, 2, and 12 (all of those that enable orientation and script detection)
 are not compatible with OCRmyPDF, which performs OSD in a separate step from OCR.
 Their use may interfere with ``--rotate-pages`` and other features.
 
@@ -445,7 +445,7 @@ Debugging the intermediate files
 OCRmyPDF normally saves its intermediate results to a temporary folder
 and deletes this folder when it exits, whether it succeeded or failed.
 
-If the ``--keep-temporary-files`` (``-k```) argument is issued on the
+If the ``--keep-temporary-files`` (``-k``) argument is issued on the
 command line, OCRmyPDF will keep the temporary folder and print the location,
 whether it succeeded or failed. An example message is:
 
