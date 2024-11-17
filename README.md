@@ -112,9 +112,33 @@ Our [documentation is served on Read the Docs](https://ocrmypdf.readthedocs.io/e
 
 Please report issues on our [GitHub issues](https://github.com/ocrmypdf/OCRmyPDF/issues) page, and follow the issue template for quick response.
 
+## Feature demo
+
+```bash
+# Add an OCR layer and convert to PDF/A
+ocrmypdf input.pdf output.pdf
+
+# Convert an image to single page PDF
+ocrmypdf input.jpg output.pdf
+
+# Add OCR to a file in place (only modifies file on success)
+ocrmypdf myfile.pdf myfile.pdf
+
+# OCR with non-English languages (look up your language's ISO 639-3 code)
+ocrmypdf -l fra LeParisien.pdf LeParisien.pdf
+
+# OCR multilingual documents
+ocrmypdf -l eng+fra Bilingual-English-French.pdf Bilingual-English-French.pdf
+
+# Deskew (straighten crooked pages)
+ocrmypdf --deskew input.pdf output.pdf
+```
+
+For more features, see the [documentation](https://ocrmypdf.readthedocs.io/en/latest/index.html).
+
 ## Requirements
 
-In addition to the required Python version (3.8+), OCRmyPDF requires external program installations of Ghostscript and Tesseract OCR. OCRmyPDF is pure Python, and runs on pretty much everything: Linux, macOS, Windows and FreeBSD.
+In addition to the required Python version, OCRmyPDF requires external program installations of Ghostscript and Tesseract OCR. OCRmyPDF is pure Python, and runs on pretty much everything: Linux, macOS, Windows and FreeBSD.
 
 ## Press & Media
 
