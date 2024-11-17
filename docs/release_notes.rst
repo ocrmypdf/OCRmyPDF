@@ -30,6 +30,12 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.6.2
+=======
+
+-  Remove invalid hyperlink annotations to satisfy Ghostscript 10.x during PDF/A
+   conversion. :issue:`1425`
+
 v16.6.1
 =======
 
