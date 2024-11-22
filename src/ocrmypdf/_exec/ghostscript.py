@@ -125,7 +125,7 @@ def rasterize_pdf(
         + (['-dPDFSTOPONERROR'] if stop_on_error else [])
         + [
             '-o',
-            '-',
+            fspath(output_file),
             '-sstdout=%stderr',  # Literal %s, not string interpolation
             '-dAutoRotatePages=/None',  # Probably has no effect on raster
             '-f',
@@ -144,7 +144,7 @@ def rasterize_pdf(
             log.error(stderr)
 
     try:
-        with Image.open(BytesIO(p.stdout)) as im:
+        with Image.open(output_file) as im:
             if rotation is not None:
                 log.debug("Rotating output by %i", rotation)
                 # rotation is a clockwise angle and Image.ROTATE_* is
@@ -157,7 +157,7 @@ def rasterize_pdf(
                     im = im.transpose(Image.Transpose.ROTATE_270)
                 if rotation % 180 == 90:
                     page_dpi = page_dpi.flip_axis()
-            im.save(fspath(output_file), dpi=page_dpi)
+            im.save(output_file, dpi=page_dpi)
     except UnidentifiedImageError:
         log.error(
             f"Ghostscript (using {raster_device} at {raster_dpi} dpi) produced "
@@ -271,19 +271,15 @@ def generate_pdfa(
             f"-dPDFA={pdfa_part}",
             "-dPDFACompatibilityPolicy=1",
             "-o",
-            "-",
+            fspath(output_file),
             "-sstdout=%stderr",  # Literal %s, not string interpolation
         ]
     )
     args_gs.extend(fspath(s) for s in pdf_pages)  # Stringify Path objs
     try:
-        with (
-            Path(output_file).open('wb') as output,
-            GhostscriptFollower(progressbar_class) as pbar,
-        ):
+        with GhostscriptFollower(progressbar_class) as pbar:
             p = run_polling_stderr(
                 args_gs,
-                stdout=output,
                 stderr=PIPE,
                 check=True,
                 text=True,
