@@ -139,7 +139,7 @@ def test_ghostscript_mandatory_color_conversion(resources, outpdf):
 
 def test_rasterize_pdf_errors(resources, no_outpdf, caplog):
     with patch('ocrmypdf._exec.ghostscript.run') as mock:
-        # ghostscript can produce
+        # ghostscript can produce empty files with return code 0
         mock.return_value = subprocess.CompletedProcess(
             ['fakegs'], returncode=0, stdout=b'', stderr=b'error this is an error'
         )

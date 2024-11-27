@@ -137,11 +137,12 @@ def rasterize_pdf(
         p = run(args_gs, stdout=PIPE, stderr=PIPE, check=True)
     except CalledProcessError as e:
         log.error(e.stderr.decode(errors='replace'))
-        raise SubprocessOutputError('Ghostscript rasterizing failed') from e
-    else:
-        stderr = p.stderr.decode(errors='replace')
-        if _gs_error_reported(stderr):
-            log.error(stderr)
+        Path(output_file).unlink(missing_ok=True)
+        raise SubprocessOutputError("Ghostscript rasterizing failed") from e
+
+    stderr = p.stderr.decode(errors='replace')
+    if _gs_error_reported(stderr):
+        log.error(stderr)
 
     try:
         with Image.open(output_file) as im:
@@ -164,6 +165,12 @@ def rasterize_pdf(
             "an invalid page image file."
         )
         raise
+    except OSError as e:
+        log.error(
+            f"Ghostscript (using {raster_device} at {raster_dpi} dpi) produced "
+            "an invalid page image file."
+        )
+        raise UnidentifiedImageError() from e
 
 
 class GhostscriptFollower:
