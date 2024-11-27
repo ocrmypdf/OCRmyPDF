@@ -40,7 +40,7 @@ jobs:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v4
         with:
           version: "0.4.27"
 
@@ -99,7 +99,7 @@ jobs:
           uv run pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
@@ -136,7 +136,7 @@ jobs:
             tesseract
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v4
         with:
           version: "0.4.27"
 
@@ -161,7 +161,7 @@ jobs:
           uv run pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
@@ -186,7 +186,7 @@ jobs:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v4
         with:
           version: "0.4.27"
 
@@ -209,7 +209,7 @@ jobs:
           uv run pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
@@ -225,7 +225,7 @@ jobs:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v4
         with:
           version: "0.4.27"
 
