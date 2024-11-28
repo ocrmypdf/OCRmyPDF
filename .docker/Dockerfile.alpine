@@ -29,7 +29,7 @@ COPY . /app
 
 WORKDIR /app
 
-RUN curl -LsSf https://astral.sh/uv/0.4.27/install.sh | sh
+RUN curl -LsSf https://astral.sh/uv/0.5.4/install.sh | sh
 
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
