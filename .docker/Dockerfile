@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2024 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-FROM ubuntu:22.04 AS base
+FROM ubuntu:24.04 AS base
 
 ENV LANG=C.UTF-8
 ENV TZ=UTC
@@ -40,12 +40,12 @@ COPY . /app
 
 WORKDIR /app
 
-RUN curl -LsSf https://astral.sh/uv/0.5.4/install.sh | sh
+# Copy uv from ghcr
+COPY --from=ghcr.io/astral-sh/uv:0.5.5 /uv /uvx /bin/
 
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
-# Instead of restarting the shell, use uv directly from its installed location.
-RUN /root/.cargo/bin/uv sync --extra test --extra webservice --extra watcher
+RUN uv sync --extra test --extra webservice --extra watcher
 
 FROM base
 
