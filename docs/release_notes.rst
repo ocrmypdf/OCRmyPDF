@@ -30,6 +30,16 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.7.0
+=======
+
+-  Fixed further issues with Docker build and updated some versions.
+-  Main Docker image returned to Ubuntu 24.04 since the fix in v16.6.2 resolved
+   that concern.
+-  Code that previously sent Ghostscript output to stdout has been changed to
+   output to temporary files, since Ghostscript was doing that anyway internally.
+   This is a modest efficiency improvement.
+
 v16.6.2
 =======
 

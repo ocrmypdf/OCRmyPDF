@@ -69,9 +69,9 @@ OCRmyPDF will use all available CPU cores. See the Docker documentation for
 if you are using Docker on macOS or Windows, where you may need to manually assign
 more resources. On Linux, all resources will be available automatically.
 
-The underlying operating system and other details in Docker images are subject
-to change at minor releases. If you are modifying the image, you should pin
-the version you intend to use.
+The underlying operating system and other details in Docker images are considered
+implementation details and **subject to change at minor releases**. If you are
+modifying the image, you should pin the version you intend to use.
 
 Using the Docker image on the command line
 ==========================================
