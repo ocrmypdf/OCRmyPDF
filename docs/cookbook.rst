@@ -399,7 +399,7 @@ Some users may consider enabling lossy JBIG2. See: :ref:`jbig2-lossy`.
 Digitally signed PDFs
 =====================
 
-OCRmyPDF cannot preserve digital signatures in PDFs and also add to OCR to them.
+OCRmyPDF cannot preserve digital signatures in PDFs and also add OCR to them.
 By default, it will refuse to modify a signed PDF regardless of other settings. You can
 override this behavior with ``--invalidate-digital-signatures``; as the name suggests,
 any digital signatures will be invalidated.
