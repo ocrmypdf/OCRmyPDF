@@ -42,7 +42,7 @@ extensions = [
 ]
 
 # Extension settings
-intersphinx_mapping = {'https://docs.python.org/': None}
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 napoleon_use_rtype = False
 issues_github_path = "ocrmypdf/OCRmyPDF"
 
