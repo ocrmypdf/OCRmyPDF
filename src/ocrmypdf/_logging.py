@@ -26,5 +26,5 @@ class PageNumberFilter(logging.Filter):
 class RichLoggingHandler(RichHandler):
     def __init__(self, console: Console, **kwargs):
         super().__init__(
-            console=console, show_level=False, show_time=False, markup=True, **kwargs
+            console=console, show_level=False, show_time=False, markup=False, **kwargs
         )
