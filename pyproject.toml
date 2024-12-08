@@ -118,8 +118,6 @@ filterwarnings = [
 [[tool.mypy.overrides]]
 module = [
   'pluggy',
-  'tqdm',
-  'coloredlogs',
   'img2pdf',
   'pdfminer.*',
   'reportlab.*',
@@ -158,8 +156,8 @@ quote-style = "preserve"
 
 [dependency-groups]
 dev = [
-    "mypy>=1.13.0",
-    "pymupdf>=1.24.14",
-    "streamlit-pdf-viewer>=0.0.19",
-    "streamlit>=1.40.2",
+  "mypy>=1.13.0",
+  "pymupdf>=1.24.14",
+  "streamlit-pdf-viewer>=0.0.19",
+  "streamlit>=1.40.2",
 ]

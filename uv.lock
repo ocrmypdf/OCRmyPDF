@@ -802,7 +802,7 @@ wheels = [
 
 [[package]]
 name = "ocrmypdf"
-version = "16.6.3.dev12+gcc058be4.d20241205"
+version = "16.6.3.dev16+g15df9c37.d20241208"
 source = { editable = "." }
 dependencies = [
     { name = "deprecation" },

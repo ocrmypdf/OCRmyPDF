@@ -34,7 +34,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.5.5 /uv /uvx /bin/
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
 # Instead of restarting the shell, use uv directly from its installed location.
-RUN uv sync --extra test --extra webservice --extra watcher
+RUN uv sync --extra test --extra webservice --extra watcher --no-dev
 
 FROM base
 

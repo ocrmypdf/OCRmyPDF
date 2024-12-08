@@ -42,7 +42,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
-          version: "0.4.27"
+          version: "0.5.x"
 
       - name: "Set up Python"
         uses: actions/setup-python@v5
@@ -84,7 +84,7 @@ jobs:
 
       - name: Install Python packages
         run: |
-          uv sync --extra test
+          uv sync --extra test --no-dev
 
       - name: Report versions
         run: |
@@ -138,7 +138,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
-          version: "0.4.27"
+          version: "0.5.x"
 
       - name: "Set up Python"
         uses: actions/setup-python@v5
@@ -147,7 +147,7 @@ jobs:
 
       - name: Install Python packages
         run: |
-          uv sync --extra test
+          uv sync --extra test --no-dev
 
       - name: Report versions
         run: |
@@ -188,7 +188,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
-          version: "0.4.27"
+          version: "0.5.x"
 
       - name: "Set up Python"
         uses: actions/setup-python@v5
@@ -202,7 +202,7 @@ jobs:
 
       - name: Install Python packages
         run: |
-          uv sync --extra test
+          uv sync --extra test --no-dev
 
       - name: Test
         run: |
@@ -227,7 +227,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
-          version: "0.4.27"
+          version: "0.5.x"
 
       - name: Make wheels and sdist
         run: |
