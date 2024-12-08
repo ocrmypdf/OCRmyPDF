@@ -39,6 +39,7 @@ v16.7.0
 -  Code that previously sent Ghostscript output to stdout has been changed to
    output to temporary files, since Ghostscript was doing that anyway internally.
    This is a modest efficiency improvement.
+-  Fixed an issue with debug log output being parsed as rich markup. :issue:`1444`
 
 v16.6.2
 =======
