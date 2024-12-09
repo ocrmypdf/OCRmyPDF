@@ -92,11 +92,11 @@ jobs:
           gs --version
           pngquant --version
           unpaper --version
-          uv run img2pdf --version
+          uv run --no-dev img2pdf --version
 
       - name: Test
         run: |
-          uv run pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
+          uv run --no-dev pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
@@ -154,11 +154,11 @@ jobs:
           tesseract --version
           gs --version
           pngquant --version
-          uv run img2pdf --version
+          uv run --no-dev img2pdf --version
 
       - name: Test
         run: |
-          uv run pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
+          uv run --no-dev pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
@@ -206,7 +206,7 @@ jobs:
 
       - name: Test
         run: |
-          uv run pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
+          uv run --no-dev pytest --cov-report xml --cov=ocrmypdf --cov=tests/ -n0 tests/
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
