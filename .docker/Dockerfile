@@ -45,7 +45,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.5.5 /uv /uvx /bin/
 
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
-RUN uv sync --extra test --extra webservice --extra watcher
+RUN uv sync --extra test --extra webservice --extra watcher --no-dev
 
 FROM base
 
