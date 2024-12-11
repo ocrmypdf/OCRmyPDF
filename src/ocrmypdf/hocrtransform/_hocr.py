@@ -409,7 +409,7 @@ class HocrTransform:
             space_box = Rectangle(next_box.urx, box.lly, box.llx, next_box.ury)
         self._debug_draw_space_bbox(canvas, space_box)
         space_width = self._font.text_width(' ', fontsize)
-        if space_width > 0:
+        if space_width > 0 and space_box.width > 0:
             if text_direction == TextDirection.LTR:
                 text.text_transform(Matrix(1, 0, 0, -1, space_box.llx, 0))
             elif text_direction == TextDirection.RTL:
