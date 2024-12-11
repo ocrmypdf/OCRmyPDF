@@ -57,27 +57,34 @@ def _update_resources(
         fonts[font_key] = font
 
 
+
 def strip_invisible_text(pdf: Pdf, page: Page):
     stream = []
     in_text_obj = False
-    render_mode = 0
+    render_mode_stack = [0]
     text_objects = []
 
     for operands, operator in parse_content_stream(page, ''):
+        if operator == Operator('Tr'):
+            render_mode_stack[-1] = operands[0]
+
+        if operator == Operator('q'):
+            render_mode_stack.append(render_mode_stack[-1])
+
+        if operator == Operator('Q'):
+            render_mode_stack.pop()
+
         if not in_text_obj:
             if operator == Operator('BT'):
                 in_text_obj = True
-                render_mode = 0
                 text_objects.append((operands, operator))
             else:
                 stream.append((operands, operator))
         else:
-            if operator == Operator('Tr'):
-                render_mode = operands[0]
             text_objects.append((operands, operator))
             if operator == Operator('ET'):
                 in_text_obj = False
-                if render_mode != 3:
+                if render_mode_stack[-1] != 3:
                     stream.extend(text_objects)
                 text_objects.clear()
 
