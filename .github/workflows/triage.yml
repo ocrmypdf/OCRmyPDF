@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2024 James R. Barlow
+# SPDX-License-Identifier: MPL-2.0
+
+name: Remove Triage Label on Reply
+
+on:
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  remove-triage-label:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check if comment is by the repository owner
+        id: check_comment
+        run: |
+          echo "::set-output name=is_owner::$(
+            if [[ '${{ github.event.comment.user.login }}' == 'jbarlow83' ]]; then
+              echo 'true';
+            else
+              echo 'false';
+            fi
+          )"
+
+      - name: Remove 'triage' label
+        if: ${{ steps.check_comment.outputs.is_owner == 'true' }}
+        uses: actions-ecosystem/action-remove-labels@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          labels: triage
