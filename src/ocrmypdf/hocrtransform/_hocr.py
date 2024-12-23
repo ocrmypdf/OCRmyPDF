@@ -396,7 +396,7 @@ class HocrTransform:
         )
         if hocr_next_box is None:
             return
-        # Render a space this word and the next word. The explicit space helps
+        # Render a space between this word and the next word. The explicit space helps
         # PDF viewers identify the word break, and horizontally scaling it to
         # occupy the space the between the words helps the PDF viewer
         # avoid combiningthewordstogether.
