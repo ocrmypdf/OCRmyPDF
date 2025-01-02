@@ -40,7 +40,7 @@ jobs:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v5
         with:
           version: "0.5.x"
 
@@ -136,7 +136,7 @@ jobs:
             tesseract
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v5
         with:
           version: "0.5.x"
 
@@ -186,7 +186,7 @@ jobs:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v5
         with:
           version: "0.5.x"
 
@@ -225,7 +225,7 @@ jobs:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v5
         with:
           version: "0.5.x"
 
