@@ -61,19 +61,31 @@ def strip_invisible_text(pdf: Pdf, page: Page):
     stream = []
     in_text_obj = False
     render_mode = 0
+    render_mode_stack = []
     text_objects = []
 
     for operands, operator in parse_content_stream(page, ''):
+        if operator == Operator('Tr'):
+            render_mode = operands[0]
+
+        if operator == Operator('q'):
+            render_mode_stack.append(render_mode)
+
+        if operator == Operator('Q'):
+            try:
+                render_mode = render_mode_stack.pop()
+            except IndexError:
+                # Stack underflow: content stream is malformed
+                # but try to carry on
+                pass
+
         if not in_text_obj:
             if operator == Operator('BT'):
                 in_text_obj = True
-                render_mode = 0
                 text_objects.append((operands, operator))
             else:
                 stream.append((operands, operator))
         else:
-            if operator == Operator('Tr'):
-                render_mode = operands[0]
             text_objects.append((operands, operator))
             if operator == Operator('ET'):
                 in_text_obj = False
