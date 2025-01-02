@@ -14,94 +14,227 @@ Ghostscript's license as well as OCRmyPDF's.
 from __future__ import annotations
 
 import os
-import shlex
-from subprocess import run
-from tempfile import TemporaryDirectory
+import subprocess
+import sys
+import time
+from functools import partial
+from operator import getitem
+from pathlib import Path
+from shutil import which
+from tempfile import NamedTemporaryFile
 
-from flask import Flask, Response, request, send_from_directory
-from werkzeug.utils import secure_filename
+import pikepdf
+import streamlit as st
+from port_for import get_port
+from streamlit.components.v1 import iframe
 
-app = Flask(__name__)
-app.secret_key = "secret"
-app.config['MAX_CONTENT_LENGTH'] = 50_000_000
-app.config.from_envvar("OCRMYPDF_WEBSERVICE_SETTINGS", silent=True)
+from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 
-ALLOWED_EXTENSIONS = {"pdf"}
+st.title("OCRmyPDF Web Service")
 
+if not which("ttyd"):
+    st.error("Missing dependency: ttyd. Please install ttyd to the local environment.")
+    sys.exit(1)
 
-def allowed_file(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+uploaded = st.file_uploader("Upload input PDF or image", type=["pdf"], key="file")
 
+mode = st.selectbox("Mode", options=["normal", "skip-text", "force-ocr", "redo-ocr"])
 
-def do_ocrmypdf(file):
-    uploaddir = TemporaryDirectory(prefix="ocrmypdf-upload")
-    downloaddir = TemporaryDirectory(prefix="ocrmypdf-download")
+with st.expander("Input options"):
+    invalidate_digital_signatures = st.checkbox(
+        "Invalidate digital signatures", value=False
+    )
+    language = st.selectbox("Language", options=["eng", "deu", "fra", "spa"])
 
-    filename = secure_filename(file.filename)
-    up_file = os.path.join(uploaddir.name, filename)
-    file.save(up_file)
-
-    down_file = os.path.join(downloaddir.name, filename)
-
-    cmd_args = [arg for arg in shlex.split(request.form["params"])]
-    if "--sidecar" in cmd_args:
-        return Response("--sidecar not supported", 501, mimetype='text/plain')
-
-    ocrmypdf_args = ["ocrmypdf", *cmd_args, up_file, down_file]
-    proc = run(ocrmypdf_args, capture_output=True, encoding="utf-8", check=False)
-    if proc.returncode != 0:
-        stderr = proc.stderr
-        return Response(stderr, 400, mimetype='text/plain')
-
-    return send_from_directory(downloaddir.name, filename)
-
-
-@app.route("/", methods=["GET", "POST"])
-def upload_file():
-    if request.method == "POST":
-        if "file" not in request.files:
-            return Response("No file in POST", 400, mimetype='text/plain')
-        file = request.files["file"]
-        if file.filename == "":
-            return Response("Empty filename", 400, mimetype='text/plain')
-        if not allowed_file(file.filename):
-            return Response("Invalid filename", 400, mimetype='text/plain')
-        if file and allowed_file(file.filename):
-            return do_ocrmypdf(file)
-        return Response("Some other problem", 400, mimetype='text/plain')
-
-    return """
-    <!doctype html>
-    <title>OCRmyPDF webservice</title>
-    <h1>Upload a PDF (debug UI)</h1>
-    <form method=post enctype=multipart/form-data>
-      <label for="args">Command line parameters</label>
-      <input type=textbox name=params>
-      <label for="file">File to upload</label>
-      <input type=file name=file>
-      <input type=submit value=Upload>
-    </form>
-    <h4>Notice</h2>
-    <div style="font-size: 70%; max-width: 34em;">
-    <p>This is a webservice wrapper for OCRmyPDF.</p>
-    <p>Copyright 2019 James R. Barlow</p>
-    <p>This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-    </p>
-    <p>This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-    </p>
-    <p>
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
-    </p>
-    </div>
-    """
+    image_dpi = st.slider(
+        "Image DPI", value=300, key="image_dpi", min_value=1, max_value=5000, step=50
+    )
+with st.expander("Preprocessing"):
+    skip_big = st.checkbox("Skip OCR on big pages", value=False, key="skip_big")
+    oversample = st.slider("Oversample", min_value=0, max_value=5000, value=0, step=50)
+    rotate_pages = st.checkbox("Rotate pages", value=False, key="rotate")
+    deskew = st.checkbox("Deskew pages", value=False, key="deskew")
+    clean = st.checkbox("Clean pages before OCR", value=False, key="clean")
+    clean_final = st.checkbox("Clean final", value=False, key="clean_final")
+    remove_vectors = st.checkbox("Remove vectors", value=False, key="remove_vectors")
 
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+with st.expander("Output options"):
+    output_type = st.selectbox(
+        "Output type", options=["pdfa", "pdfa", "pdfa-1", "pdfa-2", "pdfa-3", "none"]
+    )
+
+    pdf_renderer = st.selectbox(
+        "PDF rendereer", options=["auto", "hocr", "hocrdebug", "sandwich"]
+    )
+
+    optimize = st.selectbox("Optimize", options=["0", "1", "2", "3"])
+
+    st.selectbox("PDF/A compression", options=["auto", "jpeg", "lossless"])
+
+with st.expander("Metadata"):
+    title = author = keywords = subject = None
+    if uploaded:
+        with pikepdf.open(uploaded) as pdf, pdf.open_metadata() as meta:
+            st.code(str(meta), language="xml")
+            title = st.text_input("Title", value=meta.get('dc:title', ''))
+            author = st.text_input("Author", value=meta.get('dc:creator', ''))
+            keywords = st.text_input("Keywords", value=meta.get('dc:subject', ''))
+            subject = st.text_input("Subject", value=meta.get('dc:description', ''))
+
+
+with st.expander("Optimization after OCR"):
+    jpeg_quality = st.slider(
+        "JPEG quality", min_value=0, max_value=100, value=75, key="jpeg_quality"
+    )
+    png_quality = st.slider(
+        "PNG quality", min_value=0, max_value=100, value=75, key="png_quality"
+    )
+    jbig2_lossy = st.checkbox("JBIG2 lossy (dangerous)", value=False, key="jbig2_lossy")
+    jbig2_threshold = st.number_input("JBIG2 threshold", value=0, key="jbig2_threshold")
+
+with st.expander("Advanced options"):
+    jobs = st.slider(
+        "Threads",
+        min_value=1,
+        max_value=os.cpu_count(),
+        value=os.cpu_count(),
+        key="threads",
+    )
+    pages = st.text_input(
+        "Pages", value="", help="Comma-separated list of pages to process"
+    )
+    max_image_mpixels = st.number_input(
+        "Max image size",
+        value=250.0,
+        min_value=0.0,
+        help="Maximum image size in megapixels",
+    )
+    rotate_pages_threshold = st.number_input(
+        "Rotate pages threshold",
+        value=DEFAULT_ROTATE_PAGES_THRESHOLD,
+        min_value=0.0,
+        max_value=1000.0,
+        help="Threshold for automatic page rotation",
+    )
+    fast_web_view = st.number_input(
+        "Fast web view",
+        value=1.0,
+        min_value=0.0,
+        help="Linearize files above this size in MB",
+    )
+    continue_on_soft_render_error = st.checkbox(
+        "Continue on soft render error", value=True
+    )
+    verbose_labels = ["quiet", "default", "debug", "debug_all"]
+    verbose = st.selectbox(
+        "Verbosity level",
+        options=[-1, 0, 1, 2],
+        index=1,
+        format_func=partial(getitem, verbose_labels),
+    )
+
+if uploaded:
+    args = []
+    if mode and mode != 'normal':
+        args.append(f"--{mode}")
+    if language:
+        args.append(f"--language={language}")
+    if not uploaded.name.lower().endswith(".pdf") and image_dpi:
+        args.append(f"--image-dpi={image_dpi}")
+    if skip_big:
+        args.append("--skip-big")
+    if oversample:
+        args.append(f"--oversample={oversample}")
+    if rotate_pages:
+        args.append("--rotate-pages")
+    if deskew:
+        args.append("--deskew")
+    if clean:
+        args.append("--clean")
+    if clean_final:
+        args.append("--clean-final")
+    if remove_vectors:
+        args.append("--remove-vectors")
+    if output_type:
+        args.append(f"--output-type={output_type}")
+    if pdf_renderer:
+        args.append(f"--pdf-renderer={pdf_renderer}")
+    if optimize:
+        args.append(f"--optimize={optimize}")
+    if title:
+        args.append(f"--title={title}")
+    if author:
+        args.append(f"--author={author}")
+    if keywords:
+        args.append(f"--keywords={keywords}")
+    if subject:
+        args.append(f"--subject={subject}")
+    if pages:
+        args.append(f"--pages={pages}")
+    if max_image_mpixels:
+        args.append(f"--max-image-mpixels={max_image_mpixels}")
+    if rotate_pages_threshold:
+        args.append(f"--rotate-pages-threshold={rotate_pages_threshold}")
+    if fast_web_view:
+        args.append(f"--fast-web-view={fast_web_view}")
+    if continue_on_soft_render_error:
+        args.append("--continue-on-soft-render-error")
+    if verbose:
+        args.append(f"--verbose={verbose}")
+    if optimize > '0' and jpeg_quality:
+        args.append(f"--jpeg-quality={jpeg_quality}")
+    if optimize > '0' and png_quality:
+        args.append(f"--png-quality={png_quality}")
+    if jbig2_lossy:
+        args.append("--jbig2-lossy")
+    if jbig2_threshold:
+        args.append(f"--jbig2-threshold={jbig2_threshold}")
+    if jobs:
+        args.append(f"--jobs={jobs}")
+    input_file = NamedTemporaryFile(delete=True, suffix=f"_{uploaded.name}")
+    input_file.write(uploaded.getvalue())
+    input_file.flush()
+    input_file.seek(0)
+    args.append(str(input_file.name))
+    output_file = NamedTemporaryFile(delete=True, suffix=".pdf")
+    args.append(str(output_file.name))
+
+    st.session_state['running'] = (
+        'run_button' in st.session_state and st.session_state.run_button
+    )
+    if st.button(
+        "Run OCRmyPDF",
+        disabled=st.session_state.get("running", False),
+        key='run_button',
+    ):
+        st.session_state['running'] = True
+        args = [sys.executable, '-m', "ocrmypdf"] + args
+        cmdline = " ".join(args)
+        st.code(cmdline, language="bash")
+
+        port = get_port((5000, 7000))
+        ttyd_args = ['ttyd', '--port', str(port), '--once', '--readonly']
+
+        ttyd_proc = subprocess.Popen(
+            ttyd_args + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        iframe(src=f"http://localhost:{port}", height=400)
+
+        while ttyd_proc.poll() is None:
+            ttyd_proc.poll()
+            time.sleep(1)
+
+        if ttyd_proc.returncode == 0:
+            if Path(output_file.name).stat().st_size == 0:
+                st.error("No output PDF file was generated")
+            else:
+                st.download_button(
+                    label="Download input PDF",
+                    data=input_file.read(),
+                    file_name=uploaded.name,
+                    mime="application/pdf",
+                )
+        else:
+            st.error(f"ttyd failed with exit code {ttyd_proc.returncode}")
+        st.session_state['running'] = False
