@@ -57,22 +57,27 @@ def _update_resources(
         fonts[font_key] = font
 
 
-
 def strip_invisible_text(pdf: Pdf, page: Page):
     stream = []
     in_text_obj = False
-    render_mode_stack = [0]
+    render_mode = 0
+    render_mode_stack = []
     text_objects = []
 
     for operands, operator in parse_content_stream(page, ''):
         if operator == Operator('Tr'):
-            render_mode_stack[-1] = operands[0]
+            render_mode = operands[0]
 
         if operator == Operator('q'):
-            render_mode_stack.append(render_mode_stack[-1])
+            render_mode_stack.append(render_mode)
 
         if operator == Operator('Q'):
-            render_mode_stack.pop()
+            try:
+                render_mode = render_mode_stack.pop()
+            except IndexError:
+                # Stack underflow: content stream is malformed
+                # but try to carry on
+                pass
 
         if not in_text_obj:
             if operator == Operator('BT'):
@@ -84,7 +89,7 @@ def strip_invisible_text(pdf: Pdf, page: Page):
             text_objects.append((operands, operator))
             if operator == Operator('ET'):
                 in_text_obj = False
-                if render_mode_stack[-1] != 3:
+                if render_mode != 3:
                     stream.extend(text_objects)
                 text_objects.clear()
 
