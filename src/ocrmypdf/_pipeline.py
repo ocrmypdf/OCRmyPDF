@@ -79,6 +79,14 @@ def triage_image_file(input_file: Path, output_file: Path, options) -> None:
     except OSError as e:
         # Recover the original filename
         log.error(str(e).replace(str(input_file), str(options.input_file)))
+        if not input_file.exists():
+            log.error("Input file does not exist: %s", input_file)
+        if input_file.is_dir():
+            log.error("Input file is a directory: %s", input_file)
+        if input_file.is_file():
+            log.error("Input file is a file: %s", input_file)
+        if input_file.stat().st_size == 0:
+            log.error("Input file is empty: %s", input_file)
         raise UnsupportedImageFormatError() from e
 
     with im:
