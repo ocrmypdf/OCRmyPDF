@@ -35,7 +35,7 @@ execute the image:
    docker run hello-world
 
 .. list-table:: Docker images
-   :width: 30 20 50
+   :widths: 30 20 50
    :header-rows: 1
 
    * - Image

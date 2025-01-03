@@ -9,26 +9,11 @@ API reference
 This page summarizes the rest of the public API. Generally speaking this
 should be mainly of interest to plugin developers.
 
-ocrmypdf
-========
+ocrmypdf.api
+============
 
-.. autoclass:: ocrmypdf.PageContext
+.. automodule:: ocrmypdf.api
     :members:
-
-.. autoclass:: ocrmypdf.PdfContext
-    :members:
-
-.. autoclass:: ocrmypdf.Verbosity
-    :members:
-    :undoc-members:
-
-.. autofunction:: ocrmypdf.configure_logging
-
-.. autofunction:: ocrmypdf.ocr
-
-.. autofunction:: ocrmypdf.pdf_to_hocr
-
-.. autofunction:: ocrmypdf.hocr_to_ocr_pdf
 
 ocrmypdf.exceptions
 ===================

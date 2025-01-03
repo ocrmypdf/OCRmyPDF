@@ -68,8 +68,8 @@ to what languages it should search for. Multiple languages can be
 requested using either ``-l eng+fra`` (English and French) or
 ``-l eng -l fra``.
 
-Archlinux
-------
+Arch Linux
+----------
 
 .. code-block:: bash
 
