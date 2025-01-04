@@ -30,6 +30,8 @@
 #
 # needs_sphinx = '1.0'
 
+import datetime
+
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
@@ -64,8 +66,11 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'ocrmypdf'
+
+year = str(datetime.date.today().year)
 copyright = (
-    '2023, James R. Barlow. Licensed under Creative Commons Attribution-ShareAlike 4.0.'
+    f'{year}, James R. Barlow. ',
+    'Licensed under Creative Commons Attribution-ShareAlike 4.0.',
 )
 author = 'James R. Barlow'
 
