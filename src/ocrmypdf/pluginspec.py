@@ -145,13 +145,15 @@ def get_progressbar_class() -> type[ProgressBar]:
     The class returned by this function must be compatible with the
     :class:`ProgressBar` protocol.
 
-    Here is how OCRmyPDF will use the progress bar:
-
     Example:
-        pbar_class = pm.hook.get_progressbar_class()
-        with pbar_class(**progress_kwargs) as pbar:
-            ...
-            pbar.update(1)
+        Here is how OCRmyPDF will use the progress bar:
+
+        .. code-block:: python
+
+            pbar_class = pm.hook.get_progressbar_class()
+            with pbar_class(**progress_kwargs) as pbar:
+                ... # do some work
+                pbar.update(1)
     """
 
 

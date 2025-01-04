@@ -14,8 +14,8 @@ perform other possible optimizations such as deduplicating resources,
 consolidating fonts, simplifying vector drawings, or anything of that nature.
 
 .. list-table:: Title
-   :widths: 33 6 60
-   :header-rows: 1
+    :widths: 33 6 60
+    :header-rows: 1
 
     * - Optimization level
       - Shorthand
