@@ -241,7 +241,7 @@ if uploaded:
                 st.error("No output PDF file was generated")
             else:
                 st.download_button(
-                    label="Download input PDF",
+                    label="Download output PDF",
                     data=input_file.read(),
                     file_name=uploaded.name,
                     mime="application/pdf",
