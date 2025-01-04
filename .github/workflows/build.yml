@@ -275,14 +275,14 @@ jobs:
       - name: Sign the dists with Sigstore
         uses: sigstore/gh-action-sigstore-python@v3.0.0
         with:
-          inputs: >-
+          inputs: |
             ./dist/*.tar.gz
             ./dist/*.whl
 
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: >-
+        run: |
           gh release create
           '${{ github.ref_name }}'
           --repo '${{ github.repository }}'
@@ -294,7 +294,7 @@ jobs:
         # Upload to GitHub Release using the `gh` CLI.
         # `dist/` contains the built packages, and the
         # sigstore-produced signatures and certificates.
-        run: >-
+        run: |
           gh release upload
           '${{ github.ref_name }}' dist/**
           --repo '${{ github.repository }}'
