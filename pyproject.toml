@@ -163,4 +163,5 @@ dev = [
   "pymupdf>=1.24.14",
   "streamlit-pdf-viewer>=0.0.19",
   "streamlit>=1.40.2",
+  "ipykernel>=6.29.5",
 ]

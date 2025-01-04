@@ -16,6 +16,7 @@ import os
 import subprocess
 import sys
 import time
+import urllib
 from functools import partial
 from operator import getitem
 from pathlib import Path
@@ -28,6 +29,17 @@ from port_for import get_port
 from streamlit.components.v1 import iframe
 
 from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
+
+
+def get_host_url_with_port(port: int) -> str:
+    """Get the host URL for the web service. Hacky."""
+    host_url = st.context.headers["host"]
+    try:
+        host, _streamlit_port = host_url.split(":", maxsplit=1)
+    except ValueError:
+        host = host_url
+    return f"//{host}:{port}"  # Use the same protocol
+
 
 st.title("OCRmyPDF Web Service")
 
@@ -218,7 +230,7 @@ if uploaded:
         ttyd_proc = subprocess.Popen(
             ttyd_args + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
-        iframe(src=f"http://localhost:{port}", height=400)
+        iframe(src=get_host_url_with_port(port), height=400)
 
         while ttyd_proc.poll() is None:
             ttyd_proc.poll()

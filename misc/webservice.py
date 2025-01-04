@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # SPDX-FileCopyrightText: 2025 James R. Barlow
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
