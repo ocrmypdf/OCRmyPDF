@@ -40,6 +40,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
+    'sphinx.ext.imgconverter',  # PDF docs needs this for SVG to PNG conversion
     'sphinx_issues',
 ]
 
