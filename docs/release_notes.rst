@@ -30,6 +30,20 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+
+v16.8.0
+=======
+
+-  Upgraded webservice.py demonstration using streamlit. It's now possible to
+   exercise most of OCRmyPDF's functionality in a simple web UI.
+-  Added cache to Dockerfiles to improve build speed.
+-  Fixed numerous formatting errors in the documentation that prevented some
+   parts of documentation from generating correctly.
+-  Improved OCR text rendering by suppressing negative-width spaces. Thanks
+   @pajowu. :issue:`1446`
+-  Improved detecting of invisible text when using `--redo-ocr`. Thanks
+   @pajowu. :issue:`1448``
+
 v16.7.0
 =======
 
