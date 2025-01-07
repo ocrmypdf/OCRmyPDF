@@ -14,7 +14,7 @@ import pytest
 from PIL import Image, UnidentifiedImageError
 
 from ocrmypdf._exec.ghostscript import DuplicateFilter, rasterize_pdf
-from ocrmypdf.exceptions import ColorConversionNeededError, ExitCode
+from ocrmypdf.exceptions import ColorConversionNeededError, ExitCode, InputFileError
 from ocrmypdf.helpers import Resolution
 
 from .conftest import check_ocrmypdf, run_ocrmypdf_api
@@ -208,3 +208,57 @@ class TestDuplicateFilter:
         assert caplog.records[1].msg == "another error message"
         assert caplog.records[2].msg == "(suppressed 5 repeated lines)"
         assert caplog.records[3].msg == "yet another error message"
+
+
+def test_recoverable_image_error_path(outdir, caplog):
+    # issue 1451
+    Name = pikepdf.Name
+    pdf = pikepdf.new()
+    pdf.add_blank_page()
+    pdf.pages[0].Contents = pdf.make_stream(b'612 0 0 612 0 0 cm /Image Do')
+    # Create an invalid image object that has both ColorSpace and ImageMask set
+    pdf.pages[0].Resources = pikepdf.Dictionary(
+        XObject=pdf.make_indirect(
+            pikepdf.Dictionary(
+                Image=pdf.make_stream(
+                    b"\xf0\x0f" * 8,
+                    ColorSpace=Name.DeviceGray,
+                    BitsPerComponent=1,
+                    Width=8,
+                    Height=8,
+                    ImageMask=True,
+                    Subtype=Name.Image,
+                    Type=Name.XObject,
+                )
+            )
+        )
+    )
+    pdf.save(outdir / 'invalid_image.pdf')
+    pdf.save('invalid_image.pdf')
+
+    # When stop_on_error is False, we expect Ghostscript to print an error
+    # but continue
+    rasterize_pdf(
+        outdir / 'invalid_image.pdf',
+        outdir / 'out1.png',
+        raster_device='pngmono',
+        raster_dpi=Resolution(10, 10),
+        stop_on_error=False,
+    )
+    assert 'Image has both ImageMask and ColorSpace' in caplog.text
+
+    # When stop_on_error is True, Ghostscript will print an error and exit
+    # but still produce a viable image. We intercept this case and raise
+    # InputFileError because it will contain an image of the whole page minus
+    # the image we are rendering.
+    with pytest.raises(
+        InputFileError, match="Try using --continue-on-soft-render-error"
+    ):
+        rasterize_pdf(
+            outdir / 'invalid_image.pdf',
+            outdir / 'out2.png',
+            raster_device='pngmono',
+            raster_dpi=Resolution(100, 100),
+            stop_on_error=True,
+        )
+    # out2.png will not be created; if it were it would be blank.

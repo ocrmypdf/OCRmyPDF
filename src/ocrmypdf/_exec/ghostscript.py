@@ -17,7 +17,11 @@ from subprocess import PIPE, CalledProcessError
 from packaging.version import Version
 from PIL import Image, UnidentifiedImageError
 
-from ocrmypdf.exceptions import ColorConversionNeededError, SubprocessOutputError
+from ocrmypdf.exceptions import (
+    ColorConversionNeededError,
+    InputFileError,
+    SubprocessOutputError,
+)
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.subprocess import get_version, run, run_polling_stderr
 
@@ -111,7 +115,6 @@ def rasterize_pdf(
     args_gs = (
         [
             GS,
-            '-dQUIET',
             '-dSAFER',
             '-dBATCH',
             '-dNOPAUSE',
@@ -143,6 +146,14 @@ def rasterize_pdf(
     stderr = p.stderr.decode(errors='replace')
     if _gs_error_reported(stderr):
         log.error(stderr)
+        if stop_on_error and "recoverable image error" in stderr:
+            Path(output_file).unlink(missing_ok=True)
+            raise InputFileError(
+                "Ghostscript rasterizing failed. The input file contains errors that "
+                "cause PDF viewers to interpret it differently and incorrectly. "
+                "Try using --continue-on-soft-render-error and manually inspect the "
+                "input and output files to check for visual differences or errors."
+            )
 
     try:
         with Image.open(output_file) as im:
