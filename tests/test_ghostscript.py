@@ -11,8 +11,10 @@ from unittest.mock import patch
 
 import pikepdf
 import pytest
+from packaging.version import Version
 from PIL import Image, UnidentifiedImageError
 
+from ocrmypdf._exec import ghostscript
 from ocrmypdf._exec.ghostscript import DuplicateFilter, rasterize_pdf
 from ocrmypdf.exceptions import ColorConversionNeededError, ExitCode, InputFileError
 from ocrmypdf.helpers import Resolution
@@ -210,7 +212,8 @@ class TestDuplicateFilter:
         assert caplog.records[3].msg == "yet another error message"
 
 
-def test_recoverable_image_error_path(outdir, caplog):
+@pytest.fixture
+def pdf_with_invalid_image(outdir):
     # issue 1451
     Name = pikepdf.Name
     pdf = pikepdf.new()
@@ -235,18 +238,27 @@ def test_recoverable_image_error_path(outdir, caplog):
     )
     pdf.save(outdir / 'invalid_image.pdf')
     pdf.save('invalid_image.pdf')
+    return outdir / 'invalid_image.pdf'
 
+
+def test_recoverable_image_error(pdf_with_invalid_image, outdir, caplog):
     # When stop_on_error is False, we expect Ghostscript to print an error
     # but continue
     rasterize_pdf(
         outdir / 'invalid_image.pdf',
-        outdir / 'out1.png',
+        outdir / 'out.png',
         raster_device='pngmono',
         raster_dpi=Resolution(10, 10),
         stop_on_error=False,
     )
     assert 'Image has both ImageMask and ColorSpace' in caplog.text
 
+
+@pytest.mark.xfail(
+    ghostscript.version() < Version('10.04.0'),
+    reason="Older Ghostscript behavior is different",
+)
+def test_recoverable_image_error_with_stop(pdf_with_invalid_image, outdir, caplog):
     # When stop_on_error is True, Ghostscript will print an error and exit
     # but still produce a viable image. We intercept this case and raise
     # InputFileError because it will contain an image of the whole page minus
@@ -256,7 +268,7 @@ def test_recoverable_image_error_path(outdir, caplog):
     ):
         rasterize_pdf(
             outdir / 'invalid_image.pdf',
-            outdir / 'out2.png',
+            outdir / 'out.png',
             raster_device='pngmono',
             raster_dpi=Resolution(100, 100),
             stop_on_error=True,
