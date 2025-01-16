@@ -37,6 +37,13 @@
     <binary>ocrmypdf</binary>
   </provides>
 
+  <screenshots>
+    <screenshot type="default">
+      <image>URL HERE</image>
+      <caption>Sample usage of OCRmyPDF</caption>
+    </screenshot>
+  </screenshots>
+
   <releases>
     <release version="16.8.0" date="2025-01-05"/>
   </releases>
