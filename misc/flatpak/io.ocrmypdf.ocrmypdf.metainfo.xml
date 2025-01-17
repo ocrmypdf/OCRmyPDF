@@ -37,7 +37,7 @@
     <binary>ocrmypdf</binary>
   </provides>
 
-  <icon type="remote">https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/22dd9314ea7100a998ed2fca59cb81a1057eaa44/docs/images/logo-square.svg</icon>
+  <icon type="stock">io.ocrmypdf.ocrmypdf</icon>
 
   <screenshots>
     <screenshot type="default">
