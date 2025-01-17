@@ -3,7 +3,7 @@
   <id>io.ocrmypdf.ocrmypdf</id>
 
   <name>OCRmyPDF</name>
-  <summary>OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched</summary>
+  <summary>Adds an OCR text layer to scanned PDF files, allowing them to be searched</summary>
 
   <developer id="io.ocrmypdf">
       <name>OCRmyPDF Developers</name>
@@ -50,6 +50,12 @@
     <category>Office</category>
     <category>Utility</category>
   </categories>
+
+  <keywords>
+    <keyword>ocr</keyword>
+    <keyword>pdf</keyword>
+    <keyword>tool</keyword>
+  </keywords>
 
   <releases>
     <release version="16.8.0" date="2025-01-05"/>
