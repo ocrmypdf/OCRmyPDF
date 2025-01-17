@@ -37,12 +37,19 @@
     <binary>ocrmypdf</binary>
   </provides>
 
+  <icon type="remote">https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/22dd9314ea7100a998ed2fca59cb81a1057eaa44/docs/images/logo-square.svg</icon>
+
   <screenshots>
     <screenshot type="default">
       <image>https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/f7ad5f16bd0340b0b1803dada0c02f9f40542bd8/misc/flatpak/sample_screenshot.png</image>
       <caption>Sample usage of OCRmyPDF</caption>
     </screenshot>
   </screenshots>
+
+  <categories>
+    <category>Office</category>
+    <category>Utility</category>
+  </categories>
 
   <releases>
     <release version="16.8.0" date="2025-01-05"/>
