@@ -3,17 +3,7 @@
 name: Test and deploy
 
 on:
-  push:
-    branches:
-      - main
-      - ci
-      - release/*
-      - feature/*
-    tags:
-      - v*
-    paths-ignore:
-      - README*
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   test_linux:
