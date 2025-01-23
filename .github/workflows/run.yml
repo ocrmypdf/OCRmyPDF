@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Install OCRmyPDF
       run: |
@@ -26,7 +26,7 @@ jobs:
         ocrmypdf -l tha ./input/${{ github.event.inputs.input_file }} ./output/output.pdf
 
     - name: Upload output PDF
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: output-pdf
         path: ./output/output.pdf
