@@ -26,11 +26,11 @@ jobs:
 
     - name: Process PDF
       run: |
-        ocrmypdf -l tha ./input/${{ github.event.inputs.input_file }} ./output/output.pdf
+        ocrmypdf -l tha ./input/${{ github.event.inputs.input_file }} ./input/output.pdf
 
     - name: Upload output PDF
       uses: actions/upload-artifact@v4
       with:
         name: output-pdf
-        path: ./output/output.pdf
+        path: ./input/output.pdf
         retention-days: 7
