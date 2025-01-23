@@ -19,6 +19,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y ocrmypdf
+        sudo apt-get install -y tesseract-ocr-tha
 
     - name: Process PDF
       run: |
