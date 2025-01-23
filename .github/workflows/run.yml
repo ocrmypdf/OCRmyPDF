@@ -7,6 +7,9 @@ on:
         description: 'Input PDF file name from /input/ folder'
         required: true
 
+permissions:
+  contents: write
+
 jobs:
   process_pdf:
     runs-on: ubuntu-latest
