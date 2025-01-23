@@ -26,9 +26,7 @@ jobs:
 
     - name: Process PDF
       run: |
-        input_file="./input/${{ github.event.inputs.input_file }}"
-        output_file="./input/${{ github.event.inputs.input_file%.*}}.pdf"
-        ocrmypdf -l tha --clean "$input_file" "$output_file"
+        ocrmypdf -l tha --clean ./input/${{ github.event.inputs.input_file }} ./input/${{ github.event.inputs.input_file%.*}}.pdf
 
     - name: Upload output PDF
       uses: actions/upload-artifact@v4
