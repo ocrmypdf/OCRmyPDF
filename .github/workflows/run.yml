@@ -18,38 +18,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Cache APT Packages
-      uses: actions/cache@v3
-      with:
-        path: /var/cache/apt
-        key: ${{ runner.os }}-apt-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-apt-
-
-    - name: Cache OCRmyPDF
-      uses: actions/cache@v3
-      with:
-        path: /usr/local/bin/ocrmypdf
-        key: ${{ runner.os }}-ocrmypdf-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-ocrmypdf-
-
-    - name: Cache Tesseract
-      uses: actions/cache@v3
-      with:
-        path: /usr/share/tesseract-ocr
-        key: ${{ runner.os }}-tesseract-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-tesseract-
-
     - name: Install OCRmyPDF and Tesseract
       run: |
         sudo apt-get update
         sudo apt-get install -y ocrmypdf
         sudo apt-get install -y tesseract-ocr-tha
-
-    - name: Create output directory
-      run: mkdir -p ./output
 
     - name: Process PDF
       run: |
