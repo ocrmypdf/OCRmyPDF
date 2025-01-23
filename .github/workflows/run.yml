@@ -15,23 +15,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-
-    - name: Cache pip
-      uses: actions/cache@v2
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
-    - name: Install dependencies
+    - name: Install OCRmyPDF
       run: |
-        python -m pip install --upgrade pip
-        pip install ocrmypdf
+        sudo apt-get update
+        sudo apt-get install -y ocrmypdf
 
     - name: Process PDF
       run: |
