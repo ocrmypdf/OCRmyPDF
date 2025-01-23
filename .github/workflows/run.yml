@@ -18,6 +18,14 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Cache OCRmyPDF
+      uses: actions/cache@v3
+      with:
+        path: /usr/local/lib/python3.8/dist-packages/ocrmypdf
+        key: ${{ runner.os }}-ocrmypdf-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-ocrmypdf-
+
     - name: Install OCRmyPDF
       run: |
         sudo apt-get update
