@@ -18,11 +18,49 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Cache APT Packages
+      uses: actions/cache@v3
+      with:
+        path: |
+          /var/cache/apt
+          /var/lib/apt
+        key: ${{ runner.os }}-apt-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-apt-
+
+    - name: Cache OCRmyPDF and Tesseract
+      uses: actions/cache@v3
+      with:
+        path: |
+          /usr/bin/ocrmypdf
+          /usr/bin/tesseract
+        key: ${{ runner.os }}-ocrmypdf-tesseract-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-ocrmypdf-tesseract-
+
     - name: Install OCRmyPDF and Tesseract
       run: |
         sudo apt-get update
         sudo apt-get install -y ocrmypdf
         sudo apt-get install -y tesseract-ocr-tha
+
+    - name: Cache APT Packages Post Run
+      if: always()
+      uses: actions/cache@v3
+      with:
+        path: |
+          /var/cache/apt
+          /var/lib/apt
+        key: ${{ steps.cache-apt.outputs.cache-hit != 'true' && runner.os }}-apt-${{ hashFiles('**/requirements.txt') }}
+
+    - name: Cache OCRmyPDF and Tesseract Post Run
+      if: always()
+      uses: actions/cache@v3
+      with:
+        path: |
+          /usr/bin/ocrmypdf
+          /usr/bin/tesseract
+        key: ${{ steps.cache-ocr-tesseract.outputs.cache-hit != 'true' && runner.os }}-ocrmypdf-tesseract-${{ hashFiles('**/requirements.txt') }}
 
     - name: Process PDF
       run: |
