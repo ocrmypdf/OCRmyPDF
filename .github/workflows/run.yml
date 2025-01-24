@@ -20,9 +20,13 @@ jobs:
 
     - name: Install OCRmyPDF and Tesseract
       run: |
+        echo "Current directory before apt-get update: $(pwd)"
         sudo apt-get update
+        echo "apt-get update completed"
         sudo apt-get install -y ocrmypdf
+        echo "OCRmyPDF installed at: $(which ocrmypdf)"
         sudo apt-get install -y tesseract-ocr-tha
+        echo "Tesseract installed at: $(which tesseract)"
 
     - name: Process PDF
       run: |
