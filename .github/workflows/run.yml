@@ -26,7 +26,7 @@ jobs:
 
     - name: Process PDF
       run: |
-        ocrmypdf -l tha --clean --sidecar ./input/output_OCRmyPDF.txt ./input/${{ github.event.inputs.input_file }} ./input/output_OCRmyPDF.pdf
+        ocrmypdf -l tha+eng --clean --sidecar ./input/output_OCRmyPDF.txt ./input/${{ github.event.inputs.input_file }} ./input/output_OCRmyPDF.pdf
     # https://ocrmypdf.readthedocs.io/en/latest/cookbook.html
 
     - name: Upload output PDF
