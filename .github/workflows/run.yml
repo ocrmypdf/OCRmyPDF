@@ -26,11 +26,14 @@ jobs:
 
     - name: Process PDF
       run: |
-        ocrmypdf -l tha --clean ./input/${{ github.event.inputs.input_file }} ./input/output_${{ github.event.inputs.input_file }}
+        ocrmypdf -l tha --clean --sidecar ./input/output_OCRmyPDF.txt ./input/${{ github.event.inputs.input_file }} ./input/output_OCRmyPDF.pdf
+    # https://ocrmypdf.readthedocs.io/en/latest/cookbook.html
 
     - name: Upload output PDF
       uses: actions/upload-artifact@v4
       with:
         name: output-pdf
-        path: ./input/output_${{ github.event.inputs.input_file}}
+        path: |
+          ./input/output_OCRmyPDF.pdf
+          ./input/output_OCRmyPDF.txt
         retention-days: 7
