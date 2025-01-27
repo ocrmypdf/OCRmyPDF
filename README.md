@@ -11,7 +11,7 @@
 [docs]: https://readthedocs.org/projects/ocrmypdf/badge/?version=latest "RTD"
 [pyversions]: https://img.shields.io/pypi/pyversions/ocrmypdf "Supported Python versions"
 
-OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched or copy-pasted.
+OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched or copy-pasted. https://ocrmypdf.readthedocs.io/en/latest/cookbook.html
 
 ```bash
 ocrmypdf                      # it's a scriptable command line program
