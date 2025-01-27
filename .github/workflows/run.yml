@@ -24,16 +24,18 @@ jobs:
         sudo apt-get install -y ocrmypdf
         sudo apt-get install -y tesseract-ocr-tha
 
+    - name: Create output directory
+      run: mkdir -p ./output
+
     - name: Process PDF
       run: |
-        ocrmypdf -l tha+eng --clean --sidecar ./input/output_OCRmyPDF.txt ./input/${{ github.event.inputs.input_file }} ./input/output_OCRmyPDF.pdf
+        ocrmypdf -l tha+eng --clean --sidecar ./output/output_OCRmyPDF.txt ./input/${{ github.event.inputs.input_file }} ./output/output_OCRmyPDF.pdf
+  
     # https://ocrmypdf.readthedocs.io/en/latest/cookbook.html
 
     - name: Upload output PDF
       uses: actions/upload-artifact@v4
       with:
         name: output-pdf
-        path: |
-          ./input/output_OCRmyPDF.pdf
-          ./input/output_OCRmyPDF.txt
+        path: ./output/*
         retention-days: 7
