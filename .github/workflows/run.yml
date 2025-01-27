@@ -7,7 +7,7 @@ on:
         description: 'Input PDF file name from /input/ folder'
         required: true
       additional_param:  
-        description: 'An additional parameter'
+        description: '[Additional parameter(s)](https://ocrmypdf.readthedocs.io/en/latest/cookbook.html)'
         required: false
         default: -l tha+eng
 
