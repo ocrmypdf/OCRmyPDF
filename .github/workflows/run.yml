@@ -6,6 +6,9 @@ on:
       input_file:
         description: 'Input PDF file name from /input/ folder'
         required: true
+      additional_param:  
+        description: 'An additional parameter'
+        required: false
 
 permissions:
   contents: write
@@ -29,8 +32,8 @@ jobs:
 
     - name: Process PDF
       run: |
-        ocrmypdf -l tha+eng --clean --sidecar ./output/output_OCRmyPDF.txt ./input/${{ github.event.inputs.input_file }} ./output/output_OCRmyPDF.pdf
-  
+        ocrmypdf -l tha+eng ${{ github.event.inputs.additional_param }} --clean --sidecar ./output/output_OCRmyPDF.txt ./input/${{ github.event.inputs.input_file }} ./output/output_OCRmyPDF.pdf
+
     # https://ocrmypdf.readthedocs.io/en/latest/cookbook.html
 
     - name: Upload output PDF
