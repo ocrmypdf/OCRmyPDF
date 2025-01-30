@@ -210,7 +210,7 @@ class HocrTransform:
                     for element in par.iterfind(self._child_xpath('span'))
                     if 'class' in element.attrib
                     and element.attrib['class']
-                    in {'ocr_header', 'ocr_line', 'ocr_textfloat'}
+                    in {'ocr_header', 'ocr_line', 'ocr_textfloat', 'ocr_caption'}
                 ):
                     found_lines = True
                     direction = self._get_text_direction(par)
