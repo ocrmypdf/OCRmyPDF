@@ -241,6 +241,10 @@ def pdf_with_invalid_image(outdir):
     return outdir / 'invalid_image.pdf'
 
 
+@pytest.mark.xfail(
+    ghostscript.version() < Version('10.04.0'),
+    reason="Older Ghostscript behavior is different",
+)
 def test_recoverable_image_error(pdf_with_invalid_image, outdir, caplog):
     # When stop_on_error is False, we expect Ghostscript to print an error
     # but continue
