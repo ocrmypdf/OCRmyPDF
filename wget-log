@@ -68,4 +68,12 @@ Connecting to fki.tic.heia-fr.ch (fki.tic.heia-fr.ch)|160.98.46.146|:443... fail
 Retrying.
 
 --2025-02-05 19:58:57--  (try:18)  https://fki.tic.heia-fr.ch/static/img/a01-122-02.jpg
+Connecting to fki.tic.heia-fr.ch (fki.tic.heia-fr.ch)|160.98.46.146|:443... failed: Operation timed out.
+Retrying.
+
+--2025-02-05 20:00:22--  (try:19)  https://fki.tic.heia-fr.ch/static/img/a01-122-02.jpg
+Connecting to fki.tic.heia-fr.ch (fki.tic.heia-fr.ch)|160.98.46.146|:443... failed: Operation timed out.
+Retrying.
+
+--2025-02-05 20:01:47--  (try:20)  https://fki.tic.heia-fr.ch/static/img/a01-122-02.jpg
 Connecting to fki.tic.heia-fr.ch (fki.tic.heia-fr.ch)|160.98.46.146|:443... 
