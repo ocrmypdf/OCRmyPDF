@@ -26,14 +26,24 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y ocrmypdf
-        sudo apt-get install -y tesseract-ocr-tha
+
+        # Extract the language code from the additional_param
+        lang_codes=$(echo "${{ github.event.inputs.additional_param }}" | grep -oP '\b\w{3}(?=\+|$)' | grep -v 'eng')
+        
+        # If a language code is found and it's not 'eng', install the corresponding Tesseract package
+        for lang_code in $lang_codes; do
+          if [ -n "$lang_code" ]; then
+            echo "Installing Tesseract package for language: $lang_code"
+            sudo apt-get install -y "tesseract-ocr-$lang_code"
+          fi
+        done
 
     - name: Create output directory
       run: mkdir -p ./output
 
     - name: Process PDF
       run: |
-        ocrmypdf ${{ github.event.inputs.additional_param }} --skip-text --clean --sidecar ./output/output_OCRmyPDF.txt ./input/${{ github.event.inputs.input_file }} ./output/output_OCRmyPDF.pdf
+        ocrmypdf ${{ github.event.inputs.additional_param }} --skip-text --clean --sidecar ./output/output_$(date +"%Y%m%d_%H%M%S").txt ./input/${{ github.event.inputs.input_file }} ./output/output_$(date +"%Y%m%d_%H%M%S").pdf
 
     - name: Upload output PDF
       uses: actions/upload-artifact@v4
@@ -41,3 +51,15 @@ jobs:
         name: output-pdf
         path: ./output/*
         retention-days: 7
+
+    - name: Delete input file
+      run: |
+        rm -f ./input/${{ github.event.inputs.input_file }}
+
+    - name: Commit changes
+      run: |
+        git config --local user.name "github-actions"
+        git config --local user.email "github-actions@github.com"
+        git add ./input/${{ github.event.inputs.input_file }}
+        git commit -m "Delete input file: ${{ github.event.inputs.input_file }}"
+        git push
