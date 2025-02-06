@@ -97,11 +97,11 @@ class ProgressBar(Protocol):
                             print(f"{self.desc}: {self.current}/{self.total} ({percent:.1f}%)")
                         else:
                             print(f"{self.desc}: {self.current} units done")
-                    
+
             @hookimpl
             def get_progressbar_class():
                 return MyProgressBar
-                
+
     """
 
     def __init__(
@@ -144,7 +144,7 @@ class ProgressBar(Protocol):
 
         OCRmyPDF calls this method repeatedly while processing pages or other tasks.
         If your total is known and you track it, you might do something like:
-        
+
         .. code-block:: python
 
             self.current += n
@@ -166,6 +166,7 @@ class ProgressBar(Protocol):
                 supplement the simple increment logic. It's particularly useful
                 for percentage-based tracking (e.g., when ``total`` is 100).
         """
+
 
 class NullProgressBar:
     """Progress bar API that takes no actions."""
