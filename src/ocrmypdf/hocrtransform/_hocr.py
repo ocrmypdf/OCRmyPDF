@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2010 Jonathan Brinley
 # SPDX-FileCopyrightText: 2013-2014 Julien Pfefferkorn
 # SPDX-FileCopyrightText: 2023 James R. Barlow
+# SPDX-FileCopyrightText: 2025 Odin Dahlström
 # SPDX-License-Identifier: MIT
 
 """hOCR transform implementation."""
@@ -13,7 +14,7 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from itertools import pairwise
-from math import atan, cos, pi
+from math import atan, pi
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -79,6 +80,13 @@ class HocrTransform:
         baseline \s+
         ([\-\+]?\d*\.?\d*) \s+  # +/- decimal float
         ([\-\+]?\d+)            # +/- int
+        ''',
+        re.VERBOSE,
+    )
+    textangle_pattern = re.compile(
+        r'''
+        textangle \s+
+        ([\-\+]?\d*\.?\d*)  # +/- decimal float
         ''',
         re.VERBOSE,
     )
@@ -155,6 +163,14 @@ class HocrTransform:
         if not matches:
             return (0.0, 0.0)
         return float(matches.group(1)), int(matches.group(2))
+
+    @classmethod
+    def textangle(cls, element: Element) -> float:
+        """Get text angle of an element."""
+        matches = cls.textangle_pattern.search(element.attrib.get('title', ''))
+        if not matches:
+            return 0.0
+        return float(matches.group(1))
 
     def _child_xpath(self, html_tag: str, html_class: str | None = None) -> str:
         xpath = f".//{self.xmlns}{html_tag}"
@@ -290,50 +306,69 @@ class HocrTransform:
         """
         if line is None:
             return
-        line_box = self.element_coordinates(line)
-        if not line_box:
+        # line_min_aabb (which is created from the "bbox" hOCR property) is so named
+        # because a Rectangle instance is always an AABB (it has no orientation).
+        # However, this means that for non-zero values of the "textangle" hOCR
+        # property, line_min_aabb is not the true bounding box of the hOCR line,
+        # but rather the minimum AABB that encloses the bounding box of the line.
+        # The true bounding box of the line must be seen as an OBB, due to the
+        # existance of the "textangle" hOCR property.
+        line_min_aabb = self.element_coordinates(line)
+        if not line_min_aabb:
             return
-        if line_box.ury <= line_box.lly:
+        if line_min_aabb.ury <= line_min_aabb.lly:
             log.error(
                 "line box is invalid so we cannot render it: box=%s text=%s",
-                line_box,
+                line_min_aabb,
                 self._get_element_text(line),
             )
             return
+        self._debug_draw_line_bbox(canvas, line_min_aabb)
 
-        self._debug_draw_line_bbox(canvas, line_box)
+        # Even though line_min_aabb is not the true bounding box of the line,
+        # it is still possible to derive an AABB (Rectangle) from it that is
+        # the same size as the true bounding box of the line,
+        # if we use a coordinate system that is axis-aligned with respect to
+        # the rotation of the OBB (textangle).
+        # line_size_aabb_matrix is a transform matrix for such a coordinate
+        # system, and line_size_aabb is thus an AABB with the same
+        # size as the true bounding box of the line.
+        top_left_corner = (line_min_aabb.llx, line_min_aabb.lly)
+        line_size_aabb_matrix = (
+            Matrix()
+            .translated(*top_left_corner)
+            # Note: negative sign (textangle is counter-clockwise, see hOCR spec)
+            .rotated(-self.textangle(line))
+        )
+        line_size_aabb = line_size_aabb_matrix.inverse().transform(line_min_aabb)
 
-        # Baseline is a polynomial (usually straight line) that describes the
-        # text baseline relative to the bottom left corner of the line bounding
-        # box.
-        bottom_left_corner = line_box.llx, line_box.ury
         slope, intercept = self.baseline(line)
         if abs(slope) < 0.005:
             slope = 0.0
-        angle = atan(slope)
+        slope_angle = atan(slope)
 
-        # Setup a new coordinate system on the line box's intercept and rotated by
-        # its slope.
-        line_matrix = (
-            Matrix()
-            .translated(*bottom_left_corner)
+        # Final PDF-perspective (bottom-left corner) transform matrix for the
+        # text baseline, which has an intercept and slope relative to the OBB.
+        # See "bbox", "textangle" and "baseline" in the hOCR spec for more details.
+        baseline_matrix = (
+            line_size_aabb_matrix
+            # Translate from hOCR perspective (top-left corner) to PDF perspective
+            # (bottom-left corner).
+            # Note: it would be incorrect to use line_min_aabb.height here because
+            # it is not the true height of the OBB of the line, if textangle != 0.
+            .translated(0, line_size_aabb.height)
             .translated(0, intercept)
-            .rotated(angle / pi * 180)
+            .rotated(slope_angle / pi * 180)
         )
-        log.debug(line_matrix)
-        with canvas.do.save_state(cm=line_matrix):
-            text = Text(direction=text_direction)
 
-            # Don't allow the font to break out of the bounding box. Division by
-            # cos_a accounts for extra clearance between the glyph's vertical axis
-            # on a sloped baseline and the edge of the bounding box.
-            line_box_height = abs(line_box.height) / cos(angle)
-            fontsize = line_box_height + intercept
+        with canvas.do.save_state(cm=baseline_matrix):
+            text = Text(direction=text_direction)
+            fontsize = line_size_aabb.height + intercept
             text.font(self._fontname, fontsize)
             text.render_mode(3 if invisible_text else 0)
 
             self._debug_draw_baseline(
-                canvas, line_matrix.inverse().transform(line_box), 0
+                canvas, baseline_matrix.inverse().transform(line_min_aabb), 0
             )
 
             canvas.do.fill_color(BLACK)  # text in black
@@ -341,7 +376,7 @@ class HocrTransform:
             for elem, next_elem in pairwise(elements + [None]):
                 self._do_line_word(
                     canvas,
-                    line_matrix,
+                    baseline_matrix,
                     text,
                     fontsize,
                     elem,
