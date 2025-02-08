@@ -30,6 +30,17 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.9.0
+=======
+
+-  Added hocr caption processing. Thanks @0dinD :issue:`1466`
+-  ocrmypdf-alpine Docker image is now built with Alpine 3.21.
+-  Fixed error handling of PDFs that contain invalid images with both ImageMask
+   and ColorSpace defined. :issue:`1453`
+-  Fixed test suite regression when only older Ghostscripts are installed.
+-  Improved documetnation of _progressbar.py. Thanks @QuentinFuxa. :issue:`1456`
+-  Disabling building of documentation as PDF on ReadTheDocs, as this caused
+   complex build issues deemed not worth solving.
 
 v16.8.0
 =======
