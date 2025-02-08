@@ -338,6 +338,7 @@ class PdfMinerState:
         self.infile = infile
         self.rman = pdfminer.pdfinterp.PDFResourceManager(caching=True)
         self.disable_boxes_flow = None
+        self.page_iter = None
         self.page_cache: list[PDFPage] = []
         self.pscript5_mode = pscript5_mode
         self.file = None
@@ -345,6 +346,7 @@ class PdfMinerState:
     def __enter__(self):
         """Enter the context manager."""
         self.file = Path(self.infile).open('rb')
+        self.page_iter = PDFPage.get_pages(self.file)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -353,27 +355,20 @@ class PdfMinerState:
             self.file.close()
         return True
 
-    def _load_page_cache(self):
-        """Load the page cache."""
-        try:
-            self.page_cache = list(PDFPage.get_pages(self.file))
-            if not self.page_cache:
-                raise InputFileError(
-                    "pdfminer did not find any pages in the input file."
-                )
-            for n, page in enumerate(self.page_cache):
-                if page is None:
-                    raise InputFileError(
-                        f"pdfminer could not process page {n} (counting from 0)."
-                    )
-        except PDFTextExtractionNotAllowed as e:
-            raise EncryptedPdfError() from e
-
     def get_page_analysis(self, pageno: int):
         """Get the page analysis for a given page."""
-        if not self.page_cache:
-            self._load_page_cache()
+        while len(self.page_cache) <= pageno:
+            try:
+                self.page_cache.append(next(self.page_iter))
+            except StopIteration:
+                raise InputFileError(
+                    f"pdfminer did not find page {pageno} in the input file."
+                )
         page = self.page_cache[pageno]
+        if not page:
+            raise InputFileError(
+                f"pdfminer could not process page {pageno} (counting from 0)."
+            )
         dev = TextPositionTracker(
             self.rman,
             laparams=LAParams(
