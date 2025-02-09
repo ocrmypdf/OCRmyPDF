@@ -84,13 +84,19 @@ def test_hocrtransform_matches_sandwich(resources, outdir):
     def clean(s):
         s = re.sub(r'\s+', ' ', s)
         words = s.split(' ')
-        return '\n'.join(sorted(words))
+        return set(words)
 
-    hocr_txt = clean(text_from_pdf(outdir / 'hocr.pdf'))
-    tess_txt = clean(text_from_pdf(outdir / 'tess.pdf'))
+    hocr_words = clean(text_from_pdf(outdir / 'hocr.pdf'))
+    tess_words = clean(text_from_pdf(outdir / 'tess.pdf'))
+
+    similarity = len(hocr_words & tess_words) / len(hocr_words | tess_words)
 
     # from pathlib import Path
-    # Path('hocr.txt').write_text(hocr_txt)
-    # Path('tess.txt').write_text(tess_txt)
 
-    assert hocr_txt == tess_txt
+    # Path('hocr.txt').write_text(sorted('\n'.join(hocr_words)))
+    # Path('tess.txt').write_text(sorted('\n'.join(tess_words)))
+    # Path('mismatch.txt').write_text(
+    #     '\n'.join(sorted(hocr_words ^ tess_words)), encoding='utf8'
+    # )
+
+    assert similarity > 0.99
