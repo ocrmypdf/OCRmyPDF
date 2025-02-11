@@ -552,7 +552,9 @@ def rasterize(
 
     device = colorspaces[device_idx]
 
-    log.debug(f"Rasterize with {device}, rotation {correction}")
+    log.debug(
+        f"Rasterize with {device}, rotation {correction}, mediabox {pageinfo.mediabox}"
+    )
 
     canvas_dpi, page_dpi = calculate_raster_dpi(page_context)
 
@@ -845,7 +847,7 @@ def fix_pagepdf_boxes(
 
     The single page PDF is created with a normal MediaBox with its lower left corner
     at (0, 0). infile is the single page PDF. page_context.mediabox has the original
-    file's mediabox, which may have a different origin. We needto adjust the other
+    file's mediabox, which may have a different origin. We need to adjust the other
     boxes in the single page PDF to match the effect they had on the original page.
 
     When correcting page rotation, we create a single page PDF that is correctly
@@ -861,16 +863,20 @@ def fix_pagepdf_boxes(
         for page in pdf.pages:
             # page.BleedBox = page_context.pageinfo.bleedbox
             # page.ArtBox = page_context.pageinfo.artbox
+            log.debug(
+                f"initial mediabox={page.MediaBox} and pageinfo mediabox={page_context.pageinfo.mediabox}"
+            )
             mediabox = page_context.pageinfo.mediabox
-            offset = mediabox[0], mediabox[1]
+            offset = -mediabox[0], -mediabox[1]
             cropbox = _offset_rect(page_context.pageinfo.cropbox, offset)
             trimbox = _offset_rect(page_context.pageinfo.trimbox, offset)
-
             if swap_axis:
                 cropbox = cropbox[1], cropbox[0], cropbox[3], cropbox[2]
                 trimbox = trimbox[1], trimbox[0], trimbox[3], trimbox[2]
+                mediabox = mediabox[1], mediabox[0], mediabox[3], mediabox[2]
             page.CropBox = cropbox
             page.TrimBox = trimbox
+            log.debug(f"cropbox={cropbox}, trimbox={trimbox}, mediabox={mediabox}")
         pdf.save(out_file)
     return out_file
 
