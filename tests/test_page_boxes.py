@@ -102,7 +102,6 @@ def test_crop_box(
         page = pdf.pages[0]
         page.CropBox = crop_to
         pdf.save(outdir / 'cropped.pdf')
-        pdf.save('cropped.pdf')
     args = [
         '--jobs',
         '1',
@@ -118,5 +117,4 @@ def test_crop_box(
 
     with pikepdf.open(outdir / 'processed.pdf') as pdf:
         page = pdf.pages[0]
-        pdf.save('processed.pdf')
         assert page.CropBox == crop_expected
