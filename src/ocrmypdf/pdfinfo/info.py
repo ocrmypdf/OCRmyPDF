@@ -900,8 +900,8 @@ class PageInfo:
         width_pt = mediabox[2] - mediabox[0]
         height_pt = mediabox[3] - mediabox[1]
 
-        # self._artbox = [float(d) for d in page.artbox.as_list()]
-        # self._bleedbox = [float(d) for d in page.bleedbox.as_list()]
+        self._artbox = [float(d) for d in page.artbox.as_list()]
+        self._bleedbox = [float(d) for d in page.bleedbox.as_list()]
         self._cropbox = [float(d) for d in page.cropbox.as_list()]
         self._mediabox = [float(d) for d in page.mediabox.as_list()]
         self._trimbox = [float(d) for d in page.trimbox.as_list()]
@@ -1037,6 +1037,16 @@ class PageInfo:
     def trimbox(self) -> FloatRect:
         """Return trimbox of page in PDF coordinates."""
         return self._trimbox
+
+    @property
+    def artbox(self) -> FloatRect:
+        """Return artbox of page in PDF coordinates."""
+        return self._artbox
+
+    @property
+    def bleedbox(self) -> FloatRect:
+        """Return bleedbox of page in PDF coordinates."""
+        return self._bleedbox
 
     @property
     def images(self) -> list[ImageInfo]:
