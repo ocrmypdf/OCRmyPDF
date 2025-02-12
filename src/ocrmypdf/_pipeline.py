@@ -39,6 +39,7 @@ from ocrmypdf.hocrtransform import DebugRenderOptions, HocrTransform
 from ocrmypdf.hocrtransform._font import Courier
 from ocrmypdf.pdfa import generate_pdfa_ps
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PageInfo, PdfInfo
+from ocrmypdf.pdfinfo.info import FloatRect
 from ocrmypdf.pluginspec import OrientationConfidence
 
 try:
@@ -832,6 +833,23 @@ def _offset_rect(rect: tuple[float, float, float, float], offset: tuple[float, f
     )
 
 
+def _adjust_pagebox(
+    page: pikepdf.Page,
+    media_box: FloatRect,
+    name: pikepdf.Name,
+    target_box: FloatRect,
+    offset: tuple[float, float],
+    swap_axis: bool,
+):
+    if media_box == target_box:
+        return
+    box = _offset_rect(target_box, offset)
+    if swap_axis:
+        box = box[1], box[0], box[3], box[2]
+    page[name] = box
+    log.debug(f"{str(name)} = {target_box}")
+
+
 def fix_pagepdf_boxes(
     infile: Path | BinaryIO,
     out_file: Path,
@@ -856,22 +874,25 @@ def fix_pagepdf_boxes(
     """
     with pikepdf.open(infile) as pdf:
         for page in pdf.pages:
-            # page.BleedBox = page_context.pageinfo.bleedbox
-            # page.ArtBox = page_context.pageinfo.artbox
             log.debug(
-                f"initial mediabox={page.MediaBox} and pageinfo mediabox={page_context.pageinfo.mediabox}"
+                f"initial mediabox={page.MediaBox} and pageinfo "
+                f"mediabox={page_context.pageinfo.mediabox}"
             )
             mediabox = page_context.pageinfo.mediabox
             offset = -mediabox[0], -mediabox[1]
-            cropbox = _offset_rect(page_context.pageinfo.cropbox, offset)
-            trimbox = _offset_rect(page_context.pageinfo.trimbox, offset)
             if swap_axis:
-                cropbox = cropbox[1], cropbox[0], cropbox[3], cropbox[2]
-                trimbox = trimbox[1], trimbox[0], trimbox[3], trimbox[2]
                 mediabox = mediabox[1], mediabox[0], mediabox[3], mediabox[2]
-            page.CropBox = cropbox
-            page.TrimBox = trimbox
-            log.debug(f"cropbox={cropbox}, trimbox={trimbox}, mediabox={mediabox}")
+            boxes = ['CropBox', 'TrimBox', 'ArtBox', 'BleedBox']
+            for box_name in boxes:
+                _adjust_pagebox(
+                    page,
+                    mediabox,
+                    pikepdf.Name(f"/{box_name}"),
+                    getattr(page_context.pageinfo, box_name.lower()),
+                    offset,
+                    swap_axis,
+                )
+
         pdf.save(out_file)
     return out_file
 
