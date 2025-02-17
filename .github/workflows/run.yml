@@ -49,9 +49,10 @@ jobs:
     - name: Check if input is an image
       id: check_input
       run: |
-        FILE_EXT="${{ github.event.inputs.input_file##*. }}"
+        FILE_NAME="${{ github.event.inputs.input_file }}"
+        FILE_EXT=$(echo "$FILE_NAME" | awk -F. '{if (NF>1) {print $NF}}')
         if [[ "$FILE_EXT" =~ ^(jpg|jpeg|png|tiff|bmp)$ ]]; then
-          echo "Input is an image: ${{ github.event.inputs.input_file }}"
+          echo "Input is an image: $FILE_NAME"
           echo "::set-output name=is_image::true"
         else
           echo "Input is not an image"
