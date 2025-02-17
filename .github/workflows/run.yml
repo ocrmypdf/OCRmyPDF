@@ -28,8 +28,7 @@ jobs:
         sudo apt-get install -y ocrmypdf
 
         # Extract the language code from the additional_param
-        lang_codes=$(echo "${{ github.event.inputs.additional_param }}" | sed -n 's/.*-l[[:space:]]*$[a-zA-Z]\{3\}\(\+[a-zA-Z]\{3\}$*\)\b.*/\1/p')
-
+        lang_codes=$(echo "${{ github.event.inputs.additional_param }}" | sed -n 's/.*-l[[:space:]]*\([a-zA-Z]\{3\}\([+][a-zA-Z]\{3\}\)*\)\b.*/\1/p')
         if [ -n "$lang_codes" ]; then
           # Replace '+' with space and iterate through each language code
           for lang_code in $(echo "$lang_codes" | tr '+' ' '); do
