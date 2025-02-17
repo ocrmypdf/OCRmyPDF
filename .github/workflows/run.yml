@@ -70,7 +70,8 @@ jobs:
       run: |
         # Convert image to PDF and pass it to ocrmypdf
         TEMP_PDF="./output/temp_image.pdf"
-        img2pdf --from-file "./input/${{ github.event.inputs.input_file }}" -o "$TEMP_PDF"
+        IMAGE_FILE_PATH="./input/${{ github.event.inputs.input_file }}"
+        img2pdf --from-file "$IMAGE_FILE_PATH" -o "$TEMP_PDF"
         ocrmypdf ${{ github.event.inputs.additional_param }} --skip-text --clean --sidecar "./output/output_$(date +"%Y%m%d_%H%M%S").txt" "$TEMP_PDF" "./output/output_$(date +"%Y%m%d_%H%M%S").pdf"
         rm "$TEMP_PDF"  # Clean up the temporary PDF
         
