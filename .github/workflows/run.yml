@@ -28,15 +28,21 @@ jobs:
         sudo apt-get install -y ocrmypdf
 
         # Extract the language code from the additional_param
-        lang_codes=$(echo "${{ github.event.inputs.additional_param }}" | grep -oP '\b\w{3}(?=\+|$)' | grep -v 'eng')
-        
-        # If a language code is found and it's not 'eng', install the corresponding Tesseract package
-        for lang_code in $lang_codes; do
-          if [ -n "$lang_code" ]; then
+        lang_codes=$(echo "${{ github.event.inputs.additional_param }}" | sed -n 's/.*-l[[:space:]]*$[a-zA-Z]\{3\}\(\+[a-zA-Z]\{3\}$*\).*/\1/p')
+
+        if [ -n "$lang_codes" ]; then
+          # Replace '+' with space and iterate through each language code
+          for lang_code in $(echo "$lang_codes" | tr '+' ' '); do
+            if [ "$lang_code" = "eng" ]; then
+              echo "Skipping language code 'eng'"
+              continue
+            fi
             echo "Installing Tesseract package for language: $lang_code"
             sudo apt-get install -y "tesseract-ocr-$lang_code"
-          fi
-        done
+          done
+        else
+          echo "No language codes found after -l flag."
+        fi
 
     - name: Create output directory
       run: mkdir -p ./output
