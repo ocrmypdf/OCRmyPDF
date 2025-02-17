@@ -54,7 +54,7 @@ jobs:
         echo "File extension: $FILE_EXT"
         if [[ "$FILE_EXT" =~ ^(jpg|jpeg|png|tiff|bmp)$ ]]; then
           echo "Input is an image: $FILE_NAME"
-          echo "is_image=true" >> $GITHUB_ENV  # New way to set outputs in the environment file
+          echo "is_image=true" >> $GITHUB_ENV  
         else
           echo "Input is not an image"
           echo "is_image=false" >> $GITHUB_ENV
@@ -69,8 +69,8 @@ jobs:
       if: env.is_image == 'true'
       run: |
         # Convert image to PDF and pass it to ocrmypdf
-        TEMP_PDF="./output/temp_image.pdf"
-        img2pdf "./input/${{ github.event.inputs.input_file }}" -o "$TEMP_PDF"
+        TEMP_PDF = "./output/temp_image.pdf"
+        img2pdf --from-file "./input/${{ github.event.inputs.input_file }}" -o "$TEMP_PDF"
         ocrmypdf ${{ github.event.inputs.additional_param }} --skip-text --clean --sidecar "./output/output_$(date +"%Y%m%d_%H%M%S").txt" "$TEMP_PDF" "./output/output_$(date +"%Y%m%d_%H%M%S").pdf"
         rm "$TEMP_PDF"  # Clean up the temporary PDF
         
