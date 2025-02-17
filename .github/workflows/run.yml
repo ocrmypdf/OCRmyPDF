@@ -59,12 +59,12 @@ jobs:
 
     - name: Delete input file
       run: |
-        rm -f ./input/${{ github.event.inputs.input_file }}
+        rm -f "./input/${{ github.event.inputs.input_file }}"
 
     - name: Commit changes
       run: |
         git config --local user.name "github-actions"
         git config --local user.email "github-actions@github.com"
-        git add ./input/${{ github.event.inputs.input_file }}
+        git add "./input/${{ github.event.inputs.input_file }}"
         git commit -m "Delete input file: ${{ github.event.inputs.input_file }}"
         git push
