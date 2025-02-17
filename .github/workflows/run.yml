@@ -48,7 +48,7 @@ jobs:
 
     - name: Process PDF
       run: |
-        ocrmypdf ${{ github.event.inputs.additional_param }} --skip-text --clean --sidecar ./output/output_$(date +"%Y%m%d_%H%M%S").txt ./input/${{ github.event.inputs.input_file }} ./output/output_$(date +"%Y%m%d_%H%M%S").pdf
+        ocrmypdf ${{ github.event.inputs.additional_param }} --skip-text --clean --sidecar "./output/output_$(date +"%Y%m%d_%H%M%S").txt" "./input/${{ github.event.inputs.input_file }}" "./output/output_$(date +"%Y%m%d_%H%M%S").pdf"
 
     - name: Upload output PDF
       uses: actions/upload-artifact@v4
