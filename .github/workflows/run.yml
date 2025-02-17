@@ -46,7 +46,25 @@ jobs:
     - name: Create output directory
       run: mkdir -p ./output
 
+    - name: Check if input is an image
+      id: check_input
+      run: |
+        FILE_EXT="${{ github.event.inputs.input_file##*. }}"
+        if [[ "$FILE_EXT" =~ ^(jpg|jpeg|png|tiff|bmp)$ ]]; then
+          echo "Input is an image: ${{ github.event.inputs.input_file }}"
+          echo "::set-output name=is_image::true"
+        else
+          echo "Input is not an image"
+          echo "::set-output name=is_image::false"
+        fi
+
+    - name: Process image
+      if: steps.check_input.outputs.is_image == 'true'
+      run: |
+        img2pdf "./input/${{ github.event.inputs.input_file }}" | ocrmypdf ${{ github.event.inputs.additional_param }} --clean --sidecar "./output/output_$(date +"%Y%m%d_%H%M%S").txt" - "./output/output_$(date +"%Y%m%d_%H%M%S").pdf"
+
     - name: Process PDF
+      if: steps.check_input.outputs.is_image == 'false'
       run: |
         ocrmypdf ${{ github.event.inputs.additional_param }} --skip-text --clean --sidecar "./output/output_$(date +"%Y%m%d_%H%M%S").txt" "./input/${{ github.event.inputs.input_file }}" "./output/output_$(date +"%Y%m%d_%H%M%S").pdf"
 
