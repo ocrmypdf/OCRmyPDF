@@ -43,11 +43,6 @@ jobs:
           echo "No language codes found after -l flag."
         fi
 
-    - name: Install img2pdf if image input
-      if: steps.check_input.outputs.is_image == 'true'
-      run: |
-        sudo apt-get install -y img2pdf
-        
     - name: Create output directory
       run: mkdir -p ./output
 
@@ -55,17 +50,23 @@ jobs:
       id: check_input
       run: |
         FILE_NAME="${{ github.event.inputs.input_file }}"
-        FILE_EXT=$(echo "$FILE_NAME" | awk -F. '{if (NF>1) {print $NF}}')
+        FILE_EXT=$(echo "$FILE_NAME" | awk -F. '{if (NF>1) {print $NF}}' | tr '[:upper:]' '[:lower:]')  # Ensure the extension is lowercase
+        echo "File extension: $FILE_EXT"
         if [[ "$FILE_EXT" =~ ^(jpg|jpeg|png|tiff|bmp)$ ]]; then
           echo "Input is an image: $FILE_NAME"
-          echo "::set-output name=is_image::true"
+          echo "is_image=true" >> $GITHUB_ENV  # New way to set outputs in the environment file
         else
           echo "Input is not an image"
-          echo "::set-output name=is_image::false"
+          echo "is_image=false" >> $GITHUB_ENV
         fi
 
+    - name: Install img2pdf if image input
+      if: env.is_image == 'true'
+      run: |
+        sudo apt-get install -y img2pdf
+
     - name: Process image
-      if: steps.check_input.outputs.is_image == 'true'
+      if: env.is_image == 'true'
       run: |
         # Convert image to PDF and pass it to ocrmypdf
         TEMP_PDF="./output/temp_image.pdf"
@@ -74,7 +75,7 @@ jobs:
         rm "$TEMP_PDF"  # Clean up the temporary PDF
         
     - name: Process PDF
-      if: steps.check_input.outputs.is_image == 'false'
+      if: env.is_image == 'false'
       run: |
         ocrmypdf ${{ github.event.inputs.additional_param }} --skip-text --clean --sidecar "./output/output_$(date +"%Y%m%d_%H%M%S").txt" "./input/${{ github.event.inputs.input_file }}" "./output/output_$(date +"%Y%m%d_%H%M%S").pdf"
 
