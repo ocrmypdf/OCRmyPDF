@@ -62,8 +62,12 @@ jobs:
     - name: Process image
       if: steps.check_input.outputs.is_image == 'true'
       run: |
-        img2pdf "./input/${{ github.event.inputs.input_file }}" | ocrmypdf ${{ github.event.inputs.additional_param }} --clean --sidecar "./output/output_$(date +"%Y%m%d_%H%M%S").txt" - "./output/output_$(date +"%Y%m%d_%H%M%S").pdf"
-
+        # Convert image to PDF and pass it to ocrmypdf
+        TEMP_PDF="./output/temp_image.pdf"
+        img2pdf "./input/${{ github.event.inputs.input_file }}" -o "$TEMP_PDF"
+        ocrmypdf ${{ github.event.inputs.additional_param }} --skip-text --clean --sidecar "./output/output_$(date +"%Y%m%d_%H%M%S").txt" "$TEMP_PDF" "./output/output_$(date +"%Y%m%d_%H%M%S").pdf"
+        rm "$TEMP_PDF"  # Clean up the temporary PDF
+        
     - name: Process PDF
       if: steps.check_input.outputs.is_image == 'false'
       run: |
