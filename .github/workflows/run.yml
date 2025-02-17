@@ -43,6 +43,11 @@ jobs:
           echo "No language codes found after -l flag."
         fi
 
+    - name: Install img2pdf if image input
+      if: steps.check_input.outputs.is_image == 'true'
+      run: |
+        sudo apt-get install -y img2pdf
+        
     - name: Create output directory
       run: mkdir -p ./output
 
