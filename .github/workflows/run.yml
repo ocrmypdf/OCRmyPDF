@@ -63,17 +63,12 @@ jobs:
     - name: Process image
       if: env.is_image == 'true'
       run: |
-        set -euo pipefail  # Enable error checking
+        set -euo pipefail
         echo "Current directory: $(pwd)"
-    
         OUTPUT_DIR="$(pwd)/output"
-    
-        # Create output directory with absolute path
-        echo "Creating output directory at: $OUTPUT_DIR"
+        
         mkdir -p "$OUTPUT_DIR"
-    
-        # Run Tesseract 
-        tesseract "./input/${{ github.event.inputs.input_file}}" "$OUTPUT_DIR/output_" pdf txt ${{ github.event.inputs.additional_param}
+        tesseract "./input/${{ github.event.inputs.input_file }}" "$OUTPUT_DIR/output_" pdf txt ${{ github.event.inputs.additional_param }}
         
     - name: Process PDF
       if: env.is_image == 'false'
