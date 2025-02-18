@@ -66,7 +66,6 @@ jobs:
         set -euo pipefail  # Enable error checking
         echo "Current directory: $(pwd)"
     
-        TIMESTAMP=$(date -u +"%Y%m%dT%H%M%S")
         OUTPUT_DIR="$(pwd)/output"
     
         # Create output directory with absolute path
@@ -75,11 +74,7 @@ jobs:
         ls -la "$OUTPUT_DIR"  # Verify directory creation
     
         # Run Tesseract 
-        tesseract "./input/${{ github.event.inputs.input_file}}" output_$TIMESTAMP_ pdf txt
-    
-        # Check output files
-        echo "Generated files:"
-        ls -la "$OUTPUT_DIR/output_$TIMESTAMP".*
+        tesseract "./input/${{ github.event.inputs.input_file}}" - pdf txt
     
         # Additional verification
         echo "Current directory contents:"
