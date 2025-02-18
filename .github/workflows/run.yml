@@ -71,16 +71,9 @@ jobs:
         # Create output directory with absolute path
         echo "Creating output directory at: $OUTPUT_DIR"
         mkdir -p "$OUTPUT_DIR"
-        ls -la "$OUTPUT_DIR"  # Verify directory creation
     
         # Run Tesseract 
-        tesseract "./input/${{ github.event.inputs.input_file}}" - pdf txt
-    
-        # Additional verification
-        echo "Current directory contents:"
-        ls -la
-        echo "Output directory contents:"
-        ls -la "$OUTPUT_DIR"
+        tesseract "./input/${{ github.event.inputs.input_file}}" "$OUTPUT_DIR/output_" pdf txt ${{ github.event.inputs.additional_param}
         
     - name: Process PDF
       if: env.is_image == 'false'
