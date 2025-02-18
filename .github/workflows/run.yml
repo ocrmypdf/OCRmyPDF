@@ -64,7 +64,9 @@ jobs:
       if: env.is_image == 'true'
       run: |
         # Convert image to PDF with Tesseract 
-        tesseract "./input/${{ github.event.inputs.input_file }}" output_$(date +"%Y%m%d_%H%M%S")_ pdf
+        tesseract "./input/${{ github.event.inputs.input_file }}" output_$(date +"%Y%m%d_%H%M%S")_ pdf txt ${{ github.event.inputs.additional_param }}
+        # Move generated files to output directory
+        mv output_.* ./output/
         
     - name: Process PDF
       if: env.is_image == 'false'
