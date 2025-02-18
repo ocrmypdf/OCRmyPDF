@@ -63,12 +63,7 @@ jobs:
     - name: Process image
       if: env.is_image == 'true'
       run: |
-        set -euo pipefail
-        echo "Current directory: $(pwd)"
-        OUTPUT_DIR="$(pwd)/output"
-        
-        mkdir -p "$OUTPUT_DIR"
-        tesseract ${{ github.event.inputs.additional_param }} "./input/${{ github.event.inputs.input_file }}" "$OUTPUT_DIR/output_" pdf txt
+        tesseract ${{ github.event.inputs.additional_param }} "./input/${{ github.event.inputs.input_file }}" "./output/output_$(date +"%Y%m%d_%H%M%S")" pdf txt
         
     - name: Process PDF
       if: env.is_image == 'false'
