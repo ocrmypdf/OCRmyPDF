@@ -68,7 +68,7 @@ jobs:
         OUTPUT_DIR="$(pwd)/output"
         
         mkdir -p "$OUTPUT_DIR"
-        tesseract "./input/${{ github.event.inputs.input_file }}" "$OUTPUT_DIR/output_" pdf txt ${{ github.event.inputs.additional_param }}
+        tesseract ${{ github.event.inputs.additional_param }} "./input/${{ github.event.inputs.input_file }}" "$OUTPUT_DIR/output_" pdf txt
         
     - name: Process PDF
       if: env.is_image == 'false'
