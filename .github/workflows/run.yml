@@ -60,20 +60,11 @@ jobs:
           echo "is_image=false" >> $GITHUB_ENV
         fi
 
-    - name: Install img2pdf if image input
-      if: env.is_image == 'true'
-      run: |
-        sudo apt-get install -y img2pdf
-
     - name: Process image
       if: env.is_image == 'true'
       run: |
-        # Convert image to PDF and pass it to ocrmypdf
-        TEMP_PDF="./output/temp_image.pdf"
-        IMAGE_FILE_PATH="./input/${{ github.event.inputs.input_file }}"
-        img2pdf --from-file "$IMAGE_FILE_PATH" -o "$TEMP_PDF"
-        ocrmypdf ${{ github.event.inputs.additional_param }} --skip-text --clean --sidecar "./output/output_$(date +"%Y%m%d_%H%M%S").txt" "$TEMP_PDF" "./output/output_$(date +"%Y%m%d_%H%M%S").pdf"
-        rm "$TEMP_PDF"  # Clean up the temporary PDF
+        # Convert image to PDF with Tesseract 
+        tesseract ${{ github.event.inputs.additional_param }} output_$(date +"%Y%m%d_%H%M%S")_ pdf
         
     - name: Process PDF
       if: env.is_image == 'false'
@@ -96,5 +87,5 @@ jobs:
         git config --local user.name "github-actions"
         git config --local user.email "github-actions@github.com"
         git add "./input/${{ github.event.inputs.input_file }}"
-        git commit -m "Delete input file: ${{ github.event.inputs.input_file }}"
+        git commit -m "Delete input file"
         git push
