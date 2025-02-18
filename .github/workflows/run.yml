@@ -63,10 +63,29 @@ jobs:
     - name: Process image
       if: env.is_image == 'true'
       run: |
-        # Convert image to PDF with Tesseract 
-        tesseract "./input/${{ github.event.inputs.input_file }}" output_$(date +"%Y%m%d_%H%M%S")_ pdf txt ${{ github.event.inputs.additional_param }}
-        # Move generated files to output directory
-        mv output_.* ./output/
+        set -euo pipefail  # Enable error checking
+        echo "Current directory: $(pwd)"
+    
+        TIMESTAMP=$(date -u +"%Y%m%dT%H%M%S")
+        OUTPUT_DIR="$(pwd)/output"
+    
+        # Create output directory with absolute path
+        echo "Creating output directory at: $OUTPUT_DIR"
+        mkdir -p "$OUTPUT_DIR"
+        ls -la "$OUTPUT_DIR"  # Verify directory creation
+    
+        # Run Tesseract 
+        tesseract "./input/${{ github.event.inputs.input_file}}" output_$TIMESTAMP_ pdf txt
+    
+        # Check output files
+        echo "Generated files:"
+        ls -la "$OUTPUT_DIR/output_$TIMESTAMP".*
+    
+        # Additional verification
+        echo "Current directory contents:"
+        ls -la
+        echo "Output directory contents:"
+        ls -la "$OUTPUT_DIR"
         
     - name: Process PDF
       if: env.is_image == 'false'
