@@ -394,6 +394,10 @@ Installing on Windows
 Native Windows
 --------------
 
+..
+  If you have a Windows that is not the Home edition, you can use Windows Sandbox to test on a blank Windows instance.
+  https://learn.microsoft.com/en-us/windows/security/application-security/application-isolation/windows-sandbox/
+
 .. note::
 
     Administrator privileges will be required for some of these steps.
@@ -429,6 +433,25 @@ You may then use ``pip`` to install ocrmypdf. (This can performed by a user or
 Administrator.):
 
 * ``python3 -m pip install ocrmypdf``
+
+..
+  The Windows Python versions do not place any python or python3 executable in the path.
+  They add the py launcher to the path:
+  https://docs.python.org/3/using/windows.html#python-launcher-for-windows
+
+If you installed Python using WinGet, then use the following command instead:
+
+* ``py -m pip install ocrmypdf``
+
+and use:
+
+* ``py -m ocrmypdf``
+
+To start OCRmyPDF.
+
+If you intend to use more Python software on your Windows machine, consider the use of
+`pipx <https://pipx.pypa.io/stable/>`_ or a similar tool to create isolated Python
+environments for each Python software that you want to use.
 
 OCRmyPDF will check the Windows Registry and standard locations in your Program Files
 for third party software it needs (specifically, Tesseract and Ghostscript). To
