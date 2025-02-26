@@ -109,6 +109,8 @@ def test_crop_box(
         renderer,
         '--output-type',
         output_type,
+        '--optimize',
+        '0',
     ]
     if mode:
         args.append(mode)

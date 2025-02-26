@@ -51,20 +51,27 @@ def compare_images_monochrome(
 
     with Image.open(reference_png) as reference_im, Image.open(test_png) as test_im:
         assert reference_im.mode == test_im.mode == '1'
-        difference = ImageChops.logical_xor(reference_im, test_im)
-        assert difference.mode == '1'
+        # Pillow uses black is 0 for '1'. Invert so that foreground is 1, then
+        # compare
+        inv_ref_im = ImageChops.invert(reference_im)
+        inv_test_im = ImageChops.invert(test_im)
+        foreground_match = ImageChops.logical_and(inv_ref_im, inv_test_im)
+        foreground_total = ImageChops.logical_or(inv_ref_im, inv_test_im)
+        assert foreground_match.mode == '1'
 
-        histogram = difference.histogram()
+        histogram = foreground_match.histogram()
+        histogram_total = foreground_total.histogram()
         assert (
             len(histogram) == 256
         ), "Expected Pillow to convert to grayscale for histogram"
 
         # All entries other than first and last will be 0
-        count_same = histogram[0]
-        count_different = histogram[-1]
-        total = count_same + count_different
-
-        return count_same / (total)
+        # count_same = histogram[0]
+        # count_different = histogram[-1]
+        # total = count_same + count_different
+        # print(f"{count_same / (total)}")
+        # return count_same / (total)
+        return histogram[-1] / (histogram_total[-1] + 1)
 
 
 def test_monochrome_comparison(resources, outdir):
@@ -215,7 +222,7 @@ def test_rotate_deskew_ocr_timeout(resources, outdir):
     assert cmp > 0.95
 
 
-def make_rotate_test(imagefile, outdir, prefix, image_angle, page_angle):
+def make_rotate_test(imagefile, outdir, prefix, image_angle, page_angle, cropbox=None):
     memimg = BytesIO()
     with Image.open(fspath(imagefile)) as im:
         if image_angle != 0:
@@ -234,6 +241,8 @@ def make_rotate_test(imagefile, outdir, prefix, image_angle, page_angle):
     with pikepdf.open(mempdf) as pdf:
         pdf.pages[0].Rotate = page_angle
         target = outdir / f'{prefix}_{image_angle}_{page_angle}.pdf'
+        if cropbox:
+            pdf.pages[0].CropBox = cropbox
         pdf.save(target)
         return target
 
@@ -286,6 +295,44 @@ def test_page_rotate_tag(page_rotate_angle, resources, outdir, caplog):
 
     test_text = pdftotext(out)
     assert 'is a' in test_text, test_text
+
+
+@pytest.mark.parametrize('page_rotate_angle', (0, 90, 180, 270))
+@pytest.mark.parametrize('renderer', ['sandwich', 'hocr'])
+@pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
+def test_rotate_and_crop(
+    resources, outdir, page_rotate_angle, renderer, output_type, caplog
+):
+    cropbox = (100, 200, 1000, 800)
+    reference = make_rotate_test(
+        resources / 'typewriter.png', outdir, 'ref', 0, 0, cropbox
+    )
+    test = make_rotate_test(
+        resources / 'typewriter.png',
+        outdir,
+        'test',
+        -page_rotate_angle,
+        page_rotate_angle,
+        cropbox,
+    )
+    out = test.with_suffix('.out.pdf')
+
+    exitcode = run_ocrmypdf_api(
+        test,
+        out,
+        '-O0',
+        '--rotate-pages',
+        '--rotate-pages-threshold',
+        '0',
+        '--pdf-renderer',
+        renderer,
+        '--output-type',
+        output_type,
+        '--no-progress-bar',
+    )
+    assert exitcode == 0, caplog.text
+
+    assert compare_images_monochrome(outdir, reference, 1, out, 1) > 0.9
 
 
 def test_rasterize_rotates(resources, tmp_path):
