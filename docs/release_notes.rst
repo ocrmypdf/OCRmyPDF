@@ -30,6 +30,18 @@ OCRmyPDF typically supports the three most recent Python versions.
 
 .. |OCRmyPDF PyPI| image:: https://img.shields.io/pypi/v/ocrmypdf.svg
 
+v16.10.0
+========
+
+-  Added hocr textangle processing, improving handling of text at angles.
+   Thanks @0dinD :issue:`1467`
+-  Docker documentation updates related to podman. Thanks @rugk. :issue:`1489,1488`
+-  Dropped webservice.py's fragile use of ttyd. Instead, messages from ocrmypdf are
+   printed to the console.
+-  Fixed broken test test_hocrtransform_matches_sandwich, which had become
+   an invalid test. Thanks @QuLogic for reporting.
+-  Improved install instructions for Windows. Thanks @alex.
+
 v16.9.0
 =======
 
