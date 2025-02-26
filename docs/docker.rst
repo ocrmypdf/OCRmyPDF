@@ -115,6 +115,15 @@ Docker volume:
    alias docker_ocrmypdf='docker run --rm  -i --user "$(id -u):$(id -g)" --workdir /data -v "$PWD:/data" ocrmypdf'
    docker_ocrmypdf /data/input.pdf /data/output.pdf
 
+Especially if you use `Podman <https://podman.io/>`__ (or have SELinux enabled on your system), you may need to add ``--userns keep-id`` there, otherwise you may get access errors, because the user is otherwise not mapped to the same UID as on the host:
+
+.. code-block:: bash
+
+   alias podman_ocrmypdf='podman run --rm  -i --user "$(id -u):$(id -g)" --userns keep-id --workdir /data -v "$PWD:/data" ocrmypdf'
+   podman_ocrmypdf /data/input.pdf /data/output.pdf
+
+If you use SELinux you may additionally need to add the ``:Z`` `suffix to the volume <https://docs.podman.io/en/stable/markdown/podman-run.1.html#volume-v-source-volume-host-dir-container-dir-options>`__ or disable SELinux for the container using ``--security-opt label=disable``, which is suggested for system files as they should not be re-labelled. Please refer to the „Note” section at the end of the linked podman documentation for details.
+
 .. _docker-lang-packs:
 
 Adding languages to the Docker image
