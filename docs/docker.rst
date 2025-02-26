@@ -87,8 +87,7 @@ To start a Docker container (instance of the image):
 
 .. code-block:: bash
 
-   docker tag jbarlow83/ocrmypdf-alpine ocrmypdf
-   docker run --rm -i ocrmypdf (... all other arguments here...) - -
+   docker run --rm -i jbarlow83/ocrmypdf-alpine (... all other arguments here...) - -
 
 For convenience, create a shell alias to hide the Docker command. It is
 easier to send the input file as stdin and read the output from
@@ -96,7 +95,7 @@ stdout – **this avoids the messy permission issues with Docker entirely**.
 
 .. code-block:: bash
 
-   alias docker_ocrmypdf='docker run --rm -i ocrmypdf'
+   alias docker_ocrmypdf='docker run --rm -i jbarlow83/ocrmypdf-alpine'
    docker_ocrmypdf --version  # runs docker version
    docker_ocrmypdf - - <input.pdf >output.pdf
 
@@ -104,7 +103,7 @@ Or in the wonderful `fish shell <https://fishshell.com/>`__:
 
 .. code-block:: fish
 
-   alias docker_ocrmypdf 'docker run --rm ocrmypdf'
+   alias docker_ocrmypdf 'docker run --rm jbarlow83/ocrmypdf-alpine'
    funcsave docker_ocrmypdf
 
 Alternately, you could mount the local current working directory as a
@@ -112,14 +111,14 @@ Docker volume:
 
 .. code-block:: bash
 
-   alias docker_ocrmypdf='docker run --rm  -i --user "$(id -u):$(id -g)" --workdir /data -v "$PWD:/data" ocrmypdf'
+   alias docker_ocrmypdf='docker run --rm  -i --user "$(id -u):$(id -g)" --workdir /data -v "$PWD:/data" jbarlow83/ocrmypdf-alpine'
    docker_ocrmypdf /data/input.pdf /data/output.pdf
 
 Especially if you use `Podman <https://podman.io/>`__ (or have SELinux enabled on your system), you may need to add ``--userns keep-id`` there, otherwise you may get access errors, because the user is otherwise not mapped to the same UID as on the host:
 
 .. code-block:: bash
 
-   alias podman_ocrmypdf='podman run --rm  -i --user "$(id -u):$(id -g)" --userns keep-id --workdir /data -v "$PWD:/data" ocrmypdf'
+   alias podman_ocrmypdf='podman run --rm  -i --user "$(id -u):$(id -g)" --userns keep-id --workdir /data -v "$PWD:/data" jbarlow83/ocrmypdf-alpine'
    podman_ocrmypdf /data/input.pdf /data/output.pdf
 
 If you use SELinux you may additionally need to add the ``:Z`` `suffix to the volume <https://docs.podman.io/en/stable/markdown/podman-run.1.html#volume-v-source-volume-host-dir-container-dir-options>`__ or disable SELinux for the container using ``--security-opt label=disable``, which is suggested for system files as they should not be re-labelled. Please refer to the „Note” section at the end of the linked podman documentation for details.
