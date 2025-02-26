@@ -63,10 +63,7 @@ test = [
   "types-humanfriendly",
 ]
 watcher = ["watchdog>=1.0.2", "typer-slim[standard]", "python-dotenv"]
-webservice = [
-    "port-for>=0.7.4",
-    "streamlit>=1.41.0",
-]
+webservice = ["streamlit>=1.41.0"]
 
 [project.scripts]
 ocrmypdf = "ocrmypdf.__main__:run"

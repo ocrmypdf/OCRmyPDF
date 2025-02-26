@@ -64,7 +64,6 @@ RUN apk add --no-cache \
     tesseract-ocr-data-por \
     tesseract-ocr-data-spa \
     ttf-droid \
-    ttyd \
     unpaper \
     && rm -rf /var/cache/apk/*
 
