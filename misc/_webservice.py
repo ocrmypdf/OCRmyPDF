@@ -16,7 +16,6 @@ import os
 import subprocess
 import sys
 import time
-import urllib
 from functools import partial
 from operator import getitem
 from pathlib import Path
@@ -25,7 +24,6 @@ from tempfile import NamedTemporaryFile
 
 import pikepdf
 import streamlit as st
-from port_for import get_port
 from streamlit.components.v1 import iframe
 
 from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
@@ -42,10 +40,6 @@ def get_host_url_with_port(port: int) -> str:
 
 
 st.title("OCRmyPDF Web Service")
-
-if not which("ttyd"):
-    st.error("Missing dependency: ttyd. Please install ttyd to the local environment.")
-    sys.exit(1)
 
 uploaded = st.file_uploader("Upload input PDF or image", type=["pdf"], key="file")
 
@@ -220,32 +214,28 @@ if uploaded:
         key='run_button',
     ):
         st.session_state['running'] = True
-        args = [sys.executable, '-m', "ocrmypdf"] + args
-        cmdline = " ".join(args)
-        st.code(cmdline, language="bash")
+        args = [sys.executable, '-u', '-m', "ocrmypdf"] + args
 
-        port = get_port((5000, 7000))
-        ttyd_args = ['ttyd', '--port', str(port), '--once', '--readonly']
+        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        with st.container(border=True):
+            while proc.poll() is None:
+                line = proc.stderr.readline()
+                if line:
+                    st.html("<code>" + line.decode().strip() + "</code>")
 
-        ttyd_proc = subprocess.Popen(
-            ttyd_args + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        if proc.returncode != 0:
+            st.error(f"ocrmypdf failed with exit code {proc.returncode}")
+            st.session_state['running'] = False
+            st.stop()
+
+        if Path(output_file.name).stat().st_size == 0:
+            st.error("No output PDF file was generated")
+            st.stop()
+
+        st.download_button(
+            label="Download output PDF",
+            data=input_file.read(),
+            file_name=uploaded.name,
+            mime="application/pdf",
         )
-        iframe(src=get_host_url_with_port(port), height=400)
-
-        while ttyd_proc.poll() is None:
-            ttyd_proc.poll()
-            time.sleep(1)
-
-        if ttyd_proc.returncode == 0:
-            if Path(output_file.name).stat().st_size == 0:
-                st.error("No output PDF file was generated")
-            else:
-                st.download_button(
-                    label="Download output PDF",
-                    data=input_file.read(),
-                    file_name=uploaded.name,
-                    mime="application/pdf",
-                )
-        else:
-            st.error(f"ttyd failed with exit code {ttyd_proc.returncode}")
         st.session_state['running'] = False
