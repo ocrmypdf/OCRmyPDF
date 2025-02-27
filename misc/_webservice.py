@@ -234,7 +234,7 @@ if uploaded:
 
         st.download_button(
             label="Download output PDF",
-            data=input_file.read(),
+            data=output_file.read(),
             file_name=uploaded.name,
             mime="application/pdf",
         )
