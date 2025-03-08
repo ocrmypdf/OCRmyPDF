@@ -148,7 +148,7 @@ Prepare the environment by getting Python 3.11:
 
     dnf install python3.11 python3.11-pip
 
-Then, follow `Requirements for pip and HEAD install <#requirements-for-pip-and-head-install>`__ to instal dependencies:
+Then, follow `Requirements for pip and HEAD install <#requirements-for-pip-and-head-install>`__ to install dependencies:
 
 .. code-block:: bash
 
