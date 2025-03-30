@@ -30,6 +30,7 @@ from ocrmypdf.exceptions import (
     DpiError,
     EncryptedPdfError,
     InputFileError,
+    MissingDependencyError,
     PriorOcrFoundError,
     TaggedPDFError,
     UnsupportedImageFormatError,
@@ -39,7 +40,8 @@ from ocrmypdf.hocrtransform import DebugRenderOptions, HocrTransform
 from ocrmypdf.hocrtransform._font import Courier
 from ocrmypdf.pdfa import generate_pdfa_ps
 from ocrmypdf.pdfinfo import Colorspace, Encoding, PageInfo, PdfInfo
-from ocrmypdf.pluginspec import OrientationConfidence
+from ocrmypdf.pluginspec import OrientationConfidence, OcrEngine
+from ocrmypdf._plugin_manager import get_plugin_manager
 
 try:
     from pi_heif import register_heif_opener
@@ -110,8 +112,7 @@ def triage_image_file(input_file: Path, output_file: Path, options) -> None:
 
         if im.mode in ('RGBA', 'LA'):
             raise UnsupportedImageFormatError(
-                "The input image has an alpha channel. Remove the alpha "
-                "channel first."
+                "The input image has an alpha channel. Remove the alpha channel first."
             )
 
         if 'iccprofile' not in im.info:
@@ -390,9 +391,9 @@ def is_ocr_required(page_context: PageContext) -> bool:
 def rasterize_preview(input_file: Path, page_context: PageContext) -> Path:
     """Generate a lower quality preview image."""
     output_file = page_context.get_path('rasterize_preview.jpg')
-    canvas_dpi = Resolution(300.0, 300.0).take_min(
-        [get_canvas_square_dpi(page_context)]
-    )
+    canvas_dpi = Resolution(300.0, 300.0).take_min([
+        get_canvas_square_dpi(page_context)
+    ])
     page_dpi = Resolution(300.0, 300.0).take_min([get_page_square_dpi(page_context)])
     page_context.plugin_manager.hook.rasterize_pdf_page(
         input_file=input_file,
@@ -452,9 +453,8 @@ def get_orientation_correction(preview: Path, page_context: PageContext) -> int:
     which points it (hopefully) upright. _graft.py takes care of the orienting
     the image and text layers.
     """
-    orient_conf = page_context.plugin_manager.hook.get_ocr_engine().get_orientation(
-        preview, page_context.options
-    )
+    ocr_engine = ocr_engine_from_options(page_context.options)
+    orient_conf = ocr_engine.get_orientation(preview, page_context.options)
 
     correction = orient_conf.angle % 360
     log.info(describe_rotation(page_context, orient_conf, correction))
@@ -591,7 +591,7 @@ def preprocess_deskew(input_file: Path, page_context: PageContext) -> Path:
     output_file = page_context.get_path('pp_deskew.png')
     dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
 
-    ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
+    ocr_engine = ocr_engine_from_options(page_context.options)
     deskew_angle_degrees = ocr_engine.get_deskew(input_file, page_context.options)
 
     with Image.open(input_file) as im:
@@ -674,7 +674,7 @@ def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, 
     hocr_text_out = page_context.get_path('ocr_hocr.txt')
     options = page_context.options
 
-    ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
+    ocr_engine = ocr_engine_from_options(options)
     ocr_engine.generate_hocr(
         input_file=input_file,
         output_hocr=hocr_out,
@@ -810,7 +810,7 @@ def ocr_engine_textonly_pdf(
     output_text = page_context.get_path('ocr_tess.txt')
     options = page_context.options
 
-    ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
+    ocr_engine = ocr_engine_from_options(options)
     ocr_engine.generate_pdf(
         input_file=input_image,
         output_pdf=output_pdf,
@@ -818,6 +818,70 @@ def ocr_engine_textonly_pdf(
         options=options,
     )
     return output_pdf, output_text
+
+
+def ocr_engine_from_options(options) -> OcrEngine:
+    """Create OCR engine based on selected option."""
+    pm = get_plugin_manager(options.plugins)
+
+    # Force load the RapidOCR engine if requested
+    if options.ocr_engine == 'rapidocr':
+        log.info("Explicitly loading RapidOCR engine")
+        try:
+            from ocrmypdf.ocr_engine.rapidocr import RapidOcrEngine
+
+            rapid_engine = RapidOcrEngine()
+            log.info(f"Successfully loaded RapidOCR engine: {rapid_engine}")
+            return rapid_engine
+        except ImportError as e:
+            log.error(f"Failed to import RapidOcrEngine: {e}")
+
+    ocr_engines = pm.hook.get_ocr_engine()
+
+    # The plugin hook might return a single engine or a list of engines
+    # Normalize to a list we can iterate over
+    if not isinstance(ocr_engines, list):
+        ocr_engines = [ocr_engines]
+
+    # Filter out None values
+    ocr_engines = [engine for engine in ocr_engines if engine is not None]
+
+    log.debug(f"Plugin manager returned {len(ocr_engines)} OCR engines")
+    for i, engine in enumerate(ocr_engines):
+        log.debug(f"  Engine {i + 1}: {engine.__class__.__name__}")
+
+    log.info(f"Available OCR engines: {[str(engine) for engine in ocr_engines]}")
+    log.info(f"Selected OCR engine in options: {options.ocr_engine}")
+
+    # Find the selected OCR engine
+    selected_engine = None
+
+    # First pass: Try to find an exact match for the engine
+    for engine in ocr_engines:
+        engine_name = engine.__class__.__name__
+        log.debug(f"Checking engine: {engine_name}")
+
+        # Use more explicit check to avoid partial matches
+        if options.ocr_engine == 'rapidocr' and engine_name == 'RapidOcrEngine':
+            log.info(f"Selected RapidOCR engine: {engine}")
+            selected_engine = engine
+            break
+        elif options.ocr_engine == 'tesseract' and 'Tesseract' in engine_name:
+            log.info(f"Selected Tesseract engine: {engine}")
+            selected_engine = engine
+            break
+
+    # If no engine was specifically selected, use the first one (usually Tesseract)
+    if not selected_engine and ocr_engines:
+        # Only use a fallback if not explicitly asking for RapidOCR
+        if options.ocr_engine != 'rapidocr':
+            selected_engine = ocr_engines[0]
+            log.warning(
+                f"No matching engine found for '{options.ocr_engine}', using: {selected_engine}"
+            )
+
+    log.info(f"Using OCR engine: {selected_engine}")
+    return selected_engine
 
 
 def _offset_rect(rect: tuple[float, float, float, float], offset: tuple[float, float]):
