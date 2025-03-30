@@ -1,4 +1,3 @@
-# SPDX-FileCopyrightText: 2024 OCRmyPDF Contributors
 # SPDX-License-Identifier: MPL-2.0
 
 """Interface to RapidOCR."""
