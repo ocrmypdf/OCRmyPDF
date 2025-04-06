@@ -9,7 +9,7 @@ name = "ocrmypdf"
 dynamic = ["version"]
 description = "OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched"
 readme = "README.md"
-license = { text = "MPL-2.0" }
+license = "MPL-2.0"
 requires-python = ">=3.10"
 dependencies = [
   "deprecation>=2.1.0",
@@ -29,7 +29,6 @@ classifiers = [
   "Intended Audience :: End Users/Desktop",
   "Intended Audience :: Science/Research",
   "Intended Audience :: System Administrators",
-  "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
   "Operating System :: MacOS",
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX",
