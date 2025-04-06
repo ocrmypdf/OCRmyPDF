@@ -263,9 +263,13 @@ class HocrTransform:
 
     def _get_text_direction(self, par):
         """Get the text direction of the paragraph.
-
+    
         Arabic, Hebrew, Persian, are right-to-left languages.
+        When the paragraph element is None, defaults to left-to-right.
         """
+        if par is None:
+            return TextDirection.LTR
+            
         return (
             TextDirection.RTL
             if par.attrib.get('dir', 'ltr') == 'rtl'
