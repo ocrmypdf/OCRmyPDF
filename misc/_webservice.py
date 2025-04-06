@@ -15,16 +15,13 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-import time
 from functools import partial
 from operator import getitem
 from pathlib import Path
-from shutil import which
 from tempfile import NamedTemporaryFile
 
 import pikepdf
 import streamlit as st
-from streamlit.components.v1 import iframe
 
 from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 
@@ -44,6 +41,10 @@ st.title("OCRmyPDF Web Service")
 uploaded = st.file_uploader("Upload input PDF or image", type=["pdf"], key="file")
 
 mode = st.selectbox("Mode", options=["normal", "skip-text", "force-ocr", "redo-ocr"])
+
+pages = st.text_input(
+    "Pages", value="", help="Comma-separated list of pages to process"
+)
 
 with st.expander("Input options"):
     invalidate_digital_signatures = st.checkbox(
@@ -66,11 +67,11 @@ with st.expander("Preprocessing"):
 
 with st.expander("Output options"):
     output_type = st.selectbox(
-        "Output type", options=["pdfa", "pdfa", "pdfa-1", "pdfa-2", "pdfa-3", "none"]
+        "Output type", options=["pdfa", "pdf", "pdfa-1", "pdfa-2", "pdfa-3", "none"]
     )
 
     pdf_renderer = st.selectbox(
-        "PDF rendereer", options=["auto", "hocr", "hocrdebug", "sandwich"]
+        "PDF renderer", options=["auto", "hocr", "hocrdebug", "sandwich"]
     )
 
     optimize = st.selectbox("Optimize", options=["0", "1", "2", "3"])
@@ -105,9 +106,6 @@ with st.expander("Advanced options"):
         max_value=os.cpu_count(),
         value=os.cpu_count(),
         key="threads",
-    )
-    pages = st.text_input(
-        "Pages", value="", help="Comma-separated list of pages to process"
     )
     max_image_mpixels = st.number_input(
         "Max image size",
