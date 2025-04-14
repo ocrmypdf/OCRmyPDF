@@ -4,6 +4,8 @@
 version: "3.3"
 services:
   ocrmypdf:
+    security_opt:
+      - no-new-privileges:true
     restart: always
     container_name: ocrmypdf
     image: jbarlow83/ocrmypdf
