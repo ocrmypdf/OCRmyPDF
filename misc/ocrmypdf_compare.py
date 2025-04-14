@@ -1,3 +1,4 @@
+import ast
 # SPDX-FileCopyrightText: 2025 James R. Barlow
 # SPDX-License-Identifier: MIT
 
@@ -78,8 +79,8 @@ def main():
             return
         with st.spinner("Executing..."):
             Path(d, "input.pdf").write_bytes(pdf_bytes)
-            run(args1, env=dict(os.environ, **eval(env1 or "{}")))
-            run(args2, env=dict(os.environ, **eval(env2 or "{}")))
+            run(args1, env=dict(os.environ, **ast.literal_eval(env1 or "{}")))
+            run(args2, env=dict(os.environ, **ast.literal_eval(env2 or "{}")))
 
             col1, col2 = st.columns(2)
             with col1:
@@ -87,7 +88,7 @@ def main():
                     "Ghostscript version A: "
                     + check_output(
                         ["gs", "--version"],
-                        env=dict(os.environ, **eval(env1 or "{}")),
+                        env=dict(os.environ, **ast.literal_eval(env1 or "{}")),
                         text=True,
                     )
                 )
@@ -96,7 +97,7 @@ def main():
                     "Ghostscript version B: "
                     + check_output(
                         ["gs", "--version"],
-                        env=dict(os.environ, **eval(env2 or "{}")),
+                        env=dict(os.environ, **ast.literal_eval(env2 or "{}")),
                         text=True,
                     )
                 )
