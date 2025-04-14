@@ -19,11 +19,40 @@ from lxml import etree
 from streamlit_pdf_viewer import pdf_viewer
 
 
+def do_column(label, suffix, d):
+    cli = st.text_area(
+        f"Command line arguments for {label}",
+        key=f"args{suffix}",
+        value="ocrmypdf {in_} {out}",
+    )
+    env_text = st.text_area(f"Environment variables for {label}", key=f"env{suffix}")
+    env = os.environ.copy()
+    for line in env_text.splitlines():
+        if line:
+            try:
+                k, v = line.split("=", 1)
+            except ValueError:
+                st.error(f"Invalid environment variable: {line}")
+                break
+            env[k] = v
+    args = shlex.split(
+        cli.format(
+            in_=os.path.join(d, "input.pdf"),
+            out=os.path.join(d, f"output{suffix}.pdf"),
+        )
+    )
+    with st.expander("Environment variables", expanded=bool(env_text.strip())):
+        st.code('\n'.join(f"{k}={v}" for k, v in env.items()))
+    st.code(shlex.join(args))
+    return env, args
+
+
 def main():
     st.set_page_config(layout="wide")
 
     st.title("OCRmyPDF Compare")
     st.write("Run OCRmyPDF on the same PDF with different options.")
+    st.warning("This is a testing tool and is not intended for production use.")
 
     uploaded_pdf = st.file_uploader("Upload a PDF", type=["pdf"])
     if uploaded_pdf is None:
@@ -46,40 +75,16 @@ def main():
 
         col1, col2 = st.columns(2)
         with col1:
-            cli1 = st.text_area(
-                "Command line arguments for A",
-                key="args1",
-                value="ocrmypdf {in_} {out}",
-            )
-            env1 = st.text_area("Environment variables for A", key="env1")
-            args1 = shlex.split(
-                cli1.format(
-                    in_=os.path.join(d, "input.pdf"),
-                    out=os.path.join(d, "output1.pdf"),
-                )
-            )
-            st.code(shlex.join(args1))
+            env1, args1 = do_column("A", "1", d)
         with col2:
-            cli2 = st.text_area(
-                "Command line arguments for B",
-                key="args2",
-                value="ocrmypdf {in_} {out}",
-            )
-            env2 = st.text_area("Environment variables for B", key="env2")
-            args2 = shlex.split(
-                cli2.format(
-                    in_=os.path.join(d, "input.pdf"),
-                    out=os.path.join(d, "output2.pdf"),
-                )
-            )
-            st.code(shlex.join(args2))
+            env2, args2 = do_column("B", "2", d)
 
         if not st.button("Execute and Compare"):
             return
         with st.spinner("Executing..."):
             Path(d, "input.pdf").write_bytes(pdf_bytes)
-            run(args1, env=dict(os.environ, **eval(env1 or "{}")))
-            run(args2, env=dict(os.environ, **eval(env2 or "{}")))
+            run(args1, env=env1)
+            run(args2, env=env2)
 
             col1, col2 = st.columns(2)
             with col1:
@@ -87,7 +92,7 @@ def main():
                     "Ghostscript version A: "
                     + check_output(
                         ["gs", "--version"],
-                        env=dict(os.environ, **eval(env1 or "{}")),
+                        env=env1,
                         text=True,
                     )
                 )
@@ -96,7 +101,7 @@ def main():
                     "Ghostscript version B: "
                     + check_output(
                         ["gs", "--version"],
-                        env=dict(os.environ, **eval(env2 or "{}")),
+                        env=env2,
                         text=True,
                     )
                 )
