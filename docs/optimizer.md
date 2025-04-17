@@ -25,17 +25,23 @@ header-rows: 1
   - Disable most optimizations.
 * - ``--optimize 1`` (default)
   - ``-O1``
-  - Safe and lossless optimizations.
+  - Enables lossless optimizations, such as transcoding images to more
+      efficient formats. Also compress other uncompressed objects in the
+      PDF and enables the more efficient "object streams" within the PDF.
+      (If ``--jbig2-lossy`` is issued, then lossy JBIG2 optimization is used.
+      The decision to use lossy JBIG2 is separate from standard optimization
+      settings.)
 * - ``--optimize 2``
   - ``-O2``
-  - Safe and lossy optimizations.
+  - All of the above, and enables lossy optimizations and color quantization.
 * - ``--optimize 3``
   - ``-O3``
-  - Aggressive lossy optimizations.
+  - All of the above, and enables more aggressive optimizations and targets lower
+      image quality.
 :::
 
 The exact type of optimizations performed will vary over time, and
-depend on the availability of third-party tools.
+depend on what third party tools are installed.
 
 Despite optimizations, OCRmyPDF might still increase the overall file
 size, since it must embed information about the recognized text, and
@@ -83,8 +89,13 @@ objects more aggressively.
 
 ## Lossy optimizations
 
-At optimization level `-O2` and `-O3`, OCRmyPDF will some attempt lossy
-image optimization.
+At optimization level `-O1`, `-O2` and `-O3`, OCRmyPDF will some attempt
+loss image optimization.
+
+If Ghostscript is used to create a PDF/A (the default), Ghostscript will
+optimize some images by converting them to JPEG, which are lossy. If
+`--output-type pdf` is used, there are no lossy optimizations. Ghostscript's
+JPEG conversion is quite safe.
 
 If `pngquant` is installed, OCRmyPDF will use it to perform quantize
 paletted images to reduce their size.

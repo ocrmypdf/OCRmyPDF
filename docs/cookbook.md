@@ -283,8 +283,7 @@ as little as possible:
 ocrmypdf --pages 1 --output-type pdf --optimize 0 input.pdf output.pdf
 ```
 
-Redo existing OCR
------------------
+## Redo existing OCR
 
 To redo OCR on a file OCRed with other OCR software or a previous
 version of OCRmyPDF and/or Tesseract, you may use the `--redo-ocr`
@@ -330,8 +329,7 @@ OCR quality will suffer if the resolution of input images is not correct
 (since the range of pixel sizes that will be checked for possible fonts
 will also be incorrect).
 
-PDF optimization
-----------------
+## PDF optimization
 
 By default OCRmyPDF will attempt to perform lossless optimizations on
 the images inside PDFs after OCR is complete. Optimization is performed
@@ -339,40 +337,9 @@ even if no OCR text is found.
 
 The `--optimize N` (short form `-O`) argument controls optimization,
 where `N` ranges from 0 to 3 inclusive, analogous to the optimization
-levels in the GCC compiler.
+levels in the GCC compiler. `-O1` is the default.
 
-:::{list-table}
----
-widths: auto
-header-rows: 1
----
-
-*   - Level
-    - Comments
-*   - <nobr>``--optimize=0``</nobr>
-    - Disables optimization.
-*   - <nobr>``--optimize 1``</nobr>
-    - Enables lossless optimizations, such as transcoding images to more
-        efficient formats. Also compress other uncompressed objects in the
-        PDF and enables the more efficient "object streams" within the PDF.
-        (If ``--jbig2-lossy`` is issued, then lossy JBIG2 optimization is used.
-        The decision to use lossy JBIG2 is separate from standard optimization
-        settings.)
-*   - <nobr>``--optimize 2``</nobr>
-    - All of the above, and enables lossy optimizations and color quantization.
-*   - <nobr>``--optimize 3``</nobr>
-    - All of the above, and enables more aggressive optimizations and targets lower image quality.
-:::
-
-Optimization is improved when a JBIG2 encoder is available and when
-`pngquant` is installed. If either of these components are missing, then
-some types of images cannot be optimized.
-
-The types of optimization available may expand over time. By default,
-OCRmyPDF compresses data streams inside PDFs, and will change
-inefficient compression modes to more modern versions. A program like
-`qpdf` can be used to change encodings, e.g. to inspect the internals
-for a PDF.
+For further details, see the section on [PDF optimization](optimizer).
 
 ```bash
 ocrmypdf --optimize 3 in.pdf out.pdf  # Make it small
