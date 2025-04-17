@@ -26,9 +26,7 @@
 
 # -- General configuration ------------------------------------------------
 
-# If your documentation needs a minimal Sphinx version, state it here.
-#
-# needs_sphinx = '1.0'
+needs_sphinx = '8'
 
 import datetime
 
@@ -58,10 +56,6 @@ templates_path = ['_templates']
 # The suffix(es) of source filenames.
 source_suffix = {'.rst': 'restructuredtext', '.md': 'markdown', '.txt': 'markdown'}
 
-# The encoding of source files.
-#
-# source_encoding = 'utf-8-sig'
-
 # The master toctree document.
 master_doc = 'index'
 
@@ -70,8 +64,8 @@ project = 'ocrmypdf'
 
 year = str(datetime.date.today().year)
 copyright = (
-    f'{year}, James R. Barlow. ',
-    'Licensed under Creative Commons Attribution-ShareAlike 4.0.',
+    f'{year}, James R. Barlow. '
+    + 'Licensed under Creative Commons Attribution-ShareAlike 4.0'
 )
 author = 'James R. Barlow'
 

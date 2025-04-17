@@ -401,7 +401,6 @@ stable user interface. They may be imported from
 ```
 
 (tmpdir)=
-
 ## Changing temporary storage location
 
 OCRmyPDF generates many temporary files during processing.

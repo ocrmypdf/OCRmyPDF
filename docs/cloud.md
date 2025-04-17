@@ -1,7 +1,7 @@
 % SPDX-FileCopyrightText: 2025 James R. Barlow
 % SPDX-License-Identifier: CC-BY-SA-4.0
 
-{#ocr-service}
+(ocr-service)=
 
 # Online deployments
 
@@ -53,7 +53,7 @@ depending on the command line given. A rule of thumb would be to allow
 cloud servers or small VM partitions should be provisioned with plenty
 of extra space, if say, a 500 page file might be sent.
 
-To change the temporary directory, see [tmpdir](advanced#tmpdir).
+To change the temporary directory, see [tmpdir](#tmpdir).
 
 On Amazon Web Services or other cloud vendors, consider setting your
 temporary directory to [empheral

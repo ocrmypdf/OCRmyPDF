@@ -1,4 +1,4 @@
-{#security}
+(security)=
 
 # PDF security issues
 
