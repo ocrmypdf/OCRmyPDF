@@ -1,10 +1,14 @@
-.. SPDX-FileCopyrightText: 2022 James R. Barlow
-..
-.. SPDX-License-Identifier: CC-BY-SA-4.0
+---
+substitutions:
+  image: |-
+    ```{image} images/bitmap_vs_svg.svg
+    ```
+---
 
-============
-Introduction
-============
+% SPDX-FileCopyrightText: 2022 James R. Barlow
+% SPDX-License-Identifier: CC-BY-SA-4.0
+
+# Introduction
 
 OCRmyPDF is a Python application and library that adds text "layers" to images in
 PDFs, making scanned image PDFs searchable. It uses OCR to guess the text
@@ -13,31 +17,30 @@ that enable customization of its processing steps, and it is highly tolerant
 of PDFs containing scanned images and "born digital" content that doesn't
 require text recognition.
 
-About OCR
-=========
+## About OCR
 
-`Optical character
-recognition <https://en.wikipedia.org/wiki/Optical_character_recognition>`__
+[Optical character
+recognition](https://en.wikipedia.org/wiki/Optical_character_recognition)
 is a technology that converts images of typed or handwritten text, such as
 in a scanned document, into computer text that can be selected, searched and copied.
 
 OCRmyPDF uses
-`Tesseract <https://github.com/tesseract-ocr/tesseract>`__, a widely
+[Tesseract](https://github.com/tesseract-ocr/tesseract), a widely
 available open source OCR engine, to perform OCR.
 
-.. _raster-vector:
+(raster-vector)=
 
-About PDFs
-==========
+## About PDFs
 
 PDFs are page description files that attempt to preserve a layout
-exactly. They contain `vector
-graphics <http://vector-conversions.com/vectorizing/raster_vs_vector.html>`__
+exactly. They contain [vector
+graphics](http://vector-conversions.com/vectorizing/raster_vs_vector.html)
 that can contain raster objects, such as scanned images. Because PDFs can
 contain multiple pages (unlike many image formats) and can contain fonts
 and text, they are a suitable format for exchanging scanned documents.
 
-|image|
+:::{image} images/bitmap_vs_svg.svg
+:::
 
 A PDF page may contain multiple images, even if it appears to have only
 one image. Some scanners or scanning software may segment pages into
@@ -48,10 +51,9 @@ Rasterizing a PDF is the process of generating corresponding raster images.
 OCR engines like Tesseract work with images, not scalable vector graphics
 or mixed raster-vector-text graphics such as PDF.
 
-About PDF/A
-===========
+## About PDF/A
 
-`PDF/A <https://en.wikipedia.org/wiki/PDF/A>`__ is an ISO-standardized
+[PDF/A](https://en.wikipedia.org/wiki/PDF/A) is an ISO-standardized
 subset of the full PDF specification that is designed for archiving (the
 'A' stands for Archive). PDF/A differs from PDF primarily by omitting
 features that could complicate future file readability,
@@ -63,8 +65,8 @@ of embedded content, it is likely more secure.
 There are various conformance levels and versions, such as "PDF/A-2b".
 
 In general, the preferred format for scanned documents is PDF/A. Some
-governments and jurisdictions, US Courts in particular, `mandate the use
-of PDF/A <https://pdfblog.com/2012/02/13/what-is-pdfa/>`__ for scanned
+governments and jurisdictions, US Courts in particular, [mandate the use
+of PDF/A](https://pdfblog.com/2012/02/13/what-is-pdfa/) for scanned
 documents.
 
 Since most individuals scanning documents aim for long-term readability,
@@ -78,13 +80,12 @@ files can be digitally signed but may not be encrypted to ensure future
 readability. Fortunately, converting from PDF/A to a regular PDF is
 straightforward, and any PDF viewer can handle PDF/A files.
 
-What OCRmyPDF does
-==================
+## What OCRmyPDF does
 
 OCRmyPDF analyzes each page of a PDF to determine the required colorspace
 and resolution (DPI) for capturing all the information on that page without
 losing content. It uses
-`Ghostscript <http://ghostscript.com/>`__ to rasterize each page and subsequently
+[Ghostscript](http://ghostscript.com/) to rasterize each page and subsequently
 performs OCR on the rasterized image to generate an OCR "layer." This layer
 is then integrated back into the original PDF.
 
@@ -101,10 +102,9 @@ options are utilized, the OCR layer is integrated into the processed image.
 By default, OCRmyPDF generates archival PDFs in the PDF/A format, which is
 a more rigid subset of PDF features designed for long-term archives. If you
 prefer regular PDFs, you can disable this feature using the
-``--output-type pdf`` option.
+`--output-type pdf` option.
 
-Why you shouldn't do this manually
-==================================
+## Why you shouldn't do this manually
 
 A PDF is similar to an HTML file, in that it contains document structure
 along with images. While some PDFs may solely display a full-page image,
@@ -142,55 +142,53 @@ like pikepdf and QPDF, it can auto-repair damaged PDFs. You don't need to
 understand the intricacies of these issues; you should be able to use
 OCRmyPDF with any PDF file, and expect reasonable results.
 
-Limitations
-===========
+## Limitations
 
 OCRmyPDF is subject to limitations imposed by the Tesseract OCR engine.
 These limitations are inherent to any software relying on Tesseract:
 
--  The OCR accuracy may not match that of commercial OCR solutions.
--  It is incapable of recognizing handwriting.
--  It may detect gibberish and report it as OCR output.
--  Results may be subpar when a document contains languages not specified
-   in the ``-l LANG`` argument.
--  Tesseract may struggle to analyze the natural reading order of documents.
-   For instance, it might fail to recognize two columns in a document and
-   attempt to join text across columns.
--  Poor quality scans can result in subpar OCR quality. In other words, the
-   quality of the OCR output depends on the quality of the input.
--  Tesseract does not provide information about the font family to which text
-   belongs.
--  Tesseract does not divide text into paragraphs or headings. It only provides
-   the text and its bounding box. As such, the generated PDF does not
-   contain any information about the document's structure.
+- The OCR accuracy may not match that of commercial OCR solutions.
+- It is incapable of recognizing handwriting.
+- It may detect gibberish and report it as OCR output.
+- Results may be subpar when a document contains languages not specified
+  in the `-l LANG` argument.
+- Tesseract may struggle to analyze the natural reading order of documents.
+  For instance, it might fail to recognize two columns in a document and
+  attempt to join text across columns.
+- Poor quality scans can result in subpar OCR quality. In other words, the
+  quality of the OCR output depends on the quality of the input.
+- Tesseract does not provide information about the font family to which text
+  belongs.
+- Tesseract does not divide text into paragraphs or headings. It only provides
+  the text and its bounding box. As such, the generated PDF does not
+  contain any information about the document's structure.
 
 Ghostscript also imposes some limitations:
 
--  PDFs containing JPEG 2000-encoded content may be converted to JPEG
-   encoding, which may introduce compression artifacts, if Ghostscript
-   PDF/A is enabled.
--  Ghostscript may transcode grayscale and color images, potentially
-   lossily, based on an internal algorithm. This
-   behavior can be suppressed by setting ``--pdfa-image-compression`` to
-   ``jpeg`` or ``lossless`` to set all images to one type or the other.
-   Ghostscript lacks an option to maintain the input image's format.
-   (Modern Ghostscript can copy JPEG images without transcoding them.)
--  Ghostscript's PDF/A conversion removes any XMP metadata that is not
-   one of the standard XMP metadata namespaces for PDFs. In particular,
-   PRISM Metadata is removed.
--  Ghostscript's PDF/A conversion may remove or deactivate
-   hyperlinks and other active content.
+- PDFs containing JPEG 2000-encoded content may be converted to JPEG
+  encoding, which may introduce compression artifacts, if Ghostscript
+  PDF/A is enabled.
+- Ghostscript may transcode grayscale and color images, potentially
+  lossily, based on an internal algorithm. This
+  behavior can be suppressed by setting `--pdfa-image-compression` to
+  `jpeg` or `lossless` to set all images to one type or the other.
+  Ghostscript lacks an option to maintain the input image's format.
+  (Modern Ghostscript can copy JPEG images without transcoding them.)
+- Ghostscript's PDF/A conversion removes any XMP metadata that is not
+  one of the standard XMP metadata namespaces for PDFs. In particular,
+  PRISM Metadata is removed.
+- Ghostscript's PDF/A conversion may remove or deactivate
+  hyperlinks and other active content.
 
-You can use ``--output-type pdf`` to disable PDF/A conversion and produce
+You can use `--output-type pdf` to disable PDF/A conversion and produce
 a standard, non-archival PDF.
 
 Regarding OCRmyPDF itself:
 
--  PDFs using transparency are not currently represented in the test
-   suite
+- PDFs using transparency are not currently represented in the test
+  suite
 
-Similar programs
-================
+## Similar programs
 
 To the author's knowledge, OCRmyPDF is the most feature-rich and
 thoroughly tested command line OCR PDF conversion tool. If it does not
@@ -199,8 +197,7 @@ meet your needs, contributions and suggestions are welcome.
 Ghostscript recently added three "pdfocr" output devices. They work by
 rasterizing all content and converting all pages to a single colour space.
 
-Web front-ends
-==============
+## Web front-ends
 
 The Docker image of OCRmyPDF provides a web service front-end
 that allows files to submitted over HTTP, and the results can be downloaded.
@@ -210,16 +207,14 @@ public internet and does not provide any security measures.
 
 In addition, the following third-party integrations are available:
 
--  `Paperless-ngx <https://docs.paperless-ngx.com/>`__ is a free software
-   document management system that uses OCRmyPDF to perform OCR on
-   uploaded documents.
--  `Nextcloud OCR <https://github.com/janis91/ocr>`__ is a free software
-   plugin for the Nextcloud private cloud software.
+- [Paperless-ngx](https://docs.paperless-ngx.com/) is a free software
+  document management system that uses OCRmyPDF to perform OCR on
+  uploaded documents.
+- [Nextcloud OCR](https://github.com/janis91/ocr) is a free software
+  plugin for the Nextcloud private cloud software.
 
 OCRmyPDF is not designed to be secure against malware-bearing PDFs (see
-`Using OCRmyPDF online <ocr-service>`__). Users should ensure they
+[Using OCRmyPDF online](ocr-service)). Users should ensure they
 comply with OCRmyPDF's licenses and the licenses of all dependencies. In
 particular, OCRmyPDF requires Ghostscript, which is licensed under
 AGPLv3.
-
-.. |image| image:: images/bitmap_vs_svg.svg

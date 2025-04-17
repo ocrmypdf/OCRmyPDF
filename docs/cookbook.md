@@ -1,45 +1,43 @@
 % SPDX-FileCopyrightText: 2025 James R. Barlow
 % SPDX-License-Identifier: CC-BY-SA-4.0
 
-Cookbook
-========
+# Cookbook
 
-Basic examples
---------------
+## Basic examples
 
 ### Help!
 
 ocrmypdf has built-in help.
 
-:::{code} bash
+```bash
 ocrmypdf --help
-:::
+```
 
 ### Add an OCR layer and convert to PDF/A
 
-:::{code} bash
+```bash
 ocrmypdf input.pdf output.pdf
-:::
+```
 
 ### Add an OCR layer and output a standard PDF
 
-:::{code} bash
+```bash
 ocrmypdf --output-type pdf input.pdf output.pdf
-:::
+```
 
 ### Create a PDF/A with all color and grayscale images converted to JPEG
 
-:::{code} bash
+```bash
 ocrmypdf --output-type pdfa --pdfa-image-compression jpeg input.pdf output.pdf
-:::
+```
 
 ### Modify a file in place
 
 The file will only be overwritten if OCRmyPDF is successful.
 
-:::{code} bash
+```bash
 ocrmypdf myfile.pdf myfile.pdf
-:::
+```
 
 ### Correct page rotation
 
@@ -47,9 +45,9 @@ OCR will attempt to automatic correct the rotation of each page. This
 can help fix a scanning job that contains a mix of landscape and
 portrait pages.
 
-:::{code} bash
+```bash
 ocrmypdf --rotate-pages myfile.pdf myfile.pdf
-:::
+```
 
 You can increase (decrease) the parameter `--rotate-pages-threshold` to
 make page rotation more (less) aggressive. The threshold number is the
@@ -70,10 +68,10 @@ angle is wrong.
 OCRmyPDF assumes the document is in English unless told otherwise. OCR
 quality may be poor if the wrong language is used.
 
-:::{code} bash
+```bash
 ocrmypdf -l fra LeParisien.pdf LeParisien.pdf
 ocrmypdf -l eng+fra Bilingual-English-French.pdf Bilingual-English-French.pdf
-:::
+```
 
 Language packs must be installed for all languages specified. See
 `Installing additional language packs <lang-packs>`{.interpreted-text
@@ -87,9 +85,9 @@ language when it is unknown.
 This produces a file named \"output.pdf\" and a companion text file
 named \"output.txt\".
 
-:::{code} bash
+```bash
 ocrmypdf --sidecar output.txt input.pdf output.pdf
-:::
+```
 
 :::{note}
 The sidecar file contains the **OCR text** found by OCRmyPDF. If the
@@ -114,14 +112,14 @@ use a program like Poppler\'s `pdftotext` or `pdfgrep`.
 If you are starting with images, you can just use Tesseract directly to
 convert images to PDFs:
 
-:::{code} bash
+```bash
 tesseract my-image.jpg output-prefix pdf
-:::
+```
 
-:::{code} bash
+```bash
 # When there are multiple images
 tesseract text-file-containing-list-of-image-filenames.txt output-prefix pdf
-:::
+```
 
 Tesseract\'s PDF output is quite good -- OCRmyPDF uses it internally, in
 some cases. However, OCRmyPDF has many features not available in
@@ -134,9 +132,9 @@ You can also use a program like
 images to PDFs, and then pipe the results to run ocrmypdf. The `-` tells
 ocrmypdf to read standard input.
 
-:::{code} bash
+```bash
 img2pdf my-images*.jpg | ocrmypdf - myfile.pdf
-:::
+```
 
 `img2pdf` is recommended because it does an excellent job at generating
 PDFs without transcoding images.
@@ -148,9 +146,9 @@ own. If the resolution (dots per inch, DPI) of an image is not set or is
 incorrect, it can be overridden with `--image-dpi`. (As 1 inch is 2.54
 cm, 1 dpi = 0.39 dpcm).
 
-:::{code} bash
+```bash
 ocrmypdf --image-dpi 300 image.png myfile.pdf
-:::
+```
 
 If you have multiple images, you must use `img2pdf` to convert the
 images to PDF.
@@ -161,8 +159,9 @@ We caution against using ImageMagick or Ghostscript to convert images to
 PDF, since they may transcode images or produce downsampled images,
 sometimes without warning.
 
-Image processing
-----------------
+(image-processing)=
+
+## Image processing
 
 OCRmyPDF perform some image processing on each page of a PDF, if
 desired. The same processing is applied to each page. It is suggested
@@ -200,18 +199,18 @@ should be visually reviewed after using these options.
 
 Deskew:
 
-:::{code} bash
+```bash
 ocrmypdf --deskew input.pdf output.pdf
-:::
+```
 
 Image processing commands can be combined. The order in which options
 are given does not matter. OCRmyPDF always applies the steps of the
 image processing pipeline in the same order (rotate, remove background,
 deskew, clean).
 
-:::{code} bash
+```bash
 ocrmypdf --deskew --clean --rotate-pages input.pdf output.pdf
-:::
+```
 
 Don\'t actually OCR my PDF
 --------------------------
@@ -221,12 +220,11 @@ processing without performing OCR (by causing OCR to time out). This
 works if all you want to is to apply image processing or PDF/A
 conversion.
 
-:::{code} bash
+```bash
 ocrmypdf --tesseract-timeout=0 --remove-background input.pdf output.pdf
-:::
+```
 
-::: {.versionchanged}
-v14.1.0
+:::{versionchanged} v14.1.0
 
 Prior to this version, `--tesseract-timeout 0` would prevent other uses
 of Tesseract, such as deskewing, from working. This is no longer the
@@ -239,9 +237,9 @@ non-OCR operations, if needed.
 This is getting ridiculous, but OCRmyPDF can complete strip all textual
 information from a PDF and reconstruct it as a \"bag of images\" PDF.
 
-:::{code} bash
+```bash
 ocrmypdf --tesseract-timeout 0 --force-ocr input.pdf output.pdf
-:::
+```
 
 Why would you want to do this? Perhaps you have a PDF where OCR fails to
 produce useful results, and just want to get rid of all OCR information.
@@ -251,18 +249,18 @@ This command also removes OCR generated by third party tools.
 
 You can also optimize all images without performing any OCR:
 
-:::{code} bash
+```bash
 ocrmypdf --tesseract-timeout=0 --optimize 3 --skip-text input.pdf output.pdf
-:::
+```
 
 ### Process only certain pages
 
 You can ask OCRmyPDF to only apply [image processing](#image-processing)
 and OCR to certain pages.
 
-:::{code} bash
+```bash
 ocrmypdf --pages 2,3,13-17 input.pdf output.pdf
-:::
+```
 
 Hyphens denote a range of pages and commas separate page numbers. If you
 prefer to use spaces, quote all of the page numbers:
@@ -281,9 +279,9 @@ those options. Both of these steps are \"whole file\" operations. In
 this example, we want to OCR only the title and otherwise change the PDF
 as little as possible:
 
-:::{code} bash
+```bash
 ocrmypdf --pages 1 --output-type pdf --optimize 0 input.pdf output.pdf
-:::
+```
 
 Redo existing OCR
 -----------------
@@ -297,9 +295,9 @@ This may be helpful for users who want to take advantage of accuracy
 improvements in Tesseract for files they previously OCRed with an
 earlier version of Tesseract and OCRmyPDF.
 
-:::{code} bash
+```bash
 ocrmypdf --redo-ocr input.pdf output.pdf
-:::
+```
 
 This method will replace OCR without rasterizing, reducing quality or
 removing vector content. If a file contains a mix of pure digital text
@@ -351,18 +349,18 @@ header-rows: 1
 
 *   - Level
     - Comments
-*   - ``--optimize=0``
+*   - <nobr>``--optimize=0``</nobr>
     - Disables optimization.
-*   - ``--optimize 1``
+*   - <nobr>``--optimize 1``</nobr>
     - Enables lossless optimizations, such as transcoding images to more
         efficient formats. Also compress other uncompressed objects in the
         PDF and enables the more efficient "object streams" within the PDF.
         (If ``--jbig2-lossy`` is issued, then lossy JBIG2 optimization is used.
         The decision to use lossy JBIG2 is separate from standard optimization
         settings.)
-*   - ``--optimize 2``
+*   - <nobr>``--optimize 2``</nobr>
     - All of the above, and enables lossy optimizations and color quantization.
-*   - ``--optimize 3``
+*   - <nobr>``--optimize 3``</nobr>
     - All of the above, and enables more aggressive optimizations and targets lower image quality.
 :::
 
@@ -376,9 +374,9 @@ inefficient compression modes to more modern versions. A program like
 `qpdf` can be used to change encodings, e.g. to inspect the internals
 for a PDF.
 
-:::{code} bash
+```bash
 ocrmypdf --optimize 3 in.pdf out.pdf  # Make it small
-:::
+```
 
 Some users may consider enabling lossy JBIG2. See:
 `jbig2-lossy`{.interpreted-text role="ref"}.

@@ -45,7 +45,7 @@ extensions = [
     'sphinx_issues',
 ]
 
-myst_enable_extensions = ['colon_fence', 'attrs_block', 'attrs_inline']
+myst_enable_extensions = ['colon_fence', 'attrs_block', 'attrs_inline', 'substitution']
 
 # Extension settings
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
