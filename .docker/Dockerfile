@@ -40,7 +40,7 @@ RUN \
 WORKDIR /app
 
 # Copy uv from ghcr
-COPY --from=ghcr.io/astral-sh/uv:0.5.5 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.6.14 /uv /uvx /bin/
 
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
