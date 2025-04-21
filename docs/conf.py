@@ -26,9 +26,7 @@
 
 # -- General configuration ------------------------------------------------
 
-# If your documentation needs a minimal Sphinx version, state it here.
-#
-# needs_sphinx = '1.0'
+needs_sphinx = '8'
 
 import datetime
 
@@ -36,6 +34,7 @@ import datetime
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'myst_parser',
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinx.ext.autosummary',
@@ -43,6 +42,8 @@ extensions = [
     'sphinx.ext.imgconverter',  # PDF docs needs this for SVG to PNG conversion
     'sphinx_issues',
 ]
+
+myst_enable_extensions = ['colon_fence', 'attrs_block', 'attrs_inline', 'substitution']
 
 # Extension settings
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
@@ -53,11 +54,7 @@ issues_github_path = "ocrmypdf/OCRmyPDF"
 templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
-source_suffix = {'.rst': 'restructuredtext', '.md': 'markdown'}
-
-# The encoding of source files.
-#
-# source_encoding = 'utf-8-sig'
+source_suffix = {'.rst': 'restructuredtext', '.md': 'markdown', '.txt': 'markdown'}
 
 # The master toctree document.
 master_doc = 'index'
@@ -67,8 +64,8 @@ project = 'ocrmypdf'
 
 year = str(datetime.date.today().year)
 copyright = (
-    f'{year}, James R. Barlow. ',
-    'Licensed under Creative Commons Attribution-ShareAlike 4.0.',
+    f'{year}, James R. Barlow. '
+    + 'Licensed under Creative Commons Attribution-ShareAlike 4.0'
 )
 author = 'James R. Barlow'
 

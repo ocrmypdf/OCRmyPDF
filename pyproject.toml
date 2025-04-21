@@ -48,7 +48,12 @@ Tracker = "https://github.com/ocrmypdf/OCRmyPDF/issues"
 Changelog = "https://github.com/ocrmypdf/OCRmyPDF/docs/release_notes.rst"
 
 [project.optional-dependencies]
-docs = ["sphinx", "sphinx-issues", "sphinx-rtd-theme"]
+docs = [
+    "myst-parser>=4.0.1",
+    "sphinx",
+ "sphinx-issues",
+ "sphinx-rtd-theme",
+]
 extended_test = ["PyMuPDF>=1.19.1"]
 test = [
   "coverage[toml]>=6.2",

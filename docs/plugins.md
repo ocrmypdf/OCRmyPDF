@@ -1,15 +1,12 @@
-.. SPDX-FileCopyrightText: 2022 James R. Barlow
-..
-.. SPDX-License-Identifier: CC-BY-SA-4.0
+% SPDX-FileCopyrightText: 2022 James R. Barlow
+% SPDX-License-Identifier: CC-BY-SA-4.0
 
-=======
-Plugins
-=======
+# Plugins
 
-    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
-    NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and
-    "OPTIONAL" in this document are to be interpreted as described in
-    RFC 2119.
+> The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+> NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and
+> "OPTIONAL" in this document are to be interpreted as described in
+> RFC 2119.
 
 You can use plugins to customize the behavior of OCRmyPDF at certain points of
 interest.
@@ -24,75 +21,71 @@ Currently, it is possible to:
 - replace Ghostscript with another PDF to image converter (rasterizer) or
   PDF/A generator
 
-OCRmyPDF plugins are based on the Python ``pluggy`` package and conform to its
+OCRmyPDF plugins are based on the Python `pluggy` package and conform to its
 conventions. Note that: plugins installed with as setuptools entrypoints are
 not checked currently, because OCRmyPDF assumes you may not want to enable
 plugins for all files.
 
-See [OCRmyPDF-EasyOCR](https://github.com/ocrmypdf/OCRmyPDF-EasyOCR) for an
+See \[OCRmyPDF-EasyOCR\](<https://github.com/ocrmypdf/OCRmyPDF-EasyOCR>) for an
 example of a straightforward, fully working plugin.
 
-Script plugins
-==============
+## Script plugins
 
 Script plugins may be called from the command line, by specifying the name of a file.
 Script plugins may be convenient for informal or "one-off" plugins, when a certain
 batch of files needs a special processing step for example.
 
-.. code-block:: bash
+```bash
+ocrmypdf --plugin ocrmypdf_example_plugin.py input.pdf output.pdf
+```
 
-    ocrmypdf --plugin ocrmypdf_example_plugin.py input.pdf output.pdf
+Multiple plugins may be installed by issuing the `--plugin` argument multiple times.
 
-Multiple plugins may be installed by issuing the ``--plugin`` argument multiple times.
-
-Packaged plugins
-================
+## Packaged plugins
 
 Installed plugins may be installed into the same virtual environment as OCRmyPDF
 is installed into. They may be invoked using Python standard module naming.
 If you are intending to distribute a plugin, please package it.
 
-.. code-block:: bash
-
-    ocrmypdf --plugin ocrmypdf_fancypants.pockets.contents input.pdf output.pdf
+```bash
+ocrmypdf --plugin ocrmypdf_fancypants.pockets.contents input.pdf output.pdf
+```
 
 OCRmyPDF does not automatically import plugins, because the assumption is that
 plugins affect different files differently and you may not want them activated
-all the time. The command line or ``ocrmypdf.ocr(plugin='...')`` must call
+all the time. The command line or `ocrmypdf.ocr(plugin='...')` must call
 for them.
 
 Third parties that wish to distribute packages for ocrmypdf should package them
-as packaged plugins, and these modules should begin with the name ``ocrmypdf_``
-similar to ``pytest`` packages such as ``pytest-cov`` (the package) and
-``pytest_cov`` (the module).
+as packaged plugins, and these modules should begin with the name `ocrmypdf_`
+similar to `pytest` packages such as `pytest-cov` (the package) and
+`pytest_cov` (the module).
 
-.. note::
+:::{note}
+We recommend plugin authors name their plugins with the prefix
+`ocrmypdf-` (for the package name on PyPI) and `ocrmypdf_` (for the
+module), just like pytest plugins. At the same time, please make it clear
+that your package is not official.
+:::
 
-    We recommend plugin authors name their plugins with the prefix
-    ``ocrmypdf-`` (for the package name on PyPI) and ``ocrmypdf_`` (for the
-    module), just like pytest plugins. At the same time, please make it clear
-    that your package is not official.
-
-Plugins
-=======
+## Plugins
 
 You can also create a plugin that OCRmyPDF will always automatically load if both are
 installed in the same virtual environment, using a project entrypoint.
 OCRmyPDF uses the entrypoint namespace "ocrmypdf".
 
-For example, ``pyproject.toml`` would need to contain the following, for a plugin named
-``ocrmypdf-exampleplugin``:
+For example, `pyproject.toml` would need to contain the following, for a plugin named
+`ocrmypdf-exampleplugin`:
 
-.. code-block:: toml
+```toml
+[project]
+name = "ocrmypdf-exampleplugin"
 
-    [project]
-    name = "ocrmypdf-exampleplugin"
+[project.entry-points."ocrmypdf"]
+exampleplugin = "exampleplugin.pluginmodule"
+```
 
-    [project.entry-points."ocrmypdf"]
-    exampleplugin = "exampleplugin.pluginmodule"
-
-Plugin requirements
-===================
+## Plugin requirements
 
 OCRmyPDF generally uses multiple worker processes. When a new worker is started,
 Python will import all plugins again, including all plugins that were imported earlier.
@@ -103,14 +96,14 @@ to obtain a reference to shared state prepared by another hook implementation.
 Plugins must expect that other instances of the plugin will be running
 simultaneously.
 
-The ``context`` object that is passed to many hooks can be used to share information
+The `context` object that is passed to many hooks can be used to share information
 about a file being worked on. Plugins must write private, plugin-specific data to
-a subfolder named ``{options.work_folder}/ocrmypdf-plugin-name``. Plugins MAY
-read and write files in ``options.work_folder``, but should be aware that their
+a subfolder named `{options.work_folder}/ocrmypdf-plugin-name`. Plugins MAY
+read and write files in `options.work_folder`, but should be aware that their
 semantics are subject to change.
 
-OCRmyPDF will delete ``options.work_folder`` when it has finished OCRing
-a file, unless invoked with ``--keep-temporary-files``.
+OCRmyPDF will delete `options.work_folder` when it has finished OCRing
+a file, unless invoked with `--keep-temporary-files`.
 
 The documentation for some plugin hooks contain a detailed description of the
 execution context in which they will be called.
@@ -119,114 +112,139 @@ Plugins should be prepared to work whether executed in worker threads or worker
 processes. Generally, OCRmyPDF uses processes, but has a semi-hidden threaded
 argument that simplifies debugging.
 
-
-Plugin hooks
-============
+## Plugin hooks
 
 A plugin may provide the following hooks. Hooks must be decorated with
-``ocrmypdf.hookimpl``, for example:
+`ocrmypdf.hookimpl`, for example:
 
-.. code-block:: python
+```python
+from ocrmpydf import hookimpl
 
-    from ocrmpydf import hookimpl
-
-    @hookimpl
-    def add_options(parser):
-        pass
+@hookimpl
+def add_options(parser):
+    pass
+```
 
 The following is a complete list of hooks that are available, and when
 they are called.
 
-.. _firstresult:
+(firstresult)=
 
 **Note on firstresult hooks**
 
 If multiple plugins install implementations for this hook, they will be called in
 the reverse of the order in which they are installed (i.e., last plugin wins).
 When each hook implementation is called in order, the first implementation that
-returns a value other than ``None`` will "win" and prevent execution of all other
+returns a value other than `None` will "win" and prevent execution of all other
 hooks. As such, you cannot "chain" a series of plugin filters together in this
 way. Instead, a single hook implementation should be responsible for any such
 chaining operations.
 
-Examples
-========
+## Examples
 
-* OCRmyPDF's test suite contains several plugins that are used to simulate certain
+- OCRmyPDF's test suite contains several plugins that are used to simulate certain
   test conditions.
-* `ocrmypdf-papermerge <https://github.com/papermerge/OCRmyPDF_papermerge>`_ is
+- [ocrmypdf-papermerge](https://github.com/papermerge/OCRmyPDF_papermerge) is
   a production plugin that integrates OCRmyPDF and the Papermerge document
   management system.
 
+### Suppressing or overriding other plugins
 
-Suppressing or overriding other plugins
----------------------------------------
-
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.initialize
+```
 
-Custom command line arguments
------------------------------
+### Custom command line arguments
 
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.add_options
+```
 
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.check_options
+```
 
-Execution and progress reporting
---------------------------------
+### Execution and progress reporting
 
+```{eval-rst}
 .. autoclass:: ocrmypdf.pluginspec.ProgressBar
     :members:
     :special-members: __init__, __enter__, __exit__
+```
 
+```{eval-rst}
 .. autoclass:: ocrmypdf.pluginspec.Executor
     :members:
     :special-members: __call__
+```
 
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.get_logging_console
+```
 
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.get_executor
+```
 
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.get_progressbar_class
+```
 
-Applying special behavior before processing
--------------------------------------------
+### Applying special behavior before processing
 
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.validate
+```
 
-PDF page to image
------------------
+### PDF page to image
 
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.rasterize_pdf_page
+```
 
-Modifying intermediate images
------------------------------
+### Modifying intermediate images
 
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.filter_ocr_image
+```
 
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.filter_page_image
+```
 
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.filter_pdf_page
+```
 
-OCR engine
-----------
+### OCR engine
 
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.get_ocr_engine
+```
 
+```{eval-rst}
 .. autoclass:: ocrmypdf.pluginspec.OcrEngine
     :members:
 
     .. automethod:: __str__
+```
 
+```{eval-rst}
 .. autoclass:: ocrmypdf.pluginspec.OrientationConfidence
+```
 
-PDF/A production
-----------------
+### PDF/A production
 
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.generate_pdfa
+```
 
-PDF optimization
-----------------
+### PDF optimization
 
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.optimize_pdf
+```
 
+```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.is_optimization_enabled
+```
