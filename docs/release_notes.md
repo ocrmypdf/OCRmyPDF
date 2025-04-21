@@ -25,6 +25,16 @@ about a forthcoming release that has not been tagged yet. A release is only
 official when it's tagged and posted to PyPI.
 :::
 
+## v16.10.1
+
+- No changes affecting OCRmyPDF functionality for command line end users.
+- webservice: made page specification easier to find in UI.
+- webservice: fix download button downloads wrong file.
+- Converted project documentation from rST to Markdown.
+- Added README translation to Simplified Chinese. Thanks @HuaPai.
+- Modernized license specification in pyproject.toml.
+- Modernized SPDX license to REUSE.toml.
+
 ## v16.10.0
 
 - Added hocr textangle processing, improving handling of text at angles.
