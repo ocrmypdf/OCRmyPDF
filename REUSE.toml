@@ -1,0 +1,190 @@
+version = 1
+SPDX-PackageName = "OCRmyPDF"
+SPDX-PackageSupplier = "James R. Barlow <james@purplerock.ca>"
+SPDX-PackageDownloadLocation = "https://github.com/ocrmypdf/OCRmyPDF"
+
+[[annotations]]
+path = ["docs/**", 'misc/screencast/**']
+precedence = "aggregate"
+SPDX-FileCopyrightText = "(C) 2025 James R. Barlow"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
+path = [
+    "uv.lock",
+    ".git_archival.txt",
+    "docs/images/logo-social.png",
+    "docs/images/logo-square-256.svg",
+    "docs/images/logo-square.png",
+    "docs/images/logo-square.svg",
+    "docs/images/logo.svg",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "(C) 2025 James R. Barlow"
+SPDX-License-Identifier = "MPL-2.0"
+
+[[annotations]]
+path = [".github/ISSUE_TEMPLATE/**.yml"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "(C) 2025 James R. Barlow"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
+path = [
+    "tests/resources/acroform.pdf",
+    "tests/resources/aspect.pdf",
+    "tests/resources/blank.pdf",
+    "tests/resources/cmyk.pdf",
+    "tests/resources/crom.png",
+    "tests/resources/enormous.pdf",
+    "tests/resources/formxobject.pdf",
+    "tests/resources/francais.pdf",
+    "tests/resources/hugemono.pdf",
+    "tests/resources/invalid.pdf",
+    "tests/resources/kcs.pdf",
+    "tests/resources/livecycle.pdf",
+    "tests/resources/meta.pdf",
+    "tests/resources/missing_docinfo.pdf",
+    "tests/resources/negzero.pdf",
+    "tests/resources/no_contents.pdf",
+    "tests/resources/tagged**",
+    "tests/resources/toc.pdf",
+    "tests/resources/trivial.pdf",
+    "tests/resources/truetype_font_nomapping.pdf",
+    "tests/resources/type3_font_nomapping.pdf",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "(C) 2025 James R. Barlow"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
+path = ["tests/resources/graph.pdf", "tests/resources/graph_ocred.pdf"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "(C) 2012 SmokeyJoe"
+SPDX-License-Identifier = "GFDL-1.2-or-later or CC-BY-SA-3.0"
+
+[[annotations]]
+path = ["tests/resources/c02-22.pdf", "tests/resources/multipage.pdf"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Public domain"
+SPDX-License-Identifier = "public-domain"
+
+[[annotations]]
+path = "docs/images/bitmap_vs_svg.svg"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "(C) 2006 Yug"
+SPDX-License-Identifier = "CC-BY-SA-2.5"
+
+[[annotations]]
+path = "tests/cache/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "(C) 2025 James R. Barlow"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
+path = [
+    "tests/resources/linn.png",
+    "tests/resources/linn.pdf",
+    "tests/resources/linn.txt",
+    "tests/resources/ccitt.pdf",
+    "tests/resources/cardinal.pdf",
+    "tests/resources/jbig2.pdf",
+    "tests/resources/jbig2_baddevicen.pdf",
+    "tests/resources/skew.pdf",
+    "tests/resources/rotated_skew.pdf",
+    "tests/resources/poster.pdf",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "(C) 1985 Forat Electronics"
+SPDX-License-Identifier = "GFDL-1.2-or-later or CC-BY-SA-3.0"
+
+[[annotations]]
+path = "tests/resources/lichtenstein.pdf"
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["(C) 2001 Andreas Tille", "(C) 2007 Alessio Damato"]
+SPDX-License-Identifier = "GFDL-1.2-or-later or CC-BY-SA-3.0"
+
+[[annotations]]
+path = "tests/resources/masks.pdf"
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+    "held by the contributors to the German Wikipedia article \"Linux\"",
+    "see: https://de.wikipedia.org/w/index.php?title=Linux&action=history",
+    "(masks.pdf generated from Wikipedia article as of 2016-08-24)",
+]
+SPDX-License-Identifier = "CC-BY-SA-3.0"
+
+[[annotations]]
+path = "tests/resources/epson.pdf"
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+    "held by the contributors to the Wikipedia article \"Optical character recognition\"",
+    "see: https://en.wikipedia.org/w/index.php?title=Optical_character_recognition&action=history",
+    "(epson.pdf generated from Wikipedia article as of 2016-09-14)",
+]
+SPDX-License-Identifier = "CC-BY-SA-3.0"
+
+[[annotations]]
+path = ["tests/resources/typewriter.png", "tests/resources/2400dpi.pdf"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "(C) 2005 Ellywa"
+SPDX-License-Identifier = "GFDL-1.2-or-later or CC-BY-SA-1.0 or CC-BY-SA-2.0 or CC-BY-SA-2.5 or CC-BY-SA-3.0"
+SPDX-FileComment = "\n Obtained from: https://commons.wikimedia.org/wiki/File:Triumph.typewriter_text_Linzensoep.gif"
+
+[[annotations]]
+path = "tests/resources/overlay.pdf"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "(C) 2017 Max Anderson"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+    "tests/resources/baiona**.png",
+    "tests/resources/baiona**.jpg",
+    "tests/resources/link.pdf",
+    "tests/resources/palette.pdf",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "(C) 2014 Euskaldunaa"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
+path = "tests/resources/vector.pdf"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "(C) 2018 Catscratch"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "src/ocrmypdf/data/sRGB.icc"
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+    "Kai-Uwe Behrmann <www.behrmann.name>",
+    "Marti Maria <www.littlecms.com>",
+    "Photogamut <www.photogamut.org>",
+    "Graeme Gill <www.argyllcms.com>",
+    "ColorSolutions <www.basICColor.com>",
+]
+SPDX-License-Identifier = "Zlib"
+
+[[annotations]]
+path = "src/ocrmypdf/data/pdf.ttf"
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+    "(C) 2014 Ray Smith",
+    "(C) 2015 Ken Sharp",
+    "(C) 2016 James R. Barlow",
+    "(C) 2016 Jeff Breidenbach",
+    "(C) 2017 Zdenko Podobný",
+]
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "tests/resources/3small.pdf"
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+    "(C) 2014 Euskaldunaa",
+    "(C) 2017 James R. Barlow",
+    "(C) 2005 Ellywa",
+]
+SPDX-License-Identifier = "CC-BY-SA-4.0 and (GFDL-1.2-or-later or CC-BY-SA-1.0 or CC-BY-SA-2.0 or CC-BY-SA-2.5 or CC-BY-SA-3.0)"
+SPDX-FileComment = "concatenation of baiona_gray.png, crom.png and typewriter.png/2400dpi.pdf"
