@@ -35,11 +35,12 @@ cd jbig2enc
 Dependencies include libtoolize and libleptonica, which on Ubuntu
 systems are packaged as libtool and libleptonica-dev. On Fedora (35)
 they are packaged as libtool and leptonica-devel. For this to work,
-please make sure to install `autotools`, `automake`, `libtool` and
-`leptonica` first if not already installed.
+please make sure to install `autotools`, `automake`, `libtool`, `pkg-config`
+and `leptonica` first if not already installed. Other dependencies might
+be required depending on your system.
 
 :::{code} bash
-[sudo] apt install autotools-dev automake libtool libleptonica-dev
+[sudo] apt install autotools-dev automake libtool libleptonica-dev pkg-config
 :::
 
 {#jbig2-lossy}
