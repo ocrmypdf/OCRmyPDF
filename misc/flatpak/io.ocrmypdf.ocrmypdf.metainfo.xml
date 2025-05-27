@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="console-application">
+  <id>io.ocrmypdf.ocrmypdf</id>
+
+  <name>OCRmyPDF</name>
+  <summary>Adds an OCR text layer to scanned PDF files, allowing them to be searched</summary>
+
+  <developer id="io.ocrmypdf">
+      <name>OCRmyPDF Developers</name>
+  </developer>
+
+  <url type="homepage">https://github.com/ocrmypdf/ocrmypdf</url>
+  <url type="bugtracker">https://github.com/ocrmypdf/OCRmyPDF/issues</url>
+
+  <content_rating type="oars-1.1" />
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MPL-2.0</project_license>
+
+  <description>
+    <ul>
+        <li>Generates a searchable PDF/A file from a regular PDF</li>
+        <li>Places OCR text accurately below the image to ease copy / paste</li>
+        <li>Keeps the exact resolution of the original embedded images</li>
+        <li>When possible, inserts OCR information as a lossless operation without disrupting any other content</li>
+        <li>Optimizes PDF images, often producing files smaller than the input file If requested, deskews and/or cleans the image before performing OCR</li>
+        <li>Validates input and output files</li>
+        <li>Distributes work across all available CPU cores</li>
+        <li>Uses Tesseract OCR engine to recognize more than 100 languages</li>
+        <li>Keeps your private data private</li>
+        <li>Scales properly to handle files with thousands of pages</li>
+        <li>Battle-tested on millions of PDFs</li>
+    </ul>
+  </description>
+
+  <provides>
+    <binary>ocrmypdf</binary>
+  </provides>
+
+  <icon type="stock">io.ocrmypdf.ocrmypdf</icon>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/ocrmypdf/OCRmyPDF/f7ad5f16bd0340b0b1803dada0c02f9f40542bd8/misc/flatpak/sample_screenshot.png</image>
+      <caption>Sample usage of OCRmyPDF</caption>
+    </screenshot>
+  </screenshots>
+
+  <categories>
+    <category>Office</category>
+    <category>Utility</category>
+  </categories>
+
+  <keywords>
+    <keyword>ocr</keyword>
+    <keyword>pdf</keyword>
+    <keyword>tool</keyword>
+  </keywords>
+
+  <releases>
+    <release version="16.8.0" date="2025-01-05"/>
+  </releases>
+</component>
