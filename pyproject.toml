@@ -21,6 +21,7 @@ dependencies = [
   "Pillow>=10.0.1",
   "pluggy>=1",
   "rich>=13",
+  "google-cloud-vision>=3.4.2",
 ]
 authors = [{ name = "James R. Barlow", email = "james@purplerock.ca" }]
 classifiers = [
