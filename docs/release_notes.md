@@ -25,6 +25,10 @@ about a forthcoming release that has not been tagged yet. A release is only
 official when it's tagged and posted to PyPI.
 :::
 
+## v16.10.2
+
+- Blacklist pikepdf 9.8.0 due to an incompatible change.
+
 ## v16.10.1
 
 - No changes affecting OCRmyPDF functionality for command line end users.

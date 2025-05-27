@@ -16,8 +16,8 @@ dependencies = [
   "img2pdf>=0.5",
   "packaging>=20",
   "pdfminer.six>=20220319",
-  "pi-heif",                # Heif image format - maintainers: if this is removed, it will NOT break
-  "pikepdf>=8.10.1",
+  "pi-heif",                   # Heif image format - maintainers: if this is removed, it will NOT break
+  "pikepdf>=8.10.1, != 9.8.0",
   "Pillow>=10.0.1",
   "pluggy>=1",
   "rich>=13",
@@ -48,12 +48,7 @@ Tracker = "https://github.com/ocrmypdf/OCRmyPDF/issues"
 Changelog = "https://github.com/ocrmypdf/OCRmyPDF/docs/release_notes.rst"
 
 [project.optional-dependencies]
-docs = [
-    "myst-parser>=4.0.1",
-    "sphinx",
- "sphinx-issues",
- "sphinx-rtd-theme",
-]
+docs = ["myst-parser>=4.0.1", "sphinx", "sphinx-issues", "sphinx-rtd-theme"]
 extended_test = ["PyMuPDF>=1.19.1"]
 test = [
   "coverage[toml]>=6.2",
