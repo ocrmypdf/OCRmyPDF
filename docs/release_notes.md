@@ -25,6 +25,11 @@ about a forthcoming release that has not been tagged yet. A release is only
 official when it's tagged and posted to PyPI.
 :::
 
+## v16.10.3
+
+- Blocked optimization of images with pre-blended soft masks. {issue}`1536`
+- Fixed warning from hypothesis on running tests.
+
 ## v16.10.2
 
 - Blacklist pikepdf 9.8.0 due to an incompatible change.
