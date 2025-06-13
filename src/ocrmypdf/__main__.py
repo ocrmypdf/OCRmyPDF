@@ -78,6 +78,6 @@ def run(args=None):
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
-    if os.name == 'posix':
+    if sys.platform not in ('win32', 'darwin'):
         multiprocessing.set_start_method('forkserver')
     sys.exit(run())
