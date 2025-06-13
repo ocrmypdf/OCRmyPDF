@@ -6,7 +6,7 @@ from __future__ import annotations
 from io import BytesIO
 from os import fspath
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import img2pdf
 import pikepdf
@@ -220,7 +220,7 @@ def test_find_formx(resources):
 
 
 def test_extract_image_filter_with_pdf_image():
-    image = MagicMock()
+    image = Dictionary()
     image.Subtype = Name.Image
     image.Length = 200
     image.Width = 10
@@ -235,20 +235,20 @@ def test_extract_image_filter_with_pdf_image():
 
 
 def test_extract_image_filter_with_non_image():
-    image = MagicMock()
+    image = Dictionary()
     image.Subtype = Name.Form
     assert extract_image_filter(image, None) is None
 
 
 def test_extract_image_filter_with_small_stream_size():
-    image = MagicMock()
+    image = Dictionary()
     image.Subtype = Name.Image
     image.Length = 50
     assert extract_image_filter(image, None) is None
 
 
 def test_extract_image_filter_with_small_dimensions():
-    image = MagicMock()
+    image = Dictionary()
     image.Subtype = Name.Image
     image.Length = 200
     image.Width = 5
@@ -257,7 +257,7 @@ def test_extract_image_filter_with_small_dimensions():
 
 
 def test_extract_image_filter_with_multiple_compression_filters():
-    image = MagicMock()
+    image = Dictionary()
     image.Subtype = Name.Image
     image.Length = 200
     image.Width = 10
@@ -268,7 +268,7 @@ def test_extract_image_filter_with_multiple_compression_filters():
 
 
 def test_extract_image_filter_with_wide_gamut_image():
-    image = MagicMock()
+    image = Dictionary()
     image.Subtype = Name.Image
     image.Length = 200
     image.Width = 10
@@ -296,7 +296,7 @@ def test_extract_image_filter_with_jpeg2000_image():
 
 
 def test_extract_image_filter_with_ccitt_group_3_image():
-    image = MagicMock()
+    image = Dictionary()
     image.Subtype = Name.Image
     image.Length = 200
     image.Width = 10
@@ -309,7 +309,7 @@ def test_extract_image_filter_with_ccitt_group_3_image():
 
 # Triggers pikepdf bug
 # def test_extract_image_filter_with_decode_table():
-#     image = MagicMock()
+#     image = Dictionary()
 #     image.Subtype = Name.Image
 #     image.Length = 200
 #     image.Width = 10
@@ -319,3 +319,26 @@ def test_extract_image_filter_with_ccitt_group_3_image():
 #     image.ColorSpace = Name.DeviceGray
 #     image.Decode = [42, 0]
 #     assert extract_image_filter(image, None) is None
+
+
+def test_extract_image_filter_with_rgb_smask_matte():
+    image = Dictionary()
+    image.Subtype = Name.Image
+    image.Length = 200
+    image.Width = 10
+    image.Height = 10
+    image.Filter = Name.FlateDecode
+    image.BitsPerComponent = 8
+    image.ColorSpace = Name.DeviceRGB
+    image.SMask = Dictionary(
+        Type=Name.Image,
+        Subtype=Name.Image,
+        Length=200,
+        Width=10,
+        Height=10,
+        Filter=Name.FlateDecode,
+        BitsPerComponent=8,
+        ColorSpace=Name.DeviceGray,
+        Matte=Array([1, 2, 3]),
+    )
+    assert extract_image_filter(image, None) is None

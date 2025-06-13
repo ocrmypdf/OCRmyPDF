@@ -126,6 +126,13 @@ def extract_image_filter(
     if Name.Decode in image:
         log.debug(f"xref {xref}: skipping image with Decode table")
         return None  # Don't mess with custom Decode tables
+    if image.get(Name.SMask, Dictionary()).get(Name.Matte, None) is not None:
+        # https://github.com/ocrmypdf/OCRmyPDF/issues/1536
+        # Do not attempt to optimize images that have a SMask with a Matte.
+        # That means alpha channel pre-blending is used, and we're not prepared
+        # to deal with the complexities of that.
+        log.debug(f"xref {xref}: skipping image whose SMask has Matte")
+        return None
 
     return pim, filtdp
 
