@@ -44,7 +44,6 @@ from ocrmypdf.helpers import Resolution, available_cpu_count, pikepdf_enable_mma
 from ocrmypdf.pdfinfo.layout import (
     LTStateAwareChar,
     PdfMinerState,
-    get_page_analysis,
     get_text_boxes,
 )
 
