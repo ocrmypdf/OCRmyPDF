@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import secrets
 import subprocess
+import sys
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -165,6 +166,10 @@ class TestDuplicateFilter:
         logger.addFilter(DuplicateFilter(logger))
         return logger
 
+    @pytest.mark.xfail(
+        (3, 13, 3) <= sys.version_info <= (3, 13, 5),
+        reason="https://github.com/python/cpython/pull/135858",
+    )
     def test_filter_duplicate_messages(self, duplicate_filter_logger, caplog):
         log = duplicate_filter_logger
         log.error("test error message")
@@ -194,6 +199,10 @@ class TestDuplicateFilter:
         assert caplog.records[1].msg == "another error message"
         assert caplog.records[2].msg == "yet another error message"
 
+    @pytest.mark.xfail(
+        (3, 13, 3) <= sys.version_info <= (3, 13, 5),
+        reason="https://github.com/python/cpython/pull/135858",
+    )
     def test_filter_alt_messages(self, duplicate_filter_logger, caplog):
         log = duplicate_filter_logger
         log.error("test error message")
