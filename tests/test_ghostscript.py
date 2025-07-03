@@ -167,7 +167,7 @@ class TestDuplicateFilter:
         return logger
 
     @pytest.mark.xfail(
-        (3, 13, 3) <= sys.version_info <= (3, 13, 5),
+        (3, 13, 3) <= sys.version_info[:3] <= (3, 13, 5),
         reason="https://github.com/python/cpython/pull/135858",
     )
     def test_filter_duplicate_messages(self, duplicate_filter_logger, caplog):
@@ -200,7 +200,7 @@ class TestDuplicateFilter:
         assert caplog.records[2].msg == "yet another error message"
 
     @pytest.mark.xfail(
-        (3, 13, 3) <= sys.version_info <= (3, 13, 5),
+        (3, 13, 3) <= sys.version_info[:3] <= (3, 13, 5),
         reason="https://github.com/python/cpython/pull/135858",
     )
     def test_filter_alt_messages(self, duplicate_filter_logger, caplog):
