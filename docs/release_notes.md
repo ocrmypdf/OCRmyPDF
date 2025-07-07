@@ -25,10 +25,15 @@ about a forthcoming release that has not been tagged yet. A release is only
 official when it's tagged and posted to PyPI.
 :::
 
-## v16.10.3
+## v16.10.4
+
+- Corrected build errors in Python 3.13.3 and 3.13.4.
+
+## v16.10.3 (not released)
 
 - Blocked optimization of images with pre-blended soft masks. {issue}`1536`
 - Fixed warning from hypothesis on running tests.
+- Release incomplete due to new test failures in Python 3.13.3 and 3.13.4.
 
 ## v16.10.2
 
