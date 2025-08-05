@@ -5,7 +5,7 @@
 """OCRmyPDF page processing pipeline functions."""
 
 from __future__ import annotations
-
+from ocrmypdf.exceptions import PriorOcrFoundError, TaggedPDFError
 import logging
 import os
 import re
@@ -244,17 +244,17 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
                     "form and all filled form fields. The output PDF will be "
                     "'flattened' and will no longer be fillable."
                 )
-    if pdfinfo.is_tagged:
-        if options.force_ocr or options.skip_text or options.redo_ocr:
-            log.warning(
-                "This PDF is marked as a Tagged PDF. This often indicates "
-                "that the PDF was generated from an office document and does "
-                "not need OCR. PDF pages processed by OCRmyPDF may not be "
-                "tagged correctly."
-            )
-        else:
-            raise TaggedPDFError()
-    context.plugin_manager.hook.validate(pdfinfo=pdfinfo, options=options)
+
+if pdfinfo.is_tagged:
+    if options.force_ocr or options.skip_text or options.redo_ocr:
+        log.warning(
+            "This PDF is marked as a Tagged PDF. This often indicates "
+            "that the PDF was generated from an office document and does "
+            "not need OCR. PDF pages processed by OCRmyPDF may not be "
+            "tagged correctly."
+        )
+    else:
+        raise PriorOcrFoundError("PDF already contains OCR (tagged).") from TaggedPDFError()
 
 
 def _vector_page_dpi(pageinfo: PageInfo) -> int:
