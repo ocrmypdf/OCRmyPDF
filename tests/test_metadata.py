@@ -10,10 +10,8 @@ from shutil import copyfile
 
 import pikepdf
 import pytest
-from packaging.version import Version
 from pikepdf.models.metadata import decode_pdf_date
 
-from ocrmypdf._exec import ghostscript
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._metadata import metadata_fixup
 from ocrmypdf._pipeline import convert_to_pdfa
