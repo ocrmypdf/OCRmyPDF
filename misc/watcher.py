@@ -5,8 +5,7 @@
 
 """Watch a directory for new PDFs and OCR them."""
 
-# Do not enable annotations!
-# https://github.com/tiangolo/typer/discussions/598
+from __future__ import annotations
 
 import json
 import logging
@@ -278,11 +277,11 @@ def main(
         f"Output Directory Year & Month: {output_dir_year_month}\n"
         f"Archive Directory: {archive_dir}"
     )
-    log.debug(
+    log.info(
         f"INPUT_DIRECTORY: {input_dir}\n"
         f"OUTPUT_DIRECTORY: {output_dir}\n"
-        f"OUTPUT_DIRECTORY_YEAR_MONTH: {output_dir_year_month}\n"
         f"ARCHIVE_DIRECTORY: {archive_dir}\n"
+        f"OUTPUT_DIRECTORY_YEAR_MONTH: {output_dir_year_month}\n"
         f"ON_SUCCESS_DELETE: {on_success_delete}\n"
         f"ON_SUCCESS_ARCHIVE: {on_success_archive}\n"
         f"DESKEW: {deskew}\n"
