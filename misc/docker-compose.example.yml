@@ -5,6 +5,7 @@ version: "3.3"
 services:
   ocrmypdf:
     restart: always
+    read_only: true
     container_name: ocrmypdf
     image: jbarlow83/ocrmypdf
     volumes:
