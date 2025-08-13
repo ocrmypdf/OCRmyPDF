@@ -199,7 +199,9 @@ def metadata_fixup(
             original.open_metadata(
                 set_pikepdf_as_editor=False, update_docinfo=False, strict=False
             ) as meta_original,
-            pdf.open_metadata() as meta_pdf,
+            pdf.open_metadata(
+                set_pikepdf_as_editor=False, update_docinfo=False
+            ) as meta_pdf,
         ):
             meta_pdf.load_from_docinfo(
                 docinfo, delete_missing=False, raise_failure=False
@@ -207,7 +209,7 @@ def metadata_fixup(
             _fix_metadata(meta_original, meta_pdf)
             _unset_empty_metadata(meta_original, options)
             _unset_empty_metadata(meta_pdf, options)
-            # For deterministic output, strip volatile timestamps from XMP
+            # For deterministic output, strip volatile timestamps and IDs from XMP
             if options.deterministic_output:
                 for volatile_key in (
                     'xmp:CreateDate',
@@ -215,6 +217,9 @@ def metadata_fixup(
                     'xmp:MetadataDate',
                     'pdf:ModDate',
                     'pdf:CreationDate',
+                    'xmpMM:InstanceID',
+                    'xmpMM:DocumentID',
+                    'xmpMM:History',
                 ):
                     meta_pdf.pop(volatile_key, None)
             meta_missing = set(meta_original.keys()) - set(meta_pdf.keys())

@@ -469,17 +469,6 @@ def postprocess(
     pdf_out = metadata_fixup(pdf_out, context, pdf_save_settings=save_settings)
     pdf_out, messages = optimize_pdf(pdf_out, context, executor)
 
-    # Final normalization ensures deterministic metadata
-    if context.options.deterministic_output:
-        with Pdf.open(pdf_out) as p:
-            try:
-                del p.Root.Metadata
-            except Exception:
-                pass
-            norm = context.get_path('final.norm.pdf')
-            p.save(norm, deterministic_id=True)
-        pdf_out = norm
-
     return pdf_out, messages
 
 
