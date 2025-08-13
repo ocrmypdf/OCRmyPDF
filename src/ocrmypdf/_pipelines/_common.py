@@ -444,9 +444,7 @@ def postprocess(
     with Pdf.open(pdf_file) as pdf:
         fix_annots = context.get_path('fix_annots.pdf')
         if remove_broken_goto_annotations(pdf):
-            pdf.save(
-                fix_annots, deterministic_id=context.options.deterministic_output
-            )
+            pdf.save(fix_annots, deterministic_id=context.options.deterministic_output)
             pdf_out = fix_annots
         else:
             pdf_out = pdf_file
@@ -459,17 +457,10 @@ def postprocess(
         context.options.output_type,
         deterministic_id=context.options.deterministic_output,
     )
-    # Deterministic output: disable linearization to avoid variability
-    if False and context.options.deterministic_output:
-        save_settings['linearize'] = False
-    else:
-        save_settings['linearize'] = not optimizing and should_linearize(pdf_out, context)
-        save_settings['linearize'] = not optimizing and should_linearize(pdf_out, context)
+    save_settings['linearize'] = not optimizing and should_linearize(pdf_out, context)
 
     pdf_out = metadata_fixup(pdf_out, context, pdf_save_settings=save_settings)
-    pdf_out, messages = optimize_pdf(pdf_out, context, executor)
-
-    return pdf_out, messages
+    return optimize_pdf(pdf_out, context, executor)
 
 
 def report_output_pdf(options, start_input_file, optimize_messages) -> ExitCode:

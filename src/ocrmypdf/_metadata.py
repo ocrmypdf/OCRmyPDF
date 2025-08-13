@@ -199,9 +199,7 @@ def metadata_fixup(
             original.open_metadata(
                 set_pikepdf_as_editor=False, update_docinfo=False, strict=False
             ) as meta_original,
-            pdf.open_metadata(
-                set_pikepdf_as_editor=False, update_docinfo=False
-            ) as meta_pdf,
+            pdf.open_metadata(set_pikepdf_as_editor=not pdf_save_settings.get("deterministic_id", False)) as meta_pdf,
         ):
             meta_pdf.load_from_docinfo(
                 docinfo, delete_missing=False, raise_failure=False
@@ -209,30 +207,10 @@ def metadata_fixup(
             _fix_metadata(meta_original, meta_pdf)
             _unset_empty_metadata(meta_original, options)
             _unset_empty_metadata(meta_pdf, options)
-            # For deterministic output, strip volatile timestamps and IDs from XMP
-            if options.deterministic_output:
-                for volatile_key in (
-                    'xmp:CreateDate',
-                    'xmp:ModifyDate',
-                    'xmp:MetadataDate',
-                    'pdf:ModDate',
-                    'pdf:CreationDate',
-                    'xmpMM:InstanceID',
-                    'xmpMM:DocumentID',
-                    'xmpMM:History',
-                ):
-                    meta_pdf.pop(volatile_key, None)
             meta_missing = set(meta_original.keys()) - set(meta_pdf.keys())
             report_on_metadata(options, meta_missing)
 
         _set_language(pdf, options.languages)
-        # Also strip volatile timestamps in DocumentInfo when deterministic
-        if options.deterministic_output:
-            for key in ('/ModDate', '/CreationDate'):
-                try:
-                    del pdf.docinfo[key]
-                except KeyError:
-                    pass
         pdf.save(output_file, progress=pbar, **pdf_save_settings)
 
     return output_file

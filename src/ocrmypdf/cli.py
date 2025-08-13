@@ -433,9 +433,7 @@ Online documentation is located at:
     advanced.add_argument(
         '--deterministic-output',
         action='store_true',
-        help=(
-            "Enable deterministic output: TODO"
-        ),
+        help=("Enable deterministic output: TODO"),
     )
     advanced.add_argument(
         '--plugin',

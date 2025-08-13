@@ -867,9 +867,7 @@ def fix_pagepdf_boxes(
                 trimbox = trimbox[1], trimbox[0], trimbox[3], trimbox[2]
             page.CropBox = cropbox
             page.TrimBox = trimbox
-        pdf.save(
-            out_file, deterministic_id=page_context.options.deterministic_output
-        )
+        pdf.save(out_file, deterministic_id=page_context.options.deterministic_output)
     return out_file
 
 
