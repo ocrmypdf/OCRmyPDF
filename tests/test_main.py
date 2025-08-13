@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import time
 import os
 import shutil
 import sys
@@ -977,3 +978,29 @@ def test_corrupt_icc(graph_bad_icc, outpdf, caplog):
     assert any(
         'corrupt or unreadable ICC profile' in rec.message for rec in caplog.records
     )
+
+
+@pytest.mark.parametrize("deterministic_id", [True, False])
+def test_deterministic_output(resources: Path, outpdf, deterministic_id: bool):
+    def _doc_ids(path: Path) -> tuple[bytes, bytes]:
+        with pikepdf.open(path) as pdf:
+            id0, id1 = pdf.trailer.ID
+            return bytes(id0), bytes(id1)
+
+    out1 = check_ocrmypdf(
+        resources / "trivial.pdf",
+        outpdf,
+        "--output-type=pdf",
+        *(["--deterministic-output"] if deterministic_id else []),
+    )
+    ids1 = _doc_ids(out1)
+    time.sleep(1.1)
+    out2 = check_ocrmypdf(
+        resources / "trivial.pdf",
+        outpdf,
+        "--output-type=pdf",
+        *(["--deterministic-output"] if deterministic_id else []),
+    )
+    ids2 = _doc_ids(out2)
+
+    assert (ids1 == ids2) == deterministic_id
