@@ -374,6 +374,12 @@ Online documentation is located at:
         "signature. This option allows OCR to proceed, but the digital signature "
         "will be invalidated.",
     )
+    ocrsettings.add_argument(
+        '--ocr-engine',
+        choices=['tesseract', 'rapidocr'],
+        default='tesseract',
+        help="Choose OCR engine (default: tesseract)",
+    )
 
     advanced = parser.add_argument_group(
         "Advanced", "Advanced options to control OCRmyPDF"
