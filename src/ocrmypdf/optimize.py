@@ -720,6 +720,7 @@ def optimize(
 
         target_file = output_file.with_suffix('.opt.pdf')
         pdf.remove_unreferenced_resources()
+        save_settings.setdefault('deterministic_id', context.options.deterministic_output)
         pdf.save(target_file, **save_settings)
 
     input_size = input_file.stat().st_size
@@ -739,6 +740,7 @@ def optimize(
         # We still need to save the file
         with Pdf.open(input_file) as pdf:
             pdf.remove_unreferenced_resources()
+            save_settings.setdefault('deterministic_id', context.options.deterministic_output)
             pdf.save(output_file, **save_settings)
     else:
         safe_symlink(target_file, output_file)

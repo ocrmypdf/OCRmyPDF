@@ -52,7 +52,8 @@ def get_docinfo(base_pdf: Pdf, context: PdfContext) -> dict[str, str]:
 
     pdfmark['/Creator'] = f'{PROGRAM_NAME} {OCRMYPF_VERSION} / {creator_tag}'
     pdfmark['/Producer'] = f'pikepdf {PIKEPDF_VERSION}'
-    pdfmark['/ModDate'] = encode_pdf_date(datetime.now(timezone.utc))
+    if not options.deterministic_output:
+        pdfmark['/ModDate'] = encode_pdf_date(datetime.now(timezone.utc))
     return pdfmark
 
 
@@ -206,10 +207,27 @@ def metadata_fixup(
             _fix_metadata(meta_original, meta_pdf)
             _unset_empty_metadata(meta_original, options)
             _unset_empty_metadata(meta_pdf, options)
+            # For deterministic output, strip volatile timestamps from XMP
+            if options.deterministic_output:
+                for volatile_key in (
+                    'xmp:CreateDate',
+                    'xmp:ModifyDate',
+                    'xmp:MetadataDate',
+                    'pdf:ModDate',
+                    'pdf:CreationDate',
+                ):
+                    meta_pdf.pop(volatile_key, None)
             meta_missing = set(meta_original.keys()) - set(meta_pdf.keys())
             report_on_metadata(options, meta_missing)
 
         _set_language(pdf, options.languages)
+        # Also strip volatile timestamps in DocumentInfo when deterministic
+        if options.deterministic_output:
+            for key in ('/ModDate', '/CreationDate'):
+                try:
+                    del pdf.docinfo[key]
+                except KeyError:
+                    pass
         pdf.save(output_file, progress=pbar, **pdf_save_settings)
 
     return output_file
