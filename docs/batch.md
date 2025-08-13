@@ -196,6 +196,10 @@ it to a OCRed PDF in `/output/`, and move the processed original to
   - Define environment variable `OCR_DESKEW` to apply deskew to crooked input PDFs
 * - `--env PYTHONBUFFERED=1`
   - This will force `STDOUT` to be unbuffered and allow you to see messages in docker logs
+* - `--env OCR_LOGLEVEL='DEBUG'`
+  - Level of log messages
+* - `--env OCR_JSON_SETTINGS={"language":"deu+eng", "rotate_pages": true}`
+  - A JSON string specifying any other arguments for `ocrmypdf.ocr`
 :::
 
 This service relies on polling to check for changes to the filesystem.
