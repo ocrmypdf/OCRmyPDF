@@ -357,7 +357,7 @@ def ocr(  # noqa: D417
     create_options_kwargs = {
         k: v
         for k, v in locals().items()
-        if k not in {'input_file', 'output_file', 'kwargs'}
+        if k not in {'input_file', 'output_file', 'kwargs', 'plugin_manager'}
     }
     create_options_kwargs.update(kwargs)
 
