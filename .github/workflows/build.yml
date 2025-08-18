@@ -27,8 +27,6 @@ jobs:
           - os: ubuntu-22.04
             tesseract_ppa: "ppa"
             python: "3.10"
-          - os: ubuntu-24.04
-            python: "pypy3.10"
 
     env:
       OS: ${{ matrix.os }}
@@ -73,14 +71,6 @@ jobs:
             tesseract-ocr-osd \
             unpaper \
             zlib1g
-
-      - name: Install Ubuntu packages for PyPy
-        if: startsWith(matrix.python, 'pypy')
-        run: |
-          sudo apt-get install -y --no-install-recommends \
-            libxml2-dev \
-            libxslt1-dev \
-            pypy3-dev
 
       - name: Install Python packages
         run: |
