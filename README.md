@@ -74,6 +74,7 @@ Linux, Windows, macOS and FreeBSD are supported. Docker images are also availabl
 | macOS (nix)                   | ``nix-env -i ocrmypdf``       |
 | LinuxBrew                     | ``brew install ocrmypdf``     |
 | FreeBSD                       | ``pkg install py-ocrmypdf``   |
+| OpenBSD                       | ``pkg_add ocrmypdf``          |
 | Ubuntu Snap                   | ``snap install ocrmypdf``     |
 
 For everyone else, [see our documentation](https://ocrmypdf.readthedocs.io/en/latest/installation.html) for installation steps.
@@ -91,6 +92,10 @@ apt-get install tesseract-ocr-chi-sim  # Example: Install Chinese Simplified lan
 
 # Arch Linux users
 pacman -S tesseract-data-eng tesseract-data-deu # Example: Install the English and German language packs
+
+# OpenBSD users
+pkg_info -aQ tesseract  # Display a list of all Tesseract language packs
+pkg_add tesseract-cym  # Example: Install the Welsh language pack
 
 # brew macOS users
 brew install tesseract-lang
