@@ -431,6 +431,11 @@ Online documentation is located at:
         "file. Missing fonts are a typical source of these errors.",
     )
     advanced.add_argument(
+        '--deterministic-output',
+        action='store_true',
+        help=("Enable deterministic output: TODO"),
+    )
+    advanced.add_argument(
         '--plugin',
         dest='plugins',
         action='append',
