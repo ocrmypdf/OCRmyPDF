@@ -120,7 +120,7 @@ def file_claims_pdfa(filename: Path):
                 'output': 'pdf',
                 'conformance': 'No PDF/A metadata in XMP',
             }
-        valid_part_conforms = {'1A', '1B', '2A', '2B', '2U', '3A', '3B', '3U'}
+        valid_part_conforms = {'1a', '1b', '2a', '2b', '2u', '3a', '3b', '3u'}
         conformance = f'PDF/A-{pdfmeta.pdfa_status}'
         pdfa_dict: dict[str, str | bool] = {}
         if pdfmeta.pdfa_status in valid_part_conforms:

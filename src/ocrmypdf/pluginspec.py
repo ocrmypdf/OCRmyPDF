@@ -492,7 +492,7 @@ def generate_pdfa(
         pdf_version: The minimum PDF version that the output file should be.
             At its own discretion, the PDF/A generator may raise the version,
             but should not lower it.
-        pdfa_part: The desired PDF/A compliance level, such as ``'2B'``.
+        pdfa_part: The desired PDF/A compliance level, such as ``'2b'``.
         progressbar_class: The class of a progress bar, which must implement
             the ProgressBar protocol. If None, no progress is reported.
         stop_on_soft_error: If there is an "soft error" such that PDF/A generation
