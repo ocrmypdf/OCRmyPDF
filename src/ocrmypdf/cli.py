@@ -196,8 +196,8 @@ Online documentation is located at:
         "for users who want their file altered as little as possible. 'pdfa' "
         "also has problems with full Unicode text. 'pdf' minimizes changes "
         "to the input file. 'pdf-a1' creates a "
-        "PDF/A1-b file. 'pdf-a2' is equivalent to 'pdfa'. 'pdf-a3' creates a "
-        "PDF/A3-b file. 'none' will produce no output, which may be helpful if "
+        "PDF/A-1b file. 'pdf-a2' is equivalent to 'pdfa'. 'pdf-a3' creates a "
+        "PDF/A-3b file. 'none' will produce no output, which may be helpful if "
         "only the --sidecar is desired.",
     )
 
