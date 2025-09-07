@@ -118,7 +118,7 @@ A plugin may provide the following hooks. Hooks must be decorated with
 `ocrmypdf.hookimpl`, for example:
 
 ```python
-from ocrmpydf import hookimpl
+from ocrmypdf import hookimpl
 
 @hookimpl
 def add_options(parser):
