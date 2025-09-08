@@ -801,7 +801,7 @@ def test_pdfa_n(pdfa_level, resources, outpdf):
     )
 
     pdfa_info = file_claims_pdfa(outpdf)
-    assert pdfa_info['conformance'] == f'PDF/A-{pdfa_level}B'
+    assert pdfa_info['conformance'] == f'PDF/A-{pdfa_level}b'
 
 
 def test_decompression_bomb_error(resources, outpdf, caplog):

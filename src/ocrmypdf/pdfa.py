@@ -121,9 +121,12 @@ def file_claims_pdfa(filename: Path):
                 'conformance': 'No PDF/A metadata in XMP',
             }
         valid_part_conforms = {'1a', '1b', '2a', '2b', '2u', '3a', '3b', '3u'}
-        conformance = f'PDF/A-{pdfmeta.pdfa_status}'
+        # Raw value in XMP metadata returned by pikepdf is uppercase, but ISO
+        # uses lower case for conformance levels.
+        pdfa_status_iso = pdfmeta.pdfa_status.lower()
+        conformance = f'PDF/A-{pdfa_status_iso}'
         pdfa_dict: dict[str, str | bool] = {}
-        if pdfmeta.pdfa_status in valid_part_conforms:
+        if pdfa_status_iso in valid_part_conforms:
             pdfa_dict['pass'] = True
             pdfa_dict['output'] = 'pdfa'
         pdfa_dict['conformance'] = conformance
