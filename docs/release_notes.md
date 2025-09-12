@@ -25,6 +25,17 @@ about a forthcoming release that has not been tagged yet. A release is only
 official when it's tagged and posted to PyPI.
 :::
 
+## v16.11.0
+
+- Deprecated "semfree" plugin in favor of falling back to threads if the platform
+  does not support semaphores. Fixes an issue with Python 3.14.
+- Fixed references to PDF/A compliances levels to be consistent with ISO nomenclature.
+  Thanks @5HT2. {issue}`1557`
+- Fixed an issue around using plugin_manager as an argument. {issue}`1555`
+- Added OpenBSD install steps to README. {issue}`1554`
+- Removed PyPy from test matrix due to declining support in third party libraries.
+- Documentation improvements.
+
 ## v16.10.4
 
 - Corrected build errors in Python 3.13.3 and 3.13.4.
