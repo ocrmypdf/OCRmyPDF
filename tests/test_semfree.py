@@ -12,15 +12,16 @@ from .conftest import is_linux, run_ocrmypdf_api
 
 @pytest.mark.skipif(not is_linux(), reason='semfree plugin only works on Linux')
 def test_semfree(resources, outpdf):
-    exitcode = run_ocrmypdf_api(
-        resources / 'multipage.pdf',
-        outpdf,
-        '--skip-text',
-        '--skip-big',
-        '2',
-        '--plugin',
-        'ocrmypdf.extra_plugins.semfree',
-        '--plugin',
-        'tests/plugins/tesseract_noop.py',
-    )
-    assert exitcode in (ExitCode.ok, ExitCode.pdfa_conversion_failed)
+    with pytest.warns(DeprecationWarning, match="semfree.py is deprecated"):
+        exitcode = run_ocrmypdf_api(
+            resources / 'multipage.pdf',
+            outpdf,
+            '--skip-text',
+            '--skip-big',
+            '2',
+            '--plugin',
+            'ocrmypdf.extra_plugins.semfree',
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
+        )
+        assert exitcode in (ExitCode.ok, ExitCode.pdfa_conversion_failed)

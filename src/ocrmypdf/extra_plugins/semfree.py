@@ -13,6 +13,9 @@ worker communicates only with the main process.
 This is not without drawbacks. If the tasks are not "even" in size, which cannot
 be guaranteed, some workers may end up with too much work while others are idle.
 It is less efficient than the standard implementation, so not the default.
+
+This module is deprecated and will be removed in a future release. The standard
+executor will fall back to threads in these environments.
 """
 
 from __future__ import annotations
@@ -20,6 +23,7 @@ from __future__ import annotations
 import logging
 import logging.handlers
 import signal
+import warnings
 from collections.abc import Callable, Iterable, Iterator
 from contextlib import suppress
 from enum import Enum, auto
@@ -31,6 +35,11 @@ from ocrmypdf import Executor, hookimpl
 from ocrmypdf._concurrent import NullProgressBar
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import remove_all_log_handlers
+
+warnings.warn(
+    "semfree.py is deprecated and will be removed in a future release.",
+    DeprecationWarning,
+)
 
 
 class MessageType(Enum):

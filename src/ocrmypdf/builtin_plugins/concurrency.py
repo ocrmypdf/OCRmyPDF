@@ -96,6 +96,31 @@ def thread_init(q: Queue, user_init: UserInit, loglevel) -> None:
     return
 
 
+def setup_executor(use_threads: bool) -> tuple[Queue, Executor, WorkerInit]:
+    if not use_threads:
+        # Some execution environments like AWS Lambda and Termux do not support
+        # semaphores. Check if semaphore support is available, and if not, fall back
+        # to using threads.
+        try:
+            # pylint: disable=import-outside-toplevel
+            from multiprocessing.synchronize import SemLock
+
+            del SemLock
+        except ImportError:
+            use_threads = True
+
+    if use_threads:
+        loq_queue = queue.Queue(-1)
+        executor_class = ThreadPoolExecutor
+        initializer = thread_init
+    else:
+        loq_queue = multiprocessing.Queue(-1)
+        executor_class = ProcessPoolExecutor
+        initializer = process_init
+
+    return loq_queue, executor_class, initializer
+
+
 class StandardExecutor(Executor):
     """Standard OCRmyPDF concurrent task executor."""
 
@@ -110,14 +135,7 @@ class StandardExecutor(Executor):
         task_arguments: Iterable,
         task_finished: Callable,
     ):
-        if use_threads:
-            log_queue: Queue = queue.Queue(-1)
-            executor_class: FuturesExecutorClass = ThreadPoolExecutor
-            initializer: WorkerInit = thread_init
-        else:
-            log_queue = multiprocessing.Queue(-1)
-            executor_class = ProcessPoolExecutor
-            initializer = process_init
+        log_queue, executor_class, initializer = setup_executor(use_threads)
 
         # Regardless of whether we use_threads for worker processes, the log_listener
         # must be a thread. Make sure we create the listener after the worker pool,
