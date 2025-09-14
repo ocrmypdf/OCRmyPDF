@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import sys
+
 import pytest
 
 from ocrmypdf.exceptions import ExitCode
@@ -11,6 +13,10 @@ from .conftest import is_linux, run_ocrmypdf_api
 
 
 @pytest.mark.skipif(not is_linux(), reason='semfree plugin only works on Linux')
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason='semfree plugin only works on Python 3.13 or earlier',
+)
 def test_semfree(resources, outpdf):
     with pytest.warns(DeprecationWarning, match="semfree.py is deprecated"):
         exitcode = run_ocrmypdf_api(
