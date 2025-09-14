@@ -189,6 +189,7 @@ class HocrTransform:
         out_filename: Path,
         image_filename: Path | None = None,
         invisible_text: bool = True,
+        deterministic_id: bool = False,
     ) -> None:
         """Creates a PDF file with an image superimposed on top of the text.
 
@@ -259,7 +260,7 @@ class HocrTransform:
             )
 
         # finish up the page and save it
-        canvas.to_pdf().save(out_filename)
+        canvas.to_pdf().save(out_filename, deterministic_id=deterministic_id)
 
     def _get_text_direction(self, par):
         """Get the text direction of the paragraph.
