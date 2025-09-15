@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import pytest
 from pikepdf import Array, Dictionary, Name, NameTree, Pdf
 
 from ocrmypdf._annots import remove_broken_goto_annotations
