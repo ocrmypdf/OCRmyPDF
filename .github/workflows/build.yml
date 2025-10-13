@@ -101,7 +101,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, macos-13]  # macos-latest is arm64, macos-13 is x86_64
+        os: [macos-latest]  # macos-latest is arm64, macos-13 (unsupported) is x86_64
         python: ["3.10", "3.11", "3.12", "3.13"]
 
     env:
