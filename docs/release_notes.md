@@ -25,6 +25,10 @@ about a forthcoming release that has not been tagged yet. A release is only
 official when it's tagged and posted to PyPI.
 :::
 
+## v16.11.1
+
+- Fixed issue with Tesseract changing an error message related to skew. {issue}`1576`
+
 ## v16.11.0
 
 - Deprecated "semfree" plugin in favor of falling back to threads if the platform
