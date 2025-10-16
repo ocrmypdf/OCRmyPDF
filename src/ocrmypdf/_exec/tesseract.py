@@ -186,6 +186,18 @@ def get_orientation(
     return orient_conf
 
 
+def _is_empty_page_error(exc):
+    if b'Empty page!!' in exc.output:  # Tesseract 4.x
+        return True
+
+    return exc.returncode == 1 and (
+        # Tesseract 5.0-5.4 or so
+        exc.output == b''
+        # Tesseract 5.5+
+        or exc.output.startswith(b"Error in boxClipToRectangle: box outside rectangle")
+    )
+
+
 def get_deskew(
     input_file: Path, languages: list[str], engine_mode: int | None, timeout: float
 ) -> float:
@@ -204,11 +216,9 @@ def get_deskew(
     except CalledProcessError as e:
         tesseract_log_output(e.stdout)
         tesseract_log_output(e.stderr)
-        if b'Empty page!!' in e.output or (
-            e.output == b'' and e.returncode == 1
-        ):  # Not enough info for a skew angle - Tess 4 and 5 return different errors
+        if _is_empty_page_error(e):
+            # Not enough info for a skew angle
             return 0.0
-
         raise SubprocessOutputError() from e
 
     parsed = _parse_tesseract_output(p.stdout)
