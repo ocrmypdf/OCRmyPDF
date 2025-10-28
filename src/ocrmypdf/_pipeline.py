@@ -169,7 +169,7 @@ def triage(
                 )
             try:
                 with pikepdf.open(input_file) as pdf:
-                    pdf.save(output_file)
+                    pdf.save(output_file, deterministic_id=options.deterministic_output)
             except pikepdf.PdfError as e:
                 raise InputFileError() from e
             except pikepdf.PasswordError as e:
@@ -798,6 +798,7 @@ def render_hocr_page(hocr: Path, page_context: PageContext) -> Path:
         out_filename=output_file,
         image_filename=None,
         invisible_text=True if not debug_kwargs else False,
+        deterministic_id=page_context.options.deterministic_output,
     )
     return output_file
 
@@ -866,7 +867,7 @@ def fix_pagepdf_boxes(
                 trimbox = trimbox[1], trimbox[0], trimbox[3], trimbox[2]
             page.CropBox = cropbox
             page.TrimBox = trimbox
-        pdf.save(out_file)
+        pdf.save(out_file, deterministic_id=page_context.options.deterministic_output)
     return out_file
 
 
@@ -905,7 +906,10 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
     # stamping them out as soon as possible.
     with pikepdf.open(input_pdf) as pdf_file:
         if repair_docinfo_nuls(pdf_file):
-            pdf_file.save(fix_docinfo_file)
+            pdf_file.save(
+                fix_docinfo_file,
+                deterministic_id=context.options.deterministic_output,
+            )
         else:
             safe_symlink(input_pdf, fix_docinfo_file)
 
@@ -938,7 +942,9 @@ def should_linearize(working_file: Path, context: PdfContext) -> bool:
     return False
 
 
-def get_pdf_save_settings(output_type: str) -> dict[str, Any]:
+def get_pdf_save_settings(
+    output_type: str, *, deterministic_id: bool = False
+) -> dict[str, Any]:
     """Get pikepdf.Pdf.save settings for the given output type.
 
     Essentially, don't use features that are incompatible with a given
@@ -952,12 +958,14 @@ def get_pdf_save_settings(output_type: str) -> dict[str, Any]:
             compress_streams=True,
             stream_decode_level=pikepdf.StreamDecodeLevel.generalized,
             object_stream_mode=pikepdf.ObjectStreamMode.disable,
+            deterministic_id=deterministic_id,
         )
     else:
         return dict(
             preserve_pdfa=True,
             compress_streams=True,
             object_stream_mode=(pikepdf.ObjectStreamMode.generate),
+            deterministic_id=deterministic_id,
         )
 
 
