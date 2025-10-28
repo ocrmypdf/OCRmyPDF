@@ -223,7 +223,7 @@ jobs:
         run: |
           uv build --sdist --wheel
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: artifact
           path: |
@@ -239,7 +239,7 @@ jobs:
       id-token: write  # mandatory for PyPI publishing
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: artifact
           path: dist
@@ -257,13 +257,13 @@ jobs:
       contents: write
       id-token: write
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: artifact
           path: dist
 
       - name: Sign the dists with Sigstore
-        uses: sigstore/gh-action-sigstore-python@v3.0.1
+        uses: sigstore/gh-action-sigstore-python@v3.1.0
         with:
           inputs: |
             ./dist/*.tar.gz
