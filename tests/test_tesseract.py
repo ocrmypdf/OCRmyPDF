@@ -13,7 +13,7 @@ import pytest
 
 from ocrmypdf import pdfinfo
 from ocrmypdf._exec import tesseract
-from ocrmypdf.exceptions import BadArgsError, ExitCode, MissingDependencyError
+from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
 
 from .conftest import check_ocrmypdf, run_ocrmypdf_api
 

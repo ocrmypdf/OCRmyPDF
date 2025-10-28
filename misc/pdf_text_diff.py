@@ -18,7 +18,6 @@ def main(
     engine: Annotated[str, typer.Option()] = 'pdftotext',
 ):
     """Compare text in PDFs."""
-
     text1 = run(
         ['pdftotext', '-layout', '-', '-'], stdin=pdf1, capture_output=True, check=True
     )

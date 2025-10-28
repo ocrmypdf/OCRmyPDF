@@ -9,7 +9,6 @@ import logging
 import os
 import re
 from collections import deque
-from io import BytesIO
 from os import fspath
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError
