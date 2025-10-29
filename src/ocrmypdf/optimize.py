@@ -42,6 +42,7 @@ log = logging.getLogger(__name__)
 
 DEFAULT_JPEG_QUALITY = 75
 DEFAULT_PNG_QUALITY = 70
+FLATE_JPEG_THRESHOLD = 10000
 
 
 Xref = NewType('Xref', int)
@@ -528,7 +529,19 @@ def _find_deflatable_jpeg(
         return None
     _pim, filtdp = result
 
-    if filtdp[0] == Name.DCTDecode and not filtdp[1] and options.optimize >= 1:
+    if (
+        filtdp[0] == Name.DCTDecode
+        and not filtdp[1]
+        and (
+            (
+                # Don't flate very large images because it will slow down PDF viewers
+                1 <= options.optimize <= 2
+                and image.get(Name.Width, 0) < FLATE_JPEG_THRESHOLD
+                and image.get(Name.Height, 0) < FLATE_JPEG_THRESHOLD
+            )
+            or options.optimize == 3
+        )
+    ):
         return XrefExt(xref, '.memory')
 
     return None
