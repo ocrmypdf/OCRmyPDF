@@ -270,10 +270,7 @@ def check_pdf(input_file: Path) -> bool:
         with pdf:
             with warnings.catch_warnings():
                 warnings.filterwarnings('ignore', message=r'pikepdf.*JBIG2.*')
-                if hasattr(pdf, 'check_pdf_syntax'):
-                    messages = pdf.check_pdf_syntax()  # pikepdf >= 9.10.0
-                else:
-                    messages = pdf.check()
+                messages = pdf.check_pdf_syntax()
             success = True
             for msg in messages:
                 if 'error' in msg.lower():
