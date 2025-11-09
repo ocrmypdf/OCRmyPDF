@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2024 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-FROM ubuntu:24.04 AS base
+FROM ubuntu:25.04 AS base
 
 ENV LANG=C.UTF-8
 ENV TZ=UTC
@@ -40,7 +40,7 @@ RUN \
 WORKDIR /app
 
 # Copy uv from ghcr
-COPY --from=ghcr.io/astral-sh/uv:0.6.14 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.9.8 /uv /uvx /bin/
 
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
