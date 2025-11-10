@@ -1,7 +1,41 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-"""Functions for using ocrmypdf as an API."""
+"""Python API for OCRmyPDF.
+
+This module provides the main Python API for OCRmyPDF, allowing you to perform
+OCR operations programmatically without using the command line interface.
+
+Main Functions:
+    ocr(): The primary function for OCR processing. Takes an input PDF or image
+        file and produces an OCR'd PDF with searchable text.
+    
+    configure_logging(): Set up logging to match the command line interface
+        behavior, with support for progress bars and colored output.
+
+Experimental Functions:
+    _pdf_to_hocr(): Extract text from PDF pages and save as hOCR files for
+        manual editing before final PDF generation.
+    
+    _hocr_to_ocr_pdf(): Convert hOCR files back to a searchable PDF after
+        manual text corrections.
+
+The API maintains thread safety through internal locking since OCRmyPDF uses
+global state for plugins. Only one OCR operation can run per Python process
+at a time. For parallel processing, use multiple Python processes.
+
+Example:
+    import ocrmypdf
+    
+    # Configure logging (optional)
+    ocrmypdf.configure_logging(ocrmypdf.Verbosity.default)
+    
+    # Perform OCR
+    ocrmypdf.ocr('input.pdf', 'output.pdf', language='eng')
+
+For detailed parameter documentation, see the ocr() function docstring and
+the equivalent command line parameters in the OCRmyPDF documentation.
+"""
 
 from __future__ import annotations
 
