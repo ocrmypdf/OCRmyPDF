@@ -47,3 +47,4 @@ docs/Makefile
 src/ocrmypdf/_version.py
 
 .idea/
+.aider*
