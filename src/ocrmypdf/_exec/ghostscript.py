@@ -286,6 +286,7 @@ def generate_pdfa(
         + compression_args
         + [
             "-dJPEGQ=95",
+            "-dSubsetFonts=false",  # Prevents GS from messing up some encodings
             f"-dPDFA={pdfa_part}",
             "-dPDFACompatibilityPolicy=1",
             "-o",
