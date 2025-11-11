@@ -12,6 +12,7 @@ from ocrmypdf._exec import ghostscript, tesseract
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo import PdfInfo
+from ocrmypdf.pluginspec import GhostscriptRasterDevice
 
 from .conftest import check_ocrmypdf, have_unpaper, run_ocrmypdf
 
@@ -28,7 +29,7 @@ def test_deskew(resources, outdir):
     ghostscript.rasterize_pdf(
         deskewed_pdf,
         deskewed_png,
-        raster_device='pngmono',
+        raster_device=GhostscriptRasterDevice.PNGMONO,
         raster_dpi=Resolution(150, 150),
         pageno=1,
     )
@@ -65,7 +66,7 @@ def test_remove_background(resources, outdir):
     ghostscript.rasterize_pdf(
         output_pdf,
         output_png,
-        raster_device='png16m',
+        raster_device=GhostscriptRasterDevice.PNG16M,
         raster_dpi=Resolution(100, 100),
         pageno=1,
     )

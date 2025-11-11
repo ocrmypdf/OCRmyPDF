@@ -19,6 +19,7 @@ from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._exec.ghostscript import rasterize_pdf
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.optimize import PdfImage, extract_image_filter
+from ocrmypdf.pluginspec import GhostscriptRasterDevice
 from tests.conftest import check_ocrmypdf
 
 needs_pngquant = pytest.mark.skipif(
@@ -54,7 +55,7 @@ def test_mono_not_inverted(resources, outdir):
     rasterize_pdf(
         outdir / 'out.pdf',
         outdir / 'im.png',
-        raster_device='pnggray',
+        raster_device=GhostscriptRasterDevice.PNGGRAY,
         raster_dpi=Resolution(10, 10),
     )
 

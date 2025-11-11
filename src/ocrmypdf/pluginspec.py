@@ -8,6 +8,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 from collections.abc import Sequence, Set
+from enum import StrEnum
 from logging import Handler
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
@@ -29,6 +30,18 @@ if TYPE_CHECKING:
     from ocrmypdf.pdfinfo import PdfInfo
 
     # pylint: enable=ungrouped-imports
+
+
+class GhostscriptRasterDevice(StrEnum):
+    """Possible raster devices for Ghostscript."""
+
+    JPEGGRAY = 'jpeggray'
+    JPEGCOLOR = 'jpeg'
+    PNGMONO = 'pngmono'
+    PNGGRAY = 'pnggray'
+    PNG256 = 'png256'
+    PNG16M = 'png16m'
+
 
 hookspec = pluggy.HookspecMarker('ocrmypdf')
 
@@ -207,7 +220,7 @@ def validate(pdfinfo: PdfInfo, options: OcrOptions) -> None:
 def rasterize_pdf_page(
     input_file: Path,
     output_file: Path,
-    raster_device: str,
+    raster_device: GhostscriptRasterDevice,
     raster_dpi: Resolution,
     pageno: int,
     page_dpi: Resolution | None,

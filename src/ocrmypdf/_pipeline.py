@@ -45,7 +45,7 @@ from ocrmypdf.pdfa import (
     speculative_pdfa_conversion,
 )
 from ocrmypdf.pdfinfo import Colorspace, Encoding, FloatRect, PageInfo, PdfInfo
-from ocrmypdf.pluginspec import OrientationConfidence
+from ocrmypdf.pluginspec import GhostscriptRasterDevice, OrientationConfidence
 
 try:
     from pi_heif import register_heif_opener
@@ -403,7 +403,7 @@ def rasterize_preview(input_file: Path, page_context: PageContext) -> Path:
     page_context.plugin_manager.rasterize_pdf_page(
         input_file=input_file,
         output_file=output_file,
-        raster_device='jpeggray',
+        raster_device=GhostscriptRasterDevice.JPEGGRAY,
         raster_dpi=canvas_dpi,
         pageno=page_context.pageinfo.pageno + 1,
         page_dpi=page_dpi,
@@ -526,7 +526,12 @@ def rasterize(
     Returns:
         Path: The output PNG file path.
     """
-    colorspaces = ['pngmono', 'pnggray', 'png256', 'png16m']
+    colorspaces = [
+        GhostscriptRasterDevice.PNGMONO,
+        GhostscriptRasterDevice.PNGGRAY,
+        GhostscriptRasterDevice.PNG256,
+        GhostscriptRasterDevice.PNG16M,
+    ]
     device_idx = 0
 
     if remove_vectors is None:
@@ -543,15 +548,15 @@ def rasterize(
             continue  # ignore masks
         if image.bpc > 1:
             if image.color == Colorspace.index:
-                device_idx = at_least('png256')
+                device_idx = at_least(GhostscriptRasterDevice.PNG256)
             elif image.color == Colorspace.gray:
-                device_idx = at_least('pnggray')
+                device_idx = at_least(GhostscriptRasterDevice.PNGGRAY)
             else:
-                device_idx = at_least('png16m')
+                device_idx = at_least(GhostscriptRasterDevice.PNG16M)
 
     if pageinfo.has_vector:
-        log.debug("Page has vector content, using png16m")
-        device_idx = at_least('png16m')
+        log.debug(f"Page has vector content, using {GhostscriptRasterDevice.PNG16M}")
+        device_idx = at_least(GhostscriptRasterDevice.PNG16M)
 
     device = colorspaces[device_idx]
 

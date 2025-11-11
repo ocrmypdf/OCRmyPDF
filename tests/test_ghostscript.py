@@ -20,6 +20,7 @@ from ocrmypdf._exec.ghostscript import DuplicateFilter, rasterize_pdf
 from ocrmypdf.builtin_plugins.ghostscript import _repair_gs106_jpeg_corruption
 from ocrmypdf.exceptions import ColorConversionNeededError, ExitCode, InputFileError
 from ocrmypdf.helpers import Resolution
+from ocrmypdf.pluginspec import GhostscriptRasterDevice
 
 from .conftest import check_ocrmypdf, run_ocrmypdf_api
 
@@ -43,7 +44,7 @@ def test_rasterize_size(francais, outdir):
     rasterize_pdf(
         path,
         outdir / 'out.png',
-        raster_device='pngmono',
+        raster_device=GhostscriptRasterDevice.PNGMONO,
         raster_dpi=Resolution(
             target_size[0] / page_size[0], target_size[1] / page_size[1]
         ),
@@ -67,7 +68,7 @@ def test_rasterize_rotated(francais, outdir, caplog):
     rasterize_pdf(
         path,
         outdir / 'out.png',
-        raster_device='pngmono',
+        raster_device=GhostscriptRasterDevice.PNGMONO,
         raster_dpi=Resolution(
             target_size[0] / page_size[0], target_size[1] / page_size[1]
         ),
@@ -157,7 +158,7 @@ def test_rasterize_pdf_errors(resources, no_outpdf, caplog):
             rasterize_pdf(
                 resources / 'francais.pdf',
                 no_outpdf,
-                raster_device='pngmono',
+                raster_device=GhostscriptRasterDevice.PNGMONO,
                 raster_dpi=Resolution(100, 100),
             )
         assert "this is an error" in caplog.text
@@ -267,7 +268,7 @@ def test_recoverable_image_error(pdf_with_invalid_image, outdir, caplog):
     rasterize_pdf(
         outdir / 'invalid_image.pdf',
         outdir / 'out.png',
-        raster_device='pngmono',
+        raster_device=GhostscriptRasterDevice.PNGMONO,
         raster_dpi=Resolution(10, 10),
         stop_on_error=False,
     )
@@ -289,7 +290,7 @@ def test_recoverable_image_error_with_stop(pdf_with_invalid_image, outdir, caplo
         rasterize_pdf(
             outdir / 'invalid_image.pdf',
             outdir / 'out.png',
-            raster_device='pngmono',
+            raster_device=GhostscriptRasterDevice.PNGMONO,
             raster_dpi=Resolution(100, 100),
             stop_on_error=True,
         )

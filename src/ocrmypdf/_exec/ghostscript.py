@@ -22,6 +22,7 @@ from ocrmypdf.exceptions import (
     SubprocessOutputError,
 )
 from ocrmypdf.helpers import Resolution
+from ocrmypdf.pluginspec import GhostscriptRasterDevice
 from ocrmypdf.subprocess import get_version, run, run_polling_stderr
 
 COLOR_CONVERSION_STRATEGIES = frozenset(
@@ -98,7 +99,7 @@ def rasterize_pdf(
     input_file: os.PathLike,
     output_file: os.PathLike,
     *,
-    raster_device: str,
+    raster_device: GhostscriptRasterDevice,
     raster_dpi: Resolution,
     pageno: int = 1,
     page_dpi: Resolution | None = None,

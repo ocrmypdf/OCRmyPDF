@@ -19,6 +19,7 @@ from ocrmypdf._exec import ghostscript
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.pdfinfo import PdfInfo
+from ocrmypdf.pluginspec import GhostscriptRasterDevice
 
 from .conftest import check_ocrmypdf, run_ocrmypdf_api
 
@@ -40,7 +41,7 @@ def compare_images_monochrome(
         ghostscript.rasterize_pdf(
             pdf,
             png,
-            raster_device='pngmono',
+            raster_device=GhostscriptRasterDevice.PNGMONO,
             raster_dpi=Resolution(100, 100),
             pageno=pageno,
             rotation=0,
@@ -348,7 +349,7 @@ def test_rasterize_rotates(resources, tmp_path, rasterizer):
     pm.rasterize_pdf_page(
         input_file=resources / 'graph.pdf',
         output_file=img,
-        raster_device='pngmono',
+        raster_device=GhostscriptRasterDevice.PNGMONO,
         raster_dpi=Resolution(20, 20),
         page_dpi=Resolution(20, 20),
         pageno=1,
@@ -365,7 +366,7 @@ def test_rasterize_rotates(resources, tmp_path, rasterizer):
     pm.rasterize_pdf_page(
         input_file=resources / 'graph.pdf',
         output_file=img,
-        raster_device='pngmono',
+        raster_device=GhostscriptRasterDevice.PNGMONO,
         raster_dpi=Resolution(20, 20),
         page_dpi=Resolution(20, 20),
         pageno=1,
