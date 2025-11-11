@@ -1327,6 +1327,7 @@ dependencies = [
     { name = "pillow" },
     { name = "pluggy" },
     { name = "pydantic" },
+    { name = "pypdfium2" },
     { name = "rich" },
 ]
 
@@ -1385,6 +1386,7 @@ requires-dist = [
     { name = "pluggy", specifier = ">=1" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pymupdf", marker = "extra == 'extended-test'", specifier = ">=1.19.1" },
+    { name = "pypdfium2", specifier = ">=5.0.0" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=6.2.5" },
     { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=3.0.0" },
     { name = "pytest-xdist", marker = "extra == 'test'", specifier = ">=2.5.0" },
@@ -2038,6 +2040,26 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/4f/bf/6e02e3d84b32c137c71a0a3dcdba8f2f6e9950619a3bc272245c7c06a051/pymupdf-1.26.6-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:7777d0b7124c2ebc94849536b6a1fb85d158df3b9d873935e63036559391534c", size = 24115381, upload-time = "2025-11-05T14:33:54.338Z" },
     { url = "https://files.pythonhosted.org/packages/ab/9d/30f7fcb3776bfedde66c06297960debe4883b1667294a1ee9426c942e94d/pymupdf-1.26.6-cp310-abi3-win32.whl", hash = "sha256:8f3ef05befc90ca6bb0f12983200a7048d5bff3e1c1edef1bb3de60b32cb5274", size = 17203613, upload-time = "2025-11-05T17:19:47.494Z" },
     { url = "https://files.pythonhosted.org/packages/f9/e8/989f4eaa369c7166dc24f0eaa3023f13788c40ff1b96701f7047421554a8/pymupdf-1.26.6-cp310-abi3-win_amd64.whl", hash = "sha256:ce02ca96ed0d1acfd00331a4d41a34c98584d034155b06fd4ec0f051718de7ba", size = 18405680, upload-time = "2025-11-05T14:34:48.672Z" },
+]
+
+[[package]]
+name = "pypdfium2"
+version = "5.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fc/a1/34ebc27160533f4f11c4f2e36e4d0c3bc6fbef24b63b4582a376bbf26646/pypdfium2-5.0.0.tar.gz", hash = "sha256:666f66e8170f5502feac3b31c5c05a3697989c10e65e1a8503bf8dff8936b125", size = 243319, upload-time = "2025-10-26T13:31:41.987Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/13/bf/4259b23a88b92bec8199e1a08a0821dbfbb465629c203bdbc49e2f993940/pypdfium2-5.0.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:c477d68a0f32a22d6477d9aa9c5c2afae6512af1d5455a9ea561a224908f16ae", size = 2813187, upload-time = "2025-10-26T13:31:19.499Z" },
+    { url = "https://files.pythonhosted.org/packages/48/5b/358ae0340300564b7d878cde62a40c01535ff1568393bdd5a8250278cfa9/pypdfium2-5.0.0-py3-none-macosx_11_0_x86_64.whl", hash = "sha256:753954aeb8e130507cb3b408da68f66a25c4b7e510bdfaf5458975ab8c8285c4", size = 2935797, upload-time = "2025-10-26T13:31:22.112Z" },
+    { url = "https://files.pythonhosted.org/packages/af/74/94a4dc2f6891008111a9666214b5ef53a8390e3a324e957fdd93a8f18957/pypdfium2-5.0.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b1e50b08bde1c6c93685022ac72746ff099a7543f178d35e0a834f7e36bf401d", size = 2975686, upload-time = "2025-10-26T13:31:23.896Z" },
+    { url = "https://files.pythonhosted.org/packages/b7/82/ce53918809fdc65d16b054e4d6e4f825b4e6513bcd67cfe89c13061c5ac5/pypdfium2-5.0.0-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:baf715937b3bc78312c2d07ab2b06684f57156adadc8e849f5892724f892648e", size = 2761052, upload-time = "2025-10-26T13:31:25.739Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/7b/b22dccb7ebd62b20bff1e8c3b06900bd1e529527326ddd9ee3c5157fbc6c/pypdfium2-5.0.0-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:f216423de641187c4e322992f3a97afc5ffa63b72d4ad30f8189cfa783c9d781", size = 3061679, upload-time = "2025-10-26T13:31:27.625Z" },
+    { url = "https://files.pythonhosted.org/packages/01/ed/e0cbbf7430d908108e135bd9fff8195876b3ed7402fbe2893b09e9f53b88/pypdfium2-5.0.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4445d83ae3c6688667feba568b7b390b948c4a06ab94e576ad3b029b5567b44c", size = 2990851, upload-time = "2025-10-26T13:31:29.09Z" },
+    { url = "https://files.pythonhosted.org/packages/48/5c/41595b3051b43d270fa249c7c0dec5cd52aa633ec64e5f9e1526692eef9d/pypdfium2-5.0.0-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:3b1cbc217a6accfab005806b53e467044f83fe61133df01a4fde94334e4655ac", size = 6320499, upload-time = "2025-10-26T13:31:31.335Z" },
+    { url = "https://files.pythonhosted.org/packages/35/e2/7bfcdfd446fc3b086faca38621dc98dd6feafa9c1b2102a59b3a68862e03/pypdfium2-5.0.0-py3-none-musllinux_1_2_i686.whl", hash = "sha256:2f050cca56c4d85c24dcb572344cf5e54ebcd0a0dd351fcf6b5117e72474382c", size = 6329280, upload-time = "2025-10-26T13:31:33.421Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/6a/626f358ecd363afd3306bd15e98a040d6b2f4db9482ca7827dcf34677994/pypdfium2-5.0.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:4ee80e08a5c93a8e0f9e26a1978d4e0a31f0122a33351c260a6e436300d95075", size = 6408895, upload-time = "2025-10-26T13:31:35.055Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/87/79b9aa6d7f58959c821fb3d6e679ad288d17773c5ef59c69889bb1d3af53/pypdfium2-5.0.0-py3-none-win32.whl", hash = "sha256:aafb55d57f03c8cf482557ed421d40aed943cd563628a3df8515f301725f8e49", size = 2986180, upload-time = "2025-10-26T13:31:36.633Z" },
+    { url = "https://files.pythonhosted.org/packages/21/46/21de463f575a85dc8973fdf89f7a103d09da553e896161536d7cc73950fd/pypdfium2-5.0.0-py3-none-win_amd64.whl", hash = "sha256:de2201d4e9e423779d2e3b2c2368591d6826153a009146eaa105b501a213b299", size = 3094011, upload-time = "2025-10-26T13:31:38.341Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/43/2b0607ef7f16d63fbe00de728151a090397ef5b3b9147b4aefe975d17106/pypdfium2-5.0.0-py3-none-win_arm64.whl", hash = "sha256:0a2a473fe95802e7a5f4140f25e5cd036cf17f060f27ee2d28c3977206add763", size = 2939015, upload-time = "2025-10-26T13:31:40.531Z" },
 ]
 
 [[package]]

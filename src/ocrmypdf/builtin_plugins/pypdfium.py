@@ -33,11 +33,13 @@ def _open_pdf_document(input_file: Path):
     return pdfium.PdfDocument(input_file)
 
 
-def _render_page_to_bitmap(page, raster_dpi: Resolution, rotation: int | None):
+def _render_page_to_bitmap(
+    page, raster_device: str, raster_dpi: Resolution, rotation: int | None
+):
     """Render a PDF page to a bitmap."""
     # Calculate the scale factor based on DPI
     # pypdfium2 uses points (72 DPI) as base unit
-    scale = float(raster_dpi.x) / 72.0
+    scale = raster_dpi.to_scalar() / 72.0
 
     # Apply rotation if specified
     if rotation:
@@ -46,12 +48,14 @@ def _render_page_to_bitmap(page, raster_dpi: Resolution, rotation: int | None):
 
     # Render the page to a bitmap
     # The scale parameter controls the resolution
+    grayscale = raster_device.lower() in ('pnggray', 'jpeggray')
+
     bitmap = page.render(
         scale=scale,
         rotation=0,  # We already set rotation on the page
-        crop=None,
         may_draw_forms=True,
-        may_draw_annots=True,
+        draw_annots=True,
+        grayscale=grayscale,
         # Note: pypdfium2 doesn't have a direct equivalent to filter_vector
         # This would require more complex implementation if needed
     )
@@ -77,9 +81,9 @@ def _process_image_for_output(
         pil_image.info['dpi'] = dpi_tuple
 
     # Determine output format based on raster_device
-    if raster_device.lower() in ('png', 'png16m', 'pngalpha'):
+    if raster_device.lower() in ('png', 'pngmono', 'pnggray', 'png16m', 'pngalpha'):
         format_name = 'PNG'
-    elif raster_device.lower() in ('jpeg', 'jpg'):
+    elif raster_device.lower() in ('jpeg', 'jpeggray', 'jpg'):
         format_name = 'JPEG'
         # Convert RGBA to RGB for JPEG
         if pil_image.mode == 'RGBA':
@@ -131,11 +135,11 @@ def rasterize_pdf_page(
 
     try:
         # Get the specific page (pypdfium2 uses 0-based indexing)
-        page = pdf.get_page(pageno - 1)
+        page = pdf[pageno - 1]
 
         try:
             # Render the page to a bitmap
-            bitmap = _render_page_to_bitmap(page, raster_dpi, rotation)
+            bitmap = _render_page_to_bitmap(page, raster_device, raster_dpi, rotation)
 
             try:
                 # Convert to PIL Image
@@ -146,7 +150,6 @@ def rasterize_pdf_page(
                     pil_image, raster_device, raster_dpi, page_dpi, stop_on_soft_error
                 )
 
-                # Save the image
                 _save_image(pil_image, output_file, format_name)
 
             finally:

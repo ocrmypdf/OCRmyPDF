@@ -16,11 +16,12 @@ dependencies = [
   "img2pdf>=0.5",
   "packaging>=20",
   "pdfminer.six>=20220319",
-  "pi-heif",                # Heif image format - maintainers: if this is removed, it will NOT break
+  "pi-heif", # Heif image format - maintainers: if this is removed, it will NOT break
   "pikepdf>=10",
   "Pillow>=10.0.1",
   "pluggy>=1",
   "pydantic>=2.12.5",
+  "pypdfium2>=5.0.0",
   "rich>=13",
 ]
 authors = [{ name = "James R. Barlow", email = "james@purplerock.ca" }]
