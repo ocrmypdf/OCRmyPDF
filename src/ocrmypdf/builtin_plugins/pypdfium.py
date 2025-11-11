@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2024 James R. Barlow
+# SPDX-FileCopyrightText: 2025 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 """Built-in plugin to implement PDF page rasterization using pypdfium2."""
 
@@ -23,9 +23,7 @@ log = logging.getLogger(__name__)
 def check_options(options):
     """Check that pypdfium2 is available."""
     if pdfium is None:
-        raise MissingDependencyError(
-            "pypdfium2 is required for this plugin. Install it with: pip install pypdfium2"
-        )
+        raise MissingDependencyError("pypdfium2 is required for this plugin.")
 
 
 @hookimpl
@@ -43,24 +41,24 @@ def rasterize_pdf_page(
     """Rasterize a single page of a PDF file using pypdfium2."""
     if pdfium is None:
         raise MissingDependencyError("pypdfium2 is not available")
-    
+
     # Open the PDF document
     pdf = pdfium.PdfDocument(input_file)
-    
+
     try:
         # Get the specific page (pypdfium2 uses 0-based indexing)
         page = pdf.get_page(pageno - 1)
-        
+
         try:
             # Calculate the scale factor based on DPI
             # pypdfium2 uses points (72 DPI) as base unit
             scale = float(raster_dpi.x) / 72.0
-            
+
             # Apply rotation if specified
             if rotation:
                 # pypdfium2 rotation is in degrees, same as our input
                 page.set_rotation(rotation)
-            
+
             # Render the page to a bitmap
             # The scale parameter controls the resolution
             bitmap = page.render(
@@ -72,11 +70,11 @@ def rasterize_pdf_page(
                 # Note: pypdfium2 doesn't have a direct equivalent to filter_vector
                 # This would require more complex implementation if needed
             )
-            
+
             try:
                 # Convert to PIL Image
                 pil_image = bitmap.to_pil()
-                
+
                 # Set the DPI metadata if page_dpi is specified
                 if page_dpi:
                     # PIL expects DPI as a tuple
@@ -86,7 +84,7 @@ def rasterize_pdf_page(
                     # Use the raster DPI
                     dpi_tuple = (float(raster_dpi.x), float(raster_dpi.y))
                     pil_image.info['dpi'] = dpi_tuple
-                
+
                 # Determine output format based on raster_device
                 if raster_device.lower() in ('png', 'png16m', 'pngalpha'):
                     format_name = 'PNG'
@@ -95,8 +93,12 @@ def rasterize_pdf_page(
                     # Convert RGBA to RGB for JPEG
                     if pil_image.mode == 'RGBA':
                         # Create white background
-                        background = pil_image.new('RGB', pil_image.size, (255, 255, 255))
-                        background.paste(pil_image, mask=pil_image.split()[-1])  # Use alpha channel as mask
+                        background = pil_image.new(
+                            'RGB', pil_image.size, (255, 255, 255)
+                        )
+                        background.paste(
+                            pil_image, mask=pil_image.split()[-1]
+                        )  # Use alpha channel as mask
                         pil_image = background
                 elif raster_device.lower() in ('tiff', 'tif'):
                     format_name = 'TIFF'
@@ -106,22 +108,24 @@ def rasterize_pdf_page(
                     if stop_on_soft_error:
                         raise ValueError(f"Unsupported raster device: {raster_device}")
                     else:
-                        log.warning(f"Unsupported raster device {raster_device}, using PNG")
-                
+                        log.warning(
+                            f"Unsupported raster device {raster_device}, using PNG"
+                        )
+
                 # Save the image
                 save_kwargs = {}
                 if format_name in ('PNG', 'TIFF') and 'dpi' in pil_image.info:
                     save_kwargs['dpi'] = pil_image.info['dpi']
                 elif format_name == 'JPEG' and 'dpi' in pil_image.info:
                     save_kwargs['dpi'] = pil_image.info['dpi']
-                
+
                 pil_image.save(output_file, format=format_name, **save_kwargs)
-                
+
             finally:
                 bitmap.close()
         finally:
             page.close()
     finally:
         pdf.close()
-    
+
     return output_file
