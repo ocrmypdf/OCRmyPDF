@@ -136,11 +136,6 @@ class Resolution(Generic[T]):
         return self._isclose(self.x, other.x) and self._isclose(self.y, other.y)
 
 
-@deprecated(deprecated_in='15.4.0')
-class NeverRaise(Exception):
-    """An exception that is never raised."""
-
-
 def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike) -> None:
     """Create a symbolic link at ``soft_link_name``, which references ``input_file``.
 
