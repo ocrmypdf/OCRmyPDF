@@ -48,6 +48,7 @@ def test_stdout(ocrmypdf_exec, resources, outpdf):
     assert check_pdf(output_file)
 
 
+@pytest.mark.skipif(os.name == 'nt', reason='Windows does not support /dev/null')
 def test_dev_null(resources):
     if 'COV_CORE_DATAFILE' in os.environ:
         pytest.skip("Coverage uses stdout")
