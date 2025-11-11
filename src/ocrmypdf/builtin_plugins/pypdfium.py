@@ -26,6 +26,93 @@ def check_options(options):
         raise MissingDependencyError("pypdfium2 is required for this plugin.")
 
 
+def _open_pdf_document(input_file: Path):
+    """Open a PDF document using pypdfium2."""
+    if pdfium is None:
+        raise MissingDependencyError("pypdfium2 is not available")
+    return pdfium.PdfDocument(input_file)
+
+
+def _render_page_to_bitmap(page, raster_dpi: Resolution, rotation: int | None):
+    """Render a PDF page to a bitmap."""
+    # Calculate the scale factor based on DPI
+    # pypdfium2 uses points (72 DPI) as base unit
+    scale = float(raster_dpi.x) / 72.0
+
+    # Apply rotation if specified
+    if rotation:
+        # pypdfium2 rotation is in degrees, same as our input
+        page.set_rotation(rotation)
+
+    # Render the page to a bitmap
+    # The scale parameter controls the resolution
+    bitmap = page.render(
+        scale=scale,
+        rotation=0,  # We already set rotation on the page
+        crop=None,
+        may_draw_forms=True,
+        may_draw_annots=True,
+        # Note: pypdfium2 doesn't have a direct equivalent to filter_vector
+        # This would require more complex implementation if needed
+    )
+    return bitmap
+
+
+def _process_image_for_output(
+    pil_image,
+    raster_device: str,
+    raster_dpi: Resolution,
+    page_dpi: Resolution | None,
+    stop_on_soft_error: bool,
+):
+    """Process PIL image for output format and set DPI metadata."""
+    # Set the DPI metadata if page_dpi is specified
+    if page_dpi:
+        # PIL expects DPI as a tuple
+        dpi_tuple = (float(page_dpi.x), float(page_dpi.y))
+        pil_image.info['dpi'] = dpi_tuple
+    else:
+        # Use the raster DPI
+        dpi_tuple = (float(raster_dpi.x), float(raster_dpi.y))
+        pil_image.info['dpi'] = dpi_tuple
+
+    # Determine output format based on raster_device
+    if raster_device.lower() in ('png', 'png16m', 'pngalpha'):
+        format_name = 'PNG'
+    elif raster_device.lower() in ('jpeg', 'jpg'):
+        format_name = 'JPEG'
+        # Convert RGBA to RGB for JPEG
+        if pil_image.mode == 'RGBA':
+            # Create white background
+            background = pil_image.new('RGB', pil_image.size, (255, 255, 255))
+            background.paste(
+                pil_image, mask=pil_image.split()[-1]
+            )  # Use alpha channel as mask
+            pil_image = background
+    elif raster_device.lower() in ('tiff', 'tif'):
+        format_name = 'TIFF'
+    else:
+        # Default to PNG for unknown formats
+        format_name = 'PNG'
+        if stop_on_soft_error:
+            raise ValueError(f"Unsupported raster device: {raster_device}")
+        else:
+            log.warning(f"Unsupported raster device {raster_device}, using PNG")
+
+    return pil_image, format_name
+
+
+def _save_image(pil_image, output_file: Path, format_name: str):
+    """Save PIL image to file with appropriate DPI metadata."""
+    save_kwargs = {}
+    if format_name in ('PNG', 'TIFF') and 'dpi' in pil_image.info:
+        save_kwargs['dpi'] = pil_image.info['dpi']
+    elif format_name == 'JPEG' and 'dpi' in pil_image.info:
+        save_kwargs['dpi'] = pil_image.info['dpi']
+
+    pil_image.save(output_file, format=format_name, **save_kwargs)
+
+
 @hookimpl
 def rasterize_pdf_page(
     input_file: Path,
@@ -39,87 +126,28 @@ def rasterize_pdf_page(
     stop_on_soft_error: bool,
 ) -> Path:
     """Rasterize a single page of a PDF file using pypdfium2."""
-    if pdfium is None:
-        raise MissingDependencyError("pypdfium2 is not available")
-
     # Open the PDF document
-    pdf = pdfium.PdfDocument(input_file)
+    pdf = _open_pdf_document(input_file)
 
     try:
         # Get the specific page (pypdfium2 uses 0-based indexing)
         page = pdf.get_page(pageno - 1)
 
         try:
-            # Calculate the scale factor based on DPI
-            # pypdfium2 uses points (72 DPI) as base unit
-            scale = float(raster_dpi.x) / 72.0
-
-            # Apply rotation if specified
-            if rotation:
-                # pypdfium2 rotation is in degrees, same as our input
-                page.set_rotation(rotation)
-
             # Render the page to a bitmap
-            # The scale parameter controls the resolution
-            bitmap = page.render(
-                scale=scale,
-                rotation=0,  # We already set rotation on the page
-                crop=None,
-                may_draw_forms=True,
-                may_draw_annots=True,
-                # Note: pypdfium2 doesn't have a direct equivalent to filter_vector
-                # This would require more complex implementation if needed
-            )
+            bitmap = _render_page_to_bitmap(page, raster_dpi, rotation)
 
             try:
                 # Convert to PIL Image
                 pil_image = bitmap.to_pil()
 
-                # Set the DPI metadata if page_dpi is specified
-                if page_dpi:
-                    # PIL expects DPI as a tuple
-                    dpi_tuple = (float(page_dpi.x), float(page_dpi.y))
-                    pil_image.info['dpi'] = dpi_tuple
-                else:
-                    # Use the raster DPI
-                    dpi_tuple = (float(raster_dpi.x), float(raster_dpi.y))
-                    pil_image.info['dpi'] = dpi_tuple
-
-                # Determine output format based on raster_device
-                if raster_device.lower() in ('png', 'png16m', 'pngalpha'):
-                    format_name = 'PNG'
-                elif raster_device.lower() in ('jpeg', 'jpg'):
-                    format_name = 'JPEG'
-                    # Convert RGBA to RGB for JPEG
-                    if pil_image.mode == 'RGBA':
-                        # Create white background
-                        background = pil_image.new(
-                            'RGB', pil_image.size, (255, 255, 255)
-                        )
-                        background.paste(
-                            pil_image, mask=pil_image.split()[-1]
-                        )  # Use alpha channel as mask
-                        pil_image = background
-                elif raster_device.lower() in ('tiff', 'tif'):
-                    format_name = 'TIFF'
-                else:
-                    # Default to PNG for unknown formats
-                    format_name = 'PNG'
-                    if stop_on_soft_error:
-                        raise ValueError(f"Unsupported raster device: {raster_device}")
-                    else:
-                        log.warning(
-                            f"Unsupported raster device {raster_device}, using PNG"
-                        )
+                # Process image for output format and DPI
+                pil_image, format_name = _process_image_for_output(
+                    pil_image, raster_device, raster_dpi, page_dpi, stop_on_soft_error
+                )
 
                 # Save the image
-                save_kwargs = {}
-                if format_name in ('PNG', 'TIFF') and 'dpi' in pil_image.info:
-                    save_kwargs['dpi'] = pil_image.info['dpi']
-                elif format_name == 'JPEG' and 'dpi' in pil_image.info:
-                    save_kwargs['dpi'] = pil_image.info['dpi']
-
-                pil_image.save(output_file, format=format_name, **save_kwargs)
+                _save_image(pil_image, output_file, format_name)
 
             finally:
                 bitmap.close()
