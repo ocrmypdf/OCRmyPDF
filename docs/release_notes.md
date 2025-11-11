@@ -25,9 +25,25 @@ about a forthcoming release that has not been tagged yet. A release is only
 official when it's tagged and posted to PyPI.
 :::
 
+## v16.12.0
+
+- Disable Ghostscript's subset fonts feature, which was found to corrupt text in
+  certain PDFs. Thanks @mnaegler for identifying this issue. {issue}`1592`
+- Users of Ghostscript 10.6.0+ reported that Ghostscript seems to generate corrupted
+  JPEGs. We force re-optimization of these JPEGs to mitigate the corruption until
+  Ghostscript fixes the issue. {issue}`1585`
+- OCRmyPDF now avoids applying flate compression to large JPEG images, unless maximum
+  optimization is requested, since flate+DCT compression reduces performances in PDF
+  viewers with large images.
+- Updated Dockerfiles to use more recent base operating systems.
+- Updated build and test matrix to include Python 3.14.
+- Minor documentation improvements.
+- pikepdf >= 10.0.0 is now required.
+
 ## v16.11.1
 
 - Fixed issue with Tesseract changing an error message related to skew. {issue}`1576`
+- Dropped macOS 13 from build-test matrix since it is no longer supported by Apple.
 
 ## v16.11.0
 
