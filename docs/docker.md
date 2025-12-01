@@ -104,9 +104,9 @@ docker_ocrmypdf /data/input.pdf /data/output.pdf
 
 ## Podman
 
-Especially if you use [Podman](https://podman.io/) (or have SELinux
-enabled on your system), you may need to add `--userns keep-id` there,
-otherwise you may get access errors, because the user is otherwise not
+Especially if you use [Podman](https://podman.io/) (or use Docker in
+rootless mode), you may need to add `--userns keep-id` there,
+otherwise you may get access errors, because the user ID is otherwise not
 mapped to the same UID as on the host:
 
 :::{code} bash
@@ -114,7 +114,7 @@ alias podman_ocrmypdf='podman run --rm -i --user "$(id -u):$(id -g)" --userns ke
 podman_ocrmypdf /data/input.pdf /data/output.pdf
 :::
 
-If you use SELinux you may additionally need to add the `:Z` [suffix to
+If you have SELinux enabled, you may additionally need to add the `:Z` [suffix to
 the
 volume](https://docs.podman.io/en/stable/markdown/podman-run.1.html#volume-v-source-volume-host-dir-container-dir-options)
 or disable SELinux for the container using
