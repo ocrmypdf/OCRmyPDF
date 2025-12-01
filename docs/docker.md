@@ -110,7 +110,7 @@ otherwise you may get access errors, because the user is otherwise not
 mapped to the same UID as on the host:
 
 :::{code} bash
-alias podman_ocrmypdf='podman run --rm  -i --user "$(id -u):$(id -g)" --userns keep-id --workdir /data -v "$PWD:/data" ocrmypdf'
+alias podman_ocrmypdf='podman run --rm -i --user "$(id -u):$(id -g)" --userns keep-id --workdir /data -v "$PWD:/data" jbarlow83/ocrmypdf-alpine'
 podman_ocrmypdf /data/input.pdf /data/output.pdf
 :::
 
@@ -120,7 +120,13 @@ volume](https://docs.podman.io/en/stable/markdown/podman-run.1.html#volume-v-sou
 or disable SELinux for the container using
 `--security-opt label=disable`, which is suggested for system files as
 they should not be re-labelled. Please refer to the „Note" section at
-the end of the linked podman documentation for details.
+the end of the linked podman documentation for details. This results in
+the following full command:
+
+:::{code} bash
+alias podman_ocrmypdf='podman run --rm -i --user "$(id -u):$(id -g)" --userns keep-id --workdir /data -v "$PWD:/data" --security-opt label=disable jbarlow83/ocrmypdf-alpine'
+podman_ocrmypdf /data/input.pdf /data/output.pdf
+:::
 
 {#docker-lang-packs}
 ## Adding languages to the Docker image
