@@ -52,7 +52,8 @@ def get_docinfo(base_pdf: Pdf, context: PdfContext) -> dict[str, str]:
 
     pdfmark['/Creator'] = f'{PROGRAM_NAME} {OCRMYPF_VERSION} / {creator_tag}'
     pdfmark['/Producer'] = f'pikepdf {PIKEPDF_VERSION}'
-    pdfmark['/ModDate'] = encode_pdf_date(datetime.now(timezone.utc))
+    if not options.deterministic_output:
+        pdfmark['/ModDate'] = encode_pdf_date(datetime.now(timezone.utc))
     return pdfmark
 
 
@@ -198,7 +199,7 @@ def metadata_fixup(
             original.open_metadata(
                 set_pikepdf_as_editor=False, update_docinfo=False, strict=False
             ) as meta_original,
-            pdf.open_metadata() as meta_pdf,
+            pdf.open_metadata(set_pikepdf_as_editor=not pdf_save_settings.get("deterministic_id", False)) as meta_pdf,
         ):
             meta_pdf.load_from_docinfo(
                 docinfo, delete_missing=False, raise_failure=False

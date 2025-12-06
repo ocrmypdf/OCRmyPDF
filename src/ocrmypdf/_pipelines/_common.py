@@ -444,7 +444,7 @@ def postprocess(
     with Pdf.open(pdf_file) as pdf:
         fix_annots = context.get_path('fix_annots.pdf')
         if remove_broken_goto_annotations(pdf):
-            pdf.save(fix_annots)
+            pdf.save(fix_annots, deterministic_id=context.options.deterministic_output)
             pdf_out = fix_annots
         else:
             pdf_out = pdf_file
@@ -453,7 +453,10 @@ def postprocess(
         pdf_out = convert_to_pdfa(pdf_out, ps_stub_out, context)
 
     optimizing = context.plugin_manager.hook.is_optimization_enabled(context=context)
-    save_settings = get_pdf_save_settings(context.options.output_type)
+    save_settings = get_pdf_save_settings(
+        context.options.output_type,
+        deterministic_id=context.options.deterministic_output,
+    )
     save_settings['linearize'] = not optimizing and should_linearize(pdf_out, context)
 
     pdf_out = metadata_fixup(pdf_out, context, pdf_save_settings=save_settings)

@@ -140,7 +140,10 @@ def optimize_pdf(
 ) -> tuple[Path, Sequence[str]]:
     save_settings = dict(
         linearize=linearize,
-        **get_pdf_save_settings(context.options.output_type),
+        **get_pdf_save_settings(
+            context.options.output_type,
+            deterministic_id=context.options.deterministic_output,
+        ),
     )
     result_path = optimize(input_pdf, output_pdf, context, save_settings, executor)
     messages = []

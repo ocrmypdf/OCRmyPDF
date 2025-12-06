@@ -204,7 +204,9 @@ class OcrGrafter:
         next_file = self.output_file.with_suffix(
             f'.working{self.interim_count + 1}.pdf'
         )
-        self.pdf_base.save(next_file)
+        self.pdf_base.save(
+            next_file, deterministic_id=self.context.options.deterministic_output
+        )
         self.pdf_base.close()
 
         self.pdf_base = Pdf.open(next_file)
@@ -212,7 +214,9 @@ class OcrGrafter:
         self.interim_count += 1
 
     def finalize(self):
-        self.pdf_base.save(self.output_file)
+        self.pdf_base.save(
+            self.output_file, deterministic_id=self.context.options.deterministic_output
+        )
         self.pdf_base.close()
         return self.output_file
 
@@ -307,7 +311,11 @@ class OcrGrafter:
 
             base_resources = _ensure_dictionary(base_page.obj, Name.Resources)
             base_xobjs = _ensure_dictionary(base_resources, Name.XObject)
-            text_xobj_name = Name.random(prefix="OCR-")
+            if self.context.options.deterministic_output:
+                # Use a stable name per page for deterministic output
+                text_xobj_name = Name(f"/OCR-{page_num:06d}")
+            else:
+                text_xobj_name = Name.random(prefix="OCR-")
             xobj = self.pdf_base.make_stream(pdf_text_contents)
             base_xobjs[text_xobj_name] = xobj
             xobj.Type = Name.XObject
