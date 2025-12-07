@@ -99,12 +99,12 @@ class OCROptions(BaseModel):
     plugins: Sequence[Path | str] | None = None
     
     # Store any extra attributes (for plugins and dynamic options)
-    _extra_attrs: dict[str, Any] = Field(default_factory=dict, exclude=True)
+    extra_attrs: dict[str, Any] = Field(default_factory=dict, exclude=True, alias='_extra_attrs')
     
     def __getattr__(self, name: str) -> Any:
         """Allow attribute access like argparse.Namespace."""
-        if name in self._extra_attrs:
-            return self._extra_attrs[name]
+        if name in self.extra_attrs:
+            return self.extra_attrs[name]
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
     
     def __setattr__(self, name: str, value: Any) -> None:
@@ -112,16 +112,16 @@ class OCROptions(BaseModel):
         if name.startswith('_') or name in self.__fields__:
             super().__setattr__(name, value)
         else:
-            if not hasattr(self, '_extra_attrs'):
-                super().__setattr__('_extra_attrs', {})
-            self._extra_attrs[name] = value
+            if not hasattr(self, 'extra_attrs'):
+                super().__setattr__('extra_attrs', {})
+            self.extra_attrs[name] = value
     
     def __delattr__(self, name: str) -> None:
         """Allow attribute deletion like argparse.Namespace."""
         if name in self.__fields__:
             super().__delattr__(name)
-        elif name in self._extra_attrs:
-            del self._extra_attrs[name]
+        elif name in self.extra_attrs:
+            del self.extra_attrs[name]
         else:
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
     
@@ -139,7 +139,7 @@ class OCROptions(BaseModel):
                 extra_attrs[key] = value
         
         instance = cls(**known_fields)
-        instance._extra_attrs = extra_attrs
+        instance.extra_attrs = extra_attrs
         return instance
     
     def to_namespace(self) -> Namespace:
@@ -152,7 +152,7 @@ class OCROptions(BaseModel):
             setattr(ns, field_name, field_value)
         
         # Add extra attributes
-        for key, value in self._extra_attrs.items():
+        for key, value in self.extra_attrs.items():
             setattr(ns, key, value)
         
         return ns
@@ -223,6 +223,6 @@ class OCROptions(BaseModel):
         return v
     
     class Config:
-        extra = "forbid"  # Force use of _extra_attrs for unknown fields
+        extra = "forbid"  # Force use of extra_attrs for unknown fields
         arbitrary_types_allowed = True  # Allow BinaryIO, Path, etc.
         validate_assignment = True  # Validate on attribute assignment
