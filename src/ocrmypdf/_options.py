@@ -99,6 +99,9 @@ class OCROptions(BaseModel):
     # Plugin system
     plugins: Sequence[Path | str] | None = None
     
+    # Computed/derived options (set during validation)
+    lossless_reconstruction: bool = False
+    
     # Store any extra attributes (for plugins and dynamic options)
     extra_attrs: dict[str, Any] = Field(default_factory=dict, exclude=True, alias='_extra_attrs')
     
