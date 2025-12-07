@@ -20,6 +20,7 @@ dependencies = [
   "pikepdf>=10",
   "Pillow>=10.0.1",
   "pluggy>=1",
+  "pydantic>=2.12.5",
   "rich>=13",
 ]
 authors = [{ name = "James R. Barlow", email = "james@purplerock.ca" }]

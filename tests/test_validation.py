@@ -157,28 +157,6 @@ def test_no_progress_bar(progress_bar, resources):
     assert pbar_disabled is not None and pbar_disabled != progress_bar
 
 
-def test_language_warning(caplog):
-    opts = make_opts(language=None)
-    _plugin_manager = get_plugin_manager(opts.plugins)
-    caplog.set_level(logging.DEBUG)
-    with patch(
-        'ocrmypdf._validation.locale.getlocale', return_value=('en_US', 'UTF-8')
-    ) as mock:
-        vd.check_options_languages(opts, ['eng'])
-        assert opts.languages == ['eng']
-        assert '' in caplog.text
-        mock.assert_called_once()
-
-    opts = make_opts(language=None)
-    with patch(
-        'ocrmypdf._validation.locale.getlocale', return_value=('fr_FR', 'UTF-8')
-    ) as mock:
-        vd.check_options_languages(opts, ['eng'])
-        assert opts.languages == ['eng']
-        assert 'assuming --language' in caplog.text
-        mock.assert_called_once()
-
-
 def make_version(version):
     def _make_version():
         return TesseractVersion(version)

@@ -55,11 +55,6 @@ def check_platform() -> None:
 def check_options_languages(
     options: Union[Namespace, OCROptions], ocr_engine_languages: list[str]
 ) -> None:
-    if not options.languages:
-        options.languages = [DEFAULT_LANGUAGE]
-        system_lang = locale.getlocale()[0]
-        if system_lang and not system_lang.startswith('en'):
-            log.debug("No language specified; assuming --language %s", DEFAULT_LANGUAGE)
     if not ocr_engine_languages:
         return
 
@@ -234,23 +229,31 @@ def _check_plugin_invariant_options(options: Union[Namespace, OCROptions]) -> No
     check_options_pillow(options)
 
 
-def _check_plugin_options(options: Union[Namespace, OCROptions], plugin_manager: PluginManager) -> None:
+def _check_plugin_options(
+    options: Union[Namespace, OCROptions], plugin_manager: PluginManager
+) -> None:
     # Convert to Namespace for plugin compatibility during transition
     if isinstance(options, OCROptions):
         legacy_options = options.to_namespace()
     else:
         legacy_options = options
     plugin_manager.hook.check_options(options=legacy_options)
-    ocr_engine_languages = plugin_manager.hook.get_ocr_engine().languages(legacy_options)
+    ocr_engine_languages = plugin_manager.hook.get_ocr_engine().languages(
+        legacy_options
+    )
     check_options_languages(options, ocr_engine_languages)
 
 
-def check_options(options: Union[Namespace, OCROptions], plugin_manager: PluginManager) -> None:
+def check_options(
+    options: Union[Namespace, OCROptions], plugin_manager: PluginManager
+) -> None:
     _check_plugin_invariant_options(options)
     _check_plugin_options(options, plugin_manager)
 
 
-def create_input_file(options: Union[Namespace, OCROptions], work_folder: Path) -> tuple[Path, str]:
+def create_input_file(
+    options: Union[Namespace, OCROptions], work_folder: Path
+) -> tuple[Path, str]:
     if options.input_file == '-':
         # stdin
         log.info('reading file from standard input')
