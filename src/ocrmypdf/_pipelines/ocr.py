@@ -58,13 +58,18 @@ def _image_to_ocr_text(
 ) -> tuple[Path, Path]:
     """Run OCR engine on image to create OCR PDF and text file."""
     options = page_context.options
-    if options.pdf_renderer.startswith('hocr'):
+    # Handle 'auto' pdf_renderer by defaulting to 'hocr'
+    pdf_renderer = options.pdf_renderer
+    if pdf_renderer == 'auto':
+        pdf_renderer = 'hocr'
+    
+    if pdf_renderer.startswith('hocr'):
         hocr_out, text_out = ocr_engine_hocr(ocr_image_out, page_context)
         ocr_out = render_hocr_page(hocr_out, page_context)
-    elif options.pdf_renderer == 'sandwich':
+    elif pdf_renderer == 'sandwich':
         ocr_out, text_out = ocr_engine_textonly_pdf(ocr_image_out, page_context)
     else:
-        raise NotImplementedError(f"pdf_renderer {options.pdf_renderer}")
+        raise NotImplementedError(f"pdf_renderer {pdf_renderer}")
     return ocr_out, text_out
 
 

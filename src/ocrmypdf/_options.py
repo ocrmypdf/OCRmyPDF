@@ -110,7 +110,7 @@ class OCROptions(BaseModel):
     
     def __setattr__(self, name: str, value: Any) -> None:
         """Allow attribute setting like argparse.Namespace."""
-        if name.startswith('_') or name in self.model_fields:
+        if name.startswith('_') or name in type(self).model_fields:
             super().__setattr__(name, value)
         else:
             if not hasattr(self, 'extra_attrs'):
@@ -119,7 +119,7 @@ class OCROptions(BaseModel):
     
     def __delattr__(self, name: str) -> None:
         """Allow attribute deletion like argparse.Namespace."""
-        if name in self.model_fields:
+        if name in type(self).model_fields:
             super().__delattr__(name)
         elif name in self.extra_attrs:
             del self.extra_attrs[name]
@@ -148,7 +148,7 @@ class OCROptions(BaseModel):
         ns = Namespace()
         
         # Add pydantic fields
-        for field_name in self.model_fields:
+        for field_name in type(self).model_fields:
             field_value = getattr(self, field_name)
             setattr(ns, field_name, field_value)
         
@@ -240,6 +240,9 @@ class OCROptions(BaseModel):
             # For hOCR API, output_file might not be present
             if 'output_folder' in data and 'output_file' not in data:
                 data['output_file'] = '/dev/null'  # Placeholder
+            # Handle pdf_renderer 'auto' case
+            if data.get('pdf_renderer') == 'auto':
+                data['pdf_renderer'] = 'hocr'  # Default to hocr for auto
         return data
     
     model_config = ConfigDict(
