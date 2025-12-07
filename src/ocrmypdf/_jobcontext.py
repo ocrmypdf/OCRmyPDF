@@ -39,9 +39,18 @@ class PdfContext:
         if isinstance(options, Namespace):
             self.options = OCROptions.from_namespace(options)
             self._namespace_options = options  # Keep original for PageContext
-        else:
+        elif isinstance(options, OCROptions):
             self.options = options
             self._namespace_options = options.to_namespace()  # Convert immediately for PageContext
+        else:
+            # Handle other option types (like OptimizeOptions) by converting to OCROptions first
+            # This is a fallback for legacy code
+            self.options = options
+            # Create a minimal namespace for PageContext compatibility
+            self._namespace_options = Namespace()
+            for attr in dir(options):
+                if not attr.startswith('_') and hasattr(options, attr):
+                    setattr(self._namespace_options, attr, getattr(options, attr))
         self.work_folder = work_folder
         self.origin = origin
         self.pdfinfo = pdfinfo

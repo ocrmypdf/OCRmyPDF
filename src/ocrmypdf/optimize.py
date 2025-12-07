@@ -766,32 +766,23 @@ def main(infile, outfile, level, jobs=1):
     """Entry point for direct optimization of a file."""
     from shutil import copy  # pylint: disable=import-outside-toplevel
     from tempfile import TemporaryDirectory  # pylint: disable=import-outside-toplevel
-
-    class OptimizeOptions:
-        """Emulate ocrmypdf's options."""
-
-        def __init__(
-            self, input_file, jobs, optimize_, jpeg_quality, png_quality, jb2lossy
-        ):
-            self.input_file = input_file
-            self.jobs = jobs
-            self.optimize = optimize_
-            self.jpeg_quality = jpeg_quality
-            self.png_quality = png_quality
-            self.jbig2_page_group_size = 0
-            self.jbig2_lossy = jb2lossy
-            self.jbig2_threshold = 0.85
-            self.quiet = True
-            self.progress_bar = False
+    from ocrmypdf._options import OCROptions  # pylint: disable=import-outside-toplevel
 
     infile = Path(infile)
-    options = OptimizeOptions(
+    
+    # Create OCROptions with optimization-specific settings
+    options = OCROptions(
         input_file=infile,
+        output_file=outfile,  # Required field
         jobs=jobs,
-        optimize_=int(level),
-        jpeg_quality=0,  # Use default
+        optimize=int(level),
+        jpg_quality=0,  # Use default
         png_quality=0,
-        jb2lossy=False,
+        jbig2_page_group_size=0,
+        jbig2_lossy=False,
+        jbig2_threshold=0.85,
+        quiet=True,
+        progress_bar=False,
     )
 
     with TemporaryDirectory() as tmpdir:
