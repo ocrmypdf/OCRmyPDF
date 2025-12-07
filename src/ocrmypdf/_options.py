@@ -56,11 +56,11 @@ class OCROptions(BaseModel):
     remove_background: bool = False
     remove_vectors: bool = False
     oversample: int = 0
-    unpaper_args: str | None = None
+    unpaper_args: str | list[str] | None = None  # Can be string or list after validation
     
     # OCR behavior
     skip_big: float | None = None
-    pages: str | None = None
+    pages: str | set[int] | None = None  # Can be string or set after validation
     invalidate_digital_signatures: bool = False
     
     # Metadata

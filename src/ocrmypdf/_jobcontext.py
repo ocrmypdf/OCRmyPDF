@@ -91,7 +91,11 @@ class PageContext:
     def __init__(self, pdf_context: PdfContext, pageno):
         self.work_folder = pdf_context.work_folder
         self.origin = pdf_context.origin
-        self.options = pdf_context.options
+        # Always use the legacy options for PageContext to ensure pickling works
+        if hasattr(pdf_context.options, 'to_namespace'):
+            self.options = pdf_context.options.to_namespace()
+        else:
+            self.options = pdf_context.options
         self.pageno = pageno
         self.pageinfo = pdf_context.pdfinfo[pageno]
         self.plugin_manager = pdf_context.plugin_manager
@@ -107,8 +111,13 @@ class PageContext:
     def __getstate__(self):
         state = self.__dict__.copy()
 
-        state['options'] = copy(self.options)
-        # Handle both OCROptions and Namespace
+        # Convert OCROptions to Namespace for pickling compatibility
+        if hasattr(state['options'], 'to_namespace'):
+            state['options'] = state['options'].to_namespace()
+        else:
+            state['options'] = copy(state['options'])
+        
+        # Handle stream inputs
         if hasattr(state['options'], 'input_file'):
             if not isinstance(state['options'].input_file, str | bytes | os.PathLike):
                 state['options'].input_file = 'stream'
