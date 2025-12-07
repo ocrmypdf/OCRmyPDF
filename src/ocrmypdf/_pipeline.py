@@ -909,13 +909,22 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
         else:
             safe_symlink(input_pdf, fix_docinfo_file)
 
+    # Extract PDF/A part correctly
+    if options.output_type.startswith('pdfa'):
+        if options.output_type == 'pdfa':
+            pdfa_part = '2'  # Default to PDF/A-2
+        else:
+            pdfa_part = options.output_type.split('-')[-1]  # Extract number from pdfa-1, pdfa-2, etc.
+    else:
+        pdfa_part = '2'  # Fallback
+    
     context.plugin_manager.hook.generate_pdfa(
         pdf_version=input_pdfinfo.min_version,
         pdf_pages=[fix_docinfo_file],
         pdfmark=input_ps_stub,
         output_file=output_file,
         context=context,
-        pdfa_part=options.output_type[-1],  # is pdfa-1, pdfa-2, or pdfa-3
+        pdfa_part=pdfa_part,
         progressbar_class=(
             context.plugin_manager.hook.get_progressbar_class()
             if options.progress_bar

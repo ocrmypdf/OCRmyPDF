@@ -139,6 +139,10 @@ class OCROptions(BaseModel):
             else:
                 extra_attrs[key] = value
         
+        # Handle special cases for hOCR API
+        if 'output_folder' in extra_attrs and 'output_file' not in known_fields:
+            known_fields['output_file'] = '/dev/null'  # Placeholder
+        
         instance = cls(**known_fields)
         instance.extra_attrs = extra_attrs
         return instance
