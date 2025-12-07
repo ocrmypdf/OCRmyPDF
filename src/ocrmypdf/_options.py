@@ -1,0 +1,228 @@
+# SPDX-FileCopyrightText: 2024 James R. Barlow
+# SPDX-License-Identifier: MPL-2.0
+
+"""Internal options model for OCRmyPDF."""
+
+from __future__ import annotations
+
+import os
+from argparse import Namespace
+from collections.abc import Iterable, Sequence
+from copy import copy
+from pathlib import Path
+from typing import Any, BinaryIO, Union
+
+from pydantic import BaseModel, Field, validator
+
+from ocrmypdf._defaults import DEFAULT_LANGUAGE, DEFAULT_ROTATE_PAGES_THRESHOLD
+
+PathOrIO = Union[BinaryIO, Path, str, bytes]
+
+
+class OCROptions(BaseModel):
+    """Internal options model that can masquerade as argparse.Namespace.
+    
+    This model provides proper typing and validation while maintaining
+    compatibility with existing code that expects argparse.Namespace behavior.
+    """
+    
+    # I/O options
+    input_file: PathOrIO
+    output_file: PathOrIO
+    sidecar: PathOrIO | None = None
+    
+    # Core OCR options
+    languages: list[str] = Field(default_factory=lambda: [DEFAULT_LANGUAGE])
+    output_type: str = 'pdfa'
+    force_ocr: bool = False
+    skip_text: bool = False
+    redo_ocr: bool = False
+    
+    # Job control
+    jobs: int | None = None
+    use_threads: bool = True
+    progress_bar: bool = True
+    quiet: bool = False
+    verbose: int = 0
+    keep_temporary_files: bool = False
+    
+    # Image processing
+    image_dpi: int | None = None
+    deskew: bool = False
+    clean: bool = False
+    clean_final: bool = False
+    rotate_pages: bool = False
+    remove_background: bool = False
+    remove_vectors: bool = False
+    oversample: int = 0
+    unpaper_args: str | None = None
+    
+    # OCR behavior
+    skip_big: float | None = None
+    pages: str | None = None
+    invalidate_digital_signatures: bool = False
+    
+    # Metadata
+    title: str | None = None
+    author: str | None = None
+    subject: str | None = None
+    keywords: str | None = None
+    
+    # Optimization
+    optimize: int | None = None
+    jpg_quality: int | None = None
+    png_quality: int | None = None
+    jbig2_lossy: bool | None = None
+    jbig2_page_group_size: int | None = None
+    jbig2_threshold: float | None = None
+    
+    # Advanced options
+    max_image_mpixels: float = 250.0
+    pdf_renderer: str = 'auto'
+    tesseract_config: Iterable[str] | None = None
+    tesseract_pagesegmode: int | None = None
+    tesseract_oem: int | None = None
+    tesseract_thresholding: int | None = None
+    tesseract_timeout: float | None = None
+    tesseract_non_ocr_timeout: float | None = None
+    tesseract_downsample_above: int | None = None
+    tesseract_downsample_large_images: bool | None = None
+    rotate_pages_threshold: float = DEFAULT_ROTATE_PAGES_THRESHOLD
+    pdfa_image_compression: str | None = None
+    color_conversion_strategy: str | None = None
+    user_words: os.PathLike | None = None
+    user_patterns: os.PathLike | None = None
+    fast_web_view: float | None = None
+    continue_on_soft_render_error: bool | None = None
+    
+    # Plugin system
+    plugins: Sequence[Path | str] | None = None
+    
+    # Store any extra attributes (for plugins and dynamic options)
+    _extra_attrs: dict[str, Any] = Field(default_factory=dict, exclude=True)
+    
+    def __getattr__(self, name: str) -> Any:
+        """Allow attribute access like argparse.Namespace."""
+        if name in self._extra_attrs:
+            return self._extra_attrs[name]
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+    
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Allow attribute setting like argparse.Namespace."""
+        if name.startswith('_') or name in self.__fields__:
+            super().__setattr__(name, value)
+        else:
+            if not hasattr(self, '_extra_attrs'):
+                super().__setattr__('_extra_attrs', {})
+            self._extra_attrs[name] = value
+    
+    def __delattr__(self, name: str) -> None:
+        """Allow attribute deletion like argparse.Namespace."""
+        if name in self.__fields__:
+            super().__delattr__(name)
+        elif name in self._extra_attrs:
+            del self._extra_attrs[name]
+        else:
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+    
+    @classmethod
+    def from_namespace(cls, ns: Namespace) -> OCROptions:
+        """Convert argparse.Namespace to OCROptions."""
+        # Extract known fields
+        known_fields = {}
+        extra_attrs = {}
+        
+        for key, value in vars(ns).items():
+            if key in cls.__fields__:
+                known_fields[key] = value
+            else:
+                extra_attrs[key] = value
+        
+        instance = cls(**known_fields)
+        instance._extra_attrs = extra_attrs
+        return instance
+    
+    def to_namespace(self) -> Namespace:
+        """Convert back to argparse.Namespace for compatibility."""
+        ns = Namespace()
+        
+        # Add pydantic fields
+        for field_name in self.__fields__:
+            field_value = getattr(self, field_name)
+            setattr(ns, field_name, field_value)
+        
+        # Add extra attributes
+        for key, value in self._extra_attrs.items():
+            setattr(ns, key, value)
+        
+        return ns
+    
+    @validator('languages')
+    def validate_languages(cls, v):
+        """Ensure languages list is not empty."""
+        if not v:
+            return [DEFAULT_LANGUAGE]
+        return v
+    
+    @validator('output_type')
+    def validate_output_type(cls, v):
+        """Validate output type is one of the allowed values."""
+        valid_types = {'pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3', 'none'}
+        if v not in valid_types:
+            raise ValueError(f"output_type must be one of {valid_types}")
+        return v
+    
+    @validator('pdf_renderer')
+    def validate_pdf_renderer(cls, v):
+        """Validate PDF renderer is one of the allowed values."""
+        valid_renderers = {'auto', 'hocr', 'sandwich', 'hocrdebug'}
+        if v not in valid_renderers:
+            raise ValueError(f"pdf_renderer must be one of {valid_renderers}")
+        return v
+    
+    @validator('clean_final')
+    def validate_clean_final(cls, v, values):
+        """If clean_final is True, also set clean to True."""
+        if v and 'clean' in values:
+            values['clean'] = True
+        return v
+    
+    @validator('jobs')
+    def validate_jobs(cls, v):
+        """Validate jobs is a reasonable number."""
+        if v is not None and (v < 0 or v > 256):
+            raise ValueError("jobs must be between 0 and 256")
+        return v
+    
+    @validator('verbose')
+    def validate_verbose(cls, v):
+        """Validate verbose level."""
+        if v < 0 or v > 2:
+            raise ValueError("verbose must be between 0 and 2")
+        return v
+    
+    @validator('oversample')
+    def validate_oversample(cls, v):
+        """Validate oversample DPI."""
+        if v < 0 or v > 5000:
+            raise ValueError("oversample must be between 0 and 5000")
+        return v
+    
+    @validator('max_image_mpixels')
+    def validate_max_image_mpixels(cls, v):
+        """Validate max image megapixels."""
+        if v < 0:
+            raise ValueError("max_image_mpixels must be non-negative")
+        return v
+    
+    @validator('rotate_pages_threshold')
+    def validate_rotate_pages_threshold(cls, v):
+        """Validate rotate pages threshold."""
+        if v < 0 or v > 1000:
+            raise ValueError("rotate_pages_threshold must be between 0 and 1000")
+        return v
+    
+    class Config:
+        extra = "forbid"  # Force use of _extra_attrs for unknown fields
+        arbitrary_types_allowed = True  # Allow BinaryIO, Path, etc.
+        validate_assignment = True  # Validate on attribute assignment

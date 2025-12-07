@@ -54,6 +54,7 @@ from warnings import warn
 import pluggy
 
 from ocrmypdf._logging import PageNumberFilter
+from ocrmypdf._options import OCROptions
 from ocrmypdf._pipelines.hocr_to_ocr_pdf import run_hocr_to_ocr_pdf_pipeline
 from ocrmypdf._pipelines.ocr import run_pipeline, run_pipeline_cli
 from ocrmypdf._pipelines.pdf_to_hocr import run_hocr_pipeline
@@ -216,7 +217,7 @@ def _kwargs_to_cmdline(
 
 def create_options(
     *, input_file: PathOrIO, output_file: PathOrIO, parser: ArgumentParser, **kwargs
-) -> Namespace:
+) -> OCROptions:
     """Construct an options object from the input/output files and keyword arguments.
 
     Args:
@@ -226,7 +227,7 @@ def create_options(
         **kwargs: Keyword arguments.
 
     Returns:
-        argparse.Namespace: A Namespace object containing the parsed arguments.
+        OCROptions: An options object containing the parsed arguments.
 
     Raises:
         TypeError: If the type of a keyword argument is not supported.
@@ -248,17 +249,19 @@ def create_options(
         cmdline.append('stream://sidecar')
 
     parser.enable_api_mode()
-    options = parser.parse_args(cmdline)
+    namespace_options = parser.parse_args(cmdline)
     for keyword, val in deferred.items():
-        setattr(options, keyword, val)
+        setattr(namespace_options, keyword, val)
 
-    if options.input_file == 'stream://input_file':
-        options.input_file = input_file
-    if options.output_file == 'stream://output_file':
-        options.output_file = output_file
-    if options.sidecar == 'stream://sidecar':
-        options.sidecar = kwargs['sidecar']
+    if namespace_options.input_file == 'stream://input_file':
+        namespace_options.input_file = input_file
+    if namespace_options.output_file == 'stream://output_file':
+        namespace_options.output_file = output_file
+    if namespace_options.sidecar == 'stream://sidecar':
+        namespace_options.sidecar = kwargs['sidecar']
 
+    # Convert to OCROptions
+    options = OCROptions.from_namespace(namespace_options)
     return options
 
 

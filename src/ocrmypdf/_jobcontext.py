@@ -10,9 +10,11 @@ from argparse import Namespace
 from collections.abc import Iterator
 from copy import copy
 from pathlib import Path
+from typing import Union
 
 from pluggy import PluginManager
 
+from ocrmypdf._options import OCROptions
 from ocrmypdf.pdfinfo import PdfInfo
 from ocrmypdf.pdfinfo.info import PageInfo
 
@@ -20,24 +22,37 @@ from ocrmypdf.pdfinfo.info import PageInfo
 class PdfContext:
     """Holds the context for a particular run of the pipeline."""
 
-    options: Namespace  #: The specified options for processing this PDF.
+    options: Union[Namespace, OCROptions]  #: The specified options for processing this PDF.
     origin: Path  #: The filename of the original input file.
     pdfinfo: PdfInfo  #: Detailed data for this PDF.
     plugin_manager: PluginManager  #: PluginManager for processing the current PDF.
 
     def __init__(
         self,
-        options: Namespace,
+        options: Union[Namespace, OCROptions],
         work_folder: Path,
         origin: Path,
         pdfinfo: PdfInfo,
         plugin_manager,
     ):
-        self.options = options
+        # Accept both types during transition
+        if isinstance(options, Namespace):
+            self.options = OCROptions.from_namespace(options)
+            self._legacy_options = options
+        else:
+            self.options = options
+            self._legacy_options = None
         self.work_folder = work_folder
         self.origin = origin
         self.pdfinfo = pdfinfo
         self.plugin_manager = plugin_manager
+
+    @property
+    def legacy_options(self) -> Namespace:
+        """Provide Namespace for plugin compatibility."""
+        if self._legacy_options is None:
+            self._legacy_options = self.options.to_namespace()
+        return self._legacy_options
 
     def get_path(self, name: str) -> Path:
         """Generate a ``Path`` for an intermediate file involved in processing.
@@ -67,7 +82,7 @@ class PageContext:
     capable of their serializing themselves via ``__getstate__``.
     """
 
-    options: Namespace  #: The specified options for processing this PDF.
+    options: Union[Namespace, OCROptions]  #: The specified options for processing this PDF.
     origin: Path  #: The filename of the original input file.
     pageno: int  #: This page number (zero-based).
     pageinfo: PageInfo  #: Information on this page.
@@ -93,8 +108,11 @@ class PageContext:
         state = self.__dict__.copy()
 
         state['options'] = copy(self.options)
-        if not isinstance(state['options'].input_file, str | bytes | os.PathLike):
-            state['options'].input_file = 'stream'
-        if not isinstance(state['options'].output_file, str | bytes | os.PathLike):
-            state['options'].output_file = 'stream'
+        # Handle both OCROptions and Namespace
+        if hasattr(state['options'], 'input_file'):
+            if not isinstance(state['options'].input_file, str | bytes | os.PathLike):
+                state['options'].input_file = 'stream'
+        if hasattr(state['options'], 'output_file'):
+            if not isinstance(state['options'].output_file, str | bytes | os.PathLike):
+                state['options'].output_file = 'stream'
         return state
