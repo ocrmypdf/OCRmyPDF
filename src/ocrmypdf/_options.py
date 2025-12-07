@@ -146,6 +146,10 @@ class OCROptions(BaseModel):
         if 'output_folder' in extra_attrs and 'output_file' not in known_fields:
             known_fields['output_file'] = '/dev/null'  # Placeholder
         
+        # Handle case where input_file is missing (e.g., in _hocr_to_ocr_pdf)
+        if 'work_folder' in extra_attrs and 'input_file' not in known_fields:
+            known_fields['input_file'] = '/dev/null'  # Placeholder
+        
         instance = cls(**known_fields)
         instance.extra_attrs = extra_attrs
         return instance
