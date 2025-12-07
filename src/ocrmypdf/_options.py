@@ -9,11 +9,11 @@ import os
 from argparse import Namespace
 from collections.abc import Iterable, Sequence
 from copy import copy
+from io import IOBase
 from pathlib import Path
 from typing import Any, BinaryIO, Union
-from io import IOBase
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from ocrmypdf._defaults import DEFAULT_LANGUAGE, DEFAULT_ROTATE_PAGES_THRESHOLD
 
@@ -22,23 +22,23 @@ PathOrIO = Union[BinaryIO, IOBase, Path, str, bytes]
 
 class OCROptions(BaseModel):
     """Internal options model that can masquerade as argparse.Namespace.
-    
+
     This model provides proper typing and validation while maintaining
     compatibility with existing code that expects argparse.Namespace behavior.
     """
-    
+
     # I/O options
     input_file: PathOrIO
     output_file: PathOrIO
     sidecar: PathOrIO | None = None
-    
+
     # Core OCR options
     languages: list[str] = Field(default_factory=lambda: [DEFAULT_LANGUAGE])
     output_type: str = 'pdfa'
     force_ocr: bool = False
     skip_text: bool = False
     redo_ocr: bool = False
-    
+
     # Job control
     jobs: int | None = None
     use_threads: bool = True
@@ -46,7 +46,7 @@ class OCROptions(BaseModel):
     quiet: bool = False
     verbose: int = 0
     keep_temporary_files: bool = False
-    
+
     # Image processing
     image_dpi: int | None = None
     deskew: bool = False
@@ -56,19 +56,21 @@ class OCROptions(BaseModel):
     remove_background: bool = False
     remove_vectors: bool = False
     oversample: int = 0
-    unpaper_args: str | list[str] | None = None  # Can be string or list after validation
-    
+    unpaper_args: str | list[str] | None = (
+        None  # Can be string or list after validation
+    )
+
     # OCR behavior
     skip_big: float | None = None
     pages: str | set[int] | None = None  # Can be string or set after validation
     invalidate_digital_signatures: bool = False
-    
+
     # Metadata
     title: str | None = None
     author: str | None = None
     subject: str | None = None
     keywords: str | None = None
-    
+
     # Optimization
     optimize: int | None = None
     jpg_quality: int | None = None
@@ -76,7 +78,7 @@ class OCROptions(BaseModel):
     jbig2_lossy: bool | None = None
     jbig2_page_group_size: int | None = None
     jbig2_threshold: float | None = None
-    
+
     # Advanced options
     max_image_mpixels: float = 250.0
     pdf_renderer: str = 'auto'
@@ -95,22 +97,26 @@ class OCROptions(BaseModel):
     user_patterns: os.PathLike | None = None
     fast_web_view: float | None = None
     continue_on_soft_render_error: bool | None = None
-    
+
     # Plugin system
     plugins: Sequence[Path | str] | None = None
-    
+
     # Computed/derived options (set during validation)
     lossless_reconstruction: bool = False
-    
+
     # Store any extra attributes (for plugins and dynamic options)
-    extra_attrs: dict[str, Any] = Field(default_factory=dict, exclude=True, alias='_extra_attrs')
-    
+    extra_attrs: dict[str, Any] = Field(
+        default_factory=dict, exclude=True, alias='_extra_attrs'
+    )
+
     def __getattr__(self, name: str) -> Any:
         """Allow attribute access like argparse.Namespace."""
         if name in self.extra_attrs:
             return self.extra_attrs[name]
-        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
-    
+        raise AttributeError(
+            f"'{type(self).__name__}' object has no attribute '{name}'"
+        )
+
     def __setattr__(self, name: str, value: Any) -> None:
         """Allow attribute setting like argparse.Namespace."""
         if name.startswith('_') or name in type(self).model_fields:
@@ -119,7 +125,7 @@ class OCROptions(BaseModel):
             if not hasattr(self, 'extra_attrs'):
                 super().__setattr__('extra_attrs', {})
             self.extra_attrs[name] = value
-    
+
     def __delattr__(self, name: str) -> None:
         """Allow attribute deletion like argparse.Namespace."""
         if name in type(self).model_fields:
@@ -127,48 +133,50 @@ class OCROptions(BaseModel):
         elif name in self.extra_attrs:
             del self.extra_attrs[name]
         else:
-            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
-    
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{name}'"
+            )
+
     @classmethod
     def from_namespace(cls, ns: Namespace) -> OCROptions:
         """Convert argparse.Namespace to OCROptions."""
         # Extract known fields
         known_fields = {}
         extra_attrs = {}
-        
+
         for key, value in vars(ns).items():
             if key in cls.model_fields:
                 known_fields[key] = value
             else:
                 extra_attrs[key] = value
-        
+
         # Handle special cases for hOCR API
         if 'output_folder' in extra_attrs and 'output_file' not in known_fields:
             known_fields['output_file'] = '/dev/null'  # Placeholder
-        
+
         # Handle case where input_file is missing (e.g., in _hocr_to_ocr_pdf)
         if 'work_folder' in extra_attrs and 'input_file' not in known_fields:
             known_fields['input_file'] = '/dev/null'  # Placeholder
-        
+
         instance = cls(**known_fields)
         instance.extra_attrs = extra_attrs
         return instance
-    
+
     def to_namespace(self) -> Namespace:
         """Convert back to argparse.Namespace for compatibility."""
         ns = Namespace()
-        
+
         # Add pydantic fields
         for field_name in type(self).model_fields:
             field_value = getattr(self, field_name)
             setattr(ns, field_name, field_value)
-        
+
         # Add extra attributes
         for key, value in self.extra_attrs.items():
             setattr(ns, key, value)
-        
+
         return ns
-    
+
     @field_validator('languages')
     @classmethod
     def validate_languages(cls, v):
@@ -176,7 +184,7 @@ class OCROptions(BaseModel):
         if not v:
             return [DEFAULT_LANGUAGE]
         return v
-    
+
     @field_validator('output_type')
     @classmethod
     def validate_output_type(cls, v):
@@ -185,7 +193,7 @@ class OCROptions(BaseModel):
         if v not in valid_types:
             raise ValueError(f"output_type must be one of {valid_types}")
         return v
-    
+
     @field_validator('pdf_renderer')
     @classmethod
     def validate_pdf_renderer(cls, v):
@@ -194,7 +202,7 @@ class OCROptions(BaseModel):
         if v not in valid_renderers:
             raise ValueError(f"pdf_renderer must be one of {valid_renderers}")
         return v
-    
+
     @field_validator('clean_final')
     @classmethod
     def validate_clean_final(cls, v, info):
@@ -202,7 +210,7 @@ class OCROptions(BaseModel):
         if v and hasattr(info, 'data') and 'clean' in info.data:
             info.data['clean'] = True
         return v
-    
+
     @field_validator('jobs')
     @classmethod
     def validate_jobs(cls, v):
@@ -210,7 +218,7 @@ class OCROptions(BaseModel):
         if v is not None and (v < 0 or v > 256):
             raise ValueError("jobs must be between 0 and 256")
         return v
-    
+
     @field_validator('verbose')
     @classmethod
     def validate_verbose(cls, v):
@@ -218,7 +226,7 @@ class OCROptions(BaseModel):
         if v < 0 or v > 2:
             raise ValueError("verbose must be between 0 and 2")
         return v
-    
+
     @field_validator('oversample')
     @classmethod
     def validate_oversample(cls, v):
@@ -226,7 +234,7 @@ class OCROptions(BaseModel):
         if v < 0 or v > 5000:
             raise ValueError("oversample must be between 0 and 5000")
         return v
-    
+
     @field_validator('max_image_mpixels')
     @classmethod
     def validate_max_image_mpixels(cls, v):
@@ -234,7 +242,7 @@ class OCROptions(BaseModel):
         if v < 0:
             raise ValueError("max_image_mpixels must be non-negative")
         return v
-    
+
     @field_validator('rotate_pages_threshold')
     @classmethod
     def validate_rotate_pages_threshold(cls, v):
@@ -242,7 +250,7 @@ class OCROptions(BaseModel):
         if v < 0 or v > 1000:
             raise ValueError("rotate_pages_threshold must be between 0 and 1000")
         return v
-    
+
     @model_validator(mode='before')
     @classmethod
     def handle_special_cases(cls, data):
@@ -255,7 +263,7 @@ class OCROptions(BaseModel):
             if data.get('pdf_renderer') == 'auto':
                 data['pdf_renderer'] = 'hocr'  # Default to hocr for auto
         return data
-    
+
     model_config = ConfigDict(
         extra="forbid",  # Force use of extra_attrs for unknown fields
         arbitrary_types_allowed=True,  # Allow BinaryIO, Path, etc.

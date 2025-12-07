@@ -478,10 +478,13 @@ def convert_to_jbig2(
 
 
 def _optimize_jpeg(
-    xref: Xref, in_jpg: Path, opt_jpg: Path, jpeg_quality: int
+    xref: Xref, in_jpg: Path, opt_jpg: Path, jpg_quality: int
 ) -> tuple[Xref, Path | None]:
     with Image.open(in_jpg) as im:
-        im.save(opt_jpg, optimize=True, quality=jpeg_quality)
+        save_kwargs = {'optimize': True}
+        if isinstance(jpg_quality, int) and 0 < jpg_quality <= 100:
+            save_kwargs['quality'] = jpg_quality
+        im.save(opt_jpg, **save_kwargs)
 
     if opt_jpg.stat().st_size > in_jpg.stat().st_size:
         log.debug(f"xref {xref}, jpeg, made larger - skip")
@@ -499,7 +502,7 @@ def transcode_jpegs(
         for xref in jpegs:
             in_jpg = jpg_name(root, xref)
             opt_jpg = in_jpg.with_suffix('.opt.jpg')
-            yield xref, in_jpg, opt_jpg, options.jpeg_quality
+            yield xref, in_jpg, opt_jpg, options.jpg_quality
 
     def finish_jpeg(result: tuple[Xref, Path | None], pbar: ProgressBar):
         xref, opt_jpg = result
@@ -712,8 +715,8 @@ def optimize(
         safe_symlink(input_file, output_file)
         return output_file
 
-    if options.jpeg_quality == 0:
-        options.jpeg_quality = DEFAULT_JPEG_QUALITY if options.optimize < 3 else 40
+    if options.jpg_quality == 0:
+        options.jpg_quality = DEFAULT_JPEG_QUALITY if options.optimize < 3 else 40
     if options.png_quality == 0:
         options.png_quality = DEFAULT_PNG_QUALITY if options.optimize < 3 else 30
     if options.jbig2_page_group_size == 0:
@@ -766,10 +769,11 @@ def main(infile, outfile, level, jobs=1):
     """Entry point for direct optimization of a file."""
     from shutil import copy  # pylint: disable=import-outside-toplevel
     from tempfile import TemporaryDirectory  # pylint: disable=import-outside-toplevel
+
     from ocrmypdf._options import OCROptions  # pylint: disable=import-outside-toplevel
 
     infile = Path(infile)
-    
+
     # Create OCROptions with optimization-specific settings
     options = OCROptions(
         input_file=infile,
