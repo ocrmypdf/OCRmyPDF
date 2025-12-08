@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import NamedTuple, cast
 
 import PIL
+import PIL.Image
 from pikepdf import Pdf
 
 from ocrmypdf._annots import remove_broken_goto_annotations
@@ -306,6 +307,11 @@ def setup_pipeline(
     # options.input_file, options.pdf_renderer are already bound.)
     if not options.jobs:
         options.jobs = available_cpu_count()
+
+    # Apply PIL max image pixels side effect
+    PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1_000_000)
+    if PIL.Image.MAX_IMAGE_PIXELS == 0:
+        PIL.Image.MAX_IMAGE_PIXELS = None  # type: ignore
 
     pikepdf_enable_mmap()
     executor = setup_executor(plugin_manager)
