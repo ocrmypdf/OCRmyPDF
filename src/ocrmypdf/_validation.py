@@ -10,7 +10,6 @@ import locale
 import logging
 import os
 import sys
-import unicodedata
 from argparse import Namespace
 from collections.abc import Sequence
 from pathlib import Path
@@ -18,7 +17,6 @@ from shutil import copyfileobj
 from typing import Union
 
 import pikepdf
-import PIL
 from pluggy import PluginManager
 
 from ocrmypdf._defaults import DEFAULT_LANGUAGE, DEFAULT_ROTATE_PAGES_THRESHOLD
@@ -32,7 +30,6 @@ from ocrmypdf.exceptions import (
 )
 from ocrmypdf.helpers import (
     is_file_writable,
-    monotonic,
     running_in_docker,
     running_in_snap,
     safe_symlink,
@@ -78,34 +75,6 @@ def check_options_languages(
         raise MissingDependencyError(msg)
 
 
-def check_options_output(options: Union[Namespace, OCROptions]) -> None:
-    if options.output_type == 'none' and options.output_file not in (os.devnull, '-'):
-        raise BadArgsError(
-            "Since you specified `--output-type none`, the output file "
-            f"{options.output_file} cannot be produced. Set the output file to "
-            f"`-` to suppress this message."
-        )
-
-
-def set_lossless_reconstruction(options: Union[Namespace, OCROptions]) -> None:
-    lossless_reconstruction = False
-    if not any(
-        (
-            options.deskew,
-            options.clean_final,
-            options.force_ocr,
-            options.remove_background,
-        )
-    ):
-        lossless_reconstruction = True
-    options.lossless_reconstruction = lossless_reconstruction
-
-    if not options.lossless_reconstruction and options.redo_ocr:
-        raise BadArgsError(
-            "--redo-ocr is not currently compatible with --deskew, "
-            "--clean-final, and --remove-background"
-        )
-
 
 def check_options_sidecar(options: Union[Namespace, OCROptions]) -> None:
     if options.sidecar == '\0':
@@ -149,84 +118,11 @@ def check_options_preprocessing(options: Union[Namespace, OCROptions]) -> None:
             raise BadArgsError("--unpaper-args: " + str(e)) from e
 
 
-def _pages_from_ranges(ranges: str) -> set[int]:
-    pages: list[int] = []
-    page_groups = ranges.replace(' ', '').split(',')
-    for group in page_groups:
-        if not group:
-            continue
-        try:
-            start, end = group.split('-')
-        except ValueError:
-            pages.append(int(group) - 1)
-        else:
-            try:
-                new_pages = list(range(int(start) - 1, int(end)))
-                if not new_pages:
-                    raise BadArgsError(
-                        f"invalid page subrange '{start}-{end}'"
-                    ) from None
-                pages.extend(new_pages)
-            except ValueError:
-                raise BadArgsError(f"invalid page subrange '{group}'") from None
-
-    if not pages:
-        raise BadArgsError(
-            f"The string of page ranges '{ranges}' did not contain any recognizable "
-            f"page ranges."
-        )
-
-    if not monotonic(pages):
-        log.warning(
-            "List of pages to process contains duplicate pages, or pages that are "
-            "out of order"
-        )
-    if any(page < 0 for page in pages):
-        raise BadArgsError("pages refers to a page number less than 1")
-
-    log.debug("OCRing only these pages: %s", pages)
-    return set(pages)
-
-
-def check_options_ocr_behavior(options: Union[Namespace, OCROptions]) -> None:
-    exclusive_options = sum(
-        (1 if opt else 0)
-        for opt in (options.force_ocr, options.skip_text, options.redo_ocr)
-    )
-    if exclusive_options >= 2:
-        raise BadArgsError("Choose only one of --force-ocr, --skip-text, --redo-ocr.")
-    if options.pages:
-        options.pages = _pages_from_ranges(options.pages)
-
-
-def check_options_metadata(options: Union[Namespace, OCROptions]) -> None:
-    docinfo = [options.title, options.author, options.keywords, options.subject]
-    for s in (m for m in docinfo if m):
-        for char in s:
-            if unicodedata.category(char) == 'Co' or ord(char) >= 0x10000:
-                hexchar = hex(ord(char))[2:].upper()
-                raise ValueError(
-                    "One of the metadata strings contains "
-                    "an unsupported Unicode character: "
-                    f"{char} (U+{hexchar})"
-                )
-
-
-def check_options_pillow(options: Union[Namespace, OCROptions]) -> None:
-    PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1_000_000)
-    if PIL.Image.MAX_IMAGE_PIXELS == 0:
-        PIL.Image.MAX_IMAGE_PIXELS = None  # type: ignore
-
 
 def _check_plugin_invariant_options(options: Union[Namespace, OCROptions]) -> None:
     check_platform()
-    check_options_metadata(options)
-    check_options_output(options)
-    set_lossless_reconstruction(options)
     check_options_sidecar(options)
     check_options_preprocessing(options)
-    check_options_ocr_behavior(options)
-    check_options_pillow(options)
 
 
 def _check_plugin_options(
