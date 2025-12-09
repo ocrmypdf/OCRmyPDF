@@ -122,7 +122,17 @@ class PageContext:
                 setattr(clean_options, key, value)
             except TypeError:
                 continue
-        clean_options.lossless_reconstruction = self.options.lossless_reconstruction
+        # Set lossless_reconstruction if it exists, otherwise compute it
+        if hasattr(self.options, 'lossless_reconstruction'):
+            clean_options.lossless_reconstruction = self.options.lossless_reconstruction
+        else:
+            # Compute lossless_reconstruction for Namespace objects
+            clean_options.lossless_reconstruction = not any([
+                getattr(self.options, 'deskew', False),
+                getattr(self.options, 'clean_final', False),
+                getattr(self.options, 'force_ocr', False),
+                getattr(self.options, 'remove_background', False),
+            ])
         state['options'] = clean_options
 
         # Handle stream inputs
