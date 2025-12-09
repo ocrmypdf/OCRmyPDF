@@ -25,6 +25,7 @@ from ocrmypdf._concurrent import Executor
 from ocrmypdf._exec import unpaper
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._metadata import repair_docinfo_nuls
+from ocrmypdf._options import OCROptions
 from ocrmypdf.exceptions import (
     DigitalSignatureError,
     DpiError,
@@ -58,7 +59,7 @@ VECTOR_PAGE_DPI = 400
 register_heif_opener()
 
 
-def triage_image_file(input_file: Path, output_file: Path, options) -> None:
+def triage_image_file(input_file: Path, output_file: Path, options: OCROptions) -> None:
     """Triage the input image file.
 
     If the input file is an image, check its resolution and convert it to PDF.
@@ -157,7 +158,7 @@ def _pdf_guess_version(input_file: Path, search_window=1024) -> str:
 
 
 def triage(
-    original_filename: str, input_file: Path, output_file: Path, options
+    original_filename: str, input_file: Path, output_file: Path, options: OCROptions
 ) -> Path:
     """Triage the input file. We can handle PDFs and images."""
     try:
