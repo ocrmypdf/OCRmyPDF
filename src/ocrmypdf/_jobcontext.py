@@ -38,7 +38,7 @@ class PdfContext:
         # Accept both types during transition
         if isinstance(options, Namespace):
             self.options = OCROptions.from_namespace(options)
-            self._namespace_options = options  # Keep original for PageContext
+            self._namespace_options = self.options.to_namespace()  # Use converted namespace with computed attributes
         elif isinstance(options, OCROptions):
             self.options = options
             self._namespace_options = options.to_namespace()  # Convert immediately for PageContext
