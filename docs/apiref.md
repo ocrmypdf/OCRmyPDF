@@ -13,6 +13,13 @@ should be mainly of interest to plugin developers.
     :members:
 ```
 
+## ocrmypdf._options
+
+```{eval-rst}
+.. automodule:: ocrmypdf._options
+    :members: OCROptions
+```
+
 ## ocrmypdf.exceptions
 
 ```{eval-rst}

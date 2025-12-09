@@ -164,6 +164,13 @@ chaining operations.
 .. autofunction:: ocrmypdf.pluginspec.check_options
 ```
 
+:::{note}
+**Plugin Interface Change**: Starting in OCRmyPDF v16.13.0, plugin hooks receive 
+`OCROptions` objects instead of `argparse.Namespace` objects. Most plugins will 
+continue working due to duck-typing compatibility, but plugin developers should 
+update their type hints accordingly.
+:::
+
 ### Execution and progress reporting
 
 ```{eval-rst}

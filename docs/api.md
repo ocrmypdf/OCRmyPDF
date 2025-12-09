@@ -117,3 +117,15 @@ handler. OCRmyPDF will clean up its temporary files and worker processes
 automatically when an exception occurs.
 
 When OCRmyPDF succeeds conditionally, it returns an integer exit code.
+
+### Plugin Development Changes
+
+Starting in OCRmyPDF v16.13.0, the plugin interface has been updated:
+
+- Plugin hooks now receive `OCROptions` objects instead of `argparse.Namespace`
+- `OCROptions` provides the same attribute access as `Namespace` (duck-typing compatible)
+- Plugin developers should update type hints: `from ocrmypdf._options import OCROptions`
+- Built-in plugins no longer modify options in-place for better immutability
+
+Most existing plugins will continue working without modification due to the
+duck-typing compatibility between `OCROptions` and `Namespace`.
