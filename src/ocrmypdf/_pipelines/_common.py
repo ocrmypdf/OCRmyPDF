@@ -329,7 +329,7 @@ def setup_pipeline(
 
 
 def do_get_pdfinfo(
-    pdf_path: Path, executor: Executor, options: argparse.Namespace
+    pdf_path: Path, executor: Executor, options
 ) -> PdfInfo:
     # Handle pages field - it might be a string that needs conversion
     check_pages = options.pages
