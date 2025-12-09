@@ -48,6 +48,21 @@ from ocrmypdf._validation import (
     check_requested_output_file,
     create_input_file,
 )
+
+
+def _convert_pages_field_for_legacy_compatibility(options: argparse.Namespace) -> None:
+    """Convert pages field from string to set if needed.
+    
+    This is a temporary shim to handle the transition from CLI string processing
+    to OCROptions Pydantic validation. The pages field needs to be converted
+    before calling do_get_pdfinfo() since PdfInfo expects a Container[int].
+    
+    TODO: Remove this function when the refactoring plan is complete and all
+    pipeline functions work directly with OCROptions instead of Namespace.
+    """
+    if hasattr(options, 'pages') and isinstance(options.pages, str):
+        from ocrmypdf._options import _pages_from_ranges
+        options.pages = _pages_from_ranges(options.pages)
 from ocrmypdf.exceptions import ExitCode
 
 log = logging.getLogger(__name__)
@@ -175,6 +190,9 @@ def _run_pipeline(
             original_filename, start_input_file, work_folder / 'origin.pdf', options
         )
 
+        # Convert pages field if needed before gathering pdfinfo
+        _convert_pages_field_for_legacy_compatibility(options)
+        
         # Gather pdfinfo and create context
         pdfinfo = do_get_pdfinfo(origin_pdf, executor, options)
         context = PdfContext(options, work_folder, origin_pdf, pdfinfo, plugin_manager)

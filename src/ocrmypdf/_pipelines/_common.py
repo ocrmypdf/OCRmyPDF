@@ -50,7 +50,7 @@ from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._validation import (
     report_output_file_size,
 )
-from ocrmypdf.exceptions import ExitCode, ExitCodeException
+from ocrmypdf.exceptions import BadArgsError, ExitCode, ExitCodeException
 from ocrmypdf.helpers import (
     available_cpu_count,
     check_pdf,
@@ -275,6 +275,16 @@ def cli_exception_handler(
         else:
             log.error(type(e).__name__)
         return e.exit_code
+    except ValueError as e:
+        # Convert Pydantic validation errors to BadArgsError for proper exit code
+        if "validation error" in str(e).lower() or "value error" in str(e).lower():
+            if options.verbose >= 1:
+                log.exception("Validation error")
+            else:
+                log.error("Invalid argument: %s", str(e))
+            return ExitCode.bad_args
+        # Re-raise other ValueErrors to be caught by the general exception handler
+        raise
     except PIL.Image.DecompressionBombError:
         log.exception(
             "A decompression bomb error was encountered while executing the "

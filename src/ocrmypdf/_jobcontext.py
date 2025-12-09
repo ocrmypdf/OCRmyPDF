@@ -103,6 +103,8 @@ class PageContext:
         self.pageno = pageno
         self.pageinfo = pdf_context.pdfinfo[pageno]
         self.plugin_manager = pdf_context.plugin_manager
+        # Ensure no reference to PdfContext which contains OCROptions
+        self._pdf_context = None
 
     def get_path(self, name: str) -> Path:
         """Generate a ``Path`` for a file that is part of processing this page.
@@ -115,6 +117,7 @@ class PageContext:
     def __getstate__(self):
         state = self.__dict__.copy()
 
+        # Ensure we only pickle the Namespace, not any Pydantic objects
         state['options'] = copy(self.options)
         # Handle stream inputs
         if hasattr(state['options'], 'input_file'):
@@ -123,4 +126,7 @@ class PageContext:
         if hasattr(state['options'], 'output_file'):
             if not isinstance(state['options'].output_file, str | bytes | os.PathLike):
                 state['options'].output_file = 'stream'
+        
+        # Remove any potential references to Pydantic objects
+        state.pop('_pdf_context', None)
         return state
