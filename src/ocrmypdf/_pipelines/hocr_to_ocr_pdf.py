@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import argparse
 import logging
 import logging.handlers
 from collections.abc import Sequence
@@ -17,6 +16,7 @@ import PIL
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PageContext, PdfContext
+from ocrmypdf._options import OCROptions
 from ocrmypdf._pipeline import (
     copy_final,
     render_hocr_page,
@@ -34,6 +34,7 @@ from ocrmypdf._pipelines._common import (
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.helpers import available_cpu_count
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +56,8 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
     """Convert hOCR files to OCR PDF."""
     # Run exec_page_sync on every page
     options = context.options
-    max_workers = min(len(context.pdfinfo), options.jobs)
+    jobs = options.jobs or available_cpu_count()
+    max_workers = min(len(context.pdfinfo), jobs)
     if max_workers > 1:
         log.info("Continue processing %d pages concurrently", max_workers)
 
@@ -105,7 +107,7 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
 
 
 def run_hocr_to_ocr_pdf_pipeline(
-    options: argparse.Namespace,
+    options: OCROptions,
     *,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
