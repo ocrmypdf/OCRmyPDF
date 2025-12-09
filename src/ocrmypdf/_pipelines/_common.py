@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import argparse
 import json
 import logging
 import logging.handlers
@@ -28,6 +27,7 @@ from ocrmypdf._concurrent import Executor, setup_executor
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._metadata import metadata_fixup
+from ocrmypdf._options import OCROptions
 from ocrmypdf._pipeline import (
     convert_to_pdfa,
     create_ocr_image,
@@ -195,7 +195,7 @@ def worker_init(max_pixels: int | None) -> None:
 @contextmanager
 def manage_debug_log_handler(
     *,
-    options: argparse.Namespace,
+    options: OCROptions,
     work_folder: Path,
 ):
     remover = None
@@ -244,8 +244,8 @@ def manage_work_folder(*, work_folder: Path, retain: bool, print_location: bool)
 
 
 def cli_exception_handler(
-    fn: Callable[[argparse.Namespace, OcrmypdfPluginManager], ExitCode],
-    options: argparse.Namespace,
+    fn: Callable[[OCROptions, OcrmypdfPluginManager], ExitCode],
+    options: OCROptions,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
     """Convert exceptions into command line error messages and exit codes.
@@ -309,7 +309,7 @@ def cli_exception_handler(
 
 
 def setup_pipeline(
-    options: argparse.Namespace,
+    options: OCROptions,
     plugin_manager: OcrmypdfPluginManager,
 ) -> Executor:
     # Any changes to options will not take effect for options that are already
