@@ -63,19 +63,17 @@ def test_tesseract_not_installed(caplog):
 
 
 def test_lossless_redo():
-    with pytest.raises(BadArgsError):
-        options = make_opts(redo_ocr=True, deskew=True)
-        vd.check_options_output(options)
-        vd.set_lossless_reconstruction(options)
+    with pytest.raises(ValueError, match="--redo-ocr is not currently compatible"):
+        make_opts(redo_ocr=True, deskew=True)
 
 
 def test_mutex_options():
-    with pytest.raises(BadArgsError):
-        vd.check_options_ocr_behavior(make_opts(force_ocr=True, skip_text=True))
-    with pytest.raises(BadArgsError):
-        vd.check_options_ocr_behavior(make_opts(redo_ocr=True, skip_text=True))
-    with pytest.raises(BadArgsError):
-        vd.check_options_ocr_behavior(make_opts(redo_ocr=True, force_ocr=True))
+    with pytest.raises(ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"):
+        make_opts(force_ocr=True, skip_text=True)
+    with pytest.raises(ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"):
+        make_opts(redo_ocr=True, skip_text=True)
+    with pytest.raises(ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"):
+        make_opts(redo_ocr=True, force_ocr=True)
 
 
 def test_optimizing(caplog):
@@ -86,7 +84,13 @@ def test_optimizing(caplog):
 
 
 def test_pillow_options():
-    vd.check_options_pillow(make_opts(max_image_mpixels=0))
+    # Test that max_image_mpixels=0 is valid (validation now in OCROptions)
+    opts = make_opts(max_image_mpixels=0)
+    assert opts.max_image_mpixels == 0
+    
+    # Test that negative values are rejected
+    with pytest.raises(ValueError, match="max_image_mpixels must be non-negative"):
+        make_opts(max_image_mpixels=-1)
 
 
 def test_output_tty():
