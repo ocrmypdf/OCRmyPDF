@@ -74,8 +74,6 @@ def check_options(options):
             "use --force-ocr to discard existing text."
         )
 
-    if options.output_type == 'pdfa':
-        options.output_type = 'pdfa-2'
     if options.color_conversion_strategy not in ghostscript.COLOR_CONVERSION_STRATEGIES:
         raise ValueError(
             f"Invalid color conversion strategy: {options.color_conversion_strategy}"
@@ -128,6 +126,11 @@ def generate_pdfa(
     stop_on_soft_error,
 ):
     """Generate a PDF/A from the list of PDF pages and PDF/A metadata."""
+    # Normalize output_type at point of use
+    output_type = context.options.output_type
+    if output_type == 'pdfa':
+        output_type = 'pdfa-2'
+    
     ghostscript.generate_pdfa(
         pdf_pages=[pdfmark, *pdf_pages],
         output_file=output_file,

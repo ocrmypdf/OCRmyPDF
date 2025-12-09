@@ -152,14 +152,6 @@ def check_options(options):
             "Please upgrade to a newer or supported older version."
         )
 
-    # Decide on what renderer to use
-    if options.pdf_renderer == 'auto':
-        if {'ara', 'heb', 'fas', 'per'} & set(options.languages):
-            log.info("Using sandwich renderer since there is an RTL language")
-            options.pdf_renderer = 'sandwich'
-        else:
-            options.pdf_renderer = 'hocr'
-
     if not tesseract.has_thresholding() and options.tesseract_thresholding != 0:
         log.warning(
             "The installed version of Tesseract does not support changes to its "
@@ -235,8 +227,20 @@ class TesseractOcrEngine(OcrEngine):
         return str(tesseract.version())
 
     @staticmethod
+    def _determine_renderer(options):
+        """Determine the PDF renderer to use based on options and languages."""
+        if options.pdf_renderer == 'auto':
+            if {'ara', 'heb', 'fas', 'per'} & set(options.languages):
+                log.info("Using sandwich renderer since there is an RTL language")
+                return 'sandwich'
+            else:
+                return 'hocr'
+        return options.pdf_renderer
+
+    @staticmethod
     def creator_tag(options):
-        tag = '-PDF' if options.pdf_renderer == 'sandwich' else '-hOCR'
+        renderer = TesseractOcrEngine._determine_renderer(options)
+        tag = '-PDF' if renderer == 'sandwich' else '-hOCR'
         return f"Tesseract OCR{tag} {TesseractOcrEngine.version()}"
 
     def __str__(self):

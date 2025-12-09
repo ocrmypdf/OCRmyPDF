@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 from collections.abc import Sequence, Set
 from logging import Handler
 from pathlib import Path
@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, NamedTuple
 import pluggy
 
 from ocrmypdf import Executor, PdfContext
+from ocrmypdf._options import OCROptions
 from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.helpers import Resolution
 
@@ -87,7 +88,7 @@ def add_options(parser: ArgumentParser) -> None:
 
 
 @hookspec
-def check_options(options: Namespace) -> None:
+def check_options(options: OCROptions) -> None:
     """Called to ask the plugin to check all of the options.
 
     The plugin may check if options that it added are valid.
@@ -158,7 +159,7 @@ def get_progressbar_class() -> type[ProgressBar]:
 
 
 @hookspec
-def validate(pdfinfo: PdfInfo, options: Namespace) -> None:
+def validate(pdfinfo: PdfInfo, options: OCROptions) -> None:
     """Called to give a plugin an opportunity to review *options* and *pdfinfo*.
 
     *options* contains the "work order" to process a particular file. *pdfinfo*
@@ -368,7 +369,7 @@ class OcrEngine(ABC):
 
     @staticmethod
     @abstractmethod
-    def creator_tag(options: Namespace) -> str:
+    def creator_tag(options: OCROptions) -> str:
         """Returns the creator tag to identify this software's role in creating the PDF.
 
         This tag will be inserted in the XMP metadata and DocumentInfo dictionary
@@ -389,7 +390,7 @@ class OcrEngine(ABC):
 
     @staticmethod
     @abstractmethod
-    def languages(options: Namespace) -> Set[str]:
+    def languages(options: OCROptions) -> Set[str]:
         """Returns the set of all languages that are supported by the engine.
 
         Languages are typically given in 3-letter ISO 3166-1 codes, but actually
@@ -398,18 +399,18 @@ class OcrEngine(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_orientation(input_file: Path, options: Namespace) -> OrientationConfidence:
+    def get_orientation(input_file: Path, options: OCROptions) -> OrientationConfidence:
         """Returns the orientation of the image."""
 
     @staticmethod
-    def get_deskew(input_file: Path, options: Namespace) -> float:
+    def get_deskew(input_file: Path, options: OCROptions) -> float:
         """Returns the deskew angle of the image, in degrees."""
         return 0.0
 
     @staticmethod
     @abstractmethod
     def generate_hocr(
-        input_file: Path, output_hocr: Path, output_text: Path, options: Namespace
+        input_file: Path, output_hocr: Path, output_text: Path, options: OCROptions
     ) -> None:
         """Called to produce a hOCR file from a page image and sidecar text file.
 
@@ -432,7 +433,7 @@ class OcrEngine(ABC):
     @staticmethod
     @abstractmethod
     def generate_pdf(
-        input_file: Path, output_pdf: Path, output_text: Path, options: Namespace
+        input_file: Path, output_pdf: Path, output_text: Path, options: OCROptions
     ) -> None:
         """Called to produce a text only PDF from a page image.
 

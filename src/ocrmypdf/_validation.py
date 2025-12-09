@@ -10,7 +10,6 @@ import locale
 import logging
 import os
 import sys
-from argparse import Namespace
 from collections.abc import Sequence
 from pathlib import Path
 from shutil import copyfileobj
@@ -50,7 +49,7 @@ def check_platform() -> None:
 
 
 def check_options_languages(
-    options: Union[Namespace, OCROptions], ocr_engine_languages: list[str]
+    options: Union[OCROptions], ocr_engine_languages: list[str]
 ) -> None:
     if not ocr_engine_languages:
         return
@@ -76,7 +75,7 @@ def check_options_languages(
 
 
 
-def check_options_sidecar(options: Union[Namespace, OCROptions]) -> None:
+def check_options_sidecar(options: Union[OCROptions]) -> None:
     if options.sidecar == '\0':
         if options.output_file == '-':
             raise BadArgsError("--sidecar filename needed when output file is stdout.")
@@ -91,7 +90,7 @@ def check_options_sidecar(options: Union[Namespace, OCROptions]) -> None:
         )
 
 
-def check_options_preprocessing(options: Union[Namespace, OCROptions]) -> None:
+def check_options_preprocessing(options: Union[OCROptions]) -> None:
     if options.clean_final:
         options.clean = True
     if options.unpaper_args and not options.clean:
@@ -119,37 +118,26 @@ def check_options_preprocessing(options: Union[Namespace, OCROptions]) -> None:
 
 
 
-def _check_plugin_invariant_options(options: Union[Namespace, OCROptions]) -> None:
+def _check_plugin_invariant_options(options: Union[OCROptions]) -> None:
     check_platform()
     check_options_sidecar(options)
     check_options_preprocessing(options)
 
 
 def _check_plugin_options(
-    options: Union[Namespace, OCROptions], plugin_manager: PluginManager
+    options: OCROptions, plugin_manager: PluginManager
 ) -> None:
-    # Convert to Namespace for plugin compatibility during transition
-    if isinstance(options, OCROptions):
-        legacy_options = options.to_namespace()
-    else:
-        legacy_options = options
-    plugin_manager.hook.check_options(options=legacy_options)
-    ocr_engine_languages = plugin_manager.hook.get_ocr_engine().languages(
-        legacy_options
-    )
+    plugin_manager.hook.check_options(options=options)
+    ocr_engine_languages = plugin_manager.hook.get_ocr_engine().languages(options)
     check_options_languages(options, ocr_engine_languages)
 
 
-def check_options(
-    options: Union[Namespace, OCROptions], plugin_manager: PluginManager
-) -> None:
+def check_options(options: OCROptions, plugin_manager: PluginManager) -> None:
     _check_plugin_invariant_options(options)
     _check_plugin_options(options, plugin_manager)
 
 
-def create_input_file(
-    options: Union[Namespace, OCROptions], work_folder: Path
-) -> tuple[Path, str]:
+def create_input_file(options: OCROptions, work_folder: Path) -> tuple[Path, str]:
     if options.input_file == '-':
         # stdin
         log.info('reading file from standard input')
@@ -194,7 +182,7 @@ def create_input_file(
             raise InputFileError(msg) from e
 
 
-def check_requested_output_file(options: Union[Namespace, OCROptions]) -> None:
+def check_requested_output_file(options: OCROptions) -> None:
     if options.output_file == '-':
         if sys.stdout.isatty():
             raise BadArgsError(
@@ -212,7 +200,7 @@ def check_requested_output_file(options: Union[Namespace, OCROptions]) -> None:
 
 
 def report_output_file_size(
-    options: Union[Namespace, OCROptions],
+    options: OCROptions,
     input_file: Path,
     output_file: Path,
     optimize_messages: Sequence[str] | None = None,
