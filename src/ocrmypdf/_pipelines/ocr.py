@@ -49,6 +49,7 @@ from ocrmypdf._validation import (
     create_input_file,
 )
 from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.helpers import available_cpu_count
 
 log = logging.getLogger(__name__)
 
@@ -96,7 +97,8 @@ def _exec_page_sync(page_context: PageContext) -> PageResult:
 def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     """Execute the OCR pipeline concurrently."""
     options = context.options
-    max_workers = min(len(context.pdfinfo), options.jobs)
+    jobs = options.jobs or available_cpu_count()
+    max_workers = min(len(context.pdfinfo), jobs)
     if max_workers > 1:
         log.info("Start processing %d pages concurrently", max_workers)
 
