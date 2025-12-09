@@ -15,7 +15,7 @@ from ocrmypdf._exec import tesseract
 from ocrmypdf._jobcontext import PageContext
 from ocrmypdf.cli import numeric, str_to_int
 from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
-from ocrmypdf.helpers import clamp
+from ocrmypdf.helpers import available_cpu_count, clamp
 from ocrmypdf.imageops import calculate_downsample, downsample_image
 from ocrmypdf.pluginspec import OcrEngine
 from ocrmypdf.subprocess import check_external_program
@@ -184,7 +184,8 @@ def validate(pdfinfo, options):
     # constraint: (ocrmypdf workers) * (tesseract threads) <= max_workers.
     # As of Tesseract 4.1, 3 threads is the most effective on a 4 core/8 thread system.
     if not os.environ.get('OMP_THREAD_LIMIT', '').isnumeric():
-        tess_threads = clamp(options.jobs // len(pdfinfo), 1, 3)
+        jobs = options.jobs or available_cpu_count()
+        tess_threads = clamp(jobs // len(pdfinfo), 1, 3)
         os.environ['OMP_THREAD_LIMIT'] = str(tess_threads)
     else:
         tess_threads = int(os.environ['OMP_THREAD_LIMIT'])
