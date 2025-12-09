@@ -31,9 +31,6 @@ from ocrmypdf._pipelines._common import (
     worker_init,
 )
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
-from ocrmypdf._validation import (
-    set_lossless_reconstruction,
-)
 
 log = logging.getLogger(__name__)
 
@@ -103,6 +100,5 @@ def run_hocr_pipeline(
             options, work_folder, options.input_file, pdfinfo, plugin_manager
         )
         # Validate options are okay for this pdf
-        set_lossless_reconstruction(options)
         validate_pdfinfo_options(context)
         exec_pdf_to_hocr(context, executor)
