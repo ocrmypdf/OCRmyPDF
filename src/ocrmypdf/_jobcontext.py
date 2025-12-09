@@ -140,6 +140,7 @@ class PageContext:
                 setattr(clean_options, key, value)
             except TypeError:
                 continue
+        clean_options.lossless_reconstruction = self.options.lossless_reconstruction
         state['options'] = clean_options
 
         # Handle stream inputs
