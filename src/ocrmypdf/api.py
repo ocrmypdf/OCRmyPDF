@@ -503,12 +503,14 @@ def _pdf_to_hocr(  # noqa: D417
         cmdline.append(str(input_pdf))
         cmdline.append(str(output_folder))
         parser.enable_api_mode()
-        options = parser.parse_args(cmdline)
+        namespace_options = parser.parse_args(cmdline)
         for keyword, val in deferred.items():
-            setattr(options, keyword, val)
-        delattr(options, 'output_file')
-        setattr(options, 'output_folder', output_folder)
+            setattr(namespace_options, keyword, val)
+        delattr(namespace_options, 'output_file')
+        setattr(namespace_options, 'output_folder', output_folder)
 
+        # Convert to OCROptions
+        options = OCROptions.from_namespace(namespace_options)
         return run_hocr_pipeline(options=options, plugin_manager=plugin_manager)
 
 
@@ -569,12 +571,14 @@ def _hocr_to_ocr_pdf(  # noqa: D417
         cmdline.append(str(work_folder))
         cmdline.append(str(output_file))
         parser.enable_api_mode()
-        options = parser.parse_args(cmdline)
+        namespace_options = parser.parse_args(cmdline)
         for keyword, val in deferred.items():
-            setattr(options, keyword, val)
-        delattr(options, 'input_file')
-        setattr(options, 'work_folder', work_folder)
+            setattr(namespace_options, keyword, val)
+        delattr(namespace_options, 'input_file')
+        setattr(namespace_options, 'work_folder', work_folder)
 
+        # Convert to OCROptions
+        options = OCROptions.from_namespace(namespace_options)
         return run_hocr_to_ocr_pdf_pipeline(
             options=options, plugin_manager=plugin_manager
         )
