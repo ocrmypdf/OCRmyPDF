@@ -331,6 +331,12 @@ def setup_pipeline(
 def do_get_pdfinfo(
     pdf_path: Path, executor: Executor, options: argparse.Namespace
 ) -> PdfInfo:
+    # Handle pages field - it might be a string that needs conversion
+    check_pages = options.pages
+    if isinstance(check_pages, str):
+        from ocrmypdf._options import _pages_from_ranges
+        check_pages = _pages_from_ranges(check_pages)
+    
     return get_pdfinfo(
         pdf_path,
         executor=executor,
@@ -338,7 +344,7 @@ def do_get_pdfinfo(
         progbar=options.progress_bar,
         max_workers=options.jobs,
         use_threads=options.use_threads,
-        check_pages=options.pages,
+        check_pages=check_pages,
     )
 
 
