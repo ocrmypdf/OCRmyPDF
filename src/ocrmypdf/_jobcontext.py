@@ -6,11 +6,9 @@
 from __future__ import annotations
 
 import os
-from argparse import Namespace
 from collections.abc import Iterator
 from copy import copy
 from pathlib import Path
-from typing import Union
 
 from pluggy import PluginManager
 
@@ -22,50 +20,26 @@ from ocrmypdf.pdfinfo.info import PageInfo
 class PdfContext:
     """Holds the context for a particular run of the pipeline."""
 
-    options: Union[
-        Namespace, OCROptions
-    ]  #: The specified options for processing this PDF.
+    options: OCROptions  #: The specified options for processing this PDF.
     origin: Path  #: The filename of the original input file.
     pdfinfo: PdfInfo  #: Detailed data for this PDF.
     plugin_manager: PluginManager  #: PluginManager for processing the current PDF.
 
     def __init__(
         self,
-        options: Union[Namespace, OCROptions],
+        options: OCROptions,
         work_folder: Path,
         origin: Path,
         pdfinfo: PdfInfo,
         plugin_manager,
     ):
-        # Accept both types during transition
-        if isinstance(options, Namespace):
-            self.options = OCROptions.from_namespace(options)
-            self._namespace_options = (
-                self.options.to_namespace()
-            )  # Use converted namespace with computed attributes
-        elif isinstance(options, OCROptions):
-            self.options = options
-            self._namespace_options = (
-                options.to_namespace()
-            )  # Convert immediately for PageContext
-        else:
-            # Handle other option types (like OptimizeOptions) by converting to OCROptions first
-            # This is a fallback for legacy code
-            self.options = options
-            # Create a minimal namespace for PageContext compatibility
-            self._namespace_options = Namespace()
-            for attr in dir(options):
-                if not attr.startswith('_') and hasattr(options, attr):
-                    setattr(self._namespace_options, attr, getattr(options, attr))
+        self.options = options
+        # Convert to namespace for PageContext compatibility
+        self._namespace_options = options.to_namespace()
         self.work_folder = work_folder
         self.origin = origin
         self.pdfinfo = pdfinfo
         self.plugin_manager = plugin_manager
-
-    @property
-    def legacy_options(self) -> Namespace:
-        """Provide Namespace for plugin compatibility."""
-        return self._namespace_options
 
     def get_path(self, name: str) -> Path:
         """Generate a ``Path`` for an intermediate file involved in processing.
@@ -93,11 +67,11 @@ class PageContext:
 
     Must be pickle-able, so stores only intrinsic/simple data elements or those
     capable of their serializing themselves via ``__getstate__``.
+    
+    Note: Uses Namespace options instead of OCROptions for pickle compatibility
+    in multiprocessing scenarios.
     """
 
-    options: Union[
-        Namespace, OCROptions
-    ]  #: The specified options for processing this PDF.
     origin: Path  #: The filename of the original input file.
     pageno: int  #: This page number (zero-based).
     pageinfo: PageInfo  #: Information on this page.
@@ -128,6 +102,7 @@ class PageContext:
         # Ensure we only pickle the Namespace, not any Pydantic objects
         # Create a completely new Namespace to avoid any contamination
         from argparse import Namespace
+        import os
 
         clean_options = Namespace()
         for key, value in vars(self.options).items():
