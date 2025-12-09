@@ -8,7 +8,9 @@ from __future__ import annotations
 import os
 from collections.abc import Iterator
 from copy import copy
+from argparse import Namespace
 from pathlib import Path
+from typing import Union
 
 from pluggy import PluginManager
 
@@ -27,15 +29,20 @@ class PdfContext:
 
     def __init__(
         self,
-        options: OCROptions,
+        options: Union[OCROptions, Namespace],
         work_folder: Path,
         origin: Path,
         pdfinfo: PdfInfo,
         plugin_manager,
     ):
-        self.options = options
-        # Convert to namespace for PageContext compatibility
-        self._namespace_options = options.to_namespace()
+        # Handle both OCROptions and Namespace during transition
+        if isinstance(options, OCROptions):
+            self.options = options
+            self._namespace_options = options.to_namespace()
+        else:
+            # Convert Namespace to OCROptions
+            self.options = OCROptions.from_namespace(options)
+            self._namespace_options = options
         self.work_folder = work_folder
         self.origin = origin
         self.pdfinfo = pdfinfo
