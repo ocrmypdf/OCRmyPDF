@@ -42,7 +42,11 @@ class PdfContext:
         else:
             # Convert Namespace to OCROptions
             self.options = OCROptions.from_namespace(options)
-            self._namespace_options = options
+            self._namespace_options = self.options.to_namespace()
+        
+        # Ensure lossless_reconstruction is available on the namespace
+        if not hasattr(self._namespace_options, 'lossless_reconstruction'):
+            self._namespace_options.lossless_reconstruction = self.options.lossless_reconstruction
         self.work_folder = work_folder
         self.origin = origin
         self.pdfinfo = pdfinfo
