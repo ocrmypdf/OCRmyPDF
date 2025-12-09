@@ -13,6 +13,7 @@ import pytest
 from ocrmypdf import _validation as vd
 from ocrmypdf._concurrent import NullProgressBar, SerialExecutor
 from ocrmypdf._exec.tesseract import TesseractVersion
+from ocrmypdf._options import OCROptions
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.api import create_options
 from ocrmypdf.cli import get_parser
@@ -41,6 +42,15 @@ def make_opts(*args, **kwargs):
     return opts
 
 
+def make_ocr_opts(input_file='a.pdf', output_file='b.pdf', **kwargs):
+    """Create OCROptions directly for testing Pydantic validation."""
+    return OCROptions(
+        input_file=input_file,
+        output_file=output_file,
+        **kwargs
+    )
+
+
 def test_old_tesseract_error():
     with patch(
         'ocrmypdf._exec.tesseract.version',
@@ -64,16 +74,16 @@ def test_tesseract_not_installed(caplog):
 
 def test_lossless_redo():
     with pytest.raises(ValueError, match="--redo-ocr is not currently compatible"):
-        make_opts(redo_ocr=True, deskew=True)
+        make_ocr_opts(redo_ocr=True, deskew=True)
 
 
 def test_mutex_options():
     with pytest.raises(ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"):
-        make_opts(force_ocr=True, skip_text=True)
+        make_ocr_opts(force_ocr=True, skip_text=True)
     with pytest.raises(ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"):
-        make_opts(redo_ocr=True, skip_text=True)
+        make_ocr_opts(redo_ocr=True, skip_text=True)
     with pytest.raises(ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"):
-        make_opts(redo_ocr=True, force_ocr=True)
+        make_ocr_opts(redo_ocr=True, force_ocr=True)
 
 
 def test_optimizing(caplog):
@@ -85,12 +95,12 @@ def test_optimizing(caplog):
 
 def test_pillow_options():
     # Test that max_image_mpixels=0 is valid (validation now in OCROptions)
-    opts = make_opts(max_image_mpixels=0)
+    opts = make_ocr_opts(max_image_mpixels=0)
     assert opts.max_image_mpixels == 0
     
     # Test that negative values are rejected
     with pytest.raises(ValueError, match="max_image_mpixels must be non-negative"):
-        make_opts(max_image_mpixels=-1)
+        make_ocr_opts(max_image_mpixels=-1)
 
 
 def test_output_tty():

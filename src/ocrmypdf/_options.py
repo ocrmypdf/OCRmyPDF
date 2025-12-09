@@ -5,7 +5,9 @@
 
 from __future__ import annotations
 
+import logging
 import os
+import unicodedata
 from argparse import Namespace
 from collections.abc import Iterable, Sequence
 from copy import copy
@@ -16,8 +18,52 @@ from typing import Any, BinaryIO, Union
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from ocrmypdf._defaults import DEFAULT_LANGUAGE, DEFAULT_ROTATE_PAGES_THRESHOLD
+from ocrmypdf.exceptions import BadArgsError
+from ocrmypdf.helpers import monotonic
+
+log = logging.getLogger(__name__)
 
 PathOrIO = Union[BinaryIO, IOBase, Path, str, bytes]
+
+
+def _pages_from_ranges(ranges: str) -> set[int]:
+    """Convert page range string to set of page numbers."""
+    pages: list[int] = []
+    page_groups = ranges.replace(' ', '').split(',')
+    for group in page_groups:
+        if not group:
+            continue
+        try:
+            start, end = group.split('-')
+        except ValueError:
+            pages.append(int(group) - 1)
+        else:
+            try:
+                new_pages = list(range(int(start) - 1, int(end)))
+                if not new_pages:
+                    raise BadArgsError(
+                        f"invalid page subrange '{start}-{end}'"
+                    ) from None
+                pages.extend(new_pages)
+            except ValueError:
+                raise BadArgsError(f"invalid page subrange '{group}'") from None
+
+    if not pages:
+        raise BadArgsError(
+            f"The string of page ranges '{ranges}' did not contain any recognizable "
+            f"page ranges."
+        )
+
+    if not monotonic(pages):
+        log.warning(
+            "List of pages to process contains duplicate pages, or pages that are "
+            "out of order"
+        )
+    if any(page < 0 for page in pages):
+        raise BadArgsError("pages refers to a page number less than 1")
+
+    log.debug("OCRing only these pages: %s", pages)
+    return set(pages)
 
 
 class OCROptions(BaseModel):
@@ -251,6 +297,34 @@ class OCROptions(BaseModel):
             raise ValueError("rotate_pages_threshold must be between 0 and 1000")
         return v
 
+    @field_validator('title', 'author', 'keywords', 'subject')
+    @classmethod
+    def validate_metadata_unicode(cls, v):
+        """Validate metadata strings don't contain unsupported Unicode characters."""
+        if v is None:
+            return v
+        
+        for char in v:
+            if unicodedata.category(char) == 'Co' or ord(char) >= 0x10000:
+                hexchar = hex(ord(char))[2:].upper()
+                raise ValueError(
+                    f"Metadata string contains unsupported Unicode character: "
+                    f"{char} (U+{hexchar})"
+                )
+        return v
+
+    @field_validator('pages')
+    @classmethod
+    def validate_pages_format(cls, v):
+        """Convert page ranges string to set of page numbers."""
+        if v is None:
+            return v
+        if isinstance(v, set):
+            return v  # Already processed
+        
+        # Convert string ranges to set of page numbers
+        return _pages_from_ranges(v)
+
     @model_validator(mode='before')
     @classmethod
     def handle_special_cases(cls, data):
@@ -263,6 +337,47 @@ class OCROptions(BaseModel):
             if data.get('pdf_renderer') == 'auto':
                 data['pdf_renderer'] = 'hocr'  # Default to hocr for auto
         return data
+
+    @model_validator(mode='after')
+    def validate_exclusive_ocr_options(self):
+        """Ensure only one of force_ocr, skip_text, redo_ocr is set."""
+        exclusive_options = sum(
+            1 for opt in [self.force_ocr, self.skip_text, self.redo_ocr] if opt
+        )
+        if exclusive_options >= 2:
+            raise ValueError("Choose only one of --force-ocr, --skip-text, --redo-ocr.")
+        return self
+
+    @model_validator(mode='after') 
+    def validate_output_type_compatibility(self):
+        """Validate output type is compatible with output file."""
+        if self.output_type == 'none' and str(self.output_file) not in (os.devnull, '-'):
+            raise ValueError(
+                "Since you specified `--output-type none`, the output file "
+                f"{self.output_file} cannot be produced. Set the output file to "
+                f"`-` to suppress this message."
+            )
+        return self
+
+    @model_validator(mode='after')
+    def set_lossless_reconstruction(self):
+        """Set lossless_reconstruction based on other options."""
+        lossless = not any([
+            self.deskew,
+            self.clean_final, 
+            self.force_ocr,
+            self.remove_background,
+        ])
+        
+        if not lossless and self.redo_ocr:
+            raise ValueError(
+                "--redo-ocr is not currently compatible with --deskew, "
+                "--clean-final, and --remove-background"
+            )
+        
+        # Set the computed attribute
+        self.extra_attrs['lossless_reconstruction'] = lossless
+        return self
 
     model_config = ConfigDict(
         extra="forbid",  # Force use of extra_attrs for unknown fields
