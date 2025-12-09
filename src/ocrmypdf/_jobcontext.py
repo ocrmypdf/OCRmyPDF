@@ -22,7 +22,9 @@ from ocrmypdf.pdfinfo.info import PageInfo
 class PdfContext:
     """Holds the context for a particular run of the pipeline."""
 
-    options: Union[Namespace, OCROptions]  #: The specified options for processing this PDF.
+    options: Union[
+        Namespace, OCROptions
+    ]  #: The specified options for processing this PDF.
     origin: Path  #: The filename of the original input file.
     pdfinfo: PdfInfo  #: Detailed data for this PDF.
     plugin_manager: PluginManager  #: PluginManager for processing the current PDF.
@@ -38,10 +40,14 @@ class PdfContext:
         # Accept both types during transition
         if isinstance(options, Namespace):
             self.options = OCROptions.from_namespace(options)
-            self._namespace_options = self.options.to_namespace()  # Use converted namespace with computed attributes
+            self._namespace_options = (
+                self.options.to_namespace()
+            )  # Use converted namespace with computed attributes
         elif isinstance(options, OCROptions):
             self.options = options
-            self._namespace_options = options.to_namespace()  # Convert immediately for PageContext
+            self._namespace_options = (
+                options.to_namespace()
+            )  # Convert immediately for PageContext
         else:
             # Handle other option types (like OptimizeOptions) by converting to OCROptions first
             # This is a fallback for legacy code
@@ -89,7 +95,9 @@ class PageContext:
     capable of their serializing themselves via ``__getstate__``.
     """
 
-    options: Union[Namespace, OCROptions]  #: The specified options for processing this PDF.
+    options: Union[
+        Namespace, OCROptions
+    ]  #: The specified options for processing this PDF.
     origin: Path  #: The filename of the original input file.
     pageno: int  #: This page number (zero-based).
     pageinfo: PageInfo  #: Information on this page.
@@ -118,7 +126,22 @@ class PageContext:
         state = self.__dict__.copy()
 
         # Ensure we only pickle the Namespace, not any Pydantic objects
-        state['options'] = copy(self.options)
+        # Create a completely new Namespace to avoid any contamination
+        from argparse import Namespace
+
+        clean_options = Namespace()
+        for key, value in vars(self.options).items():
+            if key.startswith('_'):
+                continue
+            try:
+                import pickle
+
+                pickle.dumps(value)
+                setattr(clean_options, key, value)
+            except TypeError:
+                continue
+        state['options'] = clean_options
+
         # Handle stream inputs
         if hasattr(state['options'], 'input_file'):
             if not isinstance(state['options'].input_file, str | bytes | os.PathLike):
@@ -126,7 +149,7 @@ class PageContext:
         if hasattr(state['options'], 'output_file'):
             if not isinstance(state['options'].output_file, str | bytes | os.PathLike):
                 state['options'].output_file = 'stream'
-        
+
         # Remove any potential references to Pydantic objects
         state.pop('_pdf_context', None)
         return state
