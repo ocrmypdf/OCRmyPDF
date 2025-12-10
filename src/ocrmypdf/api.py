@@ -61,7 +61,6 @@ from ocrmypdf._pipelines.pdf_to_hocr import run_hocr_pipeline
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._validation import check_options
 from ocrmypdf.cli import ArgumentParser, get_parser
-from ocrmypdf.helpers import is_iterable_notstr
 
 StrPath = Path | str | bytes
 PathOrIO = BinaryIO | StrPath
@@ -173,46 +172,6 @@ def configure_logging(
     return log
 
 
-def _kwargs_to_cmdline(
-    *, defer_kwargs: set[str], **kwargs
-) -> tuple[list[str | bytes], dict[str, str | bytes]]:
-    """Convert kwargs to command line arguments."""
-    cmdline: list[str | bytes] = []
-    deferred = {}
-    for arg, val in kwargs.items():
-        if val is None:
-            continue
-
-        # Skip arguments that are handled elsewhere
-        if arg in defer_kwargs:
-            deferred[arg] = val
-            continue
-
-        cmd_style_arg = arg.replace('_', '-')
-
-        # Booleans are special: add only if True, omit for False
-        if isinstance(val, bool):
-            if val:
-                cmdline.append(f"--{cmd_style_arg}")
-            continue
-
-        if is_iterable_notstr(val):
-            for elem in val:
-                cmdline.append(f"--{cmd_style_arg}")
-                cmdline.append(elem)
-            continue
-
-        # We have a parameter
-        cmdline.append(f"--{cmd_style_arg}")
-        if isinstance(val, int | float):
-            cmdline.append(str(val))
-        elif isinstance(val, str):
-            cmdline.append(val)
-        elif isinstance(val, Path):
-            cmdline.append(str(val))
-        else:
-            raise TypeError(f"{arg}: {val} ({type(val)})")
-    return cmdline, deferred
 
 
 def create_options(
@@ -223,7 +182,7 @@ def create_options(
     Args:
         input_file: Input file path or file object.
         output_file: Output file path or file object.
-        parser: ArgumentParser object.
+        parser: ArgumentParser object (kept for compatibility, may be used for plugin validation).
         **kwargs: Keyword arguments.
 
     Returns:
@@ -232,37 +191,39 @@ def create_options(
     Raises:
         TypeError: If the type of a keyword argument is not supported.
     """
-    cmdline, deferred = _kwargs_to_cmdline(
-        defer_kwargs={'progress_bar', 'plugins', 'parser', 'input_file', 'output_file'},
-        **kwargs,
-    )
-    if isinstance(input_file, BinaryIO | IOBase):
-        cmdline.append('stream://input_file')
-    else:
-        cmdline.append(os.fspath(input_file))
-    if isinstance(output_file, BinaryIO | IOBase):
-        cmdline.append('stream://output_file')
-    else:
-        cmdline.append(os.fspath(output_file))
-    if 'sidecar' in kwargs and isinstance(kwargs['sidecar'], BinaryIO | IOBase):
-        cmdline.append('--sidecar')
-        cmdline.append('stream://sidecar')
-
-    parser.enable_api_mode()
-    namespace_options = parser.parse_args(cmdline)
-    for keyword, val in deferred.items():
-        setattr(namespace_options, keyword, val)
-
-    if namespace_options.input_file == 'stream://input_file':
-        namespace_options.input_file = input_file
-    if namespace_options.output_file == 'stream://output_file':
-        namespace_options.output_file = output_file
-    if namespace_options.sidecar == 'stream://sidecar':
-        namespace_options.sidecar = kwargs['sidecar']
-
-    # Convert to OCROptions
-    options = OCROptions.from_namespace(namespace_options)
-    return options
+    # Prepare kwargs for direct OCROptions construction
+    options_kwargs = kwargs.copy()
+    
+    # Set input and output files
+    options_kwargs['input_file'] = input_file
+    options_kwargs['output_file'] = output_file
+    
+    # Handle special stream cases for sidecar
+    if 'sidecar' in options_kwargs and isinstance(options_kwargs['sidecar'], BinaryIO | IOBase):
+        # Keep the stream object as-is - OCROptions can handle it
+        pass
+    
+    # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
+    extra_attrs = {}
+    ocr_fields = set(OCROptions.model_fields.keys())
+    
+    # Known extra attributes that should be preserved
+    known_extra = {'progress_bar', 'plugins'}
+    
+    for key in list(options_kwargs.keys()):
+        if key not in ocr_fields and key not in known_extra:
+            extra_attrs[key] = options_kwargs.pop(key)
+    
+    # Create OCROptions directly
+    try:
+        options = OCROptions(**options_kwargs)
+        # Add any extra attributes
+        if extra_attrs:
+            options.extra_attrs.update(extra_attrs)
+        return options
+    except Exception as e:
+        # If direct construction fails, provide a helpful error message
+        raise TypeError(f"Failed to create OCROptions: {e}") from e
 
 
 def ocr(  # noqa: D417
