@@ -38,15 +38,10 @@ class PdfContext:
         # Handle both OCROptions and Namespace during transition
         if isinstance(options, OCROptions):
             self.options = options
-            self._namespace_options = options.to_namespace()
         else:
             # Convert Namespace to OCROptions
             self.options = OCROptions.from_namespace(options)
-            self._namespace_options = self.options.to_namespace()
         
-        # Ensure lossless_reconstruction is available on the namespace
-        if not hasattr(self._namespace_options, 'lossless_reconstruction'):
-            self._namespace_options.lossless_reconstruction = self.options.lossless_reconstruction
         self.work_folder = work_folder
         self.origin = origin
         self.pdfinfo = pdfinfo
@@ -79,8 +74,7 @@ class PageContext:
     Must be pickle-able, so stores only intrinsic/simple data elements or those
     capable of their serializing themselves via ``__getstate__``.
     
-    Note: Uses Namespace options instead of OCROptions for pickle compatibility
-    in multiprocessing scenarios.
+    Note: Uses OCROptions with JSON serialization for multiprocessing compatibility.
     """
 
     origin: Path  #: The filename of the original input file.
@@ -91,8 +85,8 @@ class PageContext:
     def __init__(self, pdf_context: PdfContext, pageno):
         self.work_folder = pdf_context.work_folder
         self.origin = pdf_context.origin
-        # Always use Namespace for PageContext to avoid pickling issues
-        self.options = pdf_context._namespace_options
+        # Store OCROptions directly instead of Namespace
+        self.options = pdf_context.options
         self.pageno = pageno
         self.pageinfo = pdf_context.pdfinfo[pageno]
         self.plugin_manager = pdf_context.plugin_manager
@@ -110,43 +104,40 @@ class PageContext:
     def __getstate__(self):
         state = self.__dict__.copy()
 
-        # Ensure we only pickle the Namespace, not any Pydantic objects
-        # Create a completely new Namespace to avoid any contamination
-        from argparse import Namespace
-        import os
+        # Use JSON serialization instead of Namespace
+        try:
+            options_json = self.options.model_dump_json_safe()
+            state['options_json'] = options_json
+            # Remove the OCROptions object to avoid pickle issues
+            del state['options']
+        except Exception:
+            # Fallback: if JSON serialization fails, convert to namespace
+            # This shouldn't happen but provides safety
+            from argparse import Namespace
+            import os
 
-        clean_options = Namespace()
-        for key, value in vars(self.options).items():
-            if key.startswith('_'):
-                continue
-            try:
-                import pickle
-
-                pickle.dumps(value)
-                setattr(clean_options, key, value)
-            except TypeError:
-                continue
-        # Set lossless_reconstruction if it exists, otherwise compute it
-        if hasattr(self.options, 'lossless_reconstruction'):
-            clean_options.lossless_reconstruction = self.options.lossless_reconstruction
-        else:
-            # Compute lossless_reconstruction for Namespace objects
-            clean_options.lossless_reconstruction = not any([
-                getattr(self.options, 'deskew', False),
-                getattr(self.options, 'clean_final', False),
-                getattr(self.options, 'force_ocr', False),
-                getattr(self.options, 'remove_background', False),
-            ])
-        state['options'] = clean_options
-
-        # Handle stream inputs
-        if hasattr(state['options'], 'input_file'):
-            if not isinstance(state['options'].input_file, str | bytes | os.PathLike):
-                state['options'].input_file = 'stream'
-        if hasattr(state['options'], 'output_file'):
-            if not isinstance(state['options'].output_file, str | bytes | os.PathLike):
-                state['options'].output_file = 'stream'
+            clean_options = Namespace()
+            for key, value in vars(self.options.to_namespace()).items():
+                if key.startswith('_'):
+                    continue
+                try:
+                    import pickle
+                    pickle.dumps(value)
+                    setattr(clean_options, key, value)
+                except TypeError:
+                    continue
+            state['options'] = clean_options
 
         # Remove any potential references to Pydantic objects
         state.pop('_pdf_context', None)
         return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        
+        # Reconstruct OCROptions from JSON if available
+        if 'options_json' in state:
+            from ocrmypdf._options import OCROptions
+            self.options = OCROptions.model_validate_json_safe(state['options_json'])
+        # Otherwise, we have a fallback Namespace (shouldn't happen in normal operation)
+        # Leave it as-is for compatibility

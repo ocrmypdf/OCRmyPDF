@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import unicodedata
@@ -376,6 +377,74 @@ class OCROptions(BaseModel):
         # Set the computed attribute
         self.extra_attrs['lossless_reconstruction'] = lossless
         return self
+
+    def model_dump_json_safe(self) -> str:
+        """Serialize to JSON with special handling for non-serializable types."""
+        # Create a copy of the model data for serialization
+        data = self.model_dump()
+        
+        # Handle special types that don't serialize to JSON directly
+        def _serialize_value(value):
+            if isinstance(value, Path):
+                return {'__type__': 'Path', 'value': str(value)}
+            elif hasattr(value, 'read') or hasattr(value, 'write'):
+                # Stream object - replace with placeholder
+                return {'__type__': 'Stream', 'value': 'stream'}
+            elif isinstance(value, (list, tuple)):
+                return [_serialize_value(item) for item in value]
+            elif isinstance(value, dict):
+                return {k: _serialize_value(v) for k, v in value.items()}
+            else:
+                return value
+        
+        # Process all fields
+        serializable_data = {}
+        for key, value in data.items():
+            serializable_data[key] = _serialize_value(value)
+        
+        # Add extra_attrs
+        if self.extra_attrs:
+            serializable_data['_extra_attrs'] = _serialize_value(self.extra_attrs)
+        
+        return json.dumps(serializable_data)
+    
+    @classmethod
+    def model_validate_json_safe(cls, json_str: str) -> OCROptions:
+        """Reconstruct from JSON with special handling for non-serializable types."""
+        data = json.loads(json_str)
+        
+        # Handle special types during deserialization
+        def _deserialize_value(value):
+            if isinstance(value, dict) and '__type__' in value:
+                if value['__type__'] == 'Path':
+                    return Path(value['value'])
+                elif value['__type__'] == 'Stream':
+                    # For streams, we'll use a placeholder string
+                    return value['value']
+                else:
+                    return value['value']
+            elif isinstance(value, list):
+                return [_deserialize_value(item) for item in value]
+            elif isinstance(value, dict):
+                return {k: _deserialize_value(v) for k, v in value.items()}
+            else:
+                return value
+        
+        # Process all fields
+        deserialized_data = {}
+        extra_attrs = {}
+        
+        for key, value in data.items():
+            if key == '_extra_attrs':
+                extra_attrs = _deserialize_value(value)
+            else:
+                deserialized_data[key] = _deserialize_value(value)
+        
+        # Create instance
+        instance = cls(**deserialized_data)
+        instance.extra_attrs = extra_attrs
+        
+        return instance
 
     model_config = ConfigDict(
         extra="forbid",  # Force use of extra_attrs for unknown fields
