@@ -399,6 +399,9 @@ class OCROptions(BaseModel):
             elif isinstance(value, (BinaryIO, IOBase)) or hasattr(value, 'read') or hasattr(value, 'write'):
                 # Stream object - replace with placeholder
                 return {'__type__': 'Stream', 'value': 'stream'}
+            elif hasattr(value, '__class__') and 'Iterator' in value.__class__.__name__:
+                # Handle Pydantic serialization iterators
+                return {'__type__': 'Stream', 'value': 'stream'}
             elif isinstance(value, (list, tuple)):
                 return [_serialize_value(item) for item in value]
             elif isinstance(value, dict):
