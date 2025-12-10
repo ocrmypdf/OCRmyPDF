@@ -14,6 +14,7 @@ import sys
 from contextlib import suppress
 
 from ocrmypdf import __version__
+from ocrmypdf._options import OCROptions
 from ocrmypdf._pipelines.ocr import run_pipeline_cli
 from ocrmypdf._plugin_manager import get_parser_options_plugins
 from ocrmypdf._validation import check_options
@@ -39,7 +40,10 @@ def sigbus(*args):
 
 def run(args=None):
     """Run the ocrmypdf command line interface."""
-    _parser, options, plugin_manager = get_parser_options_plugins(args=args)
+    _parser, namespace_options, plugin_manager = get_parser_options_plugins(args=args)
+
+    # Convert Namespace to OCROptions
+    options = OCROptions.from_namespace(namespace_options)
 
     with suppress(AttributeError, PermissionError):
         os.nice(5)
