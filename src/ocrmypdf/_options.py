@@ -119,7 +119,7 @@ class OCROptions(BaseModel):
     keywords: str | None = None
 
     # Optimization
-    optimize: int = 0
+    optimize: int = 1
     jpg_quality: int | None = None
     png_quality: int | None = None
     jbig2_lossy: bool | None = None
@@ -140,20 +140,20 @@ class OCROptions(BaseModel):
     # Advanced options
     max_image_mpixels: float = 250.0
     pdf_renderer: str = 'auto'
-    tesseract_config: list[str] = Field(default_factory=list)
+    tesseract_config: Iterable[str] | None = None
     tesseract_pagesegmode: int | None = None
     tesseract_oem: int | None = None
     tesseract_thresholding: int | None = None
-    tesseract_timeout: float = 180.0
-    tesseract_non_ocr_timeout: float = 60.0
-    tesseract_downsample_above: int = 150
-    tesseract_downsample_large_images: bool = False
+    tesseract_timeout: float | None = None
+    tesseract_non_ocr_timeout: float | None = None
+    tesseract_downsample_above: int | None = None
+    tesseract_downsample_large_images: bool | None = None
     rotate_pages_threshold: float = DEFAULT_ROTATE_PAGES_THRESHOLD
-    pdfa_image_compression: str = 'auto'
-    color_conversion_strategy: str = 'RGB'
+    pdfa_image_compression: str | None = None
+    color_conversion_strategy: str | None = None
     user_words: os.PathLike | None = None
     user_patterns: os.PathLike | None = None
-    fast_web_view: float = 1.0
+    fast_web_view: float | None = None
     continue_on_soft_render_error: bool | None = None
 
     # Plugin system
@@ -259,27 +259,6 @@ class OCROptions(BaseModel):
             raise ValueError(f"pdf_renderer must be one of {valid_renderers}")
         return v
 
-    @field_validator('color_conversion_strategy')
-    @classmethod
-    def validate_color_conversion_strategy(cls, v):
-        """Validate color conversion strategy."""
-        if v is None or v == 'auto':
-            return 'RGB'  # Default to RGB instead of auto
-        valid_strategies = {'RGB', 'CMYK', 'Gray'}
-        if v not in valid_strategies:
-            raise ValueError(f"color_conversion_strategy must be one of {valid_strategies}")
-        return v
-
-    @field_validator('pdfa_image_compression')
-    @classmethod
-    def validate_pdfa_image_compression(cls, v):
-        """Validate PDF/A image compression."""
-        if v is None or v == 'auto':
-            return 'auto'
-        valid_compressions = {'auto', 'jpeg', 'lossless'}
-        if v not in valid_compressions:
-            raise ValueError(f"pdfa_image_compression must be one of {valid_compressions}")
-        return v
 
     @field_validator('clean_final')
     @classmethod
@@ -365,25 +344,6 @@ class OCROptions(BaseModel):
             # For hOCR API, output_file might not be present
             if 'output_folder' in data and 'output_file' not in data:
                 data['output_file'] = '/dev/null'  # Placeholder
-            # Set default values for fields that might be None
-            if data.get('tesseract_timeout') is None:
-                data['tesseract_timeout'] = 180.0
-            if data.get('tesseract_non_ocr_timeout') is None:
-                data['tesseract_non_ocr_timeout'] = 60.0
-            if data.get('tesseract_downsample_above') is None:
-                data['tesseract_downsample_above'] = 150
-            if data.get('tesseract_downsample_large_images') is None:
-                data['tesseract_downsample_large_images'] = False
-            if data.get('optimize') is None:
-                data['optimize'] = 0
-            if data.get('tesseract_config') is None:
-                data['tesseract_config'] = []
-            if data.get('color_conversion_strategy') is None:
-                data['color_conversion_strategy'] = 'RGB'
-            if data.get('pdfa_image_compression') is None:
-                data['pdfa_image_compression'] = 'auto'
-            if data.get('fast_web_view') is None:
-                data['fast_web_view'] = 1.0
         return data
 
     @model_validator(mode='after')
