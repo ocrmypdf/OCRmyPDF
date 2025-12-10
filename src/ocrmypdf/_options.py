@@ -396,7 +396,7 @@ class OCROptions(BaseModel):
         def _serialize_value(value):
             if isinstance(value, Path):
                 return {'__type__': 'Path', 'value': str(value)}
-            elif hasattr(value, 'read') or hasattr(value, 'write'):
+            elif isinstance(value, (BinaryIO, IOBase)) or hasattr(value, 'read') or hasattr(value, 'write'):
                 # Stream object - replace with placeholder
                 return {'__type__': 'Stream', 'value': 'stream'}
             elif isinstance(value, (list, tuple)):
