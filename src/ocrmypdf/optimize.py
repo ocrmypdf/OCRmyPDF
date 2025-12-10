@@ -374,9 +374,14 @@ def extract_images_generic(
 
 def extract_images_jbig2(pdf: Pdf, root: Path, options) -> dict[int, list[XrefExt]]:
     """Extract any bitonal image that we think we can improve as JBIG2."""
+    # Calculate local jbig2_page_group_size using the same logic as optimize()
+    jbig2_page_group_size = options.jbig2_page_group_size
+    if jbig2_page_group_size is None or jbig2_page_group_size == 0:
+        jbig2_page_group_size = 10 if options.jbig2_lossy else 1
+    
     jbig2_groups = defaultdict(list)
     for pageno, xref_ext in extract_images(pdf, root, options, extract_image_jbig2):
-        group = pageno // options.jbig2_page_group_size
+        group = pageno // jbig2_page_group_size
         jbig2_groups[group].append(xref_ext)
 
     log.debug(f"Optimizable images: JBIG2 groups: {len(jbig2_groups)}")
