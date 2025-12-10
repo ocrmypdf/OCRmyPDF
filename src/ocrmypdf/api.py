@@ -203,6 +203,9 @@ def create_options(
         # Keep the stream object as-is - OCROptions can handle it
         pass
     
+    # Remove None values to let OCROptions use its defaults
+    options_kwargs = {k: v for k, v in options_kwargs.items() if v is not None}
+    
     # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
     extra_attrs = {}
     ocr_fields = set(OCROptions.model_fields.keys())
