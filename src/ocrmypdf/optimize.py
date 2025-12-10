@@ -372,12 +372,17 @@ def extract_images_generic(
     return jpegs, pngs
 
 
-def extract_images_jbig2(pdf: Pdf, root: Path, options) -> dict[int, list[XrefExt]]:
-    """Extract any bitonal image that we think we can improve as JBIG2."""
-    # Calculate local jbig2_page_group_size using the same logic as optimize()
+def _get_effective_jbig2_page_group_size(options) -> int:
+    """Calculate the effective JBIG2 page group size based on options."""
     jbig2_page_group_size = options.jbig2_page_group_size
     if jbig2_page_group_size is None or jbig2_page_group_size == 0:
-        jbig2_page_group_size = 10 if options.jbig2_lossy else 1
+        return 10 if options.jbig2_lossy else 1
+    return jbig2_page_group_size
+
+
+def extract_images_jbig2(pdf: Pdf, root: Path, options) -> dict[int, list[XrefExt]]:
+    """Extract any bitonal image that we think we can improve as JBIG2."""
+    jbig2_page_group_size = _get_effective_jbig2_page_group_size(options)
     
     jbig2_groups = defaultdict(list)
     for pageno, xref_ext in extract_images(pdf, root, options, extract_image_jbig2):
@@ -416,7 +421,8 @@ def _produce_jbig2_images(
                     options.jbig2_threshold,
                 )
 
-    if options.jbig2_page_group_size > 1:
+    effective_group_size = _get_effective_jbig2_page_group_size(options)
+    if effective_group_size > 1:
         jbig2_args = jbig2_group_args
         jbig2_convert = jbig2enc.convert_group
     else:
@@ -467,7 +473,7 @@ def convert_to_jbig2(
             jbig2_globals_data = jbig2_symfile.read_bytes()
             jbig2_globals = Stream(pdf, jbig2_globals_data)
             jbig2_globals_dict = Dictionary(JBIG2Globals=jbig2_globals)
-        elif options.jbig2_page_group_size == 1:
+        elif _get_effective_jbig2_page_group_size(options) == 1:
             jbig2_globals_dict = None
         else:
             raise FileNotFoundError(jbig2_symfile)
