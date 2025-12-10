@@ -124,7 +124,7 @@ class OCROptions(BaseModel):
     png_quality: int | None = None
     jbig2_lossy: bool | None = None
     jbig2_page_group_size: int | None = None
-    jbig2_threshold: float | None = None
+    jbig2_threshold: float = 0.85 
     
     # Compatibility alias for plugins that expect jpeg_quality
     @property
@@ -140,20 +140,20 @@ class OCROptions(BaseModel):
     # Advanced options
     max_image_mpixels: float = 250.0
     pdf_renderer: str = 'auto'
-    tesseract_config: Iterable[str] | None = None
+    tesseract_config: list[str] = [] 
     tesseract_pagesegmode: int | None = None
     tesseract_oem: int | None = None
     tesseract_thresholding: int | None = None
-    tesseract_timeout: float | None = None
+    tesseract_timeout: float = 0.0 
     tesseract_non_ocr_timeout: float | None = None
-    tesseract_downsample_above: int | None = None
+    tesseract_downsample_above: int = 32767 
     tesseract_downsample_large_images: bool | None = None
     rotate_pages_threshold: float = DEFAULT_ROTATE_PAGES_THRESHOLD
     pdfa_image_compression: str | None = None
-    color_conversion_strategy: str | None = None
+    color_conversion_strategy: str = "LeaveColorUnchanged" 
     user_words: os.PathLike | None = None
     user_patterns: os.PathLike | None = None
-    fast_web_view: float | None = None
+    fast_web_view: float = 1.0 
     continue_on_soft_render_error: bool | None = None
 
     # Plugin system
