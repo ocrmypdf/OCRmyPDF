@@ -125,11 +125,22 @@ class OCROptions(BaseModel):
     jbig2_lossy: bool | None = None
     jbig2_page_group_size: int | None = None
     jbig2_threshold: float | None = None
+    
+    # Compatibility alias for plugins that expect jpeg_quality
+    @property
+    def jpeg_quality(self):
+        """Compatibility alias for jpg_quality."""
+        return self.jpg_quality
+    
+    @jpeg_quality.setter
+    def jpeg_quality(self, value):
+        """Compatibility alias for jpg_quality."""
+        self.jpg_quality = value
 
     # Advanced options
     max_image_mpixels: float = 250.0
     pdf_renderer: str = 'auto'
-    tesseract_config: Iterable[str] | None = None
+    tesseract_config: list[str] = Field(default_factory=list)
     tesseract_pagesegmode: int | None = None
     tesseract_oem: int | None = None
     tesseract_thresholding: int | None = None
@@ -139,7 +150,7 @@ class OCROptions(BaseModel):
     tesseract_downsample_large_images: bool = False
     rotate_pages_threshold: float = DEFAULT_ROTATE_PAGES_THRESHOLD
     pdfa_image_compression: str = 'auto'
-    color_conversion_strategy: str = 'auto'
+    color_conversion_strategy: str = 'RGB'
     user_words: os.PathLike | None = None
     user_patterns: os.PathLike | None = None
     fast_web_view: float | None = None
@@ -252,9 +263,9 @@ class OCROptions(BaseModel):
     @classmethod
     def validate_color_conversion_strategy(cls, v):
         """Validate color conversion strategy."""
-        if v is None:
-            return 'auto'
-        valid_strategies = {'auto', 'RGB', 'CMYK', 'Gray'}
+        if v is None or v == 'auto':
+            return 'RGB'  # Default to RGB instead of auto
+        valid_strategies = {'RGB', 'CMYK', 'Gray'}
         if v not in valid_strategies:
             raise ValueError(f"color_conversion_strategy must be one of {valid_strategies}")
         return v
@@ -263,7 +274,7 @@ class OCROptions(BaseModel):
     @classmethod
     def validate_pdfa_image_compression(cls, v):
         """Validate PDF/A image compression."""
-        if v is None:
+        if v is None or v == 'auto':
             return 'auto'
         valid_compressions = {'auto', 'jpeg', 'lossless'}
         if v not in valid_compressions:
@@ -365,8 +376,10 @@ class OCROptions(BaseModel):
                 data['tesseract_downsample_large_images'] = False
             if data.get('optimize') is None:
                 data['optimize'] = 0
+            if data.get('tesseract_config') is None:
+                data['tesseract_config'] = []
             if data.get('color_conversion_strategy') is None:
-                data['color_conversion_strategy'] = 'auto'
+                data['color_conversion_strategy'] = 'RGB'
             if data.get('pdfa_image_compression') is None:
                 data['pdfa_image_compression'] = 'auto'
         return data
