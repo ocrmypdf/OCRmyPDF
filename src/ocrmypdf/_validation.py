@@ -49,7 +49,7 @@ def check_platform() -> None:
 
 
 def check_options_languages(
-    options: Union[OCROptions], ocr_engine_languages: list[str]
+    options: OCROptions, ocr_engine_languages: list[str]
 ) -> None:
     if not ocr_engine_languages:
         return
@@ -75,7 +75,7 @@ def check_options_languages(
 
 
 
-def check_options_sidecar(options: Union[OCROptions]) -> None:
+def check_options_sidecar(options: OCROptions) -> None:
     if options.sidecar == '\0':
         if options.output_file == '-':
             raise BadArgsError("--sidecar filename needed when output file is stdout.")
@@ -90,7 +90,7 @@ def check_options_sidecar(options: Union[OCROptions]) -> None:
         )
 
 
-def check_options_preprocessing(options: Union[OCROptions]) -> None:
+def check_options_preprocessing(options: OCROptions) -> None:
     if options.clean_final:
         options.clean = True
     if options.unpaper_args and not options.clean:
@@ -118,7 +118,7 @@ def check_options_preprocessing(options: Union[OCROptions]) -> None:
 
 
 
-def _check_plugin_invariant_options(options: Union[OCROptions]) -> None:
+def _check_plugin_invariant_options(options: OCROptions) -> None:
     check_platform()
     check_options_sidecar(options)
     check_options_preprocessing(options)
