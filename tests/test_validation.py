@@ -277,7 +277,7 @@ def test_two_languages():
             input_file='a.pdf',
             output_file='b.pdf',
             parser=get_parser(),
-            language='fakelang1+fakelang2',
+            languages=['fakelang1', 'fakelang2'],
         ),
         ['fakelang1', 'fakelang2'],
     )
