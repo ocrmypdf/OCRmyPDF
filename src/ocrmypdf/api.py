@@ -442,13 +442,30 @@ def _pdf_to_hocr(  # noqa: D417
         output_folder: Output folder path.
         **kwargs: Keyword arguments.
     """
-    # No new variable names should be assigned until these two steps are run
-    create_options_kwargs = {
-        k: v
-        for k, v in locals().items()
-        if k not in {'input_pdf', 'output_folder', 'kwargs'}
-    }
-    create_options_kwargs.update(kwargs)
+    # Prepare kwargs for direct OCROptions construction
+    options_kwargs = kwargs.copy()
+    
+    # Set input file and handle special output_folder case
+    options_kwargs['input_file'] = input_pdf
+    options_kwargs['output_file'] = '/dev/null'  # Placeholder for hOCR pipeline
+    
+    # Add all the function parameters
+    for param_name, param_value in locals().items():
+        if param_name not in {'input_pdf', 'output_folder', 'kwargs', 'plugin_manager', 'plugins'} and param_value is not None:
+            options_kwargs[param_name] = param_value
+    
+    # Handle plugins separately
+    if plugins:
+        options_kwargs['plugins'] = plugins
+    
+    # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
+    extra_attrs = {'output_folder': output_folder}
+    ocr_fields = set(OCROptions.model_fields.keys())
+    known_extra = {'progress_bar', 'plugins'}
+    
+    for key in list(options_kwargs.keys()):
+        if key not in ocr_fields and key not in known_extra:
+            extra_attrs[key] = options_kwargs.pop(key)
 
     parser = get_parser()
 
@@ -457,21 +474,15 @@ def _pdf_to_hocr(  # noqa: D417
             plugin_manager = get_plugin_manager(plugins)
         plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
 
-        cmdline, deferred = _kwargs_to_cmdline(
-            defer_kwargs={'input_pdf', 'output_folder', 'plugins'},
-            **create_options_kwargs,
-        )
-        cmdline.append(str(input_pdf))
-        cmdline.append(str(output_folder))
-        parser.enable_api_mode()
-        namespace_options = parser.parse_args(cmdline)
-        for keyword, val in deferred.items():
-            setattr(namespace_options, keyword, val)
-        delattr(namespace_options, 'output_file')
-        setattr(namespace_options, 'output_folder', output_folder)
+        # Create OCROptions directly
+        try:
+            options = OCROptions(**options_kwargs)
+            # Add any extra attributes
+            if extra_attrs:
+                options.extra_attrs.update(extra_attrs)
+        except Exception as e:
+            raise TypeError(f"Failed to create OCROptions for hOCR pipeline: {e}") from e
 
-        # Convert to OCROptions
-        options = OCROptions.from_namespace(namespace_options)
         return run_hocr_pipeline(options=options, plugin_manager=plugin_manager)
 
 
@@ -510,13 +521,30 @@ def _hocr_to_ocr_pdf(  # noqa: D417
         output_file: Output PDF file path.
         **kwargs: Keyword arguments.
     """
-    # No new variable names should be assigned until these two steps are run
-    create_options_kwargs = {
-        k: v
-        for k, v in locals().items()
-        if k not in {'work_folder', 'output_pdf', 'kwargs'}
-    }
-    create_options_kwargs.update(kwargs)
+    # Prepare kwargs for direct OCROptions construction
+    options_kwargs = kwargs.copy()
+    
+    # Set output file and handle special work_folder case
+    options_kwargs['input_file'] = '/dev/null'  # Placeholder for hOCR to PDF pipeline
+    options_kwargs['output_file'] = output_file
+    
+    # Add all the function parameters
+    for param_name, param_value in locals().items():
+        if param_name not in {'work_folder', 'output_file', 'kwargs', 'plugin_manager', 'plugins'} and param_value is not None:
+            options_kwargs[param_name] = param_value
+    
+    # Handle plugins separately
+    if plugins:
+        options_kwargs['plugins'] = plugins
+    
+    # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
+    extra_attrs = {'work_folder': work_folder}
+    ocr_fields = set(OCROptions.model_fields.keys())
+    known_extra = {'progress_bar', 'plugins'}
+    
+    for key in list(options_kwargs.keys()):
+        if key not in ocr_fields and key not in known_extra:
+            extra_attrs[key] = options_kwargs.pop(key)
 
     parser = get_parser()
 
@@ -525,21 +553,15 @@ def _hocr_to_ocr_pdf(  # noqa: D417
             plugin_manager = get_plugin_manager(plugins)
         plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
 
-        cmdline, deferred = _kwargs_to_cmdline(
-            defer_kwargs={'work_folder', 'output_file', 'plugins'},
-            **create_options_kwargs,
-        )
-        cmdline.append(str(work_folder))
-        cmdline.append(str(output_file))
-        parser.enable_api_mode()
-        namespace_options = parser.parse_args(cmdline)
-        for keyword, val in deferred.items():
-            setattr(namespace_options, keyword, val)
-        delattr(namespace_options, 'input_file')
-        setattr(namespace_options, 'work_folder', work_folder)
+        # Create OCROptions directly
+        try:
+            options = OCROptions(**options_kwargs)
+            # Add any extra attributes
+            if extra_attrs:
+                options.extra_attrs.update(extra_attrs)
+        except Exception as e:
+            raise TypeError(f"Failed to create OCROptions for hOCR to PDF pipeline: {e}") from e
 
-        # Convert to OCROptions
-        options = OCROptions.from_namespace(namespace_options)
         return run_hocr_to_ocr_pdf_pipeline(
             options=options, plugin_manager=plugin_manager
         )
