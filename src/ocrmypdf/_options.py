@@ -153,7 +153,7 @@ class OCROptions(BaseModel):
     color_conversion_strategy: str = 'RGB'
     user_words: os.PathLike | None = None
     user_patterns: os.PathLike | None = None
-    fast_web_view: float | None = None
+    fast_web_view: float = 1.0
     continue_on_soft_render_error: bool | None = None
 
     # Plugin system
@@ -382,6 +382,8 @@ class OCROptions(BaseModel):
                 data['color_conversion_strategy'] = 'RGB'
             if data.get('pdfa_image_compression') is None:
                 data['pdfa_image_compression'] = 'auto'
+            if data.get('fast_web_view') is None:
+                data['fast_web_view'] = 1.0
         return data
 
     @model_validator(mode='after')
