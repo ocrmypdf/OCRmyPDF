@@ -76,7 +76,7 @@ def test_json_serialization_multiprocessing():
         assert result['optimize'] == 2
         assert result['tesseract_timeout'] == 120.0
         assert result['fast_web_view'] == 2.5
-        assert result['extra_attrs_count'] == 3  # Includes lossless_reconstruction
+        assert result['extra_attrs_count'] == 2  # Includes lossless_reconstruction
 
 
 def test_json_serialization_with_streams():

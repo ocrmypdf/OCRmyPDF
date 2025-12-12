@@ -89,6 +89,8 @@ def run_hocr_pipeline(
     plugin_manager: OcrmypdfPluginManager,
 ) -> None:
     """Run pipeline to output hOCR."""
+    if options.output_folder is None:
+        raise ValueError("output_folder must be specified for hOCR pipeline")
     with manage_work_folder(
         work_folder=options.output_folder, retain=True, print_location=False
     ) as work_folder:
