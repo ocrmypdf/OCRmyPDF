@@ -35,7 +35,7 @@ hookspec = pluggy.HookspecMarker('ocrmypdf')
 
 
 @hookspec(firstresult=True)
-def get_logging_console() -> Handler:
+def get_logging_console() -> Handler:  # type: ignore[return-value]
     """Returns a custom logging handler.
 
     Generally this is necessary when both logging output and a progress bar are both
@@ -111,7 +111,7 @@ def check_options(options: OCROptions) -> None:
 
 
 @hookspec(firstresult=True)
-def get_executor(progressbar_class: type[ProgressBar]) -> Executor:
+def get_executor(progressbar_class: type[ProgressBar]) -> Executor:  # type: ignore[return-value]
     """Called to obtain an object that manages parallel execution.
 
     This may be used to replace OCRmyPDF's default parallel execution system
@@ -139,7 +139,7 @@ def get_executor(progressbar_class: type[ProgressBar]) -> Executor:
 
 
 @hookspec(firstresult=True)
-def get_progressbar_class() -> type[ProgressBar]:
+def get_progressbar_class() -> type[ProgressBar]:  # type: ignore[return-value]
     """Called to obtain a class that can be used to monitor progress.
 
     OCRmyPDF will call this function when it wants to display a progress bar.
@@ -190,7 +190,7 @@ def rasterize_pdf_page(
     rotation: int | None,
     filter_vector: bool,
     stop_on_soft_error: bool,
-) -> Path:
+) -> Path:  # type: ignore[return-value]
     """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
 
     The image is sized to match the integer pixels dimensions implied by
@@ -227,7 +227,7 @@ def rasterize_pdf_page(
 
 
 @hookspec(firstresult=True)
-def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
+def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:  # type: ignore[return-value]
     """Called to filter the image before it is sent to OCR.
 
     This is the image that OCR sees, not what the user sees when they view the
@@ -262,7 +262,7 @@ def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
 
 
 @hookspec(firstresult=True)
-def filter_page_image(page: PageContext, image_filename: Path) -> Path:
+def filter_page_image(page: PageContext, image_filename: Path) -> Path:  # type: ignore[return-value]
     """Called to filter the whole page before it is inserted into the PDF.
 
     A whole page image is only produced when preprocessing command line arguments
@@ -299,7 +299,7 @@ def filter_page_image(page: PageContext, image_filename: Path) -> Path:
 
 
 @hookspec(firstresult=True)
-def filter_pdf_page(page: PageContext, image_filename: Path, output_pdf: Path) -> Path:
+def filter_pdf_page(page: PageContext, image_filename: Path, output_pdf: Path) -> Path:  # type: ignore[return-value]
     """Called to convert a filtered whole page image into a PDF.
 
     A whole page image is only produced when preprocessing command line arguments
@@ -381,7 +381,7 @@ class OcrEngine(ABC):
         """
 
     @abstractmethod
-    def __str__(self):
+    def __str__(self):  # type: ignore[return-value]
         """Returns name of OCR engine and version.
 
         This is used when OCRmyPDF wants to mention the name of the OCR engine
@@ -455,7 +455,7 @@ class OcrEngine(ABC):
 
 
 @hookspec(firstresult=True)
-def get_ocr_engine() -> OcrEngine:
+def get_ocr_engine() -> OcrEngine:  # type: ignore[return-value]
     """Returns an OcrEngine to use for processing this file.
 
     The OcrEngine may be instantiated multiple times, by both the main process
@@ -476,7 +476,7 @@ def generate_pdfa(
     pdfa_part: str,
     progressbar_class: type[ProgressBar] | None,
     stop_on_soft_error: bool,
-) -> Path:
+) -> Path:  # type: ignore[return-value]
     """Generate a PDF/A.
 
     This API strongly assumes a PDF/A generator with Ghostscript's semantics.
@@ -523,7 +523,7 @@ def optimize_pdf(
     context: PdfContext,
     executor: Executor,
     linearize: bool,
-) -> tuple[Path, Sequence[str]]:
+) -> tuple[Path, Sequence[str]]:  # type: ignore[return-value]
     """Optimize a PDF after image, OCR and metadata processing.
 
     If the input_pdf is a PDF/A, the plugin should modify input_pdf in a way
@@ -560,7 +560,7 @@ def optimize_pdf(
 
 
 @hookspec(firstresult=True)
-def is_optimization_enabled(context: PdfContext) -> bool:
+def is_optimization_enabled(context: PdfContext) -> bool:  # type: ignore[return-value]
     """For a given PdfContext, OCRmyPDF asks the plugin if optimization is enabled.
 
     An optimization plugin might be installed and active but could be disabled by

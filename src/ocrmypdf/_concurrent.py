@@ -15,7 +15,7 @@ from ocrmypdf._progressbar import NullProgressBar, ProgressBar
 T = TypeVar('T')
 
 
-def _task_noop(*_args, **_kwargs):
+def _task_noop(*_args, **_kwargs) -> None:
     return
 
 

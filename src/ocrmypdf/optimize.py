@@ -492,7 +492,7 @@ def _optimize_jpeg(
     xref: Xref, in_jpg: Path, opt_jpg: Path, jpg_quality: int
 ) -> tuple[Xref, Path | None]:
     with Image.open(in_jpg) as im:
-        save_kwargs = {'optimize': True}
+        save_kwargs: dict[str, Any] = {'optimize': True}
         if isinstance(jpg_quality, int) and 0 < jpg_quality <= 100:
             save_kwargs['quality'] = jpg_quality
         im.save(opt_jpg, **save_kwargs)
