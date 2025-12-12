@@ -7,11 +7,15 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Callable, Mapping
-from typing import Any, TypeVar
+from typing import Any, TypeVar, TYPE_CHECKING
 
 from ocrmypdf._defaults import DEFAULT_LANGUAGE, DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._defaults import PROGRAM_NAME as _PROGRAM_NAME
 from ocrmypdf._version import __version__ as _VERSION
+
+if TYPE_CHECKING:
+    import pluggy
+    from ocrmypdf._options import OCROptions
 
 T = TypeVar('T', int, float)
 
