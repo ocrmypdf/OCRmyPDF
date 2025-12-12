@@ -50,9 +50,8 @@ from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._validation import (
     report_output_file_size,
 )
-from ocrmypdf.exceptions import BadArgsError, ExitCode, ExitCodeException
+from ocrmypdf.exceptions import ExitCode, ExitCodeException
 from ocrmypdf.helpers import (
-    available_cpu_count,
     check_pdf,
     pikepdf_enable_mmap,
     running_in_docker,
@@ -328,15 +327,14 @@ def setup_pipeline(
     return executor
 
 
-def do_get_pdfinfo(
-    pdf_path: Path, executor: Executor, options
-) -> PdfInfo:
+def do_get_pdfinfo(pdf_path: Path, executor: Executor, options) -> PdfInfo:
     # Handle pages field - it might be a string that needs conversion
     check_pages = options.pages
     if isinstance(check_pages, str):
         from ocrmypdf._options import _pages_from_ranges
+
         check_pages = _pages_from_ranges(check_pages)
-    
+
     return get_pdfinfo(
         pdf_path,
         executor=executor,

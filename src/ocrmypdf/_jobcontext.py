@@ -5,12 +5,9 @@
 
 from __future__ import annotations
 
-import os
-from collections.abc import Iterator
-from copy import copy
 from argparse import Namespace
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Union
 
 from pluggy import PluginManager
 
@@ -29,7 +26,7 @@ class PdfContext:
 
     def __init__(
         self,
-        options: Union[OCROptions, Namespace],
+        options: OCROptions | Namespace,
         work_folder: Path,
         origin: Path,
         pdfinfo: PdfInfo,
@@ -41,7 +38,7 @@ class PdfContext:
         else:
             # Convert Namespace to OCROptions
             self.options = OCROptions.from_namespace(options)
-        
+
         self.work_folder = work_folder
         self.origin = origin
         self.pdfinfo = pdfinfo
@@ -73,7 +70,7 @@ class PageContext:
 
     Must be pickle-able, so stores only intrinsic/simple data elements or those
     capable of their serializing themselves via ``__getstate__``.
-    
+
     Note: Uses OCROptions with JSON serialization for multiprocessing compatibility.
     """
 
@@ -114,7 +111,6 @@ class PageContext:
             # Fallback: if JSON serialization fails, convert to namespace
             # This shouldn't happen but provides safety
             from argparse import Namespace
-            import os
 
             clean_options = Namespace()
             for key, value in vars(self.options.to_namespace()).items():
@@ -122,6 +118,7 @@ class PageContext:
                     continue
                 try:
                     import pickle
+
                     pickle.dumps(value)
                     setattr(clean_options, key, value)
                 except TypeError:
@@ -134,10 +131,11 @@ class PageContext:
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        
+
         # Reconstruct OCROptions from JSON if available
         if 'options_json' in state:
             from ocrmypdf._options import OCROptions
+
             self.options = OCROptions.model_validate_json_safe(state['options_json'])
         # Otherwise, we have a fallback Namespace (shouldn't happen in normal operation)
         # Leave it as-is for compatibility

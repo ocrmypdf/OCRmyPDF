@@ -6,19 +6,17 @@
 
 from __future__ import annotations
 
-import locale
 import logging
 import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
 from shutil import copyfileobj
-from typing import Union
 
 import pikepdf
 from pluggy import PluginManager
 
-from ocrmypdf._defaults import DEFAULT_LANGUAGE, DEFAULT_ROTATE_PAGES_THRESHOLD
+from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._exec import unpaper
 from ocrmypdf._options import OCROptions
 from ocrmypdf.exceptions import (
@@ -74,7 +72,6 @@ def check_options_languages(
         raise MissingDependencyError(msg)
 
 
-
 def check_options_sidecar(options: OCROptions) -> None:
     if options.sidecar == '\0':
         if options.output_file == '-':
@@ -117,16 +114,13 @@ def check_options_preprocessing(options: OCROptions) -> None:
             raise BadArgsError("--unpaper-args: " + str(e)) from e
 
 
-
 def _check_plugin_invariant_options(options: OCROptions) -> None:
     check_platform()
     check_options_sidecar(options)
     check_options_preprocessing(options)
 
 
-def _check_plugin_options(
-    options: OCROptions, plugin_manager: PluginManager
-) -> None:
+def _check_plugin_options(options: OCROptions, plugin_manager: PluginManager) -> None:
     plugin_manager.hook.check_options(options=options)
     ocr_engine_languages = plugin_manager.hook.get_ocr_engine().languages(options)
     check_options_languages(options, ocr_engine_languages)

@@ -130,7 +130,7 @@ def generate_pdfa(
     output_type = context.options.output_type
     if output_type == 'pdfa':
         output_type = 'pdfa-2'
-    
+
     ghostscript.generate_pdfa(
         pdf_pages=[pdfmark, *pdf_pages],
         output_file=output_file,

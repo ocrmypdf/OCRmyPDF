@@ -43,7 +43,6 @@ import logging
 import os
 import sys
 import threading
-from argparse import Namespace
 from collections.abc import Iterable, Sequence
 from enum import IntEnum
 from io import IOBase
@@ -172,8 +171,6 @@ def configure_logging(
     return log
 
 
-
-
 def create_options(
     *, input_file: PathOrIO, output_file: PathOrIO, parser: ArgumentParser, **kwargs
 ) -> OCROptions:
@@ -193,30 +190,32 @@ def create_options(
     """
     # Prepare kwargs for direct OCROptions construction
     options_kwargs = kwargs.copy()
-    
+
     # Set input and output files
     options_kwargs['input_file'] = input_file
     options_kwargs['output_file'] = output_file
-    
+
     # Handle special stream cases for sidecar
-    if 'sidecar' in options_kwargs and isinstance(options_kwargs['sidecar'], BinaryIO | IOBase):
+    if 'sidecar' in options_kwargs and isinstance(
+        options_kwargs['sidecar'], BinaryIO | IOBase
+    ):
         # Keep the stream object as-is - OCROptions can handle it
         pass
-    
+
     # Remove None values to let OCROptions use its defaults
     options_kwargs = {k: v for k, v in options_kwargs.items() if v is not None}
-    
+
     # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
     extra_attrs = {}
     ocr_fields = set(OCROptions.model_fields.keys())
-    
+
     # Known extra attributes that should be preserved
     known_extra = {'progress_bar', 'plugins'}
-    
+
     for key in list(options_kwargs.keys()):
         if key not in ocr_fields and key not in known_extra:
             extra_attrs[key] = options_kwargs.pop(key)
-    
+
     # Create OCROptions directly
     try:
         options = OCROptions(**options_kwargs)
@@ -447,25 +446,29 @@ def _pdf_to_hocr(  # noqa: D417
     """
     # Prepare kwargs for direct OCROptions construction
     options_kwargs = kwargs.copy()
-    
+
     # Set input file and handle special output_folder case
     options_kwargs['input_file'] = input_pdf
     options_kwargs['output_file'] = '/dev/null'  # Placeholder for hOCR pipeline
-    
+
     # Add all the function parameters
     for param_name, param_value in locals().items():
-        if param_name not in {'input_pdf', 'output_folder', 'kwargs', 'plugin_manager', 'plugins'} and param_value is not None:
+        if (
+            param_name
+            not in {'input_pdf', 'output_folder', 'kwargs', 'plugin_manager', 'plugins'}
+            and param_value is not None
+        ):
             options_kwargs[param_name] = param_value
-    
+
     # Handle plugins separately
     if plugins:
         options_kwargs['plugins'] = plugins
-    
+
     # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
     extra_attrs = {'output_folder': output_folder}
     ocr_fields = set(OCROptions.model_fields.keys())
     known_extra = {'progress_bar', 'plugins'}
-    
+
     for key in list(options_kwargs.keys()):
         if key not in ocr_fields and key not in known_extra:
             extra_attrs[key] = options_kwargs.pop(key)
@@ -484,7 +487,9 @@ def _pdf_to_hocr(  # noqa: D417
             if extra_attrs:
                 options.extra_attrs.update(extra_attrs)
         except Exception as e:
-            raise TypeError(f"Failed to create OCROptions for hOCR pipeline: {e}") from e
+            raise TypeError(
+                f"Failed to create OCROptions for hOCR pipeline: {e}"
+            ) from e
 
         return run_hocr_pipeline(options=options, plugin_manager=plugin_manager)
 
@@ -526,25 +531,29 @@ def _hocr_to_ocr_pdf(  # noqa: D417
     """
     # Prepare kwargs for direct OCROptions construction
     options_kwargs = kwargs.copy()
-    
+
     # Set output file and handle special work_folder case
     options_kwargs['input_file'] = '/dev/null'  # Placeholder for hOCR to PDF pipeline
     options_kwargs['output_file'] = output_file
-    
+
     # Add all the function parameters
     for param_name, param_value in locals().items():
-        if param_name not in {'work_folder', 'output_file', 'kwargs', 'plugin_manager', 'plugins'} and param_value is not None:
+        if (
+            param_name
+            not in {'work_folder', 'output_file', 'kwargs', 'plugin_manager', 'plugins'}
+            and param_value is not None
+        ):
             options_kwargs[param_name] = param_value
-    
+
     # Handle plugins separately
     if plugins:
         options_kwargs['plugins'] = plugins
-    
+
     # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
     extra_attrs = {'work_folder': work_folder}
     ocr_fields = set(OCROptions.model_fields.keys())
     known_extra = {'progress_bar', 'plugins'}
-    
+
     for key in list(options_kwargs.keys()):
         if key not in ocr_fields and key not in known_extra:
             extra_attrs[key] = options_kwargs.pop(key)
@@ -563,7 +572,9 @@ def _hocr_to_ocr_pdf(  # noqa: D417
             if extra_attrs:
                 options.extra_attrs.update(extra_attrs)
         except Exception as e:
-            raise TypeError(f"Failed to create OCROptions for hOCR to PDF pipeline: {e}") from e
+            raise TypeError(
+                f"Failed to create OCROptions for hOCR to PDF pipeline: {e}"
+            ) from e
 
         return run_hocr_to_ocr_pdf_pipeline(
             options=options, plugin_manager=plugin_manager

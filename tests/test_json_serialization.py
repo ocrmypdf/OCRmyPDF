@@ -1,10 +1,8 @@
 """Test JSON serialization of OCROptions for multiprocessing compatibility."""
 
 import multiprocessing
-from pathlib import Path
 from io import BytesIO
-
-import pytest
+from pathlib import Path
 
 from ocrmypdf._options import OCROptions
 
@@ -13,7 +11,7 @@ def worker_function(options_json: str) -> str:
     """Worker function that deserializes OCROptions from JSON and returns a result."""
     # Reconstruct OCROptions from JSON in worker process
     options = OCROptions.model_validate_json_safe(options_json)
-    
+
     # Verify we can access various option types
     result = {
         'input_file': str(options.input_file),
@@ -24,7 +22,7 @@ def worker_function(options_json: str) -> str:
         'fast_web_view': options.fast_web_view,
         'extra_attrs_count': len(options.extra_attrs),
     }
-    
+
     # Return as JSON string
     import json
     return json.dumps(result)
@@ -43,14 +41,14 @@ def test_json_serialization_multiprocessing():
         deskew=True,
         clean=False,
     )
-    
+
     # Add some extra attributes
     options.extra_attrs['custom_field'] = 'test_value'
     options.extra_attrs['numeric_field'] = 42
-    
+
     # Serialize to JSON
     options_json = options.model_dump_json_safe()
-    
+
     # Test that we can deserialize in the main process
     reconstructed = OCROptions.model_validate_json_safe(options_json)
     assert reconstructed.input_file == options.input_file
@@ -62,12 +60,12 @@ def test_json_serialization_multiprocessing():
     assert reconstructed.deskew == options.deskew
     assert reconstructed.clean == options.clean
     assert reconstructed.extra_attrs == options.extra_attrs
-    
+
     # Test multiprocessing with JSON serialization
     with multiprocessing.Pool(processes=2) as pool:
         # Send the JSON string to worker processes
         results = pool.map(worker_function, [options_json, options_json])
-    
+
     # Verify results from worker processes
     import json
     for result_json in results:
@@ -85,20 +83,20 @@ def test_json_serialization_with_streams():
     """Test JSON serialization with stream objects."""
     input_stream = BytesIO(b'fake pdf data')
     output_stream = BytesIO()
-    
+
     options = OCROptions(
         input_file=input_stream,
         output_file=output_stream,
         languages=['eng'],
         optimize=1,
     )
-    
+
     # Serialize to JSON (streams should be converted to placeholders)
     options_json = options.model_dump_json_safe()
-    
+
     # Deserialize (streams will be placeholder strings)
     reconstructed = OCROptions.model_validate_json_safe(options_json)
-    
+
     # Streams should be converted to placeholder strings
     assert reconstructed.input_file == 'stream'
     assert reconstructed.output_file == 'stream'
@@ -114,19 +112,19 @@ def test_json_serialization_with_none_values():
         languages=['eng'],
         # Many fields will be None by default
     )
-    
+
     # Serialize to JSON
     options_json = options.model_dump_json_safe()
-    
+
     # Deserialize
     reconstructed = OCROptions.model_validate_json_safe(options_json)
-    
+
     # Verify None values are preserved (check actual defaults from model)
     assert reconstructed.tesseract_timeout == 0.0  # Default value, not None
     assert reconstructed.fast_web_view == 1.0  # Default value, not None
     assert reconstructed.color_conversion_strategy == "LeaveColorUnchanged"  # Default value
     assert reconstructed.pdfa_image_compression is None  # This one is actually None
-    
+
     # Verify non-None values are preserved
     assert reconstructed.input_file == options.input_file
     assert reconstructed.output_file == options.output_file

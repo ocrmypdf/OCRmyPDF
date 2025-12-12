@@ -15,7 +15,6 @@ from pikepdf import Dictionary, Name, Pdf
 from pikepdf import __version__ as PIKEPDF_VERSION
 from pikepdf.models.metadata import PdfMetadata, encode_pdf_date
 
-from ocrmypdf._annots import remove_broken_goto_annotations
 from ocrmypdf._defaults import PROGRAM_NAME
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._version import __version__ as OCRMYPF_VERSION

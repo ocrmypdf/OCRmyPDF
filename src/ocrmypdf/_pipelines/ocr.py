@@ -63,7 +63,7 @@ def _image_to_ocr_text(
     pdf_renderer = options.pdf_renderer
     if pdf_renderer == 'auto':
         pdf_renderer = 'hocr'
-    
+
     if pdf_renderer.startswith('hocr'):
         hocr_out, text_out = ocr_engine_hocr(ocr_image_out, page_context)
         ocr_out = render_hocr_page(hocr_out, page_context)

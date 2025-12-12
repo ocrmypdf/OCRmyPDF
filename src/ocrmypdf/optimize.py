@@ -383,7 +383,7 @@ def _get_effective_jbig2_page_group_size(options) -> int:
 def extract_images_jbig2(pdf: Pdf, root: Path, options) -> dict[int, list[XrefExt]]:
     """Extract any bitonal image that we think we can improve as JBIG2."""
     jbig2_page_group_size = _get_effective_jbig2_page_group_size(options)
-    
+
     jbig2_groups = defaultdict(list)
     for pageno, xref_ext in extract_images(pdf, root, options, extract_image_jbig2):
         group = pageno // jbig2_page_group_size

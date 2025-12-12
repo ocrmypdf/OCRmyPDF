@@ -97,7 +97,7 @@ def test_pillow_options():
     # Test that max_image_mpixels=0 is valid (validation now in OCROptions)
     opts = make_ocr_opts(max_image_mpixels=0)
     assert opts.max_image_mpixels == 0
-    
+
     # Test that negative values are rejected
     with pytest.raises(ValueError, match="max_image_mpixels must be non-negative"):
         make_ocr_opts(max_image_mpixels=-1)

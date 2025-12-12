@@ -10,11 +10,10 @@ import logging
 import os
 import unicodedata
 from argparse import Namespace
-from collections.abc import Iterable, Sequence
-from copy import copy
+from collections.abc import Sequence
 from io import IOBase
 from pathlib import Path
-from typing import Any, BinaryIO, Union
+from typing import Any, BinaryIO
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -24,7 +23,7 @@ from ocrmypdf.helpers import monotonic
 
 log = logging.getLogger(__name__)
 
-PathOrIO = Union[BinaryIO, IOBase, Path, str, bytes]
+PathOrIO = BinaryIO | IOBase | Path | str | bytes
 
 
 def _pages_from_ranges(ranges: str) -> set[int]:
@@ -124,14 +123,14 @@ class OCROptions(BaseModel):
     png_quality: int | None = None
     jbig2_lossy: bool | None = None
     jbig2_page_group_size: int | None = None
-    jbig2_threshold: float = 0.85 
-    
+    jbig2_threshold: float = 0.85
+
     # Compatibility alias for plugins that expect jpeg_quality
     @property
     def jpeg_quality(self):
         """Compatibility alias for jpg_quality."""
         return self.jpg_quality
-    
+
     @jpeg_quality.setter
     def jpeg_quality(self, value):
         """Compatibility alias for jpg_quality."""
@@ -140,25 +139,24 @@ class OCROptions(BaseModel):
     # Advanced options
     max_image_mpixels: float = 250.0
     pdf_renderer: str = 'auto'
-    tesseract_config: list[str] = [] 
+    tesseract_config: list[str] = []
     tesseract_pagesegmode: int | None = None
     tesseract_oem: int | None = None
     tesseract_thresholding: int | None = None
-    tesseract_timeout: float = 0.0 
+    tesseract_timeout: float = 0.0
     tesseract_non_ocr_timeout: float | None = None
-    tesseract_downsample_above: int = 32767 
+    tesseract_downsample_above: int = 32767
     tesseract_downsample_large_images: bool | None = None
     rotate_pages_threshold: float = DEFAULT_ROTATE_PAGES_THRESHOLD
     pdfa_image_compression: str | None = None
-    color_conversion_strategy: str = "LeaveColorUnchanged" 
+    color_conversion_strategy: str = "LeaveColorUnchanged"
     user_words: os.PathLike | None = None
     user_patterns: os.PathLike | None = None
-    fast_web_view: float = 1.0 
+    fast_web_view: float = 1.0
     continue_on_soft_render_error: bool | None = None
 
     # Plugin system
     plugins: Sequence[Path | str] | None = None
-
 
     # Store any extra attributes (for plugins and dynamic options)
     extra_attrs: dict[str, Any] = Field(
@@ -259,7 +257,6 @@ class OCROptions(BaseModel):
             raise ValueError(f"pdf_renderer must be one of {valid_renderers}")
         return v
 
-
     @field_validator('clean_final')
     @classmethod
     def validate_clean_final(cls, v, info):
@@ -314,7 +311,7 @@ class OCROptions(BaseModel):
         """Validate metadata strings don't contain unsupported Unicode characters."""
         if v is None:
             return v
-        
+
         for char in v:
             if unicodedata.category(char) == 'Co' or ord(char) >= 0x10000:
                 hexchar = hex(ord(char))[2:].upper()
@@ -332,7 +329,7 @@ class OCROptions(BaseModel):
             return v
         if isinstance(v, set):
             return v  # Already processed
-        
+
         # Convert string ranges to set of page numbers
         return _pages_from_ranges(v)
 
@@ -356,10 +353,13 @@ class OCROptions(BaseModel):
             raise ValueError("Choose only one of --force-ocr, --skip-text, --redo-ocr.")
         return self
 
-    @model_validator(mode='after') 
+    @model_validator(mode='after')
     def validate_output_type_compatibility(self):
         """Validate output type is compatible with output file."""
-        if self.output_type == 'none' and str(self.output_file) not in (os.devnull, '-'):
+        if self.output_type == 'none' and str(self.output_file) not in (
+            os.devnull,
+            '-',
+        ):
             raise ValueError(
                 "Since you specified `--output-type none`, the output file "
                 f"{self.output_file} cannot be produced. Set the output file to "
@@ -370,19 +370,21 @@ class OCROptions(BaseModel):
     @model_validator(mode='after')
     def set_lossless_reconstruction(self):
         """Set lossless_reconstruction based on other options."""
-        lossless = not any([
-            self.deskew,
-            self.clean_final, 
-            self.force_ocr,
-            self.remove_background,
-        ])
-        
+        lossless = not any(
+            [
+                self.deskew,
+                self.clean_final,
+                self.force_ocr,
+                self.remove_background,
+            ]
+        )
+
         if not lossless and self.redo_ocr:
             raise ValueError(
                 "--redo-ocr is not currently compatible with --deskew, "
                 "--clean-final, and --remove-background"
             )
-        
+
         # Set the computed attribute
         self.extra_attrs['lossless_reconstruction'] = lossless
         return self
@@ -391,12 +393,16 @@ class OCROptions(BaseModel):
         """Serialize to JSON with special handling for non-serializable types."""
         # Create a copy of the model data for serialization
         data = self.model_dump()
-        
+
         # Handle special types that don't serialize to JSON directly
         def _serialize_value(value):
             if isinstance(value, Path):
                 return {'__type__': 'Path', 'value': str(value)}
-            elif isinstance(value, (BinaryIO, IOBase)) or hasattr(value, 'read') or hasattr(value, 'write'):
+            elif (
+                isinstance(value, (BinaryIO, IOBase))
+                or hasattr(value, 'read')
+                or hasattr(value, 'write')
+            ):
                 # Stream object - replace with placeholder
                 return {'__type__': 'Stream', 'value': 'stream'}
             elif hasattr(value, '__class__') and 'Iterator' in value.__class__.__name__:
@@ -408,23 +414,23 @@ class OCROptions(BaseModel):
                 return {k: _serialize_value(v) for k, v in value.items()}
             else:
                 return value
-        
+
         # Process all fields
         serializable_data = {}
         for key, value in data.items():
             serializable_data[key] = _serialize_value(value)
-        
+
         # Add extra_attrs
         if self.extra_attrs:
             serializable_data['_extra_attrs'] = _serialize_value(self.extra_attrs)
-        
+
         return json.dumps(serializable_data)
-    
+
     @classmethod
     def model_validate_json_safe(cls, json_str: str) -> OCROptions:
         """Reconstruct from JSON with special handling for non-serializable types."""
         data = json.loads(json_str)
-        
+
         # Handle special types during deserialization
         def _deserialize_value(value):
             if isinstance(value, dict) and '__type__' in value:
@@ -441,21 +447,21 @@ class OCROptions(BaseModel):
                 return {k: _deserialize_value(v) for k, v in value.items()}
             else:
                 return value
-        
+
         # Process all fields
         deserialized_data = {}
         extra_attrs = {}
-        
+
         for key, value in data.items():
             if key == '_extra_attrs':
                 extra_attrs = _deserialize_value(value)
             else:
                 deserialized_data[key] = _deserialize_value(value)
-        
+
         # Create instance
         instance = cls(**deserialized_data)
         instance.extra_attrs = extra_attrs
-        
+
         return instance
 
     model_config = ConfigDict(
