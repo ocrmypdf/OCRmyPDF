@@ -11,8 +11,8 @@ import pytest
 from packaging.version import Version
 
 from ocrmypdf._exec import unpaper
-from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf._validation import check_options
+from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.exceptions import BadArgsError, ExitCode, MissingDependencyError
 
 from .conftest import check_ocrmypdf, have_unpaper, run_ocrmypdf_api

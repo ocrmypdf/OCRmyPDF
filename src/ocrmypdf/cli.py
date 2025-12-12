@@ -7,15 +7,15 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Callable, Mapping
-from typing import Any, TypeVar, TYPE_CHECKING
+from typing import Any, TypeVar
 
-from ocrmypdf._defaults import DEFAULT_LANGUAGE, DEFAULT_ROTATE_PAGES_THRESHOLD
+import pluggy
+
+from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._defaults import PROGRAM_NAME as _PROGRAM_NAME
+from ocrmypdf._options import OCROptions
+from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._version import __version__ as _VERSION
-
-if TYPE_CHECKING:
-    import pluggy
-    from ocrmypdf._options import OCROptions
 
 T = TypeVar('T', int, float)
 
@@ -100,7 +100,7 @@ class LanguageSetAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         """Add a language to the set."""
         dest = getattr(namespace, self.dest)
-        if '+' in values:
+        if isinstance(values, str) and '+' in values:
             [dest.append(lang) for lang in values.split('+')]
         else:
             dest.append(values)
@@ -471,14 +471,12 @@ plugins_only_parser.add_argument(
 )
 
 
-def namespace_to_options(ns) -> 'OCROptions':
+def namespace_to_options(ns) -> OCROptions:
     """Convert argparse.Namespace to OCROptions.
-    
+
     This function encapsulates CLI-specific knowledge of how command line
     arguments map to our internal options model.
     """
-    from ocrmypdf._options import OCROptions
-    
     # Extract known fields
     known_fields = {}
     extra_attrs = {}
@@ -504,22 +502,19 @@ def namespace_to_options(ns) -> 'OCROptions':
 
 def get_options_and_plugins(
     args=None,
-) -> tuple['OCROptions', 'pluggy.PluginManager']:
+) -> tuple[OCROptions, pluggy.PluginManager]:
     """Parse command line arguments and return OCROptions and plugin manager.
-    
+
     This is the main entry point for CLI argument processing. It handles
     plugin discovery, argument parsing, and conversion to our internal
     options model.
-    
+
     Args:
         args: Command line arguments. If None, uses sys.argv.
-        
+
     Returns:
         Tuple of (OCROptions, PluginManager)
     """
-    import pluggy
-    from ocrmypdf._plugin_manager import get_plugin_manager
-    
     # First pass: get plugins so we can register their options
     pre_options, _unused = plugins_only_parser.parse_known_args(args=args)
     plugin_manager = get_plugin_manager(pre_options.plugins)
@@ -531,8 +526,8 @@ def get_options_and_plugins(
 
     # Parse all arguments
     namespace = parser.parse_args(args=args)
-    
+
     # Convert to OCROptions
     options = namespace_to_options(namespace)
-    
+
     return options, plugin_manager

@@ -44,11 +44,7 @@ def make_opts(*args, **kwargs):
 
 def make_ocr_opts(input_file='a.pdf', output_file='b.pdf', **kwargs):
     """Create OCROptions directly for testing Pydantic validation."""
-    return OCROptions(
-        input_file=input_file,
-        output_file=output_file,
-        **kwargs
-    )
+    return OCROptions(input_file=input_file, output_file=output_file, **kwargs)
 
 
 def test_old_tesseract_error():
@@ -78,11 +74,17 @@ def test_lossless_redo():
 
 
 def test_mutex_options():
-    with pytest.raises(ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"):
+    with pytest.raises(
+        ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"
+    ):
         make_ocr_opts(force_ocr=True, skip_text=True)
-    with pytest.raises(ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"):
+    with pytest.raises(
+        ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"
+    ):
         make_ocr_opts(redo_ocr=True, skip_text=True)
-    with pytest.raises(ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"):
+    with pytest.raises(
+        ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"
+    ):
         make_ocr_opts(redo_ocr=True, force_ocr=True)
 
 

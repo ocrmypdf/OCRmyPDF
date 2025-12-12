@@ -164,7 +164,6 @@ class OCROptions(BaseModel):
         default_factory=dict, exclude=True, alias='_extra_attrs'
     )
 
-
     @field_validator('languages')
     @classmethod
     def validate_languages(cls, v):

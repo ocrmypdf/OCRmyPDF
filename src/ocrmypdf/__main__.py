@@ -16,8 +16,8 @@ from contextlib import suppress
 from ocrmypdf import __version__
 from ocrmypdf._pipelines.ocr import run_pipeline_cli
 from ocrmypdf._validation import check_options
-from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.api import Verbosity, configure_logging
+from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.exceptions import (
     BadArgsError,
     ExitCode,

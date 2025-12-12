@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import argparse
 import importlib
 import importlib.util
 import pkgutil
@@ -17,7 +16,6 @@ import pluggy
 
 import ocrmypdf.builtin_plugins
 from ocrmypdf import pluginspec
-from ocrmypdf.cli import get_parser
 
 
 class OcrmypdfPluginManager(pluggy.PluginManager):

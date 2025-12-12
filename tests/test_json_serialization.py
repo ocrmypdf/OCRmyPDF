@@ -25,6 +25,7 @@ def worker_function(options_json: str) -> str:
 
     # Return as JSON string
     import json
+
     return json.dumps(result)
 
 
@@ -68,6 +69,7 @@ def test_json_serialization_multiprocessing():
 
     # Verify results from worker processes
     import json
+
     for result_json in results:
         result = json.loads(result_json)
         assert result['input_file'] == '/test/input.pdf'
@@ -122,7 +124,9 @@ def test_json_serialization_with_none_values():
     # Verify None values are preserved (check actual defaults from model)
     assert reconstructed.tesseract_timeout == 0.0  # Default value, not None
     assert reconstructed.fast_web_view == 1.0  # Default value, not None
-    assert reconstructed.color_conversion_strategy == "LeaveColorUnchanged"  # Default value
+    assert (
+        reconstructed.color_conversion_strategy == "LeaveColorUnchanged"
+    )  # Default value
     assert reconstructed.pdfa_image_compression is None  # This one is actually None
 
     # Verify non-None values are preserved
