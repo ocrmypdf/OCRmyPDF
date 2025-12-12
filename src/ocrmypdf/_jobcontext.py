@@ -101,29 +101,10 @@ class PageContext:
     def __getstate__(self):
         state = self.__dict__.copy()
 
-        # Use JSON serialization instead of Namespace
-        try:
-            options_json = self.options.model_dump_json_safe()
-            state['options_json'] = options_json
-            # Remove the OCROptions object to avoid pickle issues
-            del state['options']
-        except Exception:
-            # Fallback: if JSON serialization fails, convert to namespace
-            # This shouldn't happen but provides safety
-            from argparse import Namespace
-
-            clean_options = Namespace()
-            for key, value in vars(self.options.to_namespace()).items():
-                if key.startswith('_'):
-                    continue
-                try:
-                    import pickle
-
-                    pickle.dumps(value)
-                    setattr(clean_options, key, value)
-                except TypeError:
-                    continue
-            state['options'] = clean_options
+        options_json = self.options.model_dump_json_safe()
+        state['options_json'] = options_json
+        # Remove the OCROptions object to avoid pickle issues
+        del state['options']
 
         # Remove any potential references to Pydantic objects
         state.pop('_pdf_context', None)

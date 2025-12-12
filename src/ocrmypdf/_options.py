@@ -190,21 +190,6 @@ class OCROptions(BaseModel):
         instance.extra_attrs = extra_attrs
         return instance
 
-    def to_namespace(self) -> Namespace:
-        """Convert back to argparse.Namespace for compatibility."""
-        ns = Namespace()
-
-        # Add pydantic fields
-        for field_name in type(self).model_fields:
-            field_value = getattr(self, field_name)
-            setattr(ns, field_name, field_value)
-
-        # Add extra attributes (including computed ones like lossless_reconstruction)
-        for key, value in self.extra_attrs.items():
-            setattr(ns, key, value)
-
-        return ns
-
     @field_validator('languages')
     @classmethod
     def validate_languages(cls, v):
