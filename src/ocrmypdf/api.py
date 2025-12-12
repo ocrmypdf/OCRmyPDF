@@ -444,6 +444,16 @@ def _pdf_to_hocr(  # noqa: D417
         output_folder: Output folder path.
         **kwargs: Keyword arguments.
     """
+    if plugins and plugin_manager:
+        raise ValueError("plugins= and plugin_manager are mutually exclusive")
+
+    if not plugins:
+        plugins = []
+    elif isinstance(plugins, str | Path):
+        plugins = [plugins]
+    else:
+        plugins = list(plugins)
+
     # Prepare kwargs for direct OCROptions construction
     options_kwargs = kwargs.copy()
 
@@ -460,9 +470,12 @@ def _pdf_to_hocr(  # noqa: D417
         ):
             options_kwargs[param_name] = param_value
 
-    # Handle plugins separately
+    # Handle plugins
     if plugins:
         options_kwargs['plugins'] = plugins
+
+    # Remove None values to let OCROptions use its defaults
+    options_kwargs = {k: v for k, v in options_kwargs.items() if v is not None}
 
     # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
     extra_attrs = {'output_folder': output_folder}
@@ -473,12 +486,10 @@ def _pdf_to_hocr(  # noqa: D417
         if key not in ocr_fields and key not in known_extra:
             extra_attrs[key] = options_kwargs.pop(key)
 
-    parser = get_parser()
-
     with _api_lock:
         if not plugin_manager:
             plugin_manager = get_plugin_manager(plugins)
-        plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
+        plugin_manager.hook.add_options(parser=get_parser())  # pylint: disable=no-member
 
         # Create OCROptions directly
         try:
@@ -529,6 +540,16 @@ def _hocr_to_ocr_pdf(  # noqa: D417
         output_file: Output PDF file path.
         **kwargs: Keyword arguments.
     """
+    if plugins and plugin_manager:
+        raise ValueError("plugins= and plugin_manager are mutually exclusive")
+
+    if not plugins:
+        plugins = []
+    elif isinstance(plugins, str | Path):
+        plugins = [plugins]
+    else:
+        plugins = list(plugins)
+
     # Prepare kwargs for direct OCROptions construction
     options_kwargs = kwargs.copy()
 
@@ -545,9 +566,12 @@ def _hocr_to_ocr_pdf(  # noqa: D417
         ):
             options_kwargs[param_name] = param_value
 
-    # Handle plugins separately
+    # Handle plugins
     if plugins:
         options_kwargs['plugins'] = plugins
+
+    # Remove None values to let OCROptions use its defaults
+    options_kwargs = {k: v for k, v in options_kwargs.items() if v is not None}
 
     # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
     extra_attrs = {'work_folder': work_folder}
@@ -558,12 +582,10 @@ def _hocr_to_ocr_pdf(  # noqa: D417
         if key not in ocr_fields and key not in known_extra:
             extra_attrs[key] = options_kwargs.pop(key)
 
-    parser = get_parser()
-
     with _api_lock:
         if not plugin_manager:
             plugin_manager = get_plugin_manager(plugins)
-        plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
+        plugin_manager.hook.add_options(parser=get_parser())  # pylint: disable=no-member
 
         # Create OCROptions directly
         try:
