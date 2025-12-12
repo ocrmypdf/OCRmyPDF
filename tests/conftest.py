@@ -12,7 +12,7 @@ import pytest
 
 from ocrmypdf import api, pdfinfo
 from ocrmypdf._exec import unpaper
-from ocrmypdf._plugin_manager import get_parser_options_plugins
+from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.exceptions import ExitCode
 
 
@@ -84,7 +84,7 @@ def check_ocrmypdf(input_file: Path, output_file: Path, *args) -> Path:
         str(arg) for arg in args if arg is not None
     ]
 
-    _parser, options, plugin_manager = get_parser_options_plugins(args=api_args)
+    options, plugin_manager = get_options_and_plugins(args=api_args)
     api.check_options(options, plugin_manager)
     result = api.run_pipeline(options, plugin_manager=plugin_manager)
 
@@ -108,7 +108,7 @@ def run_ocrmypdf_api(input_file: Path, output_file: Path, *args) -> ExitCode:
     api_args = [str(input_file), str(output_file)] + [
         str(arg) for arg in args if arg is not None
     ]
-    _parser, options, plugin_manager = get_parser_options_plugins(args=api_args)
+    options, plugin_manager = get_options_and_plugins(args=api_args)
 
     api.check_options(options, plugin_manager)
     return api.run_pipeline_cli(options, plugin_manager=plugin_manager)

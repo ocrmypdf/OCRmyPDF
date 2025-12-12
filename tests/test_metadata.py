@@ -15,7 +15,8 @@ from pikepdf.models.metadata import decode_pdf_date
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._metadata import metadata_fixup
 from ocrmypdf._pipeline import convert_to_pdfa
-from ocrmypdf._plugin_manager import get_parser_options_plugins, get_plugin_manager
+from ocrmypdf._plugin_manager import get_plugin_manager
+from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import file_claims_pdfa, generate_pdfa_ps
 from ocrmypdf.pdfinfo import PdfInfo
@@ -323,7 +324,7 @@ def test_kodak_toc(resources, outpdf):
 
 
 def test_metadata_fixup_warning(resources, outdir, caplog):
-    _parser, options, _pm = get_parser_options_plugins(
+    options, _pm = get_options_and_plugins(
         ['--output-type', 'pdfa-2', 'graph.pdf', 'out.pdf']
     )
 
@@ -367,7 +368,7 @@ def test_prevent_gs_invalid_xml(resources, outdir):
         )
         pdf.save(outdir / 'layers.rendered.pdf', fix_metadata_version=False)
 
-    _, options, _ = get_parser_options_plugins(
+    options, _ = get_options_and_plugins(
         args=[
             '-j',
             '1',
