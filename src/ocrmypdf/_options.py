@@ -368,8 +368,19 @@ class OCROptions(BaseModel):
         return self
 
     @model_validator(mode='after')
-    def set_lossless_reconstruction(self):
-        """Set lossless_reconstruction based on other options."""
+    def validate_redo_ocr_options(self):
+        """Validate options compatible with redo_ocr."""
+        if self.redo_ocr:
+            if self.deskew or self.clean_final or self.remove_background:
+                raise ValueError(
+                    "--redo-ocr is not currently compatible with --deskew, "
+                    "--clean-final, and --remove-background"
+                )
+        return self
+
+    @property
+    def lossless_reconstruction(self):
+        """Determine lossless_reconstruction based on other options."""
         lossless = not any(
             [
                 self.deskew,
@@ -378,16 +389,7 @@ class OCROptions(BaseModel):
                 self.remove_background,
             ]
         )
-
-        if not lossless and self.redo_ocr:
-            raise ValueError(
-                "--redo-ocr is not currently compatible with --deskew, "
-                "--clean-final, and --remove-background"
-            )
-
-        # Set the computed attribute
-        self.extra_attrs['lossless_reconstruction'] = lossless
-        return self
+        return lossless
 
     def model_dump_json_safe(self) -> str:
         """Serialize to JSON with special handling for non-serializable types."""
