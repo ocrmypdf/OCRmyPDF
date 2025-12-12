@@ -477,8 +477,11 @@ def _pdf_to_hocr(  # noqa: D417
     # Remove None values to let OCROptions use its defaults
     options_kwargs = {k: v for k, v in options_kwargs.items() if v is not None}
 
+    # Add output_folder to options_kwargs since it's now a proper field
+    options_kwargs['output_folder'] = output_folder
+
     # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
-    extra_attrs = {'output_folder': output_folder}
+    extra_attrs = {}
     ocr_fields = set(OCROptions.model_fields.keys())
     known_extra = {'progress_bar', 'plugins'}
 
@@ -573,8 +576,11 @@ def _hocr_to_ocr_pdf(  # noqa: D417
     # Remove None values to let OCROptions use its defaults
     options_kwargs = {k: v for k, v in options_kwargs.items() if v is not None}
 
+    # Add work_folder to options_kwargs since it's now a proper field
+    options_kwargs['work_folder'] = work_folder
+
     # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
-    extra_attrs = {'work_folder': work_folder}
+    extra_attrs = {}
     ocr_fields = set(OCROptions.model_fields.keys())
     known_extra = {'progress_bar', 'plugins'}
 

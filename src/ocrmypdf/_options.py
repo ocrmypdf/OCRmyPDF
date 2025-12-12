@@ -78,6 +78,7 @@ class OCROptions(BaseModel):
     output_file: PathOrIO
     sidecar: PathOrIO | None = None
     output_folder: Path | None = None
+    work_folder: Path | None = None
 
     # Core OCR options
     languages: list[str] = Field(default_factory=lambda: [DEFAULT_LANGUAGE])
