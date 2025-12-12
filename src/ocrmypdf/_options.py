@@ -77,6 +77,7 @@ class OCROptions(BaseModel):
     input_file: PathOrIO
     output_file: PathOrIO
     sidecar: PathOrIO | None = None
+    output_folder: Path | None = None
 
     # Core OCR options
     languages: list[str] = Field(default_factory=lambda: [DEFAULT_LANGUAGE])
@@ -163,33 +164,33 @@ class OCROptions(BaseModel):
         default_factory=dict, exclude=True, alias='_extra_attrs'
     )
 
-    def __getattr__(self, name: str) -> Any:
-        """Allow attribute access like argparse.Namespace."""
-        if name in self.extra_attrs:
-            return self.extra_attrs[name]
-        raise AttributeError(
-            f"'{type(self).__name__}' object has no attribute '{name}'"
-        )
+    # def __getattr__(self, name: str) -> Any:
+    #     """Allow attribute access like argparse.Namespace."""
+    #     if name in self.extra_attrs:
+    #         return self.extra_attrs[name]
+    #     raise AttributeError(
+    #         f"'{type(self).__name__}' object has no attribute '{name}'"
+    #     )
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        """Allow attribute setting like argparse.Namespace."""
-        if name.startswith('_') or name in type(self).model_fields:
-            super().__setattr__(name, value)
-        else:
-            if not hasattr(self, 'extra_attrs'):
-                super().__setattr__('extra_attrs', {})
-            self.extra_attrs[name] = value
+    # def __setattr__(self, name: str, value: Any) -> None:
+    #     """Allow attribute setting like argparse.Namespace."""
+    #     if name.startswith('_') or name in type(self).model_fields:
+    #         super().__setattr__(name, value)
+    #     else:
+    #         if not hasattr(self, 'extra_attrs'):
+    #             super().__setattr__('extra_attrs', {})
+    #         self.extra_attrs[name] = value
 
-    def __delattr__(self, name: str) -> None:
-        """Allow attribute deletion like argparse.Namespace."""
-        if name in type(self).model_fields:
-            super().__delattr__(name)
-        elif name in self.extra_attrs:
-            del self.extra_attrs[name]
-        else:
-            raise AttributeError(
-                f"'{type(self).__name__}' object has no attribute '{name}'"
-            )
+    # def __delattr__(self, name: str) -> None:
+    #     """Allow attribute deletion like argparse.Namespace."""
+    #     if name in type(self).model_fields:
+    #         super().__delattr__(name)
+    #     elif name in self.extra_attrs:
+    #         del self.extra_attrs[name]
+    #     else:
+    #         raise AttributeError(
+    #             f"'{type(self).__name__}' object has no attribute '{name}'"
+    #         )
 
     @classmethod
     def from_namespace(cls, ns: Namespace) -> OCROptions:
