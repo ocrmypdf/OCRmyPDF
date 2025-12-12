@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from argparse import Namespace
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -26,19 +25,13 @@ class PdfContext:
 
     def __init__(
         self,
-        options: OCROptions | Namespace,
+        options: OCROptions,
         work_folder: Path,
         origin: Path,
         pdfinfo: PdfInfo,
         plugin_manager,
     ):
-        # Handle both OCROptions and Namespace during transition
-        if isinstance(options, OCROptions):
-            self.options = options
-        else:
-            # Convert Namespace to OCROptions
-            self.options = OCROptions.from_namespace(options)
-
+        self.options = options
         self.work_folder = work_folder
         self.origin = origin
         self.pdfinfo = pdfinfo

@@ -9,7 +9,7 @@ import argparse
 from collections.abc import Callable, Mapping
 from typing import Any, TypeVar
 
-from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
+from ocrmypdf._defaults import DEFAULT_LANGUAGE, DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._defaults import PROGRAM_NAME as _PROGRAM_NAME
 from ocrmypdf._version import __version__ as _VERSION
 
@@ -465,3 +465,70 @@ plugins_only_parser.add_argument(
     default=[],
     help="Name of plugin to import.",
 )
+
+
+def namespace_to_options(ns) -> 'OCROptions':
+    """Convert argparse.Namespace to OCROptions.
+    
+    This function encapsulates CLI-specific knowledge of how command line
+    arguments map to our internal options model.
+    """
+    from ocrmypdf._options import OCROptions
+    
+    # Extract known fields
+    known_fields = {}
+    extra_attrs = {}
+
+    for key, value in vars(ns).items():
+        if key in OCROptions.model_fields:
+            known_fields[key] = value
+        else:
+            extra_attrs[key] = value
+
+    # Handle special cases for hOCR API
+    if 'output_folder' in extra_attrs and 'output_file' not in known_fields:
+        known_fields['output_file'] = '/dev/null'  # Placeholder
+
+    # Handle case where input_file is missing (e.g., in _hocr_to_ocr_pdf)
+    if 'work_folder' in extra_attrs and 'input_file' not in known_fields:
+        known_fields['input_file'] = '/dev/null'  # Placeholder
+
+    instance = OCROptions(**known_fields)
+    instance.extra_attrs = extra_attrs
+    return instance
+
+
+def get_options_and_plugins(
+    args=None,
+) -> tuple['OCROptions', 'pluggy.PluginManager']:
+    """Parse command line arguments and return OCROptions and plugin manager.
+    
+    This is the main entry point for CLI argument processing. It handles
+    plugin discovery, argument parsing, and conversion to our internal
+    options model.
+    
+    Args:
+        args: Command line arguments. If None, uses sys.argv.
+        
+    Returns:
+        Tuple of (OCROptions, PluginManager)
+    """
+    import pluggy
+    from ocrmypdf._plugin_manager import get_plugin_manager
+    
+    # First pass: get plugins so we can register their options
+    pre_options, _unused = plugins_only_parser.parse_known_args(args=args)
+    plugin_manager = get_plugin_manager(pre_options.plugins)
+
+    # Get parser and let plugins add their options
+    parser = get_parser()
+    plugin_manager.hook.initialize(plugin_manager=plugin_manager)  # pylint: disable=no-member
+    plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
+
+    # Parse all arguments
+    namespace = parser.parse_args(args=args)
+    
+    # Convert to OCROptions
+    options = namespace_to_options(namespace)
+    
+    return options, plugin_manager

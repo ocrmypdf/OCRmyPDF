@@ -17,7 +17,7 @@ import pluggy
 
 import ocrmypdf.builtin_plugins
 from ocrmypdf import pluginspec
-from ocrmypdf.cli import get_parser, plugins_only_parser
+from ocrmypdf.cli import get_parser
 
 
 class OcrmypdfPluginManager(pluggy.PluginManager):
@@ -101,20 +101,4 @@ def get_plugin_manager(
     )
 
 
-def get_parser_options_plugins(
-    args: Sequence[str],
-) -> tuple[argparse.ArgumentParser, argparse.Namespace, pluggy.PluginManager]:
-    pre_options, _unused = plugins_only_parser.parse_known_args(args=args)
-    plugin_manager = get_plugin_manager(pre_options.plugins)
-
-    parser = get_parser()
-    plugin_manager.hook.initialize(  # pylint: disable=no-member
-        plugin_manager=plugin_manager
-    )
-    plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
-
-    options = parser.parse_args(args=args)
-    return parser, options, plugin_manager
-
-
-__all__ = ['OcrmypdfPluginManager', 'get_plugin_manager', 'get_parser_options_plugins']
+__all__ = ['OcrmypdfPluginManager', 'get_plugin_manager']

@@ -9,7 +9,6 @@ import json
 import logging
 import os
 import unicodedata
-from argparse import Namespace
 from collections.abc import Sequence
 from io import IOBase
 from pathlib import Path
@@ -165,30 +164,6 @@ class OCROptions(BaseModel):
         default_factory=dict, exclude=True, alias='_extra_attrs'
     )
 
-    @classmethod
-    def from_namespace(cls, ns: Namespace) -> OCROptions:
-        """Convert argparse.Namespace to OCROptions."""
-        # Extract known fields
-        known_fields = {}
-        extra_attrs = {}
-
-        for key, value in vars(ns).items():
-            if key in cls.model_fields:
-                known_fields[key] = value
-            else:
-                extra_attrs[key] = value
-
-        # Handle special cases for hOCR API
-        if 'output_folder' in extra_attrs and 'output_file' not in known_fields:
-            known_fields['output_file'] = '/dev/null'  # Placeholder
-
-        # Handle case where input_file is missing (e.g., in _hocr_to_ocr_pdf)
-        if 'work_folder' in extra_attrs and 'input_file' not in known_fields:
-            known_fields['input_file'] = '/dev/null'  # Placeholder
-
-        instance = cls(**known_fields)
-        instance.extra_attrs = extra_attrs
-        return instance
 
     @field_validator('languages')
     @classmethod
