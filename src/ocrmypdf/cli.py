@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import argparse
+from argparse import ArgumentParser
 from collections.abc import Callable, Mapping
 from typing import Any, TypeVar
 
@@ -53,39 +54,6 @@ def str_to_int(mapping: Mapping[str, int]):
             ) from None
 
     return _str_to_int
-
-
-class ArgumentParser(argparse.ArgumentParser):
-    """Override parser's default behavior of calling sys.exit().
-
-    https://stackoverflow.com/questions/5943249/python-argparse-and-controlling-overriding-the-exit-status-code
-
-    OCRmyPDF began as a CLI but eventually acquired an API. The API works inside out,
-    by synthesizing a command line argument. So we subclass the standard parser with
-    one that doesn't call sys.exit(). Obviously this is not the ideal way to do things
-    but it works for us.
-    """
-
-    def __init__(self, *args, **kwargs):
-        """Initialize the parser."""
-        super().__init__(*args, **kwargs)
-        self._api_mode = False
-
-    def enable_api_mode(self):
-        """Enable API mode.
-
-        When set, the parser will not call sys.exit() on error. OCRmyPDF was originally
-        a command line program, but now it has an API. The API works by synthesizing
-        command line arguments.
-        """
-        self._api_mode = True
-
-    def error(self, message):
-        """Override the default argparse error behavior."""
-        if not self._api_mode:
-            super().error(message)
-            return
-        raise ValueError(message)
 
 
 class LanguageSetAction(argparse.Action):
