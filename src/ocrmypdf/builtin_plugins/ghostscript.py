@@ -30,6 +30,12 @@ class GhostscriptOptions(BaseModel):
 
 
 @hookimpl
+def register_options():
+    """Register Ghostscript option model."""
+    return {'ghostscript': GhostscriptOptions}
+
+
+@hookimpl
 def add_options(parser):
     gs = parser.add_argument_group("Ghostscript", "Advanced control of Ghostscript")
     gs.add_argument(

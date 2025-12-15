@@ -79,7 +79,7 @@ def setup_plugin_infrastructure(
     This function handles:
     1. Creating or validating the plugin manager
     2. Calling plugin initialization hooks
-    3. Setting up any future plugin registries (Phase 2)
+    3. Setting up plugin option registry
     
     Args:
         plugins: List of plugin paths/names to load
@@ -105,10 +105,22 @@ def setup_plugin_infrastructure(
     if not plugin_manager:
         plugin_manager = get_plugin_manager(plugins)
     
-    # Initialize plugins (this was missing in the API path)
+    # Initialize plugins
     plugin_manager.hook.initialize(plugin_manager=plugin_manager)  # pylint: disable=no-member
     
-    # Future: Initialize plugin option registry here (Phase 2)
+    # Initialize plugin option registry
+    from ocrmypdf._plugin_registry import PluginOptionRegistry
+    registry = PluginOptionRegistry()
+    
+    # Let plugins register their option models
+    option_models = plugin_manager.hook.register_options()  # pylint: disable=no-member
+    for plugin_options in option_models:
+        if plugin_options:  # Skip None returns
+            for namespace, model_class in plugin_options.items():
+                registry.register_option_model(namespace, model_class)
+    
+    # Store registry in plugin manager for later access
+    plugin_manager._option_registry = registry
     
     return plugin_manager
 

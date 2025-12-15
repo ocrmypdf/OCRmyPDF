@@ -39,6 +39,12 @@ class TesseractOptions(BaseModel):
 
 
 @hookimpl
+def register_options():
+    """Register Tesseract option model."""
+    return {'tesseract': TesseractOptions}
+
+
+@hookimpl
 def add_options(parser):
     tess = parser.add_argument_group("Tesseract", "Advanced control of Tesseract OCR")
     tess.add_argument(

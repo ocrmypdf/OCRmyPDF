@@ -34,6 +34,12 @@ class OptimizeOptions(BaseModel):
 
 
 @hookimpl
+def register_options():
+    """Register optimization option model."""
+    return {'optimize': OptimizeOptions}
+
+
+@hookimpl
 def add_options(parser):
     optimizing = parser.add_argument_group(
         "Optimization options", "Control how the PDF is optimized after OCR"
