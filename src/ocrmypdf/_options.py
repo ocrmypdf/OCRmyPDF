@@ -161,8 +161,6 @@ class OCROptions(BaseModel):
     tesseract_non_ocr_timeout: float | None = None
     tesseract_downsample_above: int = 32767
     tesseract_downsample_large_images: bool | None = None
-    user_words: str | None = None
-    user_patterns: str | None = None
 
     # Legacy ghostscript options (for backward compatibility)
     pdfa_image_compression: str | None = None
