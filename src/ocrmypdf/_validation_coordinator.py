@@ -70,6 +70,17 @@ class ValidationCoordinator:
                 "The --tesseract-downsample-above argument will have no effect unless "
                 "--tesseract-downsample-large-images is also given."
             )
+        
+        # Check for blocked languages
+        from ocrmypdf.exceptions import BadArgsError
+        DENIED_LANGUAGES = {'equ', 'osd'}
+        if DENIED_LANGUAGES & set(options.languages):
+            raise BadArgsError(
+                "The following languages are for Tesseract's internal use and should not "
+                "be issued explicitly: "
+                f"{', '.join(DENIED_LANGUAGES & set(options.languages))}\n"
+                "Remove them from the -l/--language argument."
+            )
     
     def _validate_optimize_options(self, options: OCROptions) -> None:
         """Validate optimization options."""
