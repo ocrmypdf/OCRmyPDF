@@ -140,37 +140,6 @@ class OCROptions(BaseModel):
         """Compatibility alias for jpg_quality."""
         self.jpg_quality = value
 
-    # Backward compatibility properties for jbig2 options
-    @property
-    def jbig2_lossy(self):
-        """Backward compatibility for jbig2_lossy."""
-        return getattr(self, '_jbig2_lossy', None)
-
-    @jbig2_lossy.setter
-    def jbig2_lossy(self, value):
-        """Backward compatibility for jbig2_lossy."""
-        self._jbig2_lossy = value
-
-    @property
-    def jbig2_page_group_size(self):
-        """Backward compatibility for jbig2_page_group_size."""
-        return getattr(self, '_jbig2_page_group_size', None)
-
-    @jbig2_page_group_size.setter
-    def jbig2_page_group_size(self, value):
-        """Backward compatibility for jbig2_page_group_size."""
-        self._jbig2_page_group_size = value
-
-    @property
-    def jbig2_threshold(self):
-        """Backward compatibility for jbig2_threshold."""
-        return getattr(self, '_jbig2_threshold', 0.85)
-
-    @jbig2_threshold.setter
-    def jbig2_threshold(self, value):
-        """Backward compatibility for jbig2_threshold."""
-        self._jbig2_threshold = value
-
     # Advanced options
     max_image_mpixels: float = 250.0
     pdf_renderer: str = 'auto'
@@ -196,6 +165,11 @@ class OCROptions(BaseModel):
     # Legacy ghostscript options (for backward compatibility)
     pdfa_image_compression: str | None = None
     color_conversion_strategy: str = "LeaveColorUnchanged"
+    
+    # Legacy jbig2 options (for backward compatibility)
+    jbig2_lossy: bool | None = None
+    jbig2_page_group_size: int | None = None
+    jbig2_threshold: float = 0.85
 
     # Plugin system
     plugins: Sequence[Path | str] | None = None
@@ -384,6 +358,9 @@ class OCROptions(BaseModel):
             elif hasattr(value, '__class__') and 'Iterator' in value.__class__.__name__:
                 # Handle Pydantic serialization iterators
                 return {'__type__': 'Stream', 'value': 'stream'}
+            elif isinstance(value, property):
+                # Handle property objects that shouldn't be serialized
+                return None
             elif isinstance(value, (list, tuple)):
                 return [_serialize_value(item) for item in value]
             elif isinstance(value, dict):
@@ -394,7 +371,9 @@ class OCROptions(BaseModel):
         # Process all fields
         serializable_data = {}
         for key, value in data.items():
-            serializable_data[key] = _serialize_value(value)
+            serialized_value = _serialize_value(value)
+            if serialized_value is not None:  # Skip None values from properties
+                serializable_data[key] = serialized_value
 
         # Add extra_attrs
         if self.extra_attrs:
