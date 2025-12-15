@@ -70,6 +70,49 @@ PathOrIO = BinaryIO | StrPath
 _api_lock = threading.Lock()
 
 
+def setup_plugin_infrastructure(
+    plugins: Sequence[Path | str] | None = None,
+    plugin_manager: pluggy.PluginManager | None = None,
+) -> pluggy.PluginManager:
+    """Set up plugin infrastructure with proper initialization.
+    
+    This function handles:
+    1. Creating or validating the plugin manager
+    2. Calling plugin initialization hooks
+    3. Setting up any future plugin registries (Phase 2)
+    
+    Args:
+        plugins: List of plugin paths/names to load
+        plugin_manager: Existing plugin manager (if any)
+        
+    Returns:
+        Properly initialized plugin manager
+        
+    Raises:
+        ValueError: If both plugins and plugin_manager are provided
+    """
+    if plugins and plugin_manager:
+        raise ValueError("plugins= and plugin_manager are mutually exclusive")
+    
+    if not plugins:
+        plugins = []
+    elif isinstance(plugins, (str, Path)):
+        plugins = [plugins]
+    else:
+        plugins = list(plugins)
+    
+    # Create plugin manager if not provided
+    if not plugin_manager:
+        plugin_manager = get_plugin_manager(plugins)
+    
+    # Initialize plugins (this was missing in the API path)
+    plugin_manager.hook.initialize(plugin_manager=plugin_manager)  # pylint: disable=no-member
+    
+    # Future: Initialize plugin option registry here (Phase 2)
+    
+    return plugin_manager
+
+
 class Verbosity(IntEnum):
     """Verbosity level for configure_logging."""
 
@@ -363,8 +406,14 @@ def ocr(  # noqa: D417
 
     parser = get_parser()
     with _api_lock:
-        if not plugin_manager:
-            plugin_manager = get_plugin_manager(plugins)
+        # Set up plugin infrastructure with proper initialization
+        plugin_manager = setup_plugin_infrastructure(
+            plugins=plugins, 
+            plugin_manager=plugin_manager
+        )
+        
+        # Get parser and let plugins add their options
+        parser = get_parser()
         plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
 
         if 'verbose' in kwargs:
@@ -490,8 +539,12 @@ def _pdf_to_hocr(  # noqa: D417
             extra_attrs[key] = options_kwargs.pop(key)
 
     with _api_lock:
-        if not plugin_manager:
-            plugin_manager = get_plugin_manager(plugins)
+        # Set up plugin infrastructure with proper initialization
+        plugin_manager = setup_plugin_infrastructure(
+            plugins=plugins,
+            plugin_manager=plugin_manager
+        )
+        
         plugin_manager.hook.add_options(parser=get_parser())  # pylint: disable=no-member
 
         # Create OCROptions directly
@@ -589,8 +642,12 @@ def _hocr_to_ocr_pdf(  # noqa: D417
             extra_attrs[key] = options_kwargs.pop(key)
 
     with _api_lock:
-        if not plugin_manager:
-            plugin_manager = get_plugin_manager(plugins)
+        # Set up plugin infrastructure with proper initialization  
+        plugin_manager = setup_plugin_infrastructure(
+            plugins=plugins,
+            plugin_manager=plugin_manager
+        )
+        
         plugin_manager.hook.add_options(parser=get_parser())  # pylint: disable=no-member
 
         # Create OCROptions directly
@@ -620,4 +677,5 @@ __all__ = [
     'ocr',
     'run_pipeline',
     'run_pipeline_cli',
+    'setup_plugin_infrastructure',
 ]

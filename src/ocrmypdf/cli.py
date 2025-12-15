@@ -483,13 +483,17 @@ def get_options_and_plugins(
     Returns:
         Tuple of (OCROptions, PluginManager)
     """
+    # Import here to avoid circular imports
+    from ocrmypdf.api import setup_plugin_infrastructure
+    
     # First pass: get plugins so we can register their options
     pre_options, _unused = plugins_only_parser.parse_known_args(args=args)
-    plugin_manager = get_plugin_manager(pre_options.plugins)
+    
+    # Set up plugin infrastructure with proper initialization
+    plugin_manager = setup_plugin_infrastructure(plugins=pre_options.plugins)
 
     # Get parser and let plugins add their options
     parser = get_parser()
-    plugin_manager.hook.initialize(plugin_manager=plugin_manager)  # pylint: disable=no-member
     plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
 
     # Parse all arguments

@@ -12,6 +12,7 @@ import pytest
 
 from ocrmypdf import api, pdfinfo
 from ocrmypdf._exec import unpaper
+from ocrmypdf.api import setup_plugin_infrastructure
 from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.exceptions import ExitCode
 
@@ -164,3 +165,8 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "slow" in item.keywords:
             item.add_marker(skip_slow)
+
+
+def get_test_plugin_manager(plugins=None):
+    """Get a properly initialized plugin manager for testing."""
+    return setup_plugin_infrastructure(plugins=plugins or [])
