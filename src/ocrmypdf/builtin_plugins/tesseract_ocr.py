@@ -58,6 +58,12 @@ class TesseractOptions(BaseModel):
             description="Downsample images larger than this pixel size",
         ),
     ] = 32767
+    user_words: Annotated[
+        str | None, Field(description="Path to Tesseract user words file")
+    ] = None
+    user_patterns: Annotated[
+        str | None, Field(description="Path to Tesseract user patterns file")
+    ] = None
 
     @classmethod
     def add_arguments_to_parser(cls, parser, namespace: str = 'tesseract'):
@@ -182,6 +188,22 @@ class TesseractOptions(BaseModel):
             ),
         )
 
+        tess.add_argument(
+            '--user-words',
+            metavar='FILE',
+            dest='user_words',
+            help="Specify the location of the Tesseract user words file. This is a "
+            "list of words Tesseract should consider while performing OCR in "
+            "addition to its standard language dictionaries. This can improve "
+            "OCR quality especially for specialized and technical documents.",
+        )
+        tess.add_argument(
+            '--user-patterns',
+            metavar='FILE',
+            dest='user_patterns',
+            help="Specify the location of the Tesseract user patterns file.",
+        )
+
 
 @hookimpl
 def register_options():
@@ -191,24 +213,8 @@ def register_options():
 
 @hookimpl
 def add_options(parser):
-    # Use the model's CLI generation method
+    # Use the model's CLI generation method - it now handles all Tesseract options
     TesseractOptions.add_arguments_to_parser(parser)
-
-    # Add user words and patterns (these are not part of TesseractOptions model yet)
-    tess = parser.add_argument_group("Tesseract", "Advanced control of Tesseract OCR")
-    tess.add_argument(
-        '--user-words',
-        metavar='FILE',
-        help="Specify the location of the Tesseract user words file. This is a "
-        "list of words Tesseract should consider while performing OCR in "
-        "addition to its standard language dictionaries. This can improve "
-        "OCR quality especially for specialized and technical documents.",
-    )
-    tess.add_argument(
-        '--user-patterns',
-        metavar='FILE',
-        help="Specify the location of the Tesseract user patterns file.",
-    )
 
 
 @hookimpl
