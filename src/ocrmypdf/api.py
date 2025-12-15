@@ -75,53 +75,54 @@ def setup_plugin_infrastructure(
     plugin_manager: pluggy.PluginManager | None = None,
 ) -> pluggy.PluginManager:
     """Set up plugin infrastructure with proper initialization.
-    
+
     This function handles:
     1. Creating or validating the plugin manager
     2. Calling plugin initialization hooks
     3. Setting up plugin option registry
-    
+
     Args:
         plugins: List of plugin paths/names to load
         plugin_manager: Existing plugin manager (if any)
-        
+
     Returns:
         Properly initialized plugin manager
-        
+
     Raises:
         ValueError: If both plugins and plugin_manager are provided
     """
     if plugins and plugin_manager:
         raise ValueError("plugins= and plugin_manager are mutually exclusive")
-    
+
     if not plugins:
         plugins = []
     elif isinstance(plugins, (str, Path)):
         plugins = [plugins]
     else:
         plugins = list(plugins)
-    
+
     # Create plugin manager if not provided
     if not plugin_manager:
         plugin_manager = get_plugin_manager(plugins)
-    
+
     # Initialize plugins
     plugin_manager.hook.initialize(plugin_manager=plugin_manager)  # pylint: disable=no-member
-    
+
     # Initialize plugin option registry
     from ocrmypdf._plugin_registry import PluginOptionRegistry
+
     registry = PluginOptionRegistry()
-    
+
     # Let plugins register their option models
     option_models = plugin_manager.hook.register_options()  # pylint: disable=no-member
     for plugin_options in option_models:
         if plugin_options:  # Skip None returns
             for namespace, model_class in plugin_options.items():
                 registry.register_option_model(namespace, model_class)
-    
+
     # Store registry in plugin manager for later access
     plugin_manager._option_registry = registry
-    
+
     return plugin_manager
 
 
@@ -420,10 +421,9 @@ def ocr(  # noqa: D417
     with _api_lock:
         # Set up plugin infrastructure with proper initialization
         plugin_manager = setup_plugin_infrastructure(
-            plugins=plugins, 
-            plugin_manager=plugin_manager
+            plugins=plugins, plugin_manager=plugin_manager
         )
-        
+
         # Get parser and let plugins add their options
         parser = get_parser()
         plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
@@ -553,10 +553,9 @@ def _pdf_to_hocr(  # noqa: D417
     with _api_lock:
         # Set up plugin infrastructure with proper initialization
         plugin_manager = setup_plugin_infrastructure(
-            plugins=plugins,
-            plugin_manager=plugin_manager
+            plugins=plugins, plugin_manager=plugin_manager
         )
-        
+
         plugin_manager.hook.add_options(parser=get_parser())  # pylint: disable=no-member
 
         # Create OCROptions directly
@@ -654,12 +653,11 @@ def _hocr_to_ocr_pdf(  # noqa: D417
             extra_attrs[key] = options_kwargs.pop(key)
 
     with _api_lock:
-        # Set up plugin infrastructure with proper initialization  
+        # Set up plugin infrastructure with proper initialization
         plugin_manager = setup_plugin_infrastructure(
-            plugins=plugins,
-            plugin_manager=plugin_manager
+            plugins=plugins, plugin_manager=plugin_manager
         )
-        
+
         plugin_manager.hook.add_options(parser=get_parser())  # pylint: disable=no-member
 
         # Create OCROptions directly

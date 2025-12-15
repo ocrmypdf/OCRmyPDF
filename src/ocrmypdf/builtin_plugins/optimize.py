@@ -24,13 +24,120 @@ log = logging.getLogger(__name__)
 
 class OptimizeOptions(BaseModel):
     """Options specific to PDF optimization."""
-    
-    level: Annotated[int, Field(ge=0, le=3, description="Optimization level (0=none, 1=safe, 2=lossy, 3=aggressive)")] = 1
-    jpeg_quality: Annotated[int, Field(ge=0, le=100, description="JPEG quality level for optimization")] = 0
-    png_quality: Annotated[int, Field(ge=0, le=100, description="PNG quality level for optimization")] = 0
-    jbig2_lossy: Annotated[bool, Field(description="Enable JBIG2 lossy compression")] = False
-    jbig2_page_group_size: Annotated[int, Field(ge=1, le=10000, description="Number of pages to consider for JBIG2 compression")] = 0
-    jbig2_threshold: Annotated[float, Field(ge=0.4, le=0.9, description="JBIG2 symbol classification threshold")] = 0.85
+
+    level: Annotated[
+        int,
+        Field(
+            ge=0,
+            le=3,
+            description="Optimization level (0=none, 1=safe, 2=lossy, 3=aggressive)",
+        ),
+    ] = 1
+    jpeg_quality: Annotated[
+        int, Field(ge=0, le=100, description="JPEG quality level for optimization")
+    ] = 0
+    png_quality: Annotated[
+        int, Field(ge=0, le=100, description="PNG quality level for optimization")
+    ] = 0
+    jbig2_lossy: Annotated[
+        bool, Field(description="Enable JBIG2 lossy compression")
+    ] = False
+    jbig2_page_group_size: Annotated[
+        int,
+        Field(
+            ge=1,
+            le=10000,
+            description="Number of pages to consider for JBIG2 compression",
+        ),
+    ] = 0
+    jbig2_threshold: Annotated[
+        float,
+        Field(ge=0.4, le=0.9, description="JBIG2 symbol classification threshold"),
+    ] = 0.85
+
+    @classmethod
+    def add_arguments_to_parser(cls, parser, namespace: str = 'optimize'):
+        """Add optimization-specific arguments to the argument parser.
+
+        Args:
+            parser: The argument parser to add arguments to
+            namespace: The namespace prefix for argument names (not used for optimize for backward compatibility)
+        """
+        optimizing = parser.add_argument_group(
+            "Optimization options", "Control how the PDF is optimized after OCR"
+        )
+        optimizing.add_argument(
+            '-O',
+            '--optimize',
+            type=int,
+            choices=range(0, 4),
+            default=1,
+            help=(
+                "Control how PDF is optimized after processing:"
+                "0 - do not optimize; "
+                "1 - do safe, lossless optimizations (default); "
+                "2 - do lossy JPEG and JPEG2000 optimizations; "
+                "3 - do more aggressive lossy JPEG and JPEG2000 optimizations. "
+                "To enable lossy JBIG2, see --jbig2-lossy."
+            ),
+        )
+        optimizing.add_argument(
+            '--jpeg-quality',
+            type=numeric(int, 0, 100),
+            default=0,
+            metavar='Q',
+            help=(
+                "Adjust JPEG quality level for JPEG optimization. "
+                "100 is best quality and largest output size; "
+                "1 is lowest quality and smallest output; "
+                "0 uses the default."
+            ),
+        )
+        optimizing.add_argument(
+            '--jpg-quality',
+            type=numeric(int, 0, 100),
+            default=0,
+            metavar='Q',
+            dest='jpeg_quality',
+            help=argparse.SUPPRESS,  # Alias for --jpeg-quality
+        )
+        optimizing.add_argument(
+            '--png-quality',
+            type=numeric(int, 0, 100),
+            default=0,
+            metavar='Q',
+            help=(
+                "Adjust PNG quality level to use when quantizing PNGs. "
+                "Values have same meaning as with --jpeg-quality"
+            ),
+        )
+        optimizing.add_argument(
+            '--jbig2-lossy',
+            action='store_true',
+            help=(
+                "Enable JBIG2 lossy mode (better compression, not suitable for some "
+                "use cases - see documentation). Only takes effect if --optimize 1 or "
+                "higher is also enabled."
+            ),
+        )
+        optimizing.add_argument(
+            '--jbig2-page-group-size',
+            type=numeric(int, 1, 10000),
+            default=0,
+            metavar='N',
+            # Adjust number of pages to consider at once for JBIG2 compression
+            help=argparse.SUPPRESS,
+        )
+        optimizing.add_argument(
+            '--jbig2-threshold',
+            type=numeric(float, 0.4, 0.9),
+            default=0.85,
+            metavar='T',
+            help=(
+                "Adjust JBIG2 symbol code classification threshold "
+                "(default 0.85), range 0.4 to 0.9."
+            ),
+        )
 
 
 @hookimpl
@@ -41,81 +148,8 @@ def register_options():
 
 @hookimpl
 def add_options(parser):
-    optimizing = parser.add_argument_group(
-        "Optimization options", "Control how the PDF is optimized after OCR"
-    )
-    optimizing.add_argument(
-        '-O',
-        '--optimize',
-        type=int,
-        choices=range(0, 4),
-        default=1,
-        help=(
-            "Control how PDF is optimized after processing:"
-            "0 - do not optimize; "
-            "1 - do safe, lossless optimizations (default); "
-            "2 - do lossy JPEG and JPEG2000 optimizations; "
-            "3 - do more aggressive lossy JPEG and JPEG2000 optimizations. "
-            "To enable lossy JBIG2, see --jbig2-lossy."
-        ),
-    )
-    optimizing.add_argument(
-        '--jpeg-quality',
-        type=numeric(int, 0, 100),
-        default=0,
-        metavar='Q',
-        help=(
-            "Adjust JPEG quality level for JPEG optimization. "
-            "100 is best quality and largest output size; "
-            "1 is lowest quality and smallest output; "
-            "0 uses the default."
-        ),
-    )
-    optimizing.add_argument(
-        '--jpg-quality',
-        type=numeric(int, 0, 100),
-        default=0,
-        metavar='Q',
-        dest='jpeg_quality',
-        help=argparse.SUPPRESS,  # Alias for --jpeg-quality
-    )
-    optimizing.add_argument(
-        '--png-quality',
-        type=numeric(int, 0, 100),
-        default=0,
-        metavar='Q',
-        help=(
-            "Adjust PNG quality level to use when quantizing PNGs. "
-            "Values have same meaning as with --jpeg-quality"
-        ),
-    )
-    optimizing.add_argument(
-        '--jbig2-lossy',
-        action='store_true',
-        help=(
-            "Enable JBIG2 lossy mode (better compression, not suitable for some "
-            "use cases - see documentation). Only takes effect if --optimize 1 or "
-            "higher is also enabled."
-        ),
-    )
-    optimizing.add_argument(
-        '--jbig2-page-group-size',
-        type=numeric(int, 1, 10000),
-        default=0,
-        metavar='N',
-        # Adjust number of pages to consider at once for JBIG2 compression
-        help=argparse.SUPPRESS,
-    )
-    optimizing.add_argument(
-        '--jbig2-threshold',
-        type=numeric(float, 0.4, 0.9),
-        default=0.85,
-        metavar='T',
-        help=(
-            "Adjust JBIG2 symbol code classification threshold "
-            "(default 0.85), range 0.4 to 0.9."
-        ),
-    )
+    # Use the model's CLI generation method
+    OptimizeOptions.add_arguments_to_parser(parser)
 
 
 @hookimpl

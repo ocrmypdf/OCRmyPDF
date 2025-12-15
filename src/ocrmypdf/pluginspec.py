@@ -91,19 +91,19 @@ def add_options(parser: ArgumentParser) -> None:
 @hookspec
 def register_options() -> dict[str, type[BaseModel]]:
     """Return plugin's option models keyed by namespace.
-    
+
     This hook allows plugins to register their option models with the
     plugin option registry. The returned dictionary should map namespace
     strings to Pydantic model classes.
-    
+
     Returns:
         Dictionary mapping namespace strings to BaseModel classes
-        
+
     Example:
         @hookimpl
         def register_options():
             return {'tesseract': TesseractOptions}
-            
+
     Note:
         This hook will be called from the main process during plugin
         infrastructure setup, before child worker processes are forked.

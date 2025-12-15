@@ -24,9 +24,45 @@ BLACKLISTED_GS_VERSIONS: frozenset[Version] = frozenset()
 
 class GhostscriptOptions(BaseModel):
     """Options specific to Ghostscript operations."""
-    
-    color_conversion_strategy: Annotated[str, Field(description="Ghostscript color conversion strategy")] = "LeaveColorUnchanged"
-    pdfa_image_compression: Annotated[str, Field(description="PDF/A image compression method")] = "auto"
+
+    color_conversion_strategy: Annotated[
+        str, Field(description="Ghostscript color conversion strategy")
+    ] = "LeaveColorUnchanged"
+    pdfa_image_compression: Annotated[
+        str, Field(description="PDF/A image compression method")
+    ] = "auto"
+
+    @classmethod
+    def add_arguments_to_parser(cls, parser, namespace: str = 'ghostscript'):
+        """Add Ghostscript-specific arguments to the argument parser.
+
+        Args:
+            parser: The argument parser to add arguments to
+            namespace: The namespace prefix for argument names (not used for ghostscript for backward compatibility)
+        """
+        gs = parser.add_argument_group("Ghostscript", "Advanced control of Ghostscript")
+        gs.add_argument(
+            '--color-conversion-strategy',
+            action='store',
+            type=str,
+            metavar='STRATEGY',
+            choices=ghostscript.COLOR_CONVERSION_STRATEGIES,
+            default='LeaveColorUnchanged',
+            help="Set Ghostscript color conversion strategy",
+        )
+        gs.add_argument(
+            '--pdfa-image-compression',
+            choices=['auto', 'jpeg', 'lossless'],
+            default='auto',
+            help="Specify how to compress images in the output PDF/A. 'auto' lets "
+            "OCRmyPDF decide.  'jpeg' changes all grayscale and color images to "
+            "JPEG compression.  'lossless' uses PNG-style lossless compression "
+            "for all images.  Monochrome images are always compressed using a "
+            "lossless codec.  Compression settings "
+            "are applied to all pages, including those for which OCR was "
+            "skipped.  Not supported for --output-type=pdf ; that setting "
+            "preserves the original compression of all images.",
+        )
 
 
 @hookimpl
@@ -37,29 +73,8 @@ def register_options():
 
 @hookimpl
 def add_options(parser):
-    gs = parser.add_argument_group("Ghostscript", "Advanced control of Ghostscript")
-    gs.add_argument(
-        '--color-conversion-strategy',
-        action='store',
-        type=str,
-        metavar='STRATEGY',
-        choices=ghostscript.COLOR_CONVERSION_STRATEGIES,
-        default='LeaveColorUnchanged',
-        help="Set Ghostscript color conversion strategy",
-    )
-    gs.add_argument(
-        '--pdfa-image-compression',
-        choices=['auto', 'jpeg', 'lossless'],
-        default='auto',
-        help="Specify how to compress images in the output PDF/A. 'auto' lets "
-        "OCRmyPDF decide.  'jpeg' changes all grayscale and color images to "
-        "JPEG compression.  'lossless' uses PNG-style lossless compression "
-        "for all images.  Monochrome images are always compressed using a "
-        "lossless codec.  Compression settings "
-        "are applied to all pages, including those for which OCR was "
-        "skipped.  Not supported for --output-type=pdf ; that setting "
-        "preserves the original compression of all images.",
-    )
+    # Use the model's CLI generation method
+    GhostscriptOptions.add_arguments_to_parser(parser)
 
 
 @hookimpl

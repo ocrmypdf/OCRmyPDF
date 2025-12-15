@@ -151,7 +151,7 @@ class OCROptions(BaseModel):
 
     # Plugin option namespaces (for backward compatibility, will be removed in Phase 5)
     # These will be populated dynamically based on loaded plugins
-    
+
     # Legacy tesseract options (for backward compatibility)
     tesseract_config: list[str] = []
     tesseract_pagesegmode: int | None = None
@@ -161,11 +161,11 @@ class OCROptions(BaseModel):
     tesseract_non_ocr_timeout: float | None = None
     tesseract_downsample_above: int = 32767
     tesseract_downsample_large_images: bool | None = None
-    
+
     # Legacy ghostscript options (for backward compatibility)
     pdfa_image_compression: str | None = None
     color_conversion_strategy: str = "LeaveColorUnchanged"
-    
+
     # Legacy jbig2 options (for backward compatibility)
     jbig2_lossy: bool | None = None
     jbig2_page_group_size: int | None = None

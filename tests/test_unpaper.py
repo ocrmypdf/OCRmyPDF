@@ -12,7 +12,6 @@ from packaging.version import Version
 
 from ocrmypdf._exec import unpaper
 from ocrmypdf._validation import check_options
-from ocrmypdf.api import setup_plugin_infrastructure
 from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.exceptions import BadArgsError, ExitCode, MissingDependencyError
 

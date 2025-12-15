@@ -27,15 +27,160 @@ log = logging.getLogger(__name__)
 
 class TesseractOptions(BaseModel):
     """Options specific to Tesseract OCR engine."""
-    
-    config: Annotated[list[str], Field(description="Additional Tesseract configuration files")] = []
-    pagesegmode: Annotated[int | None, Field(ge=0, le=13, description="Set Tesseract page segmentation mode")] = None
-    oem: Annotated[int | None, Field(ge=0, le=3, description="Set Tesseract OCR engine mode")] = None
-    thresholding: Annotated[int | None, Field(description="Set Tesseract input image thresholding mode")] = None
-    timeout: Annotated[float, Field(ge=0, description="Timeout for OCR operations in seconds")] = 180.0
-    non_ocr_timeout: Annotated[float, Field(ge=0, description="Timeout for non-OCR operations in seconds")] = 180.0
-    downsample_large_images: Annotated[bool, Field(description="Downsample large images before OCR")] = True
-    downsample_above: Annotated[int, Field(ge=100, le=32767, description="Downsample images larger than this pixel size")] = 32767
+
+    config: Annotated[
+        list[str], Field(description="Additional Tesseract configuration files")
+    ] = []
+    pagesegmode: Annotated[
+        int | None,
+        Field(ge=0, le=13, description="Set Tesseract page segmentation mode"),
+    ] = None
+    oem: Annotated[
+        int | None, Field(ge=0, le=3, description="Set Tesseract OCR engine mode")
+    ] = None
+    thresholding: Annotated[
+        int | None, Field(description="Set Tesseract input image thresholding mode")
+    ] = None
+    timeout: Annotated[
+        float, Field(ge=0, description="Timeout for OCR operations in seconds")
+    ] = 180.0
+    non_ocr_timeout: Annotated[
+        float, Field(ge=0, description="Timeout for non-OCR operations in seconds")
+    ] = 180.0
+    downsample_large_images: Annotated[
+        bool, Field(description="Downsample large images before OCR")
+    ] = True
+    downsample_above: Annotated[
+        int,
+        Field(
+            ge=100,
+            le=32767,
+            description="Downsample images larger than this pixel size",
+        ),
+    ] = 32767
+
+    @classmethod
+    def add_arguments_to_parser(cls, parser, namespace: str = 'tesseract'):
+        """Add Tesseract-specific arguments to the argument parser.
+
+        Args:
+            parser: The argument parser to add arguments to
+            namespace: The namespace prefix for argument names
+        """
+        tess = parser.add_argument_group(
+            "Tesseract", "Advanced control of Tesseract OCR"
+        )
+
+        tess.add_argument(
+            f'--{namespace}-config',
+            action='append',
+            metavar='CFG',
+            default=[],
+            dest=f'{namespace}_config',
+            help="Additional Tesseract configuration files -- see documentation.",
+        )
+
+        tess.add_argument(
+            f'--{namespace}-pagesegmode',
+            action='store',
+            type=int,
+            metavar='PSM',
+            choices=range(0, 14),
+            dest=f'{namespace}_pagesegmode',
+            help="Set Tesseract page segmentation mode (see tesseract --help).",
+        )
+
+        tess.add_argument(
+            f'--{namespace}-oem',
+            action='store',
+            type=int,
+            metavar='MODE',
+            choices=range(0, 4),
+            dest=f'{namespace}_oem',
+            help=(
+                "Set Tesseract 4+ OCR engine mode: "
+                "0 - original Tesseract only; "
+                "1 - neural nets LSTM only; "
+                "2 - Tesseract + LSTM; "
+                "3 - default."
+            ),
+        )
+
+        tess.add_argument(
+            f'--{namespace}-thresholding',
+            action='store',
+            type=str_to_int(tesseract.TESSERACT_THRESHOLDING_METHODS),
+            default='auto',
+            metavar='METHOD',
+            dest=f'{namespace}_thresholding',
+            help=(
+                "Set Tesseract 5.0+ input image thresholding mode. This may improve OCR "
+                "results on low quality images or those that contain high contrast color. "
+                "legacy-otsu is the Tesseract default; adaptive-otsu is an improved Otsu "
+                "algorithm with improved sort for background color changes; sauvola is "
+                "based on local standard deviation."
+            ),
+        )
+
+        tess.add_argument(
+            f'--{namespace}-timeout',
+            default=180.0,
+            type=numeric(float, 0),
+            metavar='SECONDS',
+            dest=f'{namespace}_timeout',
+            help=(
+                "Give up on OCR after the timeout, but copy the preprocessed page "
+                "into the final output. This timeout is only used when using Tesseract "
+                "for OCR. When Tesseract is used for other operations such as "
+                "deskewing and orientation, the timeout is controlled by "
+                f"--{namespace}-non-ocr-timeout."
+            ),
+        )
+
+        tess.add_argument(
+            f'--{namespace}-non-ocr-timeout',
+            default=180.0,
+            type=numeric(float, 0),
+            metavar='SECONDS',
+            dest=f'{namespace}_non_ocr_timeout',
+            help=(
+                "Give up on non-OCR operations such as deskewing and orientation "
+                f"after timeout. This is a separate timeout from --{namespace}-timeout "
+                "because these operations are not as expensive as OCR."
+            ),
+        )
+
+        tess.add_argument(
+            f'--{namespace}-downsample-large-images',
+            action=argparse.BooleanOptionalAction,
+            default=True,
+            dest=f'{namespace}_downsample_large_images',
+            help=(
+                "Downsample large images before OCR. Tesseract has an upper limit on the "
+                "size images it will support. If this argument is given, OCRmyPDF will "
+                "downsample large images to fit Tesseract. This may reduce OCR quality, "
+                "on large images the most desirable text is usually larger. If this "
+                "parameter is not supplied, Tesseract will error out and produce no OCR "
+                "on the page in question. This argument should be used with a high value "
+                f"of --{namespace}-timeout to ensure Tesseract has enough to time."
+            ),
+        )
+
+        tess.add_argument(
+            f'--{namespace}-downsample-above',
+            action='store',
+            type=numeric(int, 100, 32767),
+            default=32767,
+            dest=f'{namespace}_downsample_above',
+            help=(
+                "Downsample images larger than this size pixel size in either dimension "
+                f"before OCR. --{namespace}-downsample-large-images downsamples only when "
+                "an image exceeds Tesseract's internal limits. This argument causes "
+                "downsampling to occur when an image exceeds the given size. This may "
+                "reduce OCR quality, but on large images the most desirable text is "
+                "usually larger."
+            ),
+        )
 
 
 @hookimpl
@@ -46,102 +191,11 @@ def register_options():
 
 @hookimpl
 def add_options(parser):
+    # Use the model's CLI generation method
+    TesseractOptions.add_arguments_to_parser(parser)
+
+    # Add user words and patterns (these are not part of TesseractOptions model yet)
     tess = parser.add_argument_group("Tesseract", "Advanced control of Tesseract OCR")
-    tess.add_argument(
-        '--tesseract-config',
-        action='append',
-        metavar='CFG',
-        default=[],
-        help="Additional Tesseract configuration files -- see documentation.",
-    )
-    tess.add_argument(
-        '--tesseract-pagesegmode',
-        action='store',
-        type=int,
-        metavar='PSM',
-        choices=range(0, 14),
-        help="Set Tesseract page segmentation mode (see tesseract --help).",
-    )
-    tess.add_argument(
-        '--tesseract-oem',
-        action='store',
-        type=int,
-        metavar='MODE',
-        choices=range(0, 4),
-        help=(
-            "Set Tesseract 4+ OCR engine mode: "
-            "0 - original Tesseract only; "
-            "1 - neural nets LSTM only; "
-            "2 - Tesseract + LSTM; "
-            "3 - default."
-        ),
-    )
-    tess.add_argument(
-        '--tesseract-thresholding',
-        action='store',
-        type=str_to_int(tesseract.TESSERACT_THRESHOLDING_METHODS),
-        default='auto',
-        metavar='METHOD',
-        help=(
-            "Set Tesseract 5.0+ input image thresholding mode. This may improve OCR "
-            "results on low quality images or those that contain high contrast color. "
-            "legacy-otsu is the Tesseract default; adaptive-otsu is an improved Otsu "
-            "algorithm with improved sort for background color changes; sauvola is "
-            "based on local standard deviation."
-        ),
-    )
-    tess.add_argument(
-        '--tesseract-timeout',
-        default=180.0,
-        type=numeric(float, 0),
-        metavar='SECONDS',
-        help=(
-            "Give up on OCR after the timeout, but copy the preprocessed page "
-            "into the final output. This timeout is only used when using Tesseract "
-            "for OCR. When Tesseract is used for other operations such as "
-            "deskewing and orientation, the timeout is controlled by "
-            "--tesseract-non-ocr-timeout."
-        ),
-    )
-    tess.add_argument(
-        '--tesseract-non-ocr-timeout',
-        default=180.0,
-        type=numeric(float, 0),
-        metavar='SECONDS',
-        help=(
-            "Give up on non-OCR operations such as deskewing and orientation "
-            "after timeout. This is a separate timeout from --tesseract-timeout "
-            "because these operations are not as expensive as OCR."
-        ),
-    )
-    tess.add_argument(
-        '--tesseract-downsample-large-images',
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help=(
-            "Downsample large images before OCR. Tesseract has an upper limit on the "
-            "size images it will support. If this argument is given, OCRmyPDF will "
-            "downsample large images to fit Tesseract. This may reduce OCR quality, "
-            "on large images the most desirable text is usually larger. If this "
-            "parameter is not supplied, Tesseract will error out and produce no OCR "
-            "on the page in question. This argument should be used with a high value "
-            "of --tesseract-timeout to ensure Tesseract has enough to time."
-        ),
-    )
-    tess.add_argument(
-        '--tesseract-downsample-above',
-        action='store',
-        type=numeric(int, 100, 32767),
-        default=32767,
-        help=(
-            "Downsample images larger than this size pixel size in either dimension "
-            "before OCR. --tesseract-downsample-large-images downsamples only when "
-            "an image exceeds Tesseract's internal limits. This argument causes "
-            "downsampling to occur when an image exceeds the given size. This may "
-            "reduce OCR quality, but on large images the most desirable text is "
-            "usually larger."
-        ),
-    )
     tess.add_argument(
         '--user-words',
         metavar='FILE',

@@ -15,7 +15,6 @@ import pluggy
 from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._defaults import PROGRAM_NAME as _PROGRAM_NAME
 from ocrmypdf._options import OCROptions
-from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf._version import __version__ as _VERSION
 
 T = TypeVar('T', int, float)
@@ -466,7 +465,7 @@ def namespace_to_options(ns) -> OCROptions:
     # Handle backward compatibility for plugin options
     # Map CLI arguments to the appropriate fields for now
     # In Phase 2, this will be handled by plugin option models
-    
+
     instance = OCROptions(**known_fields)
     instance.extra_attrs = extra_attrs
     return instance
@@ -489,10 +488,10 @@ def get_options_and_plugins(
     """
     # Import here to avoid circular imports
     from ocrmypdf.api import setup_plugin_infrastructure
-    
+
     # First pass: get plugins so we can register their options
     pre_options, _unused = plugins_only_parser.parse_known_args(args=args)
-    
+
     # Set up plugin infrastructure with proper initialization
     plugin_manager = setup_plugin_infrastructure(plugins=pre_options.plugins)
 

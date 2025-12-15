@@ -15,7 +15,6 @@ from pikepdf.models.metadata import decode_pdf_date
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._metadata import metadata_fixup
 from ocrmypdf._pipeline import convert_to_pdfa
-from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.api import setup_plugin_infrastructure
 from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.exceptions import ExitCode
@@ -333,9 +332,7 @@ def test_metadata_fixup_warning(resources, outdir, caplog):
 
     # Use the new setup function instead of get_plugin_manager directly
     plugin_manager = setup_plugin_infrastructure([])
-    context = PdfContext(
-        options, outdir, outdir / 'graph.pdf', None, plugin_manager
-    )
+    context = PdfContext(options, outdir, outdir / 'graph.pdf', None, plugin_manager)
     metadata_fixup(
         working_file=outdir / 'graph.pdf', context=context, pdf_save_settings={}
     )
@@ -382,7 +379,7 @@ def test_prevent_gs_invalid_xml(resources, outdir):
         ]
     )
     pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
-    
+
     # Use the new setup function
     plugin_manager = setup_plugin_infrastructure([])
     context = PdfContext(
