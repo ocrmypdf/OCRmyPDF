@@ -18,6 +18,7 @@ from ocrmypdf._pipeline import get_pdf_save_settings
 from ocrmypdf.cli import numeric
 from ocrmypdf.optimize import optimize
 from ocrmypdf.subprocess import check_external_program
+from pydantic import model_validator
 
 log = logging.getLogger(__name__)
 
@@ -139,6 +140,36 @@ class OptimizeOptions(BaseModel):
             ),
         )
 
+    @model_validator(mode='after')
+    def validate_optimization_consistency(self):
+        """Validate optimization options are consistent."""
+        if self.level == 0 and any([
+            self.jbig2_lossy, 
+            self.png_quality > 0, 
+            self.jpeg_quality > 0
+        ]):
+            log.warning(
+                "The arguments --jbig2-lossy, --png-quality, and --jpeg-quality "
+                "will be ignored because --optimize=0."
+            )
+        return self
+
+    def validate_with_context(self, external_programs_available: dict[str, bool]) -> None:
+        """Validate options that require external context.
+        
+        Args:
+            external_programs_available: Dict of program name -> availability
+        """
+        if self.level >= 2:
+            if not external_programs_available.get('pngquant', False):
+                log.warning(
+                    "pngquant is not available, so PNG optimization will be limited"
+                )
+            if not external_programs_available.get('jbig2enc', False):
+                log.warning(
+                    "jbig2enc is not available, so JBIG2 optimization will be limited"
+                )
+
 
 @hookimpl
 def register_options():
@@ -154,6 +185,7 @@ def add_options(parser):
 
 @hookimpl
 def check_options(options):
+    """Check external dependencies for optimization."""
     if options.optimize >= 2:
         check_external_program(
             program='pngquant',
@@ -173,14 +205,6 @@ def check_options(options):
             need_version='0.28',
             required_for='--optimize {2,3} | --jbig2-lossy',
             recommended=True if not options.jbig2_lossy else False,
-        )
-
-    if options.optimize == 0 and any(
-        [options.jbig2_lossy, options.png_quality, options.jpeg_quality]
-    ):
-        log.warning(
-            "The arguments --jbig2-lossy, --png-quality, and --jpeg-quality "
-            "will be ignored because --optimize=0."
         )
 
 

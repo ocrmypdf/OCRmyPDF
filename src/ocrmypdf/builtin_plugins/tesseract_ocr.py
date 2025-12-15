@@ -21,6 +21,7 @@ from ocrmypdf.helpers import available_cpu_count, clamp
 from ocrmypdf.imageops import calculate_downsample, downsample_image
 from ocrmypdf.pluginspec import OcrEngine
 from ocrmypdf.subprocess import check_external_program
+from pydantic import field_validator, model_validator
 
 log = logging.getLogger(__name__)
 
@@ -204,6 +205,54 @@ class TesseractOptions(BaseModel):
             help="Specify the location of the Tesseract user patterns file.",
         )
 
+    @field_validator('timeout', 'non_ocr_timeout')
+    @classmethod
+    def validate_timeout_reasonable(cls, v):
+        """Validate timeout values are reasonable."""
+        if v > 3600:  # 1 hour
+            log.warning(f"Timeout of {v} seconds is very long and may cause issues")
+        return v
+
+    @field_validator('pagesegmode')
+    @classmethod
+    def validate_pagesegmode_warning(cls, v):
+        """Validate page segmentation mode and warn about problematic values."""
+        if v in (0, 2):
+            log.warning(
+                "The tesseract-pagesegmode you selected will disable OCR. "
+                "This may cause processing to fail."
+            )
+        return v
+
+    @model_validator(mode='after')
+    def validate_downsample_consistency(self):
+        """Validate downsample options are consistent."""
+        if (
+            self.downsample_above != 32767
+            and not self.downsample_large_images
+        ):
+            log.warning(
+                "The --tesseract-downsample-above argument will have no effect unless "
+                "--tesseract-downsample-large-images is also given."
+            )
+        return self
+
+    def validate_with_context(self, languages: list[str]) -> None:
+        """Validate options that require external context.
+        
+        Args:
+            languages: List of languages being used for OCR
+        """
+        # Validate languages are not internal Tesseract languages
+        DENIED_LANGUAGES = {'equ', 'osd'}
+        if DENIED_LANGUAGES & set(languages):
+            raise BadArgsError(
+                "The following languages are for Tesseract's internal use and should not "
+                "be issued explicitly: "
+                f"{', '.join(DENIED_LANGUAGES & set(languages))}\n"
+                "Remove them from the -l/--language argument."
+            )
+
 
 @hookimpl
 def register_options():
@@ -219,6 +268,7 @@ def add_options(parser):
 
 @hookimpl
 def check_options(options):
+    """Check external dependencies and version compatibility for Tesseract."""
     check_external_program(
         program='tesseract',
         package={'linux': 'tesseract-ocr'},
@@ -233,26 +283,12 @@ def check_options(options):
             "Please upgrade to a newer or supported older version."
         )
 
-    # Validate Tesseract-specific options using the new model
-    # For now, we still access options directly for backward compatibility
+    # Check version-specific feature compatibility
     if not tesseract.has_thresholding() and options.tesseract_thresholding != 0:
         log.warning(
             "The installed version of Tesseract does not support changes to its "
             "thresholding method. The --tesseract-threshold argument will be "
             "ignored."
-        )
-    if options.tesseract_pagesegmode in (0, 2):
-        log.warning(
-            "The --tesseract-pagesegmode argument you select will disable OCR. "
-            "This may cause processing to fail."
-        )
-    DENIED_LANGUAGES = {'equ', 'osd'}
-    if DENIED_LANGUAGES & set(options.languages):
-        raise BadArgsError(
-            "The following languages for Tesseract's internal use and should not "
-            "be issued explicitly: "
-            f"{', '.join(DENIED_LANGUAGES & set(options.languages))}\n"
-            "Remove them from the -l/--language argument."
         )
 
 
