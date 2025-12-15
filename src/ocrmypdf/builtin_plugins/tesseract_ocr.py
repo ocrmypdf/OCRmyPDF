@@ -7,8 +7,10 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+from typing import Annotated
 
 from PIL import Image
+from pydantic import BaseModel, Field
 
 from ocrmypdf import hookimpl
 from ocrmypdf._exec import tesseract
@@ -21,6 +23,19 @@ from ocrmypdf.pluginspec import OcrEngine
 from ocrmypdf.subprocess import check_external_program
 
 log = logging.getLogger(__name__)
+
+
+class TesseractOptions(BaseModel):
+    """Options specific to Tesseract OCR engine."""
+    
+    config: Annotated[list[str], Field(description="Additional Tesseract configuration files")] = []
+    pagesegmode: Annotated[int | None, Field(ge=0, le=13, description="Set Tesseract page segmentation mode")] = None
+    oem: Annotated[int | None, Field(ge=0, le=3, description="Set Tesseract OCR engine mode")] = None
+    thresholding: Annotated[int | None, Field(description="Set Tesseract input image thresholding mode")] = None
+    timeout: Annotated[float, Field(ge=0, description="Timeout for OCR operations in seconds")] = 180.0
+    non_ocr_timeout: Annotated[float, Field(ge=0, description="Timeout for non-OCR operations in seconds")] = 180.0
+    downsample_large_images: Annotated[bool, Field(description="Downsample large images before OCR")] = True
+    downsample_above: Annotated[int, Field(ge=100, le=32767, description="Downsample images larger than this pixel size")] = 32767
 
 
 @hookimpl
@@ -152,6 +167,8 @@ def check_options(options):
             "Please upgrade to a newer or supported older version."
         )
 
+    # Validate Tesseract-specific options using the new model
+    # For now, we still access options directly for backward compatibility
     if not tesseract.has_thresholding() and options.tesseract_thresholding != 0:
         log.warning(
             "The installed version of Tesseract does not support changes to its "

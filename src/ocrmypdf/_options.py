@@ -20,6 +20,9 @@ from ocrmypdf._defaults import DEFAULT_LANGUAGE, DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf.exceptions import BadArgsError
 from ocrmypdf.helpers import monotonic
 
+# Import plugin option models - these will be available after plugins are loaded
+# We'll use forward references and handle imports dynamically
+
 log = logging.getLogger(__name__)
 
 PathOrIO = BinaryIO | IOBase | Path | str | bytes
@@ -137,9 +140,50 @@ class OCROptions(BaseModel):
         """Compatibility alias for jpg_quality."""
         self.jpg_quality = value
 
+    # Backward compatibility properties for jbig2 options
+    @property
+    def jbig2_lossy(self):
+        """Backward compatibility for jbig2_lossy."""
+        return getattr(self, '_jbig2_lossy', None)
+
+    @jbig2_lossy.setter
+    def jbig2_lossy(self, value):
+        """Backward compatibility for jbig2_lossy."""
+        self._jbig2_lossy = value
+
+    @property
+    def jbig2_page_group_size(self):
+        """Backward compatibility for jbig2_page_group_size."""
+        return getattr(self, '_jbig2_page_group_size', None)
+
+    @jbig2_page_group_size.setter
+    def jbig2_page_group_size(self, value):
+        """Backward compatibility for jbig2_page_group_size."""
+        self._jbig2_page_group_size = value
+
+    @property
+    def jbig2_threshold(self):
+        """Backward compatibility for jbig2_threshold."""
+        return getattr(self, '_jbig2_threshold', 0.85)
+
+    @jbig2_threshold.setter
+    def jbig2_threshold(self, value):
+        """Backward compatibility for jbig2_threshold."""
+        self._jbig2_threshold = value
+
     # Advanced options
     max_image_mpixels: float = 250.0
     pdf_renderer: str = 'auto'
+    rotate_pages_threshold: float = DEFAULT_ROTATE_PAGES_THRESHOLD
+    user_words: os.PathLike | None = None
+    user_patterns: os.PathLike | None = None
+    fast_web_view: float = 1.0
+    continue_on_soft_render_error: bool | None = None
+
+    # Plugin option namespaces (for backward compatibility, will be removed in Phase 5)
+    # These will be populated dynamically based on loaded plugins
+    
+    # Legacy tesseract options (for backward compatibility)
     tesseract_config: list[str] = []
     tesseract_pagesegmode: int | None = None
     tesseract_oem: int | None = None
@@ -148,13 +192,10 @@ class OCROptions(BaseModel):
     tesseract_non_ocr_timeout: float | None = None
     tesseract_downsample_above: int = 32767
     tesseract_downsample_large_images: bool | None = None
-    rotate_pages_threshold: float = DEFAULT_ROTATE_PAGES_THRESHOLD
+    
+    # Legacy ghostscript options (for backward compatibility)
     pdfa_image_compression: str | None = None
     color_conversion_strategy: str = "LeaveColorUnchanged"
-    user_words: os.PathLike | None = None
-    user_patterns: os.PathLike | None = None
-    fast_web_view: float = 1.0
-    continue_on_soft_render_error: bool | None = None
 
     # Plugin system
     plugins: Sequence[Path | str] | None = None

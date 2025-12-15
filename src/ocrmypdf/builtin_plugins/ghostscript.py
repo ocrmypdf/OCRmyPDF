@@ -5,8 +5,10 @@
 from __future__ import annotations
 
 import logging
+from typing import Annotated
 
 from packaging.version import Version
+from pydantic import BaseModel, Field
 
 from ocrmypdf import hookimpl
 from ocrmypdf._exec import ghostscript
@@ -18,6 +20,13 @@ log = logging.getLogger(__name__)
 # Currently all blacklisted versions are lower than 9.55, so none need to
 # be added here. If a future version is blacklisted, add it here.
 BLACKLISTED_GS_VERSIONS: frozenset[Version] = frozenset()
+
+
+class GhostscriptOptions(BaseModel):
+    """Options specific to Ghostscript operations."""
+    
+    color_conversion_strategy: Annotated[str, Field(description="Ghostscript color conversion strategy")] = "LeaveColorUnchanged"
+    pdfa_image_compression: Annotated[str, Field(description="PDF/A image compression method")] = "auto"
 
 
 @hookimpl

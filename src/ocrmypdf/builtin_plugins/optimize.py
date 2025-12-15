@@ -8,6 +8,9 @@ import argparse
 import logging
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Annotated
+
+from pydantic import BaseModel, Field
 
 from ocrmypdf import Executor, PdfContext, hookimpl
 from ocrmypdf._exec import jbig2enc, pngquant
@@ -17,6 +20,17 @@ from ocrmypdf.optimize import optimize
 from ocrmypdf.subprocess import check_external_program
 
 log = logging.getLogger(__name__)
+
+
+class OptimizeOptions(BaseModel):
+    """Options specific to PDF optimization."""
+    
+    level: Annotated[int, Field(ge=0, le=3, description="Optimization level (0=none, 1=safe, 2=lossy, 3=aggressive)")] = 1
+    jpeg_quality: Annotated[int, Field(ge=0, le=100, description="JPEG quality level for optimization")] = 0
+    png_quality: Annotated[int, Field(ge=0, le=100, description="PNG quality level for optimization")] = 0
+    jbig2_lossy: Annotated[bool, Field(description="Enable JBIG2 lossy compression")] = False
+    jbig2_page_group_size: Annotated[int, Field(ge=1, le=10000, description="Number of pages to consider for JBIG2 compression")] = 0
+    jbig2_threshold: Annotated[float, Field(ge=0.4, le=0.9, description="JBIG2 symbol classification threshold")] = 0.85
 
 
 @hookimpl
