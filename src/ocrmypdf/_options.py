@@ -291,8 +291,40 @@ class OCROptions(BaseModel):
                 data['output_file'] = '/dev/null'  # Placeholder
         return data
 
-    # Note: Cross-cutting validation moved to ValidationCoordinator
-    # Basic field validation remains here, complex validation moved to coordinator
+    @model_validator(mode='after')
+    def validate_exclusive_ocr_options(self):
+        """Ensure only one of force_ocr, skip_text, redo_ocr is set."""
+        exclusive_options = sum(
+            1 for opt in [self.force_ocr, self.skip_text, self.redo_ocr] if opt
+        )
+        if exclusive_options >= 2:
+            raise ValueError("Choose only one of --force-ocr, --skip-text, --redo-ocr.")
+        return self
+
+    @model_validator(mode='after')
+    def validate_redo_ocr_options(self):
+        """Validate options compatible with redo_ocr."""
+        if self.redo_ocr:
+            if self.deskew or self.clean_final or self.remove_background:
+                raise ValueError(
+                    "--redo-ocr is not currently compatible with --deskew, "
+                    "--clean-final, and --remove-background"
+                )
+        return self
+
+    @model_validator(mode='after')
+    def validate_output_type_compatibility(self):
+        """Validate output type is compatible with output file."""
+        if self.output_type == 'none' and str(self.output_file) not in (
+            os.devnull,
+            '-',
+        ):
+            raise ValueError(
+                "Since you specified `--output-type none`, the output file "
+                f"{self.output_file} cannot be produced. Set the output file to "
+                f"`-` to suppress this message."
+            )
+        return self
 
     @property
     def lossless_reconstruction(self):
