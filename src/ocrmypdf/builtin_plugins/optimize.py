@@ -46,9 +46,9 @@ class OptimizeOptions(BaseModel):
     jbig2_page_group_size: Annotated[
         int,
         Field(
-            ge=1,
+            ge=0,
             le=10000,
-            description="Number of pages to consider for JBIG2 compression",
+            description="Number of pages to consider for JBIG2 compression (0=disabled)",
         ),
     ] = 0
     jbig2_threshold: Annotated[
