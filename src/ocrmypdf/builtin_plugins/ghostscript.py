@@ -128,8 +128,13 @@ def rasterize_pdf_page(
     rotation,
     filter_vector,
     stop_on_soft_error,
+    options=None,
 ):
     """Rasterize a single page of a PDF file using Ghostscript."""
+    # Check if user explicitly requested a different rasterizer
+    if options is not None and options.rasterizer == 'pypdfium':
+        return None  # Let pypdfium handle it (it will error in check_options if unavailable)
+
     ghostscript.rasterize_pdf(
         input_file,
         output_file,

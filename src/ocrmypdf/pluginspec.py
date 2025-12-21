@@ -213,6 +213,7 @@ def rasterize_pdf_page(
     rotation: int | None,
     filter_vector: bool,
     stop_on_soft_error: bool,
+    options: OCROptions | None = None,
 ) -> Path:  # type: ignore[return-value]
     """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
 
@@ -236,6 +237,9 @@ def rasterize_pdf_page(
             cannot proceed, it should always raise an exception, regardless of
             this setting. One "soft error" would be a missing font that is
             required to properly rasterize the PDF.
+        options: OCRmyPDF options. Plugins may use this to check settings like
+            ``options.rasterizer`` to determine whether they should handle the
+            request or defer to another plugin. Introduced in version 17.0.
 
     Returns:
         Path: output_file if successful

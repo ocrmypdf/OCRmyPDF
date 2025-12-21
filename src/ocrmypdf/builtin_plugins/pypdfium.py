@@ -13,13 +13,20 @@ except ImportError:
     pdfium = None
 
 from ocrmypdf import hookimpl
+from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.helpers import Resolution
 
 log = logging.getLogger(__name__)
 
 
-# Note: No check_options hook - pypdfium is optional. If pypdfium2 is not
-# installed, the rasterize_pdf_page hook returns None and Ghostscript is used.
+@hookimpl
+def check_options(options):
+    """Check that pypdfium2 is available if explicitly requested."""
+    if options.rasterizer == 'pypdfium' and pdfium is None:
+        raise MissingDependencyError(
+            "The --rasterizer pypdfium option requires the pypdfium2 package. "
+            "Install it with: pip install pypdfium2"
+        )
 
 
 def _open_pdf_document(input_file: Path):
@@ -123,11 +130,17 @@ def rasterize_pdf_page(
     rotation: int | None,
     filter_vector: bool,
     stop_on_soft_error: bool,
+    options=None,
 ) -> Path | None:
     """Rasterize a single page of a PDF file using pypdfium2.
 
-    Returns None if pypdfium2 is not available, allowing Ghostscript to be used.
+    Returns None if pypdfium2 is not available or if the user has selected
+    a different rasterizer, allowing Ghostscript to be used.
     """
+    # Check if user explicitly requested a different rasterizer
+    if options is not None and options.rasterizer == 'ghostscript':
+        return None  # Let Ghostscript handle it
+
     if pdfium is None:
         return None  # Fall back to Ghostscript
 

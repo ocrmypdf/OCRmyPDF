@@ -147,6 +147,7 @@ class OCROptions(BaseModel):
     # Advanced options
     max_image_mpixels: float = 250.0
     pdf_renderer: str = 'auto'
+    rasterizer: str = 'auto'
     rotate_pages_threshold: float = DEFAULT_ROTATE_PAGES_THRESHOLD
     user_words: os.PathLike | None = None
     user_patterns: os.PathLike | None = None
@@ -205,6 +206,15 @@ class OCROptions(BaseModel):
         valid_renderers = {'auto', 'hocr', 'sandwich', 'hocrdebug'}
         if v not in valid_renderers:
             raise ValueError(f"pdf_renderer must be one of {valid_renderers}")
+        return v
+
+    @field_validator('rasterizer')
+    @classmethod
+    def validate_rasterizer(cls, v):
+        """Validate rasterizer is one of the allowed values."""
+        valid_rasterizers = {'auto', 'ghostscript', 'pypdfium'}
+        if v not in valid_rasterizers:
+            raise ValueError(f"rasterizer must be one of {valid_rasterizers}")
         return v
 
     @field_validator('clean_final')

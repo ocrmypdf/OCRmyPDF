@@ -374,6 +374,14 @@ Online documentation is located at:
         "choose.  See documentation for discussion.",
     )
     advanced.add_argument(
+        '--rasterizer',
+        choices=['auto', 'ghostscript', 'pypdfium'],
+        default='auto',
+        help="Choose PDF page rasterizer. 'auto' prefers pypdfium when available, "
+        "falling back to Ghostscript. 'pypdfium' is faster but requires the "
+        "pypdfium2 package. 'ghostscript' uses the traditional Ghostscript rasterizer.",
+    )
+    advanced.add_argument(
         '--rotate-pages-threshold',
         default=DEFAULT_ROTATE_PAGES_THRESHOLD,
         type=numeric(float, 0, 1000),
