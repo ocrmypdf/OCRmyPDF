@@ -117,31 +117,31 @@ def check_options(options):
         )
 
 
-# @hookimpl
-# def rasterize_pdf_page(
-#     input_file,
-#     output_file,
-#     raster_device,
-#     raster_dpi,
-#     pageno,
-#     page_dpi,
-#     rotation,
-#     filter_vector,
-#     stop_on_soft_error,
-# ):
-#     """Rasterize a single page of a PDF file using Ghostscript."""
-#     ghostscript.rasterize_pdf(
-#         input_file,
-#         output_file,
-#         raster_device=raster_device,
-#         raster_dpi=raster_dpi,
-#         pageno=pageno,
-#         page_dpi=page_dpi,
-#         rotation=rotation,
-#         filter_vector=filter_vector,
-#         stop_on_error=stop_on_soft_error,
-#     )
-#     return output_file
+@hookimpl
+def rasterize_pdf_page(
+    input_file,
+    output_file,
+    raster_device,
+    raster_dpi,
+    pageno,
+    page_dpi,
+    rotation,
+    filter_vector,
+    stop_on_soft_error,
+):
+    """Rasterize a single page of a PDF file using Ghostscript."""
+    ghostscript.rasterize_pdf(
+        input_file,
+        output_file,
+        raster_device=raster_device,
+        raster_dpi=raster_dpi,
+        pageno=pageno,
+        page_dpi=page_dpi,
+        rotation=rotation,
+        filter_vector=filter_vector,
+        stop_on_error=stop_on_soft_error,
+    )
+    return output_file
 
 
 @hookimpl
