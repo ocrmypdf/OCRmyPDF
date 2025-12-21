@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from pathlib import Path
 
 try:
@@ -17,6 +18,12 @@ from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.helpers import Resolution
 
 log = logging.getLogger(__name__)
+
+# pypdfium2/PDFium is not thread-safe. All calls to the library must be serialized.
+# See: https://pypdfium2.readthedocs.io/en/stable/python_api.html#incompatibility-with-threading
+# When using process-based parallelism (use_threads=False), each process has its own
+# pdfium instance, so locking is not needed across processes.
+_pdfium_lock = threading.Lock()
 
 
 @hookimpl
@@ -144,33 +151,36 @@ def rasterize_pdf_page(
     if pdfium is None:
         return None  # Fall back to Ghostscript
 
-    # Open the PDF document
-    pdf = _open_pdf_document(input_file)
-
-    try:
-        # Get the specific page (pypdfium2 uses 0-based indexing)
-        page = pdf[pageno - 1]
+    # Acquire lock to ensure thread-safe access to pypdfium2
+    with _pdfium_lock:
+        # Open the PDF document
+        pdf = _open_pdf_document(input_file)
 
         try:
-            # Render the page to a bitmap
-            bitmap = _render_page_to_bitmap(page, raster_device, raster_dpi, rotation)
+            # Get the specific page (pypdfium2 uses 0-based indexing)
+            page = pdf[pageno - 1]
 
             try:
-                # Convert to PIL Image
-                pil_image = bitmap.to_pil()
-
-                # Process image for output format and DPI
-                pil_image, format_name = _process_image_for_output(
-                    pil_image, raster_device, raster_dpi, page_dpi, stop_on_soft_error
+                # Render the page to a bitmap
+                bitmap = _render_page_to_bitmap(
+                    page, raster_device, raster_dpi, rotation
                 )
 
-                _save_image(pil_image, output_file, format_name)
-
+                try:
+                    # Convert to PIL Image
+                    pil_image = bitmap.to_pil()
+                finally:
+                    bitmap.close()
             finally:
-                bitmap.close()
+                page.close()
         finally:
-            page.close()
-    finally:
-        pdf.close()
+            pdf.close()
+
+    # Process and save image outside the lock (PIL operations are thread-safe)
+    pil_image, format_name = _process_image_for_output(
+        pil_image, raster_device, raster_dpi, page_dpi, stop_on_soft_error
+    )
+
+    _save_image(pil_image, output_file, format_name)
 
     return output_file

@@ -360,8 +360,6 @@ def test_simulated_scan(outdir):
         '--rotate-pages',
         '--plugin',
         'tests/plugins/tesseract_debug_rotate.py',
-        '--rasterizer',
-        'ghostscript',  # Use Ghostscript to avoid pypdfium2 thread safety issues
     )
 
     with pikepdf.open(outdir / 'out.pdf') as pdf:
