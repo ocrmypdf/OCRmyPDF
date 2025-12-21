@@ -462,10 +462,6 @@ def namespace_to_options(ns) -> OCROptions:
     if 'work_folder' in extra_attrs and 'input_file' not in known_fields:
         known_fields['input_file'] = '/dev/null'  # Placeholder
 
-    # Handle backward compatibility for plugin options
-    # Map CLI arguments to the appropriate fields for now
-    # In Phase 2, this will be handled by plugin option models
-
     instance = OCROptions(**known_fields)
     instance.extra_attrs = extra_attrs
     return instance

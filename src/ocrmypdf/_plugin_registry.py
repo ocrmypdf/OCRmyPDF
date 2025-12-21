@@ -7,17 +7,22 @@ from __future__ import annotations
 
 import logging
 
-from pydantic import BaseModel, create_model
+from pydantic import BaseModel
 
 log = logging.getLogger(__name__)
 
 
 class PluginOptionRegistry:
-    """Registry for plugin option models."""
+    """Registry for plugin option models.
+
+    This registry collects option models from plugins during initialization.
+    Plugin options can be accessed via nested namespaces on OCROptions
+    (e.g., options.tesseract.timeout) or via flat field names for backward
+    compatibility (e.g., options.tesseract_timeout).
+    """
 
     def __init__(self):
         self._option_models: dict[str, type[BaseModel]] = {}
-        self._extended_model_cache: type[BaseModel] | None = None
 
     def register_option_model(
         self, namespace: str, model_class: type[BaseModel]
@@ -34,123 +39,12 @@ class PluginOptionRegistry:
             )
 
         self._option_models[namespace] = model_class
-        # Clear cache when new models are registered
-        self._extended_model_cache = None
 
         log.debug(
-            f"Registered plugin option model for namespace '{namespace}': {model_class.__name__}"
+            f"Registered plugin option model for namespace '{namespace}': "
+            f"{model_class.__name__}"
         )
 
     def get_registered_models(self) -> dict[str, type[BaseModel]]:
         """Get all registered plugin option models."""
         return self._option_models.copy()
-
-    def get_extended_options_model(
-        self, base_model: type[BaseModel]
-    ) -> type[BaseModel]:
-        """Create an extended options model that includes all registered plugin options.
-
-        Args:
-            base_model: The base OCROptions model to extend
-
-        Returns:
-            A new model class that includes the base model fields plus all plugin option fields
-        """
-        if self._extended_model_cache is not None:
-            return self._extended_model_cache
-
-        # Start with base model fields
-        model_fields = {}
-
-        # Add plugin option models as nested fields
-        for namespace, model_class in self._option_models.items():
-            model_fields[namespace] = (model_class, model_class())
-
-        # Create the extended model
-        self._extended_model_cache = create_model(
-            'ExtendedOCROptions', __base__=base_model, **model_fields
-        )
-
-        return self._extended_model_cache
-
-    def clear_cache(self) -> None:
-        """Clear the extended model cache."""
-        self._extended_model_cache = None
-    
-    def map_legacy_options(self, options: dict) -> dict:
-        """Map legacy flat options to nested plugin options.
-        
-        This method helps with backward compatibility by mapping flat option
-        names (like 'tesseract_timeout') to nested plugin option structures.
-        
-        Args:
-            options: Dictionary of flat options
-            
-        Returns:
-            Dictionary with both legacy flat options and nested plugin options
-        """
-        result = options.copy()
-        
-        # Map tesseract options
-        if 'tesseract' in self._option_models:
-            tesseract_options = {}
-            tesseract_fields = self._option_models['tesseract'].model_fields.keys()
-            
-            for field in tesseract_fields:
-                legacy_key = f'tesseract_{field}'
-                if legacy_key in options:
-                    tesseract_options[field] = options[legacy_key]
-            
-            if tesseract_options:
-                result['tesseract'] = tesseract_options
-        
-        # Map optimize options  
-        if 'optimize' in self._option_models:
-            optimize_options = {}
-            optimize_fields = self._option_models['optimize'].model_fields.keys()
-            
-            for field in optimize_fields:
-                if field in options:
-                    optimize_options[field] = options[field]
-                # Handle special case for optimize level
-                elif field == 'level' and 'optimize' in options:
-                    optimize_options[field] = options['optimize']
-            
-            if optimize_options:
-                result['optimize'] = optimize_options
-        
-        # Map ghostscript options
-        if 'ghostscript' in self._option_models:
-            ghostscript_options = {}
-            ghostscript_fields = self._option_models['ghostscript'].model_fields.keys()
-            
-            for field in ghostscript_fields:
-                if field in options:
-                    ghostscript_options[field] = options[field]
-            
-            if ghostscript_options:
-                result['ghostscript'] = ghostscript_options
-        
-        return result
-    
-    def validate_plugin_options(self, options: dict) -> dict:
-        """Validate plugin options using their registered models.
-        
-        Args:
-            options: Dictionary containing plugin options
-            
-        Returns:
-            Dictionary with validated plugin options
-            
-        Raises:
-            ValidationError: If any plugin options are invalid
-        """
-        validated = {}
-        
-        for namespace, model_class in self._option_models.items():
-            if namespace in options:
-                # Validate using the plugin's model
-                plugin_options = model_class(**options[namespace])
-                validated[namespace] = plugin_options.model_dump()
-        
-        return validated

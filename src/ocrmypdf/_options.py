@@ -153,10 +153,7 @@ class OCROptions(BaseModel):
     fast_web_view: float = 1.0
     continue_on_soft_render_error: bool | None = None
 
-    # Plugin option namespaces (for backward compatibility, will be removed in Phase 5)
-    # These will be populated dynamically based on loaded plugins
-
-    # Legacy tesseract options (for backward compatibility)
+    # Tesseract options - also accessible via options.tesseract.<field>
     tesseract_config: list[str] = []
     tesseract_pagesegmode: int | None = None
     tesseract_oem: int | None = None
@@ -166,11 +163,11 @@ class OCROptions(BaseModel):
     tesseract_downsample_above: int = 32767
     tesseract_downsample_large_images: bool | None = None
 
-    # Legacy ghostscript options (for backward compatibility)
+    # Ghostscript options - also accessible via options.ghostscript.<field>
     pdfa_image_compression: str | None = None
     color_conversion_strategy: str = "LeaveColorUnchanged"
 
-    # Legacy jbig2 options (for backward compatibility)
+    # Optimize/JBIG2 options - also accessible via options.optimize.<field>
     jbig2_lossy: bool | None = None
     jbig2_page_group_size: int | None = None
     jbig2_threshold: float = 0.85

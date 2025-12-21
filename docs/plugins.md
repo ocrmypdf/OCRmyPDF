@@ -164,10 +164,29 @@ chaining operations.
 .. autofunction:: ocrmypdf.pluginspec.check_options
 ```
 
+### Plugin option models
+
+Plugins can define their own option models using Pydantic. This allows plugins to:
+
+- Define type-safe option structures with validation
+- Add CLI arguments that map to their option model fields
+- Access options via nested namespaces (e.g., `options.tesseract.timeout`)
+
+```{eval-rst}
+.. autofunction:: ocrmypdf.pluginspec.register_options
+```
+
+Plugin options can be accessed in two ways:
+
+1. **Flat access** (backward compatible): `options.tesseract_timeout`
+2. **Nested access**: `options.tesseract.timeout`
+
+Both access patterns are equivalent and return the same values.
+
 :::{note}
-**Plugin Interface Change**: Starting in OCRmyPDF v16.13.0, plugin hooks receive 
-`OCROptions` objects instead of `argparse.Namespace` objects. Most plugins will 
-continue working due to duck-typing compatibility, but plugin developers should 
+**Plugin Interface Change**: Starting in OCRmyPDF v16.13.0, plugin hooks receive
+`OCROptions` objects instead of `argparse.Namespace` objects. Most plugins will
+continue working due to duck-typing compatibility, but plugin developers should
 update their type hints accordingly.
 :::
 
