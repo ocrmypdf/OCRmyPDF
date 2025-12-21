@@ -214,6 +214,7 @@ def rasterize_pdf_page(
     filter_vector: bool,
     stop_on_soft_error: bool,
     options: OCROptions | None,
+    use_cropbox: bool,
 ) -> Path:  # type: ignore[return-value]
     """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
 
@@ -240,6 +241,9 @@ def rasterize_pdf_page(
         options: OCRmyPDF options. Plugins may use this to check settings like
             ``options.rasterizer`` to determine whether they should handle the
             request or defer to another plugin. Introduced in version 17.0.
+        use_cropbox: If True, rasterize the page's CropBox instead of the
+            MediaBox. Default is False (use MediaBox) for consistency with
+            Ghostscript's default behavior.
 
     Returns:
         Path: output_file if successful

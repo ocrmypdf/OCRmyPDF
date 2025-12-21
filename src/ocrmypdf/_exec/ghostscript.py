@@ -105,8 +105,14 @@ def rasterize_pdf(
     rotation: int | None = None,
     filter_vector: bool = False,
     stop_on_error: bool = False,
+    use_cropbox: bool = False,
 ):
-    """Rasterize one page of a PDF at resolution raster_dpi in canvas units."""
+    """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
+
+    Args:
+        use_cropbox: If True, rasterize the CropBox instead of MediaBox.
+            Default is False (use MediaBox).
+    """
     raster_dpi = raster_dpi.round(6)
     if not page_dpi:
         page_dpi = raster_dpi
@@ -123,6 +129,7 @@ def rasterize_pdf(
             f'-dLastPage={pageno}',
             f'-r{raster_dpi.x:f}x{raster_dpi.y:f}',
         ]
+        + (['-dUseCropBox'] if use_cropbox else [])
         + (['-dFILTERVECTOR'] if filter_vector else [])
         + (['-dPDFSTOPONERROR'] if stop_on_error else [])
         + [

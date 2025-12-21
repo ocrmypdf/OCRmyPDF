@@ -406,6 +406,7 @@ def rasterize_preview(input_file: Path, page_context: PageContext) -> Path:
         filter_vector=False,
         stop_on_soft_error=not page_context.options.continue_on_soft_render_error,
         options=page_context.options,
+        use_cropbox=False,
     )
     return output_file
 
@@ -566,6 +567,7 @@ def rasterize(
         filter_vector=remove_vectors,
         stop_on_soft_error=not page_context.options.continue_on_soft_render_error,
         options=page_context.options,
+        use_cropbox=False,
     )
     return output_file
 

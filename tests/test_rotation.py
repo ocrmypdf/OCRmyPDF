@@ -311,6 +311,7 @@ def test_rasterize_rotates(resources, tmp_path):
         filter_vector=False,
         stop_on_soft_error=True,
         options=options,
+        use_cropbox=False,
     )
     with Image.open(img) as im:
         assert im.size == (83, 200), "Image not rotated"
@@ -327,6 +328,7 @@ def test_rasterize_rotates(resources, tmp_path):
         filter_vector=False,
         stop_on_soft_error=True,
         options=options,
+        use_cropbox=False,
     )
     assert Image.open(img).size == (200, 83), "Image not rotated"
 

@@ -42,8 +42,35 @@ def _open_pdf_document(input_file: Path):
     return pdfium.PdfDocument(input_file)
 
 
+def _calculate_mediabox_crop(page) -> tuple[float, float, float, float]:
+    """Calculate crop values to expand rendering from CropBox to MediaBox.
+
+    By default pypdfium2 renders to the CropBox. To render the full MediaBox,
+    we need negative crop values to expand the rendering area.
+
+    Returns:
+        Tuple of (left, bottom, right, top) crop values. Negative values
+        expand the rendering area beyond the CropBox to the MediaBox.
+    """
+    mediabox = page.get_mediabox()  # (left, bottom, right, top)
+    cropbox = page.get_cropbox()  # (left, bottom, right, top), defaults to mediabox
+
+    # Calculate how much to expand from cropbox to mediabox
+    # Negative values = expand, positive = shrink
+    return (
+        mediabox[0] - cropbox[0],  # Expand left
+        mediabox[1] - cropbox[1],  # Expand bottom
+        cropbox[2] - mediabox[2],  # Expand right
+        cropbox[3] - mediabox[3],  # Expand top
+    )
+
+
 def _render_page_to_bitmap(
-    page, raster_device: str, raster_dpi: Resolution, rotation: int | None
+    page,
+    raster_device: str,
+    raster_dpi: Resolution,
+    rotation: int | None,
+    use_cropbox: bool,
 ):
     """Render a PDF page to a bitmap."""
     # Calculate the scale factor based on DPI
@@ -59,9 +86,17 @@ def _render_page_to_bitmap(
     # The scale parameter controls the resolution
     grayscale = raster_device.lower() in ('pnggray', 'jpeggray')
 
+    # Calculate crop to render the appropriate box
+    # Default (use_cropbox=False) renders MediaBox for consistency with Ghostscript
+    if use_cropbox:
+        crop = (0, 0, 0, 0)  # No crop adjustment, use default CropBox
+    else:
+        crop = _calculate_mediabox_crop(page)  # Expand to MediaBox
+
     bitmap = page.render(
         scale=scale,
         rotation=0,  # We already set rotation on the page
+        crop=crop,
         may_draw_forms=True,
         draw_annots=True,
         grayscale=grayscale,
@@ -138,6 +173,7 @@ def rasterize_pdf_page(
     filter_vector: bool,
     stop_on_soft_error: bool,
     options,
+    use_cropbox: bool,
 ) -> Path | None:
     """Rasterize a single page of a PDF file using pypdfium2.
 
@@ -163,7 +199,7 @@ def rasterize_pdf_page(
             try:
                 # Render the page to a bitmap
                 bitmap = _render_page_to_bitmap(
-                    page, raster_device, raster_dpi, rotation
+                    page, raster_device, raster_dpi, rotation, use_cropbox
                 )
 
                 try:

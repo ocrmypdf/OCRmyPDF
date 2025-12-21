@@ -145,6 +145,7 @@ class TestRasterizerHookDirect:
             filter_vector=False,
             stop_on_soft_error=True,
             options=options,
+            use_cropbox=False,
         )
         # When pypdfium is requested:
         # - If pypdfium IS available, pypdfium handles it and returns the path
@@ -179,6 +180,7 @@ class TestRasterizerHookDirect:
             filter_vector=False,
             stop_on_soft_error=True,
             options=options,
+            use_cropbox=False,
         )
         # Ghostscript should handle it
         assert result == img
@@ -206,6 +208,7 @@ class TestRasterizerHookDirect:
             filter_vector=False,
             stop_on_soft_error=True,
             options=options,
+            use_cropbox=False,
         )
         assert result == img
         assert img.exists()
@@ -378,6 +381,7 @@ class TestRasterizerWithNonStandardBoxes:
             filter_vector=False,
             stop_on_soft_error=True,
             options=options_gs,
+            use_cropbox=False,
         )
 
         with Image.open(img_gs) as im_gs:
@@ -402,17 +406,16 @@ class TestRasterizerWithNonStandardBoxes:
                 filter_vector=False,
                 stop_on_soft_error=True,
                 options=options_pdfium,
+                use_cropbox=False,
             )
 
             with Image.open(img_pdfium) as im_pdfium:
                 pdfium_size = im_pdfium.size
 
-            # Note: Ghostscript and pypdfium use different page boxes:
-            # - Ghostscript uses MediaBox (400x500)
-            # - pypdfium uses CropBox (300x400)
-            # This is expected behavior - verify each produces valid output
+            # Both rasterizers should now produce MediaBox dimensions (400x500)
+            # when use_cropbox=False (the default)
             assert gs_size == (400, 500), f"Ghostscript size: {gs_size}"
-            assert pdfium_size == (300, 400), f"pypdfium size: {pdfium_size}"
+            assert pdfium_size == (400, 500), f"pypdfium size: {pdfium_size}"
 
 
 class TestRasterizerWithRotationAndBoxes:
@@ -423,22 +426,13 @@ class TestRasterizerWithRotationAndBoxes:
     # - CropBox: [50, 50, 350, 450] → 300x400 points
     # - TrimBox: [75, 75, 325, 425] → 250x350 points
     #
-    # The rasterizers use different boxes:
-    # - Ghostscript uses MediaBox → 400x500 pixels at 72 DPI
-    # - pypdfium uses CropBox → 300x400 pixels at 72 DPI
-    GS_WIDTH = 400  # MediaBox width
-    GS_HEIGHT = 500  # MediaBox height
-    PDFIUM_WIDTH = 300  # CropBox width
-    PDFIUM_HEIGHT = 400  # CropBox height
+    # With use_cropbox=False (default), both rasterizers use MediaBox
+    MEDIABOX_WIDTH = 400
+    MEDIABOX_HEIGHT = 500
 
-    def _get_expected_size(
-        self, rotation: int, rasterizer: str = 'ghostscript'
-    ) -> tuple[int, int]:
+    def _get_expected_size(self, rotation: int) -> tuple[int, int]:
         """Get expected image dimensions after rotation."""
-        if rasterizer == 'ghostscript':
-            width, height = self.GS_WIDTH, self.GS_HEIGHT
-        else:
-            width, height = self.PDFIUM_WIDTH, self.PDFIUM_HEIGHT
+        width, height = self.MEDIABOX_WIDTH, self.MEDIABOX_HEIGHT
 
         if rotation in (0, 180):
             return (width, height)
@@ -470,11 +464,12 @@ class TestRasterizerWithRotationAndBoxes:
                 filter_vector=False,
                 stop_on_soft_error=True,
                 options=options,
+                use_cropbox=False,
             )
             assert img_path.exists(), f"Failed to rasterize with rotation {rotation}"
 
             with Image.open(img_path) as img:
-                expected = self._get_expected_size(rotation, 'ghostscript')
+                expected = self._get_expected_size(rotation)
                 # Allow small tolerance for rounding
                 assert abs(img.size[0] - expected[0]) <= 2, (
                     f"Width mismatch at {rotation}°: got {img.size[0]}, "
@@ -511,11 +506,12 @@ class TestRasterizerWithRotationAndBoxes:
                 filter_vector=False,
                 stop_on_soft_error=True,
                 options=options,
+                use_cropbox=False,
             )
             assert img_path.exists(), f"Failed to rasterize with rotation {rotation}"
 
             with Image.open(img_path) as img:
-                expected = self._get_expected_size(rotation, 'pypdfium')
+                expected = self._get_expected_size(rotation)
                 # Allow small tolerance for rounding
                 assert abs(img.size[0] - expected[0]) <= 2, (
                     f"Width mismatch at {rotation}°: got {img.size[0]}, "
@@ -527,13 +523,13 @@ class TestRasterizerWithRotationAndBoxes:
                 )
 
     @pytest.mark.skipif(not PYPDFIUM_AVAILABLE, reason="pypdfium2 not installed")
-    def test_rasterizers_dimensions_differ_as_expected(
+    def test_rasterizers_produce_same_dimensions(
         self, pdf_with_nonstandard_boxes, tmp_path
     ):
-        """Verify ghostscript and pypdfium produce expected different dimensions.
+        """Verify ghostscript and pypdfium produce the same MediaBox dimensions.
 
-        Ghostscript uses MediaBox while pypdfium uses CropBox, so their output
-        dimensions differ for PDFs with different MediaBox/CropBox sizes.
+        With use_cropbox=False (the default), both rasterizers should render
+        to the MediaBox and produce identical dimensions.
         """
         pm = get_plugin_manager([])
 
@@ -556,6 +552,7 @@ class TestRasterizerWithRotationAndBoxes:
                 filter_vector=False,
                 stop_on_soft_error=True,
                 options=gs_options,
+                use_cropbox=False,
             )
 
             # Rasterize with pypdfium
@@ -576,28 +573,28 @@ class TestRasterizerWithRotationAndBoxes:
                 filter_vector=False,
                 stop_on_soft_error=True,
                 options=pdfium_options,
+                use_cropbox=False,
             )
 
-            # Verify each produces its expected dimensions
+            # Verify both produce the same MediaBox dimensions
             with Image.open(gs_img_path) as gs_img, Image.open(
                 pdfium_img_path
             ) as pdfium_img:
-                gs_expected = self._get_expected_size(rotation, 'ghostscript')
-                pdfium_expected = self._get_expected_size(rotation, 'pypdfium')
+                expected = self._get_expected_size(rotation)
 
-                assert abs(gs_img.size[0] - gs_expected[0]) <= 2, (
+                assert abs(gs_img.size[0] - expected[0]) <= 2, (
                     f"GS width at {rotation}°: {gs_img.size[0]}, "
-                    f"expected {gs_expected[0]}"
+                    f"expected {expected[0]}"
                 )
-                assert abs(gs_img.size[1] - gs_expected[1]) <= 2, (
+                assert abs(gs_img.size[1] - expected[1]) <= 2, (
                     f"GS height at {rotation}°: {gs_img.size[1]}, "
-                    f"expected {gs_expected[1]}"
+                    f"expected {expected[1]}"
                 )
-                assert abs(pdfium_img.size[0] - pdfium_expected[0]) <= 2, (
+                assert abs(pdfium_img.size[0] - expected[0]) <= 2, (
                     f"pdfium width at {rotation}°: {pdfium_img.size[0]}, "
-                    f"expected {pdfium_expected[0]}"
+                    f"expected {expected[0]}"
                 )
-                assert abs(pdfium_img.size[1] - pdfium_expected[1]) <= 2, (
+                assert abs(pdfium_img.size[1] - expected[1]) <= 2, (
                     f"pdfium height at {rotation}°: {pdfium_img.size[1]}, "
-                    f"expected {pdfium_expected[1]}"
+                    f"expected {expected[1]}"
                 )

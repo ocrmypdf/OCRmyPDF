@@ -129,6 +129,7 @@ def rasterize_pdf_page(
     filter_vector,
     stop_on_soft_error,
     options,
+    use_cropbox,
 ):
     """Rasterize a single page of a PDF file using Ghostscript."""
     # Check if user explicitly requested a different rasterizer
@@ -145,6 +146,7 @@ def rasterize_pdf_page(
         rotation=rotation,
         filter_vector=filter_vector,
         stop_on_error=stop_on_soft_error,
+        use_cropbox=use_cropbox,
     )
     return output_file
 
