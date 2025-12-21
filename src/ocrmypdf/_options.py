@@ -25,6 +25,10 @@ from ocrmypdf.helpers import monotonic
 
 log = logging.getLogger(__name__)
 
+# Module-level registry for plugin option models
+# This is populated by setup_plugin_infrastructure() after plugins are loaded
+_plugin_option_models: dict[str, type] = {}
+
 PathOrIO = BinaryIO | IOBase | Path | str | bytes
 
 
@@ -178,6 +182,7 @@ class OCROptions(BaseModel):
     extra_attrs: dict[str, Any] = Field(
         default_factory=dict, exclude=True, alias='_extra_attrs'
     )
+
 
     @field_validator('languages')
     @classmethod
@@ -424,3 +429,103 @@ class OCROptions(BaseModel):
         arbitrary_types_allowed=True,  # Allow BinaryIO, Path, etc.
         validate_assignment=True,  # Validate on attribute assignment
     )
+
+    @classmethod
+    def register_plugin_models(cls, models: dict[str, type]) -> None:
+        """Register plugin option model classes for nested access.
+
+        Args:
+            models: Dictionary mapping namespace to model class
+        """
+        global _plugin_option_models
+        _plugin_option_models.update(models)
+
+    def _get_plugin_options(self, namespace: str) -> Any:
+        """Get or create a plugin options instance for the given namespace.
+
+        This method creates plugin option instances lazily from flat field values.
+
+        Args:
+            namespace: The plugin namespace (e.g., 'tesseract', 'optimize')
+
+        Returns:
+            An instance of the plugin's option model, or None if not registered
+        """
+        # Use extra_attrs to cache plugin option instances
+        cache_key = f'_plugin_cache_{namespace}'
+        if cache_key in self.extra_attrs:
+            return self.extra_attrs[cache_key]
+
+        if namespace not in _plugin_option_models:
+            return None
+
+        model_class = _plugin_option_models[namespace]
+
+        # Build kwargs from flat fields
+        kwargs = {}
+        for field_name in model_class.model_fields:
+            # Try namespace_field pattern first (e.g., tesseract_timeout)
+            flat_name = f"{namespace}_{field_name}"
+            if flat_name in OCROptions.model_fields:
+                value = getattr(self, flat_name)
+                if value is not None:
+                    kwargs[field_name] = value
+            # Also check direct field name (for fields like jbig2_lossy)
+            elif field_name in OCROptions.model_fields:
+                value = getattr(self, field_name)
+                if value is not None:
+                    kwargs[field_name] = value
+            # Check for special mappings
+            elif namespace == 'optimize' and field_name == 'level':
+                # 'optimize' field maps to 'level' in OptimizeOptions
+                if 'optimize' in OCROptions.model_fields:
+                    value = getattr(self, 'optimize')
+                    if value is not None:
+                        kwargs[field_name] = value
+            elif namespace == 'optimize' and field_name == 'jpeg_quality':
+                # jpg_quality maps to jpeg_quality
+                if 'jpg_quality' in OCROptions.model_fields:
+                    value = getattr(self, 'jpg_quality')
+                    if value is not None:
+                        kwargs[field_name] = value
+
+        # Create and cache the plugin options instance
+        try:
+            instance = model_class(**kwargs)
+            self.extra_attrs[cache_key] = instance
+            return instance
+        except Exception:
+            return None
+
+    def __getattr__(self, name: str) -> Any:
+        """Support dynamic access to plugin option namespaces.
+
+        This allows accessing plugin options like:
+            options.tesseract.timeout
+            options.optimize.level
+
+        Args:
+            name: Attribute name
+
+        Returns:
+            Plugin options instance if name is a registered namespace,
+            otherwise raises AttributeError
+        """
+        # Check if this is a plugin namespace
+        if name.startswith('_'):
+            # Private attributes should not trigger plugin lookup
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{name}'"
+            )
+
+        # Try to get plugin options for this namespace
+        if name in _plugin_option_models:
+            return self._get_plugin_options(name)
+
+        # Check extra_attrs
+        if 'extra_attrs' in self.__dict__ and name in self.extra_attrs:
+            return self.extra_attrs[name]
+
+        raise AttributeError(
+            f"'{type(self).__name__}' object has no attribute '{name}'"
+        )

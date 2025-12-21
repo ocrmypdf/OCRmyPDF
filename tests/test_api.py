@@ -103,3 +103,42 @@ def test_hocr_result_pickle():
         orientation_correction=180,
     )
     assert result == pickle.loads(pickle.dumps(result))
+
+
+def test_nested_plugin_option_access():
+    """Test that plugin options can be accessed via nested namespaces."""
+    from ocrmypdf._options import OCROptions
+    from ocrmypdf.api import setup_plugin_infrastructure
+
+    # Set up plugin infrastructure to register plugin models
+    setup_plugin_infrastructure()
+
+    # Create options with tesseract settings
+    options = OCROptions(
+        input_file='test.pdf',
+        output_file='output.pdf',
+        tesseract_timeout=120.0,
+        tesseract_oem=1,
+        optimize=2,
+        jbig2_lossy=True,
+    )
+
+    # Test flat access still works
+    assert options.tesseract_timeout == 120.0
+    assert options.tesseract_oem == 1
+    assert options.optimize == 2
+    assert options.jbig2_lossy is True
+
+    # Test nested access for tesseract
+    tesseract = options.tesseract
+    assert tesseract is not None
+    assert tesseract.timeout == 120.0
+    assert tesseract.oem == 1
+
+    # Test nested access for ghostscript
+    ghostscript = options.ghostscript
+    assert ghostscript is not None
+    assert ghostscript.color_conversion_strategy == "LeaveColorUnchanged"
+
+    # Test that cached instances are returned
+    assert options.tesseract is tesseract

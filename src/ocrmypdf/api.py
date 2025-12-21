@@ -115,10 +115,15 @@ def setup_plugin_infrastructure(
 
     # Let plugins register their option models
     option_models = plugin_manager.hook.register_options()  # pylint: disable=no-member
+    all_plugin_models: dict[str, type] = {}
     for plugin_options in option_models:
         if plugin_options:  # Skip None returns
             for namespace, model_class in plugin_options.items():
                 registry.register_option_model(namespace, model_class)
+                all_plugin_models[namespace] = model_class
+
+    # Register plugin models with OCROptions for dynamic nested access
+    OCROptions.register_plugin_models(all_plugin_models)
 
     # Store registry in plugin manager for later access
     plugin_manager._option_registry = registry
