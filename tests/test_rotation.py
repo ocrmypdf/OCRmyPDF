@@ -171,6 +171,8 @@ def test_rotated_skew_timeout(resources, outpdf):
         '--deskew',
         '--tesseract-timeout',
         '0',
+        '--rasterizer',
+        'ghostscript',  # Use Ghostscript for consistent dimensions
     )
 
     out_pageinfo = PdfInfo(out)[0]
@@ -197,6 +199,8 @@ def test_rotate_deskew_ocr_timeout(resources, outdir):
         '0',
         '--pdf-renderer',
         'hocr',
+        '--rasterizer',
+        'ghostscript',  # Use Ghostscript for consistent dimensions
     )
 
     cmp = compare_images_monochrome(
@@ -285,7 +289,15 @@ def test_page_rotate_tag(page_rotate_angle, resources, outdir, caplog):
 
 
 def test_rasterize_rotates(resources, tmp_path):
+    from ocrmypdf._options import OCROptions
+
     pm = get_plugin_manager([])
+
+    options = OCROptions(
+        input_file=resources / 'graph.pdf',
+        output_file=tmp_path / 'out.pdf',
+        rasterizer='ghostscript',  # Use Ghostscript for consistent dimensions
+    )
 
     img = tmp_path / 'img90.png'
     pm.hook.rasterize_pdf_page(
@@ -298,6 +310,7 @@ def test_rasterize_rotates(resources, tmp_path):
         rotation=90,
         filter_vector=False,
         stop_on_soft_error=True,
+        options=options,
     )
     with Image.open(img) as im:
         assert im.size == (83, 200), "Image not rotated"
@@ -313,6 +326,7 @@ def test_rasterize_rotates(resources, tmp_path):
         rotation=180,
         filter_vector=False,
         stop_on_soft_error=True,
+        options=options,
     )
     assert Image.open(img).size == (200, 83), "Image not rotated"
 
@@ -346,6 +360,8 @@ def test_simulated_scan(outdir):
         '--rotate-pages',
         '--plugin',
         'tests/plugins/tesseract_debug_rotate.py',
+        '--rasterizer',
+        'ghostscript',  # Use Ghostscript to avoid pypdfium2 thread safety issues
     )
 
     with pikepdf.open(outdir / 'out.pdf') as pdf:

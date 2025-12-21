@@ -130,7 +130,7 @@ def rasterize_pdf_page(
     rotation: int | None,
     filter_vector: bool,
     stop_on_soft_error: bool,
-    options=None,
+    options,
 ) -> Path | None:
     """Rasterize a single page of a PDF file using pypdfium2.
 

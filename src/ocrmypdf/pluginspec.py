@@ -213,7 +213,7 @@ def rasterize_pdf_page(
     rotation: int | None,
     filter_vector: bool,
     stop_on_soft_error: bool,
-    options: OCROptions | None = None,
+    options: OCROptions | None,
 ) -> Path:  # type: ignore[return-value]
     """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
 
