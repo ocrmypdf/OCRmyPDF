@@ -51,27 +51,20 @@ def compare_images_monochrome(
 
     with Image.open(reference_png) as reference_im, Image.open(test_png) as test_im:
         assert reference_im.mode == test_im.mode == '1'
-        # Pillow uses black is 0 for '1'. Invert so that foreground is 1, then
-        # compare
-        inv_ref_im = ImageChops.invert(reference_im)
-        inv_test_im = ImageChops.invert(test_im)
-        foreground_match = ImageChops.logical_and(inv_ref_im, inv_test_im)
-        foreground_total = ImageChops.logical_or(inv_ref_im, inv_test_im)
-        assert foreground_match.mode == '1'
+        assert reference_im.size == test_im.size, "Images must be the same size"
 
-        histogram = foreground_match.histogram()
-        histogram_total = foreground_total.histogram()
-        assert (
-            len(histogram) == 256
-        ), "Expected Pillow to convert to grayscale for histogram"
+        # XOR the images: matching pixels become 0, different pixels become 1
+        difference = ImageChops.logical_xor(reference_im, test_im)
 
-        # All entries other than first and last will be 0
-        # count_same = histogram[0]
-        # count_different = histogram[-1]
-        # total = count_same + count_different
-        # print(f"{count_same / (total)}")
-        # return count_same / (total)
-        return histogram[-1] / (histogram_total[-1] + 1)
+        # Count matching pixels directly using getcolors()
+        # For a binary image, getcolors returns [(count, 0), (count, 1)] or subset
+        colors = difference.getcolors()
+        color_counts = {color: count for count, color in colors}
+        count_same = color_counts.get(0, 0)  # 0 = matching pixels (XOR result is 0)
+        count_different = color_counts.get(255, 0)  # 255 = different pixels
+        total = count_same + count_different
+
+        return count_same / total
 
 
 def test_monochrome_comparison(resources, outdir):
