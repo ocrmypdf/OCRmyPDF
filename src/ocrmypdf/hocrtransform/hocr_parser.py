@@ -99,7 +99,7 @@ class HocrParser:
     _x_font_pattern = re.compile(
         r'''
         x_font \s+
-        (\S+)  # font name: non-whitespace string
+        ([^\s;]+)  # font name: non-whitespace, non-semicolon string
         ''',
         re.VERBOSE,
     )
