@@ -39,8 +39,7 @@ from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution, safe_symlink
 from ocrmypdf.hocrtransform import DebugRenderOptions, HocrTransform
 from ocrmypdf.hocrtransform._font import Courier
 from ocrmypdf.pdfa import generate_pdfa_ps
-from ocrmypdf.pdfinfo import Colorspace, Encoding, PageInfo, PdfInfo
-from ocrmypdf.pdfinfo.info import FloatRect
+from ocrmypdf.pdfinfo import Colorspace, Encoding, FloatRect, PageInfo, PdfInfo
 from ocrmypdf.pluginspec import OrientationConfidence
 
 try:

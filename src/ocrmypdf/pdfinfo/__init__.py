@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
-from ocrmypdf.pdfinfo.info import Colorspace, Encoding, PageInfo, PdfInfo
+from ocrmypdf.pdfinfo._types import Colorspace, Encoding, FloatRect
+from ocrmypdf.pdfinfo.info import PageInfo, PdfInfo
 
-__all__ = ["Colorspace", "Encoding", "PageInfo", "PdfInfo"]
+__all__ = ["Colorspace", "Encoding", "FloatRect", "PageInfo", "PdfInfo"]
