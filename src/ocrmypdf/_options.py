@@ -511,6 +511,10 @@ class OCROptions(BaseModel):
             options.tesseract.timeout
             options.optimize.level
 
+        Plugin models must be registered via register_plugin_models() for
+        namespace access to work. Built-in plugins register their models
+        during initialization.
+
         Args:
             name: Attribute name
 

@@ -4,23 +4,44 @@ import multiprocessing
 from io import BytesIO
 from pathlib import Path
 
+import pytest
+
 from ocrmypdf._options import OCROptions
+from ocrmypdf.builtin_plugins.tesseract_ocr import TesseractOptions
+
+
+@pytest.fixture(autouse=True)
+def register_plugin_models():
+    """Register plugin models for tests."""
+    OCROptions.register_plugin_models({'tesseract': TesseractOptions})
+    yield
+    # Clean up after test (optional, but good practice)
 
 
 def worker_function(options_json: str) -> str:
     """Worker function that deserializes OCROptions from JSON and returns a result."""
+    # Register plugin models in worker process
+    from ocrmypdf._options import OCROptions
+    from ocrmypdf.builtin_plugins.tesseract_ocr import TesseractOptions
+
+    OCROptions.register_plugin_models({'tesseract': TesseractOptions})
+
     # Reconstruct OCROptions from JSON in worker process
     options = OCROptions.model_validate_json_safe(options_json)
 
     # Verify we can access various option types
+    # Count only user-added extra_attrs (exclude plugin cache keys starting with '_')
+    user_attrs_count = len(
+        [k for k in options.extra_attrs.keys() if not k.startswith('_')]
+    )
     result = {
         'input_file': str(options.input_file),
         'output_file': str(options.output_file),
         'languages': options.languages,
         'optimize': options.optimize,
-        'tesseract_timeout': options.tesseract_timeout,
+        'tesseract_timeout': options.tesseract.timeout,
         'fast_web_view': options.fast_web_view,
-        'extra_attrs_count': len(options.extra_attrs),
+        'extra_attrs_count': user_attrs_count,
     }
 
     # Return as JSON string
@@ -56,11 +77,16 @@ def test_json_serialization_multiprocessing():
     assert reconstructed.output_file == options.output_file
     assert reconstructed.languages == options.languages
     assert reconstructed.optimize == options.optimize
-    assert reconstructed.tesseract_timeout == options.tesseract_timeout
+    assert reconstructed.tesseract_timeout == options.tesseract.timeout
     assert reconstructed.fast_web_view == options.fast_web_view
     assert reconstructed.deskew == options.deskew
     assert reconstructed.clean == options.clean
-    assert reconstructed.extra_attrs == options.extra_attrs
+    # Compare user-added extra_attrs (excluding plugin cache keys)
+    user_attrs = {k: v for k, v in options.extra_attrs.items() if not k.startswith('_')}
+    reconstructed_attrs = {
+        k: v for k, v in reconstructed.extra_attrs.items() if not k.startswith('_')
+    }
+    assert reconstructed_attrs == user_attrs
 
     # Test multiprocessing with JSON serialization
     with multiprocessing.Pool(processes=2) as pool:
@@ -78,7 +104,7 @@ def test_json_serialization_multiprocessing():
         assert result['optimize'] == 2
         assert result['tesseract_timeout'] == 120.0
         assert result['fast_web_view'] == 2.5
-        assert result['extra_attrs_count'] == 2  # Includes lossless_reconstruction
+        assert result['extra_attrs_count'] == 2  # custom_field and numeric_field
 
 
 def test_json_serialization_with_streams():
