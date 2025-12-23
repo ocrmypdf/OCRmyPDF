@@ -25,6 +25,15 @@ about a forthcoming release that has not been tagged yet. A release is only
 official when it's tagged and posted to PyPI.
 :::
 
+## v16.13.0
+
+- Added detection and repair for Ghostscript 10.6 JPEG corruption. When GS 10.6
+  truncates JPEG data by 1-15 bytes, OCRmyPDF now restores the original image
+  bytes from the input PDF. A warning is issued when GS 10.6+ is detected.
+- Fixed handling of PDF page boxes (ArtBox, BleedBox) which were not being
+  processed correctly in some cases.
+- Documentation: clarified podman usage instructions.
+
 ## v16.12.0
 
 - Disable Ghostscript's subset fonts feature, which was found to corrupt text in
