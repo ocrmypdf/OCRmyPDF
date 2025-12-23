@@ -123,11 +123,11 @@ def _check_plugin_invariant_options(options: OCROptions) -> None:
 def _check_plugin_options(options: OCROptions, plugin_manager: PluginManager) -> None:
     # First, let plugins check their external dependencies
     plugin_manager.hook.check_options(options=options)
-    
+
     # Then check OCR engine language support
     ocr_engine_languages = plugin_manager.hook.get_ocr_engine().languages(options)
     check_options_languages(options, ocr_engine_languages)
-    
+
     # Finally, run comprehensive validation using the coordinator
     from ocrmypdf._validation_coordinator import ValidationCoordinator
     coordinator = ValidationCoordinator(plugin_manager)
@@ -136,7 +136,7 @@ def _check_plugin_options(options: OCROptions, plugin_manager: PluginManager) ->
 
 def check_options(options: OCROptions, plugin_manager: PluginManager) -> None:
     """Check options for validity and consistency.
-    
+
     This function coordinates validation across the entire system:
     1. Core validation (platform, files, preprocessing)
     2. Plugin external dependency validation

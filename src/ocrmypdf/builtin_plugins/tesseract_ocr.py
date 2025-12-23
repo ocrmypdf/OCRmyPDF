@@ -238,7 +238,7 @@ class TesseractOptions(BaseModel):
 
     def validate_with_context(self, languages: list[str]) -> None:
         """Validate options that require external context.
-        
+
         Args:
             languages: List of languages being used for OCR
         """

@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from ocrmypdf import Executor, PdfContext, hookimpl
 from ocrmypdf._exec import jbig2enc, pngquant
@@ -18,7 +18,6 @@ from ocrmypdf._pipeline import get_pdf_save_settings
 from ocrmypdf.cli import numeric
 from ocrmypdf.optimize import optimize
 from ocrmypdf.subprocess import check_external_program
-from pydantic import model_validator
 
 log = logging.getLogger(__name__)
 

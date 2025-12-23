@@ -96,7 +96,7 @@ def setup_plugin_infrastructure(
 
     if not plugins:
         plugins = []
-    elif isinstance(plugins, (str, Path)):
+    elif isinstance(plugins, str | Path):
         plugins = [plugins]
     else:
         plugins = list(plugins)

@@ -26,12 +26,12 @@ class ValidationCoordinator:
 
     def validate_all_options(self, options: OCROptions) -> None:
         """Run comprehensive validation on all options.
-        
+
         This runs validation in the correct order:
         1. Plugin self-validation (already done by Pydantic)
         2. Plugin context validation (requires external context)
         3. Cross-cutting validation (between plugins and core)
-        
+
         Args:
             options: The options to validate
         """

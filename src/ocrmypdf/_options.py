@@ -357,7 +357,7 @@ class OCROptions(BaseModel):
             if isinstance(value, Path):
                 return {'__type__': 'Path', 'value': str(value)}
             elif (
-                isinstance(value, (BinaryIO, IOBase))
+                isinstance(value, BinaryIO | IOBase)
                 or hasattr(value, 'read')
                 or hasattr(value, 'write')
             ):
@@ -369,7 +369,7 @@ class OCROptions(BaseModel):
             elif isinstance(value, property):
                 # Handle property objects that shouldn't be serialized
                 return None
-            elif isinstance(value, (list, tuple)):
+            elif isinstance(value, list | tuple):
                 return [_serialize_value(item) for item in value]
             elif isinstance(value, dict):
                 return {k: _serialize_value(v) for k, v in value.items()}
