@@ -14,8 +14,7 @@ from ocrmypdf import _validation as vd
 from ocrmypdf._concurrent import NullProgressBar, SerialExecutor
 from ocrmypdf._exec.tesseract import TesseractVersion
 from ocrmypdf._options import OCROptions
-from ocrmypdf._plugin_manager import get_plugin_manager
-from ocrmypdf.api import create_options
+from ocrmypdf.api import create_options, setup_plugin_infrastructure
 from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
 from ocrmypdf.pdfinfo import PdfInfo
@@ -27,7 +26,7 @@ def make_opts_pm(input_file='a.pdf', output_file='b.pdf', language='eng', **kwar
     if language is not None:
         kwargs['language'] = language
     parser = get_parser()
-    pm = get_plugin_manager(kwargs.get('plugins', []))
+    pm = setup_plugin_infrastructure(plugins=kwargs.get('plugins', []))
     pm.hook.add_options(parser=parser)  # pylint: disable=no-member
     return (
         create_options(
@@ -268,7 +267,7 @@ def test_optional_program_recommended(caplog):
 
 def test_pagesegmode_warning(caplog):
     opts = make_opts(tesseract_pagesegmode='0')
-    plugin_manager = get_plugin_manager(opts.plugins)
+    plugin_manager = setup_plugin_infrastructure(plugins=opts.plugins or [])
     vd.check_options(opts, plugin_manager)
     assert 'disable OCR' in caplog.text
 

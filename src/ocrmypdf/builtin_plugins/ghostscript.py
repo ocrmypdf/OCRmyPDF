@@ -104,12 +104,17 @@ def check_options(options):
             "use --force-ocr to discard existing text."
         )
 
-    if options.color_conversion_strategy not in ghostscript.COLOR_CONVERSION_STRATEGIES:
+    if (
+        options.ghostscript.color_conversion_strategy
+        not in ghostscript.COLOR_CONVERSION_STRATEGIES
+    ):
         raise ValueError(
-            f"Invalid color conversion strategy: {options.color_conversion_strategy}"
+            f"Invalid color conversion strategy: "
+            f"{options.ghostscript.color_conversion_strategy}"
         )
-    if options.pdfa_image_compression != 'auto' and not options.output_type.startswith(
-        'pdfa'
+    if (
+        options.ghostscript.pdfa_image_compression != 'auto'
+        and not options.output_type.startswith('pdfa')
     ):
         log.warning(
             "--pdfa-image-compression argument only applies when "
@@ -171,8 +176,8 @@ def generate_pdfa(
     ghostscript.generate_pdfa(
         pdf_pages=[pdfmark, *pdf_pages],
         output_file=output_file,
-        compression=context.options.pdfa_image_compression,
-        color_conversion_strategy=context.options.color_conversion_strategy,
+        compression=context.options.ghostscript.pdfa_image_compression,
+        color_conversion_strategy=context.options.ghostscript.color_conversion_strategy,
         pdf_version=pdf_version,
         pdfa_part=pdfa_part,
         progressbar_class=progressbar_class,

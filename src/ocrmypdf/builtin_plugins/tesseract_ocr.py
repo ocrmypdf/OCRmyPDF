@@ -10,7 +10,7 @@ import os
 from typing import Annotated
 
 from PIL import Image
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from ocrmypdf import hookimpl
 from ocrmypdf._exec import tesseract
@@ -21,7 +21,6 @@ from ocrmypdf.helpers import available_cpu_count, clamp
 from ocrmypdf.imageops import calculate_downsample, downsample_image
 from ocrmypdf.pluginspec import OcrEngine
 from ocrmypdf.subprocess import check_external_program
-from pydantic import field_validator, model_validator
 
 log = logging.getLogger(__name__)
 
@@ -284,7 +283,7 @@ def check_options(options):
         )
 
     # Check version-specific feature compatibility
-    if not tesseract.has_thresholding() and options.tesseract_thresholding != 0:
+    if not tesseract.has_thresholding() and options.tesseract.thresholding != 0:
         log.warning(
             "The installed version of Tesseract does not support changes to its "
             "thresholding method. The --tesseract-threshold argument will be "
@@ -311,8 +310,8 @@ def validate(pdfinfo, options):
     log.debug("Using Tesseract OpenMP thread limit %d", tess_threads)
 
     if (
-        options.tesseract_downsample_above != 32767
-        and not options.tesseract_downsample_large_images
+        options.tesseract.downsample_above != 32767
+        and not options.tesseract.downsample_large_images
     ):
         log.warning(
             "The --tesseract-downsample-above argument will have no effect unless "
@@ -328,10 +327,10 @@ def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
     or more than 2**31 bytes. This function resizes the image to fit within
     those limits.
     """
-    threshold = min(page.options.tesseract_downsample_above, 32767)
-
     options = page.options
-    if options.tesseract_downsample_large_images:
+    threshold = min(options.tesseract.downsample_above, 32767)
+
+    if options.tesseract.downsample_large_images:
         size = calculate_downsample(
             image, max_size=(threshold, threshold), max_bytes=(2**31) - 1
         )
@@ -374,8 +373,8 @@ class TesseractOcrEngine(OcrEngine):
     def get_orientation(input_file, options):
         return tesseract.get_orientation(
             input_file,
-            engine_mode=options.tesseract_oem,
-            timeout=options.tesseract_non_ocr_timeout,
+            engine_mode=options.tesseract.oem,
+            timeout=options.tesseract.non_ocr_timeout,
         )
 
     @staticmethod
@@ -383,8 +382,8 @@ class TesseractOcrEngine(OcrEngine):
         return tesseract.get_deskew(
             input_file,
             languages=options.languages,
-            engine_mode=options.tesseract_oem,
-            timeout=options.tesseract_non_ocr_timeout,
+            engine_mode=options.tesseract.oem,
+            timeout=options.tesseract.non_ocr_timeout,
         )
 
     @staticmethod
@@ -394,13 +393,13 @@ class TesseractOcrEngine(OcrEngine):
             output_hocr=output_hocr,
             output_text=output_text,
             languages=options.languages,
-            engine_mode=options.tesseract_oem,
-            tessconfig=options.tesseract_config,
-            timeout=options.tesseract_timeout,
-            pagesegmode=options.tesseract_pagesegmode,
-            thresholding=options.tesseract_thresholding,
-            user_words=options.user_words,
-            user_patterns=options.user_patterns,
+            engine_mode=options.tesseract.oem,
+            tessconfig=options.tesseract.config,
+            timeout=options.tesseract.timeout,
+            pagesegmode=options.tesseract.pagesegmode,
+            thresholding=options.tesseract.thresholding,
+            user_words=options.tesseract.user_words,
+            user_patterns=options.tesseract.user_patterns,
         )
 
     @staticmethod
@@ -410,13 +409,13 @@ class TesseractOcrEngine(OcrEngine):
             output_pdf=output_pdf,
             output_text=output_text,
             languages=options.languages,
-            engine_mode=options.tesseract_oem,
-            tessconfig=options.tesseract_config,
-            timeout=options.tesseract_timeout,
-            pagesegmode=options.tesseract_pagesegmode,
-            thresholding=options.tesseract_thresholding,
-            user_words=options.user_words,
-            user_patterns=options.user_patterns,
+            engine_mode=options.tesseract.oem,
+            tessconfig=options.tesseract.config,
+            timeout=options.tesseract.timeout,
+            pagesegmode=options.tesseract.pagesegmode,
+            thresholding=options.tesseract.thresholding,
+            user_words=options.tesseract.user_words,
+            user_patterns=options.tesseract.user_patterns,
         )
 
 

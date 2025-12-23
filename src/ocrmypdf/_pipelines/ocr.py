@@ -126,7 +126,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
         max_workers=max_workers,
         progress_kwargs=dict(
             total=len(context.pdfinfo),
-            desc='OCR' if options.tesseract_timeout > 0 else 'Image processing',
+            desc='OCR' if options.tesseract.timeout > 0 else 'Image processing',
             unit='page',
             disable=not options.progress_bar,
         ),

@@ -387,9 +387,15 @@ class OCROptions(BaseModel):
             if serialized_value is not None:  # Skip None values from properties
                 serializable_data[key] = serialized_value
 
-        # Add extra_attrs
+        # Add extra_attrs, excluding plugin cache entries (they'll be recreated lazily)
         if self.extra_attrs:
-            serializable_data['_extra_attrs'] = _serialize_value(self.extra_attrs)
+            filtered_extra = {
+                k: v
+                for k, v in self.extra_attrs.items()
+                if not k.startswith('_plugin_cache_')
+            }
+            if filtered_extra:
+                serializable_data['_extra_attrs'] = _serialize_value(filtered_extra)
 
         return json.dumps(serializable_data)
 
@@ -464,9 +470,18 @@ class OCROptions(BaseModel):
             return self.extra_attrs[cache_key]
 
         if namespace not in _plugin_option_models:
-            return None
+            raise AttributeError(
+                f"Plugin namespace '{namespace}' is not registered. "
+                f"Ensure setup_plugin_infrastructure() was called."
+            )
 
         model_class = _plugin_option_models[namespace]
+
+        def _convert_value(value):
+            """Convert value to be compatible with plugin model fields."""
+            if isinstance(value, os.PathLike):
+                return os.fspath(value)
+            return value
 
         # Build kwargs from flat fields
         kwargs = {}
@@ -476,33 +491,30 @@ class OCROptions(BaseModel):
             if flat_name in OCROptions.model_fields:
                 value = getattr(self, flat_name)
                 if value is not None:
-                    kwargs[field_name] = value
+                    kwargs[field_name] = _convert_value(value)
             # Also check direct field name (for fields like jbig2_lossy)
             elif field_name in OCROptions.model_fields:
                 value = getattr(self, field_name)
                 if value is not None:
-                    kwargs[field_name] = value
+                    kwargs[field_name] = _convert_value(value)
             # Check for special mappings
             elif namespace == 'optimize' and field_name == 'level':
                 # 'optimize' field maps to 'level' in OptimizeOptions
                 if 'optimize' in OCROptions.model_fields:
                     value = getattr(self, 'optimize')
                     if value is not None:
-                        kwargs[field_name] = value
+                        kwargs[field_name] = _convert_value(value)
             elif namespace == 'optimize' and field_name == 'jpeg_quality':
                 # jpg_quality maps to jpeg_quality
                 if 'jpg_quality' in OCROptions.model_fields:
                     value = getattr(self, 'jpg_quality')
                     if value is not None:
-                        kwargs[field_name] = value
+                        kwargs[field_name] = _convert_value(value)
 
         # Create and cache the plugin options instance
-        try:
-            instance = model_class(**kwargs)
-            self.extra_attrs[cache_key] = instance
-            return instance
-        except Exception:
-            return None
+        instance = model_class(**kwargs)
+        self.extra_attrs[cache_key] = instance
+        return instance
 
     def __getattr__(self, name: str) -> Any:
         """Support dynamic access to plugin option namespaces.
