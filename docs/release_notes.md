@@ -30,6 +30,8 @@ official when it's tagged and posted to PyPI.
 - Added detection and repair for Ghostscript 10.6 JPEG corruption. When GS 10.6
   truncates JPEG data by 1-15 bytes, OCRmyPDF now restores the original image
   bytes from the input PDF. A warning is issued when GS 10.6+ is detected.
+  {issue}`1603`
+- Reverted the force re-optimization of JPEGs, since this stop-gap was not sufficient to resolve the issue. {issue}`1585`
 - Fixed handling of PDF page boxes (ArtBox, BleedBox) which were not being
   processed correctly in some cases.
 - Documentation: clarified podman usage instructions.
