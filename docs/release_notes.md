@@ -31,15 +31,15 @@ official when it's tagged and posted to PyPI.
   truncates JPEG data by 1-15 bytes, OCRmyPDF now restores the original image
   bytes from the input PDF. A warning is issued when GS 10.6+ is detected.
   {issue}`1603`
-- Reverted the force re-optimization of JPEGs, since this stop-gap was not sufficient to resolve the issue. {issue}`1585`
+- We continue to force re-optimization of JPEGs, since this catches some issues with corruption for situations where Ghostscript modifies an image. It is likely there are still cases where we cannot mitigate all corruption issues. {issue}`1585`
 - Fixed handling of PDF page boxes (ArtBox, BleedBox) which were not being
   processed correctly in some cases.
 - Documentation: clarified podman usage instructions.
 
 ## v16.12.0
 
-- Disable Ghostscript's subset fonts feature, which was found to corrupt text in
-  certain PDFs. Thanks @mnaegler for identifying this issue. {issue}`1592`
+- Disable Ghostscript's subset fonts feature, which was found to corrupt text in certain
+  PDFs. Thanks @mnaegler for identifying this issue. {issue}`1592`
 - Users of Ghostscript 10.6.0+ reported that Ghostscript seems to generate corrupted
   JPEGs. We force re-optimization of these JPEGs to mitigate the corruption until
   Ghostscript fixes the issue. {issue}`1585`
