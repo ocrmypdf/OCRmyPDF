@@ -96,8 +96,7 @@ with st.expander("Optimization after OCR"):
     png_quality = st.slider(
         "PNG quality", min_value=0, max_value=100, value=75, key="png_quality"
     )
-    jbig2_lossy = st.checkbox("JBIG2 lossy (dangerous)", value=False, key="jbig2_lossy")
-    jbig2_threshold = st.number_input("JBIG2 threshold", value=0, key="jbig2_threshold")
+    jbig2_threshold = st.number_input("JBIG2 threshold", value=0.85, key="jbig2_threshold")
 
 with st.expander("Advanced options"):
     jobs = st.slider(
@@ -189,8 +188,6 @@ if uploaded:
         args.append(f"--jpeg-quality={jpeg_quality}")
     if optimize > '0' and png_quality:
         args.append(f"--png-quality={png_quality}")
-    if jbig2_lossy:
-        args.append("--jbig2-lossy")
     if jbig2_threshold:
         args.append(f"--jbig2-threshold={jbig2_threshold}")
     if jobs:

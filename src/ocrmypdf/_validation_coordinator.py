@@ -87,12 +87,11 @@ class ValidationCoordinator:
         """Validate optimization options."""
         # Check optimization consistency
         if options.optimize == 0 and any([
-            options.jbig2_lossy,
             options.png_quality and options.png_quality > 0,
             options.jpeg_quality and options.jpeg_quality > 0
         ]):
             log.warning(
-                "The arguments --jbig2-lossy, --png-quality, and --jpeg-quality "
+                "The arguments --png-quality and --jpeg-quality "
                 "will be ignored because --optimize=0."
             )
 

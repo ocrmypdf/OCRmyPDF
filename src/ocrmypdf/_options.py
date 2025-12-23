@@ -129,8 +129,6 @@ class OCROptions(BaseModel):
     optimize: int = 1
     jpg_quality: int | None = None
     png_quality: int | None = None
-    jbig2_lossy: bool | None = None
-    jbig2_page_group_size: int | None = None
     jbig2_threshold: float = 0.85
 
     # Compatibility alias for plugins that expect jpeg_quality
@@ -169,8 +167,6 @@ class OCROptions(BaseModel):
     color_conversion_strategy: str = "LeaveColorUnchanged"
 
     # Optimize/JBIG2 options - also accessible via options.optimize.<field>
-    jbig2_lossy: bool | None = None
-    jbig2_page_group_size: int | None = None
     jbig2_threshold: float = 0.85
 
     # Plugin system

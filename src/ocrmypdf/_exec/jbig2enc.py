@@ -31,24 +31,6 @@ def available():
     return True
 
 
-def convert_group(cwd, infiles, out_prefix, threshold):
-    args = [
-        'jbig2',
-        '-b',
-        out_prefix,
-        '--symbol-mode',  # symbol mode (lossy)
-        '-t',
-        str(threshold),  # threshold
-        # '-r', # refinement mode (lossless symbol mode, currently disabled in
-        # jbig2)
-        '--pdf',
-    ]
-    args.extend(infiles)
-    proc = run(args, cwd=cwd, stdout=PIPE, stderr=PIPE)
-    proc.check_returncode()
-    return proc
-
-
 def convert_single(cwd, infile, outfile, threshold):
     args = ['jbig2', '--pdf', '-t', str(threshold), infile]
     with open(outfile, 'wb') as fstdout:

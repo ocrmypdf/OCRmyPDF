@@ -318,8 +318,8 @@ def ocr(  # noqa: D417
     optimize: int | None = None,
     jpg_quality: int | None = None,
     png_quality: int | None = None,
-    jbig2_lossy: bool | None = None,
-    jbig2_page_group_size: int | None = None,
+    jbig2_lossy: bool | None = None,  # Deprecated, ignored
+    jbig2_page_group_size: int | None = None,  # Deprecated, ignored
     jbig2_threshold: float | None = None,
     pages: str | None = None,
     max_image_mpixels: float | None = None,
@@ -436,6 +436,17 @@ def ocr(  # noqa: D417
 
         if 'verbose' in kwargs:
             warn("ocrmypdf.ocr(verbose=) is ignored. Use ocrmypdf.configure_logging().")
+
+        # Warn about deprecated jbig2 options and remove from kwargs
+        if jbig2_lossy:
+            warn(
+                "jbig2_lossy is deprecated and will be ignored. "
+                "Lossy JBIG2 has been removed due to character substitution risks."
+            )
+            create_options_kwargs.pop('jbig2_lossy', None)
+        if jbig2_page_group_size:
+            warn("jbig2_page_group_size is deprecated and will be ignored.")
+            create_options_kwargs.pop('jbig2_page_group_size', None)
 
         options = create_options(
             input_file=input_file,
@@ -588,8 +599,8 @@ def _hocr_to_ocr_pdf(  # noqa: D417
     optimize: int | None = None,
     jpg_quality: int | None = None,
     png_quality: int | None = None,
-    jbig2_lossy: bool | None = None,
-    jbig2_page_group_size: int | None = None,
+    jbig2_lossy: bool | None = None,  # Deprecated, ignored
+    jbig2_page_group_size: int | None = None,  # Deprecated, ignored
     jbig2_threshold: float | None = None,
     pdfa_image_compression: str | None = None,
     color_conversion_strategy: str | None = None,
@@ -646,6 +657,17 @@ def _hocr_to_ocr_pdf(  # noqa: D417
 
     # Remove None values to let OCROptions use its defaults
     options_kwargs = {k: v for k, v in options_kwargs.items() if v is not None}
+
+    # Warn about deprecated jbig2 options and remove from kwargs
+    if jbig2_lossy:
+        warn(
+            "jbig2_lossy is deprecated and will be ignored. "
+            "Lossy JBIG2 has been removed due to character substitution risks."
+        )
+        options_kwargs.pop('jbig2_lossy', None)
+    if jbig2_page_group_size:
+        warn("jbig2_page_group_size is deprecated and will be ignored.")
+        options_kwargs.pop('jbig2_page_group_size', None)
 
     # Add work_folder to options_kwargs since it's now a proper field
     options_kwargs['work_folder'] = work_folder

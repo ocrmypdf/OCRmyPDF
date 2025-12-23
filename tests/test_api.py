@@ -120,14 +120,12 @@ def test_nested_plugin_option_access():
         tesseract_timeout=120.0,
         tesseract_oem=1,
         optimize=2,
-        jbig2_lossy=True,
     )
 
     # Test flat access still works
     assert options.tesseract_timeout == 120.0
     assert options.tesseract_oem == 1
     assert options.optimize == 2
-    assert options.jbig2_lossy is True
 
     # Test nested access for tesseract
     tesseract = options.tesseract

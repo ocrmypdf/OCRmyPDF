@@ -28,9 +28,6 @@ header-rows: 1
   - Enables lossless optimizations, such as transcoding images to more
       efficient formats. Also compress other uncompressed objects in the
       PDF and enables the more efficient "object streams" within the PDF.
-      (If ``--jbig2-lossy`` is issued, then lossy JBIG2 optimization is used.
-      The decision to use lossy JBIG2 is separate from standard optimization
-      settings.)
 * - ``--optimize 2``
   - ``-O2``
   - All of the above, and enables lossy optimizations and color quantization.
@@ -105,7 +102,3 @@ quality image may be suitable for storage after OCR.
 
 It is not possible to optimize all image types. Uncommon image types may
 be skipped by the optimizer.
-
-OCRmyPDF provides `lossy mode JBIG2 <jbig2-lossy>`{.interpreted-text
-role="ref"} as an advanced feature that additional requires the argument
-`--jbig2-lossy`.

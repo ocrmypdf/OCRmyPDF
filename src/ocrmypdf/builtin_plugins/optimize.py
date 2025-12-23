@@ -40,17 +40,6 @@ class OptimizeOptions(BaseModel):
     png_quality: Annotated[
         int, Field(ge=0, le=100, description="PNG quality level for optimization")
     ] = 0
-    jbig2_lossy: Annotated[
-        bool, Field(description="Enable JBIG2 lossy compression")
-    ] = False
-    jbig2_page_group_size: Annotated[
-        int,
-        Field(
-            ge=0,
-            le=10000,
-            description="Number of pages to consider for JBIG2 compression (0=disabled)",
-        ),
-    ] = 0
     jbig2_threshold: Annotated[
         float,
         Field(ge=0.4, le=0.9, description="JBIG2 symbol classification threshold"),
@@ -112,22 +101,18 @@ class OptimizeOptions(BaseModel):
                 "Values have same meaning as with --jpeg-quality"
             ),
         )
+        # Deprecated arguments - kept for backward compatibility, emit warnings
         optimizing.add_argument(
             '--jbig2-lossy',
             action='store_true',
-            help=(
-                "Enable JBIG2 lossy mode (better compression, not suitable for some "
-                "use cases - see documentation). Only takes effect if --optimize 1 or "
-                "higher is also enabled."
-            ),
+            help=argparse.SUPPRESS,  # Deprecated, hidden from help
         )
         optimizing.add_argument(
             '--jbig2-page-group-size',
             type=numeric(int, 1, 10000),
             default=0,
             metavar='N',
-            # Adjust number of pages to consider at once for JBIG2 compression
-            help=argparse.SUPPRESS,
+            help=argparse.SUPPRESS,  # Deprecated, hidden from help
         )
         optimizing.add_argument(
             '--jbig2-threshold',
@@ -144,12 +129,11 @@ class OptimizeOptions(BaseModel):
     def validate_optimization_consistency(self):
         """Validate optimization options are consistent."""
         if self.level == 0 and any([
-            self.jbig2_lossy, 
-            self.png_quality > 0, 
+            self.png_quality > 0,
             self.jpeg_quality > 0
         ]):
             log.warning(
-                "The arguments --jbig2-lossy, --png-quality, and --jpeg-quality "
+                "The arguments --png-quality and --jpeg-quality "
                 "will be ignored because --optimize=0."
             )
         return self
@@ -186,6 +170,18 @@ def add_options(parser):
 @hookimpl
 def check_options(options):
     """Check external dependencies for optimization."""
+    # Warn about deprecated options
+    if getattr(options, 'jbig2_lossy', False):
+        log.warning(
+            "The --jbig2-lossy option is deprecated and will be ignored. "
+            "Lossy JBIG2 compression has been removed due to risks of "
+            "character substitution errors."
+        )
+    if getattr(options, 'jbig2_page_group_size', 0) not in (0, None):
+        log.warning(
+            "The --jbig2-page-group-size option is deprecated and will be ignored."
+        )
+
     if options.optimize >= 2:
         check_external_program(
             program='pngquant',
@@ -203,8 +199,8 @@ def check_options(options):
             package='jbig2enc',
             version_checker=jbig2enc.version,
             need_version='0.28',
-            required_for='--optimize {2,3} | --jbig2-lossy',
-            recommended=True if not options.jbig2_lossy else False,
+            required_for='--optimize {2,3}',
+            recommended=True,
         )
 
 
