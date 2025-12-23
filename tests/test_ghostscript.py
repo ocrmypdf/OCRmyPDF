@@ -17,6 +17,7 @@ from PIL import Image, UnidentifiedImageError
 
 from ocrmypdf._exec import ghostscript
 from ocrmypdf._exec.ghostscript import DuplicateFilter, rasterize_pdf
+from ocrmypdf.builtin_plugins.ghostscript import _repair_gs106_jpeg_corruption
 from ocrmypdf.exceptions import ColorConversionNeededError, ExitCode, InputFileError
 from ocrmypdf.helpers import Resolution
 
@@ -287,3 +288,120 @@ def test_recoverable_image_error_with_stop(pdf_with_invalid_image, outdir, caplo
             stop_on_error=True,
         )
     # out2.png will not be created; if it were it would be blank.
+
+
+class TestGs106JpegCorruptionRepair:
+    """Test the Ghostscript 10.6 JPEG corruption repair function."""
+
+    @pytest.fixture
+    def create_damaged_pdf(self, resources, outdir):
+        """Create a damaged PDF by truncating JPEG data by 2 bytes."""
+
+        def _create_damaged(source_pdf_name='francais.pdf', truncate_bytes=2):
+            source_path = resources / source_pdf_name
+            damaged_path = outdir / 'damaged.pdf'
+
+            with pikepdf.open(source_path) as pdf:
+                # Find and truncate DCTDecode images
+                Name = pikepdf.Name
+                damaged_count = 0
+                for page in pdf.pages:
+                    if Name.Resources not in page:
+                        continue
+                    resources_dict = page[Name.Resources]
+                    if Name.XObject not in resources_dict:
+                        continue
+                    for key in resources_dict[Name.XObject].keys():
+                        obj = resources_dict[Name.XObject][key]
+                        if obj.get(Name.Subtype) != Name.Image:
+                            continue
+                        if obj.get(Name.Filter) != Name.DCTDecode:
+                            continue
+                        # Truncate the JPEG data
+                        original_bytes = obj.read_raw_bytes()
+                        truncated_bytes = original_bytes[:-truncate_bytes]
+                        obj.write(truncated_bytes, filter=Name.DCTDecode)
+                        damaged_count += 1
+
+                pdf.save(damaged_path)
+                return source_path, damaged_path, damaged_count
+
+        return _create_damaged
+
+    def test_repair_truncated_jpeg(self, create_damaged_pdf, caplog):
+        """Test that truncated JPEG images are repaired."""
+        caplog.set_level(logging.DEBUG)
+        source_path, damaged_path, damaged_count = create_damaged_pdf()
+
+        assert damaged_count > 0, "Test PDF should have DCTDecode images"
+
+        # Get original image bytes for comparison
+        with pikepdf.open(source_path) as pdf:
+            Name = pikepdf.Name
+            original_bytes_list = []
+            for page in pdf.pages:
+                if Name.Resources not in page:
+                    continue
+                resources_dict = page[Name.Resources]
+                if Name.XObject not in resources_dict:
+                    continue
+                for key in resources_dict[Name.XObject].keys():
+                    obj = resources_dict[Name.XObject][key]
+                    if obj.get(Name.Subtype) != Name.Image:
+                        continue
+                    if obj.get(Name.Filter) != Name.DCTDecode:
+                        continue
+                    original_bytes_list.append(obj.read_raw_bytes())
+
+        # Run the repair function
+        repaired = _repair_gs106_jpeg_corruption(source_path, damaged_path)
+        assert repaired is True, "Repair should have been performed"
+
+        # Verify the repaired PDF has correct image bytes
+        with pikepdf.open(damaged_path) as pdf:
+            Name = pikepdf.Name
+            repaired_bytes_list = []
+            for page in pdf.pages:
+                if Name.Resources not in page:
+                    continue
+                resources_dict = page[Name.Resources]
+                if Name.XObject not in resources_dict:
+                    continue
+                for key in resources_dict[Name.XObject].keys():
+                    obj = resources_dict[Name.XObject][key]
+                    if obj.get(Name.Subtype) != Name.Image:
+                        continue
+                    if obj.get(Name.Filter) != Name.DCTDecode:
+                        continue
+                    repaired_bytes_list.append(obj.read_raw_bytes())
+
+        assert len(repaired_bytes_list) == len(original_bytes_list)
+        for orig, repaired_bytes in zip(original_bytes_list, repaired_bytes_list):
+            assert orig == repaired_bytes, "Repaired bytes should match original"
+
+        # Check that error/warning was logged
+        assert "JPEG corruption detected" in caplog.text
+
+    def test_no_repair_when_not_truncated(self, resources, outdir, caplog):
+        """Test that no repair is done when images are not truncated."""
+        caplog.set_level(logging.DEBUG)
+        source_path = resources / 'francais.pdf'
+
+        # Copy source to output (no damage)
+        output_path = outdir / 'undamaged.pdf'
+        with pikepdf.open(source_path) as pdf:
+            pdf.save(output_path)
+
+        # Run the repair function - should not repair anything
+        repaired = _repair_gs106_jpeg_corruption(source_path, output_path)
+        assert repaired is False, "No repair should have been performed"
+        assert "JPEG corruption detected" not in caplog.text
+
+    def test_no_repair_when_truncation_too_large(self, create_damaged_pdf, caplog):
+        """Test that images truncated by more than 15 bytes are not repaired."""
+        caplog.set_level(logging.DEBUG)
+        source_path, damaged_path, _ = create_damaged_pdf(truncate_bytes=20)
+
+        repaired = _repair_gs106_jpeg_corruption(source_path, damaged_path)
+        assert repaired is False, "Should not repair truncation > 15 bytes"
+        assert "JPEG corruption detected" not in caplog.text
