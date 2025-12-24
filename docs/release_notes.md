@@ -25,15 +25,15 @@ about a forthcoming release that has not been tagged yet. A release is only
 official when it's tagged and posted to PyPI.
 :::
 
-## v16.13.0
+## v17.0.0 (unreleased)
 
 **Breaking changes**
 
-- **Plugin interface migration**: Plugin hooks now receive `OCROptions` objects instead of 
-  `argparse.Namespace` objects. Most plugins will continue working due to duck-typing 
-  compatibility, but plugin developers should update their type hints from `Namespace` 
+- **Plugin interface migration**: Plugin hooks now receive `OCROptions` objects instead of
+  `argparse.Namespace` objects. Most plugins will continue working due to duck-typing
+  compatibility, but plugin developers should update their type hints from `Namespace`
   to `OCROptions`.
-- Built-in plugins no longer modify options in-place, improving immutability and 
+- Built-in plugins no longer modify options in-place, improving immutability and
   code clarity.
 
 **API improvements**
@@ -51,10 +51,21 @@ official when it's tagged and posted to PyPI.
 - Remove any in-place option modifications - compute values at point of use instead
 - Most existing plugins will continue working without changes due to duck-typing
 
+## v16.13.0
+
+- Added detection and repair for Ghostscript 10.6 JPEG corruption. When GS 10.6
+  truncates JPEG data by 1-15 bytes, OCRmyPDF now restores the original image
+  bytes from the input PDF. A warning is issued when GS 10.6+ is detected.
+  {issue}`1603`
+- We continue to force re-optimization of JPEGs, since this catches some issues with corruption for situations where Ghostscript modifies an image. It is likely there are still cases where we cannot mitigate all corruption issues. {issue}`1585`
+- Fixed handling of PDF page boxes (ArtBox, BleedBox) which were not being
+  processed correctly in some cases. {issue}`1181,1360`
+- Documentation: clarified podman usage instructions.
+
 ## v16.12.0
 
-- Disable Ghostscript's subset fonts feature, which was found to corrupt text in
-  certain PDFs. Thanks @mnaegler for identifying this issue. {issue}`1592`
+- Disable Ghostscript's subset fonts feature, which was found to corrupt text in certain
+  PDFs. Thanks @mnaegler for identifying this issue. {issue}`1592`
 - Users of Ghostscript 10.6.0+ reported that Ghostscript seems to generate corrupted
   JPEGs. We force re-optimization of these JPEGs to mitigate the corruption until
   Ghostscript fixes the issue. {issue}`1585`

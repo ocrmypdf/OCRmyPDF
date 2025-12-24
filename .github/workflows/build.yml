@@ -33,7 +33,7 @@ jobs:
       PYTHON: ${{ matrix.python }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
@@ -109,7 +109,7 @@ jobs:
       PYTHON: ${{ matrix.python }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
@@ -171,7 +171,7 @@ jobs:
       PYTHON: ${{ matrix.python }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
@@ -210,7 +210,7 @@ jobs:
     name: Build sdist and wheels
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
@@ -223,7 +223,7 @@ jobs:
         run: |
           uv build --sdist --wheel
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: artifact
           path: |
@@ -239,7 +239,7 @@ jobs:
       id-token: write # mandatory for PyPI publishing
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: artifact
           path: dist
@@ -257,13 +257,13 @@ jobs:
       contents: write
       id-token: write
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: artifact
           path: dist
 
       - name: Sign the dists with Sigstore
-        uses: sigstore/gh-action-sigstore-python@v3.1.0
+        uses: sigstore/gh-action-sigstore-python@v3.2.0
         with:
           inputs: |
             ./dist/*.tar.gz
@@ -308,7 +308,7 @@ jobs:
       - name: Set image name
         run: echo "DOCKER_IMAGE_NAME=ocrmypdf" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
@@ -356,7 +356,7 @@ jobs:
       - name: Set image name
         run: echo "DOCKER_IMAGE_NAME=ocrmypdf-alpine" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: "0" # 0=all, needed for setuptools-scm to resolve version tags
 
