@@ -33,7 +33,7 @@ official when it's tagged and posted to PyPI.
   {issue}`1603`
 - We continue to force re-optimization of JPEGs, since this catches some issues with corruption for situations where Ghostscript modifies an image. It is likely there are still cases where we cannot mitigate all corruption issues. {issue}`1585`
 - Fixed handling of PDF page boxes (ArtBox, BleedBox) which were not being
-  processed correctly in some cases.
+  processed correctly in some cases. {issue}`1181,1360`
 - Documentation: clarified podman usage instructions.
 
 ## v16.12.0
