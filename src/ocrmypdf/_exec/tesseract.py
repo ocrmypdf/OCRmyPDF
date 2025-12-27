@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import re
 from contextlib import suppress
+from enum import IntEnum
 from math import pi
 from os import fspath
 from pathlib import Path
@@ -26,11 +27,21 @@ from ocrmypdf.subprocess import get_version, run
 log = logging.getLogger(__name__)
 
 
+class ThresholdingMethod(IntEnum):
+    """Tesseract thresholding methods for image binarization."""
+
+    AUTO = 0
+    OTSU = 0  # Alias for AUTO - uses Tesseract's default (legacy Otsu)
+    ADAPTIVE_OTSU = 1
+    SAUVOLA = 2
+
+
+# Legacy dictionary for backward compatibility
 TESSERACT_THRESHOLDING_METHODS: dict[str, int] = {
-    'auto': 0,
-    'otsu': 0,
-    'adaptive-otsu': 1,
-    'sauvola': 2,
+    'auto': ThresholdingMethod.AUTO,
+    'otsu': ThresholdingMethod.OTSU,
+    'adaptive-otsu': ThresholdingMethod.ADAPTIVE_OTSU,
+    'sauvola': ThresholdingMethod.SAUVOLA,
 }
 
 
@@ -294,7 +305,7 @@ def generate_hocr(
     tessconfig: list[str],
     timeout: float,
     pagesegmode: int,
-    thresholding: int,
+    thresholding: ThresholdingMethod,
     user_words,
     user_patterns,
 ) -> None:
@@ -306,7 +317,7 @@ def generate_hocr(
     if pagesegmode is not None:
         args_tesseract.extend(['--psm', str(pagesegmode)])
 
-    if thresholding != 0 and has_thresholding():
+    if thresholding != ThresholdingMethod.AUTO and has_thresholding():
         args_tesseract.extend(['-c', f'thresholding_method={thresholding}'])
 
     if user_words:
@@ -360,7 +371,7 @@ def generate_pdf(
     tessconfig: list[str],
     timeout: float,
     pagesegmode: int,
-    thresholding: int,
+    thresholding: ThresholdingMethod,
     user_words,
     user_patterns,
 ) -> None:
@@ -376,7 +387,7 @@ def generate_pdf(
 
     args_tesseract.extend(['-c', 'textonly_pdf=1'])
 
-    if thresholding != 0 and has_thresholding():
+    if thresholding != ThresholdingMethod.AUTO and has_thresholding():
         args_tesseract.extend(['-c', f'thresholding_method={thresholding}'])
 
     if user_words:

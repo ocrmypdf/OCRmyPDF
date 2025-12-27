@@ -14,8 +14,9 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from ocrmypdf import hookimpl
 from ocrmypdf._exec import tesseract
+from ocrmypdf._exec.tesseract import ThresholdingMethod
 from ocrmypdf._jobcontext import PageContext
-from ocrmypdf.cli import numeric, str_to_int
+from ocrmypdf.cli import numeric
 from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
 from ocrmypdf.helpers import available_cpu_count, clamp
 from ocrmypdf.imageops import calculate_downsample, downsample_image
@@ -23,6 +24,34 @@ from ocrmypdf.pluginspec import OcrEngine
 from ocrmypdf.subprocess import check_external_program
 
 log = logging.getLogger(__name__)
+
+
+def _thresholding_method_converter(value: str) -> ThresholdingMethod:
+    """Convert string argument to ThresholdingMethod enum.
+
+    Args:
+        value: String name of thresholding method (auto, otsu, adaptive-otsu, sauvola)
+
+    Returns:
+        ThresholdingMethod enum value
+
+    Raises:
+        argparse.ArgumentTypeError: If value is not a valid thresholding method
+    """
+    method_map = {
+        'auto': ThresholdingMethod.AUTO,
+        'otsu': ThresholdingMethod.OTSU,
+        'adaptive-otsu': ThresholdingMethod.ADAPTIVE_OTSU,
+        'sauvola': ThresholdingMethod.SAUVOLA,
+    }
+    if value.lower() not in method_map:
+        import argparse
+
+        valid = ', '.join(method_map.keys())
+        raise argparse.ArgumentTypeError(
+            f"Invalid thresholding method '{value}'. Must be one of: {valid}"
+        )
+    return method_map[value.lower()]
 
 
 class TesseractOptions(BaseModel):
@@ -39,8 +68,9 @@ class TesseractOptions(BaseModel):
         int | None, Field(ge=0, le=3, description="Set Tesseract OCR engine mode")
     ] = None
     thresholding: Annotated[
-        int | None, Field(description="Set Tesseract input image thresholding mode")
-    ] = None
+        ThresholdingMethod,
+        Field(description="Set Tesseract input image thresholding mode"),
+    ] = ThresholdingMethod.AUTO
     timeout: Annotated[
         float, Field(ge=0, description="Timeout for OCR operations in seconds")
     ] = 180.0
@@ -115,16 +145,16 @@ class TesseractOptions(BaseModel):
         tess.add_argument(
             f'--{namespace}-thresholding',
             action='store',
-            type=str_to_int(tesseract.TESSERACT_THRESHOLDING_METHODS),
+            type=_thresholding_method_converter,
             default='auto',
-            metavar='METHOD',
             dest=f'{namespace}_thresholding',
             help=(
-                "Set Tesseract 5.0+ input image thresholding mode. This may improve OCR "
-                "results on low quality images or those that contain high contrast color. "
-                "legacy-otsu is the Tesseract default; adaptive-otsu is an improved Otsu "
-                "algorithm with improved sort for background color changes; sauvola is "
-                "based on local standard deviation."
+                "Set Tesseract 5.0+ input image thresholding mode. This may improve "
+                "OCR results on low quality images or those that contain high "
+                "contrast color. Options: auto, otsu, adaptive-otsu, sauvola. "
+                "auto/otsu is the Tesseract default (legacy Otsu); adaptive-otsu "
+                "is an improved Otsu algorithm with improved sort for background "
+                "color changes; sauvola is based on local standard deviation."
             ),
         )
 
@@ -226,10 +256,7 @@ class TesseractOptions(BaseModel):
     @model_validator(mode='after')
     def validate_downsample_consistency(self):
         """Validate downsample options are consistent."""
-        if (
-            self.downsample_above != 32767
-            and not self.downsample_large_images
-        ):
+        if self.downsample_above != 32767 and not self.downsample_large_images:
             log.warning(
                 "The --tesseract-downsample-above argument will have no effect unless "
                 "--tesseract-downsample-large-images is also given."
@@ -283,7 +310,10 @@ def check_options(options):
         )
 
     # Check version-specific feature compatibility
-    if not tesseract.has_thresholding() and options.tesseract.thresholding != 0:
+    if (
+        not tesseract.has_thresholding()
+        and options.tesseract.thresholding != ThresholdingMethod.AUTO
+    ):
         log.warning(
             "The installed version of Tesseract does not support changes to its "
             "thresholding method. The --tesseract-threshold argument will be "
