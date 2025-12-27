@@ -412,7 +412,7 @@ class OcrEngine(ABC):
         """
 
     @abstractmethod
-    def __str__(self):  # type: ignore[return-value]
+    def __str__(self) -> str:
         """Returns name of OCR engine and version.
 
         This is used when OCRmyPDF wants to mention the name of the OCR engine

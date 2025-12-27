@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import logging
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
@@ -24,15 +25,34 @@ log = logging.getLogger(__name__)
 BLACKLISTED_GS_VERSIONS: frozenset[Version] = frozenset()
 
 
+class ColorConversionStrategy(StrEnum):
+    """Ghostscript color conversion strategies."""
+
+    CMYK = 'CMYK'
+    GRAY = 'Gray'
+    LEAVE_COLOR_UNCHANGED = 'LeaveColorUnchanged'
+    RGB = 'RGB'
+    USE_DEVICE_INDEPENDENT_COLOR = 'UseDeviceIndependentColor'
+
+
+class PdfaImageCompression(StrEnum):
+    """PDF/A image compression methods."""
+
+    AUTO = 'auto'
+    JPEG = 'jpeg'
+    LOSSLESS = 'lossless'
+
+
 class GhostscriptOptions(BaseModel):
     """Options specific to Ghostscript operations."""
 
     color_conversion_strategy: Annotated[
-        str, Field(description="Ghostscript color conversion strategy")
-    ] = "LeaveColorUnchanged"
+        ColorConversionStrategy,
+        Field(description="Ghostscript color conversion strategy"),
+    ] = ColorConversionStrategy.LEAVE_COLOR_UNCHANGED
     pdfa_image_compression: Annotated[
-        str, Field(description="PDF/A image compression method")
-    ] = "auto"
+        PdfaImageCompression, Field(description="PDF/A image compression method")
+    ] = PdfaImageCompression.AUTO
 
     @classmethod
     def add_arguments_to_parser(cls, parser, namespace: str = 'ghostscript'):
@@ -47,15 +67,14 @@ class GhostscriptOptions(BaseModel):
             '--color-conversion-strategy',
             action='store',
             type=str,
-            metavar='STRATEGY',
-            choices=ghostscript.COLOR_CONVERSION_STRATEGIES,
-            default='LeaveColorUnchanged',
+            choices=[ccs.value for ccs in ColorConversionStrategy],
+            default=ColorConversionStrategy.LEAVE_COLOR_UNCHANGED.value,
             help="Set Ghostscript color conversion strategy",
         )
         gs.add_argument(
             '--pdfa-image-compression',
-            choices=['auto', 'jpeg', 'lossless'],
-            default='auto',
+            choices=[pc.value for pc in PdfaImageCompression],
+            default=PdfaImageCompression.AUTO.value,
             help="Specify how to compress images in the output PDF/A. 'auto' lets "
             "OCRmyPDF decide.  'jpeg' changes all grayscale and color images to "
             "JPEG compression.  'lossless' uses PNG-style lossless compression "
