@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+import io
 import unicodedata
 from dataclasses import dataclass
 from itertools import pairwise
@@ -31,6 +32,8 @@ from pikepdf.canvas import (
     Text,
     TextDirection,
 )
+
+from PIL import Image
 
 from ocrmypdf.hocrtransform._font import EncodableFont as Font
 from ocrmypdf.hocrtransform._font import GlyphlessFont
@@ -56,7 +59,6 @@ class DebugRenderOptions:
 
 class HocrTransformError(Exception):
     """Error while applying hOCR transform."""
-
 
 class HocrTransform:
     """A class for converting documents from the hOCR format.
@@ -189,6 +191,8 @@ class HocrTransform:
         out_filename: Path,
         image_filename: Path | None = None,
         invisible_text: bool = True,
+        scale_factor: float = 1.0,
+        pil_image_save_kwargs: dict | None = None,
     ) -> None:
         """Creates a PDF file with an image superimposed on top of the text.
 
@@ -212,9 +216,9 @@ class HocrTransform:
         canvas.add_font(self._fontname, self._font)
         page_matrix = (
             Matrix()
-            .translated(0, self.height)
+            .translated(0, self.height * scale_factor)
             .scaled(1, -1)
-            .scaled(INCH / self.dpi, INCH / self.dpi)
+            .scaled(INCH / self.dpi * scale_factor, INCH / self.dpi * scale_factor)
         )
         log.debug(page_matrix)
         with canvas.do.save_state(cm=page_matrix):
@@ -254,8 +258,34 @@ class HocrTransform:
                 )
         # put the image on the page, scaled to fill the page
         if image_filename is not None:
+            image_to_draw = image_filename
+
+            if pil_image_save_kwargs or scale_factor != 1.0:
+                with Image.open(image_filename) as im:
+                    # scale
+                    if scale_factor != 1.0:
+                        new_size = (
+                            int(im.width * scale_factor),
+                            int(im.height * scale_factor)
+                        )
+                        im = im.resize(new_size, Image.LANCZOS)
+                    # compress
+                    temp_buf = io.BytesIO()
+                    if not pil_image_save_kwargs.get("format"):
+                        pil_image_save_kwargs["format"] = "JPEG2000"
+                    if not pil_image_save_kwargs.get("quality"):
+                        pil_image_save_kwargs["quality"] = 40
+                    im.save(temp_buf, **pil_image_save_kwargs)
+                    del im
+                    temp_buf.seek(0)
+                    image_to_draw = Image.open(temp_buf)
+
             canvas.do.draw_image(
-                image_filename, 0, 0, width=self.width, height=self.height
+                image_to_draw,
+                0,
+                0,
+                width=self.width * scale_factor,
+                height=self.height * scale_factor,
             )
 
         # finish up the page and save it
