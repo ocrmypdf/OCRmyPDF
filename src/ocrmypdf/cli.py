@@ -368,10 +368,13 @@ Online documentation is located at:
     )
     advanced.add_argument(
         '--pdf-renderer',
-        choices=['auto', 'hocr', 'sandwich', 'hocrdebug'],
+        choices=['auto', 'hocr', 'sandwich', 'hocrdebug', 'fpdf2'],
         default='auto',
-        help="Choose OCR PDF renderer - the default option is to let OCRmyPDF "
-        "choose.  See documentation for discussion.",
+        help="Choose OCR PDF renderer. 'auto' (recommended) uses fpdf2, which "
+        "provides full international language support including RTL scripts, "
+        "proper text positioning, and invisible text that becomes visible when "
+        "selected. 'sandwich' renders text as a background layer. Legacy 'hocr' "
+        "and 'hocrdebug' options are deprecated and will use fpdf2.",
     )
     advanced.add_argument(
         '--rasterizer',

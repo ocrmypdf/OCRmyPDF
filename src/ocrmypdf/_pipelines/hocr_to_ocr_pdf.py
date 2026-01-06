@@ -17,10 +17,7 @@ from ocrmypdf._concurrent import Executor
 from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._options import OCROptions
-from ocrmypdf._pipeline import (
-    copy_final,
-    render_hocr_page,
-)
+from ocrmypdf._pipeline import copy_final
 from ocrmypdf._pipelines._common import (
     HOCRResult,
     do_get_pdfinfo,
@@ -46,9 +43,8 @@ def _exec_hocrtransform_sync(page_context: PageContext) -> HOCRResult:
         # No hOCR file, so no OCR was performed on this page.
         return HOCRResult(pageno=page_context.pageno)
     hocr_result = HOCRResult.from_json(hocr_json.read_text())
-    hocr_result.textpdf = render_hocr_page(
-        page_context.get_path('ocr_hocr.hocr'), page_context
-    )
+    # hOCR path is passed directly to the grafting phase where fpdf2 renders it
+    hocr_result.textpdf = page_context.get_path('ocr_hocr.hocr')
     return hocr_result
 
 
@@ -71,7 +67,7 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
             ocrgraft.graft_page(
                 pageno=result.pageno,
                 image=result.pdf_page_from_image,
-                textpdf=result.textpdf,
+                ocr_output=result.textpdf,
                 autorotate_correction=result.orientation_correction,
             )
             pbar.update()

@@ -13,6 +13,7 @@ license = "MPL-2.0"
 requires-python = ">=3.10"
 dependencies = [
   "deprecation>=2.1.0",
+  "fpdf2>=2.8.0",
   "img2pdf>=0.5",
   "packaging>=20",
   "pdfminer.six>=20220319",
@@ -23,6 +24,7 @@ dependencies = [
   "pydantic>=2.12.5",
   "pypdfium2>=5.0.0",
   "rich>=13",
+  "uharfbuzz>=0.53.2",
 ]
 authors = [{ name = "James R. Barlow", email = "james@purplerock.ca" }]
 classifiers = [

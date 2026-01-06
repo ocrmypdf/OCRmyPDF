@@ -25,7 +25,6 @@ from ocrmypdf._pipeline import (
     merge_sidecars,
     ocr_engine_hocr,
     ocr_engine_textonly_pdf,
-    render_hocr_page,
     triage,
     validate_pdfinfo_options,
 )
@@ -59,14 +58,13 @@ def _image_to_ocr_text(
 ) -> tuple[Path, Path]:
     """Run OCR engine on image to create OCR PDF and text file."""
     options = page_context.options
-    # Handle 'auto' pdf_renderer by defaulting to 'hocr'
     pdf_renderer = options.pdf_renderer
-    if pdf_renderer == 'auto':
-        pdf_renderer = 'hocr'
 
-    if pdf_renderer.startswith('hocr'):
-        hocr_out, text_out = ocr_engine_hocr(ocr_image_out, page_context)
-        ocr_out = render_hocr_page(hocr_out, page_context)
+    # fpdf2 is the default renderer (auto resolves to fpdf2)
+    if pdf_renderer in ('auto', 'fpdf2'):
+        # fpdf2 renderer uses hOCR as intermediate format.
+        # The hOCR is passed to the grafting phase where fpdf2 renders it in batch.
+        ocr_out, text_out = ocr_engine_hocr(ocr_image_out, page_context)
     elif pdf_renderer == 'sandwich':
         ocr_out, text_out = ocr_engine_textonly_pdf(ocr_image_out, page_context)
     else:
@@ -114,7 +112,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
             ocrgraft.graft_page(
                 pageno=result.pageno,
                 image=result.pdf_page_from_image,
-                textpdf=result.ocr,
+                ocr_output=result.ocr,
                 autorotate_correction=result.orientation_correction,
             )
             pbar.update(0.5)

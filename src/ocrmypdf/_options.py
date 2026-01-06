@@ -199,9 +199,12 @@ class OCROptions(BaseModel):
     @classmethod
     def validate_pdf_renderer(cls, v):
         """Validate PDF renderer is one of the allowed values."""
-        valid_renderers = {'auto', 'hocr', 'sandwich', 'hocrdebug'}
-        if v not in valid_renderers:
-            raise ValueError(f"pdf_renderer must be one of {valid_renderers}")
+        valid_renderers = {'auto', 'sandwich', 'fpdf2'}
+        # Legacy hocr/hocrdebug are accepted but redirected to fpdf2
+        legacy_renderers = {'hocr', 'hocrdebug'}
+        all_accepted = valid_renderers | legacy_renderers
+        if v not in all_accepted:
+            raise ValueError(f"pdf_renderer must be one of {all_accepted}")
         return v
 
     @field_validator('rasterizer')

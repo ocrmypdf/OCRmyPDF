@@ -15,16 +15,14 @@ The architecture separates parsing from rendering, allowing:
 Main components:
 - OcrElement: Generic dataclass representing OCR output structure
 - HocrParser: Parses hOCR files into OcrElement trees
-- PdfTextRenderer: Renders OcrElement trees to PDF text layers
-- HocrTransform: Backward-compatible wrapper combining parser and renderer
+- Fpdf2PdfRenderer: Renders OcrElement trees to PDF text layers (via fpdf2)
+
+For PDF rendering, use the fpdf2_renderer module:
+    from ocrmypdf.fpdf_renderer import Fpdf2PdfRenderer, DebugRenderOptions
 """
 
 from __future__ import annotations
 
-from ocrmypdf.hocrtransform._hocr import (
-    HocrTransform,
-    HocrTransformError,
-)
 from ocrmypdf.hocrtransform.hocr_parser import (
     HocrParseError,
     HocrParser,
@@ -36,20 +34,11 @@ from ocrmypdf.hocrtransform.ocr_element import (
     OcrClass,
     OcrElement,
 )
-from ocrmypdf.hocrtransform.pdf_renderer import (
-    DebugRenderOptions,
-    PdfTextRenderer,
-)
 
 __all__ = (
-    # Backward-compatible API
-    'HocrTransform',
-    'HocrTransformError',
-    'DebugRenderOptions',
-    # New separated components
+    # hOCR parsing
     'HocrParser',
     'HocrParseError',
-    'PdfTextRenderer',
     # OCR element data model
     'OcrElement',
     'OcrClass',

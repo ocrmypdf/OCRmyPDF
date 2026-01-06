@@ -36,8 +36,6 @@ from ocrmypdf.exceptions import (
     UnsupportedImageFormatError,
 )
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution, safe_symlink
-from ocrmypdf.hocrtransform import DebugRenderOptions, HocrTransform
-from ocrmypdf.hocrtransform._font import Courier
 from ocrmypdf.pdfa import generate_pdfa_ps
 from ocrmypdf.pdfinfo import Colorspace, Encoding, FloatRect, PageInfo, PdfInfo
 from ocrmypdf.pluginspec import OrientationConfidence
@@ -770,41 +768,6 @@ def create_pdf_page_from_image(
 
     output_file = page_context.plugin_manager.hook.filter_pdf_page(
         page=page_context, image_filename=image, output_pdf=output_file
-    )
-    return output_file
-
-
-def render_hocr_page(hocr: Path, page_context: PageContext) -> Path:
-    """Render the hOCR page to a PDF."""
-    options = page_context.options
-    output_file = page_context.get_path('ocr_hocr.pdf')
-    if hocr.stat().st_size == 0:
-        # If hOCR file is empty (skipped page marker), create an empty PDF file
-        output_file.touch()
-        return output_file
-
-    dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
-    debug_kwargs = {}
-    if options.pdf_renderer == 'hocrdebug':
-        debug_kwargs = dict(
-            debug_render_options=DebugRenderOptions(
-                render_baseline=True,
-                render_triangle=True,
-                render_line_bbox=False,
-                render_word_bbox=True,
-                render_paragraph_bbox=False,
-                render_space_bbox=False,
-            ),
-            font=Courier(),
-        )
-    HocrTransform(
-        hocr_filename=hocr,
-        dpi=dpi.to_scalar(),
-        **debug_kwargs,  # square
-    ).to_pdf(
-        out_filename=output_file,
-        image_filename=None,
-        invisible_text=True if not debug_kwargs else False,
     )
     return output_file
 

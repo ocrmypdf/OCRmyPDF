@@ -379,18 +379,21 @@ class TesseractOcrEngine(OcrEngine):
     def _determine_renderer(options):
         """Determine the PDF renderer to use based on options and languages."""
         if options.pdf_renderer == 'auto':
-            if {'ara', 'heb', 'fas', 'per'} & set(options.languages):
-                log.info("Using sandwich renderer since there is an RTL language")
-                return 'sandwich'
-            else:
-                return 'hocr'
+            return 'fpdf2'
         return options.pdf_renderer
 
     @staticmethod
     def creator_tag(options):
         renderer = TesseractOcrEngine._determine_renderer(options)
-        tag = '-PDF' if renderer == 'sandwich' else '-hOCR'
-        return f"Tesseract OCR{tag} {TesseractOcrEngine.version()}"
+        match renderer:
+            case 'hocr':
+                return f"OCRmyPDF hOCR + Tesseract OCR {TesseractOcrEngine.version()}"
+            case 'fpdf2':
+                return f"OCRmyPDF fpdf2 + Tesseract OCR {TesseractOcrEngine.version()}"
+            case "sandwich":
+                return f"Tesseract OCR + PDF {TesseractOcrEngine.version()}"
+            case _:
+                return f"Tesseract OCR {TesseractOcrEngine.version()}"
 
     def __str__(self):
         return f"Tesseract OCR {TesseractOcrEngine.version()}"

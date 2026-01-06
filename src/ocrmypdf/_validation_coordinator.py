@@ -97,6 +97,9 @@ class ValidationCoordinator:
 
     def _validate_cross_cutting_concerns(self, options: OCROptions) -> None:
         """Validate cross-cutting concerns that span multiple plugins."""
+        # Handle deprecated pdf_renderer values
+        self._handle_deprecated_pdf_renderer(options)
+
         # Validate mutually exclusive OCR options
         exclusive_options = sum(
             1 for opt in [options.force_ocr, options.skip_text, options.redo_ocr] if opt
@@ -132,3 +135,15 @@ class ValidationCoordinator:
                 "--pdfa-image-compression argument only applies when "
                 "--output-type is one of 'pdfa', 'pdfa-1', or 'pdfa-2'"
             )
+
+    def _handle_deprecated_pdf_renderer(self, options: OCROptions) -> None:
+        """Handle deprecated pdf_renderer values by redirecting to fpdf2."""
+        if options.pdf_renderer in ('hocr', 'hocrdebug'):
+            log.info(
+                "The '%s' PDF renderer has been removed. Using 'fpdf2' instead, "
+                "which provides full international language support, proper RTL "
+                "rendering, and improved text positioning.",
+                options.pdf_renderer,
+            )
+            # Modify the options object to use fpdf2
+            object.__setattr__(options, 'pdf_renderer', 'fpdf2')
