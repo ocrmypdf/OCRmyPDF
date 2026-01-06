@@ -24,7 +24,7 @@ from .conftest import check_ocrmypdf, run_ocrmypdf_api
 
 # pylintx: disable=unused-variable
 
-RENDERERS = ['hocr', 'sandwich']
+RENDERERS = ['fpdf2', 'sandwich']
 
 
 def compare_images_monochrome(
@@ -167,7 +167,7 @@ def test_rotated_skew_timeout(resources, outpdf):
         input_file,
         outpdf,
         '--pdf-renderer',
-        'hocr',
+        'fpdf2',
         '--deskew',
         '--tesseract-timeout',
         '0',
@@ -198,7 +198,7 @@ def test_rotate_deskew_ocr_timeout(resources, outdir):
         '--tesseract-timeout',
         '0',
         '--pdf-renderer',
-        'hocr',
+        'fpdf2',
         '--rasterizer',
         'ghostscript',  # Use Ghostscript for consistent dimensions
     )
@@ -291,7 +291,7 @@ def test_page_rotate_tag(page_rotate_angle, resources, outdir, caplog):
 
 
 @pytest.mark.parametrize('page_rotate_angle', (0, 90, 180, 270))
-@pytest.mark.parametrize('renderer', ['sandwich', 'hocr'])
+@pytest.mark.parametrize('renderer', ['sandwich', 'fpdf2'])
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
 def test_rotate_and_crop(
     resources, outdir, page_rotate_angle, renderer, output_type, caplog

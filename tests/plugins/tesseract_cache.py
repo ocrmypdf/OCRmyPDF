@@ -134,7 +134,7 @@ def cached_run(options, run_args, **run_kwargs):
             args.configfiles.append('txt')
 
         for configfile in args.configfiles:
-            if configfile not in ('hocr', 'pdf', 'txt'):
+            if configfile not in ('fpdf2', 'pdf', 'txt'):
                 continue
             # cp pwd/{outputbase}.{configfile} -> {cache}/{configfile}
             tessfile = args.outputbase + '.' + configfile

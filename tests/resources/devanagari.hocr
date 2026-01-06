@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="hi" lang="hi">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta name='ocr-system' content='tesseract 5.0.0' />
+<meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word'/>
+</head>
+<body>
+<div class='ocr_page' id='page_1' title='image "test.png"; bbox 0 0 2550 3300; ppageno 0; scan_res 300 300'>
+<div class='ocr_carea' id='carea_1_1' title="bbox 200 200 2350 1200">
+<p class='ocr_par' id='par_1_1' lang='hin' title="bbox 200 200 2350 400">
+<span class='ocr_line' id='line_1_1' title="bbox 200 200 2350 400; baseline 0 -50; x_size 150; x_descenders 30; x_ascenders 40">
+<span class='ocrx_word' id='word_1_1' title='bbox 200 200 600 400; x_wconf 95'>नमस्ते</span>
+<span class='ocrx_word' id='word_1_2' title='bbox 650 200 1050 400; x_wconf 95'>दुनिया</span>
+</span>
+</p>
+<p class='ocr_par' id='par_1_2' lang='hin' title="bbox 200 500 2350 700">
+<span class='ocr_line' id='line_1_2' title="bbox 200 500 2350 700; baseline 0 -50; x_size 150; x_descenders 30; x_ascenders 40">
+<span class='ocrx_word' id='word_1_3' title='bbox 200 500 600 700; x_wconf 95'>यह</span>
+<span class='ocrx_word' id='word_1_4' title='bbox 650 500 1050 700; x_wconf 95'>हिंदी</span>
+<span class='ocrx_word' id='word_1_5' title='bbox 1100 500 1500 700; x_wconf 95'>पाठ</span>
+<span class='ocrx_word' id='word_1_6' title='bbox 1550 500 1950 700; x_wconf 95'>है</span>
+</span>
+</p>
+<p class='ocr_par' id='par_1_3' lang='san' title="bbox 200 800 2350 1000">
+<span class='ocr_line' id='line_1_3' title="bbox 200 800 2350 1000; baseline 0 -50; x_size 150; x_descenders 30; x_ascenders 40">
+<span class='ocrx_word' id='word_1_7' title='bbox 200 800 700 1000; x_wconf 95'>संस्कृत</span>
+<span class='ocrx_word' id='word_1_8' title='bbox 750 800 1250 1000; x_wconf 95'>भाषा</span>
+</span>
+</p>
+</div>
+</div>
+</body>
+</html>

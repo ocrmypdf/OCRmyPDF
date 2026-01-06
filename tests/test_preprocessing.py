@@ -15,7 +15,7 @@ from ocrmypdf.pdfinfo import PdfInfo
 
 from .conftest import check_ocrmypdf, have_unpaper, run_ocrmypdf
 
-RENDERERS = ['hocr', 'sandwich']
+RENDERERS = ['fpdf2', 'sandwich']
 
 
 def test_deskew(resources, outdir):
@@ -79,7 +79,7 @@ def test_remove_background(resources, outdir):
 @pytest.mark.parametrize(
     "pdf", ['palette.pdf', 'cmyk.pdf', 'ccitt.pdf', 'jbig2.pdf', 'lichtenstein.pdf']
 )
-@pytest.mark.parametrize("renderer", ['sandwich', 'hocr'])
+@pytest.mark.parametrize("renderer", ['sandwich', 'fpdf2'])
 @pytest.mark.parametrize("output_type", ['pdf', 'pdfa'])
 def test_exotic_image(pdf, renderer, output_type, resources, outdir):
     outfile = outdir / f'test_{pdf}_{renderer}.pdf'

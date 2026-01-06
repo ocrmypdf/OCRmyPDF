@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2025 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-"""Unit tests for PdfTextRenderer class."""
+"""Unit tests for Fpdf2PdfRenderer class."""
 
 from __future__ import annotations
 
@@ -15,17 +15,16 @@ from pdfminer.pdfdocument import PDFDocument
 from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
 from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFParser
-from PIL import Image
 
+from ocrmypdf.font import MultiFontManager
+from ocrmypdf.fpdf_renderer import DebugRenderOptions, Fpdf2PdfRenderer
 from ocrmypdf.helpers import check_pdf
 from ocrmypdf.hocrtransform import (
     Baseline,
     BoundingBox,
     OcrClass,
     OcrElement,
-    PdfTextRenderer,
 )
-from ocrmypdf.hocrtransform.pdf_renderer import DebugRenderOptions
 
 
 def text_from_pdf(filename: Path) -> str:
@@ -40,6 +39,18 @@ def text_from_pdf(filename: Path) -> str:
         for page in PDFPage.create_pages(doc):
             interpreter.process_page(page)
     return output_string.getvalue()
+
+
+@pytest.fixture
+def font_dir():
+    """Get the font directory."""
+    return Path(__file__).parent.parent / "src" / "ocrmypdf" / "data"
+
+
+@pytest.fixture
+def multi_font_manager(font_dir):
+    """Create a MultiFontManager for tests."""
+    return MultiFontManager(font_dir)
 
 
 def create_simple_page(
@@ -93,90 +104,108 @@ def create_simple_page(
     return page
 
 
-class TestPdfTextRendererBasic:
-    """Basic PdfTextRenderer functionality tests."""
+class TestFpdf2PdfRendererBasic:
+    """Basic Fpdf2PdfRenderer functionality tests."""
 
-    def test_render_simple_page(self, tmp_path):
+    def test_render_simple_page(self, tmp_path, multi_font_manager):
         """Test rendering a simple page with two words."""
         page = create_simple_page()
         output_pdf = tmp_path / "simple.pdf"
 
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        renderer.render(out_filename=output_pdf)
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=72.0, multi_font_manager=multi_font_manager
+        )
+        renderer.render(output_pdf)
 
         assert output_pdf.exists()
         check_pdf(str(output_pdf))
 
-    def test_rendered_text_extractable(self, tmp_path):
+    def test_rendered_text_extractable(self, tmp_path, multi_font_manager):
         """Test that rendered text can be extracted from the PDF."""
         page = create_simple_page()
         output_pdf = tmp_path / "extractable.pdf"
 
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        renderer.render(out_filename=output_pdf)
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=72.0, multi_font_manager=multi_font_manager
+        )
+        renderer.render(output_pdf)
 
         extracted_text = text_from_pdf(output_pdf)
         assert "Hello" in extracted_text
         assert "World" in extracted_text
 
-    def test_invisible_text_mode(self, tmp_path):
+    def test_invisible_text_mode(self, tmp_path, multi_font_manager):
         """Test that invisible_text=True creates a valid PDF."""
         page = create_simple_page()
         output_pdf = tmp_path / "invisible.pdf"
 
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        renderer.render(out_filename=output_pdf, invisible_text=True)
+        renderer = Fpdf2PdfRenderer(
+            page=page,
+            dpi=72.0,
+            multi_font_manager=multi_font_manager,
+            invisible_text=True,
+        )
+        renderer.render(output_pdf)
 
         # Text should still be extractable even when invisible
         extracted_text = text_from_pdf(output_pdf)
         assert "Hello" in extracted_text
 
-    def test_visible_text_mode(self, tmp_path):
+    def test_visible_text_mode(self, tmp_path, multi_font_manager):
         """Test that invisible_text=False creates a valid PDF with visible text."""
         page = create_simple_page()
         output_pdf = tmp_path / "visible.pdf"
 
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        renderer.render(out_filename=output_pdf, invisible_text=False)
+        renderer = Fpdf2PdfRenderer(
+            page=page,
+            dpi=72.0,
+            multi_font_manager=multi_font_manager,
+            invisible_text=False,
+        )
+        renderer.render(output_pdf)
 
         # Text should be extractable
         extracted_text = text_from_pdf(output_pdf)
         assert "Hello" in extracted_text
 
 
-class TestPdfTextRendererPageSize:
+class TestFpdf2PdfRendererPageSize:
     """Test page size calculations."""
 
-    def test_page_dimensions(self, tmp_path):
+    def test_page_dimensions(self, tmp_path, multi_font_manager):
         """Test that page dimensions are calculated correctly."""
         # 1000x500 pixels at 72 dpi = 1000x500 points
         page = create_simple_page(width=1000, height=500)
         output_pdf = tmp_path / "dimensions.pdf"
 
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        assert renderer.width == pytest.approx(1000.0)
-        assert renderer.height == pytest.approx(500.0)
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=72.0, multi_font_manager=multi_font_manager
+        )
+        assert renderer.coord_transform.page_width_pt == pytest.approx(1000.0)
+        assert renderer.coord_transform.page_height_pt == pytest.approx(500.0)
 
-        renderer.render(out_filename=output_pdf)
+        renderer.render(output_pdf)
 
-    def test_high_dpi_page(self, tmp_path):
+    def test_high_dpi_page(self, tmp_path, multi_font_manager):
         """Test page dimensions at higher DPI."""
         # 720x360 pixels at 144 dpi = 360x180 points
         page = create_simple_page(width=720, height=360)
         output_pdf = tmp_path / "high_dpi.pdf"
 
-        renderer = PdfTextRenderer(page=page, dpi=144.0)
-        assert renderer.width == pytest.approx(360.0)
-        assert renderer.height == pytest.approx(180.0)
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=144.0, multi_font_manager=multi_font_manager
+        )
+        assert renderer.coord_transform.page_width_pt == pytest.approx(360.0)
+        assert renderer.coord_transform.page_height_pt == pytest.approx(180.0)
 
-        renderer.render(out_filename=output_pdf)
+        renderer.render(output_pdf)
         check_pdf(str(output_pdf))
 
 
-class TestPdfTextRendererMultiLine:
+class TestFpdf2PdfRendererMultiLine:
     """Test rendering of multi-line content."""
 
-    def test_multiple_lines(self, tmp_path):
+    def test_multiple_lines(self, tmp_path, multi_font_manager):
         """Test rendering multiple lines of text."""
         line1_words = [
             OcrElement(
@@ -231,8 +260,10 @@ class TestPdfTextRendererMultiLine:
         )
 
         output_pdf = tmp_path / "multiline.pdf"
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        renderer.render(out_filename=output_pdf)
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=72.0, multi_font_manager=multi_font_manager
+        )
+        renderer.render(output_pdf)
 
         extracted_text = text_from_pdf(output_pdf)
         assert "Line" in extracted_text
@@ -240,20 +271,22 @@ class TestPdfTextRendererMultiLine:
         assert "two" in extracted_text
 
 
-class TestPdfTextRendererTextDirection:
+class TestFpdf2PdfRendererTextDirection:
     """Test rendering of different text directions."""
 
-    def test_ltr_text(self, tmp_path):
+    def test_ltr_text(self, tmp_path, multi_font_manager):
         """Test rendering LTR text."""
         page = create_simple_page()
         output_pdf = tmp_path / "ltr.pdf"
 
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        renderer.render(out_filename=output_pdf)
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=72.0, multi_font_manager=multi_font_manager
+        )
+        renderer.render(output_pdf)
 
         check_pdf(str(output_pdf))
 
-    def test_rtl_text(self, tmp_path):
+    def test_rtl_text(self, tmp_path, multi_font_manager):
         """Test rendering RTL text."""
         word = OcrElement(
             ocr_class=OcrClass.WORD,
@@ -281,16 +314,18 @@ class TestPdfTextRendererTextDirection:
         )
 
         output_pdf = tmp_path / "rtl.pdf"
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        renderer.render(out_filename=output_pdf)
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=72.0, multi_font_manager=multi_font_manager
+        )
+        renderer.render(output_pdf)
 
         check_pdf(str(output_pdf))
 
 
-class TestPdfTextRendererBaseline:
+class TestFpdf2PdfRendererBaseline:
     """Test baseline handling in rendering."""
 
-    def test_sloped_baseline(self, tmp_path):
+    def test_sloped_baseline(self, tmp_path, multi_font_manager):
         """Test rendering with a sloped baseline."""
         word = OcrElement(
             ocr_class=OcrClass.WORD,
@@ -317,18 +352,20 @@ class TestPdfTextRendererBaseline:
         )
 
         output_pdf = tmp_path / "sloped.pdf"
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        renderer.render(out_filename=output_pdf)
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=72.0, multi_font_manager=multi_font_manager
+        )
+        renderer.render(output_pdf)
 
         check_pdf(str(output_pdf))
         extracted_text = text_from_pdf(output_pdf)
         assert "Sloped" in extracted_text
 
 
-class TestPdfTextRendererTextangle:
+class TestFpdf2PdfRendererTextangle:
     """Test textangle (rotation) handling in rendering."""
 
-    def test_rotated_text(self, tmp_path):
+    def test_rotated_text(self, tmp_path, multi_font_manager):
         """Test rendering rotated text."""
         word = OcrElement(
             ocr_class=OcrClass.WORD,
@@ -356,32 +393,36 @@ class TestPdfTextRendererTextangle:
         )
 
         output_pdf = tmp_path / "rotated.pdf"
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        renderer.render(out_filename=output_pdf)
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=72.0, multi_font_manager=multi_font_manager
+        )
+        renderer.render(output_pdf)
 
         check_pdf(str(output_pdf))
         extracted_text = text_from_pdf(output_pdf)
         assert "Rotated" in extracted_text
 
 
-class TestPdfTextRendererWordBreaks:
-    """Test word break injection."""
+class TestFpdf2PdfRendererWordBreaks:
+    """Test word rendering."""
 
-    def test_word_breaks_english(self, tmp_path):
-        """Test that word breaks are injected for English text."""
+    def test_word_breaks_english(self, tmp_path, multi_font_manager):
+        """Test that words are rendered for English text."""
         page = create_simple_page()
         output_pdf = tmp_path / "english.pdf"
 
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        renderer.render(out_filename=output_pdf)
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=72.0, multi_font_manager=multi_font_manager
+        )
+        renderer.render(output_pdf)
 
         extracted_text = text_from_pdf(output_pdf)
-        # Words should be separated
+        # Words should be present
         assert "Hello" in extracted_text
         assert "World" in extracted_text
 
-    def test_no_word_breaks_cjk(self, tmp_path):
-        """Test that word breaks are not injected for CJK text."""
+    def test_cjk_text(self, tmp_path, multi_font_manager):
+        """Test rendering CJK text."""
         words = [
             OcrElement(
                 ocr_class=OcrClass.WORD,
@@ -414,40 +455,47 @@ class TestPdfTextRendererWordBreaks:
         )
 
         output_pdf = tmp_path / "chinese.pdf"
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        renderer.render(out_filename=output_pdf)
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=72.0, multi_font_manager=multi_font_manager
+        )
+        renderer.render(output_pdf)
 
         check_pdf(str(output_pdf))
 
 
-class TestPdfTextRendererDebugOptions:
+class TestFpdf2PdfRendererDebugOptions:
     """Test debug rendering options."""
 
-    def test_debug_render_options_default(self):
+    def test_debug_render_options_default(self, multi_font_manager):
         """Test that debug options are disabled by default."""
         page = create_simple_page()
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=72.0, multi_font_manager=multi_font_manager
+        )
 
-        assert renderer.render_options.render_paragraph_bbox is False
-        assert renderer.render_options.render_baseline is False
-        assert renderer.render_options.render_word_bbox is False
+        assert renderer.debug_options.render_baseline is False
+        assert renderer.debug_options.render_word_bbox is False
+        assert renderer.debug_options.render_line_bbox is False
 
-    def test_debug_render_options_enabled(self, tmp_path):
+    def test_debug_render_options_enabled(self, tmp_path, multi_font_manager):
         """Test rendering with debug options enabled."""
         page = create_simple_page()
         output_pdf = tmp_path / "debug.pdf"
 
         debug_opts = DebugRenderOptions(
-            render_paragraph_bbox=True,
             render_baseline=True,
             render_word_bbox=True,
-            render_triangle=True,
+            render_line_bbox=True,
         )
 
-        renderer = PdfTextRenderer(
-            page=page, dpi=72.0, debug_render_options=debug_opts
+        renderer = Fpdf2PdfRenderer(
+            page=page,
+            dpi=72.0,
+            multi_font_manager=multi_font_manager,
+            invisible_text=False,
+            debug_render_options=debug_opts,
         )
-        renderer.render(out_filename=output_pdf, invisible_text=False)
+        renderer.render(output_pdf)
 
         check_pdf(str(output_pdf))
         # Text should still be extractable
@@ -455,54 +503,30 @@ class TestPdfTextRendererDebugOptions:
         assert "Hello" in extracted_text
 
 
-class TestPdfTextRendererWithImage:
-    """Test rendering with image overlay."""
+class TestFpdf2PdfRendererErrors:
+    """Test error handling in Fpdf2PdfRenderer."""
 
-    def test_render_with_image(self, tmp_path):
-        """Test rendering with an image overlaid on text."""
-        page = create_simple_page()
-        output_pdf = tmp_path / "with_image.pdf"
-
-        # Create a simple test image
-        image_path = tmp_path / "test.png"
-        img = Image.new('RGB', (1000, 500), color='white')
-        img.save(image_path)
-
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        renderer.render(
-            out_filename=output_pdf, image_filename=image_path, invisible_text=True
-        )
-
-        check_pdf(str(output_pdf))
-        # Text should still be extractable under the image
-        extracted_text = text_from_pdf(output_pdf)
-        assert "Hello" in extracted_text
-
-
-class TestPdfTextRendererErrors:
-    """Test error handling in PdfTextRenderer."""
-
-    def test_invalid_ocr_class(self):
+    def test_invalid_ocr_class(self, multi_font_manager):
         """Test that non-page elements are rejected."""
         line = OcrElement(
             ocr_class=OcrClass.LINE, bbox=BoundingBox(left=0, top=0, right=100, bottom=50)
         )
 
         with pytest.raises(ValueError, match="ocr_page"):
-            PdfTextRenderer(page=line, dpi=72.0)
+            Fpdf2PdfRenderer(page=line, dpi=72.0, multi_font_manager=multi_font_manager)
 
-    def test_page_without_bbox(self):
+    def test_page_without_bbox(self, multi_font_manager):
         """Test that pages without bbox are rejected."""
         page = OcrElement(ocr_class=OcrClass.PAGE)
 
         with pytest.raises(ValueError, match="bounding box"):
-            PdfTextRenderer(page=page, dpi=72.0)
+            Fpdf2PdfRenderer(page=page, dpi=72.0, multi_font_manager=multi_font_manager)
 
 
-class TestPdfTextRendererLineTypes:
+class TestFpdf2PdfRendererLineTypes:
     """Test rendering of different line types."""
 
-    def test_header_line(self, tmp_path):
+    def test_header_line(self, tmp_path, multi_font_manager):
         """Test rendering header lines."""
         word = OcrElement(
             ocr_class=OcrClass.WORD,
@@ -529,14 +553,16 @@ class TestPdfTextRendererLineTypes:
         )
 
         output_pdf = tmp_path / "header.pdf"
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        renderer.render(out_filename=output_pdf)
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=72.0, multi_font_manager=multi_font_manager
+        )
+        renderer.render(output_pdf)
 
         check_pdf(str(output_pdf))
         extracted_text = text_from_pdf(output_pdf)
         assert "Header" in extracted_text
 
-    def test_caption_line(self, tmp_path):
+    def test_caption_line(self, tmp_path, multi_font_manager):
         """Test rendering caption lines."""
         word = OcrElement(
             ocr_class=OcrClass.WORD,
@@ -563,8 +589,10 @@ class TestPdfTextRendererLineTypes:
         )
 
         output_pdf = tmp_path / "caption.pdf"
-        renderer = PdfTextRenderer(page=page, dpi=72.0)
-        renderer.render(out_filename=output_pdf)
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=72.0, multi_font_manager=multi_font_manager
+        )
+        renderer.render(output_pdf)
 
         check_pdf(str(output_pdf))
         extracted_text = text_from_pdf(output_pdf)

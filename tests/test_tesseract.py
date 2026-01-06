@@ -49,7 +49,9 @@ def test_skip_pages_does_not_replicate(resources, basename, outdir):
 def test_content_preservation(resources, outpdf):
     infile = resources / 'masks.pdf'
 
-    check_ocrmypdf(infile, outpdf, '--pdf-renderer', 'hocr', '--tesseract-timeout', '0')
+    check_ocrmypdf(
+        infile, outpdf, '--pdf-renderer', 'fpdf2', '--tesseract-timeout', '0'
+    )
 
     info = pdfinfo.PdfInfo(outpdf)
     page = info[0]

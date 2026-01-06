@@ -15,12 +15,12 @@ wh_rect = [0, 0, 412, 592]
 neg_rect = [-100, -100, 512, 692]
 
 mediabox_testdata = [
-    ('hocr', 'pdfa', 'ccitt.pdf', None, inset_rect, wh_rect),
+    ('fpdf2', 'pdfa', 'ccitt.pdf', None, inset_rect, wh_rect),
     ('sandwich', 'pdfa', 'ccitt.pdf', None, inset_rect, wh_rect),
-    ('hocr', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
+    ('fpdf2', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
     ('sandwich', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
     (
-        'hocr',
+        'fpdf2',
         'pdfa',
         'ccitt.pdf',
         '--force-ocr',
@@ -28,15 +28,15 @@ mediabox_testdata = [
         wh_rect,
     ),
     (
-        'hocr',
+        'fpdf2',
         'pdf',
         'ccitt.pdf',
         '--force-ocr',
         inset_rect,
         wh_rect,
     ),
-    ('hocr', 'pdfa', 'ccitt.pdf', '--force-ocr', neg_rect, page_rect),
-    ('hocr', 'pdf', 'ccitt.pdf', '--force-ocr', neg_rect, page_rect),
+    ('fpdf2', 'pdfa', 'ccitt.pdf', '--force-ocr', neg_rect, page_rect),
+    ('fpdf2', 'pdf', 'ccitt.pdf', '--force-ocr', neg_rect, page_rect),
 ]
 
 
@@ -69,12 +69,12 @@ def test_media_box(
 
 
 cropbox_testdata = [
-    ('hocr', 'pdfa', 'ccitt.pdf', None, inset_rect, inset_rect),
+    ('fpdf2', 'pdfa', 'ccitt.pdf', None, inset_rect, inset_rect),
     ('sandwich', 'pdfa', 'ccitt.pdf', None, inset_rect, inset_rect),
-    ('hocr', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
+    ('fpdf2', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
     ('sandwich', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
     (
-        'hocr',
+        'fpdf2',
         'pdfa',
         'ccitt.pdf',
         '--force-ocr',
@@ -82,7 +82,7 @@ cropbox_testdata = [
         inset_rect,
     ),
     (
-        'hocr',
+        'fpdf2',
         'pdf',
         'ccitt.pdf',
         '--force-ocr',
