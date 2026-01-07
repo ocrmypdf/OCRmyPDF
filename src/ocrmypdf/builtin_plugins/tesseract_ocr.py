@@ -94,6 +94,13 @@ class TesseractOptions(BaseModel):
     user_patterns: Annotated[
         str | None, Field(description="Path to Tesseract user patterns file")
     ] = None
+    omp_thread_limit: Annotated[
+        int | None,
+        Field(
+            description="Calculated OMP_THREAD_LIMIT for Tesseract subprocesses",
+            exclude=True,
+        ),
+    ] = None
 
     @classmethod
     def add_arguments_to_parser(cls, parser, namespace: str = 'tesseract'):
@@ -334,9 +341,10 @@ def validate(pdfinfo, options):
     if not os.environ.get('OMP_THREAD_LIMIT', '').isnumeric():
         jobs = options.jobs or available_cpu_count()
         tess_threads = clamp(jobs // len(pdfinfo), 1, 3)
-        os.environ['OMP_THREAD_LIMIT'] = str(tess_threads)
     else:
         tess_threads = int(os.environ['OMP_THREAD_LIMIT'])
+    # Store the thread limit in options - it will be passed to subprocess env
+    options.tesseract.omp_thread_limit = tess_threads
     log.debug("Using Tesseract OpenMP thread limit %d", tess_threads)
 
     if (
@@ -408,6 +416,7 @@ class TesseractOcrEngine(OcrEngine):
             input_file,
             engine_mode=options.tesseract.oem,
             timeout=options.tesseract.non_ocr_timeout,
+            omp_thread_limit=options.tesseract.omp_thread_limit,
         )
 
     @staticmethod
@@ -417,6 +426,7 @@ class TesseractOcrEngine(OcrEngine):
             languages=options.languages,
             engine_mode=options.tesseract.oem,
             timeout=options.tesseract.non_ocr_timeout,
+            omp_thread_limit=options.tesseract.omp_thread_limit,
         )
 
     @staticmethod
@@ -433,6 +443,7 @@ class TesseractOcrEngine(OcrEngine):
             thresholding=options.tesseract.thresholding,
             user_words=options.tesseract.user_words,
             user_patterns=options.tesseract.user_patterns,
+            omp_thread_limit=options.tesseract.omp_thread_limit,
         )
 
     @staticmethod
@@ -449,6 +460,7 @@ class TesseractOcrEngine(OcrEngine):
             thresholding=options.tesseract.thresholding,
             user_words=options.tesseract.user_words,
             user_patterns=options.tesseract.user_patterns,
+            omp_thread_limit=options.tesseract.omp_thread_limit,
         )
 
 

@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from contextlib import suppress
 from enum import IntEnum
@@ -25,6 +26,15 @@ from ocrmypdf.pluginspec import OrientationConfidence
 from ocrmypdf.subprocess import get_version, run
 
 log = logging.getLogger(__name__)
+
+
+def _tesseract_env(omp_thread_limit: int | None) -> dict[str, str] | None:
+    """Create environment dict with OMP_THREAD_LIMIT set for Tesseract subprocesses."""
+    if omp_thread_limit is None:
+        return None
+    env = os.environ.copy()
+    env['OMP_THREAD_LIMIT'] = str(omp_thread_limit)
+    return env
 
 
 class ThresholdingMethod(IntEnum):
@@ -166,7 +176,10 @@ def _parse_tesseract_output(binary_output: bytes) -> dict[str, str]:
 
 
 def get_orientation(
-    input_file: Path, engine_mode: int | None, timeout: float
+    input_file: Path,
+    engine_mode: int | None,
+    timeout: float,
+    omp_thread_limit: int | None = None,
 ) -> OrientationConfidence:
     args_tesseract = tess_base_args(['osd'], engine_mode) + [
         '--psm',
@@ -176,7 +189,14 @@ def get_orientation(
     ]
 
     try:
-        p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
+        p = run(
+            args_tesseract,
+            stdout=PIPE,
+            stderr=STDOUT,
+            timeout=timeout,
+            check=True,
+            env=_tesseract_env(omp_thread_limit),
+        )
     except TimeoutExpired:
         return OrientationConfidence(angle=0, confidence=0.0)
     except CalledProcessError as e:
@@ -210,7 +230,11 @@ def _is_empty_page_error(exc):
 
 
 def get_deskew(
-    input_file: Path, languages: list[str], engine_mode: int | None, timeout: float
+    input_file: Path,
+    languages: list[str],
+    engine_mode: int | None,
+    timeout: float,
+    omp_thread_limit: int | None = None,
 ) -> float:
     """Gets angle to deskew this page, in degrees."""
     args_tesseract = tess_base_args(languages, engine_mode) + [
@@ -221,7 +245,14 @@ def get_deskew(
     ]
 
     try:
-        p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
+        p = run(
+            args_tesseract,
+            stdout=PIPE,
+            stderr=STDOUT,
+            timeout=timeout,
+            check=True,
+            env=_tesseract_env(omp_thread_limit),
+        )
     except TimeoutExpired:
         return 0.0
     except CalledProcessError as e:
@@ -308,6 +339,7 @@ def generate_hocr(
     thresholding: ThresholdingMethod,
     user_words,
     user_patterns,
+    omp_thread_limit: int | None = None,
 ) -> None:
     """Generate a hOCR file, which must be converted to PDF."""
     prefix = output_hocr.with_suffix('')
@@ -331,7 +363,14 @@ def generate_hocr(
     args_tesseract.extend([fspath(input_file), fspath(prefix), 'hocr', 'txt'])
     args_tesseract.extend(tessconfig)
     try:
-        p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
+        p = run(
+            args_tesseract,
+            stdout=PIPE,
+            stderr=STDOUT,
+            timeout=timeout,
+            check=True,
+            env=_tesseract_env(omp_thread_limit),
+        )
         stdout = p.stdout
     except TimeoutExpired:
         # Generate a HOCR file with no recognized text if tesseract times out
@@ -374,6 +413,7 @@ def generate_pdf(
     thresholding: ThresholdingMethod,
     user_words,
     user_patterns,
+    omp_thread_limit: int | None = None,
 ) -> None:
     """Generate a PDF using Tesseract's internal PDF generator.
 
@@ -404,7 +444,14 @@ def generate_pdf(
     args_tesseract.extend([fspath(input_file), fspath(prefix), 'pdf', 'txt'])
     args_tesseract.extend(tessconfig)
     try:
-        p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
+        p = run(
+            args_tesseract,
+            stdout=PIPE,
+            stderr=STDOUT,
+            timeout=timeout,
+            check=True,
+            env=_tesseract_env(omp_thread_limit),
+        )
         stdout = p.stdout
         with suppress(FileNotFoundError):
             prefix.with_suffix('.txt').replace(output_text)

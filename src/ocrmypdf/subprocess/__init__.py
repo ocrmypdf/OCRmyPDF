@@ -23,13 +23,13 @@ from ocrmypdf.exceptions import MissingDependencyError
 log = logging.getLogger(__name__)
 
 Args = Sequence[Path | str]
-OsEnviron = os._Environ  # pylint: disable=protected-access
+Environ = Mapping[str, str] | os._Environ  # pylint: disable=protected-access
 
 
 def run(
     args: Args,
     *,
-    env: OsEnviron | None = None,
+    env: Environ | None = None,
     logs_errors_to_stdout: bool = False,
     check: bool = False,
     **kwargs,
@@ -81,7 +81,7 @@ def run_polling_stderr(
     *,
     callback: Callable[[str], None],
     check: bool = False,
-    env: OsEnviron | None = None,
+    env: Environ | None = None,
     **kwargs,
 ) -> CompletedProcess:
     """Run a process like ``ocrmypdf.subprocess.run``, and poll stderr.
@@ -116,8 +116,8 @@ def run_polling_stderr(
 
 
 def _fix_process_args(
-    args: Args, env: OsEnviron | None, kwargs
-) -> tuple[Args, OsEnviron, logging.Logger, bool]:
+    args: Args, env: Environ | None, kwargs
+) -> tuple[Args, Environ, logging.Logger, bool]:
     if not env:
         env = os.environ
 
@@ -142,7 +142,7 @@ def get_version(
     *,
     version_arg: str = '--version',
     regex=r'(\d+(\.\d+)*)',
-    env: OsEnviron | None = None,
+    env: Environ | None = None,
 ) -> str:
     """Get the version of the specified program.
 
