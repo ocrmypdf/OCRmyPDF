@@ -98,7 +98,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     jobs = options.jobs or available_cpu_count()
     max_workers = min(len(context.pdfinfo), jobs)
     if max_workers > 1:
-        log.info("Start processing %d pages concurrently", max_workers)
+        log.info("Starting processing with %d workers concurrently", max_workers)
 
     sidecars: list[Path | None] = [None] * len(context.pdfinfo)
     ocrgraft = OcrGrafter(context)

@@ -65,7 +65,7 @@ def exec_pdf_to_hocr(context: PdfContext, executor: Executor) -> None:
     jobs = options.jobs or available_cpu_count()
     max_workers = min(len(context.pdfinfo), jobs)
     if max_workers > 1:
-        log.info("Start processing %d pages concurrently", max_workers)
+        log.info("Starting processing with %d workers concurrently", max_workers)
 
     executor(
         use_threads=options.use_threads,
