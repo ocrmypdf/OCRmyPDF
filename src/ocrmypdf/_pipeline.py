@@ -949,11 +949,24 @@ def try_speculative_pdfa(input_pdf: Path, context: PdfContext) -> Path | None:
     """
     from ocrmypdf._exec import verapdf
 
+    options = context.options
+
+    # Skip speculative conversion if user requested specific image compression,
+    # since that requires Ghostscript to apply
+    gs_opts = getattr(options, 'ghostscript', None)
+    if gs_opts is not None:
+        compression = getattr(gs_opts, 'pdfa_image_compression', 'auto')
+        if compression != 'auto':
+            log.debug(
+                'Skipping speculative PDF/A: --pdfa-image-compression=%s requires '
+                'Ghostscript',
+                compression,
+            )
+            return None
+
     if not verapdf.available():
         log.debug('verapdf not available, skipping speculative PDF/A conversion')
         return None
-
-    options = context.options
     output_file = context.get_path('speculative_pdfa.pdf')
 
     try:
