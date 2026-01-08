@@ -117,7 +117,7 @@ def run_hocr_to_ocr_pdf_pipeline(
         # Gather pdfinfo and create context
         pdfinfo = do_get_pdfinfo(origin_pdf, executor, options)
         context = PdfContext(options, work_folder, origin_pdf, pdfinfo, plugin_manager)
-        plugin_manager.hook.check_options(options=options)
+        plugin_manager.check_options(options=options)
         optimize_messages = exec_hocr_to_ocr_pdf(context, executor)
 
         return report_output_pdf(options, origin_pdf, optimize_messages)

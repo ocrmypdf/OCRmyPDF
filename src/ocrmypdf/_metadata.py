@@ -47,7 +47,7 @@ def get_docinfo(base_pdf: Pdf, context: PdfContext) -> dict[str, str]:
     if options.subject:
         pdfmark['/Subject'] = options.subject
 
-    creator_tag = context.plugin_manager.hook.get_ocr_engine().creator_tag(options)
+    creator_tag = context.plugin_manager.get_ocr_engine().creator_tag(options)
 
     pdfmark['/Creator'] = f'{PROGRAM_NAME} {OCRMYPF_VERSION} / {creator_tag}'
     pdfmark['/Producer'] = f'pikepdf {PIKEPDF_VERSION}'
@@ -186,7 +186,7 @@ def metadata_fixup(
     output_file = context.get_path('metafix.pdf')
     options = context.options
 
-    pbar_class = context.plugin_manager.hook.get_progressbar_class()
+    pbar_class = context.plugin_manager.get_progressbar_class()
     with (
         Pdf.open(context.origin) as original,
         Pdf.open(working_file) as pdf,

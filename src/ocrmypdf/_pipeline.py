@@ -253,7 +253,7 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
             )
         else:
             raise TaggedPDFError()
-    context.plugin_manager.hook.validate(pdfinfo=pdfinfo, options=options)
+    context.plugin_manager.validate(pdfinfo=pdfinfo, options=options)
 
 
 def _vector_page_dpi(pageinfo: PageInfo) -> int:
@@ -393,7 +393,7 @@ def rasterize_preview(input_file: Path, page_context: PageContext) -> Path:
         [get_canvas_square_dpi(page_context)]
     )
     page_dpi = Resolution(300.0, 300.0).take_min([get_page_square_dpi(page_context)])
-    page_context.plugin_manager.hook.rasterize_pdf_page(
+    page_context.plugin_manager.rasterize_pdf_page(
         input_file=input_file,
         output_file=output_file,
         raster_device='jpeggray',
@@ -453,7 +453,7 @@ def get_orientation_correction(preview: Path, page_context: PageContext) -> int:
     which points it (hopefully) upright. _graft.py takes care of the orienting
     the image and text layers.
     """
-    orient_conf = page_context.plugin_manager.hook.get_ocr_engine().get_orientation(
+    orient_conf = page_context.plugin_manager.get_ocr_engine().get_orientation(
         preview, page_context.options
     )
 
@@ -556,7 +556,7 @@ def rasterize(
 
     canvas_dpi, page_dpi = calculate_raster_dpi(page_context)
 
-    page_context.plugin_manager.hook.rasterize_pdf_page(
+    page_context.plugin_manager.rasterize_pdf_page(
         input_file=input_file,
         output_file=output_file,
         raster_device=device,
@@ -596,7 +596,7 @@ def preprocess_deskew(input_file: Path, page_context: PageContext) -> Path:
     output_file = page_context.get_path('pp_deskew.png')
     dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
 
-    ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
+    ocr_engine = page_context.plugin_manager.get_ocr_engine()
     deskew_angle_degrees = ocr_engine.get_deskew(input_file, page_context.options)
 
     with Image.open(input_file) as im:
@@ -661,7 +661,7 @@ def create_ocr_image(image: Path, page_context: PageContext) -> Path:
                 draw.rectangle(pixcoords, fill='white')
                 # draw.rectangle(pixcoords, outline='pink')
 
-        filter_im = page_context.plugin_manager.hook.filter_ocr_image(
+        filter_im = page_context.plugin_manager.filter_ocr_image(
             page=page_context, image=im
         )
         if filter_im is not None:
@@ -679,7 +679,7 @@ def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, 
     hocr_text_out = page_context.get_path('ocr_hocr.txt')
     options = page_context.options
 
-    ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
+    ocr_engine = page_context.plugin_manager.get_ocr_engine()
     ocr_engine.generate_hocr(
         input_file=input_file,
         output_hocr=hocr_out,
@@ -766,7 +766,7 @@ def create_pdf_page_from_image(
     bio.seek(0)
     fix_pagepdf_boxes(bio, output_file, page_context, swap_axis=swap_axis)
 
-    output_file = page_context.plugin_manager.hook.filter_pdf_page(
+    output_file = page_context.plugin_manager.filter_pdf_page(
         page=page_context, image_filename=image, output_pdf=output_file
     )
     return output_file
@@ -780,7 +780,7 @@ def ocr_engine_textonly_pdf(
     output_text = page_context.get_path('ocr_tess.txt')
     options = page_context.options
 
-    ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
+    ocr_engine = page_context.plugin_manager.get_ocr_engine()
     ocr_engine.generate_pdf(
         input_file=input_image,
         output_pdf=output_pdf,
@@ -914,7 +914,7 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
     else:
         pdfa_part = '2'  # Fallback
 
-    context.plugin_manager.hook.generate_pdfa(
+    context.plugin_manager.generate_pdfa(
         pdf_version=input_pdfinfo.min_version,
         pdf_pages=[fix_docinfo_file],
         pdfmark=input_ps_stub,
@@ -922,7 +922,7 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
         context=context,
         pdfa_part=pdfa_part,
         progressbar_class=(
-            context.plugin_manager.hook.get_progressbar_class()
+            context.plugin_manager.get_progressbar_class()
             if options.progress_bar
             else None
         ),
@@ -994,7 +994,7 @@ def optimize_pdf(
 ) -> tuple[Path, Sequence[str]]:
     """Optimize the given PDF file."""
     output_file = context.get_path('optimize.pdf')
-    output_pdf, messages = context.plugin_manager.hook.optimize_pdf(
+    output_pdf, messages = context.plugin_manager.optimize_pdf(
         input_pdf=input_file,
         output_pdf=output_file,
         context=context,

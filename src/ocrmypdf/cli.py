@@ -10,11 +10,10 @@ from argparse import ArgumentParser
 from collections.abc import Callable, Mapping
 from typing import Any, TypeVar
 
-import pluggy
-
 from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._defaults import PROGRAM_NAME as _PROGRAM_NAME
 from ocrmypdf._options import OCROptions
+from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._version import __version__ as _VERSION
 
 T = TypeVar('T', int, float)
@@ -480,7 +479,7 @@ def namespace_to_options(ns) -> OCROptions:
 
 def get_options_and_plugins(
     args=None,
-) -> tuple[OCROptions, pluggy.PluginManager]:
+) -> tuple[OCROptions, OcrmypdfPluginManager]:
     """Parse command line arguments and return OCROptions and plugin manager.
 
     This is the main entry point for CLI argument processing. It handles
@@ -504,7 +503,7 @@ def get_options_and_plugins(
 
     # Get parser and let plugins add their options
     parser = get_parser()
-    plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
+    plugin_manager.add_options(parser=parser)
 
     # Parse all arguments
     namespace = parser.parse_args(args=args)

@@ -445,7 +445,7 @@ def process_page(page_context: PageContext) -> tuple[Path, Path | None, int]:
         visible_image_out = preprocess_out
         if should_visible_page_image_use_jpg(page_context.pageinfo):
             visible_image_out = create_visible_page_jpg(visible_image_out, page_context)
-        filtered_image = page_context.plugin_manager.hook.filter_page_image(
+        filtered_image = page_context.plugin_manager.filter_page_image(
             page=page_context, image_filename=visible_image_out
         )
         if filtered_image is not None:  # None if no hook is present
@@ -472,7 +472,7 @@ def postprocess(
         ps_stub_out = generate_postscript_stub(context)
         pdf_out = convert_to_pdfa(pdf_out, ps_stub_out, context)
 
-    optimizing = context.plugin_manager.hook.is_optimization_enabled(context=context)
+    optimizing = context.plugin_manager.is_optimization_enabled(context=context)
     save_settings = get_pdf_save_settings(context.options.output_type)
     save_settings['linearize'] = not optimizing and should_linearize(pdf_out, context)
 

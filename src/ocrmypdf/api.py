@@ -50,14 +50,12 @@ from pathlib import Path
 from typing import BinaryIO
 from warnings import warn
 
-import pluggy
-
 from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._options import OCROptions
 from ocrmypdf._pipelines.hocr_to_ocr_pdf import run_hocr_to_ocr_pdf_pipeline
 from ocrmypdf._pipelines.ocr import run_pipeline, run_pipeline_cli
 from ocrmypdf._pipelines.pdf_to_hocr import run_hocr_pipeline
-from ocrmypdf._plugin_manager import get_plugin_manager
+from ocrmypdf._plugin_manager import OcrmypdfPluginManager, get_plugin_manager
 from ocrmypdf._validation import check_options
 from ocrmypdf.cli import ArgumentParser, get_parser
 
@@ -72,8 +70,8 @@ _api_lock = threading.Lock()
 
 def setup_plugin_infrastructure(
     plugins: Sequence[Path | str] | None = None,
-    plugin_manager: pluggy.PluginManager | None = None,
-) -> pluggy.PluginManager:
+    plugin_manager: OcrmypdfPluginManager | None = None,
+) -> OcrmypdfPluginManager:
     """Set up plugin infrastructure with proper initialization.
 
     This function handles:
@@ -105,8 +103,8 @@ def setup_plugin_infrastructure(
     if not plugin_manager:
         plugin_manager = get_plugin_manager(plugins)
 
-    # Initialize plugins
-    plugin_manager.hook.initialize(plugin_manager=plugin_manager)  # pylint: disable=no-member
+    # Initialize plugins (pass the underlying pluggy manager)
+    plugin_manager.initialize(plugin_manager=plugin_manager.pluggy)
 
     # Initialize plugin option registry
     from ocrmypdf._plugin_registry import PluginOptionRegistry
@@ -114,7 +112,7 @@ def setup_plugin_infrastructure(
     registry = PluginOptionRegistry()
 
     # Let plugins register their option models
-    option_models = plugin_manager.hook.register_options()  # pylint: disable=no-member
+    option_models = plugin_manager.register_options()
     all_plugin_models: dict[str, type] = {}
     for plugin_options in option_models:
         if plugin_options:  # Skip None returns
@@ -146,7 +144,7 @@ def configure_logging(
     *,
     progress_bar_friendly: bool = True,
     manage_root_logger: bool = False,
-    plugin_manager: pluggy.PluginManager | None = None,
+    plugin_manager: OcrmypdfPluginManager | None = None,
 ):
     """Set up logging.
 
@@ -193,7 +191,7 @@ def configure_logging(
 
     console = None
     if plugin_manager and progress_bar_friendly:
-        console = plugin_manager.hook.get_logging_console()
+        console = plugin_manager.get_logging_console()
 
     if not console:
         console = logging.StreamHandler(stream=sys.stderr)
@@ -432,7 +430,7 @@ def ocr(  # noqa: D417
 
         # Get parser and let plugins add their options
         parser = get_parser()
-        plugin_manager.hook.add_options(parser=parser)  # pylint: disable=no-member
+        plugin_manager.add_options(parser=parser)
 
         if 'verbose' in kwargs:
             warn("ocrmypdf.ocr(verbose=) is ignored. Use ocrmypdf.configure_logging().")
@@ -574,7 +572,7 @@ def _pdf_to_hocr(  # noqa: D417
             plugins=plugins, plugin_manager=plugin_manager
         )
 
-        plugin_manager.hook.add_options(parser=get_parser())  # pylint: disable=no-member
+        plugin_manager.add_options(parser=get_parser())
 
         # Create OCROptions directly
         try:
@@ -687,7 +685,7 @@ def _hocr_to_ocr_pdf(  # noqa: D417
             plugins=plugins, plugin_manager=plugin_manager
         )
 
-        plugin_manager.hook.add_options(parser=get_parser())  # pylint: disable=no-member
+        plugin_manager.add_options(parser=get_parser())
 
         # Create OCROptions directly
         try:

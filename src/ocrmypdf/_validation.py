@@ -14,9 +14,9 @@ from pathlib import Path
 from shutil import copyfileobj
 
 import pikepdf
-from pluggy import PluginManager
 
 from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
+from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._exec import unpaper
 from ocrmypdf._options import OCROptions
 from ocrmypdf.exceptions import (
@@ -120,12 +120,14 @@ def _check_plugin_invariant_options(options: OCROptions) -> None:
     check_options_preprocessing(options)
 
 
-def _check_plugin_options(options: OCROptions, plugin_manager: PluginManager) -> None:
+def _check_plugin_options(
+    options: OCROptions, plugin_manager: OcrmypdfPluginManager
+) -> None:
     # First, let plugins check their external dependencies
-    plugin_manager.hook.check_options(options=options)
+    plugin_manager.check_options(options=options)
 
     # Then check OCR engine language support
-    ocr_engine_languages = plugin_manager.hook.get_ocr_engine().languages(options)
+    ocr_engine_languages = plugin_manager.get_ocr_engine().languages(options)
     check_options_languages(options, ocr_engine_languages)
 
     # Finally, run comprehensive validation using the coordinator
@@ -134,7 +136,7 @@ def _check_plugin_options(options: OCROptions, plugin_manager: PluginManager) ->
     coordinator.validate_all_options(options)
 
 
-def check_options(options: OCROptions, plugin_manager: PluginManager) -> None:
+def check_options(options: OCROptions, plugin_manager: OcrmypdfPluginManager) -> None:
     """Check options for validity and consistency.
 
     This function coordinates validation across the entire system:
