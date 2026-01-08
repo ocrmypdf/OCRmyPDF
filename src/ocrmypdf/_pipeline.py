@@ -36,7 +36,7 @@ from ocrmypdf.exceptions import (
     UnsupportedImageFormatError,
 )
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution, safe_symlink
-from ocrmypdf.pdfa import generate_pdfa_ps
+from ocrmypdf.pdfa import generate_pdfa_ps, speculative_pdfa_conversion
 from ocrmypdf.pdfinfo import Colorspace, Encoding, FloatRect, PageInfo, PdfInfo
 from ocrmypdf.pluginspec import OrientationConfidence
 
@@ -930,6 +930,52 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
     )
 
     return output_file
+
+
+def try_speculative_pdfa(input_pdf: Path, context: PdfContext) -> Path | None:
+    """Try speculative PDF/A conversion with verapdf validation.
+
+    This attempts a fast PDF/A conversion by adding PDF/A structures
+    directly with pikepdf, then validating with verapdf. If validation
+    passes, returns the converted file. If it fails or verapdf is not
+    available, returns None to signal that Ghostscript should be used.
+
+    Args:
+        input_pdf: Path to the PDF to convert
+        context: The PDF context
+
+    Returns:
+        Path to valid PDF/A file, or None if speculative conversion failed
+    """
+    from ocrmypdf._exec import verapdf
+
+    if not verapdf.available():
+        log.debug('verapdf not available, skipping speculative PDF/A conversion')
+        return None
+
+    options = context.options
+    output_file = context.get_path('speculative_pdfa.pdf')
+
+    try:
+        speculative_pdfa_conversion(input_pdf, output_file, options.output_type)
+
+        flavour = verapdf.output_type_to_flavour(options.output_type)
+        result = verapdf.validate(output_file, flavour)
+
+        if result.valid:
+            log.info('Speculative PDF/A conversion succeeded - skipping Ghostscript')
+            return output_file
+        else:
+            log.debug(
+                'Speculative PDF/A validation failed (%d rule violations), '
+                'falling back to Ghostscript',
+                result.failed_rules,
+            )
+            return None
+
+    except Exception as e:
+        log.debug('Speculative PDF/A conversion failed: %s', e)
+        return None
 
 
 def should_linearize(working_file: Path, context: PdfContext) -> bool:

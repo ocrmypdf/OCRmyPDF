@@ -45,6 +45,7 @@ from ocrmypdf._pipeline import (
     rasterize_preview,
     should_linearize,
     should_visible_page_image_use_jpg,
+    try_speculative_pdfa,
 )
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._validation import (
@@ -469,8 +470,14 @@ def postprocess(
         else:
             pdf_out = pdf_file
     if context.options.output_type.startswith('pdfa'):
-        ps_stub_out = generate_postscript_stub(context)
-        pdf_out = convert_to_pdfa(pdf_out, ps_stub_out, context)
+        # Try speculative PDF/A conversion first (fast path using pikepdf + verapdf)
+        speculative_result = try_speculative_pdfa(pdf_out, context)
+        if speculative_result is not None:
+            pdf_out = speculative_result
+        else:
+            # Fall back to Ghostscript conversion
+            ps_stub_out = generate_postscript_stub(context)
+            pdf_out = convert_to_pdfa(pdf_out, ps_stub_out, context)
 
     optimizing = context.plugin_manager.is_optimization_enabled(context=context)
     save_settings = get_pdf_save_settings(context.options.output_type)
