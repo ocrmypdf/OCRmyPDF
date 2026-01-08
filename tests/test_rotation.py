@@ -340,7 +340,7 @@ def test_rasterize_rotates(resources, tmp_path):
     )
 
     img = tmp_path / 'img90.png'
-    pm.hook.rasterize_pdf_page(
+    pm.rasterize_pdf_page(
         input_file=resources / 'graph.pdf',
         output_file=img,
         raster_device='pngmono',
@@ -357,7 +357,7 @@ def test_rasterize_rotates(resources, tmp_path):
         assert im.size == (83, 200), "Image not rotated"
 
     img = tmp_path / 'img180.png'
-    pm.hook.rasterize_pdf_page(
+    pm.rasterize_pdf_page(
         input_file=resources / 'graph.pdf',
         output_file=img,
         raster_device='pngmono',

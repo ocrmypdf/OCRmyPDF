@@ -134,7 +134,7 @@ class TestRasterizerHookDirect:
         )
 
         img = tmp_path / 'ghostscript_test.png'
-        result = pm.hook.rasterize_pdf_page(
+        result = pm.rasterize_pdf_page(
             input_file=resources / 'graph.pdf',
             output_file=img,
             raster_device='pngmono',
@@ -169,7 +169,7 @@ class TestRasterizerHookDirect:
         )
 
         img = tmp_path / 'pypdfium_test.png'
-        result = pm.hook.rasterize_pdf_page(
+        result = pm.rasterize_pdf_page(
             input_file=resources / 'graph.pdf',
             output_file=img,
             raster_device='pngmono',
@@ -197,7 +197,7 @@ class TestRasterizerHookDirect:
         )
 
         img = tmp_path / 'auto_test.png'
-        result = pm.hook.rasterize_pdf_page(
+        result = pm.rasterize_pdf_page(
             input_file=resources / 'graph.pdf',
             output_file=img,
             raster_device='pngmono',
@@ -370,7 +370,7 @@ class TestRasterizerWithNonStandardBoxes:
         )
 
         img_gs = tmp_path / 'gs.png'
-        pm.hook.rasterize_pdf_page(
+        pm.rasterize_pdf_page(
             input_file=pdf_with_nonstandard_boxes,
             output_file=img_gs,
             raster_device='png16m',
@@ -395,7 +395,7 @@ class TestRasterizerWithNonStandardBoxes:
             )
 
             img_pdfium = tmp_path / 'pdfium.png'
-            pm.hook.rasterize_pdf_page(
+            pm.rasterize_pdf_page(
                 input_file=pdf_with_nonstandard_boxes,
                 output_file=img_pdfium,
                 raster_device='png16m',
@@ -453,7 +453,7 @@ class TestRasterizerWithRotationAndBoxes:
 
         for rotation in [0, 90, 180, 270]:
             img_path = tmp_path / f'gs_rot{rotation}.png'
-            pm.hook.rasterize_pdf_page(
+            pm.rasterize_pdf_page(
                 input_file=pdf_with_nonstandard_boxes,
                 output_file=img_path,
                 raster_device='png16m',
@@ -495,7 +495,7 @@ class TestRasterizerWithRotationAndBoxes:
 
         for rotation in [0, 90, 180, 270]:
             img_path = tmp_path / f'pdfium_rot{rotation}.png'
-            pm.hook.rasterize_pdf_page(
+            pm.rasterize_pdf_page(
                 input_file=pdf_with_nonstandard_boxes,
                 output_file=img_path,
                 raster_device='png16m',
@@ -541,7 +541,7 @@ class TestRasterizerWithRotationAndBoxes:
                 rasterizer='ghostscript',
             )
             gs_img_path = tmp_path / f'gs_cmp_rot{rotation}.png'
-            pm.hook.rasterize_pdf_page(
+            pm.rasterize_pdf_page(
                 input_file=pdf_with_nonstandard_boxes,
                 output_file=gs_img_path,
                 raster_device='png16m',
@@ -562,7 +562,7 @@ class TestRasterizerWithRotationAndBoxes:
                 rasterizer='pypdfium',
             )
             pdfium_img_path = tmp_path / f'pdfium_cmp_rot{rotation}.png'
-            pm.hook.rasterize_pdf_page(
+            pm.rasterize_pdf_page(
                 input_file=pdf_with_nonstandard_boxes,
                 output_file=pdfium_img_path,
                 raster_device='png16m',

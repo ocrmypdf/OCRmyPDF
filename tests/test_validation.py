@@ -27,7 +27,7 @@ def make_opts_pm(input_file='a.pdf', output_file='b.pdf', language='eng', **kwar
         kwargs['language'] = language
     parser = get_parser()
     pm = setup_plugin_infrastructure(plugins=kwargs.get('plugins', []))
-    pm.hook.add_options(parser=parser)  # pylint: disable=no-member
+    pm.add_options(parser=parser)
     return (
         create_options(
             input_file=input_file, output_file=output_file, parser=parser, **kwargs
