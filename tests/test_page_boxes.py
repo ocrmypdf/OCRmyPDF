@@ -15,8 +15,11 @@ wh_rect = [0, 0, 412, 592]
 neg_rect = [-100, -100, 512, 692]
 
 mediabox_testdata = [
-    ('fpdf2', 'pdfa', 'ccitt.pdf', None, inset_rect, wh_rect),
-    ('sandwich', 'pdfa', 'ccitt.pdf', None, inset_rect, wh_rect),
+    # When speculative PDF/A succeeds (verapdf available), MediaBox is preserved.
+    # Ghostscript would normalize MediaBox to start at origin, but speculative
+    # conversion bypasses Ghostscript.
+    ('fpdf2', 'pdfa', 'ccitt.pdf', None, inset_rect, inset_rect),
+    ('sandwich', 'pdfa', 'ccitt.pdf', None, inset_rect, inset_rect),
     ('fpdf2', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
     ('sandwich', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
     (
