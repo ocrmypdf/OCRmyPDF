@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from itertools import pairwise
 from math import atan, degrees
 from pathlib import Path
 
@@ -377,17 +378,37 @@ class Fpdf2PdfRenderer:
         # Get inverse of baseline_matrix for transforming word bboxes
         inv_baseline_matrix = baseline_matrix.inverse()
 
-        # Render each word
-        for word in line.children:
-            if word.ocr_class == OcrClass.WORD and word.text:
+        # Collect words to render
+        words: list[OcrElement | None] = [
+            w for w in line.children if w.ocr_class == OcrClass.WORD and w.text
+        ]
+
+        # Render each word followed by space (except last)
+        # Use pairwise to iterate over consecutive word pairs, pairing the last
+        # word with a None to signal the end of the line.
+        for current_word, next_word in pairwise(words + [None]):
+            if current_word:  # Don't render EOL sentinel
+                # Render the current word
                 self._render_word(
                     pdf,
-                    word,
+                    current_word,
                     baseline_matrix,
                     inv_baseline_matrix,
                     font_size,
                     total_rotation_deg,
                     line_language,
+                )
+            if next_word:  # Don't render EOL sentinel
+                self._maybe_render_space(
+                    pdf,
+                    current_word,
+                    next_word,
+                    baseline_matrix,
+                    inv_baseline_matrix,
+                    font_size,
+                    total_rotation_deg,
+                    line_language,
+                    line.direction,
                 )
 
     def _render_word(
@@ -496,6 +517,195 @@ class Fpdf2PdfRenderer:
         else:
             pdf.set_xy(adjusted_x, adjusted_y)
             pdf.cell(text=word.text)
+
+        # Reset stretching
+        pdf.set_stretching(100)
+
+    def _is_cjk_only(self, text: str) -> bool:
+        """Check if text contains only CJK characters.
+
+        CJK scripts don't use spaces between words, so we should not insert
+        spaces between adjacent CJK words.
+
+        Args:
+            text: Text to check
+
+        Returns:
+            True if text contains only CJK characters
+        """
+        for char in text:
+            cp = ord(char)
+            # Check if character is in CJK ranges
+            if not (
+                0x4E00 <= cp <= 0x9FFF  # CJK Unified Ideographs
+                or 0x3400 <= cp <= 0x4DBF  # CJK Extension A
+                or 0x20000 <= cp <= 0x2A6DF  # CJK Extension B
+                or 0x2A700 <= cp <= 0x2B73F  # CJK Extension C
+                or 0x2B740 <= cp <= 0x2B81F  # CJK Extension D
+                or 0x2B820 <= cp <= 0x2CEAF  # CJK Extension E
+                or 0x2CEB0 <= cp <= 0x2EBEF  # CJK Extension F
+                or 0x30000 <= cp <= 0x3134F  # CJK Extension G
+                or 0x3040 <= cp <= 0x309F  # Hiragana
+                or 0x30A0 <= cp <= 0x30FF  # Katakana
+                or 0x31F0 <= cp <= 0x31FF  # Katakana Phonetic Extensions
+                or 0xAC00 <= cp <= 0xD7AF  # Hangul Syllables
+                or 0x1100 <= cp <= 0x11FF  # Hangul Jamo
+                or 0x3130 <= cp <= 0x318F  # Hangul Compatibility Jamo
+                or 0xA960 <= cp <= 0xA97F  # Hangul Jamo Extended-A
+                or 0xD7B0 <= cp <= 0xD7FF  # Hangul Jamo Extended-B
+                or 0x3000 <= cp <= 0x303F  # CJK Symbols and Punctuation
+                or 0xFF00 <= cp <= 0xFFEF  # Halfwidth and Fullwidth Forms
+            ):
+                return False
+        return True
+
+    def _maybe_render_space(
+        self,
+        pdf: FPDF,
+        current_word: OcrElement,
+        next_word: OcrElement,
+        baseline_matrix: Matrix,
+        inv_baseline_matrix: Matrix,
+        font_size: float,
+        rotation_deg: float,
+        line_language: str | None,
+        direction: str | None,
+    ) -> None:
+        """Render a space character between two words if a gap exists.
+
+        This ensures that PDF readers like pdfminer.six can properly segment
+        words during text extraction. Some PDF readers rely on explicit space
+        characters rather than inferring word boundaries from positioning.
+
+        Args:
+            pdf: FPDF instance
+            current_word: The word that was just rendered
+            next_word: The next word to be rendered
+            baseline_matrix: Transform from baseline coords to page coords
+            inv_baseline_matrix: Transform from page coords to baseline coords
+            font_size: Font size in points
+            rotation_deg: Total rotation angle for text
+            line_language: Language code from line for font selection
+            direction: Text direction ("ltr" or "rtl")
+        """
+        if current_word.bbox is None or next_word.bbox is None:
+            return
+
+        # Skip if both words are CJK-only (no spaces in CJK text)
+        if self._is_cjk_only(current_word.text) and self._is_cjk_only(next_word.text):
+            return
+
+        # Calculate gap between words
+        if direction == "rtl":
+            gap_left = next_word.bbox.right
+            gap_right = current_word.bbox.left
+        else:
+            gap_left = current_word.bbox.right
+            gap_right = next_word.bbox.left
+
+        gap_width_px = gap_right - gap_left
+
+        # Use word height as proxy for line height
+        line_height_px = current_word.bbox.height
+
+        # Skip if gap is too small (noise) or words are overlapping
+        if gap_width_px <= line_height_px * 0.05:
+            return
+
+        # Render space in the gap
+        self._render_space(
+            pdf,
+            gap_left,
+            gap_right,
+            current_word.bbox.top,
+            current_word.bbox.bottom,
+            baseline_matrix,
+            inv_baseline_matrix,
+            font_size,
+            rotation_deg,
+            line_language,
+        )
+
+    def _render_space(
+        self,
+        pdf: FPDF,
+        gap_left_px: float,
+        gap_right_px: float,
+        gap_top_px: float,
+        gap_bottom_px: float,
+        baseline_matrix: Matrix,
+        inv_baseline_matrix: Matrix,
+        font_size: float,
+        rotation_deg: float,
+        line_language: str | None,
+    ) -> None:
+        """Render a space character in a gap between words.
+
+        Uses the same baseline transformation logic as word rendering to ensure
+        proper alignment on rotated or sloped baselines.
+
+        Args:
+            pdf: FPDF instance
+            gap_left_px: Left edge of gap in pixels
+            gap_right_px: Right edge of gap in pixels
+            gap_top_px: Top edge of gap in pixels
+            gap_bottom_px: Bottom edge of gap in pixels
+            baseline_matrix: Transform from baseline coords to page coords
+            inv_baseline_matrix: Transform from page coords to baseline coords
+            font_size: Font size in points
+            rotation_deg: Total rotation angle for text
+            line_language: Language code from line for font selection
+        """
+        # Convert gap to PDF points
+        gap_left_pt = self.coord_transform.px_to_pt(gap_left_px)
+        gap_top_pt = self.coord_transform.px_to_pt(gap_top_px)
+        gap_right_pt = self.coord_transform.px_to_pt(gap_right_px)
+        gap_bottom_pt = self.coord_transform.px_to_pt(gap_bottom_px)
+        gap_width_pt = gap_right_pt - gap_left_pt
+
+        # Transform gap bbox into baseline coordinate system to get x position
+        box_llx, _, _, _ = transform_box(
+            inv_baseline_matrix,
+            gap_left_pt,
+            gap_top_pt,
+            gap_right_pt,
+            gap_bottom_pt,
+        )
+
+        # Select font (use default font for space)
+        font_manager = self.multi_font_manager.select_font_for_word(" ", line_language)
+        font_family = self._register_font(pdf, font_manager)
+
+        # Set font
+        pdf.set_font(font_family, size=font_size)
+
+        # Calculate natural space width and scaling
+        natural_width = pdf.get_string_width(" ")
+        if natural_width > 0 and gap_width_pt > 0:
+            scale_x = (gap_width_pt / natural_width) * 100
+        else:
+            scale_x = 100
+
+        # Apply horizontal stretching
+        pdf.set_stretching(scale_x)
+
+        # Transform the baseline-relative x position back to page coordinates
+        page_x, page_y = transform_point(baseline_matrix, box_llx, 0)
+
+        # Calculate y position based on baseline (same as _render_word)
+        ascent, descent, _ = font_manager.get_font_metrics()
+        total_height = ascent + abs(descent)
+        baseline_offset_ratio = ascent / total_height
+        adjusted_y = page_y - font_size * baseline_offset_ratio
+
+        # Position and draw space with rotation
+        if abs(rotation_deg) > 0.1:
+            with pdf.rotation(-rotation_deg, x=page_x, y=page_y):
+                pdf.set_xy(page_x, adjusted_y)
+                pdf.cell(text=" ")
+        else:
+            pdf.set_xy(page_x, adjusted_y)
+            pdf.cell(text=" ")
 
         # Reset stretching
         pdf.set_stretching(100)

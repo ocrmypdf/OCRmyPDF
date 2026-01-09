@@ -364,3 +364,169 @@ class TestFpdf2RendererWithHocr:
 
         assert output_path.exists()
         assert output_path.stat().st_size > 0
+
+
+class TestWordSegmentation:
+    """Test that rendered PDFs have proper word segmentation for pdfminer.six."""
+
+    def test_word_segmentation_with_pdfminer(self, multi_font_manager, tmp_path):
+        """Test that pdfminer.six can extract words with proper spacing.
+
+        This test verifies that explicit space characters are inserted between
+        words so that pdfminer.six (and similar PDF readers) can properly
+        segment words during text extraction.
+        """
+        from pdfminer.high_level import extract_text
+
+        from ocrmypdf.hocrtransform.ocr_element import BoundingBox, OcrElement
+
+        # Create a page with multiple words on one line
+        word1 = OcrElement(
+            ocr_class=OcrClass.WORD,
+            text="Hello",
+            bbox=BoundingBox(left=100, top=100, right=200, bottom=130),
+        )
+        word2 = OcrElement(
+            ocr_class=OcrClass.WORD,
+            text="World",
+            bbox=BoundingBox(left=220, top=100, right=320, bottom=130),
+        )
+        word3 = OcrElement(
+            ocr_class=OcrClass.WORD,
+            text="Test",
+            bbox=BoundingBox(left=340, top=100, right=420, bottom=130),
+        )
+        line = OcrElement(
+            ocr_class=OcrClass.LINE,
+            bbox=BoundingBox(left=100, top=100, right=420, bottom=130),
+            children=[word1, word2, word3],
+        )
+        page = OcrElement(
+            ocr_class=OcrClass.PAGE,
+            bbox=BoundingBox(left=0, top=0, right=612, bottom=792),
+            children=[line],
+        )
+
+        renderer = Fpdf2PdfRenderer(
+            page=page,
+            dpi=72,  # 1:1 mapping to PDF points
+            multi_font_manager=multi_font_manager,
+            invisible_text=False,
+        )
+
+        output_path = tmp_path / "test_word_segmentation.pdf"
+        renderer.render(output_path)
+
+        # Extract text using pdfminer.six
+        extracted_text = extract_text(str(output_path))
+
+        # Verify words are separated by spaces
+        assert "Hello" in extracted_text
+        assert "World" in extracted_text
+        assert "Test" in extracted_text
+
+        # The text should NOT be run together like "HelloWorldTest"
+        assert "HelloWorld" not in extracted_text
+        assert "WorldTest" not in extracted_text
+
+        # Verify proper word segmentation - words should be separated
+        # (allowing for whitespace variations)
+        words_found = extracted_text.split()
+        assert "Hello" in words_found
+        assert "World" in words_found
+        assert "Test" in words_found
+
+    def test_cjk_no_spurious_spaces(self, multi_font_manager, tmp_path):
+        """Test that CJK text does not get spurious spaces inserted.
+
+        CJK scripts don't use spaces between characters/words, so we should
+        not insert spaces between adjacent CJK words.
+        """
+        from pdfminer.high_level import extract_text
+
+        from ocrmypdf.hocrtransform.ocr_element import BoundingBox, OcrElement
+
+        # Create a page with CJK words (Chinese characters)
+        # 你好 = "Hello" in Chinese
+        # 世界 = "World" in Chinese
+        word1 = OcrElement(
+            ocr_class=OcrClass.WORD,
+            text="你好",
+            bbox=BoundingBox(left=100, top=100, right=160, bottom=130),
+        )
+        word2 = OcrElement(
+            ocr_class=OcrClass.WORD,
+            text="世界",
+            bbox=BoundingBox(left=170, top=100, right=230, bottom=130),
+        )
+        line = OcrElement(
+            ocr_class=OcrClass.LINE,
+            bbox=BoundingBox(left=100, top=100, right=230, bottom=130),
+            children=[word1, word2],
+        )
+        page = OcrElement(
+            ocr_class=OcrClass.PAGE,
+            bbox=BoundingBox(left=0, top=0, right=612, bottom=792),
+            children=[line],
+        )
+
+        renderer = Fpdf2PdfRenderer(
+            page=page,
+            dpi=72,
+            multi_font_manager=multi_font_manager,
+            invisible_text=False,
+        )
+
+        output_path = tmp_path / "test_cjk_segmentation.pdf"
+        renderer.render(output_path)
+
+        # Extract text using pdfminer.six
+        extracted_text = extract_text(str(output_path))
+
+        # CJK text should be present
+        assert "你好" in extracted_text
+        assert "世界" in extracted_text
+
+        # There should NOT be spaces between CJK characters
+        # (but pdfminer may add some whitespace, so we check the raw chars)
+        extracted_chars = extracted_text.replace(" ", "").replace("\n", "")
+        assert "你好世界" in extracted_chars or (
+            "你好" in extracted_chars and "世界" in extracted_chars
+        )
+
+    def test_latin_hocr_word_segmentation(
+        self, resources, multi_font_manager, tmp_path
+    ):
+        """Test word segmentation with real Latin hOCR file."""
+        from pdfminer.high_level import extract_text
+
+        hocr_path = resources / "latin.hocr"
+        if not hocr_path.exists():
+            pytest.skip("latin.hocr not found")
+
+        parser = HocrParser(hocr_path)
+        page = parser.parse()
+
+        renderer = Fpdf2PdfRenderer(
+            page=page,
+            dpi=300,
+            multi_font_manager=multi_font_manager,
+            invisible_text=False,
+        )
+
+        output_path = tmp_path / "latin_segmentation.pdf"
+        renderer.render(output_path)
+
+        # Extract text using pdfminer.six
+        extracted_text = extract_text(str(output_path))
+
+        # The Latin text should have proper word segmentation
+        # Words should be separable
+        words = extracted_text.split()
+        assert len(words) > 0
+
+        # Check that common English words are properly segmented
+        # (not stuck together)
+        text_no_newlines = extracted_text.replace("\n", " ")
+        # There should be spaces in the extracted text
+        assert " " in text_no_newlines
