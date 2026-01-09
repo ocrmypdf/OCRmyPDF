@@ -36,7 +36,11 @@ from ocrmypdf.exceptions import (
     UnsupportedImageFormatError,
 )
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution, safe_symlink
-from ocrmypdf.pdfa import generate_pdfa_ps, speculative_pdfa_conversion
+from ocrmypdf.pdfa import (
+    file_claims_pdfa,
+    generate_pdfa_ps,
+    speculative_pdfa_conversion,
+)
 from ocrmypdf.pdfinfo import Colorspace, Encoding, FloatRect, PageInfo, PdfInfo
 from ocrmypdf.pluginspec import OrientationConfidence
 
@@ -989,6 +993,73 @@ def try_speculative_pdfa(input_pdf: Path, context: PdfContext) -> Path | None:
     except Exception as e:
         log.debug('Speculative PDF/A conversion failed: %s', e)
         return None
+
+
+def try_auto_pdfa(input_pdf: Path, context: PdfContext) -> tuple[Path, str]:
+    """Best-effort PDF/A for 'auto' output type.
+
+    This function attempts to produce PDF/A without requiring Ghostscript:
+    1. If verapdf is available, tries speculative conversion with validation
+    2. Without verapdf, passes through as PDF/A if safe (input already PDF/A
+       or force-ocr was used)
+    3. Falls back to regular PDF if neither condition is met
+
+    Args:
+        input_pdf: Path to the PDF to convert
+        context: The PDF context
+
+    Returns:
+        Tuple of (output_path, actual_output_type) where actual_output_type
+        is 'pdfa' if PDF/A was achieved, 'pdf' otherwise
+    """
+    from ocrmypdf._exec import verapdf
+
+    # If verapdf available, try speculative conversion with validation
+    if verapdf.available():
+        result = try_speculative_pdfa(input_pdf, context)
+        if result is not None:
+            return (result, 'pdfa')
+        # verapdf validation failed - fall through to regular PDF
+        log.info(
+            'Auto mode: speculative PDF/A validation failed, outputting regular PDF'
+        )
+        return (input_pdf, 'pdf')
+
+    # Without verapdf, check if we can pass through as PDF/A
+    if _is_safe_pdfa(input_pdf, context.options):
+        # Pass through as-is (no modifications needed)
+        log.info('Auto mode: passing through as PDF/A (input already compliant)')
+        return (input_pdf, 'pdfa')
+
+    # Fall through to regular PDF
+    log.info('Auto mode: no verapdf available and input is not PDF/A, outputting PDF')
+    return (input_pdf, 'pdf')
+
+
+def _is_safe_pdfa(input_pdf: Path, options) -> bool:
+    """Check if file can be considered PDF/A without validation.
+
+    These are cases where our modifications don't break PDF/A compliance:
+    1. Input already claims PDF/A (we just grafted OCR text onto it)
+    2. We used force-ocr (we rewrote the entire PDF from scratch)
+
+    Args:
+        input_pdf: Path to the PDF to check
+        options: OCR options
+
+    Returns:
+        True if file can safely be considered PDF/A
+    """
+    # Safe if input already claims PDF/A
+    pdfa_status = file_claims_pdfa(input_pdf)
+    if pdfa_status['pass']:
+        return True
+
+    # Safe if we rewrote the PDF with force-ocr
+    if options.force_ocr:
+        return True
+
+    return False
 
 
 def should_linearize(working_file: Path, context: PdfContext) -> bool:

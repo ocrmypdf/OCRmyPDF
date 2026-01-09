@@ -45,6 +45,7 @@ from ocrmypdf._pipeline import (
     rasterize_preview,
     should_linearize,
     should_visible_page_image_use_jpg,
+    try_auto_pdfa,
     try_speculative_pdfa,
 )
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
@@ -469,8 +470,13 @@ def postprocess(
             pdf_out = fix_annots
         else:
             pdf_out = pdf_file
-    if context.options.output_type.startswith('pdfa'):
-        # Try speculative PDF/A conversion first (fast path using pikepdf + verapdf)
+    if context.options.output_type == 'auto':
+        # Best effort PDF/A - never uses Ghostscript
+        pdf_out, actual_type = try_auto_pdfa(pdf_out, context)
+        # Store actual output type for reporting
+        context.options.extra_attrs['_actual_output_type'] = actual_type
+    elif context.options.output_type.startswith('pdfa'):
+        # Required PDF/A - uses Ghostscript as fallback
         speculative_result = try_speculative_pdfa(pdf_out, context)
         if speculative_result is not None:
             pdf_out = speculative_result
@@ -495,7 +501,22 @@ def report_output_pdf(options, start_input_file, optimize_messages) -> ExitCode:
     elif samefile(options.output_file, Path(os.devnull)):
         pass  # Say nothing when sending to dev null
     else:
-        if options.output_type.startswith('pdfa'):
+        if options.output_type == 'auto':
+            # For 'auto' mode, check what we actually produced
+            actual_type = options.extra_attrs.get('_actual_output_type', 'pdf')
+            pdfa_info = file_claims_pdfa(options.output_file)
+            if actual_type == 'pdfa' and pdfa_info['pass']:
+                log.info(
+                    "Output file is a %s (auto mode achieved PDF/A)",
+                    pdfa_info['conformance'],
+                )
+            elif pdfa_info['pass']:
+                # Unexpectedly got PDF/A
+                log.info("Output file is a %s", pdfa_info['conformance'])
+            else:
+                # Regular PDF - this is expected for auto mode fallback
+                log.info("Output file is a PDF (auto mode)")
+        elif options.output_type.startswith('pdfa'):
             pdfa_info = file_claims_pdfa(options.output_file)
             if pdfa_info['pass']:
                 log.info("Output file is a %s (as expected)", pdfa_info['conformance'])

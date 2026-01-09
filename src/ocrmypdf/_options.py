@@ -88,7 +88,7 @@ class OCROptions(BaseModel):
 
     # Core OCR options
     languages: list[str] = Field(default_factory=lambda: [DEFAULT_LANGUAGE])
-    output_type: str = 'pdfa'
+    output_type: str = 'auto'
     force_ocr: bool = False
     skip_text: bool = False
     redo_ocr: bool = False
@@ -190,7 +190,7 @@ class OCROptions(BaseModel):
     @classmethod
     def validate_output_type(cls, v):
         """Validate output type is one of the allowed values."""
-        valid_types = {'pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3', 'none'}
+        valid_types = {'auto', 'pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3', 'none'}
         if v not in valid_types:
             raise ValueError(f"output_type must be one of {valid_types}")
         return v

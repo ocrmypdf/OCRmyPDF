@@ -101,38 +101,41 @@ def add_options(parser):
 @hookimpl
 def check_options(options):
     """Check that the options are valid for this plugin."""
-    check_external_program(
-        program='gs',
-        package='ghostscript',
-        version_checker=ghostscript.version,
-        need_version='9.54',  # RHEL 9's version; Ubuntu 22.04 has 9.55
-    )
-    gs_version = ghostscript.version()
-    if gs_version in BLACKLISTED_GS_VERSIONS:
-        raise MissingDependencyError(
-            f"Ghostscript {gs_version} contains serious regressions and is not "
-            "supported. Please upgrade to a newer version."
+    # Only require Ghostscript for pdfa* output types (not 'auto' or 'pdf')
+    # 'auto' mode uses best-effort PDF/A without Ghostscript fallback
+    if options.output_type.startswith('pdfa'):
+        check_external_program(
+            program='gs',
+            package='ghostscript',
+            version_checker=ghostscript.version,
+            need_version='9.54',  # RHEL 9's version; Ubuntu 22.04 has 9.55
         )
-    if Version('10.0.0') <= gs_version < Version('10.02.1') and (
-        options.skip_text or options.redo_ocr
-    ):
-        raise MissingDependencyError(
-            f"Ghostscript 10.0.0 through 10.02.0 (your version: {gs_version}) "
-            "contain serious regressions that corrupt PDFs with existing text, "
-            "such as those processed using --skip-text or --redo-ocr. "
-            "Please upgrade to a "
-            "newer version, or use --output-type pdf to avoid Ghostscript, or "
-            "use --force-ocr to discard existing text."
-        )
-    if gs_version >= Version('10.6.0') and options.output_type.startswith('pdfa'):
-        log.warning(
-            "Ghostscript 10.6.x contains JPEG encoding errors that may corrupt "
-            "images. OCRmyPDF will attempt to mitigate, but this version is "
-            "strongly not recommended. Please upgrade to a newer version. "
-            "As of 2025-12, 10.6.0 is the latest version of Ghostscript."
-        )
-    if options.output_type == 'pdfa':
-        options.output_type = 'pdfa-2'
+        gs_version = ghostscript.version()
+        if gs_version in BLACKLISTED_GS_VERSIONS:
+            raise MissingDependencyError(
+                f"Ghostscript {gs_version} contains serious regressions and is not "
+                "supported. Please upgrade to a newer version."
+            )
+        if Version('10.0.0') <= gs_version < Version('10.02.1') and (
+            options.skip_text or options.redo_ocr
+        ):
+            raise MissingDependencyError(
+                f"Ghostscript 10.0.0 through 10.02.0 (your version: {gs_version}) "
+                "contain serious regressions that corrupt PDFs with existing text, "
+                "such as those processed using --skip-text or --redo-ocr. "
+                "Please upgrade to a "
+                "newer version, or use --output-type pdf to avoid Ghostscript, or "
+                "use --force-ocr to discard existing text."
+            )
+        if gs_version >= Version('10.6.0'):
+            log.warning(
+                "Ghostscript 10.6.x contains JPEG encoding errors that may corrupt "
+                "images. OCRmyPDF will attempt to mitigate, but this version is "
+                "strongly not recommended. Please upgrade to a newer version. "
+                "As of 2025-12, 10.6.0 is the latest version of Ghostscript."
+            )
+        if options.output_type == 'pdfa':
+            options.output_type = 'pdfa-2'
 
     if (
         options.ghostscript.color_conversion_strategy
@@ -144,11 +147,11 @@ def check_options(options):
         )
     if (
         options.ghostscript.pdfa_image_compression != 'auto'
-        and not options.output_type.startswith('pdfa')
+        and options.output_type not in ('auto', 'pdfa', 'pdfa-1', 'pdfa-2', 'pdfa-3')
     ):
         log.warning(
             "--pdfa-image-compression argument only applies when "
-            "--output-type is one of 'pdfa', 'pdfa-1', or 'pdfa-2'"
+            "--output-type is 'auto' or one of 'pdfa', 'pdfa-1', 'pdfa-2', 'pdfa-3'"
         )
 
 

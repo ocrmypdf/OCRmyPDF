@@ -159,16 +159,17 @@ Online documentation is located at:
     )
     parser.add_argument(
         '--output-type',
-        choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3', 'none'],
-        default='pdfa',
-        help="Choose output type. 'pdfa' creates a PDF/A-2b compliant file for "
-        "long term archiving (default, recommended) but may not suitable "
-        "for users who want their file altered as little as possible. 'pdfa' "
-        "also has problems with full Unicode text. 'pdf' minimizes changes "
-        "to the input file. 'pdf-a1' creates a "
-        "PDF/A-1b file. 'pdf-a2' is equivalent to 'pdfa'. 'pdf-a3' creates a "
-        "PDF/A-3b file. 'none' will produce no output, which may be helpful if "
-        "only the --sidecar is desired.",
+        choices=['auto', 'pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3', 'none'],
+        default='auto',
+        help="Choose output type. 'auto' (default) produces best-effort PDF/A "
+        "without requiring Ghostscript - uses verapdf validation when available, "
+        "otherwise passes through as PDF/A if safe (input already PDF/A or "
+        "force-ocr was used), or falls back to regular PDF. 'pdfa' creates a "
+        "PDF/A-2b compliant file for long term archiving (requires Ghostscript "
+        "as fallback). 'pdf' minimizes changes to the input file. 'pdfa-1' "
+        "creates a PDF/A-1b file. 'pdfa-2' is equivalent to 'pdfa'. 'pdfa-3' "
+        "creates a PDF/A-3b file. 'none' will produce no output, which may be "
+        "helpful if only the --sidecar is desired.",
     )
 
     # Use null string '\0' as sentinel to indicate the user supplied no argument,

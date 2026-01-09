@@ -202,9 +202,11 @@ def get_orientation(
     except CalledProcessError as e:
         tesseract_log_output(e.stdout)
         tesseract_log_output(e.stderr)
+        # Check both stdout (e.output) and stderr for known non-fatal messages
+        all_output = (e.output or b'') + (e.stderr or b'')
         if (
-            b'Too few characters. Skipping this page' in e.output
-            or b'Image too large' in e.output
+            b'Too few characters. Skipping this page' in all_output
+            or b'Image too large' in all_output
         ):
             return OrientationConfidence(0, 0)
         raise SubprocessOutputError() from e
