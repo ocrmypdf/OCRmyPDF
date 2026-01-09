@@ -84,6 +84,8 @@ def test_gs_render_failure(resources, outpdf, caplog):
     exitcode = run_ocrmypdf_api(
         resources / 'blank.pdf',
         outpdf,
+        '--output-type',
+        'pdfa',  # Required to trigger Ghostscript PDF/A generation
         '--plugin',
         'tests/plugins/tesseract_noop.py',
         '--plugin',
@@ -110,6 +112,8 @@ def test_ghostscript_pdfa_failure(resources, outpdf, caplog):
     exitcode = run_ocrmypdf_api(
         resources / 'francais.pdf',
         outpdf,
+        '--output-type',
+        'pdfa',  # Required to trigger Ghostscript PDF/A generation
         '--plugin',
         'tests/plugins/tesseract_noop.py',
         '--plugin',
@@ -136,6 +140,8 @@ def test_ghostscript_mandatory_color_conversion(resources, outpdf):
         check_ocrmypdf(
             resources / 'jbig2_baddevicen.pdf',
             outpdf,
+            '--output-type',
+            'pdfa',  # Required to trigger Ghostscript PDF/A generation
             '--plugin',
             'tests/plugins/tesseract_noop.py',
         )

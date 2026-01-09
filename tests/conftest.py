@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import platform
 import sys
 from pathlib import Path
@@ -15,6 +16,27 @@ from ocrmypdf._exec import unpaper
 from ocrmypdf.api import setup_plugin_infrastructure
 from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.exceptions import ExitCode
+
+
+class Gs106WarningFilter(logging.Filter):
+    """Filter out expected Ghostscript 10.6.x warning from test logs."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        # Allow all records except the expected Ghostscript 10.6.x warning
+        if "Ghostscript 10.6.x contains JPEG encoding errors" in record.getMessage():
+            return False
+        return True
+
+
+@pytest.fixture(autouse=True)
+def suppress_gs106_warning():
+    """Suppress the expected Ghostscript 10.6.x JPEG encoding warning in tests."""
+    # Add filter to root logger to suppress expected warnings
+    root_logger = logging.getLogger()
+    warning_filter = Gs106WarningFilter()
+    root_logger.addFilter(warning_filter)
+    yield
+    root_logger.removeFilter(warning_filter)
 
 
 def is_linux():
