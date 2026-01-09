@@ -17,8 +17,8 @@ synthesizers!
 
 per disk!
 
-® One or all tracks may be TRANSPOSED at the touch of a key.
-¢ Exclusive real-time ERASE function makes editing FAST.
+¢ One or all tracks may be TRANSPOSED at the touch of a key.
+e Exclusive real-time ERASE function makes editing FAST.
 ¢ Exclusive REPEAT function automatically repeats any held notes at a pre-selected
 
 rhythmic value.
@@ -27,7 +27,7 @@ rhythmic value.
 
 ¢ Optional SMPTE time code synchronization.
 
-¢ Optional remote control.
+® Optional remote control.
 
 Recording a Sequence
 
@@ -39,7 +39,7 @@ you'll hear what you played—only all timing errors will be
 corrected! (Timing correction may be adjusted or defeated).
 
 Any additional notes played will be added into the track
-— existing notes are not erased while recording!
+—existing notes are not erased while recording!
 
 FAST FORWARD, REWIND, and LOCATE controls
 may be used at any time to quickly access any location in
@@ -70,7 +70,7 @@ from one location to another—in the same sequence or a
 different one. For example, you might insert a copy of the
 first verse between the second chorus and the bridge.
 DELETE BARS operates the same way to remove
-unwanted sections,
+unwanted sections.
 
 Creating a Song
 
@@ -101,14 +101,14 @@ ERASE, REPEAT, PLAY/STOP, or LOCATE.
 
 * Two TRIGGER OUTPUTS may be programmed to output pulses at any selected note value.
 
-® Will sync to standard LinnDrum or Linn 9000 sync tone.
+© Will sync to standard LinnDrum or Linn 9000 sync tone.
 
 © Utilizes ultra high-speed, 8 MHz 80186 16 bit computer internally for FAST operation.
 * TEMPO may be specified in BEATS-PER-MINUTE or FRAMES-PER-BEAT at 24, 25, or 30 frames per second,
 
 (even drop frame!)
 
-* TEMPO may be entered numerically, adjustable in tenths of a Beat-Per-Minute increments, or by tapping quarter notes
+¢ TEMPO may be entered numerically, adjustable in tenths of a Beat-Per-Minute increments, or by tapping quarter notes
 
 on the TAP TEMPO button.
 

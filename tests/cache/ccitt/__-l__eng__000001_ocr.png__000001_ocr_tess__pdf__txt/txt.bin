@@ -8,18 +8,18 @@ extremely powerful, yet amazingly simple to learn and use. It’s many remarkabl
 ¢ Operation is similar to multi-track tape recorder with PLAY, STOP, RECORD, FAST
 FORWARD, REWIND, and LOCATE controls.
 
-¢ Each of the 100 sequences contains 32 simultaneous, polyphonic tracks. Each track may
+e Each of the 100 sequences contains 32 simultaneous, polyphonic tracks. Each track may
 be assigned to one of 16 MIDI channels. Simultaneously plays up to 16 polyphonic
 
 synthesizers!
 
-© Ultra-fast 32” disk drive stores complex songs in seconds and holds over 110,000 notes
+¢ Ultra-fast 3%" disk drive stores complex songs in seconds and holds over 110,000 notes
 
 per disk!
 
 ¢ One or all tracks may be TRANSPOSED at the touch of a key.
-¢ Exclusive real-time ERASE function makes editing FAST.
-© Exclusive REPEAT function automatically repeats any held notes at a pre-selected
+e Exclusive real-time ERASE function makes editing FAST.
+¢ Exclusive REPEAT function automatically repeats any held notes at a pre-selected
 
 rhythmic value.
 
@@ -34,12 +34,12 @@ Recording a Sequence
 To record a sequence, simply press RECORD and PLAY,
 then play your MIDI keyboard in time to the Sequencer’s
 click track. When the sequence loops back around to bar 1,
-you’ ll hear what you played—only all timing errors will be
+you'll hear what you played—only all timing errors will be
 
 corrected! (Timing correction may be adjusted or defeated).
 
 Any additional notes played will be added into the track
-— existing notes are not erased while recording!
+—existing notes are not erased while recording!
 
 FAST FORWARD, REWIND, and LOCATE controls
 may be used at any time to quickly access any location in
@@ -70,7 +70,7 @@ from one location to another—in the same sequence or a
 different one. For example, you might insert a copy of the
 first verse between the second chorus and the bridge.
 DELETE BARS operates the same way to remove
-unwanted sections,
+unwanted sections.
 
 Creating a Song
 
@@ -103,8 +103,8 @@ ERASE, REPEAT, PLAY/STOP, or LOCATE.
 
 © Will sync to standard LinnDrum or Linn 9000 sync tone.
 
-® Utilizes ultra high-speed, 8 MHz 80186 16 bit computer internally for FAST operation.
-* TEMPO may be specified in BEATS-PER-MINUTE or FRAMES-PER-BEAT at 24, 25, or 30 frames per second,
+© Utilizes ultra high-speed, 8 MHz 80186 16 bit computer internally for FAST operation.
+¢ TEMPO may be specified in BEATS-PER-MINUTE or FRAMES-PER-BEAT at 24, 25, or 30 frames per second,
 
 (even drop frame!)
 
