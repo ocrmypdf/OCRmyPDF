@@ -178,9 +178,13 @@ class OcrmypdfPluginManager:
             page=page, image_filename=image_filename, output_pdf=output_pdf
         )
 
-    def get_ocr_engine(self) -> OcrEngine | None:
-        """Returns an OcrEngine to use for processing."""
-        return self._pm.hook.get_ocr_engine()
+    def get_ocr_engine(self, *, options: OCROptions | None = None) -> OcrEngine | None:
+        """Returns an OcrEngine to use for processing.
+
+        Args:
+            options: OCROptions to pass to the hook for engine selection.
+        """
+        return self._pm.hook.get_ocr_engine(options=options)
 
     def generate_pdfa(
         self,

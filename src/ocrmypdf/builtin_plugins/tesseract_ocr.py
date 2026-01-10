@@ -366,6 +366,8 @@ def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
     those limits.
     """
     options = page.options
+    if getattr(options, 'tesseract', None) is None:
+        return image
     threshold = min(options.tesseract.downsample_above, 32767)
 
     if options.tesseract.downsample_large_images:
@@ -465,5 +467,11 @@ class TesseractOcrEngine(OcrEngine):
 
 
 @hookimpl
-def get_ocr_engine():
+def get_ocr_engine(options):
+    """Return TesseractOcrEngine when selected or as default."""
+    if options is not None:
+        ocr_engine = getattr(options, 'ocr_engine', 'auto')
+        # Tesseract is selected if explicitly requested or if 'auto'
+        if ocr_engine not in ('auto', 'tesseract'):
+            return None
     return TesseractOcrEngine()

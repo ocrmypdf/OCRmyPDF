@@ -15,7 +15,10 @@ from contextlib import suppress
 from io import BytesIO
 from pathlib import Path
 from shutil import copyfileobj
-from typing import Any, BinaryIO, TypeVar, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
+
+if TYPE_CHECKING:
+    from ocrmypdf.hocrtransform import OcrElement
 
 import img2pdf
 import pikepdf
@@ -457,9 +460,10 @@ def get_orientation_correction(preview: Path, page_context: PageContext) -> int:
     which points it (hopefully) upright. _graft.py takes care of the orienting
     the image and text layers.
     """
-    orient_conf = page_context.plugin_manager.get_ocr_engine().get_orientation(
-        preview, page_context.options
+    ocr_engine = page_context.plugin_manager.get_ocr_engine(
+        options=page_context.options
     )
+    orient_conf = ocr_engine.get_orientation(preview, page_context.options)
 
     correction = orient_conf.angle % 360
     log.info(describe_rotation(page_context, orient_conf, correction))
@@ -600,7 +604,9 @@ def preprocess_deskew(input_file: Path, page_context: PageContext) -> Path:
     output_file = page_context.get_path('pp_deskew.png')
     dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
 
-    ocr_engine = page_context.plugin_manager.get_ocr_engine()
+    ocr_engine = page_context.plugin_manager.get_ocr_engine(
+        options=page_context.options
+    )
     deskew_angle_degrees = ocr_engine.get_deskew(input_file, page_context.options)
 
     with Image.open(input_file) as im:
@@ -683,7 +689,7 @@ def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, 
     hocr_text_out = page_context.get_path('ocr_hocr.txt')
     options = page_context.options
 
-    ocr_engine = page_context.plugin_manager.get_ocr_engine()
+    ocr_engine = page_context.plugin_manager.get_ocr_engine(options=options)
     ocr_engine.generate_hocr(
         input_file=input_file,
         output_hocr=hocr_out,
@@ -691,6 +697,37 @@ def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, 
         options=options,
     )
     return hocr_out, hocr_text_out
+
+
+def ocr_engine_direct(
+    input_file: Path, page_context: PageContext
+) -> tuple[OcrElement, Path]:
+    """Run the OCR engine and return OcrElement tree directly.
+
+    This is the modern path for OCR engines that support the generate_ocr() API.
+    It bypasses hOCR file generation for better performance and richer data.
+
+    Args:
+        input_file: The image file to OCR.
+        page_context: The page context with options and path utilities.
+
+    Returns:
+        A tuple of (OcrElement tree, path to text sidecar file).
+    """
+    text_out = page_context.get_path('ocr_direct.txt')
+    options = page_context.options
+
+    ocr_engine = page_context.plugin_manager.get_ocr_engine(options=options)
+    ocr_tree, text_content = ocr_engine.generate_ocr(
+        input_file=input_file,
+        options=options,
+        page_number=page_context.pageno,
+    )
+
+    # Write text sidecar file
+    text_out.write_text(text_content, encoding='utf-8')
+
+    return ocr_tree, text_out
 
 
 def should_visible_page_image_use_jpg(pageinfo: PageInfo) -> bool:
@@ -784,7 +821,7 @@ def ocr_engine_textonly_pdf(
     output_text = page_context.get_path('ocr_tess.txt')
     options = page_context.options
 
-    ocr_engine = page_context.plugin_manager.get_ocr_engine()
+    ocr_engine = page_context.plugin_manager.get_ocr_engine(options=options)
     ocr_engine.generate_pdf(
         input_file=input_image,
         output_pdf=output_pdf,

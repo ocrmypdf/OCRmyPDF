@@ -7,12 +7,14 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from pathlib import Path
-
-from pluggy import PluginManager
+from typing import TYPE_CHECKING
 
 from ocrmypdf._options import OCROptions
 from ocrmypdf.pdfinfo import PdfInfo
 from ocrmypdf.pdfinfo.info import PageInfo
+
+if TYPE_CHECKING:
+    from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 
 
 class PdfContext:
@@ -21,7 +23,7 @@ class PdfContext:
     options: OCROptions  #: The specified options for processing this PDF.
     origin: Path  #: The filename of the original input file.
     pdfinfo: PdfInfo  #: Detailed data for this PDF.
-    plugin_manager: PluginManager  #: PluginManager for processing the current PDF.
+    plugin_manager: OcrmypdfPluginManager  #: PluginManager for processing the current PDF.
 
     def __init__(
         self,
@@ -70,7 +72,7 @@ class PageContext:
     origin: Path  #: The filename of the original input file.
     pageno: int  #: This page number (zero-based).
     pageinfo: PageInfo  #: Information on this page.
-    plugin_manager: PluginManager  #: PluginManager for processing the current PDF.
+    plugin_manager: OcrmypdfPluginManager  #: PluginManager for processing the current PDF.
 
     def __init__(self, pdf_context: PdfContext, pageno):
         self.work_folder = pdf_context.work_folder

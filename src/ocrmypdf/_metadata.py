@@ -47,7 +47,9 @@ def get_docinfo(base_pdf: Pdf, context: PdfContext) -> dict[str, str]:
     if options.subject:
         pdfmark['/Subject'] = options.subject
 
-    creator_tag = context.plugin_manager.get_ocr_engine().creator_tag(options)
+    creator_tag = context.plugin_manager.get_ocr_engine(
+        options=options
+    ).creator_tag(options)
 
     pdfmark['/Creator'] = f'{PROGRAM_NAME} {OCRMYPF_VERSION} / {creator_tag}'
     pdfmark['/Producer'] = f'pikepdf {PIKEPDF_VERSION}'

@@ -23,6 +23,7 @@ from ocrmypdf._pipeline import (
     copy_final,
     is_ocr_required,
     merge_sidecars,
+    ocr_engine_direct,
     ocr_engine_hocr,
     ocr_engine_textonly_pdf,
     triage,
@@ -49,27 +50,31 @@ from ocrmypdf._validation import (
 )
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import available_cpu_count
+from ocrmypdf.hocrtransform.ocr_element import OcrElement
 
 log = logging.getLogger(__name__)
 
 
 def _image_to_ocr_text(
     page_context: PageContext, ocr_image_out: Path
-) -> tuple[Path, Path]:
+) -> tuple[Path | None, Path, OcrElement | None]:
     """Run OCR engine on image to create OCR PDF and text file."""
     options = page_context.options
     pdf_renderer = options.pdf_renderer
 
     # fpdf2 is the default renderer (auto resolves to fpdf2)
     if pdf_renderer in ('auto', 'fpdf2'):
-        # fpdf2 renderer uses hOCR as intermediate format.
-        # The hOCR is passed to the grafting phase where fpdf2 renders it in batch.
+        # Use generate_ocr() if the engine supports it, otherwise use hOCR path
+        ocr_engine = page_context.plugin_manager.get_ocr_engine(options=options)
+        if ocr_engine and ocr_engine.supports_generate_ocr():
+            ocr_tree, text_out = ocr_engine_direct(ocr_image_out, page_context)
+            return None, text_out, ocr_tree
         ocr_out, text_out = ocr_engine_hocr(ocr_image_out, page_context)
     elif pdf_renderer == 'sandwich':
         ocr_out, text_out = ocr_engine_textonly_pdf(ocr_image_out, page_context)
     else:
         raise NotImplementedError(f"pdf_renderer {pdf_renderer}")
-    return ocr_out, text_out
+    return ocr_out, text_out, None
 
 
 def _exec_page_sync(page_context: PageContext) -> PageResult:
@@ -82,13 +87,14 @@ def _exec_page_sync(page_context: PageContext) -> PageResult:
     ocr_image_out, pdf_page_from_image_out, orientation_correction = process_page(
         page_context
     )
-    ocr_out, text_out = _image_to_ocr_text(page_context, ocr_image_out)
+    ocr_out, text_out, ocr_tree = _image_to_ocr_text(page_context, ocr_image_out)
     return PageResult(
         pageno=page_context.pageno,
         pdf_page_from_image=pdf_page_from_image_out,
         ocr=ocr_out,
         text=text_out,
         orientation_correction=orientation_correction,
+        ocr_tree=ocr_tree,
     )
 
 
@@ -113,6 +119,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
                 pageno=result.pageno,
                 image=result.pdf_page_from_image,
                 ocr_output=result.ocr,
+                ocr_tree=result.ocr_tree,
                 autorotate_correction=result.orientation_correction,
             )
             pbar.update(0.5)
@@ -124,7 +131,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
         max_workers=max_workers,
         progress_kwargs=dict(
             total=len(context.pdfinfo),
-            desc='OCR' if options.tesseract.timeout > 0 else 'Image processing',
+            desc='OCR' if options.ocr_engine != 'none' else 'Image processing',
             unit='page',
             disable=not options.progress_bar,
         ),

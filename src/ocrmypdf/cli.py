@@ -377,6 +377,15 @@ Online documentation is located at:
         "and 'hocrdebug' options are deprecated and will use fpdf2.",
     )
     advanced.add_argument(
+        '--ocr-engine',
+        choices=['auto', 'tesseract', 'none'],
+        default='auto',
+        help="OCR engine to use. 'auto' (default) selects the best available engine. "
+        "'tesseract' uses Tesseract OCR. "
+        "'none' skips OCR entirely, useful for PDF/A conversion or image processing "
+        "without text recognition.",
+    )
+    advanced.add_argument(
         '--rasterizer',
         choices=['auto', 'ghostscript', 'pypdfium'],
         default='auto',

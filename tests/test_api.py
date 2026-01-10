@@ -89,7 +89,7 @@ def test_hocr_result_json():
     assert (
         result.to_json()
         == '{"pageno": 1, "pdf_page_from_image": {"Path": "a"}, "hocr": {"Path": "b"}, '
-        '"textpdf": {"Path": "c"}, "orientation_correction": 180}'
+        '"textpdf": {"Path": "c"}, "orientation_correction": 180, "ocr_tree": null}'
     )
     assert ocrmypdf._pipelines._common.HOCRResult.from_json(result.to_json()) == result
 

@@ -16,9 +16,9 @@ from shutil import copyfileobj
 import pikepdf
 
 from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
-from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._exec import unpaper
 from ocrmypdf._options import OCROptions
+from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf.exceptions import (
     BadArgsError,
     InputFileError,
@@ -127,7 +127,9 @@ def _check_plugin_options(
     plugin_manager.check_options(options=options)
 
     # Then check OCR engine language support
-    ocr_engine_languages = plugin_manager.get_ocr_engine().languages(options)
+    ocr_engine_languages = plugin_manager.get_ocr_engine(options=options).languages(
+        options
+    )
     check_options_languages(options, ocr_engine_languages)
 
     # Finally, run comprehensive validation using the coordinator

@@ -16,7 +16,10 @@ from concurrent.futures.thread import BrokenThreadPool
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NamedTuple, cast
+from typing import TYPE_CHECKING, NamedTuple, cast
+
+if TYPE_CHECKING:
+    from ocrmypdf.hocrtransform import OcrElement
 
 import PIL
 import PIL.Image
@@ -107,6 +110,9 @@ class PageResult(NamedTuple):
     orientation_correction: int = 0
     """Orientation correction in degrees."""
 
+    ocr_tree: OcrElement | None = None
+    """Direct OcrElement tree (when using generate_ocr() API)."""
+
 
 class HOCRResultEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -143,6 +149,9 @@ class HOCRResult:
 
     orientation_correction: int = 0
     """Orientation correction in degrees."""
+
+    ocr_tree: OcrElement | None = None
+    """Direct OcrElement tree (when using generate_ocr() API)."""
 
     @classmethod
     def from_json(cls, json_str: str) -> HOCRResult:

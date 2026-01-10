@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
     # pylint: disable=ungrouped-imports
     from ocrmypdf._jobcontext import PageContext
+    from ocrmypdf.hocrtransform import OcrElement
     from ocrmypdf.pdfinfo import PdfInfo
 
     # pylint: enable=ungrouped-imports
@@ -484,13 +485,66 @@ class OcrEngine(ABC):
             options: The command line options.
         """
 
+    @staticmethod
+    def supports_generate_ocr() -> bool:
+        """Return True if this engine supports the generate_ocr() API.
+
+        The pipeline uses this to determine whether to call generate_ocr()
+        or fall back to generate_hocr().
+
+        Returns:
+            False by default. Engines implementing generate_ocr() should
+            override this to return True.
+        """
+        return False
+
+    @staticmethod
+    def generate_ocr(
+        input_file: Path,
+        options: OCROptions,
+        page_number: int = 0,
+    ) -> tuple[OcrElement, str]:
+        """Generate OCR results as an OcrElement tree.
+
+        This is the modern API for OCR engines. Engines implementing this method
+        can return structured OCR results directly without intermediate file formats.
+
+        This function executes in a worker thread or worker process. OCRmyPDF
+        automatically parallelizes OCR over pages. The OCR engine should not
+        introduce more parallelism.
+
+        Args:
+            input_file: A page image on which to perform OCR.
+            options: The command line options.
+            page_number: Zero-indexed page number (for multi-page context).
+
+        Returns:
+            A tuple of (OcrElement tree for the page, plain text content).
+            The OcrElement should have ocr_class=OcrClass.PAGE as its root.
+
+        Note:
+            This method is optional. Engines that don't implement it should
+            leave the default implementation, and the pipeline will fall back to
+            generate_hocr() or generate_pdf().
+        """
+        raise NotImplementedError("This OcrEngine does not implement generate_ocr()")
+
 
 @hookspec(firstresult=True)
-def get_ocr_engine() -> OcrEngine:  # type: ignore[return-value]
+def get_ocr_engine(options: OCROptions | None) -> OcrEngine:  # type: ignore[return-value]
     """Returns an OcrEngine to use for processing this file.
 
     The OcrEngine may be instantiated multiple times, by both the main process
     and child process.
+
+    When multiple OCR engine plugins are installed, plugins should check
+    ``options.ocr_engine`` and return ``None`` if they are not the selected
+    engine. The hook caller will then try the next plugin.
+
+    Args:
+        options: The current OCROptions, used to determine which engine
+            to select. May be None for backward compatibility with external
+            plugins.
 
     Note:
         This is a :ref:`firstresult hook<firstresult>`.

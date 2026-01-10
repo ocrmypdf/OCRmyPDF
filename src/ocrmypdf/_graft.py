@@ -63,6 +63,10 @@ class Fpdf2ParsedPage:
     emplaced_page: bool
 
 
+# Alias for backward compatibility with plan documentation
+Fpdf2DirectPage = Fpdf2ParsedPage
+
+
 def _compute_text_misalignment(
     content_rotation: int, autorotate_correction: int, emplaced_page: bool
 ) -> int:
@@ -221,7 +225,8 @@ class OcrGrafter:
         self.use_sandwich_renderer = pdf_renderer == 'sandwich'
 
         # For fpdf2: accumulate pages before rendering
-        self.fpdf2_renderer_pages: list[Fpdf2PageInfo] = []
+        self.fpdf2_hocr_pages: list[Fpdf2PageInfo] = []
+        self.fpdf2_parsed_pages: list[Fpdf2ParsedPage] = []
 
     def graft_page(
         self,
@@ -229,6 +234,7 @@ class OcrGrafter:
         pageno: int,
         image: Path | None,
         ocr_output: Path | None,
+        ocr_tree: OcrElement | None,
         autorotate_correction: int,
     ):
         """Graft OCR output onto a page of the base PDF.
@@ -238,8 +244,13 @@ class OcrGrafter:
             image: Path to the visible page image PDF, or None if not replacing.
             ocr_output: Path to OCR output file. For fpdf2 renderer this is an
                 hOCR file; for sandwich renderer this is a text-only PDF.
+            ocr_tree: OCR tree for fpdf2 renderer.
             autorotate_correction: Orientation correction in degrees (0, 90, 180, 270).
         """
+        if ocr_output and ocr_tree:
+            raise ValueError(
+                'Cannot specify both ocr_output and ocr_tree for fpdf2 renderer'
+            )
         # Handle image emplacement first
         emplaced_page = False
         content_rotation = self.pdfinfo[pageno].rotation
@@ -279,41 +290,57 @@ class OcrGrafter:
             # The hOCR coordinates are in the corrected (upright) coordinate system.
             # We store autorotate_correction and emplaced_page to set the final
             # page /Rotate tag after grafting.
-            if ocr_output:
-                dpi = self.pdfinfo[pageno].dpi.to_scalar()
-                self.fpdf2_renderer_pages.append(
-                    Fpdf2PageInfo(
+            if ocr_tree:
+                self.fpdf2_parsed_pages.append(
+                    Fpdf2ParsedPage(
+                        ocr_tree=ocr_tree,
                         pageno=pageno,
-                        hocr_path=ocr_output,
-                        dpi=dpi,
                         autorotate_correction=autorotate_correction,
                         emplaced_page=emplaced_page,
+                        dpi=self.pdfinfo[pageno].dpi.to_scalar(),
+                    )
+                )
+            if ocr_output:
+                self.fpdf2_hocr_pages.append(
+                    Fpdf2PageInfo(
+                        hocr_path=ocr_output,
+                        pageno=pageno,
+                        autorotate_correction=autorotate_correction,
+                        emplaced_page=emplaced_page,
+                        dpi=self.pdfinfo[pageno].dpi.to_scalar(),
                     )
                 )
 
     def finalize(self):
-        if self.fpdf2_renderer_pages:
+        # Can have hocr OR parsed pages OR neither (no OCR), but not both
+        assert not (self.fpdf2_hocr_pages and self.fpdf2_parsed_pages), (
+            "Can't have both hocr and ocrtree pages"
+        )
+
+        if self.fpdf2_hocr_pages:
             # Render all pages with fpdf2, then graft
+            parsed_pages = self._parse_hocr_pages()
+            self.fpdf2_parsed_pages = parsed_pages
+
+        if self.fpdf2_parsed_pages:
             self._render_and_graft_fpdf2_pages()
 
         self.pdf_base.save(self.output_file)
         self.pdf_base.close()
         return self.output_file
 
-    def _render_and_graft_fpdf2_pages(self):
+    def _parse_hocr_pages(self):
         """Render all pages to multi-page PDF with shared fonts, then graft."""
         from ocrmypdf.hocrtransform.hocr_parser import HocrParser
 
         log.info(
-            "Rendering %d pages with fpdf2",
-            len(self.fpdf2_renderer_pages),
+            "Parsing %d pages with HocrParser",
+            len(self.fpdf2_hocr_pages),
         )
-
-        font_dir = Path(__file__).parent / "data"
 
         # Parse all hOCR files and collect OcrElements
         pages_data: list[Fpdf2ParsedPage] = []
-        for page_info in self.fpdf2_renderer_pages:
+        for page_info in self.fpdf2_hocr_pages:
             if page_info.hocr_path.stat().st_size == 0:
                 continue  # Skip empty pages
 
@@ -334,8 +361,10 @@ class OcrGrafter:
                 )
             )
 
-        if not pages_data:
-            return  # No pages to render
+        return pages_data
+
+    def _render_and_graft_fpdf2_pages(self):
+        font_dir = Path(__file__).parent / "data"
 
         # Render all pages to single PDF
         multi_page_pdf_path = self.context.get_path('fpdf2_multipage.pdf')
@@ -346,7 +375,7 @@ class OcrGrafter:
         multi_font_manager = MultiFontManager(font_dir)
         # Build renderer input as (pageno, ocr_tree, dpi) tuples
         renderer_pages_data = [
-            (parsed.pageno, parsed.ocr_tree, parsed.dpi) for parsed in pages_data
+            (parsed.pageno, parsed.ocr_tree, parsed.dpi) for parsed in self.fpdf2_parsed_pages
         ]
         renderer = Fpdf2MultiPageRenderer(
             pages_data=renderer_pages_data,
@@ -358,7 +387,7 @@ class OcrGrafter:
 
         # Now graft each page from the multi-page PDF
         with Pdf.open(multi_page_pdf_path) as pdf_text:
-            for idx, parsed in enumerate(pages_data):
+            for idx, parsed in enumerate(self.fpdf2_parsed_pages):
                 # Copy page from multi-page PDF
                 text_page = pdf_text.pages[idx]
 

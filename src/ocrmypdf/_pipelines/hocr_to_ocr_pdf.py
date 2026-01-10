@@ -68,6 +68,7 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
                 pageno=result.pageno,
                 image=result.pdf_page_from_image,
                 ocr_output=result.textpdf,
+                ocr_tree=result.ocr_tree,
                 autorotate_correction=result.orientation_correction,
             )
             pbar.update()

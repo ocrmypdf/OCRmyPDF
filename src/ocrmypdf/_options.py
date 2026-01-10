@@ -145,6 +145,7 @@ class OCROptions(BaseModel):
     # Advanced options
     max_image_mpixels: float = 250.0
     pdf_renderer: str = 'auto'
+    ocr_engine: str = 'auto'
     rasterizer: str = 'auto'
     rotate_pages_threshold: float = DEFAULT_ROTATE_PAGES_THRESHOLD
     user_words: os.PathLike | None = None
