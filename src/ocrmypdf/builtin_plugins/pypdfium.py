@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 import threading
+from contextlib import closing
 from pathlib import Path
 
 try:
@@ -80,7 +81,8 @@ def _render_page_to_bitmap(
     # Apply rotation if specified
     if rotation:
         # pypdfium2 rotation is in degrees, same as our input
-        page.set_rotation(rotation)
+        # we track rotation in CCW, and pypdfium2 expects CW, so negate
+        page.set_rotation(-rotation % 360)
 
     # Render the page to a bitmap
     # The scale parameter controls the resolution
@@ -189,28 +191,18 @@ def rasterize_pdf_page(
 
     # Acquire lock to ensure thread-safe access to pypdfium2
     with _pdfium_lock:
-        # Open the PDF document
-        pdf = _open_pdf_document(input_file)
-
-        try:
-            # Get the specific page (pypdfium2 uses 0-based indexing)
-            page = pdf[pageno - 1]
-
-            try:
-                # Render the page to a bitmap
-                bitmap = _render_page_to_bitmap(
-                    page, raster_device, raster_dpi, rotation, use_cropbox
-                )
-
-                try:
-                    # Convert to PIL Image
-                    pil_image = bitmap.to_pil()
-                finally:
-                    bitmap.close()
-            finally:
-                page.close()
-        finally:
-            pdf.close()
+        # Open the PDF document and get the specific page (pypdfium2 uses 0-based indexing)
+        with (
+            closing(_open_pdf_document(input_file)) as pdf,
+            closing(pdf[pageno - 1]) as page,
+        ):
+            # Render the page to a bitmap
+            bitmap = _render_page_to_bitmap(
+                page, raster_device, raster_dpi, rotation, use_cropbox
+            )
+            with closing(bitmap):
+                # Convert to PIL Image
+                pil_image = bitmap.to_pil()
 
     # Process and save image outside the lock (PIL operations are thread-safe)
     pil_image, format_name = _process_image_for_output(
