@@ -10,7 +10,11 @@ from pathlib import Path
 import pytest
 
 from ocrmypdf.font import MultiFontManager
-from ocrmypdf.fpdf_renderer import DebugRenderOptions, Fpdf2MultiPageRenderer, Fpdf2PdfRenderer
+from ocrmypdf.fpdf_renderer import (
+    DebugRenderOptions,
+    Fpdf2MultiPageRenderer,
+    Fpdf2PdfRenderer,
+)
 from ocrmypdf.hocrtransform.hocr_parser import HocrParser
 from ocrmypdf.hocrtransform.ocr_element import OcrClass
 
@@ -43,6 +47,7 @@ class TestFpdf2RendererImports:
             Fpdf2MultiPageRenderer,
             Fpdf2PdfRenderer,
         )
+
         assert DebugRenderOptions is not None
         assert Fpdf2PdfRenderer is not None
         assert Fpdf2MultiPageRenderer is not None
@@ -293,7 +298,9 @@ class TestFpdf2RendererWithHocr:
         assert output_path.exists()
         assert output_path.stat().st_size > 0
 
-    def test_render_hello_world_scripts_hocr(self, resources, multi_font_manager, tmp_path):
+    def test_render_hello_world_scripts_hocr(
+        self, resources, multi_font_manager, tmp_path
+    ):
         """Test rendering comprehensive multilingual 'Hello!' hOCR file.
 
         This tests all major scripts including:
