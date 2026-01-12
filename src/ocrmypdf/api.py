@@ -223,6 +223,8 @@ def configure_logging(
         pdfminer_log.setLevel(logging.ERROR)
         pil_log = logging.getLogger('PIL')
         pil_log.setLevel(logging.INFO)
+        fonttools_log = logging.getLogger('fontTools')
+        fonttools_log.setLevel(logging.ERROR)
 
     if manage_root_logger:
         logging.captureWarnings(True)
