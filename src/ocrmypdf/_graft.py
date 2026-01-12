@@ -27,6 +27,7 @@ from pikepdf import (
 )
 
 from ocrmypdf._jobcontext import PdfContext
+from ocrmypdf._options import ProcessingMode
 from ocrmypdf._pipeline import VECTOR_PAGE_DPI
 
 
@@ -492,8 +493,8 @@ class OcrGrafter:
 
         new_text_layer = Stream(self.pdf_base, pdf_draw_xobj)
 
-        # Strip old invisible text if redo_ocr is enabled
-        if self.context.options.redo_ocr:
+        # Strip old invisible text if redo mode is enabled
+        if self.context.options.mode == ProcessingMode.redo:
             strip_invisible_text(self.pdf_base, base_page)
 
         # Add text layer to base page
@@ -585,7 +586,7 @@ class OcrGrafter:
                     pdf_draw_xobj = b'q\n' + (b'%s Do\n' % text_xobj_name) + b'\nQ\n'
                 new_text_layer = Stream(self.pdf_base, pdf_draw_xobj)
 
-                if self.context.options.redo_ocr:
+                if self.context.options.mode == ProcessingMode.redo:
                     strip_invisible_text(self.pdf_base, base_page)
                 base_page.contents_coalesce()
                 base_page.contents_add(

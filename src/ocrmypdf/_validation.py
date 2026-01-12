@@ -243,13 +243,15 @@ def report_output_file_size(
         'clean_final',
         'remove_background',
         'oversample',
-        'force_ocr',
     }
     for arg in image_preproc:
         if getattr(options, arg, False):
             reasons.append(
                 f"--{arg.replace('_', '-')} was issued, causing transcoding."
             )
+    # Check force_ocr via the backward-compatible property
+    if options.force_ocr:
+        reasons.append("--force-ocr (or --mode force) was issued, causing transcoding.")
 
     reasons.extend(optimize_messages)
 

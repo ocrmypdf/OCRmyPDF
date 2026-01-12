@@ -12,7 +12,7 @@ from typing import Any, TypeVar
 
 from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._defaults import PROGRAM_NAME as _PROGRAM_NAME
-from ocrmypdf._options import OCROptions
+from ocrmypdf._options import OCROptions, ProcessingMode
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._version import __version__ as _VERSION
 
@@ -309,11 +309,24 @@ Online documentation is located at:
 
     ocrsettings = parser.add_argument_group("OCR options", "Control how OCR is applied")
     ocrsettings.add_argument(
+        '-m',
+        '--mode',
+        choices=[mode.value for mode in ProcessingMode],
+        default=ProcessingMode.default.value,
+        help="Processing mode for pages with existing text. "
+        "'default' errors if text is found. "
+        "'force' rasterizes all content and runs OCR (same as --force-ocr). "
+        "'skip' skips pages with existing text (same as --skip-text). "
+        "'redo' re-OCRs pages, replacing old invisible text (same as --redo-ocr).",
+    )
+    # Legacy flags for backward compatibility - these set the mode internally
+    ocrsettings.add_argument(
         '-f',
         '--force-ocr',
         action='store_true',
         help="Rasterize any text or vector objects on each page, apply OCR, and "
-        "save the rastered output (this rewrites the PDF)",
+        "save the rastered output (this rewrites the PDF). "
+        "Equivalent to --mode force.",
     )
     ocrsettings.add_argument(
         '-s',
@@ -321,7 +334,8 @@ Online documentation is located at:
         action='store_true',
         help="Skip OCR on any pages that already contain text, but include the "
         "page in final output; useful for PDFs that contain a mix of "
-        "images, text pages, and/or previously OCRed pages",
+        "images, text pages, and/or previously OCRed pages. "
+        "Equivalent to --mode skip.",
     )
     ocrsettings.add_argument(
         '--redo-ocr',
@@ -329,7 +343,8 @@ Online documentation is located at:
         help="Attempt to detect and remove the hidden OCR layer from files that "
         "were previously OCRed with OCRmyPDF or another program. Apply OCR "
         "to text found in raster images. Existing visible text objects will "
-        "not be changed. If there is no existing OCR, OCR will be added.",
+        "not be changed. If there is no existing OCR, OCR will be added. "
+        "Equivalent to --mode redo.",
     )
     ocrsettings.add_argument(
         '--skip-big',
@@ -468,8 +483,14 @@ def namespace_to_options(ns) -> OCROptions:
     known_fields = {}
     extra_attrs = {}
 
+    # Legacy boolean flags that map to mode - handled by OCROptions model validator
+    legacy_mode_flags = {'force_ocr', 'skip_text', 'redo_ocr'}
+
     for key, value in vars(ns).items():
         if key in OCROptions.model_fields:
+            known_fields[key] = value
+        elif key in legacy_mode_flags:
+            # Pass legacy flags to OCROptions for conversion to mode
             known_fields[key] = value
         else:
             extra_attrs[key] = value

@@ -28,7 +28,7 @@ from ocrmypdf._concurrent import Executor
 from ocrmypdf._exec import unpaper
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._metadata import repair_docinfo_nuls
-from ocrmypdf._options import OCROptions
+from ocrmypdf._options import OCROptions, ProcessingMode
 from ocrmypdf.exceptions import (
     DigitalSignatureError,
     DpiError,
@@ -233,10 +233,10 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
         else:
             raise DigitalSignatureError()
     if pdfinfo.has_acroform:
-        if options.redo_ocr:
+        if options.mode == ProcessingMode.redo:
             raise InputFileError(
-                "This PDF has a user fillable form. --redo-ocr is not "
-                "currently possible on such files."
+                "This PDF has a user fillable form. --redo-ocr (or --mode redo) "
+                "is not currently possible on such files."
             )
         else:
             log.warning(
@@ -244,14 +244,14 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
                 "Chances are it is a pure digital "
                 "document that does not need OCR."
             )
-            if not options.force_ocr:
+            if options.mode != ProcessingMode.force:
                 log.info(
-                    "Use the option --force-ocr to produce an image of the "
-                    "form and all filled form fields. The output PDF will be "
-                    "'flattened' and will no longer be fillable."
+                    "Use the option --force-ocr (or --mode force) to produce an "
+                    "image of the form and all filled form fields. The output PDF "
+                    "will be 'flattened' and will no longer be fillable."
                 )
     if pdfinfo.is_tagged:
-        if options.force_ocr or options.skip_text or options.redo_ocr:
+        if options.mode != ProcessingMode.default:
             log.warning(
                 "This PDF is marked as a Tagged PDF. This often indicates "
                 "that the PDF was generated from an office document and does "
@@ -328,24 +328,24 @@ def is_ocr_required(page_context: PageContext) -> bool:
         log.debug(f"skipped {pageinfo.pageno} as requested by --pages {options.pages}")
         ocr_required = False
     elif pageinfo.has_text:
-        if not options.force_ocr and not (options.skip_text or options.redo_ocr):
+        if options.mode == ProcessingMode.default:
             raise PriorOcrFoundError(
-                "page already has text! - aborting (use --force-ocr to force OCR; "
-                " see also help for the arguments --skip-text and --redo-ocr"
+                "page already has text! - aborting (use --force-ocr or --mode force "
+                "to force OCR; see also help for --skip-text, --redo-ocr, and --mode)"
             )
-        elif options.force_ocr:
+        elif options.mode == ProcessingMode.force:
             log.info("page already has text! - rasterizing text and running OCR anyway")
             ocr_required = True
-        elif options.redo_ocr:
+        elif options.mode == ProcessingMode.redo:
             if pageinfo.has_corrupt_text:
                 log.warning(
                     "some text on this page cannot be mapped to characters: "
-                    "consider using --force-ocr instead"
+                    "consider using --force-ocr (or --mode force) instead"
                 )
             else:
                 log.info("redoing OCR")
             ocr_required = True
-        elif options.skip_text:
+        elif options.mode == ProcessingMode.skip:
             log.info("skipping all processing on this page")
             ocr_required = False
     elif not pageinfo.images and not options.lossless_reconstruction:
@@ -356,14 +356,14 @@ def is_ocr_required(page_context: PageContext) -> bool:
         # ahead and rasterize. If not forced, then pretend there's no text
         # on the page at all so we don't lose anything.
         # This could be made smarter by explicitly searching for vector art.
-        if options.force_ocr and options.oversample:
+        if options.mode == ProcessingMode.force and options.oversample:
             # The user really wants to reprocess this file
             log.info(
                 "page has no images - "
                 f"rasterizing at {options.oversample} DPI because "
-                "--force-ocr --oversample was specified"
+                "--force-ocr --oversample (or --mode force --oversample) was specified"
             )
-        elif options.force_ocr:
+        elif options.mode == ProcessingMode.force:
             # Warn the user they might not want to do this
             log.warning(
                 "page has no images - "
@@ -376,8 +376,8 @@ def is_ocr_required(page_context: PageContext) -> bool:
             log.info(
                 "page has no images - "
                 "skipping all processing on this page to avoid losing detail. "
-                "Use --force-ocr if you wish to perform OCR on pages that "
-                "have vector content."
+                "Use --force-ocr (or --mode force) if you wish to perform OCR on "
+                "pages that have vector content."
             )
             ocr_required = False
 
@@ -645,11 +645,11 @@ def create_ocr_image(image: Path, page_context: PageContext) -> Path:
     with Image.open(image) as im:
         log.debug('resolution %r', im.info['dpi'])
 
-        if not options.force_ocr:
+        if options.mode != ProcessingMode.force:
             # Do not mask text areas when forcing OCR, because we need to OCR
             # all text areas
             mask = None  # Exclude both visible and invisible text from OCR
-            if options.redo_ocr:
+            if options.mode == ProcessingMode.redo:
                 mask = True  # Mask visible text, but not invisible text
 
             draw = ImageDraw.ImageDraw(im)
@@ -1092,8 +1092,8 @@ def _is_safe_pdfa(input_pdf: Path, options) -> bool:
     if pdfa_status['pass']:
         return True
 
-    # Safe if we rewrote the PDF with force-ocr
-    if options.force_ocr:
+    # Safe if we rewrote the PDF with force mode
+    if options.mode == ProcessingMode.force:
         return True
 
     return False

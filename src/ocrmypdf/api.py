@@ -269,13 +269,16 @@ def create_options(
     # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
     extra_attrs = {}
     ocr_fields = set(OCROptions.model_fields.keys())
+    # Legacy mode flags are handled by OCROptions model validator
+    legacy_mode_flags = {'force_ocr', 'skip_text', 'redo_ocr'}
 
     # Known extra attributes that should be preserved
     known_extra = {'progress_bar', 'plugins'}
 
     for key in list(options_kwargs.keys()):
-        if key not in ocr_fields and key not in known_extra:
-            extra_attrs[key] = options_kwargs.pop(key)
+        if key in ocr_fields or key in legacy_mode_flags or key in known_extra:
+            continue
+        extra_attrs[key] = options_kwargs.pop(key)
 
     # Create OCROptions directly
     try:
@@ -311,9 +314,10 @@ def ocr(  # noqa: D417
     unpaper_args: str | None = None,
     oversample: int | None = None,
     remove_vectors: bool | None = None,
-    force_ocr: bool | None = None,
-    skip_text: bool | None = None,
-    redo_ocr: bool | None = None,
+    mode: str | None = None,
+    force_ocr: bool | None = None,  # Legacy, use mode='force' instead
+    skip_text: bool | None = None,  # Legacy, use mode='skip' instead
+    redo_ocr: bool | None = None,  # Legacy, use mode='redo' instead
     skip_big: float | None = None,
     optimize: int | None = None,
     jpg_quality: int | None = None,
@@ -478,9 +482,10 @@ def _pdf_to_hocr(  # noqa: D417
     unpaper_args: str | None = None,
     oversample: int | None = None,
     remove_vectors: bool | None = None,
-    force_ocr: bool | None = None,
-    skip_text: bool | None = None,
-    redo_ocr: bool | None = None,
+    mode: str | None = None,
+    force_ocr: bool | None = None,  # Legacy, use mode='force' instead
+    skip_text: bool | None = None,  # Legacy, use mode='skip' instead
+    redo_ocr: bool | None = None,  # Legacy, use mode='redo' instead
     skip_big: float | None = None,
     pages: str | None = None,
     max_image_mpixels: float | None = None,
@@ -562,11 +567,14 @@ def _pdf_to_hocr(  # noqa: D417
     # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
     extra_attrs = {}
     ocr_fields = set(OCROptions.model_fields.keys())
+    # Legacy mode flags are handled by OCROptions model validator
+    legacy_mode_flags = {'force_ocr', 'skip_text', 'redo_ocr'}
     known_extra = {'progress_bar', 'plugins'}
 
     for key in list(options_kwargs.keys()):
-        if key not in ocr_fields and key not in known_extra:
-            extra_attrs[key] = options_kwargs.pop(key)
+        if key in ocr_fields or key in legacy_mode_flags or key in known_extra:
+            continue
+        extra_attrs[key] = options_kwargs.pop(key)
 
     with _api_lock:
         # Set up plugin infrastructure with proper initialization
@@ -675,11 +683,14 @@ def _hocr_to_ocr_pdf(  # noqa: D417
     # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
     extra_attrs = {}
     ocr_fields = set(OCROptions.model_fields.keys())
+    # Legacy mode flags are handled by OCROptions model validator
+    legacy_mode_flags = {'force_ocr', 'skip_text', 'redo_ocr'}
     known_extra = {'progress_bar', 'plugins'}
 
     for key in list(options_kwargs.keys()):
-        if key not in ocr_fields and key not in known_extra:
-            extra_attrs[key] = options_kwargs.pop(key)
+        if key in ocr_fields or key in legacy_mode_flags or key in known_extra:
+            continue
+        extra_attrs[key] = options_kwargs.pop(key)
 
     with _api_lock:
         # Set up plugin infrastructure with proper initialization

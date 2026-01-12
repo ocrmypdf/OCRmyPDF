@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 
 from ocrmypdf import hookimpl
 from ocrmypdf._exec import ghostscript
+from ocrmypdf._options import ProcessingMode
 from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.subprocess import check_external_program
 
@@ -117,15 +118,15 @@ def check_options(options):
                 "supported. Please upgrade to a newer version."
             )
         if Version('10.0.0') <= gs_version < Version('10.02.1') and (
-            options.skip_text or options.redo_ocr
+            options.mode in (ProcessingMode.skip, ProcessingMode.redo)
         ):
             raise MissingDependencyError(
                 f"Ghostscript 10.0.0 through 10.02.0 (your version: {gs_version}) "
                 "contain serious regressions that corrupt PDFs with existing text, "
-                "such as those processed using --skip-text or --redo-ocr. "
-                "Please upgrade to a "
-                "newer version, or use --output-type pdf to avoid Ghostscript, or "
-                "use --force-ocr to discard existing text."
+                "such as those processed using --skip-text or --redo-ocr "
+                "(or --mode skip/redo). Please upgrade to a newer version, or use "
+                "--output-type pdf to avoid Ghostscript, or use --force-ocr "
+                "(or --mode force) to discard existing text."
             )
         if gs_version >= Version('10.6.0'):
             log.warning(

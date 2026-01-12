@@ -10,6 +10,7 @@ import logging
 import os
 import unicodedata
 from collections.abc import Sequence
+from enum import StrEnum
 from io import IOBase
 from pathlib import Path
 from typing import Any, BinaryIO
@@ -30,6 +31,23 @@ log = logging.getLogger(__name__)
 _plugin_option_models: dict[str, type] = {}
 
 PathOrIO = BinaryIO | IOBase | Path | str | bytes
+
+
+class ProcessingMode(StrEnum):
+    """OCR processing mode for handling pages with existing text.
+
+    This enum controls how OCRmyPDF handles pages that already contain text:
+
+    - ``default``: Error if text is found (standard OCR behavior)
+    - ``force``: Rasterize all content and run OCR regardless of existing text
+    - ``skip``: Skip OCR on pages that already have text
+    - ``redo``: Re-OCR pages, stripping old invisible text layer
+    """
+
+    default = 'default'
+    force = 'force'
+    skip = 'skip'
+    redo = 'redo'
 
 
 def _pages_from_ranges(ranges: str) -> set[int]:
@@ -89,9 +107,23 @@ class OCROptions(BaseModel):
     # Core OCR options
     languages: list[str] = Field(default_factory=lambda: [DEFAULT_LANGUAGE])
     output_type: str = 'auto'
-    force_ocr: bool = False
-    skip_text: bool = False
-    redo_ocr: bool = False
+    mode: ProcessingMode = ProcessingMode.default
+
+    # Backward compatibility properties for force_ocr, skip_text, redo_ocr
+    @property
+    def force_ocr(self) -> bool:
+        """Backward compatibility alias for mode == ProcessingMode.force."""
+        return self.mode == ProcessingMode.force
+
+    @property
+    def skip_text(self) -> bool:
+        """Backward compatibility alias for mode == ProcessingMode.skip."""
+        return self.mode == ProcessingMode.skip
+
+    @property
+    def redo_ocr(self) -> bool:
+        """Backward compatibility alias for mode == ProcessingMode.redo."""
+        return self.mode == ProcessingMode.redo
 
     # Job control
     jobs: int | None = None
@@ -296,31 +328,58 @@ class OCROptions(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def handle_special_cases(cls, data):
-        """Handle special cases for API compatibility."""
+        """Handle special cases for API compatibility and legacy options."""
         if isinstance(data, dict):
             # For hOCR API, output_file might not be present
             if 'output_folder' in data and 'output_file' not in data:
                 data['output_file'] = '/dev/null'  # Placeholder
+
+            # Convert legacy boolean options (force_ocr, skip_text, redo_ocr) to mode
+            force = data.pop('force_ocr', None)
+            skip = data.pop('skip_text', None)
+            redo = data.pop('redo_ocr', None)
+
+            # Count how many legacy options are set to True
+            legacy_set = [
+                (force, ProcessingMode.force),
+                (skip, ProcessingMode.skip),
+                (redo, ProcessingMode.redo),
+            ]
+            legacy_true = [(val, mode) for val, mode in legacy_set if val]
+            legacy_count = len(legacy_true)
+
+            # Get current mode value (may be string or enum)
+            current_mode = data.get('mode', ProcessingMode.default)
+            if isinstance(current_mode, str):
+                current_mode = ProcessingMode(current_mode)
+            mode_is_set = current_mode != ProcessingMode.default
+
+            if legacy_count > 1:
+                raise ValueError(
+                    "Choose only one of --force-ocr, --skip-text, --redo-ocr."
+                )
+
+            if legacy_count == 1:
+                expected_mode = legacy_true[0][1]
+                if mode_is_set and current_mode != expected_mode:
+                    legacy_flag = f"--{expected_mode.value.replace('_', '-')}-ocr"
+                    raise ValueError(
+                        f"Conflicting options: --mode {current_mode.value} "
+                        f"cannot be used with {legacy_flag} or similar legacy flag."
+                    )
+                # Set mode from legacy option
+                data['mode'] = expected_mode
+
         return data
 
     @model_validator(mode='after')
-    def validate_exclusive_ocr_options(self):
-        """Ensure only one of force_ocr, skip_text, redo_ocr is set."""
-        exclusive_options = sum(
-            1 for opt in [self.force_ocr, self.skip_text, self.redo_ocr] if opt
-        )
-        if exclusive_options >= 2:
-            raise ValueError("Choose only one of --force-ocr, --skip-text, --redo-ocr.")
-        return self
-
-    @model_validator(mode='after')
     def validate_redo_ocr_options(self):
-        """Validate options compatible with redo_ocr."""
-        if self.redo_ocr:
+        """Validate options compatible with redo mode."""
+        if self.mode == ProcessingMode.redo:
             if self.deskew or self.clean_final or self.remove_background:
                 raise ValueError(
-                    "--redo-ocr is not currently compatible with --deskew, "
-                    "--clean-final, and --remove-background"
+                    "--redo-ocr (or --mode redo) is not currently compatible with "
+                    "--deskew, --clean-final, and --remove-background"
                 )
         return self
 
@@ -345,7 +404,7 @@ class OCROptions(BaseModel):
             [
                 self.deskew,
                 self.clean_final,
-                self.force_ocr,
+                self.mode == ProcessingMode.force,
                 self.remove_background,
             ]
         )

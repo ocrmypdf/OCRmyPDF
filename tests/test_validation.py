@@ -68,7 +68,7 @@ def test_tesseract_not_installed(caplog):
 
 
 def test_lossless_redo():
-    with pytest.raises(ValueError, match="--redo-ocr is not currently compatible"):
+    with pytest.raises(ValueError, match="--redo-ocr.*is not currently compatible"):
         make_ocr_opts(redo_ocr=True, deskew=True)
 
 

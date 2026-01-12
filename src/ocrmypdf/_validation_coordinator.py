@@ -97,22 +97,20 @@ class ValidationCoordinator:
 
     def _validate_cross_cutting_concerns(self, options: OCROptions) -> None:
         """Validate cross-cutting concerns that span multiple plugins."""
+        from ocrmypdf._options import ProcessingMode
+
         # Handle deprecated pdf_renderer values
         self._handle_deprecated_pdf_renderer(options)
 
-        # Validate mutually exclusive OCR options
-        exclusive_options = sum(
-            1 for opt in [options.force_ocr, options.skip_text, options.redo_ocr] if opt
-        )
-        if exclusive_options >= 2:
-            raise ValueError("Choose only one of --force-ocr, --skip-text, --redo-ocr.")
+        # Note: Mutual exclusivity of force_ocr/skip_text/redo_ocr is now enforced
+        # by the ProcessingMode enum - only one mode can be active at a time.
 
-        # Validate redo_ocr compatibility
-        if options.redo_ocr:
+        # Validate redo mode compatibility
+        if options.mode == ProcessingMode.redo:
             if options.deskew or options.clean_final or options.remove_background:
                 raise ValueError(
-                    "--redo-ocr is not currently compatible with --deskew, "
-                    "--clean-final, and --remove-background"
+                    "--redo-ocr (or --mode redo) is not currently compatible with "
+                    "--deskew, --clean-final, and --remove-background"
                 )
 
         # Validate output type compatibility
