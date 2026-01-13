@@ -18,6 +18,7 @@ from zlib import compress
 import img2pdf
 from packaging.version import Version
 from pikepdf import (
+    Array,
     Dictionary,
     Name,
     Object,
@@ -480,6 +481,16 @@ def transcode_jpegs(
     )
 
 
+def _already_flate_encoded(image: Stream) -> bool:
+    """Check if the image already has FlateDecode in its filter chain."""
+    filt = image.get(Name.Filter)
+    if filt is None:
+        return False
+    if isinstance(filt, Array):
+        return Name.FlateDecode in list(filt)
+    return filt == Name.FlateDecode
+
+
 def _find_deflatable_jpeg(
     *, pdf: Pdf, root: Path, image: Stream, xref: Xref, options
 ) -> XrefExt | None:
@@ -487,6 +498,10 @@ def _find_deflatable_jpeg(
     if result is None:
         return None
     _pim, filtdp = result
+
+    # Skip if already FlateDecode compressed - would double-compress
+    if _already_flate_encoded(image):
+        return None
 
     if (
         filtdp[0] == Name.DCTDecode
