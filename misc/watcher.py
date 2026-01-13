@@ -17,8 +17,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any
 
+import cyclopts
 import pikepdf
-import typer
 from dotenv import load_dotenv
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer
@@ -30,7 +30,7 @@ load_dotenv()
 
 
 # pylint: disable=logging-format-interpolation
-app = typer.Typer(name="ocrmypdf-watcher")
+app = cyclopts.App(name="ocrmypdf-watcher")
 
 log = logging.getLogger('ocrmypdf-watcher')
 
@@ -153,110 +153,94 @@ class HandleObserverEvent(PatternMatchingEventHandler):
             execute_ocrmypdf(file_path=Path(event.src_path), **self._settings)
 
 
-@app.command()
+@app.default
 def main(
     input_dir: Annotated[
         Path,
-        typer.Argument(
-            envvar='OCR_INPUT_DIRECTORY',
-            exists=True,
-            file_okay=False,
-            dir_okay=True,
-            readable=True,
-            resolve_path=True,
+        cyclopts.Parameter(
+            env_var='OCR_INPUT_DIRECTORY',
         ),
-    ] = '/input',
+    ] = Path('/input'),
     output_dir: Annotated[
         Path,
-        typer.Argument(
-            envvar='OCR_OUTPUT_DIRECTORY',
-            exists=True,
-            file_okay=False,
-            dir_okay=True,
-            writable=True,
-            resolve_path=True,
+        cyclopts.Parameter(
+            env_var='OCR_OUTPUT_DIRECTORY',
         ),
-    ] = '/output',
+    ] = Path('/output'),
     archive_dir: Annotated[
         Path,
-        typer.Argument(
-            envvar='OCR_ARCHIVE_DIRECTORY',
-            exists=True,
-            file_okay=False,
-            dir_okay=True,
-            writable=True,
-            resolve_path=True,
+        cyclopts.Parameter(
+            env_var='OCR_ARCHIVE_DIRECTORY',
         ),
-    ] = '/processed',
+    ] = Path('/processed'),
+    *,
     output_dir_year_month: Annotated[
         bool,
-        typer.Option(
-            envvar='OCR_OUTPUT_DIRECTORY_YEAR_MONTH',
+        cyclopts.Parameter(
+            env_var='OCR_OUTPUT_DIRECTORY_YEAR_MONTH',
             help='Create a subdirectory in the output directory for each year/month',
         ),
     ] = False,
     on_success_delete: Annotated[
         bool,
-        typer.Option(
-            envvar='OCR_ON_SUCCESS_DELETE',
+        cyclopts.Parameter(
+            env_var='OCR_ON_SUCCESS_DELETE',
             help='Delete the input file after successful OCR',
         ),
     ] = False,
     on_success_archive: Annotated[
         bool,
-        typer.Option(
-            envvar='OCR_ON_SUCCESS_ARCHIVE',
+        cyclopts.Parameter(
+            env_var='OCR_ON_SUCCESS_ARCHIVE',
             help='Archive the input file after successful OCR',
         ),
     ] = False,
     deskew: Annotated[
         bool,
-        typer.Option(
-            envvar='OCR_DESKEW',
+        cyclopts.Parameter(
+            env_var='OCR_DESKEW',
             help='Deskew the input file before OCR',
         ),
     ] = False,
     ocr_json_settings: Annotated[
-        str,
-        typer.Option(
-            envvar='OCR_JSON_SETTINGS',
+        str | None,
+        cyclopts.Parameter(
+            env_var='OCR_JSON_SETTINGS',
             help='JSON settings to pass to OCRmyPDF (JSON string or file path)',
         ),
     ] = None,
     poll_new_file_seconds: Annotated[
         int,
-        typer.Option(
-            envvar='OCR_POLL_NEW_FILE_SECONDS',
+        cyclopts.Parameter(
+            env_var='OCR_POLL_NEW_FILE_SECONDS',
             help='Seconds to wait before polling a new file',
-            min=0,
         ),
     ] = 1,
     use_polling: Annotated[
         bool,
-        typer.Option(
-            envvar='OCR_USE_POLLING',
+        cyclopts.Parameter(
+            env_var='OCR_USE_POLLING',
             help='Use polling instead of filesystem events',
         ),
     ] = False,
     retries_loading_file: Annotated[
         int,
-        typer.Option(
-            envvar='OCR_RETRIES_LOADING_FILE',
+        cyclopts.Parameter(
+            env_var='OCR_RETRIES_LOADING_FILE',
             help='Number of times to retry loading a file before giving up',
-            min=0,
         ),
     ] = 5,
     loglevel: Annotated[
         LoggingLevelEnum,
-        typer.Option(
-            envvar='OCR_LOGLEVEL',
+        cyclopts.Parameter(
+            env_var='OCR_LOGLEVEL',
             help='Logging level',
         ),
     ] = LoggingLevelEnum.INFO,
     patterns: Annotated[
         str,
-        typer.Option(
-            envvar='OCR_PATTERNS',
+        cyclopts.Parameter(
+            env_var='OCR_PATTERNS',
             help='File patterns to watch',
         ),
     ] = '*.pdf,*.PDF',
@@ -322,7 +306,7 @@ def main(
         observer = Observer()
     observer.schedule(handler, input_dir, recursive=True)
     observer.start()
-    typer.echo(f"Watching {input_dir} for new PDFs. Press Ctrl+C to exit.")
+    print(f"Watching {input_dir} for new PDFs. Press Ctrl+C to exit.")
     try:
         while True:
             time.sleep(30)
