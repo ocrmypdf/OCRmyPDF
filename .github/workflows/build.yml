@@ -74,7 +74,7 @@ jobs:
 
       - name: Install Python packages
         run: |
-          uv sync --extra test --no-dev
+          uv sync --group test
 
       - name: Report versions
         run: |
@@ -137,7 +137,7 @@ jobs:
 
       - name: Install Python packages
         run: |
-          uv sync --extra test --no-dev
+          uv sync --group test
 
       - name: Report versions
         run: |
@@ -192,7 +192,7 @@ jobs:
 
       - name: Install Python packages
         run: |
-          uv sync --extra test --no-dev
+          uv sync --group test
 
       - name: Test
         run: |

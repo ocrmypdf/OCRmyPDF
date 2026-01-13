@@ -686,17 +686,70 @@ need to be installed. The script requires specific versions of the
 dependencies. Older version than the ones mentioned in the release notes
 are likely not to be compatible to OCRmyPDF.
 
+## Optional Features
+
+OCRmyPDF provides optional features and development tools. We recommend using `uv` as your package manager.
+
+### Installing User Features
+
+User features are available as optional dependencies. Install them with `uv` (recommended) or `pip`:
+
+```bash
+# Using uv (recommended)
+uv sync --extra watcher        # File watching service
+uv sync --extra webservice     # Streamlit web UI
+uv sync --extra watcher --extra webservice  # Multiple features
+
+# Using pip (also works)
+pip install ocrmypdf[watcher]
+pip install ocrmypdf[webservice]
+pip install ocrmypdf[watcher,webservice]
+```
+
+### Development Tools (uv only)
+
+Development tools use dependency groups and require `uv`:
+
+```bash
+# Testing infrastructure
+uv sync --group test
+
+# Documentation building
+uv sync --group docs
+
+# Enhanced Streamlit development
+uv sync --group streamlit-dev
+
+# All development groups
+uv sync
+```
+
+:::{note}
+**User features** (`watcher`, `webservice`) work with both `uv` and `pip`.
+**Developer tools** (`test`, `docs`, `streamlit-dev`) require `uv` and use dependency groups (PEP 735).
+:::
+
+**Why use uv?**
+
+- Modern, fast Python package manager
+- Required for development (testing, docs)
+- Better dependency resolution
+- Consistent across all platforms
+
+Install uv: `pip install uv` or visit https://docs.astral.sh/uv/
+
 ### For development
 
 To install all of the development and test requirements:
 
 ```bash
 git clone -b main https://github.com/ocrmypdf/OCRmyPDF.git
-python -m venv .venv
-source .venv/bin/activate
 cd OCRmyPDF
-pip install -e .[test]
+pip install uv  # Install uv if not already installed
+uv sync --group test
 ```
+
+Note: Development requires `uv`. The old `pip install -e .[test]` method is no longer supported.
 
 To add JBIG2 encoding, see {ref}`jbig2`.
 

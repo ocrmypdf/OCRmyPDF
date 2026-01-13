@@ -39,7 +39,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen \
-        --extra test --extra webservice --extra watcher --no-dev \
+        --extra webservice --extra watcher --no-dev \
         --no-install-package pyarrow
 
 FROM base

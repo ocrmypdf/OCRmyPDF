@@ -52,19 +52,7 @@ Tracker = "https://github.com/ocrmypdf/OCRmyPDF/issues"
 Changelog = "https://github.com/ocrmypdf/OCRmyPDF/docs/release_notes.md"
 
 [project.optional-dependencies]
-docs = ["myst-parser>=4.0.1", "sphinx", "sphinx-issues", "sphinx-rtd-theme"]
-extended_test = ["PyMuPDF>=1.19.1"]
-test = [
-  "coverage[toml]>=6.2",
-  "hypothesis>=6.36.0",
-  "pytest>=6.2.5",
-  "pytest-cov>=3.0.0",
-  "pytest-xdist>=2.5.0",
-  "python-xmp-toolkit==2.0.1", # also requires apt-get install libexempi3
-  "reportlab>=3.6.8",
-  "types-Pillow",
-  "types-humanfriendly",
-]
+# User-installable features - use `uv sync --extra <name>` or `pip install ocrmypdf[name]`
 watcher = ["watchdog>=1.0.2", "typer-slim[standard]", "python-dotenv"]
 webservice = ["streamlit>=1.41.0"]
 
@@ -157,10 +145,34 @@ convention = "google"
 quote-style = "preserve"
 
 [dependency-groups]
+# Developer-only tools - use `uv sync --group <name>` (NOT pip-installable)
 dev = [
   "mypy>=1.13.0",
-  "pymupdf>=1.24.14",
-  "streamlit-pdf-viewer>=0.0.19",
-  "streamlit>=1.40.2",
   "ipykernel>=6.29.5",
+]
+test = [
+  # Core testing framework
+  "coverage[toml]>=6.2",
+  "hypothesis>=6.36.0",
+  "pytest>=6.2.5",
+  "pytest-cov>=3.0.0",
+  "pytest-xdist>=2.5.0",
+  # Test dependencies
+  "python-xmp-toolkit==2.0.1", # also requires apt-get install libexempi3
+  "reportlab>=3.6.8",
+  # Type stubs for testing
+  "types-Pillow",
+  "types-humanfriendly",
+  # Extended test capabilities (merged from extended_test)
+  "pymupdf>=1.24.14",
+]
+docs = [
+  "myst-parser>=4.0.1",
+  "sphinx",
+  "sphinx-issues",
+  "sphinx-rtd-theme",
+]
+streamlit-dev = [
+  "streamlit>=1.40.2",
+  "streamlit-pdf-viewer>=0.0.19",
 ]
