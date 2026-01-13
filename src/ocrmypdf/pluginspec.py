@@ -16,7 +16,7 @@ import pluggy
 from pydantic import BaseModel
 
 from ocrmypdf import Executor, PdfContext
-from ocrmypdf._options import OCROptions
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.helpers import Resolution
 
@@ -112,7 +112,7 @@ def register_options() -> dict[str, type[BaseModel]]:
 
 
 @hookspec
-def check_options(options: OCROptions) -> None:
+def check_options(options: OcrOptions) -> None:
     """Called to ask the plugin to check all of the options.
 
     The plugin may check if options that it added are valid.
@@ -183,7 +183,7 @@ def get_progressbar_class() -> type[ProgressBar]:  # type: ignore[return-value]
 
 
 @hookspec
-def validate(pdfinfo: PdfInfo, options: OCROptions) -> None:
+def validate(pdfinfo: PdfInfo, options: OcrOptions) -> None:
     """Called to give a plugin an opportunity to review *options* and *pdfinfo*.
 
     *options* contains the "work order" to process a particular file. *pdfinfo*
@@ -214,7 +214,7 @@ def rasterize_pdf_page(
     rotation: int | None,
     filter_vector: bool,
     stop_on_soft_error: bool,
-    options: OCROptions | None,
+    options: OcrOptions | None,
     use_cropbox: bool,
 ) -> Path:  # type: ignore[return-value]
     """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
@@ -401,7 +401,7 @@ class OcrEngine(ABC):
 
     @staticmethod
     @abstractmethod
-    def creator_tag(options: OCROptions) -> str:
+    def creator_tag(options: OcrOptions) -> str:
         """Returns the creator tag to identify this software's role in creating the PDF.
 
         This tag will be inserted in the XMP metadata and DocumentInfo dictionary
@@ -422,7 +422,7 @@ class OcrEngine(ABC):
 
     @staticmethod
     @abstractmethod
-    def languages(options: OCROptions) -> Set[str]:
+    def languages(options: OcrOptions) -> Set[str]:
         """Returns the set of all languages that are supported by the engine.
 
         Languages are typically given in 3-letter ISO 3166-1 codes, but actually
@@ -431,18 +431,18 @@ class OcrEngine(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_orientation(input_file: Path, options: OCROptions) -> OrientationConfidence:
+    def get_orientation(input_file: Path, options: OcrOptions) -> OrientationConfidence:
         """Returns the orientation of the image."""
 
     @staticmethod
-    def get_deskew(input_file: Path, options: OCROptions) -> float:
+    def get_deskew(input_file: Path, options: OcrOptions) -> float:
         """Returns the deskew angle of the image, in degrees."""
         return 0.0
 
     @staticmethod
     @abstractmethod
     def generate_hocr(
-        input_file: Path, output_hocr: Path, output_text: Path, options: OCROptions
+        input_file: Path, output_hocr: Path, output_text: Path, options: OcrOptions
     ) -> None:
         """Called to produce a hOCR file from a page image and sidecar text file.
 
@@ -465,7 +465,7 @@ class OcrEngine(ABC):
     @staticmethod
     @abstractmethod
     def generate_pdf(
-        input_file: Path, output_pdf: Path, output_text: Path, options: OCROptions
+        input_file: Path, output_pdf: Path, output_text: Path, options: OcrOptions
     ) -> None:
         """Called to produce a text only PDF from a page image.
 
@@ -501,7 +501,7 @@ class OcrEngine(ABC):
     @staticmethod
     def generate_ocr(
         input_file: Path,
-        options: OCROptions,
+        options: OcrOptions,
         page_number: int = 0,
     ) -> tuple[OcrElement, str]:
         """Generate OCR results as an OcrElement tree.
@@ -531,7 +531,7 @@ class OcrEngine(ABC):
 
 
 @hookspec(firstresult=True)
-def get_ocr_engine(options: OCROptions | None) -> OcrEngine:  # type: ignore[return-value]
+def get_ocr_engine(options: OcrOptions | None) -> OcrEngine:  # type: ignore[return-value]
     """Returns an OcrEngine to use for processing this file.
 
     The OcrEngine may be instantiated multiple times, by both the main process
@@ -542,7 +542,7 @@ def get_ocr_engine(options: OCROptions | None) -> OcrEngine:  # type: ignore[ret
     engine. The hook caller will then try the next plugin.
 
     Args:
-        options: The current OCROptions, used to determine which engine
+        options: The current OcrOptions, used to determine which engine
             to select. May be None for backward compatibility with external
             plugins.
 

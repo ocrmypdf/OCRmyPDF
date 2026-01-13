@@ -15,7 +15,7 @@ import PIL
 
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._jobcontext import PageContext, PdfContext
-from ocrmypdf._options import OCROptions
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._pipeline import (
     is_ocr_required,
     ocr_engine_hocr,
@@ -84,7 +84,7 @@ def exec_pdf_to_hocr(context: PdfContext, executor: Executor) -> None:
 
 
 def run_hocr_pipeline(
-    options: OCROptions,
+    options: OcrOptions,
     *,
     plugin_manager: OcrmypdfPluginManager,
 ) -> None:

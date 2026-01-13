@@ -16,7 +16,7 @@ import PIL
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PageContext, PdfContext
-from ocrmypdf._options import OCROptions
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._pipeline import copy_final
 from ocrmypdf._pipelines._common import (
     HOCRResult,
@@ -104,7 +104,7 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
 
 
 def run_hocr_to_ocr_pdf_pipeline(
-    options: OCROptions,
+    options: OcrOptions,
     *,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:

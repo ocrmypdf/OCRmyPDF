@@ -29,24 +29,24 @@ official when it's tagged and posted to PyPI.
 
 **Breaking changes**
 
-- **Plugin interface migration**: Plugin hooks now receive `OCROptions` objects instead of
+- **Plugin interface migration**: Plugin hooks now receive `OcrOptions` objects instead of
   `argparse.Namespace` objects. Most plugins will continue working due to duck-typing
   compatibility, but plugin developers should update their type hints from `Namespace`
-  to `OCROptions`.
+  to `OcrOptions`.
 - Built-in plugins no longer modify options in-place, improving immutability and
   code clarity.
 
 **API improvements**
 
-- Centralized validation logic in the `OCROptions` Pydantic model
+- Centralized validation logic in the `OcrOptions` Pydantic model
 - Removed scattered option mutation throughout the codebase
 - Better type safety for plugin development
 - Simplified plugin option handling
 
 **Migration guide for plugin developers**
 
-- Update imports: `from ocrmypdf._options import OCROptions`
-- Update type hints: `def check_options(options: OCROptions)` instead of `options: Namespace`
+- Update imports: `from ocrmypdf._options import OcrOptions`
+- Update type hints: `def check_options(options: OcrOptions)` instead of `options: Namespace`
 - Attribute access remains unchanged: `options.languages`, `options.output_type`, etc.
 - Remove any in-place option modifications - compute values at point of use instead
 - Most existing plugins will continue working without changes due to duck-typing

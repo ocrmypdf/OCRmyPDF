@@ -90,7 +90,7 @@ def _pages_from_ranges(ranges: str) -> set[int]:
     return set(pages)
 
 
-class OCROptions(BaseModel):
+class OcrOptions(BaseModel):
     """Internal options model that can masquerade as argparse.Namespace.
 
     This model provides proper typing and validation while maintaining
@@ -209,7 +209,6 @@ class OCROptions(BaseModel):
     extra_attrs: dict[str, Any] = Field(
         default_factory=dict, exclude=True, alias='_extra_attrs'
     )
-
 
     @field_validator('languages')
     @classmethod
@@ -459,7 +458,7 @@ class OCROptions(BaseModel):
         return json.dumps(serializable_data)
 
     @classmethod
-    def model_validate_json_safe(cls, json_str: str) -> OCROptions:
+    def model_validate_json_safe(cls, json_str: str) -> OcrOptions:
         """Reconstruct from JSON with special handling for non-serializable types."""
         data = json.loads(json_str)
 
@@ -547,25 +546,25 @@ class OCROptions(BaseModel):
         for field_name in model_class.model_fields:
             # Try namespace_field pattern first (e.g., tesseract_timeout)
             flat_name = f"{namespace}_{field_name}"
-            if flat_name in OCROptions.model_fields:
+            if flat_name in OcrOptions.model_fields:
                 value = getattr(self, flat_name)
                 if value is not None:
                     kwargs[field_name] = _convert_value(value)
             # Also check direct field name (for fields like jbig2_lossy)
-            elif field_name in OCROptions.model_fields:
+            elif field_name in OcrOptions.model_fields:
                 value = getattr(self, field_name)
                 if value is not None:
                     kwargs[field_name] = _convert_value(value)
             # Check for special mappings
             elif namespace == 'optimize' and field_name == 'level':
                 # 'optimize' field maps to 'level' in OptimizeOptions
-                if 'optimize' in OCROptions.model_fields:
+                if 'optimize' in OcrOptions.model_fields:
                     value = getattr(self, 'optimize')
                     if value is not None:
                         kwargs[field_name] = _convert_value(value)
             elif namespace == 'optimize' and field_name == 'jpeg_quality':
                 # jpg_quality maps to jpeg_quality
-                if 'jpg_quality' in OCROptions.model_fields:
+                if 'jpg_quality' in OcrOptions.model_fields:
                     value = getattr(self, 'jpg_quality')
                     if value is not None:
                         kwargs[field_name] = _convert_value(value)

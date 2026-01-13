@@ -1,4 +1,4 @@
-"""Test JSON serialization of OCROptions for multiprocessing compatibility."""
+"""Test JSON serialization of OcrOptions for multiprocessing compatibility."""
 
 import multiprocessing
 from io import BytesIO
@@ -6,28 +6,28 @@ from pathlib import Path
 
 import pytest
 
-from ocrmypdf._options import OCROptions
+from ocrmypdf._options import OcrOptions
 from ocrmypdf.builtin_plugins.tesseract_ocr import TesseractOptions
 
 
 @pytest.fixture(autouse=True)
 def register_plugin_models():
     """Register plugin models for tests."""
-    OCROptions.register_plugin_models({'tesseract': TesseractOptions})
+    OcrOptions.register_plugin_models({'tesseract': TesseractOptions})
     yield
     # Clean up after test (optional, but good practice)
 
 
 def worker_function(options_json: str) -> str:
-    """Worker function that deserializes OCROptions from JSON and returns a result."""
+    """Worker function that deserializes OcrOptions from JSON and returns a result."""
     # Register plugin models in worker process
-    from ocrmypdf._options import OCROptions
+    from ocrmypdf._options import OcrOptions
     from ocrmypdf.builtin_plugins.tesseract_ocr import TesseractOptions
 
-    OCROptions.register_plugin_models({'tesseract': TesseractOptions})
+    OcrOptions.register_plugin_models({'tesseract': TesseractOptions})
 
-    # Reconstruct OCROptions from JSON in worker process
-    options = OCROptions.model_validate_json_safe(options_json)
+    # Reconstruct OcrOptions from JSON in worker process
+    options = OcrOptions.model_validate_json_safe(options_json)
 
     # Verify we can access various option types
     # Count only user-added extra_attrs (exclude plugin cache keys starting with '_')
@@ -51,9 +51,9 @@ def worker_function(options_json: str) -> str:
 
 
 def test_json_serialization_multiprocessing():
-    """Test that OCROptions can be JSON serialized and used in multiprocessing."""
-    # Create OCROptions with various field types
-    options = OCROptions(
+    """Test that OcrOptions can be JSON serialized and used in multiprocessing."""
+    # Create OcrOptions with various field types
+    options = OcrOptions(
         input_file=Path('/test/input.pdf'),
         output_file=Path('/test/output.pdf'),
         languages=['eng', 'deu'],
@@ -72,7 +72,7 @@ def test_json_serialization_multiprocessing():
     options_json = options.model_dump_json_safe()
 
     # Test that we can deserialize in the main process
-    reconstructed = OCROptions.model_validate_json_safe(options_json)
+    reconstructed = OcrOptions.model_validate_json_safe(options_json)
     assert reconstructed.input_file == options.input_file
     assert reconstructed.output_file == options.output_file
     assert reconstructed.languages == options.languages
@@ -112,7 +112,7 @@ def test_json_serialization_with_streams():
     input_stream = BytesIO(b'fake pdf data')
     output_stream = BytesIO()
 
-    options = OCROptions(
+    options = OcrOptions(
         input_file=input_stream,
         output_file=output_stream,
         languages=['eng'],
@@ -123,7 +123,7 @@ def test_json_serialization_with_streams():
     options_json = options.model_dump_json_safe()
 
     # Deserialize (streams will be placeholder strings)
-    reconstructed = OCROptions.model_validate_json_safe(options_json)
+    reconstructed = OcrOptions.model_validate_json_safe(options_json)
 
     # Streams should be converted to placeholder strings
     assert reconstructed.input_file == 'stream'
@@ -134,7 +134,7 @@ def test_json_serialization_with_streams():
 
 def test_json_serialization_with_none_values():
     """Test JSON serialization handles None values correctly."""
-    options = OCROptions(
+    options = OcrOptions(
         input_file=Path('/test/input.pdf'),
         output_file=Path('/test/output.pdf'),
         languages=['eng'],
@@ -145,7 +145,7 @@ def test_json_serialization_with_none_values():
     options_json = options.model_dump_json_safe()
 
     # Deserialize
-    reconstructed = OCROptions.model_validate_json_safe(options_json)
+    reconstructed = OcrOptions.model_validate_json_safe(options_json)
 
     # Verify None values are preserved (check actual defaults from model)
     assert reconstructed.tesseract_timeout == 0.0  # Default value, not None

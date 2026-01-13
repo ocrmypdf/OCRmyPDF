@@ -18,7 +18,7 @@ import PIL
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PageContext, PdfContext
-from ocrmypdf._options import OCROptions
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._pipeline import (
     copy_final,
     is_ocr_required,
@@ -162,7 +162,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
 
 
 def _run_pipeline(
-    options: OCROptions,
+    options: OcrOptions,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
     with (
@@ -197,7 +197,7 @@ def _run_pipeline(
 
 
 def run_pipeline_cli(
-    options: OCROptions,
+    options: OcrOptions,
     *,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
@@ -212,7 +212,7 @@ def run_pipeline_cli(
 
 
 def run_pipeline(
-    options: OCROptions,
+    options: OcrOptions,
     *,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:

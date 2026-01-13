@@ -30,7 +30,7 @@ from ocrmypdf._concurrent import Executor, setup_executor
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._metadata import metadata_fixup
-from ocrmypdf._options import OCROptions
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._pipeline import (
     convert_to_pdfa,
     create_ocr_image,
@@ -205,7 +205,7 @@ def worker_init(max_pixels: int | None) -> None:
 @contextmanager
 def manage_debug_log_handler(
     *,
-    options: OCROptions,
+    options: OcrOptions,
     work_folder: Path,
 ):
     remover = None
@@ -254,8 +254,8 @@ def manage_work_folder(*, work_folder: Path, retain: bool, print_location: bool)
 
 
 def cli_exception_handler(
-    fn: Callable[[OCROptions, OcrmypdfPluginManager], ExitCode],
-    options: OCROptions,
+    fn: Callable[[OcrOptions, OcrmypdfPluginManager], ExitCode],
+    options: OcrOptions,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
     """Convert exceptions into command line error messages and exit codes.
@@ -319,14 +319,14 @@ def cli_exception_handler(
 
 
 def setup_pipeline(
-    options: OCROptions,
+    options: OcrOptions,
     plugin_manager: OcrmypdfPluginManager,
 ) -> Executor:
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
     # options.input_file, options.pdf_renderer are already bound.)
-    # Note: OCROptions is immutable, so we can't modify options.jobs directly
-    # The jobs field should already be set correctly during OCROptions creation
+    # Note: OcrOptions is immutable, so we can't modify options.jobs directly
+    # The jobs field should already be set correctly during OcrOptions creation
 
     # Apply PIL max image pixels side effect
     PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1_000_000)

@@ -23,7 +23,7 @@ from ocrmypdf.hocrtransform import BoundingBox, OcrClass, OcrElement
 from ocrmypdf.pluginspec import OcrEngine, OrientationConfidence
 
 if TYPE_CHECKING:
-    from ocrmypdf._options import OCROptions
+    from ocrmypdf._options import OcrOptions
 
 
 class NullOcrEngine(OcrEngine):
@@ -39,7 +39,7 @@ class NullOcrEngine(OcrEngine):
         return "none"
 
     @staticmethod
-    def creator_tag(options: OCROptions) -> str:
+    def creator_tag(options: OcrOptions) -> str:
         """Return creator tag for PDF metadata."""
         return "OCRmyPDF (no OCR)"
 
@@ -48,17 +48,17 @@ class NullOcrEngine(OcrEngine):
         return "No OCR engine"
 
     @staticmethod
-    def languages(options: OCROptions) -> set[str]:
+    def languages(options: OcrOptions) -> set[str]:
         """Return supported languages (empty set for null engine)."""
         return set()
 
     @staticmethod
-    def get_orientation(input_file: Path, options: OCROptions) -> OrientationConfidence:
+    def get_orientation(input_file: Path, options: OcrOptions) -> OrientationConfidence:
         """Return neutral orientation (no rotation detected)."""
         return OrientationConfidence(angle=0, confidence=0.0)
 
     @staticmethod
-    def get_deskew(input_file: Path, options: OCROptions) -> float:
+    def get_deskew(input_file: Path, options: OcrOptions) -> float:
         """Return zero deskew angle."""
         return 0.0
 
@@ -70,7 +70,7 @@ class NullOcrEngine(OcrEngine):
     @staticmethod
     def generate_ocr(
         input_file: Path,
-        options: OCROptions,
+        options: OcrOptions,
         page_number: int = 0,
     ) -> tuple[OcrElement, str]:
         """Generate empty OCR results.
@@ -104,7 +104,7 @@ class NullOcrEngine(OcrEngine):
         input_file: Path,
         output_hocr: Path,
         output_text: Path,
-        options: OCROptions,
+        options: OcrOptions,
     ) -> None:
         """Generate empty hOCR file.
 
@@ -137,7 +137,7 @@ class NullOcrEngine(OcrEngine):
         input_file: Path,
         output_pdf: Path,
         output_text: Path,
-        options: OCROptions,
+        options: OcrOptions,
     ) -> None:
         """NullOcrEngine cannot generate PDFs directly.
 

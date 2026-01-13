@@ -12,7 +12,7 @@ from typing import Any, TypeVar
 
 from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._defaults import PROGRAM_NAME as _PROGRAM_NAME
-from ocrmypdf._options import OCROptions, ProcessingMode
+from ocrmypdf._options import OcrOptions, ProcessingMode
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._version import __version__ as _VERSION
 
@@ -473,8 +473,8 @@ plugins_only_parser.add_argument(
 )
 
 
-def namespace_to_options(ns) -> OCROptions:
-    """Convert argparse.Namespace to OCROptions.
+def namespace_to_options(ns) -> OcrOptions:
+    """Convert argparse.Namespace to OcrOptions.
 
     This function encapsulates CLI-specific knowledge of how command line
     arguments map to our internal options model.
@@ -483,14 +483,14 @@ def namespace_to_options(ns) -> OCROptions:
     known_fields = {}
     extra_attrs = {}
 
-    # Legacy boolean flags that map to mode - handled by OCROptions model validator
+    # Legacy boolean flags that map to mode - handled by OcrOptions model validator
     legacy_mode_flags = {'force_ocr', 'skip_text', 'redo_ocr'}
 
     for key, value in vars(ns).items():
-        if key in OCROptions.model_fields:
+        if key in OcrOptions.model_fields:
             known_fields[key] = value
         elif key in legacy_mode_flags:
-            # Pass legacy flags to OCROptions for conversion to mode
+            # Pass legacy flags to OcrOptions for conversion to mode
             known_fields[key] = value
         else:
             extra_attrs[key] = value
@@ -503,15 +503,15 @@ def namespace_to_options(ns) -> OCROptions:
     if 'work_folder' in extra_attrs and 'input_file' not in known_fields:
         known_fields['input_file'] = '/dev/null'  # Placeholder
 
-    instance = OCROptions(**known_fields)
+    instance = OcrOptions(**known_fields)
     instance.extra_attrs = extra_attrs
     return instance
 
 
 def get_options_and_plugins(
     args=None,
-) -> tuple[OCROptions, OcrmypdfPluginManager]:
-    """Parse command line arguments and return OCROptions and plugin manager.
+) -> tuple[OcrOptions, OcrmypdfPluginManager]:
+    """Parse command line arguments and return OcrOptions and plugin manager.
 
     This is the main entry point for CLI argument processing. It handles
     plugin discovery, argument parsing, and conversion to our internal
@@ -521,7 +521,7 @@ def get_options_and_plugins(
         args: Command line arguments. If None, uses sys.argv.
 
     Returns:
-        Tuple of (OCROptions, PluginManager)
+        Tuple of (OcrOptions, PluginManager)
     """
     # Import here to avoid circular imports
     from ocrmypdf.api import setup_plugin_infrastructure
@@ -539,7 +539,7 @@ def get_options_and_plugins(
     # Parse all arguments
     namespace = parser.parse_args(args=args)
 
-    # Convert to OCROptions
+    # Convert to OcrOptions
     options = namespace_to_options(namespace)
 
     return options, plugin_manager

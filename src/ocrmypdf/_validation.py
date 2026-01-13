@@ -17,7 +17,7 @@ import pikepdf
 
 from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._exec import unpaper
-from ocrmypdf._options import OCROptions
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf.exceptions import (
     BadArgsError,
@@ -47,7 +47,7 @@ def check_platform() -> None:
 
 
 def check_options_languages(
-    options: OCROptions, ocr_engine_languages: list[str]
+    options: OcrOptions, ocr_engine_languages: list[str]
 ) -> None:
     if not ocr_engine_languages:
         return
@@ -72,7 +72,7 @@ def check_options_languages(
         raise MissingDependencyError(msg)
 
 
-def check_options_sidecar(options: OCROptions) -> None:
+def check_options_sidecar(options: OcrOptions) -> None:
     if options.sidecar == '\0':
         if options.output_file == '-':
             raise BadArgsError("--sidecar filename needed when output file is stdout.")
@@ -87,7 +87,7 @@ def check_options_sidecar(options: OCROptions) -> None:
         )
 
 
-def check_options_preprocessing(options: OCROptions) -> None:
+def check_options_preprocessing(options: OcrOptions) -> None:
     if options.clean_final:
         options.clean = True
     if options.unpaper_args and not options.clean:
@@ -114,14 +114,14 @@ def check_options_preprocessing(options: OCROptions) -> None:
             raise BadArgsError("--unpaper-args: " + str(e)) from e
 
 
-def _check_plugin_invariant_options(options: OCROptions) -> None:
+def _check_plugin_invariant_options(options: OcrOptions) -> None:
     check_platform()
     check_options_sidecar(options)
     check_options_preprocessing(options)
 
 
 def _check_plugin_options(
-    options: OCROptions, plugin_manager: OcrmypdfPluginManager
+    options: OcrOptions, plugin_manager: OcrmypdfPluginManager
 ) -> None:
     # First, let plugins check their external dependencies
     plugin_manager.check_options(options=options)
@@ -134,11 +134,12 @@ def _check_plugin_options(
 
     # Finally, run comprehensive validation using the coordinator
     from ocrmypdf._validation_coordinator import ValidationCoordinator
+
     coordinator = ValidationCoordinator(plugin_manager)
     coordinator.validate_all_options(options)
 
 
-def check_options(options: OCROptions, plugin_manager: OcrmypdfPluginManager) -> None:
+def check_options(options: OcrOptions, plugin_manager: OcrmypdfPluginManager) -> None:
     """Check options for validity and consistency.
 
     This function coordinates validation across the entire system:
@@ -151,7 +152,7 @@ def check_options(options: OCROptions, plugin_manager: OcrmypdfPluginManager) ->
     _check_plugin_options(options, plugin_manager)
 
 
-def create_input_file(options: OCROptions, work_folder: Path) -> tuple[Path, str]:
+def create_input_file(options: OcrOptions, work_folder: Path) -> tuple[Path, str]:
     if options.input_file == '-':
         # stdin
         log.info('reading file from standard input')
@@ -196,7 +197,7 @@ def create_input_file(options: OCROptions, work_folder: Path) -> tuple[Path, str
             raise InputFileError(msg) from e
 
 
-def check_requested_output_file(options: OCROptions) -> None:
+def check_requested_output_file(options: OcrOptions) -> None:
     if options.output_file == '-':
         if sys.stdout.isatty():
             raise BadArgsError(
@@ -214,7 +215,7 @@ def check_requested_output_file(options: OCROptions) -> None:
 
 
 def report_output_file_size(
-    options: OCROptions,
+    options: OcrOptions,
     input_file: Path,
     output_file: Path,
     optimize_messages: Sequence[str] | None = None,

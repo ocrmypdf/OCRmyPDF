@@ -185,7 +185,7 @@ Both access patterns are equivalent and return the same values.
 
 :::{note}
 **Plugin Interface Change**: Starting in OCRmyPDF v16.13.0, plugin hooks receive
-`OCROptions` objects instead of `argparse.Namespace` objects. Most plugins will
+`OcrOptions` objects instead of `argparse.Namespace` objects. Most plugins will
 continue working due to duck-typing compatibility, but plugin developers should
 update their type hints accordingly.
 :::

@@ -12,7 +12,7 @@ import pikepdf
 import pytest
 from PIL import Image
 
-from ocrmypdf._options import OCROptions
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 
@@ -67,7 +67,7 @@ class TestRasterizerOption:
     def test_rasterizer_invalid(self):
         """Test that an invalid rasterizer value is rejected."""
         with pytest.raises(ValueError, match="rasterizer must be one of"):
-            OCROptions(
+            OcrOptions(
                 input_file='test.pdf', output_file='out.pdf', rasterizer='invalid'
             )
 
@@ -127,7 +127,7 @@ class TestRasterizerHookDirect:
         pm = get_plugin_manager([])
 
         # Create options requesting pypdfium
-        options = OCROptions(
+        options = OcrOptions(
             input_file=resources / 'graph.pdf',
             output_file=tmp_path / 'out.pdf',
             rasterizer='pypdfium',
@@ -162,7 +162,7 @@ class TestRasterizerHookDirect:
         pm = get_plugin_manager([])
 
         # Create options requesting ghostscript
-        options = OCROptions(
+        options = OcrOptions(
             input_file=resources / 'graph.pdf',
             output_file=tmp_path / 'out.pdf',
             rasterizer='ghostscript',
@@ -190,7 +190,7 @@ class TestRasterizerHookDirect:
         """Test that auto mode uses pypdfium when available."""
         pm = get_plugin_manager([])
 
-        options = OCROptions(
+        options = OcrOptions(
             input_file=resources / 'graph.pdf',
             output_file=tmp_path / 'out.pdf',
             rasterizer='auto',
@@ -363,7 +363,7 @@ class TestRasterizerWithNonStandardBoxes:
         """Compare output dimensions between rasterizers for nonstandard boxes."""
         pm = get_plugin_manager([])
 
-        options_gs = OCROptions(
+        options_gs = OcrOptions(
             input_file=pdf_with_nonstandard_boxes,
             output_file=tmp_path / 'out_gs.pdf',
             rasterizer='ghostscript',
@@ -388,7 +388,7 @@ class TestRasterizerWithNonStandardBoxes:
             gs_size = im_gs.size
 
         if PYPDFIUM_AVAILABLE:
-            options_pdfium = OCROptions(
+            options_pdfium = OcrOptions(
                 input_file=pdf_with_nonstandard_boxes,
                 output_file=tmp_path / 'out_pdfium.pdf',
                 rasterizer='pypdfium',
@@ -445,7 +445,7 @@ class TestRasterizerWithRotationAndBoxes:
         """Test Ghostscript produces correct dimensions with rotation."""
         pm = get_plugin_manager([])
 
-        options = OCROptions(
+        options = OcrOptions(
             input_file=pdf_with_nonstandard_boxes,
             output_file=tmp_path / 'out.pdf',
             rasterizer='ghostscript',
@@ -481,13 +481,11 @@ class TestRasterizerWithRotationAndBoxes:
                 )
 
     @pytest.mark.skipif(not PYPDFIUM_AVAILABLE, reason="pypdfium2 not installed")
-    def test_pypdfium_rotation_dimensions(
-        self, pdf_with_nonstandard_boxes, tmp_path
-    ):
+    def test_pypdfium_rotation_dimensions(self, pdf_with_nonstandard_boxes, tmp_path):
         """Test pypdfium produces correct dimensions with rotation."""
         pm = get_plugin_manager([])
 
-        options = OCROptions(
+        options = OcrOptions(
             input_file=pdf_with_nonstandard_boxes,
             output_file=tmp_path / 'out.pdf',
             rasterizer='pypdfium',
@@ -535,7 +533,7 @@ class TestRasterizerWithRotationAndBoxes:
 
         for rotation in [0, 90, 180, 270]:
             # Rasterize with Ghostscript
-            gs_options = OCROptions(
+            gs_options = OcrOptions(
                 input_file=pdf_with_nonstandard_boxes,
                 output_file=tmp_path / 'out.pdf',
                 rasterizer='ghostscript',
@@ -556,7 +554,7 @@ class TestRasterizerWithRotationAndBoxes:
             )
 
             # Rasterize with pypdfium
-            pdfium_options = OCROptions(
+            pdfium_options = OcrOptions(
                 input_file=pdf_with_nonstandard_boxes,
                 output_file=tmp_path / 'out.pdf',
                 rasterizer='pypdfium',
@@ -577,9 +575,10 @@ class TestRasterizerWithRotationAndBoxes:
             )
 
             # Verify both produce the same MediaBox dimensions
-            with Image.open(gs_img_path) as gs_img, Image.open(
-                pdfium_img_path
-            ) as pdfium_img:
+            with (
+                Image.open(gs_img_path) as gs_img,
+                Image.open(pdfium_img_path) as pdfium_img,
+            ):
                 expected = self._get_expected_size(rotation)
 
                 assert abs(gs_img.size[0] - expected[0]) <= 2, (

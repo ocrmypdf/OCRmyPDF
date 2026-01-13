@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 import ocrmypdf.builtin_plugins
 from ocrmypdf import Executor, PdfContext, pluginspec
-from ocrmypdf._options import OCROptions
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.pluginspec import OcrEngine
@@ -140,7 +140,7 @@ class OcrmypdfPluginManager:
         rotation: int | None,
         filter_vector: bool,
         stop_on_soft_error: bool,
-        options: OCROptions | None,
+        options: OcrOptions | None,
         use_cropbox: bool,
     ) -> Path | None:
         """Rasterize one page of a PDF at specified resolution."""
@@ -178,11 +178,11 @@ class OcrmypdfPluginManager:
             page=page, image_filename=image_filename, output_pdf=output_pdf
         )
 
-    def get_ocr_engine(self, *, options: OCROptions | None = None) -> OcrEngine | None:
+    def get_ocr_engine(self, *, options: OcrOptions | None = None) -> OcrEngine | None:
         """Returns an OcrEngine to use for processing.
 
         Args:
-            options: OCROptions to pass to the hook for engine selection.
+            options: OcrOptions to pass to the hook for engine selection.
         """
         return self._pm.hook.get_ocr_engine(options=options)
 
@@ -251,11 +251,11 @@ class OcrmypdfPluginManager:
         """Returns plugin option models keyed by namespace."""
         return self._pm.hook.register_options()
 
-    def check_options(self, *, options: OCROptions) -> list[None]:
+    def check_options(self, *, options: OcrOptions) -> list[None]:
         """Called to validate options after parsing."""
         return self._pm.hook.check_options(options=options)
 
-    def validate(self, *, pdfinfo: PdfInfo, options: OCROptions) -> list[None]:
+    def validate(self, *, pdfinfo: PdfInfo, options: OcrOptions) -> list[None]:
         """Called to validate options and pdfinfo after PDF is loaded."""
         return self._pm.hook.validate(pdfinfo=pdfinfo, options=options)
 

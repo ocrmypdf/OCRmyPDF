@@ -122,10 +122,10 @@ When OCRmyPDF succeeds conditionally, it returns an integer exit code.
 
 Starting in OCRmyPDF v16.13.0, the plugin interface has been updated:
 
-- Plugin hooks now receive `OCROptions` objects instead of `argparse.Namespace`
-- `OCROptions` provides the same attribute access as `Namespace` (duck-typing compatible)
-- Plugin developers should update type hints: `from ocrmypdf._options import OCROptions`
+- Plugin hooks now receive `OcrOptions` objects instead of `argparse.Namespace`
+- `OcrOptions` provides the same attribute access as `Namespace` (duck-typing compatible)
+- Plugin developers should update type hints: `from ocrmypdf._options import OcrOptions`
 - Built-in plugins no longer modify options in-place for better immutability
 
 Most existing plugins will continue working without modification due to the
-duck-typing compatibility between `OCROptions` and `Namespace`.
+duck-typing compatibility between `OcrOptions` and `Namespace`.

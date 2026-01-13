@@ -16,7 +16,7 @@ class PluginOptionRegistry:
     """Registry for plugin option models.
 
     This registry collects option models from plugins during initialization.
-    Plugin options can be accessed via nested namespaces on OCROptions
+    Plugin options can be accessed via nested namespaces on OcrOptions
     (e.g., options.tesseract.timeout) or via flat field names for backward
     compatibility (e.g., options.tesseract_timeout).
     """

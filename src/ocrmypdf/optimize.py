@@ -721,12 +721,12 @@ def main(infile, outfile, level, jobs=1):
     from shutil import copy  # pylint: disable=import-outside-toplevel
     from tempfile import TemporaryDirectory  # pylint: disable=import-outside-toplevel
 
-    from ocrmypdf._options import OCROptions  # pylint: disable=import-outside-toplevel
+    from ocrmypdf._options import OcrOptions  # pylint: disable=import-outside-toplevel
 
     infile = Path(infile)
 
-    # Create OCROptions with optimization-specific settings
-    options = OCROptions(
+    # Create OcrOptions with optimization-specific settings
+    options = OcrOptions(
         input_file=infile,
         output_file=outfile,  # Required field
         jobs=jobs,

@@ -107,14 +107,14 @@ def test_hocr_result_pickle():
 
 def test_nested_plugin_option_access():
     """Test that plugin options can be accessed via nested namespaces."""
-    from ocrmypdf._options import OCROptions
+    from ocrmypdf._options import OcrOptions
     from ocrmypdf.api import setup_plugin_infrastructure
 
     # Set up plugin infrastructure to register plugin models
     setup_plugin_infrastructure()
 
     # Create options with tesseract settings
-    options = OCROptions(
+    options = OcrOptions(
         input_file='test.pdf',
         output_file='output.pdf',
         tesseract_timeout=120.0,

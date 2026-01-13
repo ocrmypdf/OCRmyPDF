@@ -13,7 +13,7 @@ import pytest
 from ocrmypdf import _validation as vd
 from ocrmypdf._concurrent import NullProgressBar, SerialExecutor
 from ocrmypdf._exec.tesseract import TesseractVersion
-from ocrmypdf._options import OCROptions
+from ocrmypdf._options import OcrOptions
 from ocrmypdf.api import create_options, setup_plugin_infrastructure
 from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
@@ -42,8 +42,8 @@ def make_opts(*args, **kwargs):
 
 
 def make_ocr_opts(input_file='a.pdf', output_file='b.pdf', **kwargs):
-    """Create OCROptions directly for testing Pydantic validation."""
-    return OCROptions(input_file=input_file, output_file=output_file, **kwargs)
+    """Create OcrOptions directly for testing Pydantic validation."""
+    return OcrOptions(input_file=input_file, output_file=output_file, **kwargs)
 
 
 def test_old_tesseract_error():
@@ -95,7 +95,7 @@ def test_optimizing(caplog):
 
 
 def test_pillow_options():
-    # Test that max_image_mpixels=0 is valid (validation now in OCROptions)
+    # Test that max_image_mpixels=0 is valid (validation now in OcrOptions)
     opts = make_ocr_opts(max_image_mpixels=0)
     assert opts.max_image_mpixels == 0
 

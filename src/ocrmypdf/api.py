@@ -51,7 +51,7 @@ from typing import BinaryIO
 from warnings import warn
 
 from ocrmypdf._logging import PageNumberFilter
-from ocrmypdf._options import OCROptions
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._pipelines.hocr_to_ocr_pdf import run_hocr_to_ocr_pdf_pipeline
 from ocrmypdf._pipelines.ocr import run_pipeline, run_pipeline_cli
 from ocrmypdf._pipelines.pdf_to_hocr import run_hocr_pipeline
@@ -120,8 +120,8 @@ def setup_plugin_infrastructure(
                 registry.register_option_model(namespace, model_class)
                 all_plugin_models[namespace] = model_class
 
-    # Register plugin models with OCROptions for dynamic nested access
-    OCROptions.register_plugin_models(all_plugin_models)
+    # Register plugin models with OcrOptions for dynamic nested access
+    OcrOptions.register_plugin_models(all_plugin_models)
 
     # Store registry in plugin manager for later access
     plugin_manager._option_registry = registry
@@ -234,7 +234,7 @@ def configure_logging(
 
 def create_options(
     *, input_file: PathOrIO, output_file: PathOrIO, parser: ArgumentParser, **kwargs
-) -> OCROptions:
+) -> OcrOptions:
     """Construct an options object from the input/output files and keyword arguments.
 
     Args:
@@ -244,12 +244,12 @@ def create_options(
         **kwargs: Keyword arguments.
 
     Returns:
-        OCROptions: An options object containing the parsed arguments.
+        OcrOptions: An options object containing the parsed arguments.
 
     Raises:
         TypeError: If the type of a keyword argument is not supported.
     """
-    # Prepare kwargs for direct OCROptions construction
+    # Prepare kwargs for direct OcrOptions construction
     options_kwargs = kwargs.copy()
 
     # Set input and output files
@@ -260,16 +260,16 @@ def create_options(
     if 'sidecar' in options_kwargs and isinstance(
         options_kwargs['sidecar'], BinaryIO | IOBase
     ):
-        # Keep the stream object as-is - OCROptions can handle it
+        # Keep the stream object as-is - OcrOptions can handle it
         pass
 
-    # Remove None values to let OCROptions use its defaults
+    # Remove None values to let OcrOptions use its defaults
     options_kwargs = {k: v for k, v in options_kwargs.items() if v is not None}
 
-    # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
+    # Remove any kwargs that aren't OcrOptions fields and store in extra_attrs
     extra_attrs = {}
-    ocr_fields = set(OCROptions.model_fields.keys())
-    # Legacy mode flags are handled by OCROptions model validator
+    ocr_fields = set(OcrOptions.model_fields.keys())
+    # Legacy mode flags are handled by OcrOptions model validator
     legacy_mode_flags = {'force_ocr', 'skip_text', 'redo_ocr'}
 
     # Known extra attributes that should be preserved
@@ -280,16 +280,16 @@ def create_options(
             continue
         extra_attrs[key] = options_kwargs.pop(key)
 
-    # Create OCROptions directly
+    # Create OcrOptions directly
     try:
-        options = OCROptions(**options_kwargs)
+        options = OcrOptions(**options_kwargs)
         # Add any extra attributes
         if extra_attrs:
             options.extra_attrs.update(extra_attrs)
         return options
     except Exception as e:
         # If direct construction fails, provide a helpful error message
-        raise TypeError(f"Failed to create OCROptions: {e}") from e
+        raise TypeError(f"Failed to create OcrOptions: {e}") from e
 
 
 def ocr(  # noqa: D417
@@ -538,7 +538,7 @@ def _pdf_to_hocr(  # noqa: D417
     else:
         plugins = list(plugins)
 
-    # Prepare kwargs for direct OCROptions construction
+    # Prepare kwargs for direct OcrOptions construction
     options_kwargs = kwargs.copy()
 
     # Set input file and handle special output_folder case
@@ -558,16 +558,16 @@ def _pdf_to_hocr(  # noqa: D417
     if plugins:
         options_kwargs['plugins'] = plugins
 
-    # Remove None values to let OCROptions use its defaults
+    # Remove None values to let OcrOptions use its defaults
     options_kwargs = {k: v for k, v in options_kwargs.items() if v is not None}
 
     # Add output_folder to options_kwargs since it's now a proper field
     options_kwargs['output_folder'] = output_folder
 
-    # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
+    # Remove any kwargs that aren't OcrOptions fields and store in extra_attrs
     extra_attrs = {}
-    ocr_fields = set(OCROptions.model_fields.keys())
-    # Legacy mode flags are handled by OCROptions model validator
+    ocr_fields = set(OcrOptions.model_fields.keys())
+    # Legacy mode flags are handled by OcrOptions model validator
     legacy_mode_flags = {'force_ocr', 'skip_text', 'redo_ocr'}
     known_extra = {'progress_bar', 'plugins'}
 
@@ -584,15 +584,15 @@ def _pdf_to_hocr(  # noqa: D417
 
         plugin_manager.add_options(parser=get_parser())
 
-        # Create OCROptions directly
+        # Create OcrOptions directly
         try:
-            options = OCROptions(**options_kwargs)
+            options = OcrOptions(**options_kwargs)
             # Add any extra attributes
             if extra_attrs:
                 options.extra_attrs.update(extra_attrs)
         except Exception as e:
             raise TypeError(
-                f"Failed to create OCROptions for hOCR pipeline: {e}"
+                f"Failed to create OcrOptions for hOCR pipeline: {e}"
             ) from e
 
         return run_hocr_pipeline(options=options, plugin_manager=plugin_manager)
@@ -643,7 +643,7 @@ def _hocr_to_ocr_pdf(  # noqa: D417
     else:
         plugins = list(plugins)
 
-    # Prepare kwargs for direct OCROptions construction
+    # Prepare kwargs for direct OcrOptions construction
     options_kwargs = kwargs.copy()
 
     # Set output file and handle special work_folder case
@@ -663,7 +663,7 @@ def _hocr_to_ocr_pdf(  # noqa: D417
     if plugins:
         options_kwargs['plugins'] = plugins
 
-    # Remove None values to let OCROptions use its defaults
+    # Remove None values to let OcrOptions use its defaults
     options_kwargs = {k: v for k, v in options_kwargs.items() if v is not None}
 
     # Warn about deprecated jbig2 options and remove from kwargs
@@ -680,10 +680,10 @@ def _hocr_to_ocr_pdf(  # noqa: D417
     # Add work_folder to options_kwargs since it's now a proper field
     options_kwargs['work_folder'] = work_folder
 
-    # Remove any kwargs that aren't OCROptions fields and store in extra_attrs
+    # Remove any kwargs that aren't OcrOptions fields and store in extra_attrs
     extra_attrs = {}
-    ocr_fields = set(OCROptions.model_fields.keys())
-    # Legacy mode flags are handled by OCROptions model validator
+    ocr_fields = set(OcrOptions.model_fields.keys())
+    # Legacy mode flags are handled by OcrOptions model validator
     legacy_mode_flags = {'force_ocr', 'skip_text', 'redo_ocr'}
     known_extra = {'progress_bar', 'plugins'}
 
@@ -700,15 +700,15 @@ def _hocr_to_ocr_pdf(  # noqa: D417
 
         plugin_manager.add_options(parser=get_parser())
 
-        # Create OCROptions directly
+        # Create OcrOptions directly
         try:
-            options = OCROptions(**options_kwargs)
+            options = OcrOptions(**options_kwargs)
             # Add any extra attributes
             if extra_attrs:
                 options.extra_attrs.update(extra_attrs)
         except Exception as e:
             raise TypeError(
-                f"Failed to create OCROptions for hOCR to PDF pipeline: {e}"
+                f"Failed to create OcrOptions for hOCR to PDF pipeline: {e}"
             ) from e
 
         return run_hocr_to_ocr_pdf_pipeline(

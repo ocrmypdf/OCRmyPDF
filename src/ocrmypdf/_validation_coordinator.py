@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import pluggy
 
-    from ocrmypdf._options import OCROptions
+    from ocrmypdf._options import OcrOptions
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class ValidationCoordinator:
         self.plugin_manager = plugin_manager
         self.registry = getattr(plugin_manager, '_option_registry', None)
 
-    def validate_all_options(self, options: OCROptions) -> None:
+    def validate_all_options(self, options: OcrOptions) -> None:
         """Run comprehensive validation on all options.
 
         This runs validation in the correct order:
@@ -41,7 +41,7 @@ class ValidationCoordinator:
         # Step 2: Cross-cutting validation
         self._validate_cross_cutting_concerns(options)
 
-    def _validate_plugin_contexts(self, options: OCROptions) -> None:
+    def _validate_plugin_contexts(self, options: OcrOptions) -> None:
         """Validate plugin options that require external context."""
         # For now, we'll run the plugin validation directly since the models
         # are still being integrated. This ensures the validation warnings
@@ -53,7 +53,7 @@ class ValidationCoordinator:
         # Run Optimize validation
         self._validate_optimize_options(options)
 
-    def _validate_tesseract_options(self, options: OCROptions) -> None:
+    def _validate_tesseract_options(self, options: OcrOptions) -> None:
         """Validate Tesseract options."""
         # Check pagesegmode warning
         if options.tesseract.pagesegmode in (0, 2):
@@ -74,6 +74,7 @@ class ValidationCoordinator:
 
         # Check for blocked languages
         from ocrmypdf.exceptions import BadArgsError
+
         DENIED_LANGUAGES = {'equ', 'osd'}
         if DENIED_LANGUAGES & set(options.languages):
             raise BadArgsError(
@@ -83,19 +84,21 @@ class ValidationCoordinator:
                 "Remove them from the -l/--language argument."
             )
 
-    def _validate_optimize_options(self, options: OCROptions) -> None:
+    def _validate_optimize_options(self, options: OcrOptions) -> None:
         """Validate optimization options."""
         # Check optimization consistency
-        if options.optimize == 0 and any([
-            options.png_quality and options.png_quality > 0,
-            options.jpeg_quality and options.jpeg_quality > 0
-        ]):
+        if options.optimize == 0 and any(
+            [
+                options.png_quality and options.png_quality > 0,
+                options.jpeg_quality and options.jpeg_quality > 0,
+            ]
+        ):
             log.warning(
                 "The arguments --png-quality and --jpeg-quality "
                 "will be ignored because --optimize=0."
             )
 
-    def _validate_cross_cutting_concerns(self, options: OCROptions) -> None:
+    def _validate_cross_cutting_concerns(self, options: OcrOptions) -> None:
         """Validate cross-cutting concerns that span multiple plugins."""
         from ocrmypdf._options import ProcessingMode
 
@@ -115,7 +118,8 @@ class ValidationCoordinator:
 
         # Validate output type compatibility
         if options.output_type == 'none' and str(options.output_file) not in (
-            os.devnull, '-'
+            os.devnull,
+            '-',
         ):
             raise ValueError(
                 "Since you specified `--output-type none`, the output file "
@@ -134,7 +138,7 @@ class ValidationCoordinator:
                 "--output-type is one of 'pdfa', 'pdfa-1', or 'pdfa-2'"
             )
 
-    def _handle_deprecated_pdf_renderer(self, options: OCROptions) -> None:
+    def _handle_deprecated_pdf_renderer(self, options: OcrOptions) -> None:
         """Handle deprecated pdf_renderer values by redirecting to fpdf2."""
         if options.pdf_renderer in ('hocr', 'hocrdebug'):
             log.info(

@@ -329,11 +329,11 @@ def test_rotate_and_crop(
 
 
 def test_rasterize_rotates(resources, tmp_path):
-    from ocrmypdf._options import OCROptions
+    from ocrmypdf._options import OcrOptions
 
     pm = get_plugin_manager([])
 
-    options = OCROptions(
+    options = OcrOptions(
         input_file=resources / 'graph.pdf',
         output_file=tmp_path / 'out.pdf',
         rasterizer='ghostscript',  # Use Ghostscript for consistent dimensions

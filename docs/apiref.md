@@ -17,7 +17,7 @@ should be mainly of interest to plugin developers.
 
 ```{eval-rst}
 .. automodule:: ocrmypdf._options
-    :members: OCROptions
+    :members: OcrOptions
 ```
 
 ## ocrmypdf.exceptions

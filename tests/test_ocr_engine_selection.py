@@ -74,14 +74,14 @@ class TestOcrEngineCliOption:
 
 
 class TestOcrEngineOptionsModel:
-    """Test OCROptions has ocr_engine field."""
+    """Test OcrOptions has ocr_engine field."""
 
     def test_ocr_options_has_ocr_engine_field(self):
-        """OCROptions should have ocr_engine field."""
-        from ocrmypdf._options import OCROptions
+        """OcrOptions should have ocr_engine field."""
+        from ocrmypdf._options import OcrOptions
 
         # Check field exists in model
-        assert 'ocr_engine' in OCROptions.model_fields
+        assert 'ocr_engine' in OcrOptions.model_fields
 
 
 class TestOcrEnginePluginSelection:
@@ -91,8 +91,8 @@ class TestOcrEnginePluginSelection:
         """TesseractOcrEngine should be returned when ocr_engine='auto'."""
         from unittest.mock import MagicMock
 
-        from ocrmypdf.builtin_plugins.tesseract_ocr import TesseractOcrEngine
         from ocrmypdf.builtin_plugins import tesseract_ocr
+        from ocrmypdf.builtin_plugins.tesseract_ocr import TesseractOcrEngine
 
         options = MagicMock()
         options.ocr_engine = 'auto'
@@ -104,8 +104,8 @@ class TestOcrEnginePluginSelection:
         """TesseractOcrEngine should be returned when ocr_engine='tesseract'."""
         from unittest.mock import MagicMock
 
-        from ocrmypdf.builtin_plugins.tesseract_ocr import TesseractOcrEngine
         from ocrmypdf.builtin_plugins import tesseract_ocr
+        from ocrmypdf.builtin_plugins.tesseract_ocr import TesseractOcrEngine
 
         options = MagicMock()
         options.ocr_engine = 'tesseract'
@@ -117,8 +117,8 @@ class TestOcrEnginePluginSelection:
         """NullOcrEngine should be returned when ocr_engine='none'."""
         from unittest.mock import MagicMock
 
-        from ocrmypdf.builtin_plugins.null_ocr import NullOcrEngine
         from ocrmypdf.builtin_plugins import null_ocr
+        from ocrmypdf.builtin_plugins.null_ocr import NullOcrEngine
 
         options = MagicMock()
         options.ocr_engine = 'none'
