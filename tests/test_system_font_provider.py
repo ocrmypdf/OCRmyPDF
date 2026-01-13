@@ -14,10 +14,8 @@ import pytest
 from ocrmypdf.font import (
     BuiltinFontProvider,
     ChainedFontProvider,
-    FontManager,
     SystemFontProvider,
 )
-
 
 # --- SystemFontProvider Platform Detection Tests ---
 

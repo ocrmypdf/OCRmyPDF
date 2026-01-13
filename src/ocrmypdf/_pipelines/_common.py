@@ -123,7 +123,8 @@ class HOCRResultEncoder(json.JSONEncoder):
 
 class HOCRResultDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
-        super().__init__(object_hook=self.dict_to_object, *args, **kwargs)
+        kwargs['object_hook'] = self.dict_to_object
+        super().__init__(*args, **kwargs)
 
     def dict_to_object(self, d):
         if 'Path' in d:

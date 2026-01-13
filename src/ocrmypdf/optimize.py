@@ -194,11 +194,9 @@ def extract_image_jbig2(
 def _should_optimize_jpeg(options, filtdp):
     if options.optimize >= 2:
         return True
-    if options.optimize < 2 and ghostscript.version() >= Version('10.6.0'):
-        # Ghostscript 10.6.0+ introduced some sort of JPEG encoding issue.
-        # To resolve this, re-optimize the JPEG anyway.
-        return True
-    return False
+    # Ghostscript 10.6.0+ introduced some sort of JPEG encoding issue.
+    # To resolve this, re-optimize the JPEG anyway.
+    return options.optimize < 2 and ghostscript.version() >= Version('10.6.0')
 
 
 def extract_image_generic(

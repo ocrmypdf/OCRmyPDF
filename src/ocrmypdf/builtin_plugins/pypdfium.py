@@ -90,10 +90,7 @@ def _render_page_to_bitmap(
 
     # Calculate crop to render the appropriate box
     # Default (use_cropbox=False) renders MediaBox for consistency with Ghostscript
-    if use_cropbox:
-        crop = (0, 0, 0, 0)  # No crop adjustment, use default CropBox
-    else:
-        crop = _calculate_mediabox_crop(page)  # Expand to MediaBox
+    crop = (0, 0, 0, 0) if use_cropbox else _calculate_mediabox_crop(page)
 
     bitmap = page.render(
         scale=scale,
@@ -155,9 +152,12 @@ def _process_image_for_output(
 def _save_image(pil_image, output_file: Path, format_name: str):
     """Save PIL image to file with appropriate DPI metadata."""
     save_kwargs = {}
-    if format_name in ('PNG', 'TIFF') and 'dpi' in pil_image.info:
-        save_kwargs['dpi'] = pil_image.info['dpi']
-    elif format_name == 'JPEG' and 'dpi' in pil_image.info:
+    if (
+        format_name in ('PNG', 'TIFF')
+        and 'dpi' in pil_image.info
+        or format_name == 'JPEG'
+        and 'dpi' in pil_image.info
+    ):
         save_kwargs['dpi'] = pil_image.info['dpi']
 
     pil_image.save(output_file, format=format_name, **save_kwargs)
@@ -190,19 +190,18 @@ def rasterize_pdf_page(
         return None  # Fall back to Ghostscript
 
     # Acquire lock to ensure thread-safe access to pypdfium2
-    with _pdfium_lock:
-        # Open the PDF document and get the specific page (pypdfium2 uses 0-based indexing)
-        with (
-            closing(_open_pdf_document(input_file)) as pdf,
-            closing(pdf[pageno - 1]) as page,
-        ):
-            # Render the page to a bitmap
-            bitmap = _render_page_to_bitmap(
-                page, raster_device, raster_dpi, rotation, use_cropbox
-            )
-            with closing(bitmap):
-                # Convert to PIL Image
-                pil_image = bitmap.to_pil()
+    with (
+        _pdfium_lock,
+        closing(_open_pdf_document(input_file)) as pdf,
+        closing(pdf[pageno - 1]) as page,
+    ):
+        # Render the page to a bitmap
+        bitmap = _render_page_to_bitmap(
+            page, raster_device, raster_dpi, rotation, use_cropbox
+        )
+        with closing(bitmap):
+            # Convert to PIL Image
+            pil_image = bitmap.to_pil()
 
     # Process and save image outside the lock (PIL operations are thread-safe)
     pil_image, format_name = _process_image_for_output(

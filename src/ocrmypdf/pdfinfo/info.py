@@ -304,12 +304,10 @@ class PageInfo:
             obj: TextboxInfo, want_visible: bool | None, want_corrupt: bool | None
         ) -> bool:
             result = True
-            if want_visible is not None:
-                if obj.is_visible != want_visible:
-                    result = False
-            if want_corrupt is not None:
-                if obj.is_corrupt != want_corrupt:
-                    result = False
+            if want_visible is not None and obj.is_visible != want_visible:
+                result = False
+            if want_corrupt is not None and obj.is_corrupt != want_corrupt:
+                result = False
             return result
 
         if not self._textboxes:
@@ -442,9 +440,10 @@ class PdfInfo:
                 )
             self._needs_rendering = pdf.Root.get(Name.NeedsRendering, False)
             if Name.AcroForm in pdf.Root:
-                if len(pdf.Root.AcroForm.get(Name.Fields, [])) > 0:
-                    self._has_acroform = True
-                elif Name.XFA in pdf.Root.AcroForm:
+                if (
+                    len(pdf.Root.AcroForm.get(Name.Fields, [])) > 0
+                    or Name.XFA in pdf.Root.AcroForm
+                ):
                     self._has_acroform = True
                 self._has_signature = bool(pdf.Root.AcroForm.get(Name.SigFlags, 0) & 1)
             self._is_tagged = bool(

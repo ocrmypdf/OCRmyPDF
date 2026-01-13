@@ -50,7 +50,8 @@ class ProgressBar(Protocol):
         unit (str | None):
             A short label for the type of work being tracked (e.g. "page", "%", "image").
         disable (bool):
-            If ``True``, progress updates are suppressed (no output). Defaults to ``False``.
+            If ``True``, progress updates are suppressed (no output).
+            Defaults to ``False``.
         **kwargs:
             Future or extra parameters that OCRmyPDF might pass. Implementations
             should accept and ignore unrecognized keywords gracefully.
@@ -64,7 +65,8 @@ class ProgressBar(Protocol):
             from ocrmypdf import hookimpl
 
             class ConsoleProgressBar(ProgressBar):
-                def __init__(self, *, total=None, desc=None, unit=None, disable=False, **kwargs):
+                def __init__(self, *, total=None, desc=None, unit=None, disable=False,
+                             **kwargs):
                     self.total = total
                     self.desc = desc
                     self.unit = unit
@@ -73,7 +75,9 @@ class ProgressBar(Protocol):
 
                 def __enter__(self):
                     if not self.disable:
-                        print(f"Starting {self.desc or 'an OCR task'} (total={self.total} {self.unit})")
+                        print(f"Starting {self.desc or 'an OCR task'} "
+                              f"(total={self.total} {self.unit})"
+                        )
                     return self
 
                 def __exit__(self, exc_type, exc_value, traceback):

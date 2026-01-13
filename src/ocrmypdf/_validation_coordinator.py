@@ -78,8 +78,8 @@ class ValidationCoordinator:
         DENIED_LANGUAGES = {'equ', 'osd'}
         if DENIED_LANGUAGES & set(options.languages):
             raise BadArgsError(
-                "The following languages are for Tesseract's internal use and should not "
-                "be issued explicitly: "
+                "The following languages are for Tesseract's internal use and "
+                "should not be issued explicitly: "
                 f"{', '.join(DENIED_LANGUAGES & set(options.languages))}\n"
                 "Remove them from the -l/--language argument."
             )
@@ -109,12 +109,13 @@ class ValidationCoordinator:
         # by the ProcessingMode enum - only one mode can be active at a time.
 
         # Validate redo mode compatibility
-        if options.mode == ProcessingMode.redo:
-            if options.deskew or options.clean_final or options.remove_background:
-                raise ValueError(
-                    "--redo-ocr (or --mode redo) is not currently compatible with "
-                    "--deskew, --clean-final, and --remove-background"
-                )
+        if options.mode == ProcessingMode.redo and (
+            options.deskew or options.clean_final or options.remove_background
+        ):
+            raise ValueError(
+                "--redo-ocr (or --mode redo) is not currently compatible with "
+                "--deskew, --clean-final, and --remove-background"
+            )
 
         # Validate output type compatibility
         if options.output_type == 'none' and str(options.output_file) not in (

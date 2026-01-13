@@ -63,7 +63,7 @@ class TextMarker:
 def _is_unit_square(shorthand):
     """Check if the shorthand represents a unit square transformation."""
     values = map(float, shorthand)
-    pairwise = zip(values, UNIT_SQUARE)
+    pairwise = zip(values, UNIT_SQUARE, strict=False)
     return all(isclose(a, b, rel_tol=1e-3) for a, b in pairwise)
 
 
@@ -138,11 +138,11 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
         elif operator == 'cm':
             try:
                 ctm = Matrix(operands) @ ctm
-            except ValueError:
+            except ValueError as e:
                 raise InputFileError(
                     "PDF content stream is corrupt - this PDF is malformed. "
                     "Use a PDF editor that is capable of visually inspecting the PDF."
-                )
+                ) from e
         elif operator == 'Do':
             image_name = operands[0]
             settings = XobjectSettings(

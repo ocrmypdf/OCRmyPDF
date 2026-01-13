@@ -287,9 +287,7 @@ def tesseract_log_output(stream: bytes) -> None:
 
     lines = text.splitlines()
     for line in lines:
-        if line.startswith("Tesseract Open Source"):
-            continue
-        elif line.startswith("Warning in pixReadMem"):
+        if line.startswith("Tesseract Open Source") or line.startswith("Warning in pixReadMem"):
             continue
         elif 'diacritics' in line:
             tlog.warning("lots of diacritics - possibly poor OCR")

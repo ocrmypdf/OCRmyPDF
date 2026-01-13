@@ -17,7 +17,7 @@ dependencies = [
   "img2pdf>=0.5",
   "packaging>=20",
   "pdfminer.six>=20220319",
-  "pi-heif", # Heif image format - maintainers: if this is removed, it will NOT break
+  "pi-heif",                # Heif image format - maintainers: if this is removed, it will NOT break
   "pikepdf>=10",
   "Pillow>=10.0.1",
   "pluggy>=1",
@@ -121,12 +121,17 @@ target-version = "py310"
 
 [tool.ruff.lint]
 "select" = [
-  "D",    # pydocstyle
-  "E",    # pycodestyle
-  "W",    # pycodestyle
-  "F",    # pyflakes
-  "I001", # isort
-  "UP",   # pyupgrade
+  "D",   # pydocstyle
+  "E",   # pycodestyle
+  "W",   # pycodestyle
+  "F",   # pyflakes
+  "I",   # isort
+  "UP",  # pyupgrade
+  "SIM", # simplify
+  "B",   # flake8-bugbear
+]
+ignore = [
+  "B028", # warn no explicit stacklevel
 ]
 
 [tool.ruff.lint.isort]
@@ -146,10 +151,7 @@ quote-style = "preserve"
 
 [dependency-groups]
 # Developer-only tools - use `uv sync --group <name>` (NOT pip-installable)
-dev = [
-  "mypy>=1.13.0",
-  "ipykernel>=6.29.5",
-]
+dev = ["mypy>=1.13.0", "ipykernel>=6.29.5"]
 test = [
   # Core testing framework
   "coverage[toml]>=6.2",
@@ -166,13 +168,5 @@ test = [
   # Extended test capabilities (merged from extended_test)
   "pymupdf>=1.24.14",
 ]
-docs = [
-  "myst-parser>=4.0.1",
-  "sphinx",
-  "sphinx-issues",
-  "sphinx-rtd-theme",
-]
-streamlit-dev = [
-  "streamlit>=1.40.2",
-  "streamlit-pdf-viewer>=0.0.19",
-]
+docs = ["myst-parser>=4.0.1", "sphinx", "sphinx-issues", "sphinx-rtd-theme"]
+streamlit-dev = ["streamlit>=1.40.2", "streamlit-pdf-viewer>=0.0.19"]

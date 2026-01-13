@@ -133,7 +133,7 @@ def cached_run(options, run_args, **run_kwargs):
     }
     # Don't pass timeout=0 to the actual run call - it would timeout immediately
     # A timeout of 0 means "use default/no timeout" in the caching context
-    if cache_kwargs.get('timeout', None) == 0.0:
+    if cache_kwargs.get('timeout') == 0.0:
         cache_kwargs['timeout'] = None
     if 'check' not in cache_kwargs:
         cache_kwargs['check'] = True

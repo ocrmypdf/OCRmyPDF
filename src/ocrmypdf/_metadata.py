@@ -47,9 +47,9 @@ def get_docinfo(base_pdf: Pdf, context: PdfContext) -> dict[str, str]:
     if options.subject:
         pdfmark['/Subject'] = options.subject
 
-    creator_tag = context.plugin_manager.get_ocr_engine(
-        options=options
-    ).creator_tag(options)
+    creator_tag = context.plugin_manager.get_ocr_engine(options=options).creator_tag(
+        options
+    )
 
     pdfmark['/Creator'] = f'{PROGRAM_NAME} {OCRMYPF_VERSION} / {creator_tag}'
     pdfmark['/Producer'] = f'pikepdf {PIKEPDF_VERSION}'
@@ -100,9 +100,7 @@ def should_linearize(working_file: Path, context: PdfContext) -> bool:
     For smaller files, linearization is not worth the effort.
     """
     filesize = os.stat(working_file).st_size
-    if filesize > (context.options.fast_web_view * 1_000_000):
-        return True
-    return False
+    return filesize > (context.options.fast_web_view * 1_000_000)
 
 
 def _fix_metadata(meta_original: PdfMetadata, meta_pdf: PdfMetadata):
@@ -110,12 +108,11 @@ def _fix_metadata(meta_original: PdfMetadata, meta_pdf: PdfMetadata):
     # ensure consistency with Ghostscript.
     if 'xmp:CreateDate' not in meta_pdf:
         meta_pdf['xmp:CreateDate'] = meta_pdf.get('xmp:ModifyDate', '')
-    if meta_pdf.get('dc:title') == 'Untitled':
+    if meta_pdf.get('dc:title') == 'Untitled' and ('dc:title' not in meta_original):
         # Ghostscript likes to set title to Untitled if omitted from input.
         # Reverse this, because PDF/A TechNote 0003:Metadata in PDF/A-1
         # and the XMP Spec do not make this recommendation.
-        if 'dc:title' not in meta_original:
-            del meta_pdf['dc:title']
+        del meta_pdf['dc:title']
 
 
 def _unset_empty_metadata(meta: PdfMetadata, options):

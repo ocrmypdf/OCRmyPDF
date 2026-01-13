@@ -216,8 +216,8 @@ class TesseractOptions(BaseModel):
             default=32767,
             dest=f'{namespace}_downsample_above',
             help=(
-                "Downsample images larger than this size pixel size in either dimension "
-                f"before OCR. --{namespace}-downsample-large-images downsamples only when "
+                "Downsample images larger than this size pixel size (either dimension) "
+                f"before OCR. --{namespace}-downsample-large-images downsamples when "
                 "an image exceeds Tesseract's internal limits. This argument causes "
                 "downsampling to occur when an image exceeds the given size. This may "
                 "reduce OCR quality, but on large images the most desirable text is "
@@ -280,8 +280,8 @@ class TesseractOptions(BaseModel):
         DENIED_LANGUAGES = {'equ', 'osd'}
         if DENIED_LANGUAGES & set(languages):
             raise BadArgsError(
-                "The following languages are for Tesseract's internal use and should not "
-                "be issued explicitly: "
+                "The following languages are for Tesseract's internal use "
+                "and should not be issued explicitly: "
                 f"{', '.join(DENIED_LANGUAGES & set(languages))}\n"
                 "Remove them from the -l/--language argument."
             )

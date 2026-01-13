@@ -40,8 +40,5 @@ class OcrQualityDictionary:
                 w != w.lower() and w.lower() in self.dictionary
             ):
                 matches += 1
-        if matches > 0:
-            hit_ratio = matches / len(text_words)
-        else:
-            hit_ratio = 0.0
+        hit_ratio = matches / len(text_words) if matches > 0 else 0.0
         return hit_ratio

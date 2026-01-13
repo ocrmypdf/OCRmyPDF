@@ -127,19 +127,18 @@ class OptimizeOptions(BaseModel):
     @model_validator(mode='after')
     def validate_optimization_consistency(self):
         """Validate optimization options are consistent."""
-        if self.level == 0 and any([
-            self.png_quality > 0,
-            self.jpeg_quality > 0
-        ]):
+        if self.level == 0 and any([self.png_quality > 0, self.jpeg_quality > 0]):
             log.warning(
                 "The arguments --png-quality and --jpeg-quality "
                 "will be ignored because --optimize=0."
             )
         return self
 
-    def validate_with_context(self, external_programs_available: dict[str, bool]) -> None:
+    def validate_with_context(
+        self, external_programs_available: dict[str, bool]
+    ) -> None:
         """Validate options that require external context.
-        
+
         Args:
             external_programs_available: Dict of program name -> availability
         """

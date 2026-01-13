@@ -181,12 +181,9 @@ def strip_invisible_text(pdf: Pdf, page: Page):
             render_mode_stack.append(render_mode)
 
         if operator == Operator('Q'):
-            try:
+            # IndexError is raised if stack is empty; try to carry on
+            with suppress(IndexError):
                 render_mode = render_mode_stack.pop()
-            except IndexError:
-                # Stack underflow: content stream is malformed
-                # but try to carry on
-                pass
 
         if not in_text_obj:
             if operator == Operator('BT'):
@@ -314,9 +311,9 @@ class OcrGrafter:
 
     def finalize(self):
         # Can have hocr OR parsed pages OR neither (no OCR), but not both
-        assert not (self.fpdf2_hocr_pages and self.fpdf2_parsed_pages), (
-            "Can't have both hocr and ocrtree pages"
-        )
+        assert not (
+            self.fpdf2_hocr_pages and self.fpdf2_parsed_pages
+        ), "Can't have both hocr and ocrtree pages"
 
         if self.fpdf2_hocr_pages:
             # Render all pages with fpdf2, then graft
@@ -376,7 +373,8 @@ class OcrGrafter:
         multi_font_manager = MultiFontManager(font_dir)
         # Build renderer input as (pageno, ocr_tree, dpi) tuples
         renderer_pages_data = [
-            (parsed.pageno, parsed.ocr_tree, parsed.dpi) for parsed in self.fpdf2_parsed_pages
+            (parsed.pageno, parsed.ocr_tree, parsed.dpi)
+            for parsed in self.fpdf2_parsed_pages
         ]
         renderer = Fpdf2MultiPageRenderer(
             pages_data=renderer_pages_data,
@@ -398,9 +396,7 @@ class OcrGrafter:
                     parsed.autorotate_correction,
                     parsed.emplaced_page,
                 )
-                self._graft_fpdf2_text_layer(
-                    parsed.pageno, text_page, text_misaligned
-                )
+                self._graft_fpdf2_text_layer(parsed.pageno, text_page, text_misaligned)
 
                 page_rotation = _compute_page_rotation(
                     content_rotation,
@@ -414,9 +410,7 @@ class OcrGrafter:
             with suppress(FileNotFoundError):
                 multi_page_pdf_path.unlink()
 
-    def _graft_fpdf2_text_layer(
-        self, pageno: int, text_page: Page, text_rotation: int
-    ):
+    def _graft_fpdf2_text_layer(self, pageno: int, text_page: Page, text_rotation: int):
         """Graft a single text page onto the base PDF.
 
         Similar to existing _graft_text_layer but works with
@@ -479,14 +473,17 @@ class OcrGrafter:
 
         # Build transformation matrix for rotation and scaling
         ctm = _build_text_layer_ctm(
-            wt, ht, wp, hp, float(base_mediabox[0]), float(base_mediabox[1]),
-            text_rotation
+            wt,
+            ht,
+            wp,
+            hp,
+            float(base_mediabox[0]),
+            float(base_mediabox[1]),
+            text_rotation,
         )
         if ctm is not None:
             pdf_draw_xobj = (
-                (b'q %s cm\n' % ctm.encode())
-                + (b'%s Do\n' % text_xobj_name)
-                + b'Q\n'
+                (b'q %s cm\n' % ctm.encode()) + (b'%s Do\n' % text_xobj_name) + b'Q\n'
             )
         else:
             pdf_draw_xobj = b'q\n' + (b'%s Do\n' % text_xobj_name) + b'\nQ\n'
@@ -552,9 +549,13 @@ class OcrGrafter:
 
                 # Build transformation matrix for rotation and scaling
                 ctm = _build_text_layer_ctm(
-                    wt, ht, wp, hp,
-                    float(base_mediabox[0]), float(base_mediabox[1]),
-                    text_rotation
+                    wt,
+                    ht,
+                    wp,
+                    hp,
+                    float(base_mediabox[0]),
+                    float(base_mediabox[1]),
+                    text_rotation,
                 )
                 log.debug("Grafting with ctm %r", ctm)
 

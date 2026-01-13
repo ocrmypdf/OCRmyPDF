@@ -79,23 +79,25 @@ class ImageInfo:
 
         self._width = pim.width
         self._height = pim.height
-        if (smask := pim.obj.get(Name.SMask, None)) is not None:
+        if (smask := pim.obj.get(Name.SMask, None)) is not None and isinstance(
+            smask, Stream | Dictionary
+        ):
             # SMask is pretty much an alpha channel, but in PDF it's possible
             # for channel to have different dimensions than the image
             # itself. Some PDF writers use this to create a grayscale stencil
             # mask. For our purposes, the effective size is the size of the
             # larger component (image or smask).
-            if isinstance(smask, Stream | Dictionary):
-                self._width = max(smask.get(Name.Width, 0), self._width)
-                self._height = max(smask.get(Name.Height, 0), self._height)
-        if (mask := pim.obj.get(Name.Mask, None)) is not None:
+            self._width = max(smask.get(Name.Width, 0), self._width)
+            self._height = max(smask.get(Name.Height, 0), self._height)
+        if (mask := pim.obj.get(Name.Mask, None)) is not None and isinstance(
+            mask, Stream | Dictionary
+        ):
             # If the image has a /Mask entry, it has an explicit mask.
             # /Mask can be a Stream or an Array. If it's a Stream,
             # use its /Width and /Height if they are larger than the main
             # image's.
-            if isinstance(mask, Stream | Dictionary):
-                self._width = max(mask.get(Name.Width, 0), self._width)
-                self._height = max(mask.get(Name.Height, 0), self._height)
+            self._width = max(mask.get(Name.Width, 0), self._width)
+            self._height = max(mask.get(Name.Height, 0), self._height)
 
         # If /ImageMask is true, then this image is a stencil mask
         # (Images that draw with this stencil mask will have a reference to

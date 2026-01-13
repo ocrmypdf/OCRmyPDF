@@ -61,7 +61,8 @@ class GhostscriptOptions(BaseModel):
 
         Args:
             parser: The argument parser to add arguments to
-            namespace: The namespace prefix for argument names (not used for ghostscript for backward compatibility)
+            namespace: The namespace prefix for argument names (not used for ghostscript
+                for backward compatibility)
         """
         gs = parser.add_argument_group("Ghostscript", "Advanced control of Ghostscript")
         gs.add_argument(
@@ -173,7 +174,8 @@ def rasterize_pdf_page(
     """Rasterize a single page of a PDF file using Ghostscript."""
     # Check if user explicitly requested a different rasterizer
     if options is not None and options.rasterizer == 'pypdfium':
-        return None  # Let pypdfium handle it (it will error in check_options if unavailable)
+        # Let pypdfium handle it (it will error in check_options if unavailable)
+        return None
 
     ghostscript.rasterize_pdf(
         input_file,

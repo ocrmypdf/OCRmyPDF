@@ -200,7 +200,7 @@ def is_iterable_notstr(thing: Any) -> bool:
 
 def monotonic(seq: Sequence) -> bool:
     """Does this sequence increase monotonically?"""
-    return all(b > a for a, b in zip(seq, seq[1:]))
+    return all(b > a for a, b in zip(seq, seq[1:], strict=False))
 
 
 def page_number(input_file: os.PathLike) -> int:
@@ -298,9 +298,7 @@ def check_pdf(input_file: Path) -> bool:
                 if linearize_msgs:
                     log.warning(linearize_msgs)
 
-            if success and not linearize_msgs:
-                return True
-            return False
+            return bool(success and not linearize_msgs)
 
 
 def clamp(n: T, smallest: T, largest: T) -> T:

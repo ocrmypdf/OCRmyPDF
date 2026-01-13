@@ -431,10 +431,7 @@ def describe_rotation(
         else:
             action = 'rotation appears correct'
     else:
-        if correction != 0:
-            action = 'confidence too low to rotate'
-        else:
-            action = 'no change'
+        action = "confidence too low to rotate" if correction != 0 else "no change"
 
     facing = ''
 
@@ -1093,10 +1090,7 @@ def _is_safe_pdfa(input_pdf: Path, options) -> bool:
         return True
 
     # Safe if we rewrote the PDF with force mode
-    if options.mode == ProcessingMode.force:
-        return True
-
-    return False
+    return options.mode == ProcessingMode.force
 
 
 def should_linearize(working_file: Path, context: PdfContext) -> bool:
@@ -1105,9 +1099,7 @@ def should_linearize(working_file: Path, context: PdfContext) -> bool:
     For smaller files, linearization is not worth the effort.
     """
     filesize = os.stat(working_file).st_size
-    if filesize > (context.options.fast_web_view * 1_000_000):
-        return True
-    return False
+    return filesize > (context.options.fast_web_view * 1_000_000)
 
 
 def get_pdf_save_settings(output_type: str) -> dict[str, Any]:
@@ -1225,10 +1217,7 @@ def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext) -> Pat
                 # others don't. Remove it if it exists, since we add one manually.
                 stream.write(txt.removesuffix('\f'))
             else:
-                if from_ != to_:
-                    pages = f'{from_}-{to_}'
-                else:
-                    pages = f'{from_}'
+                pages = f"{from_}-{to_}" if from_ != to_ else f"{from_}"
                 stream.write(f'[OCR skipped on page(s) {pages}]')
     return output_file
 

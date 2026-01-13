@@ -374,12 +374,13 @@ class OcrOptions(BaseModel):
     @model_validator(mode='after')
     def validate_redo_ocr_options(self):
         """Validate options compatible with redo mode."""
-        if self.mode == ProcessingMode.redo:
-            if self.deskew or self.clean_final or self.remove_background:
-                raise ValueError(
-                    "--redo-ocr (or --mode redo) is not currently compatible with "
-                    "--deskew, --clean-final, and --remove-background"
-                )
+        if self.mode == ProcessingMode.redo and (
+            self.deskew or self.clean_final or self.remove_background
+        ):
+            raise ValueError(
+                "--redo-ocr (or --mode redo) is not currently compatible with "
+                "--deskew, --clean-final, and --remove-background"
+            )
         return self
 
     @model_validator(mode='after')
@@ -559,13 +560,13 @@ class OcrOptions(BaseModel):
             elif namespace == 'optimize' and field_name == 'level':
                 # 'optimize' field maps to 'level' in OptimizeOptions
                 if 'optimize' in OcrOptions.model_fields:
-                    value = getattr(self, 'optimize')
+                    value = self.optimize
                     if value is not None:
                         kwargs[field_name] = _convert_value(value)
             elif namespace == 'optimize' and field_name == 'jpeg_quality':
                 # jpg_quality maps to jpeg_quality
                 if 'jpg_quality' in OcrOptions.model_fields:
-                    value = getattr(self, 'jpg_quality')
+                    value = self.jpg_quality
                     if value is not None:
                         kwargs[field_name] = _convert_value(value)
 

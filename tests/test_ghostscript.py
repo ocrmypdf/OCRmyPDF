@@ -382,7 +382,7 @@ class TestGs106JpegCorruptionRepair:
                     repaired_bytes_list.append(obj.read_raw_bytes())
 
         assert len(repaired_bytes_list) == len(original_bytes_list)
-        for orig, repaired_bytes in zip(original_bytes_list, repaired_bytes_list):
+        for orig, repaired_bytes in zip(original_bytes_list, repaired_bytes_list, strict=False):
             assert orig == repaired_bytes, "Repaired bytes should match original"
 
         # Check that error/warning was logged

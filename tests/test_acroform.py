@@ -23,7 +23,7 @@ def acroform(resources):
 def test_acroform_and_redo(acroform, no_outpdf):
     with pytest.raises(
         ocrmypdf.exceptions.InputFileError,
-        match='--redo-ocr (or --mode redo) is not currently possible',
+        match=r'.*--redo-ocr.*is not currently possible.*',
     ):
         check_ocrmypdf(acroform, no_outpdf, '--redo-ocr')
 
