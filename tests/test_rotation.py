@@ -146,7 +146,8 @@ def test_autorotate_threshold(threshold, op, comparison_threshold, resources, ou
     assert op(cmp, comparison_threshold)
 
 
-def test_rotated_skew_timeout(resources, outpdf):
+@pytest.mark.parametrize('rasterizer', ['pypdfium', 'ghostscript'])
+def test_rotated_skew_timeout(resources, outpdf, rasterizer):
     """Check rotated skew timeout.
 
     This document contains an image that is rotated 90 into place with a
@@ -172,7 +173,7 @@ def test_rotated_skew_timeout(resources, outpdf):
         '--tesseract-timeout',
         '0',
         '--rasterizer',
-        'ghostscript',  # Use Ghostscript for consistent dimensions
+        rasterizer,
     )
 
     out_pageinfo = PdfInfo(out)[0]
@@ -187,7 +188,8 @@ def test_rotated_skew_timeout(resources, outpdf):
     ), "Expected page rotation to be baked in"
 
 
-def test_rotate_deskew_ocr_timeout(resources, outdir):
+@pytest.mark.parametrize('rasterizer', ['pypdfium', 'ghostscript'])
+def test_rotate_deskew_ocr_timeout(resources, outdir, rasterizer):
     check_ocrmypdf(
         resources / 'rotated_skew.pdf',
         outdir / 'deskewed.pdf',
@@ -200,7 +202,7 @@ def test_rotate_deskew_ocr_timeout(resources, outdir):
         '--pdf-renderer',
         'fpdf2',
         '--rasterizer',
-        'ghostscript',  # Use Ghostscript for consistent dimensions
+        rasterizer,
     )
 
     cmp = compare_images_monochrome(
@@ -212,7 +214,9 @@ def test_rotate_deskew_ocr_timeout(resources, outdir):
     )
 
     # Confirm that the page still got deskewed
-    assert cmp > 0.95
+    # pypdfium anti-aliases so gets better visual quality, but lower score (0.88)
+    # on monochrome comparison; ghostscript looks ugly but gets > 0.95
+    assert cmp > 0.85
 
 
 def make_rotate_test(imagefile, outdir, prefix, image_angle, page_angle, cropbox=None):
@@ -328,7 +332,8 @@ def test_rotate_and_crop(
     assert compare_images_monochrome(outdir, reference, 1, out, 1) > 0.9
 
 
-def test_rasterize_rotates(resources, tmp_path):
+@pytest.mark.parametrize('rasterizer', ['pypdfium', 'ghostscript'])
+def test_rasterize_rotates(resources, tmp_path, rasterizer):
     from ocrmypdf._options import OcrOptions
 
     pm = get_plugin_manager([])
@@ -336,7 +341,7 @@ def test_rasterize_rotates(resources, tmp_path):
     options = OcrOptions(
         input_file=resources / 'graph.pdf',
         output_file=tmp_path / 'out.pdf',
-        rasterizer='ghostscript',  # Use Ghostscript for consistent dimensions
+        rasterizer=rasterizer,
     )
 
     img = tmp_path / 'img90.png'

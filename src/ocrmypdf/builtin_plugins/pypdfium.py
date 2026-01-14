@@ -14,6 +14,8 @@ try:
 except ImportError:
     pdfium = None
 
+from PIL import Image
+
 from ocrmypdf import hookimpl
 from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.helpers import Resolution
@@ -74,6 +76,16 @@ def _render_page_to_bitmap(
     use_cropbox: bool,
 ):
     """Render a PDF page to a bitmap."""
+    # Round DPI to match Ghostscript's precision
+    raster_dpi = raster_dpi.round(6)
+
+    # Get page dimensions BEFORE applying rotation
+    page_width_pts, page_height_pts = page.get_size()
+
+    # Calculate expected output dimensions using separate x/y DPI
+    expected_width = int(round(page_width_pts * raster_dpi.x / 72.0))
+    expected_height = int(round(page_height_pts * raster_dpi.y / 72.0))
+
     # Calculate the scale factor based on DPI
     # pypdfium2 uses points (72 DPI) as base unit
     scale = raster_dpi.to_scalar() / 72.0
@@ -83,6 +95,9 @@ def _render_page_to_bitmap(
         # pypdfium2 rotation is in degrees, same as our input
         # we track rotation in CCW, and pypdfium2 expects CW, so negate
         page.set_rotation(-rotation % 360)
+        # When rotation is 90 or 270, dimensions are swapped in output
+        if rotation % 180 == 90:
+            expected_width, expected_height = expected_height, expected_width
 
     # Render the page to a bitmap
     # The scale parameter controls the resolution
@@ -102,7 +117,7 @@ def _render_page_to_bitmap(
         # Note: pypdfium2 doesn't have a direct equivalent to filter_vector
         # This would require more complex implementation if needed
     )
-    return bitmap
+    return bitmap, expected_width, expected_height
 
 
 def _process_image_for_output(
@@ -111,8 +126,30 @@ def _process_image_for_output(
     raster_dpi: Resolution,
     page_dpi: Resolution | None,
     stop_on_soft_error: bool,
+    expected_width: int | None = None,
+    expected_height: int | None = None,
 ):
     """Process PIL image for output format and set DPI metadata."""
+    # Correct dimensions if slightly off (within 2 pixels tolerance)
+    if expected_width and expected_height:
+        actual_width, actual_height = pil_image.width, pil_image.height
+        width_diff = abs(actual_width - expected_width)
+        height_diff = abs(actual_height - expected_height)
+
+        # Only resize if off by small amount (1-2 pixels)
+        if (width_diff <= 2 or height_diff <= 2) and (
+            width_diff > 0 or height_diff > 0
+        ):
+            log.debug(
+                f"Adjusting rendered dimensions from "
+                f"{actual_width}x{actual_height} to expected "
+                f"{expected_width}x{expected_height}"
+            )
+            pil_image = pil_image.resize(
+                (expected_width, expected_height),
+                Image.Resampling.LANCZOS
+            )
+
     # Set the DPI metadata if page_dpi is specified
     if page_dpi:
         # PIL expects DPI as a tuple
@@ -196,7 +233,7 @@ def rasterize_pdf_page(
         closing(pdf[pageno - 1]) as page,
     ):
         # Render the page to a bitmap
-        bitmap = _render_page_to_bitmap(
+        bitmap, expected_width, expected_height = _render_page_to_bitmap(
             page, raster_device, raster_dpi, rotation, use_cropbox
         )
         with closing(bitmap):
@@ -205,7 +242,13 @@ def rasterize_pdf_page(
 
     # Process and save image outside the lock (PIL operations are thread-safe)
     pil_image, format_name = _process_image_for_output(
-        pil_image, raster_device, raster_dpi, page_dpi, stop_on_soft_error
+        pil_image,
+        raster_device,
+        raster_dpi,
+        page_dpi,
+        stop_on_soft_error,
+        expected_width,
+        expected_height,
     )
 
     _save_image(pil_image, output_file, format_name)
