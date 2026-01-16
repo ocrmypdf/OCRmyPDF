@@ -260,6 +260,66 @@ You can also optimize all images without performing any OCR:
 ocrmypdf --ocr-engine none --optimize 3 --skip-text input.pdf output.pdf
 ```
 
+## Using v17 features
+
+### Select a rasterizer
+
+:::{versionadded} 17.0.0
+:::
+
+OCRmyPDF can use pypdfium2 or Ghostscript to rasterize PDF pages. pypdfium2
+is generally faster and is preferred when available.
+
+```bash
+# Automatic selection (default) - prefers pypdfium when available
+ocrmypdf --rasterizer auto input.pdf output.pdf
+
+# Explicitly use pypdfium2 (requires pip install pypdfium2)
+ocrmypdf --rasterizer pypdfium input.pdf output.pdf
+
+# Explicitly use Ghostscript
+ocrmypdf --rasterizer ghostscript input.pdf output.pdf
+```
+
+### PDF/A without Ghostscript
+
+:::{versionadded} 17.0.0
+:::
+
+With verapdf installed, OCRmyPDF can produce PDF/A without using Ghostscript
+for conversion. This is faster and avoids some Ghostscript limitations.
+
+```bash
+# Uses speculative conversion with verapdf validation (default)
+ocrmypdf --output-type auto input.pdf output.pdf
+
+# Explicitly request Ghostscript-based PDF/A conversion
+ocrmypdf --output-type pdfa input.pdf output.pdf
+```
+
+### Using --mode instead of legacy flags
+
+:::{versionadded} 17.0.0
+:::
+
+The `--mode` (`-m`) flag consolidates OCR behavior options:
+
+```bash
+# Instead of --skip-text
+ocrmypdf --mode skip input.pdf output.pdf
+
+# Instead of --force-ocr
+ocrmypdf --mode force input.pdf output.pdf
+
+# Instead of --redo-ocr
+ocrmypdf --mode redo input.pdf output.pdf
+
+# Short form
+ocrmypdf -m skip input.pdf output.pdf
+```
+
+The legacy flags continue to work as aliases.
+
 ### Process only certain pages
 
 You can ask OCRmyPDF to only apply [image processing](#image-processing)

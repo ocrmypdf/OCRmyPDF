@@ -77,10 +77,17 @@ straightforward, and any PDF viewer can handle PDF/A files.
 
 OCRmyPDF analyzes each page of a PDF to determine the required colorspace
 and resolution (DPI) for capturing all the information on that page without
-losing content. It uses
-[Ghostscript](http://ghostscript.com/) to rasterize each page and subsequently
-performs OCR on the rasterized image to generate an OCR "layer." This layer
-is then integrated back into the original PDF.
+losing content. It uses a PDF rasterizer (pypdfium2 or
+[Ghostscript](http://ghostscript.com/)) to convert each page to an image and
+subsequently performs OCR on the rasterized image to generate an OCR "layer."
+This layer is then integrated back into the original PDF.
+
+:::{versionchanged} 17.0.0
+OCRmyPDF now supports pypdfium2 as an alternative rasterizer to Ghostscript.
+pypdfium2 is a Python binding for pdfium, the PDF rendering library used by
+Google Chrome. The `--rasterizer auto` setting (default) prefers pypdfium2
+when available.
+:::
 
 While it is possible to use a program like Ghostscript or ImageMagick to
 obtain an image and then run that image through Tesseract OCR, this process
@@ -156,7 +163,16 @@ These limitations are inherent to any software relying on Tesseract:
   the text and its bounding box. As such, the generated PDF does not
   contain any information about the document's structure.
 
-Ghostscript also imposes some limitations:
+### Ghostscript considerations
+
+:::{versionchanged} 17.0.0
+Ghostscript is no longer strictly required. OCRmyPDF can use pypdfium2
+for rasterization and verapdf for PDF/A validation.
+:::
+
+While Ghostscript remains a capable and feature-rich tool with a long history,
+recent releases have introduced some compatibility challenges that OCRmyPDF
+v17 addresses through alternative codepaths. When Ghostscript is used:
 
 - PDFs containing JPEG 2000-encoded content may be converted to JPEG
   encoding, which may introduce compression artifacts, if Ghostscript
@@ -172,6 +188,10 @@ Ghostscript also imposes some limitations:
   PRISM Metadata is removed.
 - Ghostscript's PDF/A conversion may remove or deactivate
   hyperlinks and other active content.
+
+When pypdfium2 and verapdf are available, many of these limitations can be
+avoided by using the speculative PDF/A conversion path (enabled by default
+with `--output-type auto`).
 
 You can use `--output-type pdf` to disable PDF/A conversion and produce
 a standard, non-archival PDF.

@@ -38,6 +38,10 @@ official when it's tagged and posted to PyPI.
 - **Lossy JBIG2 removed**: The `--jbig2-lossy` and `--jbig2-page-group-size` options have been
   removed due to well-documented risks of character substitution errors. These options are now
   deprecated and will emit warnings if used. Only lossless JBIG2 compression is supported.
+- **PDF/A output behavior change**: If neither Ghostscript nor verapdf is installed,
+  `--output-type auto` (the new default) will produce a standard PDF instead of PDF/A. This is
+  a change from previous versions where Ghostscript was required and PDF/A was always produced.
+  This configuration is rare but users should be aware of the change.
 
 **New features**
 
@@ -57,9 +61,14 @@ official when it's tagged and posted to PyPI.
 - **verapdf integration**: Added optional verapdf validation for fast PDF/A conversion. When
   available, OCRmyPDF attempts speculative PDF/A conversion using pikepdf, validates with verapdf,
   and skips Ghostscript if validation passes.
-- **Optional Ghostscript**: As a consequence of the changes above, Ghostscript is no longer a require dependency. It is optional.
+- **Optional Ghostscript**: As a consequence of the changes above, Ghostscript is no longer a required dependency. It is optional.
 - **fpdf2 text renderer**: Replaced legacy hOCR text renderer with new fpdf2-based implementation,
   providing better multilingual support and more accurate text positioning.
+- **Improved Occulta glyphless font**: The new Occulta font provides better handling of
+  zero-width markers and double-width CJK characters for accurate text layer positioning.
+- **Expanded multilingual font support**: Added FontProvider infrastructure with language-aware
+  font selection for Devanagari (Hindi, Sanskrit, Marathi, Nepali), CJK (Chinese, Japanese,
+  Korean), Arabic script, and many other scripts. System font discovery reduces package size.
 - **Simplified mode selection**: New `--mode` (`-m`) argument consolidates processing options:
   - `default`: Error if text is found (standard behavior)
   - `force`: Rasterize all content and run OCR (replaces `--force-ocr`)
@@ -101,42 +110,7 @@ official when it's tagged and posted to PyPI.
 - Optional: `verapdf` for fast PDF/A validation (new dependency)
 - Requires: `fpdf2` for text layer rendering (new dependency)
 - Recommended: `typer` with `cyclopts` in misc scripts (new dependency)
-
-Summarizing, in Debian "control" style, our runtime dependency spec would look like:
-
-```
-Depends:
- fonts-noto,
- fpdf2 (>= 2.8),
- ghostscript (>= 9.18~dfsg~),  # Not strictly required, but best user experience
- icc-profiles-free,
- img2pdf,
- python3-coloredlogs,
- python3-deprecation,
- python3-hypothesis,
- python3-pdfminer (>= 20181108+dfsg-3),
- python3-pikepdf (>= 8.14.0),
- python3-pil,
- python3-pluggy,
- python3-reportlab,
- python3-rich,
- python3-uharfbuzz,  # Not currently in Debian
- tesseract-ocr (>= 4.0.0),
- zlib1g,
- ${misc:Depends},
- ${python3:Depends},
-Recommends:
- cyclopts,   # Not currently in Debian
- jbig2
- paddleocr,  # Not currently in Debian
- pngquant,
- pypdfium2,  # Not currently in Debian
- unpaper,
- verapdf,    # Not currently in Debian
-Suggests:
- ocrmypdf-doc,
- python-watchdog,
- ```
+- See docs/maintainers.md for details.
 
 **Migration guide for plugin developers**
 

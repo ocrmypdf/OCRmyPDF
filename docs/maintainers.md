@@ -20,12 +20,48 @@ with much stiffer build requirements. If you want to use OCRmyPDF on
 some novel platform or distribution, first make sure you can package
 pikepdf.
 
-### Non-Python dependencies
+### Core dependencies
 
-Note that we have non-Python dependencies. In particular, OCRmyPDF
-requires Ghostscript and Tesseract OCR to be installed and needs to be
-able to locate their binaries on the system PATH. On Windows, OCRmyPDF
-will also check the registry for their locations.
+:::{versionchanged} 17.0.0
+Ghostscript is no longer strictly required. OCRmyPDF now supports alternative
+codepaths for both PDF rasterization and PDF/A conversion.
+:::
+
+OCRmyPDF has the following runtime dependencies:
+
+**For PDF rasterization** (converting PDF pages to images for OCR):
+
+- `pypdfium2` (Python package) - OR -
+- `ghostscript` (system binary)
+- Recommendation: Install both for best compatibility
+
+**For PDF/A conversion**:
+
+- `verapdf` (system binary) with pikepdf's speculative conversion - OR -
+- `ghostscript` (system binary)
+- Recommendation: Install both for best compatibility
+
+**For OCR**:
+- `tesseract-ocr` (system binary) - Required for MVP
+
+**For text rendering** (expressing OCR results in PDF):
+- `fpdf2` (Python package) - Required for text layer rendering
+- `uharfbuzz` (Python package) - Required for text layer rendering
+- `font-noto` (system package) - Recommended for text layer rendering
+
+**Other dependencies**:
+- `unpaper` (system binary) - Optional, enables `--clean` and `--clean-final`
+- `pngquant` (system binary) - Optional, enables `--optimize 2` and `--optimize 3`
+- `jbig2enc` (system binary) - Optional, improves compression of monochrome images
+
+While Ghostscript remains a capable and feature-rich tool with a long history,
+recent releases have introduced some compatibility challenges that OCRmyPDF v17
+addresses through alternative codepaths. For the best user experience, packagers
+should install both Ghostscript and the alternative tools (pypdfium2, verapdf)
+when available.
+
+On Windows, OCRmyPDF will also check the registry for Tesseract and Ghostscript
+locations.
 
 Tesseract OCR relies on SIMD for performance and only has proper support
 for this on ARM and x86\_64. Performance may be poor on other processor
@@ -48,7 +84,79 @@ override versioning for some reason.
 OCRmyPDF will use jbig2enc, a JBIG2 encoder, if one can be found. Some
 distributions have shied away from packaging JBIG2 because it contains
 patented algorithms, but all patents have expired since 2017. If
-possible, consider packaging it too to improve OCRmyPDF\'s compression.
+possible, consider packaging it too to improve OCRmyPDF's compression.
+
+:::{note}
+Lossy JBIG2 encoding has been removed in v17.0.0 due to well-documented
+risks of character substitution errors. Previously we provided this feature
+on a "caveat emptor" basis but in the interest of focusing and eliminating
+risks, we decided to remove this option. Now, only lossless JBIG2 compression
+is supported.
+:::
+
+### Dependency matrix for packagers
+
+:::{versionadded} 17.0.0
+:::
+
+The following table summarizes the dependency options introduced in v17.0.0:
+
+| Feature | Option 1 | Option 2 | Notes |
+|---------|----------|----------|-------|
+| PDF rasterization | pypdfium2 (Python) | ghostscript (binary) | pypdfium2 preferred when available |
+| PDF/A conversion | verapdf + pikepdf | ghostscript | verapdf validates speculative conversion |
+| Text rendering | fpdf2 (Python) | - | Required, replaces legacy hOCR renderer |
+| OCR | tesseract-ocr | `--ocr-engine none` | Can be skipped entirely |
+
+**Minimum viable installation:**
+
+- tesseract-ocr + (pypdfium2 OR ghostscript) + fpdf2
+
+**Recommended installation:**
+
+- tesseract-ocr + pypdfium2 + ghostscript + verapdf + fpdf2 + unpaper + pngquant + jbig2enc
+
+:::{warning}
+If Ghostscript is not installed and verapdf is not available, PDF/A output
+cannot be produced. The output will be a standard PDF instead. This is a
+breaking change for rare configurations that previously relied on PDF/A
+output without Ghostscript alternatives.
+:::
+
+**Sample debian/control dependency specification**
+
+```
+Depends:
+ fonts-noto,
+ fpdf2 (>= 2.8),
+ ghostscript (>= 9.55),  # Not strictly required, but best user experience
+ icc-profiles-free,
+ img2pdf,
+ python3-coloredlogs,
+ python3-deprecation,
+ python3-pdfminer (>= 20181108+dfsg-3),
+ python3-pikepdf (>= 8.14.0),
+ python3-pil,
+ python3-pluggy,
+ python3-reportlab,
+ python3-rich,
+ python3-uharfbuzz,  # Not currently in Debian
+ tesseract-ocr (>= 5.0.0),
+ zlib1g,
+ ${misc:Depends},
+ ${python3:Depends},
+Recommends:
+ cyclopts,   # Not currently in Debian
+ jbig2
+ paddleocr,  # Not currently in Debian
+ pngquant,
+ pypdfium2,  # Not currently in Debian
+ unpaper,
+ verapdf,    # Not currently in Debian
+Suggests:
+ ocrmypdf-doc,
+ python-watchdog,
+```
 
 ### Command line completions
 

@@ -184,11 +184,56 @@ Plugin options can be accessed in two ways:
 Both access patterns are equivalent and return the same values.
 
 :::{note}
-**Plugin Interface Change**: Starting in OCRmyPDF v16.13.0, plugin hooks receive
+**Plugin Interface Change**: Starting in OCRmyPDF v17.0.0, plugin hooks receive
 `OcrOptions` objects instead of `argparse.Namespace` objects. Most plugins will
 continue working due to duck-typing compatibility, but plugin developers should
 update their type hints accordingly.
 :::
+
+### Migration guide for plugin developers
+
+:::{versionadded} 17.0.0
+:::
+
+**Update imports:**
+
+```python
+from ocrmypdf._options import OcrOptions
+```
+
+**Update type hints:**
+
+```python
+# Before (v16 and earlier)
+def check_options(options: argparse.Namespace) -> None:
+    ...
+
+# After (v17+)
+def check_options(options: OcrOptions) -> None:
+    ...
+```
+
+**Attribute access unchanged:**
+
+```python
+# These work exactly as before
+options.languages
+options.output_type
+options.tesseract_timeout
+```
+
+**Remove in-place modifications:**
+
+```python
+# Before (v16 pattern - no longer recommended)
+def check_options(options):
+    options.some_computed_value = compute_value(options)
+
+# After (v17 pattern - compute at point of use)
+def some_function(options):
+    computed = compute_value(options)
+    use_computed(computed)
+```
 
 ### Execution and progress reporting
 
@@ -274,3 +319,98 @@ update their type hints accordingly.
 ```{eval-rst}
 .. autofunction:: ocrmypdf.pluginspec.is_optimization_enabled
 ```
+
+### Working with OcrElement trees
+
+:::{versionadded} 17.0.0
+:::
+
+OCRmyPDF v17 introduces the `OcrElement` dataclass for representing OCR
+output in an engine-agnostic format. This enables plugins to work with
+OCR results without parsing hOCR XML.
+
+**Key classes:**
+
+```python
+from ocrmypdf import OcrElement, OcrClass, BoundingBox
+
+# OcrElement - represents any OCR structural unit
+page = OcrElement(
+    ocr_class=OcrClass.PAGE,
+    bbox=BoundingBox(0, 0, 612, 792),
+    children=[...]
+)
+
+# BoundingBox - axis-aligned bounding box (left, top, right, bottom)
+bbox = BoundingBox(left=100, top=50, right=300, bottom=80)
+
+# OcrClass - constants for element types
+OcrClass.PAGE      # "ocr_page"
+OcrClass.LINE      # "ocr_line"
+OcrClass.WORD      # "ocrx_word"
+OcrClass.PARAGRAPH # "ocr_par"
+```
+
+**Navigating the tree:**
+
+```python
+# Get all words in a page
+words = page.words  # Returns list[OcrElement]
+
+# Get all lines
+lines = page.lines
+
+# Get combined text
+text = page.get_text_recursive()
+
+# Iterate by class
+for para in page.paragraphs:
+    print(para.get_text_recursive())
+```
+
+**OCR engine plugins:**
+
+Plugins implementing custom OCR engines can now output `OcrElement` trees
+directly via the `generate_ocr()` method, bypassing hOCR entirely:
+
+```python
+from pathlib import Path
+from ocrmypdf.pluginspec import OcrEngine
+from ocrmypdf import OcrElement, OcrClass, BoundingBox
+
+class MyOcrEngine(OcrEngine):
+    def generate_ocr(
+        self,
+        input_file: Path,
+        options,
+        context,
+    ) -> OcrElement:
+        # Perform OCR and return OcrElement tree directly
+        # No need to generate hOCR XML
+        return OcrElement(
+            ocr_class=OcrClass.PAGE,
+            bbox=BoundingBox(0, 0, width, height),
+            dpi=300,
+            children=[
+                OcrElement(
+                    ocr_class=OcrClass.LINE,
+                    bbox=BoundingBox(100, 50, 500, 80),
+                    children=[
+                        OcrElement(
+                            ocr_class=OcrClass.WORD,
+                            bbox=BoundingBox(100, 50, 200, 80),
+                            text="Hello",
+                        ),
+                        # ... more words
+                    ]
+                ),
+                # ... more lines
+            ]
+        )
+
+    def supports_generate_ocr(self) -> bool:
+        return True  # Indicate this engine uses generate_ocr()
+```
+
+This approach is simpler than generating hOCR and allows modern OCR
+engines to integrate more naturally with OCRmyPDF.

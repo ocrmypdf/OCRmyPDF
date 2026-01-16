@@ -171,5 +171,5 @@ test = [
   # Extended test capabilities (merged from extended_test)
   "pymupdf>=1.24.14",
 ]
-docs = ["myst-parser>=4.0.1", "sphinx", "sphinx-issues", "sphinx-rtd-theme"]
+docs = ["myst-parser>=4.0.1", "sphinx", "sphinx-issues", "sphinx-rtd-theme", "sphinxcontrib-mermaid"]
 streamlit-dev = ["streamlit>=1.40.2", "streamlit-pdf-viewer>=0.0.19"]
