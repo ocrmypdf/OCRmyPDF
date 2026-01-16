@@ -106,6 +106,7 @@ Summarizing, in Debian "control" style, our runtime dependency spec would look l
 
 ```
 Depends:
+ fonts-noto,
  fpdf2 (>= 2.8),
  ghostscript (>= 9.18~dfsg~),  # Not strictly required, but best user experience
  icc-profiles-free,
