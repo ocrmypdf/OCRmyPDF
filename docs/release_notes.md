@@ -35,6 +35,38 @@ official when it's tagged and posted to PyPI.
   to `OcrOptions`.
 - Built-in plugins no longer modify options in-place, improving immutability and
   code clarity.
+- **Lossy JBIG2 removed**: The `--jbig2-lossy` and `--jbig2-page-group-size` options have been
+  removed due to well-documented risks of character substitution errors. These options are now
+  deprecated and will emit warnings if used. Only lossless JBIG2 compression is supported.
+
+**New features**
+
+- **pypdfium2 rasterizer**: Added optional pypdfium2-based PDF rasterization plugin as an
+  alternative to Ghostscript for page rendering. Use `--rasterizer pypdfium` to enable
+  (requires `pip install pypdfium2`). The default `--rasterizer auto` prefers pypdfium when
+  available and falls back to Ghostscript.
+- **Pluggable OCR engines**: New `--ocr-engine` option allows selecting OCR engines:
+  - `auto` (default): Uses Tesseract
+  - `tesseract`: Explicit Tesseract selection
+  - `none`: Skip OCR entirely for PDF processing-only workflows
+
+  This prepares the foundation for future third-party OCR engine plugins.
+- **Smart PDF/A conversion**: New `--output-type auto` (now the default) produces best-effort
+  PDF/A output without requiring Ghostscript when the verapdf validator is available. Falls back
+  to traditional Ghostscript conversion when needed.
+- **verapdf integration**: Added optional verapdf validation for fast PDF/A conversion. When
+  available, OCRmyPDF attempts speculative PDF/A conversion using pikepdf, validates with verapdf,
+  and skips Ghostscript if validation passes.
+- **Optional Ghostscript**: As a consequence of the changes above, Ghostscript is no longer a require dependency. It is optional.
+- **fpdf2 text renderer**: Replaced legacy hOCR text renderer with new fpdf2-based implementation,
+  providing better multilingual support and more accurate text positioning.
+- **Simplified mode selection**: New `--mode` (`-m`) argument consolidates processing options:
+  - `default`: Error if text is found (standard behavior)
+  - `force`: Rasterize all content and run OCR (replaces `--force-ocr`)
+  - `skip`: Skip pages with existing text (replaces `--skip-text`)
+  - `redo`: Re-OCR pages, stripping old text layer (replaces `--redo-ocr`)
+
+  Legacy flags remain as silent aliases for backward compatibility.
 
 **API improvements**
 
@@ -42,6 +74,68 @@ official when it's tagged and posted to PyPI.
 - Removed scattered option mutation throughout the codebase
 - Better type safety for plugin development
 - Simplified plugin option handling
+- New `OcrElement`, `OcrClass`, and `BoundingBox` exports for OCR engine plugin developers
+- Extended `OcrEngine` ABC with `generate_ocr()` method for direct OCR tree output, eliding the need to translate a modern engine's output to hOCR or directly write to PDF.
+
+**Bug fixes**
+
+- Fixed double-compression of already-deflated JPEGs.
+- Fixed tesseract_cache plugin to properly handle cache misses.
+- Fixed handling of PDF page boxes (ArtBox, BleedBox) which were not being processed correctly.
+- Added thread safety lock to pypdfium plugin for concurrent operations.
+- Improved pdfminer.six compatibility with explicit word spacing.
+
+**Documentation**
+
+- Updated cookbook to replace deprecated `--tesseract-timeout 0` with `--ocr-engine none`.
+- Added comprehensive plugin documentation for new OCR engine framework.
+
+**Dependency changes**
+
+- Requires: one of `pypdfium2` or `ghostscript` for PDF rasterization (PDF to image)
+  - Preferred: both
+- Requires: one of `verapdf` or `ghostscript` for PDF/A generation
+  - Preferred: both
+- Recommended: `pypdfium2` for PDF rasterization (new dependency)
+- Recommended: `ghostscript` (used to be Required)
+- Optional: `verapdf` for fast PDF/A validation (new dependency)
+- Requires: `fpdf2` for text layer rendering (new dependency)
+- Recommended: `typer` with `cyclopts` in misc scripts (new dependency)
+
+Summarizing, in Debian "control" style, our runtime dependency spec would look like:
+
+```
+Depends:
+ fpdf2 (>= 2.8),
+ ghostscript (>= 9.18~dfsg~),  # Not strictly required, but best user experience
+ icc-profiles-free,
+ img2pdf,
+ python3-coloredlogs,
+ python3-deprecation,
+ python3-hypothesis,
+ python3-pdfminer (>= 20181108+dfsg-3),
+ python3-pikepdf (>= 8.14.0),
+ python3-pil,
+ python3-pluggy,
+ python3-reportlab,
+ python3-rich,
+ python3-uharfbuzz,  # Not currently in Debian
+ tesseract-ocr (>= 4.0.0),
+ zlib1g,
+ ${misc:Depends},
+ ${python3:Depends},
+Recommends:
+ cyclopts,   # Not currently in Debian
+ jbig2
+ paddleocr,  # Not currently in Debian
+ pngquant,
+ pypdfium2,  # Not currently in Debian
+ unpaper,
+ verapdf,    # Not currently in Debian
+Suggests:
+ ocrmypdf-doc,
+ python-watchdog,
+ ```
 
 **Migration guide for plugin developers**
 
