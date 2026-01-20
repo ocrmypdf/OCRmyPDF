@@ -123,7 +123,8 @@ jobs:
             jbig2enc \
             openjpeg \
             pngquant \
-            tesseract
+            tesseract \
+            verapdf
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
