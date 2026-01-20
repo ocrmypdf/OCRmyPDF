@@ -11,6 +11,7 @@ from ocrmypdf import helpers, hocrtransform, pdfa, pdfinfo
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._defaults import PROGRAM_NAME
 from ocrmypdf._jobcontext import PageContext, PdfContext
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._pipelines._common import (
     configure_debug_logging,
 )
@@ -67,6 +68,7 @@ __all__ = [
     'OcrClass',
     'OcrElement',
     'OcrEngine',
+    'OcrOptions',
     'OrientationConfidence',
     'OutputFileAccessError',
     'PageContext',

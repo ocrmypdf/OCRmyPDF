@@ -47,7 +47,7 @@ from collections.abc import Iterable, Sequence
 from enum import IntEnum
 from io import IOBase
 from pathlib import Path
-from typing import BinaryIO
+from typing import BinaryIO, overload
 from warnings import warn
 
 from ocrmypdf._logging import PageNumberFilter
@@ -58,6 +58,7 @@ from ocrmypdf._pipelines.pdf_to_hocr import run_hocr_pipeline
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager, get_plugin_manager
 from ocrmypdf._validation import check_options
 from ocrmypdf.cli import ArgumentParser, get_parser
+from ocrmypdf.exceptions import ExitCode
 
 StrPath = Path | str | bytes
 PathOrIO = BinaryIO | StrPath
@@ -232,6 +233,56 @@ def configure_logging(
     return log
 
 
+def _check_no_conflicting_ocr_params(
+    locals_dict: dict,
+    kwargs: dict,
+    excluded: set[str] | None = None,
+) -> None:
+    """Check that no individual OCR parameters conflict with OcrOptions.
+
+    When a user passes an OcrOptions object, they should not also pass
+    individual OCR parameters (except plugins/plugin_manager which are
+    handled separately).
+
+    Args:
+        locals_dict: The locals() dict from the calling function.
+        kwargs: The **kwargs dict from the calling function.
+        excluded: Parameter names to exclude from conflict checking.
+
+    Raises:
+        ValueError: If conflicting parameters are found.
+    """
+    if excluded is None:
+        excluded = set()
+
+    # Parameters that are allowed alongside OcrOptions
+    allowed_with_options = {
+        'input_file_or_options',
+        'options',  # The OcrOptions object itself after assignment
+        'plugins',
+        'plugin_manager',
+        'kwargs',
+    } | excluded
+
+    # Check all locals that are OCR parameters (not None and not allowed)
+    conflicts = [
+        name
+        for name, value in locals_dict.items()
+        if value is not None and name not in allowed_with_options
+    ]
+
+    # Check kwargs
+    conflicts.extend(kwargs.keys())
+
+    if conflicts:
+        raise ValueError(
+            f"When passing OcrOptions as the first argument, do not pass "
+            f"additional OCR parameters. Conflicting parameters: "
+            f"{', '.join(sorted(conflicts))}. "
+            f"Set these values in OcrOptions instead."
+        )
+
+
 def create_options(
     *, input_file: PathOrIO, output_file: PathOrIO, parser: ArgumentParser, **kwargs
 ) -> OcrOptions:
@@ -292,9 +343,81 @@ def create_options(
         raise TypeError(f"Failed to create OcrOptions: {e}") from e
 
 
-def ocr(  # noqa: D417
-    input_file: PathOrIO,
+@overload
+def ocr(
+    options: OcrOptions,
+    /,
+    *,
+    plugins: Iterable[Path | str] | None = None,
+    plugin_manager: OcrmypdfPluginManager | None = None,
+) -> ExitCode: ...
+
+
+@overload
+def ocr(
+    input_file_or_options: PathOrIO,
     output_file: PathOrIO,
+    *,
+    language: Iterable[str] | None = None,
+    image_dpi: int | None = None,
+    output_type: str | None = None,
+    sidecar: PathOrIO | None = None,
+    jobs: int | None = None,
+    use_threads: bool | None = None,
+    title: str | None = None,
+    author: str | None = None,
+    subject: str | None = None,
+    keywords: str | None = None,
+    rotate_pages: bool | None = None,
+    remove_background: bool | None = None,
+    deskew: bool | None = None,
+    clean: bool | None = None,
+    clean_final: bool | None = None,
+    unpaper_args: str | None = None,
+    oversample: int | None = None,
+    remove_vectors: bool | None = None,
+    mode: str | None = None,
+    force_ocr: bool | None = None,
+    skip_text: bool | None = None,
+    redo_ocr: bool | None = None,
+    skip_big: float | None = None,
+    optimize: int | None = None,
+    jpg_quality: int | None = None,
+    png_quality: int | None = None,
+    jbig2_lossy: bool | None = None,
+    jbig2_page_group_size: int | None = None,
+    jbig2_threshold: float | None = None,
+    pages: str | None = None,
+    max_image_mpixels: float | None = None,
+    tesseract_config: Iterable[str] | None = None,
+    tesseract_pagesegmode: int | None = None,
+    tesseract_oem: int | None = None,
+    tesseract_thresholding: int | None = None,
+    pdf_renderer: str | None = None,
+    rasterizer: str | None = None,
+    tesseract_timeout: float | None = None,
+    tesseract_non_ocr_timeout: float | None = None,
+    tesseract_downsample_above: int | None = None,
+    tesseract_downsample_large_images: bool | None = None,
+    rotate_pages_threshold: float | None = None,
+    pdfa_image_compression: str | None = None,
+    color_conversion_strategy: str | None = None,
+    user_words: os.PathLike | None = None,
+    user_patterns: os.PathLike | None = None,
+    fast_web_view: float | None = None,
+    continue_on_soft_render_error: bool | None = None,
+    invalidate_digital_signatures: bool | None = None,
+    plugins: Iterable[Path | str] | None = None,
+    plugin_manager: OcrmypdfPluginManager | None = None,
+    keep_temporary_files: bool | None = None,
+    progress_bar: bool | None = None,
+    **kwargs,
+) -> ExitCode: ...
+
+
+def ocr(  # noqa: D417
+    input_file_or_options: PathOrIO | OcrOptions,
+    output_file: PathOrIO | None = None,
     *,
     language: Iterable[str] | None = None,
     image_dpi: int | None = None,
@@ -346,12 +469,27 @@ def ocr(  # noqa: D417
     continue_on_soft_render_error: bool | None = None,
     invalidate_digital_signatures: bool | None = None,
     plugins: Iterable[Path | str] | None = None,
-    plugin_manager=None,
+    plugin_manager: OcrmypdfPluginManager | None = None,
     keep_temporary_files: bool | None = None,
     progress_bar: bool | None = None,
     **kwargs,
-):
+) -> ExitCode:
     """Run OCRmyPDF on one PDF or image.
+
+    This function supports two calling conventions:
+
+    **New style (recommended):**
+        >>> from ocrmypdf import ocr
+        >>> from ocrmypdf._options import OcrOptions
+        >>> options = OcrOptions(
+        ...     input_file="input.pdf",
+        ...     output_file="output.pdf",
+        ...     languages=["eng"],
+        ... )
+        >>> ocr(options)
+
+    **Old style:**
+        >>> ocr("input.pdf", "output.pdf", language=["eng"])
 
     For most arguments, see documentation for the equivalent command line parameter.
 
@@ -369,24 +507,33 @@ def ocr(  # noqa: D417
     A few specific arguments are discussed here:
 
     Args:
+        input_file_or_options: Either an OcrOptions object containing all settings,
+            or a path/stream for the input file (old-style API).
+        output_file: Output file path or stream. Required when using old-style API
+            with input_file as first argument. Must be None when passing OcrOptions.
         use_threads: Use worker threads instead of processes. This reduces
             performance but may make debugging easier since it is easier to set
             breakpoints.
-        input_file: If a :class:`pathlib.Path`, ``str`` or ``bytes``, this is
-            interpreted as file system path to the input file. If the object
-            appears to be a readable stream (with methods such as ``.read()``
-            and ``.seek()``), the object will be read in its entirety and saved to
-            a temporary file. If ``input_file`` is  ``"-"``, standard input will be
-            read.
-        output_file: If a :class:`pathlib.Path`, ``str`` or ``bytes``, this is
-            interpreted as file system path to the output file. If the object
-            appears to be a writable stream (with methods such as ``.write()`` and
-            ``.seek()``), the output will be written to this stream. If
-            ``output_file`` is ``"-"``, the output will be written to ``sys.stdout``
-            (provided that standard output does not seem to be a terminal device).
-            When a stream is used as output, whether via a writable object or
-            ``"-"``, some final validation steps are not performed (we do not read
-            back the stream after it is written).
+        plugins: List of plugin paths to load. Can be passed alongside OcrOptions.
+        plugin_manager: Pre-configured plugin manager. Can be passed alongside
+            OcrOptions.
+
+        For input_file (old-style API): If a :class:`pathlib.Path`, ``str`` or
+            ``bytes``, this is interpreted as file system path to the input file.
+            If the object appears to be a readable stream (with methods such as
+            ``.read()`` and ``.seek()``), the object will be read in its entirety
+            and saved to a temporary file. If ``input_file`` is ``"-"``, standard
+            input will be read.
+
+        For output_file (old-style API): If a :class:`pathlib.Path`, ``str`` or
+            ``bytes``, this is interpreted as file system path to the output file.
+            If the object appears to be a writable stream (with methods such as
+            ``.write()`` and ``.seek()``), the output will be written to this
+            stream. If ``output_file`` is ``"-"``, the output will be written to
+            ``sys.stdout`` (provided that standard output does not seem to be a
+            terminal device). When a stream is used as output, whether via a
+            writable object or ``"-"``, some final validation steps are not
+            performed (we do not read back the stream after it is written).
 
     Raises:
         ocrmypdf.MissingDependencyError: If a required dependency program is missing or
@@ -405,61 +552,117 @@ def ocr(  # noqa: D417
             OCRmyPDF does not remove passwords.
         ocrmypdf.TesseractConfigError: If Tesseract reported its configuration was not
             valid.
+        ValueError: If OcrOptions is passed along with other OCR parameters, or if
+            both plugins and plugin_manager are provided.
+        TypeError: If output_file is missing when using the old-style API.
 
     Returns:
         :class:`ocrmypdf.ExitCode`
     """
-    if plugins and plugin_manager:
-        raise ValueError("plugins= and plugin_manager are mutually exclusive")
+    # Detect calling convention: OcrOptions object vs individual parameters
+    if isinstance(input_file_or_options, OcrOptions):
+        # New-style API: OcrOptions passed directly
+        options = input_file_or_options
 
-    if not plugins:
-        plugins = []
-    elif isinstance(plugins, str | Path):
-        plugins = [plugins]
-    else:
-        plugins = list(plugins)
+        # Check for conflicting parameters (all should be None except plugins/plugin_manager)
+        _check_no_conflicting_ocr_params(locals(), kwargs)
 
-    # No new variable names should be assigned until these two steps are run
-    create_options_kwargs = {
-        k: v
-        for k, v in locals().items()
-        if k not in {'input_file', 'output_file', 'kwargs', 'plugin_manager'}
-    }
-    create_options_kwargs.update(kwargs)
+        # plugins and plugin_manager can still be passed alongside OcrOptions
+        if plugins and plugin_manager:
+            raise ValueError("plugins= and plugin_manager are mutually exclusive")
 
-    parser = get_parser()
-    with _api_lock:
-        # Set up plugin infrastructure with proper initialization
-        plugin_manager = setup_plugin_infrastructure(
-            plugins=plugins, plugin_manager=plugin_manager
-        )
+        # Use plugins from OcrOptions if not explicitly passed
+        if plugins is None:
+            plugins = options.plugins or []
 
-        # Get parser and let plugins add their options
-        parser = get_parser()
-        plugin_manager.add_options(parser=parser)
+        if isinstance(plugins, str | Path):
+            plugins = [plugins]
+        else:
+            plugins = list(plugins) if plugins else []
 
-        if 'verbose' in kwargs:
-            warn("ocrmypdf.ocr(verbose=) is ignored. Use ocrmypdf.configure_logging().")
-
-        # Warn about deprecated jbig2 options and remove from kwargs
-        if jbig2_lossy:
-            warn(
-                "jbig2_lossy is deprecated and will be ignored. "
-                "Lossy JBIG2 has been removed due to character substitution risks."
+        # Run the pipeline with the OcrOptions
+        with _api_lock:
+            plugin_manager = setup_plugin_infrastructure(
+                plugins=plugins, plugin_manager=plugin_manager
             )
-            create_options_kwargs.pop('jbig2_lossy', None)
-        if jbig2_page_group_size:
-            warn("jbig2_page_group_size is deprecated and will be ignored.")
-            create_options_kwargs.pop('jbig2_page_group_size', None)
 
-        options = create_options(
-            input_file=input_file,
-            output_file=output_file,
-            parser=parser,
-            **create_options_kwargs,
-        )
-        check_options(options, plugin_manager)
-        return run_pipeline(options=options, plugin_manager=plugin_manager)
+            parser = get_parser()
+            plugin_manager.add_options(parser=parser)
+
+            check_options(options, plugin_manager)
+            return run_pipeline(options=options, plugin_manager=plugin_manager)
+
+    else:
+        # Old-style API: positional arguments
+        input_file = input_file_or_options
+
+        if output_file is None:
+            raise TypeError(
+                "ocr() missing required argument: 'output_file'. "
+                "Either pass output_file as the second argument, or pass "
+                "an OcrOptions object as the first argument."
+            )
+
+        if plugins and plugin_manager:
+            raise ValueError("plugins= and plugin_manager are mutually exclusive")
+
+        if not plugins:
+            plugins = []
+        elif isinstance(plugins, str | Path):
+            plugins = [plugins]
+        else:
+            plugins = list(plugins)
+
+        # No new variable names should be assigned until these two steps are run
+        create_options_kwargs = {
+            k: v
+            for k, v in locals().items()
+            if k
+            not in {
+                'input_file_or_options',
+                'input_file',
+                'output_file',
+                'kwargs',
+                'plugin_manager',
+            }
+        }
+        create_options_kwargs.update(kwargs)
+
+        parser = get_parser()
+        with _api_lock:
+            # Set up plugin infrastructure with proper initialization
+            plugin_manager = setup_plugin_infrastructure(
+                plugins=plugins, plugin_manager=plugin_manager
+            )
+
+            # Get parser and let plugins add their options
+            parser = get_parser()
+            plugin_manager.add_options(parser=parser)
+
+            if 'verbose' in kwargs:
+                warn(
+                    "ocrmypdf.ocr(verbose=) is ignored. Use ocrmypdf.configure_logging()."
+                )
+
+            # Warn about deprecated jbig2 options and remove from kwargs
+            if jbig2_lossy:
+                warn(
+                    "jbig2_lossy is deprecated and will be ignored. "
+                    "Lossy JBIG2 has been removed due to character substitution risks."
+                )
+                create_options_kwargs.pop('jbig2_lossy', None)
+            if jbig2_page_group_size:
+                warn("jbig2_page_group_size is deprecated and will be ignored.")
+                create_options_kwargs.pop('jbig2_page_group_size', None)
+
+            options = create_options(
+                input_file=input_file,
+                output_file=output_file,
+                parser=parser,
+                **create_options_kwargs,
+            )
+            check_options(options, plugin_manager)
+            return run_pipeline(options=options, plugin_manager=plugin_manager)
 
 
 def _pdf_to_hocr(  # noqa: D417
