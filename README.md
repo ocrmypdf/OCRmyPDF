@@ -120,8 +120,8 @@ Please report issues on our [GitHub issues](https://github.com/ocrmypdf/OCRmyPDF
 ## Feature demo
 
 ```bash
-# Add an OCR layer and convert to PDF/A
-ocrmypdf input.pdf output.pdf
+# Add an OCR layer and require PDF/A
+ocrmypdf --output-type pdfa input.pdf output.pdf
 
 # Convert an image to single page PDF
 ocrmypdf input.jpg output.pdf

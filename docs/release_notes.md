@@ -109,7 +109,7 @@ official when it's tagged and posted to PyPI.
 - Recommended: `ghostscript` (used to be Required)
 - Optional: `verapdf` for fast PDF/A validation (new dependency)
 - Requires: `fpdf2` for text layer rendering (new dependency)
-- Recommended: `typer` with `cyclopts` in misc scripts (new dependency)
+- Recommended: replace `typer` with `cyclopts` in misc scripts (new dependency)
 - See docs/maintainers.md for details.
 
 **Migration guide for plugin developers**
