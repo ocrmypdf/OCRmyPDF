@@ -487,7 +487,7 @@ You can then run OCRmyPDF in the Windows command prompt or Powershell, prefixing
 First install the the following prerequisite Cygwin packages using `setup-x86_64.exe`:
 
 ```
-python310 (or later)
+python311 (or later)
 python3?-devel
 python3?-pip
 python3?-lxml
@@ -606,7 +606,7 @@ and verapdf can validate speculative PDF/A conversion.
 
 The following versions are required:
 
-- Python 3.10 or newer
+- Python 3.11 or newer
 - Tesseract 4.1.1 or newer
 - One of: Ghostscript 9.54+ **or** pypdfium2 (Python package)
 - One of: Ghostscript 9.54+ **or** verapdf (for PDF/A output)
@@ -668,7 +668,7 @@ unfortunately, the `pip install` command cannot satisfy all of them.
 
 ## Installing HEAD revision from sources
 
-If you have `git` and Python 3.10 or newer installed, you can install
+If you have `git` and Python 3.11 or newer installed, you can install
 from source. When the `pip` installer runs, it will alert you if
 dependencies are missing.
 
