@@ -41,7 +41,7 @@ def simple_hocr(tmp_path) -> Path:
         </html>
     """)
     hocr_file = tmp_path / "simple.hocr"
-    hocr_file.write_text(content)
+    hocr_file.write_text(content, encoding='utf-8')
     return hocr_file
 
 
@@ -74,7 +74,7 @@ def multiline_hocr(tmp_path) -> Path:
         </html>
     """)
     hocr_file = tmp_path / "multiline.hocr"
-    hocr_file.write_text(content)
+    hocr_file.write_text(content, encoding='utf-8')
     return hocr_file
 
 
@@ -96,7 +96,7 @@ def rtl_hocr(tmp_path) -> Path:
         </html>
     """)
     hocr_file = tmp_path / "rtl.hocr"
-    hocr_file.write_text(content)
+    hocr_file.write_text(content, encoding='utf-8')
     return hocr_file
 
 
@@ -118,7 +118,7 @@ def rotated_hocr(tmp_path) -> Path:
         </html>
     """)
     hocr_file = tmp_path / "rotated.hocr"
-    hocr_file.write_text(content)
+    hocr_file.write_text(content, encoding='utf-8')
     return hocr_file
 
 
@@ -149,7 +149,7 @@ def header_hocr(tmp_path) -> Path:
         </html>
     """)
     hocr_file = tmp_path / "header.hocr"
-    hocr_file.write_text(content)
+    hocr_file.write_text(content, encoding='utf-8')
     return hocr_file
 
 
@@ -171,7 +171,7 @@ def font_info_hocr(tmp_path) -> Path:
         </html>
     """)
     hocr_file = tmp_path / "font_info.hocr"
-    hocr_file.write_text(content)
+    hocr_file.write_text(content, encoding='utf-8')
     return hocr_file
 
 
@@ -346,14 +346,16 @@ class TestHocrParserErrors:
 
     def test_invalid_xml(self, tmp_path):
         hocr_file = tmp_path / "invalid.hocr"
-        hocr_file.write_text("<html><body>not closed")
+        hocr_file.write_text("<html><body>not closed", encoding='utf-8')
 
         with pytest.raises(HocrParseError):
             HocrParser(hocr_file)
 
     def test_missing_ocr_page(self, tmp_path):
         hocr_file = tmp_path / "no_page.hocr"
-        hocr_file.write_text("<html><body><p>No ocr_page</p></body></html>")
+        hocr_file.write_text(
+            "<html><body><p>No ocr_page</p></body></html>", encoding='utf-8'
+        )
 
         parser = HocrParser(hocr_file)
         with pytest.raises(HocrParseError, match="No ocr_page"):
@@ -362,7 +364,8 @@ class TestHocrParserErrors:
     def test_missing_page_bbox(self, tmp_path):
         hocr_file = tmp_path / "no_bbox.hocr"
         hocr_file.write_text(
-            "<html><body><div class='ocr_page'>No bbox</div></body></html>"
+            "<html><body><div class='ocr_page'>No bbox</div></body></html>",
+            encoding='utf-8',
         )
 
         parser = HocrParser(hocr_file)
@@ -391,7 +394,7 @@ class TestHocrParserEdgeCases:
             </html>
         """)
         hocr_file = tmp_path / "empty_word.hocr"
-        hocr_file.write_text(content)
+        hocr_file.write_text(content, encoding='utf-8')
 
         parser = HocrParser(hocr_file)
         page = parser.parse()
@@ -418,7 +421,7 @@ class TestHocrParserEdgeCases:
             </html>
         """)
         hocr_file = tmp_path / "whitespace_word.hocr"
-        hocr_file.write_text(content)
+        hocr_file.write_text(content, encoding='utf-8')
 
         parser = HocrParser(hocr_file)
         page = parser.parse()
@@ -446,7 +449,7 @@ class TestHocrParserEdgeCases:
             </html>
         """)
         hocr_file = tmp_path / "no_line_bbox.hocr"
-        hocr_file.write_text(content)
+        hocr_file.write_text(content, encoding='utf-8')
 
         parser = HocrParser(hocr_file)
         page = parser.parse()
@@ -473,7 +476,7 @@ class TestHocrParserEdgeCases:
             </html>
         """)
         hocr_file = tmp_path / "unicode.hocr"
-        hocr_file.write_text(content)
+        hocr_file.write_text(content, encoding='utf-8')
 
         parser = HocrParser(hocr_file)
         page = parser.parse()
@@ -495,7 +498,7 @@ class TestHocrParserEdgeCases:
             </html>
         """)
         hocr_file = tmp_path / "direct_words.hocr"
-        hocr_file.write_text(content)
+        hocr_file.write_text(content, encoding='utf-8')
 
         parser = HocrParser(hocr_file)
         page = parser.parse()
@@ -521,7 +524,7 @@ class TestHocrParserEdgeCases:
             </html>
         """)
         hocr_file = tmp_path / "no_namespace.hocr"
-        hocr_file.write_text(content)
+        hocr_file.write_text(content, encoding='utf-8')
 
         parser = HocrParser(hocr_file)
         page = parser.parse()

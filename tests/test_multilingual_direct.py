@@ -76,7 +76,11 @@ class TestLatinScript:
         assert output_pdf.stat().st_size > 0
 
         # Extract text and verify
-        text = subprocess.check_output(['pdftotext', str(output_pdf), '-'], text=True)
+        text = subprocess.check_output(
+            ['pdftotext', '-enc', 'UTF-8', str(output_pdf), '-'],
+            text=True,
+            encoding='utf-8',
+        )
 
         # English words
         assert 'quick' in text or 'brown' in text or 'fox' in text
@@ -141,7 +145,11 @@ class TestArabicScript:
         assert output_pdf.stat().st_size > 0
 
         # Extract text and verify Arabic content
-        text = subprocess.check_output(['pdftotext', str(output_pdf), '-'], text=True)
+        text = subprocess.check_output(
+            ['pdftotext', '-enc', 'UTF-8', str(output_pdf), '-'],
+            text=True,
+            encoding='utf-8',
+        )
 
         # Arabic words: مرحبا بالعالم (Hello world)
         assert 'مرحبا' in text or 'بالعالم' in text
@@ -173,8 +181,9 @@ class TestArabicScript:
         for para in page.paragraphs:
             if para.language in ('ara', 'per'):
                 # Arabic paragraphs should have RTL direction
-                assert para.direction == 'rtl', \
-                    "Arabic paragraph should have RTL direction"
+                assert (
+                    para.direction == 'rtl'
+                ), "Arabic paragraph should have RTL direction"
 
 
 # =============================================================================
@@ -228,7 +237,11 @@ class TestCJKScript:
         assert output_pdf.stat().st_size > 0
 
         # Extract text and verify CJK content
-        text = subprocess.check_output(['pdftotext', str(output_pdf), '-'], text=True)
+        text = subprocess.check_output(
+            ['pdftotext', '-enc', 'UTF-8', str(output_pdf), '-'],
+            text=True,
+            encoding='utf-8',
+        )
 
         # Chinese: 你好 世界 (Hello world)
         assert '你好' in text or '世界' in text
@@ -298,7 +311,11 @@ class TestDevanagariScript:
         assert output_pdf.stat().st_size > 0
 
         # Extract text and verify Devanagari content
-        text = subprocess.check_output(['pdftotext', str(output_pdf), '-'], text=True)
+        text = subprocess.check_output(
+            ['pdftotext', '-enc', 'UTF-8', str(output_pdf), '-'],
+            text=True,
+            encoding='utf-8',
+        )
 
         # Hindi: नमस्ते दुनिया (Hello world)
         assert 'नमस्ते' in text or 'दुनिया' in text
@@ -367,7 +384,11 @@ class TestMultilingual:
         assert output_pdf.stat().st_size > 0
 
         # Extract text from PDF
-        text = subprocess.check_output(['pdftotext', str(output_pdf), '-'], text=True)
+        text = subprocess.check_output(
+            ['pdftotext', '-enc', 'UTF-8', str(output_pdf), '-'],
+            text=True,
+            encoding='utf-8',
+        )
 
         # Verify both English and Arabic text are present
         assert 'English' in text or 'Text' in text or 'Here' in text
@@ -420,7 +441,11 @@ class TestMultilingual:
         assert output_pdf.exists()
 
         # Text should still be extractable even though invisible
-        text = subprocess.check_output(['pdftotext', str(output_pdf), '-'], text=True)
+        text = subprocess.check_output(
+            ['pdftotext', '-enc', 'UTF-8', str(output_pdf), '-'],
+            text=True,
+            encoding='utf-8',
+        )
         assert len(text.strip()) > 0
 
     def test_multilingual_font_selection(self, multilingual_hocr, multi_font_manager):
@@ -474,8 +499,9 @@ class TestBaselineHandling:
         for line in page.lines:
             if line.baseline:
                 # Baseline should be reasonable
-                assert -1.0 <= line.baseline.slope <= 1.0, \
-                    "Baseline slope should be reasonable"
+                assert (
+                    -1.0 <= line.baseline.slope <= 1.0
+                ), "Baseline slope should be reasonable"
 
 
 # =============================================================================
@@ -497,8 +523,9 @@ class TestFontCoverage:
         ]
 
         for sample in latin_samples:
-            assert multi_font_manager.has_all_glyphs('NotoSans-Regular', sample), \
-                f"NotoSans should cover: {sample}"
+            assert multi_font_manager.has_all_glyphs(
+                'NotoSans-Regular', sample
+            ), f"NotoSans should cover: {sample}"
 
     def test_noto_sans_arabic_coverage(self, multi_font_manager):
         """Test NotoSansArabic covers Arabic characters."""
@@ -539,8 +566,9 @@ class TestFontCoverage:
         ]
 
         for sample in cjk_samples:
-            assert multi_font_manager.has_all_glyphs('NotoSansCJK-Regular', sample), \
-                f"NotoSansCJK should cover: {sample}"
+            assert multi_font_manager.has_all_glyphs(
+                'NotoSansCJK-Regular', sample
+            ), f"NotoSansCJK should cover: {sample}"
 
 
 if __name__ == "__main__":
