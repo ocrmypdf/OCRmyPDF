@@ -125,6 +125,7 @@ jobs:
             jbig2enc \
             openjpeg \
             pngquant \
+            poppler \
             tesseract \
             verapdf
 
@@ -190,8 +191,9 @@ jobs:
 
       - name: Install system packages
         run: |
-          choco install --yes --no-progress --pre tesseract
+          choco install --yes --no-progress tesseract
           choco install --yes --no-progress --ignore-checksums ghostscript --version 9.56.1
+          choco install --yes --no-progress poppler --version=25.11.0
 
       - name: Install Python packages
         run: |
