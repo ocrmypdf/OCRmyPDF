@@ -114,9 +114,11 @@ def execute_ocrmypdf(
         f'kwargs: {ocrmypdf_kwargs}'
     )
     exit_code = ocrmypdf.ocr(
-        input_file=file_path,
-        output_file=output_path,
-        **ocrmypdf_kwargs,
+        ocrmypdf.OcrOptions(
+            input_file=file_path,
+            output_file=output_path,
+            **ocrmypdf_kwargs,
+        )
     )
     if exit_code == 0:
         if on_success_delete:
