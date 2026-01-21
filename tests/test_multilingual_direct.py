@@ -11,6 +11,7 @@ This tests the fpdf2 renderer with various language groups:
 - Devanagari (Hindi, Sanskrit)
 """
 
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -21,6 +22,26 @@ from ocrmypdf.fpdf_renderer import DebugRenderOptions, Fpdf2PdfRenderer
 from ocrmypdf.hocrtransform.hocr_parser import HocrParser
 
 RESOURCES = Path(__file__).parent / "resources"
+
+
+@pytest.fixture
+def pdftotext():
+    """Return a function to extract text from PDF using pdftotext.
+
+    Skips the test if pdftotext is not available.
+    """
+    pdftotext_path = shutil.which('pdftotext')
+    if pdftotext_path is None:
+        pytest.skip("pdftotext not available")
+
+    def extract_text(pdf_path: Path) -> str:
+        return subprocess.check_output(
+            ['pdftotext', '-enc', 'UTF-8', str(pdf_path), '-'],
+            text=True,
+            encoding='utf-8',
+        )
+
+    return extract_text
 
 
 @pytest.fixture
@@ -48,7 +69,9 @@ class TestLatinScript:
         """Return path to Latin HOCR test file."""
         return RESOURCES / "latin.hocr"
 
-    def test_render_latin_basic(self, latin_hocr, multi_font_manager, tmp_path):
+    def test_render_latin_basic(
+        self, latin_hocr, multi_font_manager, tmp_path, pdftotext
+    ):
         """Test rendering Latin script with various diacritics."""
         parser = HocrParser(latin_hocr)
         page = parser.parse()
@@ -76,11 +99,7 @@ class TestLatinScript:
         assert output_pdf.stat().st_size > 0
 
         # Extract text and verify
-        text = subprocess.check_output(
-            ['pdftotext', '-enc', 'UTF-8', str(output_pdf), '-'],
-            text=True,
-            encoding='utf-8',
-        )
+        text = pdftotext(output_pdf)
 
         # English words
         assert 'quick' in text or 'brown' in text or 'fox' in text
@@ -122,7 +141,9 @@ class TestArabicScript:
         """Return path to Arabic HOCR test file."""
         return RESOURCES / "arabic.hocr"
 
-    def test_render_arabic_basic(self, arabic_hocr, multi_font_manager, tmp_path):
+    def test_render_arabic_basic(
+        self, arabic_hocr, multi_font_manager, tmp_path, pdftotext
+    ):
         """Test rendering Arabic script text."""
         parser = HocrParser(arabic_hocr)
         page = parser.parse()
@@ -145,11 +166,7 @@ class TestArabicScript:
         assert output_pdf.stat().st_size > 0
 
         # Extract text and verify Arabic content
-        text = subprocess.check_output(
-            ['pdftotext', '-enc', 'UTF-8', str(output_pdf), '-'],
-            text=True,
-            encoding='utf-8',
-        )
+        text = pdftotext(output_pdf)
 
         # Arabic words: مرحبا بالعالم (Hello world)
         assert 'مرحبا' in text or 'بالعالم' in text
@@ -204,7 +221,7 @@ class TestCJKScript:
         """Return path to CJK HOCR test file."""
         return RESOURCES / "cjk.hocr"
 
-    def test_render_cjk_basic(self, cjk_hocr, multi_font_manager, tmp_path):
+    def test_render_cjk_basic(self, cjk_hocr, multi_font_manager, tmp_path, pdftotext):
         """Test rendering CJK script text."""
         if not _cjk_font_works(multi_font_manager):
             pytest.skip("CJK font not available or corrupted")
@@ -237,11 +254,7 @@ class TestCJKScript:
         assert output_pdf.stat().st_size > 0
 
         # Extract text and verify CJK content
-        text = subprocess.check_output(
-            ['pdftotext', '-enc', 'UTF-8', str(output_pdf), '-'],
-            text=True,
-            encoding='utf-8',
-        )
+        text = pdftotext(output_pdf)
 
         # Chinese: 你好 世界 (Hello world)
         assert '你好' in text or '世界' in text
@@ -287,7 +300,7 @@ class TestDevanagariScript:
         return RESOURCES / "devanagari.hocr"
 
     def test_render_devanagari_basic(
-        self, devanagari_hocr, multi_font_manager, tmp_path
+        self, devanagari_hocr, multi_font_manager, tmp_path, pdftotext
     ):
         """Test rendering Devanagari script text."""
         parser = HocrParser(devanagari_hocr)
@@ -311,11 +324,7 @@ class TestDevanagariScript:
         assert output_pdf.stat().st_size > 0
 
         # Extract text and verify Devanagari content
-        text = subprocess.check_output(
-            ['pdftotext', '-enc', 'UTF-8', str(output_pdf), '-'],
-            text=True,
-            encoding='utf-8',
-        )
+        text = pdftotext(output_pdf)
 
         # Hindi: नमस्ते दुनिया (Hello world)
         assert 'नमस्ते' in text or 'दुनिया' in text
@@ -356,7 +365,7 @@ class TestMultilingual:
         return RESOURCES / "multilingual.hocr"
 
     def test_render_multilingual_hocr_basic(
-        self, multilingual_hocr, multi_font_manager, tmp_path
+        self, multilingual_hocr, multi_font_manager, tmp_path, pdftotext
     ):
         """Test rendering multilingual HOCR file with English and Arabic text."""
         parser = HocrParser(multilingual_hocr)
@@ -384,11 +393,7 @@ class TestMultilingual:
         assert output_pdf.stat().st_size > 0
 
         # Extract text from PDF
-        text = subprocess.check_output(
-            ['pdftotext', '-enc', 'UTF-8', str(output_pdf), '-'],
-            text=True,
-            encoding='utf-8',
-        )
+        text = pdftotext(output_pdf)
 
         # Verify both English and Arabic text are present
         assert 'English' in text or 'Text' in text or 'Here' in text
@@ -422,7 +427,7 @@ class TestMultilingual:
         assert output_pdf.stat().st_size > 0
 
     def test_multilingual_invisible_text(
-        self, multilingual_hocr, multi_font_manager, tmp_path
+        self, multilingual_hocr, multi_font_manager, tmp_path, pdftotext
     ):
         """Test rendering with invisible text (default OCR mode)."""
         parser = HocrParser(multilingual_hocr)
@@ -441,11 +446,7 @@ class TestMultilingual:
         assert output_pdf.exists()
 
         # Text should still be extractable even though invisible
-        text = subprocess.check_output(
-            ['pdftotext', '-enc', 'UTF-8', str(output_pdf), '-'],
-            text=True,
-            encoding='utf-8',
-        )
+        text = pdftotext(output_pdf)
         assert len(text.strip()) > 0
 
     def test_multilingual_font_selection(self, multilingual_hocr, multi_font_manager):

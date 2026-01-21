@@ -2,7 +2,7 @@
 
 import multiprocessing
 from io import BytesIO
-from pathlib import Path
+from pathlib import Path, PurePath
 
 import pytest
 
@@ -98,8 +98,8 @@ def test_json_serialization_multiprocessing():
 
     for result_json in results:
         result = json.loads(result_json)
-        assert result['input_file'] == '/test/input.pdf'
-        assert result['output_file'] == '/test/output.pdf'
+        assert PurePath(result['input_file']) == PurePath('/test/input.pdf')
+        assert PurePath(result['output_file']) == PurePath('/test/output.pdf')
         assert result['languages'] == ['eng', 'deu']
         assert result['optimize'] == 2
         assert result['tesseract_timeout'] == 120.0

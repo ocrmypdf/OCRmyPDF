@@ -194,6 +194,7 @@ jobs:
           choco install --yes --no-progress tesseract
           choco install --yes --no-progress --ignore-checksums ghostscript --version 9.56.1
           choco install --yes --no-progress poppler --version=25.11.0
+          choco install --yes --no-progress noto
 
       - name: Install Python packages
         run: |

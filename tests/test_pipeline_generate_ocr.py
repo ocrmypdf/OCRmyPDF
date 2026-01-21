@@ -13,7 +13,7 @@ import dataclasses
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from ocrmypdf import OcrElement
+from ocrmypdf import BoundingBox, OcrElement
 
 
 class TestOcrEngineDirect:
@@ -25,7 +25,7 @@ class TestOcrEngineDirect:
 
         assert hasattr(_pipeline, 'ocr_engine_direct')
 
-    def test_ocr_engine_direct_returns_tuple(self):
+    def test_ocr_engine_direct_returns_tuple(self, tmp_path):
         """ocr_engine_direct should return (OcrElement, Path) tuple."""
         from ocrmypdf._pipeline import ocr_engine_direct
 
@@ -34,11 +34,11 @@ class TestOcrEngineDirect:
         mock_engine = MagicMock()
         mock_engine.supports_generate_ocr.return_value = True
         mock_engine.generate_ocr.return_value = (
-            OcrElement(ocr_class='ocr_page', bbox=(0, 0, 100, 100)),
+            OcrElement(ocr_class='ocr_page', bbox=BoundingBox(0, 0, 100, 100)),
             "test text",
         )
         mock_context.plugin_manager.get_ocr_engine.return_value = mock_engine
-        mock_context.get_path.return_value = Path("/tmp/test.txt")
+        mock_context.get_path.return_value = tmp_path / Path("test.txt")
         mock_context.pageno = 0
 
         with patch('builtins.open', MagicMock()):

@@ -68,7 +68,7 @@ def test_media_box(
 
     with pikepdf.open(outdir / 'processed.pdf') as pdf:
         page = pdf.pages[0]
-        assert page['/MediaBox'] == crop_expected
+        assert page.mediabox == crop_expected
 
 
 cropbox_testdata = [
@@ -122,4 +122,4 @@ def test_crop_box(
 
     with pikepdf.open(outdir / 'processed.pdf') as pdf:
         page = pdf.pages[0]
-        assert page.CropBox == crop_expected
+        assert page.cropbox == crop_expected
