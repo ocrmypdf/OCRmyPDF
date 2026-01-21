@@ -153,10 +153,12 @@ class MultiFontManager:
             self.font_provider = font_provider
         else:
             # Use chained provider: try builtin fonts first, then system fonts
-            self.font_provider = ChainedFontProvider([
-                BuiltinFontProvider(font_dir),
-                SystemFontProvider(),
-            ])
+            self.font_provider = ChainedFontProvider(
+                [
+                    BuiltinFontProvider(font_dir),
+                    SystemFontProvider(),
+                ]
+            )
 
         # Font selection cache: (word_text, language) -> font_name
         self._selection_cache: dict[tuple[str, str | None], str] = {}
@@ -235,9 +237,7 @@ class MultiFontManager:
         self._selection_cache[cache_key] = 'Occulta'
         return self.font_provider.get_fallback_font()
 
-    def _warn_missing_font(
-        self, word_text: str, line_language: str | None
-    ) -> None:
+    def _warn_missing_font(self, word_text: str, line_language: str | None) -> None:
         """Warn user about missing font for non-Latin text.
 
         Only warns once per language/script to avoid log spam.
@@ -293,6 +293,17 @@ class MultiFontManager:
                 return False
 
         return True
+
+    def has_font(self, font_name: str) -> bool:
+        """Check if a named font is available.
+
+        Args:
+            font_name: Name of font to check
+
+        Returns:
+            True if font is available
+        """
+        return self.font_provider.get_font(font_name) is not None
 
     def has_all_glyphs(self, font_name: str, text: str) -> bool:
         """Check if a named font has glyphs for all characters in text.

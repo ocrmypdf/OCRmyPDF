@@ -210,22 +210,22 @@ class TestArabicScript:
 
 def _latin_font_works(multi_font_manager) -> bool:
     """Check if Latin font is available."""
-    return multi_font_manager.has_all_glyphs('NotoSans-Regular', 'A')
+    return multi_font_manager.has_font('NotoSans-Regular')
 
 
 def _arabic_font_works(multi_font_manager) -> bool:
     """Check if Arabic font is available."""
-    return multi_font_manager.has_all_glyphs('NotoSansArabic-Regular', 'م')
+    return multi_font_manager.has_font('NotoSansArabic-Regular')
 
 
 def _devanagari_font_works(multi_font_manager) -> bool:
     """Check if Devanagari font is available."""
-    return multi_font_manager.has_all_glyphs('NotoSansDevanagari-Regular', 'न')
+    return multi_font_manager.has_font('NotoSansDevanagari-Regular')
 
 
 def _cjk_font_works(multi_font_manager) -> bool:
     """Check if CJK font is working (not corrupted)."""
-    return multi_font_manager.has_all_glyphs('NotoSansCJK-Regular', '你')
+    return multi_font_manager.has_font('NotoSansCJK-Regular')
 
 
 class TestCJKScript:
