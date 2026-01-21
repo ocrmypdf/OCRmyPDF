@@ -56,6 +56,15 @@ def multi_font_manager(font_dir):
     return MultiFontManager(font_dir)
 
 
+@pytest.fixture
+def multi_font_manager_arabic(font_dir):
+    """Create MultiFontManager instance for testing, with Arabic."""
+    mfm = MultiFontManager(font_dir)
+    if not mfm.has_font("NotoSansArabic-Regular"):
+        pytest.skip("NotoSansArabic font not available")
+    return mfm
+
+
 # =============================================================================
 # Latin Script Tests
 # =============================================================================
@@ -142,7 +151,7 @@ class TestArabicScript:
         return RESOURCES / "arabic.hocr"
 
     def test_render_arabic_basic(
-        self, arabic_hocr, multi_font_manager, tmp_path, pdftotext
+        self, arabic_hocr, multi_font_manager_arabic, tmp_path, pdftotext
     ):
         """Test rendering Arabic script text."""
         parser = HocrParser(arabic_hocr)
@@ -157,7 +166,7 @@ class TestArabicScript:
         renderer = Fpdf2PdfRenderer(
             page=page,
             dpi=300.0,
-            multi_font_manager=multi_font_manager,
+            multi_font_manager=multi_font_manager_arabic,
             invisible_text=False,
         )
         renderer.render(output_pdf)
@@ -173,7 +182,7 @@ class TestArabicScript:
         # هذا نص عربي (This is Arabic text)
         assert 'عربي' in text or 'نص' in text
 
-    def test_arabic_font_selection(self, arabic_hocr, multi_font_manager):
+    def test_arabic_font_selection(self, arabic_hocr, multi_font_manager_arabic):
         """Test that NotoSansArabic is selected for Arabic text."""
         parser = HocrParser(arabic_hocr)
         page = parser.parse()
@@ -181,12 +190,12 @@ class TestArabicScript:
         for line in page.lines:
             for word in line.children:
                 if word.text and line.language in ('ara', 'per'):
-                    font = multi_font_manager.select_font_for_word(
+                    font = multi_font_manager_arabic.select_font_for_word(
                         word.text, line.language
                     )
                     assert font is not None
                     # Arabic text should use NotoSansArabic
-                    assert multi_font_manager.has_all_glyphs(
+                    assert multi_font_manager_arabic.has_all_glyphs(
                         'NotoSansArabic-Regular', word.text
                     ), f"NotoSansArabic cannot render '{word.text}'"
 
@@ -348,6 +357,8 @@ class TestDevanagariScript:
 
     def test_devanagari_font_selection(self, devanagari_hocr, multi_font_manager):
         """Test that NotoSansDevanagari is selected for Devanagari text."""
+        if not multi_font_manager.has_font('NotoSansDevanagari-Regular'):
+            pytest.skip("Devanagari font not available")
         parser = HocrParser(devanagari_hocr)
         page = parser.parse()
 
@@ -380,7 +391,7 @@ class TestMultilingual:
         return RESOURCES / "multilingual.hocr"
 
     def test_render_multilingual_hocr_basic(
-        self, multilingual_hocr, multi_font_manager, tmp_path, pdftotext
+        self, multilingual_hocr, multi_font_manager_arabic, tmp_path, pdftotext
     ):
         """Test rendering multilingual HOCR file with English and Arabic text."""
         parser = HocrParser(multilingual_hocr)
@@ -399,7 +410,7 @@ class TestMultilingual:
         renderer = Fpdf2PdfRenderer(
             page=page,
             dpi=300.0,
-            multi_font_manager=multi_font_manager,
+            multi_font_manager=multi_font_manager_arabic,
             invisible_text=False,
         )
         renderer.render(output_pdf)
@@ -464,7 +475,9 @@ class TestMultilingual:
         text = pdftotext(output_pdf)
         assert len(text.strip()) > 0
 
-    def test_multilingual_font_selection(self, multilingual_hocr, multi_font_manager):
+    def test_multilingual_font_selection(
+        self, multilingual_hocr, multi_font_manager_arabic
+    ):
         """Test that correct fonts are selected for each language."""
         parser = HocrParser(multilingual_hocr)
         page = parser.parse()
@@ -485,11 +498,11 @@ class TestMultilingual:
 
         # Test font selection
         for text, lang in words:
-            font_mgr = multi_font_manager.select_font_for_word(text, lang)
+            font_mgr = multi_font_manager_arabic.select_font_for_word(text, lang)
             assert font_mgr is not None, f"No font selected for '{text}' ({lang})"
 
             if lang == 'ara':
-                assert multi_font_manager.has_all_glyphs(
+                assert multi_font_manager_arabic.has_all_glyphs(
                     'NotoSansArabic-Regular', text
                 ), f"NotoSansArabic cannot render '{text}'"
 
@@ -546,11 +559,8 @@ class TestFontCoverage:
                 'NotoSans-Regular', sample
             ), f"NotoSans should cover: {sample}"
 
-    def test_noto_sans_arabic_coverage(self, multi_font_manager):
+    def test_noto_sans_arabic_coverage(self, multi_font_manager_arabic):
         """Test NotoSansArabic covers Arabic characters."""
-        if not _arabic_font_works(multi_font_manager):
-            pytest.skip("NotoSansArabic font not available")
-
         arabic_samples = [
             "مرحبا",  # Hello
             "بالعالم",  # World
@@ -558,7 +568,7 @@ class TestFontCoverage:
         ]
 
         for sample in arabic_samples:
-            assert multi_font_manager.has_all_glyphs(
+            assert multi_font_manager_arabic.has_all_glyphs(
                 'NotoSansArabic-Regular', sample
             ), f"NotoSansArabic should cover: {sample}"
 
