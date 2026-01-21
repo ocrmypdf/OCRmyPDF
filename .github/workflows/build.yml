@@ -57,6 +57,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             curl \
+            fonts-noto-core \
+            fonts-noto-cjk \
             ghostscript \
             jbig2dec \
             img2pdf \

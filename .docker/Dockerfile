@@ -67,6 +67,8 @@ RUN add-apt-repository -y ppa:alex-p/tesseract-ocr5
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
   fonts-droid-fallback \
+  fonts-noto-core \
+  fonts-noto-cjk \
   jbig2dec \
   pngquant \
   tesseract-ocr \

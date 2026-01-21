@@ -57,6 +57,7 @@ RUN apk add --no-cache \
     tesseract-ocr-data-osd \
     tesseract-ocr-data-por \
     tesseract-ocr-data-spa \
+    font-noto \
     ttf-droid \
     unpaper \
     && rm -rf /var/cache/apk/*

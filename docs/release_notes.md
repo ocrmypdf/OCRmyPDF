@@ -107,6 +107,7 @@ official when it's tagged and posted to PyPI.
   - Preferred: both
 - Recommended: `pypdfium2` for PDF rasterization (new dependency)
 - Recommended: `ghostscript` (used to be Required)
+- Recommended: Noto fonts for improved OCR text positioning
 - Optional: `verapdf` for fast PDF/A validation (new dependency)
 - Requires: `fpdf2` for text layer rendering (new dependency)
 - Recommended: replace `typer` with `cyclopts` in misc scripts (new dependency)
