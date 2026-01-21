@@ -154,7 +154,11 @@ quote-style = "preserve"
 
 [dependency-groups]
 # Developer-only tools - use `uv sync --group <name>`
-dev = ["mypy>=1.13.0", "ipykernel>=6.29.5"]
+dev = [
+    "mypy>=1.13.0",
+    "ipykernel>=6.29.5",
+    "reportlab>=4.4.4",
+]
 test = [
   # Core testing framework
   "coverage[toml]>=6.2",
