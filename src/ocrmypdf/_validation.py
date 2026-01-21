@@ -49,6 +49,17 @@ def check_platform() -> None:
 def check_options_languages(
     options: OcrOptions, ocr_engine_languages: list[str]
 ) -> None:
+    # Check for blocked languages first, before checking if they're installed
+    DENIED_LANGUAGES = {'equ', 'osd'}
+    blocked = DENIED_LANGUAGES & set(options.languages)
+    if blocked:
+        raise BadArgsError(
+            "The following languages are for Tesseract's internal use and "
+            "should not be issued explicitly: "
+            f"{', '.join(blocked)}\n"
+            "Remove them from the -l/--language argument."
+        )
+
     if not ocr_engine_languages:
         return
 

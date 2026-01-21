@@ -208,6 +208,21 @@ class TestArabicScript:
 # =============================================================================
 
 
+def _latin_font_works(multi_font_manager) -> bool:
+    """Check if Latin font is available."""
+    return multi_font_manager.has_all_glyphs('NotoSans-Regular', 'A')
+
+
+def _arabic_font_works(multi_font_manager) -> bool:
+    """Check if Arabic font is available."""
+    return multi_font_manager.has_all_glyphs('NotoSansArabic-Regular', 'م')
+
+
+def _devanagari_font_works(multi_font_manager) -> bool:
+    """Check if Devanagari font is available."""
+    return multi_font_manager.has_all_glyphs('NotoSansDevanagari-Regular', 'न')
+
+
 def _cjk_font_works(multi_font_manager) -> bool:
     """Check if CJK font is working (not corrupted)."""
     return multi_font_manager.has_all_glyphs('NotoSansCJK-Regular', '你')
@@ -515,6 +530,9 @@ class TestFontCoverage:
 
     def test_noto_sans_latin_coverage(self, multi_font_manager):
         """Test NotoSans covers common Latin characters and diacritics."""
+        if not _latin_font_works(multi_font_manager):
+            pytest.skip("NotoSans font not available")
+
         latin_samples = [
             "Hello World",
             "Café résumé naïve",
@@ -530,6 +548,9 @@ class TestFontCoverage:
 
     def test_noto_sans_arabic_coverage(self, multi_font_manager):
         """Test NotoSansArabic covers Arabic characters."""
+        if not _arabic_font_works(multi_font_manager):
+            pytest.skip("NotoSansArabic font not available")
+
         arabic_samples = [
             "مرحبا",  # Hello
             "بالعالم",  # World
@@ -543,6 +564,9 @@ class TestFontCoverage:
 
     def test_noto_sans_devanagari_coverage(self, multi_font_manager):
         """Test NotoSansDevanagari covers Devanagari characters."""
+        if not _devanagari_font_works(multi_font_manager):
+            pytest.skip("NotoSansDevanagari font not available")
+
         devanagari_samples = [
             "नमस्ते",  # Hello
             "हिंदी",  # Hindi

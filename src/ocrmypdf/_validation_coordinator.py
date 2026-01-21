@@ -72,17 +72,9 @@ class ValidationCoordinator:
                 "--tesseract-downsample-large-images is also given."
             )
 
-        # Check for blocked languages
-        from ocrmypdf.exceptions import BadArgsError
-
-        DENIED_LANGUAGES = {'equ', 'osd'}
-        if DENIED_LANGUAGES & set(options.languages):
-            raise BadArgsError(
-                "The following languages are for Tesseract's internal use and "
-                "should not be issued explicitly: "
-                f"{', '.join(DENIED_LANGUAGES & set(options.languages))}\n"
-                "Remove them from the -l/--language argument."
-            )
+        # Note: blocked languages (equ, osd) are checked earlier in
+        # check_options_languages() to ensure the check runs before
+        # the missing language check.
 
     def _validate_optimize_options(self, options: OcrOptions) -> None:
         """Validate optimization options."""
