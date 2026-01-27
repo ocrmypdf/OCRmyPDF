@@ -27,7 +27,7 @@ from ocrmypdf.hocrtransform.hocr_parser import (
     HocrParseError,
     HocrParser,
 )
-from ocrmypdf.hocrtransform.ocr_element import (
+from ocrmypdf.models.ocr_element import (
     Baseline,
     BoundingBox,
     FontInfo,

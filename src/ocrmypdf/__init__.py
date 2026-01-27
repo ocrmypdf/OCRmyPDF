@@ -35,7 +35,7 @@ from ocrmypdf.exceptions import (
     TesseractConfigError,
     UnsupportedImageFormatError,
 )
-from ocrmypdf.hocrtransform import (
+from ocrmypdf.models.ocr_element import (
     Baseline,
     BoundingBox,
     FontInfo,

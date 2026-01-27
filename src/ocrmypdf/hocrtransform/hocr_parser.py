@@ -20,9 +20,9 @@ import re
 import unicodedata
 from pathlib import Path
 from typing import Literal, cast
-from xml.etree import ElementTree
+from xml.etree import ElementTree as ET
 
-from ocrmypdf.hocrtransform.ocr_element import (
+from ocrmypdf.models.ocr_element import (
     Baseline,
     BoundingBox,
     FontInfo,
@@ -34,7 +34,7 @@ TextDirection = Literal["ltr", "rtl"]
 
 log = logging.getLogger(__name__)
 
-Element = ElementTree.Element
+Element = ET.Element
 
 
 class HocrParseError(Exception):
@@ -132,8 +132,8 @@ class HocrParser:
         """
         self._hocr_path = Path(hocr_file)
         try:
-            self._tree = ElementTree.parse(os.fspath(hocr_file))
-        except ElementTree.ParseError as e:
+            self._tree = ET.parse(os.fspath(hocr_file))
+        except ET.ParseError as e:
             raise HocrParseError(f"Failed to parse hOCR file: {e}") from e
 
         # Detect XML namespace

@@ -16,7 +16,7 @@ from ocrmypdf.fpdf_renderer import (
     Fpdf2PdfRenderer,
 )
 from ocrmypdf.hocrtransform.hocr_parser import HocrParser
-from ocrmypdf.hocrtransform.ocr_element import OcrClass
+from ocrmypdf.models.ocr_element import OcrClass
 
 
 @pytest.fixture
@@ -80,7 +80,7 @@ class TestFpdf2PdfRenderer:
 
     def test_requires_page_element(self, multi_font_manager):
         """Test that renderer requires ocr_page element."""
-        from ocrmypdf.hocrtransform.ocr_element import BoundingBox, OcrElement
+        from ocrmypdf.models.ocr_element import BoundingBox, OcrElement
 
         # Create a non-page element
         word = OcrElement(
@@ -98,7 +98,7 @@ class TestFpdf2PdfRenderer:
 
     def test_requires_bbox(self, multi_font_manager):
         """Test that renderer requires page with bounding box."""
-        from ocrmypdf.hocrtransform.ocr_element import OcrElement
+        from ocrmypdf.models.ocr_element import OcrElement
 
         page = OcrElement(ocr_class=OcrClass.PAGE)
 
@@ -111,7 +111,7 @@ class TestFpdf2PdfRenderer:
 
     def test_render_simple_page(self, multi_font_manager, tmp_path):
         """Test rendering a simple page with one word."""
-        from ocrmypdf.hocrtransform.ocr_element import BoundingBox, OcrElement
+        from ocrmypdf.models.ocr_element import BoundingBox, OcrElement
 
         # Create a simple page with one word
         word = OcrElement(
@@ -145,7 +145,7 @@ class TestFpdf2PdfRenderer:
 
     def test_render_invisible_text(self, multi_font_manager, tmp_path):
         """Test rendering invisible text (OCR layer)."""
-        from ocrmypdf.hocrtransform.ocr_element import BoundingBox, OcrElement
+        from ocrmypdf.models.ocr_element import BoundingBox, OcrElement
 
         word = OcrElement(
             ocr_class=OcrClass.WORD,
@@ -191,7 +191,7 @@ class TestFpdf2MultiPageRenderer:
 
     def test_render_multiple_pages(self, multi_font_manager, tmp_path):
         """Test rendering multiple pages."""
-        from ocrmypdf.hocrtransform.ocr_element import BoundingBox, OcrElement
+        from ocrmypdf.models.ocr_element import BoundingBox, OcrElement
 
         pages_data = []
         for i in range(3):
@@ -385,7 +385,7 @@ class TestWordSegmentation:
         """
         from pdfminer.high_level import extract_text
 
-        from ocrmypdf.hocrtransform.ocr_element import BoundingBox, OcrElement
+        from ocrmypdf.models.ocr_element import BoundingBox, OcrElement
 
         # Create a page with multiple words on one line
         word1 = OcrElement(
@@ -451,7 +451,7 @@ class TestWordSegmentation:
         """
         from pdfminer.high_level import extract_text
 
-        from ocrmypdf.hocrtransform.ocr_element import BoundingBox, OcrElement
+        from ocrmypdf.models.ocr_element import BoundingBox, OcrElement
 
         # Create a page with CJK words (Chinese characters)
         # 你好 = "Hello" in Chinese

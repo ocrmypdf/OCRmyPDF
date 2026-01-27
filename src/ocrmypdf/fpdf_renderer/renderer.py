@@ -20,7 +20,7 @@ from fpdf.enums import TextMode
 from pikepdf import Matrix, Rectangle
 
 from ocrmypdf.font import FontManager, MultiFontManager
-from ocrmypdf.hocrtransform.ocr_element import OcrClass, OcrElement
+from ocrmypdf.models.ocr_element import OcrClass, OcrElement
 
 log = logging.getLogger(__name__)
 
