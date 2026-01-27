@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 """Simple CLI for testing HOCR to PDF conversion using fpdf2 renderer."""
+from __future__ import annotations
 
 import argparse
 from pathlib import Path

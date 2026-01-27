@@ -6,6 +6,7 @@
 This module provides the PDF renderer using fpdf2 for creating
 searchable OCR text layers.
 """
+from __future__ import annotations
 
 from ocrmypdf.fpdf_renderer.renderer import (
     DebugRenderOptions,

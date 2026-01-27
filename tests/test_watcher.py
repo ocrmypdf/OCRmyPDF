@@ -1,4 +1,6 @@
-import datetime
+from __future__ import annotations
+
+import datetime as dt
 import os
 import shutil
 import subprocess
@@ -43,8 +45,8 @@ def test_watcher(tmp_path, resources, year_month):
     if year_month:
         assert (
             output_dir
-            / f'{datetime.date.today().year}'
-            / f'{datetime.date.today().month:02d}'
+            / f'{dt.date.today().year}'
+            / f'{dt.date.today().month:02d}'
             / 'trivial.pdf'
         ).exists()
     else:

@@ -96,7 +96,9 @@ with st.expander("Optimization after OCR"):
     png_quality = st.slider(
         "PNG quality", min_value=0, max_value=100, value=75, key="png_quality"
     )
-    jbig2_threshold = st.number_input("JBIG2 threshold", value=0.85, key="jbig2_threshold")
+    jbig2_threshold = st.number_input(
+        "JBIG2 threshold", value=0.85, key="jbig2_threshold"
+    )
 
 with st.expander("Advanced options"):
     jobs = st.slider(
@@ -192,45 +194,47 @@ if uploaded:
         args.append(f"--jbig2-threshold={jbig2_threshold}")
     if jobs:
         args.append(f"--jobs={jobs}")
-    input_file = NamedTemporaryFile(delete=True, suffix=f"_{uploaded.name}")
-    input_file.write(uploaded.getvalue())
-    input_file.flush()
-    input_file.seek(0)
-    args.append(str(input_file.name))
-    output_file = NamedTemporaryFile(delete=True, suffix=".pdf")
-    args.append(str(output_file.name))
+    with NamedTemporaryFile(delete=True, suffix=f"_{uploaded.name}") as input_file:
+        input_file.write(uploaded.getvalue())
+        input_file.flush()
+        input_file.seek(0)
+        args.append(str(input_file.name))
+        with NamedTemporaryFile(delete=True, suffix=".pdf") as output_file:
+            args.append(str(output_file.name))
 
-    st.session_state['running'] = (
-        'run_button' in st.session_state and st.session_state.run_button
-    )
-    if st.button(
-        "Run OCRmyPDF",
-        disabled=st.session_state.get("running", False),
-        key='run_button',
-    ):
-        st.session_state['running'] = True
-        args = [sys.executable, '-u', '-m', "ocrmypdf"] + args
+            st.session_state['running'] = (
+                'run_button' in st.session_state and st.session_state.run_button
+            )
+            if st.button(
+                "Run OCRmyPDF",
+                disabled=st.session_state.get("running", False),
+                key='run_button',
+            ):
+                st.session_state['running'] = True
+                args = [sys.executable, '-u', '-m', "ocrmypdf"] + args
 
-        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        with st.container(border=True):
-            while proc.poll() is None:
-                line = proc.stderr.readline()
-                if line:
-                    st.html("<code>" + line.decode().strip() + "</code>")
+                proc = subprocess.Popen(
+                    args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                )
+                with st.container(border=True):
+                    while proc.poll() is None:
+                        line = proc.stderr.readline()
+                        if line:
+                            st.html("<code>" + line.decode().strip() + "</code>")
 
-        if proc.returncode != 0:
-            st.error(f"ocrmypdf failed with exit code {proc.returncode}")
-            st.session_state['running'] = False
-            st.stop()
+                if proc.returncode != 0:
+                    st.error(f"ocrmypdf failed with exit code {proc.returncode}")
+                    st.session_state['running'] = False
+                    st.stop()
 
-        if Path(output_file.name).stat().st_size == 0:
-            st.error("No output PDF file was generated")
-            st.stop()
+                if Path(output_file.name).stat().st_size == 0:
+                    st.error("No output PDF file was generated")
+                    st.stop()
 
-        st.download_button(
-            label="Download output PDF",
-            data=output_file.read(),
-            file_name=uploaded.name,
-            mime="application/pdf",
-        )
-        st.session_state['running'] = False
+                st.download_button(
+                    label="Download output PDF",
+                    data=output_file.read(),
+                    file_name=uploaded.name,
+                    mime="application/pdf",
+                )
+                st.session_state['running'] = False

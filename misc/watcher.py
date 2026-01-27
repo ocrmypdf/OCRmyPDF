@@ -7,12 +7,12 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import json
 import logging
 import shutil
 import sys
 import time
-from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any
@@ -48,7 +48,7 @@ class LoggingLevelEnum(str, Enum):
 def get_output_path(root: Path, basename: str, output_dir_year_month: bool) -> Path:
     assert '/' not in basename, "basename must not contain '/'"
     if output_dir_year_month:
-        today = datetime.today()
+        today = dt.datetime.today()
         output_directory_year_month = root / str(today.year) / f'{today.month:02d}'
         if not output_directory_year_month.exists():
             output_directory_year_month.mkdir(parents=True, exist_ok=True)
@@ -140,7 +140,7 @@ class HandleObserverEvent(PatternMatchingEventHandler):
         ignore_patterns=None,
         ignore_directories=False,
         case_sensitive=False,
-        settings={},
+        settings=None,
     ):
         super().__init__(
             patterns=patterns,
@@ -148,7 +148,7 @@ class HandleObserverEvent(PatternMatchingEventHandler):
             ignore_directories=ignore_directories,
             case_sensitive=case_sensitive,
         )
-        self._settings = settings
+        self._settings = settings if settings else {}
 
     def on_any_event(self, event):
         if event.event_type in ['created']:
@@ -302,10 +302,7 @@ def main(
             'output_dir_year_month': output_dir_year_month,
         },
     )
-    if use_polling:
-        observer = PollingObserver()
-    else:
-        observer = Observer()
+    observer = PollingObserver() if use_polling else Observer()
     observer.schedule(handler, input_dir, recursive=True)
     observer.start()
     print(f"Watching {input_dir} for new PDFs. Press Ctrl+C to exit.")

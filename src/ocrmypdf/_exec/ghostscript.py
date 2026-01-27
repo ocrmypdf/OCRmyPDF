@@ -111,6 +111,15 @@ def rasterize_pdf(
     """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
 
     Args:
+        input_file: The PDF file to rasterize.
+        output_file: The file to write the rasterized PDF to.
+        raster_device: The Ghostscript raster device to use to rasterize the PDF.
+        raster_dpi: Resolution in dots per inch at which to rasterize page.
+        pageno: Page number to rasterize (beginning at page 1).
+        page_dpi: Resolution, overriding output image DPI.
+        rotation: Cardinal angle, clockwise, to rotate page.
+        filter_vector: If True, remove vector graphics objects.
+        stop_on_error: If True, stop rasterizing on the first error.
         use_cropbox: If True, rasterize the CropBox instead of MediaBox.
             Default is False (use MediaBox).
     """

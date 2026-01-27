@@ -39,10 +39,7 @@ script_dir = Path(__file__).parent
 # set archive_dir to a path for backup original documents. Leave empty if not required.
 archive_dir = "/pdfbak"
 
-if len(sys.argv) > 1:
-    start_dir = Path(sys.argv[1])
-else:
-    start_dir = Path(".")
+start_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(".")
 
 if len(sys.argv) > 2:
     log_file = Path(sys.argv[2])

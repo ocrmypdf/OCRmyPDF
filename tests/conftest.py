@@ -23,9 +23,10 @@ class Gs106WarningFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         # Allow all records except the expected Ghostscript 10.6.x warning
-        if "Ghostscript 10.6.x contains JPEG encoding errors" in record.getMessage():
-            return False
-        return True
+        return (
+            "Ghostscript 10.6.x contains JPEG encoding errors"
+            not in record.getMessage()
+        )
 
 
 @pytest.fixture(autouse=True)

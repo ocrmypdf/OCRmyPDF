@@ -1,4 +1,5 @@
 """Test JSON serialization of OcrOptions for multiprocessing compatibility."""
+from __future__ import annotations
 
 import multiprocessing
 from io import BytesIO

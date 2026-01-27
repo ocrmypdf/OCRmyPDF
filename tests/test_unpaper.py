@@ -119,7 +119,7 @@ def test_unpaper_args_invalid(resources, outpdf):
 def test_unpaper_image_too_big(resources, outdir, caplog):
     with patch('ocrmypdf._exec.unpaper.UNPAPER_IMAGE_PIXEL_LIMIT', 42):
         infile = resources / 'crom.png'
-        unpaper.clean(infile, outdir / 'out.png', dpi=300) == infile
+        assert unpaper.clean(infile, outdir / 'out.png', dpi=300) == infile
 
         assert any(
             'too large for cleaning' in rec.message

@@ -25,10 +25,11 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 # -- General configuration ------------------------------------------------
+from __future__ import annotations
 
 needs_sphinx = '8'
 
-import datetime
+import datetime as dt
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -63,7 +64,7 @@ master_doc = 'index'
 # General information about the project.
 project = 'ocrmypdf'
 
-year = str(datetime.date.today().year)
+year = str(dt.date.today().year)
 copyright = (
     f'{year}, James R. Barlow. '
     + 'Licensed under Creative Commons Attribution-ShareAlike 4.0'

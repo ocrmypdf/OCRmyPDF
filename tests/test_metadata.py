@@ -3,9 +3,8 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import warnings
-from datetime import timezone
 from shutil import copyfile
 
 import pikepdf
@@ -198,10 +197,7 @@ def test_creation_date_preserved(output_type, resources, infile, outpdf):
 
         # We expect that the modified date is quite recent
         date_after = decode_pdf_date(str(after['/ModDate']))
-        assert (
-            seconds_between_dates(date_after, datetime.datetime.now(timezone.utc))
-            < 1000
-        )
+        assert seconds_between_dates(date_after, dt.datetime.now(dt.UTC)) < 1000
 
 
 @pytest.fixture

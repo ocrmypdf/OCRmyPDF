@@ -10,6 +10,7 @@ This tests the fpdf2 renderer with various language groups:
 - CJK (Chinese Simplified/Traditional, Japanese, Korean)
 - Devanagari (Hindi, Sanskrit)
 """
+from __future__ import annotations
 
 import shutil
 import subprocess

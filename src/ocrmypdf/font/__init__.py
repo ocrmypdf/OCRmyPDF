@@ -10,6 +10,7 @@ This module provides font infrastructure for the fpdf2 PDF renderer. It includes
 - MultiFontManager: Automatic font selection for multilingual documents
 - SystemFontProvider: System font discovery
 """
+from __future__ import annotations
 
 from ocrmypdf.font.font_manager import FontManager
 from ocrmypdf.font.font_provider import (

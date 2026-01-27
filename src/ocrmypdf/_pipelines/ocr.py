@@ -50,7 +50,7 @@ from ocrmypdf._validation import (
 )
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import available_cpu_count
-from ocrmypdf.hocrtransform.ocr_element import OcrElement
+from ocrmypdf.models.ocr_element import OcrElement
 
 log = logging.getLogger(__name__)
 

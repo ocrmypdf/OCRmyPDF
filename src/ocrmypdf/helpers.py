@@ -25,7 +25,6 @@ from typing import (
 
 import img2pdf
 import pikepdf
-from deprecation import deprecated
 
 log = logging.getLogger(__name__)
 

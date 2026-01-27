@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: MPL-2.0
 
 # Enforce English hegemony
+from __future__ import annotations
+
 DEFAULT_LANGUAGE = 'eng'
 
 # Default rotation threshold

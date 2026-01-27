@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import logging
 import os
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -53,7 +53,7 @@ def get_docinfo(base_pdf: Pdf, context: PdfContext) -> dict[str, str]:
 
     pdfmark['/Creator'] = f'{PROGRAM_NAME} {OCRMYPF_VERSION} / {creator_tag}'
     pdfmark['/Producer'] = f'pikepdf {PIKEPDF_VERSION}'
-    pdfmark['/ModDate'] = encode_pdf_date(datetime.now(timezone.utc))
+    pdfmark['/ModDate'] = encode_pdf_date(dt.datetime.now(dt.UTC))
     return pdfmark
 
 
