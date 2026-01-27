@@ -76,9 +76,8 @@ class TestAddPdfaMetadata:
             pdf.save(test_pdf)
 
         # Verify it persists after save
-        with pikepdf.open(test_pdf) as pdf:
-            with pdf.open_metadata() as meta:
-                assert meta.pdfa_status == '2B'
+        with pikepdf.open(test_pdf) as pdf, pdf.open_metadata() as meta:
+            assert meta.pdfa_status == '2B'
 
 
 class TestAddSrgbOutputIntent:
@@ -141,9 +140,8 @@ class TestSpeculativePdfaConversion:
             output_pdf = tmp_path / f'output_{output_type}.pdf'
             speculative_pdfa_conversion(input_pdf, output_pdf, output_type)
 
-            with pikepdf.open(output_pdf) as pdf:
-                with pdf.open_metadata() as meta:
-                    assert meta.pdfa_status == expected_status
+            with pikepdf.open(output_pdf) as pdf, pdf.open_metadata() as meta:
+                assert meta.pdfa_status == expected_status
 
 
 @pytest.mark.skipif(not verapdf.available(), reason='verapdf not installed')

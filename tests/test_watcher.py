@@ -22,10 +22,7 @@ def test_watcher(tmp_path, resources, year_month):
     processed_dir = tmp_path / 'processed'
     processed_dir.mkdir()
 
-    if year_month:
-        env_extra = {'OCR_OUTPUT_DIRECTORY_YEAR_MONTH': '1'}
-    else:
-        env_extra = {}
+    env_extra = {'OCR_OUTPUT_DIRECTORY_YEAR_MONTH': '1'} if year_month else {}
     proc = subprocess.Popen(
         [
             sys.executable,

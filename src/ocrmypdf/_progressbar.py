@@ -48,7 +48,8 @@ class ProgressBar(Protocol):
             A brief description of the current step (e.g. "Scanning contents",
             "OCR", "PDF/A conversion"). OCRmyPDF updates this before each major step.
         unit (str | None):
-            A short label for the type of work being tracked (e.g. "page", "%", "image").
+            A short label for the type of work being tracked
+            (e.g. "page", "%", "image").
         disable (bool):
             If ``True``, progress updates are suppressed (no output).
             Defaults to ``False``.
@@ -90,7 +91,7 @@ class ProgressBar(Protocol):
 
                 def update(self, n=1, *, completed=None):
                     if completed is not None:
-                        # If 'completed' is given, you could set self.current = completed
+                        # If 'completed' is given, set self.current
                         # but let's just read it to show usage
                         print(f"Absolute completion reported: {completed}")
                     # Otherwise, we increment by 'n'
@@ -98,7 +99,10 @@ class ProgressBar(Protocol):
                     if not self.disable:
                         if self.total:
                             percent = (self.current / self.total) * 100
-                            print(f"{self.desc}: {self.current}/{self.total} ({percent:.1f}%)")
+                            print(
+                                f"{self.desc}: {self.current}"
+                                f"/{self.total} ({percent:.1f}%)"
+                            )
                         else:
                             print(f"{self.desc}: {self.current} units done")
 

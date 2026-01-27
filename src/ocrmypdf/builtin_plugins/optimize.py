@@ -50,7 +50,8 @@ class OptimizeOptions(BaseModel):
 
         Args:
             parser: The argument parser to add arguments to
-            namespace: The namespace prefix for argument names (not used for optimize for backward compatibility)
+            namespace: The namespace prefix for argument names
+                (not used for optimize for backward compatibility)
         """
         optimizing = parser.add_argument_group(
             "Optimization options", "Control how the PDF is optimized after OCR"

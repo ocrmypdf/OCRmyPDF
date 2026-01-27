@@ -50,9 +50,8 @@ def test_old_tesseract_error():
     with patch(
         'ocrmypdf._exec.tesseract.version',
         return_value=TesseractVersion('4.00.00alpha'),
-    ):
-        with pytest.raises(MissingDependencyError):
-            vd.check_options(*make_opts_pm(pdf_renderer='sandwich', language='eng'))
+    ), pytest.raises(MissingDependencyError):
+        vd.check_options(*make_opts_pm(pdf_renderer='sandwich', language='eng'))
 
 
 def test_tesseract_not_installed(caplog):
@@ -105,9 +104,8 @@ def test_pillow_options():
 
 
 def test_output_tty():
-    with patch('sys.stdout.isatty', return_value=True):
-        with pytest.raises(BadArgsError):
-            vd.check_requested_output_file(make_opts(output_file='-'))
+    with patch('sys.stdout.isatty', return_value=True), pytest.raises(BadArgsError):
+        vd.check_requested_output_file(make_opts(output_file='-'))
 
 
 def test_report_file_size(tmp_path, caplog):

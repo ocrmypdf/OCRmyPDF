@@ -291,7 +291,8 @@ def create_options(
     Args:
         input_file: Input file path or file object.
         output_file: Output file path or file object.
-        parser: ArgumentParser object (kept for compatibility, may be used for plugin validation).
+        parser: ArgumentParser object (kept for compatibility,
+            may be used for plugin validation).
         **kwargs: Keyword arguments.
 
     Returns:
@@ -564,7 +565,8 @@ def ocr(  # noqa: D417
         # New-style API: OcrOptions passed directly
         options = input_file_or_options
 
-        # Check for conflicting parameters (all should be None except plugins/plugin_manager)
+        # Check for conflicting parameters
+        # (all should be None except plugins/plugin_manager)
         _check_no_conflicting_ocr_params(locals(), kwargs)
 
         # plugins and plugin_manager can still be passed alongside OcrOptions
@@ -641,7 +643,8 @@ def ocr(  # noqa: D417
 
             if 'verbose' in kwargs:
                 warn(
-                    "ocrmypdf.ocr(verbose=) is ignored. Use ocrmypdf.configure_logging()."
+                    "ocrmypdf.ocr(verbose=) is ignored. "
+                    "Use ocrmypdf.configure_logging()."
                 )
 
             # Warn about deprecated jbig2 options and remove from kwargs

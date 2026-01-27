@@ -72,41 +72,50 @@ class TestSystemFontProviderDirectories:
     def test_windows_font_dirs_with_windir(self):
         """Test Windows font directory from WINDIR env var."""
         provider = SystemFontProvider()
-        with patch.object(sys, 'platform', 'win32'):
-            with patch.dict('os.environ', {'WINDIR': r'D:\Windows'}):
-                provider._font_dirs = None  # Reset cache
-                dirs = provider._get_font_dirs()
-                # Check that Fonts subdir of WINDIR is included
-                # Use str comparison to avoid Path normalization issues across platforms
-                dir_strs = [str(d) for d in dirs]
-                assert any('Fonts' in d for d in dir_strs)
+        with (
+            patch.object(sys, 'platform', 'win32'),
+            patch.dict('os.environ', {'WINDIR': r'D:\Windows'}),
+        ):
+            provider._font_dirs = None  # Reset cache
+            dirs = provider._get_font_dirs()
+            # Check that Fonts subdir of WINDIR is included
+            # Use str comparison to avoid Path normalization issues across platforms
+            dir_strs = [str(d) for d in dirs]
+            assert any('Fonts' in d for d in dir_strs)
 
     def test_windows_font_dirs_default(self):
         """Test Windows font directory with default path."""
         provider = SystemFontProvider()
-        with patch.object(sys, 'platform', 'win32'):
-            with patch.dict('os.environ', {}, clear=True):
-                provider._font_dirs = None  # Reset cache
-                dirs = provider._get_font_dirs()
-                # Check that Windows\Fonts is included (default fallback)
-                dir_strs = [str(d) for d in dirs]
-                assert any('Windows' in d and 'Fonts' in d for d in dir_strs)
+        with (
+            patch.object(sys, 'platform', 'win32'),
+            patch.dict('os.environ', {}, clear=True),
+        ):
+            provider._font_dirs = None  # Reset cache
+            dirs = provider._get_font_dirs()
+            # Check that Windows\Fonts is included (default fallback)
+            dir_strs = [str(d) for d in dirs]
+            assert any('Windows' in d and 'Fonts' in d for d in dir_strs)
 
     def test_windows_font_dirs_with_localappdata(self):
         """Test Windows user fonts directory from LOCALAPPDATA env var."""
         provider = SystemFontProvider()
-        with patch.object(sys, 'platform', 'win32'):
-            with patch.dict(
+        with (
+            patch.object(sys, 'platform', 'win32'),
+            patch.dict(
                 'os.environ',
                 {'WINDIR': r'C:\Windows', 'LOCALAPPDATA': r'C:\Users\Test\AppData\Local'},
-            ):
-                provider._font_dirs = None  # Reset cache
-                dirs = provider._get_font_dirs()
-                dir_strs = [str(d) for d in dirs]
-                # Should have both system and user font directories
-                assert len(dirs) == 2
-                assert any('Windows' in d and 'Fonts' in d for d in dir_strs)
-                assert any('AppData' in d and 'Local' in d and 'Fonts' in d for d in dir_strs)
+            ),
+        ):
+            provider._font_dirs = None  # Reset cache
+            dirs = provider._get_font_dirs()
+            dir_strs = [str(d) for d in dirs]
+            # Should have both system and user font directories
+            assert len(dirs) == 2
+            assert any('Windows' in d and 'Fonts' in d for d in dir_strs)
+            assert any(
+                'AppData' in d and 'Local' in d and 'Fonts' in d
+                for d in dir_strs
+            )
 
     def test_font_dirs_cached(self):
         """Test that font directories are cached."""

@@ -199,13 +199,17 @@ class TesseractOptions(BaseModel):
             default=True,
             dest=f'{namespace}_downsample_large_images',
             help=(
-                "Downsample large images before OCR. Tesseract has an upper limit on the "
-                "size images it will support. If this argument is given, OCRmyPDF will "
-                "downsample large images to fit Tesseract. This may reduce OCR quality, "
-                "on large images the most desirable text is usually larger. If this "
-                "parameter is not supplied, Tesseract will error out and produce no OCR "
-                "on the page in question. This argument should be used with a high value "
-                f"of --{namespace}-timeout to ensure Tesseract has enough to time."
+                "Downsample large images before OCR. Tesseract has "
+                "an upper limit on the size images it will support."
+                " If this argument is given, OCRmyPDF will "
+                "downsample large images to fit Tesseract. This "
+                "may reduce OCR quality, on large images the most"
+                " desirable text is usually larger. If this "
+                "parameter is not supplied, Tesseract will error "
+                "out and produce no OCR on the page in question. "
+                "This argument should be used with a high value "
+                f"of --{namespace}-timeout to ensure Tesseract "
+                "has enough to time."
             ),
         )
 
