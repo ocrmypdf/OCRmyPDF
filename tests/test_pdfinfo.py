@@ -131,6 +131,55 @@ def test_jpeg(resources):
     assert isclose(pdfimage.dpi.x, 150)
 
 
+@pytest.fixture
+def flate_jpeg_pdf(outpdf):
+    """Create a PDF with a FlateDecode+DCTDecode (flate+jpeg) encoded image.
+
+    This simulates what OCRmyPDF's optimizer does when it deflates JPEGs.
+    """
+    from zlib import compress
+
+    # Create an RGB image and save as JPEG
+    im = Image.new('RGB', (64, 64), color=(128, 64, 192))
+    bio = BytesIO()
+    im.save(bio, format='JPEG')
+    jpeg_data = bio.getvalue()
+
+    # Compress the JPEG data with flate
+    flate_jpeg_data = compress(jpeg_data)
+
+    # Create a PDF with the flate+jpeg image
+    with pikepdf.Pdf.new() as pdf:
+        pdf.add_blank_page(page_size=(72, 72))
+        image_dict = pikepdf.Stream(
+            pdf,
+            flate_jpeg_data,
+            BitsPerComponent=8,
+            ColorSpace=pikepdf.Name.DeviceRGB,
+            Filter=[pikepdf.Name.FlateDecode, pikepdf.Name.DCTDecode],
+            Height=64,
+            Subtype=pikepdf.Name.Image,
+            Type=pikepdf.Name.XObject,
+            Width=64,
+        )
+        objname = pdf.pages[0].add_resource(
+            image_dict, pikepdf.Name.XObject, pikepdf.Name.Im0
+        )
+        pdf.pages[0].Contents = pikepdf.Stream(
+            pdf, b"q 72 0 0 72 0 0 cm %s Do Q" % bytes(objname)
+        )
+        pdf.save(outpdf)
+    return outpdf
+
+
+def test_flate_jpeg(flate_jpeg_pdf):
+    """Test that pdfinfo correctly identifies FlateDecode+DCTDecode as flate_jpeg."""
+    pdf = pdfinfo.PdfInfo(flate_jpeg_pdf)
+
+    pdfimage = pdf[0].images[0]
+    assert pdfimage.enc == Encoding.flate_jpeg
+
+
 def test_form_xobject(resources):
     filename = resources / 'formxobject.pdf'
 

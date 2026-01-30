@@ -735,7 +735,8 @@ def ocr_engine_direct(
 def should_visible_page_image_use_jpg(pageinfo: PageInfo) -> bool:
     """Determines whether the visible page image should be saved as a JPEG.
 
-    If all images were JPEGs originally, permit a JPEG as output.
+    If all images were JPEGs originally (including FlateDecode+DCTDecode),
+    permit a JPEG as output.
 
     Args:
         pageinfo: The PageInfo object containing information about the page.
@@ -744,7 +745,7 @@ def should_visible_page_image_use_jpg(pageinfo: PageInfo) -> bool:
         A boolean indicating whether the visible page image should be saved as a JPEG.
     """
     return bool(pageinfo.images) and all(
-        im.enc == Encoding.jpeg for im in pageinfo.images
+        im.enc in (Encoding.jpeg, Encoding.flate_jpeg) for im in pageinfo.images
     )
 
 

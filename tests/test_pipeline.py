@@ -14,6 +14,7 @@ from reportlab.pdfgen.canvas import Canvas
 
 from ocrmypdf import _pipeline, pdfinfo
 from ocrmypdf.helpers import Resolution
+from ocrmypdf.pdfinfo import Encoding
 
 warnings.filterwarnings(
     "ignore", category=DeprecationWarning, module="reportlab.lib.rl_safe_eval"
@@ -150,3 +151,28 @@ def test_dpi_needed(image, text, vector, result, rgb_image, outdir):
 )
 def test_enumerate_compress_ranges(name, input, output):
     assert output == tuple(_pipeline.enumerate_compress_ranges(input))
+
+
+@pytest.mark.parametrize(
+    'encodings, expected',
+    [
+        # Empty images list returns False
+        ([], False),
+        # Single JPEG returns True
+        ([Encoding.jpeg], True),
+        # Single flate_jpeg returns True
+        ([Encoding.flate_jpeg], True),
+        # Mix of jpeg and flate_jpeg returns True
+        ([Encoding.jpeg, Encoding.flate_jpeg], True),
+        # Non-JPEG encoding returns False
+        ([Encoding.flate], False),
+        # Mix with non-JPEG returns False
+        ([Encoding.jpeg, Encoding.flate], False),
+        ([Encoding.flate_jpeg, Encoding.flate], False),
+    ],
+)
+def test_should_visible_page_image_use_jpg(encodings, expected):
+    """Test that should_visible_page_image_use_jpg correctly handles flate_jpeg."""
+    pageinfo = Mock()
+    pageinfo.images = [Mock(enc=enc) for enc in encodings]
+    assert _pipeline.should_visible_page_image_use_jpg(pageinfo) == expected

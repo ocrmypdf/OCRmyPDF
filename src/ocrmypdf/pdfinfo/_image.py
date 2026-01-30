@@ -108,10 +108,18 @@ class ImageInfo:
             self._type = 'image'
 
         self._bpc = int(pim.bits_per_component)
-        try:
-            self._enc = FRIENDLY_ENCODING.get(pim.filters[0])
-        except IndexError:
-            self._enc = None
+        if (
+            len(pim.filters) == 2
+            and pim.filters[0] == '/FlateDecode'
+            and pim.filters[1] == '/DCTDecode'
+        ):
+            # Special case: FlateDecode followed by DCTDecode
+            self._enc = Encoding.flate_jpeg
+        else:
+            try:
+                self._enc = FRIENDLY_ENCODING.get(pim.filters[0])
+            except IndexError:
+                self._enc = None
 
         try:
             self._color = FRIENDLY_COLORSPACE.get(pim.colorspace or '')

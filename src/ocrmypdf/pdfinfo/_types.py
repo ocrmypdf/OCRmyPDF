@@ -36,6 +36,7 @@ class Encoding(Enum):
     lzw = auto()
     flate = auto()
     runlength = auto()
+    flate_jpeg = auto()
 
 
 FloatRect = tuple[float, float, float, float]
