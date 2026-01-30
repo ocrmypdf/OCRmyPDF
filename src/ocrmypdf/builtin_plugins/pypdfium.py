@@ -8,12 +8,15 @@ import logging
 import threading
 from contextlib import closing
 from pathlib import Path
+from typing import TYPE_CHECKING, Literal
 
-try:
+if TYPE_CHECKING:
     import pypdfium2 as pdfium
-except ImportError:
-    pdfium = None
-
+else:
+    try:
+        import pypdfium2 as pdfium
+    except ImportError:
+        pdfium = None
 from PIL import Image
 
 from ocrmypdf import hookimpl
@@ -69,12 +72,12 @@ def _calculate_mediabox_crop(page) -> tuple[float, float, float, float]:
 
 
 def _render_page_to_bitmap(
-    page,
+    page: pdfium.PdfPage,
     raster_device: str,
     raster_dpi: Resolution,
     rotation: int | None,
     use_cropbox: bool,
-):
+) -> tuple[pdfium.PdfBitmap, int, int]:
     """Render a PDF page to a bitmap."""
     # Round DPI to match Ghostscript's precision
     raster_dpi = raster_dpi.round(6)
@@ -122,14 +125,14 @@ def _render_page_to_bitmap(
 
 
 def _process_image_for_output(
-    pil_image,
+    pil_image: Image.Image,
     raster_device: str,
     raster_dpi: Resolution,
     page_dpi: Resolution | None,
     stop_on_soft_error: bool,
     expected_width: int | None = None,
     expected_height: int | None = None,
-):
+) -> tuple[Image.Image, Literal['PNG', 'TIFF', 'JPEG']]:
     """Process PIL image for output format and set DPI metadata."""
     # Correct dimensions if slightly off (within 2 pixels tolerance)
     if expected_width and expected_height:
@@ -147,8 +150,7 @@ def _process_image_for_output(
                 f"{expected_width}x{expected_height}"
             )
             pil_image = pil_image.resize(
-                (expected_width, expected_height),
-                Image.Resampling.LANCZOS
+                (expected_width, expected_height), Image.Resampling.LANCZOS
             )
 
     # Set the DPI metadata if page_dpi is specified
@@ -210,7 +212,7 @@ def _process_image_for_output(
     return pil_image, format_name
 
 
-def _save_image(pil_image, output_file: Path, format_name: str):
+def _save_image(pil_image: Image.Image, output_file: Path, format_name: str) -> None:
     """Save PIL image to file with appropriate DPI metadata."""
     save_kwargs = {}
     if (
