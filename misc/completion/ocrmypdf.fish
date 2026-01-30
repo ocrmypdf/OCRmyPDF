@@ -26,6 +26,12 @@ complete -c ocrmypdf -s s -l skip-text -d "skip OCR on any pages that already co
 complete -c ocrmypdf -l redo-ocr -d "redo OCR on any pages that seem to have OCR already"
 complete -c ocrmypdf -l invalidate-digital-signatures -d "invalidate digital signatures and allow OCR to proceed"
 
+function __fish_ocrmypdf_tagged_pdf_mode
+    echo -e "default\t"(_ "error if --mode is default, otherwise warn")
+    echo -e "ignore\t"(_ "always warn but continue processing")
+end
+complete -c ocrmypdf -x -l tagged-pdf-mode -a '(__fish_ocrmypdf_tagged_pdf_mode)' -d "control behavior for Tagged PDFs"
+
 complete -c ocrmypdf -s k -l keep-temporary-files -d "keep temporary files (debug)"
 
 function __fish_ocrmypdf_languages

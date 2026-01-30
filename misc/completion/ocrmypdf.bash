@@ -32,6 +32,7 @@ __ocrmypdf_arguments()
 --skip-text                     (skip OCR on any pages that already contain text)
 --redo-ocr                      (redo OCR on any pages that seem to have OCR already)
 --invalidate-digital-signatures (remove digital signatures from PDF)
+--tagged-pdf-mode               (control behavior for Tagged PDFs)
 --skip-big                      (skip OCR on pages larger than this many MPixels)
 --optimize                      (select optimization level)
 --jpeg-quality                  (JPEG quality [0..100])
@@ -232,6 +233,18 @@ redo    (re-OCR pages, replacing old invisible text)"
     fi
 }
 
+__ocrmypdf_tagged-pdf-mode()
+{
+    local choices="default (error if --mode is default, otherwise warn)
+ignore  (always warn but continue processing)"
+
+    COMPREPLY=( $( compgen -W "$choices" -- "$cur") )
+    # Remove description if only one completion exists
+    if [[ ${#COMPREPLY[*]} -eq 1 ]]; then
+        COMPREPLY=( ${COMPREPLY[0]%% *} )
+    fi
+}
+
 __ocrmypdf_ocr-engine()
 {
     local choices="auto      (select best available engine)
@@ -291,6 +304,10 @@ __ocrmypdf_check_previous()
             ;;
         -m|--mode)
             __ocrmypdf_mode
+            return 0
+            ;;
+        --tagged-pdf-mode)
+            __ocrmypdf_tagged-pdf-mode
             return 0
             ;;
         --ocr-engine)

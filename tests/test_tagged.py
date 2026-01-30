@@ -22,3 +22,29 @@ def test_force_tagged_warns(resources, outpdf, caplog):
         plugins=['tests/plugins/tesseract_noop.py'],
     )
     assert 'marked as a Tagged PDF' in caplog.text
+
+
+def test_tagged_pdf_mode_ignore_with_skip_text(resources, outpdf, caplog):
+    """Ignore tagged_pdf_mode should warn but not error."""
+    caplog.set_level('WARNING')
+    ocrmypdf.ocr(
+        resources / 'tagged.pdf',
+        outpdf,
+        tagged_pdf_mode='ignore',
+        skip_text=True,  # Tagged PDF has text, so skip pages with text
+        plugins=['tests/plugins/tesseract_noop.py'],
+    )
+    assert 'marked as a Tagged PDF' in caplog.text
+
+
+def test_tagged_pdf_mode_ignore_with_force(resources, outpdf, caplog):
+    """Ignore tagged_pdf_mode with force mode should warn."""
+    caplog.set_level('WARNING')
+    ocrmypdf.ocr(
+        resources / 'tagged.pdf',
+        outpdf,
+        tagged_pdf_mode='ignore',
+        force_ocr=True,
+        plugins=['tests/plugins/tesseract_noop.py'],
+    )
+    assert 'marked as a Tagged PDF' in caplog.text

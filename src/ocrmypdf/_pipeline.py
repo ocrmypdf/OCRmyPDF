@@ -28,7 +28,7 @@ from ocrmypdf._concurrent import Executor
 from ocrmypdf._exec import unpaper
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._metadata import repair_docinfo_nuls
-from ocrmypdf._options import OcrOptions, ProcessingMode
+from ocrmypdf._options import OcrOptions, ProcessingMode, TaggedPdfMode
 from ocrmypdf.exceptions import (
     DigitalSignatureError,
     DpiError,
@@ -251,14 +251,17 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
                     "will be 'flattened' and will no longer be fillable."
                 )
     if pdfinfo.is_tagged:
-        if options.mode != ProcessingMode.default:
-            log.warning(
-                "This PDF is marked as a Tagged PDF. This often indicates "
-                "that the PDF was generated from an office document and does "
-                "not need OCR. PDF pages processed by OCRmyPDF may not be "
-                "tagged correctly."
-            )
-        else:
+        log.warning(
+            "This PDF is marked as a Tagged PDF. This often indicates "
+            "that the PDF was generated from an office document and does "
+            "not need OCR. PDF pages processed by OCRmyPDF may not be "
+            "tagged correctly."
+        )
+        if (
+            options.tagged_pdf_mode == TaggedPdfMode.default
+            and options.mode == ProcessingMode.default
+        ):
+            log.info("Use --tagged-pdf-mode ignore to ignore Tagged PDFs.")
             raise TaggedPDFError()
     context.plugin_manager.validate(pdfinfo=pdfinfo, options=options)
 

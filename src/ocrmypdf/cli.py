@@ -12,7 +12,7 @@ from typing import Any, TypeVar
 
 from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._defaults import PROGRAM_NAME as _PROGRAM_NAME
-from ocrmypdf._options import OcrOptions, ProcessingMode
+from ocrmypdf._options import OcrOptions, ProcessingMode, TaggedPdfMode
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._version import __version__ as _VERSION
 
@@ -359,6 +359,14 @@ Online documentation is located at:
         help="Normally, OCRmyPDF will refuse to OCR a PDF that has a digital "
         "signature. This option allows OCR to proceed, but the digital signature "
         "will be invalidated.",
+    )
+    ocrsettings.add_argument(
+        '--tagged-pdf-mode',
+        choices=[mode.value for mode in TaggedPdfMode],
+        default=TaggedPdfMode.default.value,
+        help="Control behavior when a Tagged PDF is encountered. "
+        "'default' errors if --mode is default, otherwise warns. "
+        "'ignore' always warns but continues processing.",
     )
 
     advanced = parser.add_argument_group(

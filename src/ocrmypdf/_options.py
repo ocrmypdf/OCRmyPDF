@@ -50,6 +50,20 @@ class ProcessingMode(StrEnum):
     redo = 'redo'
 
 
+class TaggedPdfMode(StrEnum):
+    """Control behavior when encountering a Tagged PDF.
+
+    Tagged PDFs often indicate documents generated from office applications
+    that may not need OCR. This enum controls how OCRmyPDF handles them:
+
+    - ``default``: Error if ProcessingMode is default, otherwise warn
+    - ``ignore``: Always warn but continue processing (never error)
+    """
+
+    default = 'default'
+    ignore = 'ignore'
+
+
 def _pages_from_ranges(ranges: str) -> set[int]:
     """Convert page range string to set of page numbers."""
     pages: list[int] = []
@@ -150,6 +164,7 @@ class OcrOptions(BaseModel):
     skip_big: float | None = None
     pages: str | set[int] | None = None  # Can be string or set after validation
     invalidate_digital_signatures: bool = False
+    tagged_pdf_mode: TaggedPdfMode = TaggedPdfMode.default
 
     # Metadata
     title: str | None = None
