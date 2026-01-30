@@ -21,14 +21,13 @@ __ocrmypdf_arguments()
 --subject                       (set metadata)
 --keywords                      (set metadata)
 --rotate-pages                  (rotate pages to correct orientation)
---remove-background             (attempt to remove background from pages)
 --deskew                        (fix small horizontal alignment skew)
 --clean                         (clean document images before OCR)
 --clean-final                   (clean document images and keep result)
 --unpaper-args                  (a quoted string of arguments to pass to unpaper)
 --oversample                    (oversample images to this DPI)
 --remove-vectors                (don\'t send vector objects to OCR)
---threshold                     (threshold images before OCR)
+--mode                          (processing mode for pages with existing text)
 --force-ocr                     (OCR documents that already have printable text)
 --skip-text                     (skip OCR on any pages that already contain text)
 --redo-ocr                      (redo OCR on any pages that seem to have OCR already)
@@ -42,9 +41,12 @@ __ocrmypdf_arguments()
 --pages                         (apply OCR to only the specified pages)
 --max-image-mpixels             (image decompression bomb threshold)
 --pdf-renderer                  (select PDF renderer options)
+--ocr-engine                    (OCR engine to use)
+--rasterizer                    (PDF page rasterizer)
 --rotate-pages-threshold        (page rotation confidence)
 --pdfa-image-compression        (set PDF/A image compression options)
 --fast-web-view                 (if file size if above this amount in MB linearize PDF)
+--continue-on-soft-render-error (continue after recoverable render errors)
 --plugin                        (name of plugin to import)
 --keep-temporary-files          (keep temporary files (debug)
 --tesseract-config              (set custom tesseract config file)
@@ -52,6 +54,10 @@ __ocrmypdf_arguments()
 --tesseract-oem                 (set tesseract --oem)
 --tesseract-thresholding        (set tesseract image thresholding)
 --tesseract-timeout             (maximum number of seconds to wait for OCR)
+--tesseract-non-ocr-timeout     (maximum seconds for non-OCR operations)
+--tesseract-downsample-large-images    (downsample large images before OCR)
+--no-tesseract-downsample-large-images (do not downsample large images)
+--tesseract-downsample-above    (downsample images larger than this pixel size)
 --user-words                    (specify location of user words file)
 --user-patterns                 (specify location of user patterns file)
 --no-progress-bar               (disable the progress bar)
@@ -68,7 +74,8 @@ __ocrmypdf_arguments()
 
 __ocrmypdf_output-type()
 {
-    local choices="pdfa   (output a PDF/A (default))
+    local choices="auto   (best-effort PDF/A without Ghostscript (default))
+pdfa   (output a PDF/A-2b)
 pdf    (output a standard PDF)
 pdfa-1 (output a PDF/A-1b)
 pdfa-2 (output a PDF/A-2b)
@@ -114,10 +121,11 @@ __ocrmypdf_optimize()
 
 __ocrmypdf_pdf-renderer()
 {
-    local choices="auto      (auto select PDF renderer)
-hocr      (use hOCR renderer)
-hocrdebug (uses hOCR renderer in debug mode, showing recognized text)
-sandwich  (use sandwich renderer)"
+    local choices="auto      (auto select PDF renderer, uses fpdf2)
+fpdf2     (use fpdf2 renderer with full language support)
+sandwich  (use sandwich renderer)
+hocr      (use hOCR renderer - deprecated)
+hocrdebug (uses hOCR renderer in debug mode - deprecated)"
 
     COMPREPLY=( $( compgen -W "$choices" -- "$cur") )
 
@@ -210,6 +218,46 @@ UseDeviceIndependentColor (convert with device independent color)"
     fi
 }
 
+__ocrmypdf_mode()
+{
+    local choices="default (error if text is found)
+force   (rasterize all content and run OCR)
+skip    (skip pages with existing text)
+redo    (re-OCR pages, replacing old invisible text)"
+
+    COMPREPLY=( $( compgen -W "$choices" -- "$cur") )
+    # Remove description if only one completion exists
+    if [[ ${#COMPREPLY[*]} -eq 1 ]]; then
+        COMPREPLY=( ${COMPREPLY[0]%% *} )
+    fi
+}
+
+__ocrmypdf_ocr-engine()
+{
+    local choices="auto      (select best available engine)
+tesseract (use Tesseract OCR)
+none      (skip OCR entirely)"
+
+    COMPREPLY=( $( compgen -W "$choices" -- "$cur") )
+    # Remove description if only one completion exists
+    if [[ ${#COMPREPLY[*]} -eq 1 ]]; then
+        COMPREPLY=( ${COMPREPLY[0]%% *} )
+    fi
+}
+
+__ocrmypdf_rasterizer()
+{
+    local choices="auto        (prefer pypdfium, fall back to Ghostscript)
+ghostscript (use Ghostscript rasterizer)
+pypdfium    (use pypdfium rasterizer - faster)"
+
+    COMPREPLY=( $( compgen -W "$choices" -- "$cur") )
+    # Remove description if only one completion exists
+    if [[ ${#COMPREPLY[*]} -eq 1 ]]; then
+        COMPREPLY=( ${COMPREPLY[0]%% *} )
+    fi
+}
+
 __ocrmypdf_check_previous()
 {
     case $prev in
@@ -241,6 +289,18 @@ __ocrmypdf_check_previous()
             __ocrmypdf_pdf-renderer
             return 0
             ;;
+        -m|--mode)
+            __ocrmypdf_mode
+            return 0
+            ;;
+        --ocr-engine)
+            __ocrmypdf_ocr-engine
+            return 0
+            ;;
+        --rasterizer)
+            __ocrmypdf_rasterizer
+            return 0
+            ;;
         --pdfa-image-compression)
             __ocrmypdf_pdfa-image-compression
             return 0
@@ -260,7 +320,8 @@ __ocrmypdf_check_previous()
 
         --title|--author|--subject|--keywords|--unpaper-args|--pages|--plugin|\
         --jpeg-quality|--png-quality|--image-dpi|--oversample|--skip-big|--max-image-mpixels|\
-        --tesseract-timeout|--rotate-pages-threshold|--fast-web-view)
+        --tesseract-timeout|--tesseract-non-ocr-timeout|--tesseract-downsample-above|\
+        --rotate-pages-threshold|--fast-web-view)
             # argument required but no completions available
             return 0
             ;;

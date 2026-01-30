@@ -43,33 +43,21 @@ be required depending on your system.
 [sudo] apt install autotools-dev automake libtool libleptonica-dev pkg-config
 :::
 
-{#jbig2-lossy}
+## JBIG2 Compression
 
-## Lossy mode JBIG2
+OCRmyPDF uses JBIG2 lossless compression for bitonal (black and white)
+images. This provides excellent compression ratios compared to the older
+CCITT G4 standard, while preserving the exact pixel content of the
+original image.
 
-OCRmyPDF provides lossy mode JBIG2 as an advanced and potentially
-dangerous feature. Users should [review the technical concerns with
-JBIG2 in lossy mode](https://en.wikipedia.org/wiki/JBIG2#Disadvantages)
-and decide if this feature is acceptable for their use case. In general,
-this mode should not be used for archival purposes, should not be used
-when the original document is not available or will be destroyed, and
-should not be used when numbers present in the document are important,
-because there is a risk of 6/8 and 8/6 substitution errors.
+You can adjust the threshold for JBIG2 compression with
+`--jbig2-threshold`. The default is 0.85.
 
-JBIG2 lossy mode does achieve higher compression ratios than any other
-monochrome (bitonal) compression technology; for large text documents
-the savings are considerable. JBIG2 lossless still gives great
-compression ratios and is a major improvement over the older CCITT G4
-standard.
-
-To turn on JBIG2 lossy mode, add the argument `--jbig2-lossy`.
-`--optimize {1,2,3}` are necessary for the argument to take effect also
-required. Also, a JBIG2 encoder must be installed as described in the
-previous section.
-
-You can adjust the threshold for JBIG2 compression with the
-`--jbig2-threshold`. The default is 0.85, meaning that if two symbols
-are 85% similar, they will be compressed together.
-
-*Due to an oversight, ocrmypdf v7.0 and v7.1 used lossy mode by
-default.*
+:::{note}
+Previous versions of OCRmyPDF supported a lossy JBIG2 mode
+(`--jbig2-lossy`). This feature has been removed due to the well-known
+risk of character substitution errors (e.g., 6/8 confusion). See
+[JBIG2 disadvantages](https://en.wikipedia.org/wiki/JBIG2#Disadvantages)
+for more information on why lossy JBIG2 is problematic. The `--jbig2-lossy`
+and `--jbig2-page-group-size` arguments are now ignored with a warning.
+:::

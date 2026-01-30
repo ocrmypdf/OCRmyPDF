@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 import logging.handlers
 import multiprocessing
+import multiprocessing.queues
 import os
 import queue
 import signal
@@ -15,7 +16,7 @@ import threading
 from collections.abc import Callable, Iterable
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from contextlib import suppress
-from typing import Union
+from typing import TYPE_CHECKING
 
 from rich.console import Console as RichConsole
 
@@ -25,12 +26,14 @@ from ocrmypdf._progressbar import RichProgressBar
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import remove_all_log_handlers
 
-FuturesExecutorClass = Union[  # noqa: UP007
-    type[ThreadPoolExecutor], type[ProcessPoolExecutor]
-]
-Queue = Union[multiprocessing.Queue, queue.Queue]  # noqa: UP007
-UserInit = Callable[[], None]
-WorkerInit = Callable[[Queue, UserInit, int], None]
+if TYPE_CHECKING:
+    from typing import TypeAlias
+
+    Queue: TypeAlias = multiprocessing.queues.Queue | queue.Queue
+    UserInit: TypeAlias = Callable[[], None]
+    WorkerInit: TypeAlias = Callable[[Queue, UserInit, int], None]
+
+FuturesExecutorClass = type[ThreadPoolExecutor] | type[ProcessPoolExecutor]
 
 
 def log_listener(q: Queue):

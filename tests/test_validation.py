@@ -13,8 +13,8 @@ import pytest
 from ocrmypdf import _validation as vd
 from ocrmypdf._concurrent import NullProgressBar, SerialExecutor
 from ocrmypdf._exec.tesseract import TesseractVersion
-from ocrmypdf._plugin_manager import get_plugin_manager
-from ocrmypdf.api import create_options
+from ocrmypdf._options import OcrOptions
+from ocrmypdf.api import create_options, setup_plugin_infrastructure
 from ocrmypdf.cli import get_parser
 from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
 from ocrmypdf.pdfinfo import PdfInfo
@@ -26,8 +26,8 @@ def make_opts_pm(input_file='a.pdf', output_file='b.pdf', language='eng', **kwar
     if language is not None:
         kwargs['language'] = language
     parser = get_parser()
-    pm = get_plugin_manager(kwargs.get('plugins', []))
-    pm.hook.add_options(parser=parser)  # pylint: disable=no-member
+    pm = setup_plugin_infrastructure(plugins=kwargs.get('plugins', []))
+    pm.add_options(parser=parser)
     return (
         create_options(
             input_file=input_file, output_file=output_file, parser=parser, **kwargs
@@ -41,13 +41,17 @@ def make_opts(*args, **kwargs):
     return opts
 
 
+def make_ocr_opts(input_file='a.pdf', output_file='b.pdf', **kwargs):
+    """Create OcrOptions directly for testing Pydantic validation."""
+    return OcrOptions(input_file=input_file, output_file=output_file, **kwargs)
+
+
 def test_old_tesseract_error():
     with patch(
         'ocrmypdf._exec.tesseract.version',
         return_value=TesseractVersion('4.00.00alpha'),
-    ):
-        with pytest.raises(MissingDependencyError):
-            vd.check_options(*make_opts_pm(pdf_renderer='sandwich', language='eng'))
+    ), pytest.raises(MissingDependencyError):
+        vd.check_options(*make_opts_pm(pdf_renderer='sandwich', language='eng'))
 
 
 def test_tesseract_not_installed(caplog):
@@ -63,36 +67,45 @@ def test_tesseract_not_installed(caplog):
 
 
 def test_lossless_redo():
-    with pytest.raises(BadArgsError):
-        options = make_opts(redo_ocr=True, deskew=True)
-        vd.check_options_output(options)
-        vd.set_lossless_reconstruction(options)
+    with pytest.raises(ValueError, match="--redo-ocr.*is not currently compatible"):
+        make_ocr_opts(redo_ocr=True, deskew=True)
 
 
 def test_mutex_options():
-    with pytest.raises(BadArgsError):
-        vd.check_options_ocr_behavior(make_opts(force_ocr=True, skip_text=True))
-    with pytest.raises(BadArgsError):
-        vd.check_options_ocr_behavior(make_opts(redo_ocr=True, skip_text=True))
-    with pytest.raises(BadArgsError):
-        vd.check_options_ocr_behavior(make_opts(redo_ocr=True, force_ocr=True))
+    with pytest.raises(
+        ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"
+    ):
+        make_ocr_opts(force_ocr=True, skip_text=True)
+    with pytest.raises(
+        ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"
+    ):
+        make_ocr_opts(redo_ocr=True, skip_text=True)
+    with pytest.raises(
+        ValueError, match="Choose only one of --force-ocr, --skip-text, --redo-ocr"
+    ):
+        make_ocr_opts(redo_ocr=True, force_ocr=True)
 
 
 def test_optimizing(caplog):
     vd.check_options(
-        *make_opts_pm(optimize=0, jbig2_lossy=True, png_quality=18, jpeg_quality=10)
+        *make_opts_pm(optimize=0, png_quality=18, jpeg_quality=10)
     )
     assert 'will be ignored because' in caplog.text
 
 
 def test_pillow_options():
-    vd.check_options_pillow(make_opts(max_image_mpixels=0))
+    # Test that max_image_mpixels=0 is valid (validation now in OcrOptions)
+    opts = make_ocr_opts(max_image_mpixels=0)
+    assert opts.max_image_mpixels == 0
+
+    # Test that negative values are rejected
+    with pytest.raises(ValueError, match="max_image_mpixels must be non-negative"):
+        make_ocr_opts(max_image_mpixels=-1)
 
 
 def test_output_tty():
-    with patch('sys.stdout.isatty', return_value=True):
-        with pytest.raises(BadArgsError):
-            vd.check_requested_output_file(make_opts(output_file='-'))
+    with patch('sys.stdout.isatty', return_value=True), pytest.raises(BadArgsError):
+        vd.check_requested_output_file(make_opts(output_file='-'))
 
 
 def test_report_file_size(tmp_path, caplog):
@@ -155,28 +168,6 @@ def test_no_progress_bar(progress_bar, resources):
 
     assert pdfinfo is not None
     assert pbar_disabled is not None and pbar_disabled != progress_bar
-
-
-def test_language_warning(caplog):
-    opts = make_opts(language=None)
-    _plugin_manager = get_plugin_manager(opts.plugins)
-    caplog.set_level(logging.DEBUG)
-    with patch(
-        'ocrmypdf._validation.locale.getlocale', return_value=('en_US', 'UTF-8')
-    ) as mock:
-        vd.check_options_languages(opts, ['eng'])
-        assert opts.languages == ['eng']
-        assert '' in caplog.text
-        mock.assert_called_once()
-
-    opts = make_opts(language=None)
-    with patch(
-        'ocrmypdf._validation.locale.getlocale', return_value=('fr_FR', 'UTF-8')
-    ) as mock:
-        vd.check_options_languages(opts, ['eng'])
-        assert opts.languages == ['eng']
-        assert 'assuming --language' in caplog.text
-        mock.assert_called_once()
 
 
 def make_version(version):
@@ -274,7 +265,7 @@ def test_optional_program_recommended(caplog):
 
 def test_pagesegmode_warning(caplog):
     opts = make_opts(tesseract_pagesegmode='0')
-    plugin_manager = get_plugin_manager(opts.plugins)
+    plugin_manager = setup_plugin_infrastructure(plugins=opts.plugins or [])
     vd.check_options(opts, plugin_manager)
     assert 'disable OCR' in caplog.text
 
@@ -285,7 +276,7 @@ def test_two_languages():
             input_file='a.pdf',
             output_file='b.pdf',
             parser=get_parser(),
-            language='fakelang1+fakelang2',
+            languages=['fakelang1', 'fakelang2'],
         ),
         ['fakelang1', 'fakelang2'],
     )

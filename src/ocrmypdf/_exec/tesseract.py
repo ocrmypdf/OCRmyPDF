@@ -6,8 +6,10 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from contextlib import suppress
+from enum import IntEnum
 from math import pi
 from os import fspath
 from pathlib import Path
@@ -26,11 +28,30 @@ from ocrmypdf.subprocess import get_version, run
 log = logging.getLogger(__name__)
 
 
+def _tesseract_env(omp_thread_limit: int | None) -> dict[str, str] | None:
+    """Create environment dict with OMP_THREAD_LIMIT set for Tesseract subprocesses."""
+    if omp_thread_limit is None:
+        return None
+    env = os.environ.copy()
+    env['OMP_THREAD_LIMIT'] = str(omp_thread_limit)
+    return env
+
+
+class ThresholdingMethod(IntEnum):
+    """Tesseract thresholding methods for image binarization."""
+
+    AUTO = 0
+    OTSU = 0  # Alias for AUTO - uses Tesseract's default (legacy Otsu)
+    ADAPTIVE_OTSU = 1
+    SAUVOLA = 2
+
+
+# Legacy dictionary for backward compatibility
 TESSERACT_THRESHOLDING_METHODS: dict[str, int] = {
-    'auto': 0,
-    'otsu': 0,
-    'adaptive-otsu': 1,
-    'sauvola': 2,
+    'auto': ThresholdingMethod.AUTO,
+    'otsu': ThresholdingMethod.OTSU,
+    'adaptive-otsu': ThresholdingMethod.ADAPTIVE_OTSU,
+    'sauvola': ThresholdingMethod.SAUVOLA,
 }
 
 
@@ -155,7 +176,10 @@ def _parse_tesseract_output(binary_output: bytes) -> dict[str, str]:
 
 
 def get_orientation(
-    input_file: Path, engine_mode: int | None, timeout: float
+    input_file: Path,
+    engine_mode: int | None,
+    timeout: float,
+    omp_thread_limit: int | None = None,
 ) -> OrientationConfidence:
     args_tesseract = tess_base_args(['osd'], engine_mode) + [
         '--psm',
@@ -165,15 +189,24 @@ def get_orientation(
     ]
 
     try:
-        p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
+        p = run(
+            args_tesseract,
+            stdout=PIPE,
+            stderr=STDOUT,
+            timeout=timeout,
+            check=True,
+            env=_tesseract_env(omp_thread_limit),
+        )
     except TimeoutExpired:
         return OrientationConfidence(angle=0, confidence=0.0)
     except CalledProcessError as e:
         tesseract_log_output(e.stdout)
         tesseract_log_output(e.stderr)
+        # Check both stdout (e.output) and stderr for known non-fatal messages
+        all_output = (e.output or b'') + (e.stderr or b'')
         if (
-            b'Too few characters. Skipping this page' in e.output
-            or b'Image too large' in e.output
+            b'Too few characters. Skipping this page' in all_output
+            or b'Image too large' in all_output
         ):
             return OrientationConfidence(0, 0)
         raise SubprocessOutputError() from e
@@ -199,7 +232,11 @@ def _is_empty_page_error(exc):
 
 
 def get_deskew(
-    input_file: Path, languages: list[str], engine_mode: int | None, timeout: float
+    input_file: Path,
+    languages: list[str],
+    engine_mode: int | None,
+    timeout: float,
+    omp_thread_limit: int | None = None,
 ) -> float:
     """Gets angle to deskew this page, in degrees."""
     args_tesseract = tess_base_args(languages, engine_mode) + [
@@ -210,7 +247,14 @@ def get_deskew(
     ]
 
     try:
-        p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
+        p = run(
+            args_tesseract,
+            stdout=PIPE,
+            stderr=STDOUT,
+            timeout=timeout,
+            check=True,
+            env=_tesseract_env(omp_thread_limit),
+        )
     except TimeoutExpired:
         return 0.0
     except CalledProcessError as e:
@@ -243,9 +287,9 @@ def tesseract_log_output(stream: bytes) -> None:
 
     lines = text.splitlines()
     for line in lines:
-        if line.startswith("Tesseract Open Source"):
-            continue
-        elif line.startswith("Warning in pixReadMem"):
+        if line.startswith(
+            ("Tesseract Open Source", "Warning in pixReadMem")
+        ):
             continue
         elif 'diacritics' in line:
             tlog.warning("lots of diacritics - possibly poor OCR")
@@ -294,9 +338,10 @@ def generate_hocr(
     tessconfig: list[str],
     timeout: float,
     pagesegmode: int,
-    thresholding: int,
+    thresholding: ThresholdingMethod,
     user_words,
     user_patterns,
+    omp_thread_limit: int | None = None,
 ) -> None:
     """Generate a hOCR file, which must be converted to PDF."""
     prefix = output_hocr.with_suffix('')
@@ -306,7 +351,7 @@ def generate_hocr(
     if pagesegmode is not None:
         args_tesseract.extend(['--psm', str(pagesegmode)])
 
-    if thresholding != 0 and has_thresholding():
+    if thresholding != ThresholdingMethod.AUTO and has_thresholding():
         args_tesseract.extend(['-c', f'thresholding_method={thresholding}'])
 
     if user_words:
@@ -320,7 +365,14 @@ def generate_hocr(
     args_tesseract.extend([fspath(input_file), fspath(prefix), 'hocr', 'txt'])
     args_tesseract.extend(tessconfig)
     try:
-        p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
+        p = run(
+            args_tesseract,
+            stdout=PIPE,
+            stderr=STDOUT,
+            timeout=timeout,
+            check=True,
+            env=_tesseract_env(omp_thread_limit),
+        )
         stdout = p.stdout
     except TimeoutExpired:
         # Generate a HOCR file with no recognized text if tesseract times out
@@ -360,9 +412,10 @@ def generate_pdf(
     tessconfig: list[str],
     timeout: float,
     pagesegmode: int,
-    thresholding: int,
+    thresholding: ThresholdingMethod,
     user_words,
     user_patterns,
+    omp_thread_limit: int | None = None,
 ) -> None:
     """Generate a PDF using Tesseract's internal PDF generator.
 
@@ -376,7 +429,7 @@ def generate_pdf(
 
     args_tesseract.extend(['-c', 'textonly_pdf=1'])
 
-    if thresholding != 0 and has_thresholding():
+    if thresholding != ThresholdingMethod.AUTO and has_thresholding():
         args_tesseract.extend(['-c', f'thresholding_method={thresholding}'])
 
     if user_words:
@@ -393,7 +446,14 @@ def generate_pdf(
     args_tesseract.extend([fspath(input_file), fspath(prefix), 'pdf', 'txt'])
     args_tesseract.extend(tessconfig)
     try:
-        p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
+        p = run(
+            args_tesseract,
+            stdout=PIPE,
+            stderr=STDOUT,
+            timeout=timeout,
+            check=True,
+            env=_tesseract_env(omp_thread_limit),
+        )
         stdout = p.stdout
         with suppress(FileNotFoundError):
             prefix.with_suffix('.txt').replace(output_text)

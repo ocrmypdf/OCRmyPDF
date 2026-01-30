@@ -3,21 +3,19 @@
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import warnings
-from datetime import timezone
 from shutil import copyfile
 
 import pikepdf
 import pytest
-from packaging.version import Version
 from pikepdf.models.metadata import decode_pdf_date
 
-from ocrmypdf._exec import ghostscript
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._metadata import metadata_fixup
 from ocrmypdf._pipeline import convert_to_pdfa
-from ocrmypdf._plugin_manager import get_parser_options_plugins, get_plugin_manager
+from ocrmypdf.api import setup_plugin_infrastructure
+from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import file_claims_pdfa, generate_pdfa_ps
 from ocrmypdf.pdfinfo import PdfInfo
@@ -199,10 +197,7 @@ def test_creation_date_preserved(output_type, resources, infile, outpdf):
 
         # We expect that the modified date is quite recent
         date_after = decode_pdf_date(str(after['/ModDate']))
-        assert (
-            seconds_between_dates(date_after, datetime.datetime.now(timezone.utc))
-            < 1000
-        )
+        assert seconds_between_dates(date_after, dt.datetime.now(dt.UTC)) < 1000
 
 
 @pytest.fixture
@@ -325,15 +320,15 @@ def test_kodak_toc(resources, outpdf):
 
 
 def test_metadata_fixup_warning(resources, outdir, caplog):
-    _parser, options, _pm = get_parser_options_plugins(
+    options, _pm = get_options_and_plugins(
         ['--output-type', 'pdfa-2', 'graph.pdf', 'out.pdf']
     )
 
     copyfile(resources / 'graph.pdf', outdir / 'graph.pdf')
 
-    context = PdfContext(
-        options, outdir, outdir / 'graph.pdf', None, get_plugin_manager([])
-    )
+    # Use the new setup function instead of get_plugin_manager directly
+    plugin_manager = setup_plugin_infrastructure([])
+    context = PdfContext(options, outdir, outdir / 'graph.pdf', None, plugin_manager)
     metadata_fixup(
         working_file=outdir / 'graph.pdf', context=context, pdf_save_settings={}
     )
@@ -347,7 +342,7 @@ def test_metadata_fixup_warning(resources, outdir, caplog):
         graph.save(outdir / 'graph_mod.pdf')
 
     context = PdfContext(
-        options, outdir, outdir / 'graph_mod.pdf', None, get_plugin_manager([])
+        options, outdir, outdir / 'graph_mod.pdf', None, plugin_manager
     )
     metadata_fixup(
         working_file=outdir / 'graph.pdf', context=context, pdf_save_settings={}
@@ -369,7 +364,7 @@ def test_prevent_gs_invalid_xml(resources, outdir):
         )
         pdf.save(outdir / 'layers.rendered.pdf', fix_metadata_version=False)
 
-    _, options, _ = get_parser_options_plugins(
+    options, _ = get_options_and_plugins(
         args=[
             '-j',
             '1',
@@ -380,8 +375,11 @@ def test_prevent_gs_invalid_xml(resources, outdir):
         ]
     )
     pdfinfo = PdfInfo(outdir / 'layers.rendered.pdf')
+
+    # Use the new setup function
+    plugin_manager = setup_plugin_infrastructure([])
     context = PdfContext(
-        options, outdir, outdir / 'layers.rendered.pdf', pdfinfo, get_plugin_manager([])
+        options, outdir, outdir / 'layers.rendered.pdf', pdfinfo, plugin_manager
     )
 
     convert_to_pdfa(

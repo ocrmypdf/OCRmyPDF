@@ -15,7 +15,10 @@ from contextlib import suppress
 from io import BytesIO
 from pathlib import Path
 from shutil import copyfileobj
-from typing import Any, BinaryIO, TypeVar, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
+
+if TYPE_CHECKING:
+    from ocrmypdf.hocrtransform import OcrElement
 
 import img2pdf
 import pikepdf
@@ -25,6 +28,7 @@ from ocrmypdf._concurrent import Executor
 from ocrmypdf._exec import unpaper
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._metadata import repair_docinfo_nuls
+from ocrmypdf._options import OcrOptions, ProcessingMode
 from ocrmypdf.exceptions import (
     DigitalSignatureError,
     DpiError,
@@ -35,12 +39,13 @@ from ocrmypdf.exceptions import (
     UnsupportedImageFormatError,
 )
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution, safe_symlink
-from ocrmypdf.hocrtransform import DebugRenderOptions, HocrTransform
-from ocrmypdf.hocrtransform._font import Courier
-from ocrmypdf.pdfa import generate_pdfa_ps
-from ocrmypdf.pdfinfo import Colorspace, Encoding, PageInfo, PdfInfo
-from ocrmypdf.pdfinfo.info import FloatRect
-from ocrmypdf.pluginspec import OrientationConfidence
+from ocrmypdf.pdfa import (
+    file_claims_pdfa,
+    generate_pdfa_ps,
+    speculative_pdfa_conversion,
+)
+from ocrmypdf.pdfinfo import Colorspace, Encoding, FloatRect, PageInfo, PdfInfo
+from ocrmypdf.pluginspec import GhostscriptRasterDevice, OrientationConfidence
 
 try:
     from pi_heif import register_heif_opener
@@ -59,7 +64,7 @@ VECTOR_PAGE_DPI = 400
 register_heif_opener()
 
 
-def triage_image_file(input_file: Path, output_file: Path, options) -> None:
+def triage_image_file(input_file: Path, output_file: Path, options: OcrOptions) -> None:
     """Triage the input image file.
 
     If the input file is an image, check its resolution and convert it to PDF.
@@ -158,7 +163,7 @@ def _pdf_guess_version(input_file: Path, search_window=1024) -> str:
 
 
 def triage(
-    original_filename: str, input_file: Path, output_file: Path, options
+    original_filename: str, input_file: Path, output_file: Path, options: OcrOptions
 ) -> Path:
     """Triage the input file. We can handle PDFs and images."""
     try:
@@ -228,10 +233,10 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
         else:
             raise DigitalSignatureError()
     if pdfinfo.has_acroform:
-        if options.redo_ocr:
+        if options.mode == ProcessingMode.redo:
             raise InputFileError(
-                "This PDF has a user fillable form. --redo-ocr is not "
-                "currently possible on such files."
+                "This PDF has a user fillable form. --redo-ocr (or --mode redo) "
+                "is not currently possible on such files."
             )
         else:
             log.warning(
@@ -239,14 +244,14 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
                 "Chances are it is a pure digital "
                 "document that does not need OCR."
             )
-            if not options.force_ocr:
+            if options.mode != ProcessingMode.force:
                 log.info(
-                    "Use the option --force-ocr to produce an image of the "
-                    "form and all filled form fields. The output PDF will be "
-                    "'flattened' and will no longer be fillable."
+                    "Use the option --force-ocr (or --mode force) to produce an "
+                    "image of the form and all filled form fields. The output PDF "
+                    "will be 'flattened' and will no longer be fillable."
                 )
     if pdfinfo.is_tagged:
-        if options.force_ocr or options.skip_text or options.redo_ocr:
+        if options.mode != ProcessingMode.default:
             log.warning(
                 "This PDF is marked as a Tagged PDF. This often indicates "
                 "that the PDF was generated from an office document and does "
@@ -255,7 +260,7 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
             )
         else:
             raise TaggedPDFError()
-    context.plugin_manager.hook.validate(pdfinfo=pdfinfo, options=options)
+    context.plugin_manager.validate(pdfinfo=pdfinfo, options=options)
 
 
 def _vector_page_dpi(pageinfo: PageInfo) -> int:
@@ -323,24 +328,24 @@ def is_ocr_required(page_context: PageContext) -> bool:
         log.debug(f"skipped {pageinfo.pageno} as requested by --pages {options.pages}")
         ocr_required = False
     elif pageinfo.has_text:
-        if not options.force_ocr and not (options.skip_text or options.redo_ocr):
+        if options.mode == ProcessingMode.default:
             raise PriorOcrFoundError(
-                "page already has text! - aborting (use --force-ocr to force OCR; "
-                " see also help for the arguments --skip-text and --redo-ocr"
+                "page already has text! - aborting (use --force-ocr or --mode force "
+                "to force OCR; see also help for --skip-text, --redo-ocr, and --mode)"
             )
-        elif options.force_ocr:
+        elif options.mode == ProcessingMode.force:
             log.info("page already has text! - rasterizing text and running OCR anyway")
             ocr_required = True
-        elif options.redo_ocr:
+        elif options.mode == ProcessingMode.redo:
             if pageinfo.has_corrupt_text:
                 log.warning(
                     "some text on this page cannot be mapped to characters: "
-                    "consider using --force-ocr instead"
+                    "consider using --force-ocr (or --mode force) instead"
                 )
             else:
                 log.info("redoing OCR")
             ocr_required = True
-        elif options.skip_text:
+        elif options.mode == ProcessingMode.skip:
             log.info("skipping all processing on this page")
             ocr_required = False
     elif not pageinfo.images and not options.lossless_reconstruction:
@@ -351,14 +356,14 @@ def is_ocr_required(page_context: PageContext) -> bool:
         # ahead and rasterize. If not forced, then pretend there's no text
         # on the page at all so we don't lose anything.
         # This could be made smarter by explicitly searching for vector art.
-        if options.force_ocr and options.oversample:
+        if options.mode == ProcessingMode.force and options.oversample:
             # The user really wants to reprocess this file
             log.info(
                 "page has no images - "
                 f"rasterizing at {options.oversample} DPI because "
-                "--force-ocr --oversample was specified"
+                "--force-ocr --oversample (or --mode force --oversample) was specified"
             )
-        elif options.force_ocr:
+        elif options.mode == ProcessingMode.force:
             # Warn the user they might not want to do this
             log.warning(
                 "page has no images - "
@@ -371,8 +376,8 @@ def is_ocr_required(page_context: PageContext) -> bool:
             log.info(
                 "page has no images - "
                 "skipping all processing on this page to avoid losing detail. "
-                "Use --force-ocr if you wish to perform OCR on pages that "
-                "have vector content."
+                "Use --force-ocr (or --mode force) if you wish to perform OCR on "
+                "pages that have vector content."
             )
             ocr_required = False
 
@@ -395,16 +400,18 @@ def rasterize_preview(input_file: Path, page_context: PageContext) -> Path:
         [get_canvas_square_dpi(page_context)]
     )
     page_dpi = Resolution(300.0, 300.0).take_min([get_page_square_dpi(page_context)])
-    page_context.plugin_manager.hook.rasterize_pdf_page(
+    page_context.plugin_manager.rasterize_pdf_page(
         input_file=input_file,
         output_file=output_file,
-        raster_device='jpeggray',
+        raster_device=GhostscriptRasterDevice.JPEGGRAY,
         raster_dpi=canvas_dpi,
         pageno=page_context.pageinfo.pageno + 1,
         page_dpi=page_dpi,
         rotation=0,
         filter_vector=False,
         stop_on_soft_error=not page_context.options.continue_on_soft_render_error,
+        options=page_context.options,
+        use_cropbox=False,
     )
     return output_file
 
@@ -424,10 +431,7 @@ def describe_rotation(
         else:
             action = 'rotation appears correct'
     else:
-        if correction != 0:
-            action = 'confidence too low to rotate'
-        else:
-            action = 'no change'
+        action = "confidence too low to rotate" if correction != 0 else "no change"
 
     facing = ''
 
@@ -453,9 +457,10 @@ def get_orientation_correction(preview: Path, page_context: PageContext) -> int:
     which points it (hopefully) upright. _graft.py takes care of the orienting
     the image and text layers.
     """
-    orient_conf = page_context.plugin_manager.hook.get_ocr_engine().get_orientation(
-        preview, page_context.options
+    ocr_engine = page_context.plugin_manager.get_ocr_engine(
+        options=page_context.options
     )
+    orient_conf = ocr_engine.get_orientation(preview, page_context.options)
 
     correction = orient_conf.angle % 360
     log.info(describe_rotation(page_context, orient_conf, correction))
@@ -521,7 +526,12 @@ def rasterize(
     Returns:
         Path: The output PNG file path.
     """
-    colorspaces = ['pngmono', 'pnggray', 'png256', 'png16m']
+    colorspaces = [
+        GhostscriptRasterDevice.PNGMONO,
+        GhostscriptRasterDevice.PNGGRAY,
+        GhostscriptRasterDevice.PNG256,
+        GhostscriptRasterDevice.PNG16M,
+    ]
     device_idx = 0
 
     if remove_vectors is None:
@@ -538,15 +548,15 @@ def rasterize(
             continue  # ignore masks
         if image.bpc > 1:
             if image.color == Colorspace.index:
-                device_idx = at_least('png256')
+                device_idx = at_least(GhostscriptRasterDevice.PNG256)
             elif image.color == Colorspace.gray:
-                device_idx = at_least('pnggray')
+                device_idx = at_least(GhostscriptRasterDevice.PNGGRAY)
             else:
-                device_idx = at_least('png16m')
+                device_idx = at_least(GhostscriptRasterDevice.PNG16M)
 
     if pageinfo.has_vector:
-        log.debug("Page has vector content, using png16m")
-        device_idx = at_least('png16m')
+        log.debug(f"Page has vector content, using {GhostscriptRasterDevice.PNG16M}")
+        device_idx = at_least(GhostscriptRasterDevice.PNG16M)
 
     device = colorspaces[device_idx]
 
@@ -556,7 +566,7 @@ def rasterize(
 
     canvas_dpi, page_dpi = calculate_raster_dpi(page_context)
 
-    page_context.plugin_manager.hook.rasterize_pdf_page(
+    page_context.plugin_manager.rasterize_pdf_page(
         input_file=input_file,
         output_file=output_file,
         raster_device=device,
@@ -566,6 +576,8 @@ def rasterize(
         rotation=correction,
         filter_vector=remove_vectors,
         stop_on_soft_error=not page_context.options.continue_on_soft_render_error,
+        options=page_context.options,
+        use_cropbox=False,
     )
     return output_file
 
@@ -594,7 +606,9 @@ def preprocess_deskew(input_file: Path, page_context: PageContext) -> Path:
     output_file = page_context.get_path('pp_deskew.png')
     dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
 
-    ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
+    ocr_engine = page_context.plugin_manager.get_ocr_engine(
+        options=page_context.options
+    )
     deskew_angle_degrees = ocr_engine.get_deskew(input_file, page_context.options)
 
     with Image.open(input_file) as im:
@@ -633,11 +647,11 @@ def create_ocr_image(image: Path, page_context: PageContext) -> Path:
     with Image.open(image) as im:
         log.debug('resolution %r', im.info['dpi'])
 
-        if not options.force_ocr:
+        if options.mode != ProcessingMode.force:
             # Do not mask text areas when forcing OCR, because we need to OCR
             # all text areas
             mask = None  # Exclude both visible and invisible text from OCR
-            if options.redo_ocr:
+            if options.mode == ProcessingMode.redo:
                 mask = True  # Mask visible text, but not invisible text
 
             draw = ImageDraw.ImageDraw(im)
@@ -659,7 +673,7 @@ def create_ocr_image(image: Path, page_context: PageContext) -> Path:
                 draw.rectangle(pixcoords, fill='white')
                 # draw.rectangle(pixcoords, outline='pink')
 
-        filter_im = page_context.plugin_manager.hook.filter_ocr_image(
+        filter_im = page_context.plugin_manager.filter_ocr_image(
             page=page_context, image=im
         )
         if filter_im is not None:
@@ -677,7 +691,7 @@ def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, 
     hocr_text_out = page_context.get_path('ocr_hocr.txt')
     options = page_context.options
 
-    ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
+    ocr_engine = page_context.plugin_manager.get_ocr_engine(options=options)
     ocr_engine.generate_hocr(
         input_file=input_file,
         output_hocr=hocr_out,
@@ -685,6 +699,37 @@ def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, 
         options=options,
     )
     return hocr_out, hocr_text_out
+
+
+def ocr_engine_direct(
+    input_file: Path, page_context: PageContext
+) -> tuple[OcrElement, Path]:
+    """Run the OCR engine and return OcrElement tree directly.
+
+    This is the modern path for OCR engines that support the generate_ocr() API.
+    It bypasses hOCR file generation for better performance and richer data.
+
+    Args:
+        input_file: The image file to OCR.
+        page_context: The page context with options and path utilities.
+
+    Returns:
+        A tuple of (OcrElement tree, path to text sidecar file).
+    """
+    text_out = page_context.get_path('ocr_direct.txt')
+    options = page_context.options
+
+    ocr_engine = page_context.plugin_manager.get_ocr_engine(options=options)
+    ocr_tree, text_content = ocr_engine.generate_ocr(
+        input_file=input_file,
+        options=options,
+        page_number=page_context.pageno,
+    )
+
+    # Write text sidecar file
+    text_out.write_text(text_content, encoding='utf-8')
+
+    return ocr_tree, text_out
 
 
 def should_visible_page_image_use_jpg(pageinfo: PageInfo) -> bool:
@@ -764,43 +809,8 @@ def create_pdf_page_from_image(
     bio.seek(0)
     fix_pagepdf_boxes(bio, output_file, page_context, swap_axis=swap_axis)
 
-    output_file = page_context.plugin_manager.hook.filter_pdf_page(
+    output_file = page_context.plugin_manager.filter_pdf_page(
         page=page_context, image_filename=image, output_pdf=output_file
-    )
-    return output_file
-
-
-def render_hocr_page(hocr: Path, page_context: PageContext) -> Path:
-    """Render the hOCR page to a PDF."""
-    options = page_context.options
-    output_file = page_context.get_path('ocr_hocr.pdf')
-    if hocr.stat().st_size == 0:
-        # If hOCR file is empty (skipped page marker), create an empty PDF file
-        output_file.touch()
-        return output_file
-
-    dpi = get_page_square_dpi(page_context, calculate_image_dpi(page_context))
-    debug_kwargs = {}
-    if options.pdf_renderer == 'hocrdebug':
-        debug_kwargs = dict(
-            debug_render_options=DebugRenderOptions(
-                render_baseline=True,
-                render_triangle=True,
-                render_line_bbox=False,
-                render_word_bbox=True,
-                render_paragraph_bbox=False,
-                render_space_bbox=False,
-            ),
-            font=Courier(),
-        )
-    HocrTransform(
-        hocr_filename=hocr,
-        dpi=dpi.to_scalar(),
-        **debug_kwargs,  # square
-    ).to_pdf(
-        out_filename=output_file,
-        image_filename=None,
-        invisible_text=True if not debug_kwargs else False,
     )
     return output_file
 
@@ -813,7 +823,7 @@ def ocr_engine_textonly_pdf(
     output_text = page_context.get_path('ocr_tess.txt')
     options = page_context.options
 
-    ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
+    ocr_engine = page_context.plugin_manager.get_ocr_engine(options=options)
     ocr_engine.generate_pdf(
         input_file=input_image,
         output_pdf=output_pdf,
@@ -936,15 +946,26 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
         else:
             safe_symlink(input_pdf, fix_docinfo_file)
 
-    context.plugin_manager.hook.generate_pdfa(
+    # Extract PDF/A part correctly
+    if options.output_type.startswith('pdfa'):
+        if options.output_type == 'pdfa':
+            pdfa_part = '2'  # Default to PDF/A-2
+        else:
+            pdfa_part = options.output_type.split('-')[
+                -1
+            ]  # Extract number from pdfa-1, pdfa-2, etc.
+    else:
+        pdfa_part = '2'  # Fallback
+
+    context.plugin_manager.generate_pdfa(
         pdf_version=input_pdfinfo.min_version,
         pdf_pages=[fix_docinfo_file],
         pdfmark=input_ps_stub,
         output_file=output_file,
         context=context,
-        pdfa_part=options.output_type[-1],  # is pdfa-1, pdfa-2, or pdfa-3
+        pdfa_part=pdfa_part,
         progressbar_class=(
-            context.plugin_manager.hook.get_progressbar_class()
+            context.plugin_manager.get_progressbar_class()
             if options.progress_bar
             else None
         ),
@@ -954,15 +975,136 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
     return output_file
 
 
+def try_speculative_pdfa(input_pdf: Path, context: PdfContext) -> Path | None:
+    """Try speculative PDF/A conversion with verapdf validation.
+
+    This attempts a fast PDF/A conversion by adding PDF/A structures
+    directly with pikepdf, then validating with verapdf. If validation
+    passes, returns the converted file. If it fails or verapdf is not
+    available, returns None to signal that Ghostscript should be used.
+
+    Args:
+        input_pdf: Path to the PDF to convert
+        context: The PDF context
+
+    Returns:
+        Path to valid PDF/A file, or None if speculative conversion failed
+    """
+    from ocrmypdf._exec import verapdf
+
+    options = context.options
+
+    # Skip speculative conversion if user requested specific image compression,
+    # since that requires Ghostscript to apply
+    gs_opts = getattr(options, 'ghostscript', None)
+    if gs_opts is not None:
+        compression = getattr(gs_opts, 'pdfa_image_compression', 'auto')
+        if compression != 'auto':
+            log.debug(
+                'Skipping speculative PDF/A: --pdfa-image-compression=%s requires '
+                'Ghostscript',
+                compression,
+            )
+            return None
+
+    if not verapdf.available():
+        log.debug('verapdf not available, skipping speculative PDF/A conversion')
+        return None
+    output_file = context.get_path('speculative_pdfa.pdf')
+
+    try:
+        speculative_pdfa_conversion(input_pdf, output_file, options.output_type)
+
+        flavour = verapdf.output_type_to_flavour(options.output_type)
+        result = verapdf.validate(output_file, flavour)
+
+        if result.valid:
+            log.info('Speculative PDF/A conversion succeeded - skipping Ghostscript')
+            return output_file
+        else:
+            log.debug(
+                'Speculative PDF/A validation failed (%d rule violations), '
+                'falling back to Ghostscript',
+                result.failed_rules,
+            )
+            return None
+
+    except Exception as e:
+        log.debug('Speculative PDF/A conversion failed: %s', e)
+        return None
+
+
+def try_auto_pdfa(input_pdf: Path, context: PdfContext) -> tuple[Path, str]:
+    """Best-effort PDF/A for 'auto' output type.
+
+    This function attempts to produce PDF/A without requiring Ghostscript:
+    1. If verapdf is available, tries speculative conversion with validation
+    2. Without verapdf, passes through as PDF/A if safe (input already PDF/A
+       or force-ocr was used)
+    3. Falls back to regular PDF if neither condition is met
+
+    Args:
+        input_pdf: Path to the PDF to convert
+        context: The PDF context
+
+    Returns:
+        Tuple of (output_path, actual_output_type) where actual_output_type
+        is 'pdfa' if PDF/A was achieved, 'pdf' otherwise
+    """
+    from ocrmypdf._exec import verapdf
+
+    # If verapdf available, try speculative conversion with validation
+    if verapdf.available():
+        result = try_speculative_pdfa(input_pdf, context)
+        if result is not None:
+            return (result, 'pdfa')
+        # verapdf validation failed - fall through to regular PDF
+        log.info(
+            'Auto mode: speculative PDF/A validation failed, outputting regular PDF'
+        )
+        return (input_pdf, 'pdf')
+
+    # Without verapdf, check if we can pass through as PDF/A
+    if _is_safe_pdfa(input_pdf, context.options):
+        # Pass through as-is (no modifications needed)
+        log.info('Auto mode: passing through as PDF/A (input already compliant)')
+        return (input_pdf, 'pdfa')
+
+    # Fall through to regular PDF
+    log.info('Auto mode: no verapdf available and input is not PDF/A, outputting PDF')
+    return (input_pdf, 'pdf')
+
+
+def _is_safe_pdfa(input_pdf: Path, options) -> bool:
+    """Check if file can be considered PDF/A without validation.
+
+    These are cases where our modifications don't break PDF/A compliance:
+    1. Input already claims PDF/A (we just grafted OCR text onto it)
+    2. We used force-ocr (we rewrote the entire PDF from scratch)
+
+    Args:
+        input_pdf: Path to the PDF to check
+        options: OCR options
+
+    Returns:
+        True if file can safely be considered PDF/A
+    """
+    # Safe if input already claims PDF/A
+    pdfa_status = file_claims_pdfa(input_pdf)
+    if pdfa_status['pass']:
+        return True
+
+    # Safe if we rewrote the PDF with force mode
+    return options.mode == ProcessingMode.force
+
+
 def should_linearize(working_file: Path, context: PdfContext) -> bool:
     """Determine whether the PDF should be linearized.
 
     For smaller files, linearization is not worth the effort.
     """
     filesize = os.stat(working_file).st_size
-    if filesize > (context.options.fast_web_view * 1_000_000):
-        return True
-    return False
+    return filesize > (context.options.fast_web_view * 1_000_000)
 
 
 def get_pdf_save_settings(output_type: str) -> dict[str, Any]:
@@ -1016,7 +1158,7 @@ def optimize_pdf(
 ) -> tuple[Path, Sequence[str]]:
     """Optimize the given PDF file."""
     output_file = context.get_path('optimize.pdf')
-    output_pdf, messages = context.plugin_manager.hook.optimize_pdf(
+    output_pdf, messages = context.plugin_manager.optimize_pdf(
         input_pdf=input_file,
         output_pdf=output_file,
         context=context,
@@ -1080,10 +1222,7 @@ def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext) -> Pat
                 # others don't. Remove it if it exists, since we add one manually.
                 stream.write(txt.removesuffix('\f'))
             else:
-                if from_ != to_:
-                    pages = f'{from_}-{to_}'
-                else:
-                    pages = f'{from_}'
+                pages = f"{from_}-{to_}" if from_ != to_ else f"{from_}"
                 stream.write(f'[OCR skipped on page(s) {pages}]')
     return output_file
 

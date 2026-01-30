@@ -9,7 +9,6 @@ import logging
 import os
 import re
 from collections import deque
-from io import BytesIO
 from os import fspath
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError
@@ -23,6 +22,7 @@ from ocrmypdf.exceptions import (
     SubprocessOutputError,
 )
 from ocrmypdf.helpers import Resolution
+from ocrmypdf.pluginspec import GhostscriptRasterDevice
 from ocrmypdf.subprocess import get_version, run, run_polling_stderr
 
 COLOR_CONVERSION_STRATEGIES = frozenset(
@@ -99,15 +99,30 @@ def rasterize_pdf(
     input_file: os.PathLike,
     output_file: os.PathLike,
     *,
-    raster_device: str,
+    raster_device: GhostscriptRasterDevice,
     raster_dpi: Resolution,
     pageno: int = 1,
     page_dpi: Resolution | None = None,
     rotation: int | None = None,
     filter_vector: bool = False,
     stop_on_error: bool = False,
+    use_cropbox: bool = False,
 ):
-    """Rasterize one page of a PDF at resolution raster_dpi in canvas units."""
+    """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
+
+    Args:
+        input_file: The PDF file to rasterize.
+        output_file: The file to write the rasterized PDF to.
+        raster_device: The Ghostscript raster device to use to rasterize the PDF.
+        raster_dpi: Resolution in dots per inch at which to rasterize page.
+        pageno: Page number to rasterize (beginning at page 1).
+        page_dpi: Resolution, overriding output image DPI.
+        rotation: Cardinal angle, clockwise, to rotate page.
+        filter_vector: If True, remove vector graphics objects.
+        stop_on_error: If True, stop rasterizing on the first error.
+        use_cropbox: If True, rasterize the CropBox instead of MediaBox.
+            Default is False (use MediaBox).
+    """
     raster_dpi = raster_dpi.round(6)
     if not page_dpi:
         page_dpi = raster_dpi
@@ -124,6 +139,7 @@ def rasterize_pdf(
             f'-dLastPage={pageno}',
             f'-r{raster_dpi.x:f}x{raster_dpi.y:f}',
         ]
+        + (['-dUseCropBox'] if use_cropbox else [])
         + (['-dFILTERVECTOR'] if filter_vector else [])
         + (['-dPDFSTOPONERROR'] if stop_on_error else [])
         + [

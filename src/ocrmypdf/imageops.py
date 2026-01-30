@@ -60,11 +60,10 @@ def _calculate_downsample(
             elif size[1] == 0:
                 size = min(size[0], max_size[0]), 1
 
-    if max_pixels is not None:
-        if size[0] * size[1] > max_pixels:
-            log.debug("Resizing image to fit image pixel limit")
-            pixels_factor = sqrt(max_pixels / (size[0] * size[1]))
-            size = floor(size[0] * pixels_factor), floor(size[1] * pixels_factor)
+    if max_pixels is not None and size[0] * size[1] > max_pixels:
+        log.debug("Resizing image to fit image pixel limit")
+        pixels_factor = sqrt(max_pixels / (size[0] * size[1]))
+        size = floor(size[0] * pixels_factor), floor(size[1] * pixels_factor)
 
     if max_bytes is not None:
         bpp = bytes_per_pixel

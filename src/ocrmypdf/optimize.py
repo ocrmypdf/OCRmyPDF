@@ -9,7 +9,6 @@ import logging
 import sys
 import tempfile
 import threading
-from collections import defaultdict
 from collections.abc import Callable, Iterator, MutableSet, Sequence
 from os import fspath
 from pathlib import Path
@@ -19,6 +18,7 @@ from zlib import compress
 import img2pdf
 from packaging.version import Version
 from pikepdf import (
+    Array,
     Dictionary,
     Name,
     Object,
@@ -194,11 +194,9 @@ def extract_image_jbig2(
 def _should_optimize_jpeg(options, filtdp):
     if options.optimize >= 2:
         return True
-    if options.optimize < 2 and ghostscript.version() >= Version('10.6.0'):
-        # Ghostscript 10.6.0+ introduced some sort of JPEG encoding issue.
-        # To resolve this, re-optimize the JPEG anyway.
-        return True
-    return False
+    # Ghostscript 10.6.0+ introduced some sort of JPEG encoding issue.
+    # To resolve this, re-optimize the JPEG anyway.
+    return options.optimize < 2 and ghostscript.version() >= Version('10.6.0')
 
 
 def extract_image_generic(
@@ -245,11 +243,9 @@ def extract_image_generic(
         not pim.indexed
         and pim.colorspace == Name.ICCBased
         and pim.bits_per_component == 1
-        and not options.jbig2_lossy
     ):
         # We can losslessly optimize 1-bit images to CCITT or JBIG2 without
-        # paying any attention to the ICC profile, provided we're not doing
-        # lossy JBIG2
+        # paying any attention to the ICC profile
         pim.as_pil_image().save(png_name(root, xref))
         return XrefExt(xref, '.png')
 
@@ -372,116 +368,75 @@ def extract_images_generic(
     return jpegs, pngs
 
 
-def extract_images_jbig2(pdf: Pdf, root: Path, options) -> dict[int, list[XrefExt]]:
+def extract_images_jbig2(pdf: Pdf, root: Path, options) -> list[XrefExt]:
     """Extract any bitonal image that we think we can improve as JBIG2."""
-    jbig2_groups = defaultdict(list)
-    for pageno, xref_ext in extract_images(pdf, root, options, extract_image_jbig2):
-        group = pageno // options.jbig2_page_group_size
-        jbig2_groups[group].append(xref_ext)
+    jbig2_images = []
+    for _pageno, xref_ext in extract_images(pdf, root, options, extract_image_jbig2):
+        jbig2_images.append(xref_ext)
 
-    log.debug(f"Optimizable images: JBIG2 groups: {len(jbig2_groups)}")
-    return jbig2_groups
+    log.debug(f"Optimizable images: JBIG2: {len(jbig2_images)}")
+    return jbig2_images
 
 
 def _produce_jbig2_images(
-    jbig2_groups: dict[int, list[XrefExt]], root: Path, options, executor: Executor
+    jbig2_images: list[XrefExt], root: Path, options, executor: Executor
 ) -> None:
-    """Produce JBIG2 images from their groups."""
+    """Produce JBIG2 images using lossless single-image encoding."""
 
-    def jbig2_group_args(root: Path, groups: dict[int, list[XrefExt]]):
-        for group, xref_exts in groups.items():
-            prefix = f'group{group:08d}'
+    def jbig2_args():
+        for xref_ext in jbig2_images:
+            xref, ext = xref_ext
             yield (
-                fspath(root),  # =cwd
-                (img_name(root, xref, ext) for xref, ext in xref_exts),  # =infiles
-                prefix,  # =out_prefix
+                fspath(root),
+                img_name(root, xref, ext),
+                root / f'{xref:08d}.jbig2',
                 options.jbig2_threshold,
             )
-
-    def jbig2_single_args(root: Path, groups: dict[int, list[XrefExt]]):
-        for group, xref_exts in groups.items():
-            prefix = f'group{group:08d}'
-            # Second loop is to ensure multiple images per page are unpacked
-            for n, xref_ext in enumerate(xref_exts):
-                xref, ext = xref_ext
-                yield (
-                    fspath(root),
-                    img_name(root, xref, ext),
-                    root / f'{prefix}.{n:04d}',
-                    options.jbig2_threshold,
-                )
-
-    if options.jbig2_page_group_size > 1:
-        jbig2_args = jbig2_group_args
-        jbig2_convert = jbig2enc.convert_group
-    else:
-        jbig2_args = jbig2_single_args
-        jbig2_convert = jbig2enc.convert_single
 
     executor(
         use_threads=True,
         max_workers=options.jobs,
         progress_kwargs=dict(
-            total=len(jbig2_groups),
+            total=len(jbig2_images),
             desc="JBIG2",
-            unit='item',
+            unit='image',
             disable=not options.progress_bar,
         ),
-        task=jbig2_convert,
-        task_arguments=jbig2_args(root, jbig2_groups),
+        task=jbig2enc.convert_single,
+        task_arguments=jbig2_args(),
     )
 
 
 def convert_to_jbig2(
     pdf: Pdf,
-    jbig2_groups: dict[int, list[XrefExt]],
+    jbig2_images: list[XrefExt],
     root: Path,
     options,
     executor: Executor,
 ) -> None:
     """Convert images to JBIG2 and insert into PDF.
 
-    When the JBIG2 page group size is > 1 we do several JBIG2 images at once
-    and build a symbol dictionary that will span several pages. Each JBIG2
-    image must reference to its symbol dictionary. If too many pages shared the
-    same dictionary JBIG2 encoding becomes more expensive and less efficient.
-    The default value of 10 was determined through testing. Currently this
-    must be lossy encoding since jbig2enc does not support refinement coding.
-
-    When the JBIG2 symbolic coder is not used, each JBIG2 stands on its own
-    and needs no dictionary. Currently this must be lossless JBIG2.
+    Each JBIG2 image is encoded independently using lossless compression.
+    No symbol dictionary (JBIG2Globals) is used.
     """
-    jbig2_globals_dict: Dictionary | None
+    _produce_jbig2_images(jbig2_images, root, options, executor)
 
-    _produce_jbig2_images(jbig2_groups, root, options, executor)
-
-    for group, xref_exts in jbig2_groups.items():
-        prefix = f'group{group:08d}'
-        jbig2_symfile = root / (prefix + '.sym')
-        if jbig2_symfile.exists():
-            jbig2_globals_data = jbig2_symfile.read_bytes()
-            jbig2_globals = Stream(pdf, jbig2_globals_data)
-            jbig2_globals_dict = Dictionary(JBIG2Globals=jbig2_globals)
-        elif options.jbig2_page_group_size == 1:
-            jbig2_globals_dict = None
-        else:
-            raise FileNotFoundError(jbig2_symfile)
-
-        for n, xref_ext in enumerate(xref_exts):
-            xref, _ = xref_ext
-            jbig2_im_file = root / (prefix + f'.{n:04d}')
-            jbig2_im_data = jbig2_im_file.read_bytes()
-            im_obj = pdf.get_object(xref, 0)
-            im_obj.write(
-                jbig2_im_data, filter=Name.JBIG2Decode, decode_parms=jbig2_globals_dict
-            )
+    for xref_ext in jbig2_images:
+        xref, _ = xref_ext
+        jbig2_im_file = root / f'{xref:08d}.jbig2'
+        jbig2_im_data = jbig2_im_file.read_bytes()
+        im_obj = pdf.get_object(xref, 0)
+        im_obj.write(jbig2_im_data, filter=Name.JBIG2Decode, decode_parms=None)
 
 
 def _optimize_jpeg(
-    xref: Xref, in_jpg: Path, opt_jpg: Path, jpeg_quality: int
+    xref: Xref, in_jpg: Path, opt_jpg: Path, jpg_quality: int
 ) -> tuple[Xref, Path | None]:
     with Image.open(in_jpg) as im:
-        im.save(opt_jpg, optimize=True, quality=jpeg_quality)
+        save_kwargs: dict[str, Any] = {'optimize': True}
+        if isinstance(jpg_quality, int) and 0 < jpg_quality <= 100:
+            save_kwargs['quality'] = jpg_quality
+        im.save(opt_jpg, **save_kwargs)
 
     if opt_jpg.stat().st_size > in_jpg.stat().st_size:
         log.debug(f"xref {xref}, jpeg, made larger - skip")
@@ -499,7 +454,7 @@ def transcode_jpegs(
         for xref in jpegs:
             in_jpg = jpg_name(root, xref)
             opt_jpg = in_jpg.with_suffix('.opt.jpg')
-            yield xref, in_jpg, opt_jpg, options.jpeg_quality
+            yield xref, in_jpg, opt_jpg, options.jpg_quality
 
     def finish_jpeg(result: tuple[Xref, Path | None], pbar: ProgressBar):
         xref, opt_jpg = result
@@ -524,6 +479,16 @@ def transcode_jpegs(
     )
 
 
+def _already_flate_encoded(image: Stream) -> bool:
+    """Check if the image already has FlateDecode in its filter chain."""
+    filt = image.get(Name.Filter)
+    if filt is None:
+        return False
+    if isinstance(filt, Array):
+        return Name.FlateDecode in list(filt)
+    return filt == Name.FlateDecode
+
+
 def _find_deflatable_jpeg(
     *, pdf: Pdf, root: Path, image: Stream, xref: Xref, options
 ) -> XrefExt | None:
@@ -531,6 +496,10 @@ def _find_deflatable_jpeg(
     if result is None:
         return None
     _pim, filtdp = result
+
+    # Skip if already FlateDecode compressed - would double-compress
+    if _already_flate_encoded(image):
+        return None
 
     if (
         filtdp[0] == Name.DCTDecode
@@ -712,12 +681,10 @@ def optimize(
         safe_symlink(input_file, output_file)
         return output_file
 
-    if options.jpeg_quality == 0:
-        options.jpeg_quality = DEFAULT_JPEG_QUALITY if options.optimize < 3 else 40
+    if options.jpg_quality == 0:
+        options.jpg_quality = DEFAULT_JPEG_QUALITY if options.optimize < 3 else 40
     if options.png_quality == 0:
         options.png_quality = DEFAULT_PNG_QUALITY if options.optimize < 3 else 30
-    if options.jbig2_page_group_size == 0:
-        options.jbig2_page_group_size = 10 if options.jbig2_lossy else 1
 
     with Pdf.open(input_file) as pdf:
         root = output_file.parent / 'images'
@@ -731,8 +698,8 @@ def optimize(
         #    transcode_pngs(pdf, jpegs, jpg_name, root, options)
         transcode_pngs(pdf, pngs, png_name, root, options, executor)
 
-        jbig2_groups = extract_images_jbig2(pdf, root, options)
-        convert_to_jbig2(pdf, jbig2_groups, root, options, executor)
+        jbig2_images = extract_images_jbig2(pdf, root, options)
+        convert_to_jbig2(pdf, jbig2_images, root, options, executor)
 
         target_file = output_file.with_suffix('.opt.pdf')
         pdf.remove_unreferenced_resources()
@@ -767,35 +734,25 @@ def main(infile, outfile, level, jobs=1):
     from shutil import copy  # pylint: disable=import-outside-toplevel
     from tempfile import TemporaryDirectory  # pylint: disable=import-outside-toplevel
 
-    class OptimizeOptions:
-        """Emulate ocrmypdf's options."""
-
-        def __init__(
-            self, input_file, jobs, optimize_, jpeg_quality, png_quality, jb2lossy
-        ):
-            self.input_file = input_file
-            self.jobs = jobs
-            self.optimize = optimize_
-            self.jpeg_quality = jpeg_quality
-            self.png_quality = png_quality
-            self.jbig2_page_group_size = 0
-            self.jbig2_lossy = jb2lossy
-            self.jbig2_threshold = 0.85
-            self.quiet = True
-            self.progress_bar = False
+    from ocrmypdf._options import OcrOptions  # pylint: disable=import-outside-toplevel
 
     infile = Path(infile)
-    options = OptimizeOptions(
+
+    # Create OcrOptions with optimization-specific settings
+    options = OcrOptions(
         input_file=infile,
+        output_file=outfile,  # Required field
         jobs=jobs,
-        optimize_=int(level),
-        jpeg_quality=0,  # Use default
+        optimize=int(level),
+        jpg_quality=0,  # Use default
         png_quality=0,
-        jb2lossy=False,
+        jbig2_threshold=0.85,
+        quiet=True,
+        progress_bar=False,
     )
 
     with TemporaryDirectory() as tmpdir:
-        context = PdfContext(options, tmpdir, infile, None, None)
+        context = PdfContext(options, Path(tmpdir), infile, None, None)
         tmpout = Path(tmpdir) / 'out.pdf'
         optimize(
             infile,

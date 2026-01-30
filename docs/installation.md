@@ -487,7 +487,7 @@ You can then run OCRmyPDF in the Windows command prompt or Powershell, prefixing
 First install the the following prerequisite Cygwin packages using `setup-x86_64.exe`:
 
 ```
-python310 (or later)
+python311 (or later)
 python3?-devel
 python3?-pip
 python3?-lxml
@@ -599,21 +599,45 @@ OCRmyPDF currently requires these external programs and libraries to be
 installed, and must be satisfied using the operating system package
 manager. `pip` cannot provide them.
 
+:::{versionchanged} 17.0.0
+Ghostscript is now optional. pypdfium2 can be used for PDF rasterization,
+and verapdf can validate speculative PDF/A conversion.
+:::
+
 The following versions are required:
 
-- Python 3.10 or newer
-- Ghostscript 9.54 or newer
+- Python 3.11 or newer
 - Tesseract 4.1.1 or newer
-- jbig2enc 0.29 or newer
-- pngquant 2.5 or newer
-- unpaper 6.1
+- One of: Ghostscript 9.54+ **or** pypdfium2 (Python package)
+- One of: Ghostscript 9.54+ **or** verapdf (for PDF/A output)
+- fpdf2 2.8 or newer (Python package)
+- jbig2enc 0.29 or newer (optional)
+- pngquant 2.5 or newer (optional)
+- unpaper 6.1 (optional)
+
+:::{note}
+For the best user experience, install both Ghostscript and pypdfium2.
+pypdfium2 is faster for rasterization, while Ghostscript provides
+broader compatibility and is required for certain PDF/A conversions.
+:::
 
 We recommend 64-bit versions of all software. (32-bit versions are not
 supported, although on Linux, they may still work.)
 
-jbig2enc, pngquant, and unpaper are optional. If missing certain
-features are disabled. OCRmyPDF will discover them as soon as they are
-available.
+**fpdf2** is a required dependency that provides the text layer
+rendering engine. It replaces the legacy hOCR-based renderer with improved
+multilingual support. Install with: `pip install fpdf2`
+
+**pypdfium2**, if present, provides fast PDF page rasterization using
+the pdfium library (the same library used by Google Chrome). It is
+preferred over Ghostscript when available due to better performance.
+Install with: `pip install pypdfium2`
+
+**verapdf**, if present, enables fast speculative PDF/A conversion.
+OCRmyPDF attempts to create PDF/A by adding metadata and ICC profiles
+using pikepdf, then validates with verapdf. If validation passes,
+Ghostscript is skipped entirely. See your distribution's package manager
+or visit [verapdf.org](https://verapdf.org/).
 
 **jbig2enc**, if present, will be used to optimize the encoding of
 monochrome images. This can significantly reduce the file size of the
@@ -622,6 +646,12 @@ output file. It is not required.
 available for Ubuntu or Debian due to lingering concerns about patent
 issues, but can easily be built from source. To add JBIG2 encoding, see
 {ref}`jbig2`.
+
+:::{warning}
+Lossy JBIG2 encoding (`--jbig2-lossy`) has been removed in v17.0.0 due to
+well-documented risks of character substitution errors. Only lossless
+JBIG2 compression is now supported.
+:::
 
 **pngquant**, if present, is optionally used to optimize the encoding of
 PNG-style images in PDFs (actually, any that are that losslessly
@@ -638,7 +668,7 @@ unfortunately, the `pip install` command cannot satisfy all of them.
 
 ## Installing HEAD revision from sources
 
-If you have `git` and Python 3.10 or newer installed, you can install
+If you have `git` and Python 3.11 or newer installed, you can install
 from source. When the `pip` installer runs, it will alert you if
 dependencies are missing.
 
@@ -686,17 +716,70 @@ need to be installed. The script requires specific versions of the
 dependencies. Older version than the ones mentioned in the release notes
 are likely not to be compatible to OCRmyPDF.
 
+## Optional Features
+
+OCRmyPDF provides optional features and development tools. We recommend using `uv` as your package manager.
+
+### Installing User Features
+
+User features are available as optional dependencies. Install them with `uv` (recommended) or `pip`:
+
+```bash
+# Using uv (recommended)
+uv sync --extra watcher        # File watching service
+uv sync --extra webservice     # Streamlit web UI
+uv sync --extra watcher --extra webservice  # Multiple features
+
+# Using pip (also works)
+pip install ocrmypdf[watcher]
+pip install ocrmypdf[webservice]
+pip install ocrmypdf[watcher,webservice]
+```
+
+### Development Tools (uv only)
+
+Development tools use dependency groups and require `uv`:
+
+```bash
+# Testing infrastructure
+uv sync --group test
+
+# Documentation building
+uv sync --group docs
+
+# Enhanced Streamlit development
+uv sync --group streamlit-dev
+
+# All development groups
+uv sync
+```
+
+:::{note}
+**User features** (`watcher`, `webservice`) work with both `uv` and `pip`.
+**Developer tools** (`test`, `docs`, `streamlit-dev`) require `uv` and use dependency groups (PEP 735).
+:::
+
+**Why use uv?**
+
+- Modern, fast Python package manager
+- Required for development (testing, docs)
+- Better dependency resolution
+- Consistent across all platforms
+
+Install uv: `pip install uv` or visit https://docs.astral.sh/uv/
+
 ### For development
 
 To install all of the development and test requirements:
 
 ```bash
 git clone -b main https://github.com/ocrmypdf/OCRmyPDF.git
-python -m venv .venv
-source .venv/bin/activate
 cd OCRmyPDF
-pip install -e .[test]
+pip install uv  # Install uv if not already installed
+uv sync --group test
 ```
+
+Note: Development requires `uv`. The old `pip install -e .[test]` method is no longer supported.
 
 To add JBIG2 encoding, see {ref}`jbig2`.
 

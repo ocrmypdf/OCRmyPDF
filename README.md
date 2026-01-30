@@ -126,8 +126,8 @@ Please report issues on our [GitHub issues](https://github.com/ocrmypdf/OCRmyPDF
 ## Feature demo
 
 ```bash
-# Add an OCR layer and convert to PDF/A
-ocrmypdf input.pdf output.pdf
+# Add an OCR layer and require PDF/A
+ocrmypdf --output-type pdfa input.pdf output.pdf
 
 # Convert an image to single page PDF
 ocrmypdf input.jpg output.pdf
@@ -150,6 +150,16 @@ For more features, see the [documentation](https://ocrmypdf.readthedocs.io/en/la
 ## Requirements
 
 In addition to the required Python version, OCRmyPDF requires external program installations of Ghostscript and Tesseract OCR. OCRmyPDF is pure Python, and runs on pretty much everything: Linux, macOS, Windows and FreeBSD.
+
+## Plugins
+
+OCRmyPDF provides a plugin interface allowing its capabilities to be extended or replaced. Here are some plugins we are aware of:
+
+- [OCRmyPDF-AppleOCR](https://github.com/mkyt/ocrmypdf-AppleOCR): replaces the standard Tesseract OCR engine with Apple Vision Framework. Requires macOS.
+- [OCRmyPDF-EasyOCR](https://github.com/ocrmypdf/OCRmyPDF-EasyOCR): replaces the standard Tesseract OCR engine with EasyOCR, a newer OCR engine based on PyTorch. GPU strongly recommended.
+- [OCRmyPDF-PaddleOCR](https://github.com/clefru/ocrmypdf-paddleocr): replaces the standard Tesseract OCR engine with PaddleOCR, a powerful GPU accelerated OCR engine.
+
+[paperless-ngx](https://docs.paperless-ngx.com/) provides integration of OCRmyPDF into a searchable document management system.
 
 ## Press & Media
 

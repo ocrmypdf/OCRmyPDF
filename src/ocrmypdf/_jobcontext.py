@@ -5,29 +5,31 @@
 
 from __future__ import annotations
 
-import os
-from argparse import Namespace
 from collections.abc import Iterator
-from copy import copy
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from pluggy import PluginManager
-
+from ocrmypdf._options import OcrOptions
 from ocrmypdf.pdfinfo import PdfInfo
 from ocrmypdf.pdfinfo.info import PageInfo
+
+if TYPE_CHECKING:
+    from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 
 
 class PdfContext:
     """Holds the context for a particular run of the pipeline."""
 
-    options: Namespace  #: The specified options for processing this PDF.
+    options: OcrOptions  #: The specified options for processing this PDF.
     origin: Path  #: The filename of the original input file.
     pdfinfo: PdfInfo  #: Detailed data for this PDF.
-    plugin_manager: PluginManager  #: PluginManager for processing the current PDF.
+    plugin_manager: (
+        OcrmypdfPluginManager  #: PluginManager for processing the current PDF.
+    )
 
     def __init__(
         self,
-        options: Namespace,
+        options: OcrOptions,
         work_folder: Path,
         origin: Path,
         pdfinfo: PdfInfo,
@@ -65,21 +67,27 @@ class PageContext:
 
     Must be pickle-able, so stores only intrinsic/simple data elements or those
     capable of their serializing themselves via ``__getstate__``.
+
+    Note: Uses OcrOptions with JSON serialization for multiprocessing compatibility.
     """
 
-    options: Namespace  #: The specified options for processing this PDF.
     origin: Path  #: The filename of the original input file.
     pageno: int  #: This page number (zero-based).
     pageinfo: PageInfo  #: Information on this page.
-    plugin_manager: PluginManager  #: PluginManager for processing the current PDF.
+    plugin_manager: (
+        OcrmypdfPluginManager  #: PluginManager for processing the current PDF.
+    )
 
     def __init__(self, pdf_context: PdfContext, pageno):
         self.work_folder = pdf_context.work_folder
         self.origin = pdf_context.origin
+        # Store OcrOptions directly instead of Namespace
         self.options = pdf_context.options
         self.pageno = pageno
         self.pageinfo = pdf_context.pdfinfo[pageno]
         self.plugin_manager = pdf_context.plugin_manager
+        # Ensure no reference to PdfContext which contains OcrOptions
+        self._pdf_context = None
 
     def get_path(self, name: str) -> Path:
         """Generate a ``Path`` for a file that is part of processing this page.
@@ -92,9 +100,22 @@ class PageContext:
     def __getstate__(self):
         state = self.__dict__.copy()
 
-        state['options'] = copy(self.options)
-        if not isinstance(state['options'].input_file, str | bytes | os.PathLike):
-            state['options'].input_file = 'stream'
-        if not isinstance(state['options'].output_file, str | bytes | os.PathLike):
-            state['options'].output_file = 'stream'
+        options_json = self.options.model_dump_json_safe()
+        state['options_json'] = options_json
+        # Remove the OcrOptions object to avoid pickle issues
+        del state['options']
+
+        # Remove any potential references to Pydantic objects
+        state.pop('_pdf_context', None)
         return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+        # Reconstruct OcrOptions from JSON if available
+        if 'options_json' in state:
+            from ocrmypdf._options import OcrOptions
+
+            self.options = OcrOptions.model_validate_json_safe(state['options_json'])
+        # Otherwise, we have a fallback Namespace (shouldn't happen in normal operation)
+        # Leave it as-is for compatibility

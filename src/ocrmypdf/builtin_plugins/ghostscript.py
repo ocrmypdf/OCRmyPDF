@@ -5,13 +5,17 @@
 from __future__ import annotations
 
 import logging
+from enum import StrEnum
 from pathlib import Path
+from typing import Annotated
 
 from packaging.version import Version
 from pikepdf import Name, Pdf, Stream
+from pydantic import BaseModel, Field
 
 from ocrmypdf import hookimpl
 from ocrmypdf._exec import ghostscript
+from ocrmypdf._options import ProcessingMode
 from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.subprocess import check_external_program
 
@@ -22,79 +26,134 @@ log = logging.getLogger(__name__)
 BLACKLISTED_GS_VERSIONS: frozenset[Version] = frozenset()
 
 
+class ColorConversionStrategy(StrEnum):
+    """Ghostscript color conversion strategies."""
+
+    CMYK = 'CMYK'
+    GRAY = 'Gray'
+    LEAVE_COLOR_UNCHANGED = 'LeaveColorUnchanged'
+    RGB = 'RGB'
+    USE_DEVICE_INDEPENDENT_COLOR = 'UseDeviceIndependentColor'
+
+
+class PdfaImageCompression(StrEnum):
+    """PDF/A image compression methods."""
+
+    AUTO = 'auto'
+    JPEG = 'jpeg'
+    LOSSLESS = 'lossless'
+
+
+class GhostscriptOptions(BaseModel):
+    """Options specific to Ghostscript operations."""
+
+    color_conversion_strategy: Annotated[
+        ColorConversionStrategy,
+        Field(description="Ghostscript color conversion strategy"),
+    ] = ColorConversionStrategy.LEAVE_COLOR_UNCHANGED
+    pdfa_image_compression: Annotated[
+        PdfaImageCompression, Field(description="PDF/A image compression method")
+    ] = PdfaImageCompression.AUTO
+
+    @classmethod
+    def add_arguments_to_parser(cls, parser, namespace: str = 'ghostscript'):
+        """Add Ghostscript-specific arguments to the argument parser.
+
+        Args:
+            parser: The argument parser to add arguments to
+            namespace: The namespace prefix for argument names (not used for ghostscript
+                for backward compatibility)
+        """
+        gs = parser.add_argument_group("Ghostscript", "Advanced control of Ghostscript")
+        gs.add_argument(
+            '--color-conversion-strategy',
+            action='store',
+            type=str,
+            choices=[ccs.value for ccs in ColorConversionStrategy],
+            default=ColorConversionStrategy.LEAVE_COLOR_UNCHANGED.value,
+            help="Set Ghostscript color conversion strategy",
+        )
+        gs.add_argument(
+            '--pdfa-image-compression',
+            choices=[pc.value for pc in PdfaImageCompression],
+            default=PdfaImageCompression.AUTO.value,
+            help="Specify how to compress images in the output PDF/A. 'auto' lets "
+            "OCRmyPDF decide.  'jpeg' changes all grayscale and color images to "
+            "JPEG compression.  'lossless' uses PNG-style lossless compression "
+            "for all images.  Monochrome images are always compressed using a "
+            "lossless codec.  Compression settings "
+            "are applied to all pages, including those for which OCR was "
+            "skipped.  Not supported for --output-type=pdf ; that setting "
+            "preserves the original compression of all images.",
+        )
+
+
+@hookimpl
+def register_options():
+    """Register Ghostscript option model."""
+    return {'ghostscript': GhostscriptOptions}
+
+
 @hookimpl
 def add_options(parser):
-    gs = parser.add_argument_group("Ghostscript", "Advanced control of Ghostscript")
-    gs.add_argument(
-        '--color-conversion-strategy',
-        action='store',
-        type=str,
-        metavar='STRATEGY',
-        choices=ghostscript.COLOR_CONVERSION_STRATEGIES,
-        default='LeaveColorUnchanged',
-        help="Set Ghostscript color conversion strategy",
-    )
-    gs.add_argument(
-        '--pdfa-image-compression',
-        choices=['auto', 'jpeg', 'lossless'],
-        default='auto',
-        help="Specify how to compress images in the output PDF/A. 'auto' lets "
-        "OCRmyPDF decide.  'jpeg' changes all grayscale and color images to "
-        "JPEG compression.  'lossless' uses PNG-style lossless compression "
-        "for all images.  Monochrome images are always compressed using a "
-        "lossless codec.  Compression settings "
-        "are applied to all pages, including those for which OCR was "
-        "skipped.  Not supported for --output-type=pdf ; that setting "
-        "preserves the original compression of all images.",
-    )
+    # Use the model's CLI generation method
+    GhostscriptOptions.add_arguments_to_parser(parser)
 
 
 @hookimpl
 def check_options(options):
     """Check that the options are valid for this plugin."""
-    check_external_program(
-        program='gs',
-        package='ghostscript',
-        version_checker=ghostscript.version,
-        need_version='9.54',  # RHEL 9's version; Ubuntu 22.04 has 9.55
-    )
-    gs_version = ghostscript.version()
-    if gs_version in BLACKLISTED_GS_VERSIONS:
-        raise MissingDependencyError(
-            f"Ghostscript {gs_version} contains serious regressions and is not "
-            "supported. Please upgrade to a newer version."
+    # Only require Ghostscript for pdfa* output types (not 'auto' or 'pdf')
+    # 'auto' mode uses best-effort PDF/A without Ghostscript fallback
+    if options.output_type.startswith('pdfa'):
+        check_external_program(
+            program='gs',
+            package='ghostscript',
+            version_checker=ghostscript.version,
+            need_version='9.54',  # RHEL 9's version; Ubuntu 22.04 has 9.55
         )
-    if Version('10.0.0') <= gs_version < Version('10.02.1') and (
-        options.skip_text or options.redo_ocr
-    ):
-        raise MissingDependencyError(
-            f"Ghostscript 10.0.0 through 10.02.0 (your version: {gs_version}) "
-            "contain serious regressions that corrupt PDFs with existing text, "
-            "such as those processed using --skip-text or --redo-ocr. "
-            "Please upgrade to a "
-            "newer version, or use --output-type pdf to avoid Ghostscript, or "
-            "use --force-ocr to discard existing text."
-        )
+        gs_version = ghostscript.version()
+        if gs_version in BLACKLISTED_GS_VERSIONS:
+            raise MissingDependencyError(
+                f"Ghostscript {gs_version} contains serious regressions and is not "
+                "supported. Please upgrade to a newer version."
+            )
+        if Version('10.0.0') <= gs_version < Version('10.02.1') and (
+            options.mode in (ProcessingMode.skip, ProcessingMode.redo)
+        ):
+            raise MissingDependencyError(
+                f"Ghostscript 10.0.0 through 10.02.0 (your version: {gs_version}) "
+                "contain serious regressions that corrupt PDFs with existing text, "
+                "such as those processed using --skip-text or --redo-ocr "
+                "(or --mode skip/redo). Please upgrade to a newer version, or use "
+                "--output-type pdf to avoid Ghostscript, or use --force-ocr "
+                "(or --mode force) to discard existing text."
+            )
+        if gs_version >= Version('10.6.0'):
+            log.warning(
+                "Ghostscript 10.6.x contains JPEG encoding errors that may corrupt "
+                "images. OCRmyPDF will attempt to mitigate, but this version is "
+                "strongly not recommended. Please upgrade to a newer version. "
+                "As of 2025-12, 10.6.0 is the latest version of Ghostscript."
+            )
+        if options.output_type == 'pdfa':
+            options.output_type = 'pdfa-2'
 
-    if gs_version >= Version('10.6.0') and options.output_type.startswith('pdfa'):
-        log.warning(
-            "Ghostscript 10.6.x contains JPEG encoding errors that may corrupt "
-            "images. OCRmyPDF will attempt to mitigate, but this version is "
-            "strongly not recommended. Please upgrade to a newer version. "
-            "As of 2025-12, 10.6.0 is the latest version of Ghostscript."
-        )
-    if options.output_type == 'pdfa':
-        options.output_type = 'pdfa-2'
-    if options.color_conversion_strategy not in ghostscript.COLOR_CONVERSION_STRATEGIES:
+    if (
+        options.ghostscript.color_conversion_strategy
+        not in ghostscript.COLOR_CONVERSION_STRATEGIES
+    ):
         raise ValueError(
-            f"Invalid color conversion strategy: {options.color_conversion_strategy}"
+            f"Invalid color conversion strategy: "
+            f"{options.ghostscript.color_conversion_strategy}"
         )
-    if options.pdfa_image_compression != 'auto' and not options.output_type.startswith(
-        'pdfa'
+    if (
+        options.ghostscript.pdfa_image_compression != 'auto'
+        and options.output_type not in ('auto', 'pdfa', 'pdfa-1', 'pdfa-2', 'pdfa-3')
     ):
         log.warning(
             "--pdfa-image-compression argument only applies when "
-            "--output-type is one of 'pdfa', 'pdfa-1', or 'pdfa-2'"
+            "--output-type is 'auto' or one of 'pdfa', 'pdfa-1', 'pdfa-2', 'pdfa-3'"
         )
 
 
@@ -109,8 +168,15 @@ def rasterize_pdf_page(
     rotation,
     filter_vector,
     stop_on_soft_error,
+    options,
+    use_cropbox,
 ):
     """Rasterize a single page of a PDF file using Ghostscript."""
+    # Check if user explicitly requested a different rasterizer
+    if options is not None and options.rasterizer == 'pypdfium':
+        # Let pypdfium handle it (it will error in check_options if unavailable)
+        return None
+
     ghostscript.rasterize_pdf(
         input_file,
         output_file,
@@ -121,6 +187,7 @@ def rasterize_pdf_page(
         rotation=rotation,
         filter_vector=filter_vector,
         stop_on_error=stop_on_soft_error,
+        use_cropbox=use_cropbox,
     )
     return output_file
 
@@ -275,11 +342,16 @@ def generate_pdfa(
     stop_on_soft_error,
 ):
     """Generate a PDF/A from the list of PDF pages and PDF/A metadata."""
+    # Normalize output_type at point of use
+    output_type = context.options.output_type
+    if output_type == 'pdfa':
+        output_type = 'pdfa-2'
+
     ghostscript.generate_pdfa(
         pdf_pages=[pdfmark, *pdf_pages],
         output_file=output_file,
-        compression=context.options.pdfa_image_compression,
-        color_conversion_strategy=context.options.color_conversion_strategy,
+        compression=context.options.ghostscript.pdfa_image_compression,
+        color_conversion_strategy=context.options.ghostscript.color_conversion_strategy,
         pdf_version=pdf_version,
         pdfa_part=pdfa_part,
         progressbar_class=progressbar_class,

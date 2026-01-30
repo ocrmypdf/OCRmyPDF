@@ -19,12 +19,13 @@ from ocrmypdf._exec import ghostscript
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.pdfinfo import PdfInfo
+from ocrmypdf.pluginspec import GhostscriptRasterDevice
 
 from .conftest import check_ocrmypdf, run_ocrmypdf_api
 
 # pylintx: disable=unused-variable
 
-RENDERERS = ['hocr', 'sandwich']
+RENDERERS = ['fpdf2', 'sandwich']
 
 
 def compare_images_monochrome(
@@ -40,7 +41,7 @@ def compare_images_monochrome(
         ghostscript.rasterize_pdf(
             pdf,
             png,
-            raster_device='pngmono',
+            raster_device=GhostscriptRasterDevice.PNGMONO,
             raster_dpi=Resolution(100, 100),
             pageno=pageno,
             rotation=0,
@@ -146,7 +147,8 @@ def test_autorotate_threshold(threshold, op, comparison_threshold, resources, ou
     assert op(cmp, comparison_threshold)
 
 
-def test_rotated_skew_timeout(resources, outpdf):
+@pytest.mark.parametrize('rasterizer', ['pypdfium', 'ghostscript'])
+def test_rotated_skew_timeout(resources, outpdf, rasterizer):
     """Check rotated skew timeout.
 
     This document contains an image that is rotated 90 into place with a
@@ -167,10 +169,12 @@ def test_rotated_skew_timeout(resources, outpdf):
         input_file,
         outpdf,
         '--pdf-renderer',
-        'hocr',
+        'fpdf2',
         '--deskew',
         '--tesseract-timeout',
         '0',
+        '--rasterizer',
+        rasterizer,
     )
 
     out_pageinfo = PdfInfo(out)[0]
@@ -185,7 +189,8 @@ def test_rotated_skew_timeout(resources, outpdf):
     ), "Expected page rotation to be baked in"
 
 
-def test_rotate_deskew_ocr_timeout(resources, outdir):
+@pytest.mark.parametrize('rasterizer', ['pypdfium', 'ghostscript'])
+def test_rotate_deskew_ocr_timeout(resources, outdir, rasterizer):
     check_ocrmypdf(
         resources / 'rotated_skew.pdf',
         outdir / 'deskewed.pdf',
@@ -196,7 +201,9 @@ def test_rotate_deskew_ocr_timeout(resources, outdir):
         '--tesseract-timeout',
         '0',
         '--pdf-renderer',
-        'hocr',
+        'fpdf2',
+        '--rasterizer',
+        rasterizer,
     )
 
     cmp = compare_images_monochrome(
@@ -208,7 +215,9 @@ def test_rotate_deskew_ocr_timeout(resources, outdir):
     )
 
     # Confirm that the page still got deskewed
-    assert cmp > 0.95
+    # pypdfium anti-aliases so gets better visual quality, but lower score (0.88)
+    # on monochrome comparison; ghostscript looks ugly but gets > 0.95
+    assert cmp > 0.85
 
 
 def make_rotate_test(imagefile, outdir, prefix, image_angle, page_angle, cropbox=None):
@@ -287,7 +296,7 @@ def test_page_rotate_tag(page_rotate_angle, resources, outdir, caplog):
 
 
 @pytest.mark.parametrize('page_rotate_angle', (0, 90, 180, 270))
-@pytest.mark.parametrize('renderer', ['sandwich', 'hocr'])
+@pytest.mark.parametrize('renderer', ['sandwich', 'fpdf2'])
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa'])
 def test_rotate_and_crop(
     resources, outdir, page_rotate_angle, renderer, output_type, caplog
@@ -324,35 +333,48 @@ def test_rotate_and_crop(
     assert compare_images_monochrome(outdir, reference, 1, out, 1) > 0.9
 
 
-def test_rasterize_rotates(resources, tmp_path):
+@pytest.mark.parametrize('rasterizer', ['pypdfium', 'ghostscript'])
+def test_rasterize_rotates(resources, tmp_path, rasterizer):
+    from ocrmypdf._options import OcrOptions
+
     pm = get_plugin_manager([])
 
+    options = OcrOptions(
+        input_file=resources / 'graph.pdf',
+        output_file=tmp_path / 'out.pdf',
+        rasterizer=rasterizer,
+    )
+
     img = tmp_path / 'img90.png'
-    pm.hook.rasterize_pdf_page(
+    pm.rasterize_pdf_page(
         input_file=resources / 'graph.pdf',
         output_file=img,
-        raster_device='pngmono',
+        raster_device=GhostscriptRasterDevice.PNGMONO,
         raster_dpi=Resolution(20, 20),
         page_dpi=Resolution(20, 20),
         pageno=1,
         rotation=90,
         filter_vector=False,
         stop_on_soft_error=True,
+        options=options,
+        use_cropbox=False,
     )
     with Image.open(img) as im:
         assert im.size == (83, 200), "Image not rotated"
 
     img = tmp_path / 'img180.png'
-    pm.hook.rasterize_pdf_page(
+    pm.rasterize_pdf_page(
         input_file=resources / 'graph.pdf',
         output_file=img,
-        raster_device='pngmono',
+        raster_device=GhostscriptRasterDevice.PNGMONO,
         raster_dpi=Resolution(20, 20),
         page_dpi=Resolution(20, 20),
         pageno=1,
         rotation=180,
         filter_vector=False,
         stop_on_soft_error=True,
+        options=options,
+        use_cropbox=False,
     )
     assert Image.open(img).size == (200, 83), "Image not rotated"
 

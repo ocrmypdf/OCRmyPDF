@@ -95,14 +95,27 @@ def cached_run(options, run_args, **run_kwargs):
 
     log.debug(f"Using Tesseract cache {cache_folder}")
 
-    if (cache_folder / 'stderr.bin').exists():
+    # Determine what configfiles we need
+    configfiles = args.configfiles if args.configfiles else ['txt']
+
+    # Check if cache has all required files
+    def cache_complete():
+        if not (cache_folder / 'stderr.bin').exists():
+            return False
+        if not (cache_folder / 'stdout.bin').exists():
+            return False
+        if args.outputbase != 'stdout':
+            for configfile in configfiles:
+                if not (cache_folder / f'{configfile}.bin').exists():
+                    return False
+        return True
+
+    if cache_complete():
         log.debug("Cache HIT")
 
         # Replicate stdout/err
         if args.outputbase != 'stdout':
-            if not args.configfiles:
-                args.configfiles.append('txt')
-            for configfile in args.configfiles:
+            for configfile in configfiles:
                 # cp cache -> output
                 tessfile = args.outputbase + '.' + configfile
                 shutil.copy(str(cache_folder / configfile) + '.bin', tessfile)
@@ -118,7 +131,12 @@ def cached_run(options, run_args, **run_kwargs):
     cache_kwargs = {
         k: v for k, v in run_kwargs.items() if k not in ('stdout', 'stderr')
     }
-    assert cache_kwargs['check']
+    # Don't pass timeout=0 to the actual run call - it would timeout immediately
+    # A timeout of 0 means "use default/no timeout" in the caching context
+    if cache_kwargs.get('timeout') == 0.0:
+        cache_kwargs['timeout'] = None
+    if 'check' not in cache_kwargs:
+        cache_kwargs['check'] = True
     try:
         p = run(run_args, stdout=PIPE, stderr=PIPE, **cache_kwargs)
     except CalledProcessError as e:
@@ -130,11 +148,8 @@ def cached_run(options, run_args, **run_kwargs):
     (cache_folder / 'stderr.bin').write_bytes(p.stderr)
 
     if args.outputbase != 'stdout':
-        if not args.configfiles:
-            args.configfiles.append('txt')
-
-        for configfile in args.configfiles:
-            if configfile not in ('hocr', 'pdf', 'txt'):
+        for configfile in configfiles:
+            if configfile not in ('fpdf2', 'hocr', 'pdf', 'txt'):
                 continue
             # cp pwd/{outputbase}.{configfile} -> {cache}/{configfile}
             tessfile = args.outputbase + '.' + configfile

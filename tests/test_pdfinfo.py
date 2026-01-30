@@ -19,6 +19,7 @@ from ocrmypdf import pdfinfo
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.pdfinfo import Colorspace, Encoding
+from ocrmypdf.pdfinfo._contentstream import _interpret_contents
 from ocrmypdf.pdfinfo.layout import PDFPage
 
 warnings.filterwarnings(
@@ -189,16 +190,15 @@ def test_stack_abuse():
 
     stream = pikepdf.Stream(p, b'q ' * 35)
     with pytest.warns(UserWarning, match="overflowed"):
-        pdfinfo.info._interpret_contents(stream)
+        _interpret_contents(stream)
 
     stream = pikepdf.Stream(p, b'q Q Q Q Q')
     with pytest.warns(UserWarning, match="underflowed"):
-        pdfinfo.info._interpret_contents(stream)
+        _interpret_contents(stream)
 
     stream = pikepdf.Stream(p, b'q ' * 135)
-    with pytest.warns(UserWarning):
-        with pytest.raises(RuntimeError):
-            pdfinfo.info._interpret_contents(stream)
+    with pytest.warns(UserWarning), pytest.raises(RuntimeError):
+        _interpret_contents(stream)
 
 
 def test_pages_issue700(monkeypatch, resources):

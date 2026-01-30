@@ -55,7 +55,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen \
-        --extra test --extra webservice --extra watcher --no-dev \
+        --extra webservice --extra watcher --no-dev \
         --no-install-package pyarrow
 
 FROM base
@@ -67,6 +67,8 @@ RUN add-apt-repository -y ppa:alex-p/tesseract-ocr5
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
   fonts-droid-fallback \
+  fonts-noto-core \
+  fonts-noto-cjk \
   jbig2dec \
   pngquant \
   tesseract-ocr \

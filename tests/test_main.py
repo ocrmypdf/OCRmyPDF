@@ -35,7 +35,7 @@ from .conftest import (
 # pylint: disable=redefined-outer-name
 
 
-RENDERERS = ['hocr', 'sandwich']
+RENDERERS = ['fpdf2', 'sandwich']
 
 
 def test_quick(resources, outpdf):
@@ -435,7 +435,7 @@ def test_jbig2_passthrough(resources, outpdf):
         '--output-type',
         'pdf',
         '--pdf-renderer',
-        'hocr',
+        'fpdf2',
         '--plugin',
         'tests/plugins/tesseract_cache.py',
     )

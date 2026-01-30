@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import argparse
 import logging
 import logging.handlers
 from collections.abc import Sequence
@@ -19,13 +18,14 @@ import PIL
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PageContext, PdfContext
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._pipeline import (
     copy_final,
     is_ocr_required,
     merge_sidecars,
+    ocr_engine_direct,
     ocr_engine_hocr,
     ocr_engine_textonly_pdf,
-    render_hocr_page,
     triage,
     validate_pdfinfo_options,
 )
@@ -49,23 +49,32 @@ from ocrmypdf._validation import (
     create_input_file,
 )
 from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.helpers import available_cpu_count
+from ocrmypdf.models.ocr_element import OcrElement
 
 log = logging.getLogger(__name__)
 
 
 def _image_to_ocr_text(
     page_context: PageContext, ocr_image_out: Path
-) -> tuple[Path, Path]:
+) -> tuple[Path | None, Path, OcrElement | None]:
     """Run OCR engine on image to create OCR PDF and text file."""
     options = page_context.options
-    if options.pdf_renderer.startswith('hocr'):
-        hocr_out, text_out = ocr_engine_hocr(ocr_image_out, page_context)
-        ocr_out = render_hocr_page(hocr_out, page_context)
-    elif options.pdf_renderer == 'sandwich':
+    pdf_renderer = options.pdf_renderer
+
+    # fpdf2 is the default renderer (auto resolves to fpdf2)
+    if pdf_renderer in ('auto', 'fpdf2'):
+        # Use generate_ocr() if the engine supports it, otherwise use hOCR path
+        ocr_engine = page_context.plugin_manager.get_ocr_engine(options=options)
+        if ocr_engine and ocr_engine.supports_generate_ocr():
+            ocr_tree, text_out = ocr_engine_direct(ocr_image_out, page_context)
+            return None, text_out, ocr_tree
+        ocr_out, text_out = ocr_engine_hocr(ocr_image_out, page_context)
+    elif pdf_renderer == 'sandwich':
         ocr_out, text_out = ocr_engine_textonly_pdf(ocr_image_out, page_context)
     else:
-        raise NotImplementedError(f"pdf_renderer {options.pdf_renderer}")
-    return ocr_out, text_out
+        raise NotImplementedError(f"pdf_renderer {pdf_renderer}")
+    return ocr_out, text_out, None
 
 
 def _exec_page_sync(page_context: PageContext) -> PageResult:
@@ -78,22 +87,24 @@ def _exec_page_sync(page_context: PageContext) -> PageResult:
     ocr_image_out, pdf_page_from_image_out, orientation_correction = process_page(
         page_context
     )
-    ocr_out, text_out = _image_to_ocr_text(page_context, ocr_image_out)
+    ocr_out, text_out, ocr_tree = _image_to_ocr_text(page_context, ocr_image_out)
     return PageResult(
         pageno=page_context.pageno,
         pdf_page_from_image=pdf_page_from_image_out,
         ocr=ocr_out,
         text=text_out,
         orientation_correction=orientation_correction,
+        ocr_tree=ocr_tree,
     )
 
 
 def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     """Execute the OCR pipeline concurrently."""
     options = context.options
-    max_workers = min(len(context.pdfinfo), options.jobs)
+    jobs = options.jobs or available_cpu_count()
+    max_workers = min(len(context.pdfinfo), jobs)
     if max_workers > 1:
-        log.info("Start processing %d pages concurrently", max_workers)
+        log.info("Starting processing with %d workers concurrently", max_workers)
 
     sidecars: list[Path | None] = [None] * len(context.pdfinfo)
     ocrgraft = OcrGrafter(context)
@@ -107,7 +118,8 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
             ocrgraft.graft_page(
                 pageno=result.pageno,
                 image=result.pdf_page_from_image,
-                textpdf=result.ocr,
+                ocr_output=result.ocr,
+                ocr_tree=result.ocr_tree,
                 autorotate_correction=result.orientation_correction,
             )
             pbar.update(0.5)
@@ -119,7 +131,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
         max_workers=max_workers,
         progress_kwargs=dict(
             total=len(context.pdfinfo),
-            desc='OCR' if options.tesseract_timeout > 0 else 'Image processing',
+            desc='OCR' if options.ocr_engine != 'none' else 'Image processing',
             unit='page',
             disable=not options.progress_bar,
         ),
@@ -150,7 +162,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
 
 
 def _run_pipeline(
-    options: argparse.Namespace,
+    options: OcrOptions,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
     with (
@@ -185,14 +197,14 @@ def _run_pipeline(
 
 
 def run_pipeline_cli(
-    options: argparse.Namespace,
+    options: OcrOptions,
     *,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
     """Run the OCR pipeline with command line exception handling.
 
     Args:
-        options: The parsed command line options.
+        options: The parsed OCR options.
         plugin_manager: The plugin manager to use. If not provided, one will be
             created.
     """
@@ -200,14 +212,14 @@ def run_pipeline_cli(
 
 
 def run_pipeline(
-    options: argparse.Namespace,
+    options: OcrOptions,
     *,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
     """Run the OCR pipeline without command line exception handling.
 
     Args:
-        options: The parsed command line options.
+        options: The parsed OCR options.
         plugin_manager: The plugin manager to use. If not provided, one will be
             created.
     """

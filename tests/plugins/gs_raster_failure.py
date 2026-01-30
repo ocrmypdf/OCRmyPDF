@@ -24,9 +24,12 @@ def rasterize_pdf_page(
     raster_device,
     raster_dpi,
     pageno,
-    page_dpi=None,
-    rotation=None,
-    filter_vector=False,
+    page_dpi,
+    rotation,
+    filter_vector,
+    stop_on_soft_error,
+    options,
+    use_cropbox,
 ) -> Path:
     with patch('ocrmypdf._exec.ghostscript.run') as mock:
         mock.side_effect = raise_gs_fail
@@ -39,7 +42,9 @@ def rasterize_pdf_page(
             page_dpi=page_dpi,
             rotation=rotation,
             filter_vector=filter_vector,
-            stop_on_soft_error=True,
+            stop_on_soft_error=stop_on_soft_error,
+            options=options,
+            use_cropbox=use_cropbox,
         )
         mock.assert_called()
         return output_file

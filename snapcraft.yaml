@@ -5,7 +5,7 @@
 
 name: ocrmypdf
 title: OCRmyPDF
-base: core22
+base: core24
 version: git
 summary: OCRmyPDF adds a searchable text layer to scanned PDF files
 description: OCRmyPDF packaged for snap
@@ -14,12 +14,13 @@ confinement: strict
 icon: docs/images/logo-square-256.svg
 license: MPL-2.0
 
-architectures: [amd64]
+platforms:
+  amd64:
 
 environment:
-  TESSDATA_PREFIX: $SNAP/usr/share/tesseract-ocr/4.00/tessdata
-  GS_LIB: $SNAP/usr/share/ghostscript/9.55.0/Resource/Init
-  GS_FONTPATH: $SNAP/usr/share/ghostscript/9.55.0/Resource/Font
+  TESSDATA_PREFIX: $SNAP/usr/share/tesseract-ocr/5/tessdata
+  GS_LIB: $SNAP/usr/share/ghostscript/10.02.1/Resource/Init
+  GS_FONTPATH: $SNAP/usr/share/ghostscript/10.02.1/Resource/Font
   LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu
 
 apps:
@@ -84,11 +85,5 @@ parts:
       - wheel
 
     override-build: |
-      pip3 install --user dephell[full]
-      $HOME/.local/bin/dephell deps convert \
-          --from-path pyproject.toml \
-          --from-format pyproject \
-          --to-path setup.py \
-          --to-format setuppy
-      snapcraftctl build
-      ln -sf ../usr/lib/libsnapcraft-preload.so $SNAPCRAFT_PART_INSTALL/lib/libsnapcraft-preload.so
+      craftctl default
+      ln -sf ../usr/lib/libsnapcraft-preload.so $CRAFT_PART_INSTALL/lib/libsnapcraft-preload.so

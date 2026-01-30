@@ -48,9 +48,11 @@ class ProgressBar(Protocol):
             A brief description of the current step (e.g. "Scanning contents",
             "OCR", "PDF/A conversion"). OCRmyPDF updates this before each major step.
         unit (str | None):
-            A short label for the type of work being tracked (e.g. "page", "%", "image").
+            A short label for the type of work being tracked
+            (e.g. "page", "%", "image").
         disable (bool):
-            If ``True``, progress updates are suppressed (no output). Defaults to ``False``.
+            If ``True``, progress updates are suppressed (no output).
+            Defaults to ``False``.
         **kwargs:
             Future or extra parameters that OCRmyPDF might pass. Implementations
             should accept and ignore unrecognized keywords gracefully.
@@ -64,7 +66,8 @@ class ProgressBar(Protocol):
             from ocrmypdf import hookimpl
 
             class ConsoleProgressBar(ProgressBar):
-                def __init__(self, *, total=None, desc=None, unit=None, disable=False, **kwargs):
+                def __init__(self, *, total=None, desc=None, unit=None, disable=False,
+                             **kwargs):
                     self.total = total
                     self.desc = desc
                     self.unit = unit
@@ -73,7 +76,9 @@ class ProgressBar(Protocol):
 
                 def __enter__(self):
                     if not self.disable:
-                        print(f"Starting {self.desc or 'an OCR task'} (total={self.total} {self.unit})")
+                        print(f"Starting {self.desc or 'an OCR task'} "
+                              f"(total={self.total} {self.unit})"
+                        )
                     return self
 
                 def __exit__(self, exc_type, exc_value, traceback):
@@ -86,7 +91,7 @@ class ProgressBar(Protocol):
 
                 def update(self, n=1, *, completed=None):
                     if completed is not None:
-                        # If 'completed' is given, you could set self.current = completed
+                        # If 'completed' is given, set self.current
                         # but let's just read it to show usage
                         print(f"Absolute completion reported: {completed}")
                     # Otherwise, we increment by 'n'
@@ -94,7 +99,10 @@ class ProgressBar(Protocol):
                     if not self.disable:
                         if self.total:
                             percent = (self.current / self.total) * 100
-                            print(f"{self.desc}: {self.current}/{self.total} ({percent:.1f}%)")
+                            print(
+                                f"{self.desc}: {self.current}"
+                                f"/{self.total} ({percent:.1f}%)"
+                            )
                         else:
                             print(f"{self.desc}: {self.current} units done")
 

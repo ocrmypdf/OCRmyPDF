@@ -6,7 +6,7 @@ from __future__ import annotations
 import pytest
 
 import ocrmypdf
-from ocrmypdf._validation import _pages_from_ranges
+from ocrmypdf._options import _pages_from_ranges
 from ocrmypdf.exceptions import BadArgsError
 from ocrmypdf.pdfinfo import PdfInfo
 

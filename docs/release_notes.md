@@ -25,6 +25,102 @@ about a forthcoming release that has not been tagged yet. A release is only
 official when it's tagged and posted to PyPI.
 :::
 
+## v17.0.0 (unreleased)
+
+**Breaking changes**
+
+- **Plugin interface migration**: Plugin hooks now receive `OcrOptions` objects instead of
+  `argparse.Namespace` objects. Most plugins will continue working due to duck-typing
+  compatibility, but plugin developers should update their type hints from `Namespace`
+  to `OcrOptions`.
+- Built-in plugins no longer modify options in-place, improving immutability and
+  code clarity.
+- **Lossy JBIG2 removed**: The `--jbig2-lossy` and `--jbig2-page-group-size` options have been
+  removed due to well-documented risks of character substitution errors. These options are now
+  deprecated and will emit warnings if used. Only lossless JBIG2 compression is supported.
+- **PDF/A output behavior change**: If neither Ghostscript nor verapdf is installed,
+  `--output-type auto` (the new default) will produce a standard PDF instead of PDF/A. This is
+  a change from previous versions where Ghostscript was required and PDF/A was always produced.
+  This configuration is rare but users should be aware of the change.
+
+**New features**
+
+- **pypdfium2 rasterizer**: Added optional pypdfium2-based PDF rasterization plugin as an
+  alternative to Ghostscript for page rendering. Use `--rasterizer pypdfium` to enable
+  (requires `pip install pypdfium2`). The default `--rasterizer auto` prefers pypdfium when
+  available and falls back to Ghostscript.
+- **Pluggable OCR engines**: New `--ocr-engine` option allows selecting OCR engines:
+  - `auto` (default): Uses Tesseract
+  - `tesseract`: Explicit Tesseract selection
+  - `none`: Skip OCR entirely for PDF processing-only workflows
+
+  This prepares the foundation for future third-party OCR engine plugins.
+- **Smart PDF/A conversion**: New `--output-type auto` (now the default) produces best-effort
+  PDF/A output without requiring Ghostscript when the verapdf validator is available. Falls back
+  to traditional Ghostscript conversion when needed.
+- **verapdf integration**: Added optional verapdf validation for fast PDF/A conversion. When
+  available, OCRmyPDF attempts speculative PDF/A conversion using pikepdf, validates with verapdf,
+  and skips Ghostscript if validation passes.
+- **Optional Ghostscript**: As a consequence of the changes above, Ghostscript is no longer a required dependency. It is optional.
+- **fpdf2 text renderer**: Replaced legacy hOCR text renderer with new fpdf2-based implementation,
+  providing better multilingual support and more accurate text positioning.
+- **Improved Occulta glyphless font**: The new Occulta font provides better handling of
+  zero-width markers and double-width CJK characters for accurate text layer positioning.
+- **Expanded multilingual font support**: Added FontProvider infrastructure with language-aware
+  font selection for Devanagari (Hindi, Sanskrit, Marathi, Nepali), CJK (Chinese, Japanese,
+  Korean), Arabic script, and many other scripts. System font discovery reduces package size.
+- **Simplified mode selection**: New `--mode` (`-m`) argument consolidates processing options:
+  - `default`: Error if text is found (standard behavior)
+  - `force`: Rasterize all content and run OCR (replaces `--force-ocr`)
+  - `skip`: Skip pages with existing text (replaces `--skip-text`)
+  - `redo`: Re-OCR pages, stripping old text layer (replaces `--redo-ocr`)
+
+  Legacy flags remain as silent aliases for backward compatibility.
+
+**API improvements**
+
+- Centralized validation logic in the `OcrOptions` Pydantic model
+- Removed scattered option mutation throughout the codebase
+- Better type safety for plugin development
+- Simplified plugin option handling
+- New `OcrElement`, `OcrClass`, and `BoundingBox` exports for OCR engine plugin developers
+- Extended `OcrEngine` ABC with `generate_ocr()` method for direct OCR tree output, eliding the need to translate a modern engine's output to hOCR or directly write to PDF.
+
+**Bug fixes**
+
+- Fixed double-compression of already-deflated JPEGs.
+- Fixed tesseract_cache plugin to properly handle cache misses.
+- Fixed handling of PDF page boxes (ArtBox, BleedBox) which were not being processed correctly.
+- Added thread safety lock to pypdfium plugin for concurrent operations.
+- Improved pdfminer.six compatibility with explicit word spacing.
+
+**Documentation**
+
+- Updated cookbook to replace deprecated `--tesseract-timeout 0` with `--ocr-engine none`.
+- Added comprehensive plugin documentation for new OCR engine framework.
+
+**Dependency changes**
+
+- Requires: one of `pypdfium2` or `ghostscript` for PDF rasterization (PDF to image)
+  - Preferred: both
+- Requires: one of `verapdf` or `ghostscript` for PDF/A generation
+  - Preferred: both
+- Recommended: `pypdfium2` for PDF rasterization (new dependency)
+- Recommended: `ghostscript` (used to be Required)
+- Recommended: Noto fonts for improved OCR text positioning
+- Optional: `verapdf` for fast PDF/A validation (new dependency)
+- Requires: `fpdf2` for text layer rendering (new dependency)
+- Recommended: replace `typer` with `cyclopts` in misc scripts (new dependency)
+- See docs/maintainers.md for details.
+
+**Migration guide for plugin developers**
+
+- Update imports: `from ocrmypdf._options import OcrOptions`
+- Update type hints: `def check_options(options: OcrOptions)` instead of `options: Namespace`
+- Attribute access remains unchanged: `options.languages`, `options.output_type`, etc.
+- Remove any in-place option modifications - compute values at point of use instead
+- Most existing plugins will continue working without changes due to duck-typing
+
 ## v16.13.0
 
 - Added detection and repair for Ghostscript 10.6 JPEG corruption. When GS 10.6

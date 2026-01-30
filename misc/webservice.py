@@ -4,6 +4,8 @@
 
 """Run the OCRmyPDF web service."""
 
+from __future__ import annotations
+
 import os
 import sys
 
@@ -13,7 +15,7 @@ except ImportError:
     raise ImportError(
         'You need to install streamlit in the Python environment '
         'to run the web service.\n'
-    )
+    ) from None
 
 if __name__ == '__main__':
     os.execvp(

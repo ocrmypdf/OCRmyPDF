@@ -6,11 +6,14 @@
 from __future__ import annotations
 
 import argparse
+from argparse import ArgumentParser
 from collections.abc import Callable, Mapping
 from typing import Any, TypeVar
 
 from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._defaults import PROGRAM_NAME as _PROGRAM_NAME
+from ocrmypdf._options import OcrOptions, ProcessingMode
+from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._version import __version__ as _VERSION
 
 T = TypeVar('T', int, float)
@@ -51,39 +54,6 @@ def str_to_int(mapping: Mapping[str, int]):
     return _str_to_int
 
 
-class ArgumentParser(argparse.ArgumentParser):
-    """Override parser's default behavior of calling sys.exit().
-
-    https://stackoverflow.com/questions/5943249/python-argparse-and-controlling-overriding-the-exit-status-code
-
-    OCRmyPDF began as a CLI but eventually acquired an API. The API works inside out,
-    by synthesizing a command line argument. So we subclass the standard parser with
-    one that doesn't call sys.exit(). Obviously this is not the ideal way to do things
-    but it works for us.
-    """
-
-    def __init__(self, *args, **kwargs):
-        """Initialize the parser."""
-        super().__init__(*args, **kwargs)
-        self._api_mode = False
-
-    def enable_api_mode(self):
-        """Enable API mode.
-
-        When set, the parser will not call sys.exit() on error. OCRmyPDF was originally
-        a command line program, but now it has an API. The API works by synthesizing
-        command line arguments.
-        """
-        self._api_mode = True
-
-    def error(self, message):
-        """Override the default argparse error behavior."""
-        if not self._api_mode:
-            super().error(message)
-            return
-        raise ValueError(message)
-
-
 class LanguageSetAction(argparse.Action):
     """Manages a list of languages."""
 
@@ -96,7 +66,7 @@ class LanguageSetAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         """Add a language to the set."""
         dest = getattr(namespace, self.dest)
-        if '+' in values:
+        if isinstance(values, str) and '+' in values:
             [dest.append(lang) for lang in values.split('+')]
         else:
             dest.append(values)
@@ -189,16 +159,17 @@ Online documentation is located at:
     )
     parser.add_argument(
         '--output-type',
-        choices=['pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3', 'none'],
-        default='pdfa',
-        help="Choose output type. 'pdfa' creates a PDF/A-2b compliant file for "
-        "long term archiving (default, recommended) but may not suitable "
-        "for users who want their file altered as little as possible. 'pdfa' "
-        "also has problems with full Unicode text. 'pdf' minimizes changes "
-        "to the input file. 'pdf-a1' creates a "
-        "PDF/A-1b file. 'pdf-a2' is equivalent to 'pdfa'. 'pdf-a3' creates a "
-        "PDF/A-3b file. 'none' will produce no output, which may be helpful if "
-        "only the --sidecar is desired.",
+        choices=['auto', 'pdfa', 'pdf', 'pdfa-1', 'pdfa-2', 'pdfa-3', 'none'],
+        default='auto',
+        help="Choose output type. 'auto' (default) produces best-effort PDF/A "
+        "without requiring Ghostscript - uses verapdf validation when available, "
+        "otherwise passes through as PDF/A if safe (input already PDF/A or "
+        "force-ocr was used), or falls back to regular PDF. 'pdfa' creates a "
+        "PDF/A-2b compliant file for long term archiving (requires Ghostscript "
+        "as fallback). 'pdf' minimizes changes to the input file. 'pdfa-1' "
+        "creates a PDF/A-1b file. 'pdfa-2' is equivalent to 'pdfa'. 'pdfa-3' "
+        "creates a PDF/A-3b file. 'none' will produce no output, which may be "
+        "helpful if only the --sidecar is desired.",
     )
 
     # Use null string '\0' as sentinel to indicate the user supplied no argument,
@@ -338,11 +309,24 @@ Online documentation is located at:
 
     ocrsettings = parser.add_argument_group("OCR options", "Control how OCR is applied")
     ocrsettings.add_argument(
+        '-m',
+        '--mode',
+        choices=[mode.value for mode in ProcessingMode],
+        default=ProcessingMode.default.value,
+        help="Processing mode for pages with existing text. "
+        "'default' errors if text is found. "
+        "'force' rasterizes all content and runs OCR (same as --force-ocr). "
+        "'skip' skips pages with existing text (same as --skip-text). "
+        "'redo' re-OCRs pages, replacing old invisible text (same as --redo-ocr).",
+    )
+    # Legacy flags for backward compatibility - these set the mode internally
+    ocrsettings.add_argument(
         '-f',
         '--force-ocr',
         action='store_true',
         help="Rasterize any text or vector objects on each page, apply OCR, and "
-        "save the rastered output (this rewrites the PDF)",
+        "save the rastered output (this rewrites the PDF). "
+        "Equivalent to --mode force.",
     )
     ocrsettings.add_argument(
         '-s',
@@ -350,7 +334,8 @@ Online documentation is located at:
         action='store_true',
         help="Skip OCR on any pages that already contain text, but include the "
         "page in final output; useful for PDFs that contain a mix of "
-        "images, text pages, and/or previously OCRed pages",
+        "images, text pages, and/or previously OCRed pages. "
+        "Equivalent to --mode skip.",
     )
     ocrsettings.add_argument(
         '--redo-ocr',
@@ -358,7 +343,8 @@ Online documentation is located at:
         help="Attempt to detect and remove the hidden OCR layer from files that "
         "were previously OCRed with OCRmyPDF or another program. Apply OCR "
         "to text found in raster images. Existing visible text objects will "
-        "not be changed. If there is no existing OCR, OCR will be added.",
+        "not be changed. If there is no existing OCR, OCR will be added. "
+        "Equivalent to --mode redo.",
     )
     ocrsettings.add_argument(
         '--skip-big',
@@ -397,10 +383,30 @@ Online documentation is located at:
     )
     advanced.add_argument(
         '--pdf-renderer',
-        choices=['auto', 'hocr', 'sandwich', 'hocrdebug'],
+        choices=['auto', 'hocr', 'sandwich', 'hocrdebug', 'fpdf2'],
         default='auto',
-        help="Choose OCR PDF renderer - the default option is to let OCRmyPDF "
-        "choose.  See documentation for discussion.",
+        help="Choose OCR PDF renderer. 'auto' (recommended) uses fpdf2, which "
+        "provides full international language support including RTL scripts, "
+        "proper text positioning, and invisible text that becomes visible when "
+        "selected. 'sandwich' renders text as a background layer. Legacy 'hocr' "
+        "and 'hocrdebug' options are deprecated and will use fpdf2.",
+    )
+    advanced.add_argument(
+        '--ocr-engine',
+        choices=['auto', 'tesseract', 'none'],
+        default='auto',
+        help="OCR engine to use. 'auto' (default) selects the best available engine. "
+        "'tesseract' uses Tesseract OCR. "
+        "'none' skips OCR entirely, useful for PDF/A conversion or image processing "
+        "without text recognition.",
+    )
+    advanced.add_argument(
+        '--rasterizer',
+        choices=['auto', 'ghostscript', 'pypdfium'],
+        default='auto',
+        help="Choose PDF page rasterizer. 'auto' prefers pypdfium when available, "
+        "falling back to Ghostscript. 'pypdfium' is faster but requires the "
+        "pypdfium2 package. 'ghostscript' uses the traditional Ghostscript rasterizer.",
     )
     advanced.add_argument(
         '--rotate-pages-threshold',
@@ -465,3 +471,75 @@ plugins_only_parser.add_argument(
     default=[],
     help="Name of plugin to import.",
 )
+
+
+def namespace_to_options(ns) -> OcrOptions:
+    """Convert argparse.Namespace to OcrOptions.
+
+    This function encapsulates CLI-specific knowledge of how command line
+    arguments map to our internal options model.
+    """
+    # Extract known fields
+    known_fields = {}
+    extra_attrs = {}
+
+    # Legacy boolean flags that map to mode - handled by OcrOptions model validator
+    legacy_mode_flags = {'force_ocr', 'skip_text', 'redo_ocr'}
+
+    for key, value in vars(ns).items():
+        if key in OcrOptions.model_fields:
+            known_fields[key] = value
+        elif key in legacy_mode_flags:
+            # Pass legacy flags to OcrOptions for conversion to mode
+            known_fields[key] = value
+        else:
+            extra_attrs[key] = value
+
+    # Handle special cases for hOCR API
+    if 'output_folder' in extra_attrs and 'output_file' not in known_fields:
+        known_fields['output_file'] = '/dev/null'  # Placeholder
+
+    # Handle case where input_file is missing (e.g., in _hocr_to_ocr_pdf)
+    if 'work_folder' in extra_attrs and 'input_file' not in known_fields:
+        known_fields['input_file'] = '/dev/null'  # Placeholder
+
+    instance = OcrOptions(**known_fields)
+    instance.extra_attrs = extra_attrs
+    return instance
+
+
+def get_options_and_plugins(
+    args=None,
+) -> tuple[OcrOptions, OcrmypdfPluginManager]:
+    """Parse command line arguments and return OcrOptions and plugin manager.
+
+    This is the main entry point for CLI argument processing. It handles
+    plugin discovery, argument parsing, and conversion to our internal
+    options model.
+
+    Args:
+        args: Command line arguments. If None, uses sys.argv.
+
+    Returns:
+        Tuple of (OcrOptions, PluginManager)
+    """
+    # Import here to avoid circular imports
+    from ocrmypdf.api import setup_plugin_infrastructure
+
+    # First pass: get plugins so we can register their options
+    pre_options, _unused = plugins_only_parser.parse_known_args(args=args)
+
+    # Set up plugin infrastructure with proper initialization
+    plugin_manager = setup_plugin_infrastructure(plugins=pre_options.plugins)
+
+    # Get parser and let plugins add their options
+    parser = get_parser()
+    plugin_manager.add_options(parser=parser)
+
+    # Parse all arguments
+    namespace = parser.parse_args(args=args)
+
+    # Convert to OcrOptions
+    options = namespace_to_options(namespace)
+
+    return options, plugin_manager

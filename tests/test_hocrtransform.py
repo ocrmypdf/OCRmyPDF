@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import re
 from io import StringIO
+from pathlib import Path
 
 import pytest
 from pdfminer.converter import TextConverter
@@ -15,9 +16,11 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFParser
 from PIL import Image
 
-from ocrmypdf import hocrtransform
 from ocrmypdf._exec.tesseract import generate_hocr
+from ocrmypdf.font import MultiFontManager
+from ocrmypdf.fpdf_renderer import Fpdf2PdfRenderer
 from ocrmypdf.helpers import check_pdf
+from ocrmypdf.hocrtransform import HocrParser
 
 from .conftest import check_ocrmypdf
 
@@ -36,6 +39,18 @@ def text_from_pdf(filename):
 
 
 # pylint: disable=redefined-outer-name
+
+
+@pytest.fixture
+def font_dir():
+    """Get the font directory."""
+    return Path(__file__).parent.parent / "src" / "ocrmypdf" / "data"
+
+
+@pytest.fixture
+def multi_font_manager(font_dir):
+    """Create a MultiFontManager for tests."""
+    return MultiFontManager(font_dir)
 
 
 @pytest.fixture
@@ -58,23 +73,38 @@ def blank_hocr(tmp_path):
     return tmp_path / 'blank.hocr'
 
 
-def test_mono_image(blank_hocr, outdir):
+def test_mono_image(blank_hocr, outdir, multi_font_manager):
     im = Image.new('1', (8, 8), 0)
     for n in range(8):
         im.putpixel((n, n), 1)
     im.save(outdir / 'mono.tif', format='TIFF')
 
-    hocr = hocrtransform.HocrTransform(hocr_filename=str(blank_hocr), dpi=8)
-    hocr.to_pdf(
-        out_filename=str(outdir / 'mono.pdf'), image_filename=str(outdir / 'mono.tif')
+    # Parse hOCR file
+    parser = HocrParser(str(blank_hocr))
+    ocr_page = parser.parse()
+
+    # Use DPI from hOCR or default
+    dpi = ocr_page.dpi or 8
+
+    # Render to PDF using fpdf2
+    renderer = Fpdf2PdfRenderer(
+        page=ocr_page,
+        dpi=dpi,
+        multi_font_manager=multi_font_manager,
+        invisible_text=True,
     )
-    # shutil.copy(outdir / 'mono.pdf', 'mono.pdf')
-    check_pdf(str(outdir / 'mono.pdf'))
+    renderer.render(outdir / 'mono.pdf')
+
+    check_pdf(outdir / 'mono.pdf')
 
 
 @pytest.mark.slow
-def test_hocrtransform_matches_sandwich(resources, outdir):
-    check_ocrmypdf(resources / 'ccitt.pdf', outdir / 'hocr.pdf', '--pdf-renderer=hocr')
+def test_fpdf2_matches_sandwich(resources, outdir):
+    """Test that fpdf2 renderer produces similar output to sandwich renderer."""
+    # Note: hocr renderer now redirects to fpdf2
+    check_ocrmypdf(
+        resources / 'ccitt.pdf', outdir / 'fpdf2.pdf', '--pdf-renderer=fpdf2'
+    )
     check_ocrmypdf(
         resources / 'ccitt.pdf', outdir / 'tess.pdf', '--pdf-renderer=sandwich'
     )
@@ -86,17 +116,9 @@ def test_hocrtransform_matches_sandwich(resources, outdir):
         words = s.split(' ')
         return set(words)
 
-    hocr_words = clean(text_from_pdf(outdir / 'hocr.pdf'))
+    fpdf2_words = clean(text_from_pdf(outdir / 'fpdf2.pdf'))
     tess_words = clean(text_from_pdf(outdir / 'tess.pdf'))
 
-    similarity = len(hocr_words & tess_words) / len(hocr_words | tess_words)
-
-    # from pathlib import Path
-
-    # Path('hocr.txt').write_text(sorted('\n'.join(hocr_words)))
-    # Path('tess.txt').write_text(sorted('\n'.join(tess_words)))
-    # Path('mismatch.txt').write_text(
-    #     '\n'.join(sorted(hocr_words ^ tess_words)), encoding='utf8'
-    # )
+    similarity = len(fpdf2_words & tess_words) / len(fpdf2_words | tess_words)
 
     assert similarity > 0.99

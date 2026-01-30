@@ -20,6 +20,7 @@ from ocrmypdf._exec.ghostscript import DuplicateFilter, rasterize_pdf
 from ocrmypdf.builtin_plugins.ghostscript import _repair_gs106_jpeg_corruption
 from ocrmypdf.exceptions import ColorConversionNeededError, ExitCode, InputFileError
 from ocrmypdf.helpers import Resolution
+from ocrmypdf.pluginspec import GhostscriptRasterDevice
 
 from .conftest import check_ocrmypdf, run_ocrmypdf_api
 
@@ -43,7 +44,7 @@ def test_rasterize_size(francais, outdir):
     rasterize_pdf(
         path,
         outdir / 'out.png',
-        raster_device='pngmono',
+        raster_device=GhostscriptRasterDevice.PNGMONO,
         raster_dpi=Resolution(
             target_size[0] / page_size[0], target_size[1] / page_size[1]
         ),
@@ -67,7 +68,7 @@ def test_rasterize_rotated(francais, outdir, caplog):
     rasterize_pdf(
         path,
         outdir / 'out.png',
-        raster_device='pngmono',
+        raster_device=GhostscriptRasterDevice.PNGMONO,
         raster_dpi=Resolution(
             target_size[0] / page_size[0], target_size[1] / page_size[1]
         ),
@@ -84,6 +85,8 @@ def test_gs_render_failure(resources, outpdf, caplog):
     exitcode = run_ocrmypdf_api(
         resources / 'blank.pdf',
         outpdf,
+        '--output-type',
+        'pdfa',  # Required to trigger Ghostscript PDF/A generation
         '--plugin',
         'tests/plugins/tesseract_noop.py',
         '--plugin',
@@ -110,6 +113,8 @@ def test_ghostscript_pdfa_failure(resources, outpdf, caplog):
     exitcode = run_ocrmypdf_api(
         resources / 'francais.pdf',
         outpdf,
+        '--output-type',
+        'pdfa',  # Required to trigger Ghostscript PDF/A generation
         '--plugin',
         'tests/plugins/tesseract_noop.py',
         '--plugin',
@@ -136,6 +141,8 @@ def test_ghostscript_mandatory_color_conversion(resources, outpdf):
         check_ocrmypdf(
             resources / 'jbig2_baddevicen.pdf',
             outpdf,
+            '--output-type',
+            'pdfa',  # Required to trigger Ghostscript PDF/A generation
             '--plugin',
             'tests/plugins/tesseract_noop.py',
         )
@@ -151,7 +158,7 @@ def test_rasterize_pdf_errors(resources, no_outpdf, caplog):
             rasterize_pdf(
                 resources / 'francais.pdf',
                 no_outpdf,
-                raster_device='pngmono',
+                raster_device=GhostscriptRasterDevice.PNGMONO,
                 raster_dpi=Resolution(100, 100),
             )
         assert "this is an error" in caplog.text
@@ -261,7 +268,7 @@ def test_recoverable_image_error(pdf_with_invalid_image, outdir, caplog):
     rasterize_pdf(
         outdir / 'invalid_image.pdf',
         outdir / 'out.png',
-        raster_device='pngmono',
+        raster_device=GhostscriptRasterDevice.PNGMONO,
         raster_dpi=Resolution(10, 10),
         stop_on_error=False,
     )
@@ -283,7 +290,7 @@ def test_recoverable_image_error_with_stop(pdf_with_invalid_image, outdir, caplo
         rasterize_pdf(
             outdir / 'invalid_image.pdf',
             outdir / 'out.png',
-            raster_device='pngmono',
+            raster_device=GhostscriptRasterDevice.PNGMONO,
             raster_dpi=Resolution(100, 100),
             stop_on_error=True,
         )
@@ -376,7 +383,7 @@ class TestGs106JpegCorruptionRepair:
                     repaired_bytes_list.append(obj.read_raw_bytes())
 
         assert len(repaired_bytes_list) == len(original_bytes_list)
-        for orig, repaired_bytes in zip(original_bytes_list, repaired_bytes_list):
+        for orig, repaired_bytes in zip(original_bytes_list, repaired_bytes_list, strict=False):
             assert orig == repaired_bytes, "Repaired bytes should match original"
 
         # Check that error/warning was logged

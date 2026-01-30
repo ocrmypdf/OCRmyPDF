@@ -5,7 +5,7 @@
 To quickly run tests where getting OCR output is not necessary and we want to test
 the rotation pipeline.
 
-In 'hocr' mode, create a .hocr file that specifies no text found.
+In generate_hocr mode, create a .hocr file that specifies no text found.
 
 In 'pdf' mode, convert the image to PDF using another program.
 

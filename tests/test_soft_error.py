@@ -41,6 +41,8 @@ def test_render_continue_on_soft_error(resources, outpdf):
     exitcode = run_ocrmypdf_api(
         resources / 'francais.pdf',
         outpdf,
+        '--output-type',
+        'pdfa',  # Required to trigger Ghostscript PDF/A generation
         '--continue-on-soft-render-error',
         '--plugin',
         'tests/plugins/tesseract_noop.py',
@@ -55,6 +57,8 @@ def test_render_stop_on_soft_error(resources, outpdf):
     exitcode = run_ocrmypdf_api(
         resources / 'francais.pdf',
         outpdf,
+        '--output-type',
+        'pdfa',  # Required to trigger Ghostscript PDF/A generation
         '--plugin',
         'tests/plugins/tesseract_noop.py',
         '--plugin',

@@ -167,15 +167,9 @@ SPDX-FileCopyrightText = [
 SPDX-License-Identifier = "Zlib"
 
 [[annotations]]
-path = "src/ocrmypdf/data/pdf.ttf"
+path = "src/ocrmypdf/data/Occulta.ttf"
 precedence = "aggregate"
-SPDX-FileCopyrightText = [
-    "(C) 2014 Ray Smith",
-    "(C) 2015 Ken Sharp",
-    "(C) 2016 James R. Barlow",
-    "(C) 2016 Jeff Breidenbach",
-    "(C) 2017 Zdenko Podobný",
-]
+SPDX-FileCopyrightText = ["(C) 2026 James R. Barlow"]
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]

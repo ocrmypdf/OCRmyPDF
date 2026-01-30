@@ -12,10 +12,11 @@ from ocrmypdf._exec import ghostscript, tesseract
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo import PdfInfo
+from ocrmypdf.pluginspec import GhostscriptRasterDevice
 
 from .conftest import check_ocrmypdf, have_unpaper, run_ocrmypdf
 
-RENDERERS = ['hocr', 'sandwich']
+RENDERERS = ['fpdf2', 'sandwich']
 
 
 def test_deskew(resources, outdir):
@@ -28,7 +29,7 @@ def test_deskew(resources, outdir):
     ghostscript.rasterize_pdf(
         deskewed_pdf,
         deskewed_png,
-        raster_device='pngmono',
+        raster_device=GhostscriptRasterDevice.PNGMONO,
         raster_dpi=Resolution(150, 150),
         pageno=1,
     )
@@ -65,7 +66,7 @@ def test_remove_background(resources, outdir):
     ghostscript.rasterize_pdf(
         output_pdf,
         output_png,
-        raster_device='png16m',
+        raster_device=GhostscriptRasterDevice.PNG16M,
         raster_dpi=Resolution(100, 100),
         pageno=1,
     )
@@ -79,7 +80,7 @@ def test_remove_background(resources, outdir):
 @pytest.mark.parametrize(
     "pdf", ['palette.pdf', 'cmyk.pdf', 'ccitt.pdf', 'jbig2.pdf', 'lichtenstein.pdf']
 )
-@pytest.mark.parametrize("renderer", ['sandwich', 'hocr'])
+@pytest.mark.parametrize("renderer", ['sandwich', 'fpdf2'])
 @pytest.mark.parametrize("output_type", ['pdf', 'pdfa'])
 def test_exotic_image(pdf, renderer, output_type, resources, outdir):
     outfile = outdir / f'test_{pdf}_{renderer}.pdf'

@@ -15,9 +15,9 @@ from contextlib import suppress
 
 from ocrmypdf import __version__
 from ocrmypdf._pipelines.ocr import run_pipeline_cli
-from ocrmypdf._plugin_manager import get_parser_options_plugins
 from ocrmypdf._validation import check_options
 from ocrmypdf.api import Verbosity, configure_logging
+from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.exceptions import (
     BadArgsError,
     ExitCode,
@@ -39,7 +39,7 @@ def sigbus(*args):
 
 def run(args=None):
     """Run the ocrmypdf command line interface."""
-    _parser, options, plugin_manager = get_parser_options_plugins(args=args)
+    options, plugin_manager = get_options_and_plugins(args=args)
 
     with suppress(AttributeError, PermissionError):
         os.nice(5)

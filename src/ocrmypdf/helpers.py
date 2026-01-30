@@ -25,7 +25,6 @@ from typing import (
 
 import img2pdf
 import pikepdf
-from deprecation import deprecated
 
 log = logging.getLogger(__name__)
 
@@ -136,11 +135,6 @@ class Resolution(Generic[T]):
         return self._isclose(self.x, other.x) and self._isclose(self.y, other.y)
 
 
-@deprecated(deprecated_in='15.4.0')
-class NeverRaise(Exception):
-    """An exception that is never raised."""
-
-
 def safe_symlink(input_file: os.PathLike, soft_link_name: os.PathLike) -> None:
     """Create a symbolic link at ``soft_link_name``, which references ``input_file``.
 
@@ -200,7 +194,7 @@ def is_iterable_notstr(thing: Any) -> bool:
 
 def monotonic(seq: Sequence) -> bool:
     """Does this sequence increase monotonically?"""
-    return all(b > a for a, b in zip(seq, seq[1:]))
+    return all(b > a for a, b in zip(seq, seq[1:], strict=False))
 
 
 def page_number(input_file: os.PathLike) -> int:
@@ -298,9 +292,7 @@ def check_pdf(input_file: Path) -> bool:
                 if linearize_msgs:
                     log.warning(linearize_msgs)
 
-            if success and not linearize_msgs:
-                return True
-            return False
+            return bool(success and not linearize_msgs)
 
 
 def clamp(n: T, smallest: T, largest: T) -> T:

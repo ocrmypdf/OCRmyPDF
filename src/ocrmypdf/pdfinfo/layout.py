@@ -58,7 +58,7 @@ def pdfsimplefont__init__(
     return
 
 
-setattr(PDFSimpleFont, '__init__', pdfsimplefont__init__)
+PDFSimpleFont.__init__ = pdfsimplefont__init__
 
 # Patch pdfminer.six buffer size
 # The parser doesn't properly handle keyword tokens are split across the end of the
@@ -363,7 +363,7 @@ class PdfMinerState:
             except StopIteration:
                 raise InputFileError(
                     f"pdfminer did not find page {pageno} in the input file."
-                )
+                ) from None
         page = self.page_cache[pageno]
         if not page:
             raise InputFileError(

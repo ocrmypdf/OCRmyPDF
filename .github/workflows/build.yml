@@ -22,11 +22,11 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04]
-        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python: ["3.11", "3.12", "3.13", "3.14"]
         include:
           - os: ubuntu-22.04
             tesseract_ppa: "ppa"
-            python: "3.10"
+            python: "3.11"
 
     env:
       OS: ${{ matrix.os }}
@@ -57,6 +57,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             curl \
+            fonts-noto-core \
+            fonts-noto-cjk \
             ghostscript \
             jbig2dec \
             img2pdf \
@@ -74,7 +76,7 @@ jobs:
 
       - name: Install Python packages
         run: |
-          uv sync --extra test --no-dev
+          uv sync --group test
 
       - name: Report versions
         run: |
@@ -102,7 +104,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python: ["3.11", "3.12", "3.13", "3.14"]
 
     env:
       OS: ${{ matrix.os }}
@@ -123,7 +125,9 @@ jobs:
             jbig2enc \
             openjpeg \
             pngquant \
-            tesseract
+            poppler \
+            tesseract \
+            verapdf
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -137,7 +141,7 @@ jobs:
 
       - name: Install Python packages
         run: |
-          uv sync --extra test --no-dev
+          uv sync --group test
 
       - name: Report versions
         run: |
@@ -164,7 +168,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python: ["3.11", "3.12", "3.13", "3.14"]
 
     env:
       OS: ${{ matrix.os }}
@@ -187,12 +191,13 @@ jobs:
 
       - name: Install system packages
         run: |
-          choco install --yes --no-progress --pre tesseract
+          choco install --yes --no-progress tesseract
           choco install --yes --no-progress --ignore-checksums ghostscript --version 9.56.1
+          choco install --yes --no-progress poppler --version=25.11.0
 
       - name: Install Python packages
         run: |
-          uv sync --extra test --no-dev
+          uv sync --group test
 
       - name: Test
         run: |

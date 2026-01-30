@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import logging
 import os
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +15,6 @@ from pikepdf import Dictionary, Name, Pdf
 from pikepdf import __version__ as PIKEPDF_VERSION
 from pikepdf.models.metadata import PdfMetadata, encode_pdf_date
 
-from ocrmypdf._annots import remove_broken_goto_annotations
 from ocrmypdf._defaults import PROGRAM_NAME
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._version import __version__ as OCRMYPF_VERSION
@@ -48,11 +47,13 @@ def get_docinfo(base_pdf: Pdf, context: PdfContext) -> dict[str, str]:
     if options.subject:
         pdfmark['/Subject'] = options.subject
 
-    creator_tag = context.plugin_manager.hook.get_ocr_engine().creator_tag(options)
+    creator_tag = context.plugin_manager.get_ocr_engine(options=options).creator_tag(
+        options
+    )
 
     pdfmark['/Creator'] = f'{PROGRAM_NAME} {OCRMYPF_VERSION} / {creator_tag}'
     pdfmark['/Producer'] = f'pikepdf {PIKEPDF_VERSION}'
-    pdfmark['/ModDate'] = encode_pdf_date(datetime.now(timezone.utc))
+    pdfmark['/ModDate'] = encode_pdf_date(dt.datetime.now(dt.UTC))
     return pdfmark
 
 
@@ -99,9 +100,7 @@ def should_linearize(working_file: Path, context: PdfContext) -> bool:
     For smaller files, linearization is not worth the effort.
     """
     filesize = os.stat(working_file).st_size
-    if filesize > (context.options.fast_web_view * 1_000_000):
-        return True
-    return False
+    return filesize > (context.options.fast_web_view * 1_000_000)
 
 
 def _fix_metadata(meta_original: PdfMetadata, meta_pdf: PdfMetadata):
@@ -109,12 +108,11 @@ def _fix_metadata(meta_original: PdfMetadata, meta_pdf: PdfMetadata):
     # ensure consistency with Ghostscript.
     if 'xmp:CreateDate' not in meta_pdf:
         meta_pdf['xmp:CreateDate'] = meta_pdf.get('xmp:ModifyDate', '')
-    if meta_pdf.get('dc:title') == 'Untitled':
+    if meta_pdf.get('dc:title') == 'Untitled' and ('dc:title' not in meta_original):
         # Ghostscript likes to set title to Untitled if omitted from input.
         # Reverse this, because PDF/A TechNote 0003:Metadata in PDF/A-1
         # and the XMP Spec do not make this recommendation.
-        if 'dc:title' not in meta_original:
-            del meta_pdf['dc:title']
+        del meta_pdf['dc:title']
 
 
 def _unset_empty_metadata(meta: PdfMetadata, options):
@@ -187,7 +185,7 @@ def metadata_fixup(
     output_file = context.get_path('metafix.pdf')
     options = context.options
 
-    pbar_class = context.plugin_manager.hook.get_progressbar_class()
+    pbar_class = context.plugin_manager.get_progressbar_class()
     with (
         Pdf.open(context.origin) as original,
         Pdf.open(working_file) as pdf,

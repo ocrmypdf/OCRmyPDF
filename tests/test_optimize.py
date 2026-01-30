@@ -19,6 +19,7 @@ from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._exec.ghostscript import rasterize_pdf
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.optimize import PdfImage, extract_image_filter
+from ocrmypdf.pluginspec import GhostscriptRasterDevice
 from tests.conftest import check_ocrmypdf
 
 needs_pngquant = pytest.mark.skipif(
@@ -54,7 +55,7 @@ def test_mono_not_inverted(resources, outdir):
     rasterize_pdf(
         outdir / 'out.pdf',
         outdir / 'im.png',
-        raster_device='pnggray',
+        raster_device=GhostscriptRasterDevice.PNGGRAY,
         raster_dpi=Resolution(10, 10),
     )
 
@@ -81,8 +82,8 @@ def test_jpg_png_params(resources, outpdf):
 
 
 @needs_jbig2enc
-@pytest.mark.parametrize('lossy', [False, True])
-def test_jbig2_lossy(lossy, resources, outpdf):
+def test_jbig2_lossless(resources, outpdf):
+    """Test that JBIG2 lossless encoding works without JBIG2Globals."""
     args = [
         resources / 'ccitt.pdf',
         outpdf,
@@ -99,19 +100,14 @@ def test_jbig2_lossy(lossy, resources, outpdf):
         '--jbig2-threshold',
         '0.7',
     ]
-    if lossy:
-        args.append('--jbig2-lossy')
 
     check_ocrmypdf(*args)
 
     with pikepdf.open(outpdf) as pdf:
         pim = pikepdf.PdfImage(next(iter(pdf.pages[0].images.values())))
         assert pim.filters[0] == '/JBIG2Decode'
-
-        if lossy:
-            assert '/JBIG2Globals' in pim.decode_parms[0]
-        else:
-            assert len(pim.decode_parms) == 0
+        # Lossless JBIG2 has no JBIG2Globals (no shared symbol dictionary)
+        assert len(pim.decode_parms) == 0
 
 
 @needs_pngquant

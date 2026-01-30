@@ -15,7 +15,7 @@ from ocrmypdf._progressbar import NullProgressBar, ProgressBar
 T = TypeVar('T')
 
 
-def _task_noop(*_args, **_kwargs):
+def _task_noop(*_args, **_kwargs) -> None:
     return
 
 
@@ -101,8 +101,8 @@ class Executor(ABC):
 
 
 def setup_executor(plugin_manager) -> Executor:
-    pbar_class = plugin_manager.hook.get_progressbar_class()
-    return plugin_manager.hook.get_executor(progressbar_class=pbar_class)
+    pbar_class = plugin_manager.get_progressbar_class()
+    return plugin_manager.get_executor(progressbar_class=pbar_class)
 
 
 class SerialExecutor(Executor):

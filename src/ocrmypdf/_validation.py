@@ -6,22 +6,19 @@
 
 from __future__ import annotations
 
-import locale
 import logging
 import os
 import sys
-import unicodedata
-from argparse import Namespace
 from collections.abc import Sequence
 from pathlib import Path
 from shutil import copyfileobj
 
 import pikepdf
-import PIL
-from pluggy import PluginManager
 
-from ocrmypdf._defaults import DEFAULT_LANGUAGE, DEFAULT_ROTATE_PAGES_THRESHOLD
+from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._exec import unpaper
+from ocrmypdf._options import OcrOptions
+from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf.exceptions import (
     BadArgsError,
     InputFileError,
@@ -30,7 +27,6 @@ from ocrmypdf.exceptions import (
 )
 from ocrmypdf.helpers import (
     is_file_writable,
-    monotonic,
     running_in_docker,
     running_in_snap,
     safe_symlink,
@@ -51,13 +47,19 @@ def check_platform() -> None:
 
 
 def check_options_languages(
-    options: Namespace, ocr_engine_languages: list[str]
+    options: OcrOptions, ocr_engine_languages: list[str]
 ) -> None:
-    if not options.languages:
-        options.languages = [DEFAULT_LANGUAGE]
-        system_lang = locale.getlocale()[0]
-        if system_lang and not system_lang.startswith('en'):
-            log.debug("No language specified; assuming --language %s", DEFAULT_LANGUAGE)
+    # Check for blocked languages first, before checking if they're installed
+    DENIED_LANGUAGES = {'equ', 'osd'}
+    blocked = DENIED_LANGUAGES & set(options.languages)
+    if blocked:
+        raise BadArgsError(
+            "The following languages are for Tesseract's internal use and "
+            "should not be issued explicitly: "
+            f"{', '.join(blocked)}\n"
+            "Remove them from the -l/--language argument."
+        )
+
     if not ocr_engine_languages:
         return
 
@@ -81,36 +83,7 @@ def check_options_languages(
         raise MissingDependencyError(msg)
 
 
-def check_options_output(options: Namespace) -> None:
-    if options.output_type == 'none' and options.output_file not in (os.devnull, '-'):
-        raise BadArgsError(
-            "Since you specified `--output-type none`, the output file "
-            f"{options.output_file} cannot be produced. Set the output file to "
-            f"`-` to suppress this message."
-        )
-
-
-def set_lossless_reconstruction(options: Namespace) -> None:
-    lossless_reconstruction = False
-    if not any(
-        (
-            options.deskew,
-            options.clean_final,
-            options.force_ocr,
-            options.remove_background,
-        )
-    ):
-        lossless_reconstruction = True
-    options.lossless_reconstruction = lossless_reconstruction
-
-    if not options.lossless_reconstruction and options.redo_ocr:
-        raise BadArgsError(
-            "--redo-ocr is not currently compatible with --deskew, "
-            "--clean-final, and --remove-background"
-        )
-
-
-def check_options_sidecar(options: Namespace) -> None:
+def check_options_sidecar(options: OcrOptions) -> None:
     if options.sidecar == '\0':
         if options.output_file == '-':
             raise BadArgsError("--sidecar filename needed when output file is stdout.")
@@ -125,7 +98,7 @@ def check_options_sidecar(options: Namespace) -> None:
         )
 
 
-def check_options_preprocessing(options: Namespace) -> None:
+def check_options_preprocessing(options: OcrOptions) -> None:
     if options.clean_final:
         options.clean = True
     if options.unpaper_args and not options.clean:
@@ -152,98 +125,45 @@ def check_options_preprocessing(options: Namespace) -> None:
             raise BadArgsError("--unpaper-args: " + str(e)) from e
 
 
-def _pages_from_ranges(ranges: str) -> set[int]:
-    pages: list[int] = []
-    page_groups = ranges.replace(' ', '').split(',')
-    for group in page_groups:
-        if not group:
-            continue
-        try:
-            start, end = group.split('-')
-        except ValueError:
-            pages.append(int(group) - 1)
-        else:
-            try:
-                new_pages = list(range(int(start) - 1, int(end)))
-                if not new_pages:
-                    raise BadArgsError(
-                        f"invalid page subrange '{start}-{end}'"
-                    ) from None
-                pages.extend(new_pages)
-            except ValueError:
-                raise BadArgsError(f"invalid page subrange '{group}'") from None
-
-    if not pages:
-        raise BadArgsError(
-            f"The string of page ranges '{ranges}' did not contain any recognizable "
-            f"page ranges."
-        )
-
-    if not monotonic(pages):
-        log.warning(
-            "List of pages to process contains duplicate pages, or pages that are "
-            "out of order"
-        )
-    if any(page < 0 for page in pages):
-        raise BadArgsError("pages refers to a page number less than 1")
-
-    log.debug("OCRing only these pages: %s", pages)
-    return set(pages)
-
-
-def check_options_ocr_behavior(options: Namespace) -> None:
-    exclusive_options = sum(
-        (1 if opt else 0)
-        for opt in (options.force_ocr, options.skip_text, options.redo_ocr)
-    )
-    if exclusive_options >= 2:
-        raise BadArgsError("Choose only one of --force-ocr, --skip-text, --redo-ocr.")
-    if options.pages:
-        options.pages = _pages_from_ranges(options.pages)
-
-
-def check_options_metadata(options: Namespace) -> None:
-    docinfo = [options.title, options.author, options.keywords, options.subject]
-    for s in (m for m in docinfo if m):
-        for char in s:
-            if unicodedata.category(char) == 'Co' or ord(char) >= 0x10000:
-                hexchar = hex(ord(char))[2:].upper()
-                raise ValueError(
-                    "One of the metadata strings contains "
-                    "an unsupported Unicode character: "
-                    f"{char} (U+{hexchar})"
-                )
-
-
-def check_options_pillow(options: Namespace) -> None:
-    PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1_000_000)
-    if PIL.Image.MAX_IMAGE_PIXELS == 0:
-        PIL.Image.MAX_IMAGE_PIXELS = None  # type: ignore
-
-
-def _check_plugin_invariant_options(options: Namespace) -> None:
+def _check_plugin_invariant_options(options: OcrOptions) -> None:
     check_platform()
-    check_options_metadata(options)
-    check_options_output(options)
-    set_lossless_reconstruction(options)
     check_options_sidecar(options)
     check_options_preprocessing(options)
-    check_options_ocr_behavior(options)
-    check_options_pillow(options)
 
 
-def _check_plugin_options(options: Namespace, plugin_manager: PluginManager) -> None:
-    plugin_manager.hook.check_options(options=options)
-    ocr_engine_languages = plugin_manager.hook.get_ocr_engine().languages(options)
+def _check_plugin_options(
+    options: OcrOptions, plugin_manager: OcrmypdfPluginManager
+) -> None:
+    # First, let plugins check their external dependencies
+    plugin_manager.check_options(options=options)
+
+    # Then check OCR engine language support
+    ocr_engine_languages = plugin_manager.get_ocr_engine(options=options).languages(
+        options
+    )
     check_options_languages(options, ocr_engine_languages)
 
+    # Finally, run comprehensive validation using the coordinator
+    from ocrmypdf._validation_coordinator import ValidationCoordinator
 
-def check_options(options: Namespace, plugin_manager: PluginManager) -> None:
+    coordinator = ValidationCoordinator(plugin_manager)
+    coordinator.validate_all_options(options)
+
+
+def check_options(options: OcrOptions, plugin_manager: OcrmypdfPluginManager) -> None:
+    """Check options for validity and consistency.
+
+    This function coordinates validation across the entire system:
+    1. Core validation (platform, files, preprocessing)
+    2. Plugin external dependency validation
+    3. Plugin-specific validation (handled by plugin models)
+    4. Cross-cutting validation (handled by validation coordinator)
+    """
     _check_plugin_invariant_options(options)
     _check_plugin_options(options, plugin_manager)
 
 
-def create_input_file(options: Namespace, work_folder: Path) -> tuple[Path, str]:
+def create_input_file(options: OcrOptions, work_folder: Path) -> tuple[Path, str]:
     if options.input_file == '-':
         # stdin
         log.info('reading file from standard input')
@@ -288,7 +208,7 @@ def create_input_file(options: Namespace, work_folder: Path) -> tuple[Path, str]
             raise InputFileError(msg) from e
 
 
-def check_requested_output_file(options: Namespace) -> None:
+def check_requested_output_file(options: OcrOptions) -> None:
     if options.output_file == '-':
         if sys.stdout.isatty():
             raise BadArgsError(
@@ -306,7 +226,7 @@ def check_requested_output_file(options: Namespace) -> None:
 
 
 def report_output_file_size(
-    options: Namespace,
+    options: OcrOptions,
     input_file: Path,
     output_file: Path,
     optimize_messages: Sequence[str] | None = None,
@@ -335,13 +255,15 @@ def report_output_file_size(
         'clean_final',
         'remove_background',
         'oversample',
-        'force_ocr',
     }
     for arg in image_preproc:
         if getattr(options, arg, False):
             reasons.append(
                 f"--{arg.replace('_', '-')} was issued, causing transcoding."
             )
+    # Check force_ocr via the backward-compatible property
+    if options.force_ocr:
+        reasons.append("--force-ocr (or --mode force) was issued, causing transcoding.")
 
     reasons.extend(optimize_messages)
 

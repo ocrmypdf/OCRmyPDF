@@ -117,6 +117,10 @@ tend to give better performance. watcher.py works on all platforms.
 Users may need to customize the script to meet their requirements.
 
 :::{code} bash
+# Using uv (recommended)
+uv sync --extra watcher
+
+# Or using pip
 pip3 install ocrmypdf[watcher]
 
 env OCR_INPUT_DIRECTORY=/mnt/input-pdfs \

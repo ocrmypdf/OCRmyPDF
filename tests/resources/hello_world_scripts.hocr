@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>Multilingual Hello World Script Test</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta name='ocr-system' content='tesseract 5.0.0' />
+<meta name='ocr-capabilities' content='ocr_page ocr_carea ocr_par ocr_line ocrx_word'/>
+</head>
+<body>
+<!-- Page: 8.5x11 inches at 300 DPI = 2550x3300 pixels -->
+<div class='ocr_page' id='page_1' title='image "hello_scripts.png"; bbox 0 0 2550 3300; ppageno 0; scan_res 300 300'>
+
+<!-- Row 1: English and Spanish (Latin script with accents/punctuation) -->
+<div class='ocr_carea' id='carea_1_1' title="bbox 150 150 1200 400">
+<p class='ocr_par' id='par_1_1' lang='eng' title="bbox 150 150 600 350">
+<span class='ocr_line' id='line_1_1' title="bbox 150 150 600 350; baseline 0 -40; x_size 140; x_descenders 28; x_ascenders 35">
+<span class='ocrx_word' id='word_1_1' title='bbox 150 150 600 350; x_wconf 98'>Hello!</span>
+</span>
+</p>
+</div>
+
+<div class='ocr_carea' id='carea_1_2' title="bbox 1400 150 2400 400">
+<p class='ocr_par' id='par_1_2' lang='spa' title="bbox 1400 150 2400 350">
+<span class='ocr_line' id='line_1_2' title="bbox 1400 150 2000 350; baseline 0 -40; x_size 140; x_descenders 28; x_ascenders 35">
+<span class='ocrx_word' id='word_1_2' title='bbox 1400 150 2000 350; x_wconf 97'>¡Hola!</span>
+</span>
+</p>
+</div>
+
+<!-- Row 2: French (accents) and German (umlauts, eszett) -->
+<div class='ocr_carea' id='carea_2_1' title="bbox 150 450 1200 700">
+<p class='ocr_par' id='par_2_1' lang='fra' title="bbox 150 450 800 650">
+<span class='ocr_line' id='line_2_1' title="bbox 150 450 800 650; baseline 0 -40; x_size 140; x_descenders 28; x_ascenders 35">
+<span class='ocrx_word' id='word_2_1' title='bbox 150 450 800 650; x_wconf 96'>Bonjour!</span>
+</span>
+</p>
+</div>
+
+<div class='ocr_carea' id='carea_2_2' title="bbox 1400 450 2400 700">
+<p class='ocr_par' id='par_2_2' lang='deu' title="bbox 1400 450 2100 650">
+<span class='ocr_line' id='line_2_2' title="bbox 1400 450 2100 650; baseline 0 -40; x_size 140; x_descenders 28; x_ascenders 35">
+<span class='ocrx_word' id='word_2_2' title='bbox 1400 450 2100 650; x_wconf 95'>Grüß Gott!</span>
+</span>
+</p>
+</div>
+
+<!-- Row 3: Russian (Cyrillic) and Greek -->
+<div class='ocr_carea' id='carea_3_1' title="bbox 150 750 1200 1000">
+<p class='ocr_par' id='par_3_1' lang='rus' title="bbox 150 750 900 950">
+<span class='ocr_line' id='line_3_1' title="bbox 150 750 900 950; baseline 0 -40; x_size 140; x_descenders 28; x_ascenders 35">
+<span class='ocrx_word' id='word_3_1' title='bbox 150 750 900 950; x_wconf 94'>Привет!</span>
+</span>
+</p>
+</div>
+
+<div class='ocr_carea' id='carea_3_2' title="bbox 1400 750 2400 1000">
+<p class='ocr_par' id='par_3_2' lang='ell' title="bbox 1400 750 2200 950">
+<span class='ocr_line' id='line_3_2' title="bbox 1400 750 2200 950; baseline 0 -40; x_size 140; x_descenders 28; x_ascenders 35">
+<span class='ocrx_word' id='word_3_2' title='bbox 1400 750 2200 950; x_wconf 93'>Γειά σου!</span>
+</span>
+</p>
+</div>
+
+<!-- Row 4: Chinese (Simplified) and Japanese -->
+<div class='ocr_carea' id='carea_4_1' title="bbox 150 1050 1200 1300">
+<p class='ocr_par' id='par_4_1' lang='chi_sim' title="bbox 150 1050 700 1250">
+<span class='ocr_line' id='line_4_1' title="bbox 150 1050 700 1250; baseline 0 -40; x_size 140; x_descenders 28; x_ascenders 35">
+<span class='ocrx_word' id='word_4_1' title='bbox 150 1050 700 1250; x_wconf 92'>你好！</span>
+</span>
+</p>
+</div>
+
+<div class='ocr_carea' id='carea_4_2' title="bbox 1400 1050 2400 1300">
+<p class='ocr_par' id='par_4_2' lang='jpn' title="bbox 1400 1050 2300 1250">
+<span class='ocr_line' id='line_4_2' title="bbox 1400 1050 2300 1250; baseline 0 -40; x_size 140; x_descenders 28; x_ascenders 35">
+<span class='ocrx_word' id='word_4_2' title='bbox 1400 1050 2300 1250; x_wconf 91'>こんにちは！</span>
+</span>
+</p>
+</div>
+
+<!-- Row 5: Korean and Turkish (Latin with special chars) -->
+<div class='ocr_carea' id='carea_5_1' title="bbox 150 1350 1200 1600">
+<p class='ocr_par' id='par_5_1' lang='kor' title="bbox 150 1350 900 1550">
+<span class='ocr_line' id='line_5_1' title="bbox 150 1350 900 1550; baseline 0 -40; x_size 140; x_descenders 28; x_ascenders 35">
+<span class='ocrx_word' id='word_5_1' title='bbox 150 1350 900 1550; x_wconf 90'>안녕하세요!</span>
+</span>
+</p>
+</div>
+
+<div class='ocr_carea' id='carea_5_2' title="bbox 1400 1350 2400 1600">
+<p class='ocr_par' id='par_5_2' lang='tur' title="bbox 1400 1350 2300 1550">
+<span class='ocr_line' id='line_5_2' title="bbox 1400 1350 2300 1550; baseline 0 -40; x_size 140; x_descenders 28; x_ascenders 35">
+<span class='ocrx_word' id='word_5_2' title='bbox 1400 1350 2300 1550; x_wconf 89'>Merhaba!</span>
+</span>
+</p>
+</div>
+
+<!-- Row 6: Hindi (Devanagari) and Arabic (RTL) -->
+<div class='ocr_carea' id='carea_6_1' title="bbox 150 1650 1200 1900">
+<p class='ocr_par' id='par_6_1' lang='hin' title="bbox 150 1650 900 1850">
+<span class='ocr_line' id='line_6_1' title="bbox 150 1650 900 1850; baseline 0 -40; x_size 140; x_descenders 28; x_ascenders 35">
+<span class='ocrx_word' id='word_6_1' title='bbox 150 1650 900 1850; x_wconf 88'>नमस्ते!</span>
+</span>
+</p>
+</div>
+
+<div class='ocr_carea' id='carea_6_2' title="bbox 1400 1650 2400 1900">
+<p class='ocr_par' id='par_6_2' lang='ara' dir='rtl' title="bbox 1400 1650 2300 1850">
+<span class='ocr_line' id='line_6_2' title="bbox 1400 1650 2300 1850; baseline 0 -40; x_size 140; x_descenders 28; x_ascenders 35">
+<span class='ocrx_word' id='word_6_2' title='bbox 1400 1650 2300 1850; x_wconf 87'>!مرحبا</span>
+</span>
+</p>
+</div>
+
+<!-- Row 7: Hebrew (RTL) and Portuguese (accents) -->
+<div class='ocr_carea' id='carea_7_1' title="bbox 150 1950 1200 2200">
+<p class='ocr_par' id='par_7_1' lang='heb' dir='rtl' title="bbox 150 1950 800 2150">
+<span class='ocr_line' id='line_7_1' title="bbox 150 1950 800 2150; baseline 0 -40; x_size 140; x_descenders 28; x_ascenders 35">
+<span class='ocrx_word' id='word_7_1' title='bbox 150 1950 800 2150; x_wconf 86'>שלום</span>
+</span>
+</p>
+</div>
+
+<div class='ocr_carea' id='carea_7_2' title="bbox 1400 1950 2000 2200">
+<p class='ocr_par' id='par_7_2' lang='por' title="bbox 1400 1950 1900 2150">
+<span class='ocr_line' id='line_7_2' title="bbox 1400 1950 1900 2150; baseline 0 -40; x_size 140; x_descenders 28; x_ascenders 35">
+<span class='ocrx_word' id='word_7_2' title='bbox 1400 1950 1900 2150; x_wconf 85'>Olá!</span>
+</span>
+</p>
+</div>
+
+<!-- Rotated text section: Various scripts at angles -->
+<!-- Rotated baseline: 15 degrees clockwise (baseline slope ~0.27) -->
+<div class='ocr_carea' id='carea_8_1' title="bbox 200 2150 900 2700">
+<p class='ocr_par' id='par_8_1' lang='ita' title="bbox 200 2150 900 2650">
+<span class='ocr_line' id='line_8_1' title="bbox 200 2150 900 2450; baseline 0.27 -30; x_size 130; x_descenders 26; x_ascenders 32">
+<span class='ocrx_word' id='word_8_1' title='bbox 200 2150 900 2450; x_wconf 84'>Ciao!</span>
+</span>
+</p>
+</div>
+
+<!-- Rotated baseline: -10 degrees (baseline slope ~-0.18) -->
+<div class='ocr_carea' id='carea_8_2' title="bbox 1000 2350 1700 2700">
+<p class='ocr_par' id='par_8_2' lang='pol' title="bbox 1000 2400 1700 2650">
+<span class='ocr_line' id='line_8_2' title="bbox 1000 2400 1700 2650; baseline -0.18 -25; x_size 130; x_descenders 26; x_ascenders 32">
+<span class='ocrx_word' id='word_8_2' title='bbox 1000 2400 1700 2650; x_wconf 83'>Cześć!</span>
+</span>
+</p>
+</div>
+
+<!-- Rotated baseline: 8 degrees clockwise (baseline slope ~0.14) - Chinese -->
+<div class='ocr_carea' id='carea_8_3' title="bbox 1800 2350 2450 2700">
+<p class='ocr_par' id='par_8_3' lang='chi_tra' title="bbox 1800 2400 2450 2650">
+<span class='ocr_line' id='line_8_3' title="bbox 1800 2400 2450 2650; baseline 0.14 -35; x_size 130; x_descenders 26; x_ascenders 32">
+<span class='ocrx_word' id='word_8_3' title='bbox 1800 2400 2450 2650; x_wconf 82'>您好！</span>
+</span>
+</p>
+</div>
+
+<!-- Bottom row: More rotated examples -->
+<!-- Rotated baseline: -20 degrees (baseline slope ~-0.36) - Russian -->
+<div class='ocr_carea' id='carea_9_1' title="bbox 200 2750 900 3100">
+<p class='ocr_par' id='par_9_1' lang='rus' title="bbox 200 2800 900 3050">
+<span class='ocr_line' id='line_9_1' title="bbox 200 2800 900 3050; baseline -0.36 -20; x_size 120; x_descenders 24; x_ascenders 30">
+<span class='ocrx_word' id='word_9_1' title='bbox 200 2800 900 3050; x_wconf 81'>Здравствуй!</span>
+</span>
+</p>
+</div>
+
+<!-- Rotated baseline: 12 degrees clockwise (baseline slope ~0.21) - Greek -->
+<div class='ocr_carea' id='carea_9_2' title="bbox 1000 2750 1700 3100">
+<p class='ocr_par' id='par_9_2' lang='ell' title="bbox 1000 2780 1700 3050">
+<span class='ocr_line' id='line_9_2' title="bbox 1000 2780 1700 3050; baseline 0.21 -30; x_size 120; x_descenders 24; x_ascenders 30">
+<span class='ocrx_word' id='word_9_2' title='bbox 1000 2780 1700 3050; x_wconf 80'>Χαίρετε!</span>
+</span>
+</p>
+</div>
+
+<!-- Rotated baseline: -5 degrees (baseline slope ~-0.09) - Arabic RTL rotated -->
+<div class='ocr_carea' id='carea_9_3' title="bbox 1800 2750 2450 3100">
+<p class='ocr_par' id='par_9_3' lang='ara' dir='rtl' title="bbox 1800 2800 2450 3050">
+<span class='ocr_line' id='line_9_3' title="bbox 1800 2800 2450 3050; baseline -0.09 -25; x_size 120; x_descenders 24; x_ascenders 30">
+<span class='ocrx_word' id='word_9_3' title='bbox 1800 2800 2450 3050; x_wconf 79'>!أهلاً</span>
+</span>
+</p>
+</div>
+
+</div>
+</body>
+</html>

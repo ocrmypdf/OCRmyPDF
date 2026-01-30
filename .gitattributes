@@ -13,5 +13,6 @@
 *.jpg	binary
 *.bin   binary
 *.afdesign  binary
+*.ttf   binary
 
 .git_archival.txt  export-subst

@@ -6,6 +6,8 @@ from __future__ import annotations
 import pikepdf
 import pytest
 
+from ocrmypdf._exec import verapdf
+
 from .conftest import check_ocrmypdf
 
 page_rect = [0, 0, 612, 792]
@@ -14,13 +16,18 @@ wh_rect = [0, 0, 412, 592]
 
 neg_rect = [-100, -100, 512, 692]
 
+# When speculative PDF/A succeeds (verapdf available), MediaBox is preserved.
+# Ghostscript would normalize MediaBox to start at origin, but speculative
+# conversion bypasses Ghostscript.
+_pdfa_inset_expected = inset_rect if verapdf.available() else wh_rect
+
 mediabox_testdata = [
-    ('hocr', 'pdfa', 'ccitt.pdf', None, inset_rect, wh_rect),
-    ('sandwich', 'pdfa', 'ccitt.pdf', None, inset_rect, wh_rect),
-    ('hocr', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
+    ('fpdf2', 'pdfa', 'ccitt.pdf', None, inset_rect, _pdfa_inset_expected),
+    ('sandwich', 'pdfa', 'ccitt.pdf', None, inset_rect, _pdfa_inset_expected),
+    ('fpdf2', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
     ('sandwich', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
     (
-        'hocr',
+        'fpdf2',
         'pdfa',
         'ccitt.pdf',
         '--force-ocr',
@@ -28,15 +35,15 @@ mediabox_testdata = [
         wh_rect,
     ),
     (
-        'hocr',
+        'fpdf2',
         'pdf',
         'ccitt.pdf',
         '--force-ocr',
         inset_rect,
         wh_rect,
     ),
-    ('hocr', 'pdfa', 'ccitt.pdf', '--force-ocr', neg_rect, page_rect),
-    ('hocr', 'pdf', 'ccitt.pdf', '--force-ocr', neg_rect, page_rect),
+    ('fpdf2', 'pdfa', 'ccitt.pdf', '--force-ocr', neg_rect, page_rect),
+    ('fpdf2', 'pdf', 'ccitt.pdf', '--force-ocr', neg_rect, page_rect),
 ]
 
 
@@ -65,16 +72,16 @@ def test_media_box(
 
     with pikepdf.open(outdir / 'processed.pdf') as pdf:
         page = pdf.pages[0]
-        assert page.MediaBox == crop_expected
+        assert [float(x) for x in page.mediabox] == crop_expected
 
 
 cropbox_testdata = [
-    ('hocr', 'pdfa', 'ccitt.pdf', None, inset_rect, inset_rect),
+    ('fpdf2', 'pdfa', 'ccitt.pdf', None, inset_rect, inset_rect),
     ('sandwich', 'pdfa', 'ccitt.pdf', None, inset_rect, inset_rect),
-    ('hocr', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
+    ('fpdf2', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
     ('sandwich', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
     (
-        'hocr',
+        'fpdf2',
         'pdfa',
         'ccitt.pdf',
         '--force-ocr',
@@ -82,7 +89,7 @@ cropbox_testdata = [
         inset_rect,
     ),
     (
-        'hocr',
+        'fpdf2',
         'pdf',
         'ccitt.pdf',
         '--force-ocr',
@@ -119,4 +126,4 @@ def test_crop_box(
 
     with pikepdf.open(outdir / 'processed.pdf') as pdf:
         page = pdf.pages[0]
-        assert page.CropBox == crop_expected
+        assert [float(x) for x in page.cropbox] == crop_expected

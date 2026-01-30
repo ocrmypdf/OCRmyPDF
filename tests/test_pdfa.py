@@ -36,6 +36,5 @@ def test_pdfa(resources, outpdf, optimize, pdfa_level):
         # we don't use it
         assert b'/ObjStm' not in outpdf.read_bytes()
 
-    with pikepdf.open(outpdf) as pdf:
-        with pdf.open_metadata() as m:
-            assert m.pdfa_status == f'{pdfa_level}B'
+    with pikepdf.open(outpdf) as pdf, pdf.open_metadata() as m:
+        assert m.pdfa_status == f'{pdfa_level}B'

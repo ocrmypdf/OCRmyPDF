@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 """Helper script for bisecting PDFs to find a page with an issue."""
+from __future__ import annotations
 
 import sys
 

@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import argparse
 import logging
 import logging.handlers
 from collections.abc import Sequence
@@ -17,10 +16,8 @@ import PIL
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PageContext, PdfContext
-from ocrmypdf._pipeline import (
-    copy_final,
-    render_hocr_page,
-)
+from ocrmypdf._options import OcrOptions
+from ocrmypdf._pipeline import copy_final
 from ocrmypdf._pipelines._common import (
     HOCRResult,
     do_get_pdfinfo,
@@ -34,6 +31,7 @@ from ocrmypdf._pipelines._common import (
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.helpers import available_cpu_count
 
 log = logging.getLogger(__name__)
 
@@ -45,9 +43,8 @@ def _exec_hocrtransform_sync(page_context: PageContext) -> HOCRResult:
         # No hOCR file, so no OCR was performed on this page.
         return HOCRResult(pageno=page_context.pageno)
     hocr_result = HOCRResult.from_json(hocr_json.read_text())
-    hocr_result.textpdf = render_hocr_page(
-        page_context.get_path('ocr_hocr.hocr'), page_context
-    )
+    # hOCR path is passed directly to the grafting phase where fpdf2 renders it
+    hocr_result.textpdf = page_context.get_path('ocr_hocr.hocr')
     return hocr_result
 
 
@@ -55,7 +52,8 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
     """Convert hOCR files to OCR PDF."""
     # Run exec_page_sync on every page
     options = context.options
-    max_workers = min(len(context.pdfinfo), options.jobs)
+    jobs = options.jobs or available_cpu_count()
+    max_workers = min(len(context.pdfinfo), jobs)
     if max_workers > 1:
         log.info("Continue processing %d pages concurrently", max_workers)
 
@@ -69,7 +67,8 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
             ocrgraft.graft_page(
                 pageno=result.pageno,
                 image=result.pdf_page_from_image,
-                textpdf=result.textpdf,
+                ocr_output=result.textpdf,
+                ocr_tree=result.ocr_tree,
                 autorotate_correction=result.orientation_correction,
             )
             pbar.update()
@@ -105,7 +104,7 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
 
 
 def run_hocr_to_ocr_pdf_pipeline(
-    options: argparse.Namespace,
+    options: OcrOptions,
     *,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
@@ -119,7 +118,7 @@ def run_hocr_to_ocr_pdf_pipeline(
         # Gather pdfinfo and create context
         pdfinfo = do_get_pdfinfo(origin_pdf, executor, options)
         context = PdfContext(options, work_folder, origin_pdf, pdfinfo, plugin_manager)
-        plugin_manager.hook.check_options(options=options)
+        plugin_manager.check_options(options=options)
         optimize_messages = exec_hocr_to_ocr_pdf(context, executor)
 
         return report_output_pdf(options, origin_pdf, optimize_messages)

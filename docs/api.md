@@ -13,8 +13,49 @@ subprocess call anyway, as this provides isolation of its activities.
 ## Example
 
 OCRmyPDF provides one high-level function to run its main engine from an
-application. The parameters are symmetric to the command line arguments
-and largely have the same functions.
+application.
+
+```{versionchanged} 17.0
+The {func}`ocrmypdf.ocr` function now accepts an {class}`~ocrmypdf.OcrOptions`
+object as its first argument, providing a cleaner API with full type hints
+and validation. The previous positional argument style remains supported.
+```
+
+### Modern API (recommended)
+
+The recommended way to call {func}`ocrmypdf.ocr` is to construct an
+{class}`~ocrmypdf.OcrOptions` object with all settings, then pass it
+as the sole argument:
+
+```python
+import ocrmypdf
+from ocrmypdf import OcrOptions
+
+if __name__ == '__main__':  # To ensure correct behavior on Windows and macOS
+    options = OcrOptions(
+        input_file='input.pdf',
+        output_file='output.pdf',
+        deskew=True,
+        languages=['eng'],
+    )
+    ocrmypdf.ocr(options)
+```
+
+{class}`~ocrmypdf.OcrOptions` is a Pydantic model that provides:
+
+- Full type hints and IDE autocompletion
+- Validation of option values at construction time
+- Clear documentation of all available options
+
+```{versionadded} 17.0
+The {class}`~ocrmypdf.OcrOptions` class is now exported from the top-level
+`ocrmypdf` module.
+```
+
+### Legacy API
+
+For compatibility with OCRmyPDF < v17, the traditional calling style
+with positional arguments is still fully supported:
 
 ```python
 import ocrmypdf
@@ -23,7 +64,7 @@ if __name__ == '__main__':  # To ensure correct behavior on Windows and macOS
     ocrmypdf.ocr('input.pdf', 'output.pdf', deskew=True)
 ```
 
-With some exceptions, all of the command line arguments are available
+With this style, all of the command line arguments are available
 and may be passed as equivalent keywords.
 
 A few differences are that `verbose` and `quiet` are not available.
@@ -51,9 +92,12 @@ OCRmyPDF fails for any reason. For example:
 
 ```python
 from multiprocessing import Process
+import ocrmypdf
+from ocrmypdf import OcrOptions
 
 def ocrmypdf_process():
-    ocrmypdf.ocr('input.pdf', 'output.pdf')
+    options = OcrOptions(input_file='input.pdf', output_file='output.pdf')
+    ocrmypdf.ocr(options)
 
 def call_ocrmypdf_from_my_app():
     p = Process(target=ocrmypdf_process)
@@ -117,3 +161,17 @@ handler. OCRmyPDF will clean up its temporary files and worker processes
 automatically when an exception occurs.
 
 When OCRmyPDF succeeds conditionally, it returns an integer exit code.
+
+### Plugin Development Changes
+
+```{versionchanged} 16.13
+Plugin hooks now receive {class}`~ocrmypdf.OcrOptions` objects instead of
+`argparse.Namespace`.
+```
+
+- {class}`~ocrmypdf.OcrOptions` provides the same attribute access as `Namespace` (duck-typing compatible)
+- Plugin developers should update type hints: `from ocrmypdf import OcrOptions`
+- Built-in plugins no longer modify options in-place for better immutability
+
+Most existing plugins will continue working without modification due to the
+duck-typing compatibility between {class}`~ocrmypdf.OcrOptions` and `Namespace`.

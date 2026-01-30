@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import argparse
 import json
 import logging
 import logging.handlers
@@ -17,9 +16,13 @@ from concurrent.futures.thread import BrokenThreadPool
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NamedTuple, cast
+from typing import TYPE_CHECKING, NamedTuple, cast
+
+if TYPE_CHECKING:
+    from ocrmypdf.hocrtransform import OcrElement
 
 import PIL
+import PIL.Image
 from pikepdf import Pdf
 
 from ocrmypdf._annots import remove_broken_goto_annotations
@@ -27,6 +30,7 @@ from ocrmypdf._concurrent import Executor, setup_executor
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._metadata import metadata_fixup
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._pipeline import (
     convert_to_pdfa,
     create_ocr_image,
@@ -44,6 +48,8 @@ from ocrmypdf._pipeline import (
     rasterize_preview,
     should_linearize,
     should_visible_page_image_use_jpg,
+    try_auto_pdfa,
+    try_speculative_pdfa,
 )
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._validation import (
@@ -51,7 +57,6 @@ from ocrmypdf._validation import (
 )
 from ocrmypdf.exceptions import ExitCode, ExitCodeException
 from ocrmypdf.helpers import (
-    available_cpu_count,
     check_pdf,
     pikepdf_enable_mmap,
     running_in_docker,
@@ -105,6 +110,9 @@ class PageResult(NamedTuple):
     orientation_correction: int = 0
     """Orientation correction in degrees."""
 
+    ocr_tree: OcrElement | None = None
+    """Direct OcrElement tree (when using generate_ocr() API)."""
+
 
 class HOCRResultEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -115,7 +123,8 @@ class HOCRResultEncoder(json.JSONEncoder):
 
 class HOCRResultDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
-        super().__init__(object_hook=self.dict_to_object, *args, **kwargs)
+        kwargs['object_hook'] = self.dict_to_object
+        super().__init__(*args, **kwargs)
 
     def dict_to_object(self, d):
         if 'Path' in d:
@@ -141,6 +150,9 @@ class HOCRResult:
 
     orientation_correction: int = 0
     """Orientation correction in degrees."""
+
+    ocr_tree: OcrElement | None = None
+    """Direct OcrElement tree (when using generate_ocr() API)."""
 
     @classmethod
     def from_json(cls, json_str: str) -> HOCRResult:
@@ -194,7 +206,7 @@ def worker_init(max_pixels: int | None) -> None:
 @contextmanager
 def manage_debug_log_handler(
     *,
-    options: argparse.Namespace,
+    options: OcrOptions,
     work_folder: Path,
 ):
     remover = None
@@ -243,8 +255,8 @@ def manage_work_folder(*, work_folder: Path, retain: bool, print_location: bool)
 
 
 def cli_exception_handler(
-    fn: Callable[[argparse.Namespace, OcrmypdfPluginManager], ExitCode],
-    options: argparse.Namespace,
+    fn: Callable[[OcrOptions, OcrmypdfPluginManager], ExitCode],
+    options: OcrOptions,
     plugin_manager: OcrmypdfPluginManager,
 ) -> ExitCode:
     """Convert exceptions into command line error messages and exit codes.
@@ -274,6 +286,16 @@ def cli_exception_handler(
         else:
             log.error(type(e).__name__)
         return e.exit_code
+    except ValueError as e:
+        # Convert Pydantic validation errors to BadArgsError for proper exit code
+        if "validation error" in str(e).lower() or "value error" in str(e).lower():
+            if options.verbose >= 1:
+                log.exception("Validation error")
+            else:
+                log.error("Invalid argument: %s", str(e))
+            return ExitCode.bad_args
+        # Re-raise other ValueErrors to be caught by the general exception handler
+        raise
     except PIL.Image.DecompressionBombError:
         log.exception(
             "A decompression bomb error was encountered while executing the "
@@ -298,23 +320,33 @@ def cli_exception_handler(
 
 
 def setup_pipeline(
-    options: argparse.Namespace,
+    options: OcrOptions,
     plugin_manager: OcrmypdfPluginManager,
 ) -> Executor:
     # Any changes to options will not take effect for options that are already
     # bound to function parameters in the pipeline. (For example
     # options.input_file, options.pdf_renderer are already bound.)
-    if not options.jobs:
-        options.jobs = available_cpu_count()
+    # Note: OcrOptions is immutable, so we can't modify options.jobs directly
+    # The jobs field should already be set correctly during OcrOptions creation
+
+    # Apply PIL max image pixels side effect
+    PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1_000_000)
+    if PIL.Image.MAX_IMAGE_PIXELS == 0:
+        PIL.Image.MAX_IMAGE_PIXELS = None  # type: ignore
 
     pikepdf_enable_mmap()
     executor = setup_executor(plugin_manager)
     return executor
 
 
-def do_get_pdfinfo(
-    pdf_path: Path, executor: Executor, options: argparse.Namespace
-) -> PdfInfo:
+def do_get_pdfinfo(pdf_path: Path, executor: Executor, options) -> PdfInfo:
+    # Handle pages field - it might be a string that needs conversion
+    check_pages = options.pages
+    if isinstance(check_pages, str):
+        from ocrmypdf._options import _pages_from_ranges
+
+        check_pages = _pages_from_ranges(check_pages)
+
     return get_pdfinfo(
         pdf_path,
         executor=executor,
@@ -322,7 +354,7 @@ def do_get_pdfinfo(
         progbar=options.progress_bar,
         max_workers=options.jobs,
         use_threads=options.use_threads,
-        check_pages=options.pages,
+        check_pages=check_pages,
     )
 
 
@@ -425,7 +457,7 @@ def process_page(page_context: PageContext) -> tuple[Path, Path | None, int]:
         visible_image_out = preprocess_out
         if should_visible_page_image_use_jpg(page_context.pageinfo):
             visible_image_out = create_visible_page_jpg(visible_image_out, page_context)
-        filtered_image = page_context.plugin_manager.hook.filter_page_image(
+        filtered_image = page_context.plugin_manager.filter_page_image(
             page=page_context, image_filename=visible_image_out
         )
         if filtered_image is not None:  # None if no hook is present
@@ -448,11 +480,22 @@ def postprocess(
             pdf_out = fix_annots
         else:
             pdf_out = pdf_file
-    if context.options.output_type.startswith('pdfa'):
-        ps_stub_out = generate_postscript_stub(context)
-        pdf_out = convert_to_pdfa(pdf_out, ps_stub_out, context)
+    if context.options.output_type == 'auto':
+        # Best effort PDF/A - never uses Ghostscript
+        pdf_out, actual_type = try_auto_pdfa(pdf_out, context)
+        # Store actual output type for reporting
+        context.options.extra_attrs['_actual_output_type'] = actual_type
+    elif context.options.output_type.startswith('pdfa'):
+        # Required PDF/A - uses Ghostscript as fallback
+        speculative_result = try_speculative_pdfa(pdf_out, context)
+        if speculative_result is not None:
+            pdf_out = speculative_result
+        else:
+            # Fall back to Ghostscript conversion
+            ps_stub_out = generate_postscript_stub(context)
+            pdf_out = convert_to_pdfa(pdf_out, ps_stub_out, context)
 
-    optimizing = context.plugin_manager.hook.is_optimization_enabled(context=context)
+    optimizing = context.plugin_manager.is_optimization_enabled(context=context)
     save_settings = get_pdf_save_settings(context.options.output_type)
     save_settings['linearize'] = not optimizing and should_linearize(pdf_out, context)
 
@@ -468,7 +511,22 @@ def report_output_pdf(options, start_input_file, optimize_messages) -> ExitCode:
     elif samefile(options.output_file, Path(os.devnull)):
         pass  # Say nothing when sending to dev null
     else:
-        if options.output_type.startswith('pdfa'):
+        if options.output_type == 'auto':
+            # For 'auto' mode, check what we actually produced
+            actual_type = options.extra_attrs.get('_actual_output_type', 'pdf')
+            pdfa_info = file_claims_pdfa(options.output_file)
+            if actual_type == 'pdfa' and pdfa_info['pass']:
+                log.info(
+                    "Output file is a %s (auto mode achieved PDF/A)",
+                    pdfa_info['conformance'],
+                )
+            elif pdfa_info['pass']:
+                # Unexpectedly got PDF/A
+                log.info("Output file is a %s", pdfa_info['conformance'])
+            else:
+                # Regular PDF - this is expected for auto mode fallback
+                log.info("Output file is a PDF (auto mode)")
+        elif options.output_type.startswith('pdfa'):
             pdfa_info = file_claims_pdfa(options.output_file)
             if pdfa_info['pass']:
                 log.info("Output file is a %s (as expected)", pdfa_info['conformance'])

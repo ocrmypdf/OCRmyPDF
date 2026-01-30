@@ -11,8 +11,8 @@ import pytest
 from packaging.version import Version
 
 from ocrmypdf._exec import unpaper
-from ocrmypdf._plugin_manager import get_parser_options_plugins
 from ocrmypdf._validation import check_options
+from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.exceptions import BadArgsError, ExitCode, MissingDependencyError
 
 from .conftest import check_ocrmypdf, have_unpaper, run_ocrmypdf_api
@@ -26,7 +26,7 @@ def test_no_unpaper(resources, no_outpdf):
     input_ = fspath(resources / "c02-22.pdf")
     output = fspath(no_outpdf)
 
-    _parser, options, pm = get_parser_options_plugins(["--clean", input_, output])
+    options, pm = get_options_and_plugins(["--clean", input_, output])
     with patch("ocrmypdf._exec.unpaper.version") as mock:
         mock.side_effect = FileNotFoundError("unpaper")
 
@@ -39,7 +39,7 @@ def test_old_unpaper(resources, no_outpdf):
     input_ = fspath(resources / "c02-22.pdf")
     output = fspath(no_outpdf)
 
-    _parser, options, pm = get_parser_options_plugins(["--clean", input_, output])
+    options, pm = get_options_and_plugins(["--clean", input_, output])
     with patch("ocrmypdf._exec.unpaper.version") as mock:
         mock.return_value = Version('0.5')
 
@@ -52,7 +52,7 @@ def test_unpaper_version_chatter(resources, no_outpdf):
     input_ = fspath(resources / "c02-22.pdf")
     output = fspath(no_outpdf)
 
-    _parser, options, pm = get_parser_options_plugins(["--clean", input_, output])
+    options, pm = get_options_and_plugins(["--clean", input_, output])
     with patch("ocrmypdf.subprocess.run") as mock:
         mock.return_value = Mock(stdout='Warning: using insecure memory!\n7.0.0\n')
 
@@ -119,7 +119,7 @@ def test_unpaper_args_invalid(resources, outpdf):
 def test_unpaper_image_too_big(resources, outdir, caplog):
     with patch('ocrmypdf._exec.unpaper.UNPAPER_IMAGE_PIXEL_LIMIT', 42):
         infile = resources / 'crom.png'
-        unpaper.clean(infile, outdir / 'out.png', dpi=300) == infile
+        assert unpaper.clean(infile, outdir / 'out.png', dpi=300) == infile
 
         assert any(
             'too large for cleaning' in rec.message

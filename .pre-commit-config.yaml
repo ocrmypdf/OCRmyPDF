@@ -10,17 +10,12 @@ repos:
       - id: check-toml
       - id: check-yaml
       - id: debug-statements
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.0.261"
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: "v0.14.11"
     hooks:
-      - id: ruff
-        files: "src/.*\\.pyi?$"
-        args: [--fix, --exit-non-zero-on-fix]
-  - repo: https://github.com/psf/black
-    rev: 23.3.0
-    hooks:
-      - id: black
-        language_version: python
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.2.0
     hooks:

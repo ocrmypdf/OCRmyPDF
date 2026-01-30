@@ -1,4 +1,6 @@
-import datetime
+from __future__ import annotations
+
+import datetime as dt
 import os
 import shutil
 import subprocess
@@ -20,10 +22,7 @@ def test_watcher(tmp_path, resources, year_month):
     processed_dir = tmp_path / 'processed'
     processed_dir.mkdir()
 
-    if year_month:
-        env_extra = {'OCR_OUTPUT_DIRECTORY_YEAR_MONTH': '1'}
-    else:
-        env_extra = {}
+    env_extra = {'OCR_OUTPUT_DIRECTORY_YEAR_MONTH': '1'} if year_month else {}
     proc = subprocess.Popen(
         [
             sys.executable,
@@ -43,8 +42,8 @@ def test_watcher(tmp_path, resources, year_month):
     if year_month:
         assert (
             output_dir
-            / f'{datetime.date.today().year}'
-            / f'{datetime.date.today().month:02d}'
+            / f'{dt.date.today().year}'
+            / f'{dt.date.today().month:02d}'
             / 'trivial.pdf'
         ).exists()
     else:

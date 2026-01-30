@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import platform
 import sys
 from pathlib import Path
@@ -12,8 +13,31 @@ import pytest
 
 from ocrmypdf import api, pdfinfo
 from ocrmypdf._exec import unpaper
-from ocrmypdf._plugin_manager import get_parser_options_plugins
+from ocrmypdf.api import setup_plugin_infrastructure
+from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.exceptions import ExitCode
+
+
+class Gs106WarningFilter(logging.Filter):
+    """Filter out expected Ghostscript 10.6.x warning from test logs."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        # Allow all records except the expected Ghostscript 10.6.x warning
+        return (
+            "Ghostscript 10.6.x contains JPEG encoding errors"
+            not in record.getMessage()
+        )
+
+
+@pytest.fixture(autouse=True)
+def suppress_gs106_warning():
+    """Suppress the expected Ghostscript 10.6.x JPEG encoding warning in tests."""
+    # Add filter to root logger to suppress expected warnings
+    root_logger = logging.getLogger()
+    warning_filter = Gs106WarningFilter()
+    root_logger.addFilter(warning_filter)
+    yield
+    root_logger.removeFilter(warning_filter)
 
 
 def is_linux():
@@ -84,7 +108,7 @@ def check_ocrmypdf(input_file: Path, output_file: Path, *args) -> Path:
         str(arg) for arg in args if arg is not None
     ]
 
-    _parser, options, plugin_manager = get_parser_options_plugins(args=api_args)
+    options, plugin_manager = get_options_and_plugins(args=api_args)
     api.check_options(options, plugin_manager)
     result = api.run_pipeline(options, plugin_manager=plugin_manager)
 
@@ -108,7 +132,7 @@ def run_ocrmypdf_api(input_file: Path, output_file: Path, *args) -> ExitCode:
     api_args = [str(input_file), str(output_file)] + [
         str(arg) for arg in args if arg is not None
     ]
-    _parser, options, plugin_manager = get_parser_options_plugins(args=api_args)
+    options, plugin_manager = get_options_and_plugins(args=api_args)
 
     api.check_options(options, plugin_manager)
     return api.run_pipeline_cli(options, plugin_manager=plugin_manager)
@@ -164,3 +188,8 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "slow" in item.keywords:
             item.add_marker(skip_slow)
+
+
+def get_test_plugin_manager(plugins=None):
+    """Get a properly initialized plugin manager for testing."""
+    return setup_plugin_infrastructure(plugins=plugins or [])

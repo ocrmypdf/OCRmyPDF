@@ -11,6 +11,7 @@ from ocrmypdf import helpers, hocrtransform, pdfa, pdfinfo
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._defaults import PROGRAM_NAME
 from ocrmypdf._jobcontext import PageContext, PdfContext
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._pipelines._common import (
     configure_debug_logging,
 )
@@ -34,6 +35,13 @@ from ocrmypdf.exceptions import (
     TesseractConfigError,
     UnsupportedImageFormatError,
 )
+from ocrmypdf.models.ocr_element import (
+    Baseline,
+    BoundingBox,
+    FontInfo,
+    OcrClass,
+    OcrElement,
+)
 from ocrmypdf.pluginspec import OcrEngine, OrientationConfidence
 
 hookimpl = _HookimplMarker('ocrmypdf')
@@ -41,6 +49,8 @@ hookimpl = _HookimplMarker('ocrmypdf')
 __all__ = [
     '__version__',
     'BadArgsError',
+    'Baseline',
+    'BoundingBox',
     'configure_debug_logging',
     'configure_logging',
     'DpiError',
@@ -48,13 +58,17 @@ __all__ = [
     'Executor',
     'ExitCode',
     'ExitCodeException',
+    'FontInfo',
     'helpers',
     'hocrtransform',
     'hookimpl',
     'InputFileError',
     'MissingDependencyError',
     'ocr',
+    'OcrClass',
+    'OcrElement',
     'OcrEngine',
+    'OcrOptions',
     'OrientationConfidence',
     'OutputFileAccessError',
     'PageContext',

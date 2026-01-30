@@ -6,15 +6,18 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 from collections.abc import Sequence, Set
+from enum import StrEnum
 from logging import Handler
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
 import pluggy
+from pydantic import BaseModel
 
 from ocrmypdf import Executor, PdfContext
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.helpers import Resolution
 
@@ -23,9 +26,22 @@ if TYPE_CHECKING:
 
     # pylint: disable=ungrouped-imports
     from ocrmypdf._jobcontext import PageContext
+    from ocrmypdf.hocrtransform import OcrElement
     from ocrmypdf.pdfinfo import PdfInfo
 
     # pylint: enable=ungrouped-imports
+
+
+class GhostscriptRasterDevice(StrEnum):
+    """Possible raster devices for Ghostscript."""
+
+    JPEGGRAY = 'jpeggray'
+    JPEGCOLOR = 'jpeg'
+    PNGMONO = 'pngmono'
+    PNGGRAY = 'pnggray'
+    PNG256 = 'png256'
+    PNG16M = 'png16m'
+
 
 hookspec = pluggy.HookspecMarker('ocrmypdf')
 
@@ -34,7 +50,7 @@ hookspec = pluggy.HookspecMarker('ocrmypdf')
 
 
 @hookspec(firstresult=True)
-def get_logging_console() -> Handler:
+def get_logging_console() -> Handler:  # type: ignore[return-value]
     """Returns a custom logging handler.
 
     Generally this is necessary when both logging output and a progress bar are both
@@ -87,7 +103,29 @@ def add_options(parser: ArgumentParser) -> None:
 
 
 @hookspec
-def check_options(options: Namespace) -> None:
+def register_options() -> dict[str, type[BaseModel]]:
+    """Return plugin's option models keyed by namespace.
+
+    This hook allows plugins to register their option models with the
+    plugin option registry. The returned dictionary should map namespace
+    strings to Pydantic model classes.
+
+    Returns:
+        Dictionary mapping namespace strings to BaseModel classes
+
+    Example:
+        @hookimpl
+        def register_options():
+            return {'tesseract': TesseractOptions}
+
+    Note:
+        This hook will be called from the main process during plugin
+        infrastructure setup, before child worker processes are forked.
+    """
+
+
+@hookspec
+def check_options(options: OcrOptions) -> None:
     """Called to ask the plugin to check all of the options.
 
     The plugin may check if options that it added are valid.
@@ -110,7 +148,7 @@ def check_options(options: Namespace) -> None:
 
 
 @hookspec(firstresult=True)
-def get_executor(progressbar_class: type[ProgressBar]) -> Executor:
+def get_executor(progressbar_class: type[ProgressBar]) -> Executor:  # type: ignore[return-value]
     """Called to obtain an object that manages parallel execution.
 
     This may be used to replace OCRmyPDF's default parallel execution system
@@ -138,7 +176,7 @@ def get_executor(progressbar_class: type[ProgressBar]) -> Executor:
 
 
 @hookspec(firstresult=True)
-def get_progressbar_class() -> type[ProgressBar]:
+def get_progressbar_class() -> type[ProgressBar]:  # type: ignore[return-value]
     """Called to obtain a class that can be used to monitor progress.
 
     OCRmyPDF will call this function when it wants to display a progress bar.
@@ -158,7 +196,7 @@ def get_progressbar_class() -> type[ProgressBar]:
 
 
 @hookspec
-def validate(pdfinfo: PdfInfo, options: Namespace) -> None:
+def validate(pdfinfo: PdfInfo, options: OcrOptions) -> None:
     """Called to give a plugin an opportunity to review *options* and *pdfinfo*.
 
     *options* contains the "work order" to process a particular file. *pdfinfo*
@@ -182,14 +220,16 @@ def validate(pdfinfo: PdfInfo, options: Namespace) -> None:
 def rasterize_pdf_page(
     input_file: Path,
     output_file: Path,
-    raster_device: str,
+    raster_device: GhostscriptRasterDevice,
     raster_dpi: Resolution,
     pageno: int,
     page_dpi: Resolution | None,
     rotation: int | None,
     filter_vector: bool,
     stop_on_soft_error: bool,
-) -> Path:
+    options: OcrOptions | None,
+    use_cropbox: bool,
+) -> Path:  # type: ignore[return-value]
     """Rasterize one page of a PDF at resolution raster_dpi in canvas units.
 
     The image is sized to match the integer pixels dimensions implied by
@@ -212,6 +252,12 @@ def rasterize_pdf_page(
             cannot proceed, it should always raise an exception, regardless of
             this setting. One "soft error" would be a missing font that is
             required to properly rasterize the PDF.
+        options: OCRmyPDF options. Plugins may use this to check settings like
+            ``options.rasterizer`` to determine whether they should handle the
+            request or defer to another plugin. Introduced in version 17.0.
+        use_cropbox: If True, rasterize the page's CropBox instead of the
+            MediaBox. Default is False (use MediaBox) for consistency with
+            Ghostscript's default behavior.
 
     Returns:
         Path: output_file if successful
@@ -226,7 +272,7 @@ def rasterize_pdf_page(
 
 
 @hookspec(firstresult=True)
-def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
+def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:  # type: ignore[return-value]
     """Called to filter the image before it is sent to OCR.
 
     This is the image that OCR sees, not what the user sees when they view the
@@ -261,7 +307,7 @@ def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
 
 
 @hookspec(firstresult=True)
-def filter_page_image(page: PageContext, image_filename: Path) -> Path:
+def filter_page_image(page: PageContext, image_filename: Path) -> Path:  # type: ignore[return-value]
     """Called to filter the whole page before it is inserted into the PDF.
 
     A whole page image is only produced when preprocessing command line arguments
@@ -298,7 +344,7 @@ def filter_page_image(page: PageContext, image_filename: Path) -> Path:
 
 
 @hookspec(firstresult=True)
-def filter_pdf_page(page: PageContext, image_filename: Path, output_pdf: Path) -> Path:
+def filter_pdf_page(page: PageContext, image_filename: Path, output_pdf: Path) -> Path:  # type: ignore[return-value]
     """Called to convert a filtered whole page image into a PDF.
 
     A whole page image is only produced when preprocessing command line arguments
@@ -368,7 +414,7 @@ class OcrEngine(ABC):
 
     @staticmethod
     @abstractmethod
-    def creator_tag(options: Namespace) -> str:
+    def creator_tag(options: OcrOptions) -> str:
         """Returns the creator tag to identify this software's role in creating the PDF.
 
         This tag will be inserted in the XMP metadata and DocumentInfo dictionary
@@ -380,7 +426,7 @@ class OcrEngine(ABC):
         """
 
     @abstractmethod
-    def __str__(self):
+    def __str__(self) -> str:
         """Returns name of OCR engine and version.
 
         This is used when OCRmyPDF wants to mention the name of the OCR engine
@@ -389,7 +435,7 @@ class OcrEngine(ABC):
 
     @staticmethod
     @abstractmethod
-    def languages(options: Namespace) -> Set[str]:
+    def languages(options: OcrOptions) -> Set[str]:
         """Returns the set of all languages that are supported by the engine.
 
         Languages are typically given in 3-letter ISO 3166-1 codes, but actually
@@ -398,18 +444,18 @@ class OcrEngine(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_orientation(input_file: Path, options: Namespace) -> OrientationConfidence:
+    def get_orientation(input_file: Path, options: OcrOptions) -> OrientationConfidence:
         """Returns the orientation of the image."""
 
     @staticmethod
-    def get_deskew(input_file: Path, options: Namespace) -> float:
+    def get_deskew(input_file: Path, options: OcrOptions) -> float:
         """Returns the deskew angle of the image, in degrees."""
         return 0.0
 
     @staticmethod
     @abstractmethod
     def generate_hocr(
-        input_file: Path, output_hocr: Path, output_text: Path, options: Namespace
+        input_file: Path, output_hocr: Path, output_text: Path, options: OcrOptions
     ) -> None:
         """Called to produce a hOCR file from a page image and sidecar text file.
 
@@ -432,7 +478,7 @@ class OcrEngine(ABC):
     @staticmethod
     @abstractmethod
     def generate_pdf(
-        input_file: Path, output_pdf: Path, output_text: Path, options: Namespace
+        input_file: Path, output_pdf: Path, output_text: Path, options: OcrOptions
     ) -> None:
         """Called to produce a text only PDF from a page image.
 
@@ -452,13 +498,66 @@ class OcrEngine(ABC):
             options: The command line options.
         """
 
+    @staticmethod
+    def supports_generate_ocr() -> bool:
+        """Return True if this engine supports the generate_ocr() API.
+
+        The pipeline uses this to determine whether to call generate_ocr()
+        or fall back to generate_hocr().
+
+        Returns:
+            False by default. Engines implementing generate_ocr() should
+            override this to return True.
+        """
+        return False
+
+    @staticmethod
+    def generate_ocr(
+        input_file: Path,
+        options: OcrOptions,
+        page_number: int = 0,
+    ) -> tuple[OcrElement, str]:
+        """Generate OCR results as an OcrElement tree.
+
+        This is the modern API for OCR engines. Engines implementing this method
+        can return structured OCR results directly without intermediate file formats.
+
+        This function executes in a worker thread or worker process. OCRmyPDF
+        automatically parallelizes OCR over pages. The OCR engine should not
+        introduce more parallelism.
+
+        Args:
+            input_file: A page image on which to perform OCR.
+            options: The command line options.
+            page_number: Zero-indexed page number (for multi-page context).
+
+        Returns:
+            A tuple of (OcrElement tree for the page, plain text content).
+            The OcrElement should have ocr_class=OcrClass.PAGE as its root.
+
+        Note:
+            This method is optional. Engines that don't implement it should
+            leave the default implementation, and the pipeline will fall back to
+            generate_hocr() or generate_pdf().
+        """
+        raise NotImplementedError("This OcrEngine does not implement generate_ocr()")
+
 
 @hookspec(firstresult=True)
-def get_ocr_engine() -> OcrEngine:
+def get_ocr_engine(options: OcrOptions | None) -> OcrEngine:  # type: ignore[return-value]
     """Returns an OcrEngine to use for processing this file.
 
     The OcrEngine may be instantiated multiple times, by both the main process
     and child process.
+
+    When multiple OCR engine plugins are installed, plugins should check
+    ``options.ocr_engine`` and return ``None`` if they are not the selected
+    engine. The hook caller will then try the next plugin.
+
+    Args:
+        options: The current OcrOptions, used to determine which engine
+            to select. May be None for backward compatibility with external
+            plugins.
 
     Note:
         This is a :ref:`firstresult hook<firstresult>`.
@@ -475,7 +574,7 @@ def generate_pdfa(
     pdfa_part: str,
     progressbar_class: type[ProgressBar] | None,
     stop_on_soft_error: bool,
-) -> Path:
+) -> Path:  # type: ignore[return-value]
     """Generate a PDF/A.
 
     This API strongly assumes a PDF/A generator with Ghostscript's semantics.
@@ -522,7 +621,7 @@ def optimize_pdf(
     context: PdfContext,
     executor: Executor,
     linearize: bool,
-) -> tuple[Path, Sequence[str]]:
+) -> tuple[Path, Sequence[str]]:  # type: ignore[return-value]
     """Optimize a PDF after image, OCR and metadata processing.
 
     If the input_pdf is a PDF/A, the plugin should modify input_pdf in a way
@@ -559,7 +658,7 @@ def optimize_pdf(
 
 
 @hookspec(firstresult=True)
-def is_optimization_enabled(context: PdfContext) -> bool:
+def is_optimization_enabled(context: PdfContext) -> bool:  # type: ignore[return-value]
     """For a given PdfContext, OCRmyPDF asks the plugin if optimization is enabled.
 
     An optimization plugin might be installed and active but could be disabled by

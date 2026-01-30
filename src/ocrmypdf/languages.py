@@ -6,6 +6,7 @@
 Derived from
 https://www.loc.gov/standards/iso639-2/ascii_8bits.html
 """
+from __future__ import annotations
 
 from typing import NamedTuple
 

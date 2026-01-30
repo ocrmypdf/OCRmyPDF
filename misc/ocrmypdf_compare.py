@@ -108,7 +108,7 @@ def main():
 
             doc1 = pymupdf.open(os.path.join(d, "output1.pdf"))
             doc2 = pymupdf.open(os.path.join(d, "output2.pdf"))
-            for i, page1_2 in enumerate(zip(doc1, doc2)):
+            for i, page1_2 in enumerate(zip(doc1, doc2, strict=False)):
                 st.write(f"Page {i+1}")
                 page1, page2 = page1_2
                 col1, col2 = st.columns(2)
