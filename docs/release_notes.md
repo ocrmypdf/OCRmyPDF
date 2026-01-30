@@ -25,7 +25,12 @@ about a forthcoming release that has not been tagged yet. A release is only
 official when it's tagged and posted to PyPI.
 :::
 
-## v17.0.0 (unreleased)
+## v17.0.1
+
+- Fixed output file size inflation when using pypdfium as rasterizer and force-ocr
+  mode.
+
+## v17.0.0
 
 **Breaking changes**
 
