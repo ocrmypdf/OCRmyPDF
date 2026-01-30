@@ -84,11 +84,11 @@ For everyone else, [see our documentation](https://ocrmypdf.readthedocs.io/en/la
 OCRmyPDF uses Tesseract for OCR, and relies on its language packs. For Linux users, you can often find packages that provide language packs:
 
 ```bash
-# Display a list of all Tesseract language packs
-apt-cache search tesseract-ocr
 
 # Debian/Ubuntu users
+apt-cache search tesseract-ocr # Display a list of all Tesseract language packs
 apt-get install tesseract-ocr-chi-sim  # Example: Install Chinese Simplified language pack
+
 
 # Arch Linux users
 pacman -S tesseract-data-eng tesseract-data-deu # Example: Install the English and German language packs
@@ -99,6 +99,12 @@ pkg_add tesseract-cym  # Example: Install the Welsh language pack
 
 # brew macOS users
 brew install tesseract-lang
+
+# Fedora users
+dnf search tesseract-langpack # Display a list of all Tesseract language packs 
+dnf install tesseract-langpack-ita # Example: Install the Italian language pack
+
+
 ```
 
 You can then pass the `-l LANG` argument to OCRmyPDF to give a hint as to what languages it should search for. Multiple languages can be requested.
