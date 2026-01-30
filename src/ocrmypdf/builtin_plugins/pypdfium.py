@@ -101,7 +101,8 @@ def _render_page_to_bitmap(
 
     # Render the page to a bitmap
     # The scale parameter controls the resolution
-    grayscale = raster_device.lower() in ('pnggray', 'jpeggray')
+    # Render in grayscale for mono and gray devices (better input for 1-bit conversion)
+    grayscale = raster_device.lower() in ('pngmono', 'pnggray', 'jpeggray')
 
     # Calculate crop to render the appropriate box
     # Default (use_cropbox=False) renders MediaBox for consistency with Ghostscript
@@ -160,20 +161,43 @@ def _process_image_for_output(
         dpi_tuple = (float(raster_dpi.x), float(raster_dpi.y))
         pil_image.info['dpi'] = dpi_tuple
 
-    # Determine output format based on raster_device
-    if raster_device.lower() in ('png', 'pngmono', 'pnggray', 'png16m', 'pngalpha'):
-        format_name = 'PNG'
-    elif raster_device.lower() in ('jpeg', 'jpeggray', 'jpg'):
-        format_name = 'JPEG'
-        # Convert RGBA to RGB for JPEG
+    # Convert image mode to match raster_device
+    # This ensures pypdfium output matches Ghostscript's native device output
+    raster_device_lower = raster_device.lower()
+
+    if raster_device_lower == 'pngmono':
+        # Convert to 1-bit black and white (matches Ghostscript pngmono device)
+        if pil_image.mode != '1':
+            if pil_image.mode not in ('L', '1'):
+                pil_image = pil_image.convert('L')
+            pil_image = pil_image.convert('1')
+    elif raster_device_lower in ('pnggray', 'jpeggray'):
+        # Convert to 8-bit grayscale
+        if pil_image.mode not in ('L', '1'):
+            pil_image = pil_image.convert('L')
+    elif raster_device_lower == 'png256':
+        # Convert to 8-bit indexed color (256 colors)
+        if pil_image.mode != 'P':
+            if pil_image.mode not in ('RGB', 'RGBA'):
+                pil_image = pil_image.convert('RGB')
+            pil_image = pil_image.quantize(colors=256)
+    elif raster_device_lower in ('png16m', 'jpeg'):
+        # Convert to RGB
         if pil_image.mode == 'RGBA':
-            # Create white background
-            background = pil_image.new('RGB', pil_image.size, (255, 255, 255))
-            background.paste(
-                pil_image, mask=pil_image.split()[-1]
-            )  # Use alpha channel as mask
+            background = Image.new('RGB', pil_image.size, (255, 255, 255))
+            background.paste(pil_image, mask=pil_image.split()[-1])
             pil_image = background
-    elif raster_device.lower() in ('tiff', 'tif'):
+        elif pil_image.mode not in ('RGB',):
+            pil_image = pil_image.convert('RGB')
+    # pngalpha: keep RGBA as-is
+
+    # Determine output format based on raster_device
+    png_devices = ('png', 'pngmono', 'pnggray', 'png256', 'png16m', 'pngalpha')
+    if raster_device_lower in png_devices:
+        format_name = 'PNG'
+    elif raster_device_lower in ('jpeg', 'jpeggray', 'jpg'):
+        format_name = 'JPEG'
+    elif raster_device_lower in ('tiff', 'tif'):
         format_name = 'TIFF'
     else:
         # Default to PNG for unknown formats
