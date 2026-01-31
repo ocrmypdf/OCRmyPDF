@@ -172,19 +172,27 @@ class OcrmypdfPluginManager:
 
     def filter_pdf_page(
         self, *, page: PageContext, image_filename: Path, output_pdf: Path
-    ) -> Path | None:
+    ) -> Path:
         """Convert a filtered whole page image into a PDF."""
-        return self._pm.hook.filter_pdf_page(
+        result = self._pm.hook.filter_pdf_page(
             page=page, image_filename=image_filename, output_pdf=output_pdf
         )
+        if result is None:
+            raise ValueError('No PDF produced')
+        if result != output_pdf:
+            raise ValueError('filter_pdf_page must return output_pdf')
+        return result
 
-    def get_ocr_engine(self, *, options: OcrOptions | None = None) -> OcrEngine | None:
+    def get_ocr_engine(self, *, options: OcrOptions | None = None) -> OcrEngine:
         """Returns an OcrEngine to use for processing.
 
         Args:
             options: OcrOptions to pass to the hook for engine selection.
         """
-        return self._pm.hook.get_ocr_engine(options=options)
+        result = self._pm.hook.get_ocr_engine(options=options)
+        if result is None:
+            raise ValueError('No OCR engine selected')
+        return result
 
     def generate_pdfa(
         self,
@@ -218,15 +226,18 @@ class OcrmypdfPluginManager:
         context: PdfContext,
         executor: Executor,
         linearize: bool,
-    ) -> tuple[Path, Sequence[str]] | None:
+    ) -> tuple[Path, Sequence[str]]:
         """Optimize a PDF after OCR processing."""
-        return self._pm.hook.optimize_pdf(
+        result = self._pm.hook.optimize_pdf(
             input_pdf=input_pdf,
             output_pdf=output_pdf,
             context=context,
             executor=executor,
             linearize=linearize,
         )
+        if result is None:
+            return input_pdf, []
+        return result
 
     def is_optimization_enabled(self, *, context: PdfContext) -> bool | None:
         """Returns whether optimization is enabled for given context."""
