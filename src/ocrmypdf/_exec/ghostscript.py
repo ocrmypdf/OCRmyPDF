@@ -127,6 +127,19 @@ def rasterize_pdf(
     if not page_dpi:
         page_dpi = raster_dpi
 
+    # Ghostscript may fail with very low DPI values (below 10). If the requested
+    # DPI is too low, use a minimum of 10 DPI and resize the output afterward.
+    MIN_RASTER_DPI = 10
+    needs_low_dpi_resize = (
+        raster_dpi.x < MIN_RASTER_DPI or raster_dpi.y < MIN_RASTER_DPI
+    )
+    if needs_low_dpi_resize:
+        effective_dpi = Resolution(
+            max(raster_dpi.x, MIN_RASTER_DPI), max(raster_dpi.y, MIN_RASTER_DPI)
+        )
+    else:
+        effective_dpi = raster_dpi
+
     args_gs = (
         [
             GS,
@@ -137,7 +150,7 @@ def rasterize_pdf(
             f'-sDEVICE={raster_device}',
             f'-dFirstPage={pageno}',
             f'-dLastPage={pageno}',
-            f'-r{raster_dpi.x:f}x{raster_dpi.y:f}',
+            f'-r{effective_dpi.x:f}x{effective_dpi.y:f}',
         ]
         + (['-dUseCropBox'] if use_cropbox else [])
         + (['-dFILTERVECTOR'] if filter_vector else [])
@@ -173,6 +186,16 @@ def rasterize_pdf(
 
     try:
         with Image.open(output_file) as im:
+            if needs_low_dpi_resize:
+                # Resize to the dimensions that would have resulted from the
+                # original low DPI request
+                scale_x = raster_dpi.x / effective_dpi.x
+                scale_y = raster_dpi.y / effective_dpi.y
+                new_size = (
+                    max(1, int(round(im.width * scale_x))),
+                    max(1, int(round(im.height * scale_y))),
+                )
+                im = im.resize(new_size, Image.Resampling.LANCZOS)
             if rotation is not None:
                 log.debug("Rotating output by %i", rotation)
                 # rotation is a clockwise angle and Image.ROTATE_* is

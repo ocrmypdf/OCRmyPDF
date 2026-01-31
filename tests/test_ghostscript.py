@@ -81,6 +81,62 @@ def test_rasterize_rotated(francais, outdir, caplog):
         assert im.info['dpi'] == forced_dpi.flip_axis()
 
 
+def test_rasterize_low_dpi(francais, outdir):
+    """Test that very low DPI values (below 10) produce correctly sized output.
+
+    Ghostscript may fail with DPI values below 10. The workaround renders at
+    a minimum of 10 DPI and resizes the output to match the expected dimensions.
+    """
+    path, pdf = francais
+    page_size_pts = (pdf.pages[0].mediabox[2], pdf.pages[0].mediabox[3])
+    assert pdf.pages[0].mediabox[0] == pdf.pages[0].mediabox[1] == 0
+    page_size = (float(page_size_pts[0]) / 72, float(page_size_pts[1]) / 72)
+
+    # Request a very small output (DPI below 10 on both axes)
+    target_size = (5, 3)
+    forced_dpi = Resolution(72.0, 72.0)
+
+    rasterize_pdf(
+        path,
+        outdir / 'out_low_dpi.png',
+        raster_device=GhostscriptRasterDevice.PNGMONO,
+        raster_dpi=Resolution(
+            target_size[0] / page_size[0], target_size[1] / page_size[1]
+        ),
+        page_dpi=forced_dpi,
+    )
+
+    with Image.open(outdir / 'out_low_dpi.png') as im:
+        assert im.size == target_size
+        assert im.info['dpi'] == forced_dpi
+
+
+def test_rasterize_low_dpi_one_axis(francais, outdir):
+    """Test low DPI on only one axis produces correctly sized output."""
+    path, pdf = francais
+    page_size_pts = (pdf.pages[0].mediabox[2], pdf.pages[0].mediabox[3])
+    assert pdf.pages[0].mediabox[0] == pdf.pages[0].mediabox[1] == 0
+    page_size = (float(page_size_pts[0]) / 72, float(page_size_pts[1]) / 72)
+
+    # Request low DPI on X axis only (below 10), normal on Y axis
+    target_size = (5, 50)
+    forced_dpi = Resolution(72.0, 72.0)
+
+    rasterize_pdf(
+        path,
+        outdir / 'out_low_dpi_x.png',
+        raster_device=GhostscriptRasterDevice.PNGMONO,
+        raster_dpi=Resolution(
+            target_size[0] / page_size[0], target_size[1] / page_size[1]
+        ),
+        page_dpi=forced_dpi,
+    )
+
+    with Image.open(outdir / 'out_low_dpi_x.png') as im:
+        assert im.size == target_size
+        assert im.info['dpi'] == forced_dpi
+
+
 def test_gs_render_failure(resources, outpdf, caplog):
     exitcode = run_ocrmypdf_api(
         resources / 'blank.pdf',
