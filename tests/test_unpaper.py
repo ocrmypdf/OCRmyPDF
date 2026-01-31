@@ -9,11 +9,12 @@ from unittest.mock import Mock, patch
 
 import pytest
 from packaging.version import Version
+from pydantic import ValidationError
 
 from ocrmypdf._exec import unpaper
 from ocrmypdf._validation import check_options
 from ocrmypdf.cli import get_options_and_plugins
-from ocrmypdf.exceptions import BadArgsError, ExitCode, MissingDependencyError
+from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 
 from .conftest import check_ocrmypdf, have_unpaper, run_ocrmypdf_api
 
@@ -87,7 +88,7 @@ def test_unpaper_args_valid(resources, outpdf):
 
 @needs_unpaper
 def test_unpaper_args_invalid_filename(resources, outpdf, caplog):
-    with pytest.raises(BadArgsError):
+    with pytest.raises(ValidationError, match="No filenames allowed"):
         run_ocrmypdf_api(
             resources / "skew.pdf",
             outpdf,

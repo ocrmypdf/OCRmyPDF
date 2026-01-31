@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shlex
 import unicodedata
 from collections.abc import Sequence
 from enum import StrEnum
@@ -156,9 +157,7 @@ class OcrOptions(BaseModel):
     remove_background: bool = False
     remove_vectors: bool = False
     oversample: int = 0
-    unpaper_args: str | list[str] | None = (
-        None  # Can be string or list after validation
-    )
+    unpaper_args: list[str] | None = None
 
     # OCR behavior
     skip_big: float | None = None
@@ -338,6 +337,20 @@ class OcrOptions(BaseModel):
 
         # Convert string ranges to set of page numbers
         return _pages_from_ranges(v)
+
+    @field_validator('unpaper_args', mode='before')
+    @classmethod
+    def validate_unpaper_args(cls, v):
+        """Normalize unpaper_args from string to list and validate security."""
+        if v is None:
+            return v
+        if isinstance(v, str):
+            v = shlex.split(v)
+        if isinstance(v, list):
+            if any(('/' in arg or arg == '.' or arg == '..') for arg in v):
+                raise ValueError('No filenames allowed in --unpaper-args')
+            return v
+        raise ValueError(f'unpaper_args must be a string or list, got {type(v)}')
 
     @model_validator(mode='before')
     @classmethod

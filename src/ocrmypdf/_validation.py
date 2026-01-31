@@ -114,15 +114,8 @@ def check_options_preprocessing(options: OcrOptions) -> None:
             package='unpaper',
             version_checker=unpaper.version,
             need_version='6.1',
-            required_for="--clean, --clean-final",  # Problem arguments
+            required_for="--clean, --clean-final",
         )
-        try:
-            if options.unpaper_args:
-                options.unpaper_args = unpaper.validate_custom_args(
-                    options.unpaper_args
-                )
-        except Exception as e:
-            raise BadArgsError("--unpaper-args: " + str(e)) from e
 
 
 def _check_plugin_invariant_options(options: OcrOptions) -> None:

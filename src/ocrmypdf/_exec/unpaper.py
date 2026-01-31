@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 import os
-import shlex
 from collections.abc import Iterator
 from contextlib import contextmanager
 from decimal import Decimal
@@ -99,13 +98,6 @@ def run_unpaper(
                 + " Called with: "
                 + str(args_unpaper)
             ) from e
-
-
-def validate_custom_args(args: str) -> list[str]:
-    unpaper_args = shlex.split(args)
-    if any(('/' in arg or arg == '.' or arg == '..') for arg in unpaper_args):
-        raise ValueError('No filenames allowed in --unpaper-args')
-    return unpaper_args
 
 
 def clean(
