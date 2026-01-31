@@ -25,6 +25,14 @@ about a forthcoming release that has not been tagged yet. A release is only
 official when it's tagged and posted to PyPI.
 :::
 
+
+## v17.1.0
+
+- Added `--tagged-pdf-mode` to allow skipping the TaggedPDF error message, if desired.
+- Fixed an issue where deflated JPEGs (FlateDecode + DCTDecode) were counted as
+  lossless images for the purpose of determining whether to compress to JPEG,
+  causing file size inflation with some workflows (`--mode force` in particular).
+
 ## v17.0.1
 
 - Fixed output file size inflation when using pypdfium as rasterizer and force-ocr
