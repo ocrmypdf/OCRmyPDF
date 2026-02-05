@@ -1,41 +1,41 @@
 ---
 myst:
   substitutions:
-    deb_11: |-
-      :::{image} https://repology.org/badge/version-for-repo/debian_11/ocrmypdf.svg
-      :alt: Debian 11
-      :::
     deb_12: |-
       :::{image} https://repology.org/badge/version-for-repo/debian_12/ocrmypdf.svg
       :alt: Debian 12
+      :::
+    deb_13: |-
+      :::{image} https://repology.org/badge/version-for-repo/debian_13/ocrmypdf.svg
+      :alt: Debian 13
       :::
     deb_unstable: |-
       :::{image} https://repology.org/badge/version-for-repo/debian_unstable/ocrmypdf.svg
       :alt: Debian unstable
       :::
-    fedora_38: |-
-      :::{image} https://repology.org/badge/version-for-repo/fedora_38/ocrmypdf.svg
-      :alt: Fedora 38
+    fedora_40: |-
+      :::{image} https://repology.org/badge/version-for-repo/fedora_40/ocrmypdf.svg
+      :alt: Fedora 40
       :::
-    fedora_39: |-
-      :::{image} https://repology.org/badge/version-for-repo/fedora_39/ocrmypdf.svg
-      :alt: Fedora 39
+    fedora_41: |-
+      :::{image} https://repology.org/badge/version-for-repo/fedora_41/ocrmypdf.svg
+      :alt: Fedora 41
       :::
     fedora_rawhide: |-
       :::{image} https://repology.org/badge/version-for-repo/fedora_rawhide/ocrmypdf.svg
-      :alt: Fedore Rawhide
+      :alt: Fedora Rawhide
       :::
     latest: |-
       :::{image} https://img.shields.io/pypi/v/ocrmypdf.svg
       :alt: OCRmyPDF latest released version on PyPI
       :::
-    ubu_2004: |-
-      :::{image} https://repology.org/badge/version-for-repo/ubuntu_20_04/ocrmypdf.svg
-      :alt: Ubuntu 20.04 LTS
-      :::
     ubu_2204: |-
       :::{image} https://repology.org/badge/version-for-repo/ubuntu_22_04/ocrmypdf.svg
       :alt: Ubuntu 22.04 LTS
+      :::
+    ubu_2404: |-
+      :::{image} https://repology.org/badge/version-for-repo/ubuntu_24_04/ocrmypdf.svg
+      :alt: Ubuntu 24.04 LTS
       :::
 ---
 
@@ -54,18 +54,16 @@ These platforms have one-liner installs:
 :::{list-table}
 :header-rows: 0
 
+* - Homebrew (macOS and Linux)
+  - ``brew install ocrmypdf``
 * - Debian, Ubuntu
   - ``apt install ocrmypdf``
 * - Windows Subsystem for Linux
   - ``apt install ocrmypdf``
 * - Fedora
   - ``dnf install ocrmypdf tesseract-osd``
-* - macOS (Homebrew)
-  - ``brew install ocrmypdf``
 * - macOS (MacPorts)
   - ``port install ocrmypdf``
-* - LinuxBrew
-  - ``brew install ocrmypdf``
 * - FreeBSD
   - ``pkg install textproc/py-ocrmypdf``
 * - Snap (snapcraft packaging)
@@ -82,15 +80,15 @@ install, or install a more recent version than your platform provides, read on.
 
 ## Installing on Linux
 
-### Debian and Ubuntu 20.04 or newer
+### Debian and Ubuntu 22.04 or newer
 
 :::{list-table}
 :header-rows: 1
 
 * - OCRmyPDF versions in Debian & Ubuntu
 * - {{ latest }}
-* - {{ deb_11 }} {{ deb_12 }} {{ deb_unstable }}
-* - {{ ubu_2004 }} {{ ubu_2204 }}
+* - {{ deb_12 }} {{ deb_13 }} {{ deb_unstable }}
+* - {{ ubu_2204 }} {{ ubu_2404 }}
 :::
 
 Users of Debian or Ubuntu may simply
@@ -112,9 +110,9 @@ For full details on version availability for your platform, check the
 :::{note}
 OCRmyPDF for Debian and Ubuntu currently omit the JBIG2 encoder.
 OCRmyPDF works fine without it but will produce larger output files.
-If you build jbig2enc from source, ocrmypdf will
-automatically detect it (specifically the `jbig2` binary) on the
-`PATH`. To add JBIG2 encoding, see {ref}`jbig2`.
+All JBIG2 patents expired in 2017, so if you build jbig2enc from source,
+OCRmyPDF will automatically detect it on the `PATH`.
+To add JBIG2 encoding, see {ref}`jbig2`.
 :::
 
 ### Fedora
@@ -124,7 +122,7 @@ automatically detect it (specifically the `jbig2` binary) on the
 
 * - OCRmyPDF version
 * - {{latest}}
-* - {{fedora_38}} {{fedora_39}} {{fedora_rawhide}}
+* - {{fedora_40}} {{fedora_41}} {{fedora_rawhide}}
 :::
 
 Users of Fedora may simply
@@ -141,21 +139,20 @@ to install the latest version from source. See [Installing HEAD revision
 from sources](#installing-head-revision-from-sources).
 
 :::{note}
-OCRmyPDF for Fedora currently omits the JBIG2 encoder due to patent
-issues. OCRmyPDF works fine without it but will produce larger output
-files. If you build jbig2enc from source, ocrmypdf 7.0.0 and later
-will automatically detect it on the `PATH`. To add JBIG2 encoding,
-see {ref}`Installing the JBIG2 encoder <jbig2>`.
+OCRmyPDF for Fedora currently omits the JBIG2 encoder. All JBIG2 patents
+expired in 2017. OCRmyPDF works fine without it but will produce larger
+output files. If you build jbig2enc from source, OCRmyPDF will automatically
+detect it on the `PATH`. To add JBIG2 encoding, see {ref}`jbig2`.
 :::
 
 (ubuntu-lts-latest)=
 
 ### RHEL 9
 
-Prepare the environment by getting Python 3.11:
+Prepare the environment by getting Python 3.12:
 
 ```bash
-dnf install python3.11 python3.11-pip
+dnf install python3.12 python3.12-pip
 ```
 
 Then, follow [Requirements for pip and HEAD install](#requirements-for-pip-and-head-install) to install dependencies:
@@ -167,41 +164,46 @@ dnf install ghostscript tesseract
 and build ocrmypdf in virtual environment:
 
 ```bash
-python3.11 -m venv .venv
+python3.12 -m venv .venv
 ```
 
 To add JBIG2 encoding, see {ref}`Installing the JBIG2 encoder <jbig2>`.
 
 Note Fedora packages for language data haven't been branched for RHEL/EPEL, but you can get traineddata files directly from [tesseract](https://github.com/tesseract-ocr/tessdata/) and place them in `/usr/share/tesseract/tessdata`.
 
-### Installing the latest version on Ubuntu 22.04 LTS
+### Installing the latest version on Ubuntu 22.04/24.04 LTS
 
-Ubuntu 22.04 includes ocrmypdf 13.4.0 - you can install that with
-`apt install ocrmypdf`. To install a more recent version for the current
-user, follow these steps:
+Ubuntu includes an older version of OCRmyPDF - you can install that with
+`apt install ocrmypdf`. To install the latest version, we recommend using uv:
 
 ```bash
+# Install system dependencies first
 sudo apt-get update
-sudo apt-get -y install ocrmypdf python3-pip
+sudo apt-get -y install ocrmypdf
 
-pip install --user --upgrade ocrmypdf
+# Install uv and upgrade to the latest OCRmyPDF
+pip install uv
+uv pip install --user --upgrade ocrmypdf
 ```
 
-If you get the message `WARNING: The script ocrmypdf is installed in
-'/home/$USER/.local/bin' which is not on PATH.`, you may need to re-login
-or open a new shell, or manually adjust your PATH.
+Alternatively, use Homebrew on Linux for a full-featured installation (see below).
 
 To add JBIG2 encoding, see {ref}`jbig2`.
 
-### Ubuntu 20.04 LTS
+### Ubuntu 20.04 LTS (and other older distributions)
 
-Ubuntu 20.04 includes ocrmypdf 9.6.0 - you can install that with `apt`. The
-most convenient way to install recent OCRmyPDF on older Ubuntu is to use
-Homebrew on Linux (Linuxbrew).
+:::{note}
+Ubuntu 20.04 is approaching end of life. Consider upgrading to Ubuntu 22.04 or 24.04 LTS.
+:::
+
+For older distributions, the most convenient way to install a recent version of
+OCRmyPDF is to use Homebrew on Linux:
 
 ```bash
 brew install ocrmypdf
 ```
+
+See {ref}`homebrew-linux` for more information on using Homebrew on Linux.
 
 ### Arch Linux (AUR)
 
@@ -300,28 +302,44 @@ In general, first install the OCRmyPDF package for your system, then
 optionally use the procedure [Installing with Python
 pip](#installing-with-python-pip) to install a more recent version.
 
-## Installing on macOS
+(homebrew-linux)=
 
-### Homebrew
+## Installing with Homebrew (macOS and Linux)
 
 :::{image} https://img.shields.io/homebrew/v/ocrmypdf.svg
 :alt: homebrew
 :target: https://formulae.brew.sh/formula/ocrmypdf
 :::
 
-OCRmyPDF is now a standard [Homebrew](https://brew.sh) formula. To
-install on macOS:
+[Homebrew](https://brew.sh) provides a full-featured OCRmyPDF installation
+on both macOS and Linux with all recommended dependencies. This is often
+the easiest way to get a complete, up-to-date installation.
 
 ```bash
 brew install ocrmypdf
 ```
 
-This will include only the English language pack. If you need other
-languages you can optionally install them all:
+This includes Tesseract, Ghostscript, and all required dependencies. English
+language support is included by default. For other languages:
 
 ```bash
 brew install tesseract-lang  # Optional: Install all language packs
 ```
+
+:::{tip}
+**For Linux users:** Homebrew on Linux is an excellent choice when your
+distribution's package is outdated or missing optional dependencies like
+jbig2enc, pngquant, or unpaper. Homebrew provides a consistent, full-featured
+installation that works across many Linux distributions.
+
+Install Homebrew on Linux: https://brew.sh
+:::
+
+## Installing on macOS
+
+### Homebrew
+
+See {ref}`homebrew-linux` above - the installation is identical on macOS.
 
 ### MacPorts
 
@@ -330,7 +348,7 @@ brew install tesseract-lang  # Optional: Install all language packs
 :target: https://ports.macports.org/port/ocrmypdf
 :::
 
-OCRmyPDF is includes in MacPorts:
+OCRmyPDF is included in MacPorts:
 
 ```bash
 sudo port install ocrmypdf
@@ -341,14 +359,13 @@ the appropriate tesseract [language ports](https://ports.macports.org/search/?se
 
 ### Manual installation on macOS
 
-These instructions probably work on all macOS supported by Homebrew, and are
-for installing a more current version of OCRmyPDF than is available from
-Homebrew. Note that the Homebrew versions usually track the release versions
-fairly closely.
+These instructions are for installing a more current version of OCRmyPDF than
+is available from Homebrew. Note that Homebrew versions usually track
+releases fairly closely.
 
 If it's not already present, [install Homebrew](http://brew.sh/).
 
-Update Homebrew:
+Update Homebrew and install dependencies:
 
 ```bash
 brew update
@@ -367,16 +384,11 @@ packs. If you need other languages you can optionally install them all:
 > brew install tesseract-lang  # Option 2: for all language packs
 > ```
 
-Update the homebrew pip:
+Install uv and OCRmyPDF:
 
 ```bash
-pip install --upgrade pip
-```
-
-You can then install OCRmyPDF from PyPI for the current user:
-
-```bash
-pip install --user ocrmypdf
+pip install uv
+uv pip install --user ocrmypdf
 ```
 
 The command line program should now be available:
@@ -405,7 +417,7 @@ You must install the following for Windows:
 Using the [winget](https://docs.microsoft.com/en-us/windows/package-manager/winget/)
 package manager:
 
-- `winget install -e --id Python.Python.3.11`
+- `winget install -e --id Python.Python.3.12`
 - `winget install -e --id UB-Mannheim.TesseractOCR`
 
 You will need to install Ghostscript manually, [since it does not support automated
@@ -451,13 +463,6 @@ for third party software it needs (specifically, Tesseract and Ghostscript). To
 override the versions OCRmyPDF selects, you can modify the `PATH` environment
 variable. [Follow these directions](https://www.computerhope.com/issues/ch000549.htm#dospath)
 to change the PATH.
-
-:::{warning}
-As of early 2021, users have reported problems with the Microsoft Store version of
-Python and OCRmyPDF. These issues affect many other third party Python packages.
-Please download Python from Python.org or a package manager instead of the
-Microsoft Store version.
-:::
 
 :::{warning}
 32-bit Windows is not supported.
@@ -551,23 +556,35 @@ See [Installing the Docker image](docker) for more information.
 
 (installing-with-python-pip)=
 
-## Installing with Python pip
+## Installing with uv (recommended)
 
-OCRmyPDF is delivered by PyPI because it is a convenient way to install
-the latest version. However, PyPI and `pip` cannot address the fact
-that `ocrmypdf` depends on certain non-Python system libraries and
-programs being installed.
+We recommend using [uv](https://docs.astral.sh/uv/) for installing OCRmyPDF from PyPI.
+uv is a fast, modern Python package manager that provides better dependency resolution
+and consistent behavior across all platforms.
 
 For best results, first install [your platform's
 version](https://repology.org/metapackage/ocrmypdf/versions) of
-`ocrmypdf`, using the instructions elsewhere in this document. Then
-you can use `pip` to get the latest version if your platform version
-is out of date. Chances are that this will satisfy most dependencies.
+`ocrmypdf` using the instructions elsewhere in this document to satisfy system
+dependencies. Then use uv to get the latest OCRmyPDF version.
+
+```bash
+# Install uv if you don't have it
+pip install uv
+
+# Install ocrmypdf in a virtual environment (recommended)
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install ocrmypdf
+
+# Or install globally
+uv pip install --system ocrmypdf
+```
 
 Use `ocrmypdf --version` to confirm what version was installed.
 
-Then you can install the latest OCRmyPDF from the Python wheels. First
-try:
+### Installing with pip
+
+If you prefer pip, you can still use it:
 
 ```bash
 pip install --user ocrmypdf
@@ -576,20 +593,19 @@ pip install --user ocrmypdf
 (If the message appears `Requirement already satisfied: ocrmypdf in...`,
 you will need to use `pip install --user --upgrade ocrmypdf`.)
 
-You should then be able to run `ocrmypdf --version` and see that the
-latest version was located.
+### Installing with pipx
 
-## Installing with pipx
+Some users may prefer pipx for isolated command-line tool installations:
 
-Some users may prefer pipx. As with the method above, you will need to
-satisfy all non-Python dependencies. Then if pipx is installed, you
-can use
+```bash
+pipx install ocrmypdf
+```
+
+Or run without permanent installation:
 
 ```bash
 pipx run ocrmypdf
 ```
-
-(If not installed, pipx will install first.)
 
 (requirements-for-pip-and-head-install)=
 
@@ -606,27 +622,50 @@ and verapdf can validate speculative PDF/A conversion.
 
 The following versions are required:
 
-- Python 3.11 or newer
+- Python 3.11 or newer (3.12+ recommended)
 - Tesseract 4.1.1 or newer
 - One of: Ghostscript 9.54+ **or** pypdfium2 (Python package)
 - One of: Ghostscript 9.54+ **or** verapdf (for PDF/A output)
 - fpdf2 2.8 or newer (Python package)
+- uharfbuzz (Python package)
+- fonts-noto or equivalent (system package, recommended)
 - jbig2enc 0.29 or newer (optional)
 - pngquant 2.5 or newer (optional)
 - unpaper 6.1 (optional)
 
 :::{note}
-For the best user experience, install both Ghostscript and pypdfium2.
-pypdfium2 is faster for rasterization, while Ghostscript provides
-broader compatibility and is required for certain PDF/A conversions.
+For the best user experience, install both Ghostscript and pypdfium2. pypdfium2 is
+faster for rasterization, while Ghostscript provides is required for certain PDF/A
+conversions.
 :::
+
+**Dependency summary:**
+
+| Feature | Option 1 | Option 2 | Notes |
+|---------|----------|----------|-------|
+| PDF rasterization | pypdfium2 (Python) | Ghostscript (binary) | pypdfium2 preferred when available |
+| PDF/A conversion | verapdf + pikepdf | Ghostscript | verapdf validates speculative conversion |
+| Text rendering | fpdf2 + uharfbuzz | - | Required |
+| OCR | tesseract-ocr | `--ocr-engine none` | Can be skipped entirely |
+
+**Minimum viable installation:**
+tesseract-ocr + (pypdfium2 OR Ghostscript) + fpdf2 + uharfbuzz
+
+**Recommended installation:**
+tesseract-ocr + pypdfium2 + Ghostscript + verapdf + fpdf2 + uharfbuzz + fonts-noto + unpaper + pngquant + jbig2enc
 
 We recommend 64-bit versions of all software. (32-bit versions are not
 supported, although on Linux, they may still work.)
 
-**fpdf2** is a required dependency that provides the text layer
-rendering engine. It replaces the legacy hOCR-based renderer with improved
-multilingual support. Install with: `pip install fpdf2`
+**fpdf2** and **uharfbuzz** are required dependencies that provide the text
+layer rendering engine. fpdf2 generates the PDF text layer, while uharfbuzz
+provides text shaping for proper multilingual support. These replace the
+legacy hOCR-based renderer. Install with: `pip install fpdf2 uharfbuzz`
+
+**fonts-noto** (or an equivalent comprehensive font package) is recommended
+for proper text rendering, especially for non-Latin scripts. On Debian/Ubuntu:
+`apt install fonts-noto`. On Fedora: `dnf install google-noto-fonts-common`.
+On macOS with Homebrew: `brew install font-noto`.
 
 **pypdfium2**, if present, provides fast PDF page rasterization using
 the pdfium library (the same library used by Google Chrome). It is
@@ -642,10 +681,10 @@ or visit [verapdf.org](https://verapdf.org/).
 **jbig2enc**, if present, will be used to optimize the encoding of
 monochrome images. This can significantly reduce the file size of the
 output file. It is not required.
-[jbig2enc](https://github.com/agl/jbig2enc) is not generally
-available for Ubuntu or Debian due to lingering concerns about patent
-issues, but can easily be built from source. To add JBIG2 encoding, see
-{ref}`jbig2`.
+[jbig2enc](https://github.com/agl/jbig2enc) is not available in some
+distributions due to historical patent concerns, but all JBIG2 patents
+expired in 2017. It can easily be built from source. To add JBIG2 encoding,
+see {ref}`jbig2`.
 
 :::{warning}
 Lossy JBIG2 encoding (`--jbig2-lossy`) has been removed in v17.0.0 due to
@@ -668,8 +707,8 @@ unfortunately, the `pip install` command cannot satisfy all of them.
 
 ## Installing HEAD revision from sources
 
-If you have `git` and Python 3.11 or newer installed, you can install
-from source. When the `pip` installer runs, it will alert you if
+If you have `git` and Python 3.12 or newer installed, you can install
+from source. (Python 3.11 is supported but 3.12+ is recommended.) When the `pip` installer runs, it will alert you if
 dependencies are missing.
 
 If you prefer to build every from source, you will need to [build
@@ -677,33 +716,39 @@ pikepdf from
 source](https://pikepdf.readthedocs.io/en/latest/installation.html#building-from-source).
 First ensure you can build and install pikepdf.
 
-To install the HEAD revision from sources in the current Python 3
-environment:
+We recommend using uv to install from sources:
+
+```bash
+git clone -b main https://github.com/ocrmypdf/OCRmyPDF.git
+cd OCRmyPDF
+pip install uv  # If not already installed
+uv sync
+```
+
+This creates a virtual environment and installs all dependencies. Activate
+the environment to use ocrmypdf:
+
+```bash
+source .venv/bin/activate
+ocrmypdf --help
+```
+
+Alternatively, install directly from GitHub using pip:
 
 ```bash
 pip install git+https://github.com/ocrmypdf/OCRmyPDF.git
 ```
 
-Or, to install in editable mode
-allowing customization of OCRmyPDF, use the `-e` flag:
-
-```bash
-pip install -e git+https://github.com/ocrmypdf/OCRmyPDF.git
-```
-
-You may find it easiest to install in a virtual environment, rather than
-system-wide:
+Or, to install in editable mode allowing customization:
 
 ```bash
 git clone -b main https://github.com/ocrmypdf/OCRmyPDF.git
-python3 -m venv .venv
-source .venv/bin/activate
 cd OCRmyPDF
-pip install .
+pip install -e .
 ```
 
-However, `ocrmypdf` will only be accessible on the system PATH when
-you activate the virtual environment.
+Note: `ocrmypdf` will only be accessible when the virtual environment
+is activated.
 
 To run the program:
 
@@ -738,7 +783,7 @@ pip install ocrmypdf[watcher,webservice]
 
 ### Development Tools (uv only)
 
-Development tools use dependency groups and require `uv`:
+Development tools use dependency groups:
 
 ```bash
 # Testing infrastructure
@@ -754,11 +799,6 @@ uv sync --group streamlit-dev
 uv sync
 ```
 
-:::{note}
-**User features** (`watcher`, `webservice`) work with both `uv` and `pip`.
-**Developer tools** (`test`, `docs`, `streamlit-dev`) require `uv` and use dependency groups (PEP 735).
-:::
-
 **Why use uv?**
 
 - Modern, fast Python package manager
@@ -766,7 +806,7 @@ uv sync
 - Better dependency resolution
 - Consistent across all platforms
 
-Install uv: `pip install uv` or visit https://docs.astral.sh/uv/
+Install uv: `curl -LsSf https://astral.sh/uv/install.sh | sh` or visit https://docs.astral.sh/uv/
 
 ### For development
 
@@ -775,11 +815,8 @@ To install all of the development and test requirements:
 ```bash
 git clone -b main https://github.com/ocrmypdf/OCRmyPDF.git
 cd OCRmyPDF
-pip install uv  # Install uv if not already installed
-uv sync --group test
+uv sync --all-groups
 ```
-
-Note: Development requires `uv`. The old `pip install -e .[test]` method is no longer supported.
 
 To add JBIG2 encoding, see {ref}`jbig2`.
 
@@ -800,14 +837,5 @@ To manually install the `fish` completion, copy
 
 ## Note on 32-bit support
 
-Many Python libraries no longer provide 32-bit binary wheels for Linux. This
-includes many of the libraries that OCRmyPDF depends on, such as
-Pillow. The easiest way to express this to end users is to say we don't
-support 32-bit Linux.
-
-However, if your Linux distribution still supports 32-bit binaries, you
-can still install and use OCRmyPDF. A warning message will appear.
-In practice, OCRmyPDF may need more than 32-bit memory space to run when
-large documents are processed, so there are practical limitations to what
-users can accomplish with it. Still, for the common use case of an 32-bit
-ARM NAS or Raspberry Pi processing small documents, it should work.
+We don't support any 32-bit system, including 32-bit Python or 32-bit
+Ghostscript on Windows.
