@@ -774,14 +774,9 @@ User features are available as optional dependencies. Install them with `uv` (re
 uv sync --extra watcher        # File watching service
 uv sync --extra webservice     # Streamlit web UI
 uv sync --extra watcher --extra webservice  # Multiple features
-
-# Using pip (also works)
-pip install ocrmypdf[watcher]
-pip install ocrmypdf[webservice]
-pip install ocrmypdf[watcher,webservice]
 ```
 
-### Development Tools (uv only)
+### Development Tools
 
 Development tools use dependency groups:
 
