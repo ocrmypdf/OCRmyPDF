@@ -447,7 +447,7 @@ class OcrGrafter:
         xobj.Type = Name.XObject
         xobj.Subtype = Name.Form
         xobj.FormType = 1
-        xobj.BBox = mediabox
+        xobj.BBox = base_mediabox
 
         # Copy resources from text page's Resources to xobj
         # We need to handle this carefully since text_page is from a foreign PDF

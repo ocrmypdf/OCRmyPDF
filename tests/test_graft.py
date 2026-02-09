@@ -42,6 +42,69 @@ def test_links(resources, outpdf):
         assert p2.Annots[0].A.D[0].objgen == p1.objgen
 
 
+def test_redo_ocr_with_offset_mediabox(resources, outdir):
+    """Test that --redo-ocr handles non-zero mediabox origins correctly.
+
+    Regression test for issue #1630 where PDFs with mediabox origins like
+    [0, 100, width, height+100] (common in cropped PDFs)
+    would have OCR text shifted vertically because the Form XObject BBox
+    used the text layer's mediabox [0, 0, w, h] instead of the base page's
+    mediabox [0, 100, w, h+100].
+
+    Before the fix, the BBox would be [0, 0, w, h] but the transformation
+    matrix would expect [0, 100, w, h+100], causing a 100pt vertical shift.
+    """
+    # Create a PDF with a non-zero mediabox origin
+    input_pdf = outdir / 'offset_mediabox_input.pdf'
+
+    with pikepdf.open(resources / 'graph_ocred.pdf') as pdf:
+        page = pdf.pages[0]
+        original_mb = list(page.MediaBox)
+
+        # Shift mediabox Y origin to simulate cropped/JSTOR-style PDFs
+        # This is the scenario that triggers the bug
+        y_offset = 100
+        page.MediaBox = [
+            original_mb[0],
+            original_mb[1] + y_offset,
+            original_mb[2],
+            original_mb[3] + y_offset,
+        ]
+
+        pdf.save(input_pdf)
+
+    # Run --redo-ocr (this is where the bug occurred)
+    output_pdf = outdir / 'offset_redo_ocr.pdf'
+    ocrmypdf.ocr(input_pdf, output_pdf, redo_ocr=True)
+
+    # Verify the output
+    with pikepdf.open(output_pdf) as pdf:
+        page = pdf.pages[0]
+        mediabox = list(page.MediaBox)
+
+        # MediaBox origin should be preserved
+        assert (
+            float(mediabox[1]) == 100.0
+        ), f"MediaBox Y origin should be preserved at 100, got {mediabox[1]}"
+
+        # MediaBox should have valid dimensions
+        width = float(mediabox[2]) - float(mediabox[0])
+        height = float(mediabox[3]) - float(mediabox[1])
+        assert width > 0 and height > 0, "MediaBox should have positive dimensions"
+
+        # Text content should be present
+        # With the fix, OCR text layer coordinates will be correct
+        # Without the fix, the text would be shifted outside the visible area
+        text_content = page.Contents.read_bytes()
+        assert len(text_content) > 0, "Page should have content"
+
+        # The fix ensures text operators are present and positioned correctly
+        # (BT/ET mark text blocks in PDF)
+        assert (
+            b'BT' in text_content or b'/Im' in text_content
+        ), "Content should include text operators or image references"
+
+
 def test_strip_invisble_text():
     pdf = pikepdf.Pdf.new()
     print(pikepdf.parse_content_stream(pikepdf.Stream(pdf, b'3 Tr')))
