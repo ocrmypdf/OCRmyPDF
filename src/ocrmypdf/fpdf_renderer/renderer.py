@@ -189,9 +189,9 @@ class Fpdf2PdfRenderer:
 
         # Set text mode for invisible text
         if self.invisible_text:
-            pdf.text_rendering_mode = TextMode.INVISIBLE
+            pdf.text_mode = TextMode.INVISIBLE
         else:
-            pdf.text_rendering_mode = TextMode.FILL
+            pdf.text_mode = TextMode.FILL
 
         # Render content to PDF
         self.render_to_pdf(pdf)
