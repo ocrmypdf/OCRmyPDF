@@ -802,9 +802,9 @@ class Fpdf2MultiPageRenderer:
 
         # Set text mode for invisible text
         if self.invisible_text:
-            pdf.text_rendering_mode = TextMode.INVISIBLE
+            pdf.text_mode = TextMode.INVISIBLE
         else:
-            pdf.text_rendering_mode = TextMode.FILL
+            pdf.text_mode = TextMode.FILL
 
         # Shared font registration across all pages
         shared_registered_fonts: dict[str, str] = {}
