@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 """Simple CLI for testing HOCR to PDF conversion using fpdf2 renderer."""
+
 from __future__ import annotations
 
 import argparse
@@ -62,7 +63,7 @@ if __name__ == "__main__":
         page=ocr_page,
         dpi=dpi,
         multi_font_manager=multi_font_manager,
-        invisible_text=not args.boundingboxes,  # Visible text in debug mode
+        invisible_text=False,
         debug_render_options=debug_options,
     )
     renderer.render(Path(args.outputfile))

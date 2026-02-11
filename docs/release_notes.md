@@ -28,6 +28,10 @@ official when it's tagged and posted to PyPI.
 
 ## v17.2.0
 
+- Fixed incorrect word spacing in poppler-based PDF viewers and tools (Evince,
+  pdftotext, and others) where words on the same line appeared separated by
+  double newlines. This works around a poppler bug where Tz (horizontal scaling)
+  is not carried across BT/ET boundaries. {issue}`1632`
 - Fixed OCR text layer being visible instead of invisible due to incorrect fpdf2
   text rendering mode attribute. This caused OCR text to appear when images were
   removed from the PDF. {issue}`1631`
