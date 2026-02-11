@@ -299,6 +299,30 @@ class Fpdf2PdfRenderer:
         # Get textangle (rotation of the entire line)
         textangle = line.textangle or 0.0
 
+        # Read baseline early so we can detect rotation from steep slopes.
+        # When Tesseract doesn't report textangle for rotated text, the
+        # rotation gets encoded as a very steep baseline slope instead.
+        slope = 0.0
+        intercept_pt = 0.0
+        has_meaningful_baseline = False
+        if line.baseline is not None:
+            slope = line.baseline.slope
+            intercept_pt = self.coord_transform.px_to_pt(line.baseline.intercept)
+            if abs(slope) < 0.005:
+                slope = 0.0
+            has_meaningful_baseline = True
+
+        # Detect text rotation from steep baseline slope.
+        # A slope magnitude > 1.0 corresponds to > 45° from horizontal,
+        # which indicates the line is rotated, not merely skewed.
+        if textangle == 0.0 and abs(slope) > 1.0:
+            textangle = degrees(atan(slope))
+            # The original baseline slope and intercept are not meaningful
+            # after extracting rotation; recalculate intercept from font
+            # metrics below.
+            slope = 0.0
+            has_meaningful_baseline = False
+
         # Build line_size_aabb_matrix: transforms from page coords to un-rotated
         # line coords. The hOCR bbox is the minimum axis-aligned bounding box
         # enclosing the rotated text.
@@ -317,16 +341,10 @@ class Fpdf2PdfRenderer:
             inv_line_matrix, line_left_pt, line_top_pt, line_right_pt, line_bottom_pt
         )
 
-        # Get baseline information (slope and intercept)
-        slope = 0.0
-        intercept_pt = 0.0
-        if line.baseline is not None:
-            slope = line.baseline.slope
-            intercept_pt = self.coord_transform.px_to_pt(line.baseline.intercept)
-            if abs(slope) < 0.005:
-                slope = 0.0
-        else:
-            # No baseline provided: calculate from font metrics
+        # Get baseline intercept
+        if not has_meaningful_baseline:
+            # No baseline provided or baseline was used for rotation detection:
+            # calculate intercept from font metrics
             default_font_manager = self.multi_font_manager.fonts['NotoSans-Regular']
             ascent, descent, units_per_em = default_font_manager.get_font_metrics()
             ascent_norm = ascent / units_per_em
