@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from itertools import pairwise
-from math import atan, degrees
+from math import atan, cos, degrees, radians, sin
 from pathlib import Path
 
 from fpdf import FPDF
@@ -163,6 +163,8 @@ class Fpdf2PdfRenderer:
 
         # Registered fonts: font_path -> fpdf_family_name
         self._registered_fonts: dict[str, str] = {}
+        # Track whether we've already logged the info-level suppression message
+        self._logged_aspect_ratio_suppression = False
 
     def render(self, output_path: Path) -> None:
         """Render page to PDF file.
@@ -401,6 +403,16 @@ class Fpdf2PdfRenderer:
             w for w in line.children if w.ocr_class == OcrClass.WORD and w.text
         ]
 
+        # Suppress lines where the text aspect ratio is implausible.
+        # This catches cases where Tesseract failed to detect rotation
+        # entirely (slope=0, no textangle) and produced garbage text in a
+        # bounding box whose shape doesn't match the text content at all.
+        if not self._check_aspect_ratio_plausible(
+            pdf, words, font_size, slope_angle_deg,
+            line_size_width, line_size_height, line_language,
+        ):
+            return
+
         # Render each word followed by space (except last)
         # Use pairwise to iterate over consecutive word pairs, pairing the last
         # word with a None to signal the end of the line.
@@ -428,6 +440,83 @@ class Fpdf2PdfRenderer:
                     line_language,
                     line.direction,
                 )
+
+    def _check_aspect_ratio_plausible(
+        self,
+        pdf: FPDF,
+        words: list[OcrElement | None],
+        font_size: float,
+        slope_angle_deg: float,
+        line_size_width: float,
+        line_size_height: float,
+        line_language: str | None,
+    ) -> bool:
+        """Check whether the line's aspect ratio is plausible for its text.
+
+        Compares the aspect ratio of the OCR bounding box to the aspect ratio
+        the text would have if rendered normally (accounting for baseline
+        slope). A large mismatch indicates Tesseract misread rotated text
+        without detecting the rotation.
+
+        Returns:
+            True if plausible (rendering should proceed), False to suppress.
+        """
+        if line_size_width <= 0 or line_size_height <= 0 or font_size <= 0:
+            return True
+
+        # Fast path: most lines are wider than they are tall, which is
+        # the normal shape for horizontal text. Only tall-narrow boxes
+        # (height > width) need the expensive font measurement check.
+        if line_size_width >= line_size_height:
+            return True
+
+        line_text = ' '.join(
+            w.text for w in words if w is not None and w.text
+        )
+        if not line_text:
+            return True
+
+        # Measure the natural rendered width of the line text
+        font_manager = self.multi_font_manager.select_font_for_word(
+            line_text, line_language
+        )
+        font_family = self._register_font(pdf, font_manager)
+        pdf.set_font(font_family, size=round(font_size))
+        natural_width = pdf.get_string_width(line_text)
+
+        if natural_width <= 0:
+            return True
+
+        # Compute the AABB the text would occupy considering baseline slope
+        theta = radians(abs(slope_angle_deg))
+        expected_w = natural_width * cos(theta) + font_size * sin(theta)
+        expected_h = natural_width * sin(theta) + font_size * cos(theta)
+
+        if expected_h <= 0:
+            return True
+
+        actual_aspect = line_size_width / line_size_height
+        expected_aspect = expected_w / expected_h
+        ratio = actual_aspect / expected_aspect
+
+        if ratio >= 0.1:
+            return True
+
+        # Implausible aspect ratio — suppress this line
+        log.debug(
+            "Suppressing text with improbable aspect ratio: "
+            "actual=%.3f expected=%.3f ratio=%.4f text=%r",
+            actual_aspect,
+            expected_aspect,
+            ratio,
+            line_text[:80],
+        )
+        if not self._logged_aspect_ratio_suppression:
+            log.info(
+                "Suppressing OCR output text with improbable aspect ratio"
+            )
+            self._logged_aspect_ratio_suppression = True
+        return False
 
     def _render_word(
         self,
