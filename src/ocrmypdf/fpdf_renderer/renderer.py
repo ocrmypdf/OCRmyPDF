@@ -691,7 +691,7 @@ class Fpdf2PdfRenderer:
                 render_tz = word_tz
 
             ops.append(f'{render_tz:.2f} Tz')
-            ops.append(pdf.current_font.encode_text(text_to_render))
+            ops.append(self._encode_shaped_text(pdf, text_to_render))
 
             prev_x_baseline = x_baseline
 
@@ -706,6 +706,27 @@ class Fpdf2PdfRenderer:
         # Reset fpdf2's internal stretching tracking so subsequent API calls
         # don't think Tz is still set from our raw operators
         pdf.font_stretching = 100
+
+    def _encode_shaped_text(self, pdf: FPDF, text: str) -> str:
+        """Encode text using HarfBuzz text shaping for complex script support.
+
+        Unlike font.encode_text() which maps unicode characters one-by-one to
+        glyph IDs, this uses HarfBuzz to handle BiDi reordering, Arabic joining
+        forms, Devanagari conjuncts, and other complex script shaping. Falls
+        back to encode_text() when text shaping is not enabled.
+        """
+        font = pdf.current_font
+        if pdf.text_shaping and pdf.text_shaping.get("use_shaping_engine"):
+            shaped = font.shape_text(text, pdf.font_size_pt, pdf.text_shaping)
+            if shaped:
+                mapped = "".join(
+                    chr(ti["mapped_char"])
+                    for ti in shaped
+                    if ti["mapped_char"] is not None
+                )
+                if mapped:
+                    return f"({font.escape_text(mapped)}) Tj"
+        return font.encode_text(text)
 
     def _is_cjk_only(self, text: str) -> bool:
         """Check if text contains only CJK characters.
