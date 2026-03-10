@@ -188,6 +188,9 @@ class OcrOptions(BaseModel):
         """Compatibility alias for jpg_quality."""
         self.jpg_quality = value
 
+    # Output behavior
+    no_overwrite: bool = False
+
     # Advanced options
     max_image_mpixels: float = 250.0
     pdf_renderer: str = 'auto'

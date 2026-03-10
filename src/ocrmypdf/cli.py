@@ -137,8 +137,9 @@ Online documentation is located at:
         'output_file',
         metavar="output_pdf",
         help="Output searchable PDF file (or '-' to write to standard output). "
-        "Existing files will be overwritten. If same as input file, the "
-        "input file will be updated only if processing is successful.",
+        "Existing files will be overwritten (use --no-overwrite to prevent this). "
+        "If same as input file, the input file will be updated only if "
+        "processing is successful.",
     )
     parser.add_argument(
         '-l',
@@ -188,6 +189,15 @@ Online documentation is located at:
         "If FILE is set to '-', the sidecar is written to stdout (a "
         "convenient way to preview OCR quality). The output file and sidecar "
         "may not both use stdout at the same time.",
+    )
+
+    parser.add_argument(
+        '-n',
+        '--no-overwrite',
+        action='store_true',
+        default=False,
+        help="If the output file already exists, exit with an error instead of "
+        "overwriting it.",
     )
 
     parser.add_argument(

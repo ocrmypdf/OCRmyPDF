@@ -217,6 +217,17 @@ def check_requested_output_file(options: OcrOptions) -> None:
             f"Output file location ({options.output_file}) is not a writable file."
         )
 
+    if (
+        options.no_overwrite
+        and not hasattr(options.output_file, 'writable')
+        and options.output_file != '-'
+        and Path(str(options.output_file)).exists()
+    ):
+        raise OutputFileAccessError(
+            f"Output file already exists: {options.output_file}\n"
+            "To overwrite it, omit the --no-overwrite / -n option."
+        )
+
 
 def report_output_file_size(
     options: OcrOptions,
