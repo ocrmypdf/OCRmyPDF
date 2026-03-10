@@ -36,7 +36,7 @@ def available() -> bool:
     """Check if verapdf is available."""
     try:
         version()
-    except MissingDependencyError:
+    except (MissingDependencyError, OSError):
         return False
     return True
 
