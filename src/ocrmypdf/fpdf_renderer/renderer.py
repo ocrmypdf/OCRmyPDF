@@ -677,12 +677,12 @@ class Fpdf2PdfRenderer:
                     dy_pdf = -(py_curr_f - py_prev_f)
                     ops.append(f'{dx_pdf:.2f} {dy_pdf:.2f} Td')
 
-            # Determine text to render and compute Tz
+            # Determine text to render
             if not is_last:
                 next_text, next_x_baseline, _, _ = word_render_data[i + 1]
                 advance = next_x_baseline - x_baseline
 
-                # Add trailing space unless both words are CJK-only
+                # Add trailing space for text extraction unless both are CJK
                 if (
                     advance > 0
                     and not (
@@ -691,18 +691,14 @@ class Fpdf2PdfRenderer:
                     )
                 ):
                     text_to_render = text + ' '
-                    natural_w = pdf.get_string_width(text_to_render)
-                    render_tz = (
-                        (advance / natural_w) * 100
-                        if natural_w > 0
-                        else word_tz
-                    )
                 else:
                     text_to_render = text
-                    render_tz = word_tz
             else:
                 text_to_render = text
-                render_tz = word_tz
+
+            # Use word_tz (fits word into its hOCR bbox) — Td handles
+            # inter-word gaps, so Tz should not stretch to fill them.
+            render_tz = word_tz
 
             ops.append(f'{render_tz:.2f} Tz')
             ops.append(self._encode_shaped_text(pdf, text_to_render))
