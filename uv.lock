@@ -1313,6 +1313,7 @@ webservice = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "cyclopts" },
     { name = "ipykernel" },
     { name = "mypy" },
     { name = "reportlab" },
@@ -1367,6 +1368,7 @@ provides-extras = ["watcher", "webservice"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "cyclopts", specifier = ">=4.5.1" },
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "mypy", specifier = ">=1.13.0" },
     { name = "reportlab", specifier = ">=4.4.4" },
