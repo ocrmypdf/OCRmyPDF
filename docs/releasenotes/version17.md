@@ -3,6 +3,20 @@
 
 # v17
 
+## v17.4.0
+
+- Added ``--no-overwrite`` / ``-n`` option to prevent overwriting output files.
+  If the destination file already exists, OCRmyPDF exits with code 5
+  (``OutputFileAccessError``). {issue}`1642`
+- Fixed text layer stretching in the fpdf2 renderer for widely-spaced words.
+  The horizontal scaling (Tz) was incorrectly stretched to fill inter-word gaps
+  instead of relying on Td positioning, causing text selection to highlight far
+  beyond the actual word boundaries. {issue}`1635`
+- Fixed ``optimize=2`` or ``optimize=3`` crash when using the Python API without
+  explicitly setting ``jpg_quality`` or ``png_quality``. {issue}`1641`
+- Fixed ``verapdf`` availability check crashing with ``NotADirectoryError`` on
+  some platforms. {issue}`1638`
+
 ## v17.3.0
 
 - Fixed Python API ignoring the ``language`` parameter, always defaulting to
