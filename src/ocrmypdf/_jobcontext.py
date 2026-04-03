@@ -36,6 +36,7 @@ class PdfContext:
         plugin_manager,
     ):
         self.options = options
+        self.options.work_folder = work_folder
         self.work_folder = work_folder
         self.origin = origin
         self.pdfinfo = pdfinfo
