@@ -5,9 +5,11 @@
 
 from __future__ import annotations
 
+import re
 from io import StringIO
 from pathlib import Path
 
+import pikepdf
 import pytest
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
@@ -597,3 +599,312 @@ class TestFpdf2PdfRendererLineTypes:
         check_pdf(str(output_pdf))
         extracted_text = text_from_pdf(output_pdf)
         assert "Caption" in extracted_text
+
+
+def create_rtl_page(
+    words: list[tuple[str, tuple[float, float, float, float]]],
+    language: str = "ara",
+    width: float = 1000,
+    height: float = 500,
+) -> OcrElement:
+    """Create an OcrElement page with a single RTL paragraph/line.
+
+    Args:
+        words: List of (text, (left, top, right, bottom)) tuples.
+        language: Language code for the paragraph.
+        width: Page width in pixels.
+        height: Page height in pixels.
+
+    Returns:
+        OcrElement page.
+    """
+    word_elements = [
+        OcrElement(
+            ocr_class=OcrClass.WORD,
+            text=text,
+            bbox=BoundingBox(
+                left=bbox[0], top=bbox[1], right=bbox[2], bottom=bbox[3]
+            ),
+        )
+        for text, bbox in words
+    ]
+    line = OcrElement(
+        ocr_class=OcrClass.LINE,
+        bbox=BoundingBox(left=50, top=100, right=950, bottom=200),
+        baseline=Baseline(slope=0.0, intercept=0),
+        direction="rtl",
+        children=word_elements,
+    )
+    paragraph = OcrElement(
+        ocr_class=OcrClass.PARAGRAPH,
+        bbox=BoundingBox(left=50, top=100, right=950, bottom=200),
+        direction="rtl",
+        language=language,
+        children=[line],
+    )
+    return OcrElement(
+        ocr_class=OcrClass.PAGE,
+        bbox=BoundingBox(left=0, top=0, right=width, bottom=height),
+        children=[paragraph],
+    )
+
+
+def _tounicode_map(pdf_path: Path) -> dict[int, str]:
+    """Extract all ToUnicode CMap entries from the first page's OCR overlay.
+
+    Returns a dict mapping subset glyph index -> unicode string.
+    """
+    pdf = pikepdf.open(pdf_path)
+    page = pdf.pages[0]
+    resources = page.get('/Resources', {})
+
+    # Collect fonts from the page and from any Form XObjects (OCR overlay)
+    fonts: dict[str, pikepdf.Object] = {}
+    if '/Font' in resources:
+        for name, obj in resources['/Font'].items():
+            fonts[str(name)] = obj
+    for xobj in resources.get('/XObject', {}).values():
+        if xobj.get('/Subtype') == '/Form':
+            for name, obj in xobj.get('/Resources', {}).get('/Font', {}).items():
+                fonts[str(name)] = obj
+
+    result: dict[int, str] = {}
+    for fobj in fonts.values():
+        tounicode = fobj.get('/ToUnicode')
+        if tounicode is None:
+            continue
+        cmap = bytes(tounicode.read_bytes()).decode('latin-1', errors='replace')
+        for m in re.finditer(r'<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>', cmap):
+            src_int = int(m.group(1), 16)
+            dst_hex = m.group(2)
+            chars = ''.join(
+                chr(int(dst_hex[i : i + 4], 16))
+                for i in range(0, len(dst_hex), 4)
+                if int(dst_hex[i : i + 4], 16) > 0
+            )
+            if src_int > 0 and chars:
+                result[src_int] = chars
+    return result
+
+
+def _decode_tounicode_stream(
+    pdf_path: Path,
+) -> tuple[dict[int, str], list[int]]:
+    """Extract ToUnicode CMap and Tj glyph stream from a test PDF.
+
+    Searches the page content stream and any Form XObjects for fonts
+    and Tj operations.
+
+    Returns:
+        (cmap, glyph_ids) where *cmap* maps subset index -> Unicode string
+        and *glyph_ids* is the flat list of 2-byte glyph indices found in
+        the first Tj string.
+    """
+    pdf = pikepdf.open(pdf_path)
+    page = pdf.pages[0]
+    resources = page.get('/Resources', {})
+
+    # Collect fonts from page and from Form XObjects
+    cmap: dict[int, str] = {}
+    for font_dict in [resources.get('/Font', {})]:
+        for fobj in font_dict.values():
+            tounicode = fobj.get('/ToUnicode')
+            if tounicode is None:
+                continue
+            raw = bytes(tounicode.read_bytes()).decode('latin-1', errors='replace')
+            for m in re.finditer(r'<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>', raw):
+                src = int(m.group(1), 16)
+                dst_hex = m.group(2)
+                chars = ''.join(
+                    chr(int(dst_hex[i : i + 4], 16))
+                    for i in range(0, len(dst_hex), 4)
+                    if int(dst_hex[i : i + 4], 16) > 0
+                )
+                if src > 0 and chars:
+                    cmap[src] = chars
+    for xobj in resources.get('/XObject', {}).values():
+        if xobj.get('/Subtype') != '/Form':
+            continue
+        for fobj in xobj.get('/Resources', {}).get('/Font', {}).values():
+            tounicode = fobj.get('/ToUnicode')
+            if tounicode is None:
+                continue
+            raw = bytes(tounicode.read_bytes()).decode('latin-1', errors='replace')
+            for m in re.finditer(r'<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>', raw):
+                src = int(m.group(1), 16)
+                dst_hex = m.group(2)
+                chars = ''.join(
+                    chr(int(dst_hex[i : i + 4], 16))
+                    for i in range(0, len(dst_hex), 4)
+                    if int(dst_hex[i : i + 4], 16) > 0
+                )
+                if src > 0 and chars:
+                    cmap[src] = chars
+
+    # Find first Tj glyph IDs from page content or XObject streams
+    glyph_ids: list[int] = []
+    streams: list[bytes] = []
+    contents = page.get('/Contents')
+    if contents:
+        streams.append(bytes(contents.read_bytes()))
+    for xobj in resources.get('/XObject', {}).values():
+        if xobj.get('/Subtype') == '/Form':
+            streams.append(bytes(xobj.read_bytes()))
+    for data in streams:
+        if glyph_ids:
+            break
+        tj = re.search(rb'\(([^\)]+)\)\s*Tj', data)
+        if tj:
+            raw_bytes = tj.group(1)
+            for j in range(0, len(raw_bytes) - 1, 2):
+                glyph_ids.append((raw_bytes[j] << 8) | raw_bytes[j + 1])
+    return cmap, glyph_ids
+
+
+class TestRtlTextExtraction:
+    """Verify that RTL text is extracted in correct logical order.
+
+    The fpdf2 renderer must produce PDF text layers where text extractors
+    (pdftotext, pdfminer) return characters in correct logical (reading)
+    order for Arabic, Hebrew, and Farsi scripts.
+
+    These tests exercise invisible_text=True (the production path) to
+    catch issues like the lam-alef ligature CMap ordering bug (issue #1655).
+    """
+
+    def test_arabic_lam_alef_extraction_order(self, tmp_path, multi_font_manager):
+        """Arabic words with lam-alef ligature extract in correct order.
+
+        The lam-alef (لا) ligature was the primary trigger for issue #1655:
+        fpdf2's shape_text() produced a multi-char CMap entry whose
+        character order was reversed by the bidi algorithm during
+        extraction, giving "سالم" instead of "سلام".
+        """
+        # سلام contains lam-alef: sin(س) lam(ل) alef(ا) meem(م)
+        page = create_rtl_page(
+            [("سلام", (600, 100, 900, 200))],
+            language="fas",
+        )
+        output_pdf = tmp_path / "rtl_lam_alef.pdf"
+        renderer = Fpdf2PdfRenderer(
+            page=page,
+            dpi=72.0,
+            multi_font_manager=multi_font_manager,
+            invisible_text=True,
+        )
+        renderer.render(output_pdf)
+
+        cmap, glyph_ids = _decode_tounicode_stream(output_pdf)
+        # Decode the glyph stream via the CMap
+        decoded = ''.join(cmap.get(g, '') for g in glyph_ids)
+        # The stream is pre-reversed for RTL, so reversing it back
+        # must yield the original logical text
+        logical = decoded[::-1]
+        assert logical == 'سلام', (
+            f"Expected logical text 'سلام', got {logical!r} "
+            f"(stream: {decoded!r}, glyph_ids: {glyph_ids})"
+        )
+
+    def test_arabic_multiple_words_extraction(self, tmp_path, multi_font_manager):
+        """Multiple Arabic words produce correct Unicode mappings."""
+        page = create_rtl_page(
+            [
+                ("مرحبا", (600, 100, 900, 200)),
+                ("بالعالم", (100, 100, 500, 200)),
+            ],
+            language="ara",
+        )
+        output_pdf = tmp_path / "rtl_arabic_words.pdf"
+        renderer = Fpdf2PdfRenderer(
+            page=page,
+            dpi=72.0,
+            multi_font_manager=multi_font_manager,
+            invisible_text=True,
+        )
+        renderer.render(output_pdf)
+
+        cmap, _ = _decode_tounicode_stream(output_pdf)
+        # Every CMap value should contain valid Arabic characters
+        arabic_chars = {c for chars in cmap.values() for c in chars}
+        expected = set('مرحبابالعالم')
+        assert expected.issubset(arabic_chars | {' '}), (
+            f"CMap missing Arabic characters; got {arabic_chars}"
+        )
+
+    def test_hebrew_extraction_order(self, tmp_path, multi_font_manager):
+        """Hebrew text produces correct stream order for extraction."""
+        page = create_rtl_page(
+            [("שלום", (600, 100, 900, 200))],
+            language="heb",
+        )
+        output_pdf = tmp_path / "rtl_hebrew.pdf"
+        renderer = Fpdf2PdfRenderer(
+            page=page,
+            dpi=72.0,
+            multi_font_manager=multi_font_manager,
+            invisible_text=True,
+        )
+        renderer.render(output_pdf)
+
+        cmap, glyph_ids = _decode_tounicode_stream(output_pdf)
+        decoded = ''.join(cmap.get(g, '') for g in glyph_ids)
+        logical = decoded[::-1]
+        assert logical == 'שלום', (
+            f"Expected logical text 'שלום', got {logical!r} "
+            f"(stream: {decoded!r})"
+        )
+
+    def test_rtl_tounicode_one_to_one(self, tmp_path, multi_font_manager):
+        """RTL invisible text produces 1:1 glyph-to-Unicode CMap entries.
+
+        When using encode_text() for RTL words, each glyph maps to exactly
+        one Unicode character. Multi-char ligature CMap entries (produced by
+        shape_text()) are the root cause of the extraction order bug, so
+        their absence confirms the fix.
+        """
+        page = create_rtl_page(
+            [("سلام", (600, 100, 900, 200))],
+            language="ara",
+        )
+        output_pdf = tmp_path / "rtl_tounicode.pdf"
+        renderer = Fpdf2PdfRenderer(
+            page=page,
+            dpi=72.0,
+            multi_font_manager=multi_font_manager,
+            invisible_text=True,
+        )
+        renderer.render(output_pdf)
+
+        cmap, _ = _decode_tounicode_stream(output_pdf)
+        # Every CMap entry should map to exactly one Unicode character
+        for glyph_id, chars in cmap.items():
+            assert len(chars) == 1, (
+                f"Glyph {glyph_id} maps to {len(chars)} chars {chars!r}; "
+                f"expected 1:1 mapping for RTL invisible text"
+            )
+
+    def test_visible_rtl_still_uses_shaping(self, tmp_path, multi_font_manager):
+        """Visible RTL text (debug mode) still uses text shaping.
+
+        The encode_text() bypass is only for invisible text. When
+        invisible_text=False, shaping must remain active for correct
+        glyph rendering (joining forms, ligatures).
+        """
+        page = create_rtl_page(
+            [("سلام", (600, 100, 900, 200))],
+            language="ara",
+        )
+        output_pdf = tmp_path / "rtl_visible.pdf"
+        renderer = Fpdf2PdfRenderer(
+            page=page,
+            dpi=72.0,
+            multi_font_manager=multi_font_manager,
+            invisible_text=False,
+        )
+        renderer.render(output_pdf)
+
+        # Shaped text may have multi-char CMap entries (ligatures);
+        # just verify the PDF is valid and non-empty
+        check_pdf(str(output_pdf))
+        text = text_from_pdf(output_pdf)
+        assert len(text.strip()) > 0, "Visible RTL should produce extractable text"

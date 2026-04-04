@@ -10,6 +10,7 @@ OCR text layers.
 from __future__ import annotations
 
 import logging
+import unicodedata
 from dataclasses import dataclass
 from math import atan, cos, degrees, radians, sin, sqrt
 from pathlib import Path
@@ -22,6 +23,21 @@ from ocrmypdf.font import FontManager, MultiFontManager
 from ocrmypdf.models.ocr_element import OcrClass, OcrElement
 
 log = logging.getLogger(__name__)
+
+
+def _is_rtl_text(text: str) -> bool:
+    """Check if text is right-to-left based on Unicode bidi properties.
+
+    Looks for the first character with a strong directional type
+    (R, AL, or L) to determine the text's base direction.
+    """
+    for char in text:
+        bidi = unicodedata.bidirectional(char)
+        if bidi in ('R', 'AL'):
+            return True
+        if bidi == 'L':
+            return False
+    return False
 
 
 def transform_point(matrix: Matrix, x: float, y: float) -> tuple[float, float]:
@@ -426,8 +442,9 @@ class Fpdf2PdfRenderer:
         ):
             return
 
-        # Collect word rendering data: (text, x_baseline, font_family, word_tz)
-        word_render_data: list[tuple[str, float, str, float]] = []
+        # Collect word rendering data:
+        #   (text, x_baseline, font_family, word_tz, is_rtl)
+        word_render_data: list[tuple[str, float, str, float, bool]] = []
         for word in words:
             if word is None or not word.text or word.bbox is None:
                 continue
@@ -459,13 +476,31 @@ class Fpdf2PdfRenderer:
             )
             font_family = self._register_font(pdf, font_manager)
             pdf.set_font(font_family, size=font_size)
-            natural_width = pdf.get_string_width(word.text)
+
+            # For RTL words with invisible text, we use encode_text()
+            # (which maps characters 1:1 in logical order) combined with
+            # a -1 x-scale text matrix. This avoids an fpdf2 issue where
+            # shaped RTL ligature glyphs (e.g. lam-alef) get multi-char
+            # CMap entries whose character order is reversed by the bidi
+            # algorithm during text extraction.
+            # Since the text is invisible, glyph mirroring is harmless.
+            # Compute Tz using unshaped widths to match encode_text().
+            word_is_rtl = self.invisible_text and _is_rtl_text(word.text)
+            if word_is_rtl:
+                saved_shaping = pdf.text_shaping
+                pdf.text_shaping = None
+                natural_width = pdf.get_string_width(word.text)
+                pdf.text_shaping = saved_shaping
+            else:
+                natural_width = pdf.get_string_width(word.text)
             if natural_width > 0 and word_width_pt > 0:
                 word_tz = (word_width_pt / natural_width) * 100
             else:
                 word_tz = 100.0
 
-            word_render_data.append((word.text, box_llx, font_family, word_tz))
+            word_render_data.append(
+                (word.text, box_llx, font_family, word_tz, word_is_rtl)
+            )
 
         if not word_render_data:
             return
@@ -564,7 +599,7 @@ class Fpdf2PdfRenderer:
     def _emit_line_bt_block(
         self,
         pdf: FPDF,
-        word_render_data: list[tuple[str, float, str, float]],
+        word_render_data: list[tuple[str, float, str, float, bool]],
         baseline_matrix: Matrix,
         font_size: float,
         total_rotation_deg: float,
@@ -580,8 +615,8 @@ class Fpdf2PdfRenderer:
 
         Args:
             pdf: FPDF instance
-            word_render_data: List of (text, x_baseline, font_family, word_tz)
-                tuples, one per word on this line
+            word_render_data: List of (text, x_baseline, font_family, word_tz,
+                is_rtl) tuples, one per word on this line
             baseline_matrix: Transform from baseline coords to page coords
             font_size: Font size in points
             total_rotation_deg: Total rotation angle (textangle + slope)
@@ -641,7 +676,7 @@ class Fpdf2PdfRenderer:
         prev_font_family: str | None = None
         prev_x_baseline = first_x_baseline
 
-        for i, (text, x_baseline, font_family, word_tz) in enumerate(
+        for i, (text, x_baseline, font_family, word_tz, is_rtl) in enumerate(
             word_render_data
         ):
             is_last = i == len(word_render_data) - 1
@@ -679,7 +714,7 @@ class Fpdf2PdfRenderer:
 
             # Determine text to render
             if not is_last:
-                next_text, next_x_baseline, _, _ = word_render_data[i + 1]
+                next_text, next_x_baseline, _, _, _ = word_render_data[i + 1]
                 advance = next_x_baseline - x_baseline
 
                 # Add trailing space for text extraction unless both are CJK
@@ -701,7 +736,7 @@ class Fpdf2PdfRenderer:
             render_tz = word_tz
 
             ops.append(f'{render_tz:.2f} Tz')
-            ops.append(self._encode_shaped_text(pdf, text_to_render))
+            ops.append(self._encode_shaped_text(pdf, text_to_render, is_rtl))
 
             prev_x_baseline = x_baseline
 
@@ -717,15 +752,35 @@ class Fpdf2PdfRenderer:
         # don't think Tz is still set from our raw operators
         pdf.font_stretching = 100
 
-    def _encode_shaped_text(self, pdf: FPDF, text: str) -> str:
+    def _encode_shaped_text(
+        self, pdf: FPDF, text: str, is_rtl: bool = False
+    ) -> str:
         """Encode text using HarfBuzz text shaping for complex script support.
 
         Unlike font.encode_text() which maps unicode characters one-by-one to
         glyph IDs, this uses HarfBuzz to handle BiDi reordering, Arabic joining
         forms, Devanagari conjuncts, and other complex script shaping. Falls
         back to encode_text() when text shaping is not enabled.
+
+        For RTL words with invisible text, we use encode_text() instead of
+        shape_text(). fpdf2's shape_text() produces RTL ligature glyphs
+        (e.g. lam-alef) with multi-character CMap entries whose character
+        order gets reversed by the bidi algorithm during text extraction,
+        producing garbled output (e.g. "سالح" instead of "سلاح").
+        encode_text() maps characters 1:1 in logical order, giving correct
+        extraction. Since the text is invisible (Tr=3), the lack of proper
+        joining forms and ligature shaping is harmless.
         """
         font = pdf.current_font
+        if is_rtl:
+            # Reverse the text so that after bidi reversal by the text
+            # extractor, the characters end up in correct logical order.
+            # The text cursor advances left-to-right from the word's left
+            # edge (set by Td), so characters are positioned left-to-right
+            # in the PDF. The extractor sees RTL characters in L-to-R
+            # positions and applies bidi reversal, which reverses them.
+            # By pre-reversing, the double reversal yields the original.
+            return font.encode_text(text[::-1])
         if pdf.text_shaping and pdf.text_shaping.get("use_shaping_engine"):
             shaped = font.shape_text(text, pdf.font_size_pt, pdf.text_shaping)
             if shaped:
