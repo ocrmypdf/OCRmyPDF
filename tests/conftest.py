@@ -19,14 +19,11 @@ from ocrmypdf.exceptions import ExitCode
 
 
 class Gs106WarningFilter(logging.Filter):
-    """Filter out expected Ghostscript 10.6.x warning from test logs."""
+    """Filter out expected Ghostscript 10.6+ JPEG encoding warning from test logs."""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        # Allow all records except the expected Ghostscript 10.6.x warning
-        return (
-            "Ghostscript 10.6.x contains JPEG encoding errors"
-            not in record.getMessage()
-        )
+        # Allow all records except the expected Ghostscript 10.6+ warning
+        return "contains JPEG encoding errors" not in record.getMessage()
 
 
 @pytest.fixture(autouse=True)

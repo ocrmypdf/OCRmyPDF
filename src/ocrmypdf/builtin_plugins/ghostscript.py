@@ -131,10 +131,10 @@ def check_options(options):
             )
         if gs_version >= Version('10.6.0'):
             log.warning(
-                "Ghostscript 10.6.x contains JPEG encoding errors that may corrupt "
-                "images. OCRmyPDF will attempt to mitigate, but this version is "
-                "strongly not recommended. Please upgrade to a newer version. "
-                "As of 2025-12, 10.6.0 is the latest version of Ghostscript."
+                "Ghostscript %s contains JPEG encoding errors that may corrupt "
+                "images. OCRmyPDF will attempt to mitigate, but versions 10.6.0+ "
+                "are strongly not recommended until this is fixed upstream.",
+                gs_version,
             )
         if options.output_type == 'pdfa':
             options.output_type = 'pdfa-2'
