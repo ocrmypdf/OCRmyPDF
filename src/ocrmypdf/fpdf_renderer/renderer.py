@@ -83,6 +83,17 @@ def transform_box(
 
 
 @dataclass
+class WordRenderData:
+    """Rendering parameters for a single word on a line."""
+
+    text: str
+    x_baseline: float
+    font_family: str
+    word_tz: float
+    is_rtl: bool
+
+
+@dataclass
 class DebugRenderOptions:
     """Options for debug visualization during rendering.
 
@@ -442,9 +453,7 @@ class Fpdf2PdfRenderer:
         ):
             return
 
-        # Collect word rendering data:
-        #   (text, x_baseline, font_family, word_tz, is_rtl)
-        word_render_data: list[tuple[str, float, str, float, bool]] = []
+        word_render_data: list[WordRenderData] = []
         for word in words:
             if word is None or not word.text or word.bbox is None:
                 continue
@@ -498,9 +507,13 @@ class Fpdf2PdfRenderer:
             else:
                 word_tz = 100.0
 
-            word_render_data.append(
-                (word.text, box_llx, font_family, word_tz, word_is_rtl)
-            )
+            word_render_data.append(WordRenderData(
+                text=word.text,
+                x_baseline=box_llx,
+                font_family=font_family,
+                word_tz=word_tz,
+                is_rtl=word_is_rtl,
+            ))
 
         if not word_render_data:
             return
@@ -599,7 +612,7 @@ class Fpdf2PdfRenderer:
     def _emit_line_bt_block(
         self,
         pdf: FPDF,
-        word_render_data: list[tuple[str, float, str, float, bool]],
+        word_render_data: list[WordRenderData],
         baseline_matrix: Matrix,
         font_size: float,
         total_rotation_deg: float,
@@ -615,8 +628,7 @@ class Fpdf2PdfRenderer:
 
         Args:
             pdf: FPDF instance
-            word_render_data: List of (text, x_baseline, font_family, word_tz,
-                is_rtl) tuples, one per word on this line
+            word_render_data: List of WordRenderData, one per word on this line
             baseline_matrix: Transform from baseline coords to page coords
             font_size: Font size in points
             total_rotation_deg: Total rotation angle (textangle + slope)
@@ -661,7 +673,7 @@ class Fpdf2PdfRenderer:
         ops.append(f'{tr} Tr')
 
         # Initial text position
-        first_x_baseline = word_render_data[0][1]
+        first_x_baseline = word_render_data[0].x_baseline
         if has_rotation:
             # In the cm-transformed space, origin is at the baseline start
             ops.append(f'{first_x_baseline:.2f} 0 Td')
@@ -676,14 +688,12 @@ class Fpdf2PdfRenderer:
         prev_font_family: str | None = None
         prev_x_baseline = first_x_baseline
 
-        for i, (text, x_baseline, font_family, word_tz, is_rtl) in enumerate(
-            word_render_data
-        ):
+        for i, word in enumerate(word_render_data):
             is_last = i == len(word_render_data) - 1
 
             # Set font if changed
-            if font_family != prev_font_family:
-                pdf.set_font(font_family, size=font_size)
+            if word.font_family != prev_font_family:
+                pdf.set_font(word.font_family, size=font_size)
                 # Register font resource on this page
                 pdf._resource_catalog.add(
                     PDFResourceType.FONT, pdf.current_font.i, pdf.page
@@ -691,13 +701,13 @@ class Fpdf2PdfRenderer:
                 ops.append(
                     f'/F{pdf.current_font.i} {pdf.font_size_pt:.2f} Tf'
                 )
-                prev_font_family = font_family
+                prev_font_family = word.font_family
 
             # Relative positioning (for words after the first)
             if i > 0:
                 if has_rotation:
                     # In rotated space, advance is purely along x-axis
-                    dx_baseline = x_baseline - prev_x_baseline
+                    dx_baseline = word.x_baseline - prev_x_baseline
                     ops.append(f'{dx_baseline:.2f} 0 Td')
                 else:
                     # Non-rotated: compute delta in PDF coordinates
@@ -705,7 +715,7 @@ class Fpdf2PdfRenderer:
                         baseline_matrix, prev_x_baseline, 0
                     )
                     px_curr, py_curr_f = transform_point(
-                        baseline_matrix, x_baseline, 0
+                        baseline_matrix, word.x_baseline, 0
                     )
                     dx_pdf = px_curr - px_prev
                     # Flip y delta for PDF coordinates (y-up)
@@ -714,31 +724,31 @@ class Fpdf2PdfRenderer:
 
             # Determine text to render
             if not is_last:
-                next_text, next_x_baseline, _, _, _ = word_render_data[i + 1]
-                advance = next_x_baseline - x_baseline
+                next_word = word_render_data[i + 1]
+                advance = next_word.x_baseline - word.x_baseline
 
                 # Add trailing space for text extraction unless both are CJK
                 if (
                     advance > 0
                     and not (
-                        self._is_cjk_only(text)
-                        and self._is_cjk_only(next_text)
+                        self._is_cjk_only(word.text)
+                        and self._is_cjk_only(next_word.text)
                     )
                 ):
-                    text_to_render = text + ' '
+                    text_to_render = word.text + ' '
                 else:
-                    text_to_render = text
+                    text_to_render = word.text
             else:
-                text_to_render = text
+                text_to_render = word.text
 
             # Use word_tz (fits word into its hOCR bbox) — Td handles
             # inter-word gaps, so Tz should not stretch to fill them.
-            render_tz = word_tz
+            ops.append(f'{word.word_tz:.2f} Tz')
+            ops.append(
+                self._encode_shaped_text(pdf, text_to_render, word.is_rtl)
+            )
 
-            ops.append(f'{render_tz:.2f} Tz')
-            ops.append(self._encode_shaped_text(pdf, text_to_render, is_rtl))
-
-            prev_x_baseline = x_baseline
+            prev_x_baseline = word.x_baseline
 
         # End text object
         ops.append('ET')
