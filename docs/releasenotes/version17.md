@@ -3,6 +3,18 @@
 
 # v17
 
+## v17.4.1
+
+- Fixed RTL text extraction order in the fpdf2 renderer. Arabic lam-alef
+  ligatures and other multi-character CMap entries were garbled by the bidi
+  algorithm during text extraction. {issue}`1655`
+- Fixed ``work_folder`` not being set in ``PdfContext`` options when using
+  the Python API. Thanks @bluebox-steven. {issue}`1613`
+- Updated Ghostscript JPEG corruption warning to include the detected version
+  number, confirming the bug persists in Ghostscript 10.7.0.
+- Internal refactoring.
+- CI dependency updates.
+
 ## v17.4.0
 
 - Added ``--no-overwrite`` / ``-n`` option to prevent overwriting output files.
