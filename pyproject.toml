@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ocrmypdf"
-version = "17.4.1"
+version = "17.4.2"
 description = "OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched"
 readme = "README.md"
 license = "MPL-2.0"
