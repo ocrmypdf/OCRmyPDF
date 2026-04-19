@@ -192,7 +192,7 @@ class OcrOptions(BaseModel):
     no_overwrite: bool = False
 
     # Advanced options
-    max_image_mpixels: float = 250.0
+    max_image_mpixels: float | None = None
     pdf_renderer: str = 'auto'
     ocr_engine: str = 'auto'
     rasterizer: str = 'auto'
@@ -301,7 +301,7 @@ class OcrOptions(BaseModel):
     @classmethod
     def validate_max_image_mpixels(cls, v):
         """Validate max image megapixels."""
-        if v < 0:
+        if v is not None and v < 0:
             raise ValueError("max_image_mpixels must be non-negative")
         return v
 

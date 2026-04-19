@@ -102,6 +102,45 @@ def test_pillow_options():
     with pytest.raises(ValueError, match="max_image_mpixels must be non-negative"):
         make_ocr_opts(max_image_mpixels=-1)
 
+    # Default is None, meaning "do not override host-set PIL.Image.MAX_IMAGE_PIXELS"
+    opts = make_ocr_opts()
+    assert opts.max_image_mpixels is None
+
+
+def test_pillow_max_image_pixels_not_overridden_when_unset():
+    """Issue #1665: respect host-set PIL.Image.MAX_IMAGE_PIXELS.
+
+    API callers (e.g. Paperless-NGX) that set PIL.Image.MAX_IMAGE_PIXELS
+    before invoking ocrmypdf should not have their setting clobbered when
+    max_image_mpixels is not explicitly passed.
+    """
+    import PIL.Image
+
+    from ocrmypdf._pipelines._common import setup_pipeline
+
+    parser = get_parser()
+    pm = setup_plugin_infrastructure(plugins=[])
+    pm.add_options(parser=parser)
+
+    saved = PIL.Image.MAX_IMAGE_PIXELS
+    try:
+        PIL.Image.MAX_IMAGE_PIXELS = None  # host disables the limit
+        opts = make_ocr_opts()
+        assert opts.max_image_mpixels is None
+        setup_pipeline(opts, pm)
+        assert PIL.Image.MAX_IMAGE_PIXELS is None
+
+        PIL.Image.MAX_IMAGE_PIXELS = 1_000_000_000  # host sets a high limit
+        setup_pipeline(opts, pm)
+        assert PIL.Image.MAX_IMAGE_PIXELS == 1_000_000_000
+
+        # When explicitly passed, it still takes effect.
+        opts = make_ocr_opts(max_image_mpixels=100)
+        setup_pipeline(opts, pm)
+        assert PIL.Image.MAX_IMAGE_PIXELS == 100_000_000
+    finally:
+        PIL.Image.MAX_IMAGE_PIXELS = saved
+
 
 def test_output_tty():
     with patch('sys.stdout.isatty', return_value=True), pytest.raises(BadArgsError):

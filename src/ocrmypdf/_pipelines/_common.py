@@ -329,10 +329,13 @@ def setup_pipeline(
     # Note: OcrOptions is immutable, so we can't modify options.jobs directly
     # The jobs field should already be set correctly during OcrOptions creation
 
-    # Apply PIL max image pixels side effect
-    PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1_000_000)
-    if PIL.Image.MAX_IMAGE_PIXELS == 0:
-        PIL.Image.MAX_IMAGE_PIXELS = None  # type: ignore
+    # Apply PIL max image pixels side effect only when explicitly requested.
+    # When None, leave PIL.Image.MAX_IMAGE_PIXELS as the host application
+    # configured it. The CLI passes its own default (250.0) via argparse.
+    if options.max_image_mpixels is not None:
+        PIL.Image.MAX_IMAGE_PIXELS = int(options.max_image_mpixels * 1_000_000)
+        if PIL.Image.MAX_IMAGE_PIXELS == 0:
+            PIL.Image.MAX_IMAGE_PIXELS = None  # type: ignore
 
     pikepdf_enable_mmap()
     executor = setup_executor(plugin_manager)

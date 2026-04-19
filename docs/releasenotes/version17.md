@@ -3,6 +3,15 @@
 
 # v17
 
+## v17.4.2
+
+- Fixed Python API unconditionally overriding ``PIL.Image.MAX_IMAGE_PIXELS``
+  when the caller did not explicitly set ``max_image_mpixels``. Host
+  applications (e.g. Paperless-NGX) that configure the PIL limit before
+  invoking ``ocrmypdf.ocr()`` now have their setting respected. The CLI
+  default of 250 megapixels is unchanged. {issue}`1665`
+- Updated uv.lock to avoid pinning a vulnerable version of Pillow. {issue}`1666`
+
 ## v17.4.1
 
 - Fixed RTL text extraction order in the fpdf2 renderer. Arabic lam-alef
