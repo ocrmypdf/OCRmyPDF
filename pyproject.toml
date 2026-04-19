@@ -161,6 +161,7 @@ dev = [
     "ipykernel>=6.29.5",
     "reportlab>=4.4.4",
     "cyclopts>=4.5.1",
+    "pygithub>=2.9.1",
 ]
 test = [
   # Core testing framework
