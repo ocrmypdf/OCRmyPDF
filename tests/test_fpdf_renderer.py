@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -35,6 +37,26 @@ def multi_font_manager(font_dir):
 def resources():
     """Return path to test resources directory."""
     return Path(__file__).parent / "resources"
+
+
+@pytest.fixture
+def pdftotext():
+    """Return a function to extract text from PDF using pdftotext.
+
+    Skips the test if pdftotext is not available.
+    """
+    pdftotext_path = shutil.which('pdftotext')
+    if pdftotext_path is None:
+        pytest.skip("pdftotext not available")
+
+    def extract_text(pdf_path: Path) -> str:
+        return subprocess.check_output(
+            ['pdftotext', '-enc', 'UTF-8', str(pdf_path), '-'],
+            text=True,
+            encoding='utf-8',
+        )
+
+    return extract_text
 
 
 class TestFpdf2RendererImports:
@@ -443,14 +465,16 @@ class TestWordSegmentation:
         assert "World" in words_found
         assert "Test" in words_found
 
-    def test_cjk_no_spurious_spaces(self, multi_font_manager, tmp_path):
+    def test_cjk_no_spurious_spaces(self, multi_font_manager, tmp_path, pdftotext):
         """Test that CJK text does not get spurious spaces inserted.
 
         CJK scripts don't use spaces between characters/words, so we should
         not insert spaces between adjacent CJK words.
-        """
-        from pdfminer.high_level import extract_text
 
+        Uses pdftotext (poppler) instead of pdfminer.six because the latter
+        cannot decode the custom Encoding CMap that fpdf2 >= 2.8.7 emits for
+        subsetted CFF-based CID fonts (e.g. NotoSansCJK).
+        """
         from ocrmypdf.models.ocr_element import BoundingBox, OcrElement
 
         # Create a page with CJK words (Chinese characters)
@@ -487,15 +511,15 @@ class TestWordSegmentation:
         output_path = tmp_path / "test_cjk_segmentation.pdf"
         renderer.render(output_path)
 
-        # Extract text using pdfminer.six
-        extracted_text = extract_text(str(output_path))
+        extracted_text = pdftotext(output_path)
 
         # CJK text should be present
         assert "你好" in extracted_text
         assert "世界" in extracted_text
 
         # There should NOT be spaces between CJK characters
-        # (but pdfminer may add some whitespace, so we check the raw chars)
+        # (a space between the two words is acceptable, since they are
+        # separated horizontally on the rendered page)
         extracted_chars = extracted_text.replace(" ", "").replace("\n", "")
         assert "你好世界" in extracted_chars or (
             "你好" in extracted_chars and "世界" in extracted_chars
