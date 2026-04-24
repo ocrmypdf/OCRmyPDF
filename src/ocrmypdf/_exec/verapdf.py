@@ -11,10 +11,9 @@ from pathlib import Path
 from subprocess import PIPE
 from typing import NamedTuple
 
-from packaging.version import Version
-
+from ocrmypdf._exec._probe import ToolProbe
 from ocrmypdf.exceptions import MissingDependencyError
-from ocrmypdf.subprocess import get_version, run
+from ocrmypdf.subprocess import run
 
 log = logging.getLogger(__name__)
 
@@ -27,18 +26,13 @@ class ValidationResult(NamedTuple):
     message: str
 
 
-def version() -> Version:
-    """Get verapdf version."""
-    return Version(get_version('verapdf', regex=r'veraPDF (\d+(\.\d+)*)'))
-
-
-def available() -> bool:
-    """Check if verapdf is available."""
-    try:
-        version()
-    except (MissingDependencyError, OSError):
-        return False
-    return True
+PROBE = ToolProbe(
+    program='verapdf',
+    version_regex=r'veraPDF (\d+(\.\d+)*)',
+    also_catch=(OSError,),
+)
+version = PROBE.version
+available = PROBE.available
 
 
 def output_type_to_flavour(output_type: str) -> str:

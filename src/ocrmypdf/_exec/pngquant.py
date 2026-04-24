@@ -8,22 +8,12 @@ from __future__ import annotations
 from pathlib import Path
 from subprocess import PIPE
 
-from packaging.version import Version
+from ocrmypdf._exec._probe import ToolProbe
+from ocrmypdf.subprocess import run
 
-from ocrmypdf.exceptions import MissingDependencyError
-from ocrmypdf.subprocess import get_version, run
-
-
-def version() -> Version:
-    return Version(get_version('pngquant', regex=r'(\d+(\.\d+)*).*'))
-
-
-def available():
-    try:
-        version()
-    except MissingDependencyError:
-        return False
-    return True
+PROBE = ToolProbe(program='pngquant', version_regex=r'(\d+(\.\d+)*).*')
+version = PROBE.version
+available = PROBE.available
 
 
 def quantize(input_file: Path, output_file: Path, quality_min: int, quality_max: int):

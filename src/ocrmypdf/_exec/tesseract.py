@@ -17,13 +17,14 @@ from subprocess import PIPE, STDOUT, CalledProcessError, TimeoutExpired
 
 from packaging.version import Version
 
+from ocrmypdf._exec._probe import ToolProbe
 from ocrmypdf.exceptions import (
     MissingDependencyError,
     SubprocessOutputError,
     TesseractConfigError,
 )
 from ocrmypdf.pluginspec import OrientationConfidence
-from ocrmypdf.subprocess import get_version, run
+from ocrmypdf.subprocess import run
 
 log = logging.getLogger(__name__)
 
@@ -115,8 +116,13 @@ class TesseractVersion(Version):
     )
 
 
-def version() -> Version:
-    return TesseractVersion(get_version('tesseract', regex=r'tesseract\s(.+)'))
+PROBE = ToolProbe(
+    program='tesseract',
+    version_regex=r'tesseract\s(.+)',
+    version_cls=TesseractVersion,
+)
+version = PROBE.version
+available = PROBE.available
 
 
 def has_thresholding() -> bool:
@@ -287,9 +293,7 @@ def tesseract_log_output(stream: bytes) -> None:
 
     lines = text.splitlines()
     for line in lines:
-        if line.startswith(
-            ("Tesseract Open Source", "Warning in pixReadMem")
-        ):
+        if line.startswith(("Tesseract Open Source", "Warning in pixReadMem")):
             continue
         elif 'diacritics' in line:
             tlog.warning("lots of diacritics - possibly poor OCR")

@@ -9,21 +9,23 @@ from subprocess import PIPE, CalledProcessError
 
 from packaging.version import Version
 
+from ocrmypdf._exec._probe import ToolProbe
 from ocrmypdf.exceptions import MissingDependencyError
-from ocrmypdf.subprocess import get_version, run
+from ocrmypdf.subprocess import run
+
+_PROBE = ToolProbe(program='jbig2', version_regex=r'jbig2enc (\d+(\.\d+)*).*')
 
 
 def version() -> Version:
     try:
-        version = get_version('jbig2', regex=r'jbig2enc (\d+(\.\d+)*).*')
+        return _PROBE.version()
     except CalledProcessError as e:
         # TeX Live for Windows provides an incompatible jbig2.EXE which may
         # be on the PATH.
         raise MissingDependencyError('jbig2enc') from e
-    return Version(version)
 
 
-def available():
+def available() -> bool:
     try:
         version()
     except MissingDependencyError:

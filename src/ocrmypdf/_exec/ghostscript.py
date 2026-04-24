@@ -16,6 +16,7 @@ from subprocess import PIPE, CalledProcessError
 from packaging.version import Version
 from PIL import Image, UnidentifiedImageError
 
+from ocrmypdf._exec._probe import ToolProbe
 from ocrmypdf.exceptions import (
     ColorConversionNeededError,
     InputFileError,
@@ -23,7 +24,7 @@ from ocrmypdf.exceptions import (
 )
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.pluginspec import GhostscriptRasterDevice
-from ocrmypdf.subprocess import get_version, run, run_polling_stderr
+from ocrmypdf.subprocess import run, run_polling_stderr
 
 COLOR_CONVERSION_STRATEGIES = frozenset(
     [
@@ -69,11 +70,19 @@ class DuplicateFilter(logging.Filter):
             return True
 
 
-log.addFilter(DuplicateFilter(log))
+PROBE = ToolProbe(program=GS)
+version = PROBE.version
+available = PROBE.available
 
 
-def version() -> Version:
-    return Version(get_version(GS))
+def _ensure_log_filter_installed() -> None:
+    """Idempotently attach the duplicate-suppressing filter to the GS logger.
+
+    Called at the top of each work function so the filter is present in the
+    main process *and* in any subprocess worker that calls Ghostscript.
+    """
+    if not any(isinstance(f, DuplicateFilter) for f in log.filters):
+        log.addFilter(DuplicateFilter(log))
 
 
 def _gs_error_reported(stream) -> bool:
@@ -123,6 +132,7 @@ def rasterize_pdf(
         use_cropbox: If True, rasterize the CropBox instead of MediaBox.
             Default is False (use MediaBox).
     """
+    _ensure_log_filter_installed()
     raster_dpi = raster_dpi.round(6)
     if not page_dpi:
         page_dpi = raster_dpi
@@ -273,6 +283,7 @@ def generate_pdfa(
     progressbar_class=None,
     stop_on_error: bool = False,
 ):
+    _ensure_log_filter_installed()
     # Ghostscript's compression is all or nothing. We can either force all images
     # to JPEG, force all to Flate/PNG, or let it decide how to encode the images.
     # In most case it's best to let it decide.

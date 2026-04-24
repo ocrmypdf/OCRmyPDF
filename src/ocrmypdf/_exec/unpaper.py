@@ -14,11 +14,11 @@ from pathlib import Path
 from subprocess import PIPE, STDOUT
 from tempfile import TemporaryDirectory
 
-from packaging.version import Version
 from PIL import Image
 
+from ocrmypdf._exec._probe import ToolProbe
 from ocrmypdf.exceptions import SubprocessOutputError
-from ocrmypdf.subprocess import get_version, run
+from ocrmypdf.subprocess import run
 
 # unpaper documentation:
 # https://github.com/Flameeyes/unpaper/blob/main/doc/basic-concepts.md
@@ -46,8 +46,9 @@ class UnpaperImageTooLargeError(Exception):
         super().__init__(self.message)
 
 
-def version() -> Version:
-    return Version(get_version('unpaper', regex=r'(?m).*?(\d+(\.\d+)(\.\d+)?)'))
+PROBE = ToolProbe(program='unpaper', version_regex=r'(?m).*?(\d+(\.\d+)(\.\d+)?)')
+version = PROBE.version
+available = PROBE.available
 
 
 @contextmanager
