@@ -260,10 +260,19 @@ def _find_image_xrefs_container(
     exclude_xrefs: MutableSet[Xref],
     pageno_for_xref: dict[Xref, int],
     depth: int = 0,
+    visited_forms: MutableSet[Xref] | None = None,
 ):
     """Find all image XRefs or Form XObject and add to the include/exclude sets."""
+    # Form XObjects are not added to include/exclude_xrefs, so the dedup
+    # check below doesn't catch Form-XObject cycles or DAGs. Track them in
+    # a shared set so each Form is only descended into once per document
+    # (issue #1321).
+    if visited_forms is None:
+        visited_forms = set()
     if depth > 10:
-        log.warning("Recursion depth exceeded in _find_image_xrefs_page")
+        # With visited_forms memoization, this is a soft DAG-height guard
+        # rather than a cycle defense, so a debug log is sufficient.
+        log.debug("Recursion depth exceeded in _find_image_xrefs_page")
         return
     try:
         xobjs = container.Resources.XObject
@@ -276,7 +285,9 @@ def _find_image_xrefs_container(
         if xref in include_xrefs or xref in exclude_xrefs:
             continue  # Already processed
         if Name.Subtype in image and image.Subtype == Name.Form:
-            # Recurse into Form XObjects
+            if xref in visited_forms:
+                continue
+            visited_forms.add(xref)
             log.debug(f"Recursing into Form XObject {_imname} in page {pageno}")
             _find_image_xrefs_container(
                 pdf,
@@ -286,6 +297,7 @@ def _find_image_xrefs_container(
                 exclude_xrefs,
                 pageno_for_xref,
                 depth + 1,
+                visited_forms,
             )
             continue
         if Name.SMask in image:

@@ -215,6 +215,46 @@ def test_find_formx(resources):
         assert pagenos[xref] == 0
 
 
+def test_find_formx_circular_reference(resources, tmp_path, caplog):
+    """Regression for issue #1321.
+
+    Some PDFs (notably PowerPoint exports) contain Form XObjects that
+    reference themselves or each other in a cycle. The recursion guard in
+    _find_image_xrefs_container only deduplicates *image* xrefs, so a Form
+    XObject cycle would re-enter every branch until the depth limit fired,
+    producing thousands of "Recursion depth exceeded" warnings (and minutes
+    of wall-clock time on real-world inputs).
+    """
+    import logging
+
+    src = resources / 'formxobject.pdf'
+    out = tmp_path / 'circular_form.pdf'
+    with pikepdf.open(src) as pdf:
+        # /Form1 lives at xref 10. Replace its Resources.XObject with three
+        # entries that all point back to /Form1 itself, creating a fan-out
+        # cycle of branching factor 3.
+        form = pdf.pages[0].obj.Resources.XObject.Form1
+        form.Resources.XObject = Dictionary(
+            {'/Fm0': form, '/Fm1': form, '/Fm2': form}
+        )
+        pdf.save(out)
+
+    caplog.set_level(logging.WARNING, logger='ocrmypdf.optimize')
+    with pikepdf.open(out) as pdf:
+        opt._find_image_xrefs(pdf)
+
+    n_warnings = sum(
+        1
+        for r in caplog.records
+        if 'Recursion depth exceeded' in r.getMessage()
+    )
+    # Without the fix this is in the tens of thousands.
+    assert n_warnings == 0, (
+        f"Form XObject cycle should be detected without depth-limit warnings; "
+        f"got {n_warnings}"
+    )
+
+
 def test_extract_image_filter_with_pdf_image():
     image = Dictionary()
     image.Subtype = Name.Image
