@@ -278,6 +278,7 @@ def generate_pdfa(
     *,
     compression: str,
     color_conversion_strategy: str,
+    jpeg_quality: int | None = None,
     jpeg_maxdpi: int | None = None,
     pdf_version: str = '1.5',
     pdfa_part: str = '2',
@@ -319,6 +320,10 @@ def generate_pdfa(
         # Windows has lots of fatal "permission denied" errors
         stop_on_error = False
 
+    # Use the user-supplied quality if explicitly provided (including 0, which is
+    # maximum Ghostscript compression). Fall back to 95 only when no value given.
+    effective_jpeg_quality = jpeg_quality if jpeg_quality is not None else 95
+
     downsample_args = []
     if jpeg_maxdpi is not None:
         downsample_args = [
@@ -351,7 +356,7 @@ def generate_pdfa(
         + compression_args
         + downsample_args
         + [
-            "-dJPEGQ=95",
+            f"-dJPEGQ={effective_jpeg_quality}",
             "-dSubsetFonts=false",  # Prevents GS from messing up some encodings
             f"-dPDFA={pdfa_part}",
             "-dPDFACompatibilityPolicy=1",

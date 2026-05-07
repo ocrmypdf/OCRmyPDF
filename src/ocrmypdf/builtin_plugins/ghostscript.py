@@ -369,6 +369,7 @@ def generate_pdfa(
         output_file=output_file,
         compression=context.options.ghostscript.pdfa_image_compression,
         color_conversion_strategy=context.options.ghostscript.color_conversion_strategy,
+        jpeg_quality=context.options.jpeg_quality,
         jpeg_maxdpi=context.options.ghostscript.jpeg_maxdpi,
         pdf_version=pdf_version,
         pdfa_part=pdfa_part,
