@@ -215,6 +215,7 @@ class OcrOptions(BaseModel):
     # Ghostscript options - also accessible via options.ghostscript.<field>
     pdfa_image_compression: str | None = None
     color_conversion_strategy: str = "LeaveColorUnchanged"
+    jpeg_maxdpi: int | None = None
 
     # Optimize/JBIG2 options - also accessible via options.optimize.<field>
     jbig2_threshold: float = 0.85

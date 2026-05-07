@@ -278,6 +278,8 @@ def generate_pdfa(
     *,
     compression: str,
     color_conversion_strategy: str,
+    jpeg_quality: int | None = None,
+    jpeg_maxdpi: int | None = None,
     pdf_version: str = '1.5',
     pdfa_part: str = '2',
     progressbar_class=None,
@@ -318,6 +320,23 @@ def generate_pdfa(
         # Windows has lots of fatal "permission denied" errors
         stop_on_error = False
 
+    # Preserve prior behavior unless user explicitly provides a quality value.
+    effective_jpeg_quality = jpeg_quality if jpeg_quality and jpeg_quality > 0 else 95
+
+    downsample_args = []
+    if jpeg_maxdpi is not None:
+        downsample_args = [
+            "-dDownsampleColorImages=true",
+            "-dColorImageDownsampleThreshold=1.0",
+            "-dDownsampleGrayImages=true",
+            "-dGrayImageDownsampleThreshold=1.0",
+            "-dDownsampleMonoImages=true",
+            "-dMonoImageDownsampleThreshold=1.0",
+            f"-dColorImageResolution={jpeg_maxdpi}",
+            f"-dGrayImageResolution={jpeg_maxdpi}",
+            f"-dMonoImageResolution={jpeg_maxdpi}",
+        ]
+
     # nb no need to specify ProcessColorModel when ColorConversionStrategy
     # is set; see:
     # https://bugs.ghostscript.com/show_bug.cgi?id=699392
@@ -334,8 +353,9 @@ def generate_pdfa(
         ]
         + (['-dPDFSTOPONERROR'] if stop_on_error else [])
         + compression_args
+        + downsample_args
         + [
-            "-dJPEGQ=95",
+            f"-dJPEGQ={effective_jpeg_quality}",
             "-dSubsetFonts=false",  # Prevents GS from messing up some encodings
             f"-dPDFA={pdfa_part}",
             "-dPDFACompatibilityPolicy=1",

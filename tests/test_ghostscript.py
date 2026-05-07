@@ -137,6 +137,56 @@ def test_rasterize_low_dpi_one_axis(francais, outdir):
         assert im.info['dpi'] == forced_dpi
 
 
+def test_generate_pdfa_uses_user_jpeg_quality(outdir):
+    with (
+        patch('ocrmypdf._exec.ghostscript.version', return_value=Version('10.05.1')),
+        patch('ocrmypdf._exec.ghostscript.run_polling_stderr') as run_mock,
+    ):
+        run_mock.return_value = subprocess.CompletedProcess(
+            ['gs'], returncode=0, stdout='', stderr=''
+        )
+        ghostscript.generate_pdfa(
+            pdf_pages=[outdir / 'input.pdf'],
+            output_file=outdir / 'out.pdf',
+            compression='jpeg',
+            color_conversion_strategy='RGB',
+            jpeg_quality=72,
+        )
+
+    args = run_mock.call_args.args[0]
+    assert '-dJPEGQ=72' in args
+    assert '-dJPEGQ=95' not in args
+
+
+def test_generate_pdfa_honors_jpeg_maxdpi(outdir):
+    with (
+        patch('ocrmypdf._exec.ghostscript.version', return_value=Version('10.05.1')),
+        patch('ocrmypdf._exec.ghostscript.run_polling_stderr') as run_mock,
+    ):
+        run_mock.return_value = subprocess.CompletedProcess(
+            ['gs'], returncode=0, stdout='', stderr=''
+        )
+        ghostscript.generate_pdfa(
+            pdf_pages=[outdir / 'input.pdf'],
+            output_file=outdir / 'out.pdf',
+            compression='auto',
+            color_conversion_strategy='LeaveColorUnchanged',
+            jpeg_quality=0,
+            jpeg_maxdpi=300,
+        )
+
+    args = run_mock.call_args.args[0]
+    assert '-dJPEGQ=95' in args
+    assert '-dDownsampleColorImages=true' in args
+    assert '-dColorImageDownsampleThreshold=1.0' in args
+    assert '-dDownsampleGrayImages=true' in args
+    assert '-dGrayImageDownsampleThreshold=1.0' in args
+    assert '-dDownsampleMonoImages=true' in args
+    assert '-dMonoImageDownsampleThreshold=1.0' in args
+    assert '-dColorImageResolution=300' in args
+    assert '-dMonoImageResolution=300' in args
+
+
 def test_gs_render_failure(resources, outpdf, caplog):
     exitcode = run_ocrmypdf_api(
         resources / 'blank.pdf',
