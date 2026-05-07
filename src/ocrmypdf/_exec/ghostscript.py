@@ -320,8 +320,9 @@ def generate_pdfa(
         # Windows has lots of fatal "permission denied" errors
         stop_on_error = False
 
-    # Preserve prior behavior unless user explicitly provides a quality value.
-    effective_jpeg_quality = jpeg_quality if jpeg_quality and jpeg_quality > 0 else 95
+    # Use the user-supplied quality if explicitly provided (including 0, which is
+    # maximum Ghostscript compression). Fall back to 95 only when no value given.
+    effective_jpeg_quality = jpeg_quality if jpeg_quality is not None else 95
 
     downsample_args = []
     if jpeg_maxdpi is not None:

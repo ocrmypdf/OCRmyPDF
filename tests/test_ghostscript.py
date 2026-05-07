@@ -158,6 +158,31 @@ def test_generate_pdfa_uses_user_jpeg_quality(outdir):
     assert '-dJPEGQ=95' not in args
 
 
+def test_generate_pdfa_jpeg_quality_zero_is_max_compression(outdir):
+    """Explicit jpeg_quality=0 must reach Ghostscript as -dJPEGQ=0 (max compression).
+
+    It must not be silently replaced by the default 95.
+    """
+    with (
+        patch('ocrmypdf._exec.ghostscript.version', return_value=Version('10.05.1')),
+        patch('ocrmypdf._exec.ghostscript.run_polling_stderr') as run_mock,
+    ):
+        run_mock.return_value = subprocess.CompletedProcess(
+            ['gs'], returncode=0, stdout='', stderr=''
+        )
+        ghostscript.generate_pdfa(
+            pdf_pages=[outdir / 'input.pdf'],
+            output_file=outdir / 'out.pdf',
+            compression='jpeg',
+            color_conversion_strategy='RGB',
+            jpeg_quality=0,
+        )
+
+    args = run_mock.call_args.args[0]
+    assert '-dJPEGQ=0' in args
+    assert '-dJPEGQ=95' not in args
+
+
 def test_generate_pdfa_honors_jpeg_maxdpi(outdir):
     with (
         patch('ocrmypdf._exec.ghostscript.version', return_value=Version('10.05.1')),
@@ -171,7 +196,7 @@ def test_generate_pdfa_honors_jpeg_maxdpi(outdir):
             output_file=outdir / 'out.pdf',
             compression='auto',
             color_conversion_strategy='LeaveColorUnchanged',
-            jpeg_quality=0,
+            jpeg_quality=None,
             jpeg_maxdpi=300,
         )
 

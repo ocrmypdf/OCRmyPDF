@@ -425,8 +425,9 @@ When Ghostscript is used for PDF/A conversion (`--output-type pdfa`,
 `pdfa-1`, `pdfa-2`, or `pdfa-3`), the following options can be used to
 control image recompression behavior:
 
-- `--jpeg-quality Q` sets Ghostscript JPEG quality for recompressed
-    images. `Q=0` uses Ghostscript's default behavior.
+- `--jpeg-quality Q` sets Ghostscript's `-dJPEGQ` for recompressed images.
+  `Q=0` is maximum compression; `Q=100` is best quality. Omitting the flag
+  uses Ghostscript's built-in default.
 - `--jpeg-maxdpi DPI` enables image downsampling and caps color,
     grayscale, and monochrome image resolution to `DPI`.
 
