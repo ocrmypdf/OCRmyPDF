@@ -181,8 +181,8 @@ v17 addresses through alternative codepaths. When Ghostscript is used:
   lossily, based on an internal algorithm. This
   behavior can be suppressed by setting `--pdfa-image-compression` to
   `jpeg` or `lossless` to set all images to one type or the other.
-  You can also tune this behavior with `--jpeg-quality` and force
-  downsampling with `--jpeg-maxdpi` when Ghostscript PDF/A conversion is used.
+  Use `--jpeg-maxdpi` to force downsampling to a maximum DPI when
+  Ghostscript PDF/A conversion is used.
   Ghostscript lacks an option to maintain the input image's format.
   (Modern Ghostscript can copy JPEG images without transcoding them.)
 - Ghostscript's PDF/A conversion removes any XMP metadata that is not

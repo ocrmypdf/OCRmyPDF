@@ -74,23 +74,21 @@ class OptimizeOptions(BaseModel):
         optimizing.add_argument(
             '--jpeg-quality',
             type=numeric(int, 0, 100),
-            default=None,
+            default=0,
             metavar='Q',
-            dest='jpg_quality',
             help=(
-                "Adjust JPEG quality level for JPEG optimization and Ghostscript "
-                "PDF/A generation. "
+                "Adjust JPEG quality level for JPEG optimization. "
                 "100 is best quality and largest output size; "
-                "0 is maximum compression and smallest output; "
-                "omit to use the default quality."
+                "1 is lowest quality and smallest output; "
+                "0 uses the default."
             ),
         )
         optimizing.add_argument(
             '--jpg-quality',
             type=numeric(int, 0, 100),
-            default=None,
+            default=0,
             metavar='Q',
-            dest='jpg_quality',
+            dest='jpeg_quality',
             help=argparse.SUPPRESS,  # Alias for --jpeg-quality
         )
         optimizing.add_argument(

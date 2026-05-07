@@ -94,11 +94,6 @@ optimize some images by converting them to JPEG, which are lossy. If
 `--output-type pdf` is used, there are no lossy optimizations. Ghostscript's
 JPEG conversion is quite safe.
 
-When Ghostscript PDF/A conversion is used, `--jpeg-quality` also controls
-Ghostscript's JPEG quality setting (`-dJPEGQ`). Omitting the flag uses
-Ghostscript's default. `0` is maximum compression (lowest quality) and
-`100` is best quality and largest output.
-
 Use `--jpeg-maxdpi DPI` to force Ghostscript to downsample color,
 grayscale, and monochrome images to a maximum resolution during PDF/A
 generation.
