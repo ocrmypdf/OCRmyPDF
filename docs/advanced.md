@@ -419,6 +419,23 @@ curves. In this case, you may want to use a different color conversion
 strategy. The `--color-conversion-strategy` option allows you to select a
 different strategy, such as `RGB`.
 
+## Ghostscript JPEG controls
+
+When Ghostscript is used for PDF/A conversion (`--output-type pdfa`,
+`pdfa-1`, `pdfa-2`, or `pdfa-3`), the following options can be used to
+control image recompression behavior:
+
+- `--jpeg-quality Q` sets Ghostscript JPEG quality for recompressed
+    images. `Q=0` uses Ghostscript's default behavior.
+- `--jpeg-maxdpi DPI` enables image downsampling and caps color,
+    grayscale, and monochrome image resolution to `DPI`.
+
+Example:
+
+```bash
+ocrmypdf --output-type pdfa --jpeg-quality 80 --jpeg-maxdpi 150 in.pdf out.pdf
+```
+
 ## PDF/A output modes
 
 :::{versionchanged} 17.0.0

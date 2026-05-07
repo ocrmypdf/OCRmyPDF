@@ -94,6 +94,14 @@ optimize some images by converting them to JPEG, which are lossy. If
 `--output-type pdf` is used, there are no lossy optimizations. Ghostscript's
 JPEG conversion is quite safe.
 
+When Ghostscript PDF/A conversion is used, `--jpeg-quality` also controls
+Ghostscript's JPEG quality setting. `0` keeps the default, while `1..100`
+selects lower-to-higher quality.
+
+Use `--jpeg-maxdpi DPI` to force Ghostscript to downsample color,
+grayscale, and monochrome images to a maximum resolution during PDF/A
+generation.
+
 If `pngquant` is installed, OCRmyPDF will use it to perform quantize
 paletted images to reduce their size.
 
