@@ -31,6 +31,18 @@ ocrmypdf --output-type pdf input.pdf output.pdf
 ocrmypdf --output-type pdfa --pdfa-image-compression jpeg input.pdf output.pdf
 ```
 
+### Create a PDF/A with specific JPEG quality
+
+```bash
+ocrmypdf --output-type pdfa --jpeg-quality 80 input.pdf output.pdf
+```
+
+### Create a PDF/A and cap image resolution
+
+```bash
+ocrmypdf --output-type pdfa --jpeg-maxdpi 150 input.pdf output.pdf
+```
+
 ### Modify a file in place
 
 The file will only be overwritten if OCRmyPDF is successful.

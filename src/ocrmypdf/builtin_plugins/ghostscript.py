@@ -54,6 +54,13 @@ class GhostscriptOptions(BaseModel):
     pdfa_image_compression: Annotated[
         PdfaImageCompression, Field(description="PDF/A image compression method")
     ] = PdfaImageCompression.AUTO
+    jpeg_maxdpi: Annotated[
+        int | None,
+        Field(
+            ge=1,
+            description="Maximum DPI for Ghostscript JPEG downsampling during PDF/A generation",
+        ),
+    ] = None
 
     @classmethod
     def add_arguments_to_parser(cls, parser, namespace: str = 'ghostscript'):
@@ -85,6 +92,16 @@ class GhostscriptOptions(BaseModel):
             "are applied to all pages, including those for which OCR was "
             "skipped.  Not supported for --output-type=pdf ; that setting "
             "preserves the original compression of all images.",
+        )
+        gs.add_argument(
+            '--jpeg-maxdpi',
+            type=int,
+            metavar='DPI',
+            default=None,
+            help=(
+                "Downsample color, grayscale, and monochrome images in Ghostscript "
+                "PDF/A output to the specified maximum DPI."
+            ),
         )
 
 
@@ -352,6 +369,8 @@ def generate_pdfa(
         output_file=output_file,
         compression=context.options.ghostscript.pdfa_image_compression,
         color_conversion_strategy=context.options.ghostscript.color_conversion_strategy,
+        jpeg_quality=context.options.jpeg_quality,
+        jpeg_maxdpi=context.options.ghostscript.jpeg_maxdpi,
         pdf_version=pdf_version,
         pdfa_part=pdfa_part,
         progressbar_class=progressbar_class,

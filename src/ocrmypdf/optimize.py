@@ -693,7 +693,7 @@ def optimize(
         safe_symlink(input_file, output_file)
         return output_file
 
-    if not options.jpg_quality:
+    if options.jpg_quality is None:
         options.jpg_quality = DEFAULT_JPEG_QUALITY if options.optimize < 3 else 40
     if not options.png_quality:
         options.png_quality = DEFAULT_PNG_QUALITY if options.optimize < 3 else 30
