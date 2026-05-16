@@ -318,9 +318,15 @@ def generate_pdfa(
         # Windows has lots of fatal "permission denied" errors
         stop_on_error = False
 
-    # nb no need to specify ProcessColorModel when ColorConversionStrategy
+    # 1. nb no need to specify ProcessColorModel when ColorConversionStrategy
     # is set; see:
     # https://bugs.ghostscript.com/show_bug.cgi?id=699392
+    # 2. `-dJPEGQ=95` tells Ghostscript to use a JPEG quality of 95, IF it
+    # decides to transcode an image to JPEG. When there are existing JPEG
+    # images, Ghostscript uses passthrough mode, so the quality level is not
+    # changed. OCRmyPDF's optimizer uses the `--jpeg-quality` command line
+    # option to potentially re-encoded JPEG images, regardless of whether
+    # Ghostscript decided to transcode them to JPEG or not.
     args_gs = (
         [
             GS,
@@ -335,7 +341,7 @@ def generate_pdfa(
         + (['-dPDFSTOPONERROR'] if stop_on_error else [])
         + compression_args
         + [
-            "-dJPEGQ=95",
+            "-dJPEGQ=95",  # See note above on JPEG quality
             "-dSubsetFonts=false",  # Prevents GS from messing up some encodings
             f"-dPDFA={pdfa_part}",
             "-dPDFACompatibilityPolicy=1",
