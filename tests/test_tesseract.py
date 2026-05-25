@@ -128,7 +128,6 @@ def test_timeout(caplog):
         (b'Error in boxClipToRectangle', ''),
         (b'an unexpected error', 'an unexpected error'),
         (b'a dire warning', 'a dire warning'),
-        (b'read_params_file something', 'read_params_file'),
         (b'an innocent message', 'innocent'),
         (b'\x7f\x7f\x80innocent unicode failure', 'innocent'),
     ],
@@ -146,6 +145,13 @@ def test_tesseract_log_output_raises(caplog):
     with pytest.raises(tesseract.TesseractConfigError):
         tesseract.tesseract_log_output(b'parameter not found: moo')
     assert 'not found' in caplog.text
+
+
+def test_tesseract_log_output_raises_on_missing_config(caplog):
+    with pytest.raises(tesseract.TesseractConfigError) as excinfo:
+        tesseract.tesseract_log_output(b"read_params_file: Can't open hocr")
+    assert 'hocr' in excinfo.value.args[0]
+    assert 'read_params_file' in caplog.text
 
 
 def test_blocked_language(resources, no_outpdf):

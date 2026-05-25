@@ -313,6 +313,23 @@ def tesseract_log_output(stream: bytes) -> None:
             tlog.warning(line.strip())
         elif 'read_params_file' in line.lower():
             tlog.error(line.strip())
+            # Tesseract emits "read_params_file: Can't open <name>" when it
+            # cannot locate a config file (e.g. 'hocr', 'txt') in its
+            # tessdata configs/ directory, then exits 0 without producing
+            # the requested output. Promote to a hard error so the user
+            # sees the root cause instead of a downstream FileNotFoundError.
+            if "Can't open" in line:
+                missing = line.split("Can't open", 1)[1].strip()
+            else:
+                missing = line.strip()
+            raise TesseractConfigError(
+                f"Tesseract cannot open its config file '{missing}'. "
+                "This usually means Tesseract is installed but its config "
+                "files are missing from the tessdata configs/ directory. "
+                "On Debian/Ubuntu, ensure the 'tesseract-ocr' package is "
+                "fully installed. If you set TESSDATA_PREFIX, verify its "
+                "configs/ subdirectory contains the required files."
+            )
         else:
             tlog.info(line.strip())
 
@@ -393,6 +410,12 @@ def generate_hocr(
         raise SubprocessOutputError() from e
     else:
         tesseract_log_output(stdout)
+        if not output_hocr.exists():
+            raise SubprocessOutputError(
+                "Tesseract exited successfully but did not produce the "
+                f"expected hOCR output at {output_hocr}. Tesseract output:\n"
+                + (stdout.decode(errors='replace') if stdout else '(empty)')
+            )
         # The sidecar text file will get the suffix .txt; rename it to
         # whatever caller wants it named
         with suppress(FileNotFoundError):
@@ -461,6 +484,12 @@ def generate_pdf(
         stdout = p.stdout
         with suppress(FileNotFoundError):
             prefix.with_suffix('.txt').replace(output_text)
+        if not output_pdf.exists():
+            raise SubprocessOutputError(
+                "Tesseract exited successfully but did not produce the "
+                f"expected PDF output at {output_pdf}. Tesseract output:\n"
+                + (stdout.decode(errors='replace') if stdout else '(empty)')
+            )
     except TimeoutExpired:
         page_timedout(timeout)
         use_skip_page(output_pdf, output_text)
