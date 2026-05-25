@@ -46,6 +46,8 @@ __ocrmypdf_arguments()
 --rasterizer                    (PDF page rasterizer)
 --rotate-pages-threshold        (page rotation confidence)
 --pdfa-image-compression        (set PDF/A image compression options)
+--ghostscript-jpeg-quality      (Ghostscript JPEG quality during PDF/A [0..100])
+--ghostscript-jpeg-maxdpi       (cap Ghostscript image DPI during PDF/A)
 --fast-web-view                 (if file size if above this amount in MB linearize PDF)
 --continue-on-soft-render-error (continue after recoverable render errors)
 --plugin                        (name of plugin to import)
@@ -337,6 +339,7 @@ __ocrmypdf_check_previous()
 
         --title|--author|--subject|--keywords|--unpaper-args|--pages|--plugin|\
         --jpeg-quality|--png-quality|--image-dpi|--oversample|--skip-big|--max-image-mpixels|\
+        --ghostscript-jpeg-quality|--ghostscript-jpeg-maxdpi|\
         --tesseract-timeout|--tesseract-non-ocr-timeout|--tesseract-downsample-above|\
         --rotate-pages-threshold|--fast-web-view)
             # argument required but no completions available

@@ -31,6 +31,16 @@ ocrmypdf --output-type pdf input.pdf output.pdf
 ocrmypdf --output-type pdfa --pdfa-image-compression jpeg input.pdf output.pdf
 ```
 
+### Reduce JPEG quality with the optimizer
+
+This is the recommended way to shrink JPEG content in the output. The
+optimizer applies regardless of `--output-type`, so it works on both
+plain PDFs and Ghostscript-produced PDF/A files.
+
+```bash
+ocrmypdf --optimize 2 --jpeg-quality 60 input.pdf output.pdf
+```
+
 ### Modify a file in place
 
 The file will only be overwritten if OCRmyPDF is successful.

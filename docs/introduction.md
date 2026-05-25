@@ -183,6 +183,11 @@ v17 addresses through alternative codepaths. When Ghostscript is used:
   `jpeg` or `lossless` to set all images to one type or the other.
   Ghostscript lacks an option to maintain the input image's format.
   (Modern Ghostscript can copy JPEG images without transcoding them.)
+  Advanced users can also tune Ghostscript's image recompression with
+  `--ghostscript-jpeg-quality` and `--ghostscript-jpeg-maxdpi`; see
+  [Advanced Ghostscript tuning](advanced.md#advanced-ghostscript-tuning).
+  Most users should prefer `--jpeg-quality` (applied by the OCRmyPDF
+  optimizer) over those Ghostscript-scoped controls.
 - Ghostscript's PDF/A conversion removes any XMP metadata that is not
   one of the standard XMP metadata namespaces for PDFs. In particular,
   PRISM Metadata is removed.

@@ -419,6 +419,70 @@ curves. In this case, you may want to use a different color conversion
 strategy. The `--color-conversion-strategy` option allows you to select a
 different strategy, such as `RGB`.
 
+## Advanced Ghostscript tuning
+
+:::{versionadded} 17.5.0
+:::
+
+OCRmyPDF intentionally hides most Ghostscript controls because Ghostscript
+is a legacy code path. The preferred PDF/A pipeline in v17+ uses pypdfium2
+as the rasterizer and verapdf to validate speculative PDF/A output, with
+Ghostscript reserved as a fallback for PDFs that cannot be made compliant
+without it. OCRmyPDF's separate optimizer (controlled by `--optimize`,
+`--jpeg-quality`, `--png-quality`, etc.) is the supported way to shrink
+output PDFs: it gives consistent results across input files, and isolates
+Ghostscript so it can focus on producing a PDF/A with as few image
+transformations as possible.
+
+The two options below are exposed for advanced users who want to tune
+Ghostscript's intermediate PDF/A output directly. Most users will get
+more predictable results from the optimizer.
+
+### `--ghostscript-jpeg-quality Q`
+
+Sets Ghostscript's `-dJPEGQ` switch for images that Ghostscript chooses
+to recompress to JPEG while building a PDF/A. `Q=0` requests maximum
+compression and `Q=100` requests best quality; if the flag is omitted,
+OCRmyPDF passes `95` (the historical default). This only affects images
+Ghostscript transcodes — existing JPEGs pass through unchanged on modern
+Ghostscript releases. For end-to-end JPEG quality tuning, prefer
+`--jpeg-quality`, which is implemented by the OCRmyPDF optimizer and is
+applied independently of whatever Ghostscript decides to do.
+
+Note: setting both `--ghostscript-jpeg-quality` and `--jpeg-quality` can
+result in double JPEG recompression, since the optimizer may re-encode
+images that Ghostscript already recompressed. This can degrade quality
+in subtle ways.
+
+### `--ghostscript-jpeg-maxdpi DPI`
+
+Enables Ghostscript's image downsampling and caps color, grayscale, and
+monochrome image resolution to `DPI`. The downsample threshold is set to
+`1.0`, so any image whose effective DPI exceeds the cap will be
+downsampled.
+
+Reducing JPEG quality is almost always a better trade than downsampling
+at the same compression budget: a 400 DPI JPEG at modest quality usually
+looks much better than a 200 DPI JPEG, because the JPEG codec can spend
+bits where they count. Downsampling is also dangerous for PDFs that
+combine a low-resolution color image with a high-resolution monochrome
+mask — capping the mask resolution can produce visible quality loss.
+For these reasons, prefer `--jpeg-quality` over `--ghostscript-jpeg-maxdpi`
+unless you specifically want to force a hard DPI cap.
+
+Example:
+
+```bash
+ocrmypdf --output-type pdfa \
+    --ghostscript-jpeg-quality 80 \
+    --ghostscript-jpeg-maxdpi 150 \
+    in.pdf out.pdf
+```
+
+These options only take effect when Ghostscript is invoked for PDF/A
+conversion (`--output-type pdfa`, `pdfa-1`, `pdfa-2`, or `pdfa-3`, or
+when `--output-type auto` falls back to Ghostscript).
+
 ## PDF/A output modes
 
 :::{versionchanged} 17.0.0

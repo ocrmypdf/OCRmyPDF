@@ -54,6 +54,27 @@ class GhostscriptOptions(BaseModel):
     pdfa_image_compression: Annotated[
         PdfaImageCompression, Field(description="PDF/A image compression method")
     ] = PdfaImageCompression.AUTO
+    jpeg_quality: Annotated[
+        int | None,
+        Field(
+            ge=0,
+            le=100,
+            description=(
+                "JPEG quality (0-100) for Ghostscript image recompression during "
+                "PDF/A generation; None uses Ghostscript's default."
+            ),
+        ),
+    ] = None
+    jpeg_maxdpi: Annotated[
+        int | None,
+        Field(
+            ge=1,
+            description=(
+                "Maximum DPI for Ghostscript image downsampling during PDF/A "
+                "generation."
+            ),
+        ),
+    ] = None
 
     @classmethod
     def add_arguments_to_parser(cls, parser, namespace: str = 'ghostscript'):
@@ -85,6 +106,35 @@ class GhostscriptOptions(BaseModel):
             "are applied to all pages, including those for which OCR was "
             "skipped.  Not supported for --output-type=pdf ; that setting "
             "preserves the original compression of all images.",
+        )
+        gs.add_argument(
+            '--ghostscript-jpeg-quality',
+            type=int,
+            metavar='Q',
+            default=None,
+            dest=f'{namespace}_jpeg_quality',
+            help=(
+                "Advanced: Set Ghostscript's -dJPEGQ for images that Ghostscript "
+                "transcodes to JPEG during PDF/A generation. 0 is maximum "
+                "compression; 100 is best quality. If omitted, Ghostscript's "
+                "default is used. This only affects images Ghostscript chooses "
+                "to recompress; for general JPEG quality tuning prefer "
+                "--jpeg-quality, which is applied by the OCRmyPDF optimizer."
+            ),
+        )
+        gs.add_argument(
+            '--ghostscript-jpeg-maxdpi',
+            type=int,
+            metavar='DPI',
+            default=None,
+            dest=f'{namespace}_jpeg_maxdpi',
+            help=(
+                "Advanced: Force Ghostscript to downsample color, grayscale, "
+                "and monochrome images in PDF/A output to the given maximum DPI. "
+                "Reducing JPEG quality usually gives better results than "
+                "downsampling at the same file size, and can degrade quality "
+                "of high-resolution monochrome masks."
+            ),
         )
 
 
@@ -352,6 +402,8 @@ def generate_pdfa(
         output_file=output_file,
         compression=context.options.ghostscript.pdfa_image_compression,
         color_conversion_strategy=context.options.ghostscript.color_conversion_strategy,
+        jpeg_quality=context.options.ghostscript.jpeg_quality,
+        jpeg_maxdpi=context.options.ghostscript.jpeg_maxdpi,
         pdf_version=pdf_version,
         pdfa_part=pdfa_part,
         progressbar_class=progressbar_class,

@@ -102,6 +102,8 @@ function __fish_ocrmypdf_pdfa_compression
     echo -e "lossless\t"(_ "convert color and grayscale images to lossless (PNG)")
 end
 complete -c ocrmypdf -x -l pdfa-image-compression -a '(__fish_ocrmypdf_pdfa_compression)' -d "set PDF/A image compression options"
+complete -c ocrmypdf -x -l ghostscript-jpeg-quality -d "Ghostscript JPEG quality during PDF/A [0..100]"
+complete -c ocrmypdf -x -l ghostscript-jpeg-maxdpi -d "cap Ghostscript image DPI during PDF/A"
 
 complete -c ocrmypdf -x -s j -l jobs -d "how many worker processes to use"
 complete -c ocrmypdf -x -l title -d "set metadata"

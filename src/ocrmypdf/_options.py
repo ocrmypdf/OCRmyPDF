@@ -582,6 +582,13 @@ class OcrOptions(BaseModel):
                 value = getattr(self, flat_name)
                 if value is not None:
                     kwargs[field_name] = _convert_value(value)
+            # Plugin-scoped fields that aren't in the central OcrOptions
+            # registry: argparse stores them in extra_attrs under the
+            # namespace_field name.
+            elif flat_name in self.extra_attrs:
+                value = self.extra_attrs[flat_name]
+                if value is not None:
+                    kwargs[field_name] = _convert_value(value)
             # Also check direct field name (for fields like jbig2_lossy)
             elif field_name in OcrOptions.model_fields:
                 value = getattr(self, field_name)

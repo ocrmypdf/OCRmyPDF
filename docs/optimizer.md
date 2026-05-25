@@ -98,7 +98,16 @@ If `pngquant` is installed, OCRmyPDF will use it to perform quantize
 paletted images to reduce their size.
 
 The quality of JPEGs may be lowered, on the assumption that a lower
-quality image may be suitable for storage after OCR.
+quality image may be suitable for storage after OCR. Use `--jpeg-quality`
+to control the optimizer's JPEG quality target. The optimizer is the
+recommended way to reduce JPEG image sizes: it applies consistently
+regardless of whether Ghostscript was used to produce a PDF/A.
+
+If you specifically need to tune Ghostscript's own PDF/A image handling
+(for example, to force a hard DPI cap), see
+[Advanced Ghostscript tuning](advanced.md#advanced-ghostscript-tuning)
+for the separate `--ghostscript-jpeg-quality` and
+`--ghostscript-jpeg-maxdpi` options.
 
 It is not possible to optimize all image types. Uncommon image types may
 be skipped by the optimizer.

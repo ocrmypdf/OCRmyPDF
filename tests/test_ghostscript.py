@@ -137,6 +137,129 @@ def test_rasterize_low_dpi_one_axis(francais, outdir):
         assert im.info['dpi'] == forced_dpi
 
 
+def test_generate_pdfa_default_jpeg_quality(outdir):
+    """When jpeg_quality is None, Ghostscript receives -dJPEGQ=95 (default)."""
+    with (
+        patch('ocrmypdf._exec.ghostscript.version', return_value=Version('10.05.1')),
+        patch('ocrmypdf._exec.ghostscript.run_polling_stderr') as run_mock,
+    ):
+        run_mock.return_value = subprocess.CompletedProcess(
+            ['gs'], returncode=0, stdout='', stderr=''
+        )
+        ghostscript.generate_pdfa(
+            pdf_pages=[outdir / 'input.pdf'],
+            output_file=outdir / 'out.pdf',
+            compression='auto',
+            color_conversion_strategy='LeaveColorUnchanged',
+        )
+
+    args = run_mock.call_args.args[0]
+    assert '-dJPEGQ=95' in args
+    # No downsample switches when jpeg_maxdpi is not set
+    assert not any(a.startswith('-dDownsampleColorImages') for a in args)
+    assert not any(a.startswith('-dColorImageResolution') for a in args)
+
+
+def test_generate_pdfa_uses_user_jpeg_quality(outdir):
+    with (
+        patch('ocrmypdf._exec.ghostscript.version', return_value=Version('10.05.1')),
+        patch('ocrmypdf._exec.ghostscript.run_polling_stderr') as run_mock,
+    ):
+        run_mock.return_value = subprocess.CompletedProcess(
+            ['gs'], returncode=0, stdout='', stderr=''
+        )
+        ghostscript.generate_pdfa(
+            pdf_pages=[outdir / 'input.pdf'],
+            output_file=outdir / 'out.pdf',
+            compression='jpeg',
+            color_conversion_strategy='RGB',
+            jpeg_quality=72,
+        )
+
+    args = run_mock.call_args.args[0]
+    assert '-dJPEGQ=72' in args
+    assert '-dJPEGQ=95' not in args
+
+
+def test_generate_pdfa_jpeg_quality_zero_is_max_compression(outdir):
+    """Explicit jpeg_quality=0 must reach Ghostscript as -dJPEGQ=0.
+
+    Ghostscript accepts 0 as a valid quality value (maximum compression);
+    it must not be silently replaced by the default 95.
+    """
+    with (
+        patch('ocrmypdf._exec.ghostscript.version', return_value=Version('10.05.1')),
+        patch('ocrmypdf._exec.ghostscript.run_polling_stderr') as run_mock,
+    ):
+        run_mock.return_value = subprocess.CompletedProcess(
+            ['gs'], returncode=0, stdout='', stderr=''
+        )
+        ghostscript.generate_pdfa(
+            pdf_pages=[outdir / 'input.pdf'],
+            output_file=outdir / 'out.pdf',
+            compression='jpeg',
+            color_conversion_strategy='RGB',
+            jpeg_quality=0,
+        )
+
+    args = run_mock.call_args.args[0]
+    assert '-dJPEGQ=0' in args
+    assert '-dJPEGQ=95' not in args
+
+
+def test_generate_pdfa_honors_jpeg_maxdpi(outdir):
+    with (
+        patch('ocrmypdf._exec.ghostscript.version', return_value=Version('10.05.1')),
+        patch('ocrmypdf._exec.ghostscript.run_polling_stderr') as run_mock,
+    ):
+        run_mock.return_value = subprocess.CompletedProcess(
+            ['gs'], returncode=0, stdout='', stderr=''
+        )
+        ghostscript.generate_pdfa(
+            pdf_pages=[outdir / 'input.pdf'],
+            output_file=outdir / 'out.pdf',
+            compression='auto',
+            color_conversion_strategy='LeaveColorUnchanged',
+            jpeg_maxdpi=300,
+        )
+
+    args = run_mock.call_args.args[0]
+    assert '-dJPEGQ=95' in args
+    assert '-dDownsampleColorImages=true' in args
+    assert '-dColorImageDownsampleThreshold=1.0' in args
+    assert '-dDownsampleGrayImages=true' in args
+    assert '-dGrayImageDownsampleThreshold=1.0' in args
+    assert '-dDownsampleMonoImages=true' in args
+    assert '-dMonoImageDownsampleThreshold=1.0' in args
+    assert '-dColorImageResolution=300' in args
+    assert '-dGrayImageResolution=300' in args
+    assert '-dMonoImageResolution=300' in args
+
+
+def test_ghostscript_jpeg_options_via_cli(resources, outpdf):
+    """End-to-end: CLI flags reach the ghostscript plugin namespace."""
+    with patch(
+        'ocrmypdf._exec.ghostscript.generate_pdfa',
+        wraps=ghostscript.generate_pdfa,
+    ) as gen_mock:
+        run_ocrmypdf_api(
+            resources / 'francais.pdf',
+            outpdf,
+            '--output-type',
+            'pdfa',
+            '--ghostscript-jpeg-quality',
+            '60',
+            '--ghostscript-jpeg-maxdpi',
+            '150',
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
+        )
+    assert gen_mock.called
+    call_kwargs = gen_mock.call_args.kwargs
+    assert call_kwargs['jpeg_quality'] == 60
+    assert call_kwargs['jpeg_maxdpi'] == 150
+
+
 def test_gs_render_failure(resources, outpdf, caplog):
     exitcode = run_ocrmypdf_api(
         resources / 'blank.pdf',
@@ -176,9 +299,9 @@ def test_ghostscript_pdfa_failure(resources, outpdf, caplog):
         '--plugin',
         'tests/plugins/gs_pdfa_failure.py',
     )
-    assert (
-        exitcode == ExitCode.pdfa_conversion_failed
-    ), "Unexpected return when PDF/A fails"
+    assert exitcode == ExitCode.pdfa_conversion_failed, (
+        "Unexpected return when PDF/A fails"
+    )
 
 
 def test_ghostscript_feature_elision(resources, outpdf):
@@ -439,7 +562,9 @@ class TestGs106JpegCorruptionRepair:
                     repaired_bytes_list.append(obj.read_raw_bytes())
 
         assert len(repaired_bytes_list) == len(original_bytes_list)
-        for orig, repaired_bytes in zip(original_bytes_list, repaired_bytes_list, strict=False):
+        for orig, repaired_bytes in zip(
+            original_bytes_list, repaired_bytes_list, strict=False
+        ):
             assert orig == repaired_bytes, "Repaired bytes should match original"
 
         # Check that error/warning was logged
