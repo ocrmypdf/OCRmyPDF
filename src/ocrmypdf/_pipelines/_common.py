@@ -343,12 +343,17 @@ def setup_pipeline(
 
 
 def do_get_pdfinfo(pdf_path: Path, executor: Executor, options) -> PdfInfo:
-    # Handle pages field - it might be a string that needs conversion
+    # Handle pages field - it might be a string that needs conversion.
+    # A string indicates the ``end`` alias was used and resolution was
+    # deferred; we resolve it now using the document's actual page count.
     check_pages = options.pages
     if isinstance(check_pages, str):
         from ocrmypdf._options import _pages_from_ranges
 
-        check_pages = _pages_from_ranges(check_pages)
+        with Pdf.open(pdf_path) as pdf:
+            total_pages = len(pdf.pages)
+        check_pages = _pages_from_ranges(check_pages, total_pages=total_pages)
+        options.pages = check_pages
 
     return get_pdfinfo(
         pdf_path,

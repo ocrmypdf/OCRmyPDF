@@ -387,7 +387,8 @@ Online documentation is located at:
         type=str,
         help=(
             "Limit OCR to the specified pages (ranges or comma separated), "
-            "skipping others"
+            "skipping others. The token 'end' is an alias for the last page, "
+            "so e.g. '3-end' OCRs from page 3 to the last page."
         ),
     )
     advanced.add_argument(

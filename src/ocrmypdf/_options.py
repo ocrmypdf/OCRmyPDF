@@ -65,8 +65,34 @@ class TaggedPdfMode(StrEnum):
     ignore = 'ignore'
 
 
-def _pages_from_ranges(ranges: str) -> set[int]:
-    """Convert page range string to set of page numbers."""
+def _has_end_alias(ranges: str) -> bool:
+    """Return True if the page range string uses the ``end`` alias."""
+    return 'end' in ranges.lower()
+
+
+def _resolve_page_token(token: str, total_pages: int | None) -> int:
+    """Convert a single page-number token to a 1-based integer.
+
+    The literal ``end`` (case-insensitive) is resolved to ``total_pages``. If
+    ``total_pages`` is None, an error is raised.
+    """
+    if token.lower() == 'end':
+        if total_pages is None:
+            raise BadArgsError(
+                "'end' was used in --pages but the total page count is not yet "
+                "known"
+            )
+        return total_pages
+    return int(token)
+
+
+def _pages_from_ranges(ranges: str, total_pages: int | None = None) -> set[int]:
+    """Convert page range string to set of 0-based page numbers.
+
+    The token ``end`` (case-insensitive) is an alias for the last page of the
+    document. It is resolved using ``total_pages``; if ``end`` appears in the
+    string and ``total_pages`` is None, a :class:`BadArgsError` is raised.
+    """
     pages: list[int] = []
     page_groups = ranges.replace(' ', '').split(',')
     for group in page_groups:
@@ -75,10 +101,15 @@ def _pages_from_ranges(ranges: str) -> set[int]:
         try:
             start, end = group.split('-')
         except ValueError:
-            pages.append(int(group) - 1)
+            try:
+                pages.append(_resolve_page_token(group, total_pages) - 1)
+            except ValueError:
+                raise BadArgsError(f"invalid page number '{group}'") from None
         else:
             try:
-                new_pages = list(range(int(start) - 1, int(end)))
+                start_n = _resolve_page_token(start, total_pages)
+                end_n = _resolve_page_token(end, total_pages)
+                new_pages = list(range(start_n - 1, end_n))
                 if not new_pages:
                     raise BadArgsError(
                         f"invalid page subrange '{start}-{end}'"
@@ -332,11 +363,19 @@ class OcrOptions(BaseModel):
     @field_validator('pages')
     @classmethod
     def validate_pages_format(cls, v):
-        """Convert page ranges string to set of page numbers."""
+        """Convert page ranges string to set of page numbers.
+
+        If the string uses the ``end`` alias, the original string is preserved
+        so that resolution can happen later, once the document's page count is
+        known.
+        """
         if v is None:
             return v
         if isinstance(v, set):
             return v  # Already processed
+        if _has_end_alias(v):
+            # Defer resolution until total page count is known
+            return v
 
         # Convert string ranges to set of page numbers
         return _pages_from_ranges(v)

@@ -343,12 +343,22 @@ Hyphens denote a range of pages and commas separate page numbers. If you
 prefer to use spaces, quote all of the page numbers:
 `--pages '2, 3, 5, 7'`.
 
+The token `end` (case-insensitive) is an alias for the last page in the
+document. For example, `--pages 3-end` OCRs from page 3 through the
+final page, and `--pages end` OCRs only the last page:
+
+```bash
+ocrmypdf --pages 3-end input.pdf output.pdf
+ocrmypdf --pages end input.pdf output.pdf
+```
+
 OCRmyPDF will warn if your list of page numbers contains duplicates or
-overlapping pages. OCRmyPDF does not currently account for document page
-numbers, such as an introduction section of a book that uses Roman
-numerals. It simply counts the number of virtual pieces of paper since
-the start. If your list of pages is out of numerical order, OCRmyPDF
-will sort it for you.
+overlapping pages. (Repeated page numbers are de-duplicated automatically,
+since the underlying set of pages is what matters.) OCRmyPDF does not
+currently account for document page numbers, such as an introduction
+section of a book that uses Roman numerals. It simply counts the number
+of virtual pieces of paper since the start. If your list of pages is out
+of numerical order, OCRmyPDF will sort it for you.
 
 Regardless of the argument to `--pages`, OCRmyPDF will optimize all
 pages/images in the file and convert it to PDF/A, unless you disable
