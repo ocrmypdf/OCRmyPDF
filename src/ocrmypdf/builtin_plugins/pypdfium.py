@@ -48,27 +48,18 @@ def _open_pdf_document(input_file: Path):
     return pdfium.PdfDocument(input_file)
 
 
-def _calculate_mediabox_crop(page) -> tuple[float, float, float, float]:
-    """Calculate crop values to expand rendering from CropBox to MediaBox.
+def _expand_cropbox_to_mediabox(page) -> None:
+    """Set the page's CropBox to its MediaBox so PDFium renders the full page.
 
-    By default pypdfium2 renders to the CropBox. To render the full MediaBox,
-    we need negative crop values to expand the rendering area.
-
-    Returns:
-        Tuple of (left, bottom, right, top) crop values. Negative values
-        expand the rendering area beyond the CropBox to the MediaBox.
+    PDFium renders to the CropBox by default. Negative ``crop`` values to
+    ``render()`` are not supported and only pad the output canvas without
+    expanding the rendered area — content outside the CropBox is clipped.
+    The supported approach is to widen the CropBox in memory before rendering.
+    The document is never saved back to disk, so this mutation is local.
+    See https://github.com/ocrmypdf/OCRmyPDF/issues/1685.
     """
     mediabox = page.get_mediabox()  # (left, bottom, right, top)
-    cropbox = page.get_cropbox()  # (left, bottom, right, top), defaults to mediabox
-
-    # Calculate how much to expand from cropbox to mediabox
-    # Negative values = expand, positive = shrink
-    return (
-        mediabox[0] - cropbox[0],  # Expand left
-        mediabox[1] - cropbox[1],  # Expand bottom
-        cropbox[2] - mediabox[2],  # Expand right
-        cropbox[3] - mediabox[3],  # Expand top
-    )
+    page.set_cropbox(*mediabox)
 
 
 def _render_page_to_bitmap(
@@ -107,14 +98,13 @@ def _render_page_to_bitmap(
     # Render in grayscale for mono and gray devices (better input for 1-bit conversion)
     grayscale = raster_device.lower() in ('pngmono', 'pnggray', 'jpeggray')
 
-    # Calculate crop to render the appropriate box
     # Default (use_cropbox=False) renders MediaBox for consistency with Ghostscript
-    crop = (0, 0, 0, 0) if use_cropbox else _calculate_mediabox_crop(page)
+    if not use_cropbox:
+        _expand_cropbox_to_mediabox(page)
 
     bitmap = page.render(
         scale=scale,
         rotation=0,  # We already set rotation on the page
-        crop=crop,
         may_draw_forms=True,
         draw_annots=True,
         grayscale=grayscale,
