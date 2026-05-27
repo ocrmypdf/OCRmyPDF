@@ -3,6 +3,28 @@
 
 # v17
 
+## v17.5.0
+
+- Added support for the ``end`` alias in ``--pages``, denoting the last page
+  of the document. For example, ``--pages 3-end`` OCRs from page 3 through
+  the final page. {issue}`1615`
+- Added ``--ghostscript-jpeg-quality`` and ``--ghostscript-jpeg-maxdpi``
+  advanced options for tuning Ghostscript's PDF/A output. The optimizer's
+  ``--jpeg-quality`` remains the recommended file-size control.
+- Fixed pypdfium2 rasterizer clipping content when the CropBox was smaller
+  than the MediaBox (e.g. JSTOR or cropped PDFs). {issue}`1685`
+- Fixed Form XObject cycle detection in the optimizer's image xref scan.
+  Self-referential or DAG-shaped Form graphs (notably from PowerPoint
+  exports) previously produced floods of recursion warnings and could hang
+  for minutes. {issue}`1321`
+- Tesseract config errors are now surfaced as ``TesseractConfigError`` with
+  actionable guidance, instead of crashing later with a confusing
+  ``FileNotFoundError`` on the missing hOCR output. {issue}`1687`
+- Refreshed the Chinese README translation. Thanks @cislunarspace.
+- Internal refactoring of the ``_exec`` and ``subprocess`` modules to
+  separate probing from execution.
+- CI dependency updates.
+
 ## v17.4.2
 
 - Fixed Python API unconditionally overriding ``PIL.Image.MAX_IMAGE_PIXELS``
