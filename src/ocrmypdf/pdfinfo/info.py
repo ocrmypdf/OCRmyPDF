@@ -130,6 +130,20 @@ class PageInfo:
             pdf, pageno, infile, check_pages, detailed_analysis, miner_state
         )
 
+    def __fix_box(
+        self,
+        box: list[float | Decimal]
+    ) -> list[float | Decimal]:
+        """
+        Normalise boxes where the coordinates are reversed.
+
+        Follows the logic implemented in poppler/MuPDF.
+        """
+        return [min(box[0], box[2]),
+                min(box[1], box[3]),
+                max(box[0], box[2]),
+                max(box[1], box[3])]
+
     def _gather_pageinfo(
         self,
         pdf: Pdf,
@@ -140,15 +154,15 @@ class PageInfo:
         miner_state: PdfMinerState | None,
     ):
         page: Page = pdf.pages[pageno]
-        mediabox = [Decimal(d) for d in page.mediabox.as_list()]
+        mediabox = self.__fix_box([Decimal(d) for d in page.mediabox.as_list()])
         width_pt = mediabox[2] - mediabox[0]
         height_pt = mediabox[3] - mediabox[1]
 
-        self._artbox = [float(d) for d in page.artbox.as_list()]
-        self._bleedbox = [float(d) for d in page.bleedbox.as_list()]
-        self._cropbox = [float(d) for d in page.cropbox.as_list()]
-        self._mediabox = [float(d) for d in page.mediabox.as_list()]
-        self._trimbox = [float(d) for d in page.trimbox.as_list()]
+        self._artbox = self.__fix_box([float(d) for d in page.artbox.as_list()])
+        self._bleedbox = self.__fix_box([float(d) for d in page.bleedbox.as_list()])
+        self._cropbox = self.__fix_box([float(d) for d in page.cropbox.as_list()])
+        self._mediabox = self.__fix_box([float(d) for d in page.mediabox.as_list()])
+        self._trimbox = self.__fix_box([float(d) for d in page.trimbox.as_list()])
 
         check_this_page = pageno in check_pages
 
