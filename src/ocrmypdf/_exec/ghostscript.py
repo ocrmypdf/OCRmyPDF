@@ -404,5 +404,7 @@ def generate_pdfa(
             # the **** pattern to split the stderr into parts.
             for part in stderr.split('****'):
                 log.error(part)
-        if _gs_devicen_reported(stderr):
+        if color_conversion_strategy == 'LeaveColorUnchanged' and _gs_devicen_reported(
+            stderr
+        ):
             raise ColorConversionNeededError()

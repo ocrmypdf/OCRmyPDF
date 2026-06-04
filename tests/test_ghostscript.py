@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-FileCopyrightText: 2026 Puneet Dixit
 # SPDX-License-Identifier: MPL-2.0
 
 from __future__ import annotations
@@ -234,6 +235,25 @@ def test_generate_pdfa_honors_jpeg_maxdpi(outdir):
     assert '-dColorImageResolution=300' in args
     assert '-dGrayImageResolution=300' in args
     assert '-dMonoImageResolution=300' in args
+
+
+def test_generate_pdfa_allows_user_color_conversion_for_devicen_warning(outdir):
+    with (
+        patch('ocrmypdf._exec.ghostscript.version', return_value=Version('10.05.1')),
+        patch('ocrmypdf._exec.ghostscript.run_polling_stderr') as run_mock,
+    ):
+        run_mock.return_value = subprocess.CompletedProcess(
+            ['gs'],
+            returncode=0,
+            stdout='',
+            stderr='DeviceN color space with inappropriate alternate',
+        )
+        ghostscript.generate_pdfa(
+            pdf_pages=[outdir / 'input.pdf'],
+            output_file=outdir / 'out.pdf',
+            compression='auto',
+            color_conversion_strategy='RGB',
+        )
 
 
 def test_ghostscript_jpeg_options_via_cli(resources, outpdf):
