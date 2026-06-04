@@ -140,13 +140,42 @@ class TaggedPDFError(InputFileError):
 
 
 class ColorConversionNeededError(BadArgsError):
-    """PDF needs color conversion."""
+    """PDF needs color conversion to a standard color space.
 
-    message = dedent(
-        """\
-        The input PDF has an unusual color space. Use
-        --color-conversion-strategy to convert to a common color space
-        such as RGB, or use --output-type pdf to skip PDF/A conversion
-        and retain the original color space.
-        """
-    )
+    Ghostscript reported a DeviceN colorspace with an inappropriate alternate.
+    The resulting PDF/A is liable to render incorrectly (often blank) in some
+    viewers such as Adobe Reader, so the colorspace must be normalized to a
+    common one. RGB, CMYK, and Gray are known to work; LeaveColorUnchanged
+    performs no conversion and UseDeviceIndependentColor does not resolve the
+    problem (see https://github.com/ocrmypdf/OCRmyPDF/issues/1187).
+    """
+
+    # Strategies that can normalize an unusual DeviceN colorspace into one that
+    # PDF/A viewers render correctly.
+    _effective_strategies = "RGB, CMYK, or Gray"
+
+    def __init__(self, color_conversion_strategy: str = "LeaveColorUnchanged"):
+        """Build guidance tailored to the conversion strategy that was used."""
+        super().__init__()
+        if color_conversion_strategy == "LeaveColorUnchanged":
+            self.message = dedent(
+                f"""\
+                The input PDF has an unusual DeviceN color space that cannot be
+                represented in PDF/A; the output may appear blank in some viewers
+                such as Adobe Reader. Convert it to a common color space with
+                --color-conversion-strategy ({self._effective_strategies}), or use
+                --output-type pdf to skip PDF/A conversion and retain the original
+                color space.
+                """
+            )
+        else:
+            self.message = dedent(
+                f"""\
+                Color conversion with --color-conversion-strategy
+                {color_conversion_strategy} did not resolve the input PDF's unusual
+                DeviceN color space; the output may appear blank in some viewers
+                such as Adobe Reader. Try a different --color-conversion-strategy
+                ({self._effective_strategies}), or use --output-type pdf to skip
+                PDF/A conversion and retain the original color space.
+                """
+            )

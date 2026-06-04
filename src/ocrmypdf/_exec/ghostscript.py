@@ -405,4 +405,8 @@ def generate_pdfa(
             for part in stderr.split('****'):
                 log.error(part)
         if _gs_devicen_reported(stderr):
-            raise ColorConversionNeededError()
+            # Ghostscript could not normalize the DeviceN colorspace for PDF/A,
+            # even if the user requested a conversion strategy. The output is
+            # liable to render blank in some viewers, so raise regardless of the
+            # strategy and tailor the guidance to what was attempted.
+            raise ColorConversionNeededError(color_conversion_strategy)
