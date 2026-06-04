@@ -327,6 +327,88 @@ def test_ghostscript_mandatory_color_conversion(resources, outpdf):
         )
 
 
+def _run_generate_pdfa_with_devicen_warning(outdir, color_conversion_strategy):
+    """Invoke generate_pdfa with Ghostscript mocked to emit the DeviceN warning.
+
+    Ghostscript emits this warning when it writes a DeviceN colorspace with an
+    inappropriate alternate, i.e. when it could not normalize the colorspace for
+    PDF/A. The output is then liable to render blank in viewers such as Adobe
+    Reader (see issue #1187), regardless of which conversion strategy was
+    requested.
+    """
+    (outdir / 'input.pdf').write_bytes(b'%PDF-1.5\n%fake\n')
+    with (
+        patch('ocrmypdf._exec.ghostscript.version', return_value=Version('10.05.1')),
+        patch('ocrmypdf._exec.ghostscript.run_polling_stderr') as run_mock,
+    ):
+        run_mock.return_value = subprocess.CompletedProcess(
+            ['gs'],
+            returncode=0,
+            stdout='',
+            stderr='Attempting to write a DeviceN space with an inappropriate '
+            'alternate, reverting to the alternate color space.',
+        )
+        ghostscript.generate_pdfa(
+            pdf_pages=[outdir / 'input.pdf'],
+            output_file=outdir / 'out.pdf',
+            compression='auto',
+            color_conversion_strategy=color_conversion_strategy,
+        )
+
+
+def test_devicen_warning_default_strategy_raises_with_guidance(outdir):
+    """Default (no conversion): raise and tell the user to pick a strategy."""
+    with pytest.raises(ColorConversionNeededError) as exc_info:
+        _run_generate_pdfa_with_devicen_warning(outdir, 'LeaveColorUnchanged')
+    message = str(exc_info.value)
+    assert '--color-conversion-strategy' in message
+    assert 'RGB' in message
+
+
+@pytest.mark.parametrize(
+    'strategy',
+    [
+        # A strategy that genuinely cannot fix the colorspace; confirmed in #1187.
+        'UseDeviceIndependentColor',
+        # A normally-effective strategy that nonetheless failed on this input:
+        # if Ghostscript still warns, the output is still broken and we must not
+        # silently pass it through (the behaviour PR #1692 would have introduced).
+        'RGB',
+    ],
+)
+def test_devicen_warning_persists_despite_strategy_still_raises(outdir, strategy):
+    """If the warning survives the requested conversion, the output is broken.
+
+    We must still raise rather than silently emit a PDF/A that may render blank.
+    The guidance should acknowledge that the chosen strategy did not work and
+    point at strategies that do (or --output-type pdf).
+    """
+    with pytest.raises(ColorConversionNeededError) as exc_info:
+        _run_generate_pdfa_with_devicen_warning(outdir, strategy)
+    message = str(exc_info.value)
+    assert strategy in message
+    assert '--output-type pdf' in message
+
+
+def test_no_devicen_warning_does_not_raise(outdir):
+    """When Ghostscript does not warn, conversion succeeded; never raise."""
+    (outdir / 'input.pdf').write_bytes(b'%PDF-1.5\n%fake\n')
+    with (
+        patch('ocrmypdf._exec.ghostscript.version', return_value=Version('10.05.1')),
+        patch('ocrmypdf._exec.ghostscript.run_polling_stderr') as run_mock,
+    ):
+        run_mock.return_value = subprocess.CompletedProcess(
+            ['gs'], returncode=0, stdout='', stderr=''
+        )
+        # Must not raise for any strategy when there is no DeviceN warning.
+        ghostscript.generate_pdfa(
+            pdf_pages=[outdir / 'input.pdf'],
+            output_file=outdir / 'out.pdf',
+            compression='auto',
+            color_conversion_strategy='RGB',
+        )
+
+
 def test_rasterize_pdf_errors(resources, no_outpdf, caplog):
     with patch('ocrmypdf._exec.ghostscript.run') as mock:
         # ghostscript can produce empty files with return code 0
