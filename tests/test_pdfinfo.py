@@ -298,6 +298,61 @@ def test_ink_enum_is_picklable():
         assert pickle.loads(pickle.dumps(member)) is member
 
 
+def _ink_of_first_xobject(body: bytes):
+    from ocrmypdf.pdfinfo._contentstream import _interpret_contents
+
+    p = pikepdf.Pdf.new()
+    stream = pikepdf.Stream(p, body)
+    info = _interpret_contents(stream)
+    return info.xobject_settings[0].fill_ink
+
+
+@pytest.mark.parametrize(
+    "body, expected",
+    [
+        (b"/Im0 Do", 'mono'),  # default fill is black
+        (b"0.263 0.263 0.263 rg /Im0 Do", 'gray'),
+        (b"0.5 g /Im0 Do", 'gray'),
+        (b"0 g /Im0 Do", 'mono'),
+        (b"0.8 0.2 0.2 rg /Im0 Do", 'color'),
+        (b"0 0 0 0.5 k /Im0 Do", 'gray'),
+        (b"0.5 0.1 0 0 k /Im0 Do", 'color'),
+    ],
+)
+def test_fill_ink_tracked_per_draw(body, expected):
+    assert _ink_of_first_xobject(body) is Ink[expected]
+
+
+def test_fill_ink_non_device_colorspace_is_color():
+    # cs to a non-device colorspace then scn -> conservative color
+    assert _ink_of_first_xobject(b"/CS0 cs 0.4 scn /Im0 Do") is Ink.color
+
+
+def test_fill_ink_pattern_scn_is_color():
+    assert _ink_of_first_xobject(b"/Pattern cs /P0 scn /Im0 Do") is Ink.color
+
+
+def test_fill_ink_respects_graphics_stack():
+    # Set red, save, set gray, restore -> red again at the Do
+    assert _ink_of_first_xobject(b"0.8 0.1 0.1 rg q 0.5 g Q /Im0 Do") is Ink.color
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"g /Im0 Do",  # g with no operand
+        b"/Foo g /Im0 Do",  # g with a non-numeric operand
+        b"cs /Im0 Do",  # cs with no operand
+        b"0.5 /Foo k /Im0 Do",  # k with a non-numeric operand
+        b"/DeviceRGB cs /Foo 0.5 scn /Im0 Do",  # scn with mixed bad operands
+    ],
+)
+def test_fill_ink_tolerates_malformed_color_operands(body):
+    # Malformed color operators must not crash the interpreter; they leave the
+    # fill state at its prior value (default mono) or fall back conservatively.
+    assert _ink_of_first_xobject(body) in (Ink.mono, Ink.color)
+
+
 @pytest.mark.parametrize(
     "space, comps, expected",
     [
