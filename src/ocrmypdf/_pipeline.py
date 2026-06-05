@@ -44,7 +44,7 @@ from ocrmypdf.pdfa import (
     generate_pdfa_ps,
     speculative_pdfa_conversion,
 )
-from ocrmypdf.pdfinfo import Colorspace, Encoding, FloatRect, PageInfo, PdfInfo
+from ocrmypdf.pdfinfo import Colorspace, Encoding, FloatRect, Ink, PageInfo, PdfInfo
 from ocrmypdf.pluginspec import GhostscriptRasterDevice, OrientationConfidence
 
 try:
@@ -508,6 +508,49 @@ def calculate_raster_dpi(page_context: PageContext):
     return canvas_dpi, page_dpi
 
 
+def _select_raster_device(pageinfo: PageInfo) -> GhostscriptRasterDevice:
+    """Choose the minimum raster device that preserves the page's color depth.
+
+    The device escalates from 1-bit mono through grayscale, indexed, and full
+    color as required by the page's images, image masks, and vector content.
+    Image masks are painted with the current fill color, so a mask painted in
+    gray or color escalates the device even though the mask itself is 1-bit.
+    """
+    colorspaces = [
+        GhostscriptRasterDevice.PNGMONOD,
+        GhostscriptRasterDevice.PNGGRAY,
+        GhostscriptRasterDevice.PNG256,
+        GhostscriptRasterDevice.PNG16M,
+    ]
+    device_idx = 0
+
+    def at_least(colorspace):
+        return max(device_idx, colorspaces.index(colorspace))
+
+    for image in pageinfo.images:
+        if image.type_ == 'stencil':
+            # The fill color used to paint the mask, not the 1-bit mask data,
+            # determines the color depth OCR needs.
+            if image.ink == Ink.color:
+                device_idx = at_least(GhostscriptRasterDevice.PNG16M)
+            elif image.ink == Ink.gray:
+                device_idx = at_least(GhostscriptRasterDevice.PNGGRAY)
+            continue
+        if image.bpc > 1:
+            if image.color == Colorspace.index:
+                device_idx = at_least(GhostscriptRasterDevice.PNG256)
+            elif image.color == Colorspace.gray:
+                device_idx = at_least(GhostscriptRasterDevice.PNGGRAY)
+            else:
+                device_idx = at_least(GhostscriptRasterDevice.PNG16M)
+
+    if pageinfo.has_vector:
+        log.debug(f"Page has vector content, using {GhostscriptRasterDevice.PNG16M}")
+        device_idx = at_least(GhostscriptRasterDevice.PNG16M)
+
+    return colorspaces[device_idx]
+
+
 def rasterize(
     input_file: Path,
     page_context: PageContext,
@@ -529,39 +572,13 @@ def rasterize(
     Returns:
         Path: The output PNG file path.
     """
-    colorspaces = [
-        GhostscriptRasterDevice.PNGMONO,
-        GhostscriptRasterDevice.PNGGRAY,
-        GhostscriptRasterDevice.PNG256,
-        GhostscriptRasterDevice.PNG16M,
-    ]
-    device_idx = 0
-
     if remove_vectors is None:
         remove_vectors = page_context.options.remove_vectors
 
     output_file = page_context.get_path(f'rasterize{output_tag}.png')
     pageinfo = page_context.pageinfo
 
-    def at_least(colorspace):
-        return max(device_idx, colorspaces.index(colorspace))
-
-    for image in pageinfo.images:
-        if image.type_ != 'image':
-            continue  # ignore masks
-        if image.bpc > 1:
-            if image.color == Colorspace.index:
-                device_idx = at_least(GhostscriptRasterDevice.PNG256)
-            elif image.color == Colorspace.gray:
-                device_idx = at_least(GhostscriptRasterDevice.PNGGRAY)
-            else:
-                device_idx = at_least(GhostscriptRasterDevice.PNG16M)
-
-    if pageinfo.has_vector:
-        log.debug(f"Page has vector content, using {GhostscriptRasterDevice.PNG16M}")
-        device_idx = at_least(GhostscriptRasterDevice.PNG16M)
-
-    device = colorspaces[device_idx]
+    device = _select_raster_device(pageinfo)
 
     log.debug(
         f"Rasterize with {device}, rotation {correction}, mediabox {pageinfo.mediabox}"
