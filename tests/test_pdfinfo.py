@@ -371,3 +371,64 @@ def test_fill_ink_tolerates_malformed_color_operands(body):
 )
 def test_ink_from_components(space, comps, expected):
     assert _ink_from_components(space, comps) is Ink[expected]
+
+
+def _make_image_mask_pdf(path, content_fill: bytes):
+    """Build a 1-page PDF with one 8x8 image mask painted with content_fill.
+
+    content_fill is the color operator sequence emitted before drawing the
+    mask, e.g. b"0.263 0.263 0.263 rg".
+    """
+    pdf = pikepdf.Pdf.new()
+    pdf.add_blank_page(page_size=(72, 72))
+    # 8x8 1-bpc mask, each row padded to a byte (1 byte per row).
+    mask_bytes = bytes([0x7E] * 8)
+    mask = pikepdf.Stream(pdf, mask_bytes)
+    mask.Type = pikepdf.Name.XObject
+    mask.Subtype = pikepdf.Name.Image
+    mask.Width = 8
+    mask.Height = 8
+    mask.ImageMask = True
+    mask.BitsPerComponent = 1
+    name = pdf.pages[0].add_resource(mask, pikepdf.Name.XObject)
+    pdf.pages[0].Contents = pikepdf.Stream(
+        pdf, b"q 72 0 0 72 0 0 cm %s %s Do Q" % (content_fill, bytes(name))
+    )
+    pdf.save(path)
+    return path
+
+
+@pytest.fixture
+def mask_gray_pdf(outdir):
+    return _make_image_mask_pdf(outdir / 'mask_gray.pdf', b"0.263 0.263 0.263 rg")
+
+
+@pytest.fixture
+def mask_rgb_pdf(outdir):
+    return _make_image_mask_pdf(outdir / 'mask_rgb.pdf', b"0.8 0.2 0.2 rg")
+
+
+@pytest.fixture
+def mask_black_pdf(outdir):
+    return _make_image_mask_pdf(outdir / 'mask_black.pdf', b"0 g")
+
+
+def test_imageinfo_ink_gray(mask_gray_pdf):
+    image = pdfinfo.PdfInfo(mask_gray_pdf)[0].images[0]
+    assert image.type_ == 'stencil'
+    assert image.ink is Ink.gray
+
+
+def test_imageinfo_ink_color(mask_rgb_pdf):
+    image = pdfinfo.PdfInfo(mask_rgb_pdf)[0].images[0]
+    assert image.ink is Ink.color
+
+
+def test_imageinfo_ink_black(mask_black_pdf):
+    image = pdfinfo.PdfInfo(mask_black_pdf)[0].images[0]
+    assert image.ink is Ink.mono
+
+
+def test_imageinfo_ink_none_for_regular_image(eight_by_eight_regular_image):
+    image = pdfinfo.PdfInfo(eight_by_eight_regular_image)[0].images[0]
+    assert image.ink is None

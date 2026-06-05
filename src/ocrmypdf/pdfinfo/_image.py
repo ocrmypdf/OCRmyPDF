@@ -36,6 +36,7 @@ from ocrmypdf.pdfinfo._types import (
     UNIT_SQUARE,
     Colorspace,
     Encoding,
+    Ink,
 )
 
 logger = logging.getLogger()
@@ -61,10 +62,12 @@ class ImageInfo:
         pdfimage: Object | None = None,
         inline: PdfInlineImage | None = None,
         shorthand=None,
+        fill_ink: Ink | None = None,
     ):
         """Initialize an ImageInfo."""
         self._name = str(name)
         self._shorthand = shorthand
+        self._fill_ink = fill_ink
 
         pim: PdfInlineImage | PdfImage
 
@@ -176,6 +179,17 @@ class ImageInfo:
         return self._type
 
     @property
+    def ink(self) -> Ink | None:
+        """Fill-color classification for stencil masks, else None.
+
+        A stencil (image mask) is painted with the current fill color; this
+        reports whether that color is mono/gray/color so the rasterizer can
+        choose a device that does not discard the distinction. Non-stencil
+        images return None.
+        """
+        return self._fill_ink if self._type == 'stencil' else None
+
+    @property
     def width(self) -> int:
         """Width of the image in pixels."""
         return self._width
@@ -249,7 +263,10 @@ def _find_inline_images(contentsinfo: ContentsInfo) -> Iterator[ImageInfo]:
     """Find inline images in the contentstream."""
     for n, inline in enumerate(contentsinfo.inline_images):
         yield ImageInfo(
-            name=f'inline-{n:02d}', shorthand=inline.shorthand, inline=inline.iimage
+            name=f'inline-{n:02d}',
+            shorthand=inline.shorthand,
+            inline=inline.iimage,
+            fill_ink=inline.fill_ink,
         )
 
 
@@ -300,7 +317,12 @@ def _find_regular_images(
                 # these from our DPI calculation for the page.
                 continue
 
-            yield ImageInfo(name=draw.name, pdfimage=pdfimage, shorthand=draw.shorthand)
+            yield ImageInfo(
+                name=draw.name,
+                pdfimage=pdfimage,
+                shorthand=draw.shorthand,
+                fill_ink=draw.fill_ink,
+            )
 
 
 def _find_form_xobject_images(pdf: Pdf, container: Object, contentsinfo: ContentsInfo):
