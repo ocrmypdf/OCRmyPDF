@@ -39,6 +39,20 @@ class Encoding(Enum):
     flate_jpeg = auto()
 
 
+class Ink(Enum):
+    """Classification of the fill color used to paint a stencil image mask.
+
+    A stencil (image mask) is painted with the current fill color, so the
+    color depth needed to rasterize it for OCR depends on that fill color,
+    not on the mask's 1-bit data.
+    """
+
+    # pylint: disable=invalid-name
+    mono = auto()  # black (or no color information to preserve)
+    gray = auto()  # achromatic but not pure black
+    color = auto()  # chromatic, or a fill we cannot prove is achromatic
+
+
 FloatRect = tuple[float, float, float, float]
 
 FRIENDLY_COLORSPACE: dict[str, Colorspace] = {

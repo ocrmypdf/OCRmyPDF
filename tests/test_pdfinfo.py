@@ -18,7 +18,7 @@ from reportlab.pdfgen.canvas import Canvas
 from ocrmypdf import pdfinfo
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
-from ocrmypdf.pdfinfo import Colorspace, Encoding
+from ocrmypdf.pdfinfo import Colorspace, Encoding, Ink
 from ocrmypdf.pdfinfo._contentstream import _interpret_contents
 from ocrmypdf.pdfinfo.layout import PDFPage
 
@@ -290,3 +290,9 @@ def test_image_scale0(image_scale0):
     )
     assert not pi.pages[0]._images[0].dpi.is_finite
     assert pi.pages[0].dpi == Resolution(0, 0)
+
+
+def test_ink_enum_is_picklable():
+    # ImageInfo crosses the worker-process boundary, so Ink must pickle.
+    for member in (Ink.mono, Ink.gray, Ink.color):
+        assert pickle.loads(pickle.dumps(member)) is member
