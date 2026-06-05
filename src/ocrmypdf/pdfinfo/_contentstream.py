@@ -174,9 +174,7 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
     text_showing_ops = set("""TJ Tj " '""".split())
     image_ops = set('BI ID EI q Q Do cm'.split())
     color_ops = set('g rg k cs sc scn'.split())
-    operator_whitelist = ' '.join(
-        vector_ops | text_showing_ops | image_ops | color_ops
-    )
+    operator_whitelist = ' '.join(vector_ops | text_showing_ops | image_ops | color_ops)
 
     for n, graphobj in enumerate(
         _normalize_stack(parse_content_stream(contentstream, operator_whitelist))
