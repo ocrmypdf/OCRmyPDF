@@ -250,18 +250,18 @@ def _make_text_mask_pdf(path, fill: bytes):
     this reproduces issue #1688: the text is mid-gray, which is dithered into
     noise if rasterized to 1-bit but reads correctly once promoted to gray.
     """
+    from importlib.resources import as_file, files
+
     from PIL import ImageDraw, ImageFont
 
     w, h = 1700, 600
     im = Image.new('1', (w, h), 1)  # 1 = white = "do not paint" under Decode [0 1]
     draw = ImageDraw.Draw(im)
-    try:
-        font = ImageFont.truetype("DejaVuSans-Bold.ttf", 220)
-    except OSError:
-        font = ImageFont.truetype(
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 220
-        )
-    draw.text((40, 120), "TESTING", fill=0, font=font)
+    # Use a font bundled with ocrmypdf so this test is portable across platforms;
+    # system fonts like DejaVu are not present on macOS/Windows CI runners.
+    with as_file(files('ocrmypdf.data') / 'NotoSans-Regular.ttf') as font_path:
+        font = ImageFont.truetype(str(font_path), 220)
+        draw.text((40, 120), "TESTING", fill=0, font=font)
 
     packed = im.tobytes()  # 1-bpc, rows byte-padded, MSB first
     pdf = pikepdf.Pdf.new()
