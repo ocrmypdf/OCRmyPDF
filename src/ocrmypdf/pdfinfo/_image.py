@@ -352,13 +352,19 @@ def _find_form_xobject_images(pdf: Pdf, container: Object, contentsinfo: Content
             # but in practice both Form XObjects and multiple drawing of the
             # same object are both very rare.
             ctm_shorthand = settings.shorthand
+            # A Form XObject inherits the graphics state (including fill color)
+            # in effect at the Do that draws it, so a mask painted with an
+            # inherited gray/color fill must carry that classification inward.
             yield from _process_content_streams(
-                pdf=pdf, container=form_xobject, shorthand=ctm_shorthand
+                pdf=pdf,
+                container=form_xobject,
+                shorthand=ctm_shorthand,
+                initial_fill_ink=settings.fill_ink,
             )
 
 
 def _process_content_streams(
-    *, pdf: Pdf, container: Object, shorthand=None
+    *, pdf: Pdf, container: Object, shorthand=None, initial_fill_ink=Ink.mono
 ) -> Iterator[VectorMarker | TextMarker | ImageInfo]:
     """Find all individual instances of images drawn in the container.
 
@@ -399,7 +405,7 @@ def _process_content_streams(
     else:
         return
 
-    contentsinfo = _interpret_contents(container, initial_shorthand)
+    contentsinfo = _interpret_contents(container, initial_shorthand, initial_fill_ink)
 
     if contentsinfo.found_vector:
         yield VectorMarker()

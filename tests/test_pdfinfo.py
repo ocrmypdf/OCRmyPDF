@@ -440,3 +440,42 @@ def test_imageinfo_ink_black(mask_black_pdf):
 def test_imageinfo_ink_none_for_regular_image(eight_by_eight_regular_image):
     image = pdfinfo.PdfInfo(eight_by_eight_regular_image)[0].images[0]
     assert image.ink is None
+
+
+def test_fill_ink_cs_resets_color_to_black():
+    # `cs` resets the fill color to the colorspace's initial value (black),
+    # so a stale color set before `cs` must not leak to the drawn mask.
+    assert _ink_of_first_xobject(b"0.8 0.2 0.2 rg /DeviceGray cs /Im0 Do") is Ink.mono
+
+
+def test_imageinfo_ink_inherited_in_form_xobject(outdir):
+    # A mask drawn inside a Form XObject inherits the fill color set before the
+    # Do that paints the form; the gray classification must reach the mask.
+    pdf = pikepdf.Pdf.new()
+    pdf.add_blank_page(page_size=(72, 72))
+
+    mask = pikepdf.Stream(pdf, bytes([0x7E] * 8))
+    mask.Type = pikepdf.Name.XObject
+    mask.Subtype = pikepdf.Name.Image
+    mask.Width = 8
+    mask.Height = 8
+    mask.ImageMask = True
+    mask.BitsPerComponent = 1
+
+    # Form draws the mask with no color of its own, inheriting the caller's.
+    form = pikepdf.Stream(pdf, b"q 72 0 0 72 0 0 cm /Im0 Do Q")
+    form.Type = pikepdf.Name.XObject
+    form.Subtype = pikepdf.Name.Form
+    form.BBox = [0, 0, 72, 72]
+    form.Resources = pikepdf.Dictionary(XObject=pikepdf.Dictionary(Im0=mask))
+
+    fname = pdf.pages[0].add_resource(form, pikepdf.Name.XObject)
+    pdf.pages[0].Contents = pikepdf.Stream(
+        pdf, b"0.263 0.263 0.263 rg %s Do" % bytes(fname)
+    )
+    out = outdir / 'form_mask.pdf'
+    pdf.save(out)
+
+    image = pdfinfo.PdfInfo(out)[0].images[0]
+    assert image.type_ == 'stencil'
+    assert image.ink is Ink.gray

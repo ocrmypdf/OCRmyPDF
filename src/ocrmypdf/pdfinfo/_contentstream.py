@@ -134,7 +134,9 @@ def _normalize_stack(graphobjs):
             yield (operands, operator)
 
 
-def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
+def _interpret_contents(
+    contentstream: Object, initial_shorthand=UNIT_SQUARE, initial_fill_ink=Ink.mono
+):
     """Interpret the PDF content stream.
 
     The stack represents the state of the PDF graphics stack.  We track the
@@ -163,7 +165,7 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
     """
     stack = []
     ctm = Matrix(initial_shorthand)
-    fill_ink = Ink.mono  # PDF default fill color is black
+    fill_ink = initial_fill_ink  # PDF default fill color is black
     fill_space = '/DeviceGray'  # current fill colorspace name (for sc/scn)
     xobject_settings: list[XobjectSettings] = []
     inline_images: list[InlineSettings] = []
@@ -216,6 +218,9 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
                 fill_ink = _ink_from_components('cmyk', vals)
                 fill_space = '/DeviceCMYK'
         elif operator == 'cs':
+            # Selecting a colorspace resets the fill color to that space's
+            # initial value, which is black for all device colorspaces.
+            fill_ink = Ink.mono
             if operands:
                 fill_space = str(operands[0])
         elif operator in ('sc', 'scn'):
