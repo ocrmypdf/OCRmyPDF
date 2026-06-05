@@ -15,7 +15,7 @@ from pikepdf import Matrix, Object, PdfInlineImage, parse_content_stream
 
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import Resolution
-from ocrmypdf.pdfinfo._types import UNIT_SQUARE
+from ocrmypdf.pdfinfo._types import UNIT_SQUARE, Ink
 
 
 class XobjectSettings(NamedTuple):
@@ -65,6 +65,33 @@ def _is_unit_square(shorthand):
     values = map(float, shorthand)
     pairwise = zip(values, UNIT_SQUARE, strict=False)
     return all(isclose(a, b, rel_tol=1e-3) for a, b in pairwise)
+
+
+_INK_EPSILON = 1e-3
+
+
+def _ink_from_components(space: str, comps: list[float]) -> Ink:
+    """Classify a device-color fill into mono/gray/color.
+
+    ``space`` is one of 'gray', 'rgb', 'cmyk'. Any other value is treated
+    conservatively as color, since we cannot prove it is achromatic.
+    """
+    eps = _INK_EPSILON
+    if space == 'gray' and len(comps) == 1:
+        return Ink.mono if comps[0] <= eps else Ink.gray
+    if space == 'rgb' and len(comps) == 3:
+        r, g, b = comps
+        if max(r, g, b) <= eps:
+            return Ink.mono
+        if abs(r - g) <= eps and abs(g - b) <= eps:
+            return Ink.gray
+        return Ink.color
+    if space == 'cmyk' and len(comps) == 4:
+        c, m, y, k = comps
+        if c <= eps and m <= eps and y <= eps:
+            return Ink.mono if k <= eps else Ink.gray
+        return Ink.color
+    return Ink.color  # conservative-to-color
 
 
 def _normalize_stack(graphobjs):

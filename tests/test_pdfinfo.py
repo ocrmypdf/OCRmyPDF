@@ -19,7 +19,7 @@ from ocrmypdf import pdfinfo
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.pdfinfo import Colorspace, Encoding, Ink
-from ocrmypdf.pdfinfo._contentstream import _interpret_contents
+from ocrmypdf.pdfinfo._contentstream import _ink_from_components, _interpret_contents
 from ocrmypdf.pdfinfo.layout import PDFPage
 
 warnings.filterwarnings(
@@ -296,3 +296,23 @@ def test_ink_enum_is_picklable():
     # ImageInfo crosses the worker-process boundary, so Ink must pickle.
     for member in (Ink.mono, Ink.gray, Ink.color):
         assert pickle.loads(pickle.dumps(member)) is member
+
+
+@pytest.mark.parametrize(
+    "space, comps, expected",
+    [
+        ('gray', [0.0], 'mono'),
+        ('gray', [0.263], 'gray'),
+        ('gray', [1.0], 'gray'),  # white -> gray (harmless)
+        ('rgb', [0.0, 0.0, 0.0], 'mono'),
+        ('rgb', [0.263, 0.263, 0.263], 'gray'),
+        ('rgb', [0.8, 0.2, 0.2], 'color'),
+        ('rgb', [1.0, 1.0, 1.0], 'gray'),
+        ('cmyk', [0.0, 0.0, 0.0, 0.0], 'mono'),  # white
+        ('cmyk', [0.0, 0.0, 0.0, 0.5], 'gray'),
+        ('cmyk', [0.5, 0.1, 0.0, 0.0], 'color'),
+        ('unknown', [0.5], 'color'),  # conservative fallback
+    ],
+)
+def test_ink_from_components(space, comps, expected):
+    assert _ink_from_components(space, comps) is Ink[expected]
