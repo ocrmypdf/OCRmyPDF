@@ -3,6 +3,22 @@
 
 # v17
 
+## v17.6.0
+
+- Fixed a regression in OCR quality for PDFs that paint a 1-bit image mask
+  (stencil) with a gray or colored fill color. Previously such pages were
+  rasterized as 1-bit black-and-white before OCR, so Ghostscript dithered
+  mid-tone text into an unreadable stipple and Tesseract failed to recognize
+  it. The rasterizer now inspects the fill color used to paint a mask and
+  promotes the page to grayscale or full color as needed, so the distinction
+  is preserved for the OCR engine. This applies to both the Ghostscript and
+  pypdfium rasterizers. {issue}`1688`
+- The default 1-bit raster device for Ghostscript is now ``pngmonod``
+  (error-diffusion) instead of ``pngmono`` (ordered dithering). It produces
+  better input for OCR on faint or anti-aliased scans at negligible cost and
+  no change to output file size, since the rasterized image is an
+  intermediate that is discarded after OCR.
+
 ## v17.5.0
 
 - Added support for the ``end`` alias in ``--pages``, denoting the last page

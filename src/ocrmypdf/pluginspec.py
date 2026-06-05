@@ -38,6 +38,7 @@ class GhostscriptRasterDevice(StrEnum):
     JPEGGRAY = 'jpeggray'
     JPEGCOLOR = 'jpeg'
     PNGMONO = 'pngmono'
+    PNGMONOD = 'pngmonod'
     PNGGRAY = 'pnggray'
     PNG256 = 'png256'
     PNG16M = 'png16m'

@@ -18,8 +18,8 @@ from reportlab.pdfgen.canvas import Canvas
 from ocrmypdf import pdfinfo
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
-from ocrmypdf.pdfinfo import Colorspace, Encoding
-from ocrmypdf.pdfinfo._contentstream import _interpret_contents
+from ocrmypdf.pdfinfo import Colorspace, Encoding, Ink
+from ocrmypdf.pdfinfo._contentstream import _ink_from_components, _interpret_contents
 from ocrmypdf.pdfinfo.layout import PDFPage
 
 warnings.filterwarnings(
@@ -290,3 +290,192 @@ def test_image_scale0(image_scale0):
     )
     assert not pi.pages[0]._images[0].dpi.is_finite
     assert pi.pages[0].dpi == Resolution(0, 0)
+
+
+def test_ink_enum_is_picklable():
+    # ImageInfo crosses the worker-process boundary, so Ink must pickle.
+    for member in (Ink.mono, Ink.gray, Ink.color):
+        assert pickle.loads(pickle.dumps(member)) is member
+
+
+def test_pngmonod_device_exists():
+    from ocrmypdf.pluginspec import GhostscriptRasterDevice
+
+    assert GhostscriptRasterDevice.PNGMONOD == 'pngmonod'
+    # PNGMONO retained for compatibility / explicit use
+    assert GhostscriptRasterDevice.PNGMONO == 'pngmono'
+
+
+def _ink_of_first_xobject(body: bytes):
+    from ocrmypdf.pdfinfo._contentstream import _interpret_contents
+
+    p = pikepdf.Pdf.new()
+    stream = pikepdf.Stream(p, body)
+    info = _interpret_contents(stream)
+    return info.xobject_settings[0].fill_ink
+
+
+@pytest.mark.parametrize(
+    "body, expected",
+    [
+        (b"/Im0 Do", 'mono'),  # default fill is black
+        (b"0.263 0.263 0.263 rg /Im0 Do", 'gray'),
+        (b"0.5 g /Im0 Do", 'gray'),
+        (b"0 g /Im0 Do", 'mono'),
+        (b"0.8 0.2 0.2 rg /Im0 Do", 'color'),
+        (b"0 0 0 0.5 k /Im0 Do", 'gray'),
+        (b"0.5 0.1 0 0 k /Im0 Do", 'color'),
+    ],
+)
+def test_fill_ink_tracked_per_draw(body, expected):
+    assert _ink_of_first_xobject(body) is Ink[expected]
+
+
+def test_fill_ink_non_device_colorspace_is_color():
+    # cs to a non-device colorspace then scn -> conservative color
+    assert _ink_of_first_xobject(b"/CS0 cs 0.4 scn /Im0 Do") is Ink.color
+
+
+def test_fill_ink_pattern_scn_is_color():
+    assert _ink_of_first_xobject(b"/Pattern cs /P0 scn /Im0 Do") is Ink.color
+
+
+def test_fill_ink_respects_graphics_stack():
+    # Set red, save, set gray, restore -> red again at the Do
+    assert _ink_of_first_xobject(b"0.8 0.1 0.1 rg q 0.5 g Q /Im0 Do") is Ink.color
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"g /Im0 Do",  # g with no operand
+        b"/Foo g /Im0 Do",  # g with a non-numeric operand
+        b"cs /Im0 Do",  # cs with no operand
+        b"0.5 /Foo k /Im0 Do",  # k with a non-numeric operand
+        b"/DeviceRGB cs /Foo 0.5 scn /Im0 Do",  # scn with mixed bad operands
+    ],
+)
+def test_fill_ink_tolerates_malformed_color_operands(body):
+    # Malformed color operators must not crash the interpreter; they leave the
+    # fill state at its prior value (default mono) or fall back conservatively.
+    assert _ink_of_first_xobject(body) in (Ink.mono, Ink.color)
+
+
+@pytest.mark.parametrize(
+    "space, comps, expected",
+    [
+        ('gray', [0.0], 'mono'),
+        ('gray', [0.263], 'gray'),
+        ('gray', [1.0], 'gray'),  # white -> gray (harmless)
+        ('rgb', [0.0, 0.0, 0.0], 'mono'),
+        ('rgb', [0.263, 0.263, 0.263], 'gray'),
+        ('rgb', [0.8, 0.2, 0.2], 'color'),
+        ('rgb', [1.0, 1.0, 1.0], 'gray'),
+        ('cmyk', [0.0, 0.0, 0.0, 0.0], 'mono'),  # white
+        ('cmyk', [0.0, 0.0, 0.0, 0.5], 'gray'),
+        ('cmyk', [0.5, 0.1, 0.0, 0.0], 'color'),
+        ('unknown', [0.5], 'color'),  # conservative fallback
+    ],
+)
+def test_ink_from_components(space, comps, expected):
+    assert _ink_from_components(space, comps) is Ink[expected]
+
+
+def _make_image_mask_pdf(path, content_fill: bytes):
+    """Build a 1-page PDF with one 8x8 image mask painted with content_fill.
+
+    content_fill is the color operator sequence emitted before drawing the
+    mask, e.g. b"0.263 0.263 0.263 rg".
+    """
+    pdf = pikepdf.Pdf.new()
+    pdf.add_blank_page(page_size=(72, 72))
+    # 8x8 1-bpc mask, each row padded to a byte (1 byte per row).
+    mask_bytes = bytes([0x7E] * 8)
+    mask = pikepdf.Stream(pdf, mask_bytes)
+    mask.Type = pikepdf.Name.XObject
+    mask.Subtype = pikepdf.Name.Image
+    mask.Width = 8
+    mask.Height = 8
+    mask.ImageMask = True
+    mask.BitsPerComponent = 1
+    name = pdf.pages[0].add_resource(mask, pikepdf.Name.XObject)
+    pdf.pages[0].Contents = pikepdf.Stream(
+        pdf, b"q 72 0 0 72 0 0 cm %s %s Do Q" % (content_fill, bytes(name))
+    )
+    pdf.save(path)
+    return path
+
+
+@pytest.fixture
+def mask_gray_pdf(outdir):
+    return _make_image_mask_pdf(outdir / 'mask_gray.pdf', b"0.263 0.263 0.263 rg")
+
+
+@pytest.fixture
+def mask_rgb_pdf(outdir):
+    return _make_image_mask_pdf(outdir / 'mask_rgb.pdf', b"0.8 0.2 0.2 rg")
+
+
+@pytest.fixture
+def mask_black_pdf(outdir):
+    return _make_image_mask_pdf(outdir / 'mask_black.pdf', b"0 g")
+
+
+def test_imageinfo_ink_gray(mask_gray_pdf):
+    image = pdfinfo.PdfInfo(mask_gray_pdf)[0].images[0]
+    assert image.type_ == 'stencil'
+    assert image.ink is Ink.gray
+
+
+def test_imageinfo_ink_color(mask_rgb_pdf):
+    image = pdfinfo.PdfInfo(mask_rgb_pdf)[0].images[0]
+    assert image.ink is Ink.color
+
+
+def test_imageinfo_ink_black(mask_black_pdf):
+    image = pdfinfo.PdfInfo(mask_black_pdf)[0].images[0]
+    assert image.ink is Ink.mono
+
+
+def test_imageinfo_ink_none_for_regular_image(eight_by_eight_regular_image):
+    image = pdfinfo.PdfInfo(eight_by_eight_regular_image)[0].images[0]
+    assert image.ink is None
+
+
+def test_fill_ink_cs_resets_color_to_black():
+    # `cs` resets the fill color to the colorspace's initial value (black),
+    # so a stale color set before `cs` must not leak to the drawn mask.
+    assert _ink_of_first_xobject(b"0.8 0.2 0.2 rg /DeviceGray cs /Im0 Do") is Ink.mono
+
+
+def test_imageinfo_ink_inherited_in_form_xobject(outdir):
+    # A mask drawn inside a Form XObject inherits the fill color set before the
+    # Do that paints the form; the gray classification must reach the mask.
+    pdf = pikepdf.Pdf.new()
+    pdf.add_blank_page(page_size=(72, 72))
+
+    mask = pikepdf.Stream(pdf, bytes([0x7E] * 8))
+    mask.Type = pikepdf.Name.XObject
+    mask.Subtype = pikepdf.Name.Image
+    mask.Width = 8
+    mask.Height = 8
+    mask.ImageMask = True
+    mask.BitsPerComponent = 1
+
+    # Form draws the mask with no color of its own, inheriting the caller's.
+    form = pikepdf.Stream(pdf, b"q 72 0 0 72 0 0 cm /Im0 Do Q")
+    form.Type = pikepdf.Name.XObject
+    form.Subtype = pikepdf.Name.Form
+    form.BBox = [0, 0, 72, 72]
+    form.Resources = pikepdf.Dictionary(XObject=pikepdf.Dictionary(Im0=mask))
+
+    fname = pdf.pages[0].add_resource(form, pikepdf.Name.XObject)
+    pdf.pages[0].Contents = pikepdf.Stream(
+        pdf, b"0.263 0.263 0.263 rg %s Do" % bytes(fname)
+    )
+    out = outdir / 'form_mask.pdf'
+    pdf.save(out)
+
+    image = pdfinfo.PdfInfo(out)[0].images[0]
+    assert image.type_ == 'stencil'
+    assert image.ink is Ink.gray

@@ -6,6 +6,7 @@ from __future__ import annotations
 import warnings
 from unittest.mock import Mock
 
+import pikepdf
 import pytest
 from PIL import Image
 from reportlab.lib.units import inch
@@ -13,8 +14,10 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen.canvas import Canvas
 
 from ocrmypdf import _pipeline, pdfinfo
+from ocrmypdf._pipeline import _select_raster_device
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo import Encoding
+from ocrmypdf.pluginspec import GhostscriptRasterDevice
 
 warnings.filterwarnings(
     "ignore", category=DeprecationWarning, module="reportlab.lib.rl_safe_eval"
@@ -176,3 +179,39 @@ def test_should_visible_page_image_use_jpg(encodings, expected):
     pageinfo = Mock()
     pageinfo.images = [Mock(enc=enc) for enc in encodings]
     assert _pipeline.should_visible_page_image_use_jpg(pageinfo) == expected
+
+
+def _make_image_mask_pdf(path, content_fill: bytes):
+    pdf = pikepdf.Pdf.new()
+    pdf.add_blank_page(page_size=(72, 72))
+    mask = pikepdf.Stream(pdf, bytes([0x7E] * 8))
+    mask.Type = pikepdf.Name.XObject
+    mask.Subtype = pikepdf.Name.Image
+    mask.Width = 8
+    mask.Height = 8
+    mask.ImageMask = True
+    mask.BitsPerComponent = 1
+    name = pdf.pages[0].add_resource(mask, pikepdf.Name.XObject)
+    pdf.pages[0].Contents = pikepdf.Stream(
+        pdf, b"q 72 0 0 72 0 0 cm %s %s Do Q" % (content_fill, bytes(name))
+    )
+    pdf.save(path)
+    return path
+
+
+def test_select_device_gray_mask(tmp_path):
+    p = _make_image_mask_pdf(tmp_path / 'g.pdf', b"0.263 0.263 0.263 rg")
+    pageinfo = pdfinfo.PdfInfo(p)[0]
+    assert _select_raster_device(pageinfo) == GhostscriptRasterDevice.PNGGRAY
+
+
+def test_select_device_color_mask(tmp_path):
+    p = _make_image_mask_pdf(tmp_path / 'c.pdf', b"0.8 0.2 0.2 rg")
+    pageinfo = pdfinfo.PdfInfo(p)[0]
+    assert _select_raster_device(pageinfo) == GhostscriptRasterDevice.PNG16M
+
+
+def test_select_device_black_mask_stays_mono(tmp_path):
+    p = _make_image_mask_pdf(tmp_path / 'b.pdf', b"0 g")
+    pageinfo = pdfinfo.PdfInfo(p)[0]
+    assert _select_raster_device(pageinfo) == GhostscriptRasterDevice.PNGMONOD

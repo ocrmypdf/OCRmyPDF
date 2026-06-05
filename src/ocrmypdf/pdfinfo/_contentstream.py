@@ -11,11 +11,11 @@ from math import hypot, inf, isclose
 from typing import NamedTuple
 from warnings import warn
 
-from pikepdf import Matrix, Object, PdfInlineImage, parse_content_stream
+from pikepdf import Matrix, Name, Object, PdfInlineImage, parse_content_stream
 
 from ocrmypdf.exceptions import InputFileError
 from ocrmypdf.helpers import Resolution
-from ocrmypdf.pdfinfo._types import UNIT_SQUARE
+from ocrmypdf.pdfinfo._types import UNIT_SQUARE, Ink
 
 
 class XobjectSettings(NamedTuple):
@@ -24,6 +24,7 @@ class XobjectSettings(NamedTuple):
     name: str
     shorthand: tuple[float, float, float, float, float, float]
     stack_depth: int
+    fill_ink: Ink
 
 
 class InlineSettings(NamedTuple):
@@ -32,6 +33,7 @@ class InlineSettings(NamedTuple):
     iimage: PdfInlineImage
     shorthand: tuple[float, float, float, float, float, float]
     stack_depth: int
+    fill_ink: Ink
 
 
 class ContentsInfo(NamedTuple):
@@ -67,6 +69,60 @@ def _is_unit_square(shorthand):
     return all(isclose(a, b, rel_tol=1e-3) for a, b in pairwise)
 
 
+_INK_EPSILON = 1e-3
+
+# Maps a fill-colorspace name (set by the `cs` operator) to a device color
+# family we can classify. Names not present here (Separation, ICCBased,
+# Indexed, DeviceN, Pattern, resource names like /CS0) are treated as color.
+_DEVICE_FILL_SPACE = {
+    '/DeviceGray': 'gray',
+    '/CalGray': 'gray',
+    '/G': 'gray',
+    '/DeviceRGB': 'rgb',
+    '/CalRGB': 'rgb',
+    '/RGB': 'rgb',
+    '/DeviceCMYK': 'cmyk',
+    '/CMYK': 'cmyk',
+}
+
+
+def _ink_from_components(space: str, comps: list[float]) -> Ink:
+    """Classify a device-color fill into mono/gray/color.
+
+    ``space`` is one of 'gray', 'rgb', 'cmyk'. Any other value is treated
+    conservatively as color, since we cannot prove it is achromatic.
+    """
+    eps = _INK_EPSILON
+    if space == 'gray' and len(comps) == 1:
+        return Ink.mono if comps[0] <= eps else Ink.gray
+    if space == 'rgb' and len(comps) == 3:
+        r, g, b = comps
+        if max(r, g, b) <= eps:
+            return Ink.mono
+        if abs(r - g) <= eps and abs(g - b) <= eps:
+            return Ink.gray
+        return Ink.color
+    if space == 'cmyk' and len(comps) == 4:
+        c, m, y, k = comps
+        if c <= eps and m <= eps and y <= eps:
+            return Ink.mono if k <= eps else Ink.gray
+        return Ink.color
+    return Ink.color  # conservative-to-color
+
+
+def _operand_floats(operands) -> list[float] | None:
+    """Convert color operands to floats, or None if any is non-numeric.
+
+    Color operators in a malformed content stream may carry the wrong number
+    of operands or a non-numeric operand (e.g. a Name). Returning None lets
+    the caller keep the prior fill state instead of raising.
+    """
+    try:
+        return [float(o) for o in operands]
+    except (TypeError, ValueError):
+        return None
+
+
 def _normalize_stack(graphobjs):
     """Convert runs of qQ's in the stack into single graphobjs."""
     for operands, operator in graphobjs:
@@ -78,12 +134,15 @@ def _normalize_stack(graphobjs):
             yield (operands, operator)
 
 
-def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
+def _interpret_contents(
+    contentstream: Object, initial_shorthand=UNIT_SQUARE, initial_fill_ink=Ink.mono
+):
     """Interpret the PDF content stream.
 
-    The stack represents the state of the PDF graphics stack.  We are only
-    interested in the current transformation matrix (CTM) so we only track
-    this object; a full implementation would need to track many other items.
+    The stack represents the state of the PDF graphics stack.  We track the
+    current transformation matrix (CTM) and the current fill color (so that
+    image masks, which are painted with the fill color, can be classified);
+    a full implementation would need to track many other items.
 
     The CTM is initialized to the mapping from user space to device space.
     PDF units are 1/72".  In a PDF viewer or printer this matrix is initialized
@@ -102,10 +161,12 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
     stack depth exceeds the spec limit and set a hard limit beyond this to
     bound our memory requirements.  If the stack underflows behavior is
     undefined in the spec, but we just pretend nothing happened and leave the
-    CTM unchanged.
+    graphics state unchanged.
     """
     stack = []
     ctm = Matrix(initial_shorthand)
+    fill_ink = initial_fill_ink  # PDF default fill color is black
+    fill_space = '/DeviceGray'  # current fill colorspace name (for sc/scn)
     xobject_settings: list[XobjectSettings] = []
     inline_images: list[InlineSettings] = []
     name_index = defaultdict(lambda: [])
@@ -114,14 +175,15 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
     vector_ops = set('S s f F f* B B* b b*'.split())
     text_showing_ops = set("""TJ Tj " '""".split())
     image_ops = set('BI ID EI q Q Do cm'.split())
-    operator_whitelist = ' '.join(vector_ops | text_showing_ops | image_ops)
+    color_ops = set('g rg k cs sc scn'.split())
+    operator_whitelist = ' '.join(vector_ops | text_showing_ops | image_ops | color_ops)
 
     for n, graphobj in enumerate(
         _normalize_stack(parse_content_stream(contentstream, operator_whitelist))
     ):
         operands, operator = graphobj
         if operator == 'q':
-            stack.append(ctm)
+            stack.append((ctm, fill_ink, fill_space))
             if len(stack) > 32:  # See docstring
                 if len(stack) > 128:
                     raise RuntimeError(
@@ -130,9 +192,9 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
                 warn("PDF graphics stack overflowed spec limit")
         elif operator == 'Q':
             try:
-                ctm = stack.pop()
+                ctm, fill_ink, fill_space = stack.pop()
             except IndexError:
-                # Keeping the ctm the same seems to be the only sensible thing
+                # Keeping the state the same seems to be the only sensible thing
                 # to do. Just pretend nothing happened, keep calm and carry on.
                 warn("PDF graphics stack underflowed - PDF may be malformed")
         elif operator == 'cm':
@@ -143,17 +205,51 @@ def _interpret_contents(contentstream: Object, initial_shorthand=UNIT_SQUARE):
                     "PDF content stream is corrupt - this PDF is malformed. "
                     "Use a PDF editor that is capable of visually inspecting the PDF."
                 ) from e
+        elif operator == 'g':
+            if vals := _operand_floats(operands):
+                fill_ink = _ink_from_components('gray', vals)
+                fill_space = '/DeviceGray'
+        elif operator == 'rg':
+            if vals := _operand_floats(operands):
+                fill_ink = _ink_from_components('rgb', vals)
+                fill_space = '/DeviceRGB'
+        elif operator == 'k':
+            if vals := _operand_floats(operands):
+                fill_ink = _ink_from_components('cmyk', vals)
+                fill_space = '/DeviceCMYK'
+        elif operator == 'cs':
+            # Selecting a colorspace resets the fill color to that space's
+            # initial value, which is black for all device colorspaces.
+            fill_ink = Ink.mono
+            if operands:
+                fill_space = str(operands[0])
+        elif operator in ('sc', 'scn'):
+            if any(isinstance(o, Name) for o in operands):
+                fill_ink = Ink.color  # pattern fill
+            else:
+                space = _DEVICE_FILL_SPACE.get(fill_space)
+                vals = _operand_floats(operands)
+                if space is None or vals is None:
+                    fill_ink = Ink.color  # conservative for non-device space
+                else:
+                    fill_ink = _ink_from_components(space, vals)
         elif operator == 'Do':
             image_name = operands[0]
             settings = XobjectSettings(
-                name=image_name, shorthand=ctm.shorthand, stack_depth=len(stack)
+                name=image_name,
+                shorthand=ctm.shorthand,
+                stack_depth=len(stack),
+                fill_ink=fill_ink,
             )
             xobject_settings.append(settings)
             name_index[str(image_name)].append(settings)
         elif operator == 'INLINE IMAGE':  # BI/ID/EI are grouped into this
             iimage = operands[0]
             inline = InlineSettings(
-                iimage=iimage, shorthand=ctm.shorthand, stack_depth=len(stack)
+                iimage=iimage,
+                shorthand=ctm.shorthand,
+                stack_depth=len(stack),
+                fill_ink=fill_ink,
             )
             inline_images.append(inline)
         elif operator in vector_ops:
