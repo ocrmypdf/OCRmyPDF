@@ -213,6 +213,34 @@ class TestRasterizerHookDirect:
         assert result == img
         assert img.exists()
 
+    @pytest.mark.skipif(not PYPDFIUM_AVAILABLE, reason="pypdfium2 not installed")
+    def test_pypdfium_pngmonod_produces_1bit(self, resources, tmp_path):
+        """Pngmonod is treated like pngmono by pypdfium: it yields a 1-bit PNG."""
+        pm = get_plugin_manager([])
+        options = OcrOptions(
+            input_file=resources / 'graph.pdf',
+            output_file=tmp_path / 'out.pdf',
+            rasterizer='pypdfium',
+        )
+
+        img = tmp_path / 'pngmonod_test.png'
+        result = pm.rasterize_pdf_page(
+            input_file=resources / 'graph.pdf',
+            output_file=img,
+            raster_device='pngmonod',
+            raster_dpi=Resolution(50, 50),
+            page_dpi=Resolution(50, 50),
+            pageno=1,
+            rotation=0,
+            filter_vector=False,
+            stop_on_soft_error=True,
+            options=options,
+            use_cropbox=False,
+        )
+        assert result == img
+        with Image.open(img) as im:
+            assert im.mode == '1'
+
 
 def _create_gradient_image(width: int, height: int) -> Image.Image:
     """Create an image with multiple gradients to detect rasterization errors.

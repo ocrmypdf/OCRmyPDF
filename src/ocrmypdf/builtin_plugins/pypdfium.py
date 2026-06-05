@@ -96,7 +96,12 @@ def _render_page_to_bitmap(
     # Render the page to a bitmap
     # The scale parameter controls the resolution
     # Render in grayscale for mono and gray devices (better input for 1-bit conversion)
-    grayscale = raster_device.lower() in ('pngmono', 'pnggray', 'jpeggray')
+    grayscale = raster_device.lower() in (
+        'pngmono',
+        'pngmonod',
+        'pnggray',
+        'jpeggray',
+    )
 
     # Default (use_cropbox=False) renders MediaBox for consistency with Ghostscript
     if not use_cropbox:
@@ -157,8 +162,8 @@ def _process_image_for_output(
     # This ensures pypdfium output matches Ghostscript's native device output
     raster_device_lower = raster_device.lower()
 
-    if raster_device_lower == 'pngmono':
-        # Convert to 1-bit black and white (matches Ghostscript pngmono device)
+    if raster_device_lower in ('pngmono', 'pngmonod'):
+        # Convert to 1-bit black and white (matches Ghostscript pngmono/pngmonod)
         if pil_image.mode != '1':
             if pil_image.mode not in ('L', '1'):
                 pil_image = pil_image.convert('L')
@@ -184,7 +189,15 @@ def _process_image_for_output(
     # pngalpha: keep RGBA as-is
 
     # Determine output format based on raster_device
-    png_devices = ('png', 'pngmono', 'pnggray', 'png256', 'png16m', 'pngalpha')
+    png_devices = (
+        'png',
+        'pngmono',
+        'pngmonod',
+        'pnggray',
+        'png256',
+        'png16m',
+        'pngalpha',
+    )
     if raster_device_lower in png_devices:
         format_name = 'PNG'
     elif raster_device_lower in ('jpeg', 'jpeggray', 'jpg'):
