@@ -298,6 +298,14 @@ def test_ink_enum_is_picklable():
         assert pickle.loads(pickle.dumps(member)) is member
 
 
+def test_pngmonod_device_exists():
+    from ocrmypdf.pluginspec import GhostscriptRasterDevice
+
+    assert GhostscriptRasterDevice.PNGMONOD == 'pngmonod'
+    # PNGMONO retained for compatibility / explicit use
+    assert GhostscriptRasterDevice.PNGMONO == 'pngmono'
+
+
 def _ink_of_first_xobject(body: bytes):
     from ocrmypdf.pdfinfo._contentstream import _interpret_contents
 
