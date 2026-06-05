@@ -242,6 +242,67 @@ class TestRasterizerHookDirect:
             assert im.mode == '1'
 
 
+def _make_text_mask_pdf(path, fill: bytes):
+    """Build a letter page with a large text image mask painted with ``fill``.
+
+    The mask is a 1-bit stencil; ``fill`` is the color operator sequence that
+    sets the paint color (e.g. ``b"0.263 0.263 0.263 rg"``). With a gray fill
+    this reproduces issue #1688: the text is mid-gray, which is dithered into
+    noise if rasterized to 1-bit but reads correctly once promoted to gray.
+    """
+    from PIL import ImageDraw, ImageFont
+
+    w, h = 1700, 600
+    im = Image.new('1', (w, h), 1)  # 1 = white = "do not paint" under Decode [0 1]
+    draw = ImageDraw.Draw(im)
+    try:
+        font = ImageFont.truetype("DejaVuSans-Bold.ttf", 220)
+    except OSError:
+        font = ImageFont.truetype(
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 220
+        )
+    draw.text((40, 120), "TESTING", fill=0, font=font)
+
+    packed = im.tobytes()  # 1-bpc, rows byte-padded, MSB first
+    pdf = pikepdf.Pdf.new()
+    pdf.add_blank_page(page_size=(612, 792))
+    mask = pikepdf.Stream(pdf, packed)
+    mask.Type = pikepdf.Name.XObject
+    mask.Subtype = pikepdf.Name.Image
+    mask.Width = w
+    mask.Height = h
+    mask.ImageMask = True
+    mask.BitsPerComponent = 1
+    name = pdf.pages[0].add_resource(mask, pikepdf.Name.XObject)
+    pdf.pages[0].Contents = pikepdf.Stream(
+        pdf, b"q 560 0 0 200 26 500 cm %s %s Do Q" % (fill, bytes(name))
+    )
+    pdf.save(path)
+    return path
+
+
+@pytest.mark.parametrize("rasterizer", ['ghostscript', 'pypdfium'])
+def test_gray_mask_ocrs_to_text(tmp_path, rasterizer):
+    """A gray-painted text mask OCRs to real text on both rasterizers (#1688)."""
+    if rasterizer == 'pypdfium' and not PYPDFIUM_AVAILABLE:
+        pytest.skip("pypdfium2 not installed")
+
+    src = _make_text_mask_pdf(tmp_path / 'mask.pdf', b"0.263 0.263 0.263 rg")
+    out = tmp_path / 'out.pdf'
+    sidecar = tmp_path / 'out.txt'
+    check_ocrmypdf(
+        src,
+        out,
+        '--rasterizer',
+        rasterizer,
+        '--sidecar',
+        str(sidecar),
+        '--oversample',
+        '300',
+    )
+    assert 'TESTING' in sidecar.read_text().upper()
+
+
 def _create_gradient_image(width: int, height: int) -> Image.Image:
     """Create an image with multiple gradients to detect rasterization errors.
 
