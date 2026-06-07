@@ -211,6 +211,36 @@ def strip_invisible_text(pdf: Pdf, page: Page):
     page.Contents = Stream(pdf, content_stream)
 
 
+def discard_text_search_index(pdf: Pdf) -> bool:
+    """Discard an embedded Adobe full-text search index from the catalog.
+
+    Adobe Acrobat can embed a full-text search index in the document catalog at
+    ``/Root/PieceInfo/SearchIndex``. It is built from the page text, and only
+    Acrobat reads it; other viewers ignore it and search the text on the fly.
+    Any change to the PDF invalidates the index, so once OCRmyPDF rewrites the
+    document (editing the text layer, rasterizing, optimizing) a retained index
+    would be stale and return incorrect search results in Acrobat. We cannot
+    update this vendor-private data, so we discard it; modern viewers rebuild a
+    search index on demand. Returns True if the catalog was modified.
+    """
+    try:
+        pieceinfo = pdf.Root.get(Name.PieceInfo)
+        if not isinstance(pieceinfo, Dictionary) or Name.SearchIndex not in pieceinfo:
+            return False
+        del pieceinfo[Name.SearchIndex]
+        log.debug(
+            "Discarded embedded text search index "
+            "(/Root/PieceInfo/SearchIndex) because the PDF was rewritten; "
+            "it would otherwise be stale."
+        )
+        # Drop an empty PieceInfo rather than leave a husk behind.
+        if len(pieceinfo) == 0:
+            del pdf.Root.PieceInfo
+        return True
+    except (KeyError, TypeError, AttributeError):
+        return False
+
+
 class OcrGrafter:
     """Manages grafting text-only PDFs onto regular PDFs."""
 
@@ -319,9 +349,9 @@ class OcrGrafter:
 
     def finalize(self):
         # Can have hocr OR parsed pages OR neither (no OCR), but not both
-        assert not (
-            self.fpdf2_hocr_pages and self.fpdf2_parsed_pages
-        ), "Can't have both hocr and ocrtree pages"
+        assert not (self.fpdf2_hocr_pages and self.fpdf2_parsed_pages), (
+            "Can't have both hocr and ocrtree pages"
+        )
 
         if self.fpdf2_hocr_pages:
             # Render all pages with fpdf2, then graft
@@ -331,6 +361,7 @@ class OcrGrafter:
         if self.fpdf2_parsed_pages:
             self._render_and_graft_fpdf2_pages()
 
+        discard_text_search_index(self.pdf_base)
         self.pdf_base.save(self.output_file)
         self.pdf_base.close()
         return self.output_file
