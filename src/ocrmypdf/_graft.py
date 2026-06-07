@@ -241,6 +241,32 @@ def discard_text_search_index(pdf: Pdf) -> bool:
         return False
 
 
+def discard_page_thumbnails(pdf: Pdf) -> int:
+    """Discard embedded per-page thumbnail images.
+
+    A page object may carry an optional ``/Thumb`` image XObject — a miniature
+    rendering of the page (ISO 32000-2, 12.3.4). It is only a navigation aid and
+    modern viewers generate page thumbnails on demand. OCRmyPDF alters page
+    appearance (deskew, clean, rasterize, re-render) and plugins may edit pages
+    arbitrarily, so any retained thumbnail would be stale and misrepresent its
+    page. We discard them; viewers rebuild thumbnails as needed. Returns the
+    number of thumbnails removed.
+    """
+    removed = 0
+    for page in pdf.pages:
+        pageobj = page.obj
+        if Name.Thumb in pageobj:
+            del pageobj[Name.Thumb]
+            removed += 1
+    if removed:
+        log.debug(
+            "Discarded %d embedded page thumbnail(s) (/Thumb) because the PDF "
+            "was rewritten; they would otherwise be stale.",
+            removed,
+        )
+    return removed
+
+
 class OcrGrafter:
     """Manages grafting text-only PDFs onto regular PDFs."""
 
@@ -362,6 +388,7 @@ class OcrGrafter:
             self._render_and_graft_fpdf2_pages()
 
         discard_text_search_index(self.pdf_base)
+        discard_page_thumbnails(self.pdf_base)
         self.pdf_base.save(self.output_file)
         self.pdf_base.close()
         return self.output_file
