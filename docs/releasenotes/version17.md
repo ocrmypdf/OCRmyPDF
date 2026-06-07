@@ -5,6 +5,20 @@
 
 ## v17.6.0
 
+- OCRmyPDF now discards an embedded Adobe full-text search index
+  (``/Root/PieceInfo/SearchIndex``) from its output. This proprietary index,
+  produced by Acrobat's "Embed Index" feature, is read only by Adobe Acrobat;
+  other viewers ignore it and search the text on the fly. Because any change to
+  a PDF invalidates the index, retaining it after OCRmyPDF rewrites the document
+  would leave a stale index that returns incorrect search results in Acrobat.
+  Modern viewers rebuild a search index on demand, so there is no loss of
+  search capability.
+- OCRmyPDF now discards embedded per-page thumbnail images (the optional
+  ``/Thumb`` image XObject on a page) from its output. OCRmyPDF alters page
+  appearance (deskew, clean, rasterize, re-render) and plugins may edit pages
+  arbitrarily, so a retained thumbnail would be stale and no longer match its
+  page. Embedded thumbnails are a navigation aid that modern viewers generate
+  on demand, so there is no loss of functionality.
 - Fixed a regression in OCR quality for PDFs that paint a 1-bit image mask
   (stencil) with a gray or colored fill color. Previously such pages were
   rasterized as 1-bit black-and-white before OCR, so Ghostscript dithered
