@@ -121,6 +121,20 @@ representation. This is useful for redoing OCR, for fixing OCR text
 with a damaged character map (text is selectable but not searchable),
 and destroying redacted information.
 
+### Tagged PDFs and structural markup
+
+Some PDFs carry a logical structure tree (`/StructTreeRoot`), the markup that
+makes a "Tagged PDF" — typically the result of layout analysis or a born-digital
+export. By default OCRmyPDF treats this as a signal that the document may not need
+OCR and exits, in the same way it stops on PDFs that already contain text. Use
+`--tagged-pdf-mode ignore`, or one of `--mode skip`/`redo`/`force`, to process
+such a file anyway.
+
+OCRmyPDF cannot rebuild a structure tree to match newly recognized text. When
+`--force-ocr` rasterizes pages, or `--redo-ocr` strips and rewrites the text layer,
+the structure tree no longer corresponds to the page content, so it is discarded.
+`--mode skip` leaves text pages untouched, so their structural markup is preserved.
+
 ### Time and image size limits
 
 By default, OCRmyPDF permits tesseract to run for three minutes (180

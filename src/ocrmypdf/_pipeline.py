@@ -116,8 +116,7 @@ def triage_image_file(input_file: Path, output_file: Path, options: OcrOptions) 
 
         if im.mode in ('RGBA', 'LA'):
             raise UnsupportedImageFormatError(
-                "The input image has an alpha channel. Remove the alpha "
-                "channel first."
+                "The input image has an alpha channel. Remove the alpha channel first."
             )
 
         if 'iccprofile' not in im.info:
@@ -250,12 +249,15 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
                     "image of the form and all filled form fields. The output PDF "
                     "will be 'flattened' and will no longer be fillable."
                 )
-    if pdfinfo.is_tagged:
+    if pdfinfo.is_tagged or pdfinfo.has_structure_tree:
         log.warning(
-            "This PDF is marked as a Tagged PDF. This often indicates "
-            "that the PDF was generated from an office document and does "
-            "not need OCR. PDF pages processed by OCRmyPDF may not be "
-            "tagged correctly."
+            "This PDF contains structural markup (it is a Tagged PDF or "
+            "carries a logical structure tree). This often indicates that the "
+            "PDF was generated from an office document or is otherwise born "
+            "digital, and does not need OCR. OCRmyPDF cannot rebuild this "
+            "structure to match new text, so any page it re-OCRs with "
+            "--force-ocr or --redo-ocr will have its structural markup "
+            "discarded."
         )
         if (
             options.tagged_pdf_mode == TaggedPdfMode.default

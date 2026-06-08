@@ -267,6 +267,39 @@ def discard_page_thumbnails(pdf: Pdf) -> int:
     return removed
 
 
+def discard_structure_tree(pdf: Pdf) -> bool:
+    """Discard the logical structure (tagged-PDF) tree from the document.
+
+    The structure tree (``/Root/StructTreeRoot``, ``/Root/MarkInfo``) maps
+    marked content in the page content streams to semantic elements via MCIDs.
+    When OCRmyPDF rasterizes pages (force) or strips and rewrites the text layer
+    (redo), those MCIDs are destroyed or renumbered, leaving the tree dangling
+    and inconsistent with the new content. We cannot rebuild it to match, so we
+    discard it; the page-level ``/StructParents`` keys go too. Returns True if
+    the catalog was modified.
+    """
+    modified = False
+    try:
+        if Name.StructTreeRoot in pdf.Root:
+            del pdf.Root.StructTreeRoot
+            modified = True
+        if Name.MarkInfo in pdf.Root:
+            del pdf.Root.MarkInfo
+            modified = True
+        for page in pdf.pages:
+            if Name.StructParents in page.obj:
+                del page.obj[Name.StructParents]
+                modified = True
+    except (KeyError, TypeError, AttributeError):
+        return modified
+    if modified:
+        log.debug(
+            "Discarded the logical structure tree (/Root/StructTreeRoot) "
+            "because the PDF was re-OCR'd; it would otherwise be stale."
+        )
+    return modified
+
+
 class OcrGrafter:
     """Manages grafting text-only PDFs onto regular PDFs."""
 
@@ -389,6 +422,8 @@ class OcrGrafter:
 
         discard_text_search_index(self.pdf_base)
         discard_page_thumbnails(self.pdf_base)
+        if self.context.options.mode in (ProcessingMode.force, ProcessingMode.redo):
+            discard_structure_tree(self.pdf_base)
         self.pdf_base.save(self.output_file)
         self.pdf_base.close()
         return self.output_file

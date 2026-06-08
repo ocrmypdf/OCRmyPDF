@@ -398,6 +398,7 @@ class PdfInfo:
     _has_acroform: bool = False
     _has_signature: bool = False
     _needs_rendering: bool = False
+    _has_structure_tree: bool = False
 
     def __init__(
         self,
@@ -449,6 +450,7 @@ class PdfInfo:
             self._is_tagged = bool(
                 pdf.Root.get(Name.MarkInfo, {}).get(Name.Marked, False)
             )
+            self._has_structure_tree = Name.StructTreeRoot in pdf.Root
 
     @property
     def pages(self) -> list[PageInfo | None]:
@@ -480,6 +482,11 @@ class PdfInfo:
     def is_tagged(self) -> bool:
         """Return True if the document catalog indicates this is a Tagged PDF."""
         return self._is_tagged
+
+    @property
+    def has_structure_tree(self) -> bool:
+        """Return True if the document catalog has a logical structure tree."""
+        return self._has_structure_tree
 
     @property
     def filename(self) -> str | Path:
