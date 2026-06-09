@@ -5,6 +5,18 @@
 
 ## v17.6.0
 
+- OCRmyPDF now validates and repairs malformed page-boundary boxes
+  (``/MediaBox``, ``/CropBox``, ``/TrimBox``, ``/ArtBox``, ``/BleedBox``) in its
+  input, following the PDF 2.0 specification. Coordinates written in invalid
+  exponential notation are reinterpreted ({issue}`1398`); rectangles whose
+  corners are given in reversed order are normalized, which previously crashed
+  with ``NegativeDimensionError`` ({issue}`1526`); and a crop/trim/art/bleed box
+  that falls outside the MediaBox is clamped to their intersection, or discarded
+  when that intersection is empty, which previously produced an output with a
+  zero-height effective page that some viewers refused to open ({issue}`1400`).
+  When a box is discarded, clamped, or reinterpreted, OCRmyPDF logs a warning
+  recommending visual inspection of the output. Thanks @ajdlinux for the initial
+  fix in PR #1691.
 - OCRmyPDF now discards an embedded Adobe full-text search index
   (``/Root/PieceInfo/SearchIndex``) from its output. This proprietary index,
   produced by Acrobat's "Embed Index" feature, is read only by Adobe Acrobat;
