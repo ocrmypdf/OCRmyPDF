@@ -29,6 +29,7 @@ from ocrmypdf._exec import unpaper
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._metadata import repair_docinfo_nuls
 from ocrmypdf._options import OcrOptions, ProcessingMode, TaggedPdfMode
+from ocrmypdf._pageboxes import log_box_repairs, repair_page_boxes
 from ocrmypdf.exceptions import (
     DigitalSignatureError,
     DpiError,
@@ -174,6 +175,12 @@ def triage(
                 )
             try:
                 with pikepdf.open(input_file) as pdf:
+                    repairs_by_page = {
+                        n: repairs
+                        for n, page in enumerate(pdf.pages)
+                        if (repairs := repair_page_boxes(page))
+                    }
+                    log_box_repairs(repairs_by_page)
                     pdf.save(output_file)
             except pikepdf.PdfError as e:
                 raise InputFileError() from e
