@@ -299,6 +299,11 @@ def generate_pdfa(
         ]
     elif compression == 'lossless':
         compression_args = [
+            # Re-encoding an existing JPEG with a lossless codec only inflates
+            # its size: the lossy data is already baked in, so there is nothing
+            # to gain. Pass JPEGs through untouched and apply lossless (Flate)
+            # encoding only to images that are not already JPEG.
+            "-dPassThroughJPEGImages=true",
             "-dAutoFilterColorImages=false",
             "-dColorImageFilter=/FlateEncode",
             "-dAutoFilterGrayImages=false",

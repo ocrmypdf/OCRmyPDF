@@ -17,7 +17,11 @@ from PIL import Image, UnidentifiedImageError
 
 from ocrmypdf._exec import ghostscript
 from ocrmypdf._exec.ghostscript import DuplicateFilter, rasterize_pdf
-from ocrmypdf.builtin_plugins.ghostscript import _repair_gs106_jpeg_corruption
+from ocrmypdf.builtin_plugins.ghostscript import (
+    PdfaImageCompression,
+    _repair_gs106_jpeg_corruption,
+    _resolve_auto_compression,
+)
 from ocrmypdf.exceptions import ColorConversionNeededError, ExitCode, InputFileError
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.pluginspec import GhostscriptRasterDevice
@@ -675,3 +679,58 @@ class TestGs106JpegCorruptionRepair:
         repaired = _repair_gs106_jpeg_corruption(source_path, damaged_path)
         assert repaired is False, "Should not repair truncation > 15 bytes"
         assert "JPEG corruption detected" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    ('compression', 'optimize', 'expected'),
+    [
+        # auto coerces to lossless only at -O0; -O1 is a historical exception
+        # that keeps Ghostscript's (possibly lossy) heuristic, as do -O2/-O3
+        (PdfaImageCompression.AUTO, 0, PdfaImageCompression.LOSSLESS),
+        (PdfaImageCompression.AUTO, 1, PdfaImageCompression.AUTO),
+        (PdfaImageCompression.AUTO, 2, PdfaImageCompression.AUTO),
+        (PdfaImageCompression.AUTO, 3, PdfaImageCompression.AUTO),
+        # explicit choices are always respected, regardless of optimize level
+        (PdfaImageCompression.JPEG, 0, PdfaImageCompression.JPEG),
+        (PdfaImageCompression.JPEG, 1, PdfaImageCompression.JPEG),
+        (PdfaImageCompression.LOSSLESS, 1, PdfaImageCompression.LOSSLESS),
+        (PdfaImageCompression.LOSSLESS, 3, PdfaImageCompression.LOSSLESS),
+    ],
+)
+def test_resolve_auto_compression(compression, optimize, expected):
+    assert _resolve_auto_compression(compression, optimize) == expected
+
+
+def _capture_generate_pdfa_args(tmp_path, compression):
+    """Run generate_pdfa with a mocked Ghostscript and return the argv it built."""
+    from subprocess import CompletedProcess
+
+    captured = {}
+
+    def fake_run(args, **kwargs):
+        captured['args'] = list(args)
+        return CompletedProcess(args, 0, None, stderr='')
+
+    out = tmp_path / 'out.pdf'
+    with patch('ocrmypdf._exec.ghostscript.run_polling_stderr', side_effect=fake_run):
+        ghostscript.generate_pdfa(
+            pdf_pages=['dummy.pdf'],
+            output_file=out,
+            compression=compression,
+            color_conversion_strategy='RGB',
+        )
+    return captured['args']
+
+
+def test_lossless_compression_passes_through_jpegs(tmp_path):
+    # Re-encoding an existing JPEG losslessly only bloats it (the lossy data is
+    # already baked in), so lossless mode must let Ghostscript pass JPEGs through
+    # untouched while still keeping lossless images lossless.
+    args = _capture_generate_pdfa_args(tmp_path, 'lossless')
+    assert '-dPassThroughJPEGImages=true' in args
+    assert '-dColorImageFilter=/FlateEncode' in args
+
+
+def test_jpeg_compression_does_not_force_passthrough(tmp_path):
+    args = _capture_generate_pdfa_args(tmp_path, 'jpeg')
+    assert '-dPassThroughJPEGImages=true' not in args

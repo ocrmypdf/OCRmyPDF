@@ -178,10 +178,17 @@ v17 addresses through alternative codepaths. When Ghostscript is used:
   encoding, which may introduce compression artifacts, if Ghostscript
   PDF/A is enabled.
 - Ghostscript may transcode grayscale and color images, potentially
-  lossily, based on an internal algorithm. This
-  behavior can be suppressed by setting `--pdfa-image-compression` to
-  `jpeg` or `lossless` to set all images to one type or the other.
-  Ghostscript lacks an option to maintain the input image's format.
+  lossily, based on an internal algorithm. By default
+  (`--pdfa-image-compression=auto`) OCRmyPDF selects lossless image
+  compression at `-O0` so Ghostscript will not transcode lossless images
+  to JPEG. At `-O1` (the default optimization level) and above, `auto`
+  defers to Ghostscript's heuristic instead; `-O1` is a historical
+  exception, kept for backwards compatibility because coercing it to
+  lossless can substantially bloat output. You can override this by
+  setting `--pdfa-image-compression` to `jpeg` or `lossless` to force all
+  images to one type or the other. `lossless` passes existing JPEGs
+  through untouched (re-encoding them losslessly would only inflate them)
+  while encoding non-JPEG images losslessly.
   (Modern Ghostscript can copy JPEG images without transcoding them.)
   Advanced users can also tune Ghostscript's image recompression with
   `--ghostscript-jpeg-quality` and `--ghostscript-jpeg-maxdpi`; see

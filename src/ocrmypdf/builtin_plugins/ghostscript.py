@@ -44,6 +44,30 @@ class PdfaImageCompression(StrEnum):
     LOSSLESS = 'lossless'
 
 
+def _resolve_auto_compression(
+    compression: PdfaImageCompression, optimize_level: int
+) -> PdfaImageCompression:
+    """Resolve 'auto' image compression based on the optimization level.
+
+    At ``-O0`` (no optimization) ``auto`` maps to ``lossless`` so Ghostscript
+    will not transcode lossless images to JPEG during PDF/A generation. At all
+    other levels ``auto`` defers to Ghostscript's heuristic, which may
+    recompress images lossily.
+
+    ``-O1`` is a historical exception: although it is otherwise a
+    lossless-only optimization level, coercing ``auto`` to ``lossless`` there
+    can bloat output substantially (Ghostscript's heuristic often picks JPEG
+    for photographic content), so the default is left alone for backwards
+    compatibility. Users who want guaranteed lossless image handling at any
+    level can pass ``--pdfa-image-compression=lossless`` explicitly.
+
+    Explicit ``jpeg`` and ``lossless`` choices are always respected.
+    """
+    if compression == PdfaImageCompression.AUTO and optimize_level == 0:
+        return PdfaImageCompression.LOSSLESS
+    return compression
+
+
 class GhostscriptOptions(BaseModel):
     """Options specific to Ghostscript operations."""
 
@@ -99,9 +123,14 @@ class GhostscriptOptions(BaseModel):
             choices=[pc.value for pc in PdfaImageCompression],
             default=PdfaImageCompression.AUTO.value,
             help="Specify how to compress images in the output PDF/A. 'auto' lets "
-            "OCRmyPDF decide.  'jpeg' changes all grayscale and color images to "
+            "OCRmyPDF decide: at -O0 it uses lossless image compression so "
+            "Ghostscript does not transcode lossless images to JPEG; at -O1 and "
+            "above it defers to Ghostscript's heuristic, which may recompress "
+            "images lossily.  'jpeg' changes all grayscale and color images to "
             "JPEG compression.  'lossless' uses PNG-style lossless compression "
-            "for all images.  Monochrome images are always compressed using a "
+            "for non-JPEG images and passes existing JPEGs through unchanged "
+            "(re-encoding them losslessly would only inflate them).  Monochrome "
+            "images are always compressed using a "
             "lossless codec.  Compression settings "
             "are applied to all pages, including those for which OCR was "
             "skipped.  Not supported for --output-type=pdf ; that setting "
@@ -397,10 +426,15 @@ def generate_pdfa(
     if output_type == 'pdfa':
         output_type = 'pdfa-2'
 
+    compression = _resolve_auto_compression(
+        context.options.ghostscript.pdfa_image_compression,
+        context.options.optimize,
+    )
+
     ghostscript.generate_pdfa(
         pdf_pages=[pdfmark, *pdf_pages],
         output_file=output_file,
-        compression=context.options.ghostscript.pdfa_image_compression,
+        compression=compression,
         color_conversion_strategy=context.options.ghostscript.color_conversion_strategy,
         jpeg_quality=context.options.ghostscript.jpeg_quality,
         jpeg_maxdpi=context.options.ghostscript.jpeg_maxdpi,

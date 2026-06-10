@@ -5,6 +5,18 @@
 
 ## v17.6.0
 
+- `--pdfa-image-compression=auto` (the default) now selects lossless image
+  compression at `-O0` so Ghostscript no longer transcodes lossless images to
+  JPEG during PDF/A generation. At `-O1` and above, `auto` continues to defer
+  to Ghostscript's heuristic, which may recompress images lossily. `-O1` (the
+  default level) is kept as a historical exception because coercing it to
+  lossless can substantially bloat output; users who want guaranteed lossless
+  image handling should pass `--pdfa-image-compression=lossless` or use `-O0`
+  ({issue}`1124`).
+- `--pdfa-image-compression=lossless` now passes existing JPEG images through
+  unchanged rather than re-encoding them with a lossless codec. Re-encoding an
+  already-lossy JPEG losslessly cannot recover quality and only inflates the
+  file, so JPEGs are preserved while non-JPEG images are encoded losslessly.
 - OCRmyPDF now validates and repairs malformed page-boundary boxes
   (``/MediaBox``, ``/CropBox``, ``/TrimBox``, ``/ArtBox``, ``/BleedBox``) in its
   input, following the PDF 2.0 specification. Coordinates written in invalid
