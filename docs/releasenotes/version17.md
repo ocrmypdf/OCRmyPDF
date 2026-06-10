@@ -5,6 +5,12 @@
 
 ## v17.6.0
 
+- When the optimizer encounters an image it cannot process (for example, an
+  exotic colorspace that cannot be transcoded), it now logs a concise warning
+  that the image was left unchanged rather than printing an alarming
+  traceback. The output file was already valid in these cases; only the
+  reporting was misleading. The full traceback is still available at debug
+  verbosity (`-v 1`) ({issue}`846`).
 - `--pdfa-image-compression=auto` (the default) now selects lossless image
   compression at `-O0` so Ghostscript no longer transcodes lossless images to
   JPEG during PDF/A generation. At `-O1` and above, `auto` continues to defer

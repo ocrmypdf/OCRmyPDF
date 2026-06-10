@@ -197,14 +197,14 @@ def test_optimize_off(resources, outpdf):
 def test_group3(resources):
     with pikepdf.open(resources / 'ccitt.pdf') as pdf:
         im = pdf.pages[0].Resources.XObject['/Im1']
-        assert (
-            opt.extract_image_filter(im, im.objgen[0]) is not None
-        ), "Group 4 should be allowed"
+        assert opt.extract_image_filter(im, im.objgen[0]) is not None, (
+            "Group 4 should be allowed"
+        )
 
         im.DecodeParms['/K'] = 0
-        assert (
-            opt.extract_image_filter(im, im.objgen[0]) is None
-        ), "Group 3 should be disallowed"
+        assert opt.extract_image_filter(im, im.objgen[0]) is None, (
+            "Group 3 should be disallowed"
+        )
 
 
 def test_find_formx(resources):
@@ -234,9 +234,7 @@ def test_find_formx_circular_reference(resources, tmp_path, caplog):
         # entries that all point back to /Form1 itself, creating a fan-out
         # cycle of branching factor 3.
         form = pdf.pages[0].obj.Resources.XObject.Form1
-        form.Resources.XObject = Dictionary(
-            {'/Fm0': form, '/Fm1': form, '/Fm2': form}
-        )
+        form.Resources.XObject = Dictionary({'/Fm0': form, '/Fm1': form, '/Fm2': form})
         pdf.save(out)
 
     caplog.set_level(logging.WARNING, logger='ocrmypdf.optimize')
@@ -244,15 +242,43 @@ def test_find_formx_circular_reference(resources, tmp_path, caplog):
         opt._find_image_xrefs(pdf)
 
     n_warnings = sum(
-        1
-        for r in caplog.records
-        if 'Recursion depth exceeded' in r.getMessage()
+        1 for r in caplog.records if 'Recursion depth exceeded' in r.getMessage()
     )
     # Without the fix this is in the tens of thousands.
     assert n_warnings == 0, (
         f"Form XObject cycle should be detected without depth-limit warnings; "
         f"got {n_warnings}"
     )
+
+
+def test_extract_images_traps_errors_as_warning(resources, tmp_path, caplog):
+    """Regression for issue #846.
+
+    The optimizer is best-effort: any image it cannot process can simply be
+    passed through unchanged. When extraction of an image raises (e.g. an
+    exotic colorspace pikepdf cannot transcode), the user should see a concise
+    warning that the image was left unchanged, not an alarming traceback
+    logged at ERROR level.
+    """
+    import logging
+    from unittest.mock import Mock
+
+    def boom(*, pdf, root, image, xref, options):
+        raise NotImplementedError("synthetic extraction failure")
+
+    caplog.set_level(logging.DEBUG, logger='ocrmypdf.optimize')
+    with pikepdf.open(resources / 'francais.pdf') as pdf:
+        results = list(opt.extract_images(pdf, tmp_path, Mock(), boom))
+
+    # The error is trapped, not propagated, and nothing is extracted.
+    assert results == []
+    # A friendly warning is emitted...
+    assert any(
+        r.levelno == logging.WARNING and 'left unchanged' in r.getMessage()
+        for r in caplog.records
+    )
+    # ...and no traceback is logged at ERROR level or above.
+    assert not any(r.levelno >= logging.ERROR for r in caplog.records)
 
 
 def test_extract_image_filter_with_pdf_image():

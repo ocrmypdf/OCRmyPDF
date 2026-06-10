@@ -354,9 +354,16 @@ def extract_images(
                 pdf=pdf, root=root, image=image, xref=xref, options=options
             )
         except Exception:  # pylint: disable=broad-except
-            log.exception(
-                f"xref {xref}: While extracting this image, an error occurred"
+            # Optimization is best-effort: an image we cannot process is simply
+            # left unchanged in the output, which remains valid. Report this as
+            # a concise warning rather than an alarming traceback (issue #846);
+            # the full detail is still available at debug verbosity.
+            log.warning(
+                f"xref {xref}: this image could not be processed by the "
+                "optimizer and was left unchanged. The output file is still "
+                "valid."
             )
+            log.debug(f"xref {xref}: image optimization error detail", exc_info=True)
             errors += 1
         else:
             if result:
