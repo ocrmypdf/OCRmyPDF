@@ -17,7 +17,7 @@ import pikepdf
 
 from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._exec import unpaper
-from ocrmypdf._options import OcrOptions
+from ocrmypdf._options import OcrOptions, ProcessingMode
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf.exceptions import (
     BadArgsError,
@@ -118,8 +118,36 @@ def check_options_preprocessing(options: OcrOptions) -> None:
         )
 
 
+def check_options_strip(options: OcrOptions) -> None:
+    """Reject options that cannot apply in strip mode.
+
+    ``--mode strip`` removes the OCR text layer in place without rasterizing or
+    running OCR, so image-processing and OCR-output options have no effect.
+    """
+    if options.mode != ProcessingMode.strip_text:
+        return
+    incompatible = {
+        '--deskew': options.deskew,
+        '--clean': options.clean,
+        '--clean-final': options.clean_final,
+        '--remove-background': options.remove_background,
+        '--rotate-pages': options.rotate_pages,
+        '--oversample': options.oversample,
+        '--remove-vectors': options.remove_vectors,
+        '--sidecar': options.sidecar,
+    }
+    used = sorted(name for name, value in incompatible.items() if value)
+    if used:
+        raise BadArgsError(
+            "--mode strip removes the OCR text layer without rasterizing or "
+            "running OCR, so these options have no effect and are not allowed: "
+            f"{', '.join(used)}"
+        )
+
+
 def _check_plugin_invariant_options(options: OcrOptions) -> None:
     check_platform()
+    check_options_strip(options)
     check_options_sidecar(options)
     check_options_preprocessing(options)
 

@@ -327,7 +327,11 @@ Online documentation is located at:
         "'default' errors if text is found. "
         "'force' rasterizes all content and runs OCR (same as --force-ocr). "
         "'skip' skips pages with existing text (same as --skip-text). "
-        "'redo' re-OCRs pages, replacing old invisible text (same as --redo-ocr).",
+        "'redo' re-OCRs pages, replacing old invisible text (same as --redo-ocr). "
+        "'strip' removes the invisible OCR text layer without rasterizing or "
+        "running OCR, producing a smaller file; only text drawn as invisible "
+        "(render mode 3) is removed, so text from some OCR engines cannot be "
+        "removed this way.",
     )
     # Legacy flags for backward compatibility - these set the mode internally
     ocrsettings.add_argument(

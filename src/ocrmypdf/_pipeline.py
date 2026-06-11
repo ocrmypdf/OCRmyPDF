@@ -334,6 +334,11 @@ def is_ocr_required(page_context: PageContext) -> bool:
     pageinfo = page_context.pageinfo
     options = page_context.options
 
+    if options.mode == ProcessingMode.strip_text:
+        # Strip mode removes the OCR text layer in place; it never rasterizes
+        # or runs OCR. The stripping happens in OcrGrafter.graft_page.
+        return False
+
     ocr_required = True
 
     if options.pages and pageinfo.pageno not in options.pages:

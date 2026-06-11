@@ -43,12 +43,16 @@ class ProcessingMode(StrEnum):
     - ``force``: Rasterize all content and run OCR regardless of existing text
     - ``skip``: Skip OCR on pages that already have text
     - ``redo``: Re-OCR pages, stripping old invisible text layer
+    - ``strip``: Remove the invisible OCR text layer in place; do not OCR
     """
 
     default = 'default'
     force = 'force'
     skip = 'skip'
     redo = 'redo'
+    # User-facing value is '--mode strip'; the member is named strip_text to
+    # avoid shadowing str.strip on this str-based enum.
+    strip_text = 'strip'
 
 
 class TaggedPdfMode(StrEnum):
@@ -79,8 +83,7 @@ def _resolve_page_token(token: str, total_pages: int | None) -> int:
     if token.lower() == 'end':
         if total_pages is None:
             raise BadArgsError(
-                "'end' was used in --pages but the total page count is not yet "
-                "known"
+                "'end' was used in --pages but the total page count is not yet known"
             )
         return total_pages
     return int(token)

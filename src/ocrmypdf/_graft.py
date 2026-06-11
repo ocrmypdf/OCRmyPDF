@@ -342,6 +342,14 @@ class OcrGrafter:
             ocr_tree: OCR tree for fpdf2 renderer.
             autorotate_correction: Orientation correction in degrees (0, 90, 180, 270).
         """
+        if self.context.options.mode == ProcessingMode.strip_text:
+            # Strip mode: remove the invisible OCR text layer in place without
+            # rasterizing or grafting anything. Honor --pages if specified.
+            options = self.context.options
+            if not options.pages or pageno in options.pages:
+                strip_invisible_text(self.pdf_base, self.pdf_base.pages[pageno])
+            return
+
         if ocr_output and ocr_tree:
             raise ValueError(
                 'Cannot specify both ocr_output and ocr_tree for fpdf2 renderer'

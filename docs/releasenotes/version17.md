@@ -80,6 +80,13 @@
   interpreted "lots of diacritics - possibly poor OCR" hint, but now also emits
   Tesseract's raw message at debug verbosity (``-v 1``) so the original wording
   is available for diagnosis. {issue}`1566`
+- Added ``--mode strip``, which removes the invisible OCR text layer from a PDF
+  in place. Unlike ``--ocr-engine none --force-ocr``, it does not rasterize the
+  page, so images and visible content are preserved unchanged and the output is
+  smaller rather than larger. Only text drawn as invisible (PDF text render mode
+  3) is removed; some OCR engines -- and OCRmyPDF v2.2 and earlier -- express
+  text as visible glyphs covered by an opaque image, and that text cannot be
+  removed this way. {issue}`1435`
 
 ## v17.5.0
 
