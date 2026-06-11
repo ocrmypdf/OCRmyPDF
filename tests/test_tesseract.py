@@ -141,6 +141,14 @@ def test_tesseract_log_output(caplog, in_, logged):
         assert logged in caplog.text
 
 
+def test_tesseract_log_output_diacritics_raw(caplog):
+    """Diacritics branch keeps the interpreted hint and surfaces raw (#1566)."""
+    caplog.set_level(logging.DEBUG)
+    tesseract.tesseract_log_output(b'lots of diacritics blah blah')
+    assert 'possibly poor OCR' in caplog.text  # interpreted hint retained
+    assert 'lots of diacritics blah blah' in caplog.text  # raw message surfaced
+
+
 def test_tesseract_log_output_raises(caplog):
     with pytest.raises(tesseract.TesseractConfigError):
         tesseract.tesseract_log_output(b'parameter not found: moo')

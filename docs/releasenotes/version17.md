@@ -76,6 +76,10 @@
   OCRmyPDF now also logs which rasterizer rendered each page at debug verbosity
   (``-v 1``), and the ``--rasterizer`` help text explains the OCR-quality
   trade-off, to make such reports easier to diagnose. {issue}`1439`
+- When Tesseract reports a page with many diacritics, OCRmyPDF still logs its
+  interpreted "lots of diacritics - possibly poor OCR" hint, but now also emits
+  Tesseract's raw message at debug verbosity (``-v 1``) so the original wording
+  is available for diagnosis. {issue}`1566`
 
 ## v17.5.0
 

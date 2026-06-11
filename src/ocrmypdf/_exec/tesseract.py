@@ -297,6 +297,10 @@ def tesseract_log_output(stream: bytes) -> None:
             continue
         elif 'diacritics' in line:
             tlog.warning("lots of diacritics - possibly poor OCR")
+            # Surface the raw Tesseract message at debug level so users can see
+            # exactly what Tesseract reported (e.g. the affected count) without
+            # losing the interpreted hint above (#1566).
+            tlog.debug(line.strip())
         elif line.startswith('OSD: Weak margin'):
             tlog.warning("unsure about page orientation")
         elif 'Error in pixScanForForeground' in line:
