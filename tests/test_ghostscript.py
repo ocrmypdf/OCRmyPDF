@@ -141,6 +141,62 @@ def test_rasterize_low_dpi_one_axis(francais, outdir):
         assert im.info['dpi'] == forced_dpi
 
 
+def _capture_rasterize_args(resources, outdir, raster_device):
+    """Run rasterize_pdf with the gs subprocess mocked; return the gs argv."""
+    out = outdir / 'out.png'
+    captured = {}
+
+    def fake_run(args, **kwargs):
+        captured['args'] = list(args)
+        # Produce a valid PNG so rasterize_pdf's post-processing succeeds.
+        Image.new('RGB', (2, 2)).save(out)
+        return subprocess.CompletedProcess(args, returncode=0, stdout=b'', stderr=b'')
+
+    with patch('ocrmypdf._exec.ghostscript.run', side_effect=fake_run):
+        rasterize_pdf(
+            resources / 'francais.pdf',
+            out,
+            raster_device=raster_device,
+            raster_dpi=Resolution(150.0, 150.0),
+        )
+    return captured['args']
+
+
+@pytest.mark.parametrize(
+    'raster_device',
+    [
+        GhostscriptRasterDevice.PNGGRAY,
+        GhostscriptRasterDevice.PNG256,
+        GhostscriptRasterDevice.PNG16M,
+    ],
+)
+def test_rasterize_antialiases_contone_devices(resources, outdir, raster_device):
+    """Contone raster devices receive anti-aliasing flags to aid OCR.
+
+    Ghostscript 10.x renders aliased glyphs that OCR misreads as extra word
+    breaks; -dTextAlphaBits/-dGraphicsAlphaBits markedly improve accuracy,
+    especially for small fonts at moderate DPI (see issue #1439).
+    """
+    args = _capture_rasterize_args(resources, outdir, raster_device)
+    assert '-dTextAlphaBits=4' in args
+    assert '-dGraphicsAlphaBits=4' in args
+
+
+@pytest.mark.parametrize(
+    'raster_device',
+    [GhostscriptRasterDevice.PNGMONO, GhostscriptRasterDevice.PNGMONOD],
+)
+def test_rasterize_no_antialias_on_mono_devices(resources, outdir, raster_device):
+    """1-bit mono devices must not receive alpha-bit flags.
+
+    Older Ghostscript versions reject -dTextAlphaBits on 1-bit devices, and
+    pngmonod performs its own anti-aliased downscaling.
+    """
+    args = _capture_rasterize_args(resources, outdir, raster_device)
+    assert not any(a.startswith('-dTextAlphaBits') for a in args)
+    assert not any(a.startswith('-dGraphicsAlphaBits') for a in args)
+
+
 def test_generate_pdfa_default_jpeg_quality(outdir):
     """When jpeg_quality is None, Ghostscript receives -dJPEGQ=95 (default)."""
     with (

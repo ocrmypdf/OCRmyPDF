@@ -255,6 +255,8 @@ def rasterize_pdf_page(
     if pdfium is None:
         return None  # Fall back to Ghostscript
 
+    log.debug("Rasterizing page %d with the pypdfium2 rasterizer", pageno)
+
     # Acquire lock to ensure thread-safe access to pypdfium2
     with (
         _pdfium_lock,

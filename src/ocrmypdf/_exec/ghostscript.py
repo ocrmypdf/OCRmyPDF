@@ -150,6 +150,19 @@ def rasterize_pdf(
     else:
         effective_dpi = raster_dpi
 
+    # Anti-alias text and vector graphics when rendering to a contone device.
+    # Ghostscript 10.x renders aliased glyphs that OCR frequently misreads as
+    # extra word breaks; anti-aliasing empirically improves OCR accuracy on the
+    # Ghostscript path, especially for small fonts at moderate DPI (#1439).
+    # The 1-bit mono devices do not accept alpha bits (older Ghostscript
+    # rejects them) and pngmonod performs its own anti-aliased downscaling.
+    mono_devices = (GhostscriptRasterDevice.PNGMONO, GhostscriptRasterDevice.PNGMONOD)
+    antialias_args = (
+        []
+        if raster_device in mono_devices
+        else ['-dTextAlphaBits=4', '-dGraphicsAlphaBits=4']
+    )
+
     args_gs = (
         [
             GS,
@@ -162,6 +175,7 @@ def rasterize_pdf(
             f'-dLastPage={pageno}',
             f'-r{effective_dpi.x:f}x{effective_dpi.y:f}',
         ]
+        + antialias_args
         + (['-dUseCropBox'] if use_cropbox else [])
         + (['-dFILTERVECTOR'] if filter_vector else [])
         + (['-dPDFSTOPONERROR'] if stop_on_error else [])

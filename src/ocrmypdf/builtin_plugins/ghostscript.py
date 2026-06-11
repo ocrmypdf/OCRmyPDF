@@ -256,6 +256,8 @@ def rasterize_pdf_page(
         # Let pypdfium handle it (it will error in check_options if unavailable)
         return None
 
+    log.debug("Rasterizing page %d with the Ghostscript rasterizer", pageno)
+
     ghostscript.rasterize_pdf(
         input_file,
         output_file,

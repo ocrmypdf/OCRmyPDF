@@ -62,6 +62,20 @@
   better input for OCR on faint or anti-aliased scans at negligible cost and
   no change to output file size, since the rasterized image is an
   intermediate that is discarded after OCR.
+- When rasterizing pages with Ghostscript, OCRmyPDF now enables text and
+  graphics anti-aliasing (``-dTextAlphaBits=4 -dGraphicsAlphaBits=4``) for the
+  grayscale and color raster devices. Ghostscript 10.x renders aliased glyphs
+  that OCR frequently misreads as extra word breaks or substituted characters;
+  anti-aliasing materially improves OCR accuracy on the Ghostscript
+  rasterization path, especially for small fonts at moderate resolution. The
+  1-bit monochrome devices are unaffected, since they perform their own
+  anti-aliased downscaling and older Ghostscript versions reject alpha-bit
+  options on them. Note that the default rasterizer (``--rasterizer auto``)
+  prefers pypdfium2, which already anti-aliases; this change benefits users who
+  select ``--rasterizer ghostscript`` or do not have pypdfium2 installed.
+  OCRmyPDF now also logs which rasterizer rendered each page at debug verbosity
+  (``-v 1``), and the ``--rasterizer`` help text explains the OCR-quality
+  trade-off, to make such reports easier to diagnose. {issue}`1439`
 
 ## v17.5.0
 
