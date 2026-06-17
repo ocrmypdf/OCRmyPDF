@@ -210,7 +210,7 @@ def create_input_file(options: OcrOptions, work_folder: Path) -> tuple[Path, str
             if running_in_docker():  # pragma: no cover
                 msg += (
                     "\nDocker cannot access your working directory unless you "
-                    "explicitly share it with the Docker container and set up"
+                    "explicitly share it with the Docker container and set up "
                     "permissions correctly.\n"
                     "You may find it easier to use stdin/stdout:"
                     "\n"
