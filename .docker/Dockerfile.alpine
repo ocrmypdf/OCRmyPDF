@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2023 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-FROM alpine:3.23 AS base
+FROM alpine:3.24 AS base
 
 ENV LANG=C.UTF-8
 ENV TZ=UTC
@@ -22,7 +22,7 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-COPY --from=ghcr.io/astral-sh/uv:0.9.8 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.21 /uv /uvx /bin/
 
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
