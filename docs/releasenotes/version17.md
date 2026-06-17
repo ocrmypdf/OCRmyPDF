@@ -3,6 +3,26 @@
 
 # v17
 
+## v17.7.0
+
+- The Docker images now run as a non-root user (`app`, uid/gid 1000) by default
+  rather than as root, as a defense-in-depth measure. If you bind-mount a
+  directory for input and output, you may now need to add a `--user` argument so
+  the container can write to it; the correct value differs for rootless Docker,
+  Podman, and rootful Docker, and is described in the Docker documentation.
+  Piping the input and output through stdin/stdout still works with no
+  permission setup.
+- The Docker images now default their working directory to `/data`, so files in
+  a directory mounted there can be given as relative paths without an explicit
+  `--workdir`.
+- The Ubuntu Docker image now installs Tesseract 5 from the Ubuntu archive
+  instead of the third-party `alex-p/tesseract-ocr5` PPA, and the base images
+  were updated to Ubuntu 26.04 and Alpine 3.24.
+- Fixed a missing space in the error message shown when OCRmyPDF cannot access
+  its working directory inside a Docker container.
+- Updated packaged dependencies, including the optional web service stack
+  (starlette, tornado, python-multipart) and cryptography.
+
 ## v17.6.0
 
 - When the optimizer encounters an image it cannot process (for example, an
