@@ -6,12 +6,19 @@ services:
   ocrmypdf:
     restart: always
     container_name: ocrmypdf
-    image: jbarlow83/ocrmypdf
+    image: jbarlow83/ocrmypdf-alpine
     volumes:
       - "/media/scan:/input"
       - "/mnt/scan:/output"
     environment:
       - OCR_OUTPUT_DIRECTORY_YEAR_MONTH=0
+    # The image runs as the non-root "app" user (uid 1000) by default. The
+    # correct value here depends on your runtime, so that the watcher can write
+    # to the /output bind mount and the files end up owned by you:
+    #   rootful Docker  -> your host uid:gid
+    #   rootless Docker -> "0:0" (container root maps to your host user)
+    #   Podman          -> your host uid:gid, plus `userns_mode: "keep-id"`
+    # See docs/docker.md ("Bind-mounted volumes") for the reasoning.
     user: "<SET TO YOUR USER ID>:<SET TO YOUR GROUP ID>"
     entrypoint: python3
-    command: watcher.py
+    command: /app/watcher.py

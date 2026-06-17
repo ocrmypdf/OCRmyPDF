@@ -62,14 +62,35 @@ RUN apk add --no-cache \
     unpaper \
     && rm -rf /var/cache/apk/*
 
+# Create a non-root user to run the application (defense in depth). The build
+# stages above need root to install packages, but the entrypoint should not.
+# A fixed uid/gid of 1000 keeps `--user`/`--userns keep-id` mappings predictable
+# and matches the --chown below. See docs/docker.md for the volume/permissions
+# implications under rootless vs rootful Docker.
+RUN addgroup -g 1000 app \
+    && adduser -u 1000 -G app -D -h /home/app app
+ENV HOME=/home/app
+
 WORKDIR /app
 
 COPY --from=builder --chown=app:app /app /app
 
 RUN rm -rf /app/.git && \
     ln -s /app/misc/webservice.py /app/webservice.py && \
-    ln -s /app/misc/watcher.py /app/watcher.py
+    ln -s /app/misc/watcher.py /app/watcher.py && \
+    chown app:app /app
+
+# Default working directory for bind-mounted data, so relative input/output
+# paths work without passing --workdir (e.g. `-v "$PWD:/data" in.pdf out.pdf`).
+# The webservice/watcher are run by absolute path (/app/*.py), unaffected by this.
+RUN mkdir -p /data && chown app:app /data
+WORKDIR /data
 
 ENV PATH="/app/.venv/bin:${PATH}"
+
+# Drop privileges: run the entrypoint (ocrmypdf, or the webservice/watcher when
+# overridden) as the unprivileged app user. Override with `--user root` if you
+# need root inside a running container (e.g. to apk add extra packages).
+USER app
 
 ENTRYPOINT ["/app/.venv/bin/ocrmypdf"]

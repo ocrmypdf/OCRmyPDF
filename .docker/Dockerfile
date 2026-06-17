@@ -60,10 +60,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM base
 
-RUN apt-get update && apt-get install -y software-properties-common
-
-RUN add-apt-repository -y ppa:alex-p/tesseract-ocr5
-
+# Tesseract 5 ships in the Ubuntu archive as of 24.04, so no third-party PPA is
+# needed. (Previously this used ppa:alex-p/tesseract-ocr5.)
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
   fonts-droid-fallback \
@@ -81,6 +79,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   unpaper \
   && rm -rf /var/lib/apt/lists/*
 
+# Create a non-root user to run the application (defense in depth). The build
+# stages above need root to install packages, but the entrypoint should not.
+# A fixed uid/gid of 1000 keeps `--user`/`--userns keep-id` mappings predictable
+# and matches the --chown below. See docs/docker.md for the volume/permissions
+# implications under rootless vs rootful Docker.
+# The Ubuntu base ships a default "ubuntu" user at uid/gid 1000; remove it so
+# "app" can claim that uid for parity with the Alpine image.
+RUN userdel -r ubuntu 2>/dev/null; groupdel ubuntu 2>/dev/null; \
+  groupadd -g 1000 app \
+  && useradd -u 1000 -g app -m -d /home/app app
+ENV HOME=/home/app
+
 WORKDIR /app
 
 COPY --from=builder /usr/local/lib/ /usr/local/lib/
@@ -90,9 +100,21 @@ COPY --from=builder --chown=app:app /app /app
 
 RUN rm -rf /app/.git && \
 ln -s /app/misc/webservice.py /app/webservice.py && \
-ln -s /app/misc/watcher.py /app/watcher.py
+ln -s /app/misc/watcher.py /app/watcher.py && \
+chown app:app /app
+
+# Default working directory for bind-mounted data, so relative input/output
+# paths work without passing --workdir (e.g. `-v "$PWD:/data" in.pdf out.pdf`).
+# The webservice/watcher are run by absolute path (/app/*.py), unaffected by this.
+RUN mkdir -p /data && chown app:app /data
+WORKDIR /data
 
 ENV PATH="/app/.venv/bin:${PATH}"
+
+# Drop privileges: run the entrypoint (ocrmypdf, or the webservice/watcher when
+# overridden) as the unprivileged app user. Override with `--user root` if you
+# need root inside a running container (e.g. to apt install extra packages).
+USER app
 
 ENTRYPOINT ["/app/.venv/bin/ocrmypdf"]
 

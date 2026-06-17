@@ -71,15 +71,29 @@ application (as opposed to the more conventional case, where a Docker
 container runs as a server). For that reason we usually use the `--rm`
 argument to delete the container when it exits.
 
+:::{note}
+The image runs as a non-root user (`app`, uid/gid 1000) by default,
+rather than as root. This is a defense-in-depth measure: a flaw in
+OCRmyPDF or one of its dependencies cannot trivially act as root inside
+the container. The examples below assume **rootless Docker** or
+**Podman**; the differences for traditional *rootful* Docker are
+described separately under *Special case: rootful Docker* below.
+:::
+
 To start a Docker container (instance of the image):
 
 :::{code} bash
 docker run --rm -i jbarlow83/ocrmypdf-alpine (... all other arguments here...) - -
 :::
 
-For convenience, create a shell alias to hide the Docker command. It is
-easier to send the input file as stdin and read the output from stdout
--- **this avoids the messy permission issues with Docker entirely**.
+### Recommended: pipe through stdin and stdout
+
+The easiest and most portable way to use the image is to send the input
+file on stdin and read the output from stdout. This **avoids file
+permission issues entirely** -- nothing is written to a mounted
+directory, so it does not matter which user the container runs as, nor
+whether you use rootless or rootful Docker. For convenience, create a
+shell alias to hide the Docker command:
 
 :::{code} bash
 alias docker_ocrmypdf='docker run --rm -i jbarlow83/ocrmypdf-alpine'
@@ -90,28 +104,42 @@ docker_ocrmypdf - - <input.pdf >output.pdf
 Or in the wonderful [fish shell](https://fishshell.com/):
 
 :::{code} fish
-alias docker_ocrmypdf 'docker run --rm jbarlow83/ocrmypdf-alpine'
+alias docker_ocrmypdf 'docker run --rm -i jbarlow83/ocrmypdf-alpine'
 funcsave docker_ocrmypdf
 :::
 
-Alternately, you could mount the local current working directory as a
-Docker volume:
+{#docker-volumes}
+### Bind-mounted volumes
+
+If you would rather mount a directory and pass file paths, you need to
+consider which user owns the files OCRmyPDF writes back into that
+directory. The image's default working directory is `/data`, so mounting
+your files there lets you pass plain relative paths without an explicit
+`--workdir`. Because the container runs as the non-root `app` user, the
+right invocation otherwise depends on your container runtime.
+
+**Rootless Docker (the assumed default).** Your own account runs the
+daemon, so the container's `root` maps back to *your* unprivileged host
+user, while every other container uid -- including the image's default
+`app`/1000 -- maps to a *subordinate* uid. A directory you own on the
+host therefore appears owned by `root` inside the container, so the
+default `app` user usually **cannot write to it at all**. Run the job as
+container-`root`, which under rootless Docker is still your ordinary host
+user, so the write succeeds and the output is owned by you:
 
 :::{code} bash
-alias docker_ocrmypdf='docker run --rm  -i --user "$(id -u):$(id -g)" --workdir /data -v "$PWD:/data" jbarlow83/ocrmypdf-alpine'
-docker_ocrmypdf /data/input.pdf /data/output.pdf
+alias docker_ocrmypdf='docker run --rm -i --user 0:0 -v "$PWD:/data" jbarlow83/ocrmypdf-alpine'
+docker_ocrmypdf input.pdf output.pdf
 :::
 
-## Podman
-
-Especially if you use [Podman](https://podman.io/) (or use Docker in
-rootless mode), you may need to add `--userns keep-id` there,
-otherwise you may get access errors, because the user ID is otherwise not
-mapped to the same UID as on the host:
+**Podman.** Podman provides `--userns keep-id`, which maps your host uid
+straight through into the container. Combined with `--user`, you run as
+your own uid and own the output directly, otherwise you may get access
+errors because the user ID is not mapped to the same UID as on the host:
 
 :::{code} bash
-alias podman_ocrmypdf='podman run --rm -i --user "$(id -u):$(id -g)" --userns keep-id --workdir /data -v "$PWD:/data" jbarlow83/ocrmypdf-alpine'
-podman_ocrmypdf /data/input.pdf /data/output.pdf
+alias podman_ocrmypdf='podman run --rm -i --user "$(id -u):$(id -g)" --userns keep-id -v "$PWD:/data" jbarlow83/ocrmypdf-alpine'
+podman_ocrmypdf input.pdf output.pdf
 :::
 
 If you have SELinux enabled, you may additionally need to add the `:Z` [suffix to
@@ -124,9 +152,26 @@ the end of the linked podman documentation for details. This results in
 the following full command:
 
 :::{code} bash
-alias podman_ocrmypdf='podman run --rm -i --user "$(id -u):$(id -g)" --userns keep-id --workdir /data -v "$PWD:/data" --security-opt label=disable jbarlow83/ocrmypdf-alpine'
-podman_ocrmypdf /data/input.pdf /data/output.pdf
+alias podman_ocrmypdf='podman run --rm -i --user "$(id -u):$(id -g)" --userns keep-id -v "$PWD:/data" --security-opt label=disable jbarlow83/ocrmypdf-alpine'
+podman_ocrmypdf input.pdf output.pdf
 :::
+
+{#docker-rootful}
+### Special case: rootful Docker
+
+With a traditional root daemon, container uid *N* is the *same* uid *N*
+on the host. Running the container as root would therefore fill your
+mounted directory with root-owned files and -- more importantly -- a
+container escape would run as real host root. Drop to your own uid so the
+output is owned by you and the process stays unprivileged:
+
+:::{code} bash
+alias docker_ocrmypdf='docker run --rm -i --user "$(id -u):$(id -g)" -v "$PWD:/data" jbarlow83/ocrmypdf-alpine'
+docker_ocrmypdf input.pdf output.pdf
+:::
+
+The non-root default and the `--user` override both reduce the risk here,
+but rootless Docker or Podman remain the safer choice when available.
 
 {#docker-lang-packs}
 ## Adding languages to the Docker image
@@ -139,8 +184,12 @@ creating a new Dockerfile based on the public one.
 :::{code} dockerfile
 FROM jbarlow83/ocrmypdf
 
+# The image runs as the non-root "app" user, so switch back to root for
+# build steps that install packages, then drop back to "app".
+USER root
 # Example: add Italian
-RUN apt install tesseract-ocr-ita
+RUN apt-get update && apt-get install -y tesseract-ocr-ita
+USER app
 :::
 
 To install language packs (training data) such as the
@@ -179,7 +228,11 @@ Extending the Docker image
 --------------------------
 
 You can extend the Docker image with your own customizations, similar to
-the way it is extended to add language packs.
+the way it is extended to add language packs. Because the image runs as
+the non-root `app` user, switch to `USER root` for any build steps that
+require root (installing packages, writing to system directories) and
+back to `USER app` afterwards, as shown in the language pack example
+above.
 
 Note that the Docker image is subject to change at any time. For
 example, the base image may be updated to a newer version of Ubuntu or
@@ -196,7 +249,7 @@ Executing the test suite
 The OCRmyPDF test suite is installed with image. To run it:
 
 :::{code} bash
-docker run --rm --entrypoint python  jbarlow83/ocrmypdf -m pytest
+docker run --rm --workdir /app --entrypoint python jbarlow83/ocrmypdf -m pytest
 :::
 
 Accessing the shell
@@ -205,7 +258,15 @@ Accessing the shell
 To use the shell in the Docker image:
 
 :::{code} bash
-docker run -it --entrypoint sh  jbarlow83/ocrmypdf
+docker run -it --entrypoint sh jbarlow83/ocrmypdf-alpine
+:::
+
+This shell runs as the non-root `app` user. If you need root inside the
+container -- for example to install extra packages with `apk` or `apt` --
+add `--user root`:
+
+:::{code} bash
+docker run -it --user root --entrypoint sh jbarlow83/ocrmypdf-alpine
 :::
 
 Using the OCRmyPDF web service wrapper
@@ -215,7 +276,7 @@ The OCRmyPDF Docker image includes an example, barebones HTTP web
 service. The webservice may be launched as follows:
 
 :::{code} bash
-docker run --entrypoint python -p 5000:5000  jbarlow83/ocrmypdf webservice.py
+docker run --entrypoint python -p 5000:5000 jbarlow83/ocrmypdf /app/webservice.py
 :::
 
 We omit the `--rm` parameter so that the container will not be

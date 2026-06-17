@@ -174,7 +174,15 @@ docker run \
     --env PYTHONUNBUFFERED=1 \
     --interactive --tty --entrypoint python3 \
     jbarlow83/ocrmypdf \
-    watcher.py
+    /app/watcher.py
+:::
+
+:::{note}
+The image runs as the non-root `app` user (uid 1000) by default, so it
+may not be able to write to the `/output` and `/processed` volumes unless
+you add a `--user` argument. The correct value depends on whether you use
+rootful Docker, rootless Docker, or Podman -- see
+{ref}`Bind-mounted volumes <docker-volumes>` for details.
 :::
 
 This service will watch for a file that matches `/input/\*.pdf`, convert
