@@ -54,13 +54,15 @@ class MultiFontManager:
         'kok': 'NotoSansDevanagari-Regular',  # Konkani
         'bho': 'NotoSansDevanagari-Regular',  # Bhojpuri
         'mai': 'NotoSansDevanagari-Regular',  # Maithili
-        # CJK
-        'chi': 'NotoSansCJK-Regular',  # Chinese (generic)
-        'zho': 'NotoSansCJK-Regular',  # Chinese (ISO 639-3)
-        'chi_sim': 'NotoSansCJK-Regular',  # Chinese Simplified (Tesseract)
-        'chi_tra': 'NotoSansCJK-Regular',  # Chinese Traditional (Tesseract)
-        'jpn': 'NotoSansCJK-Regular',  # Japanese
-        'kor': 'NotoSansCJK-Regular',  # Korean
+        # CJK — prefer the family matching the document language, because the
+        # modern per-language Noto fonts are region subsets (e.g. NotoSansSC
+        # lacks Japanese kana). The pan-CJK super font is a shared fallback.
+        'chi': 'NotoSansSC-Regular',  # Chinese (generic → Simplified)
+        'zho': 'NotoSansSC-Regular',  # Chinese (ISO 639-3)
+        'chi_sim': 'NotoSansSC-Regular',  # Chinese Simplified (Tesseract)
+        'chi_tra': 'NotoSansTC-Regular',  # Chinese Traditional (Tesseract)
+        'jpn': 'NotoSansJP-Regular',  # Japanese
+        'kor': 'NotoSansKR-Regular',  # Korean
         # Thai
         'tha': 'NotoSansThai-Regular',  # Thai
         # Hebrew
@@ -113,7 +115,14 @@ class MultiFontManager:
         'NotoSans-Regular',  # Latin, Greek, Cyrillic
         'NotoSansArabic-Regular',
         'NotoSansDevanagari-Regular',
+        # Pan-CJK super font first (full coverage), then the per-language
+        # subsets so a glyph missing from one CJK family is found in another.
         'NotoSansCJK-Regular',
+        'NotoSansSC-Regular',
+        'NotoSansTC-Regular',
+        'NotoSansHK-Regular',
+        'NotoSansJP-Regular',
+        'NotoSansKR-Regular',
         'NotoSansThai-Regular',
         'NotoSansHebrew-Regular',
         'NotoSansBengali-Regular',
@@ -256,19 +265,23 @@ class MultiFontManager:
         self._warned_scripts.add(warn_key)
 
         if line_language and line_language in self.LANGUAGE_FONT_MAP:
-            font_name = self.LANGUAGE_FONT_MAP[line_language]
+            font_family = self.LANGUAGE_FONT_MAP[line_language].removesuffix('-Regular')
             log.warning(
-                "No font found with glyphs for '%s' text. "
-                "Install %s for better rendering. "
-                "See https://fonts.google.com/noto",
+                "No installed font has glyphs for the detected '%s' text, so "
+                "it was added as an invisible text layer: it stays searchable "
+                "and copyable, but appears blank when highlighted in a PDF "
+                "viewer. Install the %s font family (via your OS package "
+                "manager or https://fonts.google.com/noto) for full rendering.",
                 line_language,
-                font_name,
+                font_family,
             )
         else:
             log.warning(
-                "No font found with glyphs for some text. "
-                "Install Noto fonts for better rendering. "
-                "See https://fonts.google.com/noto"
+                "No installed font has glyphs for some of the detected text, "
+                "so it was added as an invisible text layer: it stays "
+                "searchable and copyable, but appears blank when highlighted "
+                "in a PDF viewer. Install the matching Noto fonts "
+                "(https://fonts.google.com/noto) for full rendering."
             )
 
     def _has_all_glyphs(self, font: FontManager, text: str) -> bool:

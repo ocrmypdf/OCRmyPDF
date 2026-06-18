@@ -9,6 +9,7 @@ Linux, macOS, and Windows platforms.
 
 from __future__ import annotations
 
+import glob
 import logging
 import os
 import sys
@@ -74,6 +75,35 @@ class SystemFontProvider:
             'NotoSansCJKsc-Regular.ttc',
             # Variable fonts
             'NotoSansCJKsc-VF.otf',
+        ],
+        # Per-language CJK families. Modern Google Fonts / Homebrew ship these
+        # as region subset variable fonts ('NotoSansJP[wght].ttf'), matched by
+        # the flexible base search; the legacy per-region super OTFs (full
+        # coverage) are listed here so they also satisfy the logical name.
+        'NotoSansSC-Regular': [
+            'NotoSansSC-Regular.otf',
+            'NotoSansSC-Regular.ttf',
+            'NotoSansCJKsc-Regular.otf',
+        ],
+        'NotoSansTC-Regular': [
+            'NotoSansTC-Regular.otf',
+            'NotoSansTC-Regular.ttf',
+            'NotoSansCJKtc-Regular.otf',
+        ],
+        'NotoSansHK-Regular': [
+            'NotoSansHK-Regular.otf',
+            'NotoSansHK-Regular.ttf',
+            'NotoSansCJKhk-Regular.otf',
+        ],
+        'NotoSansJP-Regular': [
+            'NotoSansJP-Regular.otf',
+            'NotoSansJP-Regular.ttf',
+            'NotoSansCJKjp-Regular.otf',
+        ],
+        'NotoSansKR-Regular': [
+            'NotoSansKR-Regular.otf',
+            'NotoSansKR-Regular.ttf',
+            'NotoSansCJKkr-Regular.otf',
         ],
         'NotoSansThai-Regular': [
             'NotoSansThai-Regular.ttf',
@@ -146,6 +176,28 @@ class SystemFontProvider:
         'NotoSansTibetan-Regular': [
             'NotoSansTibetan-Regular.ttf',
             'NotoSansTibetan-Regular.otf',
+        ],
+    }
+
+    # Font file extensions we know how to load.
+    _FONT_EXTENSIONS = ('.ttf', '.otf', '.ttc')
+
+    # Acceptable filename variants for a font family, ranked best-first.
+    # Lower rank wins when multiple variants of the same family are present.
+    _VARIANT_RANK = {'regular': 0, 'variable': 1, 'vf': 2, 'plain': 3}
+
+    # Extra family bases that can satisfy a logical font, tried after its own
+    # base (so the listed order is the preference). CJK is the case that needs
+    # this: the legacy Adobe-style 'NotoSansCJKsc-Regular.otf' is handled by
+    # NOTO_FONT_PATTERNS, but Homebrew casks and current Google Fonts ship the
+    # per-language families as variable fonts (e.g. 'NotoSansSC[wght].ttf').
+    _ALTERNATE_BASES: dict[str, list[str]] = {
+        'NotoSansCJK-Regular': [
+            'NotoSansSC',  # Simplified Chinese
+            'NotoSansTC',  # Traditional Chinese
+            'NotoSansHK',  # Hong Kong
+            'NotoSansJP',  # Japanese
+            'NotoSansKR',  # Korean
         ],
     }
 
@@ -230,6 +282,76 @@ class SystemFontProvider:
                     # Skip directories we can't read
                     continue
 
+        # No exact static '-Regular' file. Many distributors (Homebrew casks,
+        # current Google Fonts releases) ship Noto fonts as variable fonts with
+        # bracketed axis filenames such as 'NotoSansArabic[wdth,wght].ttf'.
+        # Fall back to a flexible search that also accepts those. See #1652.
+        return self._find_variant_font_file(font_name)
+
+    @staticmethod
+    def _classify_variant(stem: str, base: str) -> str | None:
+        """Classify a font filename stem as a usable variant of ``base``.
+
+        Args:
+            stem: Filename without extension (e.g. 'NotoSansArabic[wdth,wght]')
+            base: Family base name (e.g. 'NotoSansArabic')
+
+        Returns:
+            The variant kind ('regular', 'variable', 'vf', 'plain') or None if
+            the stem is not an acceptable representative of the family. The
+            boundary after ``base`` is required so that 'NotoSans' does not
+            match 'NotoSansArabic', and 'NotoSansArabicUI'/'NotoSansArabic-Bold'
+            do not match a request for 'NotoSansArabic'.
+        """
+        if stem == f'{base}-Regular':
+            return 'regular'
+        if stem.startswith(f'{base}['):  # variable font, e.g. Base[wdth,wght]
+            return 'variable'
+        if stem == f'{base}-VF':  # alternate variable-font naming
+            return 'vf'
+        if stem == base:  # bare family name
+            return 'plain'
+        return None
+
+    def _find_variant_font_file(self, font_name: str) -> Path | None:
+        """Search for a variable font or other acceptable filename variant.
+
+        Tries the font's own family base first, then any alternate bases (used
+        for the modern per-language CJK families). Within that, a static Regular
+        is preferred over a variable font. See issue #1652.
+
+        Args:
+            font_name: Logical font name (e.g. 'NotoSansArabic-Regular')
+
+        Returns:
+            Path to the best-ranked matching font file, or None.
+        """
+        bases = [font_name.removesuffix('-Regular')]
+        bases.extend(self._ALTERNATE_BASES.get(font_name, []))
+
+        # Selection key (base_index, variant_rank): earlier base wins, then the
+        # better variant. Path is carried along but not part of the comparison.
+        best: tuple[tuple[int, int], Path] | None = None
+        for base_index, base in enumerate(bases):
+            for font_dir in self._get_font_dirs():
+                if not font_dir.exists():
+                    continue
+                try:
+                    for path in font_dir.rglob(glob.escape(base) + '*'):
+                        if path.suffix.lower() not in self._FONT_EXTENSIONS:
+                            continue
+                        kind = self._classify_variant(path.stem, base)
+                        if kind is None:
+                            continue
+                        key = (base_index, self._VARIANT_RANK[kind])
+                        if best is None or key < best[0]:
+                            best = (key, path)
+                except PermissionError:
+                    # Skip directories we can't read
+                    continue
+        if best is not None:
+            log.debug("Found system font %s at %s (variant match)", font_name, best[1])
+            return best[1]
         return None
 
     def get_font(self, font_name: str) -> FontManager | None:

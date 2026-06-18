@@ -18,8 +18,9 @@ import cyclopts
 from packaging.version import InvalidVersion, Version
 
 try:
-    from github import Github, GithubException
+    from github import Auth, Github, GithubException
 except ImportError:
+    Auth = None  # type: ignore
     Github = None  # type: ignore
     GithubException = Exception  # type: ignore
 
@@ -68,7 +69,7 @@ def validate_release_notes(new_version: str) -> bool:
 
 def get_github_client():
     """Get an authenticated GitHub client."""
-    if Github is None:
+    if Github is None or Auth is None:
         print(f"{RED}error:{OFF} PyGithub is not installed")
         print("       Install with: pip install PyGithub")
         return None
@@ -92,7 +93,7 @@ def get_github_client():
             return None
 
     try:
-        return Github(token)
+        return Github(auth=Auth.Token(token))
     except GithubException as e:
         print(f"{RED}error:{OFF} Failed to authenticate with GitHub: {e}")
         return None
