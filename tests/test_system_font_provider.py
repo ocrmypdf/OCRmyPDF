@@ -190,12 +190,175 @@ class TestSystemFontProviderAvailableFonts:
         assert 'NotoSansCJK-Regular' in fonts
         assert 'NotoSansArabic-Regular' in fonts
         assert 'NotoSansThai-Regular' in fonts
+        # Per-language CJK families (modern Google Fonts / Homebrew naming)
+        assert 'NotoSansSC-Regular' in fonts
+        assert 'NotoSansJP-Regular' in fonts
 
     def test_fallback_font_raises(self):
         """Test that get_fallback_font raises NotImplementedError."""
         provider = SystemFontProvider()
         with pytest.raises(NotImplementedError):
             provider.get_fallback_font()
+
+
+class TestSystemFontProviderVariableFonts:
+    """Test discovery of variable fonts and non-static filename variants.
+
+    Homebrew casks and Google Fonts ship Noto fonts as variable fonts with
+    bracketed axis filenames (e.g. ``NotoSansArabic[wdth,wght].ttf``) rather
+    than the static ``NotoSansArabic-Regular.ttf``. See issue #1652.
+    """
+
+    @pytest.fixture
+    def real_font_bytes(self):
+        """Bytes of a real, loadable font (content is irrelevant to the test)."""
+        font_path = (
+            Path(__file__).parent.parent
+            / "src"
+            / "ocrmypdf"
+            / "data"
+            / "NotoSans-Regular.ttf"
+        )
+        if not font_path.exists():
+            pytest.skip("Builtin font not available")
+        return font_path.read_bytes()
+
+    def _provider_for(self, tmp_path, filenames, real_font_bytes):
+        """Build a provider whose only font dir is tmp_path with given files."""
+        for name in filenames:
+            (tmp_path / name).write_bytes(real_font_bytes)
+        provider = SystemFontProvider()
+        provider._font_dirs = [tmp_path]
+        return provider
+
+    def test_finds_variable_font_with_axes(self, tmp_path, real_font_bytes):
+        """A bracketed variable font satisfies a request for the static name."""
+        provider = self._provider_for(
+            tmp_path, ['NotoSansArabic[wdth,wght].ttf'], real_font_bytes
+        )
+        font = provider.get_font('NotoSansArabic-Regular')
+        assert font is not None
+        assert font.font_path.name == 'NotoSansArabic[wdth,wght].ttf'
+
+    def test_finds_weight_only_variable_font(self, tmp_path, real_font_bytes):
+        """A variable font with only a weight axis is also discovered."""
+        provider = self._provider_for(
+            tmp_path, ['NotoSansHebrew[wght].ttf'], real_font_bytes
+        )
+        assert provider.get_font('NotoSansHebrew-Regular') is not None
+
+    def test_variable_font_does_not_cross_match_other_script(
+        self, tmp_path, real_font_bytes
+    ):
+        """The generic NotoSans request must not match a script-specific font."""
+        provider = self._provider_for(
+            tmp_path, ['NotoSansArabic[wdth,wght].ttf'], real_font_bytes
+        )
+        # NotoSans (Latin) must NOT be satisfied by NotoSansArabic.
+        assert provider.get_font('NotoSans-Regular') is None
+
+    def test_does_not_match_ui_or_bold_variants(self, tmp_path, real_font_bytes):
+        """Width/UI and weight variants must not satisfy the Regular request."""
+        provider = self._provider_for(
+            tmp_path,
+            ['NotoSansArabicUI-Regular.ttf', 'NotoSansArabic-Bold.ttf'],
+            real_font_bytes,
+        )
+        assert provider.get_font('NotoSansArabic-Regular') is None
+
+    def test_prefers_static_regular_over_variable(self, tmp_path, real_font_bytes):
+        """When both exist, the static Regular is preferred for predictability."""
+        provider = self._provider_for(
+            tmp_path,
+            ['NotoSansArabic[wdth,wght].ttf', 'NotoSansArabic-Regular.ttf'],
+            real_font_bytes,
+        )
+        font = provider.get_font('NotoSansArabic-Regular')
+        assert font is not None
+        assert font.font_path.name == 'NotoSansArabic-Regular.ttf'
+
+    # --- Modern per-language CJK families (NotoSansSC/TC/HK/JP/KR) ---
+    # Homebrew casks (font-noto-sans-sc, ...) and Google Fonts ship CJK as
+    # variable fonts under these bases rather than the legacy NotoSansCJK*.
+
+    @pytest.mark.parametrize(
+        'filename',
+        [
+            'NotoSansSC[wght].ttf',  # Simplified Chinese (Homebrew/Google)
+            'NotoSansTC[wght].ttf',  # Traditional Chinese
+            'NotoSansHK[wght].ttf',  # Hong Kong
+            'NotoSansJP[wght].ttf',  # Japanese
+            'NotoSansKR[wght].ttf',  # Korean
+        ],
+    )
+    def test_finds_modern_cjk_variable_font(self, tmp_path, real_font_bytes, filename):
+        """A modern per-language CJK variable font satisfies NotoSansCJK."""
+        provider = self._provider_for(tmp_path, [filename], real_font_bytes)
+        font = provider.get_font('NotoSansCJK-Regular')
+        assert font is not None
+        assert font.font_path.name == filename
+
+    def test_finds_static_cjk_language_variant(self, tmp_path, real_font_bytes):
+        """A static per-language CJK Regular also satisfies NotoSansCJK."""
+        provider = self._provider_for(
+            tmp_path, ['NotoSansTC-Regular.otf'], real_font_bytes
+        )
+        assert provider.get_font('NotoSansCJK-Regular') is not None
+
+    def test_prefers_pan_cjk_over_language_variant(self, tmp_path, real_font_bytes):
+        """The pan-CJK family is preferred over a single-language variant."""
+        provider = self._provider_for(
+            tmp_path,
+            ['NotoSansSC[wght].ttf', 'NotoSansCJK[wght].ttf'],
+            real_font_bytes,
+        )
+        font = provider.get_font('NotoSansCJK-Regular')
+        assert font is not None
+        assert font.font_path.name == 'NotoSansCJK[wght].ttf'
+
+    def test_modern_cjk_does_not_cross_match_latin(self, tmp_path, real_font_bytes):
+        """A CJK variable font must not satisfy the generic NotoSans request."""
+        provider = self._provider_for(
+            tmp_path, ['NotoSansSC[wght].ttf'], real_font_bytes
+        )
+        assert provider.get_font('NotoSans-Regular') is None
+
+    # --- Per-language CJK families reachable by their own logical name ---
+    # Needed so MultiFontManager can prefer the family matching the document
+    # language (NotoSansJP for Japanese, NotoSansSC for Simplified Chinese, ...).
+
+    @pytest.mark.parametrize(
+        'logical,filename',
+        [
+            ('NotoSansSC-Regular', 'NotoSansSC[wght].ttf'),
+            ('NotoSansTC-Regular', 'NotoSansTC[wght].ttf'),
+            ('NotoSansHK-Regular', 'NotoSansHK[wght].ttf'),
+            ('NotoSansJP-Regular', 'NotoSansJP[wght].ttf'),
+            ('NotoSansKR-Regular', 'NotoSansKR[wght].ttf'),
+        ],
+    )
+    def test_per_language_cjk_logical_name_resolves(
+        self, tmp_path, real_font_bytes, logical, filename
+    ):
+        """Each per-language CJK family is reachable by its own logical name."""
+        provider = self._provider_for(tmp_path, [filename], real_font_bytes)
+        font = provider.get_font(logical)
+        assert font is not None
+        assert font.font_path.name == filename
+
+    def test_per_language_cjk_static_resolves(self, tmp_path, real_font_bytes):
+        """A static per-language Regular also resolves by logical name."""
+        provider = self._provider_for(
+            tmp_path, ['NotoSansJP-Regular.otf'], real_font_bytes
+        )
+        assert provider.get_font('NotoSansJP-Regular') is not None
+
+    def test_per_language_cjk_does_not_cross_match(self, tmp_path, real_font_bytes):
+        """A JP font must not satisfy an SC request (distinct families)."""
+        provider = self._provider_for(
+            tmp_path, ['NotoSansJP[wght].ttf'], real_font_bytes
+        )
+        assert provider.get_font('NotoSansSC-Regular') is None
 
 
 # --- ChainedFontProvider Tests ---
