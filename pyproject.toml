@@ -16,7 +16,7 @@ dependencies = [
   "fpdf2>=2.8.0",
   "img2pdf>=0.5",
   "packaging>=20",
-  "pdfminer.six>=20220319",
+  "pdfminer.six>=20260107",  # fixes parsing of tokens split across the read buffer/streams (gh #1361)
   "pi-heif",                # Heif image format - maintainers: if this is removed, it will NOT break
   "pikepdf>=10",
   "Pillow>=10.0.1",

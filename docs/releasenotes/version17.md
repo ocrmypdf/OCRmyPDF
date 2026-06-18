@@ -3,6 +3,23 @@
 
 # v17
 
+## v17.7.1
+
+- Fixed a severe, Windows-specific performance regression in the "Scanning
+  contents" phase, most visible with `--redo-ocr` ({issue}`1662`). Since
+  v16.4.3, OCRmyPDF forced pdfminer's read buffer to 256 MiB to work around a
+  pdfminer bug that mishandled tokens split across the buffer boundary
+  ({issue}`1361`). On Windows, CPython's `BufferedReader.read()` eagerly
+  allocates a buffer of the requested size on every read, so the oversized
+  buffer made each of pdfminer's thousands of reads cost tens of milliseconds
+  (this allocation is lazy, and effectively free, on Linux). The underlying
+  pdfminer bug was fixed upstream in pdfminer.six 20250327
+  ([#1030](https://github.com/pdfminer/pdfminer.six/pull/1030)), with a
+  follow-up for tokens split across streams in 20260107
+  ([#1158](https://github.com/pdfminer/pdfminer.six/pull/1158)), so the
+  workaround has been removed and the minimum pdfminer.six version raised to
+  20260107.
+
 ## v17.7.0
 
 - The Docker images now run as a non-root user (`app`, uid/gid 1000) by default
