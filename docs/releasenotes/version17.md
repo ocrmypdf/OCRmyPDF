@@ -19,6 +19,19 @@
   ([#1158](https://github.com/pdfminer/pdfminer.six/pull/1158)), so the
   workaround has been removed and the minimum pdfminer.six version raised to
   20260107.
+- The font discovery used to build the OCR text layer now finds variable fonts
+  such as `NotoSansArabic[wdth,wght].ttf`, the form shipped by Homebrew casks
+  and current Google Fonts releases. Previously only static `-Regular.ttf`/`.otf`
+  files were matched, so users who had installed the correct Noto font still got
+  the glyphless fallback and a "No font found" warning ({issue}`1652`).
+- Font discovery is now language-aware for CJK: each Chinese, Japanese, and
+  Korean language maps to its own per-language Noto family (NotoSansSC, TC, HK,
+  JP, KR), with the pan-CJK super font kept as a shared fallback, since the
+  per-language fonts are region subsets that may lack glyphs from other scripts.
+- The warning shown when no installed font has glyphs for some text was reworded
+  to explain the consequence — the text is still added as a searchable, copyable
+  layer but appears blank when highlighted in a viewer — and to name the specific
+  font family to install.
 
 ## v17.7.0
 
