@@ -12,9 +12,11 @@ import pikepdf
 import pytest
 from PIL import Image
 
+from ocrmypdf._exec import ghostscript
 from ocrmypdf._options import OcrOptions
 from ocrmypdf._plugin_manager import get_plugin_manager
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
+from ocrmypdf.pluginspec import GhostscriptRasterDevice
 
 from .conftest import check_ocrmypdf
 
@@ -507,6 +509,110 @@ class TestRasterizerWithNonStandardBoxes:
             assert pdfium_size == (400, 500), f"pypdfium size: {pdfium_size}"
 
 
+@pytest.fixture
+def pdf_with_offset_mediabox_origin(tmp_path):
+    """Create a single-page PDF whose MediaBox has a non-zero origin.
+
+    Tools that crop/rotate non-destructively (e.g. PDF Arranger) shift the
+    MediaBox origin rather than re-rendering content, producing a MediaBox like
+    ``[0, 440, 600, 800]`` with the visible content still inside the box. This
+    fixture reproduces that shape with a full-page gradient so the visible
+    region is unambiguously non-blank. Regression fixture for issue #1709.
+    """
+    # Full-page gradient so the entire MediaBox region carries content.
+    img = _create_gradient_image(600, 800)
+    img_bytes = BytesIO()
+    img.save(img_bytes, format='PNG')
+    img_bytes.seek(0)
+
+    pdf_bytes = BytesIO()
+    img2pdf.convert(
+        img_bytes.read(),
+        layout_fun=img2pdf.get_fixed_dpi_layout_fun((72, 72)),
+        outputstream=pdf_bytes,
+        **IMG2PDF_KWARGS,
+    )
+    pdf_bytes.seek(0)
+
+    pdf_path = tmp_path / 'offset_mediabox_origin.pdf'
+    with pikepdf.open(pdf_bytes) as pdf:
+        page = pdf.pages[0]
+        # Shift the lower-left y origin so the box is [0, 440, 600, 800]: a
+        # 600x360 visible region whose content lies entirely within the box.
+        page.MediaBox = pikepdf.Array([0, 440, 600, 800])
+        page.CropBox = pikepdf.Array([0, 440, 600, 800])
+        pdf.save(pdf_path)
+
+    return pdf_path
+
+
+def _nonwhite_fraction(pdf_path, png_path) -> float:
+    """Rasterize page 1 of pdf_path and return the fraction of non-white pixels."""
+    ghostscript.rasterize_pdf(
+        pdf_path,
+        png_path,
+        raster_device=GhostscriptRasterDevice.PNGGRAY,
+        raster_dpi=Resolution(72, 72),
+        pageno=1,
+        rotation=0,
+    )
+    with Image.open(png_path) as im:
+        gray = im.convert('L')
+        histogram = gray.histogram()
+    total = sum(histogram)
+    # Treat near-white (>= 250) as background; everything else is page content.
+    nonwhite = sum(histogram[:250])
+    return nonwhite / total
+
+
+class TestOffsetMediaBoxOrigin:
+    """Regression tests for issue #1709.
+
+    A non-zero MediaBox origin (e.g. from PDF Arranger crops) must not cause
+    --force-ocr to drop the page content and emit a blank page. Both rasterizers
+    are covered because the bug surfaced regardless of which one rendered.
+    """
+
+    @pytest.mark.parametrize(
+        'rasterizer',
+        [
+            'ghostscript',
+            pytest.param(
+                'pypdfium',
+                marks=pytest.mark.skipif(
+                    not PYPDFIUM_AVAILABLE, reason="pypdfium2 not installed"
+                ),
+            ),
+        ],
+    )
+    def test_force_ocr_preserves_offset_origin_content(
+        self, pdf_with_offset_mediabox_origin, rasterizer, outpdf, tmp_path
+    ):
+        """--force-ocr must preserve content when the MediaBox origin is non-zero."""
+        # Sanity check: the input genuinely has content in its visible region.
+        input_fraction = _nonwhite_fraction(
+            pdf_with_offset_mediabox_origin, tmp_path / 'input.png'
+        )
+        assert input_fraction > 0.5, "test fixture should have a non-blank page"
+
+        check_ocrmypdf(
+            pdf_with_offset_mediabox_origin,
+            outpdf,
+            '--force-ocr',
+            '--rasterizer',
+            rasterizer,
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
+        )
+
+        # The output page must not be blank: the visible content survives.
+        output_fraction = _nonwhite_fraction(outpdf, tmp_path / 'output.png')
+        assert output_fraction > 0.5, (
+            f"output page is blank (non-white fraction {output_fraction:.3f}); "
+            "content was dropped for a non-zero MediaBox origin (issue #1709)"
+        )
+
+
 class TestRasterizerWithRotationAndBoxes:
     """Test rasterizer + rotation + nonstandard boxes combinations."""
 
@@ -671,8 +777,7 @@ class TestRasterizerWithRotationAndBoxes:
                 expected = self._get_expected_size(rotation)
 
                 assert abs(gs_img.size[0] - expected[0]) <= 2, (
-                    f"GS width at {rotation}°: {gs_img.size[0]}, "
-                    f"expected {expected[0]}"
+                    f"GS width at {rotation}°: {gs_img.size[0]}, expected {expected[0]}"
                 )
                 assert abs(gs_img.size[1] - expected[1]) <= 2, (
                     f"GS height at {rotation}°: {gs_img.size[1]}, "
