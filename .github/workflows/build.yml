@@ -31,7 +31,7 @@ jobs:
       PYTHON: ${{ matrix.python }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -107,7 +107,7 @@ jobs:
       PYTHON: ${{ matrix.python }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Homebrew deps
         continue-on-error: true
@@ -169,7 +169,7 @@ jobs:
       PYTHON: ${{ matrix.python }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -207,7 +207,7 @@ jobs:
     name: Build sdist and wheels
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -233,7 +233,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/download-artifact@v8
         with:
@@ -281,7 +281,7 @@ jobs:
       - name: Set image name
         run: echo "DOCKER_IMAGE_NAME=ocrmypdf" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Login to Docker Hub
         uses: docker/login-action@v4
@@ -327,7 +327,7 @@ jobs:
       - name: Set image name
         run: echo "DOCKER_IMAGE_NAME=ocrmypdf-alpine" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Login to Docker Hub
         uses: docker/login-action@v4
