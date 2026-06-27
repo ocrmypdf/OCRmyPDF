@@ -49,3 +49,31 @@ pdftk input.pdf cat output output.pdf
 
 Sometimes Acrobat can repair PDFs with its [Preflight
 tool](https://helpx.adobe.com/acrobat/using/correcting-problem-areas-preflight-tool.html).
+
+(tesseract-config-missing)=
+
+## Tesseract cannot open its config file \'hocr\' or \'txt\'
+
+:::{code}
+ERROR - Tesseract cannot open its config file 'hocr'.
+:::
+
+OCRmyPDF asks Tesseract to produce `hocr` and `txt` output. Tesseract
+reads the instructions for these output formats from configuration files
+named `hocr` and `txt` that live in the `configs/` subdirectory of its
+`tessdata` folder. If those files are missing, Tesseract prints
+`read_params_file: Can't open hocr`, exits without error, and produces no
+output.
+
+This usually happens when a `tessdata` directory was assembled by hand --
+for example, by downloading individual `.traineddata` files from
+[tessdata_best](https://github.com/tesseract-ocr/tessdata_best) and
+pointing `TESSDATA_PREFIX` at them -- because those repositories do not
+include the `configs/` directory. A complete Tesseract installation from
+your operating system\'s package manager includes it.
+
+To fix this, ensure the `configs/hocr` and `configs/txt` files exist in
+the `tessdata` directory that Tesseract is using. Copying the `configs/`
+directory from a full Tesseract installation is sufficient. See
+{envvar}`TESSDATA_PREFIX` for more on selecting an alternate `tessdata`
+folder.

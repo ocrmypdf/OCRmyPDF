@@ -201,6 +201,13 @@ include:
    Overrides the path to Tesseract's data files. This can allow
    simultaneous installation of the "best" and "fast" training data
    sets. OCRmyPDF does not manage this environment variable.
+
+   If you point ``TESSDATA_PREFIX`` at a hand-assembled ``tessdata``
+   folder (for example, individual ``.traineddata`` files downloaded
+   from tessdata_best), make sure it also contains the ``configs/``
+   subdirectory with the ``hocr`` and ``txt`` files. OCRmyPDF requires
+   these; without them Tesseract produces no output. See
+   :ref:`Tesseract cannot open its config file <tesseract-config-missing>`.
 ```
 
 ```{eval-rst}
