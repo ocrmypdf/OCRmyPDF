@@ -178,6 +178,20 @@ html_theme = 'sphinx_rtd_theme'
 #
 html_theme_options = {}
 
+# ReadTheDocs used to inject the "Edit on GitHub" context automatically, but
+# dropped it when it switched to Addons, so set it explicitly here. This makes
+# sphinx_rtd_theme add an "Edit on GitHub" link to each page that points at the
+# corresponding source file in the repository, replacing the static
+# "View page source" (_sources/*.txt) link. See
+# https://github.com/ocrmypdf/OCRmyPDF/issues/1490
+html_context = {
+    'display_github': True,
+    'github_user': 'ocrmypdf',
+    'github_repo': 'OCRmyPDF',
+    'github_version': 'main',
+    'conf_py_path': '/docs/',
+}
+
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
 
