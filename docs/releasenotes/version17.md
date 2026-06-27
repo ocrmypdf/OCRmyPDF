@@ -3,6 +3,16 @@
 
 # v17
 
+## v17.7.2
+
+- Fixed an uncaught `UnicodeDecodeError` when processing a PDF whose
+  `/DocumentInfo` dictionary contains a `/Name` key encoded in Latin-1 (or
+  another non-UTF-8 encoding), such as `/Saks#e5r`. `repair_docinfo_nuls` now
+  treats such a block as malformed, logs a message, and continues instead of
+  crashing the pipeline ({issue}`1540`). Current pikepdf releases tolerate these
+  keys by surrogate-escaping them, but older versions raised while iterating the
+  dictionary.
+
 ## v17.7.1
 
 - Fixed a severe, Windows-specific performance regression in the "Scanning

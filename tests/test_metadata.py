@@ -6,13 +6,14 @@ from __future__ import annotations
 import datetime as dt
 import warnings
 from shutil import copyfile
+from unittest.mock import MagicMock, patch
 
 import pikepdf
 import pytest
 from pikepdf.models.metadata import decode_pdf_date
 
 from ocrmypdf._jobcontext import PdfContext
-from ocrmypdf._metadata import metadata_fixup
+from ocrmypdf._metadata import metadata_fixup, repair_docinfo_nuls
 from ocrmypdf._pipeline import convert_to_pdfa
 from ocrmypdf.api import setup_plugin_infrastructure
 from ocrmypdf.cli import get_options_and_plugins
@@ -41,6 +42,32 @@ def test_preserve_docinfo(output_type, resources, outpdf):
             assert pdf_before.docinfo[key] == pdf_after.docinfo[key]
         pdfa_info = file_claims_pdfa(str(output))
         assert pdfa_info['output'] == output_type
+
+
+def test_repair_docinfo_nuls_undecodable_key(caplog):
+    """A DocumentInfo key with bytes that don't decode must not crash.
+
+    Some PDFs use a /Name dictionary key in DocumentInfo whose bytes are not
+    valid PDFDocEncoding/UTF-8 (e.g. Latin-1 ``/Saks#e5r``). Older pikepdf
+    raised UnicodeDecodeError while iterating such a dictionary. The repair
+    must log and continue rather than propagate the exception. See #1540.
+    """
+    pdf = MagicMock()
+    pdf.docinfo.items.side_effect = UnicodeDecodeError(
+        'utf-8', b'Saks\xe5r', 4, 5, 'invalid continuation byte'
+    )
+    # Make isinstance(pdf.docinfo, Dictionary) succeed so we reach the loop.
+    with patch('ocrmypdf._metadata.Dictionary', MagicMock):
+        result = repair_docinfo_nuls(pdf)
+    assert result is False
+    assert 'malformed DocumentInfo' in caplog.text
+
+
+def test_repair_docinfo_nuls_undecodable_key_real_file(resources):
+    """Opening a real file with a Latin-1 DocumentInfo key must not crash."""
+    with pikepdf.open(resources / 'docinfo_latin1_key.pdf') as pdf:
+        # Should return without raising regardless of pikepdf's decode behavior.
+        repair_docinfo_nuls(pdf)
 
 
 @pytest.mark.parametrize("output_type", ['pdfa', 'pdf'])

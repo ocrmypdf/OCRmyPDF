@@ -88,8 +88,12 @@ def repair_docinfo_nuls(pdf):
             if isinstance(v, str) and b'\x00' in bytes(v):
                 pdf.docinfo[k] = bytes(v).replace(b'\x00', b'')
                 modified = True
-    except TypeError:
-        # TypeError can also be raised if dictionary items are unexpected types
+    except (TypeError, UnicodeDecodeError):
+        # TypeError: DocumentInfo is not a dictionary, or its items are
+        # unexpected types.
+        # UnicodeDecodeError: a DocumentInfo key or value contains bytes that
+        # are not valid PDFDocEncoding/UTF-16, e.g. a Latin-1 /Name key such as
+        # /Saks#e5r. Older pikepdf raised while iterating such a block (#1540).
         log.error("File contains a malformed DocumentInfo block - continuing anyway.")
     return modified
 
