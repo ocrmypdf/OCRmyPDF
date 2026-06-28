@@ -30,6 +30,7 @@ from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._metadata import repair_docinfo_nuls
 from ocrmypdf._options import OcrOptions, ProcessingMode, TaggedPdfMode
 from ocrmypdf._pageboxes import log_box_repairs, repair_page_boxes
+from ocrmypdf._stdoutprotect import get_protected_stdout_fd
 from ocrmypdf.exceptions import (
     DigitalSignatureError,
     DpiError,
@@ -1278,8 +1279,18 @@ def copy_final(
     log.debug('%s -> %s', input_file, output_file)
     with input_file.open('rb') as input_stream:
         if output_file == '-':
-            copyfileobj(input_stream, sys.stdout.buffer)  # type: ignore[misc]
-            sys.stdout.flush()
+            fd = get_protected_stdout_fd()
+            if fd is not None:
+                # Stdout protection is active: write to the preserved real
+                # stdout. dup the saved fd so the with-block's close() does not
+                # close our long-lived descriptor.
+                with os.fdopen(os.dup(fd), 'wb') as stdout_stream:
+                    copyfileobj(input_stream, stdout_stream)
+                    stdout_stream.flush()
+            else:
+                # No protection installed (e.g. plain API use): legacy behavior.
+                copyfileobj(input_stream, sys.stdout.buffer)  # type: ignore[misc]
+                sys.stdout.flush()
         elif hasattr(output_file, 'writable'):
             output_stream = cast(BinaryIO, output_file)
             copyfileobj(input_stream, output_stream)  # type: ignore[misc]

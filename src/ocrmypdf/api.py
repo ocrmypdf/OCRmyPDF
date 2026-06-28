@@ -56,6 +56,7 @@ from ocrmypdf._pipelines.hocr_to_ocr_pdf import run_hocr_to_ocr_pdf_pipeline
 from ocrmypdf._pipelines.ocr import run_pipeline, run_pipeline_cli
 from ocrmypdf._pipelines.pdf_to_hocr import run_hocr_pipeline
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager, get_plugin_manager
+from ocrmypdf._stdoutprotect import protect_stdout
 from ocrmypdf._validation import check_options
 from ocrmypdf.cli import ArgumentParser, get_parser
 from ocrmypdf.exceptions import ExitCode
@@ -231,6 +232,37 @@ def configure_logging(
         logging.captureWarnings(True)
 
     return log
+
+
+def configure_stdout_protection() -> bool:
+    """Protect the process's real standard output from corruption.
+
+    When OCRmyPDF writes its final PDF to standard output (``output_file='-'``),
+    the bytes on stdout must be exactly the PDF and nothing else. By default
+    OCRmyPDF relies on no in-process code -- third party libraries, plugins, or
+    stray ``print()`` calls -- ever writing to stdout. This function makes that
+    guarantee real: it redirects file descriptor 1 to standard error and
+    preserves a private copy of the real stdout, so that any accidental write to
+    stdout lands harmlessly on stderr while OCRmyPDF still emits its final PDF to
+    the preserved descriptor.
+
+    This is the same protection the ``ocrmypdf`` command line program installs.
+    It is optional for API users and works like :func:`configure_logging`: call
+    it before :func:`ocr` if you want command-line-like behavior. It must be
+    called once, early -- before any plugins are loaded or any worker
+    process/thread is started -- so that they inherit the redirected descriptor.
+
+    Because it mutates process-global file descriptors and affects the entire
+    process, applications that manage their own standard output (for example,
+    a long-lived service that calls :func:`ocr` in-process) should **not** call
+    this function.
+
+    Returns:
+        True if protection was installed (or was already active). False if
+        stdout is not backed by a real operating system file descriptor, in
+        which case nothing is changed.
+    """
+    return protect_stdout()
 
 
 def _check_no_conflicting_ocr_params(
@@ -965,6 +997,7 @@ __all__ = [
     'Verbosity',
     'check_options',
     'configure_logging',
+    'configure_stdout_protection',
     'create_options',
     'get_parser',
     'get_plugin_manager',

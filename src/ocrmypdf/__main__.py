@@ -16,7 +16,7 @@ from contextlib import suppress
 from ocrmypdf import __version__
 from ocrmypdf._pipelines.ocr import run_pipeline_cli
 from ocrmypdf._validation import check_options
-from ocrmypdf.api import Verbosity, configure_logging
+from ocrmypdf.api import Verbosity, configure_logging, configure_stdout_protection
 from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.exceptions import (
     BadArgsError,
@@ -39,6 +39,11 @@ def sigbus(*args):
 
 def run(args=None):
     """Run the ocrmypdf command line interface."""
+    # Protect the real stdout before loading plugins or starting any worker
+    # processes/threads, so that only our final PDF output can reach it and
+    # stray writes from plugins or libraries are diverted to stderr.
+    configure_stdout_protection()
+
     options, plugin_manager = get_options_and_plugins(args=args)
 
     with suppress(AttributeError, PermissionError):

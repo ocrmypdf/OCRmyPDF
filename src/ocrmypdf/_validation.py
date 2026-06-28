@@ -19,6 +19,7 @@ from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._exec import unpaper
 from ocrmypdf._options import OcrOptions, ProcessingMode
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
+from ocrmypdf._stdoutprotect import protected_stdout_isatty
 from ocrmypdf.exceptions import (
     BadArgsError,
     InputFileError,
@@ -231,7 +232,13 @@ def create_input_file(options: OcrOptions, work_folder: Path) -> tuple[Path, str
 
 def check_requested_output_file(options: OcrOptions) -> None:
     if options.output_file == '-':
-        if sys.stdout.isatty():
+        # When stdout protection is active, fd 1 has been redirected to stderr,
+        # so sys.stdout.isatty() would report stderr's status. Consult the
+        # preserved real stdout instead, falling back when protection is off.
+        is_tty = protected_stdout_isatty()
+        if is_tty is None:
+            is_tty = sys.stdout.isatty()
+        if is_tty:
             raise BadArgsError(
                 "Output was set to stdout '-' but it looks like stdout "
                 "is connected to a terminal.  Please redirect stdout to a "

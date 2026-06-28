@@ -19,6 +19,7 @@ from ocrmypdf._version import __version__
 from ocrmypdf.api import (
     Verbosity,
     configure_logging,
+    configure_stdout_protection,
     ocr,
 )
 from ocrmypdf.exceptions import (
@@ -53,6 +54,7 @@ __all__ = [
     'BoundingBox',
     'configure_debug_logging',
     'configure_logging',
+    'configure_stdout_protection',
     'DpiError',
     'EncryptedPdfError',
     'Executor',

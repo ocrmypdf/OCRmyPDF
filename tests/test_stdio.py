@@ -48,6 +48,33 @@ def test_stdout(ocrmypdf_exec, resources, outpdf):
     assert check_pdf(output_file)
 
 
+def test_stdout_protected_from_pollution(ocrmypdf_exec, resources, outpdf):
+    if 'COV_CORE_DATAFILE' in os.environ:
+        pytest.skip("Coverage uses stdout")
+
+    input_file = str(resources / 'francais.pdf')
+    output_file = str(outpdf)
+
+    # A plugin deliberately writes garbage to stdout during the run. With stdout
+    # protection active, that garbage must be diverted to stderr and never reach
+    # the PDF we are writing to stdout.
+    with open(output_file, 'wb') as output_stream:
+        p_args = ocrmypdf_exec + [
+            input_file,
+            '-',
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
+            '--plugin',
+            'tests/plugins/stdout_polluter.py',
+        ]
+        p = run(p_args, stdout=output_stream, stderr=PIPE, stdin=DEVNULL, check=True)
+
+    assert check_pdf(output_file), "PDF on stdout was corrupted"
+    with open(output_file, 'rb') as f:
+        assert b'POLLUTION' not in f.read(), "pollution leaked into the PDF"
+    assert b'POLLUTION' in p.stderr, "pollution was not diverted to stderr"
+
+
 @pytest.mark.skipif(os.name == 'nt', reason='Windows does not support /dev/null')
 def test_dev_null(resources):
     if 'COV_CORE_DATAFILE' in os.environ:

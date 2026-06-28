@@ -3,8 +3,21 @@
 
 # v17
 
-## v17.7.2
+## v17.8.0
 
+- Writing the output PDF to standard output (`ocrmypdf input.pdf -`) is now
+  protected against corruption at the operating system level. Previously
+  OCRmyPDF relied on no in-process code — third-party libraries, plugins, or
+  stray `print()` calls — ever writing to stdout; a single accidental write
+  would silently corrupt the PDF. The command line program now saves the real
+  stdout at startup, before plugins are loaded or any worker process/thread is
+  started, and redirects file descriptor 1 to stderr, so that only OCRmyPDF's
+  final PDF output can reach stdout. A consequence is that a plugin which
+  intentionally prints to stdout will have that output redirected to stderr.
+- Added the public API function {func}`ocrmypdf.configure_stdout_protection`,
+  which installs this same protection. Like {func}`ocrmypdf.configure_logging`,
+  it is optional and intended for callers that want command-line-like behavior;
+  applications that manage their own standard output should not call it.
 - Fixed an uncaught `UnicodeDecodeError` when processing a PDF whose
   `/DocumentInfo` dictionary contains a `/Name` key encoded in Latin-1 (or
   another non-UTF-8 encoding), such as `/Saks#e5r`. `repair_docinfo_nuls` now
